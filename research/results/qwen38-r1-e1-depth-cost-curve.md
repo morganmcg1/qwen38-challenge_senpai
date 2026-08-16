@@ -342,11 +342,56 @@ If you want the literal greedy form for reviewability I can switch it in a
 minute, but I would be knowingly shipping the −3.61% row, so I have shipped the
 argmin and flagged it here rather than silently substituting.
 
-### Implied optimal depth and implied G
+### Implied optimal depth `d*`, and `d*+1` as you asked
 
 Implied `d*` by acceptance level (cap 4 / cap 8): 0.50 -> 2/2; 0.55–0.65 -> 2/2;
 0.699 (ranked) -> **2**/2; 0.75 -> 2/2; 0.80 -> 3/3; 0.85 -> 3/3; 0.90 -> 3/3;
 0.95 -> 3/3; 1.00 -> 3/**7**.
+
+Comment 7 item 3 asked for `d*` **and** `d*+1`, on the argument that
+`d*_ranked >= d*_local` in every cell of your 5-shape x 5-`q` sweep, with a
+worst-case 0.93% loss from shipping the local optimum. Cost per token at each
+depth on the measured curve, flat acceptance `q`, normalised to a serial round:
+
+| q | d=1 | d=2 | d=3 | d=4 | d=5 | d=6 | d=7 | d=8 | `d*` | cost at `d*+1` |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0.699 | 0.6381 | **0.5310** | 0.5552 | 0.6430 | 0.7059 | 0.7772 | 0.8486 | 0.9560 | 2 | **+4.56%** |
+| 0.75 | 0.6195 | **0.5024** | 0.5136 | 0.5834 | 0.6300 | 0.6842 | 0.7386 | 0.8243 | 2 | **+2.23%** |
+| 0.80 | 0.6023 | 0.4761 | **0.4757** | 0.5294 | 0.5615 | 0.6002 | 0.6389 | 0.7044 | 3 | **+11.29%** |
+| 0.85 | 0.5861 | 0.4516 | **0.4407** | 0.4799 | 0.4989 | 0.5236 | 0.5482 | 0.5953 | 3 | **+8.89%** |
+| 0.90 | 0.5706 | 0.4287 | **0.4083** | 0.4346 | 0.4421 | 0.4546 | 0.4668 | 0.4978 | 3 | **+6.44%** |
+| 0.95 | 0.5560 | 0.4073 | **0.3785** | 0.3934 | 0.3910 | 0.3931 | 0.3949 | 0.4124 | 3 | **+3.94%** |
+| 1.00 | 0.5421 | 0.3872 | 0.3511 | 0.3559 | 0.3453 | 0.3388 | **0.3323** | 0.3388 | 7 | **+1.96%** |
+
+Two things follow, and they cut against the premise of item 3:
+
+1. **`d*_ranked = d*_local` on my curve, because the head is the same.** Your
+   `d*_ranked >= d*_local` result came from subtracting a bf16-versus-4-bit head
+   penalty that my measurements never paid (see the re-basing section). With the
+   declared head on both sides, the only residual transfer risk is M4 Pro versus
+   M5, and every constant I ship is a *ratio*, which is invariant under a uniform
+   host speed change. A non-uniform M5 change (different FLOP/bandwidth balance)
+   can still move `d*`; a uniform one cannot.
+2. **Being one step off is much more expensive than 0.93% here, and which way
+   to err flips with `q`.** Your sweep bounded the loss from shipping
+   `d*_local` at 0.93%; on the measured curve `d*+1` costs **2–11%**, because
+   the knee at d = 3 and the plateau above it make the depth just past the
+   optimum the one where the marginal jumps. Penalty for `d*-1` / `d*+1`:
+
+   | q | `d*` | `d*-1` | `d*+1` | safer error |
+   |---|---|---|---|---|
+   | 0.699 | 2 | +20.2% | +4.56% | deeper |
+   | 0.75 | 2 | +23.3% | +2.23% | deeper |
+   | 0.80 | 3 | +0.08% | +11.29% | shallower |
+   | 0.85 | 3 | +2.47% | +8.89% | shallower |
+   | 0.90 | 3 | +5.00% | +6.44% | shallower (marginal) |
+   | 0.95 | 3 | +7.61% | +3.94% | deeper |
+
+   So there is no single safe hedge: at the ranked acceptance 0.699 erring
+   **deeper** is 4x cheaper than erring shallower, while in the 0.80–0.90 band
+   erring **shallower** is 2–140x cheaper. This is exactly why a scalar `h`
+   cannot be retuned into the right answer, and it is also why the sensitivity
+   is worth an M5 confirmation before anything is submitted officially.
 
 Mean `h` = **0.2562**, just under the advisor's `h <= 0.2624` bound, so the
 curve lands in **branch 1: the cost model is roughly calibrated in magnitude,

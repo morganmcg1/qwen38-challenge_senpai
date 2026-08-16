@@ -673,21 +673,28 @@ public final class Qwen36MTPBlockSession {
     /// width 4) and the two largest steps, d=4 (width 5) and d=8 (width 9),
     /// are exactly where the affine-4 g64 crossrow kernel adds a weight pass
     /// (ceil(M / IPG), IPG = ceil(M / ceil(M / 4)), quantized.h:1051).
+    ///
+    /// Stored head-free as [V(d+2) - V(d+1)] / V(1), using the directly
+    /// measured H = 2590us and V(1) = 65044us from `probeResidentHeadCost`.
+    /// Every entry is positive, so the verify-width slope alone — not the
+    /// head — carries 84.4% of the d=8 marginal.
     private static let verifyMarginalRatioByDepth: [Double] = [
-        0.007508, 0.000584, 0.170930, 0.307986,
-        0.221859, 0.230176, 0.216792, 0.323960,
+        0.044324, 0.037618, 0.202611, 0.335359,
+        0.251939, 0.259995, 0.247031, 0.350832,
     ]
 
     /// C(0) / V(1): the zero-draft round divided by the single-row verify it
     /// is built from. Head-independent — a zero-draft round never touches the
-    /// head — and the residue above 1.0 is the fixed per-round overhead `c`.
-    private static let zeroDraftRoundRatio = 1.0319
+    /// head. Measured 65009.4us / 65044us, so the fixed per-round overhead `c`
+    /// is below the noise floor: readout, commit and upkeep together stay
+    /// under 0.5ms at every depth.
+    private static let zeroDraftRoundRatio = 0.999468
 
     /// H / V(1) for the head the frozen constants above were fitted against.
     /// Used only until `probeResidentHeadCost` reports the resident head, so
     /// that a session which somehow decodes without a warm still prices
     /// drafts against a real measurement rather than a guess.
-    private static let referenceHeadStepRatio = 0.0794
+    private static let referenceHeadStepRatio = 0.039819
 
     /// H / V(1) for the resident head, measured once per process in the warm
     /// phase. `nil` until the probe runs.
