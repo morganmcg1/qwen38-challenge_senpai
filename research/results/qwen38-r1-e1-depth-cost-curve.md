@@ -1486,8 +1486,11 @@ argmin and flagged it here rather than silently substituting.
 
 ### Implied optimal depth `d*`, and `d*+1` as you asked
 
+All numbers in this section are recomputed on the **512-token self-normalised**
+vector, the same one the policy A/B used.
+
 Implied `d*` by acceptance level (cap 4 / cap 8): 0.50 -> 2/2; 0.55–0.65 -> 2/2;
-0.699 (ranked) -> **2**/2; 0.75 -> 2/2; 0.80 -> 3/3; 0.85 -> 3/3; 0.90 -> 3/3;
+0.699 (ranked) -> **2**/2; 0.75 -> 2/2; 0.80 -> 2/2; 0.85 -> 3/3; 0.90 -> 3/3;
 0.95 -> 3/3; 1.00 -> 3/**7**.
 
 Comment 7 item 3 asked for `d*` **and** `d*+1`, on the argument that
@@ -1497,13 +1500,20 @@ depth on the measured curve, flat acceptance `q`, normalised to a serial round:
 
 | q | d=1 | d=2 | d=3 | d=4 | d=5 | d=6 | d=7 | d=8 | `d*` | cost at `d*+1` |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 0.699 | 0.6381 | **0.5310** | 0.5552 | 0.6430 | 0.7059 | 0.7772 | 0.8486 | 0.9560 | 2 | **+4.56%** |
-| 0.75 | 0.6195 | **0.5024** | 0.5136 | 0.5834 | 0.6300 | 0.6842 | 0.7386 | 0.8243 | 2 | **+2.23%** |
-| 0.80 | 0.6023 | 0.4761 | **0.4757** | 0.5294 | 0.5615 | 0.6002 | 0.6389 | 0.7044 | 3 | **+11.29%** |
-| 0.85 | 0.5861 | 0.4516 | **0.4407** | 0.4799 | 0.4989 | 0.5236 | 0.5482 | 0.5953 | 3 | **+8.89%** |
-| 0.90 | 0.5706 | 0.4287 | **0.4083** | 0.4346 | 0.4421 | 0.4546 | 0.4668 | 0.4978 | 3 | **+6.44%** |
-| 0.95 | 0.5560 | 0.4073 | **0.3785** | 0.3934 | 0.3910 | 0.3931 | 0.3949 | 0.4124 | 3 | **+3.94%** |
-| 1.00 | 0.5421 | 0.3872 | 0.3511 | 0.3559 | 0.3453 | 0.3388 | **0.3323** | 0.3388 | 7 | **+1.96%** |
+| 0.699 | 0.6417 | **0.5294** | 0.5542 | 0.6439 | 0.7019 | 0.7728 | 0.8393 | 0.9576 | 2 | **+4.68%** |
+| 0.75 | 0.6230 | **0.5008** | 0.5126 | 0.5841 | 0.6265 | 0.6803 | 0.7305 | 0.8256 | 2 | **+2.35%** |
+| 0.80 | 0.6057 | **0.4747** | 0.4748 | 0.5301 | 0.5583 | 0.5967 | 0.6319 | 0.7056 | 2 † | **+0.03%** |
+| 0.85 | 0.5893 | 0.4502 | **0.4399** | 0.4805 | 0.4961 | 0.5206 | 0.5422 | 0.5963 | 3 | **+9.24%** |
+| 0.90 | 0.5738 | 0.4274 | **0.4076** | 0.4352 | 0.4396 | 0.4520 | 0.4617 | 0.4986 | 3 | **+6.77%** |
+| 0.95 | 0.5591 | 0.4060 | **0.3778** | 0.3939 | 0.3888 | 0.3908 | 0.3906 | 0.4130 | 3 | **+4.25%** |
+| 1.00 | 0.5451 | 0.3861 | 0.3504 | 0.3564 | 0.3433 | 0.3369 | **0.3287** | 0.3394 | 7 | **+3.26%** |
+
+† `q = 0.80` is a numerical tie: `d = 2` costs 0.4747 and `d = 3` costs 0.4748,
+a 0.03 % difference. The 256 fit put `d* = 3` there and the 512 fit puts it at
+`d* = 2`. **This is the only cell in the table where the two windows disagree,
+and it disagrees by less than a thousandth of the objective**, so I record it as
+a tie rather than as a change of answer. It is also the only place the window
+refit moves anything at all.
 
 Two things follow, and they cut against the premise of item 3:
 
@@ -1776,13 +1786,21 @@ then stops it. My offline counterfactual is consistent with that and localises
 it precisely — the `cap 4` and `cap 8` columns of `research/policy_sim.py`
 differ *only* at acceptance 1.00:
 
+Rerun on the **512-token self-normalised** vector
+`[0.0902, 0.0680, 0.2435, 0.3804, 0.2778, 0.2981, 0.2715, 0.4250]`
+(`research/out/policy_sim512.json`):
+
 | acceptance | d\* @ cap 4 | d\* @ cap 8 | candidate gain @ cap 4 | candidate gain @ cap 8 |
 |---|---|---|---|---|
-| 0.699 (ranked) | 2 | 2 | +4.36% | +4.36% |
-| 0.85 | 3 | 3 | +8.17% | +11.67% |
-| 0.90 | 3 | 3 | +6.04% | +12.52% |
-| 0.95 | 3 | 3 | +3.77% | +8.21% |
-| 1.00 | 3 | **7** | +1.37% | +1.92% |
+| 0.699 (ranked) | 2 | 2 | +4.47% | +4.47% |
+| 0.85 | 3 | 3 | +8.46% | +11.33% |
+| 0.90 | 3 | 3 | +6.34% | +11.72% |
+| 0.95 | 3 | 3 | +4.08% | +8.53% |
+| 1.00 | 3 | **7** | +1.68% | +3.15% |
+
+Every conclusion below was first drawn on the 256-fitted vector and survives the
+refit unchanged; the numbers move by at most 1.3 percentage points
+(0.699: +4.36 → +4.47; 0.90 @ cap 8: +12.52 → +11.72).
 
 Read this carefully, because it is the one place my evidence **disagrees with
 your simulation's premise**: on my measured curve the corrected cost model wants

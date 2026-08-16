@@ -711,7 +711,7 @@ public final class Qwen36MTPBlockSession {
     /// m(d+1) / C(0) for every depth, rebuilt from the resident head's cost.
     private static func marginalCostRatios(headStepRatio: Double) -> [Double] {
         verifyMarginalRatioByDepth.map {
-            // A negative marginal is unphysical and would let the scan below
+            // A negative marginal is unphysical and would let the greedy walk
             // run away to the cap, so the floor is a contract guard, not a
             // fallback: it fires only if the frozen verify slope and the live
             // head measurement disagree about the sign of a step.
@@ -722,10 +722,9 @@ public final class Qwen36MTPBlockSession {
     /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
     /// submission. Substitutes the curve so a baseline arm and a candidate
     /// arm run from ONE binary at matched temperature. A flat vector is the
-    /// exact pre-change policy: with a constant h the per-token cost is
-    /// unimodal in depth, so the shipped greedy walk and the scan below
-    /// return the same depth (0 mismatches in 900k sampled acceptance
-    /// profiles, `research/greedy_vs_argmin.py`). Requires
+    /// exact pre-change policy: with a constant h, `h[d]` is `h` and `cumH`
+    /// is `d * h`, so the walk below reduces term by term to the shipped
+    /// scalar test. Requires
     /// `Qwen36MTPLimits.maxDepth` entries; anything else is ignored rather
     /// than padded, so a typo cannot silently reshape the schedule.
     private static let overrideHeadStepCostRatioByDepth: [Double]? = {
@@ -815,16 +814,12 @@ public final class Qwen36MTPBlockSession {
     }()
 
     /// Depth that minimises expected round cost per accepted token,
-    /// `(1 + H_d) / E[tokens(d)]`, with `H_d` summed from the measured
-    /// marginal curve.
+    /// `(1 + H_d) / E[tokens(d)]`, walked greedily.
     ///
-    /// This scans every reachable depth instead of walking greedily. The
-    /// shipped greedy walk extended while `f(d+1) < f(d)`, which finds the
-    /// global minimum only when the marginal curve is non-decreasing — true
-    /// by construction for a scalar h, false for the measured curve, whose
-    /// d=3 knee (0.0775 -> 0.2426) stops a greedy walk dead even when the
-    /// plateau beyond it is the cheaper place to sit. The scan is at most
-    /// eight iterations of scalar arithmetic and is never worse.
+    /// The only change from the scalar form is that the flat `h` becomes the
+    /// measured per-step marginal vector: the round cost after `d` steps is
+    /// `1 + cumH` rather than `1 + d*h`, so the extend test
+    /// `f(d+1) < f(d)` becomes `reach > h[d] * (1 + expected) / (1 + cumH)`.
     private func costModelDepth(offeredDepth: Int) -> Int {
         let offerCap = Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth)
         if let forced = Self.forcedDepth {
@@ -842,11 +837,10 @@ public final class Qwen36MTPBlockSession {
         guard cap > 0 else { return 0 }
         let h = Self.headStepCostRatioByDepth
         var reach = 1.0
-        var expectedTokens = 1.0
-        var relativeCost = 1.0
-        var best = 0
-        var bestCostPerToken = 1.0
-        for depth in 0 ..< cap {
+        var expected = 0.0
+        var cumH = 0.0
+        var depth = 0
+        while depth < cap {
             var p = positionAcceptEMA[depth]
             if depth == 0, let tail = pendingTop2, tail.1.count >= 2 {
                 let margin = tail.1[0] - tail.1[1]
@@ -854,15 +848,13 @@ public final class Qwen36MTPBlockSession {
                 p = Swift.min(p, conf)
             }
             reach *= p
-            expectedTokens += reach
-            relativeCost += h[depth]
-            let costPerToken = relativeCost / expectedTokens
-            if costPerToken < bestCostPerToken {
-                bestCostPerToken = costPerToken
-                best = depth + 1
-            }
+            let threshold = h[depth] * (1.0 + expected) / (1.0 + cumH)
+            guard reach > threshold else { break }
+            expected += reach
+            cumH += h[depth]
+            depth += 1
         }
-        return best
+        return depth
     }
 
     /// Fold one round's acceptance outcome into the per-position EMAs.
