@@ -72,6 +72,36 @@ def deep_run_length(q_deep: float) -> float:
     return 1.0 / (1.0 - q_deep)
 
 
+def advisor_grid(
+    acceptances: list[float] | None = None,
+    depths: list[int] | None = None,
+    streaks: tuple[int, ...] = (1, 2, 3),
+) -> list[dict]:
+    """Per-round full-accept probability and expected rounds to a given streak.
+
+    A round only increments `fullAcceptStreak` when EVERY draft is accepted, so
+    the streak is a Bernoulli process with success probability `p ** depth`.
+    """
+    acceptances = acceptances or [1.00, 0.90, 0.80, 0.70, 0.60]
+    depths = depths or [2, 4, 6, 8]
+    rows = []
+    for p in acceptances:
+        for d in depths:
+            q = p**d
+            rows.append(
+                {
+                    "p": p,
+                    "depth": d,
+                    "full_accept_prob": q,
+                    **{
+                        f"rounds_to_streak_{k}": rounds_to_streak(q, k)
+                        for k in streaks
+                    },
+                }
+            )
+    return rows
+
+
 def analyse(p: float, gate: int) -> dict:
     d_shallow = chosen_depth(p, SHALLOW_CAP)
     d_deep = chosen_depth(p, DEEP_CAP)
@@ -262,20 +292,19 @@ def main() -> None:
     print("| p | realized depth d | q = p^d | E[rounds to streak 1] "
           "| E[rounds to streak 2] | E[rounds to streak 3] |")
     print("|---:|---:|---:|---:|---:|---:|")
-    for p in args.acceptance:
-        for d in args.depth_grid:
-            q = p**d
-            print(
-                "| %.2f | %d | %.4f | %.1f | %.1f | %.1f |"
-                % (
-                    p,
-                    d,
-                    q,
-                    rounds_to_streak(q, 1),
-                    rounds_to_streak(q, 2),
-                    rounds_to_streak(q, 3),
-                )
+    grid = advisor_grid(args.acceptance, args.depth_grid)
+    for row in grid:
+        print(
+            "| %.2f | %d | %.4f | %.1f | %.1f | %.1f |"
+            % (
+                row["p"],
+                row["depth"],
+                row["full_accept_prob"],
+                row["rounds_to_streak_1"],
+                row["rounds_to_streak_2"],
+                row["rounds_to_streak_3"],
             )
+        )
 
     print()
     print("## Table 3 - two-regime duty cycle (gate opens at cap4 depth, "
@@ -333,6 +362,7 @@ def main() -> None:
                     "h": H,
                     "shallow_cap": SHALLOW_CAP,
                     "deep_cap": DEEP_CAP,
+                    "advisor_grid": grid,
                     "records": records,
                     "implied_p_promoted": implied_p(args.promoted_score),
                 },
