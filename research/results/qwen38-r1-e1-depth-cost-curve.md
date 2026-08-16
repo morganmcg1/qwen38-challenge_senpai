@@ -1726,19 +1726,40 @@ You asked for the chosen-depth histogram with an explicit statement of whether
 it is clipped at 4. Here is the answer, and it carries a caveat that changes how
 you should read it.
 
-**On the local fixture the wall is NOT binding, and it cannot be made to bind.**
-`base-decl` (shipped policy, declared head, 256 tokens, N = 37 scored rounds):
+**On the local fixture the wall is NOT binding for either policy, and it cannot
+be made to bind.** The 512-token A/B arms, post-warmup MTP-leg rounds, from
+`research/depth_histogram.py`:
 
 ```
-chosen depth histogram: d=4:14, d=5:2, d=6:3, d=7:6, d=8:12
-max chosen depth = 8; d==4 14/37 (37.8%); d>4 23/37 (62.2%)  ->  NOT clipped at 4
+base512 (shipped scalar 0.20), N = 82 rounds
+  d=3:2  d=4:38  d=5:2  d=6:3  d=7:7  d=8:30
+  max chosen depth = 8;  d==4  38/82 (46.34%);  d>4  42/82 (51.22%)
+  -> NOT clipped at 4, but bimodal ON the cap boundary
+
+cand512 (measured curve), N = 132 rounds
+  d=1:1  d=2:3  d=3:128
+  max chosen depth = 3;  d==4  0/132 (0.00%);  d>4  0/132 (0.00%)
+  -> strictly interior; the cap is inactive
 ```
+
+The 256-token screen said the same thing about the shipped arm with fewer
+rounds (`base-decl`, N = 37: `d=4:14, d=5:2, d=6:3, d=7:6, d=8:12`, 37.8 % at
+d == 4 and 62.2 % above it).
 
 The mechanism is the streak gate, not the cap. `widthCap = fullAcceptStreak >= 3
 ? 8 : 4` (`:561`, `:568-569`). Longcopy accepts at ≈ 0.96–1.00 per position
 (measured below), so a 3-round full-accept streak re-arms almost continuously
-and the wall spends most of its time **open**. The 37.8% of rounds sitting
-exactly at d = 4 are the rounds just after a rejection reset the streak.
+and the wall spends most of its time **open**. The 46.3 % of shipped rounds
+sitting exactly at d = 4 are the rounds just after a rejection reset the streak;
+the 36.6 % at d = 8 are the rounds where it has re-armed. The shipped policy
+therefore oscillates between the closed and the open cap and is never anywhere
+else for long — and its accept rate at the clamped d = 4 is only 0.7632, so
+almost a quarter of those clamped rounds pay for a draft that is thrown away.
+
+**The candidate is a cleaner statement: 0 of 132 rounds at d >= 4.** Whatever
+`sdpaWidthWallDepthCap` is set to, my policy's selection on this fixture is
+unchanged, because the constraint is never active. That is what makes the two
+experiments compose rather than compete.
 
 This is a regime statement, and it is the reason the local fixture cannot
 settle your joint-arm question directly: **the width wall binds when acceptance
@@ -2059,6 +2080,46 @@ question*. On a prompt where acceptance were near 1 — a longer copy region, a
 more capable head — the two would converge on `d = 7`. On the ranked pool, where
 depth-1 acceptance is 0.699 rather than 0.8929, they should diverge **further**,
 pushing the realised optimum shallower than `d = 3`, not deeper.
+
+**F30 — the two peaks in `h(d)` are the two qmv pass boundaries, predicted in
+advance.** The subagent kernel audit (F8) read `IPG = ceil(M/ceil(M/4))` and
+`ceil(M/IPG)` out of `quantized.h:1051` and predicted, *before* the 512 sweep
+finished, that the wide-tensor pass count for `M = 1..9` is
+`1,1,1,1,2,2,2,2,3`, i.e. steps at `M = 5` and `M = 9`. With `M = S = d+1` those
+steps land at `d = 4` and `d = 8`. The measured self-normalised marginals are
+`h = [0.0902, 0.0680, 0.2435, 0.3804, 0.2778, 0.2981, 0.2715, 0.4250]` for
+`d = 1..8`: **the two maxima are exactly `d = 4` (0.3804) and `d = 8` (0.4250)**,
+and the three depths strictly inside the two-pass plateau (`d = 5, 6, 7`) are
+flat to ±5.5 % of their 0.2825 mean. This is the mechanism behind the whole
+result — the marginal cost of a draft is a staircase because the quantized
+matvec kernel's pass count is a staircase — and it is why no scalar can
+describe it and why the shape should transfer to any host running the same
+kernel family, including the ranked M5.
+
+The honest gap: `d = 3` (`M = 4`) sits in the **same** one-pass plateau as
+`d = 1, 2`, yet `h(3) = 0.2435` against `h(2) = 0.0680`, a 3.6× jump with no
+pass boundary underneath it. The pass-count model explains the two peaks and
+the plateau between them; it does not explain the knee at `d = 3`. **That knee
+is the single largest unexplained feature in the curve and it is the first
+thing I would hand to the next agent**, because `d = 3` is precisely where the
+candidate policy lands, so whatever causes it is load-bearing for the win.
+
+**F31 — the measured curve beats the shipped scalar by 1.77 % on MTP seconds
+per token at 512 tokens, and it does so without ever touching the width cap.**
+Job `98221633`: `base512` = `adaptive@0.2` (an exact control for the shipped
+policy by F13) reaches 0.03291167 s/token and score 2.26075; `cand512` reaches
+0.03232837 s/token and score 2.30422. Decode-only, with the shared prefill
+removed, the margin widens to +3.04 % (2.7150 against 2.6332). The chosen-depth
+histograms show *why*: the shipped policy spends 46.34 % of its rounds pinned
+at the clamped `d = 4` (accept rate 0.7632) and 36.59 % at `d = 8` once the
+full-accept streak opens the cap, while the candidate spends 96.97 % of its
+rounds at `d = 3` (accept rate 0.9609) and offers `d >= 4` in **zero** rounds.
+Two consequences follow. First, the candidate captures 99.38 % of the best
+decode-only rate any forced depth achieves on this fixture, against 96.38 % for
+the shipped policy — the depth axis is nearly exhausted. Second, because the
+candidate never reaches `d = 4`, `sdpaWidthWallDepthCap` is inactive for it and
+the result is orthogonal to `qwen-alphonse`'s width-cap work rather than
+competing with it.
 
 ## Reconciling 0.20 against the doc block's 0.40
 
