@@ -13,6 +13,12 @@ import pathlib
 import re
 
 ALLOCA = re.compile(r"alloca\s+(\[[^\]]*\]|<[^>]*>|[%\w.]+)")
+# Two traps here, either of which reports fma=0 for a fully contracted build:
+# `metal::fma` lowers to AIR's own `@air.fma.*` and never to `@llvm.fma.*`, and
+# the crossrow inner loop is vectorized over NA, so the intrinsic is `v4f32`
+# rather than `f32`. Match the whole family.
+FMA = re.compile(r"@(llvm|air)\.fma\.(f32|v\d+f32)\b")
+VECTOR_OP = re.compile(r"<\d+ x float>")
 # Device-memory operands live in addrspace(1); `= load` without it is a private
 # or threadgroup access. Counting the two separately is what distinguishes "the
 # arithmetic was cut" from "the loads were cut", which is the whole DCE check.
@@ -46,9 +52,17 @@ def main() -> None:
         if args.match and args.match not in name:
             continue
         allocas = [ALLOCA.search(line).group(1) for line in body if ALLOCA.search(line)]
-        fma = sum(line.count("call float @llvm.fma.f32") for line in body)
+        fma = sum(1 for line in body if FMA.search(line))
         fmul = sum(1 for line in body if re.search(r"=\s*fmul\s", line))
         fadd = sum(1 for line in body if re.search(r"=\s*fadd\s", line))
+        # An AIR op on <NA x float> costs NA lane-issues on a scalar-lane GPU,
+        # so the scalar/vector split is what makes op counts comparable.
+        vec = sum(
+            1
+            for line in body
+            if VECTOR_OP.search(line)
+            and (FMA.search(line) or re.search(r"=\s*f(mul|add)\s", line))
+        )
         dev_loads = sum(1 for line in body if DEVICE_LOAD.search(line))
         loads = sum(1 for line in body if ANY_LOAD.search(line))
         # Metal emits AIR with loops still rolled, so every count above is per
@@ -56,7 +70,8 @@ def main() -> None:
         # counts, which this back-edge count is the machine check for.
         backedges = sum(1 for line in body if "!llvm.loop" in line)
         print(f"{name}: lines={len(body)} allocas={len(allocas)} fma_f32={fma} "
-              f"fmul={fmul} fadd={fadd} flops={fma * 2 + fmul + fadd} "
+              f"fmul={fmul} fadd={fadd} float_ops={fma + fmul + fadd} "
+              f"vector_float_ops={vec} flops={fma * 2 + fmul + fadd} "
               f"device_loads={dev_loads} loads={loads} loop_backedges={backedges} "
               f"types={sorted(set(allocas))}")
 

@@ -67,8 +67,36 @@ ROW_STRIDED = "      const int row = out_row + r;\n"
 ROW_SPANNED = "      const int row = out_row + r * row_span;\n"
 ROW_COLLAPSED = "      const int row = out_row;\n"
 
+FMA_QDOT = """      for (int r = 0; r < rows_per_simd; r++) {
+        const int q = packed[r][i];
+        VF p = partial[r];
+        p = metal::fma(a0, VF(float(q & 0x000f)), p);
+        p = metal::fma(a1, VF(float(q & 0x00f0)), p);
+        p = metal::fma(a2, VF(float(q & 0x0f00)), p);
+        p = metal::fma(a3, VF(float(q & 0xf000)), p);
+        partial[r] = p;
+      }
+"""
+
+# Every nibble product is exact in fp32 (a bf16 activation scaled by a power of
+# two carries <= 8 mantissa bits; the masked nibble carries <= 4), so an FMA
+# cannot change a product. Only the addition order can change a bit. This form
+# keeps the association the unfused source compiles to --
+# `((a0*q0 + a1*q1) + partial) + a2*q2 + a3*q3` -- so it is bit-identical while
+# still trading three multiply/add pairs for three FMAs.
+FMA_QDOT_ORDERED = """      for (int r = 0; r < rows_per_simd; r++) {
+        const int q = packed[r][i];
+        VF p = metal::fma(a1, VF(float(q & 0x00f0)), a0 * VF(float(q & 0x000f)));
+        p += partial[r];
+        p = metal::fma(a2, VF(float(q & 0x0f00)), p);
+        partial[r] = metal::fma(a3, VF(float(q & 0xf000)), p);
+      }
+"""
+
 ARMS = {
     "arm1": [(FULL_QDOT, ONE_TERM_QDOT)],
+    "fma": [(FULL_QDOT, FMA_QDOT)],
+    "fma-ordered": [(FULL_QDOT, FMA_QDOT_ORDERED)],
     "arm2": [(K_LOOP, K_LOOP_WITH_SPAN), (ROW_STRIDED, ROW_SPANNED)],
     "arm2-naive": [(ROW_STRIDED, ROW_COLLAPSED)],
 }
