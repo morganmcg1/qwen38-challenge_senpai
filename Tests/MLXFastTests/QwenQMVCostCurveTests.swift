@@ -21,6 +21,11 @@ struct QwenQMVCostCurveTests {
             .environment["MLXFAST_RUN_QMV_COST_CURVE"] == "1"
     }
 
+    private static var parityEnabled: Bool {
+        ProcessInfo.processInfo
+            .environment["MLXFAST_RUN_QMV_PARITY"] == "1"
+    }
+
     @Test(.enabled(if: QwenQMVCostCurveTests.enabled))
     func sweepQuantizedMatmulOverVerifyWidth() throws {
         let env = ProcessInfo.processInfo.environment
@@ -55,6 +60,53 @@ struct QwenQMVCostCurveTests {
             withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
         try data.write(to: URL(fileURLWithPath: outPath))
         print("QMV_COST_CURVE_OUT \(outPath)")
+    }
+
+    /// Digest the full `quantized_matmul` output at every scored shape and
+    /// dispatched width, so two builds can be compared bit-for-bit.
+    ///
+    /// `row0_bitwise_matches_m1` in the cost curve only compares a build against
+    /// itself, so it cannot see an edit that shifts every width equally. Both
+    /// inputs here are pure functions of their indices, with no RNG anywhere, so
+    /// the digest is reproducible across processes and across builds and is the
+    /// cheapest true cross-build parity check for a kernel edit.
+    ///
+    /// Enable with `MLXFAST_RUN_QMV_PARITY=1` and point
+    /// `MLXFAST_QMV_PARITY_OUT` at the JSON destination.
+    @Test(.enabled(if: QwenQMVCostCurveTests.parityEnabled))
+    func digestQuantizedMatmulOverVerifyWidth() throws {
+        let env = ProcessInfo.processInfo.environment
+        let outPath = try #require(
+            env["MLXFAST_QMV_PARITY_OUT"],
+            "MLXFAST_QMV_PARITY_OUT must name the JSON destination")
+
+        var entries: [[String: Any]] = []
+        for shape in scoredShapes {
+            let weight = syntheticQuantWeight(k: shape.k, n: shape.n)
+            for m in 1...12 {
+                let out = quantizedMM(
+                    syntheticActivations(m: m, k: shape.k, salt: 0),
+                    weight.w, scales: weight.scales, biases: weight.biases,
+                    transpose: true, groupSize: 64, bits: 4)
+                    .asType(.float32).asArray(Float.self)
+                entries.append([
+                    "shape": shape.name,
+                    "m": m,
+                    "elements": out.count,
+                    "digest": fnv1aHex(out),
+                ])
+            }
+        }
+
+        let payload: [String: Any] = [
+            "source": "vendored-mlx-swift",
+            "device": describeDispatchDevice(),
+            "entries": entries,
+        ]
+        let data = try JSONSerialization.data(
+            withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: URL(fileURLWithPath: outPath))
+        print("QMV_PARITY_OUT \(outPath)")
     }
 
     /// Every scored projection must stay on `qmv_fast`. Falling off it is
@@ -623,6 +675,22 @@ private struct QuantWeight {
     let scales: MLXArray
     let biases: MLXArray
     let bits: Int
+}
+
+/// FNV-1a over the raw bit patterns, so two runs agree only on bit equality and
+/// never on "close enough".
+private func fnv1aHex(_ values: [Float]) -> String {
+    var hash: UInt64 = 0xcbf2_9ce4_8422_2325
+    for value in values {
+        var bits = value.bitPattern
+        // Collapse the two zero encodings: -0.0 and 0.0 compare equal and either
+        // may appear for a row that sums to zero, which is not a fidelity change.
+        if bits == 0x8000_0000 { bits = 0 }
+        for shift in stride(from: 0, to: 32, by: 8) {
+            hash = (hash ^ UInt64((bits >> UInt32(shift)) & 0xff)) &* 0x1000_0000_01b3
+        }
+    }
+    return String(format: "%016llx", hash)
 }
 
 /// Builds a contiguous quantized weight without materializing a dense source.
