@@ -56,6 +56,35 @@ struct QwenQMVCostCurveTests {
         try data.write(to: URL(fileURLWithPath: outPath))
         print("QMV_COST_CURVE_OUT \(outPath)")
     }
+
+    /// Every scored projection must stay on `qmv_fast`. Falling off it is
+    /// silent: the result is still correct, it just costs 1.64-1.80x more at
+    /// M=9 (`fastprobe.k5184_n16480` vs the 512-aligned probes). Runs
+    /// unconditionally because it is integer arithmetic, not a measurement.
+    @Test
+    func scoredShapesStayOnTheQMVFastPath() {
+        for shape in scoredShapes + fastPathProbes.filter({ $0.k % 512 == 0 }) {
+            #expect(
+                shape.k % 512 == 0,
+                "\(shape.name): reduction dim K=\(shape.k) leaves qmv_fast")
+            #expect(
+                shape.n % 8 == 0,
+                "\(shape.name): output dim N=\(shape.n) leaves qmv_fast")
+        }
+    }
+
+    /// `in_proj`'s 16480 and the compact draft head's 98336 satisfy only the
+    /// `N % 8` half of the gate. They are safe as output dims, but a fusion or
+    /// split that moved either into the reduction position would drop that
+    /// matmul off `qmv_fast` at full numerical fidelity. Pinned so such a
+    /// change has to delete this expectation deliberately.
+    @Test
+    func nOnlyDimsAreNotSafeAsReductionDims() {
+        for n in [16480, 98336] {
+            #expect(n % 8 == 0)
+            #expect(n % 512 != 0, "\(n) is 512-aligned; re-measure the fast-path probes")
+        }
+    }
 }
 
 // MARK: - what the scored verify actually calls
