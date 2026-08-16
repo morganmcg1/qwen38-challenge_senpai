@@ -86,4 +86,5 @@ research/guardrail-*.json
 research/ema-*.json
 research/occupancy-*.json
 research/fb6-*.json
+research/fb7-*.json
 research/capture-*/

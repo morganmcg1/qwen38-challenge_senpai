@@ -243,8 +243,16 @@ Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`; URLs are
 | E | cap 6, gate 3 | 256 | `30fb1avw` | `bcab2176-732c-42e0-99fc-4765508fdbff` |
 | F | cap 7, gate 1 | 256 | `m7t6m9wv` | `561c47ca-568c-43ab-bce0-3c3422b3fc8f` |
 | **G** | **cap 7, gate 3 — CONFIRMATION, untraced** | 256 | **`z49fgehs`** | `e8cd0731-5d6b-4812-ad54-7466ca2bb7f6` |
+| H | cap 7, gate 3 — `--local-submit` gate check | 128 | none (see note) | `c39b6923-283a-42b5-b836-9b6613d787a1` |
 
 Run B failed and is documented below.
+
+Run H has **no W&B run**: `--local-submit` is driven by the benchmark wrapper,
+and my `research/mtp_row_gate.py --wandb` logger is a post-hoc trace analyser
+that only runs on `--local-iterate` traces. Run H's evidence is the score JSON
+committed at `research/score-runH-localsubmit-128.json` plus the job record. I
+flag this as a gap rather than paper over it; the five ranked-comparison
+measurements (C, D, E, F, G) all have W&B runs.
 
 ### Run G — confirmation of the exact submitted code
 
@@ -275,6 +283,41 @@ diagnostic seam was *understating* the win, not manufacturing it.
 **The honest headline delta remains the matched traced pair, C → D = +2.61 %**,
 because that is the only pair measured under identical instrumentation. Run G's
 2.0343 must not be differenced against the traced base.
+
+### Run H — `--local-submit` end-to-end verification of the winner
+
+`./benchmark-qwen-mtp.sh --local-submit` was run on the exact submitted commit
+(job `c39b6923-283a-42b5-b836-9b6613d787a1`, exit 0, 299.8 s wall). Raw score
+JSON is saved at `research/score-runH-localsubmit-128.json`.
+
+| field | value |
+| :-- | :-- |
+| `passed` | **true** |
+| `track` / `mode` | `qwen3.8-27b-mtp-v1` / `qwen-mtp-local-submit` |
+| `decode_tokens` | 128 |
+| `mtp_depth` (offered) | 8 |
+| `score` = `mtp_decode_speedup` | **1.7177867866350764** |
+| `serial_seconds_per_token` | 0.0968383913859725 |
+| `mtp_seconds_per_token` | 0.056373929604887962 |
+| `all_tokens_matched` | **true** |
+| `residual_divergence_count` | **0** |
+| `public_drift_tripwire_passed` | **true** |
+| `accepted_draft_rate` | 0.99099099099099097 |
+| `effective_mean_draft_len` | 5.8421052631578947 |
+| `uses_pinned_mtp_head` | true |
+| `head_provenance_sha256` | `05a8613e…99cb2863` |
+| rounds (serial / MTP) | 128 / **19** |
+| reference-checked rows | 128/128 serial, **130/130** MTP |
+
+⚠️ **Do not compare 1.718 against the 256-token numbers.** The two local modes
+differ only in decode window (128 vs 256), and the fixed ~4.0 s prologue is
+amortised over half as many tokens in `--local-submit`. With P ≈ 4.02 s fixed
+and the same steady-state rates, a 128-token window mechanically produces a much
+lower published ratio than a 256-token window on identical code. Run H is a
+**gate check**, not a speed measurement: what it certifies is `passed=true`,
+`all_tokens_matched=true`, zero residual divergences, and a passing public drift
+tripwire on the submitted snapshot. The headline speedup claim remains the
+matched traced pair C → D at 256 tokens.
 
 ### Parent-side `block_request_seconds` (FB4's actual ask, now direct)
 
@@ -451,12 +494,18 @@ knee-robust** — a stronger answer than the conditional rule FB5 requested. It
 would only need revisiting if the *fixed* overhead grew relative to the slope,
 which is what verify-batch padding would do.
 
-### FB2 cost accounting — `headStepCostRatio` is 3.2× under-costed
+### FB2 cost accounting — `headStepCostRatio` is under-costed
+
+> **Superseded in magnitude by FB7.** The fit below is against the **bf16** head
+> this host actually loads. The FB7 section rebases it: the ranked figure is
+> **h ≈ 0.30**, i.e. **≈1.5× under-costed**, not 3.2×. The direction and the
+> routing recommendation are unchanged; only the number to tune against moves.
 
 Fitting round cost across widths gives **`12.21 ms + 22.49 ms × width`**. One
 serial forward on this host is **65.58 ms**. In serial-forward units that is
 **fixed 0.186** and **h = 0.343 per draft**. The shipped `headStepCostRatio` is
-**0.20**, so the cost model under-charges each draft by **3.2×**. That is very
+**0.20**, so the cost model under-charges each draft by **3.2×** on this host
+(**≈1.5×** once rebased onto the ranked head). That is very
 likely why the shipped policy reaches for depth 8 at all. I did **not** change it
 — it is `qwen-edward`'s parameter per the assignment — but it should be routed
 there, and it interacts directly with the cap: with an honest `h`, the greedy
@@ -616,6 +665,14 @@ excluded, milliseconds) are:
 Measured slope over d4 → d8 is **22.75 ms/depth — 1.94× steeper** than the
 calibration, and at d = 8 I measure **217.4 ms against their 161 ms (+35 %)**.
 
+> **FB7 correction.** Part of that 56 ms gap is the oversized head this host
+> loads. Rebased onto the ranked 4-bit head my d = 8 round is **195.89 ms**, so
+> the residual gap is **+21.7 %**, not +35 %. About 21.5 ms of the 56 ms was the
+> head; the remaining ≈35 ms is the `draft_build + verify_build` term identified
+> below. Every conclusion in this subsection survives the rebasing — the ranked
+> curve is still 1.6× steeper than the calibration and still has its minimum at
+> d 7. See the FB7 section for the full rebased table.
+
 That difference flips the conclusion, not just the magnitude. Cost per accepted
 token at q = 1:
 
@@ -637,7 +694,8 @@ the **verify evaluation only**, excluding the ≈ 57 ms of
 round — i.e. it omits precisely the head/graph term that `headStepCostRatio` is
 supposed to capture. That is consistent with my independent finding that the
 shipped `h = 0.20` is **3.2× under-costed** relative to the measured
-`h = 0.343`. Both point at the same missing term, from two directions.
+`h = 0.343` (**≈1.5×** relative to the FB7-rebased ranked `h ≈ 0.30`). Both point
+at the same missing term, from two directions.
 
 A separate observation that falls out of the same table and is worth its own
 experiment: **`draft_build + verify_build` is 55–58 % of every round at every
@@ -672,6 +730,185 @@ which this fixture cannot supply. I have listed it as the recommended next
 experiment rather than half-building it inside a scope that did not include the
 wall constant.
 
+### FB7 — the head mismatch: confirmed by hashing, explained, and it does not move cap 7
+
+**Every claim in FB7 reproduces.** I hashed the resident tree rather than
+arguing from the manifest. Tool: `research/fb7_head_provenance.py`, output
+`research/fb7-head-provenance.json`.
+
+Resident head directory `~/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head/`:
+
+| file | bytes | sha256 (first 16) |
+| --- | ---: | --- |
+| `.gitattributes` | 1519 | `11ad7efa24975ee4` |
+| `.mlxfast-reference-cache.lock` | 628 | `72af35a999dfde0b` |
+| `config.json` | 3570 | `fb2a5bd03bc4a2ac` |
+| `model.safetensors` | 849400347 | `8fceddc664f3ea96` |
+| `model.safetensors.index.json` | 1002 | `b21c0c41a317926d` |
+
+Safetensors header: **15 tensors, all BF16**, `header_bytes` 1555,
+**`payload_bytes` 849,398,784**, zero `.scales`/`.biases` keys.
+
+- `model.safetensors` sha256 is **`8fceddc664f3ea96d02e304463aa1319213ff52cdf1f3401d4bce64e7075c349`**,
+  which is byte-identical to the `fixtures/qwen3_8_27b_mtp_head.sha256` pin.
+  **The local candidate leg ran the organizer-pinned bf16 head.** It does *not*
+  match `mtp-head.manifest.json`'s declared `cc209e30…`.
+- The two byte counts in circulation are the same file:
+  **849,398,784 tensor payload + 8-byte length prefix + 1,555-byte JSON header
+  = 849,400,347 on disk.**
+- `849398784 / 238934093 = 3.5550` — the advisor's 3.55× reproduces exactly, and
+  `(849398784 − 238934093) / 227e9 = 2.6893 ms`, reproducing `delta` to four
+  decimals.
+
+**The `05a8613e…` digest is solved.** It is neither a file digest nor the
+declared digest because it is a *different kind of number*: the **tree digest**
+defined at `Sources/MLXFastTrustedHarness/QwenMTPHeadDeclaration.swift:192`
+(`computeQwenMTPHeadProvenance`) as SHA-256 over
+`"<file sha256>  <relative path>\n"` concatenated in sorted relative-path order.
+My script recomputes it and gets `05a8613e3d86456f5df9bc8ab8c53daa5d19604c08d1b0bd215ad0d599cb2863`
+— an exact match to the reported `head_provenance_sha256`.
+
+⚠️ **`head_provenance_sha256` is not a safe cross-machine head identifier.** The
+tree digest walks *every* regular file, and my tree contains a harness-generated
+`.mlxfast-reference-cache.lock`. Its 628 bytes are the entire difference between
+my tree total 849,407,066 and the fixture's pinned
+`MLXFAST_QWEN_MTP_HEAD_MANIFEST_BYTES: 849,406,438` (the four real files sum to
+exactly 849,406,438). So two machines holding an **identical** head report
+**different** provenance digests if their lock files differ or one is absent.
+That is the most likely explanation for PR #3's `da336ce9…` as well. **To
+compare heads across runs, compare the `model.safetensors` file digest
+(`8fceddc6…`), not `head_provenance_sha256`.**
+
+**Why ranked loads the 4-bit head and local loads bf16 — the mechanism.**
+`Qwen36MTPHeadAttachment.verifyHeadTree`
+(`Sources/MLXFastModel/Qwen36MTPHeadAttachment.swift:215`) has two branches:
+
+- *index present* — the local pinned 4-file tree. Runs `verifyHeadIndex`, which
+  asserts exactly 15 bare tensors via
+  `MLXFastConstants.qwenMTPHeadTensorCount = 15`
+  (`Sources/MLXFastCore/Constants.swift:311`), plus `verifyHeadConfiguration`.
+  **My local run takes this branch.**
+- *no index* — the branch whose own comment reads "DECLARED-HEAD STAGING. The
+  ranked runner resolves a `remote` head declaration by fetching exactly
+  `model.safetensors` — no config, no index — and digest-verifies it against the
+  manifest before the sandbox opens." It checks only that no name carries the
+  `mtp.` prefix and that `fc.weight`, `norm.weight` and
+  `pre_fc_norm_hidden.weight` exist. **It does not assert the 15-tensor count**,
+  so a 31-entry 4-bit/group-64 head passes.
+
+So the divergence is structural and by design, not a local misconfiguration.
+`setup-qwen-mtp.sh:66-67` hardcodes `EigenLabs/Qwen3.8-27B-MTP-bf16 @ 26a328e0`
+and reads `fixtures/qwen3_8_27b_mtp_head.sha256`; it never opens
+`mtp-head.manifest.json`.
+
+**Re-characterising a test I previously called benign.** The pre-existing
+failure `theCheckedInDeclarationSelectsThePinnedHead`
+(`QwenMTPOpenSurfaceTests.swift:54-88`) is **precisely the machine-checkable
+signature of this mismatch**: it asserts `declaration.source == .pinned` but
+gets `.remote`, `declaration.sha256` `cc209e30…` against the pinned weights
+record `8fceddc6…`, and `declaration.bytes` 238,934,093 against 849,400,347. I
+did not cause it — `git diff --name-only 146c6d1..HEAD -- mtp-head.manifest.json fixtures/`
+is empty — but I was wrong to bucket it with the doc-marker noise. It is the
+head mismatch failing loudly, and it was already failing before my branch.
+
+#### Guardrail, rebased onto the ranked head — with both depths named
+
+Tool `research/fb7_head_rebase.py`, output `research/fb7-head-rebase.json`.
+`p50` is the wrapper's **lower median** `sorted[(n−1)//2]` over the after-first
+slice (`Sources/MLXFastCLI/main.swift:2010-2040`), so it always names a real
+observed round with a real depth — no interpolation.
+
+| arm | n after first | p50 | **depth of p50** | max | **depth of max** | max was reject | local max/p50 | **ranked max/p50** | shift |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: |
+| C base cap 8 | 37 | 168.484 ms | **6** | 218.308 ms | **8** | yes | 1.2957 | **1.2917** | −0.0040 |
+| **D cap 7 (winner)** | 35 | 189.730 ms | **7** | 190.309 ms | **7** | no | 1.0031 | **1.0034** | +0.0003 |
+| E cap 6 | 39 | 168.506 ms | **6** | 168.990 ms | **6** | no | 1.0029 | **1.0032** | +0.0003 |
+| F cap 7 gate 1 | 36 | 189.439 ms | **7** | 190.606 ms | **7** | yes | 1.0062 | **1.0068** | +0.0007 |
+| G parent-side | 35 | 189.796 ms | **7** | 190.337 ms | **7** | yes | 1.0028 | **1.0032** | +0.0003 |
+
+G is parent-side `block_request_seconds`; it carries no depths of its own, so
+depths are borrowed from D's trace, which is an exact 36-round length match at
+identical config, accept rate and draft length. Flagged in the JSON as
+`depth_borrow_is_exact_length_match: true`. **The serial control leg runs no
+proposal head and is not rebased.**
+
+**FB7's direction is confirmed for four of five arms, and I can sharpen it into
+an exact rule.** Writing `M/P` for the local ratio and `k` for the per-draft
+delta, rebasing gives `(M − k·d_max)/(P − k·d_p50) > M/P` iff `P·d_max < M·d_p50`,
+i.e.
+
+> **the ranked ratio rises iff `d_max / d_p50 < ratio_local`.**
+
+Equal depths therefore *always* make the local reading optimistic, which is
+FB7's case and covers D, E, F and G. But the base arm C is the exception: its
+max round is at depth 8 while its p50 round is at depth 6, so
+`d_max/d_p50 = 1.333 > 1.2957 = ratio_local`, the numerator loses more head time
+than the denominator, and the ranked ratio **falls** to 1.2917. FB7 anticipated
+the *shallow*-max case (rollback rounds pushing the ratio up further); the
+*deep*-max case runs the other way. Both are captured by the one inequality
+above, emitted as `ranked_ratio_rises` per arm.
+
+Practically: **every arm sits between 1.003 and 1.30 against a 4.0× threshold**,
+and rebasing moves each by at most 0.004. The guardrail is not a risk for any
+arm on either head, and the winner remains the tightest distribution measured.
+
+#### Cost curve, rebased — **cap 7 survives**
+
+Ranked round cost = local − `2.6893·d`. Cost per accepted token at q = 1 is
+`C(d)/(d+1)`:
+
+| d | local C | ranked C | local ms/token | ranked ms/token |
+| ---: | ---: | ---: | ---: | ---: |
+| 2 | 79.70 | 74.32 | 26.567 | 24.774 |
+| 4 | 126.40 | 115.64 | 25.280 | 23.129 |
+| 5 | 146.50 | 133.05 | 24.417 | 22.176 |
+| 6 | 168.30 | 152.16 | 24.043 | 21.738 |
+| **7** | 189.70 | 170.88 | **23.712** | **21.359** |
+| 8 | 217.40 | 195.89 | 24.156 | 21.765 |
+
+**`cost_optimal_depth` is 7 on both heads.** Marginal row 9 costs
+`195.89 − 170.88 = 25.01 ms` ranked against a 21.36 ms best cost per accepted
+token, so **row 9 still cannot repay itself even at 100 % acceptance**. The
+criterion is a ratio and head cost is linear in `d`, so it is nearly invariant:
+local `27.70/23.71 = 1.168` vs ranked `25.01/21.36 = 1.171`. **The interior
+optimum is a property of the width-9 kink in the target verify, not of the
+head.**
+
+**A correction to my own earlier reasoning.** I had hand-computed that the
+kink-removed linear fit `C(d) = 12.21 + 22.49·(d+1)` "flips to depth 8 under
+rebasing". Scripting it shows that framing was wrong. Under a pure linear fit,
+cost per accepted token at q = 1 is `f/(d+1) + s`, which is **monotonically
+decreasing in `d` for any `f > 0`** — so the linear model prefers maximum depth
+*always*, on both heads, and it did so locally too (23.847 at d 8 vs 24.016 at
+d 7). That is a degenerate property of removing the kink, not evidence for depth
+8, and head size cannot change it. Only the **measured** curve, which contains
+the +38 % width-9 marginal jump, produces an interior optimum — and that optimum
+is 7 before and after rebasing. The earlier `q ≥ 0.986` crossover figure remains
+the right way to state the no-kink sensitivity, because it is computed at
+realistic `q < 1` where the acceptance term reintroduces a maximum.
+
+#### What FB7 changes in my earlier answers
+
+- **FB6 cost reconciliation, rewritten.** I had reported measured d 8 at
+  **217.4 ms vs the advisor's 161 ms (+35 %)**. Rebased onto the ranked head my
+  d 8 is **195.89 ms**, so the residual gap narrows to **+21.7 %**. About 21.5 ms
+  of the original 56 ms gap was the oversized head, and the remaining ≈35 ms is
+  still best explained by `C(8) = 161 ≈ 67 + 94` pricing **verify only** and
+  omitting `draft_build + verify_build`. The qualitative FB6 conclusion is
+  unchanged: their slope is too flat for this host, so their +3.52 % / +7.52 %
+  remain upper bounds here.
+- **The `h = 0.343/draft` figure routed to `qwen-edward` carries a head caveat.**
+  It was fitted against the bf16 head. On the ranked 4-bit head the per-draft
+  term is smaller by roughly `2.6893 / 65.58 = 0.041` in the same units, giving
+  **h ≈ 0.30** ranked. Shipped `headStepCostRatio = 0.20` is therefore
+  **≈1.5× under-costed on the ranked head** rather than 3.2×. Both numbers say
+  the same thing — it is under-costed — but edward should tune against ≈0.30,
+  not 0.343, and the local host cannot measure the ranked head directly.
+- **Part A is unaffected**, as FB7 states. Bit-exactness of target rows at width
+  9 is a target-side property; the proposal head chooses *which* tokens are
+  drafted, never what the target scores them. My 256/256 zero-mismatch result
+  stands on either head.
+
 ## Failures, blockers and honest disclosures
 
 1. **FB3's 512-token ask is impossible on this fixture.** Run B (512 tokens, job
@@ -699,13 +936,70 @@ wall constant.
    flagging it because it means the per-position sweep numbers in this report
    should be read as bounds, not point predictions.
 4. **`post_assignment_comment` is not in my tool schema.** The advisor asked for
-   PR replies several times across FB1–FB5. I could not post any. Everything I
-   would have replied with is in this file and in the structured result. This is
-   a harness gap, not a choice.
-5. **Stale help text.** `./benchmark-qwen-mtp.sh --help` still describes the old
-   depth behaviour. Cosmetic, not fixed here (out of scope).
-6. `research/gate_occupancy.py` prints `inf` / `nan%` for `deep_run_length` at
-   p = 1.00. Cosmetic.
+   PR replies several times across FB1–FB7. I could not post a single one.
+   Everything I would have replied with is in this file and in the structured
+   result. This is a harness gap, not a choice, and it is why this document is as
+   long as it is: it is carrying seven rounds of conversation that should have
+   been incremental PR comments.
+5. **The documented runtime-test command does not work — harness papercut.**
+   `program.md` documents `tools/build-mlx-metallib.sh` followed by
+   `MLXFAST_RUN_MLX_RUNTIME_TESTS=1 swift test --force-resolved-versions`. That
+   sequence fails: job `c12ddf7b` died with `MLX error: Failed to load the
+   default metallib`, because `swift test` builds **debug** and runs from the
+   **xctest bundle**, a third build root that the plain metallib script does not
+   populate. The working invocation is
+   **`tools/build-mlx-metallib.sh --all-build-roots`** first. Worth fixing in the
+   docs; it silently blocks anyone trying to run the MLX-gated tests.
+6. **Runtime tests pass with zero regressions.** After the fix above, job
+   `c50400d2-aa21-4c14-9aa0-7f5792318d33` ran **657 tests / 37 suites** with
+   **38 issues**, byte-for-byte the *same* 38 issues across the *same* 8 tests as
+   the ungated run `bf93e981`; the suite lists diff clean. The MLX-gated tests
+   that cover the boundary I touched all executed and passed, including
+   `rollbackTrimsTheWholeVerifyWindowAndNeverTrimsRecurrentCaches()`,
+   `rollbackClearsTheVendoredDepthOneRollbackState()`,
+   `rollbackDoesNothingToACacheAlreadyAtTheBase()`,
+   `qwenHybridCachePositionAcceptsRecurrentCachesPinnedAtZero()`,
+   `correctnessAcceptsOnlyExactTopLogitTies()`,
+   `effectiveDepthIsSummarisedFromTheParentsOwnJournal()`,
+   `affineGroup32SplitKRemainsUnchangedWhenRuntimeTestsAreEnabled()` and
+   `"real transformed Qwen checkpoint matches library and custom paths"`.
+7. **The 8 pre-existing `swift test` failures are not mine — proven.**
+   `git diff --name-only 146c6d1..HEAD -- docs/ fixtures/ mtp-head.manifest.json
+   setup.sh benchmark.sh benchmark.json TASK.md README.md` is **empty**, and the
+   same 38 issues appear on an unmodified base. They are:
+   `participantDocsExposeDefaultCLIInstallDirectory`,
+   `submissionStaticReviewPromptCoversMeasurementStructureExploitation`,
+   `contestantDocsCommandBlocksKeepTheDependencyGraphFrozen` (doc markers);
+   `qwen36ConfigContractDigestMatchesTheReferenceManifest`;
+   `theEvenMedianRuleIsTheMeanOfTheTwoCentralValues`,
+   `theSeededCalibrationExpectationMatchesItsRecordedProvenance`,
+   `theQwenMTPTrackIsArmedOnQwen38` (fixture status); and
+   **`theCheckedInDeclarationSelectsThePinnedHead`** — which is exactly the FB7
+   head-mismatch signature, re-characterised in the FB7 section above.
+8. **`head_provenance_sha256` is not a safe cross-machine head identifier.** The
+   tree digest absorbs the harness-generated `.mlxfast-reference-cache.lock`:
+   `tree_digest_bytes 849407066` minus the fixture's declared
+   `MLXFAST_QWEN_MTP_HEAD_MANIFEST_BYTES 849406438` is **exactly 628 bytes**, the
+   size of that lock file. Two machines running the identical head will therefore
+   report different `head_provenance_sha256` values if their lock files differ.
+   This is the most likely explanation for PR #3's `da336ce9…` matching neither
+   the pinned tree digest nor the declared 4-bit digest. **Compare the
+   `model.safetensors` file digest `8fceddc6…` instead** — that is the value the
+   fixture actually pins.
+9. **Everything in this report was measured on the bf16 head, not the ranked
+   4-bit head.** Confirmed by `shasum -a 256`, per FB7. I have rebased the two
+   quantities where the head size actually matters (the block-latency guardrail
+   and the per-depth cost curve) and both conclusions survive, but I cannot
+   measure the ranked head locally: `setup-qwen-mtp.sh:66-67` hardcodes the bf16
+   repo and never reads `mtp-head.manifest.json`. Any number in this report that
+   is not explicitly labelled "rebased" is a bf16-head number.
+10. **Stale help text.** `./benchmark-qwen-mtp.sh --help` still describes the old
+    depth behaviour. Cosmetic, not fixed here (out of scope).
+11. `research/gate_occupancy.py` prints `inf` / `nan%` for `deep_run_length` at
+    p = 1.00. Cosmetic.
+12. **Run H has no W&B run.** `--local-submit` is wrapper-driven and my W&B
+    logger only consumes `--local-iterate` traces. Its evidence is the committed
+    `research/score-runH-localsubmit-128.json` and the job record.
 
 ## Suggested follow-ups (not implemented)
 
@@ -715,9 +1009,12 @@ wall constant.
    above identifies as the binding term. Reachable levers are the requested
    shapes plus `Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp` and
    `kernels/quantized{,_nax}.{h,metal}`.
-2. **Route `headStepCostRatio` 0.20 → ≈ 0.343 to `qwen-edward`.** With an honest
+2. **Route `headStepCostRatio` 0.20 → ≈ 0.30 to `qwen-edward`.** With an honest
    per-draft cost the greedy rule may select 7 unaided, making the hard cap
-   redundant and the policy simpler.
+   redundant and the policy simpler. **Use 0.30, not the 0.343 I measured**: 0.343
+   is the bf16-head fit, and per FB7 the ranked leg is `2.6893 / 65.58 = 0.041`
+   cheaper per draft in the same units. Either way it is under-costed; the ranked
+   figure is the one to tune against.
 3. **Propagate `reachedStopToken` through `RuntimeWorkerResponse`** so local
    windows longer than ~300 tokens become measurable. This is trusted-harness
    work and needs an advisor decision, but it currently caps every local
@@ -761,6 +1058,15 @@ wall constant.
   knee-sensitivity analysis says cap 7 survives every plausible M5 scaling — but
   a one-prompt copy task cannot prove a median over eight prose prompts. The
   cap-7 change is also small, single-line, and trivially reversible.
+- **Head transfer risk (FB7): checked, and cap 7 survives.** This host loads the
+  bf16 head, 3.55× larger than the ranked 4-bit head. Rebasing the two quantities
+  that depend on head size gives `cost_optimal_depth = 7` on **both** heads, row 9
+  unable to repay itself at q = 1 on **both** heads, and a guardrail `max/p50` for
+  the winner of 1.0031 local → **1.0034 ranked** — far under the 4.0× threshold
+  either way.
+- **Submission gate check:** `--local-submit` (Run H) passes on the exact
+  submitted commit with `all_tokens_matched = true`, zero residual divergences
+  and a passing public drift tripwire.
 - **Smallest useful next action:** verify-batch padding 9 → 10 rows, which is the
   only identified change that could make depth 8 pay.
 - **Recommendation: promote** the single-line `segmentedVerifyDepthCap` 8 → 7
