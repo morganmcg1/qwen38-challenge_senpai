@@ -77,3 +77,4 @@ wandb/
 research/trace-*.log
 research/score-*.json
 research/analysis-*.json
+wandb/
