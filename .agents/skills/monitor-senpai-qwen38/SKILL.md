@@ -1,6 +1,6 @@
 ---
 name: monitor-senpai-qwen38
-description: Run the standard read-only operational and scientific audit for the Senpai Qwen 3.8 Native-MTP campaign. Use when the user asks to check in, get campaign status, assess advisor or student health, inspect experiments, find official submissions, compare W&B evidence, or determine whether the Yukon frontier moved.
+description: Run the standard read-only operational and scientific audit for the Senpai Qwen 3.8 Native-MTP campaign, with explicit callouts for major scientific progress and major scientific issues. Use when the user asks to check in, get campaign status, assess advisor or student health, inspect experiments, find official submissions, compare W&B evidence, or determine whether the Yukon frontier moved.
 ---
 
 # Monitor Senpai Qwen 3.8
@@ -88,6 +88,8 @@ and synthesis:
 For each PR, report:
 
 - the causal hypothesis and changed cost center;
+- whether it creates a major-progress or major-issue callout under the criteria
+  below;
 - new measurements and their host/window/provenance;
 - exactness and ledger gates actually demonstrated;
 - the predeclared stop rule and whether it fired;
@@ -191,9 +193,11 @@ Lead with a UTC snapshot time and these four sections:
 
 1. **Operational health:** advisor/student health, live jobs, real failures,
    and monitoring limitations.
-2. **Scientific progress:** PR-by-PR changes since the last check, measured
-   insights, exactness, negative results, stop decisions, and evidence
-   residency.
+2. **Scientific progress:** begin with two plainly labelled callouts:
+   **Major progress** and **Major issues**. Always include both, writing
+   `none identified` when the fresh audit supports no item. Then give the
+   PR-by-PR changes since the last check, measured insights, exactness,
+   negative results, stop decisions, and evidence residency.
 3. **Submission status:** Senpai W&B/local evidence versus official Yukon,
    current promoted receipt/source/score, frontier movement, and stale pins.
 4. **Links:** concise links to the relevant PRs, W&B runs, and promoted source.
@@ -201,3 +205,35 @@ Lead with a UTC snapshot time and these four sections:
 Never describe a projection, one-fixture ratio, microbenchmark, or W&B run as
 an official score. State uncertainty plainly when exactness, 512-token
 coverage, matched-host controls, logs, or official receipts are missing.
+
+### Scientific callout criteria
+
+Use **Major progress** for developments that materially change the campaign's
+decision state, such as:
+
+- a credible measured winner or a completed matched 512-token comparison;
+- an exactness, token-window, ledger, scope, or budget gate newly closed;
+- a causal hypothesis decisively confirmed or refuted;
+- a negative result or stop-rule decision that prevents substantial further
+  work;
+- a pushed candidate that advances from live exploration to review or
+  submission readiness.
+
+Use **Major issues** for developments that materially weaken, invalidate, or
+block a scientific conclusion, such as:
+
+- a failed benchmark, crash loop, thermal blocker, or terminal job error;
+- missing matched controls, 512-token coverage, exactness, ledger closure,
+  provenance, or rankable evidence behind a headline claim;
+- a post-EOS/notBegun harness failure or any result measured over the wrong
+  effective token window;
+- a result present only in live logs when the report implies it is pushed;
+- a retracted, contradicted, mislabelled, or non-reproducible measurement;
+- failed CI or a stale official-frontier pin that blocks advancement.
+
+Do not inflate routine activity into a major callout. Rank callouts by impact,
+name the affected PR or role, state the decisive evidence, and say whether the
+issue invalidates a result, merely limits confidence, or only blocks the next
+step. A development may legitimately appear under both callouts—for example,
+a useful causal discovery whose headline score is invalid because exactness
+or the token window did not close.
