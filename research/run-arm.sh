@@ -21,6 +21,7 @@ while (($#)); do
     --force-depth) force_depth="$2"; shift 2 ;;
     --trace) trace=1; shift ;;
     --tokens) tokens="$2"; shift 2 ;;
+    --head-dir) export MLXFAST_QWEN_MTP_HEAD_DIR="$2"; shift 2 ;;
     *) echo "run-arm.sh: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -50,6 +51,7 @@ fi
   echo "tokens=${tokens}"
   echo "force_depth=${force_depth:-<adaptive>}"
   echo "trace=${trace}"
+  echo "head_dir=${MLXFAST_QWEN_MTP_HEAD_DIR:-<setup-default>}"
   echo "base_sha=$(git rev-parse HEAD)"
   echo "dirty=$(git status --porcelain | wc -l | tr -d ' ')"
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
