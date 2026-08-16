@@ -25,6 +25,14 @@ r2 rebound the assignment from `e20268e9…` to `67bde702…`. I rebased
 with no conflicts, and the candidate diff is byte-identical in shape to r1
 (`110/4` in `Qwen36MTPBlockSession.swift`, `67/3` in `Qwen35MTP.swift`).
 
+Because that rebase moved the branch off the r1 base, the branch head no longer descended
+from the published remote head `1d7c8a03…`, so the submission lease could not
+fast-forward. `1d7c8a03…` is the **empty** assignment-scaffold commit — `git diff
+e20268e9 1d7c8a03` is byte-for-byte empty — so I recorded it as an ancestor with a
+`-s ours` merge rather than rewriting or discarding published history. The merge changes
+no file: the tree SHA is `2aae65eb…` both before and after. No r1-base content is
+reintroduced, and the diff against `67bde702…` is unchanged.
+
 Between the two bases exactly **three** non-documentation files move:
 
 ```
