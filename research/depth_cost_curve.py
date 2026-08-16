@@ -186,6 +186,8 @@ def main():
             print(f"skip missing {arm_dir}", file=sys.stderr)
             continue
         legs = load_legs(arm_dir, args.warmup)
+        if not legs:
+            continue
         meta = read_meta(arm_dir)
         mtp_leg = select_mtp_leg(legs, meta, arm_dir.name)
         score_path = arm_dir / "score.json"

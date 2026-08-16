@@ -296,11 +296,33 @@ Reproduction:
 ```bash
 research/rebuild.sh
 research/run-arms.sh --tokens 512 --head-dir "$HOME/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared" 0 1 2 3 4 5 6 7 8
-python3 research/depth_cost_curve.py research/out --warmup 2 --json research/out/curve512.json
+python3 research/depth_cost_curve.py research/out --arms d0 d1 d2 d3 d4 d5 d6 d7 d8 \
+    --warmup 2 --json research/out/curve512.json
 ```
+
+**`--arms` is required to reproduce the numbers above.** Without it the script
+pools every directory under `research/out/`, which by the end of this experiment
+also held the A/B, 256-token and probe arms. Those are not forced-depth arms, so
+pooling them mixes scheduler-chosen depths into the per-depth bins and shifts the
+curve — on the final tree it returns `h(7) = 0.4007` and `sum(h) = 2.0319`
+instead of the reported `0.4250` and `2.0545`. The headline finding is unchanged
+either way (both are ~1.9x the 1.082 target, so the endpoint check still fires),
+but the exact figures only reproduce on the nine forced-depth arms.
 
 `research/out/` is gitignored, so every number needed to check this report is
 inline above rather than behind an artifact path.
+
+**Leg selection.** Each arm starts two model-holding workers — a serial
+reference leg whose rounds are all `d = 0`, and the candidate MTP leg — so the
+analysis has to name the right one. `research/depth_cost_curve.py` selects the
+single leg carrying a nonzero depth and fails loudly if two do, and records the
+chosen PID as `mtp_leg_pid` / `mtp_leg_trace` in the JSON. It previously took
+the last filename in sort order, which happened to be correct on every arm here
+but is the wrong key: it breaks when a PID crosses a digit boundary and never
+asserts the leg was drafting. I re-ran both versions over the same nine arms and
+structurally diffed the JSON: **zero value changes**, the only differences being
+the three added provenance keys. `C(d)`, `h(d)`, `sum(h)` and every histogram in
+this report are therefore identical under the current instrument.
 
 ## 9. Process note
 
