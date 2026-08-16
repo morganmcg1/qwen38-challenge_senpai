@@ -1026,10 +1026,13 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
         a3[m] = xc[3];
       }
       for (int r = 0; r < rows_per_simd; r++) {
-        partial[r] += (a0 * (packed[r][i] & 0x000f) +
-                       a1 * (packed[r][i] & 0x00f0) +
-                       a2 * (packed[r][i] & 0x0f00) +
-                       a3 * (packed[r][i] & 0xf000));
+        const int q = packed[r][i];
+        VF p = partial[r];
+        p = metal::fma(a0, VF(float(q & 0x000f)), p);
+        p = metal::fma(a1, VF(float(q & 0x00f0)), p);
+        p = metal::fma(a2, VF(float(q & 0x0f00)), p);
+        p = metal::fma(a3, VF(float(q & 0xf000)), p);
+        partial[r] = p;
       }
     }
     for (int r = 0; r < rows_per_simd; r++) {
