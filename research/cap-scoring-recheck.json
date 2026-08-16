@@ -1,0 +1,69 @@
+{
+  "question": "is the ~3% cap-7 miss a missing physics term or a scoring bug?",
+  "target_arms": {
+    "J": {
+      "gate": 3,
+      "deep_cap_from_trace": 7,
+      "measured_raw": 2.1636873696,
+      "model_raw_at_own_cap": 2.17033,
+      "error_pct_at_own_cap": 0.307,
+      "model_raw_forced_cap8": 2.095877,
+      "error_pct_forced_cap8": -3.134,
+      "model_depth_by_state": [
+        4,
+        4,
+        4,
+        7
+      ]
+    },
+    "O": {
+      "gate": 3,
+      "deep_cap_from_trace": 7,
+      "measured_raw": 2.161542049,
+      "model_raw_at_own_cap": 2.17033,
+      "error_pct_at_own_cap": 0.407,
+      "model_raw_forced_cap8": 2.095877,
+      "error_pct_forced_cap8": -3.038,
+      "model_depth_by_state": [
+        4,
+        4,
+        4,
+        7
+      ]
+    },
+    "P": {
+      "gate": 3,
+      "deep_cap_from_trace": 7,
+      "measured_raw": 2.1623244386,
+      "model_raw_at_own_cap": 2.17033,
+      "error_pct_at_own_cap": 0.37,
+      "model_raw_forced_cap8": 2.095877,
+      "error_pct_forced_cap8": -3.073,
+      "model_depth_by_state": [
+        4,
+        4,
+        4,
+        7
+      ]
+    }
+  },
+  "all_arms": {
+    "n": 9,
+    "max_abs_error_pct_at_own_cap": 1.091,
+    "mean_abs_error_pct_at_own_cap": 0.504,
+    "max_abs_error_pct_forced_cap8": 3.134,
+    "mean_abs_error_pct_forced_cap8": 1.54
+  },
+  "sign_of_cap_effect_at_gate_3": {
+    "measured_cap8_arm_I": 2.0947033499,
+    "measured_cap7_arms_J_O_P": [
+      2.1636873696,
+      2.161542049,
+      2.1623244386
+    ],
+    "model_gate3_cap8": 2.095877,
+    "model_gate3_cap7": 2.17033,
+    "model_now_prefers_cap7": true
+  },
+  "verdict": "scoring bug, not a missing term: every target arm lands inside 1% once scored at its own cap, so the claim that the model gets the sign of the cap effect wrong is withdrawn and follow-up 11 is retired"
+}

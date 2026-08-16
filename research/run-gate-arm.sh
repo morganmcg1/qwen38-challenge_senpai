@@ -38,6 +38,7 @@ assert_arm_config() {
   cap="$(sed -n 's/.*segmentedVerifyDepthCap = \([0-9]*\).*/\1/p' "${session_src}")"
   gate="$(sed -n 's/.*segmentedStreakGate = \([0-9]*\).*/\1/p' "${session_src}")"
   log "${when} cap=${cap} gate=${gate} (expected cap=${expect_cap} gate=${expect_gate})"
+  log "${when} head=$(git rev-parse HEAD) session_sha256=$(shasum -a 256 "${session_src}" | cut -c1-16) dirty_sources=$(git status --porcelain -- Sources Vendor | wc -l | tr -d ' ')"
   [[ "${cap}" == "${expect_cap}" && "${gate}" == "${expect_gate}" ]]
 }
 

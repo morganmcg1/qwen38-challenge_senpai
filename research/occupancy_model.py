@@ -22,7 +22,10 @@ import json
 
 H = 0.20  # Qwen36MTPBlockSession.headStepCostRatio
 SHALLOW_CAP = 4  # sdpaWidthWallDepthCap
-DEEP_CAP = 8  # segmentedVerifyDepthCap
+DEEP_CAP = 8  # default segmentedVerifyDepthCap
+# Widest cap any arm can carry; sizes the per-position profile arrays so a
+# cap-7 arm and a cap-8 arm share one profile representation.
+MAX_DEPTH = 8
 
 # Measured M4 Pro round cost, milliseconds, indexed by draft depth d
 # (rows verified = d + 1). Source: research/fb7_head_rebase.py parent-side
@@ -68,8 +71,8 @@ def position_acceptance(trace_path: str, only_deep: bool | None = None) -> dict:
     `only_deep` selects rounds by the cap the gate handed them, which is the
     conditioning the gate actually applies: True keeps deep-cap rounds, False
     keeps shallow-cap rounds, None keeps every round."""
-    hit = [0] * DEEP_CAP
-    seen = [0] * DEEP_CAP
+    hit = [0] * MAX_DEPTH
+    seen = [0] * MAX_DEPTH
     rounds = 0
     with open(trace_path) as fh:
         for line in fh:
@@ -89,9 +92,24 @@ def position_acceptance(trace_path: str, only_deep: bool | None = None) -> dict:
         "rounds": rounds,
         "hits": hit,
         "observations": seen,
-        "acceptance": [hit[i] / seen[i] if seen[i] else None for i in range(DEEP_CAP)],
+        "acceptance": [hit[i] / seen[i] if seen[i] else None for i in range(MAX_DEPTH)],
         "pooled_acceptance": sum(hit) / sum(seen) if sum(seen) else None,
     }
+
+
+def deep_cap_from_trace(trace_path: str) -> int:
+    """The arm's segmentedVerifyDepthCap, read off the widest cap the gate
+    actually handed out. Declaring it by hand is how a cap-7 arm gets scored
+    against a cap-8 cost curve."""
+    caps = set()
+    with open(trace_path) as fh:
+        for line in fh:
+            m = TRACE_ROUND.search(line)
+            if m:
+                caps.add(int(m.group(4)))
+    if not caps:
+        raise ValueError(f"no mtp-trace rounds in {trace_path}")
+    return max(caps)
 
 
 def _sigmoid(x: float) -> float:
@@ -185,14 +203,14 @@ def full_accept_prob(p: list[float], depth: int) -> float:
     return prob
 
 
-def stationary(gate: int, ps: list[float], pd: list[float]):
+def stationary(gate: int, ps: list[float], pd: list[float], deep_cap: int = DEEP_CAP):
     """Streak-chain stationary distribution over states 0..gate. States below
     the gate run the shallow-cap acceptance profile, states at or above it run
     the deep-cap profile -- the conditioning the gate exists to exploit."""
     n = gate + 1
     profs = [pd if s >= gate else ps for s in range(n)]
     depths = [
-        greedy_depth(profs[s], DEEP_CAP if s >= gate else SHALLOW_CAP)
+        greedy_depth(profs[s], deep_cap if s >= gate else SHALLOW_CAP)
         for s in range(n)
     ]
     accept = [full_accept_prob(profs[s], depths[s]) for s in range(n)]
@@ -210,14 +228,20 @@ def stationary(gate: int, ps: list[float], pd: list[float]):
     return pi, depths, profs
 
 
-def evaluate(gate: int, ps: list[float], pd: list[float], rebase_head: bool) -> dict:
+def evaluate(
+    gate: int,
+    ps: list[float],
+    pd: list[float],
+    rebase_head: bool,
+    deep_cap: int = DEEP_CAP,
+) -> dict:
     """gate>=1: shipped ladder. gate==0: deep cap always. gate<0: shallow only."""
     if gate == 0:
-        pi, depths, profs = [1.0], [greedy_depth(pd, DEEP_CAP)], [pd]
+        pi, depths, profs = [1.0], [greedy_depth(pd, deep_cap)], [pd]
     elif gate < 0:
         pi, depths, profs = [1.0], [greedy_depth(ps, SHALLOW_CAP)], [ps]
     else:
-        pi, depths, profs = stationary(gate, ps, pd)
+        pi, depths, profs = stationary(gate, ps, pd, deep_cap)
 
     mean_cost = sum(pi[s] * round_cost_ms(depths[s], rebase_head) for s in range(len(pi)))
     mean_tokens = sum(
@@ -225,16 +249,19 @@ def evaluate(gate: int, ps: list[float], pd: list[float], rebase_head: bool) -> 
     )
     mean_depth = sum(pi[s] * depths[s] for s in range(len(pi)))
     p_depth8 = sum(pi[s] for s in range(len(pi)) if depths[s] == 8)
+    p_depth_at_cap = sum(pi[s] for s in range(len(pi)) if depths[s] == deep_cap)
     deep_share = sum(pi[s] for s in range(len(pi)) if depths[s] > SHALLOW_CAP)
     ms_per_token = mean_cost / mean_tokens + NON_BLOCK_OVERHEAD_MS_PER_TOKEN
     return {
         "gate": gate,
+        "deep_cap": deep_cap,
         "profile_shallow": [round(x, 6) for x in ps],
         "profile_deep": [round(x, 6) for x in pd],
         "stationary": [round(x, 6) for x in pi],
         "depth_by_state": depths,
         "mean_effective_depth": mean_depth,
         "p_depth_8": p_depth8,
+        "p_depth_at_cap": p_depth_at_cap,
         "deep_round_share": deep_share,
         "accepted_tokens_per_round": mean_tokens,
         "mean_round_cost_ms": mean_cost,
@@ -243,11 +270,13 @@ def evaluate(gate: int, ps: list[float], pd: list[float], rebase_head: bool) -> 
     }
 
 
-def crossover(gate_a: int, gate_b: int, rebase_head: bool, mk) -> float | None:
+def crossover(
+    gate_a: int, gate_b: int, rebase_head: bool, mk, deep_cap: int = DEEP_CAP
+) -> float | None:
     """Lowest q in (0.50, 0.999] at which raw(gate_a) overtakes raw(gate_b)."""
     lo, hi = 0.50, 0.999
-    f = lambda x: evaluate(gate_a, *mk(x), rebase_head)["raw"] - evaluate(
-        gate_b, *mk(x), rebase_head
+    f = lambda x: evaluate(gate_a, *mk(x), rebase_head, deep_cap)["raw"] - evaluate(
+        gate_b, *mk(x), rebase_head, deep_cap
     )["raw"]
     if f(hi) <= 0 or f(lo) >= 0:
         return None
@@ -295,7 +324,7 @@ def main() -> None:
         pd0, wd0 = _clean(measured_deep)
         mk = lambda q: shifted_pair(ps0, ws0, pd0, wd0, q)
     else:
-        mk = lambda q: ([q] * DEEP_CAP, [q] * DEEP_CAP)
+        mk = lambda q: ([q] * MAX_DEPTH, [q] * MAX_DEPTH)
 
     qs = [0.70, 0.80, 0.85, 0.90, 0.93, 0.95, 0.96, 0.98]
     out: dict = {
