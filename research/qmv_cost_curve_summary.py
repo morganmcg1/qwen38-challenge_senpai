@@ -418,7 +418,7 @@ def _breakeven(d, round_seconds):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--vendored", required=True)
+    ap.add_argument("--vendored")
     ap.add_argument("--stock")
     ap.add_argument("--out", required=True)
     ap.add_argument("--wandb", action="store_true")
@@ -432,7 +432,12 @@ def main():
     if args.head_provenance and os.path.exists(args.head_provenance):
         head_prov = load(args.head_provenance)
 
-    vend = load(args.vendored)
+    if not (args.vendored or args.stock):
+        ap.error("need at least one of --vendored or --stock")
+    # When the scored-kernel sweep is absent the stock pip-MLX sweep carries the
+    # curve; it is only a valid stand-in because both trees pin the same MLX.
+    primary_source = "vendored" if args.vendored else "stock"
+    vend = load(args.vendored or args.stock)
     rf = vend["roofline"]
     widths = vend["widths"]
     shapes = vend["shapes"]
@@ -523,7 +528,7 @@ def main():
             }
 
     stock_vs_vendored = None
-    if args.stock:
+    if args.stock and args.vendored:
         stock = load(args.stock)
         stock_vs_vendored = []
         for sv in shapes:
@@ -557,9 +562,9 @@ def main():
             "k": s["k"],
             "n": s["n"],
             "calls_per_verify": s["calls_per_verify"],
-            "k_mod_512": s["k_mod_512"],
-            "n_mod_8": s["n_mod_8"],
-            "qmv_fast": s["qmv_fast"],
+            "k_mod_512": s["k"] % 512,
+            "n_mod_8": s["n"] % 8,
+            "qmv_fast": s["k"] % 512 == 0 and s["n"] % 8 == 0,
         }
         for s in shapes
     ]
@@ -612,6 +617,7 @@ def main():
         "gdn_recurrence": gdn,
         "round_cost_model": round_cost_model(verify),
         "stock_vs_vendored": stock_vs_vendored,
+        "primary_source": primary_source,
     }
 
     with open(args.out, "w") as f:
