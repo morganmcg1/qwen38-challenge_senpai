@@ -133,11 +133,16 @@ def collect(runs_root, label):
         row["serial_all_tokens_matched"] = serial.get("all_tokens_matched")
     row["trace_depth_hist"] = dict(sorted(Counter(depths).items()))
     row["trace_depth_n"] = len(depths)
-    # The parent's journal and the candidate's trace must describe the same
-    # schedule; a mismatch means the trace does not describe the timed leg.
+    row["pass"] = meta.get("pass", "timed")
+    row["mlx_qwen_env"] = meta.get("mlx_qwen_env", "")
+    row["golden"] = meta.get("golden", "<default>")
+    # A timed arm deliberately runs with no MLX_QWEN_MTP_* name set, so it has
+    # no trace to agree with; the parent's journal is then the sole and
+    # sufficient depth source. Only a fingerprint pass can contradict itself.
     row["depth_sources_agree"] = (
-        bool(row.get("parent_depth_hist"))
-        and row.get("parent_depth_hist") == row.get("trace_depth_hist"))
+        None if not row["trace_depth_hist"]
+        else (bool(row.get("parent_depth_hist"))
+              and row.get("parent_depth_hist") == row.get("trace_depth_hist")))
     return row
 
 
@@ -154,6 +159,9 @@ def to_wandb(row, group, notes):
         "head_dir": row["head_dir"],
         "decode_tokens": row["tokens"],
         "h_curve_traced": row["h_curve_traced"],
+        "pass": row.get("pass", "timed"),
+        "mlx_qwen_env": row.get("mlx_qwen_env", ""),
+        "golden": row.get("golden", "<default>"),
         "head_provenance_sha256": row.get("head_provenance_sha256", ""),
         "git_head": sh("git", "rev-parse", "HEAD"),
         "host_model": sh("sysctl", "-n", "hw.model"),
