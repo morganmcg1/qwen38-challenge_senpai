@@ -82,3 +82,5 @@ research/dominance-*.json
 wandb/
 research/feasibility-*.json
 research/sweep-*.json
+research/guardrail-*.json
+research/capture-*/
