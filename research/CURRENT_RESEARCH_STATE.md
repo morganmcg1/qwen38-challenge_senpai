@@ -1671,12 +1671,16 @@ that alone. **Do not expect one experiment to reach 3.0.**
 
 ## Live slate — current, on base `ed4269c2`
 
-| PR | Student | Head SHA | Assignment | Expected value | Why now |
-|---|---|---|---|---|---|
-| #1 | edward | `83ecc059` | **r3 — measure `h(0..7)`, MEASUREMENT ONLY** | 0–2% verify-side (~+0.9% ms/tok) | its job is to **price Alphonse's gate**, not to retune a constant |
-| #2 | alphonse | `902a2f28` | **r4 — width-9 exactness, then `segmentedStreakGate` 3 → 1** | +2.5% … +7.5% verify-side on easy/mid | the only cap that actually binds (29–87% of rounds) |
-| #7 | askeladd | `cb584dcc` | 2-bit/3-bit compact draft readout | −0.28 to −0.55 ms **per draft step** | the only sized lead with a byte-count floor behind it |
-| #10 | thorfinn | (new) | **r1 — crossrow ALU-bound vs bandwidth-bound identification at M≥4** | identification, not ms | decides whether the "33–39% of peak" prize exists at all |
+**Head SHAs below are from `git ls-remote`, not from remote-tracking refs** —
+see the retraction two sections down for why that distinction cost a whole
+false conclusion.
+
+| PR | Student | Head SHA | Assignment | Status |
+|---|---|---|---|---|
+| #1 | edward | `0309af5c` | r3 — measure `h(0..7)`, MEASUREMENT ONLY | **REPORTED, awaiting review** (56 commits) |
+| #2 | alphonse | `43438153` | r4 — width-9 exactness, then `segmentedStreakGate` 3 → 1 | **REPORTED, awaiting review** (45 commits) |
+| #7 | askeladd | `58c79050` | 2-bit/3-bit compact draft readout | **REPORTED, awaiting review** (12 commits) |
+| #10 | thorfinn | `2dd0fa28` | r1 — crossrow ALU vs bandwidth at M≥4 | just assigned, not started |
 
 Closed out of the slate: **#8 (thorfinn, crossrow `NA_max` 4 → 5) merged at
 `fa9a216a`**; its NA=4 control (`bq9xfu6d`) is the dataset that PR #10 re-reads.
@@ -1686,24 +1690,122 @@ with findings intact.
 Deliberately **not** assigned: further characterization work beyond PR #10,
 which exists only because it can *kill* a prize we would otherwise chase.
 
-### ⚠ Slate health: three of four PRs have zero student commits
+### ★★★★★ RETRACTED SAME SESSION: "three of four PRs have zero student commits"
 
-PRs **#1, #2 and #7** are open drafts with **no student commits on them at
-all**. That is the single most important operational fact on this page and it
-outranks every scientific item below it. The campaign's throughput problem is
-not idea supply — it is that briefs are not being converted into commits.
+**That claim was false, and I published it as standing policy.** An earlier
+draft of this section asserted PRs #1, #2 and #7 had "no student commits on them
+at all" and derived a whole policy from it ("the campaign's throughput problem
+is that briefs are not being converted into commits").
 
-Consequences that are now standing policy:
+**The truth, from `git ls-remote`:**
 
-- **No further amendments to #1, #2 or #7.** Thirteen amendments to one brief
-  produced zero commits. Additional clarification is not a neutral act; it
-  resets the student's context and demonstrably lowers completion probability.
-  If a brief is wrong, the correct move is to close it, not to patch it.
-- **New briefs are short, single-question, with an explicit stop rule.** PR #10
-  is written to that standard and is the control case for whether it helps.
-- **"Unverified" in a brief is advisor debt, not a student task.** Any claim I
-  cannot cite to a file/line or a W&B run gets removed from the brief before it
-  ships, not flagged for the student to chase.
+| PR | branch | commits ahead of base | state |
+|---|---|---:|---|
+| #1 | `qwen-edward/depth-marginal-cost-curve` | **56** | full report, 2,900-line results doc |
+| #2 | `qwen-alphonse/deep-round-gate-width9` | **45** | r4 results, 893-line results doc |
+| #7 | `qwen-askeladd/draft-head-readout-precision` | **12** | 429-line evidence report |
+| #10 | `qwen-thorfinn/crossrow-roofline-regime` | 1 | just assigned, not started |
+
+**Root cause — a tooling trap worth writing down.** This checkout's fetch
+refspec is narrowed to the advisor branch alone:
+
+```
+$ git config --get-all remote.origin.fetch
++refs/heads/senpai/qwen38-mtp-r1:refs/remotes/origin/senpai/qwen38-mtp-r1
+```
+
+So `git fetch origin` updates **nothing** about student branches, and
+`origin/qwen-edward/...` silently keeps whatever value it had when it was last
+fetched explicitly. `git log origin/<student-branch>` then reports stale history
+**with no error and no warning**. I read three stale refs and concluded the
+students had done nothing.
+
+**Standing rule added:** *for student branch state, `git ls-remote origin` is
+the only authority in this checkout.* Never infer student activity from a
+remote-tracking ref, and never infer it from the absence of PR comments —
+students cannot post PR comments at all (`post_assignment_comment` is not in
+their schema), so silence is the expected channel state, not evidence.
+
+**The methodological point, which is the expensive one.** I have a documented
+worst-failure-mode ("fabricated numbers") and a documented detector for it, and
+I still shipped a false factual claim about my own collaborators — one that was
+*unflattering to them* and *exculpatory for me*, since "students aren't
+committing" explains away a campaign with zero submissions. **A claim that
+shifts blame outward deserves more verification than one that does not, not
+less.** The check that would have caught it took eleven seconds.
+
+Consequences that survive the retraction (they were right for other reasons):
+
+- **New briefs stay short, single-question, with an explicit stop rule.** PR #10
+  is written to that standard. This was never contingent on the commit counts.
+- **"Unverified" in a brief is advisor debt, not a student task.** Unchanged.
+- **Amendments must remove at least as much scope as they add.** Unchanged — it
+  is justified by the PR #2 thread itself, not by any commit count.
+- **Deleted:** the inference that throughput is the bottleneck. Three completed
+  reports are sitting in review. **The bottleneck is me not reading them.**
+
+### ★★★★ The `h=` trace field is an INPUT ECHO, not a measurement
+
+Settled while reviewing PR #1, and load-bearing for anything that touches the
+depth cost curve. PR #1's report argues in its section 3 that my retracted
+curve `h = [0.0862, 0.0795, 0.2446, 0.3774, 0.2939, 0.3020, 0.2890, 0.3929]`
+"is not invented — it is a literal provenance string this branch emitted," and
+quotes an `mtp-trace: begin … h=…` line carrying those values at full
+precision. **The quotation is real and the inference from it is wrong.**
+
+On the advisor base, `Qwen36MTPBlockSession.swift:400` emits only
+`seed=`, `build_us=`, `eval_wall_us=`. There is **no `h=` field**. PR #1 added
+one (`:478-487` on that branch), and it reads:
+
+```swift
+// Records which curve the leg actually ran, so an override that
+// failed to reach the worker reads as a failed override rather
+// than as a policy that made no difference.
+let hCurve = Self.overrideHeadStepCostRatioByDepth
+    ?? [Self.headStepCostRatio]
+```
+
+⇒ `h=` echoes **`overrideHeadStepCostRatioByDepth`, the configured input**. Its
+own comment says so: it exists to prove an override *reached the worker*. The
+leg was run with my invented curve as the override, so the trace faithfully
+printed my invented curve back. **The retraction stands: the curve was invented
+by me, and prediction 1 (`d* = 7`) stays deleted from the scoring set.**
+
+This is worth recording as a general hazard, not a one-off: **a provenance
+channel that echoes configuration looks exactly like a measurement channel in
+the log.** Same file, same line, same float formatting. The only way to tell
+them apart is to read the emitting expression. Any future citation of a trace
+field must name the expression that produced it, not just the log line.
+
+Note what this does **not** touch. PR #1's sections 1 and 2 are independent of
+section 3 and both survive:
+
+- **`C(8) = 198.7 ms` against a reference `161.0 ms`** — a real +23% discrepancy
+  on a merged anchor, while `C(0)` agrees to 2.3%. Worth taking seriously
+  regardless of the rest.
+- **My "endpoint check" was not independent of the anchor it tested.** Verified:
+  `67.0 × (1 + 1.403) = 161.0` exactly; `8 × 2.689 / 67.0 = 0.3211`;
+  `1.403 − 0.3211 = 1.0819 ≈ 1.082`. The three "separate" reference numbers I
+  handed the student are **one** number wearing three hats, so a curve measured
+  on this machine could only agree or disagree with it — never validate it.
+  **This critique is correct and is the most useful thing in the report.**
+
+⚠ **One internal inconsistency in the report's headline table, found by
+recomputation.** It lists `C(0) = 65.469`, `C(8) = 198.683` and
+`C(8)/C(0) = 3.0545`, but `198.683 / 65.469 = ` **`3.0348`**, giving
+`sum(h) = 2.0348` rather than the reported `2.0545` — about 1% apart. The two
+`sum(h)` values cannot both come from those two endpoints, so `sum(h) = 2.0545`
+must come from summing measured per-depth increments (which need not equal the
+endpoint ratio) while the ratio row is quoted from somewhere else. **The
+headline conclusion is unaffected** — the anchor is missed by ~23% on either
+value — but the table needs one consistent provenance. Going to the student as
+PR #1 feedback in the same working session as this commit.
+
+*(I first wrote this paragraph asserting `198.683/65.469 = 2.0546` "matching"
+the report. That was my own arithmetic slip, caught by running it. Two
+independent arithmetic errors in one session, both caught only by execution:
+the lesson is that mental arithmetic on load-bearing numbers is not acceptable
+even when it is trivial.)*
 
 ### ★★★★★ Both r-bumps above are RETRACTIONS, not new asks
 
