@@ -165,6 +165,60 @@ Leading hypothesis: the head runs at worse than 70% efficiency (15–25 ms).
 Command-buffer commits and per-dispatch gaps are **ruled out**. Copy traffic is
 0.06 ms. PR #4 is measuring the decomposition directly.
 
+### Partial-acceptance repair — three regimes, and a counter that conflates them
+
+Traced in source on the live base after `b219009`. This underwrites the
+`headStepCostRatio = 0.20` argument, so it is load-bearing for PRs #1 and #4.
+
+**The repair path is a two-tier try/fallback**, not the single expensive path the
+file header still describes:
+
+- `Qwen36MTPBlockSession.swift:973` tries `restoreAfterPrefixReject` (impl `:1146`).
+  Success = trim attention caches + reconstruct recurrent state. **No target forward.**
+- On `false`, the `else` at `:988` runs `rollbackAfterVerify` plus a full
+  `model.callWithHidden` re-forward of the committed block (`:993-997`) — a real
+  repair forward, and by the code's own comment at `:990-992` **a second blocking
+  eval for that round**.
+
+**Three regimes by verify width `S`:**
+
+| `S` | mechanism | cost |
+|---|---|---|
+| `S >= 3` (draft ≥ 2) | compact `prefixReplayTape`, gated `nConfirmed == 1 && S >= 3 && mask == nil` (`Qwen35.swift:977`, written `:1112`, replayed `:889` ← `:1899` ← `:1146`) | cheap replay |
+| `S == 2` (K=1) | single-launch mid-kernel emits the timestep-0 state as a third output (`Qwen35.swift:990-1000`) — checkpoint is **free** | ~0 |
+| otherwise / guard failure | eager-checkpoint kernel, or the full re-forward fallback | expensive |
+
+`restoreAfterPrefixReject` returns `false` when: a cache offset ≠
+`committedOffset + rejected`; a non-trimmable non-`ArraysCache` entry exists;
+`canReplayPrefix` fails; the tape is nil; or at K=1
+`rollbackCheckpoints.count <= acceptedCount`.
+
+**Consequence for the cost model.** The justification at `:519-527` for
+`headStepCostRatio = 0.20` over MTPLX's 0.43 is that "this stack's per-row GDN
+checkpoints make a prefix reject nearly free … **no repair at any depth**". That
+premise is **real but conditional** — it holds only while the guards above hold.
+It is unmeasured. If it fails even occasionally, `C(d)` acquires a term the cost
+model does not price, and 0.20 is underpriced *independently* of any curve fit.
+
+**Consequence for instrumentation.** `rollbackRoundCount` (`:962`) increments
+**before** the branch, so it conflates a ~0 ms replay with a ~25 ms re-forward
+plus second blocking eval. A single value cannot answer "does partial rejection
+fire a second full 48-layer GDN recurrence?" Both PR #1 and PR #4 have been asked
+for the same split — `prefixRepairCount` / `fullRepairCount`, shared naming.
+
+**Two corrections to earlier internal analysis, recorded so they are not
+re-derived wrongly:**
+
+- The vendored DFlash `RecurrentRollbackCache.recordTape` is **genuinely dead**
+  (repo-wide, the only hits are a comment and a test comment). The header
+  paragraph "WHY NOT THE VENDORED DFLASH ROLLBACK" and the rollback contract
+  tests are **correct, not stale**. The live tape is a *different*, Qwen35-native
+  mechanism. What *is* stale is step 5 of the header round-loop summary
+  (`~:29-34`), which presents the full re-forward as the only partial-acceptance
+  path.
+- There is **no `S>=3` → `S>=2` gating win**. `S == 2` already gets its checkpoint
+  free as a third kernel output, so no eager-checkpoint tax exists there to remove.
+
 ### Theme D — closed this round, do not reopen
 
 - **Prefill cutting** (PR #3, merged): `P = 4.0086 s` is irreducible; quantized
@@ -240,6 +294,21 @@ Ordered by expected value. Items marked ★ are new or newly elevated this round
    code comment's claim. The only surviving objection to readout reduction is
    *acceptance*, not bandwidth — so any assignment here must gate on acceptance
    from the first measurement, not on bytes saved.
+   **Prior art (external, and it names the mechanism): FR-Spec / VocabTrim.**
+   Frequency-ranked draft-vocabulary trimming reports ~75% LM-head reduction and
+   is **exactness-preserving by construction**, because verification stays
+   full-vocab — only the *proposal* distribution narrows. Reported optimal subset
+   is ≈32K tokens; we currently draft over 98,304. This is the same idea, already
+   validated elsewhere.
+   **Design constraint that must go in the brief: prefer a STATIC CONTIGUOUS
+   pre-trimmed head over a gathered/dynamic one.** A gather can be *slower* than
+   the untrimmed read despite moving fewer bytes, because gathered rows cut across
+   4-bit g64 quantization groups and destroy the contiguous-group access the
+   `qdot` path depends on. Trimming bytes is not the same as trimming time here.
+   **Not refuted by the earlier static-prefix result.** The 49,152 halving
+   regressed acceptance 1.00 → 0.877; that is an *acceptance* refutation of a
+   naive prefix cut and it stands. Frequency-ranking is a different selection
+   rule, and the bandwidth objection that used to sit alongside it is now dead.
 
 2. **★★ Composition round.** Once ≥2 of PRs #1/#2/#4/#5 land, compose them and
    re-measure on a fresh base. Elevated because #1 and #2 are individually
@@ -376,6 +445,44 @@ Ordered by expected value. Items marked ★ are new or newly elevated this round
 
 ---
 
+## External literature sweep — round 2
+
+**Provenance caveat, applies to everything below.** Roughly one third of the
+sources in this sweep are unverified preprints carrying 2026 dates and were not
+independently confirmed. Treat every constant as a *direction*, never as a value.
+All of it was derived on non-Apple hardware or on other Apple chips; anything we
+intend to rely on must be re-derived on our own host. This campaign has already
+had to retract two externally-sourced claims (`mlx#3920`, the `mlx-lm#250`
+explanation), so the bar is: an external number may motivate an experiment, it may
+never conclude one.
+
+- **FR-Spec / VocabTrim** — folded into direction 1 above. The highest-value item
+  in the sweep, because it independently validates our strongest unassigned idea
+  *and* supplies the static-contiguous design warning.
+- **Pre-registered negative — do NOT assign.** Drafting by skipping the 16
+  full-attention layers fails on Qwen-family sequential hybrids: α ≈ 0.038 versus
+  0.68 for parallel hybrids. Already recorded under Theme D; repeated here so the
+  next person sweeping literature does not re-propose it.
+- **Adaptive draft length** (AdaEDL / SVIP / SpecDec++): stop drafting on an
+  entropy or margin threshold rather than a fixed depth; threshold-optimality has
+  a proof sketch. Relevant to Theme A, and complementary to a re-fit `C(d)` — a
+  cost curve sets the *budget*, a confidence signal spends it per-round.
+  **Novel open question worth owning:** for a *greedy-exact* verifier like ours,
+  the `top1 − top2` margin should dominate entropy as the stop signal, because
+  acceptance is decided by an argmax tie, not by distributional spread. No paper
+  in the sweep isolates this. We already carry exact top-two evidence on every
+  row, so the signal is **free** for us — unusually cheap novelty.
+- **SpecInfer**: at batch size 1–2, wider trees consistently reduce latency. We
+  run BS=1. Tension with our hard depth cap of 4 / structural width-5 wall, so
+  this is gated behind PR #2's width-9 bit-exactness result.
+- **HyperDFlash**: native MTP holds acceptance only at positions 1–2, decaying
+  after. Consistent with our own `effective depth 1` on all 48 scored prose runs.
+- **Draft&Verify**: below ~80% acceptance, K=1 is optimal. Our ranked prose regime
+  is near that boundary, which is why the depth policy matters at all.
+- **ReDrafter on MLX**: 1.37× on M1 Max → 2.3× on M2 Ultra. A same-method,
+  cross-host spread of 1.7× — direct support for Flag B/C and for the
+  bandwidth-scaling model over the fixed-host-cost model.
+
 ## Operating reminders
 
 - Local `--local-iterate` runs **both** legs from the same candidate build, so a
@@ -392,9 +499,19 @@ Ordered by expected value. Items marked ★ are new or newly elevated this round
 - The stall guardrail **fails closed** and excludes the first block. Uniform
   steady-state speedup is neutral to it; the hazard is occasional expensive
   after-first rounds.
-- `Sources/MLXFastModel/Qwen35*.swift` is editable but **never executed**. The
-  live target is `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` plus
-  `Qwen36MTPBlockSession.swift`. Prove the live call path before optimizing.
+- `Sources/MLXFastModel/Qwen35*.swift` is editable but **never executed**
+  (`Qwen35FastPathReadiness.swift:11-19` hardcodes false). Prove the live call
+  path before optimizing. Exact live paths — note the two prefixes differ, which
+  is easy to get wrong:
+  - `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` (GDN, replay tape,
+    compact draft head)
+  - `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` (round loop, repair,
+    cost model) — `Qwen36*` under `Sources/` is live; only `Qwen35*` there is dead.
+    There is **no** `Vendor/` copy of the block session.
+- **Every line number in this document and in student briefs post-dates
+  `b219009`, which shifted them all.** Re-locate by symbol name, always. The
+  in-file header comments have already been caught stale twice; source is the
+  authority, comments are not.
 - Editable budget: `source = 2,396,110 / 3,000,000`, headroom 603,890 B.
   `mtp-head/` is exempt with its own 2 GiB cap. Preflight every assignment with
   `senpai/validate-assignment-scope.sh` and `senpai/check-editable-budget.sh`.
