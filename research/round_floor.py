@@ -686,8 +686,11 @@ def sweep_quantized_matmul_width(reps, widths):
 def qmv_batch_limit(D, O, arch_size, arch_gen):
     """Mirror of get_qmv_batch_limit in mlx/backend/metal/quantized.cpp.
 
-    MLX dispatches qmv while M < limit and qmm_splitk at M >= limit, so a verify of
-    width d+1 falls off the cheap dispatch as soon as d+1 reaches this value.
+    Dispatch at :1418/:1486 is `if (M >= vector_limit) -> qmm_splitk`, so a verify of
+    width d+1 stays on qmv while d+1 <= limit-1.
+
+    The C++ switches on arch_gen first and arch_size second; this checks arch_size == "d"
+    first because both gen branches return the same 32/18/12 for the "d" part.
     """
     if arch_size == "d":
         if D <= 2048 and O <= 2048:
@@ -699,7 +702,7 @@ def qmv_batch_limit(D, O, arch_size, arch_gen):
         return 10 if (D <= 4096 and O <= 4096) else 6
     if D <= 2048 and O <= 2048:
         return 18
-    return 12 if (D <= 4096 and O <= 4096) else 8
+    return 12 if (D <= 4096 and O <= 4096) else 10
 
 
 def device_probe():

@@ -72,7 +72,7 @@ So the honest status of each number in this report:
 | section | status on the r2 base |
 |---|---|
 | §3, §4, §6-guardrail (round timing) | **carried over from the r1 192-token run**, not re-measured. Not re-run — see §8.4. |
-| §5A, §5B, §6c, §6d (kernel isolation) | **base-independent and re-verified.** They call `mx.quantized_matmul` at fixed shapes and never enter `Qwen36MTPBlockSession`. |
+| §5A, §5B, §6c, §6d (kernel isolation) | **base-independent and re-verified**, but they measure *upstream* `mx.quantized_matmul`, which does **not** carry the base's `crossrow` kernels at M in 2..9. See §5C. Only the M=1 numbers transfer to the scored stack unchanged. |
 | §8.4.4 (context sensitivity) | **new, measured on the r2 base**, added specifically to bound the 192→512 extrapolation. |
 | scope + budget | **re-run against `67bde702…`**, both exit 0 (below). |
 
@@ -142,26 +142,33 @@ Consequently the three Part B mechanisms cannot pay:
 This is **outcome #3** from the PR body: a breakdown proving irreducibility, retiring
 the line of work and re-anchoring the cost model.
 
-Five results outrank that negative and are where the campaign value is:
+Five further findings sat alongside that negative. **r3 retracts the first two**; the
+remaining three are where the campaign value is:
 
-1. **§6c.4 — the depth cap sits exactly one row past a dispatch cliff, and moving it is a
-   two-line change.** This host is `applegpu_g16s` (arch_gen 16, size `'s'`), so
-   `get_qmv_batch_limit` returns **8** for every projection shape in the model, and MLX
-   switches `qmv -> qmm_splitk` at `M >= 8`. `rows_per_round = depth + 1`, so
-   `segmentedVerifyDepthCap = 8` verifies at **M = 9**, one row over. The 9th row costs
-   **1.89x** an average row (38.46 ms marginal vs 20.32 ms average), and the traced run
-   agrees end-to-end: **d=7 is 23.79 ms/token vs d=8 at 24.49 ms/token — 2.9% cheaper**,
-   despite emitting fewer tokens per round. This also **falsifies the design comment at
-   `Qwen36MTPBlockSession.swift:588-590`** ("qmv batch limit 10+ on this generation for
-   these shapes"). Correctness is untouched; only the cost model behind the cap is wrong.
-   See §10 follow-up 0b — measure the limit on the ranked host, then set the cap from it.
-2. **§5B — `quantized_matmul` collapses at exactly the widths MTP verifies at.** It runs
-   at 248.7 GB/s at M=1 but 72.1 GB/s at M=9, moving ~3.45x the necessary weight bytes.
-   Verify-side quantized matmuls are 201.14 ms of the 217.75 ms round; at roofline the
-   round would be ~87.1 ms — a **2.50x round speedup**. The fix belongs in the *submittable*
-   `kernels/quantized*.metal` + generated twins; the qmv/qmm selector that steers into the
-   cliff is in non-editable host code, so the work must go **inside** `qmv`/`qmv_quad`.
-   Follow-up 0b is the cheap half of this: it dodges the cliff instead of fixing it.
+1. ~~**§6c.4 — the depth cap sits exactly one row past a dispatch cliff.**~~ **WITHDRAWN in
+   r3 — this was wrong, and the design comment it accused was right.** I mirrored
+   `get_qmv_batch_limit` in `research/round_floor.py` with a transcription error (`8`
+   where the C++ returns `10`). The real constant for this host — `applegpu_g16s`,
+   arch_gen 16, size `'s'` — is **`vector_limit = 10`** for every projection shape in the
+   model (`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:84`). The
+   dispatch is `if (M >= vector_limit) -> qmm_splitk`, so `qmv` covers **M ≤ 9**.
+   `segmentedVerifyDepthCap = 8` verifies at **M = 9 — the last row still on `qmv`, one
+   short of the switch, not one past it.** There is no dispatch cliff at the cap. The
+   design comment at `Qwen36MTPBlockSession.swift` ("host qmv batch limit 10+ on this
+   generation for these shapes") is **correct as written**. Follow-up 0b is withdrawn.
+   Full correction and the surviving unexplained d=7/d=8 observation: §6c.4.
+2. **§5B — upstream `mx.quantized_matmul` degrades sharply with M, but this is *not* the
+   scored kernel.** Measured through the Python binding it runs at 248.7 GB/s at M=1 and
+   72.1 GB/s at M=9. That binding path takes the **upstream** kernel: the base's
+   `crossrow` family (`Vendor/mlx-swift/.../kernels/quantized.h` + the generated twin)
+   gates on `!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024` and
+   dispatches `switch (ntg.x)` for **M = 2..9 only**. So §5B is a *no-crossrow* baseline
+   for exactly the widths MTP verifies at, and no prize can be claimed from it — the
+   scored M=2..9 curve is **unmeasured**. What survives is a smaller, explicitly
+   unexplained observation: the upstream curve has a **flat step from M=7 to M=8**
+   (0.5582 → 0.5622 ms, +0.7%, versus ~+14% per row elsewhere). I do not have an
+   explanation for it and I am not attaching one. §5C audits every conclusion that
+   depended on the old reading.
 3. **§6b.1 / §6c — the declared proposal head is already 4-bit g64, not bf16, and it is
    bandwidth-bound.** The "quantize the head, save 11-16%" follow-up has **no prize left**;
    it is banked in the base. §6c.2 additionally refutes an 8-bit head: 4-bit qmv sustains
@@ -177,15 +184,44 @@ Five results outrank that negative and are where the campaign value is:
 5. **§6b.4 — the pre-registered discriminator resolves to BANDWIDTH**, but the residual's
    real cause is small-M kernel inefficiency, a third category the dichotomy omits.
 
-## 1a. Corrections to feedback (4) and (9): `MLX_QWEN_MTP_TRACE=1` **is** reachable
+## 1a. Feedback (4) and (9): stderr really is discarded — so I added a file sink
 
-Feedback (4) concluded the trace is unreachable and that Part A "needs a new method".
-Feedback (9) restates that conclusion. The *diagnosis* behind it is correct; the
-*conclusion* does not follow. I hit exactly that wall, diagnosed it identically, and
-solved it — **every number in this report comes from the live scored worker via that
-route.** All line numbers below are re-located by name on the r2 base `67bde702`.
+**r3 correction. My r1/r2 wording here was wrong and I am replacing it.** I wrote that
+the advisor's conclusion "does not follow" and that the trace "**is** reachable", as if
+feedback (4) had misread a facility that already worked. That is not what happened.
+The accurate statement is:
 
-**What the advisor got right.** Worker stderr really is discarded:
+> **Worker stderr really is discarded, exactly as feedback (4) and (9) said. At base
+> `67bde702` the MTP trace had no other outlet, so it was genuinely unreachable through
+> the benchmark. I made it reachable by *adding a file sink that the base did not have* —
+> `MLX_QWEN_MTP_TRACE_FILE`, introduced by my own commit `746a54b`.**
+
+This matters for two reasons. First, it is a correction of attribution: the advisor was
+right about the base, and I changed the base rather than found a way around it. Second, it
+changes what the finding *is* — not "the trace works, you missed it", but "the trace needs
+one small piece of tooling, here it is, and it should probably live in the base". That
+promotion proposal is now §9a.
+
+Provenance, checked rather than asserted:
+
+```console
+$ git grep -n "MLX_QWEN_MTP_TRACE" 67bde702 -- Sources/
+67bde702:Sources/MLXFastModel/Qwen36MTPBlockSession.swift:463:  ...["MLX_QWEN_MTP_TRACE"] == "1"
+                                    # ^ only the on/off flag exists at base; no sink
+
+$ git log --oneline -S"MLX_QWEN_MTP_TRACE_FILE" -- Sources/
+746a54b trace: route MTP phase trace to a file sink and add fixed-depth diagnostic
+```
+
+So at base the flag existed and wrote to stderr, and stderr went nowhere. The `MLX_`
+allowlist prefix (`QwenRuntimeWorker.swift:2643`) **did** pre-exist — that part of my
+argument stands and is what makes the sink variable reach the child at all — but the
+file sink itself is mine.
+
+All line numbers below are re-located by name on the r2 base `67bde702`.
+
+**What the advisor got right (verbatim, and it is the load-bearing half).** Worker stderr
+really is discarded:
 
 - `Sources/MLXFastTrustedHarness/QwenRuntimeWorker.swift:2046` and `:2207` both spawn the
   worker with `emit: options.forwardsWorkerStderr ? nil : { _ in }` — the drain reads
@@ -194,16 +230,18 @@ route.** All line numbers below are re-located by name on the r2 base `67bde702`
   `:2301` further ANDs it: `forwardsWorkerStderr && !officialRun`. Only the DFlash path
   (`main.swift:1409`, inside the cited `:1404-1412`) passes `true`.
 
-So a stderr-based trace is indeed invisible. **The trace does not use stderr.**
+So a stderr-based trace is indeed invisible — and at base the trace **was** stderr-based.
 
-**Why it is nevertheless reachable — two independent facts.**
+**What the added sink changes — two facts, one new and one pre-existing.**
 
-1. **The sink is a file, not stderr.** `Qwen36MTPBlockSession.swift:475-487` opens an
-   append-mode `FileHandle` on the absolute path named by `MLX_QWEN_MTP_TRACE_FILE`.
-   Discarding the worker's stderr has no effect on a file the worker opens itself.
+1. **New (mine).** `Qwen36MTPBlockSession.swift:475-487` opens an append-mode `FileHandle`
+   on the absolute path named by `MLX_QWEN_MTP_TRACE_FILE`. Discarding the worker's stderr
+   has no effect on a file the worker opens itself. This code does not exist at
+   `67bde702`.
 
-2. **Both variables survive the worker env filter, and this is provable rather than
-   assumed.** `sanitizedRuntimeWorkerEnvironment` (`QwenRuntimeWorker.swift:2623`,
+2. **Pre-existing (the base's, not mine).** Both variables survive the worker env filter,
+   and this is provable rather than assumed.
+   `sanitizedRuntimeWorkerEnvironment` (`QwenRuntimeWorker.swift:2623`,
    applied at `:2036` and `:2191`) is a documented **strict allowlist** that starts from
    an empty environment. Its `allowedPrefixes` list at `:2638-2645` contains `"MLX_"` at
    `:2643`. `MLX_QWEN_MTP_TRACE` and `MLX_QWEN_MTP_TRACE_FILE` both match that prefix and
@@ -234,11 +272,13 @@ file.
 **Phase-oracle note (unprompted, because the allowlist doc raises it).** `MLX_`-prefixed
 names are allowlisted precisely because they are phase-independent, and the ranked
 workflow never sets either trace variable, so this instrumentation cannot act as a phase
-oracle. It is nonetheless labelled not-for-promotion in §9 and is gated off by default
-(`traceRounds` is `false` unless `MLX_QWEN_MTP_TRACE == "1"`).
+oracle. It is gated off by default (`traceRounds` is `false` unless
+`MLX_QWEN_MTP_TRACE == "1"`).
 
-This is reusable by any student who needs worker-side instrumentation — it also unblocks
-the same measurement on PR #3. `scratch/run-bench.sh` wires it up end to end.
+This is reusable by any student who needs worker-side instrumentation.
+`scratch/run-bench.sh` wires it up end to end. Because it is *added* tooling rather than a
+rediscovery, r3 splits it out of the not-for-promotion pile and proposes it for the base on
+its own: see **§9a**.
 
 
 ## 2. Why `asyncEval` is not free (mechanism)
@@ -432,14 +472,24 @@ The three numbers, d=8:
 | `achieved_kernel_floor` | **226.02 ms** | same components, **measured** back-to-back on GPU |
 | `measured_block_seconds` | **217.75 ms** | mean traced `round_us` at d=8 (N=9 rounds) |
 
-| gap | value | reading |
-|---|---:|---|
-| kernel-efficiency gap (`achieved − roofline`) | **+135.93 ms** | 60.4% of the round is kernels running below roofline |
-| scheduling gap (`measured − achieved`) | **−8.27 ms (−3.8%)** | **essentially zero** — nothing left for host or scheduler |
+> **r3 correction.** `achieved_kernel_floor` is measured through `mx.quantized_matmul`,
+> which takes the **upstream** kernel path and misses the base's `crossrow` family at
+> M = 2..9. Read it as **`upstream_kernel_floor`**. §5C.4 gives the corrected
+> interpretation of both gaps below; the short version is that a "floor" the real system
+> beats by 3.8% is evidence the scored kernels are faster than the model, not evidence
+> that scheduling is optimal.
 
-The sign of the scheduling gap is the whole answer to this assignment. The sum of
-independently measured kernels slightly *exceeds* the real round, i.e. the live round is
-already at least as well overlapped as a hand-issued back-to-back kernel stream. There
+| gap | value | reading (r1/r2) | reading (r3) |
+|---|---:|---|---|
+| kernel-efficiency gap (`achieved − roofline`) | **+135.93 ms** | 60.4% of the round is kernels below roofline | upstream-only; the scored gap is unmeasured |
+| scheduling gap (`measured − achieved`) | **−8.27 ms (−3.8%)** | **essentially zero** — nothing left for host or scheduler | at least partly the crossrow speedup; weak evidence about scheduling |
+
+r1/r2 treated the sign of the scheduling gap as "the whole answer to this assignment".
+**It is not, and r3 demotes it to corroboration.** The sum of independently measured
+*upstream* kernels slightly exceeds the real round, which is exactly what you would expect
+when the real round runs faster kernels than the ones in the model. The assignment's
+answer rests instead on the direct trace measurement of host time (599 µs/round =
+**0.350%** of the round, §3/§4), which neither error touches. There
 is no 67–77 ms of unexplained scheduling overhead on this host: once `BW_eff` and
 `FLOPS_eff` are measured rather than assumed, the gap the advisor computed **is the
 kernel-efficiency gap**, not a scheduling gap, and host graph construction (0.599 ms,
@@ -491,7 +541,21 @@ scratch/mlxenv/bin/python research/round_floor.py \
   --json scratch/results/round_floor_d8.json
 ```
 
-## 5B. Headline finding: `quantized_matmul` collapses at exactly the verify widths MTP uses
+## 5B. Width sweep of **upstream `mx.quantized_matmul` (no `crossrow`)** — a baseline, not the scored kernel
+
+> **r3 relabel.** In r1/r2 this section was titled "Headline finding: `quantized_matmul`
+> collapses at exactly the verify widths MTP uses", and I priced a 2.50× round speedup
+> from it. **Both are withdrawn.** The sweep drives `mx.quantized_matmul` through the
+> Python binding, which takes the **upstream** kernel path. The campaign base carries an
+> extra `crossrow` kernel family that the binding never reaches, and that family covers
+> **exactly M = 2..9** — the whole region this table was used to indict. Details and the
+> full audit of what depended on it are in §5C.
+>
+> What the table still is: a **legitimate upstream / no-crossrow baseline**. It is
+> correct for what it measures, it is the right control to diff a future crossrow
+> measurement against, and its **M=1 row is unaffected** (crossrow has no M=1 case and
+> falls through to `qmv_fast_impl`, so M=1 is byte-identical to upstream). Every M ≥ 2
+> row must be read as "upstream would do this", not "the scored stack does this".
 
 The 135.93 ms kernel-efficiency gap is not spread evenly. Every `compute`-bound line in
 the table above is a `quantized_matmul` at M=9 and every one of them lands at **33–35%**
@@ -517,32 +581,40 @@ swept width directly at the MLP gate shape (M × 5120 → 17408, affine 4-bit g6
 | 128 | 3.5051 | 14.3 | 6.510 | 99.5% | 7.36 |
 | 512 | 13.9552 | 3.6 | 6.540 | 100.0% | 7.40 |
 
-Three facts:
+Four readings, scoped by what the sweep can actually support:
 
-1. At M=1 the kernel is memory-bound and **99.5% of peak**. Serial decode is already
-   optimal. There is nothing to win there.
-2. From **M≈3 to M≈12 throughput is flat at ~2.6–2.9 rows per unit time** — time grows
-   ∝ M, so batching buys essentially nothing. Verifying 9 rows costs ~3× verifying 3.
-   Marginal cost of one extra verify row is **0.0618 ms** = 31% of an entire weight
-   pass, where the ideal marginal is `2·K·N / FLOPS_eff = 0.0273 ms`. **2.26× too
-   expensive at the margin, per projection, per layer.**
-3. Efficiency snaps back to ~98% only at **M ≥ 32**, and absolute time is literally flat
-   from M=12 to M=32 (0.8865 / 0.8899 / 0.8938 / 0.8917 ms) — 2.7× more rows for free,
-   unreachable because the parent caps drafts at 8, i.e. M ≤ 9.
+1. **Transfers to the scored stack.** At M=1 the kernel is memory-bound and **99.5% of
+   peak**. Serial decode is already optimal, and crossrow does not touch M=1, so this
+   holds for the base as well as upstream. There is nothing to win there.
+2. **Upstream only.** From **M≈3 to M≈12 upstream throughput is flat at ~2.6–2.9 rows per
+   unit time** — time grows ∝ M, so batching buys essentially nothing *there*. Marginal
+   cost of one extra verify row is **0.0618 ms** = 31% of an entire weight pass, where
+   the ideal marginal is `2·K·N / FLOPS_eff = 0.0273 ms`. **2.26× too expensive at the
+   margin** — for upstream. The base's crossrow kernels exist precisely to attack this
+   region, and I did not measure them, so I cannot say how much of this gap the scored
+   stack already closes.
+3. **Upstream only, and unexplained.** There is a **flat step from M=7 to M=8**:
+   0.5582 → 0.5622 ms, **+0.7%**, against ~+14% per row on either side (M=6→7 is +22.9%,
+   M=8→9 is +23.8%). One extra row is very nearly free at that one point. In r1/r2 I
+   attached this to a dispatch boundary; that explanation was wrong (§6c.4) and I have
+   **no replacement for it**. I am recording it as an unexplained feature of the upstream
+   curve rather than inventing a mechanism.
+4. **Upstream only.** Efficiency snaps back to ~98% at **M ≥ 32** and absolute time is
+   literally flat from M=12 to M=32 (0.8865 / 0.8899 / 0.8938 / 0.8917 ms) — 2.7× more
+   rows for free, unreachable regardless because the parent caps drafts at 8, i.e. M ≤ 9.
 
-**The MTP round lives entirely inside the worst part of this curve.** That is the real
-reason MTP at d=8 costs 217.75 ms while serial d=0 costs 86.80 ms per token on this
-host: 8 extra rows cost 2.5× a whole serial token instead of the ~0.9× the machine's
-own compute roofline allows.
+**What I am no longer claiming.** r1/r2 concluded from this table that "the MTP round
+lives entirely inside the worst part of this curve", priced verify-side quantized matmuls
+at 201.14 ms of the 217.75 ms round, and derived a **2.50× round speedup** from closing
+the gap, with the recommendation that the work "must go inside `qmv`/`qmv_quad`" to make
+it amortize the weight stream. **All of that is withdrawn.** The round's matmuls run on
+the base's crossrow kernels, not on the kernel this table measured, so neither the 35%
+efficiency figure nor the prize derived from it applies to the scored path. A real
+prize here may or may not exist; measuring it requires instrumenting the base's crossrow
+kernels directly, which this experiment did not do.
 
-Size of the prize: verify-side quantized matmuls are 133.514 + 31.686 + 12.463 + 9.946 +
-9.290 + 4.144 = **201.14 ms** of the 217.75 ms round at 35% efficiency. At roofline they
-are 70.49 ms, so the round would fall to **~87.1 ms — a 2.50× round speedup**, and the
-same fix raises every draft depth's payoff, moving the cost-model crossover well past
-M=9.
-
-**This is inside the submission surface.** Verified against `BASE_SHA:benchmark.json`
-with `senpai/validate-assignment-scope.sh`:
+**Scope note, kept because it is still true and still useful.** Verified against
+`BASE_SHA:benchmark.json` with `senpai/validate-assignment-scope.sh`:
 
 - ✅ submittable: `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal`,
   `.../kernels/quantized_nax.metal`, `.../kernels/quantized.h`, `.../kernels/quantized_nax.h`,
@@ -554,15 +626,133 @@ with `senpai/validate-assignment-scope.sh`:
 - ❌ **not** submittable: `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp`
   — the host dispatcher. `get_qmv_batch_limit(D, O, d)` is at line 84 and is consulted at
   lines 1415 and 1483 (`vector_limit = transpose_ ? get_qmv_batch_limit(K, N, d) : 4`).
-  For D=5120, O=17408 (both > 4096) it returns 6 on `arch_gen ∈ {13,14}` and 10
-  otherwise, which is what puts M=9 on the `qmv` side of the qmv/qmm split and produces
-  the flat-throughput regime above. **The selection cannot be changed by a submission;
-  only the kernel bodies can.** Any experiment here must therefore make `qmv_*` itself
-  amortize the weight stream across up to 9 rows (`qmv_quad` :177, `qmv` :235;
-  `qmm_nax` :473, `qmm` ~:699-771, `qmm_t_splitk` :798-846 "tile K by BK=32").
+  For D=5120, O=17408 (both > 4096) it returns **6** on `arch_gen ∈ {13,14}`, **12** on
+  Ultra (`arch_size == 'd'`), and **10** otherwise — including this host and the ranked
+  M5. Since the dispatch is `if (M >= vector_limit) -> qmm_splitk`, `qmv` covers **M ≤ 9**
+  here, so the entire reachable MTP range (M ≤ 9, drafts capped at 8) sits on the `qmv`
+  side with **no boundary crossing at any legal depth**. **The selection cannot be changed
+  by a submission; only the kernel bodies can** (`qmv_quad` :177, `qmv` :235;
+  `qmm_nax` :473, `qmm` ~:699-771, `qmm_t_splitk` :798-846).
 
-This is the single highest-value follow-up I can name from this experiment, and it is a
-different mechanism from anything currently in the ledger.
+**r3 note on internal consistency.** This paragraph said "**10** otherwise" in r1/r2 and
+was correct. The `8` appeared only in `research/round_floor.py`'s mirror of this function
+and propagated from there into §6c.4, headline item 1, and follow-ups 0/0b — i.e. the
+report contradicted itself and I did not notice. r3 fixes the mirror (§5C) and retracts
+everything downstream of it.
+
+
+## 5C. r3 audit: the two root errors and every conclusion re-checked against them
+
+This section exists because two separate mistakes contaminated an unknown set of
+downstream claims, and the honest thing is to enumerate the whole set rather than patch
+the two the advisor happened to catch.
+
+### 5C.1 Root error A — the `get_qmv_batch_limit` mirror returned 8 instead of 10
+
+**Fix applied.** `research/round_floor.py` (the `_qmv_batch_limit` helper) returned
+`12 if (D <= 4096 and O <= 4096) else 8`. The C++ returns `10` in that branch for this
+host class. The literal is corrected and the docstring now names the dispatch direction
+(`M >= vector_limit -> qmm_splitk`, so `qmv` covers `M <= vector_limit - 1`) so the sign
+error cannot recur silently.
+
+**Verification of the corrected mirror.** I re-implemented
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:84` faithfully — the
+C++ switches on `arch_gen` first, then on `arch_size`; my mirror tests `arch_size == 'd'`
+first — and compared exhaustively over
+`D, O ∈ {1024, 2048, 4096, 5120, 17408, 248320}²  ×  size ∈ {d, s, g, p}  ×  gen ∈ {13..17}`:
+**576 combinations, 0 mismatches.** The two orderings are outcome-identical because both
+`arch_gen` branches return the same `32/18/12` triple for the `'d'` part.
+
+The relevant values, from the source rather than from memory:
+
+| condition | D,O ≤ 4096 | one > 4096 | both > 4096 |
+|---|---:|---:|---:|
+| `arch_size == 'd'` (Ultra) | 32 | 18 | **12** |
+| `arch_gen ∈ {13,14}`, otherwise | 14 | 10 | **6** |
+| all other (incl. gen 16 `'s'` = this host, and ranked M5) | 18 | 12 | **10** |
+
+All three scored shapes — `5120→17408`, `17408→5120`, `5120→248320` — are "both > 4096",
+so **`vector_limit = 10` and `qmv` serves M ≤ 9** on this host and on M5.
+
+### 5C.2 Root error B — the Python sweep does not exercise the base's `crossrow` kernels
+
+`crossrow` appears in exactly three places in the tree:
+
+```console
+$ git grep -lc crossrow
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h      22
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp                    22
+Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift                     1
+```
+
+The gate in the runtime-effective generated twin is
+`if (!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024)`, then
+`out_vec_size >= 4096` selects the `_m` variants via `switch (ntg.x)`:
+
+| `ntg.x` (= M) | dispatched | | `ntg.x` | dispatched |
+|---:|---|---|---:|---|
+| 2 | `qmv_fast_crossrow_affine4_g64<T,2>` | | 6 | `..._m<T,6,3>` |
+| 3 | `..._m<T,3,3>` | | 7 | `..._m<T,7,4>` |
+| 4 | `..._m<T,4,4>` | | 8 | `..._m<T,8,4>` |
+| 5 | `..._m<T,5,3>` | | 9 | `..._m<T,9,3>` |
+
+**There is no `case 1`.** M=1 falls through to `qmv_fast_impl`, identical to upstream.
+All three scored shapes have `out_vec_size ≥ 4096`, so they take the `_m` branch.
+
+Consequence, stated plainly: **the scored stack's M=2..9 quantized-matmul curve is
+unmeasured by this experiment.** §5B measures what upstream would do there.
+
+### 5C.3 Every conclusion re-checked — what I actually looked at
+
+I walked every claim in the report that reads either `qmv_batch_limit` / the dispatch
+boundary, or a number produced by `research/round_floor.py` or the Python width sweep.
+Twelve claims; here is each one and its verdict.
+
+| # | claim | depends on | verdict in r3 |
+|---|---|---|---|
+| 1 | §1 headline 1 / §6c.4 — "cap is one row past a dispatch cliff" | error A | **retracted.** M=9 is the last `qmv` row; no cliff. |
+| 2 | §1 headline 2 / §5B "2.50× round prize" | error B | **retracted.** Priced against upstream, not the scored kernel. |
+| 3 | §10 follow-up 0b — "move the depth cap off the cliff" | error A | **withdrawn.** There is no cliff to move off. |
+| 4 | §10 follow-up 0c — "the `:588-590` comment is stale" | error A | **withdrawn.** The comment is correct. |
+| 5 | §10 follow-up 0 — kernel work, "8 otherwise" caveat | errors A+B | **kept, both caveats corrected.** Constant is 10/6/12; and the target must be the crossrow kernels, not upstream `qmv`. |
+| 6 | §5A `achieved_kernel_floor` = 226.02 ms, gap +135.93 ms | error B | **relabelled `upstream_kernel_floor`.** Not a floor for the scored stack. See 5C.4. |
+| 7 | §5A "scheduling gap −8.27 ms (−3.8%)" | error B | **reinterpreted.** See 5C.4 — this is now evidence *for* crossrow, not for scheduling quality. |
+| 8 | §6.4 "3.45× redundant weight re-streaming" | error B | **retracted as a scored-path claim**; true of upstream at M=9. |
+| 9 | §6c.3 "corrected kernel floor" | error B | **relabelled upstream.** |
+| 10 | §6.5 / §6d.5 "verify readout is 35.2% efficient" | error B | **relabelled upstream.** |
+| 11 | §6c.1, §6c.2, §6d.2, §6d.3, §6d.4, follow-up 0d | neither (M=1 only) | **unaffected — verified.** Every one of these measures the proposal head or the draft readout at **M=1**, where crossrow has no case and falls through. Head bandwidth-bound; 8-bit head refuted (249.0 vs 253.1 GB/s); Scope A 3.41×; Scope B 2.13× and 522.1 MB/step; compact readout 54.24% / 283.21 MB of 522.09 MB/step; follow-up 0d ≈ +0.058 score. |
+| 12 | **§1 headline — the host-bound refutation itself** | neither | **unaffected — verified.** The 599 µs/round host cost (0.350% of the round) comes from direct `MLX_QWEN_MTP_TRACE` instrumentation inside the live scored worker, not from `round_floor.py` and not from the Python sweep. Neither error can move it. §3, §4 and §8.4.4 are likewise direct measurements. |
+
+Claim 12 is the one that matters for the assignment's verdict, and it survives both
+errors untouched. The result stays **not useful**: drafting is not host-bound.
+
+### 5C.4 An honest new reading of the §5A "scheduling gap"
+
+This is a consequence of error B that the advisor did not ask about and that I think is
+the most interesting thing to fall out of the correction.
+
+§5A computed a no-crossrow kernel floor of **226.02 ms** for the round and compared it
+with the measured live round of **217.75 ms**, calling the −8.27 ms (−3.8%) difference a
+"scheduling gap" and reading it as "the scheduler is already slightly better than the
+model, so there is nothing left for the host". That reading is not available any more,
+because a *floor* that the real system beats is not a floor.
+
+The corrected reading: **the live round is faster than an upstream-kernel model of itself
+because the base's crossrow kernels are faster than upstream at M=9.** The −3.8% is at
+least partly a crossrow speedup that the model did not know about, not evidence of
+superior overlap.
+
+Two things follow:
+
+- The corroboration weakens. §5A can no longer be cited as independent proof that "there
+  is nothing left for the host or the scheduler". It is now consistent with a scheduler
+  that has some slack which crossrow's gain happens to mask.
+- **The headline refutation does not depend on it.** Host cost was measured directly at
+  599 µs/round = 0.350%; even a scheduler with several ms of slack cannot make a 0.350%
+  component the bottleneck. §5A was corroboration, not the argument.
+
+The clean way to settle it is to measure the crossrow kernels at M=2..9 directly and
+rebuild the floor on the real numbers. That is follow-up 0 as rewritten in §10.
 
 
 ## 6. Advisor feedback answers
@@ -855,9 +1045,17 @@ the kernel achieves 248.7 GB/s at M=1 but only **72.1 GB/s at M=9**, i.e. it mov
 **≈3.45x the necessary weight bytes** (§5B). That is memory traffic, so it does scale
 with bandwidth and lands in the BANDWIDTH branch — but its cause is a *kernel tiling
 defect*, not a bandwidth budget. A third category, **small-M kernel inefficiency**,
-belongs in the discriminator. It is also the only one of the three that is fixable, and
-§5B sizes the prize at a **2.50x round speedup** if verify-side quantized matmuls were
-brought to their roofline (201.14 ms → 70.49 ms, round 217.75 → ~87.1 ms).
+belongs in the discriminator.
+
+> **r3 correction.** The `3.45x` and the `2.50x round speedup` that followed it are
+> **withdrawn as statements about the scored path**. Both come from the §5B sweep, which
+> runs the **upstream** kernel and never reaches the base's `crossrow` family at M = 2..9
+> (§5C.2). They remain true of upstream at M=9. Two things survive intact: the BANDWIDTH
+> branch label — the discriminator was pre-registered on *scaling behaviour*, and
+> whatever the scored kernel's efficiency is, the residual still scales with bandwidth
+> rather than being fixed host time — and the structural point that **small-M kernel
+> inefficiency is a third category the dichotomy omits**. What is no longer known is
+> **how much** of it the base has already removed.
 
 ### (6.5) The three sub-hypotheses
 
@@ -1015,73 +1213,112 @@ roofline, while everything else in the round runs at 84-104%. Even after scaling
 estimate down by the full 12% discrepancy, verify quantized matmuls are ~177 ms of a
 217.75 ms round.
 
-### (6c.4) New finding from the same probe: **9 rows falls off the qmv dispatch cliff**
+> **r3 correction.** Both component passes call `mx.quantized_matmul`, so every
+> multi-row number in this subsection — the 226.02 / 187.12 ms achieved floors, the
+> corrected 243.87 / 202.40 ms floors, the 35.1% / 38.6% efficiencies and the ~177 ms
+> verify estimate — is an **upstream, no-crossrow** figure (§5C.2). Read "corrected
+> achieved floor" as "corrected *upstream* floor".
+>
+> This actually *helps* the open discrepancy above. I offered `timeit_amortized`
+> contention as "the most likely remaining cause" of a floor that exceeds the
+> measurement. There is now a second and simpler contributor: the model uses upstream
+> kernels while the live round uses faster crossrow kernels at M = 9, so the model
+> **should** overshoot, and should overshoot more at width 9 than at width 8 — which is
+> the observed 12.0% / 6.3% pattern. I cannot separate the two contributions without
+> measuring crossrow directly. The width-scaling argument in the third bullet is
+> unaffected either way, and the head-chain bullet is an M=1 measurement and stands.
 
-Chasing the floor discrepancy required knowing the exact Metal architecture, and that
-probe produced the most actionable result in this section.
+### (6c.4) **RETRACTED IN r3: there is no dispatch cliff at 9 rows, and the design comment was right**
+
+r1/r2 titled this section "New finding from the same probe: 9 rows falls off the qmv
+dispatch cliff" and called it the most actionable result in the report. **It was wrong.**
+This rewrite states what is actually true, why I got it wrong, and what survives.
+
+**The correct constant.** The probe itself was fine:
 
 ```text
 mx.device_info()  ->  architecture "applegpu_g16s"   device "Apple M4 Pro"
                       arch_gen = 16, arch_size = 's'
 ```
 
-`Vendor/mlx-swift/.../backend/metal/quantized.cpp:84` `get_qmv_batch_limit(D, O, d)` with
-`arch_gen = 16` (so **not** the 13/14 branch) and `arch_size = 's'` returns, for every
-projection shape in this model (all have D > 4096 and O > 4096):
+The error was in my Python mirror of `get_qmv_batch_limit`, which returned `8` where the
+C++ returns `10`. Reading the source instead of the mirror
+(`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:84`), `arch_gen = 16`
+takes the `default` branch, and `arch_size = 's'` takes *its* `default` arm, which returns
+`18 / 12 / 10` for (both ≤ 4096) / (one > 4096) / (both > 4096). Every projection in this
+model is "both > 4096":
 
 ```text
-mlp gate/up   5120 -> 17408     vector_limit = 8
-mlp down     17408 ->  5120     vector_limit = 8
-lm_head       5120 -> 248320    vector_limit = 8
+mlp gate/up   5120 -> 17408     vector_limit = 10
+mlp down     17408 ->  5120     vector_limit = 10
+lm_head       5120 -> 248320    vector_limit = 10
 ```
 
-and the dispatch at `:1418` is
+The dispatch (`:1415` and `:1483`, tested at `:1418`) is
 
 ```cpp
 int vector_limit = transpose_ ? get_qmv_batch_limit(K, N, d) : 4;
 if (M >= vector_limit) {          // -> qmm_splitk (transpose_ && B == 1)
 ```
 
-so **M <= 7 takes `qmv`; M >= 8 takes `qmm_splitk`.** `rows_per_round = depth + 1`, so
-`segmentedVerifyDepthCap = 8` puts the verify at **M = 9**, one row past the cheap width.
+so **`qmv` serves M ≤ 9 and `qmm_splitk` starts at M = 10.** `rows_per_round = depth + 1`
+and the parent caps drafts at 8, so the maximum legal width is **M = 9 — the last row
+still on `qmv`, one short of the switch.** The depth cap does not sit past a cliff; there
+is no cliff anywhere in the reachable range.
 
-This contradicts the design comment at `Qwen36MTPBlockSession.swift:588-590`, which asserts
-*"Quantized projections at M in 6..9 still ride the per-row-exact QMV dispatch (host qmv
-batch limit 10+ on this generation for these shapes)."* On `applegpu_g16s` the limit is
-**8**, not "10+", so at depth 8 the projections are on `qmm_splitk`. Correctness is not in
-question — bit-exactness was measured separately on the hexfloat row gate — but the **cost
-model behind the depth cap is wrong on this host**.
+**The design comment is correct.** `Qwen36MTPBlockSession.swift` states:
 
-The two component passes price it exactly:
+> *"Quantized projections at M in 6..9 still ride the per-row-exact QMV dispatch (host qmv
+> batch limit 10+ on this generation for these shapes)."*
+
+Limit 10, M ∈ 6..9 on `qmv`, "10+" — that is exactly right, including the choice of `10+`
+rather than `10` (Ultra `'d'` parts return 12). My r1/r2 claim to have "falsified" it was
+a transcription error in my own tooling, not a finding. The same claim is repeated later
+in the file and is equally correct there. **Retracted with apologies to the comment.**
+
+**What this invalidates.** The "1.89× marginal 9th row" arithmetic below was computed
+from the §5B upstream sweep, and by error B (§5C.2) that sweep does not run the base's
+crossrow kernels at M = 2..9 at all. So the numbers describe upstream, and even for
+upstream they no longer mark a dispatch boundary:
 
 ```text
+[upstream, no crossrow]
 verify quantized-matmul subtotal   width 8   162.58 ms achieved / 62.68 ms roofline = 38.6%
                                    width 9   201.04 ms achieved / 70.49 ms roofline = 35.1%
 marginal cost of the 9th row                  38.46 ms
 average cost of a row at width 8              20.32 ms
-=> the 9th row costs 1.89x an average row
 ```
 
-The width sweep of §5B shows the same cliff in isolation on the MLP shape: 0.5582 ms at
-M=7, 0.5622 ms at M=8, **0.6958 ms at M=9** (+23.8% for +12.5% rows).
+M=7→8→9 in that sweep is 0.5582 → 0.5622 → 0.6958 ms. In r1/r2 I read the +23.8% at
+M=8→9 as the cliff. It is not — M=9 is on the same kernel as M=8. If anything the
+anomaly is the *other* step, the near-free M=7→8 (+0.7%), which §5B now records as
+**explicitly unexplained**.
 
-**And the traced run agrees at the round level:**
+**What survives: one real, unexplained round-level observation.** This is a direct
+measurement from the traced run and does not depend on either error:
 
 ```text
 d=7 rounds (N=4)   round 190.336 ms   acc 7.00   -> 8.00 tokens   23.79 ms/token
 d=8 rounds (N=9)   round 217.750 ms   acc 7.89   -> 8.89 tokens   24.49 ms/token
 ```
 
-**Depth 7 is 2.9% cheaper per token than depth 8 on this host**, despite emitting fewer
-tokens per round, because 8 rows stays on the cheap side of the dispatch cliff.
+Depth 7 came out **2.9% cheaper per token** than depth 8 in this trace, despite emitting
+fewer tokens per round. That happened; the *explanation* I attached to it did not. I am
+recording it as an observation with no mechanism, and I am deliberately not proposing a
+depth-cap change on the strength of it, because the confounds are severe enough to
+account for the whole effect on their own:
 
-Caveats I will not paper over: N=4 versus N=9 rounds, depth is chosen adaptively so the
-two samples are not matched on prompt difficulty, and `get_qmv_batch_limit` on the ranked
-M5 depends on its own arch string (6 if `arch_gen` is 13 or 14, 12 if it is an Ultra
-`'d'` part, 8 otherwise). That is precisely why the follow-up should *measure* the cliff
-on the ranked host rather than hardcode 7. See §10 follow-up 0b — it is a two-line change
-inside `Qwen36MTPBlockSession.swift`, entirely within the editable surface, and it is the
-cheapest concrete speedup this experiment found.
+- N=4 versus N=9 rounds — no error bars worth the name;
+- depth is chosen **adaptively**, so the d=7 and d=8 samples are not matched on prompt
+  difficulty, and the sampling is plausibly correlated with round cost;
+- acceptance differs between the two groups (7.00 vs 7.89), so tokens-per-round and
+  per-token cost are not independent of the depth choice.
+
+The honest version of the follow-up is therefore not "move the cap" but "if anyone wants
+to know whether depth 7 beats depth 8, run the matched fixed-depth comparison" — the
+`MLX_QWEN_MTP_FIXED_DEPTH` override added in `746a54b` makes that a one-variable
+experiment. I am not claiming a speedup here. **Follow-up 0b is withdrawn** and
+follow-up 0c (which accused the design comment of being stale) is withdrawn with it.
 
 ## 6d. Answers to feedback (8) — `qwen38-r1-e4-fb8-head-ratio-correction`
 
@@ -1214,9 +1451,13 @@ exact two-guard change are in §10 follow-up 0d.
   | `head:draft_lm_head_compact` | 98,336 | 283.21 MB | 8 | 9.025 ms | 9.062 ms | 100.4% |
 
   They are different weights, different widths (M=9 versus M=1) and different regimes: the
-  verify readout is compute-bound and 35% efficient — it belongs to the §5B width-cliff
-  story — while the draft readout is bandwidth-bound and already at roofline, so its only
-  available lever is reading fewer bytes.
+  verify readout is compute-bound and 35% efficient **on upstream** — r3 caveat: that
+  35.2% comes from the §5B no-crossrow sweep, and the base's crossrow kernels cover M=9,
+  so the scored figure is unknown and is very likely better (§5C.2) — while the draft
+  readout is at **M=1**, where crossrow does not apply, so its 100.4% is a scored-path
+  number: bandwidth-bound and already at roofline, leaving "read fewer bytes" as its only
+  lever. The asymmetry in what I can claim about these two rows is entirely due to which
+  side of the crossrow gate they sit on.
 
 ## 6e. Answers to feedback (10) and (11)
 
@@ -1486,7 +1727,7 @@ scratch/mlxenv/bin/python research/round_floor.py \
   --depth 8 --kv-len 1120 --measured-block-seconds 0.21775 \
   --sweep --out scratch/results/round_floor_d8.json
 
-# 5. the same pass one row lower — the cheap side of the dispatch cliff (§6c.4)
+# 5. the same pass one row lower (§6c.4 — r3: no dispatch cliff; this is just d=7)
 scratch/mlxenv/bin/python research/round_floor.py \
   --depth 7 --kv-len 1120 --measured-block-seconds 0.190336 \
   --out scratch/results/round_floor_d7.json
@@ -1839,6 +2080,12 @@ read once), `Qwen35MTP.swift:91` guards with an early fast path, and `Qwen35MTP.
 hoists the flag out of the layer loop — but "cheap" is not "free", and a promoted
 candidate should not carry a `FileHandle`/`NSLock` writer on the scored path.
 
+> **r3 refinement (advisor feedback 6).** That blanket "not for promotion" is the
+> safe default, not the useful answer. §9a splits the diff into three piles and
+> proposes exactly one of them — the trace **file sink** — for promotion into the
+> base as campaign tooling, with a source-level argument that its disabled cost is
+> zero. The sentence above remains correct about the branch *as a whole*.
+
 Scope and budget re-checked at HEAD against the **r2** `BASE_SHA=67bde70274c42aef089ac73cf00608d8037a815e`:
 
 ```text
@@ -1860,57 +2107,209 @@ confirmation that they are outside `editablePaths`.
 `research/round_floor.py` is correctly rejected by the scope validator, confirming it is
 never packaged.
 
+### 9a. Feedback (6): splitting the diff — one hunk I *do* propose for promotion
+
+> **r3, in response to advisor feedback (6).** §9 above says "not for promotion"
+> about the whole diff, which is the safe default but not the useful answer. The
+> advisor asked me to split it and argue the promotable piece on its own merits.
+> I propose exactly one hunk: **the trace file sink**. Everything else stays
+> not-for-promotion, and I say why below rather than leaving it implied.
+
+#### 9a.1 The three piles
+
+The branch's 187 insertions across two files are not one change; they are three,
+with very different promotion cases. The insertion counts below reconcile exactly
+with §9's per-file table: A + B = 120 in `Qwen36MTPBlockSession.swift`, C = 67 in
+`Qwen35MTP.swift`, and A's 4 deletions plus C's 3 are the branch's 7.
+
+| # | change | file | ins/del | proposed |
+|---|---|---|---:|---|
+| **A** | **trace file sink** (`traceSink`, `traceLock`, `traceWrite` body) | `Qwen36MTPBlockSession.swift` | **+30 / −4** | **promote as campaign tooling** |
+| B | sub-step timers, `mtp-sub:` line, `traceLastDraftCount`, `prefixRepairCount`/`fullRepairCount`, `fixedDepthOverride` | `Qwen36MTPBlockSession.swift` | +90 / 0 | keep on branch only |
+| C | `Qwen35MTPHostTrace` + the traced layer/module paths | `Qwen35MTP.swift` | +67 / −3 | keep on branch only |
+
+Pile A is the one that unblocked this experiment. Without it, `MLX_QWEN_MTP_TRACE=1`
+produces a perfectly correct trace that nobody can read (§1a): the `mtp-timed` verb
+builds worker options with `forwardsWorkerStderr: false`, and the drain discards the
+bytes. Any future student who reaches for the base's tracing switch under the
+benchmark wrapper will rediscover that dead end. Piles B and C are this
+assignment's questions rendered in code, and they should die with the assignment.
+
+#### 9a.2 The exact hunk I propose
+
+This is pile A verbatim, as it would apply to `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`
+immediately after the existing `traceRounds` declaration:
+
+```swift
+    /// The `mtp-timed` verb the benchmark wrapper drives builds its worker
+    /// options with `forwardsWorkerStderr: false`, so the drain reads and
+    /// DISCARDS everything the worker writes to stderr. A local trace run
+    /// therefore names an absolute sink with `MLX_QWEN_MTP_TRACE_FILE` and
+    /// runs the worker unsandboxed (`MLXFAST_NO_SANDBOX=1`, refused on
+    /// official runs) so this append is permitted.
+    private static let traceSink: FileHandle? = {
+        guard traceRounds,
+              let path = ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_FILE"],
+              !path.isEmpty
+        else { return nil }
+        // Append, never truncate: a local benchmark spawns one worker per leg
+        // and all of them share this sink.
+        if !FileManager.default.fileExists(atPath: path) {
+            FileManager.default.createFile(atPath: path, contents: nil)
+        }
+        guard let handle = FileHandle(forWritingAtPath: path) else { return nil }
+        handle.seekToEndOfFile()
+        return handle
+    }()
+
+    private static let traceLock = NSLock()
+    private static func traceWrite(_ line: String) {
+        let data = Data(line.utf8)
+        traceLock.lock()
+        defer { traceLock.unlock() }
+        if let sink = traceSink {
+            sink.write(data)
+        } else {
+            FileHandle.standardError.write(data)
+        }
+    }
+```
+
+It replaces the base's four-line `traceWrite` body (three comment lines plus the
+unconditional `FileHandle.standardError.write`). Nothing else in pile A touches
+another symbol, so it applies cleanly without piles B or C.
+
+#### 9a.3 Why it is zero cost when disabled
+
+Seven checks, each verified against source on this branch rather than asserted:
+
+1. **The gate is the base's own flag.** `traceRounds` is
+   `private static let ... == "1"` (`Qwen36MTPBlockSession.swift:472`). Pile A adds
+   no new gate and does not widen the existing one.
+2. **Every `traceWrite` call site is already inside that gate.** Grepping the file
+   gives exactly three callers: two `if Self.traceRounds { ... Self.traceWrite(...) }`
+   blocks (lines 1143 and 1172, the latter being pile B) and `traceRow`, whose first
+   statement is `guard traceRounds else { return }` (line 522). There is no path from
+   a ranked round into `traceWrite`.
+3. **Swift statics are lazy, so a disabled build never runs the closure.** `traceSink`
+   and `traceLock` are `static let`s, initialized on first access via `swift_once`.
+   Their only accessor is `traceWrite`. With `traceRounds == false` nothing calls
+   `traceWrite`, so the closure never runs: no `ProcessInfo` read for the second
+   variable, no `FileManager` stat, no `createFile`, no `FileHandle`, no file
+   descriptor, no `NSLock` allocation. The disabled cost is one `swift_once` token's
+   worth of BSS and zero instructions on the scored path.
+4. **Belt and braces inside the closure.** Even if some future caller forgot the
+   outer gate, the closure's own first condition is `guard traceRounds`, so it still
+   returns `nil` and `traceWrite` still falls through to the base's stderr write.
+   The degraded behaviour is *exactly* the base's behaviour, not a different one.
+5. **No allowlist change is needed.** `MLX_QWEN_MTP_TRACE_FILE` inherits the `"MLX_"`
+   prefix already in the worker's env allowlist
+   (`Sources/MLXFastTrustedHarness/QwenRuntimeWorker.swift:2643`, mirrored at
+   `Sources/MLXFastHarness/QwenRuntimeWorker.swift:2578`). Pile A does not edit the
+   allowlist, and the allowlist is trusted surface I must not edit anyway.
+6. **The ranked workflow never sets either variable, and could not use the sink if it
+   did.** `.github/workflows/qwen-mtp-ranked-benchmark.yml` sets neither
+   `MLX_QWEN_MTP_TRACE` nor `MLX_QWEN_MTP_TRACE_FILE`. And the sandbox denies
+   `file-write*`, so an official run that somehow had both set would fail to open the
+   handle and fall back to stderr. Lifting the sandbox is itself refused:
+   `enforce_official_sandbox()` (`benchmark.sh:1252-1259`) exits 1 when
+   `MLXFAST_OFFICIAL_BENCHMARK_RUN=1` and `MLXFAST_NO_SANDBOX=1` are both set.
+7. **It is phase-independent, so it is not a benchmark detector.** The flag changes
+   *where bytes go*, never what work is done, which drafts are proposed, or which
+   rows are evaluated. Both legs of a paired local run see identical code. Nothing in
+   the trace line is fed back into generation — that is the §8 fidelity rule, and
+   pile A does not weaken it.
+
+#### 9a.4 Why I am *not* proposing piles B and C
+
+Not from caution — from the campaign's own "one obvious training path" rule.
+
+- **Pile B** is the sub-step decomposition that answered *this* question. The
+  `mtp-sub:` line has 25 fields tuned to the draft-build hypothesis; a future
+  experiment on a different mechanism would want different fields and would be worse
+  off starting from mine. `prefixRepairCount`/`fullRepairCount` are the one part I
+  would flag as arguably reusable — they fix a real ambiguity in
+  `rollbackRoundCount` (§2, feedback 10) — but they are two counters behind a
+  30-field trace line, and I would rather the advisor promote them deliberately later
+  than smuggle them in behind pile A.
+- **Pile C** puts timing calls inside the head's per-layer path. Even gated, it
+  restructures `Qwen35MTPDecoderLayer.callAsFunction` into a `guard`-plus-duplicate
+  form so the untraced path stays a straight line. That duplication is exactly the
+  kind of thing that rots. It earned its keep for one experiment; it should not
+  become permanent furniture in a vendored model file.
+
+If the advisor wants only the *smallest* useful thing, pile A alone is a strictly
+better base for the next student than what exists today, and it is the only piece
+whose disabled cost I can argue down to zero.
+
+#### 9a.5 What promoting pile A would still not fix
+
+Honesty about the limits, so nobody over-reads this section:
+
+- It does **not** make the branch submittable. Piles B and C remain on the scored
+  path in this candidate, and §9's "must not be officially submitted as-is" stands
+  for the branch as it is.
+- It does **not** validate the trace numbers. Pile A only moves bytes; every timing
+  claim in this report rests on piles B and C, which I am *not* proposing.
+- I have **not** run a paired measurement of base-plus-pile-A versus base to
+  demonstrate the zero-cost claim empirically. The argument in §9a.3 is a source
+  argument, not a measurement. Given that a disabled build executes zero added
+  instructions, a paired run would be measuring noise — but the advisor should know
+  the claim's evidence is static analysis, not a stopwatch.
+
 ## 10. Suggested follow-ups (not implemented)
 
-0. **Widen the `qmv` weight-stream amortization to M ≤ 9** (§5B). Biggest measured prize
-   in the campaign so far: 201.14 ms of a 217.75 ms round runs at 33–35% of this host's
-   own roofline purely because `quantized_matmul` at M=3..12 re-streams a large share of
-   the weight bytes per row. Editable surface is the kernel bodies
-   (`kernels/quantized{,_nax}.{metal,h}`, `kernels/quantized_utils.h`) plus their
-   runtime-effective `mlx-generated/*.cpp` twins; the host dispatcher
-   `backend/metal/quantized.cpp` is **not** submittable, so the qmv/qmm selection is
-   fixed and the work must go inside `qmv`/`qmv_quad`. Needs a fidelity plan: this
-   touches reduction order and packing, so it requires exact-row numerical checks, not
-   just an argmax match. Also needs an M5 confirmation — at D=5120/O=17408
-   `get_qmv_batch_limit` returns **6** for `arch_gen ∈ {13,14}`, **12** for an Ultra
-   (`arch_size == 'd'`), and **8** otherwise, so the ranked M5 may sit on a different side
-   of the split than this `applegpu_g16s` M4 Pro.
+0. **Measure the base's `crossrow` quantized-matmul kernels at M = 2..9 — then decide
+   whether there is a prize at all** (§5B, §5C.2). *Rewritten in r3: this used to be
+   "widen the `qmv` weight-stream amortization" with a 2.50× prize attached. Both the
+   prize and the target were wrong.*
 
-0b. **Set `segmentedVerifyDepthCap` from the measured qmv batch limit instead of the
-   constant 8** (§6c.4). This is the cheapest concrete speedup the experiment found and it
-   is entirely inside the declared editable surface — two lines in
-   `Qwen36MTPBlockSession.swift` (`:607` and the width-cap selection at `:613-619`).
+   - **Why it is now a measurement, not an optimization.** Every multi-row efficiency
+     figure in this report comes from `mx.quantized_matmul`, which takes the upstream
+     kernel. The base ships a `crossrow` family that covers **exactly M = 2..9** and that
+     the Python binding never reaches. So "verify matmuls run at 33–35% of roofline" is a
+     statement about upstream, and the scored efficiency at M = 2..9 is simply **unknown**.
+     Until someone measures it, no prize can be sized and no kernel work can be justified.
+   - **Smallest decisive test.** Drive the crossrow path from Swift at the three scored
+     shapes (5120→17408, 17408→5120, 5120→248320), affine 4-bit g64, M = 1..9, and
+     tabulate achieved GB/s against the same roofline §5B used. Diff it against the §5B
+     upstream table — that table is now exactly the right control for this. Rebuilding
+     the §5A floor on the result also settles the open 12% / 6.3% discrepancy in §6c.3
+     and the reinterpreted scheduling gap in §5C.4.
+   - **Only then**, if a real gap remains: the editable surface is the kernel bodies
+     (`kernels/quantized{,_nax}.{metal,h}`, `kernels/quantized_utils.h`) plus their
+     runtime-effective `mlx-generated/*.cpp` twins. The host dispatcher
+     `backend/metal/quantized.cpp` is **not** submittable, so the qmv/qmm selection is
+     fixed. Any such work touches reduction order and packing and therefore needs
+     exact-row numerical checks, not just an argmax match.
+   - **Arch note, corrected.** At D=5120/O=17408 `get_qmv_batch_limit` returns **6** for
+     `arch_gen ∈ {13,14}`, **12** for an Ultra (`arch_size == 'd'`), and **10** otherwise
+     — *not* 8, which was the r1/r2 error. This M4 Pro and the ranked M5 both fall in the
+     "10" case unless M5 reports an Ultra or a 13/14 generation, so M ≤ 9 stays on `qmv`
+     on both and the crossrow gate applies on both. Confirm the M5 arch string anyway
+     before relying on it.
 
-   - **Mechanism.** MLX dispatches `qmv` while `M < vector_limit` and `qmm_splitk` at
-     `M >= vector_limit`; `M = depth + 1`. Capping depth at `vector_limit − 1` keeps every
-     verify projection on the cheap dispatch. On this host that is depth 7, not 8.
-   - **Measured prize here.** 23.79 ms/token at d=7 versus 24.49 ms/token at d=8 (−2.9%),
-     with the isolated MLP shape and the two component passes both agreeing (§5B, §6c.4).
-     At the score sensitivity of §7 (`d(score)/d(candidate s) ≈ −0.43`), a 2.9% cut on a
-     ~6.70 s candidate leg is ~0.19 s ≈ **+0.084 score** — roughly 20x the ceiling of the
-     Part B work this assignment scoped.
-   - **Do not hardcode 7.** Probe the limit at runtime and derive the cap. `mx.device_info()`
-     exposes `architecture`; the Swift side can read the same Metal architecture string,
-     or the cap can be calibrated once during the existing warmup by timing the model's own
-     gate/up shape across M and taking the last width before the jump. Calibration is
-     input-independent (it depends only on shapes and hardware), so it stays inside the
-     work-honesty rules.
-   - **Risk.** Lower depth means fewer tokens per round, so the win is a *net* claim, not an
-     acceptance-rate claim. It must be validated with a matched `--local-iterate` pair, and
-     the d=7 evidence here comes from N=4 adaptively chosen rounds versus N=9 at d=8 — not
-     matched on prompt difficulty. A forced-depth A/B (the `MLX_QWEN_MTP_FIXED_DEPTH`
-     override already exists in the instrumentation) settles it in one cheap run pair.
-   - **Interaction.** If follow-up 0 succeeds and flattens the cliff, 0b becomes obsolete —
-     they should not be composed blindly.
+0b. ~~**Set `segmentedVerifyDepthCap` from the measured qmv batch limit.**~~
+   **WITHDRAWN in r3.** It was premised on a dispatch cliff at M = 9 that does not exist:
+   the limit is 10, so `qmv` covers M ≤ 9 and the cap at depth 8 already sits on the cheap
+   side. There is nothing to move.
 
-0c. **Correct the stale design comment at `Qwen36MTPBlockSession.swift:588-590`.** It states
-   the host qmv batch limit is "10+ on this generation for these shapes", which is false on
-   `applegpu_g16s` (it is 8) and false on the 13/14 generations (6). Whatever is decided
-   about 0b, the comment should record the real rule and the fact that it is
-   architecture-dependent, so the next reader does not re-derive a cost model from it. Note
-   the *rest* of that comment block was verified correct in §6c.4: the 6..9-row chunking it
-   describes applies at the sdpa only, and segmenting the whole forward was already measured
-   and rejected for paying a second full weight pass.
+   What is left is the *unexplained* round-level observation (23.79 ms/token at d=7 vs
+   24.49 ms/token at d=8, §6c.4) with no mechanism behind it and three serious confounds
+   (N=4 vs N=9, adaptive depth selection, differing acceptance). If anyone wants to settle
+   it, the cheap test is a **matched fixed-depth A/B** using the `MLX_QWEN_MTP_FIXED_DEPTH`
+   override — one variable, one run pair. I am not forecasting a win from it, and the
+   **+0.084 score** figure I attached to 0b in r1/r2 is withdrawn along with the rest.
+
+0c. ~~**Correct the stale design comment.**~~ **WITHDRAWN in r3 — the comment is correct.**
+   `Qwen36MTPBlockSession.swift` states the host qmv batch limit is "10+ on this generation
+   for these shapes". It is 10 on `applegpu_g16s` and 12 on Ultra parts, so "10+" is
+   accurate for the generations it claims to cover, and the accompanying claim that
+   projections at M ∈ 6..9 ride the QMV dispatch is exactly right. My r1/r2 accusation
+   came from a wrong constant in my own tooling. **No change to the comment is needed.**
+   (The rest of that block was independently verified in §6c.4 and also holds: the
+   6..9-row chunking applies at the sdpa only, and segmenting the whole forward was
+   already measured and rejected for paying a second full weight pass.)
 
 0d. **Ship a *compact* low-bit `draft_lm_head` in `mtp-head/`** (§6d.4) — the dedicated
    experiment feedback (8) asked me to size. On the ranked build the compact draft readout
