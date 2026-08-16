@@ -16,7 +16,9 @@ for each hidden prompt p:
 published score = median(raw_1 ... raw_8)
 ```
 
-The ranked run measures all eight hidden prompts. With eight values, the median is the mean of the two middle values after sorting. There is no no-op normalization. Serial decoding is `1.0`, the minimum published score is `0.90`, and the published median has an operator-set plausibility gate at `3.0`. That gate is an administrative, fail-closed sanity check—not a physical or theoretical limit on attainable speedup. A median above it is rejected as a measurement fault or benchmark escape rather than clamped to `3.0`; a legitimate result above the gate would require the operator to revise the policy before it could publish.
+The ranked run measures all eight hidden prompts. With eight values, the median is the mean of the two middle values after sorting. There is no no-op normalization. Serial decoding is `1.0`, the minimum published score is `0.90`, and the published median has an operator-set plausibility gate at `3.0`. That gate is an administrative, fail-closed sanity check—not a physical or theoretical limit on attainable speedup. A median above it is rejected as a measurement fault or benchmark escape rather than clamped to `3.0`.
+
+The `3.0` gate is not an optimization target, a reason to stop, or a reason to hold a candidate. Advance and submit the strongest legitimate candidate that passes correctness and the normal pre-submit checks even when local evidence predicts a score above `3.0`. Never weaken, delay, split, or tune a candidate merely to keep it below the ceiling. If Yukon rejects a correct candidate solely because of the ceiling, preserve the receipt and evidence, keep that candidate as the scientific frontier, and continue with distinct justified work. Do not wait for a policy revision before submitting the result that demonstrates one is needed.
 
 Each leg starts with a 512-token seed and then generates 512 tokens that the trusted parent counts. Both seed processing and decoding are included in the same timed leg, even though prefill has no separate score.
 
@@ -25,6 +27,8 @@ For each prompt, the pinned serial build and candidate run as a thermally gated 
 On each round, the candidate may choose any draft count from zero up to the limit offered by the parent, with an absolute maximum of eight. Choosing zero is a useful serial control, but the goal is a real score above `1.0`: any drafting and state-management work must repay its own cost.
 
 The organizer's original calibrated depth-2 tree scored about `0.994`. That is a historical starting point, not the current campaign frontier. A research round or one promoted result is a checkpoint, not a reason to stop. Continue until the operator stops the campaign or no safe, distinct, runnable experiment remains.
+
+The advisor makes ordinary campaign decisions autonomously. Do not ask a human to choose experiments, approve a crossing submission, select a response to the plausibility ceiling, or authorize a safe action already covered by this program. When external policy prevents publication, record the blocker and keep the campaign moving without waiting for human direction.
 
 ## Sources Of Truth
 
@@ -128,6 +132,8 @@ The official runner is the M5 host labeled `m5-qwen38-27b-mtp`. Other Apple GPUs
 Run one model-holding process at a time. The wrapper locks the run, checks for orphaned workers, and cools the GPU before each resident measurement. A wait at the 40C gate is normal. Do not bypass the lock or cooling gate, and inspect reported PIDs before killing a process. Compare base and candidate with the same host, power state, temperature, toolchain, memory profile, token window, and proposal head.
 
 The local modes use one public fixture and default to 64 decode tokens for `--local-iterate` and 128 for `--local-submit`. They generate their own reference rows from the candidate, so matching those rows locally does not prove a match against the organizer's hidden reference and cannot reproduce the hidden eight-prompt result. Both local legs also use the same candidate build. Schedule and head changes therefore show up directly in the local serial-to-MTP ratio, while a general target or kernel improvement may speed both legs and cancel in that ratio. Always compare absolute candidate seconds per token with a fresh, unchanged `BASE_SHA` run as well as comparing the ratio.
+
+The parent owns the configured decode length and continues the serial trajectory for the full window even when EOS appears inside it. An editable session that stops at EOS and later throws `notBegun` is a solver defect, not permission to shorten the ranked contract. A shorter exact run may be used as a clearly labelled directional screen, but a 256-token result is not a ranked-equivalent headline. Fix and validate fixed-window continuation against the public golden, including exact post-EOS tokens and row-ledger closure, then measure credible candidates against a fresh same-host base over 512 decode tokens. Do not change the trusted parent or fixture to hide the failure, and do not wait for human direction.
 
 When they explain a result, also inspect draft depth, accepted and rejected tokens, round count, rollback behavior, and block latency. Do not compare with an old result from another commit, machine, temperature, token window, memory profile, or head.
 
