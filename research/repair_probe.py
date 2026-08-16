@@ -93,12 +93,27 @@ def main():
 
     by_depth = defaultdict(lambda: {"full": [], "prefix": [], "reforward": []})
     legs = 0
+    # confusion between the commit_us classifier and the literal counters, for
+    # legs produced by a binary that emits prefix_repair=/full_repair=
+    xcheck = {"legs": 0, "rounds": 0, "agree_prefix": 0, "agree_full": 0,
+              "classifier_prefix_literal_full": 0,
+              "classifier_full_literal_prefix": 0, "literal_neither": 0}
     for arm in arms:
         for tf in sorted((args.out_dir / arm).glob("trace.txt.*")):
             rows = parse_trace(tf)
             if not rows:
                 continue
             legs += 1
+            # counters are cumulative per leg; recover per-round increments
+            literal = "prefix_repair" in rows[0]
+            if literal:
+                xcheck["legs"] += 1
+                prev_p = prev_f = 0
+                for row in rows:
+                    p, f = row["prefix_repair"], row["full_repair"]
+                    row["d_prefix_repair"] = p - prev_p
+                    row["d_full_repair"] = f - prev_f
+                    prev_p, prev_f = p, f
             for row in rows[args.warmup:]:
                 d = row["d"]
                 if d == 0:
@@ -106,10 +121,24 @@ def main():
                 row["arm"] = arm
                 if row["acc"] == d:
                     by_depth[d]["full"].append(row)
-                elif row.get("commit_us", 0) > args.full_repair_us:
+                    continue
+                if row.get("commit_us", 0) > args.full_repair_us:
                     by_depth[d]["reforward"].append(row)
+                    said_full = True
                 else:
                     by_depth[d]["prefix"].append(row)
+                    said_full = False
+                if not literal:
+                    continue
+                xcheck["rounds"] += 1
+                lp, lf = row["d_prefix_repair"], row["d_full_repair"]
+                if lf:
+                    key = "agree_full" if said_full else "classifier_prefix_literal_full"
+                elif lp:
+                    key = "classifier_full_literal_prefix" if said_full else "agree_prefix"
+                else:
+                    key = "literal_neither"
+                xcheck[key] += 1
 
     report = {"legs": legs, "arms": arms, "warmup": args.warmup,
               "full_repair_us_threshold": args.full_repair_us,
@@ -184,6 +213,23 @@ def main():
         print(f"pooled reject commit_us: n={s['n']} mean={s['mean']:.1f} "
               f"median={s['median']:.1f} max={s['max']} "
               f"(full re-forward floor ~{args.serial_round_us:.0f})")
+
+    report["counter_crosscheck"] = xcheck
+    if xcheck["rounds"]:
+        agree = xcheck["agree_prefix"] + xcheck["agree_full"]
+        print(f"\ncounter cross-check ({xcheck['legs']} legs from a binary that "
+              f"emits the literal counters, {xcheck['rounds']} reject rounds):")
+        print(f"  classifier prefix & literal prefix : {xcheck['agree_prefix']}")
+        print(f"  classifier full   & literal full   : {xcheck['agree_full']}")
+        print(f"  classifier prefix & literal full   : "
+              f"{xcheck['classifier_prefix_literal_full']}")
+        print(f"  classifier full   & literal prefix : "
+              f"{xcheck['classifier_full_literal_prefix']}")
+        print(f"  literal incremented neither        : {xcheck['literal_neither']}")
+        print(f"  agreement: {agree}/{xcheck['rounds']} = "
+              f"{agree / xcheck['rounds']:.4f}")
+    else:
+        print("\ncounter cross-check: no legs carried the literal counters")
 
     if args.json:
         args.json.write_text(json.dumps(report, indent=2, sort_keys=True))
