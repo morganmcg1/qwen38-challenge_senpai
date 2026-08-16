@@ -1,0 +1,38 @@
+{
+  "trace": "research/trace-runJ-gate2-512.log",
+  "seed_tokens": 512,
+  "boundary_key_len": 1022,
+  "final_position": 1024,
+  "per_width": {
+    "3": {
+      "rounds": 1,
+      "max_key_len": 1024,
+      "at_boundary": [
+        {
+          "round": 82,
+          "key_len": 1024
+        }
+      ]
+    },
+    "5": {
+      "rounds": 27,
+      "max_key_len": 903,
+      "at_boundary": []
+    },
+    "6": {
+      "rounds": 3,
+      "max_key_len": 909,
+      "at_boundary": []
+    },
+    "7": {
+      "rounds": 3,
+      "max_key_len": 555,
+      "at_boundary": []
+    },
+    "8": {
+      "rounds": 48,
+      "max_key_len": 1021,
+      "at_boundary": []
+    }
+  }
+}

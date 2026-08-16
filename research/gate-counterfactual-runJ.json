@@ -1,0 +1,171 @@
+{
+  "trace": "research/trace-runJ-gate2-512.log",
+  "round_count": 82,
+  "depth_histogram": {
+    "2": 1,
+    "4": 27,
+    "5": 3,
+    "6": 3,
+    "7": 48
+  },
+  "streak_in_histogram": {
+    "0": 18,
+    "1": 9,
+    "2": 7,
+    "3": 4,
+    "4": 4,
+    "5": 4,
+    "6": 4,
+    "7": 4,
+    "8": 4,
+    "9": 4,
+    "10": 3,
+    "11": 3,
+    "12": 3,
+    "13": 3,
+    "14": 2,
+    "15": 2,
+    "16": 2,
+    "17": 2
+  },
+  "gate_counterfactual": {
+    "1": {
+      "rounds_opened": 64,
+      "share_opened": 0.7805,
+      "newly_opened_vs_observed": 10,
+      "newly_opened_rounds": [
+        2,
+        20,
+        30,
+        47,
+        50,
+        55,
+        58,
+        64,
+        66,
+        82
+      ]
+    },
+    "2": {
+      "rounds_opened": 55,
+      "share_opened": 0.6707,
+      "newly_opened_vs_observed": 1,
+      "newly_opened_rounds": [
+        82
+      ]
+    },
+    "3": {
+      "rounds_opened": 48,
+      "share_opened": 0.5854,
+      "newly_opened_vs_observed": 1,
+      "newly_opened_rounds": [
+        82
+      ]
+    },
+    "4": {
+      "rounds_opened": 44,
+      "share_opened": 0.5366,
+      "newly_opened_vs_observed": 1,
+      "newly_opened_rounds": [
+        82
+      ]
+    }
+  },
+  "ema_separation": {
+    "ema[0]": {
+      "full_accept_rounds": 65,
+      "full_accept_mean": 0.9525,
+      "full_accept_min": 0.6469,
+      "reject_rounds": 17,
+      "reject_mean": 0.8889,
+      "reject_max": 0.9999,
+      "separated": false
+    },
+    "ema[1]": {
+      "full_accept_rounds": 65,
+      "full_accept_mean": 0.9653,
+      "full_accept_min": 0.8152,
+      "reject_rounds": 17,
+      "reject_mean": 0.9262,
+      "reject_max": 0.9998,
+      "separated": false
+    },
+    "ema[2]": {
+      "full_accept_rounds": 65,
+      "full_accept_mean": 0.9431,
+      "full_accept_min": 0.6495,
+      "reject_rounds": 17,
+      "reject_mean": 0.9764,
+      "reject_max": 1.0,
+      "separated": false
+    },
+    "ema[3]": {
+      "full_accept_rounds": 65,
+      "full_accept_mean": 0.9278,
+      "full_accept_min": 0.7205,
+      "reject_rounds": 17,
+      "reject_mean": 0.902,
+      "reject_max": 0.9972,
+      "separated": false
+    },
+    "ema[4]": {
+      "full_accept_rounds": 65,
+      "full_accept_mean": 0.9259,
+      "full_accept_min": 0.746,
+      "reject_rounds": 17,
+      "reject_mean": 0.8619,
+      "reject_max": 0.9952,
+      "separated": false
+    },
+    "ema[5]": {
+      "full_accept_rounds": 65,
+      "full_accept_mean": 0.9447,
+      "full_accept_min": 0.7683,
+      "reject_rounds": 17,
+      "reject_mean": 0.962,
+      "reject_max": 0.9988,
+      "separated": false
+    },
+    "ema[6]": {
+      "full_accept_rounds": 65,
+      "full_accept_mean": 0.9555,
+      "full_accept_min": 0.753,
+      "reject_rounds": 17,
+      "reject_mean": 0.9958,
+      "reject_max": 0.9982,
+      "separated": false
+    },
+    "ema[7]": {
+      "full_accept_rounds": 65,
+      "full_accept_mean": 0.9034,
+      "full_accept_min": 0.7379,
+      "reject_rounds": 17,
+      "reject_mean": 0.9448,
+      "reject_max": 0.9478,
+      "separated": false
+    }
+  },
+  "throughput": {
+    "shallow": {
+      "rounds": 28,
+      "emitted_tokens": 110,
+      "mean_round_us": 127473.9,
+      "us_per_token": 32447.9,
+      "accept_rate": 0.7455
+    },
+    "deep": {
+      "rounds": 54,
+      "emitted_tokens": 402,
+      "mean_round_us": 186755.0,
+      "us_per_token": 25086.5,
+      "accept_rate": 0.9431
+    },
+    "all": {
+      "rounds": 82,
+      "emitted_tokens": 512,
+      "mean_round_us": 166512.6,
+      "us_per_token": 26668.0,
+      "accept_rate": 0.8977
+    }
+  }
+}
