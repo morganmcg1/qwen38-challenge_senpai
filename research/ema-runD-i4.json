@@ -1,0 +1,179 @@
+{
+  "ema_at_index_when_streak_closed": {
+    "max": 0.9867,
+    "mean": 0.8971833333333333,
+    "min": 0.784,
+    "n": 6,
+    "p10": 0.784,
+    "p50": 0.9867,
+    "p90": 0.9867
+  },
+  "ema_at_index_when_streak_open": {
+    "max": 0.9986,
+    "mean": 0.9664933333333334,
+    "min": 0.8481,
+    "n": 30,
+    "p10": 0.9067,
+    "p50": 0.9867,
+    "p90": 0.9981
+  },
+  "ema_in_by_index": {
+    "0": {
+      "max": 0.9995,
+      "mean": 0.9723083333333334,
+      "min": 0.85,
+      "n": 36,
+      "p10": 0.9079,
+      "p50": 0.992,
+      "p90": 0.9992
+    },
+    "1": {
+      "max": 0.9994,
+      "mean": 0.9691500000000001,
+      "min": 0.833,
+      "n": 36,
+      "p10": 0.8974,
+      "p50": 0.991,
+      "p90": 0.9991
+    },
+    "2": {
+      "max": 0.9994,
+      "mean": 0.9660861111111111,
+      "min": 0.8163,
+      "n": 36,
+      "p10": 0.8872,
+      "p50": 0.9901,
+      "p90": 0.999
+    },
+    "3": {
+      "max": 0.9993,
+      "mean": 0.9630749999999999,
+      "min": 0.8,
+      "n": 36,
+      "p10": 0.8772,
+      "p50": 0.9893,
+      "p90": 0.9989
+    },
+    "4": {
+      "max": 0.9986,
+      "mean": 0.9549416666666666,
+      "min": 0.784,
+      "n": 36,
+      "p10": 0.8481,
+      "p50": 0.9867,
+      "p90": 0.9978
+    },
+    "5": {
+      "max": 0.9977,
+      "mean": 0.9335388888888888,
+      "min": 0.7683,
+      "n": 36,
+      "p10": 0.7683,
+      "p50": 0.9781,
+      "p90": 0.9963
+    },
+    "6": {
+      "max": 0.9811,
+      "mean": 0.8756611111111111,
+      "min": 0.753,
+      "n": 36,
+      "p10": 0.753,
+      "p50": 0.895,
+      "p90": 0.9693
+    },
+    "7": {
+      "max": 0.945,
+      "mean": 0.8589305555555556,
+      "min": 0.7379,
+      "n": 36,
+      "p10": 0.7379,
+      "p50": 0.9009,
+      "p90": 0.9418
+    }
+  },
+  "ema_index_used": 4,
+  "ema_threshold_separation": {
+    "0.80": {
+      "disjunction_open_rate": 0.9722222222222222,
+      "ema_alone_open_rate": 0.9722222222222222,
+      "rounds_ema_opens_that_streak_closes": 5,
+      "rounds_streak_opens_that_ema_closes": 0
+    },
+    "0.85": {
+      "disjunction_open_rate": 0.9166666666666666,
+      "ema_alone_open_rate": 0.8888888888888888,
+      "rounds_ema_opens_that_streak_closes": 3,
+      "rounds_streak_opens_that_ema_closes": 1
+    },
+    "0.90": {
+      "disjunction_open_rate": 0.9166666666666666,
+      "ema_alone_open_rate": 0.8333333333333334,
+      "rounds_ema_opens_that_streak_closes": 3,
+      "rounds_streak_opens_that_ema_closes": 3
+    },
+    "0.92": {
+      "disjunction_open_rate": 0.9166666666666666,
+      "ema_alone_open_rate": 0.8055555555555556,
+      "rounds_ema_opens_that_streak_closes": 3,
+      "rounds_streak_opens_that_ema_closes": 4
+    },
+    "0.95": {
+      "disjunction_open_rate": 0.9166666666666666,
+      "ema_alone_open_rate": 0.7222222222222222,
+      "rounds_ema_opens_that_streak_closes": 3,
+      "rounds_streak_opens_that_ema_closes": 7
+    },
+    "0.97": {
+      "disjunction_open_rate": 0.9166666666666666,
+      "ema_alone_open_rate": 0.6388888888888888,
+      "rounds_ema_opens_that_streak_closes": 3,
+      "rounds_streak_opens_that_ema_closes": 10
+    },
+    "0.98": {
+      "disjunction_open_rate": 0.9166666666666666,
+      "ema_alone_open_rate": 0.5555555555555556,
+      "rounds_ema_opens_that_streak_closes": 3,
+      "rounds_streak_opens_that_ema_closes": 13
+    },
+    "0.99": {
+      "disjunction_open_rate": 0.8333333333333334,
+      "ema_alone_open_rate": 0.3611111111111111,
+      "rounds_ema_opens_that_streak_closes": 0,
+      "rounds_streak_opens_that_ema_closes": 17
+    }
+  },
+  "label": "runD",
+  "rounds": 36,
+  "streak_gate": 3,
+  "streak_gate_open_rate": 0.8333333333333334,
+  "streak_in": {
+    "max": 17.0,
+    "mean": 8.5,
+    "min": 0.0,
+    "n": 36,
+    "p10": 1.0,
+    "p50": 9.0,
+    "p90": 16.0
+  },
+  "streak_in_histogram": {
+    "0": 2,
+    "1": 2,
+    "2": 2,
+    "3": 2,
+    "4": 2,
+    "5": 2,
+    "6": 2,
+    "7": 2,
+    "8": 2,
+    "9": 2,
+    "10": 2,
+    "11": 2,
+    "12": 2,
+    "13": 2,
+    "14": 2,
+    "15": 2,
+    "16": 2,
+    "17": 2
+  },
+  "streak_open_rate_reference": 0.8333333333333334
+}

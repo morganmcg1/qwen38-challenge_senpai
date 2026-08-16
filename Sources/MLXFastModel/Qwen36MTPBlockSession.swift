@@ -586,8 +586,8 @@ public final class Qwen36MTPBlockSession {
     /// drop the next few rounds to the shallow cap. Raising this needs a
     /// verify path that amortizes the extra rows -- padding the batch past
     /// the qmv limit into qmm_t_splitk, say.
-    private static let segmentedVerifyDepthCap = 6
-    private static let segmentedStreakGate = 3
+    private static let segmentedVerifyDepthCap = 7
+    private static let segmentedStreakGate = 1
 
     /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
