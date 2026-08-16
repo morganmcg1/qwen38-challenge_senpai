@@ -1061,149 +1061,8 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
   }
 }
 
-// Five-input form of qmv_fast_crossrow_affine4_g64_wide. Metal's vec<T, N>
-// only exists for N in {2, 3, 4}, so inputs 0-3 keep the vec form verbatim and
-// input 4 rides along in scalar registers. The nibble unpack is hoisted out of
-// both so all five inputs amortize one mask and one convert per (r, i); a form
-// that unpacks per input is ALU-bound and loses more than the saved weight
-// stream. Every output element still accumulates over i and over k in the same
-// order, and load_vector, the qdot expression and simd_sum are unchanged.
-template <typename T>
-METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide5(
-    const device uint32_t* w,
-    const device T* scales,
-    const device T* biases,
-    const device T* x,
-    device T* y,
-    const int in_vec_size,
-    const int out_vec_size,
-    int first_m,
-    int out_row,
-    uint simd_lid) {
-  typedef vec<float, 4> VF;
-  constexpr int rows_per_simd = 4;
-  constexpr int values_per_thread = 16;
-  constexpr int block_size = values_per_thread * SIMD_SIZE;
-  constexpr int bytes_per_lane = 8;
-  const int in_vec_size_w = in_vec_size / 2;
-  const int in_vec_size_g = in_vec_size / 64;
-
-  VF acc[rows_per_simd];
-  thread float acc_tail[rows_per_simd];
-  for (int r = 0; r < rows_per_simd; r++) {
-    acc[r] = VF(0.0f);
-    acc_tail[r] = 0.0f;
-  }
-
-  for (int k = 0; k < in_vec_size; k += block_size) {
-    thread uint16_t packed[rows_per_simd][4];
-    thread float scale_local[rows_per_simd];
-    thread float bias_local[rows_per_simd];
-    for (int r = 0; r < rows_per_simd; r++) {
-      const int row = out_row + r;
-      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
-          reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
-          k / 2 + simd_lid * bytes_per_lane);
-      for (int i = 0; i < 4; i++) {
-        packed[r][i] = ws[i];
-      }
-      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
-      scale_local[r] = scales[group_index];
-      bias_local[r] = biases[group_index];
-    }
-
-    VF sums = VF(0.0f);
-    float sum_tail = 0.0f;
-    VF partial[rows_per_simd];
-    thread float partial_tail[rows_per_simd];
-    for (int r = 0; r < rows_per_simd; r++) {
-      partial[r] = VF(0.0f);
-      partial_tail[r] = 0.0f;
-    }
-    for (int i = 0; i < 4; i++) {
-      VF a0, a1, a2, a3;
-      for (int m = 0; m < 4; m++) {
-        const device T* xm = x + (first_m + m) * in_vec_size + k +
-            simd_lid * values_per_thread + 4 * i;
-        thread float xc[4];
-        sums[m] += load_vector<T, float, 4, 4>(xm, xc);
-        a0[m] = xc[0];
-        a1[m] = xc[1];
-        a2[m] = xc[2];
-        a3[m] = xc[3];
-      }
-      thread float b[4];
-      {
-        const device T* xm = x + (first_m + 4) * in_vec_size + k +
-            simd_lid * values_per_thread + 4 * i;
-        sum_tail += load_vector<T, float, 4, 4>(xm, b);
-      }
-      // The nibble masks are hoisted so the fifth input reuses the unpack work
-      // of the first four; recomputing them per input is what makes a fully
-      // scalar five-wide form ALU-bound.
-      for (int r = 0; r < rows_per_simd; r++) {
-        const int q0 = packed[r][i] & 0x000f;
-        const int q1 = packed[r][i] & 0x00f0;
-        const int q2 = packed[r][i] & 0x0f00;
-        const int q3 = packed[r][i] & 0xf000;
-        partial[r] += (a0 * q0 + a1 * q1 + a2 * q2 + a3 * q3);
-        partial_tail[r] +=
-            (b[0] * q0 + b[1] * q1 + b[2] * q2 + b[3] * q3);
-      }
-    }
-    for (int r = 0; r < rows_per_simd; r++) {
-      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
-      acc_tail[r] +=
-          scale_local[r] * partial_tail[r] + sum_tail * bias_local[r];
-    }
-  }
-
-  for (int r = 0; r < rows_per_simd; r++) {
-    for (int m = 0; m < 4; m++) {
-      const float reduced = simd_sum(acc[r][m]);
-      if (simd_lid == 0) {
-        y[(first_m + m) * out_vec_size + out_row + r] =
-            static_cast<T>(reduced);
-      }
-    }
-    const float reduced_tail = simd_sum(acc_tail[r]);
-    if (simd_lid == 0) {
-      y[(first_m + 4) * out_vec_size + out_row + r] =
-          static_cast<T>(reduced_tail);
-    }
-  }
-}
-
-// NA = 5 needs the scalar accumulator form; NA in [2, 4] keeps the promoted
-// vec form byte-for-byte, so every width whose stream count is unchanged runs
-// exactly the same code as before.
-template <typename T, int NA>
-METAL_FUNC void qmv_fast_crossrow_affine4_g64_apply(
-    const device uint32_t* w,
-    const device T* scales,
-    const device T* biases,
-    const device T* x,
-    device T* y,
-    const int in_vec_size,
-    const int out_vec_size,
-    int first_m,
-    int out_row,
-    uint simd_lid) {
-  static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");
-  if (NA == 5) {
-    qmv_fast_crossrow_affine4_g64_wide5<T>(
-        w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
-        simd_lid);
-  } else {
-    qmv_fast_crossrow_affine4_g64_wide<T, (NA <= 4 ? NA : 4)>(
-        w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
-        simd_lid);
-  }
-}
-
-// IPG = ceil(M / ceil(M / NA_max)): the fewest weight streams reachable at the
-// widest available NA, with the remainder spread evenly so no group runs a
-// one-row tail. NA_max is 5.
+// IPG = ceil(M / ceil(M / 4)): the fewest weight streams reachable at NA <= 4,
+// with the remainder spread evenly so no group runs a one-row tail.
 template <typename T, int M, int IPG>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
     const device uint32_t* w,
@@ -1225,11 +1084,11 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
   }
   const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
   if (TAIL == 0 || M - first_m >= IPG) {
-    qmv_fast_crossrow_affine4_g64_apply<T, IPG>(
+    qmv_fast_crossrow_affine4_g64_wide<T, IPG>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         first_m, out_row, simd_lid);
   } else {
-    qmv_fast_crossrow_affine4_g64_apply<T, (TAIL >= 2 ? TAIL : 2)>(
+    qmv_fast_crossrow_affine4_g64_wide<T, (TAIL >= 2 ? TAIL : 2)>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         first_m, out_row, simd_lid);
   }
@@ -1977,7 +1836,7 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 5:
-          qmv_fast_crossrow_affine4_g64_m<T, 5, 5>(
+          qmv_fast_crossrow_affine4_g64_m<T, 5, 3>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -1997,7 +1856,7 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64_m<T, 9, 5>(
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 3>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
