@@ -1,0 +1,48 @@
+{
+  "trace": "research/trace-runK-gate2-cap8-512.log",
+  "seed_tokens": 512,
+  "boundary_key_len": 1022,
+  "final_position": 1024,
+  "per_width": {
+    "2": {
+      "rounds": 1,
+      "max_key_len": 1024,
+      "at_boundary": [
+        {
+          "round": 79,
+          "key_len": 1024
+        }
+      ]
+    },
+    "5": {
+      "rounds": 29,
+      "max_key_len": 903,
+      "at_boundary": []
+    },
+    "6": {
+      "rounds": 3,
+      "max_key_len": 909,
+      "at_boundary": []
+    },
+    "7": {
+      "rounds": 6,
+      "max_key_len": 923,
+      "at_boundary": []
+    },
+    "8": {
+      "rounds": 4,
+      "max_key_len": 587,
+      "at_boundary": []
+    },
+    "9": {
+      "rounds": 36,
+      "max_key_len": 1022,
+      "at_boundary": [
+        {
+          "round": 78,
+          "key_len": 1022
+        }
+      ]
+    }
+  }
+}

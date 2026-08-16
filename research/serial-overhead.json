@@ -1,0 +1,74 @@
+[
+  {
+    "run": "I",
+    "phase": "03-mtp-timed.json",
+    "serial_control": true,
+    "depth": 0,
+    "tokens": 512,
+    "rounds": 512,
+    "decode_s": 37.6484739780426,
+    "blocks_s": 33.63421285152435,
+    "gap_s": 4.0142611265182495,
+    "s_per_token": 0.07353217573836446
+  },
+  {
+    "run": "I",
+    "phase": "04-mtp-timed.json",
+    "serial_control": false,
+    "depth": 8,
+    "tokens": 512,
+    "rounds": 82,
+    "decode_s": 17.973176956176758,
+    "blocks_s": 13.961264967918396,
+    "gap_s": 4.011911988258362,
+    "s_per_token": 0.03510386124253273
+  },
+  {
+    "run": "J",
+    "phase": "03-mtp-timed.json",
+    "serial_control": true,
+    "depth": 0,
+    "tokens": 512,
+    "rounds": 512,
+    "decode_s": 37.552079916000366,
+    "blocks_s": 33.52303171157837,
+    "gap_s": 4.029048204421997,
+    "s_per_token": 0.07334390608593822
+  },
+  {
+    "run": "J",
+    "phase": "04-mtp-timed.json",
+    "serial_control": false,
+    "depth": 8,
+    "tokens": 512,
+    "rounds": 82,
+    "decode_s": 17.67669403553009,
+    "blocks_s": 13.66345477104187,
+    "gap_s": 4.01323926448822,
+    "s_per_token": 0.03452479303814471
+  },
+  {
+    "run": "K",
+    "phase": "03-mtp-timed.json",
+    "serial_control": true,
+    "depth": 0,
+    "tokens": 512,
+    "rounds": 512,
+    "decode_s": 37.69067704677582,
+    "blocks_s": 33.673667550086975,
+    "gap_s": 4.017009496688843,
+    "s_per_token": 0.07361460360698402
+  },
+  {
+    "run": "K",
+    "phase": "04-mtp-timed.json",
+    "serial_control": false,
+    "depth": 8,
+    "tokens": 512,
+    "rounds": 79,
+    "decode_s": 17.93120002746582,
+    "blocks_s": 13.9186692237854,
+    "gap_s": 4.01253080368042,
+    "s_per_token": 0.03502187505364418
+  }
+]
