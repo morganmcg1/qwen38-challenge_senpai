@@ -7,7 +7,11 @@
 # A failing arm does not abort the batch: a partial sweep still fits a curve.
 #
 # usage: research/run-arms.sh --tokens N --head-dir DIR ARM [ARM ...]
-# where ARM is a depth 0..8 (forced) or `NAME=adaptive` (schedule decides).
+# where ARM is a depth 0..8 (forced), `NAME=adaptive` (schedule decides), or
+# `NAME=adaptive@V` to substitute the cost curve -- V is either eight
+# comma-separated ratios or one scalar repeated eight times. A scalar makes
+# the schedule identical to the pre-change greedy policy, so a baseline arm
+# and a candidate arm can share one binary and one thermal window.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -24,8 +28,14 @@ done
 rc=0
 for spec in "$@"; do
   echo "=== run-arms.sh: ${spec} (tokens ${tokens}) at $(date -u +%H:%M:%SZ) ==="
-  if [[ "${spec}" == *=adaptive ]]; then
-    args=(research/run-arm.sh "${spec%=adaptive}" --trace --tokens "${tokens}")
+  if [[ "${spec}" == *=adaptive* ]]; then
+    name="${spec%%=adaptive*}"
+    hvec="${spec#*=adaptive}"; hvec="${hvec#@}"
+    args=(research/run-arm.sh "${name}" --trace --tokens "${tokens}")
+    if [[ -n "${hvec}" ]]; then
+      [[ "${hvec}" == *,* ]] || hvec="${hvec},${hvec},${hvec},${hvec},${hvec},${hvec},${hvec},${hvec}"
+      args+=(--h-vector "${hvec}")
+    fi
   else
     args=(research/run-arm.sh "d${spec}" --force-depth "${spec}" --trace --tokens "${tokens}")
   fi

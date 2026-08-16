@@ -112,9 +112,12 @@ def main():
     rows = []
     for cap in args.caps:
         print(f"cap = {cap}   (cost of every row priced by the MEASURED curve)")
-        print(f"{'profile':<14} {'d*old':>5} {'d*new':>5} {'d*opt':>5} "
-              f"{'T old':>6} {'T new':>6} {'c/tok old':>10} {'c/tok new':>10} "
-              f"{'c/tok opt':>10} {'new vs old':>10} {'opt vs old':>10}")
+        print("  old  = shipped: greedy walk + scalar h")
+        print("  grd  = greedy walk + measured vector (constant change only)")
+        print("  CAND = argmin + measured vector (the shipped candidate)")
+        print(f"{'profile':<14} {'d*old':>5} {'d*grd':>5} {'dCAND':>5} "
+              f"{'T old':>6} {'T grd':>6} {'c/tok old':>10} {'c/tok grd':>10} "
+              f"{'c/tokCAND':>10} {'grd vs old':>10} {'CANDvsold':>10}")
         for name, accept in PROFILES.items():
             d_old, _ = choose_depth(accept, cap, h_scalar)
             d_new, _ = choose_depth(accept, cap, h_meas)

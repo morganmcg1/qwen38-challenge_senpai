@@ -569,9 +569,30 @@ public final class Qwen36MTPBlockSession {
     /// Re-fit from forced-depth arms after every head-variant change; each
     /// entry is a COMBINED per-draft marginal (one head step plus the
     /// verify-width increment), which a depth sweep cannot separate.
-    private static let headStepCostRatioByDepth: [Double] = [
+    private static let measuredHeadStepCostRatioByDepth: [Double] = [
         0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909,
     ]
+
+    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
+    /// submission. Substitutes the curve so a baseline arm and a candidate
+    /// arm run from ONE binary at matched temperature. A flat vector is the
+    /// exact pre-change policy: with a constant h the per-token cost is
+    /// unimodal in depth, so the shipped greedy walk and the scan below
+    /// return the same depth (0 mismatches in 900k sampled acceptance
+    /// profiles, `research/greedy_vs_argmin.py`). Requires
+    /// `Qwen36MTPLimits.maxDepth` entries; anything else is ignored rather
+    /// than padded, so a typo cannot silently reshape the schedule.
+    private static let headStepCostRatioByDepth: [Double] = {
+        guard let raw = ProcessInfo.processInfo.environment[
+            "MLX_QWEN_MTP_H_VECTOR"
+        ] else { return measuredHeadStepCostRatioByDepth }
+        let parsed = raw.split(whereSeparator: { $0 == "," || $0 == " " })
+            .compactMap { Double($0) }
+        guard parsed.count == Qwen36MTPLimits.maxDepth,
+              parsed.allSatisfy({ $0.isFinite && $0 >= 0 })
+        else { return measuredHeadStepCostRatioByDepth }
+        return parsed
+    }()
 
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
