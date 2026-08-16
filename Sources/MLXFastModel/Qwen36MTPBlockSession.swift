@@ -596,7 +596,7 @@ public final class Qwen36MTPBlockSession {
     /// -- still inside the hard stretch -- and the resulting reject resets
     /// the streak again. The gate is not throttling throughput, it is
     /// damping that cascade.
-    private static let segmentedStreakGate = 3
+    private static let segmentedStreakGate = 2
 
     /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
