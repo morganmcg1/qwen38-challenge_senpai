@@ -816,6 +816,28 @@ written for a *distribution*-preserving standard, and the vocabulary is a trap.
    and chunkwise-form changes alter reduction order. **Matching one argmax is not
    sufficient evidence**, because the trusted parent checks exact top-two row
    evidence. Any such change needs the full parity gate, not a spot check.
+8. **★★★★★ FMA-contraction drift from a semantically-identical edit** —
+   **MEASURED, not hypothetical.** PR #8 produced two NA=5 crossrow kernels that
+   compute the same arithmetic: v1 `704af6f` (pure wide-5) and v2 `0a739c9`
+   (vec4 + scalar tail). **v1 is bitwise identical to M=1 for M=1..9 on 8/8
+   shapes. v2 fails at exactly M=5 and M=9** (0/8 shapes, max|d| 0.207–1.0,
+   `lm_head` 1.0) and is exact at every other width — i.e. it breaks precisely at
+   the widths that take the new code path. Adding a scalar tail alongside a
+   `vec4` body changed how the compiler contracted multiply-adds *inside the vec
+   lanes*.
+
+   **This hazard is qualitatively worse than (1)–(7).** Those are all catchable
+   by reading a design: you can see that typical acceptance changes the accepted
+   set, or that quantized verification changes the target. This one is invisible
+   at the design level **and invisible in code review** — the two kernels are
+   the same algorithm, and the diff looks like a pure refactor. The only defence
+   is measurement. `704af6f` vs `0a739c9` is the cleanest controlled experiment
+   on Metal FMA contraction available to this campaign, obtained as a byproduct.
+
+   **Operational rule: any edit to a kernel on the exactness-critical path — even
+   one believed to be a pure refactor — must re-run the bitwise-vs-M=1 gate
+   before it is trusted.** "I did not change the math" is not evidence. See
+   follow-up (b): a standing canary in the curve harness.
 
 ## Operating reminders
 
@@ -977,8 +999,10 @@ are now superseded:
 - Staircase *location* confirmed **only on crossrow**: rank test (are M=5, M=9 the
   two largest increments over M=2..9?) passes 6/8 shapes vendored, **0/8 stock**
   (stock's largest steps are at M=7 and M=9). **M=5 is the true discriminator** —
-  an M=9-only test false-positives on a no-crossrow build. Both vendored failures
-  are the two N=5120 shapes.
+  an M=9-only test false-positives on a no-crossrow build. ~~Both vendored
+  failures are the two N=5120 shapes.~~ **The N=5120 attribution is session noise
+  — see the retraction below; PR #8 re-ran the rank test with a same-session NA=4
+  control and got 8/8 rank-1st, so the 6/8 was not a shape property.**
 
 ### ★★★★★ RETRACTED: the "two-method cross-validation" was not one
 
@@ -1160,12 +1184,37 @@ is still open, but the projections are eliminated as a suspect.
 - GDN recurrence is 2.748 → 4.007 ms/verify from M=1→9: only 4.2% / 1.9% of round
   cost at d=0 / d=8. Not a target.
 
-### Live defect found in our own shipped kernel (unassigned, small)
+### ~~Live defect found in our own shipped kernel (unassigned, small)~~ — **RETRACTED, DOES NOT REPLICATE**
 
-Vendored/stock speedup is 1.09–1.25 at M=7 and 1.08–1.19 at M=9, but **regresses
-to 0.87–0.92 at M=2..5 on the two N=5120 shapes** (`out_proj`, MLP down). ~1% of
-verify cost. Thorfinn's follow-up (b): a shape-aware guard keeping N=5120 shapes
-off crossrow at M=2..5. Small but real and cheap.
+> **RETRACTED 2026-08-16 by PR #8 (thorfinn).** This section claimed the vendored
+> crossrow kernel **regresses to 0.87–0.92 vs stock at M=2..5 on the two N=5120
+> shapes** (`out_proj`, MLP down), and proposed a shape-aware guard to route those
+> shapes off crossrow. **The regression does not replicate.** Across **five
+> sessions** the N=5120 shapes at M=2..5 **never fall below 0.950**. The
+> 0.87–0.92 figure was a single-session excursion read as a standing property.
+>
+> Two independent controls in PR #8 establish that the harness is not the source:
+> a stock-pip-MLX control over **144 points** has median **1.0000** (range
+> 0.954–1.019), and two independent NA=4 sessions agree within **0.4%**.
+>
+> The proposed shape-aware guard is **separately refuted at zero GPU cost.** An
+> oracle with perfect, *free* per-`(shape, width)` routing — an upper bound no
+> real guard can reach — saves at most **0.53%** of weighted verify, and
+> **0.00% at M ≥ 6**. The guard's own dispatch cost (~1%) exceeds the entire
+> prize. Do not re-propose it.
+>
+> **Method worth copying: bound the prize before you pay for the experiment.**
+> This branch was closed by an arithmetic upper bound, not by a benchmark. When a
+> proposed optimization has a computable ceiling, compute the ceiling first — an
+> oracle bound that lands under the implementation cost kills the idea for free.
+>
+> **Provenance lesson.** A one-session ratio was promoted to "live defect found in
+> our own shipped kernel" — a heading that asserts a durable property — and then
+> sat in the record as an unassigned work item. The rank-test note at the top of
+> the PR #5 section (*"both vendored failures are the two N=5120 shapes"*) is the
+> same observation and is **also** just session noise; it is annotated in place.
+> **A number seen once is an observation; a number seen across sessions is a
+> property. Headings must not promote the former to the latter.**
 
 ### Campaign-value numbers from PR #5
 
@@ -1226,8 +1275,164 @@ differently than the vector form, so the reduction order argument does not
 automatically transfer. It must be *measured* — and PR #5 merged exactly the
 instrument that measures it.
 
-## Instrument now on the base (from PR #5)
+> **★★★★★ THIS WARNING FIRED. It was the live hazard, and it fired in the exact
+> form written above.** PR #8's v2 (`0a739c9`, vec4 + scalar tail) is
+> *semantically identical* to v1 (`704af6f`, pure wide-5) and is **not**
+> bit-exact: v1 is bitwise identical to M=1 for M=1..9 on 8/8 shapes, v2 fails at
+> **exactly M=5 and M=9** (0/8, max|d| 0.207–1.0, lm_head 1.0) and passes
+> everywhere else — i.e. it fails precisely at the widths that take the new path.
+> The added scalar tail changed FMA contraction *inside the vec lanes*. See the
+> PR #8 section below.
 
+## ★★★★★ PR #8 (thorfinn, MERGED): `NA=5` REFUTED — and the boundary streams are not overhead, they are what saturates memory
+
+Merged at `fa9a216a`. Head `84eedac5`; base `b2419f41`, accepted on the changed
+base `ddfb2f8a` after verifying the drift is `research/`-only. **Zero bytes on
+the scored path** — the merged diff is 7 files, all under `research/`, and the
+kernel files are byte-identical to base (HEAD restores `NA_max = 4`).
+
+Runs (Apple M4 Pro, one thermal session, `dirty=0`): NA=4 control `e7-na4-base`
+@`861f57f` → W&B **`bq9xfu6d`**; NA=5 v1 pure wide-5 @`704af6f` → **`e79lcwx2`**;
+NA=5 v2 vec4+scalar-tail @`0a739c9` → **`1y91qkq5`**.
+Repro: `research/run-qmv-curve.sh <TAG> b2419f41`, then `research/qmv_na_compare.py`
+and `research/qmv_gbps_table.py`.
+
+### The mechanism fired exactly as designed, and the widths got *slower*
+
+`weight_streams` went 2→1 at M=5 and 3→2 at M=9, unchanged at every other width,
+on all 8 shapes — the manipulation worked. **Both boundary widths then got
+1.13–1.54× SLOWER**, under **two independent implementations**. This is the most
+informative shape a negative can have: it localises the error to the *premise*,
+not to the execution.
+
+### ★★★★★ The premise that died: extra weight streams are NOT waste
+
+The whole `ceil(M/4)`-staircase framing treated the extra stream at a boundary
+width as overhead to be removed. **Stream-corrected GB/s says the opposite.**
+
+| width | NA=4 | NA=5 v1 | NA=5 v2 | vs 273 GB/s peak (NA=4) |
+|---|---:|---:|---:|---|
+| M=5 | **262.1** | 85.6 | 95.5 | **96%** |
+| M=9 | **239.5** | 125.6 | 141.9 | **88%** |
+| M=4 (interior) | 165.6 | — | — | **61%** |
+| M=8 (interior) | 183.0 | — | — | **67%** |
+
+**The boundary widths are the only place the kernel actually saturates the
+machine.** Splitting across two streams is what generates the memory-level
+parallelism that gets there; collapsing to one stream gives it up. One NA=5 group
+sustains 95.5 GB/s where one NA≤4 group sustains 165.6 — the wide-5 path degrades
+**superlinearly and independently of stream count**. Break-even needs ~131 GB/s;
+v1→v2 bought 85.6→95.5 (+12%) of the required +37% and cost bit-exactness.
+
+**⇒ THE OPTIMIZATION TARGET INVERTS. The prize is the under-utilised INTERIOR
+(M=4/7/8 at 61–67% of peak), not the boundaries (88–96%).** For most of this
+campaign the boundaries were the villain; they are the best-behaved part of the
+kernel. The same kernel reaching 262 GB/s at M=5 is an *existence proof* that the
+hardware is available at these shapes — the open question is why the interior
+does not take it.
+
+### Rank test: the excess did not shrink, it inverted
+
+NA=4 under the `NA_max=4` law → boundaries `[5,9]`, rank-1st **8/8**, step_excess
+1.28–2.44. Both NA=5 builds under the `NA_max=5` law → boundary `[6]`, rank-1st
+**0/8**, step_excess **negative** (v1 −1.58..−1.40, v2 −1.39..−0.94), i.e.
+`cost(6) < cost(5)`. The boundary excess did not move to M=6; it became a **spike
+at M=5**.
+
+### Quantitative replacement for the retracted in-situ figures
+
+Width = depth+1 verified (M=5 ↔ d=4, M=9 ↔ d=8). Weighted V, ms:
+`ΔV(5) = +60.126` (v1) / `+45.275` (v2); `ΔV(9) = +50.293` / `+35.772`.
+Through the **real** measured law `C(d) = V(d+1) + 4.46 + 3.73·d`:
+`C(4)` 127.736 → 187.862 (+47.1%) or 173.012 (+35.4%);
+`C(8)` 213.248 → 263.541 (+23.6%) or 249.020 (+16.8%).
+**NA=5 is not marginal — it is not close.** Correctly, `d*` was **not**
+recomputed: that vector is void, and anything derived from it inherits the void.
+
+### Occupancy: rules out a hard cliff, not a soft one
+
+`crossrow_na2/3/4/5` all report `maxTotalThreadsPerThreadgroup=1024`,
+`execWidth=32`, `tgMem=0`. AIR: v2 372 lines / 7 allocas (two tail accumulators,
+**no spill slots**) vs NA=4 292/5. Student's own caveat, which is correct:
+`maxTotalThreads` is a **ceiling**, not resident occupancy — so this rules out a
+*hard* cliff only. The bandwidth collapse is consistent with a soft one.
+
+### Controls
+
+Drift over unchanged widths M=3,4,6,7,8 = **0.999**. Stock pip-MLX control, 144
+points, median **1.0000** (0.954–1.019). Two independent NA=4 sessions agree
+within **0.4%**.
+
+### Two corrections this PR forced on the existing record
+
+1. **PR #5's "live defect" (0.87–0.92 at M=2..5 on N=5120) does not replicate** —
+   never below 0.950 across five sessions. Retracted above; the shape-aware guard
+   is separately dead on an oracle bound (≤0.53%, 0.00% at M≥6).
+2. **PR #5's `step_excess` magnitude (0.112 → 0.169) is inflated**, by the
+   student's own unprompted admission: the statistic averages the flat M=2/M=3
+   increments into the interior baseline. **Demoted from a physical result to a
+   reading caution on the statistic.** Volunteering a correction to your own
+   already-merged work while delivering a different result is the behaviour that
+   makes a research record trustworthy.
+
+### Follow-ups (candidate next experiments, not yet assigned)
+
+- **(a) Interior-width memory-level parallelism.** M=4/7/8 at 61–67% of peak in a
+  kernel that demonstrably reaches 88–96% at adjacent widths. Prediction #4's
+  confirmation licenses attacking this without a boundary confound. If the cause
+  is "too few independent load streams in flight," that is the **exact inverse**
+  of the change PR #8 tried, and PR #8 measured the dose–response.
+- **(b) A standing bit-exactness canary in the curve harness.** Assert bitwise
+  identity to M=1 across M=1..9 on all 8 shapes on every curve invocation. This
+  converts the FMA-contraction hazard from something caught by luck into
+  something that cannot land silently. Cheap, permanent, and it protects the one
+  property the entire crossrow line rests on.
+
+### ★★★★★ Transferable rules banked from PR #8
+
+> **A mechanism that fires while the hypothesis fails is worth more than a null.**
+> "Nothing happened" leaves the premise and the execution both suspect. "The thing
+> I intended happened, and the outcome went the wrong way" indicts the premise
+> alone. Always instrument the *mechanism* (here: `weight_streams` per width per
+> shape), not only the outcome — otherwise you cannot tell these apart.
+
+> **Overhead you can see is not necessarily overhead.** The extra weight stream was
+> visible, countable, and easy to frame as waste. It was the load-generating
+> structure holding the kernel at 96% of peak. Before removing a redundancy, ask
+> what it might be *buying* — in a bandwidth-bound regime, apparent duplication is
+> often the parallelism.
+
+> **Report bandwidth-bound work against the roofline, not against itself.** Every
+> earlier reading of this kernel compared widths to *other widths* and found the
+> boundaries anomalous. One column of "% of 273 GB/s peak" inverted the
+> conclusion. A ratio to your own baseline cannot tell you whether the baseline
+> was the problem.
+
+> **Bound the prize before paying for the experiment.** Part B died on an oracle
+> upper bound — perfect free routing saves ≤0.53% against a ~1% guard cost — at
+> zero GPU cost. When a proposed optimization has a computable ceiling, compute
+> the ceiling first.
+
+> **Stop when the gap is arithmetic.** v2 closed 12% of a required 37% and cost
+> bit-exactness. Two implementations agreeing on the sign of a refutation is
+> terminal; a third is chasing. The failure mode to guard against in a strong
+> student is pursuing a *working* mechanism into a *failing* result.
+
+## Instrument now on the base (from PR #5, extended by PR #8)
+
+**Added by PR #8 (all under `research/`, growth 0):**
+`qmv_na_compare.py` (paired NA-arm comparison: per-width ratios, `weight_streams`
+per shape, rank test, step_excess, drift over unchanged widths);
+`qmv_gbps_table.py` (**stream-corrected achieved GB/s against the 273 GB/s
+roofline** — the instrument that inverted the boundary conclusion);
+`air_kernel_stats.py` (AIR line/alloca/spill counts per kernel variant);
+`crossrow_na_probe.metal` + `crossrow_na_occupancy.swift`
+(`maxTotalThreadsPerThreadgroup`, `execWidth`, `tgMem` per NA).
+**`qmv_gbps_table.py` is the highest-value item**: it is the first tool in this
+campaign that reads the kernel against the roofline rather than against itself.
+Prefer it to any width-vs-width ratio when judging a bandwidth-bound change.
+
+**From PR #5:**
 `research/qmv_cost_curve.py`, `research/qmv_cost_curve_summary.py`,
 `research/run-qmv-curve.sh`, `Tests/MLXFastTests/QwenQMVCostCurveTests.swift`
 (gated behind `MLXFAST_RUN_QMV_COST_CURVE=1`, off by default; `_OUT`, `_REPS=12`,
@@ -1497,6 +1702,13 @@ prediction. Score these honestly when the results arrive.
 4. **The M≈4 ramp will NOT move under `NA=5`.** The ramp and the boundaries
    looked separable in PR #5's data; `NA=5` should touch only the boundaries.
    If the ramp moves too, the two-component model is wrong.
+   **★ CONFIRMED by PR #8 (thorfinn), 2026-08-16.** Median nominal GB/s step
+   M=3→4: **NA=4 −35.6, NA=5 −35.3** — within 1%, while the same builds moved
+   the boundary widths by 1.13–1.54×. The manipulation hit one component hard
+   and left the other untouched, which is the strongest available evidence that
+   **the ramp and the boundary excess are separable and independently
+   addressable**. This is the one structural licence that lets the next
+   experiment attack the interior widths without a boundary confound.
 5. **Lowering *draft* precision cannot change the emitted token stream.**
    Confirmed structurally — acceptance is
    `acceptedDraftPrefixCount(drafts:verifyArgmax:)`, the first index where

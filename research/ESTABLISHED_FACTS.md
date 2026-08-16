@@ -1172,3 +1172,106 @@ notes* was the one that had to be withdrawn.
 > element counts) over quantities inherited from the research record. The first
 > kind fails loudly and locally; the second kind propagates.**
 
+
+---
+
+## Crossrow QMV against the roofline — measured facts from PR #8 (merged 2026-08-16)
+
+Source: PR #8 (`qwen-thorfinn`, `qwen38-r1-e7-crossrow-na5`), merged at
+`fa9a216a`. Apple M4 Pro, one thermal session, `dirty=0`. W&B runs
+`bq9xfu6d` (NA=4 control), `e79lcwx2` (NA=5 v1), `1y91qkq5` (NA=5 v2).
+Repro: `research/run-qmv-curve.sh <TAG> b2419f41` → `research/qmv_na_compare.py`,
+`research/qmv_gbps_table.py`. **GPU peak bandwidth ≈ 273 GB/s.**
+
+### FACT 1 — the boundary widths are the saturated ones; the interior is not
+
+Stream-corrected achieved bandwidth, NA=4 (the shipped kernel):
+
+| width | GB/s | % of 273 GB/s peak | role under the old framing |
+|---|---:|---:|---|
+| M=5 | **262.1** | **96%** | "boundary — wasteful" |
+| M=9 | **239.5** | **88%** | "boundary — wasteful" |
+| M=4 | 165.6 | **61%** | "interior — efficient" |
+| M=8 | 183.0 | **67%** | "interior — efficient" |
+
+**The framing was backwards.** The widths that spend an extra weight stream are
+the only ones reaching the machine's bandwidth. The extra stream is not overhead;
+it is the memory-level parallelism that gets the kernel to peak. Collapsing M=5
+from two streams to one (NA=5) dropped it to 85.6–95.5 GB/s — one NA=5 group
+sustains 95.5 where one NA≤4 group sustains 165.6, so the wide-5 path degrades
+**superlinearly and independently of stream count**.
+
+**Consequence for targeting: the recoverable headroom is in the interior widths
+M=4/7/8 (61–67% of peak), not at the boundaries (88–96%).** The 262 GB/s at M=5
+is an existence proof that the hardware is reachable at these shapes.
+
+### FACT 2 — `NA=5` is refuted by two independent implementations
+
+Both v1 (pure wide-5, `704af6f`) and v2 (vec4 + scalar tail, `0a739c9`) made the
+boundary widths **1.13–1.54× slower**, while the intended mechanism fired exactly
+as designed (`weight_streams` 2→1 at M=5, 3→2 at M=9, unchanged elsewhere, all 8
+shapes). Break-even needs ~131 GB/s; the better implementation reached 95.5.
+Through the measured law `C(d) = V(d+1) + 4.46 + 3.73·d`: `C(4)` 127.736 →
+173.012 ms (+35.4%), `C(8)` 213.248 → 249.020 ms (+16.8%). **Not marginal.**
+`NA_max = 4` is restored on the base; the `static_assert(NA >= 2 && NA <= 4)` at
+`mlx-generated/quantized.cpp:993` and its twin `quantized.h:980` stand.
+
+### FACT 3 — the ramp and the boundary excess are SEPARABLE
+
+Median nominal GB/s step M=3→4: **NA=4 −35.6, NA=5 −35.3** (within 1%), under a
+manipulation that moved the boundary widths by 1.13–1.54×. Pre-registered
+prediction #4, confirmed. **This is the structural licence to attack the interior
+widths without a boundary confound**, and it is the most reusable single fact in
+the PR.
+
+### FACT 4 — a semantically-identical refactor broke bit-exactness
+
+v1 is **bitwise identical to M=1 for M=1..9 on 8/8 shapes**. v2 computes the same
+arithmetic and **fails at exactly M=5 and M=9** (0/8, max|d| 0.207–1.0, `lm_head`
+1.0), exact at every other width — it breaks precisely at the widths taking the
+new path. A scalar tail added beside a `vec4` body changed FMA contraction inside
+the vec lanes. Registered as **bit-exactness hazard (8)**.
+
+> **Any edit to a kernel on the exactness-critical path must re-run the
+> bitwise-vs-M=1 gate, including edits believed to be pure refactors. "I did not
+> change the math" is not evidence.** Unlike every other hazard on that list, this
+> one is invisible both in the design and in the diff.
+
+### FACT 5 — two prior record entries do not survive
+
+- **The "live defect" (vendored/stock 0.87–0.92 at M=2..5 on the two N=5120
+  shapes) does not replicate**: never below 0.950 across five sessions. Controls:
+  144-point stock-pip control at median 1.0000 (0.954–1.019); two independent
+  NA=4 sessions within 0.4%. The associated shape-aware guard is independently
+  dead — a **perfect free routing oracle** saves ≤**0.53%** of weighted verify and
+  **0.00% at M≥6**, against a guard cost of ~1%.
+- **PR #5's `step_excess` magnitude (0.112 → 0.169) is inflated** and is demoted
+  to a reading caution: the statistic averages the flat M=2/M=3 increments into
+  the interior baseline. Reported unprompted by its own author.
+
+### ★★★★★ Method rules banked
+
+> **Report bandwidth-bound work against the roofline, not against itself.** Every
+> earlier reading of this kernel compared widths to other widths and concluded the
+> boundaries were anomalous. Adding one column — "% of peak" — inverted the
+> conclusion. **A ratio to your own baseline cannot tell you whether the baseline
+> was the problem.**
+
+> **Instrument the mechanism, not only the outcome.** Because `weight_streams` was
+> logged per width per shape, this experiment could say "the intervention worked
+> and the hypothesis is still false," which indicts the premise alone. A pure
+> outcome measurement would have left premise and execution equally suspect.
+
+> **Overhead you can see is not necessarily overhead.** In a bandwidth-bound
+> regime, apparent duplication is often the parallelism. Before removing a
+> redundancy, ask what it is buying.
+
+> **Bound the prize before paying for the experiment.** An oracle upper bound
+> closed the shape-aware-guard branch at zero GPU cost. When a proposed
+> optimization has a computable ceiling, compute the ceiling first.
+
+> **A number seen once is an observation; a number seen across sessions is a
+> property.** The 0.87–0.92 figure was a single-session excursion that a section
+> heading ("Live defect found in our own shipped kernel") promoted to a durable
+> claim, where it sat as an unassigned work item until someone re-measured it.
+
