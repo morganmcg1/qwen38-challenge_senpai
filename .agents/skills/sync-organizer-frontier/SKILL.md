@@ -317,20 +317,20 @@ allowed differences are the current editable surface and campaign-owned paths:
 verify_trusted_parity() {
   emulate -L zsh
   setopt errexit nounset pipefail
-  local path editable unexpected=""
+  local changed_path editable unexpected=""
   local -a editable_paths
   editable_paths=(${(f)"$(jq -r '.editablePaths[]' benchmark.json)"})
 
-  while IFS= read -r -d $'\0' path; do
-    case "$path" in
+  while IFS= read -r -d $'\0' changed_path; do
+    case "$changed_path" in
       senpai/*|.agents/*|research/*|AGENTS.md|.gitignore) continue ;;
     esac
     for editable in $editable_paths; do
-      if [[ "$path" == "$editable" || "$path" == "$editable"/* ]]; then
+      if [[ "$changed_path" == "$editable" || "$changed_path" == "$editable"/* ]]; then
         continue 2
       fi
     done
-    unexpected="$path"
+    unexpected="$changed_path"
     break
   done < <(git diff --name-only -z "$UPSTREAM_SHA" HEAD --)
 
