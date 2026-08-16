@@ -40,6 +40,8 @@ Use the live enforcing sources in this order:
 
 The main campaign records are [`frontier-state.json`](frontier-state.json) and [`campaign-ledger.md`](campaign-ledger.md). Commands and report formats live in [`experiment-runbook.md`](experiment-runbook.md), [`assignment-template.md`](assignment-template.md), and [`result-template.md`](result-template.md). Use [`laguna-to-qwen-speedup-map.md`](laguna-to-qwen-speedup-map.md) as a reviewed source of hypotheses, not as a Qwen contract.
 
+For historical background on the competition's progress, see the timestamped [`Qwen 3.8 MLX.fast submission audit`](qwen38-yukon-submissions-2026-08-16.md). It ties every public receipt at its cutoff to inspected source changes and records promoted, rejected, failed, and pending work. Treat it as a point-in-time research record; Yukon and `frontier-state.json` remain the authorities for live status.
+
 For broader LLM optimization guidance, see W&B Senpai's [Large Language Model Inference Optimization Guide](https://github.com/wandb/senpai/blob/main/literature_and_guidance/LLM-INFERENCE-OPTIMIZATION-SENPAI-GUIDE.md). Treat it as a source of ideas and research methods, not as a substitute for this challenge's live contract or measurements.
 
 ## Campaign State And Git Safety
