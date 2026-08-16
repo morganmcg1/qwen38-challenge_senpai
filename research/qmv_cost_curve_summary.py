@@ -263,7 +263,12 @@ def main():
     ap.add_argument("--tag", default="local")
     ap.add_argument("--host", default="unknown")
     ap.add_argument("--base-sha", default="unknown")
+    ap.add_argument("--head-provenance")
     args = ap.parse_args()
+
+    head_prov = {}
+    if args.head_provenance and os.path.exists(args.head_provenance):
+        head_prov = load(args.head_provenance)
 
     vend = load(args.vendored)
     rf = vend["roofline"]
@@ -377,6 +382,7 @@ def main():
     out = {
         "host": args.host,
         "base_sha": args.base_sha,
+        "head_provenance": head_prov,
         "device": vend.get("device", {}),
         "roofline": rf,
         "widths": widths,
@@ -552,6 +558,28 @@ def main():
             config={
                 "host": args.host,
                 "base_sha": args.base_sha,
+                "head_dir": head_prov.get("head_dir"),
+                "head_repo_declares_proposal_head": head_prov.get(
+                    "repo_declares_proposal_head"
+                ),
+                "head_provenance_files": head_prov.get("files", []),
+                "head_provenance_sha256": next(
+                    (
+                        f["sha256"]
+                        for f in head_prov.get("files", [])
+                        if f["name"] == "model.safetensors"
+                    ),
+                    None,
+                ),
+                "head_provenance_bytes": next(
+                    (
+                        f["bytes"]
+                        for f in head_prov.get("files", [])
+                        if f["name"] == "model.safetensors"
+                    ),
+                    None,
+                ),
+                "head_dtype": "bf16",
                 "reps": vend["reps"],
                 "inner_calls_per_rep": vend["inner_calls_per_rep"],
                 "peak_bandwidth_gb_s": rf["peak_bandwidth_bytes_per_second"] / 1e9,

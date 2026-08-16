@@ -69,6 +69,34 @@ mkdir -p "${out_dir}"
   date -u '+run-qmv-curve: started_utc=%Y-%m-%dT%H:%M:%SZ'
 } | tee "${out_dir}/identity.txt" >&2
 
+# --- proposal-head provenance -------------------------------------------------
+# The advisor requires the exact head bytes behind every number, and
+# setup-qwen-mtp.sh stages the organizer-pinned head by model id, not from
+# mtp-head.manifest.json. Record what is actually on disk.
+head_dir="${MLXFAST_QWEN_MTP_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head}"
+{
+  echo "{"
+  printf '  "head_dir": "%s",\n' "${head_dir}"
+  printf '  "repo_declares_proposal_head": %s,\n' \
+    "$(compgen -G 'mtp-head/*.safetensors' >/dev/null && echo true || echo false)"
+  echo '  "files": ['
+  first=1
+  for f in "${head_dir}"/.gitattributes "${head_dir}"/config.json \
+           "${head_dir}"/model.safetensors "${head_dir}"/model.safetensors.index.json
+  do
+    [[ -f "${f}" ]] || continue
+    [[ ${first} -eq 1 ]] || echo ","
+    first=0
+    printf '    {"name": "%s", "bytes": %s, "sha256": "%s"}' \
+      "$(basename "${f}")" \
+      "$(stat -f %z "${f}")" \
+      "$(shasum -a 256 "${f}" | cut -d' ' -f1)"
+  done
+  echo ""
+  echo "  ]"
+  echo "}"
+} >"${out_dir}/head-provenance.json"
+
 # --- build the vendored-kernel bench ------------------------------------------
 # Release, because the curve at the small shapes is only tens of microseconds
 # and a debug host would add its own dispatch overhead to every point. Release
@@ -122,6 +150,7 @@ WANDB_ENTITY="${WANDB_ENTITY:-wandb-applied-ai-team}" \
 "${summary_python}" research/qmv_cost_curve_summary.py \
   --vendored "${out_dir}/vendored.json" \
   "${stock_flag[@]}" \
+  --head-provenance "${out_dir}/head-provenance.json" \
   --out "${out_dir}/summary.json" \
   --tag "${tag}" \
   --host "$(sysctl -n machdep.cpu.brand_string)" \
