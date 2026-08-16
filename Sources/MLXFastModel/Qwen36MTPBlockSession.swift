@@ -754,7 +754,7 @@ public final class Qwen36MTPBlockSession {
     /// rows -- padding the batch past the qmv limit into qmm_t_splitk, say
     /// -- or a gate that opens depth 8 separately from depths 5..7, since
     /// only the former crosses a stream boundary.
-    private static let segmentedVerifyDepthCap = 8
+    private static let segmentedVerifyDepthCap = 7
 
     /// Consecutive fully-accepted rounds required to open the deep cap.
     /// Swept 3 -> 2 -> 1 -> 0 on the 512-token local fixture (the ranked
