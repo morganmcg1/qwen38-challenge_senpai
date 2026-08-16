@@ -85,6 +85,21 @@ def leg_stats(report: dict) -> dict:
         "residual_divergence_count": int(report.get("residual_divergence_count", 0)),
         "all_tokens_matched": bool(report.get("all_tokens_matched", False)),
         "declared_rows_total": int(report.get("declared_rows_total", 0)),
+        # Stall guardrail: fixtures/qwen3_8_27b_mtp_track.json rejects a run whose
+        # max block latency exceeds 4x its p50. Report the parent's own fields and
+        # the ratio, plus the ratio the recommended "exclude the first block" fix
+        # would produce.
+        "guardrail_max_block_seconds": float(report["max_block_request_seconds"]),
+        "guardrail_p50_block_seconds": float(report["p50_block_request_seconds"]),
+        "guardrail_max_over_p50": float(report["max_block_request_seconds"])
+        / float(report["p50_block_request_seconds"]),
+        "guardrail_max_over_p50_excluding_first": float(
+            report["max_block_request_seconds_after_first"]
+        )
+        / float(report["p50_block_request_seconds_after_first"]),
+        "guardrail_margin_to_4x": 4.0
+        - float(report["max_block_request_seconds"]) / float(report["p50_block_request_seconds"]),
+        "guardrail_max_is_first_block": max(blocks) == first,
     }
 
 
@@ -120,6 +135,20 @@ def decompose(serial: dict, mtp: dict) -> dict:
         "score_points_per_100ms_prefill_removed": -dscore_dp * 0.100,
         "score_if_prefill_were_free": d_s / d_c,
         "headroom_to_prefill_free": d_s / d_c - score,
+        # Attribution band. Allowing a third per-emitted-token parent cost k, the
+        # legs give R_leg = P + N_leg*c + T*k. The subtraction that fixes c is
+        # independent of k because both legs emit the same T, so `prefill_seconds`
+        # is exactly P + T*k: an upper bound on P, tight to whatever the parent
+        # spends per token on its token-equality check and array append.
+        "prefill_is_upper_bound_because_of_per_token_overhead": True,
+        "emitted_tokens_both_legs": serial["emitted_token_total"],
+        "prefill_upper_bound_slack_if_k_is_50us": 50e-6 * serial["emitted_token_total"],
+        # Decode-only speedup: what the local ratio would read if the shared
+        # prefill were removed from both legs. The gap to `measured_local_score`
+        # is exactly how much fixed prefill dilutes the local number.
+        "decode_only_speedup": d_s / d_c,
+        "serial_decode_seconds_per_token_excl_prefill": d_s / serial["emitted_token_total"],
+        "mtp_decode_seconds_per_token_excl_prefill": d_c / mtp["emitted_token_total"],
     }
 
     # Same model re-evaluated at the ranked 512-token decode window. Prefill is

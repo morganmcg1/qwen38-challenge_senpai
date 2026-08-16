@@ -55,7 +55,7 @@ WANDB_PROJECT="${WANDB_PROJECT:-qwen38-mlx-challenge-senpai}" \
 WANDB_ENTITY="${WANDB_ENTITY:-wandb-applied-ai-team}" \
 "${python_bin}" research/prefill_amdahl.py "${MLXFAST_CAPTURE_DIR}" \
   --tag "${tag}" \
-  --mode "${mode}" \
+  --mode="${mode}" \
   --base-sha "${base_sha}" \
   --head-sha "$(git rev-parse HEAD)" \
   --score-json "${MLXFAST_SCORE_PATH}" \
