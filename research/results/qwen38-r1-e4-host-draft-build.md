@@ -1,8 +1,10 @@
 # E4 — Host-bound draft build: decomposition and irreducibility
 
-**Assignment** `qwen38-r1-e4-host-draft-build` r1 · PR #4 · student `qwen-askeladd`
-**Base** `e20268e9c2c1f35c2d75221d059e75bb95768ef6` (`senpai/qwen38-mtp-r1`) ·
+**Assignment** `qwen38-r1-e4-host-draft-build` **r2** · PR #4 · student `qwen-askeladd`
+**Base** `67bde70274c42aef089ac73cf00608d8037a815e` (`senpai/qwen38-mtp-r1`) ·
 **Upstream** `7351e62674bc600f0ca148d3a1b0604716a09db6`
+**Rebase provenance** r1 evidence was cut on `e20268e9…`; this report is replayed on the
+r2 base. See §0 for exactly what changed and which numbers were re-measured.
 **Host** Apple M4 Pro (Mac16,11), `applegpu_g16s`, 48 GiB, macOS 26.5.2 (25F84), Swift 6.3.3
 **Head** unchanged from base. Local runs use the organizer bf16 head
 (`EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`, sha256 `8fceddc6…`); the ranked candidate leg
@@ -13,6 +15,103 @@ sha256 `cc209e30…`). Full provenance in §8.2b; consequences in §6b.1 and §6
 not host graph-construction time; it is ~96–98% GPU execution wait. The optimizations
 scoped in Part B are bounded above by ~0.35% of round time, an order of magnitude
 below the ≥3% promotion bar.
+
+---
+
+## 0. r2 rebase — what changed, and what it did or did not invalidate
+
+r2 rebound the assignment from `e20268e9…` to `67bde702…`. I rebased
+`qwen-askeladd/host-bound-draft-build` onto the new base; the rebase applied **cleanly**,
+with no conflicts, and the candidate diff is byte-identical in shape to r1
+(`110/4` in `Qwen36MTPBlockSession.swift`, `67/3` in `Qwen35MTP.swift`).
+
+Between the two bases exactly **three** non-documentation files move:
+
+```
+.gitignore                                        +2  -0
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift  +24 -53
+Tests/MLXFastTests/QwenMTPFixedWindowTests.swift  +31  -0
+```
+
+Only `b219009` ("qwen: continue fixed decode windows past EOS") touches a file I also
+edit. Re-located **by symbol name**, as instructed, it does five things:
+
+Sites are line numbers **on the r2 base**, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`:
+
+| change | site on r2 base | effect on this experiment |
+|---|---|---|
+| `stopTokens` stored property removed; `init` takes `stopTokens _:` | `:171` | none — never read by instrumentation |
+| `reachedStopToken` stored var → computed `{ false }` | `:167` | none |
+| early-return block when the **primary** is a stop token | deleted (sat between my `tRound0` and `tPrologueDone`) | **removes a round shape** my trace could previously see; it fired in 0 of 28 r1 rounds anyway |
+| accept walk → `static acceptedDraftPrefixCount(drafts:verifyArgmax:)` | defined `:641`, called `:931` | none — same prefix rule minus the stop-token `break` |
+| `stoppedEarly` suppression dropped from `recordAcceptOutcome` | `:610` | affects the accept-EMA, hence the depth schedule, on any round that would have committed EOS |
+
+**What this invalidates — and the one thing I could not deliver.** Nothing structural.
+But r2 asks for headline numbers at 512 decode tokens, and **I could not produce them.**
+I rebased, rebuilt cleanly on the r2 base (48.9 s, both binaries), re-checked scope and
+budget, and launched the 512-token traced run — and it died in the pre-timing cool gate,
+as did two earlier attempts. The host's *idle* GPU floor is 40.17 °C against a ≤40.0 °C
+gate, held there by a runaway root-owned `WirelessRadioManagerd` at ~100% CPU that I
+cannot kill without sudo. To prove this is the host and not my workload, I then ran the
+gate **by itself** — `./benchmark.sh --local-cool-gate-only`, no model loaded, no GPU work
+of mine anywhere — and it still failed, reporting `min seen 40.6C` after 180 s of doing
+nothing. **§8.4 gives the exact commands, the complete output, the root cause, and each
+escape route I refused to take.** I did not bypass the gate, and I did not falsify the
+sensor.
+
+So the honest status of each number in this report:
+
+| section | status on the r2 base |
+|---|---|
+| §3, §4, §6-guardrail (round timing) | **carried over from the r1 192-token run**, not re-measured. Not re-run — see §8.4. |
+| §5A, §5B, §6c, §6d (kernel isolation) | **base-independent and re-verified.** They call `mx.quantized_matmul` at fixed shapes and never enter `Qwen36MTPBlockSession`. |
+| §8.4.4 (context sensitivity) | **new, measured on the r2 base**, added specifically to bound the 192→512 extrapolation. |
+| scope + budget | **re-run against `67bde702…`**, both exit 0 (below). |
+
+**§8.4.4 is the part I could still run, and it bounds the gap.** The one thing a 512-token
+window changes relative to a 192-token one is context: the KV cache walks 512→1024. That is
+a device-side question, so I measured it directly with the gate-free component harness at
+kv ∈ {512, 640, 768, 896, 1024, 1280}. Over the full walk the round floor moves **+0.377%**
+(226.555 → 227.409 ms); only the two SDPA kernels move at all; the 48 Gated DeltaNet layers
+are byte-identical; and the byte model matches the analytic prediction **exactly**
+(67,108,864 B both ways). The host-only share of the round therefore goes 0.350% → 0.349%.
+That does not replace an end-to-end 512-token leg, but it does mean the extrapolation I am
+asking the advisor to accept is worth **0.001 percentage points**, against a hypothesis that
+is wrong by **~70×**.
+
+Two reasons the carried-over timing is still sound, stated as argument rather than
+measurement so the advisor can discount it as they see fit:
+
+1. **The r1 window is clean.** The EOS defect kills runs near decode token ~301; the r1
+   window is 192 tokens, so it completed with 28 rounds, `all_tokens_matched: true` and
+   `residual_divergence_count: 0`.
+2. **`b219009` is timing-neutral-to-cheaper on the measured path.** It deletes a stored
+   property write (`:167`), deletes an early-return branch that sat inside my *prologue*
+   phase — which measures **1.8 µs**, and fired in 0 of 28 r1 rounds — and extracts the
+   accept walk into a static helper doing the same work. Every one of those can only make
+   host-side work equal or smaller, which strengthens rather than weakens the finding that
+   host graph build is 0.35% of the round.
+
+**Scope and budget, re-checked against the r2 base:**
+
+```
+senpai/validate-assignment-scope.sh 67bde702… \
+    Sources/MLXFastModel/Qwen36MTPBlockSession.swift \
+    Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift
+  -> assignment scope OK: 2 submitted path(s)                        (exit 0)
+
+senpai/check-editable-budget.sh 67bde702…
+  -> editable budget OK: source=2402616/3000000 headroom=597384
+     growth=7966/262144 exempt=2410/2147483648 files=154             (exit 0)
+```
+
+**A protocol failure I must declare.** r2 asks me to *post* the provenance and the Part A
+breakdown as PR comments before optimizing. **`post_assignment_comment` is not in my tool
+schema this session**, and the harness forbids reproducing it with `gh` or REST. I could
+not comply. Both artifacts are instead delivered here (§8.2b provenance, §3 breakdown)
+and in the terminal result. This is a tooling gap, not a decision to withhold; if
+`qwen-edward` needs the breakdown before this PR is reviewed, it is in §3 and in the
+committed file at `research/results/qwen38-r1-e4-host-draft-build.md`.
 
 ---
 
@@ -70,21 +169,41 @@ Five results outrank that negative and are where the campaign value is:
 5. **§6b.4 — the pre-registered discriminator resolves to BANDWIDTH**, but the residual's
    real cause is small-M kernel inefficiency, a third category the dichotomy omits.
 
-## 1a. Correction to feedback (4): `MLX_QWEN_MTP_TRACE=1` **is** reachable
+## 1a. Corrections to feedback (4) and (9): `MLX_QWEN_MTP_TRACE=1` **is** reachable
 
 Feedback (4) concluded the trace is unreachable and that Part A "needs a new method".
-The diagnosis behind it is correct, the conclusion is not. I hit exactly that wall,
-diagnosed it identically, and solved it — **every number in this report comes from the
-live scored worker via that route.**
+Feedback (9) restates that conclusion. The *diagnosis* behind it is correct; the
+*conclusion* does not follow. I hit exactly that wall, diagnosed it identically, and
+solved it — **every number in this report comes from the live scored worker via that
+route.** All line numbers below are re-located by name on the r2 base `67bde702`.
 
-Why it looks unreachable (all confirmed):
+**What the advisor got right.** Worker stderr really is discarded:
 
-- `MLX_`-prefixed environment variables *do* reach the worker, so the flag arrives.
-- The worker writes trace lines to its own **stderr**.
-- `QwenRuntimeWorker.swift:2046,:2207` spawn the worker with `forwardsWorkerStderr: false`,
-  so that stderr is discarded. Only the DFlash path (`main.swift:1404-1412`) forwards it.
+- `Sources/MLXFastTrustedHarness/QwenRuntimeWorker.swift:2046` and `:2207` both spawn the
+  worker with `emit: options.forwardsWorkerStderr ? nil : { _ in }` — the drain reads
+  stderr and throws it away.
+- `Sources/MLXFastCLI/main.swift:2224` defaults `forwardsWorkerStderr: Bool = false`, and
+  `:2301` further ANDs it: `forwardsWorkerStderr && !officialRun`. Only the DFlash path
+  (`main.swift:1409`, inside the cited `:1404-1412`) passes `true`.
 
-The fix is to stop using stderr as the transport:
+So a stderr-based trace is indeed invisible. **The trace does not use stderr.**
+
+**Why it is nevertheless reachable — two independent facts.**
+
+1. **The sink is a file, not stderr.** `Qwen36MTPBlockSession.swift:475-487` opens an
+   append-mode `FileHandle` on the absolute path named by `MLX_QWEN_MTP_TRACE_FILE`.
+   Discarding the worker's stderr has no effect on a file the worker opens itself.
+
+2. **Both variables survive the worker env filter, and this is provable rather than
+   assumed.** `sanitizedRuntimeWorkerEnvironment` (`QwenRuntimeWorker.swift:2623`,
+   applied at `:2036` and `:2191`) is a documented **strict allowlist** that starts from
+   an empty environment. Its `allowedPrefixes` list at `:2638-2645` contains `"MLX_"` at
+   `:2643`. `MLX_QWEN_MTP_TRACE` and `MLX_QWEN_MTP_TRACE_FILE` both match that prefix and
+   are copied through. The filter's own doc comment at `:2600` makes the trap explicit —
+   `"MLX_"` does **not** match `MLXFAST_*` — which is exactly why the sink-path variable
+   is `MLX_`-prefixed and not `MLXFAST_TRACE_FILE`.
+
+**The recipe:**
 
 ```bash
 export MLX_QWEN_MTP_TRACE=1
@@ -93,12 +212,22 @@ export MLXFAST_NO_SANDBOX=1                          # sandbox denies file-write
 ./benchmark-qwen-mtp.sh --local-iterate
 ```
 
-Both variables are `MLX_`-prefixed so they pass the worker env filter.
-`MLXFAST_NO_SANDBOX=1` is required because the worker sandbox profile denies
-`file-write*`; without it the open silently fails and the file stays empty.
-The sink is an append-mode `FileHandle` guarded by an `NSLock`, so the two worker
-sessions (serial control, then the MTP leg) interleave safely into one file, tagged by
-session index.
+`MLXFAST_NO_SANDBOX=1` is set in the **parent** (it is a harness variable and is
+deliberately *not* forwarded to the child) because the worker's Seatbelt profile otherwise
+denies `file-write*`; without it the open silently fails and the file stays empty.
+The sink is guarded by an `NSLock`, so the two worker sessions (serial control, then the
+MTP leg) interleave safely into one file, tagged by session index.
+
+**Empirical proof, not just a code argument:** the r1 traced run emitted 28 complete
+`mtp-round` records plus per-round sub-records from the live scored worker. A method that
+was unreachable could not have produced them. Sections 3, 4 and 6 are computed from that
+file.
+
+**Phase-oracle note (unprompted, because the allowlist doc raises it).** `MLX_`-prefixed
+names are allowlisted precisely because they are phase-independent, and the ranked
+workflow never sets either trace variable, so this instrumentation cannot act as a phase
+oracle. It is nonetheless labelled not-for-promotion in §9 and is gated off by default
+(`traceRounds` is `false` unless `MLX_QWEN_MTP_TRACE == "1"`).
 
 This is reusable by any student who needs worker-side instrumentation — it also unblocks
 the same measurement on PR #3. `scratch/run-bench.sh` wires it up end to end.
@@ -1219,33 +1348,261 @@ the absolute ms are context. §5A's floor is computed from **this host's own** m
 regardless of the slowdown; §5.3's cross-host reconciliation uses thorfinn's constants
 explicitly.
 
-### 8.4 Failed run — 512-token traced window (abandoned deliberately)
+### 8.4 The 512-token window is blocked by a host thermal fault — exact commands and output
 
-I attempted a 512-token traced window to match the ranked leg length. Both attempts
-died in the pre-leg cooling gate, never reaching a measurement:
+Feedback (9) asks for headline numbers at 512 decode tokens and says: *"If you cannot
+run, post a comment naming the exact command and its output."* I cannot run, and this is
+that record. **The headline numbers in this report are therefore at 192 decode tokens,
+not 512.** §8.4.3 quantifies what that does and does not cost.
 
-| job | commit | wall | outcome |
-|---|---|---:|---|
-| `084340b2-…` | `e604ee3` | 267 s | exit 1 — cool gate abort |
-| `5322fad0-b2f2-4a32-be54-801d80d1f4f6` | `e604ee3` | 640 s | exit 1 — cool gate abort |
+#### 8.4.1 Four attempts, all killed by the pre-timing cool gate
 
-Log line (2nd attempt, `scratch/results/trace-512/stderr.log`, file mtime 16:08 local,
-run started 15:57):
+| job | commit | base | wall | model held? | outcome |
+|---|---|---|---:|:---:|---|
+| `084340b2-…` | `e604ee3` | r1 `e20268e9` | 267 s | yes | exit 1 — cool gate abort |
+| `5322fad0-b2f2-4a32-be54-801d80d1f4f6` | `e604ee3` | r1 `e20268e9` | 640 s | yes | exit 1 — cool gate abort |
+| `4e1e7328-7d80-41a1-88f3-b4e841a46e59` | `bcdd5c6` | **r2 `67bde702`** | 277 s | yes | exit 1 — cool gate abort |
+| `eafffc4a-ea77-4f11-9a65-7533af8baca6` | `bcdd5c6` | **r2 `67bde702`** | 210 s | **no — gate only** | exit 1 — cool gate abort |
 
-```text
-GPU is hot and not cooling (current 40.0C, min seen 40.2C, target <=40C, waited 280s)
+The fourth row is the controlled one and it is the reason this is not a self-inflicted
+problem. `benchmark-qwen-mtp.sh:146` runs the gate as
+`cool_gate_command=("./benchmark.sh" "--local-cool-gate-only")`, so I ran exactly that
+sub-step **in isolation, with no model loaded and no GPU work of mine anywhere on the
+box**:
+
+```bash
+./benchmark.sh --local-cool-gate-only
 ```
 
-The gate is `COOL_GATE_TEMP_C=40` (`benchmark.sh:28`) sampled by
-`macmon pipe -s1 | jq .temp.gpu_temp_avg` (`benchmark.sh:448-453`), with POLL 10 s,
-ABORT-on-no-progress 180 s, STALL 90 s, MAX_WAIT 900 s, PROGRESS_EPSILON 0.25 C. The
-same `WirelessRadioManagerd` spin from §8.3 held the package above 40 °C indefinitely,
-so the gate could never clear. **I did not bypass the gate.** I dropped to the
-192-token window instead, which is sufficient: every conclusion in this report is a
-*share* or a *ratio*, and §3's steady-state column already excludes warmup, so a longer
-window changes the sample size, not the verdict. The one thing 512 tokens would have
-added — a second, longer-horizon guardrail sample — is partially covered by the 28-round
-after-first guardrail in §6.
+Its complete output (25 lines, the whole log):
+
+```text
+benchmark.sh: waiting for GPU to cool down before timing (current 40.6C, target <=40C, waited 0s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.6C, target <=40C, waited 10s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.6C, target <=40C, waited 20s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.5C, target <=40C, waited 30s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.5C, target <=40C, waited 40s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.5C, target <=40C, waited 50s)...
+benchmark.sh: GPU cool-down is stalled and no interactive terminal is attached;
+benchmark.sh: to force the fans to 70% manually, run: .../tools/fan-control.sh boost
+benchmark.sh: waiting for GPU to cool down before timing (current 40.5C, target <=40C, waited 60s)...
+   … (identical 40.5C lines at 70s … 170s) …
+benchmark.sh: ERROR: GPU is hot and not cooling down (current 40.5C, min seen 40.6C, target <=40C, waited 180s).
+benchmark.sh: something else appears to be loading the GPU. Close GPU-heavy
+benchmark.sh: processes (other benchmarks, ML jobs, games, video encodes),
+benchmark.sh: let the machine cool, and rerun. To debug without the gate, set
+benchmark.sh: MLXFAST_LOCAL_COOL_GATE=0 (hot-start timings are not comparable).
+```
+
+Read that carefully: **`min seen 40.6C`**. Across 180 s in which I was running nothing at
+all, the die never once reached the 40.0 °C gate, and never even dipped below 40.5 °C.
+The gate is not waiting for *my* heat to dissipate — there is no heat of mine to
+dissipate. The host's floor is simply above the threshold (§8.4.2). This run also
+confirms the script degrades safely without a tty: `benchmark.sh:822`
+(`if ! { : < /dev/tty; } 2>/dev/null;`) detects the missing terminal and prints the
+fan-boost hint instead of blocking on a prompt.
+
+The exact command for the third row (full pipeline, post-rebase, on the r2 base):
+
+```bash
+TOKENS=512 scratch/run-bench.sh r2-trace-512 1 --local-iterate
+# expands to, with the §1a trace variables exported:
+#   MLXFAST_QWEN_MTP_DECODE_TOKENS=512 ./benchmark-qwen-mtp.sh --local-iterate
+```
+
+Its exact output (tail of `scratch/results/r2-trace-512/stderr.log`):
+
+```text
+benchmark.sh: waiting for GPU to cool down before timing (current 40.1C, target <=40C, waited 210s)...
+benchmark.sh: ERROR: GPU is hot and not cooling down (current 40.1C, min seen 40.3C, target <=40C, waited 220s).
+benchmark.sh: something else appears to be loading the GPU. Close GPU-heavy
+benchmark.sh: processes (other benchmarks, ML jobs, games, video encodes),
+benchmark.sh: let the machine cool, and rerun. To debug without the gate, set
+benchmark.sh: MLXFAST_LOCAL_COOL_GATE=0 (hot-start timings are not comparable).
+benchmark-qwen-mtp.sh: GPU cool gate failed before the MTP reference pass; free the GPU and rerun
+```
+
+No timed leg ever started, so there is no partial result to salvage —
+`scratch/results/r2-trace-512/{stdout.log,score.json}` are empty and `trace.log` was
+never created.
+
+#### 8.4.2 Root cause: the host's *idle* floor is above the gate
+
+This is not a hot-GPU problem that waiting fixes. Measured after ~12 minutes with **zero**
+GPU work on the machine:
+
+```console
+$ macmon pipe -s1 | jq -r '.temp.gpu_temp_avg, .temp.cpu_temp_avg'
+40.174556732177734
+40.074424743652344
+
+$ ps -Ao pid,user,pcpu,comm -r | head -4
+  PID USER     %CPU COMM
+49894 root    103.1 /usr/sbin/WirelessRadioManagerd
+  102 _windowserver 14.1 .../WindowServer
+15542 ec2-user 11.9 .../venv/bin/python -m senpai_agent.controller student
+```
+
+The gate needs **≤ 40.0 °C** (`COOL_GATE_TEMP_C=40`, `benchmark.sh:28`); the idle floor is
+**40.17 °C**. A runaway root-owned `WirelessRadioManagerd` (103% CPU, up from 87% earlier
+in the session; it has already respawned under a new PID once) plus `bluetoothd` (9.3%)
+hold the package there. No `mlxfast` worker of mine was resident — the only `ec2-user`
+process is my own Senpai controller, which I cannot kill without ending the session.
+
+I sampled this four times over the session. It is not drifting downward:
+
+| sample | GPU °C | CPU °C | `WirelessRadioManagerd` %CPU | `bluetoothd` |
+|---|---:|---:|---:|---|
+| 1 | — | 40.07 | 87 (earlier PID) | — |
+| 2 | 40.17 | 40.07 | 103.1 (PID 49894) | 9.3% |
+| 3 | 40.61 | 40.17 | 99.7 (PID 49894) | 8.3% (PID 43454) |
+| 4 | 40.69 | 40.20 | 99.8 (PID 49894) | 4.1% (PID 43895) |
+
+`WirelessRadioManagerd` has held one core saturated for the entire assignment under a
+stable PID (49894), while `bluetoothd` keeps crashing and respawning under new PIDs
+(43454 → 43895) — the classic signature of a wedged Bluetooth/Wi-Fi coexistence daemon.
+Both are root-owned; this runner has no non-interactive `sudo`. The GPU die trend over
+the session is **40.17 → 40.61 → 40.69 °C**, i.e. moving *away* from the gate, so
+"wait longer" is not a fix available to me.
+
+A secondary factor makes the gate fire *early*: progress requires a **0.25 °C** drop
+(`COOL_GATE_PROGRESS_EPSILON_C`, `benchmark.sh:33`), but the die falls ~0.1 °C per poll,
+so the stall detector trips while the GPU is still genuinely, slowly cooling — at 220 s in
+the model-holding runs and at the `COOL_GATE_ABORT_AFTER_S=180` floor (`benchmark.sh:30`)
+in the isolated gate-only run, which saw no progress at all to reset the timer.
+The gate constants at `benchmark.sh:28-34` are `readonly` and have no environment
+override, so the gate cannot legitimately be made *more patient*.
+
+**Every escape route is either unavailable or forbidden, and I took none of them:**
+
+- `tools/fan-control.sh boost` — the remedy `benchmark.sh` itself offers. Its own header
+  documents that SMC writes need root and that "sudo prompts for your password itself, on
+  your terminal". No automated session has an interactive sudo prompt.
+- `MLXFAST_LOCAL_COOL_GATE=0` — would work, and is **forbidden** by `program.md` ("Do not
+  bypass the lock or cooling gate"). Hot-start timings are also not comparable.
+- `MLXFAST_GPU_TEMP_CMD` — a documented portability seam that would let me substitute any
+  number for the sensor reading. Using it here would be falsifying the thermal gate, which
+  is the same violation as disabling it. Not used.
+
+#### 8.4.3 What the 192-token window does and does not cost
+
+The assigned hypothesis is refuted by a **~70× margin** (host-only graph build is 0.35% of
+the round, against the assignment's assumed ~24%). No window length flips a 70× margin,
+and every Part A number is a *share* or a *ratio*, with §3 already reporting a
+steady-state (round > 1) column that excludes warmup.
+
+Two specific reassurances:
+
+1. **The r1 192-token data is not contaminated by the EOS defect that motivated the r2
+   rebase.** Feedback (9) states runs on the old base die at ~decode token 301. 192 < 301,
+   so the traced window completed cleanly — 28 rounds, `all_tokens_matched: true`,
+   `residual_divergence_count: 0`. The defect is why 512 was impossible *then*; it does
+   not invalidate 192.
+
+2. **Context length is not a confound.** A 512-token window walks the KV cache from 512 to
+   1024. Only 16 of 64 layers are full attention; the other 48 are Gated DeltaNet and are
+   O(1) in context. The full-attention KV stream is
+   `2 × 4 heads × 1024 × 256 × 2 B × 16 layers = 67.1 MB`, against **14,412 MB** streamed
+   per verify — **0.47%** of the round at kv=1024, and the 512→1024 growth adds only
+   **0.23%**. §8.4.4 measures this directly rather than leaving it as arithmetic.
+
+What is genuinely lost, and I am not claiming otherwise: a longer-horizon guardrail sample
+(partly covered by the 28-round after-first guardrail in §6) and tighter per-depth
+statistics from real accepted-length variation.
+
+#### 8.4.4 Measured KV-length sweep — the 192-token result transfers to 512
+
+The thermal gate blocks the *end-to-end* 512-token leg, but it does not block the question
+that window length actually raises: **does a longer context change the round composition?**
+That is a device-side question, and the component harness answers it directly without
+holding the model or touching the benchmark wrapper, so it runs with no cool gate.
+
+I swept `research/round_floor.py` at the ranked depth (`--depth 8`, verify width 9) across
+the exact KV range a ranked leg traverses — a 512-token seed decoding 512 tokens walks the
+cache from 512 to 1024 — plus 1280 as an overshoot control. 15 reps per point.
+
+```bash
+for KV in 512 640 768 896 1024 1280; do
+  research/round_floor.py --depth 8 --kv-len $KV --reps 15 \
+    --measured-block-seconds 0.21775 --out scratch/results/kv_sweep/kv_${KV}.json
+done
+```
+
+Job `6c9199e9-e152-4183-9a7a-8cfe5902d894`, exit 0, 67.3 s, commit `bcdd5c6`.
+
+| kv_len | roofline (ms) | achieved floor (ms) | kernel gap | vs kv=512 | verify bytes (MB) |
+|---:|---:|---:|---:|---:|---:|
+| 512 | 90.031 | 226.555 | 136.524 | — | 14,763.62 |
+| 640 | 90.114 | 226.000 | 135.886 | −0.245% | 14,772.01 |
+| 768 | 90.194 | 226.886 | 136.692 | +0.146% | 14,780.40 |
+| 896 | 90.278 | 226.830 | 136.552 | +0.121% | 14,788.79 |
+| 1024 | 90.350 | 227.409 | 137.059 | **+0.377%** | 14,797.18 |
+| 1280 | 90.505 | 228.435 | 137.931 | +0.830% | 14,813.95 |
+
+**Result 1 — the window is worth +0.38%.** Across the full 512→1024 walk the achieved
+kernel floor moves **+0.854 ms on a ~227 ms round**. A least-squares fit gives
+**2.746 µs per KV position** (roofline slope 0.616 µs). The assignment's central quantity,
+the host-only share of the round, therefore moves from 0.350% at kv=512 to
+`0.350% × 226.555/227.409 = 0.349%` at kv=1024. The hypothesis is refuted by ~70×; a
+0.001-percentage-point context effect cannot touch that.
+
+**Result 2 — only the two SDPA kernels move at all.** Of 16 components, 14 are flat within
+scatter and two scale as expected:
+
+| component | kv=512 | kv=1024 | Δ | Δ% |
+|---|---:|---:|---:|---:|
+| `verify:full_attn:sdpa` | 2.208 | 3.903 | **+1.695** | **+76.8%** |
+| `head:attn_sdpa` | 0.198 | 0.313 | **+0.115** | **+58.2%** |
+| `verify:mlp:gate_up_down` | 133.607 | 133.420 | −0.187 | −0.14% |
+| `verify:lin_attn:in_proj_fused_qkvzba` | 31.738 | 31.678 | −0.060 | −0.19% |
+| `verify:lm_head_full_vocab` | 9.953 | 9.955 | +0.002 | +0.02% |
+| `head:draft_lm_head_compact` | 9.077 | 9.069 | −0.008 | −0.09% |
+| all 48 `lin_attn` rows (subtotal) | 48.589 | 47.987 | −0.602 | −1.24% |
+
+The 48 Gated DeltaNet layers are **byte-identical** across the sweep (`+0.000 MB`),
+confirming they are O(1) in context; their −1.24% drift is measurement scatter, not signal.
+The two SDPA rows grow by exactly the KV they read.
+
+**Result 3 — the byte model is confirmed to the byte.** §8.4.3 predicted the
+full-attention KV stream at kv=1024 as `2 × 4 heads × 1024 × 256 × 2 B × 16 layers`:
+
+```text
+analytic  2*4*1024*256*2*16                       = 67,108,864 B
+measured  verify:full_attn:sdpa 4,194,304 B x 16  = 67,108,864 B
+```
+
+An exact match. The predicted 512→1024 growth was 0.23% of the verify stream; measured is
+**+33.554 MB on 14,763.62 MB = +0.227%**.
+
+The 14,763.62 MB here and the **14,412.3 MB** quoted in §5/§8.4.3 are the same model counted
+to different boundaries, and they reconcile exactly. 14,412.3 MB is the pure *weight* stream
+(`48 × 215.56 + 16 × 209.39 + 715.2`). The harness additionally counts the state and
+activation traffic that the weight model omits:
+
+```text
+verify:lin_attn:gated_delta_kernel  (recurrent state, x48)   301.990 MB
+verify:full_attn:sdpa               (KV at kv=512,   x16)     33.554 MB
+verify:lin_attn:conv1d_depthwise_k4 (conv state,     x48)     15.729 MB
+                                                    total    351.273 MB
+14,412.3 + 351.3 = 14,763.6 MB
+```
+
+So the two figures differ by 2.4%, entirely accounted for, and the 0.47%-vs-0.4545% spread
+in the two KV-share estimates is just which denominator was used.
+
+**Result 4 — there is no 256-boundary cliff.** This was the one open worry in §8.4.3, since
+MLX allocates KV in blocks of 256 and my window straddled no boundary. The sampled points
+sit on both sides of the 512/768/1024/1280 boundaries. Residuals about the linear fit are
+`+0.473 −0.434 +0.101 −0.307 −0.079 +0.244` ms — **the scatter is larger than any step**,
+and the largest single anomaly is kv=640 coming in *below* kv=512. Block-boundary
+reallocation costs nothing measurable on the scored path.
+
+**Honest limits of this sweep.** It measures the *device* floor, not an end-to-end leg. It
+cannot show accepted-length statistics, rollback behaviour, or scheduler drift over 512
+tokens, and `--measured-block-seconds` was pinned to the r1 192-token measurement, so the
+`scheduling gap` column is not independently measured here and I have not quoted it. What
+it does establish is the specific thing that window length could have changed — round
+composition and the byte model underneath it — and that is stable to well under 1%.
 
 ## 9. Candidate diff — **not for promotion**
 
@@ -1269,18 +1626,23 @@ read once), `Qwen35MTP.swift:91` guards with an early fast path, and `Qwen35MTP.
 hoists the flag out of the layer loop — but "cheap" is not "free", and a promoted
 candidate should not carry a `FileHandle`/`NSLock` writer on the scored path.
 
-Scope and budget re-checked at HEAD against `BASE_SHA`:
+Scope and budget re-checked at HEAD against the **r2** `BASE_SHA=67bde70274c42aef089ac73cf00608d8037a815e`:
 
 ```text
-senpai/validate-assignment-scope.sh <BASE_SHA> \
+senpai/validate-assignment-scope.sh 67bde70274c42aef089ac73cf00608d8037a815e \
   Sources/MLXFastModel/Qwen36MTPBlockSession.swift \
   Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift
-  -> assignment scope OK: 2 submitted path(s)
+  -> assignment scope OK: 2 submitted path(s)   [exit 0]
 
-senpai/check-editable-budget.sh <BASE_SHA>
-  -> editable budget OK: source=2404076/3000000 headroom=595924
+senpai/check-editable-budget.sh 67bde70274c42aef089ac73cf00608d8037a815e
+  -> editable budget OK: source=2402616/3000000 bytes headroom=597384
      growth=7966/262144 exempt=2410/2147483648 files=154
+     (base source=2394650, exempt=2410, files=154)   [exit 0]
 ```
+
+The `growth=7966` figure is the candidate-surface growth of the two Swift files only; the
+1,747-line report and the 916-line harness contribute nothing to it, which is the
+mechanical confirmation that they are outside `editablePaths`.
 
 `research/round_floor.py` is correctly rejected by the scope validator, confirming it is
 never packaged.
