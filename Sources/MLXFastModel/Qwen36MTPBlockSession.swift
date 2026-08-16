@@ -467,12 +467,16 @@ public final class Qwen36MTPBlockSession {
     /// to read the phase trace back; the local run therefore has to relax the
     /// generated worker sandbox (`MLXFAST_NO_SANDBOX=1`, refused on official
     /// runs) because that profile denies `file-write*`.
+    /// One file per worker PID: the wrapper spawns a separate worker for
+    /// reference-row generation, the serial control and the MTP leg, and a
+    /// shared path would leave only the last one.
     private static let traceFile: FileHandle? = {
         guard traceRounds,
-              let path = ProcessInfo.processInfo.environment[
+              let base = ProcessInfo.processInfo.environment[
                   "MLX_QWEN_MTP_TRACE_PATH"
-              ], !path.isEmpty
+              ], !base.isEmpty
         else { return nil }
+        let path = "\(base).\(ProcessInfo.processInfo.processIdentifier)"
         FileManager.default.createFile(atPath: path, contents: nil)
         return FileHandle(forWritingAtPath: path)
     }()
