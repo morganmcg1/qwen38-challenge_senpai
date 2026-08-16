@@ -552,6 +552,128 @@ removing any per-arm thermal offset): d1 0.0805 (N=129, 4 arms), d2 0.0839
 (N=83), d3 0.2424 (N=61), d4 0.3680 (N=48), d6-combined 0.6008 (N=33) against
 pooled 0.2919 + 0.3000 = 0.5919. Agrees with the pooled fit within ~2%.
 
+### The 512-token forced-depth curve (ranked-equivalent window) — HEADLINE
+
+The table above pools 256- and 512-token arms and is the *directional screen*.
+This is the ranked-equivalent replacement: every row a dedicated forced-depth
+arm at 512 decode tokens, declared 4-bit head, same host, one arm at a time
+through the run lock and the 40 C gate.
+
+Each arm runs its own serial leg, so the serial column is five independent
+measurements spread over ~4 hours. They span **0.073366–0.073918 s/token, a
+0.75 % spread** — the thermal and host control for everything below.
+
+| d | serial s/tok | MTP s/tok | **speedup** | eff_draft | accept rate | matched | div |
+|---:|---:|---:|---:|---:|---:|:---:|---:|
+| 0 | 0.073593 | 0.073350 | 1.0033 | 0.000 | – | ✅ | 0 |
+| 1 | 0.073366 | 0.044092 | 1.6639 | 1.000 | 0.9807 | ✅ | 0 |
+| 2 | 0.073418 | 0.034140 | 2.1505 | 1.994 | 0.9490 | ✅ | 0 |
+| 3 | 0.073918 | 0.031925 | **2.3153** | 2.985 | 0.9475 | ✅ | 0 |
+| 8 | 0.073386 | 0.034268 | 2.1415 | 7.941 | 0.8222 | ✅ | 0 |
+
+`d = 0` reproducing **1.0033** is the calibration anchor: forcing zero drafts
+costs 0.33 % against the serial leg, so `C(0) ≈ V(1)` and the shipped
+`zeroDraftRoundRatio = 0.999468` is correct to within measurement noise.
+
+Round-level costs from the same traces, `C(0)` pooled over the depth-0 control
+leg of **all five arms (N = 3060)**:
+
+| d | N | C(d) µs | median | sd% | m(d) µs | **h(d)** | C/C0 | eval µs | host µs |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 3060 | 65170.5 | 64757.0 | 4.4 | – | – | 1.000 | 29020.9 | 36147.9 |
+| 1 | 254 | 70931.1 | 70452.0 | 6.9 | 5760.6 | **0.0884** | 1.088 | 33796.3 | 37132.3 |
+| 2 | 163 | 75398.2 | 75114.0 | 2.8 | 4467.1 | **0.0685** | 1.157 | 35110.4 | 40285.4 |
+| 3 | 120 | 91828.3 | 91835.0 | 0.4 | 16430.2 | **0.2521** | 1.409 | 43525.8 | 48300.4 |
+| 8 | 45 | 198683.0 | 198611.0 | 0.3 | 34511.0/4 = 8627.8 | **0.1324**/step | 3.049 | 93032.1 | 105648.3 |
+
+The five per-arm depth-0 controls agree to **0.7 %** (65046.1, 65065.0,
+65100.0, 65256.1, 65512.2 µs), which is what licenses pooling `C(0)` and
+comparing `C(d)` measured hours apart.
+
+#### Two results that the scalar cost model cannot express
+
+**1. `m(2) < m(1)`.** The second draft step is *cheaper in absolute terms* than
+the first: 4467 µs against 5761 µs. A model of the form `C(d) = V(d+1) + d·H`
+with any constant `H` forces the marginal to be non-decreasing once verify
+width costs are monotone, so no scalar `headStepCostRatio` — 0.20 or any other
+value — can reproduce this. It is not noise: `d = 2` has N = 163 at sd 2.8 %
+and `d = 1` has N = 254.
+
+**2. A 3.7× knee at `d = 3`.** `h` jumps from 0.0685 to 0.2521 in one step.
+The shipped scalar 0.20 is therefore **2.3× too high at `d = 1`, 2.9× too high
+at `d = 2`, and 26 % too low at `d = 3`** — it is wrong in *both directions*
+inside the range the scheduler actually chooses from. This is the direct answer
+to the assignment's question, and the answer is choice **(c), "something
+else"**: a cheap-flat region, a sharp knee, then a plateau.
+
+#### The realised optimum on this fixture is `d = 3`, not `d = 8`
+
+Decode-round-only seconds per token, from the trace rather than the score file
+(so prefill and warmup are excluded):
+
+| d | tokens/round | MTP-leg s/token | vs best |
+|---:|---:|---:|---:|
+| 0 | 1.000 | 0.065046 | +171 % |
+| 1 | 1.981 | 0.035910 | +49.8 % |
+| 2 | 2.897 | 0.026112 | +8.9 % |
+| 3 | 3.840 | **0.023980** | — |
+| 8 | 7.523 | 0.026528 | +10.6 % |
+
+Drafting **past `d = 3` loses 10.6 %** on this fixture, and the leg-level score
+agrees (2.3153 at `d = 3` against 2.1415 at `d = 8`). Depth 8 buys 1.96× more
+tokens per round than depth 3 but pays 2.16× more per round, so it is on the
+wrong side of the knee. The extra cost is not acceptance-driven — per-position
+acceptance is flat at ~0.95 with no depth decay — it is the `C(d)` knee.
+
+#### The curve predicts the end-to-end policy A/B to within 1 %
+
+This is the strongest validation I have that `C(d)` is right, and it is also
+why the advisor was correct that the policy A/B does not transfer.
+
+Measured adaptive arms at 256 tokens, declared head:
+
+| arm | cost model | mean chosen depth | accept | tokens/round | speedup |
+|---|---|---:|---:|---:|---:|
+| `base-decl` | shipped scalar 0.20 | 6.000 | 0.9435 | 6.649 | 2.0613 |
+| `base256` | shipped scalar 0.20 (repeat) | 6.000 | 0.9435 | 6.649 | 2.0712 |
+| `cand256` | measured curve | 3.000 (62/63 rounds) | 0.9896 | 3.938 | 2.0765 |
+
+The two baseline repeats differ by 0.5 %, so **+0.5 % for the candidate is
+inside the noise floor. The A/B is a wash.**
+
+Now predict that wash from the round-level curve alone, before looking at the
+speedups:
+
+```text
+shipped   picks d = 6:  C(6) / (tokens/round) = 154169.1 / 6.649 = 23187 us/token
+measured  picks d = 3:  C(3) / (tokens/round) =  91828.3 / 3.938 = 23318 us/token
+                                         predicted difference:  -0.6 %
+                                         observed  difference:  +0.5 %
+```
+
+The curve predicts a dead heat and a dead heat is what the benchmark reports.
+Depths 3 and 6 sit on a **genuinely flat efficiency plateau when acceptance is
+~0.95**: `d = 6` costs 1.68× more per round and returns 1.69× more tokens.
+
+So the shipped scalar 0.20 is *badly wrong as a description of cost* — 2.3×
+high at `d = 1`, 26 % low at `d = 3` — and yet nearly *harmless as a policy* on
+a high-acceptance fixture, because it lands on a plateau where the choice
+barely matters. **Both statements are true, and only the first one transfers.**
+
+The plateau breaks as soon as acceptance falls. At 512 tokens the `d = 8` arm
+sees accept 0.8222 (the post-EOS regime) and the gap opens to a real
+**8.1 %** in favour of `d = 3` (2.3153 against 2.1415). The value of the curve
+is therefore not the +0.5 % here; it is that the curve tells you *where the
+plateau ends*, which a scalar cannot.
+
+#### Host time, not GPU time, is the majority of every round
+
+The `eval` and `host` columns split each round at the blocking evaluation.
+Host time is **55 % of a depth-0 round** (36.1 ms of 65.2 ms) and stays above
+half at every depth. Both grow with `d`, so drafting is not hiding under an
+idle GPU. This bounds any pipelining or overlap experiment: the addressable
+budget is large, but it is on the CPU side of the boundary.
+
 ### Shape: answer (c), "something else"
 
 Not flat-then-knee at d ≈ 7, and not flat. The curve is **cheap-flat at
