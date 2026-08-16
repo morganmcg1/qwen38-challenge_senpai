@@ -648,10 +648,16 @@ whole-window fields are audit-only.
 Max-round detail: round 16, `d=8`, `acc=7`, **`shape_change=0`**, `repair=none`,
 draft 26906 µs, verify 98994 µs, eval 91998 µs.
 
-**The max block is not caused by a width change, a rebuild, or a repair.** It is an
+**The max block is not caused by a width change or a rebuild.** It is an
 ordinary `d=8` round. Spread is driven purely by schedule depth
-(d=4 → 140 ms, d=8 → 218 ms). Repairs: **none** in the window. Width changes: 7 of 28.
-The guardrail has 3.1× margin.
+(d=4 → 140 ms, d=8 → 218 ms). Width changes: 7 of 28. The guardrail has 3.1× margin.
+
+> **Corrected in §6e.** `repair=none` here is the *full-repair* flag (`didRepair`), not
+> the parent partial-rejection counter. Round 16 has `acc=7 < d=8`, so it **is** a
+> partially-rejected round and it **did** take the cheap prefix-repair path. §6e measures
+> that cost at **+1,018 µs (+0.47%)** against the other eight `d=8` rounds, which is far
+> too small to explain the max: depth, not the repair, still drives the spread, and the
+> guardrail margin is unchanged.
 
 ### Head forwards per round (feedback 3.4)
 
@@ -807,6 +813,11 @@ dropped without ever entering an `eval`/`asyncEval` output set, so MLX never sch
 them. And in the 192-token window **`repair=1` occurred in 0 of 28 rounds**, so the
 snapshot was never materialized even once.
 
+> **§6e note.** `repair=1` is `didRepair`, i.e. `fullRepairCount`, and that is exactly the
+> flag this argument needs: `snapshot` is consumed *only* at line 1089 on the full-repair
+> path. The 2–4 partially-rejected rounds took `restoreAfterPrefixReject`, which does not
+> read `snapshot`. So the retraction below stands unchanged.
+
 My floor line modelled the 302 MB read+write, i.e. the **rollback-path** cost. Removing
 it:
 
@@ -866,9 +877,12 @@ part of the round; there is no slack to recover.
 > bf16 chain figure once the compact draft `lm_head` (9.03 ms) is added: 27.41 + 9.03 =
 > **36.4 ms**, all of it real and none of it recoverable by better kernels.
 
-**"Report `rollbackRoundCount`." — ANSWERED: zero.** `repair=1` in **0 of 28 rounds**
-(`acc` never fell below the eager-checkpoint path). The rollback/repair term contributes
-**0 ms** to this window, which is also why 6.3's correction is safe to apply.
+**"Report `rollbackRoundCount`." — ~~ANSWERED: zero~~ — WRONG, corrected in §6e.**
+`repair=1` in **0 of 28 rounds** is true but it is the *full-repair* flag, not
+`rollbackRoundCount`. The correct answer is `fullRepairCount = 0` (measured) and
+`rollbackRoundCount = prefixRepairCount ∈ [2, 4]` (derived). The **snapshot** term still
+contributes **0 ms** — `snapshot` is only consumed on the full-repair path, which is the
+one that measured zero — so 6.3's correction remains valid. See §6e.
 
 **"48 dependent tiny GDN kernels, 1.5-4 ms." — CONSISTENT, and already inside the floor.**
 `verify:lin_attn:gated_delta_kernel` = **3.198 ms achieved** (48 calls, 37.8% efficiency,
@@ -1187,9 +1201,11 @@ exact two-guard change are in §10 follow-up 0d.
   achieved-kernel 224.71 ms / measured block 217.75 ms), with the bf16-head correction
   (243.87 ms, −26.12 ms scheduling gap) and the `d=7` pass (202.40 / 190.34, −12.06) in
   §6c.3.
-- **`rollbackRoundCount = 0`.** Zero repairs and zero rollbacks across all 28 rounds of the
-  192-token window; `repair=1` never appears in the sub-trace. No rollback cost is hiding
-  in any number in this report.
+- **~~`rollbackRoundCount = 0`~~ — WRONG; see §6e.** The measured zero is
+  `fullRepairCount`, the expensive re-forward path. `rollbackRoundCount` (= partially
+  rejected rounds = `prefixRepairCount` here) is **2–4**, all of them on the cheap
+  tape-replay path. The corrected cost is **≈ +1,018 µs per prefix repair (+0.47% of a
+  `d=8` round)**, still negligible against every number in this report.
 - **Verify `lm_head` is kept separate from the compact draft readout** and always has been:
 
   | line | rows | bytes | calls/round at d=8 | achieved | roofline | eff |
@@ -1201,6 +1217,181 @@ exact two-guard change are in §10 follow-up 0d.
   verify readout is compute-bound and 35% efficient — it belongs to the §5B width-cliff
   story — while the draft readout is bandwidth-bound and already at roofline, so its only
   available lever is reading fewer bytes.
+
+## 6e. Answers to feedback (10) and (11)
+
+Both comments landed at 17:38:31Z and 17:45:07Z, before my 18:09:40Z submission, and I
+did not reconcile them. This section is the correction. **One of my published numbers was
+wrong**, and the corrected answer is stronger, not weaker.
+
+### 6e.1 `fb10` — the overlap-vs-serialize verdict: **SERIALIZED**
+
+The advisor called this "the single most load-bearing thing you can report", so it gets a
+direct answer with the structural argument first and the arithmetic second.
+
+**Verdict: the CPU `draft_build` leg and the GPU draft forward do NOT overlap. They
+serialize, and the serialization is structural, not incidental.**
+
+Source path, per round, per deep draft step (`Qwen36MTPBlockSession.swift`):
+
+1. The host walks the head-step Swift code and appends lazy `MLXArray` nodes. No GPU work
+   is scheduled yet — MLX is lazy, so this is pure host tape construction. This is the
+   segment I named `draft_build` / `host_only`.
+2. The host then calls `asyncEval(...)` on the step outputs. MLX's `async_eval` **walks
+   and submits the tape on the calling thread** before it returns; the return only means
+   "submitted", not "complete".
+3. The host immediately needs the step's sampled token to build step *n+1*'s input, so it
+   blocks. That block is the segment I named `tail_async`.
+
+Steps 1 and 3 are therefore on the same thread, in strict order, with no producer/consumer
+queue between them. There is no second host thread building the next step's tape while the
+GPU drains the current one. **The host cannot hide behind the GPU here because it is the
+thread that submits and then waits.**
+
+The timing discriminator the advisor proposed (`wall ≈ sum` ⇒ serialize, `wall ≈ max` ⇒
+overlap) is **degenerate on this workload**, and I want to be explicit about that rather
+than claim it as confirmation:
+
+| steady-state deep draft step | value |
+|---|---:|
+| host leg (`draft_build`, tape construction) | **33.1 µs** |
+| GPU wait leg (`tail_async`) | **3,575 µs** |
+| measured wall per step | **3,608 µs** |
+| `sum(host, gpu)` | 3,608 µs |
+| `max(host, gpu)` | 3,575 µs |
+| `sum − max` | 33 µs (**0.9%**) |
+
+The two predictions differ by 0.9%, which is inside sampling noise. So the timing test
+alone cannot separate them; the verdict above rests on the source contract, and the timing
+is merely *consistent* with it (`wall = sum` to within 1 µs).
+
+**Why this makes the assignment's conclusion stronger, not weaker.** The advisor's concern
+is that a serialized host leg might be *masked* on the local arm and only matter on the
+ranked arm. The masking runs the other way:
+
+- The host leg is **arm-independent**. It is Swift graph construction over a fixed number
+  of ops; it does not touch weights. Steady-state 33.1 µs/step, ~85 µs/step including
+  first-call warmup.
+- The GPU leg is what shrinks on the ranked 4-bit arm: **4.554 ms → 2.133 ms** per deep
+  step (§6d.3, measured on an isolated chain).
+- So the host share goes from 33.1 / 3,608 = **0.92%** (local, bf16) to at worst
+  33.1 / 2,133 = **1.55%** (ranked, 4-bit).
+
+Even at the ranked arm's smaller GPU denominator, deleting **100%** of host graph
+construction buys ≈1.5% of the draft step, and the draft step is itself ~12% of the round.
+There is no hidden 2.4 ms/step CPU win on either arm. That is the refutation.
+
+**GPU-side per-draft-step time, as requested:**
+
+| arm | measured GPU per deep draft step | advisor roofline | delta |
+|---|---:|---:|---:|
+| local, bf16 head (isolated chain, §6d.3) | **4.554 ms** | 4.99 ms | −8.7% |
+| ranked-like, 4-bit head (isolated chain) | **2.133 ms** | 2.30 ms | −7.3% |
+| in-run `tail_async`/step (local, bf16) | **3.575 ms** | — | — |
+
+Both isolated figures sit ~8% under the advisor's roofline because that roofline assumes
+227 GB/s and this host sustains ≈250 GB/s on these shapes. The in-run `tail_async` (3.575
+ms) is *lower* than the isolated bf16 chain (4.554 ms) because some draft GPU work spills
+past the tail wait and is absorbed by the round's later blocking eval, so **the in-run
+number is a lower bound on GPU draft time, not a contradiction**.
+
+**On "no CPU-cut conclusion from a local null" — accepted, and I am not making one.** The
+claim I am defending is not "a local A/B showed no difference". It is a *bound*: the host
+leg is 33.1 µs/step measured directly, it is arm-independent by construction, and the
+ranked GPU denominator is 2.13 ms. A bound of that shape transfers across arms in a way a
+null does not. If the advisor wants the null as well, the honest statement is that I do
+not have one and could not obtain one this session (§8.4 thermal fault).
+
+### 6e.2 `fb11` — the counter split: **my submitted answer was WRONG**
+
+The advisor asked me to split `rollbackRoundCount` into `prefixRepairCount` and
+`fullRepairCount`. My submitted result said "the split counters are `prefixRepairCount`=0
+and `fullRepairCount`=0", and §6.5/§6d.5 said `rollbackRoundCount = 0`. **`prefixRepairCount`
+was not 0 and I never measured `rollbackRoundCount` at all.**
+
+The bug in my reading, in source:
+
+```swift
+} else {
+    rollbackRoundCount += 1            // line 1045 — fires on EVERY partial rejection
+    ...
+    if Self.restoreAfterPrefixReject(...) {
+        prefixRepairCount += 1         // cheap tape-replay repair
+    } else {
+        didRepair = true               // line 1074
+        fullRepairCount += 1           // expensive full re-forward
+    }
+}
+```
+
+My trace's `repair=` field emitted `didRepair`. So the "0 of 28 rounds" I published is an
+exact measurement of **`fullRepairCount`**, and it says nothing about the parent counter.
+
+**Corrected answer:**
+
+| counter | value | basis |
+|---|---:|---|
+| `fullRepairCount` | **0** | directly measured, 28 of 28 rounds, `repair=0` |
+| `prefixRepairCount` = `rollbackRoundCount` | **2 – 4** | derived from the per-depth acceptance table (§4c) |
+
+Derivation, from the §4c aggregate and the run's `accepted_draft_rate`:
+
+- `d=4`, N=10, mean `acc` 3.70 ⇒ 37 of 40 accepted ⇒ **deficit 3**.
+- `d=8`, N=9, mean `acc` 7.89 ⇒ 71 of 72 accepted ⇒ **deficit 1**.
+- `d=5,6,7`: mean `acc` exactly equals `d` ⇒ **deficit 0**.
+- Total drafts 168, `accepted_draft_rate` 0.976190476 = 164/168 ⇒ **4 rejected**, which
+  closes against 3 + 1 independently.
+
+A partially-rejected round with `acc = k` at depth `d` discards `d − k` drafts, so the
+deficit-3 at `d=4` is 1, 2, or 3 rounds, and the deficit-1 at `d=8` is **exactly one**
+round — round 16, the guardrail max block, logged as `d=8, acc=7, repair=none`. Hence
+`rollbackRoundCount ∈ [2, 4]`, with the `d=8` member identified exactly. I cannot narrow
+it further: the raw per-round trace was in `scratch/` and is gone, and neither W&B run
+(`ma8cga81`, `j0z3rmty`) carries a per-round table or history — only the floor and
+component tables.
+
+**This upgrades hypothesis 2 from vacuous to genuinely tested.** The question was whether a
+partial rejection forces a second full 48-layer GDN recurrence. Under my wrong reading the
+answer was "no partial rejection ever happened", which tests nothing. The correct reading
+is: **partial rejection occurred at least twice, and the expensive path fired zero times.**
+The eager post-primary checkpoint plus `restoreAfterPrefixReject` absorbed every one of
+them. That is a real negative result about the repair machinery, not an absence of data.
+
+**Measured prefix-repair cost (N=1, `d=8`):**
+
+| quantity | µs |
+|---|---:|
+| round 16 (`acc=7`, the prefix repair) | 218,655 |
+| other eight `d=8` rounds, mean = (9 × 217,750 − 218,655) / 8 | 217,636.9 |
+| **delta** | **+1,018 (+0.47%)** |
+
+So a prefix repair costs about **1 ms on a 218 ms round**, and it also commits one fewer
+token. N=1, one depth, one prompt — directional only. It does not move any floor,
+guardrail, or score number in this report, and it does not change the assignment verdict.
+
+**Instrumentation added.** `prefixRepairCount` and `fullRepairCount` are now real
+`public private(set)` counters incremented at the two branch sites above, and the sub-trace
+emits `prefix_repair_total=` / `full_repair_total=` next to `repair=`, so the next traced
+run reports exact integers instead of a derived interval. Research instrumentation only —
+see §9, not for promotion.
+
+### 6e.3 `fb10` — the retracted readout claim, reconciled against my measurement
+
+The advisor retracted the "315 MB / 0.6 ms" compact-readout figure and settled on 283.2 MB
+with a 1.25 ms floor. My report reached 283.21 MB independently (§6d.5) before that
+retraction, so the byte count agrees exactly. On the floor we differ slightly:
+
+| source | bytes | assumed BW | floor per call | measured per call |
+|---|---:|---:|---:|---:|
+| advisor (settled) | 283.2 MB | 227 GB/s | 1.25 ms | — |
+| this report (§6d.5) | 283.21 MB | 214.2 GB/s (`BW_eff`) | 1.133 ms | **1.128 ms** |
+
+Measured: `head:draft_lm_head_compact` = 9.0247 ms over 8 calls ⇒ **1.128 ms/call**,
+i.e. 251 GB/s achieved. That is under the advisor's 227 GB/s-derived floor but well inside
+this host's 273 GB/s peak, so it is a bandwidth-assumption difference, not a violation. The
+conclusion is the same either way: the compact draft readout runs **at** its roofline
+(100.4% of my `BW_eff` model), so the only lever on it is reading fewer bytes, not a better
+kernel. Nothing in §6d.4's ranking changes.
 
 ## 7. Score arithmetic
 
@@ -1235,8 +1426,10 @@ Window sensitivity: 64 tokens → 1.462, 192 tokens → 1.8625.
 **One blocking eval per round confirmed**: the single blocking `eval(...)` is at
 `Qwen36MTPBlockSession.swift` ~line 1000 (post-verify readout). The serial path's
 blocking eval is ~line 781. A second blocking eval exists only on the rare generic
-repair path (~line 1086-1100), which **did not fire in this window** (`repair rounds:
-none`).
+**full**-repair path (~line 1086-1100), which **did not fire in this window**
+(`fullRepairCount = 0`). The 2–4 prefix-repair rounds (§6e) do **not** add a blocking
+eval — they reuse already-materialized rows — so "one blocking eval per round" holds for
+every one of the 28 rounds.
 
 ### 8.1 W&B record
 
@@ -1634,7 +1827,7 @@ deliberately so the advisor and the next student can reproduce and extend it:
 
 | path | ins | del | submitted? |
 |---|---:|---:|---|
-| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | 110 | 4 | yes (in `editablePaths`) |
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | 120 | 4 | yes (in `editablePaths`) |
 | `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift` | 67 | 3 | yes (in `editablePaths`) |
 | `research/round_floor.py` | 916 | 0 | **no** — research-only, outside `editablePaths` |
 | `research/results/qwen38-r1-e4-host-draft-build.md` | new | 0 | **no** — this report |
@@ -1655,14 +1848,14 @@ senpai/validate-assignment-scope.sh 67bde70274c42aef089ac73cf00608d8037a815e \
   -> assignment scope OK: 2 submitted path(s)   [exit 0]
 
 senpai/check-editable-budget.sh 67bde70274c42aef089ac73cf00608d8037a815e
-  -> editable budget OK: source=2402616/3000000 bytes headroom=597384
-     growth=7966/262144 exempt=2410/2147483648 files=154
+  -> editable budget OK: source=2403212/3000000 bytes headroom=596788
+     growth=8562/262144 exempt=2410/2147483648 files=154
      (base source=2394650, exempt=2410, files=154)   [exit 0]
 ```
 
-The `growth=7966` figure is the candidate-surface growth of the two Swift files only; the
-1,747-line report and the 916-line harness contribute nothing to it, which is the
-mechanical confirmation that they are outside `editablePaths`.
+The `growth=8562` figure is the candidate-surface growth of the two Swift files only; the
+report and the 916-line harness contribute nothing to it, which is the mechanical
+confirmation that they are outside `editablePaths`.
 
 `research/round_floor.py` is correctly rejected by the scope validator, confirming it is
 never packaged.

@@ -162,6 +162,12 @@ public final class Qwen36MTPBlockSession {
     public private(set) var acceptedDraftTotal = 0
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
+    /// `rollbackRoundCount` counts every partially-rejected round, but the two
+    /// repair paths differ in cost by more than an order of magnitude, so it
+    /// cannot distinguish them. These split it: the cheap tape-replay repair
+    /// versus the fallback that re-forwards the committed block.
+    public private(set) var prefixRepairCount = 0
+    public private(set) var fullRepairCount = 0
     public private(set) var began = false
     /// Fixed-window decode treats EOS like any other serial token. Kept as a
     /// compatibility property for callers compiled against the old session API.
@@ -1054,6 +1060,7 @@ public final class Qwen36MTPBlockSession {
             {
                 pendingPrimary = verifyArgmax[acceptedCount]
                 pendingHidden = hiddenRow(verifyHidden, acceptedCount)
+                prefixRepairCount += 1
                 pendingTop2 = (
                     perRowTop2Tokens[acceptedCount],
                     perRowTop2Logits[acceptedCount]
@@ -1065,6 +1072,7 @@ public final class Qwen36MTPBlockSession {
                 // and re-forward the committed block. This rare path pays a
                 // second blocking eval for its own readout.
                 didRepair = true
+                fullRepairCount += 1
                 Self.rollbackAfterVerify(
                     cache, snapshot, verifiedTokens: draftCount + 1, to: base)
                 let (repairLogits, repairHidden) = model.callWithHidden(
@@ -1151,6 +1159,8 @@ public final class Qwen36MTPBlockSession {
                 + "prev_d=\(traceLastDraftCount) "
                 + "shape_change=\(traceLastDraftCount == draftCount ? 0 : 1) "
                 + "repair=\(didRepair ? 1 : 0) "
+                + "prefix_repair_total=\(prefixRepairCount) "
+                + "full_repair_total=\(fullRepairCount) "
                 + "mod_embed_ns=\(Qwen35MTPHostTrace.embedNs) "
                 + "mod_fuse_ns=\(Qwen35MTPHostTrace.fuseNs) "
                 + "mod_mask_ns=\(Qwen35MTPHostTrace.maskNs) "
