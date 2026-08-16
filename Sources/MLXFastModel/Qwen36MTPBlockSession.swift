@@ -65,7 +65,8 @@ public struct Qwen36MTPRoundResult {
     public let perRowTop2Logits: [[Double]]
     /// Trimmable-cache offset after the round: `seedTokenCount + committedTotal`.
     public let targetCacheOffset: Int
-    /// True when a stop token was committed this round; the parent stops asking.
+    /// Retained for protocol compatibility. Fixed-window MTP runs never stop on
+    /// a model token, so this is always false.
     public let reachedStopToken: Bool
 }
 
@@ -108,7 +109,6 @@ public enum Qwen36MTPSessionError: Error, CustomStringConvertible {
 /// straight into the score.
 public final class Qwen36MTPBlockSession {
     private let model: any Qwen36MTPTarget
-    private let stopTokens: Set<Int>
     /// MTPLX default `base_hidden_variant == mtp_hidden_variant == "post_norm"`.
     private let postNorm: Bool
 
@@ -162,16 +162,17 @@ public final class Qwen36MTPBlockSession {
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
     public private(set) var began = false
-    public private(set) var reachedStopToken = false
+    /// Fixed-window decode treats EOS like any other serial token. Kept as a
+    /// compatibility property for callers compiled against the old session API.
+    public var reachedStopToken: Bool { false }
 
     public init(
         model: any Qwen36MTPTarget,
-        stopTokens: Set<Int>,
+        stopTokens _: Set<Int>,
         postNorm: Bool = true
     ) throws {
         guard model.hasMTPHead else { throw Qwen36MTPSessionError.headNotAttached }
         self.model = model
-        self.stopTokens = stopTokens
         self.postNorm = postNorm
         // Cost-model schedule (replaces the streak ladder). Choose the depth
         // that maximizes expected committed tokens per unit round time under
@@ -860,16 +861,13 @@ public final class Qwen36MTPBlockSession {
     /// Fold one round's acceptance outcome into the per-position EMAs.
     /// Positions before the accepted count observed a success; the position
     /// AT the accepted count observed a failure only if the walk actually
-    /// rejected there (not when it ended early on a committed stop token);
-    /// deeper positions were never reached and observe nothing.
+    /// rejected there; deeper positions were never reached and observe nothing.
     private func recordAcceptOutcome(acceptedCount: Int, drafts: [Int]) {
         let alpha = Self.acceptEMAAlpha
         for index in 0 ..< acceptedCount where index < positionAcceptEMA.count {
             positionAcceptEMA[index] += alpha * (1.0 - positionAcceptEMA[index])
         }
-        let stoppedEarly = acceptedCount > 0 && acceptedCount <= drafts.count
-            && stopTokens.contains(drafts[acceptedCount - 1])
-        if acceptedCount < drafts.count, !stoppedEarly,
+        if acceptedCount < drafts.count,
            acceptedCount < positionAcceptEMA.count
         {
             positionAcceptEMA[acceptedCount] +=
@@ -891,6 +889,18 @@ public final class Qwen36MTPBlockSession {
                     alpha * (0.95 - positionAcceptEMA[acceptedCount])
             }
         }
+    }
+
+    /// Count the target-matching draft prefix for a fixed decode window.
+    /// Token identity, including EOS, never changes the parent-owned length.
+    static func acceptedDraftPrefixCount(
+        drafts: [Int], verifyArgmax: [Int]
+    ) -> Int {
+        precondition(verifyArgmax.count >= drafts.count)
+        for index in drafts.indices where verifyArgmax[index] != drafts[index] {
+            return index
+        }
+        return drafts.count
     }
 
     /// The shipped schedule's width. See `draftPolicy`.
@@ -921,7 +931,7 @@ public final class Qwen36MTPBlockSession {
     /// round from the last round's accept run.
     public func generateRound(depth: Int) throws -> Qwen36MTPRoundResult {
         guard began, let primaryPending = pendingPrimary,
-              let tailPending = pendingTop2, let hidden = pendingHidden
+              pendingTop2 != nil, let hidden = pendingHidden
         else { throw Qwen36MTPSessionError.notBegun }
         guard depth >= Qwen36MTPLimits.serialControlDepth,
               depth <= Qwen36MTPLimits.maxDepth
@@ -965,32 +975,6 @@ public final class Qwen36MTPBlockSession {
                 && draftCount <= Qwen36MTPLimits.maxDepth,
             "draftPolicy returned \(draftCount) for an offer of \(depth); a "
                 + "round may propose 0 ... min(offer, maxDepth) drafts")
-
-        // A stop token as the primary ends the run BEFORE any drafting: there is
-        // nothing after it to predict, and drafting past it would charge the
-        // measurement for work no decoder performs. The round still declares its
-        // single target tail row (the row that produced this primary's successor
-        // candidate is the one already spent), so the ledger stays closed.
-        if stopTokens.contains(primary) {
-            reachedStopToken = true
-            // The tail row to declare is the row that produced this primary —
-            // its top-2 was read out of the previous round's batched eval.
-            let (tailTokens, tailLogits) = tailPending
-            pendingPrimary = nil
-            pendingTop2 = nil
-            pendingHidden = nil
-            return Qwen36MTPRoundResult(
-                tokens: committed,
-                declaredRows: 1,
-                draftTokens: [],
-                acceptedDraftCount: 0,
-                rejectedDraftCount: 0,
-                perRowTop2Tokens: [tailTokens],
-                perRowTop2Logits: [tailLogits],
-                targetCacheOffset: seedTokenCount + committedTokenCount,
-                reachedStopToken: true
-            )
-        }
 
         // NO DRAFTS THIS ROUND. Two ways to get here and they are not the same
         // thing. Depth 0 is THE TRUE SERIAL CONTROL -- the parent offered
@@ -1219,12 +1203,8 @@ public final class Qwen36MTPBlockSession {
         //    is the target's greedy continuation of verify input i, i.e. the
         //    truth for draft i. Row `draftCount` is the BONUS row and is only
         //    used on full acceptance.
-        var acceptedCount = 0
-        for index in 0 ..< drafts.count {
-            guard verifyArgmax[index] == drafts[index] else { break }
-            acceptedCount += 1
-            if stopTokens.contains(drafts[index]) { break }
-        }
+        let acceptedCount = Self.acceptedDraftPrefixCount(
+            drafts: drafts, verifyArgmax: verifyArgmax)
 
         var perRowTop2Tokens: [[Int]] = []
         var perRowTop2Logits: [[Double]] = []
@@ -1357,15 +1337,6 @@ public final class Qwen36MTPBlockSession {
         // them. The rare generic-repair path ran its own second eval.
         // `pendingHidden` is likewise device-only until the next round.
 
-        // Truncate after the first committed stop token, keeping the stop token
-        // itself — the same rule the serial reference applies.
-        if let stopIndex = committed.firstIndex(where: { stopTokens.contains($0) }) {
-            let dropped = committed.count - (stopIndex + 1)
-            committed = Array(committed.prefix(stopIndex + 1))
-            committedTokenCount -= dropped
-            reachedStopToken = true
-        }
-
         return Qwen36MTPRoundResult(
             tokens: committed,
             declaredRows: draftCount + 1,
@@ -1375,7 +1346,7 @@ public final class Qwen36MTPBlockSession {
             perRowTop2Tokens: perRowTop2Tokens,
             perRowTop2Logits: perRowTop2Logits,
             targetCacheOffset: seedTokenCount + committedTokenCount,
-            reachedStopToken: reachedStopToken
+            reachedStopToken: false
         )
     }
 

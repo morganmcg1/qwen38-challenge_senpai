@@ -1,421 +1,362 @@
 # SENPAI Research State
 
-- **2026-08-16 17:40 UTC** — round 1 of the `qwen38-mlx-senpai-r1` campaign, four
-  experiments in flight, none yet reporting. Base
-  `e20268e9c2c1f35c2d75221d059e75bb95768ef6`, upstream
-  `7351e62674bc600f0ca148d3a1b0604716a09db6`.
-- **Most recent research direction from the human researcher team:** none
-  received yet this launch. Four items are flagged below for the team; Flag 1
-  needs an answer *before* a crossing submission, not after.
-- **This revision retracts two round-1 claims of mine** (Flag 3's guardrail
-  mechanism, and the mlx #3920 sizing anchor) and adds three findings that
-  re-rank the queue: the memory roofline that closes the `G` branch, the
-  64-token cold-start window, and the `qmv` small-`M` kernel as the new top
-  hypothesis. Corrections were sent to all four open PRs.
+- **2026-08-16 17:40 UTC**
+- Track `qwen3.8-27b-mtp-v1`; advisor branch `senpai/qwen38-mtp-r1`;
+  `BASE_SHA` = the live head of that branch (`git rev-parse
+  origin/senpai/qwen38-mtp-r1`), which now contains the `b219009` EOS fix;
+  `UPSTREAM_SHA = 7351e62674bc600f0ca148d3a1b0604716a09db6`.
 
-## Where the campaign actually stands
+This is a **living document**. Durable measurements, source-line citations, and
+closed questions live in [`ESTABLISHED_FACTS.md`](ESTABLISHED_FACTS.md); the
+per-experiment record lives in
+[`../senpai/campaign-ledger.md`](../senpai/campaign-ledger.md). Keep this file to
+the current hypotheses, the live experiment slots, and where we go next. Prune it
+every round.
 
-- Promoted frontier: submission `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd`, official
-  score **2.9042110287045**, `sourceRef` `7351e626…`. **Our base tree is that
-  frontier.** It is the public frontier bootstrapped into this campaign, not
-  Senpai-authored; Senpai has zero official submissions and the ledger's
-  submission table is empty.
-- Same-host local reference (AWS Birch/Alphonse, M4 Pro 48 GB, low-memory
-  profile, macOS 26.5.2 / Xcode 26.6 / Swift 6.3.3): directional
-  `1.4708805115725638`, serial `0.1292338595` s/token, MTP `0.0878615621`
-  s/token, effective draft `5.4`, acceptance `1.0`, exact `64/64`.
-- Pinned ranked calibration: serial `0.037994794617407023` s/token, serial leg
-  ≈ 19.453 s, candidate leg ≈ 6.699 s. Therefore
-  **d(score)/d(candidate_seconds) ≈ −0.4335**: every **100 ms** removed from the
-  candidate leg is worth about **+0.043 score**, and the distance from 2.904 to
-  the 3.0 gate is about **220 ms**.
+---
 
-### Flag 1 — we are ~3.3% from a fail-closed rejection gate
+## Current campaign direction
 
-The operator plausibility gate is **3.0**; the frontier is **2.904**. Per
-`program.md` the gate is administrative and fail-closed: a legitimate median
-above it is **rejected as a measurement fault or benchmark escape, not clamped**,
-and publishing above it requires the operator to revise policy first. Round-1
-work is plausibly large enough to cross it. **The human team needs to tell us
-whether to (a) hold a crossing candidate unsubmitted pending a policy revision,
-(b) submit and accept a rejection as evidence, or (c) deliberately submit a
-sub-gate variant.** Until answered, no official submission should be sent.
+**Operate autonomously.** No human decision is pending before any experiment or
+submission. The advisor makes ordinary campaign decisions — experiment choice,
+submission timing, and the response to the plausibility ceiling — without asking
+for approval. When external policy blocks publication, record the blocker and
+keep the campaign moving.
 
-### Flag 2 — a shipped fidelity gap at verify width 9
+**Submit the strongest legitimate candidate even when it is expected to cross
+`3.0`.** Never hold, weaken, delay, split, or tune a candidate to keep it below
+the ceiling. If Yukon rejects a correct candidate solely at the administrative
+ceiling, preserve the receipt and evidence, retain that candidate as the
+scientific frontier, and continue with distinct justified work. A rejection would
+demonstrate the ceiling is wrong; it would not invalidate or cap the measured
+speedup.
 
-`segmentedVerifyDepthCap = 8` implies `rows_per_round = 9`. The recorded
-hexfloat row-gate evidence covers **widths 6-8 only**; width 9 was in the
-*original drift set*. `attentionWithCacheUpdate` mechanically handles `qL 6...9`
-(split `5 + 4`), but that is not a measurement. This is more load-bearing than it
-first appeared: under the corrected regime below, the frontier operates at
-width 8-9 most of the time, so the untested width is on the hot path. Assigned
-as the blocking Part A of PR #2.
+*(These two paragraphs supersede the round-1 "Flag 1" escalation, which was a
+mistake on my part: I asked for a decision that `senpai/program.md` already
+delegates to me.)*
 
-### Flag 3 — stall guardrail: CORRECTED, the hazard is outliers not success
+---
 
-**My round-1 description of this flag was wrong and has been retracted to PRs #3
-and #4.** I claimed the guard reads whole-window max/p50, so any steady-state
-speedup would inflate the ratio and a large win could disqualify itself. Source
-says otherwise.
+## Where we stand
 
-`Sources/MLXFastCLI/main.swift:2011-2040` (`check_stall_guardrail`):
+The promoted frontier is submission `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` at
+score **2.9042110287045**, `sourceRef = 7351e626…`. **Senpai has zero official
+submissions.**
 
-- it **fails closed** unless the report carries either the full
-  `block_request_seconds` array or the after-first trio;
-- it reads `max_block_request_seconds_after_first` and
-  `p50_block_request_seconds_after_first` — **the first block is excluded**;
-- whole-window `max_block_request_seconds` / `p50_block_request_seconds` are
-  annotated *"RETAINED FOR AUDIT ONLY -- no guard reads these now"*;
-- with >= 2 array entries the wrapper prefers the array and computes its own
-  slice / max / lower-median (pinned by a test).
+Score sensitivity at the pinned calibration: `d(score)/d(candidate_seconds) ≈
+−0.4335`, i.e. **100 ms off the candidate decode leg ≈ +0.043 score**. The
+distance from 2.904 to the 3.0 ceiling is ≈220 ms — which we now treat as a
+milestone to drive through, not a boundary to stop at.
 
-Implementation: `Sources/MLXFastTrustedHarness/QwenRuntimeMTP.swift:337`
-(`roundRequestSeconds`), `:381` (`firstBlockSeconds`), `:385-386`
-(`dropFirst().max()`), `:395` (`lowerMedian(dropFirst())`);
-`QwenRuntimeMTPDriver.swift:281`.
+### Open flags
 
-The first-block exclusion exists **precisely** to stop prefill and warmup from
-tripping the guard. A uniform steady-state speedup divides max and p50 alike and
-is therefore neutral. **The real hazard is an occasional expensive after-first
-round**: rollback fallback repair, mid-stream shape rebuild, or the KV-cache
-growth reallocation at the 256-step boundary (`KVCache.swift:398-435`), which a
-512-token decode crosses. This makes PR #4's shape-rebuild split and repair-path
-telemetry *more* valuable, not less. Both PRs now carry a deliverable for
-after-first max/p50 plus the round index that produced the max.
-
-### Flag 4 — the default local window measures the transient, not the frontier
-
-`benchmark-qwen-mtp.sh:78-79` reads `MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS`
-(default 64) and `MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS` (default 128) from the
-environment. **Both are overridable**, and until this round nobody was
-overriding them.
-
-The ranked leg is 512 seed + 512 decode, ~95+ rounds. The default 64-token
-`--local-iterate` window is ~12 rounds at 5.4 tokens/round — **entirely cold
-start**, against an EMA half-life of `ln(0.5)/ln(0.85) = 4.265` rounds and ~14
-rounds to converge, with round 1 always drafting 4 unconditionally. So the
-default window measures the schedule's transient and the ranked leg measures its
-steady state. It also inflates the prefill share by ~8x and is saturated with
-first-time shape builds.
-
-All four PRs were told this round to quote headline numbers from
+**Flag A — the 512-token window and the EOS defect (FIXED on this base).**
+The 64-token default `--local-iterate` window measures the schedule's *transient*
+while the ranked leg measures its *steady state*, and it inflates the prefill
+share by ~8×. All four PRs were told to take headline numbers at
 `MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS=512` and keep 64 only as an inner-loop
-screen. **Every local measurement taken before this round should be re-read as a
-cold-start measurement.**
+screen.
 
-## The corrected regime model (this replaces the round-1 working assumption)
+That exposed a real solver defect: the sole public long-copy trajectory emits EOS
+around **decode token 301**. The old `Qwen36MTPBlockSession` treated EOS as
+terminal, cleared its pending state, and the fixed-window parent then received
+`notBegun` on the next round. **Commit `b219009` fixes this**: `stopTokens` is
+gone from the session, `reachedStopToken` is now always `false`, the early-return
+and post-commit truncation blocks are deleted, and acceptance is decided purely
+by target match via the new `acceptedDraftPrefixCount` helper (covered by
+`Tests/MLXFastTests/QwenMTPFixedWindowTests.swift`, EOS = 151,645).
 
-My initial framing to students used acceptance ≈0.70 / effective depth ≈1. That
-came from the organizer's **original** calibrated depth-2 tree
-(`expected_raw_median` 0.994) and is **not** our 2.904 base. Corrected and
-re-sent to PRs #1 and #2.
+Consequence for every in-flight experiment: **any 256-token result is a clearly
+labelled directional screen, not a ranked-equivalent headline.** Rebase onto
+`b219009` and remeasure credible candidates against a fresh same-host base over
+512 decode tokens. Never change the trusted parent or the fixture to work around
+this.
 
-Per-prompt raw score decomposes as `raw = G · T / (1 + h·d)`, with `T` mean
-accepted tokens per round (`T <= d+1 <= 9`), `d` mean draft count, `h` per-draft
-drafting cost as a fraction of one target forward, and `G = V_pinned /
-V_candidate` the **general** target-forward speedup.
+**Flag B — local and ranked are different machines, and we know why.**
+Local directional ratio is 1.4709; ranked is ~2.90. Four causes, all quantified
+in `ESTABLISHED_FACTS.md`: cold-start dominance of the short local window; prefill
+dilution (23.9% of the candidate leg); M5's much cheaper wide verify; and — newly
+identified this round — **the local build runs a bf16 MTP head 3.55× larger than
+the 4-bit head the ranked candidate actually declares**, which alone means ranked
+absolute throughput is ~14.6% better than the local ratio implies.
 
-`G` is a free variable, because the ranked serial depth-0 leg runs a
-**separately pinned prebuilt baseline workspace**
-(`.github/workflows/qwen-mtp-ranked-benchmark.yml:224-225`, `:2964-2966`;
-`docs/qwen-mtp-go-live-runbook.md:220-222`) rather than our own candidate at
-depth 0. **General target, kernel, and prefill wins are fully scored and do not
-cancel.** The *local* ratio hides them; absolute candidate wall time is the true
-signal, and every local report must include it.
+**Flag C — the ranked serial leg is a separately pinned prebuilt baseline**
+(`MLXFAST_QWEN_MTP_BASELINE_WS=/opt/bench-runner/baseline/...`). Therefore
+**general target/kernel/prefill wins are fully scored and do not cancel**, even
+though they cancel in the local same-build ratio. Absolute candidate wall time is
+the true signal; the local ratio is a decoy for anything that is not a
+schedule-or-head change.
 
-Setting `T = 9`, `d = 8` and requiring `raw >= 2.904` gives
+**Flag D — the score is a median of 8 prompts.** Improving our two best prompts
+is worth exactly zero. `parity_all_ok` is an AND across all eight, so one hard
+middle prompt can sink a change that wins on average. Every schedule change needs
+a low-acceptance arm before it ships.
+
+### Head mismatch — the largest single correction of the campaign
+
+The organizer-pinned head (`EigenLabs/Qwen3.8-27B-MTP-bf16`, 849,398,784 B, bf16)
+is **not** the head the ranked candidate uses. `mtp-head.manifest.json` on our
+base declares `hf:lowskillcoding/qwen38-mtp-head-4bit-g64`, **238,934,093 B, MLX
+affine 4-bit group-64**. `setup-qwen-mtp.sh:66-67` hardcodes the bf16 head, so
+every local measurement we have taken so far is on the wrong head.
+
+Re-basing rule at the measured 227 GB/s M4 Pro decode bandwidth:
 
 ```
-h  <=  (3.099·G − 1) / 8         →  at G = 1:  h <= 0.262
+delta_head  = (849,398,784 − 238,934,093) / 227e9 = 2.689 ms per head forward
+m_ranked(d) = m_local(d) − 2.689 ms      for every d ≥ 1
+C_ranked(d) = C_local(d) − 2.689·d ms
+C(0) is head-independent.
 ```
 
-**A memory roofline closes that branch.** The backbone is ~15 GB of 4-bit
-weights; the ranked M5 sustains roughly 560-600 GB/s, so one full weight pass
-costs ~25-27 ms. The pinned serial baseline is 0.037994794617407023 s/token —
-about **68% of roofline**, i.e. already well optimised. Therefore `G` is
-bounded by roughly **1.5**, and `G >= 1.92` is physically impossible.
-Consequently **`h` is small and the schedule genuinely runs deep**; the `h ≈
-0.62` branch is dead. Corollaries:
+Consequences: `headStepCostRatio = 0.20` overestimates the true `h` by **1.39×
+locally and 1.92× versus ranked**; and **"quantize the MTP head" is already
+banked**, not a future win.
 
-- The candidate leg's 0.01308 s/token is 76.4 tok/s, ~**1.9x** a single-pass
-  roofline, so it is unambiguously emitting multiple tokens per weight pass.
-- Solving `T / (1 + h·d) ≈ 1.912` at `h = 0.2, d = 8` gives `T ≈ 4.97`, i.e.
-  per-draft acceptance **q ≈ 0.85** — very plausible for a native MTP head, and
-  consistent with the external per-position data below.
-
-Two consequences that re-ranked this round's priorities:
-
-1. **The cost model is roughly calibrated and the schedule is running deep and
-   near-saturated (`h` small, `G ≈ 1-1.5`).** PR #1's forced-depth sweep
-   resolves `h` directly and is still the highest-information experiment on the
-   board, but the roofline already tells us which branch it will land in.
-2. At `G ≈ 1`, reproducing 2.904 needs per-draft acceptance **q ≈ 0.93-0.96**
-   with near-permanent cap-8 operation. That means the local longcopy fixture
-   (acceptance 1.0) is **much closer** to ranked reality than I told students,
-   and it means `segmentedStreakGate = 3` is **expensive rather than
-   irrelevant**: a Markov estimate puts cap-8 occupancy at only ~29% of rounds at
-   q=0.93 (~46% at q=0.96), worth ~5.6-6.5% of raw score.
-
-**Median-of-8 strategy.** The published score is the mean of the 4th and 5th
-order statistics over eight prompts. Improving the two *best* prompts is worth
-exactly zero. Correctness (`parity_all_ok`), by contrast, is an AND across all
-eight. So: optimise the middle of the distribution, and never trade fidelity for
-speed anywhere.
+---
 
 ## Current research focus and themes
 
-The base is far more optimized than its own documentation admits. Already
-shipped and **not** to be re-proposed: the prefix replay tape /
-`restoreAfterPrefixReject`, the persistent committed-history head cache, the
-compact 98,304-row draft vocabulary with a fused select kernel, removal of
-vocabulary-wide argmax on verify, the affine-4 group-64 head requantization, one
-blocking eval per round, and the M=512 seed-prefill shape warm.
+### Theme A — the depth policy is mis-specified, and this is the biggest known win
 
-Round 1 spans **two tiers** so a plateau in one does not stall the other.
+The shipped rule assumes an affine cost `C(d) = C₀(1 + d·h)` with a hardcoded
+`h = 0.20`, and additionally caps depth at 4 behind an SDPA width wall. Both
+assumptions are wrong, and **they only pay off together**:
 
-**Tier A — schedule (how deep to draft):**
+| fix | q=0.95 | q=0.90 | q=0.85 |
+|---|---:|---:|---:|
+| remove width wall only | +3.52% | +2.14% | +0.93% |
+| measured cost curve only | +1.89% | +0.89% | +0.68% |
+| **both** | **+7.52%** | **+5.83%** | **+2.75%** |
+| oracle best fixed depth | +7.70% | +6.18% | +3.36% |
 
-- **PR #1 / qwen-edward — per-depth marginal cost curve.** `costModelDepth`
-  prices every extra draft with one scalar `headStepCostRatio = 0.20`, whose own
-  comment block records three inconsistent fits implying ~0.40. The head has
-  since gone 4-bit and depths 5-8 now run a structurally different segmented
-  verify; one scalar cannot be right on both sides of that boundary. Deliverable
-  is the **curve** plus the implied `d*`, which survives even if the policy
-  change is neutral.
-- **PR #2 / qwen-alphonse — deep-round gate + width-9 exactness.**
-  `fullAcceptStreak` resets on *any* non-full round, pinning the session to depth
-  cap 4 for >=3 rounds after every single reject. Now sweeping cap-8 occupancy
-  and blended ratio over q ∈ {0.70 … 0.98} rather than the single wrong q.
-  Gated on the Flag 2 row gate.
+The prize is a **13× function of the shape** of `m(d)`: holding the endpoints
+`C(0)=67.0 ms` and `C(8)=161.0 ms` fixed and varying only the shape between them
+moves the joint gain at q=0.94 from **+0.58%** (a cliff at d=5) to **+7.54%** (a
+knee at d=7). Measuring that shape is the entire point of PR #1.
 
-**Tier B — cost (how much a round costs at all):**
+Caveat that shapes the design: removing the wall is **negative at q ≤ 0.75**.
+Because the score is a median of 8, the correct artifact is a measured-marginal
+rule **plus** an EMA-driven safety cap, not an uncapped rule.
 
-- **PR #3 / qwen-thorfinn — the seed-prefill Amdahl term.** The 512-token seed
-  prefill is charged *inside* the timed leg, and `begin` measured ~0.9 s. Since
-  the pinned serial leg does not receive our improvements, cutting `P` is scored
-  in full and gets *more* valuable as decode gets faster.
-- **PR #4 / qwen-askeladd — the host-bound draft step.** `draft_build ≈ 2.4 ms`
-  of CPU graph construction per draft step against ~1.3 ms of GPU streaming.
-  Now also asked to split that into shape-rebuild vs constant-width construction
-  vs genuine per-draft work, following mlx-lm #250 (non-static shapes cost ~50%
-  of target-model time in a speculative path).
+Literature status, settled this round: this form is **not novel** — Sequoia
+(NeurIPS 2024), D-cut, DSpark, ECHO, SMART, Yggdrasil and Su et al. (2023) all
+publish measured non-affine draft-cost models. We adopt Sequoia's
+`G(n,d)/(t(n)+d·c)` and D-cut's profile-at-startup/read-at-runtime mechanic. The
+residual novelty is the **setting**: every published counterexample locates the
+knee in *batched* verification crossing compute saturation; ours is at **B=1**,
+from MLX kernel granularity and the GDN-vs-full-attention width regimes. No
+Apple-Silicon/MLX instance and no native-MTP-fixed-target instance exists.
 
-## Newly established facts worth acting on
+### Theme B — drafting bandwidth is now dominated by the readout, not the head
 
-- **`d == 0` is an unrecoverable absorbing state.** `Qwen36MTPBlockSession.swift`
-  L761 returns *before* `recordAcceptOutcome` (L610-639) and the streak update
-  (L1045-1047), so once the schedule picks depth 0 the EMAs and streak freeze
-  permanently — no probe, no decay, no recovery. Simulation: botany freezes on
-  40/40 seeds by round ~51. Negligible at q≈0.95 but a real tail risk on a hard
-  hidden prompt, and the median-of-8 makes one slow prompt cheap while a *frozen*
-  prompt is catastrophic. **Cheap fix: update EMA[0] on the serial path from the
-  committed token's own top-2 margin.**
-- **`positionAcceptEMA` is never reset per prompt**, is initialised optimistically
-  (`0.85·0.98^i`), and its half-life is `ln0.5/ln0.85 = 4.265` rounds — the
-  in-code "~9 rounds" comment is ~2x optimistic, and deep positions are
-  reach-gated to an effective half-life of tens of rounds. Round 1 always drafts
-  4 unconditionally.
-- **A fully-accepted round pulls `positionAcceptEMA[acceptedCount]` toward 0.95**
-  (L620-637), biasing the schedule upward by one position — this optimism
-  transfer is the mechanism that lets the session climb to the cap at all.
-- **Dead code confirmed:** the `conf` gate can never trigger a skip
-  (`conf ∈ [0.5,1)` vs a k=0 threshold of exactly h=0.2); the L446-449
-  "OPERATOR K-TEST VARIANT" default policy closure is overridden at init
-  (L197-200).
-- **`Sources/MLXFastModel/Qwen35{Attention,Block,GatedDelta,MLP,Model,Ops,RoPE,FastEngine}.swift`
-  is editable but NEVER EXECUTED** — `Qwen35FastPathReadiness.swift:11-19`
-  hardcodes false, so `selectQwen35ExecutionBackend` always returns
-  `.libraryOracle`. The live target is
-  `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` plus
-  `Qwen36MTPBlockSession.swift`. Any experiment that edits the former is
-  measuring nothing.
-- **Verify width is one row short of a much better kernel.**
-  `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:1415,1483`
-  sets `vector_limit ≈ 10` at K=N=5120 and dispatches `qmv` below it,
-  `qmm_t_splitk` at or above. Widths 1-9 therefore all take `qmv`, which
-  **re-reads the weights per row** — the direct cause of `eval_wall` growing
-  79 → 89 → 106 ms across widths 7 → 8 → 9. That host dispatch file is *not*
-  editable, but the shapes we request are ours to choose.
-- **We can honestly build representative local fixtures.**
-  `Sources/MLXFastCLI/main.swift:761-840` exposes
-  `generate-golden --prompt-file … --steps N`, and
-  `benchmark-qwen-mtp.sh:103,107` honours
-  `MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE`. The ranked prompt names are all
-  public-domain classics, so same-genre local seeds are legitimate test-set
-  construction — **not** hidden-prompt specialisation, provided candidate code
-  stays prompt-independent. Every current experiment is measured on a copy task
-  with acceptance 1.0; this is the single largest infrastructural gap.
-- **`Qwen36MTPTarget` is an `AnyObject` protocol**
-  (`Sources/MLXFastModel/Qwen36MTPTarget.swift:36`), so a research-only stub
-  conformer can drive the **real** `costModelDepth` / `recordAcceptOutcome` over
-  synthetic acceptance with **zero GPU**. Nothing today exercises the depth
-  policy over a 512-round horizon; the local window is 64-128 tokens, 4-8x short.
-- **Rollback is not free above draftCount 1.** `restoreAfterPrefixReject`'s "no
-  repair at any depth" claim holds only at draftCount==1; above that (L1188-1202)
-  a reject calls `replayRecurrentPrefix`, i.e. 48 serial GDN layer scans on the
-  critical path, and a `canReplayPrefix` failure falls back to a full repair
-  forward (L1006-1028) — a second blocking eval.
+On the ranked arm, per draft step: 4-bit head 238.9 MB + compact 98,336-row draft
+readout **283.2 MB** = 522.1 MB. The readout is **54.2% of all drafting
+bandwidth** and is completely untouched by head quantization. This is the
+clearest new lever of the round and we have never attacked it. (The static prefix
+trim we already rejected — halving to 49,152 regressed acceptance 1.00 → 0.877 —
+is a *different* mechanism from clustered or low-rank two-stage readout.)
 
-## External reference implementation: mlx-lm PR #990
+### Theme C — the residual above roofline is real but smaller than I claimed
 
-`ml-explore/mlx-lm` PR #990 (open, unmerged, 31 commits, 73 comments, zero
-maintainer review) is a native-MTP speculative-decoding reference for **our
-exact architecture family** — the author enumerates `64 layers (48 GDN + 16
-attn)`, `hidden 5120`, `24 / 4 / 256` heads, `lm_head [H, 248320]`. It is the
-single most relevant external artifact found so far. <https://github.com/ml-explore/mlx-lm/pull/990>
+A dispatch census reconciles a d=8 round to 23.5 GB of traffic ≈ 122.8 ms at the
+**measured** 70% of peak, against a measured 161.0 ms. Local residual ≈ 38 ms.
+Leading hypothesis: the head runs at worse than 70% efficiency (15–25 ms).
+Command-buffer commits and per-dispatch gaps are **ruled out**. Copy traffic is
+0.06 ms. PR #4 is measuring the decomposition directly.
 
-**Their depth scaling is negative, and that is the headline.** On stock MLX
-kernels, deeper drafting *loses*:
+### Theme D — closed this round, do not reopen
 
-| source | model / host | d=1 | d=2 | d=3 | d=5 |
-|---|---|---|---|---|---|
-| JJJYmmm | Qwen3.5-9B 4-bit, **M5** | 1.52x | 1.36x | 1.13x | **0.80x** |
-| AirRunner | Qwen3.6-27B 4-bit, M4 Pro | 1.65x | 1.56x | 1.33x | — |
+- **Prefill cutting** (PR #3, merged): `P = 4.0086 s` is irreducible; quantized
+  GEMM is 97.0% of it at 87.1% of the measured dense bf16 ceiling. Free dequant
+  would buy 12.49%, under the 20% stop rule.
+- **STree / A_tree rollback-free GDN verification**: the GDN update is
+  rank-1-perturbed affine, not diagonal; run-fatal under zero-tolerance token
+  identity; and it has **zero** bandwidth benefit. Its one useful trick (replay
+  instead of snapshot) is already shipped as `PrefixReplayTape`.
+- **The `d == 0` absorbing state**: 400 seeds × 512 rounds show it **never fires
+  at q ≥ 0.85**. Tail insurance only. (Retracts "botany freezes by round ~51".)
+- **Head quantization**: already banked via `mtp-head.manifest.json`.
+- **An 8-bit head**: would be **1.6–1.7× slower** than the 4-bit head we already
+  have. Six measured Q8→Q4 points agree.
+- **Layer-skipping self-drafting**: α ≈ 0.038 for sequential hybrids versus 0.68
+  for parallel. Keep the trained MTP head.
 
-Named cause: *"stock MLX's `qmv` kernel is tuned for `M=1` and becomes
-increasingly inefficient as `M` grows"*. This is the same `vector_limit ≈ 10`
-cliff we found independently in `quantized.cpp:1415`.
+---
 
-**Our base reaches raw 2.904 with deep drafting, which their numbers say should
-be impossible on stock kernels.** So either our verify path is already
-materially better than theirs, or our schedule's conservatism
-(`segmentedStreakGate = 3`, `sdpaWidthWallDepthCap = 4`) is an empirically-found
-optimum sitting exactly at the qmv cliff. PR #2 Part B separates these, and a
-regression there is now a fully expected and publishable outcome.
+## Live experiment slots
 
-Their unattributed residual is the strongest sizing anchor we have for host
-overhead: a bandwidth model predicts per-round overhead `beta + delta = 1.081`,
-every measured run lands at **1.19-1.36**, and the author attributes the gap to
-*"kernel launch overhead, MLX graph evaluation, or similar costs"*. **10-28% of
-round cost unexplained by bandwidth on the same architecture** — a far better
-anchor than mlx PR #3920's 2%.
+All four students are occupied. No slot is free.
 
-Four concrete techniques from that PR, ranked for us (their probabilistic /
-residual-sampling machinery is inapplicable — our contract is exact-match, i.e.
-greedy):
+| PR | Student | Question | Status |
+|---|---|---|---|
+| #1 | qwen-edward | Measure `C(d)` for d=0..8; ship the generalized table rule with `H` measured at run time; width-9→10 padding probe; per-position acceptance table | r2 issued on the post-`b219009` base |
+| #2 | qwen-alphonse | Part A: width-9 bit-exactness (blocking). Part B: `max/p50` block latency per arm **at both head sizes**, plus a low-acceptance arm | r2 issued on the post-`b219009` base |
+| #4 | qwen-askeladd | Three-number floor decomposition; head chain timed in isolation; `rollbackRoundCount` | r2 issued on the post-`b219009` base |
+| #5 | qwen-thorfinn | qmv small-M kernel curve M=1..512; normalized `qmv_tax` stop rule; GDN-vs-projections knees side by side; `qmv_fast` K-alignment audit | r2 issued on the post-`b219009` base |
+| #3 | qwen-thorfinn | Seed-prefill Amdahl term | **merged** — *not useful* for the mechanism, decisive for the ceiling |
 
-1. **Prefill the MTP head cache during prompt prefill.** Acceptance 86.0% vs
-   82.4% (9B 4-bit) and 87.1% vs 83.1% (4B bf16), at ~4 KB/token of permanent
-   head KV. Our 512-token seed makes this 2 MB. Assigned as a deliverable to
-   PR #3.
-2. **Fuse the accepted-draft cache commit into the next draft forward**
-   (`cache_commit=(hidden_at_confirmed, draft_tok)`), saving one head forward per
-   accepted round. Assigned as a deliverable to PR #4.
-3. **Keep linear projections un-split around the recurrent snapshot.** They
-   project `qkv/z/b/a` over the full `S` *before* the confirmed/draft split and
-   split only the recurrence, giving snapshot overhead `beta ≈ 1.009` — 0.9% of a
-   pass. Their depth>1 per-position variant instead iterates the confirmed prefix
-   one token at a time, which serialises the recurrence and is a plausible
-   second cause of their depth-2 regression, independent of qmv. Under check
-   against our `processChunkStashingPrefix`.
-4. **`lm_head` is ~70% of head cost** (635.7 MB of 911 MB) over the 248,320
-   vocabulary. We already ship a compact 98,304-row draft vocab, so this is
-   partly banked; under check whether every head step uses it.
+Round-1 revisions were all cut from bases older than `b219009` and therefore
+carried the EOS defect. Round 2 re-binds each assignment to the live advisor-branch
+head, so **no in-flight experiment is measuring on a defective base any more**.
+PRs #1 and #2 are the pair that only pays off jointly (Theme A); PRs #4 and #5
+jointly settle Theme C.
 
-**Per-position acceptance priors** (JJJYmmm, 9B 4-bit, depth 5): p1 82.5%,
-p2 64.0%, p3 47.6%, p4 33.9%, p5 23.4%. Our `positionAcceptEMA` initialises to
-`0.85·0.98^i` = 0.85 / 0.833 / 0.816 / 0.800 / 0.784 — a **3.3x overestimate at
-position 5**. Their model is smaller so the levels are not ours, but the shape
-matters: their conditional acceptance **degrades with depth** (constant-`q` fit
-to p1 predicts p5 = 0.38, not 0.234) whereas `0.98^i` encodes near
-depth-independence. PRs #1 and #2 now both emit realised per-position acceptance
-over a 512-token window so we can re-fit against our own data.
+### Process finding — round 1 produced zero student pushes
 
-**Two evidence downgrades, both retracted to PR #4.** `ml-explore/mlx` #3920 is
-a *closed, unmerged* PR with zero comments reporting only +2.0-2.8% decode, not
-an open issue establishing host-bound decode. `ml-explore/mlx-lm` #250's
-200-210 ms vs 130-140 ms measurement is real, but its non-static-shape
-*explanation* is the reporter's own flagged guess on an issue with zero replies.
+Between assignment creation (14:41–15:57 UTC) and the round-1 close (17:24 UTC),
+all four PRs stayed at their creation head SHA with **no commits and no student
+comments**, and then all four students went idle at once. Nine, eight, eight and
+four advisor feedback comments were delivered into that silence. Two lessons are
+now standing policy for this campaign:
 
+1. **Cheapest decisive artifact first.** Every assignment must name one artifact
+   that is producible in a single short session (a Python microbenchmark, a
+   bit-exactness check, a breakdown table) *before* any end-to-end A/B. A student
+   who runs out of budget must still leave durable evidence behind.
+2. **Silence is not a status.** A student that cannot run — setup failure, weights
+   missing, lock contention, thermal gate, wall-clock limit — must post a PR
+   comment naming the exact blocking command and its output. Going idle with an
+   empty branch is a protocol failure, not a null result.
 
-## Pre-emptively rejected (do not re-assign without new evidence)
+Advisor-side lesson: feedback volume is not progress. Round 2 leads with a short
+ordered instruction, not more analysis.
 
-- **Further draft-vocabulary trimming.** Compact-head read is only ~0.6 ms per
-  draft step (`Qwen35.swift:2054-2060`), and a uniform 49,152 halving already
-  regressed (accept 1.00 → 0.877) because three committed argmax ids lived above
-  the cut. Reopen only if the 0.6 ms figure is shown wrong.
-- **Skipping the 16 full-attention layers as a self-drafter.** Literature reports
-  alpha ≈ 0.038 on sequential hybrids. Pre-registered negative.
-- **Gathered / scattered dynamic vocabulary heads.** Reported slower than a
-  static contiguous slice, and affine-4 group-64 packing makes it worse. Any
-  shortlist must stay contiguous and a multiple of 64.
+---
 
 ## Potential next research directions
 
-Ordered by expected value per student-slot. Item 0 is new this round and is now
-the strongest single hypothesis on the board. Items 1-3 are infrastructure that
-makes every later experiment more trustworthy.
+Ordered by expected value. Items marked ★ are new or newly elevated this round.
 
-0. **Retune the small-`M` `qmv` quantized kernel for M = 2..9.** Every verify
-   width we can reach dispatches `qmv` (`quantized.cpp:1415`, `vector_limit ≈ 10`
-   at K=N=5120), and `qmv` re-reads the weight tile once per row because it is
-   tuned for `M = 1`. Two independent lines of evidence now point here: our own
-   `eval_wall` growing 79 → 89 → 106 ms across widths 7 → 8 → 9, and mlx-lm
-   PR #990's depth cliff with `qmv` named as the cause. That PR also notes a
-   private fork retuning `qmv` for `M = 3..6` with `4-simdgroup` /
-   `unroll_count(4)`. **The kernel sources are inside our editable surface**
-   (`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp` for the JIT
-   strings plus `kernels/quantized{,_nax}.{h,metal}`; `_nax` runs on the ranked
-   M5), even though the host dispatch file is not. This changes the *shape of the
-   cost curve every schedule experiment is fighting*, so it dominates further
-   schedule tuning. Prerequisites: PR #1's `C(d)` curve to confirm the slope is
-   linear in `d`, and a `python3 research/twin_audit.py` discipline because the
-   readable `.metal` and the generated twin must move together. High ceiling,
-   high numerical risk — needs an exact-row gate, not just argmax matching.
-0b. **Pad the verify batch from 9 to 10 rows** to cross `vector_limit` into
-   `qmm_t_splitk` and read weights once. Nearly free to test, and PR #1 has been
-   asked for the data point. If width 10 is cheaper in wall-clock than width 9,
-   it is exploitable immediately and it also validates the whole item-0 thesis.
-1. **Representative local prose goldens** via `generate-golden --prompt-file` and
-   `MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE`. Highest leverage available: right now
-   every measurement we take is on a copy task at acceptance 1.0, and the
-   schedule experiments are precisely the ones that behaviour distorts.
-2. **Zero-GPU policy simulator** — a research-only `Qwen36MTPTarget` stub driving
-   the real `costModelDepth` / `recordAcceptOutcome` across acceptance regimes at
-   a full 512-round horizon. Turns schedule questions from GPU-bound into free,
-   and would have caught the `d==0` absorbing state.
-3. **Schedule-state hygiene**: fix the `d==0` absorbing state, reset
-   `positionAcceptEMA` per prompt, and re-fit the `0.85·0.98^i` prior against
-   measured data. Small, cheap, and it removes a catastrophic tail risk.
-4. **Pad verify width 9 → 10** to cross `vector_limit` into `qmm_t_splitk`
-   weight reuse. Cheap to test, potentially large, directly explains the
-   measured width cost curve.
-5. **Compiled MTP round.** `Vendor/mlx-swift-lm/Libraries/MLXLMCommon/CompiledDecode.swift`
-   is editable and gates the compiled path at L38 to "no MTP, no SSM". Making the
-   GDN recurrent state traceable is the gating sub-problem. Attacks the 2-4k
-   graph-nodes-per-token host bound (mlx#3920) at its root. Promote only if PR #4
-   shows graph construction dominates.
-6. **Rollback-free GDN verification** — arXiv 2607.06763 formulates tree
-   verification over Gated DeltaNet layers as a masked triangular solve so
-   committed state is never speculatively written; reports 4.37x on Qwen3.6 27B.
-   STree (2505.14969) is the cheaper accumulated-transition variant. This is the
-   most credible large swing in the literature for exactly our 48+16 hybrid.
-7. **Tree drafting** (best-first over top-K-per-depth marginals) sized by the
-   measured `b(n)` verification-latency curve. Caveat from SpecMQuant
-   (2505.22179): on **W4A16** the verify/decode ratio is **1.8** versus <1.2 for
-   FP16, so widening is unusually expensive on our 4-bit backbone — trees must be
-   converted to sequences aggressively.
-8. **Per-position margin-conditioned acceptance.** The `conf` clamp is applied
-   only at depth 0, with an unfitted temperature, and is provably dead. The head
-   emits top-2 evidence at every position; a *fitted* margin model across all
-   positions is the natural successor to PR #1 (AdaEDL, SVIP, SpecDec++).
-9. **Repair-path telemetry.** `rollbackRoundCount` does not separate a cheap
-   replay from the expensive full re-forward. We cannot currently see how often
-   the expensive path fires — the highest-value measurement not yet taken.
-10. **Eager checkpoint cost at low depth.** `S == 2` rounds write ~144 MiB of
-    mid-state unconditionally; the packed-GDN-prework kernel is gated at `S >= 3`.
-    Extending the replay tape to S=2 removes a per-round write.
-11. **Composition round.** PRs #1-#4 are deliberately orthogonal; compose once two
-    or more land independently measured. `program.md` names runtime x speculative
-    interaction as an open area.
-12. **GQA query-head pairing** to break the `qL*gqa <= 32` width wall. High
-    ceiling, high risk, and it needs a fresh hexfloat row gate first.
-13. **ReDrafter-style head restructuring** (2403.09919) — the only real Apple
-    Silicon precedent, implemented in MLX, up to 2.3x. Hydra (2402.05109) adds
-    sequential dependence between heads, which LK Losses (2602.23881) identifies
-    as the cause of MTP depth-decay. Hold for a genuine plateau.
-14. **Cleanup assignment** once a slot frees: the stale header at
-    `Qwen36MTPBlockSession.swift:22-43` and the matching framing in
-    `Tests/MLXFastTests/QwenMTPRollbackContractTests.swift:14,78,108,190`, the
-    dead `Sources/MLXFastModel/Qwen35*.swift` tree, the dead L446-449 policy
-    closure, and the dead `conf` gate.
+1. **★★★★★ Compact draft-readout reduction.** 283.2 MB, 54.2% of ranked drafting
+   bandwidth, untouched by head quantization. Gemma 4 reduces the projection from
+   ×262,000 to ×4096 via top-k over token clusters "while preserving a similar
+   acceptance rate"; SlimSpec reports ~4–5× LM-head latency reduction where
+   VocabTrim-class methods reach only ~60%. Rough sizing: ~14% of the ranked
+   low-band marginal `m_lo`. **Strongest unassigned idea we have.**
+
+2. **★★ Composition round.** Once ≥2 of PRs #1/#2/#4/#5 land, compose them and
+   re-measure on a fresh base. Elevated because #1 and #2 are individually
+   near-worthless and jointly worth +5.8% at q=0.90.
+
+3. **★★ Replicate the break-even acceptance curve α(k) on our hardware.**
+   `2604.16368` (Bielik 11B, MLX-LM, M2 Pro) reports break-even acceptance of
+   ≈40% at k=2, ≈77% at k=4, and **>100% at k=6** — i.e. depth ≥6 would be
+   unrecoverable. Single-author preprint, unverified, and it directly contradicts
+   our main theme. Cheapest possible falsification of that theme.
+
+4. **★★ Per-layer-family knees.** GDN decode is ≈2 FLOP/byte (knee ≫ 8) while
+   4-bit projections are ≈7.9 (knee ≈ 7.9). If so, a **single scalar depth policy
+   is mis-specified for the model as a whole**. No literature exists on per-family
+   knees in a hybrid recurrent/attention model. Partly folded into PR #5.
+
+5. **★★ Head-precision A/B (bf16 vs 4-bit), gated behind a free offline
+   pre-check.** Expected acceptance cost −1% to −3%, credible tail to −8%. Run the
+   **untimed, outside-the-scored-path** KL / top-1-agreement comparison on the
+   public fixture first: ≥99% top-1 agreement → skip the A/B; ≤96% → spend the
+   slot. Must log **per-position** a₁…a_d and **jointly re-tune depth**. Note that
+   "both sides 4-bit" buys us nothing: every high-acceptance quantized-draft
+   result rests on the draft being a quantized *copy of* the target so errors
+   cancel — **our head is independently trained, so errors add**.
+
+6. **★★ Align local measurement to the ranked head** via
+   `MLXFAST_QWEN_MTP_HEAD_DIR`, and mandate `head_provenance_sha256` in every
+   result. Partially issued as feedback; deserves to be made structural.
+
+7. **Re-fit the per-position acceptance prior.** `positionAcceptEMA` is
+   initialized `0.85 · 0.98^i` and never reset per prompt. Two independent
+   measurements condemn that shape: GLM-4.5-Air — whose released weights contain
+   only the first MTP module *"reused autoregressively"*, exactly our architecture
+   — measures **0.92 → 0.68 → 0.38**, and Nemotron 3 Super reports monotonic decay
+   with draft index. Cheap, and it feeds Theme A directly. **Note `b219009`
+   slightly changed this function's semantics** (the `stoppedEarly` suppression is
+   gone), so re-read it before fitting.
+
+8. **Move the 511-row head priming out of the first timed drafting round.**
+   `headHistoryCache` is lazily primed inside the first scored round.
+
+9. **Representative local prose goldens.** The eight ranked prompts are
+   public-domain classics; `generate-golden --prompt-file` plus
+   `MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE` lets us build honest same-genre local
+   seeds, stop over-fitting to one fixture, and — now relevant — obtain
+   trajectories that do not all hit EOS at the same token.
+
+10. **Zero-GPU policy simulator.** `Qwen36MTPTarget` is an `AnyObject` protocol,
+    so a research-only stub can drive the real `costModelDepth` and
+    `recordAcceptOutcome` with no GPU at all. Done ad-hoc advisor-side; worth
+    productionizing so students can pre-screen schedules for free.
+
+11. **★ Assert `K % 512 == 0` on every scored 4-bit reduction dim.**
+    `qmv_fast_k_alignment` silently drops 4-bit shapes that are 256- but not
+    512-aligned into the bounds-checked generic kernel. All current dims pass by
+    inspection; the assertion is nearly free and the failure mode is silent.
+    Folded into PR #5.
+
+12. **Cleanup PR (owed).** Stale `Qwen36MTPBlockSession.swift:22-43` header, stale
+    rollback-contract test framing, the never-executed
+    `Sources/MLXFastModel/Qwen35*.swift` family, the dead `:446-449` policy
+    closure, the dead `conf` gate, the unconditional `convInput` at
+    `Qwen35.swift:758` (96 wasted dispatches per verify), the stale
+    `mtp-head/README.md` "pinned" claim, and the vestigial `Constants.swift:311`.
+    **Now also: the residual `reachedStopToken` compatibility shim and the ignored
+    `stopTokens` init parameter left by `b219009`**, once no caller needs them.
+    **Deletion is the default.** Assign to the next free slot.
+
+13. **Repair-path telemetry (`rollbackRoundCount`)** — needed to settle census
+    hypothesis 2 (does partial rejection fire a second full 48-layer GDN
+    recurrence?). Requested inside PR #4.
+
+14. **Extend the replay tape to S=2** and delete the eager 144 MiB mid-state
+    write that K=1 rejection currently pays unconditionally.
+
+15. **Verify MLX's `qmv` reuses dequantized weights across rows.** A Snapdragon
+    roofline sweep shows 0.52× marginal cost even at M ≤ 8. If MLX does not reuse,
+    the knee is unreachable in software and the fix is a kernel change.
+
+16. **Off-diagonal `(d, w)` identification of `H`** via the `d=8, w=10` point.
+
+17. **Settle the compact-draft-vocab read cost.** The in-code note claims ~0.6 ms;
+    283.2 MB at 227 GB/s floors at 1.25 ms. One of the two is wrong, and item 1
+    depends on which.
+
+18. **Compiled MTP round** — extend `CompiledDecode.swift` past its B=1
+    solo-decode gate to cover GDN and MTP.
+
+19. **Tree drafting sized by measured `b(n)`**, and per-position
+    margin-conditioned acceptance fitted at all positions.
+
+20. **GQA query-head pairing** to break the `qL*gqa <= 32` fused-path limit.
+
+21. **ReDrafter / Hydra head restructuring** — hold until a genuine plateau.
+
+22. **Thermal/scheduler-variance investigation** for the fixture's depth-2
+    3.30–3.36× max/p50 spread.
+
+23. **Resolve the `da336ce9…` head digest** recorded in PR #3, which matches
+    neither the declared nor the computed pinned tree digest. Needs a `shasum` on
+    a student host; the advisor host has no model cache.
+
+---
+
+## Operating reminders
+
+- Local `--local-iterate` runs **both** legs from the same candidate build, so a
+  general target/kernel win cancels in the local ratio while scoring fully on the
+  ranked board. Always report **absolute candidate seconds per token** against a
+  fresh unchanged `BASE_SHA` run, not just the ratio.
+- Headline numbers come from a **512-token** window on a base at or after
+  `b219009`. 64 tokens is an inner-loop screen; 256 tokens is a labelled
+  directional screen.
+- `MLX_QWEN_MTP_TRACE=1` is **unreachable** on the scored path — worker stderr is
+  discarded unless `MLX_DFLASH_TRACE_CACHE_SEAM=1`. Use parent-clock algebra
+  (`decode_seconds = P + Σ block_request_seconds + N·c`), the campaign-standard
+  method since PR #3.
+- The stall guardrail **fails closed** and excludes the first block. Uniform
+  steady-state speedup is neutral to it; the hazard is occasional expensive
+  after-first rounds.
+- `Sources/MLXFastModel/Qwen35*.swift` is editable but **never executed**. The
+  live target is `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` plus
+  `Qwen36MTPBlockSession.swift`. Prove the live call path before optimizing.
+- Editable budget: `source = 2,396,110 / 3,000,000`, headroom 603,890 B.
+  `mtp-head/` is exempt with its own 2 GiB cap. Preflight every assignment with
+  `senpai/validate-assignment-scope.sh` and `senpai/check-editable-budget.sh`.
