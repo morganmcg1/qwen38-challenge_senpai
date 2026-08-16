@@ -227,7 +227,9 @@ def main() -> int:
             entity=os.environ.get("WANDB_ENTITY", "wandb-applied-ai-team"),
             name=f"prefill-amdahl-{args.tag}",
             job_type="measurement",
-            group="qwen38-r1-e3-seed-prefill-amdahl",
+            group=os.environ.get(
+                "WANDB_RUN_GROUP", "qwen38-r1-e3-seed-prefill-amdahl"
+            ),
             config={**provenance, "serial_leg": serial, "mtp_leg": mtp},
         )
         flat = {f"serial/{k}": v for k, v in serial.items() if isinstance(v, (int, float))}

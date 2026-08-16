@@ -18,5 +18,20 @@ seq_file="${keep}/.seq"
 seq=$(( $(cat "${seq_file}" 2>/dev/null || echo 0) + 1 ))
 printf '%s' "${seq}" > "${seq_file}"
 
-"${real}" "$@" | tee "${keep}/$(printf '%02d' "${seq}")-${verb//\//_}.json"
-exit "${PIPESTATUS[0]}"
+stem="${keep}/$(printf '%02d' "${seq}")-${verb//\//_}"
+"${real}" "$@" | tee "${stem}.json"
+status="${PIPESTATUS[0]}"
+
+# `mtp-verify --generate` writes its report to --output rather than stdout, so
+# the captured stdout file is empty and the reference row ledger -- the only
+# per-row acceptance and token evidence this pipeline produces -- dies with the
+# scratch run directory. Copy it out after the process has already exited.
+out_path=""
+prev=""
+for arg in "$@"; do
+  [[ "${prev}" == "--output" ]] && out_path="${arg}"
+  prev="${arg}"
+done
+[[ -n "${out_path}" && -f "${out_path}" ]] && cp "${out_path}" "${stem}-output.json"
+
+exit "${status}"
