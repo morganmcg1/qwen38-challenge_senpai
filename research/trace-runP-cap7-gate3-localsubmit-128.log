@@ -1,0 +1,288 @@
+run-gate-arm: tag=runP-cap7-gate3-localsubmit-128 mode=--local-submit tokens=128
+run-gate-arm: head=44e7a8d618f121e063baae1b52f327ab3a303ecb dirty=0
+run-gate-arm: sdpaWidthWallDepthCap = 4 segmentedVerifyDepthCap = 7 segmentedStreakGate = 3 
+run-gate-arm: started_utc=2026-08-16T20:19:41Z
+run-gate-arm: pre-build cap=7 gate=3 (expected cap=7 gate=3)
+run-gate-arm: post-build cap=7 gate=3 (expected cap=7 gate=3)
+benchmark-qwen-mtp.sh: generating the MTP reference rows (128 rows, depth=8)
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (128 tokens)
+mlxfast-worker: mtp-trace: begin seed=512 build_us=3143822 eval_wall_us=868420
+mlxfast-worker: mtp-row: pos=513 ids=550,248068 v=0x1.8ap+4,0x1.6ap+4
+mlxfast-worker: mtp-row: pos=514 ids=38643,220 v=0x1.88p+4,0x1.ccp+3
+mlxfast-worker: mtp-row: pos=515 ids=2022,12415 v=0x1.9ep+4,0x1.aep+3
+mlxfast-worker: mtp-row: pos=516 ids=28286,198 v=0x1.ep+4,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=517 ids=198,271 v=0x1.b8p+4,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=518 ids=760,550 v=0x1.eep+4,0x1.02p+4
+mlxfast-worker: mtp-row: pos=519 ids=21568,39866 v=0x1.eap+4,0x1.f4p+3
+mlxfast-worker: mtp-row: pos=520 ids=1118,3765 v=0x1.ecp+4,0x1.f4p+3
+mlxfast-worker: mtp-row: pos=521 ids=84828,25419 v=0x1.cep+4,0x1.06p+4
+mlxfast-worker: mtp-row: pos=522 ids=421,279 v=0x1.bep+4,0x1.ep+3
+mlxfast-worker: mtp-row: pos=523 ids=279,264 v=0x1.bap+4,0x1.7ep+3
+mlxfast-worker: mtp-row: pos=524 ids=5604,21118 v=0x1.d8p+4,0x1.08p+4
+mlxfast-worker: mtp-row: pos=525 ids=28336,1558 v=0x1.fp+4,0x1.26p+4
+mlxfast-worker: mtp-row: pos=526 ids=11,44424 v=0x1.dep+4,0x1.a2p+3
+mlxfast-worker: mtp-row: pos=527 ids=44424,82637 v=0x1.eep+4,0x1p+4
+mlxfast-worker: mtp-row: pos=528 ids=3425,999 v=0x1.f8p+4,0x1.04p+4
+mlxfast-worker: mtp-row: pos=529 ids=11,7658 v=0x1.d6p+4,0x1.ap+3
+mlxfast-worker: mtp-row: pos=530 ids=7658,15710 v=0x1.02p+5,0x1.1cp+4
+mlxfast-worker: mtp-row: pos=531 ids=4528,14040 v=0x1.dcp+4,0x1.d6p+3
+mlxfast-worker: mtp-row: pos=532 ids=14040,855 v=0x1.f4p+4,0x1.08p+4
+mlxfast-worker: mtp-row: pos=533 ids=11,26 v=0x1.e6p+4,0x1.8ep+3
+mlxfast-worker: mtp-row: pos=534 ids=321,18626 v=0x1.04p+5,0x1.26p+4
+mlxfast-worker: mtp-row: pos=535 ids=18626,9041 v=0x1.eap+4,0x1.22p+4
+mlxfast-worker: mtp-row: pos=536 ids=6522,19573 v=0x1.ep+4,0x1.dp+3
+mlxfast-worker: mtp-row: pos=537 ids=2353,8798 v=0x1.f8p+4,0x1.e4p+3
+mlxfast-worker: mtp-row: pos=538 ids=279,21118 v=0x1.e6p+4,0x1.dcp+3
+mlxfast-worker: mtp-row: pos=539 ids=21118,80946 v=0x1p+5,0x1.46p+4
+mlxfast-worker: mtp-row: pos=540 ids=6343,2124 v=0x1.dp+4,0x1.dap+3
+mlxfast-worker: mtp-row: pos=541 ids=13,25 v=0x1.cep+4,0x1.8ep+3
+mlxfast-worker: mtp-row: pos=542 ids=1049,2064 v=0x1.0cp+5,0x1.24p+4
+mlxfast-worker: mtp-row: pos=543 ids=1179,20269 v=0x1.06p+5,0x1.f6p+3
+mlxfast-worker: mtp-row: pos=544 ids=20269,25822 v=0x1.cep+4,0x1.02p+4
+mlxfast-worker: mtp-row: pos=545 ids=279,22773 v=0x1.dap+4,0x1.cap+3
+mlxfast-worker: mtp-row: pos=546 ids=22773,15625 v=0x1.12p+5,0x1.26p+4
+mlxfast-worker: mtp-row: pos=547 ids=13914,20467 v=0x1.ecp+4,0x1.dp+3
+mlxfast-worker: mtp-row: pos=548 ids=321,11 v=0x1.bep+4,0x1.bap+3
+mlxfast-worker: mtp-row: pos=549 ids=25822,2649 v=0x1.eep+4,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=550 ids=10756,3817 v=0x1.dap+4,0x1.3p+4
+mlxfast-worker: mtp-row: pos=551 ids=14751,5305 v=0x1p+5,0x1.12p+4
+mlxfast-worker: mtp-row: pos=552 ids=1931,3438 v=0x1.b6p+4,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=553 ids=3817,10885 v=0x1.eep+4,0x1.cep+3
+mlxfast-worker: mtp-row: pos=554 ids=11988,1716 v=0x1.ep+4,0x1.08p+4
+mlxfast-worker: mtp-row: pos=555 ids=1518,11 v=0x1.04p+5,0x1.eap+3
+mlxfast-worker: mtp-row: pos=556 ids=866,17856 v=0x1.eap+4,0x1.04p+4
+mlxfast-worker: mtp-row: pos=557 ids=17856,19221 v=0x1.e2p+4,0x1.18p+4
+mlxfast-worker: mtp-row: pos=558 ids=5284,369 v=0x1.eap+4,0x1.e4p+3
+mlxfast-worker: mtp-row: pos=559 ids=369,6306 v=0x1.c2p+4,0x1.c2p+3
+mlxfast-worker: mtp-row: pos=560 ids=6306,2814 v=0x1.0ap+5,0x1.3p+4
+mlxfast-worker: mtp-row: pos=561 ids=13,271 v=0x1.c2p+4,0x1.acp+3
+mlxfast-worker: mtp-row: pos=562 ids=271,198 v=0x1.dcp+4,0x1.22p+4
+mlxfast-worker: mtp-row: pos=563 ids=550,82040 v=0x1p+5,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=564 ids=59542,34088 v=0x1.e8p+4,0x1.16p+4
+mlxfast-worker: mtp-row: pos=565 ids=52369,36438 v=0x1.04p+5,0x1.2ap+4
+mlxfast-worker: mtp-row: pos=566 ids=198,271 v=0x1.cep+4,0x1.a2p+3
+mlxfast-worker: mtp-row: pos=567 ids=760,561 v=0x1.ecp+4,0x1.d8p+3
+mlxfast-worker: mtp-row: pos=568 ids=24382,6579 v=0x1.fp+4,0x1.3p+4
+mlxfast-worker: mtp-row: pos=569 ids=3644,2243 v=0x1.ecp+4,0x1.dap+3
+mlxfast-worker: mtp-row: pos=570 ids=7189,25367 v=0x1.14p+5,0x1.1ap+4
+mlxfast-worker: mtp-row: pos=571 ids=829,279 v=0x1.e4p+4,0x1.f4p+3
+mlxfast-worker: mtp-row: pos=572 ids=7320,37116 v=0x1.fcp+4,0x1.3p+4
+mlxfast-worker: mtp-row: pos=573 ids=37972,72285 v=0x1.08p+5,0x1.18p+4
+mlxfast-worker: mtp-row: pos=574 ids=364,11 v=0x1.ccp+4,0x1.a4p+3
+mlxfast-worker: mtp-row: pos=575 ids=279,8097 v=0x1.dcp+4,0x1.fcp+3
+mlxfast-worker: mtp-row: pos=576 ids=8097,99159 v=0x1.18p+5,0x1.4ep+4
+mlxfast-worker: mtp-row: pos=577 ids=9640,39811 v=0x1.f2p+4,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=578 ids=11,321 v=0x1.e6p+4,0x1.a6p+3
+mlxfast-worker: mtp-row: pos=579 ids=16401,45543 v=0x1.02p+5,0x1.1ep+4
+mlxfast-worker: mtp-row: pos=580 ids=37972,20214 v=0x1.08p+5,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=581 ids=364,494 v=0x1.cap+4,0x1.8ep+3
+mlxfast-worker: mtp-row: pos=582 ids=279,8097 v=0x1.cap+4,0x1.a8p+3
+mlxfast-worker: mtp-row: pos=583 ids=8097,99159 v=0x1.04p+5,0x1.14p+4
+mlxfast-worker: mtp-row: pos=584 ids=39811,8626 v=0x1.f2p+4,0x1.fp+3
+mlxfast-worker: mtp-row: pos=585 ids=11,18394 v=0x1.e4p+4,0x1.8cp+3
+mlxfast-worker: mtp-row: pos=586 ids=18394,19446 v=0x1.fap+4,0x1.1ep+4
+mlxfast-worker: mtp-row: pos=587 ids=4779,198 v=0x1.f6p+4,0x1.b8p+3
+mlxfast-worker: mtp-row: pos=588 ids=2261,28275 v=0x1.fep+4,0x1.2ap+4
+mlxfast-worker: mtp-row: pos=589 ids=1558,279 v=0x1.e4p+4,0x1.dap+3
+mlxfast-worker: mtp-row: pos=590 ids=10993,50947 v=0x1.0ep+5,0x1.26p+4
+mlxfast-worker: mtp-row: pos=591 ids=11,26 v=0x1.cap+4,0x1.8ap+3
+mlxfast-worker: mtp-row: pos=592 ids=321,7347 v=0x1.08p+5,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=593 ids=6009,18394 v=0x1.f8p+4,0x1.3cp+4
+mlxfast-worker: mtp-row: pos=594 ids=5639,4763 v=0x1.fcp+4,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=595 ids=70755,16350 v=0x1.fap+4,0x1.1ep+4
+mlxfast-worker: mtp-row: pos=596 ids=494,23440 v=0x1.f8p+4,0x1.cp+3
+mlxfast-worker: mtp-row: pos=597 ids=5638,9476 v=0x1.04p+5,0x1.f6p+3
+mlxfast-worker: mtp-row: pos=598 ids=13,8315 v=0x1.e6p+4,0x1.c4p+3
+mlxfast-worker: mtp-row: pos=599 ids=8315,34748 v=0x1.08p+5,0x1.0ap+4
+mlxfast-worker: mtp-row: pos=600 ids=854,96341 v=0x1.dep+4,0x1.9cp+3
+mlxfast-worker: mtp-row: pos=601 ids=11,6302 v=0x1.dep+4,0x1.bp+3
+mlxfast-worker: mtp-row: pos=602 ids=6302,14746 v=0x1.1ep+5,0x1.4ep+4
+mlxfast-worker: mtp-row: pos=603 ids=944,11 v=0x1.eap+4,0x1.b4p+3
+mlxfast-worker: mtp-row: pos=604 ids=11,26 v=0x1.cap+4,0x1.48p+3
+mlxfast-worker: mtp-row: pos=605 ids=321,7347 v=0x1.12p+5,0x1.18p+4
+mlxfast-worker: mtp-row: pos=606 ids=5000,9813 v=0x1.f2p+4,0x1.1p+4
+mlxfast-worker: mtp-row: pos=607 ids=17439,20671 v=0x1.02p+5,0x1.26p+4
+mlxfast-worker: mtp-row: pos=608 ids=513,369 v=0x1.c4p+4,0x1.dap+3
+mlxfast-worker: mtp-row: pos=609 ids=4732,4613 v=0x1.08p+5,0x1.2p+4
+mlxfast-worker: mtp-row: pos=610 ids=279,314 v=0x1.dap+4,0x1.c6p+3
+mlxfast-worker: mtp-row: pos=611 ids=5284,6676 v=0x1.e4p+4,0x1.ecp+3
+mlxfast-worker: mtp-row: pos=612 ids=1521,26892 v=0x1.0ap+5,0x1.24p+4
+mlxfast-worker: mtp-row: pos=613 ids=781,170175 v=0x1.ecp+4,0x1.e2p+3
+mlxfast-worker: mtp-row: pos=614 ids=635,1459 v=0x1.02p+5,0x1.3cp+4
+mlxfast-worker: mtp-row: pos=615 ids=524,6420 v=0x1.14p+5,0x1p+4
+mlxfast-worker: mtp-row: pos=616 ids=6420,80930 v=0x1p+5,0x1.fap+3
+mlxfast-worker: mtp-row: pos=617 ids=9705,279 v=0x1.f8p+4,0x1.ecp+3
+mlxfast-worker: mtp-row: pos=618 ids=4131,11846 v=0x1.eap+4,0x1.eap+3
+mlxfast-worker: mtp-row: pos=619 ids=13,271 v=0x1.9cp+4,0x1.7ep+3
+mlxfast-worker: mtp-row: pos=620 ids=271,198 v=0x1.cap+4,0x1.ap+3
+mlxfast-worker: mtp-row: pos=621 ids=550,13962 v=0x1.dap+4,0x1.f2p+3
+mlxfast-worker: mtp-row: pos=622 ids=55688,25682 v=0x1.cap+4,0x1.1ep+4
+mlxfast-worker: mtp-row: pos=623 ids=21284,50879 v=0x1.f4p+4,0x1.14p+4
+mlxfast-worker: mtp-row: pos=624 ids=12120,1320 v=0x1.dep+4,0x1.44p+4
+mlxfast-worker: mtp-row: pos=625 ids=198,32 v=0x1.c2p+4,0x1.9ap+3
+mlxfast-worker: mtp-row: pos=626 ids=32,64 v=0x1.e2p+4,0x1.fcp+3
+mlxfast-worker: mtp-row: pos=627 ids=2610,19878 v=0x1.f4p+4,0x1.fp+3
+mlxfast-worker: mtp-row: pos=628 ids=19878,9042 v=0x1.ecp+4,0x1.0ap+4
+mlxfast-worker: mtp-row: pos=629 ids=1189,1902 v=0x1.e8p+4,0x1.02p+4
+mlxfast-worker: mtp-row: pos=630 ids=7042,15214 v=0x1.02p+5,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=631 ids=6009,31098 v=0x1.04p+5,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=632 ids=87363,86368 v=0x1.08p+5,0x1.1ap+4
+mlxfast-worker: mtp-row: pos=633 ids=286,11 v=0x1.dp+4,0x1.c8p+3
+mlxfast-worker: mtp-row: pos=634 ids=11,32335 v=0x1.f8p+4,0x1.cep+3
+mlxfast-worker: mtp-row: pos=635 ids=32335,68710 v=0x1.04p+5,0x1.5p+4
+mlxfast-worker: mtp-row: pos=636 ids=15167,24438 v=0x1.f4p+4,0x1.14p+4
+mlxfast-worker: mtp-row: pos=637 ids=8019,17401 v=0x1.f2p+4,0x1.fp+3
+mlxfast-worker: mtp-row: pos=638 ids=11,6297 v=0x1.dp+4,0x1.a8p+3
+mlxfast-worker: mtp-row: pos=639 ids=6297,11198 v=0x1.04p+5,0x1.26p+4
+mlxfast-worker: mtp-row: pos=640 ids=25147,10121 v=0x1.e8p+4,0x1.1ap+4
+benchmark-qwen-mtp.sh: measuring native-MTP decode (128 tokens, depth=8)
+mlxfast-worker: mtp-trace: begin seed=512 build_us=3147728 eval_wall_us=868318
+mlxfast-worker: mtp-row: pos=513 ids=550,248068 v=0x1.8ap+4,0x1.6ap+4
+mlxfast-worker: mtp-row: pos=514 ids=38643,220 v=0x1.88p+4,0x1.ccp+3
+mlxfast-worker: mtp-row: pos=515 ids=2022,12415 v=0x1.9ep+4,0x1.aep+3
+mlxfast-worker: mtp-row: pos=516 ids=28286,198 v=0x1.ep+4,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=517 ids=198,271 v=0x1.b8p+4,0x1.0cp+4
+mlxfast-worker: mtp-trace: round=1 d=4 acc=4 draft_build_us=33905 verify_build_us=88414 eval_wall_us=54502 readout_us=40 commit_us=168 upkeep_us=72 round_us=177104 streak_in=0 cap=4 ema_in=0.8500,0.8330,0.8163,0.8000,0.7840,0.7683,0.7530,0.7379
+mlxfast-worker: mtp-row: pos=518 ids=760,550 v=0x1.eep+4,0x1.02p+4
+mlxfast-worker: mtp-row: pos=519 ids=21568,39866 v=0x1.eap+4,0x1.f4p+3
+mlxfast-worker: mtp-row: pos=520 ids=1118,3765 v=0x1.ecp+4,0x1.f4p+3
+mlxfast-worker: mtp-row: pos=521 ids=84828,25419 v=0x1.cep+4,0x1.06p+4
+mlxfast-worker: mtp-row: pos=522 ids=421,279 v=0x1.bep+4,0x1.ep+3
+mlxfast-worker: mtp-trace: round=2 d=4 acc=4 draft_build_us=6774 verify_build_us=63945 eval_wall_us=54652 readout_us=17 commit_us=206 upkeep_us=86 round_us=125682 streak_in=1 cap=4 ema_in=0.8725,0.8580,0.8439,0.8300,0.8089,0.7683,0.7530,0.7379
+mlxfast-worker: mtp-row: pos=523 ids=279,264 v=0x1.bap+4,0x1.7ep+3
+mlxfast-worker: mtp-row: pos=524 ids=5604,21118 v=0x1.d8p+4,0x1.08p+4
+mlxfast-worker: mtp-row: pos=525 ids=28336,1558 v=0x1.fp+4,0x1.26p+4
+mlxfast-worker: mtp-row: pos=526 ids=11,44424 v=0x1.dep+4,0x1.a2p+3
+mlxfast-worker: mtp-row: pos=527 ids=44424,82637 v=0x1.eep+4,0x1p+4
+mlxfast-worker: mtp-trace: round=3 d=4 acc=4 draft_build_us=6812 verify_build_us=64526 eval_wall_us=53834 readout_us=39 commit_us=458 upkeep_us=101 round_us=125772 streak_in=2 cap=4 ema_in=0.8916,0.8793,0.8673,0.8555,0.8301,0.7683,0.7530,0.7379
+mlxfast-worker: mtp-row: pos=528 ids=3425,999 v=0x1.f8p+4,0x1.04p+4
+mlxfast-worker: mtp-row: pos=529 ids=11,7658 v=0x1.d6p+4,0x1.ap+3
+mlxfast-worker: mtp-row: pos=530 ids=7658,15710 v=0x1.02p+5,0x1.1cp+4
+mlxfast-worker: mtp-row: pos=531 ids=4528,14040 v=0x1.dcp+4,0x1.d6p+3
+mlxfast-worker: mtp-row: pos=532 ids=14040,855 v=0x1.f4p+4,0x1.08p+4
+mlxfast-worker: mtp-row: pos=533 ids=11,26 v=0x1.e6p+4,0x1.8ep+3
+mlxfast-worker: mtp-trace: round=4 d=5 acc=5 draft_build_us=11725 verify_build_us=71994 eval_wall_us=62136 readout_us=40 commit_us=452 upkeep_us=124 round_us=146474 streak_in=3 cap=7 ema_in=0.9079,0.8974,0.8872,0.8772,0.8481,0.7683,0.7530,0.7379
+mlxfast-worker: mtp-row: pos=534 ids=321,18626 v=0x1.04p+5,0x1.26p+4
+mlxfast-worker: mtp-row: pos=535 ids=18626,9041 v=0x1.eap+4,0x1.22p+4
+mlxfast-worker: mtp-row: pos=536 ids=6522,19573 v=0x1.ep+4,0x1.dp+3
+mlxfast-worker: mtp-row: pos=537 ids=2353,8798 v=0x1.f8p+4,0x1.e4p+3
+mlxfast-worker: mtp-row: pos=538 ids=279,21118 v=0x1.e6p+4,0x1.dcp+3
+mlxfast-worker: mtp-row: pos=539 ids=21118,80946 v=0x1p+5,0x1.46p+4
+mlxfast-worker: mtp-trace: round=5 d=5 acc=5 draft_build_us=12318 verify_build_us=72168 eval_wall_us=61988 readout_us=41 commit_us=359 upkeep_us=139 round_us=147015 streak_in=4 cap=7 ema_in=0.9217,0.9128,0.9041,0.8956,0.8709,0.7956,0.7530,0.7379
+mlxfast-worker: mtp-row: pos=540 ids=6343,2124 v=0x1.dp+4,0x1.dap+3
+mlxfast-worker: mtp-row: pos=541 ids=13,25 v=0x1.cep+4,0x1.8ep+3
+mlxfast-worker: mtp-row: pos=542 ids=1049,2064 v=0x1.0cp+5,0x1.24p+4
+mlxfast-worker: mtp-row: pos=543 ids=1179,20269 v=0x1.06p+5,0x1.f6p+3
+mlxfast-worker: mtp-row: pos=544 ids=20269,25822 v=0x1.cep+4,0x1.02p+4
+mlxfast-worker: mtp-row: pos=545 ids=279,22773 v=0x1.dap+4,0x1.cap+3
+mlxfast-worker: mtp-row: pos=546 ids=22773,15625 v=0x1.12p+5,0x1.26p+4
+mlxfast-worker: mtp-trace: round=6 d=6 acc=6 draft_build_us=16572 verify_build_us=80340 eval_wall_us=71059 readout_us=31 commit_us=247 upkeep_us=109 round_us=168361 streak_in=5 cap=7 ema_in=0.9334,0.9259,0.9185,0.9113,0.8902,0.8187,0.7530,0.7379
+mlxfast-worker: mtp-row: pos=547 ids=13914,20467 v=0x1.ecp+4,0x1.dp+3
+mlxfast-worker: mtp-row: pos=548 ids=321,11 v=0x1.bep+4,0x1.bap+3
+mlxfast-worker: mtp-row: pos=549 ids=25822,2649 v=0x1.eep+4,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=550 ids=10756,3817 v=0x1.dap+4,0x1.3p+4
+mlxfast-worker: mtp-row: pos=551 ids=14751,5305 v=0x1p+5,0x1.12p+4
+mlxfast-worker: mtp-row: pos=552 ids=1931,3438 v=0x1.b6p+4,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=553 ids=3817,10885 v=0x1.eep+4,0x1.cep+3
+mlxfast-worker: mtp-trace: round=7 d=6 acc=6 draft_build_us=16464 verify_build_us=80119 eval_wall_us=72234 readout_us=10 commit_us=94 upkeep_us=49 round_us=168974 streak_in=6 cap=7 ema_in=0.9434,0.9370,0.9307,0.9246,0.9067,0.8459,0.7825,0.7379
+mlxfast-worker: mtp-row: pos=554 ids=11988,1716 v=0x1.ep+4,0x1.08p+4
+mlxfast-worker: mtp-row: pos=555 ids=1518,11 v=0x1.04p+5,0x1.eap+3
+mlxfast-worker: mtp-row: pos=556 ids=866,17856 v=0x1.eap+4,0x1.04p+4
+mlxfast-worker: mtp-row: pos=557 ids=17856,19221 v=0x1.e2p+4,0x1.18p+4
+mlxfast-worker: mtp-row: pos=558 ids=5284,369 v=0x1.eap+4,0x1.e4p+3
+mlxfast-worker: mtp-row: pos=559 ids=369,6306 v=0x1.c2p+4,0x1.c2p+3
+mlxfast-worker: mtp-row: pos=560 ids=6306,2814 v=0x1.0ap+5,0x1.3p+4
+mlxfast-worker: mtp-trace: round=8 d=6 acc=6 draft_build_us=15953 verify_build_us=79896 eval_wall_us=72171 readout_us=7 commit_us=86 upkeep_us=36 round_us=168152 streak_in=7 cap=7 ema_in=0.9519,0.9465,0.9411,0.9359,0.9207,0.8690,0.8076,0.7379
+mlxfast-worker: mtp-row: pos=561 ids=13,271 v=0x1.c2p+4,0x1.acp+3
+mlxfast-worker: mtp-row: pos=562 ids=271,198 v=0x1.dcp+4,0x1.22p+4
+mlxfast-worker: mtp-row: pos=563 ids=550,82040 v=0x1p+5,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=564 ids=59542,34088 v=0x1.e8p+4,0x1.16p+4
+mlxfast-worker: mtp-row: pos=565 ids=52369,36438 v=0x1.04p+5,0x1.2ap+4
+mlxfast-worker: mtp-row: pos=566 ids=198,271 v=0x1.cep+4,0x1.a2p+3
+mlxfast-worker: mtp-row: pos=567 ids=760,561 v=0x1.ecp+4,0x1.d8p+3
+mlxfast-worker: mtp-row: pos=568 ids=24382,6579 v=0x1.fp+4,0x1.3p+4
+mlxfast-worker: mtp-trace: round=9 d=7 acc=7 draft_build_us=20688 verify_build_us=87801 eval_wall_us=81011 readout_us=9 commit_us=110 upkeep_us=39 round_us=189661 streak_in=8 cap=7 ema_in=0.9591,0.9545,0.9500,0.9455,0.9326,0.8887,0.8290,0.7379
+mlxfast-worker: mtp-row: pos=569 ids=3644,2243 v=0x1.ecp+4,0x1.dap+3
+mlxfast-worker: mtp-row: pos=570 ids=7189,25367 v=0x1.14p+5,0x1.1ap+4
+mlxfast-worker: mtp-row: pos=571 ids=829,279 v=0x1.e4p+4,0x1.f4p+3
+mlxfast-worker: mtp-row: pos=572 ids=7320,37116 v=0x1.fcp+4,0x1.3p+4
+mlxfast-worker: mtp-row: pos=573 ids=37972,72285 v=0x1.08p+5,0x1.18p+4
+mlxfast-worker: mtp-row: pos=574 ids=364,11 v=0x1.ccp+4,0x1.a4p+3
+mlxfast-worker: mtp-row: pos=575 ids=279,8097 v=0x1.dcp+4,0x1.fcp+3
+mlxfast-worker: mtp-row: pos=576 ids=8097,99159 v=0x1.18p+5,0x1.4ep+4
+mlxfast-worker: mtp-trace: round=10 d=7 acc=7 draft_build_us=20754 verify_build_us=87929 eval_wall_us=80784 readout_us=7 commit_us=85 upkeep_us=36 round_us=189598 streak_in=9 cap=7 ema_in=0.9653,0.9613,0.9575,0.9537,0.9427,0.9054,0.8546,0.7697
+mlxfast-worker: mtp-row: pos=577 ids=9640,39811 v=0x1.f2p+4,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=578 ids=11,321 v=0x1.e6p+4,0x1.a6p+3
+mlxfast-worker: mtp-row: pos=579 ids=16401,45543 v=0x1.02p+5,0x1.1ep+4
+mlxfast-worker: mtp-row: pos=580 ids=37972,20214 v=0x1.08p+5,0x1.0ep+4
+mlxfast-worker: mtp-row: pos=581 ids=364,494 v=0x1.cap+4,0x1.8ep+3
+mlxfast-worker: mtp-row: pos=582 ids=279,8097 v=0x1.cap+4,0x1.a8p+3
+mlxfast-worker: mtp-row: pos=583 ids=8097,99159 v=0x1.04p+5,0x1.14p+4
+mlxfast-worker: mtp-row: pos=584 ids=39811,8626 v=0x1.f2p+4,0x1.fp+3
+mlxfast-worker: mtp-trace: round=11 d=7 acc=7 draft_build_us=20693 verify_build_us=87808 eval_wall_us=80779 readout_us=9 commit_us=81 upkeep_us=35 round_us=189407 streak_in=10 cap=7 ema_in=0.9705,0.9671,0.9638,0.9606,0.9513,0.9196,0.8764,0.7968
+mlxfast-worker: mtp-row: pos=585 ids=11,18394 v=0x1.e4p+4,0x1.8cp+3
+mlxfast-worker: mtp-row: pos=586 ids=18394,19446 v=0x1.fap+4,0x1.1ep+4
+mlxfast-worker: mtp-row: pos=587 ids=4779,198 v=0x1.f6p+4,0x1.b8p+3
+mlxfast-worker: mtp-row: pos=588 ids=2261,28275 v=0x1.fep+4,0x1.2ap+4
+mlxfast-worker: mtp-row: pos=589 ids=1558,279 v=0x1.e4p+4,0x1.dap+3
+mlxfast-worker: mtp-row: pos=590 ids=10993,50947 v=0x1.0ep+5,0x1.26p+4
+mlxfast-worker: mtp-row: pos=591 ids=11,26 v=0x1.cap+4,0x1.8ap+3
+mlxfast-worker: mtp-row: pos=592 ids=321,7347 v=0x1.08p+5,0x1.0ep+4
+mlxfast-worker: mtp-trace: round=12 d=7 acc=7 draft_build_us=20645 verify_build_us=88073 eval_wall_us=80715 readout_us=7 commit_us=78 upkeep_us=37 round_us=189558 streak_in=11 cap=7 ema_in=0.9749,0.9721,0.9693,0.9665,0.9586,0.9316,0.8950,0.8197
+mlxfast-worker: mtp-row: pos=593 ids=6009,18394 v=0x1.f8p+4,0x1.3cp+4
+mlxfast-worker: mtp-row: pos=594 ids=5639,4763 v=0x1.fcp+4,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=595 ids=70755,16350 v=0x1.fap+4,0x1.1ep+4
+mlxfast-worker: mtp-row: pos=596 ids=494,23440 v=0x1.f8p+4,0x1.cp+3
+mlxfast-worker: mtp-row: pos=597 ids=5638,9476 v=0x1.04p+5,0x1.f6p+3
+mlxfast-worker: mtp-row: pos=598 ids=13,8315 v=0x1.e6p+4,0x1.c4p+3
+mlxfast-worker: mtp-row: pos=599 ids=8315,34748 v=0x1.08p+5,0x1.0ap+4
+mlxfast-worker: mtp-row: pos=600 ids=854,96341 v=0x1.dep+4,0x1.9cp+3
+mlxfast-worker: mtp-trace: round=13 d=7 acc=7 draft_build_us=20697 verify_build_us=88065 eval_wall_us=80887 readout_us=6 commit_us=76 upkeep_us=35 round_us=189769 streak_in=12 cap=7 ema_in=0.9787,0.9762,0.9739,0.9716,0.9648,0.9419,0.9107,0.8393
+mlxfast-worker: mtp-row: pos=601 ids=11,6302 v=0x1.dep+4,0x1.bp+3
+mlxfast-worker: mtp-row: pos=602 ids=6302,14746 v=0x1.1ep+5,0x1.4ep+4
+mlxfast-worker: mtp-row: pos=603 ids=944,11 v=0x1.eap+4,0x1.b4p+3
+mlxfast-worker: mtp-row: pos=604 ids=11,26 v=0x1.cap+4,0x1.48p+3
+mlxfast-worker: mtp-row: pos=605 ids=321,7347 v=0x1.12p+5,0x1.18p+4
+mlxfast-worker: mtp-row: pos=606 ids=5000,9813 v=0x1.f2p+4,0x1.1p+4
+mlxfast-worker: mtp-row: pos=607 ids=17439,20671 v=0x1.02p+5,0x1.26p+4
+mlxfast-worker: mtp-row: pos=608 ids=513,369 v=0x1.c4p+4,0x1.dap+3
+mlxfast-worker: mtp-trace: round=14 d=7 acc=7 draft_build_us=20684 verify_build_us=87955 eval_wall_us=80882 readout_us=6 commit_us=79 upkeep_us=35 round_us=189643 streak_in=13 cap=7 ema_in=0.9819,0.9798,0.9778,0.9758,0.9701,0.9506,0.9241,0.8559
+mlxfast-worker: mtp-row: pos=609 ids=4732,4613 v=0x1.08p+5,0x1.2p+4
+mlxfast-worker: mtp-row: pos=610 ids=279,314 v=0x1.dap+4,0x1.c6p+3
+mlxfast-worker: mtp-row: pos=611 ids=5284,6676 v=0x1.e4p+4,0x1.ecp+3
+mlxfast-worker: mtp-row: pos=612 ids=1521,26892 v=0x1.0ap+5,0x1.24p+4
+mlxfast-worker: mtp-row: pos=613 ids=781,170175 v=0x1.ecp+4,0x1.e2p+3
+mlxfast-worker: mtp-row: pos=614 ids=635,1459 v=0x1.02p+5,0x1.3cp+4
+mlxfast-worker: mtp-row: pos=615 ids=524,6420 v=0x1.14p+5,0x1p+4
+mlxfast-worker: mtp-row: pos=616 ids=6420,80930 v=0x1p+5,0x1.fap+3
+mlxfast-worker: mtp-trace: round=15 d=7 acc=7 draft_build_us=20687 verify_build_us=87924 eval_wall_us=80762 readout_us=7 commit_us=77 upkeep_us=35 round_us=189495 streak_in=14 cap=7 ema_in=0.9846,0.9828,0.9811,0.9794,0.9746,0.9580,0.9355,0.8700
+mlxfast-worker: mtp-row: pos=617 ids=9705,279 v=0x1.f8p+4,0x1.ecp+3
+mlxfast-worker: mtp-row: pos=618 ids=4131,11846 v=0x1.eap+4,0x1.eap+3
+mlxfast-worker: mtp-row: pos=619 ids=13,271 v=0x1.9cp+4,0x1.7ep+3
+mlxfast-worker: mtp-row: pos=620 ids=271,198 v=0x1.cap+4,0x1.ap+3
+mlxfast-worker: mtp-row: pos=621 ids=550,13962 v=0x1.dap+4,0x1.f2p+3
+mlxfast-worker: mtp-row: pos=622 ids=55688,25682 v=0x1.cap+4,0x1.1ep+4
+mlxfast-worker: mtp-row: pos=623 ids=21284,50879 v=0x1.f4p+4,0x1.14p+4
+mlxfast-worker: mtp-row: pos=624 ids=12120,1320 v=0x1.dep+4,0x1.44p+4
+mlxfast-worker: mtp-trace: round=16 d=7 acc=7 draft_build_us=20631 verify_build_us=87900 eval_wall_us=80902 readout_us=6 commit_us=77 upkeep_us=35 round_us=189553 streak_in=15 cap=7 ema_in=0.9869,0.9854,0.9840,0.9825,0.9784,0.9643,0.9452,0.8820
+mlxfast-worker: mtp-row: pos=625 ids=198,32 v=0x1.c2p+4,0x1.9ap+3
+mlxfast-worker: mtp-row: pos=626 ids=32,64 v=0x1.e2p+4,0x1.fcp+3
+mlxfast-worker: mtp-row: pos=627 ids=2610,19878 v=0x1.f4p+4,0x1.fp+3
+mlxfast-worker: mtp-row: pos=628 ids=19878,9042 v=0x1.ecp+4,0x1.0ap+4
+mlxfast-worker: mtp-row: pos=629 ids=1189,1902 v=0x1.e8p+4,0x1.02p+4
+mlxfast-worker: mtp-row: pos=630 ids=7042,15214 v=0x1.02p+5,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=631 ids=6009,31098 v=0x1.04p+5,0x1.0cp+4
+mlxfast-worker: mtp-row: pos=632 ids=87363,86368 v=0x1.08p+5,0x1.1ap+4
+mlxfast-worker: mtp-trace: round=17 d=7 acc=7 draft_build_us=20784 verify_build_us=87834 eval_wall_us=80905 readout_us=6 commit_us=75 upkeep_us=35 round_us=189641 streak_in=16 cap=7 ema_in=0.9889,0.9876,0.9864,0.9852,0.9816,0.9697,0.9534,0.8922
+mlxfast-worker: mtp-row: pos=633 ids=286,11 v=0x1.dp+4,0x1.c8p+3
+mlxfast-worker: mtp-row: pos=634 ids=11,32335 v=0x1.f8p+4,0x1.cep+3
+mlxfast-worker: mtp-row: pos=635 ids=32335,68710 v=0x1.04p+5,0x1.5p+4
+mlxfast-worker: mtp-row: pos=636 ids=15167,24438 v=0x1.f4p+4,0x1.14p+4
+mlxfast-worker: mtp-row: pos=637 ids=8019,17401 v=0x1.f2p+4,0x1.fp+3
+mlxfast-worker: mtp-row: pos=638 ids=11,6297 v=0x1.dp+4,0x1.a8p+3
+mlxfast-worker: mtp-row: pos=639 ids=6297,11198 v=0x1.04p+5,0x1.26p+4
+mlxfast-worker: mtp-trace: round=18 d=7 acc=6 draft_build_us=20727 verify_build_us=88048 eval_wall_us=81017 readout_us=6 commit_us=602 upkeep_us=30 round_us=190433 streak_in=17 cap=7 ema_in=0.9905,0.9895,0.9884,0.9874,0.9844,0.9742,0.9604,0.9009
+mlxfast-worker: mtp-row: pos=640 ids=25147,10121 v=0x1.e8p+4,0x1.1ap+4
+mlxfast-worker: mtp-row: pos=641 ids=11,9966 v=0x1p+5,0x1.f2p+3
+mlxfast-worker: mtp-trace: round=19 d=1 acc=1 draft_build_us=224 verify_build_us=39172 eval_wall_us=35933 readout_us=16 commit_us=61 upkeep_us=17 round_us=75426 streak_in=0 cap=4 ema_in=0.9920,0.9910,0.9901,0.9893,0.9867,0.9781,0.8163,0.9009
+run-gate-arm: benchmark_finished_utc=2026-08-16T20:25:56Z

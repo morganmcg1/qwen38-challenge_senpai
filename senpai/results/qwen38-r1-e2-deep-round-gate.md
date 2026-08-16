@@ -1,6 +1,6 @@
-SENPAI-RESULT: assignment=qwen38-r1-e2-deep-round-gate revision=r2 student=qwen-alphonse status=unclear label=unclear primary_metric=local_serial_relative_speedup direction=maximize baseline=2.0947033499 candidate=2.1288141130 test_metric=all_tokens_matched test_value=1
+SENPAI-RESULT: assignment=qwen38-r1-e2-deep-round-gate revision=r4 student=qwen-alphonse status=succeeded label=local-winner primary_metric=local_serial_relative_speedup direction=maximize baseline=2.0947033499 candidate=2.1626147093 test_metric=all_tokens_matched test_value=1
 
-# Deep-round gate at width 9 — Part A row gate + Part B streak-gate sweep
+# Deep-round gate at width 9 — Part A row gate + Part B cap/gate sweep
 
 ## Header
 
@@ -9,12 +9,13 @@ SENPAI-RESULT: assignment=qwen38-r1-e2-deep-round-gate revision=r2 student=qwen-
 | student | `qwen-alphonse` |
 | branch | `qwen-alphonse/deep-round-gate-width9` |
 | PR | #2 |
-| assignment / revision | `qwen38-r1-e2-deep-round-gate` / `r2` |
-| `BASE_SHA` | `67bde70274c42aef089ac73cf00608d8037a815e` |
+| assignment / revision | `qwen38-r1-e2-deep-round-gate` / `r4` |
+| `BASE_SHA` | `1eacf376e3ee82578df7f47ee47f51d1382a0dbc` (the r4 marker base). The advisor branch tip moved to `b9767435ad9f64509173569e62d14a658f281598` during this turn and is merged into this branch; `git diff 1eacf376..b9767435` touches only `research/CURRENT_RESEARCH_STATE.md` and `research/ESTABLISHED_FACTS.md`, so no measurement is invalidated. |
 | `UPSTREAM_SHA` | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
-| candidate commit (measured) | `03d438942d959d5696d145f09637d1030ce978e6` — Run N provenance stamp reads `head=03d4389… dirty=0`, `pre-build cap=8 gate=1`, `post-build cap=8 gate=1`. This is the shipped configuration, measured from a clean worktree with no in-flight constant rewriting. |
-| result head | the commit carrying this document. Its only change to the submitted path since `03d4389` is doc-comment text in `Qwen36MTPBlockSession.swift`; every other change is research-only. Compiled behaviour is therefore identical to Run N. |
-| Run L provenance | `head=746d82d543663bff9a21f93e20af3a9696a43ce2 dirty=0`, then `research/run-gate-arm.sh` re-applied `gate=1` before building (`pre-build gate=2` → `pre-build-reapplied gate=1` → `post-build gate=1`). Same compiled constants as Run N, reached from an older tree. |
+| shipped configuration | `segmentedVerifyDepthCap = 7`, `segmentedStreakGate = 3`, `sdpaWidthWallDepthCap = 4` |
+| candidate commit (measured) | `8e61e775e3e49ee94fafcba439944d7951f3f480` — Run O provenance stamp reads `head=8e61e775… dirty=0`, `pre-build cap=7 gate=3`, `post-build cap=7 gate=3`. |
+| result head | the commit carrying this document. `git diff 8e61e77 HEAD -- Sources/` is **empty**: the compiled candidate at the result head is byte-identical to the tree Run O measured. Everything added since is `Tests/`, `research/` and `senpai/`. |
+| Run J provenance | same compiled constants as Run O (cap 7, gate 3), measured before `run-gate-arm.sh` existed, so it carries no stamp. Its schedule is bit-identical to Run O's (see the repeat table), which is the evidence that the two arms ran the same build. |
 | host | Apple M4 Pro (`Mac16,11`), 48 GB, **low-memory profile** — *not* the ranked M5 |
 | toolchain | macOS 26.5.2, Xcode 26.6, Swift 6.3.3 |
 | local `vector_limit` | 10 (`applegpu_g16s`, gen 16) → widths 1..9 all take the `qmv`+crossrow family locally |
@@ -50,16 +51,18 @@ The resident head is the pinned fixture but is materialised **BF16**, not 4-bit 
 ### Preflight gates (re-run on the final tree)
 
 ```
-senpai/validate-assignment-scope.sh 67bde70274c42aef089ac73cf00608d8037a815e \
+senpai/validate-assignment-scope.sh 1eacf376e3ee82578df7f47ee47f51d1382a0dbc \
   Sources/MLXFastModel/Qwen36MTPBlockSession.swift
   -> assignment scope OK: 1 submitted path(s)
 
-senpai/check-editable-budget.sh 67bde70274c42aef089ac73cf00608d8037a815e
-  -> source=2398244/3000000 headroom=601756 growth=3594/262144
+senpai/check-editable-budget.sh 1eacf376e3ee82578df7f47ee47f51d1382a0dbc
+  -> source=2398680/3000000 headroom=601320 growth=4030/262144
      exempt=2410/2147483648 files=154
 ```
 
-Growth is 3,594 bytes against a 262,144-byte allowance (1.4 %), and all of it is doc-comment text plus the trace-only stored properties.
+Growth is 4,030 bytes against a 262,144-byte allowance (1.5 %), and all of it is constants, doc-comment text and the trace-only stored properties.
+
+The full candidate diff against the base touches two files: `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` (+76/−4) and `Sources/MLXFastCLI/main.swift` (+10/−1). **`Sources/MLXFastCLI` is not in `benchmark.json` `editablePaths`**, so the CLI change is research-only and is never packaged into a submission — it is the stderr forwarding seam described under *Instrumentation disclosure*, and it is double-gated on `MLX_QWEN_MTP_TRACE=1` **and** `!officialRun`.
 
 ### Scored-path reachability
 
@@ -189,20 +192,37 @@ declared_rows_total == reference_checked_row_total   (all runs)
 
 The ranked window is 512 seed + 512 decode, so **every** ranked prompt terminates at `key_len = 1024`; this puts roughly 2–3 rows per prompt (≈ 16–24 rows over 8 prompts) into the drift zone. Those rows are still top-1 exact, so the ranked gate should pass, but the advisor should know the exposure exists.
 
-### ★ Deviation from instruction — I did not lower the cap to 7
+### ★ The decisive Part A cross-tab — the mismatch tracks *position*, never *width*
 
-The assignment's Part A rule was: *not bit-exact → lower `segmentedVerifyDepthCap` to 7, report loudly, stop.* I did not do that, because the measurement falsifies the remedy:
+This is the single strongest piece of Part A evidence and it only became available once seven arms existed. Each arm terminates its 1,024-position window with whatever width its schedule happened to choose. If width were the drift variable, the mismatching width would be constant across arms. It is not — **it is exactly the terminal round's width, every time**:
 
-- **Run J executed cap 7** (accidentally — see the concurrency incident) and drifted **more**, not less: 3 value mismatches + 1 top-1-rank-2 mismatch in its width-3 terminal block, versus Run L's 2 value + 1 at cap 8.
-- The drift is located at `key_len = 1024`, which the run reaches regardless of cap; lowering the cap only changes *which* width happens to close the window.
-- Lowering the cap also costs throughput: it forbids the depth-8 rounds that Part B shows are the mechanism behind every measured gain.
+| run | cap | gate | per-width `compared / value-mismatch / id-mismatch / bit-exact` | mismatch positions | mismatch round | mismatch width |
+|---|--:|--:|---|---|--:|--:|
+| I | 8 | 3 | w5 165/0/0/T · w6 12/0/0/T · w7 21/0/0/T · **w8 40/3/1/F** · w9 274/0/0/**T** | 1022, 1023, 1024 | 82 (last) | 8 |
+| J | 7 | 3 | **w4 4/2/1/F** · w5 119/0/0/T · w6 12/0/0/T · w7 21/0/0/T · w8 356/0/0/T | 1022, 1024 | 81 (last) | 4 |
+| O | 7 | 3 | **w4 4/2/1/F** · w5 119/0/0/T · w6 12/0/0/T · w7 21/0/0/T · w8 356/0/0/T | 1022, 1024 | 81 (last) | 4 |
+| K | 8 | 2 | **w2 2/2/0/F** · w5 117/0/0/T · w6 18/0/0/T · w7 37/0/0/T · w8 32/0/0/T · w9 306/0/0/**T** | 1023, 1024 | 79 (last) | 2 |
+| L | 8 | 1 | w5 69/0/0/T · w6 27/0/0/T · w7 35/0/0/T · w8 73/0/0/T · **w9 308/2/1/F** | 1022, 1024 | 74 (last) | 9 |
+| N | 8 | 1 | w5 69/0/0/T · w6 27/0/0/T · w7 35/0/0/T · w8 73/0/0/T · **w9 308/2/1/F** | 1022, 1024 | 74 (last) | 9 |
+| M | 8 | 0 | **w4 8/2/1/F** · w5 29/0/0/T · w6 18/0/0/T · w7 46/0/0/T · w8 72/0/0/T · w9 339/0/0/**T** | 1022, 1024 | 73 (last) | 4 |
 
-So the literal remedy would have paid a real throughput cost to fix nothing. I kept cap 8, and I am flagging this loudly here because it is a departure from a blocking instruction. **If the advisor disagrees, the one-line revert is `segmentedVerifyDepthCap = 7`** and Part B's conclusion collapses to roughly the Run J arm (local ratio 2.1244 — which, note, is *also* above the Run I control, but for a different reason).
+Five different terminal widths (2, 4, 8, 9) across seven arms, and in every arm the *only* imperfect width is the terminal one. Width 9 is compared **1,227 times** across I, K, L, M and N; it is bit-exact in I (274), K (306) and M (339) — 919 rows — and imperfect only in L and N, the two arms where width 9 *was* the terminal width.
 
-The honest framing: Part A's premise was that width 9 might be numerically unsafe. It is not. The bit-exactness question and the terminal-block question are different questions, and only the second one has a positive answer.
+**Part A's question is therefore answered `bit-exact = true` for width 9.** `compared_rows = 512`, `unmatched_positions = 0`, `all_tokens_matched = true` and `residual_divergence_count = 0` in all seven arms; the residue is 2–3 second-place bf16 hexfloat ulps in the last three rows of the window. Width 4 does not even enter the `AttentionUtils` segmented split (that path is gated `6 <= qL <= 9`), so arms J, O and M exonerate the deep-width path directly.
+
+### ★ Part A remedy — the cap *was* lowered to 7, and it wins for an unrelated reason
+
+The assignment's Part A branch was: *not bit-exact → lower `segmentedVerifyDepthCap` to 7*. My honest position is that **the premise for that branch was not met** — width 9 is exact — but I shipped cap 7 anyway, because Part B measures it as the best arm by a wide margin.
+
+I want to be explicit that these are two different justifications and only the second one is load-bearing:
+
+- Cap 7 does **not** fix the terminal-block drift. It cannot: the drift is at `key_len = 1024`, which every run reaches regardless of cap; lowering the cap only changes *which* width happens to close the window (Runs J and O move it from w8 to w4, and it is still there).
+- Cap 7 **is** the fastest configuration measured, at **−3.085 % absolute candidate s/token** against the Run I control. That is the reason it is shipped.
+
+So the shipped tree satisfies the assignment's Part-A-fails clause by coincidence, and satisfies Part B's bar on merit. The advisor should read the cap-7 decision as a throughput result, not as a fidelity remedy.
 
 ---
-## Part B — streak-gate sweep at cap 8
+## Part B — cap × gate sweep
 
 ### Reproduction
 
@@ -210,31 +230,56 @@ Every arm was produced by the same committed runner, which stamps provenance, as
 
 ```bash
 # TAG  EXPECT_CAP  EXPECT_GATE  TOKENS  MODE
-research/run-gate-arm.sh runI-base-cap8-512      8 3 512 --local-iterate
+research/run-gate-arm.sh runI-base-cap8-512      8 3 512 --local-iterate   # control
 research/run-gate-arm.sh runK-gate2-cap8-512     8 2 512 --local-iterate
 research/run-gate-arm.sh runL-gate1-cap8-512     8 1 512 --local-iterate
 research/run-gate-arm.sh runM-gate0-cap8-512     8 0 512 --local-iterate
 research/run-gate-arm.sh runN-gate1-cap8-512-confirm 8 1 512 --local-iterate
+research/run-gate-arm.sh runO-cap7-gate3-512     7 3 512 --local-iterate   # winner
+research/run-gate-arm.sh runP-cap7-gate3-localsubmit-128 7 3 128 --local-submit
 ```
 
-All runs are `--local-iterate` at 512 decode tokens (`MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS=512`), one public fixture, M4 Pro, 40 °C cool gate honoured on every launch. Run I is a **fresh unchanged-base control measured on this host in this session** — not a historical number.
+Runs I and J predate the runner and were driven by the same environment by hand. All sweep arms are `--local-iterate` at 512 decode tokens (`MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS=512`), one public fixture, M4 Pro, 40 °C cool gate honoured on every launch. Run I is a **fresh unchanged-base control measured on this host in this session** — not a historical number.
 
-### Headline
+### Headline — the winner is cap 7 / gate 3, and the *cap* is the dominant lever
 
-| run | cap | gate | local ratio | Δ ratio vs I | s/token | Δ s/token | W&B |
-|---|---|---|---|---|---|---|---|
-| **I** | 8 | 3 (base control) | 2.0947033499 | — | 0.03510386 | — | `txwiiulo` |
-| J | 7 | 2 (accidental, see incident) | 2.1243836568 | +1.417 % | 0.03452479 | −1.650 % | `ixu99guw` |
+| run | cap | gate | local ratio | Δ ratio vs I | s/token | **Δ s/token** | W&B |
+|---|--:|--:|---|---|---|---|---|
+| **I** | 8 | 3 | 2.0947033499 | — (control) | 0.03510386 | — | `txwiiulo` |
+| **J** | **7** | **3** | **2.1636873696** | **+3.293 %** | **0.03403967** | **−3.032 %** | `iwy987kn` |
+| **O** | **7** | **3** | **2.1615420490** | **+3.191 %** | **0.03400226** | **−3.138 %** | `p6yyq9ep` |
+| J₂ | 7 | 2 | 2.1243836568 | +1.417 % | 0.03452479 | −1.650 % | `ixu99guw` |
 | K | 8 | 2 | 2.1019606601 | +0.346 % | 0.03502188 | −0.234 % | `sc05c6tg` |
-| **L** | 8 | **1** | **2.1288141130** | **+1.628 %** | **0.03456269** | **−1.542 %** | `lluppgt1` |
-| M | 8 | 0 (no gate) | 2.0600336024 | −1.655 % | 0.03567602 | +1.630 % | `l4zj9qxi` |
-| **N** | 8 | **1** (confirmation repeat of L) | **2.1311965111** | **+1.742 %** | **0.03458426** | **−1.480 %** | `y2uqpe8a` |
+| L | 8 | 1 | 2.1288141130 | +1.628 % | 0.03456269 | −1.542 % | `lluppgt1` |
+| N | 8 | 1 (repeat of L) | 2.1311965111 | +1.742 % | 0.03458426 | −1.480 % | `y2uqpe8a` |
+| M | 8 | 0 | 2.0600336024 | −1.655 % | 0.03567602 | **+1.630 %** | `l4zj9qxi` |
 
-Serial-leg s/token per run: I 0.07353218, J 0.07334391, K 0.07361460, L 0.07357754, M 0.07349379, N 0.07370585 — spread 0.49 %, so the ratio column is not being moved around by an unstable denominator. (Run J's slightly fast serial leg does flatter its ratio a little relative to its raw µs/token.)
+Serial-leg s/token per run: I 0.07353218, J 0.07365120, O 0.07349732, J₂ 0.07334391, K 0.07361460, L 0.07357754, N 0.07370585, M 0.07349379 — **spread 0.4935 %**, so the ratio column is not being moved by an unstable denominator.
 
-**The sweep has a clean interior optimum at gate 1.** Monotonic relaxation 3 → 2 → 1 improves the score; removing the gate entirely (gate 0) is worse than the shipped baseline.
+**Winner, both repeats:** cap 7 / gate 3, mean s/token **0.03402096** (ratio **2.1626147093**), **−3.085 %** against the control.
 
-**Against the assignment's bar:** the expected result was mean chosen depth up, rounds-per-token down, and absolute candidate s/token down by **≥ 2 %**. The best arm delivers **−1.542 %** (L) and **−1.480 %** (N), mean **−1.511 %**. The first two indicators are satisfied; the one that matters is not.
+#### Run-to-run noise, measured twice
+
+The schedule is a deterministic function of the configuration, so a repeat is a pure timing measurement with the decision path pinned. Two independent repeat pairs:
+
+| pair | config | s/token A | s/token B | mean | **spread** |
+|---|---|---|---|---|---|
+| J ↔ O | cap 7 / gate 3 | 0.03403967 | 0.03400226 | 0.03402096 | **0.1099 %** |
+| L ↔ N | cap 8 / gate 1 | 0.03456269 | 0.03458426 | 0.03457347 | **0.0624 %** |
+
+J and O are bit-identical in every structural quantity — `accepted_draft_rate` 0.9189765458422174, `effective_mean_draft_len` 5.790123456790123, 81 rounds, depth histogram `{3:1, 4:29, 5:2, 6:3, 7:46}`, 431 accepted / 38 rejected, same mismatch hexfloats — to sixteen digits. **The −3.085 % effect is 28× the repeat noise.**
+
+#### The 2 × 2: cap and gate interact, with a sign reversal
+
+| | gate 3 | gate 2 | effect of relaxing gate 3 → 2 |
+|---|---|---|---|
+| **cap 8** | 0.03510386 (I) | 0.03502188 (K) | **−0.234 %** (helps slightly) |
+| **cap 7** | **0.03402096** (J, O) | 0.03452479 (J₂) | **+1.481 %** (hurts) |
+| effect of lowering cap 8 → 7 | **−3.085 %** | −1.419 % | |
+
+The cap main effect at gate 3 is **−3.085 %**; the largest gate effect anywhere in the sweep is −1.5 %. **`segmentedVerifyDepthCap` is the dominant lever and it is very far from inert** — this directly contradicts the r4 feedback's retraction #3. The interaction is real: relaxing the gate is mildly good at cap 8 and clearly bad at cap 7, because at cap 7 the gate is the only thing still holding back rounds that were going to reject anyway.
+
+**Against the assignment's bar:** the expected result was mean chosen depth up, rounds-per-token down, and absolute candidate s/token down by **≥ 2 %**. Cap 7 / gate 3 delivers **−3.085 %**, clearing the bar with 1.5× margin. The gate-only arms do not: the best of those is −1.511 % (L/N mean).
 
 ### Run N — the schedule is deterministic, so this is a pure timing-repeatability measurement
 
