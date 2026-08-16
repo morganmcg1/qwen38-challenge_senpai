@@ -1528,18 +1528,36 @@ drafting specifically.** F25 established that acceptance falls after the EOS
 transition. Measuring the same split at every forced depth I have at 512 shows
 the penalty is not a flat tax — it scales with depth:
 
-| arm | `d` | pre-EOS mean accepted | post-EOS | delta | delta % |
-|---|---|---|---|---|---|
-| `d1` | 1 | 0.980 | 0.981 | +0.001 | **+0.1%** |
-| `d2` | 2 | 1.931 | 1.833 | −0.098 | **−5.1%** |
-| `d8` | 8 | 7.000 | 5.750 | −1.250 | **−17.9%** |
+Straddling rounds are dropped. Because a few late rounds run below the forced
+depth as the leg runs out of tokens, the honest statistic is the **accept rate**
+`mean_accepted / mean_offered`, not the raw accepted count; both are shown.
+
+| arm | `d` | pre mean acc | post mean acc | pre rate | post rate | rate delta |
+|---|---|---|---|---|---|---|
+| `d1` | 1 | 0.980 (N=152) | 0.981 (N=105) | 0.9803 | 0.9810 | **+0.1%** |
+| `d2` | 2 | 1.931 (N=102) | 1.833 (N=72) | 0.9655 | 0.9165 | **−5.1%** |
+| `d3` | 3 | 2.859 (N=78) | 2.778 (N=54) | 0.9530 | 0.9376 | **−1.6%** |
+| `d4` | 4 | 3.762 (N=63) | 3.523 (N=44) | 0.9405 | 0.8960 | **−4.7%** |
+| `d8` | 8 | 7.000 (N=37) | 5.750 (N=28) | 0.8750 | 0.7188 | **−17.9%** |
 
 At depth 1 there is effectively no EOS penalty at all (pre-EOS `p1` = 0.9803,
-post-EOS `p1` = 0.9810). The mechanism is straightforward: a deeper draft
-exposes more positions to a higher-entropy region, and one rejection truncates
-the whole tail. This matters for the policy argument because it is a *second*,
-independent reason to prefer shallower depth in exactly the regime where the
-cost curve already does — the two effects compound rather than cancel.
+post-EOS `p1` = 0.9810), and by depth 8 it costs 17.9 % of the accept rate. The
+mechanism is straightforward: a deeper draft exposes more positions to a
+higher-entropy region, and one rejection truncates the whole tail.
+
+**The trend is real but jagged, and I am not going to smooth it.** It rises
+strongly from `d = 1` to `d = 8`, but it is not monotone in the middle: `d = 3`
+(−1.6 %) is penalised *less* than `d = 2` (−5.1 %). At these N (54–102 rounds
+post-EOS) a 1–3 % swing is not resolvable, so the defensible claim is the band
+structure — nil at `d = 1`, a few percent across `d = 2..4`, and an order of
+magnitude worse at `d = 8` — not a smooth function of depth. This is the second
+place in this report where per-depth structure turns out to be jagged rather
+than smooth, which is the concrete vindication of the advisor's comment-8
+instruction to scan every depth instead of interpolating between endpoints.
+
+This matters for the policy argument because it is a *second*, independent
+reason to prefer shallower depth in exactly the regime where the cost curve
+already does — the two effects compound rather than cancel.
 
 **F29 — at 512 tokens, forced `d = 2` beats forced `d = 8` end to end.** On the
 parent-clock-stripped after-first-block metric, `d2` runs at 26,119 µs/token
