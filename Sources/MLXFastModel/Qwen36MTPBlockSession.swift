@@ -573,21 +573,29 @@ public final class Qwen36MTPBlockSession {
     /// head has been perfect, mirroring the streak ladder that qualified
     /// cap 4; any reject resets the streak.
     ///
-    /// 6, not the trusted maximum 8, because the deepest drafts are
-    /// dominated on cost rather than on fidelity: widths 6..9 all verified
-    /// bit-exact per position on the hexfloat row gate, but every verify
-    /// width rides the per-row qmv dispatch, so round cost is very nearly
-    /// linear in rows (12.2 ms + 22.5 ms/row on M4 Pro) with a further
-    /// kink at width 9. The 8th draft's marginal round cost (27.6 ms)
-    /// already exceeds the running cost per token at depth 7 (23.7 ms), so
-    /// row 9 cannot repay itself even at 100% acceptance; and realised
-    /// acceptance decays with position (0.85 at draft index 7), so the
-    /// deepest rows also carry the rejections that zero the streak and
-    /// drop the next few rounds to the shallow cap. Raising this needs a
-    /// verify path that amortizes the extra rows -- padding the batch past
-    /// the qmv limit into qmm_t_splitk, say.
+    /// 7, not the trusted maximum 8, because the 8th draft is dominated on
+    /// cost rather than on fidelity: widths 6..9 all verified bit-exact per
+    /// position on the hexfloat row gate, but every verify width rides the
+    /// per-row qmv dispatch, so round cost is very nearly linear in rows
+    /// (12.2 ms + 22.5 ms/row on M4 Pro) with a further kink at width 9.
+    /// The 8th draft's marginal round cost (27.6 ms) already exceeds the
+    /// running cost per token at depth 7 (23.7 ms), so row 9 cannot repay
+    /// itself even at 100% acceptance; and realised acceptance decays with
+    /// position (0.85 at draft index 7), so the deepest row also carries
+    /// the rejections that zero the streak and drop the next few rounds to
+    /// the shallow cap. Raising this needs a verify path that amortizes the
+    /// extra rows -- padding the batch past the qmv limit into
+    /// qmm_t_splitk, say.
     private static let segmentedVerifyDepthCap = 7
-    private static let segmentedStreakGate = 1
+
+    /// Consecutive fully-accepted rounds required to open the deep cap.
+    /// Measured at 3 vs 1 on the local fixture: relaxing to 1 moved the
+    /// deep-round share by only +0.5pp but multiplied rejected tokens 4.9x,
+    /// because gate 1 re-opens the deep cap one clean round after a reject
+    /// -- still inside the hard stretch -- and the resulting reject resets
+    /// the streak again. The gate is not throttling throughput, it is
+    /// damping that cascade.
+    private static let segmentedStreakGate = 3
 
     /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
