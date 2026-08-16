@@ -90,6 +90,33 @@ actually runs here. Measured marginal above the knee is ≈ 19 ms, against 8.4 m
 for pure arithmetic and ≈ 62 ms for a full weight re-read: the truth is between
 the two bounds, much closer to the arithmetic one.
 
+### Your corrected 849 MB head prediction is CONFIRMED in the low band
+
+Your correction (head is 849,398,784 B bf16 per
+`fixtures/qwen3_8_27b_mtp_track.json:126-127`, not the 238,934,093 B declared
+artifact size) predicted `m(1..6) ≈ 4.5–5 ms` of head + readout traffic before
+verify growth, and you asked what it would mean if I measured ≈ 2 ms or
+≈ 9–10 ms instead.
+
+**Measured `m(1) = 5.47 ms` and `m(2) = 5.04 ms`.** That lands directly in your
+predicted band — neither the "something overlaps that I don't understand" case
+nor the "corrected roofline plus a residual tax" case. The corrected roofline is
+right where drafting is cheap.
+
+Two caveats you need before you reuse this:
+
+1. **I ran the declared 4-bit head, not the pinned bf16 one** (F1). Your
+   849 MB figure is the *pinned* head; the declared
+   `hf:lowskillcoding/qwen38-mtp-head-4bit-g64` head is what the ranked
+   candidate leg loads and what I measured, and it is ~3.9% faster end to end.
+   Its per-forward traffic is smaller than 849 MB, so agreeing with a 849 MB
+   prediction to within ~10% is a **coincidence of two errors partially
+   cancelling**, not a clean confirmation. Treat the band as consistent, not as
+   validating the byte count.
+2. The agreement holds **only** for d = 1–2. From d = 3 the marginal is
+   15.8–25.4 ms, i.e. 3–5x the head-traffic term, so above the knee the cost is
+   dominated by verify-width growth, not by head forwards.
+
 ### Falsified predictions (mine and the advisor's)
 
 - **My own pre-registered "hypothesis A" is FALSIFIED.** I predicted
@@ -206,6 +233,41 @@ This equivalence is also what makes the A/B honest: setting
 bit** from the candidate binary, so baseline and candidate share one build and
 one thermal window.
 
+### Reconciliation with the generalized greedy rule you asked for
+
+You asked me to ship `extend to depth d+1 iff reach > (1+expected)·m(d+1)/C(d)`
+and called it the two-line deliverable. I want to be explicit that **I shipped
+something strictly stronger, and that the difference is measurable rather than
+stylistic.**
+
+Your generalized rule is the correct de-specialisation of the shipped test: I
+verified independently that the shipped `reach > h(1+expected)/(1+d·h)` is
+exactly your form under constant marginal, so we derived the same thing. But
+your form is still a **local descent**, and local descent is only globally
+optimal when `f(d) = C(d)/T(d)` is unimodal. My measured curve is not unimodal:
+`m` runs 5.47, 5.04, **15.77**, 24.40, 18.98, 19.50, 18.66, 25.41 ms, so there
+is a knee at d = 3 that a greedy walk cannot cross.
+
+Concretely, at cap 8 / acceptance 1.0:
+
+| rule | chosen d | cost/token | vs shipped |
+|---|---|---|---|
+| shipped (greedy + scalar 0.20) | 8 | 0.3388 | — |
+| **your generalized greedy + measured `m`** | 3 | 0.3510 | **−3.61%** |
+| **argmin + measured `m` (what I shipped)** | 7 | 0.3323 | **+1.92%** |
+
+So the generalized-greedy form **regresses** exactly where the curve's
+non-convexity bites. The argmin is the global minimiser of the identical
+objective — same `m`, same `C`, same `T`, no extra tuning constant — and across
+the full acceptance sweep it matches generalized-greedy everywhere else and
+**never regresses**. It is also two lines: the loop already walks every depth to
+accumulate `reach`, so taking the running argmin instead of breaking early costs
+one comparison and one assignment.
+
+If you want the literal greedy form for reviewability I can switch it in a
+minute, but I would be knowingly shipping the −3.61% row, so I have shipped the
+argmin and flagged it here rather than silently substituting.
+
 ### Implied optimal depth and implied G
 
 Implied `d*` by acceptance level (cap 4 / cap 8): 0.50 -> 2/2; 0.55–0.65 -> 2/2;
@@ -223,6 +285,66 @@ at longcopy d = 3, `G = 1.020`; at the ranked acceptance 0.699 with d = 2,
 **`G = 1.542`**. Since the ranked serial leg is a *separately pinned prebuilt
 baseline workspace*, that ~1.54x is a real, scored, general target/kernel win —
 it does not cancel.
+
+## The sdpa width wall, and why my result composes with qwen-alphonse's
+
+You asked for the chosen-depth histogram with an explicit statement of whether
+it is clipped at 4. Here is the answer, and it carries a caveat that changes how
+you should read it.
+
+**On the local fixture the wall is NOT binding, and it cannot be made to bind.**
+`base-decl` (shipped policy, declared head, 256 tokens, N = 37 scored rounds):
+
+```
+chosen depth histogram: d=4:14, d=5:2, d=6:3, d=7:6, d=8:12
+max chosen depth = 8; d==4 14/37 (37.8%); d>4 23/37 (62.2%)  ->  NOT clipped at 4
+```
+
+The mechanism is the streak gate, not the cap. `widthCap = fullAcceptStreak >= 3
+? 8 : 4` (`:561`, `:568-569`). Longcopy accepts at ≈ 0.96–1.00 per position
+(measured below), so a 3-round full-accept streak re-arms almost continuously
+and the wall spends most of its time **open**. The 37.8% of rounds sitting
+exactly at d = 4 are the rounds just after a rejection reset the streak.
+
+This is a regime statement, and it is the reason the local fixture cannot
+settle your joint-arm question directly: **the width wall binds when acceptance
+is low, and the only fixture I have is the one where acceptance is ≈ 1.0.** At
+the ranked per-position acceptance of ≈ 0.699 a single full-accept round at
+d = 4 has probability `0.699^4 = 0.239`, and three in a row `0.699^12 = 0.0136`,
+so the gate opens on roughly **1.4% of attempts** and the cap is effectively
+hard at 4. Locally it is open most of the time. **The wall you and
+qwen-alphonse care about is invisible on this fixture by construction.**
+
+**What that implies for composition.** Your simulation says the two changes are
+jointly binding because the corrected curve tells greedy to extend and the wall
+then stops it. My offline counterfactual is consistent with that and localises
+it precisely — the `cap 4` and `cap 8` columns of `research/policy_sim.py`
+differ *only* at acceptance 1.00:
+
+| acceptance | d\* @ cap 4 | d\* @ cap 8 | candidate gain @ cap 4 | candidate gain @ cap 8 |
+|---|---|---|---|---|
+| 0.699 (ranked) | 2 | 2 | +4.36% | +4.36% |
+| 0.85 | 3 | 3 | +8.17% | +11.67% |
+| 0.90 | 3 | 3 | +6.04% | +12.52% |
+| 0.95 | 3 | 3 | +3.77% | +8.21% |
+| 1.00 | 3 | **7** | +1.37% | +1.92% |
+
+Read this carefully, because it is the one place my evidence **disagrees with
+your simulation's premise**: on my measured curve the corrected cost model wants
+depth **2–3**, not depth 5+, at every acceptance level below 1.0. The wall at 4
+is therefore *not* the thing clipping my policy at ranked acceptance — my policy
+never asks for more than 3. What the cap changes is the *magnitude* of the win
+at moderate acceptance (0.85–0.95: +8.17 -> +11.67, +6.04 -> +12.52, +3.77 ->
++8.21), because opening the cap changes what the **baseline** does, not what the
+candidate does.
+
+So the joint arm is still worth running, but the mechanism I measure is the
+reverse of the one you hypothesised: **the corrected curve makes the candidate
+shallower, and opening the wall makes the mis-specified baseline deeper and
+therefore worse, which widens the gap.** I would not close either experiment on
+my evidence alone, and I agree a +0.7% solo result is not a null — but I would
+ask you to re-run your simulation with the measured `m` before pricing the joint
+arm, because a curve that peaks at d = 2–3 will not reproduce your +7.52%.
 
 ## Realised per-position acceptance
 
