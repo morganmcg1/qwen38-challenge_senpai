@@ -747,3 +747,86 @@ written for a *distribution*-preserving standard, and the vocabulary is a trap.
 - Editable budget: `source = 2,396,110 / 3,000,000`, headroom 603,890 B.
   `mtp-head/` is exempt with its own 2 GiB cap. Preflight every assignment with
   `senpai/validate-assignment-scope.sh` and `senpai/check-editable-budget.sh`.
+
+## ★★★ Verify width is a STAIRCASE, not a roofline knee — the base already ships a crossrow QMV
+
+This is the largest correction of round 2 and it changes how PR #2 and PR #5 must
+be read. Traced end to end in source on the live base.
+
+**The frozen host launches one threadgroup per input row.**
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:235-295` — `qmv`
+sets `bn = 8`, `bk = 32`, `group_dims(bk, 2, 1)` and, at `:254`,
+`MTL::Size grid_dims(M, (N + bn - 1) / bn, B)`. **`M` is the x grid dimension**, so
+each of the `M` verify rows is an independent threadgroup. Threadgroups share
+nothing, so the naive reading is that weights are streamed and dequantized `M`
+times. `:259` sets `fast = N % bn == 0 && K % 512 == 0`, selecting `qmv_fast`.
+
+**But a prior accepted submission already fixed this, inside the kernel.**
+`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp` (editable surface)
+carries `qmv_fast_crossrow_affine4_g64{,_wide,_m}`. The design note at `:973-980`
+states the contract exactly: *"the frozen host launches M x-groups for each
+8-output tile, so a group that claims NA adjacent input rows lets the remaining
+host groups return without reading weights."* The wrapper at `:1067-1094` does
+`first_m = tid.x * IPG; if (first_m >= M) return;` — surplus groups exit before
+touching weights. Live gate at `:1817-1860`: `!batched && group_size == 64 &&
+bits == 4 && out_vec_size >= 1024`, with the `_wide`/`_m` family above 4096.
+It arrived progressively across the validated submissions `b6c7251` →
+`08897af` → `1033e1a`, so **it is already inside the promoted 2.9042 frontier.**
+
+**The cost law.** `:1064-1065` states it outright:
+`IPG = ceil(M / ceil(M / 4))`, *"the fewest weight streams reachable at NA <= 4,
+with the remainder spread evenly so no group runs a one-row tail."* Active groups
+= `ceil(M / IPG)` = **`ceil(M / 4)` weight streams**. Verified against the
+dispatch table `<3,3> <4,4> <5,3> <6,3> <7,4> <8,4> <9,3>` — computed IPG matches
+every entry.
+
+| verify width M | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|---|
+| weight streams `ceil(M/4)` | 1 | 1 | 1 | **2** | 2 | 2 | 2 | **3** |
+
+**This re-explains our own headline measurement.** `eval_wall` 79 → 89 → 106 ms at
+widths 7 → 8 → 9 (`ESTABLISHED_FACTS.md:393`, corroborated by the phase-trace note
+at `Qwen36MTPBlockSession.swift:512`): 7→8 stays at 2 streams and costs +10 ms;
+8→9 crosses 2→3 streams and costs +17 ms. The accelerating delta is a **tiling
+step**, not the roofline knee at `M* = 7.9`. It also explains why `V(9) ≈ 161 ms`
+rather than the ~600 ms a true per-row re-read would give — 3 streams, not 9.
+
+**`ESTABLISHED_FACTS.md:120-131` set up precisely this falsification** — *"if
+different shapes knee at different M, then dispatch and occupancy — not roofline —
+set the curve, and the whole model below is wrong in an informative way."* Source
+now says dispatch and occupancy set the curve. The roofline `M*` is not deleted —
+both terms are present — but the staircase dominates and the two models are
+**cleanly separable at M = 5**, where the staircase predicts a jump (1→2 streams)
+and roofline predicts business as usual deep in the bandwidth-bound regime.
+**That is the discriminator, and PR #5's Python `mx.quantized_matmul` M=1..12
+sweep measures it with no run lock and no GPU contention.**
+
+**Concrete opportunity (unassigned, strong).** Width 9 costs 3 streams only
+because `NA` is capped at 4 — `static_assert(NA >= 2 && NA <= 4)` at `:993`. At
+`NA = 5`, width 9 would need `ceil(9/5) = 2` streams, plausibly recovering much of
+the +17 ms at exactly the width PR #2's gate is about. Bit-exactness is safe *by
+the kernel's own design contract* (`:977-980`: *"load_vector, the qdot expression,
+the K accumulation order and simd_sum are unchanged for every output element"*).
+**Known blocker:** `typedef vec<float, NA> VF` at `:994` — Metal has no
+`vec<float,5>`; legal widths are 2/3/4/8/16. A 5-row group needs `vec<float,8>`
+with 3 lanes wasted, or a restructure, and the note at `:975-978` warns register
+footprint is the binding constraint. This is an experiment, not a certainty.
+
+**Corrections to our own records.**
+- `ESTABLISHED_FACTS.md:389-402` says widths 1-9 "all take `qmv`, tuned for
+  `M = 1`". The **host dispatch** claim is right; "tuned for `M = 1`" is **wrong**
+  for 4-bit g64 with `N >= 1024`, which is every scored projection.
+- `ESTABLISHED_FACTS.md:749-750` justifies the alignment check by asserting
+  "5120, 6144, 8704, 10240, 16480 are all multiples of 512". **16480 is not**
+  (16480 = 512·32 + 96). **No live defect**: 16480 is an *output* dim (GDN fused
+  in-projection 5120 × 16480, `:127`), and `N` only needs `% 8`. The real `K`
+  dims — 5120, 6144, 8704, 10240, 17408 — are all 512-aligned, so the
+  conclusion stands and only the stated reasoning was wrong. Still unasserted in
+  code, still nearly free to assert.
+
+**Corroborating external result, held at arm's length.** SpecMQuant
+(arXiv 2505.22179) reports a W4A16-specific widening penalty — verify/decode ratio
+1.8 at tree size 60 versus <1.2 for FP16/W8A8. Same *direction* as our staircase,
+different *mechanism*, and their tree size 60 is far outside our 2..9 range, so it
+motivates but cannot conclude. Its value here is that it independently warns the
+4-bit path is the penalised one; our staircase says *why* on this stack.
