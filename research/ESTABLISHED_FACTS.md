@@ -1041,3 +1041,134 @@ the static prefix trim we already rejected: halving the compact prefix to 49,152
 rows regressed acceptance 1.00 → 0.877, whereas a clustered or low-rank
 two-stage readout preserves coverage.
 
+
+---
+
+## Draft-readout precision path — four source facts verified during the brief audit
+
+These four were all read directly from source on 2026-08-16 while auditing PR #7
+and PR #8. Two of them close standing "UNVERIFIED" notes in this file; one of
+them corrects a line number recorded earlier from memory. **Each is quoted with
+its file and line range so the next reader can re-check it in under a minute
+rather than re-deriving it.**
+
+### 1. Low-bit affine `qmv_fast` IS instantiated on the non-NAX path
+
+This resolves the standing "UNVERIFIED — we only ever confirmed bits ∈ {2,3,4,5,6,8}
+for the NAX kernels" note. In
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal`, the
+instantiation macro chain is:
+
+```
+:150-158  instantiate_quantized_all()   -> groups(2),(3),(4),(5),(6),(8)
+:145      instantiate_quantized_groups  -> types(128,·) types(64,·) types(32,·)
+:141-144  instantiate_quantized_types   -> funcs(float|float16_t|bfloat16_t)
+:132-139  instantiate_quantized_funcs   -> instantiate_quantized_all_batched
+:82-86    ..._all_batched               -> batched_wrap(affine_qmv_fast, ...)
+:78-80    ..._batched_wrap              -> batched(...,1) and batched(...,0)
+```
+
+Therefore `affine_qmv_fast_<type>_gs_64_b_2` and `affine_qmv_fast_<type>_gs_64_b_3`
+both exist, in batched and non-batched form, for `float`, `float16_t` and
+`bfloat16_t`. **Bits ∈ {2,3,4,5,6,8} × group size ∈ {32,64,128} is the full
+supported matrix on the ordinary path, not just the NAX path.** The host `fast`
+gate (`backend/metal/quantized.cpp:259`, `N % bn == 0 && K % 512 == 0`) is
+bits-independent, so lowering bit width cannot fall off the fast path.
+
+### 2. `qwen35DraftSelectKernel` is bit-width agnostic
+
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1944-2008` (definition),
+called at `:2372`. `inputNames: ["logits"]`; the body reads
+`float value = float(logits[index])` and runs a two-level SIMD argmax (shuffle
+reduce → one threadgroup barrier → second reduce in simd group 0), then writes
+`token_id[0] = int(best_id < PREFIX_COUNT ? best_id : best_id + CONTROL_OFFSET)`.
+Template params are `REAL_COUNT`, `PREFIX_COUNT`, `CONTROL_OFFSET`, `TG_SIZE=1024`.
+
+**It never touches packed weights, scales or biases** — it consumes dense logits
+that have already been produced. Any belief that this kernel "assumes 4-bit" is
+false, and a stopping-rule branch conditioned on it could never fire.
+
+### 3. Draft-head bit width lives in `makeCompactDraftHead()`, not `draftTokenID`
+
+`Qwen35.swift:2406-2434`. The function builds
+`compactRows = concatenated([prefix 0..<98_304, controls 248_044..<248_070,
+padding 0..<(paddedCount − realCount)], axis: 0)`, and when `lmHead` is a
+`QuantizedLinear` it reconstructs one with `bits: quantized.bits` (`:2428`) —
+i.e. it **inherits 4 bits from the parent head**. Row-slicing packed 4-bit
+weights is valid because packing runs along K, not N.
+
+Related anchors: `draftTokenID` at `:2361-2387`, whose guard is
+`_draftHeadW == nil, usesCompactDraftVocabulary` (`:2364`);
+`usesCompactDraftVocabulary` at `:2401-2404` requires
+`configuration.vocabularySize == 248_320 && lmHead != nil && _draftHeadW == nil`.
+
+Three consequences follow directly:
+
+- **Steady-state peak memory FALLS, it does not rise.** Requantizing *replaces*
+  an existing allocation: −62.9 MB at 3-bit, −125.9 MB at 2-bit. (An earlier
+  advisor note warning of a peak-memory *increase* was backwards.)
+- **The real hazard is a transient**, not the steady state: dequantizing
+  98,336 × 5120 = **503,480,320** weights costs ≈ **1.01 GB in fp16** and
+  ≈ **2.01 GB in fp32** while it is live. Chunk by rows if it bites.
+- **Crossrow is not in play for the draft readout.** Draft readout is M=1, and
+  the crossrow kernel carries `static_assert(M >= 2 && M <= 9)` plus a
+  `bits == 4` host gate. A draft-head bit-width change therefore cannot move the
+  dispatch family.
+
+### 4. Acceptance is exact token-ID match — exact lines
+
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:641-649`. **Note the line
+number: `:641`, not the `~:638` recorded earlier in this file from memory.**
+
+```swift
+static func acceptedDraftPrefixCount(drafts: [Int], verifyArgmax: [Int]) -> Int {
+    precondition(verifyArgmax.count >= drafts.count)
+    for index in drafts.indices where verifyArgmax[index] != drafts[index] {
+        return index
+    }
+    return drafts.count
+}
+```
+
+Pinned by `Tests/MLXFastTests/QwenMTPFixedWindowTests.swift:12,28`. Nearby:
+`defaultDraftDepth = 2` at `:652`.
+
+This is the structural basis of prediction 5: acceptance compares **token IDs**,
+so any change confined to the drafter's numerics can only change *which* drafts
+are proposed and *how many* are accepted — never the emitted token, which always
+comes from the verifier's argmax. It still requires a parity run to confirm
+empirically, because "structurally cannot" and "measured did not" are different
+claims.
+
+### Provenance note attached to this audit
+
+`git log --all --oneline -S"6.6 ms" -- research/` returns exactly one commit,
+`b2419f4` ("research: the width cost law is measured, and both prior models are
+refuted"). The retraction of the `+5.5 / +6.6 ms` boundary excess, of the
+`h(3) = 0.2446` "ramp onset" explanation, of the "2.4× smaller live than
+isolated" discrepancy, and of `d* = 7` is recorded above at lines 186-210 of this
+file and struck in place in `CURRENT_RESEARCH_STATE.md`.
+
+### ★★★★★ The methodological point these four facts make together
+
+Three of the four were **gates I had written into a student brief as
+"Unverified: check whether X"**. All three were resolvable from source in under
+ten minutes by the person who wrote the brief. A gate the advisor can close from
+source in minutes costs a student hours and can terminate in a spurious "blocked"
+report.
+
+> **"Unverified" in a brief is a debt the advisor owes, not a task to delegate.**
+> Before writing "check whether X", try to check X.
+
+And the contrast that made the audit worth doing: the brief that survived the
+contamination sweep intact (PR #7, Part A) survived because **its numbers were
+derived from physical constants and independently recomputable** — 98,336 rows ×
+5120 cols at 4/3/2 bits plus fp16 scale+bias ⇒ 2880/2240/1600 B/row ⇒
+283.2/220.3/157.3 MB ⇒ Δt at 227 GB/s. Every figure re-derived in two minutes and
+all held. The one number in that brief that came from *other numbers in my own
+notes* was the one that had to be withdrawn.
+
+> **Prefer quantities recomputable from physical constants (bytes, bandwidth,
+> element counts) over quantities inherited from the research record. The first
+> kind fails loudly and locally; the second kind propagates.**
+
