@@ -83,4 +83,6 @@ wandb/
 research/feasibility-*.json
 research/sweep-*.json
 research/guardrail-*.json
+research/ema-*.json
+research/occupancy-*.json
 research/capture-*/
