@@ -1004,17 +1004,12 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
     acc[r] = VF(0.0f);
   }
 
-  // Measurement-only arm 2: a runtime zero the compiler cannot fold. The four
-  // row addresses stay formally distinct, so no load or value CSE fires and the
-  // arithmetic is untouched, while at runtime all four resolve to one tile and
-  // unique weight traffic falls ~4x.
-  const int row_span = in_vec_size >> 30;
   for (int k = 0; k < in_vec_size; k += block_size) {
     thread uint16_t packed[rows_per_simd][4];
     thread float scale_local[rows_per_simd];
     thread float bias_local[rows_per_simd];
     for (int r = 0; r < rows_per_simd; r++) {
-      const int row = out_row + r * row_span;
+      const int row = out_row + r;
       const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
           reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
           k / 2 + simd_lid * bytes_per_lane);

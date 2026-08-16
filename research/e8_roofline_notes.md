@@ -274,3 +274,32 @@ Three things sharpen it:
    fixed cost -- address arithmetic, the surviving loads, the simdgroup
    reduction, launch and tail -- does not scale with the ALU cut. ALU is the
    dominant term at M=8 but not the only one.
+
+## Arm 2 result: cut unique weight bytes ~4x, hold arithmetic constant
+
+Tag `e8-arm2`, head `b63d319`, W&B run `jwdqvl6n`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jwdqvl6n).
+
+| shape | M=4 s/call | M=4 GB/s | M=4 ratio | M=8 s/call | M=8 GB/s | M=8 ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| full_attn.o_proj | 138.54 | 127.7 | 0.998 | 223.93 | 79.0 | 0.994 |
+| full_attn.qkv_proj_fused | 250.45 | 164.9 | 0.993 | 452.47 | 91.2 | 1.001 |
+| head.compact_draft_vocab | 1435.67 | 197.3 | 0.994 | 2816.02 | 100.6 | 0.992 |
+| head.lm_head | 3547.71 | 201.6 | 0.993 | 7030.73 | 101.7 | 0.998 |
+| linear_attn.in_proj_fused_qkvzba | 281.22 | 168.8 | 0.993 | 513.06 | 92.5 | 0.997 |
+| linear_attn.out_proj | 137.83 | 128.4 | 1.004 | 224.26 | 78.9 | 0.999 |
+| mlp.down | 325.18 | 154.2 | 0.990 | 568.89 | 88.1 | 0.996 |
+| mlp.gate_up_fused | 541.80 | 185.1 | 0.995 | 1029.85 | 97.4 | 0.998 |
+
+Median ratio **0.994** at M=4 and **0.997** at M=8; all sixteen points sit
+inside the +/-1.2% noise band. Cutting unique DRAM weight traffic ~4x bought
+nothing.
+
+Positive control that the arm was live: `row0_bitwise_matches_m1` over the
+sixteen measured points is 16/16 for the control (max delta 0), **0/16 for
+arm 2** (max delta 0.568 to 7.375) and 0/16 for arm 1 (1.641 to 45.938). The
+collapsed addressing demonstrably executed in the measured binary.
+
+Full write-up, including the item-4 re-derivation and the flagged `qmm_splitk`
+tension, is in `research/e8_roofline_report.md`.
+

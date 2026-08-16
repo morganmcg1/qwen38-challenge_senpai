@@ -204,7 +204,57 @@ Three details sharpen the reading:
 
 ### Arm 2 -- cut unique weight bytes ~4x, hold arithmetic constant
 
-ARM2_TABLE_PLACEHOLDER
+Tag `e8-arm2`, head `b63d319`, W&B `jwdqvl6n`. All four simd rows resolve to one
+weight tile at runtime through an opaque zero, so unique weight, scale and bias
+traffic falls about 4x while every AIR op count, the device load count and the
+loop trip counts stay bit-identical to the control.
+
+| shape | M=4 s/call | M=4 GB/s | M=4 ratio | M=8 s/call | M=8 GB/s | M=8 ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| full_attn.o_proj | 138.54 | 127.7 | 0.998 | 223.93 | 79.0 | 0.994 |
+| full_attn.qkv_proj_fused | 250.45 | 164.9 | 0.993 | 452.47 | 91.2 | 1.001 |
+| head.compact_draft_vocab | 1435.67 | 197.3 | 0.994 | 2816.02 | 100.6 | 0.992 |
+| head.lm_head | 3547.71 | 201.6 | 0.993 | 7030.73 | 101.7 | 0.998 |
+| linear_attn.in_proj_fused_qkvzba | 281.22 | 168.8 | 0.993 | 513.06 | 92.5 | 0.997 |
+| linear_attn.out_proj | 137.83 | 128.4 | 1.004 | 224.26 | 78.9 | 0.999 |
+| mlp.down | 325.18 | 154.2 | 0.990 | 568.89 | 88.1 | 0.996 |
+| mlp.gate_up_fused | 541.80 | 185.1 | 0.995 | 1029.85 | 97.4 | 0.998 |
+
+Median ratio **0.994 [0.990, 1.004] at M = 4** and **0.997 [0.992, 1.001] at
+M = 8**. Every one of the sixteen points is inside the +/-1.2% noise band.
+**Cutting unique DRAM weight traffic by about 4x bought nothing at all.**
+
+Read as effective traffic: at M = 8 the control's 78-102 GB/s nominal becomes
+roughly **20-25 GB/s of real DRAM weight traffic** under arm 2, about 9-11% of
+the 226.7 GB/s roofline, and the clock did not move. That is as far from
+bandwidth-limited as this microbenchmark can demonstrate.
+
+**Positive control -- proof the arm was live.** A null result is only worth
+something if the change actually took effect, which is the arm-2 analogue of the
+arm-1 DCE hazard. The curve harness records `row0_bitwise_matches_m1` and
+`row0_max_abs_delta_vs_m1` per shape and width. Over the sixteen measured
+points:
+
+| build | bitwise matches | max abs delta vs M=1 |
+|---|---:|---|
+| control | 16 / 16 | 0 |
+| arm 1 | 0 / 16 | 1.641 to 45.938 |
+| arm 2 | 0 / 16 | 0.568 to 7.375 |
+
+The control is exact on every point, and **arm 2 diverges numerically on every
+point**, so the collapsed addressing demonstrably executed in the measured
+binary. Provenance agrees: `identity.txt` records `head=b63d319... dirty=0`
+against `base_sha=ed4269c2...`, and the run script rebuilt release plus
+`mlx.metallib --all-build-roots` from that tree.
+
+**One honest limit of arm 2 taken alone.** It reduces unique *addresses*, not
+the number of load *instructions*. So by itself it refutes a DRAM-bandwidth
+bound but not a load-issue or L1-throughput bound -- both of those would also
+have gone flat. Arm 1 closes precisely that gap: it held the device load count
+(7) and every loop trip count identical to the control and still ran 1.98x
+faster at M = 8, which no load-issue-limited kernel can do. The two arms are
+only decisive together, and together they leave arithmetic as the binding
+constraint.
 
 ## Item 4 -- independent re-derivation of `nominal x M = 692 +/- 5.6%`
 
@@ -240,7 +290,8 @@ the measured roofline, so `weight_streams(m) = ceil(m/4)` over-counts DRAM
 traffic at boundary widths -- the second pass is served from cache, not DRAM.
 
 **Refutation B (statistical) -- the strongest line in this report.**
-`research/roofline_regime_check.py` decides via
+The advisor's `research/roofline_regime_check.py` (on the advisor branch at
+`5cb32a2`, not present on this branch) decides via
 `verdict = "ALU-bound" if prod_rel < nom_rel`, a two-way contest between
 `H_A: nominal` flat and `H_B: nominal x M` flat. It **never scores
 `H_C: nominal x ceil(M/4)` flat** -- the integer weight-stream model whose death
@@ -282,4 +333,85 @@ and pays substantial non-FLOP unpack and address ALU per weight.
 
 ## Conclusion
 
-CONCLUSION_PLACEHOLDER
+**Label: `not useful`.** The four-label taxonomy grades candidate changes, and
+this experiment deliberately produces no candidate: both arms are wrong-numerics
+instruments and the reported head restores the kernel to `BASE_SHA`. So nothing
+here should be promoted, which is what `not useful` means. The label is not a
+verdict on the question, which was answered decisively.
+
+**What happened and why.** At verify width M >= 4 the crossrow qmv kernel is
+**ALU-bound, overwhelmingly so at M = 8**. The two arms are a matched pair and
+they point the same way from opposite directions:
+
+| arm | what was held constant | what changed | M=4 | M=8 | BW-bound predicts | ALU-bound predicts |
+|---|---|---|---:|---:|---|---|
+| 1 | bytes, loads, trip counts | ~2.7x fewer lane ops | **0.760** | **0.506** | ~1.00 | < 1 |
+| 2 | every op, load and trip count | ~4x fewer unique DRAM bytes | **0.994** | **0.997** | < 1 | ~1.00 |
+
+Against a measured +/-1.2% noise floor, arm 1 misses the bandwidth prediction by
+24% and 49%, and arm 2 lands on the ALU prediction to within 0.6%. There is no
+reading of these two tables that is consistent with a bandwidth-bound kernel.
+
+**Evidence for the mechanism, beyond the two ratios.**
+
+- The base kernel runs at **35-45% of measured achievable bandwidth** at M = 8.
+- Cutting arithmetic alone moves it to **93-94% of that same roofline**, so
+  roughly **2x of bandwidth headroom sits unused** behind an arithmetic wall.
+- The arm-1 effect **grows** with M (1.32x at M = 4, 1.98x at M = 8), the
+  opposite of what amortising a fixed weight stream over more rows predicts.
+- Both hazards are closed by measurement, not assertion: AIR device loads (7)
+  and loop back-edges (11) are identical across all three builds, so arm 1 did
+  not silently delete loads; and arm 2 diverges numerically on 16/16 points
+  while the control is exact on 16/16, so arm 2 was genuinely live.
+
+**Caveats I want on the record.**
+
+1. Time fell 1.98x while lane ops fell 2.7x. ALU is dominant at M = 8 but not
+   the whole cost; address arithmetic, the surviving loads, the simdgroup
+   reduction, launch and tail do not scale away.
+2. M = 4 is a **mixed** regime, not a clean ALU regime: 0.760 is a real
+   ALU effect but far from arm 1's M = 8 behaviour, and arm 2 is equally flat
+   there. Read M = 4 as "ALU-dominant with meaningful fixed cost", not as a
+   scaled-down M = 8.
+3. This is a kernel microbenchmark on the eight scored shapes, not an
+   end-to-end decode measurement. It says where the qmv kernel's time goes; it
+   does not say what fraction of a verify round that kernel is.
+4. Host is M4 Pro `applegpu_g16s`, not the ranked M5. The ALU-to-bandwidth
+   balance is exactly the quantity that can differ between GPU generations, so
+   the *regime* finding transfers only as a strong prior.
+5. Arm 2 taken alone cannot separate DRAM-bound from load-issue-bound; only the
+   pair does.
+
+**Flagged, not resolved -- the `qmm_splitk` tension.** The assignment asked me
+to surface this rather than settle it. `research/CURRENT_RESEARCH_STATE.md`
+records padding verify width 9 -> 10 as dead: speedup **0.661**, i.e. 34%
+*slower*, because crossing `vector_limit = 10` leaves `qmv` for `qmm_splitk`
+(and separately `row0_survives_padding = False`, which kills it on exactness
+regardless). If qmv at M >= 4 is ALU-bound with ~2x of bandwidth headroom, then
+moving to a path built on the simdgroup matmul hardware -- far higher arithmetic
+throughput -- should have been a win, and it was a large loss. Both facts are
+measured on this same machine, and this experiment does not determine which
+assumption breaks. Candidate explanations, **all untested here**: `qmm_splitk`
+may trade the ALU saving for extra memory traffic and a second reduction pass
+over materialised partials; qmv's arithmetic is 4-bit unpack, per-group affine
+scale/bias and address math, which matmul hardware does not accelerate and may
+even have to pay in a less favourable form; and padding 9 -> 10 wastes a row
+while the splitk tiling may fit these shapes badly at N up to 248,320. Resolving
+this needs its own experiment; I did not start one, per the stop rule.
+
+**Smallest useful next action (not implemented, per the stop rule).** The
+actionable consequence is a re-prioritisation, not a patch: **at M >= 4, work
+that removes arithmetic per weight is on the critical path and work that removes
+weight bytes is not.** Concretely, that argues for looking at the unpack and
+affine-dequant chain -- sharing per-group scale/bias work across the four
+crossrow rows, cheaper 4-bit extraction, wider vector ALU utilisation -- and
+argues against packing, compression or byte-layout work at these widths, which
+arm 2 shows would return nothing. It also raises the value of settling the
+`qmm_splitk` contradiction above, since that is the one measurement standing
+against this reading.
+
+**Recommendation: close this experiment and use its verdict to steer the next
+one.** Nothing to promote, nothing to repeat -- the noise floor is +/-1.2% and
+the effects are 24-49%, so a repeat cannot change the sign. The one repeat that
+would add value is a confirmation on the ranked M5 host, since caveat 4 is the
+only real transfer risk.
