@@ -83,19 +83,24 @@ def main():
         "J": "research/capture-runJ-gate2-512",
         "K": "research/capture-runK-gate2-cap8-512",
         "L": "research/capture-runL-gate1-cap8-512",
+        "M": "research/capture-runM-gate0-cap8-512",
     }
     traces = {
         "I": "research/trace-runI-base-cap8-512.log",
         "J": "research/trace-runJ-gate2-512.log",
         "K": "research/trace-runK-gate2-cap8-512.log",
+        "L": "research/trace-runL-gate1-cap8-512.log",
+        "M": "research/trace-runM-gate0-cap8-512.log",
     }
     scores = {
         "I": "research/score-runI-base-cap8-512.json",
         "J": "research/score-runJ-gate2-512.json",
         "K": "research/score-runK-gate2-cap8-512.json",
+        "L": "research/score-runL-gate1-cap8-512.json",
+        "M": "research/score-runM-gate0-cap8-512.json",
     }
     data = load(runs)
-    labs = [x for x in ("I", "J", "K") if x in data]
+    labs = [x for x in ("I", "J", "K", "L", "M") if x in data]
 
     print("=== headline ===")
     for lab in labs:

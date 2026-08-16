@@ -562,8 +562,13 @@ public final class Qwen36MTPBlockSession {
     /// decode attention into two <= 5-row sdpa calls whose bottom-right-
     /// aligned windows are byte-identical to the promoted <= 5 rounds' —
     /// after which a deep round is ONE ordinary model call. Measured on the
-    /// hexfloat row gate: widths 6..9 bit-exact per position against the
-    /// serial trajectory. Segmenting the whole FORWARD instead (two model
+    /// hexfloat row gate over five 512-token runs (2560 rows): widths 5..9
+    /// bit-exact per position against the serial trajectory everywhere
+    /// except the one round that closes the window at key_len 1024, which
+    /// drifts by <= 0.25 absolute logit at ANY width (terminal widths 2, 3,
+    /// 4, 8 and 9 all reproduced it) and never changes the top-1 token.
+    /// The drift variable is terminal-block position, not verify width.
+    /// Segmenting the whole FORWARD instead (two model
     /// calls, 5+k) was measured bit-exact too but pays a second full weight
     /// pass (~25 ms) and loses on net; the chunk lives at the sdpa only.
     private static let sdpaWidthWallDepthCap = 4
@@ -574,28 +579,44 @@ public final class Qwen36MTPBlockSession {
     /// head has been perfect, mirroring the streak ladder that qualified
     /// cap 4; any reject resets the streak.
     ///
-    /// 7, not the trusted maximum 8, because the 8th draft is dominated on
-    /// cost rather than on fidelity: widths 6..9 all verified bit-exact per
-    /// position on the hexfloat row gate, but every verify width rides the
-    /// per-row qmv dispatch, so round cost is very nearly linear in rows
-    /// (12.2 ms + 22.5 ms/row on M4 Pro) with a further kink at width 9.
-    /// The 8th draft's marginal round cost (27.6 ms) already exceeds the
-    /// running cost per token at depth 7 (23.7 ms), so row 9 cannot repay
-    /// itself even at 100% acceptance; and realised acceptance decays with
-    /// position (0.85 at draft index 7), so the deepest row also carries
-    /// the rejections that zero the streak and drop the next few rounds to
-    /// the shallow cap. Raising this needs a verify path that amortizes the
-    /// extra rows -- padding the batch past the qmv limit into
-    /// qmm_t_splitk, say.
+    /// 8, the trusted maximum, and the 8th draft is a fidelity-free but
+    /// marginal cost bet. Every verify width rides the per-row qmv dispatch
+    /// (host qmv batch limit 10 on this generation), so round cost is very
+    /// nearly linear in rows -- 12.2 ms + 22.5 ms/row on M4 Pro -- with a
+    /// kink at width 9, where the weight stream count ceil(M/4) steps 2->3:
+    /// marginal rows inside a stream band cost ~19 ms, the width-9 row
+    /// costs ~28 ms. That 28 ms exceeds the 23.7 ms running cost per token
+    /// at depth 7, so row 9 does not repay itself on a per-round cost
+    /// argument alone.
+    ///
+    /// It is still kept at 8 because the streak gate below only opens the
+    /// deep cap on rounds the head has already proven it can carry: the
+    /// realised conditional acceptance on those rounds is ~0.98, flat to
+    /// draft index 7 (it does NOT decay with position -- the unconditional
+    /// rate does, which is a survivorship artifact), and the extra token
+    /// arrives often enough to pay the 28 ms. Dropping to 7 was measured
+    /// and loses. Raising the payoff instead needs a verify path that
+    /// amortizes the extra rows -- padding the batch past the qmv limit
+    /// into qmm_t_splitk, say -- or a gate that opens depth 8 separately
+    /// from depths 5..7, since only the former crosses a stream boundary.
     private static let segmentedVerifyDepthCap = 8
 
     /// Consecutive fully-accepted rounds required to open the deep cap.
-    /// Measured at 3 vs 1 on the local fixture: relaxing to 1 moved the
-    /// deep-round share by only +0.5pp but multiplied rejected tokens 4.9x,
-    /// because gate 1 re-opens the deep cap one clean round after a reject
-    /// -- still inside the hard stretch -- and the resulting reject resets
-    /// the streak again. The gate is not throttling throughput, it is
-    /// damping that cascade.
+    /// Swept 3 -> 2 -> 1 -> 0 on the 512-token local fixture (the ranked
+    /// decode length; a 256-token screen ranks these differently and should
+    /// not be used to pick this value). Local serial-relative ratio:
+    /// gate 3 = 2.0947, gate 2 = 2.1020, gate 1 = 2.1288, gate 0 = 2.0600.
+    /// The optimum is interior at 1.
+    ///
+    /// Relaxing 3 -> 1 helps because the streak is a genuine predictor:
+    /// rounds it qualifies accept at ~0.977 versus ~0.864 for the rest, so
+    /// each step down admits rounds that still carry a deep draft. Removing
+    /// the gate entirely (0) loses because that conditioning is what the
+    /// deep cap was buying: with every round deep, rejected drafts jump
+    /// 47 -> 72, accepted tokens per round fall 6.92 -> 6.01, and the cost
+    /// lands on the hard second half of the window, where seconds/token
+    /// degrades 29.3 ms -> 31.7 ms. The gate is not throttling throughput,
+    /// it is keeping post-reject rounds shallow until the head recovers.
     private static let segmentedStreakGate = 1
 
     /// The greedy marginal-depth rule described at the policy's assignment.

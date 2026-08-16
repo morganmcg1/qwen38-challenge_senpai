@@ -94,5 +94,29 @@
     "blocks_s": 13.679527759552002,
     "gap_s": 4.016569256782532,
     "s_per_token": 0.034562689485028386
+  },
+  {
+    "run": "M",
+    "phase": "03-mtp-timed.json",
+    "serial_control": true,
+    "depth": 0,
+    "tokens": 512,
+    "rounds": 512,
+    "decode_s": 37.62882089614868,
+    "blocks_s": 33.60935652256012,
+    "gap_s": 4.019464373588562,
+    "s_per_token": 0.0734937908127904
+  },
+  {
+    "run": "M",
+    "phase": "04-mtp-timed.json",
+    "serial_control": false,
+    "depth": 8,
+    "tokens": 512,
+    "rounds": 73,
+    "decode_s": 18.266119956970215,
+    "blocks_s": 14.253292560577393,
+    "gap_s": 4.012827396392822,
+    "s_per_token": 0.03567601554095745
   }
 ]

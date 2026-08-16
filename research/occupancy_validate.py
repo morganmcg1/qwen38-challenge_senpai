@@ -20,6 +20,7 @@ ARMS = [
     ("J", "research/trace-runJ-gate2-512.log", 2, 2.1243836568),
     ("K", "research/trace-runK-gate2-cap8-512.log", 2, 2.1019606601),
     ("L", "research/trace-runL-gate1-cap8-512.log", 1, 2.1288141130),
+    ("M", "research/trace-runM-gate0-cap8-512.log", 0, 2.0600336024),
 ]
 
 

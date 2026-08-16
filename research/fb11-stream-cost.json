@@ -69,6 +69,14 @@
    "6": 5,
    "7": 10,
    "8": 36
+  },
+  "research/trace-runM-gate0-cap8-512.log": {
+   "3": 2,
+   "4": 7,
+   "5": 3,
+   "6": 7,
+   "7": 12,
+   "8": 42
   }
  },
  "stream_rule": "ceil(width/4); width = depth + 1",
@@ -92,49 +100,58 @@
    "median_round_ms_head_rebased": 74.465
   },
   {
+   "depth": 3,
+   "width_rows": 4,
+   "weight_streams": 1,
+   "rounds_observed": 2,
+   "median_round_ms_local": 105.257,
+   "mean_round_ms_local": 105.257,
+   "median_round_ms_head_rebased": 97.189
+  },
+  {
    "depth": 4,
    "width_rows": 5,
    "weight_streams": 2,
-   "rounds_observed": 187,
+   "rounds_observed": 194,
    "median_round_ms_local": 127.073,
-   "mean_round_ms_local": 129.61,
+   "mean_round_ms_local": 129.805,
    "median_round_ms_head_rebased": 116.316
   },
   {
    "depth": 5,
    "width_rows": 6,
    "weight_streams": 2,
-   "rounds_observed": 26,
-   "median_round_ms_local": 146.546,
-   "mean_round_ms_local": 146.688,
-   "median_round_ms_head_rebased": 133.099
+   "rounds_observed": 29,
+   "median_round_ms_local": 146.559,
+   "mean_round_ms_local": 146.692,
+   "median_round_ms_head_rebased": 133.113
   },
   {
    "depth": 6,
    "width_rows": 7,
    "weight_streams": 2,
-   "rounds_observed": 63,
-   "median_round_ms_local": 168.506,
-   "mean_round_ms_local": 168.568,
-   "median_round_ms_head_rebased": 152.37
+   "rounds_observed": 70,
+   "median_round_ms_local": 168.52,
+   "mean_round_ms_local": 168.626,
+   "median_round_ms_head_rebased": 152.384
   },
   {
    "depth": 7,
    "width_rows": 8,
    "weight_streams": 2,
-   "rounds_observed": 126,
-   "median_round_ms_local": 189.885,
-   "mean_round_ms_local": 190.218,
-   "median_round_ms_head_rebased": 171.06
+   "rounds_observed": 138,
+   "median_round_ms_local": 189.904,
+   "mean_round_ms_local": 190.278,
+   "median_round_ms_head_rebased": 171.079
   },
   {
    "depth": 8,
    "width_rows": 9,
    "weight_streams": 3,
-   "rounds_observed": 152,
-   "median_round_ms_local": 217.805,
-   "mean_round_ms_local": 217.99,
-   "median_round_ms_head_rebased": 196.29
+   "rounds_observed": 194,
+   "median_round_ms_local": 217.959,
+   "mean_round_ms_local": 218.078,
+   "median_round_ms_head_rebased": 196.445
   }
  ],
  "marginal_rows": [
@@ -149,14 +166,34 @@
    "rounds_backing": 3
   },
   {
+   "added_row_width": 4,
+   "from_depth": 2,
+   "to_depth": 3,
+   "crosses_stream_boundary": false,
+   "stream_transition": "1->1",
+   "marginal_ms_local": 25.413,
+   "marginal_ms_head_rebased": 22.724,
+   "rounds_backing": 2
+  },
+  {
+   "added_row_width": 5,
+   "from_depth": 3,
+   "to_depth": 4,
+   "crosses_stream_boundary": true,
+   "stream_transition": "1->2",
+   "marginal_ms_local": 21.816,
+   "marginal_ms_head_rebased": 19.127,
+   "rounds_backing": 2
+  },
+  {
    "added_row_width": 6,
    "from_depth": 4,
    "to_depth": 5,
    "crosses_stream_boundary": false,
    "stream_transition": "2->2",
-   "marginal_ms_local": 19.473,
-   "marginal_ms_head_rebased": 16.783,
-   "rounds_backing": 26
+   "marginal_ms_local": 19.486,
+   "marginal_ms_head_rebased": 16.797,
+   "rounds_backing": 29
   },
   {
    "added_row_width": 7,
@@ -164,9 +201,9 @@
    "to_depth": 6,
    "crosses_stream_boundary": false,
    "stream_transition": "2->2",
-   "marginal_ms_local": 21.96,
+   "marginal_ms_local": 21.961,
    "marginal_ms_head_rebased": 19.271,
-   "rounds_backing": 26
+   "rounds_backing": 29
   },
   {
    "added_row_width": 8,
@@ -174,9 +211,9 @@
    "to_depth": 7,
    "crosses_stream_boundary": false,
    "stream_transition": "2->2",
-   "marginal_ms_local": 21.379,
-   "marginal_ms_head_rebased": 18.69,
-   "rounds_backing": 63
+   "marginal_ms_local": 21.384,
+   "marginal_ms_head_rebased": 18.695,
+   "rounds_backing": 70
   },
   {
    "added_row_width": 9,
@@ -184,16 +221,17 @@
    "to_depth": 8,
    "crosses_stream_boundary": true,
    "stream_transition": "2->3",
-   "marginal_ms_local": 27.92,
-   "marginal_ms_head_rebased": 25.23,
-   "rounds_backing": 126
+   "marginal_ms_local": 28.055,
+   "marginal_ms_head_rebased": 25.366,
+   "rounds_backing": 138
   }
  ],
- "mean_marginal_ms_within_band": 17.356,
- "mean_marginal_ms_crossing_band": 27.92,
+ "mean_marginal_ms_within_band": 18.971,
+ "mean_marginal_ms_crossing_band": 24.935,
  "observed_widths": [
   2,
   3,
+  4,
   5,
   6,
   7,
@@ -201,7 +239,6 @@
   9
  ],
  "missing_widths_1_to_9": [
-  1,
-  4
+  1
  ]
 }
