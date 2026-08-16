@@ -478,8 +478,9 @@ public final class Qwen36MTPBlockSession {
             // Records which curve the leg actually ran, so an override that
             // failed to reach the worker reads as a failed override rather
             // than as a policy that made no difference.
-            let hText = Self.headStepCostRatioByDepth
-                .map { String($0) }.joined(separator: ",")
+            let hText = Self.overrideHeadStepCostRatioByDepth
+                .map { $0.map(String.init).joined(separator: ",") }
+                ?? String(Self.headStepCostRatio)
             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
                 + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
@@ -639,92 +640,19 @@ public final class Qwen36MTPBlockSession {
     /// honest fit FOR THIS ROLLBACK MECHANISM; the wasted-work term a
     /// reject does keep (the drafted head steps past the break) is already
     /// inside the marginal the rule prices.
-    ///
-    /// FIFTH FIT — h IS NOT A SCALAR, AND IT IS NOT A CONSTANT OF THIS
-    /// SOURCE TREE EITHER. It is a per-depth marginal, half of which belongs
-    /// to whichever proposal head is resident.
-    /// Re-fit from forced-depth arms after every TARGET change; each entry is
-    /// a COMBINED per-draft marginal (one head step plus the verify-width
-    /// increment), which a depth sweep cannot separate on its own.
-    ///
-    /// A FROZEN VECTOR WOULD BE WRONG, because exactly one of its two terms
-    /// is a property of the proposal head, and the head is declarable:
-    ///
-    ///     C(d) = V(d+1) + d*H + c
-    ///     m(d+1) = C(d+1) - C(d) = [V(d+2) - V(d+1)] + H
-    ///
-    /// `V` (batched target verify at a given width) and `c` (fixed per-round
-    /// overhead) are head-independent — a zero-draft round performs no head
-    /// forward at all, so C(0) = V(1) + c holds for any head. `H` is the one
-    /// head-dependent term, and it moves by ~3.5x between the two heads this
-    /// track can serve (organizer-pinned bf16, 849,398,784 B, versus the
-    /// manifest-declared affine-4/g64 head, 238,934,093 B). So the frozen
-    /// half is stored here and `H` is measured from the RESIDENT head during
-    /// the warm phase, outside every timed window (`probeResidentHeadCost`).
-    ///
-    /// Both frozen constants are DIMENSIONLESS, in units of one single-row
-    /// verify forward V(1), and the live probe measures V(1) alongside H for
-    /// the same reason: a frozen absolute microsecond constant mixed with a
-    /// microsecond measured on a different host is simply wrong, and the
-    /// ranked host is not the host these were fitted on. Under a uniform
-    /// host speed change every ratio below is invariant.
-    ///
-    /// FIFTH FIT — measured on M4 Pro against the declared affine-4/g64 head:
-    /// forced-depth arms d0..d8, 1778 pooled depth-0 rounds for C(0),
-    /// 61/60/36/32 full-accept rounds at d3/d4/d6/d8. The resulting
-    /// per-draft marginals are 0.084, 0.078, 0.243, 0.375, 0.292, 0.300,
-    /// 0.287, 0.391 fractions of a zero-draft round. The scalar 0.20 they
-    /// replace is ~2.5x TOO HIGH at d=1..2 (under-drafts the cheap prefix)
-    /// and ~1.4-2x TOO LOW at d>=4 (over-drafts the plateau); its mean,
-    /// 0.2562, is close to 0.20, which is why a scalar survived end-to-end
-    /// tuning while being badly mis-shaped. The knee sits at d=3 (verify
-    /// width 4) and the two largest steps, d=4 (width 5) and d=8 (width 9),
-    /// are exactly where the affine-4 g64 crossrow kernel adds a weight pass
-    /// (ceil(M / IPG), IPG = ceil(M / ceil(M / 4)), quantized.h:1051).
-    ///
-    /// Stored head-free as [V(d+2) - V(d+1)] / V(1), using the directly
-    /// measured H = 2590us and V(1) = 65044us from `probeResidentHeadCost`.
-    /// Every entry is positive, so the verify-width slope alone — not the
-    /// head — carries 84.4% of the d=8 marginal.
-    private static let verifyMarginalRatioByDepth: [Double] = [
-        0.044324, 0.037618, 0.202611, 0.335359,
-        0.251939, 0.259995, 0.247031, 0.350832,
-    ]
-
-    /// C(0) / V(1): the zero-draft round divided by the single-row verify it
-    /// is built from. Head-independent — a zero-draft round never touches the
-    /// head. Measured 65009.4us / 65044us, so the fixed per-round overhead `c`
-    /// is below the noise floor: readout, commit and upkeep together stay
-    /// under 0.5ms at every depth.
-    private static let zeroDraftRoundRatio = 0.999468
-
-    /// H / V(1) for the head the frozen constants above were fitted against.
-    /// Used only until `probeResidentHeadCost` reports the resident head, so
-    /// that a session which somehow decodes without a warm still prices
-    /// drafts against a real measurement rather than a guess.
-    private static let referenceHeadStepRatio = 0.039819
+    private static let headStepCostRatio = 0.20
 
     /// H / V(1) for the resident head, measured once per process in the warm
-    /// phase. `nil` until the probe runs.
+    /// phase by `probeResidentHeadCost`. `nil` until the probe runs. Reported
+    /// through the `headprobe` trace line; nothing reads it to make a
+    /// scheduling decision.
     nonisolated(unsafe) private static var residentHeadStepRatio: Double?
 
-    /// m(d+1) / C(0) for every depth, rebuilt from the resident head's cost.
-    private static func marginalCostRatios(headStepRatio: Double) -> [Double] {
-        verifyMarginalRatioByDepth.map {
-            // A negative marginal is unphysical and would let the greedy walk
-            // run away to the cap, so the floor is a contract guard, not a
-            // fallback: it fires only if the frozen verify slope and the live
-            // head measurement disagree about the sign of a step.
-            Swift.max(0.0, ($0 + headStepRatio) / zeroDraftRoundRatio)
-        }
-    }
-
     /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
-    /// submission. Substitutes the curve so a baseline arm and a candidate
-    /// arm run from ONE binary at matched temperature. A flat vector is the
-    /// exact pre-change policy: with a constant h, `h[d]` is `h` and `cumH`
-    /// is `d * h`, so the walk below reduces term by term to the shipped
-    /// scalar test. Requires
+    /// submission. Prices drafts from a supplied per-depth marginal vector
+    /// instead of the scalar above, so a baseline arm and a candidate arm can
+    /// run from ONE binary at matched temperature. Unset — the shipped case —
+    /// leaves `costModelDepth` on the scalar rule, byte-for-byte. Requires
     /// `Qwen36MTPLimits.maxDepth` entries; anything else is ignored rather
     /// than padded, so a typo cannot silently reshape the schedule.
     private static let overrideHeadStepCostRatioByDepth: [Double]? = {
@@ -739,16 +667,9 @@ public final class Qwen36MTPBlockSession {
         return parsed
     }()
 
-    /// The live per-draft marginal cost vector the schedule prices with.
-    nonisolated(unsafe) private static var headStepCostRatioByDepth: [Double] =
-        overrideHeadStepCostRatioByDepth
-            ?? marginalCostRatios(headStepRatio: referenceHeadStepRatio)
-
     private static func adoptResidentHeadStepRatio(_ ratio: Double) {
         guard ratio.isFinite, ratio > 0 else { return }
         residentHeadStepRatio = ratio
-        guard overrideHeadStepCostRatioByDepth == nil else { return }
-        headStepCostRatioByDepth = marginalCostRatios(headStepRatio: ratio)
     }
 
     private static func medianMicroseconds(_ samples: [Double]) -> Double {
@@ -813,17 +734,15 @@ public final class Qwen36MTPBlockSession {
         return value
     }()
 
-    /// Depth that minimises expected round cost per accepted token,
-    /// `(1 + H_d) / E[tokens(d)]`, walked greedily.
-    ///
-    /// The only change from the scalar form is that the flat `h` becomes the
-    /// measured per-step marginal vector: the round cost after `d` steps is
-    /// `1 + cumH` rather than `1 + d*h`, so the extend test
-    /// `f(d+1) < f(d)` becomes `reach > h[d] * (1 + expected) / (1 + cumH)`.
+    /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
-        let offerCap = Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth)
         if let forced = Self.forcedDepth {
-            return Swift.min(offerCap, forced)
+            return Swift.min(
+                Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth), forced)
+        }
+        if let measured = Self.overrideHeadStepCostRatioByDepth {
+            return instrumentedCostModelDepth(
+                offeredDepth: offeredDepth, h: measured)
         }
         // The width wall binds the SINGLE-CALL verify; a qualifying
         // full-accept streak opens the segmented cap (the round then feeds
@@ -833,9 +752,47 @@ public final class Qwen36MTPBlockSession {
         let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
             ? Self.segmentedVerifyDepthCap
             : Self.sdpaWidthWallDepthCap
-        let cap = Swift.min(offerCap, widthCap)
+        let cap = Swift.min(
+            Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
+            widthCap)
         guard cap > 0 else { return 0 }
-        let h = Self.headStepCostRatioByDepth
+        let h = Self.headStepCostRatio
+        var reach = 1.0
+        var expected = 0.0
+        var depth = 0
+        while depth < cap {
+            var p = positionAcceptEMA[depth]
+            if depth == 0, let tail = pendingTop2, tail.1.count >= 2 {
+                let margin = tail.1[0] - tail.1[1]
+                let conf = 1.0 / (1.0 + exp(-margin / 2.0))
+                p = Swift.min(p, conf)
+            }
+            reach *= p
+            let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
+            guard reach > threshold else { break }
+            expected += reach
+            depth += 1
+        }
+        return depth
+    }
+
+    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
+    /// submission. The same greedy walk with the flat `h` generalised to a
+    /// per-depth vector: round cost after `d` steps is `1 + cumH` rather than
+    /// `1 + d*h`, so the extend test `f(d+1) < f(d)` becomes
+    /// `reach > h[d] * (1 + expected) / (1 + cumH)`. A flat vector reduces to
+    /// the shipped rule term by term, which is what lets both A/B arms run
+    /// from one binary. Reachable only via `MLX_QWEN_MTP_H_VECTOR`.
+    private func instrumentedCostModelDepth(
+        offeredDepth: Int, h: [Double]
+    ) -> Int {
+        let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
+            ? Self.segmentedVerifyDepthCap
+            : Self.sdpaWidthWallDepthCap
+        let cap = Swift.min(
+            Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
+            widthCap)
+        guard cap > 0 else { return 0 }
         var reach = 1.0
         var expected = 0.0
         var cumH = 0.0
