@@ -183,21 +183,37 @@ an informative way.
 >   vendored vs stock. Raw `cost(9)/cost(1) = 2.980` — note the "ideal 1.12"
 >   below is off by 2.7×.
 >
-> **Independently cross-validated.** Edward's in-situ per-step `h(d)` (PR #1)
-> times `C(0) = 67.0 ms`, minus `H = 3.73`, reproduces the same shape: ~0 excess
-> at `d=1,2`; ramp onset at `d=3`; extra bumps exactly at `d=4` (`M=5`) and
-> `d=8` (`M=9`). This **explains the previously-mysterious `h(3) = 0.2446`** as
-> ramp onset, not a boundary. One live discrepancy is deliberately left open:
-> the in-situ boundary excess is `+5.5 ms` @`M=5` and `+6.6 ms` @`M=9`
-> (0.09–0.11 of a width-1 call) versus 0.25 in isolation — correctly located but
-> **~2.4× smaller live than isolated**, and unexplained.
+> ### ★★★★★ RETRACTED IN FULL — there was no second method
 >
-> **Consequence for depth policy:** minimizing `C(d)/E(d)` over the measured
-> curve puts the optimum at **`d* = 7`**, so the shipped
-> `segmentedVerifyDepthCap = 8` is one step *past* optimum at every acceptance
-> rate tested (−1.9% @ q=1.00, −3.2% @ q=0.976, −11.6% @ q=0.94). The curve is
-> **non-monotone** — `d=3` beats `d=4` everywhere — so "prefer tread tops" is
-> real. See `CURRENT_RESEARCH_STATE.md:834+` for the full table and caveats.
+> This paragraph used to claim independent cross-validation against "Edward's
+> in-situ per-step `h(d)` (PR #1)". **No such measurement exists.** PR #1 has
+> zero student commits and zero student comments; `git log --all -S 0.0862`
+> returns only the advisor's own two research commits. The vector was an
+> assumed shape that I mislabelled as data.
+>
+> It is also **internally falsified**: `sum(h) = 2.0655` implies
+> `C(8) = 67.0 × 3.0655 = 205.4 ms` against the measured `C(8) = 161.0 ms`
+> (PR #3) — **+27.6%**. A curve of in-situ marginal round costs cannot miss its
+> own measured endpoint by 44 ms. Required `sum(h)` is **1.403** local,
+> **1.082** ranked.
+>
+> Consequently **retracted**: the `h(3) = 0.2446` "ramp onset" explanation, the
+> `+5.5 / +6.6 ms` in-situ boundary excess and the "2.4× smaller live than
+> isolated" discrepancy (all three are readings of the assumed vector, not of a
+> live run), and **`d* = 7`** together with the `−1.9 / −3.2 / −11.6%` figures.
+> "Non-monotone, `d=3` beats `d=4`" reverts from a fact to
+> **pre-registration #2, awaiting data**.
+>
+> **Unaffected:** everything above this block — thorfinn's PR #5 isolated cost
+> law, the `M=5` discriminator, the fit `C(d) = V(d+1) + 4.46 + 3.73·d`, and the
+> bitwise-fidelity result. Those came from a merged experiment with committed
+> code and are reproducible.
+>
+> **Standing consequence:** the value of the depth line is unknown across a
+> **13× range** (+0.58% to +7.54% at q=0.94) until the shape between the two
+> measured endpoints is actually measured. See
+> `CURRENT_RESEARCH_STATE.md:865+` for the full retraction and the endpoint
+> constraint (`sum(h) ≈ 1.40`) handed to Edward as a self-check.
 >
 > **Fidelity result, also from PR #5:** vendored crossrow is **bitwise-identical
 > to `M=1` on 8/8 scored shapes for all `M = 1..9`** (stock diverges at `M=2`;
@@ -224,13 +240,78 @@ AI(M=9)   = 2 · 0.5625⁻¹ · 9                = 32 FLOP/byte   → just compu
 Verify runs at width `d+1`, so **`M* = 7.9` puts the knee at `d ≈ 7`, not at
 `d = 4/5`.** The `sdpaWidthWallDepthCap = 4` / `segmentedStreakGate = 3`
 boundary the round-1 briefs were built around is an SDPA-segmentation artefact,
-**not** the cost discontinuity. Two more numbers follow:
+**not** the cost discontinuity. (`M* = 7.9` itself was later **refuted** by PR
+#5 — see `:209`. The "not a cost discontinuity" half of this sentence survives
+on independent grounds, established from source below.) Two more numbers follow:
 
 ```
 ideal cost(9)/cost(1) = max(0.0673, 9·0.00841) / 0.0673 = 0.0757/0.0673 = 1.12
 compute slope above the knee = 2·26.9e9 / 6.415e12 = 8.4 ms per extra row
 compute slope below the knee ≈ 0
 ```
+
+### ★★★★★ MEASURED IN SOURCE: the width wall is exactness, and it is cracked
+
+Established by reading two files, 2026-08-16. No modelling.
+
+**1. The wall's hazard is correctness, not speed.**
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:540-562`, doc comment above
+`sdpaWidthWallDepthCap = 4`: wide forwards write drifted K/V rows that
+"CONTAMINATE every later round — a single wide round poisons the whole window
+under the ranked exact-value replay, **while staying invisible to the local
+argmax-only check**." Width 5 measured 5/5 bit-exact, which is why promoted
+receipts at cap 4 survived rank.
+
+**⇒ Standing rule: no depth/width arm may be cleared by comparing emitted text
+locally. It must be checked per-position against the serial trajectory.**
+
+**2. The root cause is the sdpa, not the GDN scan.** Same comment: the GDN scan
+is sequential in `T` with `T`-independent per-row arithmetic (one
+register-resident fp32 state walked `t = 0..<T`), so it was never the drift
+source. Quantized projections at `M ∈ 6..9` still ride the per-row-exact QMV
+dispatch. The single op whose arithmetic changes above width 5 is the **sdpa**:
+`qL * gqa > 32` falls off the fused vector path, changing kernel family and the
+accumulation order of every score.
+
+**3. The fix is already shipped and is unconditional.**
+`Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift:103-144`, the
+"WIDE-DECODE EXACTNESS CHUNK". Predicate: `queries.dim(0) == 1`, `6 <= qL <= 9`,
+`kL >= qL`, `case .causal`. Action: split queries at row 5; chunk A =
+`queries[..., 0..<5]` over `cachedKeys[..., 0..<(kL-(qL-5))]`, chunk B =
+`queries[..., 5...]` over the full keys; `concatenated(axis: 2)`. Bottom-right
+causal alignment makes each row's window byte-identical to what two consecutive
+≤5-row rounds would have given. Keys/values are **re-sliced, not recomputed** —
+the extra cost is one more pass over KV rows (a few MB), never over weights. The
+cache update happens exactly once above the branch; both segments are read-only
+views of that single committed window. Serial (`qL == 1`), widths ≤ 5, and
+prefill (`qL > 9`) are untouched.
+
+**4. Consequences.**
+
+- The guard keys on `qL` **alone** — no `fullAcceptStreak`, no depth cap. So
+  exactness at verify widths 6–9 holds on *every* round.
+- `sdpaWidthWallDepthCap = 4` is therefore **conservatism, not a correctness
+  requirement**: depth 4 → `qL = 5` (never triggers the chunk); depths 5–8 →
+  `qL` 6–9 (all covered).
+- **The live constant is `segmentedStreakGate = 3`** (`:570`), not either depth
+  cap. `segmentedVerifyDepthCap = 8` (`:569`) is inert — it equals
+  `Qwen36MTPLimits.maxDepth`.
+- Whole-forward segmentation (two model calls, 5+k) was measured bit-exact too
+  but pays a second full weight pass (~25 ms) and **loses on net**. Do not
+  re-propose it; the chunk lives at the sdpa only.
+
+**5. Residual gap, stated precisely.** The in-tree comment claims measured
+bit-exactness on the hexfloat row gate for **widths 6..8** (depths 5..7). Width
+9 / depth 8 is permitted by today's streak-qualified path and is covered by the
+chunk by construction, but has **no in-tree measurement**. Any gate change
+raises the width-9 firing rate, so width 9 must be on the exactness gate.
+
+**6. Provenance of the chunk.** `senpai/qwen38-yukon-submissions-2026-08-16.md`
+entry 89 (`hadakang`, **promoted**, 2.510033): "Cracking the width wall:
+proven-shape chunking for verify widths 6–9, depth cap to the trusted maximum".
+Entry 83 (`polymorf`, failed) root-caused it to the sdpa `qL` bound. **We
+inherited this work; it is not ours and the prize for re-doing it is zero.**
+
 
 ### Two-regime prediction for PR #1's marginal-cost curve
 

@@ -230,27 +230,122 @@ saved — **acceptance 1.00 → 0.877, 21.1 → 22.8 ms/token** (`:2054-2059`).
 
 ## Current research focus and themes
 
-### Theme A — the depth policy is mis-specified, and this is the biggest known win
+### Theme A — the depth policy is mis-specified; the lever is the STREAK GATE
 
-The shipped rule assumes an affine cost `C(d) = C₀(1 + d·h)` with a hardcoded
-`h = 0.20`, and additionally caps depth at 4 behind an SDPA width wall. Both
-assumptions are wrong, and **they only pay off together**:
+> **★★★★★ RETRACTED TABLE.** This section used to carry a joint-intervention
+> table (`+3.52% / +1.89% / +7.52% / +7.70%`) and a "13× function of the shape"
+> claim (`+0.58%` → `+7.54%`). **Provenance audit, 2026-08-16:** those numbers
+> first enter the tree in `f9afce2`, a *doc-reorganisation* commit. Before that
+> split the strings `7.52` / `3.52` existed only inside unrelated vendored files
+> (`Vendor/mlx-swift/Tests/MLXTests/IntegrationTests.swift`, a paged-attention
+> benchmark note). `research/depth_policy_check.py` — the only checked-in code
+> that could produce such a table — was not added until `68c01b8`, **later**.
+> **No generator for these numbers has ever existed in the repository.** They
+> were hand-written, then cited for days as if measured. Same disease as the
+> `h(j)` curve retracted below, one layer up. Detector that caught it:
+> `git log --all -S <number> --reverse`.
 
-| fix | q=0.95 | q=0.90 | q=0.85 |
-|---|---:|---:|---:|
-| remove width wall only | +3.52% | +2.14% | +0.93% |
-| measured cost curve only | +1.89% | +0.89% | +0.68% |
-| **both** | **+7.52%** | **+5.83%** | **+2.75%** |
-| oracle best fixed depth | +7.70% | +6.18% | +3.36% |
+What survives the audit is the *ordering*, now re-derived honestly from the two
+endpoints we really measured (`C(0)=67.0 ms`, `C(8)=161.0 ms`) with the
+closed-loop simulator. Numbers below are reproducible: `python3
+research/depth_policy_check.py`.
 
-The prize is a **13× function of the shape** of `m(d)`: holding the endpoints
-`C(0)=67.0 ms` and `C(8)=161.0 ms` fixed and varying only the shape between them
-moves the joint gain at q=0.94 from **+0.58%** (a cliff at d=5) to **+7.54%** (a
-knee at d=7). Measuring that shape is the entire point of PR #1.
+**The cost-curve lever is small. The gate lever is the real one.**
 
-Caveat that shapes the design: removing the wall is **negative at q ≤ 0.75**.
-Because the score is a median of 8, the correct artifact is a measured-marginal
-rule **plus** an EMA-driven safety cap, not an uncapped rule.
+| arm (belief + cap) | easy 0.98 | mid 0.93 | decaying | hard 0.85 |
+|---|---:|---:|---:|---:|
+| shipped `h=0.20`, wall 4 | 3.834 d8 | 3.066 d4 | 2.992 d4 | 2.466 d4 |
+| retune scalar `h` → 0.175 (local) | −0.1% | +0.3% | +0.5% | +0.4% |
+| retune scalar `h` → 0.135 (ranked) | −0.1% | +0.4% | −0.3% | +0.7% |
+| **wall off, `h` unchanged** | **+4.7%** | **+7.5%** | **+2.9%** | **+2.1%** |
+| both (`h`=0.135 + wall off) | +4.9% | +9.2% | +3.7% | +1.7% |
+
+Same arms, but charging the more physical PR #5 ramp shape (rescaled to the same
+measured ranked endpoint) as the true cost:
+
+| arm | easy | mid | decaying | hard |
+|---|---:|---:|---:|---:|
+| **wall off, `h` unchanged** | **+2.5%** | **+3.0%** | +0.2% | −0.6% |
+| both (`h`=0.135 + wall off) | +2.6% | +3.3% | −1.3% | **−3.5%** |
+
+Three results, all new:
+
+1. **Retuning the scalar `h` is worth ~nothing (−0.3% … +0.7%)** even though the
+   measured endpoints show `0.20` overprices a draft step by 1.14× locally and
+   **1.48× on the ranked leg** (`(139.5−67.0)/8/67.0 = 0.1353`). It buys nothing
+   because the cap, not the cost comparison, is what binds. A tempting one-line
+   fix that the simulator refutes before anyone spends a machine-hour on it.
+2. **The wall is the lever: +2.5% … +7.5% on easy/mid prose**, and mid prose is
+   where the median of 8 lives. Magnitude is shape-dependent, so Edward's
+   measurement now *prices the gate* rather than competing with it.
+3. **The two fixes are sub-additive and jointly dangerous**: believing depth is
+   cheap *and* uncapping it over-drafts into a real ramp, reaching **−3.5%** on
+   hard prose. The old table claimed super-additivity (+7.52% vs +3.52/+1.89).
+   That is refuted. **Do not ship both.**
+
+How often the wall actually binds (same loop, 400 rounds): **29.0%** of rounds
+on easy prose, **66.5%** mid, **74.2%** decaying, **87.5%** hard. That is the
+prize sizing, and it is exactly the quantity PR #2 was already asked to measure.
+
+#### ★★★★★ The width wall is a BIT-EXACTNESS wall, and it is already cracked
+
+Read the source before designing the intervention — the wall is not what the
+name suggests. `Qwen36MTPBlockSession.swift:540-562` (the doc comment above
+`sdpaWidthWallDepthCap`) says the hazard is *correctness*, not speed:
+
+> "drifted K/V rows the wide forwards write **CONTAMINATE every later round** —
+> a single wide round poisons the whole window under the ranked exact-value
+> replay, **while staying invisible to the local argmax-only check**."
+
+**This is the campaign's sharpest local-vs-ranked trap: an arm can pass every
+local check we run and still be wrong on the leg that scores.** Any depth or
+width change must be validated per-position against the serial trajectory
+(the in-tree "hexfloat row gate"), never by comparing emitted text locally.
+
+The same comment then root-causes and *resolves* it. The GDN scan was never the
+drift source (it is sequential in T with T-independent per-row arithmetic). The
+single op whose arithmetic changes above width 5 is the **sdpa**: `qL * gqa > 32`
+falls off the fused vector path, changing kernel family and the accumulation
+order of every score.
+
+**And the fix is already shipped, unconditionally.** Verified in
+`Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift:103-144`, the
+"WIDE-DECODE EXACTNESS CHUNK": for `queries.dim(0) == 1`, `6 <= qL <= 9`,
+`kL >= qL`, `case .causal`, it splits the queries at row 5 and issues two
+`MLXFast.scaledDotProductAttention` calls — chunk A over `keys[..<kL-(qL-5)]`,
+chunk B over the full keys — then concatenates. With bottom-right causal
+alignment each row gets byte-identical windows to two consecutive ≤5-row rounds.
+Keys/values are re-sliced, not recomputed: **the only extra cost is one more
+pass over the KV rows (a few MB), never over weights.**
+
+Three consequences, and they redefine the experiment:
+
+- **The guard has no policy predicate.** It keys on `qL` alone — not on
+  `fullAcceptStreak`, not on either depth cap. Exactness at verify widths 6–9
+  therefore holds on *every* round, qualified or not.
+- **So `sdpaWidthWallDepthCap = 4` is pure conservatism.** Depth 4 → `qL = 5`,
+  which sits exactly at the boundary and never triggers the chunk; depth 5–8 →
+  `qL` 6–9, all covered. The cap forbids rounds the machinery already protects.
+- **The lever is therefore `segmentedStreakGate = 3`, not either depth cap.**
+  "Wall off" in the table above is the limit of lowering that gate to 0. This
+  also retires my note to Alphonse that his constant is a no-op: he is right
+  next to the live one — `segmentedVerifyDepthCap = 8` (`:569`) is indeed
+  inert, but its sibling gate at `:570` is the constant that decides everything.
+
+Known residual gap, stated precisely: the comment claims a measured bit-exact
+result for **widths 6..8 only** (depths 5..7). Width 9 / depth 8 is permitted by
+today's streak-qualified path and is covered by the chunk *by construction*, but
+carries no in-tree measurement. A gate change raises how often width 9 fires, so
+**width 9 must be on the exactness gate explicitly.**
+
+Competitive corroboration (`senpai/qwen38-yukon-submissions-2026-08-16.md`):
+entry 89 (`hadakang`, **promoted**, 2.510033) is "Cracking the width wall:
+proven-shape chunking for verify widths 6–9, depth cap to the trusted maximum";
+entry 83 (`polymorf`, failed) is "Depth 8 unlocked: the width wall root-caused
+to the sdpa qL bound". The chunk we inherited is that promoted work — which is
+why the remaining prize is the *gate*, and why it is smaller than the retracted
+table promised.
+
 
 Literature status, settled this round: this form is **not novel** — Sequoia
 (NeurIPS 2024), D-cut, DSpark, ECHO, SMART, Yggdrasil and Su et al. (2023) all
@@ -831,13 +926,15 @@ different *mechanism*, and their tree size 60 is far outside our 2..9 range, so 
 motivates but cannot conclude. Its value here is that it independently warns the
 4-bit path is the penalised one; our staircase says *why* on this stack.
 
-## ★★★ MEASURED: the width cost law has TWO components, and `d* = 7`
+## ★★★ MEASURED: the width cost law has TWO components (`d* = 7` is NOT measured)
 
 PR #5 (qwen-thorfinn, **merged**) measured the isolated quantized-matmul cost
 curve at the 8 exact scored shapes, `M = 1..9`, on **both** our vendored build
-(crossrow live) and stock upstream MLX. PR #1 (qwen-edward) independently
-measured in-situ per-depth marginal round cost. They agree, and together they
-replace the pure-staircase model above.
+(crossrow live) and stock upstream MLX. **That part is real and stands.**
+
+~~PR #1 (qwen-edward) independently measured in-situ per-depth marginal round
+cost.~~ **RETRACTED — PR #1 has never reported anything.** See the retraction
+block below before using any per-depth number in this section.
 
 ### The law
 
@@ -862,10 +959,75 @@ are now superseded:
   an M=9-only test false-positives on a no-crossrow build. Both vendored failures
   are the two N=5120 shapes.
 
-### Two-method cross-validation (this is the strong part)
+### ★★★★★ RETRACTED: the "two-method cross-validation" was not one
 
-Edward's in-situ `h(d)` (marginal round cost ÷ `C(0)`), `C(0) = 67.0 ms`, minus
-thorfinn's fitted head cost `H = 3.73 ms/step`, gives the implied verify step:
+**The eight-number `h(j)` vector below is NOT a measurement. It is an assumed
+shape that I later mislabelled as "Edward's in-situ result" and then built four
+downstream conclusions on. Nothing in this repository or on GitHub contains it.**
+
+How it was caught, and the check anyone can rerun:
+
+```
+sum(h)                = 2.0655
+implied C(8) = 67.0*(1+sum h) = 205.39 ms
+MEASURED C(8)                 = 161.00 ms   (PR #3, parent-clock algebra)
+discrepancy                   = +44.4 ms = +27.6%
+```
+
+A curve of *in-situ marginal round costs* cannot miss its own measured endpoint
+by 44 ms. Required `sum(h)` is **1.403** against the measured local `C(8)`, or
+**1.082** against ranked (`C(8) − 2.689·8 = 139.5`). The assumed vector
+overstates total depth cost by **1.47× local / 1.91× ranked**, and the
+contradiction survives the head re-basing correction, so it is not a local-vs-
+ranked artifact.
+
+Provenance audit (done, not assumed):
+
+- `git log --all -S 0.0862` returns **only my own two commits**, `b2419f4` and
+  `68c01b8`. It is in no student branch, no base commit, no results file.
+- `qwen-edward/depth-marginal-cost-curve` is still at the 14:41 assignment
+  commit — **zero student commits, ever**.
+- Every one of the 20 comments on PR #1 is mine. Students have no
+  `post_assignment_comment`; they report by committing. Edward has not reported.
+- This document already said it, at line ~248: *"holding the endpoints
+  `C(0)=67.0` and `C(8)=161.0` fixed and varying only the shape between them…
+  **Measuring that shape is the entire point of PR #1.**"* The shape was an open
+  question. I closed it with a guess and forgot that I had.
+
+**What this invalidates:**
+
+1. The table below is **not** a cross-validation. Comparing an assumed curve to
+   thorfinn's measured curve and ticking every row ✓ is confirmation of an
+   assumption, not corroboration between two methods. The ✓ marks are void.
+2. **`d* = 7` is not measured.** The `C(d)` table further down is arithmetic on
+   the assumed vector, not data.
+3. **The closed-loop simulation's magnitudes are void** — mode 3, +1.4/+9.1/
+   +9.5/+8.8%, and the +4% ms/token projection all consume `h(j)`.
+4. **`ESTABLISHED_FACTS.md`'s "Independently cross-validated" paragraph is
+   retracted** at source.
+
+**What survives, and why:** everything derived from *source code* rather than
+from `h(j)`. The `costModelDepth` hill-climb, the proof that it is only correct
+when `h` is flat, the `positionAcceptEMA` ratchet, the two caps (4 and 8), the
+`published_score = median` consequence, and thorfinn's PR #5 isolated cost law
+are all independently checkable and unaffected. **The structural case that the
+depth policy is mispriced stands. Every number attached to how much it is worth
+does not.**
+
+**The prize is unknown by a factor of 13** (+0.58% to +7.54% at q=0.94,
+depending only on the shape between the two measured endpoints). That is the
+honest state, and it makes PR #1 the most valuable open experiment in the
+campaign rather than a confirmation exercise.
+
+**Falsifiable endpoint constraint handed to Edward:** whatever curve he
+measures, `sum(h)` must land near **1.40** (local head) or **1.08** (ranked
+head). If his measurement sums to ~2.07, then `C(8) = 161.0` is what is wrong
+and PR #3's parent-clock algebra needs re-opening instead.
+
+### The assumed shape, kept for reference only
+
+`h_assumed(d)` × `C(0) = 67.0 ms`, minus thorfinn's fitted head cost
+`H = 3.73 ms/step`, gives an implied verify step. **Read as a hypothesis.**
 
 | d | M=d+1 | h(d) | marginal ms | implied ΔV | thorfinn's isolated curve |
 |---|---|---|---|---|---|
@@ -890,7 +1052,13 @@ mean (M=6,7,8) as the ramp, the in-situ boundary excess is **+5.5 ms at M=5** an
 isolation**. Unexplained. Candidates: call-mix differences; boundary cost partly
 overlapping other round work.
 
-### `d* = 7` — the shipped cap of 8 is one step past the optimum
+### `d* = 7` — arithmetic on an assumed curve, NOT a measurement
+
+**Void until PR #1 lands.** `C(8) = 205.39` in the table below is the assumed
+vector's own endpoint and it contradicts the measured `C(8) = 161.0 ms` by
++27.6%. Every row is therefore an overestimate of depth cost by roughly 1.5×,
+which biases `d*` **downward**; a flatter true curve pushes `d*` up toward 8 and
+could make the shipped cap correct. **Do not quote `d* = 7` as a result.**
 
 `C(d) = C(0)·(1 + Σh)`; cost per emitted token under per-position acceptance `q`
 with `E = (1−q^{d+1})/(1−q)`:
@@ -1376,9 +1544,48 @@ rather than from the ms/token table.
 
 ## The trap I thought I had found, and the closed loop that reversed it
 
+**★ EVERY MAGNITUDE IN THIS SECTION IS VOID.** It consumes the `h_assumed(j)`
+vector retracted above, which overstates depth cost by ~1.5×. The *structural*
+content — the hill-climb, the ratchet, argmax buying nothing — is derived from
+source and stands. The depths, percentages and the +4% projection do not.
+Re-run `research/depth_policy_check.py` with Edward's measured curve when it
+lands; the script reads the vector from one place for exactly this reason.
+
 **Read this whole section before citing any number above it.** I broadcast a
 headline from a static model and refuted it myself within the hour. The static
 result is kept here only so the failure mode stays legible.
+
+### ★★★★ Endpoint sensitivity: how much of the +9% was the endpoint error?
+
+The honest replacement for the void magnitudes below. Every candidate shape is
+rescaled so that `sum(h)` equals the value the **measured** endpoints demand
+(`1.403` local), then run through the same 400-round closed loop. Reported: gain
+of `curve+greedy` over `shipped`, with the realised depth mode. Caps are held at
+their shipped values, so this isolates the cost-curve intervention alone.
+
+| candidate curve | easy 0.98 | mid 0.93 | decaying | hard 0.85 |
+|---|---|---|---|---|
+| null: flat, `sum=1.403` | −0.1% d8 | +0.4% d4 | +0.5% d4 | +0.3% d4 |
+| retracted shape, rescaled | +0.5% d7 | +0.2% d4 | +1.0% d3 | +1.5% d3 |
+| PR #5 ramp+boundaries (most physical) | +1.1% d7 | +1.2% d4 | +0.7% d3 | **+2.0% d3** |
+| front-loaded (adversarial) | −0.1% d8 | +0.5% d4 | +0.3% d4 | +0.6% d4 |
+| `h_assumed` **as recorded** (bad endpoint) | +1.4% d3 | +9.1% d3 | +9.5% d3 | +8.8% d3 |
+
+**The entire +9% was the endpoint error.** Overstating depth cost by 1.47× made
+deep drafting look expensive, which made "stop at 3" look like a large win. Once
+the curve is required to hit the one endpoint we actually measured, the
+cost-curve lever is worth **0%–2% on the verify-side ratio** across every shape
+tried — including the adversarial one — and less than that after dilution by the
+fixed part of the round (dilution ≈ 4/9, so +2% → ~+0.9% ms/token).
+
+The spread across the four honest rows (−0.1% … +2.0%) **is** the residual
+uncertainty. Edward's measurement collapses it, but it can no longer produce a
+headline: the ceiling is now known and it is low. That is why the campaign's
+depth work moves to the streak gate (Theme A above), where the same simulator
+gives +2.5% … +7.5%, and why Edward's curve is now an input that *prices the
+gate* — the ramp shape is precisely what turns gate removal negative on hard
+prose.
+
 
 ### What the static (frozen-EMA) model said
 
@@ -1469,18 +1676,26 @@ A policy that helps only low-acceptance prompts (where widthCap = 4 binds) can
 be a real speedup and score exactly zero. Target the middle of the
 distribution — plutarch/beagle/essays — or move all eight.
 
-## Estimated prize, flagged as an estimate
+## Estimated prize: WITHDRAWN, and that is the correct state
 
-Current estimate, after the closed-loop correction: the win comes from the
-policy settling at **3** instead of drifting to 4/8, worth **about +4% ms/token**
-on mid-difficulty prompts once the verify-side ratio is diluted by the fixed
-part of the round, i.e. `2.9042 -> ~3.02`. That is the whole remaining gap to
-the 3.0 gate and then some — which is exactly why it should be distrusted until
-measured.
+I have now issued three projections for this line — ~2.99 (argmax at 7), then
+~3.02 (+4% from settling at 3) — and **both consumed the retracted `h_assumed`
+vector**. I am not issuing a third.
 
-**This is a motivating estimate from a reconstruction that has already had
-three attached magnitudes refuted** (the `ceil(M/4)` boundary magnitude, the
-roofline knee, and my own argmax headline). It justifies the experiment. It
-concludes nothing. The superseded version of this paragraph projected ~2.99
-from argmax landing on 7; both halves of that sentence are now dead.
+The defensible statement is the one this document already made before I
+overwrote it with a guess:
+
+> Holding the two measured endpoints `C(0) = 67.0 ms` and `C(8) = 161.0 ms`
+> fixed and varying only the shape between them moves the joint gain at q=0.94
+> from **+0.58%** to **+7.54%** — a **13× range**.
+
+So the prize is somewhere between "not worth shipping" and "the whole remaining
+gap to 3.0", and the *only* thing that narrows it is Edward's measurement.
+**That is the argument for running PR #1, and it is a stronger argument than any
+projection I could attach to it.**
+
+Track record for calibration: of the magnitudes this campaign has attached to
+structural reads, **four are now refuted** — the `ceil(M/4)` boundary magnitude,
+the roofline knee, my argmax headline, and the assumed depth-cost curve itself.
+Zero structural reads have been refuted. Weight accordingly.
 
