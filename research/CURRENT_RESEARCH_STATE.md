@@ -1338,16 +1338,38 @@ Reference points: `d(score)/d(candidate_seconds) ≈ −0.4335`, so 100 ms ≈
 +0.043, and 2.904 → 3.0 is ≈ 220 ms. Neither of the two leads below closes
 that alone. **Do not expect one experiment to reach 3.0.**
 
-## Live slate — all four students assigned (base `b2419f41`)
+## Live slate — re-aimed onto base `1eacf376`
 
 | PR | Student | Assignment | Expected value | Why now |
 |---|---|---|---|---|
-| #1 | edward | depth marginal cost curve (r2, running) | evidence, not speed | d=7/d=8 arms are the decisive test of `d* = 7` |
-| #2 | alphonse | **r3 — `segmentedVerifyDepthCap` 8 → 7, one constant** | −1.9% to −3.2% ms/tok | cheapest possible shot at a scored win |
+| #1 | edward | **r3 — measure `h(0..7)`, MEASUREMENT ONLY** | 0–2% verify-side (~+0.9% ms/tok) | its job is to **price Alphonse's gate**, not to retune a constant |
+| #2 | alphonse | **r4 — width-9 exactness, then `segmentedStreakGate` 3 → 1** | +2.5% … +7.5% verify-side on easy/mid | the only cap that actually binds (29–87% of rounds) |
 | #7 | askeladd | 2-bit/3-bit compact draft readout | −0.28 to −0.55 ms **per draft step** | the only sized lead with a byte-count floor behind it |
 | #8 | thorfinn | crossrow `NA_max` 4 → 5 | mechanism test first, ms second | `NA=5` moves the stream count at **exactly M=5 and M=9** and nowhere else |
 
 Deliberately **not** assigned: further characterization work. We have enough.
+
+### ★★★★★ Both r-bumps above are RETRACTIONS, not new asks
+
+- **PR #2 r4 restores the r1 brief.** r3 had opened with "discard everything in
+  this PR's history" and pointed Alphonse at `segmentedVerifyDepthCap` 8 → 7 —
+  a constant that is **inert** (`= Qwen36MTPLimits.maxDepth`). r3 also killed
+  Part A on the false ground that PR #5's bit-exactness result covered it; PR
+  #5 covers the **verify matmul**, and the width wall is in the **SDPA**.
+  r1's Part A (width-9 hexfloat gate) + Part B (streak gate) were correct all
+  along. r4 = r1 minus the `positionAcceptEMA[4]` redesign, which is a separate
+  experiment. **r4 is smaller than r1 and smaller than r3 + its follow-up.**
+- **PR #1 r3 removes scope**: void the `d* = 7` hunt, the argmax arm, the
+  staircase-breakpoint work, the ranked-dispatch hazard, **and the scalar →
+  vector policy swap**. Deliverable is the curve, not a policy change. The
+  hill-climb in `costModelDepth` is correct *only because `h` is flat*, so a
+  vector requires re-deriving the stopping rule — for a measured ceiling of ~2%.
+- Both were told plainly that the curve they had been working against was
+  **invented by me** and that the fault for zero commits is mine.
+
+**Rule this enforces:** *an amendment must remove at least as much scope as it
+adds* — and a revision issued to correct an advisor error must be measured
+against the **original** brief, not against the degraded one it replaces.
 
 ## Pre-registered predictions (timestamped before the data lands)
 
@@ -1371,6 +1393,22 @@ prediction. Score these honestly when the results arrive.
    `acceptedDraftPrefixCount(drafts:verifyArgmax:)`, the first index where
    `verifyArgmax[i] != drafts[i]` — but **still to be verified by parity run**,
    because "matching one argmax is insufficient" is a standing hazard.
+6. **The streak gate binds hard.** `fullAcceptStreak < segmentedStreakGate`
+   holds the round at depth 4 in **29%** of easy-prose rounds, 66.5% mid,
+   74.2% decaying, **87.5%** hard. Opening it (`gate 3 → 1`) is worth
+   **+4.7%/+7.5%** verify-side on easy/mid under a flat cost curve, falling to
+   **+2.5%/+3.0%** and **negative on hard prose** under a ramped one. Realised
+   depth mode moves 4 → 7/8. **Tested by PR #2 r4.**
+7. **`h(4)` is a STEP, not a ramp.** Verify width is `depth + 1`, so at depth 5
+   (width 6) the `AttentionUtils` wide-decode chunk starts splitting attention
+   into **two** sdpa calls instead of one. Predict a visible step up in `h(4)`
+   relative to `h(0)..h(3)`, then roughly **flat** across `h(5)..h(7)` — the
+   split happens once and does not worsen with width. A smooth ramp instead
+   refutes "the second sdpa call is the dominant term." **Tested by PR #1 r3.**
+
+**Predictions 6 and 7 are the two that now matter**, because they are the only
+ones still attached to a live experiment whose brief I have not since broken.
+Both are falsifiable against a single run each.
 
 Known way for 1–3 to be wrong: the model behind them assumes acceptance is
 **position-independent**, and `positionAcceptEMA` exists precisely because it
@@ -1401,6 +1439,37 @@ brief — not another comment. "Feedback volume is not progress" was already
 policy; this is its sharper form. Also: when a student produces nothing for a
 long time, **suspect the brief before suspecting the student**, and ask them
 directly whether the obstacle is on my side or the host's.
+
+### ★★★★★ The sharper form: r3 was ALSO wrong, and r1 had been right
+
+Read back later, the "corrective" r3 above was the worst comment in the thread.
+It opened with *"discard everything in this PR's history"* — and the thing it
+discarded was **a correct brief**. r1 had already named the right lever
+(`segmentedStreakGate`), the right safety precondition (the width-9 hexfloat
+row gate), and the right warning (*"a clean local 64/64 does not prove safety
+here"*). Fifteen amendments later I had replaced all of it with an **inert
+constant** (`segmentedVerifyDepthCap == Qwen36MTPLimits.maxDepth`) justified
+by a **cost table I had invented**, and killed the exactness gate by citing a
+bit-exactness result about the **verify matmul** against a hazard that lives
+in the **SDPA**.
+
+So the failure was not merely "too many amendments." It was:
+
+1. **A reset can destroy signal.** "Discard everything prior" is safe only if
+   the prior contains nothing correct. Before resetting a brief, diff the
+   *original* against the replacement and check what is being thrown away.
+2. **Simplification is not neutral.** Narrowing to "one constant" felt like
+   discipline, but I narrowed onto a no-op. *Cheap* and *decisive* are
+   different axes; I optimised the first and lost the second.
+3. **Evidence must be matched to hazard, not to topic.** PR #5's proof and the
+   width wall were both "bit-exactness at width M," which is why the
+   substitution passed unchallenged for days. Different kernel ⇒ different
+   claim.
+
+**Rule:** when correcting an over-amended brief, restore the original and
+subtract from *it* — do not compose a new one from the wreckage. Measure the
+replacement against r1, never against the degraded latest revision. Applied as
+PR #2 r4 (= r1 − the EMA redesign) and PR #1 r3 (measurement only).
 
 ## ★★ Advising lesson — I broadcast a policy headline from a static model
 

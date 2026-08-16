@@ -312,6 +312,25 @@ proven-shape chunking for verify widths 6–9, depth cap to the trusted maximum"
 Entry 83 (`polymorf`, failed) root-caused it to the sdpa `qL` bound. **We
 inherited this work; it is not ours and the prize for re-doing it is zero.**
 
+**7. The chunk really is on our live path — verified, with one precondition.**
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1666` calls
+`attentionWithCacheUpdate(...)`, which is the *only* caller of the patched
+helper in that file and the sole attention entry point for the live model. So
+the chunk is reachable. **But** the chunk sits in the `else` arm of a
+`cache as? QuantizedKVCacheProtocol` test (`AttentionUtils.swift:89`) — with a
+quantized KV *cache* the wide-decode split is **silently skipped** and the
+width wall returns. Near-miss worth recording: `_qkvBits = 4` / `_kvBits = 4`
+(`Qwen35.swift:1438,1456`) look like a quantized KV cache but are **quantized
+weight packs** for the Q/K/V projections, an unrelated mechanism. Do not read
+those fields as evidence either way; confirm the cache *class* at runtime.
+
+**8. Consequence for the cost curve (drives prediction 7).** Verify width is
+`depth + 1`. Depth ≤ 4 → width ≤ 5 → chunk never fires → **one** sdpa call.
+Depth ≥ 5 → width ≥ 6 → **two** sdpa calls, over re-sliced K/V views (no extra
+weight pass). So the marginal-cost curve should show a **step at `h(4)`, then
+flat** — not a ramp. This is a structural, falsifiable feature of `h(d)` that
+costs nothing extra to test inside PR #1's existing measurement.
+
 
 ### Two-regime prediction for PR #1's marginal-cost curve
 
