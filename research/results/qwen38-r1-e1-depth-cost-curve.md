@@ -400,21 +400,38 @@ free-checkpoint path at `S == 2`, and records the cheap replay tape only when
 `replayPrefix` `:889`); otherwise it falls back to the eager-checkpoint kernel.
 So **the regime boundary sits exactly at the `d = 1` → `d = 2` step you flagged.**
 
-512-token window (`d0`, `d1`, `d2`, `d8`; `research/out/repair512.json`):
+512-token window, the complete forced-depth sweep
+(`research/out/repair512_all.json`, `--warmup 2`). Every drafting depth in the
+sweep is now covered at the ranked window, not just the four I had when I first
+answered comment 11. `bound` is the classifier-free upper bound on the fraction
+of reject rounds that could have paid a full re-forward, derived in the next
+subsection:
 
-| d | S | regime | N full-accept | N reject | `prefixRepairCount` | `fullRepairCount` | commit µs accept | commit µs reject | commit µs **max** |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | 2 | single-launch free checkpoint | 253 | 5 | **5** | **0** | 304.9 | 226.6 | 284 |
-| 2 | 3 | replay tape | 163 | 11 | **11** | **0** | 411.8 | 1947.7 | 2031 |
-| 4 | 5 | replay tape | 1 | 0 | 0 | 0 | 237.0 | – | – |
-| 8 | 9 | replay tape | 45 | 20 | **20** | **0** | 111.8 | 619.5 | 717 |
+| d | S | regime | N full-accept | N reject | `prefixRepairCount` | `fullRepairCount` | commit µs accept | commit µs reject | commit µs **max** | bound |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 2 | single-launch free checkpoint | 255 | 5 | **5** | **0** | 304.8 | 226.6 | 284 | 0.0038 |
+| 2 | 3 | replay tape | 163 | 11 | **11** | **0** | 411.8 | 1947.7 | 2031 | 0.0254 |
+| 3 | 4 | replay tape | 120 | 11 | **11** | **0** | 91.3 | 672.1 | 778 | 0.0099 |
+| 4 | 5 | replay tape | 96 | 14 | **14** | **0** | 459.3 | 789.5 | 2720 | 0.0190 |
+| 5 | 6 | replay tape | 72 | 21 | **21** | **0** | 575.5 | 4331.4 | 4707 | 0.0678 |
+| 6 | 7 | replay tape | 61 | 19 | **19** | **0** | 442.0 | 1384.3 | 4581 | 0.0251 |
+| 8 | 9 | replay tape | 45 | 20 | **20** | **0** | 111.8 | 619.5 | 717 | 0.0203 |
 
 The `d = 2` row is the one that matters most for your question, because it is the
 first depth *inside* the replay-tape regime and so is where a tape-replay repair
 would first become possible. It has 11 rejects and still zero full repairs.
 
-256-token window (`d3`, `d4`, `d6`, `base-decl`, `base256`, `cand256`;
-`research/out/repair256.json`):
+The `d = 5` row is the worst case anywhere in this report: 21 rejects, a 4,331 µs
+mean reject `commit_us`, a 4,707 µs max, and the largest classifier-free bound at
+0.068. It is still **13.8× below** the ~65 ms cost of one target forward, so even
+this row cannot be hiding a re-forward. I flag it because it is also the depth
+whose `h(d)` dips, and I checked whether the two facts were the same fact — they
+are not: `C(d)` is fit on full-accept rounds only, so none of this reject-round
+`commit_us` enters `h(5)` by construction.
+
+256-token window (`base-decl`, `base256`, `cand256`, and the pre-overwrite `d3`,
+`d4`, `d6` arms; `research/out/repair256.json`). Kept as an independent-window
+cross-check — 17 pooled rejects, max 1,918 µs, same zero:
 
 | d | S | regime | N full-accept | N reject | `prefixRepairCount` | `fullRepairCount` | commit µs accept | commit µs reject | commit µs **max** |
 |---|---|---|---|---|---|---|---|---|---|
@@ -426,10 +443,13 @@ would first become possible. It has 11 rejects and still zero full repairs.
 | 7 | 8 | replay tape | 12 | 0 | 0 | 0 | 136.4 | – | – |
 | 8 | 9 | replay tape | 18 | 6 | **6** | **0** | 78.8 | 615.5 | 665 |
 
-Totals: **`prefixRepairCount` = 53, `fullRepairCount` = 0** over 53 reject rounds,
-19 legs, depths 1/2/3/4/6/8, both regimes, both windows. The single largest
-reject-round `commit_us` anywhere is **2,031 µs**, which is **32× below** the
-65 ms floor for one target forward. This is not a close call.
+Totals across the complete 512 sweep: **`prefixRepairCount` = 101,
+`fullRepairCount` = 0** over 101 reject rounds, 16 legs, depths 1/2/3/4/5/6/8,
+both checkpoint regimes. Pooled reject `commit_us` is mean 1,690 µs, median
+640 µs, max **4,707 µs** against a **65,115 µs** forward floor — **13.8× below**
+it at the very worst single round, and 102× below at the median. This is not a
+close call, and it is no longer a close call at any depth rather than at the four
+depths I could reach when comment 11 arrived.
 
 ### An independent bound that does not trust my classifier
 
@@ -437,21 +457,33 @@ If you distrust the `commit_us` attribution, the round totals bound the same
 quantity without it. A full re-forward must cost at least one `C(0)`, so the
 mean round-time excess of reject rounds over full-accept rounds divides by
 `C(0)` to give an upper bound on the fraction of reject rounds that could have
-paid one:
+paid one. All seven drafting depths, 512-token window, one statistic that never
+touches `commit_us`:
 
 | d | median Δ round µs | bound on re-forward fraction |
 |---|---|---|
-| 1 (512) | 253.5 | 0.0039 |
-| 3 (256) | 1561.0 | 0.0240 |
-| 4 (256) | 985.5 | 0.0152 |
-| 6 (256) | 683.5 | 0.0105 |
-| 8 (256) | 544.5 | 0.0084 |
-| 8 (512) | 1324.5 | 0.0203 |
+| 1 | 249.0 | 0.0038 |
+| 2 | 1655.0 | 0.0254 |
+| 3 | 646.0 | 0.0099 |
+| 4 | 1239.0 | 0.0190 |
+| 5 | 4414.0 | **0.0678** |
+| 6 | 1637.0 | 0.0251 |
+| 8 | 1324.5 | 0.0203 |
 
-Every bound is ≤ 2.4% of a single forward, and — this is the part that answers
-your second interpretation branch — **the bound does not rise with `d`**. It is
-flat-to-falling from `d = 3` to `d = 8`. There is no unpriced term growing in
-depth, so `C(d)` is not hiding one.
+Every bound is ≤ 6.8% of a single forward, and — this is the part that answers
+your second interpretation branch — **the bound does not rise with `d`**. The
+maximum sits at `d = 5`, and the two deepest arms are both *below* it (0.0251 at
+`d = 6`, 0.0203 at `d = 8`). A hidden repair term that scaled with depth would
+have to rise monotonically; this falls after `d = 5`. So there is no unpriced
+term growing in depth, and `C(d)` is not hiding one.
+
+The `d = 5` peak deserves a word rather than a shrug, because 0.0678 is nearly
+three times the next value. Read literally it says at most 1.4 of the 21 reject
+rounds could have paid a full re-forward. The literal counters for that arm say
+zero did, and `d = 5` is inside the post-rebuild binary so those counters exist
+for it — this is one of the two arms in the 40/40 cross-check. So the bound is
+loose here rather than informative, which is exactly what a bound built from
+round-time medians does when an arm has a wider round-time spread.
 
 I report medians here deliberately. The `d = 1` *mean* delta is 10,044 µs, which
 looks alarming until you read the five rounds: round 151 has
@@ -517,27 +549,61 @@ re-fit `C(d)`; it would have been to add an expected-repair term to the policy's
 objective. It is zero, so I did not add one, and that is the honest reason the
 cost model still has the shape it has.
 
+### The classifier is no longer the weak link: 40/40 against the literal counters
+
+I first answered comment 11 with a *classifier*: `commit_us` brackets the repair
+branch (`tReadDone` `:1219` is read before the branch, `tCommitDone` `:1287`
+after it), so a small `commit_us` on a reject round means the cheap
+`restoreAfterPrefixReject` path ran and a large one would mean a full re-forward.
+That inference was rebuild-free, which is why I used it mid-sweep, but it was an
+inference.
+
+I have since added the literal counters to the session (`db37226`,
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift`, +11 lines): a
+`public private(set) var prefixRepairCount` / `fullRepairCount` pair incremented
+in the `restoreAfterPrefixReject` success branch and its `else` fallback
+respectively, plus `prefix_repair=` / `full_repair=` fields on the trace row.
+They are named exactly as you asked so `qwen-askeladd` can compare directly.
+
+That gives a real check, because the arms run after the rebuild emit **both** the
+literal counters and the `commit_us` the classifier reads. Over the reject rounds
+in those arms:
+
+| agreement cell | count |
+|---|---|
+| classifier says prefix **and** literal says prefix | 40 |
+| classifier says full **and** literal says full | 0 |
+| classifier says prefix **but** literal says full | **0** |
+| classifier says full **but** literal says prefix | **0** |
+| literal incremented neither counter | **0** |
+| **agreement** | **40/40 = 1.0000** |
+
+No disagreements in either direction, and no reject round that failed to
+increment something. So the pre-rebuild arms, which only have `commit_us`, are
+being read correctly, and the pooled totals below are trustworthy rather than
+merely suggestive. This is the one place in this report where a method I had to
+justify by argument later got checked against ground truth, and it survived.
+
+The cost of that certainty was splitting the sweep across two binaries, which I
+account for in the binary-split subsection above and which is why `h(6)` is
+derived from `d5` and `d6` only — both inside the post-rebuild binary, so no
+`h` value in the curve is estimated across a binary step.
+
 ### What I did not do, and what would change it
 
-I did not add the literal `prefixRepairCount` / `fullRepairCount` counters to
-the session. If you want them in the shipped source for cross-agent comparison
-with `qwen-askeladd`, say so and I will add them under those exact names — it is
-a small, self-contained change. I declined it mid-sweep only because the rebuild
-would have split the forced-depth sweep across two binaries, against your fb8
-instruction to prioritise getting all nine points cleanly over implementation
-polish, and because comment 11 says this does not change my assignment.
-
-Two honest limits on the above. First, all 53 reject rounds come from one public
+Two honest limits remain. First, all the reject rounds come from one public
 fixture on one host; `restoreAfterPrefixReject` has failure modes (cache offset
 mismatch, a non-trimmable non-`ArraysCache` entry, `canReplayPrefix` failing, a
 nil tape, or `rollbackCheckpoints.count <= acceptedCount` at K=1) that this
-fixture may simply never provoke. Second, my reject-round counts are small at
-every depth except `d = 8`, because forced-depth arms on a copy task accept
-nearly everything — the very acceptance inflation I document elsewhere. A ranked
-prompt with depth-1 acceptance 0.699 would produce roughly an order of magnitude
-more reject rounds, and I cannot run one. So the correct claim is: **on
-everything I can measure, the cheap path always wins, and its cost is ~0.6 ms
-against a 65 ms forward.** I am not claiming the fallback is unreachable.
+fixture may simply never provoke. Second, the reject rounds are few at every
+depth — 5 to 21 per arm — because forced-depth arms on a copy task accept nearly
+everything, the very acceptance inflation I document elsewhere. A ranked prompt
+with depth-1 acceptance 0.699 against this fixture's 0.8929 would produce roughly
+an order of magnitude more reject rounds, and I cannot run one. So the correct
+claim is: **on everything I can measure, the cheap path always wins, and its cost
+is ~0.64 ms median against a 65 ms forward.** I am not claiming the fallback is
+unreachable — I am claiming it never ran, in 101 opportunities, at seven
+different depths spanning both checkpoint regimes.
 
 ## Section 1 — the curve (measurement, not policy)
 
@@ -1593,11 +1659,20 @@ runs `rollbackAfterVerify` plus a full `model.callWithHidden` re-forward
 two counters can be separated without rebuilding, because `tReadDone` is stamped
 at `:1219` (before the accept/reject branch) and `tCommitDone` at `:1287` (after
 the whole branch including the repair forward), so the emitted `commit_us`
-brackets any repair. Over 53 reject rounds across 19 legs, depths 1/2/3/4/6/8,
-both repair regimes and both token windows: **`prefixRepairCount` = 53,
+brackets any repair. Over 101 reject rounds across 16 legs, depths 1/2/3/4/5/6/8,
+both repair regimes, complete at the 512 window: **`prefixRepairCount` = 101,
 `fullRepairCount` = 0**. The largest reject-round `commit_us` seen anywhere is
-2,031 µs, **32x below** the ~65 ms forward floor, so no round contains a hidden
-re-forward. `research/repair_probe.py` reproduces this from committed traces.
+4,707 µs (at `d = 5`), **13.8x below** the 65,115 µs forward floor, and the
+median is 640 µs, 102x below it — so no round contains a hidden re-forward.
+`research/repair_probe.py` reproduces this from committed traces.
+**The classifier is now validated against ground truth**: `db37226` added the
+literal `prefixRepairCount` / `fullRepairCount` counters to the session and the
+`prefix_repair=` / `full_repair=` trace fields, and over the 40 reject rounds in
+the two arms that emit both, classifier and literal counters agree **40/40 =
+1.0000** with zero disagreement in either direction and zero rounds that
+incremented neither. A classifier-free bound from round-time medians alone caps
+the re-forward fraction at 0.068 and does **not** rise with depth (it peaks at
+`d = 5` and falls at `d = 6` and `d = 8`).
 Agents touching rollback, acceptance, or cache-snapshot code should note that on
 this fixture the cheap path is the *only* observed path — which also means the
 expensive path is **untested here**, not proven absent. Ranked depth-1
