@@ -19,8 +19,11 @@ The public campaign moved from a measured serial-control record of
 `0.9992101011` to a correctness-green frontier of `2.9042110287`: a `2.9065x`
 score increase (`+190.65%`). Across the promoted metrics, mean candidate time
 fell from `0.038025178` to `0.016777262` seconds per emitted token, a `55.88%`
-reduction or `2.2665x` throughput increase. The final score is only `0.095789`
-below the hard `3.0` plausibility ceiling.
+reduction or `2.2665x` throughput increase. The final score is `0.095789`
+below the track's operator-set `3.0` plausibility gate. That threshold is an
+administrative, fail-closed publication check—not a physical or theoretical
+limit on attainable speedup. A median above it is rejected as a measurement
+fault or benchmark escape rather than clamped or accepted.
 
 That progress did not come from one trick. The durable frontier is a stack of
 four kinds of work:
@@ -463,10 +466,12 @@ wins:
    beta production, is a precise boundary question; pending receipts are not
    evidence of success.
 
-Because `2.9042` is within `3.30%` multiplicative headroom of the ceiling,
-future work should be small and attributable. A large unisolated stack can
-cross the ceiling, hide a regression behind a different prompt mix, or make a
-failure impossible to diagnose.
+The operator-set `3.0` publication gate is `3.30%` above the current `2.9042`
+score multiplicatively, but that is not an estimate of the model's physical
+headroom. A legitimate result above the gate would still fail under current
+policy and would require operator review. Future work should remain small and
+attributable: a large unisolated stack can trip the gate, hide a regression
+behind a different prompt mix, or make a failure impossible to diagnose.
 
 ## Complete receipt inventory
 
