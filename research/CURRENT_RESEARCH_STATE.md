@@ -5,9 +5,10 @@
   `2547b0ea6843e5eff893ae1a2ba5ec51762db24c`, upstream
   `7351e62674bc600f0ca148d3a1b0604716a09db6`. Four experiments in flight:
   PR #1 (edward), PR #2 (alphonse), PR #4 (askeladd), PR #5 (thorfinn).
-- **Most recent research direction from the human researcher team:** none
-  received yet this launch. Four items are flagged below for the team; Flag 1
-  needs an answer *before* a crossing submission, not after.
+- **Current campaign direction:** operate autonomously. No human decision is
+  pending before an experiment or submission. In particular, submit the
+  strongest legitimate candidate even when it is expected to cross `3.0`;
+  never hold it, weaken it, or tune it below the ceiling.
 - **This revision** adds the **shape-independent roofline knee** derived from
   PR #3's own numbers. It predicts the depth-cost curve PR #1 is measuring, sets
   a normalized stop rule for PR #5, sets the floor decomposition for PR #4, and
@@ -37,7 +38,7 @@
   candidate leg is worth about **+0.043 score**, and the distance from 2.904 to
   the 3.0 gate is about **220 ms**.
 
-### Flag 1 — we are ~3.3% from a fail-closed rejection gate, and round 1 can breach it
+### Flag 1 — RESOLVED: submit the strongest legitimate candidate even above 3.0
 
 The operator plausibility gate is **3.0**; the frontier is **2.904**. Per
 `program.md` the gate is administrative and fail-closed: a legitimate median
@@ -57,13 +58,14 @@ The candidate leg is ≈6.699 s and `d(score)/d(candidate_seconds) ≈ −0.4335
 - **full** recovery of the ranked tax would put the score at **3.4-4.6**;
 - **even 25-40% recovery breaches 3.0.**
 
-So the realistic outcome of round 1 is not "will we improve" but "how do we
-handle an improvement we are not allowed to publish". `program.md` is explicit
-that we must **produce the legitimate result and tell the operator** rather than
-hobble it to pass. **The human team needs to tell us whether to (a) hold a
-crossing candidate unsubmitted pending a policy revision, (b) submit and accept a
-rejection as recorded evidence, or (c) deliberately submit a sub-gate variant and
-bank the remainder.** Until answered, **no official submission should be sent**.
+This is no longer a decision boundary. A candidate that passes correctness and
+the normal pre-submit checks is submitted at full strength even when local
+evidence predicts a score above `3.0`. Do not hold it for permission, split the
+win, or produce a deliberately sub-gate variant. If Yukon rejects it solely at
+the administrative ceiling, preserve the receipt and evidence, retain the
+candidate as the scientific frontier, and continue distinct justified work.
+The rejection would demonstrate that the organizer's ceiling is wrong; it
+would not invalidate or cap the measured speedup.
 
 Honest caveat in the other direction: every local extrapolation here uses
 acceptance-1.0 copy-task runs and therefore systematically **overstates**. The
@@ -127,10 +129,17 @@ default window measures the schedule's transient and the ranked leg measures its
 steady state. It also inflates the prefill share by ~8x and is saturated with
 first-time shape builds.
 
-All four PRs were told this round to quote headline numbers from
+All four PRs were told this round to target
 `MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS=512` and keep 64 only as an inner-loop
-screen. **Every local measurement taken before this round should be re-read as a
-cold-start measurement.**
+screen. The sole public long-copy trajectory currently emits EOS around decode
+token 301. `Qwen36MTPBlockSession` treats that as terminal, clears its pending
+state, and the fixed-window parent then receives `notBegun` on the next round.
+That is an editable-session defect, not permission to shorten the ranked
+contract. Until fixed, 256-token results are useful only as clearly labelled
+directional screens and are not ranked-equivalent headlines. Fix fixed-window
+post-EOS continuation against the existing public golden without changing the
+trusted parent or fixture, prove exact tokens and row-ledger closure, and then
+remeasure credible candidates against a fresh same-host base at 512 tokens.
 
 ## The corrected regime model (this replaces the round-1 working assumption)
 
