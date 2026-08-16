@@ -29,6 +29,7 @@ ROW_RE = re.compile(r"mtp-row: pos=(\d+) ids=(-?\d+),(-?\d+) v=(\S+)")
 ROUND_RE = re.compile(r"mtp-trace: round=(\d+) d=(\d+) acc=(\d+) (.*)")
 BEGIN_RE = re.compile(r"mtp-trace: begin (.*)")
 KV_RE = re.compile(r"(\w+)=(\S+)")
+EMA_RE = re.compile(r"ema_in=([0-9.,]+)")
 
 PHASE_MARKERS = (
     ("generating the MTP reference rows", "reference"),
@@ -52,6 +53,7 @@ class Round:
     depth: int
     accepted: int
     timings: dict[str, int]
+    ema_in: list[float] = field(default_factory=list)
     rows: list[Row] = field(default_factory=list)
 
     @property
@@ -106,7 +108,19 @@ def parse_trace(path: str) -> dict[str, Phase]:
                     for key, value in KV_RE.findall(round_match.group(4))
                     if value.isdigit()
                 }
-                rnd = Round(index=index, depth=depth, accepted=accepted, timings=timings)
+                ema_match = EMA_RE.search(round_match.group(4))
+                ema_in = (
+                    [float(part) for part in ema_match.group(1).split(",")]
+                    if ema_match
+                    else []
+                )
+                rnd = Round(
+                    index=index,
+                    depth=depth,
+                    accepted=accepted,
+                    timings=timings,
+                    ema_in=ema_in,
+                )
                 take = accepted + 1
                 own = pending[-take:] if take <= len(pending) else pending[:]
                 leftover = pending[: len(pending) - len(own)]
@@ -220,6 +234,54 @@ def schedule_stats(phase: Phase) -> dict:
         "mean_eval_wall_us": (timing_totals.get("eval_wall_us", 0) / len(phase.rounds))
         if phase.rounds
         else 0.0,
+        **gate_stats(phase),
+    }
+
+
+def gate_stats(phase: Phase) -> dict:
+    """Distribution of the gate's decision inputs.
+
+    Part B needs a threshold on `positionAcceptEMA[4]` -- the first EMA the
+    shipped streak gate does not already imply -- fitted to what the run
+    actually produced, so report where a candidate threshold would have
+    opened the deep cap versus where the streak gate opened it.
+    """
+    caps = Counter()
+    streaks = Counter()
+    ema4_open: list[float] = []
+    ema4_closed: list[float] = []
+    for rnd in phase.rounds:
+        cap = rnd.timings.get("cap")
+        streak = rnd.timings.get("streak_in")
+        if cap is None or streak is None:
+            continue
+        caps[cap] += 1
+        streaks[streak] += 1
+        if len(rnd.ema_in) > 4:
+            (ema4_open if cap > 4 else ema4_closed).append(rnd.ema_in[4])
+    if not caps:
+        return {}
+
+    def quantiles(values: list[float]) -> dict:
+        if not values:
+            return {}
+        ordered = sorted(values)
+        return {
+            "n": len(ordered),
+            "min": ordered[0],
+            "p25": ordered[len(ordered) // 4],
+            "median": ordered[len(ordered) // 2],
+            "p75": ordered[(3 * len(ordered)) // 4],
+            "max": ordered[-1],
+        }
+
+    return {
+        "cap_histogram": {str(cap): count for cap, count in sorted(caps.items())},
+        "streak_in_histogram": {str(s): c for s, c in sorted(streaks.items())},
+        "deep_gate_open_rate": sum(c for cap, c in caps.items() if cap > 4)
+        / sum(caps.values()),
+        "ema4_when_gate_open": quantiles(ema4_open),
+        "ema4_when_gate_closed": quantiles(ema4_closed),
     }
 
 
