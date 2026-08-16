@@ -72,6 +72,47 @@ def summarize(rows, key="round_us"):
             "min_us": min(vals), "max_us": max(vals)}
 
 
+def trace_pid(path):
+    """Numeric PID suffix of a `trace.txt.<pid>` file.
+
+    Sorting on this rather than the filename keeps leg order equal to process
+    start order once a PID crosses a digit boundary.
+    """
+    return int(str(path).rsplit(".", 1)[-1])
+
+
+def select_mtp_leg(legs, meta, arm):
+    """The one leg whose rounds came from the candidate MTP session.
+
+    Each arm starts two model-holding workers: a serial reference leg, whose
+    rounds are all `d=0`, and the MTP leg. Reading the wrong file silently
+    turns a real MTP arm into a serial control, so name the leg explicitly and
+    fail loudly rather than guessing.
+
+    Exactly one leg with a nonzero depth is the normal case. Zero such legs is
+    only legal when the arm forced depth 0, and both legs are then genuinely
+    indistinguishable by depth alone; the MTP leg is the later-started process.
+    Two nonzero-depth legs mean the arm layout changed and every downstream
+    per-arm number would be a pool of two schedules.
+    """
+    scoring = [leg for leg in legs if leg["rounds_total"]]
+    nonzero = [leg for leg in scoring if any(leg["depths_seen"])]
+    if len(nonzero) == 1:
+        return nonzero[0]
+    if len(nonzero) > 1:
+        raise SystemExit(
+            f"{arm}: {len(nonzero)} legs carry nonzero depths "
+            f"({[leg['trace'] for leg in nonzero]}); cannot name one MTP leg")
+    if meta.get("force_depth") != "0":
+        raise SystemExit(
+            f"{arm}: no leg carries a nonzero depth but force_depth="
+            f"{meta.get('force_depth')!r}; the MTP leg is missing or drafting "
+            f"never ran")
+    if not scoring:
+        raise SystemExit(f"{arm}: no leg emitted any round")
+    return scoring[-1]
+
+
 def load_legs(arm_dir, warmup):
     """One entry per worker process that emitted decode rounds.
 
@@ -85,14 +126,14 @@ def load_legs(arm_dir, warmup):
     proposing and verifying d drafts.
     """
     legs = []
-    for path in sorted(arm_dir.glob("trace.txt*")):
+    for path in sorted(arm_dir.glob("trace.txt*"), key=trace_pid):
         begin, rounds = parse_trace(path)
         if not rounds:
             continue
         tail = [r for r in rounds if r["round"] > warmup]
         steady = [r for r in tail if r["acc"] == r["d"]]
         legs.append({
-            "trace": path.name, "begin": begin,
+            "trace": path.name, "pid": trace_pid(path), "begin": begin,
             "rounds_total": len(rounds),
             "dropped_warmup": len(rounds) - len(tail),
             "dropped_partial": len(tail) - len(steady),
@@ -139,24 +180,29 @@ def main():
     by_depth_all = defaultdict(list)
     arms = {}
     print(f"{'arm':<14} {'trace':<22} {'N':>4} {'depths':<10} {'acc':>5} "
-          f"{'drop_w':>6} {'drop_p':>6}")
+          f"{'drop_w':>6} {'drop_p':>6}  {'leg':<4}")
     for arm_dir in arm_dirs:
         if not arm_dir.is_dir():
             print(f"skip missing {arm_dir}", file=sys.stderr)
             continue
         legs = load_legs(arm_dir, args.warmup)
+        meta = read_meta(arm_dir)
+        mtp_leg = select_mtp_leg(legs, meta, arm_dir.name)
         score_path = arm_dir / "score.json"
         arms[arm_dir.name] = {
-            "meta": read_meta(arm_dir),
+            "meta": meta,
+            "mtp_leg_pid": mtp_leg["pid"],
+            "mtp_leg_trace": mtp_leg["trace"],
             "score": json.loads(score_path.read_text()) if score_path.exists() else None,
             "legs": [{k: v for k, v in leg.items()
                       if k not in ("steady_rows", "tail_rows")}
                      for leg in legs],
         }
         for leg in legs:
+            tag = "MTP" if leg is mtp_leg else "ref"
             print(f"{arm_dir.name:<14} {leg['trace']:<22} {leg['rounds_total']:>4} "
                   f"{str(leg['depths_seen']):<10} {leg['acc_mean']:>5.2f} "
-                  f"{leg['dropped_warmup']:>6} {leg['dropped_partial']:>6}")
+                  f"{leg['dropped_warmup']:>6} {leg['dropped_partial']:>6}  {tag}")
             for row in leg["tail_rows"]:
                 row["arm"] = arm_dir.name
                 row["trace"] = leg["trace"]

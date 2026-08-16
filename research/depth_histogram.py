@@ -42,14 +42,23 @@ def main():
     args = ap.parse_args()
 
     for arm in args.arms:
-        paths = sorted(glob.glob(os.path.join(args.out_dir, arm, "trace.txt.*")))
+        paths = sorted(glob.glob(os.path.join(args.out_dir, arm, "trace.txt.*")),
+                       key=lambda p: int(p.rsplit(".", 1)[-1]))
         # Legs may share one process (forced-depth arms) or be split across
         # worker PIDs (adaptive arms), so collect from every file.
-        all_legs = [lg for p in paths for lg in legs(p) if lg]
+        all_legs = [(int(p.rsplit(".", 1)[-1]), lg)
+                    for p in paths for lg in legs(p) if lg]
         if not all_legs:
             print(f"{arm}: no rounds found", file=sys.stderr)
             continue
-        rounds = all_legs[-1]
+        # The serial reference leg is all d=0, so a nonzero depth names the MTP
+        # leg outright. Reading the reference leg by accident would silently
+        # report a real MTP arm as a serial control, so say which PID was used.
+        drafting = [(pid, lg) for pid, lg in all_legs if any(d for _, d, _ in lg)]
+        if len(drafting) > 1:
+            sys.exit(f"{arm}: {len(drafting)} legs carry nonzero depths "
+                     f"{[pid for pid, _ in drafting]}; cannot name one MTP leg")
+        pid, rounds = drafting[0] if drafting else all_legs[-1]
         rounds = rounds[args.warmup:]
         hist = Counter(d for _, d, _ in rounds)
         acc_by_d = {}
@@ -57,7 +66,8 @@ def main():
             acc_by_d.setdefault(d, []).append(a)
         n = len(rounds)
         tok = sum(a for _, _, a in rounds) + n
-        print(f"\n=== {arm}  rounds={n}  committed_tokens={tok} ===")
+        print(f"\n=== {arm}  mtp_leg_pid={pid}  rounds={n}  "
+              f"committed_tokens={tok} ===")
         print(f"{'d':>3} {'rounds':>7} {'share':>8} {'mean_acc':>9} {'accept_rate':>12}")
         for d in sorted(hist):
             accs = acc_by_d[d]
