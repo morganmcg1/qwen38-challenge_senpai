@@ -16,27 +16,44 @@ usage: research/accept_profile.py OUT_DIR [--arms a b ...] [--warmup N]
 """
 import argparse
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 ROUND = re.compile(r"mtp-trace: round=(\d+) d=(\d+) acc=(\d+)")
+ROUND_US = re.compile(r"round_us=(\d+)")
+BEGIN_H = re.compile(r"mtp-trace: begin.* h=([0-9.,eE+-]+)")
 
 
-def load(arm_dir, warmup):
-    rounds = []
+def load_legs(arm_dir, warmup):
+    """Split every trace file into legs; a leg restarts at `round=0`.
+
+    Returns (legs, h_texts) where a leg is a list of (idx, d, acc, round_us)
+    and the leading `warmup` rounds have already been dropped.
+    """
+    legs, h_texts = [], []
     for path in sorted(arm_dir.glob("trace.txt.*")):
         per_leg = []
         for line in path.read_text(errors="replace").splitlines():
+            hm = BEGIN_H.search(line)
+            if hm:
+                h_texts.append(hm.group(1))
             m = ROUND.search(line)
             if not m:
                 continue
             idx, d, acc = (int(x) for x in m.groups())
+            us = ROUND_US.search(line)
             if idx == 0 and per_leg:
-                rounds.extend(per_leg[warmup:])
+                legs.append(per_leg[warmup:])
                 per_leg = []
-            per_leg.append((idx, d, acc))
-        rounds.extend(per_leg[warmup:])
-    return rounds
+            per_leg.append((idx, d, acc, int(us.group(1)) if us else 0))
+        if per_leg:
+            legs.append(per_leg[warmup:])
+    return legs, h_texts
+
+
+def load(arm_dir, warmup):
+    legs, _ = load_legs(arm_dir, warmup)
+    return [r for leg in legs for r in leg]
 
 
 def main():
@@ -52,15 +69,18 @@ def main():
 
     for arm in arms:
         arm_dir = args.out_dir / arm
-        rounds = load(arm_dir, args.warmup)
+        legs, h_texts = load_legs(arm_dir, args.warmup)
+        rounds = [r for leg in legs for r in leg]
         if not rounds:
             continue
-        depth_hist = Counter(d for _, d, _ in rounds)
-        acc_hist = Counter(a for _, _, a in rounds)
-        total_d = sum(d for _, d, _ in rounds)
-        total_a = sum(a for _, _, a in rounds)
-        print(f"\n=== {arm}: {len(rounds)} scored rounds "
+        depth_hist = Counter(d for _, d, _, _ in rounds)
+        acc_hist = Counter(a for _, _, a, _ in rounds)
+        total_d = sum(d for _, d, _, _ in rounds)
+        total_a = sum(a for _, _, a, _ in rounds)
+        print(f"\n=== {arm}: {len(rounds)} scored rounds in {len(legs)} leg(s) "
               f"(warmup {args.warmup} dropped per leg) ===")
+        for h in dict.fromkeys(h_texts):
+            print(f"  active h vector: {h}")
         print("  chosen depth histogram: " + ", ".join(
             f"d={d}:{n}" for d, n in sorted(depth_hist.items())))
         print("  accepted-count histogram: " + ", ".join(
@@ -68,11 +88,48 @@ def main():
         print(f"  mean chosen depth = {total_d / len(rounds):.3f}   "
               f"mean accepted drafts = {total_a / len(rounds):.3f}   "
               f"tokens/round = {1 + total_a / len(rounds):.3f}")
+
+        drafting = [r for r in rounds if r[1] > 0]
+        if drafting:
+            above = sum(1 for _, d, _, _ in drafting if d > 4)
+            at = sum(1 for _, d, _, _ in drafting if d == 4)
+            top = max(d for _, d, _, _ in drafting)
+            print(f"  width-wall check: max chosen depth = {top}, "
+                  f"d==4 {at}/{len(drafting)} ({100 * at / len(drafting):.1f}%), "
+                  f"d>4 {above}/{len(drafting)} "
+                  f"({100 * above / len(drafting):.1f}%) -> "
+                  + ("CLIPPED AT 4" if above == 0 else "not clipped at 4"))
+
+        print(f"  realised T(d): {'d':>3} {'N':>6} {'acc/round':>10} "
+              f"{'tokens/round':>13} {'accept rate':>12}")
+        by_depth = defaultdict(list)
+        for _, d, a, _ in rounds:
+            by_depth[d].append(a)
+        for d in sorted(by_depth):
+            accs = by_depth[d]
+            mean_a = sum(accs) / len(accs)
+            rate = mean_a / d if d else float("nan")
+            print(f"  {'':>16} {d:>3} {len(accs):>6} {mean_a:>10.3f} "
+                  f"{1 + mean_a:>13.3f} {rate:>12.4f}")
+
+        for i, leg in enumerate(legs):
+            if len(leg) < 2:
+                continue
+            tail = leg[1:]
+            tok = sum(a for _, _, a, _ in leg) + len(leg)
+            tok_t = sum(a for _, _, a, _ in tail) + len(tail)
+            us = sum(u for _, _, _, u in leg)
+            us_t = sum(u for _, _, _, u in tail)
+            print(f"  leg {i}: rounds={len(leg)} "
+                  f"round_index {leg[0][0]}..{leg[-1][0]} tokens={tok} "
+                  f"s/token={us / tok / 1e6:.6f} "
+                  f"after_first_block s/token={us_t / tok_t / 1e6:.6f}")
+
         print(f"  {'pos':>4} {'reached':>8} {'accepted':>9} {'p_i':>7} "
               f"{'shipped prior':>14}")
         for i in range(8):
-            reached = sum(1 for _, d, a in rounds if d > i and a >= i)
-            ok = sum(1 for _, d, a in rounds if d > i and a > i)
+            reached = sum(1 for _, d, a, _ in rounds if d > i and a >= i)
+            ok = sum(1 for _, d, a, _ in rounds if d > i and a > i)
             if not reached:
                 continue
             prior = 0.85 * 0.98 ** i
