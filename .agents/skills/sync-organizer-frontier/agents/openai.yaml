@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync Qwen Organizer Frontier"
+  short_description: "Safely import Qwen organizer rules and promoted code"
+  default_prompt: "Use $sync-organizer-frontier to update this Senpai repository from the latest Qwen organizer policy and promoted solver while preserving campaign files and remotes."

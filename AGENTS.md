@@ -3,6 +3,18 @@
 This repository is the Swift-only Poolside Laguna XS 2.1 NVFP4 MoE inference
 optimization challenge.
 Use this file as the working contract for coding agents and participants.
+<!-- SENPAI-CAMPAIGN-BEGIN -->
+## Senpai campaign layer
+
+For coordinated research in `morganmcg1/qwen38-challenge_senpai`, read
+[`senpai/program.md`](senpai/program.md) and
+[`senpai/experiment-runbook.md`](senpai/experiment-runbook.md) before assigning
+or running experiments. Use the repository-local `sync-organizer-frontier`
+skill to refresh from Layr-Labs while preserving campaign files and remotes.
+Never run `yukon sync`, `yukon sync --harness-only`, or `yukon reset` in this
+maintained Senpai checkout; those commands are for a plain solver checkout and
+can reset campaign history and repoint `origin`.
+<!-- SENPAI-CAMPAIGN-END -->
 
 ## Goal
 

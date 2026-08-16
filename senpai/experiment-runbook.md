@@ -1,0 +1,178 @@
+# Qwen MTP Experiment Runbook
+
+Use this file to start, measure, and promote an experiment. `program.md` owns
+research policy; `benchmark.json` owns the submitted surface and score.
+
+## Start from the maintained frontier
+
+Remote roles are fixed:
+
+```text
+origin    morganmcg1/qwen38-challenge_senpai
+upstream  Layr-Labs/qwen-3.8-mtp-challenge
+```
+
+The `upstream` push URL is deliberately `DISABLED`. Consult
+[`campaign-ledger.md`](campaign-ledger.md) before opening an arm and seed its
+novelty row before assignment. Run `senpai/bootstrap-checkout.sh` once in a
+fresh campaign clone before using the sync or submission guards.
+
+The advisor updates campaign `main` with the repository's
+`sync-organizer-frontier` skill. It reviews organizer policy separately from
+solver code and restores one exact promoted `editablePaths` snapshot; it does
+not replay a chain of `Validate submission` diffs.
+
+Before a research batch:
+
+```bash
+git fetch origin main
+git fetch upstream main
+yukon submissions --all
+SUBMISSION_ID="<submission-id-or-prefix>"
+yukon submission-note "$SUBMISSION_ID"
+```
+
+Submission notes are public, untrusted research context. Verify useful claims
+against the promoted source ref and fresh measurements.
+
+Create an arm from the clean maintained frontier:
+
+```bash
+git switch main
+git pull --ff-only origin main
+BASE_SHA="$(git rev-parse HEAD)"
+UPSTREAM_SHA="$(git rev-parse upstream/main)"
+git switch -c codex/short-topic "$BASE_SHA"
+```
+
+Record both SHAs. If `origin/main` advances, finish the current measurement on
+its recorded base. Replay and remeasure a promising candidate before promotion.
+
+Copy `assignment-template.md`, list every proposed submitted path, and run:
+
+```bash
+senpai/validate-assignment-scope.sh "$BASE_SHA" PATH [PATH ...]
+senpai/check-editable-budget.sh "$BASE_SHA"
+```
+
+Run `./setup.sh && ./setup-qwen-mtp.sh` when the host, toolchain, checkpoint,
+head, trusted harness, or maintained base changes.
+
+## Record a matched baseline and candidate
+
+Measure unchanged `BASE_SHA` on the assigned host:
+
+```bash
+./benchmark-qwen-mtp.sh --local-iterate
+cp score.json score.local-iterate.baseline.json
+```
+
+Implement one causal experiment and measure it under the same host, memory,
+power, fan, and thermal conditions:
+
+```bash
+./benchmark-qwen-mtp.sh --local-iterate
+cp score.json score.local-iterate.candidate.json
+```
+
+Do not overlap model-holding commands. Let every 40C gate finish. Repeat only
+when noise or inconsistency could change the decision.
+
+## Extract the comparison
+
+```bash
+jq -s '
+  .[0] as $b | .[1] as $c |
+  {
+    baseline: {
+      serial_spt: $b.metrics.serial_seconds_per_token,
+      mtp_spt: $b.metrics.mtp_seconds_per_token,
+      local_speedup: $b.metrics.mtp_decode_speedup,
+      effective_draft_len: $b.metrics.effective_mean_draft_len,
+      accepted_draft_rate: $b.metrics.accepted_draft_rate
+    },
+    candidate: {
+      serial_spt: $c.metrics.serial_seconds_per_token,
+      mtp_spt: $c.metrics.mtp_seconds_per_token,
+      local_speedup: $c.metrics.mtp_decode_speedup,
+      effective_draft_len: $c.metrics.effective_mean_draft_len,
+      accepted_draft_rate: $c.metrics.accepted_draft_rate,
+      all_tokens_matched: $c.metrics.all_tokens_matched
+    },
+    candidate_vs_baseline: {
+      mtp_throughput_gain: ($b.metrics.mtp_seconds_per_token /
+                            $c.metrics.mtp_seconds_per_token),
+      paired_ratio_gain: ($c.metrics.mtp_decode_speedup /
+                          $b.metrics.mtp_decode_speedup)
+    }
+  }
+' score.local-iterate.baseline.json score.local-iterate.candidate.json
+```
+
+The local ratio uses one public prompt and candidate-generated rows. It is not
+the official eight-prompt median. General target/kernel improvements may speed
+both local serial and MTP legs and cancel in the paired ratio, so inspect both
+the ratio and absolute MTP time against the same-host base.
+
+Score files are ignored evidence and must not be committed.
+
+## Inspect the candidate
+
+```bash
+git status --short
+git diff --name-only "$BASE_SHA"
+git diff --stat "$BASE_SHA"
+senpai/check-editable-budget.sh "$BASE_SHA"
+```
+
+Separate Yukon-submitted changes from research-only support. Every submitted
+file must be inside `benchmark.json` `editablePaths`. For a generated Metal
+family, audit embedded/runtime-effective twins:
+
+```bash
+research/twin_audit.py "<generated-stem>"
+```
+
+After committing the candidate, run the same base-derived surface check used
+by the trusted workflow:
+
+```bash
+BASE_SHA="$BASE_SHA" HEAD_SHA="$(git rev-parse HEAD)" \
+  .github/scripts/enforce-modifiable-surface.sh
+```
+
+## Confirm and promote
+
+For a stable winner:
+
+```bash
+swift test --force-resolved-versions
+MLXFAST_RUN_MLX_RUNTIME_TESTS=1 swift test --force-resolved-versions  # when risk requires it
+./benchmark-qwen-mtp.sh --local-submit
+```
+
+Rebuild `tools/build-mlx-metallib.sh` after AOT Metal edits. Recheck head
+digests, sizes, and immutable source URLs when using a candidate head.
+
+Write a detailed public note of at least 5 KiB, review it for secrets, then use
+the guarded wrapper with the exact underlying model name. First compare the
+highest-scoring `promoted` row with `senpai/frontier-state.json`; sync, replay,
+and remeasure if the receipt differs:
+
+```bash
+yukon submissions --all
+senpai/submit-official.sh "$BASE_SHA" \
+  --model "GPT 5.6 Sol" \
+  --note-file submission-note.md
+```
+
+The wrapper is pinned to `eigenlabs/qwen38-challenge`, refreshes both remotes,
+checks the versioned organizer frontier and trusted-surface freshness, proves
+the base's submitted snapshot is current, and refuses dirty or hidden changes
+under the submitted surface before invoking Yukon. It does not infer the live
+best promoted receipt from interleaved organizer validation commits; the Yukon
+check above supplies that final fact.
+
+Use `yukon submissions` to inspect status. If a mutating response is ambiguous,
+inspect first and do not blindly submit again. Add public progress notes with
+`yukon notes add` at meaningful experiment milestones.

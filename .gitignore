@@ -59,3 +59,14 @@ correctness_prompts/*gpqa_reference_cases*.json
 
 # Local-only working docs (not part of the benchmark)
 local-docs/
+# SENPAI-CAMPAIGN-BEGIN
+# Senpai-local credentials and generated Python caches
+.env
+.env.*
+!.env.example
+senpai/.env*
+senpai/*.credentials.json
+senpai/submission-note*.md
+__pycache__/
+.mlxfast-local-qwen-mtp/
+# SENPAI-CAMPAIGN-END
