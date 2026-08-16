@@ -80,3 +80,4 @@ research/analysis-*.json
 research/costfit-*.json
 research/dominance-*.json
 wandb/
+research/feasibility-*.json
