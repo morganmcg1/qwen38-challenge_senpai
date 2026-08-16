@@ -239,11 +239,65 @@ Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`; URLs are
 | --- | --- | ---: | --- | --- |
 | A | base cap 8, scouting | 64 | `weg12jxu` | — |
 | C | base cap 8, gate 3 | 256 | `c8kz6b7t` | `a2f9b0c5-9f49-4301-928c-db0b0b09c9de` |
-| D | **cap 7, gate 3 (winner)** | 256 | `44zuadg5` | `4a95995d-fcc1-4ea1-a86f-9e6687a91c43` |
+| D | **cap 7, gate 3 (winner, traced)** | 256 | `44zuadg5` | `4a95995d-fcc1-4ea1-a86f-9e6687a91c43` |
 | E | cap 6, gate 3 | 256 | `30fb1avw` | `bcab2176-732c-42e0-99fc-4765508fdbff` |
 | F | cap 7, gate 1 | 256 | `m7t6m9wv` | `561c47ca-568c-43ab-bce0-3c3422b3fc8f` |
+| **G** | **cap 7, gate 3 — CONFIRMATION, untraced** | 256 | **`z49fgehs`** | `e8cd0731-5d6b-4812-ad54-7466ca2bb7f6` |
 
 Run B failed and is documented below.
+
+### Run G — confirmation of the exact submitted code
+
+Run G re-measures the winner with the trace seam **reverted** and
+`MLX_QWEN_MTP_TRACE` unset, so it measures byte-for-byte the code being
+submitted. It confirms the win and comes out slightly *better* than the traced
+arm:
+
+| metric | D (traced) | **G (untraced, submitted code)** |
+| :-- | --: | --: |
+| serial s/token | 0.08117573847994208 | 0.0814559725113213 |
+| MTP s/token | 0.040059609804302454 | **0.04004218755289912** |
+| local serial-relative speedup | 2.0263736685529 | **2.03425380802962** |
+| accepted draft rate | 0.995475113122172 | 0.995475113122172 |
+| effective mean draft length | 6.138888888888889 | 6.138888888888889 |
+| rounds | 36 | 36 |
+| all tokens matched / divergences | true / 0 | **true / 0** |
+| drift tripwire | passed | **passed** |
+| head provenance sha256 | pinned | `05a8613e…99cb2863` (pinned) |
+
+`accepted_draft_rate`, `effective_mean_draft_len` and round count are **identical
+to four decimal places**, which is the expected signature of a deterministic
+policy: the trace seam changed timing only, never behaviour. The +0.39 % is the
+trace write-out cost leaving the MTP leg (only drafting rounds emit trace lines,
+so the trace penalised the candidate leg and not the serial control) — i.e. the
+diagnostic seam was *understating* the win, not manufacturing it.
+
+**The honest headline delta remains the matched traced pair, C → D = +2.61 %**,
+because that is the only pair measured under identical instrumentation. Run G's
+2.0343 must not be differenced against the traced base.
+
+### Parent-side `block_request_seconds` (FB4's actual ask, now direct)
+
+`research/capture-cli.sh` retained the CLI reports Run G's scratch directory
+would otherwise have deleted, giving the parent-side array directly rather than
+via the worker-side proxy:
+
+| leg | blocks | decode_seconds | first | p50 after first | max after first | **max / p50** | first / p50 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| serial control | 256 | 20.852728962898254 | 0.110436 | 0.065024 | 0.106855 | **1.6433** | 1.6984 |
+| MTP candidate | 36 | 10.250800013542175 | 0.177513 | **0.189796** | 0.190337 | **1.0028** | 0.9353 |
+
+Two things worth recording:
+
+1. **The worker-side proxy is validated a second time.** Run D's worker-side
+   `p50_after_first` was 189.7 ms; Run G's parent-side value is **189.796 ms** —
+   0.05 % apart. `round_us` can be trusted as a stand-in for
+   `block_request_seconds` in the traced arms.
+2. **The serial control is the ragged leg, not the candidate.** Its max/p50 is
+   **1.6433** against the candidate's **1.0028**. Any block-latency guardrail
+   tuned on candidate behaviour has enormous headroom here; the candidate is by
+   far the more uniform of the two legs. Both are far under the 4.0×
+   threshold.
 
 ### Block-latency guardrail (FB4 / FB5 ask), worker-side `round_us`, after first
 
