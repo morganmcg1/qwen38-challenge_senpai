@@ -228,3 +228,49 @@ Control absolute numbers (seconds/call in us, `gbps_nominal`):
 Note the level: at M=8 every shape sits at **78-102 GB/s nominal against a
 measured 226.9 GB/s achievable**, i.e. 35-45% of peak. Read without the stream
 correction, that alone is not a bandwidth-saturated kernel.
+
+## Arm 1 result: cut arithmetic, hold bytes constant
+
+Tag `e8-arm1`, head `9031269`, W&B run `pfd7wo6v`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/pfd7wo6v).
+Session peak stream bandwidth 226.7 GB/s, within 0.1% of the control session.
+
+`python3 research/e8_compare.py e8-control e8-arm1`, ratio = arm1 / control
+seconds per call (lower = arm1 faster):
+
+| shape | M=4 s/call | M=4 GB/s | M=4 ratio | M=8 s/call | M=8 GB/s | M=8 ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| full_attn.o_proj | 83.26 | 212.5 | 0.600 | 122.75 | 144.1 | 0.545 |
+| full_attn.qkv_proj_fused | 186.91 | 220.9 | 0.741 | 230.82 | 178.9 | 0.510 |
+| head.compact_draft_vocab | 1160.48 | 244.0 | 0.803 | 1345.98 | 210.4 | 0.474 |
+| head.lm_head | 2880.06 | 248.3 | 0.807 | 3346.40 | 213.7 | 0.475 |
+| linear_attn.in_proj_fused_qkvzba | 227.45 | 208.7 | 0.803 | 258.40 | 183.7 | 0.502 |
+| linear_attn.out_proj | 83.08 | 213.0 | 0.605 | 123.42 | 143.4 | 0.550 |
+| mlp.down | 237.25 | 211.3 | 0.723 | 295.69 | 169.6 | 0.518 |
+| mlp.gate_up_fused | 423.98 | 236.5 | 0.778 | 500.92 | 200.2 | 0.485 |
+
+Median ratio **0.760** at M=4 (range 0.600-0.807) and **0.506** at M=8
+(range 0.474-0.550).
+
+Verdict for this arm: the kernel is **ALU-bound at M=8** and ALU-influenced at
+M=4. The measured noise floor is +/-1.2%; these are 24% and 49% effects, far
+outside it. The bytes moved are identical by construction (AIR device-load
+count 7 and loop trip counts unchanged, see the DCE section), so a
+bandwidth-bound kernel was required to be flat here and was not.
+
+Three things sharpen it:
+
+1. The effect **grows with M**. 1.32x speedup at M=4, 1.98x at M=8. Under a
+   bandwidth-bound model, more verify rows amortize the same weight stream over
+   more arithmetic and the kernel should become *more* bandwidth-bound with M,
+   so the arm-1 effect should shrink. It does the opposite.
+2. Arm 1 lands on the wall. At M=8 the head shapes reach 210-214 GB/s nominal,
+   which is **93-94% of the 226.7 GB/s measured achievable peak**. Removing
+   arithmetic moves the kernel from 44% of peak to 94% of peak. That is the
+   signature of an ALU-limited kernel with roughly 2x of unused bandwidth
+   headroom, not of a kernel already limited by DRAM.
+3. The win is smaller than the lane-op cut. Whole-kernel lane ops fall about
+   688 -> 256 (2.7x, see the AIR accounting) but time falls only 1.98x. Some
+   fixed cost -- address arithmetic, the surviving loads, the simdgroup
+   reduction, launch and tail -- does not scale with the ALU cut. ALU is the
+   dominant term at M=8 but not the only one.
