@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Research-only (qwen38-r1-e11-depth-lever-showdown): run one or more 512-token
+# --local-iterate arms from prebuilt, hash-pinned binary pairs.
+#
+#   research/e11-run.sh LABEL=BINARM [LABEL=BINARM ...]
+#
+# e.g. research/e11-run.sh C1=C C2=C   (the noise-floor pair: same binary twice)
+#      research/e11-run.sh H=H K=K
+#
+# The label names the MEASUREMENT, the binary names the BUILD, so a repeat of
+# the control is expressed without pretending it is a different build. Every
+# gate benchmark-qwen-mtp.sh owns (drift tripwire, orphan scan, run lock, 40C
+# cool gate, report seals) runs unmodified.
+#
+# Hashes are re-verified at install time and recorded per label, because the
+# whole experiment collapses if two arms that must differ ran the same bytes.
+set -uo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+repo_root="${PWD}"
+bins_root="${repo_root}/.mlxfast-private/e11/bins"
+runs_root="${repo_root}/.mlxfast-private/e11/runs"
+head_dir="${E11_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared}"
+tokens="${E11_TOKENS:-512}"
+
+# The h-curve arms must prove the DEFAULT flipped, so no research override may
+# be live for any arm; a leaked variable would make H unfalsifiable.
+unset MLX_QWEN_MTP_H_VECTOR MLX_QWEN_MTP_FORCE_DEPTH
+
+status=0
+for spec in "$@"; do
+  label="${spec%%=*}"
+  arm="${spec#*=}"
+  src="${bins_root}/${arm}"
+  out="${runs_root}/${label}"
+
+  if [[ ! -f "${src}/sha256.txt" ]]; then
+    echo "e11-run: no built binaries for arm ${arm} (${src})" >&2
+    status=1; break
+  fi
+
+  rm -rf "${out}"; mkdir -p "${out}/reports"
+
+  install -m 755 "${src}/mlxfast-swift" "${repo_root}/.build/release/mlxfast-swift"
+  install -m 755 "${src}/mlxfast-runtime-worker" \
+    "${repo_root}/.build-worker/release/mlxfast-runtime-worker"
+
+  installed_cli="$(shasum -a 256 "${repo_root}/.build/release/mlxfast-swift" | cut -d' ' -f1)"
+  installed_worker="$(shasum -a 256 "${repo_root}/.build-worker/release/mlxfast-runtime-worker" | cut -d' ' -f1)"
+  want_cli="$(awk '$2=="mlxfast-swift"{print $1}' "${src}/sha256.txt")"
+  want_worker="$(awk '$2=="mlxfast-runtime-worker"{print $1}' "${src}/sha256.txt")"
+  if [[ "${installed_cli}" != "${want_cli}" || "${installed_worker}" != "${want_worker}" ]]; then
+    echo "e11-run: ${label}: installed hashes do not match arm ${arm}" >&2
+    status=1; break
+  fi
+
+  export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
+  export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
+  export MLXFAST_SCORE_PATH="${out}/score.json"
+  export MLXFAST_CAPTURE_REAL_BIN="${repo_root}/.build/release/mlxfast-swift"
+  export MLXFAST_CAPTURE_DIR="${out}/reports"
+  export MLXFAST_SWIFT_BIN="${repo_root}/research/capture-cli.sh"
+  # The worker sandbox denies file-write*, and the parent swallows worker
+  # stderr, so the phase trace needs the documented local relaxation.
+  export MLX_QWEN_MTP_TRACE=1
+  export MLX_QWEN_MTP_TRACE_PATH="${out}/trace.txt"
+  export MLXFAST_NO_SANDBOX=1
+
+  {
+    echo "label=${label}"
+    echo "arm=${arm}"
+    echo "tokens=${tokens}"
+    echo "head_dir=${head_dir}"
+    echo "cli_sha256=${installed_cli}"
+    echo "worker_sha256=${installed_worker}"
+    echo "source_sha256=$(awk '$2=="source.swift"{print $1}' "${src}/sha256.txt")"
+    echo "head_sha=$(git rev-parse HEAD)"
+    echo "dirty=$(git status --porcelain | wc -l | tr -d ' ')"
+    echo "mlx_qwen_env=$(env | grep -c '^MLX_QWEN_MTP_H_VECTOR\|^MLX_QWEN_MTP_FORCE_DEPTH')"
+    echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } > "${out}/meta.txt"
+
+  echo "=== e11-run: ${label} (build ${arm}) ==="
+  ./benchmark-qwen-mtp.sh --local-iterate
+  rc=$?
+  {
+    echo "exit=${rc}"
+    echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } >> "${out}/meta.txt"
+  if ((rc != 0)); then
+    echo "e11-run: ${label}: benchmark exited ${rc}" >&2
+    status=1; break
+  fi
+done
+exit "${status}"

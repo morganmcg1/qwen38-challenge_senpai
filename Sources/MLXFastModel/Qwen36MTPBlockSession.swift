@@ -477,10 +477,11 @@ public final class Qwen36MTPBlockSession {
             let tBeginDone = DispatchTime.now().uptimeNanoseconds
             // Records which curve the leg actually ran, so an override that
             // failed to reach the worker reads as a failed override rather
-            // than as a policy that made no difference.
-            let hCurve = Self.overrideHeadStepCostRatioByDepth
-                ?? [Self.headStepCostRatio]
-            let hText = hCurve.map { "\($0)" }.joined(separator: ",")
+            // than as a policy that made no difference. Reads the same
+            // accessor the policy reads, so the trace cannot describe a
+            // curve the depth choice did not use.
+            let hText = Self.headStepCostRatioByDepth
+                .map { "\($0)" }.joined(separator: ",")
             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
                 + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
@@ -647,7 +648,30 @@ public final class Qwen36MTPBlockSession {
     /// honest fit FOR THIS ROLLBACK MECHANISM; the wasted-work term a
     /// reject does keep (the drafted head steps past the break) is already
     /// inside the marginal the rule prices.
-    private static let headStepCostRatio = 0.20
+    ///
+    /// FIFTH FIT — per depth, and the scalar is retired. Forced-depth arms
+    /// d0..d8 on the declared affine-4/g64 head (N = 1778 pooled depth-0
+    /// rounds for C(0); 61/60/36/32 full-accept rounds at d3/d4/d6/d8) put
+    /// the marginals at the vector below, fractions of a zero-draft round.
+    /// The scalar 0.20 is ~2.5x TOO HIGH at d = 1..2 (under-drafts the cheap
+    /// prefix) and ~1.4-2x TOO LOW at d >= 4 (over-drafts the plateau); its
+    /// mean, 0.2562, is close to 0.20, which is why a scalar survived
+    /// end-to-end tuning while being badly mis-shaped. The knee sits at
+    /// d = 3 (verify width 4) and the two largest steps, d = 4 (width 5) and
+    /// d = 8 (width 9), are exactly where the affine-4 g64 crossrow kernel
+    /// adds a weight pass (ceil(M / IPG), IPG = ceil(M / ceil(M / 4)),
+    /// quantized.h:1051). Measured -1.93% end-to-end seconds/token against
+    /// the scalar over a matched 512-token pair.
+    ///
+    /// HEAD-DEPENDENT, by construction: only the head-step term H moves
+    /// between heads, and it moves ~3.5x between the organizer-pinned bf16
+    /// head and the manifest-declared affine-4/g64 head. This vector is
+    /// fitted against the DECLARED head, which is the head the candidate leg
+    /// runs (`mtp-head.manifest.json`). Re-fit it after any head change.
+    private static let defaultHeadStepCostRatioByDepth: [Double] = [
+        0.0842, 0.0775, 0.2426, 0.3754,
+        0.2919, 0.3000, 0.2870, 0.3909,
+    ]
 
     /// H / V(1) for the resident head, measured once per process in the warm
     /// phase by `probeResidentHeadCost`. `nil` until the probe runs. Reported
@@ -656,10 +680,10 @@ public final class Qwen36MTPBlockSession {
     nonisolated(unsafe) private static var residentHeadStepRatio: Double?
 
     /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
-    /// submission. Prices drafts from a supplied per-depth marginal vector
-    /// instead of the scalar above, so a baseline arm and a candidate arm can
-    /// run from ONE binary at matched temperature. Unset — the shipped case —
-    /// leaves `costModelDepth` on the scalar rule, byte-for-byte. Requires
+    /// submission. Substitutes the default curve so a baseline arm and a
+    /// candidate arm can run from ONE binary at matched temperature; a flat
+    /// vector reproduces the retired scalar rule term for term. Unset — the
+    /// shipped case — prices drafts from the measured curve above. Requires
     /// `Qwen36MTPLimits.maxDepth` entries; anything else is ignored rather
     /// than padded, so a typo cannot silently reshape the schedule.
     private static let overrideHeadStepCostRatioByDepth: [Double]? = {
@@ -673,6 +697,13 @@ public final class Qwen36MTPBlockSession {
         else { return nil }
         return parsed
     }()
+
+    /// The curve the schedule actually prices with. Single source for both the
+    /// policy and the trace, so the reported `h=` can never disagree with the
+    /// rule that ran.
+    private static var headStepCostRatioByDepth: [Double] {
+        overrideHeadStepCostRatioByDepth ?? defaultHeadStepCostRatioByDepth
+    }
 
     private static func adoptResidentHeadStepRatio(_ ratio: Double) {
         guard ratio.isFinite, ratio > 0 else { return }
@@ -801,10 +832,11 @@ public final class Qwen36MTPBlockSession {
             return Swift.min(
                 Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth), forced)
         }
-        if let measured = Self.overrideHeadStepCostRatioByDepth {
-            return instrumentedCostModelDepth(
-                offeredDepth: offeredDepth, h: measured)
-        }
+        // Round cost after `d` steps is `1 + cumH`, so the extend test
+        // `f(d+1) < f(d)` is `reach > h[d] * (1 + expected) / (1 + cumH)`. A
+        // flat vector reduces this to the retired scalar rule term by term,
+        // which is what lets an A/B pair run from one binary.
+        let h = Self.headStepCostRatioByDepth
         // The width wall binds the SINGLE-CALL verify; a qualifying
         // full-accept streak opens the segmented cap (the round then feeds
         // the target <= 5-row segments, never a wider launch). Any reject
@@ -818,43 +850,6 @@ public final class Qwen36MTPBlockSession {
             traceWidthCap = widthCap
             traceEMAIn = positionAcceptEMA
         }
-        let cap = Swift.min(
-            Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
-            widthCap)
-        guard cap > 0 else { return 0 }
-        let h = Self.headStepCostRatio
-        var reach = 1.0
-        var expected = 0.0
-        var depth = 0
-        while depth < cap {
-            var p = positionAcceptEMA[depth]
-            if depth == 0, let tail = pendingTop2, tail.1.count >= 2 {
-                let margin = tail.1[0] - tail.1[1]
-                let conf = 1.0 / (1.0 + exp(-margin / 2.0))
-                p = Swift.min(p, conf)
-            }
-            reach *= p
-            let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
-            guard reach > threshold else { break }
-            expected += reach
-            depth += 1
-        }
-        return depth
-    }
-
-    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
-    /// submission. The same greedy walk with the flat `h` generalised to a
-    /// per-depth vector: round cost after `d` steps is `1 + cumH` rather than
-    /// `1 + d*h`, so the extend test `f(d+1) < f(d)` becomes
-    /// `reach > h[d] * (1 + expected) / (1 + cumH)`. A flat vector reduces to
-    /// the shipped rule term by term, which is what lets both A/B arms run
-    /// from one binary. Reachable only via `MLX_QWEN_MTP_H_VECTOR`.
-    private func instrumentedCostModelDepth(
-        offeredDepth: Int, h: [Double]
-    ) -> Int {
-        let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
-            ? Self.segmentedVerifyDepthCap
-            : Self.sdpaWidthWallDepthCap
         let cap = Swift.min(
             Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
             widthCap)
