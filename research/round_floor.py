@@ -123,18 +123,62 @@ GATED_DELTA_SOURCE = """
 """
 
 
-def timeit(fn, reps, warmup=3):
+INNER = 16
+# Distinct weight copies per component. Consecutive calls rotate through them so
+# a small weight cannot sit in cache across the back-to-back batch; the scored
+# round reads a different layer's weights on every one of its calls.
+WEIGHT_COPIES = 2
+
+
+def _median(samples):
+    samples.sort()
+    return samples[len(samples) // 2]
+
+
+def _release():
+    for name in ("clear_cache", "reset_peak_memory"):
+        fn = getattr(mx, name, None)
+        if fn is not None:
+            fn()
+
+
+def timeit_isolated(fn, reps, warmup=3):
+    """One submit + one sync per call.
+
+    At decode widths most kernels are far smaller than a command-buffer round
+    trip, so this over-charges them. It is reported only as a per-dispatch
+    overhead diagnostic, never summed into a floor.
+    """
     for _ in range(warmup):
-        mx.eval(fn())
+        mx.eval(fn(0))
     mx.synchronize()
     samples = []
     for _ in range(reps):
         t0 = time.perf_counter()
-        mx.eval(fn())
+        mx.eval(fn(0))
         mx.synchronize()
         samples.append(time.perf_counter() - t0)
-    samples.sort()
-    return samples[len(samples) // 2]
+    return _median(samples)
+
+
+def timeit_amortized(fn, reps, inner=INNER, warmup=2):
+    """`inner` independent calls inside one submit, divided by `inner`.
+
+    `fn(i)` must build a graph that differs by `i` so MLX cannot common-
+    subexpression the copies away. This is the floor an ideal scheduler
+    reaches: every kernel is charged, no host stall or sync is charged, and
+    independent work may overlap exactly as it would under a good submission.
+    """
+    for _ in range(warmup):
+        mx.eval([fn(i) for i in range(inner)])
+    mx.synchronize()
+    samples = []
+    for _ in range(reps):
+        t0 = time.perf_counter()
+        mx.eval([fn(i) for i in range(inner)])
+        mx.synchronize()
+        samples.append((time.perf_counter() - t0) / inner)
+    return _median(samples)
 
 
 def make_qlinear(out_features, in_features):
@@ -142,12 +186,20 @@ def make_qlinear(out_features, in_features):
     return mx.quantize(w, group_size=QGROUP, bits=QBITS)
 
 
-def qmm_fn(x, packed):
-    w, scales, biases = packed
+def qbank(out_features, in_features, copies=WEIGHT_COPIES):
+    return [make_qlinear(out_features, in_features) for _ in range(copies)]
 
-    def run():
+
+def inputs(shape, dtype=mx.bfloat16, n=INNER, uniform=False):
+    gen = mx.random.uniform if uniform else mx.random.normal
+    return [gen(shape=shape).astype(dtype) for _ in range(n)]
+
+
+def qmm_fn(xs, bank):
+    def run(i):
+        w, scales, biases = bank[i % len(bank)]
         return mx.quantized_matmul(
-            x, w, scales, biases, transpose=True, group_size=QGROUP, bits=QBITS
+            xs[i % len(xs)], w, scales, biases, transpose=True, group_size=QGROUP, bits=QBITS
         )
 
     return run
@@ -158,16 +210,22 @@ def qweight_bytes(out_features, in_features):
 
 
 def measure_machine_balance(reps):
-    """Measure BW_eff from a pure weight-streaming qmv and FLOPS_eff from a wide GEMM."""
-    lm = make_qlinear(VOCAB, H)
-    x1 = mx.random.normal([1, 1, H]).astype(mx.bfloat16)
-    t_bw = timeit(qmm_fn(x1, lm), reps)
-    bw_eff = qweight_bytes(VOCAB, H) / t_bw
+    """Measure BW_eff from a pure weight-streaming qmv and FLOPS_eff from a wide GEMM.
 
-    wide = make_qlinear(INTERMEDIATE, H)
-    xw = mx.random.normal([1, 512, H]).astype(mx.bfloat16)
-    t_fl = timeit(qmm_fn(xw, wide), reps)
+    Both probes use the amortized path so the anchors describe the machine, not
+    the command-buffer round trip.
+    """
+    lm = qbank(VOCAB, H, copies=1)
+    t_bw = timeit_amortized(qmm_fn(inputs([1, 1, H]), lm), reps)
+    bw_eff = qweight_bytes(VOCAB, H) / t_bw
+    del lm
+    _release()
+
+    wide = qbank(INTERMEDIATE, H, copies=1)
+    t_fl = timeit_amortized(qmm_fn(inputs([1, 512, H]), wide), reps)
     flops_eff = (2.0 * 512 * H * INTERMEDIATE) / t_fl
+    del wide
+    _release()
 
     return {
         "bw_eff_bytes_per_s": bw_eff,
@@ -185,24 +243,29 @@ def build_components(width, kv_len, depth, reps):
     comps = []
     M = width
 
-    def record(name, count, fn, byts, flops):
-        sec = timeit(fn, reps)
-        comps.append(
-            {
-                "component": name,
-                "calls_per_round": count,
-                "per_call_seconds": sec,
-                "measured_total_seconds": sec * count,
-                "bytes_per_call": byts,
-                "flops_per_call": flops,
-            }
-        )
+    def record(name, count, fn, byts, flops, inner=INNER, note=None):
+        sec = timeit_amortized(fn, reps, inner=inner)
+        iso = timeit_isolated(fn, reps)
+        entry = {
+            "component": name,
+            "calls_per_round": count,
+            "per_call_seconds": sec,
+            "per_call_seconds_isolated": iso,
+            "dispatch_overhead_seconds": iso - sec,
+            "measured_total_seconds": sec * count,
+            "bytes_per_call": byts,
+            "flops_per_call": flops,
+        }
+        if note:
+            entry["note"] = note
+        comps.append(entry)
+        _release()
 
-    xM = mx.random.normal([1, M, H]).astype(mx.bfloat16)
-    x1 = mx.random.normal([1, 1, H]).astype(mx.bfloat16)
+    xM = inputs([1, M, H])
+    x1 = inputs([1, 1, H])
 
     # ---- target verify pass, once per round at width M -----------------
-    in_proj = make_qlinear(FUSED_IN_PROJ_OUT, H)
+    in_proj = qbank(FUSED_IN_PROJ_OUT, H)
     record(
         "verify:lin_attn:in_proj_fused_qkvzba",
         N_LINEAR_LAYERS,
@@ -211,12 +274,15 @@ def build_components(width, kv_len, depth, reps):
         2 * M * H * FUSED_IN_PROJ_OUT,
     )
 
-    conv_w = mx.random.normal([CONV_DIM, CONV_KERNEL, 1]).astype(mx.bfloat16)
-    conv_x = mx.random.normal([1, M + CONV_KERNEL - 1, CONV_DIM]).astype(mx.bfloat16)
+    conv_w = [
+        mx.random.normal(shape=[CONV_DIM, CONV_KERNEL, 1]).astype(mx.bfloat16)
+        for _ in range(WEIGHT_COPIES)
+    ]
+    conv_x = inputs([1, M + CONV_KERNEL - 1, CONV_DIM])
     record(
         "verify:lin_attn:conv1d_depthwise_k4",
         N_LINEAR_LAYERS,
-        lambda: mx.conv1d(conv_x, conv_w, groups=CONV_DIM),
+        lambda i: mx.conv1d(conv_x[i % INNER], conv_w[i % WEIGHT_COPIES], groups=CONV_DIM),
         CONV_DIM * CONV_KERNEL * 2 + (M + CONV_KERNEL - 1) * CONV_DIM * 2,
         2 * M * CONV_DIM * CONV_KERNEL,
     )
@@ -227,18 +293,19 @@ def build_components(width, kv_len, depth, reps):
         output_names=["y", "state_out"],
         source=GATED_DELTA_SOURCE,
     )
-    qq = mx.random.normal([1, M, LINEAR_KEY_HEADS, LINEAR_KEY_HEAD_DIM]).astype(mx.bfloat16)
-    kk = mx.random.normal([1, M, LINEAR_KEY_HEADS, LINEAR_KEY_HEAD_DIM]).astype(mx.bfloat16)
-    vv = mx.random.normal([1, M, LINEAR_VALUE_HEADS, LINEAR_VALUE_HEAD_DIM]).astype(mx.bfloat16)
-    gg = mx.random.uniform(shape=[1, M, LINEAR_VALUE_HEADS]).astype(mx.float32)
-    bb = mx.random.uniform(shape=[1, M, LINEAR_VALUE_HEADS]).astype(mx.float32)
-    st = mx.zeros(
-        [1, LINEAR_VALUE_HEADS, LINEAR_VALUE_HEAD_DIM, LINEAR_KEY_HEAD_DIM], dtype=mx.float32
-    )
+    qq = inputs([1, M, LINEAR_KEY_HEADS, LINEAR_KEY_HEAD_DIM])
+    kk = inputs([1, M, LINEAR_KEY_HEADS, LINEAR_KEY_HEAD_DIM])
+    vv = inputs([1, M, LINEAR_VALUE_HEADS, LINEAR_VALUE_HEAD_DIM])
+    gg = inputs([1, M, LINEAR_VALUE_HEADS], dtype=mx.float32, uniform=True)
+    bb = inputs([1, M, LINEAR_VALUE_HEADS], dtype=mx.float32, uniform=True)
+    state_shape = [1, LINEAR_VALUE_HEADS, LINEAR_VALUE_HEAD_DIM, LINEAR_KEY_HEAD_DIM]
+    st = [mx.zeros(state_shape, dtype=mx.float32) for _ in range(WEIGHT_COPIES)]
+    tarr = mx.array(M)
 
-    def delta():
+    def delta(i):
+        j = i % INNER
         return kernel(
-            inputs=[qq, kk, vv, gg, bb, st, mx.array(M)],
+            inputs=[qq[j], kk[j], vv[j], gg[j], bb[j], st[i % WEIGHT_COPIES], tarr],
             template=[
                 ("InT", mx.bfloat16),
                 ("StT", mx.float32),
@@ -249,7 +316,7 @@ def build_components(width, kv_len, depth, reps):
             ],
             grid=(32, LINEAR_VALUE_HEAD_DIM, LINEAR_VALUE_HEADS),
             threadgroup=(32, 4, 1),
-            output_shapes=[[1, M, LINEAR_VALUE_HEADS, LINEAR_VALUE_HEAD_DIM], st.shape],
+            output_shapes=[[1, M, LINEAR_VALUE_HEADS, LINEAR_VALUE_HEAD_DIM], state_shape],
             output_dtypes=[mx.bfloat16, mx.float32],
         )
 
@@ -261,8 +328,8 @@ def build_components(width, kv_len, depth, reps):
         M * LINEAR_VALUE_HEADS * LINEAR_VALUE_HEAD_DIM * LINEAR_KEY_HEAD_DIM * 4 * 2,
     )
 
-    lin_out = make_qlinear(H, VALUE_DIM)
-    xv = mx.random.normal([1, M, VALUE_DIM]).astype(mx.bfloat16)
+    lin_out = qbank(H, VALUE_DIM)
+    xv = inputs([1, M, VALUE_DIM])
     record(
         "verify:lin_attn:out_proj",
         N_LINEAR_LAYERS,
@@ -271,38 +338,49 @@ def build_components(width, kv_len, depth, reps):
         2 * M * VALUE_DIM * H,
     )
 
-    qp = make_qlinear(ATTN_Q_OUT, H)
-    kp = make_qlinear(ATTN_KV_OUT, H)
-    vp = make_qlinear(ATTN_KV_OUT, H)
-    op = make_qlinear(H, ATTN_HEADS * HEAD_DIM)
+    qp = qbank(ATTN_Q_OUT, H)
+    kp = qbank(ATTN_KV_OUT, H)
+    vp = qbank(ATTN_KV_OUT, H)
+    op = qbank(H, ATTN_HEADS * HEAD_DIM)
 
-    def attn_proj():
-        a = mx.quantized_matmul(xM, *qp, transpose=True, group_size=QGROUP, bits=QBITS)
-        b = mx.quantized_matmul(xM, *kp, transpose=True, group_size=QGROUP, bits=QBITS)
-        c = mx.quantized_matmul(xM, *vp, transpose=True, group_size=QGROUP, bits=QBITS)
-        return (a, b, c)
+    def proj3(xs, banks):
+        def run(i):
+            x = xs[i % INNER]
+            j = i % WEIGHT_COPIES
+            return tuple(
+                mx.quantized_matmul(x, *b[j], transpose=True, group_size=QGROUP, bits=QBITS)
+                for b in banks
+            )
+
+        return run
 
     qkv_out = ATTN_Q_OUT + 2 * ATTN_KV_OUT
     record(
         "verify:full_attn:qkv_proj",
         N_FULL_LAYERS,
-        attn_proj,
+        proj3(xM, (qp, kp, vp)),
         qweight_bytes(qkv_out, H),
         2 * M * H * qkv_out,
     )
 
-    qa = mx.random.normal([1, ATTN_HEADS, M, HEAD_DIM]).astype(mx.bfloat16)
-    ka = mx.random.normal([1, KV_HEADS, kv_len, HEAD_DIM]).astype(mx.bfloat16)
-    va = mx.random.normal([1, KV_HEADS, kv_len, HEAD_DIM]).astype(mx.bfloat16)
+    qa = inputs([1, ATTN_HEADS, M, HEAD_DIM])
+    ka = inputs([1, KV_HEADS, kv_len, HEAD_DIM], n=WEIGHT_COPIES)
+    va = inputs([1, KV_HEADS, kv_len, HEAD_DIM], n=WEIGHT_COPIES)
     record(
         "verify:full_attn:sdpa",
         N_FULL_LAYERS,
-        lambda: mx.fast.scaled_dot_product_attention(qa, ka, va, scale=1.0 / 16.0, mask=None),
+        lambda i: mx.fast.scaled_dot_product_attention(
+            qa[i % INNER],
+            ka[i % WEIGHT_COPIES],
+            va[i % WEIGHT_COPIES],
+            scale=1.0 / 16.0,
+            mask=None,
+        ),
         2 * KV_HEADS * kv_len * HEAD_DIM * 2,
         2 * 2 * ATTN_HEADS * M * kv_len * HEAD_DIM,
     )
 
-    xo = mx.random.normal([1, M, ATTN_HEADS * HEAD_DIM]).astype(mx.bfloat16)
+    xo = inputs([1, M, ATTN_HEADS * HEAD_DIM])
     record(
         "verify:full_attn:o_proj",
         N_FULL_LAYERS,
@@ -311,16 +389,18 @@ def build_components(width, kv_len, depth, reps):
         2 * M * ATTN_HEADS * HEAD_DIM * H,
     )
 
-    gate = make_qlinear(INTERMEDIATE, H)
-    up = make_qlinear(INTERMEDIATE, H)
-    down = make_qlinear(H, INTERMEDIATE)
+    gate = qbank(INTERMEDIATE, H)
+    up = qbank(INTERMEDIATE, H)
+    down = qbank(H, INTERMEDIATE)
 
-    def mlp(x):
-        def run():
-            a = mx.quantized_matmul(x, *gate, transpose=True, group_size=QGROUP, bits=QBITS)
-            b = mx.quantized_matmul(x, *up, transpose=True, group_size=QGROUP, bits=QBITS)
+    def mlp(xs):
+        def run(i):
+            x = xs[i % INNER]
+            j = i % WEIGHT_COPIES
+            a = mx.quantized_matmul(x, *gate[j], transpose=True, group_size=QGROUP, bits=QBITS)
+            b = mx.quantized_matmul(x, *up[j], transpose=True, group_size=QGROUP, bits=QBITS)
             h = a * mx.sigmoid(a) * b
-            return mx.quantized_matmul(h, *down, transpose=True, group_size=QGROUP, bits=QBITS)
+            return mx.quantized_matmul(h, *down[j], transpose=True, group_size=QGROUP, bits=QBITS)
 
         return run
 
@@ -333,55 +413,57 @@ def build_components(width, kv_len, depth, reps):
         3 * 2 * M * H * INTERMEDIATE,
     )
 
-    lm = make_qlinear(VOCAB, H)
+    lm = qbank(VOCAB, H, copies=1)
     record(
         "verify:lm_head_full_vocab",
         1,
         qmm_fn(xM, lm),
         qweight_bytes(VOCAB, H),
         2 * M * H * VOCAB,
+        note="untied lm_head; embed_tokens is gathered, not streamed",
     )
 
     # ---- recurrent state snapshot, once per round ----------------------
-    snap_src = mx.zeros([N_LINEAR_LAYERS, LINEAR_VALUE_HEADS, LINEAR_VALUE_HEAD_DIM,
-                         LINEAR_KEY_HEAD_DIM], dtype=mx.float32)
+    snap_shape = [N_LINEAR_LAYERS, LINEAR_VALUE_HEADS, LINEAR_VALUE_HEAD_DIM, LINEAR_KEY_HEAD_DIM]
+    snap_src = [mx.zeros(snap_shape, dtype=mx.float32) for _ in range(WEIGHT_COPIES)]
     record(
         "state:recurrent_snapshot_48_layers",
         1,
-        lambda: mx.contiguous(snap_src + 0.0),
+        lambda i: mx.contiguous(snap_src[i % WEIGHT_COPIES] + float(i)),
         2 * N_LINEAR_LAYERS * RECURRENT_STATE_BYTES,
         N_LINEAR_LAYERS * RECURRENT_STATE_BYTES // 4,
+        inner=4,
     )
 
     # ---- proposal head, `depth` times per round at width 1 -------------
-    fc = make_qlinear(H, 2 * H)
-    x2h = mx.random.normal([1, 1, 2 * H]).astype(mx.bfloat16)
+    fc = qbank(H, 2 * H)
+    x2h = inputs([1, 1, 2 * H])
     record("head:fc_concat_proj", depth, qmm_fn(x2h, fc), qweight_bytes(H, 2 * H), 2 * 2 * H * H)
-
-    def head_attn_proj():
-        a = mx.quantized_matmul(x1, *qp, transpose=True, group_size=QGROUP, bits=QBITS)
-        b = mx.quantized_matmul(x1, *kp, transpose=True, group_size=QGROUP, bits=QBITS)
-        c = mx.quantized_matmul(x1, *vp, transpose=True, group_size=QGROUP, bits=QBITS)
-        return (a, b, c)
 
     record(
         "head:attn_qkv_proj",
         depth,
-        head_attn_proj,
+        proj3(x1, (qp, kp, vp)),
         qweight_bytes(qkv_out, H),
         2 * 1 * H * qkv_out,
     )
 
-    qh = mx.random.normal([1, ATTN_HEADS, 1, HEAD_DIM]).astype(mx.bfloat16)
+    qh = inputs([1, ATTN_HEADS, 1, HEAD_DIM])
     record(
         "head:attn_sdpa",
         depth,
-        lambda: mx.fast.scaled_dot_product_attention(qh, ka, va, scale=1.0 / 16.0, mask=None),
+        lambda i: mx.fast.scaled_dot_product_attention(
+            qh[i % INNER],
+            ka[i % WEIGHT_COPIES],
+            va[i % WEIGHT_COPIES],
+            scale=1.0 / 16.0,
+            mask=None,
+        ),
         2 * KV_HEADS * kv_len * HEAD_DIM * 2,
         2 * 2 * ATTN_HEADS * 1 * kv_len * HEAD_DIM,
     )
 
-    xo1 = mx.random.normal([1, 1, ATTN_HEADS * HEAD_DIM]).astype(mx.bfloat16)
+    xo1 = inputs([1, 1, ATTN_HEADS * HEAD_DIM])
     record(
         "head:attn_o_proj",
         depth,
@@ -392,13 +474,14 @@ def build_components(width, kv_len, depth, reps):
 
     record("head:mlp_gate_up_down", depth, mlp(x1), mlp_bytes, 3 * 2 * 1 * H * INTERMEDIATE)
 
-    draft_lm = make_qlinear(COMPACT_DRAFT_ROWS, H)
+    draft_lm = qbank(COMPACT_DRAFT_ROWS, H, copies=1)
     record(
         "head:draft_lm_head_compact",
         depth,
         qmm_fn(x1, draft_lm),
         qweight_bytes(COMPACT_DRAFT_ROWS, H),
         2 * 1 * H * COMPACT_DRAFT_ROWS,
+        note="single weight bank: 283 MB exceeds any plausible reuse window",
     )
 
     return comps
@@ -438,9 +521,11 @@ def main():
             else 0.0
         )
         c["achieved_bytes_per_s"] = c["bytes_per_call"] / c["per_call_seconds"]
+        c["isolated_total_seconds"] = c["per_call_seconds_isolated"] * c["calls_per_round"]
 
     roofline = sum(c["roofline_total_seconds"] for c in comps)
     achieved = sum(c["measured_total_seconds"] for c in comps)
+    isolated = sum(c["isolated_total_seconds"] for c in comps)
     measured = args.measured_block_seconds
 
     out = {
@@ -459,6 +544,13 @@ def main():
         "achieved_over_roofline": achieved / roofline if roofline else 0.0,
         "measured_over_achieved": measured / achieved if achieved else 0.0,
         "measured_over_roofline": measured / roofline if roofline else 0.0,
+        "isolated_kernel_sum_seconds": isolated,
+        "dispatch_overhead_seconds": isolated - achieved,
+        "isolated_note": (
+            "one-submit-per-call timing; not a floor. Difference from "
+            "achieved_kernel_floor_seconds is per-dispatch command-buffer overhead that an "
+            "ideal scheduler overlaps away."
+        ),
     }
     with open(args.out, "w") as f:
         json.dump(out, f, indent=2)
@@ -469,19 +561,24 @@ def main():
     )
     print(
         f"{'component':42s} {'x':>3s} {'roof_ms':>9s} {'meas_ms':>9s} "
-        f"{'eff':>6s} {'bound':>7s}"
+        f"{'eff':>6s} {'bound':>7s} {'iso_ms':>9s}"
     )
     for c in out["components"]:
         print(
             f"{c['component']:42s} {c['calls_per_round']:3d} "
             f"{c['roofline_total_seconds']*1e3:9.3f} {c['measured_total_seconds']*1e3:9.3f} "
-            f"{c['kernel_efficiency']*100:5.1f}% {c['roofline_bound']:>7s}"
+            f"{c['kernel_efficiency']*100:5.1f}% {c['roofline_bound']:>7s} "
+            f"{c['isolated_total_seconds']*1e3:9.3f}"
         )
     print(f"\nroofline_floor        = {roofline*1e3:9.2f} ms")
     print(f"achieved_kernel_floor = {achieved*1e3:9.2f} ms  ({out['achieved_over_roofline']:.2f}x roofline)")
     print(f"measured_block        = {measured*1e3:9.2f} ms  ({out['measured_over_achieved']:.2f}x achieved)")
     print(f"\nkernel-efficiency gap = {(achieved-roofline)*1e3:9.2f} ms")
     print(f"scheduling gap        = {(measured-achieved)*1e3:9.2f} ms")
+    print(
+        f"\n[diag] isolated one-submit-per-call sum = {isolated*1e3:9.2f} ms; "
+        f"per-dispatch overhead = {(isolated-achieved)*1e3:.2f} ms (not part of the floor)"
+    )
 
 
 if __name__ == "__main__":
