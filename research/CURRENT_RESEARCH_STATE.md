@@ -1,17 +1,20 @@
 # SENPAI Research State
 
-- **2026-08-16 17:40 UTC** — round 1 of the `qwen38-mlx-senpai-r1` campaign, four
-  experiments in flight, none yet reporting. Base
-  `e20268e9c2c1f35c2d75221d059e75bb95768ef6`, upstream
-  `7351e62674bc600f0ca148d3a1b0604716a09db6`.
+- **2026-08-16 20:05 UTC** — round 1 of the `qwen38-mlx-senpai-r1` campaign.
+  **PR #3 merged.** Base is now
+  `dbed6c27405ee2a2cf9c6bd68deec51017ae6c52`, upstream
+  `7351e62674bc600f0ca148d3a1b0604716a09db6`. Four experiments in flight:
+  PR #1 (edward), PR #2 (alphonse), PR #4 (askeladd), PR #5 (thorfinn, new).
 - **Most recent research direction from the human researcher team:** none
   received yet this launch. Four items are flagged below for the team; Flag 1
   needs an answer *before* a crossing submission, not after.
-- **This revision retracts two round-1 claims of mine** (Flag 3's guardrail
-  mechanism, and the mlx #3920 sizing anchor) and adds three findings that
-  re-rank the queue: the memory roofline that closes the `G` branch, the
-  64-token cold-start window, and the `qmv` small-`M` kernel as the new top
-  hypothesis. Corrections were sent to all four open PRs.
+- **This revision** records PR #3's merged result (the seed-prefill term is
+  measured and **irreducible**), the harness fact that
+  **`MLX_QWEN_MTP_TRACE=1` is unreachable**, and the promotion of the small-`M`
+  `qmv` retune from hypothesis to assignment (PR #5).
+- **Retractions still standing from the previous revision:** Flag 3's guardrail
+  mechanism, and the mlx #3920 sizing anchor. Corrections were sent to all four
+  open PRs.
 
 ## Where the campaign actually stands
 
@@ -190,15 +193,124 @@ Round 1 spans **two tiers** so a plateau in one does not stall the other.
 
 **Tier B — cost (how much a round costs at all):**
 
-- **PR #3 / qwen-thorfinn — the seed-prefill Amdahl term.** The 512-token seed
-  prefill is charged *inside* the timed leg, and `begin` measured ~0.9 s. Since
-  the pinned serial leg does not receive our improvements, cutting `P` is scored
-  in full and gets *more* valuable as decode gets faster.
+- **PR #3 / qwen-thorfinn — the seed-prefill Amdahl term. MERGED, result:
+  mechanism dead, measurement kept.** See the dedicated section below. `P` is
+  now a measured number, not an estimate, and it is irreducible.
 - **PR #4 / qwen-askeladd — the host-bound draft step.** `draft_build ≈ 2.4 ms`
   of CPU graph construction per draft step against ~1.3 ms of GPU streaming.
   Now also asked to split that into shape-rebuild vs constant-width construction
   vs genuine per-draft work, following mlx-lm #250 (non-static shapes cost ~50%
-  of target-model time in a speculative path).
+  of target-model time in a speculative path). Method redirected: the trace is
+  unreachable, so build an **isolated-kernel no-overlap floor** for the decode
+  round (`d` head forwards + one width-`d+1` verify) with the
+  `research/prefill_floor.py` technique and compare against measured
+  `block_request_seconds`. Measured ≤ floor kills the hypothesis; measured
+  20-30% above *is* the host-bound cost, and would reproduce mlx-lm #990's own
+  unexplained 10-28% residual.
+- **PR #5 / qwen-thorfinn — the small-`M` `qmv` tax. NEW.** Part A is a
+  research-only cost curve for `mx.quantized_matmul` at the exact scored shapes
+  across `M = 1..12`, which brackets `vector_limit ≈ 10`. Part B is the
+  exploitation: pad verify 9 → 10 to cross into `qmm_t_splitk`, or retune `qmv`
+  itself in `mlx-generated/quantized.cpp` plus `kernels/quantized{,_nax}.*`.
+  **Part A alone is a complete result** — a precise cost curve at the scored
+  shapes feeds every future depth, tree, and batching decision.
+
+**PR #1 method correction in force:** the depth-cost curve must now come from a
+parent-clock **depth sweep** (`--local-iterate --mtp-depth d`, `d = 0..8`) with
+`P` stripped first, not from the trace. The `d = 0` run is the `V(1)` anchor.
+Realised-vs-offered depth must be recorded, since the schedule may not take the
+depth it was offered.
+
+## PR #3 result — the seed-prefill term is measured and irreducible
+
+Merged at `51d7dbb902dbf01b99f7eb7d3f8301a8b62cea34`. No editable-surface file
+touched (`growth = 0 / 262144`); the diff is `.gitignore` plus `research/`.
+Fidelity clean on both legs (`all_tokens_matched = true`,
+`emitted_token_total = 64`, `declared_rows_total = 64`,
+`residual_divergence_count = 0`). W&B group
+`qwen38-r1-e3-seed-prefill-amdahl`:
+[`cwlqu3ok`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cwlqu3ok)
+(leg decomposition) and
+[`ihnmmi1b`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ihnmmi1b)
+(prefill compute floor).
+
+**The method is now the campaign standard.** Since the trace is unreachable
+(next section), `P` was recovered by *parent-clock algebra*:
+`decode_seconds = P + Σ block_request_seconds + N·c`. Two legs — 64 serial
+rounds and 10 MTP rounds — give two equations in two unknowns. Result
+`c = 338 µs` per round and **`P = 4.008616434203254 s`**. The two raw residuals
+(`4.030277` serial, `4.012001` MTP) agree to **0.45%**, which is what makes the
+number trustworthy.
+
+**What it costs us.** At the ranked 512-seed / 512-decode window on this host,
+`P` is **23.9% of the candidate leg** — roughly twice the 13.4% I had assumed —
+but only 10.5% of the serial leg. `dscore/dprefill ≈ −0.0757` per second, so
+100 ms of prefill is worth **0.0076 score**, not the 0.043 that 100 ms of decode
+is worth. Honest ranked band for `P`: **13.4%-30%**, likely the lower end,
+because M5 lifts compute more than bandwidth.
+
+**Why it cannot be cut.** `research/prefill_floor.py` reconstructs `P` from
+isolated kernels at the exact scored shapes and **over**-predicts by **+1.1%** —
+so `asyncEval` already pipelines and there is no host slack. Quantized GEMM is
+**97.0% of `P`**, running at **6.415 TFLOP/s = 87.1% of the measured dense bf16
+ceiling** on this part. A physically impossible free dequant would save 12.49%,
+under the 20% stop threshold. The weight-streaming floor is the wrong bound
+entirely: 14.1 GiB at ~273 GB/s is 55 ms, **1.4% of `P`**.
+
+**Three findings that outlive the mechanism:**
+
+1. **`warmAllDepths` has no first-touch cost left on the candidate leg.** First
+   block `0.1783 s` vs `p50` `0.1686 s` — only **+5.8%** — and the run maximum is
+   the **last** round, not the first (`max/p50 = 1.128`, margin to the 4x
+   guardrail = 2.87). The serial leg still shows classic warmup
+   (`max/p50 = 1.696`, max *is* the first block). **Consequence:** prefill and
+   warm work cannot buy guardrail margin, and the fixture's depth-2 3.30-3.36x
+   `max/p50` is therefore **not** residual JIT. Thermal or scheduler variance
+   over 512 rounds is the remaining explanation and is now its own open item.
+2. **The candidate leg is two different machines.** Prefill is compute-bound
+   (bandwidth floor is 1.4% of `P`). Serial *decode* moves 14.1 GiB in 0.0673 s
+   = **~224 GB/s, about 82% of peak bandwidth** — which independently confirms
+   the roofline argument that closes the `G` branch. **Every future proposal must
+   state which of the two machines it attacks.** A compute win in prefill and a
+   bandwidth win in decode are not interchangeable.
+3. `gated_delta_kernel_T512` at **1.209 TFLOP/s** is the only prefill component
+   far off roofline, but at 3.19% of `P` it is worth ≤ ~0.024 score even if
+   zeroed. Not worth a slot.
+
+**Reopen only if** target quantization changes such that GEMM efficiency falls
+well below 87% of ceiling, or an M5 measurement shows `P` above 30% of the ranked
+candidate leg *and* ranked GEMM far from its own roofline.
+
+## Harness fact: `MLX_QWEN_MTP_TRACE=1` is unreachable
+
+Verified in source, and it invalidated the stated method of PRs #1 and #4
+(corrections sent). The per-round trace exists and emits the fields we want
+(`round, d, acc, draft_build_us, verify_build_us, eval_wall_us, readout_us,
+commit_us, upkeep_us, round_us` at `Qwen36MTPBlockSession.swift:~1062-1078`),
+but it writes to **worker** stderr, which is discarded:
+
+- `Sources/MLXFastTrustedHarness/QwenRuntimeWorker.swift:2046` and `:2207` —
+  `emit: options.forwardsWorkerStderr ? nil : { _ in }`.
+- `runtimeWorkerOptions(blockedGoldenPath:forwardsWorkerStderr:)` at
+  `Sources/MLXFastCLI/main.swift:2222-2224` defaults `false` and returns
+  `forwardsWorkerStderr && !officialRun` at `:2301`.
+- The only caller that enables it is `runDFlashBenchmark`
+  (`main.swift:1404-1412`), gated on `MLX_DFLASH_TRACE_CACHE_SEAM=1`.
+  `runQwenMTPVerify` (`:1748-1750`) and `runQwenMTPTimed` (`:1799-1801`) both
+  take the default.
+
+Wrapping the worker to capture its stderr is blocked by
+`enforceMetallibFingerprint` and the sandbox `allowedExecutablePath`.
+
+**Substitutes that do work**, both merged on the current base:
+
+- `research/capture-cli.sh` — an argv-passthrough tee for `MLXFAST_SWIFT_BIN`.
+  This is not optional plumbing: `benchmark-qwen-mtp.sh` `mktemp`s its report
+  directory and deletes it on `EXIT`, so `block_request_seconds` and
+  `decode_seconds` **never survive a run without it**.
+- `research/prefill_amdahl.py` (two-leg parent-clock decomposition),
+  `research/prefill_floor.py` (isolated-kernel floor at exact scored shapes),
+  `research/prefill_floor_summary.py`, `research/run-amdahl-measurement.sh`.
 
 ## Newly established facts worth acting on
 
@@ -339,33 +451,48 @@ an open issue establishing host-bound decode. `ml-explore/mlx-lm` #250's
 - **Gathered / scattered dynamic vocabulary heads.** Reported slower than a
   static contiguous slice, and affine-4 group-64 packing makes it worse. Any
   shortlist must stay contiguous and a multiple of 64.
+- **Cutting the seed prefill (PR #3).** Measured, decomposed, and irreducible:
+  97% quantized GEMM at 87% of the measured dense bf16 ceiling, with a
+  physically-impossible-free-dequant ceiling of 12.49%. Reopen conditions are
+  recorded in the PR #3 section above.
+- **Chunked prefill (2x256, 4x128) and chunkwise-parallel GDN prefill.**
+  `GatedDelta.swift:128` is a strictly sequential per-timestep recurrence in
+  which `T` is a kernel *input*, not part of the grid, so chunking is
+  structurally worse, and the whole GDN prefill kernel is 3.19% of `P`.
 
 ## Potential next research directions
 
-Ordered by expected value per student-slot. Item 0 is new this round and is now
-the strongest single hypothesis on the board. Items 1-3 are infrastructure that
-makes every later experiment more trustworthy.
+Ordered by expected value per student-slot. Item 0 is now **assigned as PR #5**
+and remains the strongest single hypothesis on the board. Items 1-3 are
+infrastructure that makes every later experiment more trustworthy.
 
-0. **Retune the small-`M` `qmv` quantized kernel for M = 2..9.** Every verify
-   width we can reach dispatches `qmv` (`quantized.cpp:1415`, `vector_limit ≈ 10`
-   at K=N=5120), and `qmv` re-reads the weight tile once per row because it is
-   tuned for `M = 1`. Two independent lines of evidence now point here: our own
-   `eval_wall` growing 79 → 89 → 106 ms across widths 7 → 8 → 9, and mlx-lm
-   PR #990's depth cliff with `qmv` named as the cause. That PR also notes a
-   private fork retuning `qmv` for `M = 3..6` with `4-simdgroup` /
-   `unroll_count(4)`. **The kernel sources are inside our editable surface**
-   (`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp` for the JIT
-   strings plus `kernels/quantized{,_nax}.{h,metal}`; `_nax` runs on the ranked
-   M5), even though the host dispatch file is not. This changes the *shape of the
-   cost curve every schedule experiment is fighting*, so it dominates further
-   schedule tuning. Prerequisites: PR #1's `C(d)` curve to confirm the slope is
-   linear in `d`, and a `python3 research/twin_audit.py` discipline because the
-   readable `.metal` and the generated twin must move together. High ceiling,
-   high numerical risk — needs an exact-row gate, not just argmax matching.
+0. **Retune the small-`M` `qmv` quantized kernel for M = 2..9.** *(ASSIGNED —
+   PR #5, qwen-thorfinn.)* Every verify width we can reach dispatches `qmv`
+   (`quantized.cpp:1415`, `vector_limit ≈ 10` at K=N=5120), and `qmv` re-reads
+   the weight tile once per row because it is tuned for `M = 1`. Two independent
+   lines of evidence point here: our own `eval_wall` growing 79 → 89 → 106 ms
+   across widths 7 → 8 → 9 — note the deltas +10 then +17 are *increasing*, so
+   no linear `a + b·M` fits — and mlx-lm PR #990's depth cliff with `qmv` named
+   as the cause. That PR also notes a private fork retuning `qmv` for `M = 3..6`
+   with `4-simdgroup` / `unroll_count(4)`. **The kernel sources are inside our
+   editable surface** (`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`
+   for the JIT strings plus `kernels/quantized{,_nax}.{h,metal}`; `_nax` runs on
+   the ranked M5), even though the host dispatch file is not. This changes the
+   *shape of the cost curve every schedule experiment is fighting*, so it
+   dominates further schedule tuning. `python3 research/twin_audit.py` is
+   mandatory because the readable `.metal` and the generated twin must move
+   together. High ceiling, high numerical risk — needs an exact-row gate, not
+   just argmax matching.
 0b. **Pad the verify batch from 9 to 10 rows** to cross `vector_limit` into
-   `qmm_t_splitk` and read weights once. Nearly free to test, and PR #1 has been
-   asked for the data point. If width 10 is cheaper in wall-clock than width 9,
-   it is exploitable immediately and it also validates the whole item-0 thesis.
+   `qmm_t_splitk` and read weights once. PR #5 owns the kernel-level curve that
+   *predicts* the effect; PR #1 owns the system-level end-to-end data point.
+   Deliberately independent, so the two form a cross-check rather than a
+   duplicate. **Caveat now on record:** S = 10 leaves several width-gated fast
+   paths — `fusedInProjections` (`S <= 9`), `qwen35PackedGDNPreworkKernel`
+   (`S >= 3 && S <= 9`), and the `AttentionUtils` wide-chunk split
+   (`qL >= 6 && qL <= 9`) — so the honest question is whether the kernel gain
+   survives losing them. A clean negative here would explain why `vector_limit`
+   sits where it does.
 1. **Representative local prose goldens** via `generate-golden --prompt-file` and
    `MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE`. Highest leverage available: right now
    every measurement we take is on a copy task at acceptance 1.0, and the
@@ -377,9 +504,14 @@ makes every later experiment more trustworthy.
 3. **Schedule-state hygiene**: fix the `d==0` absorbing state, reset
    `positionAcceptEMA` per prompt, and re-fit the `0.85·0.98^i` prior against
    measured data. Small, cheap, and it removes a catastrophic tail risk.
-4. **Pad verify width 9 → 10** to cross `vector_limit` into `qmm_t_splitk`
-   weight reuse. Cheap to test, potentially large, directly explains the
-   measured width cost curve.
+4. **Move the 511-row head priming out of the first timed drafting round.**
+   `headHistoryCache` is declared at `Qwen36MTPBlockSession.swift:149` but first
+   *written* at `:819-822`, inside the round path — so the head's 511-row seed
+   prefill is paid inside the first scored drafting round, not in `begin()`.
+   PR #3 shows the candidate leg's first block is only +5.8% over `p50`, so the
+   total is small; this is a **block-latency distribution** item, relevant to
+   guardrail margin rather than to the score. Low priority until the thermal item
+   below is understood.
 5. **Compiled MTP round.** `Vendor/mlx-swift-lm/Libraries/MLXLMCommon/CompiledDecode.swift`
    is editable and gates the compiled path at L38 to "no MTP, no SSM". Making the
    GDN recurrent state traceable is the gating sub-problem. Attacks the 2-4k
@@ -418,4 +550,12 @@ makes every later experiment more trustworthy.
     `Qwen36MTPBlockSession.swift:22-43` and the matching framing in
     `Tests/MLXFastTests/QwenMTPRollbackContractTests.swift:14,78,108,190`, the
     dead `Sources/MLXFastModel/Qwen35*.swift` tree, the dead L446-449 policy
-    closure, and the dead `conf` gate.
+    closure, and the dead `conf` gate. **Owed.** Deletion is the default: stale
+    experiment paths are a mis-run risk, and the winning behaviour should be the
+    single obvious main path.
+15. **Explain the fixture's depth-2 3.30-3.36x `max/p50`.** PR #3 removed the
+    obvious suspect — it is **not** residual JIT, because the candidate leg's
+    first block is only +5.8% over `p50` and its maximum is the *last* round.
+    That leaves thermal throttling or scheduler variance accumulating over 512
+    rounds. This is the single largest unexplained number touching the stall
+    guardrail, which fails closed. Worth a slot once the current four report.
