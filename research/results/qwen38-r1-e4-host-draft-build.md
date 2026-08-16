@@ -35,7 +35,7 @@ Consequently the three Part B mechanisms cannot pay:
 This is **outcome #3** from the PR body: a breakdown proving irreducibility, retiring
 the line of work and re-anchoring the cost model.
 
-Four results outrank that negative and are where the campaign value is:
+Five results outrank that negative and are where the campaign value is:
 
 1. **§6c.4 — the depth cap sits exactly one row past a dispatch cliff, and moving it is a
    two-line change.** This host is `applegpu_g16s` (arch_gen 16, size `'s'`), so
@@ -60,7 +60,14 @@ Four results outrank that negative and are where the campaign value is:
    it is banked in the base. §6c.2 additionally refutes an 8-bit head: 4-bit qmv sustains
    249.0 GB/s versus 253.1 GB/s for bf16 dense matvec (98.4%), so there is no nibble-unpack
    penalty to buy back at M=1 and a wider head would be strictly slower.
-4. **§6b.4 — the pre-registered discriminator resolves to BANDWIDTH**, but the residual's
+4. **§6d.4 — on the ranked build the compact draft readout, not the head, is the biggest
+   remaining drafting-bandwidth item.** It is 283.21 MB of the 522.09 MB/step ranked
+   drafting total = **54.24%**, it is a slice of the *fixed target* `lm_head` so head
+   quantization cannot shrink it, and it already runs at 100.4% of roofline. It is also the
+   most compressible thing in the path, because proposals do not have to be exact — the
+   target verifies every token. This confirms the 522.1 MB/step figure in feedback (8) to
+   0.003%. Sized design in §10 follow-up 0d (≈ **+0.058 score** at `d=8`).
+5. **§6b.4 — the pre-registered discriminator resolves to BANDWIDTH**, but the residual's
    real cause is small-M kernel inefficiency, a third category the dichotomy omits.
 
 ## 1a. Correction to feedback (4): `MLX_QWEN_MTP_TRACE=1` **is** reachable
@@ -925,6 +932,139 @@ on the ranked host rather than hardcode 7. See §10 follow-up 0b — it is a two
 inside `Qwen36MTPBlockSession.swift`, entirely within the editable surface, and it is the
 cheapest concrete speedup this experiment found.
 
+## 6d. Answers to feedback (8) — `qwen38-r1-e4-fb8-head-ratio-correction`
+
+The threshold correction is accepted and it is answerable from measurements already in
+hand: `head_dtype_d8.json` times the head trunk and the compact draft readout as
+**separate** rows, so both scopes can be reported without a new run.
+
+### 6d.1 Which scope was timed — both
+
+| scope | what is in the timer | measured 4-bit | measured bf16 |
+|---|---|---:|---:|
+| **A. head trunk only** | fc-concat, qkv, sdpa, o-proj, gate/up/down for one draft step | 1.005 ms | 3.426 ms |
+| **B. trunk + compact draft readout** | scope A plus `draftTokenID`'s 98,336-row projection | 2.133 ms | 4.554 ms |
+
+`head_dtype_d8` reports the trunk as a `×8` chain (8.040 ms 4-bit / 27.406 ms bf16); the
+readout is the separate `head:draft_lm_head_compact` line of the `d=8` floor pass
+(8 calls, 9.025 ms achieved against a 9.062 ms roofline = **100.4%** efficient, i.e.
+1.128 ms per draft step). Per-step numbers above are those totals divided by 8.
+
+### 6d.2 Scope A: **3.41×** — the bandwidth branch fires
+
+```text
+trunk bytes/step        4-bit 238.88 MB   bf16 849.35 MB   byte ratio 3.556x  (= 16 / 4.5)
+trunk achieved x8       4-bit   8.040 ms  bf16  27.406 ms  wall ratio 3.41x
+effective bandwidth     4-bit 237.7 GB/s  bf16 247.9 GB/s
+```
+
+**3.41× ≥ 2.8× ⇒ BANDWIDTH-BOUND. There is no large fixed per-step cost hiding in the
+head read.** The ≤2.2× branch — the one that would have rescued this experiment — did not
+fire. That is the same verdict §3 reaches independently from the trace (host-only work is
+599 µs/round = 0.35%), so the two methods agree.
+
+**Why my ratio sits above the 2.8–3.3× band, and why that is not a red flag.** The
+anchors in feedback (8) are end-to-end generation tok/s for whole models, where per-token
+costs that do *not* shrink with weight precision — attention over a growing KV cache,
+cache writes, sampling, host dispatch — dilute the ratio to ~84% of the byte ratio. My
+number is an isolated `timeit_amortized` chain over the head's weight-reading ops only, so
+those diluting terms are absent by construction. The one non-scaling item *inside* the
+chain is measured explicitly and is tiny:
+
+```text
+head:attn_sdpa   4-bit 0.0434 ms   bf16 0.0405 ms   ratio 0.93x   (reads no weights)
+chain excluding sdpa   4-bit 0.9617 ms   bf16 3.3853 ms   ratio 3.520x = 99.0% of 3.5550x
+```
+
+Removing the single fixed row recovers 99.0% of the theoretical 3.5550×, which is exactly
+what a clean bandwidth-bound measurement should do. So the 3.41× and the ~3.0× anchors are
+consistent measurements of the same physics at different scopes, not a contradiction. The
+practical reading for the campaign: an end-to-end ranked head swap should be budgeted at
+the advisor's ~3.0×, not at my 3.41×.
+
+### 6d.3 Scope B: **2.13× measured against the predicted ~1.9×**, and the 522.1 MB figure is confirmed
+
+```text
+                          4-bit (ranked-like)      bf16 (local)        ratio
+trunk bytes/step               238.88 MB             849.35 MB
+compact readout bytes/step     283.21 MB             283.21 MB        (does not shrink)
+total bytes/step               522.09 MB            1132.56 MB        2.169x
+predicted wall (fb8, 227 GB/s)   2.30 ms               4.99 ms        ~1.9x
+measured wall                    2.133 ms              4.554 ms       2.13x
+```
+
+**The 522.1 MB/step ranked figure is confirmed to 0.003%** — my independently derived
+compact slice is `98,336 × 5,120 × 0.5625 B = 283,207,680 B` exactly, and
+`238.88 + 283.21 = 522.09 MB`. That is far inside the ±15% the advisor asked for, so the
+precondition he set for opening a dedicated experiment is met.
+
+The measured 2.13× runs a little ahead of the predicted 1.9× for the same reason as §6d.2
+(isolated chain, and this host sustains ~250 GB/s rather than the 227 GB/s assumed), but
+the *structure* of the prediction is exactly right: **the readout is already 4-bit in both
+builds, so it is pure ballast in the ratio.** I am explicitly not reading 2.13× as "the
+head barely matters" — the head matters at 3.41×; it is the readout riding alongside it
+that pulls the combined figure down.
+
+### 6d.4 Campaign answer: the compact draft readout is the largest remaining drafting-bandwidth item
+
+```text
+ranked (4-bit head)   readout share of drafting bytes = 283.21 / 522.09 = 54.24%
+local  (bf16 head)    readout share of drafting bytes = 283.21 / 1132.56 = 25.01%
+```
+
+Confirmed, with the mechanism: the compact readout is a slice of the **target**
+checkpoint's `lm_head` (`Qwen35.swift:2344-2352`, `:2361-2387`), which is fixed at affine
+4-bit group-64 in every build. Quantizing the proposal head cannot touch it, and its share
+of drafting bandwidth *more than doubles* when the head is quantized. On the scored
+machine it is the single biggest drafting-bandwidth line.
+
+Two things make it a much better experiment than it first looks:
+
+1. **The draft readout does not have to be exact.** It only selects proposals; the target
+   verifies every emitted token and the ledger/verify values never come from this path
+   (the source comment at `:2332-2335` says so explicitly). Approximation here costs
+   acceptance rate, not correctness — so it is legal under the work-honesty rules and
+   cheap to evaluate as net tokens/second.
+2. **The hook already exists.** `Qwen35.swift:2135-2142` loads
+   `mtp.draft_lm_head.{weight,scales,biases}` from the declared head tree, and `:2337-2343`
+   infers the bit width from tensor shapes (`bits = w.dim(1) * 32 / k`). A candidate can
+   ship a cheaper draft readout in `mtp-head/` with no new kernel work.
+
+One caveat that changes the design, found while checking this: the declared-head branch is
+hardcoded **full-vocabulary** (`:2362-2364`, `:2401-2403` disable the compact remap when a
+declared head is present), and full-vocabulary is a dead end at any sane bit width —
+
+```text
+full vocab 248,320 x 5,120   4-bit(4.5b) 715.16 MB   3-bit(3.5b) 556.24 MB   2-bit(2.5b) 397.31 MB
+compact slice (current)                                                                  283.21 MB
+```
+
+— every one of them is *worse* than the compact slice, because the compact path is already
+an effective **1.78 bits per weight** amortized over the full vocabulary. So the experiment
+is "let a declared draft head be **compact**", not "declare a draft head". Sizing and the
+exact two-guard change are in §10 follow-up 0d.
+
+### 6d.5 Items the advisor asked me to keep reporting
+
+- **Three-number floor decomposition:** unchanged and still in §5A (roofline 88.87 ms /
+  achieved-kernel 224.71 ms / measured block 217.75 ms), with the bf16-head correction
+  (243.87 ms, −26.12 ms scheduling gap) and the `d=7` pass (202.40 / 190.34, −12.06) in
+  §6c.3.
+- **`rollbackRoundCount = 0`.** Zero repairs and zero rollbacks across all 28 rounds of the
+  192-token window; `repair=1` never appears in the sub-trace. No rollback cost is hiding
+  in any number in this report.
+- **Verify `lm_head` is kept separate from the compact draft readout** and always has been:
+
+  | line | rows | bytes | calls/round at d=8 | achieved | roofline | eff |
+  |---|---:|---:|---:|---:|---:|---:|
+  | `verify:lm_head_full_vocab` | 248,320 | 715.16 MB | 1 | 9.946 ms | 3.498 ms | 35.2% |
+  | `head:draft_lm_head_compact` | 98,336 | 283.21 MB | 8 | 9.025 ms | 9.062 ms | 100.4% |
+
+  They are different weights, different widths (M=9 versus M=1) and different regimes: the
+  verify readout is compute-bound and 35% efficient — it belongs to the §5B width-cliff
+  story — while the draft readout is bandwidth-bound and already at roofline, so its only
+  available lever is reading fewer bytes.
+
 ## 7. Score arithmetic
 
 Pinned `serial_decode_seconds_per_token_mean = 0.037994794617407023` over 512 tokens
@@ -1197,16 +1337,50 @@ never packaged.
    describes applies at the sdpa only, and segmenting the whole forward was already measured
    and rejected for paying a second full weight pass.
 
+0d. **Ship a *compact* low-bit `draft_lm_head` in `mtp-head/`** (§6d.4) — the dedicated
+   experiment feedback (8) asked me to size. On the ranked build the compact draft readout
+   is **54.24% of all drafting bandwidth** (283.21 MB of 522.09 MB/step) and head
+   quantization cannot touch it, because it is a slice of the fixed target `lm_head`.
+
+   - **Why it is tractable.** The readout only *selects* proposals; the target verifies
+     every emitted token, so it may be approximate. It is also already at 100.4% of
+     roofline, so the only lever is reading fewer bytes — a data change, not a kernel
+     change.
+   - **Sizing on measured numbers.** A ranked-like `d=8` round is
+     `217.75 − 27.41 + 8.04 = 198.38 ms` (measured round with the 4-bit head trunk
+     substituted for the bf16 one); the readout is 9.03 ms = **4.55%** of it. Replacing the
+     4-bit compact slice with a 2-bit affine g64 compact slice gives
+     `98,336 × 5120 × 0.3125 = 157.34 MB`, i.e. 0.63 ms/step and 5.02 ms/round —
+     **−4.01 ms/round = −2.02%**, ≈ 0.135 s on a 6.70 s candidate leg ≈ **+0.058 score**.
+     A 3-bit slice (220.27 MB) is worth about half that.
+   - **The change is two guards, not a rewrite.** `Qwen35.swift:2135-2142` already loads
+     `mtp.draft_lm_head.{weight,scales,biases}` and `:2337-2343` already infers the bit
+     width from tensor shapes. What blocks a compact declared head is that `:2362-2364` and
+     `:2401-2403` treat any declared draft head as full-vocabulary and disable the compact
+     remap; they should key on the declared row count instead. `Qwen35.swift` is inside
+     `editablePaths` (verified with `senpai/validate-assignment-scope.sh`), and 157 MB is
+     trivial against the 2 GiB `mtp-head/` cap on top of the 238.9 MB ranked head.
+   - **Do not attempt this full-vocabulary.** 248,320 rows costs 715.16 MB at 4 bits,
+     556.24 MB at 3 bits and 397.31 MB at 2 bits — all *worse* than today's 283.21 MB,
+     because the compact slice is already an effective 1.78 bits/weight over the full
+     vocabulary.
+   - **Risk and stop rule.** Coarser proposals cost acceptance rate. The claim is net
+     tokens/second, so it must be judged on a matched `--local-iterate` pair plus
+     `effective_mean_draft_len` and `accepted_draft_rate`, never on readout milliseconds.
+     Also note the prize scales with achieved draft depth (one readout per draft step): at
+     `d=8` it is 9.03 ms/round, at `d=1` it is 1.13 ms/round, so the ranked pool's depth
+     profile decides whether this is worth a slot.
+
 1. **Re-anchor `headStepCostRatio`** to ~0.224 on M4-class hosts and re-measure the
    depth schedule. The current 0.20 under-charges deep drafts, biasing the scheduler
    toward depths that do not repay themselves.
 2. **Shrink the proposal head's bytes, not its efficiency.** §5A measures every head
-   component at 84–100% of roofline, so there is no kernel headroom there — the head
-   costs 522.1 MB/step (17.27 ms of the round at d=8) simply because that is how much it
-   reads, and 9.03 ms of that is `draft_lm_head_compact` alone (98,336 × 5120, already
-   100.4% efficient). The only lever is a smaller draft-vocabulary slice or a more
-   compact head representation, which changes proposal quality and so must be measured
-   end-to-end, not by acceptance rate alone.
+   component at 84–100% of roofline, so there is no kernel headroom there — the head costs
+   522.1 MB/step (17.07 ms of the round at d=8 with a 4-bit trunk) simply because that is
+   how much it reads. The 283.21 MB readout half is follow-up 0d; the remaining 238.88 MB
+   is the trunk itself, whose only lever is a smaller or lower-precision proposal head,
+   which changes proposal quality and so must be measured end-to-end, not by acceptance
+   rate alone.
 3. **Revisit the `Qwen35.swift` asyncEval ladder** (lines 1858-1888). It fires 8 times
    per verify pass at width ≤ 9. Measuring whether fewer ladder points reduce
    `verify_build_us` is a scoped, cheap experiment — but note `Qwen35.swift` is outside
