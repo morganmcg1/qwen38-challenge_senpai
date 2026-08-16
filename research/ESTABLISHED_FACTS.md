@@ -840,6 +840,30 @@ manifest is authoritative. Cleanup target.
 
 ### The re-basing rule
 
+> ### ⛔ PARTIALLY VOID — see §11 (2026-08-16, advisor)
+>
+> **What survives:** the `delta_head = 2.689 ms` bandwidth arithmetic and the
+> shape of the rule (`C_ranked(d) = C_local(d) − 2.689·d`). That is a byte-count
+> divided by a measured bandwidth and does not depend on any depth anchor.
+>
+> **What is void:** every row of the table below that is derived from
+> `m_lo`, `m_hi` or `C(8) = 161.0 ms` — i.e. `m_lo`, `m_hi`, `C(8)`, `h`, and
+> the two chain rows. Those all descend from PR #3's `C(8) = 160.959 ms`, which
+> **§11 establishes was never a depth-8 measurement**: the `d=8` label names
+> `segmentedVerifyDepthCap`, not attempted depth.
+>
+> **What has the sign backwards:** the conclusion sentence below, that
+> `headStepCostRatio = 0.20` "overestimates the true marginal ratio by 1.39x
+> locally and 1.92x against the ranked configuration". It is wrong twice over —
+> it is built on the void anchor, **and** it re-bases arms that had already run
+> the declared 4-bit head, so the correction is applied to numbers that did not
+> need it. Corrected: **`0.20` UNDER-prices a draft step by ~28%** (Edward's
+> measured mean `h` = 0.2562), and the true `h` is strongly increasing
+> (0.0842 → 0.3909), which no scalar can represent in either direction.
+>
+> Also void: `h_avg = (161.0 − 67.0)/8/67.0 = 0.1754` and everything derived
+> from it, wherever it appears in this file.
+
 At the measured local decode bandwidth of 227 GB/s (M4 Pro):
 
 ```
@@ -1655,8 +1679,33 @@ Senpai still has **zero official submissions**. Promoted frontier is
 - PR #7 3-bit draft head: −1.90% ms/token (merged, **not banked** — needs the
   default flip in PR #11).
 
-Combined ≈ −4.9% on decode. Local decode 17.98 s + irreducible prefill ~4.0 s
-≈ 22.0 s ⇒ ≈ −4.0% total candidate time ⇒ ratio +4.2% ⇒ **≈ 3.03**.
+> ### ⛔ RETRACTED ARITHMETIC — corrected in §11.3
+>
+> This section originally read: *"Combined ≈ −4.9% on decode. Local decode
+> 17.98 s + irreducible prefill ~4.0 s ≈ 22.0 s ⇒ ≈ −4.0% total candidate time
+> ⇒ ratio +4.2% ⇒ **≈ 3.03**."*
+>
+> **That addition is invalid.** It adds cap-7 to the 3-bit head as though they
+> were independent, which they are — but it also treats cap-7 as *the* depth
+> term when there are now **three** measured depth levers (cap-7, the fitted
+> `h`-curve, a fixed cap-3) and **§11.2 proves at least two of them are
+> substitutes, not complements**. Under the measured `h`-curve the drafting
+> policy provably never exceeds depth 3, so `segmentedVerifyDepthCap` — the
+> constant cap-7 edits — is unreachable dead code and contributes exactly zero.
+>
+> The correct form is
+>
+> ```
+> candidate = max(depth levers) + 3-bit draft head
+> ```
+>
+> not a sum over depth levers. Today's numbers give −4.9% **only** if cap-7 is
+> the depth lever that wins a matched-head comparison. If the `h`-curve or a
+> fixed cap-3 wins instead, the depth term is smaller than −3.085% and the
+> candidate **does not clear 3.0 on this stack alone**. PR #13 (E11) is the
+> experiment that decides which lever it is; §11.3 shows the ranking currently
+> flips inside the uncertainty of the head correction, so I genuinely do not
+> know.
 
 Both legs must actually land on the advisor branch before this is real, and the
 combination needs its own confirmation arm — **stacking arithmetic is a
@@ -1669,14 +1718,280 @@ hypothesis, not a measurement.**
   `vector_limit` from `qmv` into `qmm_splitk` (`quantized.cpp:1415`) — should
   have **won**. It is recorded dead at speedup 0.661. Thorfinn flagged it and
   correctly did not try to resolve it inside PR #10.
-- PR #3 `C(8)` discrepancy: settle with `MLX_QWEN_MTP_FORCE_DEPTH` on a **freshly
-  built** worker; two hypotheses now (mis-labelled depth, stale binary).
+- ~~PR #3 `C(8)` discrepancy: settle with `MLX_QWEN_MTP_FORCE_DEPTH` on a
+  **freshly built** worker; two hypotheses now (mis-labelled depth, stale
+  binary).~~ **CLOSED by desk work — see §11.1.** It is a labelling error; the
+  forced-depth instrument did not exist in the tree at PR #3's head, so no
+  student session is needed and the stale-binary hypothesis is not required
+  for *this* discrepancy (the build defect in §5 remains real for other
+  reasons).
+- **Which depth lever ships (new, funded as PR #13/E11).** Three levers each
+  measured to win — the `h`-curve, cap-7, a fixed cap-3 — at least two of which
+  are substitutes (§11.2). They have never been run on one host, one head, one
+  session, and the ranking flips inside the head-correction uncertainty
+  (§11.3). This gates §9's arithmetic and therefore the submission plan.
+- **Bank the `h`-curve (new).** PR #1's `armB512` is a merged, reproduced
+  −1.9275% s/token win that banks nothing because `MLX_QWEN_MTP_H_VECTOR` is
+  env-gated (§11.4). Second instance of the same class of advisor error as §1.
 - `key_len = 1024` positional residual: advisor-owned fidelity item.
-- Depth policy that sits at 6–7, motivated by PR #2's bimodality (39 rounds at
-  d=4, 33 at d=8, none between).
+- ~~Depth policy that sits at 6–7, motivated by PR #2's bimodality (39 rounds at
+  d=4, 33 at d=8, none between).~~ **Downgraded.** Still open as a *cap*
+  question under the flat scalar, but it is unreachable under the measured
+  `h`-curve, so it is not a direction that composes with the curve — it is a
+  rival to it.
 
 > **Standing caution carried forward:** PR #10's host is M4 Pro `applegpu_g16s`,
 > not the ranked M5, and ALU:BW balance is exactly what moves across GPU
 > generations. The ALU-bound verdict transfers as a **strong prior, not a fact**,
 > and must not be quoted as a fact.
 
+
+# Session: the depth-lever reconciliation (advisor desk work, 2026-08-16)
+
+Four results, no new measurements. Everything below is derived from already
+merged student reports plus code read at the exact commits that produced the
+numbers. Generator: `research/depth_lever_reconciliation.py` — run it, it
+prints every figure quoted here and it fails loudly if §11.2's proof breaks.
+
+Read §11.1 and §11.2 first: they retire an anchor that six downstream
+conclusions were resting on, and they turn "the depth policy is a tuning
+question" into "the depth policy is a *choice between rivals* question".
+
+## 11.1 PR #3's `C(8) = 160.959 ms` is a LABEL, not a depth — SETTLED
+
+This was carried as an open discrepancy against PR #1's directly measured
+`C(8) = 198.237 ms` (a 23% gap), with two live hypotheses: mis-labelled depth,
+or a stale binary. It is the first one, and it is settled by desk work. Two
+independent lines, neither needing a host:
+
+**Line 1 — the instrument did not exist yet.**
+
+```
+git show 51d7dbb9:Sources/MLXFastModel/Qwen36MTPBlockSession.swift | grep -c FORCE_DEPTH
+0
+```
+
+`51d7dbb9` is PR #3's head. `MLX_QWEN_MTP_FORCE_DEPTH` first appears at PR #1's
+`58cf0197`, about six hours later (`51d7dbb9` = `2026-08-16T15:31:27Z`,
+`58cf0197` = `2026-08-16T21:28:44Z`), and its own doc-comment names it
+`qwen38-r1-e1-depth-cost-curve`. Independently,
+`research/run-amdahl-measurement.sh` — the script that produced those anchors,
+65 lines, read in full — contains **no depth control of any kind**. There was
+no mechanism by which PR #3 could have pinned depth 8. The `d = 8` column label
+names `segmentedVerifyDepthCap`, the constant. The measured quantity is
+`E[C(d_attempted)]` under the natural adaptive policy.
+
+**Line 2 — inverting the anchor recovers the policy's real depth.**
+
+Push `160.959 ms` back through PR #1's measured `C(d)` under three
+head/session assumptions:
+
+| assumption | implied mean attempted depth |
+|---|---:|
+| declared 4-bit head, no session correction | 6.36 |
+| pinned bf16 head (PR #3's actual stack) | 5.58 |
+| pinned bf16 + PR #3 session offset ×1.0302 | 5.37 |
+
+Against which the shipped policy's mean offered depth, measured independently
+at the same 512-token window, is **5.7927** (PR #1 `armA512` histogram) and
+**5.890** (PR #2 control `effective_mean_draft_len`). The labelling explanation
+lands inside the measured spread. The rival — that PR #3 really ran pinned
+depth 8 — predicts `C(8)` of 198.2 / 219.7 / 226.4 ms under the same three
+assumptions, i.e. **23–41% away from the anchor**.
+
+Cross-check by the other route, pooling PR #1's per-depth costs over PR #1's
+own `armA512` depth histogram (same policy, same window): `E[C]` = 152.0 /
+167.6 / 172.7 ms against the anchor's 161.0, i.e. −5.5% to +7.3%. Two
+independent routes, both consistent, neither requiring a stale binary.
+
+**Consequences.**
+
+- `C(0) = 66.975` vs `65.009` (+3.0%) was always a fine session offset. The
+  `C(8)` row was never a depth-8 measurement, so there was never a
+  contradiction to explain.
+- Everything derived from `h_avg = (161.0 − 67.0)/8/67.0 = 0.1754` is void.
+  The measured mean is **0.2562**, from PR #1's own fit.
+- **The re-basing block above (`### The re-basing rule`) had the sign
+  backwards.** It concluded that the shipped `headStepCostRatio = 0.20`
+  *overestimates* the true marginal ratio by 1.39x/1.92x. It is wrong twice:
+  built on the void anchor, and applying a bf16→4-bit correction to arms that
+  had **already** run the declared 4-bit head. Corrected: **`0.20` UNDER-prices
+  a draft step by ~28%**, and the true `h` is strongly increasing
+  (0.0842 → 0.3909), so no scalar represents it in either direction.
+- The stale-binary hypothesis is **not needed for this discrepancy**. The build
+  defect at §5 (`benchmark-qwen-mtp.sh` never builds the worker, and
+  `run-amdahl-measurement.sh:40` calls it with no build step) remains real and
+  still matters for other arms.
+
+**Method note for the campaign:** the reason this sat open for a session is
+that I reached for an experiment ("settle it with `FORCE_DEPTH` on a freshly
+built worker") before reaching for `git show` at the commit that produced the
+number. The cheaper move was always available. This is the same lesson as
+"cite the emitting expression at the commit that produced the log line",
+arriving from the opposite direction.
+
+## 11.2 ★ The measured `h` vector STRUCTURALLY CAPS depth at 3
+
+This is the load-bearing result of the session, and it is analytic.
+
+Replicating `instrumentedCostModelDepth` exactly — the walk is
+`reach *= p; take if reach > h[d]·(1+expected)/(1+cumH); expected += reach;
+cumH += h[d]` — with PR #1's measured
+`h = [0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909]`:
+
+| constant acceptance `q` | measured-curve depth | flat-0.20 depth |
+|---:|---:|---:|
+| 0.70 | 2 | 3 |
+| 0.80 | 3 | 4 |
+| 0.85 | 3 | 5 |
+| 0.90 | 3 | 7 |
+| 0.93 – 1.00 | **3** | 8 |
+
+At the most favourable possible input, `q = 1.0`:
+
+```
+step 0 -> 1 : reach=1.0000 threshold=0.0842 take=True
+step 1 -> 2 : reach=1.0000 threshold=0.1430 take=True
+step 2 -> 3 : reach=1.0000 threshold=0.6265 take=True
+step 3 -> 4 : reach=1.0000 threshold=1.0693 take=False
+```
+
+**The general proof** (constant `q` is only a sweep; this covers arbitrary
+per-position acceptance `p0..p3 ∈ [0,1]`, which also covers the depth-0
+confidence-margin clamp, since that only ever *lowers* `p0`). At the `3 → 4`
+test the walk has set `reach = r3·p3` with `r3 := p0·p1·p2`, and
+`expected = r1 + r2 + r3 ≥ 3·r3` because `r1 ≥ r2 ≥ r3` (each factor ≤ 1), and
+`cumH = h0+h1+h2 = 0.4043`. So taking the step requires
+
+```
+r3·p3  >  0.3754·(1 + 3·r3)/1.4043  =  0.2673 + 0.8020·r3
+```
+
+and since `p3 ≤ 1` the left side is at most `r3`, giving `r3 > 0.2673/(1 −
+0.8020) = 1.3499`. **Impossible** — `r3` is a product of probabilities.
+
+Confirmed numerically: 400,000 random non-constant acceptance vectors biased
+hard toward 1.0, plus the all-ones corner, with `widthCap` released to 8, never
+reach depth 4 under the measured curve; the flat 0.20 vector reaches 8 on the
+same inputs. The generator raises `SystemExit` if this ever fails.
+
+So `armB512`'s depth histogram `{1:1, 2:2, 3:129}` is **not a property of the
+fixture it was measured on. It is a property of the vector.** It will look like
+that on every prompt, including all eight ranked ones.
+
+**Corollaries, all analytic, none needing a run:**
+
+- depth ≤ 3 ⇒ verify width ≤ 4 ⇒ `sdpaWidthWallDepthCap = 4` never binds,
+  `segmentedStreakGate` never matters, and `segmentedVerifyDepthCap` (7 or 8)
+  is **unreachable dead code**.
+- **PR #2's cap-7 win is provably inert on top of the `h`-curve.** The two are
+  rivals for one slot, not two improvements to add up.
+- A fitted 8-parameter vector that provably collapses to "at most 3" deserves
+  to be weighed against simply shipping **"at most 3"** — a two-line diff with
+  no fitted parameters and no env var. They differ only in the low-acceptance
+  tail: at `q = 0.70` the curve backs off to 2 while a hard cap-3 holds at 3.
+  That is exactly the hard-prompt regime that decides a median over eight
+  prompts (Flag D), so the difference is not academic — but it is small, and it
+  is measurable.
+
+**What this does not say.** It does not say the `h`-curve is wrong or that
+depth 3 is optimal. PR #1 measured the curve to beat the shipped scalar by
+−1.9275% end-to-end with `all_tokens_matched: true`; that stands. It says the
+curve's *mechanism* is not "smarter per-depth pricing" but "a hard cap at 3
+expressed as eight fitted numbers", and once that is visible, the honest
+comparison set changes.
+
+## 11.3 The three depth levers are SUBSTITUTES, and are not yet comparable
+
+| lever | Δ s/token | head | source |
+|---|---:|---|---|
+| `h`-curve as default | **−1.9275%** | declared 4-bit | PR #1 `armB512` |
+| cap 7 / gate 3 | **−3.0848%** | pinned bf16 | PR #2 |
+| fixed cap 3 | unmeasured | — | — |
+
+The two measured numbers **ran on different heads and cannot be ranked as they
+stand**. Converting a declared-4-bit number to a bf16-equivalent number needs a
+multiplier, and the multiplier is itself uncertain:
+
+| estimate | offset |
+|---|---:|
+| 256 tok, one session, `base-1` / `base-decl` | +4.11% |
+| 512 tok, PR #2 control / PR #1 `armA512` | +6.62% |
+| 512 tok, PR #7 control / PR #1 `armA512` | +6.66% |
+
+PR #2's and PR #7's controls agree with each other to 0.04%, which is why I
+read the 512-token gap as the head rather than the session. But the 256-token
+estimate is the only one that also controls for session, and it is the
+**smallest**. Both readings stay on the table. Applying them:
+
+```
+h-curve arm + 4.11%  ->  0.033618   vs  cap-7 0.034021   =>  h-curve wins
+h-curve arm + 6.62%  ->  0.034427   vs  cap-7 0.034021   =>  cap-7   wins
+h-curve arm + 6.66%  ->  0.034442   vs  cap-7 0.034021   =>  cap-7   wins
+```
+
+**The ranking flips inside the uncertainty of the correction.** No amount of
+re-arithmetic settles it. One host, one head, one session, interleaved arms —
+which is exactly what PR #13 (E11) runs.
+
+This is what invalidates §9's stacked arithmetic. See the retraction box there.
+
+## 11.4 ★ FOURTH ADVISOR ERROR: PR #1's headline is a merged win I did not bank
+
+PR #1's pair #3 — the A/B on a deterministic rebuild of the submitted commit,
+`dirty = 0` on both arms, live rebuilt binary:
+
+| metric | `armA512` flat 0.20 | `armB512` measured curve |
+|---|---:|---:|
+| `mtp_seconds_per_token` | 0.03292571287602186 | **0.03229108382947743** |
+| `mtp_decode_speedup` | 2.2630622411251546 | **2.308136053239464** |
+| `effective_mean_draft_len` | 5.75 | 2.970149253731343 |
+| `accepted_draft_rate` | 0.8861283643892339 | 0.9522613065326633 |
+| `all_tokens_matched` | true | true |
+| `residual_divergence_count` | 0 | 0 |
+
+**−1.9275% `mtp_seconds_per_token`, +1.9917% speedup**, bit-exact, depth
+histograms reproduced round-for-round across two separately built binaries.
+Decode-only the gap is larger: `armB512` leg-1 0.024210 vs `armA512` 0.025049
+s/tok = **+3.52%**; against the forced-`d3` ceiling of 2.7320 the candidate
+captures 99.84% and the control 96.45%. Part of the gap between +3.52%
+decode-only and +1.93% end-to-end is round count: 132 vs 82 rounds at the
+parent-clock fit's `c = 623.1 µs/round` ≈ 31 ms of extra per-round overhead.
+
+**It banks nothing.** `MLX_QWEN_MTP_H_VECTOR` is env-gated exactly like
+`MLX_QWEN_MTP_DRAFT_BITS`, and the ranked workflow's `env:` block sets only
+`MLXFAST_*` names it defines itself. I merged this PR, wrote the lesson *"a
+knob the scored run cannot reach is a measurement, not a win"* for PR #7 in §1
+of this file, and **did not apply it to the PR I had merged earlier**. That is
+the fourth advisor error of the campaign and the second instance of this exact
+class.
+
+The generalisation I should have drawn in §1 and am drawing now:
+
+> **Every merged result must be labelled BANKED or UNBANKED at merge time, and
+> the unbanked ones must carry a named follow-up that flips the default.** An
+> env-gated win is a measurement with a to-do attached. The failure mode is not
+> forgetting the result — it is remembering the result and forgetting the gate.
+
+Applying that retroactively to everything merged so far:
+
+| merged result | banked? | what flips it |
+|---|---|---|
+| PR #1 `h`-curve, −1.93% | **UNBANKED** — `MLX_QWEN_MTP_H_VECTOR` | PR #13 (E11) |
+| PR #7 3-bit draft head, −1.90% | **UNBANKED** — `MLX_QWEN_MTP_DRAFT_BITS` | PR #11 Part B |
+| PR #5 qmv small-M retune | BANKED — kernel default | — |
+| PR #8 crossrow NA=5 | BANKED — kernel default | — |
+| PR #10 roofline regime | n/a — knowledge, no diff | — |
+| PR #3 prefill irreducibility | n/a — closes a direction | — |
+
+Two of the campaign's three largest measured wins are currently sitting behind
+env vars. That is the single most actionable line in this file.
+
+## 11.5 Bookkeeping: numbers still suspended pending audit
+
+Unchanged from last session, listed so they are not quietly rehabilitated:
+"residual tax 1.71–1.91×"; "67–77 ms per round unexplained"; the `M=9` stream
+reading at `:598`; the comparison table at `:776`; `:204`. Several of these
+descend from the void `C(8)` anchor and may resolve by deletion rather than by
+correction; none of them are currently load-bearing for any funded experiment,
+which is why they are suspended rather than fixed.
