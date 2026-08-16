@@ -158,6 +158,7 @@ public final class Qwen36MTPBlockSession {
     public private(set) var seedTokenCount = 0
     public private(set) var committedTokenCount = 0
     public private(set) var roundCount = 0
+    private var traceLastDraftCount = -1
     public private(set) var acceptedDraftTotal = 0
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
@@ -743,6 +744,9 @@ public final class Qwen36MTPBlockSession {
         var deepSelectNs: UInt64 = 0
         var deepStepCount = 0
         var tLoopDone: UInt64 = 0
+        var tSnapDone: UInt64 = 0
+        var tConcatDone: UInt64 = 0
+        var didRepair = false
 
         // Round-top invariant, kept as a THROW rather than a comment: every
         // emitted token is in the trimmable caches and the pending primary is
@@ -951,9 +955,11 @@ public final class Qwen36MTPBlockSession {
         //    rejected single draft can then retain the primary's target work and
         //    discard only the draft token instead of re-forwarding the primary.
         let snapshot = Self.snapshotRecurrent(cache)
+        if Self.traceRounds { tSnapDone = DispatchTime.now().uptimeNanoseconds }
         let verifyTokens = concatenated(
             [MLXArray([Int32(primary)]).reshaped([1, 1])] + draftIdArrays,
             axis: 1)
+        if Self.traceRounds { tConcatDone = DispatchTime.now().uptimeNanoseconds }
         // nConfirmed: 1 at every drafting width. K=1 writes its promoted eager
         // primary checkpoint; K>=2 keeps exact recurrence inputs so a partial
         // accept can replay only its committed prefix without a repair forward.
@@ -1058,6 +1064,7 @@ public final class Qwen36MTPBlockSession {
                 // Generic K>1 / defensive fallback: undo the whole verify window
                 // and re-forward the committed block. This rare path pays a
                 // second blocking eval for its own readout.
+                didRepair = true
                 Self.rollbackAfterVerify(
                     cache, snapshot, verifiedTokens: draftCount + 1, to: base)
                 let (repairLogits, repairHidden) = model.callWithHidden(
@@ -1138,6 +1145,12 @@ public final class Qwen36MTPBlockSession {
                 + "deep_slice_ns=\(deepSliceNs) "
                 + "deep_select_ns=\(deepSelectNs) "
                 + "tail_async_ns=\(tDraftBuilt - tLoopDone) "
+                + "snap_ns=\(tSnapDone - tDraftBuilt) "
+                + "concat_ns=\(tConcatDone - tSnapDone) "
+                + "verify_fwd_ns=\(tVerifyBuilt - tConcatDone) "
+                + "prev_d=\(traceLastDraftCount) "
+                + "shape_change=\(traceLastDraftCount == draftCount ? 0 : 1) "
+                + "repair=\(didRepair ? 1 : 0) "
                 + "mod_embed_ns=\(Qwen35MTPHostTrace.embedNs) "
                 + "mod_fuse_ns=\(Qwen35MTPHostTrace.fuseNs) "
                 + "mod_mask_ns=\(Qwen35MTPHostTrace.maskNs) "
@@ -1147,6 +1160,7 @@ public final class Qwen36MTPBlockSession {
                 + "lay_mlp_ns=\(Qwen35MTPHostTrace.mlpNs) "
                 + "lay_norm_ns=\(Qwen35MTPHostTrace.layerNormNs)\n"
             Self.traceWrite(sub)
+            traceLastDraftCount = draftCount
         }
         // No trailing eval: every host-read value was materialised by the
         // round bundle above. A successful wide-prefix replay intentionally
