@@ -1,5 +1,6 @@
 import Foundation
 import MLX
+import MLXLLM
 import Testing
 
 /// Cost curve of `quantized_matmul` at the exact scored Qwen 3.8 27B shapes,
@@ -46,6 +47,9 @@ struct QwenQMVCostCurveTests {
         payload["fast_path_probes"] = fastPathProbes.map { shape in
             sweep(shape: shape, widths: [1, 4, 8, 9], reps: reps, inner: inner)
         }
+        payload["head_fc_dtype_probe"] = measureHeadFCDtypes(reps: reps, inner: inner)
+        payload["gdn_recurrence"] = sweepGatedDelta(
+            widths: Array(1...12), reps: reps, inner: inner)
 
         let data = try JSONSerialization.data(
             withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
@@ -291,6 +295,138 @@ private func sweep(
 /// Affine 4-bit group-64: packed nibbles plus a bf16 scale and bias per group.
 private func affine4WeightBytes(k: Int, n: Int) -> Int {
     n * (k / 2) + 2 * (n * (k / 64) * 2)
+}
+
+// MARK: - proposal-head dtype
+
+/// The head's widest projection, timed bf16 against affine 4-bit group-64 at the
+/// same shape and the same width.
+///
+/// Two artifacts claim to be the proposal head on this base and they disagree by
+/// 3.556x in bytes: `fixtures/qwen3_8_27b_mtp_track.json` pins 849,398,784 bf16
+/// tensor bytes and `setup-qwen-mtp.sh` fetches that tree unconditionally, while
+/// `mtp-head.manifest.json` declares a 238,934,093-byte 4-bit group-64
+/// requantization that nothing in the local path reads. Whether requantizing the
+/// head buys its byte ratio back as time is a decode-side question this measures
+/// directly instead of inferring from the backbone curve.
+private let headFCShape = (k: 5120, n: 10240)
+
+private func measureHeadFCDtypes(reps: Int, inner: Int) -> [String: Any] {
+    let (k, n) = headFCShape
+    let x = syntheticActivations(m: 1, k: k, salt: 3)
+    eval(x)
+
+    // [K, N] contiguous is the fastest legal bf16 layout, so the quantized side
+    // is compared against the strongest dense form rather than a strided view.
+    let dense = zeros([k, n], dtype: .bfloat16) + Float(0.01)
+    eval(dense)
+    let denseSeconds = medianSpread(reps: reps, inner: inner, warmup: 3) {
+        (0..<inner).map { _ in x.matmul(dense) }
+    }
+
+    let quant = syntheticAffine4Weight(k: k, n: n)
+    let quantSeconds = medianSpread(reps: reps, inner: inner, warmup: 3) {
+        (0..<inner).map { _ in
+            quantizedMM(
+                x, quant.w, scales: quant.scales, biases: quant.biases,
+                transpose: true, groupSize: 64, bits: 4)
+        }
+    }
+
+    let denseBytes = k * n * 2
+    let quantBytes = affine4WeightBytes(k: k, n: n)
+    let dt = denseSeconds[denseSeconds.count / 2]
+    let qt = quantSeconds[quantSeconds.count / 2]
+    return [
+        "k": k,
+        "n": n,
+        "m": 1,
+        "bf16_weight_bytes": denseBytes,
+        "q4g64_weight_bytes": quantBytes,
+        "byte_ratio_bf16_over_q4g64": Double(denseBytes) / Double(quantBytes),
+        "bf16_seconds_per_call": dt,
+        "q4g64_seconds_per_call": qt,
+        "time_ratio_bf16_over_q4g64": dt / qt,
+        "bf16_effective_bandwidth_bytes_per_second": Double(denseBytes) / dt,
+        "q4g64_effective_bandwidth_bytes_per_second": Double(quantBytes) / qt,
+    ]
+}
+
+// MARK: - Gated DeltaNet recurrence
+
+/// The other half of every verify round: 48 recurrent layers whose cost is state
+/// traffic, not projection traffic.
+///
+/// A GDN step reads and writes the whole `[1, Hv, Dk, Dv]` fp32 state regardless
+/// of width, so its arithmetic intensity is roughly `2 * T` FLOP/byte against a
+/// machine balance in the high twenties. That predicts an almost flat curve over
+/// the verify widths, which is the opposite of a quantized projection and is why
+/// the two are reported side by side rather than summed.
+///
+/// The chain is the real recurrence: each call consumes the previous call's
+/// state, so nothing here overlaps that would not overlap in the scored round.
+private func sweepGatedDelta(widths: [Int], reps: Int, inner: Int) -> [String: Any] {
+    let hk = 16, dk = 128, hv = 48, dv = 128
+    let aLog = (zeros([hv], dtype: .float32) + Float(-0.5)).asType(.bfloat16)
+    let dtBias = (zeros([hv], dtype: .float32) + Float(0.1)).asType(.bfloat16)
+    let state0 = zeros([1, hv, dk, dv], dtype: .float32)
+    eval(aLog, dtBias, state0)
+
+    var rows: [[String: Any]] = []
+    for m in widths {
+        let q = gdnInput([1, m, hk, dk], salt: 1)
+        let kk = gdnInput([1, m, hk, dk], salt: 2)
+        let v = gdnInput([1, m, hv, dv], salt: 3)
+        let a = gdnInput([1, m, hv], salt: 4)
+        let b = gdnInput([1, m, hv], salt: 5)
+        eval(q, kk, v, a, b)
+
+        let samples = medianSpread(reps: reps, inner: inner, warmup: 3) {
+            var outs: [MLXArray] = []
+            var state = state0
+            for _ in 0..<inner {
+                let (y, next) = gatedDeltaUpdate(
+                    q: q, k: kk, v: v, a: a, b: b,
+                    aLog: aLog, dtBias: dtBias, state: state)
+                outs.append(y)
+                state = next
+            }
+            outs.append(state)
+            return outs
+        }
+
+        let stateBytes = hv * dk * dv * 4
+        let ioBytes = 2 * m * hk * dk * 2 + m * hv * dv * 2 * 2
+        rows.append([
+            "m": m,
+            "seconds_per_call": samples[samples.count / 2],
+            "seconds_per_call_min": samples[0],
+            "seconds_per_call_max": samples[samples.count - 1],
+            "calls_per_timed_region": inner,
+            "timed_regions": reps,
+            "traffic_bytes": 2 * stateBytes + ioBytes,
+            "flops": 4 * m * hv * dk * dv,
+        ])
+    }
+
+    return [
+        "name": "linear_attn.gated_delta_recurrence",
+        "calls_per_verify": 48,
+        "num_k_heads": hk,
+        "num_v_heads": hv,
+        "head_k_dim": dk,
+        "head_v_dim": dv,
+        "state_bytes_per_layer": hv * dk * dv * 4,
+        "rows": rows,
+    ]
+}
+
+private func gdnInput(_ shape: [Int], salt: Int) -> MLXArray {
+    let count = shape.reduce(1, *)
+    let values: [Float] = (0..<count).map { index in
+        Float((index &* 97 &+ salt &* 6151) % 211) / 211.0 - 0.5
+    }
+    return MLXArray(values).reshaped(shape).asType(.bfloat16)
 }
 
 private func maxAbsDelta(_ a: [Float], _ b: [Float]) -> Double {

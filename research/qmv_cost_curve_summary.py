@@ -133,6 +133,15 @@ def per_shape_curve(shape, rf, widths):
                 "m": m,
                 "seconds_per_call": r["seconds_per_call"],
                 "cost_ratio_vs_m1": r["seconds_per_call"] / base,
+                # What the *next* row costs in units of the first row. A shape
+                # still on its bandwidth plateau charges ~0 for another row; one
+                # past its knee charges ~1/knee_m. This is the number a depth
+                # scheduler needs, and averaging it into cost(M)/cost(1) hides it.
+                "incremental_tax": (
+                    (r["seconds_per_call"] - row(shape, m - 1)["seconds_per_call"]) / base
+                    if row(shape, m - 1) is not None
+                    else None
+                ),
                 "roofline_seconds": floor,
                 "qmv_tax": r["seconds_per_call"] / floor,
                 "hw_roofline_seconds": hw_floor,
@@ -197,6 +206,51 @@ def crossover(shape):
         "largest_drop_at_m": down_m,
         "largest_drop_ratio": steps[down_m],
         "step_at_predicted_limit": steps.get(limit),
+    }
+
+
+def gdn_curve(gdn, rf):
+    """The 48 recurrent layers, normalised the same way as the projections.
+
+    A GDN step moves the whole fp32 state in and out whatever the width, so its
+    arithmetic intensity is ~2*M FLOP/byte against a machine balance in the high
+    twenties. If the projections steepen with M while this stays flat, the round
+    has two cost families and one draft-depth policy cannot be tuned against a
+    single curve.
+    """
+    if not gdn:
+        return None
+    base = gdn["rows"][0]["seconds_per_call"]
+    bw = rf["peak_bandwidth_bytes_per_second"]
+    flops = rf["peak_flops_per_second"]
+    rows = []
+    prev = None
+    for r in gdn["rows"]:
+        floor = max(r["traffic_bytes"] / bw, r["flops"] / flops)
+        rows.append(
+            {
+                "m": r["m"],
+                "seconds_per_call": r["seconds_per_call"],
+                "cost_ratio_vs_m1": r["seconds_per_call"] / base,
+                "incremental_tax": (
+                    (r["seconds_per_call"] - prev) / base if prev is not None else None
+                ),
+                "hw_roofline_seconds": floor,
+                "hw_efficiency": floor / r["seconds_per_call"],
+                "arithmetic_intensity_flop_per_byte": r["flops"] / r["traffic_bytes"],
+                "layer_seconds_per_verify": r["seconds_per_call"] * gdn["calls_per_verify"],
+            }
+        )
+        prev = r["seconds_per_call"]
+    return {
+        "name": gdn["name"],
+        "calls_per_verify": gdn["calls_per_verify"],
+        "state_bytes_per_layer": gdn["state_bytes_per_layer"],
+        "state_bytes_all_layers": gdn["state_bytes_per_layer"] * gdn["calls_per_verify"],
+        "machine_balance_flop_per_byte": flops / bw,
+        "cost_9_over_1": next(
+            (r["cost_ratio_vs_m1"] for r in rows if r["m"] == 9), None),
+        "rows": rows,
     }
 
 
@@ -318,6 +372,8 @@ def main():
                     }
                 )
 
+    gdn = gdn_curve(vend.get("gdn_recurrence"), rf)
+
     out = {
         "host": args.host,
         "base_sha": args.base_sha,
@@ -355,6 +411,8 @@ def main():
             }
             for p in vend["fast_path_probes"]
         ],
+        "head_fc_dtype_probe": vend.get("head_fc_dtype_probe"),
+        "gdn_recurrence": gdn,
         "stock_vs_vendored": stock_vs_vendored,
     }
 
@@ -441,6 +499,37 @@ def main():
     for p in out["fast_path_probes"]:
         vals = "  ".join(f"M{m}={s*1e3:.3f}ms" for m, s in p["seconds_per_call_by_m"].items())
         print(f"  {p['name']:24s} {vals}")
+
+    hp = out["head_fc_dtype_probe"]
+    if hp:
+        print(f"\nproposal-head fc, K={hp['k']} N={hp['n']}, M=1: does 4-bit "
+              "requantisation buy its byte ratio back as time?")
+        print(f"  bf16    {hp['bf16_weight_bytes']/1e6:8.1f} MB  "
+              f"{hp['bf16_seconds_per_call']*1e3:7.3f} ms  "
+              f"{hp['bf16_effective_bandwidth_bytes_per_second']/1e9:6.1f} GB/s")
+        print(f"  q4/g64  {hp['q4g64_weight_bytes']/1e6:8.1f} MB  "
+              f"{hp['q4g64_seconds_per_call']*1e3:7.3f} ms  "
+              f"{hp['q4g64_effective_bandwidth_bytes_per_second']/1e9:6.1f} GB/s")
+        print(f"  bytes {hp['byte_ratio_bf16_over_q4g64']:.3f}x  ->  "
+              f"time {hp['time_ratio_bf16_over_q4g64']:.3f}x  "
+              f"({100*hp['time_ratio_bf16_over_q4g64']/hp['byte_ratio_bf16_over_q4g64']:.0f}% "
+              "of the byte ratio realised)")
+
+    if out["gdn_recurrence"]:
+        g = out["gdn_recurrence"]
+        print(f"\ngated-delta recurrence, {g['calls_per_verify']} layers x "
+              f"{g['state_bytes_per_layer']/2**20:.1f} MiB state "
+              f"({g['state_bytes_all_layers']/2**20:.0f} MiB total); "
+              f"machine balance {g['machine_balance_flop_per_byte']:.1f} FLOP/byte")
+        print(f"  {'M':>3s} {'ms/layer':>9s} {'ms/verify':>10s} {'cost/M1':>8s} "
+              f"{'incr':>7s} {'FLOP/B':>7s} {'hw eff':>7s}")
+        for r in g["rows"]:
+            incr = f"{r['incremental_tax']:7.3f}" if r["incremental_tax"] is not None else f"{'':>7s}"
+            print(f"  {r['m']:3d} {r['seconds_per_call']*1e3:9.4f} "
+                  f"{r['layer_seconds_per_verify']*1e3:10.3f} "
+                  f"{r['cost_ratio_vs_m1']:8.3f} {incr} "
+                  f"{r['arithmetic_intensity_flop_per_byte']:7.2f} "
+                  f"{r['hw_efficiency']:7.3f}")
     if stock_vs_vendored:
         print("\nvendored vs stock pip MLX (speedup > 1 means this checkout is faster)")
         for s in shapes:
@@ -483,7 +572,7 @@ def main():
         curve_table = wandb.Table(
             columns=[
                 "shape", "k", "n", "calls_per_verify", "m", "seconds_per_call",
-                "cost_ratio_vs_m1", "roofline_seconds", "qmv_tax",
+                "cost_ratio_vs_m1", "incremental_tax", "roofline_seconds", "qmv_tax",
                 "hw_roofline_seconds", "hw_efficiency", "concurrent_speedup",
                 "tap_overhead_fraction", "row0_bitwise_matches_m1",
             ]
@@ -491,7 +580,8 @@ def main():
         for c in curves:
             curve_table.add_data(
                 c["name"], c["k"], c["n"], c["calls_per_verify"], c["m"],
-                c["seconds_per_call"], c["cost_ratio_vs_m1"], c["roofline_seconds"],
+                c["seconds_per_call"], c["cost_ratio_vs_m1"], c["incremental_tax"],
+                c["roofline_seconds"],
                 c["qmv_tax"], c["hw_roofline_seconds"], c["hw_efficiency"],
                 c["concurrent_speedup"], c["tap_overhead_fraction"],
                 c["row0_bitwise_matches_m1"],
@@ -518,11 +608,32 @@ def main():
                 kn["plateau_end_m"], kn["marginal_knee_m"],
             )
 
+        gdn_table = wandb.Table(
+            columns=[
+                "m", "seconds_per_call", "ms_per_verify", "cost_ratio_vs_m1",
+                "incremental_tax", "arithmetic_intensity_flop_per_byte",
+                "hw_efficiency",
+            ]
+        )
+        for r in (out["gdn_recurrence"] or {}).get("rows", []):
+            gdn_table.add_data(
+                r["m"], r["seconds_per_call"], r["layer_seconds_per_verify"] * 1e3,
+                r["cost_ratio_vs_m1"], r["incremental_tax"],
+                r["arithmetic_intensity_flop_per_byte"], r["hw_efficiency"],
+            )
+
         run.log(
             {
                 "qmv/cost_curve": curve_table,
                 "qmv/weighted_verify": verify_table,
                 "qmv/per_shape_roofline": knee_table,
+                "qmv/gdn_recurrence": gdn_table,
+                "qmv/gdn_cost_ratio": wandb.plot.line(
+                    gdn_table, "m", "cost_ratio_vs_m1",
+                    title="gated-delta recurrence cost(M)/cost(1)"),
+                "qmv/incremental_tax_by_shape": wandb.plot.line(
+                    curve_table, "m", "incremental_tax",
+                    stroke="shape", title="marginal cost of row M, in units of cost(1)"),
                 "qmv/cost_ratio_by_shape": wandb.plot.line(
                     curve_table, "m", "cost_ratio_vs_m1",
                     stroke="shape", title="quantized_matmul cost(M)/cost(1)"),
@@ -557,6 +668,22 @@ def main():
             f"qmv/knee_m_{kn['name']}": kn["predicted_knee_m"]
             for kn in knees if kn["predicted_knee_m"]
         }
+        if hp:
+            flat |= {
+                "head_fc/bf16_ms": hp["bf16_seconds_per_call"] * 1e3,
+                "head_fc/q4g64_ms": hp["q4g64_seconds_per_call"] * 1e3,
+                "head_fc/byte_ratio": hp["byte_ratio_bf16_over_q4g64"],
+                "head_fc/time_ratio": hp["time_ratio_bf16_over_q4g64"],
+                "head_fc/byte_ratio_realised": (
+                    hp["time_ratio_bf16_over_q4g64"] / hp["byte_ratio_bf16_over_q4g64"]),
+            }
+        if out["gdn_recurrence"]:
+            g = out["gdn_recurrence"]
+            flat |= {
+                f"gdn/ms_per_verify_m{r['m']}": r["layer_seconds_per_verify"] * 1e3
+                for r in g["rows"]
+            }
+            flat["gdn/cost_9_over_1"] = g["cost_9_over_1"]
         if pad_gain:
             flat["qmv/pad_9_to_10_speedup"] = pad_gain["pad_9_to_10_speedup"]
         for m, d in advisor.items():
