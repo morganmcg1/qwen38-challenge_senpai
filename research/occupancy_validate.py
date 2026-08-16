@@ -17,11 +17,14 @@ from occupancy_model import (  # noqa: E402
 
 ARMS = [
     ("I", "research/trace-runI-base-cap8-512.log", 3, 2.0947033499),
-    ("J", "research/trace-runJ-gate2-512.log", 2, 2.1243836568),
+    ("J", "research/trace-runJ-cap7-512.log", 3, 2.1636873696),
+    ("J2", "research/trace-runJ-gate2-512.log", 2, 2.1243836568),
     ("K", "research/trace-runK-gate2-cap8-512.log", 2, 2.1019606601),
     ("L", "research/trace-runL-gate1-cap8-512.log", 1, 2.1288141130),
     ("M", "research/trace-runM-gate0-cap8-512.log", 0, 2.0600336024),
     ("N", "research/trace-runN-gate1-cap8-512-confirm.log", 1, 2.1311965111),
+    ("O", "research/trace-runO-cap7-gate3-512.log", 3, 2.1615420490),
+    ("P", "research/trace-runP-cap7-gate3-512-confirm.log", 3, 2.1623244386),
 ]
 
 

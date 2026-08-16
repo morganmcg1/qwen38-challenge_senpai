@@ -10,12 +10,13 @@ SENPAI-RESULT: assignment=qwen38-r1-e2-deep-round-gate revision=r4 student=qwen-
 | branch | `qwen-alphonse/deep-round-gate-width9` |
 | PR | #2 |
 | assignment / revision | `qwen38-r1-e2-deep-round-gate` / `r4` |
-| `BASE_SHA` | `1eacf376e3ee82578df7f47ee47f51d1382a0dbc` (the r4 marker base). The advisor branch tip moved to `b9767435ad9f64509173569e62d14a658f281598` during this turn and is merged into this branch; `git diff 1eacf376..b9767435` touches only `research/CURRENT_RESEARCH_STATE.md` and `research/ESTABLISHED_FACTS.md`, so no measurement is invalidated. |
+| `BASE_SHA` | `1eacf376e3ee82578df7f47ee47f51d1382a0dbc` (the r4 marker base). The advisor branch tip moved three times during this turn — to `b9767435ad9f64509173569e62d14a658f281598` (merged into this branch), then `ea2afad4b0649cf238c7d3bf0c289330acc75d83`, then `71767c0234e91590cb2f2c187ceab6a118861a61`. All three diffs are confined to `research/` (state docs plus new `qmv`/roofline analysis scripts, probes and `pr3_anchor_reconciliation.py`); none touches `Sources/`, `Vendor/`, fixtures or the manifest, so **no measurement here is invalidated**. |
 | `UPSTREAM_SHA` | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
 | shipped configuration | `segmentedVerifyDepthCap = 7`, `segmentedStreakGate = 3`, `sdpaWidthWallDepthCap = 4` |
 | candidate commit (measured) | `8e61e775e3e49ee94fafcba439944d7951f3f480` — Run O provenance stamp reads `head=8e61e775… dirty=0`, `pre-build cap=7 gate=3`, `post-build cap=7 gate=3`. |
 | result head | the commit carrying this document. `git diff 8e61e77 HEAD -- Sources/` is **empty**: the compiled candidate at the result head is byte-identical to the tree Run O measured. Everything added since is `Tests/`, `research/` and `senpai/`. |
-| Run J provenance | same compiled constants as Run O (cap 7, gate 3), measured before `run-gate-arm.sh` existed, so it carries no stamp. Its schedule is bit-identical to Run O's (see the repeat table), which is the evidence that the two arms ran the same build. |
+| Run J provenance — **caveat retired** | J predates `run-gate-arm.sh` and carries no launch stamp. It is now bracketed by **two** stamped repeats of its configuration: Run O at `head=8e61e775… dirty=0` and Run P₅₁₂ at `head=43438153… dirty=0`, both asserting `cap=7 gate=3` before *and* after the Swift build. All three arms agree bit-for-bit on every structural quantity, so J demonstrably compiled the shipped constants. |
+| confirmation run (r4 stop rule) | **Run P₅₁₂**, tag `runP-cap7-gate3-512-confirm`, stamped at `43438153a5ca93f4e5050229e2be2ffb01238d1f` — *the exact head of the submitted result*. Launched after submission purely to close the provenance gap; it reproduced within 0.11 % and **changed no conclusion**. |
 | host | Apple M4 Pro (`Mac16,11`), 48 GB, **low-memory profile** — *not* the ranked M5 |
 | toolchain | macOS 26.5.2, Xcode 26.6, Swift 6.3.3 |
 | local `vector_limit` | 10 (`applegpu_g16s`, gen 16) → widths 1..9 all take the `qmv`+crossrow family locally |
@@ -241,9 +242,10 @@ research/run-gate-arm.sh runM-gate0-cap8-512     8 0 512 --local-iterate
 research/run-gate-arm.sh runN-gate1-cap8-512-confirm 8 1 512 --local-iterate
 research/run-gate-arm.sh runO-cap7-gate3-512     7 3 512 --local-iterate   # winner
 research/run-gate-arm.sh runP-cap7-gate3-localsubmit-128 7 3 128 --local-submit
+research/run-gate-arm.sh runP-cap7-gate3-512-confirm 7 3 512 --local-iterate  # third repeat, stamped at the submitted head
 ```
 
-Runs I, J and J₂ predate the runner and were driven by the same environment by hand; that is precisely why J₂'s assigned and executed configurations diverged, and why Run O exists to reproduce J under a stamped build. All sweep arms are `--local-iterate` at 512 decode tokens (`MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS=512`), one public fixture, M4 Pro, 40 °C cool gate honoured on every launch. Run I is a **fresh unchanged-base control measured on this host in this session** — not a historical number.
+Runs I, J and J₂ predate the runner and were driven by the same environment by hand; that is precisely why J₂'s assigned and executed configurations diverged, why Run O exists to reproduce J under a stamped build, and why Run P₅₁₂ then repeated it a third time stamped at the submitted head. All sweep arms are `--local-iterate` at 512 decode tokens (`MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS=512`), one public fixture, M4 Pro, 40 °C cool gate honoured on every launch. Run I is a **fresh unchanged-base control measured on this host in this session** — not a historical number.
 
 ### Headline — the winner is cap 7 / gate 3, and the *cap* is the dominant lever
 
@@ -252,26 +254,31 @@ Runs I, J and J₂ predate the runner and were driven by the same environment by
 | **I** | 8 | 3 | 2.0947033499 | — (control) | 0.03510386 | — | `txwiiulo` |
 | **J** | **7** | **3** | **2.1636873696** | **+3.293 %** | **0.03403967** | **−3.032 %** | `iwy987kn` |
 | **O** | **7** | **3** | **2.1615420490** | **+3.191 %** | **0.03400226** | **−3.138 %** | `p6yyq9ep` |
+| **P₅₁₂** | **7** | **3** | **2.1623244386** | **+3.228 %** | **0.03403510** | **−3.045 %** | `bp9kysyu` |
 | J₂ | 7 | 2 | 2.1243836568 | +1.417 % | 0.03452479 | −1.650 % | `ixu99guw` |
 | K | 8 | 2 | 2.1019606601 | +0.346 % | 0.03502188 | −0.234 % | `sc05c6tg` |
 | L | 8 | 1 | 2.1288141130 | +1.628 % | 0.03456269 | −1.542 % | `lluppgt1` |
 | N | 8 | 1 (repeat of L) | 2.1311965111 | +1.742 % | 0.03458426 | −1.480 % | `y2uqpe8a` |
 | M | 8 | 0 | 2.0600336024 | −1.655 % | 0.03567602 | **+1.630 %** | `l4zj9qxi` |
 
-Serial-leg s/token per run: I 0.07353218, J 0.07365120, O 0.07349732, J₂ 0.07334391, K 0.07361460, L 0.07357754, N 0.07370585, M 0.07349379 — **spread 0.4935 %**, so the ratio column is not being moved by an unstable denominator.
+Serial-leg s/token per run: I 0.07353218, J 0.07365120, O 0.07349732, P₅₁₂ 0.07359493, J₂ 0.07334391, K 0.07361460, L 0.07357754, N 0.07370585, M 0.07349379 — **spread 0.4935 %**, so the ratio column is not being moved by an unstable denominator. Restricted to the four arms that matter for the headline comparison (I, J, O, P₅₁₂) the serial spread is **0.209 %**.
 
-**Winner, both repeats:** cap 7 / gate 3, mean s/token **0.03402096** (ratio **2.1626147093**), **−3.085 %** against the control.
+**Winner, all three repeats:** cap 7 / gate 3, mean s/token **0.03402568** (mean ratio **2.1625179524**), **−3.071 %** against the control, **+3.237 %** on the ratio.
 
-#### Run-to-run noise, measured twice
+The published primary metric is left at the two-repeat mean **2.1626147093**, because that is the number the timing evidence was submitted under. The three-repeat mean is **2.1625179524**, a difference of **−0.0045 %** — an order of magnitude below repeat noise, and not worth restating the whole result for. Either figure supports the same decision.
 
-The schedule is a deterministic function of the configuration, so a repeat is a pure timing measurement with the decision path pinned. Two independent repeat pairs:
+#### Run-to-run noise, measured three times
 
-| pair | config | s/token A | s/token B | mean | **spread** |
-|---|---|---|---|---|---|
-| J ↔ O | cap 7 / gate 3 | 0.03403967 | 0.03400226 | 0.03402096 | **0.1099 %** |
-| L ↔ N | cap 8 / gate 1 | 0.03456269 | 0.03458426 | 0.03457347 | **0.0624 %** |
+The schedule is a deterministic function of the configuration, so a repeat is a pure timing measurement with the decision path pinned. Three independent repeats of the winner plus one of a gate arm:
 
-J and O are bit-identical in every structural quantity — `accepted_draft_rate` 0.9189765458422174, `effective_mean_draft_len` 5.790123456790123, 81 rounds, depth histogram `{3:1, 4:29, 5:2, 6:3, 7:46}`, 431 accepted / 38 rejected, same mismatch hexfloats — to sixteen digits. **The −3.085 % effect is 28× the repeat noise.**
+| set | config | s/token values | mean | **spread** |
+|---|---|---|---|---|
+| **J ↔ O ↔ P₅₁₂** | **cap 7 / gate 3** | 0.03403967 / 0.03400226 / 0.03403510 | **0.03402568** | **0.1100 %** |
+| L ↔ N | cap 8 / gate 1 | 0.03456269 / 0.03458426 | 0.03457347 | **0.0624 %** |
+
+Adding a third repeat did **not** widen the band: the three-arm spread (0.1100 %) is the same as the original J↔O pair (0.1099 %), so 0.11 % is a stable estimate of this host's timing noise rather than an artefact of two samples. **The −3.071 % effect is 28× the repeat noise.**
+
+J, O and P₅₁₂ are bit-identical in every structural quantity — `accepted_draft_rate` 0.9189765458422174, `effective_mean_draft_len` 5.790123456790123, 81 rounds, depth histogram `{3:1, 4:29, 5:2, 6:3, 7:46}`, cap histogram `{4:29, 7:52}`, 431 accepted / 38 rejected, `declared_rows_total` = `reference_checked_row_total` = 550, 10 replayed verify blocks, and the *same two* terminal-round mismatch hexfloats — to sixteen digits.
 
 #### The 2 × 2: cap and gate interact, with a sign reversal
 
@@ -304,7 +311,36 @@ Run N re-ran Run L's exact configuration on the committed tree (`head=03d43894�
 | row-gate mismatches | pos 1022 + 1024, round 74 | pos 1022 + 1024, round 74, **same hexfloats** |
 | gate counterfactual, KL boundary | identical | identical |
 
-Run O did the same for Run J (cap 7 / gate 3). It is the only arm with a full provenance stamp, and it too reproduced J exactly: depth histogram `{3:1, 4:29, 5:2, 6:3, 7:46}`, 81 rounds, 431 accepted / 38 rejected drafts, `effective_mean_draft_len` 5.790123456790123, `accepted_draft_rate` 0.9189765458422174, and the *same* terminal-round mismatch hexfloats at positions 1022 and 1024.
+Run O did the same for Run J (cap 7 / gate 3) and reproduced it exactly: depth histogram `{3:1, 4:29, 5:2, 6:3, 7:46}`, 81 rounds, 431 accepted / 38 rejected drafts, `effective_mean_draft_len` 5.790123456790123, `accepted_draft_rate` 0.9189765458422174, and the *same* terminal-round mismatch hexfloats at positions 1022 and 1024.
+
+#### ★ Run P₅₁₂ — the third repeat, stamped at the submitted head
+
+The winner was run a **third** time, `research/run-gate-arm.sh runP-cap7-gate3-512-confirm 7 3 512 --local-iterate`, stamped `head=43438153a5ca93f4e5050229e2be2ffb01238d1f dirty=0` with pre-build and post-build asserts both `cap=7 gate=3`. That head is the exact commit the r4 result was submitted at, which is the point of the run.
+
+Run P₅₁₂ is **byte-identical to Run O in every non-timing output**, verified by direct comparison of the committed artifacts rather than by eye:
+
+| quantity | Run O | Run P₅₁₂ |
+|---|---|---|
+| depth histogram | `{3:1, 4:29, 5:2, 6:3, 7:46}` | identical |
+| cap histogram | `{4:29, 7:52}` | identical |
+| rounds | 81 | 81 |
+| accepted / rejected drafts | 431 / 38 | 431 / 38 |
+| `declared_rows_total` / `reference_checked_row_total` | 550 / 550 | 550 / 550 |
+| `verify_block_replayed_round_count` | 10 | 10 |
+| `accepted_draft_rate` | 0.9189765458422174 | identical |
+| `effective_mean_draft_len` | 5.790123456790123 | identical |
+| row-gate `per_width` table | w4 4/2/1, w5 119/0/0, w6 12/0/0, w7 21/0/0, w8 356/0/0 | **`==` identical** |
+| row-gate mismatch samples | pos 1022 + 1024, round 81 | **`==` identical**, same token ids *and* same hexfloats |
+| per-position acceptance profile | `0.951 0.974 0.960 0.972 0.980 1.000 0.955` | identical |
+| decode seconds | 17.4092 | 17.4260 |
+
+The `per_width` and `mismatch_samples` rows were compared with a structural equality test on the two `analysis-run*.json` artifacts, not by inspection; both returned `True`. Only the timings differ.
+
+*Artifact-hygiene note.* My first pass wrote this run's analysis to `research/analysis-runP.json`, which was already occupied by the 128-token `--local-submit` fidelity analysis (both runs use the tag prefix `runP`). The committed 128-token artifact was silently overwritten in the worktree. It was recovered from git and the confirmation run now lives at `research/analysis-runP-512-confirm.json`; both are committed side by side. Nothing measured was lost, but the near-miss is worth recording — the two `runP` tags should have been disambiguated at launch.
+
+**What the third repeat bought.** Not precision — the spread did not move. It bought **provenance**: Run J was the highest-scoring arm and the only unstamped one, so the headline rested partly on inferring J's build from its outputs. There are now two stamped arms reproducing J bit-for-bit, one of them at the submitted head itself, which converts that inference into direct evidence. The caveat in the header is retired on this basis.
+
+**Correction to my earlier claim.** The previous revision of this section asserted that "repeating an arm a third time would buy nothing; only a different host or a different prompt can move the conclusion." That was right about *precision* and wrong about *provenance*, and I should not have written it as a blanket statement. The precision half held exactly — the third sample reproduced to 0.11 % and shifted the mean by −0.0045 % — but a repeat is also the only way to attach a launch stamp to an arm measured before the stamping runner existed, and that was a real open weakness in my own report header.
 
 **The candidate schedule is a deterministic function of the configuration.** Nothing in the gate or cap path depends on wall-clock time, thermal state, or scheduling order. That makes each repeat a clean measurement of *timing* noise with the decision path held exactly fixed:
 
@@ -555,20 +591,39 @@ Under `vector_limit = 6`, widths above 5 leave the `qmv` + crossrow family entir
 
 `research/occupancy_model.py` implements a Markov chain over `fullAcceptStreak` that replicates `costModelDepth` exactly (H = 0.20, SHALLOW_CAP = 4, DEEP_CAP = 8), driven by the **measured** cost table `C(d)` = {2: 79.70, 4: 126.40, 5: 146.50, 6: 168.30, 7: 189.70, 8: 217.40} ms with a linear fill `12.2 + 22.5·(d+1)`, head delta 2.6893 ms/draft, serial 0.073532175738364458 s/token, and a fixed non-block overhead of 4012.5/512 ms per token.
 
-### Validation against the six arms measured at the time (I–N)
+### Validation against all nine measured arms
 
-| arm | gate | pooled conditional q | shallow-cap accept | deep-cap accept | model raw | measured raw | error |
-|---|---|---|---|---|---|---|---|
-| I | 3 | 0.959821 | 0.9130 | 0.9806 | 2.100669 | 2.0947033 | +0.28 % |
-| J | 2 | 0.961969 | 0.8791 | 0.9831 | 2.076416 | 2.1243837 | −2.26 % (ran cap 7) |
-| K | 2 | 0.960089 | 0.8889 | 0.9801 | 2.105931 | 2.1019607 | +0.19 % |
-| L | 1 | 0.962637 | 0.8644 | 0.9773 | 2.118051 | 2.1288141 | −0.51 % |
-| M | 0 | 0.960613 | **null** (no shallow rounds exist) | 0.9606 | 2.044294 | 2.0600336 | −0.76 % |
-| N | 1 | 0.962637 | 0.8644 | 0.9773 | 2.118051 | 2.1311965 | −0.62 % |
+`research/occupancy_validate.py` now carries every arm, including the real Run J (cap 7 / gate 3) that was previously mislabelled in this table — the row that used to be called "J" was in fact the gate-2 arm, and is listed here as **J₂**. The model itself is structurally **cap 8**: `DEEP_CAP` is fixed, so every arm is scored as if it had run cap 8 and only the measured acceptance profile changes between rows.
 
-Fitted per-arm, the model is accurate to well under 1 % on every arm that ran the configuration it was told about. (Run J's 2.26 % error is the model being given cap 8 while the run executed cap 7.)
+| arm | cap | gate | pooled conditional q | shallow-cap accept | deep-cap accept | model raw | measured raw | model/measured |
+|---|---|---|---|---|---|---|---|---|
+| I | 8 | 3 | 0.959821 | 0.9130 | 0.9806 | 2.100669 | 2.0947033 | 1.002848 |
+| K | 8 | 2 | 0.960089 | 0.8889 | 0.9801 | 2.105931 | 2.1019607 | 1.001889 |
+| L | 8 | 1 | 0.962637 | 0.8644 | 0.9773 | 2.118051 | 2.1288141 | 0.994944 |
+| N | 8 | 1 | 0.962637 | 0.8644 | 0.9773 | 2.118051 | 2.1311965 | 0.993832 |
+| M | 8 | 0 | 0.960613 | **null** (no shallow rounds exist) | 0.9606 | 2.044294 | 2.0600336 | 0.992359 |
+| J₂ | 7 | 2 | 0.961969 | 0.8791 | 0.9831 | 2.076416 | 2.1243837 | 0.977421 |
+| J | 7 | 3 | 0.968539 | 0.9000 | 0.9884 | 2.095877 | 2.1636874 | **0.968660** |
+| O | 7 | 3 | 0.968539 | 0.9000 | 0.9884 | 2.095877 | 2.1615420 | **0.969621** |
+| P₅₁₂ | 7 | 3 | 0.968539 | 0.9000 | 0.9884 | 2.095877 | 2.1623244 | **0.969270** |
 
-Run N is a useful check on the model as well as on the hardware: because the schedule is deterministic, N feeds the model **byte-identical inputs** to L, so the model emits exactly the same 2.118051. The only thing that moves between the two rows is the measurement, and it moves by 0.11 %. The model's residual against gate 1 is therefore a genuine model error of about half a percent, not a sampling artifact — the fixed-selection-gap bias described below, not noise.
+Run N is a useful check on the model as well as on the hardware: because the schedule is deterministic, N feeds the model **byte-identical inputs** to L, so the model emits exactly the same 2.118051. The only thing that moves between the two rows is the measurement, and it moves by 0.11 %. The model's residual against gate 1 is therefore a genuine model error of about half a percent, not a sampling artifact — the fixed-selection-gap bias described below, not noise. J, O and P₅₁₂ do the same at cap 7: identical acceptance inputs, one model output, three measurements spanning 0.10 %.
+
+### ★ The model's error is not uniform — it splits exactly along the cap
+
+This is the finding that fell out of adding the corrected arms, and it is **independent support for the stream-count mechanism**:
+
+- On all five **cap-8** arms the model is accurate to **under 1 %** (worst 0.76 %), in both directions.
+- On all three **cap-7 / gate-3** arms it under-predicts by **3.07 %, 3.04 % and 3.13 %** — a tight, one-sided cluster, roughly 4× the worst cap-8 error and the same size as the measured cap 8 → cap 7 effect (+3.085 %).
+- J₂ (cap 7 / gate 2) sits between them at 2.26 % under, in the same direction.
+
+The model is not merely "missing a number". It has the cap-7 traces' own acceptance data — a **better** pooled q (0.9685 vs 0.9598) and a **better** deep-cap acceptance (0.9884 vs 0.9806) — and it still predicts the cap-7 arms should be *marginally slower* than Run I (2.095877 vs 2.100669, −0.23 %). Measured, they are **3.1 % faster**. The model gets the **sign of the cap effect wrong**, not just its magnitude.
+
+The same asymmetry shows up in the counterfactual gate ordering. `forward_raw_by_gate` for the cap-7 profile predicts gate 2 = 2.134357 against gate 3 = 2.095877, i.e. loosening the gate should buy +1.84 %. Measured at cap 7, gate 2 (J₂, 2.1243837) is **1.72 % slower** than the three-repeat gate-3 mean (2.1625180) — wrong sign. At cap 8 the model makes the same directional call (gate 2 = 2.128775 > gate 3 = 2.100669, +1.34 %) and there it is **right**: K beats I by +0.35 %. So the model's gate ordering is correct at cap 8 and inverted at cap 7. That is precisely the region where the fb10/fb11 weight-stream discontinuity lives.
+
+**Why this is evidence and not circularity.** The model's cost input `C(d)` is a smooth, depth-proportional table with a linear fill; it has no term for how many weight streams a given row width requires. It therefore *cannot* represent a cost cliff between width 8 and width 9, and it cannot represent that removing width-9 rounds is worth more than the drafts those rounds would have produced. Feeding it the cap-7 acceptance profile makes it predict the cap-8 answer, and the residual it leaves behind is the part of the effect that acceptance and depth **do not explain**. That residual is 3.1 %, one-sided, present in all three repeats, and absent from every cap-8 arm.
+
+**Honest limits.** This is a negative result about a model, not a fitted alternative model. I did not extend `occupancy_model.py` with a per-width stream term and refit — that would be the correct way to turn this observation into a quantitative claim, and it is listed as a follow-up. The cap-7 residual is also confounded with the fixed-selection-gap bias described below, which already biases the model in the same direction by roughly half a percent; the stream-count reading accounts for the remaining ~2.5 %, not the whole 3.1 %.
 
 ### Sweep over acceptance q (Run I profile, local frame)
 
@@ -808,7 +863,7 @@ The second of these — referred to as **J₂** throughout this report — is th
 
 So the foreign commits produced one damaged arm (J₂, assigned-vs-executed mismatch) and one accidental discovery (J, the cap-7 winner). Neither outcome was intended, and I have kept both and labelled them explicitly everywhere they appear. Note also that the shipped configuration this report recommends — `8e61e77`, cap → 7 and gate → 3 — *originated in the other conversation*, not in mine; my contribution is the controlled 2 × 2 that establishes it is the right choice and the reproduction (Run O) that proves it. The r1 conversation also launched its own benchmark job (`a0f6e10a-7078-4fda-b89c-3f21d4f7b441`), which I can neither inspect nor cancel, and which occupied my `run_job` slot.
 
-**Mitigation, now in place and effective.** `research/run-gate-arm.sh` stamps `head=` and `dirty=` at launch, asserts the constants before the build, re-applies and re-asserts, then asserts again *after* the build; and the per-round trace records `cap=` and `streak_in=` so the executed configuration is recoverable from the artifact rather than from the git log. There have been **no foreign commits since `ca1e2d0`** — Runs K, L, M, N, O and P all carry clean `dirty=0` stamps and post-build assertions matching their assigned constants. Runs I and J predate the runner and carry no stamp, which is exactly why Run O exists.
+**Mitigation, now in place and effective.** `research/run-gate-arm.sh` stamps `head=` and `dirty=` at launch, asserts the constants before the build, re-applies and re-asserts, then asserts again *after* the build; and the per-round trace records `cap=` and `streak_in=` so the executed configuration is recoverable from the artifact rather than from the git log. There have been **no foreign commits since `ca1e2d0`** — Runs K, L, M, N, O, P and P₅₁₂ all carry clean `dirty=0` stamps and post-build assertions matching their assigned constants. Runs I and J predate the runner and carry no stamp, which is why Run O was added; **Run P₅₁₂ closes the gap completely**, because it was stamped at `head=43438153a5ca93f4e5050229e2be2ffb01238d1f dirty=0` — the exact head of the submitted result — and it reproduced Run O's schedule, depth histogram, per-width row-gate table and mismatch samples **bit-for-bit**. The winning configuration is therefore attested by two independently stamped runs, one of them at the submitted head, and the unstamped Run J is now corroboration rather than a load-bearing measurement.
 
 **This needs an advisor decision**, because I cannot resolve it from inside my own conversation: either close the r1 conversation, or give the two revisions separate worktrees. As long as both are live against one checkout, any future run on this branch is at risk of silently executing a configuration it was not assigned.
 
@@ -842,6 +897,7 @@ I could not raise this while it was happening: **`post_assignment_comment` is no
 8. **Add a second local fixture with a different seed**, so low-acceptance arms can be run as real arms instead of as within-run splits, and so the cap-7 result can be checked against a prompt it was not found on.
 9. **Attack `draft_build + verify_build`**, which is 55–58 % of every round in every arm measured here.
 10. **Build a rejection-manufacturing research harness** so acceptance-sensitive schedule changes can be tested without waiting for a naturally low-acceptance prompt. This must not touch `Qwen36MTPReferenceSession.swift` on any timed path.
+11. **Give `occupancy_model.py` a per-width weight-stream term and refit.** The model is accurate to under 1 % on all five cap-8 arms and under-predicts all three cap-7 arms by ~3.1 % with the wrong sign on both the cap effect and the gate ordering, because its cost table is smooth in depth and cannot represent a stream-count cliff. Adding `ceil(width/4)` as a cost input and refitting against the nine arms already measured would turn that residual into a predictive tool, and would let follow-up 4 (caps 6 and 5) be screened analytically before spending runs.
 
 
 ---

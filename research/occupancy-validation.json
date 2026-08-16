@@ -1,0 +1,176 @@
+{
+ "serial_s_per_token": 0.07353217573836446,
+ "arms": [
+  {
+   "arm": "I",
+   "gate": 3,
+   "q_pooled_conditional": 0.959821,
+   "pooled_shallow_cap": 0.9130434782608695,
+   "pooled_deep_cap": 0.9806451612903225,
+   "model_raw": 2.100669,
+   "measured_raw": 2.0947033499,
+   "model_over_measured": 1.002848,
+   "model_mean_tokens_per_round": 6.2996,
+   "model_ms_per_token": 35.0042,
+   "forward_raw_by_gate": {
+    "-1": 1.960956,
+    "3": 2.100669,
+    "2": 2.128775,
+    "1": 2.156461,
+    "0": 2.182148
+   }
+  },
+  {
+   "arm": "J",
+   "gate": 3,
+   "q_pooled_conditional": 0.968539,
+   "pooled_shallow_cap": 0.9,
+   "pooled_deep_cap": 0.9884057971014493,
+   "model_raw": 2.095877,
+   "measured_raw": 2.1636873696,
+   "model_over_measured": 0.96866,
+   "model_mean_tokens_per_round": 6.1625,
+   "model_ms_per_token": 35.0842,
+   "forward_raw_by_gate": {
+    "-1": 1.928316,
+    "3": 2.095877,
+    "2": 2.134357,
+    "1": 2.172498,
+    "0": 2.207672
+   }
+  },
+  {
+   "arm": "J2",
+   "gate": 2,
+   "q_pooled_conditional": 0.961969,
+   "pooled_shallow_cap": 0.8791208791208791,
+   "pooled_deep_cap": 0.9831460674157303,
+   "model_raw": 2.076416,
+   "measured_raw": 2.1243836568,
+   "model_over_measured": 0.977421,
+   "model_mean_tokens_per_round": 6.3519,
+   "model_ms_per_token": 35.413,
+   "forward_raw_by_gate": {
+    "-1": 1.870168,
+    "3": 2.025167,
+    "2": 2.076416,
+    "1": 2.128675,
+    "0": 2.176065
+   }
+  },
+  {
+   "arm": "K",
+   "gate": 2,
+   "q_pooled_conditional": 0.960089,
+   "pooled_shallow_cap": 0.8888888888888888,
+   "pooled_deep_cap": 0.9801136363636364,
+   "model_raw": 2.105931,
+   "measured_raw": 2.1019606601,
+   "model_over_measured": 1.001889,
+   "model_mean_tokens_per_round": 6.6944,
+   "model_ms_per_token": 34.9167,
+   "forward_raw_by_gate": {
+    "-1": 1.891934,
+    "3": 2.061911,
+    "2": 2.105931,
+    "1": 2.148044,
+    "0": 2.184615
+   }
+  },
+  {
+   "arm": "L",
+   "gate": 1,
+   "q_pooled_conditional": 0.962637,
+   "pooled_shallow_cap": 0.864406779661017,
+   "pooled_deep_cap": 0.9772727272727273,
+   "model_raw": 2.118051,
+   "measured_raw": 2.128814113,
+   "model_over_measured": 0.994944,
+   "model_mean_tokens_per_round": 7.2624,
+   "model_ms_per_token": 34.7169,
+   "forward_raw_by_gate": {
+    "-1": 1.823317,
+    "3": 1.994473,
+    "2": 2.05655,
+    "1": 2.118051,
+    "0": 2.17076
+   }
+  },
+  {
+   "arm": "M",
+   "gate": 0,
+   "q_pooled_conditional": 0.960613,
+   "pooled_shallow_cap": null,
+   "pooled_deep_cap": 0.9606126914660832,
+   "model_raw": 2.044294,
+   "measured_raw": 2.0600336024,
+   "model_over_measured": 0.992359,
+   "model_mean_tokens_per_round": 7.7277,
+   "model_ms_per_token": 35.9695,
+   "forward_raw_by_gate": {
+    "-1": 1.907279,
+    "3": 1.972258,
+    "2": 1.993915,
+    "1": 2.018503,
+    "0": 2.044294
+   }
+  },
+  {
+   "arm": "N",
+   "gate": 1,
+   "q_pooled_conditional": 0.962637,
+   "pooled_shallow_cap": 0.864406779661017,
+   "pooled_deep_cap": 0.9772727272727273,
+   "model_raw": 2.118051,
+   "measured_raw": 2.1311965111,
+   "model_over_measured": 0.993832,
+   "model_mean_tokens_per_round": 7.2624,
+   "model_ms_per_token": 34.7169,
+   "forward_raw_by_gate": {
+    "-1": 1.823317,
+    "3": 1.994473,
+    "2": 2.05655,
+    "1": 2.118051,
+    "0": 2.17076
+   }
+  },
+  {
+   "arm": "O",
+   "gate": 3,
+   "q_pooled_conditional": 0.968539,
+   "pooled_shallow_cap": 0.9,
+   "pooled_deep_cap": 0.9884057971014493,
+   "model_raw": 2.095877,
+   "measured_raw": 2.161542049,
+   "model_over_measured": 0.969621,
+   "model_mean_tokens_per_round": 6.1625,
+   "model_ms_per_token": 35.0842,
+   "forward_raw_by_gate": {
+    "-1": 1.928316,
+    "3": 2.095877,
+    "2": 2.134357,
+    "1": 2.172498,
+    "0": 2.207672
+   }
+  },
+  {
+   "arm": "P",
+   "gate": 3,
+   "q_pooled_conditional": 0.968539,
+   "pooled_shallow_cap": 0.9,
+   "pooled_deep_cap": 0.9884057971014493,
+   "model_raw": 2.095877,
+   "measured_raw": 2.1623244386,
+   "model_over_measured": 0.96927,
+   "model_mean_tokens_per_round": 6.1625,
+   "model_ms_per_token": 35.0842,
+   "forward_raw_by_gate": {
+    "-1": 1.928316,
+    "3": 2.095877,
+    "2": 2.134357,
+    "1": 2.172498,
+    "0": 2.207672
+   }
+  }
+ ]
+}

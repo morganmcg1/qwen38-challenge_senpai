@@ -1,0 +1,250 @@
+{
+  "label": "runP-cap7-gate3-512-confirm",
+  "notes": "Third cap7/gate3 repeat, stamped at the submitted result head 43438153. Confirmation arm for the r4 stop rule; retires the Run J no-stamp caveat.",
+  "config": {
+    "segmentedVerifyDepthCap": 7,
+    "segmentedStreakGate": 3,
+    "sdpaWidthWallDepthCap": 4,
+    "decode_tokens": 512,
+    "mode": "--local-iterate",
+    "control_arm": "runI",
+    "repeat_pair": "runJ,runO",
+    "provenance_head": "43438153a5ca93f4e5050229e2be2ffb01238d1f"
+  },
+  "score": {
+    "score": 2.1623244386153915,
+    "passed": true,
+    "track_id": "qwen3.8-27b-mtp-v1",
+    "metrics": {
+      "mode": "qwen-mtp-local-iterate",
+      "oracle": "candidate-local-mtp-golden-rows",
+      "official_score": false,
+      "rankable": false,
+      "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+      "ranked_decode_speedup_floor": 0.9,
+      "public_drift_tripwire_passed": true,
+      "decode_tokens": 512,
+      "mtp_depth": 8,
+      "all_tokens_matched": true,
+      "uses_pinned_mtp_head": true,
+      "head_provenance_sha256": "05a8613e3d86456f5df9bc8ab8c53daa5d19604c08d1b0bd215ad0d599cb2863",
+      "effective_mean_draft_len": 5.790123456790123,
+      "serial_seconds_per_token": 0.07359492778778076,
+      "mtp_seconds_per_token": 0.03403509967029095,
+      "mtp_decode_speedup": 2.1623244386153915,
+      "accepted_draft_rate": 0.9189765458422174,
+      "residual_divergence_count": 0
+    }
+  },
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.9,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "05a8613e3d86456f5df9bc8ab8c53daa5d19604c08d1b0bd215ad0d599cb2863",
+    "effective_mean_draft_len": 5.790123456790123,
+    "serial_seconds_per_token": 0.07359492778778076,
+    "mtp_seconds_per_token": 0.03403509967029095,
+    "mtp_decode_speedup": 2.1623244386153915,
+    "accepted_draft_rate": 0.9189765458422174,
+    "residual_divergence_count": 0
+  },
+  "phases": {
+    "reference": {
+      "rounds": 0,
+      "drafting_rounds": 0,
+      "depth_histogram": {
+        "0": 0
+      },
+      "mean_depth": 0.0,
+      "drafted_tokens": 0,
+      "accepted_tokens": 0,
+      "rejected_tokens": 0,
+      "accept_rate": 0.0,
+      "reject_round_rate": 0.0,
+      "accepted_tokens_per_round": 0.0,
+      "tokens_per_round": 0.0,
+      "rounds_per_token": 0.0,
+      "mean_round_us": 0.0,
+      "mean_eval_wall_us": 0.0
+    },
+    "serial": {
+      "rounds": 512,
+      "drafting_rounds": 0,
+      "depth_histogram": {
+        "0": 512
+      },
+      "mean_depth": 0.0,
+      "drafted_tokens": 0,
+      "accepted_tokens": 0,
+      "rejected_tokens": 0,
+      "accept_rate": 0.0,
+      "reject_round_rate": 0.0,
+      "accepted_tokens_per_round": 0.0,
+      "tokens_per_round": 1.0,
+      "rounds_per_token": 1.0,
+      "mean_round_us": 0.0,
+      "mean_eval_wall_us": 0.0
+    },
+    "mtp": {
+      "rounds": 81,
+      "drafting_rounds": 81,
+      "depth_histogram": {
+        "0": 0,
+        "3": 1,
+        "4": 29,
+        "5": 2,
+        "6": 3,
+        "7": 46
+      },
+      "mean_depth": 5.790123456790123,
+      "drafted_tokens": 469,
+      "accepted_tokens": 431,
+      "rejected_tokens": 38,
+      "accept_rate": 0.9189765458422174,
+      "reject_round_rate": 0.1728395061728395,
+      "accepted_tokens_per_round": 5.320987654320987,
+      "tokens_per_round": 6.320987654320987,
+      "rounds_per_token": 0.158203125,
+      "mean_round_us": 165312.0987654321,
+      "mean_eval_wall_us": 70458.29629629629,
+      "cap_histogram": {
+        "4": 29,
+        "7": 52
+      },
+      "streak_in_histogram": {
+        "0": 15,
+        "1": 8,
+        "2": 6,
+        "3": 5,
+        "4": 3,
+        "5": 3,
+        "6": 3,
+        "7": 3,
+        "8": 3,
+        "9": 3,
+        "10": 3,
+        "11": 3,
+        "12": 3,
+        "13": 3,
+        "14": 3,
+        "15": 3,
+        "16": 3,
+        "17": 3,
+        "18": 1,
+        "19": 1,
+        "20": 1,
+        "21": 1,
+        "22": 1
+      },
+      "deep_gate_open_rate": 0.6419753086419753,
+      "ema4_when_gate_open": {
+        "n": 52,
+        "min": 0.8481,
+        "p25": 0.9546,
+        "median": 0.9844,
+        "p75": 0.9969,
+        "max": 0.9995
+      },
+      "ema4_when_gate_closed": {
+        "n": 29,
+        "min": 0.784,
+        "p25": 0.8646,
+        "median": 0.9995,
+        "p75": 0.9995,
+        "max": 0.9995
+      }
+    }
+  },
+  "row_gate": {
+    "serial_rows": 512,
+    "mtp_rows": 512,
+    "compared_rows": 512,
+    "unmatched_positions": 0,
+    "value_mismatches": 2,
+    "id_mismatches": 1,
+    "per_width": {
+      "4": {
+        "compared": 4,
+        "value_mismatches": 2,
+        "id_mismatches": 1,
+        "bit_exact": false
+      },
+      "5": {
+        "compared": 119,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      },
+      "6": {
+        "compared": 12,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      },
+      "7": {
+        "compared": 21,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      },
+      "8": {
+        "compared": 356,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      }
+    },
+    "mismatch_samples": [
+      {
+        "pos": 1022,
+        "width": 4,
+        "round": 81,
+        "mtp_ids": [
+          6009,
+          31098
+        ],
+        "serial_ids": [
+          6009,
+          98138
+        ],
+        "mtp_values": [
+          "0x1.1ep+5",
+          "0x1.2ap+4"
+        ],
+        "serial_values": [
+          "0x1.1cp+5",
+          "0x1.28p+4"
+        ]
+      },
+      {
+        "pos": 1024,
+        "width": 4,
+        "round": 81,
+        "mtp_ids": [
+          286,
+          1658
+        ],
+        "serial_ids": [
+          286,
+          1658
+        ],
+        "mtp_values": [
+          "0x1.2ap+5",
+          "0x1.4ap+4"
+        ],
+        "serial_values": [
+          "0x1.2ap+5",
+          "0x1.4ep+4"
+        ]
+      }
+    ]
+  }
+}
