@@ -1,0 +1,44 @@
+{
+  "label": "runM (cap 8, gate 0)",
+  "trace": "research/trace-runM-gate0-cap8-512.log",
+  "gate": 0,
+  "deep_cap": 8,
+  "shallow_cap": 4,
+  "round_count": 73,
+  "depth_histogram": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 2,
+    "4": 7,
+    "5": 3,
+    "6": 7,
+    "7": 12,
+    "8": 42
+  },
+  "cap_histogram": {
+    "8": 73
+  },
+  "rounds_at_deep_cap": 42,
+  "frac_at_deep_cap": 0.5753424657534246,
+  "rounds_gate_closed": 0,
+  "frac_gate_closed": 0.0,
+  "rounds_gate_open": 73,
+  "frac_gate_open": 1.0,
+  "frac_of_open_rounds_at_deep_cap": 0.5753424657534246,
+  "rounds_at_shallow_cap": 0,
+  "frac_of_closed_rounds_at_shallow_cap": null,
+  "depth_by_cap": {
+    "8": {
+      "3": 2,
+      "4": 7,
+      "5": 3,
+      "6": 7,
+      "7": 12,
+      "8": 42
+    }
+  },
+  "accepted_total": 439,
+  "mean_depth": 7.0,
+  "mean_accepted": 6.013698630136986
+}

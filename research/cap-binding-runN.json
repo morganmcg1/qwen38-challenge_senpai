@@ -1,0 +1,46 @@
+{
+  "label": "runN (cap 8, gate 1, L repeat)",
+  "trace": "research/trace-runN-gate1-cap8-512-confirm.log",
+  "gate": 1,
+  "deep_cap": 8,
+  "shallow_cap": 4,
+  "round_count": 74,
+  "depth_histogram": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 18,
+    "5": 5,
+    "6": 5,
+    "7": 10,
+    "8": 36
+  },
+  "cap_histogram": {
+    "4": 18,
+    "8": 56
+  },
+  "rounds_at_deep_cap": 36,
+  "frac_at_deep_cap": 0.4864864864864865,
+  "rounds_gate_closed": 18,
+  "frac_gate_closed": 0.24324324324324326,
+  "rounds_gate_open": 56,
+  "frac_gate_open": 0.7567567567567568,
+  "frac_of_open_rounds_at_deep_cap": 0.6428571428571429,
+  "rounds_at_shallow_cap": 18,
+  "frac_of_closed_rounds_at_shallow_cap": 1.0,
+  "depth_by_cap": {
+    "4": {
+      "4": 18
+    },
+    "8": {
+      "5": 5,
+      "6": 5,
+      "7": 10,
+      "8": 36
+    }
+  },
+  "accepted_total": 438,
+  "mean_depth": 6.554054054054054,
+  "mean_accepted": 5.918918918918919
+}

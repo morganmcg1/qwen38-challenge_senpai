@@ -1,5 +1,5 @@
 {
-  "label": "runI (shipped BASE_SHA: cap 8, gate 3)",
+  "label": "runI (control, shipped BASE_SHA: cap 8, gate 3)",
   "trace": "research/trace-runI-base-cap8-512.log",
   "gate": 3,
   "deep_cap": 8,

@@ -441,6 +441,31 @@ Within the cap-8 family the shape is bimodal: the schedule is almost always eith
 
 The cap-7 arms have a different signature, and it is the reason they win. Depth 8 is structurally unreachable, so all 33 of the control's width-9 rounds collapse onto width 8, which needs only **two** weight streams instead of three. The deep mode is *preserved* — 46 deep rounds versus the control's 5 + 33 = 38 — while the third-stream dispatch disappears from the run entirely. Cap 7 is not "less drafting"; it is the same amount of drafting done in a cheaper dispatch class.
 
+### Step 0 — does the gate actually bind? (`research/cap_binding.py`)
+
+Both caps are read from the per-round `cap=` field that `costModelDepth` emits, so this is the configuration the round *executed*, not one inferred from the git log. Reproduce with `python3 research/cap_binding.py --trace research/trace-runI-base-cap8-512.log --label runI --gate 3 --deep-cap 8`; artifacts are `research/cap-binding-run{I,J,J2,K,L,M,N,O}.json`.
+
+| arm | gate | cap | rounds | rounds gate-closed (streak < gate, ceiling 4) | frac | rounds at deep cap | frac | mean depth |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **I (control)** | 3 | 8 | 82 | **39** | **0.4756** | **33** | **0.4024** | 5.890 |
+| J | 3 | 7 | 81 | 29 | 0.3580 | 46 | 0.5679 | 5.790 |
+| O (J repeat) | 3 | 7 | 81 | 29 | 0.3580 | 46 | 0.5679 | 5.790 |
+| J₂ | 2 | 7 | 82 | 27 | 0.3293 | 48 | 0.5854 | 5.841 |
+| K | 2 | 8 | 79 | 29 | 0.3671 | 36 | 0.4557 | 6.127 |
+| L | 1 | 8 | 74 | 18 | 0.2432 | 36 | 0.4865 | 6.554 |
+| N (L repeat) | 1 | 8 | 74 | 18 | 0.2432 | 36 | 0.4865 | 6.554 |
+| M | 0 | 8 | 73 | 0 | 0.0000 | 42 | 0.5753 | 7.000 |
+
+Three answers, all from the control:
+
+1. **The cap binds.** 33 of 82 rounds (40.24 %) realised depth 8. The r3 prediction was that this would come back at ~0, which would have closed the experiment; it did not, and the experiment was live. The cost test in `costModelDepth` does *not* stop the loop at ~5 on this fixture — the 5.4 effective draft length that motivated that prediction is an average over a **bimodal** distribution (39 rounds pinned at depth 4, 33 at depth 8), not a mode.
+2. **The gate binds hard.** 39 of 82 rounds (**47.56 %**) ran with `fullAcceptStreak < 3`, i.e. with a real ceiling of 4 rather than 8. That lands inside the r4 prediction band of 29–87 %, between the simulated "easy" (29.0 %) and "mid" (66.5 %) prose regimes.
+3. **The gate lever moves exactly as designed — it is just not the biggest one.** At cap 8 the closed fraction falls monotonically 0.4756 → 0.3671 → 0.2432 → 0.0000 as the gate goes 3 → 2 → 1 → 0, and mean depth rises monotonically 5.890 → 6.127 → 6.554 → 7.000. The r1/r4 hypothesis is therefore mechanically confirmed: the streak really does withhold deep rounds, and relaxing it really does release them. It also *pays* at cap 8 — gate 2 −0.234 %, gate 1 −1.511 % — until gate 0 removes the gate entirely and reverses to +1.630 %. But the cap effect at gate 3 is **−3.085 %, roughly twice the best gate effect anywhere in the sweep**, and it is obtained *without* releasing any additional deep rounds. The gate was the right thing to suspect; it was not the largest thing wrong.
+
+J↔O and L↔N are bit-identical in every column, which is the same determinism the headline rests on.
+
+*Artifact-naming correction:* the previously committed `research/cap-binding-runJ.json` was generated from `trace-runJ-gate2-512.log` — the **J₂** arm — under the filename `runJ`. The eight artifacts above are regenerated so each filename matches the arm it describes, and all eight now reconcile cell-for-cell with the depth-histogram table. No number in this report changed: the histogram table already carried the correct J and J₂ columns, so the defect was in the artifact filename, not in the analysis.
+
 ### Block latency after the first block (fb7)
 
 | run | rounds | p50 after first | p50 depth/idx | max after first | max depth/idx | max idx ÷ rounds | max round was a rejection | local ratio | ranked (head-rebased) | shift |

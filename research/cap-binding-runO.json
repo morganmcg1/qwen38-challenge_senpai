@@ -1,6 +1,6 @@
 {
-  "label": "runJ (winner: cap 7, gate 3)",
-  "trace": "research/trace-runJ-cap7-512.log",
+  "label": "runO (winner repeat: cap 7, gate 3)",
+  "trace": "research/trace-runO-cap7-gate3-512.log",
   "gate": 3,
   "deep_cap": 7,
   "shallow_cap": 4,
