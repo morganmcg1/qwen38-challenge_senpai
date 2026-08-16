@@ -41,6 +41,7 @@ export MLX_QWEN_MTP_DRAFT_BITS="${bits}"
 export MLX_QWEN_MTP_DRAFT_HEAD_REPORT="${out_dir}/draft-head.txt"
 : >"${MLX_QWEN_MTP_DRAFT_HEAD_REPORT}"
 export MLX_QWEN_MTP_TRACE="${MLX_QWEN_MTP_TRACE:-0}"
+export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-qwen38-r1-e6-draft-head-precision}"
 
 # The MTP local-iterate report carries no memory field, so peak comes from
 # `ru_maxrss`, which XNU folds across waited descendants as a max (in bytes).
@@ -49,6 +50,12 @@ export MLX_QWEN_MTP_TRACE="${MLX_QWEN_MTP_TRACE:-0}"
     "${tag}" --local-iterate "${tokens}" "${base_sha}" \
     "draft-head readout precision: MLX_QWEN_MTP_DRAFT_BITS=${bits}"
 } 2>&1 | tee "${out_dir}/rusage.txt"
+
+# Collect the captured legs so the arm directory is self-contained: the next
+# arm's run-amdahl-measurement.sh clears its own tag directory, and
+# research/draft_bits_arms.py compares arms after every arm has run.
+cp -R "${repo_root}/.mlxfast-private/amdahl/${tag}/reports" "${out_dir}/reports"
+cp "${repo_root}/.mlxfast-private/amdahl/${tag}/amdahl.json" "${out_dir}/amdahl.json"
 
 echo "run-draft-bits-arm: arm summary"
 cat "${MLX_QWEN_MTP_DRAFT_HEAD_REPORT}"
