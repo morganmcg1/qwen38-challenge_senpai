@@ -482,7 +482,7 @@ The `d = 5` peak deserves a word rather than a shrug, because 0.0678 is nearly
 three times the next value. Read literally it says at most 1.4 of the 21 reject
 rounds could have paid a full re-forward. The literal counters for that arm say
 zero did, and `d = 5` is inside the post-rebuild binary so those counters exist
-for it — this is one of the two arms in the 40/40 cross-check. So the bound is
+for it — this is one of the three arms in the 56/56 cross-check. So the bound is
 loose here rather than informative, which is exactly what a bound built from
 round-time medians does when an arm has a wider round-time spread.
 
@@ -606,8 +606,8 @@ with depth-1 acceptance 0.699 against this fixture's 0.8929 would produce roughl
 an order of magnitude more reject rounds, and I cannot run one. So the correct
 claim is: **on everything I can measure, the cheap path always wins, and its cost
 is ~0.64 ms median against a 65 ms forward.** I am not claiming the fallback is
-unreachable — I am claiming it never ran, in 101 opportunities, at seven
-different depths spanning both checkpoint regimes.
+unreachable — I am claiming it never ran, in 117 opportunities, at all eight
+non-zero depths, spanning both checkpoint regimes.
 
 ## Section 1 — the curve (measurement, not policy)
 
@@ -936,11 +936,121 @@ half at every depth. Both grow with `d`, so drafting is not hiding under an
 idle GPU. This bounds any pipelining or overlap experiment: the addressable
 budget is large, but it is on the CPU side of the boundary.
 
+#### Decode-only rate: the ranking survives stripping the parent clock entirely
+
+Everything above compares round costs. The published score, by contrast, is a
+ratio of wall-clock seconds per token that includes a 512-token seed prologue.
+Comment 4 gave the reconciliation model `decode_seconds = P + Σ
+block_request_seconds + N·c`, and a fair objection to the whole curve is that
+prefill dilution, not decode behaviour, could be producing the ranking. This
+section removes that objection by measuring the decode leg on its own.
+
+Each forced-depth arm writes **one** trace containing **both** legs
+sequentially: the serial reference leg (≈511 rounds at `d = 0`) and then the MTP
+leg. `research/realised_rate.py` splits them on the round-counter reset and
+computes seconds per **committed** token from the in-session `round_us` stamps
+alone, so no seed prologue and no parent-side protocol cost is in either number.
+Every arm therefore carries its **own** serial control measured minutes earlier
+on the same binary, in the same thermal window, in the same process.
+
+| arm | leg-0 s/tok (serial) | leg-1 s/tok (MTP) | **decode-only speedup** | mean `d` | mean accepted |
+|---|---|---|---|---|---|
+| `d3` | 0.065512 | 0.023980 | **2.7320** | 2.985 | 2.826 |
+| `d7` | 0.065925 | 0.024654 | **2.6740** | 6.930 | 5.986 |
+| `d4` | 0.065947 | 0.025059 | 2.6317 | 3.972 | 3.657 |
+| `d6` | 0.065817 | 0.025233 | 2.6084 | 5.975 | 5.148 |
+| `d5` | 0.065981 | 0.025749 | 2.5625 | 4.989 | 4.319 |
+| `d2` | 0.065100 | 0.026112 | 2.4931 | 1.994 | 1.891 |
+| `d8` | 0.065046 | 0.026528 | 2.4520 | 7.939 | 6.485 |
+| `d1` | 0.065065 | 0.035910 | 1.8119 | 1.000 | 0.981 |
+| `d0` | 0.065256 | 0.065043 | 1.0033 | 0.000 | 0.000 |
+
+**This is the same nine-way ordering the trusted parent published**, arm for
+arm, with no exceptions: `d3 > d7 > d4 > d6 > d5 > d2 > d8 > d1 > d0`. The two
+measurement paths are independent — one is the harness's own wall clock over the
+full timed leg, the other is my `round_us` instrumentation inside the session —
+and on the `d0` control they agree to four decimal places (1.0033 both ways).
+The decode-only speedups are uniformly *larger* than the published ones (2.7320
+vs 2.3153 at `d3`) because the shared prefill is exactly the dilution the score
+carries and this metric does not. **The jaggedness is real decode behaviour, not
+a scoring or prefill artefact.**
+
+#### The parent clock, measured: `P0 = 4.0031 s` and `c = 490 µs/round`
+
+The same eighteen legs let me fit the comment-4 model directly. For each leg I
+take the harness's reported leg seconds and subtract the summed in-session
+`round_us`; what is left is the seed prologue plus whatever the parent spends
+per round outside my instrumentation.
+
+| arm | parent serial leg (s) | rounds | parent MTP leg (s) | rounds | delta (s) |
+|---|---|---|---|---|---|
+| `d0` | 4.2256 | 512 | 4.2058 | 512 | −0.0198 |
+| `d1` | 4.2055 | 512 | 4.1120 | 259 | −0.0935 |
+| `d2` | 4.2100 | 512 | 4.0863 | 177 | −0.1237 |
+| `d3` | 4.2611 | 512 | 4.0279 | 134 | −0.2333 |
+| `d4` | 4.3085 | 512 | 4.0719 | 110 | −0.2366 |
+| `d5` | 4.3125 | 512 | 4.0859 | 96 | −0.2266 |
+| `d6` | 4.2762 | 512 | 4.0524 | 83 | −0.2238 |
+| `d7` | 4.3190 | 512 | 4.0422 | 73 | −0.2768 |
+| `d8` | 4.2254 | 512 | 4.0253 | 68 | −0.2001 |
+
+Pooled over all 18 estimates the residual is 4.1696 s, sd 0.1027 s (**2.46 %**).
+But it is not constant — it falls systematically as the round count falls, which
+is precisely the `N·c` term. The two-parameter least-squares fit
+`residual = P0 + c·rounds` gives:
+
+```text
+P0 = 4.0031 s        (seed prologue, round-count-independent)
+c  = 489.9 us/round  (parent-side per-round protocol cost)
+resid_sd = 35.8 ms   (0.90 % of P0, down from 2.46 % for the constant model)
+```
+
+Two checks on this. First, `P0 = 4.0031 s` against the independently measured
+prefill constant of **4.0086 s** (F9/F21, obtained a different way from
+`score.json` alone) — agreement to **0.14 %**. Second, the advisor reported
+`c = 338 µs/round` from another agent's work; I measure 490 µs/round on M4 Pro,
+same order, plausibly a host difference.
+
+This `c` is **not** in conflict with F18's finding that the in-session additive
+term is ≈ 0. They are different quantities: F18's `c` is the depth-independent
+constant inside the `C(d)` fit, measured from `round_us` stamps; this `c` is the
+parent-side cost *outside* those stamps — harness leg seconds minus summed
+`round_us`. Both are true simultaneously, and the second one is invisible to the
+first by construction.
+
+#### The pro-depth objection, quantified and closed
+
+`c` is charged per round, so a deeper policy amortises it over more committed
+tokens. It therefore systematically favours depth, and the curve above omits it.
+That is a real bias in the anti-depth direction of my conclusion, so it needs a
+number rather than a hand-wave. Adding `c/tokens_per_round` back to each MTP leg:
+
+| arm | mtp s/tok | + `c` | penalty | speedup | speedup + `c` | shift |
+|---|---|---|---|---|---|---|
+| `d3` | 0.023980 | 0.024110 | 0.54 % | 2.7319 | 2.7375 | +0.20 % |
+| `d7` | 0.024654 | 0.024726 | 0.29 % | 2.6740 | 2.6860 | +0.45 % |
+| `d4` | 0.025059 | 0.025166 | 0.43 % | 2.6317 | 2.6399 | +0.31 % |
+| `d6` | 0.025233 | 0.025315 | 0.32 % | 2.6084 | 2.6193 | +0.42 % |
+| `d5` | 0.025749 | 0.025843 | 0.37 % | 2.5625 | 2.5721 | +0.38 % |
+| `d2` | 0.026112 | 0.026283 | 0.66 % | 2.4931 | 2.4955 | +0.10 % |
+| `d8` | 0.026528 | 0.026595 | 0.25 % | 2.4520 | 2.4642 | +0.50 % |
+| `d1` | 0.035910 | 0.036159 | 0.69 % | 1.8119 | 1.8129 | +0.06 % |
+| `d0` | 0.065043 | 0.065533 | 0.75 % | 1.0033 | 1.0033 | −0.00 % |
+
+The bias is exactly the sign predicted — every deep arm gains more than every
+shallow arm — and it is an order of magnitude too small to matter. The **ranking
+is completely unchanged**, and the `d3`–`d7` gap narrows only from 2.17 % to
+1.92 %, an erosion of about 12 % of the gap. So `c` is real, directionally
+pro-depth, and cannot move the optimum off `d = 3`.
+
 ### Shape: answer (c), "something else"
 
-Not flat-then-knee at d ≈ 7, and not flat. The curve is **cheap-flat at
-d = 1–2 (~0.08), a knee at d = 3 (0.243), then a plateau of ~0.29–0.39 for
-d = 4–8**, with the two largest steps at d = 4 (0.375) and d = 8 (0.391).
+Not flat-then-knee at d ≈ 7, and not flat. On the headline 512 window the
+self-normalised curve is **cheap-flat at d = 1–2 (0.090, 0.068), a knee at
+d = 3 (0.244), a spike at d = 4 (0.380), a genuine plateau across d = 5–7
+(0.278, 0.298, 0.272) and a second spike at d = 8 (0.425)**. The 256 window
+gives the same shape to within 12 % at every point. The two spikes are the two
+qmv pass boundaries; the knee at `d = 3` is not, and remains unexplained.
 
 Against the pre-registered roofline prediction (flat 0.145 for d = 1..6, 0.271
 for d = 7..8): measured h(1), h(2) are ~45% **below** 0.145; h(5), h(6) are ~2x
@@ -1685,20 +1795,22 @@ runs `rollbackAfterVerify` plus a full `model.callWithHidden` re-forward
 two counters can be separated without rebuilding, because `tReadDone` is stamped
 at `:1219` (before the accept/reject branch) and `tCommitDone` at `:1287` (after
 the whole branch including the repair forward), so the emitted `commit_us`
-brackets any repair. Over 101 reject rounds across 16 legs, depths 1/2/3/4/5/6/8,
-both repair regimes, complete at the 512 window: **`prefixRepairCount` = 101,
-`fullRepairCount` = 0**. The largest reject-round `commit_us` seen anywhere is
-4,707 µs (at `d = 5`), **13.8x below** the 65,115 µs forward floor, and the
-median is 640 µs, 102x below it — so no round contains a hidden re-forward.
-`research/repair_probe.py` reproduces this from committed traces.
+brackets any repair. Over 117 reject rounds across 18 legs, every non-zero depth
+1 through 8, both repair regimes, complete at the 512 window:
+**`prefixRepairCount` = 117, `fullRepairCount` = 0**. The largest reject-round
+`commit_us` seen anywhere is 4,707 µs (at `d = 5`), **13.8x below** the 65,115 µs
+forward floor, and the median is 637 µs, 102x below it — so no round contains a
+hidden re-forward. `research/repair_probe.py` reproduces this from committed
+traces.
 **The classifier is now validated against ground truth**: `db37226` added the
 literal `prefixRepairCount` / `fullRepairCount` counters to the session and the
-`prefix_repair=` / `full_repair=` trace fields, and over the 40 reject rounds in
-the two arms that emit both, classifier and literal counters agree **40/40 =
+`prefix_repair=` / `full_repair=` trace fields, and over the 56 reject rounds in
+the three post-rebuild arms that emit both (`d = 5, 6, 7`, i.e. draft-row counts
+`S = 6, 7, 8`), classifier and literal counters agree **56/56 =
 1.0000** with zero disagreement in either direction and zero rounds that
 incremented neither. A classifier-free bound from round-time medians alone caps
 the re-forward fraction at 0.068 and does **not** rise with depth (it peaks at
-`d = 5` and falls at `d = 6` and `d = 8`).
+`d = 5` and falls at `d = 6`, `d = 7` and `d = 8`).
 Agents touching rollback, acceptance, or cache-snapshot code should note that on
 this fixture the cheap path is the *only* observed path — which also means the
 expensive path is **untested here**, not proven absent. Ranked depth-1
@@ -1711,8 +1823,9 @@ the curve's knee, at either window.** The step that crosses the boundary is
 the marginal *falls* across the boundary. The knee is `m(3)`, one step later and
 entirely inside the tape regime. The inversion reproduces at both windows and
 strengthens at 512: `m(2)/m(1)` = 5036.8/5473.0 = **0.920** at 256 and
-4467.5/5828.6 = **0.766** at 512. Wrong sign and wrong location, so the regime
-change is exonerated; the knee matches the F8 qmv IPG staircase instead.
+4465.2/5469.2 = **0.816** at 512 on pooled marginals, or 0.0680/0.0902 =
+**0.754** on the self-normalised estimator. Wrong sign and wrong location, so the
+regime change is exonerated; the knee matches the F8 qmv IPG staircase instead.
 
 **F28 — the EOS acceptance penalty is depth-dependent, and it penalises deep
 drafting specifically.** F25 established that acceptance falls after the EOS
@@ -1731,7 +1844,13 @@ depth as the leg runs out of tokens, the honest statistic is the **accept rate**
 | `d4` | 4 | 3.762 (N=63) | 3.523 (N=44) | 0.9405 | 0.8960 | **−4.7%** |
 | `d5` | 5 | 4.537 (N=54) | 4.077 (N=39) | 0.9074 | 0.8197 | **−9.7%** |
 | `d6` | 6 | 5.383 (N=47) | 4.788 (N=33) | 0.8972 | 0.8062 | **−10.1%** |
+| `d7` | 7 | 6.425 (N=40) | 5.467 (N=30) | 0.9179 | 0.8001 | **−12.8%** |
 | `d8` | 8 | 7.000 (N=37) | 5.750 (N=28) | 0.8750 | 0.7188 | **−17.9%** |
+
+`d7` is the only arm where the offered depth itself differs across the split
+(7.000 pre, 6.833 post), which is why its raw pre-EOS accepted count of 6.425
+converts to a *higher* pre rate (0.9179) than `d6`'s while its post rate is
+lower. That is exactly the case the rate normalisation exists to handle.
 
 At depth 1 there is effectively no EOS penalty at all (pre-EOS `p1` = 0.9803,
 post-EOS `p1` = 0.9810), and by depth 8 it costs 17.9 % of the accept rate. The
@@ -1748,36 +1867,57 @@ place in this report where per-depth structure turns out to be jagged rather
 than smooth, which is the concrete vindication of the advisor's comment-8
 instruction to scan every depth instead of interpolating between endpoints.
 
-Adding `d5` and `d6` sharpens that statement rather than softening it. The
+Completing the sweep sharpens that statement rather than softening it. The
 jaggedness is visibly **confined to the shallow half**: `+0.1 → −5.1 → −1.6 →
 −4.7` across `d = 1..4` has no order to it, but from `d = 4` onward the tail is
-cleanly monotone — `−4.7 → −9.7 → −10.1 → −17.9` at `d = 4, 5, 6, 8`. So the
-honest description is two regimes, not one function: below `d ≈ 4` the EOS
-penalty is small and buried in sampling noise, and above it the penalty grows
-fast and reliably. That is consistent with the truncation mechanism, because a
-whole-tail truncation only starts to dominate once the tail is long.
+cleanly monotone at every consecutive step — `−4.7 → −9.7 → −10.1 → −12.8 →
+−17.9` at `d = 4, 5, 6, 7, 8`. `d7` was the last gap in that tail and it lands
+where a monotone reading requires, between `d6` and `d8`. So the honest
+description is two regimes, not one function: below `d ≈ 4` the EOS penalty is
+small and buried in sampling noise, and above it the penalty grows fast and
+reliably. That is consistent with the truncation mechanism, because a whole-tail
+truncation only starts to dominate once the tail is long.
 
 Worth noting against the rest of this report: the EOS penalty is the **one**
 per-depth quantity here whose deep tail *is* well behaved. `h(d)` dips at
-`d = 5` and the end-to-end speedup puts `d = 6` above `d = 5`, but the EOS
-penalty passes straight through `d = 5, 6` without a kink. So the deep-depth
-non-monotonicity in the speedup curve is not an acceptance effect — acceptance
-degrades smoothly there — which points at the cost side, and `h(5) < h(6)` is
-exactly where it shows up.
+`d = 5` and `d = 7`, and the end-to-end speedup ranks the deep arms
+`d7 > d6 > d5 > d8`, but the EOS penalty passes straight through `d = 5, 6, 7`
+without a kink. So the deep-depth non-monotonicity in the speedup curve is
+**not** an acceptance effect — acceptance degrades smoothly and monotonically
+there — which localises it to the cost side, and `h(7) < h(6)` and `h(5) < h(6)`
+are exactly where it shows up.
 
 This matters for the policy argument because it is a *second*, independent
 reason to prefer shallower depth in exactly the regime where the cost curve
 already does — the two effects compound rather than cancel.
 
-**F29 — at 512 tokens, forced `d = 2` beats forced `d = 8` end to end.** On the
-parent-clock-stripped after-first-block metric, `d2` runs at 26,119 µs/token
-against `d8` at 26,612 µs/token, so `d2` is **+1.85%** faster; the published
-scores agree in direction (2.1505 versus 2.1415). This inverts the 256-token
-idealised ranking, where cost-curve µs/token was minimised at `d = 7`. The two
-are not in conflict: the 256 figure is `C(d)/(d+1)`, which *assumes* full
-acceptance, whereas the 512 leg numbers are realised and therefore pay the
-F28 depth-scaled EOS penalty. Idealised per-token cost is the wrong statistic to
-choose a depth with whenever acceptance is below 1.
+**F29 — the idealised optimum and the realised optimum are different depths, at
+both windows.** The idealised statistic `C(d)/(d+1)` — full-accept cost per token
+— is minimised at `d = 7` at 256 tokens (21,603.4 µs) *and* at 512 tokens
+(21,668.9 µs), two independent windows agreeing on the same idealised answer.
+The **realised** speedup on the same 512 arms peaks at `d = 3` instead, and
+forced `d = 2` (2.1505) even beats forced `d = 8` (2.1415). The two are not in
+conflict: `C(d)/(d+1)` *assumes* full acceptance, whereas realised throughput
+divides by the tokens actually committed and therefore pays the F28
+depth-scaled acceptance penalty. Idealised per-token cost is the wrong statistic
+to choose a depth with whenever acceptance is below 1, and the gap between
+`d = 7` and `d = 3` is the exact size of that error on this fixture.
+
+The gap is not small, and it is not an artefact of the harness clock. Both
+routes give the same nine-way ranking:
+
+| statistic | best | 2nd | worst non-zero |
+|---|---|---|---|
+| idealised `C(d)/(d+1)` | `d7` 21,668.9 µs | `d6` 22,171.2 µs | `d1` 35,469.3 µs |
+| realised harness speedup | `d3` 2.3153 | `d7` 2.2894 | `d1` 1.6639 |
+| realised decode-only speedup | `d3` 2.7320 | `d7` 2.6740 | `d1` 1.8119 |
+
+`d = 7` is second on both realised measures, which is the interesting part: the
+idealised optimum is not wrong so much as it is *the answer to a different
+question*. On a prompt where acceptance were near 1 — a longer copy region, a
+more capable head — the two would converge on `d = 7`. On the ranked pool, where
+depth-1 acceptance is 0.699 rather than 0.8929, they should diverge **further**,
+pushing the realised optimum shallower than `d = 3`, not deeper.
 
 ## Reconciling 0.20 against the doc block's 0.40
 
