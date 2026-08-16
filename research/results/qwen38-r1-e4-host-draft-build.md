@@ -3,9 +3,11 @@
 **Assignment** `qwen38-r1-e4-host-draft-build` r1 · PR #4 · student `qwen-askeladd`
 **Base** `e20268e9c2c1f35c2d75221d059e75bb95768ef6` (`senpai/qwen38-mtp-r1`) ·
 **Upstream** `7351e62674bc600f0ca148d3a1b0604716a09db6`
-**Host** Apple M4 Pro (Mac16,11), 48 GiB, macOS 26.5.2 (25F84), Swift 6.3.3
-**Head** `hf:lowskillcoding/qwen38-mtp-head-4bit-g64@0966ddaf` (unchanged),
-provenance sha256 `eb481df38267db5c9d9db1f6a813fcc73e762d0af74fdb1bcb061724c815adfe`
+**Host** Apple M4 Pro (Mac16,11), `applegpu_g16s`, 48 GiB, macOS 26.5.2 (25F84), Swift 6.3.3
+**Head** unchanged from base. Local runs use the organizer bf16 head
+(`EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`, sha256 `8fceddc6…`); the ranked candidate leg
+uses the declared 4-bit head (`hf:lowskillcoding/qwen38-mtp-head-4bit-g64@0966ddaf`,
+sha256 `cc209e30…`). Full provenance in §8.2b; consequences in §6b.1 and §6c.
 
 **Label: `not useful`** — the premise of the assignment is refuted. `draft_build_us` is
 not host graph-construction time; it is ~96–98% GPU execution wait. The optimizations
@@ -33,17 +35,32 @@ Consequently the three Part B mechanisms cannot pay:
 This is **outcome #3** from the PR body: a breakdown proving irreducibility, retiring
 the line of work and re-anchoring the cost model.
 
-Three results outrank that negative and are where the campaign value is:
+Four results outrank that negative and are where the campaign value is:
 
-1. **§5B — `quantized_matmul` collapses at exactly the widths MTP verifies at.** It runs
+1. **§6c.4 — the depth cap sits exactly one row past a dispatch cliff, and moving it is a
+   two-line change.** This host is `applegpu_g16s` (arch_gen 16, size `'s'`), so
+   `get_qmv_batch_limit` returns **8** for every projection shape in the model, and MLX
+   switches `qmv -> qmm_splitk` at `M >= 8`. `rows_per_round = depth + 1`, so
+   `segmentedVerifyDepthCap = 8` verifies at **M = 9**, one row over. The 9th row costs
+   **1.89x** an average row (38.46 ms marginal vs 20.32 ms average), and the traced run
+   agrees end-to-end: **d=7 is 23.79 ms/token vs d=8 at 24.49 ms/token — 2.9% cheaper**,
+   despite emitting fewer tokens per round. This also **falsifies the design comment at
+   `Qwen36MTPBlockSession.swift:588-590`** ("qmv batch limit 10+ on this generation for
+   these shapes"). Correctness is untouched; only the cost model behind the cap is wrong.
+   See §10 follow-up 0b — measure the limit on the ranked host, then set the cap from it.
+2. **§5B — `quantized_matmul` collapses at exactly the widths MTP verifies at.** It runs
    at 248.7 GB/s at M=1 but 72.1 GB/s at M=9, moving ~3.45x the necessary weight bytes.
    Verify-side quantized matmuls are 201.14 ms of the 217.75 ms round; at roofline the
    round would be ~87.1 ms — a **2.50x round speedup**. The fix belongs in the *submittable*
    `kernels/quantized*.metal` + generated twins; the qmv/qmm selector that steers into the
    cliff is in non-editable host code, so the work must go **inside** `qmv`/`qmv_quad`.
-2. **§6b.1 — the declared proposal head is already 4-bit g64, not bf16.** The "quantize
-   the head, save 11-16%" follow-up has **no prize left**; it is banked in the base.
-3. **§6b.4 — the pre-registered discriminator resolves to BANDWIDTH**, but the residual's
+   Follow-up 0b is the cheap half of this: it dodges the cliff instead of fixing it.
+3. **§6b.1 / §6c — the declared proposal head is already 4-bit g64, not bf16, and it is
+   bandwidth-bound.** The "quantize the head, save 11-16%" follow-up has **no prize left**;
+   it is banked in the base. §6c.2 additionally refutes an 8-bit head: 4-bit qmv sustains
+   249.0 GB/s versus 253.1 GB/s for bf16 dense matvec (98.4%), so there is no nibble-unpack
+   penalty to buy back at M=1 and a wider head would be strictly slower.
+4. **§6b.4 — the pre-registered discriminator resolves to BANDWIDTH**, but the residual's
    real cause is small-M kernel inefficiency, a third category the dichotomy omits.
 
 ## 1a. Correction to feedback (4): `MLX_QWEN_MTP_TRACE=1` **is** reachable
@@ -510,31 +527,65 @@ assignment (explicitly forbidden) — reported as a follow-up.
 
 ## 6b. Answers to feedback (6) — `qwen38-r1-e4-fb6-bandwidth-vs-fixed-preregistered`
 
-Five items, answered in order. Two of the advisor's corrections are **accepted**, one is
-**refuted with two independent proofs**, and the pre-registered discriminator gets an
-explicit branch answer.
+Five items, answered in order. Two of the advisor's corrections are **accepted**, one was
+answered wrongly in the first revision of this report and is **retracted below**, and the
+pre-registered discriminator gets an explicit branch answer.
 
-### (6.1) "The MTP head streams 849.4 MB/forward (bf16), not 239 MB" — **REFUTED**
+### (6.1) "The MTP head streams 849.4 MB/forward (bf16), not 239 MB" — **ADVISOR CORRECT; MY FIRST ANSWER RETRACTED**
 
-The feedback cites `fixtures/qwen3_8_27b_mtp_track.json:126-127`
-(`"tensor_bytes": 849398784`, `"dtype": "bf16"`). Those two lines are real, but they sit
-inside the fixture's `mtp_head` block, which describes the **organizer-pinned default
-head**, not the head this base runs:
+An earlier revision of this report claimed the runtime loads the declared 4-bit head. That
+claim is **wrong for every local run in this experiment**, and the advisor's follow-up
+(feedback 7) was right to force the check. The corrected position is that *both* readings
+are true, but of different legs:
 
 ```text
-fixtures/qwen3_8_27b_mtp_track.json  ->  mtp_head (ORGANIZER DEFAULT)
-  repo                 EigenLabs/Qwen3.8-27B-MTP-bf16
-  revision             26a328e070875b0314d652a039b6b59902690f03
-  dtype                bf16
-  tensor_count         15
-  tensor_bytes         849398784
-  weights_file_bytes   849400347
-  expected_total_bytes 849406438
+LOCAL  (./benchmark-qwen-mtp.sh, both serial and MTP legs)  ->  bf16 organizer head   849.4 MB/step
+RANKED (candidate leg only)                                 ->  declared 4-bit head   238.9 MB/step
+RANKED (pinned serial leg)                                  ->  never uses a candidate head
 ```
 
-`program.md` (*"What The Candidate May Change"*) states that `mtp-head.manifest.json`
-**"may declare a proposal head for the candidate leg only. Without a declaration, the
-candidate uses the organizer-pinned head."** Our base declares one:
+**Why local is always bf16 — the harness never reads `mtp-head.manifest.json`.**
+
+```text
+setup-qwen-mtp.sh:66-67   MTP_HEAD_MODEL_ID="${MLXFAST_QWEN_MTP_HEAD_REPO:-EigenLabs/Qwen3.8-27B-MTP-bf16}"
+                          revision 26a328e070875b0314d652a039b6b59902690f03
+                          verified against fixtures/qwen3_8_27b_mtp_head.sha256
+benchmark-qwen-mtp.sh:214-216   requires MLXFAST_QWEN_MTP_HEAD_DIR
+benchmark-qwen-mtp.sh:554,603,613   passes --mtp-head "${MLXFAST_QWEN_MTP_HEAD_DIR}"
+```
+
+Neither script contains the string `mtp-head.manifest.json`. The declaration is consumed
+by the trusted worker on the ranked candidate leg only.
+
+**`head_provenance` — the mandatory record for every head-sensitive number in this report.**
+
+```text
+directory        ~/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head
+file             model.safetensors
+sha256           8fceddc664f3ea96d02e304463aa1319213ff52cdf1f3401d4bce64e7075c349
+bytes            849,400,347                (== fixture weights_file_bytes, exact match)
+dtype            bfloat16                   (config.json "dtype": "bfloat16")
+tensors          15 bare tensors, NO ".scales"/".biases" keys -> stays dense after load
+source repo      EigenLabs/Qwen3.8-27B-MTP-bf16 @ 26a328e070875b0314d652a039b6b59902690f03
+index total_size 849,398,784
+```
+
+The index `total_size` reproduces exactly from the declared shapes, which also pins the
+trunk geometry used everywhere below:
+
+```text
+q 12288x5120 + k 1024x5120 + v 1024x5120 + o 5120x6144
++ gate 17408x5120 + up 17408x5120 + down 5120x17408
++ fc 5120x10240 + 26,112 norm params
+= 424,699,392 params x 2 B = 849,398,784 B   == index total_size
+```
+
+The fixture note says the same thing in words: *"The 3.8 head is bf16, so the same 8
+matrices are 8 entries and 8 + 7 = 15."*
+
+**What the repository declares for the ranked leg** (unchanged, and still correct as a
+*ranked-leg* statement): `mtp-head/` in this tree contains only `README.md`; the weights
+are fetched from the declaration.
 
 ```text
 mtp-head.manifest.json  (verbatim, BASE_SHA e20268e9)
@@ -543,14 +594,9 @@ mtp-head.manifest.json  (verbatim, BASE_SHA e20268e9)
   sha256      cc209e30d8a7def1fc4d785be22b0ec40e16ae6763f9591255a1996a34f08f0d
   bytes       238934093
   max_bytes   2147483648
-  note        "4-bit/group-64 MLX-affine requantization of the pinned bf16 head;
-               matches the backbone quantization geometry so the stock
-               scales-keyed walk loads it with zero code changes. rev2 post-#56
-               (f2be121)."
 ```
 
-The assignment's own PR body also describes the declared head as 4-bit g64. The 239 MB
-figure in §5 is therefore the correct **runtime** number, and it reconciles to the byte:
+which reconciles to the byte:
 
 ```text
 424,673,280 weight elements x 0.5625 B/elt (4-bit + g64 scale/bias) = 238,878,720 B
@@ -559,28 +605,33 @@ safetensors header                                                  =      14,41
                                                               total =  238,934,093 B  == manifest `bytes`
 ```
 
-**Independent measurement refutation** (holds even if one rejects the source reading).
-The traced `draft_build_us` at d=8 is **25.96 ms** for the entire 8-step head chain. A
-bf16 head would have to stream `8 x 849.4 MB = 6.80 GB` for the trunk alone. At this
-host's *measured peak* 250.0 GB/s that is **27.2 ms > 25.96 ms** — the chain would have
-to finish before its own weights arrived. Using the nominal 273 GB/s peak and adding the
-8 x 283.2 MB compact draft `lm_head` gives **33.2 ms**, still impossible. The head that
-actually executes is 4-bit.
+**The "impossibility" argument I used before is withdrawn as invalid.** It compared
+`draft_build_us` (25.96 ms at d=8) against a bf16 GPU roofline (27.2 ms) and concluded the
+chain "would have to finish before its own weights arrived". That inference is unsound,
+because §2/§3 of this same report establish that `draft_build_us` is *host-thread* time
+that ends when the async-eval throttle releases — the tail of the head chain's GPU work
+spills into `eval_wall_us`. The two quantities are not comparable. The measured bf16 chain
+(27.41 ms, §6c) against `tail_async` = 24.66 ms at d=8 is in fact perfectly consistent:
+~90% of the head's GPU time is absorbed inside the draft phase and the rest spills.
 
-The dispatch branch is also unambiguous in source. `Qwen35.swift:1193` (`fusedGateUp()`)
-takes `_fqW/_fqS/_fqZ -> quantizedMM(...)` **first**, with `if let w = _fbfW { matmul(x, w.T) }`
-only as the fallback; `qkv()` at `:1513` is the same shape, and the doc comment
-immediately above it (`:1510-1512`) reads verbatim **"Unquantized (MTP bf16) falls back."**
-Our 4-bit head takes the quantized branch; the bf16 path is the one that is dead here.
+The dispatch-branch reading survives, but now points the other way. `Qwen35.swift:1193`
+(`fusedGateUp()`) tries `_fqW/_fqS/_fqZ -> quantizedMM(...)` first with
+`if let w = _fbfW { matmul(x, w.T) }` as fallback; `qkv()` at `:1513` is the same shape and
+the doc comment at `:1510-1512` reads verbatim **"Unquantized (MTP bf16) falls back."**
+With a dense bf16 head loaded, **the fallback is the live path locally** — which is exactly
+what that comment was written for.
 
-Finally, the cited path `Sources/MLXFastModel/Qwen35MTP.swift:37-38` **does not exist**
-in this tree. The real file is
+Finally, the cited path `Sources/MLXFastModel/Qwen35MTP.swift:37-38` **does not exist** in
+this tree. The real file is
 `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift`.
 
-> **Consequence for item (6.5).** The proposed follow-up "quantize the head to 4-bit,
-> save 18-26 ms (11-16%)" **has no prize left to win — it is already banked in the
-> promoted base.** Assigning it would burn a student on a no-op. This is the single most
-> actionable output of this section.
+> **Consequence for item (6.5).** The proposed follow-up "quantize the head to 4-bit, save
+> 18-26 ms (11-16%)" is **already banked for the ranked leg** by the existing
+> `mtp-head.manifest.json`, so there is no ranked prize left in *doing* the quantization.
+> What is left, and what §6c measures, is whether the 4-bit head is on the right side of
+> the bandwidth/efficiency tradeoff at all. It is: at M=1 the 4-bit path sustains 249.0
+> GB/s against bf16's 253.1 GB/s (98.4%), so bytes convert to time at the same rate and
+> only *fewer bytes* help.
 
 ### (6.2) Launch overhead is ruled out — **CONFIRMED**, and strengthened
 
@@ -589,9 +640,15 @@ Agreed, and this experiment's measurement is stronger than the census. The measu
 *faster* than the sum of its kernels timed back-to-back in isolation. Dispatch and
 command-buffer overhead is therefore not merely bounded — it is already fully hidden
 behind GPU execution. The census figures (~1,540 dispatches/round, ~1,285 of them in
-verify at S=9; ~49 command-buffer commits at `max_ops_per_buffer_ = 40` for arch suffix
-`g`, `mlx/backend/metal/device.cpp:485-486,579-582`; ~17 MB/round copy traffic → 0.06 ms)
-are consistent with that and change nothing.
+verify at S=9; ~17 MB/round copy traffic → 0.06 ms) are consistent with that and change
+nothing.
+
+> **Erratum.** An earlier revision assumed arch suffix `g` and therefore
+> `max_ops_per_buffer_ = 40`. The device actually reports `applegpu_g16s`
+> (`mx.device_info()`, §6c), i.e. suffix **`s`** → `max_ops_per_buffer_ = 50`,
+> `max_mb_per_buffer_ = 50` (`mlx/backend/metal/device.cpp:574-586`). That lowers the
+> commit count to ~31/round and makes the "overhead is hidden" conclusion *stronger*, not
+> weaker. The same probe is what exposes the qmv/qmm dispatch finding in §6c.4.
 
 ### (6.3) Snapshot retraction — **ACCEPTED, verified, floor corrected**
 
@@ -654,8 +711,16 @@ against its 47.5 ms roofline." — ALREADY MEASURED, REFUTED.** The five `head:*
 to **17.27 ms achieved against a 16.79 ms 4-bit roofline**, i.e. **84%-100.4% efficiency**
 per row (`draft_lm_head_compact` 100.4%, `mlp_gate_up_down` 97.4%, `fc_concat_proj`
 100.0%, `attn_qkv_proj` 89.8%, `attn_o_proj` 84.0%). The head chain is the *healthiest*
-part of the round; there is no slack to recover. The 47.5 ms roofline in the hypothesis
-is the bf16 figure and inherits the error corrected in 6.1.
+part of the round; there is no slack to recover.
+
+> **Revised in light of 6.1/§6c.** Those five rows model the *ranked* 4-bit head. The
+> local run streams the bf16 head, so the correct local numbers are **27.41 ms achieved
+> against a 27.00 ms roofline = 101.5% chain efficiency**, measured directly in §6c.2.
+> The conclusion is unchanged and in fact sharper: at **either** storage format the head
+> chain runs at its bandwidth roofline, so the advisor's "15-25 ms of slack" does not
+> exist in the head. The 47.5 ms roofline quoted in the hypothesis is close to the true
+> bf16 chain figure once the compact draft `lm_head` (9.03 ms) is added: 27.41 + 9.03 =
+> **36.4 ms**, all of it real and none of it recoverable by better kernels.
 
 **"Report `rollbackRoundCount`." — ANSWERED: zero.** `repair=1` in **0 of 28 rounds**
 (`acc` never fell below the eager-checkpoint path). The rollback/repair term contributes
@@ -665,6 +730,200 @@ is the bf16 figure and inherits the error corrected in 6.1.
 `verify:lin_attn:gated_delta_kernel` = **3.198 ms achieved** (48 calls, 37.8% efficiency,
 memory-bound), squarely in the predicted band and already counted in the 224.71 ms
 achieved floor. It is not a hidden term.
+
+## 6c. Answers to feedback (7) — `qwen38-r1-e4-fb7-head-mismatch-floor`
+
+The advisor asked for four things: the head provenance record, a decisive measurement of
+which branch the head sits on, whether an 8-bit head would beat 4-bit, and a corrected
+floor. All four are answered from one 13.9 s measurement plus a 10.5 s second component
+pass. **The advisor was right about the mismatch**; §6b.1 now carries the retraction and
+the provenance record. This section carries the measurements.
+
+Reproduce:
+
+```bash
+<mlxenv>/bin/python research/round_floor.py --depth 8 --kv-len 1120 \
+    --measured-block-seconds 0.21775 --head-dtype-compare \
+    --out scratch/results/head_dtype_d8.json          # 13.9 s, job 5851eca0
+<mlxenv>/bin/python research/round_floor.py --depth 7 --kv-len 1120 \
+    --measured-block-seconds 0.190336 \
+    --out scratch/results/round_floor_d7.json         # 10.5 s, job c33fea48
+```
+
+### (6c.1) The head is **BANDWIDTH-BOUND** — the advisor's branch #1 fires
+
+`research/round_floor.py --head-dtype-compare` rebuilds the eight trunk matrices at both
+storage formats and times the same five rows. It excludes `head:draft_lm_head_compact`,
+which is the target-owned compact draft slice: it is 4-bit either way and independent of
+the head's storage format.
+
+Machine probes for this pass:
+
+```text
+BW_eff(4-bit qmv, lm_head M=1)      = 249.0 GB/s
+BW_eff(bf16 dense matvec, 65536x5120) = 253.1 GB/s
+FLOPS_eff = 6.541 TFLOP/s   machine balance = 26.3 FLOP/byte
+```
+
+| head row | q4 ms | q4 eff | bf16 ms | bf16 eff | x (bf16/q4) |
+|---|---:|---:|---:|---:|---:|
+| `head:fc_concat_proj` | 0.1146 | 103.4% | 0.4181 | 99.1% | 3.65 |
+| `head:attn_qkv_proj` | 0.1688 | 98.3% | 0.5844 | 99.3% | 3.46 |
+| `head:attn_sdpa` | 0.0434 | 42.5% | 0.0405 | 44.7% | 0.93 |
+| `head:attn_o_proj` | 0.0644 | 110.3% | 0.2478 | 100.3% | 3.85 |
+| `head:mlp_gate_up_down` | 0.6139 | 98.4% | 2.1350 | 99.0% | 3.48 |
+
+```text
+trunk bytes/step   q4  238.88 MB    bf16  849.35 MB    ratio 3.56x
+chain x8 achieved  q4    8.040 ms   bf16   27.406 ms   ratio 3.41x
+chain x8 roofline  q4    7.823 ms   bf16   26.996 ms
+```
+
+**Verdict: bandwidth-bound, unambiguously.** The measured time ratio 3.41x tracks the byte
+ratio 3.56x, and every trunk row sits at **99-103% of its own same-dtype roofline**. The
+only row that does not scale is the sdpa (0.93x), which is correct — it touches activations
+and the head KV cache, not trunk weights, and it is 0.15% of the chain.
+
+Two consequences:
+
+1. The roofline model **applies** to the head. There is no efficiency defect to recover
+   here at either dtype; the residual the advisor is chasing is not in the head.
+2. Because the chain is at its roofline, head time is a pure function of head bytes. The
+   only lever is **fewer bytes**, not better kernels. That is what §10 follow-up 2 says
+   and it is now measured rather than argued.
+
+### (6c.2) Would an 8-bit head be better than 4-bit? — **NO, strictly worse**
+
+The advisor's hypothesis was that 4-bit nibble unpacking might cost enough to make an
+8-bit head faster despite doubling the bytes. The measurement above settles it directly:
+at decode width the 4-bit quantized matvec sustains **249.0 GB/s** against dense bf16's
+**253.1 GB/s** — **98.4%**. There is no meaningful per-byte penalty for 4-bit on this host
+at M=1, so an 8-bit head would pay ~2x the bytes at ~the same bytes/second and land at
+~2x the time. The `qmv` path's dequantization is fully hidden behind the memory stream.
+
+The Fermi-estimate claim that "4-bit is ~12% slower than 8-bit on Apple Silicon" does not
+transfer to M=1 decode on `applegpu_g16s`. **Keep the declared 4-bit head; the remaining
+prize is a smaller head, not a differently-quantized one.**
+
+I did **not** stage a second head tree, per the advisor's instruction to skip it if
+expensive. Timing the isolated chain at both dtypes answered the same question in 13.9 s
+and without touching `mtp-head.manifest.json`.
+
+### (6c.3) Corrected floor — and an honest new discrepancy
+
+Substituting the true bf16 trunk for the 4-bit trunk rows in the d=8 component pass:
+
+```text
+                                d=8 (width 9)      d=7 (width 8)
+achieved floor as measured        226.02 ms          187.12 ms
+  minus 4-bit head trunk rows      -8.24 ms           -7.38 ms
+  plus  bf16 head trunk rows      +27.41 ms          +23.98 ms   (27.406 x 7/8)
+  minus snapshot erratum (6.3)     -1.32 ms           -1.32 ms
+= corrected achieved floor        243.87 ms          202.40 ms
+measured_block                    217.75 ms          190.34 ms
+scheduling gap                    -26.12 ms          -12.06 ms
+                                    (-12.0%)            (-6.3%)
+```
+
+**The corrected floor now exceeds the measurement**, by 12% at width 9 and 6% at width 8.
+A floor above the measurement is a defect in the model, and I am reporting it rather than
+tuning it away. Three things are established about it:
+
+- **It is not the head.** The head chain was measured directly at both dtypes in 6c.1 and
+  matches its roofline to 1.5%. The bf16 chain (27.41 ms) is also consistent with the
+  traced `tail_async` at d=8 (24.66 ms) plus spill into `eval_wall`.
+- **It is not "whole-forward segmentation", which is what I guessed first.** That guess is
+  **refuted by the source**. `Qwen36MTPBlockSession.swift:592-599` states that
+  `attentionWithCacheUpdate` splits only the **sdpa** into two <= 5-row calls, and that
+  segmenting the whole forward (two model calls, 5+k) *"was measured bit-exact too but
+  pays a second full weight pass (~25 ms) and loses on net; the chunk lives at the sdpa
+  only."* The quantized projections genuinely run at M=9 in one launch, exactly as my
+  component pass models them.
+- **It scales with verify width** (-6.3% at width 8, -12.0% at width 9), which points at
+  the wide quantized-matmul rows rather than at any fixed term.
+
+The most likely remaining cause is a property of the harness, not of the round:
+`timeit_amortized` issues 16 **independent copies of one op** inside a single submit, which
+maximizes contention on exactly the unit that op saturates. The real forward interleaves
+heterogeneous work (GDN scan, depthwise conv, softmax, RMSNorm, gathers) between the big
+quantized GEMMs, so some of it overlaps. That would inflate my per-call figures for the
+widest, most contended rows precisely in proportion to width — which is the observed
+pattern.
+
+**None of this changes the conclusion of §5A/§5B.** The two component passes are
+independent measurements at two widths and they agree on the thing that matters: the
+verify-side quantized matmuls run at **35.1% (width 9) and 38.6% (width 8)** of their
+roofline, while everything else in the round runs at 84-104%. Even after scaling my verify
+estimate down by the full 12% discrepancy, verify quantized matmuls are ~177 ms of a
+217.75 ms round.
+
+### (6c.4) New finding from the same probe: **9 rows falls off the qmv dispatch cliff**
+
+Chasing the floor discrepancy required knowing the exact Metal architecture, and that
+probe produced the most actionable result in this section.
+
+```text
+mx.device_info()  ->  architecture "applegpu_g16s"   device "Apple M4 Pro"
+                      arch_gen = 16, arch_size = 's'
+```
+
+`Vendor/mlx-swift/.../backend/metal/quantized.cpp:84` `get_qmv_batch_limit(D, O, d)` with
+`arch_gen = 16` (so **not** the 13/14 branch) and `arch_size = 's'` returns, for every
+projection shape in this model (all have D > 4096 and O > 4096):
+
+```text
+mlp gate/up   5120 -> 17408     vector_limit = 8
+mlp down     17408 ->  5120     vector_limit = 8
+lm_head       5120 -> 248320    vector_limit = 8
+```
+
+and the dispatch at `:1418` is
+
+```cpp
+int vector_limit = transpose_ ? get_qmv_batch_limit(K, N, d) : 4;
+if (M >= vector_limit) {          // -> qmm_splitk (transpose_ && B == 1)
+```
+
+so **M <= 7 takes `qmv`; M >= 8 takes `qmm_splitk`.** `rows_per_round = depth + 1`, so
+`segmentedVerifyDepthCap = 8` puts the verify at **M = 9**, one row past the cheap width.
+
+This contradicts the design comment at `Qwen36MTPBlockSession.swift:588-590`, which asserts
+*"Quantized projections at M in 6..9 still ride the per-row-exact QMV dispatch (host qmv
+batch limit 10+ on this generation for these shapes)."* On `applegpu_g16s` the limit is
+**8**, not "10+", so at depth 8 the projections are on `qmm_splitk`. Correctness is not in
+question — bit-exactness was measured separately on the hexfloat row gate — but the **cost
+model behind the depth cap is wrong on this host**.
+
+The two component passes price it exactly:
+
+```text
+verify quantized-matmul subtotal   width 8   162.58 ms achieved / 62.68 ms roofline = 38.6%
+                                   width 9   201.04 ms achieved / 70.49 ms roofline = 35.1%
+marginal cost of the 9th row                  38.46 ms
+average cost of a row at width 8              20.32 ms
+=> the 9th row costs 1.89x an average row
+```
+
+The width sweep of §5B shows the same cliff in isolation on the MLP shape: 0.5582 ms at
+M=7, 0.5622 ms at M=8, **0.6958 ms at M=9** (+23.8% for +12.5% rows).
+
+**And the traced run agrees at the round level:**
+
+```text
+d=7 rounds (N=4)   round 190.336 ms   acc 7.00   -> 8.00 tokens   23.79 ms/token
+d=8 rounds (N=9)   round 217.750 ms   acc 7.89   -> 8.89 tokens   24.49 ms/token
+```
+
+**Depth 7 is 2.9% cheaper per token than depth 8 on this host**, despite emitting fewer
+tokens per round, because 8 rows stays on the cheap side of the dispatch cliff.
+
+Caveats I will not paper over: N=4 versus N=9 rounds, depth is chosen adaptively so the
+two samples are not matched on prompt difficulty, and `get_qmv_batch_limit` on the ranked
+M5 depends on its own arch string (6 if `arch_gen` is 13 or 14, 12 if it is an Ultra
+`'d'` part, 8 otherwise). That is precisely why the follow-up should *measure* the cliff
+on the ranked host rather than hardcode 7. See §10 follow-up 0b — it is a two-line change
+inside `Qwen36MTPBlockSession.swift`, entirely within the editable surface, and it is the
+cheapest concrete speedup this experiment found.
 
 ## 7. Score arithmetic
 
@@ -743,16 +1002,65 @@ scratch/analyze-sub.py scratch/results/trace-free-192/trace.log 1
 # 4. the roofline / achieved-kernel floor and the width sweep (§5A, §5B)
 scratch/mlxenv/bin/python research/round_floor.py \
   --depth 8 --kv-len 1120 --measured-block-seconds 0.21775 \
-  --sweep --json scratch/results/round_floor_d8.json
+  --sweep --out scratch/results/round_floor_d8.json
 
-# 5. publish to W&B
+# 5. the same pass one row lower — the cheap side of the dispatch cliff (§6c.4)
+scratch/mlxenv/bin/python research/round_floor.py \
+  --depth 7 --kv-len 1120 --measured-block-seconds 0.190336 \
+  --out scratch/results/round_floor_d7.json
+
+# 6. head trunk at 4-bit vs bf16 storage (§6c.1, §6c.2)
+scratch/mlxenv/bin/python research/round_floor.py \
+  --depth 8 --kv-len 1120 --measured-block-seconds 0.21775 \
+  --head-dtype-compare --out scratch/results/head_dtype_d8.json
+
+# 7. Metal architecture + qmv batch limits (§6c.4) — 0.08 s, no model load
+scratch/mlxenv/bin/python research/round_floor.py --device-only
+
+# 8. publish to W&B
 scratch/log-wandb.py --floor=scratch/results/round_floor_d8.json \
   e4-host-draft-build-decode-round-floor \
   scratch/results/A-trace-base scratch/results/trace-free-192
 ```
 
+Every `round_floor.py` invocation now records the step-7 device probe in its own JSON
+under the `device` key, so a floor number can never be read without the architecture that
+produced it.
+
+Job IDs behind the numbers, all exit 0:
+
+| job | wall | produced |
+|---|---:|---|
+| `e6a2f1c1-849f-…` | ~13 min | 192-token traced window (§3, §4, §6) |
+| `56814494-…` | ~6 min | 64-token baseline window (run A) |
+| `7d99e5b3-…` | 20.5 s | `round_floor_d8.json` (§5A, §5B) |
+| `c33fea48-74e8-4c4c-9103-0d01cdb25812` | 10.5 s | `round_floor_d7.json` (§6c.4) |
+| `5851eca0-13a3-4a47-b707-44b0129216c6` | 13.9 s | `head_dtype_d8.json` (§6c.1, §6c.2) |
+| `b311e34a-f7f0-45dd-a5d8-e4bf0c8ec9c7` | 0.075 s | device probe (§6c.4) |
+| `73b03979-b688-4976-b757-32c52857164c` | 16.9 s | W&B run `ma8cga81` |
+
 `scratch/` is outside the checkout and outside Git; `research/round_floor.py` is
 committed but never packaged (§9).
+
+### 8.2b Proposal-head provenance (local runs)
+
+Recorded so the local-versus-ranked head split of §6b.1 is auditable:
+
+```text
+dir              ~/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head
+source           EigenLabs/Qwen3.8-27B-MTP-bf16 @ 26a328e070875b0314d652a039b6b59902690f03
+                 (hardcoded at setup-qwen-mtp.sh:66-67, verified against
+                  fixtures/qwen3_8_27b_mtp_head.sha256)
+model.safetensors sha256 8fceddc664f3ea96d02e304463aa1319213ff52cdf1f3401d4bce64e7075c349
+bytes            849,400,347   index total_size 849,398,784 = 424,699,392 params x 2 B
+dtype            bfloat16, 15 bare tensors, no `.scales` -> stays dense
+```
+
+The ranked candidate leg instead uses `mtp-head.manifest.json`:
+`hf:lowskillcoding/qwen38-mtp-head-4bit-g64@0966ddaff972fd3ca2be08f3640603b47e9ce70a`,
+sha256 `cc209e30d8a7def1fc4d785be22b0ec40e16ae6763f9591255a1996a34f08f0d`,
+238,934,093 B of a 2,147,483,648 B cap. The repo's `mtp-head/` holds only `README.md`,
+and the pinned serial leg never uses a candidate head.
 
 ### 8.3 Host caveat — this M4 Pro is ~22% slower than the E3 host
 
@@ -809,9 +1117,10 @@ deliberately so the advisor and the next student can reproduce and extend it:
 
 | path | ins | del | submitted? |
 |---|---:|---:|---|
-| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | 114 | 5 | yes (in `editablePaths`) |
-| `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift` | 70 | 2 | yes (in `editablePaths`) |
-| `research/round_floor.py` | 641 | 0 | **no** — research-only, outside `editablePaths` |
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | 110 | 4 | yes (in `editablePaths`) |
+| `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift` | 67 | 3 | yes (in `editablePaths`) |
+| `research/round_floor.py` | 916 | 0 | **no** — research-only, outside `editablePaths` |
+| `research/results/qwen38-r1-e4-host-draft-build.md` | new | 0 | **no** — this report |
 
 **This candidate must not be officially submitted as-is.** The two Swift files add a
 tracing path that must be stripped or compile-gated out before any Yukon submission.
@@ -847,9 +1156,46 @@ never packaged.
    `backend/metal/quantized.cpp` is **not** submittable, so the qmv/qmm selection is
    fixed and the work must go inside `qmv`/`qmv_quad`. Needs a fidelity plan: this
    touches reduction order and packing, so it requires exact-row numerical checks, not
-   just an argmax match. Also needs an M5 confirmation — `get_qmv_batch_limit` returns 6
-   for `arch_gen ∈ {13,14}` and 10 otherwise at D=5120/O=17408, so the ranked M5 may sit
-   on a different side of the split than this M4 Pro.
+   just an argmax match. Also needs an M5 confirmation — at D=5120/O=17408
+   `get_qmv_batch_limit` returns **6** for `arch_gen ∈ {13,14}`, **12** for an Ultra
+   (`arch_size == 'd'`), and **8** otherwise, so the ranked M5 may sit on a different side
+   of the split than this `applegpu_g16s` M4 Pro.
+
+0b. **Set `segmentedVerifyDepthCap` from the measured qmv batch limit instead of the
+   constant 8** (§6c.4). This is the cheapest concrete speedup the experiment found and it
+   is entirely inside the declared editable surface — two lines in
+   `Qwen36MTPBlockSession.swift` (`:607` and the width-cap selection at `:613-619`).
+
+   - **Mechanism.** MLX dispatches `qmv` while `M < vector_limit` and `qmm_splitk` at
+     `M >= vector_limit`; `M = depth + 1`. Capping depth at `vector_limit − 1` keeps every
+     verify projection on the cheap dispatch. On this host that is depth 7, not 8.
+   - **Measured prize here.** 23.79 ms/token at d=7 versus 24.49 ms/token at d=8 (−2.9%),
+     with the isolated MLP shape and the two component passes both agreeing (§5B, §6c.4).
+     At the score sensitivity of §7 (`d(score)/d(candidate s) ≈ −0.43`), a 2.9% cut on a
+     ~6.70 s candidate leg is ~0.19 s ≈ **+0.084 score** — roughly 20x the ceiling of the
+     Part B work this assignment scoped.
+   - **Do not hardcode 7.** Probe the limit at runtime and derive the cap. `mx.device_info()`
+     exposes `architecture`; the Swift side can read the same Metal architecture string,
+     or the cap can be calibrated once during the existing warmup by timing the model's own
+     gate/up shape across M and taking the last width before the jump. Calibration is
+     input-independent (it depends only on shapes and hardware), so it stays inside the
+     work-honesty rules.
+   - **Risk.** Lower depth means fewer tokens per round, so the win is a *net* claim, not an
+     acceptance-rate claim. It must be validated with a matched `--local-iterate` pair, and
+     the d=7 evidence here comes from N=4 adaptively chosen rounds versus N=9 at d=8 — not
+     matched on prompt difficulty. A forced-depth A/B (the `MLX_QWEN_MTP_FIXED_DEPTH`
+     override already exists in the instrumentation) settles it in one cheap run pair.
+   - **Interaction.** If follow-up 0 succeeds and flattens the cliff, 0b becomes obsolete —
+     they should not be composed blindly.
+
+0c. **Correct the stale design comment at `Qwen36MTPBlockSession.swift:588-590`.** It states
+   the host qmv batch limit is "10+ on this generation for these shapes", which is false on
+   `applegpu_g16s` (it is 8) and false on the 13/14 generations (6). Whatever is decided
+   about 0b, the comment should record the real rule and the fact that it is
+   architecture-dependent, so the next reader does not re-derive a cost model from it. Note
+   the *rest* of that comment block was verified correct in §6c.4: the 6..9-row chunking it
+   describes applies at the sdpa only, and segmenting the whole forward was already measured
+   and rejected for paying a second full weight pass.
 
 1. **Re-anchor `headStepCostRatio`** to ~0.224 on M4-class hosts and re-measure the
    depth schedule. The current 0.20 under-charges deep drafts, biasing the scheduler

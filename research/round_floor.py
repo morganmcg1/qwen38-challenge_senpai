@@ -683,6 +683,47 @@ def sweep_quantized_matmul_width(reps, widths):
     return rows
 
 
+def qmv_batch_limit(D, O, arch_size, arch_gen):
+    """Mirror of get_qmv_batch_limit in mlx/backend/metal/quantized.cpp.
+
+    MLX dispatches qmv while M < limit and qmm_splitk at M >= limit, so a verify of
+    width d+1 falls off the cheap dispatch as soon as d+1 reaches this value.
+    """
+    if arch_size == "d":
+        if D <= 2048 and O <= 2048:
+            return 32
+        return 18 if (D <= 4096 and O <= 4096) else 12
+    if arch_gen in (13, 14):
+        if D <= 2048 and O <= 2048:
+            return 14
+        return 10 if (D <= 4096 and O <= 4096) else 6
+    if D <= 2048 and O <= 2048:
+        return 18
+    return 12 if (D <= 4096 and O <= 4096) else 8
+
+
+def device_probe():
+    info = mx.device_info()
+    arch = str(info.get("architecture", ""))
+    # device.cpp parses the generation from the two digits before the size suffix.
+    arch_gen = (ord(arch[-3]) - 48) * 10 + (ord(arch[-2]) - 48) if len(arch) >= 3 else 0
+    arch_size = arch[-1] if arch else ""
+    shapes = {
+        "mlp_gate_up_5120x17408": (5120, 17408),
+        "mlp_down_17408x5120": (17408, 5120),
+        "lm_head_5120x248320": (5120, 248320),
+    }
+    return {
+        "architecture": arch,
+        "arch_gen": arch_gen,
+        "arch_size": arch_size,
+        "device_info": {k: str(v) for k, v in info.items()},
+        "qmv_batch_limit": {
+            name: qmv_batch_limit(d, o, arch_size, arch_gen) for name, (d, o) in shapes.items()
+        },
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--reps", type=int, default=15)
@@ -691,10 +732,14 @@ def main():
     ap.add_argument(
         "--measured-block-seconds",
         type=float,
-        required=True,
         help="parent-clock seconds for one round at this depth",
     )
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--out")
+    ap.add_argument(
+        "--device-only",
+        action="store_true",
+        help="print the Metal architecture and qmv batch limits, then exit",
+    )
     ap.add_argument(
         "--sweep",
         action="store_true",
@@ -706,6 +751,13 @@ def main():
         help="also measure the chained head trunk at 4-bit and bf16 storage",
     )
     args = ap.parse_args()
+
+    device = device_probe()
+    if args.device_only:
+        print(json.dumps(device, indent=2))
+        return
+    if args.measured_block_seconds is None or args.out is None:
+        ap.error("--measured-block-seconds and --out are required unless --device-only is set")
 
     mx.random.seed(0)
     width = args.depth + 1
@@ -736,6 +788,7 @@ def main():
 
     out = {
         "host": {"chip": "Apple M4 Pro", "mlx_python": mx.__version__, "mlx_swift": "0.32.0"},
+        "device": device,
         "depth": args.depth,
         "verify_width": width,
         "kv_len": args.kv_len,
