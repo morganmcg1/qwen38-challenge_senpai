@@ -74,6 +74,7 @@ wandb/
 # SENPAI-CAMPAIGN-END
 
 # Senpai research measurement artifacts (evidence lives in W&B, not Git)
+research/raw-*.log
 research/trace-*.log
 research/score-*.json
 research/analysis-*.json
