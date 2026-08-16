@@ -56,11 +56,60 @@ def load(arm_dir, warmup):
     return [r for leg in legs for r in leg]
 
 
+def split_at_eos(legs, eos_index):
+    """Partition rounds by whether they commit before or after `eos_index`.
+
+    A round commits `acc + 1` tokens, so the decode index of its first
+    committed token is the running total over earlier rounds of that leg.
+    Rounds straddling the boundary are dropped from both sides rather than
+    assigned to one, so neither segment mixes the two regimes.
+    """
+    pre, post = [], []
+    for leg in legs:
+        cursor = 0
+        for r in leg:
+            emitted = r[2] + 1
+            if cursor + emitted <= eos_index:
+                pre.append(r)
+            elif cursor >= eos_index:
+                post.append(r)
+            cursor += emitted
+    return pre, post
+
+
+def acceptance_table(rounds):
+    """Per-position (reached, accepted, p_i) over a round list."""
+    rows = []
+    for i in range(8):
+        reached = sum(1 for _, d, a, _ in rounds if d > i and a >= i)
+        ok = sum(1 for _, d, a, _ in rounds if d > i and a > i)
+        if reached:
+            rows.append((i + 1, reached, ok, ok / reached))
+    return rows
+
+
+def print_segment(label, rounds):
+    if not rounds:
+        print(f"  [{label}] no rounds")
+        return
+    total_d = sum(d for _, d, _, _ in rounds)
+    total_a = sum(a for _, _, a, _ in rounds)
+    print(f"  [{label}] N={len(rounds)} "
+          f"mean_depth={total_d / len(rounds):.3f} "
+          f"mean_acc={total_a / len(rounds):.3f} "
+          f"tokens/round={1 + total_a / len(rounds):.3f}")
+    for pos, reached, ok, p in acceptance_table(rounds):
+        print(f"  [{label}]   pos {pos}: reached {reached:>5} "
+              f"accepted {ok:>5}  p={p:.4f}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out_dir", type=Path)
     ap.add_argument("--arms", nargs="*", default=None)
     ap.add_argument("--warmup", type=int, default=2)
+    ap.add_argument("--eos-index", type=int, default=301,
+                    help="decode index where the public trajectory emits EOS")
     args = ap.parse_args()
 
     arms = args.arms or sorted(
@@ -127,14 +176,16 @@ def main():
 
         print(f"  {'pos':>4} {'reached':>8} {'accepted':>9} {'p_i':>7} "
               f"{'shipped prior':>14}")
-        for i in range(8):
-            reached = sum(1 for _, d, a, _ in rounds if d > i and a >= i)
-            ok = sum(1 for _, d, a, _ in rounds if d > i and a > i)
-            if not reached:
-                continue
-            prior = 0.85 * 0.98 ** i
-            print(f"  {i + 1:>4} {reached:>8} {ok:>9} {ok / reached:>7.4f} "
+        for pos, reached, ok, p in acceptance_table(rounds):
+            prior = 0.85 * 0.98 ** (pos - 1)
+            print(f"  {pos:>4} {reached:>8} {ok:>9} {p:>7.4f} "
                   f"{prior:>14.4f}")
+
+        pre, post = split_at_eos(legs, args.eos_index)
+        print(f"  --- EOS split at decode index {args.eos_index} "
+              f"(straddling rounds dropped) ---")
+        print_segment("pre-EOS", pre)
+        print_segment("post-EOS", post)
 
 
 if __name__ == "__main__":
