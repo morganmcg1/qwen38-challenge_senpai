@@ -51,6 +51,11 @@ else
   echo "run-amdahl-measurement: WANDB_API_KEY unset; skipping W&B logging" >&2
 fi
 
+extra_config_flag=()
+if [[ -n "${MLXFAST_AMDAHL_EXTRA_CONFIG:-}" ]]; then
+  extra_config_flag=(--extra-config "${MLXFAST_AMDAHL_EXTRA_CONFIG}")
+fi
+
 WANDB_PROJECT="${WANDB_PROJECT:-qwen38-mlx-challenge-senpai}" \
 WANDB_ENTITY="${WANDB_ENTITY:-wandb-applied-ai-team}" \
 "${python_bin}" research/prefill_amdahl.py "${MLXFAST_CAPTURE_DIR}" \
@@ -60,5 +65,6 @@ WANDB_ENTITY="${WANDB_ENTITY:-wandb-applied-ai-team}" \
   --head-sha "$(git rev-parse HEAD)" \
   --score-json "${MLXFAST_SCORE_PATH}" \
   --notes "${notes}" \
+  "${extra_config_flag[@]}" \
   "${wandb_flag[@]}" \
   | tee "${out_dir}/amdahl.json"

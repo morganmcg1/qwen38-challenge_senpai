@@ -191,6 +191,7 @@ def main() -> int:
     ap.add_argument("--score-json", type=Path, default=None)
     ap.add_argument("--wandb", action="store_true")
     ap.add_argument("--notes", default="")
+    ap.add_argument("--extra-config", default="", help="JSON object merged into provenance")
     args = ap.parse_args()
 
     legs = load_timed_reports(args.capture_dir)
@@ -215,6 +216,8 @@ def main() -> int:
     }
     if args.score_json and args.score_json.exists():
         provenance["score_json"] = json.loads(args.score_json.read_text())
+    if args.extra_config:
+        provenance.update(json.loads(args.extra_config))
 
     payload = {"provenance": provenance, "serial_leg": serial, "mtp_leg": mtp, "amdahl": model}
     print(json.dumps(payload, indent=2, sort_keys=True))

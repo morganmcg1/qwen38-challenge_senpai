@@ -1,0 +1,31 @@
+Copy the passage between the tags exactly. Preserve every heading, bullet, comma, period, numeral, and blank line. Do not summarize, translate, explain, add a preface, add a code fence, or add a closing note. Begin with the first heading of the passage.
+
+Context notes:
+- This seed is research-only and was authored for a draft-head precision study.
+- The register is dense technical prose so that token prediction is harder than in plain narration.
+- The passage is longer than the correctness window, keeping validation inside real content.
+- Stable copying matters more than creative reasoning.
+- Numerals and units appear throughout because they tokenize differently from ordinary words.
+Copy exactly.
+
+<passage>
+## Thermal Transport In Binary Alloys
+Heat moves through a crystalline solid by two carriers. Free electrons dominate in most metals, while lattice vibrations, quantized as phonons, dominate in insulators and in heavily disordered alloys. The measured conductivity is the sum of the two channels, and the ratio between them shifts with composition, temperature, and defect density.
+
+## The Solute Scattering Term
+Adding a second species to a pure metal lowers the electronic contribution sharply at first. Each substituted atom presents a scattering center whose strength scales with the square of the difference in valence and with the fourth power of the radius mismatch. At 4 percent solute the residual resistivity of a copper-nickel system has already risen by roughly an order of magnitude over the annealed pure state, and the electronic conductivity falls with it.
+
+## Phonon Mean Free Path
+The phonon channel obeys a different law. Its mean free path is set by the shorter of two lengths: the distance between mass defects and the intrinsic anharmonic length, which shrinks as temperature rises. Below about 50 kelvin the defect term controls, so conductivity depends on how the alloy was quenched. Above 300 kelvin the anharmonic term controls, and quench history stops mattering.
+
+## Interfaces And Grain Boundaries
+A grain boundary is not a simple resistor. It contributes an interfacial resistance of order 1e-9 square meter kelvin per watt in clean systems, which is negligible in a coarse casting and dominant in a nanocrystalline film. The crossover grain size is near 40 nanometers for most face-centered cubic metals at room temperature.
+
+## Measurement Practice
+Steady-state comparative methods are simple but accumulate error from radiative losses above 600 kelvin. Transient laser flash avoids that loss and measures diffusivity directly, but it requires an independent heat capacity value and a density value, and the product of three measured quantities carries the sum of three relative errors.
+
+## Reporting Rule
+State the composition, the thermal history, the grain size distribution, and the measurement method with every reported conductivity. A number without those four qualifiers is not reproducible and should not be entered into a materials table.
+</passage>
+
+Now output the passage exactly as written, starting with ## Thermal Transport In Binary Alloys. Do not include the tags or any extra text.

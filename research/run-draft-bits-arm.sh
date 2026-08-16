@@ -18,9 +18,9 @@ tokens="${3:-512}"
 base_sha="${4:-}"
 
 case "${bits}" in
-  2 | 3 | 4) ;;
+  2 | 3 | 4 | default) ;;
   *)
-    echo "run-draft-bits-arm.sh: BITS must be 2, 3, or 4 (got ${bits})" >&2
+    echo "run-draft-bits-arm.sh: BITS must be 2, 3, 4, or default (got ${bits})" >&2
     exit 1
     ;;
 esac
@@ -34,7 +34,14 @@ out_dir="${repo_root}/.mlxfast-private/draft-bits/${tag}"
 rm -rf -- "${out_dir}"
 mkdir -p "${out_dir}"
 
-export MLX_QWEN_MTP_DRAFT_BITS="${bits}"
+if [[ "${bits}" == "default" ]]; then
+  # The whole point of the `default` arm: prove what the ranked worker gets when
+  # nothing sets the knob. The ranked workflow exports only names it defines
+  # itself, so it can never set MLX_QWEN_MTP_DRAFT_BITS.
+  unset MLX_QWEN_MTP_DRAFT_BITS
+else
+  export MLX_QWEN_MTP_DRAFT_BITS="${bits}"
+fi
 # No in-band provenance line is possible: on the mtp-timed verb the worker runs
 # under a Seatbelt profile that denies file-write* except /dev/null
 # (MLXFastCLI/main.swift writeRuntimeWorkerSandboxProfile), its stdout is the
@@ -85,6 +92,13 @@ if [[ "$(strings -a "${worker_bin}" | grep -c "MLX_QWEN_MTP_DRAFT_BITS" || true)
   echo "run-draft-bits-arm.sh: ${worker_bin} has no MLX_QWEN_MTP_DRAFT_BITS; refusing to time a build that cannot honour the arm" >&2
   exit 1
 fi
+# The `strings` gate above goes blind the moment the in-tree DEFAULT changes:
+# both a stale and a fresh binary still contain that symbol. The binary digest
+# is the gate that cannot go blind -- an arm that shares another arm's worker
+# hash measured another arm's code, whatever the env said.
+worker_sha="$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
+cli_sha="$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
+golden_fixture="${MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE:-<harness default>}"
 
 identity="${out_dir}/identity.txt"
 {
@@ -93,9 +107,27 @@ identity="${out_dir}/identity.txt"
   echo "run-draft-bits-arm: base_sha=${base_sha}"
   echo "run-draft-bits-arm: host=$(sysctl -n machdep.cpu.brand_string) mem=$(sysctl -n hw.memsize)"
   echo "run-draft-bits-arm: started_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "run-draft-bits-arm: env_draft_bits=${MLX_QWEN_MTP_DRAFT_BITS:-<unset>}"
+  echo "run-draft-bits-arm: golden_fixture=${golden_fixture}"
+  echo "worker_sha256=${worker_sha}"
+  echo "cli_sha256=${cli_sha}"
   echo "cool_gate=disabled_ambient_floor"
   echo "gpu_temp_c_before=$(gpu_temp_now)"
 } >"${identity}"
+
+export MLXFAST_AMDAHL_EXTRA_CONFIG="$(
+  jq -cn \
+    --arg bits "${bits}" \
+    --arg env_bits "${MLX_QWEN_MTP_DRAFT_BITS:-unset}" \
+    --arg fixture "${golden_fixture}" \
+    --arg worker_sha "${worker_sha}" \
+    --arg cli_sha "${cli_sha}" \
+    --arg tokens "${tokens}" \
+    '{draft_bits_arm: $bits, env_draft_bits: $env_bits,
+      golden_fixture: $fixture, worker_sha256: $worker_sha,
+      cli_sha256: $cli_sha, decode_tokens: ($tokens | tonumber),
+      cool_gate: "disabled_ambient_floor"}'
+)"
 
 # The MTP local-iterate report carries no memory field, so peak comes from
 # `ru_maxrss`, which XNU folds across waited descendants as a max (in bytes).

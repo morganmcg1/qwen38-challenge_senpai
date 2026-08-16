@@ -1,0 +1,31 @@
+Copy the passage between the tags exactly. Preserve every heading, comma, period, and blank line. Do not summarize, translate, explain, add a preface, add a code fence, or add a closing note. Begin with the first heading of the passage.
+
+Context notes:
+- This seed is research-only and was authored for a draft-head precision study.
+- The register is narrative and historical, in the manner of a travel journal or a life of a commander.
+- The passage is longer than the correctness window, keeping validation inside real content.
+- Stable copying matters more than creative reasoning.
+- The sentences are long and clausal, which is the ordinary shape of older prose.
+Copy exactly.
+
+<passage>
+## The March To The Northern Passes
+He set out from the coast in the third week of autumn, with four cohorts and a train of mules that the quartermaster had judged sufficient for nineteen days, and he took the inland road rather than the shore road, which was shorter but ran under the walls of three towns whose loyalty had not been tested since the spring.
+
+## The Country Between
+The country between the river and the first pass is a broad plain of stiff clay, cut by shallow watercourses that are dry for most of the year and impassable for a day after any rain. The inhabitants keep goats and a hardy small cattle, and they sell cheese and dried fish to the caravans, but they will not guide a column of soldiers, having learned from an older war what befalls a guide whose road proves unlucky.
+
+## The First Encampment
+On the fourth evening the column halted beside a ruined shrine, and the men found there an inscription, much worn, which the secretary copied and afterward could not read. The historian who preserves the anecdote says only that it was in an older hand than the province used, and that an old woman of the neighborhood told the soldiers the place had been holy before the road was made, and had been holy for a different reason after.
+
+## The Delay At The Ford
+Rain held them nine days at the ford. The commander, who was not a patient man, is said to have walked the bank each morning and returned each evening without speaking, and to have kept the cohorts at their drill in the wet, which the older officers thought harsh and the younger thought prudent, and which the event afterward justified, for the men came to the pass in condition and the enemy did not.
+
+## What Was Found At The Summit
+At the summit they found the watchtowers abandoned, the fires cold, and a quantity of grain untouched in the store, which persuaded the commander that the withdrawal had been ordered and was not a flight. He wrote as much in his dispatch, and added, in the sentence for which the dispatch is remembered, that an empty position taken without loss is worth less than the reason it was left empty.
+
+## The Judgment Of The Historians
+Later writers have disputed almost every detail of the march, the number of the cohorts, the season, and even the identity of the pass, but none has disputed the sentence, and it is quoted in three later commanders' memoirs, twice without attribution.
+</passage>
+
+Now output the passage exactly as written, starting with ## The March To The Northern Passes. Do not include the tags or any extra text.
