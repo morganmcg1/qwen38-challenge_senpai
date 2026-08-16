@@ -128,6 +128,142 @@ drafts for that round exist. There is no path from draft content to depth.
 `C(d) ≈ C₀·(1 + γ·[d − d_knee]₊)`. It is not used: the measured table is
 strictly more faithful and costs the same at run time (8 doubles).
 
+## The EOS boundary — your comment-9 hazard is real, but it points the other way
+
+You asked me to split every acceptance statistic at the EOS boundary because
+211 of the 512 local tokens are post-EOS continuation, which you expected to be
+"degenerate, repetitive and easy to draft", biasing my local acceptance
+*upward* relative to ranked prose.
+
+I measured it. **The post-EOS region is harder, not easier.** The aggregate
+`accepted_draft_rate` of the forced-`d=8` arm *falls* when the window is
+extended from 256 to 512 tokens:
+
+| window | arm | `accepted_draft_rate` | mean accepted drafts / round |
+|---|---|---|---|
+| 256 tok | `d8` | 0.9456 | 7.500 |
+| 512 tok | `d8` | **0.8222** | **6.523** |
+
+Split at decode index 301, straddling rounds dropped:
+
+| segment | N rounds | mean depth | mean accepted | tokens/round |
+|---|---|---|---|---|
+| pre-EOS | 37 | 8.000 | **7.000** | 8.000 |
+| post-EOS | 28 | 7.857 | **5.750** | 6.750 |
+
+Per-position, post-EOS is at or below pre-EOS at every position but one:
+
+| pos | pre-EOS `p_i` | post-EOS `p_i` | shipped prior `0.85·0.98^i` |
+|---|---|---|---|
+| 1 | 0.9459 | 0.8929 | 0.8500 |
+| 2 | 0.9714 | 0.9600 | 0.8330 |
+| 3 | 0.9706 | 0.9167 | 0.8163 |
+| 4 | 1.0000 | 0.9545 | 0.8000 |
+| 5 | 0.9697 | 0.9500 | 0.7840 |
+| 6 | 1.0000 | 0.9474 | 0.7683 |
+| 7 | 0.9688 | 0.9444 | 0.7530 |
+| 8 | 0.9355 | 0.8824 | 0.7379 |
+
+### The mechanism, from the 64-token bins
+
+The split above hides the structure. Binning by decode index shows the loss is
+not spread across the post-EOS tail at all — it is concentrated in the
+*transition*:
+
+| decode bin | N | mean depth | mean accepted | tokens/round | round µs |
+|---|---|---|---|---|---|
+| 0–63 | 8 | 8.000 | 8.000 | 9.000 | 197,912 |
+| 64–127 | 8 | 8.000 | 6.875 | 7.875 | 198,612 |
+| 128–191 | 7 | 8.000 | 8.000 | 9.000 | 198,294 |
+| 192–255 | 7 | 8.000 | 7.429 | 8.429 | 198,738 |
+| **256–319** | 13 | 8.000 | **4.000** | 5.000 | 199,455 |
+| **320–383** | 11 | 8.000 | **5.182** | 6.182 | 200,358 |
+| 384–447 | 7 | 8.000 | **8.000** | 9.000 | 199,191 |
+| 448–511 | 5 | 7.200 | 7.200 | 8.200 | 192,413 |
+
+So the honest reading is: **you were right about the settled tail and wrong
+about the net effect.** Once the model has committed to a new pattern
+(384 onward) acceptance returns to a perfect 8.000/8, exactly the degenerate
+repetition you predicted. But getting there costs one genuinely high-entropy
+decision region (256–383) where acceptance collapses to 4.0–5.2 of 8, and that
+region is larger than the easy tail it buys.
+
+Net: **the 512-token window is more ranked-representative than the 256-token
+window, not less.** It contains exactly one real high-entropy decision point;
+the 256-token window contains none.
+
+### What this does not license
+
+This is one EOS event on one fixture, with N=13 rounds in the worst bin. It is
+an anecdote about a transition, not a distribution over prose. It does **not**
+make `public_longcopy_gate_english_512` a proxy for the ranked pool, and I am
+not treating it as one.
+
+The load-bearing number is still comment 1's: ranked depth-1 acceptance is
+**0.699**. My *hardest* local region reaches `p₁ = 0.8929`. The local fixture
+therefore still overestimates ranked acceptance substantially — just for a
+different reason than the one you flagged. Everything I claim about `d*` on
+ranked prompts continues to come from the offline counterfactual at
+`q = 0.699`, never from a local acceptance measurement.
+
+One consequence worth stating plainly: the shipped prior `0.85·0.98^i`
+underestimates acceptance at *every* position in *both* segments here, while
+comment 3's external mlx-lm PR #990 table has it overestimating by 3.3× at
+`p₅`. The prior is mis-specified in both directions depending on regime, which
+is exactly why I left it alone and why F19 (the EMA, not true acceptance,
+drives realised depth) matters more than the prior's shape.
+
+### Round cost is unaffected by the boundary
+
+The `round µs` column above is flat at ~198–200k across every bin including the
+transition, varying by 1.0% peak-to-peak with no trend. Acceptance changes
+sharply at the boundary; **cost does not**. That is the first direct evidence
+for the window-invariance result in the next section, measured within a single
+arm.
+
+## Window invariance: the curve does not depend on sequence position
+
+The two endpoint arms were re-measured at 512 tokens on the merged r2 base.
+Against the 256-token fit:
+
+| quantity | 256 tok | 512 tok | agreement |
+|---|---|---|---|
+| `C(0)` | 65,009.4 µs | 65,115.1 µs | 0.16% |
+| `C(8)` | 198,236.5 µs | 198,683.0 µs | 0.23% |
+| `m_avg = (C(8)−C(0))/8` | 16,653.4 µs | 16,696.0 µs | 0.26% |
+| `h_avg` | 0.2562 | 0.2564 | 0.08% |
+
+`C(0)` at 512 pools N=1530 depth-0 rounds across three independent legs
+(`d0` leg A 65,256.1, `d0` leg B 65,043.2, `d8` serial control 65,046.1 — 0.33%
+peak-to-peak). `C(8)` uses N=45 full-accept rounds, sd 0.3%.
+
+**Round cost is a function of verify width, not of KV-cache length or decode
+position.** Over a 2× change in sequence length the whole curve moves by less
+than the 0.3–0.5% run-to-run noise on a single point.
+
+Three things follow:
+
+1. The constants already committed to
+   `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` — fit at 256 — are valid
+   at 512. **No refit and no rebuild are required**, so the 512-token policy
+   A/B measures exactly the shipped artefact rather than a re-tuned one. That
+   is the cleanest available version of the test.
+2. Cross-arm pooling (F5) holds at 512 as well, so forced-depth arms measured
+   in separate thermal windows remain comparable.
+3. Your comment-5 pre-registration can now be scored against a
+   ranked-equivalent window:
+
+| quantity | your fb5 pre-registration | measured @512 | error |
+|---|---|---|---|
+| serial round `C(0)` | 67.0 ms | 65.1 ms | −2.8% |
+| MTP round `C(8)` | 161.0 ms | **198.7 ms** | **+23.4%** |
+| average marginal | 11.75 ms | **16.70 ms** | **+42.1%** |
+| `h_avg` | 0.176 | **0.2564** | **+45.7%** |
+
+`C(0)` was close. The drafting bill was not: the true average marginal is 42%
+above the pre-registered value. This is the same direction as, and the
+quantitative cause of, the `0.20` scalar being too optimistic.
+
 ## Section 1 — the curve (measurement, not policy)
 
 ### Definition and the identifiability limit
