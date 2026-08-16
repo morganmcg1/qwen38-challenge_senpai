@@ -2,7 +2,7 @@ import json
 
 d = json.load(open("research/arm-summary.json"))
 pa = d["position_acceptance"]
-for run in ("I", "J", "K", "L", "M", "N"):
+for run in ("I", "J", "K", "L", "M", "N", "O", "P"):
     s = pa.get(run)
     if not s:
         continue

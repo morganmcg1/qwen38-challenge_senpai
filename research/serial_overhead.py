@@ -12,6 +12,8 @@ RUNS = {
     "L": "research/capture-runL-gate1-cap8-512",
     "M": "research/capture-runM-gate0-cap8-512",
     "N": "research/capture-runN-gate1-cap8-512-confirm",
+    "O": "research/capture-runO-cap7-gate3-512",
+    "P": "research/capture-runP-cap7-gate3-512-confirm",
 }
 
 rows = []
