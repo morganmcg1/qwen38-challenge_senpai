@@ -328,6 +328,9 @@ public final class Qwen36MTPBlockSession {
             cache: oneRowReplayCache, committedRows: 1))
         eval(oneRowReplayCache.flatMap { $0.state })
 
+        probeResidentHeadCost(warmCache: warmCache, hiddenDim: hDim,
+                              hiddenDType: row.dtype)
+
         // SEED-PREFILL SHAPE WARM (M=512 backbone). Keep this as the final
         // warm so the promoted allocator/pipeline end state is preserved.
         // The phase trace measured
@@ -356,6 +359,74 @@ public final class Qwen36MTPBlockSession {
             Self.linearTopTwoRows(model.applyLMHead(seedWarmRow))
         eval(seedWarmCache.flatMap { $0.state }
             + [seedWarmIDs, seedWarmValues, seedWarmNorm])
+    }
+
+    /// Price the RESIDENT proposal head against the RESIDENT target, on
+    /// throwaway state, at the end of the warm phase.
+    ///
+    /// The schedule needs `H / V(1)` — one isolated head draft step over one
+    /// single-row target verify — because that ratio is the only part of the
+    /// per-draft marginal that a declared head can change, and it is also the
+    /// only part that a forced-depth sweep cannot recover: at every depth the
+    /// verify width is exactly `d + 1`, so a head step and a verify-width
+    /// increment are perfectly collinear across the sweep. Measuring one of
+    /// them directly breaks that degeneracy.
+    ///
+    /// Both probes replay the expression the scored round dispatches — the
+    /// head step is `mtpHeadHiddenForward` chained into `draftTokenID`, as in
+    /// a deep draft sub-step, and the verify is a single-row `callWithHidden`
+    /// closed by the same top-2 reduction. Zero real tokens are involved, the
+    /// caches are throwaway, every shape here was already compiled above, and
+    /// none of this is inside a timed window.
+    private func probeResidentHeadCost(
+        warmCache: [any KVCache], hiddenDim: Int, hiddenDType: DType
+    ) {
+        let probeHeadCache = model.makeMTPCache()
+        var probeHidden = MLXArray.zeros([1, 1, hiddenDim], dtype: hiddenDType)
+        var probeID = model.draftTokenID(probeHidden)
+        eval(probeID)
+        var headSamples: [Double] = []
+        for _ in 0 ..< 5 {
+            let start = DispatchTime.now().uptimeNanoseconds
+            let stepHidden = model.mtpHeadHiddenForward(
+                hidden: probeHidden, nextTokenIds: probeID,
+                cache: probeHeadCache)
+            probeHidden = stepHidden[
+                0..., (stepHidden.dim(1) - 1) ..< stepHidden.dim(1), 0...]
+            probeID = model.draftTokenID(probeHidden)
+            eval(probeID)
+            headSamples.append(
+                Double(DispatchTime.now().uptimeNanoseconds - start) / 1000.0)
+        }
+
+        var verifySamples: [Double] = []
+        for _ in 0 ..< 3 {
+            let start = DispatchTime.now().uptimeNanoseconds
+            let (probeLogits, _) = model.callWithHidden(
+                input: LMInput.Text(tokens: MLXArray([0]).reshaped([1, 1])),
+                cache: warmCache, nConfirmed: 0)
+            let (probeIDs, probeValues) = Self.linearTopTwoRows(probeLogits)
+            eval(probeIDs, probeValues)
+            eval(warmCache.flatMap { $0.state })
+            verifySamples.append(
+                Double(DispatchTime.now().uptimeNanoseconds - start) / 1000.0)
+            Self.clearRecurrentRollback(warmCache)
+        }
+
+        let headUS = Self.medianMicroseconds(headSamples)
+        let verifyUS = Self.medianMicroseconds(verifySamples)
+        Self.adoptResidentHeadStepRatio(headUS / verifyUS)
+        if Self.traceRounds {
+            let headText = headSamples.map { String(format: "%.0f", $0) }
+                .joined(separator: ",")
+            let verifyText = verifySamples.map { String(format: "%.0f", $0) }
+                .joined(separator: ",")
+            Self.traceWrite(
+                "mtp-trace: headprobe head_us=\(Int(headUS)) "
+                    + "verify_us=\(Int(verifyUS)) "
+                    + "ratio=\(String(format: "%.6f", headUS / verifyUS)) "
+                    + "head_samples=\(headText) verify_samples=\(verifyText)\n")
+        }
     }
 
     // MARK: - begin
@@ -561,23 +632,77 @@ public final class Qwen36MTPBlockSession {
     /// reject does keep (the drafted head steps past the break) is already
     /// inside the marginal the rule prices.
     ///
-    /// FIFTH FIT — h IS NOT A SCALAR. Forced-depth arms d0..d8 on the
-    /// declared 4-bit head (M4 Pro, 1778 pooled depth-0 rounds for C(0),
-    /// 61/60/36/32 full-accept rounds at d3/d4/d6/d8) give
-    /// h(d) = (C(d) - C(d-1)) / C(0) below. The scalar 0.20 is ~2.5x TOO
-    /// HIGH at d=1..2 (under-drafts the cheap prefix) and ~1.4-2x TOO LOW
-    /// at d>=4 (over-drafts the plateau); its mean, 0.2562, is close to
-    /// 0.20, which is why the scalar survived end-to-end tuning while
-    /// being badly mis-shaped. The knee sits at d=3 (verify width 4), and
-    /// the two largest steps, d=4 (width 5) and d=8 (width 9), are exactly
-    /// where the affine-4 g64 crossrow kernel adds a weight pass
+    /// FIFTH FIT — h IS NOT A SCALAR, AND IT IS NOT A CONSTANT OF THIS
+    /// SOURCE TREE EITHER. It is a per-depth marginal, half of which belongs
+    /// to whichever proposal head is resident.
+    /// Re-fit from forced-depth arms after every TARGET change; each entry is
+    /// a COMBINED per-draft marginal (one head step plus the verify-width
+    /// increment), which a depth sweep cannot separate on its own.
+    ///
+    /// A FROZEN VECTOR WOULD BE WRONG, because exactly one of its two terms
+    /// is a property of the proposal head, and the head is declarable:
+    ///
+    ///     C(d) = V(d+1) + d*H + c
+    ///     m(d+1) = C(d+1) - C(d) = [V(d+2) - V(d+1)] + H
+    ///
+    /// `V` (batched target verify at a given width) and `c` (fixed per-round
+    /// overhead) are head-independent — a zero-draft round performs no head
+    /// forward at all, so C(0) = V(1) + c holds for any head. `H` is the one
+    /// head-dependent term, and it moves by ~3.5x between the two heads this
+    /// track can serve (organizer-pinned bf16, 849,398,784 B, versus the
+    /// manifest-declared affine-4/g64 head, 238,934,093 B). So the frozen
+    /// half is stored here and `H` is measured from the RESIDENT head during
+    /// the warm phase, outside every timed window (`probeResidentHeadCost`).
+    ///
+    /// Both frozen constants are DIMENSIONLESS, in units of one single-row
+    /// verify forward V(1), and the live probe measures V(1) alongside H for
+    /// the same reason: a frozen absolute microsecond constant mixed with a
+    /// microsecond measured on a different host is simply wrong, and the
+    /// ranked host is not the host these were fitted on. Under a uniform
+    /// host speed change every ratio below is invariant.
+    ///
+    /// FIFTH FIT — measured on M4 Pro against the declared affine-4/g64 head:
+    /// forced-depth arms d0..d8, 1778 pooled depth-0 rounds for C(0),
+    /// 61/60/36/32 full-accept rounds at d3/d4/d6/d8. The resulting
+    /// per-draft marginals are 0.084, 0.078, 0.243, 0.375, 0.292, 0.300,
+    /// 0.287, 0.391 fractions of a zero-draft round. The scalar 0.20 they
+    /// replace is ~2.5x TOO HIGH at d=1..2 (under-drafts the cheap prefix)
+    /// and ~1.4-2x TOO LOW at d>=4 (over-drafts the plateau); its mean,
+    /// 0.2562, is close to 0.20, which is why a scalar survived end-to-end
+    /// tuning while being badly mis-shaped. The knee sits at d=3 (verify
+    /// width 4) and the two largest steps, d=4 (width 5) and d=8 (width 9),
+    /// are exactly where the affine-4 g64 crossrow kernel adds a weight pass
     /// (ceil(M / IPG), IPG = ceil(M / ceil(M / 4)), quantized.h:1051).
-    /// Re-fit from forced-depth arms after every head-variant change; each
-    /// entry is a COMBINED per-draft marginal (one head step plus the
-    /// verify-width increment), which a depth sweep cannot separate.
-    private static let measuredHeadStepCostRatioByDepth: [Double] = [
-        0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909,
+    private static let verifyMarginalRatioByDepth: [Double] = [
+        0.007508, 0.000584, 0.170930, 0.307986,
+        0.221859, 0.230176, 0.216792, 0.323960,
     ]
+
+    /// C(0) / V(1): the zero-draft round divided by the single-row verify it
+    /// is built from. Head-independent — a zero-draft round never touches the
+    /// head — and the residue above 1.0 is the fixed per-round overhead `c`.
+    private static let zeroDraftRoundRatio = 1.0319
+
+    /// H / V(1) for the head the frozen constants above were fitted against.
+    /// Used only until `probeResidentHeadCost` reports the resident head, so
+    /// that a session which somehow decodes without a warm still prices
+    /// drafts against a real measurement rather than a guess.
+    private static let referenceHeadStepRatio = 0.0794
+
+    /// H / V(1) for the resident head, measured once per process in the warm
+    /// phase. `nil` until the probe runs.
+    nonisolated(unsafe) private static var residentHeadStepRatio: Double?
+
+    /// m(d+1) / C(0) for every depth, rebuilt from the resident head's cost.
+    private static func marginalCostRatios(headStepRatio: Double) -> [Double] {
+        verifyMarginalRatioByDepth.map {
+            // A negative marginal is unphysical and would let the scan below
+            // run away to the cap, so the floor is a contract guard, not a
+            // fallback: it fires only if the frozen verify slope and the live
+            // head measurement disagree about the sign of a step.
+            Swift.max(0.0, ($0 + headStepRatio) / zeroDraftRoundRatio)
+        }
+    }
 
     /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
     /// submission. Substitutes the curve so a baseline arm and a candidate
@@ -588,17 +713,38 @@ public final class Qwen36MTPBlockSession {
     /// profiles, `research/greedy_vs_argmin.py`). Requires
     /// `Qwen36MTPLimits.maxDepth` entries; anything else is ignored rather
     /// than padded, so a typo cannot silently reshape the schedule.
-    private static let headStepCostRatioByDepth: [Double] = {
+    private static let overrideHeadStepCostRatioByDepth: [Double]? = {
         guard let raw = ProcessInfo.processInfo.environment[
             "MLX_QWEN_MTP_H_VECTOR"
-        ] else { return measuredHeadStepCostRatioByDepth }
+        ] else { return nil }
         let parsed = raw.split(whereSeparator: { $0 == "," || $0 == " " })
             .compactMap { Double($0) }
         guard parsed.count == Qwen36MTPLimits.maxDepth,
               parsed.allSatisfy({ $0.isFinite && $0 >= 0 })
-        else { return measuredHeadStepCostRatioByDepth }
+        else { return nil }
         return parsed
     }()
+
+    /// The live per-draft marginal cost vector the schedule prices with.
+    nonisolated(unsafe) private static var headStepCostRatioByDepth: [Double] =
+        overrideHeadStepCostRatioByDepth
+            ?? marginalCostRatios(headStepRatio: referenceHeadStepRatio)
+
+    private static func adoptResidentHeadStepRatio(_ ratio: Double) {
+        guard ratio.isFinite, ratio > 0 else { return }
+        residentHeadStepRatio = ratio
+        guard overrideHeadStepCostRatioByDepth == nil else { return }
+        headStepCostRatioByDepth = marginalCostRatios(headStepRatio: ratio)
+    }
+
+    private static func medianMicroseconds(_ samples: [Double]) -> Double {
+        precondition(!samples.isEmpty)
+        let sorted = samples.sorted()
+        let mid = sorted.count / 2
+        return sorted.count % 2 == 1
+            ? sorted[mid]
+            : 0.5 * (sorted[mid - 1] + sorted[mid])
+    }
 
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
