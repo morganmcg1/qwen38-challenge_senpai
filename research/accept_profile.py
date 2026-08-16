@@ -21,6 +21,7 @@ from pathlib import Path
 
 ROUND = re.compile(r"mtp-trace: round=(\d+) d=(\d+) acc=(\d+)")
 ROUND_US = re.compile(r"round_us=(\d+)")
+REPAIR = re.compile(r"prefix_repair=(\d+) full_repair=(\d+)")
 BEGIN_H = re.compile(r"mtp-trace: begin.* h=([0-9.,eE+-]+)")
 
 
@@ -54,6 +55,36 @@ def load_legs(arm_dir, warmup):
 def load(arm_dir, warmup):
     legs, _ = load_legs(arm_dir, warmup)
     return [r for leg in legs for r in leg]
+
+
+def repair_split(arm_dir):
+    """Count rounds taking each repair branch, keyed by chosen depth.
+
+    The session exports cumulative counters, so a round took a branch when
+    that counter advanced since the previous round of the same leg. Legs are
+    detected by the counters resetting, which also makes the pre-counter
+    traces degrade to "no rows" rather than to wrong rows.
+    """
+    prefix, full, rejects = Counter(), Counter(), Counter()
+    for path in sorted(arm_dir.glob("trace.txt.*")):
+        prev_p = prev_f = 0
+        for line in path.read_text(errors="replace").splitlines():
+            m = ROUND.search(line)
+            r = REPAIR.search(line)
+            if not m or not r:
+                continue
+            d = int(m.group(2))
+            p, f = int(r.group(1)), int(r.group(2))
+            if p < prev_p or f < prev_f:
+                prev_p = prev_f = 0
+            if p > prev_p:
+                prefix[d] += 1
+            if f > prev_f:
+                full[d] += 1
+            if p > prev_p or f > prev_f:
+                rejects[d] += 1
+            prev_p, prev_f = p, f
+    return prefix, full, rejects
 
 
 def split_at_eos(legs, eos_index):
@@ -159,6 +190,20 @@ def main():
         print(f"  mean chosen depth = {total_d / len(rounds):.3f}   "
               f"mean accepted drafts = {total_a / len(rounds):.3f}   "
               f"tokens/round = {1 + total_a / len(rounds):.3f}")
+
+        prefix, full, rejects = repair_split(arm_dir)
+        if rejects:
+            print("  --- repair branch split per chosen depth ---")
+            for d in sorted(rejects):
+                n = rejects[d]
+                print(f"  d={d}: rejecting_rounds={n:>4} "
+                      f"prefixRepairCount={prefix[d]:>4} "
+                      f"fullRepairCount={full[d]:>4} "
+                      f"full_share={full[d] / n:.4f}")
+            print(f"  totals: prefixRepairCount={sum(prefix.values())} "
+                  f"fullRepairCount={sum(full.values())}")
+        else:
+            print("  repair split: unavailable (trace predates the counters)")
 
         drafting = [r for r in rounds if r[1] > 0]
         if drafting:

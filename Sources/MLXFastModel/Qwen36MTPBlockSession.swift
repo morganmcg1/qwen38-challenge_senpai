@@ -161,6 +161,13 @@ public final class Qwen36MTPBlockSession {
     public private(set) var acceptedDraftTotal = 0
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
+    /// `rollbackRoundCount` increments before the repair branch, so it cannot
+    /// distinguish the cheap per-row GDN checkpoint restore from the fallback
+    /// that re-forwards the committed block and pays a second blocking eval.
+    /// The break-even constant is justified by the cheap path being universal,
+    /// so the split is the measurement that tests that premise.
+    public private(set) var prefixRepairCount = 0
+    public private(set) var fullRepairCount = 0
     public private(set) var began = false
     /// Fixed-window decode treats EOS like any other serial token. Kept as a
     /// compatibility property for callers compiled against the old session API.
@@ -1250,6 +1257,7 @@ public final class Qwen36MTPBlockSession {
                 acceptedCount: acceptedCount, draftCount: draftCount,
                 to: committedOffset)
             {
+                prefixRepairCount += 1
                 pendingPrimary = verifyArgmax[acceptedCount]
                 pendingHidden = hiddenRow(verifyHidden, acceptedCount)
                 pendingTop2 = (
@@ -1262,6 +1270,7 @@ public final class Qwen36MTPBlockSession {
                 // Generic K>1 / defensive fallback: undo the whole verify window
                 // and re-forward the committed block. This rare path pays a
                 // second blocking eval for its own readout.
+                fullRepairCount += 1
                 Self.rollbackAfterVerify(
                     cache, snapshot, verifiedTokens: draftCount + 1, to: base)
                 let (repairLogits, repairHidden) = model.callWithHidden(
@@ -1328,6 +1337,8 @@ public final class Qwen36MTPBlockSession {
                 + "readout_us=\((tReadDone - tEvalDone) / 1000) "
                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
+                + "prefix_repair=\(prefixRepairCount) "
+                + "full_repair=\(fullRepairCount) "
                 + "round_us=\((tTailDone - tRound0) / 1000)\n"
             Self.traceWrite(line)
         }
