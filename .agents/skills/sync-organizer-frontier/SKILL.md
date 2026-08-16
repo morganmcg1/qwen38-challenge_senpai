@@ -225,7 +225,7 @@ import_frontier() {
   emulate -L zsh
   setopt errexit nounset pipefail
 
-  local old_contract new_contract path
+  local old_contract new_contract sync_path
   local -a old_paths new_paths optional_paths old_removed
   local -a frontier_paths fallback_paths fallback_present fallback_absent
   local -a stage_paths
@@ -236,24 +236,24 @@ import_frontier() {
   new_paths=(${(f)"$(jq -r '.editablePaths[]' <<<"$new_contract")"})
   optional_paths=(${(f)"$(jq -r '(.optionalEditablePaths // [])[]' <<<"$new_contract")"})
 
-  for path in $old_paths; do
-    (( ${new_paths[(Ie)$path]} )) || old_removed+=("$path")
+  for sync_path in $old_paths; do
+    (( ${new_paths[(Ie)$sync_path]} )) || old_removed+=("$sync_path")
   done
-  for path in $old_removed; do
-    if git cat-file -e "$UPSTREAM_SHA:$path" 2>/dev/null; then
-      git restore --source="$UPSTREAM_SHA" --worktree -- "$path"
+  for sync_path in $old_removed; do
+    if git cat-file -e "$UPSTREAM_SHA:$sync_path" 2>/dev/null; then
+      git restore --source="$UPSTREAM_SHA" --worktree -- "$sync_path"
     else
-      git rm -r --ignore-unmatch -- "$path"
+      git rm -r --ignore-unmatch -- "$sync_path"
     fi
   done
 
-  for path in $new_paths; do
-    if git cat-file -e "$ORGANIZER_FRONTIER_SHA:$path" 2>/dev/null; then
-      frontier_paths+=("$path")
-    elif (( ${optional_paths[(Ie)$path]} )); then
-      fallback_paths+=("$path")
+  for sync_path in $new_paths; do
+    if git cat-file -e "$ORGANIZER_FRONTIER_SHA:$sync_path" 2>/dev/null; then
+      frontier_paths+=("$sync_path")
+    elif (( ${optional_paths[(Ie)$sync_path]} )); then
+      fallback_paths+=("$sync_path")
     else
-      print -u2 "required editable path missing from promoted source: $path"
+      print -u2 "required editable path missing from promoted source: $sync_path"
       return 1
     fi
   done
@@ -265,19 +265,19 @@ import_frontier() {
   git restore --source="$ORGANIZER_FRONTIER_SHA" --worktree -- $frontier_paths
   git diff --exit-code "$ORGANIZER_FRONTIER_SHA" -- $frontier_paths
 
-  for path in $fallback_paths; do
-    if git cat-file -e "$POST_POLICY_SHA:$path" 2>/dev/null; then
-      git restore --source="$POST_POLICY_SHA" --worktree -- "$path"
-      fallback_present+=("$path")
+  for sync_path in $fallback_paths; do
+    if git cat-file -e "$POST_POLICY_SHA:$sync_path" 2>/dev/null; then
+      git restore --source="$POST_POLICY_SHA" --worktree -- "$sync_path"
+      fallback_present+=("$sync_path")
     else
-      git rm -r --ignore-unmatch -- "$path"
-      fallback_absent+=("$path")
+      git rm -r --ignore-unmatch -- "$sync_path"
+      fallback_absent+=("$sync_path")
     fi
   done
   (( $#fallback_present == 0 )) || \
     git diff --exit-code "$POST_POLICY_SHA" -- $fallback_present
-  for path in $fallback_absent; do
-    [[ ! -e "$path" && -z "$(git ls-files -- "$path")" ]]
+  for sync_path in $fallback_absent; do
+    [[ ! -e "$sync_path" && -z "$(git ls-files -- "$sync_path")" ]]
   done
 
   stage_paths=($old_removed $new_paths)
