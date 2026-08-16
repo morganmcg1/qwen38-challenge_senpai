@@ -155,6 +155,7 @@ WANDB_ENTITY="${WANDB_ENTITY:-wandb-applied-ai-team}" \
   --tag "${tag}" \
   --host "$(sysctl -n machdep.cpu.brand_string)" \
   --base-sha "${base_sha:-unset}" \
+  --na-max "${MLXFAST_QMV_NA_MAX:-4}" \
   "${wandb_flag[@]}" 2>&1 | tee "${out_dir}/summary.log"
 
 date -u '+run-qmv-curve: finished_utc=%Y-%m-%dT%H:%M:%SZ' >&2
