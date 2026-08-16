@@ -20,10 +20,20 @@ serial round = 1).
 increment in target verify width from `d` to `d+1` rows.** Verify width is
 always `d + 1` (`Qwen36MTPBlockSession.swift:962-964, 978-980`), so head cost
 `H` and the verify-width slope `V(d+1) - V(d)` are perfectly collinear across
-any depth sweep. Nothing below is a measurement of head-step cost in isolation
-and no such claim is made. The only design that breaks the collinearity is a
-width-padding arm (run width `w` at depth `d < w - 1`); it is listed as an
-un-run follow-up.
+any depth sweep. **Nothing in the measured table below is a measurement of
+head-step cost in isolation and no such claim is made.**
+
+The collinearity is now broken **by direct measurement rather than by a padding
+arm**, because comment 7 required a head-agnostic policy and that forces the
+same separation. `probeResidentHeadCost` times an isolated single-token head
+step — `mtpHeadHiddenForward` chained into `draftTokenID`, the exact expression
+a deep draft sub-step dispatches — and an isolated single-row verify, on
+throwaway caches, inside the existing warm phase and outside every timed
+window. That yields `H` and `V(1)` separately, so `V(d+2) - V(d+1) = m(d+1) - H`
+follows. See "Making the policy head-agnostic" below for the measured values
+and for the one caveat (an isolated head step is not overlapped with a verify
+graph build, so it is an upper bound on the head's marginal wall-clock
+contribution inside a real round).
 
 ### Exclusion rule
 
@@ -210,6 +220,33 @@ N = 1778 at d = 0 and N = 32–129 at the drafting depths and has sd ≤ 0.5% at
 most depths. The policy delta is a derived consequence, and the fixture that
 would actually test it — natural prose at acceptance ≈ 0.7 — is not available
 locally.
+
+**What then happened: the 512-token window you asked for is not reachable on
+this fixture (F16).** `MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS=512` hard-fails
+with `MTP round requested before the seed prefill`. Root cause, source-pinned
+and *not* caused by my diff:
+
+- `Qwen36MTPBlockSession.generateRound` guards on `pendingPrimary != nil`
+  (`:769-771`) and throws `Qwen36MTPSessionError.notBegun` (`:90`) otherwise.
+- The only site that clears `pendingPrimary`/`pendingTop2`/`pendingHidden` is
+  the stop-token branch (`:821-828`), which returns `reachedStopToken: true`.
+- `QwenRuntimeMTPDriver.swift:114` loops `while emitted.count <
+  options.totalTokenCount` and **never inspects `reachedStopToken`**.
+
+So a greedy continuation of `public_longcopy_gate_english_512.txt` emits EOS
+before 512 decode tokens, the driver asks for one more round, and the session
+throws. 256 tokens never reaches EOS, which is why every arm here is 256.
+Reference-row generation is unaffected (`mtp-verify` produced 513/513 rows)
+because the reference path does not apply stop tokens. **Every headline number
+in this report is therefore at a 256-token decode window, labelled as such.** A
+512-token local measurement needs the driver fix listed under follow-ups; it is
+outside my assignment's file scope (`QwenRuntimeMTPDriver.swift` is not in my
+declared submitted path).
+
+The same batch also lost one arm to the **thermal gate**: `base512` hard-failed
+`run_cool_gate` after 180 s with a GPU temperature floor of 42.2 °C that never
+reached the 40 °C threshold. That is environmental, the wrapper behaved
+correctly, and I did not bypass it.
 
 Columns: `old` = shipped (greedy walk + scalar 0.20); `grd` = greedy +
 measured vector (**the constant change alone**); **`CAND` = argmin + measured
