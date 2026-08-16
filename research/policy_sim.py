@@ -146,7 +146,8 @@ def main():
     print("flat-acceptance sweep: does the curve ever move the selected depth?")
     header = f"{'p':>5}"
     for cap in args.caps:
-        header += f" | cap{cap}: {'old':>3} {'new':>3} {'gain':>7}"
+        header += (f" | cap{cap}: {'old':>3} {'grd':>3} {'grdgain':>8}"
+                   f" {'CAND':>4} {'CANDgain':>9}")
     print(header)
     for i in range(11):
         p = 0.50 + 0.05 * i
@@ -156,12 +157,16 @@ def main():
         for cap in args.caps:
             d_old, _ = choose_depth(accept, cap, h_scalar)
             d_new, _ = choose_depth(accept, cap, h_meas)
-            c_old = per_token(accept, h_meas, d_old)
-            c_new = per_token(accept, h_meas, d_new)
+            costs = [per_token(accept, h_meas, d) for d in range(cap + 1)]
+            d_cand = min(range(cap + 1), key=lambda d: costs[d])
+            c_old, c_new, c_cand = costs[d_old], costs[d_new], costs[d_cand]
             gain = 100.0 * (c_old - c_new) / c_old
+            gain_cand = 100.0 * (c_old - c_cand) / c_old
             entry["caps"][str(cap)] = {"d_old": d_old, "d_new": d_new,
-                                       "pct": gain}
-            line += f" | {'':<5}{d_old:>3} {d_new:>3} {gain:>6.2f}%"
+                                       "d_cand": d_cand, "pct": gain,
+                                       "pct_cand": gain_cand}
+            line += (f" | {'':<5}{d_old:>3} {d_new:>3} {gain:>7.2f}%"
+                     f" {d_cand:>4} {gain_cand:>8.2f}%")
         sweep.append(entry)
         print(line)
     print()

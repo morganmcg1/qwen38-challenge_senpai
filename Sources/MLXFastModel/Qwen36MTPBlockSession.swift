@@ -396,14 +396,15 @@ public final class Qwen36MTPBlockSession {
                                            pendingHidden!, hidden])
         if Self.traceRounds {
             let tBeginDone = DispatchTime.now().uptimeNanoseconds
+            // Records which curve the leg actually ran, so an override that
+            // failed to reach the worker reads as a failed override rather
+            // than as a policy that made no difference.
+            let hText = Self.headStepCostRatioByDepth
+                .map { String($0) }.joined(separator: ",")
             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
                 + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
-                // Records which curve the leg actually ran, so an override
-                // that failed to reach the worker reads as a failed override
-                // rather than as a policy that made no difference.
-                + "h=\(Self.headStepCostRatioByDepth.map { String($0) }
-                    .joined(separator: ","))\n")
+                + "h=\(hText)\n")
         }
         let readTail = (
             tailIDs.asArray(Int32.self).map { Int($0) },
