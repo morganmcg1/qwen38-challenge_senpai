@@ -107,12 +107,17 @@ struct QwenQMVCostCurveTests {
 
         let k = 5120
         let n = 98_336
-        var arms: [[String: Any]] = []
-        for bits in [4, 3, 2] {
+        let bitWidths = [4, 3, 2]
+        let xs = (0..<inner).map { syntheticActivations(m: 1, k: k, salt: $0) }
+        eval(xs)
+
+        // Every arm is resident before any of them is timed, and the reps below
+        // are round-robin rather than blocked. This host holds a ~41C floor that
+        // the 40C cool gate cannot clear, so an arm-blocked sweep would charge
+        // whatever thermal drift happens during its own block to that arm alone.
+        let bodies = bitWidths.map { bits -> () -> [MLXArray] in
             let weight = lowBitQuantWeight(k: k, n: n, bits: bits)
-            let xs = (0..<inner).map { syntheticActivations(m: 1, k: k, salt: $0) }
-            eval(xs)
-            let chained = {
+            return {
                 var outs: [MLXArray] = []
                 outs.reserveCapacity(inner)
                 var x = xs[0]
@@ -125,8 +130,23 @@ struct QwenQMVCostCurveTests {
                 }
                 return outs
             }
-            let samples = medianSpread(
-                reps: reps, inner: inner, warmup: 3, body: chained)
+        }
+        for body in bodies {
+            for _ in 0..<3 { eval(body()) }
+        }
+        var samplesByArm = [[Double]](repeating: [], count: bitWidths.count)
+        for _ in 0..<reps {
+            for (index, body) in bodies.enumerated() {
+                let start = DispatchTime.now().uptimeNanoseconds
+                eval(body())
+                let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9
+                samplesByArm[index].append(elapsed / Double(inner))
+            }
+        }
+
+        var arms: [[String: Any]] = []
+        for (index, bits) in bitWidths.enumerated() {
+            let samples = samplesByArm[index].sorted()
             let median = samples[samples.count / 2]
             // Affine g64 with bf16 scale+bias is bits + 0.5 bits per weight.
             let bytes = Double(n) * Double(k) * (Double(bits) + 0.5) / 8.0
@@ -147,6 +167,7 @@ struct QwenQMVCostCurveTests {
             "source": "vendored-mlx-swift",
             "reps": reps,
             "inner_calls_per_rep": inner,
+            "arm_order": "round-robin",
             "device": describeDispatchDevice(),
             "roofline": measureRoofline(reps: reps),
             "arms": arms,

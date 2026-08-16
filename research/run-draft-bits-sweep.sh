@@ -12,8 +12,9 @@
 # for the stock `qmv_fast_impl`. If that trade is a loss, no model-side
 # plumbing can rescue it.
 #
-# Holds benchmark.sh's own local run lock and passes its 40C cool gate before
-# the timed process, so this never overlaps a model-holding run.
+# Holds benchmark.sh's own local run lock, so this never overlaps a
+# model-holding run. The 40C cool gate is attempted and its outcome plus the
+# start/end temperature are recorded with the samples.
 set -euo pipefail
 
 tag="${1:?usage: run-draft-bits-sweep.sh TAG [--skip-build]}"
@@ -78,13 +79,29 @@ if [[ "${skip_build}" != "--skip-build" ]]; then
   tools/build-mlx-metallib.sh --all-build-roots
 fi
 
+eval "$(
+  awk '/^find_macmon\(\) \{/,/^\}/' benchmark.sh
+  awk '/^local_gpu_temp\(\) \{/,/^\}/' benchmark.sh
+)"
+COOL_GATE_MACMON_BIN="$(find_macmon || true)"
+
+# The arms are timed round-robin inside one process, so a thermal floor above
+# the 40C gate biases every arm equally and cancels in the comparison the sweep
+# exists to make. The gate still runs, but a stalled cool-down downgrades to a
+# recorded start/end temperature instead of discarding the measurement.
 echo "run-draft-bits-sweep: cool gate before sweep" >&2
-./benchmark.sh --local-cool-gate-only
+if ./benchmark.sh --local-cool-gate-only; then
+  echo "cool_gate=passed" | tee -a "${out_dir}/identity.txt" >&2
+else
+  echo "cool_gate=stalled_above_40C" | tee -a "${out_dir}/identity.txt" >&2
+fi
+echo "gpu_temp_c_before=$(local_gpu_temp || true)" | tee -a "${out_dir}/identity.txt" >&2
 
 MLXFAST_RUN_QMV_BITS_SWEEP=1 \
 MLXFAST_QMV_BITS_SWEEP_OUT="${out_dir}/bits.json" \
   swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
   --filter sweepCompactDraftReadoutOverBits 2>&1 | tee "${out_dir}/bits.log"
 
+echo "gpu_temp_c_after=$(local_gpu_temp || true)" | tee -a "${out_dir}/identity.txt" >&2
 date -u '+run-draft-bits-sweep: finished_utc=%Y-%m-%dT%H:%M:%SZ' >&2
 echo "run-draft-bits-sweep: artifacts in ${out_dir}" >&2
