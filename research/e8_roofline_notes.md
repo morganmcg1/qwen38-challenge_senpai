@@ -197,5 +197,34 @@ Reusable from PR #8 (same host, same harness):
 - stock pip-MLX control median 1.0000 (range 0.954-1.019)
 - two independent NA=4 sessions agree within 0.4%
 
-This experiment adds a direct session-to-session repeatability number by
-re-running the unchanged base as `e8-control` and comparing with `e7-na4-base`.
+### Measured in this experiment
+
+`e8-control` re-runs the unchanged base (head `f313ca2`, which touches only
+`research/`), started 2026-08-16T21:12:53Z, W&B run `p4xpgtcd`.
+`python3 research/e8_compare.py e7-na4-base e8-control`:
+
+| M | median ratio | per-shape range |
+|---|---|---|
+| 4 | **1.000** | [0.988, 1.003] |
+| 8 | **1.000** | [0.993, 1.006] |
+
+Session-to-session repeatability is therefore **+/-1.2% worst case, ~+/-0.5%
+typical**, across two sessions separated by a full rebuild and a cool-down.
+Any arm effect larger than ~2% is outside the noise band.
+
+Control absolute numbers (seconds/call in us, `gbps_nominal`):
+
+| shape | M=4 s/call | M=4 GB/s | M=8 s/call | M=8 GB/s |
+|---|---:|---:|---:|---:|
+| full_attn.o_proj | 138.80 | 127.5 | 225.27 | 78.5 |
+| full_attn.qkv_proj_fused | 252.18 | 163.7 | 452.19 | 91.3 |
+| head.compact_draft_vocab | 1444.88 | 196.0 | 2837.31 | 99.8 |
+| head.lm_head | 3570.96 | 200.3 | 7043.90 | 101.5 |
+| linear_attn.in_proj_fused_qkvzba | 283.13 | 167.6 | 514.80 | 92.2 |
+| linear_attn.out_proj | 137.25 | 128.9 | 224.46 | 78.8 |
+| mlp.down | 328.34 | 152.7 | 571.20 | 87.8 |
+| mlp.gate_up_fused | 544.73 | 184.1 | 1031.93 | 97.2 |
+
+Note the level: at M=8 every shape sits at **78-102 GB/s nominal against a
+measured 226.9 GB/s achievable**, i.e. 35-45% of peak. Read without the stream
+correction, that alone is not a bandwidth-saturated kernel.
