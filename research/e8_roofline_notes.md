@@ -1,0 +1,305 @@
+# E8 crossrow roofline regime — working notes
+
+Base `ed4269c2`, host Apple M4 Pro 48 GiB (`applegpu_g16s`).
+Machine roofline measured in-run: stream peak **226.90 GB/s**, GEMM peak **7.50 TFLOP/s**.
+
+## 1. Re-derivation of the advisor's `nominal x M` table
+
+Source: merged PR #8 artifact `.mlxfast-private/qmv-curve/e7-na4-base/summary.json`,
+field `per_shape_curve` (8 scored shapes x widths 1..512).
+Reproduced with `research/roofline_rederive.py`.
+
+### 1a. The aggregate reproduces exactly — CONFIRMED
+
+Median over the 8 shapes of `gbps_nominal * M`:
+
+| M | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|
+| median `nominal*M` | 662.3 | 655.4 | 689.2 | 711.2 | 732.0 | 718.6 |
+| mean `nominal*M`   | 659.6 | 652.4 | 684.6 | 707.7 | 726.6 | 712.9 |
+
+mean 694.8, min 655.4 (M=5), max 732.0 (M=8) => **half-range +/-5.52%**.
+Mean-aggregation gives 690.6 +/-5.37%. Either rule lands on the advisor's
+`692 +/- 5.6%`. The number is not an artifact of the aggregation rule.
+
+I also identified the FACT 1 GB/s row (165.6 / 262.1 / 183.0 / 239.5) as the
+**median of `gbps_stream_corrected`**, not of `gbps_nominal`:
+median stream-corrected = 165.57 (M=4), 262.14 (M=5), 183.00 (M=8), 239.53 (M=9).
+
+### 1b. Two qualifications the aggregate hides
+
+**(i) Per-shape drift is ~4x the quoted band.** `nominal*M` max/min over M=4..9,
+per shape:
+
+| shape | max/min |
+|---|---|
+| head.lm_head | 1.078 |
+| head.compact_draft_vocab | 1.082 |
+| mlp.gate_up_fused | 1.098 |
+| full_attn.qkv_proj_fused | 1.118 |
+| linear_attn.in_proj_fused_qkvzba | 1.116 |
+| mlp.down | 1.145 |
+| full_attn.o_proj | 1.238 |
+| linear_attn.out_proj | 1.243 |
+
+So the residual reaches **+24%** on the two K>=6144, N=5120 shapes, versus the
++/-5.6% suggested by the aggregate. The drift is monotone in M for every shape
+(not noise) and is ordered by aspect ratio, so "`nominal*M` is invariant" is a
+good first-order law with a real, structured residual — not a clean ALU verdict.
+
+**(ii) The residual is staircase + slope, not either alone.** Per-row time
+increments for `head.lm_head`, in units of t(M=1):
+0.408 (M=5), 0.273, 0.261, 0.263, 0.434 (M=9).
+There is an extra ~0.15 t(1) step at exactly M=5 and M=9 — the `ceil(M/4)`
+stream boundaries — superimposed on an interior slope of ~0.263 t(1)/row.
+Neither a pure ALU-linear law nor a pure integer-stream staircase explains both.
+
+### 1c. Candidate REFUTATION: the stream correction over-counts DRAM traffic
+
+`gbps_stream_corrected` multiplies nominal weight bytes by `ceil(M/4)`, i.e. it
+assumes every one of the `ceil(M/4)` passes re-reads the weights from DRAM.
+At M=5 that implies **262.1 GB/s** (call-weighted 264.4) of sustained traffic.
+The measured achievable copy bandwidth on this host is **226.90 GB/s**.
+262.1 / 226.9 = **1.16** — 16% above the machine's own measured ceiling.
+M=9 is also over (239.5 vs 226.9, +6%).
+
+A metric cannot exceed the measured roofline. So the `ceil(M/4)`-streams model
+is wrong at the boundary widths: a substantial part of the second pass is
+served from cache, not DRAM. This matters because the "bandwidth-bound at
+67-96% of peak" reading of FACT 1 rests entirely on that correction.
+
+Corollary: the true operating point sits between the two idealisations, which
+is exactly why the direct arms are needed rather than more curve fitting.
+
+### 1e. REFUTATION of the "6.0x tighter" statistic (not of the conclusion)
+
+The advisor's `research/roofline_regime_check.py` decides with
+
+```python
+verdict = "ALU-bound" if prod_rel < nom_rel else "bandwidth-bound"
+```
+
+i.e. a two-way contest between
+* `H_A`: `nominal` flat  <=> t independent of M (perfect cross-row reuse), and
+* `H_B`: `nominal*M` flat <=> t ~ M (zero cross-row reuse).
+
+**The memory-side model is not on the ballot.** The hypothesis whose death the
+script announces ("the memory-side lever family is dead") is
+`H_C`: `nominal*ceil(M/4)` flat <=> t ~ ceil(M/4) — the integer weight-stream
+model that the harness's own `gbps_stream_corrected` encodes. `H_C` is never
+scored, so the test cannot reject it.
+
+**Consequence 1 — the rule has no specificity.** Generate data from `H_C`
+exactly, with zero noise (`t = ceil(M/4)`, `nominal := 1/t`) and run the
+advisor's rule on it:
+
+| window | H_A | H_C | H_B | advisor rule reports |
+|---|---:|---:|---:|---|
+| M=4,5,8,9 | 49.5% | **0.0%** | 22.2% | "ALU-bound, 2.2x tighter" |
+| M=4..9 | 41.0% | **0.0%** | 18.2% | "ALU-bound, 2.3x tighter" |
+| M=1..9 | 40.6% | **0.0%** | 33.3% | "ALU-bound, 1.2x tighter" |
+
+A *perfectly bandwidth-bound* kernel makes the rule announce "ALU-bound" with a
+2.2x margin. So 2.2x is the rule's **floor**, not 1.0x. The reason is trivial:
+over M in {4,5,8,9}, `1/M` has ~37% relative sd by construction, so `H_A` is
+guaranteed to lose against anything. The 6.0x must be read against that floor.
+
+**Consequence 2 — restoring `H_C` shrinks the margin from 6.0x to 3.8x.**
+
+| dataset | n | H_A | H_C | H_B | winner | B vs C | B vs A |
+|---|---:|---:|---:|---:|---|---:|---:|
+| advisor 4 points (FACT 1) | 4 | 33.4% | 21.5% | **5.6%** | H_B | 3.8x | 6.0x |
+| my 8-shape median, M=4..9 | 6 | 27.1% | 17.0% | **4.5%** | H_B | 3.8x | 6.0x |
+| my 8-shape median, M=1..9 | 9 | 39.8% | **14.2%** | 26.9% | **H_C** | 0.5x | 1.5x |
+
+Two things follow. (a) My independent 6-point, 8-shape median reproduces the
+advisor's ratio structure exactly (6.0x vs `H_A`, 3.8x vs `H_C`) from different
+data, so the **direction is confirmed and is not an artifact of the 4-point
+window**. (b) The honest margin over the model actually being declared dead is
+**3.8x against a rule floor of 2.2x** — much thinner than "6.0x tighter"
+suggests.
+
+**Consequence 3 — the M>=4 restriction is load-bearing.** Over the full M=1..9
+the winner *flips* to `H_C` (14.2% vs 26.9%). That is expected below the knee
+and is not itself a refutation, since the brief does restrict to M>=4. But it
+means the conclusion rests on the knee band `[2.99, 3.27]` being right: the
+verdict is a statement about a 6-point window whose left edge is estimated, not
+measured.
+
+Per-shape, `H_B` wins on all 8 shapes, but the margin over `H_C` ranges from
+**2.1x** (`linear_attn.out_proj`) and 2.2x (`full_attn.o_proj`) up to 6.1x
+(`head.compact_draft_vocab`). The two shapes with the +24% drift from 1b are
+also the two weakest ALU cases — the same structure showing up twice.
+
+**Net:** the advisor's conclusion survives my attempt to break it, but the
+statistic offered as "the actual strength of the case" overstates it by ~1.6x
+and is measured against a null that cannot be true. This is a reason the arms
+are necessary, which is the advisor's own position; I am disputing the strength
+of the prior, not the plan.
+
+### 1f. Classical FLOP roofline (for reference only)
+
+4-bit g64 => 0.5625 B/weight; 2 FLOP/weight/row => arithmetic intensity
+= 3.56*M FLOP/byte. Machine balance 7500/226.9 = 33 FLOP/byte. Naive roofline
+therefore says bandwidth-bound for all M < 10. But `qmv_fast` does not use the
+matmul pipeline and pays 4-bit unpack ALU that the roofline does not count, so
+this is a lower bound on ALU pressure, not a verdict.
+
+## 2. Arm design and DCE evidence
+
+`research/roofline_arm_patch.py` edits the `_wide` body in BOTH twins
+(`quantized.h` and `mlx-generated/quantized.cpp`), refusing to run unless each
+anchor is unique inside that function (`const int row = out_row + r;` occurs
+twice per file: once in the NA<=2 kernel, once in `_wide`).
+
+- `arm1` — arithmetic /~2.7, bytes constant: keep only the `& 0x000f` term of
+  the 4-term unpack accumulate.
+- `arm2` — unique weight bytes /4, arithmetic constant: `row = out_row + r*row_span`
+  with `row_span = in_vec_size >> 30` (a runtime-opaque zero, so addresses stay
+  formally distinct and no load/value CSE can fire, but all 4 rows resolve to
+  one tile at runtime).
+- `arm2-naive` — literal `row = out_row`, AIR inspection only.
+
+AIR counts (`research/air_kernel_stats.py --match crossrow_na4`):
+
+| build | fmul | fadd | flops | device_loads | loads | loop_backedges |
+|---|---|---|---|---|---|---|
+| control | 9 | 10 | 19 | 7 | 16 | 11 |
+| arm1 | 3 | 7 | 10 | 7 | 16 | 11 |
+| arm2 | 9 | 10 | 19 | 7 | 16 | 11 |
+| arm2-naive | 9 | 10 | 19 | 7 | 16 | 11 |
+
+**Arm 1 DCE check passes:** arithmetic drops 19 -> 10 while device loads (7),
+total loads (16) and loop back-edges (11) are all unchanged. Op accounting is
+exact: control fmul 9 = 4 unpack terms + 2 (`acc += scale*partial + sums*bias`)
++ 3 (`load_vector` bits=4 scalings /16, /256, /4096); arm1 = 1 + 2 + 0 = 3.
+Control fadd 10 = 3 (term sum) + 4 (sums/acc) + 3 (`load_vector` raw sum);
+arm1 = 0 + 4 + 3 = 7. `load_vector<T,float,4,4>` returns the sum of the 4 raw
+activation values and that return feeds `sums[m]`, so every activation load is
+live by construction; `packed[r][i]` stays live through the surviving
+`& 0x000f` term, so no weight load can be eliminated.
+
+Estimated per-thread lane-op cut at NA=4: ~688 -> ~256 ops = **2.7x, not 4x**.
+Report the measured effect against 2.7x, not 4x.
+
+**Arm 2 holds arithmetic exactly constant** (identical fmul/fadd/loads/back-edges).
+
+Honest caveat: `arm2-naive` did *not* show an arithmetic collapse at AIR level
+either, because Metal emits AIR with loops still rolled (verified: -O2 and -O3
+give byte-identical rolled output). So AIR cannot resolve whether the backend
+would have CSE'd the naive form; the opaque-zero defence is justified insurance,
+not a proven necessity.
+
+## 3. Noise budget
+
+Reusable from PR #8 (same host, same harness):
+- drift over unchanged widths: 0.999
+- stock pip-MLX control median 1.0000 (range 0.954-1.019)
+- two independent NA=4 sessions agree within 0.4%
+
+### Measured in this experiment
+
+`e8-control` re-runs the unchanged base (head `f313ca2`, which touches only
+`research/`), started 2026-08-16T21:12:53Z, W&B run `p4xpgtcd`.
+`python3 research/e8_compare.py e7-na4-base e8-control`:
+
+| M | median ratio | per-shape range |
+|---|---|---|
+| 4 | **1.000** | [0.988, 1.003] |
+| 8 | **1.000** | [0.993, 1.006] |
+
+Session-to-session repeatability is therefore **+/-1.2% worst case, ~+/-0.5%
+typical**, across two sessions separated by a full rebuild and a cool-down.
+Any arm effect larger than ~2% is outside the noise band.
+
+Control absolute numbers (seconds/call in us, `gbps_nominal`):
+
+| shape | M=4 s/call | M=4 GB/s | M=8 s/call | M=8 GB/s |
+|---|---:|---:|---:|---:|
+| full_attn.o_proj | 138.80 | 127.5 | 225.27 | 78.5 |
+| full_attn.qkv_proj_fused | 252.18 | 163.7 | 452.19 | 91.3 |
+| head.compact_draft_vocab | 1444.88 | 196.0 | 2837.31 | 99.8 |
+| head.lm_head | 3570.96 | 200.3 | 7043.90 | 101.5 |
+| linear_attn.in_proj_fused_qkvzba | 283.13 | 167.6 | 514.80 | 92.2 |
+| linear_attn.out_proj | 137.25 | 128.9 | 224.46 | 78.8 |
+| mlp.down | 328.34 | 152.7 | 571.20 | 87.8 |
+| mlp.gate_up_fused | 544.73 | 184.1 | 1031.93 | 97.2 |
+
+Note the level: at M=8 every shape sits at **78-102 GB/s nominal against a
+measured 226.9 GB/s achievable**, i.e. 35-45% of peak. Read without the stream
+correction, that alone is not a bandwidth-saturated kernel.
+
+## Arm 1 result: cut arithmetic, hold bytes constant
+
+Tag `e8-arm1`, head `9031269`, W&B run `pfd7wo6v`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/pfd7wo6v).
+Session peak stream bandwidth 226.7 GB/s, within 0.1% of the control session.
+
+`python3 research/e8_compare.py e8-control e8-arm1`, ratio = arm1 / control
+seconds per call (lower = arm1 faster):
+
+| shape | M=4 s/call | M=4 GB/s | M=4 ratio | M=8 s/call | M=8 GB/s | M=8 ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| full_attn.o_proj | 83.26 | 212.5 | 0.600 | 122.75 | 144.1 | 0.545 |
+| full_attn.qkv_proj_fused | 186.91 | 220.9 | 0.741 | 230.82 | 178.9 | 0.510 |
+| head.compact_draft_vocab | 1160.48 | 244.0 | 0.803 | 1345.98 | 210.4 | 0.474 |
+| head.lm_head | 2880.06 | 248.3 | 0.807 | 3346.40 | 213.7 | 0.475 |
+| linear_attn.in_proj_fused_qkvzba | 227.45 | 208.7 | 0.803 | 258.40 | 183.7 | 0.502 |
+| linear_attn.out_proj | 83.08 | 213.0 | 0.605 | 123.42 | 143.4 | 0.550 |
+| mlp.down | 237.25 | 211.3 | 0.723 | 295.69 | 169.6 | 0.518 |
+| mlp.gate_up_fused | 423.98 | 236.5 | 0.778 | 500.92 | 200.2 | 0.485 |
+
+Median ratio **0.760** at M=4 (range 0.600-0.807) and **0.506** at M=8
+(range 0.474-0.550).
+
+Verdict for this arm: the kernel is **ALU-bound at M=8** and ALU-influenced at
+M=4. The measured noise floor is +/-1.2%; these are 24% and 49% effects, far
+outside it. The bytes moved are identical by construction (AIR device-load
+count 7 and loop trip counts unchanged, see the DCE section), so a
+bandwidth-bound kernel was required to be flat here and was not.
+
+Three things sharpen it:
+
+1. The effect **grows with M**. 1.32x speedup at M=4, 1.98x at M=8. Under a
+   bandwidth-bound model, more verify rows amortize the same weight stream over
+   more arithmetic and the kernel should become *more* bandwidth-bound with M,
+   so the arm-1 effect should shrink. It does the opposite.
+2. Arm 1 lands on the wall. At M=8 the head shapes reach 210-214 GB/s nominal,
+   which is **93-94% of the 226.7 GB/s measured achievable peak**. Removing
+   arithmetic moves the kernel from 44% of peak to 94% of peak. That is the
+   signature of an ALU-limited kernel with roughly 2x of unused bandwidth
+   headroom, not of a kernel already limited by DRAM.
+3. The win is smaller than the lane-op cut. Whole-kernel lane ops fall about
+   688 -> 256 (2.7x, see the AIR accounting) but time falls only 1.98x. Some
+   fixed cost -- address arithmetic, the surviving loads, the simdgroup
+   reduction, launch and tail -- does not scale with the ALU cut. ALU is the
+   dominant term at M=8 but not the only one.
+
+## Arm 2 result: cut unique weight bytes ~4x, hold arithmetic constant
+
+Tag `e8-arm2`, head `b63d319`, W&B run `jwdqvl6n`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jwdqvl6n).
+
+| shape | M=4 s/call | M=4 GB/s | M=4 ratio | M=8 s/call | M=8 GB/s | M=8 ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| full_attn.o_proj | 138.54 | 127.7 | 0.998 | 223.93 | 79.0 | 0.994 |
+| full_attn.qkv_proj_fused | 250.45 | 164.9 | 0.993 | 452.47 | 91.2 | 1.001 |
+| head.compact_draft_vocab | 1435.67 | 197.3 | 0.994 | 2816.02 | 100.6 | 0.992 |
+| head.lm_head | 3547.71 | 201.6 | 0.993 | 7030.73 | 101.7 | 0.998 |
+| linear_attn.in_proj_fused_qkvzba | 281.22 | 168.8 | 0.993 | 513.06 | 92.5 | 0.997 |
+| linear_attn.out_proj | 137.83 | 128.4 | 1.004 | 224.26 | 78.9 | 0.999 |
+| mlp.down | 325.18 | 154.2 | 0.990 | 568.89 | 88.1 | 0.996 |
+| mlp.gate_up_fused | 541.80 | 185.1 | 0.995 | 1029.85 | 97.4 | 0.998 |
+
+Median ratio **0.994** at M=4 and **0.997** at M=8; all sixteen points sit
+inside the +/-1.2% noise band. Cutting unique DRAM weight traffic ~4x bought
+nothing.
+
+Positive control that the arm was live: `row0_bitwise_matches_m1` over the
+sixteen measured points is 16/16 for the control (max delta 0), **0/16 for
+arm 2** (max delta 0.568 to 7.375) and 0/16 for arm 1 (1.641 to 45.938). The
+collapsed addressing demonstrably executed in the measured binary.
+
+Full write-up, including the item-4 re-derivation and the flagged `qmm_splitk`
+tension, is in `research/e8_roofline_report.md`.
+
