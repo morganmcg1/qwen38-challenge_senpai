@@ -589,17 +589,20 @@ public final class Qwen36MTPBlockSession {
     /// at depth 7, so row 9 does not repay itself on a per-round cost
     /// argument alone.
     ///
-    /// It is still kept at 8 because the streak gate below only opens the
-    /// deep cap on rounds the head has already proven it can carry: the
-    /// realised conditional acceptance on those rounds is ~0.98, flat to
-    /// draft index 7 (it does NOT decay with position -- the unconditional
-    /// rate does, which is a survivorship artifact), and the extra token
-    /// arrives often enough to pay the 28 ms. Dropping to 7 was measured
-    /// and loses. Raising the payoff instead needs a verify path that
-    /// amortizes the extra rows -- padding the batch past the qmv limit
-    /// into qmm_t_splitk, say -- or a gate that opens depth 8 separately
-    /// from depths 5..7, since only the former crosses a stream boundary.
-    private static let segmentedVerifyDepthCap = 8
+    /// The realised conditional acceptance on deep rounds is ~0.98 and flat
+    /// to draft index 7 (it does NOT decay with position -- the
+    /// unconditional rate does, which is a survivorship artifact), so the
+    /// 9th row does arrive often. It still does not pay: at a fixed streak
+    /// gate of 2 on the 512-token local fixture, cap 7 costs 0.0345248
+    /// s/token against cap 8's 0.0350219, a 1.42% absolute win for the
+    /// narrower cap, and cap 7 posted the lowest absolute seconds/token of
+    /// every configuration measured on this host.
+    ///
+    /// Recovering row 9 would need a verify path that amortizes the extra
+    /// rows -- padding the batch past the qmv limit into qmm_t_splitk, say
+    /// -- or a gate that opens depth 8 separately from depths 5..7, since
+    /// only the former crosses a stream boundary.
+    private static let segmentedVerifyDepthCap = 7
 
     /// Consecutive fully-accepted rounds required to open the deep cap.
     /// Swept 3 -> 2 -> 1 -> 0 on the 512-token local fixture (the ranked
@@ -619,7 +622,13 @@ public final class Qwen36MTPBlockSession {
     /// because the extra rejects land on the hard second half of the
     /// window, where it degrades 29.3 ms -> 31.7 ms. Tune this against
     /// rejected work, not against accepted tokens per round.
-    private static let segmentedStreakGate = 1
+    ///
+    /// Left at the shipped 3 here: the sweep above was run at cap 8, and
+    /// the cap has since moved to 7, so those ratios no longer describe
+    /// this configuration. Re-measure the gate on top of cap 7 before
+    /// moving it -- the two constants interact through exactly the rounds
+    /// the gate admits.
+    private static let segmentedStreakGate = 3
 
     /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
