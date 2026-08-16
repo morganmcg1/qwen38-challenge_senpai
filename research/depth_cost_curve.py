@@ -61,9 +61,12 @@ def summarize(rows, key="round_us"):
     vals = [r[key] for r in rows]
     if not vals:
         return None
-    return {"n": len(vals), "mean_us": statistics.fmean(vals),
+    mean = statistics.fmean(vals)
+    sd = statistics.stdev(vals) if len(vals) > 1 else 0.0
+    return {"n": len(vals), "mean_us": mean,
             "median_us": statistics.median(vals),
-            "stddev_us": statistics.stdev(vals) if len(vals) > 1 else 0.0,
+            "stddev_us": sd, "sd_pct": 100.0 * sd / mean if mean else 0.0,
+            "sem_us": sd / len(vals) ** 0.5,
             "min_us": min(vals), "max_us": max(vals)}
 
 
@@ -92,8 +95,12 @@ def load_legs(arm_dir, warmup):
             "dropped_warmup": len(rounds) - len(tail),
             "dropped_partial": len(tail) - len(steady),
             "depths_seen": sorted({r["d"] for r in rounds}),
+            "acc_hist": {str(k): sum(1 for r in rounds if r["acc"] == k)
+                         for k in sorted({r["acc"] for r in rounds})},
+            "depth_hist": {str(k): sum(1 for r in rounds if r["d"] == k)
+                           for k in sorted({r["d"] for r in rounds})},
             "acc_mean": statistics.fmean([r["acc"] for r in rounds]),
-            "steady_rows": steady,
+            "steady_rows": steady, "tail_rows": tail,
         })
     return legs
 
@@ -116,12 +123,18 @@ def main():
                     help="arm dir names to include (default: every dir)")
     ap.add_argument("--warmup", type=int, default=2)
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--c0-arm", default=None,
+                    help="normalise h(d) against this arm's depth-0 rounds "
+                         "only; every leg contributes a serial control, and "
+                         "an out-of-session control is not the base the cost "
+                         "model means by `1`")
     args = ap.parse_args()
 
     arm_dirs = ([args.out_dir / a for a in args.arms] if args.arms
                 else sorted(p for p in args.out_dir.iterdir() if p.is_dir()))
 
     by_depth = defaultdict(list)
+    by_depth_all = defaultdict(list)
     arms = {}
     print(f"{'arm':<14} {'trace':<22} {'N':>4} {'depths':<10} {'acc':>5} "
           f"{'drop_w':>6} {'drop_p':>6}")
@@ -134,53 +147,88 @@ def main():
         arms[arm_dir.name] = {
             "meta": read_meta(arm_dir),
             "score": json.loads(score_path.read_text()) if score_path.exists() else None,
-            "legs": [{k: v for k, v in leg.items() if k != "steady_rows"}
+            "legs": [{k: v for k, v in leg.items()
+                      if k not in ("steady_rows", "tail_rows")}
                      for leg in legs],
         }
         for leg in legs:
             print(f"{arm_dir.name:<14} {leg['trace']:<22} {leg['rounds_total']:>4} "
                   f"{str(leg['depths_seen']):<10} {leg['acc_mean']:>5.2f} "
                   f"{leg['dropped_warmup']:>6} {leg['dropped_partial']:>6}")
+            for row in leg["tail_rows"]:
+                row["arm"] = arm_dir.name
+                by_depth_all[row["d"]].append(row)
             for row in leg["steady_rows"]:
                 by_depth[row["d"]].append(row)
 
-    c0_rows = by_depth.get(0, [])
+    all_c0 = by_depth.get(0, [])
+    print(f"\ndepth-0 control by arm ({'pooled' if not args.c0_arm else args.c0_arm + ' selected'})")
+    c0_by_arm = defaultdict(list)
+    for row in all_c0:
+        c0_by_arm[row["arm"]].append(row)
+    for arm in sorted(c0_by_arm):
+        s = summarize(c0_by_arm[arm])
+        arms[arm]["c0"] = s
+        print(f"  {arm:<14} N={s['n']:>4} mean={s['mean_us']:>9.1f} "
+              f"median={s['median_us']:>9.1f} sd={s['sd_pct']:>5.1f}%")
+    if all_c0:
+        pooled = summarize(all_c0)
+        print(f"  {'POOLED':<14} N={pooled['n']:>4} mean={pooled['mean_us']:>9.1f} "
+              f"median={pooled['median_us']:>9.1f} sd={pooled['sd_pct']:>5.1f}%")
+
+    c0_rows = c0_by_arm.get(args.c0_arm, []) if args.c0_arm else all_c0
+    if args.c0_arm and not c0_rows:
+        print(f"\nerror: --c0-arm {args.c0_arm} has no steady depth-0 rounds",
+              file=sys.stderr)
+        return 2
     c0 = summarize(c0_rows)["mean_us"] if c0_rows else None
     if c0 is None:
         print("\nwarning: no depth-0 rounds; h(d) cannot be normalised",
               file=sys.stderr)
 
-    print(f"\n{'d':>2} {'N':>4} {'C(d) us':>10} {'median':>9} {'sd':>8} "
-          f"{'marg':>9} {'h(d)':>7} {'C/C0':>7} {'us/tok':>8} {'eval':>8} {'host':>8}")
+    print(f"\nfull-accept rounds only (acc == d)")
+    print(f"{'d':>2} {'N':>4} {'C(d) us':>10} {'median':>9} {'sd%':>6} "
+          f"{'marg':>9} {'h(d)':>7} {'C/C0':>7} {'us/tok':>8} {'eval':>8} {'host':>8} "
+          f"{'Nall':>5} {'C_all':>9}")
     curve, prev = {}, None
     for depth in sorted(by_depth):
         rows = by_depth[depth]
         s = summarize(rows)
+        s_all = summarize(by_depth_all[depth])
         marginal = None if prev is None else s["mean_us"] - prev
         h = None if (marginal is None or not c0) else marginal / c0
         phases = {p: summarize(rows, p) for p in PHASES}
         host = sum(phases[p]["mean_us"] for p in PHASES if p != "eval_wall_us")
         ratio = s["mean_us"] / c0 if c0 else None
-        curve[depth] = {"depth": depth, "steady": s, "marginal_us": marginal,
+        curve[depth] = {"depth": depth, "steady": s, "all_rounds": s_all,
+                        "marginal_us": marginal,
                         "h": h, "c_over_c0": ratio,
                         "us_per_token": s["mean_us"] / (depth + 1),
-                        "phases": phases, "host_us": host}
+                        "phases": phases, "host_us": host,
+                        "arms": sorted({r["arm"] for r in rows})}
         marg_s = "-" if marginal is None else "%.1f" % marginal
         h_s = "-" if h is None else "%.4f" % h
         ratio_s = "-" if ratio is None else "%.3f" % ratio
         print(f"{depth:>2} {s['n']:>4} {s['mean_us']:>10.1f} {s['median_us']:>9.1f} "
-              f"{s['stddev_us']:>8.1f} {marg_s:>9} {h_s:>7} {ratio_s:>7} "
+              f"{s['sd_pct']:>6.1f} {marg_s:>9} {h_s:>7} {ratio_s:>7} "
               f"{s['mean_us'] / (depth + 1):>8.1f} "
-              f"{phases['eval_wall_us']['mean_us']:>8.1f} {host:>8.1f}")
+              f"{phases['eval_wall_us']['mean_us']:>8.1f} {host:>8.1f} "
+              f"{s_all['n']:>5} {s_all['mean_us']:>9.1f}")
         prev = s["mean_us"]
+
+    if curve:
+        vec = [curve[d]["h"] for d in sorted(curve) if d and curve[d]["h"] is not None]
+        print("\nheadStepCostRatioByDepth = [" +
+              ", ".join("%.4f" % v for v in vec) + "]")
 
     if args.json:
         args.json.write_text(json.dumps(
-            {"c0_us": c0, "warmup": args.warmup, "arms": arms,
-             "curve": {str(k): v for k, v in curve.items()}},
+            {"c0_us": c0, "c0_arm": args.c0_arm, "warmup": args.warmup,
+             "arms": arms, "curve": {str(k): v for k, v in curve.items()}},
             indent=2, sort_keys=True))
-        print(f"\nwrote {args.json}")
+        print(f"wrote {args.json}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
