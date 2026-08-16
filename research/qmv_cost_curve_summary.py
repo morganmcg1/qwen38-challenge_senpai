@@ -860,14 +860,15 @@ def main():
               " full weight read")
         print("  corr/M1 > 1 falsifies the correction: it needs more bandwidth"
               " than this kernel reaches at M=1")
-        print(f"  {'shape':36s} {'mstream@5':>10s} {'mstream@9':>10s} "
-              f"{'corr/M1':>8s}  implied streams M1..M9")
+        bnd = stair[0]["boundaries"]
+        bhdr = ' '.join(f"{f'mstream@{m}':>10s}" for m in bnd)
+        print(f"  {'shape':36s} {bhdr} {'corr/M1':>8s}  implied streams M1..M9")
         for f in stair:
             imp = ' '.join(f"{f['implied_streams'][m]:4.2f}" for m in
                            sorted(f['implied_streams']))
-            print(f"  {f['name']:36s} "
-                  f"{f['marginal_stream_cost']['5']:10.3f} "
-                  f"{f['marginal_stream_cost']['9']:10.3f} "
+            mstream = ' '.join(f"{f['marginal_stream_cost'][str(m)]:10.3f}"
+                               for m in bnd)
+            print(f"  {f['name']:36s} {mstream} "
                   f"{f['max_corrected_over_m1']:8.2f}  {imp}")
     print("\ncall-mix-weighted verify cost, relative to width 1")
     print("  tap-corr repeats the tax with the timing scaffolding subtracted")
@@ -1140,8 +1141,8 @@ def main():
                 "shape", "k", "n", "cv_gbps_nominal", "cv_gbps_stream_corrected",
                 "flatness_gain", "mean_gbps_stream_corrected", "increment_m5",
                 "increment_m9", "mean_interior_increment", "step_excess",
-                "boundaries_rank_first", "marginal_stream_cost_m5",
-                "marginal_stream_cost_m9", "max_corrected_over_m1", "verdict",
+                "boundaries_rank_first", "boundaries", "marginal_stream_cost",
+                "max_corrected_over_m1", "verdict",
             ]
         )
         for f in stair:
@@ -1151,7 +1152,8 @@ def main():
                 f["mean_gbps_stream_corrected"], f["increments"][5],
                 f["increments"][9], f["mean_interior_increment"],
                 f["step_excess"], f["boundaries_rank_first"],
-                f["marginal_stream_cost"]["5"], f["marginal_stream_cost"]["9"],
+                json.dumps(f["boundaries"]),
+                json.dumps(f["marginal_stream_cost"]),
                 f["max_corrected_over_m1"], f["verdict"],
             )
 
