@@ -196,6 +196,9 @@ public final class Qwen36MTPBlockSession {
         // version of this; the per-position EMAs let depth 5-8 pay where the
         // ladder's cap of 4 left committed tokens on the table.
         draftPolicy = { [weak self] offeredDepth, _ in
+            if let fixed = Self.fixedDepthOverride {
+                return Swift.min(offeredDepth, fixed)
+            }
             guard let self else { return Swift.min(offeredDepth, 1) }
             return self.costModelDepth(offeredDepth: offeredDepth)
         }
@@ -461,11 +464,42 @@ public final class Qwen36MTPBlockSession {
     /// stderr to the wrapper's log.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+    /// The `mtp-timed` verb the benchmark wrapper drives builds its worker
+    /// options with `forwardsWorkerStderr: false`, so the drain reads and
+    /// DISCARDS everything the worker writes to stderr. A local trace run
+    /// therefore names an absolute sink with `MLX_QWEN_MTP_TRACE_FILE` and
+    /// runs the worker unsandboxed (`MLXFAST_NO_SANDBOX=1`, refused on
+    /// official runs) so this append is permitted.
+    private static let traceSink: FileHandle? = {
+        guard traceRounds,
+              let path = ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_FILE"],
+              !path.isEmpty
+        else { return nil }
+        FileManager.default.createFile(atPath: path, contents: nil)
+        guard let handle = FileHandle(forWritingAtPath: path) else { return nil }
+        handle.seekToEndOfFile()
+        return handle
+    }()
+    /// Local shape-stability diagnostic: pin every round to one draft width so
+    /// a traced run can separate shape-CHANGE rebuild cost from constant-width
+    /// per-round graph construction. Diagnostic only; never set at rank.
+    private static let fixedDepthOverride: Int? = {
+        guard let raw = ProcessInfo.processInfo.environment["MLX_QWEN_MTP_FIXED_DEPTH"],
+              let value = Int(raw), value >= 0
+        else { return nil }
+        return value
+    }()
+
+    private static let traceLock = NSLock()
     private static func traceWrite(_ line: String) {
-        // stderr: the worker sandbox denies file-write*, and the parent's
-        // drain forwards stderr lines when MLX_QWEN_MTP_TRACE=1 flips
-        // `forwardsWorkerStderr` on the local mtp-timed verb.
-        FileHandle.standardError.write(Data(line.utf8))
+        let data = Data(line.utf8)
+        traceLock.lock()
+        defer { traceLock.unlock() }
+        if let sink = traceSink {
+            sink.write(data)
+        } else {
+            FileHandle.standardError.write(data)
+        }
     }
 
     /// Exact-value row dump for the LOCAL width-wall gate: hexfloat (`%a`)
