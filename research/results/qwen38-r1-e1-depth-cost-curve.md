@@ -358,15 +358,43 @@ trace-measured `C(0) = 65.0 ms` to **1.2%**, from two completely independent
 routes. A 256-token quote therefore carries **19.2%** prefill and a 512-token
 quote **10.6%**; the difference alone moves an apparent speedup by ~10%.
 
-### Base advance during r3
+### Base advance during r3, and the merge that closes it
 
-The remote base tip moved from `1eacf376` (the sha named by the r3 assignment
-marker) to `ddfb2f8a8ee503e5bf51e626b70839e16380c9d9` while this revision was in
-flight. `git diff 1eacf376..ddfb2f8` touches exactly two files —
-`research/CURRENT_RESEARCH_STATE.md` and `research/ESTABLISHED_FACTS.md`, 582
-insertions / 53 deletions, **documentation only**. No submitted path and no
-runtime source changed, so every measurement in this report remains valid on the
-newer tip and no replay is needed.
+This branch forked from `67bde70274c42aef089ac73cf00608d8037a815e`, the r2 base.
+The r3 marker names `1eacf376` instead, which is eleven commits further on, so
+the branch did not yet *contain* its own assigned base. `git diff
+67bde702..1eacf376` touches seven files — `Tests/MLXFastTests/
+QwenQMVCostCurveTests.swift` and six under `research/` — and **no `Sources/`,
+`Vendor/`, `Package.swift`, `benchmark.json` or `mtp-head.manifest.json` path at
+all**. Every measurement here was therefore taken on source identical to the r3
+base, and the assigned base is merged in as commit "Merge assigned research base
+1eacf376 into the measurement branch" with no replay.
+
+The remote base tip has since moved further, to `ed4269c25f29ce1129339b0eb43658
+86c0a6bb71`. `git diff 1eacf376..ed4269c2` is nine files, all under `research/`,
+**documentation and analysis only**; no submitted path and no runtime source
+changed, so the numbers below hold on that tip too.
+
+Two of those newer base commits touch this report directly and are worth naming:
+
+- `ddfb2f8 research: the fabricated cost curve had seven residences, not two`
+  records at `CURRENT_RESEARCH_STATE.md:1180` that "no such measurement exists
+  and edward has never pushed a commit". That is the same ordering question
+  section 3 below raises, seen from the other side: as of that commit the branch
+  was unpushed, so the record could not have seen it — and the generator for the
+  retracted curve is nonetheless on this branch, in a commit dated before it.
+  Section 3 states what can and cannot be settled from the commit graph alone.
+- `ed4269c research: the boundary streams were never overhead` reports that the
+  boundary widths `M=5` and `M=9` run at 96% and 88% of the 273 GB/s roofline
+  while the interior widths `M=4` and `M=8` run at 61% and 67%. That does **not**
+  conflict with the two `h` peaks measured here, and it sharpens what they mean.
+  Crossing a pass boundary adds a whole extra weight stream, so it adds bytes and
+  therefore adds absolute time even though those bytes move at near peak rate.
+  The peaks are the price of extra traffic, not evidence of a stall. The
+  magnitudes agree independently: the boundary excess here is
+  `m(4) − m(6) = 25,671 − 19,286 = 6.4 ms` at width 5 and
+  `m(8) − m(7) = 25,332 − 18,153 = 7.2 ms` at width 9, against the in-situ
+  `+5.5 ms` and `+6.6 ms` quoted in comment 16 from a different method.
 
 Preflight against the r3 base at the submitted commit:
 
