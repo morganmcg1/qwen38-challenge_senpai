@@ -1,8 +1,9 @@
 # SENPAI Research State
 
-- **2026-08-16 17:25 UTC**
+- **2026-08-16 17:40 UTC**
 - Track `qwen3.8-27b-mtp-v1`; advisor branch `senpai/qwen38-mtp-r1`;
-  `BASE_SHA = b2190092d024496b0f1ad3c8f51d6fdd8091cc86`;
+  `BASE_SHA` = the live head of that branch (`git rev-parse
+  origin/senpai/qwen38-mtp-r1`), which now contains the `b219009` EOS fix;
   `UPSTREAM_SHA = 7351e62674bc600f0ca148d3a1b0604716a09db6`.
 
 This is a **living document**. Durable measurements, source-line citations, and
@@ -189,16 +190,37 @@ All four students are occupied. No slot is free.
 
 | PR | Student | Question | Status |
 |---|---|---|---|
-| #1 | qwen-edward | Measure `C(d)` for d=0..8; ship the generalized table rule with `H` measured at run time; width-9→10 padding probe; per-position acceptance table | in progress |
-| #2 | qwen-alphonse | Part A: width-9 bit-exactness (blocking). Part B: `max/p50` block latency per arm **at both head sizes**, plus a low-acceptance arm | in progress |
-| #4 | qwen-askeladd | Three-number floor decomposition; head chain timed in isolation; `rollbackRoundCount` | in progress |
-| #5 | qwen-thorfinn | qmv small-M kernel curve M=1..512; normalized `qmv_tax` stop rule; GDN-vs-projections knees side by side; `qmv_fast` K-alignment audit | in progress |
+| #1 | qwen-edward | Measure `C(d)` for d=0..8; ship the generalized table rule with `H` measured at run time; width-9→10 padding probe; per-position acceptance table | r2 issued on the post-`b219009` base |
+| #2 | qwen-alphonse | Part A: width-9 bit-exactness (blocking). Part B: `max/p50` block latency per arm **at both head sizes**, plus a low-acceptance arm | r2 issued on the post-`b219009` base |
+| #4 | qwen-askeladd | Three-number floor decomposition; head chain timed in isolation; `rollbackRoundCount` | r2 issued on the post-`b219009` base |
+| #5 | qwen-thorfinn | qmv small-M kernel curve M=1..512; normalized `qmv_tax` stop rule; GDN-vs-projections knees side by side; `qmv_fast` K-alignment audit | r2 issued on the post-`b219009` base |
 | #3 | qwen-thorfinn | Seed-prefill Amdahl term | **merged** — *not useful* for the mechanism, decisive for the ceiling |
 
-**All four are based on commits older than `b219009` and therefore still contain
-the EOS defect.** Each has been told to rebase before taking any 512-token
-headline number. PRs #1 and #2 are the pair that only pays off jointly (Theme A);
-PRs #4 and #5 jointly settle Theme C.
+Round-1 revisions were all cut from bases older than `b219009` and therefore
+carried the EOS defect. Round 2 re-binds each assignment to the live advisor-branch
+head, so **no in-flight experiment is measuring on a defective base any more**.
+PRs #1 and #2 are the pair that only pays off jointly (Theme A); PRs #4 and #5
+jointly settle Theme C.
+
+### Process finding — round 1 produced zero student pushes
+
+Between assignment creation (14:41–15:57 UTC) and the round-1 close (17:24 UTC),
+all four PRs stayed at their creation head SHA with **no commits and no student
+comments**, and then all four students went idle at once. Nine, eight, eight and
+four advisor feedback comments were delivered into that silence. Two lessons are
+now standing policy for this campaign:
+
+1. **Cheapest decisive artifact first.** Every assignment must name one artifact
+   that is producible in a single short session (a Python microbenchmark, a
+   bit-exactness check, a breakdown table) *before* any end-to-end A/B. A student
+   who runs out of budget must still leave durable evidence behind.
+2. **Silence is not a status.** A student that cannot run — setup failure, weights
+   missing, lock contention, thermal gate, wall-clock limit — must post a PR
+   comment naming the exact blocking command and its output. Going idle with an
+   empty branch is a protocol failure, not a null result.
+
+Advisor-side lesson: feedback volume is not progress. Round 2 leads with a short
+ordered instruction, not more analysis.
 
 ---
 
