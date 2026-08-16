@@ -478,9 +478,9 @@ public final class Qwen36MTPBlockSession {
             // Records which curve the leg actually ran, so an override that
             // failed to reach the worker reads as a failed override rather
             // than as a policy that made no difference.
-            let hText = Self.overrideHeadStepCostRatioByDepth
-                .map { $0.map(String.init).joined(separator: ",") }
-                ?? String(Self.headStepCostRatio)
+            let hCurve = Self.overrideHeadStepCostRatioByDepth
+                ?? [Self.headStepCostRatio]
+            let hText = hCurve.map { "\($0)" }.joined(separator: ",")
             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
                 + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
