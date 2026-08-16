@@ -254,6 +254,107 @@ def gdn_curve(gdn, rf):
     }
 
 
+# Depth-matched block latencies measured end to end on this host at BASE_SHA
+# (PR #3, W&B rrfby4xn). The first block of a window is excluded: it carries
+# warm-up the steady-state rounds do not. Keyed by draft depth d, seconds.
+MEASURED_ROUND_SECONDS = {
+    0: 0.06628893292139447,
+    4: 0.125967,
+    5: 0.146685,
+    6: 0.168561,
+    7: 0.1898345,
+}
+
+
+def round_cost_model(verify):
+    """Turn the width curve into a draft-depth policy answer.
+
+    A round at depth d verifies d+1 rows and runs d chained head steps, so
+    `C(d) = G(d+1) + A + d*h` with `G` the measured width curve, `h` the
+    per-draft head cost and `A` everything per round that the width curve does
+    not contain. Fitting `A` and `h` against end-to-end rounds makes the two
+    unknowns testable: `h` has an independent byte-level prediction, and the
+    residuals say whether the width curve really is the round's shape.
+    """
+    anchors = [(d, s) for d, s in sorted(MEASURED_ROUND_SECONDS.items())
+               if (d + 1) in verify]
+    if len(anchors) < 2:
+        return None
+
+    # Least squares on [1, d] for the two free terms.
+    n = len(anchors)
+    sd = sum(d for d, _ in anchors)
+    sdd = sum(d * d for d, _ in anchors)
+    resid = [s - verify[d + 1] for _, s in anchors]
+    sr = sum(resid)
+    sdr = sum(d * r for (d, _), r in zip(anchors, resid))
+    det = n * sdd - sd * sd
+    if det == 0:
+        return None
+    a = (sdd * sr - sd * sdr) / det
+    h = (n * sdr - sd * sr) / det
+
+    depths = [d for d in range(0, 9) if (d + 1) in verify]
+    rows = []
+    for d in depths:
+        predicted = verify[d + 1] + a + d * h
+        measured = MEASURED_ROUND_SECONDS.get(d)
+        entry = {
+            "depth": d,
+            "verify_width": d + 1,
+            "gemm_seconds": verify[d + 1],
+            "predicted_round_seconds": predicted,
+            "measured_round_seconds": measured,
+            "residual_seconds": (
+                predicted - measured if measured is not None else None),
+            "gemm_share_of_round": verify[d + 1] / predicted,
+            "head_share_of_round": (d * h) / predicted,
+        }
+        for q in (1.0, 0.94, 0.90):
+            tokens = (d + 1) if q == 1.0 else (1 - q ** (d + 1)) / (1 - q)
+            entry[f"seconds_per_token_q{int(q*100)}"] = predicted / tokens
+            entry[f"speedup_vs_serial_q{int(q*100)}"] = (
+                MEASURED_ROUND_SECONDS[0] / (predicted / tokens))
+        entry["breakeven_acceptance"] = _breakeven(d, predicted)
+        rows.append(entry)
+
+    best = min(
+        (r for r in rows if r["depth"] > 0),
+        key=lambda r: r["seconds_per_token_q100"])
+    spread = [r["seconds_per_token_q100"] for r in rows if r["depth"] >= 3]
+    return {
+        "per_round_constant_seconds": a,
+        "per_draft_head_seconds": h,
+        "max_abs_residual_seconds": max(
+            abs(r["residual_seconds"]) for r in rows
+            if r["residual_seconds"] is not None),
+        "optimal_depth_q100": best["depth"],
+        "optimal_seconds_per_token_q100": best["seconds_per_token_q100"],
+        "optimal_speedup_q100": best["speedup_vs_serial_q100"],
+        "flatness_depth3_to_8": (
+            (max(spread) - min(spread)) / min(spread) if spread else None),
+        "rows": rows,
+    }
+
+
+def _breakeven(d, round_seconds):
+    """Per-draft acceptance at which depth d stops paying for itself."""
+    if d == 0:
+        return None
+    serial = MEASURED_ROUND_SECONDS[0]
+    if round_seconds / (d + 1) > serial:
+        return None  # even perfect acceptance loses
+    lo, hi = 0.0, 1.0
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        tokens = (1 - mid ** (d + 1)) / (1 - mid) if mid < 1 else d + 1
+        if round_seconds / tokens > serial:
+            lo = mid
+        else:
+            hi = mid
+    return hi
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--vendored", required=True)
@@ -439,6 +540,7 @@ def main():
         ],
         "head_fc_dtype_probe": vend.get("head_fc_dtype_probe"),
         "gdn_recurrence": gdn,
+        "round_cost_model": round_cost_model(verify),
         "stock_vs_vendored": stock_vs_vendored,
     }
 
@@ -534,18 +636,29 @@ def main():
 
     hp = out["head_fc_dtype_probe"]
     if hp:
-        print(f"\nproposal-head fc, K={hp['k']} N={hp['n']}, M=1: does 4-bit "
+        print(f"\nproposal-head fc, K={hp['k']} N={hp['n']}, M=1: does "
               "requantisation buy its byte ratio back as time?")
-        print(f"  bf16    {hp['bf16_weight_bytes']/1e6:8.1f} MB  "
-              f"{hp['bf16_seconds_per_call']*1e3:7.3f} ms  "
-              f"{hp['bf16_effective_bandwidth_bytes_per_second']/1e9:6.1f} GB/s")
-        print(f"  q4/g64  {hp['q4g64_weight_bytes']/1e6:8.1f} MB  "
-              f"{hp['q4g64_seconds_per_call']*1e3:7.3f} ms  "
-              f"{hp['q4g64_effective_bandwidth_bytes_per_second']/1e9:6.1f} GB/s")
-        print(f"  bytes {hp['byte_ratio_bf16_over_q4g64']:.3f}x  ->  "
-              f"time {hp['time_ratio_bf16_over_q4g64']:.3f}x  "
-              f"({100*hp['time_ratio_bf16_over_q4g64']/hp['byte_ratio_bf16_over_q4g64']:.0f}% "
-              "of the byte ratio realised)")
+        print(f"  {'form':8s} {'MB':>8s} {'ms':>8s} {'GB/s':>7s} "
+              f"{'bytes vs bf16':>14s} {'time vs bf16':>13s} {'realised':>9s}")
+        print(f"  {'bf16':8s} {hp['bf16_weight_bytes']/1e6:8.1f} "
+              f"{hp['bf16_seconds_per_call']*1e3:8.3f} "
+              f"{hp['bf16_effective_bandwidth_bytes_per_second']/1e9:7.1f}")
+        for tag in ("q8g64", "q4g64"):
+            if f"{tag}_seconds_per_call" not in hp:
+                continue
+            byte_ratio = hp[f"byte_ratio_bf16_over_{tag}"]
+            time_ratio = hp[f"time_ratio_bf16_over_{tag}"]
+            print(f"  {tag:8s} {hp[f'{tag}_weight_bytes']/1e6:8.1f} "
+                  f"{hp[f'{tag}_seconds_per_call']*1e3:8.3f} "
+                  f"{hp[f'{tag}_effective_bandwidth_bytes_per_second']/1e9:7.1f} "
+                  f"{byte_ratio:14.3f} {time_ratio:13.3f} "
+                  f"{100*time_ratio/byte_ratio:8.0f}%")
+        if "time_ratio_q8g64_over_q4g64" in hp:
+            print(f"  8-bit vs 4-bit: bytes "
+                  f"{hp['byte_ratio_q8g64_over_q4g64']:.3f}x  ->  time "
+                  f"{hp['time_ratio_q8g64_over_q4g64']:.3f}x "
+                  "(<1 means the shipped 4-bit head is on the wrong side of "
+                  "the nibble-unpacking tradeoff)")
 
     if out["gdn_recurrence"]:
         g = out["gdn_recurrence"]
@@ -562,6 +675,35 @@ def main():
                   f"{r['cost_ratio_vs_m1']:8.3f} {incr} "
                   f"{r['arithmetic_intensity_flop_per_byte']:7.2f} "
                   f"{r['hw_efficiency']:7.3f}")
+    rcm = out["round_cost_model"]
+    if rcm:
+        print(f"\nround cost model C(d) = G(d+1) "
+              f"{rcm['per_round_constant_seconds']*1e3:+.2f} ms "
+              f"{rcm['per_draft_head_seconds']*1e3:+.2f} ms/draft, fitted to "
+              f"{len(MEASURED_ROUND_SECONDS)} end-to-end depths "
+              f"(max |residual| {rcm['max_abs_residual_seconds']*1e3:.2f} ms)")
+        print(f"  {'d':>2s} {'M':>2s} {'GEMM ms':>8s} {'C(d) ms':>8s} "
+              f"{'meas ms':>8s} {'GEMM%':>6s} {'head%':>6s} "
+              f"{'ms/tok':>7s} {'x@q1.0':>7s} {'x@q.94':>7s} {'x@q.90':>7s} "
+              f"{'a_be':>6s}")
+        for r in rcm["rows"]:
+            meas = (f"{r['measured_round_seconds']*1e3:8.2f}"
+                    if r["measured_round_seconds"] is not None else f"{'':>8s}")
+            abe = (f"{r['breakeven_acceptance']:6.3f}"
+                   if r["breakeven_acceptance"] is not None else f"{'never':>6s}")
+            print(f"  {r['depth']:2d} {r['verify_width']:2d} "
+                  f"{r['gemm_seconds']*1e3:8.2f} "
+                  f"{r['predicted_round_seconds']*1e3:8.2f} {meas} "
+                  f"{100*r['gemm_share_of_round']:5.1f}% "
+                  f"{100*r['head_share_of_round']:5.1f}% "
+                  f"{r['seconds_per_token_q100']*1e3:7.2f} "
+                  f"{r['speedup_vs_serial_q100']:7.3f} "
+                  f"{r['speedup_vs_serial_q94']:7.3f} "
+                  f"{r['speedup_vs_serial_q90']:7.3f} {abe}")
+        print(f"  optimal depth at full acceptance: d={rcm['optimal_depth_q100']} "
+              f"({rcm['optimal_speedup_q100']:.3f}x); "
+              f"d=3..8 spread {100*rcm['flatness_depth3_to_8']:.1f}%")
+
     if stock_vs_vendored:
         print("\nvendored vs stock pip MLX (speedup > 1 means this checkout is faster)")
         for s in shapes:
@@ -686,6 +828,26 @@ def main():
                 a["k_mod_512"], a["n_mod_8"], a["qmv_fast"],
             )
 
+        round_table = wandb.Table(
+            columns=[
+                "depth", "verify_width", "gemm_ms", "predicted_round_ms",
+                "measured_round_ms", "gemm_share_of_round", "head_share_of_round",
+                "ms_per_token_q100", "speedup_q100", "speedup_q94", "speedup_q90",
+                "breakeven_acceptance",
+            ]
+        )
+        for r in (rcm or {}).get("rows", []):
+            round_table.add_data(
+                r["depth"], r["verify_width"], r["gemm_seconds"] * 1e3,
+                r["predicted_round_seconds"] * 1e3,
+                (r["measured_round_seconds"] * 1e3
+                 if r["measured_round_seconds"] is not None else None),
+                r["gemm_share_of_round"], r["head_share_of_round"],
+                r["seconds_per_token_q100"] * 1e3,
+                r["speedup_vs_serial_q100"], r["speedup_vs_serial_q94"],
+                r["speedup_vs_serial_q90"], r["breakeven_acceptance"],
+            )
+
         run.log(
             {
                 "qmv/cost_curve": curve_table,
@@ -693,6 +855,13 @@ def main():
                 "qmv/per_shape_roofline": knee_table,
                 "qmv/fast_path_alignment": align_table,
                 "qmv/scored_shapes_off_fast_count": len(off_fast),
+                "round/cost_model": round_table,
+                "round/ms_per_token_by_depth": wandb.plot.line(
+                    round_table, "depth", "ms_per_token_q100",
+                    title="modelled ms/token by draft depth at full acceptance"),
+                "round/breakeven_acceptance_by_depth": wandb.plot.line(
+                    round_table, "depth", "breakeven_acceptance",
+                    title="per-draft acceptance at which depth stops paying"),
                 "qmv/gdn_recurrence": gdn_table,
                 "qmv/gdn_cost_ratio": wandb.plot.line(
                     gdn_table, "m", "cost_ratio_vs_m1",
@@ -735,14 +904,20 @@ def main():
             for kn in knees if kn["predicted_knee_m"]
         }
         if hp:
-            flat |= {
-                "head_fc/bf16_ms": hp["bf16_seconds_per_call"] * 1e3,
-                "head_fc/q4g64_ms": hp["q4g64_seconds_per_call"] * 1e3,
-                "head_fc/byte_ratio": hp["byte_ratio_bf16_over_q4g64"],
-                "head_fc/time_ratio": hp["time_ratio_bf16_over_q4g64"],
-                "head_fc/byte_ratio_realised": (
-                    hp["time_ratio_bf16_over_q4g64"] / hp["byte_ratio_bf16_over_q4g64"]),
-            }
+            flat["head_fc/bf16_ms"] = hp["bf16_seconds_per_call"] * 1e3
+            for tag in ("q8g64", "q4g64"):
+                if f"{tag}_seconds_per_call" not in hp:
+                    continue
+                flat |= {
+                    f"head_fc/{tag}_ms": hp[f"{tag}_seconds_per_call"] * 1e3,
+                    f"head_fc/{tag}_byte_ratio": hp[f"byte_ratio_bf16_over_{tag}"],
+                    f"head_fc/{tag}_time_ratio": hp[f"time_ratio_bf16_over_{tag}"],
+                    f"head_fc/{tag}_byte_ratio_realised": (
+                        hp[f"time_ratio_bf16_over_{tag}"]
+                        / hp[f"byte_ratio_bf16_over_{tag}"]),
+                }
+            if "time_ratio_q8g64_over_q4g64" in hp:
+                flat["head_fc/q8_over_q4_time_ratio"] = hp["time_ratio_q8g64_over_q4g64"]
         if out["gdn_recurrence"]:
             g = out["gdn_recurrence"]
             flat |= {
@@ -750,6 +925,27 @@ def main():
                 for r in g["rows"]
             }
             flat["gdn/cost_9_over_1"] = g["cost_9_over_1"]
+        if rcm:
+            flat |= {
+                "round/per_round_constant_ms": (
+                    rcm["per_round_constant_seconds"] * 1e3),
+                "round/per_draft_head_ms": rcm["per_draft_head_seconds"] * 1e3,
+                "round/max_abs_residual_ms": (
+                    rcm["max_abs_residual_seconds"] * 1e3),
+                "round/optimal_depth_q100": rcm["optimal_depth_q100"],
+                "round/optimal_speedup_q100": rcm["optimal_speedup_q100"],
+                "round/flatness_depth3_to_8": rcm["flatness_depth3_to_8"],
+            }
+            flat |= {
+                f"round/ms_per_token_d{r['depth']}":
+                    r["seconds_per_token_q100"] * 1e3
+                for r in rcm["rows"]
+            }
+            flat |= {
+                f"round/breakeven_acceptance_d{r['depth']}":
+                    r["breakeven_acceptance"]
+                for r in rcm["rows"] if r["breakeven_acceptance"] is not None
+            }
         if pad_gain:
             flat["qmv/pad_9_to_10_speedup"] = pad_gain["pad_9_to_10_speedup"]
         for m, d in advisor.items():

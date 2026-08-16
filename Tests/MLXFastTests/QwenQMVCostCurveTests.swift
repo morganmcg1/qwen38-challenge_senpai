@@ -212,7 +212,7 @@ private func sweep(
     reps: Int,
     inner: Int
 ) -> [String: Any] {
-    let weight = syntheticAffine4Weight(k: shape.k, n: shape.n)
+    let weight = syntheticQuantWeight(k: shape.k, n: shape.n)
     var rows: [[String: Any]] = []
     var referenceRow0: [Float]? = nil
 
@@ -297,22 +297,22 @@ private func sweep(
         "k": shape.k,
         "n": shape.n,
         "calls_per_verify": shape.callsPerVerify,
-        "weight_bytes": affine4WeightBytes(k: shape.k, n: shape.n),
+        "weight_bytes": quantWeightBytes(k: shape.k, n: shape.n),
         "flops_per_row": 2 * shape.k * shape.n,
         "predicted_vector_limit": hostDispatch.vectorLimit(k: shape.k, n: shape.n),
         "rows": rows,
     ].merging(qmvFastAlignment(k: shape.k, n: shape.n)) { a, _ in a }
 }
 
-/// Affine 4-bit group-64: packed nibbles plus a bf16 scale and bias per group.
-private func affine4WeightBytes(k: Int, n: Int) -> Int {
-    n * (k / 2) + 2 * (n * (k / 64) * 2)
+/// Affine group-64: packed weights plus a bf16 scale and bias per group.
+private func quantWeightBytes(k: Int, n: Int, bits: Int = 4) -> Int {
+    n * k * bits / 8 + 2 * (n * (k / 64) * 2)
 }
 
 // MARK: - proposal-head dtype
 
-/// The head's widest projection, timed bf16 against affine 4-bit group-64 at the
-/// same shape and the same width.
+/// The head's widest projection, timed bf16 against affine group-64 at 8 and 4
+/// bits, at the same shape and the same width.
 ///
 /// Two artifacts claim to be the proposal head on this base and they disagree by
 /// 3.556x in bytes: `fixtures/qwen3_8_27b_mtp_track.json` pins 849,398,784 bf16
@@ -320,7 +320,9 @@ private func affine4WeightBytes(k: Int, n: Int) -> Int {
 /// `mtp-head.manifest.json` declares a 238,934,093-byte 4-bit group-64
 /// requantization that nothing in the local path reads. Whether requantizing the
 /// head buys its byte ratio back as time is a decode-side question this measures
-/// directly instead of inferring from the backbone curve.
+/// directly instead of inferring from the backbone curve. The 8-bit point is
+/// what decides whether the shipped 4-bit head is on the right side of the
+/// nibble-unpacking tradeoff.
 private let headFCShape = (k: 5120, n: 10240)
 
 private func measureHeadFCDtypes(reps: Int, inner: Int) -> [String: Any] {
@@ -332,36 +334,51 @@ private func measureHeadFCDtypes(reps: Int, inner: Int) -> [String: Any] {
     // is compared against the strongest dense form rather than a strided view.
     let dense = zeros([k, n], dtype: .bfloat16) + Float(0.01)
     eval(dense)
-    let denseSeconds = medianSpread(reps: reps, inner: inner, warmup: 3) {
+    let denseSamples = medianSpread(reps: reps, inner: inner, warmup: 3) {
         (0..<inner).map { _ in x.matmul(dense) }
     }
-
-    let quant = syntheticAffine4Weight(k: k, n: n)
-    let quantSeconds = medianSpread(reps: reps, inner: inner, warmup: 3) {
-        (0..<inner).map { _ in
-            quantizedMM(
-                x, quant.w, scales: quant.scales, biases: quant.biases,
-                transpose: true, groupSize: 64, bits: 4)
-        }
-    }
-
     let denseBytes = k * n * 2
-    let quantBytes = affine4WeightBytes(k: k, n: n)
-    let dt = denseSeconds[denseSeconds.count / 2]
-    let qt = quantSeconds[quantSeconds.count / 2]
-    return [
+    let denseSeconds = denseSamples[denseSamples.count / 2]
+
+    var payload: [String: Any] = [
         "k": k,
         "n": n,
         "m": 1,
         "bf16_weight_bytes": denseBytes,
-        "q4g64_weight_bytes": quantBytes,
-        "byte_ratio_bf16_over_q4g64": Double(denseBytes) / Double(quantBytes),
-        "bf16_seconds_per_call": dt,
-        "q4g64_seconds_per_call": qt,
-        "time_ratio_bf16_over_q4g64": dt / qt,
-        "bf16_effective_bandwidth_bytes_per_second": Double(denseBytes) / dt,
-        "q4g64_effective_bandwidth_bytes_per_second": Double(quantBytes) / qt,
+        "bf16_seconds_per_call": denseSeconds,
+        "bf16_effective_bandwidth_bytes_per_second": Double(denseBytes) / denseSeconds,
     ]
+
+    for bits in [8, 4] {
+        let quant = syntheticQuantWeight(k: k, n: n, bits: bits)
+        let samples = medianSpread(reps: reps, inner: inner, warmup: 3) {
+            (0..<inner).map { _ in
+                quantizedMM(
+                    x, quant.w, scales: quant.scales, biases: quant.biases,
+                    transpose: true, groupSize: 64, bits: bits)
+            }
+        }
+        let bytes = quantWeightBytes(k: k, n: n, bits: bits)
+        let seconds = samples[samples.count / 2]
+        let tag = "q\(bits)g64"
+        payload["\(tag)_weight_bytes"] = bytes
+        payload["\(tag)_seconds_per_call"] = seconds
+        payload["\(tag)_seconds_per_call_min"] = samples[0]
+        payload["\(tag)_seconds_per_call_max"] = samples[samples.count - 1]
+        payload["byte_ratio_bf16_over_\(tag)"] = Double(denseBytes) / Double(bytes)
+        payload["time_ratio_bf16_over_\(tag)"] = denseSeconds / seconds
+        payload["\(tag)_effective_bandwidth_bytes_per_second"] = Double(bytes) / seconds
+    }
+
+    if let q8 = payload["q8g64_seconds_per_call"] as? Double,
+        let q4 = payload["q4g64_seconds_per_call"] as? Double
+    {
+        payload["time_ratio_q8g64_over_q4g64"] = q8 / q4
+        payload["byte_ratio_q8g64_over_q4g64"] =
+            Double(quantWeightBytes(k: k, n: n, bits: 8))
+            / Double(quantWeightBytes(k: k, n: n, bits: 4))
+    }
+    return payload
 }
 
 // MARK: - Gated DeltaNet recurrence
@@ -448,18 +465,19 @@ private func maxAbsDelta(_ a: [Float], _ b: [Float]) -> Double {
     return Double(worst)
 }
 
-private struct Affine4Weight {
+private struct QuantWeight {
     let w: MLXArray
     let scales: MLXArray
     let biases: MLXArray
+    let bits: Int
 }
 
 /// Builds a contiguous quantized weight without materializing a dense source.
 /// A per-row broadcast add both varies the data across rows and forces the
 /// broadcast tile into real row-contiguous storage, so `quantized_matmul` never
 /// pays a hidden contiguity copy inside the timed region.
-private func syntheticAffine4Weight(k: Int, n: Int) -> Affine4Weight {
-    let words = k / 8
+private func syntheticQuantWeight(k: Int, n: Int, bits: Int = 4) -> QuantWeight {
+    let words = k / (32 / bits)
     let tile = (0..<words).map { index -> UInt32 in
         UInt32(truncatingIfNeeded: index &* 2_654_435_761) ^ 0x9E37_79B9
     }
@@ -478,7 +496,7 @@ private func syntheticAffine4Weight(k: Int, n: Int) -> Affine4Weight {
     let scales = (MLXArray(scaleTile).reshaped([1, groups]) + rowJitter).asType(.bfloat16)
     let biases = (MLXArray(biasTile).reshaped([1, groups]) + rowJitter).asType(.bfloat16)
 
-    let weight = Affine4Weight(w: w, scales: scales, biases: biases)
+    let weight = QuantWeight(w: w, scales: scales, biases: biases, bits: bits)
     eval(weight.w, weight.scales, weight.biases)
     return weight
 }
