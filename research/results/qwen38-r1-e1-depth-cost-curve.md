@@ -410,11 +410,12 @@ subsection:
 | d | S | regime | N full-accept | N reject | `prefixRepairCount` | `fullRepairCount` | commit µs accept | commit µs reject | commit µs **max** | bound |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | 2 | single-launch free checkpoint | 255 | 5 | **5** | **0** | 304.8 | 226.6 | 284 | 0.0038 |
-| 2 | 3 | replay tape | 163 | 11 | **11** | **0** | 411.8 | 1947.7 | 2031 | 0.0254 |
+| 2 | 3 | replay tape | 164 | 11 | **11** | **0** | 409.9 | 1947.7 | 2031 | 0.0254 |
 | 3 | 4 | replay tape | 120 | 11 | **11** | **0** | 91.3 | 672.1 | 778 | 0.0099 |
 | 4 | 5 | replay tape | 96 | 14 | **14** | **0** | 459.3 | 789.5 | 2720 | 0.0190 |
 | 5 | 6 | replay tape | 72 | 21 | **21** | **0** | 575.5 | 4331.4 | 4707 | 0.0678 |
 | 6 | 7 | replay tape | 61 | 19 | **19** | **0** | 442.0 | 1384.3 | 4581 | 0.0251 |
+| 7 | 8 | replay tape | 54 | 16 | **16** | **0** | 104.2 | 652.1 | 792 | 0.0206 |
 | 8 | 9 | replay tape | 45 | 20 | **20** | **0** | 111.8 | 619.5 | 717 | 0.0203 |
 
 The `d = 2` row is the one that matters most for your question, because it is the
@@ -443,13 +444,13 @@ cross-check — 17 pooled rejects, max 1,918 µs, same zero:
 | 7 | 8 | replay tape | 12 | 0 | 0 | 0 | 136.4 | – | – |
 | 8 | 9 | replay tape | 18 | 6 | **6** | **0** | 78.8 | 615.5 | 665 |
 
-Totals across the complete 512 sweep: **`prefixRepairCount` = 101,
-`fullRepairCount` = 0** over 101 reject rounds, 16 legs, depths 1/2/3/4/5/6/8,
-both checkpoint regimes. Pooled reject `commit_us` is mean 1,690 µs, median
-640 µs, max **4,707 µs** against a **65,115 µs** forward floor — **13.8× below**
-it at the very worst single round, and 102× below at the median. This is not a
-close call, and it is no longer a close call at any depth rather than at the four
-depths I could reach when comment 11 arrived.
+Totals across the complete 512 sweep: **`prefixRepairCount` = 117,
+`fullRepairCount` = 0** over 117 reject rounds, 18 legs, **every drafting depth
+1–8**, both checkpoint regimes. Pooled reject `commit_us` is mean 1,548 µs,
+median 637 µs, max **4,707 µs** against a **65,115 µs** forward floor —
+**13.8× below** it at the very worst single round, and 102× below at the median.
+This is not a close call, and it is no longer a close call at any depth rather
+than at the four depths I could reach when comment 11 arrived.
 
 ### An independent bound that does not trust my classifier
 
@@ -549,7 +550,7 @@ re-fit `C(d)`; it would have been to add an expected-repair term to the policy's
 objective. It is zero, so I did not add one, and that is the honest reason the
 cost model still has the shape it has.
 
-### The classifier is no longer the weak link: 40/40 against the literal counters
+### The classifier is no longer the weak link: 56/56 against the literal counters
 
 I first answered comment 11 with a *classifier*: `commit_us` brackets the repair
 branch (`tReadDone` `:1219` is read before the branch, `tCommitDone` `:1287`
@@ -571,12 +572,15 @@ in those arms:
 
 | agreement cell | count |
 |---|---|
-| classifier says prefix **and** literal says prefix | 40 |
+| classifier says prefix **and** literal says prefix | 56 |
 | classifier says full **and** literal says full | 0 |
 | classifier says prefix **but** literal says full | **0** |
 | classifier says full **but** literal says prefix | **0** |
 | literal incremented neither counter | **0** |
-| **agreement** | **40/40 = 1.0000** |
+| **agreement** | **56/56 = 1.0000** |
+
+That is every reject round in the three post-rebuild arms (`d5`, `d6`, `d7`),
+spanning verify windows `S = 6, 7, 8`.
 
 No disagreements in either direction, and no reject round that failed to
 increment something. So the pre-rebuild arms, which only have `commit_us`, are
@@ -743,86 +747,108 @@ costs 0.33 % against the serial leg, so `C(0) ≈ V(1)` and the shipped
 `zeroDraftRoundRatio = 0.999468` is correct to within measurement noise.
 
 Round-level costs from the same traces, `C(0)` pooled over the depth-0 control
-leg of **all six arms (N = 3570)**. `C(d)` is measured over **full-accept
+leg of **all nine arms (N = 5100)**. `C(d)` is measured over **full-accept
 rounds only** (`acc == d`), so it is the cost of the depth-`d` round mechanism
 itself and is not contaminated by the cheaper rejected rounds:
 
-| d | N | C(d) µs | median | sd% | m(d) µs | **h(d)** | C/C0 | eval µs | host µs |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 0 | 3570 | 65281.4 | 64797.0 | 4.1 | – | – | 1.000 | 28958.5 | 36321.4 |
-| 1 | 255 | 70938.6 | 70454.0 | 6.9 | 5657.1 | **0.0867** | 1.087 | 33796.0 | 37140.0 |
-| 2 | 163 | 75398.2 | 75114.0 | 2.8 | 4459.6 | **0.0683** | 1.155 | 35110.4 | 40285.4 |
-| 3 | 120 | 91828.3 | 91835.0 | 0.4 | 16430.2 | **0.2517** | 1.407 | 43525.8 | 48300.4 |
-| 4 | 94 | 117491.6 | 116952.0 | 4.2 | 25663.3 | **0.3931** | 1.800 | 53555.7 | 63933.5 |
-| 5 † | 72 | 135911.8 | 135752.0 | 0.5 | 17844.8 | **0.2705** | 2.060 | 62019.4 | 73890.0 |
-| 6 † | 61 | 155198.1 | 155106.0 | 0.3 | 19286.3 | **0.2981** | 2.358 | 71394.9 | 83800.8 |
-| 8 | 45 | 198683.0 | 198611.0 | 0.3 | 81191.3/4 = 20297.8 | **0.3109**/step | 3.043 | 93032.1 | 105648.3 |
+| d | N | C(d) µs | median | sd% | m(d) µs | **h(d)** | C/C0 | µs/token | eval µs | host µs |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 5100 | 65469.3 | 64931.5 | 3.9 | – | – | 1.000 | 65469.3 | 28881.0 | 36586.8 |
+| 1 | 255 | 70938.6 | 70454.0 | 6.9 | 5469.2 | **0.0835** | 1.084 | 35469.3 | 33796.0 | 37140.0 |
+| 2 | 164 | 75403.7 | 75115.0 | 2.8 | 4465.2 | **0.0682** | 1.152 | 25134.6 | 35118.0 | 40283.4 |
+| 3 | 120 | 91828.3 | 91835.0 | 0.4 | 16424.6 | **0.2509** | 1.403 | 22957.1 | 43525.8 | 48300.4 |
+| 4 | 96 | 117499.6 | 116959.0 | 4.1 | 25671.3 | **0.3921** | 1.795 | 23499.9 | 53577.8 | 63919.4 |
+| 5 | 72 | 135911.8 | 135752.0 | 0.5 | 18412.3 | **0.2812** | 2.076 | 22652.0 | 62019.4 | 73890.0 |
+| 6 | 61 | 155198.1 | 155106.0 | 0.3 | 19286.2 | **0.2946** | 2.371 | 22171.2 | 71394.9 | 83800.8 |
+| 7 | 54 | 173350.9 | 173299.5 | 0.4 | 18152.8 | **0.2773** | 2.648 | **21668.9** | 81054.1 | 92294.4 |
+| 8 | 45 | 198683.0 | 198611.0 | 0.3 | 25332.0 | **0.3869** | 3.035 | 22075.9 | 93032.1 | 105648.3 |
 
-The six binary-A per-arm depth-0 controls agree to **1.4 %** (65046.1, 65065.0,
-65100.0, 65256.1, 65512.2, 65947.4 µs), which is what licenses pooling `C(0)`
-and comparing `C(d)` measured hours apart. Normalising every round by its own
-arm's control instead of the pool moves the ratios by less than 0.02:
-`[0.0902, 0.0680, 0.2435, 0.3803]` for `d = 1..4`.
+Every `h(d)` above is now a **one-step marginal with a populated anchor on both
+sides**. The `N = 1` straggler and the 4-step average that earlier propped up
+`h(5)` and `h(8)` are gone.
 
-† `d = 5` and `d = 6` are binary B, and their rows are normalised against **their
-own** `C(0)` — 65980.6 and 65817.1 µs — never against the binary-A pool.
+The nine per-arm depth-0 controls agree to **1.4 %** (65046.1, 65065.0, 65100.0,
+65256.1, 65512.2, 65817.1, 65925.4, 65947.4, 65980.6 µs), which is what licenses
+pooling `C(0)` and comparing `C(d)` measured hours apart. Because the sweep spans
+two binaries, the honest primary estimator normalises **every round by its own
+arm's `C(0)`**, so no `h` is ever taken across a binary or thermal step:
 
-`h(5)` is awkward to anchor because the only `acc == 4` round the `d5` arm
-emitted is a single straggler at 118067.0 µs, giving `m(5) = 17844.8` and
-`h(5) = 0.2705` end to end inside binary B off an `N = 1` anchor. Cross-checking
-purely in ratios against the well-populated binary-A `d4` (`N = 94`),
-`C(5)/C(0)|_B − C(4)/C(0)|_A = 2.0599 − 1.7998 = 0.2601`. The two differ by 4 %,
-so `h(5) ≈ 0.26–0.27` either way.
+| d | N | arms | C/C0 | sd% | **h(d)** self-normalised |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 5100 | 9 | 1.0000 | 3.9 | – |
+| 1 | 255 | 4 | 1.0902 | 6.9 | 0.0902 |
+| 2 | 164 | 2 | 1.1582 | 2.8 | 0.0680 |
+| 3 | 120 | 1 | 1.4017 | 0.4 | 0.2435 |
+| 4 | 96 | 4 | 1.7821 | 4.3 | **0.3804** |
+| 5 | 72 | 1 | 2.0599 | 0.5 | 0.2778 |
+| 6 | 61 | 1 | 2.3580 | 0.3 | 0.2981 |
+| 7 | 54 | 1 | 2.6295 | 0.4 | 0.2715 |
+| 8 | 45 | 1 | 3.0545 | 0.3 | **0.4250** |
 
-`h(6)` is on much firmer ground, because `d5` and `d6` are **both binary B** and
-both well populated: `C(6)/C(0) − C(5)/C(0) = 2.3580 − 2.0599 = 0.2981`, a
-one-step marginal with `N = 61` and `N = 72` behind it and no cross-binary step
-anywhere in the derivation. (The `N = 1` straggler route gives 0.2850 per step,
-agreeing to 4.6 %.)
+```text
+pooled     h = [0.0835, 0.0682, 0.2509, 0.3921, 0.2812, 0.2946, 0.2773, 0.3869]
+self-norm  h = [0.0902, 0.0680, 0.2435, 0.3804, 0.2778, 0.2981, 0.2715, 0.4250]
+```
 
-**`h(d)` dips at `d = 5`.** The sequence runs 0.3931 → 0.27 → 0.2981 at
-`d = 4, 5, 6`: a fall and then a partial recovery, not a plateau. This is the
-same shape the 256-token screen found (0.3754 → 0.2919 → 0.3000), on a different
-window, from an independent sample.
+The two routes agree to better than 0.04 everywhere, so the two-binary split
+does not carry the result either way.
 
-That agreement is worth stating on its own, because it is the depth-resolved
-version of the window-invariance check that F22 previously only did on
-aggregates:
+#### The two `h(d)` peaks are the two qmv pass boundaries
+
+F8 established, *before* these depths were measured, that the wide-tensor
+matrix-vector path takes `ceil(M/IPG)` passes over `M = d + 1` rows, stepping
+from 1 to 2 passes at `M = 5` and from 2 to 3 at `M = 9`. That predicts extra
+cost at exactly `d = 4` and `d = 8` and nowhere else.
+
+The self-normalised `h` peaks are at **`d = 4` (0.3804)** and **`d = 8`
+(0.4250)** — exactly the two predicted crossings. The three depths strictly
+inside the 2-pass plateau are 0.2778, 0.2981, 0.2715, flat to within **±5.5 %**
+of their 0.2825 mean. A stale source comment sent me looking for a steep-linear
+ramp; the measured curve is a staircase, and it steps where the kernel says.
+
+**This does not explain the `d = 3` knee, and I am not going to pretend it
+does.** `d = 3` (`M = 4`) sits in the *same* 1-pass plateau as `d = 1, 2`, yet
+`h(3) = 0.2435` against `h(2) = 0.0680` — a 3.6× jump with no pass boundary
+under it. So the 1-pass region is *not* flat, the staircase accounts for the two
+peaks but not the knee, and the knee remains the single largest unexplained
+feature of the curve. It is the first thing I would hand to the next agent.
+
+That the peaks land on an independently predicted structure is also the
+depth-resolved version of the window-invariance check that F22 previously only
+did on aggregates:
 
 | d | `h(d)` @256 | `h(d)` @512 | agreement |
 |---:|---:|---:|---:|
-| 1 | 0.0842 | 0.0867 | +3 % |
-| 2 | 0.0775 | 0.0683 | −12 % |
-| 3 | 0.2426 | 0.2517 | +4 % |
-| 4 | 0.3754 | 0.3931 | +5 % |
-| 5 | 0.2919 | 0.2601–0.2705 | −8 % |
-| 6 | 0.3000 | 0.2850–0.2981 | −1 % |
-| 8 | 0.3909 | 0.3109/step | −20 % |
+| 1 | 0.0842 | 0.0902 | +7 % |
+| 2 | 0.0775 | 0.0680 | −12 % |
+| 3 | 0.2426 | 0.2435 | **+0.4 %** |
+| 4 | 0.3754 | 0.3804 | +1 % |
+| 5 | 0.2919 | 0.2778 | −5 % |
+| 6 | 0.3000 | 0.2981 | −0.6 % |
+| 7 | 0.2870 | 0.2715 | −5 % |
+| 8 | 0.3909 | 0.4250 | +9 % |
 
-Every depth the scheduler actually chooses from (`d = 1..6`) reproduces within
-12 %, and all three features that matter — the flat cheap region at `d = 1, 2`,
-the 3.7× knee at `d = 3`, and the dip at `d = 5` — reproduce in **both**
-windows. The shipped vector was fitted at 256; this is the evidence that it does
-not need refitting for the ranked 512-token window, which is what makes it
-safe to ship as a static table.
-
-`d = 7` is still outstanding at this window; the 256-token screen put it at
-`h = 0.2870` with `N = 7`.
+**All nine points reproduce within 12 %**, and every feature that matters — the
+flat cheap region at `d = 1, 2`, the knee at `d = 3`, and both staircase peaks —
+reproduces in **both** windows from independent samples. The shipped vector was
+fitted at 256; this is the evidence that it does not need refitting for the
+ranked 512-token window, and it is why I ran the A/B against the shipped
+256-fitted vector rather than a last-minute 512 refit.
 
 #### Two results that the scalar cost model cannot express
 
 **1. `m(2) < m(1)`.** The second draft step is *cheaper in absolute terms* than
-the first: 4460 µs against 5657 µs. A model of the form `C(d) = V(d+1) + d·H`
+the first: 4465 µs against 5469 µs. A model of the form `C(d) = V(d+1) + d·H`
 with any constant `H` forces the marginal to be non-decreasing once verify
 width costs are monotone, so no scalar `headStepCostRatio` — 0.20 or any other
-value — can reproduce this. It is not noise: `d = 2` has N = 163 at sd 2.8 %
-and `d = 1` has N = 254.
+value — can reproduce this. It is not noise: `d = 2` has N = 164 at sd 2.8 %
+and `d = 1` has N = 255.
 
-**2. A 3.7× knee at `d = 3`.** `h` jumps from 0.0683 to 0.2517 in one step, and
-`d = 4` then pushes it further to 0.3931 — the knee is a step into a new, more
+**2. A 3.6× knee at `d = 3`.** `h` jumps from 0.0680 to 0.2435 in one step, and
+`d = 4` then pushes it further to 0.3804 — the knee is a step into a new, more
 expensive regime, not a one-off spike.
-The shipped scalar 0.20 is therefore **2.3× too high at `d = 1`, 2.9× too high
-at `d = 2`, 26 % too low at `d = 3`, and 2.0× too low at `d = 4`** — wrong in
+The shipped scalar 0.20 is therefore **2.2× too high at `d = 1`, 2.9× too high
+at `d = 2`, 18 % too low at `d = 3`, and 1.9× too low at `d = 4`** — wrong in
 *both directions*
 inside the range the scheduler actually chooses from. This is the direct answer
 to the assignment's question, and the answer is choice **(c), "something
