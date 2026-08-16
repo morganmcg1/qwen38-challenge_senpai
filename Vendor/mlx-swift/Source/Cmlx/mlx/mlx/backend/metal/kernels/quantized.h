@@ -1026,10 +1026,11 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
         a3[m] = xc[3];
       }
       for (int r = 0; r < rows_per_simd; r++) {
-        partial[r] += (a0 * (packed[r][i] & 0x000f) +
-                       a1 * (packed[r][i] & 0x00f0) +
-                       a2 * (packed[r][i] & 0x0f00) +
-                       a3 * (packed[r][i] & 0xf000));
+        // Measurement-only arm 1: three of the four nibble terms are dropped.
+        // `packed[r][i]` stays live through the surviving term and load_vector
+        // still consumes all four x values through its returned sum, so weight
+        // and activation traffic are untouched while the FMA count falls ~4x.
+        partial[r] += a0 * (packed[r][i] & 0x000f);
       }
     }
     for (int r = 0; r < rows_per_simd; r++) {
