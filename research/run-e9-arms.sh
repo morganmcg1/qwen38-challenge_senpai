@@ -29,7 +29,7 @@ cd "${repo_root}"
 export MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE="$(cd "$(dirname "${fixture}")" && pwd)/$(basename "${fixture}")"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-qwen38-r1-e9-draft-bits-default}"
 
-base_sha="${E9_BASE_SHA:-f89b3d609ae7a66ed0f032d28094474ed2ac5efc}"
+base_sha="${E9_BASE_SHA:-8970d775a63a28b610fd418c68873c236ce6b86c}"
 
 for bits in "$@"; do
   echo "run-e9-arms: === ${label} bits=${bits} ==="
