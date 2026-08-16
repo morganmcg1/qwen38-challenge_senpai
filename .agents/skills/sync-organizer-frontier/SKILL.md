@@ -19,8 +19,11 @@ snapshot, and campaign-only state as separate commits.
 - Never replay a chain of bot `Validate submission` or `Accept submission`
   commits. Those can be snapshots of unrelated candidate trees.
 - The best promoted submission comes from Yukon, not the newest Git commit.
-- Preserve `senpai/`, `.agents/`, `research/`, and the marked campaign blocks
-  in `AGENTS.md` and `.gitignore`.
+- Preserve `senpai/`, `.agents/`, `research/`, the fully campaign-owned
+  `AGENTS.md`, and the marked campaign block in `.gitignore`.
+- Organizer `AGENTS.md` is not copied over the campaign guide, but every
+  organizer change to it must be reviewed for new Qwen contract or operating
+  rules and reconciled deliberately.
 - Keep [`senpai/frontier-state.json`](../../../senpai/frontier-state.json)
   exact; the official-submit guard relies on it.
 
@@ -99,9 +102,33 @@ UPSTREAM_SHA="$(git rev-parse upstream/main)"
 SENPAI_TREE_SHA="$(git rev-parse HEAD:senpai)"
 AGENT_TREE_SHA="$(git rev-parse HEAD:.agents)"
 RESEARCH_TREE_SHA="$(git rev-parse HEAD:research)"
+AGENTS_BLOB_SHA="$(git rev-parse HEAD:AGENTS.md)"
 ```
 
 Use a fresh branch name. Do not recycle an earlier integration branch.
+
+Review organizer guide changes explicitly before selecting policy commits:
+
+```bash
+PREVIOUS_UPSTREAM_SHA="$(
+  git show "$FORK_BASE_SHA:senpai/frontier-state.json" \
+    | jq -er '.organizer.syncedCommit'
+)"
+git diff "$PREVIOUS_UPSTREAM_SHA" "$UPSTREAM_SHA" -- AGENTS.md
+```
+
+The campaign guide replaces the organizer file, so do not restore or
+cherry-pick upstream `AGENTS.md` wholesale. If the diff contains a new
+enforceable Qwen rule, port that rule into the campaign-owned guide with
+`apply_patch`, commit it as a separate reconciliation, and then refresh the
+expected preservation pin:
+
+```bash
+AGENTS_BLOB_SHA="$(git rev-parse HEAD:AGENTS.md)"
+```
+
+If no rule applies, state that disposition in the final sync report rather
+than silently ignoring the diff.
 
 ## 2. Select organizer policy, not bot snapshots
 
@@ -122,7 +149,8 @@ with `git cherry-pick -x`.
 
 If a commit mixes trusted policy with solver bytes, extract only the reviewed
 trusted hunks into a campaign commit and name its source SHA. Resolve conflicts
-by adopting final organizer semantics while keeping marked campaign blocks.
+by adopting final organizer semantics while preserving the campaign-owned
+`AGENTS.md` and marked `.gitignore` block.
 Do not silently edit `Package.resolved`.
 
 Commit every resolution, require a clean tree, and capture the contract that
@@ -266,14 +294,15 @@ trusted harness files from the promoted solver commit.
 
 ## 5. Prove preservation and trusted parity
 
-Before intentionally updating campaign state, require the campaign trees and
-root overlays to be unchanged:
+Before intentionally updating campaign state, require the campaign trees,
+campaign-owned guide, and root overlay to be unchanged:
 
 ```bash
 set -euo pipefail
 test "$(git rev-parse HEAD:senpai)" = "$SENPAI_TREE_SHA"
 test "$(git rev-parse HEAD:.agents)" = "$AGENT_TREE_SHA"
 test "$(git rev-parse HEAD:research)" = "$RESEARCH_TREE_SHA"
+test "$(git rev-parse HEAD:AGENTS.md)" = "$AGENTS_BLOB_SHA"
 senpai/verify-campaign-overlay.sh "$UPSTREAM_SHA"
 senpai/check-editable-budget.sh "$ORGANIZER_FRONTIER_SHA" "$POST_POLICY_SHA"
 research/twin_audit.py

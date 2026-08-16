@@ -70,11 +70,9 @@ class OfficialSubmissionGuardTests(unittest.TestCase):
 
         (self.repository / "senpai").mkdir()
         (self.repository / "AGENTS.md").write_text(
-            "# Test Agent Guide\n"
             "<!-- SENPAI-CAMPAIGN-BEGIN -->\n"
-            "## Campaign\n\nCampaign text.\n"
-            "<!-- SENPAI-CAMPAIGN-END -->\n\n"
-            "Organizer text.\n",
+            "# Campaign Agent Guide\n\nCampaign-owned text.\n"
+            "<!-- SENPAI-CAMPAIGN-END -->\n",
             encoding="utf-8",
         )
         (self.repository / ".gitignore").write_text(
@@ -209,6 +207,54 @@ class OfficialSubmissionGuardTests(unittest.TestCase):
         allowed = self.submit()
         self.assertEqual(allowed.returncode, 0, allowed.stdout)
         self.assertTrue(self.log.exists())
+
+    def test_campaign_owned_agents_advance_does_not_invalidate_base(self):
+        self.publish(
+            "origin",
+            lambda checkout: (checkout / "AGENTS.md").write_text(
+                "<!-- SENPAI-CAMPAIGN-BEGIN -->\n"
+                "# Updated Campaign Guide\n\nQwen-only instructions.\n"
+                "<!-- SENPAI-CAMPAIGN-END -->\n",
+                encoding="utf-8",
+            ),
+            "update campaign agent guide",
+        )
+        allowed = self.submit()
+        self.assertEqual(allowed.returncode, 0, allowed.stdout)
+        self.assertTrue(self.log.exists())
+
+    def test_agents_content_outside_campaign_block_is_rejected(self):
+        self.publish(
+            "origin",
+            lambda checkout: (checkout / "AGENTS.md").write_text(
+                "<!-- SENPAI-CAMPAIGN-BEGIN -->\n"
+                "# Campaign Guide\n"
+                "<!-- SENPAI-CAMPAIGN-END -->\n"
+                "Organizer text reintroduced.\n",
+                encoding="utf-8",
+            ),
+            "reintroduce organizer agent prose",
+        )
+        refused = self.submit()
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("must be wholly campaign-owned", refused.stdout)
+        self.assertFalse(self.log.exists())
+
+    def test_campaign_agents_symlink_is_rejected(self):
+        def replace_with_symlink(checkout):
+            path = checkout / "AGENTS.md"
+            path.unlink()
+            path.symlink_to("benchmark.json")
+
+        self.publish(
+            "origin",
+            replace_with_symlink,
+            "replace campaign guide with symlink",
+        )
+        refused = self.submit()
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("must be a regular file", refused.stdout)
+        self.assertFalse(self.log.exists())
 
     def test_campaign_trusted_surface_drift_is_rejected(self):
         self.publish(

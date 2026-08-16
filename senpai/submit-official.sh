@@ -304,7 +304,33 @@ verify_campaign_overlay() {
   fi
 }
 
-verify_campaign_overlay \
+verify_campaign_owned_file() {
+  local path="$1" begin="$2" end="$3" label mode
+  label="${path//\//_}"
+  mode="$(git ls-tree "${main_sha}" -- "${path}" | awk '{print $1}')"
+  case "${mode}" in
+    100644|100755) ;;
+    *)
+      echo "official submit: ${path} must be a regular file in campaign main" >&2
+      exit 1
+      ;;
+  esac
+  git show "${main_sha}:${path}" > "${overlay_dir}/${label}.campaign"
+  if ! strip_campaign_block \
+    "${overlay_dir}/${label}.campaign" \
+    "${overlay_dir}/${label}.outside" \
+    "${begin}" "${end}"
+  then
+    echo "official submit: ${path} has malformed campaign markers" >&2
+    exit 1
+  fi
+  if [[ -s "${overlay_dir}/${label}.outside" ]]; then
+    echo "official submit: ${path} must be wholly campaign-owned" >&2
+    exit 1
+  fi
+}
+
+verify_campaign_owned_file \
   AGENTS.md '<!-- SENPAI-CAMPAIGN-BEGIN -->' '<!-- SENPAI-CAMPAIGN-END -->'
 verify_campaign_overlay \
   .gitignore '# SENPAI-CAMPAIGN-BEGIN' '# SENPAI-CAMPAIGN-END'

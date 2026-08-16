@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Prove that shared root files equal organizer versions plus marked Senpai blocks.
+# Prove campaign ownership of AGENTS.md and the organizer-plus-campaign shape of
+# .gitignore.
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
@@ -75,9 +76,28 @@ verify_file() {
   fi
 }
 
-verify_file \
+verify_campaign_owned_file() {
+  local path="$1" begin="$2" end="$3" label
+  label="${path//\//_}"
+  if [[ ! -f "${path}" || -L "${path}" ]]; then
+    echo "campaign overlay: ${path} must be a regular file" >&2
+    exit 1
+  fi
+  if ! strip_block \
+    "${path}" "${temporary_dir}/${label}.outside" "${begin}" "${end}"
+  then
+    echo "campaign overlay: ${path} has malformed campaign markers" >&2
+    exit 1
+  fi
+  if [[ -s "${temporary_dir}/${label}.outside" ]]; then
+    echo "campaign overlay: ${path} must be wholly campaign-owned" >&2
+    exit 1
+  fi
+}
+
+verify_campaign_owned_file \
   AGENTS.md '<!-- SENPAI-CAMPAIGN-BEGIN -->' '<!-- SENPAI-CAMPAIGN-END -->'
 verify_file \
   .gitignore '# SENPAI-CAMPAIGN-BEGIN' '# SENPAI-CAMPAIGN-END'
 
-echo "campaign overlay OK: AGENTS.md and .gitignore match ${upstream_sha} plus marked Senpai blocks"
+echo "campaign overlay OK: AGENTS.md is campaign-owned and .gitignore matches ${upstream_sha} plus its marked block"
