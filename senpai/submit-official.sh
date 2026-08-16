@@ -7,6 +7,7 @@ EXPECTED_BENCHMARK_NAME="eigenlabs/qwen38-challenge"
 EXPECTED_ORIGIN_URL="https://github.com/morganmcg1/qwen38-challenge_senpai.git"
 EXPECTED_UPSTREAM_URL="https://github.com/Layr-Labs/qwen-3.8-mtp-challenge"
 EXPECTED_UPSTREAM_PUSH_URL="DISABLED"
+EXPECTED_MODEL="senpai"
 SOURCE_BRANCH="main"
 STATE_PATH="senpai/frontier-state.json"
 
@@ -27,6 +28,7 @@ fi
 submit_args=()
 has_model=0
 has_note=0
+model_value=""
 while [[ $# -gt 0 ]]; do
   argument="$1"
   case "${argument}" in
@@ -35,8 +37,17 @@ while [[ $# -gt 0 ]]; do
         echo "official submit: ${argument} requires a non-empty value" >&2
         exit 2
       fi
+      if [[ "${argument}" == "--model" ]]; then
+        if [[ "${has_model}" == "1" ]]; then
+          echo "official submit: pass --model exactly once" >&2
+          exit 2
+        fi
+        model_value="$2"
+        has_model=1
+      else
+        has_note=1
+      fi
       submit_args+=("${argument}" "$2")
-      [[ "${argument}" == "--model" ]] && has_model=1 || has_note=1
       shift 2
       ;;
     --model=*|--note=*|--note-file=*)
@@ -45,8 +56,17 @@ while [[ $# -gt 0 ]]; do
         echo "official submit: ${argument%%=*} requires a non-empty value" >&2
         exit 2
       fi
+      if [[ "${argument}" == --model=* ]]; then
+        if [[ "${has_model}" == "1" ]]; then
+          echo "official submit: pass --model exactly once" >&2
+          exit 2
+        fi
+        model_value="${value}"
+        has_model=1
+      else
+        has_note=1
+      fi
       submit_args+=("${argument}")
-      [[ "${argument}" == --model=* ]] && has_model=1 || has_note=1
       shift
       ;;
     --track|--track=*)
@@ -65,7 +85,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 if [[ "${has_model}" == "0" ]]; then
-  echo "official submit: pass Yukon's exact fully qualified --model value" >&2
+  echo "official submit: pass --model \"${EXPECTED_MODEL}\"" >&2
+  exit 2
+fi
+if [[ "${model_value}" != "${EXPECTED_MODEL}" ]]; then
+  echo "official submit: campaign attribution must be --model \"${EXPECTED_MODEL}\"" >&2
   exit 2
 fi
 if [[ "${has_note}" == "0" ]]; then

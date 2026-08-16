@@ -155,14 +155,16 @@ Rebuild `tools/build-mlx-metallib.sh` after AOT Metal edits. Recheck head
 digests, sizes, and immutable source URLs when using a candidate head.
 
 Write a detailed public note of at least 5 KiB, review it for secrets, then use
-the guarded wrapper with the exact underlying model name. First compare the
+the guarded wrapper with the campaign model attribution `senpai`. Record the
+exact underlying LLMs, effort levels, and agent harnesses in the note body.
+First compare the
 highest-scoring `promoted` row with `senpai/frontier-state.json`; sync, replay,
 and remeasure if the receipt differs:
 
 ```bash
 yukon submissions --all
 senpai/submit-official.sh "$BASE_SHA" \
-  --model "GPT 5.6 Sol" \
+  --model "senpai" \
   --note-file submission-note.md
 ```
 

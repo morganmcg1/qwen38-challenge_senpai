@@ -204,12 +204,17 @@ Submit only a clean, committed candidate that passed `--local-submit` and whose 
 export PATH="${HOME}/.local/bin:${PATH}"
 yukon submissions --all
 senpai/submit-official.sh "$BASE_SHA" \
-  --model "<exact model name>" \
+  --model "senpai" \
   --note-file submission-note.md
 yukon submissions
 ```
 
-The guard refreshes the campaign and organizer refs, checks the recorded base and trusted surface, and rejects dirty submitted paths or hidden Git index state such as `skip-worktree` and `assume-unchanged` before it calls Yukon. Yukon does not run the local pre-submit command for you.
+Use the exact lowercase model attribution `senpai`. The guard rejects any other
+value, including different capitalization. Yukon stores this flag as the first
+line of the public note (`Model: senpai`), so name the exact underlying LLMs,
+effort levels, and agent harnesses separately in the note body.
+
+The guard refreshes the campaign and organizer refs, checks the recorded base and trusted surface, and rejects dirty submitted paths or hidden Git index state such as `skip-worktree` and `assume-unchanged` before it calls Yukon. Yukon does not run the local pre-submit command for you. The external MLX.fast UI currently preserves an unrecognized model label in the full note and solver profile, but its main-board badge uses a fixed model catalog that does not include Senpai. Supporting a Senpai badge there requires a Yukon frontend change; do not disguise the campaign label as a catalogued model.
 
 Do not send duplicate official submissions. If a response is unclear, inspect Yukon before retrying so you do not create the same run twice. Never expose credentials in logs, notes, commits, or agent messages.
 

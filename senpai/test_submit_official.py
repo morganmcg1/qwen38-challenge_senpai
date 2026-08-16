@@ -139,7 +139,7 @@ class OfficialSubmissionGuardTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def submit(self, *arguments):
-        default = ("--model", "GPT 5.6 Sol", "--note-file", "submission-note.md")
+        default = ("--model", "senpai", "--note-file", "submission-note.md")
         return self.submit_with_base(self.base, *(arguments or default))
 
     def submit_with_base(self, base, *arguments):
@@ -166,7 +166,7 @@ class OfficialSubmissionGuardTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(
             self.log.read_text(encoding="utf-8").splitlines(),
-            ["submit", "--model", "GPT 5.6 Sol", "--note-file", "submission-note.md"],
+            ["submit", "--model", "senpai", "--note-file", "submission-note.md"],
         )
 
     def test_dirty_research_is_allowed_but_dirty_submission_surface_is_not(self):
@@ -315,7 +315,30 @@ class OfficialSubmissionGuardTests(unittest.TestCase):
         self.assertEqual(missing_model.returncode, 2)
         self.assertIn("--model", missing_model.stdout)
 
-        missing_note = self.submit_with_base(self.base, "--model", "GPT 5.6 Sol")
+        for model in ("GPT 5.6 Sol", "Senpai", " senpai"):
+            with self.subTest(model=model):
+                wrong_model = self.submit_with_base(
+                    self.base,
+                    "--model",
+                    model,
+                    "--note-file",
+                    "submission-note.md",
+                )
+                self.assertEqual(wrong_model.returncode, 2)
+                self.assertIn('must be --model "senpai"', wrong_model.stdout)
+
+        duplicate_model = self.submit_with_base(
+            self.base,
+            "--model",
+            "senpai",
+            "--model=senpai",
+            "--note-file",
+            "submission-note.md",
+        )
+        self.assertEqual(duplicate_model.returncode, 2)
+        self.assertIn("exactly once", duplicate_model.stdout)
+
+        missing_note = self.submit_with_base(self.base, "--model", "senpai")
         self.assertEqual(missing_note.returncode, 2)
         self.assertIn("--note", missing_note.stdout)
 
@@ -324,7 +347,7 @@ class OfficialSubmissionGuardTests(unittest.TestCase):
             "--track",
             "qwen3.8-27b-mtp-v1",
             "--model",
-            "GPT 5.6 Sol",
+            "senpai",
             "--note-file",
             "submission-note.md",
         )
@@ -335,7 +358,7 @@ class OfficialSubmissionGuardTests(unittest.TestCase):
             self.base,
             "someone/another-benchmark",
             "--model",
-            "GPT 5.6 Sol",
+            "senpai",
             "--note-file",
             "submission-note.md",
         )
@@ -347,7 +370,7 @@ class OfficialSubmissionGuardTests(unittest.TestCase):
             "--unknown",
             "value",
             "--model",
-            "GPT 5.6 Sol",
+            "senpai",
             "--note-file",
             "submission-note.md",
         )
