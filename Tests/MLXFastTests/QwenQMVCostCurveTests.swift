@@ -85,6 +85,109 @@ struct QwenQMVCostCurveTests {
             #expect(n % 512 != 0, "\(n) is 512-aligned; re-measure the fast-path probes")
         }
     }
+
+    /// Cost of the compact draft readout at M=1 as a function of quantization
+    /// bits. The 4-bit arm is not stock: this checkout routes
+    /// `!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024`
+    /// into `qmv_fast_crossrow_affine4_g64*`
+    /// (`backend/metal/kernels/quantized.h:1804`), so a 3-bit or 2-bit head
+    /// trades 25%/50% less weight traffic for the stock `qmv_fast_impl`.
+    /// This measures that trade before any model-side plumbing exists.
+    ///
+    /// Enable with `MLXFAST_RUN_QMV_BITS_SWEEP=1` and point
+    /// `MLXFAST_QMV_BITS_SWEEP_OUT` at the JSON destination.
+    @Test(.enabled(if: QwenQMVCostCurveTests.bitsSweepEnabled))
+    func sweepCompactDraftReadoutOverBits() throws {
+        let env = ProcessInfo.processInfo.environment
+        let outPath = try #require(
+            env["MLXFAST_QMV_BITS_SWEEP_OUT"],
+            "MLXFAST_QMV_BITS_SWEEP_OUT must name the JSON destination")
+        let reps = Int(env["MLXFAST_QMV_COST_CURVE_REPS"] ?? "") ?? 21
+        let inner = Int(env["MLXFAST_QMV_COST_CURVE_INNER"] ?? "") ?? 10
+
+        let k = 5120
+        let n = 98_336
+        var arms: [[String: Any]] = []
+        for bits in [4, 3, 2] {
+            let weight = lowBitQuantWeight(k: k, n: n, bits: bits)
+            let xs = (0..<inner).map { syntheticActivations(m: 1, k: k, salt: $0) }
+            eval(xs)
+            let chained = {
+                var outs: [MLXArray] = []
+                outs.reserveCapacity(inner)
+                var x = xs[0]
+                for index in 0..<inner {
+                    let o = quantizedMM(
+                        x, weight.w, scales: weight.scales, biases: weight.biases,
+                        transpose: true, groupSize: 64, bits: bits)
+                    outs.append(o)
+                    if index + 1 < inner { x = xs[index + 1] + o[0..<1, 0..<1] * 1e-30 }
+                }
+                return outs
+            }
+            let samples = medianSpread(
+                reps: reps, inner: inner, warmup: 3, body: chained)
+            let median = samples[samples.count / 2]
+            // Affine g64 with bf16 scale+bias is bits + 0.5 bits per weight.
+            let bytes = Double(n) * Double(k) * (Double(bits) + 0.5) / 8.0
+            arms.append([
+                "bits": bits,
+                "k": k,
+                "n": n,
+                "weight_bytes": bytes,
+                "seconds_per_call": median,
+                "seconds_per_call_min": samples[0],
+                "seconds_per_call_max": samples[samples.count - 1],
+                "achieved_gb_per_second": bytes / median / 1e9,
+                "uses_crossrow_kernel": bits == 4,
+            ])
+        }
+
+        let payload: [String: Any] = [
+            "source": "vendored-mlx-swift",
+            "reps": reps,
+            "inner_calls_per_rep": inner,
+            "device": describeDispatchDevice(),
+            "roofline": measureRoofline(reps: reps),
+            "arms": arms,
+        ]
+        let data = try JSONSerialization.data(
+            withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: URL(fileURLWithPath: outPath))
+        print("QMV_BITS_SWEEP_OUT \(outPath)")
+    }
+
+    private static var bitsSweepEnabled: Bool {
+        ProcessInfo.processInfo
+            .environment["MLXFAST_RUN_QMV_BITS_SWEEP"] == "1"
+    }
+}
+
+/// `syntheticQuantWeight` assumes a power-of-two `bits` when it derives the
+/// packed width. Affine 3-bit packs a contiguous LSB-first bitstream whose row
+/// width is `k * bits / 32` uint32 words (`mlx/ops.cpp:4862`), which is the
+/// form the kernel's byte-stride view expects (`quantized.h:776`).
+private func lowBitQuantWeight(k: Int, n: Int, bits: Int) -> QuantWeight {
+    let words = k * bits / 32
+    let tile = (0..<words).map { index -> UInt32 in
+        UInt32(truncatingIfNeeded: index &* 2_654_435_761) ^ 0x9E37_79B9
+    }
+    let w = MLXArray(tile).reshaped([1, words]) + arange(0, n, dtype: .uint32).reshaped([n, 1])
+
+    let groups = k / 64
+    let rowJitter = arange(0, n, dtype: .float32).reshaped([n, 1]) * 1e-6
+    let scaleTile: [Float] = (0..<groups).map { index -> Float in
+        0.006 + 0.004 * Float((index &* 37) % 61) / 61.0
+    }
+    let biasTile: [Float] = (0..<groups).map { index -> Float in
+        -0.05 - 0.02 * Float((index &* 23) % 53) / 53.0
+    }
+    let scales = (MLXArray(scaleTile).reshaped([1, groups]) + rowJitter).asType(.bfloat16)
+    let biases = (MLXArray(biasTile).reshaped([1, groups]) + rowJitter).asType(.bfloat16)
+
+    let weight = QuantWeight(w: w, scales: scales, biases: biases, bits: bits)
+    eval(weight.w, weight.scales, weight.biases)
+    return weight
 }
 
 // MARK: - what the scored verify actually calls
