@@ -15,9 +15,9 @@ timestamped current state.
   edit, sync, reset, or otherwise mutate campaign or external state.
 - Never run `yukon sync`, `yukon sync --harness-only`, or `yukon reset` in the
   maintained checkout.
-- Do not run `aws sso login` without explicit user authorization. If the SSO
-  token is expired, report a monitor-side authentication blocker; do not call
-  the fleet unhealthy.
+- Treat refreshing the local `sandbox-sso` session as an allowed monitoring
+  prerequisite. It does not authorize any AWS resource mutation. Follow the
+  recovery flow below when the cached session is expired.
 - Never print credentials, environment values, API keys, or tokens.
 - Treat thermal waits and thermal aborts as legitimate. Never bypass a gate.
 - Distinguish pushed Git evidence, live-agent log claims, local/W&B evidence,
@@ -130,9 +130,27 @@ means a supervised benchmark is running; follow its job ID to completion.
 Ignore repeated cipher-save and `.eventlog.lock` warnings unless accompanied
 by a stopped service, crash loop, or real terminal job error.
 
-When AWS access fails before returning status, state exactly what remains
-unverified: node health, live job IDs, and terminal job states. Use recent
-GitHub or W&B activity only as weaker evidence of agent activity.
+When AWS reports an expired SSO token or missing cached session:
+
+1. Start `aws sso login --profile sandbox-sso --no-browser` in a persistent
+   terminal with host access. Attempt re-authentication once; do not loop.
+2. Capture only the public AWS verification URL and, when present, the short
+   device code. Never expose credentials or cached-token contents.
+3. Use the Chrome browser-control skill to open that exact AWS URL. Inspect the
+   visible page and complete or confirm the authorization using the existing
+   signed-in Chrome session. Do not inspect cookies, storage, passwords, or
+   browser profiles.
+4. If Chrome requests a password, MFA secret, security-key touch, or other
+   user-only approval that cannot be completed safely, ask the user to finish
+   it in Chrome and tell you when it is ready. Keep the terminal login pending.
+5. Resume the terminal command, then prove recovery with
+   `aws sts get-caller-identity --profile sandbox-sso` without printing any
+   credential material. Retry fleet status and every role log after it passes.
+
+If re-authentication fails or is denied, state exactly what remains unverified:
+node health, live job IDs, and terminal job states. Do not call the fleet
+unhealthy from an authentication failure. Use recent GitHub or W&B activity
+only as weaker evidence of agent activity.
 
 ## 4. Audit W&B without promoting it to official evidence
 
