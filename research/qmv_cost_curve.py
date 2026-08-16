@@ -35,10 +35,12 @@ SCORED_SHAPES = [
 # expose the bandwidth/compute knee empirically.
 SCORED_WIDTHS = list(range(1, 13)) + [16, 32, 64, 128, 256, 512]
 
+# Each probe range spans every limit get_qmv_batch_limit can return for its
+# (K, N) size class, so the boundary is measured rather than assumed.
 BOUNDARY_PROBES = [
-    ("probe.k2048_n2048", 2048, 2048, list(range(1, 23)), 18),
-    ("probe.k4096_n4096", 4096, 4096, list(range(1, 17)), 12),
-    ("probe.k5120_n5120", 5120, 5120, list(range(1, 15)), 10),
+    ("probe.k2048_n2048", 2048, 2048, list(range(1, 23))),
+    ("probe.k4096_n4096", 4096, 4096, list(range(1, 17))),
+    ("probe.k5120_n5120", 5120, 5120, list(range(1, 15))),
 ]
 
 FAST_PATH_PROBES = [
@@ -46,6 +48,57 @@ FAST_PATH_PROBES = [
     ("fastprobe.k5184_n16480", 5184, 16480),
     ("fastprobe.k5632_n16480", 5632, 16480),
 ]
+
+
+def architecture_gen(arch):
+    """device.cpp:565-572 -- two digits before the trailing size character."""
+    if len(arch) < 3:
+        return 0
+    tens = ord(arch[-3]) - ord("0")
+    ones = ord(arch[-2]) - ord("0")
+    tens = tens if 0 <= tens < 10 else 0
+    ones = ones if 0 <= ones < 10 else 0
+    return tens * 10 + ones
+
+
+def qmv_batch_limit(k, n, arch_class, arch_gen):
+    """quantized.cpp:84-124. The brief's ~10 is only the non-gen-13/14 row."""
+    small = k <= 2048 and n <= 2048
+    middle = k <= 4096 and n <= 4096
+    if arch_class == "d":
+        return 32 if small else (18 if middle else 12)
+    if arch_gen in (13, 14):
+        return 14 if small else (10 if middle else 6)
+    return 18 if small else (12 if middle else 10)
+
+
+def describe_device():
+    info = mx.metal.device_info()
+    arch = str(info.get("architecture", ""))
+    arch_class = arch[-1] if arch else ""
+    gen = architecture_gen(arch)
+    shapes = (
+        [s[:3] for s in SCORED_SHAPES]
+        + [p[:3] for p in BOUNDARY_PROBES]
+        + list(FAST_PATH_PROBES)
+    )
+    return {
+        "architecture": arch,
+        "architecture_class": arch_class,
+        "architecture_gen": gen,
+        "nax_available": gen >= (18 if arch_class == "p" else 17),
+        "memory_size_bytes": info.get("memory_size"),
+        "max_buffer_size_bytes": info.get("max_buffer_length"),
+        "predicted_vector_limits": [
+            {
+                "shape": name,
+                "k": k,
+                "n": n,
+                "vector_limit": qmv_batch_limit(k, n, arch_class, gen),
+            }
+            for name, k, n in shapes
+        ],
+    }
 
 
 def weight_bytes(k, n):
@@ -97,7 +150,7 @@ def median(fn, reps, warmup=3):
     return samples
 
 
-def sweep(name, k, n, widths, calls_per_verify, reps, inner, extra=None):
+def sweep(name, k, n, widths, calls_per_verify, reps, inner, vector_limit):
     w, scales, biases = synthetic_weight(k, n)
     rows = []
     reference_row0 = None
@@ -165,17 +218,16 @@ def sweep(name, k, n, widths, calls_per_verify, reps, inner, extra=None):
             }
         )
     del w, scales, biases
-    out = {
+    return {
         "name": name,
         "k": k,
         "n": n,
         "calls_per_verify": calls_per_verify,
         "weight_bytes": weight_bytes(k, n),
         "flops_per_row": 2 * k * n,
+        "predicted_vector_limit": vector_limit,
         "rows": rows,
     }
-    out.update(extra or {})
-    return out
 
 
 def roofline(reps):
@@ -209,6 +261,8 @@ def main():
     args = ap.parse_args()
 
     widths = list(range(1, args.max_width + 1)) if args.max_width else SCORED_WIDTHS
+    device = describe_device()
+    limit_of = {e["shape"]: e["vector_limit"] for e in device["predicted_vector_limits"]}
     payload = {
         "source": "pip-mlx",
         "mlx_version": mx.__version__,
@@ -216,20 +270,18 @@ def main():
         "reps": args.reps,
         "inner_calls_per_rep": args.inner,
         "widths": widths,
+        "device": device,
         "roofline": roofline(args.reps),
         "shapes": [
-            sweep(name, k, n, widths, calls, args.reps, args.inner)
+            sweep(name, k, n, widths, calls, args.reps, args.inner, limit_of[name])
             for name, k, n, calls in SCORED_SHAPES
         ],
         "dispatch_boundary_probes": [
-            sweep(
-                name, k, n, probe_widths, 0, args.reps, args.inner,
-                {"predicted_vector_limit": limit},
-            )
-            for name, k, n, probe_widths, limit in BOUNDARY_PROBES
+            sweep(name, k, n, probe_widths, 0, args.reps, args.inner, limit_of[name])
+            for name, k, n, probe_widths in BOUNDARY_PROBES
         ],
         "fast_path_probes": [
-            sweep(name, k, n, [1, 4, 8, 9], 0, args.reps, args.inner)
+            sweep(name, k, n, [1, 4, 8, 9], 0, args.reps, args.inner, limit_of[name])
             for name, k, n in FAST_PATH_PROBES
         ],
     }

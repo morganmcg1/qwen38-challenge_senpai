@@ -174,14 +174,30 @@ def weighted_verify_roofline(shapes, m):
 
 
 def crossover(shape):
-    """Largest M whose cost is still below the step to the next kernel."""
+    """Locate the kernel switch by the shape of the cost curve itself.
+
+    `M >= vector_limit` leaves `qmv` for `qmm_t_splitk`. A limit that is set too
+    high shows up as a *drop*: the wider kernel is cheaper than the narrower one
+    it replaced. `largest_drop_at_m` is therefore the measurement that decides
+    whether padding the verify width across the limit can pay.
+    """
     rows = sorted(shape["rows"], key=lambda r: r["m"])
-    worst_step, worst_m = 0.0, None
-    for prev, cur in zip(rows, rows[1:]):
-        step = cur["seconds_per_call"] / prev["seconds_per_call"]
-        if step > worst_step:
-            worst_step, worst_m = step, cur["m"]
-    return {"largest_step_at_m": worst_m, "largest_step_ratio": worst_step}
+    steps = {
+        cur["m"]: cur["seconds_per_call"] / prev["seconds_per_call"]
+        for prev, cur in zip(rows, rows[1:])
+    }
+    if not steps:
+        return {}
+    up_m = max(steps, key=steps.get)
+    down_m = min(steps, key=steps.get)
+    limit = shape.get("predicted_vector_limit")
+    return {
+        "largest_step_at_m": up_m,
+        "largest_step_ratio": steps[up_m],
+        "largest_drop_at_m": down_m,
+        "largest_drop_ratio": steps[down_m],
+        "step_at_predicted_limit": steps.get(limit),
+    }
 
 
 def main():
@@ -305,6 +321,7 @@ def main():
     out = {
         "host": args.host,
         "base_sha": args.base_sha,
+        "device": vend.get("device", {}),
         "roofline": rf,
         "widths": widths,
         "per_shape_curve": curves,
@@ -326,7 +343,7 @@ def main():
                 "predicted_vector_limit": p["predicted_vector_limit"],
                 **crossover(p),
             }
-            for p in vend["dispatch_boundary_probes"]
+            for p in vend["dispatch_boundary_probes"] + shapes
         ],
         "fast_path_probes": [
             {
@@ -345,6 +362,14 @@ def main():
         json.dump(out, f, indent=2, sort_keys=True)
 
     print(f"host {args.host}   base {args.base_sha}")
+    dev = out["device"]
+    if dev:
+        limits = {e["vector_limit"] for e in dev["predicted_vector_limits"]
+                  if e["shape"] in {s["name"] for s in shapes}}
+        print(f"gpu {dev['architecture']} (class '{dev['architecture_class']}', "
+              f"gen {dev['architecture_gen']}), _nax available: {dev['nax_available']}")
+        print(f"get_qmv_batch_limit -> vector_limit {sorted(limits)} "
+              f"for the scored shapes")
     print(
         f"roofline: {rf['peak_bandwidth_bytes_per_second']/1e9:.1f} GB/s, "
         f"{rf['peak_flops_per_second']/1e12:.2f} TFLOP/s\n"
@@ -402,11 +427,16 @@ def main():
           f"-> branch '{raw_branch}' under the original 1.5x/3.0x rule")
     if pad_gain:
         print(f"pad 9->10 speedup: {pad_gain['pad_9_to_10_speedup']:.3f}x")
-    print("\ndispatch-boundary probes (largest cost step = kernel change)")
+    print("\ndispatch boundary: a cost DROP at M means the wider kernel that takes")
+    print("over there is cheaper, so padding up to it can pay")
+    print(f"  {'shape':36s} {'limit':>5s} {'step@limit':>11s} "
+          f"{'max step':>16s} {'max drop':>16s}")
     for p in out["crossover_probes"]:
-        print(f"  {p['name']:24s} predicted limit {p['predicted_vector_limit']:2d}  "
-              f"largest step at M={p['largest_step_at_m']} "
-              f"({p['largest_step_ratio']:.2f}x)")
+        at = p["step_at_predicted_limit"]
+        at = f"{at:11.2f}" if at else f"{'n/a':>11s}"
+        print(f"  {p['name']:36s} {p['predicted_vector_limit']:5d} {at} "
+              f"{p['largest_step_ratio']:9.2f}x @M{p['largest_step_at_m']:<4d} "
+              f"{p['largest_drop_ratio']:9.2f}x @M{p['largest_drop_at_m']:<4d}")
     print("\nfast-path probes (K % 512 == 0 selects qmv_fast)")
     for p in out["fast_path_probes"]:
         vals = "  ".join(f"M{m}={s*1e3:.3f}ms" for m, s in p["seconds_per_call_by_m"].items())
@@ -437,6 +467,17 @@ def main():
                 "inner_calls_per_rep": vend["inner_calls_per_rep"],
                 "peak_bandwidth_gb_s": rf["peak_bandwidth_bytes_per_second"] / 1e9,
                 "peak_tflops": rf["peak_flops_per_second"] / 1e12,
+                "gpu_architecture": dev.get("architecture"),
+                "gpu_architecture_class": dev.get("architecture_class"),
+                "gpu_architecture_gen": dev.get("architecture_gen"),
+                "nax_available": dev.get("nax_available"),
+                "scored_shape_vector_limits": sorted(
+                    {
+                        e["vector_limit"]
+                        for e in dev.get("predicted_vector_limits", [])
+                        if e["shape"] in {s["name"] for s in shapes}
+                    }
+                ),
             },
         )
         curve_table = wandb.Table(

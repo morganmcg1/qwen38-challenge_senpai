@@ -35,14 +35,13 @@ struct QwenQMVCostCurveTests {
             "inner_calls_per_rep": inner,
             "widths": scoredWidths,
         ]
+        payload["device"] = describeDispatchDevice()
         payload["roofline"] = measureRoofline(reps: reps)
         payload["shapes"] = scoredShapes.map { shape in
             sweep(shape: shape, widths: scoredWidths, reps: reps, inner: inner)
         }
         payload["dispatch_boundary_probes"] = dispatchBoundaryProbes.map { probe in
-            sweep(
-                shape: probe.shape, widths: probe.widths, reps: reps, inner: inner,
-                extra: ["predicted_vector_limit": probe.predictedVectorLimit])
+            sweep(shape: probe.shape, widths: probe.widths, reps: reps, inner: inner)
         }
         payload["fast_path_probes"] = fastPathProbes.map { shape in
             sweep(shape: shape, widths: [1, 4, 8, 9], reps: reps, inner: inner)
@@ -90,26 +89,95 @@ private let scoredShapes: [ScoredShape] = [
     .init(name: "head.compact_draft_vocab", k: 5120, n: 98336, callsPerVerify: 0),
 ]
 
-/// `get_qmv_batch_limit` claims three different limits by (K, N) size class on
-/// this architecture. Sweeping past each predicted limit turns that read of the
-/// host dispatcher into a measurement.
+/// `get_qmv_batch_limit` returns three different limits by (K, N) size class,
+/// and the whole table shifts with the GPU architecture. Each probe range spans
+/// every limit the dispatcher can return for its size class, so the boundary is
+/// measured rather than assumed.
 private struct BoundaryProbe {
     let shape: ScoredShape
     let widths: [Int]
-    let predictedVectorLimit: Int
 }
 
 private let dispatchBoundaryProbes: [BoundaryProbe] = [
+    // small class: 32 ('d'), 18, or 14
     .init(
         shape: .init(name: "probe.k2048_n2048", k: 2048, n: 2048, callsPerVerify: 0),
-        widths: Array(1...22), predictedVectorLimit: 18),
+        widths: Array(1...22)),
+    // middle class: 18 ('d'), 12, or 10
     .init(
         shape: .init(name: "probe.k4096_n4096", k: 4096, n: 4096, callsPerVerify: 0),
-        widths: Array(1...16), predictedVectorLimit: 12),
+        widths: Array(1...16)),
+    // large class, the one every scored shape lands in: 12 ('d'), 10, or 6
     .init(
         shape: .init(name: "probe.k5120_n5120", k: 5120, n: 5120, callsPerVerify: 0),
-        widths: Array(1...14), predictedVectorLimit: 10),
+        widths: Array(1...14)),
 ]
+
+// MARK: - host dispatcher, reproduced
+
+/// `get_qmv_batch_limit` (`mlx/backend/metal/quantized.cpp:84-124`) keys off the
+/// last character of the Metal architecture name and the two digits before it.
+/// The brief's `vector_limit ~ 10` is only the `arch_gen != 13, 14` row; a gen-13
+/// or gen-14 part returns 6 for every scored shape, which would put verify
+/// widths 7, 8 and 9 on `qmm_t_splitk` already. Reproducing the table here
+/// records which row this host is actually on next to the measured curve.
+private struct HostDispatch {
+    let architecture: String
+    let archClass: Character
+    /// `Device::Device` (`device.cpp:565-572`) reads the generation from the two
+    /// digits before the trailing size character, e.g. `applegpu_g15p` -> 15.
+    let archGen: Int
+    /// `is_nax_available` (`device.cpp:918-928`): macOS 26.2+ and a new enough
+    /// generation. `_nax` kernels run on the ranked M5; a host that misses this
+    /// gate is not executing the same quantized family the ranked run does.
+    let naxAvailable: Bool
+
+    init() {
+        let arch = GPU.deviceInfo().architecture
+        architecture = arch
+        archClass = arch.last ?? " "
+        var gen = 0
+        if arch.count >= 3 {
+            let chars = Array(arch)
+            let tens = chars[chars.count - 3].wholeNumberValue ?? 0
+            let ones = chars[chars.count - 2].wholeNumberValue ?? 0
+            gen = (tens >= 0 && tens < 10 ? tens : 0) * 10 + (ones >= 0 && ones < 10 ? ones : 0)
+        }
+        archGen = gen
+        var osReady = false
+        if #available(macOS 26.2, *) { osReady = true }
+        naxAvailable = osReady && gen >= (archClass == "p" ? 18 : 17)
+    }
+
+    func vectorLimit(k: Int, n: Int) -> Int {
+        let small = k <= 2048 && n <= 2048
+        let middle = k <= 4096 && n <= 4096
+        if archClass == "d" { return small ? 32 : (middle ? 18 : 12) }
+        if archGen == 13 || archGen == 14 { return small ? 14 : (middle ? 10 : 6) }
+        return small ? 18 : (middle ? 12 : 10)
+    }
+}
+
+private let hostDispatch = HostDispatch()
+
+private func describeDispatchDevice() -> [String: Any] {
+    let info = GPU.deviceInfo()
+    return [
+        "architecture": hostDispatch.architecture,
+        "architecture_class": String(hostDispatch.archClass),
+        "architecture_gen": hostDispatch.archGen,
+        "nax_available": hostDispatch.naxAvailable,
+        "memory_size_bytes": info.memorySize,
+        "max_buffer_size_bytes": info.maxBufferSize,
+        "predicted_vector_limits": (scoredShapes + dispatchBoundaryProbes.map(\.shape)
+            + fastPathProbes).map {
+            [
+                "shape": $0.name, "k": $0.k, "n": $0.n,
+                "vector_limit": hostDispatch.vectorLimit(k: $0.k, n: $0.n),
+            ]
+        },
+    ]
+}
 
 /// `qmv` picks its fast variant on `N % 8 == 0 && K % 512 == 0`. 5120 and 5632
 /// are multiples of 512; 5184 is not. A step between them at fixed N is the
@@ -126,8 +194,7 @@ private func sweep(
     shape: ScoredShape,
     widths: [Int],
     reps: Int,
-    inner: Int,
-    extra: [String: Any] = [:]
+    inner: Int
 ) -> [String: Any] {
     let weight = syntheticAffine4Weight(k: shape.k, n: shape.n)
     var rows: [[String: Any]] = []
@@ -209,17 +276,16 @@ private func sweep(
         ])
     }
 
-    var out: [String: Any] = [
+    return [
         "name": shape.name,
         "k": shape.k,
         "n": shape.n,
         "calls_per_verify": shape.callsPerVerify,
         "weight_bytes": affine4WeightBytes(k: shape.k, n: shape.n),
         "flops_per_row": 2 * shape.k * shape.n,
+        "predicted_vector_limit": hostDispatch.vectorLimit(k: shape.k, n: shape.n),
         "rows": rows,
     ]
-    out.merge(extra) { a, _ in a }
-    return out
 }
 
 /// Affine 4-bit group-64: packed nibbles plus a bf16 scale and bias per group.
