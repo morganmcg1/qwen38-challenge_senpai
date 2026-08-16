@@ -114,6 +114,124 @@ def empirical_knee(shape, widths):
     }
 
 
+# `vector_limit = get_qmv_batch_limit(K, N, d)` for transposed weights; every
+# scored projection has K, N > 4096 on applegpu_g16s, so it lands on the final
+# `else` branch. M below this is `qmv`, M at or above it is `qmm_t_splitk`, and
+# the two families must never be fitted with one law.
+VECTOR_LIMIT = 10
+
+# Active weight streams under the crossrow kernel: `IPG = ceil(M / ceil(M / 4))`
+# packs up to NA = 4 input rows into one group, and the surplus host groups
+# return before touching weights. So the number of full-matrix reads is
+# `ceil(M / 4)` -- a staircase with period 4, stepping at M = 5 and M = 9.
+CROSSROW_MAX_INPUTS_PER_GROUP = 4
+
+
+def weight_streams(m):
+    if m >= VECTOR_LIMIT:
+        return None
+    return -(-m // CROSSROW_MAX_INPUTS_PER_GROUP)
+
+
+def kernel_family(m):
+    return "qmv_fast" if m < VECTOR_LIMIT else "qmm_t_splitk"
+
+
+def staircase_fit(shape):
+    """Decide between the two competing cost laws for M < vector_limit.
+
+    Staircase: cost tracks `ceil(M / 4)` full weight reads, so achieved GB/s
+    against nominal bytes saws and against stream-corrected bytes flattens.
+    Roofline: cost rises smoothly through one bandwidth/compute knee, so
+    neither column flattens and the treads are not flat either. The flatter
+    stream-corrected column is the discriminating evidence, because it says the
+    cost law was identified rather than that a wiggle was observed.
+    """
+    tread = {1: [1, 2, 3, 4], 2: [5, 6, 7, 8], 3: [9]}
+    nominal, corrected, cost = {}, {}, {}
+    for m in range(1, VECTOR_LIMIT):
+        r = row(shape, m)
+        if r is None:
+            continue
+        cost[m] = r["seconds_per_call"]
+        nominal[m] = shape["weight_bytes"] / cost[m] / 1e9
+        corrected[m] = weight_streams(m) * nominal[m]
+    if len(cost) < VECTOR_LIMIT - 1:
+        return None
+
+    def cv(d):
+        vals = list(d.values())
+        mean = sum(vals) / len(vals)
+        var = sum((v - mean) ** 2 for v in vals) / len(vals)
+        return (var**0.5) / mean
+
+    cv_nom, cv_cor = cv(nominal), cv(corrected)
+    spread = {
+        s: max(cost[m] for m in ms) / min(cost[m] for m in ms)
+        for s, ms in tread.items()
+        if len(ms) > 1
+    }
+    # `flatness_gain > 1` on its own proves nothing: dividing any monotone cost
+    # curve by a rising step function flattens it somewhat.
+    #
+    # The steps have to be compared per step. Each tread boundary is one
+    # increment, so it must be measured against the mean *single* increment
+    # inside a tread, not against a tread spread that has accumulated three of
+    # them. Increments are normalised by cost[1] so shapes are comparable.
+    incr = {m: (cost[m] - cost[m - 1]) / cost[1] for m in range(2, VECTOR_LIMIT)}
+    boundaries = [m for m in (5, 9) if m in incr]
+    interior = [m for m in incr if m not in boundaries]
+    mean_boundary = sum(incr[m] for m in boundaries) / len(boundaries)
+    mean_interior = sum(incr[m] for m in interior) / len(interior)
+    step_excess = mean_boundary / mean_interior if mean_interior else None
+    # Rank test: a real `ceil(M/4)` stream boundary should make M=5 and M=9 the
+    # two most expensive increments in the whole range. This is scale-free and
+    # survives any monotone per-row cost added on top.
+    order = sorted(incr, key=lambda m: incr[m], reverse=True)
+    ranks = {m: order.index(m) + 1 for m in boundaries}
+    boundaries_rank_first = sorted(ranks.values()) == list(range(1, len(boundaries) + 1))
+    if boundaries_rank_first and step_excess and step_excess > 1.25:
+        verdict = "staircase-modulated"
+    elif step_excess and step_excess > 1.25:
+        verdict = "stepped-elsewhere"
+    else:
+        verdict = "smooth"
+    return {
+        "name": shape["name"],
+        "k": shape["k"],
+        "n": shape["n"],
+        "cv_gbps_nominal": cv_nom,
+        "cv_gbps_stream_corrected": cv_cor,
+        "flatness_gain": cv_nom / cv_cor if cv_cor else None,
+        "mean_gbps_stream_corrected": sum(corrected.values()) / len(corrected),
+        "step_at_m5": cost[5] / cost[4],
+        "step_at_m9": cost[9] / cost[8],
+        "tread_spread": {str(s): v for s, v in spread.items()},
+        "increments": incr,
+        "mean_boundary_increment": mean_boundary,
+        "mean_interior_increment": mean_interior,
+        "step_excess": step_excess,
+        # Weight streams the measurement actually implies, if achieved
+        # bandwidth were held at the width-1 value. A true `ceil(M/4)` law
+        # would make these the integers 1,1,1,1,2,2,2,2,3.
+        "implied_streams": {m: nominal[1] / nominal[m] for m in nominal},
+        # Cost of crossing a stream boundary once the ordinary per-row cost is
+        # removed, as a fraction of one full weight read. The `ceil(M/4)`
+        # correction assumes 1.0 here.
+        "marginal_stream_cost": {
+            str(m): incr[m] - mean_interior for m in boundaries
+        },
+        # > 1 means stream-corrected bandwidth exceeds what this same kernel
+        # reaches at M=1, so the correction demands impossible traffic.
+        "max_corrected_over_m1": max(corrected.values()) / nominal[1],
+        "boundary_ranks": {str(m): r for m, r in ranks.items()},
+        "boundaries_rank_first": boundaries_rank_first,
+        "verdict": verdict,
+        "gbps_nominal": nominal,
+        "gbps_stream_corrected": corrected,
+    }
+
+
 def per_shape_curve(shape, rf, widths):
     base = row(shape, 1)["seconds_per_call"]
     eff = shape_roofline(shape)
@@ -133,6 +251,20 @@ def per_shape_curve(shape, rf, widths):
                 "m": m,
                 "seconds_per_call": r["seconds_per_call"],
                 "cost_ratio_vs_m1": r["seconds_per_call"] / base,
+                "kernel_family": kernel_family(m),
+                "weight_streams": weight_streams(m),
+                # Achieved bandwidth twice. Against nominal bytes the crossrow
+                # staircase looks like a sawtooth; against stream-corrected
+                # bytes it flattens, which is what identifies the cost law
+                # rather than merely a wiggle. A build without crossrow cannot
+                # flatten the second column.
+                "gbps_nominal": shape["weight_bytes"] / r["seconds_per_call"] / 1e9,
+                "gbps_stream_corrected": (
+                    weight_streams(m) * shape["weight_bytes"]
+                    / r["seconds_per_call"] / 1e9
+                    if weight_streams(m)
+                    else None
+                ),
                 # What the *next* row costs in units of the first row. A shape
                 # still on its bandwidth plateau charges ~0 for another row; one
                 # past its knee charges ~1/knee_m. This is the number a depth
@@ -445,6 +577,7 @@ def main():
     curves = []
     for s in shapes:
         curves.extend(per_shape_curve(s, rf, widths))
+    stair = [f for f in (staircase_fit(s) for s in shapes) if f]
 
     verify = {m: weighted_verify_seconds(shapes, m) for m in widths}
     verify_floor = {m: weighted_verify_roofline(shapes, m) for m in widths}
@@ -581,6 +714,7 @@ def main():
         "widths": widths,
         "per_shape_curve": curves,
         "per_shape_roofline": knees,
+        "staircase_fit": stair,
         "weighted_verify_seconds": verify,
         "weighted_verify_roofline_seconds": verify_floor,
         "weighted_cost_multiplier_vs_m1": multiplier,
@@ -678,6 +812,37 @@ def main():
         mk = kn["marginal_knee_m"]
         print(f"  {kn['name']:36s} {kn['bw_eff_gb_s']:9.1f}G {fl} {km} "
               f"{kn['plateau_end_m']:8d} {(mk if mk else 0):9d}")
+    if stair:
+        print("\nstaircase vs roofline over M=1..9 (achieved GB/s, two ways)")
+        print("  step_excess = mean cost increment at the stream boundaries "
+              "M=5,9 / mean increment inside a tread")
+        print("  rank1st = M=5 and M=9 are the two largest increments over "
+              "M=2..9, which is the scale-free staircase signature")
+        print(f"  {'shape':36s} {'cv_nom':>7s} {'cv_corr':>8s} {'flatgain':>9s} "
+              f"{'GB/s_corr':>10s} {'dM5':>6s} {'dM9':>6s} {'dInt':>6s} "
+              f"{'excess':>7s} {'rank1st':>8s} {'verdict':>20s}")
+        for f in stair:
+            print(f"  {f['name']:36s} {f['cv_gbps_nominal']:7.3f} "
+                  f"{f['cv_gbps_stream_corrected']:8.3f} "
+                  f"{(f['flatness_gain'] or 0):9.2f} "
+                  f"{f['mean_gbps_stream_corrected']:10.1f} "
+                  f"{f['increments'][5]:6.3f} {f['increments'][9]:6.3f} "
+                  f"{f['mean_interior_increment']:6.3f} "
+                  f"{f['step_excess']:7.2f} "
+                  f"{str(f['boundaries_rank_first']):>8s} {f['verdict']:>20s}")
+        print("\n  how much a stream boundary really costs, as a fraction of one"
+              " full weight read")
+        print("  corr/M1 > 1 falsifies the correction: it needs more bandwidth"
+              " than this kernel reaches at M=1")
+        print(f"  {'shape':36s} {'mstream@5':>10s} {'mstream@9':>10s} "
+              f"{'corr/M1':>8s}  implied streams M1..M9")
+        for f in stair:
+            imp = ' '.join(f"{f['implied_streams'][m]:4.2f}" for m in
+                           sorted(f['implied_streams']))
+            print(f"  {f['name']:36s} "
+                  f"{f['marginal_stream_cost']['5']:10.3f} "
+                  f"{f['marginal_stream_cost']['9']:10.3f} "
+                  f"{f['max_corrected_over_m1']:8.2f}  {imp}")
     print("\ncall-mix-weighted verify cost, relative to width 1")
     print("  tap-corr repeats the tax with the timing scaffolding subtracted")
     for m in widths:
@@ -857,6 +1022,8 @@ def main():
                 "cost_ratio_vs_m1", "incremental_tax", "roofline_seconds", "qmv_tax",
                 "hw_roofline_seconds", "hw_efficiency", "concurrent_speedup",
                 "tap_overhead_fraction", "row0_bitwise_matches_m1",
+                "kernel_family", "weight_streams", "gbps_nominal",
+                "gbps_stream_corrected",
             ]
         )
         for c in curves:
@@ -867,6 +1034,8 @@ def main():
                 c["qmv_tax"], c["hw_roofline_seconds"], c["hw_efficiency"],
                 c["concurrent_speedup"], c["tap_overhead_fraction"],
                 c["row0_bitwise_matches_m1"],
+                c["kernel_family"], c["weight_streams"], c["gbps_nominal"],
+                c["gbps_stream_corrected"],
             )
         verify_table = wandb.Table(
             columns=[
@@ -940,8 +1109,38 @@ def main():
                 r["speedup_vs_serial_q90"], r["breakeven_acceptance"],
             )
 
+        stair_table = wandb.Table(
+            columns=[
+                "shape", "k", "n", "cv_gbps_nominal", "cv_gbps_stream_corrected",
+                "flatness_gain", "mean_gbps_stream_corrected", "increment_m5",
+                "increment_m9", "mean_interior_increment", "step_excess",
+                "boundaries_rank_first", "marginal_stream_cost_m5",
+                "marginal_stream_cost_m9", "max_corrected_over_m1", "verdict",
+            ]
+        )
+        for f in stair:
+            stair_table.add_data(
+                f["name"], f["k"], f["n"], f["cv_gbps_nominal"],
+                f["cv_gbps_stream_corrected"], f["flatness_gain"],
+                f["mean_gbps_stream_corrected"], f["increments"][5],
+                f["increments"][9], f["mean_interior_increment"],
+                f["step_excess"], f["boundaries_rank_first"],
+                f["marginal_stream_cost"]["5"], f["marginal_stream_cost"]["9"],
+                f["max_corrected_over_m1"], f["verdict"],
+            )
+
         run.log(
             {
+                "qmv/staircase_fit": stair_table,
+                "qmv/staircase_shapes_rank_first": sum(
+                    1 for f in stair if f["boundaries_rank_first"]),
+                "qmv/staircase_shapes_total": len(stair),
+                "qmv/gbps_nominal_by_shape": wandb.plot.line(
+                    curve_table, "m", "gbps_nominal", stroke="shape",
+                    title="achieved GB/s against nominal weight bytes"),
+                "qmv/gbps_stream_corrected_by_shape": wandb.plot.line(
+                    curve_table, "m", "gbps_stream_corrected", stroke="shape",
+                    title="achieved GB/s against ceil(M/4) stream-corrected bytes"),
                 "qmv/cost_curve": curve_table,
                 "qmv/weighted_verify": verify_table,
                 "qmv/per_shape_roofline": knee_table,
