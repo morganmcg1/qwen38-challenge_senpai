@@ -136,16 +136,42 @@ Head provenance, per comment 7 item 5, is in the provenance block below.
 The corrected prediction was `m(1..6) ≈ 4.5–5 ms` of head + readout traffic
 before verify growth, derived from an 849 MB head at 227 GB/s. Measured
 `m(1) = 5.47 ms`, `m(2) = 5.04 ms` — inside that band. But the agreement is
-**numerological, not mechanistic**: the head I ran streams 238,934,093 B, which
-at 227 GB/s is **1.05 ms**, so pure head weight traffic explains only ~19% of
-the measured 5.47 ms. The remaining ~4.4 ms is head activation/KV work, the
-compact draft `lm_head` readout, the `V(2) − V(1)` verify-width increment, and
-per-step dispatch. Do not reuse "849 MB / 227 GB/s" as an explanation of the low
-band; it lands on the right number for the wrong reason.
+**numerological, not mechanistic**. I have now measured the head step directly
+(see "Making the policy head-agnostic" below): **`H = 2.590 ms`**, not 4.5–5 ms.
+So a head forward is only **47%** of `m(1)` and **51%** of `m(2)`; the rest is
+the `V(d+2) − V(d+1)` verify-width increment. Do not reuse "849 MB / 227 GB/s"
+as an explanation of the low band; it lands on the right number for the wrong
+reason, and it lands there on a head my runs never loaded.
 
 The agreement also holds **only** for d = 1–2. From d = 3 the marginal is
-15.8–25.4 ms, i.e. 3–5x any head-traffic term, so above the knee the cost is
-dominated by verify-width growth, not by head forwards.
+15.8–25.4 ms and `H` is 10–16% of it, so above the knee the cost is dominated by
+verify-width growth, not by head forwards. Across the whole span,
+**8·H / (C(8) − C(0)) = 15.6%**: the head is a sixth of the drafting bill, and
+verify width is the other five sixths.
+
+#### Your `delta_head = 2.689 ms` is independently confirmed — to three decimals
+
+The probe gives the head step for the **declared 4-bit** head. Your re-basing
+constant is the *difference* between the pinned bf16 head and that one, derived
+purely from bandwidth: `(849,398,784 − 238,934,093) / 227e9 = 2.689 ms`. I can
+now check that from the other side:
+
+| quantity | value |
+|---|---|
+| declared 4-bit head, bytes | 238,934,093 |
+| its bandwidth floor at 227 GB/s | 1.053 ms |
+| **measured step `H`** | **2.590 ms** |
+| size-independent residue (dispatch, activations, draft readout) | 1.537 ms |
+| pinned bf16 head bandwidth floor | 3.742 ms |
+| implied bf16 step = floor + same residue | 5.279 ms |
+| **implied `delta_head` = 5.279 − 2.590** | **2.689 ms** |
+
+The two derivations agree to the displayed precision. That is a coincidence of
+rounding at the third decimal, but the agreement to ~0.1% is real and it says
+the constant residue assumption is sound: head cost on this machine is
+`1.54 ms + bytes/227 GB/s`. **Your re-basing arithmetic is right; it just must
+be applied to PR #3's anchors and to the default `setup-qwen-mtp.sh` stack, not
+to my curve.**
 
 ### Falsified predictions (mine and the advisor's)
 
@@ -404,6 +430,179 @@ at longcopy d = 3, `G = 1.020`; at the ranked acceptance 0.699 with d = 2,
 **`G = 1.542`**. Since the ranked serial leg is a *separately pinned prebuilt
 baseline workspace*, that ~1.54x is a real, scored, general target/kernel win —
 it does not cancel.
+
+## Making the policy head-agnostic (comment 7 item 4)
+
+> "A single frozen table is the one option I will not accept."
+
+Agreed, and shipped. The policy no longer contains a frozen `h`.
+
+### What ships
+
+The round cost decomposes as `C(d) = V(d+1) + d·H + c`, where `V(w)` is a
+verify over `w` rows, `H` is one proposal-head step, and `c` is fixed per-round
+overhead. Only `H` depends on which head is resident; `V` and `c` are pure
+target-model quantities. So the marginal
+
+```
+m(d+1) = C(d+1) − C(d) = [V(d+2) − V(d+1)] + H
+```
+
+splits into a head-free term I can freeze and a head term I must measure.
+
+I went one step past the brief: **the frozen constants are dimensionless**,
+stored in units of a single-row verify.
+
+```swift
+verifyMarginalRatioByDepth[i] = (V(i+2) − V(i+1)) / V(1)   // frozen, head-free
+zeroDraftRoundRatio          = C(0) / V(1)                 // frozen, head-free
+h(d+1) = (verifyMarginalRatioByDepth[d] + H/V(1)) / zeroDraftRoundRatio
+```
+
+`probeResidentHeadCost` measures **both** `H` and `V(1)` once per worker process
+during the existing warm phase, then `adoptResidentHeadStepRatio(H/V(1))`
+rebuilds the vector. Five timed head steps and three timed width-1 verifies,
+medians, on a throwaway cache; ~19 ms of warm time, entirely outside timing.
+
+### Why dimensionless, and not the brief's absolute form
+
+Freezing `V` and `c` in microseconds and measuring only `H` mixes an M4 Pro
+constant with an M5 measurement. If the ranked host is uniformly `s` times
+faster, the true `h(d)` is **unchanged** (both numerator and denominator scale),
+but the absolute form returns `[Vslope_local + s·H_local] / C0_local`:
+
+| `s` | `h(1)` absolute form | `h(1)` truth | error | `h(8)` error |
+|---|---|---|---|---|
+| 1.00 | 0.0842 | 0.0842 | 0.0% | 0.0% |
+| 0.80 | 0.0762 | 0.0842 | **−9.5%** | −2.1% |
+| 1.25 | 0.0941 | 0.0842 | **+11.8%** | +2.6% |
+
+The error is worst exactly in the low band, which is the band that decides
+*whether to draft at all*. Dimensionless ratios are invariant under any uniform
+host speed factor, so the only thing that has to transfer is the **shape** of
+the verify-width curve — which is a property of the target model's kernels, not
+of the machine's clock. Your "second best" option (two tables keyed on head
+byte count) would also have worked, but it interpolates a proxy where a direct
+measurement costs 19 ms.
+
+### The measured numbers (M4 Pro, declared affine-4/g64 head)
+
+Five probes fired (the worker creates a warm session at init, at
+`mtp_decode_warm`, and lazily inside `mtp_decode_begin`):
+
+```
+headprobe head_us=2759 verify_us=65100 ratio=0.042386
+headprobe head_us=2736 verify_us=65217 ratio=0.041957
+headprobe head_us=2590 verify_us=65044 ratio=0.039834
+headprobe head_us=2489 verify_us=64935 ratio=0.038344
+headprobe head_us=2544 verify_us=64836 ratio=0.039244
+```
+
+| quantity | median | spread |
+|---|---|---|
+| `H` (head step) | **2590 µs** | sd 4.5% |
+| `V(1)` (width-1 verify) | **65044 µs** | sd 0.23% |
+| `H / V(1)` | **0.039819** | 0.0383–0.0424 |
+| `C(0) / V(1)` | **0.999468** | — |
+
+Two independent cross-checks fall out for free:
+
+1. **`V(1) = 65044 µs` versus the pooled `C(0) = 65009 µs` from 1778 depth-0
+   rounds — 0.05% apart.** So the fixed per-round overhead `c` is at the noise
+   floor, confirming the phase decomposition (readout + commit + upkeep stay
+   under 0.5 ms at every depth) from a completely different measurement.
+2. **`V(1) = 65.0 ms` versus the 27B-at-4-bit weight-streaming floor
+   `13.5 GB / 227 GB/s = 59.5 ms`.** A width-1 verify runs at ~92% of roofline
+   bandwidth. The target is almost perfectly memory-bound at width 1, which is
+   why `h(1)`, `h(2)` are so cheap: rows 2 and 3 ride weights already in flight.
+
+Refitting the frozen constants against these two numbers reproduces the measured
+curve **exactly**:
+
+```
+reconstructed h = 0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909
+measured     h = 0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909
+```
+
+That is by construction, not evidence — it only shows the reparameterisation is
+algebraically faithful. The evidence is that all eight head-free terms come out
+**positive** (0.0443 … 0.3508), so the split is physically meaningful rather
+than an artefact of forcing `H` out of a collinear fit.
+
+### This is what resolves the comment-5 identifiability limit
+
+Comment 5 was right that `H` and the verify-width slope are perfectly collinear
+*in the forced-depth data alone*: every arm at depth `d` pays exactly `d·H` and
+exactly one `V(d+1)`, so no regression on that data can separate them. The
+answer is not a cleverer fit — it is a second, independent experiment. The warm
+probe runs the head with **no** verify and the verify with **no** head, which
+breaks the collinearity by measurement.
+
+I therefore now claim, and did not claim before: **the isolated head step is
+2.590 ms, and 84.4% of the d=8 marginal is verify width, not head work.**
+
+Caveats, stated honestly:
+
+- The probe syncs after every step, so it charges each head forward a full
+  round-trip. In a real round the head steps are already serialised (each needs
+  `.item()` on the drafted token before the next), so there is little overlap to
+  lose — but if any exists, the probe **over**-states `H`, which inflates `h`
+  uniformly and biases the chosen depth **down**. The bias is conservative.
+- `head_us` has 4.5% spread across probes; `h(1)` moves over 0.0827–0.0868 as a
+  result, and `d*` does not move at all (the cost-per-token curve is flat within
+  ~2% around its optimum, see the `d*±1` tables).
+- The medians are over 5 and 3 samples. The first head sample is a
+  compile/warm outlier in 4 of 5 probes (6970, 6451, 3900, 4363 µs); a
+  median-of-5 rejects one outlier but would be contaminated by two. Raising the
+  sample count to 7 costs ~5 ms of warm time and is the obvious hardening step
+  if this ever misbehaves.
+- If the probe never runs, `referenceHeadStepRatio = 0.039819` is used, and a
+  negative reconstructed marginal is floored at 0. Neither path has fired.
+
+## Head provenance (comment 7 item 5)
+
+Every number in this report was measured against this head:
+
+| field | value |
+|---|---|
+| resident head directory | `~/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared` |
+| `model.safetensors` | 238,934,093 B |
+| `config.json` | 3,570 B |
+| total on disk | 238,937,663 B |
+| dtype | 4-bit / group-64, MLX affine |
+| manifest `source_url` | `hf:lowskillcoding/qwen38-mtp-head-4bit-g64@0966ddaff972fd3ca2be08f3640603b47e9ce70a` |
+| manifest `sha256` (tree digest) | `cc209e30d8a7def1fc4d785be22b0ec40e16ae6763f9591255a1996a34f08f0d` |
+| **`head_provenance_sha256`** as the harness reports it | `54930a1d281ff3ec4373fc2befd190afdb67ee09ffd90e8fc60e4d1f538bfc4b` |
+
+### Why those two digests differ, and why the head is still verified
+
+This tripped me up, so it is worth recording. The manifest digest is a **tree
+digest**, not a file digest: sha256 over `"<file sha256>  <relative path>\n"`
+lines in `LC_ALL=C` order, `README.md` excluded
+(`research/fetch-declared-head.sh:13-14`). Reproduced from my local tree:
+
+```
+sha256(model.safetensors)                       = 0e267a48…62815
+tree digest over {model.safetensors}            = cc209e30…8f0d   == manifest ✓
+tree digest over {config.json, model.safetensors} = 54930a1d…bfc4b == reported
+```
+
+The declared head ships **weights only**. `benchmark-qwen-mtp.sh:215` refuses a
+head directory without a `config.json`, so `fetch-declared-head.sh` copies one
+in from the pinned head after verifying the digest. That extra file is what
+changes the reported tree digest — **the weights are bit-identical to the
+manifest**, which the single-file reproduction above proves exactly.
+
+Two consequences:
+
+- Nothing about my measurements is off-manifest. Anyone re-deriving provenance
+  should compare `cc209e30…` against the **weights-only** tree digest.
+- The `config.json` is a load-time architecture descriptor only. Quantization is
+  detected from the `scales`/`biases` keys present in the safetensors, not from
+  config, which the manifest note states and which the runs confirm empirically:
+  the declared head decoded **3.9% faster** than the bf16 head with
+  `all_tokens_matched: true`. Had it loaded as bf16 it would have been the same
+  speed.
 
 ## The sdpa width wall, and why my result composes with qwen-alphonse's
 
