@@ -321,13 +321,18 @@ free-checkpoint path at `S == 2`, and records the cheap replay tape only when
 `replayPrefix` `:889`); otherwise it falls back to the eager-checkpoint kernel.
 So **the regime boundary sits exactly at the `d = 1` → `d = 2` step you flagged.**
 
-512-token window (`d0`, `d1`, `d8`; `research/out/repair512.json`):
+512-token window (`d0`, `d1`, `d2`, `d8`; `research/out/repair512.json`):
 
 | d | S | regime | N full-accept | N reject | `prefixRepairCount` | `fullRepairCount` | commit µs accept | commit µs reject | commit µs **max** |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 2 | single-launch free checkpoint | 252 | 5 | **5** | **0** | 304.9 | 226.6 | 284 |
+| 1 | 2 | single-launch free checkpoint | 253 | 5 | **5** | **0** | 304.9 | 226.6 | 284 |
+| 2 | 3 | replay tape | 163 | 11 | **11** | **0** | 411.8 | 1947.7 | 2031 |
 | 4 | 5 | replay tape | 1 | 0 | 0 | 0 | 237.0 | – | – |
 | 8 | 9 | replay tape | 45 | 20 | **20** | **0** | 111.8 | 619.5 | 717 |
+
+The `d = 2` row is the one that matters most for your question, because it is the
+first depth *inside* the replay-tape regime and so is where a tape-replay repair
+would first become possible. It has 11 rejects and still zero full repairs.
 
 256-token window (`d3`, `d4`, `d6`, `base-decl`, `base256`, `cand256`;
 `research/out/repair256.json`):
@@ -342,9 +347,9 @@ So **the regime boundary sits exactly at the `d = 1` → `d = 2` step you flagge
 | 7 | 8 | replay tape | 12 | 0 | 0 | 0 | 136.4 | – | – |
 | 8 | 9 | replay tape | 18 | 6 | **6** | **0** | 78.8 | 615.5 | 665 |
 
-Totals: **`prefixRepairCount` = 42, `fullRepairCount` = 0** over 42 reject rounds,
-17 legs, depths 1/3/4/6/8, both regimes, both windows. The single largest
-reject-round `commit_us` anywhere is **1,918 µs**, which is **34× below** the
+Totals: **`prefixRepairCount` = 53, `fullRepairCount` = 0** over 53 reject rounds,
+19 legs, depths 1/2/3/4/6/8, both regimes, both windows. The single largest
+reject-round `commit_us` anywhere is **2,031 µs**, which is **32× below** the
 65 ms floor for one target forward. This is not a close call.
 
 ### An independent bound that does not trust my classifier
@@ -443,7 +448,7 @@ would have split the forced-depth sweep across two binaries, against your fb8
 instruction to prioritise getting all nine points cleanly over implementation
 polish, and because comment 11 says this does not change my assignment.
 
-Two honest limits on the above. First, all 42 reject rounds come from one public
+Two honest limits on the above. First, all 53 reject rounds come from one public
 fixture on one host; `restoreAfterPrefixReject` has failure modes (cache offset
 mismatch, a non-trimmable non-`ArraysCache` entry, `canReplayPrefix` failing, a
 nil tape, or `rollbackCheckpoints.count <= acceptedCount` at K=1) that this
@@ -1296,10 +1301,10 @@ runs `rollbackAfterVerify` plus a full `model.callWithHidden` re-forward
 two counters can be separated without rebuilding, because `tReadDone` is stamped
 at `:1219` (before the accept/reject branch) and `tCommitDone` at `:1287` (after
 the whole branch including the repair forward), so the emitted `commit_us`
-brackets any repair. Over 42 reject rounds across 17 legs, depths 1/3/4/6/8,
-both repair regimes and both token windows: **`prefixRepairCount` = 42,
+brackets any repair. Over 53 reject rounds across 19 legs, depths 1/2/3/4/6/8,
+both repair regimes and both token windows: **`prefixRepairCount` = 53,
 `fullRepairCount` = 0**. The largest reject-round `commit_us` seen anywhere is
-1,918 µs, **34x below** the ~65 ms forward floor, so no round contains a hidden
+2,031 µs, **32x below** the ~65 ms forward floor, so no round contains a hidden
 re-forward. `research/repair_probe.py` reproduces this from committed traces.
 Agents touching rollback, acceptance, or cache-snapshot code should note that on
 this fixture the cheap path is the *only* observed path — which also means the
