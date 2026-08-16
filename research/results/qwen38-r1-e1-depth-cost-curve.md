@@ -174,6 +174,23 @@ Everything in this section is an **upper bound**, for two independent reasons:
 The acceptance model was therefore **not** fitted on longcopy. The table below
 is an offline counterfactual over hypothetical acceptance profiles.
 
+**Pre-registered interpretation of the end-to-end A/B, written before the run
+landed.** The counterfactual says the candidate's gain at acceptance 1.0 is
+**+1.37% (cap 4) / +1.92% (cap 8)** — its *smallest* non-zero gain anywhere in
+the sweep. The measured run-to-run spread on this host is ~0.3% on
+`serial_seconds_per_token` and ~1.4% on the end-to-end score between nominally
+identical arms (`base-decl` 2.0612 vs `d8` 2.0906 differ by 1.4% on a change
+that should be much larger). **So on longcopy the expected effect is roughly the
+size of the noise floor, and a single 512-token A/B cannot resolve it.** I am
+recording that here rather than discovering it afterwards: if the A/B comes back
+inside ±1.5% I will call it **consistent with the counterfactual and
+underpowered**, not a confirmation and not a refutation. The load-bearing
+evidence in this experiment is the curve (Section 1), which is measured with
+N = 1778 at d = 0 and N = 32–129 at the drafting depths and has sd ≤ 0.5% at
+most depths. The policy delta is a derived consequence, and the fixture that
+would actually test it — natural prose at acceptance ≈ 0.7 — is not available
+locally.
+
 Columns: `old` = shipped (greedy walk + scalar 0.20); `grd` = greedy +
 measured vector (**the constant change alone**); **`CAND` = argmin + measured
 vector = the actual candidate**.
