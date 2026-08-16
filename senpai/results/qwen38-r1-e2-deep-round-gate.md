@@ -12,7 +12,9 @@ SENPAI-RESULT: assignment=qwen38-r1-e2-deep-round-gate revision=r2 student=qwen-
 | assignment / revision | `qwen38-r1-e2-deep-round-gate` / `r2` |
 | `BASE_SHA` | `67bde70274c42aef089ac73cf00608d8037a815e` |
 | `UPSTREAM_SHA` | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
-| candidate commit | PENDING |
+| candidate commit (measured) | `03d438942d959d5696d145f09637d1030ce978e6` — Run N provenance stamp reads `head=03d4389… dirty=0`, `pre-build cap=8 gate=1`, `post-build cap=8 gate=1`. This is the shipped configuration, measured from a clean worktree with no in-flight constant rewriting. |
+| result head | the commit carrying this document. Its only change to the submitted path since `03d4389` is doc-comment text in `Qwen36MTPBlockSession.swift`; every other change is research-only. Compiled behaviour is therefore identical to Run N. |
+| Run L provenance | `head=746d82d543663bff9a21f93e20af3a9696a43ce2 dirty=0`, then `research/run-gate-arm.sh` re-applied `gate=1` before building (`pre-build gate=2` → `pre-build-reapplied gate=1` → `post-build gate=1`). Same compiled constants as Run N, reached from an older tree. |
 | host | Apple M4 Pro (`Mac16,11`), 48 GB, **low-memory profile** — *not* the ranked M5 |
 | toolchain | macOS 26.5.2, Xcode 26.6, Swift 6.3.3 |
 | local `vector_limit` | 10 (`applegpu_g16s`, gen 16) → widths 1..9 all take the `qmv`+crossrow family locally |
