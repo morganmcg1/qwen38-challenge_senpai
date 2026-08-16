@@ -887,10 +887,117 @@ The two facts are consistent — flat per-position acceptance still compounds, s
 the chance of a clean sweep decays geometrically in depth while the per-round
 cost climbs past the knee.
 
-#### The curve predicts the end-to-end policy A/B to within 1 %
+#### The end-to-end policy A/B at 512 tokens — HEADLINE
 
-This is the strongest validation I have that `C(d)` is right, and it is also
-why the advisor was correct that the policy A/B does not transfer.
+This is the strongest validation I have that `C(d)` is right, and it is the
+only A/B I am willing to put a number on, because it is the only one measured
+in the ranked-equivalent window.
+
+Job `98221633`, exit 0, 977 s. One binary, one thermal window, two arms run
+back to back by `research/run-arms.sh`. Both arms: `passed = true`,
+`decode_tokens = 512`, `all_tokens_matched = true`,
+`residual_divergence_count = 0`, `public_drift_tripwire_passed = true`,
+`uses_pinned_mtp_head = true`,
+`head_provenance_sha256 = 54930a1d281ff3ec4373fc2befd190afdb67ee09ffd90e8fc60e4d1f538bfc4b`.
+
+| metric | `base512` = `adaptive@0.2` | `cand512` = measured curve + argmin |
+|---|---:|---:|
+| `mtp_decode_speedup` | 2.2607490741755134 | **2.304220770896327** |
+| `mtp_seconds_per_token` | 0.03291166992858052 | **0.03232836723327637** |
+| `serial_seconds_per_token` | 0.0744050273206085 | 0.07449169526807964 |
+| `effective_mean_draft_len` | 5.75 | 2.962686567164179 |
+| `accepted_draft_rate` | 0.8861283643892339 | 0.9521410579345088 |
+
+**MTP seconds per token: −1.7723 %. Score ratio: +1.9229 %.** Both clear the
+1.5 % bar in my pre-registered stop rule.
+
+`base512` is not an approximation of the shipped policy — it *is* the shipped
+policy. F13 proves that with a flat `h` vector the shipped greedy loop and the
+candidate argmin select the identical depth on all 900,000 sampled
+`(reach, expected, cap)` states, so `adaptive@0.2` exercises the candidate code
+path with the shipped numbers. The arms therefore differ in exactly one thing:
+the eight constants. The two serial legs agree to **0.0667 %**
+(0.0744050 against 0.0744917 s/token), which is the direct evidence that the
+pair shared a thermal window rather than my having to assert it.
+
+**The chosen-depth histogram (comment 6, item 2).** `research/depth_histogram.py`,
+post-warmup rounds of the MTP leg:
+
+`base512`, shipped scalar 0.20 — 82 rounds, 502 committed tokens:
+
+| offered d | rounds | share | mean accepted | accept rate |
+|---:|---:|---:|---:|---:|
+| 3 | 2 | 0.0244 | 3.000 | 1.0000 |
+| **4** | **38** | **0.4634** | 3.053 | **0.7632** |
+| 5 | 2 | 0.0244 | 5.000 | 1.0000 |
+| 6 | 3 | 0.0366 | 6.000 | 1.0000 |
+| 7 | 7 | 0.0854 | 7.000 | 1.0000 |
+| **8** | **30** | **0.3659** | 7.367 | 0.9208 |
+
+mean offered depth 5.7927, mean accepted 5.1220, 6.1220 tokens/round.
+
+`cand512`, measured curve — 132 rounds, 504 committed tokens:
+
+| offered d | rounds | share | mean accepted | accept rate |
+|---:|---:|---:|---:|---:|
+| 1 | 1 | 0.0076 | 1.000 | 1.0000 |
+| 2 | 3 | 0.0227 | 0.667 | 0.3333 |
+| **3** | **128** | **0.9697** | 2.883 | 0.9609 |
+
+mean offered depth 2.9621, mean accepted 2.8182, 3.8182 tokens/round.
+
+**The explicit statement you asked for: the candidate is never clipped at the
+width wall. It offers `d = 4` in 0 of 132 rounds and `d > 4` in 0 of 132
+rounds.** Its choice is strictly interior to the feasible set at every round,
+so `sdpaWidthWallDepthCap = 4` is inactive for it and the result composes
+orthogonally with `qwen-alphonse`'s width-cap work — raising or removing that
+cap cannot change what my policy selects on this fixture.
+
+The shipped policy is the one that lives on the cap. 46.34 % of its rounds sit
+*exactly at* `d = 4`, which is the clamped value, and 36.59 % sit at `d = 8`,
+which is the value the clamp takes once `fullAcceptStreak >= 3` opens it. It
+oscillates bimodally between the closed and open cap and spends 51.22 % of its
+rounds deeper than 4. The accept rate at the clamped `d = 4` is only 0.7632,
+against 0.9609 for the candidate at `d = 3` — the shipped policy is paying for
+a fourth draft that is rejected nearly a quarter of the time.
+
+**Predicting the A/B from the curve alone**, weighting the pooled `C(d)` by the
+measured histograms above:
+
+| arm | predicted round µs | measured round µs | error | predicted µs/token | measured µs/token | error |
+|---|---:|---:|---:|---:|---:|---:|
+| `base512` | 153170.8 | 153298.5 | **−0.08 %** | 25019.7 | 25041.0 | **−0.08 %** |
+| `cand512` | 91296.8 | 92789.4 | −1.61 % | 23910.9 | 24302.0 | −1.61 % |
+
+The curve reproduces the shipped arm's realised round cost to 0.08 % and the
+candidate's to 1.61 %. It predicts a **+4.64 %** candidate win; the measured
+decode-only win is **+3.04 %** and the measured harness win is **+1.80 %**.
+
+I want to be explicit about the direction of that error rather than claim the
+prediction is better than it is. `C(d)` is fitted on **full-accept rounds
+only** (the exclusion rule above), so it is a lower bound on the cost of an arm
+that pays for rejections. The candidate rejects in 3.9 % of its `d = 3` rounds
+and in 2 of its 3 `d = 2` rounds, so the curve under-charges it; the shipped
+arm's `d = 8` rounds are also mostly full-accept, so it under-charges that arm
+less. The +4.64 % prediction is therefore optimistic by construction and the
++3.04 % measurement is the number to trust. The useful claim is not the
+magnitude, it is that a model fitted only on forced-depth full-accept rounds
+ranks two unforced adaptive policies correctly and gets one of them right to
+within a tenth of a percent.
+
+**How much of the available win each policy captures.** The forced-depth sweep
+says the best achievable decode-only rate on this fixture is `d = 3` at 2.7320.
+Measured decode-only, `cand512` reaches 2.7150 — **99.38 %** of that optimum —
+while `base512` reaches 2.6332, or **96.38 %**. The candidate is not merely
+faster; it is within 0.6 % of everything the depth axis has to give, which also
+means **this mechanism is nearly exhausted** and further gains have to come
+from somewhere other than choosing a better constant depth.
+
+##### The 256-token screen, and why it was a wash
+
+The 256-token A/B ran first as a directional screen. It is *not* the headline
+and I am not claiming it as evidence for or against the mechanism; it is here
+because it explains why a small window cannot decide this question.
 
 Measured adaptive arms at 256 tokens, declared head:
 
@@ -924,9 +1031,18 @@ barely matters. **Both statements are true, and only the first one transfers.**
 
 The plateau breaks as soon as acceptance falls. At 512 tokens the `d = 8` arm
 sees accept 0.8222 (the post-EOS regime) and the gap opens to a real
-**8.1 %** in favour of `d = 3` (2.3153 against 2.1415). The value of the curve
-is therefore not the +0.5 % here; it is that the curve tells you *where the
-plateau ends*, which a scalar cannot.
+**8.1 %** in favour of `d = 3` (2.3153 against 2.1415). That is exactly why the
+256-token screen could not decide the question and the 512-token A/B could:
+same mechanism, same constants, same code, and the win goes from +0.26 % to
++1.92 % purely because the longer window spends more of its rounds in the
+low-acceptance regime where the plateau has ended.
+
+I flag this as the sharpest warning in the whole report. **A cost model that is
+badly wrong is nearly harmless while acceptance is high, and becomes expensive
+the moment it is not.** The 256-token screen measured the harmless regime. The
+ranked benchmark, at depth-1 acceptance ≈ 0.699 (comment 1) rather than the
+0.94–0.99 this fixture shows, sits further into the expensive regime than
+either of my windows does.
 
 #### Host time, not GPU time, is the majority of every round
 
@@ -974,6 +1090,31 @@ The decode-only speedups are uniformly *larger* than the published ones (2.7320
 vs 2.3153 at `d3`) because the shared prefill is exactly the dilution the score
 carries and this metric does not. **The jaggedness is real decode behaviour, not
 a scoring or prefill artefact.**
+
+The same treatment applied to the two adaptive A/B arms is the cleanest
+statement of the headline result, because it removes the prefill that both arms
+share and cannot influence:
+
+| arm | leg-0 s/tok (serial) | leg-1 s/tok (MTP) | **decode-only speedup** | mean `d` | mean accepted | leg-1 round µs | rounds |
+|---|---|---|---|---|---|---|---|
+| `cand512` | 0.065981 | **0.024302** | **2.7150** | 2.962 | 2.818 | 92789.4 | 132 |
+| `base512` | 0.065937 | 0.025041 | 2.6332 | 5.793 | 5.122 | 153298.5 | 82 |
+
+**Decode-only, the candidate wins by +3.04 %** — larger than the +1.80 % the
+harness reports, and larger by exactly the amount prefill dilution predicts. The
+two serial legs here agree to 0.0667 %, independently of the harness's own
+serial numbers, which is a second confirmation that the pair shared a thermal
+window. Note also that the candidate runs **more rounds** (132 against 82) and
+is still faster: that is the entire point of the curve, and no acceptance-rate
+or tokens-per-round summary would have found it.
+
+One adaptive-arm caveat for anyone reproducing this. Forced-depth arms put both
+legs in a single `trace.txt.<pid>`, but the adaptive arms split their legs
+across **separate worker PIDs** — each arm directory holds four trace files, two
+of which contain only the `begin` line. `research/realised_rate.py` collects
+legs across every file in the directory and takes the last non-empty leg as the
+MTP leg; a script that reads only one trace file will silently report the serial
+leg twice.
 
 #### The parent clock, measured: `P0 = 4.0031 s` and `c = 490 µs/round`
 
