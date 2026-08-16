@@ -2665,3 +2665,140 @@ structural reads, **four are now refuted** — the `ceil(M/4)` boundary magnitud
 the roofline knee, my argmax headline, and the assumed depth-cost curve itself.
 Zero structural reads have been refuted. Weight accordingly.
 
+
+---
+
+# ★★★★ PR #1 MERGED, and PR #2 refutes the premise that closed the depth-gate direction
+
+Advisor branch head after the PR #1 merge: `29ee4d481b280f46f351b91bd7cea25daab00abb`.
+Merged with a **merge commit, not a squash**, deliberately: Edward's
+`75fe7a2` and `84f1c9c8` must stay reachable from this branch so future
+`git log -S` provenance audits can find them. (Reminder: `remote.origin.fetch`
+on this checkout is narrowed to the advisor branch, so an absence proof from
+`git log -S --all` is only as wide as the refs actually fetched.)
+
+## I audited my own merge: the PR #1 instrument is inert on the default path
+
+I merged a +240-line change into `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`,
+which is the live candidate hot file. That obliges me to show it changes nothing
+by default. Verified at `29ee4d48`:
+
+| surface | finding |
+|---|---|
+| `costModelDepth` (`:738`) | dispatches to `instrumentedCostModelDepth` **only** if `Self.forcedDepth != nil` or `Self.overrideHeadStepCostRatioByDepth != nil`; both are env-driven (`MLX_QWEN_MTP_FORCE_DEPTH`, override var) and nil by default. Default path falls through to the original body. **Schedule unchanged.** |
+| `probeResidentHeadCost` (`:389`) | called **unconditionally** at `:339`, but from inside `warmAllDepths` (`:218`). |
+| `warmAllDepths` call sites | `QwenRuntime{,Trusted}MTPWorker.swift:196/283/309`. The `mtp_decode_warm` case is documented untimed (`QwenRuntimeWorker.swift:2342`: *"Untimed phase start … issued before the parent's clock starts"*), and `QwenRuntimeMTPDriver.swift:84` always issues it before begin. |
+| `residentHeadStepRatio` | written at `:672`, **read nowhere**. Dead storage on the default path. |
+
+**Latent hazard, recorded not fixed:** the `mtp_decode_begin` case re-runs
+`warmAllDepths` `if !state.warmed`. On any path that skips the warm request, the
+probe's 5 head forwards + 3 verify calls land inside `begin` — and seed prefill
+**is** scored. That fallback is unreachable through the current driver, but it is
+now more expensive than it was, so it must not become reachable.
+
+## PR #2 (alphonse) — the r3-era premise that closed this direction was WRONG
+
+I closed the depth-gate direction on the belief that ~0 rounds reach depth 8.
+Alphonse's step-0 binding fractions, all arms at 512 tokens:
+
+| arm | cap/gate | rounds | gate-closed | at deep cap | mean depth |
+|---|---|---:|---:|---:|---:|
+| I | 8/3 | 82 | 0.4756 | **0.4024** | 5.890 |
+| J,O,P₅₁₂ | 7/3 | 81 | 0.3580 | 0.5679 | 5.790 |
+| J₂ | 7/2 | 82 | 0.3293 | 0.5854 | 5.841 |
+| K | 8/2 | 79 | 0.3671 | 0.4557 | 6.127 |
+| L,N | 8/1 | 74 | 0.2432 | 0.4865 | 6.554 |
+| M | 8/0 | 73 | 0.0000 | 0.5753 | 7.000 |
+
+**40.24% of control rounds realise depth 8.** My prediction is **REFUTED**, and
+the gate binds 47.56% — inside the 29–87% band I preregistered, so the band was
+right and the point estimate that overrode it was wrong.
+
+**The depth histogram is BIMODAL: 39 control rounds at depth 4, 33 at depth 8,
+and none at 5, 6 or 7.** The "5.4 effective drafts" figure this campaign has
+quoted is the mean of a distribution that never visits its own mean. Any
+schedule able to *sit* at 6–7 is unexplored territory.
+
+Result shipped: `segmentedVerifyDepthCap 8 → 7` at `segmentedStreakGate = 3`,
+**−3.085% s/token** (0.03510386 → 0.03402096), three stamped repeats spanning
+0.110%, i.e. 28× repeat noise. Full local-submit fidelity clean. Mechanism: width
+9 alone needs a third weight stream (`ceil(9/4) = 3`); collapsing 33 width-9
+rounds onto width 8 **keeps more deep rounds** (46 vs 38) and cuts rejects 53→38.
+
+## ★ Two independent measurements of the width-9 boundary excess
+
+Alphonse's measured round-cost table (`research/occupancy_model.py:30`) is
+**not smooth at the boundary**, contrary to what his report claims about it:
+
+| step | Δ | width |
+|---|---:|---|
+| C(5)−C(4) | 20.10 ms | 5→6 |
+| C(6)−C(5) | 21.80 ms | 6→7 |
+| C(7)−C(6) | 21.40 ms | 7→8 |
+| **C(8)−C(7)** | **27.70 ms** | **8→9** |
+
+Mean sub-boundary step 21.10 ms ⇒ **width-9 excess = 6.60 ms (+31.3%)**.
+Edward's independent depth curve (PR #1) put the same boundary excess at
+**7.2 ms**. Two different instruments, two different arms, 9% apart. The
+stream-count cliff is now measured twice.
+
+## ★ CORRECTION owed to PR #2: the cap-7 model residual is a specification artifact
+
+PR #2 reports that `occupancy_model.py` is accurate to <1% on all five cap-8 arms
+but under-predicts all three cap-7 arms by ~3.1%, and reads that residual as
+independent evidence for a missing per-width weight-stream term (its follow-up 11).
+**That reading does not survive checking.** Generator:
+`research/cap7_model_specification_check.py`.
+
+1. The premise *"its cost table … cannot represent a cost cliff between width 8
+   and width 9"* is **false about its own file** — see the table above. The 7→8
+   step is the largest in the table and carries the cliff.
+2. `DEEP_CAP = 8` is a module-level constant read by `stationary()` and
+   `evaluate()`; nothing in `occupancy_validate.py` overrides it per arm. **All
+   three cap-7 arms were scored against a cap-8 Markov chain.** The report states
+   this and then attributes the consequence to the cost table instead.
+3. Applying the model's **own** cost table to the **actual** cap-7 schedule
+   (`{3:1, 4:29, 5:2, 6:3, 7:46}`, 81 rounds, plus the model's 4012.5 ms
+   non-block term) predicts **33.798 ms/token** against Run O's measured
+   **34.002** — an error of **−0.60%**, squarely inside its cap-8 accuracy band.
+   The cost table is *not* the thing that is wrong.
+4. The cap-8 counterfactual from the same table gives **+0.42% to +7.36%**
+   across the full feasible range of promoted rounds, bracketing the measured
+   **+3.24%** and matching it at a plausible interior point. The model's table
+   already prices the cap effect **with the correct sign**.
+
+⇒ Follow-up 11 (add a stream term and refit) is **probably unnecessary**; the
+term is already in the measured table. The free falsification is to set
+`DEEP_CAP = 7` and re-score J/O/P₅₁₂ — no GPU, no rebuild. If that lands inside
+1%, the "model gets the sign of the cap effect wrong" claim is withdrawn and the
+model becomes a **validated two-cap screening tool** for caps 6 and 5.
+
+**The physical finding survives and is stronger**: the width-9 excess is measured
+twice (6.6 ms, 7.2 ms). Only the argument for it needed replacing, and the
+replacement came out of Alphonse's own data.
+
+## Campaign-level fidelity item, needs an owner: the `key_len = 1024` residual
+
+PR #2's Part A **refutes** the width-9 exactness hypothesis it was assigned:
+919/919 non-terminal width-9 rows are bit-exact; all 15 value mismatches sit in
+the final block at positions 1022–1024, and widths 2, 4 and 8 drift there too.
+Width 4 is **outside** the `AttentionUtils` split (`6 ≤ qL ≤ 9`), which exonerates
+that path. Lowering the cap relocates the drift (w8→w4) instead of removing it.
+The 128-token local-submit window ends at 640 and is clean — a fourth confirmation
+that the residual is **positional at `key_len = 1024`, not width-driven**.
+The ranked leg is 512+512 and therefore crosses that boundary. This is a
+campaign-level item, not Alphonse's.
+
+## Two advisor errors that PR #2 caught
+
+1. **My designated stop signal was wrong.** I told Alphonse to rank arms by
+   `accepted_tokens_per_round`. Among cap-8 arms it is **anti-correlated** with
+   speed — M has the most accepted tokens (439) and is the slowest arm measured;
+   I has the fewest (430) and is the fastest. Ranking by my signal selects the
+   worst arm. He ignored it, said so, and used µs/emitted token plus reject count.
+   A stop signal that is monotone in the mechanism I have in mind is not
+   automatically monotone in the objective.
+2. **I closed this direction on a point estimate that contradicted my own
+   preregistered band.** The band (29–87%) contained the truth (47.56%). The
+   point estimate (~0%) did not. When a band and a point estimate disagree,
+   the point estimate is the thing that needs defending.
