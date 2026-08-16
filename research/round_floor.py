@@ -487,6 +487,35 @@ def build_components(width, kv_len, depth, reps):
     return comps
 
 
+def sweep_quantized_matmul_width(reps, widths):
+    """Efficiency of `mx.quantized_matmul` versus row count M at a fixed shape.
+
+    Uses the MLP gate projection (N=17408, K=5120), the single largest consumer
+    of round time. Isolates the one variable that differs between a head step
+    (M=1) and a verify pass (M=d+1).
+    """
+    bank = qbank(INTERMEDIATE, H)
+    wb = qweight_bytes(INTERMEDIATE, H)
+    rows = []
+    for m in widths:
+        xs = inputs([1, m, H])
+        sec = timeit_amortized(qmm_fn(xs, bank), reps)
+        rows.append(
+            {
+                "M": m,
+                "per_call_seconds": sec,
+                "achieved_bytes_per_s": wb / sec,
+                "achieved_flops": (2.0 * m * H * INTERMEDIATE) / sec,
+                "seconds_per_row": sec / m,
+            }
+        )
+        del xs
+        _release()
+    del bank
+    _release()
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--reps", type=int, default=15)
@@ -499,6 +528,11 @@ def main():
         help="parent-clock seconds for one round at this depth",
     )
     ap.add_argument("--out", required=True)
+    ap.add_argument(
+        "--sweep",
+        action="store_true",
+        help="also sweep quantized_matmul efficiency versus row count M",
+    )
     args = ap.parse_args()
 
     mx.random.seed(0)
@@ -552,6 +586,28 @@ def main():
             "ideal scheduler overlaps away."
         ),
     }
+
+    if args.sweep:
+        widths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 16, 24, 32, 64, 128, 256, 512]
+        sweep = sweep_quantized_matmul_width(args.reps, widths)
+        base = sweep[0]["seconds_per_row"]
+        for r in sweep:
+            r["roofline_seconds"] = max(
+                qweight_bytes(INTERMEDIATE, H) / bw, (2.0 * r["M"] * H * INTERMEDIATE) / fl
+            )
+            r["kernel_efficiency"] = r["roofline_seconds"] / r["per_call_seconds"]
+            r["rows_per_second_vs_M1"] = base / r["seconds_per_row"]
+        out["quantized_matmul_width_sweep"] = sweep
+        out["quantized_matmul_sweep_shape"] = {"N": INTERMEDIATE, "K": H, "bits": QBITS,
+                                               "group_size": QGROUP}
+        print(f"\n{'M':>5s} {'ms/call':>9s} {'GB/s':>8s} {'TFLOP/s':>8s} {'eff':>6s} {'x M=1/row':>10s}")
+        for r in sweep:
+            print(
+                f"{r['M']:5d} {r['per_call_seconds']*1e3:9.4f} "
+                f"{r['achieved_bytes_per_s']/1e9:8.1f} {r['achieved_flops']/1e12:8.3f} "
+                f"{r['kernel_efficiency']*100:5.1f}% {r['rows_per_second_vs_M1']:10.2f}"
+            )
+
     with open(args.out, "w") as f:
         json.dump(out, f, indent=2)
 
