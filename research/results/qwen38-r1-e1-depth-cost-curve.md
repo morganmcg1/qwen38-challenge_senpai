@@ -344,14 +344,21 @@ measurement-equivalent and the split costs the sweep nothing.
 | `d0..d4, d8` pooled | A | 3570 | 65281.4 | — |
 | binary-A per-arm range | A | 510 ea | 65046.1 … 65947.4 | −0.36 % … +1.02 % |
 | `d5` serial leg | **B** | 510 | **65980.6** | **+1.07 %** |
+| `d6` serial leg | **B** | 510 | **65817.1** | **+0.82 %** |
 
-The binary-B control lands 1.07 % above the binary-A pool, against a 1.4 %
-spread that binary A already shows *among its own six controls*. I will not
-overclaim it: 65980.6 is marginally above the highest binary-A control
-(65947.4, by 0.05 %), so this is the top edge of the envelope rather than the
-middle of it. What it rules out is the thing that would matter — a systematic
-shift large enough to move `h(d)`, whose smallest interesting feature is the
-3.7× knee at `d = 3`. A 1 % control drift cannot manufacture or hide that.
+The two binary-B controls land +1.07 % and +0.82 % against the binary-A pool,
+inside the 1.4 % spread binary A already shows *among its own six controls*.
+`d6`'s 65817.1 µs falls **within** the binary-A range outright; `d5`'s 65980.6
+is 0.05 % above the highest binary-A control, so the binary-B pair sits at the
+top edge of the envelope rather than the middle of it, and I am not going to
+call that a perfect match.
+
+What it does rule out is the thing that would matter — a systematic shift large
+enough to move `h(d)`, whose smallest interesting feature is the 3.7× knee at
+`d = 3`. A sub-1 % control drift cannot manufacture or hide that. The stronger
+protection is structural: `h(6)`, the one binary-B quantity this report leans
+on, is derived from `d5` and `d6` alone, so no cross-binary step enters it at
+all.
 
 For the same reason every cross-binary comparison below is also reported
 **self-normalised**: each round divided by its *own* arm's depth-0 control, so a
@@ -631,7 +638,7 @@ This is the ranked-equivalent replacement: every row a dedicated forced-depth
 arm at 512 decode tokens, declared 4-bit head, same host, one arm at a time
 through the run lock and the 40 C gate.
 
-Each arm runs its own serial leg, so the serial column is seven independent
+Each arm runs its own serial leg, so the serial column is eight independent
 measurements spread over ~5 hours. They span **0.073366–0.074470 s/token, a
 1.5 % spread** — the thermal and host control for everything below.
 
@@ -643,16 +650,27 @@ measurements spread over ~5 hours. They span **0.073366–0.074470 s/token, a
 | 3 | 0.073918 | 0.031925 | **2.3153** | 2.985 | 0.9475 | ✅ | 0 |
 | 4 | 0.074426 | 0.033061 | 2.2512 | 3.973 | 0.9222 | ✅ | 0 |
 | 5 † | 0.074470 | 0.033717 | 2.2087 | 4.990 | 0.8685 | ✅ | 0 |
+| 6 † | 0.074241 | 0.033105 | 2.2426 | 5.976 | 0.8649 | ✅ | 0 |
 | 8 | 0.073386 | 0.034268 | 2.1415 | 7.941 | 0.8222 | ✅ | 0 |
 
-† `d = 5` was measured on binary B; see the two-binary disclosure above. Its own
-serial leg is the binary-equivalence control and lands 1.07 % above the binary-A
-pool.
+† `d = 5` and `d = 6` were measured on binary B; see the two-binary disclosure
+above. Their own serial legs are the binary-equivalence controls.
 
-**The ranking is `d3 > d4 > d5 > d2 > d8 > d1 > d0`.** Past the `d = 3` optimum
-the decline is monotone in depth — 2.3153, 2.2512, 2.2087, … 2.1415 at
-`d = 3, 4, 5, 8` — so the peak is a genuine interior optimum and not a
-single-point artefact.
+**The ranking is `d3 > d4 > d6 > d5 > d2 > d8 > d1 > d0`.** `d = 3` is the
+optimum, but the descent away from it is **not monotone**: `d = 6` (2.2426)
+scores above `d = 5` (2.2087). I want to be careful about how much weight that
+carries — it is a 1.5 % gap against a 1.5 % serial-control spread — so I checked
+it on the statistic that does not depend on the serial leg at all. Trace-derived
+decode-only throughput agrees: `d6` runs at 0.025278 s/token against `d5` at
+0.025676, so `d6` is **1.6 % faster** there too, and both arms are on the same
+binary. The dip at `d = 5` is therefore visible in two independent statistics,
+and it is not a serial-normalisation artefact.
+
+That makes the end-to-end speedup curve the **third** quantity in this report
+that turns out to be jagged rather than smooth, after `h(d)` and the EOS
+penalty. The `d = 3` peak itself is robust — it wins by 2.8 % over the next arm,
+which is well clear of the control spread — but anyone who samples only the
+endpoints and interpolates will get the interior wrong in both directions.
 
 `d = 0` reproducing **1.0033** is the calibration anchor: forcing zero drafts
 costs 0.33 % against the serial leg, so `C(0) ≈ V(1)` and the shipped
@@ -671,6 +689,7 @@ itself and is not contaminated by the cheaper rejected rounds:
 | 3 | 120 | 91828.3 | 91835.0 | 0.4 | 16430.2 | **0.2517** | 1.407 | 43525.8 | 48300.4 |
 | 4 | 94 | 117491.6 | 116952.0 | 4.2 | 25663.3 | **0.3931** | 1.800 | 53555.7 | 63933.5 |
 | 5 † | 72 | 135911.8 | 135752.0 | 0.5 | 17844.8 | **0.2705** | 2.060 | 62019.4 | 73890.0 |
+| 6 † | 61 | 155198.1 | 155106.0 | 0.3 | 19286.3 | **0.2981** | 2.358 | 71394.9 | 83800.8 |
 | 8 | 45 | 198683.0 | 198611.0 | 0.3 | 81191.3/4 = 20297.8 | **0.3109**/step | 3.043 | 93032.1 | 105648.3 |
 
 The six binary-A per-arm depth-0 controls agree to **1.4 %** (65046.1, 65065.0,
@@ -679,25 +698,50 @@ and comparing `C(d)` measured hours apart. Normalising every round by its own
 arm's control instead of the pool moves the ratios by less than 0.02:
 `[0.0902, 0.0680, 0.2435, 0.3803]` for `d = 1..4`.
 
-† `d = 5` is binary B, and its row is normalised against **its own** `C(0)` of
-65980.6 µs, never against the binary-A pool. Its marginal is also taken
-within-binary: the `d5` arm emitted one straggler `acc == 4` round at 118067.0
-µs, so `m(5) = 135911.8 − 118067.0 = 17844.8` and `h(5) = 0.2705` are computed
-end to end inside binary B. That anchor has `N = 1`, so I cross-checked it the
-other way, purely in ratios: `C(5)/C(0)|_B = 2.0599` minus `C(4)/C(0)|_A =
-1.7998` gives `h(5) = 0.2601` against a well-populated `N = 94` anchor. The two
-estimates differ by 4 %, which is smaller than the feature they are being used
-to resolve, so `h(5) ≈ 0.26–0.27` either way.
+† `d = 5` and `d = 6` are binary B, and their rows are normalised against **their
+own** `C(0)` — 65980.6 and 65817.1 µs — never against the binary-A pool.
 
-The interesting part is that **`h(5)` drops back below `h(4)`**: 0.3931 → 0.27.
-That is not the plateau flattening out, it is a decrease, and it holds under
-both normalisations. It also matches the 256-token screen, which put `h(5)` at
-0.2919 against `h(4)` at 0.3754 — a fall of the same size measured on a
-different window with an independent (and very thin, `N = 2`) sample. Two weak
-measurements agreeing is not proof, but the direction is now consistent twice.
+`h(5)` is awkward to anchor because the only `acc == 4` round the `d5` arm
+emitted is a single straggler at 118067.0 µs, giving `m(5) = 17844.8` and
+`h(5) = 0.2705` end to end inside binary B off an `N = 1` anchor. Cross-checking
+purely in ratios against the well-populated binary-A `d4` (`N = 94`),
+`C(5)/C(0)|_B − C(4)/C(0)|_A = 2.0599 − 1.7998 = 0.2601`. The two differ by 4 %,
+so `h(5) ≈ 0.26–0.27` either way.
 
-`d = 6, 7` are still outstanding at this window; the 256-token screen put them
-at `h = 0.3000` and `h = 0.2870` with `N = 36` and `N = 7`.
+`h(6)` is on much firmer ground, because `d5` and `d6` are **both binary B** and
+both well populated: `C(6)/C(0) − C(5)/C(0) = 2.3580 − 2.0599 = 0.2981`, a
+one-step marginal with `N = 61` and `N = 72` behind it and no cross-binary step
+anywhere in the derivation. (The `N = 1` straggler route gives 0.2850 per step,
+agreeing to 4.6 %.)
+
+**`h(d)` dips at `d = 5`.** The sequence runs 0.3931 → 0.27 → 0.2981 at
+`d = 4, 5, 6`: a fall and then a partial recovery, not a plateau. This is the
+same shape the 256-token screen found (0.3754 → 0.2919 → 0.3000), on a different
+window, from an independent sample.
+
+That agreement is worth stating on its own, because it is the depth-resolved
+version of the window-invariance check that F22 previously only did on
+aggregates:
+
+| d | `h(d)` @256 | `h(d)` @512 | agreement |
+|---:|---:|---:|---:|
+| 1 | 0.0842 | 0.0867 | +3 % |
+| 2 | 0.0775 | 0.0683 | −12 % |
+| 3 | 0.2426 | 0.2517 | +4 % |
+| 4 | 0.3754 | 0.3931 | +5 % |
+| 5 | 0.2919 | 0.2601–0.2705 | −8 % |
+| 6 | 0.3000 | 0.2850–0.2981 | −1 % |
+| 8 | 0.3909 | 0.3109/step | −20 % |
+
+Every depth the scheduler actually chooses from (`d = 1..6`) reproduces within
+12 %, and all three features that matter — the flat cheap region at `d = 1, 2`,
+the 3.7× knee at `d = 3`, and the dip at `d = 5` — reproduce in **both**
+windows. The shipped vector was fitted at 256; this is the evidence that it does
+not need refitting for the ranked 512-token window, which is what makes it
+safe to ship as a static table.
+
+`d = 7` is still outstanding at this window; the 256-token screen put it at
+`h = 0.2870` with `N = 7`.
 
 #### Two results that the scalar cost model cannot express
 
@@ -1585,6 +1629,7 @@ depth as the leg runs out of tokens, the honest statistic is the **accept rate**
 | `d3` | 3 | 2.859 (N=78) | 2.778 (N=54) | 0.9530 | 0.9376 | **−1.6%** |
 | `d4` | 4 | 3.762 (N=63) | 3.523 (N=44) | 0.9405 | 0.8960 | **−4.7%** |
 | `d5` | 5 | 4.537 (N=54) | 4.077 (N=39) | 0.9074 | 0.8197 | **−9.7%** |
+| `d6` | 6 | 5.383 (N=47) | 4.788 (N=33) | 0.8972 | 0.8062 | **−10.1%** |
 | `d8` | 8 | 7.000 (N=37) | 5.750 (N=28) | 0.8750 | 0.7188 | **−17.9%** |
 
 At depth 1 there is effectively no EOS penalty at all (pre-EOS `p1` = 0.9803,
@@ -1602,14 +1647,22 @@ place in this report where per-depth structure turns out to be jagged rather
 than smooth, which is the concrete vindication of the advisor's comment-8
 instruction to scan every depth instead of interpolating between endpoints.
 
-Adding `d5` sharpens that statement rather than softening it. The jaggedness is
-now visibly **confined to the shallow half**: `+0.1 → −5.1 → −1.6 → −4.7` across
-`d = 1..4` has no order to it, but from `d = 4` onward the tail is cleanly
-monotone — `−4.7 → −9.7 → −17.9` at `d = 4, 5, 8`. So the honest description is
-two regimes, not one function: below `d ≈ 4` the EOS penalty is small and buried
-in sampling noise, and above it the penalty grows fast and reliably. That is
-consistent with the truncation mechanism, because a whole-tail truncation only
-starts to dominate once the tail is long.
+Adding `d5` and `d6` sharpens that statement rather than softening it. The
+jaggedness is visibly **confined to the shallow half**: `+0.1 → −5.1 → −1.6 →
+−4.7` across `d = 1..4` has no order to it, but from `d = 4` onward the tail is
+cleanly monotone — `−4.7 → −9.7 → −10.1 → −17.9` at `d = 4, 5, 6, 8`. So the
+honest description is two regimes, not one function: below `d ≈ 4` the EOS
+penalty is small and buried in sampling noise, and above it the penalty grows
+fast and reliably. That is consistent with the truncation mechanism, because a
+whole-tail truncation only starts to dominate once the tail is long.
+
+Worth noting against the rest of this report: the EOS penalty is the **one**
+per-depth quantity here whose deep tail *is* well behaved. `h(d)` dips at
+`d = 5` and the end-to-end speedup puts `d = 6` above `d = 5`, but the EOS
+penalty passes straight through `d = 5, 6` without a kink. So the deep-depth
+non-monotonicity in the speedup curve is not an acceptance effect — acceptance
+degrades smoothly there — which points at the cost side, and `h(5) < h(6)` is
+exactly where it shows up.
 
 This matters for the policy argument because it is a *second*, independent
 reason to prefer shallower depth in exactly the regime where the cost curve
