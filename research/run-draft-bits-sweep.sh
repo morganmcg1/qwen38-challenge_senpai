@@ -16,7 +16,8 @@
 # the timed process, so this never overlaps a model-holding run.
 set -euo pipefail
 
-tag="${1:?usage: run-draft-bits-sweep.sh TAG}"
+tag="${1:?usage: run-draft-bits-sweep.sh TAG [--skip-build]}"
+skip_build="${2:-}"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_root}"
@@ -70,8 +71,12 @@ mkdir -p "${out_dir}"
   date -u '+run-draft-bits-sweep: started_utc=%Y-%m-%dT%H:%M:%SZ'
 } | tee "${out_dir}/identity.txt" >&2
 
-swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-testing
-tools/build-mlx-metallib.sh --all-build-roots
+# A full build ahead of the gate leaves the SoC hot enough that the gate's
+# stall detector aborts before 40C. Build separately, then measure.
+if [[ "${skip_build}" != "--skip-build" ]]; then
+  swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-testing
+  tools/build-mlx-metallib.sh --all-build-roots
+fi
 
 echo "run-draft-bits-sweep: cool gate before sweep" >&2
 ./benchmark.sh --local-cool-gate-only

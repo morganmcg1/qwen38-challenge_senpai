@@ -2403,6 +2403,24 @@ extension Qwen35TextModel: MTPCapable {
             && lmHead != nil && _draftHeadW == nil
     }
 
+    /// Draft-only readout precision, read once. The compact draft head is the
+    /// draft step's dominant memory traffic, so `MLX_QWEN_MTP_DRAFT_BITS`
+    /// requantizes that copy to 3 or 2 bits. Only proposal quality can move:
+    /// verify keeps the pinned 4-bit `lmHead`, and acceptance is an exact
+    /// token-ID match against the target's argmax, so the emitted stream is
+    /// unchanged either way.
+    ///
+    /// `MLX_` prefix on purpose: the trusted harness strips `MLXFAST_*` from
+    /// the sandboxed worker's environment but allows `MLX_` through.
+    private static let draftHeadBits: Int = {
+        guard
+            let raw = ProcessInfo.processInfo
+                .environment["MLX_QWEN_MTP_DRAFT_BITS"],
+            let bits = Int(raw), [2, 3, 4].contains(bits)
+        else { return 4 }
+        return bits
+    }()
+
     private func makeCompactDraftHead() -> Linear {
         guard let full = lmHead else {
             fatalError("compact draft vocabulary requires an untied lm_head")
@@ -2419,7 +2437,7 @@ extension Qwen35TextModel: MTPCapable {
         }
 
         if let quantized = full as? QuantizedLinear {
-            return QuantizedLinear(
+            let compact = QuantizedLinear(
                 weight: compactRows(quantized.weight),
                 bias: quantized.bias.map(compactRows),
                 scales: compactRows(quantized.scales),
@@ -2427,10 +2445,92 @@ extension Qwen35TextModel: MTPCapable {
                 groupSize: quantized.groupSize,
                 bits: quantized.bits,
                 mode: quantized.mode)
+            guard Self.draftHeadBits != quantized.bits else {
+                Self.reportDraftHead(compact)
+                return compact
+            }
+            let repacked = Self.requantizedDraftHead(
+                compact, bits: Self.draftHeadBits)
+            Self.reportDraftHead(repacked)
+            return repacked
         }
         return Linear(
             weight: compactRows(full.weight),
             bias: full.bias.map(compactRows))
+    }
+
+    /// Repack a compact draft head at `bits`, one row block at a time.
+    ///
+    /// Dequantizing the whole head at once would materialize ~1 GB of fp16;
+    /// the blocked form peaks at one block. Affine group-64 row widths stay
+    /// whole uint32 words at 2, 3, and 4 bits (`64 * bits % 32 == 0`), so
+    /// concatenating packed blocks along axis 0 is exact.
+    private static func requantizedDraftHead(
+        _ head: QuantizedLinear, bits: Int
+    ) -> QuantizedLinear {
+        guard let sourceBiases = head.biases else {
+            fatalError("draft head requantization requires affine biases")
+        }
+        let rows = head.weight.dim(0)
+        let blockRows = 8192
+        var weights: [MLXArray] = []
+        var scales: [MLXArray] = []
+        var biases: [MLXArray] = []
+        var start = 0
+        while start < rows {
+            let end = Swift.min(start + blockRows, rows)
+            let dense = dequantized(
+                head.weight[start ..< end],
+                scales: head.scales[start ..< end],
+                biases: sourceBiases[start ..< end],
+                groupSize: head.groupSize, bits: head.bits, mode: head.mode)
+            let packed = MLX.quantized(
+                dense, groupSize: head.groupSize, bits: bits, mode: head.mode)
+            guard let packedBiases = packed.biases else {
+                fatalError("affine quantization must produce biases")
+            }
+            eval(packed.wq, packed.scales, packedBiases)
+            weights.append(packed.wq)
+            scales.append(packed.scales)
+            biases.append(packedBiases)
+            start = end
+        }
+        let repacked = QuantizedLinear(
+            weight: concatenated(weights, axis: 0),
+            bias: head.bias,
+            scales: concatenated(scales, axis: 0),
+            biases: concatenated(biases, axis: 0),
+            groupSize: head.groupSize, bits: bits, mode: head.mode)
+        eval(repacked.weight, repacked.scales, repacked.biases!)
+        return repacked
+    }
+
+    /// The worker only forwards stderr under a tracing mode that also writes
+    /// per-round rows inside the timed window, so an arm proves which head it
+    /// actually built by way of `MLX_QWEN_MTP_DRAFT_HEAD_REPORT`.
+    private static func reportDraftHead(_ head: QuantizedLinear) {
+        let scaleBytes = head.scales.nbytes + (head.biases?.nbytes ?? 0)
+        let data = Data(
+            """
+            mtp-draft-head: bits=\(head.bits) group=\(head.groupSize) \
+            rows=\(head.weight.dim(0)) packed_bytes=\(head.weight.nbytes) \
+            scale_bytes=\(scaleBytes)
+
+            """.utf8)
+        guard
+            let path = ProcessInfo.processInfo
+                .environment["MLX_QWEN_MTP_DRAFT_HEAD_REPORT"]
+        else {
+            FileHandle.standardError.write(data)
+            return
+        }
+        if !FileManager.default.fileExists(atPath: path) {
+            FileManager.default.createFile(atPath: path, contents: nil)
+        }
+        guard let handle = FileHandle(forWritingAtPath: path) else { return }
+        handle.seekToEndOfFile()
+        handle.write(data)
+        try? handle.close()
     }
 
 
