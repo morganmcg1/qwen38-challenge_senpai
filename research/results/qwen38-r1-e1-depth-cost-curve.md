@@ -631,9 +631,9 @@ This is the ranked-equivalent replacement: every row a dedicated forced-depth
 arm at 512 decode tokens, declared 4-bit head, same host, one arm at a time
 through the run lock and the 40 C gate.
 
-Each arm runs its own serial leg, so the serial column is six independent
-measurements spread over ~4.5 hours. They span **0.073366–0.074426 s/token, a
-1.4 % spread** — the thermal and host control for everything below.
+Each arm runs its own serial leg, so the serial column is seven independent
+measurements spread over ~5 hours. They span **0.073366–0.074470 s/token, a
+1.5 % spread** — the thermal and host control for everything below.
 
 | d | serial s/tok | MTP s/tok | **speedup** | eff_draft | accept rate | matched | div |
 |---:|---:|---:|---:|---:|---:|:---:|---:|
@@ -642,7 +642,17 @@ measurements spread over ~4.5 hours. They span **0.073366–0.074426 s/token, a
 | 2 | 0.073418 | 0.034140 | 2.1505 | 1.994 | 0.9490 | ✅ | 0 |
 | 3 | 0.073918 | 0.031925 | **2.3153** | 2.985 | 0.9475 | ✅ | 0 |
 | 4 | 0.074426 | 0.033061 | 2.2512 | 3.973 | 0.9222 | ✅ | 0 |
+| 5 † | 0.074470 | 0.033717 | 2.2087 | 4.990 | 0.8685 | ✅ | 0 |
 | 8 | 0.073386 | 0.034268 | 2.1415 | 7.941 | 0.8222 | ✅ | 0 |
+
+† `d = 5` was measured on binary B; see the two-binary disclosure above. Its own
+serial leg is the binary-equivalence control and lands 1.07 % above the binary-A
+pool.
+
+**The ranking is `d3 > d4 > d5 > d2 > d8 > d1 > d0`.** Past the `d = 3` optimum
+the decline is monotone in depth — 2.3153, 2.2512, 2.2087, … 2.1415 at
+`d = 3, 4, 5, 8` — so the peak is a genuine interior optimum and not a
+single-point artefact.
 
 `d = 0` reproducing **1.0033** is the calibration anchor: forcing zero drafts
 costs 0.33 % against the serial leg, so `C(0) ≈ V(1)` and the shipped
@@ -660,17 +670,34 @@ itself and is not contaminated by the cheaper rejected rounds:
 | 2 | 163 | 75398.2 | 75114.0 | 2.8 | 4459.6 | **0.0683** | 1.155 | 35110.4 | 40285.4 |
 | 3 | 120 | 91828.3 | 91835.0 | 0.4 | 16430.2 | **0.2517** | 1.407 | 43525.8 | 48300.4 |
 | 4 | 94 | 117491.6 | 116952.0 | 4.2 | 25663.3 | **0.3931** | 1.800 | 53555.7 | 63933.5 |
+| 5 † | 72 | 135911.8 | 135752.0 | 0.5 | 17844.8 | **0.2705** | 2.060 | 62019.4 | 73890.0 |
 | 8 | 45 | 198683.0 | 198611.0 | 0.3 | 81191.3/4 = 20297.8 | **0.3109**/step | 3.043 | 93032.1 | 105648.3 |
 
-The six per-arm depth-0 controls agree to **1.4 %** (65046.1, 65065.0,
+The six binary-A per-arm depth-0 controls agree to **1.4 %** (65046.1, 65065.0,
 65100.0, 65256.1, 65512.2, 65947.4 µs), which is what licenses pooling `C(0)`
 and comparing `C(d)` measured hours apart. Normalising every round by its own
 arm's control instead of the pool moves the ratios by less than 0.02:
 `[0.0902, 0.0680, 0.2435, 0.3803]` for `d = 1..4`.
 
-`d = 5, 6, 7` are still missing at this window; the 256-token screen put them
-on the plateau but with N = 2 at `d = 5` and N = 7 at `d = 7`, which is why
-they are not quoted as measured here.
+† `d = 5` is binary B, and its row is normalised against **its own** `C(0)` of
+65980.6 µs, never against the binary-A pool. Its marginal is also taken
+within-binary: the `d5` arm emitted one straggler `acc == 4` round at 118067.0
+µs, so `m(5) = 135911.8 − 118067.0 = 17844.8` and `h(5) = 0.2705` are computed
+end to end inside binary B. That anchor has `N = 1`, so I cross-checked it the
+other way, purely in ratios: `C(5)/C(0)|_B = 2.0599` minus `C(4)/C(0)|_A =
+1.7998` gives `h(5) = 0.2601` against a well-populated `N = 94` anchor. The two
+estimates differ by 4 %, which is smaller than the feature they are being used
+to resolve, so `h(5) ≈ 0.26–0.27` either way.
+
+The interesting part is that **`h(5)` drops back below `h(4)`**: 0.3931 → 0.27.
+That is not the plateau flattening out, it is a decrease, and it holds under
+both normalisations. It also matches the 256-token screen, which put `h(5)` at
+0.2919 against `h(4)` at 0.3754 — a fall of the same size measured on a
+different window with an independent (and very thin, `N = 2`) sample. Two weak
+measurements agreeing is not proof, but the direction is now consistent twice.
+
+`d = 6, 7` are still outstanding at this window; the 256-token screen put them
+at `h = 0.3000` and `h = 0.2870` with `N = 36` and `N = 7`.
 
 #### Two results that the scalar cost model cannot express
 
