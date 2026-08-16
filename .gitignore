@@ -69,6 +69,8 @@ senpai/*.credentials.json
 senpai/submission-note*.md
 __pycache__/
 .mlxfast-local-qwen-mtp/
+.mlxfast-private/
+wandb/
 # SENPAI-CAMPAIGN-END
 
 # research-only measurement artifacts (qwen38-r1-e1-depth-cost-curve)
