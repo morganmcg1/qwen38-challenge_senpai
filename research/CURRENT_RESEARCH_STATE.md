@@ -1187,7 +1187,13 @@ Recorded here and posted to PR #1 so that a later fit cannot be passed off as a
 prediction. Score these honestly when the results arrive.
 
 1. **`d* = 7`** — d=7 beats d=8 by ≈2% ms/token at q≈1.0, more as q falls.
-2. **The depth curve is non-monotone** — d=3 beats d=4.
+   **STATUS: expected to refute.** The closed-loop simulation (see "the trap I
+   thought I had found") puts the realised mode at **3** in every acceptance
+   regime. Recorded as heading for refutation *before* Edward's data lands, so
+   it still scores as a prediction. This does not retract the prediction; it
+   records that I now expect to lose it.
+2. **The depth curve is non-monotone** — d=3 beats d=4. **This one now carries
+   the result**: it is the prediction the closed-loop model rests on.
 3. **`H ≈ 3.73 ms`** per head-step; per-round constant `c ≈ 4.46 ms`.
 4. **The M≈4 ramp will NOT move under `NA=5`.** The ramp and the boundaries
    looked separable in PR #5's data; `NA=5` should touch only the boundaries.
@@ -1227,6 +1233,26 @@ brief — not another comment. "Feedback volume is not progress" was already
 policy; this is its sharper form. Also: when a student produces nothing for a
 long time, **suspect the brief before suspecting the student**, and ask them
 directly whether the obstacle is on my side or the host's.
+
+## ★★ Advising lesson — I broadcast a policy headline from a static model
+
+I told Edward that the measured cost curve alone would be a *regression* and
+that a global argmax was required. That came from evaluating the shipped loop
+at a **frozen** `positionAcceptEMA` vector. One closed-loop simulation later —
+same loop, but letting `recordAcceptOutcome` move the EMAs — argmax and greedy
+were identical and the "regression" was the winner.
+
+**Standing rule, added:** *simulate the actual dynamics before broadcasting a
+policy conclusion.* A controller whose own output determines which state
+variables receive evidence cannot be analysed at a fixed parameter vector.
+`positionAcceptEMA` is a ratchet; treating it as a constant is the same class
+of error as reading an in-file comment instead of the source.
+
+Two things kept this cheap, and both should be repeated: the wrong arm was
+requested **specifically because I predicted it would lose** (so the reversal
+cost one comment, not one experiment), and the correction was sent as an
+explicit in-thread supersession naming the earlier feedback ID, rather than
+quietly restating the new view.
 
 ## Consequence of PR #5 for the other briefs (already communicated)
 
@@ -1348,30 +1374,73 @@ at depth 7.** This is an independent second derivation of pre-registrations #1
 (`d* = 7`) and #2 (non-monotone, d=3 beats d=4), from the policy objective
 rather than from the ms/token table.
 
-## The trap: the naive fix is a regression
+## The trap I thought I had found, and the closed loop that reversed it
 
-Transcribing the shipped loop exactly and running three policies at flat
-per-position acceptance q (`research/depth_policy_check.py`):
+**Read this whole section before citing any number above it.** I broadcast a
+headline from a static model and refuted it myself within the hour. The static
+result is kept here only so the failure mode stays legible.
+
+### What the static (frozen-EMA) model said
+
+Transcribing the shipped loop exactly and running three policies at *fixed*
+flat per-position acceptance q (`research/depth_policy_check.py`):
 
 | q | shipped (flat h, greedy) | measured h, **same greedy loop** | measured h, **global argmax** |
 |---|---|---|---|
-| 1.000 | 8 | **3** | **7** |
-| 0.976 | 8 | **3** | **7** |
+| 1.000 | 8 | 3 | 7 |
+| 0.976 | 8 | 3 | 7 |
 | 0.940 | 8 | 3 | 3 |
 | 0.900 | 7 | 3 | 3 |
 
-Dropping the measured curve into the existing `while` loop pins depth at 3
-forever, because the hill-climb hits the M=5 dip and quits. **The scalar is not
-the only thing that must change — the search must change too.** The minimal
-correct rule keeps the objective, the EMAs and the cap, and takes a global
-argmax over `cap <= 8` candidates.
+Read literally: dropping the measured curve into the existing `while` loop pins
+depth at 3 forever because the hill-climb hits the M=5 dip and quits, so the
+search must change too, and argmax buys the difference between 3 and 7.
+**All three of those inferences are wrong.**
 
-An argmax policy is also naturally adaptive: **7 at high acceptance, 3 at low**.
-Predicted realised-depth histogram is **bimodal at 3 and 7**, not centred at 5.
-If it comes out unimodal near 5, the boundary is in the wrong place.
+### Why it is wrong: `positionAcceptEMA` is a ratchet, not a parameter
 
-Sent to Edward as `qwen38-r1-e1-fb-greedy-is-a-hillclimb`, with the
-measured-curve-greedy arm requested *specifically because I predict it loses*.
+`recordAcceptOutcome` (`Qwen36MTPBlockSession.swift:609-635`) only ever gives
+evidence to positions the policy *already chose to draft*. Positions strictly
+inside the accepted prefix move toward 1.0; the position at `acceptedCount`
+moves toward 0.0 on a real reject; on a fully accepted round the position just
+past the prefix receives transferred optimism toward 0.95, **and only if it is
+currently below 0.95**. Everything deeper keeps the cold seed
+`0.85 * 0.98^i` forever. The depth choice therefore selects its own evidence,
+and the loop can only widen by one position per fully-accepted round. A frozen
+EMA vector is not a model of that.
+
+### The closed loop: 400 rounds, real `record` semantics, streak gate live
+
+| ground truth | shipped | curve + greedy | curve + argmax |
+|---|---|---|---|
+| easy prose (0.98) | 2.746 (d~8) | **2.785, +1.4%** (d~3) | 2.785, +1.4% (d~3) |
+| mid prose (0.93) | 2.396 (d~4) | **2.615, +9.1%** (d~3) | 2.615, +9.1% (d~3) |
+| decaying (0.97^(i+1)) | 2.454 (d~4) | **2.686, +9.5%** (d~3) | 2.686, +9.5% (d~3) |
+| hard prose (0.85) | 2.110 (d~4) | **2.295, +8.8%** (d~3) | 2.295, +8.8% (d~3) |
+
+Three corrections, all sent to Edward in-thread:
+
+1. **Argmax buys nothing.** It is identical to greedy in every regime once the
+   EMAs are allowed to move. The gap in the static table was an artifact of
+   freezing them. **The minimal change is the whole change: swap the scalar for
+   the vector and keep the `while` loop.** The argmax arm was dropped.
+2. **`d* = 7` does not survive.** Realised mode is **3** everywhere.
+   **Pre-registration #1 is heading for refutation**; pre-registration #2
+   (non-monotone, d=3 beats d=4) now carries the result.
+3. **My prediction that the greedy arm would lose was backwards.** It is the
+   winner. I had asked for that arm *because I expected it to fail*, which is
+   the only reason the reversal was cheap.
+
+### Honest sizing
+
+Tokens-per-verify-unit is not ms/token — the round has a fixed non-verify
+component that dilutes any verify-side ratio. Hand-computing the dilution for
+mid prose at d=4 -> d=3: **27.70 -> 26.62 ms/token, about +4%**, not +9%.
+So `2.9042 * 1.041 ~ 3.02`. Edward was told +4% is the order of magnitude and
+his measurement is the number; I declined to issue a third projection.
+
+Superseded feedback: `qwen38-r1-e1-fb-greedy-is-a-hillclimb` (wrong), corrected
+by `qwen38-r1-e1-fb-correction-argmax-not-needed` (current).
 
 ## There are two caps, and the interesting one is 4
 
@@ -1402,9 +1471,16 @@ distribution — plutarch/beagle/essays — or move all eight.
 
 ## Estimated prize, flagged as an estimate
 
-If the frontier drafts near 8 and argmax lands on 7, the round-cost ratio is
-~1.03, i.e. `2.9042 -> ~2.99` — essentially the whole remaining gap to the 3.0
-gate. **This is a motivating estimate from a reconstruction that has already
-had two attached magnitudes refuted.** It justifies the experiment. It
-concludes nothing.
+Current estimate, after the closed-loop correction: the win comes from the
+policy settling at **3** instead of drifting to 4/8, worth **about +4% ms/token**
+on mid-difficulty prompts once the verify-side ratio is diluted by the fixed
+part of the round, i.e. `2.9042 -> ~3.02`. That is the whole remaining gap to
+the 3.0 gate and then some — which is exactly why it should be distrusted until
+measured.
+
+**This is a motivating estimate from a reconstruction that has already had
+three attached magnitudes refuted** (the `ceil(M/4)` boundary magnitude, the
+roofline knee, and my own argmax headline). It justifies the experiment. It
+concludes nothing. The superseded version of this paragraph projected ~2.99
+from argmax landing on 7; both halves of that sentence are now dead.
 
