@@ -61,6 +61,23 @@ gpu_temp_now() {
   "${macmon}" pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty' 2>/dev/null
 }
 
+# benchmark-qwen-mtp.sh drives the CLI directly and reaches benchmark.sh only
+# through --local-cool-gate-only, which returns before the build gate, so it
+# never rebuilds a stale worker. The scored binary is the .build-worker twin;
+# build both here with benchmark.sh's own commands and cache roots.
+mkdir -p .build/clang-module-cache .build-worker/clang-module-cache
+CLANG_MODULE_CACHE_PATH="${PWD}/.build/clang-module-cache" \
+  swift build -c release --force-resolved-versions --product mlxfast-swift
+CLANG_MODULE_CACHE_PATH="${PWD}/.build-worker/clang-module-cache" \
+  swift build -c release --force-resolved-versions \
+  --scratch-path .build-worker --product mlxfast-runtime-worker
+
+worker_bin=".build-worker/release/mlxfast-runtime-worker"
+if ! strings -a "${worker_bin}" | grep -q "MLX_QWEN_MTP_DRAFT_BITS"; then
+  echo "run-draft-bits-arm.sh: ${worker_bin} has no MLX_QWEN_MTP_DRAFT_BITS; refusing to time a build that cannot honour the arm" >&2
+  exit 1
+fi
+
 identity="${out_dir}/identity.txt"
 {
   echo "run-draft-bits-arm: tag=${tag} bits=${bits} tokens=${tokens}"
@@ -91,3 +108,10 @@ echo "gpu_temp_c_after=$(gpu_temp_now)" >>"${identity}"
 echo "run-draft-bits-arm: arm summary"
 cat "${MLX_QWEN_MTP_DRAFT_HEAD_REPORT}"
 grep -i "maximum resident set size" "${out_dir}/rusage.txt" || true
+
+# Without a provenance line the arm cannot prove which head it built, and an
+# ignored MLX_QWEN_MTP_DRAFT_BITS would read as "precision is free".
+if ! grep -q "^mtp-draft-head: bits=${bits} " "${MLX_QWEN_MTP_DRAFT_HEAD_REPORT}"; then
+  echo "run-draft-bits-arm.sh: no 'bits=${bits}' provenance line; the arm did not build the requested head" >&2
+  exit 1
+fi
