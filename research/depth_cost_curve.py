@@ -157,6 +157,7 @@ def main():
                   f"{leg['dropped_warmup']:>6} {leg['dropped_partial']:>6}")
             for row in leg["tail_rows"]:
                 row["arm"] = arm_dir.name
+                row["trace"] = leg["trace"]
                 by_depth_all[row["d"]].append(row)
             for row in leg["steady_rows"]:
                 by_depth[row["d"]].append(row)
@@ -164,13 +165,19 @@ def main():
     all_c0 = by_depth.get(0, [])
     print(f"\ndepth-0 control by arm ({'pooled' if not args.c0_arm else args.c0_arm + ' selected'})")
     c0_by_arm = defaultdict(list)
+    c0_by_leg = defaultdict(list)
     for row in all_c0:
         c0_by_arm[row["arm"]].append(row)
+        c0_by_leg[(row["arm"], row["trace"])].append(row)
     for arm in sorted(c0_by_arm):
         s = summarize(c0_by_arm[arm])
         arms[arm]["c0"] = s
-        print(f"  {arm:<14} N={s['n']:>4} mean={s['mean_us']:>9.1f} "
+        print(f"  {arm:<14} {'(all legs)':<22} N={s['n']:>4} mean={s['mean_us']:>9.1f} "
               f"median={s['median_us']:>9.1f} sd={s['sd_pct']:>5.1f}%")
+        for (a, trace) in sorted(k for k in c0_by_leg if k[0] == arm):
+            ls = summarize(c0_by_leg[(a, trace)])
+            print(f"  {'':<14} {trace:<22} N={ls['n']:>4} mean={ls['mean_us']:>9.1f} "
+                  f"median={ls['median_us']:>9.1f} sd={ls['sd_pct']:>5.1f}%")
     if all_c0:
         pooled = summarize(all_c0)
         print(f"  {'POOLED':<14} N={pooled['n']:>4} mean={pooled['mean_us']:>9.1f} "
@@ -216,14 +223,49 @@ def main():
               f"{s_all['n']:>5} {s_all['mean_us']:>9.1f}")
         prev = s["mean_us"]
 
+    # Every arm carries its own depth-0 control, so each C(d) can be divided by
+    # the C(0) measured in the same arm. That cancels between-arm drift (clock,
+    # temperature, allocator age) which the pooled table above leaves in the
+    # marginal, since C(d) and C(d-1) come from different runs there.
+    self_norm = {}
+    c0_arm_mean = {a: summarize(rows)["mean_us"]
+                   for a, rows in c0_by_arm.items()}
+    if c0_arm_mean:
+        print("\nself-normalised: each round divided by its own arm's C(0)")
+        print(f"{'d':>2} {'N':>4} {'arms':>4} {'C/C0':>8} {'sd%':>6} {'h(d)':>8}")
+        prev_r = None
+        for depth in sorted(by_depth):
+            vals = [r["round_us"] / c0_arm_mean[r["arm"]]
+                    for r in by_depth[depth] if r["arm"] in c0_arm_mean]
+            if not vals:
+                continue
+            mean = statistics.fmean(vals)
+            sd = statistics.stdev(vals) if len(vals) > 1 else 0.0
+            h = None if prev_r is None else mean - prev_r
+            self_norm[depth] = {"n": len(vals), "c_over_c0": mean,
+                                "sd_pct": 100.0 * sd / mean if mean else 0.0,
+                                "h": h,
+                                "arms": sorted({r["arm"] for r in by_depth[depth]})}
+            print(f"{depth:>2} {len(vals):>4} {len(self_norm[depth]['arms']):>4} "
+                  f"{mean:>8.4f} {100.0 * sd / mean if mean else 0:>6.1f} "
+                  f"{'-' if h is None else '%.4f' % h:>8}")
+            prev_r = mean
+
     if curve:
         vec = [curve[d]["h"] for d in sorted(curve) if d and curve[d]["h"] is not None]
-        print("\nheadStepCostRatioByDepth = [" +
+        print("\npooled     headStepCostRatioByDepth = [" +
+              ", ".join("%.4f" % v for v in vec) + "]")
+    if self_norm:
+        vec = [self_norm[d]["h"] for d in sorted(self_norm)
+               if d and self_norm[d]["h"] is not None]
+        print("self-norm  headStepCostRatioByDepth = [" +
               ", ".join("%.4f" % v for v in vec) + "]")
 
     if args.json:
         args.json.write_text(json.dumps(
             {"c0_us": c0, "c0_arm": args.c0_arm, "warmup": args.warmup,
+             "c0_by_arm_us": c0_arm_mean,
+             "self_normalised": {str(k): v for k, v in self_norm.items()},
              "arms": arms, "curve": {str(k): v for k, v in curve.items()}},
             indent=2, sort_keys=True))
         print(f"wrote {args.json}")

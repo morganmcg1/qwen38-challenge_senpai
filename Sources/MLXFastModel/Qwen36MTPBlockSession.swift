@@ -821,11 +821,14 @@ public final class Qwen36MTPBlockSession {
             let serialLastRow = serialLogits[
                 0..., (serialLogits.dim(1) - 1) ..< serialLogits.dim(1), 0...]
             let (tailIDs, tailValues) = Self.linearTopTwoRows(serialLastRow)
+            tVerifyBuilt = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             eval(cache.flatMap { $0.state } + [tailIDs, tailValues])
+            tEvalDone = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             let readTail = (
                 tailIDs.asArray(Int32.self).map { Int($0) },
                 tailValues.asArray(Float.self).map { Double($0) }
             )
+            tReadDone = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             // Top-2 first ID == row argmax (same ordering); no separate argMax.
             pendingPrimary = readTail.0[0]
             pendingTop2 = readTail
@@ -833,6 +836,23 @@ public final class Qwen36MTPBlockSession {
             Self.traceRow(
                 pos: seedTokenCount + committedTokenCount,
                 ids: tailTokens, values: tailLogits)
+            if Self.traceRounds {
+                // C(0) for the cost curve. The scalar this session prices drafts
+                // with is a fraction of a zero-draft round, so the denominator
+                // has to come from THIS branch, through the same session and
+                // readout path -- not from the wrapper's separate serial control
+                // leg, which never enters `generateRound`.
+                let tTailDone = DispatchTime.now().uptimeNanoseconds
+                Self.traceWrite(
+                    "mtp-trace: round=\(roundCount) d=0 acc=0 "
+                        + "draft_build_us=0 "
+                        + "verify_build_us=\((tVerifyBuilt - tRound0) / 1000) "
+                        + "eval_wall_us=\((tEvalDone - tVerifyBuilt) / 1000) "
+                        + "readout_us=\((tReadDone - tEvalDone) / 1000) "
+                        + "commit_us=0 "
+                        + "upkeep_us=\((tTailDone - tReadDone) / 1000) "
+                        + "round_us=\((tTailDone - tRound0) / 1000)\n")
+            }
             return Qwen36MTPRoundResult(
                 tokens: committed,
                 declaredRows: 1,

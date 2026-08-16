@@ -145,10 +145,30 @@ def log_curve(args):
             f"curve/h_{d}": entry["h"],
             f"curve/us_per_token_{d}": entry["us_per_token"],
         })
+    for depth_key, entry in sorted(data.get("self_normalised", {}).items(),
+                                   key=lambda kv: int(kv[0])):
+        summary[f"curve/self_c_over_c0_{depth_key}"] = entry["c_over_c0"]
+        summary[f"curve/self_h_{depth_key}"] = entry["h"]
+        summary[f"curve/self_n_{depth_key}"] = entry["n"]
     run.log({"depth_cost_curve": table})
-    run.summary.update(summary)
+
     artifact = wandb.Artifact("depth-cost-curve", type="analysis")
     artifact.add_file(str(args.path / "curve.json"))
+    if args.policy_sim and args.policy_sim.exists():
+        sim = json.loads(args.policy_sim.read_text())
+        sim_table = wandb.Table(columns=[
+            "cap", "profile", "d_old", "d_new", "d_opt", "T_old", "T_new",
+            "cost_per_token_old", "cost_per_token_new", "cost_per_token_opt",
+            "pct_new_vs_old", "pct_opt_vs_old"])
+        for row in sim["rows"]:
+            sim_table.add_data(*[row[c] for c in sim_table.columns])
+            summary[f"policy/cap{row['cap']}/{row['profile']}/pct"] = \
+                row["pct_new_vs_old"]
+            summary[f"policy/cap{row['cap']}/{row['profile']}/d_new"] = \
+                row["d_new"]
+        run.log({"policy_counterfactual": sim_table})
+        artifact.add_file(str(args.policy_sim))
+    run.summary.update(summary)
     run.log_artifact(artifact)
     print(f"curve: {run.url}")
     run.finish()
@@ -163,6 +183,8 @@ def main():
     ap.add_argument("--name", default=None)
     ap.add_argument("--notes", default=None)
     ap.add_argument("--warmup", type=int, default=2)
+    ap.add_argument("--policy-sim", type=Path, default=None,
+                    help="policy_sim.py --json output to attach to a curve run")
     args = ap.parse_args()
     (log_arm if args.kind == "arm" else log_curve)(args)
 
