@@ -120,10 +120,12 @@ def empirical_knee(shape, widths):
 # the two families must never be fitted with one law.
 VECTOR_LIMIT = 10
 
-# Active weight streams under the crossrow kernel: `IPG = ceil(M / ceil(M / 4))`
-# packs up to NA = 4 input rows into one group, and the surplus host groups
-# return before touching weights. So the number of full-matrix reads is
-# `ceil(M / 4)` -- a staircase with period 4, stepping at M = 5 and M = 9.
+# Active weight streams under the crossrow kernel:
+# `IPG = ceil(M / ceil(M / NA_max))` packs up to NA_max input rows into one
+# group, and the surplus host groups return before touching weights. So the
+# number of full-matrix reads is `ceil(M / NA_max)`. At NA_max = 4 that is a
+# period-4 staircase stepping at M = 5 and M = 9; at NA_max = 5 the only step
+# inside M < 10 is at M = 6.
 CROSSROW_MAX_INPUTS_PER_GROUP = 4
 
 
@@ -131,6 +133,14 @@ def weight_streams(m):
     if m >= VECTOR_LIMIT:
         return None
     return -(-m // CROSSROW_MAX_INPUTS_PER_GROUP)
+
+
+def stream_boundaries():
+    return [
+        m
+        for m in range(2, VECTOR_LIMIT)
+        if weight_streams(m) != weight_streams(m - 1)
+    ]
 
 
 def kernel_family(m):
@@ -147,7 +157,9 @@ def staircase_fit(shape):
     stream-corrected column is the discriminating evidence, because it says the
     cost law was identified rather than that a wiggle was observed.
     """
-    tread = {1: [1, 2, 3, 4], 2: [5, 6, 7, 8], 3: [9]}
+    tread = {}
+    for m in range(1, VECTOR_LIMIT):
+        tread.setdefault(weight_streams(m), []).append(m)
     nominal, corrected, cost = {}, {}, {}
     for m in range(1, VECTOR_LIMIT):
         r = row(shape, m)
@@ -179,7 +191,7 @@ def staircase_fit(shape):
     # inside a tread, not against a tread spread that has accumulated three of
     # them. Increments are normalised by cost[1] so shapes are comparable.
     incr = {m: (cost[m] - cost[m - 1]) / cost[1] for m in range(2, VECTOR_LIMIT)}
-    boundaries = [m for m in (5, 9) if m in incr]
+    boundaries = [m for m in stream_boundaries() if m in incr]
     interior = [m for m in incr if m not in boundaries]
     mean_boundary = sum(incr[m] for m in boundaries) / len(boundaries)
     mean_interior = sum(incr[m] for m in interior) / len(interior)
@@ -224,6 +236,7 @@ def staircase_fit(shape):
         # > 1 means stream-corrected bandwidth exceeds what this same kernel
         # reaches at M=1, so the correction demands impossible traffic.
         "max_corrected_over_m1": max(corrected.values()) / nominal[1],
+        "boundaries": boundaries,
         "boundary_ranks": {str(m): r for m, r in ranks.items()},
         "boundaries_rank_first": boundaries_rank_first,
         "verdict": verdict,
@@ -549,6 +562,7 @@ def _breakeven(d, round_seconds):
 
 
 def main():
+    global CROSSROW_MAX_INPUTS_PER_GROUP
     ap = argparse.ArgumentParser()
     ap.add_argument("--vendored")
     ap.add_argument("--stock")
@@ -558,7 +572,15 @@ def main():
     ap.add_argument("--host", default="unknown")
     ap.add_argument("--base-sha", default="unknown")
     ap.add_argument("--head-provenance")
+    ap.add_argument(
+        "--na-max",
+        type=int,
+        default=CROSSROW_MAX_INPUTS_PER_GROUP,
+        help="inputs a crossrow group may pack; sets the ceil(M/NA_max) "
+        "stream law the staircase test is scored against",
+    )
     args = ap.parse_args()
+    CROSSROW_MAX_INPUTS_PER_GROUP = args.na_max
 
     head_prov = {}
     if args.head_provenance and os.path.exists(args.head_provenance):
@@ -706,6 +728,8 @@ def main():
     out = {
         "host": args.host,
         "base_sha": args.base_sha,
+        "crossrow_na_max": CROSSROW_MAX_INPUTS_PER_GROUP,
+        "stream_boundaries": stream_boundaries(),
         "head_provenance": head_prov,
         "qmv_fast_alignment": alignment,
         "scored_shapes_off_qmv_fast": off_fast,
@@ -813,10 +837,12 @@ def main():
         print(f"  {kn['name']:36s} {kn['bw_eff_gb_s']:9.1f}G {fl} {km} "
               f"{kn['plateau_end_m']:8d} {(mk if mk else 0):9d}")
     if stair:
+        bnd = ",".join(str(m) for m in stream_boundaries())
         print("\nstaircase vs roofline over M=1..9 (achieved GB/s, two ways)")
-        print("  step_excess = mean cost increment at the stream boundaries "
-              "M=5,9 / mean increment inside a tread")
-        print("  rank1st = M=5 and M=9 are the two largest increments over "
+        print(f"  NA_max={CROSSROW_MAX_INPUTS_PER_GROUP}, stream boundaries M={bnd}")
+        print(f"  step_excess = mean cost increment at the stream boundaries "
+              f"M={bnd} / mean increment inside a tread")
+        print(f"  rank1st = M={bnd} are the largest increments over "
               "M=2..9, which is the scale-free staircase signature")
         print(f"  {'shape':36s} {'cv_nom':>7s} {'cv_corr':>8s} {'flatgain':>9s} "
               f"{'GB/s_corr':>10s} {'dM5':>6s} {'dM9':>6s} {'dInt':>6s} "
@@ -834,14 +860,15 @@ def main():
               " full weight read")
         print("  corr/M1 > 1 falsifies the correction: it needs more bandwidth"
               " than this kernel reaches at M=1")
-        print(f"  {'shape':36s} {'mstream@5':>10s} {'mstream@9':>10s} "
-              f"{'corr/M1':>8s}  implied streams M1..M9")
+        bnd = stair[0]["boundaries"]
+        bhdr = ' '.join(f"{f'mstream@{m}':>10s}" for m in bnd)
+        print(f"  {'shape':36s} {bhdr} {'corr/M1':>8s}  implied streams M1..M9")
         for f in stair:
             imp = ' '.join(f"{f['implied_streams'][m]:4.2f}" for m in
                            sorted(f['implied_streams']))
-            print(f"  {f['name']:36s} "
-                  f"{f['marginal_stream_cost']['5']:10.3f} "
-                  f"{f['marginal_stream_cost']['9']:10.3f} "
+            mstream = ' '.join(f"{f['marginal_stream_cost'][str(m)]:10.3f}"
+                               for m in bnd)
+            print(f"  {f['name']:36s} {mstream} "
                   f"{f['max_corrected_over_m1']:8.2f}  {imp}")
     print("\ncall-mix-weighted verify cost, relative to width 1")
     print("  tap-corr repeats the tax with the timing scaffolding subtracted")
@@ -1114,8 +1141,8 @@ def main():
                 "shape", "k", "n", "cv_gbps_nominal", "cv_gbps_stream_corrected",
                 "flatness_gain", "mean_gbps_stream_corrected", "increment_m5",
                 "increment_m9", "mean_interior_increment", "step_excess",
-                "boundaries_rank_first", "marginal_stream_cost_m5",
-                "marginal_stream_cost_m9", "max_corrected_over_m1", "verdict",
+                "boundaries_rank_first", "boundaries", "marginal_stream_cost",
+                "max_corrected_over_m1", "verdict",
             ]
         )
         for f in stair:
@@ -1125,7 +1152,8 @@ def main():
                 f["mean_gbps_stream_corrected"], f["increments"][5],
                 f["increments"][9], f["mean_interior_increment"],
                 f["step_excess"], f["boundaries_rank_first"],
-                f["marginal_stream_cost"]["5"], f["marginal_stream_cost"]["9"],
+                json.dumps(f["boundaries"]),
+                json.dumps(f["marginal_stream_cost"]),
                 f["max_corrected_over_m1"], f["verdict"],
             )
 

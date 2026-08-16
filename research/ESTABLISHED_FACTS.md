@@ -183,6 +183,38 @@ an informative way.
 >   vendored vs stock. Raw `cost(9)/cost(1) = 2.980` — note the "ideal 1.12"
 >   below is off by 2.7×.
 >
+### ⛔⛔ THE RETRACTION QUOTED BELOW IS ITSELF RETRACTED — the curve was measured; the *endpoint* is what is wrong
+
+**Do not act on the block-quoted retraction below.** Every load-bearing claim in
+it has been checked and falsified:
+
+| its claim | truth | how verified |
+|---|---|---|
+| "PR #1 has zero student commits" | **56 commits**, full report delivered | `git ls-remote origin`; head `0309af5c` |
+| "`git log --all -S 0.0862` returns only advisor commits" | true **and irrelevant** — the fetch refspec is narrowed to the advisor branch, so `--all` could never see a student branch | `git config --get-all remote.origin.fetch` |
+| "the vector was an assumed shape I mislabelled as data" | **false** — it is `a·v + b`, `a = 1.000532`, `b = 0.041868`, residuals `≤ 2e-9`, over `verifyMarginalRatioByDepth` as refit at `84f1c9c8` | recomputed |
+| "no in-situ `h(d)` measurement exists" | it existed at `75fe7a2` (17:14:02Z), **before** my earliest artifact carrying the curve (18:53:33Z) | commit timestamps |
+| "internally falsified by the `C(8)` endpoint" | **the endpoint is the error.** PR #1 r3 measures `C(8) = 198.683 ms`; the "invented" curve implies **200.7 ms** — **+1.0%** against that, **+0.4%** against the report's curve-ratio endpoint `65.469 × 3.0545 = 199.975 ms` | nine-arm forced-depth sweep |
+
+**⇒ `C(8) = 161.0 ms` (PR #3, table below) is REFUTED as a depth-8 round cost —
+it is **19.0% below** direct measurement (equivalently, the measurement is 23.4%
+above it), while `C(0) = 67.0 ms` agrees to 2.3%.** The endpoint test I built
+could never have failed independently:
+`67.0 × (1 + 1.403) = 161.0` *exactly*, and
+`1.403 − 8 × 2.689/67.0 = 1.0819 ≈ 1.082`. The "local" and "ranked" required
+sums and the anchor are **one number wearing three hats**.
+
+**Restored to fact status** (previously struck by the block below): the
+`h(3)` ramp-onset reading, the in-situ boundary-excess figures, and `d* = 7`
+as a *live unresolved prediction* — restored as claims that may now be scored,
+not as confirmed results.
+
+**Still struck, for a reason that survives:** calling the objective table an
+"independent second derivation" of `d* = 7`. One vector through two formulas is
+one method, whatever the vector's provenance.
+
+Preserved verbatim, wrong parts included, because it is the evidence:
+
 > ### ★★★★★ RETRACTED IN FULL — there was no second method
 >
 > This paragraph used to claim independent cross-validation against "Edward's
@@ -339,7 +371,58 @@ PR #3's round anchors on this host:
 | leg | rounds | `Σ block_latency` | per round |
 |---|---:|---:|---:|
 | serial `d=0` | 64 | 4.286431789398193 | **67.0 ms** (= `V(1)+c`) |
-| MTP `d=8` | 10 | 1.6095870733261108 | **161.0 ms** |
+| MTP `d=8` | 10 | 1.6095870733261108 | ~~**161.0 ms**~~ ⛔ **REFUTED — see below** |
+
+> ### ⛔ THE `C(8) = 161.0 ms` ANCHOR IS REFUTED. `C(0) = 67.0 ms` SURVIVES.
+>
+> PR #1 r3 measured the round cost curve directly — nine forced-depth arms, a
+> 512-token decode window, warmup 2, `acc == d` only, the pinned 4-bit head on
+> every arm (`head_provenance_sha256 =
+> 54930a1d281ff3ec4373fc2befd190afdb67ee09ffd90e8fc60e4d1f538bfc4b`), all arms
+> bit-exact. It reports **`C(0) = 65.469 ms`** and **`C(8) = 198.683 ms`**.
+>
+> | | PR #3 anchor | PR #1 direct | gap (measurement as denominator) |
+> |---|---:|---:|---:|
+> | `C(0)` | 66.975 ms | 65.469 ms | **+2.3%** — agrees |
+> | `C(8)` | 160.959 ms | 198.683 ms | **−19.0%** — refuted |
+>
+> The two legs disagree by 37.7 ms at depth 8 and agree at depth 0, so the
+> disagreement is real and scales with `d`.
+>
+> **Leading explanation — a LABELLING error, not a measurement error.** The
+> PR #3 leg was *configured* with depth cap 8; nothing shows it *attempted* 8.
+> Inverting PR #1's measured curve at the observed 160.959 ms gives a mean
+> attempted depth of **≈ 6.2**, and the session's depth policy is adaptive
+> (`acceptEMAAlpha = 0.15`). On this reading `161.0 ms` is `E[C(d_attempted)]`,
+> which is a perfectly good number that was filed under the wrong name.
+>
+> **Not excluded:** partial scope of the latency counter (weakened — PR #3 states
+> the per-round `latency` brackets the whole block request, parent-side), and a
+> 10-round sample against the serial leg's 64.
+>
+> ⚠ **Honest limit on this explanation.** I built a second "independent" channel
+> — token yield, `64/10 = 6.40` tokens/round ⇒ 5.40 accepted drafts — expecting
+> it to confirm depth ≈ 6.2. **It does not discriminate.** 5.40 accepted drafts
+> is reproduced by depth 6.2 at `q ≈ 0.97` *and* by depth 8 at `q ≈ 0.93`, both
+> plausible. The yield channel rules out *full* acceptance and nothing more, so
+> counting it as corroboration would repeat exactly the one-number-two-formulas
+> error this file already records at `:1724`. **All discriminating power sits in
+> a single 10-round cost measurement.** Status: leading hypothesis, not fact.
+>
+> **To settle it:** read realised attempted depth per round directly off the leg
+> — PR #1's merged forced-depth/histogram instrument does this in one run.
+> Generator and full arithmetic: `research/pr3_anchor_reconciliation.py`.
+>
+> **Unaffected: PR #3's `P = 4.0086 s`.** The two-leg algebra uses
+> `sum(block_latency)` only as an observed per-leg total and never assigns it a
+> depth, so a mislabelled depth does not enter it.
+>
+> Anything derived from `C(8) = 161.0` **as a depth-8 cost** is suspect:
+> `h_avg = 0.176`, the "residual tax 1.71–1.91×", "67–77 ms per round
+> unexplained", the `M=9` stream reading at `:598`, and the comparison table at
+> `:776`. **The "unexplained tax" is probably largely an artifact of comparing a
+> depth-8 ideal against a leg that averaged depth ≈ 6.2.** Each site is flagged
+> inline.
 
 with `c = 0.00033844841851128475` s/round. The *average* marginal is
 `(161.0 − 67.0)/8 = 11.75 ms/draft`, i.e. `h_avg = 0.176` against the shipped
@@ -1040,4 +1123,311 @@ the major computational bottlenecks."* Note this is a *different* mechanism from
 the static prefix trim we already rejected: halving the compact prefix to 49,152
 rows regressed acceptance 1.00 → 0.877, whereas a clustered or low-rank
 two-stage readout preserves coverage.
+
+
+---
+
+## Draft-readout precision path — four source facts verified during the brief audit
+
+These four were all read directly from source on 2026-08-16 while auditing PR #7
+and PR #8. Two of them close standing "UNVERIFIED" notes in this file; one of
+them corrects a line number recorded earlier from memory. **Each is quoted with
+its file and line range so the next reader can re-check it in under a minute
+rather than re-deriving it.**
+
+### 1. Low-bit affine `qmv_fast` IS instantiated on the non-NAX path
+
+This resolves the standing "UNVERIFIED — we only ever confirmed bits ∈ {2,3,4,5,6,8}
+for the NAX kernels" note. In
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal`, the
+instantiation macro chain is:
+
+```
+:150-158  instantiate_quantized_all()   -> groups(2),(3),(4),(5),(6),(8)
+:145      instantiate_quantized_groups  -> types(128,·) types(64,·) types(32,·)
+:141-144  instantiate_quantized_types   -> funcs(float|float16_t|bfloat16_t)
+:132-139  instantiate_quantized_funcs   -> instantiate_quantized_all_batched
+:82-86    ..._all_batched               -> batched_wrap(affine_qmv_fast, ...)
+:78-80    ..._batched_wrap              -> batched(...,1) and batched(...,0)
+```
+
+Therefore `affine_qmv_fast_<type>_gs_64_b_2` and `affine_qmv_fast_<type>_gs_64_b_3`
+both exist, in batched and non-batched form, for `float`, `float16_t` and
+`bfloat16_t`. **Bits ∈ {2,3,4,5,6,8} × group size ∈ {32,64,128} is the full
+supported matrix on the ordinary path, not just the NAX path.** The host `fast`
+gate (`backend/metal/quantized.cpp:259`, `N % bn == 0 && K % 512 == 0`) is
+bits-independent, so lowering bit width cannot fall off the fast path.
+
+### 2. `qwen35DraftSelectKernel` is bit-width agnostic
+
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1944-2008` (definition),
+called at `:2372`. `inputNames: ["logits"]`; the body reads
+`float value = float(logits[index])` and runs a two-level SIMD argmax (shuffle
+reduce → one threadgroup barrier → second reduce in simd group 0), then writes
+`token_id[0] = int(best_id < PREFIX_COUNT ? best_id : best_id + CONTROL_OFFSET)`.
+Template params are `REAL_COUNT`, `PREFIX_COUNT`, `CONTROL_OFFSET`, `TG_SIZE=1024`.
+
+**It never touches packed weights, scales or biases** — it consumes dense logits
+that have already been produced. Any belief that this kernel "assumes 4-bit" is
+false, and a stopping-rule branch conditioned on it could never fire.
+
+### 3. Draft-head bit width lives in `makeCompactDraftHead()`, not `draftTokenID`
+
+`Qwen35.swift:2406-2434`. The function builds
+`compactRows = concatenated([prefix 0..<98_304, controls 248_044..<248_070,
+padding 0..<(paddedCount − realCount)], axis: 0)`, and when `lmHead` is a
+`QuantizedLinear` it reconstructs one with `bits: quantized.bits` (`:2428`) —
+i.e. it **inherits 4 bits from the parent head**. Row-slicing packed 4-bit
+weights is valid because packing runs along K, not N.
+
+Related anchors: `draftTokenID` at `:2361-2387`, whose guard is
+`_draftHeadW == nil, usesCompactDraftVocabulary` (`:2364`);
+`usesCompactDraftVocabulary` at `:2401-2404` requires
+`configuration.vocabularySize == 248_320 && lmHead != nil && _draftHeadW == nil`.
+
+Three consequences follow directly:
+
+- **Steady-state peak memory FALLS, it does not rise.** Requantizing *replaces*
+  an existing allocation: −62.9 MB at 3-bit, −125.9 MB at 2-bit. (An earlier
+  advisor note warning of a peak-memory *increase* was backwards.)
+- **The real hazard is a transient**, not the steady state: dequantizing
+  98,336 × 5120 = **503,480,320** weights costs ≈ **1.01 GB in fp16** and
+  ≈ **2.01 GB in fp32** while it is live. Chunk by rows if it bites.
+- **Crossrow is not in play for the draft readout.** Draft readout is M=1, and
+  the crossrow kernel carries `static_assert(M >= 2 && M <= 9)` plus a
+  `bits == 4` host gate. A draft-head bit-width change therefore cannot move the
+  dispatch family.
+
+### 4. Acceptance is exact token-ID match — exact lines
+
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:641-649`. **Note the line
+number: `:641`, not the `~:638` recorded earlier in this file from memory.**
+
+```swift
+static func acceptedDraftPrefixCount(drafts: [Int], verifyArgmax: [Int]) -> Int {
+    precondition(verifyArgmax.count >= drafts.count)
+    for index in drafts.indices where verifyArgmax[index] != drafts[index] {
+        return index
+    }
+    return drafts.count
+}
+```
+
+Pinned by `Tests/MLXFastTests/QwenMTPFixedWindowTests.swift:12,28`. Nearby:
+`defaultDraftDepth = 2` at `:652`.
+
+This is the structural basis of prediction 5: acceptance compares **token IDs**,
+so any change confined to the drafter's numerics can only change *which* drafts
+are proposed and *how many* are accepted — never the emitted token, which always
+comes from the verifier's argmax. It still requires a parity run to confirm
+empirically, because "structurally cannot" and "measured did not" are different
+claims.
+
+### Provenance note attached to this audit
+
+`git log --all --oneline -S"6.6 ms" -- research/` returns exactly one commit,
+`b2419f4` ("research: the width cost law is measured, and both prior models are
+refuted"). The retraction of the `+5.5 / +6.6 ms` boundary excess, of the
+`h(3) = 0.2446` "ramp onset" explanation, of the "2.4× smaller live than
+isolated" discrepancy, and of `d* = 7` is recorded above at lines 186-210 of this
+file and struck in place in `CURRENT_RESEARCH_STATE.md`.
+
+### ★★★★★ The methodological point these four facts make together
+
+Three of the four were **gates I had written into a student brief as
+"Unverified: check whether X"**. All three were resolvable from source in under
+ten minutes by the person who wrote the brief. A gate the advisor can close from
+source in minutes costs a student hours and can terminate in a spurious "blocked"
+report.
+
+> **"Unverified" in a brief is a debt the advisor owes, not a task to delegate.**
+> Before writing "check whether X", try to check X.
+
+And the contrast that made the audit worth doing: the brief that survived the
+contamination sweep intact (PR #7, Part A) survived because **its numbers were
+derived from physical constants and independently recomputable** — 98,336 rows ×
+5120 cols at 4/3/2 bits plus fp16 scale+bias ⇒ 2880/2240/1600 B/row ⇒
+283.2/220.3/157.3 MB ⇒ Δt at 227 GB/s. Every figure re-derived in two minutes and
+all held. The one number in that brief that came from *other numbers in my own
+notes* was the one that had to be withdrawn.
+
+> **Prefer quantities recomputable from physical constants (bytes, bandwidth,
+> element counts) over quantities inherited from the research record. The first
+> kind fails loudly and locally; the second kind propagates.**
+
+
+---
+
+## Crossrow QMV against the roofline — measured facts from PR #8 (merged 2026-08-16)
+
+Source: PR #8 (`qwen-thorfinn`, `qwen38-r1-e7-crossrow-na5`), merged at
+`fa9a216a`. Apple M4 Pro, one thermal session, `dirty=0`. W&B runs
+`bq9xfu6d` (NA=4 control), `e79lcwx2` (NA=5 v1), `1y91qkq5` (NA=5 v2).
+Repro: `research/run-qmv-curve.sh <TAG> b2419f41` → `research/qmv_na_compare.py`,
+`research/qmv_gbps_table.py`. **GPU peak bandwidth ≈ 273 GB/s.**
+
+### FACT 1 — the boundary widths are the saturated ones; the interior is not
+
+> ## ★★★★★ 2026-08-16 — **THE "% OF PEAK" COLUMN BELOW IS DISPUTED.** Read this
+> ## banner before using it to target anything. Assigned as PR #10.
+>
+> The `% of 273 GB/s peak` column is computed from `gbps_stream_corrected`, which
+> `research/qmv_cost_curve_summary.py:274-278` defines as
+> `weight_streams(m) * weight_bytes / seconds_per_call`, with
+> `weight_streams(m) = ceil(m/4)` (`:132-136`).
+>
+> **Invert it and a different invariant appears.** Dividing out the stream count
+> to recover `gbps_nominal = weight_bytes / seconds_per_call`:
+>
+> | M | streams | stream-corrected | nominal | **nominal × M** |
+> |---:|---:|---:|---:|---:|
+> | 4 | 1 | 165.6 | 165.60 | 662.4 |
+> | 5 | 2 | 262.1 | 131.05 | 655.2 |
+> | 8 | 2 | 183.0 | 91.50 | 732.0 |
+> | 9 | 3 | 239.5 | 79.83 | 718.5 |
+>
+> **`nominal × M = 692 ± 5.6%`** (stdev 38.9, n=4). Under a bandwidth-bound
+> model `gbps_nominal` should be flat; it instead spans **2.07×** (79.8 → 165.6),
+> monotonically decreasing in `M`. The invariant is `nominal × M`, i.e.
+> **`seconds_per_call ∝ M`** at fixed unique weight bytes. Cross-row weight reuse
+> buys ≈ nothing at `M ≥ 4`.
+>
+> **Independently cross-validated by PR #5**, a different dataset on a different
+> shape. Its `implied_streams` curve (`:171`) ramps linearly above `M = 3`, and
+> the ramp extrapolates back to the flat floor `c ≈ 1.0` at **`M ≈ 3`** — which
+> is where PR #5 independently reports the plateau ends ("the measured plateau
+> *ends at `M = 1–3`* on every shape").
+>
+> **State the method, because the knee moves with it** (this was caught by
+> re-deriving the number rather than trusting the note that recorded it):
+>
+> | method over the ramp | slope/row | intercept | knee |
+> |---|---:|---:|---:|
+> | endpoint `M=4→9`, proportional line `c = βM` | 0.326 | (forced 0) | **3.07** |
+> | endpoint `M=4→9`, with its own intercept | 0.326 | −0.064 | 3.26 |
+> | OLS `M = 4..9` | 0.309 | +0.034 | 3.13 |
+> | OLS, windows `3..9 / 4..9 / 5..9 / 6..9` | 0.30–0.32 | ~0 | 2.99–3.27 |
+>
+> ⇒ **The load-bearing claim is `knee ∈ [2.99, 3.27]` — robust to every method
+> and window tried.** The single figure "3.07" is the proportional-line case
+> only; do not quote it as *the* knee, and note that "intercept ≈ 0" is an
+> approximation whose sign is not even stable across methods. The robustness of
+> the band is the real result, because it means the knee is not an artifact of
+> a fitting choice.
+>
+> ⇒ **Two-regime roofline model, one free parameter:**
+> `t(M) = max(t_bandwidth, β·M)`, knee at `M ≈ 3`. Bandwidth-bound below,
+> **ALU-bound above.** It *predicts* the knee rather than fitting it, and it
+> needs no boundary-excess term.
+>
+> **Why the "% of peak" framing is suspect:** it corrects bandwidth by the
+> integer `ceil(M/4)`, but PR #5 already showed that integer does not govern
+> cost — `implied_streams` is **continuous** (1.00 0.99 1.01 1.24 1.64 1.90 2.17
+> 2.44 2.87) exactly where the integer model demands steps at 1,1,1,1,2,2,2,2,3.
+> Correcting by a quantity that does not govern cost manufactures apparent
+> headroom. On this reading the interior is not leaving 33–39% of the machine
+> idle; it is **ALU-saturated and there is no bandwidth prize to collect.**
+>
+> **Status: derived by the advisor from merged artifacts, NOT separately
+> measured.** Nothing in it is inherited from the retracted-number family. PR #10
+> (`qwen-thorfinn`) settles it with two microbenchmark arms — cut arithmetic at
+> fixed bytes, cut bytes at fixed arithmetic. Until it lands, treat FACT 1's
+> targeting consequence as **live but unsafe to spend a student on**.
+>
+> **Every number above is regenerated by `research/roofline_regime_check.py`**
+> (`python3 research/roofline_regime_check.py`, no deps, < 1 s). Do not trust
+> this banner — run it. It prints the inversion table, all six knee estimates,
+> and the integer-vs-continuous comparison. Useful extra it reports: `nominal×M`
+> is **6.0× tighter** than `nominal` (5.6% vs 33.4% relative sd), which is the
+> quantitative form of "the ALU-bound invariant fits better."
+
+Stream-corrected achieved bandwidth, NA=4 (the shipped kernel):
+
+| width | GB/s | % of 273 GB/s peak | role under the old framing |
+|---|---:|---:|---|
+| M=5 | **262.1** | **96%** | "boundary — wasteful" |
+| M=9 | **239.5** | **88%** | "boundary — wasteful" |
+| M=4 | 165.6 | **61%** | "interior — efficient" |
+| M=8 | 183.0 | **67%** | "interior — efficient" |
+
+**The framing was backwards.** The widths that spend an extra weight stream are
+the only ones reaching the machine's bandwidth. The extra stream is not overhead;
+it is the memory-level parallelism that gets the kernel to peak. Collapsing M=5
+from two streams to one (NA=5) dropped it to 85.6–95.5 GB/s — one NA=5 group
+sustains 95.5 where one NA≤4 group sustains 165.6, so the wide-5 path degrades
+**superlinearly and independently of stream count**.
+
+**Consequence for targeting: the recoverable headroom is in the interior widths
+M=4/7/8 (61–67% of peak), not at the boundaries (88–96%).** The 262 GB/s at M=5
+is an existence proof that the hardware is reachable at these shapes.
+
+### FACT 2 — `NA=5` is refuted by two independent implementations
+
+Both v1 (pure wide-5, `704af6f`) and v2 (vec4 + scalar tail, `0a739c9`) made the
+boundary widths **1.13–1.54× slower**, while the intended mechanism fired exactly
+as designed (`weight_streams` 2→1 at M=5, 3→2 at M=9, unchanged elsewhere, all 8
+shapes). Break-even needs ~131 GB/s; the better implementation reached 95.5.
+Through the measured law `C(d) = V(d+1) + 4.46 + 3.73·d`: `C(4)` 127.736 →
+173.012 ms (+35.4%), `C(8)` 213.248 → 249.020 ms (+16.8%). **Not marginal.**
+`NA_max = 4` is restored on the base; the `static_assert(NA >= 2 && NA <= 4)` at
+`mlx-generated/quantized.cpp:993` and its twin `quantized.h:980` stand.
+
+### FACT 3 — the ramp and the boundary excess are SEPARABLE
+
+Median nominal GB/s step M=3→4: **NA=4 −35.6, NA=5 −35.3** (within 1%), under a
+manipulation that moved the boundary widths by 1.13–1.54×. Pre-registered
+prediction #4, confirmed. **This is the structural licence to attack the interior
+widths without a boundary confound**, and it is the most reusable single fact in
+the PR.
+
+### FACT 4 — a semantically-identical refactor broke bit-exactness
+
+v1 is **bitwise identical to M=1 for M=1..9 on 8/8 shapes**. v2 computes the same
+arithmetic and **fails at exactly M=5 and M=9** (0/8, max|d| 0.207–1.0, `lm_head`
+1.0), exact at every other width — it breaks precisely at the widths taking the
+new path. A scalar tail added beside a `vec4` body changed FMA contraction inside
+the vec lanes. Registered as **bit-exactness hazard (8)**.
+
+> **Any edit to a kernel on the exactness-critical path must re-run the
+> bitwise-vs-M=1 gate, including edits believed to be pure refactors. "I did not
+> change the math" is not evidence.** Unlike every other hazard on that list, this
+> one is invisible both in the design and in the diff.
+
+### FACT 5 — two prior record entries do not survive
+
+- **The "live defect" (vendored/stock 0.87–0.92 at M=2..5 on the two N=5120
+  shapes) does not replicate**: never below 0.950 across five sessions. Controls:
+  144-point stock-pip control at median 1.0000 (0.954–1.019); two independent
+  NA=4 sessions within 0.4%. The associated shape-aware guard is independently
+  dead — a **perfect free routing oracle** saves ≤**0.53%** of weighted verify and
+  **0.00% at M≥6**, against a guard cost of ~1%.
+- **PR #5's `step_excess` magnitude (0.112 → 0.169) is inflated** and is demoted
+  to a reading caution: the statistic averages the flat M=2/M=3 increments into
+  the interior baseline. Reported unprompted by its own author.
+
+### ★★★★★ Method rules banked
+
+> **Report bandwidth-bound work against the roofline, not against itself.** Every
+> earlier reading of this kernel compared widths to other widths and concluded the
+> boundaries were anomalous. Adding one column — "% of peak" — inverted the
+> conclusion. **A ratio to your own baseline cannot tell you whether the baseline
+> was the problem.**
+
+> **Instrument the mechanism, not only the outcome.** Because `weight_streams` was
+> logged per width per shape, this experiment could say "the intervention worked
+> and the hypothesis is still false," which indicts the premise alone. A pure
+> outcome measurement would have left premise and execution equally suspect.
+
+> **Overhead you can see is not necessarily overhead.** In a bandwidth-bound
+> regime, apparent duplication is often the parallelism. Before removing a
+> redundancy, ask what it is buying.
+
+> **Bound the prize before paying for the experiment.** An oracle upper bound
+> closed the shape-aware-guard branch at zero GPU cost. When a proposed
+> optimization has a computable ceiling, compute the ceiling first.
+
+> **A number seen once is an observation; a number seen across sessions is a
+> property.** The 0.87–0.92 figure was a single-session excursion that a section
+> heading ("Live defect found in our own shipped kernel") promoted to a durable
+> claim, where it sat as an unassigned work item until someone re-measured it.
 

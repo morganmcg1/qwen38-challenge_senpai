@@ -161,6 +161,13 @@ public final class Qwen36MTPBlockSession {
     public private(set) var acceptedDraftTotal = 0
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
+    /// `rollbackRoundCount` increments before the repair branch, so it cannot
+    /// distinguish the cheap per-row GDN checkpoint restore from the fallback
+    /// that re-forwards the committed block and pays a second blocking eval.
+    /// The break-even constant is justified by the cheap path being universal,
+    /// so the split is the measurement that tests that premise.
+    public private(set) var prefixRepairCount = 0
+    public private(set) var fullRepairCount = 0
     public private(set) var began = false
     /// Fixed-window decode treats EOS like any other serial token. Kept as a
     /// compatibility property for callers compiled against the old session API.
@@ -329,6 +336,9 @@ public final class Qwen36MTPBlockSession {
             cache: oneRowReplayCache, committedRows: 1))
         eval(oneRowReplayCache.flatMap { $0.state })
 
+        probeResidentHeadCost(warmCache: warmCache, hiddenDim: hDim,
+                              hiddenDType: row.dtype)
+
         // SEED-PREFILL SHAPE WARM (M=512 backbone). Keep this as the final
         // warm so the promoted allocator/pipeline end state is preserved.
         // The phase trace measured
@@ -357,6 +367,74 @@ public final class Qwen36MTPBlockSession {
             Self.linearTopTwoRows(model.applyLMHead(seedWarmRow))
         eval(seedWarmCache.flatMap { $0.state }
             + [seedWarmIDs, seedWarmValues, seedWarmNorm])
+    }
+
+    /// Price the RESIDENT proposal head against the RESIDENT target, on
+    /// throwaway state, at the end of the warm phase.
+    ///
+    /// The schedule needs `H / V(1)` — one isolated head draft step over one
+    /// single-row target verify — because that ratio is the only part of the
+    /// per-draft marginal that a declared head can change, and it is also the
+    /// only part that a forced-depth sweep cannot recover: at every depth the
+    /// verify width is exactly `d + 1`, so a head step and a verify-width
+    /// increment are perfectly collinear across the sweep. Measuring one of
+    /// them directly breaks that degeneracy.
+    ///
+    /// Both probes replay the expression the scored round dispatches — the
+    /// head step is `mtpHeadHiddenForward` chained into `draftTokenID`, as in
+    /// a deep draft sub-step, and the verify is a single-row `callWithHidden`
+    /// closed by the same top-2 reduction. Zero real tokens are involved, the
+    /// caches are throwaway, every shape here was already compiled above, and
+    /// none of this is inside a timed window.
+    private func probeResidentHeadCost(
+        warmCache: [any KVCache], hiddenDim: Int, hiddenDType: DType
+    ) {
+        let probeHeadCache = model.makeMTPCache()
+        var probeHidden = MLXArray.zeros([1, 1, hiddenDim], dtype: hiddenDType)
+        var probeID = model.draftTokenID(probeHidden)
+        eval(probeID)
+        var headSamples: [Double] = []
+        for _ in 0 ..< 5 {
+            let start = DispatchTime.now().uptimeNanoseconds
+            let stepHidden = model.mtpHeadHiddenForward(
+                hidden: probeHidden, nextTokenIds: probeID,
+                cache: probeHeadCache)
+            probeHidden = stepHidden[
+                0..., (stepHidden.dim(1) - 1) ..< stepHidden.dim(1), 0...]
+            probeID = model.draftTokenID(probeHidden)
+            eval(probeID)
+            headSamples.append(
+                Double(DispatchTime.now().uptimeNanoseconds - start) / 1000.0)
+        }
+
+        var verifySamples: [Double] = []
+        for _ in 0 ..< 3 {
+            let start = DispatchTime.now().uptimeNanoseconds
+            let (probeLogits, _) = model.callWithHidden(
+                input: LMInput.Text(tokens: MLXArray([0]).reshaped([1, 1])),
+                cache: warmCache, nConfirmed: 0)
+            let (probeIDs, probeValues) = Self.linearTopTwoRows(probeLogits)
+            eval(probeIDs, probeValues)
+            eval(warmCache.flatMap { $0.state })
+            verifySamples.append(
+                Double(DispatchTime.now().uptimeNanoseconds - start) / 1000.0)
+            Self.clearRecurrentRollback(warmCache)
+        }
+
+        let headUS = Self.medianMicroseconds(headSamples)
+        let verifyUS = Self.medianMicroseconds(verifySamples)
+        Self.adoptResidentHeadStepRatio(headUS / verifyUS)
+        if Self.traceRounds {
+            let headText = headSamples.map { String(format: "%.0f", $0) }
+                .joined(separator: ",")
+            let verifyText = verifySamples.map { String(format: "%.0f", $0) }
+                .joined(separator: ",")
+            Self.traceWrite(
+                "mtp-trace: headprobe head_us=\(Int(headUS)) "
+                    + "verify_us=\(Int(verifyUS)) "
+                    + "ratio=\(String(format: "%.6f", headUS / verifyUS)) "
+                    + "head_samples=\(headText) verify_samples=\(verifyText)\n")
+        }
     }
 
     // MARK: - begin
@@ -397,9 +475,16 @@ public final class Qwen36MTPBlockSession {
                                            pendingHidden!, hidden])
         if Self.traceRounds {
             let tBeginDone = DispatchTime.now().uptimeNanoseconds
+            // Records which curve the leg actually ran, so an override that
+            // failed to reach the worker reads as a failed override rather
+            // than as a policy that made no difference.
+            let hCurve = Self.overrideHeadStepCostRatioByDepth
+                ?? [Self.headStepCostRatio]
+            let hText = hCurve.map { "\($0)" }.joined(separator: ",")
             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
-                + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000)\n")
+                + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
+                + "h=\(hText)\n")
         }
         let readTail = (
             tailIDs.asArray(Int32.self).map { Int($0) },
@@ -468,10 +553,31 @@ public final class Qwen36MTPBlockSession {
     /// stderr to the wrapper's log.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
+    /// submission. `mtp-timed` builds its worker options WITHOUT
+    /// `forwardsWorkerStderr`, so the parent's drain attaches a no-op emitter
+    /// and every stderr trace line is swallowed. A file sink is the only way
+    /// to read the phase trace back; the local run therefore has to relax the
+    /// generated worker sandbox (`MLXFAST_NO_SANDBOX=1`, refused on official
+    /// runs) because that profile denies `file-write*`.
+    /// One file per worker PID: the wrapper spawns a separate worker for
+    /// reference-row generation, the serial control and the MTP leg, and a
+    /// shared path would leave only the last one.
+    private static let traceFile: FileHandle? = {
+        guard traceRounds,
+              let base = ProcessInfo.processInfo.environment[
+                  "MLX_QWEN_MTP_TRACE_PATH"
+              ], !base.isEmpty
+        else { return nil }
+        let path = "\(base).\(ProcessInfo.processInfo.processIdentifier)"
+        FileManager.default.createFile(atPath: path, contents: nil)
+        return FileHandle(forWritingAtPath: path)
+    }()
     private static func traceWrite(_ line: String) {
-        // stderr: the worker sandbox denies file-write*, and the parent's
-        // drain forwards stderr lines when MLX_QWEN_MTP_TRACE=1 flips
-        // `forwardsWorkerStderr` on the local mtp-timed verb.
+        if let traceFile {
+            traceFile.write(Data(line.utf8))
+            return
+        }
         FileHandle.standardError.write(Data(line.utf8))
     }
 
@@ -480,8 +586,15 @@ public final class Qwen36MTPBlockSession {
     /// rows can be compared BIT-FOR-BIT by position — the comparison the
     /// local argmax-only reference check does not do and the ranked ledger
     /// replay does. Same env gate as the phase trace; never on at rank.
+    /// RESEARCH INSTRUMENTATION: the row dump costs host time INSIDE the
+    /// timed round and its cost scales with the accepted count, i.e. with
+    /// depth — exactly the axis the cost curve measures. Split it off the
+    /// phase-trace gate so a cost-curve arm carries only the fixed-size
+    /// per-round line.
+    private static let traceRowValues =
+        ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_ROWS"] == "1"
     private static func traceRow(pos: Int, ids: [Int], values: [Double]) {
-        guard traceRounds else { return }
+        guard traceRounds, traceRowValues else { return }
         let hex = values.map { String(format: "%a", $0) }.joined(separator: ",")
         traceWrite("mtp-row: pos=\(pos) ids=\(ids[0]),\(ids[1]) v=\(hex)\n")
     }
@@ -535,6 +648,45 @@ public final class Qwen36MTPBlockSession {
     /// reject does keep (the drafted head steps past the break) is already
     /// inside the marginal the rule prices.
     private static let headStepCostRatio = 0.20
+
+    /// H / V(1) for the resident head, measured once per process in the warm
+    /// phase by `probeResidentHeadCost`. `nil` until the probe runs. Reported
+    /// through the `headprobe` trace line; nothing reads it to make a
+    /// scheduling decision.
+    nonisolated(unsafe) private static var residentHeadStepRatio: Double?
+
+    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
+    /// submission. Prices drafts from a supplied per-depth marginal vector
+    /// instead of the scalar above, so a baseline arm and a candidate arm can
+    /// run from ONE binary at matched temperature. Unset — the shipped case —
+    /// leaves `costModelDepth` on the scalar rule, byte-for-byte. Requires
+    /// `Qwen36MTPLimits.maxDepth` entries; anything else is ignored rather
+    /// than padded, so a typo cannot silently reshape the schedule.
+    private static let overrideHeadStepCostRatioByDepth: [Double]? = {
+        guard let raw = ProcessInfo.processInfo.environment[
+            "MLX_QWEN_MTP_H_VECTOR"
+        ] else { return nil }
+        let parsed = raw.split(whereSeparator: { $0 == "," || $0 == " " })
+            .compactMap { Double($0) }
+        guard parsed.count == Qwen36MTPLimits.maxDepth,
+              parsed.allSatisfy({ $0.isFinite && $0 >= 0 })
+        else { return nil }
+        return parsed
+    }()
+
+    private static func adoptResidentHeadStepRatio(_ ratio: Double) {
+        guard ratio.isFinite, ratio > 0 else { return }
+        residentHeadStepRatio = ratio
+    }
+
+    private static func medianMicroseconds(_ samples: [Double]) -> Double {
+        precondition(!samples.isEmpty)
+        let sorted = samples.sorted()
+        let mid = sorted.count / 2
+        return sorted.count % 2 == 1
+            ? sorted[mid]
+            : 0.5 * (sorted[mid - 1] + sorted[mid])
+    }
 
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
@@ -630,8 +782,29 @@ public final class Qwen36MTPBlockSession {
     /// the gate admits.
     private static let segmentedStreakGate = 3
 
+    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
+    /// submission. Pins every drafting round to one depth so the phase trace
+    /// yields C(d) per arm. It also bypasses the streak gate, which is the
+    /// only way a d >= 5 arm is reachable at all: the segmented cap opens
+    /// solely after three fully-accepted rounds.
+    private static let forcedDepth: Int? = {
+        guard let raw = ProcessInfo.processInfo.environment[
+            "MLX_QWEN_MTP_FORCE_DEPTH"
+        ], let value = Int(raw), (0 ... Qwen36MTPLimits.maxDepth).contains(value)
+        else { return nil }
+        return value
+    }()
+
     /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
+        if let forced = Self.forcedDepth {
+            return Swift.min(
+                Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth), forced)
+        }
+        if let measured = Self.overrideHeadStepCostRatioByDepth {
+            return instrumentedCostModelDepth(
+                offeredDepth: offeredDepth, h: measured)
+        }
         // The width wall binds the SINGLE-CALL verify; a qualifying
         // full-accept streak opens the segmented cap (the round then feeds
         // the target <= 5-row segments, never a wider launch). Any reject
@@ -664,6 +837,44 @@ public final class Qwen36MTPBlockSession {
             let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
             guard reach > threshold else { break }
             expected += reach
+            depth += 1
+        }
+        return depth
+    }
+
+    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
+    /// submission. The same greedy walk with the flat `h` generalised to a
+    /// per-depth vector: round cost after `d` steps is `1 + cumH` rather than
+    /// `1 + d*h`, so the extend test `f(d+1) < f(d)` becomes
+    /// `reach > h[d] * (1 + expected) / (1 + cumH)`. A flat vector reduces to
+    /// the shipped rule term by term, which is what lets both A/B arms run
+    /// from one binary. Reachable only via `MLX_QWEN_MTP_H_VECTOR`.
+    private func instrumentedCostModelDepth(
+        offeredDepth: Int, h: [Double]
+    ) -> Int {
+        let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
+            ? Self.segmentedVerifyDepthCap
+            : Self.sdpaWidthWallDepthCap
+        let cap = Swift.min(
+            Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
+            widthCap)
+        guard cap > 0 else { return 0 }
+        var reach = 1.0
+        var expected = 0.0
+        var cumH = 0.0
+        var depth = 0
+        while depth < cap {
+            var p = positionAcceptEMA[depth]
+            if depth == 0, let tail = pendingTop2, tail.1.count >= 2 {
+                let margin = tail.1[0] - tail.1[1]
+                let conf = 1.0 / (1.0 + exp(-margin / 2.0))
+                p = Swift.min(p, conf)
+            }
+            reach *= p
+            let threshold = h[depth] * (1.0 + expected) / (1.0 + cumH)
+            guard reach > threshold else { break }
+            expected += reach
+            cumH += h[depth]
             depth += 1
         }
         return depth
@@ -828,11 +1039,14 @@ public final class Qwen36MTPBlockSession {
             let serialLastRow = serialLogits[
                 0..., (serialLogits.dim(1) - 1) ..< serialLogits.dim(1), 0...]
             let (tailIDs, tailValues) = Self.linearTopTwoRows(serialLastRow)
+            tVerifyBuilt = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             eval(cache.flatMap { $0.state } + [tailIDs, tailValues])
+            tEvalDone = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             let readTail = (
                 tailIDs.asArray(Int32.self).map { Int($0) },
                 tailValues.asArray(Float.self).map { Double($0) }
             )
+            tReadDone = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             // Top-2 first ID == row argmax (same ordering); no separate argMax.
             pendingPrimary = readTail.0[0]
             pendingTop2 = readTail
@@ -840,6 +1054,23 @@ public final class Qwen36MTPBlockSession {
             Self.traceRow(
                 pos: seedTokenCount + committedTokenCount,
                 ids: tailTokens, values: tailLogits)
+            if Self.traceRounds {
+                // C(0) for the cost curve. The scalar this session prices drafts
+                // with is a fraction of a zero-draft round, so the denominator
+                // has to come from THIS branch, through the same session and
+                // readout path -- not from the wrapper's separate serial control
+                // leg, which never enters `generateRound`.
+                let tTailDone = DispatchTime.now().uptimeNanoseconds
+                Self.traceWrite(
+                    "mtp-trace: round=\(roundCount) d=0 acc=0 "
+                        + "draft_build_us=0 "
+                        + "verify_build_us=\((tVerifyBuilt - tRound0) / 1000) "
+                        + "eval_wall_us=\((tEvalDone - tVerifyBuilt) / 1000) "
+                        + "readout_us=\((tReadDone - tEvalDone) / 1000) "
+                        + "commit_us=0 "
+                        + "upkeep_us=\((tTailDone - tReadDone) / 1000) "
+                        + "round_us=\((tTailDone - tRound0) / 1000)\n")
+            }
             return Qwen36MTPRoundResult(
                 tokens: committed,
                 declaredRows: 1,
@@ -1041,6 +1272,7 @@ public final class Qwen36MTPBlockSession {
                 acceptedCount: acceptedCount, draftCount: draftCount,
                 to: committedOffset)
             {
+                prefixRepairCount += 1
                 pendingPrimary = verifyArgmax[acceptedCount]
                 pendingHidden = hiddenRow(verifyHidden, acceptedCount)
                 pendingTop2 = (
@@ -1053,6 +1285,7 @@ public final class Qwen36MTPBlockSession {
                 // Generic K>1 / defensive fallback: undo the whole verify window
                 // and re-forward the committed block. This rare path pays a
                 // second blocking eval for its own readout.
+                fullRepairCount += 1
                 Self.rollbackAfterVerify(
                     cache, snapshot, verifiedTokens: draftCount + 1, to: base)
                 let (repairLogits, repairHidden) = model.callWithHidden(
@@ -1119,6 +1352,8 @@ public final class Qwen36MTPBlockSession {
                 + "readout_us=\((tReadDone - tEvalDone) / 1000) "
                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
+                + "prefix_repair=\(prefixRepairCount) "
+                + "full_repair=\(fullRepairCount) "
                 + "round_us=\((tTailDone - tRound0) / 1000) "
                 + "streak_in=\(traceStreakIn) cap=\(traceWidthCap) "
                 + "ema_in=\(traceEMAIn.map { String(format: "%.4f", $0) }.joined(separator: ","))\n"

@@ -80,7 +80,6 @@ research/score-*.json
 research/analysis-*.json
 research/costfit-*.json
 research/dominance-*.json
-wandb/
 research/feasibility-*.json
 research/sweep-*.json
 research/guardrail-*.json
@@ -89,3 +88,6 @@ research/occupancy-*.json
 research/fb6-*.json
 research/fb7-*.json
 research/capture-*/
+# research-only measurement artifacts (qwen38-r1-e1-depth-cost-curve)
+research/out/
+wandb/
