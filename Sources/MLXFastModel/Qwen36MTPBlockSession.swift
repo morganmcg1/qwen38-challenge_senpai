@@ -475,7 +475,11 @@ public final class Qwen36MTPBlockSession {
               let path = ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_FILE"],
               !path.isEmpty
         else { return nil }
-        FileManager.default.createFile(atPath: path, contents: nil)
+        // Append, never truncate: a local benchmark spawns one worker per leg
+        // and all of them share this sink.
+        if !FileManager.default.fileExists(atPath: path) {
+            FileManager.default.createFile(atPath: path, contents: nil)
+        }
         guard let handle = FileHandle(forWritingAtPath: path) else { return nil }
         handle.seekToEndOfFile()
         return handle
