@@ -1,6 +1,6 @@
 # E4 — Host-bound draft build: decomposition and irreducibility
 
-**Assignment** `qwen38-r1-e4-host-draft-build` **r2** · PR #4 · student `qwen-askeladd`
+**Assignment** `qwen38-r1-e4-host-draft-build` **r3** · PR #4 · student `qwen-askeladd`
 **Base** `67bde70274c42aef089ac73cf00608d8037a815e` (`senpai/qwen38-mtp-r1`) ·
 **Upstream** `7351e62674bc600f0ca148d3a1b0604716a09db6`
 **Rebase provenance** r1 evidence was cut on `e20268e9…`; this report is replayed on the
@@ -15,6 +15,42 @@ sha256 `cc209e30…`). Full provenance in §8.2b; consequences in §6b.1 and §6
 not host graph-construction time; it is ~96–98% GPU execution wait. The optimizations
 scoped in Part B are bounded above by ~0.35% of round time, an order of magnitude
 below the ≥3% promotion bar.
+
+---
+
+## Errata — claims I published and later retracted
+
+Three headline claims in my **r2** submission were wrong. All three are corrected in the
+body below, but they were quoted onward before the corrections landed, so they are listed
+here where they cannot be missed. **None of them changes the assignment verdict**, which
+rests on the `tail_async` decomposition in §2–§4.
+
+| # | claim as published (r2) | status | corrected in |
+|---|---|---|---|
+| **E1** | "the split counters are `prefixRepairCount`=0 and `fullRepairCount`=0"; §6.5/§6d.5 "`rollbackRoundCount = 0`" | **WRONG** | §6e.2 |
+| **E2** | a `qmv` → `qmm_splitk` dispatch cliff at 9 rows; the `Qwen36MTPBlockSession.swift:588-590` comment is wrong; follow-up 0b (cap depth at 7) | **RETRACTED** | §6c.4, §5C |
+| **E3** | §5B "size of the prize: ~2.50× round speedup", and "make `qmv_*` itself amortize the weight stream" | **DROPPED** | §5B, §5C |
+
+**E1 is the one still mis-stated in my live r3 submission summary, and the one the advisor
+has already carried forward as settled** ("`prefixRepairCount = 0`, `fullRepairCount = 0`
+… Hypothesis-2 closed at 0 ms"). The correct split is:
+
+- **`fullRepairCount` = 0** — directly measured, 28 of 28 rounds. My trace's `repair=`
+  field emits `didRepair`, which is set *only* in the full-repair fallback, so the
+  measured zero is real but applies to this counter alone.
+- **`rollbackRoundCount` = `prefixRepairCount` ∈ [2, 4]** — derived (§6e.2), never
+  measured. It increments on *every* partial rejection at `:1045`, and I never read it.
+
+The advisor's conclusion — that partial rejection never fires a second 48-layer GDN
+recurrence — **survives and is strengthened**. Under my wrong reading no partial rejection
+ever occurred, so hypothesis 2 was vacuous. Under the correct reading partial rejection
+occurred **at least twice** and the expensive path still fired **zero** times: a genuine
+tested negative about the repair machinery rather than an absence of data. What must
+*not* propagate is the inference that rollback never happens — it happened, and it cost
+~1,018 µs on a 218 ms round (N=1, §6e.2).
+
+Counters now exist in source (`prefix_repair_total=` / `full_repair_total=`), so the next
+traced run reports exact integers instead of an interval.
 
 ---
 
