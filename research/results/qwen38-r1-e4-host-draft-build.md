@@ -33,6 +33,19 @@ Consequently the three Part B mechanisms cannot pay:
 This is **outcome #3** from the PR body: a breakdown proving irreducibility, retiring
 the line of work and re-anchoring the cost model.
 
+Three results outrank that negative and are where the campaign value is:
+
+1. **§5B — `quantized_matmul` collapses at exactly the widths MTP verifies at.** It runs
+   at 248.7 GB/s at M=1 but 72.1 GB/s at M=9, moving ~3.45x the necessary weight bytes.
+   Verify-side quantized matmuls are 201.14 ms of the 217.75 ms round; at roofline the
+   round would be ~87.1 ms — a **2.50x round speedup**. The fix belongs in the *submittable*
+   `kernels/quantized*.metal` + generated twins; the qmv/qmm selector that steers into the
+   cliff is in non-editable host code, so the work must go **inside** `qmv`/`qmv_quad`.
+2. **§6b.1 — the declared proposal head is already 4-bit g64, not bf16.** The "quantize
+   the head, save 11-16%" follow-up has **no prize left**; it is banked in the base.
+3. **§6b.4 — the pre-registered discriminator resolves to BANDWIDTH**, but the residual's
+   real cause is small-M kernel inefficiency, a third category the dichotomy omits.
+
 ## 1a. Correction to feedback (4): `MLX_QWEN_MTP_TRACE=1` **is** reachable
 
 Feedback (4) concluded the trace is unreachable and that Part A "needs a new method".
@@ -494,6 +507,164 @@ optimization is already implemented here**.
 Measured here: round marginal per extra draft = **19.42 ms**; serial base =
 **86.80 ms/token** ⇒ implied ratio **≈ 0.224**. Out of scope to change under this
 assignment (explicitly forbidden) — reported as a follow-up.
+
+## 6b. Answers to feedback (6) — `qwen38-r1-e4-fb6-bandwidth-vs-fixed-preregistered`
+
+Five items, answered in order. Two of the advisor's corrections are **accepted**, one is
+**refuted with two independent proofs**, and the pre-registered discriminator gets an
+explicit branch answer.
+
+### (6.1) "The MTP head streams 849.4 MB/forward (bf16), not 239 MB" — **REFUTED**
+
+The feedback cites `fixtures/qwen3_8_27b_mtp_track.json:126-127`
+(`"tensor_bytes": 849398784`, `"dtype": "bf16"`). Those two lines are real, but they sit
+inside the fixture's `mtp_head` block, which describes the **organizer-pinned default
+head**, not the head this base runs:
+
+```text
+fixtures/qwen3_8_27b_mtp_track.json  ->  mtp_head (ORGANIZER DEFAULT)
+  repo                 EigenLabs/Qwen3.8-27B-MTP-bf16
+  revision             26a328e070875b0314d652a039b6b59902690f03
+  dtype                bf16
+  tensor_count         15
+  tensor_bytes         849398784
+  weights_file_bytes   849400347
+  expected_total_bytes 849406438
+```
+
+`program.md` (*"What The Candidate May Change"*) states that `mtp-head.manifest.json`
+**"may declare a proposal head for the candidate leg only. Without a declaration, the
+candidate uses the organizer-pinned head."** Our base declares one:
+
+```text
+mtp-head.manifest.json  (verbatim, BASE_SHA e20268e9)
+  source_url  hf:lowskillcoding/qwen38-mtp-head-4bit-g64
+              @0966ddaff972fd3ca2be08f3640603b47e9ce70a
+  sha256      cc209e30d8a7def1fc4d785be22b0ec40e16ae6763f9591255a1996a34f08f0d
+  bytes       238934093
+  max_bytes   2147483648
+  note        "4-bit/group-64 MLX-affine requantization of the pinned bf16 head;
+               matches the backbone quantization geometry so the stock
+               scales-keyed walk loads it with zero code changes. rev2 post-#56
+               (f2be121)."
+```
+
+The assignment's own PR body also describes the declared head as 4-bit g64. The 239 MB
+figure in §5 is therefore the correct **runtime** number, and it reconciles to the byte:
+
+```text
+424,673,280 weight elements x 0.5625 B/elt (4-bit + g64 scale/bias) = 238,878,720 B
+4 RMSNorm vectors                                                   =      40,960 B
+safetensors header                                                  =      14,413 B
+                                                              total =  238,934,093 B  == manifest `bytes`
+```
+
+**Independent measurement refutation** (holds even if one rejects the source reading).
+The traced `draft_build_us` at d=8 is **25.96 ms** for the entire 8-step head chain. A
+bf16 head would have to stream `8 x 849.4 MB = 6.80 GB` for the trunk alone. At this
+host's *measured peak* 250.0 GB/s that is **27.2 ms > 25.96 ms** — the chain would have
+to finish before its own weights arrived. Using the nominal 273 GB/s peak and adding the
+8 x 283.2 MB compact draft `lm_head` gives **33.2 ms**, still impossible. The head that
+actually executes is 4-bit.
+
+The dispatch branch is also unambiguous in source. `Qwen35.swift:1193` (`fusedGateUp()`)
+takes `_fqW/_fqS/_fqZ -> quantizedMM(...)` **first**, with `if let w = _fbfW { matmul(x, w.T) }`
+only as the fallback; `qkv()` at `:1513` is the same shape, and the doc comment
+immediately above it (`:1510-1512`) reads verbatim **"Unquantized (MTP bf16) falls back."**
+Our 4-bit head takes the quantized branch; the bf16 path is the one that is dead here.
+
+Finally, the cited path `Sources/MLXFastModel/Qwen35MTP.swift:37-38` **does not exist**
+in this tree. The real file is
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift`.
+
+> **Consequence for item (6.5).** The proposed follow-up "quantize the head to 4-bit,
+> save 18-26 ms (11-16%)" **has no prize left to win — it is already banked in the
+> promoted base.** Assigning it would burn a student on a no-op. This is the single most
+> actionable output of this section.
+
+### (6.2) Launch overhead is ruled out — **CONFIRMED**, and strengthened
+
+Agreed, and this experiment's measurement is stronger than the census. The measured
+**scheduling gap is −8.27 ms** (−6.96 ms after the correction in 6.3): the real round is
+*faster* than the sum of its kernels timed back-to-back in isolation. Dispatch and
+command-buffer overhead is therefore not merely bounded — it is already fully hidden
+behind GPU execution. The census figures (~1,540 dispatches/round, ~1,285 of them in
+verify at S=9; ~49 command-buffer commits at `max_ops_per_buffer_ = 40` for arch suffix
+`g`, `mlx/backend/metal/device.cpp:485-486,579-582`; ~17 MB/round copy traffic → 0.06 ms)
+are consistent with that and change nothing.
+
+### (6.3) Snapshot retraction — **ACCEPTED, verified, floor corrected**
+
+The advisor is right. `Qwen36MTPBlockSession.swift:1232-1239` builds **96 lazy
+`[.ellipsis]` slice expressions** (48 GDN layers x 2 arrays), and its own contract says
+so: *"No GPU work happens here; this is MTPLX's `_lazy_state_view`."*
+
+The decisive check is the **consumption** site, not the construction site. `snapshot` is
+read at **exactly one place**, line `1089`, inside the `else` branch that also sets
+`didRepair = true` — the rare defensive re-forward. On the happy path the slices are
+dropped without ever entering an `eval`/`asyncEval` output set, so MLX never schedules
+them. And in the 192-token window **`repair=1` occurred in 0 of 28 rounds**, so the
+snapshot was never materialized even once.
+
+My floor line modelled the 302 MB read+write, i.e. the **rollback-path** cost. Removing
+it:
+
+| quantity | as published (§5A) | corrected | delta |
+|---|---:|---:|---:|
+| roofline floor | 90.08 ms | **88.87 ms** | −1.208 |
+| achieved-kernel floor | 226.02 ms | **224.71 ms** | −1.315 |
+| measured block | 217.75 ms | 217.75 ms | 0 |
+| achieved / roofline | 2.51x | **2.53x** | — |
+| kernel-efficiency gap | +135.93 ms (60.4%) | **+135.84 ms (62.4%)** | −0.09 |
+| scheduling gap | −8.27 ms (−3.8%) | **−6.96 ms (−3.2%)** | +1.31 |
+
+**No conclusion changes** (−0.6% on the floor). The §5A/§5B tables are left as-measured
+and this table is the erratum; the `state:recurrent_snapshot_48_layers` row should be
+read as "cost *if* a repair fires", not as a per-round charge.
+
+Caveat on provenance: `snap_ns` was added in commit `e604ee3`, *after* the 192-token run
+(`c39e178`), so there is **no direct timing** of this segment. The verdict rests on the
+source contract plus the observed `repair=0`, not on a measurement.
+
+### (6.4) The pre-registered discriminator — **my answer is BANDWIDTH**
+
+This confirms the advisor's prediction and the ranked anchor. Reasoning:
+
+The residual is **not** host-fixed cost — the measured scheduling gap is ≈ 0 (indeed
+negative), which directly falsifies the FIXED branch's mechanism. And the FIXED branch's
+own 12.40 ms/token floor **cannot reproduce the observed 9.957 ms/token**, so it is
+arithmetically excluded before any of my data is considered. BANDWIDTH's implied score
+3.039 with a 0.50 ms residual is the consistent branch.
+
+**But the dichotomy is incomplete, and that matters more than the branch label.** The
+residual is neither fixed host time nor "extra" traffic from some unmodelled tensor. It
+is **redundant re-streaming of the *same* weights inside `quantized_matmul` at M = 3..12**:
+the kernel achieves 248.7 GB/s at M=1 but only **72.1 GB/s at M=9**, i.e. it moves
+**≈3.45x the necessary weight bytes** (§5B). That is memory traffic, so it does scale
+with bandwidth and lands in the BANDWIDTH branch — but its cause is a *kernel tiling
+defect*, not a bandwidth budget. A third category, **small-M kernel inefficiency**,
+belongs in the discriminator. It is also the only one of the three that is fixable, and
+§5B sizes the prize at a **2.50x round speedup** if verify-side quantized matmuls were
+brought to their roofline (201.14 ms → 70.49 ms, round 217.75 → ~87.1 ms).
+
+### (6.5) The three sub-hypotheses
+
+**"The head chain runs worse than 70% efficiency; 15-25 ms of slack; time it in isolation
+against its 47.5 ms roofline." — ALREADY MEASURED, REFUTED.** The five `head:*` rows sum
+to **17.27 ms achieved against a 16.79 ms 4-bit roofline**, i.e. **84%-100.4% efficiency**
+per row (`draft_lm_head_compact` 100.4%, `mlp_gate_up_down` 97.4%, `fc_concat_proj`
+100.0%, `attn_qkv_proj` 89.8%, `attn_o_proj` 84.0%). The head chain is the *healthiest*
+part of the round; there is no slack to recover. The 47.5 ms roofline in the hypothesis
+is the bf16 figure and inherits the error corrected in 6.1.
+
+**"Report `rollbackRoundCount`." — ANSWERED: zero.** `repair=1` in **0 of 28 rounds**
+(`acc` never fell below the eager-checkpoint path). The rollback/repair term contributes
+**0 ms** to this window, which is also why 6.3's correction is safe to apply.
+
+**"48 dependent tiny GDN kernels, 1.5-4 ms." — CONSISTENT, and already inside the floor.**
+`verify:lin_attn:gated_delta_kernel` = **3.198 ms achieved** (48 calls, 37.8% efficiency,
+memory-bound), squarely in the predicted band and already counted in the 224.71 ms
+achieved floor. It is not a hidden term.
 
 ## 7. Score arithmetic
 
