@@ -292,6 +292,7 @@ def main() -> None:
     parser.add_argument("--label", required=True)
     parser.add_argument("--notes", default="")
     parser.add_argument("--config", default="{}")
+    parser.add_argument("--cost-fit")
     parser.add_argument("--wandb", action="store_true")
     parser.add_argument("--out")
     args = parser.parse_args()
@@ -312,6 +313,10 @@ def main() -> None:
         }
         if "serial" in phases and "mtp" in phases:
             record["row_gate"] = row_gate(phases["serial"], phases["mtp"])
+
+    if args.cost_fit:
+        with open(args.cost_fit) as handle:
+            record["cost_fit"] = json.load(handle)
 
     text = json.dumps(record, indent=2, default=str)
     if args.out:
@@ -336,6 +341,7 @@ def main() -> None:
         gate = dict(record.get("row_gate", {}))
         gate.pop("mismatch_samples", None)
         flatten("", {"row_gate": gate})
+        flatten("", {"cost_fit": record.get("cost_fit", {})})
         run = wandb.init(
             entity="wandb-applied-ai-team",
             project="qwen38-mlx-challenge-senpai",
