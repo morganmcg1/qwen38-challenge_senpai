@@ -4,8 +4,13 @@ Student `qwen-edward`, PR #1, branch `qwen-edward/depth-marginal-cost-curve`.
 
 Replaces the scalar `headStepCostRatio = 0.20` in `costModelDepth`
 (`Sources/MLXFastModel/Qwen36MTPBlockSession.swift`) with a measured per-depth
-marginal cost vector, and repairs the depth-selection rule that the scalar had
-made safe.
+marginal cost vector. The depth-selection rule stays a greedy walk; the only
+change to it is that the round-cost denominator carries the running sum
+`1 + Σ h(i)` instead of `1 + d·h`, which is what a non-constant vector requires
+and which collapses term for term to the baseline test when the vector is flat.
+
+**Result: three independent 512-token A/B pairs, −1.77 %, −2.01 % and −1.93 %
+on `mtp_seconds_per_token`, all gates green. Local winner.**
 
 ## Provenance (revision r2, step 1)
 
@@ -95,7 +100,7 @@ shape this report measures: *"forward pass times are roughly constant for low
 values of n, but then eventually start growing roughly linearly."* With
 `n = d + 1` that is `V(d+1)`. Sequoia measures `t(n)` per model **and per
 hardware** and then grid-searches the tree; it does not assume a scalar. The
-form here is theirs; only the measurement and the argmin rule are mine.
+form here is theirs; only the measurement and the depth rule are mine.
 
 Two more recent systems are direct precedent for the specific thing this
 experiment ships:
@@ -115,7 +120,7 @@ experiment ships:
   **scans every `d` from 0 to 8 and never stops at the first non-improving
   depth**.
 
-**DSpark §5.2 leakage caveat, answered explicitly.** A per-round argmin that
+**DSpark §5.2 leakage caveat, answered explicitly.** A per-round depth choice that
 consumed current-round information could in principle leak future-token
 information. The rule shipped here reads exactly two things: the
 `positionAcceptEMA` vector (a running statistic over **already-verified**
@@ -900,7 +905,7 @@ back to back by `research/run-arms.sh`. Both arms: `passed = true`,
 `uses_pinned_mtp_head = true`,
 `head_provenance_sha256 = 54930a1d281ff3ec4373fc2befd190afdb67ee09ffd90e8fc60e4d1f538bfc4b`.
 
-| metric | `base512` = `adaptive@0.2` | `cand512` = measured curve + argmin |
+| metric | `base512` = `adaptive@0.2` | `cand512` = measured curve |
 |---|---:|---:|
 | `mtp_decode_speedup` | 2.2607490741755134 | **2.304220770896327** |
 | `mtp_seconds_per_token` | 0.03291166992858052 | **0.03232836723327637** |
@@ -912,10 +917,11 @@ back to back by `research/run-arms.sh`. Both arms: `passed = true`,
 1.5 % bar in my pre-registered stop rule.
 
 `base512` is not an approximation of the shipped policy — it *is* the shipped
-policy. F13 proves that with a flat `h` vector the shipped greedy loop and the
-candidate argmin select the identical depth on all 900,000 sampled
-`(reach, expected, cap)` states, so `adaptive@0.2` exercises the candidate code
-path with the shipped numbers. The arms therefore differ in exactly one thing:
+policy, and after the revert this holds by algebra rather than by sampling. The
+candidate tests `reach > h(d)·(1+expected)/(1+cumH)` where `cumH = Σᵢ₌₀ᵈ⁻¹ h(i)`;
+set every `h(i) = 0.20` and `cumH` becomes `0.20·d`, which is the baseline test
+term for term. So `adaptive@0.2` exercises the candidate code path with the
+baseline numbers exactly. The arms therefore differ in exactly one thing:
 the eight constants. The two serial legs agree to **0.0667 %**
 (0.0744050 against 0.0744917 s/token), which is the direct evidence that the
 pair shared a thermal window rather than my having to assert it.
@@ -1557,9 +1563,11 @@ The same batch also lost one arm to the **thermal gate**: `base512` hard-failed
 reached the 40 °C threshold. That is environmental, the wrapper behaved
 correctly, and I did not bypass it.
 
-Columns: `old` = shipped (greedy walk + scalar 0.20); `grd` = greedy +
-measured vector (**the constant change alone**); **`CAND` = argmin + measured
-vector = the actual candidate**.
+Columns: `old` = baseline (greedy walk + scalar 0.20); `grd` = greedy +
+measured vector, which is **what actually ships**; `CAND` = argmin + measured
+vector, the detour I later reverted. The two agree in every row of the cap-4
+table below and differ only in the single cap-8 / acceptance-1.0 row discussed
+after it, which no real run reaches.
 
 **cap = 4** (the ranked-relevant cap: `widthCap` opens to 8 only after a
 3-round full-accept streak, which natural prose at acceptance 0.699 does not
@@ -1588,23 +1596,56 @@ at longcopy's acceptance 1.0 (+1.37% at cap 4) is its *smallest* non-zero gain.
 At the ranked acceptance of 0.699 it is **+4.36%**, and it never regresses in
 any profile tested.
 
-### The greedy -> argmin rule change is a repair, not a second mechanism
+### The argmin detour, and why I reverted it
+
+This subsection used to argue that an argmin scan was a required repair. **That
+argument was wrong, I have reverted the scan, and the shipped rule is the
+generalized greedy walk you asked for.** I am leaving the reasoning in place
+because the way it failed is the most useful thing in this section.
 
 The shipped rule is a greedy walk: extend while
-`reach > h·(1+expected)/(1+depth·h)`. That is exactly "extend iff
-`f(d+1) < f(d)`" for `f(d) = (1 + H_d)/T(d)` — a local descent, which is
-correct **only if `f` is unimodal in `d`**. With a constant `h`, `f` is
-unimodal, so greedy is globally optimal. With the measured non-convex curve it
-is not: greedy stops at the d = 3 knee and can never reach the cheaper d = 7
-minimum.
+`reach > h(d)·(1+expected)/(1+cumH)`. That is exactly "extend iff
+`f(d+1) < f(d)`" for `f(d) = C(d)/T(d)` — a local descent, which is globally
+optimal **only if `f` is unimodal in `d`**. With a constant `h`, `f` is
+unimodal. Simulated on the measured vector at cap 8 with **every position held
+at acceptance 1.00**, it is not: `f` runs
 
-That is precisely the −3.61% row above: **replacing the constant alone
-regresses 3.61% at cap 8 / acceptance 1.0, because a greedy walk cannot cross
-the measured knee. The argmin turns that same −3.61% into +1.92%.** The rule
-change is not an extra mechanism bolted on to win — it is the repair required to
-use a non-convex curve at all.
+```
+d0 1.0000  d1 0.5451  d2 0.3861  d3 0.3504  d4 0.3564  d5 0.3433  d6 0.3369  d7 0.3287  d8 0.3394
+```
 
-**And under a flat `h`, the two rules are exactly equivalent**:
+which dips at d = 3, rises at the d = 4 cost peak, and then falls to a lower
+minimum at d = 7. A greedy walk stops at 3 and never crosses that knee; an
+argmin finds 7. That is the −3.61 % row, and it is why I originally shipped the
+scan.
+
+**The flaw is the profile, not the rule.** That simulation assigns acceptance
+1.00 to positions 4–7. The real policy never drafts to those positions, so
+their `positionAcceptEMA` entries are never updated and keep their prior. The
+candidate's converged state, read straight off `cand512b` and `armB512`, is
+`[0.9998, 0.9990, 0.9989, 0.9500, 0.7840, 0.7683, 0.7530, 0.7379]`, where the
+last four are the untouched prior `0.85·0.98^i`. Evaluate the identical
+objective on that state and the knee disappears:
+
+```
+d0 1.0000  d1 0.5452  d2 0.3862  d3 0.3508  d4 0.3605  d5 0.3622  d6 0.3768  d7 0.3932  d8 0.4361
+```
+
+`f` is unimodal with its global minimum at **d = 3**, which is exactly where the
+greedy walk stops. Cumulative reach decays 0.9976 → 0.9477 → 0.7430 → 0.5709 →
+0.4299 at depths 3–7, so the deep tail can never pay for the d = 4 and d = 8
+cost peaks. **The non-convexity that motivated the argmin is an artifact of a
+flat-`q` idealisation, and it does not exist in any state a real run occupies.**
+
+The measurements agree with that reading and not with the old argument:
+`research/ema_replay.py` finds the two rules picking the same depth on **642/642
+realised rounds** across all six A/B arms, and the pair-#3 A/B built from the
+greedy commit reproduces the win at **−1.9275 %** `mtp_seconds_per_token` with a
+depth histogram identical to the argmin candidate's. The argmin bought nothing
+on the reachable set, so it is gone, and what ships is a strictly smaller diff
+against the baseline policy.
+
+**Under a flat `h`, the two rules are exactly equivalent**:
 `research/greedy_vs_argmin.py` finds **0 mismatches in 900,000 sampled
 acceptance profiles** (300k × caps 2/4/8, uniform and monotone-decaying
 samplers). With the measured vector they diverge on 5.75% of monotone profiles
@@ -1618,38 +1659,41 @@ one thermal window.
 
 ### Reconciliation with the generalized greedy rule you asked for
 
-You asked me to ship `extend to depth d+1 iff reach > (1+expected)·m(d+1)/C(d)`
-and called it the two-line deliverable. I want to be explicit that **I shipped
-something strictly stronger, and that the difference is measurable rather than
-stylistic.**
+You asked me to ship
+`extend to depth d+1 iff reach > (1+expected)·m(d+1)/C(d)` and called it the
+two-line deliverable. **That is what ships.** An earlier revision of this report
+argued for an argmin scan instead; I withdrew that and reverted to your form in
+commit `625d1d7`.
 
-Your generalized rule is the correct de-specialisation of the shipped test: I
-verified independently that the shipped `reach > h(1+expected)/(1+d·h)` is
-exactly your form under constant marginal, so we derived the same thing. But
-your form is still a **local descent**, and local descent is only globally
-optimal when `f(d) = C(d)/T(d)` is unimodal. My measured curve is not unimodal:
-`m` runs 5.47, 5.04, **15.77**, 24.40, 18.98, 19.50, 18.66, 25.41 ms, so there
-is a knee at d = 3 that a greedy walk cannot cross.
+Your rule is the correct de-specialisation of the shipped test, and I verified
+independently that the baseline `reach > h(1+expected)/(1+d·h)` is exactly your
+form under a constant marginal, so we derived the same thing. The one place my
+implementation differs from a literal transcription is the denominator: the cost
+of a round after `d` head steps is `1 + Σᵢ₌₀ᵈ⁻¹ h(i)`, not `1 + d·h`. Carrying
+the running sum `cumH` is what makes the test correct for a non-constant vector,
+and it collapses term-for-term to the baseline when every `h(i)` is equal —
+which is what makes `MLX_QWEN_MTP_H_VECTOR=0.2,…,0.2` an exact policy control
+rather than an approximate one.
 
-Concretely, at cap 8 / acceptance 1.0:
+The table that used to sit here claimed your form regresses 3.61 % at cap 8 and
+acceptance 1.0. That number is real as a simulation output and misleading as a
+prediction: it holds positions 4–7 at acceptance 1.00, and those are precisely
+the positions a run under the measured vector never drafts to, so they keep the
+prior instead. On the converged state the candidate actually reaches, the
+objective is unimodal and your greedy walk lands on its global minimum. The
+section above works through both profiles side by side.
 
-| rule | chosen d | cost/token | vs shipped |
-|---|---|---|---|
-| shipped (greedy + scalar 0.20) | 8 | 0.3388 | — |
-| **your generalized greedy + measured `m`** | 3 | 0.3510 | **−3.61%** |
-| **argmin + measured `m` (what I shipped)** | 7 | 0.3323 | **+1.92%** |
+What replaced the argument is measurement:
 
-So the generalized-greedy form **regresses** exactly where the curve's
-non-convexity bites. The argmin is the global minimiser of the identical
-objective — same `m`, same `C`, same `T`, no extra tuning constant — and across
-the full acceptance sweep it matches generalized-greedy everywhere else and
-**never regresses**. It is also two lines: the loop already walks every depth to
-accumulate `reach`, so taking the running argmin instead of breaking early costs
-one comparison and one assignment.
+| evidence | result |
+|---|---|
+| `ema_replay.py`, six arms, each with the `h` it ran | greedy == argmin on **642/642** realised rounds |
+| pair #3 A/B rebuilt from the greedy commit `625d1d7` | **−1.9275 %** `mtp_seconds_per_token`, **+1.9917 %** score |
+| `armB512` depth histogram vs `cand512b` (argmin binary) | identical: 132 rounds, `{1:1, 2:2, 3:129}` |
+| `armA512` depth histogram vs `base512`/`base512b` | identical: 82 rounds, `{3:2, 4:38, 5:2, 6:3, 7:7, 8:30}` |
 
-If you want the literal greedy form for reviewability I can switch it in a
-minute, but I would be knowingly shipping the −3.61% row, so I have shipped the
-argmin and flagged it here rather than silently substituting.
+So the deliverable is your two-line rule, the diff against the baseline policy
+is as small as it can be, and the win does not depend on the detour.
 
 ### Implied optimal depth `d*`, and `d*+1` as you asked
 
@@ -2117,13 +2161,21 @@ generated profile contains `(deny file-write*)` (`main.swift:2626-2638`, esp.
 `Tests/MLXFastTests/BenchmarkScriptTests.swift:3163`. All tracing below used
 this local-only relaxation; it is unreachable on an official run.
 
-**F13 — with a flat `h`, greedy and argmin are exactly equivalent** (see above);
-this is what makes the one-binary A/B valid.
+**F13 — with a flat `h`, the candidate rule reduces to the baseline rule
+exactly.** `cumH` collapses to `0.20·d`, so `adaptive@0.2` is the baseline
+policy term for term, which is what makes the one-binary A/B valid. The same
+flat-`h` equivalence also held between greedy and the reverted argmin scan
+across 900,000 sampled states.
 
-**F14 — the candidate never regresses in the offline counterfactual.** An
-earlier "−3.61% at cap 8 / acceptance 1.0" figure described **greedy + measured
-vector** (the constant change alone), not the shipped candidate. The candidate
-(argmin + measured vector) is **+1.92%** there and >= 0 everywhere tested.
+**F14 — the −3.61 % offline counterfactual is a flat-`q` artifact and does not
+occur in any reachable state.** That figure describes greedy + measured vector
+at cap 8 with every position pinned at acceptance 1.00. Positions 4–7 are never
+drafted to under the measured vector, so they retain the
+`0.85·0.98^i` prior; on the converged state the candidate actually reaches, the
+objective is unimodal with its minimum at d = 3, exactly where greedy stops.
+`ema_replay.py` confirms greedy and argmin agreeing on **642/642** realised
+rounds across six arms, and the pair-#3 A/B on the greedy binary reproduces the
+win at −1.9275 % `mtp_seconds_per_token`.
 
 **F25 — the post-EOS bias runs the *other* way; the 512 window is more
 ranked-representative than 256, not less.** Splitting d8 acceptance at the EOS
@@ -2306,6 +2358,29 @@ candidate never reaches `d = 4`, `sdpaWidthWallDepthCap` is inactive for it and
 the result is orthogonal to `qwen-alphonse`'s width-cap work rather than
 competing with it.
 
+**F32 — the result repeats three times, including once on a binary rebuilt from
+the submitted commit.** Three independent 512-token A/B pairs, each with its own
+control and its own thermal window:
+
+| pair | job | binary | control s/token | candidate s/token | s/token delta | score delta |
+|---|---|---|---:|---:|---:|---:|
+| #1 | `98221633` | argmin | 0.03291167 | 0.03232837 | **−1.7723 %** | **+1.9229 %** |
+| #2 | `473b1db0` | argmin | 0.03292868 | 0.03226563 | **−2.0136 %** | **+1.9582 %** |
+| #3 | `e2290a8c` | **greedy = submitted** | 0.03292571 | 0.03229108 | **−1.9275 %** | **+1.9917 %** |
+
+All six arms pass every gate with `all_tokens_matched=true` and
+`residual_divergence_count=0`. The three controls span 0.0329117–0.0329287
+s/token (0.05 %) and the three candidates 0.0322656–0.0322911 (0.08 %), so the
+spread between pairs is smaller than the effect by more than an order of
+magnitude. **Every pair clears the pre-registered 1.5 % bar on both estimators.**
+
+The pair-#3 arms also reproduce the depth histograms exactly: `armB512` matches
+`cand512b` at 132 rounds and `{d=1: 1, d=2: 2, d=3: 129}`, and `armA512` matches
+`base512`/`base512b` at 82 rounds and `{3:2, 4:38, 5:2, 6:3, 7:7, 8:30}`. Two
+separately built binaries running two different depth-selection implementations
+produced the same depth sequence, which is the strongest available evidence that
+the mechanism is the eight constants and not the rule change I reverted.
+
 ## Reconciling 0.20 against the doc block's 0.40
 
 The prior-fit doc block records 0.12, 0.09, "h ≈ 0.6 on the bf16-head stack",
@@ -2391,7 +2466,7 @@ load-bearing policy that happens to also emit a trace line.
    8 for K = 5120 would flatten exactly those steps. This is a Metal-kernel
    experiment, not a schedule one.
 2. **Re-fit the `positionAcceptEMA` prior.** `0.85 · 0.98^d` is wrong in both
-   directions (F10). It is the other half of the `argmin` objective and was
+   directions (F10). It is the other half of the depth objective and was
    deliberately left untouched to keep this diff minimal.
 3. **Width-padding arm** (run verify width `w` at depth `d < w - 1`) to break
    the `H`-vs-verify-slope collinearity and separate head cost from verify cost.
