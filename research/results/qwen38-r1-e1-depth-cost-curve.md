@@ -90,32 +90,52 @@ actually runs here. Measured marginal above the knee is ≈ 19 ms, against 8.4 m
 for pure arithmetic and ≈ 62 ms for a full weight re-read: the truth is between
 the two bounds, much closer to the arithmetic one.
 
-### Your corrected 849 MB head prediction is CONFIRMED in the low band
+### DO NOT RE-BASE THIS CURVE BY −2.689 ms — it is already the ranked-side head
 
-Your correction (head is 849,398,784 B bf16 per
-`fixtures/qwen3_8_27b_mtp_track.json:126-127`, not the 238,934,093 B declared
-artifact size) predicted `m(1..6) ≈ 4.5–5 ms` of head + readout traffic before
-verify growth, and you asked what it would mean if I measured ≈ 2 ms or
-≈ 9–10 ms instead.
+Comment 7 assumed my measurements ran the organizer-pinned bf16 head and gave a
+re-basing rule `m_ranked(d) = m_local(d) − 2.689 ms`. **That premise does not
+hold for my runs, and applying the correction would double-count it.**
 
-**Measured `m(1) = 5.47 ms` and `m(2) = 5.04 ms`.** That lands directly in your
-predicted band — neither the "something overlaps that I don't understand" case
-nor the "corrected roofline plus a residual tax" case. The corrected roofline is
-right where drafting is cheap.
+Every forced-depth arm in the table above was launched through
+`research/run-arms.sh --head-dir <declared>`, i.e. against
+`hf:lowskillcoding/qwen38-mtp-head-4bit-g64` — the head
+`mtp-head.manifest.json` declares and the head the ranked *candidate* leg
+attaches. This was F1, found on day one precisely because `setup-qwen-mtp.sh`
+never reads the manifest: the default local stack silently serves the
+849,398,784 B bf16 head, and I built `research/fetch-declared-head.sh` to
+provision the declared 238,934,093 B tree instead. So:
 
-Two caveats you need before you reuse this:
+- **My `m(d)` are already ranked-side.** `m(1) = 5.47 ms` is a declared-head
+  number, not a pinned-head number. Subtracting 2.689 ms would produce
+  `m(1) = 2.78 ms`, which nothing measured supports.
+- **The re-basing is still correct for PR #3's anchors** (`C(0) = 67.0`,
+  `C(8) = 161.0`, runs `cwlqu3ok` / `ihnmmi1b`) and for anyone else running the
+  default `setup-qwen-mtp.sh` stack, because those do run the pinned bf16 head.
+  My `base-1` arm (`h1t8073f`, pinned bf16, adaptive) versus `base-decl`
+  (`w8aocl64`, declared 4-bit, adaptive) puts the end-to-end head penalty at
+  **3.9%** of `mtp_seconds_per_token` (0.041100 vs 0.039478 s/token), which is
+  the same effect measured end to end rather than per draft step.
+- **Comment 7's item 6 ("optional, if under ~15 minutes: point
+  `MLXFAST_QWEN_MTP_HEAD_DIR` at the declared head") is already satisfied for
+  every number in this report.**
 
-1. **I ran the declared 4-bit head, not the pinned bf16 one** (F1). Your
-   849 MB figure is the *pinned* head; the declared
-   `hf:lowskillcoding/qwen38-mtp-head-4bit-g64` head is what the ranked
-   candidate leg loads and what I measured, and it is ~3.9% faster end to end.
-   Its per-forward traffic is smaller than 849 MB, so agreeing with a 849 MB
-   prediction to within ~10% is a **coincidence of two errors partially
-   cancelling**, not a clean confirmation. Treat the band as consistent, not as
-   validating the byte count.
-2. The agreement holds **only** for d = 1–2. From d = 3 the marginal is
-   15.8–25.4 ms, i.e. 3–5x the head-traffic term, so above the knee the cost is
-   dominated by verify-width growth, not by head forwards.
+Head provenance, per comment 7 item 5, is in the provenance block below.
+
+#### What the low band actually says
+
+The corrected prediction was `m(1..6) ≈ 4.5–5 ms` of head + readout traffic
+before verify growth, derived from an 849 MB head at 227 GB/s. Measured
+`m(1) = 5.47 ms`, `m(2) = 5.04 ms` — inside that band. But the agreement is
+**numerological, not mechanistic**: the head I ran streams 238,934,093 B, which
+at 227 GB/s is **1.05 ms**, so pure head weight traffic explains only ~19% of
+the measured 5.47 ms. The remaining ~4.4 ms is head activation/KV work, the
+compact draft `lm_head` readout, the `V(2) − V(1)` verify-width increment, and
+per-step dispatch. Do not reuse "849 MB / 227 GB/s" as an explanation of the low
+band; it lands on the right number for the wrong reason.
+
+The agreement also holds **only** for d = 1–2. From d = 3 the marginal is
+15.8–25.4 ms, i.e. 3–5x any head-traffic term, so above the knee the cost is
+dominated by verify-width growth, not by head forwards.
 
 ### Falsified predictions (mine and the advisor's)
 
