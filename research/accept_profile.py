@@ -66,6 +66,8 @@ def split_at_eos(legs, eos_index):
     """
     pre, post = [], []
     for leg in legs:
+        if not any(d for _, d, _, _ in leg):
+            continue  # serial reference leg carries no acceptance signal
         cursor = 0
         for r in leg:
             emitted = r[2] + 1
@@ -75,6 +77,24 @@ def split_at_eos(legs, eos_index):
                 post.append(r)
             cursor += emitted
     return pre, post
+
+
+def binned_profile(legs, width):
+    """Mean depth/acceptance by decode-index bucket, to LOCATE regime changes.
+
+    The EOS boundary is not recorded in the trace, so the split index must be
+    justified from the data rather than assumed. A copy task that runs out of
+    source text and continues degenerately shows up here as a step.
+    """
+    buckets = defaultdict(list)
+    for leg in legs:
+        if not any(d for _, d, _, _ in leg):
+            continue  # serial reference leg carries no acceptance signal
+        cursor = 0
+        for r in leg:
+            buckets[cursor // width].append(r)
+            cursor += r[2] + 1
+    return sorted(buckets.items())
 
 
 def acceptance_table(rounds):
@@ -110,6 +130,8 @@ def main():
     ap.add_argument("--warmup", type=int, default=2)
     ap.add_argument("--eos-index", type=int, default=301,
                     help="decode index where the public trajectory emits EOS")
+    ap.add_argument("--bin", type=int, default=64,
+                    help="decode-index bucket width for the regime scan")
     args = ap.parse_args()
 
     arms = args.arms or sorted(
@@ -180,6 +202,15 @@ def main():
             prior = 0.85 * 0.98 ** (pos - 1)
             print(f"  {pos:>4} {reached:>8} {ok:>9} {p:>7.4f} "
                   f"{prior:>14.4f}")
+
+        print(f"  --- decode-index bins of {args.bin} tokens ---")
+        for b, rs in binned_profile(legs, args.bin):
+            md = sum(d for _, d, _, _ in rs) / len(rs)
+            ma = sum(a for _, _, a, _ in rs) / len(rs)
+            us = sum(u for _, _, _, u in rs) / len(rs)
+            print(f"  [{b * args.bin:>4}-{(b + 1) * args.bin - 1:>4}] "
+                  f"N={len(rs):>4} mean_depth={md:.3f} mean_acc={ma:.3f} "
+                  f"tokens/round={1 + ma:.3f} round_us={us:.0f}")
 
         pre, post = split_at_eos(legs, args.eos_index)
         print(f"  --- EOS split at decode index {args.eos_index} "
