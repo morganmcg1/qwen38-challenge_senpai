@@ -12,10 +12,14 @@
 # gate, and report seals all run unmodified.
 set -euo pipefail
 
-bits="${1:?usage: run-draft-bits-arm.sh BITS TAG [TOKENS] [BASE_SHA]}"
-tag="${2:?usage: run-draft-bits-arm.sh BITS TAG [TOKENS] [BASE_SHA]}"
+bits="${1:?usage: run-draft-bits-arm.sh BITS TAG [TOKENS] [BASE_SHA] [MODE]}"
+tag="${2:?usage: run-draft-bits-arm.sh BITS TAG [TOKENS] [BASE_SHA] [MODE]}"
 tokens="${3:-512}"
 base_sha="${4:-}"
+# --local-submit swaps the drift tripwire onto the 1024-step public golden,
+# which is the only local way to check fidelity past key_len 1024. Decode
+# tokens stay capped at 512 by benchmark-qwen-mtp.sh either way.
+mode="${5:---local-iterate}"
 
 case "${bits}" in
   2 | 3 | 4 | default) ;;
@@ -102,7 +106,7 @@ golden_fixture="${MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE:-<harness default>}"
 
 identity="${out_dir}/identity.txt"
 {
-  echo "run-draft-bits-arm: tag=${tag} bits=${bits} tokens=${tokens}"
+  echo "run-draft-bits-arm: tag=${tag} bits=${bits} tokens=${tokens} mode=${mode}"
   echo "run-draft-bits-arm: head=$(git rev-parse HEAD) dirty=$(git status --porcelain | wc -l | tr -d ' ')"
   echo "run-draft-bits-arm: base_sha=${base_sha}"
   echo "run-draft-bits-arm: host=$(sysctl -n machdep.cpu.brand_string) mem=$(sysctl -n hw.memsize)"
@@ -123,18 +127,19 @@ export MLXFAST_AMDAHL_EXTRA_CONFIG="$(
     --arg worker_sha "${worker_sha}" \
     --arg cli_sha "${cli_sha}" \
     --arg tokens "${tokens}" \
+    --arg mode "${mode}" \
     '{draft_bits_arm: $bits, env_draft_bits: $env_bits,
       golden_fixture: $fixture, worker_sha256: $worker_sha,
       cli_sha256: $cli_sha, decode_tokens: ($tokens | tonumber),
-      cool_gate: "disabled_ambient_floor"}'
+      bench_mode: $mode, cool_gate: "disabled_ambient_floor"}'
 )"
 
 # The MTP local-iterate report carries no memory field, so peak comes from
 # `ru_maxrss`, which XNU folds across waited descendants as a max (in bytes).
 {
   /usr/bin/time -l research/run-amdahl-measurement.sh \
-    "${tag}" --local-iterate "${tokens}" "${base_sha}" \
-    "draft-head readout precision: MLX_QWEN_MTP_DRAFT_BITS=${bits}"
+    "${tag}" "${mode}" "${tokens}" "${base_sha}" \
+    "draft-head readout precision: MLX_QWEN_MTP_DRAFT_BITS=${bits} mode=${mode}"
 } 2>&1 | tee "${out_dir}/rusage.txt"
 
 # Collect the captured legs so the arm directory is self-contained: the next
