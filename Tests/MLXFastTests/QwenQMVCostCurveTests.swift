@@ -178,8 +178,20 @@ private func describeDispatchDevice() -> [String: Any] {
             [
                 "shape": $0.name, "k": $0.k, "n": $0.n,
                 "vector_limit": hostDispatch.vectorLimit(k: $0.k, n: $0.n),
-            ]
+            ].merging(qmvFastAlignment(k: $0.k, n: $0.n)) { a, _ in a }
         },
+    ]
+}
+
+/// Vendored MLX 0.32.0 forks `qmv` on `N % 8 == 0 && K % 512 == 0` at
+/// `quantized.cpp:259` (and `gather_qmv` at `:992`) with the 512 hardcoded for
+/// every bit width. There is no bits-dependent `qmv_fast_k_alignment` helper in
+/// this tree, so an 8-bit weight gets no alignment relief over a 4-bit one.
+private func qmvFastAlignment(k: Int, n: Int) -> [String: Any] {
+    [
+        "k_mod_512": k % 512,
+        "n_mod_8": n % 8,
+        "qmv_fast": n % 8 == 0 && k % 512 == 0,
     ]
 }
 
@@ -289,7 +301,7 @@ private func sweep(
         "flops_per_row": 2 * shape.k * shape.n,
         "predicted_vector_limit": hostDispatch.vectorLimit(k: shape.k, n: shape.n),
         "rows": rows,
-    ]
+    ].merging(qmvFastAlignment(k: shape.k, n: shape.n)) { a, _ in a }
 }
 
 /// Affine 4-bit group-64: packed nibbles plus a bf16 scale and bias per group.

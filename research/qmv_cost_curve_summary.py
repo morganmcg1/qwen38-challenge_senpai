@@ -379,10 +379,30 @@ def main():
 
     gdn = gdn_curve(vend.get("gdn_recurrence"), rf)
 
+    # Vendored quantized.cpp:259 forks qmv on `N % 8 == 0 && K % 512 == 0` with
+    # the 512 hardcoded for every bit width. A shape that misses it silently
+    # runs the bounds-checked generic kernel, so every measured point has to say
+    # which side of the fork it was on before its cost can be attributed.
+    alignment = [
+        {
+            "shape": s["name"],
+            "k": s["k"],
+            "n": s["n"],
+            "calls_per_verify": s["calls_per_verify"],
+            "k_mod_512": s["k_mod_512"],
+            "n_mod_8": s["n_mod_8"],
+            "qmv_fast": s["qmv_fast"],
+        }
+        for s in shapes
+    ]
+    off_fast = [a["shape"] for a in alignment if not a["qmv_fast"]]
+
     out = {
         "host": args.host,
         "base_sha": args.base_sha,
         "head_provenance": head_prov,
+        "qmv_fast_alignment": alignment,
+        "scored_shapes_off_qmv_fast": off_fast,
         "device": vend.get("device", {}),
         "roofline": rf,
         "widths": widths,
@@ -501,6 +521,12 @@ def main():
         print(f"  {p['name']:36s} {p['predicted_vector_limit']:5d} {at} "
               f"{p['largest_step_ratio']:9.2f}x @M{p['largest_step_at_m']:<4d} "
               f"{p['largest_drop_ratio']:9.2f}x @M{p['largest_drop_at_m']:<4d}")
+    print("\nqmv_fast alignment audit (quantized.cpp:259, 512 hardcoded for all bits)")
+    for a in out["qmv_fast_alignment"]:
+        print(f"  {a['shape']:34s} K={a['k']:6d} K%512={a['k_mod_512']:4d}  "
+              f"N={a['n']:6d} N%8={a['n_mod_8']}  qmv_fast={a['qmv_fast']}")
+    print(f"  scored shapes OFF qmv_fast: {out['scored_shapes_off_qmv_fast'] or 'none'}")
+
     print("\nfast-path probes (K % 512 == 0 selects qmv_fast)")
     for p in out["fast_path_probes"]:
         vals = "  ".join(f"M{m}={s*1e3:.3f}ms" for m, s in p["seconds_per_call_by_m"].items())
@@ -650,11 +676,23 @@ def main():
                 r["arithmetic_intensity_flop_per_byte"], r["hw_efficiency"],
             )
 
+        align_table = wandb.Table(
+            columns=["shape", "k", "n", "calls_per_verify", "k_mod_512",
+                     "n_mod_8", "qmv_fast"]
+        )
+        for a in alignment:
+            align_table.add_data(
+                a["shape"], a["k"], a["n"], a["calls_per_verify"],
+                a["k_mod_512"], a["n_mod_8"], a["qmv_fast"],
+            )
+
         run.log(
             {
                 "qmv/cost_curve": curve_table,
                 "qmv/weighted_verify": verify_table,
                 "qmv/per_shape_roofline": knee_table,
+                "qmv/fast_path_alignment": align_table,
+                "qmv/scored_shapes_off_fast_count": len(off_fast),
                 "qmv/gdn_recurrence": gdn_table,
                 "qmv/gdn_cost_ratio": wandb.plot.line(
                     gdn_table, "m", "cost_ratio_vs_m1",
