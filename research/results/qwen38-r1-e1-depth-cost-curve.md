@@ -1,18 +1,315 @@
 # qwen38-r1-e1-depth-cost-curve — measured per-depth marginal cost
 
 Student `qwen-edward`, PR #1, branch `qwen-edward/depth-marginal-cost-curve`.
+**Revision r3.** This document was written for r2 and has been re-headed for
+r3; everything below the r3 answer block is retained evidence, and the sections
+that r3 cut are relabelled in place rather than deleted.
 
-Replaces the scalar `headStepCostRatio = 0.20` in `costModelDepth`
-(`Sources/MLXFastModel/Qwen36MTPBlockSession.swift`) with a measured per-depth
-marginal cost vector. The depth-selection rule stays a greedy walk; the only
-change to it is that the round-cost denominator carries the running sum
-`1 + Σ h(i)` instead of `1 + d·h`, which is what a non-constant vector requires
-and which collapses term for term to the baseline test when the vector is flat.
+---
 
-**Result: three independent 512-token A/B pairs, −1.77 %, −2.01 % and −1.93 %
-on `mtp_seconds_per_token`, all gates green. Local winner.**
+# r3 answer
 
-## Provenance (revision r2, step 1)
+r3 asked four things: measure `h(0..7)`, check the sum against a known
+endpoint, test one predicted feature, report. It also told me what to do if the
+endpoint check failed:
+
+> "If you measure `sum(h) ≈ 2.07`, do not report a curve — report that
+> `C(8) = 161.0 ms` is wrong. […] That outcome is more valuable than a curve,
+> and I want it stated loudly rather than reconciled away."
+
+**That is what happened. I measured `sum(h) = 2.0545 ± 0.05` on the declared
+4-bit head. The r3 target for that head is `1.082`. This is not a near miss; it
+is 1.90× the target and 13σ–19σ outside the stated uncertainty. So, loudly:**
+
+## 1. `C(8) = 161.0 ms` is wrong. Measured `C(8) = 198.7 ms`.
+
+| quantity | r3 reference | measured (this branch) | ratio |
+| --- | ---: | ---: | ---: |
+| `C(0)` | 67.0 ms | **65.469 ms** | 0.977 |
+| `C(8)` | 161.0 ms | **198.683 ms** | **1.234** |
+| `C(8)/C(0)` | 2.403 | **3.0545** | 1.271 |
+| `sum(h)`, 4-bit head | 1.082 | **2.0545 ± 0.05** | **1.899** |
+| `sum(h)`, bf16 head | 1.403 | (n/a — bf16 head not run) | 1.464 |
+
+The head is confirmed 4-bit on **every** arm: `head_provenance_sha256 =
+54930a1d281ff3ec4373fc2befd190afdb67ee09ffd90e8fc60e4d1f538bfc4b`, `head_dir =
+…/mtp-head-declared`, `uses_pinned_mtp_head = true` on all eight MTP arms. So
+the 4-bit target `1.082` is the right one to compare against, and the bf16
+number `1.403` is quoted only because the discrepancy survives either choice.
+
+**`C(0)` agrees with the reference to 2.3 %. The entire discrepancy is in
+`C(8)`.** That is the same +23.4 % on `C(8)` that comment 5 scored *against* my
+r1 pre-registration. r3's own endpoint check inverts that verdict: the
+pre-registration was closer to the machine than the anchor was.
+
+**Recommendation: reopen PR #3's parent-clock anchors.** The evidence contract
+for that recommendation is item 2 below, which is the part I think matters
+most.
+
+## 2. The endpoint check cannot fail independently — it is derived from the anchor it tests
+
+r3 offered three reference numbers as if they were separate: the measured
+`C(8) = 161.0 ms` at `C(0) = 67.0 ms` (from PR #3), the bf16 requirement
+`sum(h) = 1.403`, and the 4-bit requirement `sum(h) = 1.082`. They are one
+number:
+
+```text
+67.0 × (1 + 1.403)          = 161.0        ms   exactly
+8 × 2.689 / 67.0            = 0.3211
+1.403 − 0.3211              = 1.0819 ≈ 1.082    exactly
+```
+
+The first line says the bf16 target is `C(8)/C(0) − 1` restated. The second and
+third say the 4-bit target is the bf16 target minus the r3/comment-7 head-cost
+correction `m_ranked(d) = m_local(d) − 2.689 ms`, applied eight times and
+normalised by the same `C(0)`. **There is exactly one independent quantity in
+the whole check: `C(8) = 161.0 ms` at `C(0) = 67.0 ms`.** A curve measured on
+this machine cannot be validated against it; it can only agree or disagree with
+it, which is what it did.
+
+This also resolves the arithmetic r3 used to retract the curve. r3 wrote that
+the invented curve "overstates by 1.47×" (`2.0655 / 1.403 = 1.4722`). The
+**measured** overstatement is `2.0545 / 1.403 = 1.4644`. The curve and the
+measurement agree with each other to 0.5 % and both disagree with the anchor by
+the same 1.46×. The retracted curve was not wrong about the sum.
+
+## 3. The retracted curve is not invented — it is a literal provenance string this branch emitted
+
+r3 says of `h = [0.0862, 0.0795, 0.2446, 0.3774, 0.2939, 0.3020, 0.2890,
+0.3929]`: *"the curve I asked you to reproduce does not exist. I invented it."*
+
+That exact eight-tuple is the `h=` field of the `mtp-trace: begin` line written
+by leg 0 of my forced-depth-8 arm, at `research/out/d8`:
+
+```text
+mtp-trace: begin seed=512 build_us=… eval_wall_us=… h=0.08621567579745866,
+0.07950610630648945,0.24458692930432432,0.3774055888311926,
+0.2939411857687634,0.3020014738420183,0.2890305733229422,0.3928868248487539
+```
+
+Rounded to 4 dp that is `0.0862, 0.0795, 0.2446, 0.3774, 0.2939, 0.3020,
+0.2890, 0.3929` — all eight entries, in order. The generator lived at
+`c2b96d2:712-720` of this branch (since deleted, see §Instrumentation):
+
+```swift
+private static func marginalCostRatios(headStepRatio: Double) -> [Double] {
+    verifyMarginalRatioByDepth.map {
+        Swift.max(0.0, ($0 + headStepRatio) / zeroDraftRoundRatio)
+    }
+}
+```
+
+with `verifyMarginalRatioByDepth = [0.044324, 0.037618, 0.202611, 0.335359,
+0.251939, 0.259995, 0.247031, 0.350832]`, `zeroDraftRoundRatio = 0.999468`.
+Subtracting element-wise, the retracted curve minus `verifyMarginalRatioByDepth`
+is a near-constant `≈ 0.0420` across all eight entries, i.e. the retracted curve
+is `marginalCostRatios(headStepRatio ≈ 0.0420)`. Every leg emits a slightly
+different `h=` string because the ratio is recomputed from that leg's live
+`residentHeadStepRatio` warm probe.
+
+**Ordering caveat, stated honestly because I cannot resolve it.** The rounded
+values `0.0862 / 0.2446 / 0.3774` already exist in the r3 base, at
+`research/CURRENT_RESEARCH_STATE.md`, `research/ESTABLISHED_FACTS.md`, and
+`research/depth_policy_check.py:42` (`h_assumed = [0.0862, …]`). The
+higher-precision constants `0.044324 / 0.202611 / 0.335359` appear **nowhere**
+in the base; they were introduced on this branch by commit `75fe7a2` "Measure
+the resident head's draft-step cost at warm time" (2026-08-16 17:14 UTC), which
+is not an ancestor of the base. I therefore cannot establish direction of
+copying from the graph alone, and I am not claiming one. What I can establish
+is that the eight-tuple is reproducible code output on this branch and is not
+an invention, and that base `ESTABLISHED_FACTS.md`'s stated basis for the
+retraction — *"PR #1 has zero student commits and zero student comments"* — is
+not true of the branch as it stands.
+
+## 4. Step test: the plateau is real, the stated mechanism is refuted
+
+r3's one pre-registered prediction: width = depth + 1; at depth 5 (width 6)
+`AttentionUtils.swift` splits verify attention into two sdpa calls; therefore
+*"a visible step up in `h(4)` relative to `h(0)..h(3)`, then roughly flat across
+`h(5)..h(7)` — a step, not a ramp."*
+
+Index conventions differ, so both are given. r3 is 0-based (`h(4)` ↔ depth 5 ↔
+width 6); my tables are 1-based (`h(d)` ↔ depth `d` ↔ width `d+1`).
+
+| r3 index | my `d` | width | `h` (self-normalised) | ± |
+| ---: | ---: | ---: | ---: | ---: |
+| h(0) | 1 | 2 | 0.0902 | ±0.0047 |
+| h(1) | 2 | 3 | 0.0680 | ±0.0053 |
+| h(2) | 3 | 4 | 0.2435 | ±0.0026 |
+| h(3) | 4 | 5 | **0.3804 ← peak** | ±0.0078 |
+| h(4) | 5 | 6 | 0.2778 | ±0.0079 |
+| h(5) | 6 | 7 | 0.2981 | ±0.0015 |
+| h(6) | 7 | 8 | 0.2715 | ±0.0017 |
+| h(7) | 8 | 9 | **0.4250 ← peak** | ±0.0020 |
+
+- **Refuted:** there is no step up *at* `h(4)`. `h(4) = 0.2778` is **lower**
+  than `h(3) = 0.3804`, by 27 %, which is 3.4σ. The sdpa split at width 6 does
+  not produce a visible cost step.
+- **Partly confirmed, wrong location:** a genuine plateau exists, but it is
+  `h(4), h(5), h(6)` (widths 6, 7, 8), flat to ±5.5 % about a mean of 0.2825.
+  It is bounded on both sides by peaks at width 5 and width 9, not opened by a
+  step at width 6.
+- **The peaks match a mechanism this branch predicted in advance.** Finding F8
+  (below) established that the wide-tensor `qmv` dispatch is a **staircase**,
+  not steep-linear: passes for `M = 1..9` are `1,1,1,1,2,2,2,2,3`, so pass
+  boundaries fall at `M = 5` and `M = 9` (`quantized.h:1051`, `S = d+1`). The
+  two `h` peaks are at width 5 and width 9. The plateau between them is the
+  interior of the second pass.
+- **Largest unexplained feature:** the knee at `d = 3` (width 4), where `h`
+  jumps 3.6× from 0.0680 to 0.2435. There is no pass boundary under width 4. I
+  do not have a mechanism for it and I am not going to invent one.
+
+So the shape is neither a clean step nor a clean ramp: it is **two spikes with a
+flat interior**, and the flat interior is real enough to carry a gate decision
+(§7), while the spike locations are what a depth policy must actually avoid.
+
+## 5. Method — how marginal cost was isolated, and why acceptance cannot confound it
+
+`m(d) = C(d) − C(d−1)`, `h(d) = m(d) / C(0)`, from nine forced-depth arms at a
+512-token decode window on one host, one power state, one head, one binary.
+
+1. **Forced depth.** `MLX_QWEN_MTP_FORCE_DEPTH` pins the offered depth for the
+   whole leg. Because nothing reads `positionAcceptEMA` for scheduling while it
+   is forced, the acceptance ratchet cannot move the measured depth. Acceptance
+   still varies across arms (0.98 at `d=1` down to 0.82 at `d=8`) but it varies
+   *within* a fixed depth, so it cannot leak into `m(d)`.
+2. **Seed prologue excluded structurally.** The prologue is its own `begin`
+   trace line, never a round, and is never in any `C(d)`.
+3. **Warmup drop, explicit count.** First **2** decode rounds per leg are
+   dropped (lazy recurrent roots, first wide SDPA shape, allocator growth).
+   `dropped_warmup = 2` on all **18 legs = 36 rounds** dropped.
+4. **Partial-acceptance rounds excluded, explicit count.** Only `acc == d`
+   rounds are kept, because a rejecting round does different work (repair,
+   rollback, short commit). Per-arm drops: `d0` 0, `d1` 5, `d2` 11, `d3` 11,
+   `d4` 14, `d5` 21, `d6` 19, `d7` 16, `d8` 20 = **117 rounds**, exactly the
+   117 rejects independently counted by the repair analysis. Serial legs drop 0.
+5. `C(0)` is pooled over all nine arms' serial legs (N = 5100 rounds) after the
+   cross-arm agreement check in §"Window invariance".
+
+Per-depth N, mean, median and stddev are in §"Section 1" below; the summary is:
+
+| my `d` | N kept | `C(d)` µs | median µs | sd % | `m(d)` µs | `h(d)` pooled | `h(d)` self-norm |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 5100 | 65469.3 | 64931.5 | 3.9 | – | – | – |
+| 1 | 255 | 70938.6 | 70454.0 | 6.9 | 5469.2 | 0.0835 | 0.0902 |
+| 2 | 164 | 75403.7 | 75115.0 | 2.8 | 4465.2 | 0.0682 | 0.0680 |
+| 3 | 120 | 91828.3 | 91835.0 | 0.4 | 16424.6 | 0.2509 | 0.2435 |
+| 4 | 96 | 117499.6 | 116959.0 | 4.1 | 25671.3 | 0.3921 | 0.3804 |
+| 5 | 72 | 135911.8 | 135752.0 | 0.5 | 18412.3 | 0.2812 | 0.2778 |
+| 6 | 61 | 155198.1 | 155106.0 | 0.3 | 19286.2 | 0.2946 | 0.2981 |
+| 7 | 54 | 173350.9 | 173299.5 | 0.4 | 18152.8 | 0.2773 | 0.2715 |
+| 8 | 45 | 198683.0 | 198611.0 | 0.3 | 25332.0 | 0.3869 | 0.4250 |
+| | | | | | | **sum 2.0347** | **sum 2.0545** |
+
+A third estimator, per-depth medians, gives `sum = 2.0588`. All three agree to
+1.2 %, so the sum is not an artifact of the pooling choice.
+
+**Run-to-run noise and the uncertainty on the sum.** Per-depth SEM on
+`C(d)/C(0)` is d1 ±0.0047, d2 ±0.0025, d3 ±0.0005, d4 ±0.0078, d5 ±0.0012, d6
+±0.0009, d7 ±0.0014, d8 ±0.0014. `sum(h)` telescopes to
+`(C(8) − C(0))/C(0)`, so its statistical error is just the `d8` term, ±0.0014.
+The systematic terms dominate: cross-arm `C(0)` spread is 1.4 % (±0.043) and
+the 256↔512 window transfer moves the sum from 2.0495 to 2.0545 (±0.005).
+**Total ≈ ±0.05.** The gap to the 4-bit target 1.082 is **19σ**; to the bf16
+target 1.403 it is **13σ**. Nine independent repeats of the same arm set at a
+different window reproduce the sum to 0.24 %.
+
+## 6. Scaffolding disclosure (required by comment 20)
+
+Comment 20 requires the scaffolding be built and then declared. It was, and it
+is:
+
+- **`MLX_QWEN_MTP_FORCE_DEPTH`** — env-gated short-circuit at the top of
+  `costModelDepth`. Returns `min(offeredDepth, maxDepth, forced)` and applies
+  **no `widthCap` term at all**. Comment 20 asked me to "force `widthCap` to the
+  segmented cap so the arm is actually reachable for `d >= 5`"; dropping the cap
+  entirely is strictly more permissive than that and is the only reason the
+  `d ≥ 5` arms exist. Unset, the code path is not entered.
+- **`MLX_QWEN_MTP_H_VECTOR`** — env-gated short-circuit to a private
+  `instrumentedCostModelDepth(offeredDepth:h:)` that walks a running `cumH`
+  instead of `d · h`. Marked `RESEARCH INSTRUMENTATION` in the source. Unset,
+  the code path is not entered.
+- **`residentHeadStepRatio`** — warm-time head-cost probe, **probe-reported
+  only**; nothing in the shipped policy reads it.
+- The `h=` field on the `mtp-trace: begin` line — provenance, so a leg records
+  which curve it actually ran.
+
+**No policy change is in the diff.** The shipped rule is the base scalar
+`headStepCostRatio = 0.20` and the base `d · h` loop, restored verbatim. I
+verified by direct comparison against base `1eacf376` that
+`headStepCostRatio`, `segmentedStreakGate`, `sdpaWidthWallDepthCap`,
+`segmentedVerifyDepthCap` and `acceptEMAAlpha` are **unchanged**. The diff is
+one file, `+240/−5`; the five deletions are all tracing infrastructure. The
+retuned scalar, the scalar→vector swap and the `segmentedStreakGate` edit that
+r2 pointed at are all **absent**, per r3.
+
+## 7. What the curve prices, since it is not a policy change
+
+The value r3 named for this work is pricing Alphonse's `segmentedStreakGate`
+lever on PR #2, which holds 29 % of easy-prose and 87 % of hard-prose rounds at
+depth 4. Under the measured curve:
+
+- Opening the gate moves rounds from width 5 (`h = 0.3804`, a **pass boundary
+  spike**) up into widths 6–8 (`h ≈ 0.2825`, the **plateau interior**). The
+  marginal token is therefore *cheaper* above the gate than at it — the
+  opposite of a ramp.
+- But depth 8 lands on the **second** spike (`h = 0.4250`), so an opened gate
+  must still cap below width 9. The measured optimum for cost per token is
+  `d = 7` (21,668.9 µs/token, the minimum of the whole curve) and `d = 8` is
+  worse than `d = 6`.
+- Realised acceptance, not cost, is what actually binds: at the 512 window the
+  adaptive policy settles on `d = 3` and the measured per-arm realised rates
+  rank `d3 (2.732) > d7 (2.674) > d4 (2.631)`. The gate is priced by
+  `f(d) = C(d)/T(d)`, and under **measured** acceptance that function is
+  unimodal with its minimum at `d = 3`; it is only non-unimodal under a flat
+  acceptance assumption, which is unreachable (F14).
+
+Net: the curve does not support "open the gate and let depth run", and it does
+not support the flat-curve estimate of +4.7 %/+7.5 %. It supports opening the
+gate **to a hard cap of 7**, and the payoff is bounded by acceptance rather than
+by cost. I did not implement any of that, per r3.
+
+## 8. W&B evidence
+
+Group `qwen38-r1-e1-depth-cost-curve`, entity `wandb-applied-ai-team`, project
+`qwen38-mlx-challenge-senpai`. The nine forced-depth arms that produce the
+curve and the sum:
+
+| arm | run ID |
+| --- | --- |
+| `d0-512` | `wy02zf2t` |
+| `d1-512` | `pxxdapeq` |
+| `d2-512` | `uczvr6xo` |
+| `d3-512` | `vpordvbk` |
+| `d4-512` | `03bvpx95` |
+| `d5-512` | `230ypvcj` |
+| `d6-512` | `i593ofcq` |
+| `d7-512` | `huanfgag` |
+| `d8-512` | `oaar88uf` |
+| nine-point fit | `umxt6r7x` |
+
+URL form
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/<id>`.
+
+Reproduction:
+
+```bash
+research/rebuild.sh
+research/run-arms.sh --tokens 512 --head-dir "$HOME/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared" 0 1 2 3 4 5 6 7 8
+python3 research/depth_cost_curve.py research/out --warmup 2 --json research/out/curve512.json
+```
+
+`research/out/` is gitignored, so every number needed to check this report is
+inline above rather than behind an artifact path.
+
+## 9. Process note
+
+I do not have the `post_assignment_comment` tool in this launch, which the
+advisor acknowledged in comment 20. Everything I would have raised as an interim
+question — in particular §2, which I would rather have asked about before
+spending the runs — is in this report instead.
+
+## Provenance
 
 | field | value |
 | --- | --- |
@@ -20,7 +317,8 @@ on `mtp_seconds_per_token`, all gates green. Local winner.**
 | memory profile | **48 GB** unified, single resident model process, wrapper run lock held |
 | OS | macOS 26.5.2 |
 | toolchain | Xcode 26.6 (17F113), Swift 6.3.3 |
-| `BASE_SHA` (r2) | `67bde70274c42aef089ac73cf00608d8037a815e` |
+| `BASE_SHA` (r3) | `1eacf376e3ee82578df7f47ee47f51d1382a0dbc` |
+| `BASE_SHA` (r2, superseded) | `67bde70274c42aef089ac73cf00608d8037a815e` |
 | `UPSTREAM_SHA` | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
 | merge commit onto r2 base | `0bb21a67a80510f59ac8a461fbb9045652a6dae8` |
 | head actually loaded | declared 4-bit head, `--head-dir …/mtp-head-declared` |
@@ -59,6 +357,24 @@ Differencing gives **65.8 ms per pure serial round** and an implied prefill of
 trace-measured `C(0) = 65.0 ms` to **1.2%**, from two completely independent
 routes. A 256-token quote therefore carries **19.2%** prefill and a 512-token
 quote **10.6%**; the difference alone moves an apparent speedup by ~10%.
+
+### Base advance during r3
+
+The remote base tip moved from `1eacf376` (the sha named by the r3 assignment
+marker) to `ddfb2f8a8ee503e5bf51e626b70839e16380c9d9` while this revision was in
+flight. `git diff 1eacf376..ddfb2f8` touches exactly two files —
+`research/CURRENT_RESEARCH_STATE.md` and `research/ESTABLISHED_FACTS.md`, 582
+insertions / 53 deletions, **documentation only**. No submitted path and no
+runtime source changed, so every measurement in this report remains valid on the
+newer tip and no replay is needed.
+
+Preflight against the r3 base at the submitted commit:
+
+```text
+assignment scope OK: 1 submitted path(s) against BASE_SHA=1eacf376…
+editable budget OK: source=2406507/3000000 headroom=593493
+                    growth=11857/262144 exempt=2410/2147483648 files=154
+```
 
 ## Revision r2: what I could and could not do
 
@@ -1505,7 +1821,27 @@ non-monotone (615 µs at d = 4 against 1264 µs at d = 3), so it is a weak
 host-side signal; the head's GPU work stays collinear with verify width exactly
 as the identifiability limit predicts.
 
-## Section 2 — policy delta (UPPER BOUND, offline counterfactual)
+## Section 2 — policy delta — **NOT SHIPPED, evidence for a follow-up only**
+
+> **r3 status.** r3 cut the policy change explicitly: *"replacing the scalar
+> with a vector in `costModelDepth` … Deliver the curve, not a policy change."*
+> Comment 20 added: *"Do not leave a policy change in the final diff: no
+> retuned `headStepCostRatio`, no scalar→vector swap, no `segmentedStreakGate`
+> edit."*
+>
+> **I complied.** The vector rule was reverted at commit `a1ae674`; the shipped
+> `costModelDepth` is the base scalar loop with `headStepCostRatio = 0.20`,
+> verbatim. The vector walk survives only as
+> `instrumentedCostModelDepth(offeredDepth:h:)`, reachable **only** when
+> `MLX_QWEN_MTP_H_VECTOR` is set, and marked `RESEARCH INSTRUMENTATION`.
+>
+> This whole section is therefore **retained measurement, not a proposal**. The
+> three A/B pairs below were run before the revert, on binaries that carried the
+> vector rule; they say what a future assignment could expect if it chose to
+> revisit the rule. Nothing in them is in the submitted diff. I have left the
+> numbers in place rather than deleting them because re-earning three matched
+> 512-token A/B pairs costs about an hour of runner time, and because r3 asked
+> for follow-up suggestions I did not implement.
 
 Everything in this section is an **upper bound**, for two independent reasons:
 
@@ -1768,7 +2104,15 @@ at longcopy d = 3, `G = 1.020`; at the ranked acceptance 0.699 with d = 2,
 baseline workspace*, that ~1.54x is a real, scored, general target/kernel win —
 it does not cancel.
 
-## Making the policy head-agnostic (comment 7 item 4)
+## Making the policy head-agnostic (comment 7 item 4) — **superseded by the r3 revert**
+
+> **r3 status.** This section describes the head-agnostic rescaling that shipped
+> before the revert. With the scalar restored, the shipped policy is
+> head-agnostic in the trivial sense that it has no head-derived table to be
+> wrong about. The rescaling machinery is retained as instrumentation only; see
+> §"The instrumentation decision". Kept because it answers comment 7 item 4 on
+> the record and because any follow-up that revisits the vector needs it.
+
 
 > "A single frozen table is the one option I will not accept."
 
@@ -2395,27 +2739,32 @@ correct for the d >= 4 plateau (measured 0.29–0.39) but ~5x too high for d = 1
 describes. 0.20 is a compromise that is ~2.5x too high at d = 1–2 and
 ~1.4–2x too low at d >= 4; its mean, 0.2562, happens to be close to 0.20, which
 is why the scalar survived end-to-end tuning **while being badly mis-shaped**.
-The per-depth vector removes the compromise instead of re-picking it.
+A per-depth vector would remove the compromise instead of re-picking it —
+but per r3 that is a follow-up, not this diff. The scalar `0.20` ships
+unchanged.
 
 ## Submission surface: one file, and what the research instrumentation costs
 
-Preflight on the current head, run against the r2 base
-`67bde70274c42aef089ac73cf00608d8037a815e`:
+Preflight on the submitted head, run against the r3 base
+`1eacf376e3ee82578df7f47ee47f51d1382a0dbc`:
 
 ```text
-senpai/validate-assignment-scope.sh 67bde70 Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+senpai/validate-assignment-scope.sh 1eacf376 Sources/MLXFastModel/Qwen36MTPBlockSession.swift
   -> assignment scope OK: 1 submitted path(s)
 
-senpai/check-editable-budget.sh 67bde70
-  -> editable budget OK: source=2410226/3000000 headroom=589774
-     growth=15576/262144 exempt=2410/2147483648 files=154
+senpai/check-editable-budget.sh 1eacf376
+  -> editable budget OK: source=2406507/3000000 headroom=593493
+     growth=11857/262144 exempt=2410/2147483648 files=154
 ```
 
-**One submitted file.** Everything else this experiment produced —
+**One submitted file**, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`,
+`+240/−5` against the r3 base. Everything else this experiment produced —
 `research/*.py`, `research/*.sh`, `research/out/`, this report — is research-only
-and is not in `editablePaths`, so Yukon does not ship it. Growth is 15576 bytes
-against a 262144 budget, i.e. **6 % of the allowance**, and 590 KB of total
-source headroom remains.
+and is not in `editablePaths`, so Yukon does not ship it. Growth is 11857 bytes
+against a 262144 budget, i.e. **4.5 % of the allowance**, and 593 KB of total
+source headroom remains. Growth fell from 15576 bytes at the pre-revert head
+because reverting the policy deleted the eight-constant table and its two
+derived helpers.
 
 ### The instrumentation decision, stated so the advisor can overrule it
 
@@ -2451,23 +2800,73 @@ re-deriving any of this would have to re-add it, and it cannot execute on the
 ranked host. If the advisor prefers a bare submission, deleting the hooks is
 mechanical and touches only this one file — say so and I will strip it.
 
-**One thing here is not instrumentation and must not be stripped: the warm
-H-probe.** `probeResidentHeadCost` runs in `warmAllDepths` and feeds
-`adoptResidentHeadStepRatio`, which is what makes the shipped cost model
-head-agnostic instead of a frozen table (comment 7 item 4, and the direct answer
-to *"a single frozen table is the one option I will not accept"*). It is
-load-bearing policy that happens to also emit a trace line.
+**One correction after the r3 revert: the warm H-probe is now instrumentation
+too.** Before the revert, `probeResidentHeadCost` fed
+`adoptResidentHeadStepRatio`, which rescaled the shipped vector and was what
+made the cost model head-agnostic rather than a frozen table (comment 7 item 4).
+With the scalar restored, **nothing in the shipped policy reads
+`residentHeadStepRatio`** — it is measured at warm time, reported on the
+`headprobe` trace line and in the `h=` provenance field, and then unused. It is
+kept because it is the only way to price a different proposal head without a
+full sweep, and because a follow-up that revisits the vector needs it. It is no
+longer load-bearing, so it strips as cleanly as the rest.
+
+**Provenance-format note.** With the vector gone, `h=` on the `begin` line
+normally carries a single value (the scalar) rather than eight. Both parsers
+treat the field as free-form — `research/accept_profile.py:25`
+(`h=([0-9.,eE+-]+)`) and `research/depth_cost_curve.py:32` (`(?: h=(\S+))?$`) —
+so the existing 512-token traces and the post-revert traces are both readable by
+the same tooling.
 
 ## Suggested follow-ups (not implemented)
 
-1. **Raise IPG above 4 for these shapes.** The in-source rule caps
+**Ordered for r3.** The first two follow from the endpoint check and are, I
+think, worth more than anything else on this list.
+
+1. **Reopen PR #3's parent-clock anchors.** `C(8) = 161.0 ms` at
+   `C(0) = 67.0 ms` disagrees with nine forced-depth arms by +23.4 % on `C(8)`
+   while agreeing to 2.3 % on `C(0)`. A discrepancy that sits entirely in the
+   depth-8 endpoint and not at all in the serial endpoint looks like a
+   width-dependent accounting error in the parent clock, not a host difference:
+   a host difference would move both. The cheapest decisive test is to re-derive
+   `C(8)` from PR #3's own traces with the seed prologue and partial-acceptance
+   rounds excluded the way §5 excludes them, and see whether the 161.0 ms
+   survives. **117 partial-acceptance rounds and 36 warmup rounds** is 30 % of
+   the depth-8 sample here; including them would pull `C(8)` down by roughly the
+   observed gap, which is my leading hypothesis for the difference.
+2. **Give the endpoint check an independent second anchor.** As §2 shows, the
+   1.403 / 1.082 / 161.0 triple is one number written three ways, so no measured
+   curve can ever be validated against it — it can only agree or disagree. A
+   second anchor from a different route (e.g. total decode wall-clock at forced
+   depth 8 divided by round count, which does not pass through the parent clock)
+   would make the check falsifiable.
+3. **Find the mechanism for the `d = 3` knee.** `h` jumps 3.6× between width 3
+   and width 4 with no `qmv` pass boundary underneath it. It is the largest
+   unexplained feature of the curve and it sits exactly where the adaptive
+   policy settles, so it is also the most decision-relevant one. Candidates I
+   did not test: an SDPA tile-width threshold, a cache-update path that changes
+   at 4 rows, or an allocator/residency boundary.
+4. **Raise IPG above 4 for these shapes.** The in-source rule caps
    `IPG = ceil(M / ceil(M / 4))` at 4 inputs per group; the M = 5 and M = 9 pass
-   boundaries are the two most expensive marginals measured. A tuned IPG of 5 or
-   8 for K = 5120 would flatten exactly those steps. This is a Metal-kernel
-   experiment, not a schedule one.
-2. **Re-fit the `positionAcceptEMA` prior.** `0.85 · 0.98^d` is wrong in both
+   boundaries are the two most expensive marginals measured, and they are the
+   two `h` peaks. A tuned IPG of 5 or 8 for K = 5120 would flatten exactly those
+   steps. This is a Metal-kernel experiment, not a schedule one, and it attacks
+   the curve's shape at its source rather than routing around it.
+5. **Price `segmentedStreakGate` with a hard cap of 7, not 8.** §7. Depth 8 sits
+   on the second pass boundary; the measured per-token minimum is at `d = 7`.
+   Any gate-opening experiment on PR #2 should exclude width 9.
+6. **Re-fit the `positionAcceptEMA` prior.** `0.85 · 0.98^d` is wrong in both
    directions (F10). It is the other half of the depth objective and was
-   deliberately left untouched to keep this diff minimal.
-3. **Width-padding arm** (run verify width `w` at depth `d < w - 1`) to break
+   deliberately left untouched.
+7. **Width-padding arm** (run verify width `w` at depth `d < w - 1`) to break
    the `H`-vs-verify-slope collinearity and separate head cost from verify cost.
-4. **A `d = 5` forced arm** to replace the N = 2 row.
+8. **Revisit the scalar→vector swap**, if and only if a future assignment wants
+   it. Three matched 512-token A/B pairs measured −1.77 %, −2.01 % and −1.93 %
+   on `mtp_seconds_per_token` before the revert (Section 2), all gates green.
+   r3 prices retuning at −0.3 % to +0.7 %, so those numbers and that estimate
+   disagree and one of them is wrong; the pairs are on this branch's history at
+   `c2b96d2` if the advisor wants to settle it.
+
+**Done since this list was first written:** the `d = 5` forced arm that used to
+be item 4 has been run at the 512 window with N = 72 kept rounds and is in the
+curve above; the old N = 2 row was a 256-token artifact.
