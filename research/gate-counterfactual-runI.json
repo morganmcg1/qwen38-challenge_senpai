@@ -1,0 +1,183 @@
+{
+  "trace": "research/trace-runI-base-cap8-512.log",
+  "round_count": 82,
+  "depth_histogram": {
+    "4": 39,
+    "5": 2,
+    "6": 3,
+    "7": 5,
+    "8": 33
+  },
+  "streak_in_histogram": {
+    "0": 19,
+    "1": 11,
+    "2": 9,
+    "3": 7,
+    "4": 5,
+    "5": 5,
+    "6": 5,
+    "7": 4,
+    "8": 3,
+    "9": 2,
+    "10": 2,
+    "11": 2,
+    "12": 2,
+    "13": 2,
+    "14": 2,
+    "15": 2
+  },
+  "gate_counterfactual": {
+    "1": {
+      "rounds_opened": 63,
+      "share_opened": 0.7683,
+      "newly_opened_vs_observed": 20,
+      "newly_opened_rounds": [
+        2,
+        3,
+        18,
+        19,
+        21,
+        22,
+        31,
+        32,
+        38,
+        39,
+        49,
+        52,
+        53,
+        57,
+        58,
+        60,
+        61,
+        66,
+        68,
+        69
+      ]
+    },
+    "2": {
+      "rounds_opened": 52,
+      "share_opened": 0.6341,
+      "newly_opened_vs_observed": 9,
+      "newly_opened_rounds": [
+        3,
+        19,
+        22,
+        32,
+        39,
+        53,
+        58,
+        61,
+        69
+      ]
+    },
+    "3": {
+      "rounds_opened": 43,
+      "share_opened": 0.5244,
+      "newly_opened_vs_observed": 0,
+      "newly_opened_rounds": []
+    },
+    "4": {
+      "rounds_opened": 36,
+      "share_opened": 0.439,
+      "newly_opened_vs_observed": 0,
+      "newly_opened_rounds": []
+    }
+  },
+  "ema_separation": {
+    "ema[0]": {
+      "full_accept_rounds": 64,
+      "full_accept_mean": 0.9477,
+      "full_accept_min": 0.6469,
+      "reject_rounds": 18,
+      "reject_mean": 0.9098,
+      "reject_max": 0.9999,
+      "separated": false
+    },
+    "ema[1]": {
+      "full_accept_rounds": 64,
+      "full_accept_mean": 0.9392,
+      "full_accept_min": 0.7202,
+      "reject_rounds": 18,
+      "reject_mean": 0.8908,
+      "reject_max": 0.9968,
+      "separated": false
+    },
+    "ema[2]": {
+      "full_accept_rounds": 64,
+      "full_accept_mean": 0.9431,
+      "full_accept_min": 0.6495,
+      "reject_rounds": 18,
+      "reject_mean": 0.9767,
+      "reject_max": 1.0,
+      "separated": false
+    },
+    "ema[3]": {
+      "full_accept_rounds": 64,
+      "full_accept_mean": 0.9379,
+      "full_accept_min": 0.7129,
+      "reject_rounds": 18,
+      "reject_mean": 0.9402,
+      "reject_max": 0.9975,
+      "separated": false
+    },
+    "ema[4]": {
+      "full_accept_rounds": 64,
+      "full_accept_mean": 0.9561,
+      "full_accept_min": 0.784,
+      "reject_rounds": 18,
+      "reject_mean": 0.9712,
+      "reject_max": 0.9981,
+      "separated": false
+    },
+    "ema[5]": {
+      "full_accept_rounds": 64,
+      "full_accept_mean": 0.9606,
+      "full_accept_min": 0.7683,
+      "reject_rounds": 18,
+      "reject_mean": 0.9923,
+      "reject_max": 0.9969,
+      "separated": false
+    },
+    "ema[6]": {
+      "full_accept_rounds": 64,
+      "full_accept_mean": 0.9155,
+      "full_accept_min": 0.753,
+      "reject_rounds": 18,
+      "reject_mean": 0.9452,
+      "reject_max": 0.9793,
+      "separated": false
+    },
+    "ema[7]": {
+      "full_accept_rounds": 64,
+      "full_accept_mean": 0.8551,
+      "full_accept_min": 0.7379,
+      "reject_rounds": 18,
+      "reject_mean": 0.8895,
+      "reject_max": 0.9363,
+      "separated": false
+    }
+  },
+  "throughput": {
+    "shallow": {
+      "rounds": 39,
+      "emitted_tokens": 165,
+      "mean_round_us": 128144.6,
+      "us_per_token": 30288.7,
+      "accept_rate": 0.8077
+    },
+    "deep": {
+      "rounds": 43,
+      "emitted_tokens": 347,
+      "mean_round_us": 208201.4,
+      "us_per_token": 25800.2,
+      "accept_rate": 0.9297
+    },
+    "all": {
+      "rounds": 82,
+      "emitted_tokens": 512,
+      "mean_round_us": 170125.6,
+      "us_per_token": 27246.7,
+      "accept_rate": 0.8903
+    }
+  }
+}
