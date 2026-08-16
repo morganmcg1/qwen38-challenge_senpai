@@ -37,7 +37,7 @@ def load_mtp_report(arm_dir: Path) -> dict:
             continue
         if not isinstance(payload, dict):
             continue
-        if "row_ledger" not in payload or "parity_all_ok" not in payload:
+        if "parity_all_ok" not in payload or "decode_seconds" not in payload:
             continue
         if payload.get("mtp_depth", 0) == 0:
             continue
@@ -46,6 +46,25 @@ def load_mtp_report(arm_dir: Path) -> dict:
     if best is None:
         raise SystemExit(f"draft_bits_arms: no MTP leg report under {reports}")
     return best
+
+
+def load_reference_ledger(arm_dir: Path) -> tuple[list[dict], str | None]:
+    """Per-row evidence from the untimed `mtp-verify --generate` pass.
+
+    The timed leg is built with `retainLedger == false`, so its report carries
+    no `row_ledger`. The reference pass runs the same depth with the same arm
+    head and does retain one; `research/capture-cli.sh` copies it out of the
+    scratch run directory that benchmark-qwen-mtp.sh deletes.
+    """
+    for path in sorted((arm_dir / "reports").glob("*-output.json")):
+        try:
+            payload = json.loads(path.read_text())
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        rows = payload.get("row_ledger") if isinstance(payload, dict) else None
+        if rows:
+            return rows, path.name
+    return [], None
 
 
 def load_serial_report(arm_dir: Path) -> dict | None:
@@ -153,7 +172,7 @@ def emitted_stream(ledger: list[dict]) -> list[int]:
 def summarize(arm_dir: Path) -> dict:
     report = load_mtp_report(arm_dir)
     serial = load_serial_report(arm_dir)
-    ledger = report.get("row_ledger", [])
+    ledger, ledger_file = load_reference_ledger(arm_dir)
     stream = emitted_stream(ledger)
     head = draft_head_provenance(arm_dir)
     seconds = report.get("parent_measured_seconds_per_token")
@@ -174,14 +193,15 @@ def summarize(arm_dir: Path) -> dict:
         "effective_mean_draft_len": report.get("effective_mean_draft_len"),
         "ms_per_token": seconds * 1e3 if seconds else None,
         "decode_seconds": report.get("decode_seconds"),
-        "emitted_token_count": len(stream),
-        "emitted_stream_sha256": hashlib.sha256(
+        "ref_ledger_file": ledger_file,
+        "ref_emitted_token_count": len(stream),
+        "ref_emitted_stream_sha256": hashlib.sha256(
             json.dumps(stream).encode()
         ).hexdigest(),
         "max_rss_bytes": max_rss_bytes(arm_dir),
         "report_file": report["_source_file"],
     }
-    out |= acceptance_profile(ledger)
+    out |= {f"ref_{k}": v for k, v in acceptance_profile(ledger).items()}
     out |= thermal_provenance(arm_dir)
     if serial and serial.get("parent_measured_seconds_per_token") and seconds:
         out["local_ratio_serial_over_mtp"] = (
@@ -205,7 +225,7 @@ def main() -> int:
     arms = [summarize(d) for d in args.arm_dirs]
     control = arms[0]
     for arm in arms:
-        arm["stream_identical_to_control"] = arm["_stream"] == control["_stream"]
+        arm["ref_stream_identical_to_control"] = arm["_stream"] == control["_stream"]
         if control["accepted_draft_rate"] and arm["accepted_draft_rate"]:
             arm["accept_rate_delta_vs_control"] = (
                 arm["accepted_draft_rate"] - control["accepted_draft_rate"]
@@ -233,7 +253,7 @@ def main() -> int:
             f"{arm['arm']:<28} {str(arm['draft_head_bits']):>4} "
             f"{(packed / 1e6 if packed else 0):>7.1f} "
             f"{str(arm['parity_all_ok']):>7} "
-            f"{str(arm['stream_identical_to_control']):>5} "
+            f"{str(arm['ref_stream_identical_to_control']):>5} "
             f"{(arm['accepted_draft_rate'] or 0):>7.4f} "
             f"{arm.get('accept_rate_pct_of_control', float('nan')):>6.1f}% "
             f"{(arm['ms_per_token'] or 0):>8.3f} "
@@ -259,7 +279,7 @@ def main() -> int:
             "bits",
             "packed_bytes",
             "parity_all_ok",
-            "stream_identical_to_control",
+            "ref_stream_identical_to_control",
             "accepted_draft_rate",
             "accept_rate_pct_of_control",
             "effective_mean_draft_len",
@@ -274,7 +294,7 @@ def main() -> int:
                 arm["draft_head_bits"],
                 arm["draft_head_packed_bytes"],
                 arm["parity_all_ok"],
-                arm["stream_identical_to_control"],
+                arm["ref_stream_identical_to_control"],
                 arm["accepted_draft_rate"],
                 arm.get("accept_rate_pct_of_control"),
                 arm["effective_mean_draft_len"],

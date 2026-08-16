@@ -73,7 +73,9 @@ CLANG_MODULE_CACHE_PATH="${PWD}/.build-worker/clang-module-cache" \
   --scratch-path .build-worker --product mlxfast-runtime-worker
 
 worker_bin=".build-worker/release/mlxfast-runtime-worker"
-if ! strings -a "${worker_bin}" | grep -q "MLX_QWEN_MTP_DRAFT_BITS"; then
+# grep -c, not grep -q: under `pipefail` an early-exiting grep SIGPIPEs strings
+# and the pipeline reports 141 even on a match.
+if [[ "$(strings -a "${worker_bin}" | grep -c "MLX_QWEN_MTP_DRAFT_BITS" || true)" -eq 0 ]]; then
   echo "run-draft-bits-arm.sh: ${worker_bin} has no MLX_QWEN_MTP_DRAFT_BITS; refusing to time a build that cannot honour the arm" >&2
   exit 1
 fi
