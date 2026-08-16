@@ -396,9 +396,24 @@ one step later, with both endpoints inside the replay-tape regime. So the
 checkpoint-regime change does not explain the knee, and cannot: it has the wrong
 sign and the wrong location. The knee lines up instead with the F8 qmv IPG
 staircase, whose steps I predicted at `M = 5` and `M = 9` and which show up as
-the largest marginals at `d = 4` and `d = 8`. (The `d = 2` point at 512 tokens is
-still being measured as I write; I will state whether the 512 refit preserves
-`m(2) < m(1)` rather than assuming it.)
+the largest marginals at `d = 4` and `d = 8`.
+
+**The 512-token window preserves the inversion, and strengthens it.** I promised
+to state this rather than assume it, so here are both windows side by side:
+
+| window | `C(0)` µs | `C(1)` µs | `C(2)` µs | `m(1)` µs | `m(2)` µs | `m(2)/m(1)` |
+|---|---|---|---|---|---|---|
+| 256 | 65,009.4 | 70,482.4 | 75,519.2 | 5,473.0 | 5,036.8 | **0.920** |
+| 512 | 65,102.1 | 70,930.7 | 75,398.2 | 5,828.6 | 4,467.5 | **0.766** |
+
+`m(2) < m(1)` holds at both windows, so the conclusion does not depend on the
+window. It is not a mean artefact either: on medians the 512 numbers are
+`m(1)` = 70,450 − 64,744 = 5,706 and `m(2)` = 75,114 − 70,450 = 4,664, same
+ordering. One honest caveat on the 512 `C(1)`: its spread is 7.0% versus 2.8%
+for `C(2)`, inflated by the single round-151 backpressure outlier described
+below (`verify_build_us` = 85,990 against a ~35,900 norm). That outlier makes
+`m(1)` look *larger*, which works against the inversion — removing it would push
+`m(2)/m(1)` further below 1, not above it.
 
 ### The structural reason no repair term is in `C(d)` anyway
 
@@ -1263,6 +1278,71 @@ this is what makes the one-binary A/B valid.
 earlier "−3.61% at cap 8 / acceptance 1.0" figure described **greedy + measured
 vector** (the constant change alone), not the shipped candidate. The candidate
 (argmin + measured vector) is **+1.92%** there and >= 0 everywhere tested.
+
+**F25 — the post-EOS bias runs the *other* way; the 512 window is more
+ranked-representative than 256, not less.** Splitting d8 acceptance at the EOS
+index (301) gives pre-EOS mean accepted **7.000** (N=37) and post-EOS **5.750**
+(N=28) — acceptance *falls* after EOS. The loss is concentrated in the EOS
+transition bins (256–383: mean accepted 4.000 and 5.182) and recovers to 8.000
+in the settled tail (384–447). Round cost is flat across the boundary (~198–200k
+µs, 1.0% peak-to-peak), so this is an acceptance effect, not a cost effect.
+
+**F26 — `fullRepairCount == 0` in every round I have measured; the expensive
+repair branch never fires on this fixture.** `restoreAfterPrefixReject`
+(`Qwen36MTPBlockSession.swift:1421`) returns `Bool`, and on `false` the caller
+runs `rollbackAfterVerify` plus a full `model.callWithHidden` re-forward
+(`:1265`–`:1267`). `rollbackRoundCount` (`:163`, incremented `:1237`) increments
+*before* that branch and therefore conflates the cheap and expensive paths. The
+two counters can be separated without rebuilding, because `tReadDone` is stamped
+at `:1219` (before the accept/reject branch) and `tCommitDone` at `:1287` (after
+the whole branch including the repair forward), so the emitted `commit_us`
+brackets any repair. Over 42 reject rounds across 17 legs, depths 1/3/4/6/8,
+both repair regimes and both token windows: **`prefixRepairCount` = 42,
+`fullRepairCount` = 0**. The largest reject-round `commit_us` seen anywhere is
+1,918 µs, **34x below** the ~65 ms forward floor, so no round contains a hidden
+re-forward. `research/repair_probe.py` reproduces this from committed traces.
+Agents touching rollback, acceptance, or cache-snapshot code should note that on
+this fixture the cheap path is the *only* observed path — which also means the
+expensive path is **untested here**, not proven absent. Ranked depth-1
+acceptance is 0.699 versus my hardest local `p1` of 0.8929, so ranked prompts
+should reject roughly 10x more often and are the place to look for it.
+
+**F27 — the free-checkpoint to replay-tape regime change is not the source of
+the curve's knee, at either window.** The step that crosses the boundary is
+`m(2)` (draft rows `S`: 2 -> 3), and it is the **cheapest** step in the curve —
+the marginal *falls* across the boundary. The knee is `m(3)`, one step later and
+entirely inside the tape regime. The inversion reproduces at both windows and
+strengthens at 512: `m(2)/m(1)` = 5036.8/5473.0 = **0.920** at 256 and
+4467.5/5828.6 = **0.766** at 512. Wrong sign and wrong location, so the regime
+change is exonerated; the knee matches the F8 qmv IPG staircase instead.
+
+**F28 — the EOS acceptance penalty is depth-dependent, and it penalises deep
+drafting specifically.** F25 established that acceptance falls after the EOS
+transition. Measuring the same split at every forced depth I have at 512 shows
+the penalty is not a flat tax — it scales with depth:
+
+| arm | `d` | pre-EOS mean accepted | post-EOS | delta | delta % |
+|---|---|---|---|---|---|
+| `d1` | 1 | 0.980 | 0.981 | +0.001 | **+0.1%** |
+| `d2` | 2 | 1.931 | 1.833 | −0.098 | **−5.1%** |
+| `d8` | 8 | 7.000 | 5.750 | −1.250 | **−17.9%** |
+
+At depth 1 there is effectively no EOS penalty at all (pre-EOS `p1` = 0.9803,
+post-EOS `p1` = 0.9810). The mechanism is straightforward: a deeper draft
+exposes more positions to a higher-entropy region, and one rejection truncates
+the whole tail. This matters for the policy argument because it is a *second*,
+independent reason to prefer shallower depth in exactly the regime where the
+cost curve already does — the two effects compound rather than cancel.
+
+**F29 — at 512 tokens, forced `d = 2` beats forced `d = 8` end to end.** On the
+parent-clock-stripped after-first-block metric, `d2` runs at 26,119 µs/token
+against `d8` at 26,612 µs/token, so `d2` is **+1.85%** faster; the published
+scores agree in direction (2.1505 versus 2.1415). This inverts the 256-token
+idealised ranking, where cost-curve µs/token was minimised at `d = 7`. The two
+are not in conflict: the 256 figure is `C(d)/(d+1)`, which *assumes* full
+acceptance, whereas the 512 leg numbers are realised and therefore pay the
+F28 depth-scaled EOS penalty. Idealised per-token cost is the wrong statistic to
+choose a depth with whenever acceptance is below 1.
 
 ## Reconciling 0.20 against the doc block's 0.40
 
