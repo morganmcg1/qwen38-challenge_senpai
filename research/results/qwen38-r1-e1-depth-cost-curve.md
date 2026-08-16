@@ -283,12 +283,12 @@ re-assertion of the original claim.
 
 ### How I got the two counters without rebuilding
 
-I did not add the counters, because adding them mid-sweep would have forced a
-rebuild and broken the single-binary comparability of the forced-depth sweep
-(`research/run-arms.sh` and `research/run-arm.sh` contain no build step, and
-`git diff --stat 20b6e2b b9379e2 -- Sources/ Vendor/` is empty, so every depth
-point in this report comes from one binary). Instead the existing traces already
-separate the two paths:
+I first recovered the counters *without* adding them, because adding them
+mid-sweep forces a rebuild and splits the forced-depth sweep across two
+binaries. `research/run-arms.sh` and `research/run-arm.sh` contain no build
+step, and `git diff --stat 20b6e2b b9379e2 -- Sources/ Vendor/` is empty, so
+`d = 0,1,2,3,4,8` all come from one binary ("binary A"). Instead of rebuilding,
+the existing traces already separate the two paths: 
 
 - `tReadDone` is stamped at `:1219`, **before** the accept/reject branch.
 - `tCommitDone` is stamped at `:1287`, **after** the entire branch — including
@@ -312,6 +312,59 @@ the 59.5 ms roofline). The cheap path issues no blocking eval at all. I set the
 threshold at 10 ms — ~6× below the cheapest possible forward and ~40× above the
 largest cheap-path cost I observed. Tool: `research/repair_probe.py`; outputs
 `research/out/repair512.json`, `research/out/repair256.json`.
+
+### The sweep is split across two binaries — disclosure and the free control
+
+Having proved the classifier worked, I then *did* add the two literal counters
+(`db37226`), so the deep tail of the sweep was rebuilt. This must be declared:
+
+| arms | binary | source | counters |
+|---|---|---|---|
+| `d0 d1 d2 d3 d4 d8`, all 256-token arms, `base256`, `cand256` | **A** | `20b6e2b` | recovered from `commit_us` |
+| `d5 d6 d7`, `base512`, `cand512` | **B** | `db37226` | emitted literally |
+
+The delta is 11 lines in `Qwen36MTPBlockSession.swift`: two `Int` declarations,
+two `+= 1` statements **inside the reject branch only**, and two extra fields in
+the trace string. Its cost is nanoseconds against a 65 ms round, and the trace
+string is built after `tTailDone` is stamped, so it cannot enter `round_us`.
+Expected effect: nil.
+
+I do not want to assert "nil" from source reading alone, and I do not want to
+spend a GPU arm proving it, so the sweep pays for its own control. **Every arm
+runs its own serial depth-0 leg.** That leg is a `C(0)` measurement, so the
+binary-B arms re-measure on binary B exactly the quantity the binary-A arms
+pooled to 65281.4 µs (N = 3570). If the two agree inside the 1.4 % spread the
+six binary-A controls already show among themselves, the binaries are
+measurement-equivalent and the split costs the sweep nothing. This check is
+reported in the results below at zero extra GPU cost.
+
+The binary/arm assignment above is not inferred from commit SHAs — it is pinned
+by the mtime of the built worker against each arm's wall-clock window:
+
+```text
+.build-worker/release/mlxfast-runtime-worker   mtime 2026-08-16T18:47:01Z
+
+d0  17:42:19 -> 17:49:58   dirty=0   |
+d8  17:49:58 -> 17:59:15   dirty=0   |  all six finish before the rebuild
+d1  18:03:01 -> 18:11:01   dirty=0   |  -> binary A
+d2  18:11:01 -> 18:20:26   dirty=0   |
+d3  18:21:51 -> 18:31:12   dirty=0   |
+d4  18:31:12 -> 18:40:59   dirty=1   |
+                    <-- rebuild at 18:47:01 -->
+d5  18:47:07 -> ...        dirty=0      binary B
+```
+
+This also disposes of the one provenance wart. The `d4` arm's `meta.txt`
+records **`dirty=1`**: it was launched while the counter edit sat uncommitted in
+the worktree, so its recorded base SHA does not pin its source. But `d4`
+finished at 18:40:59, six minutes *before* the only rebuild in the sweep, and
+`run-arm.sh` contains no build step — so the uncommitted edit was never
+compiled and `d4` ran the same binary A as `d0..d3` and `d8`. The dirty flag is
+real and I am reporting it, but it does not touch the measurement.
+
+`d0` through `d4` and `d8` record base SHAs ranging from `20b6e2b` to `73dd6ea`;
+those commits differ only in `research/` and `senpai/` files, which the binary
+does not contain.
 
 ### The counters, per depth, annotated by repair regime
 
