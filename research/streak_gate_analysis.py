@@ -215,7 +215,10 @@ def simulate_trajectory(
             continue  # non-drafting round leaves `fullAcceptStreak` frozen
         accepted = depth
         for i in range(depth):
-            if p < 1.0 and rng.random() >= p:
+            # `p` may be a scalar (i.i.d. positions) or the measured per-position
+            # curve, which decays sharply at the deepest index.
+            pi = p[min(i, len(p) - 1)] if isinstance(p, (list, tuple)) else p
+            if pi < 1.0 and rng.random() >= pi:
                 accepted = i
                 break
         for i in range(accepted):
