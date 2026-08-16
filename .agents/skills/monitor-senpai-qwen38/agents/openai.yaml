@@ -1,4 +1,0 @@
-interface:
-  display_name: "Monitor Senpai Qwen 3.8"
-  short_description: "Audit Senpai health, scientific advances and risks"
-  default_prompt: "Use $monitor-senpai-qwen38 to perform a fresh read-only campaign audit and report operational health, explicit major scientific progress and major issues, official submissions, and frontier movement."

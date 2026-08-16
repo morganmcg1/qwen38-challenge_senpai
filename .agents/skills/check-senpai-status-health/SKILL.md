@@ -1,9 +1,9 @@
 ---
-name: monitor-senpai-qwen38
+name: check-senpai-status-health
 description: Run the standard read-only operational and scientific audit for the Senpai Qwen 3.8 Native-MTP campaign, with explicit callouts for major scientific progress and major scientific issues. Use when the user asks to check in, get campaign status, assess advisor or student health, inspect experiments, find official submissions, compare W&B evidence, or determine whether the Yukon frontier moved.
 ---
 
-# Monitor Senpai Qwen 3.8
+# Check Senpai Qwen 3.8 Status and Health
 
 Produce a fresh, evidence-ranked snapshot of the live campaign. Compare with
 the preceding audit when it is available in conversation; otherwise report a
