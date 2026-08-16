@@ -1049,12 +1049,12 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
 }
 
 // Five-input form of qmv_fast_crossrow_affine4_g64_wide. Metal's vec<T, N>
-// only exists for N in {2, 3, 4}, so the accumulators here are plain floats.
-// The loop nest is reordered to run one input at a time against the cached
-// weight tile, which keeps the per-thread footprint at acc[4][5] plus a
-// four-wide partial instead of the vec form's acc + partial + a0..a3. Every
-// output element still accumulates over i and over k in the same order, and
-// load_vector, the qdot expression and simd_sum are unchanged.
+// only exists for N in {2, 3, 4}, so inputs 0-3 keep the vec form verbatim and
+// input 4 rides along in scalar registers. The nibble unpack is hoisted out of
+// both so all five inputs amortize one mask and one convert per (r, i); a form
+// that unpacks per input is ALU-bound and loses more than the saved weight
+// stream. Every output element still accumulates over i and over k in the same
+// order, and load_vector, the qdot expression and simd_sum are unchanged.
 template <typename T>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide5(
     const device uint32_t* w,
@@ -1067,7 +1067,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide5(
     int first_m,
     int out_row,
     uint simd_lid) {
-  constexpr int inputs = 5;
+  typedef vec<float, 4> VF;
   constexpr int rows_per_simd = 4;
   constexpr int values_per_thread = 16;
   constexpr int block_size = values_per_thread * SIMD_SIZE;
@@ -1075,11 +1075,11 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide5(
   const int in_vec_size_w = in_vec_size / 2;
   const int in_vec_size_g = in_vec_size / 64;
 
-  thread float acc[rows_per_simd][inputs];
+  VF acc[rows_per_simd];
+  thread float acc_tail[rows_per_simd];
   for (int r = 0; r < rows_per_simd; r++) {
-    for (int m = 0; m < inputs; m++) {
-      acc[r][m] = 0.0f;
-    }
+    acc[r] = VF(0.0f);
+    acc_tail[r] = 0.0f;
   }
 
   for (int k = 0; k < in_vec_size; k += block_size) {
@@ -1099,37 +1099,64 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide5(
       bias_local[r] = biases[group_index];
     }
 
-    for (int m = 0; m < inputs; m++) {
-      float sum = 0.0f;
-      thread float partial[rows_per_simd];
-      for (int r = 0; r < rows_per_simd; r++) {
-        partial[r] = 0.0f;
-      }
-      for (int i = 0; i < 4; i++) {
+    VF sums = VF(0.0f);
+    float sum_tail = 0.0f;
+    VF partial[rows_per_simd];
+    thread float partial_tail[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+      partial_tail[r] = 0.0f;
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < 4; m++) {
         const device T* xm = x + (first_m + m) * in_vec_size + k +
             simd_lid * values_per_thread + 4 * i;
         thread float xc[4];
-        sum += load_vector<T, float, 4, 4>(xm, xc);
-        for (int r = 0; r < rows_per_simd; r++) {
-          partial[r] += (xc[0] * (packed[r][i] & 0x000f) +
-                         xc[1] * (packed[r][i] & 0x00f0) +
-                         xc[2] * (packed[r][i] & 0x0f00) +
-                         xc[3] * (packed[r][i] & 0xf000));
-        }
+        sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+        a0[m] = xc[0];
+        a1[m] = xc[1];
+        a2[m] = xc[2];
+        a3[m] = xc[3];
       }
+      thread float b[4];
+      {
+        const device T* xm = x + (first_m + 4) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        sum_tail += load_vector<T, float, 4, 4>(xm, b);
+      }
+      // The nibble masks are hoisted so the fifth input reuses the unpack work
+      // of the first four; recomputing them per input is what makes a fully
+      // scalar five-wide form ALU-bound.
       for (int r = 0; r < rows_per_simd; r++) {
-        acc[r][m] += scale_local[r] * partial[r] + sum * bias_local[r];
+        const int q0 = packed[r][i] & 0x000f;
+        const int q1 = packed[r][i] & 0x00f0;
+        const int q2 = packed[r][i] & 0x0f00;
+        const int q3 = packed[r][i] & 0xf000;
+        partial[r] += (a0 * q0 + a1 * q1 + a2 * q2 + a3 * q3);
+        partial_tail[r] +=
+            (b[0] * q0 + b[1] * q1 + b[2] * q2 + b[3] * q3);
       }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      acc_tail[r] +=
+          scale_local[r] * partial_tail[r] + sum_tail * bias_local[r];
     }
   }
 
   for (int r = 0; r < rows_per_simd; r++) {
-    for (int m = 0; m < inputs; m++) {
+    for (int m = 0; m < 4; m++) {
       const float reduced = simd_sum(acc[r][m]);
       if (simd_lid == 0) {
         y[(first_m + m) * out_vec_size + out_row + r] =
             static_cast<T>(reduced);
       }
+    }
+    const float reduced_tail = simd_sum(acc_tail[r]);
+    if (simd_lid == 0) {
+      y[(first_m + 4) * out_vec_size + out_row + r] =
+          static_cast<T>(reduced_tail);
     }
   }
 }
