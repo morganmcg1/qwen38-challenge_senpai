@@ -4,7 +4,8 @@
     "J": 2.124383656837688,
     "K": 2.1019606601367307,
     "L": 2.128814113014489,
-    "M": 2.0600336023628163
+    "M": 2.0600336023628163,
+    "N": 2.131196511088887
   },
   "capture": {
     "I": {
@@ -126,6 +127,30 @@
       "uses_pinned_mtp_head": true,
       "public_drift_tripwire_passed": null,
       "parent_measured_seconds_per_token": 0.03567601554095745
+    },
+    "N": {
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "declared_rows_total": 559,
+      "reference_checked_row_total": 559,
+      "round_count": 74,
+      "accepted_draft_rate": 0.9030927835051547,
+      "accepted_draft_total": 438,
+      "rejected_draft_total": 47,
+      "effective_mean_draft_len": 6.554054054054054,
+      "verify_block_replayed_round_count": 12,
+      "seed_token_count": 512,
+      "target_cache_offset_final": 1024,
+      "decode_seconds": 17.707140922546387,
+      "first_block_seconds": 0.17630994319915771,
+      "max_block_request_seconds_after_first": 0.22722506523132324,
+      "p50_block_request_seconds_after_first": 0.191087007522583,
+      "non_drafting_round_count": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "parity_all_ok": true,
+      "uses_pinned_mtp_head": true,
+      "public_drift_tripwire_passed": null,
+      "parent_measured_seconds_per_token": 0.03458425961434841
     }
   },
   "position_acceptance": {
@@ -413,6 +438,64 @@
         61,
         54,
         42,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "N": {
+      "conditional_hits": [
+        71,
+        70,
+        66,
+        62,
+        52,
+        46,
+        40,
+        31,
+        0,
+        0,
+        0,
+        0
+      ],
+      "conditional_obs": [
+        74,
+        71,
+        70,
+        66,
+        52,
+        48,
+        41,
+        33,
+        0,
+        0,
+        0,
+        0
+      ],
+      "unconditional_hits": [
+        71,
+        70,
+        66,
+        62,
+        52,
+        46,
+        40,
+        31,
+        0,
+        0,
+        0,
+        0
+      ],
+      "unconditional_obs": [
+        74,
+        74,
+        74,
+        74,
+        56,
+        51,
+        46,
+        36,
         0,
         0,
         0,

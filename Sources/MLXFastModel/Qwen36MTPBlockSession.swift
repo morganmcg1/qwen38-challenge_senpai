@@ -613,10 +613,12 @@ public final class Qwen36MTPBlockSession {
     /// each step down admits rounds that still carry a deep draft. Removing
     /// the gate entirely (0) loses because that conditioning is what the
     /// deep cap was buying: with every round deep, rejected drafts jump
-    /// 47 -> 72, accepted tokens per round fall 6.92 -> 6.01, and the cost
-    /// lands on the hard second half of the window, where seconds/token
-    /// degrades 29.3 ms -> 31.7 ms. The gate is not throttling throughput,
-    /// it is keeping post-reject rounds shallow until the head recovers.
+    /// 47 -> 72. Throughput indicators all improve at gate 0 - accepted
+    /// drafts per round rise 5.92 -> 6.01 and rounds per token fall
+    /// 0.1445 -> 0.1426 - yet cost per token rises 26.70 -> 27.82 ms,
+    /// because the extra rejects land on the hard second half of the
+    /// window, where it degrades 29.3 ms -> 31.7 ms. Tune this against
+    /// rejected work, not against accepted tokens per round.
     private static let segmentedStreakGate = 1
 
     /// The greedy marginal-depth rule described at the policy's assignment.
