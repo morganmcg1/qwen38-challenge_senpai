@@ -1239,3 +1239,172 @@ directly whether the obstacle is on my side or the host's.
 - **Everything I told either of them about the `ceil(M/4)` magnitude or the
   `M* = 7.9` knee is refuted** and was explicitly retracted in-thread.
 
+
+---
+
+# The campaign has banked nothing yet, and the reason is now proven
+
+I went looking for an unbanked scored win — some result already sitting in the
+base that had never been submitted. There is none, and the proof is short.
+
+## Provenance, settled
+
+`7351e626...` (the `UPSTREAM_SHA` quoted in every assignment brief) is **not a
+commit in this repository**. It is a `sourceRef` into the organizer's tree. Its
+content arrived here as:
+
+```
+ce15975 | 08-16 12:59 | mmcguire | Sync promoted organizer frontier 7351e62674bc600f0ca148d3a1b0604716a09db6
+```
+
+That commit **is** the promoted frontier: submission
+`e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd`, official score **2.9042110287045**.
+Every `Validate submission <uuid>` commit by `yukon-autoresearch[bot]` is an
+ancestor of our HEAD, so the base carries the whole validated pool.
+
+## The decisive diff
+
+```
+git diff --stat ce15975 HEAD -- Sources/ Vendor/
+  Sources/MLXFastModel/Qwen36MTPBlockSession.swift | 24 +++---- 53 ------
+```
+
+- `Vendor/mlx-swift-lm/.../Qwen35.swift` is **byte-identical** to the promoted
+  frontier. All crossrow work, the compact draft vocabulary, the fused select
+  kernel — all of it is *inside* 2.9042 and none of it is ours.
+- The **only** scored-path delta is `b219009`, the operator's own
+  "continue fixed decode windows past EOS" harness-correctness fix.
+- `git diff b219009 HEAD -- Sources/ Vendor/` is **empty**.
+
+**Senpai has contributed zero bytes to the scored path.** Submitting the base
+today would reproduce ~2.9042 and bank nothing. This closes the question; do
+not re-open it without a scored-path change in hand.
+
+It also retires an earlier wrong note of mine that treated `7351e626` as a
+local ancestor, and confirms by ancestry what I had only inferred from symbol
+hit-counts: **crossrow is inside the frontier.**
+
+## What this reframes
+
+Round 1 produced knowledge, not score. That is a legitimate outcome for a
+first round, but it must be said plainly: the *only* paths to a scored delta
+are the four live experiments. Everything else is instrumentation.
+
+---
+
+# Depth is competitive surface, and the policy that sets it is mispriced
+
+## The operator opened depth on purpose
+
+`fixtures/qwen3_8_27b_mtp_track.json`:
+
+- `/protocol/maximum_depth = 8` — the trusted per-round verify-width bound.
+- `/protocol/offered_draft_depth_ceiling = 8`, **operator-ratified 2026-08-14**,
+  replacing a pinned `candidate_depth = 2`.
+- `/protocol/candidate_declares_no_depth = True` — the parent *offers* a
+  ceiling; the **candidate chooses 0..8 per round, adaptively**.
+- The note is explicit: *"Depth is competitive surface now: the previous pin
+  carried a standing TODO to re-derive it across the whole pool, and opening it
+  moves that re-derivation from the operator to the competitor."*
+
+So re-deriving the depth schedule is an **invited** move, not a loophole. The
+ranked workflow sets `MLXFAST_QWEN_MTP_DEPTH = 8`.
+
+**Correction to a standing note:** `effective_depth = 1 on all 48 (configured
+depth 2)` sits under `/calibration/expected_raw_median_provenance`. It
+describes the **calibration reference**, not the frontier. Do not cite it as
+evidence about what the current candidate drafts.
+
+## ★★★ `costModelDepth` is a hill-climb on a non-monotone function
+
+`Qwen36MTPBlockSession.swift:573-604`. The loop continues while
+
+```
+reach > h * (1 + expected) / (1 + depth*h)
+```
+
+which is algebraically *"continue iff `(1+expected)/(1+cost)` strictly
+improves."* It is a **strict hill-climb that stops at the first local
+maximum**. That is correct **only because `h` is flat** (`headStepCostRatio =
+0.20`, `:530`): a flat cost makes the objective monotone up to the cap.
+
+The measured cost is neither flat nor monotone. Cost of the j-th draft, in
+width-1-verify units (PR #5 isolated, cross-validated against Edward's in-situ
+`h(d)`):
+
+| j | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| h(j) | 0.086 | 0.080 | 0.245 | **0.377** | 0.294 | 0.302 | 0.289 | **0.393** |
+
+The shipped 0.20 **overprices j=1,2 by ~2.4x** and **underprices j=3..8 by
+1.2-2x**. The resulting objective at perfect acceptance:
+
+| depth | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|---|
+| tokens/verify-unit | 1.000 | 1.841 | 2.574 | **2.836** | 2.797 | 2.882 | 2.937 | **2.993** | 2.936 |
+
+It **dips at depth 4 — the M=5 stream boundary — then recovers to a global max
+at depth 7.** This is an independent second derivation of pre-registrations #1
+(`d* = 7`) and #2 (non-monotone, d=3 beats d=4), from the policy objective
+rather than from the ms/token table.
+
+## The trap: the naive fix is a regression
+
+Transcribing the shipped loop exactly and running three policies at flat
+per-position acceptance q (`research/depth_policy_check.py`):
+
+| q | shipped (flat h, greedy) | measured h, **same greedy loop** | measured h, **global argmax** |
+|---|---|---|---|
+| 1.000 | 8 | **3** | **7** |
+| 0.976 | 8 | **3** | **7** |
+| 0.940 | 8 | 3 | 3 |
+| 0.900 | 7 | 3 | 3 |
+
+Dropping the measured curve into the existing `while` loop pins depth at 3
+forever, because the hill-climb hits the M=5 dip and quits. **The scalar is not
+the only thing that must change — the search must change too.** The minimal
+correct rule keeps the objective, the EMAs and the cap, and takes a global
+argmax over `cap <= 8` candidates.
+
+An argmax policy is also naturally adaptive: **7 at high acceptance, 3 at low**.
+Predicted realised-depth histogram is **bimodal at 3 and 7**, not centred at 5.
+If it comes out unimodal near 5, the boundary is in the wrong place.
+
+Sent to Edward as `qwen38-r1-e1-fb-greedy-is-a-hillclimb`, with the
+measured-curve-greedy arm requested *specifically because I predict it loses*.
+
+## There are two caps, and the interesting one is 4
+
+```swift
+let widthCap = fullAcceptStreak >= segmentedStreakGate   // 3
+    ? segmentedVerifyDepthCap                            // 8
+    : sdpaWidthWallDepthCap                              // 4
+```
+
+The local reference runs **effective draft 5.4 at acceptance 1.0**. A loop that
+averages 5.4 while the cap is 8 is stopping on the *cost* test, not the cap —
+so **`segmentedVerifyDepthCap = 8` almost certainly never binds**, and PR #2's
+one constant is probably a no-op. Told Alphonse directly, with the histogram
+reframed as the whole experiment rather than a warm-up, and asked him for the
+number I actually want: **the fraction of rounds running with streak < 3**,
+where the real ceiling is 4. Note that a ceiling of 4 sits exactly below the
+M=5 boundary — it may be accidentally well placed.
+
+## Scoring consequence not to forget
+
+`published_score = median(raw_p over all timed prompts)` over 8 prose prompts —
+the mean of the 4th/5th order statistics. Per-prompt raw ratios: botany 0.8467,
+drama 0.9587, plutarch 0.9701, beagle 0.9837, essays 1.0044, republic 1.0116,
+travel 1.0581, medicine 1.0726. **Improving the worst prompt moves nothing.**
+A policy that helps only low-acceptance prompts (where widthCap = 4 binds) can
+be a real speedup and score exactly zero. Target the middle of the
+distribution — plutarch/beagle/essays — or move all eight.
+
+## Estimated prize, flagged as an estimate
+
+If the frontier drafts near 8 and argmax lands on 7, the round-cost ratio is
+~1.03, i.e. `2.9042 -> ~2.99` — essentially the whole remaining gap to the 3.0
+gate. **This is a motivating estimate from a reconstruction that has already
+had two attached magnitudes refuted.** It justifies the experiment. It
+concludes nothing.
+
