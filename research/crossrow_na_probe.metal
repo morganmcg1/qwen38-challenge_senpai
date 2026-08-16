@@ -27,7 +27,7 @@
       uint3 tid [[threadgroup_position_in_grid]],                          \
       uint simd_gid [[simdgroup_index_in_threadgroup]],                    \
       uint simd_lid [[thread_index_in_simdgroup]]) {                       \
-    qmv_fast_crossrow_affine4_g64_apply<bfloat16_t, NA>(                   \
+    qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, NA>(                    \
         w, scales, biases, x, y, in_vec_size, out_vec_size,                \
         int(tid.x) * NA, int(tid.y) * 8 + int(simd_gid) * 4, simd_lid);    \
   }
@@ -35,4 +35,3 @@
 CROSSROW_NA_PROBE(crossrow_na2, 2)
 CROSSROW_NA_PROBE(crossrow_na3, 3)
 CROSSROW_NA_PROBE(crossrow_na4, 4)
-CROSSROW_NA_PROBE(crossrow_na5, 5)

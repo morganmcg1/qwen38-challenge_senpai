@@ -13,6 +13,11 @@ import pathlib
 import re
 
 ALLOCA = re.compile(r"alloca\s+(\[[^\]]*\]|<[^>]*>|[%\w.]+)")
+# Device-memory operands live in addrspace(1); `= load` without it is a private
+# or threadgroup access. Counting the two separately is what distinguishes "the
+# arithmetic was cut" from "the loads were cut", which is the whole DCE check.
+DEVICE_LOAD = re.compile(r"=\s*load\s.*addrspace\(1\)")
+ANY_LOAD = re.compile(r"=\s*load\s")
 
 
 def kernels(path: pathlib.Path) -> dict[str, list[str]]:
@@ -42,7 +47,17 @@ def main() -> None:
             continue
         allocas = [ALLOCA.search(line).group(1) for line in body if ALLOCA.search(line)]
         fma = sum(line.count("call float @llvm.fma.f32") for line in body)
+        fmul = sum(1 for line in body if re.search(r"=\s*fmul\s", line))
+        fadd = sum(1 for line in body if re.search(r"=\s*fadd\s", line))
+        dev_loads = sum(1 for line in body if DEVICE_LOAD.search(line))
+        loads = sum(1 for line in body if ANY_LOAD.search(line))
+        # Metal emits AIR with loops still rolled, so every count above is per
+        # loop body. They are only comparable across builds at equal trip
+        # counts, which this back-edge count is the machine check for.
+        backedges = sum(1 for line in body if "!llvm.loop" in line)
         print(f"{name}: lines={len(body)} allocas={len(allocas)} fma_f32={fma} "
+              f"fmul={fmul} fadd={fadd} flops={fma * 2 + fmul + fadd} "
+              f"device_loads={dev_loads} loads={loads} loop_backedges={backedges} "
               f"types={sorted(set(allocas))}")
 
 
