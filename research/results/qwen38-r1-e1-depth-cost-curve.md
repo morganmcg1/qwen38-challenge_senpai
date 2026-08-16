@@ -264,6 +264,182 @@ Three things follow:
 above the pre-registered value. This is the same direction as, and the
 quantitative cause of, the `0.20` scalar being too optimistic.
 
+## Comment 11 — the repair premise is conditional, and the condition holds everywhere I measured
+
+You are right that I stated the premise unconditionally and the source states
+it conditionally. `restoreAfterPrefixReject` returns `Bool`
+(`Qwen36MTPBlockSession.swift:1421`), and on `false` the caller at `:1265-:1267`
+runs `rollbackAfterVerify` **plus** a full `model.callWithHidden` re-forward of
+the committed block, with its own blocking `eval`. `rollbackRoundCount`
+(`:163`, incremented `:1237`) increments *before* that branch and so conflates
+the two paths, exactly as you said. My "nearly free at any depth" wording was
+not licensed by the code.
+
+**Answer: `fullRepairCount == 0` at every depth I have data for, in both
+checkpoint regimes, in both windows.** Your first interpretation branch fires:
+the `0.20` premise holds, the mis-specification is in the *value*, and the curve
+is the whole story. I am stating that as a measured result, not as a
+re-assertion of the original claim.
+
+### How I got the two counters without rebuilding
+
+I did not add the counters, because adding them mid-sweep would have forced a
+rebuild and broken the single-binary comparability of the forced-depth sweep
+(`research/run-arms.sh` and `research/run-arm.sh` contain no build step, and
+`git diff --stat 20b6e2b b9379e2 -- Sources/ Vendor/` is empty, so every depth
+point in this report comes from one binary). Instead the existing traces already
+separate the two paths:
+
+- `tReadDone` is stamped at `:1219`, **before** the accept/reject branch.
+- `tCommitDone` is stamped at `:1287`, **after** the entire branch — including
+  the `rollbackAfterVerify` + `callWithHidden` re-forward at `:1265-:1267`.
+- `commit_us = (tCommitDone - tReadDone)/1000` is emitted at `:1329`.
+
+So **`commit_us` brackets the repair; `upkeep_us` does not.** I had this wrong in
+my earlier note: `upkeep_us` is `tTailDone - tCommitDone` (`:1330`), which starts
+after the repair has already completed. `commit_us` gives a per-round classifier:
+
+| round class | condition | meaning |
+|---|---|---|
+| full accept | `acc == d` | branch never entered |
+| `prefixRepairCount` | `acc < d`, `commit_us` small | `restoreAfterPrefixReject` returned `true` |
+| `fullRepairCount` | `acc < d`, `commit_us` large | it returned `false`: rollback + full re-forward |
+
+The classes are separated by orders of magnitude, not by a tuned cutoff. Any
+target forward on this host is memory-bound at **≥ 60 ms** because it reads the
+whole 4-bit backbone (`C(0) = 65.1 ms`, and F18 puts width-1 verify at ~92% of
+the 59.5 ms roofline). The cheap path issues no blocking eval at all. I set the
+threshold at 10 ms — ~6× below the cheapest possible forward and ~40× above the
+largest cheap-path cost I observed. Tool: `research/repair_probe.py`; outputs
+`research/out/repair512.json`, `research/out/repair256.json`.
+
+### The counters, per depth, annotated by repair regime
+
+The verify window is `S = d + 1`. `Qwen35.swift` takes the single-launch
+free-checkpoint path at `S == 2`, and records the cheap replay tape only when
+`nConfirmed == 1 && S >= 3 && mask == nil` (`:977`, written `:1112`, consumed by
+`replayPrefix` `:889`); otherwise it falls back to the eager-checkpoint kernel.
+So **the regime boundary sits exactly at the `d = 1` → `d = 2` step you flagged.**
+
+512-token window (`d0`, `d1`, `d8`; `research/out/repair512.json`):
+
+| d | S | regime | N full-accept | N reject | `prefixRepairCount` | `fullRepairCount` | commit µs accept | commit µs reject | commit µs **max** |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 2 | single-launch free checkpoint | 252 | 5 | **5** | **0** | 304.9 | 226.6 | 284 |
+| 4 | 5 | replay tape | 1 | 0 | 0 | 0 | 237.0 | – | – |
+| 8 | 9 | replay tape | 45 | 20 | **20** | **0** | 111.8 | 619.5 | 717 |
+
+256-token window (`d3`, `d4`, `d6`, `base-decl`, `base256`, `cand256`;
+`research/out/repair256.json`):
+
+| d | S | regime | N full-accept | N reject | `prefixRepairCount` | `fullRepairCount` | commit µs accept | commit µs reject | commit µs **max** |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 2 | single-launch free checkpoint | 3 | 0 | 0 | 0 | 200.3 | – | – |
+| 3 | 4 | replay tape | 121 | 4 | **4** | **0** | 397.0 | 1882.2 | 1918 |
+| 4 | 5 | replay tape | 72 | 5 | **5** | **0** | 117.5 | 623.4 | 680 |
+| 5 | 6 | replay tape | 4 | 0 | 0 | 0 | 264.0 | – | – |
+| 6 | 7 | replay tape | 39 | 2 | **2** | **0** | 220.2 | 604.5 | 607 |
+| 7 | 8 | replay tape | 12 | 0 | 0 | 0 | 136.4 | – | – |
+| 8 | 9 | replay tape | 18 | 6 | **6** | **0** | 78.8 | 615.5 | 665 |
+
+Totals: **`prefixRepairCount` = 42, `fullRepairCount` = 0** over 42 reject rounds,
+17 legs, depths 1/3/4/6/8, both regimes, both windows. The single largest
+reject-round `commit_us` anywhere is **1,918 µs**, which is **34× below** the
+65 ms floor for one target forward. This is not a close call.
+
+### An independent bound that does not trust my classifier
+
+If you distrust the `commit_us` attribution, the round totals bound the same
+quantity without it. A full re-forward must cost at least one `C(0)`, so the
+mean round-time excess of reject rounds over full-accept rounds divides by
+`C(0)` to give an upper bound on the fraction of reject rounds that could have
+paid one:
+
+| d | median Δ round µs | bound on re-forward fraction |
+|---|---|---|
+| 1 (512) | 253.5 | 0.0039 |
+| 3 (256) | 1561.0 | 0.0240 |
+| 4 (256) | 985.5 | 0.0152 |
+| 6 (256) | 683.5 | 0.0105 |
+| 8 (256) | 544.5 | 0.0084 |
+| 8 (512) | 1324.5 | 0.0203 |
+
+Every bound is ≤ 2.4% of a single forward, and — this is the part that answers
+your second interpretation branch — **the bound does not rise with `d`**. It is
+flat-to-falling from `d = 3` to `d = 8`. There is no unpriced term growing in
+depth, so `C(d)` is not hiding one.
+
+I report medians here deliberately. The `d = 1` *mean* delta is 10,044 µs, which
+looks alarming until you read the five rounds: round 151 has
+`verify_build_us = 85,990` against a ~35,900 norm, while its `commit_us` is 255.
+That is the command-queue backpressure artefact I flag elsewhere in this report
+landing in `verify_build`, not repair work landing in `commit`. The other four
+reject rounds are 70,319–70,866 µs against a 70,927 µs full-accept mean — at or
+*below* it. The median delta is 253.5 µs.
+
+### Your kink question, answered directly
+
+You asked me to suspect the regime change before attributing a kink between
+`d = 1` and `d = 2` to head-step cost. Checked, and the regime change is
+exonerated. Writing `m(d) = C(d) - C(d-1)` and labelling each step by the `S`
+transition it crosses (256-token curve, the one with all nine points):
+
+| step | `S` transition | crosses the regime boundary? | `m(d)` µs |
+|---|---|---|---|
+| `m(1)` | 1 → 2 | enters free-checkpoint | 5,473 |
+| `m(2)` | 2 → 3 | **yes — free-checkpoint → replay tape** | 5,037 |
+| `m(3)` | 3 → 4 | no, tape → tape | **15,769** |
+
+The step that actually crosses the regime boundary, `m(2)`, is the **cheapest
+step in the entire curve** — the marginal *falls* across it. The knee is `m(3)`,
+one step later, with both endpoints inside the replay-tape regime. So the
+checkpoint-regime change does not explain the knee, and cannot: it has the wrong
+sign and the wrong location. The knee lines up instead with the F8 qmv IPG
+staircase, whose steps I predicted at `M = 5` and `M = 9` and which show up as
+the largest marginals at `d = 4` and `d = 8`. (The `d = 2` point at 512 tokens is
+still being measured as I write; I will state whether the 512 refit preserves
+`m(2) < m(1)` rather than assuming it.)
+
+### The structural reason no repair term is in `C(d)` anyway
+
+`C(d)` is fit on full-accept rounds only (`acc == d`), which is the exclusion
+rule stated in Section 1 and enforced in `research/depth_cost_curve.py`. A
+full-accept round never enters the `else` branch at `:1236`, so **no repair cost
+of either kind can enter `C(d)` by construction.** That is a property of the fit,
+not a lucky measurement.
+
+This is worth being precise about, because it cuts both ways. It means the curve
+is safe from the contamination you were worried about. It also means the curve
+**does not price rejection at all** — `C(d)` is the cost of a *successful*
+depth-`d` round. The policy simulator handles rejection separately, through the
+acceptance profile, which is the right place for it. But if `fullRepairCount`
+had been non-zero and depth-rising, the correct fix would not have been to
+re-fit `C(d)`; it would have been to add an expected-repair term to the policy's
+objective. It is zero, so I did not add one, and that is the honest reason the
+cost model still has the shape it has.
+
+### What I did not do, and what would change it
+
+I did not add the literal `prefixRepairCount` / `fullRepairCount` counters to
+the session. If you want them in the shipped source for cross-agent comparison
+with `qwen-askeladd`, say so and I will add them under those exact names — it is
+a small, self-contained change. I declined it mid-sweep only because the rebuild
+would have split the forced-depth sweep across two binaries, against your fb8
+instruction to prioritise getting all nine points cleanly over implementation
+polish, and because comment 11 says this does not change my assignment.
+
+Two honest limits on the above. First, all 42 reject rounds come from one public
+fixture on one host; `restoreAfterPrefixReject` has failure modes (cache offset
+mismatch, a non-trimmable non-`ArraysCache` entry, `canReplayPrefix` failing, a
+nil tape, or `rollbackCheckpoints.count <= acceptedCount` at K=1) that this
+fixture may simply never provoke. Second, my reject-round counts are small at
+every depth except `d = 8`, because forced-depth arms on a copy task accept
+nearly everything — the very acceptance inflation I document elsewhere. A ranked
+prompt with depth-1 acceptance 0.699 would produce roughly an order of magnitude
+more reject rounds, and I cannot run one. So the correct claim is: **on
+everything I can measure, the cheap path always wins, and its cost is ~0.6 ms
+against a 65 ms forward.** I am not claiming the fallback is unreachable.
+
 ## Section 1 — the curve (measurement, not policy)
 
 ### Definition and the identifiability limit
@@ -477,10 +653,20 @@ Mean µs per full-accept round by phase:
 | 7 | 7 | 5544 | 86600 | 80474 | 18 | 180 | 8 | 172827 |
 | 8 | 32 | 7609 | 97718 | 92765 | 13 | 123 | 7 | 198237 |
 
-**Clean negative: rollback and state management are not the cost.** `readout`,
-`commit` and `upkeep` marginals are all `|Δ| <= 0.45 ms` and flat in `d`. The
-per-row GDN checkpoint really does make a prefix reject nearly free. **91–99% of
-every step's marginal lives in the verify path.**
+**Clean negative: bookkeeping is not the cost.** `readout`, `commit` and
+`upkeep` marginals are all `|Δ| <= 0.45 ms` and flat in `d`. **91–99% of every
+step's marginal lives in the verify path.**
+
+⚠️ **Corrected inference (comment 11).** An earlier draft read this table as
+"a prefix reject is nearly free at any depth". That does not follow, and the
+correction matters. Every row here is a **full-accept** round (`acc == d`), which
+never enters the reject branch at `Qwen36MTPBlockSession.swift:1236` at all, so
+this table is silent about rejects by construction. What it licenses is only the
+narrower claim above: on the *accept* path, bookkeeping is free. The reject-path
+evidence is measured separately in the comment-11 section, where reject rounds
+are isolated and classified — and there the conclusion does hold, but as a
+measurement (`fullRepairCount = 0`, cheap-path cost ~0.6 ms) rather than as an
+inference from this table.
 
 ⚠️ **Caveat that must not be dropped:** `verify_build_us` is *not* host time.
 MLX dispatches asynchronously, so "build" absorbs command-queue backpressure —
