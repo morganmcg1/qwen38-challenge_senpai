@@ -1382,6 +1382,42 @@ within **0.4%**.
   confirmation licenses attacking this without a boundary confound. If the cause
   is "too few independent load streams in flight," that is the **exact inverse**
   of the change PR #8 tried, and PR #8 measured the dose–response.
+
+  > **★★★★★ 2026-08-16 — (a) IS BLOCKED, AND I ALMOST ASSIGNED IT ANYWAY.**
+  > I had this brief half-written for thorfinn before checking the arithmetic.
+  > Inverting `gbps_stream_corrected` back to `gbps_nominal` (formula at
+  > `research/qmv_cost_curve_summary.py:274-278`, `weight_streams = ceil(m/4)`
+  > at `:132-136`) gives **`nominal × M = 692 ± 5.6%`** across M=4,5,8,9, where
+  > a bandwidth-bound kernel would show flat `nominal` — it instead spans
+  > **2.07×**. That means **`seconds_per_call ∝ M`**: cross-row reuse buys ≈ 0
+  > at `M ≥ 4`, and the "61–67% of peak" deficit is plausibly an **artifact of
+  > correcting bandwidth by an integer stream count that PR #5 already showed
+  > does not govern cost** (`implied_streams` is continuous where the integer
+  > model demands steps).
+  >
+  > PR #5's independent 9-point curve agrees: the ramp above M=3 has slope
+  > **0.30–0.33**/row and extrapolates back to the flat floor at
+  > **M ∈ [2.99, 3.27]** across every fit method and window tried — exactly the
+  > measured plateau end. ⇒ **`t(M) = max(t_bw, β·M)`, knee at M ≈ 3;
+  > bandwidth-bound below, ALU-bound above.** One parameter, predicts the knee,
+  > no boundary term needed.
+  >
+  > *(Method note: an earlier draft of this block quoted "slope 0.326, intercept
+  > ≈ 0, knee 3.07" as if from a regression. It is the **endpoint** slope
+  > `(2.87−1.24)/5` with the intercept forced to zero. OLS over the same window
+  > gives 0.309 / +0.034 / 3.13. The band above is the honest statement and is
+  > the stronger one, since the knee survives the choice of method. Full table:
+  > `ESTABLISHED_FACTS.md` FACT 1 banner.)*
+  >
+  > If ALU-bound, **(a) has no prize at all** and the whole memory-side family
+  > (stream count, tiling, cache blocking, the `ceil(M/4)` staircase) dies with
+  > it. **Assigned as PR #10** (thorfinn) as a pure identification experiment:
+  > cut arithmetic at fixed bytes, cut bytes at fixed arithmetic. Full
+  > derivation in `ESTABLISHED_FACTS.md` under FACT 1.
+  >
+  > This is the second time in two experiments that the premise, not the
+  > execution, was the weak part. **The check that caught it cost two minutes
+  > and was available before the brief was written.**
 - **(b) A standing bit-exactness canary in the curve harness.** Assert bitwise
   identity to M=1 across M=1..9 on all 8 shapes on every curve invocation. This
   converts the FMA-contraction hazard from something caught by luck into
@@ -1633,16 +1669,41 @@ Reference points: `d(score)/d(candidate_seconds) ≈ −0.4335`, so 100 ms ≈
 +0.043, and 2.904 → 3.0 is ≈ 220 ms. Neither of the two leads below closes
 that alone. **Do not expect one experiment to reach 3.0.**
 
-## Live slate — re-aimed onto base `1eacf376`
+## Live slate — current, on base `ed4269c2`
 
-| PR | Student | Assignment | Expected value | Why now |
-|---|---|---|---|---|
-| #1 | edward | **r3 — measure `h(0..7)`, MEASUREMENT ONLY** | 0–2% verify-side (~+0.9% ms/tok) | its job is to **price Alphonse's gate**, not to retune a constant |
-| #2 | alphonse | **r4 — width-9 exactness, then `segmentedStreakGate` 3 → 1** | +2.5% … +7.5% verify-side on easy/mid | the only cap that actually binds (29–87% of rounds) |
-| #7 | askeladd | 2-bit/3-bit compact draft readout | −0.28 to −0.55 ms **per draft step** | the only sized lead with a byte-count floor behind it |
-| #8 | thorfinn | crossrow `NA_max` 4 → 5 | mechanism test first, ms second | `NA=5` moves the stream count at **exactly M=5 and M=9** and nowhere else |
+| PR | Student | Head SHA | Assignment | Expected value | Why now |
+|---|---|---|---|---|---|
+| #1 | edward | `83ecc059` | **r3 — measure `h(0..7)`, MEASUREMENT ONLY** | 0–2% verify-side (~+0.9% ms/tok) | its job is to **price Alphonse's gate**, not to retune a constant |
+| #2 | alphonse | `902a2f28` | **r4 — width-9 exactness, then `segmentedStreakGate` 3 → 1** | +2.5% … +7.5% verify-side on easy/mid | the only cap that actually binds (29–87% of rounds) |
+| #7 | askeladd | `cb584dcc` | 2-bit/3-bit compact draft readout | −0.28 to −0.55 ms **per draft step** | the only sized lead with a byte-count floor behind it |
+| #10 | thorfinn | (new) | **r1 — crossrow ALU-bound vs bandwidth-bound identification at M≥4** | identification, not ms | decides whether the "33–39% of peak" prize exists at all |
 
-Deliberately **not** assigned: further characterization work. We have enough.
+Closed out of the slate: **#8 (thorfinn, crossrow `NA_max` 4 → 5) merged at
+`fa9a216a`**; its NA=4 control (`bq9xfu6d`) is the dataset that PR #10 re-reads.
+#3 merged (prefill Amdahl), #5 merged (qmv small-M cost law), #4 closed unmerged
+with findings intact.
+
+Deliberately **not** assigned: further characterization work beyond PR #10,
+which exists only because it can *kill* a prize we would otherwise chase.
+
+### ⚠ Slate health: three of four PRs have zero student commits
+
+PRs **#1, #2 and #7** are open drafts with **no student commits on them at
+all**. That is the single most important operational fact on this page and it
+outranks every scientific item below it. The campaign's throughput problem is
+not idea supply — it is that briefs are not being converted into commits.
+
+Consequences that are now standing policy:
+
+- **No further amendments to #1, #2 or #7.** Thirteen amendments to one brief
+  produced zero commits. Additional clarification is not a neutral act; it
+  resets the student's context and demonstrably lowers completion probability.
+  If a brief is wrong, the correct move is to close it, not to patch it.
+- **New briefs are short, single-question, with an explicit stop rule.** PR #10
+  is written to that standard and is the control case for whether it helps.
+- **"Unverified" in a brief is advisor debt, not a student task.** Any claim I
+  cannot cite to a file/line or a W&B run gets removed from the brief before it
+  ships, not flagged for the student to chase.
 
 ### ★★★★★ Both r-bumps above are RETRACTIONS, not new asks
 
@@ -1709,6 +1770,19 @@ prediction. Score these honestly when the results arrive.
    **the ramp and the boundary excess are separable and independently
    addressable**. This is the one structural licence that lets the next
    experiment attack the interior widths without a boundary confound.
+
+   > **⚠ Partial retraction of the second sentence, same session.** The
+   > *prediction* stands — the ramp did not move, and that is a real measured
+   > result. What does **not** stand is the inference drawn after it. "Boundary
+   > excess" is not an observable; it is a residual left over after dividing by
+   > `weight_streams(m) = ceil(m/4)`. Inverting that correction over PR #8's own
+   > NA=4 control gives `gbps_nominal × M = 692 ± 5.6%` across M = 4, 5, 8, 9,
+   > i.e. `seconds_per_call ∝ M` with no boundary term at all, and PR #5's
+   > `implied_streams` curve rises *continuously* (slope 0.30–0.33/row) where an
+   > integer stream count demands steps. So the licence I claimed — "attack the
+   > interior widths, the boundary is separable" — may be a licence to chase a
+   > residual of my own construction. **PR #10 exists to settle this**, and
+   > follow-up (a) is BLOCKED until it does.
 5. **Lowering *draft* precision cannot change the emitted token stream.**
    Confirmed structurally — acceptance is
    `acceptedDraftPrefixCount(drafts:verifyArgmax:)`, the first index where
@@ -1726,10 +1800,48 @@ prediction. Score these honestly when the results arrive.
    relative to `h(0)..h(3)`, then roughly **flat** across `h(5)..h(7)` — the
    split happens once and does not worsen with width. A smooth ramp instead
    refutes "the second sdpa call is the dominant term." **Tested by PR #1 r3.**
+8. **Crossrow `qmv` is ALU-bound, not bandwidth-bound, for M ≥ 4.**
+   Registered **before** PR #10 runs. The two-regime model
+   `t(M) = max(t_bandwidth, β·M)` has **one** free parameter and *predicts* the
+   knee at M ≈ 3 rather than fitting it: PR #5's `implied_streams` ramp
+   (slope 0.30–0.33/row) extrapolates back to the flat floor at
+   **M ∈ [2.99, 3.27]** under every fit method and window tried, and the
+   reported plateau ends at exactly M = 3. Concretely, in PR #10:
+   - **Arm 1 (cut arithmetic, hold bytes)** should get **faster** at both M=4
+     and M=8, by a large and obvious margin — call it ≥ 20% — because under the
+     ALU-bound branch time is set by the accumulation work that Arm 1 removes.
+   - **Arm 2 (cut bytes, hold arithmetic)** should be **≈ flat**, within run
+     noise, at both M=4 and M=8.
+   - The bandwidth-bound alternative predicts the exact mirror image: Arm 1
+     flat, Arm 2 much faster.
 
-**Predictions 6 and 7 are the two that now matter**, because they are the only
-ones still attached to a live experiment whose brief I have not since broken.
-Both are falsifiable against a single run each.
+   These two are **not** independent, which is the point of running both: a
+   result where *both* arms move, or *neither* does, refutes the two-regime
+   model outright rather than leaving it half-supported. **Both-move** most
+   likely means the DCE hazard fired and Arm 1 deleted the loads as well as the
+   math — the AIR load-count check is in the brief precisely to catch that, and
+   a both-move result is uninterpretable until that check is read.
+   **Neither-move** means cost at M ≥ 4 is set by something the microbenchmark
+   does not vary at all (launch/occupancy/sync), which would be a more
+   interesting finding than either branch.
+
+   **What it buys:** if ALU-bound is confirmed, the recorded "interior leaves
+   33–39% of peak on the floor" prize is an **artifact of the `ceil(M/4)`
+   stream correction** and must be struck from the asset list — we would be
+   deleting a lead, not gaining one. If bandwidth-bound is confirmed instead,
+   the prize survives *and* the correction is vindicated. **I expect to lose a
+   lead here, and that is why this experiment is worth a student.**
+
+**Predictions 6, 7 and 8 are the three that now matter**, because they are the
+only ones still attached to a live experiment whose brief I have not since
+broken. Each is falsifiable against a single run.
+
+Prediction 8 is deliberately the **most exposed** of the three: it is a
+two-armed test with a stated sign *and* a stated magnitude on each arm, plus
+two named ways to refute the whole model. Given that my structural reads have
+been sound and my magnitudes have not (see the calibration note below), the
+≥ 20% figure on Arm 1 is the part most likely to be wrong; the **signs** are
+the part I am actually staking the model on.
 
 Known way for 1–3 to be wrong: the model behind them assumes acceptance is
 **position-independent**, and `positionAcceptEMA` exists precisely because it
