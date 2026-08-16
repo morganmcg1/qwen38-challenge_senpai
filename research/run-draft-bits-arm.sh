@@ -28,14 +28,17 @@ esac
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_root}"
 
-out_dir=".mlxfast-private/amdahl/${tag}"
+# Not under .mlxfast-private/amdahl/<tag>: run-amdahl-measurement.sh clears
+# that directory, which would delete these before the run starts.
+out_dir="${repo_root}/.mlxfast-private/draft-bits/${tag}"
+rm -rf -- "${out_dir}"
 mkdir -p "${out_dir}"
 
 export MLX_QWEN_MTP_DRAFT_BITS="${bits}"
 # Provenance for which head the worker actually built. A file, not stderr:
 # the worker only forwards stderr under MLX_QWEN_MTP_TRACE=1, which also writes
 # per-round trace rows inside the timed window.
-export MLX_QWEN_MTP_DRAFT_HEAD_REPORT="${repo_root}/${out_dir}/draft-head.txt"
+export MLX_QWEN_MTP_DRAFT_HEAD_REPORT="${out_dir}/draft-head.txt"
 : >"${MLX_QWEN_MTP_DRAFT_HEAD_REPORT}"
 export MLX_QWEN_MTP_TRACE="${MLX_QWEN_MTP_TRACE:-0}"
 
