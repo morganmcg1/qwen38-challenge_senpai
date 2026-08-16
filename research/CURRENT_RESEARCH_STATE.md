@@ -80,12 +80,57 @@ identified this round — **the local build runs a bf16 MTP head 3.55× larger t
 the 4-bit head the ranked candidate actually declares**, which alone means ranked
 absolute throughput is ~14.6% better than the local ratio implies.
 
-**Flag C — the ranked serial leg is a separately pinned prebuilt baseline**
-(`MLXFAST_QWEN_MTP_BASELINE_WS=/opt/bench-runner/baseline/...`). Therefore
-**general target/kernel/prefill wins are fully scored and do not cancel**, even
-though they cancel in the local same-build ratio. Absolute candidate wall time is
-the true signal; the local ratio is a decoy for anything that is not a
-schedule-or-head change.
+**Flag C — the ranked serial leg is a separately pinned prebuilt baseline.
+SETTLED, with citations.** This was the single most load-bearing open question
+about how our work is scored, and it is now closed against the workflow source
+rather than inferred:
+
+- `.github/workflows/qwen-mtp-ranked-benchmark.yml:224` —
+  `MLXFAST_QWEN_MTP_BASELINE_WS: /opt/bench-runner/baseline/qwen3.8-27b-mtp-v1/current`.
+- `:2921-2923` resolves that symlink and **requires** a prebuilt
+  `.build/release` inside it; `:1066` fails the run closed if the tree is
+  missing. The measure wrapper is invoked at `:2957-2966` with
+  `--candidate "${MLXFAST_JOB_WS}" --baseline "${MLXFAST_QWEN_MTP_BASELINE_RESOLVED}"`
+  — two different trees, explicitly.
+- `docs/qwen-mtp-go-live-runbook.md:220` — "**decisively**, the serial leg
+  executes the *pinned baseline tree's* own prebuilt `mlxfast-swift` … no
+  repo-side protocol change reaches it".
+
+Therefore **general target/kernel/prefill wins are fully scored and do not
+cancel**, even though they cancel in the local same-build ratio. Absolute
+candidate wall time is the true signal; the local ratio is a decoy for anything
+that is not a schedule-or-head change. The one genuinely shared cost is MTP head
+residency: the head is resident on both legs, so its memory footprint is charged
+to the denominator as well (`fixtures/qwen3_8_27b_mtp_track.json:131`).
+
+**Flag C corollary — the serial denominator band is NOT a hazard we can create.**
+`fixtures/qwen3_8_27b_mtp_track.json:261` records a load-bearing guard on the
+denominator: `serial_decode_seconds_per_token_mean = 0.037994794617407023` with
+`serial_band_low 0.95` / `serial_band_high 1.05`. The analogous DFlash wrapper
+rejects the whole run `exit 6` *after* the full measurement cost has been paid
+(`docs/dflash-track-correctness-contract.md:2953`). The enforcing script,
+`/opt/bench-runner/measure-qwen-mtp-job.sh` (`MLXFAST_QWEN_MTP_MEASURE_JOB`, wired
+at workflow `:219`, checked `:1043`, invoked `:2964`), is **box-owned and not in
+this checkout**, so the exact text is unavailable — the mechanism is definitive,
+the literal wording is inferred from the sibling track.
+
+The decision-relevant reading: because the serial leg is pinned and
+unmodifiable by us, **no change we make can move the denominator**. This band is
+a host-stability / thermal guard on the box, not a constraint on our
+optimizations. Nobody should spend a single experiment "protecting" the serial
+number, and no candidate should be weakened out of fear of tripping it. If a run
+dies on the band, it is a box event — re-run it, do not redesign around it.
+
+**Flag C corollary — seed prefill is scored on the candidate's own tree.**
+The 512-token seed prefill runs on **both** legs, **inside** the timed window on
+both, and on the candidate leg it executes the **candidate's** build
+(`senpai/program.md:21`; `fixtures/qwen3_8_27b_mtp_track.json:196`,
+`"prefill_component": "none; seed prefill is charged inside the decode
+measurement, identically on both legs"`; `docs/qwen-mtp-go-live-runbook.md:283-286`).
+So prefill work on the candidate leg **is** scored and a prefill win is a real
+win — which is exactly why PR #3's finding that P = 4.0086 s is irreducible *on
+compute grounds* was worth establishing, and why it closes that direction rather
+than merely deferring it.
 
 **Flag D — the score is a median of 8 prompts.** Improving our two best prompts
 is worth exactly zero. `parity_all_ok` is an AND across all eight, so one hard
@@ -112,6 +157,74 @@ C(0) is head-independent.
 Consequences: `headStepCostRatio = 0.20` overestimates the true `h` by **1.39×
 locally and 1.92× versus ranked**; and **"quantize the MTP head" is already
 banked**, not a future win.
+
+**Verified against source this round, because the fixture appeared to contradict
+it.** `fixtures/qwen3_8_27b_mtp_track.json:129` asserts `tensor_count: 15` and
+says the 3.8 head "is bf16 and unquantized", which reads like a refutation of the
+whole re-basing rule. It is not, and the resolution matters:
+
+- `mtp-head.manifest.json` is an **editable path**: a participant *proposal* head,
+  digest-verified by the runner pre-sandbox, 2 GiB cap, applied to the
+  **candidate leg only** — "the serial denominator always runs the §9d-pinned
+  head" (`docs/qwen-mtp-editable-surface.md:46`; `senpai/program.md:82`).
+- Our base already declares one: `hf:lowskillcoding/qwen38-mtp-head-4bit-g64`,
+  238,934,093 B (`senpai/laguna-to-qwen-speedup-map.md:179` calls it out as
+  "a declared 4-bit/g64 MTP head").
+- `setup-qwen-mtp.sh:66-67` defaults to the organizer-pinned
+  `EigenLabs/Qwen3.8-27B-MTP-bf16`, which is the 15-tensor tree the fixture note
+  describes. **The fixture is describing the pinned head; the manifest is
+  describing ours.** Both are true, and the local/ranked gap is real.
+- The exact-count gate was **deliberately relaxed** for declared heads:
+  `Qwen36MTPHeadAttachment.verifyHeadIndex` (`Sources/MLXFastModel/…:315-325`)
+  now requires only `weightMap.count >= 3`, a bare namespace, and
+  `fc.weight` / `norm.weight` / `pre_fc_norm_hidden.weight`, with a comment
+  stating that a declared head "may carry a different count — e.g. a quantized
+  head's weight/scales/biases triples". `qwenMTPHeadTensorCount = 15` survives
+  only in an error string and in tests, **not as a gate on our head**.
+
+### The head is competitive surface, and it carries a draft-only projection slot
+
+This is the most under-exploited structural fact on the board, and it was found
+by chasing the contradiction above.
+
+`README.md:245` states the licence plainly: "A head only *proposes* — the pinned
+target still decides every emitted token — **which is why this can be yours**."
+So head-side numerics cannot break bit-exactness by construction; they can only
+move **acceptance**. That collapses the risk profile of every head-side idea from
+"might be disqualifying" to "might not pay".
+
+The vendored model exposes a dedicated slot for this
+(`Vendor/mlx-swift-lm/…/Qwen35.swift:2038-2049`): the declared head tree may ship
+`draft_lm_head.{weight,scales,biases}`, merged under `mtp.` and intercepted in
+`sanitize` (`:2135-2154`) — "a coarser affine copy of the exact lm_head used
+exclusively to argmax DRAFT proposals … every ledger/verify value still comes
+from the exact `lmHead`. Plain stored arrays, deliberately not Module
+parameters."
+
+Current state of that machinery:
+
+- With **no** declared draft head, the model derives `_compactDraftHead`, an
+  input-independent compact copy of the exact `lm_head` trimmed to
+  **98,336 padded / 98,330 real rows** out of vocab 248,320, and selects through
+  a fused one-dispatch kernel `qwen35DraftSelectKernel` (`:2361-2387`) instead of
+  six dispatches. This is the promoted configuration.
+- Deriving hidden size from our corrected readout: 283.2 MB / 98,336 rows =
+  2880 B/row; at 4-bit g64 that is `H·0.5 + (H/64)·4` ⇒ **H = 5120**. Sanity
+  check: a **full-vocab** 4-bit draft head reads 248,320 × 2880 ≈ **715 MB**,
+  i.e. 2.5× the compact read.
+- **A declared draft head is full-vocabulary today and *disables* the compact
+  fused path** — `draftTokenID` guards on `_draftHeadW == nil` (`:2362-2366`) and
+  `usesCompactDraftVocabulary` requires `_draftHeadW == nil` (`:2401-2404`). So
+  naively declaring a `draft_lm_head` is a **2.5× readout regression**, not a win.
+  Anyone proposing one must change that code path too — and
+  `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` **is** editable
+  surface (`docs/qwen-mtp-editable-surface.md:50`), so that is allowed.
+
+**Pre-registered negative, already paid for — do not re-propose.** A 49,152-row
+halving of the compact prefix was measured on the public longcopy gate and
+regressed: three committed argmax ids live in `[49,152, 248,044)`, the head could
+no longer propose them, and the forced rejects cost more than the halved read
+saved — **acceptance 1.00 → 0.877, 21.1 → 22.8 ms/token** (`:2054-2059`).
 
 ---
 
@@ -310,6 +423,45 @@ Ordered by expected value. Items marked ★ are new or newly elevated this round
    naive prefix cut and it stands. Frequency-ranking is a different selection
    rule, and the bandwidth objection that used to sit alongside it is now dead.
 
+   **1b. ★★★★★ NEW — cut readout PRECISION instead of readout ROWS.** The single
+   best idea to come out of this round, and it is on a different axis from every
+   trim result above. Every refutation we have is about *deleting rows*: a deleted
+   row is a **guaranteed** reject whenever it is the answer, which is why 1.00 →
+   0.877 happened on only three ids. Lowering the *precision* of the draft
+   projection degrades acceptance **gracefully** instead — a slightly-wrong logit
+   only changes the argmax near a tie, and the exact target still decides the
+   token, so bit-exactness is untouched either way.
+
+   The delivery vehicle already exists and is sanctioned: ship
+   `draft_lm_head.{weight,scales,biases}` in our declared head artifact (see "The
+   head is competitive surface" above). Head bytes live under the separate 2 GiB
+   cap, **outside** the 2,396,110 / 3,000,000 source budget.
+
+   Sizing at the derived H = 5120, on the compact 98,336-row set:
+
+   | draft head | bytes/row | readout | Δ vs today |
+   |---|---|---|---|
+   | 4-bit g64 (today) | 2880 | 283.2 MB | — |
+   | 3-bit g64 | 2240 | 220.3 MB | −62.9 MB ≈ −0.28 ms |
+   | 2-bit g64 | 1600 | 157.3 MB | −125.9 MB ≈ **−0.55 ms** |
+
+   at the measured 227 GB/s. Per **round** (readout 9.98 ms) that is ≈−1.1 ms at
+   2-bit, i.e. ~5.5% of drafting — and over a 512-token leg it plausibly reaches
+   the few-hundred-millisecond scale that actually moves score (100 ms ≈ +0.043).
+   That makes it one of very few unassigned ideas with a credible path to the
+   ≈220 ms we need.
+
+   **Blocker to state in any brief:** a declared draft head currently forces the
+   full-vocab path and disables the fused compact kernel, which alone is a 2.5×
+   readout *regression*. The experiment is therefore **compact-vocab AND
+   low-precision together**, which requires editing `usesCompactDraftVocabulary` /
+   `draftTokenID` in the vendored `Qwen35.swift` so a declared head can keep the
+   compact bounds. Open risks to check before assigning: whether MLX's affine
+   2-bit path and the `qmv_fast` / `qwen35DraftSelectKernel` shapes support 2-bit
+   at the `N % 8` padding contract, and whether 2-bit is too coarse to hold
+   acceptance (3-bit is the fallback rung, still −0.28 ms). Gate on **acceptance
+   from the first measurement**, exactly as in 1 above.
+
 2. **★★ Composition round.** Once ≥2 of PRs #1/#2/#4/#5 land, compose them and
    re-measure on a fresh base. Elevated because #1 and #2 are individually
    near-worthless and jointly worth +5.8% at q=0.90.
@@ -481,7 +633,87 @@ never conclude one.
   is near that boundary, which is why the depth policy matters at all.
 - **ReDrafter on MLX**: 1.37× on M1 Max → 2.3× on M2 Ultra. A same-method,
   cross-host spread of 1.7× — direct support for Flag B/C and for the
-  bandwidth-scaling model over the fixed-host-cost model.
+  bandwidth-scaling model over the fixed-host-cost model. Still the **only
+  Apple-Silicon datapoint in either sweep.**
+
+### Round-2 additions, ranked by decision relevance
+
+- **★ The W4 widening penalty — SpecMQuant (arXiv 2505.22179).** On **W4A16**,
+  the verify-to-decode time ratio reaches **1.8** at tree size 60, versus **<1.2**
+  for FP16 and W8A8; the paper attributes EAGLE-2's weak 4-bit showing to exactly
+  this. Mechanism: widening converts a memory-bound decode into a compute-bound
+  one, which destroys the advantage 4-bit weights were bought for. **This
+  independently predicts our own measured super-linear `eval_wall` of 79 → 89 →
+  106 ms for widths 7 → 8 → 9.** We are a 4-bit deployment, so we sit squarely in
+  the penalised regime. The paper's own remedy is to convert tree drafts into
+  *sequence* drafts (2.78× on 4-bit Llama-3-70B) — an alternative worth holding in
+  reserve if width is confirmed dead. **Bears directly on PR #2 (width-9) and on
+  PR #1's `C(d)`.**
+- **★ OPT-Tree (TACL 2025, doi 10.1162/tacl_a_00735)** — deepen only while the
+  marginal gain in expected accepted length exceeds **μ = (drafting step time) /
+  (decoding step time)**, with threshold δ ∈ (μ, 1). Reported best δ is **0.2 with
+  a standalone drafter but 0.8 with an EAGLE-style head.** Our
+  `headStepCostRatio = 0.20` is sitting in the *standalone-drafter* regime while
+  we actually run an MTP head — **independent external corroboration of Theme A**,
+  arrived at from a completely different direction than our own cost algebra.
+- **★ LK Losses (arXiv 2602.23881)** — released MTP modules typically ship **only
+  the first MTP module**, trained to predict the first next token but then reused
+  autoregressively for deeper positions, producing a **sharp acceptance decline at
+  later positions**. This gives a *structural* explanation for our `effective
+  depth 1` on all 48 scored prose runs: it is a property of the released
+  checkpoint, not a tuning failure, and no depth policy can recover it.
+  Consistent with HyperDFlash above and with Draft&Verify's K=1 result.
+- **Leviathan (arXiv 2211.17192)** — the closed form we should be quoting:
+  `E[tokens/round] = (1 − α^{γ+1}) / (1 − α)`, and speedup exists **iff α > c**.
+  Useful as the sanity check on any proposed depth change.
+- **Trees from Marginals (arXiv 2607.06763)** — rollback-free tree verification
+  for Gated DeltaNet via a masked triangular solve; claims 4.37× on Qwen3.6 27B,
+  i.e. our architecture family. **Deliberately NOT pursued**, and the reasons are
+  already established under Theme D: the GDN update is a rank-1-perturbed affine,
+  not diagonal; a reformulated solve changes reduction order and is run-fatal
+  under zero-tolerance token identity; and it carries **zero bandwidth benefit**
+  for us. This round adds a fourth reason — our partial-acceptance repair is
+  already cheap in its common case, so the problem it solves is largely not our
+  problem. Recorded so nobody re-proposes it on the strength of the headline
+  number and the matching model name.
+- **STree (2505.14969) / Mamba-in-Llama (2408.15237) / SpecMamba (2509.19873)** —
+  useful only as a taxonomy of rollback strategies for recurrent state: snapshot,
+  activation-replay, and rollback-free. Our implementation already spans the first
+  two; see the repair-regime section.
+- **Goose (arXiv 2604.02047)** — batch-1 and greedy, so unusually close to our
+  setting. The transferable parts are the **1/i harmonic branch-width schedule**
+  (narrow as depth grows rather than a rectangular tree) and **harvesting logits
+  from rejected branches and from prefill** rather than discarding them.
+- **SpecInfer / adaptive-draft-length / FR-Spec** — see above; unchanged.
+
+## Standing policy — the bit-exactness hazard list
+
+Our track scores under **zero-tolerance token identity**. The following are
+recurring, respectable, well-cited techniques that are nevertheless **disqualifying
+or banned here**. This list exists because most speculative-decoding literature is
+written for a *distribution*-preserving standard, and the vocabulary is a trap.
+
+1. **Medusa typical acceptance** — accepts tokens the target would not have
+   emitted. It is the source of most of Medusa's headline gain. Disqualifying.
+2. **Any relaxed, entropy-gated, or multiplicative acceptance certificate.**
+   Same failure, different dress.
+3. **Standard speculative *sampling* rejection** (Leviathan/Chen-style) —
+   preserves the output *distribution*, **not the token stream**. **Read every
+   "lossless" claim in this field as distribution-lossless unless the paper
+   explicitly says otherwise; only the greedy / T=0 configuration transfers to
+   us.** This single misreading would invalidate an entire experiment.
+4. **Quantized verification** (e.g. Quasar, 2603.01399) — changes the target's
+   answer. Disqualifying. Note the asymmetry: QSpec and ML-SpecQD are safe *only
+   because they lower the **drafter's** precision alone* — which is exactly the
+   licence direction 1b relies on.
+5. **Bigram / n-gram / suffix-automaton / prompt-lookup drafting** — banned by
+   program rules independently of exactness. Do not propose these.
+6. **Cross-request caching** — banned. Per-request reuse, and input-independent
+   shape/kernel tables, are fine.
+7. **Numerical-reformulation risk** — triangular solves, `A_tree` formulations,
+   and chunkwise-form changes alter reduction order. **Matching one argmax is not
+   sufficient evidence**, because the trusted parent checks exact top-two row
+   evidence. Any such change needs the full parity gate, not a spot check.
 
 ## Operating reminders
 
