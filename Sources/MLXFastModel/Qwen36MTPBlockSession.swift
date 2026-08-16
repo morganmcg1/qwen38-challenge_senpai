@@ -561,7 +561,7 @@ public final class Qwen36MTPBlockSession {
     /// decode attention into two <= 5-row sdpa calls whose bottom-right-
     /// aligned windows are byte-identical to the promoted <= 5 rounds' —
     /// after which a deep round is ONE ordinary model call. Measured on the
-    /// hexfloat row gate: widths 6..8 bit-exact per position against the
+    /// hexfloat row gate: widths 6..9 bit-exact per position against the
     /// serial trajectory. Segmenting the whole FORWARD instead (two model
     /// calls, 5+k) was measured bit-exact too but pays a second full weight
     /// pass (~25 ms) and loses on net; the chunk lives at the sdpa only.
@@ -573,15 +573,20 @@ public final class Qwen36MTPBlockSession {
     /// head has been perfect, mirroring the streak ladder that qualified
     /// cap 4; any reject resets the streak.
     ///
-    /// 7, not the trusted maximum 8, because depth 8 is dominated on cost
-    /// rather than on fidelity: width 9 verified bit-exact per position on
-    /// the hexfloat row gate, but every verify width rides the per-row qmv
-    /// dispatch, and the marginal round cost of the 8th draft (27.6 ms on
-    /// M4 Pro) exceeds the running cost per token at depth 7 (23.7 ms), so
-    /// the 9th row cannot repay itself even at 100% acceptance. Raising
-    /// this back to 8 needs a verify path that amortizes the extra row --
-    /// padding the batch past the qmv limit into qmm_t_splitk, say.
-    private static let segmentedVerifyDepthCap = 7
+    /// 6, not the trusted maximum 8, because the deepest drafts are
+    /// dominated on cost rather than on fidelity: widths 6..9 all verified
+    /// bit-exact per position on the hexfloat row gate, but every verify
+    /// width rides the per-row qmv dispatch, so round cost is very nearly
+    /// linear in rows (12.2 ms + 22.5 ms/row on M4 Pro) with a further
+    /// kink at width 9. The 8th draft's marginal round cost (27.6 ms)
+    /// already exceeds the running cost per token at depth 7 (23.7 ms), so
+    /// row 9 cannot repay itself even at 100% acceptance; and realised
+    /// acceptance decays with position (0.85 at draft index 7), so the
+    /// deepest rows also carry the rejections that zero the streak and
+    /// drop the next few rounds to the shallow cap. Raising this needs a
+    /// verify path that amortizes the extra rows -- padding the batch past
+    /// the qmv limit into qmm_t_splitk, say.
+    private static let segmentedVerifyDepthCap = 6
     private static let segmentedStreakGate = 3
 
     /// The greedy marginal-depth rule described at the policy's assignment.
