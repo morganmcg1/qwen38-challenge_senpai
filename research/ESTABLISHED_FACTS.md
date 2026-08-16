@@ -183,6 +183,38 @@ an informative way.
 >   vendored vs stock. Raw `cost(9)/cost(1) = 2.980` — note the "ideal 1.12"
 >   below is off by 2.7×.
 >
+### ⛔⛔ THE RETRACTION QUOTED BELOW IS ITSELF RETRACTED — the curve was measured; the *endpoint* is what is wrong
+
+**Do not act on the block-quoted retraction below.** Every load-bearing claim in
+it has been checked and falsified:
+
+| its claim | truth | how verified |
+|---|---|---|
+| "PR #1 has zero student commits" | **56 commits**, full report delivered | `git ls-remote origin`; head `0309af5c` |
+| "`git log --all -S 0.0862` returns only advisor commits" | true **and irrelevant** — the fetch refspec is narrowed to the advisor branch, so `--all` could never see a student branch | `git config --get-all remote.origin.fetch` |
+| "the vector was an assumed shape I mislabelled as data" | **false** — it is `a·v + b`, `a = 1.000532`, `b = 0.041868`, residuals `≤ 2e-9`, over `verifyMarginalRatioByDepth` as refit at `84f1c9c8` | recomputed |
+| "no in-situ `h(d)` measurement exists" | it existed at `75fe7a2` (17:14:02Z), **before** my earliest artifact carrying the curve (18:53:33Z) | commit timestamps |
+| "internally falsified by the `C(8)` endpoint" | **the endpoint is the error.** PR #1 r3 measures `C(8) = 198.683 ms`; the "invented" curve implies **200.7 ms** — **+1.0%** against that, **+0.4%** against the report's curve-ratio endpoint `65.469 × 3.0545 = 199.975 ms` | nine-arm forced-depth sweep |
+
+**⇒ `C(8) = 161.0 ms` (PR #3, table below) is REFUTED as a depth-8 round cost —
+it is **19.0% below** direct measurement (equivalently, the measurement is 23.4%
+above it), while `C(0) = 67.0 ms` agrees to 2.3%.** The endpoint test I built
+could never have failed independently:
+`67.0 × (1 + 1.403) = 161.0` *exactly*, and
+`1.403 − 8 × 2.689/67.0 = 1.0819 ≈ 1.082`. The "local" and "ranked" required
+sums and the anchor are **one number wearing three hats**.
+
+**Restored to fact status** (previously struck by the block below): the
+`h(3)` ramp-onset reading, the in-situ boundary-excess figures, and `d* = 7`
+as a *live unresolved prediction* — restored as claims that may now be scored,
+not as confirmed results.
+
+**Still struck, for a reason that survives:** calling the objective table an
+"independent second derivation" of `d* = 7`. One vector through two formulas is
+one method, whatever the vector's provenance.
+
+Preserved verbatim, wrong parts included, because it is the evidence:
+
 > ### ★★★★★ RETRACTED IN FULL — there was no second method
 >
 > This paragraph used to claim independent cross-validation against "Edward's
@@ -339,7 +371,58 @@ PR #3's round anchors on this host:
 | leg | rounds | `Σ block_latency` | per round |
 |---|---:|---:|---:|
 | serial `d=0` | 64 | 4.286431789398193 | **67.0 ms** (= `V(1)+c`) |
-| MTP `d=8` | 10 | 1.6095870733261108 | **161.0 ms** |
+| MTP `d=8` | 10 | 1.6095870733261108 | ~~**161.0 ms**~~ ⛔ **REFUTED — see below** |
+
+> ### ⛔ THE `C(8) = 161.0 ms` ANCHOR IS REFUTED. `C(0) = 67.0 ms` SURVIVES.
+>
+> PR #1 r3 measured the round cost curve directly — nine forced-depth arms, a
+> 512-token decode window, warmup 2, `acc == d` only, the pinned 4-bit head on
+> every arm (`head_provenance_sha256 =
+> 54930a1d281ff3ec4373fc2befd190afdb67ee09ffd90e8fc60e4d1f538bfc4b`), all arms
+> bit-exact. It reports **`C(0) = 65.469 ms`** and **`C(8) = 198.683 ms`**.
+>
+> | | PR #3 anchor | PR #1 direct | gap (measurement as denominator) |
+> |---|---:|---:|---:|
+> | `C(0)` | 66.975 ms | 65.469 ms | **+2.3%** — agrees |
+> | `C(8)` | 160.959 ms | 198.683 ms | **−19.0%** — refuted |
+>
+> The two legs disagree by 37.7 ms at depth 8 and agree at depth 0, so the
+> disagreement is real and scales with `d`.
+>
+> **Leading explanation — a LABELLING error, not a measurement error.** The
+> PR #3 leg was *configured* with depth cap 8; nothing shows it *attempted* 8.
+> Inverting PR #1's measured curve at the observed 160.959 ms gives a mean
+> attempted depth of **≈ 6.2**, and the session's depth policy is adaptive
+> (`acceptEMAAlpha = 0.15`). On this reading `161.0 ms` is `E[C(d_attempted)]`,
+> which is a perfectly good number that was filed under the wrong name.
+>
+> **Not excluded:** partial scope of the latency counter (weakened — PR #3 states
+> the per-round `latency` brackets the whole block request, parent-side), and a
+> 10-round sample against the serial leg's 64.
+>
+> ⚠ **Honest limit on this explanation.** I built a second "independent" channel
+> — token yield, `64/10 = 6.40` tokens/round ⇒ 5.40 accepted drafts — expecting
+> it to confirm depth ≈ 6.2. **It does not discriminate.** 5.40 accepted drafts
+> is reproduced by depth 6.2 at `q ≈ 0.97` *and* by depth 8 at `q ≈ 0.93`, both
+> plausible. The yield channel rules out *full* acceptance and nothing more, so
+> counting it as corroboration would repeat exactly the one-number-two-formulas
+> error this file already records at `:1724`. **All discriminating power sits in
+> a single 10-round cost measurement.** Status: leading hypothesis, not fact.
+>
+> **To settle it:** read realised attempted depth per round directly off the leg
+> — PR #1's merged forced-depth/histogram instrument does this in one run.
+> Generator and full arithmetic: `research/pr3_anchor_reconciliation.py`.
+>
+> **Unaffected: PR #3's `P = 4.0086 s`.** The two-leg algebra uses
+> `sum(block_latency)` only as an observed per-leg total and never assigns it a
+> depth, so a mislabelled depth does not enter it.
+>
+> Anything derived from `C(8) = 161.0` **as a depth-8 cost** is suspect:
+> `h_avg = 0.176`, the "residual tax 1.71–1.91×", "67–77 ms per round
+> unexplained", the `M=9` stream reading at `:598`, and the comparison table at
+> `:776`. **The "unexplained tax" is probably largely an artifact of comparing a
+> depth-8 ideal against a leg that averaged depth ≈ 6.2.** Each site is flagged
+> inline.
 
 with `c = 0.00033844841851128475` s/round. The *average* marginal is
 `(161.0 − 67.0)/8 = 11.75 ms/draft`, i.e. `h_avg = 0.176` against the shipped

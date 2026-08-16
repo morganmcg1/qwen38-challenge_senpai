@@ -13,6 +13,41 @@ per-experiment record lives in
 the current hypotheses, the live experiment slots, and where we go next. Prune it
 every round.
 
+> ## ⛔ GLOBAL CORRECTION — read before trusting any "fabricated curve" passage below
+>
+> Large parts of this document were written during an audit in which I concluded
+> that the depth cost curve
+> `h = [0.0862, 0.0795, 0.2446, 0.3774, 0.2939, 0.3020, 0.2890, 0.3929]`
+> was **hand-written by me and never measured**. **That conclusion is false and
+> is retracted in full.** The curve is an affine image of forced-depth constants
+> measured on PR #1's branch at `75fe7a2` (2026-08-16T17:14:02Z); it predates
+> every artifact of mine that carries it; and PR #1's independent nine-arm
+> re-measurement reproduces its sum to **0.54%**. The number that is actually
+> wrong is the PR #3 parent-clock anchor **`C(8) = 161.0 ms`**: direct
+> measurement is 198.683 ms, i.e. the anchor is **19.0% low** (equivalently, the
+> measurement is 23.4% above it). Full chain: **"RETRACTION OF A RETRACTION"**,
+> below; reconciliation in `research/pr3_anchor_reconciliation.py`.
+>
+> Therefore, everywhere in this file:
+>
+> - Any phrase of the form *"the hand-written vector"*, *"the invented curve"*,
+>   *"the fabrication"*, or *"a curve that never existed"* — **retracted as to
+>   provenance.** The vector was measured.
+> - The **"contaminated 75% of the live slate"** table and its blast-radius
+>   moral — **retracted.** There was no fabrication to propagate. What did
+>   propagate was a bad *anchor* (`C(8) = 161.0`) and my false retraction of a
+>   good curve, which is a different failure with a different remedy.
+> - The **methodological** lessons are kept and are *not* downstream of the
+>   provenance error: *the same number through a second formula is not a second
+>   method*; *name two measurements and two commits before saying
+>   "cross-check"*. Those stand on their own. Where such a lesson was
+>   illustrated with the "fabricated curve", the illustration is wrong even
+>   though the rule is right, and each site is marked inline.
+>
+> I have deliberately **not deleted** the superseded passages. They are the
+> evidence for the most expensive mistake in this campaign, and the corrected
+> record is worth more than a clean one.
+
 ---
 
 ## Current campaign direction
@@ -1744,68 +1779,132 @@ Consequences that survive the retraction (they were right for other reasons):
 - **Deleted:** the inference that throughput is the bottleneck. Three completed
   reports are sitting in review. **The bottleneck is me not reading them.**
 
-### ★★★★ The `h=` trace field is an INPUT ECHO, not a measurement
+### ★★★★★ RETRACTION OF A RETRACTION: the depth cost curve was MEASURED, and `C(8) = 161.0 ms` is the number that is wrong
 
-Settled while reviewing PR #1, and load-bearing for anything that touches the
-depth cost curve. PR #1's report argues in its section 3 that my retracted
-curve `h = [0.0862, 0.0795, 0.2446, 0.3774, 0.2939, 0.3020, 0.2890, 0.3929]`
-"is not invented — it is a literal provenance string this branch emitted," and
-quotes an `mtp-trace: begin … h=…` line carrying those values at full
-precision. **The quotation is real and the inference from it is wrong.**
+**This supersedes, in full, a section I published on this branch at commit
+`ea2afad4` claiming the `h=` trace field is an "input echo".** That claim was
+wrong, it was wrong in a way that blamed a student for my error, and I am
+recording the whole chain because the failure mode is more valuable than the
+conclusion.
 
-On the advisor base, `Qwen36MTPBlockSession.swift:400` emits only
-`seed=`, `build_us=`, `eval_wall_us=`. There is **no `h=` field**. PR #1 added
-one (`:478-487` on that branch), and it reads:
+#### What I claimed, twice, and why both claims were false
 
-```swift
-// Records which curve the leg actually ran, so an override that
-// failed to reach the worker reads as a failed override rather
-// than as a policy that made no difference.
-let hCurve = Self.overrideHeadStepCostRatioByDepth
-    ?? [Self.headStepCostRatio]
-```
+In the PR #1 r3 brief I wrote: *"the curve `h = [0.0862, 0.0795, 0.2446,
+0.3774, 0.2939, 0.3020, 0.2890, 0.3929]` … was never measured. I wrote it down
+as an assumption."* I justified that with `git log --all -S`, finding no
+generator **in my own tree**, and I retracted the curve against a PR #3 anchor
+`C(8) = 161.0 ms`.
 
-⇒ `h=` echoes **`overrideHeadStepCostRatioByDepth`, the configured input**. Its
-own comment says so: it exists to prove an override *reached the worker*. The
-leg was run with my invented curve as the override, so the trace faithfully
-printed my invented curve back. **The retraction stands: the curve was invented
-by me, and prediction 1 (`d* = 7`) stays deleted from the scoring set.**
+Edward's report answered that the curve is genuine code output. I then read the
+`h=` emitter at his branch **head** (`0309af5c`), saw
+`overrideHeadStepCostRatioByDepth ?? [headStepCostRatio]`, and concluded his
+argument was circular — an echo of a configured input. **I published that.**
 
-This is worth recording as a general hazard, not a one-off: **a provenance
-channel that echoes configuration looks exactly like a measurement channel in
-the log.** Same file, same line, same float formatting. The only way to tell
-them apart is to read the emitting expression. Any future citation of a trace
-field must name the expression that produced it, not just the log line.
+Both are refuted by the following, all verified by execution today:
 
-Note what this does **not** touch. PR #1's sections 1 and 2 are independent of
-section 3 and both survive:
+1. **The `h=` line was emitted by a computed value, not by an override.** At the
+   commit that actually produced the cited trace, `75fe7a2`
+   (2026-08-16T17:14:02Z), the emitter is
+   `Self.headStepCostRatioByDepth`, whose definition is
+   `overrideHeadStepCostRatioByDepth ?? marginalCostRatios(headStepRatio:
+   referenceHeadStepRatio)`, and which `adoptResidentHeadStepRatio` **rebuilds
+   from the head cost measured by the warm probe** — a path taken *only when the
+   override is nil*. The trace's curve corresponds to `headStepRatio ≈ 0.0420`,
+   the resident probe's output, not to `referenceHeadStepRatio = 0.0794` and not
+   to anything I supplied. So the override was unset and `h=` was computed.
+   I had read the right comment attached to the wrong version of the code.
+2. **The curve is an exact affine image of measured constants.** With
+   `verifyMarginalRatioByDepth` as refit at `84f1c9c8`, `h = a·v + b` with
+   `a = 1.000532`, `b = 0.041868` reproduces all four published entries with
+   residuals `≤ 2e-9`. That is the documented model
+   `h(d+1) = (v[d] + H/V(1)) / zeroDraftRoundRatio`, not a coincidence.
+3. **The ordering runs the other way from my accusation.** Those constants, and
+   a code comment quoting the curve to 3 dp as a *fifth fit* from forced-depth
+   arms `d0..d8`, enter git on Edward's branch at **17:14:02Z**. The earliest
+   appearance anywhere in my artifacts is a PR comment at **18:53:33Z** and a
+   commit at **19:11:44Z**. I did not invent the curve; I transcribed his
+   measurement, failed to record where it came from, then audited **my** tree,
+   found no generator there, and declared it fiction.
+4. **An independent re-measurement confirms it.** Edward's r3 nine-arm
+   forced-depth sweep gives `sum(h) = 2.0545`; the curve I retracted sums to
+   `2.0656`. That is **0.54% apart**. Implied `C(8)` at his measured
+   `C(0) = 65.469 ms`: **199.98 ms measured vs 200.70 ms from the retracted
+   curve — 0.36% apart.**
 
-- **`C(8) = 198.7 ms` against a reference `161.0 ms`** — a real +23% discrepancy
-  on a merged anchor, while `C(0)` agrees to 2.3%. Worth taking seriously
-  regardless of the rest.
-- **My "endpoint check" was not independent of the anchor it tested.** Verified:
-  `67.0 × (1 + 1.403) = 161.0` exactly; `8 × 2.689 / 67.0 = 0.3211`;
-  `1.403 − 0.3211 = 1.0819 ≈ 1.082`. The three "separate" reference numbers I
-  handed the student are **one** number wearing three hats, so a curve measured
-  on this machine could only agree or disagree with it — never validate it.
-  **This critique is correct and is the most useful thing in the report.**
+#### The number that is actually wrong
 
-⚠ **One internal inconsistency in the report's headline table, found by
-recomputation.** It lists `C(0) = 65.469`, `C(8) = 198.683` and
-`C(8)/C(0) = 3.0545`, but `198.683 / 65.469 = ` **`3.0348`**, giving
-`sum(h) = 2.0348` rather than the reported `2.0545` — about 1% apart. The two
-`sum(h)` values cannot both come from those two endpoints, so `sum(h) = 2.0545`
-must come from summing measured per-depth increments (which need not equal the
-endpoint ratio) while the ratio row is quoted from somewhere else. **The
-headline conclusion is unaffected** — the anchor is missed by ~23% on either
-value — but the table needs one consistent provenance. Going to the student as
-PR #1 feedback in the same working session as this commit.
+| quantity | value | vs Edward's measurement |
+|---|---:|---:|
+| `C(0)` reference | 67.0 ms | +2.3% — fine |
+| `C(8)` reference (PR #3 parent clock) | 161.0 ms | **−19.0% — broken** |
+| `C(8)` implied by the "invented" curve | 200.7 ms | **+1.0% — right** |
 
-*(I first wrote this paragraph asserting `198.683/65.469 = 2.0546` "matching"
-the report. That was my own arithmetic slip, caught by running it. Two
-independent arithmetic errors in one session, both caught only by execution:
-the lesson is that mental arithmetic on load-bearing numbers is not acceptable
-even when it is trivial.)*
+*(Percentages are stated with the measurement as denominator throughout. I
+first wrote the `C(8)` row as "−23.4%", which is the same disagreement computed
+with the **anchor** as denominator and the sign of the other convention — a
+denominator error caught by `research/pr3_anchor_reconciliation.py`. Both
+readings describe the same 37.7 ms gap; only one of them is what the column
+header says.)*
+
+**`C(8) = 161.0 ms` is retracted.** It is a merged anchor from PR #3, and it is
+the sole independent input to *both* endpoint targets I handed Edward: verified,
+`67.0 × (1 + 1.403) = 161.0` exactly and `1.403 − 8 × 2.689 / 67.0 = 1.0819 ≈
+1.082`. Edward found that circularity himself and it is the most useful single
+finding in the report — **the check I designed could not have failed
+independently, so its firing is information about the anchor, not the curve.**
+
+Consequences, all of which I am adopting:
+
+- **PR #3's parent-clock anchors must be reopened.** Any campaign number derived
+  from `C(8) = 161.0` is suspect. This is now the top follow-up.
+- **Prediction 1 (`d* = 7`) returns to the scoring set as UNRESOLVED.** It was
+  deleted on the strength of a false retraction. It is not thereby confirmed —
+  it must be scored on its merits.
+- **The depth-policy prize is un-suppressed.** My r3 revision cut it to "0–2%
+  verify-side, ~+0.9% ms/token" *by forcing the curve to integrate to 161.0 ms*.
+  With the endpoint refuted, that rescaling is void. The row of my own
+  simulation that applies is the unrescaled one (+1.4% easy / +9.1% mid / +9.5%
+  decaying / +8.8% hard). **I am not promoting those numbers** — they rest on
+  assumed acceptance vectors and have never been measured. I am recording only
+  that the reason I suppressed them was wrong, so the direction is live again.
+
+#### The general hazard, stated correctly this time
+
+I originally wrote the lesson as "a provenance channel that echoes
+configuration is indistinguishable from a measurement channel." That lesson is
+real but it is not what happened here, and stating it that way let me keep the
+wrong conclusion. The actual lessons:
+
+1. **Cite the emitting expression *at the commit that produced the log line*,
+   not at branch head.** A branch that reverts its instrument before submission
+   — which is exactly what a well-behaved student does — will make every trace
+   it ever emitted look like an echo.
+2. **`git log -S` over "the tree" means whatever refspec you happen to have.**
+   Mine is narrowed to the advisor branch; `--all` only sees refs that were
+   fetched. My "no generator ever existed" audit could not have found a
+   generator that lived on a student branch I had never fetched. **An absence
+   proof is only as wide as the ref set behind it, and I did not state the ref
+   set.**
+3. **Two of my three published errors today shifted fault away from me.** "The
+   students aren't committing", and "the student's provenance argument is
+   circular". Neither survived eleven seconds of checking. The prior on a
+   convenient conclusion has to be lower than the prior on an inconvenient one.
+
+#### Still standing against the report: one presentation ambiguity
+
+The headline table lists `C(0) = 65.469`, `C(8) = 198.683`, and
+`C(8)/C(0) = 3.0545`. Dividing the two rows above gives **`3.0348`**, not
+`3.0545`. Both are defensible — the ratio row is `1 + sum(h)` from the
+*self-normalised* curve, where each arm's marginals are divided by that arm's
+own `C(0)`, and the report states the run-to-run `C(0)` spread is 1.4%, which
+comfortably covers the 0.65% gap. **This is not an error**, but the same row
+means "ratio of the two rows above" in the reference column and "1 + sum(h)"
+in the measured column, and a reader will divide. It needs one sentence of
+normalisation provenance. Raised as PR #1 feedback.
+
+*(For the record: I first wrote that paragraph asserting `198.683/65.469 =
+2.0546` and "matching". That was an arithmetic slip caught only by running it.
+Every load-bearing number in this session that I did not execute was wrong.)*
 
 ### ★★★★★ Both r-bumps above are RETRACTIONS, not new asks
 
@@ -1834,28 +1933,55 @@ against the **original** brief, not against the degraded one it replaces.
 Recorded here and posted to PR #1 so that a later fit cannot be passed off as a
 prediction. Score these honestly when the results arrive.
 
-1. ~~**`d* = 7`** — d=7 beats d=8 by ≈2% ms/token at q≈1.0, more as q falls.~~
-   **STATUS: VOID — not refuted, and it must not be scored either way.**
-   This prediction was arithmetic on the hand-written `h_assumed(j)` vector.
-   A prediction computed from a fabricated input is not a prediction about the
-   world, so **neither confirming nor refuting it means anything**, and quietly
-   marking it "refuted" would let me bank a methodological credit I have not
-   earned. It is withdrawn from the scoring set entirely; the round-1 record
-   counts **six** live pre-registrations, not seven.
+1. **`d* = 7`** — d=7 beats d=8 by ≈2% ms/token at q≈1.0, more as q falls.
+   **STATUS: RESTORED TO THE SCORING SET, UNRESOLVED.** Round-1 counts
+   **seven** live pre-registrations again.
 
-   *Note on how this one nearly escaped.* Before the audit this entry read
-   "STATUS: expected to refute", which **feels** like the honest, self-critical
-   move — I was pre-committing to losing. But it is the wrong correction: it
-   treats a fabricated premise as a merely *wrong* premise, and it keeps the
-   claim inside the scoring set where a later result could be matched against
-   it. **Predicting the failure of a fabricated claim is still trading on the
-   fabrication.** The right move for a prediction whose input never existed is
-   deletion from the ledger, not a pessimistic annotation on it.
-2. **The depth curve is non-monotone** — d=3 beats d=4. **Still live and still
-   falsifiable**, and PR #1 r3 measures it directly. Two honesty notes attached
-   after the audit: (a) its *provenance* is the same hand-written vector that
-   voided #1 — I believed it because I had put a peak at `j=4` — so it should be
-   read as a hunch with a plausible mechanism, not as a second finding; (b) the
+   *This entry has been wrong in both directions and the history is the
+   point.* It was first marked "expected to refute". I then voided it on the
+   grounds that its input, the `h` vector, was "a hand-written fabrication" —
+   and I wrote a confident paragraph (preserved below) about why deletion beat
+   a pessimistic annotation. **The vector was not fabricated.** It is an affine
+   image of forced-depth constants measured on PR #1's branch at `75fe7a2`
+   (17:14:02Z), it predates every artifact of mine that carries it, and PR #1's
+   independent nine-arm re-measurement reproduces its sum to 0.54%. See the
+   "RETRACTION OF A RETRACTION" section above for the full chain.
+
+   So the prediction rests on a measured input after all and goes back in the
+   ledger **unresolved**. It is *not* thereby confirmed: PR #1's realised-mode
+   evidence points at mode 3, so I expect it to be refuted on the merits. That
+   expectation is now worth something precisely because the premise is real.
+
+   *Preserved, because the reasoning was good and the premise was false:*
+   > A prediction computed from a fabricated input is not a prediction about
+   > the world, so neither confirming nor refuting it means anything…
+   > **Predicting the failure of a fabricated claim is still trading on the
+   > fabrication.** The right move for a prediction whose input never existed
+   > is deletion from the ledger, not a pessimistic annotation on it.
+
+   That rule stands and I would apply it again. The lesson is not about the
+   rule; it is that I applied a correct rule to a premise I had not verified,
+   and the self-critical framing made the whole move feel *more* trustworthy
+   rather than less. **A retraction is an assertion. It needs the same
+   evidentiary standard as the claim it retracts, and mine did not get it.**
+2. **The depth curve is non-monotone** — d=3 beats d=4.
+   **STATUS: RESOLVED — REFUTED at the predicted location by PR #1 r3.**
+   Measured: `h(3) = 0.3804`, `h(4) = 0.2778`, i.e. the drop is at 3→4, so d=4
+   does **not** cost more than d=3; the predicted dip is displaced. What PR #1
+   found instead is a **plateau at h(4), h(5), h(6)** (widths 6–8), flat to
+   ±5.5% about 0.2825, bounded by peaks at width 5 and width 9 — the qmv
+   wide-tensor pass boundaries. Score it as refuted.
+
+   ⛔ *Note (a) below is retracted: the provenance claim it rests on is false —
+   see the GLOBAL CORRECTION at the top of this file. The vector was measured on
+   PR #1's branch, not written by me, so "I believed it because I had put a peak
+   at `j=4`" is not what happened. Preserved for the record:*
+   > Two honesty notes attached
+   > after the audit: (a) its *provenance* is the same hand-written vector that
+   > voided #1 — I believed it because I had put a peak at `j=4` — so it should be
+   > read as a hunch with a plausible mechanism, not as a second finding.
+
+   Note (b) is unaffected and stands: the
    claim it "carries the result" is **withdrawn**. The closed-loop conclusion
    (the width-wall cap binds first, so the gate is the lever and retuning the
    scalar `h` is worth ≈0%) was rebuilt curve-independently and **does not
@@ -2018,11 +2144,25 @@ assignments line by line rather than assuming the rest were clean.
 | #8 | thorfinn | **yes** — calibration + `d*=7` | told him his own merged measurement was 2.4× inflated, and dressed the artifact up as an open mystery | retraction feedback |
 | #7 | askeladd | **no** | different disease: undischarged verification debt (below) | gates-resolved feedback |
 
-**One hand-written vector contaminated 75% of the live slate**, including a
-brief whose subject matter (crossrow stream boundaries) has nothing to do with
-depth policy. That is the number to remember about fabrication: the blast
-radius is not the topic, it is everything the number was ever used to
-*calibrate*.
+⛔ **THIS TABLE AND ITS MORAL ARE RETRACTED.** See the GLOBAL CORRECTION at the
+top of this file. The vector was not hand-written and there was no fabrication,
+so nothing was "contaminated by the invented curve" — the "contaminated?" column
+is void in every row. Preserved because the *actions* it drove were real and
+some of them did damage (a correct r1 was reset on PR #2; PR #8 was told its
+own merged measurement was inflated). Superseded text:
+
+> **One hand-written vector contaminated 75% of the live slate**, including a
+> brief whose subject matter (crossrow stream boundaries) has nothing to do with
+> depth policy. That is the number to remember about fabrication: the blast
+> radius is not the topic, it is everything the number was ever used to
+> *calibrate*.
+
+**What actually had a blast radius was the false retraction itself.** It reached
+the same four PRs, in the same week, through the same mechanism — I asserted it
+with confidence and students rebuilt their work around it. The corrected moral
+is narrower and worse for me: *an advisor's retraction propagates exactly as far
+as an advisor's claim, and is subject to no review at all unless a student
+pushes back.* Edward pushed back. That is the only reason this was caught.
 
 ### Why PR #7 was immune — the structural defence
 
@@ -2096,10 +2236,15 @@ the sections that derived the retracted numbers:
 **Three of these five are worse than simple leftovers**, and the pattern across
 them is the finding:
 
-1. **`:1724` — circularity dressed as corroboration.** The same hand-written
+1. **`:1724` — circularity dressed as corroboration.** The same
    vector, run through a second formula, was recorded as independent
-   confirmation. This is where the fabrication *acquired its authority*: it had
-   agreed with itself, and agreement feels like evidence.
+   confirmation. ⛔ *Correction: the vector was measured, not fabricated (see
+   GLOBAL CORRECTION at top), so the words "this is where the fabrication
+   acquired its authority" are withdrawn.* **The circularity finding itself is
+   unaffected and stands** — one number through two formulas was still logged as
+   two pieces of evidence, and that is still a defect regardless of whether the
+   number was any good. It had agreed with itself, and agreement feels like
+   evidence.
    > **The same number run through a second formula is not a second method.**
    > Before calling something a cross-check, name the two measurements and the
    > two commits. If you cannot name two, you have one.
@@ -2272,6 +2417,22 @@ which is algebraically *"continue iff `(1+expected)/(1+cost)` strictly
 improves."* It is a **strict hill-climb that stops at the first local
 maximum**. That is correct **only because `h` is flat** (`headStepCostRatio =
 0.20`, `:530`): a flat cost makes the objective monotone up to the cap.
+
+⛔⛔ **THE RETRACTION NOTICE IMMEDIATELY BELOW IS ITSELF PARTLY RETRACTED.**
+Its point 1 is false twice over: **Edward does not have zero commits** (56 on
+PR #1) and **the vector was not hand-written by me** — see the GLOBAL CORRECTION
+at the top of this file. There *is* an in-situ `h(d)` measurement: PR #1 r3's
+nine-arm forced-depth sweep, which reproduces the disputed sum to 0.54%. So the
+original claim that the table was "cross-validated against Edward's in-situ
+`h(d)`" was **premature when written but has since come true**, and striking it
+was the wrong call.
+
+What survives is **point 2 only**: the objective table was the *same* vector
+through a *different formula*, and logging that as an "independent second
+derivation" was a real circularity defect. That defect does not depend on where
+the vector came from.
+
+Preserved verbatim below, wrong parts included:
 
 > ### ★★★★★ RETRACTED — everything below this line in this section, and the
 > retraction that matters most, because this is where the fabricated vector
