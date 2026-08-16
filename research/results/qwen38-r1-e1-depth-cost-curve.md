@@ -993,6 +993,173 @@ faster; it is within 0.6 % of everything the depth axis has to give, which also
 means **this mechanism is nearly exhausted** and further gains have to come
 from somewhere other than choosing a better constant depth.
 
+##### The confirmation repeat — the stop rule is met
+
+My pre-registered stop rule was "one adaptive candidate run **and one
+confirmation run**; a win that survives the repeat is a local winner". This is
+the repeat. Job `473b1db0`, exit 0, 990 s, launched from a clean tree, same
+binary, same head, its own fresh thermal window and cool gate. Same gates as
+the first pair: `passed = true`, `decode_tokens = 512`,
+`all_tokens_matched = true`, `residual_divergence_count = 0`,
+`public_drift_tripwire_passed = true`, `uses_pinned_mtp_head = true`,
+`head_provenance_sha256 = 54930a1d…f538bfc4b`.
+
+| metric | `base512b` = `adaptive@0.2` | `cand512b` = measured curve |
+|---|---:|---:|
+| `mtp_decode_speedup` | 2.264353266019497 | **2.308694833371071** |
+| `mtp_seconds_per_token` | 0.03292867564596236 | **0.03226563287898898** |
+| `serial_seconds_per_token` | 0.07456215424463153 | 0.07449149992316961 |
+| `effective_mean_draft_len` | 5.75 | 2.970149253731343 |
+| `accepted_draft_rate` | 0.8861283643892339 | 0.9522613065326633 |
+
+**MTP seconds per token: −2.0136 %. Score ratio: +1.9582 %.**
+
+Both pairs side by side:
+
+| pair | job | s/token delta | score delta | decode-only delta |
+|---|---|---:|---:|---:|
+| #1 `base512`/`cand512` | `98221633` | −1.7723 % | +1.9229 % | +3.04 % |
+| #2 `base512b`/`cand512b` | `473b1db0` | −2.0136 % | +1.9582 % | +3.54 % |
+
+**The stop rule is met: both pairs clear 1.5 % on both estimators, and the
+second pair is slightly the larger win. I am calling this a local winner.**
+
+The run-to-run reproducibility is the part I did not expect to be this tight.
+Across the two independent pairs the same arm re-measures to **+0.0517 %**
+(control) and **−0.1941 %** (candidate) on MTP seconds per token — both an
+order of magnitude below the effect. The four serial legs across both pairs
+span 0.074405…0.074562 s/token, a total spread of 0.21 %.
+
+Decode-only, with the parent clock stripped (`research/realised_rate.py`):
+
+| arm | leg0 serial s/tok | leg1 MTP s/tok | speedup | mean d | mean acc | leg1 round µs |
+|---|---:|---:|---:|---:|---:|---:|
+| `cand512b` | 0.065970 | **0.024168** | **2.7297** | 2.970 | 2.826 | 92460.1 |
+| `base512b` | 0.066038 | 0.025054 | 2.6358 | 5.793 | 5.122 | 153379.4 |
+
+Its two serial legs agree to 0.103 %. The independent parent-clock fit on this
+pair is `P0 = 3.9999 s`, `c = 624.5 µs/round`, resid_sd 16.0 ms (0.40 %) —
+against `P0 = 3.9986 s`, `c = 618.1 µs/round` from pair #1, and `P = 4.0086 s`
+from the unrelated F9/F21 route. Three routes to the prefill constant now agree
+to 0.22 %.
+
+Against the forced-depth ceiling of 2.7320 (`d = 3`), `cand512b` captures
+**99.92 %** and `base512b` **96.48 %** — the same story as pair #1, slightly
+sharper.
+
+The chosen-depth histograms repeat almost exactly. `base512b` is **bit-identical
+to `base512`**: 82 rounds, 502 committed tokens, and the same 2/38/2/3/7/30
+split across `d = 3…8`, mean offered 5.7927, mean accepted 5.1220. `cand512b`
+is 132 rounds and 505 committed tokens with 1/2/129 across `d = 1…3`, mean
+offered 2.9697, mean accepted 2.8258:
+
+| arm | rounds | `d == 4` | `d > 4` | mean offered | tokens/round |
+|---|---:|---:|---:|---:|---:|
+| `base512b` | 82 | 38 (46.34 %) | 42 (51.22 %) | 5.7927 | 6.1220 |
+| `cand512b` | 132 | **0 (0.00 %)** | **0 (0.00 %)** | 2.9697 | 3.8258 |
+
+**The never-clipped-at-4 claim survives the repeat: 0 of 132 rounds at `d = 4`
+and 0 at `d > 4`.**
+
+W&B: `base512b-flat020-repeat` `rtx0gpyu`, `cand512b-measured-repeat`
+`5gcsr2zf`.
+
+##### Disclosure: the first two pairs ran the argmin scan, the submitted source walks greedily — and a third pair on the submitted source settles it
+
+I have to be explicit about this because it is the one place where the
+submitted source and a timed binary were not the same text. **It is now closed
+by direct measurement, not by argument**: a third A/B pair built from the
+submitted commit reproduces the win and lands on an identical depth histogram.
+
+Both A/B pairs above were measured with a binary that selected depth by an
+**argmin scan** over all reachable depths. After they were measured I reverted
+that scan and shipped the **greedy walk** instead (commit `625d1d7`), because
+the scan turned out to buy nothing on the states a real run visits and the
+greedy form is a strictly smaller diff against the shipped policy. The −3.61 %
+"greedy penalty" that originally motivated the scan was a flat-`q` simulation
+artifact: in that idealisation every position keeps a hand-set acceptance, which
+makes the objective multi-modal, whereas in a real run the positions the policy
+never reaches simply keep their prior and the objective is unimodal over the
+reachable set.
+
+The evidence that the revert does not move the measurement is
+`research/ema_replay.py`, which reconstructs `positionAcceptEMA` from an arm's
+own `(offered_depth, accepted_count)` trace — it is a deterministic function of
+that sequence — and then replays both rules over the states the arm actually
+visited. Each arm is replayed with the `h` it actually ran:
+
+| arm | binary | `h` used | rounds | greedy == argmin | margin-clamp rounds |
+|---|---|---|---:|---:|---:|
+| `base512` | argmin | flat 0.20 | 82 | **82/82 (100 %)** | 0 |
+| `cand512` | argmin | measured | 132 | **132/132 (100 %)** | 0 |
+| `base512b` | argmin | flat 0.20 | 82 | **82/82 (100 %)** | 0 |
+| `cand512b` | argmin | measured | 132 | **132/132 (100 %)** | 0 |
+| `armA512` | **greedy** | flat 0.20 | 82 | **82/82 (100 %)** | 0 |
+| `armB512` | **greedy** | measured | 132 | **132/132 (100 %)** | 0 |
+
+**642/642 realised rounds across all three pairs — the two rules are
+indistinguishable on every state any arm actually reached.** The candidate
+arms converge to `positionAcceptEMA = [0.9998, 0.9990, 0.9988, 0.9500, …]` with
+positions 4–7 still at their untouched prior, because the policy never drafts
+that deep; with that state and the measured vector both rules return 3.
+
+Two honesty notes on that table. First, the replay is a model of the rule, not a
+bit-exact emulator of the session: on `base512` its argmin histogram is
+{4:39, 5:2, 6:3, 7:7, 8:31} against the measured {3:2, 4:38, 5:2, 6:3, 7:7,
+8:30}, a one-round drift in two bins from the first rounds' offered depths.
+Second, replaying a **base** arm with the *measured* vector — which is not what
+it ran — does show the rules diverging on 18 of 82 rounds (argmin would pick 7
+where greedy picks 3). That counterfactual is the reason the scan looked
+attractive in the first place, and it is precisely the case a real run never
+enters, because an arm running the measured vector never accumulates the deep
+EMA that makes those states reachable.
+
+##### Pair #3 — the same A/B on a deterministic rebuild of the submitted commit
+
+I did not want to leave this resting on a replay, so I reran the A/B on a
+binary built with `--rebuild` from the submitted commit `625d1d7` itself, with
+`dirty=0` in both arm manifests. This binary contains the greedy walk and no
+argmin scan anywhere.
+
+| metric | `armA512` = flat `0.20` | `armB512` = measured curve |
+|---|---:|---:|
+| `mtp_decode_speedup` | 2.2630622411251546 | **2.308136053239464** |
+| `mtp_seconds_per_token` | 0.03292571287602186 | **0.03229108382947743** |
+| `serial_seconds_per_token` | 0.0745129375718534 | 0.07453221478499472 |
+| `effective_mean_draft_len` | 5.75 | 2.970149253731343 |
+| `accepted_draft_rate` | 0.8861283643892339 | 0.9522613065326633 |
+| `all_tokens_matched` | true | true |
+| `residual_divergence_count` | 0 | 0 |
+
+**`mtp_seconds_per_token` −1.9275 %, `mtp_decode_speedup` +1.9917 %** — squarely
+between the two argmin pairs and clear of the pre-registered 1.5 % bar. Every
+gate passes on both arms.
+
+The stronger evidence is not the timing, it is the depth histogram. `armB512`
+is *identical* to `cand512b` round for round: 132 rounds, 505 committed tokens,
+`{d=1: 1, d=2: 2, d=3: 129}`, mean offered depth 2.9697, mean accepted 2.8258,
+zero rounds at `d ≥ 4`. `armA512` is likewise identical to `base512` and
+`base512b`: 82 rounds, 502 tokens, `{3:2, 4:38, 5:2, 6:3, 7:7, 8:30}`, mean
+offered 5.7927. **Two different depth-selection implementations, run on two
+separately built binaries, emitted the same depth sequence.** That is the claim
+the replay was standing in for, and it now rests on a live run.
+
+Decode-only, with the parent clock stripped:
+
+| arm | leg0 serial s/tok | leg1 MTP s/tok | speedup | mean `d` | mean acc | leg1 round µs | rounds |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `armB512` | 0.066036 | **0.024210** | **2.7277** | 2.970 | 2.826 | 92620.6 | 132 |
+| `armA512` | 0.066003 | 0.025049 | 2.6349 | 5.793 | 5.122 | 153351.6 | 82 |
+
+Decode-only delta **+3.52 %**; against the forced-`d3` ceiling of 2.7320 the
+candidate captures **99.84 %** of the available optimum and the control
+**96.45 %**. The parent-clock fit on this pair is `P0 = 4.0007 s`,
+`c = 623.1 µs/round`, `resid_sd = 14.3 ms` (0.36 %) — the same constant the
+other two pairs and the eighteen-leg regression recover.
+
+W&B: `armA512-greedy-flat020` `qbql5o1g`, `armB512-greedy-measured` `9uyeebqt`.
+
+
 ##### The 256-token screen, and why it was a wash
 
 The 256-token A/B ran first as a directional screen. It is *not* the headline
