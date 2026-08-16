@@ -80,16 +80,18 @@ FMA_QDOT = """      for (int r = 0; r < rows_per_simd; r++) {
 
 # Every nibble product is exact in fp32 (a bf16 activation scaled by a power of
 # two carries <= 8 mantissa bits; the masked nibble carries <= 4), so an FMA
-# cannot change a product. Only the addition order can change a bit. This form
-# keeps the association the unfused source compiles to --
-# `((a0*q0 + a1*q1) + partial) + a2*q2 + a3*q3` -- so it is bit-identical while
-# still trading three multiply/add pairs for three FMAs.
+# cannot change a product. Only the summation order can change a bit. Summing
+# the four terms among themselves and adding to partial[r] once reproduces the
+# control association exactly, and keeps the loop-carried chain on partial[r]
+# one add deep as in the control, unlike FMA_QDOT which threads partial[r]
+# through all four FMAs and so makes that chain four deep.
 FMA_QDOT_ORDERED = """      for (int r = 0; r < rows_per_simd; r++) {
         const int q = packed[r][i];
-        VF p = metal::fma(a1, VF(float(q & 0x00f0)), a0 * VF(float(q & 0x000f)));
-        p += partial[r];
-        p = metal::fma(a2, VF(float(q & 0x0f00)), p);
-        partial[r] = metal::fma(a3, VF(float(q & 0xf000)), p);
+        VF s = a0 * VF(float(q & 0x000f));
+        s = metal::fma(a1, VF(float(q & 0x00f0)), s);
+        s = metal::fma(a2, VF(float(q & 0x0f00)), s);
+        s = metal::fma(a3, VF(float(q & 0xf000)), s);
+        partial[r] += s;
       }
 """
 

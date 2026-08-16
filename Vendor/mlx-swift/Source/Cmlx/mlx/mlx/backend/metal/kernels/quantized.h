@@ -1027,12 +1027,11 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
       }
       for (int r = 0; r < rows_per_simd; r++) {
         const int q = packed[r][i];
-        VF p = partial[r];
-        p = metal::fma(a0, VF(float(q & 0x000f)), p);
-        p = metal::fma(a1, VF(float(q & 0x00f0)), p);
-        p = metal::fma(a2, VF(float(q & 0x0f00)), p);
-        p = metal::fma(a3, VF(float(q & 0xf000)), p);
-        partial[r] = p;
+        VF s = a0 * VF(float(q & 0x000f));
+        s = metal::fma(a1, VF(float(q & 0x00f0)), s);
+        s = metal::fma(a2, VF(float(q & 0x0f00)), s);
+        s = metal::fma(a3, VF(float(q & 0xf000)), s);
+        partial[r] += s;
       }
     }
     for (int r = 0; r < rows_per_simd; r++) {
