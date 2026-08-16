@@ -90,6 +90,24 @@ def max_rss_bytes(arm_dir: Path) -> int | None:
     return best
 
 
+def thermal_provenance(arm_dir: Path) -> dict:
+    """Whether the arm's seconds are gate-qualified, and the temps around it."""
+    path = arm_dir / "identity.txt"
+    if not path.exists():
+        return {}
+    out: dict[str, object] = {}
+    for line in path.read_text().splitlines():
+        key, _, value = line.partition("=")
+        if key not in {"cool_gate", "gpu_temp_c_before", "gpu_temp_c_after"}:
+            continue
+        try:
+            out[key] = float(value)
+        except ValueError:
+            out[key] = value
+    out["seconds_are_gate_qualified"] = out.get("cool_gate") == "passed"
+    return out
+
+
 def acceptance_profile(ledger: list[dict]) -> dict:
     by_round: dict[int, dict[int, bool]] = {}
     for row in ledger:
@@ -164,6 +182,7 @@ def summarize(arm_dir: Path) -> dict:
         "report_file": report["_source_file"],
     }
     out |= acceptance_profile(ledger)
+    out |= thermal_provenance(arm_dir)
     if serial and serial.get("parent_measured_seconds_per_token") and seconds:
         out["local_ratio_serial_over_mtp"] = (
             serial["parent_measured_seconds_per_token"] / seconds
