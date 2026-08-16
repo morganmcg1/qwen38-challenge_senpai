@@ -587,7 +587,7 @@ public final class Qwen36MTPBlockSession {
     /// the shallow cap. Raising this needs a verify path that amortizes the
     /// extra rows -- padding the batch past the qmv limit into
     /// qmm_t_splitk, say.
-    private static let segmentedVerifyDepthCap = 7
+    private static let segmentedVerifyDepthCap = 8
 
     /// Consecutive fully-accepted rounds required to open the deep cap.
     /// Measured at 3 vs 1 on the local fixture: relaxing to 1 moved the
@@ -596,7 +596,7 @@ public final class Qwen36MTPBlockSession {
     /// -- still inside the hard stretch -- and the resulting reject resets
     /// the streak again. The gate is not throttling throughput, it is
     /// damping that cascade.
-    private static let segmentedStreakGate = 3
+    private static let segmentedStreakGate = 2
 
     /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
