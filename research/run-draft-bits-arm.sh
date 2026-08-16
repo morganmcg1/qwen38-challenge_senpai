@@ -35,11 +35,17 @@ rm -rf -- "${out_dir}"
 mkdir -p "${out_dir}"
 
 export MLX_QWEN_MTP_DRAFT_BITS="${bits}"
-# Provenance for which head the worker actually built. A file, not stderr:
-# the worker only forwards stderr under MLX_QWEN_MTP_TRACE=1, which also writes
-# per-round trace rows inside the timed window.
-export MLX_QWEN_MTP_DRAFT_HEAD_REPORT="${out_dir}/draft-head.txt"
-: >"${MLX_QWEN_MTP_DRAFT_HEAD_REPORT}"
+# No in-band provenance line is possible: on the mtp-timed verb the worker runs
+# under a Seatbelt profile that denies file-write* except /dev/null
+# (MLXFastCLI/main.swift writeRuntimeWorkerSandboxProfile), its stdout is the
+# request protocol, and runQwenMTPTimed builds worker options with the default
+# forwardsWorkerStderr:false, so the parent's drain discards worker stderr. The
+# arm proves the requested head four other ways: the built worker binary
+# contains the env read (gate below), MLX_ survives the worker env allowlist
+# (sanitizedRuntimeWorkerEnvironment), the shape/byte math is pinned by
+# QwenQMVCostCurveTests, and the bits=2 arm is the positive control -- two
+# independent bits=4 runs agreed on accepted_draft_rate to 16 digits, so any
+# arm that moves acceptance proves MLX_QWEN_MTP_DRAFT_BITS reached the head.
 export MLX_QWEN_MTP_TRACE="${MLX_QWEN_MTP_TRACE:-0}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-qwen38-r1-e6-draft-head-precision}"
 
@@ -108,12 +114,6 @@ cp "${repo_root}/.mlxfast-private/amdahl/${tag}/amdahl.json" "${out_dir}/amdahl.
 echo "gpu_temp_c_after=$(gpu_temp_now)" >>"${identity}"
 
 echo "run-draft-bits-arm: arm summary"
-cat "${MLX_QWEN_MTP_DRAFT_HEAD_REPORT}"
 grep -i "maximum resident set size" "${out_dir}/rusage.txt" || true
-
-# Without a provenance line the arm cannot prove which head it built, and an
-# ignored MLX_QWEN_MTP_DRAFT_BITS would read as "precision is free".
-if ! grep -q "^mtp-draft-head: bits=${bits} " "${MLX_QWEN_MTP_DRAFT_HEAD_REPORT}"; then
-  echo "run-draft-bits-arm.sh: no 'bits=${bits}' provenance line; the arm did not build the requested head" >&2
-  exit 1
-fi
+python3 -c 'import json,sys;r=json.load(open(sys.argv[1]))["mtp_leg"];print("run-draft-bits-arm: accepted_draft_rate=%.16f round_count=%d spt=%.9f" % (r["accepted_draft_rate"],r["round_count"],r["parent_measured_seconds_per_token"]))' \
+  "${out_dir}/amdahl.json"

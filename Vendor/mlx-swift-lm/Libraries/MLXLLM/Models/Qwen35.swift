@@ -2445,14 +2445,9 @@ extension Qwen35TextModel: MTPCapable {
                 groupSize: quantized.groupSize,
                 bits: quantized.bits,
                 mode: quantized.mode)
-            guard Self.draftHeadBits != quantized.bits else {
-                Self.reportDraftHead(compact)
-                return compact
-            }
-            let repacked = Self.requantizedDraftHead(
+            guard Self.draftHeadBits != quantized.bits else { return compact }
+            return Self.requantizedDraftHead(
                 compact, bits: Self.draftHeadBits)
-            Self.reportDraftHead(repacked)
-            return repacked
         }
         return Linear(
             weight: compactRows(full.weight),
@@ -2504,35 +2499,6 @@ extension Qwen35TextModel: MTPCapable {
         eval(repacked.weight, repacked.scales, repacked.biases!)
         return repacked
     }
-
-    /// The worker only forwards stderr under a tracing mode that also writes
-    /// per-round rows inside the timed window, so an arm proves which head it
-    /// actually built by way of `MLX_QWEN_MTP_DRAFT_HEAD_REPORT`.
-    private static func reportDraftHead(_ head: QuantizedLinear) {
-        let scaleBytes = head.scales.nbytes + (head.biases?.nbytes ?? 0)
-        let data = Data(
-            """
-            mtp-draft-head: bits=\(head.bits) group=\(head.groupSize) \
-            rows=\(head.weight.dim(0)) packed_bytes=\(head.weight.nbytes) \
-            scale_bytes=\(scaleBytes)
-
-            """.utf8)
-        guard
-            let path = ProcessInfo.processInfo
-                .environment["MLX_QWEN_MTP_DRAFT_HEAD_REPORT"]
-        else {
-            FileHandle.standardError.write(data)
-            return
-        }
-        if !FileManager.default.fileExists(atPath: path) {
-            FileManager.default.createFile(atPath: path, contents: nil)
-        }
-        guard let handle = FileHandle(forWritingAtPath: path) else { return }
-        handle.seekToEndOfFile()
-        handle.write(data)
-        try? handle.close()
-    }
-
 
     /// Allocate a fresh KV cache for the MTP head layers.
     /// omlx: patches/mlx_lm_mtp/qwen35_model.py TextModel.make_mtp_cache

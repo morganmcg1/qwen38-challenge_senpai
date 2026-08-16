@@ -2,9 +2,8 @@
 """Compare draft-head readout precision arms on acceptance, fidelity and time.
 
 Each arm directory is one `research/run-draft-bits-arm.sh` run and holds the
-captured CLI reports, the `mtp-draft-head:` provenance line and the rusage
-trailer. The first arm on the command line is the control every other arm is
-compared against.
+captured CLI reports, the amdahl roll-up and the rusage trailer. The first arm
+on the command line is the control every other arm is compared against.
 
 Acceptance and token-stream identity are properties of the head's numerics and
 do not depend on temperature, so they stay trustworthy on a host whose thermal
@@ -48,23 +47,24 @@ def load_mtp_report(arm_dir: Path) -> dict:
     return best
 
 
-def load_reference_ledger(arm_dir: Path) -> tuple[list[dict], str | None]:
-    """Per-row evidence from the untimed `mtp-verify --generate` pass.
+def load_reference_golden(arm_dir: Path) -> tuple[dict, str | None]:
+    """The serial golden written by `mtp-verify --generate`.
 
-    The timed leg is built with `retainLedger == false`, so its report carries
-    no `row_ledger`. The reference pass runs the same depth with the same arm
-    head and does retain one; `research/capture-cli.sh` copies it out of the
-    scratch run directory that benchmark-qwen-mtp.sh deletes.
+    `research/capture-cli.sh` copies it out of the scratch run directory that
+    benchmark-qwen-mtp.sh deletes. It holds `emitted_tokens` (the serial
+    target argmax stream) and one `rows` entry per position carrying the
+    top-two tokens and logits. The draft head never runs during this pass, so
+    the golden is arm-invariant -- which is exactly what makes it a usable
+    anchor for cross-arm token identity.
     """
     for path in sorted((arm_dir / "reports").glob("*-output.json")):
         try:
             payload = json.loads(path.read_text())
         except (json.JSONDecodeError, UnicodeDecodeError):
             continue
-        rows = payload.get("row_ledger") if isinstance(payload, dict) else None
-        if rows:
-            return rows, path.name
-    return [], None
+        if isinstance(payload, dict) and payload.get("emitted_tokens"):
+            return payload, path.name
+    return {}, None
 
 
 def load_serial_report(arm_dir: Path) -> dict | None:
@@ -79,23 +79,39 @@ def load_serial_report(arm_dir: Path) -> dict | None:
     return None
 
 
+COMPACT_DRAFT_ROWS = 98_336
+COMPACT_DRAFT_K = 5_120
+COMPACT_DRAFT_GROUP = 64
+
+
 def draft_head_provenance(arm_dir: Path) -> dict:
-    path = arm_dir / "draft-head.txt"
+    """The arm's requested readout precision and the head bytes it implies.
+
+    The worker cannot report the head it built: on `mtp-timed` its sandbox
+    denies file-write*, its stdout is the request protocol, and the parent
+    discards its stderr. So the bits come from the arm's recorded request and
+    the byte counts from the fixed compact-draft shape, which
+    QwenQMVCostCurveTests measures directly on device.
+    """
+    path = arm_dir / "amdahl.json"
     if not path.exists():
         return {}
-    out: dict = {}
-    for line in path.read_text().splitlines():
-        if not line.startswith("mtp-draft-head:"):
-            continue
-        for field in line.split(":", 1)[1].split():
-            if "=" not in field:
-                continue
-            key, _, value = field.partition("=")
-            try:
-                out[key] = int(value)
-            except ValueError:
-                out[key] = value
-    return out
+    notes = json.loads(path.read_text()).get("provenance", {}).get("notes", "")
+    match = re.search(r"MLX_QWEN_MTP_DRAFT_BITS=(\d+)", notes)
+    if not match:
+        return {}
+    bits = int(match.group(1))
+    groups = COMPACT_DRAFT_ROWS * COMPACT_DRAFT_K // COMPACT_DRAFT_GROUP
+    packed = COMPACT_DRAFT_ROWS * COMPACT_DRAFT_K * bits // 8
+    # affine group-64: one fp16 scale and one fp16 bias per group.
+    scales = groups * 2 * 2
+    return {
+        "bits": bits,
+        "rows": COMPACT_DRAFT_ROWS,
+        "packed_bytes": packed,
+        "scale_bytes": scales,
+        "total_bytes": packed + scales,
+    }
 
 
 def max_rss_bytes(arm_dir: Path) -> int | None:
@@ -127,53 +143,56 @@ def thermal_provenance(arm_dir: Path) -> dict:
     return out
 
 
-def acceptance_profile(ledger: list[dict]) -> dict:
-    by_round: dict[int, dict[int, bool]] = {}
-    for row in ledger:
-        if row.get("kind") != "draft":
-            continue
-        index = row.get("draft_index")
-        if index is None:
-            continue
-        by_round.setdefault(row["round"], {})[index] = bool(row["accepted"])
+def reference_margins(golden: dict) -> dict:
+    """How much logit headroom a draft has to get each position right.
 
-    widths = [len(v) for v in by_round.values()]
-    max_pos = max((max(v) for v in by_round.values() if v), default=-1)
-    marginal: list[float] = []
-    conditional: list[float] = []
-    for pos in range(max_pos + 1):
-        seen = [v[pos] for v in by_round.values() if pos in v]
-        marginal.append(sum(seen) / len(seen) if seen else float("nan"))
-        reached = [
-            v[pos]
-            for v in by_round.values()
-            if pos in v and all(v.get(p, False) for p in range(pos))
-        ]
-        conditional.append(sum(reached) / len(reached) if reached else float("nan"))
+    A noisier draft head can only flip positions whose top-two target logits
+    are close, so this distribution bounds the acceptance any precision arm
+    can lose. It explains an acceptance delta rather than restating it.
+    """
+    margins = [
+        float(row["top2_logits"][0]) - float(row["top2_logits"][1])
+        for row in golden.get("rows", [])
+        if len(row.get("top2_logits", ())) >= 2
+    ]
+    if not margins:
+        return {}
+    ordered = sorted(margins)
     return {
-        "drafting_round_count": len(by_round),
-        "mean_draft_window": statistics.fmean(widths) if widths else 0.0,
-        "accept_rate_by_position": marginal,
-        "conditional_accept_by_position": conditional,
+        "margin_row_count": len(ordered),
+        "margin_mean": statistics.fmean(ordered),
+        "margin_p10": ordered[len(ordered) // 10],
+        "margin_p50": statistics.median(ordered),
+        "near_tie_fraction_lt_0p5": sum(m < 0.5 for m in ordered) / len(ordered),
+        "near_tie_fraction_lt_2p0": sum(m < 2.0 for m in ordered) / len(ordered),
     }
 
 
-def emitted_stream(ledger: list[dict]) -> list[int]:
-    """Tokens the run actually committed, in row order."""
-    stream: list[int] = []
-    for row in sorted(ledger, key=lambda r: r["row_index"]):
-        if row.get("kind") == "targetTail":
-            stream.append(int(row["token"]))
-        elif row.get("accepted"):
-            stream.append(int(row["token"]))
-    return stream
+def draft_depth_histogram(report: dict) -> dict:
+    """Where the adaptive depth schedule settled.
+
+    Mean acceptance alone hides a schedule that pulled depth back to protect
+    its acceptance rate, which costs tokens per round without ever showing up
+    as a worse acceptance number.
+    """
+    lengths = report.get("effective_draft_lengths") or []
+    if not lengths:
+        return {}
+    counts: dict[int, int] = {}
+    for length in lengths:
+        counts[int(length)] = counts.get(int(length), 0) + 1
+    return {
+        "draft_readouts_total": sum(lengths),
+        "draft_readouts_per_round": statistics.fmean(lengths),
+        "draft_depth_histogram": dict(sorted(counts.items())),
+    }
 
 
 def summarize(arm_dir: Path) -> dict:
     report = load_mtp_report(arm_dir)
     serial = load_serial_report(arm_dir)
-    ledger, ledger_file = load_reference_ledger(arm_dir)
-    stream = emitted_stream(ledger)
+    golden, golden_file = load_reference_golden(arm_dir)
+    stream = [int(t) for t in golden.get("emitted_tokens", [])]
     head = draft_head_provenance(arm_dir)
     seconds = report.get("parent_measured_seconds_per_token")
     out = {
@@ -182,6 +201,7 @@ def summarize(arm_dir: Path) -> dict:
         "draft_head_bits": head.get("bits"),
         "draft_head_packed_bytes": head.get("packed_bytes"),
         "draft_head_scale_bytes": head.get("scale_bytes"),
+        "draft_head_total_bytes": head.get("total_bytes"),
         "draft_head_rows": head.get("rows"),
         "parity_all_ok": report.get("parity_all_ok"),
         "all_tokens_matched": report.get("all_tokens_matched"),
@@ -193,7 +213,7 @@ def summarize(arm_dir: Path) -> dict:
         "effective_mean_draft_len": report.get("effective_mean_draft_len"),
         "ms_per_token": seconds * 1e3 if seconds else None,
         "decode_seconds": report.get("decode_seconds"),
-        "ref_ledger_file": ledger_file,
+        "ref_golden_file": golden_file,
         "ref_emitted_token_count": len(stream),
         "ref_emitted_stream_sha256": hashlib.sha256(
             json.dumps(stream).encode()
@@ -201,7 +221,8 @@ def summarize(arm_dir: Path) -> dict:
         "max_rss_bytes": max_rss_bytes(arm_dir),
         "report_file": report["_source_file"],
     }
-    out |= {f"ref_{k}": v for k, v in acceptance_profile(ledger).items()}
+    out |= {f"ref_{k}": v for k, v in reference_margins(golden).items()}
+    out |= draft_depth_histogram(report)
     out |= thermal_provenance(arm_dir)
     if serial and serial.get("parent_measured_seconds_per_token") and seconds:
         out["local_ratio_serial_over_mtp"] = (
@@ -225,7 +246,12 @@ def main() -> int:
     arms = [summarize(d) for d in args.arm_dirs]
     control = arms[0]
     for arm in arms:
-        arm["ref_stream_identical_to_control"] = arm["_stream"] == control["_stream"]
+        # An arm without a rescued golden is unknown, not divergent.
+        arm["ref_stream_identical_to_control"] = (
+            arm["_stream"] == control["_stream"]
+            if arm["_stream"] and control["_stream"]
+            else None
+        )
         if control["accepted_draft_rate"] and arm["accepted_draft_rate"]:
             arm["accept_rate_delta_vs_control"] = (
                 arm["accepted_draft_rate"] - control["accepted_draft_rate"]
@@ -248,10 +274,10 @@ def main() -> int:
     )
     print(header, file=sys.stderr)
     for arm in arms:
-        packed = arm["draft_head_packed_bytes"]
+        total = arm["draft_head_total_bytes"]
         print(
             f"{arm['arm']:<28} {str(arm['draft_head_bits']):>4} "
-            f"{(packed / 1e6 if packed else 0):>7.1f} "
+            f"{(total / 1e6 if total else 0):>7.1f} "
             f"{str(arm['parity_all_ok']):>7} "
             f"{str(arm['ref_stream_identical_to_control']):>5} "
             f"{(arm['accepted_draft_rate'] or 0):>7.4f} "
