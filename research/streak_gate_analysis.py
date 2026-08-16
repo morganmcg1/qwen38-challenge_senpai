@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 
 H = 0.20  # headStepCostRatio (owned by qwen-edward; read, never retuned)
 SHALLOW_CAP = 4  # sdpaWidthWallDepthCap
@@ -115,6 +116,118 @@ def implied_p(target_speedup: float, h: float = H) -> dict:
             break
         p += 0.0005
     return best or {"p": None, "note": "unreachable under this cost model"}
+
+
+ALPHA = 0.15  # acceptEMAAlpha (read-only for this assignment)
+OPTIMISM_TARGET = 0.95  # capped optimism transfer on a fully-accepted round
+MAX_DEPTH = 8  # Qwen36MTPLimits.maxDepth
+PRIOR = [0.85 * 0.98**i for i in range(MAX_DEPTH)]
+
+
+def depth_from_ema(ema: list, cap: int, h: float = H) -> int:
+    """`costModelDepth` driven by a full per-position EMA vector."""
+    reach = 1.0
+    expected = 0.0
+    depth = 0
+    while depth < cap:
+        reach *= ema[depth]
+        threshold = h * (1.0 + expected) / (1.0 + depth * h)
+        if not reach > threshold:
+            break
+        expected += reach
+        depth += 1
+    return depth
+
+
+def simulate_trajectory(
+    p: float,
+    gate: int,
+    tokens: int,
+    seed: int = 0,
+    deep_cap: int = DEEP_CAP,
+    shallow_cap: int = SHALLOW_CAP,
+    ema_gate: float = None,
+    ema_gate_index: int = 4,
+) -> dict:
+    """Replay the shipped EMA/streak/width-cap loop token-for-token.
+
+    `p` is the true per-position acceptance. p == 1.0 replays the local
+    copy fixture deterministically; p < 1.0 draws leading-run acceptances.
+    `ema_gate` adds the candidate disjunct `positionAcceptEMA[i] >= t`.
+    """
+    rng = random.Random(seed)
+    ema = list(PRIOR)
+    streak = 0
+    emitted = 0
+    rounds = []
+    while emitted < tokens:
+        streak_in = streak
+        deep = streak_in >= gate
+        if ema_gate is not None and ema[ema_gate_index] >= ema_gate:
+            deep = True
+        cap = deep_cap if deep else shallow_cap
+        depth = depth_from_ema(ema, cap)
+        ema_in = list(ema)
+        if depth == 0:
+            emitted += 1
+            rounds.append(
+                {
+                    "round": len(rounds) + 1,
+                    "streak_in": streak_in,
+                    "cap": cap,
+                    "depth": 0,
+                    "accepted": 0,
+                    "width": 1,
+                    "emitted": emitted,
+                    "ema_in": ema_in,
+                }
+            )
+            continue  # non-drafting round leaves `fullAcceptStreak` frozen
+        accepted = depth
+        for i in range(depth):
+            if p < 1.0 and rng.random() >= p:
+                accepted = i
+                break
+        for i in range(accepted):
+            ema[i] += ALPHA * (1.0 - ema[i])
+        if accepted < depth:
+            ema[accepted] += ALPHA * (0.0 - ema[accepted])
+        elif depth < MAX_DEPTH:
+            ema[depth] += ALPHA * (OPTIMISM_TARGET - ema[depth])
+        streak = streak + 1 if accepted == depth else 0
+        emitted += accepted + 1
+        rounds.append(
+            {
+                "round": len(rounds) + 1,
+                "streak_in": streak_in,
+                "cap": cap,
+                "depth": depth,
+                "accepted": accepted,
+                "width": accepted + 1,
+                "emitted": emitted,
+                "ema_in": ema_in,
+            }
+        )
+    widths = {}
+    depths = {}
+    for r in rounds:
+        widths[r["width"]] = widths.get(r["width"], 0) + 1
+        depths[r["depth"]] = depths.get(r["depth"], 0) + 1
+    first_deep = next((r for r in rounds if r["depth"] == MAX_DEPTH), None)
+    return {
+        "p": p,
+        "gate": gate,
+        "tokens": tokens,
+        "rounds": len(rounds),
+        "depth_histogram": dict(sorted(depths.items())),
+        "width_histogram": dict(sorted(widths.items())),
+        "mean_depth": sum(r["depth"] for r in rounds) / max(len(rounds), 1),
+        "tokens_per_round": rounds[-1]["emitted"] / len(rounds) if rounds else 0.0,
+        "first_depth8_round": first_deep["round"] if first_deep else None,
+        "first_depth8_token": first_deep["emitted"] if first_deep else None,
+        "width9_rounds": widths.get(MAX_DEPTH + 1, 0),
+        "trajectory": rounds,
+    }
 
 
 def main() -> None:
