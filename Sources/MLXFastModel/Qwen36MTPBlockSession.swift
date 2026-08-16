@@ -554,7 +554,24 @@ public final class Qwen36MTPBlockSession {
     /// honest fit FOR THIS ROLLBACK MECHANISM; the wasted-work term a
     /// reject does keep (the drafted head steps past the break) is already
     /// inside the marginal the rule prices.
-    private static let headStepCostRatio = 0.20
+    ///
+    /// FIFTH FIT — h IS NOT A SCALAR. Forced-depth arms d0..d8 on the
+    /// declared 4-bit head (M4 Pro, 1778 pooled depth-0 rounds for C(0),
+    /// 61/60/36/32 full-accept rounds at d3/d4/d6/d8) give
+    /// h(d) = (C(d) - C(d-1)) / C(0) below. The scalar 0.20 is ~2.5x TOO
+    /// HIGH at d=1..2 (under-drafts the cheap prefix) and ~1.4-2x TOO LOW
+    /// at d>=4 (over-drafts the plateau); its mean, 0.2562, is close to
+    /// 0.20, which is why the scalar survived end-to-end tuning while
+    /// being badly mis-shaped. The knee sits at d=3 (verify width 4), and
+    /// the two largest steps, d=4 (width 5) and d=8 (width 9), are exactly
+    /// where the affine-4 g64 crossrow kernel adds a weight pass
+    /// (ceil(M / IPG), IPG = ceil(M / ceil(M / 4)), quantized.h:1051).
+    /// Re-fit from forced-depth arms after every head-variant change; each
+    /// entry is a COMBINED per-draft marginal (one head step plus the
+    /// verify-width increment), which a depth sweep cannot separate.
+    private static let headStepCostRatioByDepth: [Double] = [
+        0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909,
+    ]
 
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
@@ -609,7 +626,17 @@ public final class Qwen36MTPBlockSession {
         return value
     }()
 
-    /// The greedy marginal-depth rule described at the policy's assignment.
+    /// Depth that minimises expected round cost per accepted token,
+    /// `(1 + H_d) / E[tokens(d)]`, with `H_d` summed from the measured
+    /// marginal curve.
+    ///
+    /// This scans every reachable depth instead of walking greedily. The
+    /// shipped greedy walk extended while `f(d+1) < f(d)`, which finds the
+    /// global minimum only when the marginal curve is non-decreasing — true
+    /// by construction for a scalar h, false for the measured curve, whose
+    /// d=3 knee (0.0775 -> 0.2426) stops a greedy walk dead even when the
+    /// plateau beyond it is the cheaper place to sit. The scan is at most
+    /// eight iterations of scalar arithmetic and is never worse.
     private func costModelDepth(offeredDepth: Int) -> Int {
         let offerCap = Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth)
         if let forced = Self.forcedDepth {
@@ -625,11 +652,13 @@ public final class Qwen36MTPBlockSession {
             : Self.sdpaWidthWallDepthCap
         let cap = Swift.min(offerCap, widthCap)
         guard cap > 0 else { return 0 }
-        let h = Self.headStepCostRatio
+        let h = Self.headStepCostRatioByDepth
         var reach = 1.0
-        var expected = 0.0
-        var depth = 0
-        while depth < cap {
+        var expectedTokens = 1.0
+        var relativeCost = 1.0
+        var best = 0
+        var bestCostPerToken = 1.0
+        for depth in 0 ..< cap {
             var p = positionAcceptEMA[depth]
             if depth == 0, let tail = pendingTop2, tail.1.count >= 2 {
                 let margin = tail.1[0] - tail.1[1]
@@ -637,12 +666,15 @@ public final class Qwen36MTPBlockSession {
                 p = Swift.min(p, conf)
             }
             reach *= p
-            let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
-            guard reach > threshold else { break }
-            expected += reach
-            depth += 1
+            expectedTokens += reach
+            relativeCost += h[depth]
+            let costPerToken = relativeCost / expectedTokens
+            if costPerToken < bestCostPerToken {
+                bestCostPerToken = costPerToken
+                best = depth + 1
+            }
         }
-        return depth
+        return best
     }
 
     /// Fold one round's acceptance outcome into the per-position EMAs.
