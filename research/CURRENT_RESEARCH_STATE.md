@@ -234,6 +234,12 @@ Ordered by expected value. Items marked ★ are new or newly elevated this round
    acceptance rate"; SlimSpec reports ~4–5× LM-head latency reduction where
    VocabTrim-class methods reach only ~60%. Rough sizing: ~14% of the ranked
    low-band marginal `m_lo`. **Strongest unassigned idea we have.**
+   **Strengthened by item 17, now settled:** the in-code "~0.6 ms" note that made
+   this look not worth attacking is unreachable by 1.7–1.9× on this host. The real
+   readout is 9.98 ms/round (~6.2% of the round), so the trim ceiling is twice the
+   code comment's claim. The only surviving objection to readout reduction is
+   *acceptance*, not bandwidth — so any assignment here must gate on acceptance
+   from the first measurement, not on bytes saved.
 
 2. **★★ Composition round.** Once ≥2 of PRs #1/#2/#4/#5 land, compose them and
    re-measure on a fresh base. Elevated because #1 and #2 are individually
@@ -315,9 +321,41 @@ Ordered by expected value. Items marked ★ are new or newly elevated this round
 
 16. **Off-diagonal `(d, w)` identification of `H`** via the `d=8, w=10` point.
 
-17. **Settle the compact-draft-vocab read cost.** The in-code note claims ~0.6 ms;
-    283.2 MB at 227 GB/s floors at 1.25 ms. One of the two is wrong, and item 1
-    depends on which.
+17. **SETTLED (advisor, source + arithmetic, no timing run needed) — the in-code
+    compact-draft-vocab note is wrong on both numbers.** The note at
+    `Qwen35.swift:2058-2060` claims "~315 MB of affine-4 rows per draft step
+    (~0.6 ms)". Both halves fail:
+
+    - **Bytes.** `makeCompactDraftHead` (`:2406-2434`) inherits `groupSize`/`bits`
+      from the loaded `lmHead`; it does not choose its own. This checkpoint family
+      is affine 4-bit **group-64** (`hf:lowskillcoding/qwen38-mtp-head-4bit-g64`;
+      `groupSize: 64` hardcoded on the declared-draft-head path at `:2342`). At
+      98,336 × 5120, g64 gives 251.7 MB weights + 15.7 MB scales + 15.7 MB biases
+      = **283,207,680 B = 283.2 MB**. The note's 315 MB is exactly the **g32**
+      arithmetic (314,675,200 B) — it assumed the wrong group size.
+    - **Time.** 0.6 ms for that read implies **472 GB/s** (g64) or 524 GB/s (g32).
+      The M4 Pro's *theoretical peak* is 273 GB/s and its measured decode
+      bandwidth is 227 GB/s. So ~0.6 ms is not merely optimistic, it is
+      **unreachable by 1.7–1.9×** on this host class under either group size. The
+      floor is **1.25 ms measured / 1.04 ms at theoretical peak**.
+
+    **Consequence — the note's conclusion inverts.** It reasons "the read is
+    ~0.6 ms, so the ceiling of any further trim is small". The true per-round
+    readout is 8 × 283.2 MB = 2.27 GB = **9.98 ms at 227 GB/s, not ~4.8 ms** — a
+    +5.2 ms/round correction. That is **6.2% of the ~161 ms *local* (bf16-head)
+    round and ~7.2% of the ~139 ms *ranked* (4-bit-head) round** — always state
+    which arm, since the readout fraction rises as the head shrinks. The
+    trim ceiling is **twice** what the code comment asserts. This does not revive
+    the *static prefix trim* (halving to 49,152 genuinely regressed acceptance
+    1.00 → 0.877 — that refutation is about acceptance, not about bytes, and it
+    stands), but it removes the stated bandwidth objection to **clustered /
+    low-rank two-stage readout**, which is item 1.
+
+    Residual uncertainty is one line: confirm the loaded `lmHead` is
+    `QuantizedLinear(bits: 4, groupSize: 64)` rather than bf16. If it is bf16 the
+    compact head is 1.007 GB and the error is ~7×, not ~2× — i.e. every branch of
+    this check makes item 1 stronger, none weakens it. Anyone timing it should
+    report **achieved GB/s**, not ms; ms alone is not host-portable.
 
 18. **Compiled MTP round** — extend `CompiledDecode.swift` past its B=1
     solo-decode gate to cover GDN and MTP.
