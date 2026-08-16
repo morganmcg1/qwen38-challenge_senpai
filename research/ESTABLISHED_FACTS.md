@@ -130,6 +130,21 @@ falsifiable: **if different shapes knee at different `M`, then dispatch and
 occupancy — not roofline — set the curve**, and the whole model below is wrong in
 an informative way.
 
+> **2026-08-16 — a competing model now has the stronger source evidence, and this
+> section is no longer the default explanation.** The base ships a crossrow
+> multi-row QMV whose own design comment states the cost law
+> `IPG = ceil(M / ceil(M/4))`, giving **`ceil(M/4)` weight streams** and a
+> **staircase** in `M` that steps at `M = 5` and `M = 9` — see the correction at
+> `:399-413` and the full trace in `CURRENT_RESEARCH_STATE.md`. The staircase is
+> a tiling property, so unlike the roofline knee it does **not** move with the
+> host's FLOPS/bandwidth balance; the M5 extrapolation table below therefore does
+> **not** license treating width 9 as potentially free on the ranked host.
+> The two models are **separable at `M = 5`**: the staircase predicts a step,
+> roofline predicts an unremarkable point deep in the bandwidth-bound regime.
+> Measurement is assigned three ways (PR #5 isolated Python, PR #2 in situ,
+> PR #1 as a depth cost). Until those land, treat both models as live and this
+> one as the weaker.
+
 ### On this host (M4 Pro) the knee is at verify width 8, i.e. depth 7
 
 PR #3 supplies both constants on the same host:
@@ -389,14 +404,28 @@ Wrapping the worker to capture its stderr is blocked by
 - **Verify width is one row short of a much better kernel.**
   `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:1415,1483`
   sets `vector_limit ≈ 10` at K=N=5120 and dispatches `qmv` below it,
-  `qmm_t_splitk` at or above. Widths 1-9 therefore all take `qmv`, tuned for
-  `M = 1`, and `eval_wall` grows 79 → 89 → 106 ms across widths 7 → 8 → 9 with
+  `qmm_t_splitk` at or above. Widths 1-9 therefore all take the `qmv` **host
+  dispatch**, and `eval_wall` grows 79 → 89 → 106 ms across widths 7 → 8 → 9 with
   *increasing* deltas (+10 then +17), so no linear `a + b·M` fits. **It is not a
   full per-row re-read** — that would give `V(9) ≈ 600 ms` against a measured
-  161 ms round. The roofline knee at `M* = 7.9` explains the acceleration
-  without any re-read: widths 8-9 are the first that cross into the
-  compute-bound regime. That host dispatch file is *not* editable, but the
+  161 ms round. That host dispatch file is *not* editable, but the
   shapes we request are ours to choose.
+
+  > **Corrected 2026-08-16 — "tuned for `M = 1`" was wrong.** An earlier revision
+  > said widths 1-9 all take `qmv` "tuned for `M = 1`" and attributed the
+  > acceleration to the roofline knee at `M* = 7.9`. The host-dispatch half is
+  > right; the rest is not. The base already ships a **crossrow multi-row QMV**
+  > inside `qmv_fast` (`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`,
+  > `:973-976`, `:1067-1094`, live gate `:1817`), added across the validated
+  > submissions `b6c7251 → 08897af → 1033e1a` and therefore already inside the
+  > promoted 2.9042 frontier. `:1064` gives the law `IPG = ceil(M / ceil(M/4))`,
+  > so **active weight streams = `ceil(M/4)`** — verified against the entire
+  > dispatch table `<3,3> <4,4> <5,3> <6,3> <7,4> <8,4> <9,3>`. Width cost is a
+  > **staircase with period 4**, stepping at `M = 5` and `M = 9`. The 7 → 8 step
+  > stays inside a tread (+10 ms); the 8 → 9 step crosses 2 → 3 streams (+17 ms).
+  > This also explains the 161 ms figure directly: 3 streams, not 9. The two
+  > models separate cleanly at `M = 5` — see the falsification note at
+  > `:120-131`, which pre-registered exactly this test.
 - **We can honestly build representative local fixtures.**
   `Sources/MLXFastCLI/main.swift:761-840` exposes
   `generate-golden --prompt-file … --steps N`, and
@@ -745,10 +774,18 @@ bool fast = N % bn == 0 && K % qmv_fast_k_alignment(bits) == 0;   // bn = 8
 
 **4-bit requires `K % 512 == 0`; 8-bit only requires `K % 256 == 0`.** A `K`
 that is 256- but not 512-aligned **silently** drops from `qmv_fast` to the
-bounds-checked generic `qmv` (`load_vector_safe`/`qdot_safe`). Our main scored
-reduction dims all pass by inspection — 5120, 6144, 8704, 10240, 16480 are all
-multiples of 512, and `N` dims 5120/16480/98336/248320 are all multiples of 8 —
-but this has not been asserted in code and is nearly free to check.
+bounds-checked generic `qmv` (`load_vector_safe`/`qdot_safe`) — **and therefore
+also loses the crossrow row-sharing path entirely**, since that lives inside
+`qmv_fast`. Our scored **reduction** dims all pass: 5120, 6144, 8704, 10240 and
+17408 are multiples of 512, and `N` dims 5120/16480/34816/98336/248320 are all
+multiples of 8. This has not been asserted in code and is nearly free to check.
+
+> **Corrected 2026-08-16.** An earlier revision of this paragraph listed `16480`
+> among the reduction dims and claimed it was a multiple of 512. **It is not**
+> — `16480 = 512·32 + 96`. There is no live defect, because 16480 is an *output*
+> dim (the GDN fused in-projection is 5120 × 16480) and `N` only needs `% 8`.
+> The conclusion held; the stated reasoning did not. **Do not pick 16480 as a
+> benchmark `K`** — it silently measures the unshared generic kernel.
 
 ### 3. Head-precision A/B: worth a slot, but run the free pre-check first
 
