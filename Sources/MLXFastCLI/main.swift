@@ -1797,7 +1797,15 @@ private enum MLXFastCLI {
             name: "--tokens"
         )
         guard let workerOptions = try runtimeWorkerOptions(
-            blockedGoldenPath: goldenPath
+            blockedGoldenPath: goldenPath,
+            // Local-only diagnostic seam, mirroring the DFlash cache-seam
+            // trace above: the MTP session's row/round trace is written to
+            // worker stderr and is otherwise swallowed on this verb.
+            // `runtimeWorkerOptions` ANDs this with `!officialRun`.
+            forwardsWorkerStderr: environmentValue(
+                "MLX_QWEN_MTP_TRACE",
+                fallback: "0"
+            ) == "1"
         ) else {
             throw MLXFastError.invalidInput(
                 "mtp-timed requires the participant runtime worker"

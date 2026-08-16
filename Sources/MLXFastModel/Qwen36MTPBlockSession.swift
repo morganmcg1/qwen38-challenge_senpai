@@ -453,6 +453,13 @@ public final class Qwen36MTPBlockSession {
     /// EMAs, not this.
     private var fullAcceptStreak = 0
 
+    /// Trace-only snapshot of the depth decision's inputs, written by
+    /// `costModelDepth` and emitted on the round line. Only touched when
+    /// `traceRounds` is on, so a ranked round never pays for them.
+    private var traceStreakIn = 0
+    private var traceWidthCap = 0
+    private var traceEMAIn: [Double] = []
+
     /// Local phase-trace gate, read once. `MLX_` prefix on purpose: the
     /// trusted harness strips `MLXFAST_*` from the sandboxed worker's env
     /// but allows the `MLX_` prefix through. The trace lands in a TMPDIR
@@ -578,6 +585,11 @@ public final class Qwen36MTPBlockSession {
         let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
             ? Self.segmentedVerifyDepthCap
             : Self.sdpaWidthWallDepthCap
+        if Self.traceRounds {
+            traceStreakIn = fullAcceptStreak
+            traceWidthCap = widthCap
+            traceEMAIn = positionAcceptEMA
+        }
         let cap = Swift.min(
             Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
             widthCap)
@@ -1073,7 +1085,9 @@ public final class Qwen36MTPBlockSession {
                 + "readout_us=\((tReadDone - tEvalDone) / 1000) "
                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
-                + "round_us=\((tTailDone - tRound0) / 1000)\n"
+                + "round_us=\((tTailDone - tRound0) / 1000) "
+                + "streak_in=\(traceStreakIn) cap=\(traceWidthCap) "
+                + "ema_in=\(traceEMAIn.map { String(format: "%.4f", $0) }.joined(separator: ","))\n"
             Self.traceWrite(line)
         }
         // No trailing eval: every host-read value was materialised by the
