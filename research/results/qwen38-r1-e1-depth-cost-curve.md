@@ -335,8 +335,27 @@ runs its own serial depth-0 leg.** That leg is a `C(0)` measurement, so the
 binary-B arms re-measure on binary B exactly the quantity the binary-A arms
 pooled to 65281.4 µs (N = 3570). If the two agree inside the 1.4 % spread the
 six binary-A controls already show among themselves, the binaries are
-measurement-equivalent and the split costs the sweep nothing. This check is
-reported in the results below at zero extra GPU cost.
+measurement-equivalent and the split costs the sweep nothing.
+
+**Result: they agree.**
+
+| control | binary | N | `C(0)` µs | vs binary-A pool |
+|---|:---:|---:|---:|---:|
+| `d0..d4, d8` pooled | A | 3570 | 65281.4 | — |
+| binary-A per-arm range | A | 510 ea | 65046.1 … 65947.4 | −0.36 % … +1.02 % |
+| `d5` serial leg | **B** | 510 | **65980.6** | **+1.07 %** |
+
+The binary-B control lands 1.07 % above the binary-A pool, against a 1.4 %
+spread that binary A already shows *among its own six controls*. I will not
+overclaim it: 65980.6 is marginally above the highest binary-A control
+(65947.4, by 0.05 %), so this is the top edge of the envelope rather than the
+middle of it. What it rules out is the thing that would matter — a systematic
+shift large enough to move `h(d)`, whose smallest interesting feature is the
+3.7× knee at `d = 3`. A 1 % control drift cannot manufacture or hide that.
+
+For the same reason every cross-binary comparison below is also reported
+**self-normalised**: each round divided by its *own* arm's depth-0 control, so a
+binary-B `C(d)` is never divided by a binary-A `C(0)`.
 
 The binary/arm assignment above is not inferred from commit SHAs — it is pinned
 by the mtime of the built worker against each arm's wall-clock window:
