@@ -1,0 +1,65 @@
+{
+  "label": "runO",
+  "trace": "research/trace-runO-cap7-gate3-512.log",
+  "split_decode_index": 301,
+  "whole_window": {
+    "rounds": 81,
+    "emitted_tokens": 512,
+    "drafted_tokens": 469,
+    "accepted_tokens": 431,
+    "rejected_tokens": 38,
+    "accept_rate": 0.919,
+    "reject_round_share": 0.1728,
+    "mean_depth": 5.79,
+    "depth_histogram": {
+      "3": 1,
+      "4": 29,
+      "5": 2,
+      "6": 3,
+      "7": 46
+    },
+    "accepted_tokens_per_round": 6.321,
+    "rounds_per_token": 0.1582,
+    "mean_round_us": 165161.3,
+    "us_per_token": 26129.0
+  },
+  "before_split": {
+    "rounds": 41,
+    "emitted_tokens": 301,
+    "drafted_tokens": 262,
+    "accepted_tokens": 260,
+    "rejected_tokens": 2,
+    "accept_rate": 0.9924,
+    "reject_round_share": 0.0488,
+    "mean_depth": 6.39,
+    "depth_histogram": {
+      "4": 6,
+      "5": 2,
+      "6": 3,
+      "7": 30
+    },
+    "accepted_tokens_per_round": 7.341,
+    "rounds_per_token": 0.13621,
+    "mean_round_us": 178002.8,
+    "us_per_token": 24246.2
+  },
+  "after_split": {
+    "rounds": 40,
+    "emitted_tokens": 211,
+    "drafted_tokens": 207,
+    "accepted_tokens": 171,
+    "rejected_tokens": 36,
+    "accept_rate": 0.8261,
+    "reject_round_share": 0.3,
+    "mean_depth": 5.175,
+    "depth_histogram": {
+      "3": 1,
+      "4": 23,
+      "7": 16
+    },
+    "accepted_tokens_per_round": 5.275,
+    "rounds_per_token": 0.18957,
+    "mean_round_us": 151998.7,
+    "us_per_token": 28814.9
+  }
+}
