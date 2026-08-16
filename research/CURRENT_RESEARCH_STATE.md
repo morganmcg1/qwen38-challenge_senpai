@@ -1,20 +1,24 @@
 # SENPAI Research State
 
-- **2026-08-16 20:05 UTC** — round 1 of the `qwen38-mlx-senpai-r1` campaign.
+- **2026-08-16 21:40 UTC** — round 1 of the `qwen38-mlx-senpai-r1` campaign.
   **PR #3 merged.** Base is now
-  `dbed6c27405ee2a2cf9c6bd68deec51017ae6c52`, upstream
+  `2547b0ea6843e5eff893ae1a2ba5ec51762db24c`, upstream
   `7351e62674bc600f0ca148d3a1b0604716a09db6`. Four experiments in flight:
-  PR #1 (edward), PR #2 (alphonse), PR #4 (askeladd), PR #5 (thorfinn, new).
+  PR #1 (edward), PR #2 (alphonse), PR #4 (askeladd), PR #5 (thorfinn).
 - **Most recent research direction from the human researcher team:** none
   received yet this launch. Four items are flagged below for the team; Flag 1
   needs an answer *before* a crossing submission, not after.
-- **This revision** records PR #3's merged result (the seed-prefill term is
-  measured and **irreducible**), the harness fact that
-  **`MLX_QWEN_MTP_TRACE=1` is unreachable**, and the promotion of the small-`M`
-  `qmv` retune from hypothesis to assignment (PR #5).
-- **Retractions still standing from the previous revision:** Flag 3's guardrail
-  mechanism, and the mlx #3920 sizing anchor. Corrections were sent to all four
-  open PRs.
+- **This revision** adds the **shape-independent roofline knee** derived from
+  PR #3's own numbers. It predicts the depth-cost curve PR #1 is measuring, sets
+  a normalized stop rule for PR #5, sets the floor decomposition for PR #4, and
+  moves the schedule discontinuity from `d = 4/5` to `d = 7`. It also records the
+  **(H, verify-slope) identifiability limit** and the **(T, tax) identifiability
+  limit**, and sharpens Flag 1 into a quantitative escalation.
+- **Retractions standing:** Flag 3's guardrail mechanism; the mlx #3920 sizing
+  anchor; the `h <= 0.262` feasibility bound (now non-discriminating); the
+  "`qmv` re-reads weights once per row" claim (arithmetically refuted below);
+  the "20-30% above floor" sizing given to PR #4 (real gap is ~90%). All
+  corrections were sent to the affected PRs.
 
 ## Where the campaign actually stands
 
@@ -33,16 +37,38 @@
   candidate leg is worth about **+0.043 score**, and the distance from 2.904 to
   the 3.0 gate is about **220 ms**.
 
-### Flag 1 — we are ~3.3% from a fail-closed rejection gate
+### Flag 1 — we are ~3.3% from a fail-closed rejection gate, and round 1 can breach it
 
 The operator plausibility gate is **3.0**; the frontier is **2.904**. Per
 `program.md` the gate is administrative and fail-closed: a legitimate median
 above it is **rejected as a measurement fault or benchmark escape, not clamped**,
-and publishing above it requires the operator to revise policy first. Round-1
-work is plausibly large enough to cross it. **The human team needs to tell us
-whether to (a) hold a crossing candidate unsubmitted pending a policy revision,
-(b) submit and accept a rejection as evidence, or (c) deliberately submit a
-sub-gate variant.** Until answered, no official submission should be sent.
+and publishing above it requires the operator to revise policy first.
+
+**This is now quantified and it is the dominant strategic fact of the campaign.**
+The candidate leg is ≈6.699 s and `d(score)/d(candidate_seconds) ≈ −0.4335`:
+
+- distance from 2.904 to the gate is **≈ 220 ms** of candidate-leg time;
+- the round is **≈ 95 rounds**, so the whole budget before rejection is
+  **≈ 2.3 ms per round** out of an estimated ~25 ms;
+- the measured local residual tax is **1.7-1.9x** of the ideal round
+  (67-77 ms unexplained per round on M4 Pro). Transferred to M5 the honest band
+  is **1.08-1.31x** at the low-tax corner and up to **~1.7x** at the high-tax
+  corner (see the (T, tax) identifiability note below);
+- **full** recovery of the ranked tax would put the score at **3.4-4.6**;
+- **even 25-40% recovery breaches 3.0.**
+
+So the realistic outcome of round 1 is not "will we improve" but "how do we
+handle an improvement we are not allowed to publish". `program.md` is explicit
+that we must **produce the legitimate result and tell the operator** rather than
+hobble it to pass. **The human team needs to tell us whether to (a) hold a
+crossing candidate unsubmitted pending a policy revision, (b) submit and accept a
+rejection as recorded evidence, or (c) deliberately submit a sub-gate variant and
+bank the remainder.** Until answered, **no official submission should be sent**.
+
+Honest caveat in the other direction: every local extrapolation here uses
+acceptance-1.0 copy-task runs and therefore systematically **overstates**. The
+2.904 already reflects real hidden prompts at q ≈ 0.85. The band above is wide
+on purpose.
 
 ### Flag 2 — a shipped fidelity gap at verify width 9
 
@@ -133,12 +159,14 @@ h  <=  (3.099·G − 1) / 8         →  at G = 1:  h <= 0.262
 ```
 
 **A memory roofline closes that branch.** The backbone is ~15 GB of 4-bit
-weights; the ranked M5 sustains roughly 560-600 GB/s, so one full weight pass
-costs ~25-27 ms. The pinned serial baseline is 0.037994794617407023 s/token —
-about **68% of roofline**, i.e. already well optimised. Therefore `G` is
-bounded by roughly **1.5**, and `G >= 1.92` is physically impossible.
-Consequently **`h` is small and the schedule genuinely runs deep**; the `h ≈
-0.62` branch is dead. Corollaries:
+weights (26.9B parameters at `0.5 + 4/64 = 0.5625` bytes/weight = 15.14 GB).
+The pinned serial baseline is 0.037994794617407023 s/token, which implies the
+ranked M5 **achieves ≈ 410-420 GB/s on the serial decode step** — that is the
+measured number, and it supersedes the earlier 560-600 GB/s peak-spec estimate.
+Being at achieved bandwidth means the pinned serial leg is already near its own
+roofline. Therefore `G` is bounded by roughly **1.5**, and `G >= 1.92` is
+physically impossible. Consequently **`h` is small and the schedule genuinely
+runs deep**; the `h ≈ 0.62` branch is dead. Corollaries:
 
 - The candidate leg's 0.01308 s/token is 76.4 tok/s, ~**1.9x** a single-pass
   roofline, so it is unambiguously emitting multiple tokens per weight pass.
@@ -164,6 +192,173 @@ order statistics over eight prompts. Improving the two *best* prompts is worth
 exactly zero. Correctness (`parity_all_ok`), by contrast, is an AND across all
 eight. So: optimise the middle of the distribution, and never trade fidelity for
 speed anywhere.
+
+## The shape-independent roofline knee (this revision's main result)
+
+This is derived entirely from PR #3's merged measurements plus the quantization
+format. It replaces guesswork about the depth-cost curve with a prediction that
+PR #1 can falsify in one sweep.
+
+### The knee is the same integer for every projection in the model
+
+Affine 4-bit group-64 costs `0.5 + 4/64 = 0.5625` bytes per weight (this
+reproduces the 15.14 GB checkpoint at ~26.9B parameters). For any projection
+`K x N` evaluated at batch width `M`:
+
+```
+bytes = K·N·0.5625      (independent of M)
+flops = 2·K·N·M
+```
+
+Both are proportional to `K·N`, so the batch width at which compute time
+overtakes weight-streaming time is
+
+```
+M*  =  0.5625 · FLOPS_eff / (2 · BW_eff)
+```
+
+and **`K` and `N` cancel**. The knee is therefore *identical* for the GDN fused
+in-projection (5120 x 16480), `out_proj` (5120 x 5120), both MLP projections
+(5120 x 34816 and 17408 x 5120), and `lm_head` (5120 x 248320). This is
+falsifiable: **if different shapes knee at different `M`, then dispatch and
+occupancy — not roofline — set the curve**, and the whole model below is wrong in
+an informative way.
+
+### On this host (M4 Pro) the knee is at verify width 8, i.e. depth 7
+
+PR #3 supplies both constants on the same host:
+
+- `FLOPS_eff = 6.415 TFLOP/s` (quantized GEMM at M=512, 87.1% of the measured
+  dense bf16 ceiling);
+- `BW_eff = 227 GB/s` (14.1 GiB of weights in the 0.0673 s serial decode step).
+
+```
+M*        = 0.5625 · 6.415e12 / (2 · 227e9) = 7.9
+balance   = 6.415e12 / 227e9                = 28.3 FLOP/byte
+AI(M=9)   = 2 · 0.5625⁻¹ · 9                = 32 FLOP/byte   → just compute-bound
+```
+
+Verify runs at width `d+1`, so **`M* = 7.9` puts the knee at `d ≈ 7`, not at
+`d = 4/5`.** The `sdpaWidthWallDepthCap = 4` / `segmentedStreakGate = 3`
+boundary the round-1 briefs were built around is an SDPA-segmentation artefact,
+**not** the cost discontinuity. Two more numbers follow:
+
+```
+ideal cost(9)/cost(1) = max(0.0673, 9·0.00841) / 0.0673 = 0.0757/0.0673 = 1.12
+compute slope above the knee = 2·26.9e9 / 6.415e12 = 8.4 ms per extra row
+compute slope below the knee ≈ 0
+```
+
+### Two-regime prediction for PR #1's marginal-cost curve
+
+PR #3's round anchors on this host:
+
+| leg | rounds | `Σ block_latency` | per round |
+|---|---:|---:|---:|
+| serial `d=0` | 64 | 4.286431789398193 | **67.0 ms** (= `V(1)+c`) |
+| MTP `d=8` | 10 | 1.6095870733261108 | **161.0 ms** |
+
+with `c = 0.00033844841851128475` s/round. The *average* marginal is
+`(161.0 − 67.0)/8 = 11.75 ms/draft`, i.e. `h_avg = 0.176` against the shipped
+`headStepCostRatio = 0.20`. **The scalar is roughly right on average; the
+question is entirely its shape.** Building the ideal round:
+
+- verify(9) floor = `max(67.0, 9·8.4) = 75.5 ms`;
+- 8 head forwards: trunk `238,934,093 B / 227 GB/s = 1.05 ms` each = **8.4 ms**;
+  plus the compact draft-vocab slice `5120·98336·0.5625 = 283 MB` = 1.25 ms each,
+  so up to **18.4 ms** total;
+- **ideal round = 84-94 ms against a measured 161 ms ⇒ residual tax 1.71-1.91x**,
+  i.e. **67-77 ms per round unexplained**.
+
+Distributing the ideal 94 ms over the two regimes (`6·m_lo + 2·(m_lo + 8.4) =
+94.0` ⇒ `m_lo = 9.65 ms`) predicts:
+
+| depth band | marginal | implied `h(d)` | vs shipped 0.20 |
+|---|---:|---:|---|
+| `d = 1..6` (bandwidth-bound) | ~9.7 ms | **~0.145** | 38% too high → **under-drafts** |
+| `d = 7..8` (compute-bound) | ~18.1 ms | **~0.271** | 26% too low → **over-drafts** |
+
+**A single scalar is wrong in both directions**, which is exactly why PR #1's
+deliverable is the curve rather than a retuned constant.
+
+### The (H, verify-slope) identifiability limit
+
+The measured per-round marginal is
+
+```
+m(d) = H + [ V(d+1) − V(d) ]
+```
+
+Because the verify width is *always* `d+1`, the head cost `H` and the verify
+width-slope are **perfectly collinear across any depth sweep at any acceptance
+rate**. No depth sweep can separate them. This is harmless for the policy —
+`costModelDepth` only needs the combined marginal — but fatal for attribution,
+so no student should claim to have measured `H` from a depth sweep. Three ways
+out, all now assigned: PR #5 measures `V(w)` in isolation, PR #4 builds the
+isolated-kernel floor, and one off-diagonal `(d, w)` point (the width-9 → 10
+padding experiment) identifies `H` directly.
+
+### Retraction: `qmv` is *not* doing a full per-row weight re-read
+
+Earlier advisor guidance to PR #1 said `C(d)` would be close to linear with a
+steep slope "if `qmv` re-reads the weight tile once per row". Arithmetic refutes
+it: a literal per-row re-read gives `V(9) = 9 · 67 ms = 600 ms` against a
+measured whole round of 161 ms. Whatever `qmv` costs at `M = 9`, it is **not** a
+9x re-read. The `h <= 0.262` feasibility bound is likewise retired: the predicted
+`h_avg = 0.176` sits comfortably inside it, so it no longer discriminates
+between hypotheses.
+
+### Normalized, host-portable stop rule (in force for PR #5)
+
+Raw ratios do not transfer between hosts; a roofline-normalized tax does.
+
+```
+BW_eff            from M=1:    K·N·0.5625 / cost(1)
+FLOPS_eff         from M=512:  2·K·N·512  / cost(512)
+cost_roofline(M)  = max( K·N·0.5625/BW_eff , 2·K·N·M/FLOPS_eff )
+qmv_tax(M)        = cost_measured(M) / cost_roofline(M)
+```
+
+- `qmv_tax(9) < 1.35` → the kernel is near roofline, stop and retire the idea;
+- `qmv_tax(9) > 2.7` → the tax is real and large, proceed to the exploitation;
+- in between → width-padding sub-experiment only.
+
+Pre-registered prediction: raw weighted `cost(9)/cost(1) ≈ 2.0-2.4`, normalized
+`qmv_tax(9) ≈ 1.55-1.9`, so the **middle branch fires**.
+
+### On the ranked M5 the knee is at least as deep, never shallower
+
+M5 serial decode implies `BW_eff ≈ 410-420 GB/s`. Its `FLOPS_eff` is unknown;
+Apple's NAX is ~4x on **prefill** but only ~25% on decode (Tech Talk 111432), so
+bracket it:
+
+| assumed M5 `FLOPS_eff` | balance | knee `M*` |
+|---|---:|---:|
+| 12.8 TFLOP/s (2x) | 30.5 FLOP/byte | **8.6** |
+| 25.7 TFLOP/s (4x) | 61 FLOP/byte | **17.2** |
+
+M4 Pro is 7.9. **In every corner of the bracket, M5's knee is deeper than
+ours.** Two consequences that reframe the whole round:
+
+1. **Local M4 Pro measurements systematically understate the value of deep
+   drafting** and overstate the case for gating deep rounds. A local regression
+   at `d = 7..8` is weak evidence of a ranked regression.
+2. The M5 residual tax is correspondingly lower, roughly **1.08-1.31x** versus
+   our local 1.7-1.9x.
+
+### The (T, tax) identifiability limit at the ranked score
+
+The published 2.904 constrains only the **product** of tokens-per-round `T` and
+the residual tax, not the two factors. Both of these reproduce it:
+
+| corner | `T` | implied `q` | implied M5 tax |
+|---|---:|---:|---:|
+| A (low tax) | ≈ 5.12 | ≈ 0.85 | 1.08-1.31 |
+| B (high tax) | ≈ 7.0 | ≈ 0.93 | ≈ 1.7 |
+
+Closing this needs PR #1's realised `T(d)` together with PR #5's kernel curve.
+Until then every ranked projection carries both corners, which is why Flag 1's
+band is 3.4-4.6 rather than a point estimate.
 
 ## Current research focus and themes
 
@@ -344,10 +539,14 @@ Wrapping the worker to capture its stderr is blocked by
 - **Verify width is one row short of a much better kernel.**
   `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:1415,1483`
   sets `vector_limit ≈ 10` at K=N=5120 and dispatches `qmv` below it,
-  `qmm_t_splitk` at or above. Widths 1-9 therefore all take `qmv`, which
-  **re-reads the weights per row** — the direct cause of `eval_wall` growing
-  79 → 89 → 106 ms across widths 7 → 8 → 9. That host dispatch file is *not*
-  editable, but the shapes we request are ours to choose.
+  `qmm_t_splitk` at or above. Widths 1-9 therefore all take `qmv`, tuned for
+  `M = 1`, and `eval_wall` grows 79 → 89 → 106 ms across widths 7 → 8 → 9 with
+  *increasing* deltas (+10 then +17), so no linear `a + b·M` fits. **It is not a
+  full per-row re-read** — that would give `V(9) ≈ 600 ms` against a measured
+  161 ms round. The roofline knee at `M* = 7.9` explains the acceleration
+  without any re-read: widths 8-9 are the first that cross into the
+  compute-bound regime. That host dispatch file is *not* editable, but the
+  shapes we request are ours to choose.
 - **We can honestly build representative local fixtures.**
   `Sources/MLXFastCLI/main.swift:761-840` exposes
   `generate-golden --prompt-file … --steps N`, and
@@ -442,6 +641,13 @@ an open issue establishing host-bound decode. `ml-explore/mlx-lm` #250's
 
 ## Pre-emptively rejected (do not re-assign without new evidence)
 
+- **Further draft-vocabulary trimming. CONTESTED — see queue item 16.** The
+  ~0.6 ms note contradicts arithmetic: the padded compact slice is
+  `5120 · 98336 · 0.5625 = 283 MB`, which at the measured 227 GB/s cannot be
+  read in under **1.25 ms**. Either the note is stale, the slice is not fully
+  read per draft step, or `BW_eff` for that access pattern is much higher than
+  the whole-model figure. This changes the head-cost term in *every* campaign
+  cost model, so PR #5 was asked to settle it. The original note follows.
 - **Further draft-vocabulary trimming.** Compact-head read is only ~0.6 ms per
   draft step (`Qwen35.swift:2054-2060`), and a uniform 49,152 halving already
   regressed (accept 1.00 → 0.877) because three committed argmax ids lived above
@@ -484,8 +690,10 @@ infrastructure that makes every later experiment more trustworthy.
    together. High ceiling, high numerical risk — needs an exact-row gate, not
    just argmax matching.
 0b. **Pad the verify batch from 9 to 10 rows** to cross `vector_limit` into
-   `qmm_t_splitk` and read weights once. PR #5 owns the kernel-level curve that
-   *predicts* the effect; PR #1 owns the system-level end-to-end data point.
+   `qmm_t_splitk`. **Now double-purpose:** it is also the only cheap way to
+   break the `(H, verify-slope)` collinearity, because it is the one reachable
+   `(d, w)` point off the `w = d+1` diagonal. PR #5 owns the kernel-level curve
+   that *predicts* the effect; PR #1 owns the system-level end-to-end data point.
    Deliberately independent, so the two form a cross-check rather than a
    duplicate. **Caveat now on record:** S = 10 leaves several width-gated fast
    paths — `fusedInProjections` (`S <= 9`), `qwen35PackedGDNPreworkKernel`
@@ -559,3 +767,15 @@ infrastructure that makes every later experiment more trustworthy.
     That leaves thermal throttling or scheduler variance accumulating over 512
     rounds. This is the single largest unexplained number touching the stall
     guardrail, which fails closed. Worth a slot once the current four report.
+16. **Settle the compact-draft-vocabulary read cost.** The in-code note says
+    ~0.6 ms per draft step (`Qwen35.swift:2054-2060`); the padded slice is
+    `5120 · 98336 · 0.5625 = 283 MB`, which at the measured 227 GB/s cannot be
+    read in under 1.25 ms. One of the two is wrong, and the answer sets the head
+    term `H` in every cost model on this board — 8 draft steps per round means
+    the difference is 5 ms of a ~161 ms round. Asked of PR #5 as a side
+    deliverable; promote to its own slot if that PR cannot answer it.
+17. **Off-diagonal `(d, w)` identification of `H`.** Every depth sweep confounds
+    the head cost with the verify width-slope because `w = d+1` always. A single
+    run at `d = 8, w = 10` (the width-padding experiment) breaks the collinearity
+    and yields `H` directly. Cheap, and it converts PR #1's curve from a policy
+    input into a mechanistic decomposition.
