@@ -7,33 +7,172 @@ Replaces the scalar `headStepCostRatio = 0.20` in `costModelDepth`
 marginal cost vector, and repairs the depth-selection rule that the scalar had
 made safe.
 
+## Provenance (revision r2, step 1)
+
+| field | value |
+| --- | --- |
+| host | AWS Mac mini, Apple **M4 Pro**, 14 CPU (10P/4E), 20 GPU cores |
+| memory profile | **48 GB** unified, single resident model process, wrapper run lock held |
+| OS | macOS 26.5.2 |
+| toolchain | Xcode 26.6 (17F113), Swift 6.3.3 |
+| `BASE_SHA` (r2) | `67bde70274c42aef089ac73cf00608d8037a815e` |
+| `UPSTREAM_SHA` | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
+| merge commit onto r2 base | `0bb21a67a80510f59ac8a461fbb9045652a6dae8` |
+| head actually loaded | declared 4-bit head, `--head-dir …/mtp-head-declared` |
+| `head_provenance_sha256` reported by the harness | `54930a1d281ff3ec4373fc2befd190afdb67ee09ffd90e8fc60e4d1f538bfc4b` |
+| `shasum -a 256` of the resolved head weight file | `0e267a482e74c2664ce41dc4c4326f480020d015372fc9f7654ea3a136d62815` (`model.safetensors`, 238,934,093 B) |
+| `mtp-head.manifest.json` `sha256` | `cc209e30d8a7def1fc4d785be22b0ec40e16ae6763f9591255a1996a34f08f0d` |
+
+The three digests are all consistent; the reconciliation is in "Head
+provenance" below. In one line: the manifest digest is a **tree digest** over
+`{model.safetensors}` only, the harness digest is the same tree digest over
+`{config.json, model.safetensors}`, and `research/fetch-declared-head.sh` adds
+that `config.json` **after** verifying the manifest because
+`benchmark-qwen-mtp.sh:215` refuses a head directory without one. The weights
+are bit-identical to the manifest.
+
+The official runner is the M5 host `m5-qwen38-27b-mtp`. **Every number in this
+report is M4 Pro.** Where M5 transfer is at risk it is called out explicitly.
+
+## Window labels
+
+Revision r2 and comment 9 require every number to carry its decode window.
+Three windows appear here and they are **not interchangeable**:
+
+| window | label | what it is good for |
+| --- | --- | --- |
+| 64 tokens | **inner-loop screen** | does the binary run, does the probe fire, is fidelity intact |
+| 256 tokens | **labelled directional screen** | shape of the cost curve; sits entirely **before** the EOS boundary |
+| 512 tokens | **ranked-equivalent headline** | the only window quoted as a result |
+
+The prefill constant is why these cannot be mixed. Measured on this host from
+`score.json` alone, with no trace: serial decode is `0.0814 s/token` at 256 and
+`0.07359 s/token` at 512, so `256·0.0814 = 20.84 s` and `512·0.07359 = 37.68 s`.
+Differencing gives **65.8 ms per pure serial round** and an implied prefill of
+`20.84 − 256·0.0658 = 4.00 s`. That reproduces the parent-clock constant
+`P = 4.0086 s` supplied in comment 4 to **0.2%**, and reproduces this report's
+trace-measured `C(0) = 65.0 ms` to **1.2%**, from two completely independent
+routes. A 256-token quote therefore carries **19.2%** prefill and a 512-token
+quote **10.6%**; the difference alone moves an apparent speedup by ~10%.
+
+## Revision r2: what I could and could not do
+
+r2 mandates "push and post after each step, do not batch", with a provenance
+comment posted before any measurement. **I do not have the
+`post_assignment_comment` tool in this session** — my only GitHub write path is
+`submit_experiment_result`, which is terminal. I therefore could not post
+per-step comments, and this is a harness capability gap, not a decision to
+batch. Everything r2 asked to be posted incrementally is instead recorded here
+in the mandated order, with the provenance table first, endpoints before
+interior, interior before policy. The per-arm `meta.txt` files under
+`research/out/` carry the start/finish timestamps that would have gone into
+those comments.
+
+Two further r2 constraints and how they are met:
+
+- **"Do not carry measurements across the boundary."** The r1 base predated the
+  EOS fix and every 512-token run on it died at ~token 301. All headline
+  numbers below were re-measured on the merged r2 base. Where a 256-token
+  number from before the boundary is still quoted, it is quoted **as a
+  directional screen and labelled as such** — never as a headline — and the
+  reason it remains valid is proved separately: the removed
+  `stoppedEarly` suppression in `recordAcceptOutcome` could only fire once a
+  stop token had been seen, and the public trajectory's first EOS is at decode
+  index ≈301, so a 256-token window never reached the changed branch. The
+  256-token acceptance path is provably identical across the boundary.
+- **"Report `m(d)` and `h(d) = m(d)/V(1)`; do not present a separated `H`."**
+  Both are below. The separated `H` that *is* reported is not a sweep
+  decomposition — see the next section.
+
+## Literature: the cost form is adopted, not invented
+
+`C(d) = V(d+1) + d·H + c` is **Sequoia**'s cost model (Chen et al.,
+*Sequoia: Scalable and Robust Speculative Decoding*, NeurIPS 2024,
+arXiv:2402.12374) written in this campaign's variables. Sequoia optimises
+`Speedup(n, d) = G(n, d) / (t(n) + d·c)` where `t(n)` is the **measured**
+forward-pass time at batch width `n`, and Appendix G.5 records exactly the
+shape this report measures: *"forward pass times are roughly constant for low
+values of n, but then eventually start growing roughly linearly."* With
+`n = d + 1` that is `V(d+1)`. Sequoia measures `t(n)` per model **and per
+hardware** and then grid-searches the tree; it does not assume a scalar. The
+form here is theirs; only the measurement and the argmin rule are mine.
+
+Two more recent systems are direct precedent for the specific thing this
+experiment ships:
+
+- **D-cut** (arXiv:2607.14647) profiles a latency table at **engine startup**
+  and reads an argmax from it at run time, explicitly moving away from
+  *"treating each extra draft position as having a constant cost"* — i.e. away
+  from `headStepCostRatio = 0.20`. Their selector costs **0.55–0.58 ms/step**,
+  which on a 65 ms round would be 0.9% of a serial round and would eat most of
+  the win available here. **This implementation therefore keeps selection to a
+  table lookup plus a comparison, never a search.**
+- **DSpark** (arXiv:2607.05147): *"the capacity curve is profiled once during
+  engine initialization and stored as a lightweight cost table."* DSpark also
+  reports that the capacity curve is **jagged and non-unimodal**, which is why
+  they removed early stopping from their depth selector. That warning applies
+  directly: the curve measured here is non-monotonic, so the shipped rule
+  **scans every `d` from 0 to 8 and never stops at the first non-improving
+  depth**.
+
+**DSpark §5.2 leakage caveat, answered explicitly.** A per-round argmin that
+consumed current-round information could in principle leak future-token
+information. The rule shipped here reads exactly two things: the
+`positionAcceptEMA` vector (a running statistic over **already-verified**
+outcomes from previous rounds) and the cost table (input-independent, measured
+at warm time). **It never reads the identities of the drafted tokens, their
+logits, or any pre-verification confidence.** Depth is chosen *before* the
+drafts for that round exist. There is no path from draft content to depth.
+
+**ECHO** (arXiv:2604.09603) offers a 3-parameter hinge fallback
+`C(d) ≈ C₀·(1 + γ·[d − d_knee]₊)`. It is not used: the measured table is
+strictly more faithful and costs the same at run time (8 doubles).
+
 ## Section 1 — the curve (measurement, not policy)
 
 ### Definition and the identifiability limit
 
 `C(d)` is the mean wall-clock of one full-accept decode round at chosen depth
-`d`. `m(d) = C(d) - C(d-1)` is the marginal cost of the `d`-th draft, and
-`h(d) = m(d) / C(0)` expresses it in the unit the cost model already uses (one
-serial round = 1).
+`d`. `m(d) = C(d) - C(d-1)` is the **combined** marginal cost of the `d`-th
+draft. Revision r2 asks for it normalised by the width-1 verify, `h(d) =
+m(d) / V(1)`; the shipped cost model normalises by the full zero-draft round,
+`m(d) / C(0)`. **These differ by 0.05% and nowhere else in this report does the
+choice matter**: measured `V(1) = 65,044 µs` and `C(0) = 65,009 µs`, i.e.
+`C(0)/V(1) = 0.999468`. Every `h(d)` printed below is `m(d)/C(0)`; multiply by
+`0.999468` for `m(d)/V(1)`. That near-identity is itself a result — it says the
+round-level overhead `c` outside the verify graph is at the noise floor.
 
-**`h(d)` is a COMBINED per-draft marginal: one proposal-head step plus the
-increment in target verify width from `d` to `d+1` rows.** Verify width is
-always `d + 1` (`Qwen36MTPBlockSession.swift:962-964, 978-980`), so head cost
-`H` and the verify-width slope `V(d+1) - V(d)` are perfectly collinear across
-any depth sweep. **Nothing in the measured table below is a measurement of
-head-step cost in isolation and no such claim is made.**
+### The one place a separated `H` appears, and why it is not a sweep decomposition
 
-The collinearity is now broken **by direct measurement rather than by a padding
-arm**, because comment 7 required a head-agnostic policy and that forces the
-same separation. `probeResidentHeadCost` times an isolated single-token head
-step — `mtpHeadHiddenForward` chained into `draftTokenID`, the exact expression
-a deep draft sub-step dispatches — and an isolated single-row verify, on
-throwaway caches, inside the existing warm phase and outside every timed
-window. That yields `H` and `V(1)` separately, so `V(d+2) - V(d+1) = m(d+1) - H`
-follows. See "Making the policy head-agnostic" below for the measured values
-and for the one caveat (an isolated head step is not overlapped with a verify
-graph build, so it is an upper bound on the head's marginal wall-clock
-contribution inside a real round).
+Revision r2 is right that **head cost and verify-width slope are perfectly
+collinear across a depth sweep** and that a separated `H` must not be presented
+as if the sweep had produced it. Verify width is always `d + 1`
+(`Qwen36MTPBlockSession.swift`, `verify` row construction), so every
+`m(d) = H + [V(d+1) − V(d)]` and no depth sweep can split that sum. **No number
+in the measured table below is a sweep-derived head cost, and no such claim is
+made anywhere.**
+
+A separated `H` nevertheless appears once, because comment 7 required the
+policy to be **head-agnostic** — "a single frozen table is the one option I will
+not accept" — and a head-agnostic table is impossible without separating the
+head term. The separation is obtained by **direct isolated measurement, not by
+decomposition of the sweep**: `probeResidentHeadCost` times a single-token head
+step with **no verify in the graph** and a single-row verify with **no head in
+the graph**, on throwaway caches, inside the existing warm phase and outside
+every timed window. Two isolated timings are not a regression on eight
+collinear points; the collinearity is broken by construction, not by fitting.
+The two instructions are therefore both satisfied: `m(d)` and `h(d)` are the
+headline fit, and `H` is reported separately and labelled as a direct
+measurement.
+
+One honest caveat on that probe: an isolated head step is not overlapped with a
+verify graph build, so it is an **upper bound** on the head's marginal
+wall-clock contribution inside a real round.
+
+The probed head step is `mtpHeadHiddenForward` chained into `draftTokenID` —
+the exact expression a deep draft sub-step dispatches. Measured values and the
+head-agnostic reparameterisation they enable are in "Making the policy
+head-agnostic" below.
 
 ### Exclusion rule
 
