@@ -93,3 +93,63 @@ clamp's favour on prose, which is what T3 exists to check.
 - `research/e11-build.sh` rewrites the working-tree copy of
   `Qwen36MTPBlockSession.swift` per arm and restores it on EXIT. Read that file
   with `git show` while a build is running.
+
+## C1 measured: the ternary is visible in the parent's own histogram
+
+First timed arm, 512 decode tokens, declared 4-bit head `54930a1d`:
+
+| field | C1 |
+| --- | --- |
+| serial s/tok | 0.074336291 |
+| MTP s/tok | 0.032924979 |
+| local ratio | 2.2578 |
+| round_count | 88 |
+| effective_mean_draft_len | 5.386 |
+| accepted_draft_rate | 0.8945 |
+| accepted / rejected drafts | 424 / 50 |
+| declared rows = checked rows | 562 = 562 |
+| all_tokens_matched | true |
+| residual_divergence_count | 0 |
+
+Parent depth histogram: `{1:1, 3:2, 4:39, 5:3, 6:5, 7:38}`.
+
+This is direct confirmation of the ternary reading, not an inference. The two
+tall bars sit at *exactly* `sdpaWidthWallDepthCap = 4` (39 rounds) and
+*exactly* `segmentedVerifyDepthCap = 7` (38 rounds), with only 11 rounds spread
+across every other depth. Under the flat `h = 0.20` control the cost model
+always wants to go deeper than it is allowed, so each round is decided by
+whichever cap the streak gate selected. The histogram is therefore a direct
+readout of the gate's hot/cold split, and each arm's structural claim can be
+falsified from the trusted parent alone.
+
+Consequences for the arm table:
+
+- **W5** must move the 39-round bar from 4 to 5 and leave the 7 bar in place.
+  If the depth-4 bar survives, the sed did not reach the scored path and the
+  arm is void regardless of its timing.
+- **C8** must move the 38-round bar from 7 to 8.
+- **H** must collapse nearly everything to depth 3, *below* both caps. That is
+  the same clamp the reach analysis predicts analytically, so the histogram is
+  an independent check on it — and it is why `H8 == H`: a cap at 8 cannot bind
+  a curve that stops at 3.
+
+The flat control reaching depth 7 is not in tension with the depth-3 clamp
+result: the clamp is a property of the measured curve
+(`defaultHeadStepCostRatioByDepth`), not of flat `h = 0.20`.
+
+### Magnitude expectation for H, revised upward
+
+C1 emits 512 tokens in 88 rounds. A curve clamped to depth 3 at the same
+acceptance would need roughly `512 / (3 * 0.8945 + 1) ~= 140` rounds, i.e.
+about 1.6x the target verifications. The original "+1.0% to +1.5%" guess for
+H was calibrated before this histogram existed and is very likely far too
+small; H should lose by substantially more on this fixture. Recorded here so
+the miss is scored honestly rather than quietly rewritten after the fact.
+
+### Fixture caveat carried into every conclusion
+
+`accepted_draft_rate = 0.8945` on the copy-task fixture is close to the
+best case for deep drafting. The hidden pool is eight prose prompts with
+calibration ratios 0.8467 to 1.0726. Any arm that wins here purely by drafting
+deeper (C8, W5) is winning in the regime most favourable to it, so a local win
+is weak evidence for the ranked pool and must be labelled as such.
