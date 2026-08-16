@@ -559,9 +559,9 @@ This is the ranked-equivalent replacement: every row a dedicated forced-depth
 arm at 512 decode tokens, declared 4-bit head, same host, one arm at a time
 through the run lock and the 40 C gate.
 
-Each arm runs its own serial leg, so the serial column is five independent
-measurements spread over ~4 hours. They span **0.073366–0.073918 s/token, a
-0.75 % spread** — the thermal and host control for everything below.
+Each arm runs its own serial leg, so the serial column is six independent
+measurements spread over ~4.5 hours. They span **0.073366–0.074426 s/token, a
+1.4 % spread** — the thermal and host control for everything below.
 
 | d | serial s/tok | MTP s/tok | **speedup** | eff_draft | accept rate | matched | div |
 |---:|---:|---:|---:|---:|---:|:---:|---:|
@@ -569,6 +569,7 @@ measurements spread over ~4 hours. They span **0.073366–0.073918 s/token, a
 | 1 | 0.073366 | 0.044092 | 1.6639 | 1.000 | 0.9807 | ✅ | 0 |
 | 2 | 0.073418 | 0.034140 | 2.1505 | 1.994 | 0.9490 | ✅ | 0 |
 | 3 | 0.073918 | 0.031925 | **2.3153** | 2.985 | 0.9475 | ✅ | 0 |
+| 4 | 0.074426 | 0.033061 | 2.2512 | 3.973 | 0.9222 | ✅ | 0 |
 | 8 | 0.073386 | 0.034268 | 2.1415 | 7.941 | 0.8222 | ✅ | 0 |
 
 `d = 0` reproducing **1.0033** is the calibration anchor: forcing zero drafts
@@ -576,32 +577,44 @@ costs 0.33 % against the serial leg, so `C(0) ≈ V(1)` and the shipped
 `zeroDraftRoundRatio = 0.999468` is correct to within measurement noise.
 
 Round-level costs from the same traces, `C(0)` pooled over the depth-0 control
-leg of **all five arms (N = 3060)**:
+leg of **all six arms (N = 3570)**. `C(d)` is measured over **full-accept
+rounds only** (`acc == d`), so it is the cost of the depth-`d` round mechanism
+itself and is not contaminated by the cheaper rejected rounds:
 
 | d | N | C(d) µs | median | sd% | m(d) µs | **h(d)** | C/C0 | eval µs | host µs |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 0 | 3060 | 65170.5 | 64757.0 | 4.4 | – | – | 1.000 | 29020.9 | 36147.9 |
-| 1 | 254 | 70931.1 | 70452.0 | 6.9 | 5760.6 | **0.0884** | 1.088 | 33796.3 | 37132.3 |
-| 2 | 163 | 75398.2 | 75114.0 | 2.8 | 4467.1 | **0.0685** | 1.157 | 35110.4 | 40285.4 |
-| 3 | 120 | 91828.3 | 91835.0 | 0.4 | 16430.2 | **0.2521** | 1.409 | 43525.8 | 48300.4 |
-| 8 | 45 | 198683.0 | 198611.0 | 0.3 | 34511.0/4 = 8627.8 | **0.1324**/step | 3.049 | 93032.1 | 105648.3 |
+| 0 | 3570 | 65281.4 | 64797.0 | 4.1 | – | – | 1.000 | 28958.5 | 36321.4 |
+| 1 | 255 | 70938.6 | 70454.0 | 6.9 | 5657.1 | **0.0867** | 1.087 | 33796.0 | 37140.0 |
+| 2 | 163 | 75398.2 | 75114.0 | 2.8 | 4459.6 | **0.0683** | 1.155 | 35110.4 | 40285.4 |
+| 3 | 120 | 91828.3 | 91835.0 | 0.4 | 16430.2 | **0.2517** | 1.407 | 43525.8 | 48300.4 |
+| 4 | 94 | 117491.6 | 116952.0 | 4.2 | 25663.3 | **0.3931** | 1.800 | 53555.7 | 63933.5 |
+| 8 | 45 | 198683.0 | 198611.0 | 0.3 | 81191.3/4 = 20297.8 | **0.3109**/step | 3.043 | 93032.1 | 105648.3 |
 
-The five per-arm depth-0 controls agree to **0.7 %** (65046.1, 65065.0,
-65100.0, 65256.1, 65512.2 µs), which is what licenses pooling `C(0)` and
-comparing `C(d)` measured hours apart.
+The six per-arm depth-0 controls agree to **1.4 %** (65046.1, 65065.0,
+65100.0, 65256.1, 65512.2, 65947.4 µs), which is what licenses pooling `C(0)`
+and comparing `C(d)` measured hours apart. Normalising every round by its own
+arm's control instead of the pool moves the ratios by less than 0.02:
+`[0.0902, 0.0680, 0.2435, 0.3803]` for `d = 1..4`.
+
+`d = 5, 6, 7` are still missing at this window; the 256-token screen put them
+on the plateau but with N = 2 at `d = 5` and N = 7 at `d = 7`, which is why
+they are not quoted as measured here.
 
 #### Two results that the scalar cost model cannot express
 
 **1. `m(2) < m(1)`.** The second draft step is *cheaper in absolute terms* than
-the first: 4467 µs against 5761 µs. A model of the form `C(d) = V(d+1) + d·H`
+the first: 4460 µs against 5657 µs. A model of the form `C(d) = V(d+1) + d·H`
 with any constant `H` forces the marginal to be non-decreasing once verify
 width costs are monotone, so no scalar `headStepCostRatio` — 0.20 or any other
 value — can reproduce this. It is not noise: `d = 2` has N = 163 at sd 2.8 %
 and `d = 1` has N = 254.
 
-**2. A 3.7× knee at `d = 3`.** `h` jumps from 0.0685 to 0.2521 in one step.
+**2. A 3.7× knee at `d = 3`.** `h` jumps from 0.0683 to 0.2517 in one step, and
+`d = 4` then pushes it further to 0.3931 — the knee is a step into a new, more
+expensive regime, not a one-off spike.
 The shipped scalar 0.20 is therefore **2.3× too high at `d = 1`, 2.9× too high
-at `d = 2`, and 26 % too low at `d = 3`** — it is wrong in *both directions*
+at `d = 2`, 26 % too low at `d = 3`, and 2.0× too low at `d = 4`** — wrong in
+*both directions*
 inside the range the scheduler actually chooses from. This is the direct answer
 to the assignment's question, and the answer is choice **(c), "something
 else"**: a cheap-flat region, a sharp knee, then a plateau.
@@ -609,21 +622,35 @@ else"**: a cheap-flat region, a sharp knee, then a plateau.
 #### The realised optimum on this fixture is `d = 3`, not `d = 8`
 
 Decode-round-only seconds per token, from the trace rather than the score file
-(so prefill and warmup are excluded):
+(so prefill and warmup are excluded). This averages over **every** post-warmup
+round, accepted and rejected, so unlike `C(d)` above it is realised throughput:
 
-| d | tokens/round | MTP-leg s/token | vs best |
-|---:|---:|---:|---:|
-| 0 | 1.000 | 0.065046 | +171 % |
-| 1 | 1.981 | 0.035910 | +49.8 % |
-| 2 | 2.897 | 0.026112 | +8.9 % |
-| 3 | 3.840 | **0.023980** | — |
-| 8 | 7.523 | 0.026528 | +10.6 % |
+| d | rounds | tokens | tokens/round | MTP-leg s/token | vs best |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 510 | 510 | 1.000 | 0.065043 | +171 % |
+| 1 | 257 | 509 | 1.981 | 0.035910 | +49.8 % |
+| 2 | 175 | 506 | 2.891 | 0.026112 | +8.9 % |
+| 3 | 132 | 505 | 3.826 | **0.023980** | — |
+| 4 | 108 | 503 | 4.657 | 0.025059 | +4.5 % |
+| 8 | 66 | 494 | 7.485 | 0.026528 | +10.6 % |
 
-Drafting **past `d = 3` loses 10.6 %** on this fixture, and the leg-level score
-agrees (2.3153 at `d = 3` against 2.1415 at `d = 8`). Depth 8 buys 1.96× more
-tokens per round than depth 3 but pays 2.16× more per round, so it is on the
-wrong side of the knee. The extra cost is not acceptance-driven — per-position
-acceptance is flat at ~0.95 with no depth decay — it is the `C(d)` knee.
+Drafting **past `d = 3` loses 4.5 % at `d = 4` and 10.6 % at `d = 8`**, and the
+leg-level score agrees on the ordering (2.3153, 2.2512, 2.1415). Depth 8 buys
+1.96× more tokens per round than depth 3 but pays 2.16× more per round, so it
+is on the wrong side of the knee.
+
+Two distinctions matter for reading these two tables together, because they
+disagree if you conflate them. `C(d)/(d+1)` computed from the full-accept table
+would make `d = 8` look *best* at 22076 µs/token — that number is conditional
+on all eight drafts being accepted, which happens in only 45 of 65 depth-8
+rounds. The realised column above is the one that predicts the leg score, and
+it is worse at `d = 8` because 32 % of depth-8 rounds pay for a rejection.
+Correspondingly the extra cost at `d = 8` is *partly* acceptance-driven after
+all: `accepted_draft_rate` falls 0.9475 → 0.9222 → 0.8222 across `d = 3, 4, 8`
+even though per-position acceptance inside the depth-8 arm is flat at ~0.95.
+The two facts are consistent — flat per-position acceptance still compounds, so
+the chance of a clean sweep decays geometrically in depth while the per-round
+cost climbs past the knee.
 
 #### The curve predicts the end-to-end policy A/B to within 1 %
 

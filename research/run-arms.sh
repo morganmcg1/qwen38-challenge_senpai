@@ -6,7 +6,7 @@
 # batching arms is the only way to fit a depth sweep inside the job wall clock.
 # A failing arm does not abort the batch: a partial sweep still fits a curve.
 #
-# usage: research/run-arms.sh --tokens N --head-dir DIR ARM [ARM ...]
+# usage: research/run-arms.sh [--rebuild] --tokens N --head-dir DIR ARM [ARM ...]
 # where ARM is a depth 0..8 (forced), `NAME=adaptive` (schedule decides), or
 # `NAME=adaptive@V` to substitute the cost curve -- V is either eight
 # comma-separated ratios or one scalar repeated eight times. A scalar makes
@@ -17,13 +17,23 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 tokens=256
 head_dir=""
+rebuild=0
 while (($#)); do
   case "$1" in
     --tokens) tokens="$2"; shift 2 ;;
     --head-dir) head_dir="$2"; shift 2 ;;
+    --rebuild) rebuild=1; shift ;;
     *) break ;;
   esac
 done
+
+# Rebuilding here rather than letting the first arm absorb it keeps the build
+# off the far side of that arm's cool gate, so every arm in the batch is timed
+# against the same thermal preparation.
+if ((rebuild)); then
+  echo "=== run-arms.sh: rebuild at $(date -u +%H:%M:%SZ) ==="
+  research/rebuild.sh || exit 1
+fi
 
 rc=0
 for spec in "$@"; do
