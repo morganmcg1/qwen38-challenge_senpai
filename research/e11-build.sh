@@ -8,10 +8,15 @@
 # so "two arms that had to differ but shared a hash" is a detectable failure
 # rather than a silently duplicated measurement.
 #
-# Only the H recipe is shippable. The cap edits (C8/H8/F3) are arm scaffolding:
-# built, measured, and never committed. Note the polarity: since PR #2 merged,
-# cap 7 is the SHIPPED default, so the cap arms open the cap back to 8 (C8/H8)
-# rather than closing it.
+# Only the H recipe is shippable. Every cap edit (C8/H8/F3/W5/W6) is arm
+# scaffolding: built, measured, and never committed. Note the polarity: since
+# PR #2 merged, cap 7 is the SHIPPED default, so the cap arms open the cap back
+# to 8 (C8/H8) rather than closing it.
+#
+# The two caps are the two arms of ONE ternary, selected per round by the
+# full-accept streak gate, so an arm moves either the HOT ceiling
+# (segmentedVerifyDepthCap: C8/H8) or the COLD floor (sdpaWidthWallDepthCap:
+# W5/W6), and F3 pins both to 3.
 #
 # usage: research/e11-build.sh ARM [ARM ...]
 set -uo pipefail
@@ -33,7 +38,7 @@ trap restore EXIT
 # h); H/H8 start from this branch's committed measured-curve default.
 materialise() {
   case "$1" in
-    C | C8 | F3) git show "${base_sha}:${src}" > "${src}" ;;
+    C | C8 | F3 | W5 | W6) git show "${base_sha}:${src}" > "${src}" ;;
     H | H8) git show "HEAD:${src}" > "${src}" ;;
     *) echo "e11-build: unknown arm $1" >&2; return 2 ;;
   esac
@@ -46,6 +51,14 @@ materialise() {
         "${src}"
       sed -i '' 's/^\( *private static let segmentedVerifyDepthCap = \)7$/\13/' \
         "${src}" ;;
+    # The COLD arm of the widthCap ternary. Cap 7 stays, so these raise the
+    # floor without touching the ceiling.
+    W5)
+      sed -i '' 's/^\( *private static let sdpaWidthWallDepthCap = \)4$/\15/' \
+        "${src}" ;;
+    W6)
+      sed -i '' 's/^\( *private static let sdpaWidthWallDepthCap = \)4$/\16/' \
+        "${src}" ;;
   esac
 }
 
@@ -55,7 +68,7 @@ materialise() {
 assert_arm() {
   local arm="$1" want ok=1
   case "${arm}" in
-    C | C8 | F3) want='private static let headStepCostRatio = 0.20' ;;
+    C | C8 | F3 | W5 | W6) want='private static let headStepCostRatio = 0.20' ;;
     H | H8) want='private static let defaultHeadStepCostRatioByDepth: \[Double\] = \[' ;;
   esac
   grep -qE "^ *${want}" "${src}" || { echo "e11-build: ${arm}: missing h form" >&2; ok=0; }
@@ -63,6 +76,8 @@ assert_arm() {
   case "${arm}" in
     C8 | H8) segcap=8 ;;
     F3) width=3; segcap=3 ;;
+    W5) width=5 ;;
+    W6) width=6 ;;
   esac
   grep -qE "^ *private static let sdpaWidthWallDepthCap = ${width}$" "${src}" \
     || { echo "e11-build: ${arm}: sdpaWidthWallDepthCap != ${width}" >&2; ok=0; }
