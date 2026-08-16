@@ -1139,3 +1139,103 @@ floor `P = 4.0086 s` as transferable.
 surgical. Env-var results are **not submittable** — this is a measurement lever
 only. Note PR #5 measured `vector_limit = 10` empirically rather than assuming it,
 confirming the table read.
+
+---
+
+## ★★★ Honest strategic reading — the campaign is knowledge-rich and win-poor
+
+Written deliberately, because the record above is flattering and the scoreboard
+is not.
+
+**What we have produced:** a measured per-width cost law that replaced two
+wrong models; a proof that widths 1..9 are bitwise-safe; a resolved `h(3)`
+anomaly; a two-method cross-validation; several permanently closed dead ends;
+an instrument on the base. That is real science and it will not have to be
+redone.
+
+**What we have shipped to the scoreboard: nothing.** Senpai still has **zero
+official submissions**. The promoted frontier is 2.9042110287045
+(`e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd`, `sourceRef 7351e626…`), and that
+frontier **already contains crossrow** (`1033e1a` has 22 hits). Everything the
+campaign has added on top of it — `b219009`, the PR #3 merge, the PR #5 merge,
+these docs — is either research-only or behavioural-but-unquantified.
+
+⇒ **We currently hold no measured scored win.** Every one of the four live
+experiments is exploratory. That is the correct thing to be uncomfortable
+about, and it is why the round-2 slate below is deliberately weighted toward
+*small, cheap, one-constant or one-precision changes with a pre-computed
+expected value*, and away from further characterization.
+
+Reference points: `d(score)/d(candidate_seconds) ≈ −0.4335`, so 100 ms ≈
++0.043, and 2.904 → 3.0 is ≈ 220 ms. Neither of the two leads below closes
+that alone. **Do not expect one experiment to reach 3.0.**
+
+## Live slate — all four students assigned (base `b2419f41`)
+
+| PR | Student | Assignment | Expected value | Why now |
+|---|---|---|---|---|
+| #1 | edward | depth marginal cost curve (r2, running) | evidence, not speed | d=7/d=8 arms are the decisive test of `d* = 7` |
+| #2 | alphonse | **r3 — `segmentedVerifyDepthCap` 8 → 7, one constant** | −1.9% to −3.2% ms/tok | cheapest possible shot at a scored win |
+| #7 | askeladd | 2-bit/3-bit compact draft readout | −0.28 to −0.55 ms **per draft step** | the only sized lead with a byte-count floor behind it |
+| #8 | thorfinn | crossrow `NA_max` 4 → 5 | mechanism test first, ms second | `NA=5` moves the stream count at **exactly M=5 and M=9** and nowhere else |
+
+Deliberately **not** assigned: further characterization work. We have enough.
+
+## Pre-registered predictions (timestamped before the data lands)
+
+Recorded here and posted to PR #1 so that a later fit cannot be passed off as a
+prediction. Score these honestly when the results arrive.
+
+1. **`d* = 7`** — d=7 beats d=8 by ≈2% ms/token at q≈1.0, more as q falls.
+2. **The depth curve is non-monotone** — d=3 beats d=4.
+3. **`H ≈ 3.73 ms`** per head-step; per-round constant `c ≈ 4.46 ms`.
+4. **The M≈4 ramp will NOT move under `NA=5`.** The ramp and the boundaries
+   looked separable in PR #5's data; `NA=5` should touch only the boundaries.
+   If the ramp moves too, the two-component model is wrong.
+5. **Lowering *draft* precision cannot change the emitted token stream.**
+   Confirmed structurally — acceptance is
+   `acceptedDraftPrefixCount(drafts:verifyArgmax:)`, the first index where
+   `verifyArgmax[i] != drafts[i]` — but **still to be verified by parity run**,
+   because "matching one argmax is insufficient" is a standing hazard.
+
+Known way for 1–3 to be wrong: the model behind them assumes acceptance is
+**position-independent**, and `positionAcceptEMA` exists precisely because it
+is not.
+
+My round-1 prediction record, for calibration: boundary *location* correct;
+branch correct; **`ceil(M/4)` magnitude wrong; roofline knee wrong; both
+magnitude bands under-predicted** (raw `cost(9)/cost(1)` predicted 2.0–2.4,
+measured 2.980). **The structural reads have been sound; every magnitude
+attached to them has not.** Weight predictions 4 and 5 accordingly — 4 is
+structural, and I trust it more than any number I have attached to it.
+
+## ★★ Advising lesson — I amended one brief thirteen times and got zero commits
+
+PR #2 accumulated **13 advisor comments and 0 student commits**. I had been
+reading that as the student being silent. On review the causal story is the
+reverse: each comment *added* scope — width-9 exactness, then the hexfloat
+gate, then the staircase, then the guardrail statistic, then cap-7 — until the
+brief was unfinishable and probably unreadable.
+
+Corrective action taken: r3 discards the entire history and replaces it with
+**one constant**, explicitly telling the student that nothing prior is still
+required, and that the fault was mine.
+
+**Standing rule, added:** *an amendment must remove at least as much scope as
+it adds.* If it cannot, the right move is a fresh revision that resets the
+brief — not another comment. "Feedback volume is not progress" was already
+policy; this is its sharper form. Also: when a student produces nothing for a
+long time, **suspect the brief before suspecting the student**, and ask them
+directly whether the obstacle is on my side or the host's.
+
+## Consequence of PR #5 for the other briefs (already communicated)
+
+- **Alphonse's Part A is largely dead, in a good way.** The width-9 hexfloat
+  row gate is unnecessary for the *projection* path — widths 1..9 are
+  bitwise-identical to M=1 on 8/8 scored shapes. SDPA/attention and GDN remain
+  uncovered, but nothing live depends on them now.
+- **Edward gains a deleted confound class.** Any token movement across depths
+  in his sweep is policy or head, never the verify matmul.
+- **Everything I told either of them about the `ceil(M/4)` magnitude or the
+  `M* = 7.9` knee is refuted** and was explicitly retracted in-thread.
+
