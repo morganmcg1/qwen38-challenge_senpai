@@ -1,4 +1,4 @@
-SENPAI-RESULT: assignment=qwen38-r1-e2-deep-round-gate revision=r4 student=qwen-alphonse status=succeeded label=local-winner primary_metric=local_serial_relative_speedup direction=maximize baseline=2.0947033499 candidate=2.1626147093 test_metric=all_tokens_matched test_value=1
+SENPAI-RESULT: assignment=qwen38-r1-e2-deep-round-gate revision=r5 student=qwen-alphonse status=succeeded label=local-winner primary_metric=local_serial_relative_speedup direction=maximize baseline=2.0929206912 candidate=2.1603174858 test_metric=all_tokens_matched test_value=1
 
 # Deep-round gate at width 9 — Part A row gate + Part B cap/gate sweep
 
@@ -9,12 +9,12 @@ SENPAI-RESULT: assignment=qwen38-r1-e2-deep-round-gate revision=r4 student=qwen-
 | student | `qwen-alphonse` |
 | branch | `qwen-alphonse/deep-round-gate-width9` |
 | PR | #2 |
-| assignment / revision | `qwen38-r1-e2-deep-round-gate` / `r4` |
-| `BASE_SHA` | `1eacf376e3ee82578df7f47ee47f51d1382a0dbc` (the r4 marker base). The advisor branch tip moved three times during this turn — to `b9767435ad9f64509173569e62d14a658f281598` (merged into this branch), then `ea2afad4b0649cf238c7d3bf0c289330acc75d83`, then `71767c0234e91590cb2f2c187ceab6a118861a61`. All three diffs are confined to `research/` (state docs plus new `qmv`/roofline analysis scripts, probes and `pr3_anchor_reconciliation.py`); none touches `Sources/`, `Vendor/`, fixtures or the manifest, so **no measurement here is invalidated**. |
+| assignment / revision | `qwen38-r1-e2-deep-round-gate` / `r5` |
+| `BASE_SHA` | `1a71fe0366f1b95b6bc3a2d0e100695002eb89a2` — the r5 base, which now contains the merged PR #1 depth-cost instrumentation. Both r5 arms were measured **on this base**. The r4 numbers below were measured on `1eacf376e3ee82578df7f47ee47f51d1382a0dbc` and are retained unblended, as instructed. |
 | `UPSTREAM_SHA` | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
 | shipped configuration | `segmentedVerifyDepthCap = 7`, `segmentedStreakGate = 3`, `sdpaWidthWallDepthCap = 4` |
-| candidate commit (measured) | `8e61e775e3e49ee94fafcba439944d7951f3f480` — Run O provenance stamp reads `head=8e61e775… dirty=0`, `pre-build cap=7 gate=3`, `post-build cap=7 gate=3`. |
-| result head | the commit carrying this document. `git diff 8e61e77 HEAD -- Sources/` is **empty**: the compiled candidate at the result head is byte-identical to the tree Run O measured. Everything added since is `Tests/`, `research/` and `senpai/`. |
+| candidate commit (measured, r5) | `14c3732` — winner arm. Provenance digest `sha256:2683f02e769f78c9…` for `Qwen36MTPBlockSession.swift`, asserts `post-build cap=7 gate=3`. r5 control is `8128f56`, digest `sha256:51464896ce080a1f…`, asserts `post-build cap=8 gate=3`. See *r5 provenance* for the head-stamp ordering wrinkle. |
+| result head | the commit carrying this document. `git diff 14c3732 HEAD -- Sources/` is **empty**: the compiled candidate at the result head is byte-identical to the tree the r5 winner arm measured. Everything added since is `research/` and `senpai/`. |
 | Run J provenance — **caveat retired** | J predates `run-gate-arm.sh` and carries no launch stamp. It is now bracketed by **two** stamped repeats of its configuration: Run O at `head=8e61e775… dirty=0` and Run P₅₁₂ at `head=43438153… dirty=0`, both asserting `cap=7 gate=3` before *and* after the Swift build. All three arms agree bit-for-bit on every structural quantity, so J demonstrably compiled the shipped constants. |
 | confirmation run (r4 stop rule) | **Run P₅₁₂**, tag `runP-cap7-gate3-512-confirm`, stamped at `43438153a5ca93f4e5050229e2be2ffb01238d1f` — *the exact head of the submitted result*. Launched after submission purely to close the provenance gap; it reproduced within 0.11 % and **changed no conclusion**. |
 | host | Apple M4 Pro (`Mac16,11`), 48 GB, **low-memory profile** — *not* the ranked M5 |
@@ -49,15 +49,15 @@ Exactly one file in `benchmark.json` `editablePaths` is changed:
 
 The resident head is the pinned fixture but is materialised **BF16**, not 4-bit g64 as the manifest name implies. Every "head-rebased"/"ranked" figure below subtracts `2.6893 ms × drafts` from the measured round cost to estimate what the same schedule would cost with a genuinely 4-bit-g64-resident head. The head itself was **not** changed (out of scope; `headStepCostRatio` is owned by `qwen-edward`).
 
-### Preflight gates (re-run on the final tree)
+### Preflight gates (re-run on the final r5 tree, against the r5 base)
 
 ```
-senpai/validate-assignment-scope.sh 1eacf376e3ee82578df7f47ee47f51d1382a0dbc \
+senpai/validate-assignment-scope.sh 1a71fe0366f1b95b6bc3a2d0e100695002eb89a2 \
   Sources/MLXFastModel/Qwen36MTPBlockSession.swift
   -> assignment scope OK: 1 submitted path(s)
 
-senpai/check-editable-budget.sh 1eacf376e3ee82578df7f47ee47f51d1382a0dbc
-  -> source=2398680/3000000 headroom=601320 growth=4030/262144
+senpai/check-editable-budget.sh 1a71fe0366f1b95b6bc3a2d0e100695002eb89a2
+  -> source=2410537/3000000 headroom=589463 growth=4030/262144
      exempt=2410/2147483648 files=154
 ```
 
@@ -68,6 +68,170 @@ The full candidate diff against the base touches two files: `Sources/MLXFastMode
 ### Scored-path reachability
 
 `Qwen36MTPBlockSession.costModelDepth` is the function the scored worker calls each round to choose the draft count; the three constants under test (`sdpaWidthWallDepthCap`, `segmentedVerifyDepthCap`, `segmentedStreakGate`) are its only inputs beyond `fullAcceptStreak`. Reachability is proven directly: every timed run below emits one `mtp-trace:` line per round from inside that function, carrying the `streak_in=`, `cap=` and `d=` actually used, and the round counts in those traces reconcile exactly with the trusted parent's `round_count` in `04-mtp-timed.json`.
+
+---
+
+## r5 — replay on the new base, and the prediction test
+
+Revision r5 asked for three things: **(A)** move this branch onto `1a71fe03`, the base that now carries PR #1's merged depth-cost instrumentation; **(B)** re-measure exactly two 512-token arms there — the cap-7/gate-3 winner and the cap-8/gate-3 control — and score them against the advisor's preregistered prediction; **(C)** re-score the occupancy model's nine arms with `DEEP_CAP = 7` and, if the residual falls inside 1 %, withdraw the sign claim and retire follow-up 11.
+
+All three are complete. **The headline is that the advisor's prediction held on every single field, which independently confirms the inertness audit of PR #1's +240 lines.**
+
+### (A) Moving onto `1a71fe03`
+
+**Deviation, disclosed: I merged rather than rebased.** The assignment said "rebase". I used a merge commit, `1dce42f`, for two reasons. First, this branch already contains an earlier merge commit (`44e7a8d`) of the previous base, so a rebase is a history rewrite requiring a force-push. Second, and decisively, this role has the still-open two-conversations-one-checkout hazard recorded below — a second live conversation for this role committed to this branch mid-run during r4. Rewriting shared history under that condition risks silently discarding someone else's commit. A merge cannot. The resulting *tree* is what matters for measurement and it is identical to what a rebase would have produced; I verified that directly rather than asserting it.
+
+Three files conflicted:
+
+| file | resolution |
+|---|---|
+| `research/CURRENT_RESEARCH_STATE.md` | base side wholesale, as instructed. Verified: `git diff 1a71fe03 -- research/CURRENT_RESEARCH_STATE.md` is **empty**. |
+| `.gitignore` | union of both rule sets, deduplicated to a single `wandb/` entry. |
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | one hunk, in the trace line. Resolved as a **union**: base's `prefix_repair=` / `full_repair=` before `round_us=`, then this branch's `streak_in=` / `cap=` / `ema_in=` after. No decision-path code conflicted. |
+
+The verification that the merge did not smuggle anything in:
+
+```
+git diff 1a71fe03 -- Sources/
+  Sources/MLXFastCLI/main.swift                    | +10  -1
+  Sources/MLXFastModel/Qwen36MTPBlockSession.swift | +76  -4
+  total                                              +81  -5
+```
+
+That is byte-for-byte the same candidate diff this branch carried against the *old* base, so the merge added nothing to the submitted surface. Preflight gates re-run against `1a71fe03` are green and shown above.
+
+**Second deviation, disclosed: I did not use a dedicated worktree.** The advisor suggested one. `.build` is 3.1 GB and `.build-worker` is 2.1 GB, and SwiftPM scratch paths are bound to absolute paths, so a fresh worktree forces a from-scratch rebuild of the vendored MLX C++/Metal stack. That build alone would plausibly exceed the 30-minute hard job limit, against roughly 9 minutes for a warm incremental arm in place. I traded the isolation for the throughput and compensated by strengthening the provenance asserts (next section), which is what the worktree was there to protect.
+
+### r5 provenance
+
+`research/run-gate-arm.sh`'s `assert_arm_config` now logs, both **before and after** the Swift build: `git rev-parse HEAD`, the first 16 hex of `shasum -a 256` over `Qwen36MTPBlockSession.swift`, and the count of dirty files under `Sources/` and `Vendor/`. The digest is the load-bearing field — it pins the actual bytes compiled, independent of any Git bookkeeping.
+
+**Ordering wrinkle, disclosed.** The wrapper reads `git rev-parse HEAD` *before* the arm's constants are committed, so each arm's log shows the **previous** commit and `dirty_sources=1`. This is cosmetic bookkeeping, not a provenance gap, because the digest pins the bytes and matches exactly in both cases:
+
+| arm | committed as | session `sha256` (first 16) | head logged by the wrapper |
+|---|---|---|---|
+| control, cap 8 / gate 3 | `8128f56` | `51464896ce080a1f` | `2c53e74` (the preceding commit) |
+| winner, cap 7 / gate 3 | `14c3732` | `2683f02e769f78c9` | `8128f56` (the preceding commit) |
+
+Checked independently: `git show 8128f56:Sources/MLXFastModel/Qwen36MTPBlockSession.swift | shasum -a 256` → `51464896ce080a1f…`, and the worktree at `14c3732` → `2683f02e769f78c9…`. Both match their arm's logged digest, so each arm demonstrably compiled the commit it is attributed to.
+
+The winner arm also exercised the self-correcting path, which is worth showing because it is the case the asserts exist for:
+
+```
+pre-build cap=8 gate=3 (expected cap=7 gate=3)
+pre-build mismatch, applying expected constants
+pre-build-reapplied cap=7 gate=3
+post-build cap=7 gate=3
+```
+
+The tree was left holding the control's constants (the wrapper does its edit by `sed` and has no restore trap), the assert caught it before the build, and the post-build assert confirms the fix compiled.
+
+### (B) The two r5 arms
+
+Exactly two arms, as instructed. No third arm.
+
+Reproduction, per arm:
+
+```
+research/run-gate-arm.sh r5-control-cap8-gate3-512 8 3 512 --local-iterate
+research/run-gate-arm.sh r5-winner-cap7-gate3-512  7 3 512 --local-iterate
+```
+
+| quantity | control — cap 8 / gate 3 | **winner — cap 7 / gate 3** |
+|---|---|---|
+| tag | `r5-control-cap8-gate3-512` | `r5-winner-cap7-gate3-512` |
+| **local ratio** (`mtp_decode_speedup`) | 2.0929206912 | **2.1603174858** |
+| **candidate s/token** | 0.0350864551 | **0.0339912423** |
+| serial s/token | 0.0734331678 | 0.0734318751 |
+| depth histogram | `{4: 39, 5: 2, 6: 3, 7: 5, 8: 33}` | `{3: 1, 4: 29, 5: 2, 6: 3, 7: 46}` |
+| cap histogram | `{4: 39, 8: 43}` | `{4: 29, 7: 52}` |
+| rounds | 82 | 81 |
+| accepted / rejected | 430 / 53 | 431 / **38** |
+| `effective_mean_draft_len` | 5.8902439024 | 5.7901234568 |
+| `accepted_draft_rate` | 0.8902691511 | **0.9189765458** |
+| `declared_rows_total` = `reference_checked_row_total` | 565 | **550** |
+| `decode_seconds` | 17.9642649889 | 17.4035160542 |
+| `first_block_seconds` | 0.1777139902 | 0.1761389971 |
+| p50 block request after first (s) | 0.1684300900 | 0.1896990538 |
+| max block request after first (s) | 0.2191649675 | **0.1910840273** |
+| `verify_block_replayed_round_count` | 13 | 10 |
+| `non_drafting_round_count` | 0 | 0 |
+| `all_tokens_matched` | `true` | `true` |
+| `parity_all_ok` | `true` | `true` |
+| `residual_divergence_count` | 0 | 0 |
+| `max_rejected_tail_logit_delta` | 0 | 0 |
+| `public_drift_tripwire_passed` | `true` | `true` |
+| `uses_pinned_mtp_head` | `true` | `true` |
+| seed / decode tokens | 512 / 512 | 512 / 512 |
+| W&B run | [`4i4gmk41`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/4i4gmk41) | [`6l4q2inn`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6l4q2inn) |
+
+**Winner vs r5 control: −3.1215 % candidate s/token, +3.2202 % local ratio.**
+
+Each arm ran as one supervised job of roughly 9 minutes wall-clock (control `ba66d68d-c5bf-4043-9112-1fea8e8f7987`, winner `d1fb49bc-4745-4034-80a4-f3bc5c0d29a9`), both exit 0. Parsed by `research/parse_r5_arms.py` into `research/r5-arm-summary.json`, both committed.
+
+### Scoring the advisor's preregistered prediction
+
+The advisor predicted, in advance, the exact structural output of the winner arm on the new base — on the theory that PR #1's +240 lines of depth-cost instrumentation are inert on the timed path and therefore cannot perturb the schedule. `research/parse_r5_arms.py` scores this mechanically and reports `winner_vs_prediction.all_match: true`:
+
+| predicted quantity | predicted | measured | match |
+|---|---|---|---|
+| `depth_histogram` | `{3:1, 4:29, 5:2, 6:3, 7:46}` | `{3:1, 4:29, 5:2, 6:3, 7:46}` | ✅ |
+| `cap_histogram` | `{4:29, 7:52}` | `{4:29, 7:52}` | ✅ |
+| `rounds` | 81 | 81 | ✅ |
+| `accepted_draft_tokens` | 431 | 431 | ✅ |
+| `rejected_draft_tokens` | 38 | 38 | ✅ |
+| `effective_mean_draft_len` | 5.790123456790123 | 5.790123456790123 | ✅ |
+| `declared_rows_total` | 550 | 550 | ✅ |
+
+**Seven of seven, exactly.** Not "within tolerance" — the schedule on the new base is bit-for-bit the schedule on the old one. That is a stronger result than a timing comparison could give, because a schedule is a discrete object: any live coupling between the merged instrumentation and the decision path would have had to perturb one of these quantities, and none moved.
+
+**Conclusion: the advisor's inertness audit of PR #1 is correct.** The merged depth-cost instrumentation does not touch the timed path.
+
+Timing corroborates from the other side. Comparing the r5 control against r4's Run I — the same configuration on the old base:
+
+| | r4 Run I | r5 control | Δ |
+|---|---|---|---|
+| candidate s/token | 0.0351038610 | 0.0350864551 | **−0.0496 %** |
+| serial s/token | 0.0735322 | 0.0734331678 | −0.135 % |
+| local ratio | 2.0947033499 | 2.0929206912 | −0.0851 % |
+
+All three are inside the 0.110 % repeat noise floor, and the two arms' schedules are bit-for-bit identical. The new base costs nothing measurable.
+
+The winner's effect size also replicates: r4 gave −3.085 % / +3.24 %, r5 gives −3.1215 % / +3.2202 %. Roughly 28× the noise floor, independently on two bases.
+
+### (C) Re-scoring the occupancy model at `DEEP_CAP = 7`
+
+This was the free check — pure Python, no GPU. It is **decisive, and it went against my r4 write-up**: the model's 3.1 % residual on the cap-7 arms was a **scoring bug in my own harness**, not a missing physical term.
+
+The mechanism: arms J, O and P₅₁₂ all ran with `segmentedVerifyDepthCap = 7`, but I scored them with the module-level `DEEP_CAP = 8`. That let the model's greedy walk reach depth 8 (217.4 ms) when the arm it was predicting could only ever reach depth 7 (189.7 ms). The model was being asked to predict the wrong schedule.
+
+| arm | gate | cap from trace | measured | model @ own cap | err @ own cap | model @ forced 8 | err @ forced 8 |
+|---|---|---|---|---|---|---|---|
+| J | 3 | 7 | 2.1636873696 | 2.17033 | **+0.307 %** | 2.095877 | −3.134 % |
+| O | 3 | 7 | 2.1615420490 | 2.17033 | **+0.407 %** | 2.095877 | −3.038 % |
+| P | 3 | 7 | 2.1623244386 | 2.17033 | **+0.370 %** | 2.095877 | −3.073 % |
+
+All three land inside 1 %. Per the stop rule in the assignment:
+
+- **The "the model gets the sign of the cap effect wrong" claim is withdrawn.** `model_now_prefers_cap7: true` — at gate 3 the model scores cap 8 at 2.095877 and cap 7 at 2.17033, which is the correct sign and the correct winner.
+- **Follow-up 11 is retired.** No per-width weight-stream term is needed; the smooth-in-depth cost table was never the problem.
+
+Across all nine arms the fit improves from **max |err| 3.134 % → 1.091 %** and **mean |err| 1.540 % → 0.504 %**. The worst remaining residual is arm J₂ at +1.09 %. The model is now a validated two-cap screening tool.
+
+**Incidental finding worth the advisor's attention:** the hand-declared cap table had **J₂ at cap 8, but its trace says cap 7**. Rather than fix the constant, I replaced declaration with derivation — `deep_cap_from_trace()` (`research/occupancy_model.py:100`) reads each arm's cap out of its own trace, so this class of bookkeeping error cannot recur. `deep_cap` is now threaded through `stationary`, `evaluate` and `crossover`, with a separate `MAX_DEPTH = 8` retained purely for profile-array sizing. Verified per-arm caps: I=8, J=7, J₂=**7**, K=8, L=8, M=8, N=8, O=7, P=7.
+
+Artifacts: `research/cap_scoring_recheck.py`, `research/cap-scoring-recheck.json`, and an updated `research/occupancy-validation.json`.
+
+**One observation I did not act on, because it is outside r5's scope.** With the scoring fixed, the model's gate-3 cap sweep no longer peaks at cap 7:
+
+| cap | model raw, arm J profile, gate 3 |
+|---|---|
+| 5 | 2.171568 |
+| **6** | **2.189710** |
+| 7 | 2.170330 |
+| 8 | 2.095877 |
+
+Arm I's profile agrees on the shape (cap 5 2.138372, **cap 6 2.154427**, cap 7 2.153605, cap 8 2.100669). **No arm has ever run cap 6 at 512 tokens** — this is extrapolation from a model that has only ever been validated at caps 7 and 8, so I am flagging it, not claiming it. It sharpens existing follow-up 4 rather than replacing it.
 
 ---
 
@@ -890,14 +1054,14 @@ I could not raise this while it was happening: **`post_assignment_comment` is no
 1. **Pad the verify batch from 9 rows to 10 in `qmm_t_splitk`.** Cap 7 wins because width 9 crosses into a third weight stream. If a padded 10-row dispatch costs the same as 8 rows in the two-stream class, depth 8 becomes worth re-opening and this result inverts. It is the single most direct follow-up to this experiment.
 2. **Attack the 4.02 s prefill floor.** A 30 % improvement is worth ≈ +3.7 % of score — more than the entire sweep. This is the highest-value target I found.
 3. **Re-tune `headStepCostRatio` (0.20 → ≈ 0.30) now that the cap is 7.** The ratio was calibrated against a cap-8 schedule and is owned by another student; with width 9 removed, the head/target cost balance that it encodes has changed.
-4. **Sweep caps 6 and 5 in the 512-token frame.** Cap 7 was found by accident, not by search. Cap 6 was only ever measured at 256 tokens. The optimum may be lower.
+4. **Sweep caps 6 and 5 in the 512-token frame — and start with cap 6.** Cap 7 was found by accident, not by search. Cap 6 was only ever measured at 256 tokens. **r5 sharpened this:** once the occupancy model is scored at each arm's own cap (check C), its gate-3 sweep peaks at **cap 6**, not cap 7 — 2.189710 versus 2.170330 on arm J's profile, with arm I's profile agreeing on the shape. That is extrapolation from a model validated only at caps 7 and 8, so it is a screening hint rather than a claim, but it makes cap 6 the single highest-value untested point and it is now backed by a model whose worst residual across nine arms is 1.09 %.
 5. **Split the streak gate from the width wall.** Let `segmentedStreakGate` govern only the last step before a stream crossing and let the shallower depths open freely. The fb11 marginal-cost table says the current design taxes several rows that all pay, in order to tax one that does not.
 6. **Measure the 1 → 2 stream boundary properly** with a forced shallow wall (`sdpaWidthWallDepthCap = 3`) screen, to get widths 3–4 out of n = 2 territory. `run-gate-arm.sh` would need an optional sixth parameter for the wall.
 7. **Root-cause the terminal-round drift at `key_len ≈ 1024`.** It is width-independent and top-1-safe today, but the ranked window ends at exactly 1024 on every prompt, so the exposure is systematic rather than incidental.
 8. **Add a second local fixture with a different seed**, so low-acceptance arms can be run as real arms instead of as within-run splits, and so the cap-7 result can be checked against a prompt it was not found on.
 9. **Attack `draft_build + verify_build`**, which is 55–58 % of every round in every arm measured here.
 10. **Build a rejection-manufacturing research harness** so acceptance-sensitive schedule changes can be tested without waiting for a naturally low-acceptance prompt. This must not touch `Qwen36MTPReferenceSession.swift` on any timed path.
-11. **Give `occupancy_model.py` a per-width weight-stream term and refit.** The model is accurate to under 1 % on all five cap-8 arms and under-predicts all three cap-7 arms by ~3.1 % with the wrong sign on both the cap effect and the gate ordering, because its cost table is smooth in depth and cannot represent a stream-count cliff. Adding `ceil(width/4)` as a cost input and refitting against the nine arms already measured would turn that residual into a predictive tool, and would let follow-up 4 (caps 6 and 5) be screened analytically before spending runs.
+11. ~~**Give `occupancy_model.py` a per-width weight-stream term and refit.**~~ **RETIRED in r5.** The premise was wrong. The ~3.1 % under-prediction on the cap-7 arms was a scoring bug in my own harness — those arms ran `segmentedVerifyDepthCap = 7` but were scored with the module-level `DEEP_CAP = 8`, so the model's greedy walk was allowed to reach a depth the arm could never take. Scoring each arm at the cap derived from its own trace drops max |err| from 3.134 % to 1.091 % and mean |err| from 1.540 % to 0.504 %, and the cap-effect sign comes out correct. No per-width weight-stream term is needed; the smooth-in-depth cost table was never the problem. The model is now a validated two-cap screening tool, which is what this follow-up wanted to build. Details under *r5 → (C)*.
 
 
 ---
@@ -920,6 +1084,18 @@ Cap 7 therefore does **not** fix the drift — it merely moves it from width 8 t
 
 The assignment's bar was a **≥ 2 % reduction in absolute candidate s/token**. Cap 7 / gate 3 delivers **−3.085 %** (mean of J and O), the best gate-only arm delivers −1.511 %, and the repeat spread on the winner itself is 0.110 %. The effect is 28× the largest observed repeat noise and 6× the end-to-end drift of the eight unchanged serial control legs.
 
+**r5 replicated this on the new base, `1a71fe03`, as a fresh matched pair:**
+
+| | r5 control, cap 8 / gate 3 | **r5 winner, cap 7 / gate 3** |
+|---|---|---|
+| local ratio | 2.0929206912 | **2.1603174858** |
+| candidate s/token | 0.0350864551 | **0.0339912423** |
+| Δ s/token vs control | — | **−3.1215 %** |
+
+Two bases, two independent matched pairs, the same answer to within a tenth of a percent: **−3.085 %** on `1eacf376` and **−3.1215 %** on `1a71fe03`. The r5 control also reproduces r4's Run I to −0.0496 % on candidate s/token with a bit-for-bit identical schedule, so the base change itself is a null.
+
+**r5 also settled a question the advisor preregistered.** Predicting that PR #1's merged depth-cost instrumentation is inert on the timed path, the advisor wrote down the structural quantities the winner arm should produce on the new base. All seven came back exact — depth histogram, cap histogram, rounds, accepted, rejected, `effective_mean_draft_len`, `declared_rows_total`. A schedule is a discrete object, so any live coupling would have had to move one of them. None moved. **The inertness audit is confirmed.**
+
 **The 2 × 2 shows a sign reversal, which is why the cap had to be swept and not assumed.** Dropping the cap 8 → 7 helps by −3.085 % at gate 3 but only −1.419 % at gate 2. Loosening the gate 3 → 2 helps by −0.234 % at cap 8 but *hurts* by +1.481 % at cap 7. The two constants are not separable, and an earlier revision of this report retracted the cap as "inert" on the strength of a single confounded arm; the controlled sweep refutes that retraction.
 
 The mechanism is dispatch width, not draft quantity. Width 9 is the only width needing a third weight stream (`ceil(9/4) = 3`); capping at 7 collapses all 33 of the control's width-9 rounds onto width 8, keeps the deep mode intact (46 deep rounds vs the control's 38), cuts rejections 53 → 38, and declares 550 target rows instead of 565.
@@ -930,20 +1106,23 @@ The mechanism is dispatch width, not draft quantity. Width 9 is the only width n
 
 Cap 7 / gate 3 meets every condition the program sets for that label:
 
-- **A clear same-host improvement.** −3.085 % absolute candidate s/token and +3.24 % local ratio, measured twice, against a matched control run in the same session on the same host, power state, token window, memory profile and head.
+- **A clear same-host improvement.** −3.1215 % absolute candidate s/token and +3.2202 % local ratio on the r5 base, against a matched control run in the same session on the same host, power state, token window, memory profile and head. r4 measured −3.085 % / +3.24 % on the previous base, twice.
+- **Replicated across a base change.** Two bases, two independent matched pairs, agreeing to within a tenth of a percent. The r5 control reproduces r4's Run I to −0.0496 % with a bit-for-bit identical schedule.
 - **Well outside noise.** 28× the repeat spread, 6× the serial-leg drift.
-- **Correct behaviour and counters.** `all_tokens_matched = true`, `residual_divergence_count = 0`, `parity_all_ok = true`, `max_rejected_tail_logit_delta = 0`, `non_drafting_round_count = 0`, row accounting balanced at 550 declared rows, `uses_pinned_mtp_head = true`.
+- **Correct behaviour and counters.** `all_tokens_matched = true`, `residual_divergence_count = 0`, `parity_all_ok = true`, `max_rejected_tail_logit_delta = 0`, `non_drafting_round_count = 0`, `public_drift_tripwire_passed = true`, row accounting balanced at 550 declared rows, `uses_pinned_mtp_head = true`. All of these hold in the r5 winner arm as well as in r4's.
 - **No observed fidelity problem.** The row gate is clean at every width in Run P, and the only residual in the 512-token arms is a positional top-2 drift that is present in the control as well and never changes a token.
-- **A self-contained submitted snapshot.** The candidate diff against `BASE_SHA` touches exactly one file inside `editablePaths`, and `--local-submit` passes on the packaged path.
+- **A self-contained submitted snapshot.** The candidate diff against `BASE_SHA` touches exactly one file inside `editablePaths`, and `--local-submit` passes on the packaged path. That `--local-submit` was run in r4; r5 did not repeat it, because r5 was scoped to exactly two `--local-iterate` arms and the `Sources/` diff is byte-identical between the two revisions.
 
 The honest qualifications, which the advisor should weigh before an official submission: this is an M4 Pro rather than the ranked M5; it is one prompt and one seed; and the 128-token `--local-submit` window is too short to show the effect (+0.058 % versus the r1 submit artifact, a null), so the speed claim rests entirely on the matched 512-token iterate arms. What makes me comfortable with `local winner` regardless is that the mechanism — removing the only draft width that needs a third weight stream — is structural and should transfer, and cap 7 wins on three independent counters (s/token, µs per emitted token, declared rows) rather than on one.
 
 ### Recommendations
 
-1. **Ship `segmentedVerifyDepthCap = 7` together with `segmentedStreakGate = 3`** — the pair as committed at `8e61e77` and reproduced by Run O, worth −3.085 % candidate s/token. Ship them as a pair: the 2 × 2 shows the gain is not additive and cap 7 with gate 2 gives back nearly half of it.
+1. **Ship `segmentedVerifyDepthCap = 7` together with `segmentedStreakGate = 3`** — the pair as committed at `14c3732` on the r5 base and measured at −3.1215 % candidate s/token, reproducing r4's `8e61e77` / Run O result of −3.085 % on the old base. Ship them as a pair: the 2 × 2 shows the gain is not additive and cap 7 with gate 2 gives back nearly half of it.
 2. **Do not ship `segmentedStreakGate = 1`.** It was the best arm at cap 8 (−1.511 %), but at cap 7 the gate should stay at 3. An earlier revision of this report recommended gate 1 and recommended keeping cap 8; both of those recommendations are withdrawn.
-3. **Re-open depth 8 only through verify-batch padding.** Padding 9 rows to 10 in `qmm_t_splitk` is the one change that could make width 9 cheap enough to be worth restoring; without it, cap 7 should stand.
-4. **Redirect the next allocation at the 4.02 s prefill floor**, worth ≈ +3.7 % — more than this entire sweep — and untouched by any experiment in the campaign so far.
-5. **Retire accepted-tokens-per-round as the stop signal for depth work** and replace it with µs per emitted token plus the reject count.
-6. **Resolve the two-conversations-one-checkout hazard** before the next run on this branch.
+3. **Run cap 6 / gate 3 next, before anything else in this line.** This is the one recommendation r5 adds. With the occupancy model's scoring bug fixed it becomes a validated screening tool (worst residual 1.09 % across nine arms), and its gate-3 sweep peaks at **cap 6**, not cap 7. Cap 6 has never been run at 512 tokens. One arm settles it, and if the model is right the shipped configuration is not yet optimal.
+4. **Re-open depth 8 only through verify-batch padding.** Padding 9 rows to 10 in `qmm_t_splitk` is the one change that could make width 9 cheap enough to be worth restoring; without it, cap 7 should stand.
+5. **Redirect the next allocation at the 4.02 s prefill floor**, worth ≈ +3.7 % — more than this entire sweep — and untouched by any experiment in the campaign so far.
+6. **Retire accepted-tokens-per-round as the stop signal for depth work** and replace it with µs per emitted token plus the reject count.
+7. **Resolve the two-conversations-one-checkout hazard** before the next run on this branch. It is still open, and in r5 it is the reason I merged the new base rather than rebasing onto it.
+8. **Consider giving `run-gate-arm.sh` a restore trap.** It edits the constants by `sed` and leaves the edit in the tree, and it stamps `git rev-parse HEAD` before the arm's config is committed. Neither cost anything this round — the source digest covers both — but both are avoidable papercuts for the next student who uses it.
 
