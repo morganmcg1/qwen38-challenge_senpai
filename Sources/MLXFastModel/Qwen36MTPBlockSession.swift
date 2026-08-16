@@ -460,10 +460,27 @@ public final class Qwen36MTPBlockSession {
     /// stderr to the wrapper's log.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
+    /// submission. `mtp-timed` builds its worker options WITHOUT
+    /// `forwardsWorkerStderr`, so the parent's drain attaches a no-op emitter
+    /// and every stderr trace line is swallowed. A file sink is the only way
+    /// to read the phase trace back; the local run therefore has to relax the
+    /// generated worker sandbox (`MLXFAST_NO_SANDBOX=1`, refused on official
+    /// runs) because that profile denies `file-write*`.
+    private static let traceFile: FileHandle? = {
+        guard traceRounds,
+              let path = ProcessInfo.processInfo.environment[
+                  "MLX_QWEN_MTP_TRACE_PATH"
+              ], !path.isEmpty
+        else { return nil }
+        FileManager.default.createFile(atPath: path, contents: nil)
+        return FileHandle(forWritingAtPath: path)
+    }()
     private static func traceWrite(_ line: String) {
-        // stderr: the worker sandbox denies file-write*, and the parent's
-        // drain forwards stderr lines when MLX_QWEN_MTP_TRACE=1 flips
-        // `forwardsWorkerStderr` on the local mtp-timed verb.
+        if let traceFile {
+            traceFile.write(Data(line.utf8))
+            return
+        }
         FileHandle.standardError.write(Data(line.utf8))
     }
 
@@ -472,8 +489,15 @@ public final class Qwen36MTPBlockSession {
     /// rows can be compared BIT-FOR-BIT by position — the comparison the
     /// local argmax-only reference check does not do and the ranked ledger
     /// replay does. Same env gate as the phase trace; never on at rank.
+    /// RESEARCH INSTRUMENTATION: the row dump costs host time INSIDE the
+    /// timed round and its cost scales with the accepted count, i.e. with
+    /// depth — exactly the axis the cost curve measures. Split it off the
+    /// phase-trace gate so a cost-curve arm carries only the fixed-size
+    /// per-round line.
+    private static let traceRowValues =
+        ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_ROWS"] == "1"
     private static func traceRow(pos: Int, ids: [Int], values: [Double]) {
-        guard traceRounds else { return }
+        guard traceRounds, traceRowValues else { return }
         let hex = values.map { String(format: "%a", $0) }.joined(separator: ",")
         traceWrite("mtp-row: pos=\(pos) ids=\(ids[0]),\(ids[1]) v=\(hex)\n")
     }
@@ -568,8 +592,25 @@ public final class Qwen36MTPBlockSession {
     private static let segmentedVerifyDepthCap = 8
     private static let segmentedStreakGate = 3
 
+    /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
+    /// submission. Pins every drafting round to one depth so the phase trace
+    /// yields C(d) per arm. It also bypasses the streak gate, which is the
+    /// only way a d >= 5 arm is reachable at all: the segmented cap opens
+    /// solely after three fully-accepted rounds.
+    private static let forcedDepth: Int? = {
+        guard let raw = ProcessInfo.processInfo.environment[
+            "MLX_QWEN_MTP_FORCE_DEPTH"
+        ], let value = Int(raw), (0 ... Qwen36MTPLimits.maxDepth).contains(value)
+        else { return nil }
+        return value
+    }()
+
     /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
+        let offerCap = Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth)
+        if let forced = Self.forcedDepth {
+            return Swift.min(offerCap, forced)
+        }
         // The width wall binds the SINGLE-CALL verify; a qualifying
         // full-accept streak opens the segmented cap (the round then feeds
         // the target <= 5-row segments, never a wider launch). Any reject
@@ -578,9 +619,7 @@ public final class Qwen36MTPBlockSession {
         let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
             ? Self.segmentedVerifyDepthCap
             : Self.sdpaWidthWallDepthCap
-        let cap = Swift.min(
-            Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
-            widthCap)
+        let cap = Swift.min(offerCap, widthCap)
         guard cap > 0 else { return 0 }
         let h = Self.headStepCostRatio
         var reach = 1.0
