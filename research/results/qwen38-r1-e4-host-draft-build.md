@@ -1232,15 +1232,27 @@ none`).
 
 ### 8.1 W&B record
 
-| field | value |
-|---|---|
-| run URL | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ma8cga81 |
-| run ID | `ma8cga81` |
-| run name | `e4-host-draft-build-decode-round-floor` |
-| project | `wandb-applied-ai-team/qwen38-mlx-challenge-senpai` |
-| state | `finished` |
+Two runs, one per assignment revision. Both are in
+`wandb-applied-ai-team/qwen38-mlx-challenge-senpai` and both are `finished`.
 
-Logged namespaces:
+| revision | run ID | run name | URL |
+|---|---|---|---|
+| r1 | `ma8cga81` | `e4-host-draft-build-decode-round-floor` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ma8cga81 |
+| **r2** | `j0z3rmty` | `r2-kv-sweep-and-thermal-block` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/j0z3rmty |
+
+The r2 run carries `config.revision_id = "r2"` and
+`config.base_sha = "67bde70274c42aef089ac73cf00608d8037a815e"`, re-logs every r1 namespace
+so the two are directly comparable, and adds the §8.4.4 sweep:
+
+- `kv_sweep/kv<K>/{achieved_ms,roofline_ms,verify_bytes_MB}` for K ∈ {512, 640, 768, 896,
+  1024, 1280}.
+- `kv_sweep/component/<name>/delta_pct` — per-kernel change across the 512→1024 walk.
+- `kv_sweep/achieved_delta_pct_512_to_1024` = **+0.377**.
+- `kv_sweep/host_share_pct_at_kv512` = 0.350 and `kv_sweep/host_share_pct_at_kv1024` =
+  0.349 — the assigned hypothesis's headline number at both ends of the 512-token window.
+- Two more `wandb.Table`s: `kv_sweep/floor_vs_kv_len` and `kv_sweep/component_delta`.
+
+Logged namespaces (both runs):
 
 - `A-trace-base/*` and `trace-free-192/*` — score, s/token, trace sub-step means,
   guardrail trio, model/session scalars for both benchmark windows.
