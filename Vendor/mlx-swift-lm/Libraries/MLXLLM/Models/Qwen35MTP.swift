@@ -17,6 +17,39 @@ import MLXNN
 /// patches/mlx_lm_mtp/__init__.py.
 public nonisolated(unsafe) var _qwen35MTPEnabled: Bool = false
 
+// MARK: - Host-cost trace (local research instrumentation)
+
+/// Nanosecond accumulators for the head's host-side graph-build cost, gated by
+/// the same `MLX_QWEN_MTP_TRACE=1` switch the block session uses. Decode is
+/// single threaded, so plain statics are sufficient; the session resets them
+/// around the sub-steps it wants attributed.
+public enum Qwen35MTPHostTrace {
+    public nonisolated(unsafe) static let enabled =
+        ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+    public nonisolated(unsafe) static var embedNs: UInt64 = 0
+    public nonisolated(unsafe) static var fuseNs: UInt64 = 0
+    public nonisolated(unsafe) static var maskNs: UInt64 = 0
+    public nonisolated(unsafe) static var layerNs: UInt64 = 0
+    public nonisolated(unsafe) static var normNs: UInt64 = 0
+    public nonisolated(unsafe) static var attnNs: UInt64 = 0
+    public nonisolated(unsafe) static var mlpNs: UInt64 = 0
+    public nonisolated(unsafe) static var layerNormNs: UInt64 = 0
+
+    public static func reset() {
+        embedNs = 0
+        fuseNs = 0
+        maskNs = 0
+        layerNs = 0
+        normNs = 0
+        attnNs = 0
+        mlpNs = 0
+        layerNormNs = 0
+    }
+
+    @inline(__always)
+    static func now() -> UInt64 { DispatchTime.now().uptimeNanoseconds }
+}
+
 // MARK: - MTPDecoderLayer
 
 /// Full-attention transformer layer used inside the Qwen3.5/3.6 MTP head.
@@ -55,9 +88,25 @@ final class Qwen35MTPDecoderLayer: Module {
         cache: (any KVCache)?
     ) -> MLXArray {
         // omlx: MTPDecoderLayer.__call__
-        let r = selfAttn(inputLayerNorm(x), mask: mask, cache: cache)
+        guard Qwen35MTPHostTrace.enabled else {
+            let r = selfAttn(inputLayerNorm(x), mask: mask, cache: cache)
+            let h = x + r
+            return h + (mlp as! UnaryLayer)(postAttentionLayerNorm(h))
+        }
+        let t0 = Qwen35MTPHostTrace.now()
+        let normed = inputLayerNorm(x)
+        let t1 = Qwen35MTPHostTrace.now()
+        let r = selfAttn(normed, mask: mask, cache: cache)
+        let t2 = Qwen35MTPHostTrace.now()
         let h = x + r
-        return h + (mlp as! UnaryLayer)(postAttentionLayerNorm(h))
+        let postNormed = postAttentionLayerNorm(h)
+        let t3 = Qwen35MTPHostTrace.now()
+        let out = h + (mlp as! UnaryLayer)(postNormed)
+        let t4 = Qwen35MTPHostTrace.now()
+        Qwen35MTPHostTrace.layerNormNs += (t1 - t0) + (t3 - t2)
+        Qwen35MTPHostTrace.attnNs += t2 - t1
+        Qwen35MTPHostTrace.mlpNs += t4 - t3
+        return out
     }
 
     /// Populate this layer's K/V history without computing a dead layer
@@ -111,24 +160,39 @@ final class Qwen35MTPModule: Module {
         cache: [any KVCache]
     ) -> MLXArray {
         // omlx: MTPModule.__call__
+        let trace = Qwen35MTPHostTrace.enabled
+        let t0 = trace ? Qwen35MTPHostTrace.now() : 0
         // 1. Embed next-token ids and fuse with normed hidden state.
         let embeds = embedTokens(nextTokenIds)
+        let t1 = trace ? Qwen35MTPHostTrace.now() : 0
         let e = preFcNormEmbedding(embeds)
         let h = preFcNormHidden(hidden)
         var fused = fc(concatenated([e, h], axis: -1))
+        let t2 = trace ? Qwen35MTPHostTrace.now() : 0
 
         // 2. Compute attention mask from the first cache entry (or nil if empty).
         let firstCache: (any KVCache)? = cache.first
         let mask = createAttentionMask(h: fused, cache: firstCache)
+        let t3 = trace ? Qwen35MTPHostTrace.now() : 0
 
         // 3. Run each MTPDecoderLayer.
         for (i, layer) in layers.enumerated() {
             let c: (any KVCache)? = i < cache.count ? cache[i] : nil
             fused = layer(fused, mask: mask, cache: c)
         }
+        let t4 = trace ? Qwen35MTPHostTrace.now() : 0
 
         // 4. Return pre-lm_head hidden (norm applied; lm_head is in TextModel).
-        return norm(fused)
+        let out = norm(fused)
+        if trace {
+            let t5 = Qwen35MTPHostTrace.now()
+            Qwen35MTPHostTrace.embedNs += t1 - t0
+            Qwen35MTPHostTrace.fuseNs += t2 - t1
+            Qwen35MTPHostTrace.maskNs += t3 - t2
+            Qwen35MTPHostTrace.layerNs += t4 - t3
+            Qwen35MTPHostTrace.normNs += t5 - t4
+        }
+        return out
     }
 
     /// Run one proposal flush while omitting leading-row outputs that have no

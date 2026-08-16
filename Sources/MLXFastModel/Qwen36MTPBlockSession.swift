@@ -693,6 +693,18 @@ public final class Qwen36MTPBlockSession {
         var tEvalDone: UInt64 = 0
         var tReadDone: UInt64 = 0
         var tCommitDone: UInt64 = 0
+        // Sub-step split of `draft_build` (same gate). Research-only.
+        var tPrologueDone: UInt64 = 0
+        var tFlushPrepDone: UInt64 = 0
+        var tStep1Fwd: UInt64 = 0
+        var tStep1Slice: UInt64 = 0
+        var tStep1Select: UInt64 = 0
+        var tStep1Async: UInt64 = 0
+        var deepFwdNs: UInt64 = 0
+        var deepSliceNs: UInt64 = 0
+        var deepSelectNs: UInt64 = 0
+        var deepStepCount = 0
+        var tLoopDone: UInt64 = 0
 
         // Round-top invariant, kept as a THROW rather than a comment: every
         // emitted token is in the trimmable caches and the pending primary is
@@ -795,6 +807,7 @@ public final class Qwen36MTPBlockSession {
         //    forward. Only the last row's logits are projected through the
         //    lm_head. Deeper sub-steps chain the head's OWN post-`mtp.norm`
         //    hidden exactly as before.
+        if Self.traceRounds { tPrologueDone = DispatchTime.now().uptimeNanoseconds }
         let headCache: [any KVCache]
         var flushHidden: [MLXArray] = []
         var flushTokens: [Int] = []
@@ -847,6 +860,7 @@ public final class Qwen36MTPBlockSession {
         // (Per-step asyncEval was tried here and measured NEUTRAL — the
         // ~2.4 ms/step is host graph BUILD, not GPU work to overlap; see
         // idea.md V6 journal. Single submission after the loop, as before.)
+        if Self.traceRounds { tFlushPrepDone = DispatchTime.now().uptimeNanoseconds }
         var draftIdArrays: [MLXArray] = []
         var headHidden = model.mtpHeadLastHiddenWithKVOnlyHistory(
             hidden: draftInputHidden, nextTokenIds: draftInputTokens,
@@ -854,9 +868,12 @@ public final class Qwen36MTPBlockSession {
             ?? model.mtpHeadHiddenForward(
                 hidden: draftInputHidden, nextTokenIds: draftInputTokens,
                 cache: headCache)
+        if Self.traceRounds { tStep1Fwd = DispatchTime.now().uptimeNanoseconds }
         var draftHidden = headHidden[
             0..., (headHidden.dim(1) - 1) ..< headHidden.dim(1), 0...]
+        if Self.traceRounds { tStep1Slice = DispatchTime.now().uptimeNanoseconds }
         var draftId = model.draftTokenID(draftHidden)
+        if Self.traceRounds { tStep1Select = DispatchTime.now().uptimeNanoseconds }
         draftIdArrays.append(draftId)
         // Early submission of the FIRST head step: its graph exists ~2.4 ms
         // before the rest of the chain is built, and unlike the per-step
@@ -864,14 +881,30 @@ public final class Qwen36MTPBlockSession {
         // the first step carries the history flush, which IS real GPU work
         // the device can start while the host builds steps 2..d.
         asyncEval(draftId)
+        if Self.traceRounds {
+            tStep1Async = DispatchTime.now().uptimeNanoseconds
+            // Attribute the module-internal accumulators to deep steps only.
+            Qwen35MTPHostTrace.reset()
+        }
         for _ in 1 ..< draftCount {
+            let s0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             headHidden = model.mtpHeadHiddenForward(
                 hidden: draftHidden, nextTokenIds: draftId, cache: headCache)
+            let s1 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             draftHidden = headHidden[
                 0..., (headHidden.dim(1) - 1) ..< headHidden.dim(1), 0...]
+            let s2 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             draftId = model.draftTokenID(draftHidden)
+            if Self.traceRounds {
+                let s3 = DispatchTime.now().uptimeNanoseconds
+                deepFwdNs += s1 - s0
+                deepSliceNs += s2 - s1
+                deepSelectNs += s3 - s2
+                deepStepCount += 1
+            }
             draftIdArrays.append(draftId)
         }
+        if Self.traceRounds { tLoopDone = DispatchTime.now().uptimeNanoseconds }
         asyncEval(draftIdArrays[draftIdArrays.count - 1])
         if Self.traceRounds { tDraftBuilt = DispatchTime.now().uptimeNanoseconds }
 
@@ -1055,6 +1088,27 @@ public final class Qwen36MTPBlockSession {
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
                 + "round_us=\((tTailDone - tRound0) / 1000)\n"
             Self.traceWrite(line)
+            let sub = "mtp-sub: round=\(roundCount) d=\(draftCount) "
+                + "deep=\(deepStepCount) "
+                + "prologue_ns=\(tPrologueDone - tRound0) "
+                + "flushprep_ns=\(tFlushPrepDone - tPrologueDone) "
+                + "s1_fwd_ns=\(tStep1Fwd - tFlushPrepDone) "
+                + "s1_slice_ns=\(tStep1Slice - tStep1Fwd) "
+                + "s1_select_ns=\(tStep1Select - tStep1Slice) "
+                + "s1_async_ns=\(tStep1Async - tStep1Select) "
+                + "deep_fwd_ns=\(deepFwdNs) "
+                + "deep_slice_ns=\(deepSliceNs) "
+                + "deep_select_ns=\(deepSelectNs) "
+                + "tail_async_ns=\(tDraftBuilt - tLoopDone) "
+                + "mod_embed_ns=\(Qwen35MTPHostTrace.embedNs) "
+                + "mod_fuse_ns=\(Qwen35MTPHostTrace.fuseNs) "
+                + "mod_mask_ns=\(Qwen35MTPHostTrace.maskNs) "
+                + "mod_layer_ns=\(Qwen35MTPHostTrace.layerNs) "
+                + "mod_norm_ns=\(Qwen35MTPHostTrace.normNs) "
+                + "lay_attn_ns=\(Qwen35MTPHostTrace.attnNs) "
+                + "lay_mlp_ns=\(Qwen35MTPHostTrace.mlpNs) "
+                + "lay_norm_ns=\(Qwen35MTPHostTrace.layerNormNs)\n"
+            Self.traceWrite(sub)
         }
         // No trailing eval: every host-read value was materialised by the
         // round bundle above. A successful wide-prefix replay intentionally
