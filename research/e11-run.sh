@@ -23,9 +23,19 @@ runs_root="${repo_root}/.mlxfast-private/e11/runs"
 head_dir="${E11_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared}"
 tokens="${E11_TOKENS:-512}"
 
-# The h-curve arms must prove the DEFAULT flipped, so no research override may
-# be live for any arm; a leaked variable would make H unfalsifiable.
-unset MLX_QWEN_MTP_H_VECTOR MLX_QWEN_MTP_FORCE_DEPTH
+# Two passes, and the difference matters.
+#
+# TIMED (E11_TRACE unset, the default): every MLX_QWEN_MTP_* name is cleared,
+# including the trace. The h-curve arms have to prove the DEFAULT flipped, so a
+# leaked override would make H unfalsifiable; and since PR #2 the trace gate
+# also buys per-round file I/O inside the timed round, which a headline number
+# must not carry.
+#
+# FINGERPRINT (E11_TRACE=1): the same binary re-run with the phase trace on to
+# recover the depth histogram, which score.json does not report. Never a source
+# of headline timing. The loop is closed by checking the fingerprint pass's
+# histogram mean against the timed pass's effective_mean_draft_len.
+for v in $(env | sed -n 's/^\(MLX_QWEN_MTP_[A-Z_]*\)=.*/\1/p'); do unset "${v}"; done
 
 status=0
 for spec in "$@"; do
@@ -60,11 +70,15 @@ for spec in "$@"; do
   export MLXFAST_CAPTURE_REAL_BIN="${repo_root}/.build/release/mlxfast-swift"
   export MLXFAST_CAPTURE_DIR="${out}/reports"
   export MLXFAST_SWIFT_BIN="${repo_root}/research/capture-cli.sh"
-  # The worker sandbox denies file-write*, and the parent swallows worker
-  # stderr, so the phase trace needs the documented local relaxation.
-  export MLX_QWEN_MTP_TRACE=1
-  export MLX_QWEN_MTP_TRACE_PATH="${out}/trace.txt"
-  export MLXFAST_NO_SANDBOX=1
+  if [[ -n "${E11_TRACE:-}" ]]; then
+    # The worker sandbox denies file-write*, and the parent swallows worker
+    # stderr, so the phase trace needs the documented local relaxation.
+    export MLX_QWEN_MTP_TRACE=1
+    export MLX_QWEN_MTP_TRACE_PATH="${out}/trace.txt"
+    export MLXFAST_NO_SANDBOX=1
+  else
+    unset MLX_QWEN_MTP_TRACE MLX_QWEN_MTP_TRACE_PATH MLXFAST_NO_SANDBOX
+  fi
 
   {
     echo "label=${label}"
@@ -76,7 +90,12 @@ for spec in "$@"; do
     echo "source_sha256=$(awk '$2=="source.swift"{print $1}' "${src}/sha256.txt")"
     echo "head_sha=$(git rev-parse HEAD)"
     echo "dirty=$(git status --porcelain | wc -l | tr -d ' ')"
-    echo "mlx_qwen_env=$(env | grep -c '^MLX_QWEN_MTP_H_VECTOR\|^MLX_QWEN_MTP_FORCE_DEPTH')"
+    echo "pass=${E11_TRACE:+fingerprint}${E11_TRACE:-timed}"
+    # Verbatim list, not a count of two known names: the H arms claim to need
+    # NO research variable at all, and only the full list can show that.
+    echo "mlx_qwen_env=$(env | sed -n 's/^\(MLX_QWEN_MTP_[A-Z_]*\)=.*/\1/p' \
+      | sort | tr '\n' ',')"
+    echo "golden=${MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE:-<default>}"
     echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "${out}/meta.txt"
 

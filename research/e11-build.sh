@@ -8,15 +8,17 @@
 # so "two arms that had to differ but shared a hash" is a detectable failure
 # rather than a silently duplicated measurement.
 #
-# Only the H recipe is shippable. The cap edits (K/F3/HK) are arm scaffolding:
-# built, measured, and never committed.
+# Only the H recipe is shippable. The cap edits (C8/H8/F3) are arm scaffolding:
+# built, measured, and never committed. Note the polarity: since PR #2 merged,
+# cap 7 is the SHIPPED default, so the cap arms open the cap back to 8 (C8/H8)
+# rather than closing it.
 #
 # usage: research/e11-build.sh ARM [ARM ...]
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 src=Sources/MLXFastModel/Qwen36MTPBlockSession.swift
-base_sha="${E11_BASE_SHA:-807c80b8dec55d39df395fae57023cd143acf1fa}"
+base_sha="${E11_BASE_SHA:-8970d775a63a28b610fd418c68873c236ce6b86c}"
 root=.mlxfast-private/e11/bins
 
 if [[ -n "$(git status --porcelain -- "${src}")" ]]; then
@@ -27,22 +29,22 @@ fi
 restore() { git checkout -- "${src}"; }
 trap restore EXIT
 
-# Materialise the arm source. C/K/F3 start from the campaign base (flat scalar
-# h); H/HK start from this branch's committed measured-curve default.
+# Materialise the arm source. C/C8/F3 start from the campaign base (flat scalar
+# h); H/H8 start from this branch's committed measured-curve default.
 materialise() {
   case "$1" in
-    C | K | F3) git show "${base_sha}:${src}" > "${src}" ;;
-    H | HK) git show "HEAD:${src}" > "${src}" ;;
+    C | C8 | F3) git show "${base_sha}:${src}" > "${src}" ;;
+    H | H8) git show "HEAD:${src}" > "${src}" ;;
     *) echo "e11-build: unknown arm $1" >&2; return 2 ;;
   esac
   case "$1" in
-    K | HK)
-      sed -i '' 's/^\( *private static let segmentedVerifyDepthCap = \)8$/\17/' \
+    C8 | H8)
+      sed -i '' 's/^\( *private static let segmentedVerifyDepthCap = \)7$/\18/' \
         "${src}" ;;
     F3)
       sed -i '' 's/^\( *private static let sdpaWidthWallDepthCap = \)4$/\13/' \
         "${src}"
-      sed -i '' 's/^\( *private static let segmentedVerifyDepthCap = \)8$/\13/' \
+      sed -i '' 's/^\( *private static let segmentedVerifyDepthCap = \)7$/\13/' \
         "${src}" ;;
   esac
 }
@@ -53,13 +55,13 @@ materialise() {
 assert_arm() {
   local arm="$1" want ok=1
   case "${arm}" in
-    C | K | F3) want='private static let headStepCostRatio = 0.20' ;;
-    H | HK) want='private static let defaultHeadStepCostRatioByDepth: \[Double\] = \[' ;;
+    C | C8 | F3) want='private static let headStepCostRatio = 0.20' ;;
+    H | H8) want='private static let defaultHeadStepCostRatioByDepth: \[Double\] = \[' ;;
   esac
   grep -qE "^ *${want}" "${src}" || { echo "e11-build: ${arm}: missing h form" >&2; ok=0; }
-  local width=4 segcap=8
+  local width=4 segcap=7
   case "${arm}" in
-    K | HK) segcap=7 ;;
+    C8 | H8) segcap=8 ;;
     F3) width=3; segcap=3 ;;
   esac
   grep -qE "^ *private static let sdpaWidthWallDepthCap = ${width}$" "${src}" \
