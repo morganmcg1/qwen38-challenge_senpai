@@ -71,8 +71,9 @@ mkdir -p "${out_dir}"
 
 # --- build the vendored-kernel bench ------------------------------------------
 # Release, because the curve at the small shapes is only tens of microseconds
-# and a debug host would add its own dispatch overhead to every point.
-swift build -c release --build-tests --force-resolved-versions
+# and a debug host would add its own dispatch overhead to every point. Release
+# builds omit `-enable-testing`, which the suite's `@testable` imports require.
+swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-testing
 # The xctest bundle is a third location Cmlx does not search by default; without
 # this the first MLXArray fails to load the default metallib.
 tools/build-mlx-metallib.sh --all-build-roots
@@ -90,7 +91,7 @@ cool_gate() {
 cool_gate vendored
 MLXFAST_RUN_QMV_COST_CURVE=1 \
 MLXFAST_QMV_COST_CURVE_OUT="${out_dir}/vendored.json" \
-  swift test -c release --force-resolved-versions \
+  swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
   --filter QwenQMVCostCurveTests 2>&1 | tee "${out_dir}/vendored.log"
 
 # --- stock pip MLX control ----------------------------------------------------

@@ -28,7 +28,12 @@ SCORED_SHAPES = [
     ("mlp.gate_up_fused", 5120, 34816, 64),
     ("mlp.down", 17408, 5120, 64),
     ("head.lm_head", 5120, 248320, 1),
+    ("head.compact_draft_vocab", 5120, 98336, 0),
 ]
+
+# M = 1..12 brackets vector_limit; the decade points anchor FLOPS_eff and
+# expose the bandwidth/compute knee empirically.
+SCORED_WIDTHS = list(range(1, 13)) + [16, 32, 64, 128, 256, 512]
 
 BOUNDARY_PROBES = [
     ("probe.k2048_n2048", 2048, 2048, list(range(1, 23)), 18),
@@ -97,24 +102,48 @@ def sweep(name, k, n, widths, calls_per_verify, reps, inner, extra=None):
     rows = []
     reference_row0 = None
     for m in widths:
-        xs = [synthetic_activations(m, k, salt) for salt in range(inner)]
+        inner_m = inner if m <= 12 else max(2, (inner * 12) // m)
+        reps_m = reps if m <= 12 else max(5, reps // 3)
+        xs = [synthetic_activations(m, k, salt) for salt in range(inner_m)]
         mx.eval(xs)
 
-        def run():
-            mx.eval(
-                [
-                    mx.quantized_matmul(
-                        x, w, scales, biases, transpose=True,
-                        group_size=QGROUP, bits=QBITS,
-                    )
-                    for x in xs
-                ]
+        def qmm(x):
+            return mx.quantized_matmul(
+                x, w, scales, biases, transpose=True,
+                group_size=QGROUP, bits=QBITS,
             )
 
-        samples = median(run, reps)
-        row0 = mx.quantized_matmul(
-            xs[0], w, scales, biases, transpose=True, group_size=QGROUP, bits=QBITS
-        )[0].astype(mx.float32)
+        # The scored verify pass is a dependent chain; MLX inserts a Metal
+        # barrier only between kernels that share a buffer, so independent
+        # calls in one eval overlap and understate small-M cost. A 1x1 tap
+        # scaled to 1e-30 restores the dependency and vanishes in bf16.
+        def chained():
+            outs = []
+            x = xs[0]
+            for i in range(inner_m):
+                o = qmm(x)
+                outs.append(o)
+                if i + 1 < inner_m:
+                    x = xs[i + 1] + o[0:1, 0:1] * 1e-30
+            mx.eval(outs)
+
+        def taps_only():
+            outs = []
+            x = xs[0]
+            for i in range(inner_m):
+                outs.append(x)
+                if i + 1 < inner_m:
+                    x = xs[i + 1] + x[0:1, 0:1] * 1e-30
+            mx.eval(outs)
+
+        def concurrent():
+            mx.eval([qmm(x) for x in xs])
+
+        samples = median(chained, reps_m)
+        conc = median(concurrent, reps_m)
+        taps = median(taps_only, reps_m)
+
+        row0 = qmm(xs[0])[0].astype(mx.float32)
         mx.eval(row0)
         row0 = row0.tolist()
         if reference_row0 is None:
@@ -122,9 +151,13 @@ def sweep(name, k, n, widths, calls_per_verify, reps, inner, extra=None):
         rows.append(
             {
                 "m": m,
-                "seconds_per_call": samples[len(samples) // 2] / inner,
-                "seconds_per_call_min": samples[0] / inner,
-                "seconds_per_call_max": samples[-1] / inner,
+                "seconds_per_call": samples[len(samples) // 2] / inner_m,
+                "seconds_per_call_min": samples[0] / inner_m,
+                "seconds_per_call_max": samples[-1] / inner_m,
+                "seconds_per_call_concurrent": conc[len(conc) // 2] / inner_m,
+                "tap_overhead_seconds_per_call": taps[len(taps) // 2] / inner_m,
+                "calls_per_timed_region": inner_m,
+                "timed_regions": reps_m,
                 "row0_bitwise_matches_m1": row0 == reference_row0,
                 "row0_max_abs_delta_vs_m1": max(
                     abs(a - b) for a, b in zip(row0, reference_row0)
@@ -170,11 +203,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--reps", type=int, default=15)
     ap.add_argument("--inner", type=int, default=10)
-    ap.add_argument("--max-width", type=int, default=12)
+    ap.add_argument("--max-width", type=int, default=0,
+                   help="sweep 1..N instead of the default scored width set")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
-    widths = list(range(1, args.max_width + 1))
+    widths = list(range(1, args.max_width + 1)) if args.max_width else SCORED_WIDTHS
     payload = {
         "source": "pip-mlx",
         "mlx_version": mx.__version__,
