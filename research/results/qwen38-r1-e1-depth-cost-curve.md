@@ -1585,6 +1585,67 @@ describes. 0.20 is a compromise that is ~2.5x too high at d = 1–2 and
 is why the scalar survived end-to-end tuning **while being badly mis-shaped**.
 The per-depth vector removes the compromise instead of re-picking it.
 
+## Submission surface: one file, and what the research instrumentation costs
+
+Preflight on the current head, run against the r2 base
+`67bde70274c42aef089ac73cf00608d8037a815e`:
+
+```text
+senpai/validate-assignment-scope.sh 67bde70 Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+  -> assignment scope OK: 1 submitted path(s)
+
+senpai/check-editable-budget.sh 67bde70
+  -> editable budget OK: source=2410226/3000000 headroom=589774
+     growth=15576/262144 exempt=2410/2147483648 files=154
+```
+
+**One submitted file.** Everything else this experiment produced —
+`research/*.py`, `research/*.sh`, `research/out/`, this report — is research-only
+and is not in `editablePaths`, so Yukon does not ship it. Growth is 15576 bytes
+against a 262144 budget, i.e. **6 % of the allowance**, and 590 KB of total
+source headroom remains.
+
+### The instrumentation decision, stated so the advisor can overrule it
+
+The submitted file carries research instrumentation that I have **kept**, and I
+want that to be an explicit, reversible choice rather than something discovered
+in review:
+
+| hook | gate | default |
+|---|---|---|
+| `MLX_QWEN_MTP_TRACE` + `MLX_QWEN_MTP_TRACE_PATH` | both required, file sink | off |
+| `MLX_QWEN_MTP_FORCE_DEPTH` | env present | off |
+| `MLX_QWEN_MTP_TRACE_ROWS` | env present | off |
+| `MLX_QWEN_MTP_H_VECTOR` | env present, requires 8 finite ≥0 values | off |
+| `h=` field on the trace `begin` line | inside the trace sink | off |
+| `headprobe` trace line | inside the trace sink | off |
+| `prefix_repair=` / `full_repair=` counters | two `Int` adds in the reject branch | **always on** |
+
+Every hook except the last is behind an env var that is absent on an official
+run, and the trace sink additionally needs `MLXFAST_NO_SANDBOX=1`, which
+official runs **fail closed** on (F12: `main.swift:2236-2238`, `:2288-2291`, deny
+at `:2626-2638`, pinned by `ParentToolSandboxTests.swift:108`). So the tracing
+machinery is not merely off by default on the ranked runner — it is
+unreachable there.
+
+The two repair counters are unconditional, and I am not hiding that. They are
+two `Int` increments confined to the reject branch of one round; against a
+65 ms round on a memory-bound 4-bit backbone they are unmeasurable, and they
+are the literal counters comment 11 asked for.
+
+My recommendation is to **keep** all of it: it is what made the per-depth curve,
+the repair classification, and the EOS split measurable at all, a future agent
+re-deriving any of this would have to re-add it, and it cannot execute on the
+ranked host. If the advisor prefers a bare submission, deleting the hooks is
+mechanical and touches only this one file — say so and I will strip it.
+
+**One thing here is not instrumentation and must not be stripped: the warm
+H-probe.** `probeResidentHeadCost` runs in `warmAllDepths` and feeds
+`adoptResidentHeadStepRatio`, which is what makes the shipped cost model
+head-agnostic instead of a frozen table (comment 7 item 4, and the direct answer
+to *"a single frozen table is the one option I will not accept"*). It is
+load-bearing policy that happens to also emit a trace line.
+
 ## Suggested follow-ups (not implemented)
 
 1. **Raise IPG above 4 for these shapes.** The in-source rule caps
