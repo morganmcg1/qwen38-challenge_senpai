@@ -1004,12 +1004,17 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
     acc[r] = VF(0.0f);
   }
 
+  // Measurement-only arm 2: a runtime zero the compiler cannot fold. The four
+  // row addresses stay formally distinct, so no load or value CSE fires and the
+  // arithmetic is untouched, while at runtime all four resolve to one tile and
+  // unique weight traffic falls ~4x.
+  const int row_span = in_vec_size >> 30;
   for (int k = 0; k < in_vec_size; k += block_size) {
     thread uint16_t packed[rows_per_simd][4];
     thread float scale_local[rows_per_simd];
     thread float bias_local[rows_per_simd];
     for (int r = 0; r < rows_per_simd; r++) {
-      const int row = out_row + r;
+      const int row = out_row + r * row_span;
       const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
           reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
           k / 2 + simd_lid * bytes_per_lane);
@@ -1039,11 +1044,10 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
         a3[m] = xc[3];
       }
       for (int r = 0; r < rows_per_simd; r++) {
-        // Measurement-only arm 1: three of the four nibble terms are dropped.
-        // `packed[r][i]` stays live through the surviving term and load_vector
-        // still consumes all four x values through its returned sum, so weight
-        // and activation traffic are untouched while the FMA count falls ~4x.
-        partial[r] += a0 * (packed[r][i] & 0x000f);
+        partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                       a1 * (packed[r][i] & 0x00f0) +
+                       a2 * (packed[r][i] & 0x0f00) +
+                       a3 * (packed[r][i] & 0xf000));
       }
     }
     for (int r = 0; r < rows_per_simd; r++) {
