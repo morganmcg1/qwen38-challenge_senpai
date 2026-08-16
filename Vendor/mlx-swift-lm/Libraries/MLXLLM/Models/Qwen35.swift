@@ -2417,7 +2417,7 @@ extension Qwen35TextModel: MTPCapable {
             let raw = ProcessInfo.processInfo
                 .environment["MLX_QWEN_MTP_DRAFT_BITS"],
             let bits = Int(raw), [2, 3, 4].contains(bits)
-        else { return 4 }
+        else { return 3 }
         return bits
     }()
 
