@@ -351,10 +351,13 @@ pre-submit command for you. In the maintained campaign checkout, use the guard:
 export PATH="${HOME}/.local/bin:${PATH}"
 yukon submissions --all
 senpai/submit-official.sh "$BASE_SHA" \
-  --model "<exact model name>" \
+  --model "senpai" \
   --note-file submission-note.md
 yukon submissions
 ```
+
+Use the exact lowercase campaign attribution `senpai`; record the underlying
+models, effort levels, and agent harnesses in the public note body.
 
 Immediately before submission, compare the highest-scoring live `promoted` row
 with `senpai/frontier-state.json`. If the receipt, source ref, or score differs,

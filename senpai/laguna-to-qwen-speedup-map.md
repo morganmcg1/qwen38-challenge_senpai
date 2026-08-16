@@ -1,6 +1,7 @@
 # Laguna XS to Qwen 3.8 speedup transfer audit
 
-**Snapshot:** 2026-08-16 10:41 UTC
+**Research snapshot:** 2026-08-16 10:41 UTC
+**Frontier refresh:** 2026-08-16 12:05 UTC
 
 **Purpose:** record what the final Laguna XS frontier actually optimized, map
 those mechanisms onto the current Qwen 3.8 frontier, and separate quick
@@ -32,18 +33,17 @@ There are nevertheless several worthwhile seams. In priority order:
    roughly 32 MiB of target K/V slices at the charged 512-token seed (up to
    roughly 64 MiB of logical write traffic), plus the MTP-head cache where
    applicable. Physical traffic still needs profiling under MLX laziness.
-2. **Do not duplicate the currently validating public composition.** A source
-   stack containing wider decode/seed `asyncEval`, a seed-safe Q/K-prep gate,
-   a target-margin draft prior, and compiled MLP SiLU/product scored
-   `2.90354559365115`; its first promotion failed on stale harness ancestry,
-   not correctness. Adopt it if a rebased receipt promotes, or isolate its
-   components only if it does not.
-3. **Extend the packed Gated DeltaNet prework kernel to widths 1 and 2.** The
+2. **Extend the packed Gated DeltaNet prework kernel to widths 1 and 2.** The
    current fused mixer covers 3...9, leaving the common serial/narrow cases on
    a less fused path. This is Qwen-specific rather than a literal Laguna port,
    but it applies Laguna's most durable lesson: eliminate a producer-consumer
    intermediate, not merely a launch.
-4. **Try the generic RMSNorm input-cache hunk.** It is a direct, exact Laguna
+3. **Isolate the promoted composite before extending it.** Source
+   `7351e626` combines a top-two-margin draft prior, wider decode/seed
+   `asyncEval`, a short-width Q/K-prep guard, and compiled dense-MLP
+   SiLU/product. The composite is correctness-green and promoted, but no
+   component inherits its score independently.
+4. **Try the generic RMSNorm input-cache hunk only after proving reachability.** It is a direct, exact Laguna
    carryover, but the easy hunk accelerates `rms_single_row`; Qwen's main
    hidden-5120 norms use `rms_looped`, so expected whole-model impact is limited
    unless a separate looped or residual-plus-RMS design proves safe.
@@ -53,8 +53,8 @@ There are nevertheless several worthwhile seams. In priority order:
    vocabulary is proposal-only. A Qwen certificate could be valuable, but it
    must preserve both exact top-two IDs and values.
 
-The current promoted Qwen score is already `2.87642940762738` and the hard
-plausibility ceiling is 3.0. That leaves only about 4.3% multiplicative headroom
+The current promoted Qwen score is already `2.9042110287045` and the hard
+plausibility ceiling is 3.0. That leaves only about 3.3% multiplicative headroom
 before a faster result can fail rather than receive a clamped score. Prefer
 small, attributable candidates and inspect all eight prompt results before
 stacking wins.
@@ -90,17 +90,20 @@ are noisy evidence, not clean causal attribution.
 
 | Item | Value |
 | --- | --- |
-| Campaign commit at audit | `80c26b679198f83cff05df0c75c66b8959fa9b37` |
-| Organizer contract commit | `26ae2bf6326de93e7f1b1b0aaf94a7667aca797b` |
-| Promoted editable snapshot | `df404e08fee2ef8681f5bf2d68fe841969788eaf` |
-| Promoted receipt | `aa7c3e0c-20d1-4b27-a80c-e622e7880999` |
-| Official score | `2.87642940762738` |
+| Campaign solver-import commit | `ce159755215b60c8f582f3b4402ddf483083d990` |
+| Organizer main at refresh | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
+| Trusted organizer policy parent | `26ae2bf6326de93e7f1b1b0aaf94a7667aca797b` |
+| Promoted editable snapshot | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
+| Promoted receipt | `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` |
+| Official score | `2.9042110287045` |
 | Score | median of eight per-prompt serial-relative speedups; floor 0.90; ceiling 3.0 |
 
-The campaign commit overlays the promoted editable snapshot onto the current
-organizer contract. [`frontier-state.json`](frontier-state.json) and the live
-Yukon receipt are the operational authorities; this report is a timestamped
-comparison and can become stale quickly.
+The campaign import overlays the promoted editable snapshot onto the reviewed
+organizer contract. Its submitted delta from the previous `df404e08` snapshot
+is exactly `Qwen36MTPBlockSession.swift` and `Qwen35.swift` (`+54/-14`).
+[`frontier-state.json`](frontier-state.json) and the live Yukon receipt are the
+operational authorities; this report is a timestamped comparison and can
+become stale quickly.
 
 ## Architecture and cost-center comparison
 
@@ -150,7 +153,8 @@ contains Qwen-native versions or stronger mechanisms:
 
 - **Laguna-derived host/GPU overlap.** The layer loop in
   [`Qwen35.swift`](../Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift)
-  runs an `asyncEval` ladder for serial and width-two forwards.
+  runs an `asyncEval` ladder through decode/verify widths 1...9 and a denser
+  ladder for the charged 512-row seed.
 - **Quantized weight sharing across verification rows.** The affine4/g64 QMV
   kernels share weight/code loads across rows 2...9 while preserving the exact
   per-row arithmetic order; source and `mlx-generated/quantized.cpp` twin are
@@ -178,6 +182,11 @@ contains Qwen-native versions or stronger mechanisms:
 - **Persistent committed MTP history.** Lazy seed priming, accepted-row
   backlog, K/V-only history flush, and draft chaining avoid recomputing dead
   leading-row head work.
+- **Promoted confidence and dense-MLP composite.** The first draft probability
+  is capped by the pending target top-two margin, fused Q/K preparation is
+  limited to short lengths, and packed dense-MLP SiLU/product runs as a
+  compiled expression. These landed together; their individual signs remain
+  unresolved.
 - **Scored-shape warmups.** Legal verify widths, proposal selection, long-KV,
   recurrent replay, and the 512-row seed shapes have explicit warm paths.
 - **Decode mask construction is mostly absent.** Recurrent layers receive no
@@ -196,43 +205,38 @@ keeping a large speculative patch alive.
 
 | Rank | Experiment | Why it remains | Effort / risk | Decisive test |
 | ---: | --- | --- | --- | --- |
-| 0 | **Adopt the rebased 2.903545 stack if it promotes** | Public receipt `9ff11c5` passed all eight prompt checks and exceeded the frontier, but promotion failed on stale harness ancestry. Byte-identical rebases `e6c5ef3` and `1c2787b` were validating at this snapshot. | Low adoption risk after source review; mixed causal attribution | Require a promoted rebased receipt, compare its exact editable snapshot with current frontier, then import it as one unit before opening overlapping work. |
-| 1 | **Exact-fill first `KVCacheSimple.update`** | Current code allocates zero buffers and slice-copies a first update even when 512 tokens exactly fill two 256-token steps. | Very low / low | Bitwise compare returned K/V, offset, next-growth behavior, snapshots, and rollback after 512 + 1...9 tokens. Measure seed/window time on all eight prompts. |
-| 2 | **Packed GDN prework for S=1...2** | The packed mixer covers S=3...9; serial, adaptive-skip, and narrow verify calls retain separate conv/QKV/g paths. | Medium / medium | Reproduce every output and cache byte at S=1,2. Kill if a target call saves less than about 0.25 ms or end-to-end movement is noise. |
-| 3 | **Complete packed GDN `beta` with one certified BF16 exception** | Existing comments identify one finite BF16 input where fused sigmoid rounds differently; the excluded beta step costs a small but repeated dispatch/intermediate. | Low-medium / medium | Exhaust all 65,536 BF16 encodings, including NaNs/infinities, with an explicit correction for `0xC0DB`; require exact output/cache values. |
-| 4 | **Generic `rms_single_row` input reuse** | Current kernel rereads each input for the output pass; Laguna caches the already promoted floats in registers. | Low / low-medium | Port only the generic hunk, rebuild `mlx.metallib`, run raw-array equality and official-path tests. Inspect occupancy; stop if affected calls are not material. |
+| 0 | **Exact-fill first `KVCacheSimple.update`** | Current code allocates zero buffers and slice-copies a first update even when 512 tokens exactly fill two 256-token steps. | Very low / low | Bitwise compare returned K/V, offset, next-growth behavior, snapshots, and rollback after 512 + 1...9 tokens. Measure seed/window time on all eight prompts. |
+| 1 | **Packed GDN prework for S=1...2** | The packed mixer covers S=3...9; serial, adaptive-skip, and narrow verify calls retain separate conv/QKV/g paths. | Medium / medium | Reproduce every output and cache byte at S=1,2. Kill if a target call saves less than about 0.25 ms or end-to-end movement is noise. |
+| 2 | **Complete packed GDN `beta` with one certified BF16 exception** | Existing comments identify one finite BF16 input where fused sigmoid rounds differently; the excluded beta step costs a small but repeated dispatch/intermediate. | Low-medium / medium | Exhaust all 65,536 BF16 encodings, including NaNs/infinities, with an explicit correction for `0xC0DB`; require exact output/cache values. |
+| 3 | **Isolate compiled fused-SwiGLU** | It is promoted inside the four-hunk `7351e626` composite, but its independent contribution is unknown. | Low / low-medium | Run a matched on/off ablation on `7351e626`; require movement outside matched noise or direct structural evidence before extending it. |
+| 4 | **Generic `rms_single_row` input reuse** | Current kernel rereads each input for the output pass; Laguna caches the already promoted floats in registers, but Qwen hidden width 5,120 may dispatch `rms_looped` instead. | Low / low-medium | Prove scored-path reachability first; only then port the generic hunk, rebuild `mlx.metallib`, compare raw arrays, and inspect occupancy. |
 | 5 | **Residual-add plus following RMSNorm** | Qwen materializes `h = x + r`, rereads it for post-attention RMSNorm, then repeats the pattern after MLP. Laguna proved the class can win. | Medium / medium-high | First emit both exact BF16 residual and normalized output for hidden 5,120 at S=1...9 and 512. Preserve stock `rms_looped` reduction/cast order; require exact hidden, top-two values, and caches. |
 | 6 | **Certified target LM-head screening** | Qwen still computes every exact target logit before reducing top two; its larger vocabulary makes avoided rows valuable. | High / high | Build a conservative coarse plane and per-row bound; exact-evaluate every possible top-two survivor. Stop if p90/p99 survivor density makes coarse+tail bytes approach stock affine4 reads or any ID/value differs. |
-| 7 | **Pair GQA query heads to reuse K/V reads** | Laguna's shipped pair-head path attacked a real duplicate-byte seam; Qwen has six query heads per KV head. Its causal benefit was not isolated in the final campaign evidence. | High / high | Reimplement for D256 with independent accumulation order. Compile/occupancy gate first; a recent wider grouped-SDPA attempt failed pipeline creation from register pressure. |
+| 7 | **Pair GQA query heads to reuse K/V reads** | Laguna's shipped pair-head path attacked a real duplicate-byte seam; Qwen has six query heads per KV head. Its causal benefit was not isolated in the final campaign evidence. | High / high | Reimplement for D256 with independent accumulation order. Compile/occupancy gate first; wider grouped-SDPA work has failed pipeline creation from register pressure. |
 | 8 | **Fuse full-attention K/V append with short-query SDPA** | Q/K preparation is fused, but new K/V are written through generic cache update then reread by SDPA. | Very high / high | Preserve unbounded cache semantics and the qL=6...9 split that protects exact values. Require compile/resource evidence before full correctness work. |
 | 9 | **Dense affine4 MLP down projection plus residual epilogue** | SiLU/product can be fused cheaply, but `downProj` output and residual remain a hidden-size intermediate in every layer. | High / medium-high | A custom editable kernel must reproduce the current QMV arithmetic and BF16 cast-before-add boundary. Try residual+RMS first; stop if the epilogue changes exact top-two values. |
 | 10 | **Current affine4 scale/code byte census** | Laguna's largest late win came from scale-plane bytes, but Qwen's format and cross-row sharing are different and may already be near the floor. | Low audit / high implementation | Trace runtime-effective layouts and count unique code/scale bytes by shape. Open a format experiment only with a concrete removable-byte construction. |
 
-### Pending public stack: overlap warning
+### Promoted composite: attribution remains unresolved
 
-At this snapshot, public receipt
-`9ff11c51-5c82-4f67-86de-bc23fd61f786` at commit
-`6e5c10d50709f317c169c640ee20d76bd5e8b7bf` reported
-`2.90354559365115`, all eight prompts exact, and “promotion failed” because the
-trusted branch changed outside `editablePaths` during validation. Byte-identical
-rebases `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` and
-`1c2787b0-600b-4be2-8cd7-a8e25f0fd249` were validating on organizer commit
-`26ae2bf` when observed. Its public source description contains:
+Receipt `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` promoted source
+`7351e62674bc600f0ca148d3a1b0604716a09db6` at
+`2.9042110287045`. Relative to the preceding `df404e08` frontier score, the
+official increase is `0.0277816210771`, or `0.965837%`. The exact source delta
+contains four conceptual hunks:
 
-1. decode `asyncEval` ladder widened from S<=2 through S<=9;
-2. a denser ladder for the charged 512-row seed;
-3. fused Q/K preparation restricted to L<=16 so the seed uses the faster stock
-   path while short verify widths retain the fused path;
-4. a target top-one/top-two-margin cap on the first-position acceptance prior;
-5. shape-specialized compiled dense-MLP SiLU/product.
+1. a target top-two-margin cap on the first-position acceptance prior;
+2. shape-specialized compiled dense-MLP SiLU/product;
+3. fused Q/K preparation restricted to L<=16; and
+4. the decode ladder widened through S<=9 plus a denser charged-seed ladder.
 
-Do not independently implement these while a rebased copy is validating. The
-generic shapeless `compiledSiluProduct` helper already exists in
+The result establishes the complete composition, not four individual wins.
+Do not extend or recombine one component without a matched ablation or a direct
+structural cost proof. The generic shapeless `compiledSiluProduct` helper
+already exists in
 [`SwitchLayers.swift`](../Vendor/mlx-swift-lm/Libraries/MLXLMCommon/SwitchLayers.swift),
-but the public composition used a shape-specialized closure after a shapeless
-half-slice could not infer its output shape. If the stack does not promote,
-isolate mechanisms 1, 2, and 5 first; mechanisms 3 and 4 had mixed standalone
-evidence and should not inherit the composite score.
+but the promoted composition uses a shape-specialized closure because a
+shapeless half-slice could not infer its output shape.
 
 ## Two first experiment cards
 
@@ -323,8 +327,9 @@ Required tests:
 - **Do not dismantle Qwen's rollback machinery.** Recurrent snapshot deletion,
   target-hidden reuse, and several compiled MTP-head chains have recent negative
   receipts.
-- **Do not attribute the public 2.903545 composite to every component.** It is
-  a combined result and has not yet become the promoted source authority.
+- **Do not attribute the promoted 2.904211 composite to every component.** It
+  is authoritative only as a combined result; no component is independently
+  established by that receipt.
 
 ## Research discipline for transfers
 
