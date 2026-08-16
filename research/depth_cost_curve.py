@@ -27,7 +27,9 @@ from pathlib import Path
 
 ROUND_RE = re.compile(r"^mtp-trace: round=(\d+) d=(\d+) acc=(\d+) (.*)$")
 KV_RE = re.compile(r"(\w+)=(-?\d+)")
-BEGIN_RE = re.compile(r"^mtp-trace: begin seed=(\d+) build_us=(\d+) eval_wall_us=(\d+)$")
+BEGIN_RE = re.compile(
+    r"^mtp-trace: begin seed=(\d+) build_us=(\d+) eval_wall_us=(\d+)"
+    r"(?: h=(\S+))?$")
 
 PHASES = [
     "draft_build_us",
@@ -46,7 +48,7 @@ def parse_trace(path):
         m = BEGIN_RE.match(line)
         if m:
             begin = {"seed": int(m.group(1)), "build_us": int(m.group(2)),
-                     "eval_wall_us": int(m.group(3))}
+                     "eval_wall_us": int(m.group(3)), "h": m.group(4)}
             continue
         m = ROUND_RE.match(line)
         if m:
