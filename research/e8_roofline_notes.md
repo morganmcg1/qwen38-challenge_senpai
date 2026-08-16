@@ -71,7 +71,73 @@ served from cache, not DRAM. This matters because the "bandwidth-bound at
 Corollary: the true operating point sits between the two idealisations, which
 is exactly why the direct arms are needed rather than more curve fitting.
 
-### 1d. Classical FLOP roofline (for reference only)
+### 1e. REFUTATION of the "6.0x tighter" statistic (not of the conclusion)
+
+The advisor's `research/roofline_regime_check.py` decides with
+
+```python
+verdict = "ALU-bound" if prod_rel < nom_rel else "bandwidth-bound"
+```
+
+i.e. a two-way contest between
+* `H_A`: `nominal` flat  <=> t independent of M (perfect cross-row reuse), and
+* `H_B`: `nominal*M` flat <=> t ~ M (zero cross-row reuse).
+
+**The memory-side model is not on the ballot.** The hypothesis whose death the
+script announces ("the memory-side lever family is dead") is
+`H_C`: `nominal*ceil(M/4)` flat <=> t ~ ceil(M/4) — the integer weight-stream
+model that the harness's own `gbps_stream_corrected` encodes. `H_C` is never
+scored, so the test cannot reject it.
+
+**Consequence 1 — the rule has no specificity.** Generate data from `H_C`
+exactly, with zero noise (`t = ceil(M/4)`, `nominal := 1/t`) and run the
+advisor's rule on it:
+
+| window | H_A | H_C | H_B | advisor rule reports |
+|---|---:|---:|---:|---|
+| M=4,5,8,9 | 49.5% | **0.0%** | 22.2% | "ALU-bound, 2.2x tighter" |
+| M=4..9 | 41.0% | **0.0%** | 18.2% | "ALU-bound, 2.3x tighter" |
+| M=1..9 | 40.6% | **0.0%** | 33.3% | "ALU-bound, 1.2x tighter" |
+
+A *perfectly bandwidth-bound* kernel makes the rule announce "ALU-bound" with a
+2.2x margin. So 2.2x is the rule's **floor**, not 1.0x. The reason is trivial:
+over M in {4,5,8,9}, `1/M` has ~37% relative sd by construction, so `H_A` is
+guaranteed to lose against anything. The 6.0x must be read against that floor.
+
+**Consequence 2 — restoring `H_C` shrinks the margin from 6.0x to 3.8x.**
+
+| dataset | n | H_A | H_C | H_B | winner | B vs C | B vs A |
+|---|---:|---:|---:|---:|---|---:|---:|
+| advisor 4 points (FACT 1) | 4 | 33.4% | 21.5% | **5.6%** | H_B | 3.8x | 6.0x |
+| my 8-shape median, M=4..9 | 6 | 27.1% | 17.0% | **4.5%** | H_B | 3.8x | 6.0x |
+| my 8-shape median, M=1..9 | 9 | 39.8% | **14.2%** | 26.9% | **H_C** | 0.5x | 1.5x |
+
+Two things follow. (a) My independent 6-point, 8-shape median reproduces the
+advisor's ratio structure exactly (6.0x vs `H_A`, 3.8x vs `H_C`) from different
+data, so the **direction is confirmed and is not an artifact of the 4-point
+window**. (b) The honest margin over the model actually being declared dead is
+**3.8x against a rule floor of 2.2x** — much thinner than "6.0x tighter"
+suggests.
+
+**Consequence 3 — the M>=4 restriction is load-bearing.** Over the full M=1..9
+the winner *flips* to `H_C` (14.2% vs 26.9%). That is expected below the knee
+and is not itself a refutation, since the brief does restrict to M>=4. But it
+means the conclusion rests on the knee band `[2.99, 3.27]` being right: the
+verdict is a statement about a 6-point window whose left edge is estimated, not
+measured.
+
+Per-shape, `H_B` wins on all 8 shapes, but the margin over `H_C` ranges from
+**2.1x** (`linear_attn.out_proj`) and 2.2x (`full_attn.o_proj`) up to 6.1x
+(`head.compact_draft_vocab`). The two shapes with the +24% drift from 1b are
+also the two weakest ALU cases — the same structure showing up twice.
+
+**Net:** the advisor's conclusion survives my attempt to break it, but the
+statistic offered as "the actual strength of the case" overstates it by ~1.6x
+and is measured against a null that cannot be true. This is a reason the arms
+are necessary, which is the advisor's own position; I am disputing the strength
+of the prior, not the plan.
+
+### 1f. Classical FLOP roofline (for reference only)
 
 4-bit g64 => 0.5625 B/weight; 2 FLOP/weight/row => arithmetic intensity
 = 3.56*M FLOP/byte. Machine balance 7500/226.9 = 33 FLOP/byte. Naive roofline
