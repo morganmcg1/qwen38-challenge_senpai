@@ -119,6 +119,41 @@ def shifted_profile(profile: list[float], weights: list[int], q: float) -> list[
     return [_sigmoid(l + 0.5 * (lo + hi)) for l in logits]
 
 
+def shifted_pair(
+    ps: list[float],
+    ws: list[int],
+    pd: list[float],
+    wd: list[int],
+    q: float,
+) -> tuple[list[float], list[float]]:
+    """Shift the shallow-cap and deep-cap profiles by one shared log-odds
+    offset until their pooled observation-weighted mean equals q.
+
+    A shared offset is what makes this a difficulty sweep: it moves the whole
+    prompt to a harder or easier regime while preserving the measured gap
+    between rounds the gate held shallow and rounds it let run deep. Shifting
+    each subpopulation to q separately would erase that gap, which is exactly
+    the conditioning the gate exists to exploit."""
+    import math
+
+    ls = [math.log(p / (1.0 - p)) for p in ps]
+    ld = [math.log(p / (1.0 - p)) for p in pd]
+    wsum = sum(ws) + sum(wd)
+    lo, hi = -12.0, 12.0
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        mean = (
+            sum(_sigmoid(ls[i] + mid) * ws[i] for i in range(len(ls)))
+            + sum(_sigmoid(ld[i] + mid) * wd[i] for i in range(len(ld)))
+        ) / wsum
+        if mean > q:
+            hi = mid
+        else:
+            lo = mid
+    d = 0.5 * (lo + hi)
+    return [_sigmoid(l + d) for l in ls], [_sigmoid(l + d) for l in ld]
+
+
 def greedy_depth(p: list[float], cap: int) -> int:
     """Replay costModelDepth against a per-position acceptance vector."""
     if cap <= 0:
@@ -211,8 +246,8 @@ def evaluate(gate: int, ps: list[float], pd: list[float], rebase_head: bool) -> 
 def crossover(gate_a: int, gate_b: int, rebase_head: bool, mk) -> float | None:
     """Lowest q in (0.50, 0.999] at which raw(gate_a) overtakes raw(gate_b)."""
     lo, hi = 0.50, 0.999
-    f = lambda x: evaluate(gate_a, mk(x), rebase_head)["raw"] - evaluate(
-        gate_b, mk(x), rebase_head
+    f = lambda x: evaluate(gate_a, *mk(x), rebase_head)["raw"] - evaluate(
+        gate_b, *mk(x), rebase_head
     )["raw"]
     if f(hi) <= 0 or f(lo) >= 0:
         return None
@@ -242,20 +277,31 @@ def main() -> None:
     args = ap.parse_args()
 
     measured = None
+    measured_shallow = None
+    measured_deep = None
     if args.profile_from:
         measured = position_acceptance(args.profile_from)
-        base = [
-            x if x not in (None, 0.0, 1.0) else 0.9
-            for x in measured["acceptance"]
-        ]
-        weights = [max(w, 1) for w in measured["observations"]]
-        mk = lambda q: shifted_profile(base, weights, q)
+        measured_shallow = position_acceptance(args.profile_from, only_deep=False)
+        measured_deep = position_acceptance(args.profile_from, only_deep=True)
+
+        def _clean(stats):
+            base = [
+                min(max(x, 0.05), 0.995) if x is not None else 0.9
+                for x in stats["acceptance"]
+            ]
+            return base, [max(w, 1) for w in stats["observations"]]
+
+        ps0, ws0 = _clean(measured_shallow)
+        pd0, wd0 = _clean(measured_deep)
+        mk = lambda q: shifted_pair(ps0, ws0, pd0, wd0, q)
     else:
-        mk = lambda q: [q] * DEEP_CAP
+        mk = lambda q: ([q] * DEEP_CAP, [q] * DEEP_CAP)
 
     qs = [0.70, 0.80, 0.85, 0.90, 0.93, 0.95, 0.96, 0.98]
     out: dict = {
         "measured_position_acceptance": measured,
+        "measured_position_acceptance_shallow_cap_rounds": measured_shallow,
+        "measured_position_acceptance_deep_cap_rounds": measured_deep,
         "constants": {
             "headStepCostRatio": H,
             "sdpaWidthWallDepthCap": SHALLOW_CAP,
@@ -280,7 +326,7 @@ def main() -> None:
                 ("gate_1", 1),
                 ("no_gate", 0),
             ):
-                row[label] = evaluate(gate, profile, rebase)
+                row[label] = evaluate(gate, *profile, rebase)
             # EMA-conditioned arm: with a homogeneous q the per-position EMA
             # concentrates on q, so the EMA test degenerates to a prompt-level
             # threshold on top of the streak ladder.

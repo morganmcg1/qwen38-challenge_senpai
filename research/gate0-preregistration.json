@@ -1,0 +1,30 @@
+{
+ "pre_registered_for": "runM-gate0-cap8-512",
+ "two_state_model": {
+  "keys_profile_on": "streak state (what the code branches on)",
+  "gate1": {
+   "post_reject_round_share": 0.2313,
+   "tokens_per_round": 7.204,
+   "ms_per_round": 196.82,
+   "ms_per_token": 27.32
+  },
+  "gate0": {
+   "post_reject_round_share": 0.3502,
+   "tokens_per_round": 7.231,
+   "ms_per_round": 217.81,
+   "ms_per_token": 30.123
+  },
+  "validation_gate1_share_measured": 0.2432,
+  "validation_gate1_ms_per_token_measured": 26.718,
+  "block_ms_per_token_change_pct": 10.26,
+  "predicted_raw": 1.9724,
+  "predicted_raw_change_vs_runL_pct": -7.35
+ },
+ "occupancy_model_L_calibrated": {
+  "keys_profile_on": "depth actually run (grants deep profile to every round)",
+  "predicted_raw": 2.17076,
+  "predicted_raw_change_vs_runL_pct": 1.97
+ },
+ "runL_measured_raw": 2.128814113,
+ "decision_rule": "Run M settles which conditioning is right. If raw >= 2.17 the occupancy model is vindicated and the streak gate should be deleted. If raw <= 2.05 the two-state model is right, the gate earns its keep purely by keeping post-reject rounds shallow, and gate 1 is the recommended setting."
+}
