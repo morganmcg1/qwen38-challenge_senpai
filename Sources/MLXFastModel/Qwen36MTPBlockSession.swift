@@ -572,7 +572,16 @@ public final class Qwen36MTPBlockSession {
     /// Gated on a full-accept streak so the deep rounds only fire where the
     /// head has been perfect, mirroring the streak ladder that qualified
     /// cap 4; any reject resets the streak.
-    private static let segmentedVerifyDepthCap = 8
+    ///
+    /// 7, not the trusted maximum 8, because depth 8 is dominated on cost
+    /// rather than on fidelity: width 9 verified bit-exact per position on
+    /// the hexfloat row gate, but every verify width rides the per-row qmv
+    /// dispatch, and the marginal round cost of the 8th draft (27.6 ms on
+    /// M4 Pro) exceeds the running cost per token at depth 7 (23.7 ms), so
+    /// the 9th row cannot repay itself even at 100% acceptance. Raising
+    /// this back to 8 needs a verify path that amortizes the extra row --
+    /// padding the batch past the qmv limit into qmm_t_splitk, say.
+    private static let segmentedVerifyDepthCap = 7
     private static let segmentedStreakGate = 3
 
     /// The greedy marginal-depth rule described at the policy's assignment.
