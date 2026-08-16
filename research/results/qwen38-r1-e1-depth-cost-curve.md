@@ -1557,6 +1557,7 @@ depth as the leg runs out of tokens, the honest statistic is the **accept rate**
 | `d2` | 2 | 1.931 (N=102) | 1.833 (N=72) | 0.9655 | 0.9165 | **−5.1%** |
 | `d3` | 3 | 2.859 (N=78) | 2.778 (N=54) | 0.9530 | 0.9376 | **−1.6%** |
 | `d4` | 4 | 3.762 (N=63) | 3.523 (N=44) | 0.9405 | 0.8960 | **−4.7%** |
+| `d5` | 5 | 4.537 (N=54) | 4.077 (N=39) | 0.9074 | 0.8197 | **−9.7%** |
 | `d8` | 8 | 7.000 (N=37) | 5.750 (N=28) | 0.8750 | 0.7188 | **−17.9%** |
 
 At depth 1 there is effectively no EOS penalty at all (pre-EOS `p1` = 0.9803,
@@ -1573,6 +1574,15 @@ magnitude worse at `d = 8` — not a smooth function of depth. This is the secon
 place in this report where per-depth structure turns out to be jagged rather
 than smooth, which is the concrete vindication of the advisor's comment-8
 instruction to scan every depth instead of interpolating between endpoints.
+
+Adding `d5` sharpens that statement rather than softening it. The jaggedness is
+now visibly **confined to the shallow half**: `+0.1 → −5.1 → −1.6 → −4.7` across
+`d = 1..4` has no order to it, but from `d = 4` onward the tail is cleanly
+monotone — `−4.7 → −9.7 → −17.9` at `d = 4, 5, 8`. So the honest description is
+two regimes, not one function: below `d ≈ 4` the EOS penalty is small and buried
+in sampling noise, and above it the penalty grows fast and reliably. That is
+consistent with the truncation mechanism, because a whole-tail truncation only
+starts to dominate once the tail is long.
 
 This matters for the policy argument because it is a *second*, independent
 reason to prefer shallower depth in exactly the regime where the cost curve
