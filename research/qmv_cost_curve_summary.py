@@ -182,6 +182,67 @@ def weighted_verify_roofline(shapes, m):
     return total
 
 
+def fidelity_by_width(shapes, widths):
+    """Row 0 must not depend on how many rows travel with it.
+
+    A verify batch only exists to check tokens the serial model would emit, so
+    widening it may not perturb row 0. Crossing `vector_limit` swaps `qmv` for
+    `qmm_t_splitk`, whose different reduction order breaks that invariant, which
+    makes any padding scheme a fidelity question before it is a speed question.
+    """
+    out = []
+    for m in widths:
+        rows = [row(s, m) for s in shapes]
+        if any(r is None for r in rows):
+            continue
+        diverged = [
+            s["name"] for s, r in zip(shapes, rows) if not r["row0_bitwise_matches_m1"]
+        ]
+        out.append(
+            {
+                "m": m,
+                "shapes_bitwise_identical": len(rows) - len(diverged),
+                "shapes_total": len(rows),
+                "max_abs_delta": max(r["row0_max_abs_delta_vs_m1"] for r in rows),
+                "diverged_shapes": diverged,
+            }
+        )
+    cliff = next((e["m"] for e in out if e["diverged_shapes"]), None)
+    return {"by_width": out, "bitwise_cliff_m": cliff}
+
+
+def tap_corrected_tax(shapes, widths, ref_width):
+    """Repeat the normalized tax with the timing scaffolding removed.
+
+    The dependent-chain tap is a fixed cost per call, so it is a larger share of
+    a narrow call than a wide one and therefore flatters the measured curve.
+    Recomputing BW_eff and FLOPS_eff from corrected endpoints keeps the tax
+    self-consistent and shows whether the stop-rule branch survives the
+    correction.
+    """
+
+    def net(shape, m):
+        r = row(shape, m)
+        return r["seconds_per_call"] - (r.get("tap_overhead_seconds_per_call") or 0.0)
+
+    out = {}
+    for m in widths:
+        num = den = 0.0
+        for s in shapes:
+            if not s["calls_per_verify"]:
+                continue
+            if any(row(s, x) is None for x in (m, 1, ref_width)):
+                continue
+            byts, flops = s["weight_bytes"], s["flops_per_row"]
+            bw = byts / net(s, 1)
+            fl = flops * ref_width / net(s, ref_width)
+            num += s["calls_per_verify"] * net(s, m)
+            den += s["calls_per_verify"] * max(byts / bw, flops * m / fl)
+        if den:
+            out[m] = num / den
+    return out
+
+
 def crossover(shape):
     """Locate the kernel switch by the shape of the cost curve itself.
 
@@ -285,7 +346,7 @@ def round_cost_model(verify):
     n = len(anchors)
     sd = sum(d for d, _ in anchors)
     sdd = sum(d * d for d, _ in anchors)
-    resid = [s - verify[d + 1] for _, s in anchors]
+    resid = [s - verify[d + 1] for d, s in anchors]
     sr = sum(resid)
     sdr = sum(d * r for (d, _), r in zip(anchors, resid))
     det = n * sdd - sd * sd
@@ -434,13 +495,19 @@ def main():
             }
         )
 
+    fidelity = fidelity_by_width(shapes, widths)
+    corrected = tap_corrected_tax(shapes, widths, FLOPS_REF_WIDTH)
+
     # Does padding 9 -> 10 (into the qmm_splitk regime) buy anything?
     pad_gain = None
     if verify.get(10):
+        cliff = fidelity["bitwise_cliff_m"]
         pad_gain = {
             "verify_seconds_m9": verify[9],
             "verify_seconds_m10": verify[10],
             "pad_9_to_10_speedup": verify[9] / verify[10],
+            "row0_survives_padding": cliff is None or cliff > 10,
+            "bitwise_cliff_m": cliff,
         }
 
     # Modelled verify wall against the advisor's observed eval_wall.
@@ -513,8 +580,11 @@ def main():
         "weighted_verify_roofline_seconds": verify_floor,
         "weighted_cost_multiplier_vs_m1": multiplier,
         "weighted_qmv_tax": weighted_tax,
+        "weighted_qmv_tax_tap_corrected": corrected,
         "weighted_cost_9_over_1": weighted_9,
         "weighted_qmv_tax_9": tax_9,
+        "weighted_qmv_tax_9_tap_corrected": corrected.get(9),
+        "row0_fidelity": fidelity,
         "stop_rule_branch": branch,
         "stop_rule_branch_raw_thresholds": raw_branch,
         "decision": decision,
@@ -603,16 +673,26 @@ def main():
         print(f"  {kn['name']:36s} {kn['bw_eff_gb_s']:9.1f}G {fl} {km} "
               f"{kn['plateau_end_m']:8d} {(mk if mk else 0):9d}")
     print("\ncall-mix-weighted verify cost, relative to width 1")
+    print("  tap-corr repeats the tax with the timing scaffolding subtracted")
     for m in widths:
         tax = weighted_tax.get(m)
         tx = f"{tax:6.3f}x" if tax else f"{'n/a':>7s}"
+        cor = corrected.get(m)
+        cx = f"{cor:6.3f}x" if cor else f"{'n/a':>7s}"
         print(f"  M={m:3d}  {verify[m]*1e3:8.3f} ms  raw {multiplier[m]:6.3f}x"
-              f"  tax {tx}")
+              f"  tax {tx}  tap-corr {cx}")
     print(f"\n{decision}")
     print(f"raw-threshold cross-check: cost(9)/cost(1) = {weighted_9:.3f}x "
           f"-> branch '{raw_branch}' under the original 1.5x/3.0x rule")
+    print("\nrow-0 fidelity vs width: does widening the verify batch change the")
+    print("token the serial model would have emitted?")
+    for e in fidelity["by_width"]:
+        print(f"  M={e['m']:3d}  bitwise-identical {e['shapes_bitwise_identical']}"
+              f"/{e['shapes_total']} shapes   max |delta| {e['max_abs_delta']:.6g}")
+    print(f"  bitwise cliff at M={fidelity['bitwise_cliff_m']}")
     if pad_gain:
-        print(f"pad 9->10 speedup: {pad_gain['pad_9_to_10_speedup']:.3f}x")
+        print(f"\npad 9->10 speedup: {pad_gain['pad_9_to_10_speedup']:.3f}x"
+              f"   row 0 survives padding: {pad_gain['row0_survives_padding']}")
     print("\ndispatch boundary: a cost DROP at M means the wider kernel that takes")
     print("over there is cheaper, so padding up to it can pay")
     print(f"  {'shape':36s} {'limit':>5s} {'step@limit':>11s} "
@@ -785,11 +865,17 @@ def main():
         verify_table = wandb.Table(
             columns=[
                 "m", "verify_seconds", "verify_ms", "multiplier_vs_m1", "qmv_tax",
+                "qmv_tax_tap_corrected", "shapes_bitwise_identical",
+                "row0_max_abs_delta",
             ]
         )
+        fid = {e["m"]: e for e in fidelity["by_width"]}
         for m in widths:
+            f = fid.get(m, {})
             verify_table.add_data(
-                m, verify[m], verify[m] * 1e3, multiplier[m], weighted_tax.get(m)
+                m, verify[m], verify[m] * 1e3, multiplier[m], weighted_tax.get(m),
+                corrected.get(m), f.get("shapes_bitwise_identical"),
+                f.get("max_abs_delta"),
             )
         knee_table = wandb.Table(
             columns=[
@@ -884,11 +970,19 @@ def main():
                 "qmv/weighted_verify_tax": wandb.plot.line(
                     verify_table, "m", "qmv_tax",
                     title="call-mix-weighted qmv_tax vs width"),
+                "qmv/weighted_verify_tax_tap_corrected": wandb.plot.line(
+                    verify_table, "m", "qmv_tax_tap_corrected",
+                    title="call-mix-weighted qmv_tax, timing tap removed"),
+                "qmv/row0_bitwise_identical_shapes": wandb.plot.line(
+                    verify_table, "m", "shapes_bitwise_identical",
+                    title="shapes whose row 0 is unchanged by verify width"),
             }
         )
         flat = {
             "qmv/weighted_cost_9_over_1": weighted_9,
             "qmv/weighted_qmv_tax_9": tax_9,
+            "qmv/weighted_qmv_tax_9_tap_corrected": corrected.get(9),
+            "qmv/row0_bitwise_cliff_m": fidelity["bitwise_cliff_m"],
             "qmv/stop_rule_branch": branch,
             "qmv/stop_rule_branch_raw_thresholds": raw_branch,
             "qmv/peak_bandwidth_gb_s": rf["peak_bandwidth_bytes_per_second"] / 1e9,
@@ -898,6 +992,9 @@ def main():
         flat |= {f"qmv/verify_ms_m{m}": verify[m] * 1e3 for m in widths}
         flat |= {
             f"qmv/weighted_tax_m{m}": t for m, t in weighted_tax.items()
+        }
+        flat |= {
+            f"qmv/weighted_tax_tap_corrected_m{m}": t for m, t in corrected.items()
         }
         flat |= {
             f"qmv/knee_m_{kn['name']}": kn["predicted_knee_m"]
@@ -948,6 +1045,9 @@ def main():
             }
         if pad_gain:
             flat["qmv/pad_9_to_10_speedup"] = pad_gain["pad_9_to_10_speedup"]
+            flat["qmv/pad_9_to_10_row0_survives"] = int(
+                pad_gain["row0_survives_padding"]
+            )
         for m, d in advisor.items():
             flat[f"qmv/qmm_share_of_eval_wall_m{m}"] = d["qmm_share_of_eval_wall"]
         run.summary.update(flat)
