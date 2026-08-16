@@ -1,0 +1,46 @@
+{
+  "label": "runO (winner repeat: cap 7, gate 3)",
+  "trace": "research/trace-runO-cap7-gate3-512.log",
+  "gate": 3,
+  "deep_cap": 7,
+  "shallow_cap": 4,
+  "round_count": 81,
+  "depth_histogram": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 1,
+    "4": 29,
+    "5": 2,
+    "6": 3,
+    "7": 46,
+    "8": 0
+  },
+  "cap_histogram": {
+    "4": 29,
+    "7": 52
+  },
+  "rounds_at_deep_cap": 46,
+  "frac_at_deep_cap": 0.5679012345679012,
+  "rounds_gate_closed": 29,
+  "frac_gate_closed": 0.35802469135802467,
+  "rounds_gate_open": 52,
+  "frac_gate_open": 0.6419753086419753,
+  "frac_of_open_rounds_at_deep_cap": 0.8846153846153846,
+  "rounds_at_shallow_cap": 29,
+  "frac_of_closed_rounds_at_shallow_cap": 1.0,
+  "depth_by_cap": {
+    "4": {
+      "4": 29
+    },
+    "7": {
+      "3": 1,
+      "5": 2,
+      "6": 3,
+      "7": 46
+    }
+  },
+  "accepted_total": 431,
+  "mean_depth": 5.790123456790123,
+  "mean_accepted": 5.320987654320987
+}

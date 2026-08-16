@@ -73,6 +73,21 @@ __pycache__/
 wandb/
 # SENPAI-CAMPAIGN-END
 
+# Senpai research measurement artifacts (evidence lives in W&B, not Git)
+research/raw-*.log
+research/trace-*.log
+research/score-*.json
+research/analysis-*.json
+research/costfit-*.json
+research/dominance-*.json
+research/feasibility-*.json
+research/sweep-*.json
+research/guardrail-*.json
+research/ema-*.json
+research/occupancy-*.json
+research/fb6-*.json
+research/fb7-*.json
+research/capture-*/
 # research-only measurement artifacts (qwen38-r1-e1-depth-cost-curve)
 research/out/
 wandb/

@@ -1,0 +1,46 @@
+{
+  "label": "runI (control, shipped BASE_SHA: cap 8, gate 3)",
+  "trace": "research/trace-runI-base-cap8-512.log",
+  "gate": 3,
+  "deep_cap": 8,
+  "shallow_cap": 4,
+  "round_count": 82,
+  "depth_histogram": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 39,
+    "5": 2,
+    "6": 3,
+    "7": 5,
+    "8": 33
+  },
+  "cap_histogram": {
+    "4": 39,
+    "8": 43
+  },
+  "rounds_at_deep_cap": 33,
+  "frac_at_deep_cap": 0.4024390243902439,
+  "rounds_gate_closed": 39,
+  "frac_gate_closed": 0.47560975609756095,
+  "rounds_gate_open": 43,
+  "frac_gate_open": 0.524390243902439,
+  "frac_of_open_rounds_at_deep_cap": 0.7674418604651163,
+  "rounds_at_shallow_cap": 39,
+  "frac_of_closed_rounds_at_shallow_cap": 1.0,
+  "depth_by_cap": {
+    "4": {
+      "4": 39
+    },
+    "8": {
+      "5": 2,
+      "6": 3,
+      "7": 5,
+      "8": 33
+    }
+  },
+  "accepted_total": 430,
+  "mean_depth": 5.890243902439025,
+  "mean_accepted": 5.2439024390243905
+}

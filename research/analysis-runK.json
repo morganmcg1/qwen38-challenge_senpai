@@ -1,0 +1,247 @@
+{
+  "label": "runK-gate2-cap8-512",
+  "notes": "Arm B1: segmentedStreakGate=2 at segmentedVerifyDepthCap=8, 512 decode tokens, local-iterate, M4 Pro",
+  "config": {
+    "segmentedVerifyDepthCap": 8,
+    "segmentedStreakGate": 2,
+    "sdpaWidthWallDepthCap": 4,
+    "tokens": 512
+  },
+  "score": {
+    "score": 2.1019606601367307,
+    "passed": true,
+    "track_id": "qwen3.8-27b-mtp-v1",
+    "metrics": {
+      "mode": "qwen-mtp-local-iterate",
+      "oracle": "candidate-local-mtp-golden-rows",
+      "official_score": false,
+      "rankable": false,
+      "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+      "ranked_decode_speedup_floor": 0.9,
+      "public_drift_tripwire_passed": true,
+      "decode_tokens": 512,
+      "mtp_depth": 8,
+      "all_tokens_matched": true,
+      "uses_pinned_mtp_head": true,
+      "head_provenance_sha256": "05a8613e3d86456f5df9bc8ab8c53daa5d19604c08d1b0bd215ad0d599cb2863",
+      "effective_mean_draft_len": 6.1265822784810124,
+      "serial_seconds_per_token": 0.07361460360698402,
+      "mtp_seconds_per_token": 0.03502187505364418,
+      "mtp_decode_speedup": 2.1019606601367307,
+      "accepted_draft_rate": 0.8946280991735537,
+      "residual_divergence_count": 0
+    }
+  },
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.9,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "05a8613e3d86456f5df9bc8ab8c53daa5d19604c08d1b0bd215ad0d599cb2863",
+    "effective_mean_draft_len": 6.1265822784810124,
+    "serial_seconds_per_token": 0.07361460360698402,
+    "mtp_seconds_per_token": 0.03502187505364418,
+    "mtp_decode_speedup": 2.1019606601367307,
+    "accepted_draft_rate": 0.8946280991735537,
+    "residual_divergence_count": 0
+  },
+  "phases": {
+    "reference": {
+      "rounds": 0,
+      "drafting_rounds": 0,
+      "depth_histogram": {
+        "0": 0
+      },
+      "mean_depth": 0.0,
+      "drafted_tokens": 0,
+      "accepted_tokens": 0,
+      "rejected_tokens": 0,
+      "accept_rate": 0.0,
+      "reject_round_rate": 0.0,
+      "accepted_tokens_per_round": 0.0,
+      "tokens_per_round": 0.0,
+      "rounds_per_token": 0.0,
+      "mean_round_us": 0.0,
+      "mean_eval_wall_us": 0.0
+    },
+    "serial": {
+      "rounds": 512,
+      "drafting_rounds": 0,
+      "depth_histogram": {
+        "0": 512
+      },
+      "mean_depth": 0.0,
+      "drafted_tokens": 0,
+      "accepted_tokens": 0,
+      "rejected_tokens": 0,
+      "accept_rate": 0.0,
+      "reject_round_rate": 0.0,
+      "accepted_tokens_per_round": 0.0,
+      "tokens_per_round": 1.0,
+      "rounds_per_token": 1.0,
+      "mean_round_us": 0.0,
+      "mean_eval_wall_us": 0.0
+    },
+    "mtp": {
+      "rounds": 79,
+      "drafting_rounds": 79,
+      "depth_histogram": {
+        "0": 0,
+        "1": 1,
+        "4": 29,
+        "5": 3,
+        "6": 6,
+        "7": 4,
+        "8": 36
+      },
+      "mean_depth": 6.1265822784810124,
+      "drafted_tokens": 484,
+      "accepted_tokens": 433,
+      "rejected_tokens": 51,
+      "accept_rate": 0.8946280991735537,
+      "reject_round_rate": 0.22784810126582278,
+      "accepted_tokens_per_round": 5.481012658227848,
+      "tokens_per_round": 6.481012658227848,
+      "rounds_per_token": 0.154296875,
+      "mean_round_us": 175932.6329113924,
+      "mean_eval_wall_us": 74807.6329113924,
+      "cap_histogram": {
+        "4": 29,
+        "8": 50
+      },
+      "streak_in_histogram": {
+        "0": 19,
+        "1": 10,
+        "2": 8,
+        "3": 5,
+        "4": 5,
+        "5": 5,
+        "6": 5,
+        "7": 3,
+        "8": 3,
+        "9": 2,
+        "10": 2,
+        "11": 2,
+        "12": 2,
+        "13": 2,
+        "14": 2,
+        "15": 2,
+        "16": 2
+      },
+      "deep_gate_open_rate": 0.6329113924050633,
+      "ema4_when_gate_open": {
+        "n": 50,
+        "min": 0.8301,
+        "p25": 0.9473,
+        "median": 0.9825,
+        "p75": 0.9934,
+        "max": 0.9989
+      },
+      "ema4_when_gate_closed": {
+        "n": 29,
+        "min": 0.784,
+        "p25": 0.888,
+        "median": 0.9231,
+        "p75": 0.9989,
+        "max": 0.9989
+      }
+    }
+  },
+  "row_gate": {
+    "serial_rows": 512,
+    "mtp_rows": 512,
+    "compared_rows": 512,
+    "unmatched_positions": 0,
+    "value_mismatches": 2,
+    "id_mismatches": 0,
+    "per_width": {
+      "2": {
+        "compared": 2,
+        "value_mismatches": 2,
+        "id_mismatches": 0,
+        "bit_exact": false
+      },
+      "5": {
+        "compared": 117,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      },
+      "6": {
+        "compared": 18,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      },
+      "7": {
+        "compared": 37,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      },
+      "8": {
+        "compared": 32,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      },
+      "9": {
+        "compared": 306,
+        "value_mismatches": 0,
+        "id_mismatches": 0,
+        "bit_exact": true
+      }
+    },
+    "mismatch_samples": [
+      {
+        "pos": 1023,
+        "width": 2,
+        "round": 79,
+        "mtp_ids": [
+          87363,
+          86368
+        ],
+        "serial_ids": [
+          87363,
+          86368
+        ],
+        "mtp_values": [
+          "0x1.fep+4",
+          "0x1.22p+4"
+        ],
+        "serial_values": [
+          "0x1.fcp+4",
+          "0x1.2p+4"
+        ]
+      },
+      {
+        "pos": 1024,
+        "width": 2,
+        "round": 79,
+        "mtp_ids": [
+          286,
+          1658
+        ],
+        "serial_ids": [
+          286,
+          1658
+        ],
+        "mtp_values": [
+          "0x1.2ap+5",
+          "0x1.4cp+4"
+        ],
+        "serial_values": [
+          "0x1.2ap+5",
+          "0x1.4ep+4"
+        ]
+      }
+    ]
+  }
+}

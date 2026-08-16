@@ -1,0 +1,177 @@
+{
+  "ema_at_index_when_streak_closed": {
+    "max": 0.8962,
+    "mean": 0.7991133333333332,
+    "min": 0.7379,
+    "n": 15,
+    "p10": 0.7379,
+    "p50": 0.7661,
+    "p90": 0.8962
+  },
+  "ema_at_index_when_streak_open": {
+    "max": 0.9363,
+    "mean": 0.8260695652173914,
+    "min": 0.7379,
+    "n": 23,
+    "p10": 0.7379,
+    "p50": 0.831,
+    "p90": 0.9118
+  },
+  "ema_in_by_index": {
+    "0": {
+      "max": 0.9996,
+      "mean": 0.9737447368421052,
+      "min": 0.85,
+      "n": 38,
+      "p10": 0.9079,
+      "p50": 0.9932,
+      "p90": 0.9994
+    },
+    "1": {
+      "max": 0.9915,
+      "mean": 0.9456421052631578,
+      "min": 0.833,
+      "n": 38,
+      "p10": 0.866,
+      "p50": 0.9635,
+      "p90": 0.9895
+    },
+    "2": {
+      "max": 0.9995,
+      "mean": 0.9675973684210527,
+      "min": 0.8163,
+      "n": 38,
+      "p10": 0.8872,
+      "p50": 0.9901,
+      "p90": 0.9991
+    },
+    "3": {
+      "max": 0.9975,
+      "mean": 0.9445,
+      "min": 0.8,
+      "n": 38,
+      "p10": 0.8555,
+      "p50": 0.9606,
+      "p90": 0.996
+    },
+    "4": {
+      "max": 0.9964,
+      "mean": 0.9549736842105263,
+      "min": 0.784,
+      "n": 38,
+      "p10": 0.8481,
+      "p50": 0.9816,
+      "p90": 0.995
+    },
+    "5": {
+      "max": 0.994,
+      "mean": 0.933178947368421,
+      "min": 0.7683,
+      "n": 38,
+      "p10": 0.7683,
+      "p50": 0.9697,
+      "p90": 0.9917
+    },
+    "6": {
+      "max": 0.9793,
+      "mean": 0.8796342105263157,
+      "min": 0.753,
+      "n": 38,
+      "p10": 0.753,
+      "p50": 0.8971,
+      "p90": 0.9663
+    },
+    "7": {
+      "max": 0.9363,
+      "mean": 0.8154289473684211,
+      "min": 0.7379,
+      "n": 38,
+      "p10": 0.7379,
+      "p50": 0.7968,
+      "p90": 0.9013
+    }
+  },
+  "ema_index_used": 7,
+  "ema_threshold_separation": {
+    "0.80": {
+      "disjunction_open_rate": 0.7105263157894737,
+      "ema_alone_open_rate": 0.47368421052631576,
+      "rounds_ema_opens_that_streak_closes": 4,
+      "rounds_streak_opens_that_ema_closes": 9
+    },
+    "0.85": {
+      "disjunction_open_rate": 0.7105263157894737,
+      "ema_alone_open_rate": 0.3684210526315789,
+      "rounds_ema_opens_that_streak_closes": 4,
+      "rounds_streak_opens_that_ema_closes": 13
+    },
+    "0.90": {
+      "disjunction_open_rate": 0.6052631578947368,
+      "ema_alone_open_rate": 0.10526315789473684,
+      "rounds_ema_opens_that_streak_closes": 0,
+      "rounds_streak_opens_that_ema_closes": 19
+    },
+    "0.92": {
+      "disjunction_open_rate": 0.6052631578947368,
+      "ema_alone_open_rate": 0.05263157894736842,
+      "rounds_ema_opens_that_streak_closes": 0,
+      "rounds_streak_opens_that_ema_closes": 21
+    },
+    "0.95": {
+      "disjunction_open_rate": 0.6052631578947368,
+      "ema_alone_open_rate": 0.0,
+      "rounds_ema_opens_that_streak_closes": 0,
+      "rounds_streak_opens_that_ema_closes": 23
+    },
+    "0.97": {
+      "disjunction_open_rate": 0.6052631578947368,
+      "ema_alone_open_rate": 0.0,
+      "rounds_ema_opens_that_streak_closes": 0,
+      "rounds_streak_opens_that_ema_closes": 23
+    },
+    "0.98": {
+      "disjunction_open_rate": 0.6052631578947368,
+      "ema_alone_open_rate": 0.0,
+      "rounds_ema_opens_that_streak_closes": 0,
+      "rounds_streak_opens_that_ema_closes": 23
+    },
+    "0.99": {
+      "disjunction_open_rate": 0.6052631578947368,
+      "ema_alone_open_rate": 0.0,
+      "rounds_ema_opens_that_streak_closes": 0,
+      "rounds_streak_opens_that_ema_closes": 23
+    }
+  },
+  "label": "runC",
+  "rounds": 38,
+  "streak_gate": 3,
+  "streak_gate_open_rate": 0.6052631578947368,
+  "streak_in": {
+    "max": 15.0,
+    "mean": 4.7631578947368425,
+    "min": 0.0,
+    "n": 38,
+    "p10": 0.0,
+    "p50": 4.0,
+    "p90": 12.0
+  },
+  "streak_in_histogram": {
+    "0": 6,
+    "1": 5,
+    "2": 4,
+    "3": 3,
+    "4": 3,
+    "5": 3,
+    "6": 3,
+    "7": 2,
+    "8": 2,
+    "9": 1,
+    "10": 1,
+    "11": 1,
+    "12": 1,
+    "13": 1,
+    "14": 1,
+    "15": 1
+  },
+  "streak_open_rate_reference": 0.6052631578947368
+}

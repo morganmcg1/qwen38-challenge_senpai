@@ -539,6 +539,13 @@ public final class Qwen36MTPBlockSession {
     /// EMAs, not this.
     private var fullAcceptStreak = 0
 
+    /// Trace-only snapshot of the depth decision's inputs, written by
+    /// `costModelDepth` and emitted on the round line. Only touched when
+    /// `traceRounds` is on, so a ranked round never pays for them.
+    private var traceStreakIn = 0
+    private var traceWidthCap = 0
+    private var traceEMAIn: [Double] = []
+
     /// Local phase-trace gate, read once. `MLX_` prefix on purpose: the
     /// trusted harness strips `MLXFAST_*` from the sandboxed worker's env
     /// but allows the `MLX_` prefix through. The trace lands in a TMPDIR
@@ -707,8 +714,13 @@ public final class Qwen36MTPBlockSession {
     /// decode attention into two <= 5-row sdpa calls whose bottom-right-
     /// aligned windows are byte-identical to the promoted <= 5 rounds' —
     /// after which a deep round is ONE ordinary model call. Measured on the
-    /// hexfloat row gate: widths 6..8 bit-exact per position against the
-    /// serial trajectory. Segmenting the whole FORWARD instead (two model
+    /// hexfloat row gate over five 512-token runs (2560 rows): widths 5..9
+    /// bit-exact per position against the serial trajectory everywhere
+    /// except the one round that closes the window at key_len 1024, which
+    /// drifts by <= 0.25 absolute logit at ANY width (terminal widths 2, 3,
+    /// 4, 8 and 9 all reproduced it) and never changes the top-1 token.
+    /// The drift variable is terminal-block position, not verify width.
+    /// Segmenting the whole FORWARD instead (two model
     /// calls, 5+k) was measured bit-exact too but pays a second full weight
     /// pass (~25 ms) and loses on net; the chunk lives at the sdpa only.
     private static let sdpaWidthWallDepthCap = 4
@@ -718,7 +730,56 @@ public final class Qwen36MTPBlockSession {
     /// Gated on a full-accept streak so the deep rounds only fire where the
     /// head has been perfect, mirroring the streak ladder that qualified
     /// cap 4; any reject resets the streak.
-    private static let segmentedVerifyDepthCap = 8
+    ///
+    /// 8, the trusted maximum, and the 8th draft is a fidelity-free but
+    /// marginal cost bet. Every verify width rides the per-row qmv dispatch
+    /// (host qmv batch limit 10 on this generation), so round cost is very
+    /// nearly linear in rows -- 12.2 ms + 22.5 ms/row on M4 Pro -- with a
+    /// kink at width 9, where the weight stream count ceil(M/4) steps 2->3:
+    /// marginal rows inside a stream band cost ~19 ms, the width-9 row
+    /// costs ~28 ms. That 28 ms exceeds the 23.7 ms running cost per token
+    /// at depth 7, so row 9 does not repay itself on a per-round cost
+    /// argument alone.
+    ///
+    /// The realised conditional acceptance on deep rounds is ~0.98 and flat
+    /// to draft index 7 (it does NOT decay with position -- the
+    /// unconditional rate does, which is a survivorship artifact), so the
+    /// 9th row does arrive often. It still does not pay: at a fixed streak
+    /// gate of 2 on the 512-token local fixture, cap 7 costs 0.0345248
+    /// s/token against cap 8's 0.0350219, a 1.42% absolute win for the
+    /// narrower cap, and cap 7 posted the lowest absolute seconds/token of
+    /// every configuration measured on this host.
+    ///
+    /// Recovering row 9 would need a verify path that amortizes the extra
+    /// rows -- padding the batch past the qmv limit into qmm_t_splitk, say
+    /// -- or a gate that opens depth 8 separately from depths 5..7, since
+    /// only the former crosses a stream boundary.
+    private static let segmentedVerifyDepthCap = 7
+
+    /// Consecutive fully-accepted rounds required to open the deep cap.
+    /// Swept 3 -> 2 -> 1 -> 0 on the 512-token local fixture (the ranked
+    /// decode length; a 256-token screen ranks these differently and should
+    /// not be used to pick this value). Local serial-relative ratio:
+    /// gate 3 = 2.0947, gate 2 = 2.1020, gate 1 = 2.1288, gate 0 = 2.0600.
+    /// The optimum is interior at 1.
+    ///
+    /// Relaxing 3 -> 1 helps because the streak is a genuine predictor:
+    /// rounds it qualifies accept at ~0.977 versus ~0.864 for the rest, so
+    /// each step down admits rounds that still carry a deep draft. Removing
+    /// the gate entirely (0) loses because that conditioning is what the
+    /// deep cap was buying: with every round deep, rejected drafts jump
+    /// 47 -> 72. Throughput indicators all improve at gate 0 - accepted
+    /// drafts per round rise 5.92 -> 6.01 and rounds per token fall
+    /// 0.1445 -> 0.1426 - yet cost per token rises 26.70 -> 27.82 ms,
+    /// because the extra rejects land on the hard second half of the
+    /// window, where it degrades 29.3 ms -> 31.7 ms. Tune this against
+    /// rejected work, not against accepted tokens per round.
+    ///
+    /// Left at the shipped 3 here: the sweep above was run at cap 8, and
+    /// the cap has since moved to 7, so those ratios no longer describe
+    /// this configuration. Re-measure the gate on top of cap 7 before
+    /// moving it -- the two constants interact through exactly the rounds
+    /// the gate admits.
     private static let segmentedStreakGate = 3
 
     /// RESEARCH INSTRUMENTATION (qwen38-r1-e1-depth-cost-curve), not for
@@ -752,6 +813,11 @@ public final class Qwen36MTPBlockSession {
         let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
             ? Self.segmentedVerifyDepthCap
             : Self.sdpaWidthWallDepthCap
+        if Self.traceRounds {
+            traceStreakIn = fullAcceptStreak
+            traceWidthCap = widthCap
+            traceEMAIn = positionAcceptEMA
+        }
         let cap = Swift.min(
             Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
             widthCap)
@@ -1288,7 +1354,9 @@ public final class Qwen36MTPBlockSession {
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
                 + "prefix_repair=\(prefixRepairCount) "
                 + "full_repair=\(fullRepairCount) "
-                + "round_us=\((tTailDone - tRound0) / 1000)\n"
+                + "round_us=\((tTailDone - tRound0) / 1000) "
+                + "streak_in=\(traceStreakIn) cap=\(traceWidthCap) "
+                + "ema_in=\(traceEMAIn.map { String(format: "%.4f", $0) }.joined(separator: ","))\n"
             Self.traceWrite(line)
         }
         // No trailing eval: every host-read value was materialised by the

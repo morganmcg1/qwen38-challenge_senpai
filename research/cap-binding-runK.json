@@ -1,0 +1,47 @@
+{
+  "label": "runK (cap 8, gate 2)",
+  "trace": "research/trace-runK-gate2-cap8-512.log",
+  "gate": 2,
+  "deep_cap": 8,
+  "shallow_cap": 4,
+  "round_count": 79,
+  "depth_histogram": {
+    "0": 0,
+    "1": 1,
+    "2": 0,
+    "3": 0,
+    "4": 29,
+    "5": 3,
+    "6": 6,
+    "7": 4,
+    "8": 36
+  },
+  "cap_histogram": {
+    "4": 29,
+    "8": 50
+  },
+  "rounds_at_deep_cap": 36,
+  "frac_at_deep_cap": 0.45569620253164556,
+  "rounds_gate_closed": 29,
+  "frac_gate_closed": 0.3670886075949367,
+  "rounds_gate_open": 50,
+  "frac_gate_open": 0.6329113924050633,
+  "frac_of_open_rounds_at_deep_cap": 0.72,
+  "rounds_at_shallow_cap": 29,
+  "frac_of_closed_rounds_at_shallow_cap": 1.0,
+  "depth_by_cap": {
+    "4": {
+      "4": 29
+    },
+    "8": {
+      "1": 1,
+      "5": 3,
+      "6": 6,
+      "7": 4,
+      "8": 36
+    }
+  },
+  "accepted_total": 433,
+  "mean_depth": 6.1265822784810124,
+  "mean_accepted": 5.481012658227848
+}

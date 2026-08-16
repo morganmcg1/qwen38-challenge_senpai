@@ -1,0 +1,43 @@
+{
+  "trace": "research/trace-runM-gate0-cap8-512.log",
+  "seed_tokens": 512,
+  "boundary_key_len": 1024,
+  "final_position": 1024,
+  "per_width": {
+    "4": {
+      "rounds": 2,
+      "max_key_len": 1024,
+      "at_boundary": [
+        {
+          "round": 73,
+          "key_len": 1024
+        }
+      ]
+    },
+    "5": {
+      "rounds": 7,
+      "max_key_len": 907,
+      "at_boundary": []
+    },
+    "6": {
+      "rounds": 3,
+      "max_key_len": 535,
+      "at_boundary": []
+    },
+    "7": {
+      "rounds": 7,
+      "max_key_len": 914,
+      "at_boundary": []
+    },
+    "8": {
+      "rounds": 12,
+      "max_key_len": 930,
+      "at_boundary": []
+    },
+    "9": {
+      "rounds": 42,
+      "max_key_len": 1020,
+      "at_boundary": []
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "trace": "research/trace-runI-base-cap8-512.log",
+  "seed_tokens": 512,
+  "boundary_key_len": 1022,
+  "final_position": 1024,
+  "per_width": {
+    "5": {
+      "rounds": 39,
+      "max_key_len": 908,
+      "at_boundary": []
+    },
+    "6": {
+      "rounds": 2,
+      "max_key_len": 539,
+      "at_boundary": []
+    },
+    "7": {
+      "rounds": 3,
+      "max_key_len": 560,
+      "at_boundary": []
+    },
+    "8": {
+      "rounds": 5,
+      "max_key_len": 1024,
+      "at_boundary": [
+        {
+          "round": 82,
+          "key_len": 1024
+        }
+      ]
+    },
+    "9": {
+      "rounds": 33,
+      "max_key_len": 1016,
+      "at_boundary": []
+    }
+  }
+}
