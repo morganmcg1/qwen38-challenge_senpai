@@ -73,3 +73,4 @@ __pycache__/
 
 # research-only measurement artifacts (qwen38-r1-e1-depth-cost-curve)
 research/out/
+wandb/
