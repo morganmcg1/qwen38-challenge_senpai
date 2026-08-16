@@ -130,7 +130,100 @@ falsifiable: **if different shapes knee at different `M`, then dispatch and
 occupancy — not roofline — set the curve**, and the whole model below is wrong in
 an informative way.
 
+> **2026-08-16 — a competing model now has the stronger source evidence, and this
+> section is no longer the default explanation.** The base ships a crossrow
+> multi-row QMV whose own design comment states the cost law
+> `IPG = ceil(M / ceil(M/4))`, giving **`ceil(M/4)` weight streams** and a
+> **staircase** in `M` that steps at `M = 5` and `M = 9` — see the correction at
+> `:399-413` and the full trace in `CURRENT_RESEARCH_STATE.md`. The staircase is
+> a tiling property, so unlike the roofline knee it does **not** move with the
+> host's FLOPS/bandwidth balance; the M5 extrapolation table below therefore does
+> **not** license treating width 9 as potentially free on the ranked host.
+> The two models are **separable at `M = 5`**: the staircase predicts a step,
+> roofline predicts an unremarkable point deep in the bandwidth-bound regime.
+> Measurement is assigned three ways (PR #5 isolated Python, PR #2 in situ,
+> PR #1 as a depth cost). Until those land, treat both models as live and this
+> one as the weaker.
+
+> ## ★★★ 2026-08-17 — MEASURED. **BOTH models above are refuted.** Read this
+> ## banner instead of the two sections it precedes.
+>
+> PR #5 (qwen-thorfinn, merged, W&B `cq7y31l0` vendored / `ppvrsfpp` stock)
+> measured all 8 scored shapes at `M = 1..9` directly. Result:
+>
+> **~free up to `M ≈ 3`; then `+0.17–0.32` of a width-1 call per additional
+> row; PLUS a stream-boundary excess at `M = 5` and `M = 9`.**
+>
+> Two components, not one — a **linear per-row ramp switching on at `M ≈ 4`**,
+> *and* boundaries at 5 and 9. Specifically:
+>
+> - **The roofline knee `M* = 7.9` is REFUTED.** There is no flat region out to
+>   7.9. Per-shape knees compute to 7.16–7.80, but the measured plateau *ends at
+>   `M = 1–3`* on every shape. `K` and `N` really do cancel in the algebra; the
+>   algebra simply is not what sets the curve. **`M* = 7.9` does not license
+>   treating width 8 or 9 as nearly free, on this host or on M5.** The M5
+>   extrapolation table further down inherits this refutation.
+> - **The `ceil(M/4)` staircase MAGNITUDE is FALSIFIED**, though its *location*
+>   is right. Stream-corrected GB/s is not flat and exceeds the kernel's own
+>   `M = 1` bandwidth by up to 22% (`lm_head` 301.0 GB/s @ `M=5` vs 247.3 @
+>   `M=1`) — i.e. the correction over-corrects by 4–50×. The marginal cost of
+>   crossing a boundary is **0.02–0.26** of a full weight read, not 1.0.
+>   `implied_streams = c(1)/c(m)` is **continuous** (`lm_head`: 1.00 0.99 1.01
+>   1.24 1.64 1.90 2.17 2.44 2.87) where the integer model demands 1,1,1,1,2,2,
+>   2,2,3.
+> - **Boundary LOCATION confirmed, and it is OURS.** Rank test "are `M=5` and
+>   `M=9` the two largest increments over `M=2..9`": vendored crossrow **6/8**
+>   shapes true; upstream stock mlx **0/8** (its largest steps land at `M=7` and
+>   `M=9`). **`M = 5` is the discriminator** — an `M=9`-only test
+>   false-positives on stock. Both vendored failures are the two `N = 5120`
+>   shapes.
+> - Fit across depth: **`C(d) = V(d+1) + 4.46 + 3.73·d` ms** (max resid 2.69,
+>   vs 11.15 for stock) ⇒ **`H = 3.73 ms` per head-step, `c = 4.46 ms`**.
+> - Call-mix-weighted roofline-normalized verify tax at `M=9`: **2.898 → 2.530**
+>   vendored vs stock. Raw `cost(9)/cost(1) = 2.980` — note the "ideal 1.12"
+>   below is off by 2.7×.
+>
+> ### ★★★★★ RETRACTED IN FULL — there was no second method
+>
+> This paragraph used to claim independent cross-validation against "Edward's
+> in-situ per-step `h(d)` (PR #1)". **No such measurement exists.** PR #1 has
+> zero student commits and zero student comments; `git log --all -S 0.0862`
+> returns only the advisor's own two research commits. The vector was an
+> assumed shape that I mislabelled as data.
+>
+> It is also **internally falsified**: `sum(h) = 2.0655` implies
+> `C(8) = 67.0 × 3.0655 = 205.4 ms` against the measured `C(8) = 161.0 ms`
+> (PR #3) — **+27.6%**. A curve of in-situ marginal round costs cannot miss its
+> own measured endpoint by 44 ms. Required `sum(h)` is **1.403** local,
+> **1.082** ranked.
+>
+> Consequently **retracted**: the `h(3) = 0.2446` "ramp onset" explanation, the
+> `+5.5 / +6.6 ms` in-situ boundary excess and the "2.4× smaller live than
+> isolated" discrepancy (all three are readings of the assumed vector, not of a
+> live run), and **`d* = 7`** together with the `−1.9 / −3.2 / −11.6%` figures.
+> "Non-monotone, `d=3` beats `d=4`" reverts from a fact to
+> **pre-registration #2, awaiting data**.
+>
+> **Unaffected:** everything above this block — thorfinn's PR #5 isolated cost
+> law, the `M=5` discriminator, the fit `C(d) = V(d+1) + 4.46 + 3.73·d`, and the
+> bitwise-fidelity result. Those came from a merged experiment with committed
+> code and are reproducible.
+>
+> **Standing consequence:** the value of the depth line is unknown across a
+> **13× range** (+0.58% to +7.54% at q=0.94) until the shape between the two
+> measured endpoints is actually measured. See
+> `CURRENT_RESEARCH_STATE.md:865+` for the full retraction and the endpoint
+> constraint (`sum(h) ≈ 1.40`) handed to Edward as a self-check.
+>
+> **Fidelity result, also from PR #5:** vendored crossrow is **bitwise-identical
+> to `M=1` on 8/8 scored shapes for all `M = 1..9`** (stock diverges at `M=2`;
+> vendored first diverges at `M=10`). Therefore **no depth change in `d ∈ 0..8`
+> can alter an emitted token via the verify matmul** — any token movement across
+> depths is policy or head, never the projection kernel. This does *not* cover
+> SDPA/attention or GDN.
+
 ### On this host (M4 Pro) the knee is at verify width 8, i.e. depth 7
+### — ✗ REFUTED by measurement; see the banner above. Retained for the record.
 
 PR #3 supplies both constants on the same host:
 
@@ -147,13 +240,97 @@ AI(M=9)   = 2 · 0.5625⁻¹ · 9                = 32 FLOP/byte   → just compu
 Verify runs at width `d+1`, so **`M* = 7.9` puts the knee at `d ≈ 7`, not at
 `d = 4/5`.** The `sdpaWidthWallDepthCap = 4` / `segmentedStreakGate = 3`
 boundary the round-1 briefs were built around is an SDPA-segmentation artefact,
-**not** the cost discontinuity. Two more numbers follow:
+**not** the cost discontinuity. (`M* = 7.9` itself was later **refuted** by PR
+#5 — see `:209`. The "not a cost discontinuity" half of this sentence survives
+on independent grounds, established from source below.) Two more numbers follow:
 
 ```
 ideal cost(9)/cost(1) = max(0.0673, 9·0.00841) / 0.0673 = 0.0757/0.0673 = 1.12
 compute slope above the knee = 2·26.9e9 / 6.415e12 = 8.4 ms per extra row
 compute slope below the knee ≈ 0
 ```
+
+### ★★★★★ MEASURED IN SOURCE: the width wall is exactness, and it is cracked
+
+Established by reading two files, 2026-08-16. No modelling.
+
+**1. The wall's hazard is correctness, not speed.**
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:540-562`, doc comment above
+`sdpaWidthWallDepthCap = 4`: wide forwards write drifted K/V rows that
+"CONTAMINATE every later round — a single wide round poisons the whole window
+under the ranked exact-value replay, **while staying invisible to the local
+argmax-only check**." Width 5 measured 5/5 bit-exact, which is why promoted
+receipts at cap 4 survived rank.
+
+**⇒ Standing rule: no depth/width arm may be cleared by comparing emitted text
+locally. It must be checked per-position against the serial trajectory.**
+
+**2. The root cause is the sdpa, not the GDN scan.** Same comment: the GDN scan
+is sequential in `T` with `T`-independent per-row arithmetic (one
+register-resident fp32 state walked `t = 0..<T`), so it was never the drift
+source. Quantized projections at `M ∈ 6..9` still ride the per-row-exact QMV
+dispatch. The single op whose arithmetic changes above width 5 is the **sdpa**:
+`qL * gqa > 32` falls off the fused vector path, changing kernel family and the
+accumulation order of every score.
+
+**3. The fix is already shipped and is unconditional.**
+`Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift:103-144`, the
+"WIDE-DECODE EXACTNESS CHUNK". Predicate: `queries.dim(0) == 1`, `6 <= qL <= 9`,
+`kL >= qL`, `case .causal`. Action: split queries at row 5; chunk A =
+`queries[..., 0..<5]` over `cachedKeys[..., 0..<(kL-(qL-5))]`, chunk B =
+`queries[..., 5...]` over the full keys; `concatenated(axis: 2)`. Bottom-right
+causal alignment makes each row's window byte-identical to what two consecutive
+≤5-row rounds would have given. Keys/values are **re-sliced, not recomputed** —
+the extra cost is one more pass over KV rows (a few MB), never over weights. The
+cache update happens exactly once above the branch; both segments are read-only
+views of that single committed window. Serial (`qL == 1`), widths ≤ 5, and
+prefill (`qL > 9`) are untouched.
+
+**4. Consequences.**
+
+- The guard keys on `qL` **alone** — no `fullAcceptStreak`, no depth cap. So
+  exactness at verify widths 6–9 holds on *every* round.
+- `sdpaWidthWallDepthCap = 4` is therefore **conservatism, not a correctness
+  requirement**: depth 4 → `qL = 5` (never triggers the chunk); depths 5–8 →
+  `qL` 6–9 (all covered).
+- **The live constant is `segmentedStreakGate = 3`** (`:570`), not either depth
+  cap. `segmentedVerifyDepthCap = 8` (`:569`) is inert — it equals
+  `Qwen36MTPLimits.maxDepth`.
+- Whole-forward segmentation (two model calls, 5+k) was measured bit-exact too
+  but pays a second full weight pass (~25 ms) and **loses on net**. Do not
+  re-propose it; the chunk lives at the sdpa only.
+
+**5. Residual gap, stated precisely.** The in-tree comment claims measured
+bit-exactness on the hexfloat row gate for **widths 6..8** (depths 5..7). Width
+9 / depth 8 is permitted by today's streak-qualified path and is covered by the
+chunk by construction, but has **no in-tree measurement**. Any gate change
+raises the width-9 firing rate, so width 9 must be on the exactness gate.
+
+**6. Provenance of the chunk.** `senpai/qwen38-yukon-submissions-2026-08-16.md`
+entry 89 (`hadakang`, **promoted**, 2.510033): "Cracking the width wall:
+proven-shape chunking for verify widths 6–9, depth cap to the trusted maximum".
+Entry 83 (`polymorf`, failed) root-caused it to the sdpa `qL` bound. **We
+inherited this work; it is not ours and the prize for re-doing it is zero.**
+
+**7. The chunk really is on our live path — verified, with one precondition.**
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1666` calls
+`attentionWithCacheUpdate(...)`, which is the *only* caller of the patched
+helper in that file and the sole attention entry point for the live model. So
+the chunk is reachable. **But** the chunk sits in the `else` arm of a
+`cache as? QuantizedKVCacheProtocol` test (`AttentionUtils.swift:89`) — with a
+quantized KV *cache* the wide-decode split is **silently skipped** and the
+width wall returns. Near-miss worth recording: `_qkvBits = 4` / `_kvBits = 4`
+(`Qwen35.swift:1438,1456`) look like a quantized KV cache but are **quantized
+weight packs** for the Q/K/V projections, an unrelated mechanism. Do not read
+those fields as evidence either way; confirm the cache *class* at runtime.
+
+**8. Consequence for the cost curve (drives prediction 7).** Verify width is
+`depth + 1`. Depth ≤ 4 → width ≤ 5 → chunk never fires → **one** sdpa call.
+Depth ≥ 5 → width ≥ 6 → **two** sdpa calls, over re-sliced K/V views (no extra
+weight pass). So the marginal-cost curve should show a **step at `h(4)`, then
+flat** — not a ramp. This is a structural, falsifiable feature of `h(d)` that
+costs nothing extra to test inside PR #1's existing measurement.
+
 
 ### Two-regime prediction for PR #1's marginal-cost curve
 
@@ -242,6 +419,16 @@ bracket it:
 |---|---:|---:|
 | 12.8 TFLOP/s (2x) | 30.5 FLOP/byte | **8.6** |
 | 25.7 TFLOP/s (4x) | 61 FLOP/byte | **17.2** |
+
+> **✗ 2026-08-17 — this table is now UNSUPPORTED.** It extrapolates a roofline
+> knee that PR #5 measured and refuted (see the banner at `:148`). The measured
+> curve ramps from `M ≈ 4`, far below the algebraic knee at 7.9, so whatever
+> sets the ramp is **not** the FLOPS/bandwidth balance and does not scale with
+> it. Consequence 1 below — "local measurements understate the value of deep
+> drafting" — therefore **has no surviving mechanism**, and must not be used to
+> discount a local regression at `d = 7..8`. Treat local depth measurements as
+> the best available evidence for ranked depth behaviour until something
+> measures the ranked host. Retained below for the record only.
 
 M4 Pro is 7.9. **In every corner of the bracket, M5's knee is deeper than
 ours.** Two consequences that reframe the whole round:
@@ -389,14 +576,28 @@ Wrapping the worker to capture its stderr is blocked by
 - **Verify width is one row short of a much better kernel.**
   `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:1415,1483`
   sets `vector_limit ≈ 10` at K=N=5120 and dispatches `qmv` below it,
-  `qmm_t_splitk` at or above. Widths 1-9 therefore all take `qmv`, tuned for
-  `M = 1`, and `eval_wall` grows 79 → 89 → 106 ms across widths 7 → 8 → 9 with
+  `qmm_t_splitk` at or above. Widths 1-9 therefore all take the `qmv` **host
+  dispatch**, and `eval_wall` grows 79 → 89 → 106 ms across widths 7 → 8 → 9 with
   *increasing* deltas (+10 then +17), so no linear `a + b·M` fits. **It is not a
   full per-row re-read** — that would give `V(9) ≈ 600 ms` against a measured
-  161 ms round. The roofline knee at `M* = 7.9` explains the acceleration
-  without any re-read: widths 8-9 are the first that cross into the
-  compute-bound regime. That host dispatch file is *not* editable, but the
+  161 ms round. That host dispatch file is *not* editable, but the
   shapes we request are ours to choose.
+
+  > **Corrected 2026-08-16 — "tuned for `M = 1`" was wrong.** An earlier revision
+  > said widths 1-9 all take `qmv` "tuned for `M = 1`" and attributed the
+  > acceleration to the roofline knee at `M* = 7.9`. The host-dispatch half is
+  > right; the rest is not. The base already ships a **crossrow multi-row QMV**
+  > inside `qmv_fast` (`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`,
+  > `:973-976`, `:1067-1094`, live gate `:1817`), added across the validated
+  > submissions `b6c7251 → 08897af → 1033e1a` and therefore already inside the
+  > promoted 2.9042 frontier. `:1064` gives the law `IPG = ceil(M / ceil(M/4))`,
+  > so **active weight streams = `ceil(M/4)`** — verified against the entire
+  > dispatch table `<3,3> <4,4> <5,3> <6,3> <7,4> <8,4> <9,3>`. Width cost is a
+  > **staircase with period 4**, stepping at `M = 5` and `M = 9`. The 7 → 8 step
+  > stays inside a tread (+10 ms); the 8 → 9 step crosses 2 → 3 streams (+17 ms).
+  > This also explains the 161 ms figure directly: 3 streams, not 9. The two
+  > models separate cleanly at `M = 5` — see the falsification note at
+  > `:120-131`, which pre-registered exactly this test.
 - **We can honestly build representative local fixtures.**
   `Sources/MLXFastCLI/main.swift:761-840` exposes
   `generate-golden --prompt-file … --steps N`, and
@@ -745,10 +946,18 @@ bool fast = N % bn == 0 && K % qmv_fast_k_alignment(bits) == 0;   // bn = 8
 
 **4-bit requires `K % 512 == 0`; 8-bit only requires `K % 256 == 0`.** A `K`
 that is 256- but not 512-aligned **silently** drops from `qmv_fast` to the
-bounds-checked generic `qmv` (`load_vector_safe`/`qdot_safe`). Our main scored
-reduction dims all pass by inspection — 5120, 6144, 8704, 10240, 16480 are all
-multiples of 512, and `N` dims 5120/16480/98336/248320 are all multiples of 8 —
-but this has not been asserted in code and is nearly free to check.
+bounds-checked generic `qmv` (`load_vector_safe`/`qdot_safe`) — **and therefore
+also loses the crossrow row-sharing path entirely**, since that lives inside
+`qmv_fast`. Our scored **reduction** dims all pass: 5120, 6144, 8704, 10240 and
+17408 are multiples of 512, and `N` dims 5120/16480/34816/98336/248320 are all
+multiples of 8. This has not been asserted in code and is nearly free to check.
+
+> **Corrected 2026-08-16.** An earlier revision of this paragraph listed `16480`
+> among the reduction dims and claimed it was a multiple of 512. **It is not**
+> — `16480 = 512·32 + 96`. There is no live defect, because 16480 is an *output*
+> dim (the GDN fused in-projection is 5120 × 16480) and `N` only needs `% 8`.
+> The conclusion held; the stated reasoning did not. **Do not pick 16480 as a
+> benchmark `K`** — it silently measures the unshared generic kernel.
 
 ### 3. Head-precision A/B: worth a slot, but run the free pre-check first
 
