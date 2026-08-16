@@ -830,3 +830,312 @@ footprint is the binding constraint. This is an experiment, not a certainty.
 different *mechanism*, and their tree size 60 is far outside our 2..9 range, so it
 motivates but cannot conclude. Its value here is that it independently warns the
 4-bit path is the penalised one; our staircase says *why* on this stack.
+
+## ★★★ MEASURED: the width cost law has TWO components, and `d* = 7`
+
+PR #5 (qwen-thorfinn, **merged**) measured the isolated quantized-matmul cost
+curve at the 8 exact scored shapes, `M = 1..9`, on **both** our vendored build
+(crossrow live) and stock upstream MLX. PR #1 (qwen-edward) independently
+measured in-situ per-depth marginal round cost. They agree, and together they
+replace the pure-staircase model above.
+
+### The law
+
+> **~free up to M ≈ 3; then +0.17–0.32 of a width-1 call per additional row;
+> plus a stream-boundary excess at M = 5 and M = 9.**
+
+So the curve is **a linear per-row ramp switching on at M ≈ 4, PLUS the stream
+boundaries** — not a pure staircase and not a roofline knee. Both prior models
+are now superseded:
+
+- **`ceil(M/4)` stream-correction magnitude: FALSIFIED.** Stream-corrected GB/s
+  is not flat and exceeds the kernel's own M=1 achieved bandwidth by up to 22%.
+  Marginal boundary cost is **0.02–0.26** of a full weight read, not the 1.0 the
+  correction assumes — it over-corrects 4–50×. `implied_streams = c(1)/c(m)` is
+  *continuous* (lm_head: 1.00 0.99 1.01 1.24 1.64 1.90 2.17 2.44 2.87), not the
+  integer 1,1,1,1,2,2,2,2,3. **Boundary *location* was right; *magnitude* was wrong.**
+- **Roofline knee at `M* = 7.9`: REFUTED.** No flat region out to 7.9; per-shape
+  knee 7.16–7.80 but the plateau ends at M = 1–3.
+- Staircase *location* confirmed **only on crossrow**: rank test (are M=5, M=9 the
+  two largest increments over M=2..9?) passes 6/8 shapes vendored, **0/8 stock**
+  (stock's largest steps are at M=7 and M=9). **M=5 is the true discriminator** —
+  an M=9-only test false-positives on a no-crossrow build. Both vendored failures
+  are the two N=5120 shapes.
+
+### Two-method cross-validation (this is the strong part)
+
+Edward's in-situ `h(d)` (marginal round cost ÷ `C(0)`), `C(0) = 67.0 ms`, minus
+thorfinn's fitted head cost `H = 3.73 ms/step`, gives the implied verify step:
+
+| d | M=d+1 | h(d) | marginal ms | implied ΔV | thorfinn's isolated curve |
+|---|---|---|---|---|---|
+| 1 | 2 | 0.0862 | 5.78 | 2.05 | ~0 (free) ✓ |
+| 2 | 3 | 0.0795 | 5.33 | 1.60 | ~0 (free) ✓ |
+| 3 | 4 | 0.2446 | 16.39 | 12.66 | 10.3–19.3 (ramp onset) ✓ |
+| 4 | 5 | 0.3774 | 25.29 | 21.56 | ramp + boundary ✓ |
+| 5 | 6 | 0.2939 | 19.69 | 15.96 | 10.3–19.3 ✓ |
+| 6 | 7 | 0.3020 | 20.23 | 16.50 | 10.3–19.3 ✓ |
+| 7 | 8 | 0.2890 | 19.36 | 15.63 | 10.3–19.3 ✓ |
+| 8 | 9 | 0.3929 | 26.32 | 22.59 | ramp + boundary ✓ |
+
+**This resolves the previously-unexplained `h(3) = 0.2446`** (a 3× rise with no
+stream transition): it is the *onset of the linear ramp*, which is independent of
+the stream boundaries. The shape is robust to error in `H` — changing `H` shifts
+the whole ΔV column by a constant and cannot move the onset or the two bumps.
+
+**Open quantitative discrepancy, do not smooth over.** Taking edward's interior
+mean (M=6,7,8) as the ramp, the in-situ boundary excess is **+5.5 ms at M=5** and
+**+6.6 ms at M=9** = **0.09–0.11** of a width-1 call, against thorfinn's isolated
+**0.25**. Real and correctly located, but **~2.4× smaller in a live round than in
+isolation**. Unexplained. Candidates: call-mix differences; boundary cost partly
+overlapping other round work.
+
+### `d* = 7` — the shipped cap of 8 is one step past the optimum
+
+`C(d) = C(0)·(1 + Σh)`; cost per emitted token under per-position acceptance `q`
+with `E = (1−q^{d+1})/(1−q)`:
+
+| d | C(d) ms | ms/tok @ q=1.00 | @ q=0.976 | @ q=0.94 |
+|---|---|---|---|---|
+| 3 | 94.49 | 23.62 | 24.49 | **25.86** ← best |
+| 4 | 119.78 | 23.96 | 25.13 | 27.01 |
+| 5 | 139.47 | 23.25 | 24.68 | 26.98 |
+| 6 | 159.70 | 22.81 | 24.51 | 27.26 |
+| 7 | 179.06 | **22.38** ← best | **24.33** ← best | 27.52 |
+| 8 | 205.39 | 22.82 | 25.10 | 28.86 |
+
+**`d = 8` is dominated by `d = 7` at every acceptance level tested** (−1.9% at
+q=1.0, −3.2% at q=0.976 — the rate askeladd measured — and −11.6% at q=0.94).
+Thorfinn's independent fit `C(d) = V(d+1) + 4.46 + 3.73·d` (max resid 2.69 ms vs
+11.15 stock) gives the same answer: **best d = 7 @ q=1.0, d=5–6 @ q=0.94, d=3 @
+q=0.90.** The curve is **non-monotone** — d=3 beats d=4 at every q — confirming
+the "prefer tread tops" policy prediction. Three independent routes converge.
+
+⇒ **`segmentedVerifyDepthCap = 8 → 7` is a one-constant candidate win** with
+strictly narrower widths, zero fidelity risk and zero budget cost. Assigned to
+qwen-alphonse (PR #2) as a first-class arm, *not* a fallback. **Caveat: `C(d)` is
+reconstructed across mixed provenance and the acceptance model is
+position-independent, which `positionAcceptEMA` exists because it is not. This is
+a lead that justifies an arm, not a result.**
+
+### Fidelity: widths 1..9 are bitwise-safe (a correctness win)
+
+Vendored crossrow is **bitwise-identical to the M=1 result on 8/8 scored shapes
+for all M = 1..9**; stock upstream diverges at **M=2**; vendored first diverges at
+**M=10** (max |Δ| 0.3125). Confirms the kernel contract at
+`mlx-generated/quantized.cpp:973-980` by measurement.
+⇒ **No depth change in d ∈ 0..8 can alter an emitted token via the verify
+matmul.** Any acceptance/token movement across depths is policy or head, never the
+kernel. This deletes a whole confound class from every depth experiment.
+It does **not** cover attention/SDPA or GDN — alphonse's width-9 hexfloat row gate
+is still open, but the projections are eliminated as a suspect.
+
+### Dead ends closed by PR #5 — do not re-propose
+
+- **Padding verify 9 → 10 is DEAD on two counts.** Speedup **0.661** (34%
+  *slower*; stock 0.764) — crossing `vector_limit = 10` leaves `qmv` for
+  `qmm_splitk` and loses. And `row0_survives_padding = False`: padding **changes
+  row 0's bits**, so it could never satisfy the exactness contract. This is before
+  any GDN/attention fast-path loss at S=10. I had requested this probe in
+  edward's brief and re-requested it three times; **retracted**.
+- All 8 scored shapes have `K % 512 == 0` and `N % 8 == 0`; **none** fall off
+  `qmv_fast`. No alignment headroom exists.
+- The shipped 4-bit head beats 8-bit (2.010× time for 1.889× bytes) — reconfirms
+  askeladd's two-scope refutation of an 8-bit head.
+- GDN recurrence is 2.748 → 4.007 ms/verify from M=1→9: only 4.2% / 1.9% of round
+  cost at d=0 / d=8. Not a target.
+
+### Live defect found in our own shipped kernel (unassigned, small)
+
+Vendored/stock speedup is 1.09–1.25 at M=7 and 1.08–1.19 at M=9, but **regresses
+to 0.87–0.92 at M=2..5 on the two N=5120 shapes** (`out_proj`, MLP down). ~1% of
+verify cost. Thorfinn's follow-up (b): a shape-aware guard keeping N=5120 shapes
+off crossrow at M=2..5. Small but real and cheap.
+
+### Campaign-value numbers from PR #5
+
+Call-mix-weighted, roofline-normalized verify tax at M=9: **2.898 → 2.530**
+(−0.368) — i.e. crossrow has *already* paid down that much of what the campaign
+believed was recoverable. Absolute weighted verify **206.2 → 180.0 ms** (−12.7%);
+M=1 essentially unchanged 60.7 → 60.4 as expected. Raw `cost(9)/cost(1) = 2.980`.
+`BW_eff` 231.9–250.4 GB/s, `FLOPS_eff` 6.37–6.56 TFLOP/s across shapes.
+
+**My pre-registered predictions scored:** boundary *location* — correct. Raw
+`cost(9)/cost(1)` predicted 2.0–2.4, measured **2.980** — under-predicted.
+Normalized `qmv_tax(9)` predicted 1.55–1.9, measured **2.530** — under-predicted.
+`ceil(M/4)` unit magnitude — **wrong**. Roofline knee `M* = 7.9` — **wrong**.
+Branch prediction (middle → Part B(a) only) — correct, but B(a) then died on
+measurement. Net: the structural read of the kernel was sound; every *magnitude* I
+attached to it was not.
+
+### `NA = 5` is UNBLOCKED — my recorded blocker was not fatal
+
+I had recorded the `NA = 5` crossrow experiment as blocked because Metal has no
+`vec<float,5>` (legal widths 2/3/4/8/16). Thorfinn found the way through:
+`mlx-generated/quantized.cpp:993-994` is
+
+```cpp
+static_assert(NA >= 2 && NA <= 4, "wide multi-row QMV supports NA in [2, 4]");
+typedef vec<float, NA> VF;
+```
+
+— the bound is forced **only** by the `vec<float,NA>` typedef. A plain `float[NA]`
+(or a small struct) lifts it. Register footprint is `acc[4] + partial[4] +
+a0..a3 = 12·NA` plus `sums = NA` ⇒ **≈13·NA floats/thread**, so NA=5 (81 floats
+incl. packed/scale/bias) plausibly fits where NA=6 may not. Payoff: M=9 needs
+`ceil(9/5) = 2` streams instead of 3, targeting the +6.6 ms in-situ boundary
+excess at M=9 — the largest single increment in edward's vector.
+**Bit-exactness is NOT free here**: element-wise scalar code may contract to FMA
+differently than the vector form, so the reduction order argument does not
+automatically transfer. It must be *measured* — and PR #5 merged exactly the
+instrument that measures it.
+
+## Instrument now on the base (from PR #5)
+
+`research/qmv_cost_curve.py`, `research/qmv_cost_curve_summary.py`,
+`research/run-qmv-curve.sh`, `Tests/MLXFastTests/QwenQMVCostCurveTests.swift`
+(gated behind `MLXFAST_RUN_QMV_COST_CURVE=1`, off by default; `_OUT`, `_REPS=12`,
+`_INNER=8`). All outside `editablePaths` — Yukon submits none of it, growth 0.
+Repro: `swift test -c release --force-resolved-versions -Xswiftc -enable-testing
+--filter QwenQMVCostCurve`, then `research/qmv_cost_curve_summary.py`.
+Reports per-shape cost, achieved GB/s (nominal and stream-corrected), selected
+kernel, and **bitwise deviation vs the M=1 reference** — the last of which is the
+exactness gate for any future kernel edit. Caveat: synthetic weights (validated
+indirectly — its weighted M=1 verify of 60.4 ms sits ~10% under the in-situ
+`C(0) = 67.0 ms`, which is the right order for verify-plus-overhead).
+
+## ★★ MEASUREMENT HAZARD — each arm emits FOUR trace files (cost me a false alarm)
+
+A traced arm writes **four** `trace.txt.<pid>` files. Two are one-line stubs. Of
+the two real ones:
+
+- the **LARGE** file (e.g. 515 lines / 512 rounds, all `d=0`, `draft_build_us=0`)
+  is the **SERIAL CONTROL LEG** — correctly depth 0;
+- the **SMALL** file is the **MTP leg** — the one with the real depth histogram.
+
+Sampling with `ls … | head -1` **or** `ls -S … | head -1` picks a wrong file.
+Correct histogram command (**the leading space is mandatory**, or it matches
+`roun`**`d=`**`99`):
+
+```bash
+grep -o ' d=[0-9]*' <trace> | sort | uniq -c
+```
+
+I sampled the serial leg across a whole sweep, saw `d=0` everywhere, and concluded
+a student's `--force-depth` was inoperative and his positive control had failed —
+i.e. that hours of his work were degenerate. **All of that was wrong**; the sweep
+was healthy (`base-decl` and `base256` histograms identical, proving env plumbing;
+`d4` → d=4×109; `d8` → d=8×67). Caught before broadcast.
+
+**Standing lesson: when a conclusion implies a student has wasted hours, verify
+the measurement instrument before broadcasting.** Bad claim #11 caught
+pre-broadcast — and the only one that was mine end to end.
+
+Related, also resolved: `round=301` exit-1 failures on 512-token arms are the
+**serial leg** hitting the known EOS wall at decode token 301, pre-`b219009`.
+Every 512-token arm on a base at/after `b219009` completes 512 rounds, exit 0.
+
+## THERMAL — resolved, no escalation; my earlier "no margin" claim is SUPERSEDED
+
+A decisive 900 s idle soak: GPU idled at t=53 s (52.08 °C, 0.010 W) and reached
+**39.92 °C at t=168 s**; at t=181 s `benchmark.sh --local-cool-gate-only` exited
+and GPU power jumped to 20.5 W ⇒ **gate PASSED**. The idle floor is **not** at or
+above the 40 °C gate, and it is passable in ~2–3 min from a hot run. My prior
+"floor 40.05–40.4 °C, margin ~0" was contaminated by concurrent GPU work.
+**Zero cool-gate aborts** across all of edward's arm logs. Residual risk is
+contention only ⇒ serialize GPU work.
+
+Gate mechanics (`benchmark.sh`): `COOL_GATE_TEMP_C=40` (:28), `ABORT_SECONDS=180`
+(:30), `STALL_SECONDS=90` (:31), `MAX_WAIT_SECONDS=900` (:32),
+`PROGRESS_EPSILON_C=0.25` (:33), `POLL_SECONDS=10`. **The 900 s ceiling almost
+never binds — the stall abort does**: `waited >= 180 && (waited − last_progress)
+>= 90`, where progress means a new minimum ≥0.25 °C below the previous. An abort
+at ~180–270 s therefore means the die *plateaued*, which nearly always means
+**something else was on the GPU**. Pass is a single sample ≤ 40.0, so jitter helps.
+
+## CORRECTION to ESTABLISHED_FACTS — the repair counters (askeladd's r3)
+
+My note "`prefixRepairCount = 0`, `fullRepairCount = 0` over 28 rounds ⇒
+Hypothesis-2 closed at 0 ms" was **wrong**, and I had already promoted it into an
+advisor instruction before askeladd caught it. Correct split:
+
+- `fullRepairCount = 0` — **directly measured**, 28/28 rounds (the trace `repair=`
+  field emits `didRepair`, set only in the full-repair fallback).
+- `rollbackRoundCount` = `prefixRepairCount` ∈ **[2, 4]** — **derived, never
+  measured**. d=4, N=10, mean acc 3.70 ⇒ 37/40 ⇒ deficit 3; d=8, N=9, mean acc
+  7.89 ⇒ 71/72 ⇒ deficit 1 (round 16, `d=8 acc=7 repair=none`); d=5,6,7 deficit 0.
+  Independently closed by `accepted_draft_rate = 0.976190476 = 164/168` ⇒ 4
+  rejected drafts.
+
+**The interpretation is STRONGER, not weaker:** partial rejection fired ≥2 times
+and the expensive full re-forward fired **zero** times — a genuine tested negative
+about the repair machinery (the eager post-primary checkpoint plus
+`restoreAfterPrefixReject` absorbed every one), not an absence of data. Rollback
+cost +1,018 µs (+0.47%) on a 218 ms round (N=1, directional). Counters
+`prefix_repair_total=` / `full_repair_total=` now exist in source, so the next
+traced run reports exact integers.
+
+## PR #4 (qwen-askeladd) — closed unmerged; findings stand
+
+Closed because only Pile A (trace file sink, +30/−4) was proposed for promotion
+while the head also carried Piles B (+90 sub-step timers) and C (+67/−3
+`Qwen35MTPHostTrace`), which are research-only; merging would have landed ~187
+lines of instrumentation and 8,562 B of candidate growth for a `failed`
+experiment. Standing findings:
+
+1. `draft_build_us` is **NOT host-bound**: 93.4% of the 17,486 µs mean is
+   `tail_async`; steady-state host-only is **599 µs/round = 0.350%**, ~33 µs per
+   draft step against an assumed ~2,400 — a **~70× overestimate in my assignment
+   premise**. Mechanism: mlx `async_eval()` → `eval_impl(outputs, true)` walks the
+   tape on the calling thread, throttling at `MAX_ACTIVE_TASKS = 10`.
+2. Shape-varying rebuild ≈ 0 (max |Δ| 276 µs = 0.19%) ⇒ refutes `mlx-lm` #250 here.
+3. **Compiled decode is dead**: ≤599 µs/round total prize. Do not spend a student.
+4. Accepted-token commit is **already fused** ⇒ `mlx-lm` #990's saving is banked.
+5. Two-scope head test: trunk-only q4/bf16 = **3.41×** vs a 3.5550× byte ratio ⇒
+   **bandwidth-bound**, 8-bit head refuted. **522.1 MB/step confirmed to 0.003%**
+   ⇒ compact readout is **54.24% of ranked drafting bandwidth**; 2-bit compact
+   `draft_lm_head` ≈ **−2.02% round ≈ +0.058 score** (Direction 1b).
+6. `headStepCostRatio` measured **h ≈ 0.224** vs shipped `0.20`.
+7. Fidelity exact 192/192, divergences 0. Guardrail after-first 1.293 vs 4.0.
+
+**Deferred, not declined:** the trace file sink (Pile A only) should come onto the
+base as advisor tooling on a future base move. Urgency dropped because edward
+independently built an equivalent under `MLX_QWEN_MTP_TRACE_PATH`.
+
+**My errors in that assignment**, on the record: the host-bound premise (~70×
+wrong); the stall-guardrail mechanism (retracted); the §1a framing of
+`MLX_QWEN_MTP_TRACE_FILE`; sizing off mlx #3920; and repeatedly asking for interim
+PR comments via a `post_assignment_comment` tool that is **not in the students'
+schema** (the report-embedded fallback is correct; I have stopped asking).
+
+## `qmm_splitk` has NO NAX gate — ranked prefill floor strengthened
+
+`mlx/backend/metal/quantized.cpp:1414-1440`:
+
+```cpp
+int vector_limit = transpose_ ? get_qmv_batch_limit(K,N,d) : 4;
+if (M >= vector_limit) {
+  int B = out.size()/M/N;
+  if (transpose_ && B == 1) { qmm_splitk(...); return; }
+  qmm(...); return;
+}
+```
+
+NAX early-returns exist only at :697 (qmm), :892 (gather_qmm), :1237
+(gather_qmm_rhs). ⇒ For our transposed, non-batched (B==1) projections
+**including prefill, NAX is bypassed**. My earlier "NAX could make ranked prefill
+faster than local" is **WRONG for our shapes**, which strengthens PR #3's prefill
+floor `P = 4.0086 s` as transferable.
+
+## `MLX_METAL_GPU_ARCH` — a surgical A/B lever (unassigned)
+
+`mlx/utils.h:206`: `static std::string gpu_arch_ = get_var("MLX_METAL_GPU_ARCH", "")`
+— the only occurrence. `Device::Device()` falls back to
+`device_->architecture()->name()` when empty. `MLX_` is worker-allowlisted
+(`QwenRuntimeWorker.swift:2643`). Every other arch consumer reads only
+`.back()`; **only `quantized.cpp:85-86` reads both** `arch_gen_` and `.back()`.
+⇒ **`MLX_METAL_GPU_ARCH=applegpu_g13s` changes exactly one thing: `vector_limit`
+10 → 6.** Overriding *upward* (g17s) crosses `is_nax_available()` and is **not**
+surgical. Env-var results are **not submittable** — this is a measurement lever
+only. Note PR #5 measured `vector_limit = 10` empirically rather than assuming it,
+confirming the table read.

@@ -145,7 +145,69 @@ an informative way.
 > PR #1 as a depth cost). Until those land, treat both models as live and this
 > one as the weaker.
 
+> ## ★★★ 2026-08-17 — MEASURED. **BOTH models above are refuted.** Read this
+> ## banner instead of the two sections it precedes.
+>
+> PR #5 (qwen-thorfinn, merged, W&B `cq7y31l0` vendored / `ppvrsfpp` stock)
+> measured all 8 scored shapes at `M = 1..9` directly. Result:
+>
+> **~free up to `M ≈ 3`; then `+0.17–0.32` of a width-1 call per additional
+> row; PLUS a stream-boundary excess at `M = 5` and `M = 9`.**
+>
+> Two components, not one — a **linear per-row ramp switching on at `M ≈ 4`**,
+> *and* boundaries at 5 and 9. Specifically:
+>
+> - **The roofline knee `M* = 7.9` is REFUTED.** There is no flat region out to
+>   7.9. Per-shape knees compute to 7.16–7.80, but the measured plateau *ends at
+>   `M = 1–3`* on every shape. `K` and `N` really do cancel in the algebra; the
+>   algebra simply is not what sets the curve. **`M* = 7.9` does not license
+>   treating width 8 or 9 as nearly free, on this host or on M5.** The M5
+>   extrapolation table further down inherits this refutation.
+> - **The `ceil(M/4)` staircase MAGNITUDE is FALSIFIED**, though its *location*
+>   is right. Stream-corrected GB/s is not flat and exceeds the kernel's own
+>   `M = 1` bandwidth by up to 22% (`lm_head` 301.0 GB/s @ `M=5` vs 247.3 @
+>   `M=1`) — i.e. the correction over-corrects by 4–50×. The marginal cost of
+>   crossing a boundary is **0.02–0.26** of a full weight read, not 1.0.
+>   `implied_streams = c(1)/c(m)` is **continuous** (`lm_head`: 1.00 0.99 1.01
+>   1.24 1.64 1.90 2.17 2.44 2.87) where the integer model demands 1,1,1,1,2,2,
+>   2,2,3.
+> - **Boundary LOCATION confirmed, and it is OURS.** Rank test "are `M=5` and
+>   `M=9` the two largest increments over `M=2..9`": vendored crossrow **6/8**
+>   shapes true; upstream stock mlx **0/8** (its largest steps land at `M=7` and
+>   `M=9`). **`M = 5` is the discriminator** — an `M=9`-only test
+>   false-positives on stock. Both vendored failures are the two `N = 5120`
+>   shapes.
+> - Fit across depth: **`C(d) = V(d+1) + 4.46 + 3.73·d` ms** (max resid 2.69,
+>   vs 11.15 for stock) ⇒ **`H = 3.73 ms` per head-step, `c = 4.46 ms`**.
+> - Call-mix-weighted roofline-normalized verify tax at `M=9`: **2.898 → 2.530**
+>   vendored vs stock. Raw `cost(9)/cost(1) = 2.980` — note the "ideal 1.12"
+>   below is off by 2.7×.
+>
+> **Independently cross-validated.** Edward's in-situ per-step `h(d)` (PR #1)
+> times `C(0) = 67.0 ms`, minus `H = 3.73`, reproduces the same shape: ~0 excess
+> at `d=1,2`; ramp onset at `d=3`; extra bumps exactly at `d=4` (`M=5`) and
+> `d=8` (`M=9`). This **explains the previously-mysterious `h(3) = 0.2446`** as
+> ramp onset, not a boundary. One live discrepancy is deliberately left open:
+> the in-situ boundary excess is `+5.5 ms` @`M=5` and `+6.6 ms` @`M=9`
+> (0.09–0.11 of a width-1 call) versus 0.25 in isolation — correctly located but
+> **~2.4× smaller live than isolated**, and unexplained.
+>
+> **Consequence for depth policy:** minimizing `C(d)/E(d)` over the measured
+> curve puts the optimum at **`d* = 7`**, so the shipped
+> `segmentedVerifyDepthCap = 8` is one step *past* optimum at every acceptance
+> rate tested (−1.9% @ q=1.00, −3.2% @ q=0.976, −11.6% @ q=0.94). The curve is
+> **non-monotone** — `d=3` beats `d=4` everywhere — so "prefer tread tops" is
+> real. See `CURRENT_RESEARCH_STATE.md:834+` for the full table and caveats.
+>
+> **Fidelity result, also from PR #5:** vendored crossrow is **bitwise-identical
+> to `M=1` on 8/8 scored shapes for all `M = 1..9`** (stock diverges at `M=2`;
+> vendored first diverges at `M=10`). Therefore **no depth change in `d ∈ 0..8`
+> can alter an emitted token via the verify matmul** — any token movement across
+> depths is policy or head, never the projection kernel. This does *not* cover
+> SDPA/attention or GDN.
+
 ### On this host (M4 Pro) the knee is at verify width 8, i.e. depth 7
+### — ✗ REFUTED by measurement; see the banner above. Retained for the record.
 
 PR #3 supplies both constants on the same host:
 
@@ -257,6 +319,16 @@ bracket it:
 |---|---:|---:|
 | 12.8 TFLOP/s (2x) | 30.5 FLOP/byte | **8.6** |
 | 25.7 TFLOP/s (4x) | 61 FLOP/byte | **17.2** |
+
+> **✗ 2026-08-17 — this table is now UNSUPPORTED.** It extrapolates a roofline
+> knee that PR #5 measured and refuted (see the banner at `:148`). The measured
+> curve ramps from `M ≈ 4`, far below the algebraic knee at 7.9, so whatever
+> sets the ramp is **not** the FLOPS/bandwidth balance and does not scale with
+> it. Consequence 1 below — "local measurements understate the value of deep
+> drafting" — therefore **has no surviving mechanism**, and must not be used to
+> discount a local regression at `d = 7..8`. Treat local depth measurements as
+> the best available evidence for ranked depth behaviour until something
+> measures the ranked host. Retained below for the record only.
 
 M4 Pro is 7.9. **In every corner of the bracket, M5's knee is deeper than
 ours.** Two consequences that reframe the whole round:
