@@ -466,6 +466,212 @@ Decode-only raw speedup at G = 1 is **2.5792**, with prologue 4.018 s / 4.027 s
 (P = 23.9 % of the candidate leg). **2.904 is therefore reachable at G ≈ 1**, so
 the official score is not by itself evidence that G ≫ 1.
 
+### FB6 — the SDPA width wall: clip rate, counterfactual depth, and zero value drift
+
+FB6 asked three concrete things. All three are answered below from the traces
+already on disk, at **zero additional GPU cost**. FB6 also stated explicitly
+that no new revision was needed, so this stayed on the current head.
+
+Tool: `research/fb6_wall_clip.py`. It replays `costModelDepth` offline — the
+same greedy walk, `h = 0.20`, `MAX_DEPTH = 8`, `SDPA_WALL = 4`,
+`conf = sigmoid(margin / 2)` taken from the last row emitted in the previous
+round (`pendingTop2`) — validates the replay against the depth actually
+observed, then recomputes the depth the same policy would have chosen with the
+wall removed. Outputs: `research/fb6-run{C,D,F}.json`.
+
+#### Replay fidelity is 100 % on every round the cost model was free to choose
+
+| run | rounds | replay matched | note |
+|:--|--:|--:|:--|
+| C base cap8 g3 | 38 | 37 | round 38 only |
+| D cap7 g3 (winner) | 36 | 35 | round 36 only |
+| F cap7 g1 | 37 | 36 | round 37 only |
+
+The single per-run miss is always the **terminal** round, and it is fully
+explained rather than unexplained. `research/tail_round_check.py` shows the
+decode window truncates `offeredDepth` at the tail:
+
+```text
+C: round 38 emitted_before=253 remaining=3  -> observed d=2 (replay assumed offered=8, said 4)
+D: round 36 emitted_before=254 remaining=2  -> observed d=1 (replay said 7)
+F: round 37 emitted_before=253 remaining=3  -> observed d=2 (replay said 7)
+```
+
+My offline replay assumed a constant `offeredDepth = 8`; the harness offers
+fewer slots once fewer than nine tokens remain in the 256-token window. Dropping
+that one budget-truncated round gives **37/37, 35/35, 36/36 — exact replay of
+the shipped policy**. The offline transcription of `costModelDepth` is therefore
+trustworthy, which is what licenses the counterfactual below.
+
+#### Deliverable 1 — clip rate and counterfactual depth histogram
+
+Excluding the budget-truncated terminal round in each run:
+
+| run | free rounds | **clip rate** | clipped rounds | clipped depth total | mean depth shipped | mean depth wall-open |
+|:--|--:|--:|--:|--:|--:|--:|
+| **C base cap8 g3** | 37 | **0.3514** | 13 | 46 | 5.947 | **7.316** |
+| **D cap7 g3 (winner)** | 35 | **0.1429** | 5 | 11 | 6.139 | 6.611 |
+| F cap7 g1 | 36 | **0.1389** | 5 | 15 | 6.135 | 6.676 |
+
+Counterfactual depth histograms (all rounds, as emitted by the tool):
+
+| run | shipped | wall open |
+|:--|:--|:--|
+| C | `{2:1, 4:14, 5:2, 6:3, 7:4, 8:14}` | `{4:1, 5:4, 6:3, 7:4, 8:26}` |
+| D | `{1:1, 4:6, 5:2, 6:3, 7:24}` | `{4:1, 5:4, 6:3, 7:28}` |
+| F | `{2:1, 4:6, 5:3, 6:3, 7:24}` | `{4:1, 5:3, 6:3, 7:30}` |
+
+**Caveat, stated plainly:** this is a counterfactual on the *recorded*
+(streak, EMA, confidence) trajectory. Actually opening the wall changes which
+drafts are accepted, which changes the streak and the EMA, which changes every
+later decision. These numbers bound how often the wall bites; they are not a
+prediction of the resulting score.
+
+#### Reconciling the clip rate with what I measured
+
+The base clip rate of **35.1 %** is genuinely high and superficially supports
+FB6's "+3.52 % from opening the wall". Two measured facts cut against reading it
+that way on this host:
+
+1. **The closest measured wall-opening proxy lost.** Relaxing
+   `segmentedStreakGate` 3 → 1 (Run F) is the cheapest way to spend more rounds
+   above the shallow cap. It raised the deep-round share by only **+0.5 pp**
+   (0.8333 → 0.8378) and cost **−1.15 %** against the winner, because it
+   re-opens the deep cap one clean round after a rejection and manufactures a
+   self-sustaining rejection cascade (rejected tokens 1 → 8, ×4.9).
+2. **Cap 7 already removes most of the clipping and wins anyway.** Going from
+   cap 8 to cap 7 cut the clip rate **35.1 % → 14.3 %** *and* delivered
+   **+2.61 %**. Nearly three quarters of the base's clipping was rounds that
+   would have walked to depth 8 — a depth my cost measurements show cannot repay
+   itself (below).
+
+So the wall is real and it does bite, but on this host the profitable response
+to it was a **lower** verify cap, not a **deeper** one.
+
+**An important terminology separation, because FB6 and Part B are not the same
+knob.** FB6's "open the wall" means raising `sdpaWidthWallDepthCap` (currently
+4, `Qwen36MTPBlockSession.swift:561`), which sets the depth used when the streak
+gate is *closed*. My Part B relaxed `segmentedStreakGate`, which sets how quickly
+a round becomes eligible for the *deep* cap. They both increase time spent deep,
+but through different states, and only the second was in my assignment scope.
+Run F is therefore evidence *about* wall-opening, not a test *of* FB6's exact
+proposal.
+
+#### Deliverable 2 — per-width top-2 logit deviation vs the `S ≤ 5` serial path
+
+FB6 §3 flagged `AttentionUtils.swift:104-107`/`:124-125`: the wide-chunk split
+fires for `1 == B, 6 <= qL <= 9, .causal`, splitting one SDPA call into two per
+full-attention layer (+3 dispatches per full-attention layer, ≈ +48 dispatches
+per forward at d = 8, plus a second ≈ 39 MB KV read), and named `qL = 6` as a
+known top-2 **value**-drift source — "the argmax matched" is not sufficient.
+
+Measured, per width, against the serial trajectory rows in the same trace:
+
+| run | width | rows | max_abs_dev_top1 | max_abs_dev_top2 | max_rel_dev top1/top2 | top1 id mism. | top2 id mism. | ordering swaps | unmatched |
+|:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| C | 3 | 3 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| C | 5 | 66 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| C | **6** | 12 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| C | **7** | 21 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| C | **8** | 32 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| C | **9** | 122 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| D | 2 | 2 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| D | 5 | 30 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| D | **6** | 12 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| D | **7** | 21 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| D | **8** | 191 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| F | 3 | 3 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| F | 5 | 29 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| F | **6** | 18 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| F | **7** | 21 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+| F | **8** | 185 | 0.0 | 0.0 | 0.0 / 0.0 | 0 | 0 | 0 | 0 |
+
+**Every width, every run: exactly zero.** Not "small", not "within tolerance" —
+the hexfloat bit patterns of both top-1 and top-2 logits are identical to the
+serial `S ≤ 5` path, ids included, with no ordering swaps and no unmatched
+positions. This is the same evidence that carried Part A, now split by width and
+extended to the top-2 **value**, which is what FB6 asked for. On this fixture the
+`qL = 6` wide-chunk switch produces no value drift at all.
+
+Two honest limits on that claim: it is one public fixture (a copy task,
+q ≈ 0.99) on M4 Pro, and widths 6–9 are only reachable at all because the deep
+cap opens — a run that never goes deep would exercise none of them.
+
+#### The cost curve behind FB6's simulation does not match this host
+
+FB6's policy simulation was calibrated to endpoints **`C(0) = 67.0 ms/round`**
+and **`C(8) = 161.0 ms/round`** (from `qwen-thorfinn` PR #3, W&B `cwlqu3ok`).
+That is a slope of **11.75 ms/depth**. My Run C per-depth means (round 1
+excluded, milliseconds) are:
+
+| d | n | draft_build | verify_build | eval_wall | readout | commit | upkeep | **round** | (draft+vbuild)/round |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2 | 1 | 0.37 | 43.38 | 35.87 | 0.01 | 0.09 | 0.01 | 79.74 | 0.549 |
+| 4 | 13 | 6.75 | 64.41 | 55.13 | 0.02 | 0.20 | 0.04 | 126.53 | 0.562 |
+| 5 | 2 | 11.78 | 71.99 | 62.16 | 0.04 | 0.38 | 0.13 | 146.48 | 0.572 |
+| 6 | 3 | 16.58 | 80.16 | 70.96 | 0.04 | 0.42 | 0.13 | 168.29 | 0.575 |
+| 7 | 4 | 21.12 | 88.05 | 80.20 | 0.03 | 0.25 | 0.10 | 189.74 | 0.575 |
+| 8 | 14 | 25.39 | 98.96 | 92.91 | 0.01 | 0.19 | 0.04 | 217.50 | 0.572 |
+
+Measured slope over d4 → d8 is **22.75 ms/depth — 1.94× steeper** than the
+calibration, and at d = 8 I measure **217.4 ms against their 161 ms (+35 %)**.
+
+That difference flips the conclusion, not just the magnitude. Cost per accepted
+token at q = 1:
+
+- with `C(d) = 67 + 11.75 d`: 22.8 (d4) → 17.89 (d8), **monotonically
+  decreasing** ⇒ deeper is always better ⇒ the wall is pure loss.
+- measured: 25.28 (d4) → **23.72 (d7, the minimum)** → 24.15 (d8) ⇒ an
+  **interior optimum**, and the marginal cost of row 9 (27.62 ms) already exceeds
+  the average cost per accepted token (23.72 ms) even at 100 % acceptance.
+
+**So FB6's +3.52 % (Part B alone) and +7.52 % (composed) should be read as upper
+bounds on this host.** They are computed on a curve that is roughly half as steep
+in depth as the one I measure, and the flatness is exactly what makes extra depth
+look free.
+
+A concrete hypothesis for where the 56 ms went: `161 ≈ 67 + 94`, and my width-9
+`eval_wall` is **92.91 ms**. The thorfinn endpoint therefore looks like it prices
+the **verify evaluation only**, excluding the ≈ 57 ms of
+`draft_build + verify_build` that sits above the serial forward in a real
+round — i.e. it omits precisely the head/graph term that `headStepCostRatio` is
+supposed to capture. That is consistent with my independent finding that the
+shipped `h = 0.20` is **3.2× under-costed** relative to the measured
+`h = 0.343`. Both point at the same missing term, from two directions.
+
+A separate observation that falls out of the same table and is worth its own
+experiment: **`draft_build + verify_build` is 55–58 % of every round at every
+depth.** That is Swift-side graph and command-buffer construction, not GPU
+evaluation. It is the single largest cost block in the decode loop and, as far as
+I can tell from the ledger, it has not been attacked directly.
+
+#### On FB6's reframing, and what I would run next
+
+FB6's point that "a ~+1 % Part B result is a SUCCESS, not a null" is taken, and
+the measured **+2.61 %** clears that bar comfortably. It does not, however,
+rescue the *specific* Part B hypothesis I was assigned: relaxing the streak gate
+measured as a clean **negative** (−1.15 % at gate 1), and the win came from the
+opposite direction. I am reporting both rather than relabelling the negative.
+
+FB6's warning about hard-removing the wall is consistent with everything above,
+and with the scoring rule: the published score is the **median of 8**, i.e. the
+mean of the 4th and 5th order statistics, and the calibration spread runs
+`botany 0.8467` → `medicine 1.0726`. A change that helps easy prompts and hurts
+a middling one lowers the median while raising the mean. My occupancy grid says
+the same thing from the other side: gate 1 beats gate 3 only for q ≥ 0.957, and
+its worst-case give-up (0.11 at q = 0.80) is **8×** gate 3's (0.013), so gate 3
+is the minimax choice. Depth 8 is not optimal at **any** q < 0.999 at **any**
+gate 0–4.
+
+The design FB6 actually wants — replace the fixed depth-4 wall with the
+measured-marginal extension rule plus an acceptance-driven safety cap keyed on
+`positionAcceptEMA` — is **not implemented here**. It needs `headStepCostRatio`
+corrected first (it is `qwen-edward`'s parameter, and it is the term that makes
+the marginal rule mean anything), and it needs at least one low-acceptance arm,
+which this fixture cannot supply. I have listed it as the recommended next
+experiment rather than half-building it inside a scope that did not include the
+wall constant.
+
 ## Failures, blockers and honest disclosures
 
 1. **FB3's 512-token ask is impossible on this fixture.** Run B (512 tokens, job
@@ -520,6 +726,19 @@ the official score is not by itself evidence that G ≫ 1.
    regime the ranked prose prompts occupy, since the only public fixture is a
    copy task that sits at q ≈ 0.99. It must stay research-only and must not touch
    `Qwen36MTPReferenceSession.swift`.
+5. **Attack `draft_build + verify_build`, which is 55–58 % of every round.** The
+   per-depth cost table shows the largest single block in the decode loop is
+   Swift-side graph and command-buffer construction, not GPU evaluation, and it
+   is roughly constant as a *fraction* of the round at every depth. Nothing in
+   the ledger targets it directly. Even a 20 % reduction there is worth more than
+   the entire cap-7 win.
+6. **FB6's measured-marginal wall replacement.** Replace the fixed
+   `sdpaWidthWallDepthCap = 4` with the measured-marginal extension rule plus an
+   acceptance-driven safety cap keyed on `positionAcceptEMA`, per FB6. Sequence
+   it *after* `headStepCostRatio` is corrected, since the marginal rule is only
+   meaningful once the per-draft cost is honest, and run it with at least one
+   low-acceptance arm so the median-of-8 risk FB6 warns about is actually
+   observable. Do not hard-remove the wall.
 
 ## Conclusion
 
