@@ -209,6 +209,173 @@ def qweight_bytes(out_features, in_features):
     return out_features * in_features * BYTES_PER_WEIGHT
 
 
+def dbank(out_features, in_features, copies=WEIGHT_COPIES):
+    return [
+        (mx.random.normal([out_features, in_features]).astype(mx.bfloat16) * 0.02,)
+        for _ in range(copies)
+    ]
+
+
+def dmm_fn(xs, bank):
+    def run(i):
+        (w,) = bank[i % len(bank)]
+        return xs[i % len(xs)] @ w.T
+
+    return run
+
+
+def dproj3(xs, banks):
+    def run(i):
+        x = xs[i % len(xs)]
+        j = i % WEIGHT_COPIES
+        return tuple(x @ b[j][0].T for b in banks)
+
+    return run
+
+
+def dweight_bytes(out_features, in_features):
+    return out_features * in_features * 2.0
+
+
+def head_banks(dtype):
+    """The eight head trunk matrices, in the dtype the head is actually stored in.
+
+    The head reuses the target's layer shapes because it is one layer of the same
+    architecture. Only `fc` (concat projection) is head-specific.
+    """
+    if dtype == "bf16":
+        mk, mm, proj3_, wb = dbank, dmm_fn, dproj3, dweight_bytes
+    else:
+        mk, mm, proj3_, wb = qbank, qmm_fn, proj3_quantized, qweight_bytes
+    return {
+        "fc": mk(H, 2 * H),
+        "q": mk(ATTN_Q_OUT, H),
+        "k": mk(ATTN_KV_OUT, H),
+        "v": mk(ATTN_KV_OUT, H),
+        "o": mk(H, ATTN_HEADS * HEAD_DIM),
+        "gate": mk(INTERMEDIATE, H),
+        "up": mk(INTERMEDIATE, H),
+        "down": mk(H, INTERMEDIATE),
+        "mm": mm,
+        "proj3": proj3_,
+        "weight_bytes": wb,
+    }
+
+
+def proj3_quantized(xs, banks):
+    def run(i):
+        x = xs[i % len(xs)]
+        j = i % WEIGHT_COPIES
+        return tuple(
+            mx.quantized_matmul(x, *b[j], transpose=True, group_size=QGROUP, bits=QBITS)
+            for b in banks
+        )
+
+    return run
+
+
+def measure_bf16_bandwidth(reps):
+    """BW_eff for a dense bf16 matvec, which pays no dequantization.
+
+    The 4-bit probe in `measure_machine_balance` cannot serve as the roofline
+    denominator for a bf16 head: the two kernels are different families and only
+    a same-dtype anchor makes `achieved / roofline` mean kernel efficiency.
+    """
+    bank = dbank(65536, H, copies=1)
+    t = timeit_amortized(dmm_fn(inputs([1, 1, H]), bank), reps)
+    del bank
+    _release()
+    return dweight_bytes(65536, H) / t
+
+
+def measure_head_chain(depth, kv_len, reps, dtype, bw_eff):
+    """The `depth` chained head steps of one round, at one head storage dtype.
+
+    Answers whether the head is bandwidth-bound (achieved tracks bytes/BW_eff, so
+    a smaller head buys time proportionally) or latency-bound (per-step launch and
+    dequantization dominate, so shrinking the head buys nothing).
+
+    `head:draft_lm_head_compact` is deliberately excluded: that slice belongs to
+    the target's lm_head, is 4-bit either way, and is head-independent.
+    """
+    b = head_banks(dtype)
+    wb = b["weight_bytes"]
+    x1 = inputs([1, 1, H])
+    x2h = inputs([1, 1, 2 * H])
+    xo1 = inputs([1, 1, ATTN_HEADS * HEAD_DIM])
+    qh = inputs([1, ATTN_HEADS, 1, HEAD_DIM])
+    ka = inputs([1, KV_HEADS, kv_len, HEAD_DIM], n=WEIGHT_COPIES)
+    va = inputs([1, KV_HEADS, kv_len, HEAD_DIM], n=WEIGHT_COPIES)
+
+    def mlp(i):
+        x = x1[i % INNER]
+        j = i % WEIGHT_COPIES
+        if dtype == "bf16":
+            a = x @ b["gate"][j][0].T
+            u = x @ b["up"][j][0].T
+            h = a * mx.sigmoid(a) * u
+            return h @ b["down"][j][0].T
+        a = mx.quantized_matmul(x, *b["gate"][j], transpose=True, group_size=QGROUP, bits=QBITS)
+        u = mx.quantized_matmul(x, *b["up"][j], transpose=True, group_size=QGROUP, bits=QBITS)
+        h = a * mx.sigmoid(a) * u
+        return mx.quantized_matmul(h, *b["down"][j], transpose=True, group_size=QGROUP, bits=QBITS)
+
+    qkv_out = ATTN_Q_OUT + 2 * ATTN_KV_OUT
+    rows = [
+        ("head:fc_concat_proj", b["mm"](x2h, b["fc"]), wb(H, 2 * H)),
+        (
+            "head:attn_qkv_proj",
+            b["proj3"](x1, (b["q"], b["k"], b["v"])),
+            wb(qkv_out, H),
+        ),
+        (
+            "head:attn_sdpa",
+            lambda i: mx.fast.scaled_dot_product_attention(
+                qh[i % INNER],
+                ka[i % WEIGHT_COPIES],
+                va[i % WEIGHT_COPIES],
+                scale=1.0 / 16.0,
+                mask=None,
+            ),
+            2 * KV_HEADS * kv_len * HEAD_DIM * 2,
+        ),
+        ("head:attn_o_proj", b["mm"](xo1, b["o"]), wb(H, ATTN_HEADS * HEAD_DIM)),
+        (
+            "head:mlp_gate_up_down",
+            mlp,
+            2 * wb(INTERMEDIATE, H) + wb(H, INTERMEDIATE),
+        ),
+    ]
+
+    out = []
+    for name, fn, byts in rows:
+        sec = timeit_amortized(fn, reps, inner=INNER)
+        out.append(
+            {
+                "component": name,
+                "per_call_seconds": sec,
+                "bytes_per_call": byts,
+                "roofline_per_call_seconds": byts / bw_eff,
+                "kernel_efficiency": (byts / bw_eff) / sec if sec > 0 else 0.0,
+                "achieved_bytes_per_s": byts / sec,
+                "chain_seconds": sec * depth,
+            }
+        )
+    del b
+    _release()
+
+    trunk_bytes = sum(r["bytes_per_call"] for r in out if r["component"] != "head:attn_sdpa")
+    return {
+        "head_dtype": dtype,
+        "depth": depth,
+        "bw_eff_bytes_per_s": bw_eff,
+        "trunk_weight_bytes_per_step": trunk_bytes,
+        "rows": out,
+        "chain_achieved_seconds": sum(r["chain_seconds"] for r in out),
+        "chain_roofline_seconds": sum(r["roofline_per_call_seconds"] * depth for r in out),
+    }
+
+
 def measure_machine_balance(reps):
     """Measure BW_eff from a pure weight-streaming qmv and FLOPS_eff from a wide GEMM.
 
@@ -533,6 +700,11 @@ def main():
         action="store_true",
         help="also sweep quantized_matmul efficiency versus row count M",
     )
+    ap.add_argument(
+        "--head-dtype-compare",
+        action="store_true",
+        help="also measure the chained head trunk at 4-bit and bf16 storage",
+    )
     args = ap.parse_args()
 
     mx.random.seed(0)
@@ -607,6 +779,56 @@ def main():
                 f"{r['achieved_bytes_per_s']/1e9:8.1f} {r['achieved_flops']/1e12:8.3f} "
                 f"{r['kernel_efficiency']*100:5.1f}% {r['rows_per_second_vs_M1']:10.2f}"
             )
+
+    if args.head_dtype_compare:
+        bw_bf16 = measure_bf16_bandwidth(args.reps)
+        chains = {
+            d: measure_head_chain(
+                args.depth, args.kv_len, args.reps, d, bw_bf16 if d == "bf16" else bw
+            )
+            for d in ("q4", "bf16")
+        }
+        q4c, bfc = chains["q4"], chains["bf16"]
+        out["bw_eff_bf16_bytes_per_s"] = bw_bf16
+        out["head_dtype_comparison"] = {
+            "q4": q4c,
+            "bf16": bfc,
+            "trunk_byte_ratio_bf16_over_q4": (
+                bfc["trunk_weight_bytes_per_step"] / q4c["trunk_weight_bytes_per_step"]
+            ),
+            "chain_time_ratio_bf16_over_q4": (
+                bfc["chain_achieved_seconds"] / q4c["chain_achieved_seconds"]
+            ),
+            "verdict_note": (
+                "bandwidth-bound if the time ratio tracks the byte ratio; latency-bound "
+                "if the time ratio stays near 1.0 while bytes fall"
+            ),
+        }
+        print(f"\nBW_eff(bf16 dense matvec) = {bw_bf16/1e9:.1f} GB/s")
+        print(
+            f"\n{'head row':32s} {'q4_ms':>9s} {'q4_eff':>7s} {'bf16_ms':>9s} {'bf16_eff':>9s} {'x':>6s}"
+        )
+        for rq, rb in zip(q4c["rows"], bfc["rows"]):
+            print(
+                f"{rq['component']:32s} {rq['per_call_seconds']*1e3:9.4f} "
+                f"{rq['kernel_efficiency']*100:6.1f}% {rb['per_call_seconds']*1e3:9.4f} "
+                f"{rb['kernel_efficiency']*100:8.1f}% "
+                f"{rb['per_call_seconds']/rq['per_call_seconds']:6.2f}"
+            )
+        print(
+            f"\ntrunk bytes/step   q4 {q4c['trunk_weight_bytes_per_step']/1e6:9.2f} MB   "
+            f"bf16 {bfc['trunk_weight_bytes_per_step']/1e6:9.2f} MB   "
+            f"ratio {out['head_dtype_comparison']['trunk_byte_ratio_bf16_over_q4']:.2f}x"
+        )
+        print(
+            f"chain x{args.depth} achieved   q4 {q4c['chain_achieved_seconds']*1e3:9.3f} ms   "
+            f"bf16 {bfc['chain_achieved_seconds']*1e3:9.3f} ms   "
+            f"ratio {out['head_dtype_comparison']['chain_time_ratio_bf16_over_q4']:.2f}x"
+        )
+        print(
+            f"chain x{args.depth} roofline   q4 {q4c['chain_roofline_seconds']*1e3:9.3f} ms   "
+            f"bf16 {bfc['chain_roofline_seconds']*1e3:9.3f} ms"
+        )
 
     with open(args.out, "w") as f:
         json.dump(out, f, indent=2)
