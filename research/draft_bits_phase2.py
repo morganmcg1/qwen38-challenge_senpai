@@ -17,24 +17,32 @@ import re
 import statistics as st
 import sys
 
-ARM_RE = re.compile(r"run-draft-bits-phase2: arm bits=(\d)")
+ARM_RE = re.compile(r"run-draft-bits-phase\d: arm .*?bits=(\d)")
 KV_RE = re.compile(r"(\w+)=([\d.]+)")
 INT_KV_RE = re.compile(r"(\w+)=(\d+)")
 
 
 def parse(path):
-    """Group trace records by arm and by worker instance."""
+    """Group trace records by arm and by worker instance.
+
+    `slot` is the 1-based position of the arm invocation in the log, which is
+    what distinguishes the two replicates of the same bit width in a
+    counterbalanced Phase 3 order; `arm` is the bit width and repeats.
+    """
     arm = None
+    slot = 0
     blocks = []
     cur = None
     for line in open(path, errors="replace"):
         m = ARM_RE.search(line)
         if m:
             arm = m.group(1)
+            slot += 1
         if "draft-head materialised" in line:
             kv = dict(KV_RE.findall(line))
             cur = {
                 "arm": arm,
+                "slot": slot,
                 "bits": kv["bits"],
                 "source_bits": kv["source_bits"],
                 "requant_ms": float(kv["requant_ms"]),
