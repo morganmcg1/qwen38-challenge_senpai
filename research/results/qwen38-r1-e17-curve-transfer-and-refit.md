@@ -549,6 +549,27 @@ is the authoritative identity, `dirty = 0` on both, and the changed file is a Py
 executes — but it is a hygiene slip and it is disclosed rather than smoothed over. Rule adopted for future
 sessions: **never commit while a job is running.**
 
+### The `-s ours` merge parent, and why it discards nothing
+
+r1's remote tip `e3f31dea` was built on the r1 base `e6e6f81`; r2 was rebased onto the assigned base
+`af80b0fc`, so the two heads share only `e6e6f81` as a merge base and the r2 head does not fast-forward
+the remote. All ten remote-only commits exist locally as rebased copies (`b5b20ae`→`8121c82`,
+`42d75c6`→`fbfd412`, `82ce6ce`→`7274e9d`, `f2d7680`→`8766874`, `991af64`→`a59043b`,
+`03f1c8b`→`a3414f4`, `98ad7cc`→`fb9b3f4`, `e3f31de`→`3c2eaab`; the ceiling-5.0 commit arrives through
+`af80b0fc`'s own lineage). I therefore recorded `e3f31dea` as a second parent with `git merge -s ours`,
+which keeps the r2 tree bit-for-bit and so leaves the submitted surface empty. This follows the campaign's
+existing bookkeeping precedent (`5d4fa4c`, `81e13ce`).
+
+Evidence that nothing is lost, checked before the merge:
+
+- `git diff --name-only --diff-filter=D e3f31dea HEAD` is **empty** — no file on the remote tip is absent
+  locally.
+- The only removed lines in this report are the **two r1 sentences that r2 explicitly retracts**: the
+  "prefill-inclusive" label on `raw_p` and the `0.84228` decode→score conversion factor. Section
+  *Q1 (r2)* above replaces both.
+- The other removed lines are the intended r2 rewrites of research-only tooling: the arm builder generalised
+  from 2 arms to 6, the analyser to `--runs-root/--arms/--control`, and the W&B logger to N arms.
+
 ## Submitted surface
 
 `git diff --name-only af80b0fc..HEAD` lists **only 20 `research/` files**. The diff filtered to
