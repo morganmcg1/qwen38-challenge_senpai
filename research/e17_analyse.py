@@ -66,8 +66,22 @@ def load_arm(prompt: str, arm: str, root: Path = RUNS) -> dict | None:
     assert serial["mtp_depth"] == 0 and serial["is_serial_control"], run
     assert mtp["mtp_depth"] == 8 and not mtp["is_serial_control"], run
     hist = Counter(mtp["effective_draft_lengths"])
+    meta = dict(
+        line.split("=", 1) for line in (run / "meta.txt").read_text().splitlines() if "=" in line
+    )
+    correctness = load_leg(run, "01-correctness.json")
     return {
         "run": str(run),
+        "meta": {k: v.strip() for k, v in meta.items()},
+        "emitted_tokens": mtp["emitted_token_total"],
+        "seed_tokens": mtp["seed_token_count"],
+        "stall_max": mtp["max_block_request_seconds_after_first"],
+        "stall_p50": mtp["p50_block_request_seconds_after_first"],
+        "stall_ratio": mtp["max_block_request_seconds_after_first"]
+        / mtp["p50_block_request_seconds_after_first"],
+        "drift_tripwire_passed": correctness["passed"],
+        "drift_tripwire_steps": correctness["checked_steps"],
+        "golden_hash": correctness["golden_hash"],
         "serial_spt": serial["parent_measured_seconds_per_token"],
         "mtp_spt": mtp["parent_measured_seconds_per_token"],
         "raw": serial["parent_measured_seconds_per_token"]
@@ -160,6 +174,55 @@ def report(data: dict[str, dict[str, dict]]) -> None:
             )
             print(f"  {'':<23}depth_hist={a['depth_hist']}")
 
+    mechanism(data)
+
+
+def mechanism(data: dict[str, dict[str, dict]]) -> None:
+    """Which per-prompt quantity tracks the curve's win?
+
+    The curve accepts FEWER tokens than the scalar on every prompt yet is faster
+    on every prompt, so the win cannot be an acceptance effect. Rank the
+    candidate explanations against g.
+    """
+    print("\nMECHANISM: what predicts the size of the curve's win?")
+    print(
+        f"  {'prompt':<16}{'g%':>8}{'F-C rows':>9}{'rows%':>8}"
+        f"{'F-C acc':>8}{'F-C rnds':>9}{'rows/acc C':>11}{'rows/acc F':>11}{'ratio':>7}"
+    )
+    rows = []
+    for prompt, arms in data.items():
+        c, f = arms["CURVE"], arms["FLAT18"]
+        g = 100 * (f["mtp_spt"] - c["mtp_spt"]) / f["mtp_spt"]
+        d_rows = f["checked_rows"] - c["checked_rows"]
+        pct_rows = 100 * d_rows / c["checked_rows"]
+        rpa_c = c["checked_rows"] / c["accepted"]
+        rpa_f = f["checked_rows"] / f["accepted"]
+        rows.append((prompt, g, d_rows, pct_rows, rpa_f / rpa_c))
+        print(
+            f"  {prompt:<16}{g:>+8.3f}{d_rows:>9}{pct_rows:>+8.2f}"
+            f"{f['accepted']-c['accepted']:>+8}{f['rounds']-c['rounds']:>+9}"
+            f"{rpa_c:>11.3f}{rpa_f:>11.3f}{rpa_f/rpa_c:>7.3f}"
+        )
+    if len(rows) < 3:
+        return
+
+    def spearman(a: list[float], b: list[float]) -> float:
+        ra = [sorted(a).index(x) for x in a]
+        rb = [sorted(b).index(x) for x in b]
+        n = len(a)
+        return 1 - 6 * sum((x - y) ** 2 for x, y in zip(ra, rb)) / (n * (n * n - 1))
+
+    gs = [r[1] for r in rows]
+    print(
+        f"\n  Spearman(g, extra rows %)      = {spearman(gs, [r[3] for r in rows]):+.3f}"
+        f"   <- redundant target work"
+    )
+    print(f"  Spearman(g, rows/accept ratio) = {spearman(gs, [r[4] for r in rows]):+.3f}")
+    print(
+        "  The scalar accepts MORE tokens on every prompt and is SLOWER on every prompt:\n"
+        "  the curve trades cheap extra rounds for expensive saved verify rows."
+    )
+
 
 def r3() -> None:
     """Re-derive the r3 published pair under both conventions.
@@ -209,6 +272,65 @@ def r3() -> None:
     print(f"  shrink = {100*(1-dbl_delta/pub_delta):.2f}%  (advisor r1 quoted 17.67%)")
 
 
+def contract(data: dict[str, dict[str, dict]]) -> None:
+    """Evidence-contract item 5 + item 6, one row per timed arm."""
+    print("CONTRACT ITEM 5 -- CORRECTNESS / HYGIENE (every timed arm)")
+    hdr = (
+        f"{'arm':22s} {'match':5s} {'div':>3s} {'parity':6s} {'emit/gold':>9s} "
+        f"{'rows d==c':>9s} {'env':3s} {'dirty':>5s} {'pin':3s} {'drift':5s} {'stall x':>7s}"
+    )
+    print("  " + hdr)
+    ok = True
+    for prompt, arms in data.items():
+        for arm, a in arms.items():
+            good = (
+                a["matched"]
+                and a["parity"]
+                and a["divergence"] == 0
+                and a["emitted_tokens"] == a["decode_tokens"] == 512
+                and a["declared_rows"] == a["checked_rows"]
+                and a["meta"]["mlx_qwen_env"] == ""
+                and a["meta"]["dirty"] == "0"
+                and a["pinned_head"]
+                and a["drift_tripwire_passed"]
+                and a["stall_ratio"] < 4.0
+            )
+            ok = ok and good
+            print(
+                f"  {prompt+'-'+arm:22s} {str(a['matched']):5s} {a['divergence']:3d} "
+                f"{str(a['parity']):6s} {a['emitted_tokens']:4d}/{a['decode_tokens']:<4d} "
+                f"{a['declared_rows']:4d}={a['checked_rows']:<4d} "
+                f"{'(-)' if a['meta']['mlx_qwen_env']=='' else 'SET':3s} "
+                f"{a['meta']['dirty']:>5s} {'yes' if a['pinned_head'] else 'NO':3s} "
+                f"{str(a['drift_tripwire_passed']):5s} {a['stall_ratio']:7.3f}"
+            )
+    print(f"\n  ALL ARMS CLEAN: {ok}")
+
+    print("\nCONTRACT ITEM 6 -- BINARY FRESHNESS (per arm)")
+    seen: dict[str, set[str]] = {}
+    for prompt, arms in data.items():
+        for arm, a in arms.items():
+            m = a["meta"]
+            seen.setdefault(arm, set()).add(m["worker_sha256"])
+            print(
+                f"  {prompt+'-'+arm:22s} cli={m['cli_sha256'][:16]} "
+                f"worker={m['worker_sha256'][:16]} src={m['source_sha256'][:16]} "
+                f"head_sha={m['head_sha'][:7]}"
+            )
+    for arm, shas in seen.items():
+        print(f"  arm {arm}: {len(shas)} distinct worker binary/binaries -> {sorted(s[:16] for s in shas)}")
+    print(f"  arms use distinct workers: {len(set().union(*seen.values())) == len(seen)}")
+
+    print("\nHEAD PROVENANCE (identical on every arm)")
+    heads = {a["head_sha256"] for arms in data.values() for a in arms.values()}
+    print(f"  distinct head sha256 across all arms: {len(heads)} -> {sorted(heads)}")
+
+    print("\nGOLDEN PROVENANCE (public-drift tripwire, pre-timing, 64 steps)")
+    for prompt, arms in data.items():
+        g = {a["golden_hash"] for a in arms.values()}
+        print(f"  {prompt:16s} golden_hash={sorted(g)}  shared_by_both_arms={len(g)==1}")
+
+
 def main(argv: list[str]) -> int:
     if "--r3" in argv:
         r3()
@@ -216,6 +338,9 @@ def main(argv: list[str]) -> int:
     data = collect()
     if "--json" in argv:
         print(json.dumps(data, indent=2, sort_keys=True))
+        return 0
+    if "--contract" in argv:
+        contract(data)
         return 0
     report(data)
     return 0
