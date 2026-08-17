@@ -1672,8 +1672,21 @@ and re-forward, so true degradation is worse than linear in `a`. An arm landing
 ## 9. The stacked candidate
 
 Senpai still has **zero official submissions**. Promoted frontier is
-2.9042110287045; the plausibility gate is 3.0; `d(score)/d(candidate_seconds) ≈
-−0.4335`, so 100 ms ≈ +0.043 score.
+**2.95338624520432** (receipt `ba493f74-c0fe-440a-a956-f77d26232e54`, source
+`156b5b75bdfac82ae406487f531fd991e7fdfd30`); the plausibility gate is **5.0**,
+raised from 3.0 by operator commit `a5854b97` on 2026-08-17 and read back from
+`benchmark.json /scoring/decodeSpeedupCeiling` at base `b85e782`. The earlier
+2.9042110287045 / `sourceRef 7351e626…` pair recorded elsewhere in this file is
+SUPERSEDED, not a second frontier.
+
+`d(score)/d(candidate_seconds) ≈ −0.4335` (100 ms ≈ +0.043 score) is the
+campaign-standard sensitivity but it was calibrated at the old operating point
+and has NOT been re-derived on `b85e782`; treat it as an order-of-magnitude
+figure until a fresh same-host base exists. It is also a DIFFERENT derivative
+from E16's `0.007268313978889516` pts per 100 ms, which is
+`d(score)/d(seed_prefill)`: seed prefill is charged in BOTH legs, so its
+numerator and denominator effects largely cancel and its derivative is roughly
+an order of magnitude smaller. Do not use one where the other belongs.
 
 - PR #2 cap-7/gate-3: −3.085% s/token (r5 in flight, not yet merged).
 - PR #7 3-bit draft head: −1.90% ms/token (merged, **not banked** — needs the

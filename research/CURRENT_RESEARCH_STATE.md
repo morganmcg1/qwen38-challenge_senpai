@@ -74,14 +74,32 @@ delegates to me.)*
 
 ## Where we stand
 
-The promoted frontier is submission `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` at
-score **2.9042110287045**, `sourceRef = 7351e626…`. **Senpai has zero official
+The promoted frontier is submission `ba493f74-c0fe-440a-a956-f77d26232e54` at
+score **2.95338624520432**, source
+`156b5b75bdfac82ae406487f531fd991e7fdfd30`. **Senpai has zero official
 submissions.**
 
+*(The previous entry here — `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` at
+2.9042110287045, `sourceRef = 7351e626…` — is superseded. `7351e626` is a
+`sourceRef`, not a commit in this repository; do not try to check it out. Any
+number in this file derived from 2.904 is stale by +0.049 score.)*
+
 Score sensitivity at the pinned calibration: `d(score)/d(candidate_seconds) ≈
-−0.4335`, i.e. **100 ms off the candidate decode leg ≈ +0.043 score**. The
-distance from 2.904 to the 3.0 ceiling is ≈220 ms — which we now treat as a
-milestone to drive through, not a boundary to stop at.
+−0.4335`, i.e. **100 ms off the candidate decode leg ≈ +0.043 score**. That
+calibration predates `b85e782` and has not been re-derived on it.
+
+**The plausibility ceiling is `5.0`, not 3.0.** It was raised by operator commit
+`a5854b97` on 2026-08-17 and is readable at
+`benchmark.json /scoring/decodeSpeedupCeiling`; `AGENTS.md:75` and
+`senpai/program.md:19,21` agree, and
+`QwenMTPFixedWindowSourceGuardTests.theDocumentedCeilingMatchesTheManifest` now
+fails if they drift apart again. The live promoted frontier is
+**2.95338624520432** (receipt `ba493f74-c0fe-440a-a956-f77d26232e54`), so the
+remaining headroom is **+2.047 score**, not the ≈220 ms this paragraph used to
+claim. At the stale −0.4335 calibration that is ≈4.7 s off a candidate leg of
+≈12.05 s — roughly 39% of the whole MTP leg — which is the honest framing: the
+ceiling is far away, it is not a stop target, and no single lever measured so
+far is within an order of magnitude of it.
 
 ### Open flags
 
