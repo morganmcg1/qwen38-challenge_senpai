@@ -1,5 +1,7 @@
 # E19 — the `key_len = 1024` residual band
 
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"local_serial_relative_speedup","available":false,"value":null},"test_metric":{"name":"arms_out_of_band","available":true,"value":0}}
+
 - Assignment: `qwen38-r1-e19-keylen-1024-residual` r1, PR #21
 - Student: `qwen-alphonse`
 - Base: `senpai/qwen38-mtp-r1` @ `1bb627ab9339fd17c7560bd3d1134dc40fbb5885`
@@ -10,16 +12,43 @@
   out of vendored source or recomputed from PR #2's already-committed row
   ledgers. The GPU lock queue at the time of this work was askeladd (#17),
   edward (#19 r2), thorfinn (#20); I was fourth and did not take it.
-- Deliverable: `research/sdpa_keylen_band.py` (595 lines, five modes, exit 0)
+- Deliverable: `research/sdpa_keylen_band.py` (598 lines, five modes, exit 0)
+- Decision: **not useful as a speedup, green as measurement.** There is no
+  speedup here and claiming one would be wrong — this assignment had no timed
+  leg and no score to move. What it produces is a tool, a theorem, and a
+  status change on a hazard the campaign was carrying as open.
+- Label I am claiming: **Not useful** in the `program.md` sense (no end-to-end
+  gain, because none was available), **not Unclear**. See "Label" below for why
+  the one open question cannot move the decision.
 
-## Headline
+## Headline — the decision first
+
+**The `key_len = 1024` drift is contract-legal today, with ~19.5× margin.**
+That is the finding that changes what the campaign should do, so it goes first.
+
+The trusted harness compares top-2 **logit values** under
+`DFlashWorkBindingTolerance.matches` with AND semantics — `absolute = 4.875`,
+`relative = 0.25`. PR #2's worst observed drift across all seven arms is
+**abs 0.25, rel 0.011976**: ~19.5× and ~21× inside tolerance. The emitted-token
+check needs only `top2Tokens.contains(token)`, so the runner-up-id flip at
+`pos 1022` costs nothing, and `residual_divergence_count = 0` in every arm. What
+made this look urgent was `research/mtp_row_gate.py`'s `id_mismatches`, which is
+**research-only and strictly stronger than the contract**.
+
+So the correct campaign action is: **do not build the repair, bank the
+mechanism, and re-check the margin whenever the window, the tolerance, or the
+prompt pool changes.** `key_len = 1024` moves from *open fidelity hazard* to
+*latent risk with a located mechanism, a validated band, a quantified margin,
+and an audited repair*. Full derivation in "Stake".
+
+## The mechanism — the finding that closes a question
 
 The advisor's §1.3 band table is **wrong**, and it is wrong in a way that makes
 the hazard *smaller and cheaper to fix* than the assignment assumed. The
 mechanism is real, I proved it from source, and I validated it against **3584
 measured rows across all seven PR #2 arms with zero out-of-band observations**.
 
-The single most important finding is a theorem, not a table:
+The load-bearing part is a theorem, not a table:
 
 > **Width-invariance.** Both `sdpa_vector` kernels stride the key axis with a
 > compile-time-constant stride and *skip* masked keys instead of shortening the
@@ -28,14 +57,50 @@ The single most important finding is a theorem, not a table:
 > width `qL`.**
 
 That is why the drift exists at all, why it is bounded to three positions, and
-why a repair is nearly free. Four of the advisor's five §1 claims need
+why a repair would be nearly free. Four of the advisor's five §1 claims need
 correction; §2 turns out to be moot; and the repair I designed **empties the
 band entirely** — including the position the assignment thought was
-unreachable — for **+1 SDPA launch in 1 of ~73–82 rounds per leg**.
+unreachable — for **+1 SDPA launch in 1 of ~73–82 rounds per leg**. I did not
+build it, because at ~19.5× margin it buys no score and no fidelity.
 
-I am also obliged to report that **the drift is contract-legal today**, with
-~19.5× margin against the work-binding tolerance. This is a latent-risk result,
-not a live-bug result. See "Stake".
+## Label — why this is Not useful and not Unclear
+
+`program.md` reserves **Unclear** for when "noise, prompt sensitivity,
+local-to-M5 differences, or cancellation in the local ratio could change the
+decision." Exactly one question is open here: the ranked M5's architecture
+suffix, which decides whether the two-pass path is reachable at all
+(`'d'`/`'s'` yes, `'g'` no). It cannot change the decision:
+
+- If the ranked host is `'g'`-class, the band is **empty** and the hazard does
+  not exist there. Decision: don't build the repair.
+- If it is `'d'`/`'s'`-class, the band is exactly the one validated on 3584
+  rows, and the margin is the ~19.5× computed above. Decision: don't build the
+  repair.
+
+Every claim I make is either a source citation at a pinned base or a recompute
+over already-committed ledgers, so there is no noise term and no local ratio to
+cancel. And my own §2 — the `d`-vs-`s` blocks question — turned out **moot**
+rather than resolved-against, so my stop rule (a) never fired. `--discriminate`
+converts the open question into a transferable prediction instead of leaving it
+as a dependency: a 512-token leg on a `'g'`-class box **must** show zero
+deviation at pos 1022–1024. That is a test someone else can run for free on the
+next ranked-adjacent measurement.
+
+## Three durable negatives
+
+These are results, not caveats on results. They survive whatever happens to the
+ranked-host question, and each one closes off a direction the campaign would
+otherwise have paid for. Pointers only — the reasoning stays where it belongs.
+
+1. **The assignment's mechanism (c) is refuted.** The band does not arise the
+   way §1.2(c) says it does. See "D2".
+2. **The assignment's §1.3 band table is refuted** and replaced with one that
+   matches 3584 measured rows row for row, including the counter-intuitive
+   consequences that width 6 is bit-exact and width 4 is *worse* than width 8.
+   See "D3" and "Validation".
+3. **`MLX_SDPA_BLOCKS=32` measures the wrong term** and cannot answer the
+   question it was proposed for — two independent reasons, one of which is that
+   the worker's env allowlist never passes the variable through. See "D2".
 
 ## The dispatch law (all line numbers re-verified against the vendored tree)
 
@@ -114,6 +179,17 @@ Five corrections to §1.3:
 
 `--validate` replays each arm's committed `mtp-trace`/`mtp-row` ledger and
 compares the predicted band against what was actually observed:
+
+> ⚠️ **Do not cite `research/kl-boundary-runJ.json` for the runJ row, or for
+> anything else.** That pre-existing artifact was computed from the wrong arm:
+> it reports **w3 / round 82**. The truth is **w4 / round 81**, read directly
+> out of `research/trace-runJ-cap7-512.log`, where round 81 `d=3 acc=3` is the
+> round that owns pos 1021–1024. Run O — a stamped repeat of J's config —
+> independently agrees. Every runJ number in the table below comes from the
+> trace log, not from that JSON. Separately, the `boundary_key_len` differences
+> across the whole `kl-boundary-*` family are just the `--boundary` CLI flag
+> being passed different values; they are not a finding and should not be read
+> as one.
 
 | arm | final round | w | kL | observed | predicted injected | inherited | |
 |---|---|---|---|---|---|---|---|
@@ -324,17 +400,25 @@ value is entirely conditional on the ranked box being `'s'`/`'d'`:
 That check is free — it rides along on any 512-token run and needs no new arm.
 If it confirms, the Swift repair is ~30 lines in the `AttentionUtils.swift`
 chunk plus a boundary unit test, and should be measured for its `+1 launch`
-cost before promotion. If the advisor wants the fidelity guarantee regardless of
-score, the repair is worth building on the strength of the audit alone; if the
-advisor is optimizing score only, E19 is a **documented latent risk with a
-known fix** and should wait behind work that moves the median.
+cost before promotion. But since the margin is ~19.5×, the honest reading is
+that E19 is a **documented latent risk with a known fix** and should wait behind
+work that moves the median. The advisor has since attached this rider to two
+already-planned runs — askeladd's E15 Phase 3 512-token ABBA and the
+fixed-window overlay's 512-token exact replay — so it costs no new allocation.
 
-Two follow-ups I did **not** implement, per scope:
+One follow-up I did **not** implement, per scope: the §5 freebie
+(`DEEP_CAP = 7`, re-score J/O/P₅₁₂ in `occupancy_model.py`). It is a separate
+result and should be assigned as one.
 
-- The §5 freebie (`DEEP_CAP = 7`, re-score J/O/P₅₁₂ in `occupancy_model.py`).
-- Whether `Sources/MLXFastModel/Qwen35FastEngine.swift` is live in the timed
-  leg. It cannot change any E19 answer. Smallest read:
-  `grep -n 'Qwen35FastEngine\|Qwen36MTPBlockSession' Sources/MLXFastTrustedHarness/QwenRuntimeBenchmark.swift`.
+**Loose end now closed:** `Sources/MLXFastModel/Qwen35FastEngine.swift` is
+**never executed**. `Sources/MLXFastModel/Qwen35FastPathReadiness.swift:13-19`
+hardcodes `realCheckpointParityPassed = false` and
+`productionActivationApproved = false` and derives `productionBackend` from
+exactly those two constants, and `AGENTS.md:138-140` states that the separate
+`Qwen35FastEngine` path "is not the MTP worker's current target path". The whole
+`Qwen35{Attention,Block,GatedDelta,MLP,Model,Ops,RoPE,FastEngine}.swift` family
+is editable but dead. This never could have changed an E19 answer, but it does
+retire a listed uncertainty: nobody should spend a slot optimizing that file.
 
 ## Reproduction
 

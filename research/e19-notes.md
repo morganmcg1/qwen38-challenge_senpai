@@ -90,7 +90,12 @@ lock and no weights. Design choices worth recording:
   flag, not a real disagreement.
 - runI `w=8` prints top-1 `0x1.28p+5` where other arms print `0x1.2ap+5`. One
   8-bit-print inconsistency; recorded, not explained, not fitted.
-- Whether `Qwen35FastEngine.swift` is live in the timed leg is unresolved and
-  cannot change any E19 answer.
+- ~~Whether `Qwen35FastEngine.swift` is live in the timed leg~~ — **closed.**
+  It is never executed: `Qwen35FastPathReadiness.swift:13-19` hardcodes
+  `realCheckpointParityPassed = false` and
+  `productionActivationApproved = false` and computes `productionBackend` from
+  only those two, and `AGENTS.md:138-140` confirms it "is not the MTP worker's
+  current target path". The whole `Qwen35{Attention,Block,GatedDelta,MLP,Model,
+  Ops,RoPE,FastEngine}.swift` family is editable but dead.
 - The §5 `DEEP_CAP = 7` re-score is out of scope for r1 and was not run, so it
   could not displace §2.
