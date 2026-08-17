@@ -22,14 +22,28 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from e17_analyse import ARMS, HELD_OUT, PROMPTS, collect, median  # noqa: E402
+import e17_analyse  # noqa: E402
+from e17_analyse import (  # noqa: E402
+    ARMS, CONTROL, HELD_OUT, PROMPTS, candidates, collect, median, wide_share,
+)
 
 PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
 GROUP = "qwen38-r1-e17-curve-transfer-and-refit"
-BASE_SHA = "e6e6f81767e84cc8c39b48c09a4f5cac597cdbca"
-RUNS = Path(".mlxfast-private/e17/runs")
-CURVE_OF = {"CURVE": "merged-h-curve", "FLAT18": "scalar-h-0.18"}
+BASE_SHA = "af80b0fc93cf20e8405631bb53365ace21a1f913"
+
+# h[1] is the swept element; see research/e17-r2-prereg.md sections 1 and 4 for why
+# it is the one that both closes depth 2 and opens depth 3+.
+ARM_DESC = {
+    "S18": ("scalar-h-0.18-untouched-head", 0.18, "control"),
+    "S18R": ("scalar-h-0.18-replicate", 0.18, "noise-floor-replicate"),
+    "CURVE": ("merged-h-curve", 0.0775, "transfer-candidate"),
+    "H1LO": ("flat-0.18-h1-0.0800", 0.0800, "below-measured-marginal"),
+    "H1MEAS": ("flat-0.18-h1-0.1152", 0.1152, "measured-marginal"),
+    "H1HI": ("flat-0.18-h1-0.3000", 0.3000, "above-shipped"),
+    # r1 arms, kept so --runs-root can replay r1 through the same logger
+    "FLAT18": ("scalar-h-0.18", 0.18, "r1-control"),
+}
 
 
 def sh(*argv: str) -> str:
@@ -47,15 +61,6 @@ def host_config() -> dict:
         "git_base_sha": BASE_SHA,
         "git_dirty_files": len(sh("git", "status", "--porcelain").splitlines()),
     }
-
-
-def read_meta(run: Path) -> dict:
-    out = {}
-    for line in (run / "meta.txt").read_text().splitlines():
-        if "=" in line:
-            key, value = line.split("=", 1)
-            out[key.strip()] = value.strip()
-    return out
 
 
 def thermals(meta: dict) -> dict:
@@ -77,24 +82,39 @@ def leg(run: Path, name: str) -> dict:
     return json.loads((run / "reports" / name).read_text())
 
 
-def arm_payload(prompt: str, arm: str, summary: dict) -> tuple[dict, dict, list]:
-    run = RUNS / f"{prompt}-{arm}"
-    meta = read_meta(run)
+def session_order(prompt: str, arms: dict[str, dict]) -> dict[str, int]:
+    """Rank the prompt's arms by actual wall-clock start, 1-based.
+
+    The runner rotates arm order by prompt index, so a slot cannot be derived
+    from the arm name alone. `meta.txt` records when each arm really ran, which
+    is what a thermal-position confound would attach to.
+    """
+    started = {a: arms[a]["meta"].get("started", "") for a in arms}
+    return {a: i + 1 for i, a in enumerate(sorted(started, key=lambda k: started[k]))}
+
+
+def arm_payload(
+    prompt: str, arm: str, summary: dict, position: int
+) -> tuple[dict, dict, list]:
+    run, meta = Path(summary["run"]), summary["meta"]
     serial, mtp = leg(run, "03-mtp-timed.json"), leg(run, "04-mtp-timed.json")
     score = json.loads((run / "score.json").read_text())
+    h_curve, h1, role = ARM_DESC[arm]
 
     config = dict(host_config())
     config.update({
         "experiment": "qwen38-r1-e17-curve-transfer-and-refit",
-        "assignment_revision": "r1",
+        "assignment_revision": "r2",
         "pr_number": 19,
         "prompt": prompt,
         "prompt_index": PROMPTS.index(prompt),
         "prompt_held_out": prompt in HELD_OUT,
         "arm": arm,
-        "h_curve": CURVE_OF[arm],
-        "arm_position_in_prompt": 1 if PROMPTS.index(prompt) % 2 == (
-            0 if arm == "CURVE" else 1) else 2,
+        "arm_role": role,
+        "arm_is_control": arm == CONTROL,
+        "h_curve": h_curve,
+        "h1": h1,
+        "arm_position_in_prompt": position,
         "decode_tokens": mtp["decode_token_count"],
         "seed_tokens": mtp["seed_token_count"],
         "local_mode": "local-iterate",
@@ -132,6 +152,10 @@ def arm_payload(prompt: str, arm: str, summary: dict) -> tuple[dict, dict, list]
         "rounds": summary["rounds"],
         "mean_depth": summary["mean_depth"],
         "max_depth": summary["max_depth"],
+        # M = depth + 1 per the row ledger, so M >= 5 is depth >= 4; this is the
+        # share of rounds that reach the sdpaWidthWallDepthCap-relevant widths.
+        "wide_round_share_M_ge_5": wide_share(summary),
+        "rows_per_round": summary["declared_rows"] / max(summary["rounds"], 1),
         "accepted_draft_total": summary["accepted"],
         "rejected_draft_total": summary["rejected"],
         "accepted_draft_rate": summary["accept_rate"],
@@ -166,7 +190,8 @@ def main(argv: list[str]) -> int:
 
     data = collect()
     if not data:
-        print("e17_wandb: no completed pairs under", RUNS, file=sys.stderr)
+        print("e17_wandb: no completed pairs under", e17_analyse.RUNS,
+              file=sys.stderr)
         return 1
 
     if not args.dry_run:
@@ -174,9 +199,13 @@ def main(argv: list[str]) -> int:
 
     urls = {}
     for prompt, arms in data.items():
+        position = session_order(prompt, arms)
         for arm in ARMS:
-            config, metrics, series = arm_payload(prompt, arm, arms[arm])
-            name = f"e17-{prompt}-{arm}"
+            if arm not in arms:
+                continue
+            config, metrics, series = arm_payload(
+                prompt, arm, arms[arm], position[arm])
+            name = f"e17r2-{prompt}-{arm}"
             if args.dry_run:
                 print(f"--- {name}\n  config={json.dumps(config, sort_keys=True)}"
                       f"\n  metrics={json.dumps(metrics, sort_keys=True)}")
@@ -191,36 +220,48 @@ def main(argv: list[str]) -> int:
             print(f"{name}: {run.url}")
             run.finish()
 
-    # Pooled headline: the ranked-style median over prompts, both populations.
+    # Pooled headline: ranked-style median over prompts, per candidate arm.
+    # `n` is always logged, so a one- or two-prompt "median" cannot be mistaken
+    # for the eight-prompt ranked aggregation.
     pooled = {}
-    for label, ids in (("held_out", HELD_OUT), ("all", PROMPTS)):
-        sub = [p for p in ids if p in data]
-        if len(sub) < 2:
+    all_arms = sorted({a for arms in data.values() for a in arms})
+    for arm in all_arms:
+        if arm == CONTROL:
             continue
-        rc = [data[p]["CURVE"]["raw"] for p in sub]
-        rf = [data[p]["FLAT18"]["raw"] for p in sub]
-        gs = [(data[p]["FLAT18"]["mtp_spt"] - data[p]["CURVE"]["mtp_spt"])
-              / data[p]["FLAT18"]["mtp_spt"] for p in sub]
-        pooled.update({
-            f"{label}/n": len(sub),
-            f"{label}/median_raw_curve": median(rc),
-            f"{label}/median_raw_flat18": median(rf),
-            f"{label}/headline_delta": median(rc) - median(rf),
-            f"{label}/headline_delta_pct": 100 * (median(rc) - median(rf)) / median(rf),
-            f"{label}/g_median_pct": 100 * median(gs),
-            f"{label}/g_min_pct": 100 * min(gs),
-            f"{label}/g_max_pct": 100 * max(gs),
-            f"{label}/curve_wins": sum(1 for x in gs if x > 0),
-            f"{label}/raw_curve_min": min(rc),
-            f"{label}/raw_curve_max": max(rc),
-            f"{label}/raw_flat18_min": min(rf),
-            f"{label}/raw_flat18_max": max(rf),
-        })
+        for label, ids in (("held_out", HELD_OUT), ("all", PROMPTS)):
+            sub = [p for p in ids if p in data and arm in data[p]]
+            if not sub:
+                continue
+            rk = [data[p][arm]["raw"] for p in sub]
+            ra = [data[p][CONTROL]["raw"] for p in sub]
+            gs = [(data[p][CONTROL]["mtp_spt"] - data[p][arm]["mtp_spt"])
+                  / data[p][CONTROL]["mtp_spt"] for p in sub]
+            pooled.update({
+                f"{arm}/{label}/n": len(sub),
+                f"{arm}/{label}/prompts": ",".join(sub),
+                f"{arm}/{label}/median_raw_arm": median(rk),
+                f"{arm}/{label}/median_raw_control": median(ra),
+                f"{arm}/{label}/headline_delta": median(rk) - median(ra),
+                f"{arm}/{label}/headline_delta_pct":
+                    100 * (median(rk) - median(ra)) / median(ra),
+                f"{arm}/{label}/g_median_pct": 100 * median(gs),
+                f"{arm}/{label}/g_min_pct": 100 * min(gs),
+                f"{arm}/{label}/g_max_pct": 100 * max(gs),
+                f"{arm}/{label}/arm_wins": sum(1 for x in gs if x > 0),
+            })
+
+    # Two independent noise floors. The serial floor is within-prompt across two
+    # runs of a byte-identical depth-0 leg; the S18R floor is a whole arm-level
+    # repeat of the control binary and is the threshold a candidate must clear.
     for prompt, arms in data.items():
-        c, f = arms["CURVE"], arms["FLAT18"]
-        mean_serial = (c["serial_spt"] + f["serial_spt"]) / 2
-        pooled[f"noise_floor/{prompt}_pct"] = (
-            100 * abs(c["serial_spt"] - f["serial_spt"]) / mean_serial)
+        legs = [v["serial_spt"] for v in arms.values()]
+        pooled[f"noise_floor_serial/{prompt}_pct"] = (
+            100 * (max(legs) - min(legs)) / (sum(legs) / len(legs)))
+        if "S18R" in arms and CONTROL in arms:
+            r, a = arms["S18R"], arms[CONTROL]
+            pooled[f"noise_floor_arm/{prompt}_g_pct"] = (
+                100 * (a["mtp_spt"] - r["mtp_spt"]) / a["mtp_spt"])
+            pooled[f"noise_floor_arm/{prompt}_d_raw"] = r["raw"] - a["raw"]
 
     if args.dry_run:
         print(f"--- e17-headline\n  {json.dumps(pooled, indent=2, sort_keys=True)}")
@@ -235,19 +276,28 @@ def main(argv: list[str]) -> int:
                      job_type="analysis", config=config, reinit=True,
                      tags=["qwen38-r1-e17", "curve-transfer", "headline"])
     table = wandb.Table(columns=[
-        "prompt", "held_out", "serial_curve", "serial_flat18", "noise_floor_pct",
-        "mtp_curve", "mtp_flat18", "raw_curve", "raw_flat18", "d_raw", "g_pct",
-        "rounds_curve", "rounds_flat18", "mean_d_curve", "mean_d_flat18"])
+        "prompt", "arm", "role", "h1", "is_control", "held_out", "position",
+        "serial_spt", "mtp_spt", "raw", "d_raw_vs_control", "g_pct_vs_control",
+        "rounds", "mean_depth", "max_depth", "wide_share_M_ge_5",
+        "rows_per_round", "accept_rate", "declared_rows", "tokens_matched",
+        "divergence"])
     for prompt, arms in data.items():
-        c, f = arms["CURVE"], arms["FLAT18"]
-        mean_serial = (c["serial_spt"] + f["serial_spt"]) / 2
-        table.add_data(
-            prompt, prompt in HELD_OUT, c["serial_spt"], f["serial_spt"],
-            100 * abs(c["serial_spt"] - f["serial_spt"]) / mean_serial,
-            c["mtp_spt"], f["mtp_spt"], c["raw"], f["raw"], c["raw"] - f["raw"],
-            100 * (f["mtp_spt"] - c["mtp_spt"]) / f["mtp_spt"],
-            c["rounds"], f["rounds"], c["mean_depth"], f["mean_depth"])
-    run.log({"per_prompt_pairs": table})
+        position = session_order(prompt, arms)
+        ctl = arms.get(CONTROL)
+        for arm in sorted(arms, key=lambda a: position[a]):
+            s = arms[arm]
+            _, h1, role = ARM_DESC.get(arm, ("?", None, "?"))
+            table.add_data(
+                prompt, arm, role, h1, arm == CONTROL, prompt in HELD_OUT,
+                position[arm], s["serial_spt"], s["mtp_spt"], s["raw"],
+                None if ctl is None else s["raw"] - ctl["raw"],
+                None if ctl is None else
+                100 * (ctl["mtp_spt"] - s["mtp_spt"]) / ctl["mtp_spt"],
+                s["rounds"], s["mean_depth"], s["max_depth"],
+                100 * wide_share(s), s["declared_rows"] / max(s["rounds"], 1),
+                s["accept_rate"], s["declared_rows"], s["matched"],
+                s["divergence"])
+    run.log({"per_prompt_arms": table})
     run.summary.update(pooled)
     print(f"e17-headline: {run.url}")
     run.finish()
