@@ -17,7 +17,7 @@ import re
 import statistics as st
 import sys
 
-ARM_RE = re.compile(r"run-draft-bits-phase\d: arm .*?bits=(\d)")
+ARM_RE = re.compile(r"run-draft-bits-phase\d: arm (?:pos=(\d+) )?.*?bits=(\d)")
 KV_RE = re.compile(r"(\w+)=([\d.]+)")
 INT_KV_RE = re.compile(r"(\w+)=(\d+)")
 
@@ -25,9 +25,11 @@ INT_KV_RE = re.compile(r"(\w+)=(\d+)")
 def parse(path):
     """Group trace records by arm and by worker instance.
 
-    `slot` is the 1-based position of the arm invocation in the log, which is
-    what distinguishes the two replicates of the same bit width in a
-    counterbalanced Phase 3 order; `arm` is the bit width and repeats.
+    `slot` is the 1-based position of the arm invocation, which is what
+    distinguishes the two replicates of the same bit width in a counterbalanced
+    Phase 3 order; `arm` is the bit width and repeats. The driver's own `pos=`
+    is preferred over log order so that an ABBA sequence split across two
+    supervised jobs cannot be mis-slotted by concatenating the logs.
     """
     arm = None
     slot = 0
@@ -36,8 +38,8 @@ def parse(path):
     for line in open(path, errors="replace"):
         m = ARM_RE.search(line)
         if m:
-            arm = m.group(1)
-            slot += 1
+            arm = m.group(2)
+            slot = int(m.group(1)) if m.group(1) else slot + 1
         if "draft-head materialised" in line:
             kv = dict(KV_RE.findall(line))
             cur = {

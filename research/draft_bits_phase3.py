@@ -178,20 +178,50 @@ def main():
             "score": r["amdahl"]["measured_local_score"],
             "before": float(ident.get("gpu_temp_c_before", "nan")),
             "after": float(ident.get("gpu_temp_c_after", "nan")),
+            "ident": ident,
         }
         print("  slot=%d bits=%s matched=%s mtp_spt=%.10f serial_spt=%.10f "
               "temp %.2f->%.2f C" % (slot, bits, legs[slot]["matched"],
                                      legs[slot]["mtp"], legs[slot]["serial"],
                                      legs[slot]["before"], legs[slot]["after"]))
-    if len(legs) == len(order):
-        for field in ("mtp", "serial"):
-            c = st.mean(legs[s][field] for s in ctl_slots)
-            k = st.mean(legs[s][field] for s in cand_slots)
-            print("  %-6s control=%.10f candidate=%.10f delta=%+.4f%%"
-                  % (field, c, k, 100.0 * (k - c) / c))
-        a, b = ctl_slots
-        print("  control-vs-control mtp drift p%d->p%d = %+.4f%%  (noise floor)"
-              % (a, b, 100.0 * (legs[b]["mtp"] - legs[a]["mtp"]) / legs[a]["mtp"]))
+        print("       cool_gate=%s settle_reached=%s settle_min=%s settle_waited=%s"
+              " streak_gate=%s m8_ipg=%s worker=%s"
+              % (ident.get("cool_gate"), ident.get("settle_reached_c"),
+                 ident.get("settle_min_c"), ident.get("settle_waited_s"),
+                 ident.get("segmented_streak_gate"), ident.get("m8_ipg"),
+                 (ident.get("worker_sha256") or "?")[:12]))
+    if len(legs) != len(order):
+        return
+
+    digests = {legs[s]["ident"].get("worker_sha256") for s in legs}
+    print("  worker digests distinct=%d (one digest => every arm ran the same "
+          "binary and differed only by MLX_QWEN_MTP_DRAFT_BITS)" % len(digests))
+
+    # Reported two ways because they answer different questions. Pooled compares
+    # arm means and is the estimator the ABBA order was designed for. The mean of
+    # the two half-contrasts (p1-p2 and p4-p3) is a ratio-of-adjacent-runs
+    # estimator: each half is nearly thermally matched, so agreement between the
+    # two numbers is the evidence that no position/thermal term survives.
+    halves = [(a, b) if order[a - 1] == args.control else (b, a)
+              for a, b in adjacent_pairs(order)]
+    for field in ("mtp", "serial"):
+        c = st.mean(legs[s][field] for s in ctl_slots)
+        k = st.mean(legs[s][field] for s in cand_slots)
+        pooled = 100.0 * (k - c) / c
+        half_deltas = [100.0 * (legs[cs][field] - legs[ct][field]) / legs[ct][field]
+                       for ct, cs in halves]
+        mean_half = st.mean(half_deltas)
+        print("  %-6s control=%.10f candidate=%.10f" % (field, c, k))
+        print("         pooled_delta=%+.4f%%  half_deltas=%s  mean_of_halves=%+.4f%%"
+              "  pooled-vs-halves=%+.4f pp"
+              % (pooled, " ".join("%+.4f%%" % d for d in half_deltas),
+                 mean_half, pooled - mean_half))
+    a, b = ctl_slots
+    floor = 100.0 * (legs[b]["mtp"] - legs[a]["mtp"]) / legs[a]["mtp"]
+    print("  control-vs-control mtp drift p%d->p%d = %+.4f%%  (noise floor)"
+          % (a, b, floor))
+    print("  half-contrast spread = %.4f pp vs noise floor %.4f pp"
+          % (max(half_deltas) - min(half_deltas), abs(floor)))
 
 
 if __name__ == "__main__":

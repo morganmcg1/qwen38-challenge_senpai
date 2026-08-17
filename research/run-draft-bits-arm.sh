@@ -49,15 +49,15 @@ export MLX_QWEN_MTP_DRAFT_BITS="${bits}"
 export MLX_QWEN_MTP_TRACE="${MLX_QWEN_MTP_TRACE:-0}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-qwen38-r1-e6-draft-head-precision}"
 
-# This host idles at a ~40.7C GPU floor (racked Mac: cpu_temp 36.8C and 0.22W
-# package power while the GPU sensor reads 40.7C+, so the floor is inlet-air
-# bound, not load bound), and the 40C gate therefore always hits its stalled
-# abort. Acceptance, parity and the emitted token stream are thermally
-# invariant, which is what this arm exists to measure, so the arms run ungated
-# and every second they report is recorded as NOT gate-qualified. Arms stay
-# comparable to each other -- same host, same hot state, back to back -- but not
-# to any gated baseline. Authoritative timing comes from the interleaved
-# QwenQMVCostCurveTests sweep instead.
+# The r1 claim of a ~40.7C inlet-bound floor was measured while a foreign GPU
+# load was resident and is retracted: a true-idle sample on this host reads
+# 39.92C GPU at 0.0076W GPU / 0.083W package, i.e. 0.08C BELOW the 40C gate, so
+# the gate can pass here. The arms still run ungated for a budget reason:
+# benchmark-qwen-mtp.sh calls the gate three times per arm and each call may wait
+# COOL_GATE_MAX_WAIT_SECONDS=900, which four arms cannot fit in a 30-minute job.
+# run-draft-bits-phase3.sh instead settles to the same 40.0C threshold before the
+# arm and witnesses it with the real --local-cool-gate-only gate; MLXFAST_
+# COOL_GATE_STATUS below records per-arm whether that witness actually passed.
 export MLXFAST_LOCAL_COOL_GATE="${MLXFAST_LOCAL_COOL_GATE:-0}"
 
 gpu_temp_now() {
@@ -86,6 +86,11 @@ if [[ "$(strings -a "${worker_bin}" | grep -c "MLX_QWEN_MTP_DRAFT_BITS" || true)
   exit 1
 fi
 
+# The strings tripwire above only proves the env READ survives; it goes blind to
+# a change in the compiled DEFAULT, which is exactly what this experiment moves.
+# worker_sha256 is the tripwire for that: two arms differing only in the env var
+# must report the SAME worker digest, and a digest equal to a pre-change build
+# would prove the default never got compiled in.
 identity="${out_dir}/identity.txt"
 {
   echo "run-draft-bits-arm: tag=${tag} bits=${bits} tokens=${tokens}"
@@ -93,7 +98,14 @@ identity="${out_dir}/identity.txt"
   echo "run-draft-bits-arm: base_sha=${base_sha}"
   echo "run-draft-bits-arm: host=$(sysctl -n machdep.cpu.brand_string) mem=$(sysctl -n hw.memsize)"
   echo "run-draft-bits-arm: started_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "cool_gate=disabled_ambient_floor"
+  echo "worker_sha256=$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
+  echo "segmented_streak_gate=$(grep -oE 'segmentedStreakGate = [0-9]+' \
+    Sources/MLXFastModel/Qwen36MTPBlockSession.swift | head -1 | grep -oE '[0-9]+$')"
+  echo "m8_ipg=$(grep -oE 'qmv_fast_crossrow_affine4_g64_m<T, 8, [0-9]+>' \
+    Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h |
+    head -1 | grep -oE '[0-9]+>$' | tr -d '>')"
+  echo "cool_gate=${MLXFAST_COOL_GATE_STATUS:-not_probed}"
+  echo "settle_target_c=${MLXFAST_SETTLE_TARGET_C:-none} settle_reached_c=${MLXFAST_SETTLE_REACHED_C:-none} settle_min_c=${MLXFAST_SETTLE_MIN_C:-none} settle_waited_s=${MLXFAST_SETTLE_WAITED_S:-none}"
   echo "gpu_temp_c_before=$(gpu_temp_now)"
 } >"${identity}"
 

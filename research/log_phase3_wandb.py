@@ -79,9 +79,16 @@ def main():
         "decode_tokens": docs[1]["mtp_leg"]["emitted_token_total"],
         "seed_token_count": docs[1]["mtp_leg"]["seed_token_count"],
         "cool_gate": ident[1].get("cool_gate"),
-        "gate_qualified_for_timing": False,
+        "gate_qualified_for_timing": all(
+            ident[s].get("cool_gate") == "passed_real_gate" for s in docs),
+        "settle_target_c": ident[1].get("settle_target_c"),
         "temperature_equalized": True,
         "git_head_dirty": ident[1].get("dirty"),
+        "segmented_streak_gate": ident[1].get("segmented_streak_gate"),
+        "qmv_fast_crossrow_m8_ipg": ident[1].get("m8_ipg"),
+        "worker_sha256": ident[1].get("worker_sha256"),
+        "worker_sha256_distinct_across_arms": len(
+            {ident[s].get("worker_sha256") for s in docs}),
     }
 
     run = wandb.init(project=PROJECT, entity=ENTITY, group=args.group,
@@ -91,7 +98,9 @@ def main():
 
     legs = wandb.Table(columns=["slot", "bits", "leg", "all_tokens_matched",
                                 "emitted_token_total", "seconds_per_token",
-                                "gpu_temp_c_before", "gpu_temp_c_after"])
+                                "gpu_temp_c_before", "gpu_temp_c_after",
+                                "cool_gate", "settle_reached_c", "settle_min_c",
+                                "settle_waited_s"])
     summary = {}
     for slot, bits, _d in reps:
         doc = docs[slot]
@@ -102,7 +111,13 @@ def main():
                           node["emitted_token_total"],
                           node["parent_measured_seconds_per_token"],
                           float(ident[slot].get("gpu_temp_c_before", "nan")),
-                          float(ident[slot].get("gpu_temp_c_after", "nan")))
+                          float(ident[slot].get("gpu_temp_c_after", "nan")),
+                          ident[slot].get("cool_gate"),
+                          ident[slot].get("settle_reached_c"),
+                          ident[slot].get("settle_min_c"),
+                          ident[slot].get("settle_waited_s"))
+        summary[f"p{slot}/cool_gate_passed_real_gate"] = (
+            ident[slot].get("cool_gate") == "passed_real_gate")
         for k in LEG_KEYS:
             if k in doc["mtp_leg"]:
                 summary[f"p{slot}/mtp/{k}"] = doc["mtp_leg"][k]
@@ -193,12 +208,30 @@ def main():
     def mean_leg(slots, leg, key="parent_measured_seconds_per_token"):
         return st.mean(docs[s][leg][key] for s in slots)
 
+    # Two estimators of the same contrast. `pooled` compares arm means, which is
+    # what the ABBA order was built for. `mean_of_halves` averages the two
+    # nearly thermally matched adjacent-run ratios (p1-p2, p4-p3); agreement
+    # between the two is the evidence that no position/thermal term survives.
+    halves = [(a, b) if order[a - 1] == args.control else (b, a)
+              for a, b in adjacent_pairs(order)]
     for leg, tag in (("mtp_leg", "mtp"), ("serial_leg", "serial")):
         c = mean_leg(ctl_slots, leg)
         k = mean_leg(cand_slots, leg)
         summary[f"abba/{tag}_seconds_per_token_control"] = c
         summary[f"abba/{tag}_seconds_per_token_candidate"] = k
         summary[f"headline/{tag}_seconds_per_token_pct"] = 100.0 * (k - c) / c
+        halved = []
+        for ct, cd in halves:
+            key = "parent_measured_seconds_per_token"
+            halved.append(100.0 * (docs[cd][leg][key] - docs[ct][leg][key])
+                          / docs[ct][leg][key])
+        for i, (ct, cd) in enumerate(halves, 1):
+            summary[f"halves/{tag}_h{i}_p{ct}_vs_p{cd}_pct"] = halved[i - 1]
+        summary[f"headline/{tag}_seconds_per_token_pct_mean_of_halves"] = \
+            st.mean(halved)
+        summary[f"headline/{tag}_pooled_minus_mean_of_halves_pp"] = \
+            100.0 * (k - c) / c - st.mean(halved)
+        summary[f"halves/{tag}_spread_pp"] = max(halved) - min(halved)
     summary["headline/serial_drift_pct"] = \
         summary["headline/serial_seconds_per_token_pct"]
 
