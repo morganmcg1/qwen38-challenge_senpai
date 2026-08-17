@@ -40,7 +40,7 @@ for reused in local_run_lock_path acquire_local_run_lock release_local_run_lock 
   }
 done
 
-out_dir="${repo_root}/.mlxfast-private/qmv-parity"
+out_dir="${MLXFAST_QMV_PARITY_DIR:-${repo_root}/.mlxfast-private/qmv-parity}"
 rm -rf -- "${out_dir}"
 mkdir -p "${out_dir}"
 
