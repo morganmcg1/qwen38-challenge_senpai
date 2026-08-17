@@ -139,17 +139,18 @@ def main():
     summary["requant_ms_mean"] = st.mean(requant) if requant else 0.0
     summary["requant_ms_max"] = max(requant) if requant else 0.0
 
-    timed = {b: next(x for x in blocks if x["arm"] == b and len(x["rounds"]) > 1)
+    timed = {b: next(x for x in blocks if x["arm"] == b and x["rounds"])
              for b in arms}
     ctl, cnd = timed[control]["rounds"], timed[candidate]["rounds"]
-    assert [r["depth"] for r in ctl] == [r["depth"] for r in cnd], \
-        "depth schedules diverge; the acceptance term is not zero"
+    assert [(r["d"], r["acc"]) for r in ctl] == [(r["d"], r["acc"])
+                                                 for r in cnd], \
+        "depth/acceptance schedules diverge; the acceptance term is not zero"
 
-    rounds = wandb.Table(columns=["round", "depth"] +
+    rounds = wandb.Table(columns=["round", "depth", "accepted"] +
                          [f"{p}_{f}" for p in ("ctl", "cnd", "delta")
                           for f in FIELDS])
     for a, b in zip(ctl, cnd):
-        rounds.add_data(a["round"], a["depth"],
+        rounds.add_data(a["round"], a["d"], a["acc"],
                         *[a[f] for f in FIELDS], *[b[f] for f in FIELDS],
                         *[a[f] - b[f] for f in FIELDS])
     for f in FIELDS:
@@ -159,7 +160,7 @@ def main():
 
     steady = sum(a["round_us"] - b["round_us"]
                  for a, b in zip(ctl[1:], cnd[1:]))
-    readouts = sum(r["depth"] for r in ctl[1:])
+    readouts = sum(r["d"] for r in ctl[1:])
     summary["steady_round_us_delta_total"] = steady
     summary["steady_readout_count"] = readouts
     summary["implied_us_saved_per_readout"] = steady / readouts
