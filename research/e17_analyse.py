@@ -62,7 +62,8 @@ def load_leg(run: Path, name: str) -> dict:
     return json.loads((run / "reports" / name).read_text())
 
 
-def load_arm(prompt: str, arm: str, root: Path = RUNS) -> dict | None:
+def load_arm(prompt: str, arm: str, root: Path | None = None) -> dict | None:
+    root = RUNS if root is None else root
     run = root / f"{prompt}-{arm}"
     try:
         serial = load_leg(run, "03-mtp-timed.json")
@@ -378,12 +379,14 @@ def contract(data: dict[str, dict[str, dict]]) -> None:
 
 
 def main(argv: list[str]) -> int:
-    global ARMS, CONTROL
+    global ARMS, CONTROL, RUNS
     for i, a in enumerate(argv):
         if a == "--arms":
             ARMS = tuple(argv[i + 1].split(","))
         elif a == "--control":
             CONTROL = argv[i + 1]
+        elif a == "--runs-root":
+            RUNS = Path(argv[i + 1])
     if CONTROL not in ARMS:
         print(f"e17: control {CONTROL} is not in --arms {ARMS}", file=sys.stderr)
         return 2

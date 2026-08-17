@@ -262,9 +262,10 @@ reported as a *local* winner with the transfer caveat attached.
   `research/await-lock-then-run.sh`; `macmon` thermal sampling per arm.
 - 512-token seed, **512 decode tokens**, `./benchmark-qwen-mtp.sh
   --local-iterate`, prefill-inclusive. The window is never shortened.
-- Sweep prompt: `english` (chosen for direct comparability with r1's
-  `{1:2, 2:231, 3:13}`). Confirmation prompt for the winning arm: `technical`
-  (r1's weakest register, `+3.923%`).
+- Sweep prompt: `english` (chosen for direct comparability with r1, whose
+  measured `english` histograms were FLAT18 `{1:19, 2:138, 3:67, 4:21}` and
+  CURVE `{1:2, 2:237, 3:7}`). Confirmation prompt for the winning arm:
+  `technical` (r1's weakest register, `+3.923%`).
 - ABBA interleave: within-prompt arm order alternates by prompt index
   (`research/e17-run.sh`).
 - No `MLX_QWEN_MTP_*` environment variable is set on any timed arm
@@ -282,6 +283,12 @@ reported as a *local* winner with the transfer caveat attached.
   `rejected_rows`.
 - Per-arm worker sha256 recorded alongside the shared CLI sha256
   (`meta.txt` per run directory).
+- r1's measured run directories were moved to `.mlxfast-private/e17/runs-r1/`
+  before the first r2 arm, because `research/e11-run.sh` starts each run with
+  `rm -rf` and r1 already held an `english-CURVE` built on `e6e6f81`. r2 writes
+  a fresh `runs/`, so no r2 number can silently inherit an r1 measurement and
+  the r1 arithmetic stays independently re-checkable via
+  `research/e17_analyse.py --runs-root .mlxfast-private/e17/runs-r1`.
 
 ## 8. Signature
 
