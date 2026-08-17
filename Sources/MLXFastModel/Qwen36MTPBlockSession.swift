@@ -65,8 +65,7 @@ public struct Qwen36MTPRoundResult {
     public let perRowTop2Logits: [[Double]]
     /// Trimmable-cache offset after the round: `seedTokenCount + committedTotal`.
     public let targetCacheOffset: Int
-    /// Retained for protocol compatibility. Fixed-window MTP runs never stop on
-    /// a model token, so this is always false.
+    /// True when a stop token was committed this round; the parent stops asking.
     public let reachedStopToken: Bool
 }
 
@@ -109,6 +108,7 @@ public enum Qwen36MTPSessionError: Error, CustomStringConvertible {
 /// straight into the score.
 public final class Qwen36MTPBlockSession {
     private let model: any Qwen36MTPTarget
+    private let stopTokens: Set<Int>
     /// MTPLX default `base_hidden_variant == mtp_hidden_variant == "post_norm"`.
     private let postNorm: Bool
 
@@ -162,17 +162,16 @@ public final class Qwen36MTPBlockSession {
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
     public private(set) var began = false
-    /// Fixed-window decode treats EOS like any other serial token. Kept as a
-    /// compatibility property for callers compiled against the old session API.
-    public var reachedStopToken: Bool { false }
+    public private(set) var reachedStopToken = false
 
     public init(
         model: any Qwen36MTPTarget,
-        stopTokens _: Set<Int>,
+        stopTokens: Set<Int>,
         postNorm: Bool = true
     ) throws {
         guard model.hasMTPHead else { throw Qwen36MTPSessionError.headNotAttached }
         self.model = model
+        self.stopTokens = stopTokens
         self.postNorm = postNorm
         // Cost-model schedule (replaces the streak ladder). Choose the depth
         // that maximizes expected committed tokens per unit round time under
@@ -527,7 +526,7 @@ public final class Qwen36MTPBlockSession {
     /// honest fit FOR THIS ROLLBACK MECHANISM; the wasted-work term a
     /// reject does keep (the drafted head steps past the break) is already
     /// inside the marginal the rule prices.
-    private static let headStepCostRatio = 0.20
+    private static let headStepCostRatio = 0.18
 
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
@@ -559,7 +558,7 @@ public final class Qwen36MTPBlockSession {
     /// serial trajectory. Segmenting the whole FORWARD instead (two model
     /// calls, 5+k) was measured bit-exact too but pays a second full weight
     /// pass (~25 ms) and loses on net; the chunk lives at the sdpa only.
-    private static let sdpaWidthWallDepthCap = 4
+    private static let sdpaWidthWallDepthCap = 5
 
     /// Depth cap for streak-qualified deep rounds. 8 is the trusted
     /// per-round maximum; rows_per_round = depth + 1 stays ledger-legal.
@@ -593,6 +592,10 @@ public final class Qwen36MTPBlockSession {
                 let margin = tail.1[0] - tail.1[1]
                 let conf = 1.0 / (1.0 + exp(-margin / 2.0))
                 p = Swift.min(p, conf)
+            } else if depth == 1, let tail = pendingTop2, tail.1.count >= 2 {
+                let margin = tail.1[0] - tail.1[1]
+                let conf2 = 1.0 / (1.0 + exp(-margin / 3.0))
+                p = Swift.min(p, conf2)
             }
             reach *= p
             let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
@@ -606,13 +609,16 @@ public final class Qwen36MTPBlockSession {
     /// Fold one round's acceptance outcome into the per-position EMAs.
     /// Positions before the accepted count observed a success; the position
     /// AT the accepted count observed a failure only if the walk actually
-    /// rejected there; deeper positions were never reached and observe nothing.
+    /// rejected there (not when it ended early on a committed stop token);
+    /// deeper positions were never reached and observe nothing.
     private func recordAcceptOutcome(acceptedCount: Int, drafts: [Int]) {
         let alpha = Self.acceptEMAAlpha
         for index in 0 ..< acceptedCount where index < positionAcceptEMA.count {
             positionAcceptEMA[index] += alpha * (1.0 - positionAcceptEMA[index])
         }
-        if acceptedCount < drafts.count,
+        let stoppedEarly = acceptedCount > 0 && acceptedCount <= drafts.count
+            && stopTokens.contains(drafts[acceptedCount - 1])
+        if acceptedCount < drafts.count, !stoppedEarly,
            acceptedCount < positionAcceptEMA.count
         {
             positionAcceptEMA[acceptedCount] +=
@@ -634,18 +640,6 @@ public final class Qwen36MTPBlockSession {
                     alpha * (0.95 - positionAcceptEMA[acceptedCount])
             }
         }
-    }
-
-    /// Count the target-matching draft prefix for a fixed decode window.
-    /// Token identity, including EOS, never changes the parent-owned length.
-    static func acceptedDraftPrefixCount(
-        drafts: [Int], verifyArgmax: [Int]
-    ) -> Int {
-        precondition(verifyArgmax.count >= drafts.count)
-        for index in drafts.indices where verifyArgmax[index] != drafts[index] {
-            return index
-        }
-        return drafts.count
     }
 
     /// The shipped schedule's width. See `draftPolicy`.
@@ -676,7 +670,7 @@ public final class Qwen36MTPBlockSession {
     /// round from the last round's accept run.
     public func generateRound(depth: Int) throws -> Qwen36MTPRoundResult {
         guard began, let primaryPending = pendingPrimary,
-              pendingTop2 != nil, let hidden = pendingHidden
+              let tailPending = pendingTop2, let hidden = pendingHidden
         else { throw Qwen36MTPSessionError.notBegun }
         guard depth >= Qwen36MTPLimits.serialControlDepth,
               depth <= Qwen36MTPLimits.maxDepth
@@ -720,6 +714,32 @@ public final class Qwen36MTPBlockSession {
                 && draftCount <= Qwen36MTPLimits.maxDepth,
             "draftPolicy returned \(draftCount) for an offer of \(depth); a "
                 + "round may propose 0 ... min(offer, maxDepth) drafts")
+
+        // A stop token as the primary ends the run BEFORE any drafting: there is
+        // nothing after it to predict, and drafting past it would charge the
+        // measurement for work no decoder performs. The round still declares its
+        // single target tail row (the row that produced this primary's successor
+        // candidate is the one already spent), so the ledger stays closed.
+        if stopTokens.contains(primary) {
+            reachedStopToken = true
+            // The tail row to declare is the row that produced this primary —
+            // its top-2 was read out of the previous round's batched eval.
+            let (tailTokens, tailLogits) = tailPending
+            pendingPrimary = nil
+            pendingTop2 = nil
+            pendingHidden = nil
+            return Qwen36MTPRoundResult(
+                tokens: committed,
+                declaredRows: 1,
+                draftTokens: [],
+                acceptedDraftCount: 0,
+                rejectedDraftCount: 0,
+                perRowTop2Tokens: [tailTokens],
+                perRowTop2Logits: [tailLogits],
+                targetCacheOffset: seedTokenCount + committedTokenCount,
+                reachedStopToken: true
+            )
+        }
 
         // NO DRAFTS THIS ROUND. Two ways to get here and they are not the same
         // thing. Depth 0 is THE TRUE SERIAL CONTROL -- the parent offered
@@ -896,9 +916,14 @@ public final class Qwen36MTPBlockSession {
         // by the exactness chunk inside `attentionWithCacheUpdate` (two
         // <= 5-row sdpa calls, byte-identical windows). One tape, one
         // rollback story, one readout, no second weight pass.
-        let (verifyLogits, verifyHidden) = model.callWithHidden(
-            input: LMInput.Text(tokens: verifyTokens),
-            cache: cache, nConfirmed: 1)
+        // Publish the post-norm block this verify forward already computes so
+        // accepted head-history rows do not each repeat the same row-local
+        // RMSNorm through applyFinalNorm. Conformers that return nil retain the
+        // old path through the guarded hiddenRow overload below.
+        let (verifyLogits, verifyHidden, verifyNormed) =
+            model.callWithHiddenAndNormed(
+                input: LMInput.Text(tokens: verifyTokens),
+                cache: cache, nConfirmed: 1)
         if Self.traceRounds { tVerifyBuilt = DispatchTime.now().uptimeNanoseconds }
 
         // THE ROUND'S SINGLE BLOCKING EVAL. Everything the host needs to read
@@ -928,8 +953,12 @@ public final class Qwen36MTPBlockSession {
         //    is the target's greedy continuation of verify input i, i.e. the
         //    truth for draft i. Row `draftCount` is the BONUS row and is only
         //    used on full acceptance.
-        let acceptedCount = Self.acceptedDraftPrefixCount(
-            drafts: drafts, verifyArgmax: verifyArgmax)
+        var acceptedCount = 0
+        for index in 0 ..< drafts.count {
+            guard verifyArgmax[index] == drafts[index] else { break }
+            acceptedCount += 1
+            if stopTokens.contains(drafts[index]) { break }
+        }
 
         var perRowTop2Tokens: [[Int]] = []
         var perRowTop2Logits: [[Double]] = []
@@ -951,7 +980,8 @@ public final class Qwen36MTPBlockSession {
             committed.append(contentsOf: drafts)
             committedTokenCount += drafts.count
             pendingPrimary = verifyArgmax[drafts.count]
-            pendingHidden = hiddenRow(verifyHidden, verifyHidden.dim(1) - 1)
+            pendingHidden = hiddenRow(
+                verifyHidden, verifyNormed, verifyHidden.dim(1) - 1)
             let base = drafts.count * 2
             let ids = Array(flatTop2IDs[base ..< (base + 2)])
             let values = Array(flatTop2Values[base ..< (base + 2)])
@@ -976,7 +1006,8 @@ public final class Qwen36MTPBlockSession {
                 to: committedOffset)
             {
                 pendingPrimary = verifyArgmax[acceptedCount]
-                pendingHidden = hiddenRow(verifyHidden, acceptedCount)
+                pendingHidden = hiddenRow(
+                    verifyHidden, verifyNormed, acceptedCount)
                 pendingTop2 = (
                     perRowTop2Tokens[acceptedCount],
                     perRowTop2Logits[acceptedCount]
@@ -1018,9 +1049,24 @@ public final class Qwen36MTPBlockSession {
         // committed pair. The rejecting round queues nothing — the next
         // round's own (pendingHidden, primary) row covers that transition.
         Self.trimTrimmable(headCache, to: validHistoryOffset)
-        for index in 0 ..< acceptedCount {
-            headHistoryBacklogHidden.append(hiddenRow(verifyHidden, index))
-            headHistoryBacklogTokens.append(drafts[index])
+        if acceptedCount > 0 {
+            // Keep accepted post-norm rows as one contiguous block. The backlog
+            // already supports multi-row blocks (seed priming uses one), while
+            // the token list remains flat and preserves the same row order.
+            if let block = normedRows(
+                verifyHidden, verifyNormed, 0 ..< acceptedCount)
+            {
+                headHistoryBacklogHidden.append(block)
+            } else {
+                // Preserve the exact pre-existing per-row normalization path
+                // whenever no matching published block is available.
+                for index in 0 ..< acceptedCount {
+                    headHistoryBacklogHidden.append(
+                        hiddenRow(verifyHidden, index))
+                }
+            }
+            headHistoryBacklogTokens.append(
+                contentsOf: drafts.prefix(acceptedCount))
         }
         fullAcceptStreak =
             acceptedCount == drafts.count ? fullAcceptStreak + 1 : 0
@@ -1062,6 +1108,15 @@ public final class Qwen36MTPBlockSession {
         // them. The rare generic-repair path ran its own second eval.
         // `pendingHidden` is likewise device-only until the next round.
 
+        // Truncate after the first committed stop token, keeping the stop token
+        // itself — the same rule the serial reference applies.
+        if let stopIndex = committed.firstIndex(where: { stopTokens.contains($0) }) {
+            let dropped = committed.count - (stopIndex + 1)
+            committed = Array(committed.prefix(stopIndex + 1))
+            committedTokenCount -= dropped
+            reachedStopToken = true
+        }
+
         return Qwen36MTPRoundResult(
             tokens: committed,
             declaredRows: draftCount + 1,
@@ -1071,7 +1126,7 @@ public final class Qwen36MTPBlockSession {
             perRowTop2Tokens: perRowTop2Tokens,
             perRowTop2Logits: perRowTop2Logits,
             targetCacheOffset: seedTokenCount + committedTokenCount,
-            reachedStopToken: false
+            reachedStopToken: reachedStopToken
         )
     }
 
@@ -1477,6 +1532,32 @@ public final class Qwen36MTPBlockSession {
     private func hiddenRow(_ hidden: MLXArray, _ index: Int) -> MLXArray {
         let row = hidden[0..., index ..< (index + 1), 0...]
         return postNorm ? model.applyFinalNorm(row) : row
+    }
+
+    /// Slice rows from a matching post-norm block when the verify forward
+    /// published one. RMSNorm reduces only over the final axis, so these are
+    /// the same values as normalizing each row again.
+    private func normedRows(
+        _ hidden: MLXArray, _ normed: MLXArray?, _ range: Range<Int>
+    ) -> MLXArray? {
+        guard postNorm, let normed,
+              hidden.ndim == 3, normed.ndim == 3,
+              normed.dim(0) == hidden.dim(0),
+              normed.dim(1) == hidden.dim(1),
+              normed.dim(2) == hidden.dim(2),
+              range.lowerBound >= 0,
+              range.upperBound <= normed.dim(1),
+              !range.isEmpty
+        else { return nil }
+        return normed[0..., range, 0...]
+    }
+
+    /// Any shape surprise falls back to the pre-existing per-row path.
+    private func hiddenRow(
+        _ hidden: MLXArray, _ normed: MLXArray?, _ index: Int
+    ) -> MLXArray {
+        normedRows(hidden, normed, index ..< (index + 1))
+            ?? hiddenRow(hidden, index)
     }
 
     private func lastRow(_ logits: MLXArray) -> MLXArray {
