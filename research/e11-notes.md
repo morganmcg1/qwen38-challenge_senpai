@@ -433,3 +433,113 @@ tracks the win ordering across arms (C1/C2/C8 = 15, W5 = 12, H/F3 = 6) and is
 not in the model. Replay is real work the model currently charges nothing for.
 I am reporting this as an open discrepancy rather than adding a third parameter
 to six points and calling it a fit.
+
+`W6` was added to the table after it ran and lands at pred 17.227 / act 16.921,
++1.8%. That is the same sign and roughly the same size as `W5`'s miss, which is
+consistent with the missing replay term rather than with a second effect.
+
+## The noise floor I have been quoting is not a floor
+
+`W5b` re-ran the `W5` binary. The two replicate pairs now available disagree by
+an order of magnitude:
+
+| pair | arms | spread on `vs ref` |
+| --- | --- | --- |
+| control | C1 / C2 | **0.873%** |
+| width-5 | W5 / W5b | **0.092%** |
+
+Both pairs are the same binary run twice under the same gate, so a single pair
+is evidently a bad estimator of run-to-run spread — 0.873% is one draw, not a
+measured floor, and I quoted it as though it were a property of the host. I am
+keeping 0.873% as the CONSERVATIVE gate for every claim in this experiment,
+because it is the larger of the two and because being wrong in that direction
+only costs me claims. But the reasoning I recorded after T1 — that C8 and H
+were resolvable and W5 was only partly resolvable — rested on treating one pair
+as a calibrated instrument. That reasoning was unsound even where its
+conclusion survived. Anything that needs a real floor needs n >= 5 on one arm,
+which E11 did not buy.
+
+What is NOT noisy is the schedule. `W5` and `W5b` are bit-identical on every
+structural counter and on the full depth histogram, exactly as `C1`/`C2` were.
+Only the clock moves.
+
+## W5 vs W6: the cold lever has an interior optimum at 5
+
+`W6` opens the same cold wall one step further, to depth 6.
+
+**Its timing is inconclusive and I am not quoting it as a headline.** The
+serial leg drifted +0.873% against the C1/C2 reference, which trips the
+~0.25% serial-drift monitor I pre-registered before T1. When the denominator
+moves that far, the ratio and the absolute number are both suspect.
+
+The structural comparison needs no clock, and it is decisive. Against `W5` at
+*identical* realised mean draft length — 6.049 vs 6.050 — `W6` is worse on
+every axis:
+
+| counter | W5 | W6 | direction |
+| --- | --- | --- | --- |
+| rounds | 80 | 82 | worse |
+| target rows | 564 | 578 | worse |
+| rejected drafts | 51 | 66 | worse |
+| replayed rounds | 12 | 16 | worse |
+| accepted-draft rate | 0.8946 | 0.8669 | worse |
+| mean draft length | 6.050 | 6.049 | tie |
+
+There is no dimension on which `W6` is better. It buys the same average depth
+by a worse route: more speculative rows, a quarter more rejects, a third more
+replays. `W6` loses to `W5` whatever the clock says, and the 2-parameter model
+puts it behind `C` as well (+2.2% predicted decode).
+
+### The marginal-acceptance cliff, and why the wall belongs at exactly 5
+
+The break-even from the cost model is **0.849** accepted tokens per extra draft
+slot. Measured marginals per lever:
+
+| lever | population it gates | dD | dE | marginal | verdict |
+| --- | --- | --- | --- | --- | --- |
+| C -> C8 (hot cap 7->8) | streak-qualified | +0.364 | +0.277 | 0.762 | loses |
+| C -> W5 (cold wall 4->5) | everything else | +0.664 | +0.582 | **0.877** | **wins** |
+| W5 -> W6 (cold wall 5->6) | everything else | -0.001 | -0.156 | ~0.4 | loses hard |
+
+Slot 5 clears break-even by 0.028; slot 6 misses it by roughly half. That is a
+cliff, not a slope, and it puts the cold wall at exactly 5 — one integer,
+bracketed on both sides by measurement rather than by taste.
+
+This independently reproduces `sdpaWidthWallDepthCap = 5` in the public
+promoted frontier `033f622` (score 2.92520777238747). That receipt ships wall 5
+together with cap 8 and h 0.18. E11 says the wall is the part that pays: cap 8
+is a measured loss here (+0.55%), and the advisor already showed h 0.18 is
+bit-identical to 0.20 after the cap-7 clamp. Useful as corroboration in one
+direction only — that receipt was scored on the real hidden 8-prompt pool,
+which is exactly the generalisation my own evidence cannot reach.
+
+## Shipped: one integer
+
+`sdpaWidthWallDepthCap = 4 -> 5`, unconditional, no env var, no new constant.
+
+The committed source at 52be39e hashes to
+`341ddc5ad5e153280ec7c4f3d78a93da0ab838c5ed358bd8b8b288eed50e2916`, which is
+byte-identical to `.mlxfast-private/e11/runs/W5/meta.txt` `source_sha256`. The
+shipped bytes and the measured bytes are the same bytes. This falls out of the
+harness design: `e11-build.sh` materialises C/C8/F3/W5/W6 from `git show
+BASE:src`, i.e. from the campaign base with the *scalar* `headStepCostRatio`,
+so `W5` never was a vector-arithmetic variant and there is no floating-point
+equivalence argument to make.
+
+The earlier plan of record — ship the measured per-depth h curve, committed at
+7c85b4f — is **reverted**. Three reasons, in order of weight:
+
+1. It lost. `H` (curve) is -1.006%; `W5` (one integer) is -1.303%, at n=2 with
+   a 0.09% spread against `H`'s n=1. The gap is inside the conservative floor,
+   so this reason alone would not settle it.
+2. `F3` reproduces `H` to within 0.13% using two clamped integers and no curve
+   at all. Whatever the 8 fitted constants were buying, "stop at depth 3" buys
+   the same thing. The curve is over-parameterised for its measured effect.
+3. The curve is head-dependent by construction — its own doc says re-fit after
+   any head change — and it was fitted on this one copy fixture. One integer
+   that a promoted receipt independently landed on is the better bet off-fixture.
+
+They are also not composable, which is worth stating because it is not obvious:
+under the curve the realised max depth is 3, strictly below the wall at 4, so
+the wall never binds and raising it to 5 changes nothing. Curve-plus-wall is
+exactly `H`. This is an either/or, and I took the measured winner.
