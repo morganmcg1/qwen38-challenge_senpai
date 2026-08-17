@@ -195,7 +195,31 @@ Arms A and D confirm this from the other direction, and add a second mechanism:
   rather than memory traffic. The largest excess is `mlp.down` (53.7%), the shape with the
   longest reduction (`k = 17408`), exactly where accumulator pressure bites hardest.
 
-<!-- ARM_D_RESULTS -->
+### Arm D — is the arm A penalty register pressure?
+
+`_wide` keeps its accumulator as `VF acc[4]`. On this target `vec<float,5>` occupies eight
+lanes, so at `NA = 5` three lanes per element are dead. Arm D is arm A with `acc` packed
+exactly, and it recovered **nothing**:
+
+| arm | ratio vs ref1 | drift-adjusted | h-units | noise floor | control span |
+| --- | ---: | ---: | ---: | ---: | --- |
+| ref2 (repeat) | 1.0002 | 0.9998 | +0.0003 | +/-0.39% | [0.9965, 1.0027] |
+| A (`<5,3>` -> `<5,5>`) | 1.3932 | 1.3929 | +0.7202 | +/-0.58% | [0.9944, 1.0016] |
+| D (A + packed `acc`) | 1.3969 | **1.3996** | +0.7270 | +/-0.49% | [0.9949, 1.0029] |
+
+Per-shape excess is statistically indistinguishable from arm A (D vs A: 34.58/54.00/35.74/
+37.70/36.14/34.25/39.75/34.50 against 34.53/53.74/35.59/33.62/36.22/34.05/40.97/34.36).
+
+I first read this as "the penalty is not register pressure." **That read was wrong, and arm
+D was simply too weak a probe.** `_wide` holds *thirteen* `NA`-wide vectors per thread —
+`acc[4]`, `sums`, `partial[4]`, `a0..a3`. At `NA = 5` that is 13 x 8 = 104 lanes against 65
+useful, so 39 lanes are wasted. Arm D packed four of thirteen vectors, removing 12 of those
+39 lanes. Occupancy is a step function of registers per thread, so removing 31% of the waste
+can plausibly cross no step at all and return exactly zero — which is what happened. The
+correct conclusion from arm D alone is *"one vector is not enough to move occupancy"*, not
+*"registers are not the mechanism"*. Arm E is the strong form of the same probe.
+
+<!-- ARM_E_RESULTS -->
 
 ## Q3 — if M=5 gets cheap, does depth 4 open?
 
