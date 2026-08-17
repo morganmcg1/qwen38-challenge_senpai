@@ -38,9 +38,19 @@ unpack ALU per MAC — has a magnitude set entirely by the GEMM tile height `BM`
 which is chosen by the **read-only** dispatcher and baked into the requested
 kernel name before any editable code runs.
 
-Five corrections to the assignment's premises came out of the work. One of them
+Eight corrections to the assignment's premises came out of the work. One of them
 (Correction 5) contradicts a standing campaign belief and may reopen closed work,
 so it is stated in full below rather than buried.
+
+§12 reconciles the advisor's later feedback
+(`e18-r1-correction-authoritative-scored-shapes-and-dequant-is-not-bandwidth`),
+which arrived after this analysis was committed. Its §E and §F independently
+confirm Phase 2 — §E reaches the same 14,412,349,440 B weight-traffic constant
+and the same "scope it at the arithmetic, not the bandwidth" conclusion. Its §F
+correctly splits the roofline into read-side and mixed, which *widens* the
+stopping-rule margin. Its §A I have to push back on, with source evidence: the
+fused `SCORED_SHAPES` totals are all correct but the grouping is not, and the
+grouping is what hides the two `N = 48` shapes behind Correction 1.
 
 - **H1 → UNRESOLVED**, with the two missing facts named precisely and the
   smallest resolving read identified. Stopping rule (b) fires.
@@ -48,9 +58,9 @@ so it is stated in full below rather than buried.
   prefill GEMM, and the proof is structural — the kernel carrying that mechanism
   is not reachable at prefill at all.
 - **Stopping rule (c) is satisfied for every byte-traffic term.** The largest of
-  them, all quantized weight traffic combined, is 1.632 % of measured GEMM
-  seconds; metadata alone is 0.176 % of P and the split-K round trip is 0.0166 %
-  of P.
+  them, all quantized weight traffic combined, is **1.58 % of P** at the mixed
+  roofline and **1.44 %** at the read-side roofline (§12.2); metadata alone is
+  0.176 % of P and the split-K round trip is 0.0166 % of P.
 - **The prize is also 4–8× smaller than the assignment assumed** (§11, added
   late, from ranked-hardware telemetry in public Yukon receipts). Ranked prefill
   is **6.20 %** of the candidate leg, not the 15.8–18.0 % the assignment states,
@@ -938,6 +948,118 @@ python3 research/e18_yukon_prefill.py yukon_subs.json
 self-checks the frontier receipt id, source ref and official score against the
 values quoted here.
 
+## 12. Reconciliation with advisor feedback `e18-r1-correction-authoritative-scored-shapes-and-dequant-is-not-bandwidth`
+
+This feedback (posted `2026-08-17T15:02:15Z`) reached me after the analysis was
+committed. Reconciling it changed one number's label and added a qualifier, but
+did not move either verdict. Section by section:
+
+### 12.1 §E and §F independently confirm Phase 2 — strong agreement
+
+§E derives total prefill weight traffic as **14,412,349,440 B** and concludes the
+whole weight stream cannot fund φ, so "E18 is not a bandwidth experiment — scope
+it at the arithmetic instead."
+
+That is the same constant this report reached independently
+(`QUANTIZED_WEIGHT_BYTES = 14412349440` in `research/e18_yukon_prefill.py`) and
+the same conclusion §5 reached by a different route (arithmetic intensity
+1,730 FLOP/byte). We agree to the byte. §E also asks the exact question §5.4
+answers:
+
+> "If you find that the dequant cost per weight element is paid once per output
+> *tile* rather than once per output *element*, that is the shape of a real answer."
+
+It is paid **once per output tile-row-block**: cost per MAC is
+`ops_per_weight / BM`, independent of `BN` and `BK`. That is why the surviving
+band is 12.50–15.62 % at `BM = 32` and 6.25–7.81 % at `BM = 64`, and why the
+mechanism is unreachable — `BM` is chosen by the read-only dispatcher and baked
+into the requested kernel name (Correction 5).
+
+### 12.2 §F accepted — the read-side roofline strengthens the verdict
+
+§F is correct that 226.9 GB/s is a mixed triad/copy figure and that a
+read-dominated weight stream should be bounded with the ~249.54 GB/s read-side
+number. Re-running the traffic terms both ways:
+
+| traffic term | bytes | @ 227.13 GB/s (mixed) | @ 249.54 GB/s (read-side) |
+| --- | --: | --: | --: |
+| scales + biases only (metadata) | 1,601,372,160 | 0.007051 s = **0.1761 % of P** | 0.006417 s = **0.1603 % of P** |
+| all quantized weight traffic | 14,412,349,440 | 0.063455 s = **1.5848 % of P** | 0.057756 s = **1.4424 % of P** |
+| split-K round trip (read+write ⇒ mixed) | 150,994,944 | 0.000665 s = **0.0166 % of P** | — |
+
+Every term stays far under the 2 %-of-P bar, so stopping rule (c) still fires;
+the read-side figure makes the margin larger, not smaller. Compute-boundedness
+rises from 61.3× to **67.3×**. I have kept the mixed figure for the split-K round
+trip because that term is a genuine read-modify-write reduction.
+
+**One labelling error in my own earlier text is corrected here:** the 0.1761 %
+figure is the **metadata (scale+bias) term alone**, not codes+scales+biases. The
+full weight stream is 1.58 % of P (mixed) / 1.44 % (read-side). Both are under the
+bar, so no conclusion changes, but the label was wrong and §F is what surfaced it.
+
+### 12.3 §A — I have to push back, with source evidence
+
+§A instructs me to treat `research/qmv_cost_curve.py:23-32` `SCORED_SHAPES` as
+authoritative over my own derivation, and lists three *fused* projections. **The
+totals in that table are all correct. The grouping is not.** The live model issues
+each of those as several separate `Qwen35Ops.linear` dispatches:
+
+| §A row | §A `N` | actual dispatches (this base) | source |
+| --- | --: | --- | --- |
+| `mlp.gate_up_fused` | 34816 | `gate` 17408 + `up` 17408 | `Qwen35MLP.swift` — three separate `Qwen35Ops.linear`, weights `gateProjection` / `upProjection` / `downProjection` |
+| `full_attn.qkv_proj_fused` | 14336 | `q(+gate)` 12288 + `k` 1024 + `v` 1024 | `Qwen35Attention.swift:143`, `:162`, `:163` |
+| `linear_attn.in_proj_fused_qkvzba` | 16480 | `qkv` 10240 + `z` 6144 + `b` 48 + `a` 48 | `Qwen35GatedDelta.swift:241`, `:245`, `:254`, `:255` |
+
+In every case **my dispatch widths sum exactly to the §A width**
+(17408+17408 = 34816; 12288+1024+1024 = 14336; 10240+6144+48+48 = 16480). That
+identity is why we agree and why the disagreement was invisible:
+
+- **§B's `N*K*0.5625` cross-check cannot adjudicate this.** Footprint is linear in
+  `N`, so a fused row and its unfused parts have *identical* total bytes. §B's
+  "all eight reproduce exactly" is true under both readings and therefore is not
+  evidence for fusion. The same holds for FLOPs (`2*M*N*K`), which is why my
+  corrected census still reproduces E16's total at zero relative error.
+- **`qmv_cost_curve.py` is not a measured record of model dispatches.** Its own
+  docstring describes it as a *stock-MLX control* that "runs the same sweep …
+  against whatever MLX the interpreter imports", and marks it "Research-only:
+  never packaged into a submission." `SCORED_SHAPES` is a hand-written constant
+  driving a standalone `mx.quantized_matmul` microbenchmark, not a trace of
+  `Qwen35*.swift`. Under the rule "the file wins", the file that wins here is the
+  model source that the scored worker actually executes.
+
+**This is load-bearing, not pedantry.** §C concludes "the smallest scored `N` is
+5120 — ten times the bound" and therefore "`qmm_t_splitk` is dead code on this
+model." That holds under the fused grouping. In the real dispatch stream the
+smallest `N` is **48** (`in_proj_b`, `in_proj_a`), which is 10.7× *below* the
+`N <= 512` bound — so `split_k = 16` and
+`affine_qmm_t_splitk_bfloat16_gs_64_b_4_alN_false` fires **96× per prefill**
+(Correction 1, §1). §C reports re-running the probe "both ways" and finding
+`split_k = 1` on all eight rows either way; both of those tables share the fused
+grouping, so neither probe could have surfaced these two shapes.
+
+The practical consequence is small — 96 dispatches moving 150,994,944 B, 0.0166 %
+of P, and NAX-immune — so this does not resurrect any arm. It matters because the
+"dead code" label would otherwise be carried forward into future briefs as a fact.
+
+### 12.4 §G — geometry agrees
+
+`head_dim = 256` and `attn_output_gate = True` are both confirmed here
+independently: `Qwen35Attention.swift` carries a single `queryProjection` of shape
+`[queryAndGateProjectionSize, hiddenSize]` = `[12288, 5120]` = `(24 q + 24 gate) × 256`,
+with `k` and `v` as separate 1024-wide dispatches. `Qwen35Config.swift:238-242`
+pins `hidden_size 5120`, `intermediate_size 17408`, `num_attention_heads 24`,
+`num_key_value_heads 4`. The 16-of-64 full-attention split is the same one used in
+the §2 census.
+
+### 12.5 §5 requirement 7 — the 15.8–18.0 % premise is refuted, and the feedback does not withdraw it
+
+The feedback restates the brief without revisiting requirement 7's "prefill is
+15.8–18.0 % of the MTP leg". §11.2 measures it at **6.1989 %** of the candidate
+leg on the ranked frontier receipt, from the operator's own telemetry. That
+refutation is unaffected by anything in this feedback, and it is the single
+largest quantitative correction in this report.
+
+
 ---
 
 ```senpai-result:v1
@@ -1068,7 +1190,22 @@ values quoted here.
     "corrected census reproduces E16 FLOP total at zero relative error",
     "backend/metal/quantized.cpp is READ-ONLY but kernels/steel/gemm/** IS editable via a benchmark.json directory entry",
     "assignment premise that ranked prefill is 15.8-18.0 percent of the candidate leg is refuted: the frontier receipt puts it at 6.1989 percent",
-    "program.md's 3.0 plausibility ceiling is stale; receipts independently confirm assignment section 5.10, with decode_speedup_ceiling raised 3 -> 5 at 2026-08-17T11:10:46.796Z"
-  ]
+    "program.md's 3.0 plausibility ceiling is stale; receipts independently confirm assignment section 5.10, with decode_speedup_ceiling raised 3 -> 5 at 2026-08-17T11:10:46.796Z",
+    "advisor feedback section A: the qmv_cost_curve.py SCORED_SHAPES totals are correct but the fused grouping is not; the live model issues 34816 as 17408+17408, 14336 as 12288+1024+1024, and 16480 as 10240+6144+48+48, and that grouping is what hides the two N=48 shapes that make qmm_t_splitk live"
+  ],
+  "advisor_feedback_reconciled": {
+    "feedback_id": "e18-r1-correction-authoritative-scored-shapes-and-dequant-is-not-bandwidth",
+    "posted_at": "2026-08-17T15:02:15Z",
+    "arrived_after_analysis_committed": true,
+    "verdicts_changed": false,
+    "sections_confirming_this_report": ["E", "F", "G"],
+    "sections_disputed_with_source_evidence": ["A", "C"],
+    "weight_traffic_bytes_agreed": 14412349440,
+    "roofline_read_side_bytes_per_s": 249540000000.0,
+    "weight_traffic_fraction_of_p_mixed": 0.015848,
+    "weight_traffic_fraction_of_p_read_side": 0.014424,
+    "compute_bound_factor_read_side": 67.3,
+    "self_correction": "the 0.1761 percent figure is the scale+bias metadata term alone, not codes+scales+biases; the full weight stream is 1.58 percent of P mixed / 1.44 percent read-side, both still under the 2 percent bar"
+  }
 }
 ```
