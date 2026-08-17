@@ -380,6 +380,97 @@ def report_curves(args: argparse.Namespace) -> None:
     print("The gap between the two columns for `shipped` IS the fitting error.")
 
 
+CURVES = {
+    "shipped": SHIPPED_CURVE,
+    "refit": refit_curve(),
+    "flat0.18": scalar_curve(0.18),
+    "flat0.20": scalar_curve(0.20),
+}
+
+
+def hist_cost_per_token(hist: dict[int, int], h: list[float], tokens: int) -> float:
+    """Cost of a MEASURED round sequence, in batched-verify-forward units.
+
+    A round that drafts d tokens costs one verify forward plus d head steps:
+    1 + sum(h[:d]).  This is the gate's own cost model, evaluated on the depths
+    the gate actually chose, so it needs no acceptance model at all.
+    """
+    return sum(n * (1.0 + sum(h[:d])) for d, n in hist.items()) / tokens
+
+
+def report_costcheck(args: argparse.Namespace) -> None:
+    """Q3, and the load-bearing validation for Q2.
+
+    The cost model is tested directly: take each arm's MEASURED per-round depth
+    sequence, price it under a candidate h vector, and compare the predicted
+    cost ratio between arms with the measured decode seconds/token ratio.
+
+    Prefill is subtracted HERE and only here.  It is ~3.995 s of arm-independent
+    work in every leg, so leaving it in dilutes every relative decode claim by a
+    constant factor; the ranked score, by contrast, is prefill-INCLUSIVE and is
+    never computed this way.  See research/e17-notes.md section 2.
+    """
+    labels = args.labels.split(",")
+    arms = dict(kv.split("=", 1) for kv in args.arm_map.split(",") if kv)
+    runs_root = Path(args.runs_root)
+    data = {}
+    for label in labels:
+        mtp = json.loads((runs_root / label / "reports" / "04-mtp-timed.json").read_text())
+        hist: dict[int, int] = {}
+        for d in mtp["effective_draft_lengths"]:
+            hist[d] = hist.get(d, 0) + 1
+        tokens = mtp["decode_token_count"]
+        spt = mtp["parent_measured_seconds_per_token"]
+        prefill = mtp["seed_prefill_seconds"]
+        data[label] = {
+            "hist": hist,
+            "tokens": tokens,
+            "spt_inclusive": spt,
+            "spt_decode": spt - prefill / tokens,
+            "rounds": len(mtp["effective_draft_lengths"]),
+            "curve": arms.get(label, "?"),
+        }
+
+    print("=== measured arms (prose golden, 512 decode tokens) ===")
+    print(f"{'label':>6} {'curve':>9} {'rounds':>7} {'mean_d':>7} "
+          f"{'spt_incl':>10} {'spt_decode':>11}  hist")
+    for label, d in data.items():
+        mean_d = sum(k * v for k, v in d["hist"].items()) / d["rounds"]
+        hist_s = " ".join(f"d{k}:{v}" for k, v in sorted(d["hist"].items()))
+        print(f"{label:>6} {d['curve']:>9} {d['rounds']:>7} {mean_d:>7.3f} "
+              f"{d['spt_inclusive']:>10.6f} {d['spt_decode']:>11.6f}  {hist_s}")
+
+    print()
+    print("=== cost model priced on the MEASURED depth sequences ===")
+    for cname, h in CURVES.items():
+        tag = "  <- measured marginals (truth candidate)" if cname == "refit" else ""
+        print(f"\n-- priced under h = {cname}{tag}")
+        for label, d in data.items():
+            c = hist_cost_per_token(d["hist"], h, d["tokens"])
+            print(f"{label:>6}: cost/token = {c:.6f}")
+
+    print()
+    print("=== prediction test: pairwise cost ratio vs measured decode ratio ===")
+    print("(a pair is a real test only because the depth sequences differ; both")
+    print(" arms ran the same prompt, host, window and head)")
+    order = list(data)
+    for i in range(len(order)):
+        for j in range(i + 1, len(order)):
+            a, b = order[i], order[j]
+            meas_incl = 100.0 * (data[b]["spt_inclusive"] - data[a]["spt_inclusive"]) \
+                / data[b]["spt_inclusive"]
+            meas_dec = 100.0 * (data[b]["spt_decode"] - data[a]["spt_decode"]) \
+                / data[b]["spt_decode"]
+            print(f"\n{a} vs {b}: {a} is {meas_dec:+.3f}% cheaper on DECODE seconds "
+                  f"({meas_incl:+.3f}% on prefill-inclusive seconds)")
+            for cname, h in CURVES.items():
+                ca = hist_cost_per_token(data[a]["hist"], h, data[a]["tokens"])
+                cb = hist_cost_per_token(data[b]["hist"], h, data[b]["tokens"])
+                pred = 100.0 * (cb - ca) / cb
+                print(f"{'':>4} h={cname:>9}: predicted {pred:+.3f}%  "
+                      f"(error vs decode {pred - meas_dec:+.3f} pp)")
+
+
 def report_fit(args: argparse.Namespace) -> None:
     runs = load_measured(Path(args.runs_root))
     if not runs:
@@ -440,8 +531,22 @@ def main() -> None:
     ap.add_argument("--b", type=float, default=0.94, help="geometric decay of q")
     ap.add_argument("--m", type=float, default=4.0, help="mean top-2 margin")
     ap.add_argument("--fit", action="store_true", help="fit against measured arms")
+    ap.add_argument(
+        "--costcheck",
+        action="store_true",
+        help="price measured depth sequences under each candidate h and compare "
+        "with measured decode seconds",
+    )
+    ap.add_argument("--labels", default="Hp3,Sp3,S20p")
+    ap.add_argument(
+        "--arm-map",
+        default="Hp3=shipped,Sp3=flat0.18,S20p=flat0.20",
+        help="LABEL=CURVE pairs naming which h vector each measured arm ran",
+    )
     args = ap.parse_args()
-    if args.fit:
+    if args.costcheck:
+        report_costcheck(args)
+    elif args.fit:
         report_fit(args)
     else:
         report_curves(args)
