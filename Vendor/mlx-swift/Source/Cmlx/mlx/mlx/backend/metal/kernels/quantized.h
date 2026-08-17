@@ -1831,17 +1831,32 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 3:
-          qmv_fast_crossrow_affine4_g64_m<T, 3, 3>(
+          // DIRECT_NIBBLES, same flag widths 6..9 already carry. M = 3, 4 and 5
+          // are the HOTTEST verify widths: the measured depth histogram over a
+          // 512-token window is {1:19, 2:138, 3:67, 4:21} with M = depth + 1,
+          // so 226 of 245 rounds land here and none of them had the flag.
+          // Exact, independent of M and NA: the flag only moves powers of two
+          // across the product. The incumbent multiplies (x_j * 2^-4j) by
+          // (n_j * 2^4j) after masking nibble j at bit offset 4j; with the flag
+          // it multiplies x_j by the un-shifted nibble n_j. Each factor differs
+          // only in its exponent field, so every product is bit-identical, and
+          // the accumulation order is untouched. The x-side row sum becomes
+          // xm[0] + xm[1] + xm[2] + xm[3], which is load_vector's own
+          // expression tree, so that reduction is bit-identical too. What
+          // disappears is 12 * NA power-of-two multiplies per 512-element
+          // k-block per simdgroup, against 64 * NA FMAs that stay: a free
+          // ~12% ALU cut on an ALU-bound kernel.
+          qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 4:
-          qmv_fast_crossrow_affine4_g64_m<T, 4, 4>(
+          qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 5:
-          qmv_fast_crossrow_affine4_g64_m<T, 5, 3>(
+          qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
