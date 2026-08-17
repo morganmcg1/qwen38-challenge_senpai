@@ -980,6 +980,20 @@ no scalar can simultaneously be small at depth 1 and large at depth 4.
 
 ## R3 measurement record — five arms, promoted-frontier base `fe38ecc`
 
+**Base disclosure.** All five arms were measured with a merge-base of
+`fe38ecc21e4084e4d17dac3aa76264bb5897a614`. The advisor branch then advanced
+twice during the write-up, to `bc5e15fd` (the base named by the r3 assignment
+event) and then to `ef16dea4`. Both moves are **byte-identical on the submitted
+surface**: `git diff fe38ecc ef16dea4 -- Sources Vendor mtp-head.manifest.json
+mtp-head benchmark.json fixtures` is empty, and the only changed paths are
+`AGENTS.md` (a cosmetic note about where the Yukon CLI installs), campaign
+records, and new advisor-side research and parity scripts. The branch has been
+merged up to `ef16dea4`, so these numbers are current-base results, not stale
+ones, and no arm needs replaying. Against `ef16dea4` the branch differs on the
+submitted surface by exactly one file
+(`Sources/MLXFastModel/Qwen36MTPBlockSession.swift`); scope and budget checks
+pass (source 2405727/3000000, growth 3524/262144).
+
 All five arms on the same host, same 512-seed/512-decode prose golden
 (`.mlxfast-private/e11/goldens/e11_prose_512_512.json`, sha256
 `615a1f20cae333fdb540f29e3cad71a187c449b74ca62ed195a020fa75ceb219`), same
