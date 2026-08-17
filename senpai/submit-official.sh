@@ -393,9 +393,18 @@ if ! index_entries="$(git ls-files -v -- "${protected_paths[@]}")"; then
   echo "official submit: could not inspect submitted index entries" >&2
   exit 1
 fi
+# `git ls-files -v` tags a normal cached entry `H`, skip-worktree `S`, and encodes
+# assume-unchanged by lowercasing whatever the tag would otherwise have been.
+#
+# The lowercase test below MUST be an explicit bracket LIST, never the range
+# `[a-z]`. A ranged bracket expression in a shell glob is locale-collating: under
+# `LANG=en_US.UTF-8` on macOS bash 3.2 the collation sequence interleaves cases
+# (aAbBcC...), so `[a-z]` also matches `H` and this gate fired on every clean
+# repository, making an official submission structurally impossible on that host.
+# A bracket list matches each listed character literally and is locale-independent.
 while IFS=' ' read -r index_tag _; do
   case "${index_tag}" in
-    S|[a-z])
+    S|[abcdefghijklmnopqrstuvwxyz])
       echo "official submit: skip-worktree/assume-unchanged is set under submitted paths" >&2
       exit 1
       ;;
