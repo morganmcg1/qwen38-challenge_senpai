@@ -1,0 +1,44 @@
+[
+  {
+    "arm": "q1on",
+    "id": "rfz3z51m",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rfz3z51m",
+    "name": "e16-q1on"
+  },
+  {
+    "arm": "q1off",
+    "id": "cisv46md",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cisv46md",
+    "name": "e16-q1off"
+  },
+  {
+    "arm": "q1ctl",
+    "id": "rnlg3tak",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rnlg3tak",
+    "name": "e16-q1ctl"
+  },
+  {
+    "arm": "q4a",
+    "id": "u22omnab",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/u22omnab",
+    "name": "e16-q4a"
+  },
+  {
+    "arm": "q4b",
+    "id": "kvy18tsw",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/kvy18tsw",
+    "name": "e16-q4b"
+  },
+  {
+    "arm": "q5post",
+    "id": "y8nge47k",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/y8nge47k",
+    "name": "e16-q5post"
+  },
+  {
+    "arm": "summary",
+    "id": "2jmf5z8w",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/2jmf5z8w",
+    "name": "e16-prefill-floor-and-arms"
+  }
+]
