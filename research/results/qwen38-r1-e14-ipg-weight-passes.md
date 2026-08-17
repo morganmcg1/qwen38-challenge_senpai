@@ -40,7 +40,8 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 
 Group `qwen38-r1-e14-ipg-weight-passes`, project
 `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`. One `analysis` run per measured arm
-carrying its full cost curve, plus one comparison run carrying the cross-arm tables.
+carrying its full cost curve, plus one comparison run carrying the cross-arm tables and one
+run carrying the Q4 end-to-end dispatch-frequency screen. Eleven runs, all `finished`.
 
 | run | arm | NA_max scored | run id |
 | --- | --- | ---: | --- |
@@ -54,10 +55,19 @@ carrying its full cost curve, plus one comparison run carrying the cross-arm tab
 | `qmv-cost-curve-e14-armE` | arm A + packed all 13 | 5 | [`md5dlsm0`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/md5dlsm0) |
 | `qmv-cost-curve-e14-armE2` | arm E repeat | 5 | [`fdus9cxa`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/fdus9cxa) |
 | `e14-ipg-weight-passes` | cross-arm comparison | — | [`2qvqo4z8`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/2qvqo4z8) |
+| `e14-q4-dispatch-frequency` | Q4 end-to-end screen | — | [`sxau0sjl`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/sxau0sjl) |
 
 The comparison run carries tables `e14/arms`, `e14/per_shape_excess`, `e14/h_by_depth` and
 `e14/weighted_verify_seconds`, and summary keys `ref/h4_pass_spike`,
 `ref/structural_pass_cost_h_units` and `ref/row_tax_over_stream_tax`.
+
+The Q4 run is the only end-to-end run in the group. It carries tables
+`q4/dispatch_occupancy` and `q4/policies`, and summary keys `q4/m5_round_share`,
+`q4/m5_best_case_end_to_end_pct`, `q4/multi_pass_round_share` and
+`q4/three_pass_m9_round_share`, alongside the `e2e/*` decode metrics. Its config records
+`ranked_equivalent: false` and `screen_kind: directional-policy-screen` because it runs a
+256-token window rather than the ranked 512; its dispatch *frequencies* are the transferable
+result, not its absolute timings.
 
 `NA_max scored` is the stream law `ceil(M/NA_max)` each curve's staircase test is scored
 against, so it tracks the arm rather than the shipped kernel. It is a labelling choice for
@@ -369,7 +379,98 @@ operating point — it would at best flatten a bump that the scheduler already r
 
 ## Q4 — what would it buy on the scored fixture?
 
-<!-- Q4_RESULTS -->
+Q1–Q3 are all measured on the isolated kernel fixture. Q4 asks the only question that
+decides the assignment: **how often does the live scored path actually dispatch `M=5`, and
+what is the largest end-to-end gain removing its second weight pass could possibly buy?**
+
+### Directional policy screen, 256 decode tokens
+
+This is a **directional policy screen, not a ranked-equivalent measurement.** The ranked
+contract is 512 decode tokens per leg, and the base defect documented in the next section
+makes a 512-token local run impossible on `ef16dea4`. 256 tokens is the longest window the
+public fixture supports, and it is used here only to count dispatch frequencies — no timing
+claim in this report rests on it.
+
+Traced run, job `3e52f4a3-3dd2-464d-8fa3-5ffe395b2847`, `2026-08-17T11:49:46Z`–`11:56:20Z`,
+exit 0, `research/out/e14-trace/`. Twins pristine
+(`metallib_source_fingerprint=6639cc59d6fb84ff…`, `dirty=0`), zero stale-metallib warnings,
+`all_tokens_matched=true`, `residual_divergence_count=0`, `mtp_decode_speedup=1.9265`,
+`accepted_draft_rate=0.9609`, `effective_mean_draft_len=6.571`.
+
+Round accounting closes exactly: 35 rounds, 35 primaries + 221 accepted drafts = **256
+committed tokens**, matching `decode_tokens`. `implied_d0=0` — no zero-draft round was
+hidden by the trace (the depth-0 branch returns before emitting its `round=` line, so
+`depth_histogram.py` now reconstructs those from gaps in the round counter; there were none).
+
+### Measured dispatch occupancy — verify width is `M = d + 1`
+
+| offered `d` | `M` | rounds | share | dispatch | passes | `NA` |
+|---|---|---|---|---|---|---|
+| 1 | 2 | 1 | 2.86% | `qmv_fast_crossrow_affine4_g64<T,2>` | — | — |
+| **4** | **5** | **1** | **2.86%** | **`_m<5,3>`** | **2** | **3** |
+| 5 | 6 | 10 | 28.57% | `_m<6,3>` | 2 | 3 |
+| 6 | 7 | 3 | 8.57% | `_m<7,4>` | 2 | 4 |
+| 7 | 8 | 3 | 8.57% | `_m<8,4>` | 2 | 4 |
+| 8 | 9 | **17** | **48.57%** | `_m<9,3>` | **3** | 3 |
+
+`mean_offered_depth=6.571`, `tokens_per_round=7.314`. The schedule on this base is a **ramp**:
+it opens at `d=4` and climbs to `d=8` within ten rounds as it observes near-perfect
+acceptance, then saturates. Dropping the two clock-ramp warmup rounds leaves **0 of 33**
+rounds at `d=4`.
+
+### The answer
+
+| policy | provenance | rounds | `d=4` rounds | round share | cost-weighted time share | best-case end-to-end at −7150 µs per `M=5` verify |
+|---|---|---|---|---|---|---|
+| PR #13 control | Edward, `e6e6f81` | 253 | 18 | 7.11% | 10.07% | **−0.622%** |
+| PR #13 best `Hp` arm | Edward, `e6e6f81` | 246 | 0 | 0.00% | 0.00% | **0** |
+| measured `e14-trace` | this base, live | 35 | 1 | 2.86% | 1.97% | **−0.122%** |
+
+**`M=5` is a cold dispatch slot under every scheduler measured, on two different bases.**
+On this base the best-case end-to-end value of making the second `M=5` weight pass free is
+**0.12%** — an order of magnitude inside `--local-iterate` noise. The −7150 µs input is
+itself the *upper bound* from Q1 (0.11 depth-0 rounds × `C(0)=65009.4` µs), i.e. the value if
+the second pass were removed at **zero** cost.
+
+No arm comes near that bound. Arm A makes `M=5` **+39.2%** more expensive and arm E **+7.4%**
+more expensive, so the realised end-to-end value of the E14 mechanism is **negative under
+every arm tested**. Q4 confirms the Q3 verdict from a completely independent direction: Q3
+argued analytically that the scheduler routes around depth 4; Q4 shows a live traced run in
+which it does exactly that.
+
+### The finding Q4 adds that Q1–Q3 could not
+
+E14 targeted the wrong width. **97.1% of live rounds take a multi-pass `_m` dispatch, and
+48.6% take `_m<9,3>` — the only three-pass slot in the whole table.** The two-pass slot at
+`M=5` that this assignment was scoped to is 2.86%. If the weight-pass hypothesis is worth
+retesting at all, `M=9` is where the tax actually is, and it is roughly *twice* the tax
+(two redundant passes rather than one) at seventeen times the frequency.
+
+E14's own results already predict how that retest would go, which is why I am not claiming it
+as a likely win. Collapsing `_m<9,3>` to two passes means `_m<9,5>`, which lands on exactly
+the `vec<float,5>`→`vec<float,8>` padding trap that made arm A both **+39.2%** slower and
+**bit-divergent**; one pass would mean `NA=9` padded to 16, which is worse. Avoiding the trap
+requires arm E's `float[NA]` packing — and arm E's **+12.4%** penalty falls on the `NA=3` and
+`NA=4` widths, which this table shows are `M=6, 7, 8, 9`, i.e. **94.3% of live rounds**.
+
+That last point also sharpens the arm E verdict. I previously wrote that arm E taxes `M=3`
+and `M=4` to cheapen a cold `M=5`. On this base the taxed hot slots are `M=6` and `M=9`
+instead — but the shape of the trade is identical, so **arm E taxes the hot widths to cheapen
+a cold one under both schedulers**, which is a materially stronger basis for rejecting it than
+either histogram alone.
+
+Artifacts: `.mlxfast-private/ipg-arms/e14-trace-hist-w0.json` (full 35 rounds),
+`e14-trace-hist.json` (warmup 2), `e14-q4-frequency.json`.
+
+Reproduce:
+
+```bash
+research/run-arm.sh e14-trace --trace --tokens 256
+/usr/bin/python3 research/depth_histogram.py research/out e14-trace --warmup 0 \
+  --json-out .mlxfast-private/ipg-arms/e14-trace-hist-w0.json
+/usr/bin/python3 research/ipg_depth_frequency.py \
+  --measured-hist .mlxfast-private/ipg-arms/e14-trace-hist-w0.json --delta-m5-us 7150
+```
 
 ## Out-of-scope base defect found while collecting Q4
 
@@ -566,16 +667,26 @@ produce +39% at `M = 5` for one arm and +12.4% at every wide width for another.
   behaviour that is unlikely to invert.
 - **The padding penalty is removable, and removing it does not help.** Arm E packs all
   thirteen `NA`-wide vectors and recovers ~32 of arm A's 39 points at `M = 5`, which confirms
-  register pressure as the mechanism. It also makes every other wide width 12.4% slower,
-  including `M = 3`, which carries 231 of 246 verifies. The fix costs more where it applies
-  than it saves where it helps.
+  register pressure as the mechanism. It also makes every other wide width 12.4% slower — and
+  Q4's live trace shows those other widths are `M = 6` and `M = 9`, i.e. 94.3% of real rounds
+  on this base, just as they were `M = 3` and `M = 4` under PR #13's schedule. The fix costs
+  more where it applies than it saves where it helps, under both schedulers measured.
+- **`M = 5` is cold, and E14 therefore targeted the wrong width.** Q4 traced a live run and
+  found `M = 5` dispatched in 1 of 35 rounds (2.86%, 1.97% cost-weighted), bounding the
+  best-case end-to-end value of a *free* second pass at **0.12%** — well inside noise, and
+  negative for every arm actually built. The same trace found `_m<9,3>`, the only three-pass
+  entry in the table, taking **48.6%** of rounds. The redundant-pass mechanism is real and
+  worth roughly twice as much at `M = 9`; it is simply not worth anything at `M = 5`. See
+  follow-up 8.
 - **Recommendation: close, and close firmly.** Do not repeat this lever, and do not reopen it
   on a toolchain change. The earlier draft of this line said to reopen if a future MLX or
   Metal toolchain removed the `vec<float,5>` padding penalty. Arm E shows that penalty can be
   removed in source today, so that reopening condition has already been tested and failed.
-  Reopening now requires a genuinely different reason: a scheduler that dispatches `M = 5` at
-  meaningful frequency, or a wide-branch rewrite that reaches `NA = 5` occupancy without
-  taxing `NA = 3` and `NA = 4`.
+  The other reopening condition — a scheduler that dispatches `M = 5` at meaningful frequency
+  — has now also been tested and failed, on two bases and three policies. Reopening requires a
+  genuinely different reason: a wide-branch rewrite that reaches `NA = 5` occupancy without
+  taxing `NA = 3` and `NA = 4`, or the `M = 9` retest in follow-up 8, which is a different
+  width and should be assigned as a new experiment rather than a revival of this one.
 
 ### Suggested follow-ups (not implemented here)
 
@@ -617,6 +728,23 @@ produce +39% at `M = 5` for one arm and +12.4% at every wide width for another.
    measurement on the public fixture, and it sits one `if` away from the ranked candidate leg.
    Whoever owns the session should make the stop-token round continue the serial trajectory
    for the configured window. *Owner: the `Qwen36MTPBlockSession.swift` owner.*
+
+8. **Retest the weight-pass hypothesis at `M=9`, not `M=5` — but read E14's register result
+   first.** Q4's live trace shows `_m<9,3>` taking **48.6%** of rounds and multi-pass `_m`
+   dispatches taking **97.1%**, against **2.86%** for the `M=5` slot this assignment was
+   scoped to. `M=9` is the only three-pass entry in the table, so it carries twice E14's tax
+   at seventeen times the frequency, and it is the single largest redundant-weight-pass target
+   on the scored path. I did not attempt it: it is outside E14's scope, and E14's own evidence
+   predicts the obvious implementations fail. `_m<9,5>` hits the `vec<float,5>`→`vec<float,8>`
+   padding trap that cost arm A **+39.2%** and bit-exactness; `_m<9,9>` pads `NA=9` to 16;
+   and arm E's `float[NA]` packing, which is the only fix that removes the padding penalty
+   *and* stays bit-identical, costs **+12.4%** at precisely the `NA=3`/`NA=4` widths that
+   dominate here. The decisive cheap screen is therefore a **cost-curve sweep of `_m<9,IPG>`
+   for `IPG ∈ {3,5,9}` with and without arm E packing**, judged on the isolated fixture at
+   `M=9` *and* on the unchanged widths, before any end-to-end run. If no variant beats
+   `_m<9,3>` at `M=9` without taxing `M=6`, the redundant-weight-pass family is closed for
+   this kernel, not just for `M=5`. Note this follow-up inherits the same edward anti-synergy
+   below. *Owner: a future kernel experiment.*
 
 ### edward anti-synergy (stated explicitly)
 
