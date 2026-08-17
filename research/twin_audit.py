@@ -48,24 +48,27 @@ RULE = re.compile(r"^/{40,}$")
 # twin; ``regenerated_sha256`` is the digest of the same section as regenerated
 # from the readable vendored header. Both are pinned, so editing either comment
 # block re-reds the audit and forces this table to be revisited deliberately.
-KNOWN_COMMENT_DIVERGENCES = {
-    ("quantized", "mlx/backend/metal/kernels/quantized.h"): {
-        "checked_in_sha256": (
-            "2c00bbb34d04e8a1b5197febd8a7a036c57d1897236a06b912f7309508d202c1"
-        ),
-        "regenerated_sha256": (
-            "c19772d9d469f3143e98e743c739b4cdd20ab29f0e311080b5d30900be682439"
-        ),
-        "reason": (
-            "Inherited from promoted organizer frontier "
-            "79683c633b13c63aa23f112756a9c6b5173705b0, which shipped the long M=8 "
-            "register-cliff rationale in the readable header and a short pointer "
-            "comment in the runtime-effective twin. Comment text only: every "
-            "non-comment line is byte-identical, so the compiled Metal source and "
-            "the DIRECT_NIBBLES dispatch table are unchanged."
-        ),
-    },
-}
+# RETIRED WAIVER, kept as a record rather than as a live hole.
+#
+#   ("quantized", "mlx/backend/metal/kernels/quantized.h")
+#
+# was waived while promoted organizer frontier
+# 79683c633b13c63aa23f112756a9c6b5173705b0 shipped the long M=8 register-cliff
+# rationale in the readable header and a short pointer comment in the
+# runtime-effective twin. Frontier sync c8dceb9 (organizer
+# d1530a409848b82a0a1890141c1483875d1e0173) and the campaign regeneration
+# 08fb76a removed that divergence: the two comment blocks are now byte-identical
+# and the audit is clean at 29/29 with no waiver applied.
+#
+# The row was deleted rather than left in place because a waiver that no longer
+# matches anything is worse than no waiver at all. Its digests are pinned to a
+# body that no longer exists, so it can never fire again for the divergence it
+# was written for -- but the ENTRY would keep the (stem, header) key waivable,
+# so a future sync that reintroduces ANY comment divergence in this exact
+# section would only have to reproduce two digests to be waived silently. The
+# negative control research/twin_waiver_negative_control.py is what detected
+# that this row had gone dead; it now asserts the empty-table state instead.
+KNOWN_COMMENT_DIVERGENCES = {}
 
 
 class AuditError(RuntimeError):

@@ -14,14 +14,30 @@ import Testing
 // that own the length -- and benchmark.json states it in
 // /scoring/mtpEmptyDraftRoundsLegalNote.
 //
-// The editable session therefore has NO stop-token behaviour at all:
-// `reachedStopToken` is a stored `false`, the initialiser takes `stopTokens` as
-// an ignored `_` parameter, and `acceptedDraftPrefixCount` is a pure
-// longest-common-prefix over (drafts, verifyArgmax) with no EOS special case.
-// That is ALIGNMENT with the trusted driver, not a competitive deviation, and
-// the guard suite below is what keeps that distinction checkable: if the driver
-// ever grows stop-token logic, the alignment claim is dead and the overlay must
-// be re-adjudicated rather than silently kept.
+// THE OVERLAY IS GONE, AND WE DID NOT RESTORE IT.
+//
+// Campaign commit c8dceb9 imported the promoted submitted surface from
+// d1530a409848b82a0a1890141c1483875d1e0173 -- the frontier that scores
+// 3.13098700135133, the top of the board. That surface truncates at EOS:
+// `reachedStopToken` is a tracked mutable flag, `stopTokens` is stored and
+// consulted, and the pure prefix helper `acceptedDraftPrefixCount` no longer
+// exists. All fourteen call sites in this file broke at once.
+//
+// We deliberately did NOT restore the overlay, because the frontier settled the
+// question against it. A candidate scoring 3.131 on the official 512-token
+// exact-match runner WITH truncation is decisive evidence that truncation
+// passes the token-fidelity gate; post-EOS continuation was therefore never a
+// correctness fix, only a performance-shaped bet that no ranked run has ever
+// supported. Restoring it to keep a test compiling would be shipping an
+// unvalidated perturbation to defend our own test file, which is backwards.
+//
+// So the accept RULE survives here as an executable specification (every depth,
+// cost-curve and row-ledger argument the campaign makes is denominated in it),
+// and the source guard below flips from an alignment claim into a TRIPWIRE that
+// records what the shipped session actually does today. That turns a silent
+// frontier removal into a checkable campaign fact: if a later sync re-adds the
+// overlay, this file fails and the question is re-adjudicated on its merits
+// instead of being inherited by accident.
 //
 // REVERT HISTORY. This literal has now been deleted four times, each time by a
 // frontier-sync merge rather than by a decision:
@@ -38,6 +54,24 @@ import Testing
 // cheapest defence is that the deletion has to break something. Everything
 // here is CPU-only: no model, no weights, no network, no GPU.
 
+/// THE FIXED-WINDOW ACCEPT RULE, as an executable specification.
+///
+/// This used to be `Qwen36MTPBlockSession.acceptedDraftPrefixCount`. The rule
+/// is unchanged and still describes what the shipped accept loop does for every
+/// draft prefix that contains no stop token -- which, on the 512-token long-copy
+/// goldens, is essentially all of them. Keeping it here means the properties
+/// below still fail loudly if our MODEL of acceptance drifts, even though the
+/// product no longer exposes the helper.
+private func fixedWindowAcceptedPrefixCount(
+    drafts: [Int], verifyArgmax: [Int]
+) -> Int {
+    precondition(verifyArgmax.count >= drafts.count)
+    for index in drafts.indices where verifyArgmax[index] != drafts[index] {
+        return index
+    }
+    return drafts.count
+}
+
 @Suite
 struct QwenMTPFixedWindowTests {
     /// The original pair, restored verbatim from bc552e5^ so that a diff
@@ -48,7 +82,7 @@ struct QwenMTPFixedWindowTests {
         let drafts = [41, eos, 73, 89]
         let targetTokens = [41, eos, 73, 97, 101]
 
-        let accepted = Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+        let accepted = fixedWindowAcceptedPrefixCount(
             drafts: drafts, verifyArgmax: targetTokens)
         let committed = [13] + Array(drafts.prefix(accepted))
 
@@ -64,7 +98,7 @@ struct QwenMTPFixedWindowTests {
         let targetTokens = [41, 71, eos, 101]
 
         #expect(
-            Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            fixedWindowAcceptedPrefixCount(
                 drafts: drafts, verifyArgmax: targetTokens) == 1)
     }
 
@@ -102,7 +136,7 @@ struct QwenMTPFixedWindowTests {
 
             let expected = reference(drafts, verify)
             #expect(
-                Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+                fixedWindowAcceptedPrefixCount(
                     drafts: drafts, verifyArgmax: verify) == expected)
 
             // Token IDENTITY is irrelevant: substituting EOS at any single
@@ -114,14 +148,14 @@ struct QwenMTPFixedWindowTests {
                 draftsWithEOS[position] = eos
                 verifyWithEOS[position] = eos
                 #expect(
-                    Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+                    fixedWindowAcceptedPrefixCount(
                         drafts: draftsWithEOS, verifyArgmax: verifyWithEOS)
                         == reference(draftsWithEOS, verifyWithEOS))
 
                 var draftsOnly = drafts
                 draftsOnly[position] = eos
                 #expect(
-                    Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+                    fixedWindowAcceptedPrefixCount(
                         drafts: draftsOnly, verifyArgmax: verify)
                         == reference(draftsOnly, verify))
             }
@@ -136,29 +170,29 @@ struct QwenMTPFixedWindowTests {
 
         let all = [7, 8, eos, 9]
         #expect(
-            Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            fixedWindowAcceptedPrefixCount(
                 drafts: all, verifyArgmax: all + [10]) == all.count)
 
         // An EOS-only draft that the target agrees with is FULLY accepted.
         #expect(
-            Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            fixedWindowAcceptedPrefixCount(
                 drafts: [eos], verifyArgmax: [eos, 11]) == 1)
 
         // A mismatch at position 0 accepts nothing, even when the draft is EOS.
         #expect(
-            Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            fixedWindowAcceptedPrefixCount(
                 drafts: [eos, 8], verifyArgmax: [7, 8, 9]) == 0)
         #expect(
-            Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            fixedWindowAcceptedPrefixCount(
                 drafts: [7, 8], verifyArgmax: [eos, 8, 9]) == 0)
 
         // A non-drafting round: zero drafts, zero accepted, and the round still
         // commits the parent token that the caller adds.
         #expect(
-            Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            fixedWindowAcceptedPrefixCount(
                 drafts: [], verifyArgmax: [12]) == 0)
         #expect(
-            Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            fixedWindowAcceptedPrefixCount(
                 drafts: [], verifyArgmax: []) == 0)
     }
 
@@ -171,12 +205,12 @@ struct QwenMTPFixedWindowTests {
         let drafts = [21, 22, 23]
         for tail in [24, eos, 21, 0] {
             #expect(
-                Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+                fixedWindowAcceptedPrefixCount(
                     drafts: drafts, verifyArgmax: drafts + [tail]) == 3)
         }
         // Longer-than-normal verify rows are also harmless.
         #expect(
-            Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            fixedWindowAcceptedPrefixCount(
                 drafts: drafts, verifyArgmax: drafts + [eos, eos, eos]) == 3)
     }
 
@@ -208,7 +242,7 @@ struct QwenMTPFixedWindowTests {
             let agree = next(depth + 1)
             for index in 0..<agree { verify[index] = drafts[index] }
 
-            let take = Qwen36MTPBlockSession.acceptedDraftPrefixCount(
+            let take = fixedWindowAcceptedPrefixCount(
                 drafts: drafts, verifyArgmax: verify)
             #expect(take <= depth)
             let round = Array(drafts.prefix(take)) + [verify[take]]
@@ -249,47 +283,47 @@ struct QwenMTPFixedWindowSourceGuardTests {
     static let driverPath =
         "Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift"
 
+    /// TRIPWIRE, NOT AN ALIGNMENT CLAIM.
+    ///
+    /// Asserts what the shipped session does TODAY: it truncates at EOS, the
+    /// same behaviour carried by the promoted 3.13098700135133 frontier. A
+    /// failure here is not a defect -- it means a sync re-introduced the
+    /// fixed-window overlay, so the post-EOS continuation question is live
+    /// again and has to be argued from evidence rather than inherited.
     @Test
-    func theEditableSessionCannotStopAtEos() throws {
+    func theEditableSessionTruncatesAtEosToday() throws {
         let session = try S.text(Self.sessionPath)
 
-        // `reachedStopToken` is a CONSTANT false, not a tracked flag.
-        #expect(session.contains("public var reachedStopToken: Bool { false }"))
+        // `reachedStopToken` is a tracked mutable flag, not a stored `false`.
         #expect(
-            !session.contains("reachedStopToken: true"),
-            "the fixed window has no state in which a stop token was reached")
+            session.contains("public private(set) var reachedStopToken = false"))
         #expect(
-            session.components(separatedBy: "reachedStopToken: false").count - 1
-                >= 2,
-            "every round result must report false, not just one of them")
+            session.contains("reachedStopToken = true"),
+            "the shipped session has a state in which a stop token was reached")
+        #expect(
+            !session.contains("public var reachedStopToken: Bool { false }"),
+            "the overlay's constant-false accessor must stay absent")
 
-        // `stopTokens` survives ONLY as the ignored initialiser parameter that
-        // keeps the call site source-compatible. A second occurrence means the
-        // set is being stored or consulted again.
-        #expect(session.contains("stopTokens _: Set<Int>,"))
+        // `stopTokens` is stored and consulted, not accepted and dropped.
         #expect(
-            session.components(separatedBy: "stopTokens").count - 1 == 1,
-            "stopTokens must appear exactly once, as the ignored parameter")
+            !session.contains("stopTokens _: Set<Int>,"),
+            "stopTokens must not be an ignored initialiser parameter")
+        #expect(
+            session.components(separatedBy: "stopTokens").count - 1 >= 2,
+            "stopTokens must be consulted, not merely accepted")
 
-        // The helper is documented as identity-blind and stays a pure prefix
-        // scan over a target mismatch.
+        // And the overlay's identity-blind prefix helper went with it.
         #expect(
-            session.contains(
-                "Token identity, including EOS, never changes the parent-owned length."
-            ))
-        #expect(
-            session.contains(
-                "for index in drafts.indices where verifyArgmax[index] != drafts[index]"
-            ))
-        #expect(
-            session.contains("precondition(verifyArgmax.count >= drafts.count)"))
+            !session.contains("static func acceptedDraftPrefixCount("),
+            "the overlay's pure prefix helper must stay absent")
     }
 
-    /// THE ALIGNMENT INVARIANT. The editable overlay is defensible only because
-    /// the TRUSTED driver -- which we may not edit -- owns the window length by
-    /// token COUNT and has no stop-token concept. If this test ever fails the
-    /// overlay has become a deviation from the trusted harness and has to be
-    /// re-argued from scratch, not patched.
+    /// THE ALIGNMENT INVARIANT, and the reason this file is worth keeping. The
+    /// TRUSTED driver -- which we may not edit -- owns the window length by
+    /// token COUNT and has no stop-token concept, so the 512 parent-counted
+    /// tokens are demanded regardless of what the editable session believes
+    /// about EOS. This is the NON-EDITABLE enforcer, which is why it, and not
+    /// any overlay, is what this suite pins.
     @Test
     func theTrustedDriverStillOwnsTheWindowLengthByCount() throws {
         let driver = try S.text(Self.driverPath)
