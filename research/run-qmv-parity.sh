@@ -45,7 +45,10 @@ rm -rf -- "${out_dir}"
 mkdir -p "${out_dir}"
 
 cleanup() {
-  git checkout -- "${TWINS[@]}" 2>/dev/null || true
+  # Restore from HEAD, not the index: the per-arm `git checkout <sha> -- ...`
+  # below rewrites the index too, so a plain `git checkout --` would "restore"
+  # the tree to the last arm rather than to the commit under test.
+  git checkout HEAD -- "${TWINS[@]}" 2>/dev/null || true
   release_local_run_lock
 }
 trap cleanup EXIT
@@ -76,5 +79,5 @@ for spec in "$@"; do
     --filter digestQuantizedMatmulOverVerifyWidth 2>&1
 done
 
-git checkout -- "${TWINS[@]}"
+git checkout HEAD -- "${TWINS[@]}"
 python3 research/qmv_parity_compare.py "${out_dir}"/*.json

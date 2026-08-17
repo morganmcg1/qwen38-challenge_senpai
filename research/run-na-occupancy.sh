@@ -11,7 +11,10 @@ PROBE=research/crossrow_na_probe.metal
 
 swiftc -O research/crossrow_na_occupancy.swift -o /tmp/na_occupancy || exit 1
 
-restore() { git checkout -- "$HEADER"; }
+# Restore from HEAD, not the index: the per-arm `git checkout <sha> -- ...`
+# below rewrites the index too, so a plain `git checkout --` would "restore"
+# the tree to the last arm rather than to the commit under test.
+restore() { git checkout HEAD -- "$HEADER"; }
 trap restore EXIT
 
 for spec in "$@"; do
