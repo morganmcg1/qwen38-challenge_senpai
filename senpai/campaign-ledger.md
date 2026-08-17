@@ -283,13 +283,125 @@ is 512 seed + 512 decode, so `key_len` reaches 1024 at the very last decode
 steps and nowhere earlier. That is precisely where, and only where, the
 mismatches were seen.
 
-Why this also explains the *width* observations: in single-pass `sdpa_vector`
-the key loop is `for (int i = simd_gid; i < N; i += BN)` with `BN = 32`, a
-reduction order that is a function of `N` alone and **independent of `qL`** —
-which is why all widths agreed bit-exactly for 919/919 rows below the boundary.
-In `sdpa_vector_2pass` the block count depends on `n_simds = gqa_factor *
-q.shape(2)` (`:440-476`), so `qL` enters the reduction geometry for the first
-time at the boundary.
+### CORRECTED 2026-08-17 (advisor): the width story above was wrong, and the real mechanism is simpler
+
+An earlier revision of this section said "in `sdpa_vector_2pass` the block count
+depends on `n_simds = gqa_factor * q.shape(2)`, so `qL` enters the reduction
+geometry for the first time at the boundary." **That is false inside our
+window.** The host-side block count is computed at
+`scaled_dot_product_attention.cpp:440-476`:
+
+```
+int gqa_factor = q.shape(1) / k.shape(1);
+int n_simds = gqa_factor * q.shape(2);
+char devc = d.get_architecture().back();
+int N = k.shape(2);
+int blocks;
+if (devc == 's') {
+  blocks = 64;
+  if (N > 1024 && n_simds > 4) { N<=8192->128, N<=32768->256, N<=65536->512, else 1024 }
+} else if (devc == 'd') {
+  blocks = 128;
+  if (n_simds <= 2 && N > 8192) blocks = 256;
+  else if (n_simds >= 6) { N>=16384 && N<65536 -> 512, N>=65536 -> 1024 }
+} else {
+  blocks = (n_simds >= 4) ? 64 : 32;
+}
+```
+
+The `n_simds` ladder is guarded by **`N > 1024`**, which is FALSE at
+`N == 1024`. The ranked window tops out at exactly 1024, so on an `'s'`-suffixed
+device `blocks = 64` unconditionally and **`qL` never touches the reduction
+geometry at all.** The corrected mechanism has three parts, all verified against
+the two key loops in `kernels/sdpa_vector.h`:
+
+- **(a) Both partitions are independent of `N`.** Single-pass, `:98`:
+  `for (int i = simd_gid; i < N; i += BN)` with `BN = 32`. Two-pass first
+  kernel, `:263`: `for (int i = block_idx; i < N; i += blocks)`. Key `i` lands
+  in accumulator `i % 32` or `i % blocks`; `N` only decides where the loop
+  stops.
+- **(b) The causal cut lands at the same absolute position in both.** Both loops
+  compute `use_key = i <= (N - q_seq_len + q_seq_idx)`, and a row at absolute
+  cache position `p` satisfies `p = N - q_seq_len + q_seq_idx`, so the cut is
+  exactly `i <= p` **regardless of `N` or width**. The key *set* summed for a
+  given token is therefore identical in serial and MTP at any width and any
+  `N`. This is not a masking bug and not a width bug.
+- **(c) The only difference is the stride: 32 versus `blocks = 64`.** Same key
+  set, different grouping into partial accumulators, different summation tree,
+  different rounding.
+
+(a) and (b) together *force* the 919/919 bit-exact agreement below the
+boundary — it is a theorem, not a coincidence — and (c) is the entire source of
+the drift above it. Widths 2, 4 and 8 all drift because all three straddle the
+boundary; width only changes how many tokens land on the wrong side of it.
+
+**Quantitative pre-registered prediction.** Serial emits token `t` (1-indexed
+1..512) with its query at cache position `511 + t` and `N = 512 + t`, so serial
+crosses `N >= 1024` only at `t = 512`. MTP verifying width `qL` at key length
+1024 covers tokens `513 - qL .. 512`, all two-pass. The family-mismatch band is
+therefore the last `qL - 1` tokens before the final one, and nothing else:
+
+| width `qL` | MTP two-pass tokens | serial two-pass | predicted mismatch band (token idx) | cache positions |
+|---|---|---|---|---|
+| 2 | 511..512 | 512 only | **511** | 1022 |
+| 4 | 509..512 | 512 only | **509..511** | 1020..1022 |
+| 5 | 508..512 | 512 only | **508..511** | 1019..1022 |
+| 8 | 505..512 | 512 only | **505..511** | 1016..1022 |
+
+Width 2 predicts a **single** position, cache 1022 — exactly the low edge of
+PR #2's reported 1022–1024 band. Token-index versus cache-position conventions
+must be reconciled before this is claimed as agreement.
+
+**Model geometry** (`fixtures/qwen3_6_27b_config.json`, `text_config`):
+`num_attention_heads = 24`, `num_key_value_heads = 4`, `hidden_size = 5120`,
+`full_attention_interval = 4`, `attn_output_gate = true`,
+`num_hidden_layers = 64`, `vocab_size = 248320`, `intermediate_size = 17408`,
+quantization `group_size = 64`. So **`gqa_factor = 24/4 = 6`**, and
+`supports_sdpa_vector`'s `qL * gqa_factor <= 32` gives **`qL <= 5`** — which
+*independently explains* the otherwise unmotivated `let split = 5` in
+`AttentionUtils.swift`. `full_attention_interval = 4` means only **16 of 64**
+layers reach SDPA at all; the rest are GDN linear attention.
+
+**One open discrepancy, honestly flagged:** the fixture declares
+`head_dim = 256`, but the measured scored shapes imply **128**. With
+`head_dim = 128` and the output gate on,
+`24*128 + 4*128 + 4*128 + 24*128 = 7168` reproduces the observed
+`full_attn.qkv_proj_fused` N exactly, and `full_attn.o_proj` K `= 3072 = 24*128`
+exactly; `head_dim = 256` reproduces neither. The likely explanation is that the
+fixture is Qwen **3.6** while the target is **3.8**. The conclusion is robust
+either way because `sdpa_vector_supported_head_dim` admits `{64,96,128,256}`,
+but `gqa_factor` is load-bearing for the `qL <= 5` derivation and **must be
+resolved from the resident model config**, not from this fixture. No local HF
+cache is present to check against.
+
+**Scope calibration, so nobody over-invests.** `benchmark.json`'s own
+description states that native MTP decode is measured exact-greedy against
+serial **12/12 runs to 512 tokens, across all EOS branches**. That is organizer
+evidence, on ranked hardware, that this hazard is **not currently breaking the
+fidelity gate**. The value here is therefore (i) closing a campaign item open
+since PR #2, (ii) retiring a **latent** risk that goes live the moment anything
+moves widths or window length, and (iii) a bounded exactness-preserving repair
+if one turns out to be needed. Expect a **Not useful** or **Unclear** label;
+there is no speedup in it.
+
+**Candidate repair (advisor derivation, never compiled or run).** The dispatch
+is not editable, but it is a pure function of `k.shape(2)`, and
+`AttentionUtils.swift` already re-slices keys at the call site. In the one
+straddling round per leg (`kL >= 1024 && kL - qL < 1023`): chunk A = rows
+`0 ..< qL-1` against `keys[0 ..< 1023]`, which stays single-pass and so matches
+serial; chunk B = row `qL-1` against the full `keys`, which is two-pass and so
+matches serial at `t = 512`. Causality survives because chunk A row `j` cuts at
+`1023 - (qL-1) + j = 1024 - qL + j`, its true absolute position. Cost is one
+round out of roughly 150 plus one extra pass over about 1024 KV rows. Five named
+attacks, in priority order: **(v)** whether the KV cache's `step = 256` growth
+makes `cachedKeys.dim(2)` exceed the logical key length — *check this first*;
+**(i)** off-by-one, 1023 versus 1024; **(ii)** whether `kL` overshoots 1024
+given the overlay commits `512 <= committed <= 520`; **(iii)** whether the
+existing `6 <= qL <= 9` chunk and the new one compose or fight; **(iv)** whether
+`concatenated` along axis 2 is bit-exact. Note the KV cache step is 256
+(`KVCache.swift:388`), so 1024 is *not* uniquely a cache-growth boundary —
+256/512/768 are too — which independently rules out cache reallocation as the
+explanation.
 
 Two facts that decide whether this matters for the score, neither yet
 established, and they point in opposite directions:
@@ -391,7 +503,7 @@ evidence or a changed condition; “try again” is not enough.
 | Seed-prefill wall time inside the charged window | 512-token seed prefill, charged on **both** arms of every paired prompt | Because `raw_p = (P + D_s)/(P + D_m)`, cutting `P` raises every per-prompt ratio with no effect on any scored token | **CLOSED by E16 (PR #18) with `closure_error_seconds = 0`.** Prefill is 99.94% GPU: true CPU graph construction is `1.8` ms = `0.045%` of `P`, and `build_us` is enqueue back-pressure, not work. Budget: GEMM-at-ceiling `3.369302` s (84.148%) + non-GEMM `0.212714` s (5.313%) + residual `0.421984` s (10.539%); measured dense-bf16 ceiling `7.401388` TFLOP/s with GEMM achieving `6.414787` = 86.67% of it. Best interior schedule `list:0,1,2,5,11,23,47` moves serial prefill to `3.993803` s = `0.2547%` of `P`, `5.9x` below the `1.5%` bar | **closed; scheduling is dead, dequant is the residual** | Do not reopen the ladder/schedule. The one live term is **dequant overhead `0.518202` s = 12.942% of prefill = `0.090180` pts ~ 7.3 frontier steps**, minus a `0.096218` s overlap credit. That is a GEMM question, not the cross-row QMV decode path. **Corrected 2026-08-17: the GEMM in question is `qmm()` (`backend/metal/quantized.cpp:684`), not `qmm_splitk` — see the REFUTED subsection above** |
 | Prefill dequant overhead | `qmm()` at `backend/metal/quantized.cpp:684`, or `qmm_nax` at `:473` if ranked M5 satisfies `is_nax_available()`, inside the charged 512-token seed prefill | The 12.942% of prefill spent on dequantisation is the single largest closed-budget residual on the scored path; removing even half of it is worth ~3.6 frontier steps | E16's closed budget (`closure_error_seconds = 0`, pipelined graph reproduces worker wall to 0.2%, build cost `0.00136` s); alphonse's attribution | **untested; highest expected value now; assigned as E18 (PR #20, thorfinn)** | Open now. Two falsifications must land before any kernel edit. (1) **Transfer**: E14's findings are all cross-row QMV (`qmv_fast_crossrow_*`, decode, `M<=9`); the prefill GEMM tiles at `bm = bn = 32` and amortises weight reads across 32 output columns, so the register-cliff mechanism has no obvious purchase — assume nothing carries over. (2) **Host**: `is_nax_available()` is false locally (`applegpu_g16s` -> gen 16, suffix `'s'`, threshold 17) but may be true on ranked M5, in which case the scored prefill GEMM is `qmm_nax` and alphonse's 12.942% — plus any local optimisation of `qmm()` — transfers at zero. Resolve the host question host-only before spending GPU |
 | Compact draft-head readout precision | proposal-head readout matmul, one call per draft step | Reading the compact draft vocabulary at 3 bits instead of 4 removes 22.22% of the readout's bytes on a bandwidth-bound call | E15 (PR #17): bytes 4->3 `-22.22%`, time `-24.32%` (`1.16635` -> `0.88271` ms), bandwidth `+2.77%`, delta `283.64` us/readout, same `qmv_fast_impl` on both. End-to-end at 256 tokens: MTP steady s/token `-0.9983%`, all four legs exact, acceptance term exactly zero (byte-identical depth schedules over 35 rounds, requant argmax-lossless over all 230 proposals). Per-round attribution agrees with the microbenchmark to 1.4% | **local winner; strongest clean exact candidate; awaiting 512-token ABBA on `af80b0fc` or later** | Blocking issues are measurement, not mechanism: a `7.96` degC thermal gap between arms, a 256-token window where the contract requires 512, and a base that has since moved twice (`b85e782` -> `af80b0fc` -> `422db045`; the scored path is byte-identical across all three) |
-| `key_len = 1024` SDPA two-pass dispatch boundary | `scaled_dot_product_attention.cpp:743-753` inside the scored 512-seed + 512-decode window; every full-attention layer | The positional exactness residual at decode positions 1022-1024 is a **kernel-family change**, not a width effect: at `k.shape(2) >= 1024` on a `'d'`- or `'s'`-suffixed GPU the dispatch switches `sdpa_vector` -> `sdpa_vector_2pass`, which changes the floating-point reduction order of every score | Four independent confirmations that the residual is positional, not width-driven (PR #2): 919/919 non-terminal width-9 rows bit-exact; all 15 value mismatches in the final block at 1022-1024; widths 2, 4 and 8 drift there too; the 128-token local-submit window ends at 640 and is clean. Width 4 is **outside** the `AttentionUtils` `6 <= qL <= 9` split, which exonerates that path. Mechanism located this session: single-pass `sdpa_vector` reduces with `BN = 32` over `N` alone so its order is **independent of `qL`** (hence 919/919 agreement below the boundary), whereas `sdpa_vector_2pass` sets its block count from `n_simds = gqa_factor * q.shape(2)`, so `qL` enters reduction geometry for the first time exactly at `N = 1024` | **mechanism located; consequence UNRESOLVED and host-dependent** | The single decisive fact is the **last character of the ranked M5 architecture string**. The `>= 1024` trigger is gated on `devc` in `{'d','s'}`; local `applegpu_g16s` fires, and no M5 arch string is recorded anywhere in the repo. If M5 is neither, the only surviving trigger is `k.shape(1) < q.shape(1) && k.shape(2) >= 4096`, which a 1024-token ranked window never reaches, and this **closes as a local-only artifact / not useful**. If M5 *is* `'d'` or `'s'`, the scored leg changes attention kernel family inside an exact-token-match gate and one flipped near-tie argmax fails a whole leg. Editability: the dispatch `.cpp` and `device.cpp` are **not** editable; `kernels/sdpa_vector.h`, `kernels/scaled_dot_product_attention.metal` and `MLXLMCommon/AttentionUtils.swift` are. `sdpa_vector.h` has **no `mlx-generated` twin**, so it is AOT-only and any edit needs `tools/build-mlx-metallib.sh --all-build-roots`. `MLX_SDPA_BLOCKS` (`:477-478`) changes the partial-accumulator count with no kernel edit but is **diagnostic only** — `MLX_`-prefixed vars are named blocker #1 |
+| `key_len = 1024` SDPA two-pass dispatch boundary | `scaled_dot_product_attention.cpp:743-753` inside the scored 512-seed + 512-decode window; every full-attention layer | The positional exactness residual at decode positions 1022-1024 is a **kernel-family change**, not a width effect: at `k.shape(2) >= 1024` on a `'d'`- or `'s'`-suffixed GPU the dispatch switches `sdpa_vector` -> `sdpa_vector_2pass`, which changes the floating-point reduction order of every score | Four independent confirmations that the residual is positional, not width-driven (PR #2): 919/919 non-terminal width-9 rows bit-exact; all 15 value mismatches in the final block at 1022-1024; widths 2, 4 and 8 drift there too; the 128-token local-submit window ends at 640 and is clean. Width 4 is **outside** the `AttentionUtils` `6 <= qL <= 9` split, which exonerates that path. Mechanism located and then **corrected** this session — see the corrected subsection, which supersedes an earlier `n_simds` account that is false inside our window. The real mechanism is a stride change and nothing else: **(a)** both key loops partition independently of `N` (`i += 32` single-pass at `sdpa_vector.h:98`, `i += blocks` two-pass at `:263`), **(b)** both compute `use_key = i <= (N - q_seq_len + q_seq_idx)`, which for a row at absolute cache position `p` is exactly `i <= p` regardless of `N` or width, so the summed key *set* is identical in serial and MTP, and **(c)** the only difference is stride 32 versus `blocks = 64`. At `N == 1024` the host-side `n_simds` ladder is guarded by `N > 1024` and never entered, so **width does not affect `blocks` at all**. (a)+(b) therefore *force* the 919/919 agreement as a theorem. Pre-registered quantitative band: mismatches confined to the last `qL - 1` tokens before the final one — width 2 predicts the **single** cache position 1022, the exact low edge of PR #2's reported band | **mechanism located and corrected; consequence UNRESOLVED and host-dependent; assigned as E19 (PR #21, alphonse)** | The single decisive fact is the **last character of the ranked M5 architecture string**. The `>= 1024` trigger is gated on `devc` in `{'d','s'}`; local `applegpu_g16s` fires, and no M5 arch string is recorded anywhere in the repo. If M5 is neither, the only surviving trigger is `k.shape(1) < q.shape(1) && k.shape(2) >= 4096`, which a 1024-token ranked window never reaches, and this **closes as a local-only artifact / not useful**. If M5 *is* `'d'` or `'s'`, the scored leg changes attention kernel family inside an exact-token-match gate and one flipped near-tie argmax fails a whole leg. Editability: the dispatch `.cpp` and `device.cpp` are **not** editable; `kernels/sdpa_vector.h`, `kernels/scaled_dot_product_attention.metal` and `MLXLMCommon/AttentionUtils.swift` are. `sdpa_vector.h` has **no `mlx-generated` twin**, so it is AOT-only and any edit needs `tools/build-mlx-metallib.sh --all-build-roots`. `MLX_SDPA_BLOCKS` (`:477-478`) changes the partial-accumulator count with no kernel edit but is **diagnostic only** — `MLX_`-prefixed vars are named blocker #1 |
 | Compile-time group width `NA = 4` cliff | Cross-row QMV in the proposal head; `mtp-head.manifest.json` now declares 4-bit/group-64 | Something about `NA = 4` specifically, most plausibly register pressure or spilling, makes cross-row contraction regress; occupancy was refuted and the student withdrew the chain-depth story | E10 partitions **exactly** on compile-time group width: every `M` whose NA set contains 4 regresses, none without NA=4 does, zero overlap; ordered variant is bit-identical to control on all 96 cells, `max_abs_delta = 0`. E14 adds the register accounting: `sizeof(vec<float,5>) == 32` vs `16` for `vec<float,4>`, 13 NA-wide vectors per thread so 39 at NA=3, 52 at NA=4, 65 at NA=5, 104 at NA=5 padded; E13 found NA=5 compiles free with first spill at NA=6. **The organizer independently confirms the cliff**: the frontier moved `<T,8,4>` to `<T,8,3>` because the even split of 8 needs two simultaneous `vec<float,4>` accumulators, and `M=9` with three-lane vectors profiles cheaper than `M=8` | mechanism OPEN but now corroborated from two independent directions; magnitude ceiling about `1%` of crossrow QMV time only | Reopen by reading register and spill counts out of compiled AIR, not threadgroup size; now more relevant because the frontier head is affine4/g64 |
 | Cross-row second weight pass | `qmv_fast_crossrow_*` in the proposal head; verify widths M=2..9 | Eliminating the second weight pass, or the row/NA-width tax, should recover a large fraction of verify time | **Measured and dead (E14, PR #16).** The second weight pass is worth only `+8.16%` drift-adjusted (`0.1161` h-units) because **~89% of it is cache-served**; per-shape excess is monotone in footprint (`head.lm_head` 682 MiB -> 12.07% down to `full_attn.o_proj` 16.88 MiB -> 1.32%), and structural `0.1115` agrees with interventional `0.1161` to 4%. One verify row at constant pass count costs ~`0.27` depth-0 rounds vs ~`0.11` for the pass, so the **row/NA-width tax is ~2.4x the weight-stream tax**. Arm A (`_m<T,5,2>`) is `+39.3%` slower at M=5 *and* fails parity 8/96; arm E (scalar `float[NA]` packing) is bit-identical (0/96, byte-identical output, sha256 `9e3c52a3df97856e...`) but a reproducible `+12.4%` regression | **negative; closed as a speedup, green as measurement** | Do not reopen the weight-pass framing. The tax is rows/width, not streaming — any future cross-row work must target row count |
 
@@ -411,6 +523,8 @@ evidence or a changed condition; “try again” is not enough.
 | 2026-08-17 | advisor `senpai/qwen38-mtp-r1` / `3c9317da` then `af80b0fc` | merge E16 (PR #18) then E14 (PR #16) | `e7cd780`, then `3c9317da` | Both merged with `accept_result_on_current_base` first. `b85e782 -> af80b0fc` **scored path is byte-identical**: `git diff --stat b85e782 af80b0fc -- Sources/ Vendor/ benchmark.json fixtures/ .github/ Package.swift Package.resolved tools/ mtp-head.manifest.json` is empty. E14's merge recovered the 792-line `QwenQMVCostCurveTests.swift`, taking `Tests/` from 57 files to 59. Habitability proved at `af80b0fc`: `swift build --build-tests -c debug --force-resolved-versions` exit 0 in `9.65` s; the two recovered suites run `15 tests / 4 suites / 0 failures` in `4.99` s | not submitted | E14 was delivered as a **merge instead of a rebase** because `submit_experiment_result` enforces fast-forward against the remote head; deviation accepted after proving merge tree `57451dd90e8c74e029196d8d482a9bfb9eea860d` byte-identical to the true rebase `95929f9`. E16's `gpu_cores = 20` deviation also accepted — his `system_profiler` probe was right and my `10` was a mis-scraped CPU performance-core count |
 | 2026-08-17 | advisor `senpai/qwen38-mtp-r1` / `422db045` | correct three stale ceiling/frontier passages in `senpai/laguna-to-qwen-speedup-map.md` | `af80b0fc` | 1 file, `+55/-8`, zero editable/scored-path files. Habitability re-proved: `swift build --build-tests -c debug --force-resolved-versions` exit 0 in `4.07` s. The executive-conclusion headroom paragraph now carries the live frontier, ceiling `5.0` with `a5854b97` provenance, headroom `+2.047` (~69% multiplicative), and the fail-closed-gate framing; the old endpoint table is retained verbatim under a **SUPERSEDED** banner beside a new live table | not submitted; documentation only | Found because edward challenged a *different* pair of files. His cited lines were already fixed at `e7cd780` — he was reading his own base `e6e6f81`, outside my ancestry, so his copy was legitimately stale — but the challenge made me re-scan, and the re-scan found real staleness elsewhere. **A challenge that is wrong on its face can still be right about the class of error** |
 | 2026-08-17 | `qwen-thorfinn/prefill-dequant-prize` / `dbfef047` (PR #20, E18) | is the 12.942% prefill dequant residual reachable, and on which kernel? | `422db045` | **r1 assigned, in flight.** Phase 1 is host-only and takes no benchmark lock: reproduce or refute my `split_k` arithmetic, instrument the dispatch *decision* for the six scored prefill shapes, and determine from runner-image / workflow / arch evidence whether ranked M5 satisfies `is_nax_available()`. **Phase 1 alone is a complete, mergeable result**, and an explicit UNRESOLVED with a named missing fact is a full pass | not submitted | Brief opens with my own self-correction: I concluded the scored prefill takes `qmm_splitk` after tracing only the outer dispatch, and asked him to check me because "I got the call graph wrong once already in this area; assume I can be wrong again." His parity false-pass hole from E14 and his per-arm worker `sha256` are now campaign requirements |
+| 2026-08-17 | advisor `senpai/qwen38-mtp-r1` / `1bb627ab` | record the refuted `qmm_splitk` conclusion and the campaign's process lessons | `422db045` | 1 file, `+218/-29`, zero editable/scored-path files. Habitability proved first: `swift build --build-tests -c debug --force-resolved-versions` exit 0 in `0.91` s. Adds the REFUTED subsection (verbatim `qmm_splitk` delegation, the `N <= 512` derivation, the eight-row `split_k` table, the `qmm()` NAX early return at `:697-699`), the SURVIVES subsection, and three standing rules | not submitted; documentation only | The standing rule this produced is the most transferable thing in it: **"a call-site trace is not a call-graph trace."** I read the outer dispatch, saw `qmm_splitk(...); return;`, and stopped one level too shallow — the callee delegates straight back to `qmm()` whenever `split_k <= 1`, which is *every* scored prefill shape |
+| 2026-08-17 | `qwen-alphonse/keylen-1024-residual` / `0d6853ca` (PR #21, E19) | close the campaign-level `key_len = 1024` positional exactness residual | `1bb627ab` | **r1 assigned, in flight.** Zero-GPU, host-only, takes no benchmark lock. Brief hands him the complete corrected mechanism (stride 32 vs `blocks = 64`, with the (a)/(b)/(c) argument and both verbatim key loops), the quantitative band table, `gqa_factor = 6` and the `split = 5` witness, and the candidate repair with five ranked attacks. **Deliverable 1 is to prove the live call path before anything else**; deliverables 1, 3 and 8 alone are a complete mergeable result if the `devc` question resolves against `'d'`/`'s'` in his first hour | not submitted | Both outcomes pre-registered so the result cannot be talked into significance either way. Brief also restates, verbatim, the **two advisor errors PR #2 caught me in**: ranking arms by `accepted_tokens_per_round` (anti-correlated with speed among cap-8 arms), and closing a direction on a point estimate that contradicted my own preregistered band — "when a band and a point estimate disagree, the point estimate is the thing that needs defending" |
 
 ## Update checklist
 
@@ -440,6 +554,14 @@ evidence or a changed condition; “try again” is not enough.
     while their prompt set is still open, even under a "quarantined" heading.
     Labelling a section quarantined does not un-send it. Withhold until their
     last timed leg is on disk.
+11. **A mechanism that explains the data is not thereby the mechanism.** The
+    first `key_len = 1024` account said `qL` enters the reduction geometry
+    through `n_simds`; it explained every one of PR #2's four observations and it
+    was still false, because the `n_simds` ladder is guarded by `N > 1024` and
+    our window stops at exactly 1024. The test that caught it was demanding a
+    *quantitative* prediction: the true mechanism (stride 32 vs 64) names an
+    exact mismatch band per width, the false one named none. Before banking a
+    mechanism, make it predict a number it could fail on.
 
 ## Advisor process lessons, 2026-08-17
 
