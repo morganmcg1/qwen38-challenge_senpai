@@ -21,8 +21,17 @@
 # same numeric threshold as benchmark.sh's COOL_GATE_TEMP_C and the ranked
 # runner's gate. When the settle reaches it, the driver also runs the real
 # `./benchmark.sh --local-cool-gate-only` gate as a witness (it passes on its
-# first poll at that point, so it cannot burn budget). The arms themselves still
-# run with MLXFAST_LOCAL_COOL_GATE=0 for a budget reason, not a thermal one:
+# first poll at that point, so it cannot burn budget).
+#
+# The measured idle floor on this host is 39.92C, only 0.08C under the target,
+# and a post-build host sits at 40.42C where the real gate reports
+# stalled_above_40C. The settle therefore also exits on a plateau, reusing the
+# gate's own COOL_GATE_PROGRESS_EPSILON_C=0.25 and COOL_GATE_STALL_SECONDS=90
+# semantics, and records which of the two outcomes each arm actually got. The
+# ABBA order is what makes the stalled case analysable rather than fatal.
+#
+# The arms themselves still run with MLXFAST_LOCAL_COOL_GATE=0 for a budget
+# reason, not a thermal one:
 # benchmark-qwen-mtp.sh invokes the gate three times per arm and each invocation
 # may wait up to COOL_GATE_MAX_WAIT_SECONDS=900, which no 30-minute job can
 # contain for four arms.
@@ -42,6 +51,8 @@ export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-qwen38-r1-e15-draft-readout-3bit}"
 
 settle_target_c="${MLXFAST_SETTLE_TARGET_C:-40.0}"
 settle_max_s="${MLXFAST_SETTLE_MAX_S:-300}"
+settle_stall_s="${MLXFAST_SETTLE_STALL_S:-90}"
+settle_epsilon_c="${MLXFAST_SETTLE_EPSILON_C:-0.25}"
 lock_wait_s="${MLXFAST_LOCK_WAIT_S:-300}"
 export MLXFAST_SETTLE_TARGET_C="${settle_target_c}"
 
@@ -56,7 +67,7 @@ gpu_temp_now() {
 # It cannot be written into the arm directory here: the arm rm -rf's its own out
 # dir before it starts.
 settle() {
-  local pos="$1" waited=0 t min=""
+  local pos="$1" waited=0 t min="" stalled=0
   export MLXFAST_SETTLE_REACHED_C="" MLXFAST_SETTLE_MIN_C="" \
     MLXFAST_SETTLE_WAITED_S="" MLXFAST_COOL_GATE_STATUS="no_temperature_reader"
   while :; do
@@ -65,8 +76,12 @@ settle() {
       echo "phase3-settle: pos=${pos} no macmon reading; proceeding ungated"
       return 0
     fi
-    if [[ -z "${min}" ]] || awk -v a="${t}" -v b="${min}" 'BEGIN{exit !(a<b)}'; then
+    if [[ -z "${min}" ]] || awk -v a="${t}" -v b="${min}" -v eps="${settle_epsilon_c}" \
+      'BEGIN{exit !(a < b - eps)}'; then
       min="${t}"
+      stalled=0
+    else
+      stalled=$((stalled + 10))
     fi
     export MLXFAST_SETTLE_REACHED_C="${t}" MLXFAST_SETTLE_MIN_C="${min}" \
       MLXFAST_SETTLE_WAITED_S="${waited}"
@@ -80,8 +95,13 @@ settle() {
       echo "phase3-settle: pos=${pos} cool_gate=${MLXFAST_COOL_GATE_STATUS}"
       return 0
     fi
-    if [[ "${waited}" -ge "${settle_max_s}" ]]; then
-      echo "phase3-settle: pos=${pos} STALLED at=${t}C target=${settle_target_c}C min=${min}C waited=${waited}s"
+    # Plateau exit mirrors benchmark.sh's own gate semantics
+    # (COOL_GATE_PROGRESS_EPSILON_C / COOL_GATE_STALL_SECONDS): once the host
+    # stops making progress toward the target there is nothing left to wait for,
+    # and waiting out settle_max_s would spend timing budget for no thermal gain.
+    if [[ "${stalled}" -ge "${settle_stall_s}" || "${waited}" -ge "${settle_max_s}" ]]; then
+      echo "phase3-settle: pos=${pos} STALLED at=${t}C target=${settle_target_c}C" \
+        "min=${min}C waited=${waited}s no_progress_for=${stalled}s"
       export MLXFAST_COOL_GATE_STATUS="stalled_above_${settle_target_c}C"
       return 0
     fi
