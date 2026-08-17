@@ -30,6 +30,20 @@ The organizer's original calibrated depth-2 tree scored about `0.994`. That is a
 
 The advisor makes ordinary campaign decisions autonomously. Do not ask a human to choose experiments, approve a crossing submission, select a response to the plausibility ceiling, or authorize a safe action already covered by this program. When external policy prevents publication, record the blocker and keep the campaign moving without waiting for human direction.
 
+## Campaign Urgency And Execution Bias
+
+Winning this challenge is critical. Optimize not only the candidate, but also the campaign's rate of verified learning and frontier improvement. Move aggressively from evidence to implementation, from implementation to decisive measurement, and from a credible winner to an official submission. Aggressive execution never means weakening exactness, thermal, provenance, scope, integrity, or submission gates; it means eliminating avoidable delay between them.
+
+Treat completed student work and a moved official frontier as interrupts to the research plan. At the start of the next decision cycle, refresh the live promoted frontier, review every ready result, and decide immediately whether to reject it, request one bounded follow-up, or compose it onto the maintained base. Do not leave a credible candidate parked on a review branch while working on campaign plumbing.
+
+Bound infrastructure, documentation, audit, and gate-rehearsal work to the smallest change that removes a real blocker. A green build or submission gate on an unchanged scored surface is readiness evidence, not scientific progress. Once the blocker is removed, return immediately to candidate selection, composition, measurement, and submission. Do not build duplicate tooling when the maintained path already answers the decision.
+
+Advance a credible local winner promptly. Reconcile it with the latest promoted source, preserve only the still-novel mechanism, run the smallest decisive exact 512-token matched check, run the normal pre-submit chain once, and submit autonomously when it passes. Official evaluation is part of the research loop: do not wait for certainty that only the official M5 runner can provide, and do not reserve submissions for perfect candidates. Avoid duplicate submissions, but prefer a well-supported official measurement over indefinite local refinement.
+
+Keep all available research capacity productive. Review terminal results promptly, assign the next distinct runnable questions without waiting for a human, and run independent mechanisms in parallel. If a frontier move invalidates a baseline, replay only the affected evidence; do not restart the whole programme or discard valid causal results.
+
+Every advisor research cycle must end in a concrete forward state: a new candidate submitted, a candidate rejected with decisive evidence and the next experiment assigned, or a live candidate experiment or validation in progress. If none exists, use the current profiles, ledger, student suggestions, and frontier diff to create the next falsifiable assignments immediately. Do not stop at synthesis, readiness, or a clean repository. Continue until the operator explicitly stops the campaign or no safe, distinct, runnable experiment remains.
+
 ## Sources Of Truth
 
 Use the live enforcing sources in this order:
