@@ -1,6 +1,6 @@
 # E14 — IPG weight passes: is the second weight pass real, and is width or streaming the bigger tax?
 
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"local_serial_relative_speedup","available":false,"value":null},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"local_serial_relative_speedup","available":false,"value":null},"test_metric":{"name":"qmv_parity_cells_differing","available":true,"value":8}}
 
 - Student / branch: `qwen-thorfinn` / `qwen-thorfinn/ipg-weight-passes` (PR #16)
 - Hypothesis and target cost: the `qmv_fast_crossrow_affine4_g64_m<T,M,IPG>` dispatch table
@@ -372,6 +372,73 @@ operating point — it would at best flatten a bump that the scheduler already r
 <!-- Q4_RESULTS -->
 
 ## Correctness
+
+Bit-exact QMV parity, job `74ca3fb2-…` (exit 0, 884.7 s, `2026-08-17T11:12Z`–`11:27Z`),
+via `research/run-qmv-parity.sh`. Each arm is a full rebuild from the same source commit
+`ad553c1f…` plus its patch: `swift build -c release --build-tests`,
+`tools/build-mlx-metallib.sh --all-build-roots`, then `QwenQMVParityTests`, which digests
+the output of `quantized_matmul` over the 8 scored shapes × verify widths 1–12 = **96 cells**.
+Outputs in `.mlxfast-private/qmv-parity/`.
+
+| arm | twin `quantized.h` | cells differing | widths differing | verdict |
+|---|---|---|---|---|
+| `ref` (unpatched) | `b99146e9…` | — (reference) | — | reference |
+| `armE` (`ipg-e`) | `a0de4f27…` | **0 / 96** | none | **bit-identical** |
+| `armA` (`ipg-a`) | `16703cd6…` | **8 / 96** | **[5]** | **diverges** |
+| `perturb` (positive control) | `6319e4fd…` | 56 / 96 | [3,4,5,6,7,8,9] | diverges |
+
+**Both controls fired, so the verdicts are trustworthy.**
+
+- *Positive control.* `perturb` multiplies `partial[r]` by `1.015625f` inside `_wide`. It
+  changes exactly 56 cells = 7 widths × 8 shapes, and the 7 widths are exactly `[3..9]` —
+  the wide-branch dispatch range. Widths 1, 2 and 10–12 are untouched because they never
+  enter `_wide`. So the harness detects a one-instruction kernel change, and it detects it
+  across precisely the region arms A/D/E modify. This also independently confirms, from
+  output digests alone, which widths execute the wide branch.
+- *Determinism control.* `armE` is a separate checkout, patch, Swift build, metallib build
+  and test process, and its `armE.json` is **byte-identical** to `ref.json`
+  (both sha256 `9e3c52a3df97856e…`). Build-to-build digest noise is therefore zero, so
+  `armA`'s 8 differing cells are signal, not jitter.
+
+**Arm A is not bit-exact, and that is a new and decisive finding.** Arm A's only functional
+edit is the dispatch line `_m<T,5,3>` → `_m<T,5,5>` (the companion `NA_ASSERT` edit is a
+`static_assert` and cannot change arithmetic). Yet every one of the 8 scored shapes returns
+different bits at `M=5`. The reference serves `M=5` as two passes of `NA=3` then `NA=2`;
+arm A serves it as one pass of `NA=5`, where `vec<float,5>` is padded to `vec<float,8>`.
+Changing the accumulator's vector width changes the code the Metal compiler emits for the
+`k` loop — FMA contraction and lane scheduling — and the last bits move with it.
+
+**Arm E, which contains arm A's dispatch change, is bit-identical anyway.** That is the
+control that pins the mechanism: arm E additionally replaces every `vec<float,NA>` with a
+plain `float[NA]`. Elementwise arithmetic on a scalar array is lane-independent and rounds
+identically at any `NA`, so removing the padded vector type puts the results back exactly
+on the reference. The divergence is caused by the padded `vec<float,5>`, not by the row
+partitioning.
+
+This tightens the register-pressure diagnosis in the arm E section rather than competing
+with it: the padded `vec<float,5>` is demonstrably driving *different codegen*, visible
+here in the output bits and earlier in the ~32 points of `M=5` cost that arm E recovers.
+The toolchain agrees — arm E's metallib build emits
+`quantized.h:981:26: warning: unused typedef 'VF' [-Wunused-local-typedef]`, confirming
+that no `vec<float,NA>` use survives in the wide body.
+
+### Correctness verdict
+
+- **Arm A — invalid as a candidate.** It changes QMV output bits on scored shapes, so it can
+  flip a near-tie argmax at readout and perturb accept/reject decisions and the emitted
+  token stream. It is *latent* rather than live: `M=5` is dispatched 0.00% of the time on
+  base `e6e6f81`, so nothing today executes the changed cells. It would become a live
+  fidelity risk the moment a scheduler makes depth 4 reachable. Any future use of this
+  dispatch change must carry arm E's scalar packing with it to stay bit-exact.
+- **Arm E — bit-exact, but not useful.** It passes every parity cell and still costs
+  **+12.4%** median at every unchanged wide width, so it is rejected on performance.
+
+The assignment stop rule was "stop if any arm fails bit-exact parity". It fired, on arm A,
+and it is the reason no candidate advances from E14.
+
+**Scope of the claim.** This is kernel-output parity on the 8 scored shapes at widths 1–12,
+not an end-to-end token-stream match, and it was measured on M4 Pro. It bounds where a
+change is visible; it does not by itself prove a full-generation match on the ranked M5.
 
 <!-- PARITY_RESULTS -->
 
