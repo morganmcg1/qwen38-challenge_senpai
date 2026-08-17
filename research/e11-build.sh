@@ -8,10 +8,12 @@
 # so "two arms that had to differ but shared a hash" is a detectable failure
 # rather than a silently duplicated measurement.
 #
-# Only the H recipe is shippable. Every cap edit (C8/H8/F3/W5/W6) is arm
-# scaffolding: built, measured, and never committed. Note the polarity: since
-# PR #2 merged, cap 7 is the SHIPPED default, so the cap arms open the cap back
-# to 8 (C8/H8) rather than closing it.
+# OUTCOME: W5 shipped and H did not, so this harness's polarity inverted after
+# it was written. W5 (sdpaWidthWallDepthCap 4 -> 5) is the branch default now,
+# and H/H8 are pinned to the reverted curve commit below. Every other recipe
+# stays arm scaffolding: built, measured, never committed. Note the other
+# polarity too: since PR #2 merged, cap 7 is the SHIPPED default, so the cap
+# arms open the cap back to 8 (C8/H8) rather than closing it.
 #
 # The two caps are the two arms of ONE ternary, selected per round by the
 # full-accept streak gate, so an arm moves either the HOT ceiling
@@ -34,12 +36,14 @@ fi
 restore() { git checkout -- "${src}"; }
 trap restore EXIT
 
-# Materialise the arm source. C/C8/F3 start from the campaign base (flat scalar
-# h); H/H8 start from this branch's committed measured-curve default.
+# Materialise the arm source. C/C8/F3/W5/W6 start from the campaign base (flat
+# scalar h); H/H8 start from 7c85b4f, the curve default this branch has since
+# reverted, so both recipes stay reproducible from history rather than from a
+# HEAD that has moved on.
 materialise() {
   case "$1" in
     C | C8 | F3 | W5 | W6) git show "${base_sha}:${src}" > "${src}" ;;
-    H | H8) git show "HEAD:${src}" > "${src}" ;;
+    H | H8) git show "${E11_CURVE_SHA:-7c85b4f}:${src}" > "${src}" ;;
     *) echo "e11-build: unknown arm $1" >&2; return 2 ;;
   esac
   case "$1" in

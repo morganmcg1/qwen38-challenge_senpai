@@ -1,0 +1,60 @@
+Before the railways, every English town kept its own clock. Noon was a local
+fact, established by the sun over a particular parish, and a traveller moving
+west from London gained a minute of the morning for every fourteen miles of
+road. Bristol ran ten minutes behind the capital, Exeter fourteen, Penzance
+something over twenty, and nobody was inconvenienced by the discrepancy,
+because nobody could move fast enough for it to matter. A coach that took two
+days to reach Devon had no need of a shared second. The mail guards carried
+timepieces that were deliberately set to gain a fixed amount each day, and the
+guard adjusted his reckoning as he went, so that the letters arrived at an hour
+the receiving postmaster could recognise. This was not disorder. It was a
+perfectly serviceable arrangement for a country whose fastest information
+travelled at the speed of a horse.
+
+The locomotive dissolved the arrangement in about a decade. A train leaving
+Paddington at a stated hour and arriving at Bridgwater at another stated hour
+required the two hours to belong to the same system, or the timetable was a
+work of fiction. Worse, the danger was not merely administrative. Single-track
+working depended on knowing that the up train had cleared a section before the
+down train entered it, and that knowledge was expressed in minutes. A signalman
+whose watch disagreed with his neighbour's by four minutes was not making a
+clerical error; he was arranging a collision. The Great Western adopted London
+time across its whole route in 1840, and the other companies followed, so that
+by the middle of the century a passenger stepping down onto a provincial
+platform found two minute hands on the station clock: one for the railway, one
+for the town.
+
+The telegraph made the correction cheap and then made it universal. An
+electrical signal despatched from Greenwich could set a clock in Edinburgh
+within a fraction of a second, and once the Observatory began sending a daily
+time signal along the wires, the argument for local time lost its last
+practical support. What remained was sentiment, and a certain amount of civic
+pride. Oxford resisted for years. Its cathedral bell was still tolling five
+minutes after the hour, in obedience to the meridian of the city rather than
+the meridian of the Observatory, long after the trains had stopped caring. The
+law caught up slowly and without drama: the Statutes (Definition of Time) Act
+of 1880 simply declared that any expression of time in an Act of Parliament
+should mean Greenwich mean time in Great Britain, and the question was closed.
+
+What is striking about the episode, looking back, is how little of it was
+planned. No one set out to abolish local time. Engineers solved a scheduling
+problem, telegraph companies sold a service, and a legal definition was
+eventually written down to tidy up what had already happened. The standard
+emerged from the constraints of the fastest thing in the system, and every
+slower institution was reorganised around it afterwards. Precisely the same
+pattern repeated a few years later on a larger scale, when the delegates at
+Washington divided the world into hours of longitude, and again in our own
+century, when the atomic definition of the second detached timekeeping from
+the rotation of the earth altogether and left astronomers to insert leap
+seconds by hand.
+
+There is a general lesson buried here about the way infrastructure changes.
+The visible reform, the one that gets a date and an Act, is usually the last
+step rather than the first. It ratifies a settlement that the underlying
+technology had already forced, and it is therefore easy to mistake the
+ratification for the cause. Historians of the period who read the 1880 Act as
+the moment Britain adopted a national time have the sequence exactly backwards.
+The country had adopted it forty years earlier, one railway company at a time,
+because a signalman needed to know what his neighbour's watch said. The
+interesting question is never who wrote the standard down. It is which
+constraint made the old arrangement impossible to keep.

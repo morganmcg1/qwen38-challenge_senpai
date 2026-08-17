@@ -723,6 +723,20 @@ public final class Qwen36MTPBlockSession {
     /// Segmenting the whole FORWARD instead (two model
     /// calls, 5+k) was measured bit-exact too but pays a second full weight
     /// pass (~25 ms) and loses on net; the chunk lives at the sdpa only.
+    ///
+    /// RAISED 4 -> 5 once that resolution made the >width-5 rows legal
+    /// (qwen38-r1-e11-depth-lever-showdown). At 4 the wall was BINDING, not
+    /// chosen: 39 of 88 rounds on the 512-token local fixture stopped exactly
+    /// on it. Letting those rounds price their own depth moved decode
+    /// 0.032782 -> 0.032355 s/token (-1.30%, two replicates, spread 0.09%) at
+    /// a flat accepted-draft rate, 0.8945 -> 0.8946. The optimum is interior:
+    /// at 6 the same lever is worse than 5 on every structural axis at equal
+    /// mean depth (more rows, rejects, replays and rounds, lower acceptance),
+    /// because the cold population returns ~0.877 accepted tokens for slot 5
+    /// against a 0.849 break-even and only ~0.4 for slot 6. This is the COLD
+    /// arm of the ternary and is independent of `segmentedVerifyDepthCap`:
+    /// opening the hot arm 7 -> 8 over the same window LOSES (+0.55%), so the
+    /// two caps are not one depth knob and must be tuned separately.
     private static let sdpaWidthWallDepthCap = 5
 
     /// Depth cap for streak-qualified deep rounds. 8 is the trusted
