@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Every campaign difference from the organizer frontier that is NOT an editablePaths entry and NOT campaign-owned scaffolding must be declared here, with the obligation that keeps it honest. senpai/verify-trusted-parity.sh fails on any undeclared drift.",
+  "campaignOwnedPrefixes": ["senpai/", ".agents/", "research/"],
+  "campaignOwnedPaths": ["AGENTS.md", ".gitignore"],
+  "notes": [
+    "AGENTS.md is campaign-owned on purpose: the campaign rewrite is wrapped in <!-- SENPAI-CAMPAIGN-BEGIN --> and replaces the inherited Laguna/DFlash prose with a Qwen-only guide. It is not organizer drift.",
+    "Widening the allow-list to Tests/* would let a future sync hide real trusted-test drift. Declare each path individually instead.",
+    "organizerBlob pins the blob we reviewed. If the organizer changes that file in a later frontier, this gate fails on purpose so the overlay is re-reviewed instead of silently reapplied.",
+    "campaignBlob is informational only. It differs by branch: the trace seam and the QMV cost-curve test live on senpai/qwen38-mtp-r1, not on main."
+  ],
+  "overlays": [
+    {
+      "path": "Tests/MLXFastTests/QwenMTPVerbTests.swift",
+      "kind": "repair",
+      "organizerBlob": "5bab1076ac632a0b8d7f5d95f30b281490fe8886",
+      "campaignBlob": "710953e68da565738b2782b8e58a134ce1e06262",
+      "introducedBy": "e20268e9c2c1f35c2d75221d059e75bb95768ef6",
+      "why": "The organizer writes #expect(cond, \"a\" + \"b\"), which fails Swift type checking, so `swift test` will not compile at all. The campaign rewrites the message as a multiline literal. Behaviour is unchanged; this is a compile repair, not a test relaxation."
+    },
+    {
+      "path": "Tests/MLXFastTests/QwenQMVCostCurveTests.swift",
+      "kind": "added",
+      "campaignBlob": "105113cc2a2ff9dc69b8dc4f4a526abef3ad29c2",
+      "why": "Campaign-authored QMV cost-curve test. Absent upstream. Verified to compile against frontier-exact sources.",
+      "branches": ["senpai/qwen38-mtp-r1"]
+    },
+    {
+      "path": "Sources/MLXFastCLI/main.swift",
+      "kind": "seam",
+      "organizerBlob": "b75c8fb65b393b96f9c64e0b5a1b7e8c816e983f",
+      "campaignBlob": "4fb19edcca8024b1ebdc6aa2ac3b262d90ca3f48",
+      "why": "Wires the trusted forwardsWorkerStderr drain to the local mtp-timed verb so MLX_QWEN_MTP_TRACE=1 traces are readable. 9 insertions / 1 deletion.",
+      "mustContain": "forwardsWorkerStderr && !officialRun",
+      "obligation": "The seam MUST stay ANDed with !officialRun (main.swift:2319). Checking the whole expression, not just the token `officialRun`, so the guard tests the gating code and cannot be satisfied by a comment that merely mentions it. A traced run is instrumented and can never be a timing arm.",
+      "branches": ["senpai/qwen38-mtp-r1"]
+    }
+  ]
+}

@@ -8,6 +8,23 @@ Machine-readable frontier pins live in
 [`frontier-state.json`](frontier-state.json). If this ledger and that file
 disagree, stop and repair both before assigning or submitting work.
 
+## Read first: the operator reply channel is blocked
+
+The 2026-08-17 frontier-sync directive arrived as a comment on issue #9 and
+required a reply on that issue. **That reply could not be posted**, and the
+failure is structural rather than transient: the advisor role authenticates as
+`morganmcg1`, which is also the author of every human message on issue #9, and
+the reply tool refuses any message authored by the authenticated actor. Both
+available message IDs were attempted and returned the identical error, so no
+choice of ID can succeed. Unauthenticated reads work; writes do not.
+
+The full reply — verified promoted receipt, resulting pins, per-PR dispositions,
+and the active assignment slate — is therefore delivered as a durable file:
+[`operator-report-2026-08-17-frontier-sync.md`](operator-report-2026-08-17-frontier-sync.md).
+Read it as the answer to issue #9. Unblocking it needs an operator action, not an
+advisor retry: either give the advisor its own GitHub identity, or file directives
+from a second account.
+
 ## Current frontier
 
 Observed from Yukon and the organizer remote at `2026-08-17T08:09:23Z`.
@@ -60,17 +77,58 @@ byte-exact to the officially scored surface, which is the strongest form of
 this proof and the reason a local rescore is directly comparable to
 `2.94661597308114`.
 
-Declared non-editable overlay manifest (every path outside the editable set
-that may differ from the organizer, with its standing obligation):
+Declared non-editable overlay manifest: every path outside the editable set that
+may differ from the organizer, with its standing obligation.
 
-| Path | Kind | Obligation |
-| --- | --- | --- |
-| `Tests/MLXFastTests/QwenMTPVerbTests.swift` | repair | Organizer blob must stay `5bab1076ac632a0b8d7f5d95f30b281490fe8886`; campaign blob `710953e68da565738b2782b8e58a134ce1e06262`. Rewrites the organizer's `#expect(cond, "a" + "b")` as a multiline literal because the concatenation fails Swift type checking. Re-review the moment the organizer blob moves. |
+The authoritative, machine-readable form is
+[`trusted-overlay-manifest.json`](trusted-overlay-manifest.json); this table is a
+summary and loses to the JSON if they disagree. **The set is branch-dependent** —
+`main` carries one overlay, the research branch `senpai/qwen38-mtp-r1` carries
+three — so each entry records which branches it applies to.
+
+| Path | Kind | Branches | Obligation |
+| --- | --- | --- | --- |
+| `Tests/MLXFastTests/QwenMTPVerbTests.swift` | repair | all | Organizer blob must stay `5bab1076ac632a0b8d7f5d95f30b281490fe8886`; campaign blob `710953e68da565738b2782b8e58a134ce1e06262`. Rewrites the organizer's `#expect(cond, "a" + "b")` as a multiline literal because the concatenation fails Swift type checking. Re-review the moment the organizer blob moves. |
+| `Tests/MLXFastTests/QwenQMVCostCurveTests.swift` | added | research | Absent upstream by construction; campaign blob `105113cc2a2ff9dc69b8dc4f4a526abef3ad29c2`. If the organizer ever adds this path, the two must be reconciled deliberately. |
+| `Sources/MLXFastCLI/main.swift` | seam | research | Organizer blob must stay `b75c8fb65b393b96f9c64e0b5a1b7e8c816e983f`; campaign blob `4fb19edcca8024b1ebdc6aa2ac3b262d90ca3f48`. Single `+8/-1` hunk that forwards worker stderr when `MLX_QWEN_MTP_TRACE=1`, so the in-session trace is readable. **Standing obligation: the file must still contain `forwardsWorkerStderr && !officialRun`** — tracing must remain impossible on an official run. |
 
 `senpai/`, `.agents/`, `research/`, `AGENTS.md`, and `.gitignore` are
 campaign-owned by construction and are not part of this manifest. Anything
 else appearing outside the editable set is undeclared drift and must block the
 sync until it is explained.
+
+### Enforcing the manifest, and validating the enforcer
+
+`senpai/verify-trusted-parity.sh <UPSTREAM_SHA> [REV]` reads the editable set
+from `benchmark.json`, subtracts the campaign-owned allow-list, and requires
+every remaining difference against the organizer to be a declared overlay whose
+kind-specific obligation still holds. Current results: research branch → `trusted
+parity OK: 3 declared overlay(s), 0 undeclared drift`; `main` → `OK: 1 declared
+overlay(s)`.
+
+A gate that has only ever passed is a decoration, so
+`senpai/selftest-trusted-parity.sh <UPSTREAM_SHA> [REV]` perturbs the manifest
+and requires the gate to fail *with the right cause* each time: dropped entry →
+`UNDECLARED trusted-surface drift`; zeroed `organizerBlob` → `organizer CHANGED a
+path the campaign patched`; bogus `mustContain` → `obligation BROKEN`; unknown
+`kind` → `unknown overlay kind`; and it demonstrates that widening
+`campaignOwnedPrefixes` to `Sources/` would launder `main.swift` out of view,
+which is why that list is narrow and reviewed. The manifest is restored
+byte-exactly (hash-verified) even if the self-test dies.
+
+Two defects were found by actually running these, both worth remembering:
+
+1. **`grep -q` on a pipe inverts a successful search under `pipefail`.** `git show
+   … | grep -q` made the seam's obligation report `obligation BROKEN` while the
+   string was present: `grep -q` exits at the first match, the producer takes
+   SIGPIPE, and `pipefail` promotes that to failure. Both scripts now match
+   in-shell with `case`, and the same bug appeared a second time as `… | head -1`
+   in victim selection, which aborted the whole self-test.
+2. **A self-test that dies must not look like a pass.** The first run printed
+   `baseline passes` and stopped, and its status was invisible because it had been
+   invoked through `| tail`. The fix is a mandatory verdict line on every exit
+   path, not a cleverer trap — a plain `trap … EXIT` was verified to preserve the
+   exit status and was never the cause.
 
 Retired in this sync: `Tests/MLXFastTests/QwenMTPFixedWindowTests.swift`,
 added by campaign commit `f1a874dbb65054b9dceb941abdfd89cac6e40ce4`. The
@@ -102,15 +160,46 @@ run: every file the failing tests read is byte-identical either to organizer
 | `theEvenMedianRuleIsTheMeanOfTheTwoCentralValues()` | trusted scoring semantics | Fails at `32b94cb` itself |
 | `theSeededCalibrationExpectationMatchesItsRecordedProvenance()` | calibration provenance | Fails at `32b94cb` itself; status is `measured_qwen38_cutover_2026_08_14` |
 | `qwen36ConfigContractDigestMatchesTheReferenceManifest()` | `config.json` digest | Fails at `32b94cb` itself |
-| `participantDocsExposeDefaultCLIInstallDirectory()`, `contestantDocsCommandBlocksKeepTheDependencyGraphFrozen()`, `submissionStaticReviewPromptCoversMeasurementStructureExploitation()` | `AGENTS.md` | Pre-existing **campaign** defect, not from this sync: `AGENTS.md` is byte-unchanged across the sync branch, but the campaign overlay dropped organizer-required doc content (confirmed missing: ``Yukon CLI (`yukon`)``) |
+| `participantDocsExposeDefaultCLIInstallDirectory()`, `contestantDocsCommandBlocksKeepTheDependencyGraphFrozen()`, `submissionStaticReviewPromptCoversMeasurementStructureExploitation()` | `README.md`, `TASK.md`, `AGENTS.md`, `CLAUDE.md` | **Split cause — see the corrected table below.** Partly a campaign omission in `AGENTS.md`, partly an organizer-side failure in `CLAUDE.md` that no campaign change can fix |
 
-Two consequences worth acting on. First, **the ranked benchmark does not run
+#### Correction: the doc test has two independent causes, not one
+
+An earlier revision of this ledger attributed the doc-test failures solely to a
+campaign omission in `AGENTS.md`. That was half wrong. `participantDocs...` at
+`Tests/MLXFastTests/BenchmarkScriptTests.swift:456` loops over **four**
+documents and requires each to contain both `export PATH="${HOME}/.local/bin:${PATH}"`
+and ``Yukon CLI (`yukon`)``, and to contain none of
+`mlxfast {login,clone,submit,submissions,run,sync}`. Evaluated per document:
+
+| Document | At organizer `32b94cb` | At campaign `HEAD` | Blob relation |
+| --- | --- | --- | --- |
+| `README.md` | passes | passes | identical blob |
+| `TASK.md` | passes | passes | identical blob |
+| `AGENTS.md` | **passes** | **failed** → now fixed | campaign rewrite, `80a46b72c907` |
+| `CLAUDE.md` | **fails** | **fails** | identical blob, `47dc3e3d863c` |
+
+So `CLAUDE.md` fails **at the organizer frontier itself**, on a byte-identical
+blob, missing *both* required strings. Only the `AGENTS.md` half was ours.
+
+**Action taken:** `AGENTS.md` is campaign-owned and is what students actually
+read, so the omission is fixed in place — the Senpai Campaign section now states
+that ``the Yukon CLI (`yukon`)`` manages accounts and official submissions and
+installs to `${HOME}/.local/bin`. `CLAUDE.md` is deliberately **left alone**: it
+is organizer-owned and non-editable, patching it would manufacture a fourth
+undeclared trusted-surface overlay, and it buys exactly zero benchmark value.
+The test therefore stays red for a known, harmless, upstream reason. That is the
+correct trade, and it is recorded here so nobody "fixes" it later by widening the
+trusted surface.
+
+Three consequences worth acting on. First, **the ranked benchmark does not run
 `swift test`** — the promoted frontier fails the organizer's own checked-in
 head-declaration test and was still promoted at `2.94661597308114` — so
 `swift test` is a campaign hygiene gate, never a submission gate. Second, the
-`AGENTS.md` doc-content omission is a real campaign defect and is queued as a
-standalone fix; it is deliberately **not** folded into this sync so that the
-`AGENTS.md` blob-preservation pin stays checkable.
+`AGENTS.md` blob pin in this sync's preservation proof necessarily moves when
+that fix lands; the pin's purpose was to prove the *sync* changed nothing, and
+the fix is a separate, later commit. Third, a test that fails upstream is not
+evidence about our work, and a ledger that says otherwise will mislead the next
+reader — hence this correction rather than a quiet edit.
 
 ### Scoring-semantics correction: seed prefill is charged
 
