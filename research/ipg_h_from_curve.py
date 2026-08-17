@@ -24,9 +24,17 @@ import pathlib
 SHIPPED_H = [0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909]
 
 
-def load_widths(path: pathlib.Path) -> dict[int, float]:
-    summary = json.loads(path.read_text())
-    return {int(k): v for k, v in summary["weighted_verify_seconds"].items()}
+def load_widths(path: pathlib.Path, estimator: str = "seconds_per_call") -> dict[int, float]:
+    doc = json.loads(path.read_text())
+    if "shapes" not in doc:
+        return {int(k): v for k, v in doc["weighted_verify_seconds"].items()}
+    widths = {}
+    for m in range(1, 10):
+        widths[m] = sum(
+            {r["m"]: r for r in s["rows"]}[m][estimator] * s["calls_per_verify"]
+            for s in doc["shapes"]
+        )
+    return widths
 
 
 def h_vector(widths: dict[int, float]) -> list[float]:
@@ -58,8 +66,8 @@ def depth_threshold(h: list[float], depth: int) -> dict[str, float]:
     }
 
 
-def report(label: str, path: pathlib.Path) -> dict:
-    widths = load_widths(path)
+def report(label: str, path: pathlib.Path, estimator: str = "seconds_per_call") -> dict:
+    widths = load_widths(path, estimator)
     h = h_vector(widths)
     out = {
         "label": label,
@@ -90,16 +98,19 @@ def main() -> int:
     ap.add_argument("--vs", type=pathlib.Path, default=None)
     ap.add_argument("--vs-label", default="reference")
     ap.add_argument("--json-out", type=pathlib.Path, default=None)
+    ap.add_argument("--estimator", default="seconds_per_call",
+                    choices=["seconds_per_call", "seconds_per_call_min"],
+                    help="only used when the input is a raw vendored.json")
     args = ap.parse_args()
 
-    out = {"candidate": report(args.label, args.summary)}
+    out = {"candidate": report(args.label, args.summary, args.estimator)}
     if args.vs is not None:
         print()
-        out["reference"] = report(args.vs_label, args.vs)
+        out["reference"] = report(args.vs_label, args.vs, args.estimator)
         hc = out["candidate"]["h"]
         hr = out["reference"]["h"]
-        wc = load_widths(args.summary)
-        wr = load_widths(args.vs)
+        wc = load_widths(args.summary, args.estimator)
+        wr = load_widths(args.vs, args.estimator)
         print("\n== candidate vs reference")
         print("  d   h_ref     h_cand    delta      pct")
         for d, (a, b) in enumerate(zip(hr, hc), start=1):
