@@ -70,14 +70,24 @@ def main():
                      f"{[pid for pid, _ in drafting]}; cannot name one MTP leg")
         pid, rounds = drafting[0] if drafting else all_legs[-1]
         rounds = rounds[args.warmup:]
+        # A round that drafts nothing returns before the round trace is written
+        # (`Qwen36MTPBlockSession.swift:765` branch), so it is invisible here
+        # while still consuming a round counter. Recover it from the gaps in
+        # that counter; trailing zero-draft rounds after the last traced round
+        # are unrecoverable and are reported as a separate lower bound.
+        span = rounds[-1][0] - rounds[0][0] + 1
+        implied_d0 = span - len(rounds)
         hist = Counter(d for _, d, _ in rounds)
+        if implied_d0:
+            hist[0] += implied_d0
+            rounds = rounds + [(-1, 0, 0)] * implied_d0
         acc_by_d = {}
         for _, d, a in rounds:
             acc_by_d.setdefault(d, []).append(a)
         n = len(rounds)
         tok = sum(a for _, _, a in rounds) + n
         print(f"\n=== {arm}  mtp_leg_pid={pid}  rounds={n}  "
-              f"committed_tokens={tok} ===")
+              f"committed_tokens={tok}  implied_d0={implied_d0} ===")
         print(f"{'d':>3} {'rounds':>7} {'share':>8} {'mean_acc':>9} {'accept_rate':>12}")
         for d in sorted(hist):
             accs = acc_by_d[d]
@@ -93,6 +103,7 @@ def main():
         print(f"rounds_at_d==4: {at_cap4} ({at_cap4/n:.4%})   "
               f"rounds_at_d>4: {above4} ({above4/n:.4%})")
         report[arm] = {"mtp_leg_pid": pid, "rounds": n, "committed_tokens": tok,
+                       "implied_d0_rounds": implied_d0,
                        "hist": {str(d): hist[d] for d in sorted(hist)},
                        "mean_offered_depth": mean_d, "mean_accepted": mean_a,
                        "rounds_at_d4": at_cap4, "rounds_above_d4": above4}

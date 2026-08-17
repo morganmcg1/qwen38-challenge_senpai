@@ -371,6 +371,74 @@ operating point — it would at best flatten a bump that the scheduler already r
 
 <!-- Q4_RESULTS -->
 
+## Out-of-scope base defect found while collecting Q4
+
+Collecting the depth histogram needs a traced `--local-iterate` run, and I first asked for
+the ranked-equivalent window of 512 decode tokens. **That run cannot complete on the current
+base.** This is not an E14 arm — the twins were pristine (`metallib_source_fingerprint=6639cc59d6fb84ff…`,
+`dirty=0`) and no patch was applied — so it is a property of `ef16dea4`'s editable session,
+reported here because `program.md` names this exact failure mode a solver defect.
+
+Job `502e563f-12e3-4caf-90dc-8a888a708850`, `2026-08-17T11:36:13Z`–`11:40:48Z`, exit 1,
+`research/run-arm.sh e14-trace --trace --tokens 512`.
+
+What the trace shows, in order:
+
+1. The reference pass **succeeds completely**:
+   `mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true
+   (replayed 1 row bit-identically) chain_contradictions=0`.
+2. The true serial control (`mtp-timed --mtp-depth 0`) starts, `mtp-trace: begin seed=512
+   build_us=2947560 eval_wall_us=1047001`, and decodes **301 tokens**, `mtp-row: pos=513`
+   through `pos=813`.
+3. The last row is `mtp-row: pos=813 ids=248044,271`. **248044 is the EOS token** —
+   `weights/config.json` has `eos_token_id: 248044` and `generation_config.json` has
+   `[248046, 248044]`.
+4. The next round dies: `mlxfast-swift: runtime worker mtp_decode_round failed: MTP round
+   requested before the seed prefill`.
+
+Root cause, exactly as written in the source:
+
+- `Qwen36MTPBlockSession.swift:723` — `if stopTokens.contains(primary)` sets
+  `reachedStopToken = true` and then **nils out `pendingPrimary`, `pendingTop2` and
+  `pendingHidden`** (`:726-728`) before returning its 1-row result.
+- `Qwen36MTPBlockSession.swift:672-674` — the next `generateRound` guard is
+  `guard began, let primaryPending = pendingPrimary, let tailPending = pendingTop2,
+  let hidden = pendingHidden else { throw .notBegun }`. `began` is still `true`; the three
+  pendings are `nil`. `.notBegun`'s description is `"MTP round requested before the seed
+  prefill"` (`:90`), which is why the message misleadingly blames the prefill.
+- The parent never asked the session to stop: `reachedStopToken` **is not read anywhere**
+  in `Sources/MLXFastTrustedHarness/` (grep over `QwenRuntimeBenchmark.swift`,
+  `QwenRuntimeWorker.swift`, `QwenRuntimeMTPWorker.swift` returns no consumer). The trusted
+  parent owns the window and keeps requesting rounds to 512, exactly as `program.md` says
+  it should.
+- `Qwen36MTPReferenceSession` has no such short-circuit, which is why the 513-row reference
+  pass in step 1 sails past the same EOS. The two sessions disagree about what "the window"
+  means, and the timed side is the one that is wrong.
+
+Consequences worth the advisor's attention:
+
+- It kills the **denominator**, not just the candidate: the depth-0 serial control is the
+  leg that failed. On the public fixture **no arm — E14's or anyone's — can produce a
+  512-token local measurement on this base.** Every local number in this campaign, mine
+  included, is from a window short enough to stay inside the model's own completion.
+- The public fixture's natural completion is at decoded token **302**, so 64, 128 and 256
+  are all safe and 512 is not. This is fixture-specific, not a fixed 302-token limit.
+- The ranked contract is 512 decode tokens per leg. If any hidden prompt emits EOS before
+  its 512th decoded token, the candidate leg hits this same throw. I cannot see the hidden
+  pool, so I cannot say whether it does — but the failure is one `if` away from the ranked
+  path and costs a whole prompt if it fires.
+- The fix is small and lives in the editable surface: on the stop-token round, keep
+  producing the serial trajectory (or at minimum keep the pendings valid) instead of
+  tearing down session state. `program.md` already prescribes the behaviour — "continues
+  the serial trajectory for the full window even when EOS appears inside it".
+
+**I did not fix it.** E14's contract is `quantized.h` and its generated twin;
+`Qwen36MTPBlockSession.swift` is another agent's surface and a fix there would change the
+schedule under every other in-flight arm. Filed as follow-up #7.
+
+Q4 was therefore collected at **256 decode tokens** and is labelled a directional policy
+screen, per `program.md`'s rule for short exact runs.
+
 ## Correctness
 
 Bit-exact QMV parity, job `74ca3fb2-…` (exit 0, 884.7 s, `2026-08-17T11:12Z`–`11:27Z`),
@@ -542,6 +610,13 @@ produce +39% at `M = 5` for one arm and +12.4% at every wide width for another.
    width map: it lives in `_wide`, so the set of widths whose output changes is exactly the
    set routed through the wide branch. Running it once per arm family would have flagged the
    shared-body scope before any timing was spent. *Owner: unassigned.*
+7. **The 512-token EOS `notBegun` defect** — `Qwen36MTPBlockSession.swift:723-728` tears down
+   its own pendings on a stop-token round; the trusted parent never reads `reachedStopToken`
+   and asks for the next round anyway, which throws `.notBegun`. Full root cause and evidence
+   in the section above. It kills the **serial control**, so it blocks every 512-token local
+   measurement on the public fixture, and it sits one `if` away from the ranked candidate leg.
+   Whoever owns the session should make the stop-token round continue the serial trajectory
+   for the configured window. *Owner: the `Qwen36MTPBlockSession.swift` owner.*
 
 ### edward anti-synergy (stated explicitly)
 
