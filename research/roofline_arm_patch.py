@@ -116,33 +116,99 @@ ARMS = {
     "perturb": [(FULL_QDOT, PERTURBED_QDOT)],
 }
 
+# --- weight-pass arms ---------------------------------------------------------
+# These edit the M -> IPG dispatch table, which lives outside the `_wide` body,
+# so they are applied file-wide. Unlike the measurement-only arms above they are
+# numerically exact candidate forms: `_wide` reduces each output element in the
+# same K order with the same simd_sum regardless of NA, so only the number of
+# weight streams and the NA width change.
+NA_ASSERT_4 = 'static_assert(NA >= 2 && NA <= 4, "wide multi-row QMV supports NA in [2, 4]");'
+NA_ASSERT_5 = 'static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");'
+
+FILE_ARMS = {
+    # M=5 in one weight pass instead of two (IPG 3 -> 5, NA 3 -> 5).
+    "ipg-a": [
+        (NA_ASSERT_4, NA_ASSERT_5),
+        ("qmv_fast_crossrow_affine4_g64_m<T, 5, 3>(",
+         "qmv_fast_crossrow_affine4_g64_m<T, 5, 5>("),
+    ],
+    # Opposite-direction discriminator: M=4 in two weight passes instead of one
+    # (IPG 4 -> 2, NA 4 -> 2). Isolates the NA-width tax from the stream tax.
+    "ipg-b": [
+        ("qmv_fast_crossrow_affine4_g64_m<T, 4, 4>(",
+         "qmv_fast_crossrow_affine4_g64_m<T, 4, 2>("),
+    ],
+    # Arm A with an exactly packed accumulator: vec<float,5> occupies 32 bytes,
+    # so `VF acc[4]` wastes three lanes per element.
+    "ipg-d": [
+        (NA_ASSERT_4, NA_ASSERT_5),
+        ("qmv_fast_crossrow_affine4_g64_m<T, 5, 3>(",
+         "qmv_fast_crossrow_affine4_g64_m<T, 5, 5>("),
+        ("""  VF acc[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc[r] = VF(0.0f);
+  }
+""",
+         """  float acc[rows_per_simd][NA];
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      acc[r][m] = 0.0f;
+    }
+  }
+"""),
+        ("""    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+""",
+         """    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < NA; m++) {
+        acc[r][m] += scale_local[r] * partial[r][m] + sums[m] * bias_local[r];
+      }
+    }
+"""),
+    ],
+}
+
 
 def wide_region(text: str) -> tuple[int, int]:
     start = text.index(WIDE_DECL)
     return start, text.index("\n}\n", start) + 3
 
 
+def apply_arm(rel: str, path: pathlib.Path, arm: str, check: bool) -> int:
+    text = path.read_text()
+    if arm in FILE_ARMS:
+        start, end = 0, len(text)
+        pairs = FILE_ARMS[arm]
+        where = "file"
+    else:
+        start, end = wide_region(text)
+        pairs = ARMS[arm]
+        where = "_wide body"
+    region = text[start:end]
+    for old, new in pairs:
+        if region.count(old) != 1:
+            print(f"{rel}: anchor not unique in the {where} "
+                  f"({region.count(old)} matches); source drifted", file=sys.stderr)
+            return 1
+        region = region.replace(old, new)
+    if not check:
+        path.write_text(text[:start] + region + text[end:])
+    print(f"{rel}: {arm} {'ok' if check else 'applied'}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("arm", choices=sorted(ARMS))
+    ap.add_argument("arm", choices=sorted(set(ARMS) | set(FILE_ARMS)))
     ap.add_argument("--check", action="store_true", help="verify only, do not write")
     args = ap.parse_args()
 
     root = pathlib.Path(__file__).resolve().parent.parent
     for rel in TWINS:
-        path = root / rel
-        text = path.read_text()
-        start, end = wide_region(text)
-        region = text[start:end]
-        for old, new in ARMS[args.arm]:
-            if region.count(old) != 1:
-                print(f"{rel}: anchor not unique in the _wide body "
-                      f"({region.count(old)} matches); source drifted", file=sys.stderr)
-                return 1
-            region = region.replace(old, new)
-        if not args.check:
-            path.write_text(text[:start] + region + text[end:])
-        print(f"{rel}: {args.arm} {'ok' if args.check else 'applied'}")
+        rc = apply_arm(rel, root / rel, args.arm, args.check)
+        if rc:
+            return rc
     return 0
 
 

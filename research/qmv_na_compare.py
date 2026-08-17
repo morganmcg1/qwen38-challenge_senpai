@@ -16,8 +16,8 @@ import json
 import statistics as st
 from pathlib import Path
 
-CHANGED = (5, 9)
-CONTROL = (3, 4, 6, 7, 8)
+DEFAULT_CHANGED = "5,9"
+DEFAULT_CONTROL = "3,4,6,7,8"
 
 
 def load(d: Path) -> dict:
@@ -47,7 +47,13 @@ def main() -> None:
     ap.add_argument("--a-label", default="NA=4")
     ap.add_argument("--b-label", default="NA=5")
     ap.add_argument("--out", type=Path)
+    ap.add_argument("--changed", default=DEFAULT_CHANGED,
+                    help="widths whose dispatched kernel differs between a and b")
+    ap.add_argument("--control", default=DEFAULT_CONTROL,
+                    help="widths that dispatch identical code in both builds")
     args = ap.parse_args()
+    changed = tuple(int(m) for m in args.changed.split(","))
+    control = tuple(int(m) for m in args.control.split(","))
 
     sa, sb = load(args.a), load(args.b)
     ca, cb = curve(sa), curve(sb)
@@ -78,46 +84,44 @@ def main() -> None:
         f["identical"] == f["total"] for f in fid if 1 <= f["m"] <= 9)
 
     print(f"\n=== seconds/call ratio {args.b_label} / {args.a_label} ===")
-    print("  M=3,4,6,7,8 dispatch identical code: that block is session drift")
-    hdr = "  ".join(f"M{m}" for m in widths)
+    print(f"  M={','.join(str(m) for m in control)} dispatch identical code:"
+          " that block is session drift")
     print(f"  {'shape':36s} " + "  ".join(f"{f'M{m}':>6s}" for m in widths)
-          + f"  {'drift':>7s} {'M5adj':>7s} {'M9adj':>7s}")
-    del hdr
+          + f"  {'drift':>7s} "
+          + " ".join(f"{f'M{m}adj':>7s}" for m in changed))
     per_shape = []
     for nm in names:
         ratios = {m: cb[(nm, m)]["seconds_per_call"]
                   / ca[(nm, m)]["seconds_per_call"] for m in widths}
-        drift = st.median(ratios[m] for m in CONTROL)
+        drift = st.median(ratios[m] for m in control)
         rec = {"name": nm, "ratio": ratios, "control_drift": drift,
-               "m5_drift_adjusted": ratios[5] / drift,
-               "m9_drift_adjusted": ratios[9] / drift}
+               "control_spread": (min(ratios[m] for m in control),
+                                  max(ratios[m] for m in control)),
+               "drift_adjusted": {m: ratios[m] / drift for m in changed}}
         per_shape.append(rec)
         cells = "  ".join(f"{ratios[m]:6.3f}" for m in widths)
         print(f"  {nm:36s} {cells}  {drift:7.3f} "
-              f"{rec['m5_drift_adjusted']:7.3f} "
-              f"{rec['m9_drift_adjusted']:7.3f}")
+              + " ".join(f"{rec['drift_adjusted'][m]:7.3f}" for m in changed))
     report["seconds_per_call_ratio"] = per_shape
-    report["m5_drift_adjusted_median"] = st.median(
-        r["m5_drift_adjusted"] for r in per_shape)
-    report["m9_drift_adjusted_median"] = st.median(
-        r["m9_drift_adjusted"] for r in per_shape)
+    report["drift_adjusted_median"] = {
+        m: st.median(r["drift_adjusted"][m] for r in per_shape)
+        for m in changed}
     report["control_drift_median"] = st.median(
         r["control_drift"] for r in per_shape)
     print(f"\n  median control drift        {report['control_drift_median']:.4f}"
           "   (1.000 = the two sessions are comparable)")
-    print(f"  median M=5 drift-adjusted   "
-          f"{report['m5_drift_adjusted_median']:.4f}"
-          "   (<1 = wider packing is faster at the old boundary)")
-    print(f"  median M=9 drift-adjusted   "
-          f"{report['m9_drift_adjusted_median']:.4f}")
+    for m in changed:
+        print(f"  median M={m} drift-adjusted   "
+              f"{report['drift_adjusted_median'][m]:.4f}"
+              "   (<1 = the b build is faster at that width)")
 
     print(f"\n=== achieved GB/s, {args.a_label} -> {args.b_label} ===")
-    print(f"  {'shape':36s} " + "  ".join(f"{f'M{m}':>13s}" for m in CHANGED))
+    print(f"  {'shape':36s} " + "  ".join(f"{f'M{m}':>13s}" for m in changed))
     gb = []
     for nm in names:
         cells = []
         rec = {"name": nm}
-        for m in CHANGED:
+        for m in changed:
             a = ca[(nm, m)].get("gbps_nominal")
             b = cb[(nm, m)].get("gbps_nominal")
             rec[f"m{m}"] = {"a": a, "b": b}
