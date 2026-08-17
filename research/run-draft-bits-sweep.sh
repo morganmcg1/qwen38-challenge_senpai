@@ -5,12 +5,14 @@
 #
 #   research/run-draft-bits-sweep.sh TAG
 #
-# This is the cheap gate for the draft-head precision experiment. The 4-bit arm
-# is not stock here: this checkout routes
-# `!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024` into
-# `qmv_fast_crossrow_affine4_g64*`, so 3-bit/2-bit trade less weight traffic
-# for the stock `qmv_fast_impl`. If that trade is a loss, no model-side
-# plumbing can rescue it.
+# This is the cheap gate for the draft-head precision experiment. This
+# checkout carries a crossrow specialization for
+# `!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024`, but it
+# is an in-kernel branch on `ntg.x` with cases 2...9 only, and the host sets
+# `ntg.x == M`. The shipped draft readout is M=1, so BOTH the 4-bit and 3-bit
+# arms fall through to `qmv_fast_impl` and 3 bits is a pure byte saving. The
+# M=2 arms in the sweep are the empirical check on that reading. If the 3-bit
+# arm still loses, no model-side plumbing can rescue it.
 #
 # Holds benchmark.sh's own local run lock, so this never overlaps a
 # model-holding run. The 40C cool gate is attempted and its outcome plus the
