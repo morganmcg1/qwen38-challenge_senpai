@@ -67,7 +67,10 @@ for spec in "$@"; do
   } >"${out_dir}/arm-state.json"
   cat "${out_dir}/arm-state.json" >&2
 
+  # The default summarizer interpreter is a venv python3 that exits silently
+  # under run_job, leaving an empty summary.log and no summary.json.
   MLXFAST_MLX_PYTHON_BIN=/usr/bin/python3 \
+  MLXFAST_PYTHON_BIN=/usr/bin/python3 \
     research/run-qmv-curve.sh "${tag}"
 
   {
