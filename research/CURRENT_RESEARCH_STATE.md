@@ -74,15 +74,16 @@ delegates to me.)*
 
 ## Where we stand
 
-The promoted frontier is submission `ba493f74-c0fe-440a-a956-f77d26232e54` at
-score **2.95338624520432**, source
-`156b5b75bdfac82ae406487f531fd991e7fdfd30`. **Senpai has zero official
+The promoted frontier is submission `14b53255-e585-44bd-84d9-37b7b29c0be9` at
+score **3.02460155382533**, source
+`79683c633b13c63aa23f112756a9c6b5173705b0`. **Senpai has zero official
 submissions.**
 
-*(The previous entry here — `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` at
-2.9042110287045, `sourceRef = 7351e626…` — is superseded. `7351e626` is a
-`sourceRef`, not a commit in this repository; do not try to check it out. Any
-number in this file derived from 2.904 is stale by +0.049 score.)*
+*(The immediately previous frontier — `ba493f74-c0fe-440a-a956-f77d26232e54`
+at 2.95338624520432, source `156b5b75…` — is superseded by +0.07121530862101
+score. The older `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` receipt at
+2.9042110287045 is superseded by +0.12039052512083; its `7351e626…` value is a
+`sourceRef`, not a commit in this repository.)*
 
 Score sensitivity at the pinned calibration: `d(score)/d(candidate_seconds) ≈
 −0.4335`, i.e. **100 ms off the candidate decode leg ≈ +0.043 score**. That
@@ -94,10 +95,11 @@ calibration predates `b85e782` and has not been re-derived on it.
 `senpai/program.md:19,21` agree, and
 `QwenMTPFixedWindowSourceGuardTests.theDocumentedCeilingMatchesTheManifest` now
 fails if they drift apart again. The live promoted frontier is
-**2.95338624520432** (receipt `ba493f74-c0fe-440a-a956-f77d26232e54`), so the
-remaining headroom is **+2.047 score**, not the ≈220 ms this paragraph used to
-claim. At the stale −0.4335 calibration that is ≈4.7 s off a candidate leg of
-≈12.05 s — roughly 39% of the whole MTP leg — which is the honest framing: the
+**3.02460155382533** (receipt `14b53255-e585-44bd-84d9-37b7b29c0be9`), so the
+remaining headroom is **+1.97539844617467 score**, not the ≈220 ms this
+paragraph used to claim. At the stale −0.4335 calibration that is ≈4.56 s off
+a candidate leg of ≈12.05 s — roughly 38% of the whole MTP leg — which is the
+honest framing: the
 ceiling is far away, it is not a stop target, and no single lever measured so
 far is within an order of magnitude of it.
 
@@ -1705,8 +1707,9 @@ base. That is real science and it will not have to be redone.
 > commit and a number someone else can recompute. That is the standard the
 > other two failed.
 
-**What we have shipped to the scoreboard: nothing.** Senpai still has **zero
-official submissions**. The promoted frontier is 2.9042110287045
+**At this historical checkpoint, what we had shipped to the scoreboard was
+nothing.** Senpai had **zero official submissions**. The promoted frontier was
+2.9042110287045
 (`e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd`, `sourceRef 7351e626…`), and that
 frontier **already contains crossrow** (`1033e1a` has 22 hits). Everything the
 campaign has added on top of it — `b219009`, the PR #3 merge, the PR #5 merge,
@@ -2365,7 +2368,8 @@ content arrived here as:
 ce15975 | 08-16 12:59 | mmcguire | Sync promoted organizer frontier 7351e62674bc600f0ca148d3a1b0604716a09db6
 ```
 
-That commit **is** the promoted frontier: submission
+That commit **was the promoted frontier at this historical checkpoint**:
+submission
 `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd`, official score **2.9042110287045**.
 Every `Validate submission <uuid>` commit by `yukon-autoresearch[bot]` is an
 ancestor of our HEAD, so the base carries the whole validated pool.

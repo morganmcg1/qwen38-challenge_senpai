@@ -4,10 +4,10 @@
 **Frontier refresh:** 2026-08-16 12:05 UTC
 **Ceiling and frontier correction:** 2026-08-17 (advisor). The transfer
 arguments below are unchanged and still stand on their own evidence; only the
-frontier endpoints and the plausibility ceiling were stale. Corrected in three
-places: the headroom paragraph in the executive conclusion, the authority table
-under "Reproducible endpoints", and item 6 of the closing checklist. Ceiling is
-`5.0`, not 3.0; frontier is `2.95338624520432`, not `2.9042110287045`.
+frontier endpoints and the plausibility ceiling were stale. Live values are
+carried in the headroom paragraph, the authority table under "Reproducible
+endpoints", the import description, and item 6 of the closing checklist. Ceiling is
+`5.0`, not 3.0; frontier is `3.02460155382533`, not `2.9042110287045`.
 
 **Purpose:** record what the final Laguna XS frontier actually optimized, map
 those mechanisms onto the current Qwen 3.8 frontier, and separate quick
@@ -65,11 +65,12 @@ headroom remained, so wins should not be stacked. Both halves are now wrong and
 the prescription was the dangerous half: it would talk a reader out of
 composing legitimate wins.
 
-The promoted Qwen score is `2.95338624520432` (receipt
-`ba493f74-c0fe-440a-a956-f77d26232e54`, source
-`156b5b75bdfac82ae406487f531fd991e7fdfd30`) and the plausibility ceiling is
+The promoted Qwen score is `3.02460155382533` (receipt
+`14b53255-e585-44bd-84d9-37b7b29c0be9`, source
+`79683c633b13c63aa23f112756a9c6b5173705b0`) and the plausibility ceiling is
 `5.0`, raised from 3.0 by operator commit `a5854b979499800a6f5f71a8d4fc14fd43ca4723`.
-Headroom is therefore `+2.047` of score, about 69% multiplicative, not 3.3%.
+Headroom is therefore `+1.97539844617467` of score, about 65.3% multiplicative,
+not 3.3%.
 No measured lever in this campaign is within an order of magnitude of
 exhausting it. **Stack every legitimate win you can attribute.** The ceiling is
 a fail-closed plausibility gate, not an optimization target and not a reason to
@@ -131,10 +132,10 @@ this repository; it arrived with the solver import `ce159755`.
 
 | Item | Value |
 | --- | --- |
-| Promoted receipt | `ba493f74-c0fe-440a-a956-f77d26232e54` |
-| Promoted source | `156b5b75bdfac82ae406487f531fd991e7fdfd30` |
-| Official score | `2.95338624520432` |
-| Trusted organizer contract | `0b071ed9db211f17554bc5a13fb7381f14d709b3` |
+| Promoted receipt | `14b53255-e585-44bd-84d9-37b7b29c0be9` |
+| Promoted source | `79683c633b13c63aa23f112756a9c6b5173705b0` |
+| Official score | `3.02460155382533` |
+| Organizer synced commit | `79683c633b13c63aa23f112756a9c6b5173705b0` |
 | Score | median of eight per-prompt serial-relative speedups; floor 0.90; ceiling `5.0` |
 | Ceiling provenance | raised 3.0 -> `5.0` by `a5854b979499800a6f5f71a8d4fc14fd43ca4723` |
 
@@ -144,8 +145,10 @@ Two different bounds exist and they are not the same number: the
 tighter than the per-pair bound (`benchmark.json:201`).
 
 The campaign import overlays the promoted editable snapshot onto the reviewed
-organizer contract. Its submitted delta from the previous `df404e08` snapshot
-is exactly `Qwen36MTPBlockSession.swift` and `Qwen35.swift` (`+54/-14`).
+organizer contract. Its submitted delta from the previous promoted
+`156b5b75bdfac82ae406487f531fd991e7fdfd30` snapshot is exactly the readable
+and generated affine4/group-64 QMV kernel twins (`+58/-22`); the campaign then
+reapplies fixed-window post-EOS continuation as a separate overlay.
 [`frontier-state.json`](frontier-state.json) and the live Yukon receipt are the
 operational authorities; this report is a timestamped comparison and can
 become stale quickly.
@@ -388,7 +391,7 @@ Required tests:
    steady time separated.
 6. Use all eight prompt results when deciding whether to compose independent
    wins. The ceiling is `5.0`, not 3.0, and with the frontier at
-   `2.95338624520432` it is far enough away that it should not enter the
+   `3.02460155382533` it is far enough away that it should not enter the
    composition decision at all.
 7. Record negative results in the campaign novelty ledger so future agents do
    not rediscover Laguna-shaped dead ends.

@@ -42,18 +42,18 @@ and official validation before it can itself be called promoted.
 `senpai/program.md` only) and readable at
 `benchmark.json /scoring/decodeSpeedupCeiling` on base `b85e782`. It is a
 fail-closed administrative gate, **not** a stop target and not an optimization
-target (`senpai/program.md:21`). Headroom from the promoted `2.95338624520432`
-is `+2.047` score — at the stale `-0.4335` calibration roughly `4.7` s off a
-`~12.05` s candidate leg, i.e. about 39% of the whole MTP leg. No lever measured
-this campaign is within an order of magnitude of that, so the ceiling changes
-nothing operationally except that a large legitimate result must not be held
-back. Docs corrected this session:
+target (`senpai/program.md:21`). Headroom from the promoted `3.02460155382533`
+is `+1.97539844617467` score — at the stale `-0.4335` calibration roughly
+`4.56` s off a `~12.05` s candidate leg, i.e. about 38% of the whole MTP leg.
+No lever measured this campaign is within an order of magnitude of that, so the
+ceiling changes nothing operationally except that a large legitimate result
+must not be held back. Docs corrected this session:
 `research/ESTABLISHED_FACTS.md` and `research/CURRENT_RESEARCH_STATE.md` were
 still stale at `3.0` and at the superseded `2.904` frontier.
 
 ## Base `b85e782`: what moved, and what students must re-derive
 
-**The advisor branch has since advanced to `422db045`, and every step was
+**This earlier advisor progression through `422db045` was entirely
 scored-path-inert.** Progression and verified deltas:
 `b85e782` -> `e7cd780` (defect closure: tests and docs, 0 editable files) ->
 `3c9317da` (merge PR #18, 13 files, **0 editable**) -> `af80b0fc` (merge PR #16,
@@ -452,7 +452,7 @@ below `5.0`. The organizer's own stated reason for `5.0` being generous is worth
 quoting when judging a suspicious number: "the authors' own exact-greedy
 envelope tops out at 1.74x at a 32-token window, kernel work on this tower has
 historically bought tens of percent, and 5.0 leaves room for both compounding."
-Our promoted `2.95338624520432` is already well above that 1.74x envelope, which
+Our promoted `3.02460155382533` is already well above that 1.74x envelope, which
 is the honest measure of how much of this campaign's frontier is kernel work
 rather than acceptance.
 
@@ -526,6 +526,7 @@ evidence or a changed condition; “try again” is not enough.
 | 2026-08-17 | `qwen-alphonse/keylen-1024-residual` / `0d6853ca` (PR #21, E19) | close the campaign-level `key_len = 1024` positional exactness residual | `1bb627ab` | **r1 assigned, in flight.** Zero-GPU, host-only, takes no benchmark lock. Brief hands him the complete corrected mechanism (stride 32 vs `blocks = 64`, with the (a)/(b)/(c) argument and both verbatim key loops), the quantitative band table, `gqa_factor = 6` and the `split = 5` witness, and the candidate repair with five ranked attacks. **Deliverable 1 is to prove the live call path before anything else**; deliverables 1, 3 and 8 alone are a complete mergeable result if the `devc` question resolves against `'d'`/`'s'` in his first hour | not submitted | Both outcomes pre-registered so the result cannot be talked into significance either way. Brief also restates, verbatim, the **two advisor errors PR #2 caught me in**: ranking arms by `accepted_tokens_per_round` (anti-correlated with speed among cap-8 arms), and closing a direction on a point estimate that contradicted my own preregistered band — "when a band and a point estimate disagree, the point estimate is the thing that needs defending" |
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-6` / `29f1ee4` | exact promoted editable-snapshot import | `1c57496` | preservation, overlay, budget, and trusted-parity checks passed; both changed QMV twins are byte-identical to promoted source `79683c63`; regeneration audit is locally blocked by the missing Xcode Metal Toolchain | adopted public promoted `14b53255` at `3.02460155382533`; not a Senpai-authored submission | Exact organizer source `79683c63`; two affine4/group-64 QMV kernel twins changed relative to the previous promoted source |
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-6` / `28e591f` | fixed-window continuation after EOS on promoted source `79683c63` | `29f1ee4` | source overlay and trusted-parity checks passed; Swift test compilation remains blocked by the unchanged organizer `QwenMTPVerbTests.swift:755` type error, so full 512-token exact replay is still required | not submitted; not promoted | Reapplies the campaign's parent-owned fixed-window behavior as a separate overlay |
+| 2026-08-17 | advisor `senpai/qwen38-mtp-r1` / `56e81ff` | merge current challenge frontier and reconcile local cooling policy | `3e6ca31` + campaign `main` `57cb86b` | complete test target builds; focused fixed-window suite passes 10 tests in 2 suites; QMV twins are byte-identical to official source `79683c63`; experiment ledger preserved | not submitted; adopted public promoted `14b53255` at `3.02460155382533` | Real 40C gate remains default; ungated local timing is permitted only under the recorded ABBA, temperature, and false-qualification protocol |
 
 ## Update checklist
 

@@ -1672,8 +1672,8 @@ and re-forward, so true degradation is worse than linear in `a`. An arm landing
 ## 9. The stacked candidate
 
 Senpai still has **zero official submissions**. Promoted frontier is
-**2.95338624520432** (receipt `ba493f74-c0fe-440a-a956-f77d26232e54`, source
-`156b5b75bdfac82ae406487f531fd991e7fdfd30`); the plausibility gate is **5.0**,
+**3.02460155382533** (receipt `14b53255-e585-44bd-84d9-37b7b29c0be9`, source
+`79683c633b13c63aa23f112756a9c6b5173705b0`); the plausibility gate is **5.0**,
 raised from 3.0 by operator commit `a5854b97` on 2026-08-17 and read back from
 `benchmark.json /scoring/decodeSpeedupCeiling` at base `b85e782`. The earlier
 2.9042110287045 / `sourceRef 7351e626…` pair recorded elsewhere in this file is
