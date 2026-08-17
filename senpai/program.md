@@ -16,7 +16,9 @@ for each hidden prompt p:
 published score = median(raw_1 ... raw_8)
 ```
 
-The ranked run measures all eight hidden prompts. With eight values, the median is the mean of the two middle values after sorting. There is no no-op normalization. Serial decoding is `1.0`, the minimum published score is `0.90`, and the published median has an operator-set plausibility gate at `3.0`. That gate is an administrative, fail-closed sanity check—not a physical or theoretical limit on attainable speedup. A median above it is rejected as a measurement fault or benchmark escape rather than clamped to `3.0`; a legitimate result above the gate would require the operator to revise the policy before it could publish.
+The ranked run measures all eight hidden prompts. With eight values, the median is the mean of the two middle values after sorting. There is no no-op normalization. Serial decoding is `1.0`, the minimum published score is `0.90`, and the published median has an operator-set plausibility gate at `5.0`. That gate is an administrative, fail-closed sanity check—not a physical or theoretical limit on attainable speedup. A median above it is rejected as a measurement fault or benchmark escape rather than clamped to `5.0`.
+
+The `5.0` gate is not an optimization target, a reason to stop, or a reason to hold a candidate. Advance and submit the strongest legitimate candidate that passes correctness and the normal pre-submit checks even when local evidence predicts a score above `5.0`. Never weaken, delay, split, or tune a candidate merely to keep it below the ceiling. If Yukon rejects a correct candidate solely because of the ceiling, preserve the receipt and evidence, keep that candidate as the scientific frontier, and continue with distinct justified work. Do not wait for a policy revision before submitting the result that demonstrates one is needed.
 
 Each leg starts with a 512-token seed and then generates 512 tokens that the trusted parent counts. Both seed processing and decoding are included in the same timed leg, even though prefill has no separate score.
 
