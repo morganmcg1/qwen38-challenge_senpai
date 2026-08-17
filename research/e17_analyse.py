@@ -158,8 +158,12 @@ def report(data: dict[str, dict[str, dict]]) -> None:
         "(raw = serial spt / mtp spt, prefill-inclusive, 512 decode tokens)"
     )
     print(
-        f"{'prompt':<16}{'arm':<8}{'serial A':>10}{'serial K':>10}{'floor%':>8}"
-        f"{'mtp A':>11}{'mtp K':>10}{'raw A':>8}{'raw K':>8}"
+        f"  g% > 0 means the CANDIDATE decodes faster than {CONTROL}: "
+        f"g = (mtp_ctrl - mtp_cand) / mtp_ctrl"
+    )
+    print(
+        f"{'prompt':<16}{'arm':<8}{'ser cand':>10}{'ser ctrl':>10}{'floor%':>8}"
+        f"{'mtp cand':>11}{'mtp ctrl':>10}{'raw cand':>9}{'raw ctrl':>9}"
         f"{'d_raw':>8}{'g%':>8}"
     )
     for prompt, arms in data.items():
@@ -200,7 +204,7 @@ def report(data: dict[str, dict[str, dict]]) -> None:
             print(f"  arm wins on        = {sum(1 for x in gs if x > 0)}/{len(gs)} prompts")
 
     print("\nDEPTH / ACCEPTANCE / CORRECTNESS")
-    print("  (M = drafted depth + 2 is the verify width, so M>=5 means depth>=3)")
+    print("  (M = drafted depth + 1 is the verify width, so M>=5 means depth>=4)")
     for prompt, arms in data.items():
         for arm in ARMS:
             if arm not in arms:

@@ -308,3 +308,66 @@ rules attached to them are the standard r2 is judged against; a failed
 prediction is reported as failed.
 
 -- `qwen-edward`, r2, base `af80b0fc93cf20e8405631bb53365ace21a1f913`
+
+## 9. P1 verdict -- appended 2026-08-17T14:15Z, predictions above unedited
+
+Job `18ff234b`, english, 512 decode tokens, arms `S18` then `CURVE`,
+`dirty=0` and `mlx_qwen_env=` empty on both, worker sha256
+`aa17ce5c...` / `ed12f464...` as built.
+
+**P1 CONFIRMED, at the strongest available strength.** `S18` on `af80b0fc`
+reproduces r1's `FLAT18` english arm *exactly*, not merely closely:
+
+| quantity | r1 `FLAT18` on `e6e6f81` | r2 `S18` on `af80b0fc` |
+| --- | --- | --- |
+| depth_hist | `{1:19, 2:138, 3:67, 4:21}` | `{1:19, 2:138, 3:67, 4:21}` |
+| mean / max depth | 2.367 / 4 | 2.367 / 4 |
+| M>=5 (depth>=4) | 8.57% | 8.57% |
+| declared rows | 825/825 | 825/825 |
+| accepted | 267/580 (46.0%) | 267/580 (46.0%) |
+| replays / rounds | 110 / 245 | 110 / 245 |
+
+`CURVE` likewise reproduces r1's english `CURVE` exactly:
+`{1:2, 2:237, 3:7}`, mean 2.020, max 3, M>=5 0.00%, 743/743 rows,
+266/497 (53.5%), 74 replays, 246 rounds.
+
+Consequences, in order of importance:
+
+1. **§2 stands: the live base default is r1's losing-arm policy.** The base's
+   scalar `headStepCostRatio = 0.18` behaves identically to r1's `FLAT18`.
+   The merged depth curve is genuinely absent from `af80b0fc`, so restoring it
+   is a real submittable change, and the r2 premise "control arm = shipped
+   CURVE" is invalid as written.
+2. **The advisor's gate-2 prediction is FALSIFIED.** It predicted the curve's
+   histogram would move *deeper* on `af80b0fc` and that M>=5 would become
+   `> 0.00%`. Measured: the histogram did not move deeper, and did not move
+   *at all*; M>=5 stayed exactly 0.00%.
+3. **Mechanism for that falsification, and it is benign.**
+   `segmentedStreakGate` governs entry to the segmented-verify path, which the
+   ledger ties to the width-8 verify kernel. Both arms cap at max depth 4, so
+   M <= 5 and the segmented path is never reached. The gate 3 -> 2 change is
+   *inert in this regime* -- it is not that the organizer's change fails to do
+   what its author says, it is that its author's claim is about depth-8
+   drafting and `h = 0.18` never drafts that deep on this prompt. The
+   simulator's pre-registered estimate (gate contributes ~0.015 mean depth)
+   was directionally right and numerically conservative; the truth is 0.000.
+4. **The h[1] sweep is stopped**, honouring the advisor's stop rule. Its
+   premise -- that h[1] tuning is measured against a curve-shaped base -- is
+   moot, and §4's algebra already showed a 3-point bracket cannot identify a
+   non-monotone response. `H1LO`/`H1MEAS`/`H1HI` remain built and
+   hash-verified for a future assignment; they were never timed, and no
+   number is reported for them.
+5. **Remaining GPU goes to the two things that decide the headline**: the
+   `S18R` noise floor (§5 threshold: a candidate whose |g%| does not clear
+   |g%(S18R)| is reported as not measured) and a second prompt for the
+   winning arm (deliverable 4).
+
+**P3 remains live and unresolved by this run.** `CURVE` wins locally
+(+6.821% on english, versus r1's +6.688% -- 0.13 pp apart on bit-identical
+behaviour, so that spread is pure timing noise). But it wins by drafting
+*shallower*, and §3's ranked M5 evidence records the same shallowing
+direction losing 3%. Per §6-P3, no shallowing arm may be advanced as
+submittable on local evidence alone. That constraint binds here and is not
+relaxed by the size of the local win.
+
+-- `qwen-edward`, r2, appended after job `18ff234b`
