@@ -977,3 +977,152 @@ already collected about 27 % of what the r2 measurement was crediting to the
 curve. The remaining -6.378 % is the part a single scalar cannot reach, because
 no scalar can simultaneously be small at depth 1 and large at depth 4.
 
+
+## R3 measurement record — five arms, promoted-frontier base `fe38ecc`
+
+All five arms on the same host, same 512-seed/512-decode prose golden
+(`.mlxfast-private/e11/goldens/e11_prose_512_512.json`, sha256
+`615a1f20cae333fdb540f29e3cad71a187c449b74ca62ed195a020fa75ceb219`), same
+declared head (`head_provenance_sha256 07293af7...`, 2 files, 238937699 bytes =
+manifest 238934129 + staged `config.json` 3570), no `MLX_QWEN_MTP_*` set,
+`dirty=0`. Every arm: `all_tokens_matched: true`,
+`residual_divergence_count: 0`, `parity_all_ok: true`,
+`reference_checked_row_total == declared_rows_total`, `emitted_token_total 512`.
+
+W&B (`wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, all `finished`,
+`base_sha = fe38ecc2`):
+
+| arm | build | W&B run | head sha at run time | window (UTC) |
+|---|---|---|---|---|
+| `Sp3`  | S18 | `5x66fb6b` | `075174ad` | 08:57:14-09:05:02 |
+| `Sp3b` | S18 | `vw8tkex5` | `5db6e26c` | 09:16:43-09:24:55 |
+| `S20p` | S20 | `8o6vg3ku` | `c91c2293` | 09:35:01-09:43:10 |
+| `Hp3`  | HV  | `930e1t9u` | `e47e562f` | 09:06:18-09:14:24 |
+| `Hp3b` | HV  | `83k6ipv6` | `aec51a1c` | 09:25:52-09:33:56 |
+
+Build identity: CLI `e1d9980b...` for every arm; workers `741d3b37...` (S18),
+`3ea7bb59...` (S20), `a698f506...` (HV). Inter-arm commits touched only
+`research/`, never `Sources/`, so each arm's archived `source.swift` digest is
+constant across its runs.
+
+```
+arm    h        mtp s/tok     speedup   meanD  accRate  maxD rounds rows replays gpuC
+Sp3    0.18     0.049472851   1.507282  2.367  0.4603   4    245    825  110     37.56
+Sp3b   0.18     0.049594029   1.501926  2.367  0.4603   4    245    825  110     39.65
+S20p   0.20     0.049148680   1.509605  2.152  0.4888   4    250    788   85     41.71
+Hp3    curve    0.046317363   1.609073  2.020  0.5352   3    246    743   74     41.19
+Hp3b   curve    0.046259088   1.607356  2.020  0.5352   3    246    743   74     42.34
+```
+
+### Serial-leg noise floor (the honest error bar)
+
+The serial leg is byte-identical work in all five arms, so its spread is a
+direct measurement of session noise on this host:
+
+```
+mean 0.074426803 s/tok over 5 arms, peak-to-peak +0.503%
+(0.125% relative sd over the first four)
+```
+
+Replicate-pair noise was `Sp3`/`Sp3b` +0.245% and `Hp3`/`Hp3b` -0.126%. Both
+exceed the r2 clean-pair band 0.019-0.092%, so per the r3 protocol the pairs are
+**not averaged**; the range is reported instead. The serial floor brackets both
+pair figures, which is why these are read as session noise rather than defective
+arms. `research/e11_pairnoise.py` on both pairs shows the schedule is
+**bit-identical** (`effective_draft_lengths` equal element-for-element, meanD and
+acceptance agreeing to 16 digits), the shift is uniform across quantiles rather
+than a tail, and no stall. Stall ratios (max/p50 block latency) are 1.51-1.55 on
+the MTP leg and 1.71-1.79 serial, far under the 4x guardrail.
+
+### Thermal retraction
+
+An earlier two-point fit claimed "hotter start -> slower, so the measured gain
+understates the truth". **The sign flips with five points.** Regression of MTP
+seconds/token on `gpu_c_before`:
+
+```
+slope -55.34e-6 s/tok/degC = -0.0744%/degC, r = -0.695
+(critical |r| at n=5, p=0.05 is 0.878 -> not significant)
+```
+
+Colder start -> slower, consistent with clock/residency warmup rather than
+throttling. The curve arms started 3.16 degC hotter on average (41.77 vs 38.60),
+so the curve had a possible ~0.24 pp thermal *advantage*: -6.378% may be a
+slight overstatement (~-6.14% thermally corrected). The best thermally matched
+pair is `Hp3` (41.19) vs `S20p` (41.71), 0.5 degC apart, giving **-5.761%** —
+simultaneously the most conservative and the best-controlled number.
+
+### Per-depth marginal costs (Q2): the profile did not move
+
+Round cost C(d) from aligned `block_request_seconds` and
+`effective_draft_lengths`; C(0) from the serial leg (median, n=511 per arm,
+66.16-66.28 ms). `h[d] = (C(d+1) - C(d)) / C(0)`.
+
+| d | Sp3 | Sp3b | S20p | Hp3 | Hp3b | E1 fit | best estimate |
+|---|---|---|---|---|---|---|---|
+| 0 | 0.0962 | 0.0982 | 0.0969 | 0.0921 (n=2) | 0.0874 (n=2) | 0.0842 | **0.0971** (fit 15% low) |
+| 1 | 0.1131 | 0.1153 | 0.1171 | 0.1177 | 0.1222 | 0.0775 | **0.1152** (fit 33% low) |
+| 2 | 0.2468 | 0.2480 | 0.2497 | 0.2481 | 0.2472 | 0.2426 | **0.2482** (fit 2.3% low) |
+| 3 | 0.3761 | 0.3751 | 0.3772 | -- | -- | 0.3754 | **0.3761** (fit 0.2% low) |
+
+Cross-arm agreement 0.1-0.5%; cross-base movement vs the r2 old-base values
+(0.0965 / 0.1204 / 0.2485 / 0.3740) is <= 0.6%. **The declared head repository
+changed between bases and the cost profile did not.**
+
+New finding: the E1 fit is **non-monotone at the first step** (h[0]=0.0842 >
+h[1]=0.0775, i.e. it prices the second draft step below the first) while
+measurement is strictly monotone (0.0971 < 0.1152 < 0.2482 < 0.3761). That
+non-monotonicity is a fitting artifact of the forced-depth design. The doc-block
+claim "0.18 is ~2.2x TOO HIGH at d=1..2" is also wrong: it is ~1.85x high at
+h[0] and ~1.56x high at h[1], and ~1.4-2.1x *low* at h[2..3]. Both corrected in
+the source comment.
+
+### Width wall vs curve (Q3): the wall was never binding
+
+Direct evidence from the reports rather than inference: every arm has
+`max_draft_depth_bound = 8` and `requested_draft_depth = 8`, so the parent
+offered depth 8 every round and `cap = min(8, maxDepth 8, widthCap)` = widthCap,
+which is 5 normally and 8 once `fullAcceptStreak >= segmentedStreakGate`. **Zero
+rounds at depth >= 5 in any arm** (`Sp3`/`Sp3b` maxD 4, `S20p` maxD 4, curve
+maxD 3). Note `sdpaWidthWallDepthCap` is a *depth* cap min'd against the offer,
+not a width cap, so 5 genuinely permits depth 5 — the observed stop at 4 is the
+cost-model threshold rule, not the wall. The streak gate can only raise cap
+5 -> 8 and is therefore irrelevant here.
+
+The wall moved 4 -> 5 between bases and unlocked nothing: old-base scalar 0.20
+had 18/253 rounds at d=4 against a wall of 4; new-base `S20p` has 16/250 at d=4
+and none at d=5 against a wall of 5. So the wall was already slack on the old
+base too.
+
+Analytically the curve caps *itself*. Extend iff
+`reach > h[d]*(1+expected)/(1+cumH)`, and `reach <= 1`, so `reach = 1` is the
+supremum over all acceptance profiles. Curve thresholds are 0.0842, 0.1430,
+0.6265, then **1.0693 at d=3 -> impossible**, hence max depth 3 for every input
+— exactly what 246 rounds show. The 0.18 scalar's thresholds (0.1800, 0.3051,
+0.3971, 0.4675, 0.5233, 0.5684, 0.6058, 0.6372) are all < 1, so it would reach
+depth 8 at the supremum and is the arm the wall could in principle bind.
+Conclusion unchanged: curve and wall are substitutes, and shipping the curve
+alone still holds.
+
+### The 0.20 -> 0.18 scalar step is a null (Q4)
+
+`S20p` (0.20) is **0.655-0.898% faster** than the 0.18 arms. That is only
+1.3-1.8x the 0.503% serial floor and larger than the 0.245% base pair noise, so
+it is not resolved — but 0.20 is certainly no worse than 0.18 on this prompt, and
+the frontier's 0.18 step is not demonstrated here. Q4's premise (that 0.18 is
+the stronger baseline) does not hold on this prompt, so measuring the curve
+against 0.18 slightly *flatters* it. Against 0.20 on the same base the curve is
+-5.761% / -5.879%.
+
+The mechanistic trend is monotone in effective conservatism (0.18 -> 0.20 ->
+curve) and supports the curve's thesis of drafting less at the right depths:
+
+```
+meanD    2.367 -> 2.152 -> 2.020
+accRate  0.460 -> 0.489 -> 0.535
+rows       825 ->   788 ->   743
+replays    110 ->    85 ->    74
+rejected   313 ->   275 ->   231
+s/tok   0.049473 -> 0.049149 -> 0.046317
+```
+

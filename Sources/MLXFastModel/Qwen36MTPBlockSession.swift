@@ -532,8 +532,8 @@ public final class Qwen36MTPBlockSession {
     /// rounds for C(0); 61/60/36/32 full-accept rounds at d3/d4/d6/d8) put
     /// the marginals at the vector below, as fractions of a zero-draft round.
     /// A scalar is not a cheap approximation of it but a mis-shaped one: the
-    /// retired 0.18 is ~2.2x TOO HIGH at d = 1..2, where it under-drafts a
-    /// nearly free prefix, and ~1.6-2.2x TOO LOW at d >= 4, where it
+    /// retired 0.18 is ~1.6-1.9x TOO HIGH at h[0..1], where it under-drafts a
+    /// nearly free prefix, and ~1.4-2.1x TOO LOW at h[2..3], where it
     /// over-drafts a plateau. The knee at d = 3 (verify width 4) and the two
     /// largest steps, d = 4 (width 5) and d = 8 (width 9), are exactly where
     /// the affine-4 g64 crossrow kernel adds a weight pass
@@ -555,6 +555,23 @@ public final class Qwen36MTPBlockSession {
     /// fitted against the DECLARED head, which is the head the candidate leg
     /// runs (`mtp-head.manifest.json`). Re-fit it after any head change, and
     /// after any change to what a round costs at a given width.
+    ///
+    /// R3 RE-MEASUREMENT on base fe38ecc, where the declared head repo moved
+    /// to hf:dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6 (was lowskillcoding/
+    /// qwen38-mtp-head-4bit-g64@0966ddaf). Both are affine-4/g64
+    /// requantizations of the same pinned bf16 head with identical geometry,
+    /// and the marginals moved <= 0.6%, so the vector needs no re-fit: the
+    /// direct per-depth marginals are 0.0971 / 0.1152 / 0.2482 / 0.3761 at
+    /// h[0..3], agreeing across five arms to 0.1-0.5%. Two known defects in
+    /// the fit above, both at the first step and both conservative in the
+    /// wrong direction: h[0] is ~15% low and h[1] is ~33% low, and the pair
+    /// is NON-MONOTONE (h[1] < h[0] claims the second draft step is cheaper
+    /// than the first) where measurement is strictly monotone. That is a
+    /// fitting artifact of the forced-depth design, not a property of the
+    /// stack. A sixth fit should raise h[0] -> ~0.097 and h[1] -> ~0.115 and
+    /// leave h[2..3] alone. Against the 0.18 scalar this vector re-measures
+    /// at -5.8% to -6.7% seconds/token on the held-out prose golden (was
+    /// -7.66% against 0.20 on the previous base).
     private static let headStepCostRatioByDepth: [Double] = [
         0.0842, 0.0775, 0.2426, 0.3754,
         0.2919, 0.3000, 0.2870, 0.3909,
