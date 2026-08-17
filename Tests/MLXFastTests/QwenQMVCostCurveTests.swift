@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import MLX
 import MLXLLM
@@ -182,6 +183,75 @@ struct QwenQMVCostCurveTests {
         ProcessInfo.processInfo
             .environment["MLXFAST_RUN_QMV_BITS_SWEEP"] == "1"
     }
+}
+
+/// Bit-exactness of `quantized_matmul` across kernel arms, at the scored shapes
+/// and every verify width the dispatch table distinguishes.
+///
+/// The cost curve's `row0_bitwise_matches_m1` only compares a build against
+/// itself, so it cannot see an arm that is self-consistently wrong. This
+/// digests the *whole* output of one deterministic call per (shape, width) and
+/// writes it out, so `research/qmv_parity_compare.py` can diff one arm's build
+/// against another's. Every input here is derived from integer arithmetic and
+/// `arange`, so the digest depends on the kernel alone.
+///
+/// Untimed on purpose: one call per cell, no repetitions, no warmup.
+///
+/// Enable with `MLXFAST_RUN_QMV_PARITY=1` and point `MLXFAST_QMV_PARITY_OUT`
+/// at the JSON destination.
+@Suite
+struct QwenQMVParityTests {
+    private static var enabled: Bool {
+        ProcessInfo.processInfo.environment["MLXFAST_RUN_QMV_PARITY"] == "1"
+    }
+
+    @Test(.enabled(if: QwenQMVParityTests.enabled))
+    func digestQuantizedMatmulOverVerifyWidth() throws {
+        let env = ProcessInfo.processInfo.environment
+        let outPath = try #require(
+            env["MLXFAST_QMV_PARITY_OUT"],
+            "MLXFAST_QMV_PARITY_OUT must name the JSON destination")
+        let widths = Array(1...12)
+
+        var entries: [[String: Any]] = []
+        for shape in scoredShapes {
+            let weight = syntheticQuantWeight(k: shape.k, n: shape.n)
+            for m in widths {
+                let x = syntheticActivations(m: m, k: shape.k, salt: m)
+                let out = quantizedMM(
+                    x, weight.w, scales: weight.scales, biases: weight.biases,
+                    transpose: true, groupSize: 64, bits: 4)
+                eval(out)
+                // bf16 -> f32 is exact, so this digests the kernel's own bits.
+                let values = out.asType(.float32).asArray(Float.self)
+                entries.append([
+                    "shape": shape.name,
+                    "m": m,
+                    "k": shape.k,
+                    "n": shape.n,
+                    "elements": values.count,
+                    "digest": digest(values),
+                ])
+            }
+        }
+
+        let payload: [String: Any] = [
+            "source": "vendored-mlx-swift",
+            "widths": widths,
+            "device": describeDispatchDevice(),
+            "entries": entries,
+        ]
+        let data = try JSONSerialization.data(
+            withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: URL(fileURLWithPath: outPath))
+        print("QMV_PARITY_OUT \(outPath) cells=\(entries.count)")
+    }
+}
+
+private func digest(_ values: [Float]) -> String {
+    var hasher = SHA256()
+    values.withUnsafeBytes { hasher.update(bufferPointer: $0) }
+    return hasher.finalize().map { String(format: "%02x", $0) }.joined()
 }
 
 /// `syntheticQuantWeight` assumes a power-of-two `bits` when it derives the

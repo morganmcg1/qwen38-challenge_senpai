@@ -85,8 +85,20 @@ for spec in "$@"; do
   MLXFAST_RUN_QMV_PARITY=1 \
   MLXFAST_QMV_PARITY_OUT="${out_dir}/${arm}.json" \
     swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
-    --filter digestQuantizedMatmulOverVerifyWidth 2>&1
+    --filter QwenQMVParityTests 2>&1 | tee "${out_dir}/${arm}.log"
+
+  # `swift test --filter` exits 0 when the pattern matches nothing, so an
+  # unwritten digest file is the only reliable "the test did not run" signal.
+  [[ -s "${out_dir}/${arm}.json" ]] || {
+    echo "run-qmv-parity.sh: arm ${arm} produced no digests" >&2
+    exit 1
+  }
 done
 
 git checkout HEAD -- "${TWINS[@]}"
-python3 research/qmv_parity_compare.py "${out_dir}"/*.json
+
+# Command-line order, not glob order: the comparator treats its first file as
+# the reference arm, and a glob would silently promote `armA` over `ref`.
+ordered=()
+for spec in "$@"; do ordered+=("${out_dir}/${spec%%=*}.json"); done
+"${MLXFAST_PYTHON_BIN:-python3}" research/qmv_parity_compare.py "${ordered[@]}"
