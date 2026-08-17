@@ -13,6 +13,24 @@
 - W&B group: `qwen38-r1-e16-prefill-ladder-adjudication`
   (project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`)
 
+| run | arm | ID | URL |
+|---|---|---|---|
+| `e16-q1on` | ladder on, compiled default | `rfz3z51m` | <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rfz3z51m> |
+| `e16-q1off` | `DARKBLOOM_QWEN_PREFILL_LADDER=off` | `cisv46md` | <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cisv46md> |
+| `e16-q1ctl` | explicit `everyN:3` control | `rnlg3tak` | <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rnlg3tak> |
+| `e16-q4a` | `list:0,1,2,5,11,23,47` | `u22omnab` | <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/u22omnab> |
+| `e16-q4b` | `everyN:12` | `kvy18tsw` | <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/kvy18tsw> |
+| `e16-q5post` | post-merge confirmation on `e6e6f81` | `y8nge47k` | <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/y8nge47k> |
+| `e16-prefill-floor-and-arms` | Q2/Q3 floor + closing budget | `2jmf5z8w` | <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/2jmf5z8w> |
+
+Each arm run carries 121 summary metrics namespaced `serial/`, `mtp/`, and
+`score/` plus 24 config fields. Provenance is per-arm, not per-publish:
+`run_head_sha` is the commit that arm actually executed (`b82a51e` for Q1/Q4,
+`99d42f3` for Q5) alongside `worker_sha256`, `cli_sha256`, the resolved
+`ladder_rung_positions`, both gate temperatures, and the host/toolchain block.
+The floor run carries the 18 `budget/*` terms and the per-component
+`component/*` TFLOP/s rates.
+
 ## Headline
 
 **My merged E12 claim that the 512-row seed prefill is 73.8 % CPU graph
@@ -413,3 +431,18 @@ research/e16_wandb.py --group qwen38-r1-e16-prefill-ladder-adjudication \
 `DARKBLOOM_QWEN_PREFILL_LADDER` accepts `off`, `everyN:<n>`, `list:<i,j,k…>`, or
 nothing (compiled default). It is read once in `Qwen35.swift` when the prefill
 ladder is built; unset ⇒ byte-identical behaviour to the shipped build.
+
+### Known cosmetic defect in the committed `research/floor-e16.json`
+
+Its `host.gpu_cores` reads `"10"`. The real host has **20 GPU / 14 CPU cores**;
+the scrape picked the wrong `system_profiler` line. The code is fixed in this
+branch, so any future run self-reports correctly.
+
+I deliberately did **not** re-run the floor to refresh the artifact.
+`gpu_cores` is metadata scraped from `system_profiler` and is never read by the
+budget: `ceiling_tflops` comes from a measured dense-bf16 GEMM sweep, not from a
+core count, so no number in Q2 or Q3 depends on it. Re-running would have
+re-measured the ceiling and shifted every quoted figure by a little, breaking the
+cross-reference between this write-up, the committed artifact, and the advisor's
+own arithmetic — a worse trade than one wrong metadata string that is called out
+here. Read the field as 20.
