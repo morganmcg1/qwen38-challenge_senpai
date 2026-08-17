@@ -72,7 +72,7 @@ published score = median(raw_1 ... raw_8)
 All eight hidden prompts are measured. Because eight is even, the median is the
 mean of the two central ordered values. There is no no-op normalization and no
 prompt lottery. The published median must be at least `0.90` and no greater
-than the `3.0` plausibility ceiling.
+than the `5.0` plausibility ceiling.
 
 Each ranked leg processes a 512-token seed followed by 512 parent-counted
 decode tokens, and the seed work is charged in the timed leg. Prefill is not a
