@@ -169,6 +169,51 @@ FILE_ARMS = {
     ],
 }
 
+# Arm D only packs `acc`. `sums`, `partial[4]` and `a0..a3` are also VF, so at
+# NA=5 they still pad 5 floats to 8: 9 of the 13 NA-wide vectors per thread stay
+# padded. Arm E packs all of them, which is the complete form of the hypothesis
+# arm D tests partially. Every operation stays elementwise in the same order, so
+# the result is bit-identical to arm A.
+FILE_ARMS["ipg-e"] = FILE_ARMS["ipg-d"] + [
+    ("""    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+""",
+     """    float sums[NA];
+    for (int m = 0; m < NA; m++) {
+      sums[m] = 0.0f;
+    }
+    float partial[rows_per_simd][NA];
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < NA; m++) {
+        partial[r][m] = 0.0f;
+      }
+    }
+    for (int i = 0; i < 4; i++) {
+      float a0[NA], a1[NA], a2[NA], a3[NA];
+"""),
+    ("""      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                       a1 * (packed[r][i] & 0x00f0) +
+                       a2 * (packed[r][i] & 0x0f00) +
+                       a3 * (packed[r][i] & 0xf000));
+      }
+""",
+     """      for (int r = 0; r < rows_per_simd; r++) {
+        for (int m = 0; m < NA; m++) {
+          partial[r][m] += (a0[m] * (packed[r][i] & 0x000f) +
+                            a1[m] * (packed[r][i] & 0x00f0) +
+                            a2[m] * (packed[r][i] & 0x0f00) +
+                            a3[m] * (packed[r][i] & 0xf000));
+        }
+      }
+"""),
+]
+
 
 def wide_region(text: str) -> tuple[int, int]:
     start = text.index(WIDE_DECL)

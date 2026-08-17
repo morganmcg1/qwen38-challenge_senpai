@@ -67,8 +67,17 @@ for spec in "$@"; do
   echo "=== arm=${arm} sha=${sha} patch=${patch:-none} ===" >&2
   git checkout "${sha}" -- "${TWINS[@]}"
   if [[ -n "${patch}" ]]; then
-    python3 research/roofline_arm_patch.py "${patch}"
+    # A silently-skipped patch would compare a build against itself and report a
+    # false bit-exact pass, so record the twin digests and require them to move.
+    before="$(shasum -a 256 "${TWINS[@]}" | awk '{print $1}' | tr '\n' ' ')"
+    "${MLXFAST_PYTHON_BIN:-python3}" research/roofline_arm_patch.py "${patch}"
+    after="$(shasum -a 256 "${TWINS[@]}" | awk '{print $1}' | tr '\n' ' ')"
+    if [[ "${before}" == "${after}" ]]; then
+      echo "run-qmv-parity.sh: patch ${patch} left both twins unchanged" >&2
+      exit 1
+    fi
   fi
+  shasum -a 256 "${TWINS[@]}" > "${out_dir}/${arm}.twins.txt"
 
   swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-testing
   tools/build-mlx-metallib.sh --all-build-roots
