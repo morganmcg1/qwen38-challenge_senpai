@@ -2,6 +2,12 @@
 
 **Research snapshot:** 2026-08-16 10:41 UTC
 **Frontier refresh:** 2026-08-16 12:05 UTC
+**Ceiling and frontier correction:** 2026-08-17 (advisor). The transfer
+arguments below are unchanged and still stand on their own evidence; only the
+frontier endpoints and the plausibility ceiling were stale. Corrected in three
+places: the headroom paragraph in the executive conclusion, the authority table
+under "Reproducible endpoints", and item 6 of the closing checklist. Ceiling is
+`5.0`, not 3.0; frontier is `2.95338624520432`, not `2.9042110287045`.
 
 **Purpose:** record what the final Laguna XS frontier actually optimized, map
 those mechanisms onto the current Qwen 3.8 frontier, and separate quick
@@ -53,11 +59,26 @@ There are nevertheless several worthwhile seams. In priority order:
    vocabulary is proposal-only. A Qwen certificate could be valuable, but it
    must preserve both exact top-two IDs and values.
 
-The current promoted Qwen score is already `2.9042110287045` and the hard
-plausibility ceiling is 3.0. That leaves only about 3.3% multiplicative headroom
-before a faster result can fail rather than receive a clamped score. Prefer
-small, attributable candidates and inspect all eight prompt results before
-stacking wins.
+**CORRECTED 2026-08-17 (advisor).** The paragraph that stood here was written
+against a 3.0 ceiling and told the reader that only about 3.3% multiplicative
+headroom remained, so wins should not be stacked. Both halves are now wrong and
+the prescription was the dangerous half: it would talk a reader out of
+composing legitimate wins.
+
+The promoted Qwen score is `2.95338624520432` (receipt
+`ba493f74-c0fe-440a-a956-f77d26232e54`, source
+`156b5b75bdfac82ae406487f531fd991e7fdfd30`) and the plausibility ceiling is
+`5.0`, raised from 3.0 by operator commit `a5854b979499800a6f5f71a8d4fc14fd43ca4723`.
+Headroom is therefore `+2.047` of score, about 69% multiplicative, not 3.3%.
+No measured lever in this campaign is within an order of magnitude of
+exhausting it. **Stack every legitimate win you can attribute.** The ceiling is
+a fail-closed plausibility gate, not an optimization target and not a reason to
+stop; see `senpai/program.md:19-21` and `AGENTS.md:75`.
+
+What survives from the original paragraph is only the measurement hygiene:
+prefer small, attributable candidates and inspect all eight prompt results
+before composing, because the score is a median of eight and improving the
+worst prompt moves nothing.
 
 ## Reproducible endpoints
 
@@ -86,7 +107,12 @@ apart from an ordinary comment, while cross-receipt decode and prefill moved in
 opposite directions. The source is authoritative; individual leaderboard deltas
 are noisy evidence, not clean causal attribution.
 
-### Current Qwen authority
+### Qwen authority as of the 2026-08-16 12:05 UTC refresh (SUPERSEDED)
+
+**Do not use this table as live authority.** Every frontier row below was
+correct at the refresh timestamp and is now stale. The live values are in the
+table that follows it. Kept verbatim because the report's transfer arguments
+were written against these endpoints.
 
 | Item | Value |
 | --- | --- |
@@ -97,6 +123,25 @@ are noisy evidence, not clean causal attribution.
 | Promoted receipt | `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` |
 | Official score | `2.9042110287045` |
 | Score | median of eight per-prompt serial-relative speedups; floor 0.90; ceiling 3.0 |
+
+Note that `7351e626...` is a submission `sourceRef`, not a commit reachable in
+this repository; it arrived with the solver import `ce159755`.
+
+### Current Qwen authority (2026-08-17, advisor)
+
+| Item | Value |
+| --- | --- |
+| Promoted receipt | `ba493f74-c0fe-440a-a956-f77d26232e54` |
+| Promoted source | `156b5b75bdfac82ae406487f531fd991e7fdfd30` |
+| Official score | `2.95338624520432` |
+| Trusted organizer contract | `0b071ed9db211f17554bc5a13fb7381f14d709b3` |
+| Score | median of eight per-prompt serial-relative speedups; floor 0.90; ceiling `5.0` |
+| Ceiling provenance | raised 3.0 -> `5.0` by `a5854b979499800a6f5f71a8d4fc14fd43ca4723` |
+
+Two different bounds exist and they are not the same number: the
+**published-median** ceiling is `5.0`, while the box wrapper's **per-pair**
+`MAX_PLAUSIBLE_SPEEDUP` is `8.0`, so the aggregate ceiling stays strictly
+tighter than the per-pair bound (`benchmark.json:201`).
 
 The campaign import overlays the promoted editable snapshot onto the reviewed
 organizer contract. Its submitted delta from the previous `df404e08` snapshot
@@ -341,8 +386,10 @@ Required tests:
    ranked receipt on an M5-only hypothesis.
 5. Compare a fresh same-host unchanged baseline and candidate with seed versus
    steady time separated.
-6. Use all eight prompt results and the 3.0 ceiling when deciding whether to
-   compose independent wins.
+6. Use all eight prompt results when deciding whether to compose independent
+   wins. The ceiling is `5.0`, not 3.0, and with the frontier at
+   `2.95338624520432` it is far enough away that it should not enter the
+   composition decision at all.
 7. Record negative results in the campaign novelty ledger so future agents do
    not rediscover Laguna-shaped dead ends.
 
