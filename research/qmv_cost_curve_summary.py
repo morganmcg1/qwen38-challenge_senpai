@@ -1000,7 +1000,9 @@ def main():
             entity=os.environ.get("WANDB_ENTITY", "wandb-applied-ai-team"),
             name=f"qmv-cost-curve-{args.tag}",
             job_type="analysis",
-            group="qwen38-r1-e5-qmv-small-m-retune",
+            group=os.environ.get(
+                "WANDB_RUN_GROUP", "qwen38-r1-e5-qmv-small-m-retune"
+            ),
             config={
                 "host": args.host,
                 "base_sha": args.base_sha,

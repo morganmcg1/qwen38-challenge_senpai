@@ -40,7 +40,7 @@ for reused in local_run_lock_path acquire_local_run_lock release_local_run_lock 
   }
 done
 
-out_dir="${repo_root}/.mlxfast-private/qmv-parity"
+out_dir="${MLXFAST_QMV_PARITY_DIR:-${repo_root}/.mlxfast-private/qmv-parity}"
 rm -rf -- "${out_dir}"
 mkdir -p "${out_dir}"
 
@@ -49,6 +49,10 @@ cleanup() {
   # below rewrites the index too, so a plain `git checkout --` would "restore"
   # the tree to the last arm rather than to the commit under test.
   git checkout HEAD -- "${TWINS[@]}" 2>/dev/null || true
+  # Restoring the sources is not enough: every build root still holds the last
+  # arm's mlx.metallib, so the next unrelated run would silently execute that
+  # arm's kernels. Rebuild before releasing the lock.
+  tools/build-mlx-metallib.sh --all-build-roots >/dev/null 2>&1 || true
   release_local_run_lock
 }
 trap cleanup EXIT
@@ -67,8 +71,17 @@ for spec in "$@"; do
   echo "=== arm=${arm} sha=${sha} patch=${patch:-none} ===" >&2
   git checkout "${sha}" -- "${TWINS[@]}"
   if [[ -n "${patch}" ]]; then
-    python3 research/roofline_arm_patch.py "${patch}"
+    # A silently-skipped patch would compare a build against itself and report a
+    # false bit-exact pass, so record the twin digests and require them to move.
+    before="$(shasum -a 256 "${TWINS[@]}" | awk '{print $1}' | tr '\n' ' ')"
+    "${MLXFAST_PYTHON_BIN:-python3}" research/roofline_arm_patch.py "${patch}"
+    after="$(shasum -a 256 "${TWINS[@]}" | awk '{print $1}' | tr '\n' ' ')"
+    if [[ "${before}" == "${after}" ]]; then
+      echo "run-qmv-parity.sh: patch ${patch} left both twins unchanged" >&2
+      exit 1
+    fi
   fi
+  shasum -a 256 "${TWINS[@]}" > "${out_dir}/${arm}.twins.txt"
 
   swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-testing
   tools/build-mlx-metallib.sh --all-build-roots
@@ -76,8 +89,20 @@ for spec in "$@"; do
   MLXFAST_RUN_QMV_PARITY=1 \
   MLXFAST_QMV_PARITY_OUT="${out_dir}/${arm}.json" \
     swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
-    --filter digestQuantizedMatmulOverVerifyWidth 2>&1
+    --filter QwenQMVParityTests 2>&1 | tee "${out_dir}/${arm}.log"
+
+  # `swift test --filter` exits 0 when the pattern matches nothing, so an
+  # unwritten digest file is the only reliable "the test did not run" signal.
+  [[ -s "${out_dir}/${arm}.json" ]] || {
+    echo "run-qmv-parity.sh: arm ${arm} produced no digests" >&2
+    exit 1
+  }
 done
 
 git checkout HEAD -- "${TWINS[@]}"
-python3 research/qmv_parity_compare.py "${out_dir}"/*.json
+
+# Command-line order, not glob order: the comparator treats its first file as
+# the reference arm, and a glob would silently promote `armA` over `ref`.
+ordered=()
+for spec in "$@"; do ordered+=("${out_dir}/${spec%%=*}.json"); done
+"${MLXFAST_PYTHON_BIN:-python3}" research/qmv_parity_compare.py "${ordered[@]}"

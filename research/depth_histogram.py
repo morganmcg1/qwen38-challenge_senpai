@@ -8,12 +8,18 @@ whether the policy is sitting on the width cap at 4.
 """
 import argparse
 import glob
+import json
 import os
 import re
 import sys
 from collections import Counter
 
 ROUND_RE = re.compile(r"mtp-trace: round=(\d+) d=(\d+) acc=(\d+)")
+
+
+def pid_of(path):
+    suffix = path.rsplit(".", 1)[-1]
+    return int(suffix) if suffix.isdigit() else -1
 
 
 def legs(path):
@@ -39,15 +45,19 @@ def main():
     ap.add_argument("out_dir")
     ap.add_argument("arms", nargs="+")
     ap.add_argument("--warmup", type=int, default=2)
+    ap.add_argument("--json-out")
     args = ap.parse_args()
 
+    report = {}
     for arm in args.arms:
-        paths = sorted(glob.glob(os.path.join(args.out_dir, arm, "trace.txt.*")),
-                       key=lambda p: int(p.rsplit(".", 1)[-1]))
+        # Per-PID `trace.txt.<pid>` files and a single merged `trace.txt` are
+        # both valid captures, so accept either. A merged capture has no PID in
+        # its name and reports -1.
+        paths = sorted(glob.glob(os.path.join(args.out_dir, arm, "trace.txt*")),
+                       key=pid_of)
         # Legs may share one process (forced-depth arms) or be split across
         # worker PIDs (adaptive arms), so collect from every file.
-        all_legs = [(int(p.rsplit(".", 1)[-1]), lg)
-                    for p in paths for lg in legs(p) if lg]
+        all_legs = [(pid_of(p), lg) for p in paths for lg in legs(p) if lg]
         if not all_legs:
             print(f"{arm}: no rounds found", file=sys.stderr)
             continue
@@ -60,14 +70,24 @@ def main():
                      f"{[pid for pid, _ in drafting]}; cannot name one MTP leg")
         pid, rounds = drafting[0] if drafting else all_legs[-1]
         rounds = rounds[args.warmup:]
+        # A round that drafts nothing returns before the round trace is written
+        # (`Qwen36MTPBlockSession.swift:765` branch), so it is invisible here
+        # while still consuming a round counter. Recover it from the gaps in
+        # that counter; trailing zero-draft rounds after the last traced round
+        # are unrecoverable and are reported as a separate lower bound.
+        span = rounds[-1][0] - rounds[0][0] + 1
+        implied_d0 = span - len(rounds)
         hist = Counter(d for _, d, _ in rounds)
+        if implied_d0:
+            hist[0] += implied_d0
+            rounds = rounds + [(-1, 0, 0)] * implied_d0
         acc_by_d = {}
         for _, d, a in rounds:
             acc_by_d.setdefault(d, []).append(a)
         n = len(rounds)
         tok = sum(a for _, _, a in rounds) + n
         print(f"\n=== {arm}  mtp_leg_pid={pid}  rounds={n}  "
-              f"committed_tokens={tok} ===")
+              f"committed_tokens={tok}  implied_d0={implied_d0} ===")
         print(f"{'d':>3} {'rounds':>7} {'share':>8} {'mean_acc':>9} {'accept_rate':>12}")
         for d in sorted(hist):
             accs = acc_by_d[d]
@@ -82,6 +102,16 @@ def main():
               f"tokens_per_round={tok/n:.4f}")
         print(f"rounds_at_d==4: {at_cap4} ({at_cap4/n:.4%})   "
               f"rounds_at_d>4: {above4} ({above4/n:.4%})")
+        report[arm] = {"mtp_leg_pid": pid, "rounds": n, "committed_tokens": tok,
+                       "implied_d0_rounds": implied_d0,
+                       "hist": {str(d): hist[d] for d in sorted(hist)},
+                       "mean_offered_depth": mean_d, "mean_accepted": mean_a,
+                       "rounds_at_d4": at_cap4, "rounds_above_d4": above4}
+
+    if args.json_out:
+        with open(args.json_out, "w") as fh:
+            json.dump(report, fh, indent=2)
+        print(f"\nwrote {args.json_out}")
 
 
 if __name__ == "__main__":

@@ -6,19 +6,17 @@
 # ./benchmark-qwen-mtp.sh so the run lock, orphan check and 40C cool gate are
 # never bypassed.
 #
-# usage: research/run-arm.sh ARM [--force-depth D] [--trace] [--tokens N]
+# usage: research/run-arm.sh ARM [--trace] [--tokens N]
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-arm="${1:?usage: run-arm.sh ARM [--force-depth D] [--trace] [--tokens N]}"
+arm="${1:?usage: run-arm.sh ARM [--trace] [--tokens N]}"
 shift
 
-force_depth=""
 trace=0
 tokens="${MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS:-64}"
 while (($#)); do
   case "$1" in
-    --force-depth) force_depth="$2"; shift 2 ;;
     --trace) trace=1; shift ;;
     --tokens) tokens="$2"; shift 2 ;;
     --head-dir) export MLXFAST_QWEN_MTP_HEAD_DIR="$2"; shift 2 ;;
@@ -34,10 +32,6 @@ mkdir -p "${out}"
 export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
 export MLXFAST_SCORE_PATH="${PWD}/${out}/score.json"
 
-if [[ -n "${force_depth}" ]]; then
-  export MLX_QWEN_MTP_FORCE_DEPTH="${force_depth}"
-fi
-
 if ((trace)); then
   # The generated worker sandbox denies file-write*, and the parent swallows
   # worker stderr, so a readable phase trace needs the documented local
@@ -47,11 +41,15 @@ if ((trace)); then
   export MLXFAST_NO_SANDBOX=1
 fi
 
+# A previous job can leave a metallib built from another arm's patched sources
+# in every build root, and nothing downstream of here rebuilds it.
+tools/build-mlx-metallib.sh --all-build-roots
+
 {
   echo "arm=${arm}"
   echo "tokens=${tokens}"
-  echo "force_depth=${force_depth:-<adaptive>}"
   echo "trace=${trace}"
+  echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   echo "head_dir=${MLXFAST_QWEN_MTP_HEAD_DIR:-<setup-default>}"
   echo "h_vector=${MLX_QWEN_MTP_H_VECTOR:-<measured-default>}"
   echo "base_sha=$(git rev-parse HEAD)"
@@ -59,7 +57,13 @@ fi
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "${out}/meta.txt"
 
-./benchmark-qwen-mtp.sh --local-iterate
+if ((trace)); then
+  # The session writes trace lines to stderr only; MLX_QWEN_MTP_TRACE_PATH is
+  # not read by any source, so the wrapper is what makes that path real.
+  ./benchmark-qwen-mtp.sh --local-iterate 2>"${MLX_QWEN_MTP_TRACE_PATH}"
+else
+  ./benchmark-qwen-mtp.sh --local-iterate
+fi
 status=$?
 echo "exit=${status}" >> "${out}/meta.txt"
 echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${out}/meta.txt"
