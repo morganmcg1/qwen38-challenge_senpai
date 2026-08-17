@@ -138,3 +138,33 @@ Root cause, fully traced:
 - **Prompt or M5 transfer risk:** substantial and unquantified. This is M4 Pro, not the ranked M5; the CPU/GPU split of `P` in particular is the ratio most likely to move on different silicon, and the CPU-heavy finding is the one the follow-up depends on. `p(512)` is a *projection* from 300-token steady rates, not a measurement — the 512-token measurement is blocked. Only one public prompt was used. Note also that the implied prefill-free ranked `r` is `3.55`, above the operator's `3.0` plausibility gate; per `program.md` that is not a reason to hold anything, but it is worth knowing before the lever is pulled hard.
 - **Smallest useful next action:** two, in order. (1) Restore fixed-window continuation past EOS so anyone can measure 512 tokens locally at all — it is cheap, it is the gate on every future ranked-equivalent local measurement, and the exact prior fix is recoverable from campaign commit `f1a874d`; the advisor needs to decide whether that lands on main or on a research-only branch. (2) Attack the CPU three-quarters of `P`: the untimed `warmAllDepths` already builds the same 512-row op sequence once before the clock starts, so the first question is whether that constructed graph can be reused instead of rebuilt inside the timed `begin`. That is a graph-construction question, not a kernel question.
 - **Recommendation: revise the program's cost model and open a prefill workstream.** Close e12 as answered — do not repeat it. Prediction 4 should be struck from the campaign's assumptions, and seed prefill should be promoted from "rounding error" to a first-class `≈0.6`-point research area, with graph construction as the first target and the EOS continuation fix as its prerequisite.
+
+---
+
+## Correction note — 2026-08-17, appended by e16/r1 (`qwen38-r1-e16-prefill-ladder-adjudication`)
+
+**Every measurement above stands. One *interpretation* above is retracted.**
+
+The retracted claim is the CPU/GPU split of `P`: this report attributed `build_us = 2.952156 s` (73.8 % of `P`) to CPU-side graph construction inside `begin`, and `eval_wall_us = 1.047279 s` (26.2 %) to GPU execution. **That attribution is wrong.** The advisor caught it with a ceiling argument I could not answer: the 512-row prefill executes `24.9338 TFLOP`, so charging all of it to the 1.047 s tail implies `23.808 TFLOP/s`, which is `3.23x` the `7.363 TFLOP/s` dense-bf16 ceiling measured on this host in e3.
+
+**Mechanism.** `Qwen35.swift` fires `asyncEval(hiddenStates)` on 22 of the 64 decoder layers (`i == 0 || i % 3 == 2`). Those calls sit *inside* the interval this report labelled `build_us`. `asyncEval` submits work and returns without blocking the CPU, but the GPU then runs that work concurrently, and the *next* rung's `asyncEval` cannot be enqueued until the queue drains enough to accept it. So `build_us` was never a CPU-only quantity: it was CPU enqueue time plus almost all of the GPU execution, and `eval_wall_us` was only the residual tail after the last rung.
+
+**Direct measurement (e16 Q1, `research/e12-run.sh ladder-sweep`, same host, same build, `env=""` compiled default vs `DARKBLOOM_QWEN_PREFILL_LADDER=off`):**
+
+| arm | `asyncEval` rungs | `build_us` | `eval_wall_us` | `seed_prefill_seconds` (serial) |
+|---|---:|---:|---:|---:|
+| ladder ON (compiled default `everyN:3`) | 22 | 2.957503 s | 1.046892 s | 4.0049039125442505 |
+| ladder OFF | 0 | **0.001796 s** | **4.004115 s** | 4.006404995918274 |
+
+Removing the rungs moves `2.9557 s` out of `build_us` and into `eval_wall_us` while changing the total by `+0.0015 s`. **The corrected split of `begin` is `0.045 %` CPU graph construction and `99.94 %` GPU execution.** The ceiling arithmetic then resolves cleanly: `24.9338 TFLOP / 4.006405 s = 6.2235 TFLOP/s`, which is `84.5 %` of the `7.363 TFLOP/s` ceiling and adjacent to e3's `6.415 TFLOP/s` measured quantized-GEMM rate.
+
+**Consequences for this report's conclusions:**
+
+- The "Smallest useful next action" item (2) — *"attack the CPU three-quarters of `P` … reuse the constructed graph instead of rebuilding it inside the timed `begin`"* — is **withdrawn**. There is no CPU three-quarters. There is `1.8 ms` of graph construction, `0.045 %` of `P`; reusing it perfectly would be invisible.
+- The `≈0.6` ranked-point *size* of the prefill area is unaffected: `p(512) = 0.3110454468716388` and the area estimate rest on `P` and the decode ratio, neither of which changed. The prefill lever is still large. What changed is **where inside `P` the time lives**, and therefore which levers can reach it.
+- Prefill headroom is a **kernel-efficiency** question, not a scheduling or graph-construction question. At `84.5 %` of the dense ceiling with quantized weights, the remaining prefill time is in the affine-4-bit matmul path (`quantized.h`), not in anything I proposed here.
+
+**Predictions scored.** This report's prediction that `build_us` was CPU-bound work was wrong. The advisor's e16 prediction — ladder-off `eval_wall_us ≥ 3.3 s`, ladder-on `build_us ≤ 1.0 s` — was directionally right on the first half (`4.004 s`) and wrong on the second (`2.958 s`, because enqueue back-pressure charges the build interval), which is itself further evidence that `build_us` is a queue-occupancy measurement rather than a CPU measurement.
+
+Full evidence, including both arms of both phases, the exactness ledger, and the schedule sweep, is in `research/results/qwen38-r1-e16-prefill-ladder-adjudication.md` (PR #18).
+
