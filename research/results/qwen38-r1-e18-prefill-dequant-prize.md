@@ -38,9 +38,13 @@ unpack ALU per MAC — has a magnitude set entirely by the GEMM tile height `BM`
 which is chosen by the **read-only** dispatcher and baked into the requested
 kernel name before any editable code runs.
 
-Eight corrections to the assignment's premises came out of the work. One of them
-(Correction 5) contradicts a standing campaign belief and may reopen closed work,
-so it is stated in full below rather than buried.
+Nine corrections to the assignment's premises came out of the work. Two of them
+contradict standing campaign beliefs and may reopen closed work, so they are
+stated in full below rather than buried: **Correction 5** (the `steel/gemm/**`
+headers are editable after all) and **Correction 9** (`qmm_splitk` tail-calls
+`qmm()` at `quantized.cpp:808-811`, so `senpai/campaign-ledger.md:169-175` is
+wrong that `qmm()` is never reached — the NAX gate does govern 400 of the 496
+scored prefill GEMM dispatches).
 
 §12 reconciles the advisor's later feedback
 (`e18-r1-correction-authoritative-scored-shapes-and-dequant-is-not-bandwidth`),
@@ -221,6 +225,89 @@ tile sizes `bm`/`bn`/`bk` that the dispatcher bakes into the requested kernel
 name** all live in the read-only `quantized.cpp`. No host-side dispatch change
 and no tile-selection change is submittable.
 
+### Correction 9 — `qmm_splitk` tail-calls `qmm()`, so the ledger's dismissal of H1 is refuted
+
+`senpai/campaign-ledger.md:165-182` records a re-verification at `b85e782` that
+concludes NAX cannot reach our shapes:
+
+> the NAX early-returns live *inside* `qmm()` (`quantized.cpp:697`) […] while our
+> transposed non-batched (`B == 1`) projections take `qmm_splitk()` and `return`
+> at `:1418-1424` **before `qmm()` is ever called**. […] So the prefill dequant
+> prize really is a `qmm_splitk` problem.
+
+The premise is right and the conclusion is wrong. `qmm_splitk` is indeed the
+entry point — `QuantizedMatmul::eval_gpu` at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:1418-1424`
+really does divert every transposed `B == 1` shape into it:
+
+```cpp
+if (M >= vector_limit) {
+  int B = out.size() / M / N;
+  if (transpose_ && B == 1) {
+    qmm_splitk(x, w, scales, biases, out, group_size_, bits_, M, N, K, d, s, mode);
+    return;
+  }
+  qmm(x, ...);
+  return;
+}
+```
+
+But `qmm_splitk` is not a terminal kernel launcher. Twenty lines into it, at
+`quantized.cpp:808-811`, it **tail-calls `qmm()`**:
+
+```cpp
+if (split_k <= 1) {
+  return qmm(
+      x, w, scales, biases, out, true, group_size, bits, M, N, K, d, s, mode);
+}
+```
+
+It forwards `transpose = true` literally, so the NAX guard's `transpose`
+condition is satisfied on arrival, and the guard at `:697-698` then fires
+normally:
+
+```cpp
+if (metal::is_nax_available() && transpose && (K % 64 == 0) &&
+    (env::enable_tf32() || x.dtype() != float32)) {
+  return qmm_nax(...);
+}
+```
+
+`x` is bfloat16, so `x.dtype() != float32` short-circuits the `||` true, and
+every scored `K` (5120, 6144, 17408) satisfies `K % 64 == 0` — a point the
+advisor's §D reaches independently.
+
+Three consequences:
+
+1. **`qmm()` is reached for 400 of the 496 prefill GEMM dispatches** — every
+   shape with `N >= 1024`, i.e. all the FLOP-dominant ones. Correction 1 already
+   showed the `split_k -> 1` collapse; the ledger's re-verification stopped at
+   the `eval_gpu` entry point and did not follow it into `:808-811`. So
+   `is_nax_available()` **does** govern the scored prefill kernel.
+2. **"The prefill dequant prize really is a `qmm_splitk` problem" is backwards.**
+   `qmm_t_splitk` genuinely launches for only the 96 `N = 48` dispatches
+   (Correction 1), worth 0.0166 % of P. The prize is overwhelmingly a `qmm()`
+   problem, which is exactly where the NAX branch lives.
+3. **This raises H1's importance rather than resolving it.** The ledger read as
+   licence to stop asking which kernel ranked prefill executes. It is not. §5.4
+   and §11.5 both hinge on `BM` — 32 non-NAX versus 64 NAX — and that choice is
+   made by the `is_nax_available()` call inside `qmm()`, on the live path, 400
+   times per prefill.
+
+Two standing campaign statements about `qmm_splitk` also contradict each other,
+and neither matches the source. The ledger says split-K *is* the whole story; the
+assignment's §C says `split_k == 1` makes `qmm_t_splitk` dead code. Source says
+both are wrong in opposite directions: `split_k == 1` does not mean "no kernel",
+it means "delegate to `qmm()`", and `split_k == 1` is not universal — the two
+`N = 48` projections land on `split_k = 16`.
+
+This correction does not change any verdict in this report. It removes a
+load-bearing reason the campaign had for treating H1 as already closed.
+
+Corrections 6, 7 and 8 are stated where their evidence lives: §11.2 (the
+15.8–18.0 % prefill-share premise), §11.6 (the stale `program.md` ceiling), and
+§12.3 (the fused `SCORED_SHAPES` grouping).
+
 ## 2. Phase 1 — dispatch table
 
 Produced by `research/e18_dispatch_table.py` (committed with this document). The
@@ -290,6 +377,17 @@ have their own tables. At our shapes the third bucket applies, giving
 
 **Verdict: UNRESOLVED.** Per the assignment, an UNRESOLVED verdict with a named
 missing fact is a full pass, and stopping rule (b) fires here.
+
+**H1 is a live question, not a closed one.** `senpai/campaign-ledger.md:169-175`
+closes it by asserting that our shapes take `qmm_splitk` and return "before
+`qmm()` is ever called", so the NAX gate never runs on the scored path.
+Correction 9 refutes that from source: `qmm_splitk` tail-calls `qmm()` at
+`quantized.cpp:808-811` whenever `split_k` collapses to 1, which is every shape
+with `N >= 1024` — 400 of the 496 prefill GEMM dispatches, carrying essentially
+all the FLOPs. `is_nax_available()` therefore selects the scored prefill kernel,
+and with it `BM` (32 non-NAX versus 64 NAX), which is the single quantity §5.4
+and §11.5 depend on. The rest of this section is about *why I still cannot read
+that bit*, not about whether it matters.
 
 ### The assignment's proposed off control does not exist in this build
 
@@ -727,6 +825,14 @@ invalidating the verdict.
    editable headers. It is not a removable-byte/ALU construction and so is out of
    scope for E18, but it is a real, specific, source-backed target if someone
    wants to spend a parity-gated kernel edit on latency hiding.
+6. **Correct `senpai/campaign-ledger.md:169-175` (Correction 9).** The ledger
+   currently records, as a re-verified conclusion at `b85e782`, that `qmm()` is
+   never reached on our shapes. It is reached 400 times per prefill via the
+   `split_k <= 1` tail-call at `quantized.cpp:808-811`. Anything closed on the
+   reasoning "NAX cannot touch our GEMM" should be re-opened on the merits, and
+   the ledger's derived claim "the prefill dequant prize really is a
+   `qmm_splitk` problem" should be struck — split-K launches for 96 dispatches
+   worth 0.0166 % of P.
 
 ## 11. Ranked-hardware evidence from Yukon receipt telemetry
 
@@ -1191,8 +1297,19 @@ largest quantitative correction in this report.
     "backend/metal/quantized.cpp is READ-ONLY but kernels/steel/gemm/** IS editable via a benchmark.json directory entry",
     "assignment premise that ranked prefill is 15.8-18.0 percent of the candidate leg is refuted: the frontier receipt puts it at 6.1989 percent",
     "program.md's 3.0 plausibility ceiling is stale; receipts independently confirm assignment section 5.10, with decode_speedup_ceiling raised 3 -> 5 at 2026-08-17T11:10:46.796Z",
-    "advisor feedback section A: the qmv_cost_curve.py SCORED_SHAPES totals are correct but the fused grouping is not; the live model issues 34816 as 17408+17408, 14336 as 12288+1024+1024, and 16480 as 10240+6144+48+48, and that grouping is what hides the two N=48 shapes that make qmm_t_splitk live"
+    "advisor feedback section A: the qmv_cost_curve.py SCORED_SHAPES totals are correct but the fused grouping is not; the live model issues 34816 as 17408+17408, 14336 as 12288+1024+1024, and 16480 as 10240+6144+48+48, and that grouping is what hides the two N=48 shapes that make qmm_t_splitk live",
+    "campaign-ledger.md:169-175 is wrong that qmm() is never reached: qmm_splitk tail-calls qmm() at quantized.cpp:808-811 when split_k collapses to 1, so the NAX gate at :697-698 governs 400 of the 496 prefill GEMM dispatches; the prize is a qmm() problem, not a qmm_splitk problem, and H1 matters more rather than less"
   ],
+  "ledger_claim_refuted": {
+    "source": "senpai/campaign-ledger.md:169-175",
+    "claim": "transposed non-batched projections take qmm_splitk and return at quantized.cpp:1418-1424 before qmm() is ever called, so the prefill dequant prize really is a qmm_splitk problem",
+    "refutation_site": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:808-811",
+    "refutation": "qmm_splitk returns qmm(x, w, scales, biases, out, true, ...) when split_k <= 1, forwarding transpose=true, so the NAX guard at :697-698 fires normally",
+    "dispatches_reaching_qmm": 400,
+    "dispatches_reaching_qmm_t_splitk": 96,
+    "dispatches_reaching_qmv_fast": 1,
+    "effect_on_h1": "raises importance; does not resolve"
+  },
   "advisor_feedback_reconciled": {
     "feedback_id": "e18-r1-correction-authoritative-scored-shapes-and-dequant-is-not-bandwidth",
     "posted_at": "2026-08-17T15:02:15Z",
