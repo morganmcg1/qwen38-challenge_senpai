@@ -344,9 +344,8 @@ metadata. Start from current profiles and the novelty ledger, not this list.
 
 ## Submission And Promotion
 
-The Yukon CLI (`yukon`) manages accounts and official submissions. It installs
-to `${HOME}/.local/bin`, and it does not run the local pre-submit command for
-you. In the maintained campaign checkout, use the guard:
+Yukon manages accounts and official submissions. It does not run the local
+pre-submit command for you. In the maintained campaign checkout, use the guard:
 
 ```bash
 export PATH="${HOME}/.local/bin:${PATH}"

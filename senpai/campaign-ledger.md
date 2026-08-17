@@ -8,222 +8,35 @@ Machine-readable frontier pins live in
 [`frontier-state.json`](frontier-state.json). If this ledger and that file
 disagree, stop and repair both before assigning or submitting work.
 
-## Read first: the operator reply channel is blocked
-
-The 2026-08-17 frontier-sync directive arrived as a comment on issue #9 and
-required a reply on that issue. **That reply could not be posted**, and the
-failure is structural rather than transient: the advisor role authenticates as
-`morganmcg1`, which is also the author of every human message on issue #9, and
-the reply tool refuses any message authored by the authenticated actor. Both
-available message IDs were attempted and returned the identical error, so no
-choice of ID can succeed. Unauthenticated reads work; writes do not.
-
-The full reply — verified promoted receipt, resulting pins, per-PR dispositions,
-and the active assignment slate — is therefore delivered as a durable file:
-[`operator-report-2026-08-17-frontier-sync.md`](operator-report-2026-08-17-frontier-sync.md).
-Read it as the answer to issue #9. Unblocking it needs an operator action, not an
-advisor retry: either give the advisor its own GitHub identity, or file directives
-from a second account.
-
 ## Current frontier
 
-Observed from Yukon and the organizer remote at `2026-08-17T08:09:23Z`.
+Observed from Yukon and the organizer remote at `2026-08-17T11:46:41Z`.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `32b94cb67d2f3a102a36382d2beb62eee8d99db5` |
-| Best promoted submission | `03dedda8-fc70-4e3e-881f-5384a17af405` |
-| Promoted source ref | `32b94cb67d2f3a102a36382d2beb62eee8d99db5` |
-| Official score | `2.94661597308114` |
+| Organizer synced commit | `0b071ed9db211f17554bc5a13fb7381f14d709b3` |
+| Best promoted submission | `ba493f74-c0fe-440a-a956-f77d26232e54` |
+| Promoted source ref | `156b5b75bdfac82ae406487f531fd991e7fdfd30` |
+| Official score | `2.95338624520432` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Submitted solver snapshot | `32b94cb67d2f3a102a36382d2beb62eee8d99db5` |
+| Submitted solver snapshot | `156b5b75bdfac82ae406487f531fd991e7fdfd30` |
 
 The promoted receipt above is the public Yukon frontier used to bootstrap this
 campaign; it is not claimed as a Senpai-authored result.
 
-`03dedda8` (solver `vibecodooor`, `+0.012329`/`+1.24%`) supersedes `5c523482`
-(source `cdb06b7045622fc40c1b336af28892c073ba28a3`, `2.93428682708139`), which
-held the frontier for under three hours on 2026-08-17. Any handoff still
-quoting `5c523482` or `cdb06b70` is one promotion stale. `cdb06b70` is a
-verified ancestor of `32b94cb`, so the newer receipt strictly contains it.
+Campaign commit `d098212` imports that exact promoted submitted surface. The
+source is based on trusted organizer parent
+`d077e68567827e8d926272df2245226d72b889ac`; relative to the previous promoted
+`7351e62674bc600f0ca148d3a1b0604716a09db6` snapshot, its submitted delta spans
+eight editable files (`+217/-41`), including the adaptive schedule, target and
+head-state paths, quantized kernel twin, and proposal-head manifest. Trusted
+base ancestry was reviewed separately and was not imported as solver code.
 
-Relative to `cdb06b70`, the promoted delta is three schedule-neutral,
-head-neutral edits confined to `Qwen36MTPBlockSession.swift` (`+64`),
-`Qwen36MTPTarget.swift` (`+18`), and `Qwen35.swift` (`+47`): publish the
-post-final-norm block the target verify forward already computes, reuse the
-accepted prefix for proposal-head history as one contiguous slice, and compile
-Qwen attention output `x * sigmoid(gate)` as one shapeless fused pass. The
-inherited 4-bit/group-64 proposal head arrived earlier in the `033f6227`
-span, not in this delta.
-
-Scheduler constants now live at `headStepCostRatio = 0.18`,
-`sdpaWidthWallDepthCap = 5`, `segmentedVerifyDepthCap = 8`, and
-`segmentedStreakGate = 3`. Any candidate that was fitted against the previous
-`0.20 / 4 / 7` triple must be refitted before it is trusted on this base.
-
-`benchmark.json` is byte-identical across the sync: `editablePaths` and
-`optionalEditablePaths` are unchanged, so no editable-surface transition
-applies. The organizer `AGENTS.md` diff from `7351e626` to `32b94cb` is empty,
-so this sync ported no new enforceable rule.
-
-### Preservation proof for the 2026-08-17 sync
-
-Campaign `main` now differs from organizer `32b94cb` on **no editable path at
-all**: `git diff --name-status 32b94cb HEAD` lists only the campaign overlay
-(`senpai/`, `.agents/skills/`, `research/twin_audit.py`, `.gitignore`,
-`AGENTS.md`) plus one declared trusted repair. Editable bytes are therefore
-byte-exact to the officially scored surface, which is the strongest form of
-this proof and the reason a local rescore is directly comparable to
-`2.94661597308114`.
-
-Declared non-editable overlay manifest: every path outside the editable set that
-may differ from the organizer, with its standing obligation.
-
-The authoritative, machine-readable form is
-[`trusted-overlay-manifest.json`](trusted-overlay-manifest.json); this table is a
-summary and loses to the JSON if they disagree. **The set is branch-dependent** —
-`main` carries one overlay, the research branch `senpai/qwen38-mtp-r1` carries
-three — so each entry records which branches it applies to.
-
-| Path | Kind | Branches | Obligation |
-| --- | --- | --- | --- |
-| `Tests/MLXFastTests/QwenMTPVerbTests.swift` | repair | all | Organizer blob must stay `5bab1076ac632a0b8d7f5d95f30b281490fe8886`; campaign blob `710953e68da565738b2782b8e58a134ce1e06262`. Rewrites the organizer's `#expect(cond, "a" + "b")` as a multiline literal because the concatenation fails Swift type checking. Re-review the moment the organizer blob moves. |
-| `Tests/MLXFastTests/QwenQMVCostCurveTests.swift` | added | research | Absent upstream by construction; campaign blob `105113cc2a2ff9dc69b8dc4f4a526abef3ad29c2`. If the organizer ever adds this path, the two must be reconciled deliberately. |
-| `Sources/MLXFastCLI/main.swift` | seam | research | Organizer blob must stay `b75c8fb65b393b96f9c64e0b5a1b7e8c816e983f`; campaign blob `4fb19edcca8024b1ebdc6aa2ac3b262d90ca3f48`. Single `+8/-1` hunk that forwards worker stderr when `MLX_QWEN_MTP_TRACE=1`, so the in-session trace is readable. **Standing obligation: the file must still contain `forwardsWorkerStderr && !officialRun`** — tracing must remain impossible on an official run. |
-
-`senpai/`, `.agents/`, `research/`, `AGENTS.md`, and `.gitignore` are
-campaign-owned by construction and are not part of this manifest. Anything
-else appearing outside the editable set is undeclared drift and must block the
-sync until it is explained.
-
-### Enforcing the manifest, and validating the enforcer
-
-`senpai/verify-trusted-parity.sh <UPSTREAM_SHA> [REV]` reads the editable set
-from `benchmark.json`, subtracts the campaign-owned allow-list, and requires
-every remaining difference against the organizer to be a declared overlay whose
-kind-specific obligation still holds. Current results: research branch → `trusted
-parity OK: 3 declared overlay(s), 0 undeclared drift`; `main` → `OK: 1 declared
-overlay(s)`.
-
-A gate that has only ever passed is a decoration, so
-`senpai/selftest-trusted-parity.sh <UPSTREAM_SHA> [REV]` perturbs the manifest
-and requires the gate to fail *with the right cause* each time: dropped entry →
-`UNDECLARED trusted-surface drift`; zeroed `organizerBlob` → `organizer CHANGED a
-path the campaign patched`; bogus `mustContain` → `obligation BROKEN`; unknown
-`kind` → `unknown overlay kind`; and it demonstrates that widening
-`campaignOwnedPrefixes` to `Sources/` would launder `main.swift` out of view,
-which is why that list is narrow and reviewed. The manifest is restored
-byte-exactly (hash-verified) even if the self-test dies.
-
-Two defects were found by actually running these, both worth remembering:
-
-1. **`grep -q` on a pipe inverts a successful search under `pipefail`.** `git show
-   … | grep -q` made the seam's obligation report `obligation BROKEN` while the
-   string was present: `grep -q` exits at the first match, the producer takes
-   SIGPIPE, and `pipefail` promotes that to failure. Both scripts now match
-   in-shell with `case`, and the same bug appeared a second time as `… | head -1`
-   in victim selection, which aborted the whole self-test.
-2. **A self-test that dies must not look like a pass.** The first run printed
-   `baseline passes` and stopped, and its status was invisible because it had been
-   invoked through `| tail`. The fix is a mandatory verdict line on every exit
-   path, not a cleverer trap — a plain `trap … EXIT` was verified to preserve the
-   exit status and was never the cause.
-
-Retired in this sync: `Tests/MLXFastTests/QwenMTPFixedWindowTests.swift`,
-added by campaign commit `f1a874dbb65054b9dceb941abdfd89cac6e40ce4`. The
-promoted frontier restores the organizer session's stop-token early exit, so
-its subject `Qwen36MTPBlockSession.acceptedDraftPrefixCount` no longer exists
-and the guard was the only `swift test` build failure after the import.
-Retiring the guard rather than patching the snapshot keeps editable bytes
-exact. Whether EOS lands inside the scored fixed window is a property of the
-prompt and the target model's greedy continuation, not of the candidate,
-because exactness forces token-for-token reproduction of the serial reference;
-and the frontier was promoted at `2.94661597308114` with the early exit
-present, so EOS does not truncate the window on the ranked pool. It can still
-appear in campaign-local held-out fixtures, so the replacement control is a
-tripwire, not a behaviour change: **every local A/B must assert a full-length
-token match on both arms.**
-
-### `swift test` disposition on this base
-
-`swift test --force-resolved-versions` now **builds clean** and runs 657 tests
-in 37 suites; 38 issues are recorded. The import introduced **none** of them,
-and the attribution is static rather than empirical, so it needs no control
-run: every file the failing tests read is byte-identical either to organizer
-`32b94cb` or to the campaign fork base.
-
-| Failing test | Reads | Attribution |
-| --- | --- | --- |
-| `theQwenMTPTrackIsArmedOnQwen38()` | organizer release markers/digests | Fails at organizer `32b94cb` itself; the track is released, the test still demands `QWEN38-PENDING-RELEASE` |
-| `theCheckedInDeclarationSelectsThePinnedHead()` | `mtp-head.manifest.json` | Fails at `32b94cb` itself; the promoted head is the remote 4-bit/group-64 head, the test still expects the pinned bf16 head |
-| `theEvenMedianRuleIsTheMeanOfTheTwoCentralValues()` | trusted scoring semantics | Fails at `32b94cb` itself |
-| `theSeededCalibrationExpectationMatchesItsRecordedProvenance()` | calibration provenance | Fails at `32b94cb` itself; status is `measured_qwen38_cutover_2026_08_14` |
-| `qwen36ConfigContractDigestMatchesTheReferenceManifest()` | `config.json` digest | Fails at `32b94cb` itself |
-| `participantDocsExposeDefaultCLIInstallDirectory()`, `contestantDocsCommandBlocksKeepTheDependencyGraphFrozen()`, `submissionStaticReviewPromptCoversMeasurementStructureExploitation()` | `README.md`, `TASK.md`, `AGENTS.md`, `CLAUDE.md` | **Split cause — see the corrected table below.** Partly a campaign omission in `AGENTS.md`, partly an organizer-side failure in `CLAUDE.md` that no campaign change can fix |
-
-#### Correction: the doc test has two independent causes, not one
-
-An earlier revision of this ledger attributed the doc-test failures solely to a
-campaign omission in `AGENTS.md`. That was half wrong. `participantDocs...` at
-`Tests/MLXFastTests/BenchmarkScriptTests.swift:456` loops over **four**
-documents and requires each to contain both `export PATH="${HOME}/.local/bin:${PATH}"`
-and ``Yukon CLI (`yukon`)``, and to contain none of
-`mlxfast {login,clone,submit,submissions,run,sync}`. Evaluated per document:
-
-| Document | At organizer `32b94cb` | At campaign `HEAD` | Blob relation |
-| --- | --- | --- | --- |
-| `README.md` | passes | passes | identical blob |
-| `TASK.md` | passes | passes | identical blob |
-| `AGENTS.md` | **passes** | **failed** → now fixed | campaign rewrite, `80a46b72c907` |
-| `CLAUDE.md` | **fails** | **fails** | identical blob, `47dc3e3d863c` |
-
-So `CLAUDE.md` fails **at the organizer frontier itself**, on a byte-identical
-blob, missing *both* required strings. Only the `AGENTS.md` half was ours.
-
-**Action taken:** `AGENTS.md` is campaign-owned and is what students actually
-read, so the omission is fixed in place — the Senpai Campaign section now states
-that ``the Yukon CLI (`yukon`)`` manages accounts and official submissions and
-installs to `${HOME}/.local/bin`. `CLAUDE.md` is deliberately **left alone**: it
-is organizer-owned and non-editable, patching it would manufacture a fourth
-undeclared trusted-surface overlay, and it buys exactly zero benchmark value.
-The test therefore stays red for a known, harmless, upstream reason. That is the
-correct trade, and it is recorded here so nobody "fixes" it later by widening the
-trusted surface.
-
-Three consequences worth acting on. First, **the ranked benchmark does not run
-`swift test`** — the promoted frontier fails the organizer's own checked-in
-head-declaration test and was still promoted at `2.94661597308114` — so
-`swift test` is a campaign hygiene gate, never a submission gate. Second, the
-`AGENTS.md` blob pin in this sync's preservation proof necessarily moves when
-that fix lands; the pin's purpose was to prove the *sync* changed nothing, and
-the fix is a separate, later commit. Third, a test that fails upstream is not
-evidence about our work, and a ledger that says otherwise will mislead the next
-reader — hence this correction rather than a quiet edit.
-
-### Scoring-semantics correction: seed prefill is charged
-
-Organizer commit `da72848b` ("Publish the seed-prefill rate in ranked
-payloads"), cherry-picked here as a trusted-path change, states that the
-trusted parent **charges the seed prefill inside the decode window on both
-sides of the pair**. This *corrects* the earlier standing campaign note that
-prefill was excluded from scoring. So
-
-```
-raw_p = (P + D_serial) / (P + D_mtp)
-```
-
-with prefill `P` additive to both numerator and denominator, dragging every
-per-prompt ratio toward `1.0`. Therefore **reducing seed-prefill wall time is a
-score lever that cannot affect correctness at all**, since prefill produces no
-scored tokens. Sensitivity is
-`d ln(raw_p)/dP = 1/(P + D_serial) - 1/(P + D_mtp)`, about `-0.03` per second
-at current timings; a long prompt spending `0.3` to `0.5` s in prefill is worth
-roughly `1.5%` of score, near `+0.045` absolute — larger than the `+0.012`
-step that won the current frontier. The same commit ships the instrumentation
-(`seed_prefill_seconds` and `prefill_seconds_per_token` per prompt, plus a
-metrics-object mean in `score.json`), and nothing in the scoring path reads
-those new keys, so they are observability only.
+Campaign commit `8b85909` then reapplies the fixed-window post-EOS continuation
+required by the current parent-owned 512-token contract. That overlay is not
+part of the promoted Yukon receipt above and must pass exact 512-token replay
+and official validation before it can itself be called promoted.
 
 ## Same-host baselines
 
@@ -234,11 +47,12 @@ those new keys, so they are observability only.
 That baseline ran on the detached promoted source. Its complete submitted
 surface is identical to campaign import commit `ce159755`.
 
-**That baseline is now stale for A/B use.** It was taken on `7351e626`, two
-promotions back, and the scheduler triple moved from `0.20 / 4 / 7` to
-`0.18 / 5 / 8` in between. No candidate may be compared against it on this
-base; a fresh same-host baseline on `32b94cb` is required first, and every
-comparison must be a matched pair measured in the same serialized window.
+**That baseline is now stale for A/B use.** It was taken on `7351e626`, several
+promotions back, and the scheduler moved from `0.20 / 4 / 7 / gate 3` to
+`0.18 / 5 / 8 / gate 2` in between. No candidate may be compared against it on
+this base; a fresh same-host baseline on the current advisor merge is required
+first, and every comparison must be a matched pair measured in the same
+serialized window.
 
 **Measurement hygiene, from a 1000 s idle thermal soak on this host.** Idle GPU
 settles near `38.7` to `40` °C at about `0.02` W and recovers within roughly
@@ -276,7 +90,8 @@ evidence or a changed condition; “try again” is not enough.
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-08-16 | clean Yukon source / `7351e626` | untouched promoted-tree baseline | `7351e62674bc600f0ca148d3a1b0604716a09db6` | pass; M4-local directional score `1.4708805115725638`; public tripwire passed; exact `64/64` | not submitted; local result is non-rankable | Same-host baseline row above; submitted surface now matches campaign import `ce159755` |
 | 2026-08-16 | `codex/sync-organizer-frontier-20260816` / `ce159755` | exact promoted editable-snapshot import | `eb2dc26caf48ac126e0f51df7db5130414ff1d94` | release build, overlay, budget, twin, and trusted-parity checks passed; full `swift test` reached product compilation but was blocked by unchanged organizer test-source type error at `QwenMTPVerbTests.swift:755` | adopted public promoted `e6c5ef35` at `2.9042110287045`; not a Senpai-authored submission | Source delta is exactly two editable Swift files (`+54/-14`); campaign records and novelty queue refreshed separately |
-| 2026-08-17 | `codex/sync-organizer-frontier-20260817` | exact promoted editable-snapshot import, two frontier steps | `83201aa98a71d42415e1c7e85e8bc96cf609d5cf` | overlay, editable-budget (`source 2402203/3000000`, `growth 0/262144`), twin audit (29 runtime-effective twins), and strengthened trusted-parity checks passed; `swift test` builds clean with 38 pre-existing issues attributed above, none introduced by the import | adopted public promoted `03dedda8` at `2.94661597308114`; not a Senpai-authored submission | Editable diff against organizer `32b94cb` is **empty**; trusted policy commit `da72848b` cherry-picked with `-x`; orphaned `QwenMTPFixedWindowTests.swift` retired |
+| 2026-08-17 | `codex/sync-organizer-frontier-20260817-5` / `d098212` | exact promoted editable-snapshot import | `83201aa98a71d42415e1c7e85e8bc96cf609d5cf` | preservation, overlay, and budget checks passed; inherited `quantized` twin comment drift recorded without changing promoted bytes | adopted public promoted `ba493f74` at `2.95338624520432`; not a Senpai-authored submission | Exact organizer source `156b5b75`; eight editable files changed relative to the prior promoted source |
+| 2026-08-17 | `codex/sync-organizer-frontier-20260817-5` / `8b85909` | fixed-window continuation after EOS on the new promoted source | `d098212` | focused `QwenMTPFixedWindowTests`: 2/2 passed; full 512-token exact replay still required | not submitted; not promoted | Restores the campaign's parent-owned fixed-window behavior without altering the trusted fixture or parent |
 
 ## Update checklist
 

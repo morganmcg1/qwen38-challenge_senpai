@@ -10,13 +10,28 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 - Decision: **dead as a speedup, green as measurement.** Both directions of the 2x2 were
   measured. The second weight pass is real but ~89% absorbed by cache, and the only lever
   that removes it costs 3.5x more than it saves.
-- `BASE_SHA` / `UPSTREAM_SHA` / candidate commit: `ef16dea4ab2cb1023eb96f3740e0dfdbd88a3bda` /
-  see `senpai/frontier-state.json` / no candidate proposed (research-only result)
+- `BASE_SHA` / `UPSTREAM_SHA` / candidate commit: measured on
+  `ef16dea4ab2cb1023eb96f3740e0dfdbd88a3bda`, branch rebased onto
+  `b85e7827158eb8c29b6b290a9e2971812f7e70b4` for merge (see *Base moved after the
+  measurements* below) / see `senpai/frontier-state.json` / no candidate proposed
+  (research-only result)
 - Yukon promoted submission / source ref used as frontier: unchanged; this experiment
   proposes no submission.
-- Submitted candidate files: **none.** All arm patches were applied transiently by
-  `research/run-ipg-arms.sh` and restored by its exit trap; the branch ships only research
-  tooling and this report.
+- Submitted candidate files: **no submitted runtime change; one test file extended.** All arm
+  patches were applied transiently by `research/run-ipg-arms.sh` and restored by its exit
+  trap, so nothing inside `editablePaths` differs from the base. The branch also restores and
+  extends `Tests/MLXFastTests/QwenQMVCostCurveTests.swift` (722 -> 792 lines), which Yukon does
+  not submit: `Tests/` is not in `benchmark.json editablePaths` at either base, and
+  `senpai/validate-assignment-scope.sh` rejects that path by name (receipt below).
+- Recovered test suite: `Tests/MLXFastTests/QwenQMVCostCurveTests.swift` is **absent at
+  `b85e782`** — the frontier-sync merge resolved in favour of the sync side and silently
+  dropped it (`Tests/` holds 58 files at `e6e6f81`, 57 at `b85e782`, and that is the single
+  lost file). This PR is the recovery vehicle for it: the rebase hits a modify/delete conflict
+  on exactly that path, resolved by **keeping** the 792-line version, which carries
+  `sweepQuantizedMatmulOverVerifyWidth`, `scoredShapesStayOnTheQMVFastPath`,
+  `nOnlyDimsAreNotSafeAsReductionDims`, `sweepCompactDraftReadoutOverBits`, and
+  `QwenQMVParityTests.digestQuantizedMatmulOverVerifyWidth` — the bit-exactness gate this
+  experiment's parity verdict depends on.
 - Supporting test, tooling, or documentation files: `research/run-ipg-arms.sh`,
   `research/roofline_arm_patch.py` (arms `ipg-a`, `ipg-b`, `ipg-d`, `ipg-e`, `perturb`),
   `research/ipg_h_from_curve.py`, `research/ipg_shape_breakdown.py`,
@@ -25,11 +40,38 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   `research/ipg_wandb_log.py`, this file.
 - MTP head provenance and draft policy: organizer-pinned head, unchanged. No
   `mtp-head.manifest.json` declaration was added.
-- Assignment-scope preflight: `senpai/validate-assignment-scope.sh ef16dea4… <quantized.h>
-  <quantized.cpp>` -> `assignment scope OK: 2 submitted path(s)`.
-- Editable source bytes / headroom / growth / exempt-head bytes:
-  `editable budget OK: source=2402203/3000000 headroom=597797 growth=0/262144 exempt=2410
-  files=154`.
+- Assignment-scope preflight, re-run against the rebase base `b85e782`:
+
+  ```text
+  $ senpai/validate-assignment-scope.sh b85e7827158eb8c29b6b290a9e2971812f7e70b4 \
+      Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h \
+      Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  assignment scope OK: 2 submitted path(s) against BASE_SHA=b85e7827158eb8c29b6b290a9e2971812f7e70b4
+  ```
+
+  (The same run against `ef16dea4…` gave `assignment scope OK: 2 submitted path(s)`.)
+  The recovered test file is confirmed non-submitted by the same script:
+
+  ```text
+  $ senpai/validate-assignment-scope.sh b85e7827158eb8c29b6b290a9e2971812f7e70b4 \
+      Tests/MLXFastTests/QwenQMVCostCurveTests.swift
+  assignment scope: 'Tests/MLXFastTests/QwenQMVCostCurveTests.swift' is outside
+  b85e7827158eb8c29b6b290a9e2971812f7e70b4:benchmark.json editablePaths
+  ```
+
+- Editable source bytes / headroom / growth / exempt-head bytes, re-run against `b85e782`:
+
+  ```text
+  $ senpai/check-editable-budget.sh b85e7827158eb8c29b6b290a9e2971812f7e70b4
+  editable budget OK: source=2403812/3000000 bytes headroom=596188 growth=0/262144
+  exempt=2410/2147483648 files=154 (growth base=b85e782…; contract=b85e782…;
+  base source=2403812, exempt=2410, files=154)
+  ```
+
+  `growth=0` because this branch changes no submitted path at all. The base source figure
+  moved `2402203 -> 2403812` bytes purely because the organizer's own base advanced; it is
+  not growth attributable to this experiment. (The same run against `ef16dea4…` gave
+  `source=2402203/3000000 headroom=597797 growth=0/262144 exempt=2410 files=154`.)
 - Scored-path reachability evidence: the device-side dispatch `switch (ntg.x)` at
   `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1809` is guarded by
   `!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024`; the wide `_m` branch
@@ -73,6 +115,51 @@ result, not its absolute timings.
 against, so it tracks the arm rather than the shipped kernel. It is a labelling choice for
 the staircase diagnostic only and does not touch any measured time.
 
+## Base moved after the measurements (r2 bookkeeping)
+
+Every timed arm below was measured against `ef16dea4`. This branch is now rebased onto
+`b85e782`, and the organizer's base changed one line of the dispatch table in the window
+between them. Nothing here is a re-measurement; it is arithmetic over the already-measured
+numbers plus a source diff, and it exists so the next agent does not read a stale claim as
+current.
+
+`git diff ef16dea4..b85e782 -- Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h`
+touches exactly one `case`:
+
+```text
+case 8: qmv_fast_crossrow_affine4_g64_m<T,8,4>  ->  qmv_fast_crossrow_affine4_g64_m<T,8,3>
+```
+
+with an organizer comment citing 319 / 437 / 216 us for `M = 7 / 8 / 9` — the same register
+cliff this experiment measured independently. That is a useful outside confirmation of the
+mechanism: two agents found the same `<T,8,4>` outlier from opposite directions, one from a
+cost curve and one from a dispatch retune.
+
+What that change does and does not invalidate:
+
+| claim | status on `b85e782` |
+| --- | --- |
+| arm A (`<T,5,3>` -> `<T,5,5>`) | **stands** — `case 5` is byte-identical across the diff |
+| arm B (`<T,4,4>` -> `<T,4,2>`) | **stands** — `case 4` is byte-identical across the diff |
+| arm E (arm A + packed 13 vectors) | **stands** — built on `case 5`, untouched |
+| the `h8 = 0.3816` pass spike | **superseded** — measured against `<T,8,4>`, which no longer ships |
+| the histogram frequency model | **superseded** — `segmentedStreakGate` moved 3 -> 2 |
+| Q1 / Q2 / Q3 pass-vs-row conclusion | **stands** — it rests on arms A, B and the `M=3..7` curve |
+
+The pass vector for `M = 3..9` was `1,1,2,2,2,2,3` when measured and is `1,1,2,2,2,3,3` on
+`b85e782`. The pass increment therefore moved from `M=8` to `M=7`. That gives a falsifiable
+prediction rather than a dead claim: on the new base the structural pass spike should appear
+at `h7`, not `h8`, and `h8` should fall back onto the `NA=3` two-pass line. This experiment
+did not run that check and should not be read as having run it.
+
+`segmentedStreakGate` also moved `3 -> 2` in `Qwen36MTPBlockSession.swift` between the two
+bases. Every frequency number in Q4 is pinned to gate 3 and therefore *understates* how often
+`M >= 5` fires on the new base. Re-indexing the already-measured histogram against the new
+dispatch table — arithmetic only, no new run — moves the three-pass round share from
+**48.57%** (`M=9` alone under `<8,4>`) to **57.14%** (`M=8` at 8.57% plus `M=9` at 48.57%,
+both three-pass under `<8,3>`). The direction of follow-up #8 is unchanged and its
+motivation is slightly stronger, but its exact numbers need the new base.
+
 ## Question
 
 Does verify width `M` cost what it costs because of the *number of weight passes*
@@ -87,7 +174,7 @@ second weight pass at `M=5` can be removed, does depth 4 become worth offering?
   (`--force-resolved-versions`); every resident measurement went through the wrapper's run
   lock and 40C cooling gate. Per-leg temperatures are recorded in
   `.mlxfast-private/qmv-curve/<TAG>/start-temps.txt`.
-- The shipped dispatch table (verified at HEAD, `quantized.h:1809`) is:
+- The shipped dispatch table **as measured, pinned to `ef16dea4`** (`quantized.h:1809`) is:
 
   | M | template | passes = ceil(M/IPG) | NA = IPG (or TAIL) |
   | ---: | --- | ---: | ---: |
@@ -99,6 +186,9 @@ second weight pass at `M=5` can be removed, does depth 4 become worth offering?
   | 7 | `_m<T,7,4>` | 2 | 4 |
   | 8 | `_m<T,8,4>` | 2 | 4 |
   | 9 | `_m<T,9,3>` | 3 | 3 |
+
+  On the rebase base `b85e782` the `M=8` row is `_m<T,8,3>`, 3 passes, `NA=3`. Every other
+  row is unchanged. See *Base moved after the measurements* above.
 
 ## Smallest decisive test
 
@@ -205,6 +295,12 @@ Two independent routes agree:
 The two spikes land **exactly** on the two pass-count increments, and they are the **same
 height**. Spike minus the mean of the four flat steps (0.2701) = **0.1115 h-units**.
 
+*Scoped to `ef16dea4`:* the `h8` row is a property of the `<T,8,4>` entry that shipped when
+these curves were taken. `b85e782` moved `M=8` to `<T,8,3>`, so on the current base the
+second increment sits at `h7` and `h8` should fall onto the flat `NA=3` line. The `h4` row
+and the Q1 conclusion are unaffected — `case 4` and `case 5` did not move. Treat the `h8`
+number as superseded evidence and the `h7` shift as an untested prediction.
+
 *Interventional* — arm B forces a second pass at `M=4`, where the table ships one:
 **+0.1161 h-units** drift-adjusted (ratio 1.0801 -> 1.0816; control widths [3,5,6,7,8,9]
 spanned [0.9977, 1.0013], median drift 0.9986, noise floor +/-0.27%).
@@ -275,6 +371,10 @@ useful, so 39 lanes are wasted. Arm D packed four of thirteen vectors, removing 
 can plausibly cross no step at all and return exactly zero — which is what happened. The
 correct conclusion from arm D alone is *"one vector is not enough to move occupancy"*, not
 *"registers are not the mechanism"*. Arm E is the strong form of the same probe.
+
+**Arm D is closed.** The advisor dropped it at r2: arm E already answers the register
+question in its strong form, and re-running D would spend GPU time to re-confirm a null. The
+measurement above stands as recorded; there is no further work on this arm.
 
 ### Arm E — packing all thirteen vectors
 
@@ -417,6 +517,40 @@ hidden by the trace (the depth-0 branch returns before emitting its `round=` lin
 it opens at `d=4` and climbs to `d=8` within ten rounds as it observes near-perfect
 acceptance, then saturates. Dropping the two clock-ramp warmup rounds leaves **0 of 33**
 rounds at `d=4`.
+
+*Scoped to `ef16dea4`, and superseded in two ways.* The `dispatch` / `passes` / `NA` columns
+are the table that shipped when the trace was taken; on `b85e782` the `M=8` row is
+`_m<8,3>`, 3 passes, `NA=3`. Re-indexing these **same measured rounds** against the new table
+— arithmetic, not a new run — moves the three-pass share from **48.57%** (`M=9` only) to
+**57.14%** (`M=8` at 8.57% plus `M=9` at 48.57%). Separately, `segmentedStreakGate` moved
+`3 -> 2` on the new base, which changes how fast the ramp climbs, so the `rounds` and `share`
+columns themselves need a fresh trace before anyone quotes them as current. Both changes push
+in the same direction as the finding below.
+
+### Validation of the recovered suite (r2, no GPU)
+
+One `swift build --build-tests --force-resolved-versions` on the rebased tree, to check that
+the recovered 792-line file still type-checks against the new base:
+
+- `QwenQMVCostCurveTests.swift` **compiles clean** — it appears once in the compile log and
+  contributes **zero** diagnostics, and `Emitting module MLXFastTests` is reached. It imports
+  only `CryptoKit`, `Foundation`, `MLX`, `MLXLLM` and `Testing`, with no `@testable import`
+  of the session or kernel modules the base changed, which is why the base move cannot reach
+  it.
+- The build nevertheless **fails**, on exactly one error in exactly one file:
+
+  ```text
+  Tests/MLXFastTests/QwenMTPVerbTests.swift:755:21: error:
+  cannot convert value of type 'String' to expected argument type 'Comment?'
+  ```
+
+  That file is **byte-identical to `b85e782`** (`git diff b85e782 HEAD -- <path>` is empty)
+  and is not among the 14 files this branch changes. It is a **pre-existing base defect, not
+  a rebase artifact**: the offending expression is present unchanged at `e6e6f81`,
+  `ef16dea4`, `d098212` and `b85e782`, introduced by `ee977ae Restore organizer test source
+  snapshot`. See follow-up #9.
+
+So the recovery is sound and the suite is ready to run, but nobody can run it until #9 lands.
 
 ### The answer
 
@@ -729,6 +863,17 @@ produce +39% at `M = 5` for one arm and +12.4% at every wide width for another.
    Whoever owns the session should make the stop-token round continue the serial trajectory
    for the configured window. *Owner: the `Qwen36MTPBlockSession.swift` owner.*
 
+   **Fixed on `b85e782` — this follow-up is closed.** The rebase base already carries the
+   repair: `stopTokens` drops from **7 occurrences to 1** in that file, `reachedStopToken` is
+   now a constant `false` (`:167`, and literal `false` at both `:817` and `:1127`), and the
+   pre-drafting early return, the accept-loop `break`, and the post-hoc truncation are all
+   gone, replaced by `acceptedDraftPrefixCount(drafts:verifyArgmax:)` (`:672`, called at
+   `:967`) which accepts on argmax agreement alone. The session now runs the parent's
+   configured window regardless of EOS. Worth recording *why* this is the right shape: the
+   organizer's trusted driver never had this defect, so the fix is the candidate coming back
+   into line with the ranked contract, not a deviation from it. I did not verify the repair by
+   running the 512-token control — r2 is bookkeeping-only, and confirming it needs a GPU leg.
+
 8. **Retest the weight-pass hypothesis at `M=9`, not `M=5` — but read E14's register result
    first.** Q4's live trace shows `_m<9,3>` taking **48.6%** of rounds and multi-pass `_m`
    dispatches taking **97.1%**, against **2.86%** for the `M=5` slot this assignment was
@@ -746,6 +891,44 @@ produce +39% at `M = 5` for one arm and +12.4% at every wide width for another.
    this kernel, not just for `M=5`. Note this follow-up inherits the same edward anti-synergy
    below. *Owner: a future kernel experiment.*
 
+   **Restated for `b85e782`.** The base moved under this follow-up in two ways, both
+   strengthening it. `M=8` is now `_m<8,3>`, so the three-pass slots are `M=8` **and** `M=9`,
+   and re-indexing the measured histogram lifts the three-pass round share from **48.6%** to
+   **57.1%**. `segmentedStreakGate` moved `3 -> 2`, which lets the ramp reach high `M` sooner,
+   so the true share is likely higher still. The screen should therefore sweep `_m<8,IPG>`
+   alongside `_m<9,IPG>` and re-derive the round histogram on the new base rather than reusing
+   the numbers above. Two independent signals now point at the same place: my cost curve found
+   `<T,8,4>` anomalous from the timing side, and the organizer's own retune comment cites
+   319 / 437 / 216 µs for `M = 7 / 8 / 9` from the dispatch side.
+
+9. **`swift test` does not build on this toolchain — one line, campaign-wide.** Found while
+   validating the recovered suite at r2. `Tests/MLXFastTests/QwenMTPVerbTests.swift:755`
+   passes a **concatenated** `String` where Swift Testing's `#expect` wants a `Comment?`:
+
+   ```swift
+   #expect(
+       !paths.contains(absent),
+       "the head tree does not ship \(absent); pinning it would fail "
+           + "verify_cache's inventory half against the published tree")
+   ```
+
+   `Comment` is `ExpressibleByStringInterpolation`, so a single interpolated *literal*
+   converts implicitly but a `+` expression does not. Joining the two fragments into one
+   literal fixes it; `Comment(rawValue:)` also works. This is the **only** error in the whole
+   test target — everything else is warnings — so that one line is what stands between the
+   campaign and a runnable `swift test`.
+
+   Scope and blast radius: the expression is unchanged at `e6e6f81`, `ef16dea4`, `d098212`
+   and `b85e782`, introduced by `ee977ae Restore organizer test source snapshot`, so this has
+   been broken for the whole window I can see, not just since the last sync. `Tests/` is not
+   in `editablePaths`, so nothing here reaches a submission. It is toolchain-dependent —
+   `swift-testing` ships with the toolchain rather than being pinned in `Package.resolved`,
+   and this host is Apple Swift 6.3.3 — so a runner on an older toolchain may not see it;
+   that does not make it safe to leave, since it silently disables the repository's own
+   correctness gates for anyone who does. I did **not** fix it: r2 is bookkeeping-only, and
+   the file is restored organizer test source that E14 does not own. *Owner: whoever owns the
+   organizer test snapshot; it is a one-line change.*
+
 ### edward anti-synergy (stated explicitly)
 
 edward's promoted schedule is tuned against the *current* `h` vector, in which `h4` is a
@@ -755,3 +938,11 @@ the two changes would have had to be re-tuned together rather than composed. Tha
 anti-synergy is now moot because arm A loses, but the general rule stands: any change to the
 QMV dispatch table invalidates the `h` vector that the scheduler was fitted to, so the two
 must always land as one re-tuned pair, never as independent merges.
+
+**`b85e782` is a live instance of that rule.** The `<T,8,4>` -> `<T,8,3>` retune changed the
+`h` vector at the top end: `h4` is untouched, but the second pass increment moved from `h8`
+to `h7`, so any scheduler constant fitted against the old high-`M` shape is now fitted
+against a curve that no longer exists. `segmentedStreakGate` moving `3 -> 2` on the same base
+is consistent with a re-tune having been done, but I did not verify that the two landed
+together, and E14 owns neither file. Flagging it for whoever owns the scheduler: the pair
+rule applies to the organizer's own dispatch edits, not only to ours.
