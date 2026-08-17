@@ -1,337 +1,292 @@
-# Result — `qwen38-r1-e9-draft-bits-default` (revision `r2`)
+# E9 r3 — draft-head readout bit width on the promoted-frontier base
 
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"mtp_seconds_per_token","available":true,"value":0.03331521479412913},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"local_serial_relative_speedup","available":false,"value":null},"test_metric":{"name":"all_tokens_matched","available":false,"value":null}}
 
-**Result label: `local winner` — with one honest qualification.** Flipping the
-in-tree `draftHeadBits` default from 4 to 3 is worth **−2.0303 %** MTP
-seconds/token on the cap-7 base, correctness is exact on every arm, and the
-candidate diff is a single submitted file. But the gain is **not** the kernel
-speedup the hypothesis assumed: it is an acceptance-rate rise that is
-deterministic and bit-exactly reproducible yet **fixture-specific**, and it
-landed the other way on one of the two unseen prompts. Project the ranked median
-from Part A's three-prompt median of **−1.520 %**, not from −2.0303 %.
+- Student / branch: `qwen-askeladd` / `qwen-askeladd/draft-bits-multiprompt-default`
+- Hypothesis and target cost: r2 measured a −1.90% / −1.52% / +0.05% spread from
+  setting the compact draft readout to 3 bits, and asked whether 3 bits should
+  become the in-tree default. r3 asks that question again on the promoted
+  frontier. Target cost was the compact draft readout: 283.2 MB of affine-4/g64
+  rows streamed once per draft step.
+- **Decision: dead — the lever does not exist on this base.** Part A returned
+  negative at its first gate, so per the assignment's stop rule Part B was not
+  run and no timing allocation was spent.
+- `BASE_SHA` / `UPSTREAM_SHA` / candidate commit: base `bc5e15fd` (assignment
+  marker) merged forward to research base `fe38ecc`; candidate head is this
+  commit. Prior r2 base was `8970d775`.
+- Yukon promoted submission / source ref used as frontier: not queried — no
+  candidate was produced, so no submission decision arose.
+- **Submitted candidate files: none.** `git diff --stat bc5e15fd HEAD -- Vendor/
+  Sources/ mtp-head.manifest.json mtp-head/` is empty. Every file in this branch
+  is under `research/` or `correctness_prompts/`.
+- Supporting test, tooling, or documentation files: `research/e9r3_readout_share.py`
+  (A3 arithmetic), `research/run-e9r3-liveness.sh` (untimed path probe),
+  `research/log_e9r3_to_wandb.py` (W&B record), this report.
+- W&B record: run `lirtaqkk` —
+  <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/lirtaqkk>,
+  group `qwen38-r1-e9-draft-bits-default`, `job_type=source-analysis`. It carries
+  the A1 symbol counts, the probe counters, and the A3 byte model as config and
+  summary, plus this report as an artifact. It deliberately logs **no** speed or
+  acceptance metric, because none was measured validly.
+- MTP head provenance and draft policy: see "The head is not where the bits are"
+  below. Draft policy on this base is the greedy marginal `costModelDepth` rule
+  with `headStepCostRatio = 0.18`, `sdpaWidthWallDepthCap = 5`,
+  `segmentedVerifyDepthCap = 8`, `segmentedStreakGate = 3`.
+- Assignment-scope preflight: `senpai/validate-assignment-scope.sh` →
+  `assignment scope OK: 1 submitted path(s)` against both `bc5e15fd` and
+  `fe38ecc`.
+- Editable source bytes / headroom / growth / exempt-head bytes:
+  `senpai/check-editable-budget.sh` → `editable budget OK: source=2402203/3000000
+  headroom=597797 growth=0/262144 exempt=2410/2147483648 files=154`, identical
+  against both `bc5e15fd` and `fe38ecc`. **`growth=0`** confirms zero submitted
+  bytes changed.
+- Scored-path reachability evidence: measured, not inferred. An untimed stderr
+  probe shows `makeCompactDraftHead vocab=248320 draftHeadW_present=false
+  lmHead=QuantizedLinear bits=4 groupSize=64` and `draftTokenID total=1
+  compact_fused=1 declared_head=0` — the compact readout is reached and the fused
+  path is taken, but there is no longer any bit-width knob on that path to turn.
+  Full probe detail under "Untimed liveness probe".
 
-- **Student / branch:** `qwen-askeladd` / `qwen-askeladd/draft-bits-multiprompt-default`
-- **Hypothesis and target cost:** the 3-bit draft-head readout measured in E6
-  (−1.9 % on the one public english fixture) is a real kernel win; flipping the
-  in-tree default converts it into scored time, and it survives unseen prompts.
-- **Decision:** **green locally.** Candidate is submittable as-is. Ranked
-  projection should be discounted — see Conclusion.
-- **`BASE_SHA`:** `8970d775a63a28b610fd418c68873c236ce6b86c` (`senpai/qwen38-mtp-r1`,
-  carries merged PR #2 ⇒ `segmentedVerifyDepthCap = 7` at
-  `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:757`)
-- **`UPSTREAM_SHA`:** `7351e62674bc600f0ca148d3a1b0604716a09db6`
-- **Candidate commit:** `d320d36` (branch HEAD; the flip itself is `6c2c360`)
-- **Yukon promoted frontier used as reference:** submission
-  `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd`, score `2.9042110287045`,
-  `sourceRef 7351e626`
-- **Submitted candidate files:** **one** —
-  `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` (`draftHeadBits`,
-  `else { return 4 }` → `else { return 3 }`)
-- **Supporting test, tooling, and documentation files (not submitted):**
-  `research/run-draft-bits-arm.sh`, `research/e9_evidence.py`,
-  `research/e9_partb.py`, `correctness_prompts/*.json`
-- **MTP head provenance and draft policy:** organizer-pinned head throughout —
-  `uses_pinned_mtp_head: true`,
-  `head_provenance_sha256 = eb481df38267db5c9d9db1f6a813fcc73e762d0af74fdb1bcb061724c815adfe`.
-  No `mtp-head.manifest.json` declared, so `mtp-head/` contributes 0 exempt
-  bytes. Draft policy unchanged: parent-offered depth 8, session cap 7.
-- **Assignment-scope preflight:** `assignment scope OK` — 1 submitted path.
-  New goldens live in `correctness_prompts/`, which is **outside**
-  `benchmark.json -> editablePaths`, so they cost zero growth.
-- **Editable source bytes / headroom / growth / exempt-head bytes:**
-  `editable budget OK: source=2413591/3000000 bytes headroom=586409
-  growth=0/262144 exempt=2410/2147483648 files=154`. The 2410 exempt bytes are
-  inherited unchanged from `BASE_SHA`; this candidate declares no
-  `mtp-head.manifest.json` and adds no exempt bytes. Growth is exactly zero
-  because the flip changes one literal character.
-- **Scored-path reachability evidence:** `draftHeadBits` is read inside the
-  quantized draft-head readout that `Qwen36MTPBlockSession` invokes every
-  drafting round. Reachability is proven *behaviourally*, not by inspection:
-  with the flip in place and the override env var unset, the measured
-  `accepted_draft_rate` is **bit-identical to 16 digits** to the `env=3` arm and
-  **differs** from the `env=4` arm (see "Flip is live" below). A dead code path
-  cannot move a 16-digit acceptance figure.
+## A1 — is the lever still live? **No. It was deleted upstream.**
+
+The promoted-frontier rebase removed the entire PR #7 mechanism from
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`. Exact symbol counts
+in that one file:
+
+| symbol | old base `8970d775` | new base `bc5e15fd` |
+| --- | ---: | ---: |
+| `draftHeadBits` | 3 | **0** |
+| `requantizedDraftHead` | 2 | **0** |
+| `MLX_QWEN_MTP_DRAFT_BITS` | 2 | **0** |
+| `makeCompactDraftHead` | 3 | 3 |
+
+`makeCompactDraftHead()` survives, but its quantized branch now returns
+directly and inherits the backbone width:
+
+```swift
+if let quantized = full as? QuantizedLinear {
+    return QuantizedLinear(
+        weight: compactRows(quantized.weight),
+        ...
+        groupSize: quantized.groupSize,
+        bits: quantized.bits,   // <- no lever
+```
+
+This is a stronger negative than the assignment anticipated. The r3 brief framed
+A1 as "the default integer may have moved"; in fact there is no integer. Setting
+3 bits here is not a one-line default change but a **re-implementation** of the
+deleted `requantizedDraftHead` (dequantize the sliced 4-bit rows in 8192-row
+blocks, 13 blocks with an `eval()` each, then re-quantize). That is outside the
+r3 scope as written, so I flagged it rather than silently exceeding scope.
+
+Accordingly the branch no longer carries the r2 edit: the base merge resolved
+`Qwen35.swift` in favour of the new base, and the submitted-path diff is empty.
+
+### The head is not where the bits are — the path is live, the knob is not
+
+Worth separating, because it decides whether re-implementation *could* ever pay.
+`usesCompactDraftVocabulary` requires `lmHead != nil` and vocab 248,320 — both
+hold. The `_draftHeadW` guard that would bypass `makeCompactDraftHead()` is
+populated only from `mtp.draft_lm_head.{weight,scales,biases}`, and **neither
+available head contains that tensor**:
+
+- pinned bf16 head (`~/.cache/mlxfast/.../mtp-head/model.safetensors`,
+  849,400,347 B): 15 BF16 tensors — `fc.weight [5120,10240]`, the seven
+  `layers.0` projections, four `layers.0` norms, `norm.weight`,
+  `pre_fc_norm_embedding.weight`, `pre_fc_norm_hidden.weight`. No
+  `draft_lm_head`.
+- declared 4-bit head (238,934,129 B): 31 tensors = 8 Linear × 3 + 7 norms. No
+  `draft_lm_head`.
+
+So `_draftHeadW == nil`, `makeCompactDraftHead()` is reached, and `draftTokenID`
+takes the fused kernel path (session call sites 879 and 892, warmed at 268–287).
+Runtime confirmation is in "Evidence" below.
+
+**Route B has not shipped.** The r3 brief supposed the new base introduced a
+manifest-supplied draft head. It did not, on two counts. First, the declared head
+was *already* 4-bit at the old base
+(`lowskillcoding/qwen38-mtp-head-4bit-g64`, 238,934,093 B, added at `deb63ad`);
+`bc5e15fd` only swaps the source repo to `dwsdubey/qwen3.8-27b-mtp-4bit`
+(238,934,129 B), same geometry. Second, the manifest head feeds
+`mtpHeadHiddenForward`, not `applyDraftLMHead` — it is a different tensor in a
+different place. Route B proper would be a head that actually ships a
+`draft_lm_head` tensor; none does.
+
+## A2 — was r2 measuring double quantization? **Yes, always.**
+
+`makeCompactDraftHead` slices the **backbone** `lmHead`, which is affine 4-bit
+group-64. It never touches the MTP head. The deleted `requantizedDraftHead`
+therefore dequantized already-4-bit rows and re-quantized them to 3 or 2 bits.
+PR #7 and r2 were the double-quantization experiment from the start; r3's
+premise that double quantization would be a *new* penalty introduced by the
+rebase is not correct.
+
+The brief's expectation that this must be "strictly worse" for acceptance is
+refuted by r2's own data: 3-bit acceptance moved **+0.019** (english), **+0.010**
+(technical), **−0.007** (narrative). Double quantization did not reliably harm
+acceptance — which is exactly why r2's realized gain was not attributable to the
+mechanism (see the coin-flip note in Conclusion).
+
+## A3 — how big could the prize be? **Small, and unchanged by the rebase.**
+
+From exact byte counts (`research/e9r3_readout_share.py`; row constants
+`compactDraftPaddedCount = 98_336`, `COLS = 5_120`, `GROUP = 64` are **identical
+on both bases**, so the attacked bytes did not move):
+
+| width | weight | scales | biases | total | ms at 227.13 GB/s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4-bit | 251.740 MB | 15.734 MB | 15.734 MB | **283.208 MB** | 1.2469 |
+| 3-bit | 188.805 MB | 15.734 MB | 15.734 MB | **220.273 MB** | 0.9698 |
+| 2-bit | 125.870 MB | 15.734 MB | 15.734 MB | 157.338 MB | — |
+
+3 bits saves 62.935 MB = **22.22%** of readout bytes, ≈ **0.277 ms** per draft
+step at STREAM peak.
+
+One correction to the brief's reasoning about the ceiling. The head the MTP block
+runs differs by **measurement path, not by base**: `benchmark-qwen-mtp.sh` always
+passes the pinned cache dir (`:554/603/613`), while the trusted parent resolves
+the manifest. `QwenMTPHeadDeclaration.resolve(contractRoot:)` is called only at
+`Sources/MLXFastCLI/main.swift:1897`, inside `qwenMTPHeadProvenancePayload` —
+provenance reporting, not loading. So:
+
+| head step denominator | readout share | cap on head step from a 24.2%-faster readout |
+| --- | ---: | ---: |
+| pinned bf16 head — **local** path | 25.00% | −6.05% |
+| declared 4-bit head — **ranked** path | 54.24% | −13.13% |
+
+The rebase did not lower this ceiling. If anything the ranked path flatters a
+readout win more than the local path does, which means **local measurement
+understates the ranked effect** — a hazard worth recording for anyone who
+later measures a readout change locally and reads the ratio as ranked-equivalent.
+
+I did **not** convert these into a share-of-round figure. That needs one
+measurement I deliberately did not spend once A1 came back negative, and r2's
+implied `R4 = 1.048 ms` belongs to a different schedule and must be re-derived
+rather than reused. The in-tree comment claiming "~315 MB of affine-4 rows per
+draft step (~0.6 ms)" disagrees with the byte model above and is worth a look by
+whoever owns that comment.
 
 ## Evidence
 
-- **Host, memory profile, toolchain, thermal policy:** Apple **M4 Pro**,
-  `mem=51539607552`, macOS `26.5.2 (25F84)`. **This is not the ranked M5 host.**
-  `cool_gate=disabled_ambient_floor` — the inlet-bound floor sat near 40.7 °C, so
-  the 40 °C gate could never arm. **Arms are therefore comparable to each other
-  only**, which is why every headline number in this report is a within-session
-  A/B on one binary rather than a cross-session absolute.
-- **Exact baseline and candidate commands:** driver signature is
-  `research/run-draft-bits-arm.sh BITS TAG [TOKENS] [BASE_SHA] [MODE]`. The
-  literal `default` means "unset the knob", which is exactly what the ranked
-  worker sees; any other value is exported as `MLX_QWEN_MTP_DRAFT_BITS`.
-  ```bash
-  BASE=8970d775a63a28b610fd418c68873c236ce6b86c
-  # baseline (cap-7 control, 4-bit forced via the env override)
-  research/run-draft-bits-arm.sh 4       e9-cap7-b4             512 "$BASE"
-  # candidate (cap-7, in-tree default now 3-bit, override unset)
-  research/run-draft-bits-arm.sh default e9-cap7-bdefault       512 "$BASE"
-  # Part C submit-mode confirmation
-  research/run-draft-bits-arm.sh default e9-cap7-submit-default 512 "$BASE" --local-submit
-  ```
-  All arms: 512 decode tokens, `dirty=0`. The driver refuses to time a build
-  whose worker binary does not contain the `MLX_QWEN_MTP_DRAFT_BITS` symbol, so
-  a stale binary cannot silently invalidate an arm.
-- **Tests and risk-based checks:** Part C ran `--local-submit` end to end and
-  passed (`passed: true`). Its drift tripwire ran against
-  `correctness_prompts/public_longcopy_gate_english_512_1024.json` — 1024
-  expected tokens over a 512-token prompt, i.e. an M5-generated reference
-  checked to `key_len = 1536` — and reported
-  `public_drift_tripwire_passed: true`.
-- **Exact-token and row-ledger verdict:** **exact on all 16 arms.**
-  `all_tokens_matched = true`, `residual_divergence_count = 0` everywhere. Part C
-  ledger closes: `declared_rows_total 540`, `emitted_token_total 512`,
-  `round_count 79`.
-- **Divergent tokens or failure category:** none.
-- **Generated-twin audit:** not relevant — no `.metal` / `.h` / `mlx-generated`
-  file was touched.
-- **Peak RAM:** `16249552896` B = **15.13 GiB** (Part C). Every arm landed within
-  15.10–15.16 GiB; the flip does not change the memory profile.
-- **Official status and score:** **not submitted to Yukon.** Part C is
-  explicitly `rankable: false`,
-  `not_rankable_reason: "candidate-generated reference rows; official scoring
-  disabled; ranked run is the only authority"`, `oracle:
-  candidate-local-mtp-golden-rows`.
+- Host, memory profile, toolchain, and thermal policy: same racked M-series host
+  and toolchain as r2; `swift build -c release --force-resolved-versions`. No
+  timed arm was run, so no thermal pairing was required and no GPU-temperature
+  pair is reported. The host idles at a ~40.7 °C GPU floor above the 40 °C gate.
+- Exact baseline and candidate commands: no baseline/candidate pair exists. The
+  only GPU work was the untimed probe:
+  `research/await-lock-then-run.sh 600 research/run-e9r3-liveness.sh 16`.
+- Tests and risk-based checks: release builds of both products compiled clean
+  (exit 0, 0 errors), and the probe run passed the public drift tripwire. Both
+  preflight scripts pass, above. I did **not** run the full `swift test` suite:
+  the submitted-path diff is empty, so it would only re-test the unchanged base
+  and would consume a slot another student can use. Say so if you want it anyway.
+- Exact-token and row-ledger verdict: **not applicable** — no candidate to
+  verify. The probe build was reverted before submission.
+- Generated-twin audit: not relevant; no Metal source changed.
+- Peak RAM or head/artifact size: pinned head 849,400,347 B; declared head
+  238,934,129 B; `mtp-head/` in-tree holds only `README.md` (exempt bytes 2,410).
+- Official status and score, if submitted: not submitted.
 
-### Headline metric table — cap-7 base, one binary
+No metric table is reported. There is no candidate build, so every cell would be
+either a copy of the baseline or an invention. Per the assignment, a missing
+metric is reported as missing.
 
-Baseline = `e9-cap7-b4` (`MLX_QWEN_MTP_DRAFT_BITS=4`).
-Candidate = `e9-cap7-bdefault` (override unset; in-tree default is now 3).
-Both share `worker_sha256 3a62b25ce75396365342b0bf91bbaa394cfa27f03de1cc838d638b758f81ad49`
-and `cli_sha256 f90971df57df19bd4ecc6c76601511e8b7b2759c93b87fba13ead7ca55d243b4`.
+### Untimed liveness probe
 
-| Metric | Baseline | Candidate | Ratio / delta |
-| --- | ---: | ---: | ---: |
-| serial seconds/token | 0.07345598423853517 | 0.07358258380554616 | +0.172 % (noise) |
-| MTP seconds/token | 0.034005630761384964 | 0.03331521479412913 | **−2.0303 %** |
-| local serial-relative speedup | 2.160112387091728 | 2.208678054764126 | **+2.2483 %** |
-| effective mean draft length | 5.790123456790123 | 5.8354430379746836 | +0.783 % |
-| accepted draft rate | 0.9189765458422174 | 0.9392624728850325 | +0.0202859 |
+Ran at probe commit `aa4bd9e`, `dirty=0`, 16 decode tokens, worker
+`sha256=4aa4cdf6b7910326dd0c0cc91c76467e1b3cd521b8cd964772d48dacf87a40aa`, CLI
+`sha256=c8de2266b9444dd0428dd6620c1eb2c8fb15d7255df283248fa7e46e14705005`,
+started `2026-08-17T08:52:26Z`, exit 0. Lock was free at 0 s, so `qwen-edward`'s
+slot was never contended.
 
-The serial leg is untouched by the flip (serial runs depth 0 and never loads the
-draft head). Its 0.172 % spread across the three cap-7 arms is the honest
-session noise floor, and the −2.0303 % candidate move is ~12× that.
+Both probes fired (twice each — once per leg, since the depth-0 and depth-8 legs
+each construct the model):
 
-The local score is a one-prompt directional measurement. It is not the ranked
-median across eight hidden prompts.
+```text
+E9R3-TRACE makeCompactDraftHead vocab=248320 draftHeadW_present=false \
+  lmHead=QuantizedLinear bits=4 groupSize=64 \
+  weightShape=[248320, 640] scalesShape=[248320, 80]
+E9R3-TRACE draftTokenID total=1 compact_fused=1 declared_head=0
+```
 
-### Part C — `--local-submit` confirmation (W&B `92n7h4tq`)
+This converts the static inference into measured fact:
 
-`passed: true`, `score` = `mtp_decode_speedup` = **2.2100917410013805**,
-`mtp_depth: 8`, head `d320d36`, `dirty=0`, started 23:40:11Z, GPU 44.58 → 57.02 °C.
+- `draftHeadW_present=false` — `_draftHeadW == nil`, so the bypass guard is not
+  taken and `makeCompactDraftHead()` is genuinely reached on the scored path.
+- `bits=4 groupSize=64` with `weightShape=[248320, 640]` (640 uint32 words =
+  5120 × 4 / 32) and `scalesShape=[248320, 80]` (80 = 5120 / 64) — the sliced
+  head is affine 4-bit group-64, confirming the width the byte model assumes and
+  confirming A2's point that the slice is of the **backbone** head.
+- `compact_fused=1 declared_head=0` — every `draftTokenID` call took the fused
+  `qwen35DraftSelectKernel` path; the declared-head path was never entered.
 
-| Leg | seconds/token | rounds | matched | div |
-| --- | ---: | ---: | --- | ---: |
-| serial (depth 0) | 0.07355892774648964 | 512 | true | 0 |
-| MTP (depth 8, cap 7) | 0.03328320104628801 | 79 | true | 0 |
+Fidelity on both legs: `all_tokens_matched=true`,
+`reference_checked_rows=16/16`, `public_drift_tripwire_passed: true`.
 
-`accepted_draft_rate = 0.9392624728850325` — **bit-identical to the Part B
-candidate arm**. First block 0.17305 s, steady 25.412 ms/token, guardrail
-max/p50 1.0125 (serial leg 1.7797). Timing reproduces the Part B candidate
-(0.0333152) to **0.096 %** across a different mode *and* a different thermal
-slot, which is the strongest stability evidence in this report.
+The run also printed `seconds_per_token` (0.318164 depth-0, 0.278726 depth-8) and
+`accepted_draft_rate=1.0000` at depth 8. **None of that is usable timing or
+acceptance evidence** and it is recorded here only so nobody later mistakes it
+for a measurement: `MLX_QWEN_MTP_TRACE=1` is required to forward worker stderr at
+all, and it also switches on the session's verbose per-position row dump, so the
+run is deliberately perturbed. A 16-token window on the public fixture prefix is
+also far too short and too easy for acceptance to mean anything.
 
-### Full arm table — all 16 arms, full precision
+### Measurement-hygiene finding
 
-`dep` = parent-offered depth 8 (not the session cap). `match`/`div` are
-`all_tokens_matched` / `residual_divergence_count`.
+On arrival `.build-worker/release/mlxfast-runtime-worker` was **stale**
+(Aug 16 23:25) while `.build/release/mlxfast-runtime-worker` was fresh
+(Aug 17 08:46). This is the same stale-worker class of defect I disclosed in r2,
+and it is a live trap for the next agent: a plain `swift build -c release`
+refreshes only `.build/release`, while the benchmark wrapper runs the
+`.build-worker` twin. `research/run-e9r3-liveness.sh` builds both with
+benchmark.sh's own scratch paths and asserts its probe symbol is present in the
+worker binary before trusting a run, so a silent build cannot be reported as
+evidence.
 
-| arm | env | ms/token | accepted_draft_rate | rnds | D | rdouts | ms/round | match | div | worker_sha256 | W&B | base | head |
-|---|---|---:|---|---:|---:|---:|---:|---|---|---|---|---|---|
-| e6-r1-bits2 | ? | 34.6194 | 0.8902691511387164 | 82 | 5.8902 | 483 | 216.160 | True | 0 | ? | `ue0l9ryy` | b2419f41 | 58e9af2 |
-| e6-r1-bits3 | ? | 34.4514 | 0.9094736842105263 | 81 | 5.8642 | 475 | 217.767 | True | 0 | ? | `ey56o2j5` | b2419f41 | 58e9af2 |
-| e6-r1-bits4-control | ? | 35.1056 | 0.8902691511387164 | 82 | 5.8902 | 483 | 219.196 | True | 0 | ? | `50ikno4b` | b2419f41 | 26f9d4f |
-| e6-r1-bits4-control-b | ? | 35.1193 | 0.8902691511387164 | 82 | 5.8902 | 483 | 219.282 | True | 0 | ? | `hrgew6pe` | b2419f41 | a1081a9 |
-| **e9-cap7-b4** | 4 | **34.0056** | 0.9189765458422174 | 81 | 5.7901 | 469 | 214.949 | True | 0 | `3a62b25ce753` | `m4xemao3` | 8970d775 | 36322ce |
-| **e9-cap7-bdefault** | unset | **33.3152** | 0.9392624728850325 | 79 | 5.8354 | 461 | 215.916 | True | 0 | `3a62b25ce753` | `dc5kwr7w` | 8970d775 | a9d338c |
-| **e9-cap7-submit-default** | unset | **33.2832** | 0.9392624728850325 | 79 | 5.8354 | 461 | 215.709 | True | 0 | `3a62b25ce753` | `92n7h4tq` | 8970d775 | d320d36 |
-| e9-flip-b3 | 3 | 34.4224 | 0.9094736842105263 | 81 | 5.8642 | 475 | 217.583 | True | 0 | `b73455224922` | `xextsvtq` | f89b3d60 | 8d979e9 |
-| e9-flip-b4 | 4 | 35.1543 | 0.8902691511387164 | 82 | 5.8902 | 483 | 219.500 | True | 0 | `b73455224922` | `dc2yln9r` | f89b3d60 | 8d979e9 |
-| e9-flip-bdefault | unset | 34.4325 | 0.9094736842105263 | 81 | 5.8642 | 475 | 217.647 | True | 0 | `b73455224922` | `q36elobx` | f89b3d60 | 8d979e9 |
-| e9-narr-b2 | 2 | 52.5561 | 0.4407345575959933 | 249 | 2.4056 | 599 | 108.067 | True | 0 | `369d7adb713b` | `msn7bh1w` | f89b3d60 | 7803f48 |
-| e9-narr-b3 | 3 | 52.8506 | 0.4431239388794567 | 251 | 2.3466 | 589 | 107.807 | True | 0 | `369d7adb713b` | `rnk2vqkx` | f89b3d60 | 7803f48 |
-| e9-narr-b4 | 4 | 52.8231 | 0.4501718213058419 | 251 | 2.3187 | 582 | 107.751 | True | 0 | `369d7adb713b` | `s55oneg8` | f89b3d60 | 7803f48 |
-| e9-tech-b2 | 2 | 42.4325 | 0.6820809248554913 | 158 | 3.2848 | 519 | 137.503 | True | 0 | `369d7adb713b` | `3jiygepd` | f89b3d60 | 46e3d88 |
-| e9-tech-b3 | 3 | 41.3435 | 0.7029126213592233 | 150 | 3.4333 | 515 | 141.119 | True | 0 | `369d7adb713b` | `h6aytj05` | f89b3d60 | 46e3d88 |
-| e9-tech-b4 | 4 | 41.9817 | 0.6928982725527831 | 151 | 3.4503 | 521 | 142.349 | True | 0 | `369d7adb713b` | `y05wa3s6` | f89b3d60 | 46e3d88 |
-
-W&B project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
-`qwen38-r1-e9-draft-bits-default`; URL form
-`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/<id>`.
-
-### Flip is live — pre-merge bit-exact proof (cap-8 base `f89b3d60`)
-
-The three `e9-flip-*` arms share one binary and differ only in the env override:
-
-| arm | env | accepted_draft_rate | ms/token |
-| --- | --- | --- | ---: |
-| e9-flip-bdefault | unset | 0.9094736842105263 | 34.4325 |
-| e9-flip-b3 | 3 | 0.9094736842105263 | 34.4224 |
-| e9-flip-b4 | 4 | 0.8902691511387164 | 35.1543 |
-
-`acceptance(default) == acceptance(env=3)` to 16 digits and `!= acceptance(env=4)`.
-The unset-vs-`env=3` timing gap is **0.029 %**, inside the 0.039 % noise floor
-for that pair ⇒ **no differential requantization cost** when the value comes
-from the in-tree default rather than the env override. This retires the
-advisor's "default could be worse than the control" branch and means **Route B
-is not forced.**
-
-### Part A — does 3-bit survive unseen prompts? (cap-8 base `f89b3d60`, worker `369d7adb713b`)
-
-Two new goldens were generated for this part. 3-bit vs 4-bit control, same base
-and binary within each prompt:
-
-| prompt | ms/token 4-bit | ms/token 3-bit | Δ time | Δ acceptance | D (4-bit) |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| english (public) | 35.1543 | 34.4224 | **−2.082 %** | +0.019205 | 5.8902 |
-| technical (new) | 41.9817 | 41.3435 | **−1.520 %** | +0.010014 | 3.4503 |
-| narrative (new) | 52.8231 | 52.8506 | **+0.052 %** | −0.007048 | 2.3187 |
-
-Median across the three prompts = **−1.520 %**. The english figure reproduces
-independently across two sessions: the E6 pairing (`ey56o2j5` vs `hrgew6pe`)
-gives −1.902 %, so the english effect is −1.9 % to −2.1 %.
-
-**The 3-bit gain tracks D, not a kernel speedup.** Ordering the prompts by
-effective mean draft length — 5.89 / 3.45 / 2.32 — reproduces the ordering of
-the time delta exactly. A genuine per-readout kernel win would be roughly
-constant per readout and would, if anything, help the *low*-D prompts most,
-because they issue more readouts per token (599 readouts for 512 narrative
-tokens vs 483 for english). It does the opposite.
-
-**Prediction 2 confirmed on both new prompts.** If 3-bit and 2-bit preserved
-subgrid rank, their acceptance would be exactly equal. They are not:
-technical 0.7029126213592233 vs 0.6820809248554913; narrative
-0.4431239388794567 vs 0.4407345575959933. The subgrid-rank-preservation branch
-is **dead**.
-
-### Part B — does the cap-7 composition hold? (base `8970d775`)
-
-- Candidate effect on the cap-7 base: **−2.0303 %**.
-- Control vs the advisor's independently measured 33.99: **+0.046 %**.
-- Candidate vs the advisor's 33.34: **−0.074 %** ⇒ **prediction 4 confirmed.**
-  Composition is in fact **0.131 % better** than pure multiplicative against my
-  own same-session carry (34.0056 × 0.980983 = 33.3589 predicted vs 33.3152
-  measured).
-- **Full stack** vs the cap-8 4-bit control: 35.1543 → 33.3152 = **−5.2314 %**.
-- **Cap-7's own effect, measured adjacently:** 35.1543 → 34.0056 = **−3.2675 %**.
-  Alphonse reported −3.1215 %; this is an independent reproduction of PR #2.
-- **Advisor's coupling term confirmed exactly:** D moved
-  5.890243902439025 → 5.790123456790123 = **−1.6998 %**, against his predicted
-  −1.7 %.
-
-#### Break-even floor — called explicitly
-
-Recomputed on the cap-7 base, because control acceptance moved from 0.8903 to
-0.9190 and **any floor calibrated at cap 8 is invalid at cap 7**:
-
-| quantity | value |
-| --- | ---: |
-| cap-7 3-bit break-even floor | 0.911518 |
-| allowed acceptance drop | 0.007459 |
-| measured candidate acceptance | 0.939262 |
-| margin | **+0.027744** |
-
-**Verdict: PASS**, by 3.7× the allowed drop. Acceptance did not drop at all —
-it rose.
-
-#### Honest decomposition — the mechanism did not do the work
-
-Splitting the −2.0303 % into its two multiplicative parts:
-
-| term | value |
-| --- | ---: |
-| per-round cost (214.949 → 215.916 ms/round) | **+0.450 %** |
-| round count (81 → 79) | **−2.469 %** |
-
-The readout share at cap 7 is 2.82 %, so the **mechanism ceiling is −0.683 %**.
-The per-round term went the **wrong way**. Part of that is explained: D rose
-5.7901 → 5.8354, i.e. +0.78 % more drafts per round, which widens the
-ALU-bound verify consistent with Thorfinn's M ≥ 4 result. The residual is
-**unclosed** and I am not going to invent a story for it.
-
-So the entire −2.0303 % is a **round-count effect driven by an acceptance
-rise**. That rise is deterministic and bit-exactly reproducible on a given
-fixture, but it is a quantization coin flip: on narrative it landed the other
-way (Δa −0.0070).
-
-### Verdict on the advisor's break-even derivation
-
-**Structurally right, calibrated too lenient.** His cap-8 floors were 0.88224
-(3-bit) and 0.87620 (2-bit); mine are 0.88687 and 0.87762. **Both omit the
-rollback and re-forward cost of a rejected draft**, and the cap-8 technical
-2-bit arm proves it empirically: acceptance 0.6820809248554913 against a floor
-of 0.682314 is a margin of **−0.0002**, i.e. nominally break-even, yet the arm
-measured **+1.074 % slower** (42.4325 vs 41.9817). A nominally break-even arm
-paying a ~1 % penalty is the missing rollback term made visible. Any future
-floor should carry it.
-
-### Prediction scorecard
-
-| # | prediction | outcome |
-| --- | --- | --- |
-| P1 (advisor) | 3-bit is neutral **or better** on unseen prompts | **half right.** Narrative Δa −0.00705 is inside ±0.008, so "neutral" holds on acceptance; "or better" broke on timing (+0.052 %). |
-| P2 (advisor) | 3-bit/2-bit acceptance will **not** be exactly equal | **confirmed** on both new prompts ⇒ subgrid-rank branch dead. |
-| P3 (advisor) | cap-7 control reproduces | **taken free** — reproduced at −3.2675 % vs Alphonse's −3.1215 %. |
-| P4 (advisor) | flip composes ≈ multiplicatively with cap 7 | **confirmed** within −0.074 %. |
-| Mine (pre-registered) | unseen prompts come in at "−0.7 % or worse" | **wrong on technical** (−1.520 %, much better), **right on narrative** (+0.052 %). |
-
-### Disclosed hygiene defect
-
-The two cap-7 arms record different `head` (`36322ce` vs `a9d338c`) because I
-committed a research script while arm 1 was still timing. Both are `dirty=0`,
-both share one `worker_sha256 3a62b25ce753…`, and
-`git diff 36322ce a9d338c -- Sources Vendor` is **empty** — binary identity is
-the binding proof, and the comparison stands. The lesson was applied to Part C:
-`d320d36` was committed *before* launch and the worktree was frozen for the whole
-run.
+Note also that `research/run-draft-bits-arm.sh` now **cannot run on this base**:
+its `strings` tripwire at ~:84 requires `MLX_QWEN_MTP_DRAFT_BITS` in the worker
+binary, and that symbol no longer exists. It is dead tooling unless the lever is
+re-implemented. I left it in place rather than deleting tooling I was not
+assigned to prune.
 
 ## Conclusion
 
-- **What happened and why:** the flip is live, exact, free in bytes, and worth
-  −2.0303 % on the cap-7 base, composing with PR #2 for a −5.2314 % full stack.
-  But the decomposition shows the win is **not** the readout kernel. The
-  mechanism ceiling is −0.683 % and the per-round term actually regressed
-  +0.450 %; the whole gain arrives as a −2.469 % round-count reduction caused by
-  acceptance rising 0.0203.
-- **Evidence for or against the mechanism:** **against.** The three-prompt Δ
-  ordering tracks D (5.89 / 3.45 / 2.32) rather than readout count
-  (483 / 521 / 582), which is backwards for a per-readout kernel win. 3-bit
-  quantization is perturbing which drafts survive verification, and that
-  perturbation is prompt-specific.
-- **Prompt or M5 transfer risk:** **high, and this is the main caveat.** Two
-  compounding risks: (1) prompt — one of two unseen prompts showed no gain, so
-  the ranked median should be projected from **−1.520 %**, not −2.0303 %;
-  (2) host — every number here is M4 Pro with the cooling gate ambient-disabled,
-  so absolute times do not transfer to the ranked M5 and only the within-session
-  A/B structure does.
-- **Smallest useful next action:** run the candidate on the ranked M5 against a
-  fresh same-host cap-7 control. Everything cheap has been done; the remaining
-  uncertainty is host and prompt transfer, which no further M4 work can reduce.
-- **Recommendation:** **promote**, with the ranked projection discounted to
-  ~−1.5 %. The candidate is one character in one submitted file, costs zero
-  bytes of growth, is exact on 16/16 arms, passes `--local-submit` with the
-  1024-step drift tripwire green, and reproduces to 0.096 % across modes. The
-  downside is bounded by the narrative arm at +0.052 %, which is within noise —
-  so the realistic worst case is "no change", not a regression.
+- What happened and why: the promoted-frontier rebase deleted the mechanism this
+  experiment was assigned to tune. A1 failed at its first gate, and the stop rule
+  ended the experiment there with zero timing budget spent.
+- Evidence for or against the mechanism: the byte model caps a 3-bit readout at
+  −6.05% of a head step locally / −13.13% on the ranked path, before paying for
+  13 blocked dequant/requant `eval()`s. r2's measured per-round effect was
+  **+0.450% slower**, with a mechanism ceiling of only −0.683%.
+- **The r2 gain was luck, and the coin is re-rolled.** r2's −2.03% decomposed
+  into a per-round regression plus a −2.469% round-count win driven by acceptance
+  moving 0.9190 → 0.9393. Acceptance is re-rolled by any change to the schedule,
+  and this base's schedule differs materially from r2's (`headStepCostRatio`,
+  `sdpaWidthWallDepthCap = 5`, `segmentedVerifyDepthCap = 8`,
+  `segmentedStreakGate = 3`, greedy marginal `costModelDepth` with
+  `positionAcceptEMA` and top-2-margin confidence caps). r2's cap-7 floors
+  (`0.911518`) are therefore **invalid here**. Directional agreement across
+  bases would not be replication, and I am not claiming any.
+- Prompt or M5 transfer risk: moot for this result. Recorded for reuse: the
+  local-vs-ranked head asymmetry above means a locally-measured readout change
+  transfers *better* than the local ratio suggests, not worse.
+- Smallest useful next action: none for this mechanism. If someone wants to
+  reopen it, the decisive cheap test is a standalone `qmv` micro-benchmark of
+  98,336 × 5,120 at 3 vs 4 bits *plus* the blocked requant cost, compared against
+  the −6.05% ceiling — before writing any session code.
+- **Recommendation: close.** Do not restore the lever. It needs a
+  re-implementation, its ceiling is small, its measured per-round effect was a
+  regression, and the only reason it ever looked good was an acceptance coin flip
+  that this base re-rolls.
 
-## Suggested follow-ups (not implemented)
+## Suggested follow-ups (not implemented, not mine to take)
 
-1. **Route B — manifest-provisioned pre-quantized head.** Now optional rather
-   than forced, since Part B proved there is no differential requantization
-   cost. It would require lifting the `_draftHeadW == nil` guards at
-   `Qwen35.swift:2364` and `:2403`. Worth it only if a *genuine* readout win is
-   the target; this experiment says the readout is 2.82 % of the round and the
-   ceiling is −0.683 %.
-2. **Close the +0.450 % per-round residual.** D rising 0.78 % explains part of
-   it. The rest is unexplained and sits directly on the critical path.
-3. **More unseen prompts.** Three prompts give a very soft median. Five or six
-   would materially firm up the ranked projection, and this experiment now has
-   a reusable golden-generation path to do it cheaply.
-4. **PR #7 §9 dispatch-grid puzzle** — untouched here, still open.
-5. **Re-derive the break-even floor with the rollback term.** The technical
-   2-bit arm gives a calibration point: margin −0.0002 ⇒ +1.074 % measured.
+- `headStepCostRatio = 0.18` is hard-coded, and a cheaper readout would lower the
+  true `h` it approximates — so any future readout win silently mis-calibrates the
+  depth chooser. Owner: `qwen-edward`.
+- Route B proper — a manifest head that actually ships a `draft_lm_head` tensor —
+  would make `_draftHeadW` non-nil and bypass `makeCompactDraftHead()` entirely.
+  That is a head-artifact question, not a `Qwen35.swift` question, and it is the
+  only version of this idea that avoids double quantization.
+- The in-tree "~315 MB / ~0.6 ms per draft step" comment does not match the
+  283.2 MB / 1.2469 ms byte model here; one of the two is wrong.
