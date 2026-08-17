@@ -219,7 +219,72 @@ can plausibly cross no step at all and return exactly zero — which is what hap
 correct conclusion from arm D alone is *"one vector is not enough to move occupancy"*, not
 *"registers are not the mechanism"*. Arm E is the strong form of the same probe.
 
-<!-- ARM_E_RESULTS -->
+### Arm E — packing all thirteen vectors
+
+Arm E is arm A plus exact packing of all thirteen `NA`-wide vectors, with identical
+elementwise arithmetic in identical order. It was run twice against two different
+references:
+
+| leg | started | reference | ref measured | control median | M=5 raw |
+| --- | --- | --- | ---: | ---: | ---: |
+| armE | 10:40:38Z | e14-ref1 | 36 min earlier | 1.1215 | 1.0762 |
+| armE2 | 10:56:18Z | e14-ref3 | 7 min earlier | **1.1241** | **1.0739** |
+
+Control span for armE2 is [1.0989, 1.1259]; start temps 39.73 / 39.59 C.
+
+#### The controls were never controls
+
+On the first run I read the elevated control widths as thermal drift and reported a
+drift-adjusted `0.9596`. **That was a measurement-design error, and the repeat exposes it:**
+two control medians measured in different sessions against references taken 36 and 7 minutes
+prior agree to **0.23%**. Thermal drift does not reproduce to 0.23%.
+
+The cause is in the patch structure. `VF` is `vec<float, NA>` declared inside the *shared*
+`_wide` body, not inside a per-`M` instantiation. Arms D and E rewrite that body, so every
+`_m<T,M,IPG>` instantiation compiled from it changes — all of `M = 3..9`. Widths
+[3,4,6,7,8,9] receive the intervention. Only arms A and B, which rewrite a dispatch-table
+line and an assert, have genuine controls.
+
+| arm | edits | controls valid | control span |
+| --- | --- | --- | --- |
+| A | dispatch `<5,3>` -> `<5,5>` | yes | [0.9944, 1.0016] |
+| B | dispatch `<4,4>` -> `<4,2>` | yes | [0.9977, 1.0013] |
+| D | dispatch + pack `acc` (4/13) | **no** | [0.9949, 1.0029] |
+| E | dispatch + pack all 13 | **no** | [1.0989, 1.1259] |
+
+Arm D's flat controls were luck, not design: packing four vectors happens to be free at
+`NA = 3` and `NA = 4`. That coincidence is what let me misread arm D as a clean null.
+
+**The drift-adjusted `0.9596` / `0.9553` figures are retracted.** Dividing the `M=5` ratio by
+the `NA=3/4` penalty presumes packing costs the same at every `NA`, which is precisely false:
+packing *helps* at `NA = 5` by removing padding and *hurts* at `NA = 3/4`. The quotient is
+meaningless in both directions.
+
+#### What arm E does establish
+
+Two statements survive, and both are strong:
+
+1. **Full packing is a reproducible global regression** of +12.4% median (+9.9% to +12.6%)
+   at every unchanged wide width.
+2. **Full packing removes the `NA = 5` penalty.** At `M = 5`, arm A costs **+39.3%** against
+   shipped and arm E costs **+7.4%** — packing recovers **about 32 points**.
+
+So the register-pressure diagnosis is confirmed, and the arm D null is now *explained*
+rather than merely recorded: 12 of 39 wasted lanes crosses no occupancy step, 39 of 39 does.
+The two arms together are a clean pair, which is more than either is alone.
+
+#### Why it is still not a win
+
+Arm E taxes the widths that actually execute — `M = 3` carries 231 of 246 verifies in
+edward's histogram and `M = 4` carries 13 — by roughly 11%, in order to cheapen an `M = 5`
+that is dispatched 0.00% of the time on `e6e6f81`. No schedule trades that positively.
+
+This makes the conclusion **stronger**, not weaker. The earlier draft said to reopen if a
+future toolchain removed the `vec<float,5>` padding penalty. The accurate version is that
+the padding penalty is removable in source **today**, and removing it costs more elsewhere
+than it saves. That is a closed door rather than a pending one.
+
+Arm E does not touch Q2, which rests on arms A and B and on the structural h-step spikes.
 
 ## Q3 — if M=5 gets cheap, does depth 4 open?
 
@@ -289,9 +354,18 @@ metallib.** `run-ipg-arms.sh` now rebuilds the metallib per arm and records
   cache hierarchy and register file, so the 89% absorption fraction and the 2.4x ratio are
   M4-Pro numbers. The *ordering* (width tax > stream tax) rests on register/occupancy
   behaviour that is unlikely to invert.
-- **Recommendation: close.** Do not repeat this lever. Reopen only if a future MLX or Metal
-  toolchain removes the `vec<float,5>` padding penalty, which would change the arithmetic
-  that killed arm A.
+- **The padding penalty is removable, and removing it does not help.** Arm E packs all
+  thirteen `NA`-wide vectors and recovers ~32 of arm A's 39 points at `M = 5`, which confirms
+  register pressure as the mechanism. It also makes every other wide width 12.4% slower,
+  including `M = 3`, which carries 231 of 246 verifies. The fix costs more where it applies
+  than it saves where it helps.
+- **Recommendation: close, and close firmly.** Do not repeat this lever, and do not reopen it
+  on a toolchain change. The earlier draft of this line said to reopen if a future MLX or
+  Metal toolchain removed the `vec<float,5>` padding penalty. Arm E shows that penalty can be
+  removed in source today, so that reopening condition has already been tested and failed.
+  Reopening now requires a genuinely different reason: a scheduler that dispatches `M = 5` at
+  meaningful frequency, or a wide-branch rewrite that reaches `NA = 5` occupancy without
+  taxing `NA = 3` and `NA = 4`.
 
 ### Suggested follow-ups (not implemented here)
 
@@ -308,6 +382,17 @@ metallib.** `run-ipg-arms.sh` now rebuilds the metallib per arm and records
    `research/rebuild.sh` would stop silent measurement of stale kernels. *Owner: unassigned.*
 4. **edward anti-synergy** — see below; the scheduler owner should decide whether depth 4 is
    worth re-opening at all given the cost-per-token sweep above. *Owner: edward.*
+5. **Control validity for shared-body kernel edits (methodology)** — `research/run-ipg-arms.sh`
+   and `ipg_shape_breakdown.py` treat every unchanged width as a control and report a "drift
+   adjustment" from their median. That is only sound for arms that edit a *dispatch-table
+   entry*. An arm that edits the shared `_wide` body changes every instantiation, so the
+   adjustment silently divides the signal by the intervention. The tooling should require the
+   arm to declare which widths it touches and refuse to drift-adjust otherwise. I hit this
+   here and it cost a full confirmation run. *Owner: whoever next touches the arm tooling.*
+6. **A cheap way to detect it** — the `1 + 2^-6` perturbation arm used for parity doubles as a
+   width map: it lives in `_wide`, so the set of widths whose output changes is exactly the
+   set routed through the wide branch. Running it once per arm family would have flagged the
+   shared-body scope before any timing was spent. *Owner: unassigned.*
 
 ### edward anti-synergy (stated explicitly)
 
