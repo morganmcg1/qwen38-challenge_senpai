@@ -193,7 +193,7 @@ def main(argv: list[str]) -> int:
 
     # Pooled headline: the ranked-style median over prompts, both populations.
     pooled = {}
-    for label, ids in (("held_out7", HELD_OUT), ("all8", PROMPTS)):
+    for label, ids in (("held_out", HELD_OUT), ("all", PROMPTS)):
         sub = [p for p in ids if p in data]
         if len(sub) < 2:
             continue
