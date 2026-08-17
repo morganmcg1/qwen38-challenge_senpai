@@ -7,8 +7,10 @@ prefill wall. Comparing that model with the parent-clock measurement of P from
 `research/prefill_amdahl.py` says how much of P is irreducible kernel work and
 how much is schedulable overhead.
 
-MLX python 0.32.0 drives the same C++/Metal kernels as the vendored
-Vendor/mlx-swift 0.32.0 the scored worker links, so component walls transfer.
+The available MLX python wheel is 0.29.3 while the scored worker links vendored
+mlx-swift 0.32.0, so absolute component rates are directional and only the
+internal comparisons made inside one invocation of this script are load-bearing.
+The recorded `mlx_version` in the output names the wheel actually used.
 
 Research-only: never packaged into a submission.
 """
