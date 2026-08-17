@@ -146,6 +146,59 @@ H was calibrated before this histogram existed and is very likely far too
 small; H should lose by substantially more on this fixture. Recorded here so
 the miss is scored honestly rather than quietly rewritten after the fact.
 
+## C2 replicate: the schedule is deterministic, only the clock is noisy
+
+| leg | C1 | C2 | spread |
+| --- | --- | --- | --- |
+| serial s/tok | 0.074336291 | 0.074519354 | +0.246% |
+| MTP s/tok | 0.032924979 | 0.032639906 | -0.866% |
+| local ratio | 2.2577926 | 2.2830969 | **+1.121%** |
+
+Every non-timing field is *bit-identical* across the two replicates:
+`round_count` 88, `effective_mean_draft_len` 5.386363636363637,
+`accepted_draft_rate` 0.894515, accepted 424, rejected 50, and the depth
+histogram `{1:1, 3:2, 4:39, 5:3, 6:5, 7:38}`.
+
+So the candidate's schedule is fully deterministic. Structural differences
+between arms carry **zero** measurement noise, and the histogram is a clean
+signal. All the noise lives in the wall clock.
+
+### The stop rule fires on the ratio and not on the absolute time
+
+The advisor's rule was "stop if the C1/C2 spread exceeds 1.0%". That is true of
+the local ratio (1.121%) and false of the absolute MTP time (0.866%). This must
+not be resolved by quietly picking the flattering number, so here is the
+mechanism.
+
+The two legs are *independently* thermally reset: `benchmark-qwen-mtp.sh` runs
+the 40C cool gate before the serial leg and again before the MTP leg. The
+replicate shows the serial leg drifting **up** 0.246% while the MTP leg drifted
+**down** 0.866% — anti-correlated. A shared thermal factor would move both legs
+the same way and cancel in the ratio; independent per-leg noise compounds in
+it, which is what happened. The ratio is therefore the *noisier* statistic
+here, by construction, and `program.md` independently warns not to lean on the
+local ratio alone.
+
+Consequences adopted for the rest of the experiment:
+
+- **Primary timing metric: absolute MTP seconds/token.** Noise floor 0.866%
+  spread, i.e. about +/-0.43% around the mean 0.0327824.
+- **Secondary: the local ratio**, reported for every arm but never used to
+  decide an arm on its own.
+- **The serial leg is a free per-arm drift monitor.** The serial control runs
+  MTP off at depth 0, so neither cap nor cost model is reachable and every arm
+  executes the *same* computation. A serial leg that moves more than ~0.25%
+  from C's flags machine drift rather than an arm effect.
+
+This does not rescue every arm. Scored against a 0.87% noise floor:
+
+- **C8** (predicted -2.8% to -3.5%) and **H** (predicted large and positive)
+  are resolvable.
+- **W5** (predicted -0.5% to -2.0%) is only *partly* resolvable. A W5 result
+  near -0.5% is **unresolvable, not a win**, and will be reported as such. W5's
+  verdict therefore leans on its structural claim, which is noise-free, with
+  timing as support.
+
 ### Fixture caveat carried into every conclusion
 
 `accepted_draft_rate = 0.8945` on the copy-task fixture is close to the
