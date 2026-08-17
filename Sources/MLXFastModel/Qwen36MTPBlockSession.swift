@@ -65,7 +65,8 @@ public struct Qwen36MTPRoundResult {
     public let perRowTop2Logits: [[Double]]
     /// Trimmable-cache offset after the round: `seedTokenCount + committedTotal`.
     public let targetCacheOffset: Int
-    /// True when a stop token was committed this round; the parent stops asking.
+    /// Retained for protocol compatibility. Fixed-window MTP runs never stop on
+    /// a model token, so this is always false.
     public let reachedStopToken: Bool
 }
 
@@ -108,7 +109,6 @@ public enum Qwen36MTPSessionError: Error, CustomStringConvertible {
 /// straight into the score.
 public final class Qwen36MTPBlockSession {
     private let model: any Qwen36MTPTarget
-    private let stopTokens: Set<Int>
     /// MTPLX default `base_hidden_variant == mtp_hidden_variant == "post_norm"`.
     private let postNorm: Bool
 
@@ -162,16 +162,17 @@ public final class Qwen36MTPBlockSession {
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
     public private(set) var began = false
-    public private(set) var reachedStopToken = false
+    /// Fixed-window decode treats EOS like any other serial token. Kept as a
+    /// compatibility property for callers compiled against the old session API.
+    public var reachedStopToken: Bool { false }
 
     public init(
         model: any Qwen36MTPTarget,
-        stopTokens: Set<Int>,
+        stopTokens _: Set<Int>,
         postNorm: Bool = true
     ) throws {
         guard model.hasMTPHead else { throw Qwen36MTPSessionError.headNotAttached }
         self.model = model
-        self.stopTokens = stopTokens
         self.postNorm = postNorm
         // Cost-model schedule (replaces the streak ladder). Choose the depth
         // that maximizes expected committed tokens per unit round time under
@@ -526,56 +527,7 @@ public final class Qwen36MTPBlockSession {
     /// honest fit FOR THIS ROLLBACK MECHANISM; the wasted-work term a
     /// reject does keep (the drafted head steps past the break) is already
     /// inside the marginal the rule prices.
-    ///
-    /// FIFTH FIT — per depth, and the scalar is retired. Forced-depth arms
-    /// d0..d8 on the declared affine-4/g64 head (N = 1778 pooled depth-0
-    /// rounds for C(0); 61/60/36/32 full-accept rounds at d3/d4/d6/d8) put
-    /// the marginals at the vector below, as fractions of a zero-draft round.
-    /// A scalar is not a cheap approximation of it but a mis-shaped one: the
-    /// retired 0.18 is ~1.6-1.9x TOO HIGH at h[0..1], where it under-drafts a
-    /// nearly free prefix, and ~1.4-2.1x TOO LOW at h[2..3], where it
-    /// over-drafts a plateau. The knee at d = 3 (verify width 4) and the two
-    /// largest steps, d = 4 (width 5) and d = 8 (width 9), are exactly where
-    /// the affine-4 g64 crossrow kernel adds a weight pass
-    /// (ceil(M / IPG), IPG = ceil(M / ceil(M / 4)), quantized.h:1051), so the
-    /// shape is mechanical rather than fitted to one fixture.
-    ///
-    /// The curve prices every round instead of only truncating the deep tail,
-    /// which is why it wins where acceptance is LOW: on a held-out 512-token
-    /// prose golden it collapsed the schedule onto depth 2 and cut rejected
-    /// rows and GDN replays by ~24% each, for -7.66% seconds/token against
-    /// the scalar rule; on the copy-heavy local fixture, where acceptance is
-    /// 0.89-0.95 and almost nothing is rejected, the same change is worth
-    /// only ~-1%. A depth lever screened on the copy fixture alone is
-    /// unmeasured.
-    ///
-    /// HEAD-DEPENDENT, by construction: only the head-step term H moves
-    /// between heads, and it moves ~3.5x between the organizer-pinned bf16
-    /// head and the manifest-declared affine-4/g64 head. This vector is
-    /// fitted against the DECLARED head, which is the head the candidate leg
-    /// runs (`mtp-head.manifest.json`). Re-fit it after any head change, and
-    /// after any change to what a round costs at a given width.
-    ///
-    /// R3 RE-MEASUREMENT on base fe38ecc, where the declared head repo moved
-    /// to hf:dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6 (was lowskillcoding/
-    /// qwen38-mtp-head-4bit-g64@0966ddaf). Both are affine-4/g64
-    /// requantizations of the same pinned bf16 head with identical geometry,
-    /// and the marginals moved <= 0.6%, so the vector needs no re-fit: the
-    /// direct per-depth marginals are 0.0971 / 0.1152 / 0.2482 / 0.3761 at
-    /// h[0..3], agreeing across five arms to 0.1-0.5%. Two known defects in
-    /// the fit above, both at the first step and both conservative in the
-    /// wrong direction: h[0] is ~15% low and h[1] is ~33% low, and the pair
-    /// is NON-MONOTONE (h[1] < h[0] claims the second draft step is cheaper
-    /// than the first) where measurement is strictly monotone. That is a
-    /// fitting artifact of the forced-depth design, not a property of the
-    /// stack. A sixth fit should raise h[0] -> ~0.097 and h[1] -> ~0.115 and
-    /// leave h[2..3] alone. Against the 0.18 scalar this vector re-measures
-    /// at -5.8% to -6.7% seconds/token on the held-out prose golden (was
-    /// -7.66% against 0.20 on the previous base).
-    private static let headStepCostRatioByDepth: [Double] = [
-        0.0842, 0.0775, 0.2426, 0.3754,
-        0.2919, 0.3000, 0.2870, 0.3909,
-    ]
+    private static let headStepCostRatio = 0.18
 
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
@@ -615,7 +567,34 @@ public final class Qwen36MTPBlockSession {
     /// head has been perfect, mirroring the streak ladder that qualified
     /// cap 4; any reject resets the streak.
     private static let segmentedVerifyDepthCap = 8
-    private static let segmentedStreakGate = 3
+    /// 2, not 3 — the FOURTH restore of this literal, and it has still never
+    /// lost on its merits.
+    ///
+    /// Ranked history: newjordan 2.91995 (PROMOTED, then reverted by a later
+    /// archive that happened to carry 3); hadakang 2.92976 against the 2.92622
+    /// frontier of its day (beat its contemporary crown, lost the race); and my
+    /// own `4650c96e` scored 2.93524 against the 2.93429 base it was built on
+    /// (+0.03%) and again lost only because the crown moved to 2.94662 while it
+    /// validated. Three independent runs, three times ahead of its own base.
+    ///
+    /// A fourth, independent line of evidence, from a negative result of mine.
+    /// I raised `headStepCostRatio` 0.18 -> 0.32 on the directly measured
+    /// marginal (`fc62d1aa`): it scored 2.84585, a clean -3% with the baseline
+    /// leg FLAT (0.038092 -> 0.038070, so not a draw artifact). It shortened
+    /// every draft — 4.35/4.89/5.78/5.33/5.04 -> 3.36/4.01/4.53/4.03/4.76 — and
+    /// candidate decode time ROSE 0.95%. **This pool rewards depth**: the
+    /// marginal draft is worth more than its verify row costs. With 0.15 (2.667)
+    /// and 0.14 (2.766) failing below, h is now bracketed on both sides and 0.18
+    /// is a true local optimum — so the way to buy depth is NOT the price.
+    ///
+    /// It is the cap, and that is what makes it safe. `h` moves the marginal
+    /// rule on EVERY round including the hard prompts (0.32 dragged prompt 6
+    /// from 0.17 drafts to 0.06). This gate is conditioned on OBSERVED perfect
+    /// acceptance and any reject resets `fullAcceptStreak` to 0, so it cannot
+    /// touch a cold or hard prompt at all — it only shortens the
+    /// re-qualification ramp on stretches the head is already proving. Gate 1 is
+    /// measured dead (2.833, -7.1%); gate 0 only tied (2.9200).
+    private static let segmentedStreakGate = 2
 
     /// The greedy marginal-depth rule described at the policy's assignment.
     private func costModelDepth(offeredDepth: Int) -> Int {
@@ -631,14 +610,9 @@ public final class Qwen36MTPBlockSession {
             Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
             widthCap)
         guard cap > 0 else { return 0 }
-        // Round cost after `d` steps is `1 + cumH` rather than `1 + d*h`, so
-        // the extend test `f(d+1) < f(d)` becomes
-        // `reach > h[d] * (1 + expected) / (1 + cumH)`. A flat vector reduces
-        // this to the retired scalar rule term for term.
-        let h = Self.headStepCostRatioByDepth
+        let h = Self.headStepCostRatio
         var reach = 1.0
         var expected = 0.0
-        var cumH = 0.0
         var depth = 0
         while depth < cap {
             var p = positionAcceptEMA[depth]
@@ -652,10 +626,9 @@ public final class Qwen36MTPBlockSession {
                 p = Swift.min(p, conf2)
             }
             reach *= p
-            let threshold = h[depth] * (1.0 + expected) / (1.0 + cumH)
+            let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
             guard reach > threshold else { break }
             expected += reach
-            cumH += h[depth]
             depth += 1
         }
         return depth
@@ -664,16 +637,13 @@ public final class Qwen36MTPBlockSession {
     /// Fold one round's acceptance outcome into the per-position EMAs.
     /// Positions before the accepted count observed a success; the position
     /// AT the accepted count observed a failure only if the walk actually
-    /// rejected there (not when it ended early on a committed stop token);
-    /// deeper positions were never reached and observe nothing.
+    /// rejected there; deeper positions were never reached and observe nothing.
     private func recordAcceptOutcome(acceptedCount: Int, drafts: [Int]) {
         let alpha = Self.acceptEMAAlpha
         for index in 0 ..< acceptedCount where index < positionAcceptEMA.count {
             positionAcceptEMA[index] += alpha * (1.0 - positionAcceptEMA[index])
         }
-        let stoppedEarly = acceptedCount > 0 && acceptedCount <= drafts.count
-            && stopTokens.contains(drafts[acceptedCount - 1])
-        if acceptedCount < drafts.count, !stoppedEarly,
+        if acceptedCount < drafts.count,
            acceptedCount < positionAcceptEMA.count
         {
             positionAcceptEMA[acceptedCount] +=
@@ -695,6 +665,18 @@ public final class Qwen36MTPBlockSession {
                     alpha * (0.95 - positionAcceptEMA[acceptedCount])
             }
         }
+    }
+
+    /// Count the target-matching draft prefix for a fixed decode window.
+    /// Token identity, including EOS, never changes the parent-owned length.
+    static func acceptedDraftPrefixCount(
+        drafts: [Int], verifyArgmax: [Int]
+    ) -> Int {
+        precondition(verifyArgmax.count >= drafts.count)
+        for index in drafts.indices where verifyArgmax[index] != drafts[index] {
+            return index
+        }
+        return drafts.count
     }
 
     /// The shipped schedule's width. See `draftPolicy`.
@@ -725,7 +707,7 @@ public final class Qwen36MTPBlockSession {
     /// round from the last round's accept run.
     public func generateRound(depth: Int) throws -> Qwen36MTPRoundResult {
         guard began, let primaryPending = pendingPrimary,
-              let tailPending = pendingTop2, let hidden = pendingHidden
+              pendingTop2 != nil, let hidden = pendingHidden
         else { throw Qwen36MTPSessionError.notBegun }
         guard depth >= Qwen36MTPLimits.serialControlDepth,
               depth <= Qwen36MTPLimits.maxDepth
@@ -769,32 +751,6 @@ public final class Qwen36MTPBlockSession {
                 && draftCount <= Qwen36MTPLimits.maxDepth,
             "draftPolicy returned \(draftCount) for an offer of \(depth); a "
                 + "round may propose 0 ... min(offer, maxDepth) drafts")
-
-        // A stop token as the primary ends the run BEFORE any drafting: there is
-        // nothing after it to predict, and drafting past it would charge the
-        // measurement for work no decoder performs. The round still declares its
-        // single target tail row (the row that produced this primary's successor
-        // candidate is the one already spent), so the ledger stays closed.
-        if stopTokens.contains(primary) {
-            reachedStopToken = true
-            // The tail row to declare is the row that produced this primary —
-            // its top-2 was read out of the previous round's batched eval.
-            let (tailTokens, tailLogits) = tailPending
-            pendingPrimary = nil
-            pendingTop2 = nil
-            pendingHidden = nil
-            return Qwen36MTPRoundResult(
-                tokens: committed,
-                declaredRows: 1,
-                draftTokens: [],
-                acceptedDraftCount: 0,
-                rejectedDraftCount: 0,
-                perRowTop2Tokens: [tailTokens],
-                perRowTop2Logits: [tailLogits],
-                targetCacheOffset: seedTokenCount + committedTokenCount,
-                reachedStopToken: true
-            )
-        }
 
         // NO DRAFTS THIS ROUND. Two ways to get here and they are not the same
         // thing. Depth 0 is THE TRUE SERIAL CONTROL -- the parent offered
@@ -1008,12 +964,8 @@ public final class Qwen36MTPBlockSession {
         //    is the target's greedy continuation of verify input i, i.e. the
         //    truth for draft i. Row `draftCount` is the BONUS row and is only
         //    used on full acceptance.
-        var acceptedCount = 0
-        for index in 0 ..< drafts.count {
-            guard verifyArgmax[index] == drafts[index] else { break }
-            acceptedCount += 1
-            if stopTokens.contains(drafts[index]) { break }
-        }
+        let acceptedCount = Self.acceptedDraftPrefixCount(
+            drafts: drafts, verifyArgmax: verifyArgmax)
 
         var perRowTop2Tokens: [[Int]] = []
         var perRowTop2Logits: [[Double]] = []
@@ -1163,15 +1115,6 @@ public final class Qwen36MTPBlockSession {
         // them. The rare generic-repair path ran its own second eval.
         // `pendingHidden` is likewise device-only until the next round.
 
-        // Truncate after the first committed stop token, keeping the stop token
-        // itself — the same rule the serial reference applies.
-        if let stopIndex = committed.firstIndex(where: { stopTokens.contains($0) }) {
-            let dropped = committed.count - (stopIndex + 1)
-            committed = Array(committed.prefix(stopIndex + 1))
-            committedTokenCount -= dropped
-            reachedStopToken = true
-        }
-
         return Qwen36MTPRoundResult(
             tokens: committed,
             declaredRows: draftCount + 1,
@@ -1181,7 +1124,7 @@ public final class Qwen36MTPBlockSession {
             perRowTop2Tokens: perRowTop2Tokens,
             perRowTop2Logits: perRowTop2Logits,
             targetCacheOffset: seedTokenCount + committedTokenCount,
-            reachedStopToken: reachedStopToken
+            reachedStopToken: false
         )
     }
 
