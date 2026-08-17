@@ -845,3 +845,135 @@ with this once read carefully: both are inside the timed leg as *work*, and the
 trailing clause is the disclaimer that prefill is not separately scored. It is
 not a statement that prefill enters `raw_p`.
 
+
+## r3 results
+
+Base `fe38ecc21e4084e4d17dac3aa76264bb5897a614`, reached on this branch through
+merge `d85d22d` rather than a rebase so that the r2 result commit `2062fea`
+stays in history. `git diff --stat fe38ecc d85d22d -- Sources Vendor
+mtp-head.manifest.json` is empty, so the merge carried no editable drift.
+
+All arms: 512-token seed, 512 decode tokens, golden
+`e11_prose_512_512.json` (sha256 `615a1f20cae333fdb540f29e3cad71a187c449b74ca62ed195a020fa75ceb219`),
+declared head staged at `head_provenance_sha256`
+`07293af742df4599d94eda6e9db5782e7f5be10cd1b5fdef7691f4ef404ea81c`, no
+`MLX_QWEN_MTP_*` variable set, clean worktree.
+
+### Q1 - does the r2 lever survive the base move?
+
+Yes, at roughly five sixths of its r2 size.
+
+```text
+Sp3  S18  scalar 0.18   mtp_seconds_per_token = 0.049472851   speedup 1.50728
+Hp3  HV   per-depth h   mtp_seconds_per_token = 0.046317363   speedup 1.60907
+                                              delta = -6.378 %   (r2: -7.658 %)
+```
+
+Both arms report `all_tokens_matched: true` and `residual_divergence_count: 0`
+on both legs across the full 512-token window, with `parity_all_ok: true` and
+`max_rejected_tail_logit_delta: 0`.
+
+A free noise check falls out of the protocol. The serial control leg is
+byte-identical work in both arms - depth 0, same target, same golden - so the
+gap between the two serial readings measures cross-arm run-to-run noise directly
+without spending an extra arm:
+
+```text
+Sp3 serial 0.074569518   Hp3 serial 0.074528022   -> -0.056 %
+```
+
+That is inside the clean-pair band of 0.019-0.092 % established in r2, so the
+two arms ran under equivalent thermal and power conditions and the -6.378 %
+candidate-leg difference is roughly 114x the observed noise on the control leg.
+
+### Q2 - forced-depth marginal costs on the new base
+
+Recovered from the aligned `block_request_seconds` and `effective_draft_lengths`
+series in the timed reports rather than from new forced-depth arms, which the
+frontier removed the hooks for. Round 0 dropped. Serial control gives `C(0)`.
+
+```text
+depth      Sp3 C(d)      Hp3 C(d)      old-base r2      C(d)/C(0) Sp3
+  0        66.283 ms     66.230 ms     66.265 ms        1.0000
+  1        72.657 ms     72.330 ms     72.659 ms        1.0962
+  2        80.156 ms     80.125 ms     80.636 ms        1.2093
+  3        96.515 ms     96.554 ms     97.106 ms        1.4561
+  4       121.447 ms        --        121.890 ms        1.8322
+
+marginal h[d] = (C(d+1) - C(d)) / C(0)
+  d      E1 fit    Sp3        Hp3        old-base r2
+  0      0.0842   +0.0962    +0.0921    +0.0965
+  1      0.0775   +0.1131    +0.1177    +0.1204
+  2      0.2426   +0.2468    +0.2481    +0.2485
+  3      0.3754   +0.3761      --       +0.3740
+```
+
+Three independent readings agree, and they agree with the old base. The cost
+structure did not move across either the base change or the declared-head repo
+change, and the two arms agree with each other to within 0.1-0.5 % at every
+shared depth - which is the evidence that the per-depth cost is a property of
+the machine and model rather than of the schedule that sampled it.
+
+The E1 vector remains accurate at `d = 0, 2, 3` and still understates `h[1]` by
+about 1.5x (1.46x on Sp3, 1.52x on Hp3, 1.55x in r2). Re-fitting is out of r3
+scope, so this is recorded as a recommendation, not a change.
+
+One honesty note the doc block needs. The declared head changed between bases,
+from `lowskillcoding/qwen38-mtp-head-4bit-g64@0966ddaf` to
+`hf:dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6`. Both are 4-bit affine group-64
+requantizations of the same pinned bf16 head with identical geometry, so the
+doc block's "re-fit after any head change" trigger did fire on paper. The
+measurements above are the answer to whether it mattered: it did not.
+
+### Q3 - are the curve and the width wall still substitutes at wall 5?
+
+Yes, and now provably rather than empirically. The extend rule is
+
+```text
+extend iff reach > h[depth] * (1 + expected) / (1 + cumH)
+```
+
+`reach` is a product of probabilities, so `reach <= 1`, and both confidence
+clamps only lower it. Setting `reach = 1` therefore gives the supremum over
+every acceptance profile and every prompt:
+
+```text
+curve:        d0->1 thr 0.0842 take    d1->2 thr 0.1430 take
+              d2->3 thr 0.6265 take    d3->4 thr 1.0693 IMPOSSIBLE
+  => max depth 3 for all inputs; width cap 5 unreachable; wall constant inert
+
+scalar 0.18:  thresholds 0.1800 0.3051 0.3971 0.4675 0.5233 0.5684 0.6058 0.6372
+  => reaches depth 8 at its supremum; the wall IS live for the scalar
+```
+
+So the wall move from 4 to 5 is a change to the baseline, not to the candidate.
+"Ship the curve alone" still holds, and the two levers remain substitutes
+because the curve makes the wall unreachable by construction.
+
+The measured depth histograms confirm the analysis exactly:
+
+```text
+Sp3 scalar 0.18   maxD 4   {1:19, 2:138, 3:67, 4:20}    825 rows, 110 replays
+Hp3 curve         maxD 3   {1:2,  2:236, 3:7}           743 rows,  74 replays
+r2  curve         maxD 3   {1:2,  2:231, 3:13}          749 rows,  76 replays
+```
+
+The curve never reaches depth 4 on 246 rounds, and the r2 and r3 curve
+histograms are near-identical, so the mechanism is reproducible across the base
+move.
+
+### Q4 - gain against the new 0.18 baseline, and what the frontier already took
+
+```text
+r2 old base, scalar 0.20   0.050634801
+r3 new base, scalar 0.18   0.049472851    -2.295 % vs 0.20
+r3 new base, curve         0.046317363    -8.527 % vs 0.20,  -6.378 % vs 0.18
+```
+
+Read against the correct 0.18 baseline the lever is -6.378 %, not -7.658 %. The
+missing 1.28 points are not noise and not a regression in the idea: the
+frontier's move from 0.20 to 0.18 is itself a step in the curve's direction and
+already collected about 27 % of what the r2 measurement was crediting to the
+curve. The remaining -6.378 % is the part a single scalar cannot reach, because
+no scalar can simultaneously be small at depth 1 and large at depth 4.
+
