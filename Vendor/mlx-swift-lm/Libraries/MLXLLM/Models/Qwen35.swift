@@ -2412,8 +2412,10 @@ extension Qwen35TextModel: MTPCapable {
         // A declared `draft_lm_head` is full-vocabulary and needs no remap, so
         // the fused path (which bakes in the compact bounds) does not apply.
         guard _draftHeadW == nil, usesCompactDraftVocabulary else {
+            Qwen35DraftTrace.declaredHeadPath()
             return argMax(applyDraftLMHead(x), axis: -1).asType(.int32)
         }
+        Qwen35DraftTrace.compactFusedPath()
         if _compactDraftHead == nil {
             _compactDraftHead = makeCompactDraftHead()
         }
@@ -2457,6 +2459,11 @@ extension Qwen35TextModel: MTPCapable {
         guard let full = lmHead else {
             fatalError("compact draft vocabulary requires an untied lm_head")
         }
+
+        Qwen35DraftTrace.headBuilt(
+            vocab: configuration.vocabularySize,
+            draftHeadWPresent: _draftHeadW != nil,
+            quantized: full as? QuantizedLinear)
 
         func compactRows(_ array: MLXArray) -> MLXArray {
             let prefix = array[0 ..< Self.compactDraftPrefixCount]
@@ -2638,3 +2645,56 @@ extension Qwen35Model: MTPCapable {
         languageModel.makeMTPCache()
     }
 }
+
+// MARK: - E9 r3 liveness trace (research instrumentation, reverted before submit)
+
+/// Proves at runtime which draft-readout path the scored worker takes. Gated on
+/// `MLX_QWEN_MTP_TRACE_DRAFT=1` (`MLX_` prefix survives the sandboxed worker's
+/// environment filter, `MLXFAST_*` does not).
+enum Qwen35DraftTrace {
+    private static let enabled =
+        ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_DRAFT"] == "1"
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var builtReported = false
+    nonisolated(unsafe) private static var compactCalls = 0
+    nonisolated(unsafe) private static var declaredCalls = 0
+
+    static func headBuilt(
+        vocab: Int, draftHeadWPresent: Bool, quantized: QuantizedLinear?
+    ) {
+        guard enabled else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        guard !builtReported else { return }
+        builtReported = true
+        var line =
+            "E9R3-TRACE makeCompactDraftHead vocab=\(vocab)"
+            + " draftHeadW_present=\(draftHeadWPresent)"
+        if let q = quantized {
+            line +=
+                " lmHead=QuantizedLinear bits=\(q.bits)"
+                + " groupSize=\(q.groupSize)"
+                + " weightShape=\(q.weight.shape) scalesShape=\(q.scales.shape)"
+        } else {
+            line += " lmHead=Linear(dense)"
+        }
+        FileHandle.standardError.write(Data((line + "\n").utf8))
+    }
+
+    static func compactFusedPath() { bump(compact: true) }
+    static func declaredHeadPath() { bump(compact: false) }
+
+    private static func bump(compact: Bool) {
+        guard enabled else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        if compact { compactCalls += 1 } else { declaredCalls += 1 }
+        let total = compactCalls + declaredCalls
+        guard total == 1 || total % 512 == 0 else { return }
+        let line =
+            "E9R3-TRACE draftTokenID total=\(total)"
+            + " compact_fused=\(compactCalls) declared_head=\(declaredCalls)\n"
+        FileHandle.standardError.write(Data(line.utf8))
+    }
+}
+
