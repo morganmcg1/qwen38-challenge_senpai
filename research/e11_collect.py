@@ -21,6 +21,7 @@ import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
+from statistics import median
 
 PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
@@ -87,6 +88,74 @@ def trace_depths(run_dir):
     return (drafting[-1] if drafting else []), curves
 
 
+def round_cost_stats(serial, mtp):
+    """Per-depth round cost and the stall-guardrail ratio, from the parent's
+    own timing journal.
+
+    C(0) comes from the depth-0 serial control leg and C(d) from the drafting
+    leg grouped by the parent's `effective_draft_lengths`, so the cost curve the
+    schedule is priced against is measured rather than assumed. Round 0 is
+    dropped everywhere: it carries first-round warmup.
+    """
+    out = {}
+    base = None
+    if serial:
+        wall = (serial.get("block_request_seconds") or [])[1:]
+        if wall:
+            base = median(wall)
+            out["cost/C0_ms"] = base * 1e3
+            out["cost/C0_n"] = len(wall)
+            out["stall/serial_max_over_p50"] = max(wall) / median(wall)
+    if not mtp:
+        return out
+    wall = (mtp.get("block_request_seconds") or [])[1:]
+    depths = (mtp.get("effective_draft_lengths") or [])[1:]
+    if wall:
+        out["stall/mtp_max_over_p50"] = max(wall) / median(wall)
+    if not (wall and depths and len(wall) == len(depths)):
+        return out
+    per_depth = {}
+    for seconds, depth in zip(wall, depths):
+        per_depth.setdefault(depth, []).append(seconds)
+    for depth in sorted(per_depth):
+        cost = median(per_depth[depth])
+        out[f"cost/C{depth}_ms"] = cost * 1e3
+        out[f"cost/C{depth}_n"] = len(per_depth[depth])
+        if base:
+            out[f"cost/C{depth}_over_C0"] = cost / base
+    if base:
+        levels = {0: base}
+        levels.update({d: median(v) for d, v in per_depth.items() if d > 0})
+        for depth in sorted(levels):
+            if depth + 1 in levels:
+                out[f"cost/h{depth}_marginal"] = (
+                    levels[depth + 1] - levels[depth]) / base
+    return out
+
+
+def arm_h_form(arm):
+    """The head-cost constant as it appeared in the source that was actually
+    compiled for this arm, read back from the build archive rather than from the
+    working tree, which moves between arms.
+    """
+    src = Path(".mlxfast-private/e11/bins") / arm / "source.swift"
+    if not (arm and src.exists()):
+        return ""
+    lines = src.read_text().splitlines()
+    for index, line in enumerate(lines):
+        if "headStepCostRatio" not in line or "let " not in line:
+            continue
+        chunk = [line.strip()]
+        # `]` is tested on the right of `=` only: the type annotation on the
+        # left (`[Double]`) also carries one.
+        while (chunk[-1].endswith(("[", ","))
+               and "]" not in chunk[-1].split("=", 1)[-1]):
+            index += 1
+            chunk.append(lines[index].strip())
+        return " ".join(chunk)
+    return ""
+
+
 def collect(runs_root, label):
     run_dir = runs_root / label
     meta = read_meta(run_dir)
@@ -109,7 +178,11 @@ def collect(runs_root, label):
         "thermal_before": meta.get("thermal_before", ""),
         "thermal_after": meta.get("thermal_after", ""),
         "h_curve_traced": curves[-1] if curves else "",
+        "h_form": arm_h_form(meta.get("arm", "")),
+        "run_head_sha": meta.get("head_sha", ""),
+        "run_worktree_dirty": int(meta.get("dirty", 0) or 0),
     }
+    row.update(round_cost_stats(serial, mtp))
     row.update({k: v for k, v in metrics.items()
                 if isinstance(v, (int, float, bool)) or v is None
                 or k in ("head_provenance_sha256",)})
@@ -122,7 +195,12 @@ def collect(runs_root, label):
                     "verify_block_replayed_round_count", "all_tokens_matched",
                     "residual_divergence_count", "parity_all_ok",
                     "max_draft_depth_bound", "peak_ram_gb",
-                    "mlx_peak_memory_bytes"):
+                    "mlx_peak_memory_bytes", "decode_seconds",
+                    "seed_prefill_seconds", "prefill_seconds_per_token",
+                    "p50_block_request_seconds_after_first",
+                    "max_block_request_seconds_after_first",
+                    "accepted_draft_rate", "accepted_draft_token_total",
+                    "rejected_draft_row_total", "declared_row_total"):
             if key in mtp:
                 row[key] = mtp[key]
         row["head_provenance_sha256"] = (mtp.get("head_provenance") or {}).get(
@@ -133,6 +211,12 @@ def collect(runs_root, label):
     if serial:
         row["serial_round_count"] = serial.get("round_count")
         row["serial_all_tokens_matched"] = serial.get("all_tokens_matched")
+        for key in ("decode_seconds", "seed_prefill_seconds",
+                    "prefill_seconds_per_token",
+                    "p50_block_request_seconds_after_first",
+                    "max_block_request_seconds_after_first"):
+            if key in serial:
+                row[f"serial_{key}"] = serial[key]
     row["trace_depth_hist"] = dict(sorted(Counter(depths).items()))
     row["trace_depth_n"] = len(depths)
     row["pass"] = meta.get("pass", "timed")
@@ -161,6 +245,10 @@ def to_wandb(row, group, notes):
         "head_dir": row["head_dir"],
         "decode_tokens": row["tokens"],
         "h_curve_traced": row["h_curve_traced"],
+        "h_form": row.get("h_form", ""),
+        "base_sha": sh("git", "merge-base", "HEAD",
+                       "origin/senpai/qwen38-mtp-r1"),
+        "run_head_sha": row.get("run_head_sha", ""),
         "pass": row.get("pass", "timed"),
         "mlx_qwen_env": row.get("mlx_qwen_env", ""),
         "golden": row.get("golden", "<default>"),
