@@ -207,63 +207,111 @@ construction, not merely by observation.
 
 ## 5. End-to-end receipt for the combined tree
 
-Full local `--local-submit` gate on the exact submitted tree (rebuild → metallib
-→ public drift tripwire → correctness → mtp-verify → two timed legs):
+Full local `--local-submit` gate on the exact submitted tree, HEAD `531f6b6`,
+`dirty=0` (rebuild → metallib → public drift tripwire → correctness → mtp-verify
+→ two timed legs):
 
 ```json
-{"score":1.7355953380083484,"passed":true,"track_id":"qwen3.8-27b-mtp-v1",
+{"score":1.7259967043846272,"passed":true,"track_id":"qwen3.8-27b-mtp-v1",
  "metrics":{"mode":"qwen-mtp-local-submit","oracle":"candidate-local-mtp-golden-rows",
+ "official_score":false,"rankable":false,
  "public_drift_tripwire_passed":true,"decode_tokens":128,"mtp_depth":8,
  "all_tokens_matched":true,"uses_pinned_mtp_head":true,
+ "head_provenance_sha256":"7bbb40deac0a979b0a1ae93f87932d7975a01bfe39a1e4d46f9a670534c36688",
  "effective_mean_draft_len":5.7,
- "serial_seconds_per_token":0.098464609123766422,
- "mtp_seconds_per_token":0.056732469238340855,
- "mtp_decode_speedup":1.7355953380083484,
+ "serial_seconds_per_token":0.097943570464849472,
+ "mtp_seconds_per_token":0.056746093556284904,
+ "mtp_decode_speedup":1.7259967043846272,
  "accepted_draft_rate":0.95614035087719296,"residual_divergence_count":0}}
 ```
 
-`mtp-verify: rows=129 seed_tokens=512 reference_seed_token=271 self_consistent=true chain_contradictions=0`.
+`mtp-verify: rows=129 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0`.
 
-Build provenance:
+Build provenance at `531f6b6`:
 
 ```
 c1334052cee358ac5bf8e232178dbf0caae72067299c164d3aee3ba03891b8f9  .build/release/mlxfast-swift
-0f1b019c1c34f9e859a4d942dcd3e0c071fe0d53011a9eb26d82187889520efe  .build-worker/release/mlxfast-runtime-worker
+c765d8b74fcdf451796cb37fc2d641eae957765cdae1ca552dc302699ecc7811  .build-worker/release/mlxfast-runtime-worker
 47b06e36cb88c00f6126134087103fb9c1561014fdade495fe32923326bdba24  .build-worker/release/mlx.metallib
-6247ca18bcf188367948725df9ed5d52a02ba18eea541f15b2391c6e1a54cbe8  quantized.h
-97785051608980a610e962ccd9820c5ade28deff67352dfc1c3c7e7b23aab420  mlx-generated/quantized.cpp
+fca182caf89cb4c195ddc379a51cd31a65bf67ce595f734041df3ca8b5599d4e  quantized.h
+241078bb7a44186c9a1934ac1fbc40bb42f46fae068fa6199a826b279084d385  mlx-generated/quantized.cpp
 ```
+
+The immediately preceding commit `ed19ee5f` — identical GPU semantics, differing
+only in source comments — produced score `1.7355953380083484` from
+`serial_seconds_per_token 0.098464609123766422` and
+`mtp_seconds_per_token 0.056732469238340855`, with worker digest
+`0f1b019c1c34f9e859a4d942dcd3e0c071fe0d53011a9eb26d82187889520efe`, twins
+`6247ca18…` / `97785051…`, and the **same** metallib digest. §5.1 uses that pair
+as a null control.
 
 The metallib digest is unchanged from before mechanism B, which is correct and
 expected: the `quantized` family is JIT-compiled from the embedded source string
 in the `.cpp` twin, not loaded AOT from `mlx.metallib`. A `strings` tripwire on
 the built worker confirms the Swift-side change is present.
 
-### 5.1 A corroborating decode-only comparison, and its noise floor
+### 5.1 A corroborating decode-only comparison, with a measured null control
 
 Comparing the pre-merge tree (mechanism B only, 4-bit readout) against the
 combined tree, **with the harness's prefill contribution removed** — the harness's
 `seconds_per_token` field is prefill-*inclusive*, and at 128 tokens prefill is
-**55.01 %** of the MTP leg:
+**55.01 %** of the MTP leg.
 
-| arm | serial true decode | MTP true decode |
-|---|---|---|
-| mechanism B only, 4-bit readout | 8.545129 s | 3.307839 s |
-| combined, 3-bit readout | 8.607571 s | **3.266720 s** |
+We ran the combined tree **twice**. The second run is a deliberate **null
+experiment**: commit `531f6b6` changes only *comments* in `quantized.h` and
+`mlx-generated/quantized.cpp` plus markdown, and we can prove the change is
+semantically inert on the GPU because `mlx.metallib` is **byte-identical**
+across the two commits (`47b06e36cb88c00f6126134087103fb9c1561014fdade495fe32923326bdba24`
+in both `PROVENANCE.txt` files). The worker binary digest *does* change
+(`0f1b019c…` → `c765d8b7…`) purely because `mlx-generated/quantized.cpp` embeds
+its own text — comments included — as a JIT source string literal.
 
-MTP true decode **−1.2431 %**. The serial leg — which *cannot* have changed —
-moved **+0.7307 %**, and that is the honest single-pair noise floor for this
-comparison. So this is corroborating, not confirming.
+| arm | HEAD | serial true decode | MTP true decode | reported score |
+|---|---|---|---|---|
+| mechanism B only, 4-bit readout | `6be09a5` | 8.545129 s | 3.307839 s | 1.719035 |
+| combined, 3-bit readout | `ed19ee5f` | 8.607571 s | **3.266720 s** | 1.735595 |
+| combined, 3-bit readout (null replicate) | `531f6b6` | 8.537113 s | **3.269077 s** | 1.725997 |
 
-What makes it interesting is that the two runs are **trajectory-identical**:
+Read the null pair first, because it calibrates everything else:
+
+* **MTP true decode reproduces to +0.0722 %** between the two semantically
+  identical builds, run in separate sessions about an hour apart at entry GPU
+  temperatures of 45.620 °C and 45.764 °C.
+* The **serial control leg** — depth 0, no draft head materialised, structurally
+  untouchable by either mechanism — moved **−0.8186 %** across the same null
+  pair, and spans **0.8251 %** across all three runs (8.537113 / 8.545129 /
+  8.607571 s). The serial leg is the noisy instrument here, not the MTP leg.
+* Because the harness score is `serial_spt / mtp_spt`, that serial noise lands
+  directly on the headline: the reported score moves **−0.5530 %** across a
+  change that provably cannot alter a single GPU instruction. The three reported
+  scores span **0.9636 %**. **Do not read a sub-1 % local score difference as a
+  result.**
+
+Against that calibration, the 4→3-bit readout effect on the MTP leg is
+**−1.2074 %** (mean of the two 3-bit replicates versus the single 4-bit run),
+which is **16.7×** the measured MTP-leg reproducibility. That is a real
+separation rather than a coin flip. Two honest limits remain: the 4-bit arm was
+run only **once**, so we cannot exclude that it was a slow draw; and this is one
+prompt on one host. What raises our confidence is that an *independent*
+ABBA-counterbalanced measurement (E15, four arms, order 4,3,3,4) attributes
+−0.989 % of decode work to the same term, `term_readout_precision`. Two
+independent instruments agreeing on sign and magnitude is the argument; neither
+one alone would be.
+
+What makes the pre/post comparison interpretable at all is that the runs are
+**trajectory-identical**:
 `round_count 20`, `accepted_draft_total 109`, `rejected_draft_total 5`,
 `declared_rows_total 134`, `accepted_draft_rate 0.956140350877193`, and the
 entire per-round width vector
 `[4, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 5, 5, 7, 7, 8, 8, 5, 5, 1]` are identical
-between them. So the trajectory term (60 % of the ABBA headline) is **exactly
-zero** here, and the residual is a pure mechanism measurement whose sign and
-rough magnitude match the ABBA `term_readout_precision` (−0.989 % of decode
-work).
+across **all three** runs, together with `reference_checked_row_total 134`,
+`effective_max_draft_len 8`, `emitted_token_total 128`,
+`target_cache_offset_final 640`, `non_drafting_round_count 0`,
+`max_rejected_tail_logit_delta 0`, `residual_divergence_count 0` and
+`verify_block_replayed_round_count 1` — fifteen fields, zero disagreements. So
+the trajectory term (60 % of the ABBA headline) is **exactly zero** here, and the
+residual is a pure mechanism measurement whose sign and rough magnitude match the
+ABBA `term_readout_precision` (−0.989 % of decode work).
 
 The trajectory identity has a straightforward explanation: on this prompt the
 top1−top2 logit margin has median **15.0** and minimum **0.375** over 513
@@ -324,9 +372,16 @@ We would rather under-claim than have a reviewer find these.
 * The +0.83 % for mechanism A is a **model**, transferring a directly measured
   local mechanism term through a readout-share ratio. The 60 % trajectory term of
   the local headline is explicitly excluded because it does not transfer.
-* The corroborating decode-only comparison in §5.1 is a single pair against a
-  +0.73 % noise floor. It is consistent with the ABBA result; it does not
-  independently confirm it.
+* The corroborating decode-only comparison in §5.1 rests on **one** run of the
+  4-bit arm. The 3-bit arm is replicated and its MTP leg reproduces to 0.072 %,
+  which is what licenses reading a −1.21 % separation; but a single draw of the
+  control cannot exclude a slow outlier. It is consistent with the ABBA result;
+  it does not independently confirm it.
+* We are **not** claiming the local `--local-submit` score itself as evidence.
+  §5.1 shows that score moving −0.55 % across a provably inert comment-only
+  commit, and spanning 0.96 % over three runs of two semantically identical
+  trees. The serial control leg is the source of that spread. Any sub-1 % local
+  score difference on this harness should be read as noise.
 * Two of the leaderboard's own *promoted* rows carry negative score deltas
   relative to their predecessors, so run-to-run spread on this benchmark is
   comparable to the step size we are claiming. We would not be surprised by a
