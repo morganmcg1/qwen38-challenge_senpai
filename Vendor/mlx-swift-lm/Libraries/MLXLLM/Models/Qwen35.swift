@@ -232,21 +232,40 @@ private let qwen35CompiledGatedDeltaPostNorm:
     return body
 }()
 
+/// Fuse the full-attention output gate `x * sigmoid(gate)` into one compiled
+/// elementwise pass, replacing the separate sigmoid and multiply launches (and
+/// their intermediate materialization) in every full-attention layer call.
+/// Same primitive arithmetic as `sigmoidMultiply` — sigmoid first, then
+/// multiply — so the values are bit-identical to the two-launch path; only
+/// the launches and the intermediate buffer disappear. Shapeless compilation
+/// shares one trace across prefill and verify widths.
+private let qwen35CompiledSigmoidMultiply:
+    @Sendable (MLXArray, MLXArray) -> MLXArray =
+{
+    let body: @Sendable (MLXArray, MLXArray) -> MLXArray = { x, gate in
+        x * sigmoid(gate)
+    }
+    if MLXHardwareInfo.isCompiledDecodeSupported {
+        return compile(shapeless: true, body)
+    }
+    return body
+}()
+
 
 // MARK: - packed GDN prework mixer (verify widths 3...9)
 //
 // ONE launch replacing the wide verify's GDN prework chain — conv1d + SiLU +
-// split + Q/K rmsNorm-and-scale + the compiled-g producer — for S in 3...9 on
-// the one-wide-call path. Five outputs: normed/scaled Q and K, activated V,
-// the next 3-row conv state, and fp32 `g`. DESIGN NOTE, load-bearing: `beta`
-// is DELIBERATELY NOT a kernel output. An exhaustive sweep of all 65,280
-// finite bf16 inputs found the in-kernel sigmoid diverges from MLX's by 1 ulp
-// on exactly one input (0xC0DB = -6.84375); silu and softplus are bit-exact
-// everywhere. beta feeds the VERIFY recurrence where fidelity is absolute, so
-// it stays a plain graph `sigmoid(b)` — one [1,S,48] elementwise launch,
-// ~0.06 ms of the ~0.7 ms saving, in exchange for removing an unquantifiable
-// knife-edge. The remaining five outputs measured bit-exact at S=3..9 over
-// 5 seeds x 4 compile modes (12,983,040 element comparisons, zero mismatches)
+// split + Q/K rmsNorm-and-scale + the g/beta producer — for S in 3...9 on
+// the one-wide-call path. Six outputs: normed/scaled Q and K, activated V,
+// the next 3-row conv state, and fp32 `g` and `beta`. An exhaustive sweep of
+// all 65,280 finite bf16 inputs found the in-kernel sigmoid diverges from MLX's
+// graph sigmoid by 1 ulp on exactly one input (0xC0DB = -6.84375). The helper
+// below maps that input directly to MLX's bf16 output word (0x3A8B) before the
+// lossless fp32 expansion; every other input retains the inherited expression.
+// This removes the final [1,S,48] elementwise launch without changing the
+// recurrence's beta bytes. The original five outputs measured bit-exact at
+// S=3...9 over 5 seeds x 4 compile modes (12,983,040 element comparisons,
+// zero mismatches)
 // on the vendored MLX version, with a +1-row conv-window negative control
 // failing exactly the three outputs that read the window. S=2 breaks the
 // conv-state copy (a state row would come from the OLD conv state, which the
@@ -261,6 +280,14 @@ private let qwen35PackedGDNPreworkKernel: MLXFast.MLXFastKernel = {
         inline InT qwen35_prework_sigmoid(InT x) {
           auto y = 1 / (1 + metal::exp(metal::abs(x)));
           return (x < 0) ? y : 1 - y;
+        }
+
+        inline InT qwen35_prework_beta(InT x) {
+          const uint16_t bits = as_type<uint16_t>(x);
+          if (bits == uint16_t(0xC0DB)) {
+            return as_type<InT>(uint16_t(0x3A8B));
+          }
+          return qwen35_prework_sigmoid(x);
         }
 
         inline InT qwen35_prework_logaddexp(InT x, InT y) {
@@ -361,6 +388,8 @@ private let qwen35PackedGDNPreworkKernel: MLXFast.MLXFastKernel = {
           if (lane == 0) {
             const ulong a_offset = ulong(row) * ulong(a_strides[1])
                 + ulong(head) * ulong(a_strides[2]);
+            const ulong b_offset = ulong(row) * ulong(b_strides[1])
+                + ulong(head) * ulong(b_strides[2]);
             const InT shifted = a[a_offset] + dt_bias[head];
             const InT softplus = qwen35_prework_logaddexp(shifted, InT(0));
             const float exp_a = metal::precise::exp(
@@ -369,6 +398,8 @@ private let qwen35PackedGDNPreworkKernel: MLXFast.MLXFastKernel = {
             const float product = neg_exp_a * static_cast<float>(softplus);
             const uint scalar_output = row * Hv + head;
             g_out[scalar_output] = metal::precise::exp(product);
+            beta_out[scalar_output] = static_cast<float>(
+                qwen35_prework_beta(b[b_offset]));
           }
         }
 
@@ -387,10 +418,12 @@ private let qwen35PackedGDNPreworkKernel: MLXFast.MLXFastKernel = {
     return MLXFast.metalKernel(
         name: "qwen35_packed_gdn_prework",
         inputNames: [
-            "qkv", "a", "conv_state", "conv_weight", "a_log",
+            "qkv", "a", "b", "conv_state", "conv_weight", "a_log",
             "dt_bias", "q_scale", "k_scale",
         ],
-        outputNames: ["q_out", "k_out", "v_out", "conv_out", "g_out"],
+        outputNames: [
+            "q_out", "k_out", "v_out", "conv_out", "g_out", "beta_out",
+        ],
         source: source,
         header: header,
         ensureRowContiguous: false)
@@ -777,7 +810,7 @@ final class Qwen35GatedDeltaNet: Module {
         if mixerHit {
             let invScale = pow(Float(headKDim), -0.5)
             let outs = qwen35PackedGDNPreworkKernel(
-                [qkv, a, convState, conv1d.weight, aLog, dtBias,
+                [qkv, a, b, convState, conv1d.weight, aLog, dtBias,
                  MLXArray(pow(invScale, 2)).asType(.bfloat16),
                  MLXArray(invScale).asType(.bfloat16)],
                 template: [
@@ -793,9 +826,11 @@ final class Qwen35GatedDeltaNet: Module {
                     [B, S, numVHeads, headVDim],
                     [B, nKeep, qkv.dim(2)],
                     [B, S, numVHeads],
+                    [B, S, numVHeads],
                 ],
                 outputDTypes: [
                     .bfloat16, .bfloat16, .bfloat16, .bfloat16, .float32,
+                    .float32,
                 ]
             )
             qNormed = outs[0]
@@ -803,10 +838,7 @@ final class Qwen35GatedDeltaNet: Module {
             v = outs[2]
             newConvState = outs[3]
             g = outs[4]
-            // beta stays a plain graph op BY DESIGN — see the kernel's
-            // header comment. Same expression as the compiled producer's
-            // beta half, so the recurrence sees identical bytes.
-            beta = sigmoid(b).asType(.float32)
+            beta = outs[5]
         } else {
             newConvState = convInput[0..., (convInput.dim(1) - nKeep)...]
             let convOut = silu(conv1d(convInput))
@@ -1117,7 +1149,7 @@ final class Qwen35GatedDeltaNet: Module {
         }
 
         let normedOut: MLXArray
-        if nConfirmed == 1 && S >= 2 {
+        if S >= 2 {
             let rmsOut = MLXFast.rmsNorm(out, weight: norm.weight, eps: norm.eps)
             normedOut = qwen35CompiledGatedDeltaPostNorm(rmsOut, z)
         } else {
@@ -1229,7 +1261,7 @@ final class Qwen35FusedMLP: Module, UnaryLayer {
         // equal halves (`_gateOut * 2 == N`); a mismatched pair falls back
         // to the exact two-projection expression, preserving the original
         // slicing semantics in every case.
-        if x.dim(-2) <= 9, let y = fusedGateUp(x), _gateOut * 2 == y.dim(-1) {
+        if x.dim(-2) <= 16, let y = fusedGateUp(x), _gateOut * 2 == y.dim(-1) {
             return downProj(qwen35CompiledFusedSwiGLU(y))
         }
         return downProj(silu(gateProj(x)) * upProj(x))
@@ -1633,7 +1665,7 @@ final class Qwen35Attention: Module {
             || cache is CompilableKVCache
             || cache is BatchPositionedKVCache
         if usesFusedQKPreparation,
-           L <= 16,
+           L <= 32,
            !hasArrayOffset,
            queries.dtype == .bfloat16,
            keys.dtype == .bfloat16,
@@ -1674,7 +1706,7 @@ final class Qwen35Attention: Module {
         .transposed(0, 2, 1, 3)
         .reshaped(B, L, -1)
 
-        return oProj(sigmoidMultiply(output, gate))
+        return oProj(qwen35CompiledSigmoidMultiply(output, gate))
     }
 }
 
@@ -1874,7 +1906,7 @@ public class Qwen35TextModelInner: Module {
                 cache: cacheArray?[i], nConfirmed: nConfirmed)
             if ladderActive {
                 if prefillLadder {
-                    if i == 0 || i % 4 == 3 {
+                    if i == 0 || i % 3 == 2 {
                         asyncEval(hiddenStates)
                     }
                 } else {
@@ -2215,6 +2247,24 @@ extension Qwen35TextModel: MTPCapable {
         return (logits, hidden)
     }
 
+    /// Publish the post-norm block this same forward already needs for its
+    /// vocabulary projection. The verify session can reuse its rows on the
+    /// proposal side instead of launching identical single-row RMSNorms.
+    public func callWithHiddenAndNormed(
+        input: LMInput.Text, cache: [any KVCache], nConfirmed: Int
+    ) -> (MLXArray, MLXArray, MLXArray?) {
+        let cacheOpt: [KVCache?] = cache.map { Optional($0) }
+        let hidden = model(input.tokens, cache: cacheOpt, nConfirmed: nConfirmed)
+        let normed = model.norm(hidden)
+        let logits: MLXArray
+        if let lmHead {
+            logits = lmHead(normed)
+        } else {
+            logits = model.embedTokens.asLinear(normed)
+        }
+        return (logits, hidden, normed)
+    }
+
     /// Rebuild the target's recurrent cache after an accepted verify prefix.
     public func replayRecurrentPrefix(
         cache: [any KVCache], committedRows: Int
@@ -2403,24 +2453,6 @@ extension Qwen35TextModel: MTPCapable {
             && lmHead != nil && _draftHeadW == nil
     }
 
-    /// Draft-only readout precision, read once. The compact draft head is the
-    /// draft step's dominant memory traffic, so `MLX_QWEN_MTP_DRAFT_BITS`
-    /// requantizes that copy to 3 or 2 bits. Only proposal quality can move:
-    /// verify keeps the pinned 4-bit `lmHead`, and acceptance is an exact
-    /// token-ID match against the target's argmax, so the emitted stream is
-    /// unchanged either way.
-    ///
-    /// `MLX_` prefix on purpose: the trusted harness strips `MLXFAST_*` from
-    /// the sandboxed worker's environment but allows `MLX_` through.
-    private static let draftHeadBits: Int = {
-        guard
-            let raw = ProcessInfo.processInfo
-                .environment["MLX_QWEN_MTP_DRAFT_BITS"],
-            let bits = Int(raw), [2, 3, 4].contains(bits)
-        else { return 3 }
-        return bits
-    }()
-
     private func makeCompactDraftHead() -> Linear {
         guard let full = lmHead else {
             fatalError("compact draft vocabulary requires an untied lm_head")
@@ -2437,7 +2469,7 @@ extension Qwen35TextModel: MTPCapable {
         }
 
         if let quantized = full as? QuantizedLinear {
-            let compact = QuantizedLinear(
+            return QuantizedLinear(
                 weight: compactRows(quantized.weight),
                 bias: quantized.bias.map(compactRows),
                 scales: compactRows(quantized.scales),
@@ -2445,60 +2477,12 @@ extension Qwen35TextModel: MTPCapable {
                 groupSize: quantized.groupSize,
                 bits: quantized.bits,
                 mode: quantized.mode)
-            guard Self.draftHeadBits != quantized.bits else { return compact }
-            return Self.requantizedDraftHead(
-                compact, bits: Self.draftHeadBits)
         }
         return Linear(
             weight: compactRows(full.weight),
             bias: full.bias.map(compactRows))
     }
 
-    /// Repack a compact draft head at `bits`, one row block at a time.
-    ///
-    /// Dequantizing the whole head at once would materialize ~1 GB of fp16;
-    /// the blocked form peaks at one block. Affine group-64 row widths stay
-    /// whole uint32 words at 2, 3, and 4 bits (`64 * bits % 32 == 0`), so
-    /// concatenating packed blocks along axis 0 is exact.
-    private static func requantizedDraftHead(
-        _ head: QuantizedLinear, bits: Int
-    ) -> QuantizedLinear {
-        guard let sourceBiases = head.biases else {
-            fatalError("draft head requantization requires affine biases")
-        }
-        let rows = head.weight.dim(0)
-        let blockRows = 8192
-        var weights: [MLXArray] = []
-        var scales: [MLXArray] = []
-        var biases: [MLXArray] = []
-        var start = 0
-        while start < rows {
-            let end = Swift.min(start + blockRows, rows)
-            let dense = dequantized(
-                head.weight[start ..< end],
-                scales: head.scales[start ..< end],
-                biases: sourceBiases[start ..< end],
-                groupSize: head.groupSize, bits: head.bits, mode: head.mode)
-            let packed = MLX.quantized(
-                dense, groupSize: head.groupSize, bits: bits, mode: head.mode)
-            guard let packedBiases = packed.biases else {
-                fatalError("affine quantization must produce biases")
-            }
-            eval(packed.wq, packed.scales, packedBiases)
-            weights.append(packed.wq)
-            scales.append(packed.scales)
-            biases.append(packedBiases)
-            start = end
-        }
-        let repacked = QuantizedLinear(
-            weight: concatenated(weights, axis: 0),
-            bias: head.bias,
-            scales: concatenated(scales, axis: 0),
-            biases: concatenated(biases, axis: 0),
-            groupSize: head.groupSize, bits: bits, mode: head.mode)
-        eval(repacked.weight, repacked.scales, repacked.biases!)
-        return repacked
-    }
 
     /// Allocate a fresh KV cache for the MTP head layers.
     /// omlx: patches/mlx_lm_mtp/qwen35_model.py TextModel.make_mtp_cache
@@ -2576,6 +2560,14 @@ extension Qwen35Model: MTPCapable {
         input: LMInput.Text, cache: [any KVCache], nConfirmed: Int
     ) -> (MLXArray, MLXArray) {
         languageModel.callWithHidden(input: input, cache: cache, nConfirmed: nConfirmed)
+    }
+
+    /// See `Qwen35TextModel.callWithHiddenAndNormed`.
+    public func callWithHiddenAndNormed(
+        input: LMInput.Text, cache: [any KVCache], nConfirmed: Int
+    ) -> (MLXArray, MLXArray, MLXArray?) {
+        languageModel.callWithHiddenAndNormed(
+            input: input, cache: cache, nConfirmed: nConfirmed)
     }
 
     /// See `Qwen35TextModel.replayRecurrentPrefix`.
