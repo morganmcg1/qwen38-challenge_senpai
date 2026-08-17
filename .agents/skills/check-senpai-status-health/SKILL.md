@@ -19,7 +19,13 @@ timestamped current state.
   prerequisite. It does not authorize any AWS resource mutation. Follow the
   recovery flow below when the cached session is expired.
 - Never print credentials, environment values, API keys, or tokens.
-- Treat thermal waits and thermal aborts as legitimate. Never bypass a gate.
+- Treat thermal waits and thermal aborts as legitimate. A read-only audit never
+  bypasses a gate itself. Do not flag `MLXFAST_LOCAL_COOL_GATE=0` as a policy
+  violation when a local arm follows the standing program rule: ABBA within one
+  session, per-arm entry/exit temperatures with entry spread, and both
+  `cool_gate_passed_real_gate=false` and
+  `gate_qualified_for_timing=false` retained. Classify that evidence as
+  explicitly ungated and directional, never gate-qualified or official.
 - Distinguish pushed Git evidence, live-agent log claims, local/W&B evidence,
   and official Yukon results in every conclusion.
 
@@ -91,6 +97,8 @@ For each PR, report:
 - whether it creates a major-progress or major-issue callout under the criteria
   below;
 - new measurements and their host/window/provenance;
+- thermal qualification: real-gate pass, or the complete ABBA, temperature,
+  and false-qualification evidence required for an authorized ungated arm;
 - exactness and ledger gates actually demonstrated;
 - the predeclared stop rule and whether it fired;
 - whether a candidate diff is pushed, only present in live logs, research-only,
@@ -163,7 +171,9 @@ chain as far as read-only access permits:
    corroborate it before attributing it to a human.
 3. Every deferred job ID, its supervisor state, PID liveness, elapsed time,
    deadline, concise progress tail, and terminal result. Do not interrupt a
-   live benchmark or bypass a thermal gate during diagnosis.
+   live benchmark or cause a thermal-gate bypass during diagnosis. An already
+   authorized ungated local arm is active work only when its ABBA order,
+   temperatures, and false qualification flags are present or being recorded.
 4. Workspace branch, HEAD, dirty state, current PR head, expected-head lease,
    pending inbox delivery, and whether an unpushed result or remote policy
    commit explains the wait.
@@ -290,6 +300,8 @@ Use **Major issues** for developments that materially weaken, invalidate, or
 block a scientific conclusion, such as:
 
 - a failed benchmark, crash loop, thermal blocker, or terminal job error;
+- an ungated local headline missing its ABBA order, per-arm temperatures,
+  entry spread, or explicit false gate-qualification fields;
 - missing matched controls, 512-token coverage, exactness, ledger closure,
   provenance, or rankable evidence behind a headline claim;
 - a post-EOS/notBegun harness failure or any result measured over the wrong

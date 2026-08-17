@@ -129,7 +129,15 @@ Use the Qwen setup and benchmark commands:
 
 The official runner is the M5 host labeled `m5-qwen38-27b-mtp`. Other Apple GPUs can provide directional evidence only after confirming that they execute the same kernel family and layout.
 
-Run one model-holding process at a time. The wrapper locks the run, checks for orphaned workers, and cools the GPU before each resident measurement. A wait at the 40C gate is normal. Do not bypass the lock or cooling gate, and inspect reported PIDs before killing a process. Compare base and candidate with the same host, power state, temperature, toolchain, memory profile, token window, and proposal head.
+Run one model-holding process at a time. The wrapper locks the run, checks for orphaned workers, and cools the GPU before each resident measurement. A wait at the 40C gate is normal, and the real gate remains the default. Never bypass the process lock, fabricate a temperature source, or edit the gate constant.
+
+For local timed arms only, `MLXFAST_LOCAL_COOL_GATE=0` is a standing permitted measurement mode when all three conditions hold:
+
+1. Arms are ABBA-counterbalanced within one session so monotone thermal drift cancels to first order.
+2. Entry and exit GPU temperature are recorded for every arm, and the entry-temperature spread is reported alongside the measured effect.
+3. `cool_gate_passed_real_gate=false` and `gate_qualified_for_timing=false` are preserved verbatim in the result rather than omitted or relabelled.
+
+An ungated result is directional causal evidence within that counterbalanced session. It is not gate-qualified, cannot be compared as though it were a gated historical run, and is never an official or ranked score. The official runner's thermal gate and all normal correctness, provenance, scope, and token-window requirements remain unchanged. Inspect reported PIDs before killing a process, and compare base and candidate with the same host, power state, temperature record, toolchain, memory profile, token window, and proposal head.
 
 The local modes use one public fixture and default to 64 decode tokens for `--local-iterate` and 128 for `--local-submit`. They generate their own reference rows from the candidate, so matching those rows locally does not prove a match against the organizer's hidden reference and cannot reproduce the hidden eight-prompt result. Both local legs also use the same candidate build. Schedule and head changes therefore show up directly in the local serial-to-MTP ratio, while a general target or kernel improvement may speed both legs and cancel in that ratio. Always compare absolute candidate seconds per token with a fresh, unchanged `BASE_SHA` run as well as comparing the ratio.
 

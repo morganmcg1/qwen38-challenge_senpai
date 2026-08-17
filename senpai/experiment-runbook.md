@@ -75,7 +75,14 @@ power, fan, and thermal conditions:
 cp score.json score.local-iterate.candidate.json
 ```
 
-Do not overlap model-holding commands. Let every 40C gate finish. Repeat only
+Do not overlap model-holding commands. The real 40C gate is the default; let it
+finish. When using the permitted local-only ungated protocol from
+`program.md`, run the complete arm set ABBA-counterbalanced within one session
+with `MLXFAST_LOCAL_COOL_GATE=0`. Record entry and exit GPU temperature for
+every arm, report the entry spread beside the effect, and preserve
+`cool_gate_passed_real_gate=false` and `gate_qualified_for_timing=false` in the
+result. Compare those arms only within the counterbalanced session and never
+label the result gate-qualified, ranked-equivalent, or official. Repeat only
 when noise or inconsistency could change the decision.
 
 ## Extract the comparison

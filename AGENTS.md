@@ -306,11 +306,19 @@ PIDs before killing anything, and never disable the guard to work around a
 legitimate concurrent run.
 
 The wrapper cools the GPU before each resident measurement. Waiting at the 40C
-gate is normal, not a hang. Do not disable it for comparable measurements.
-Keep host, power, thermal state, memory profile, head provenance, toolchain,
-token window, and frontier SHA matched between base and candidate. Ranked
-authority is the self-hosted M5 runner labeled `m5-qwen38-27b-mtp`; non-M5
-timing is directional only after confirming the same kernel family executes.
+gate is normal, not a hang, and the gate remains the default. For local timed
+arms only, `MLXFAST_LOCAL_COOL_GATE=0` is permitted when all arms are
+ABBA-counterbalanced within one session, every arm records entry and exit GPU
+temperature with the entry spread reported beside the effect, and the result
+retains `cool_gate_passed_real_gate=false` plus
+`gate_qualified_for_timing=false`. Such evidence is explicitly ungated and
+directional; compare it within that counterbalanced session, not as though it
+were a gate-qualified or official result. Never fabricate a temperature source,
+edit the gate constant, or bypass the process lock. Keep host, power, thermal
+state, memory profile, head provenance, toolchain, token window, and frontier
+SHA matched between base and candidate. Ranked authority is the self-hosted M5
+runner labeled `m5-qwen38-27b-mtp`; non-M5 timing is directional only after
+confirming the same kernel family executes.
 
 ## Experiment Discipline
 
