@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-17T19:54:55Z",
+  "observedAt": "2026-08-17T21:24:25Z",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -8,11 +8,11 @@
   "organizer": {
     "url": "https://github.com/Layr-Labs/qwen-3.8-mtp-challenge",
     "branch": "main",
-    "syncedCommit": "be3361b96875beaab17e52f2f054045cb81df882"
+    "syncedCommit": "d1530a409848b82a0a1890141c1483875d1e0173"
   },
   "promotedSubmission": {
-    "id": "39fdbf62-60e4-4ab7-bf09-0d1b5a0b618a",
-    "sourceRef": "ed4dfd6b0e95bb1cafb26c694bc247f551d550fe",
-    "score": 3.07714439121787
+    "id": "bd007bc7-e8ab-4919-baf4-d5e90068dd83",
+    "sourceRef": "d1530a409848b82a0a1890141c1483875d1e0173",
+    "score": 3.13098700135133
   }
 }
