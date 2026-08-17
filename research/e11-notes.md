@@ -646,3 +646,106 @@ campaign actually cares about it was actively misleading: it promoted a no-op
 over a -7.6% change. Any depth or acceptance lever screened only on the default
 fixture should be treated as unmeasured until it is run on prose.
 
+
+---
+
+## r3: replay on the promoted-frontier base
+
+### Provenance, before any number
+
+The r2 measurements were taken on base `8970d775`. The advisor's r3 question is
+whether the curve's -7.658% survives the base move to
+`fe38ecc21e4084e4d17dac3aa76264bb5897a614` (promoted frontier `32b94cb`, Yukon
+submission `03dedda8-fc70-4e3e-881f-5384a17af405`, score 2.94661597308114).
+
+The branch takes the new base by **merge** (`d85d22d`), not rebase, so the r2
+result commit `2062fea` stays reachable and the r2 evidence remains auditable.
+`git diff --stat fe38ecc d85d22d -- Sources Vendor mtp-head.manifest.json` is
+empty: the merge contributes nothing to the scored surface beyond the base.
+
+Four things changed under us, and each one had to be checked rather than assumed.
+
+**1. The E1 research hooks are gone.** The frontier deleted
+`overrideHeadStepCostRatioByDepth`, `MLX_QWEN_MTP_H_VECTOR`, `forcedDepth`, and
+the trace `h=` field. The r2 report flagged a hazard here -- that a future h
+experiment could read the scalar through an instrument that no longer exists --
+and it is now moot: after the deletion there were exactly two readers of
+`headStepCostRatio`, both inside `costModelDepth`. The r3 curve is therefore a
+source-level edit of those two readers with no env plumbing at all, and the
+`H`-type arms run with **no** `MLX_QWEN_MTP_*` variable set.
+
+**2. `costModelDepth` gained a depth-1 confidence clamp.** The frontier scales
+the depth-1 expected-acceptance term by `conf2 = 1/(1+exp(-margin/3.0))`, which
+did not exist in r2. It is preserved verbatim in the curve implementation; the
+only thing the curve replaces is the constant `0.18` in the cost term.
+
+**3. The width wall moved from 4 to 5** (`sdpaWidthWallDepthCap`), with
+`segmentedVerifyDepthCap = 8` and `segmentedStreakGate = 3`. Q3 is whether the
+curve and the wall are still substitutes at wall 5, which is decided by the
+curve's realised max depth, not by argument.
+
+**4. The declared MTP head repo changed.** r2 ran
+`lowskillcoding/qwen38-mtp-head-4bit-g64@0966ddaf` (sha256 `cc209e30...`,
+238934093 bytes). The frontier manifest declares
+`dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6c87a438caa28f975c1cea9b0b005bc71`
+(sha256 `7d62702795865b9036afe4bddcd16a2a8eb973c0caced15e5243139dda067f47`,
+238934129 bytes). This is the one change that bears directly on the h vector,
+because h is a property of the head's per-step cost. Both are affine 4-bit
+group-64 requantisations of the same pinned bf16 head with identical geometry
+(31 tensors, same names and shapes), so the cost profile should be close and the
+acceptance profile is the part free to move. The doc block's own "re-fit after
+any head change" trigger did fire; Q2 measures the marginals so the advisor can
+see by how much, without re-fitting (out of scope for r3).
+
+The head was re-provisioned from scratch for r3: the stale r2 cache directory
+was removed and `research/fetch-declared-head.sh` re-downloaded the declared
+revision. Verified tree digest `7d627027...` == manifest, 238934129 bytes.
+Standalone `model.safetensors` sha256
+`c934b40f1254858425cc0b5fdfe62b6ae13d1a4aff74da9d81606e92fdcf41ee`.
+
+### One staging detail worth writing down
+
+`benchmark-qwen-mtp.sh:215` refuses to run unless
+`${MLXFAST_QWEN_MTP_HEAD_DIR}/config.json` is non-empty. The declared head
+publishes only `model.safetensors` -- which is also exactly what the ranked
+workflow stages -- and the loader does not need a config: the DECLARED-HEAD
+STAGING branch in `Qwen36MTPHeadAttachment.verifyHeadTree`
+(`Sources/MLXFastModel/Qwen36MTPHeadAttachment.swift:215`) reads structure out
+of the safetensors header when `model.safetensors.index.json` is absent. So the
+wrapper precondition is satisfied by copying the pinned head's `config.json`
+into the declared directory and leaving the index absent, which keeps the loader
+on the declared-head branch. The wrapper is trusted and was not modified. r2 ran
+the same way (its cache directory carried the same 3570-byte config), so this is
+a continuation of the r2 protocol, not a new degree of freedom. Because the
+manifest byte count covers `model.safetensors` alone, the standalone file digest
+above is the witness to report, not a whole-directory digest.
+
+### Two honesty corrections to r2, found while rebuilding the fixture
+
+**r2's exactness claim covered a prefix.** The r2 golden carried 256 expected
+tokens while the decode window was 512, and `all_tokens_matched` compares only
+as many tokens as the golden carries. So r2's `all_tokens_matched: true` proved
+an exact match over the first 256 of 512 decode tokens, not over the window. r3
+regenerates the golden at 512 steps, puts the step count in the filename, and
+`research/e11-run.sh` now refuses any golden shorter than the decode window, so
+the gap is structurally closed rather than remembered.
+
+**The r2 golden was not stale, though.** The new 512-token golden on the new
+base has the r2 256-token golden as an exact prefix: the frontier's 172-line
+`Vendor/.../Qwen35.swift` change does not move the serial target trajectory on
+this prompt. The r2 -> r3 comparison is therefore apples-to-apples on the
+reference side, and the only moving parts are the schedule, the wall, and the
+head.
+
+### Trace is unreachable under the benchmark, so depth data comes from the parent
+
+`MLX_QWEN_MTP_TRACE` writes a file, and the worker profile in
+`Sources/MLXFastCLI/main.swift:2654` is sandboxed `(deny file-write*)`;
+`MLXFAST_NO_SANDBOX` is refused outright for benchmark contexts at `:2254` and
+`:2553`. Depth histograms in r3 are therefore read from the trusted parent's own
+`effective_draft_lengths`, which is strictly better evidence anyway. The same
+array, aligned with `block_request_seconds`, is what `research/e11_marginal.py`
+uses to recover per-depth round cost for Q2 -- so the forced-depth arms E1 needed
+are replaced by post-hoc analysis of the ordinary timed arms, at zero extra GPU
+cost.
+
