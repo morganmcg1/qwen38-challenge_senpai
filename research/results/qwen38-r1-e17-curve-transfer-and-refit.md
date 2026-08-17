@@ -470,6 +470,16 @@ documented sensor quirk at `benchmark.sh:863-870` — that failure mode is the o
 13:52Z 39.14 C → ~14:16Z 40.3 C → 14:40Z 40.43 C → 14:48Z 40.61 C — about +1.5 C in under an hour. **The
 host's idle floor moved above the ≤40 C gate and kept rising.**
 
+A fifth observation, taken 34 minutes after the retry aborted and with the GPU still idle
+(`gpu_power = 0.0069 W`), settles whether this was bad luck or the host's new floor:
+**15:22Z 41.94 C**, with CPU at 40.45 C. The idle GPU is now ~2 C *above* the gate and still climbing on
+the same ~+1.5 C/hour slope, so the blocker is **structural for this host in its current environment**, not
+a transient I could have waited out inside a job's 900 s `MAX_WAIT`. Any further resident measurement on
+this machine needs the ambient problem fixed (or the gate's headroom raised by whoever owns
+`benchmark.sh`); retrying the same command would only reproduce the same abort. This is recorded as a
+measured fact, not as an argument for relaxing the gate — the gate is exactly what keeps a
+thermally-degraded pair from being reported as a speedup.
+
 The gate constants in `benchmark.sh` are all `readonly` and not env-overridable: `COOL_GATE_TEMP_C=40`,
 `POLL=10s`, `ABORT=180s`, `STALL=90s`, `MAX_WAIT=900s`, `PROGRESS_EPSILON_C=0.25`, `FAN_OFFER_STALL=60s`.
 The reader is `local_gpu_temp()` at line 448. Interactive fan boost is unavailable under `run_job`.

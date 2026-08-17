@@ -782,13 +782,17 @@ Shared `cli_sha256 = c9bfcaf9c58d5b5bd31466f4bab8c90a5d693bf8f0afd2818840deef0fd
 The aborted partial is preserved at
 `.mlxfast-private/e17/aborted/narrative-CURVE-thermal-abort/`.
 
-### Thermal blocker — the four observations
+### Thermal blocker — the five observations
 
 No `mlxfast` / `runtime-worker` / `benchmark` process alive, no stale locks, GPU
 idle at `gpu_power = 0.008 W`, CPU 34.6 C (cooler than GPU, so not spillover).
 Idle GPU temperature over the session: 13:52Z 39.14 C → ~14:16Z 40.3 C →
-14:40Z 40.43 C → 14:48Z 40.61 C. About +1.5 C in under an hour, i.e. the host's
-idle floor rose above the `COOL_GATE_TEMP_C=40` gate and kept rising. Readings
+14:40Z 40.43 C → 14:48Z 40.61 C → **15:22Z 41.94 C** (CPU 40.45 C,
+`gpu_power = 0.0069 W`). About +1.5 C/hour, i.e. the host's idle floor rose above
+the `COOL_GATE_TEMP_C=40` gate and kept rising. The fifth point, taken 34 min
+after the retry aborted, is the decisive one: an idle GPU ~2 C *above* the gate
+makes this structural for this host, not a transient that a job's 900 s
+`MAX_WAIT` could have absorbed. Readings
 were plausible and varying, so this is **not** the frozen-sensor quirk documented
 at `benchmark.sh:863-870` (that one reads implausibly *low*, e.g. constant
 3.657 C). Gate constants are `readonly` and not env-overridable; interactive fan
