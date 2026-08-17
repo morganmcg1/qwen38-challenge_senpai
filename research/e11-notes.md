@@ -785,3 +785,63 @@ same array, aligned with `block_request_seconds`, is what
 forced-depth arms E1 needed are replaced by post-hoc analysis of the ordinary
 timed arms at zero extra GPU cost and zero instrumentation overhead.
 
+### The score is decode-only, so prefill does not dilute any E11 delta
+
+The r3 assignment states as a hard requirement that prefill is inside the score,
+`raw_p = (P + D_serial) / (P + D_mtp)`, and records that this supersedes an
+earlier "prefill excluded" claim. Checking the enforcing sources in the order
+`program.md` prescribes, the earlier claim was the correct one and the
+retraction is the error. Prefill is measured, reported, and thermally relevant,
+but it is not in the scored ratio.
+
+Enforcing evidence, in `program.md`'s own precedence order:
+
+- `benchmark.json` `/scoring/mode` is the string `qwen-mtp-paired-decode-only`.
+- `benchmark.json` `/scoring/aggregation` is
+  `median_of_per_prompt_raw_serial_relative_speedup`, and its note defines the
+  per-prompt quantity as "mean serial (depth-0) seconds/token over that
+  prompt's accepted pairs divided by mean candidate seconds/token over the same
+  pairs". There is no additive prefill term.
+- `.github/workflows/qwen-mtp-ranked-benchmark.yml:129` states
+  `raw_p = mean(serial depth-0 seconds/token) / mean(MTP seconds/token)`.
+- The same workflow at `:3083` computes the per-prompt ratio as
+  `(.serial_seconds_per_token_mean / .mtp_seconds_per_token_mean)`. That jq
+  expression is the enforcing site and it contains no prefill operand.
+- The workflow does collect `prefill_seconds_per_token` at `:3148-3217`, but
+  only to average it into the emitted metrics block. It is a published
+  diagnostic, never a divisor or an addend.
+
+`Sources/MLXFastCore/Score.swift:18-48` does implement a prefill-weighted score,
+a weighted geometric mean of decode and prefill speedups with
+`scorePrefillWeight = 0.25` and `scoreDecodeWeight = 0.75`
+(`Sources/MLXFastCore/Constants.swift:244-245`). That function is not on this
+track's path. The local harness proves it numerically: `score.json` reports
+`score` exactly equal to its own `mtp_decode_speedup`, which is
+`serial_seconds_per_token / mtp_seconds_per_token` to every printed digit, while
+`prefill_seconds_per_token` sits beside it unused.
+
+Why this matters beyond bookkeeping. Prefill is a fixed ~3.99 s per leg that is
+identical in the serial and MTP legs, because both legs process the same
+512-token seed with the same target. Folding it in would compress every ratio
+toward 1.0 and, worse, would compress *differences* between candidates. On the
+r3 scalar arm the two readings are:
+
+```text
+decode-only        0.074569518 / 0.049472851          = 1.5073   <- the score
+prefill-inclusive  (3.998045+38.179593)/(3.994842+25.330100) = 1.4383   <- not the score
+```
+
+A 4.6% gap on the level, and a similar proportional haircut on any delta between
+two candidate arms. Had I accepted the assignment's formula I would have
+reported the curve's headline as roughly 0.93x of its true score effect and
+understated the lever. Because the score is decode-only, the decode-only deltas
+this experiment measures carry into `raw_p` essentially one-for-one, and the r2
+headline of -7.658% on `mtp_seconds_per_token` needs no prefill correction at
+all.
+
+`program.md`'s prose sentence "Both seed processing and decoding are included in
+the same timed leg, even though prefill has no separate score" is consistent
+with this once read carefully: both are inside the timed leg as *work*, and the
+trailing clause is the disclaimer that prefill is not separately scored. It is
+not a statement that prefill enters `raw_p`.
+
