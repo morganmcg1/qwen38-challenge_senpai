@@ -6,7 +6,7 @@
 #
 # `iterate` measures one matched serial/MTP pair through the unmodified
 # benchmark-qwen-mtp.sh wrapper, behind research/await-lock-then-run.sh, and keeps
-# the per-arm payloads via research/e12-swift-shim.sh. TRACE=1 sets
+# the per-arm payloads via research/capture-cli.sh. TRACE=1 sets
 # MLX_QWEN_MTP_TRACE=1, which forwards the session's worker-stderr trace; a traced
 # run carries decode-side trace overhead and is never a timed headline.
 set -uo pipefail
@@ -49,12 +49,15 @@ iterate)
   tokens="${2:?tokens}"
   trace="${3:?trace 0|1}"
   tag="${4:?tag}"
+  capture="${PWD}/research/capture-e12-${tag}"
+  score="research/score-e12-${tag}.json"
   export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
   export MLX_QWEN_MTP_TRACE="${trace}"
-  export MLXFAST_SWIFT_BIN="research/e12-swift-shim.sh"
-  export MLXFAST_E12_TAG="${tag}"
-  export MLXFAST_SCORE_PATH="research/score-e12-${tag}-summary.json"
-  rm -f "research/score-e12-${tag}-depth"*.json "research/score-e12-${tag}-summary.json"
+  export MLXFAST_SWIFT_BIN="research/capture-cli.sh"
+  export MLXFAST_CAPTURE_REAL_BIN="${PWD}/.build/release/mlxfast-swift"
+  export MLXFAST_CAPTURE_DIR="${capture}"
+  export MLXFAST_SCORE_PATH="${score}"
+  rm -rf "${capture}" "${score}"
   echo "e12: HEAD $(git rev-parse HEAD)"
   echo "e12: worker sha256 $(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
   echo "e12: cli sha256 $(shasum -a 256 .build/release/mlxfast-swift | awk '{print $1}')"
@@ -64,12 +67,12 @@ iterate)
   status=$?
   echo "e12: lock_wrapper_exit=${status} $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "e12: gpu_temp_after=$(gpu_temp)"
-  for f in "research/score-e12-${tag}-depth"*.json "research/score-e12-${tag}-summary.json"; do
+  for f in "${score}" "${capture}"/*.json; do
     if [[ -s "${f}" ]]; then
       echo "e12: === ${f}"
-      jq -S 'del(.row_ledger, .block_request_seconds, .effective_draft_lengths)' "${f}"
+      jq -S 'del(.row_ledger, .block_request_seconds, .effective_draft_lengths, .tokens, .reference_rows)' "${f}"
     else
-      echo "e12: === ${f} MISSING"
+      echo "e12: === ${f} EMPTY-OR-MISSING"
     fi
   done
   exit "${status}"
