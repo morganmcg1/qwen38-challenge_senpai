@@ -33,7 +33,13 @@ from pathlib import Path
 
 RUNS = Path(".mlxfast-private/e17/runs")
 R3_RUNS = Path(".mlxfast-private/e11/runs")
-ARMS = ("CURVE", "FLAT18")
+
+# r1 measured two arms on e6e6f81 (CURVE vs FLAT18).  r2 measures a control plus
+# up to four candidates on af80b0fc, and not every candidate runs on every
+# prompt, so the arm set and the control are CLI-selected and a prompt is
+# reported as soon as the control and at least one candidate are present.
+ARMS: tuple[str, ...] = ("S18", "CURVE", "H1LO", "H1MEAS", "H1HI")
+CONTROL = "S18"
 PROMPTS = (
     "english",
     "narrative",
@@ -110,10 +116,32 @@ def load_arm(prompt: str, arm: str, root: Path = RUNS) -> dict | None:
 def collect() -> dict[str, dict[str, dict]]:
     out: dict[str, dict[str, dict]] = {}
     for prompt in PROMPTS:
-        arms = {a: load_arm(prompt, a) for a in ARMS}
-        if all(v is not None for v in arms.values()):
+        arms = {a: v for a in ARMS if (v := load_arm(prompt, a)) is not None}
+        if CONTROL in arms and len(arms) >= 2:
             out[prompt] = arms
     return out
+
+
+def candidates(arms: dict[str, dict]) -> list[str]:
+    return [a for a in ARMS if a in arms and a != CONTROL]
+
+
+def wide_share(arm: dict) -> float:
+    """Share of rounds verified at width M >= 5.
+
+    Settled from the row ledger, not from reading the source: on r1's english
+    arms, sum over rounds of (depth + 1) reproduces `declared_rows` exactly
+    (FLAT18 825, CURVE 743) while depth and depth + 2 do not.  So a round that
+    drafts `depth` tokens verifies M = depth + 1 rows -- the pending primary
+    plus the drafts -- and M >= 5 is depth >= 4.
+
+    Distinct from the marginal statement: h[i] prices the step depth i -> i+1,
+    which takes that round's width from i+1 to i+2.  Both are true; they index
+    a step and a round total respectively.
+    """
+    hist = {int(d): int(n) for d, n in arm["depth_hist"].items()}
+    total = sum(hist.values())
+    return sum(n for d, n in hist.items() if d >= 4) / max(total, 1)
 
 
 def report(data: dict[str, dict[str, dict]]) -> None:
@@ -121,47 +149,58 @@ def report(data: dict[str, dict[str, dict]]) -> None:
         print("e17: no completed prompt pairs under", RUNS)
         return
 
-    print("PER-PROMPT PAIRS (raw_p = serial spt / mtp spt, prefill-inclusive)")
     print(
-        f"{'prompt':<16}{'serial C':>10}{'serial F':>10}{'floor%':>8}"
-        f"{'mtp CURVE':>11}{'mtp FLAT':>10}{'raw C':>8}{'raw F':>8}"
+        f"PER-PROMPT PAIRS vs {CONTROL} "
+        "(raw = serial spt / mtp spt, prefill-inclusive, 512 decode tokens)"
+    )
+    print(
+        f"{'prompt':<16}{'arm':<8}{'serial A':>10}{'serial K':>10}{'floor%':>8}"
+        f"{'mtp A':>11}{'mtp K':>10}{'raw A':>8}{'raw K':>8}"
         f"{'d_raw':>8}{'g%':>8}"
     )
     for prompt, arms in data.items():
-        c, f = arms["CURVE"], arms["FLAT18"]
-        floor = abs(c["serial_spt"] - f["serial_spt"]) / (
-            (c["serial_spt"] + f["serial_spt"]) / 2
-        )
-        g = (f["mtp_spt"] - c["mtp_spt"]) / f["mtp_spt"]
-        print(
-            f"{prompt:<16}{c['serial_spt']:>10.6f}{f['serial_spt']:>10.6f}"
-            f"{100*floor:>8.3f}{c['mtp_spt']:>11.6f}{f['mtp_spt']:>10.6f}"
-            f"{c['raw']:>8.4f}{f['raw']:>8.4f}"
-            f"{c['raw']-f['raw']:>+8.4f}{100*g:>+8.3f}"
-        )
+        k = arms[CONTROL]
+        for arm in candidates(arms):
+            a = arms[arm]
+            floor = abs(a["serial_spt"] - k["serial_spt"]) / (
+                (a["serial_spt"] + k["serial_spt"]) / 2
+            )
+            g = (k["mtp_spt"] - a["mtp_spt"]) / k["mtp_spt"]
+            print(
+                f"{prompt:<16}{arm:<8}{a['serial_spt']:>10.6f}{k['serial_spt']:>10.6f}"
+                f"{100*floor:>8.3f}{a['mtp_spt']:>11.6f}{k['mtp_spt']:>10.6f}"
+                f"{a['raw']:>8.4f}{k['raw']:>8.4f}"
+                f"{a['raw']-k['raw']:>+8.4f}{100*g:>+8.3f}"
+            )
 
     for label, ids in (("HELD-OUT 7", HELD_OUT), ("ALL 8 (with in-sample anchor)", PROMPTS)):
-        sub = [p for p in ids if p in data]
-        if len(sub) < 2:
-            continue
-        rc = [data[p]["CURVE"]["raw"] for p in sub]
-        rf = [data[p]["FLAT18"]["raw"] for p in sub]
-        gs = [
-            (data[p]["FLAT18"]["mtp_spt"] - data[p]["CURVE"]["mtp_spt"])
-            / data[p]["FLAT18"]["mtp_spt"]
-            for p in sub
-        ]
-        mc, mf, gm = median(rc), median(rf), median(gs)
-        print(f"\n{label}  n={len(sub)}  ({', '.join(sub)})")
-        print(f"  median(raw|CURVE)  = {mc:.6f}   spread {min(rc):.4f}..{max(rc):.4f}")
-        print(f"  median(raw|FLAT18) = {mf:.6f}   spread {min(rf):.4f}..{max(rf):.4f}")
-        print(f"  headline delta     = {mc-mf:+.6f}  ({100*(mc-mf)/mf:+.3f}% of FLAT18)")
-        print(f"  g_median           = {100*gm:+.3f}%  spread {100*min(gs):+.3f}..{100*max(gs):+.3f}%")
-        print(f"  curve wins on      = {sum(1 for x in gs if x > 0)}/{len(gs)} prompts")
+        for arm in ARMS:
+            if arm == CONTROL:
+                continue
+            sub = [p for p in ids if p in data and arm in data[p]]
+            if len(sub) < 2:
+                continue
+            ra = [data[p][arm]["raw"] for p in sub]
+            rk = [data[p][CONTROL]["raw"] for p in sub]
+            gs = [
+                (data[p][CONTROL]["mtp_spt"] - data[p][arm]["mtp_spt"])
+                / data[p][CONTROL]["mtp_spt"]
+                for p in sub
+            ]
+            ma, mk, gm = median(ra), median(rk), median(gs)
+            print(f"\n{label}  arm={arm}  n={len(sub)}  ({', '.join(sub)})")
+            print(f"  median(raw|{arm:<7}) = {ma:.6f}   spread {min(ra):.4f}..{max(ra):.4f}")
+            print(f"  median(raw|{CONTROL:<7}) = {mk:.6f}   spread {min(rk):.4f}..{max(rk):.4f}")
+            print(f"  headline delta     = {ma-mk:+.6f}  ({100*(ma-mk)/mk:+.3f}% of {CONTROL})")
+            print(f"  g_median           = {100*gm:+.3f}%  spread {100*min(gs):+.3f}..{100*max(gs):+.3f}%")
+            print(f"  arm wins on        = {sum(1 for x in gs if x > 0)}/{len(gs)} prompts")
 
     print("\nDEPTH / ACCEPTANCE / CORRECTNESS")
+    print("  (M = drafted depth + 2 is the verify width, so M>=5 means depth>=3)")
     for prompt, arms in data.items():
         for arm in ARMS:
+            if arm not in arms:
+                continue
             a = arms[arm]
             print(
                 f"  {prompt:<16}{arm:<7} rounds={a['rounds']:<4} "
@@ -172,7 +211,10 @@ def report(data: dict[str, dict[str, dict]]) -> None:
                 f"matched={a['matched']} parity={a['parity']} "
                 f"div={a['divergence']} pinned_head={a['pinned_head']}"
             )
-            print(f"  {'':<23}depth_hist={a['depth_hist']}")
+            print(
+                f"  {'':<23}depth_hist={a['depth_hist']}  "
+                f"M>=5={100*wide_share(a):.2f}%"
+            )
 
     mechanism(data)
 
@@ -184,27 +226,29 @@ def mechanism(data: dict[str, dict[str, dict]]) -> None:
     on every prompt, so the win cannot be an acceptance effect. Rank the
     candidate explanations against g.
     """
-    print("\nMECHANISM: what predicts the size of the curve's win?")
+    print(f"\nMECHANISM: what predicts the size of each arm's win over {CONTROL}?")
     print(
-        f"  {'prompt':<16}{'g%':>8}{'F-C rows':>9}{'rows%':>8}"
-        f"{'F-C acc':>8}{'F-C rnds':>9}{'rows/acc C':>11}{'rows/acc F':>11}{'ratio':>7}"
+        f"  {'prompt':<16}{'arm':<8}{'g%':>8}{'K-A rows':>9}{'rows%':>8}"
+        f"{'K-A acc':>8}{'K-A rnds':>9}{'rows/acc A':>11}{'rows/acc K':>11}{'ratio':>7}"
     )
-    rows = []
+    by_arm: dict[str, list[tuple[str, float, int, float, float]]] = {}
     for prompt, arms in data.items():
-        c, f = arms["CURVE"], arms["FLAT18"]
-        g = 100 * (f["mtp_spt"] - c["mtp_spt"]) / f["mtp_spt"]
-        d_rows = f["checked_rows"] - c["checked_rows"]
-        pct_rows = 100 * d_rows / c["checked_rows"]
-        rpa_c = c["checked_rows"] / c["accepted"]
-        rpa_f = f["checked_rows"] / f["accepted"]
-        rows.append((prompt, g, d_rows, pct_rows, rpa_f / rpa_c))
-        print(
-            f"  {prompt:<16}{g:>+8.3f}{d_rows:>9}{pct_rows:>+8.2f}"
-            f"{f['accepted']-c['accepted']:>+8}{f['rounds']-c['rounds']:>+9}"
-            f"{rpa_c:>11.3f}{rpa_f:>11.3f}{rpa_f/rpa_c:>7.3f}"
-        )
-    if len(rows) < 3:
-        return
+        k = arms[CONTROL]
+        for arm in candidates(arms):
+            a = arms[arm]
+            g = 100 * (k["mtp_spt"] - a["mtp_spt"]) / k["mtp_spt"]
+            d_rows = k["checked_rows"] - a["checked_rows"]
+            pct_rows = 100 * d_rows / a["checked_rows"]
+            rpa_a = a["checked_rows"] / a["accepted"]
+            rpa_k = k["checked_rows"] / k["accepted"]
+            by_arm.setdefault(arm, []).append(
+                (prompt, g, d_rows, pct_rows, rpa_k / rpa_a)
+            )
+            print(
+                f"  {prompt:<16}{arm:<8}{g:>+8.3f}{d_rows:>9}{pct_rows:>+8.2f}"
+                f"{k['accepted']-a['accepted']:>+8}{k['rounds']-a['rounds']:>+9}"
+                f"{rpa_a:>11.3f}{rpa_k:>11.3f}{rpa_k/rpa_a:>7.3f}"
+            )
 
     def spearman(a: list[float], b: list[float]) -> float:
         ra = [sorted(a).index(x) for x in a]
@@ -212,16 +256,18 @@ def mechanism(data: dict[str, dict[str, dict]]) -> None:
         n = len(a)
         return 1 - 6 * sum((x - y) ** 2 for x, y in zip(ra, rb)) / (n * (n * n - 1))
 
-    gs = [r[1] for r in rows]
-    print(
-        f"\n  Spearman(g, extra rows %)      = {spearman(gs, [r[3] for r in rows]):+.3f}"
-        f"   <- redundant target work"
-    )
-    print(f"  Spearman(g, rows/accept ratio) = {spearman(gs, [r[4] for r in rows]):+.3f}")
-    print(
-        "  The scalar accepts MORE tokens on every prompt and is SLOWER on every prompt:\n"
-        "  the curve trades cheap extra rounds for expensive saved verify rows."
-    )
+    for arm, rows in by_arm.items():
+        if len(rows) < 3:
+            continue
+        gs = [r[1] for r in rows]
+        print(
+            f"\n  {arm}: Spearman(g, extra rows %)      = "
+            f"{spearman(gs, [r[3] for r in rows]):+.3f}   <- redundant target work"
+        )
+        print(
+            f"  {arm}: Spearman(g, rows/accept ratio) = "
+            f"{spearman(gs, [r[4] for r in rows]):+.3f}"
+        )
 
 
 def r3() -> None:
@@ -332,6 +378,15 @@ def contract(data: dict[str, dict[str, dict]]) -> None:
 
 
 def main(argv: list[str]) -> int:
+    global ARMS, CONTROL
+    for i, a in enumerate(argv):
+        if a == "--arms":
+            ARMS = tuple(argv[i + 1].split(","))
+        elif a == "--control":
+            CONTROL = argv[i + 1]
+    if CONTROL not in ARMS:
+        print(f"e17: control {CONTROL} is not in --arms {ARMS}", file=sys.stderr)
+        return 2
     if "--r3" in argv:
         r3()
         return 0
