@@ -67,10 +67,53 @@ ROW_STRIDED = "      const int row = out_row + r;\n"
 ROW_SPANNED = "      const int row = out_row + r * row_span;\n"
 ROW_COLLAPSED = "      const int row = out_row;\n"
 
+FMA_QDOT = """      for (int r = 0; r < rows_per_simd; r++) {
+        const int q = packed[r][i];
+        VF p = partial[r];
+        p = metal::fma(a0, VF(float(q & 0x000f)), p);
+        p = metal::fma(a1, VF(float(q & 0x00f0)), p);
+        p = metal::fma(a2, VF(float(q & 0x0f00)), p);
+        p = metal::fma(a3, VF(float(q & 0xf000)), p);
+        partial[r] = p;
+      }
+"""
+
+# Every nibble product is exact in fp32 (a bf16 activation scaled by a power of
+# two carries <= 8 mantissa bits; the masked nibble carries <= 4), so an FMA
+# cannot change a product. Only the summation order can change a bit. Summing
+# the four terms among themselves and adding to partial[r] once reproduces the
+# control association exactly, and keeps the loop-carried chain on partial[r]
+# one add deep as in the control, unlike FMA_QDOT which threads partial[r]
+# through all four FMAs and so makes that chain four deep.
+FMA_QDOT_ORDERED = """      for (int r = 0; r < rows_per_simd; r++) {
+        const int q = packed[r][i];
+        VF s = a0 * VF(float(q & 0x000f));
+        s = metal::fma(a1, VF(float(q & 0x00f0)), s);
+        s = metal::fma(a2, VF(float(q & 0x0f00)), s);
+        s = metal::fma(a3, VF(float(q & 0xf000)), s);
+        partial[r] += s;
+      }
+"""
+
+# Sensitivity control for the cross-build digest instrument, not a candidate
+# form: it is the control expression scaled by 1 + 2^-6, a deliberate error ~4x
+# the bf16 output ulp. Every cell that dispatches `_wide` must move, so an
+# unchanged digest can only mean the instrument never saw the edit.
+PERTURBED_QDOT = """      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] += 1.015625f * (a0 * (packed[r][i] & 0x000f) +
+                       a1 * (packed[r][i] & 0x00f0) +
+                       a2 * (packed[r][i] & 0x0f00) +
+                       a3 * (packed[r][i] & 0xf000));
+      }
+"""
+
 ARMS = {
     "arm1": [(FULL_QDOT, ONE_TERM_QDOT)],
+    "fma": [(FULL_QDOT, FMA_QDOT)],
+    "fma-ordered": [(FULL_QDOT, FMA_QDOT_ORDERED)],
     "arm2": [(K_LOOP, K_LOOP_WITH_SPAN), (ROW_STRIDED, ROW_SPANNED)],
     "arm2-naive": [(ROW_STRIDED, ROW_COLLAPSED)],
+    "perturb": [(FULL_QDOT, PERTURBED_QDOT)],
 }
 
 

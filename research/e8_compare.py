@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """Compare qmv-curve runs shape-by-shape at the E8 verify widths.
 
-Usage: python3 research/e8_compare.py BASE_TAG CAND_TAG [CAND_TAG ...]
+Usage: python3 research/e8_compare.py [--widths 5,8] BASE_TAG CAND_TAG [CAND_TAG ...]
 
 Reports, per shape and per width, seconds_per_call and gbps_nominal for the
 base and each candidate, plus the candidate/base time ratio.  A ratio well
 below 1.0 means the arm's change made the kernel faster.
+
+Also reports a round-weighted aggregate using SHIPPED_ROUND_HISTOGRAM, the
+verify-width distribution actually observed in shipped decoding.  That
+aggregate weights each width by the time it consumes, so it estimates the
+end-to-end qmv impact rather than an unweighted median over arbitrary widths.
 """
 
 import json
@@ -14,6 +19,10 @@ import sys
 
 ROOT = ".mlxfast-private/qmv-curve"
 WIDTHS = (4, 8)
+
+# Verify-width histogram observed in shipped decoding at segmentedVerifyDepthCap
+# = 7 (base 8970d775).  Rounds, not tokens.
+SHIPPED_ROUND_HISTOGRAM = {4: 1, 5: 29, 6: 2, 7: 3, 8: 46}
 
 
 def curve(tag):
@@ -26,7 +35,12 @@ def curve(tag):
 
 
 def main():
-    tags = sys.argv[1:]
+    global WIDTHS
+    argv = sys.argv[1:]
+    if argv and argv[0] == "--widths":
+        WIDTHS = tuple(int(x) for x in argv[1].split(","))
+        argv = argv[2:]
+    tags = argv
     if len(tags) < 2:
         sys.exit(__doc__)
     base_tag, cand_tags = tags[0], tags[1:]
@@ -73,6 +87,27 @@ def main():
                 parts.append(f"M={m}: {statistics.median(v):.3f} "
                              f"[{min(v):.3f}, {max(v):.3f}]")
         print(f"  {t:16s} " + "   ".join(parts))
+
+    print()
+    print("===== shipped-round-weighted qmv time ratio =====")
+    print(f"  histogram (rounds) = {SHIPPED_ROUND_HISTOGRAM}")
+    for t in cand_tags:
+        base_time = cand_time = 0.0
+        missing = []
+        for m, w in SHIPPED_ROUND_HISTOGRAM.items():
+            for s in shapes:
+                b, c = base.get((s, m)), cands[t].get((s, m))
+                if b is None or c is None:
+                    missing.append((s, m))
+                    continue
+                base_time += w * b["seconds_per_call"]
+                cand_time += w * c["seconds_per_call"]
+        if base_time == 0.0:
+            print(f"  {t:16s} no overlapping data")
+            continue
+        rr = cand_time / base_time
+        note = f"   (missing {len(missing)} cells)" if missing else ""
+        print(f"  {t:16s} {rr:.4f}  ({(rr - 1.0) * 100:+.2f}% qmv time){note}")
 
 
 if __name__ == "__main__":
