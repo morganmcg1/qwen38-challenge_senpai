@@ -18,8 +18,10 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 repo_root="${PWD}"
-bins_root="${repo_root}/.mlxfast-private/e11/bins"
-runs_root="${repo_root}/.mlxfast-private/e11/runs"
+# Overridable so a later experiment can drive the same runner over its own arm
+# set without its labels colliding with E11's.
+bins_root="${E11_BINS_ROOT:-${repo_root}/.mlxfast-private/e11/bins}"
+runs_root="${E11_RUNS_ROOT:-${repo_root}/.mlxfast-private/e11/runs}"
 head_dir="${E11_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared}"
 tokens="${E11_TOKENS:-512}"
 # Defaulted rather than passed in, because run_job launches an argv with no

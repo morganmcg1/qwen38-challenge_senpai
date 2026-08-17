@@ -21,15 +21,33 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-prompt="research/e11_prose_gate_english_512.txt"
-out_dir=".mlxfast-private/e11/goldens"
+# usage: research/e11-golden.sh [PROMPT_FILE ...]
+#
+# With no argument this keeps E11's single prose prompt and filename. With
+# arguments it generates one golden per prompt file, named after the prompt's
+# basename, so a prompt SET can be measured without a second copy of this
+# script. E11_GOLDEN_DIR relocates the output for a later experiment.
+out_dir="${E11_GOLDEN_DIR:-.mlxfast-private/e11/goldens}"
 steps="${E11_GOLDEN_STEPS:-512}"
-# Step count is in the filename: a golden shorter than the arm's decode window
-# still reports all_tokens_matched, having compared only its own prefix.
-out="${out_dir}/e11_prose_512_${steps}.json"
-name="e11_prose_gate_english_512_${steps}"
+prompts=("$@")
+if ((${#prompts[@]} == 0)); then
+  prompts=("research/e11_prose_gate_english_512.txt")
+fi
 
 mkdir -p "${out_dir}"
+
+golden_paths() {
+  local prompt="$1" stem
+  stem="$(basename "${prompt}" .txt)"
+  if [[ "${prompt}" == "research/e11_prose_gate_english_512.txt" \
+        && "${out_dir}" == ".mlxfast-private/e11/goldens" ]]; then
+    # E11's committed filename, kept so its runs stay reproducible.
+    echo ".mlxfast-private/e11/goldens/e11_prose_512_${steps}.json" \
+         "e11_prose_gate_english_512_${steps}"
+  else
+    echo "${out_dir}/${stem}_${steps}.json" "${stem}_${steps}"
+  fi
+}
 
 # Generate with whichever arm binary is resident: generate-golden runs the
 # SERIAL reference path (QwenRuntime.generateGreedyTokens), which no E11 arm
@@ -37,16 +55,25 @@ mkdir -p "${out_dir}"
 # anyway, so the claim is checkable rather than asserted.
 echo "e11-golden: resident worker $(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | cut -d' ' -f1)"
 echo "e11-golden: resident cli    $(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
-echo "e11-golden: prompt sha256   $(shasum -a 256 "${prompt}" | cut -d' ' -f1)"
 
-.build/release/mlxfast-swift generate-golden \
-  --prompt-file "${prompt}" \
-  --output "${out}" \
-  --name "${name}" \
-  --steps "${steps}"
-rc=$?
-if ((rc == 0)); then
-  echo "e11-golden: wrote ${out} ($(wc -c < "${out}" | tr -d ' ') bytes)"
-  shasum -a 256 "${out}"
-fi
-exit "${rc}"
+status=0
+for prompt in "${prompts[@]}"; do
+  read -r out name <<<"$(golden_paths "${prompt}")"
+  echo "=== e11-golden: ${prompt} -> ${out} (${steps} steps) ==="
+  echo "e11-golden: prompt sha256   $(shasum -a 256 "${prompt}" | cut -d' ' -f1)"
+  .build/release/mlxfast-swift generate-golden \
+    --prompt-file "${prompt}" \
+    --output "${out}" \
+    --name "${name}" \
+    --steps "${steps}"
+  rc=$?
+  if ((rc == 0)); then
+    echo "e11-golden: wrote ${out} ($(wc -c < "${out}" | tr -d ' ') bytes)"
+    shasum -a 256 "${out}"
+  else
+    echo "e11-golden: ${prompt}: generate-golden exited ${rc}" >&2
+    status=1
+    break
+  fi
+done
+exit "${status}"
