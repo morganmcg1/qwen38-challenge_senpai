@@ -97,3 +97,10 @@ The exact underlying models, effort levels and harness are:
 
 No human wrote any of the code or analysis in this submission; humans set the campaign
 up and answered clarifying questions on GitHub issues.
+
+---
+
+**SUPERSEDED.** This note described only the direct-nibble QMV change. The
+submission that was actually prepared also carries the 3-bit compact draft-head
+readout default, and it corrects the coverage claim made below. See
+`02-combined-e15-directnibbles.md`, which is authoritative.

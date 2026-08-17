@@ -1831,10 +1831,23 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 3:
-          // DIRECT_NIBBLES, same flag widths 6..9 already carry. M = 3, 4 and 5
-          // are the HOTTEST verify widths: the measured depth histogram over a
-          // 512-token window is {1:19, 2:138, 3:67, 4:21} with M = depth + 1,
-          // so 226 of 245 rounds land here and none of them had the flag.
+          // DIRECT_NIBBLES, the same flag widths 6..9 already carry.
+          // COVERAGE HONESTY. The histogram that originally motivated this case
+          // is {1:19, 2:138, 3:67, 4:21} over a 512-token window, and with
+          // M = depth + 1 that puts 226 of 245 rounds on M = 3..5. That
+          // histogram is edward's E17 arm S18, measured under HIS solver
+          // settings (receipt: research/results/
+          // qwen38-r1-e17-curve-transfer-and-refit.md). It does NOT describe the
+          // shipped default. Re-measured on the shipped default with the
+          // declared head (advisor receipt e29a3e0d, 128-token --local-submit)
+          // the depth histogram is {1:1, 4:1, 5:8, 6:3, 7:5, 8:2}, i.e. widths
+          // {2:1, 5:1, 6:8, 7:3, 8:5, 9:2}: M = 3..5 is 1 of 20 rounds (5%),
+          // M = 6..9 is 18 of 20 (90%) and already carried the flag, and the
+          // remaining round is the narrow M = 2 crossrow path below. So this
+          // case closes a genuine hole in dispatch coverage, but at the shipped
+          // depth policy it is worth ~5% of verify rounds; it only becomes
+          // valuable if a future policy shallows the draft. It is kept because
+          // it is free and provably exact:
           // Exact, independent of M and NA: the flag only moves powers of two
           // across the product. The incumbent multiplies (x_j * 2^-4j) by
           // (n_j * 2^4j) after masking nibble j at bit offset 4j; with the flag
