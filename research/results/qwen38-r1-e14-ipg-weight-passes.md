@@ -440,8 +440,6 @@ and it is the reason no candidate advances from E14.
 not an end-to-end token-stream match, and it was measured on M4 Pro. It bounds where a
 change is visible; it does not by itself prove a full-generation match on the ranked M5.
 
-<!-- PARITY_RESULTS -->
-
 ## Freshness proof (before the first timing arm)
 
 Recorded in `.mlxfast-private/ipg-arms/freshness-before.txt`, re-recorded post-rebuild at
@@ -464,8 +462,26 @@ Recorded in `.mlxfast-private/ipg-arms/freshness-before.txt`, re-recorded post-r
 metallib.** `run-ipg-arms.sh` now rebuilds the metallib per arm and records
 `arm-state.json` + `arm-state-after.txt` so the binding is auditable.
 
+**Audit of every timed arm above.** After the Q4 trace run was found executing a leftover
+metallib, I re-derived which results could be affected. Per arm, `run-ipg-arms.sh` does
+`restore_twins` -> `roofline_arm_patch.py <arm>` -> `run-qmv-curve.sh <tag>`, and
+`run-qmv-curve.sh:104-107` does `swift build` then
+`tools/build-mlx-metallib.sh --all-build-roots` **before** its first cool gate and before
+any timed sweep. So each arm rebuilt from its own patched source immediately before
+measuring, and a metallib inherited from an earlier job is always overwritten. Only a
+wrapper with no rebuild of its own is exposed, which is exactly the case that failed.
+The arm-specific effects are independent confirmation: a shared stale metallib cannot
+produce +39% at `M = 5` for one arm and +12.4% at every wide width for another.
+
 ## Conclusion
 
+- **Arm A is invalid, not merely slow.** It changes `quantized_matmul` output bits on 8 of
+  96 scored cells, all at `M = 5`. A candidate that moves target-model bits can flip a
+  near-tie argmax against the hidden serial stream, so it could never be submitted at any
+  speed. Arm E carries the same dispatch change and is bit-identical over all 96 cells, so
+  the divergence is caused by the padded `vec<float,5>` type and not by the row
+  re-partitioning the arm was testing. Any future revival of this lever must carry arm E's
+  scalar packing.
 - **What happened and why:** the second weight pass is real and lands exactly where the
   dispatch table says it should, but it is ~89% absorbed by cache, so it is worth only ~0.11
   depth-0 rounds. The only way to remove it at `M=5` is to widen `NA` to 5, and `NA` width is
@@ -504,8 +520,15 @@ metallib.** `run-ipg-arms.sh` now rebuilds the metallib per arm and records
    `summary.log` and no `summary.json`. Fixed locally for `run-ipg-arms.sh`; still latent
    for every other caller. *Owner: whoever next touches the curve tooling.*
 3. **Stale-metallib hazard** — nothing in the normal build path rebuilds `mlx.metallib` when
-   a `.metal`/`.h` source changes without a generated twin. A cheap fingerprint check in
-   `research/rebuild.sh` would stop silent measurement of stale kernels. *Owner: unassigned.*
+   a `.metal`/`.h` source changes without a generated twin, and restoring the *sources* after
+   an arm does not restore the *metallib*. This bit me: the first attempt at the Q4 trace run
+   executed arm A's kernels because `run-qmv-parity.sh` had left arm A's metallib in
+   every build root. The worker's own fingerprint warning is what caught it, on stderr, which
+   nothing was capturing until this assignment made the trace path real. Both wrappers now
+   rebuild, but the normal build path still does not, and the warning is still only a
+   warning. Promoting that fingerprint mismatch to a hard failure in
+   `benchmark-qwen-mtp.sh` would remove a whole class of silent wrong measurements.
+   *Owner: unassigned.*
 4. **edward anti-synergy** — see below; the scheduler owner should decide whether depth 4 is
    worth re-opening at all given the cost-per-token sweep above. *Owner: edward.*
 5. **Control validity for shared-body kernel edits (methodology)** — `research/run-ipg-arms.sh`
