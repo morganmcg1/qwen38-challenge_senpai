@@ -2,30 +2,31 @@
 # Research-only (qwen38-r1-e11-depth-lever-showdown): build one arm's binary
 # pair from an asserted source variant and stash it with hashes.
 #
-# E11 compares three depth levers that are all COMPILE-TIME constants, so the
-# arms cannot share a binary the way an env-var A/B can. Each arm therefore
-# gets its own built pair, hashed at build time and re-hashed at install time,
-# so "two arms that had to differ but shared a hash" is a detectable failure
+# E11 compares depth levers that are all COMPILE-TIME constants, so the arms
+# cannot share a binary the way an env-var A/B can. Each arm therefore gets
+# its own built pair, hashed at build time and re-hashed at install time, so
+# "two arms that had to differ but shared a hash" is a detectable failure
 # rather than a silently duplicated measurement.
 #
-# OUTCOME: W5 shipped and H did not, so this harness's polarity inverted after
-# it was written. W5 (sdpaWidthWallDepthCap 4 -> 5) is the branch default now,
-# and H/H8 are pinned to the reverted curve commit below. Every other recipe
-# stays arm scaffolding: built, measured, never committed. Note the other
-# polarity too: since PR #2 merged, cap 7 is the SHIPPED default, so the cap
-# arms open the cap back to 8 (C8/H8) rather than closing it.
+# r3 REWRITE. The r2 arm set (C/C8/F3/W5/W6/H/H8) is retired: its constants no
+# longer exist on this base. The promoted frontier moved the scalar to 0.18,
+# the cold width wall to 5, and the hot cap to 8, and it deleted every E1
+# research hook (no overrideHeadStepCostRatioByDepth, no MLX_QWEN_MTP_H_VECTOR,
+# no forcedDepth), so the only h form left is the declaration itself.
 #
-# The two caps are the two arms of ONE ternary, selected per round by the
-# full-accept streak gate, so an arm moves either the HOT ceiling
-# (segmentedVerifyDepthCap: C8/H8) or the COLD floor (sdpaWidthWallDepthCap:
-# W5/W6), and F3 pins both to 3.
+#   S18  control: campaign base bytes, verbatim (scalar 0.18)
+#   HV   candidate: this branch's HEAD (per-depth vector)
+#   S20  decomposition-only: base bytes with the scalar moved back to 0.20, so
+#        the r2 headline can be split into "the base moved the scalar" and
+#        "the curve beats the scalar it is actually shipped against"
 #
 # usage: research/e11-build.sh ARM [ARM ...]
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 src=Sources/MLXFastModel/Qwen36MTPBlockSession.swift
-base_sha="${E11_BASE_SHA:-8970d775a63a28b610fd418c68873c236ce6b86c}"
+base_sha="${E11_BASE_SHA:-fe38ecc21e4084e4d17dac3aa76264bb5897a614}"
+curve_ref="${E11_CURVE_SHA:-HEAD}"
 root=.mlxfast-private/e11/bins
 
 if [[ -n "$(git status --porcelain -- "${src}")" ]]; then
@@ -36,61 +37,50 @@ fi
 restore() { git checkout -- "${src}"; }
 trap restore EXIT
 
-# Materialise the arm source. C/C8/F3/W5/W6 start from the campaign base (flat
-# scalar h); H/H8 start from 7c85b4f, the curve default this branch has since
-# reverted, so both recipes stay reproducible from history rather than from a
-# HEAD that has moved on.
 materialise() {
   case "$1" in
-    C | C8 | F3 | W5 | W6) git show "${base_sha}:${src}" > "${src}" ;;
-    H | H8) git show "${E11_CURVE_SHA:-7c85b4f}:${src}" > "${src}" ;;
+    S18 | S20) git show "${base_sha}:${src}" > "${src}" ;;
+    HV) git show "${curve_ref}:${src}" > "${src}" ;;
     *) echo "e11-build: unknown arm $1" >&2; return 2 ;;
   esac
   case "$1" in
-    C8 | H8)
-      sed -i '' 's/^\( *private static let segmentedVerifyDepthCap = \)7$/\18/' \
-        "${src}" ;;
-    F3)
-      sed -i '' 's/^\( *private static let sdpaWidthWallDepthCap = \)4$/\13/' \
-        "${src}"
-      sed -i '' 's/^\( *private static let segmentedVerifyDepthCap = \)7$/\13/' \
-        "${src}" ;;
-    # The COLD arm of the widthCap ternary. Cap 7 stays, so these raise the
-    # floor without touching the ceiling.
-    W5)
-      sed -i '' 's/^\( *private static let sdpaWidthWallDepthCap = \)4$/\15/' \
-        "${src}" ;;
-    W6)
-      sed -i '' 's/^\( *private static let sdpaWidthWallDepthCap = \)4$/\16/' \
+    S20)
+      sed -i '' 's/^\( *private static let headStepCostRatio = \)0\.18$/\10.20/' \
         "${src}" ;;
   esac
 }
 
 # Every constant that defines the arm is asserted in the file that is about to
-# be compiled. A recipe that silently no-ops (renamed constant, changed default)
-# fails here instead of producing a second copy of the control.
+# be compiled. A recipe that silently no-ops (renamed constant, changed
+# default) fails here instead of producing a second copy of the control.
 assert_arm() {
   local arm="$1" want ok=1
   case "${arm}" in
-    C | C8 | F3 | W5 | W6) want='private static let headStepCostRatio = 0.20' ;;
-    H | H8) want='private static let defaultHeadStepCostRatioByDepth: \[Double\] = \[' ;;
+    S18) want='private static let headStepCostRatio = 0\.18' ;;
+    S20) want='private static let headStepCostRatio = 0\.20' ;;
+    HV) want='private static let headStepCostRatioByDepth: \[Double\] = \[' ;;
   esac
-  grep -qE "^ *${want}" "${src}" || { echo "e11-build: ${arm}: missing h form" >&2; ok=0; }
-  local width=4 segcap=7
+  grep -qE "^ *${want}" "${src}" \
+    || { echo "e11-build: ${arm}: missing h form" >&2; ok=0; }
+  # The scalar and the vector are mutually exclusive: a merge that left both
+  # declarations behind would compile and measure as the control.
   case "${arm}" in
-    C8 | H8) segcap=8 ;;
-    F3) width=3; segcap=3 ;;
-    W5) width=5 ;;
-    W6) width=6 ;;
+    HV) grep -qE '^ *private static let headStepCostRatio = ' "${src}" \
+          && { echo "e11-build: HV: scalar h still declared" >&2; ok=0; } ;;
+    *) grep -qE '^ *private static let headStepCostRatioByDepth' "${src}" \
+          && { echo "e11-build: ${arm}: vector h still declared" >&2; ok=0; } ;;
   esac
-  grep -qE "^ *private static let sdpaWidthWallDepthCap = ${width}$" "${src}" \
-    || { echo "e11-build: ${arm}: sdpaWidthWallDepthCap != ${width}" >&2; ok=0; }
-  grep -qE "^ *private static let segmentedVerifyDepthCap = ${segcap}$" "${src}" \
-    || { echo "e11-build: ${arm}: segmentedVerifyDepthCap != ${segcap}" >&2; ok=0; }
+  # Both depth caps are frontier defaults in r3; no arm moves them. Asserting
+  # them anyway keeps an unnoticed base change from being read as a curve
+  # effect.
+  grep -qE '^ *private static let sdpaWidthWallDepthCap = 5$' "${src}" \
+    || { echo "e11-build: ${arm}: sdpaWidthWallDepthCap != 5" >&2; ok=0; }
+  grep -qE '^ *private static let segmentedVerifyDepthCap = 8$' "${src}" \
+    || { echo "e11-build: ${arm}: segmentedVerifyDepthCap != 8" >&2; ok=0; }
   grep -qE '^ *private static let segmentedStreakGate = 3$' "${src}" \
     || { echo "e11-build: ${arm}: segmentedStreakGate != 3" >&2; ok=0; }
   ((ok)) || return 3
-  echo "e11-build: ${arm}: source asserted (h=${want:0:44}..., width=${width}, segcap=${segcap})"
+  echo "e11-build: ${arm}: source asserted (h=${want:0:48}..., width=5, segcap=8)"
 }
 
 status=0

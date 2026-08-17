@@ -37,6 +37,20 @@ tokens="${E11_TOKENS:-512}"
 # histogram mean against the timed pass's effective_mean_draft_len.
 for v in $(env | sed -n 's/^\(MLX_QWEN_MTP_[A-Z_]*\)=.*/\1/p'); do unset "${v}"; done
 
+# Per-arm thermal witness. benchmark.sh already gates entry at <=40C, but it
+# gates only ITS OWN runs: foreign GPU load on this host has been seen to hold
+# 65-83C / 16-31W while an arm was resident, which is exactly the confound that
+# makes two arms incomparable. Sampling the same reader benchmark.sh uses,
+# before and after each arm, turns that into recorded evidence instead of a
+# guess.
+macmon_bin="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
+sample_thermal() {
+  [[ -x "${macmon_bin}" ]] || { echo "unavailable"; return 0; }
+  "${macmon_bin}" pipe -s1 2>/dev/null \
+    | jq -r '"gpu_temp=\(.temp.gpu_temp_avg // "?")C cpu_temp=\(.temp.cpu_temp_avg // "?")C gpu_power=\(.gpu_power // "?")W all_power=\(.all_power // "?")W"' \
+      2>/dev/null || echo "unreadable"
+}
+
 status=0
 for spec in "$@"; do
   label="${spec%%=*}"
@@ -96,6 +110,7 @@ for spec in "$@"; do
     echo "mlx_qwen_env=$(env | sed -n 's/^\(MLX_QWEN_MTP_[A-Z_]*\)=.*/\1/p' \
       | sort | tr '\n' ',')"
     echo "golden=${MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE:-<default>}"
+    echo "thermal_before=$(sample_thermal)"
     echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "${out}/meta.txt"
 
@@ -104,6 +119,7 @@ for spec in "$@"; do
   rc=$?
   {
     echo "exit=${rc}"
+    echo "thermal_after=$(sample_thermal)"
     echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } >> "${out}/meta.txt"
   if ((rc != 0)); then
