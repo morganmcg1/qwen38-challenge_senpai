@@ -10,32 +10,46 @@ disagree, stop and repair both before assigning or submitting work.
 
 ## Current frontier
 
-Observed from Yukon and the organizer remote at `2026-08-17T16:44:50Z`.
+The organizer remote was refreshed at `2026-08-17T19:54:55Z`; the promoted row
+was last successfully observed from Yukon at `2026-08-17T19:07:45Z`.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `79683c633b13c63aa23f112756a9c6b5173705b0` |
-| Best promoted submission | `14b53255-e585-44bd-84d9-37b7b29c0be9` |
-| Promoted source ref | `79683c633b13c63aa23f112756a9c6b5173705b0` |
-| Official score | `3.02460155382533` |
+| Organizer synced commit | `be3361b96875beaab17e52f2f054045cb81df882` |
+| Best promoted submission | `39fdbf62-60e4-4ab7-bf09-0d1b5a0b618a` |
+| Promoted source ref | `ed4dfd6b0e95bb1cafb26c694bc247f551d550fe` |
+| Official score | `3.07714439121787` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Submitted solver snapshot | `79683c633b13c63aa23f112756a9c6b5173705b0` |
+| Submitted solver snapshot | `ed4dfd6b0e95bb1cafb26c694bc247f551d550fe` |
 
 The promoted receipt above is the public Yukon frontier used to bootstrap this
 campaign; it is not claimed as a Senpai-authored result.
 
-Campaign commit `29f1ee4` imports that exact promoted submitted surface.
-Relative to the previous promoted `156b5b75bdfac82ae406487f531fd991e7fdfd30`
-snapshot, its submitted delta changes only the readable and generated
-affine4/group-64 QMV kernel twins (`+58/-22`). The direct-nibble specialization
-applies at target widths M=6 and M=9. Trusted base ancestry was reviewed
-separately and was not imported as solver code.
+Campaign commit `f04df93` imports the exact promoted submitted surface from
+`ed4dfd6b0e95bb1cafb26c694bc247f551d550fe`. Relative to the previous promoted
+source `79683c633b13c63aa23f112756a9c6b5173705b0`, that source changes four
+editable paths: proposal-only BF16 Q/K/V precision-island support in
+`Qwen35.swift`, the immutable precision-island head declaration, and the
+readable/generated affine4 QMV twins enabling direct nibbles at target width
+M=8. The import also restores the promoted `Qwen36MTPBlockSession.swift`
+snapshot, removing the unpromoted campaign fixed-window overlay rather than
+carrying it across the frontier.
 
-Campaign commit `28e591f` then reapplies the fixed-window post-EOS continuation
-required by the current parent-owned 512-token contract. That overlay is not
-part of the promoted Yukon receipt above and must pass exact 512-token replay
-and official validation before it can itself be called promoted.
+Organizer commit `be3361b96875beaab17e52f2f054045cb81df882` is the later bot
+snapshot `Accept submission 1d7876fd-d0e7-4e8a-a6dd-432a321084e9`. Its delta
+from `ed4dfd6` touches only three editable paths and contains no organizer
+policy, contract, fixture, workflow, guide, or dependency change. It was not
+imported as the promoted solver surface without a Yukon promotion receipt; the
+official-submit guard must refresh the live promoted row before submission.
+
+The promoted source's generated `quantized.cpp` abbreviated the M=8 rationale
+that appears in `quantized.h`, so the canonical regeneration audit initially
+failed one of 29 twins. Campaign commit `7ab7376` is a separate mechanical
+repair containing only that 3-line-to-13-line comment expansion. Removing
+full-line comments leaves both versions at SHA-256
+`35537fae49462db61e3c8f81bf731f9228c5d1f0e6e104985e3119bb6873fd93`;
+no executable token changed. The full twin audit then passed 29/29.
 
 ## Same-host baselines
 
@@ -75,6 +89,8 @@ evidence or a changed condition; “try again” is not enough.
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-5` / `8b85909` | fixed-window continuation after EOS on the new promoted source | `d098212` | focused `QwenMTPFixedWindowTests`: 2/2 passed; full 512-token exact replay still required | not submitted; not promoted | Restores the campaign's parent-owned fixed-window behavior without altering the trusted fixture or parent |
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-6` / `29f1ee4` | exact promoted editable-snapshot import | `1c57496` | preservation, overlay, budget, and trusted-parity checks passed; both changed QMV twins are byte-identical to promoted source `79683c63`; regeneration audit is locally blocked by the missing Xcode Metal Toolchain | adopted public promoted `14b53255` at `3.02460155382533`; not a Senpai-authored submission | Exact organizer source `79683c63`; two affine4/group-64 QMV kernel twins changed relative to the previous promoted source |
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-6` / `28e591f` | fixed-window continuation after EOS on promoted source `79683c63` | `29f1ee4` | source overlay and trusted-parity checks passed; Swift test compilation remains blocked by the unchanged organizer `QwenMTPVerbTests.swift:755` type error, so full 512-token exact replay is still required | not submitted; not promoted | Reapplies the campaign's parent-owned fixed-window behavior as a separate overlay |
+| 2026-08-17 | `codex/sync-organizer-frontier-20260817-ed4dfd6-r2` / `f04df93` | exact promoted editable-snapshot import | `1d573f6` | preservation, campaign overlay, and editable budget passed; canonical audit exposed one comment-only stale generated twin in the promoted bytes | adopted public promoted `39fdbf62-60e4-4ab7-bf09-0d1b5a0b618a` / `ed4dfd6` at `3.07714439121787`; not a Senpai-authored submission | Exact promoted source changes four submitted paths relative to `79683c6`; the campaign import changes five paths because it also removes the unpromoted fixed-window overlay; preserves the intervening campaign-only `program.md` update at `1d573f6` |
+| 2026-08-17 | `codex/sync-organizer-frontier-20260817-ed4dfd6-r2` / `7ab7376` | canonical regeneration of promoted `quantized` twin | `f04df93` | comment-stripped source SHA is identical before/after; twin audit 29/29 and release build passed; full `swift test` remains blocked by unchanged organizer `QwenMTPVerbTests.swift:755` type error | not submitted; mechanical campaign repair only | Canonical output expands three comments to thirteen; no executable token changes; no AOT Metal source changed, so `mlx.metallib` rebuild is not applicable |
 
 ## Update checklist
 
