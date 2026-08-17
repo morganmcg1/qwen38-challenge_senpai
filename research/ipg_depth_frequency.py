@@ -69,6 +69,9 @@ def main():
     ap.add_argument("--h3-measured", type=float, default=None,
                     help="measured h[3] under the arm, in units of C(0)")
     ap.add_argument("--json-out")
+    ap.add_argument("--measured-hist",
+                    help="depth_histogram.py JSON; adds a third, locally measured "
+                         "policy row instead of relying on the copied constants")
     args = ap.parse_args()
 
     rep = {}
@@ -114,8 +117,15 @@ def main():
     print("\n" + "=" * 74)
     print("2. scored-fixture frequency of M=5")
     print("=" * 74)
-    for name, hist in (("PR #13 control policy", CONTROL_HIST),
-                       ("PR #13 best Hp arm", EDWARD_HP_HIST)):
+    policies = [("PR #13 control policy", CONTROL_HIST),
+                ("PR #13 best Hp arm", EDWARD_HP_HIST)]
+    if args.measured_hist:
+        with open(args.measured_hist) as fh:
+            measured = json.load(fh)
+        for arm, entry in measured.items():
+            policies.append((f"measured {arm}",
+                             {int(d): c for d, c in entry["hist"].items()}))
+    for name, hist in policies:
         n = sum(hist.values())
         d4 = hist.get(4, 0)
         share, total_us = round_share(hist, C_DECL_US)

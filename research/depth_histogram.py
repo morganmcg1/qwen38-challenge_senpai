@@ -8,6 +8,7 @@ whether the policy is sitting on the width cap at 4.
 """
 import argparse
 import glob
+import json
 import os
 import re
 import sys
@@ -39,8 +40,10 @@ def main():
     ap.add_argument("out_dir")
     ap.add_argument("arms", nargs="+")
     ap.add_argument("--warmup", type=int, default=2)
+    ap.add_argument("--json-out")
     args = ap.parse_args()
 
+    report = {}
     for arm in args.arms:
         paths = sorted(glob.glob(os.path.join(args.out_dir, arm, "trace.txt.*")),
                        key=lambda p: int(p.rsplit(".", 1)[-1]))
@@ -82,6 +85,15 @@ def main():
               f"tokens_per_round={tok/n:.4f}")
         print(f"rounds_at_d==4: {at_cap4} ({at_cap4/n:.4%})   "
               f"rounds_at_d>4: {above4} ({above4/n:.4%})")
+        report[arm] = {"mtp_leg_pid": pid, "rounds": n, "committed_tokens": tok,
+                       "hist": {str(d): hist[d] for d in sorted(hist)},
+                       "mean_offered_depth": mean_d, "mean_accepted": mean_a,
+                       "rounds_at_d4": at_cap4, "rounds_above_d4": above4}
+
+    if args.json_out:
+        with open(args.json_out, "w") as fh:
+            json.dump(report, fh, indent=2)
+        print(f"\nwrote {args.json_out}")
 
 
 if __name__ == "__main__":
