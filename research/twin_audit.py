@@ -8,12 +8,19 @@ This audit runs that generator in a temporary directory and compares every
 relative (vendored) section. Toolchain-owned absolute sections are ignored
 because their paths vary by installed Metal toolchain.
 
+A section may carry an allowlisted *comment-only* divergence (see
+``KNOWN_COMMENT_DIVERGENCES``). Such a waiver is fail-closed three ways: both
+section bodies are sha256-pinned, and every non-comment line must still be
+byte-identical. Any code edit, and any edit to either comment block, re-reds the
+audit. Waivers are printed rather than silently skipped.
+
 Usage:
     research/twin_audit.py                 # every editable generated twin
     research/twin_audit.py gemm_nax ...    # selected generated stems
 """
 
 import difflib
+import hashlib
 import json
 import pathlib
 import re
@@ -34,9 +41,69 @@ BANNER = re.compile(r'^// Contents from "(.+)"$')
 ROOT_HEADER = re.compile(r"^// Auto generated source for (.+)$")
 RULE = re.compile(r"^/{40,}$")
 
+# Sections whose checked-in twin and readable header differ in COMMENT TEXT ONLY.
+#
+# Keyed by (generated stem, vendored section header). ``checked_in_sha256`` is the
+# digest of the section body extracted from the checked-in mlx-generated/*.cpp
+# twin; ``regenerated_sha256`` is the digest of the same section as regenerated
+# from the readable vendored header. Both are pinned, so editing either comment
+# block re-reds the audit and forces this table to be revisited deliberately.
+KNOWN_COMMENT_DIVERGENCES = {
+    ("quantized", "mlx/backend/metal/kernels/quantized.h"): {
+        "checked_in_sha256": (
+            "2c00bbb34d04e8a1b5197febd8a7a036c57d1897236a06b912f7309508d202c1"
+        ),
+        "regenerated_sha256": (
+            "c19772d9d469f3143e98e743c739b4cdd20ab29f0e311080b5d30900be682439"
+        ),
+        "reason": (
+            "Inherited from promoted organizer frontier "
+            "79683c633b13c63aa23f112756a9c6b5173705b0, which shipped the long M=8 "
+            "register-cliff rationale in the readable header and a short pointer "
+            "comment in the runtime-effective twin. Comment text only: every "
+            "non-comment line is byte-identical, so the compiled Metal source and "
+            "the DIRECT_NIBBLES dispatch table are unchanged."
+        ),
+    },
+}
+
 
 class AuditError(RuntimeError):
     pass
+
+
+def body_digest(body):
+    """Digest a section body exactly as the audit compares it."""
+    return hashlib.sha256(("\n".join(body) + "\n").encode("utf-8")).hexdigest()
+
+
+def code_lines(body):
+    """Drop whole-line comments, keeping everything the Metal compiler sees."""
+    return [line for line in body if not line.strip().startswith("//")]
+
+
+def comment_only_waiver(stem, header, current_body, expected_body):
+    """Return a printable note when this exact divergence is an allowed waiver.
+
+    Fail-closed on three independent conditions: the pinned digest of the
+    checked-in body, the pinned digest of the regenerated body, and a structural
+    guard that every non-comment line still matches. If any of them fails the
+    waiver does not apply and the caller reports real drift.
+    """
+    entry = KNOWN_COMMENT_DIVERGENCES.get((stem, header))
+    if entry is None:
+        return None
+    if body_digest(current_body) != entry["checked_in_sha256"]:
+        return None
+    if body_digest(expected_body) != entry["regenerated_sha256"]:
+        return None
+    if code_lines(current_body) != code_lines(expected_body):
+        return None
+    return (
+        f"WAIVED {stem}: comment-only divergence in {header} "
+        f"({len(current_body)} checked-in vs {len(expected_body)} regenerated "
+        f"line(s), {len(code_lines(current_body))} non-comment line(s) identical)"
+    )
 
 
 def embedded_block(path):
@@ -136,7 +203,7 @@ def regenerate(stem, current, temporary):
     return current_snapshot, snapshot(generated)
 
 
-def first_difference(current, expected):
+def first_difference(current, expected, stem, notes=None):
     if current["wrapper"] != expected["wrapper"]:
         return "generated C++ wrapper changed"
     if current["root"] != expected["root"]:
@@ -157,6 +224,11 @@ def first_difference(current, expected):
         current["sections"], expected["sections"]
     ):
         if current_body == expected_body:
+            continue
+        waiver = comment_only_waiver(stem, header, current_body, expected_body)
+        if waiver is not None:
+            if notes is not None:
+                notes.append(waiver)
             continue
         sample = list(
             difflib.unified_diff(
@@ -186,6 +258,7 @@ def default_stems():
 def main():
     stems = sys.argv[1:] or default_stems()
     failures = []
+    waivers = []
     with tempfile.TemporaryDirectory(prefix="qwen38-twin-audit-") as directory:
         temporary = pathlib.Path(directory)
         for stem in stems:
@@ -193,18 +266,23 @@ def main():
             if not current.is_file():
                 failures.append(f"{stem}: no generated twin at {current.relative_to(ROOT)}")
                 continue
+            notes = []
             try:
                 checked, regenerated = regenerate(stem, current, temporary)
-                difference = first_difference(checked, regenerated)
+                difference = first_difference(checked, regenerated, stem, notes)
             except (AuditError, OSError) as error:
                 failures.append(str(error))
                 continue
             if difference:
                 failures.append(f"{stem}: {difference}")
             else:
+                for note in notes:
+                    print(note)
+                waivers.extend(notes)
                 print(
                     f"OK {stem}: {len(checked['sections'])} vendored section(s), "
                     f"{len(checked['system_sections'])} normalized toolchain section(s)"
+                    + (f", {len(notes)} allowlisted waiver(s)" if notes else "")
                 )
 
     if failures:
@@ -215,7 +293,13 @@ def main():
             file=sys.stderr,
         )
         return 1
-    print(f"TWIN AUDIT OK: {len(stems)} runtime-effective twin(s)")
+    summary = f"TWIN AUDIT OK: {len(stems)} runtime-effective twin(s)"
+    if waivers:
+        summary += (
+            f", {len(waivers)} allowlisted comment-only waiver(s) "
+            "(non-comment lines byte-identical, both bodies sha256-pinned)"
+        )
+    print(summary)
     return 0
 
 
