@@ -533,27 +533,44 @@ def main():
     gemm_macs = sum(c["macs_per_call"] * c["calls_per_prefill"] for c in gemms)
     gemm_at_ceiling = (2.0 * gemm_macs) / (ceiling * 1e12)
     nongemm_seconds = modelled - gemm_seconds
-    named = gemm_at_ceiling + nongemm_seconds + (gemm_seconds - gemm_at_ceiling)
+    dequant = gemm_seconds - gemm_at_ceiling
+    # Signed closing budget for the measured prefill. The floor proper is the
+    # GEMM work at the dense ceiling plus the non-GEMM components; everything
+    # between that subtotal and the measurement is the residual, and the
+    # residual is *named* by two signed terms rather than absorbed.
+    floor_subtotal = gemm_at_ceiling + nongemm_seconds
+    residual = measured - floor_subtotal
+    overlap_credit = modelled - measured
     budget = {
         "ceiling_tflops": ceiling,
+        "gemm_tflop_total": 2.0 * gemm_macs / 1e12,
         "gemm_seconds_measured": gemm_seconds,
         "gemm_tflops_achieved": (2.0 * gemm_macs) / gemm_seconds / 1e12,
         "gemm_at_ceiling_seconds": gemm_at_ceiling,
+        "gemm_at_ceiling_fraction_of_measured": gemm_at_ceiling / measured,
         "gemm_fraction_of_ceiling": gemm_at_ceiling / gemm_seconds,
-        "dequant_overhead_seconds": gemm_seconds - gemm_at_ceiling,
         "nongemm_seconds": nongemm_seconds,
-        "named_subtotal_seconds": named,
+        "floor_subtotal_seconds": floor_subtotal,
+        "floor_subtotal_fraction_of_measured": floor_subtotal / measured,
+        "residual_seconds": residual,
+        "residual_fraction_of_measured": residual / measured,
+        "dequant_overhead_seconds": dequant,
+        "dequant_fraction_of_measured": dequant / measured,
+        # Positive means MLX overlapped work the per-op floor charges serially;
+        # negative means the floor is missing work the model actually performs.
+        "overlap_credit_seconds": overlap_credit,
+        "overlap_credit_fraction_of_measured": overlap_credit / measured,
+        # floor + dequant - overlap == measured, so this must be ~0.
+        "closure_error_seconds": floor_subtotal + dequant - overlap_credit - measured,
+        "modelled_prefill_seconds": modelled,
         "measured_prefill_seconds": measured,
-        # Signed: positive means MLX overlapped work the per-op floor charges
-        # twice, negative means the floor is missing work.
-        "overlap_credit_seconds": named - measured,
-        "residual_fraction_of_measured": (measured - modelled) / measured,
     }
     if args.chain > 0:
         chained = sum(c.get("chained_total_seconds", 0.0) for c in comps if c["calls_per_prefill"] > 0)
         budget["chained_modelled_seconds"] = chained
         budget["chained_vs_synced_ratio"] = chained / modelled
-        budget["min_chain_scaling"] = min(
+        budget["chained_vs_measured_ratio"] = chained / measured
+        budget["min_chain_scaling_normalized"] = min(
             c["chain_scaling"] for c in comps if "chain_scaling" in c
         ) / args.chain
 
@@ -625,14 +642,21 @@ def main():
     )
     print(f"non-GEMM           = {nongemm_seconds:.4f} s")
     print(
-        f"named subtotal     = {named:.4f} s, overlap credit "
-        f"{budget['overlap_credit_seconds']:+.4f} s"
+        f"floor subtotal     = {floor_subtotal:.4f} s "
+        f"({100*budget['floor_subtotal_fraction_of_measured']:.2f}% of P), residual "
+        f"{residual:+.4f} s ({100*budget['residual_fraction_of_measured']:+.2f}%)"
+    )
+    print(
+        f"  residual named as dequant {dequant:+.4f} s "
+        f"({100*budget['dequant_fraction_of_measured']:+.2f}%) minus overlap credit "
+        f"{overlap_credit:+.4f} s ({100*budget['overlap_credit_fraction_of_measured']:+.2f}%), "
+        f"closure error {budget['closure_error_seconds']:+.2e} s"
     )
     if args.chain > 0:
         print(
             f"chained modelled   = {budget['chained_modelled_seconds']:.4f} s "
             f"({budget['chained_vs_synced_ratio']:.3f}x per-op-synced), "
-            f"min chain scaling {budget['min_chain_scaling']:.3f}"
+            f"min chain scaling {budget['min_chain_scaling_normalized']:.3f}"
         )
     if pipelined:
         print(
