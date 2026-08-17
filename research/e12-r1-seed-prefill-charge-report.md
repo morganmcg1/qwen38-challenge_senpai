@@ -161,10 +161,32 @@ Removing the rungs moves `2.9557 s` out of `build_us` and into `eval_wall_us` wh
 **Consequences for this report's conclusions:**
 
 - The "Smallest useful next action" item (2) — *"attack the CPU three-quarters of `P` … reuse the constructed graph instead of rebuilding it inside the timed `begin`"* — is **withdrawn**. There is no CPU three-quarters. There is `1.8 ms` of graph construction, `0.045 %` of `P`; reusing it perfectly would be invisible.
-- The `≈0.6` ranked-point *size* of the prefill area is unaffected: `p(512) = 0.3110454468716388` and the area estimate rest on `P` and the decode ratio, neither of which changed. The prefill lever is still large. What changed is **where inside `P` the time lives**, and therefore which levers can reach it.
+- The `≈0.6` ranked-point *size* of the prefill area is unaffected by the correction: `p(512) = 0.3110454468716388` and the area estimate rest on `P` and the decode ratio, neither of which the correction changed. (It has since been changed by a *base move* — see "Base move" below; `0.3110454` is no longer the current figure.) The prefill lever is still large. What changed is **where inside `P` the time lives**, and therefore which levers can reach it.
 - Prefill headroom is a **kernel-efficiency** question, not a scheduling or graph-construction question. At `84.5 %` of the dense ceiling with quantized weights, the remaining prefill time is in the affine-4-bit matmul path (`quantized.h`), not in anything I proposed here.
 
 **Predictions scored.** This report's prediction that `build_us` was CPU-bound work was wrong. The advisor's e16 prediction — ladder-off `eval_wall_us ≥ 3.3 s`, ladder-on `build_us ≤ 1.0 s` — was directionally right on the first half (`4.004 s`) and wrong on the second (`2.958 s`, because enqueue back-pressure charges the build interval), which is itself further evidence that `build_us` is a queue-occupancy measurement rather than a CPU measurement.
 
 Full evidence, including both arms of both phases, the exactness ledger, and the schedule sweep, is in `research/results/qwen38-r1-e16-prefill-ladder-adjudication.md` (PR #18).
+
+### Base move — every `p(512)` figure above is pre-merge
+
+This report was written on base `e13a6fe0fd62a90d5042860dd01b03b7dfa8bcc4`. PR #13
+then merged a per-depth draft-cost curve into `Qwen36MTPBlockSession` (new base
+`e6e6f81767e84cc8c39b48c09a4f5cac597cdbca`), which shortens the MTP **decode**
+window at fixed `P`. Since `p = P / D_mtp`, a shorter `D_mtp` *raises* `p`:
+
+| quantity | this report (`e13a6fe`) | current (`e6e6f81`) |
+|---|---:|---:|
+| `D_mtp(512)` | 12.870633 s | 12.049719 s |
+| `p(512) = P / D_mtp(512)` | 0.3110454 | **0.3322361** (+6.81 %) |
+| prefill share of the ranked MTP leg | 23.725 % | **24.938 %** |
+
+`P` itself did not move: the post-merge confirmation arm (e16 Q5, same host, same
+64-token window, rebuilt worker `3670d6f7…`) reproduces `seed_prefill_seconds`
+within the same-build noise band, which is what a decode-policy change must do.
+**Quote `p(512) = 0.3322361` and `24.938 %`, not the pre-merge figures**, and note
+that both are projections to a 512-token window from 300-token steady rates, not
+direct 512-token measurements. Ranked-point conversions on the current base are
+tabulated in `research/results/qwen38-r1-e16-prefill-ladder-adjudication.md`
+(1 % of `P` removed = 0.006968 points, up from 0.006055).
 
