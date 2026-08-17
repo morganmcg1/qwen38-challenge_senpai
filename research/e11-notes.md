@@ -337,3 +337,99 @@ unrepresentative of the hidden pool (likely - see the fixture caveat), or the
 levers interact, or the frontier's gain comes from elsewhere in that commit.
 Isolating one lever at a time is what makes this visible, and it is a reason to
 treat any single-lever local win as weak evidence for the ranked pool.
+
+## T2 result: W5 wins, and the two caps are not the same lever
+
+| arm | worker | MTP s/tok | vs ref | ratio | serial drift | rounds | rows | mean D | accR | rej | replay |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| W5 | `7736e290` | 0.032370 | **-1.258%** | 2.2999 | +0.029% | 80 | 564 | 6.050 | 0.8946 | 51 | 12 |
+| F3 | `96ba4c43` | 0.032495 | -0.876% | 2.2923 | +0.082% | 134 | 534 | 2.985 | 0.9475 | 21 | 6 |
+
+```
+W5  {1:1, 4:3, 5:29, 6:3, 7:44}   replay=12
+F3  {1:1, 3:133}                  replay=6
+H   {1:1, 2:2, 3:131}             replay=6   (for comparison)
+```
+
+Both `pass=timed`, `env=""`, `all_tokens_matched=true`, `resid=0`, rows OK.
+
+### Prediction 5 (W5) - CORRECT, and my own revision of it was WRONG
+
+`W5` beats C1 by **1.686%** and the reference mean by **1.258%**, inside the
+pre-registered -0.5% to -2.0% band. It is now the fastest arm measured.
+
+The revised, model-based **prediction 5b (-0.3% to +0.3%, unresolvable) was
+wrong**. I talked myself out of a correct pre-registered prediction using a
+model whose *direction* was right but whose input estimate I got wrong: I
+assumed the round count would hold at 88, so `dD` was only +0.443. The round
+count actually fell to 80, making `dD = +0.664` and `dE = +0.582`, i.e. a
+marginal acceptance of **0.877 - above the 0.849 break-even**. Worked properly,
+the break-even model predicts a W5 win. The lesson is that `dE` and `dD` are
+coupled through the round count and cannot be estimated one at a time.
+
+### The structural claim, and an honest correction to my VOID rule
+
+Pre-registered: "the depth-4 bar must disappear, or the arm is VOID." Measured:
+the depth-4 population fell **39 -> 3**. Three rounds still land on depth 4.
+
+Read literally my rule would VOID the arm, and that reading is wrong - so I am
+recording the correction rather than quietly reinterpreting it. With the wall at
+4, all 39 rounds were *pinned* at the wall. With the wall at 5, the cost model
+is free to stop at 4 on its own, and only 3 rounds do. What had to disappear was
+the **pile-up at the wall**, not every depth-4 round. 39 -> 3 is unambiguous:
+the wall moved. The rule was stated too crudely; the arm is valid.
+
+An unpredicted effect also shows up: depth 7 grew **38 -> 44**. Lifting the cold
+wall lets some rounds survive long enough to reach the streak gate, so this
+lever moves rounds into the *other* cap's population too.
+
+### The real mechanism: the two caps gate different round populations
+
+`C8` and `W5` both add draft depth to C, yet one loses and the other wins,
+because they add it to different rounds:
+
+| lever | population | dD | dE | marginal | vs 0.849 | result |
+| --- | --- | --- | --- | --- | --- | --- |
+| `C8` cap 7 -> 8 | hot, streak-gated | +0.364 | +0.277 | **0.762** | below | loses |
+| `W5` wall 4 -> 5 | cold, width-gated | +0.664 | +0.582 | **0.877** | above | **wins** |
+
+**Cold width-wall rounds have much higher marginal acceptance than hot
+streak-capped rounds.** This corrects the over-general story I told after T1
+("shallower is better everywhere"). C is not on a slope, it is on a *ridge*:
+both drafting deeper (W5) and shallower (H) beat it, because C's mean of 5.386
+is a blend of a too-shallow cold population and a too-deep hot population.
+Averaged depth is the wrong control variable; the two populations want opposite
+treatment.
+
+This also explains the frontier tension above: `033f622` ships the wall at 5
+(which my W5 confirms is the good lever) bundled with cap 8 (which my C8 shows
+is not, at least here).
+
+### Prediction 4 (F3 within noise of H) - CONFIRMED
+
+`F3` and `H` differ by 0.13%, far inside the +/-0.44% floor, with near-identical
+histograms (`{1:1, 3:133}` vs `{1:1, 2:2, 3:131}`) and identical replay counts.
+
+This matters for what would ship: **H's win never needed the cost curve.** Two
+constants clamped to 3 reproduce it. Since `W5` beats both, the depth-3 branch
+is not the ship candidate anyway - but had it been, the simple version was
+available and the curve would have been unjustified complexity.
+
+### Where the 2-parameter cost model breaks
+
+Predicted vs measured decode seconds, model fit on C1/H only:
+
+| arm | pred | act | err |
+| --- | --- | --- | --- |
+| C2 | 16.857 | 16.712 | +0.87% (= noise floor) |
+| C8 | 16.945 | 16.877 | +0.40% |
+| F3 | 16.671 | 16.638 | +0.20% |
+| **W5** | 16.809 | 16.574 | **+1.42%** |
+
+Five of six arms land inside the noise floor; `W5` is over-predicted by 1.42%,
+i.e. it is *faster* than rounds and rows alone can explain. The obvious
+candidate for the missing term is `verify_block_replayed_round_count`, which
+tracks the win ordering across arms (C1/C2/C8 = 15, W5 = 12, H/F3 = 6) and is
+not in the model. Replay is real work the model currently charges nothing for.
+I am reporting this as an open discrepancy rather than adding a third parameter
+to six points and calling it a fit.
