@@ -10,29 +10,33 @@ disagree, stop and repair both before assigning or submitting work.
 
 ## Current frontier
 
-Observed from Yukon and the organizer remote at `2026-08-16T12:05:47Z`.
+Observed from Yukon and the organizer remote at `2026-08-17T11:46:41Z`.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
-| Best promoted submission | `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` |
-| Promoted source ref | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
-| Official score | `2.9042110287045` |
+| Organizer synced commit | `0b071ed9db211f17554bc5a13fb7381f14d709b3` |
+| Best promoted submission | `ba493f74-c0fe-440a-a956-f77d26232e54` |
+| Promoted source ref | `156b5b75bdfac82ae406487f531fd991e7fdfd30` |
+| Official score | `2.95338624520432` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Submitted solver snapshot | `7351e62674bc600f0ca148d3a1b0604716a09db6` |
+| Submitted solver snapshot | `156b5b75bdfac82ae406487f531fd991e7fdfd30` |
 
 The promoted receipt above is the public Yukon frontier used to bootstrap this
 campaign; it is not claimed as a Senpai-authored result.
 
-Campaign commit `ce159755215b60c8f582f3b4402ddf483083d990`
-imports that exact promoted submitted surface. The source is based on trusted
-organizer parent `26ae2bf6326de93e7f1b1b0aaf94a7667aca797b`;
-relative to the previous `df404e08fee2ef8681f5bf2d68fe841969788eaf`
-snapshot, its submitted delta is exactly `Qwen36MTPBlockSession.swift` and
-`Qwen35.swift` (`+54/-14`). Every other editable path, including the declared
-proposal-head manifest, is identical. Trusted-base ancestry was reviewed
-separately and was not imported as solver code.
+Campaign commit `d098212` imports that exact promoted submitted surface. The
+source is based on trusted organizer parent
+`d077e68567827e8d926272df2245226d72b889ac`; relative to the previous promoted
+`7351e62674bc600f0ca148d3a1b0604716a09db6` snapshot, its submitted delta spans
+eight editable files (`+217/-41`), including the adaptive schedule, target and
+head-state paths, quantized kernel twin, and proposal-head manifest. Trusted
+base ancestry was reviewed separately and was not imported as solver code.
+
+Campaign commit `8b85909` then reapplies the fixed-window post-EOS continuation
+required by the current parent-owned 512-token contract. That overlay is not
+part of the promoted Yukon receipt above and must pass exact 512-token replay
+and official validation before it can itself be called promoted.
 
 ## Same-host baselines
 
@@ -68,6 +72,8 @@ evidence or a changed condition; “try again” is not enough.
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-08-16 | clean Yukon source / `7351e626` | untouched promoted-tree baseline | `7351e62674bc600f0ca148d3a1b0604716a09db6` | pass; M4-local directional score `1.4708805115725638`; public tripwire passed; exact `64/64` | not submitted; local result is non-rankable | Same-host baseline row above; submitted surface now matches campaign import `ce159755` |
 | 2026-08-16 | `codex/sync-organizer-frontier-20260816` / `ce159755` | exact promoted editable-snapshot import | `eb2dc26caf48ac126e0f51df7db5130414ff1d94` | release build, overlay, budget, twin, and trusted-parity checks passed; full `swift test` reached product compilation but was blocked by unchanged organizer test-source type error at `QwenMTPVerbTests.swift:755` | adopted public promoted `e6c5ef35` at `2.9042110287045`; not a Senpai-authored submission | Source delta is exactly two editable Swift files (`+54/-14`); campaign records and novelty queue refreshed separately |
+| 2026-08-17 | `codex/sync-organizer-frontier-20260817-5` / `d098212` | exact promoted editable-snapshot import | `83201aa98a71d42415e1c7e85e8bc96cf609d5cf` | preservation, overlay, and budget checks passed; inherited `quantized` twin comment drift recorded without changing promoted bytes | adopted public promoted `ba493f74` at `2.95338624520432`; not a Senpai-authored submission | Exact organizer source `156b5b75`; eight editable files changed relative to the prior promoted source |
+| 2026-08-17 | `codex/sync-organizer-frontier-20260817-5` / `8b85909` | fixed-window continuation after EOS on the new promoted source | `d098212` | focused `QwenMTPFixedWindowTests`: 2/2 passed; full 512-token exact replay still required | not submitted; not promoted | Restores the campaign's parent-owned fixed-window behavior without altering the trusted fixture or parent |
 
 ## Update checklist
 
