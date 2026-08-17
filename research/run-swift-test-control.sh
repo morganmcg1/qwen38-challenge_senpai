@@ -14,10 +14,24 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 2
 fi
 
-restore() { git checkout -- "$FILE"; }
+# Revert through the worktree only. `git checkout $BASE -- $FILE` would also
+# stage the base blob, which makes a plain `git checkout -- $FILE` restore from
+# that poisoned index instead of from HEAD and silently leave the candidate
+# change reverted. Verify the restore rather than assuming it.
+restore() {
+  local now expect
+  git checkout HEAD -- "$FILE"
+  now="$(git hash-object "$FILE")"
+  expect="$(git rev-parse "HEAD:$FILE")"
+  if [ "$now" != "$expect" ]; then
+    echo "RESTORE FAILED: $FILE is $now, expected $expect" >&2
+    return 1
+  fi
+  echo "control: $FILE restored to HEAD ($expect)"
+}
 trap restore EXIT
 
-git checkout "$BASE" -- "$FILE"
+git show "$BASE:$FILE" >"$FILE" || exit 3
 echo "control: $FILE reverted to $BASE"
 git --no-pager diff --stat -- "$FILE"
 research/run-swift-test-set.sh "$TAG"

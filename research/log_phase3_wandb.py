@@ -26,6 +26,7 @@ from pathlib import Path
 
 import wandb
 
+from draft_bits_attribution import aggregate, attribute
 from draft_bits_phase2 import FIELDS, parse
 from draft_bits_phase3 import adjacent_pairs, replicate_dirs, round_delta
 from log_phase2_wandb import (AMDAHL_KEYS, ENTITY, LEG_KEYS, PROJECT,
@@ -37,6 +38,94 @@ def steady_per_readout(pairs):
     total = sum(a["round_us"] - b["round_us"] for a, b in steady)
     readouts = sum(a["d"] for a, _ in steady)
     return total, readouts, (total / readouts if readouts else float("nan"))
+
+
+def trace_tables(blocks, order, control, ctl_slots, cand_slots, summary):
+    """Publish the per-round trace decomposition, when a trace log exists.
+
+    `run-amdahl-measurement.sh` re-points MLXFAST_SWIFT_BIN at
+    research/capture-cli.sh and never exports MLX_QWEN_MTP_TRACE, so a Phase 3
+    log carries no round records and none of this is available. The parent's own
+    timed report still carries the result, so the absence degrades the
+    decomposition rather than the headline.
+    """
+    reqt = wandb.Table(columns=["slot", "instance", "bits", "source_bits",
+                                "requant_ms", "round_count"])
+    per_slot_instance = {}
+    for b in blocks:
+        i = per_slot_instance[b["slot"]] = per_slot_instance.get(b["slot"], 0) + 1
+        reqt.add_data(b["slot"], i, int(b["bits"]), int(b["source_bits"]),
+                      b["requant_ms"], len(b["rounds"]))
+    requant = [b["requant_ms"] for b in blocks if b["requant_ms"] > 0]
+    summary["requant_ms_mean"] = st.mean(requant) if requant else 0.0
+    summary["requant_ms_max"] = max(requant) if requant else 0.0
+
+    timed = {}
+    for b in blocks:
+        if b["rounds"]:
+            assert b["slot"] not in timed, f"slot {b['slot']} timed twice"
+            timed[b["slot"]] = b["rounds"]
+    assert sorted(timed) == list(range(1, len(order) + 1)), \
+        f"expected timed rounds for slots 1..{len(order)}, got {sorted(timed)}"
+
+    scheds = {tuple((x["d"], x["acc"]) for x in timed[s]) for s in timed}
+    summary["acceptance/distinct_schedules"] = len(scheds)
+    summary["headline/acceptance_term_pct"] = 0.0 if len(scheds) == 1 else None
+    assert len(scheds) == 1, \
+        "depth/acceptance schedules diverge; the acceptance term is not zero"
+
+    per_pair = []
+    for a, b in adjacent_pairs(order):
+        ctl, cand = (a, b) if order[a - 1] == control else (b, a)
+        pairs = round_delta(timed[ctl], timed[cand])
+        total, readouts, per = steady_per_readout(pairs)
+        per_pair.append(per)
+        tag = f"pair_p{ctl}_p{cand}"
+        summary[f"{tag}/paired_rounds"] = len(pairs)
+        summary[f"{tag}/steady_round_us_delta_total"] = total
+        summary[f"{tag}/steady_readout_count"] = readouts
+        summary[f"{tag}/implied_us_saved_per_readout"] = per
+    summary["pairs/implied_us_saved_per_readout_spread"] = \
+        max(per_pair) - min(per_pair)
+
+    n = min(len(timed[s]) for s in timed)
+    depths = [timed[ctl_slots[0]][i]["d"] for i in range(n)]
+    combined, rows = [], wandb.Table(
+        columns=["round", "depth", "accepted"]
+        + [f"p{s}_{f}" for s in sorted(timed) for f in FIELDS]
+        + [f"abba_delta_{f}" for f in FIELDS])
+    for i in range(n):
+        if any(timed[s][i]["d"] != depths[i] for s in timed):
+            continue
+        row = {"d": depths[i]}
+        for f in FIELDS:
+            row[f] = (st.mean(timed[s][i][f] for s in ctl_slots)
+                      - st.mean(timed[s][i][f] for s in cand_slots))
+        combined.append(row)
+        ref = timed[ctl_slots[0]][i]
+        rows.add_data(ref["round"], ref["d"], ref["acc"],
+                      *[timed[s][i][f] for s in sorted(timed) for f in FIELDS],
+                      *[row[f] for f in FIELDS])
+    summary["abba/paired_rounds"] = len(combined)
+    for f in FIELDS:
+        d = [r[f] for r in combined]
+        summary[f"abba/delta/{f}_median_us"] = st.median(d)
+        summary[f"abba/delta/{f}_mean_us"] = st.mean(d)
+    steady = combined[1:]
+    total = sum(r["round_us"] for r in steady)
+    readouts = sum(r["d"] for r in steady)
+    summary["abba/steady_round_us_delta_total"] = total
+    summary["abba/steady_readout_count"] = readouts
+    summary["abba/implied_us_saved_per_readout"] = total / readouts
+
+    if len(ctl_slots) == 2:
+        a, b = ctl_slots
+        pairs = round_delta(timed[a], timed[b])
+        total, readouts, per = steady_per_readout(pairs)
+        summary["noise/control_vs_control_paired_rounds"] = len(pairs)
+        summary["noise/control_vs_control_per_readout_us"] = per
+
+    return {"requant_provenance": reqt, "rounds": rows}
 
 
 def main():
@@ -128,82 +217,51 @@ def main():
         for k in ("gpu_temp_c_before", "gpu_temp_c_after"):
             summary[f"p{slot}/{k}"] = float(ident[slot].get(k, "nan"))
 
+    tables = {"legs": legs}
     blocks = parse(args.log)
-    reqt = wandb.Table(columns=["slot", "instance", "bits", "source_bits",
-                                "requant_ms", "round_count"])
-    per_slot_instance = {}
-    for b in blocks:
-        i = per_slot_instance[b["slot"]] = per_slot_instance.get(b["slot"], 0) + 1
-        reqt.add_data(b["slot"], i, int(b["bits"]), int(b["source_bits"]),
-                      b["requant_ms"], len(b["rounds"]))
-    requant = [b["requant_ms"] for b in blocks if b["requant_ms"] > 0]
-    summary["requant_ms_mean"] = st.mean(requant) if requant else 0.0
-    summary["requant_ms_max"] = max(requant) if requant else 0.0
+    summary["trace/available"] = bool(blocks)
+    if blocks:
+        tables.update(trace_tables(blocks, order, args.control, ctl_slots,
+                                   cand_slots, summary))
 
-    timed = {}
-    for b in blocks:
-        if b["rounds"]:
-            assert b["slot"] not in timed, f"slot {b['slot']} timed twice"
-            timed[b["slot"]] = b["rounds"]
-    assert sorted(timed) == list(range(1, len(order) + 1)), \
-        f"expected timed rounds for slots 1..{len(order)}, got {sorted(timed)}"
+    # The parent's own timed report is the authority for work actually done, and
+    # unlike the trace it is always present. Price the mechanism from Phase 1's
+    # separately measured readout cost so the prompt-specific trajectory term
+    # cannot be quoted as part of the bandwidth result.
+    agg = aggregate(str(args.prefix.parent), args.prefix.name,
+                    [int(b) for b in order])
+    attr = attribute(agg, int(args.control), config["candidate_bits"])
+    work = wandb.Table(columns=["bits", "replicates", "rounds", "rows",
+                                "draft_calls", "accept_rate",
+                                "decode_work_seconds", "prefill_seconds",
+                                "leg_seconds", "local_score"])
+    for bits in sorted(agg, reverse=True):
+        a = agg[bits]
+        work.add_data(bits, a["replicates"], a["rounds"], a["rows"], a["calls"],
+                      a["accept_rate"], a["work"], a["prefill"], a["leg"],
+                      a["score"])
+        for k in ("rounds", "rows", "calls", "accept_rate", "work", "prefill",
+                  "leg", "score"):
+            summary[f"work/b{bits}/{k}"] = a[k]
+    tables["work"] = work
 
-    scheds = {tuple((x["d"], x["acc"]) for x in timed[s]) for s in timed}
-    summary["acceptance/distinct_schedules"] = len(scheds)
-    summary["headline/acceptance_term_pct"] = 0.0 if len(scheds) == 1 else None
-    assert len(scheds) == 1, \
-        "depth/acceptance schedules diverge; the acceptance term is not zero"
-
-    per_pair = []
-    for a, b in adjacent_pairs(order):
-        ctl, cand = (a, b) if order[a - 1] == args.control else (b, a)
-        pairs = round_delta(timed[ctl], timed[cand])
-        total, readouts, per = steady_per_readout(pairs)
-        per_pair.append(per)
-        tag = f"pair_p{ctl}_p{cand}"
-        summary[f"{tag}/paired_rounds"] = len(pairs)
-        summary[f"{tag}/steady_round_us_delta_total"] = total
-        summary[f"{tag}/steady_readout_count"] = readouts
-        summary[f"{tag}/implied_us_saved_per_readout"] = per
-    summary["pairs/implied_us_saved_per_readout_spread"] = \
-        max(per_pair) - min(per_pair)
-
-    n = min(len(timed[s]) for s in timed)
-    depths = [timed[ctl_slots[0]][i]["d"] for i in range(n)]
-    combined, rows = [], wandb.Table(
-        columns=["round", "depth", "accepted"]
-        + [f"p{s}_{f}" for s in sorted(timed) for f in FIELDS]
-        + [f"abba_delta_{f}" for f in FIELDS])
-    for i in range(n):
-        if any(timed[s][i]["d"] != depths[i] for s in timed):
-            continue
-        row = {"d": depths[i]}
-        for f in FIELDS:
-            row[f] = (st.mean(timed[s][i][f] for s in ctl_slots)
-                      - st.mean(timed[s][i][f] for s in cand_slots))
-        combined.append(row)
-        ref = timed[ctl_slots[0]][i]
-        rows.add_data(ref["round"], ref["d"], ref["acc"],
-                      *[timed[s][i][f] for s in sorted(timed) for f in FIELDS],
-                      *[row[f] for f in FIELDS])
-    summary["abba/paired_rounds"] = len(combined)
-    for f in FIELDS:
-        d = [r[f] for r in combined]
-        summary[f"abba/delta/{f}_median_us"] = st.median(d)
-        summary[f"abba/delta/{f}_mean_us"] = st.mean(d)
-    steady = combined[1:]
-    total = sum(r["round_us"] for r in steady)
-    readouts = sum(r["d"] for r in steady)
-    summary["abba/steady_round_us_delta_total"] = total
-    summary["abba/steady_readout_count"] = readouts
-    summary["abba/implied_us_saved_per_readout"] = total / readouts
-
-    if len(ctl_slots) == 2:
-        a, b = ctl_slots
-        pairs = round_delta(timed[a], timed[b])
-        total, readouts, per = steady_per_readout(pairs)
-        summary["noise/control_vs_control_paired_rounds"] = len(pairs)
-        summary["noise/control_vs_control_per_readout_us"] = per
+    transfer = wandb.Table(columns=[
+        "label", "head", "head_mb", "readout_share_of_draft_bytes_pct",
+        "draft_step_ms", "decode_work_seconds", "mechanism_pct_of_decode_work",
+        "mechanism_score_pct"])
+    for t in attr.pop("transfer"):
+        transfer.add_data(*[t[c] for c in transfer.columns])
+        summary[f"transfer/{t['head']}/mechanism_score_pct"] = \
+            t["mechanism_score_pct"]
+        summary[f"transfer/{t['head']}/readout_share_of_draft_bytes_pct"] = \
+            t["readout_share_of_draft_bytes_pct"]
+    tables["transfer_model"] = transfer
+    for k, v in attr.items():
+        summary[f"attribution/{k}"] = v
+    summary["headline/mechanism_only_score_pct"] = \
+        attr["mechanism_only_score_pct"]
+    summary["headline/trajectory_share_of_delta_pct"] = \
+        attr["term_trajectory_share_pct"]
 
     def mean_leg(slots, leg, key="parent_measured_seconds_per_token"):
         return st.mean(docs[s][leg][key] for s in slots)
@@ -253,10 +311,11 @@ def main():
     cb = docs[b]["mtp_leg"]["parent_measured_seconds_per_token"]
     summary["noise/control_vs_control_mtp_pct"] = 100.0 * (cb - ca) / ca
 
-    run.log({"legs": legs, "requant_provenance": reqt, "rounds": rows})
+    run.log(tables)
     run.summary.update(summary)
     for k in sorted(summary):
         if k.startswith(("headline/", "noise/", "pairs/", "acceptance/",
+                         "attribution/", "transfer/", "trace/",
                          "abba/implied", "abba/steady", "abba/paired")):
             print("%-58s %s" % (k, summary[k]))
     print(run.url)
