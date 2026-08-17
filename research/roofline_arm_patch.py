@@ -95,12 +95,25 @@ FMA_QDOT_ORDERED = """      for (int r = 0; r < rows_per_simd; r++) {
       }
 """
 
+# Sensitivity control for the cross-build digest instrument, not a candidate
+# form: it is the control expression scaled by 1 + 2^-6, a deliberate error ~4x
+# the bf16 output ulp. Every cell that dispatches `_wide` must move, so an
+# unchanged digest can only mean the instrument never saw the edit.
+PERTURBED_QDOT = """      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] += 1.015625f * (a0 * (packed[r][i] & 0x000f) +
+                       a1 * (packed[r][i] & 0x00f0) +
+                       a2 * (packed[r][i] & 0x0f00) +
+                       a3 * (packed[r][i] & 0xf000));
+      }
+"""
+
 ARMS = {
     "arm1": [(FULL_QDOT, ONE_TERM_QDOT)],
     "fma": [(FULL_QDOT, FMA_QDOT)],
     "fma-ordered": [(FULL_QDOT, FMA_QDOT_ORDERED)],
     "arm2": [(K_LOOP, K_LOOP_WITH_SPAN), (ROW_STRIDED, ROW_SPANNED)],
     "arm2-naive": [(ROW_STRIDED, ROW_COLLAPSED)],
+    "perturb": [(FULL_QDOT, PERTURBED_QDOT)],
 }
 
 

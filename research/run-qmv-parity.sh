@@ -55,9 +55,17 @@ abort_if_model_already_resident
 
 for spec in "$@"; do
   arm="${spec%%=*}"
-  sha="${spec##*=}"
-  echo "=== arm=${arm} sha=${sha} ===" >&2
+  rhs="${spec##*=}"
+  sha="${rhs%%+*}"
+  patch=""
+  if [[ "${rhs}" == *+* ]]; then
+    patch="${rhs##*+}"
+  fi
+  echo "=== arm=${arm} sha=${sha} patch=${patch:-none} ===" >&2
   git checkout "${sha}" -- "${TWINS[@]}"
+  if [[ -n "${patch}" ]]; then
+    python3 research/roofline_arm_patch.py "${patch}"
+  fi
 
   swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-testing
   tools/build-mlx-metallib.sh --all-build-roots
@@ -65,7 +73,7 @@ for spec in "$@"; do
   MLXFAST_RUN_QMV_PARITY=1 \
   MLXFAST_QMV_PARITY_OUT="${out_dir}/${arm}.json" \
     swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
-    --filter digestQuantizedMatmulOverVerifyWidth 2>&1 | tail -20
+    --filter digestQuantizedMatmulOverVerifyWidth 2>&1
 done
 
 git checkout -- "${TWINS[@]}"
