@@ -523,6 +523,15 @@ tooling surface was disturbed. One operator commit already present upstream
 (raising the plausibility ceiling to 5.0, `AGENTS.md` + `senpai/program.md` only)
 was auto-skipped as already applied.
 
+Because that skip removed `a5854b9` — the pre-rebase published head — from the
+first-parent chain, the rebased head does not fast-forward it, and the submission
+lease refuses a non-fast-forward push. Resolved with one `git merge -s ours
+a5854b9`, which records the superseded head as a second parent while leaving the
+tree byte-identical to the validated rebased tree (verified: same tree SHA, and
+the scope and budget checks below were re-run on the merge commit). Nothing from
+`a5854b9` is lost: its only unique content was the ceiling commit already carried
+by `b85e782`.
+
 ### Submitted path reverted to zero delta
 
 `git checkout b85e782 -- Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`.
