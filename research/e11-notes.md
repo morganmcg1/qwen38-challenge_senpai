@@ -543,3 +543,106 @@ They are also not composable, which is worth stating because it is not obvious:
 under the curve the realised max depth is 3, strictly below the wall at 4, so
 the wall never binds and raising it to 5 changes nothing. Curve-plus-wall is
 exactly `H`. This is an either/or, and I took the measured winner.
+
+## T3/T4/T5 — the prose fixture, and the retraction of everything above
+
+Everything in the section above was measured on the `--local-iterate` default,
+`public_longcopy_gate_english_512_256.json`. That is a copy task. It runs at
+acceptance 0.89-0.95 and mean draft depth 5.4, which is close to the best case
+for deep drafting. The hidden pool is eight prose prompts with calibration
+ratios 0.8467-1.0726. So I built a held-out prose golden and re-ran the arms.
+
+`research/e11_prose_gate_english_512.txt` is original expository English about
+railway time standardisation, deliberately outside every hidden-pool subject
+(beagle, botany, drama, essays, medicine, plutarch, republic, travel).
+`research/e11-golden.sh` generates the 512/256 golden from it through the
+serial reference path with no E11 arm resident. Nothing under `fixtures/` or
+`correctness_prompts/` is touched; the golden is selected through
+`MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE`, which `benchmark-qwen-mtp.sh:103`
+already publishes, and Yukon submits none of it. Because it was generated on
+this host, the drift tripwire is self-consistent.
+
+Six timed arms, three jobs, all `pass=timed`, `env=""`, `all_tokens_matched`,
+`resid=0`, row-check OK, head `54930a1d`:
+
+| arm  | MTP s/tok | vs ref  | ratio  | rnds | rows | meanD | accR   | rej | maxd | replay | depth hist |
+|------|-----------|---------|--------|------|------|-------|--------|-----|------|--------|------------|
+| Cp   | 0.050640  | +0.010% | 1.4705 | 253  | 823  | 2.253 | 0.4561 | 310 | 4    | 100    | 1:39 2:129 3:67 4:18 |
+| Cp2  | 0.050630  | -0.010% | 1.4735 | 253  | 823  | 2.253 | 0.4561 | 310 | 4    | 100    | 1:39 2:129 3:67 4:18 |
+| W5p  | 0.050606  | -0.056% | 1.4717 | 253  | 823  | 2.253 | 0.4561 | 310 | 4    | 100    | 1:39 2:129 3:67 4:18 |
+| Hp   | 0.046757  | -7.658% | 1.5925 | 246  | 749  | 2.045 | 0.5288 | 237 | 3    | 76     | 1:2 2:231 3:13 |
+| Hp2  | 0.046774  | -7.624% | 1.5955 | 246  | 749  | 2.045 | 0.5288 | 237 | 3    | 76     | 1:2 2:231 3:13 |
+| F3p  | 0.050025  | -1.204% | 1.4925 | 254  | 806  | 2.173 | 0.4692 | 293 | 3    | 100    | 1:43 2:124 3:87 |
+
+### The wall is a no-op on prose, provably
+
+`Cp` and `W5p` differ only in `sdpaWidthWallDepthCap` (4 vs 5) and produced
+identical round count, identical depth histogram, identical accepted and
+rejected totals, and identical replayed-round count. The scheduler computes
+`cap = min(offeredDepth, maxDepth, widthCap)` and then extends greedily while
+`reach > threshold`. Eighteen prose rounds stopped at depth 4 under a wall of
+4; under a wall of 5 the same eighteen still stopped at 4, which proves they
+exited on the reach test and not on the cap. The wall never binds on prose.
+
+So the -1.303% I measured for `W5` on the copy fixture predicts approximately
+zero on the scored pool. The lever is real, but its reach is a property of the
+prompt, not of the code.
+
+### The curve wins on prose, by a lot, and F3 does not stand in for it
+
+`H` is -7.64% on prose against -1.006% on copy, and the replicate pair agrees
+to 0.036%. This is roughly 200x the noise. The mechanism is legible: rows
+823 -> 749, rejected rows 310 -> 237 (-24%), replayed rounds 100 -> 76 (-24%),
+acceptance 0.4561 -> 0.5288. Prose wastes 310 of 823 rows on rejected drafts;
+the curve is the only arm that meaningfully attacks that.
+
+All three reasons I gave above for reverting the curve were artifacts of the
+copy fixture:
+
+1. "It lost" was true only on copy. On prose the ranking inverts, and it
+   inverts by 7.6 points against a no-op.
+2. "`F3` reproduces it" was true only on copy. On prose `F3` is -1.204% and
+   `H` is -7.658%. A fixed integer cap can only shave the depth-4 tail
+   (67 -> 87 at depth 3, 18 -> 0 at depth 4). The curve re-prices every round
+   and collapses the distribution onto depth 2 (231 of 246 rounds). The extra
+   parameters are buying per-round adaptivity, not slack.
+3. "It is fixture-fit" was simply wrong about provenance, and I should have
+   checked before asserting it. The vector comes from E1's forced-depth
+   marginal-cost arms on the declared head (N = 1778 pooled depth-0 rounds;
+   61/60/36/32 full-accept rounds at d3/d4/d6/d8), and the knee at d = 3..4 is
+   explained by the affine-4 g64 crossrow kernel adding a weight pass. It is a
+   mechanistic measurement of the head, not an end-to-end fit to a fixture.
+   That is exactly why it survives transfer to a held-out prompt, and survives
+   it with a larger gain.
+
+Composition is unchanged and still analytic: the curve's realised max depth is
+3 on both fixtures, strictly below the wall at 4, so curve-plus-wall is exactly
+the curve. Shipping the curve makes the wall change moot, so the wall goes back
+to 4 and the shipped diff is the curve alone.
+
+### Noise floor, third and final revision
+
+Five replicate pairs now exist, four of them at or below 0.1%:
+
+| pair    | fixture | spread |
+|---------|---------|--------|
+| Cp/Cp2  | prose   | 0.019% |
+| Hp/Hp2  | prose   | 0.036% |
+| Cp/W5p  | prose   | 0.066% (provably identical work) |
+| W5/W5b  | copy    | 0.092% |
+| C1/C2   | copy    | 0.873% |
+
+`Cp`/`Cp2` are from different jobs and still agree to 0.019%, so the host is
+stable and the 0.873% on `C1`/`C2` was a thermal excursion rather than the
+floor. Typical spread is about 0.1% with occasional ~0.9% outliers. I am still
+not claiming a floor from n=5, but the -7.64% headline does not depend on where
+in that range the truth sits.
+
+### What this says about the method, not just the result
+
+The copy fixture ranked these levers exactly backwards. It is the default for
+`--local-iterate`, it is the cheapest thing to measure, and on the question the
+campaign actually cares about it was actively misleading: it promoted a no-op
+over a -7.6% change. Any depth or acceptance lever screened only on the default
+fixture should be treated as unmeasured until it is run on prose.
+
