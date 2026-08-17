@@ -1,0 +1,64 @@
+A sequence model built from two kinds of layer has to reconcile two different
+theories of memory. The first holds that everything worth knowing about the
+past can be compressed into a state of fixed size, updated once per position
+and never revisited. The second holds that the past should be kept in full,
+stored position by position, and consulted again whenever a later position has
+a question to ask of it. Neither theory is adequate alone. A fixed state is
+cheap to carry but must continually decide what to forget; a complete record
+forgets nothing but grows without bound and must be searched. A hybrid
+architecture accepts both costs in different places, giving most of its depth
+to compressive recurrence and reserving a minority of its layers for the
+expensive and exact kind of recall.
+
+When such a model is given a long document to read before it is asked to
+produce anything, the document arrives as a stack of embeddings, one row for
+each position, and passes upward through the layers. In a recurrent layer the
+computation is organised along the sequence rather than across it. The layer
+carries a state, conventionally a matrix rather than a vector, and at each
+position it forms a few projections of the incoming activation: something
+playing the role of a key, something playing the role of a value, and one or
+more gates. The gates are the interesting part. One of them decides how much
+of the existing state survives into the next position, and because it is
+computed from the current input rather than fixed in advance, the layer can
+hold a fact almost indefinitely when the input suggests that it should, and
+discard it abruptly when the input suggests that it should not. The state is
+then updated by accumulating an outer product of the new key and value, scaled
+and decayed according to the gates, and the layer's output is read back out of
+the state by a query projection. Nothing in this loop refers to any position
+except the current one and the summary of everything before it, so the memory
+required does not depend on the length of the document, and the arithmetic
+grows in direct proportion to it.
+
+A full-attention layer treats the same activation quite differently. Queries,
+keys and values are projected as before, but the keys and values are retained.
+Each position writes its key and value into a cache indexed by layer and
+position, and the query at a given position is compared against every key at
+or before it. The scores are normalised across the attended positions and the
+output is the correspondingly weighted sum of values. Two properties of this
+arrangement dominate its cost. During the first pass over the document the
+work grows with the square of the length, because every position consults
+every earlier one. And the cache that makes later recall cheap is also the
+largest runtime object the model holds, growing linearly in the number of
+positions, the number of retained heads and the width of each head. Sharing
+one key and value head among several query heads is a concession to that
+second property and to very little else.
+
+Extending the document one position at a time inverts the balance. The
+recurrent layers do exactly what they did before, one state update apiece,
+indifferent to how much text preceded them. The attention layers now perform a
+single query against a long cache, which is arithmetically trivial and yet
+often the slowest thing in the step, because the cache must be read out of
+memory in its entirety while the useful multiplications are few. The step is
+limited by traffic rather than by computation, and the same holds for the
+projection weights, which must be streamed once per position regardless of how
+little is asked of them.
+
+The practical lesson is that the two mechanisms fail in opposite directions,
+and the hybrid is arranged to exploit that. Length hurts attention and leaves
+recurrence untouched; precision of recall hurts recurrence and comes almost
+free to attention. Reading a long context is expensive in arithmetic and cheap
+in traffic, while continuing it position by position is cheap in arithmetic and
+expensive in traffic. Anyone who reasons about the cost of such a model without
+first saying which of the two regimes is meant will reliably reach the wrong
+conclusion, and will optimise the half of the system that was never the
+constraint.
