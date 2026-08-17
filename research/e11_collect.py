@@ -282,10 +282,62 @@ def to_wandb(row, group, notes):
     return run.id, url
 
 
+def compare(rows):
+    """Cross-arm comparison, plus the noise floor it has to clear.
+
+    Every arm's serial leg runs the same depth-0 target on the same golden, so
+    its spread across arms measures session noise on identical work and needs no
+    extra GPU time. An arm difference is only interesting above that floor.
+    """
+    out = []
+    serial = [(r["label"], r["serial_seconds_per_token"]) for r in rows
+              if r.get("serial_seconds_per_token")]
+    if len(serial) > 1:
+        values = [v for _, v in serial]
+        mean = sum(values) / len(values)
+        lo = min(serial, key=lambda kv: kv[1])
+        hi = max(serial, key=lambda kv: kv[1])
+        out.append(f"serial-leg matched-work floor over {len(serial)} arms: "
+                   f"mean {mean:.9f} s/tok, "
+                   f"peak-to-peak {(hi[1] - lo[1]) / mean * 100:+.3f}% "
+                   f"(slowest {hi[0]}, fastest {lo[0]})")
+    out.append("")
+    out.append(f"{'arm':<7}{'h':<12}{'mtp s/tok':<14}{'speedup':<10}"
+               f"{'meanD':<8}{'accRate':<9}{'maxD':<6}{'rounds':<8}"
+               f"{'rows':<7}{'replays':<8}gpuC")
+    for r in rows:
+        temp = re.search(r"gpu_temp=([0-9.]+)", r.get("thermal_before") or "")
+        kind = ("curve" if "ByDepth" in (r.get("h_form") or "")
+                else (r.get("h_form") or "").split("=")[-1].strip())
+        out.append(f"{r['label']:<7}{kind:<12}"
+                   f"{r.get('mtp_seconds_per_token', 0):<14.9f}"
+                   f"{r.get('mtp_decode_speedup', 0):<10.6f}"
+                   f"{r.get('effective_mean_draft_len', 0):<8.3f}"
+                   f"{r.get('accepted_draft_rate', 0):<9.4f}"
+                   f"{r.get('effective_max_draft_len', 0):<6}"
+                   f"{r.get('round_count', 0):<8}"
+                   f"{r.get('declared_rows_total', 0):<7}"
+                   f"{r.get('verify_block_replayed_round_count', 0):<8}"
+                   f"{float(temp.group(1)) if temp else 0:.2f}")
+    out.append("")
+    out.append("pairwise mtp s/tok delta (row vs column, negative = row faster)")
+    labels = [r["label"] for r in rows]
+    out.append("       " + "".join(f"{lab:>10}" for lab in labels))
+    for r in rows:
+        cells = []
+        for other in rows:
+            base = other.get("mtp_seconds_per_token")
+            cells.append("         -" if other is r or not base else
+                         f"{(r['mtp_seconds_per_token'] - base) / base * 100:>+10.3f}")
+        out.append(f"{r['label']:<7}" + "".join(cells))
+    return "\n".join(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("runs_root", type=Path)
     ap.add_argument("--arms", nargs="+", required=True)
+    ap.add_argument("--compare", action="store_true")
     ap.add_argument("--wandb", action="store_true")
     ap.add_argument("--group", default=EXPERIMENT)
     ap.add_argument("--notes", default="")
@@ -303,7 +355,10 @@ def main():
                 row, args.group, args.notes)
         rows.append(row)
 
-    print(json.dumps(rows, indent=2, sort_keys=False))
+    if args.compare:
+        print(compare(rows))
+    else:
+        print(json.dumps(rows, indent=2, sort_keys=False))
     if args.json_out:
         args.json_out.write_text(json.dumps(rows, indent=2))
 
