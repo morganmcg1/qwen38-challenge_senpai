@@ -35,3 +35,12 @@
 CROSSROW_NA_PROBE(crossrow_na2, 2)
 CROSSROW_NA_PROBE(crossrow_na3, 3)
 CROSSROW_NA_PROBE(crossrow_na4, 4)
+
+// Opt-in arm. NA > 4 trips the production `static_assert(NA <= 4)`, so building
+// this requires temporarily widening that bound in quantized.h; it is scaffolding
+// to measure what the cap is made of, not a live-code change.
+#ifdef CROSSROW_NA_PROBE_WIDE
+CROSSROW_NA_PROBE(crossrow_na5, 5)
+CROSSROW_NA_PROBE(crossrow_na6, 6)
+CROSSROW_NA_PROBE(crossrow_na8, 8)
+#endif
