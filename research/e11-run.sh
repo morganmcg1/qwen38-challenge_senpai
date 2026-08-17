@@ -22,6 +22,18 @@ bins_root="${repo_root}/.mlxfast-private/e11/bins"
 runs_root="${repo_root}/.mlxfast-private/e11/runs"
 head_dir="${E11_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared}"
 tokens="${E11_TOKENS:-512}"
+# Defaulted rather than passed in, because run_job launches an argv with no
+# environment of its own: an arm that silently fell back to the copy fixture
+# would answer a different question with the same label.
+golden="${E11_GOLDEN:-.mlxfast-private/e11/goldens/e11_prose_512_${tokens}.json}"
+
+# all_tokens_matched compares only as many tokens as the golden carries, so a
+# short golden reports an exact match over a prefix of the decode window.
+golden_steps="$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["expected_tokens"]))' "${golden}" 2>/dev/null || echo 0)"
+if ((golden_steps < tokens)); then
+  echo "e11-run: golden ${golden} covers ${golden_steps} of ${tokens} decode tokens" >&2
+  exit 1
+fi
 
 # Two passes, and the difference matters.
 #
@@ -79,6 +91,7 @@ for spec in "$@"; do
   fi
 
   export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
+  export MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE="${golden}"
   export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
   export MLXFAST_SCORE_PATH="${out}/score.json"
   export MLXFAST_CAPTURE_REAL_BIN="${repo_root}/.build/release/mlxfast-swift"

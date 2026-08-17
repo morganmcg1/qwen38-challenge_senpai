@@ -23,9 +23,11 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 prompt="research/e11_prose_gate_english_512.txt"
 out_dir=".mlxfast-private/e11/goldens"
-out="${out_dir}/e11_prose_512_256.json"
-name="e11_prose_gate_english_512_256"
-steps="${E11_GOLDEN_STEPS:-256}"
+steps="${E11_GOLDEN_STEPS:-512}"
+# Step count is in the filename: a golden shorter than the arm's decode window
+# still reports all_tokens_matched, having compared only its own prefix.
+out="${out_dir}/e11_prose_512_${steps}.json"
+name="e11_prose_gate_english_512_${steps}"
 
 mkdir -p "${out_dir}"
 
