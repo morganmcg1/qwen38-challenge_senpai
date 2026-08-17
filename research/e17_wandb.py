@@ -137,17 +137,22 @@ def arm_payload(
     n = mtp["decode_token_count"]
     raw = summary["raw"]
     metrics = {
-        # headline currency: verbatim, prefill-INCLUSIVE, nothing subtracted
+        # headline currency: verbatim decode-only, which score.json confirms is
+        # what the track scores. Nothing is subtracted or added to reach it.
         "raw_p": raw,
         "serial_spt": summary["serial_spt"],
         "mtp_spt": summary["mtp_spt"],
         "score_json_speedup": score["score"],
-        # decode-only, reported alongside so the dilution is auditable
-        "serial_spt_decode": summary["serial_spt"] - summary["serial_prefill_s"] / n,
-        "mtp_spt_decode": summary["mtp_spt"] - summary["mtp_prefill_s"] / n,
+        # wall-clock secondary: charge each leg its own measured seed prefill.
+        # Real end-to-end latency, but not the scored currency.
+        "serial_spt_total": summary["serial_spt"] + summary["serial_prefill_s"] / n,
+        "mtp_spt_total": summary["mtp_spt"] + summary["mtp_prefill_s"] / n,
+        "raw_p_wallclock": (summary["serial_spt"] + summary["serial_prefill_s"] / n)
+        / (summary["mtp_spt"] + summary["mtp_prefill_s"] / n),
         "serial_prefill_s": summary["serial_prefill_s"],
         "mtp_prefill_s": summary["mtp_prefill_s"],
-        "prefill_share_of_mtp_leg": summary["mtp_prefill_s"] / (summary["mtp_spt"] * n),
+        "decode_share_of_mtp_leg": summary["mtp_spt"]
+        / (summary["mtp_spt"] + summary["mtp_prefill_s"] / n),
         # drafting behaviour
         "rounds": summary["rounds"],
         "mean_depth": summary["mean_depth"],
@@ -270,8 +275,9 @@ def main(argv: list[str]) -> int:
     config = dict(host_config())
     config.update({"experiment": "qwen38-r1-e17-curve-transfer-and-refit",
                    "arm": "headline", "prompts_completed": sorted(data),
-                   "metric_convention": "raw_p = serial_spt / mtp_spt, "
-                                        "prefill-inclusive, verbatim"})
+                   "metric_convention": "raw_p = serial_spt / mtp_spt, verbatim "
+                                        "decode-only = scored currency; "
+                                        "raw_p_wallclock is a secondary"})
     run = wandb.init(entity=ENTITY, project=PROJECT, name="e17-headline", group=GROUP,
                      job_type="analysis", config=config, reinit=True,
                      tags=["qwen38-r1-e17", "curve-transfer", "headline"])

@@ -16,7 +16,7 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 
 ## Q1 — headline
 
-Per-prompt pairs, `raw_p = serial_spt / mtp_spt` straight from `.parent_measured_seconds_per_token`, **prefill-inclusive, 512 decode tokens after a 512-token seed**, `--local-iterate`:
+Per-prompt pairs, `raw_p = serial_spt / mtp_spt` straight from `.parent_measured_seconds_per_token`, **decode-only — which is the scored currency — over 512 decode tokens after a 512-token seed**, `--local-iterate`. *(r2 correction: r1 originally labelled this field prefill-inclusive. The label was wrong; the numbers below are unchanged and were always in score currency. See "Convention and window" below.)*
 
 | prompt | held out | serial (C leg) | serial (F leg) | floor % | mtp CURVE | mtp FLAT18 | raw CURVE | raw FLAT18 | Δraw | g % |
 |:--|:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|
@@ -53,7 +53,13 @@ The two central-order-statistic sets differ between arms (`dramatic` is central 
 
 ### Convention and window, stated for every ratio
 
-Every `raw_p`, every median, and every `g` above is **prefill-inclusive** and measured over **512 decode tokens** after a 512-token seed, taken directly from `.parent_measured_seconds_per_token` with **no subtraction**, per the section-0 correction. Prefill is ≈3.9944–3.9980 s per leg ≈ 15.8–18.0 % of the MTP leg. The decode-currency→score conversion factor on this base is **0.84228**: a decode-leg `g` becomes a score-leg effect of `g × 0.84228`. Sanity check against the E11 pair: 7.577 % × 0.84228 = 6.382 % vs the 6.378 % measured prefill-inclusive delta ✓. **No number in this report is quoted in the decode-only convention.**
+**Corrected in r2 — read this instead of r1's original wording.** Every `raw_p`, every median, and every `g` above is **decode-only**, which `score.json` proves is exactly the scored currency, measured over **512 decode tokens** after a 512-token seed, taken directly from `.parent_measured_seconds_per_token` with **no subtraction and no addition**. So **every number in this report is already in score currency** and the `× 0.84228` factor must **not** be applied to any of them.
+
+What r1 got wrong was only the *label*, not any measured value. r1 called the field prefill-inclusive and derived a "decode-currency → score conversion factor" of `0.84228`. That quantity is real but is the **decode share of the wall-clock leg** (`D_m / T_m`), which describes end-to-end latency and is not scored. The arithmetic r1 offered as a sanity check (7.577 % × 0.84228 = 6.382 % ≈ 6.378 %) is correct algebra with the two labels swapped: `(R_wall − 1)/(R_decode − 1) = D_m/T_m` exactly when both legs prefill in the same time, which they do here. r1's further conclusion that the pair `Sp3 = 1.437971 / Hp3 = 1.521771` arose from "prefill charged twice" is therefore **inverted** — that pair is the legitimate wall-clock ratio, diluted because a fixed ≈4 s seed prefill is not accelerated.
+
+Three independent proofs, in increasing authority: (i) `spt × 512 = 38.05845701694889` matches `decode_seconds = 38.058457016944885` to 1e-11 while `decode + prefill = 42.0525` does not, and `prefill_seconds_per_token = 3.9940489530563354/512` exactly; (ii) `Sources/MLXFastCLI/main.swift:1509` emits `report.decodeSecondsPerToken`, and `QwenRuntimeBenchmark.swift` carries `decodeSecondsPerToken` and `prefillSecondsPerToken` as separate parallel fields; (iii) the run's own `score.json` has `.score == .metrics.mtp_decode_speedup` over these same two fields, gated by `ranked_decode_speedup_floor = 0.9` — `program.md`'s published 0.90 floor.
+
+Across all 20 timed legs measured in r1 and r2, prefill is **3.9937–4.0111 s** per leg: **9.47–9.51 %** of a serial wall-clock leg and **13.60–15.22 %** of an MTP one. That asymmetry is the whole story — a faster MTP leg makes the unaccelerated prefill a larger share, so the wall-clock ratio always understates the scored one. Recomputed on `af80b0fc`, `D_m/T_m` = **0.85570** (CURVE) and **0.86391** (S18), versus 0.84228 on `e6e6f81`. Reported as a **clearly-labelled secondary**, r1's held-out wall-clock `g_median` is **+4.556 %** against the scored **+5.284 %**.
 
 ## Mechanism — the main scientific result of the session
 
