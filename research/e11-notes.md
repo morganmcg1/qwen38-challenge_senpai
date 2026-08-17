@@ -737,15 +737,51 @@ this prompt. The r2 -> r3 comparison is therefore apples-to-apples on the
 reference side, and the only moving parts are the schedule, the wall, and the
 head.
 
-### Trace is unreachable under the benchmark, so depth data comes from the parent
+### Retraction: my r2 "trace unreachable" disclosure was wrong
 
-`MLX_QWEN_MTP_TRACE` writes a file, and the worker profile in
-`Sources/MLXFastCLI/main.swift:2654` is sandboxed `(deny file-write*)`;
-`MLXFAST_NO_SANDBOX` is refused outright for benchmark contexts at `:2254` and
-`:2553`. Depth histograms in r3 are therefore read from the trusted parent's own
-`effective_draft_lengths`, which is strictly better evidence anyway. The same
-array, aligned with `block_request_seconds`, is what `research/e11_marginal.py`
-uses to recover per-depth round cost for Q2 -- so the forced-depth arms E1 needed
-are replaced by post-hoc analysis of the ordinary timed arms, at zero extra GPU
-cost.
+I reported in r2 that `MLX_QWEN_MTP_TRACE` is unreachable because the worker
+sandbox denies `file-write*` and `MLXFAST_NO_SANDBOX=1` is refused in benchmark
+contexts. The Seatbelt half of that is correct. The conclusion is not, and the
+advisor caught it. Verified by symbol on this base:
+
+- `Qwen36MTPBlockSession.traceWrite` (`:463`) writes to
+  `FileHandle.standardError`, not to a file, and its own comment says it does so
+  *because* the sandbox denies file-write. I went looking for the file the
+  doc-comment above `traceRounds` (`:458-460`) still describes -- that stale
+  comment is what misled me, and reading the function body instead of the
+  comment above it would have settled it in one step.
+- `forwardsWorkerStderr` is organizer infrastructure, declared in `QwenRuntime`
+  in both `MLXFastHarness` and `MLXFastTrustedHarness` and consumed in each
+  `QwenRuntimeWorker` drain (`emit: options.forwardsWorkerStderr ? nil : { _ in }`).
+- `Sources/MLXFastCLI/main.swift:1805` sets `forwardsWorkerStderr` from
+  `MLX_QWEN_MTP_TRACE` on the local `mtp-timed` verb, and `:2319` ANDs it with
+  `!officialRun`.
+
+So `MLX_QWEN_MTP_TRACE=1` on a local `mtp-timed` run emits the trace on stderr
+with no sandbox fight. The instrument existed the whole time.
+
+**One thing the correction itself is stale on, though: there is no `h=` field on
+this base.** The advisor's note suggests reading `h=` to tell a reach-test stop
+from a cap stop, but `h=` was part of the E1 instrumentation block the frontier
+deleted. The round line here is
+`round= d= acc= draft_build_us= verify_build_us= eval_wall_us= readout_us= commit_us= upkeep_us= round_us=`.
+That turns out to be *more* useful for Q2 than `h=` would have been: grouping
+`round_us` by `d=` gives per-depth round cost directly, and the five-way split
+says **which segment** grows with depth, which no timing delta can show. Q3 does
+not need `h=` either -- reachability of depth 4 under the curve is decidable from
+the source without running anything.
+
+The obligation attached to the instrument is real and I am keeping it: a traced
+run does per-round stderr writes with the parent drain in the loop, so it can
+never be a timing arm. Every arm reported with a time below ran with no
+`MLX_QWEN_MTP_*` variable set at all, and any trace run is labelled untimed with
+its own SHA.
+
+Depth histograms for the timed arms therefore still come from the trusted
+parent's `effective_draft_lengths` -- which is the better source regardless,
+since it is the parent's accounting rather than the candidate's self-report. The
+same array, aligned with `block_request_seconds`, is what
+`research/e11_marginal.py` uses to recover per-depth round cost for Q2, so the
+forced-depth arms E1 needed are replaced by post-hoc analysis of the ordinary
+timed arms at zero extra GPU cost and zero instrumentation overhead.
 
