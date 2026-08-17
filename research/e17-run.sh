@@ -5,7 +5,7 @@
 # prompt E11 happened to hold out.
 #
 #   research/e17-run.sh --goldens [ID ...]   generate the 512-step goldens
-#   research/e17-run.sh ID [ID ...]          time both arms for those prompts
+#   research/e17-run.sh --arms A,B ID [ID ...]  time that arm pair per prompt
 #
 # DESIGN COMMITMENTS, fixed here before any arm was timed:
 #
@@ -71,9 +71,9 @@ if [[ "${1:-}" == "--goldens" ]]; then
   # generate-golden runs the SERIAL reference path, which neither arm touches,
   # so either build yields the same rows; pin CURVE anyway so the goldens name
   # a hash-verified binary instead of whatever happened to be resident.
-  pin="${E11_BINS_ROOT}/CURVE"
+  pin="${E11_BINS_ROOT}/${E17_GOLDEN_PIN:-S18}"
   [[ -f "${pin}/sha256.txt" ]] || {
-    echo "e17-run: no built CURVE arm at ${pin}; run research/e17-build.sh first" >&2
+    echo "e17-run: no built arm at ${pin}; run research/e17-build.sh first" >&2
     exit 2
   }
   install -m 755 "${pin}/mlxfast-swift" .build/release/mlxfast-swift
@@ -82,7 +82,19 @@ if [[ "${1:-}" == "--goldens" ]]; then
   exec research/e11-golden.sh "${files[@]}"
 fi
 
-((${#@})) || { echo "usage: research/e17-run.sh [--goldens] ID [ID ...]" >&2; exit 2; }
+pair=()
+if [[ "${1:-}" == "--arms" ]]; then
+  IFS=, read -r -a pair <<< "${2:?--arms needs A,B}"
+  shift 2
+fi
+((${#pair[@]} == 2)) || {
+  echo "usage: research/e17-run.sh --arms A,B ID [ID ...]" >&2; exit 2; }
+for arm in "${pair[@]}"; do
+  [[ -s "${E11_BINS_ROOT}/${arm}/sha256.txt" ]] || {
+    echo "e17-run: arm ${arm} is not built" >&2; exit 2; }
+done
+
+((${#@})) || { echo "usage: research/e17-run.sh --arms A,B ID [ID ...]" >&2; exit 2; }
 
 status=0
 for id in "$@"; do
@@ -93,9 +105,9 @@ for id in "$@"; do
     status=2; break
   fi
   if ((idx % 2 == 0)); then
-    arms=(CURVE FLAT18)
+    arms=("${pair[0]}" "${pair[1]}")
   else
-    arms=(FLAT18 CURVE)
+    arms=("${pair[1]}" "${pair[0]}")
   fi
   echo "=== e17-run: prompt ${id} (index ${idx}) arms ${arms[*]} ==="
   export E11_GOLDEN="${golden}"

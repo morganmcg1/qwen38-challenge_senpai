@@ -48,7 +48,10 @@ from pathlib import Path
 MAX_DEPTH = 8
 SDPA_WIDTH_WALL_DEPTH_CAP = 5
 SEGMENTED_VERIFY_DEPTH_CAP = 8
-SEGMENTED_STREAK_GATE = 3
+# The live base af80b0fc ships segmentedStreakGate = 2 (l.597).  r1 was measured
+# on e6e6f81, which shipped 3.  Every r2 prediction is made at 2; the gate-3
+# number is retained so the r1 histogram can be reproduced with --streak-gate 3.
+SEGMENTED_STREAK_GATE = 2
 ACCEPT_EMA_ALPHA = 0.15
 EMA_PRIOR = [0.85 * (0.98 ** i) for i in range(MAX_DEPTH)]
 OPTIMISM_CAP = 0.95
@@ -87,11 +90,12 @@ class GateState:
     h: list[float]
     ema: list[float] = field(default_factory=lambda: list(EMA_PRIOR))
     streak: int = 0
+    streak_gate: int = SEGMENTED_STREAK_GATE
 
     def cost_model_depth(self, offered_depth: int, margin: float | None) -> int:
         width_cap = (
             SEGMENTED_VERIFY_DEPTH_CAP
-            if self.streak >= SEGMENTED_STREAK_GATE
+            if self.streak >= self.streak_gate
             else SDPA_WIDTH_WALL_DEPTH_CAP
         )
         cap = min(min(offered_depth, MAX_DEPTH), width_cap)
@@ -188,12 +192,13 @@ def simulate(
     offered_depth: int = MAX_DEPTH,
     trials: int = 200,
     seed: int = 20260817,
+    streak_gate: int = SEGMENTED_STREAK_GATE,
 ) -> SimResult:
     rng = random.Random(seed)
     hist: dict[int, int] = {d: 0 for d in range(MAX_DEPTH + 1)}
     rounds = accepted_total = rejected_total = tokens_total = 0
     for _ in range(trials):
-        state = GateState(h=list(h))
+        state = GateState(h=list(h), streak_gate=streak_gate)
         emitted = 0
         while emitted < tokens:
             margin = rng.expovariate(1.0 / proc.m) if proc.m > 0 else None
@@ -522,6 +527,112 @@ def report_fit(args: argparse.Namespace) -> None:
             )
 
 
+def h1_arm_curves() -> dict[str, list[float]]:
+    """The five r2 arms, in the vector form research/e17-build.sh materialises.
+
+    Index convention (derived from the base source, not assumed): inside
+    costModelDepth the extend test for the step out of depth `depth` reads
+    h[depth]; taking that step makes the round draft depth+1 tokens, verified at
+    width M = depth+2.  So h[i] prices the step depth i -> i+1 and buys verify
+    width M = i+2.  The element that governs "go to depth 2" is h[1].
+    """
+    return {
+        "S18": scalar_curve(0.18),
+        "CURVE": list(SHIPPED_CURVE),
+        "H1LO": scalar_curve(0.18)[:1] + [0.0800] + scalar_curve(0.18)[2:],
+        "H1MEAS": scalar_curve(0.18)[:1] + [0.1152] + scalar_curve(0.18)[2:],
+        "H1HI": scalar_curve(0.18)[:1] + [0.3000] + scalar_curve(0.18)[2:],
+    }
+
+
+def report_r2(args: argparse.Namespace) -> None:
+    """Pre-registered r2 predictions: gate-2 depth shift, and the h[1] sweep.
+
+    Nothing here is a measurement.  It is the falsifiable statement that the
+    timed arms are run against.
+    """
+    arms = h1_arm_curves()
+    print("=" * 78)
+    print("r2 PREDICTION 1 -- streak gate 2 (live base) vs 3 (r1 base e6e6f81)")
+    print("=" * 78)
+    print(
+        "The gate lifts the verify-width cap from "
+        f"{SDPA_WIDTH_WALL_DEPTH_CAP} to {SEGMENTED_VERIFY_DEPTH_CAP} after a "
+        "streak of clean rounds.  Lowering the streak requirement 3 -> 2 can "
+        "only lift the cap on strictly more rounds, so no arm can go shallower."
+    )
+    print()
+    print(f"{'arm':>7}  {'gate':>4}  {'meandep':>8}  histogram")
+    for label in ("S18", "CURVE"):
+        for gate in (3, 2):
+            res = simulate(
+                arms[label],
+                Process(args.a, args.b, args.m),
+                tokens=args.tokens,
+                trials=args.trials,
+                streak_gate=gate,
+            )
+            print(
+                f"{label:>7}  {gate:>4}  {res.mean_depth:>8.3f}  "
+                f"{fmt_hist(res.depth_hist, res.round_count)}"
+            )
+    print()
+    print(
+        "Pre-registered, falsifiable: the measured S18 control on af80b0fc at "
+        "512 decode tokens on `english` must be NO SHALLOWER than the r1 "
+        "gate-3 CURVE histogram {1:2, 2:231, 3:13}, and must show a non-zero "
+        "M>=5 share (i.e. depth>=3 rounds), because gate 2 admits the wide "
+        "verify path sooner AND the flat 0.18 vector prices depth 2 and 3 far "
+        "below the r1 curve's 0.2426/0.3754.  If the control is shallower or "
+        "M>=5 is 0.00%, the depth model in this file is wrong and r2 stops."
+    )
+    print()
+    print("=" * 78)
+    print("r2 PREDICTION 2 -- direction of the h[1] sweep")
+    print("=" * 78)
+    print(
+        "Thresholds, written out: d0->1 needs reach0 > h[0];  d1->2 needs "
+        "reach1 > h[1](1+reach0)/(1+h[0]);  d2->3 needs reach2 > "
+        "h[2](1+reach0+reach1)/(1+h[0]+h[1]).  h[1] appears in the d1->2 "
+        "threshold's NUMERATOR and in every deeper threshold's DENOMINATOR, so "
+        "raising h[1] closes depth 2 and simultaneously OPENS depth 3+."
+    )
+    print()
+    for ratio in (0.95, 0.85, 0.70, 0.50):
+        q = [ratio] * MAX_DEPTH
+        print(f"-- uniform per-position accept q = {ratio:.2f}")
+        print(f"{'arm':>7}  {'h[1]':>6}  {'depth':>5}  per-depth reach/threshold")
+        for label, h in arms.items():
+            rows = threshold_table(h, q)
+            reached = sum(1 for r in rows if r["opens"])
+            detail = " ".join(
+                f"d{r['depth']}:{r['reach']:.3f}{'>' if r['opens'] else '<='}"
+                f"{r['threshold']:.3f}"
+                for r in rows[: min(reached + 1, 4)]
+            )
+            print(f"{label:>7}  {h[1]:>6.4f}  {reached:>5}  {detail}")
+        print()
+    print(f"{'arm':>7}  {'h[1]':>6}  {'meandep':>8}  {'acc%':>6}  histogram")
+    for label, h in arms.items():
+        res = simulate(
+            h,
+            Process(args.a, args.b, args.m),
+            tokens=args.tokens,
+            trials=args.trials,
+        )
+        print(
+            f"{label:>7}  {h[1]:>6.4f}  {res.mean_depth:>8.3f}  "
+            f"{100.0 * res.accept_rate:>6.2f}  "
+            f"{fmt_hist(res.depth_hist, res.round_count)}"
+        )
+    print()
+    print(
+        "Pre-registered, falsifiable: mean drafted depth is NOT monotone in "
+        "h[1].  H1HI must not be uniformly the shallowest arm -- if the sweep "
+        "shows monotone depth in h[1], the sign analysis above is wrong."
+    )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs-root", default=".mlxfast-private/e17/runs")
@@ -543,8 +654,16 @@ def main() -> None:
         default="Hp3=shipped,Sp3=flat0.18,S20p=flat0.20",
         help="LABEL=CURVE pairs naming which h vector each measured arm ran",
     )
+    ap.add_argument(
+        "--r2",
+        action="store_true",
+        help="print the pre-registered r2 predictions (gate-2 depth shift and "
+        "h[1] sweep direction)",
+    )
     args = ap.parse_args()
-    if args.costcheck:
+    if args.r2:
+        report_r2(args)
+    elif args.costcheck:
         report_costcheck(args)
     elif args.fit:
         report_fit(args)
