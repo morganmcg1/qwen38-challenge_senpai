@@ -129,9 +129,23 @@ def host_info():
         mlx_version = importlib.metadata.version("mlx")
     except Exception:
         mlx_version = None
+    gpu_cores = None
+    try:
+        for line in subprocess.run(
+            ["system_profiler", "SPDisplaysDataType"],
+            capture_output=True, text=True, check=True
+        ).stdout.splitlines():
+            if "Total Number of Cores" in line:
+                gpu_cores = line.split(":", 1)[1].strip()
+                break
+    except Exception:
+        pass
+
     return {
         "chip": sysctl("machdep.cpu.brand_string"),
-        "gpu_cores": sysctl("hw.perflevel0.physicalcpu"),
+        "gpu_cores": gpu_cores,
+        "cpu_perf_cores": sysctl("hw.perflevel0.physicalcpu"),
+        "cpu_cores": sysctl("hw.ncpu"),
         "memsize_bytes": sysctl("hw.memsize"),
         "macos_build": sysctl("kern.osversion"),
         # The Swift build vendors mlx-swift's C++ core (Vendor/mlx-swift
