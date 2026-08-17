@@ -137,22 +137,22 @@ def arm_payload(
     n = mtp["decode_token_count"]
     raw = summary["raw"]
     metrics = {
-        # headline currency: verbatim decode-only, which score.json confirms is
+        # headline currency: verbatim (P + D) / N, prefill-inclusive, which is
         # what the track scores. Nothing is subtracted or added to reach it.
         "raw_p": raw,
         "serial_spt": summary["serial_spt"],
         "mtp_spt": summary["mtp_spt"],
         "score_json_speedup": score["score"],
-        # wall-clock secondary: charge each leg its own measured seed prefill.
-        # Real end-to-end latency, but not the scored currency.
-        "serial_spt_total": summary["serial_spt"] + summary["serial_prefill_s"] / n,
-        "mtp_spt_total": summary["mtp_spt"] + summary["mtp_prefill_s"] / n,
-        "raw_p_wallclock": (summary["serial_spt"] + summary["serial_prefill_s"] / n)
-        / (summary["mtp_spt"] + summary["mtp_prefill_s"] / n),
+        # decode-only DIAGNOSTIC: subtract each leg's own measured seed prefill
+        # out of the already-inclusive field. Never a headline.
+        "serial_spt_decode_only": summary["serial_spt"] - summary["serial_prefill_s"] / n,
+        "mtp_spt_decode_only": summary["mtp_spt"] - summary["mtp_prefill_s"] / n,
+        "raw_p_decode_only": (summary["serial_spt"] - summary["serial_prefill_s"] / n)
+        / (summary["mtp_spt"] - summary["mtp_prefill_s"] / n),
         "serial_prefill_s": summary["serial_prefill_s"],
         "mtp_prefill_s": summary["mtp_prefill_s"],
-        "decode_share_of_mtp_leg": summary["mtp_spt"]
-        / (summary["mtp_spt"] + summary["mtp_prefill_s"] / n),
+        "decode_share_of_mtp_leg": (summary["mtp_spt"] - summary["mtp_prefill_s"] / n)
+        / summary["mtp_spt"],
         # drafting behaviour
         "rounds": summary["rounds"],
         "mean_depth": summary["mean_depth"],
@@ -237,18 +237,21 @@ def main(argv: list[str]) -> int:
             sub = [p for p in ids if p in data and arm in data[p]]
             if not sub:
                 continue
-            rk = [data[p][arm]["raw"] for p in sub]
-            ra = [data[p][CONTROL]["raw"] for p in sub]
+            # `raw` is the scored currency; `g` is the MTP leg's seconds/token
+            # reduction. They are different percentages of different things:
+            # headline_delta_pct moves the score, g_median_pct moves decode time.
+            r_arm = [data[p][arm]["raw"] for p in sub]
+            r_ctl = [data[p][CONTROL]["raw"] for p in sub]
             gs = [(data[p][CONTROL]["mtp_spt"] - data[p][arm]["mtp_spt"])
                   / data[p][CONTROL]["mtp_spt"] for p in sub]
             pooled.update({
                 f"{arm}/{label}/n": len(sub),
                 f"{arm}/{label}/prompts": ",".join(sub),
-                f"{arm}/{label}/median_raw_arm": median(rk),
-                f"{arm}/{label}/median_raw_control": median(ra),
-                f"{arm}/{label}/headline_delta": median(rk) - median(ra),
+                f"{arm}/{label}/median_raw_arm": median(r_arm),
+                f"{arm}/{label}/median_raw_control": median(r_ctl),
+                f"{arm}/{label}/headline_delta": median(r_arm) - median(r_ctl),
                 f"{arm}/{label}/headline_delta_pct":
-                    100 * (median(rk) - median(ra)) / median(ra),
+                    100 * (median(r_arm) - median(r_ctl)) / median(r_ctl),
                 f"{arm}/{label}/g_median_pct": 100 * median(gs),
                 f"{arm}/{label}/g_min_pct": 100 * min(gs),
                 f"{arm}/{label}/g_max_pct": 100 * max(gs),
@@ -276,8 +279,8 @@ def main(argv: list[str]) -> int:
     config.update({"experiment": "qwen38-r1-e17-curve-transfer-and-refit",
                    "arm": "headline", "prompts_completed": sorted(data),
                    "metric_convention": "raw_p = serial_spt / mtp_spt, verbatim "
-                                        "decode-only = scored currency; "
-                                        "raw_p_wallclock is a secondary"})
+                                        "(P+D)/N prefill-inclusive = scored currency; "
+                                        "raw_p_decode_only is a diagnostic only"})
     run = wandb.init(entity=ENTITY, project=PROJECT, name="e17-headline", group=GROUP,
                      job_type="analysis", config=config, reinit=True,
                      tags=["qwen38-r1-e17", "curve-transfer", "headline"])

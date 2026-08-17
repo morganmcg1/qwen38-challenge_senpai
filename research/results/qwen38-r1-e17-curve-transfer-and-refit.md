@@ -1,4 +1,22 @@
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"g_median_held_out_pct","available":true,"value":5.284272658432601},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"revision_id":"r2","base_sha":"af80b0fc93cf20e8405631bb53365ace21a1f913","primary_metric":{"name":"curve_m_ge_5_share_pct","available":true,"value":0.0},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+
+The marker above is **r2**. Its head is the commit that carries this line, so the head SHA cannot be written
+inside itself; the base is `af80b0fc93cf20e8405631bb53365ace21a1f913` and the head is recorded in the typed
+`submit_experiment_result` payload, which is the registration of record. A committed marker alone does not
+register a revision.
+
+Two scope statements that belong next to the marker, so no reader has to reconstruct them:
+
+- The `narrative` prompt was **never timed** on `af80b0fc`. Its only r2 artifact is an aborted partial at
+  `.mlxfast-private/e17/aborted/narrative-CURVE-thermal-abort/`, kept and labelled. No `narrative` number
+  appears anywhere in this report, and the r2 headline is a single-prompt (`english`) contrast.
+- The three `h[1]` sensitivity arms — `H1LO`, `H1MEAS`, `H1HI` — were built and hash-verified but **never
+  timed**, so they **carry no numbers at all**. Every `h[1]` statement below is either simulator output or
+  gate algebra, explicitly labelled as such.
+
+r1's marker, superseded, kept for provenance:
+
+`SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"g_median_held_out_pct","available":true,"value":5.284272658432601},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}`
 
 # E17 — does the depth curve's advantage survive the ranked aggregation?
 
@@ -16,7 +34,7 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 
 ## Q1 — headline
 
-Per-prompt pairs, `raw_p = serial_spt / mtp_spt` straight from `.parent_measured_seconds_per_token`, **decode-only — which is the scored currency — over 512 decode tokens after a 512-token seed**, `--local-iterate`. *(r2 correction: r1 originally labelled this field prefill-inclusive. The label was wrong; the numbers below are unchanged and were always in score currency. See "Convention and window" below.)*
+Per-prompt pairs, `raw_p = serial_spt / mtp_spt` straight from `.parent_measured_seconds_per_token`, **prefill-inclusive — which is the scored currency — over 512 decode tokens after a 512-token seed**, `--local-iterate`. *(r2-final correction: r1 labelled this field prefill-inclusive and was **right**; r2's first pass relabelled it decode-only and was **wrong**. The measured values below never changed and were always in score currency. See "Convention and window" below for the source proof.)*
 
 | prompt | held out | serial (C leg) | serial (F leg) | floor % | mtp CURVE | mtp FLAT18 | raw CURVE | raw FLAT18 | Δraw | g % |
 |:--|:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|
@@ -53,13 +71,74 @@ The two central-order-statistic sets differ between arms (`dramatic` is central 
 
 ### Convention and window, stated for every ratio
 
-**Corrected in r2 — read this instead of r1's original wording.** Every `raw_p`, every median, and every `g` above is **decode-only**, which `score.json` proves is exactly the scored currency, measured over **512 decode tokens** after a 512-token seed, taken directly from `.parent_measured_seconds_per_token` with **no subtraction and no addition**. So **every number in this report is already in score currency** and the `× 0.84228` factor must **not** be applied to any of them.
+**Corrected again in r2-final. This supersedes both r1's wording and r2's first correction; read only this block.** I resolved
+the convention at source rather than by arithmetic, and the resolution goes **against my r2 rebuttal and for the advisor**.
 
-What r1 got wrong was only the *label*, not any measured value. r1 called the field prefill-inclusive and derived a "decode-currency → score conversion factor" of `0.84228`. That quantity is real but is the **decode share of the wall-clock leg** (`D_m / T_m`), which describes end-to-end latency and is not scored. The arithmetic r1 offered as a sanity check (7.577 % × 0.84228 = 6.382 % ≈ 6.378 %) is correct algebra with the two labels swapped: `(R_wall − 1)/(R_decode − 1) = D_m/T_m` exactly when both legs prefill in the same time, which they do here. r1's further conclusion that the pair `Sp3 = 1.437971 / Hp3 = 1.521771` arose from "prefill charged twice" is therefore **inverted** — that pair is the legitimate wall-clock ratio, diluted because a fixed ≈4 s seed prefill is not accelerated.
+`Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift` sets **one** clock origin and reads it twice:
 
-Three independent proofs, in increasing authority: (i) `spt × 512 = 38.05845701694889` matches `decode_seconds = 38.058457016944885` to 1e-11 while `decode + prefill = 42.0525` does not, and `prefill_seconds_per_token = 3.9940489530563354/512` exactly; (ii) `Sources/MLXFastCLI/main.swift:1509` emits `report.decodeSecondsPerToken`, and `QwenRuntimeBenchmark.swift` carries `decodeSecondsPerToken` and `prefillSecondsPerToken` as separate parallel fields; (iii) the run's own `score.json` has `.score == .metrics.mtp_decode_speedup` over these same two fields, gated by `ranked_decode_speedup_floor = 0.9` — `program.md`'s published 0.90 floor.
+```
+ 94   let started = Date()
+ 95   let begin = try client.beginMTPDecode(seedTokens: golden.seedTokens)
+100   let seedPrefillSeconds = Date().timeIntervalSince(started)
+...
+197   let decodeSeconds = Date().timeIntervalSince(started)
+```
 
-Across all 20 timed legs measured in r1 and r2, prefill is **3.9937–4.0111 s** per leg: **9.47–9.51 %** of a serial wall-clock leg and **13.60–15.22 %** of an MTP one. That asymmetry is the whole story — a faster MTP leg makes the unaccelerated prefill a larger share, so the wall-clock ratio always understates the scored one. Recomputed on `af80b0fc`, `D_m/T_m` = **0.85570** (CURVE) and **0.86391** (S18), versus 0.84228 on `e6e6f81`. Reported as a **clearly-labelled secondary**, r1's held-out wall-clock `g_median` is **+4.556 %** against the scored **+5.284 %**.
+Both intervals are measured from the same `started`, and `started` precedes `beginMTPDecode`. So the field emitted as
+`decode_seconds` is **`P + D`, not `D`**, and `QwenRuntimeMTP.swift:442-443` divides exactly that by the decode token
+count: `decodeSecondsPerToken { decodeSeconds / max(decodeTokenCount, 1) }`. Therefore
+`parent_measured_seconds_per_token = (P + D) / N` and is **prefill-inclusive**.
+
+**What this retracts.**
+
+- The r2 label **"decode-only"** on `raw_p` is **wrong**. The number is prefill-inclusive.
+- r2's proof (i) was a naming trap, not a proof: `spt × 512 == decode_seconds` holds to the last bit (both are
+  `38.058457016944885` for S18-serial), but `decode_seconds` is itself `P + D`. Adding prefill again to that field is what
+  produced `42.0525`, so the check confirmed only that the harness divides the field it emits.
+- The advisor's r1 diagnosis that the pair `Sp3 = 1.437971 / Hp3 = 1.521771` arose from **prefill charged twice** was
+  **correct**. My r2 claim that it was "inverted" is withdrawn, and so is the description of that pair as "the legitimate
+  wall-clock ratio". It is an arithmetic artifact.
+
+**What this does *not* change: the headline magnitude.** Because the harness field is already prefill-inclusive and the
+headline is read straight from it with no subtraction and no addition, `g = +6.821 %` is **already in the scored
+convention** and needs no restatement. Concretely, on `af80b0fc`/`english`:
+
+```
+                                       S18 (control)   CURVE (candidate)     g%
+as emitted  = (P+D)/N        raw_p          1.496775            1.605692   +6.821   <- SCORED
+prefill added a second time  raw_p          1.428788            1.518272   +5.926   <- artifact, withdrawn
+prefill subtracted (true D)  raw_p          1.590185            1.728578   +8.051   <- diagnostic only
+```
+
+One further label, because it is the second-easiest thing to swap in this document: the `g%` column above is the
+**candidate MTP leg's seconds-per-token reduction**, not the movement of the scored ratio. The scored ratio moves
+`1.496775 → 1.605692`, i.e. `d_raw = +0.10892` = **+7.277 %** relative. See "Two percentages, and which one is the
+score" in the r2 headline section for the `g/(1−g)` algebra that connects them.
+
+So the advisor's §0 conclusion that "**the scored delta is 17.67 % smaller than you reported**" **does not follow from the
+advisor's own source chain**: the §0 table labels `1.6091`-type values "decode-only" and `1.5218`-type values
+"prefill-inclusive (what is scored)", but line 197 above shows the assignment is the other way round — the `1.6091`-type
+values *are* the scored ones and the `1.5218`-type values are the double-charged ones. The §0 bisection that recovers
+`P ≈ 3.9866 s` is sound but recovers only `|P|`; a bisection on `|R_a − R_b|` cannot distinguish adding prefill from
+subtracting it, which is exactly the ambiguity that put the two rows in the wrong order.
+
+**`0.84228` — please do not apply it to anything in this report.** It is real, and it is now banked as a standing campaign
+constant, so its scope matters. It is the **MTP leg's true decode share**, `(T_m − P_m)/T_m`; recomputed on `af80b0fc` it
+is **0.84248** (S18) and **0.83136** (CURVE), matching the `e6e6f81` value to ~0.2 pp. Its only valid use is converting a
+**true decode-only** quantity into the scored one. It must **not** be applied to `+6.821 %`, to any `raw_p` in this
+report, or to anything read straight from `parent_measured_seconds_per_token`, because those are already scored;
+multiplying them by it would understate the result by ~16 %. The reason the advisor's E11 sanity check works
+(`7.577 % × 0.84228 = 6.382 % ≈ 6.378 %`) is that its left operand was a true decode-only `g`: here the same identity
+reappears as `6.821 / 8.051 = 0.8473`, i.e. `g_scored / g_decode-only ≈ (T_m − P_m)/T_m`.
+
+The `0.85570`/`0.86391` pair reported earlier in r2 as "`D_m/T_m` recomputed on `af80b0fc`" is **not** a decode share. It
+is `T_m / (T_m + P_m)` — the dilution factor of the double-charged artifact against the scored value — and it is withdrawn
+along with the artifact. The r1 held-out "wall-clock `g_median` = +4.556 %" secondary is withdrawn for the same reason;
+the held-out scored figure **+5.284 %** stands alone, with no companion currency.
+
+Measured prefill is **3.9937–4.0111 s** across all 20 timed legs in r1 and r2 — stable, unaccelerated, and inside the
+scored window on both legs. That is why a `≈4 s` fixed cost sits in every ratio in this report, and why the scored ratio
+is *lower* than the true decode-only ratio rather than higher.
 
 ## Mechanism — the main scientific result of the session
 
@@ -200,11 +279,11 @@ On the substance of §7: alphonse's E16 claim that the curve **costs** ~1 % of t
 Per the advisor's §2/§3: the live advisor base is `b85e782`, which moved `segmentedStreakGate 3 → 2` and `qmv_fast_crossrow_affine4_g64_m<T,8,4> → <T,8,3>` **together on purpose**, and those are exactly the two levers my model is about. So:
 
 - **This is a within-session contrast on a single fixed base, `e6e6f81`, and I report it as such.** The blinding held, the arms differ in one literal, and the pairing is clean. As a *mechanism* result it stands.
-- **I am not proposing any `R'` or submission number.** Anything headline must be measured on `b85e782`. My `M≥5 = 0.00 %` figure and the `{1:2, 2:231, 3:13}` histogram were both taken at gate 3 and now **understate** firing; the `R'` projection table is stale for the same reason.
+- **I am not proposing any `R'` or submission number.** Anything headline must be measured on `b85e782`. My `M≥5 = 0.00 %` figure and the `{1:2, 2:237, 3:7}` histogram were both taken at gate 3 and could in principle **understate** firing; the `R'` projection table is stale for the same reason. *(Corrected in r2-final: this bullet previously read `{1:2, 2:231, 3:13}`, a transcription error introduced at `3c2eaab`. That histogram does not exist in any measurement. The measured CURVE histogram is `{1:2, 2:237, 3:7}` on both `e6e6f81` and `af80b0fc`, and it is the value already tabulated in the data table above and present in the raw JSON. Proof: `(1·2 + 2·237 + 3·7)/246 = 497/246 = 2.0203`, which matches the recorded mean depth `2.020` and the declared row total `743`; the erroneous vector gives `503/246 = 2.0447` and `749` rows, matching neither. The gate-3 → gate-2 re-measure in r2 then showed the histogram did not move, so the "understate" concern is itself resolved — see the gate-2 falsification section.)*
 
 ### What is salvageable, and what a re-measure costs
 
-**Base-independent (no re-measure needed):** the whole gate algebra and its derivation; the non-monotonicity diagnosis; the monotone refit vector and its pre-timing depth predictions; the pricing test; the 0.18-vs-0.20 gate-flip calculation and its confirmation; both arithmetic corrections; the prefill-dilution factor derivation (the *value* 0.84228 is base-specific, the method is not); the mechanism finding that the curve wins by declining verify rows; and the entire instrument — prompt set, texts, goldens, `e17-build.sh`, `e17-run.sh`, `e17_analyse.py`, `e17_wandb.py`, the ABBA design and the noise-floor discipline. The instrument is the expensive part and it ports unchanged.
+**Base-independent (no re-measure needed):** the whole gate algebra and its derivation; the non-monotonicity diagnosis; the monotone refit vector and its pre-timing depth predictions; the pricing test; the 0.18-vs-0.20 gate-flip calculation and its confirmation; both arithmetic corrections; the decode-share derivation (the *value* 0.84228 is base-specific, the method is not — but see "Convention and window": it converts a true decode-only quantity into the scored one and must not be applied to any `raw_p` in this report); the mechanism finding that the curve wins by declining verify rows; and the entire instrument — prompt set, texts, goldens, `e17-build.sh`, `e17-run.sh`, `e17_analyse.py`, `e17_wandb.py`, the ABBA design and the noise-floor discipline. The instrument is the expensive part and it ports unchanged.
 
 **Needs re-measure on `b85e782`:** every number in the per-prompt table and both medians; anything about depth ≥4, `M≥5` or `M=8`; and the `R'` projection.
 
@@ -323,7 +402,9 @@ calls, measured bit-exact. Neither was touched.
 ## The advisor's gate-2 prediction is **falsified**
 
 The advisor predicted that on `af80b0fc` (`segmentedStreakGate` 3 → 2) the curve's depth histogram would
-move **deeper** than r1's `{1:2, 2:231, 3:13}`, and that the `M ≥ 5` share would become **> 0.00 %**.
+move **deeper** than r1's `{1:2, 2:237, 3:7}`, and that the `M ≥ 5` share would become **> 0.00 %**. *(The assignment and
+r1's own summary bullet quoted that histogram as `{1:2, 2:231, 3:13}`; that vector is a transcription error and was never
+measured. The prediction is unaffected either way — both vectors cap at depth 3, and the prediction was about movement.)*
 
 Measured: `{1:2, 2:237, 3:7}` — the histogram did not move deeper; it did not move meaningfully at all.
 `M ≥ 5` stayed **exactly 0.00 %**.
@@ -392,7 +473,7 @@ was stale, and that is fixed.
 
 ## Q1 (r2) — headline, in score currency
 
-`english`, 512 decode tokens, ABBA position 1 then 2, decode-only (= the scored currency, see the
+`english`, 512 decode tokens, ABBA position 1 then 2, prefill-inclusive (= the scored currency, see the
 convention section above):
 
 | arm | serial s/tok | mtp s/tok | `raw_p` | `g%` vs control |
@@ -402,18 +483,40 @@ convention section above):
 
 `d_raw = +0.10892`. Serial-leg floor between the two byte-identical depth-0 legs: **0.041 %**.
 
-Dual convention, both currencies, so the number cannot be misread:
+**Two percentages, and which one is the score.** `+6.821 %` — the number I have quoted as the headline
+throughout — is the **MTP leg's seconds-per-token reduction**, `(mtp_ctrl − mtp_cand)/mtp_ctrl =
+(0.049662 − 0.046275)/0.049662`. The **score** is the median of `raw_p`, and it moves by
+`d_raw / raw_ctrl = 0.10892 / 1.49677 =` **+7.277 %**. Both are logged and neither is wrong, but they answer
+different questions, so a reader must not swap them:
 
 ```
-prompt   arm    raw scored  raw wall  g% scored  g% wall     D/T   (Rt-1)/(Rd-1)
-english  CURVE      1.6057    1.5183     +6.821   +5.926  0.85570      0.85567
-english  S18        1.4968    1.4288         --       --  0.86391      0.86314
+g               = +6.821 %   decode time removed from the candidate leg
+d_raw           = +0.10892   absolute movement of the scored ratio
+d_raw / raw_ctl = +7.277 %   relative movement of the scored ratio
 ```
 
-`raw scored` is the decode-only ratio the harness scores. `raw wall` adds the ~4.0 s seed prefill to both
-legs; it is *unscored end-to-end latency*, diluted because prefill is unaccelerated. The identity
-`(R_wall − 1)/(R_decode − 1) = D_m/T_m` holds to 5 decimal places, which is what a shared-prefill pair
-must satisfy.
+The gap is arithmetic, not a discrepancy: removing a fraction `g` of the denominator raises the ratio by
+`g/(1−g) = 7.32 %`, and the remaining 0.04 pp is the serial-leg floor pulling the other way
+(CURVE's serial leg was 0.041 % *faster*, which slightly *reduces* its `raw_p`). Where this document says
+"+6.821 %" it means the decode-time reduction; where it needs the score it quotes `raw_p` or `d_raw`
+directly. The scored quantities are `1.49677 → 1.60569`.
+
+**The "dual convention" table that stood here in r2's first pass is withdrawn.** It presented a second currency
+(`raw wall` = 1.5183 / 1.4288, `g% wall` = +5.926 %) as legitimate unscored end-to-end latency. It is not a currency at
+all: `parent_measured_seconds_per_token` already contains the seed prefill (`QwenRuntimeMTPDriver.swift:94/197`), so that
+column added the ~4.0 s prefill a **second** time. The accompanying `D/T` column (0.85570 / 0.86391) was
+`T_m/(T_m + P_m)`, the artifact's own dilution factor, not a decode share. There is exactly **one** scored number here:
+
+```
+prompt   arm     raw_p (scored, = (P+D)/N)   g% vs control
+english  CURVE                     1.605692         +6.821
+english  S18                       1.496775             --
+```
+
+For diagnosis only, and never as a headline: subtracting the measured prefill from both legs gives the **true
+decode-only** ratios 1.728578 / 1.590185, `g = +8.051 %`, with MTP-leg decode shares `(T_m − P_m)/T_m` of 0.83136
+(CURVE) and 0.84248 (S18). `6.821 / 8.051 = 0.8473` reproduces that share, which is the identity the campaign's
+`0.84228` constant expresses — and the reason it must not be applied to the `+6.821 %` above.
 
 ## P1 — transfer verdict: **CONFIRMED**, and by an unusually strong route
 
@@ -436,6 +539,41 @@ Thermal note: `meta.txt` records `thermal_before = 39.14 C / thermal_after = 60.
 `58.13 C / 60.88 C` (CURVE). The `before` value is `e11-run.sh`'s entry snapshot taken *before*
 `benchmark.sh` runs its own internal per-leg cooling gates, so each timed leg was still individually gated
 below 40 C. Job A's measurements are sound.
+
+## W&B runs (r2), and a disclosure about four mislabelled keys
+
+Group `qwen38-r1-e17-curve-transfer-and-refit`, project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`.
+Three runs, all `finished`:
+
+| run | id | state | url |
+| --- | --- | --- | --- |
+| `e17r2-english-S18` (control) | `8jpqa48w` | finished | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/8jpqa48w |
+| `e17r2-english-CURVE` (candidate) | `tz5kfkcb` | finished | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tz5kfkcb |
+| `e17-headline` (analysis) | `p9fz76o8` | finished | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/p9fz76o8 |
+
+**Disclosure.** Those three runs were logged before I read `QwenRuntimeMTPDriver.swift:94/197`, so four of
+their keys carry the withdrawn dual-convention semantics. Nothing that feeds the headline is affected, but a
+future reader must not take these four at face value:
+
+| logged key | value (S18 / CURVE) | what it actually is | status |
+| --- | --- | --- | --- |
+| `serial_spt_total` | 0.082134 / 0.082106 | `(P+D)/N` **plus P/N again** | wrong, do not use |
+| `mtp_spt_total` | 0.057485 / 0.054078 | same double charge | wrong, do not use |
+| `raw_p_wallclock` | 1.428788 / 1.518272 | ratio of the two doubly-charged legs (`g` = +5.926 %) | wrong, do not use |
+| `decode_share_of_mtp_leg` | 0.86391 / 0.85570 | `T_m/(T_m+P_m)`, the artifact's dilution factor — **not** a decode share | mislabelled |
+
+The keys that matter are all correct as logged, because they are copied verbatim out of
+`parent_measured_seconds_per_token` with no arithmetic: `raw_p` (1.496775 / 1.605692), `serial_spt`,
+`mtp_spt`, `score_json_speedup`, `g`, and every behavioural and correctness key. The analysis run's
+`metric_convention` config string says "verbatim decode-only = scored currency": the *identification* of
+`raw_p` as the scored currency is right, the word "decode-only" is the wrong label for it.
+
+`research/e17_wandb.py` is fixed in this commit — the three broken keys now **subtract** prefill and are
+renamed `serial_spt_decode_only` / `mtp_spt_decode_only` / `raw_p_decode_only` (1.590185 / 1.728578), and
+`decode_share_of_mtp_leg` is now the real `(T_m − P_m)/T_m` (0.84248 / 0.83136). I deliberately did **not**
+re-log or overwrite the three finished runs: rewriting a published run's summary in place would leave the
+campaign with numbers that no longer match the run's own history, and a fourth duplicate run would pollute the
+group. The corrected values are in the table above and reproduce from `research/e17_analyse.py --r3`.
 
 ## Noise floor — honest, and one estimate short
 
@@ -574,9 +712,13 @@ Evidence that nothing is lost, checked before the merge:
 
 - `git diff --name-only --diff-filter=D e3f31dea HEAD` is **empty** — no file on the remote tip is absent
   locally.
-- The only removed lines in this report are the **two r1 sentences that r2 explicitly retracts**: the
-  "prefill-inclusive" label on `raw_p` and the `0.84228` decode→score conversion factor. Section
-  *Q1 (r2)* above replaces both.
+- The only removed lines in this report were the **two r1 sentences that r2's first pass retracted**: the
+  "prefill-inclusive" label on `raw_p` and the `0.84228` decode→score conversion factor. **r2-final reinstates the
+  substance of both.** The source read at `QwenRuntimeMTPDriver.swift:94/197` shows r1's label was correct, so that
+  retraction is itself withdrawn; and `0.84228` is a real, correctly-derived MTP decode share whose only error was scope
+  (it converts true decode-only → scored, and so does not apply to a field that is already scored). The removals are
+  therefore net-neutral in content: r1's claims stand, with their scope now stated. Section *Convention and window*
+  above is the single authority.
 - The other removed lines are the intended r2 rewrites of research-only tooling: the arm builder generalised
   from 2 arms to 6, the analyser to `--runs-root/--arms/--control`, and the W&B logger to N arms.
 
@@ -591,8 +733,10 @@ In particular the CURVE vector was **deliberately not** committed into
 
 ## Conclusion (r2)
 
-- **P1 is confirmed.** The curve's mechanism transfers from `e6e6f81` to `af80b0fc`: `+6.821 %` on
-  `english`, decode-only, 512 tokens, with both arms reproducing r1 bit-for-bit in behaviour.
+- **P1 is confirmed.** The curve's mechanism transfers from `e6e6f81` to `af80b0fc`: `g = +6.821 %` decode
+  time on `english` over 512 tokens (scored `raw_p` 1.49677 → 1.60569, `d_raw = +0.10892`, +7.277 %
+  relative), prefill-inclusive as the harness emits it, with both arms reproducing r1 bit-for-bit in
+  behaviour.
 - **The advisor's gate-2 prediction is falsified**, with a benign mechanism: the segmented-verify path the
   gate controls is never entered when both arms cap at `M ≤ 5`. Gate 3 → 2 is inert here. The `h[1]` sweep
   is stopped per the advisor's own stop rule.

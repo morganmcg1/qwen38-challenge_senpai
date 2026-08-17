@@ -6,25 +6,32 @@ Conventions, fixed before any E17 arm was timed:
   raw_p = serial_seconds_per_token / mtp_seconds_per_token
 
 Both terms are read verbatim from `.parent_measured_seconds_per_token` in the
-run's own reports. That field is DECODE-ONLY, and decode-only is exactly the
-currency the track scores. Three independent proofs, in increasing authority:
+run's own reports. That field is PREFILL-INCLUSIVE, (P + D) / N, and it is
+exactly the currency the track scores. Settled at source, not by arithmetic:
 
-  * arithmetic: spt * decode_token_count reproduces `decode_seconds` to 1e-11
-    (38.05845701694889 vs 38.058457016944885) while decode+prefill (42.0525)
-    does not;
-  * source: MLXFastCLI/main.swift:1509 emits `report.decodeSecondsPerToken`, and
-    QwenRuntimeBenchmark.swift carries `decodeSecondsPerToken` and
-    `prefillSecondsPerToken` as separate parallel fields throughout;
-  * harness: the run's own score.json sets `.score` == `.metrics
-    .mtp_decode_speedup` == serial_spt/mtp_spt over these same fields, gated by
-    `ranked_decode_speedup_floor = 0.9` -- program.md's 0.90 published floor.
+  MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift
+     94   let started = Date()
+     95   let begin = try client.beginMTPDecode(seedTokens: golden.seedTokens)
+    100   let seedPrefillSeconds = Date().timeIntervalSince(started)
+    197   let decodeSeconds = Date().timeIntervalSince(started)
+
+Both reads share one origin and `started` precedes prefill, so the field emitted
+as `decode_seconds` already contains prefill; QwenRuntimeMTP.swift:442-443 then
+divides that by the decode token count.
 
 So `raw` here IS the scored ratio and nothing should be subtracted or added to
-reach score currency. An earlier revision of this docstring claimed the opposite
-(prefill-inclusive) and introduced a 0.84228 "decode->score" factor; that factor
-is really the decode SHARE of the wall-clock leg (D/T), which describes
-end-to-end latency and is NOT what the track scores. It is still reported below
-as a clearly labelled secondary number, never applied to the headline.
+reach score currency. Two earlier revisions of this docstring were wrong in
+opposite directions; the traps are worth naming because both look like proofs:
+
+  * "spt * decode_token_count reproduces decode_seconds to 1e-11 while
+    decode+prefill does not" is TRUE but proves nothing about the convention --
+    `decode_seconds` is itself P + D, so the check only shows the harness
+    divides the field it emits. Adding prefill to it charges prefill twice, and
+    that is where the 42.0525 / 1.5183 / +5.926% family of numbers came from.
+  * the 0.84228 "decode->score" factor is a REAL quantity, the MTP leg's decode
+    share (T_m - P_m)/T_m, but its scope is narrow: it converts a TRUE
+    decode-only figure into the scored one. Applying it to anything read
+    straight from `parent_measured_seconds_per_token` understates by ~16%.
 
   03-mtp-timed.json  the serial control leg of that run (mtp_depth 0)
   04-mtp-timed.json  the MTP arm leg of that run (mtp_depth 8)
@@ -169,7 +176,7 @@ def report(data: dict[str, dict[str, dict]]) -> None:
 
     print(
         f"PER-PROMPT PAIRS vs {CONTROL} "
-        "(raw = serial spt / mtp spt, decode-only = scored currency, 512 decode tokens)"
+        "(raw = serial spt / mtp spt, prefill-inclusive = scored currency, 512 decode tokens)"
     )
     print(
         f"  g% > 0 means the CANDIDATE decodes faster than {CONTROL}: "
@@ -195,7 +202,7 @@ def report(data: dict[str, dict[str, dict]]) -> None:
                 f"{a['raw']-k['raw']:>+8.4f}{100*g:>+8.3f}"
             )
 
-    dual_convention(data)
+    prefill_diagnostic(data)
 
     for label, ids in (("HELD-OUT 7", HELD_OUT), ("ALL 8 (with in-sample anchor)", PROMPTS)):
         for arm in ARMS:
@@ -243,39 +250,39 @@ def report(data: dict[str, dict[str, dict]]) -> None:
     mechanism(data)
 
 
-def dual_convention(data: dict[str, dict[str, dict]]) -> None:
-    """Every ratio twice: scored decode-only, and wall-clock as a secondary.
+def prefill_diagnostic(data: dict[str, dict[str, dict]]) -> None:
+    """The scored ratio, plus a decode-only diagnostic that never replaces it.
 
-    Wall-clock charges each leg its own measured seed prefill. It is a real
-    end-to-end latency number but the track does not score it, so it never
-    replaces the headline. `D/T` is that leg's decode share; it equals
-    (raw_wall - 1) / (raw_decode - 1) exactly when both legs prefill in the
-    same time, which is why an earlier revision mistook it for a conversion
-    factor into score currency.
+    `raw` is already prefill-inclusive and already scored, so the diagnostic
+    SUBTRACTS each leg's measured seed prefill rather than adding it. An earlier
+    revision added it, which charged prefill twice and produced a spurious
+    "wall-clock currency". `D/T` is the MTP leg's true decode share, and
+    g_scored / g_decode_only reproduces it -- that identity is the entire valid
+    scope of the campaign's 0.84228 constant.
     """
-    print("\nDUAL CONVENTION (scored decode-only vs wall-clock secondary)")
+    print("\nSCORED RATIO, with a decode-only diagnostic (never a headline)")
     print(
-        f"{'prompt':<16}{'arm':<8}{'raw scored':>11}{'raw wall':>10}"
-        f"{'g% scored':>11}{'g% wall':>10}{'D/T':>8}{'(Rt-1)/(Rd-1)':>15}"
+        f"{'prompt':<16}{'arm':<8}{'raw scored':>11}{'raw dec':>10}"
+        f"{'g% scored':>11}{'g% dec':>10}{'D/T':>8}{'gs/gd':>15}"
     )
     for prompt, arms in data.items():
         k = arms[CONTROL]
-        kt = k["mtp_spt"] + k["mtp_prefill_s"] / k["decode_tokens"]
-        krw = (k["serial_spt"] + k["serial_prefill_s"] / k["decode_tokens"]) / kt
+        kd = k["mtp_spt"] - k["mtp_prefill_s"] / k["decode_tokens"]
+        krd = (k["serial_spt"] - k["serial_prefill_s"] / k["decode_tokens"]) / kd
         for arm in candidates(arms):
             a = arms[arm]
-            at = a["mtp_spt"] + a["mtp_prefill_s"] / a["decode_tokens"]
-            arw = (a["serial_spt"] + a["serial_prefill_s"] / a["decode_tokens"]) / at
+            ad = a["mtp_spt"] - a["mtp_prefill_s"] / a["decode_tokens"]
+            ard = (a["serial_spt"] - a["serial_prefill_s"] / a["decode_tokens"]) / ad
+            gs = (k["mtp_spt"] - a["mtp_spt"]) / k["mtp_spt"]
+            gd = (kd - ad) / kd
             print(
-                f"{prompt:<16}{arm:<8}{a['raw']:>11.4f}{arw:>10.4f}"
-                f"{100*(k['mtp_spt']-a['mtp_spt'])/k['mtp_spt']:>+11.3f}"
-                f"{100*(kt-at)/kt:>+10.3f}"
-                f"{a['mtp_spt']/at:>8.5f}{(arw-1)/(a['raw']-1):>15.5f}"
+                f"{prompt:<16}{arm:<8}{a['raw']:>11.4f}{ard:>10.4f}"
+                f"{100*gs:>+11.3f}{100*gd:>+10.3f}"
+                f"{ad/a['mtp_spt']:>8.5f}{gs/gd:>15.5f}"
             )
         print(
-            f"{prompt:<16}{CONTROL:<8}{k['raw']:>11.4f}{krw:>10.4f}"
-            f"{'--':>11}{'--':>10}{k['mtp_spt']/kt:>8.5f}"
-            f"{(krw-1)/(k['raw']-1):>15.5f}"
+            f"{prompt:<16}{CONTROL:<8}{k['raw']:>11.4f}{krd:>10.4f}"
+            f"{'--':>11}{'--':>10}{kd/k['mtp_spt']:>8.5f}{'--':>15}"
         )
 
 
@@ -331,16 +338,17 @@ def mechanism(data: dict[str, dict[str, dict]]) -> None:
 
 
 def r3() -> None:
-    """Re-derive the r3 published pair under both conventions.
+    """Re-derive the r3 published pair, and locate the advisor's r1 pair.
 
     The r3 report published Sp3=1.507282 (scalar 0.18) and Hp3=1.609073
-    (merged curve). Those are the DECODE-ONLY ratios, i.e. the scored
-    currency, because `parent_measured_seconds_per_token` is already
-    decode-only (see module docstring for the three proofs).
+    (merged curve). Those are the ratios as emitted, i.e. already the scored
+    currency, because `parent_measured_seconds_per_token` is (P + D) / N (see
+    module docstring for the source read).
 
-    The wall-clock ratio adds each leg's own measured seed prefill back in.
-    It is a legitimate end-to-end latency number and is reported as a
-    clearly-labelled secondary; the track does not score it.
+    Adding each leg's prefill AGAIN reproduces the advisor's r1 pair
+    1.437971 / 1.521771. That confirms r1's diagnosis: it is prefill charged
+    twice, not a second legitimate currency. Subtracting prefill instead gives
+    the true decode-only ratio, which is a diagnostic only.
     """
     print("r3 RE-ARITHMETIC (E11 runs, 512 decode tokens)\n")
     rows = []
@@ -351,37 +359,35 @@ def r3() -> None:
         n = m["decode_token_count"]
         ss, ms = s["parent_measured_seconds_per_token"], m["parent_measured_seconds_per_token"]
         sp, mp = s["seed_prefill_seconds"], m["seed_prefill_seconds"]
-        # wall-clock: add each leg's own measured prefill back on to decode
-        ss_t, ms_t = ss + sp / n, ms + mp / n
-        rows.append((label, what, ss, ms, ss / ms, ss_t, ms_t, ss_t / ms_t, sp, mp))
+        ss_x, ms_x = ss + sp / n, ms + mp / n          # prefill charged twice
+        ss_d, ms_d = ss - sp / n, ms - mp / n          # true decode-only
+        rows.append((label, what, ss, ms, ss / ms, ss_x, ms_x, ss_x / ms_x, ss_d, ms_d))
         print(f"{label} ({what})  n={n}")
-        print(f"  serial: spt_decode={ss:.18f}  prefill={sp:.6f}s  spt_total={ss_t:.18f}")
-        print(f"  mtp   : spt_decode={ms:.18f}  prefill={mp:.6f}s  spt_total={ms_t:.18f}")
-        print(f"  ratio decode-only (SCORED)     = {ss/ms:.6f}")
-        print(f"  ratio wall-clock (secondary)   = {ss_t/ms_t:.6f}")
-        print(f"  decode share of leg D/T        = {ms/ms_t:.6f}\n")
+        print(f"  serial: spt={ss:.18f}  prefill={sp:.6f}s")
+        print(f"  mtp   : spt={ms:.18f}  prefill={mp:.6f}s")
+        print(f"  ratio as emitted (SCORED)      = {ss/ms:.6f}")
+        print(f"  ratio prefill charged twice    = {ss_x/ms_x:.6f}  (artifact)")
+        print(f"  ratio prefill subtracted       = {ss_d/ms_d:.6f}  (diagnostic)")
+        print(f"  MTP decode share (T-P)/T       = {ms_d/ms:.6f}\n")
 
-    (_, _, _, sm, sd, _, smt, st, _, _) = rows[0]
-    (_, _, _, hm, hd, _, hmt, ht, _, _) = rows[1]
+    (_, _, sm, _, sd, _, smx, sx, _, smd) = rows[0]
+    (_, _, hm, _, hd, _, hmx, hx, _, hmd) = rows[1]
     print(f"published r3 pair: Sp3=1.507282  Hp3=1.609073")
-    print(f"decode-only (SCORED)   : Sp3={sd:.6f}  Hp3={hd:.6f}   <-- matches published")
-    print(f"wall-clock (secondary) : Sp3={st:.6f}  Hp3={ht:.6f}")
+    print(f"as emitted (SCORED)      : Sp3={sd:.6f}  Hp3={hd:.6f}   <-- matches published")
+    print(f"prefill charged twice    : Sp3={sx:.6f}  Hp3={hx:.6f}")
     print(f"\ng (curve gain on the MTP leg)")
-    print(f"  decode-only (SCORED)  = {100*(sm-hm)/sm:+.3f}%   <-- matches published 6.378%")
-    print(f"  wall-clock (secondary)= {100*(smt-hmt)/smt:+.3f}%")
+    print(f"  as emitted (SCORED)    = {100*(sm-hm)/sm:+.3f}%   <-- matches published 6.378%")
+    print(f"  prefill charged twice  = {100*(smx-hmx)/smx:+.3f}%   (artifact)")
+    print(f"  prefill subtracted     = {100*(smd-hmd)/smd:+.3f}%   (diagnostic)")
 
-    # The advisor's r1 restatement (Sp3=1.437971 / Hp3=1.521771, pair delta
-    # "17.67% smaller") is exactly the wall-clock pair above. r1 mislabelled it
-    # as prefill charged twice; it is the correct end-to-end ratio, and the
-    # shrink is just a fixed ~4s unaccelerated prefill diluting both legs.
-    pub_delta, wall_delta = hd - sd, ht - st
-    print("\nWALL-CLOCK PAIR = advisor r1's 1.437971 / 1.521771")
-    print(f"  (spt_decode + P/n) ratio : Sp3={st:.6f}  Hp3={ht:.6f}")
+    pub_delta, twice_delta = hd - sd, hx - sx
+    print("\nDOUBLE-CHARGED PAIR = advisor r1's 1.437971 / 1.521771 -- r1 WAS RIGHT")
+    print(f"  (spt + P/n) ratio        : Sp3={sx:.6f}  Hp3={hx:.6f}")
     print(f"  advisor r1 quoted        : Sp3=1.437971  Hp3=1.521771")
-    print(f"  pair delta: scored {pub_delta:.6f} -> wall-clock {wall_delta:.6f}")
-    print(f"  dilution = {100*(1-wall_delta/pub_delta):.2f}%  (advisor r1 quoted 17.67%)")
-    print("  cause: seed prefill is not accelerated, so it dilutes both legs.")
-    print("  NOT a double charge, and NOT applicable to the scored headline.")
+    print(f"  pair delta: scored {pub_delta:.6f} -> double-charged {twice_delta:.6f}")
+    print(f"  shrink = {100*(1-twice_delta/pub_delta):.2f}%  (advisor r1 quoted 17.67%)")
+    print("  cause: spt already contains prefill, so this adds the ~4s seed twice.")
+    print("  It is an artifact. The scored headline needs no restatement.")
 
 
 def contract(data: dict[str, dict[str, dict]]) -> None:
