@@ -17,6 +17,11 @@ from collections import Counter
 ROUND_RE = re.compile(r"mtp-trace: round=(\d+) d=(\d+) acc=(\d+)")
 
 
+def pid_of(path):
+    suffix = path.rsplit(".", 1)[-1]
+    return int(suffix) if suffix.isdigit() else -1
+
+
 def legs(path):
     out, cur, last = [], [], -1
     with open(path, errors="replace") as fh:
@@ -45,12 +50,14 @@ def main():
 
     report = {}
     for arm in args.arms:
-        paths = sorted(glob.glob(os.path.join(args.out_dir, arm, "trace.txt.*")),
-                       key=lambda p: int(p.rsplit(".", 1)[-1]))
+        # Per-PID `trace.txt.<pid>` files and a single merged `trace.txt` are
+        # both valid captures, so accept either. A merged capture has no PID in
+        # its name and reports -1.
+        paths = sorted(glob.glob(os.path.join(args.out_dir, arm, "trace.txt*")),
+                       key=pid_of)
         # Legs may share one process (forced-depth arms) or be split across
         # worker PIDs (adaptive arms), so collect from every file.
-        all_legs = [(int(p.rsplit(".", 1)[-1]), lg)
-                    for p in paths for lg in legs(p) if lg]
+        all_legs = [(pid_of(p), lg) for p in paths for lg in legs(p) if lg]
         if not all_legs:
             print(f"{arm}: no rounds found", file=sys.stderr)
             continue

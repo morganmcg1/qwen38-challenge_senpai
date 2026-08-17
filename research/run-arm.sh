@@ -59,7 +59,13 @@ fi
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "${out}/meta.txt"
 
-./benchmark-qwen-mtp.sh --local-iterate
+if ((trace)); then
+  # The session writes trace lines to stderr only; MLX_QWEN_MTP_TRACE_PATH is
+  # not read by any source, so the wrapper is what makes that path real.
+  ./benchmark-qwen-mtp.sh --local-iterate 2>"${MLX_QWEN_MTP_TRACE_PATH}"
+else
+  ./benchmark-qwen-mtp.sh --local-iterate
+fi
 status=$?
 echo "exit=${status}" >> "${out}/meta.txt"
 echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${out}/meta.txt"
