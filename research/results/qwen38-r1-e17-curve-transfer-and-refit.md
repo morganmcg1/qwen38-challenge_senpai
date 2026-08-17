@@ -260,3 +260,336 @@ The local score is a directional measurement on four public prompts on M4 Pro. *
 2. **`FLAT20` as the standing scalar control.** Q3 settles that 0.20 beats 0.18; every future curve-vs-scalar contrast should use it, which will shrink reported margins by ~0.8 pp and make them honest.
 3. **Price depth-2 risk directly.** Since the shipped curve wins by accidental conservatism at `d2`, the obvious experiment is a *deliberate* one-parameter sweep of `h[1]` alone with everything else shipped, to find whether the accident is at its optimum. That is a cheap, well-identified, one-lever study and it is the natural successor to E17.
 4. **`research/ESTABLISHED_FACTS.md:1675` and `research/CURRENT_RESEARCH_STATE.md:83,56`** are stale on the `3.0 → 5.0` ceiling. The advisor claimed those fixes; I am **not** editing them and am not silently assuming they are done.
+
+---
+
+# r2 — transfer to `af80b0fc`, and what the base actually ships
+
+Assignment `qwen38-r1-e17-curve-transfer-and-refit` revision **r2**, base
+`af80b0fc93cf20e8405631bb53365ace21a1f913`, host Apple M4 Pro (Mac16,11, 14 cores, 48 GiB, macOS 26.5.2).
+Everything below is measured on that base unless it says otherwise.
+
+The headline of r2 is not the number. It is that **the premise of the assignment was wrong in a way that
+made the experiment more valuable, not less**, and that a prediction the advisor asked me to test came out
+false. Both are reported before the metric.
+
+## Finding A — the merged depth curve is **NOT** on the live base
+
+The r2 assignment described the control arm as "the shipped CURVE". It is not shipped.
+On `af80b0fc`, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` declares a **scalar**:
+
+- line 530: `headStepCostRatio = 0.18`
+- line 629: extend test `h * (1.0 + expected) / (1.0 + Double(depth) * h)` — a *linear* depth price
+- line 597: `segmentedStreakGate = 2`
+
+`headStepCostRatioByDepth` and its `cumH` prefix sum exist at `e6e6f817` (r1's base) and are **absent** at
+`b85e782`, `d098212`, `3c9317d` and `af80b0fc`. So the curve was never merged forward; the live default is
+exactly r1's *losing* arm.
+
+This is not an inference from `git log` alone — it is confirmed by measurement. My control arm `S18`, built
+as byte-untouched HEAD, reproduces r1's `FLAT18` **exactly**: same round count, same depth histogram, same
+accepted/rejected counts, same declared row total, same replay count. The live default *is* r1's FLAT18.
+
+**Consequence:** restoring the curve is a genuine, submittable source change worth ≈+5–7 % locally, not a
+no-op re-measurement. The r2 premise as written is invalid; the corrected question — "does r1's curve
+transfer from `e6e6f81` to `af80b0fc`?" — is the one I answered.
+
+## Finding B — the base's own doc comment brackets the scalar with ranked M5 evidence that contradicts the local mechanism
+
+`Qwen36MTPBlockSession.swift:505–596` on this base carries a calibration record from ranked M5 runs:
+
+| `headStepCostRatio` | ranked score |
+| --- | --- |
+| 0.14 | 2.766 |
+| 0.15 | 2.667 |
+| **0.18 (shipped)** | **≈2.934 — ranked local optimum** |
+| 0.32 (`fc62d1aa`) | **2.84585, −3 %** |
+
+The 0.32 run is the important one. Its serial baseline leg was flat (0.038092 → 0.038070 s/token), drafts
+shortened (4.35/4.89/5.78/5.33/5.04 → 3.36/4.01/4.53/4.03/4.76), and candidate decode time **rose 0.95 %**.
+The comment's own conclusion: **"this pool rewards depth."**
+
+My CURVE arm shallows: mean drafted depth 2.020 vs 2.367, max depth 3 vs 4, share of rounds at `M ≥ 5`
+0.00 % vs 8.57 %. That is the same direction that lost 3 % on ranked M5. The local win is real and large;
+the ranked evidence against the mechanism it uses is also real. **These are not reconciled**, and per
+pre-registration §6-P3 that is sufficient to bar advancing the arm as submittable on local evidence alone.
+
+Related ranked history in the same region, for whoever picks this up: `segmentedStreakGate = 2` has a
+promotion record (newjordan 2.91995 promoted; hadakang 2.92976; `4650c96e` 2.93524 vs 2.93429 base), gate 1
+is dead (2.833, −7.1 %), gate 0 ties (2.9200). `sdpaWidthWallDepthCap = 5` has a bitwise justification —
+widths 6–9 drift in top-2, and `attentionWithCacheUpdate` splits 6..9-row attention into two ≤5-row `sdpa`
+calls, measured bit-exact. Neither was touched.
+
+## The advisor's gate-2 prediction is **falsified**
+
+The advisor predicted that on `af80b0fc` (`segmentedStreakGate` 3 → 2) the curve's depth histogram would
+move **deeper** than r1's `{1:2, 2:231, 3:13}`, and that the `M ≥ 5` share would become **> 0.00 %**.
+
+Measured: `{1:2, 2:237, 3:7}` — the histogram did not move deeper; it did not move meaningfully at all.
+`M ≥ 5` stayed **exactly 0.00 %**.
+
+**Mechanism, and it is benign.** `segmentedStreakGate` governs *entry to segmented verify*, which the
+campaign ledger ties to the width-8 verify kernel. Both of my arms cap at max drafted depth 4 (`M ≤ 5`), so
+that path is never reached. **Gate 3 → 2 is inert in this regime.** My pre-registered simulator estimate
+put the gate's contribution at ~0.015 mean depth — directionally right and conservative; the truth is 0.000.
+
+Per the advisor's own stop rule, this **stops the `h[1]` sweep**. `H1LO` / `H1MEAS` / `H1HI` were built and
+hash-verified and are listed below, but were **never timed and carry no numbers**.
+
+## Finding C — `research/twin_audit.py` is already **RED** on the assigned base
+
+`af80b0fc` fails its own Metal-twin gate: `STALE quantized: section drift in
+mlx/backend/metal/kernels/quantized.h`, 1/29 twins stale. The diff is **comment text only** — the
+checked-in header has a 3-line condensed comment where regeneration from the runtime-effective JIT twin
+produces the original 10-line version. **Zero semantic difference.** I did not fix it: `quantized.h` and
+the kernels are outside my assignment's allowed edits. It is reported because a pre-existing red audit
+**masks future real drift** for every subsequent experiment.
+
+**Related false alarm that is *not* a defect.** Every arm logs
+`mlxfast-swift: warning: mlx.metallib ... built from different vendored Metal sources`
+(recorded `6639cc59…`, current `3dd0ffd6…`). The recipe at `tools/build-mlx-metallib.sh:63` hashes *all*
+files under `Vendor/mlx-swift/Source/Cmlx/{mlx,mlx-generated}`; exactly two are newer than the metallib —
+`quantized.h` and `mlx-generated/quantized.cpp` — both arriving with `d098212` (organizer sync
+`156b5b75`). Per `program.md`, a kernel family **with** an `mlx-generated/*.cpp` twin is JIT-compiled from
+that C++ source string and is *not* served from `mlx.metallib`. So the stale metallib does **not** mask the
+base's promoted quantized-kernel edits, and I deliberately did **not** rebuild it mid-experiment.
+
+## Finding D — the depth curve's cost model is structurally misspecified
+
+The base's own `quantized.h` comment, `research/ESTABLISHED_FACTS.md:1221` and
+`senpai/campaign-ledger.md:81` all record crossrow QMV dispatch costs of **319 / 437 / 216 µs for
+M = 7 / 8 / 9**. That is a *register cliff*, not a curve: an even 4+4 split at M = 8 needs two simultaneous
+`vec<float,4>` accumulators, while M = 9 uses three-lane vectors and is cheaper despite doing more work —
+which is why M = 8 is dispatched as 3+3+2.
+
+The extend test at line 629 prices depth **linearly** (`1.0 + Double(depth) * h`). Since `M = depth + 1`, a
+linear model **cannot represent a cliff**. That is a clean structural reason why a per-depth vector beats a
+scalar, independent of which numbers are in the vector.
+
+**Caveat, stated because it matters:** those microbenchmarks are dispatch-side at widths 7–9, whereas my
+arms' hot range is `M = 2–5`, where the cost shape is *unmeasured*. Finding D is therefore a mechanism
+**hypothesis** consistent with the win, not a demonstrated cause of it.
+
+**Ledger corroboration and a transfer warning.** Gate-2 and the M = 8 3+3+2 split were *one deliberately
+paired* organizer change (gate values: `ef16dea4` = 3, `e6e6f81` = 3, `b85e782` = 2). The ledger warns that
+results measured on `ef16dea4` / `e6e6f81` had both halves at the wrong setting, invalidating depth-8 / M = 8
+arithmetic, depth histograms and `h(8)` estimates. **r1 was measured on `e6e6f81`** — precisely the transfer
+risk P1 existed to detect. The answer: for the depths that `h = 0.18` actually reaches, the transfer is clean.
+
+## Index convention, corrected before the first timed arm
+
+An earlier pre-registration draft of mine asserted `M = depth + 2`. That was **wrong**, and I found it
+before spending a single timed leg. Reporting it rather than quietly fixing it:
+
+1. **`M = depth + 1`**, so **`M ≥ 5` ⇔ `depth ≥ 4`**. Proof: `Σ(depth+1)·n` reproduces `declared_rows`
+   exactly (S18 825, CURVE 743), while `Σdepth·n` (580 / 497) and `Σ(depth+2)·n` (1070 / 989) do not.
+   Cross-check: 21/245 = 8.571 % = S18's measured `M ≥ 5` share.
+2. **Marginal `h[i]` prices the step `depth i → i+1`**, taking that round's width from `i+1` to `i+2`. So
+   `h[3]` is the first entry that buys `M = 5`, and `h[1]` governs "go to depth 2".
+
+`wide_share()` in the analyser was always computing the right thing (`depth ≥ 4`); only its printed legend
+was stale, and that is fixed.
+
+## Q1 (r2) — headline, in score currency
+
+`english`, 512 decode tokens, ABBA position 1 then 2, decode-only (= the scored currency, see the
+convention section above):
+
+| arm | serial s/tok | mtp s/tok | `raw_p` | `g%` vs control |
+| --- | --- | --- | --- | --- |
+| **CURVE** (candidate) | 0.074303 | **0.046275** | **1.60569** | **+6.821 %** |
+| `S18` (control, live default) | 0.074333 | 0.049662 | 1.49677 | — |
+
+`d_raw = +0.10892`. Serial-leg floor between the two byte-identical depth-0 legs: **0.041 %**.
+
+Dual convention, both currencies, so the number cannot be misread:
+
+```
+prompt   arm    raw scored  raw wall  g% scored  g% wall     D/T   (Rt-1)/(Rd-1)
+english  CURVE      1.6057    1.5183     +6.821   +5.926  0.85570      0.85567
+english  S18        1.4968    1.4288         --       --  0.86391      0.86314
+```
+
+`raw scored` is the decode-only ratio the harness scores. `raw wall` adds the ~4.0 s seed prefill to both
+legs; it is *unscored end-to-end latency*, diluted because prefill is unaccelerated. The identity
+`(R_wall − 1)/(R_decode − 1) = D_m/T_m` holds to 5 decimal places, which is what a shared-prefill pair
+must satisfy.
+
+## P1 — transfer verdict: **CONFIRMED**, and by an unusually strong route
+
+r1's mechanism transfers from `e6e6f81` to `af80b0fc`. The evidence is stronger than a matching headline:
+**both arms reproduce their r1 counterparts bit-for-bit in behaviour.**
+
+| arm | rounds | mean depth | max depth | accepted | accept rate | replays | rows checked/declared | `M ≥ 5` | depth histogram |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `S18` (control) | 245 | 2.367 | 4 | 267/580 | 46.0 % | 110 | 825/825 | 8.57 % | `{1:19, 2:138, 3:67, 4:21}` |
+| `CURVE` | 246 | 2.020 | 3 | 266/497 | 53.5 % | 74 | 743/743 | 0.00 % | `{1:2, 2:237, 3:7}` |
+
+Identical histograms, rows, accepts, replays and round counts to r1. `g` differs (6.821 % vs r1's 6.688 %)
+on **bit-identical behaviour**, so that 0.13 pp gap is pure timing noise, not a base effect.
+
+Stale-binary risk was ruled out from `meta.txt`, not assumed: fresh non-overlapping timestamps
+(S18 13:52:17Z → 14:02:25Z, CURVE 14:02:28Z → 14:15:25Z), distinct `worker_sha256` per arm, shared
+`cli_sha256 = c9bfcaf9…`, `dirty = 0`, and `mlx_qwen_env=` empty on every arm.
+
+Thermal note: `meta.txt` records `thermal_before = 39.14 C / thermal_after = 60.66 C` (S18) and
+`58.13 C / 60.88 C` (CURVE). The `before` value is `e11-run.sh`'s entry snapshot taken *before*
+`benchmark.sh` runs its own internal per-leg cooling gates, so each timed leg was still individually gated
+below 40 C. Job A's measurements are sound.
+
+## Noise floor — honest, and one estimate short
+
+`S18R` — a byte-identical replicate of the control, built and hash-verified for exactly this purpose — was
+**never measured**, because the host became thermally unrunnable (next section). I therefore have **no
+arm-level replicate floor** and will not invent one. Two partial estimates:
+
+- **serial floor 0.041 %** — english job A ran two byte-identical depth-0 serial legs in different thermal
+  slots (0.074303 vs 0.074333). Bounds *session thermal drift on an identical binary*, but it is a depth-0
+  leg and slower per token, so its variance may not transfer to an MTP leg.
+- **≈0.13 pp on `g`** — r1 CURVE vs r2 CURVE, bit-identical behaviour, different sessions *and* different
+  bases (+6.688 vs +6.821). This is the better arm-level estimate because it compares MTP legs.
+
+The measured effect is ~50–170× the larger of these. That is why I am willing to call P1 confirmed even
+without `S18R`.
+
+## Blocker — the host's idle GPU temperature rose above the cooling gate
+
+Two jobs to extend the sweep to `narrative` both failed, and the cause is environmental, not a code defect.
+
+- Job B (`5febb677-7371-47e4-9fee-e7baeab9ee0a`, exit 1): first gate passed at 39.9 C; reference-row
+  generation heated the GPU to 58.6 C; the second gate — before the first timed leg — plateaued at 40.3 C
+  across 27 polls and aborted at 270 s.
+- Retry (`d44f374a-ab85-4647-b79a-6f89ac16cdbf`, exit 1): failed at the **very first** gate, before any GPU
+  work, aborting at 180 s with `min seen 40.6 C`.
+
+Diagnosis, checked rather than assumed: no `mlxfast` / `runtime-worker` / `benchmark` processes alive; no
+stale lock files; GPU idle at 40.43 C then 40.61 C with `gpu_power = 0.008 W`; CPU only 34.6 C, i.e. cooler
+than the GPU, so this is not CPU spillover. The reading is plausible and varying, so this is **not** the
+documented sensor quirk at `benchmark.sh:863-870` — that failure mode is the opposite (frozen implausibly
+*low*, e.g. a constant 3.657 C). What the timestamps show is a monotone ambient rise:
+13:52Z 39.14 C → ~14:16Z 40.3 C → 14:40Z 40.43 C → 14:48Z 40.61 C — about +1.5 C in under an hour. **The
+host's idle floor moved above the ≤40 C gate and kept rising.**
+
+The gate constants in `benchmark.sh` are all `readonly` and not env-overridable: `COOL_GATE_TEMP_C=40`,
+`POLL=10s`, `ABORT=180s`, `STALL=90s`, `MAX_WAIT=900s`, `PROGRESS_EPSILON_C=0.25`, `FAN_OFFER_STALL=60s`.
+The reader is `local_gpu_temp()` at line 448. Interactive fan boost is unavailable under `run_job`.
+
+ABBA rotation is confirmed working: job B's log line 2 reads
+`=== e17-run: prompt narrative (index 1) arms CURVE S18 ===`, correctly reversing english's `S18 CURVE`.
+The retry deliberately reused the identical command so that the pre-registered `rot = idx % len(pair)`
+rotation, and not I, chose arm order.
+
+The thermally aborted partial run is preserved at
+`.mlxfast-private/e17/aborted/narrative-CURVE-thermal-abort/` (`meta.txt` with `exit=1`,
+`thermal_before=40.30C`, `thermal_after=40.60C`, `started=2026-08-17T14:37:35Z`,
+`finished=2026-08-17T14:41:47Z`, `worker_sha256=ed12f46…`, and an empty `reports/`).
+
+### Shortcuts I declined, and why
+
+1. **`MLXFAST_LOCAL_COOL_GATE=0`** — `program.md` forbids bypassing the cooling gate, and a hot-start timing
+   would not be comparable with job A's gated legs anyway. Declined.
+2. **`MLXFAST_GPU_TEMP_CMD` pointed at a fake reader** — that is measurement fraud. Declined.
+3. **Editing `COOL_GATE_TEMP_C`** — trusted timing/telemetry, outside the editable surface. Declined.
+4. **Reusing english's reference rows for the narrative arms** to avoid the 58 C generation spike — checked
+   and it is *deliberately* unsupported: `benchmark-qwen-mtp.sh:34` requires rows generated by the
+   candidate's **own** build, and line 688 gates on it. Declined.
+
+## Correctness contract — every timed arm
+
+Both timed arms pass the full contract, and these are read out of the reports rather than asserted:
+
+`all_tokens_matched = true` on both legs; `parity_all_ok = true`; `residual_divergence_count = 0`;
+`reference_checked_row_total == declared_rows_total` (825/825, 743/743);
+`rejected_rows_reference_checked == rejected_draft_total` (313/313, 231/231);
+`max_rejected_tail_logit_delta = 0` on both; `uses_pinned_mtp_head = true` with
+`head_sha256 = 07293af742df4599d94eda6e9db5782e7f5be10cd1b5fdef7691f4ef404ea81c`, `head_bytes = 238937699`,
+`head_origin = hf:dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6c87a438caa28f975c1cea9b0b005bc71`; drift tripwire
+passed; `target_cache_offset_final = 1024` and `non_drafting_round_count = 0` on both.
+Stall/p50 block latency: 0.12388/0.08109 = 1.53× (S18) and 0.12378/0.08020 = 1.54× (CURVE), far inside the
+4× guardrail.
+
+**`max_rejected_tail_logit_delta = 0` is genuine, not a default.**
+`Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift:497` accumulates a running
+`max(|candidate top-1 logit − reference top-1 logit|)` over every reference-checked rejected-tail row
+(declared at `QwenRuntimeDFlash.swift:1049/1152/1199/1238`, wired at `QwenRuntimeMTPDriver.swift:283/356`).
+Combined with `rejected_rows_reference_checked == rejected_draft_total`, every rejected row was replayed and
+matched to the last bit.
+
+Arm identity (all six built on `af80b0fc`, each verified twice including exact source literals; shared
+`cli_sha256 = c9bfcaf9c58d5b5bd31466f4bab8c90a5d693bf8f0afd2818840deef0fd060b7`):
+
+| arm | `headStepCostRatio` at l.530–533 | `worker_sha256` | role / status |
+| --- | --- | --- | --- |
+| `S18` | scalar `0.18`, untouched HEAD | `aa17ce5c064b5d1f3574783364ed861d4372452d651327187be712fd03f61dca` | control, **timed** |
+| `CURVE` | `[0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909]` + `cumH` | `ed12f4647045de01b72aadbbee29c6e2e29a53631865b360c1d4a295007d2488` | candidate, **timed** |
+| `H1LO` | `[0.18, 0.0800, 0.18×6]` | `a6733ca8a7e6057152740d4b42f1a9991c05af98a60ef2ff49eed9bec24391b5` | **never timed, no number** |
+| `H1MEAS` | `[0.18, 0.1152, 0.18×6]` | `72cdfc2f058414f44247de6b3a492e4cd428d344dcf328fb528f8fab5234e1e5` | **never timed, no number** |
+| `H1HI` | `[0.18, 0.3000, 0.18×6]` | `f226deaa8e777d3cdf79951747e10246fe6884d696b8ca4d51d8560b8908e869` | **never timed, no number** |
+| `S18R` | scalar `0.18`, byte-identical copy of `S18` | `aa17ce5c064b5d1f…` (identical to `S18`) | noise floor, **never timed, blocked** |
+
+`S18` is built as *untouched HEAD* rather than by patching in a flat vector, because with a flat vector
+`cumH` equals `Double(depth) * h` bitwise only for depths 0–5 and differs by 1 ulp at depths 6–7. Asserting
+byte-identity is stronger than asserting numerical equivalence.
+
+The `h[1]` sweep direction I built also **disagrees with the assignment's §3**, and I followed the algebra
+under its own escape clause. The thresholds are `d0→1: h[0]`; `d1→2: h[1](1+reach0)/(1+h[0])`;
+`d2→3: h[2](1+reach0+reach1)/(1+h[0]+h[1])`. `h[1]` sits in the `1→2` numerator *and* in every deeper
+denominator, so raising it closes depth 2 while **opening** depth 3+. Mean depth is therefore **not
+monotone in `h[1]`**, and a 3-point bracket cannot identify a non-monotone response. My simulator agrees:
+mean drafted depth S18 **3.573** > H1MEAS 3.430 > H1LO 3.366 > H1HI 3.075 > CURVE 2.388, i.e. **0.18 is a
+local maximum**, with H1HI strongly bimodal (`d1:32.7 % d2:1.2 % d3:17.0 % d4:26.8 % d5:19.7 %`). These are
+synthetic predictions of record, not measurements.
+
+## Provenance disclosure
+
+The two timed arms of job A carry **different `head_sha` values** in `meta.txt` (S18 `73cba45`, CURVE
+`d3bed96`) because I committed a W&B-logger generalisation while job A was running. This is **not a
+confound** — both binaries were built before the job started and hash-verified at install, `worker_sha256`
+is the authoritative identity, `dirty = 0` on both, and the changed file is a Python logger that no arm
+executes — but it is a hygiene slip and it is disclosed rather than smoothed over. Rule adopted for future
+sessions: **never commit while a job is running.**
+
+## Submitted surface
+
+`git diff --name-only af80b0fc..HEAD` lists **only 20 `research/` files**. The diff filtered to
+`Sources/ Vendor/ fixtures/ benchmark.json .github/ correctness_prompts/ benchmark-qwen-mtp.sh` is
+**empty** — zero submitted-surface change, so the editable byte budget is exactly the base's and
+`validate-assignment-scope.sh` (which takes `BASE_SHA SUBMITTED_PATH …`) is trivially satisfied.
+In particular the CURVE vector was **deliberately not** committed into
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift`, per pre-registration §6-P3.
+
+## Conclusion (r2)
+
+- **P1 is confirmed.** The curve's mechanism transfers from `e6e6f81` to `af80b0fc`: `+6.821 %` on
+  `english`, decode-only, 512 tokens, with both arms reproducing r1 bit-for-bit in behaviour.
+- **The advisor's gate-2 prediction is falsified**, with a benign mechanism: the segmented-verify path the
+  gate controls is never entered when both arms cap at `M ≤ 5`. Gate 3 → 2 is inert here. The `h[1]` sweep
+  is stopped per the advisor's own stop rule.
+- **The base does not ship the curve** (Finding A), so this is a live, submittable change worth ≈+5–7 %
+  locally — a materially better outcome than the re-measurement the assignment expected.
+- **No headline is proposed.** P3 binds: CURVE wins locally *by shallowing*, and the base's own ranked M5
+  record shows that direction losing 3 % at `h = 0.32`. Advancing a shallowing arm on local evidence alone
+  is exactly what §6-P3 forbids, and I am not doing it.
+- **The held-out sweep is blocked** on host thermals, not on code. `S18R` and the three `H1*` arms are
+  built, hash-verified, and reported with **no numbers attached**.
+- **A pre-existing red `twin_audit.py`** (Finding C) will mask real Metal drift for the next experiment
+  until someone with `quantized.h` access clears it.
+
+## Suggested follow-ups (not implemented)
+
+1. **Log per-round `reach`.** The timed reports expose only `block_request_seconds`,
+   `effective_draft_lengths` and `head_provenance` as sequences, so a zero-GPU depth-histogram prediction by
+   replaying r1's *real* reach distribution is impossible today. Adding `reach` would have answered the
+   gate-2 question **without a single timed leg**.
+2. **Measure the `M = 2–5` dispatch cost curve directly.** Finding D rests on width-7–9 microbenchmarks,
+   while the hot range of these arms is `M = 2–5`, where the shape is unmeasured. This turns a mechanism
+   hypothesis into a measured cause.
+3. **Build a depth-preserving variant.** The clean way to resolve the ranked/local contradiction is an arm
+   that keeps mean depth at ≈2.37 while still declining the redundant rows — that sidesteps P3 instead of
+   arguing with it, and it is the only route I can see to a submittable version of this mechanism.
+4. **Re-green `twin_audit.py`** in an assignment permitted to touch `quantized.h`. The current drift is
+   comment-only and safe to normalise; leaving it red is what is unsafe.
+5. **Raise cooling-gate headroom or cool the host.** Every remaining held-out prompt in this experiment is
+   blocked on a ~+1.5 C/hour ambient rise that pushed the idle floor above the 40 C gate. No amount of code
+   work unblocks it.
+

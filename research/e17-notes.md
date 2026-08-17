@@ -750,3 +750,76 @@ appear. That is a hypothesis, not a finding; the brief asks for the fold-in at
 n=3 and 512 tokens after Q1, which is now a follow-up. PR #18 is outside my
 launch isolation scope, so I treat it strictly as advisor-relayed context and
 have not inspected it.
+
+## 8. r2 session record — jobs, runs, and the thermal blocker
+
+Base `af80b0fc93cf20e8405631bb53365ace21a1f913`. Pre-registration for this
+revision is `research/e17-r2-prereg.md`; the full write-up is the `# r2` section
+of `research/results/qwen38-r1-e17-curve-transfer-and-refit.md`.
+
+### Builds
+
+- `70a055b8-929f-4ba8-8615-a0a899aedb82` exit 0 — `S18`, `CURVE`.
+- `cdc360b4-792e-44c6-8027-cc4417694211` exit 0, 63 s — `H1LO`, `H1MEAS`, `H1HI`.
+- `S18R` is a byte-identical `cp -R` of `S18` (same `worker_sha256`).
+
+Six arms live in `.mlxfast-private/e17/bins/{S18,S18R,CURVE,H1LO,H1MEAS,H1HI}`.
+Shared `cli_sha256 = c9bfcaf9c58d5b5bd31466f4bab8c90a5d693bf8f0afd2818840deef0fd060b7`.
+
+### Timed work
+
+- Job A `18ff234b-100b-4f40-84e9-cc1b6a3468b5` exit 0 — `--arms S18,CURVE english`,
+  512 decode tokens, ABBA position 1 then 2. Both arms clean, full correctness
+  contract passed, results in `.mlxfast-private/e17/runs/english-{S18,CURVE}`.
+- Job B `5febb677-7371-47e4-9fee-e7baeab9ee0a` exit 1 — `narrative`. First cooling
+  gate passed at 39.9 C; reference-row generation heated the GPU to 58.6 C; the
+  gate before the first timed leg plateaued at 40.3 C over 27 polls and aborted
+  at 270 s.
+- Retry `d44f374a-ab85-4647-b79a-6f89ac16cdbf` exit 1 — same command deliberately,
+  so the pre-registered `rot = idx % len(pair)` rotation chose arm order. Failed
+  at the **first** gate before any GPU work, aborting at 180 s, `min seen 40.6 C`.
+
+The aborted partial is preserved at
+`.mlxfast-private/e17/aborted/narrative-CURVE-thermal-abort/`.
+
+### Thermal blocker — the four observations
+
+No `mlxfast` / `runtime-worker` / `benchmark` process alive, no stale locks, GPU
+idle at `gpu_power = 0.008 W`, CPU 34.6 C (cooler than GPU, so not spillover).
+Idle GPU temperature over the session: 13:52Z 39.14 C → ~14:16Z 40.3 C →
+14:40Z 40.43 C → 14:48Z 40.61 C. About +1.5 C in under an hour, i.e. the host's
+idle floor rose above the `COOL_GATE_TEMP_C=40` gate and kept rising. Readings
+were plausible and varying, so this is **not** the frozen-sensor quirk documented
+at `benchmark.sh:863-870` (that one reads implausibly *low*, e.g. constant
+3.657 C). Gate constants are `readonly` and not env-overridable; interactive fan
+boost is unavailable under `run_job`.
+
+Declined: `MLXFAST_LOCAL_COOL_GATE=0`; a fake `MLXFAST_GPU_TEMP_CMD`; editing
+`COOL_GATE_TEMP_C`; reusing english's reference rows (checked — rows must come
+from the candidate's own build, `benchmark-qwen-mtp.sh:34`, gated at line 688).
+
+### W&B runs
+
+Logger `research/e17_wandb.py`, job `caabe831-9f30-4b6e-901f-3ad48fd4b583`
+(exit 0, 23 s, clean tree at commit `cad16ea`), group
+`qwen38-r1-e17-curve-transfer-and-refit`:
+
+- `e17r2-english-S18` → `8jpqa48w`
+- `e17r2-english-CURVE` → `tz5kfkcb`
+- `e17-headline` → `p9fz76o8` (carries the `per_prompt_arms` table artifact)
+
+`score_json_speedup` equals `raw_p` exactly for both arms, which is the harness-side
+confirmation that `parent_measured_seconds_per_token` is decode-only.
+
+### Data hygiene
+
+`research/e11-run.sh` opens every run with `rm -rf "${out}"`, so r2 would have
+destroyed r1's runs. r1 was moved to `.mlxfast-private/e17/runs-r1/` and the
+analyser gained `--runs-root`. The r1 replay through the archive still reproduces
+`g_median = +5.284272658432601 %` exactly.
+
+Provenance slip, disclosed in the result: job A's two arms carry different
+`head_sha` in `meta.txt` (`73cba45`, `d3bed96`) because a Python-logger commit
+landed while the job ran. Binaries were pre-built and hash-verified, `dirty = 0`,
+`worker_sha256` is authoritative. Rule adopted: never commit while a job runs.
+
