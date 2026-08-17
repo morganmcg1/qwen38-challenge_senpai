@@ -165,6 +165,17 @@ not a symmetric straddle):
 | `H1MEAS` | 0.1152 | flat 0.18, `h[1]` moved | measured marginal |
 | `H1HI` | 0.3000 | flat 0.18, `h[1]` moved | above shipped |
 | `CURVE` | 0.0775 | full r1 curve + `cumH` algebra | transfer candidate |
+| `S18R` | 0.18 | byte-identical copy of `S18` | **noise floor** |
+
+`S18R` is added because r1 had no arm-level noise floor. Each arm's raw ratio is
+already internally thermally paired -- its serial and MTP legs come from the same
+`--local-iterate` invocation -- so running five arms on one prompt does not need
+a re-paired control. What r1 could *not* bound is how much of a reported `g%`
+survives running the *same binary* in a different thermal slot of the session.
+`S18R` is exactly that: same worker sha256 as `S18`
+(`aa17ce5c064b5d1f35...`), different position. Registered before the first timed
+arm with a live threshold: **a candidate whose `|g%|` does not clear `|g%(S18R)|`
+is reported as not measured**, whatever its sign.
 
 `research/e17-build.sh` asserts per arm that **only** `h[1]` moved for the `H1*`
 arms, that `S18` is byte-identical to HEAD, and that the shared constants

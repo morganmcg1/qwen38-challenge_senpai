@@ -87,8 +87,8 @@ if [[ "${1:-}" == "--arms" ]]; then
   IFS=, read -r -a pair <<< "${2:?--arms needs A,B}"
   shift 2
 fi
-((${#pair[@]} == 2)) || {
-  echo "usage: research/e17-run.sh --arms A,B ID [ID ...]" >&2; exit 2; }
+((${#pair[@]} >= 1)) || {
+  echo "usage: research/e17-run.sh --arms A[,B,...] ID [ID ...]" >&2; exit 2; }
 for arm in "${pair[@]}"; do
   [[ -s "${E11_BINS_ROOT}/${arm}/sha256.txt" ]] || {
     echo "e17-run: arm ${arm} is not built" >&2; exit 2; }
@@ -104,11 +104,11 @@ for id in "$@"; do
     echo "e17-run: missing golden ${golden}; run --goldens ${id} first" >&2
     status=2; break
   fi
-  if ((idx % 2 == 0)); then
-    arms=("${pair[0]}" "${pair[1]}")
-  else
-    arms=("${pair[1]}" "${pair[0]}")
-  fi
+  # Rotate the within-prompt order by prompt index. For the two-arm case this is
+  # exactly the ABBA alternation the header commits to; it generalises to N arms
+  # without giving any arm a fixed slot in the session.
+  rot=$((idx % ${#pair[@]}))
+  arms=("${pair[@]:rot}" "${pair[@]:0:rot}")
   echo "=== e17-run: prompt ${id} (index ${idx}) arms ${arms[*]} ==="
   export E11_GOLDEN="${golden}"
   for arm in "${arms[@]}"; do

@@ -38,7 +38,10 @@ R3_RUNS = Path(".mlxfast-private/e11/runs")
 # up to four candidates on af80b0fc, and not every candidate runs on every
 # prompt, so the arm set and the control are CLI-selected and a prompt is
 # reported as soon as the control and at least one candidate are present.
-ARMS: tuple[str, ...] = ("S18", "CURVE", "H1LO", "H1MEAS", "H1HI")
+# S18R is a byte-identical copy of the S18 control binary run in a different
+# thermal slot of the session, so its g% against S18 is a pure arm-level noise
+# floor: any candidate whose g% does not clear |g(S18R)| is not measured.
+ARMS: tuple[str, ...] = ("S18", "S18R", "CURVE", "H1LO", "H1MEAS", "H1HI")
 CONTROL = "S18"
 PROMPTS = (
     "english",
