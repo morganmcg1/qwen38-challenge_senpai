@@ -18,9 +18,11 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   `research/run-ipg-arms.sh` and restored by its exit trap; the branch ships only research
   tooling and this report.
 - Supporting test, tooling, or documentation files: `research/run-ipg-arms.sh`,
-  `research/roofline_arm_patch.py` (arms `ipg-a`, `ipg-b`, `ipg-d`, `perturb`),
+  `research/roofline_arm_patch.py` (arms `ipg-a`, `ipg-b`, `ipg-d`, `ipg-e`, `perturb`),
   `research/ipg_h_from_curve.py`, `research/ipg_shape_breakdown.py`,
-  `research/ipg_depth_frequency.py`, this file.
+  `research/ipg_depth_frequency.py`, `research/run-qmv-parity.sh`,
+  `research/qmv_parity_compare.py`, `research/depth_histogram.py`,
+  `research/ipg_wandb_log.py`, this file.
 - MTP head provenance and draft policy: organizer-pinned head, unchanged. No
   `mtp-head.manifest.json` declaration was added.
 - Assignment-scope preflight: `senpai/validate-assignment-scope.sh ef16dea4… <quantized.h>
@@ -33,6 +35,33 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   `!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024`; the wide `_m` branch
   additionally needs `out_vec_size >= 4096`. All eight projection shapes measured here have
   `n >= 4096`, so every one takes the wide `_m` branch on the scored path.
+
+## W&B runs
+
+Group `qwen38-r1-e14-ipg-weight-passes`, project
+`wandb-applied-ai-team/qwen38-mlx-challenge-senpai`. One `analysis` run per measured arm
+carrying its full cost curve, plus one comparison run carrying the cross-arm tables.
+
+| run | arm | NA_max scored | run id |
+| --- | --- | ---: | --- |
+| `qmv-cost-curve-e14-ref1` | reference | 4 | [`88khsek3`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/88khsek3) |
+| `qmv-cost-curve-e14-ref2` | reference repeat | 4 | [`bfk6o414`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/bfk6o414) |
+| `qmv-cost-curve-e14-ref3` | reference repeat | 4 | [`97ieuck5`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/97ieuck5) |
+| `qmv-cost-curve-e14-armB` | `<4,4>` -> `<4,2>` | 4 | [`tu839z8z`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tu839z8z) |
+| `qmv-cost-curve-e14-armA` | `<5,3>` -> `<5,5>` | 5 | [`e62r389y`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e62r389y) |
+| `qmv-cost-curve-e14-armA3` | arm A repeat | 5 | [`a10cxpfs`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/a10cxpfs) |
+| `qmv-cost-curve-e14-armD` | arm A + packed `acc` | 5 | [`qnwqdh03`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/qnwqdh03) |
+| `qmv-cost-curve-e14-armE` | arm A + packed all 13 | 5 | [`md5dlsm0`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/md5dlsm0) |
+| `qmv-cost-curve-e14-armE2` | arm E repeat | 5 | [`fdus9cxa`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/fdus9cxa) |
+| `e14-ipg-weight-passes` | cross-arm comparison | — | [`2qvqo4z8`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/2qvqo4z8) |
+
+The comparison run carries tables `e14/arms`, `e14/per_shape_excess`, `e14/h_by_depth` and
+`e14/weighted_verify_seconds`, and summary keys `ref/h4_pass_spike`,
+`ref/structural_pass_cost_h_units` and `ref/row_tax_over_stream_tax`.
+
+`NA_max scored` is the stream law `ceil(M/NA_max)` each curve's staircase test is scored
+against, so it tracks the arm rather than the shipped kernel. It is a labelling choice for
+the staircase diagnostic only and does not touch any measured time.
 
 ## Question
 
