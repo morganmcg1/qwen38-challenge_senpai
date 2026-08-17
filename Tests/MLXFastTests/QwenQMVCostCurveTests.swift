@@ -86,13 +86,21 @@ struct QwenQMVCostCurveTests {
         }
     }
 
-    /// Cost of the compact draft readout at M=1 as a function of quantization
-    /// bits. The 4-bit arm is not stock: this checkout routes
-    /// `!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024`
-    /// into `qmv_fast_crossrow_affine4_g64*`
-    /// (`backend/metal/kernels/quantized.h:1804`), so a 3-bit or 2-bit head
-    /// trades 25%/50% less weight traffic for the stock `qmv_fast_impl`.
-    /// This measures that trade before any model-side plumbing exists.
+    /// Cost of the compact draft readout as a function of quantization bits.
+    ///
+    /// The crossrow specialization does NOT change which kernel the host
+    /// launches. `qmv()` always names `affine_qmv_fast_<T>_gs_64_b_<bits>_
+    /// batch_0` (`backend/metal/quantized.cpp:259-277`) and dispatches
+    /// `grid_dims(M, ceil(N/8), B)` (`:254`), so `ntg.x == M`. The crossrow
+    /// switch lives INSIDE that kernel and has cases 2...9 only, with
+    /// `default: break` falling through to `qmv_fast_impl`
+    /// (`backend/metal/kernels/quantized.h:1804-1908`). At the shipped draft
+    /// readout width M=1 both the 4-bit and 3-bit arms therefore execute the
+    /// same `qmv_fast_impl` body, and 3 bits is simply 22.2% fewer bytes.
+    ///
+    /// The M=2 arms are the empirical check on that reading: a discontinuity
+    /// that appears at 4 bits and not at 3 bits is the specialization
+    /// engaging, and its absence at M=1 is what the sweep needs to establish.
     ///
     /// Enable with `MLXFAST_RUN_QMV_BITS_SWEEP=1` and point
     /// `MLXFAST_QMV_BITS_SWEEP_OUT` at the JSON destination.
@@ -107,16 +115,29 @@ struct QwenQMVCostCurveTests {
 
         let k = 5120
         let n = 98_336
-        let bitWidths = [4, 3, 2]
-        let xs = (0..<inner).map { syntheticActivations(m: 1, k: k, salt: $0) }
-        eval(xs)
+        let armSpecs: [(bits: Int, m: Int)] = [
+            (4, 1), (3, 1), (2, 1), (4, 2), (3, 2),
+        ]
+        var activations: [Int: [MLXArray]] = [:]
+        for m in Set(armSpecs.map(\.m)) {
+            let xs = (0..<inner).map { syntheticActivations(m: m, k: k, salt: $0) }
+            eval(xs)
+            activations[m] = xs
+        }
+        // One weight per bit width, shared across M, so the M probe costs
+        // activations rather than another ~250 MB of resident head.
+        var weights: [Int: QuantWeight] = [:]
+        for bits in Set(armSpecs.map(\.bits)) {
+            weights[bits] = lowBitQuantWeight(k: k, n: n, bits: bits)
+        }
 
         // Every arm is resident before any of them is timed, and the reps below
         // are round-robin rather than blocked. This host holds a ~41C floor that
         // the 40C cool gate cannot clear, so an arm-blocked sweep would charge
         // whatever thermal drift happens during its own block to that arm alone.
-        let bodies = bitWidths.map { bits -> () -> [MLXArray] in
-            let weight = lowBitQuantWeight(k: k, n: n, bits: bits)
+        let bodies = armSpecs.map { spec -> () -> [MLXArray] in
+            let weight = weights[spec.bits]!
+            let xs = activations[spec.m]!
             return {
                 var outs: [MLXArray] = []
                 outs.reserveCapacity(inner)
@@ -124,7 +145,7 @@ struct QwenQMVCostCurveTests {
                 for index in 0..<inner {
                     let o = quantizedMM(
                         x, weight.w, scales: weight.scales, biases: weight.biases,
-                        transpose: true, groupSize: 64, bits: bits)
+                        transpose: true, groupSize: 64, bits: spec.bits)
                     outs.append(o)
                     if index + 1 < inner { x = xs[index + 1] + o[0..<1, 0..<1] * 1e-30 }
                 }
@@ -134,7 +155,7 @@ struct QwenQMVCostCurveTests {
         for body in bodies {
             for _ in 0..<3 { eval(body()) }
         }
-        var samplesByArm = [[Double]](repeating: [], count: bitWidths.count)
+        var samplesByArm = [[Double]](repeating: [], count: armSpecs.count)
         for _ in 0..<reps {
             for (index, body) in bodies.enumerated() {
                 let start = DispatchTime.now().uptimeNanoseconds
@@ -145,21 +166,27 @@ struct QwenQMVCostCurveTests {
         }
 
         var arms: [[String: Any]] = []
-        for (index, bits) in bitWidths.enumerated() {
+        for (index, spec) in armSpecs.enumerated() {
             let samples = samplesByArm[index].sorted()
             let median = samples[samples.count / 2]
             // Affine g64 with bf16 scale+bias is bits + 0.5 bits per weight.
-            let bytes = Double(n) * Double(k) * (Double(bits) + 0.5) / 8.0
+            let bytes = Double(n) * Double(k) * (Double(spec.bits) + 0.5) / 8.0
+            let crossrow = spec.bits == 4 && (2...9).contains(spec.m)
             arms.append([
-                "bits": bits,
+                "bits": spec.bits,
+                "m": spec.m,
                 "k": k,
                 "n": n,
+                "threadgroups_x": spec.m,
+                "kernel": "affine_qmv_fast_bfloat16_gs_64_b_\(spec.bits)_batch_0",
+                "in_kernel_path": crossrow
+                    ? "qmv_fast_crossrow_affine4_g64_m" : "qmv_fast_impl",
                 "weight_bytes": bytes,
                 "seconds_per_call": median,
                 "seconds_per_call_min": samples[0],
                 "seconds_per_call_max": samples[samples.count - 1],
                 "achieved_gb_per_second": bytes / median / 1e9,
-                "uses_crossrow_kernel": bits == 4,
+                "uses_crossrow_kernel": crossrow,
             ])
         }
 
