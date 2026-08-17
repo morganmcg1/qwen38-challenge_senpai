@@ -175,7 +175,7 @@ def main():
             "serial": r["serial_leg"]["parent_measured_seconds_per_token"],
             "matched": (r["mtp_leg"]["all_tokens_matched"]
                         and r["serial_leg"]["all_tokens_matched"]),
-            "score": r.get("measured_local_score"),
+            "score": r["amdahl"]["measured_local_score"],
             "before": float(ident.get("gpu_temp_c_before", "nan")),
             "after": float(ident.get("gpu_temp_c_after", "nan")),
         }
