@@ -49,6 +49,10 @@ cleanup() {
   # below rewrites the index too, so a plain `git checkout --` would "restore"
   # the tree to the last arm rather than to the commit under test.
   git checkout HEAD -- "${TWINS[@]}" 2>/dev/null || true
+  # Restoring the sources is not enough: every build root still holds the last
+  # arm's mlx.metallib, so the next unrelated run would silently execute that
+  # arm's kernels. Rebuild before releasing the lock.
+  tools/build-mlx-metallib.sh --all-build-roots >/dev/null 2>&1 || true
   release_local_run_lock
 }
 trap cleanup EXIT
