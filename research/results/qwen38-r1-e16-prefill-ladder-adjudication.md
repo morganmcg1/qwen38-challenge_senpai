@@ -248,7 +248,67 @@ PR #13's per-depth draft-cost curve is a decode-path policy change inside
 radius exactly: the CLI digest is **unchanged** (`0a904c0d…`), only the worker
 moved (`42c72d09…` → `3670d6f7…`).
 
-<!-- Q5 arm table appended after the confirmation run -->
+One arm, shipped default ladder, 64 decode tokens, trace on, both phases gated
+(39.3 °C serial, 39.8 °C MTP), HEAD `99d42f3`, worker `3670d6f7…`, CLI
+`0a904c0d…`. The default ladder resolves to `everyN:3`, 22 rungs at
+`0,2,5,…,62`, i.e. the same schedule Q1/Q4 called "22 default".
+
+| quantity | pre-merge (n=6 arms, 64 tok) | Q5 post-merge | delta |
+|---|---|---|---|
+| serial `seed_prefill_seconds` | 4.000460664 mean, band [3.993803, 4.007064] | 4.002278924 | **+0.0455 %, inside band** |
+| MTP `seed_prefill_seconds` | 4.000838161 mean, max 4.007064 | 4.026414037 | **+0.6393 %, +0.019350 s above band** |
+| serial `decode_seconds` | 8.2057–8.2447 | 8.212129951 | inside band |
+| MTP `decode_seconds` | 5.618732154 mean, spread 0.017885 | 5.674883008 | **+0.9994 %, 2.73× spread** |
+| local ratio | 1.463132049 mean, band [1.458510, 1.469797] | 1.447101189 | **−1.0957 %, below band** |
+| `effective_mean_draft_len` | 5.4 (all 6 arms) | **3.0** | −44 % |
+| `round_count` for 64 tokens | 10 (all 6 arms) | **16** | +60 % |
+
+Exactness is clean in both phases: `all_tokens_matched=true`,
+`residual_divergence_count=0`, `declared_rows_total=emitted_token_total=64`,
+`public_drift_tripwire_passed=true`, `accepted_draft_rate=1`,
+`uses_pinned_mtp_head=true`, head `05a8613e…`.
+
+**Q5's own question is answered: yes, `P` is base-invariant.** The serial-leg
+prefill lands inside the twelve-phase pre-merge band, so every Q1–Q4 conclusion
+about the prefill wall transfers to `e6e6f81` unchanged. The unchanged CLI digest
+already predicted this, and the measurement confirms it.
+
+### Incidental finding — PR #13's depth curve costs ~1 % of the local ratio here
+
+This was not my question, and I did not chase it. Reporting it because it lands
+on the base every later experiment will branch from.
+
+The mean draft length falling 5.4 → 3.0 and rounds rising 10 → 16 is
+*deterministic*, not noise: that is PR #13's per-depth draft-cost curve choosing
+shallower drafts on this host. The three timing consequences are each larger than
+the noise they sit in — MTP prefill 0.0194 s above a 0.0133 s band, decode 2.73×
+the pre-merge spread, local ratio below the entire pre-merge range — but all
+three come from **n=1**, so treat the mechanism as confirmed and the magnitude as
+provisional.
+
+The MTP-leg-only prefill rise is the odd part. The within-arm MTP-minus-serial
+prefill gap is +0.024135 s, 6.67× the biggest such gap in six pre-merge arms
+(+0.003620). Prefill is the same `begin` call on both legs, so a legitimate
+decode-policy change should not move it at all; a one-time cost-curve setup
+billed inside `begin` would explain it.
+
+Why this may not transfer, and why I am not calling it a regression:
+
+- 64 decode tokens gives the adaptive curve only 10–16 rounds to amortize over,
+  against the ranked 512.
+- The curve was calibrated on the ranked M5; this is an M4 Pro with a different
+  per-depth cost shape, which is exactly the cross-host risk an adaptive depth
+  policy carries.
+- n=1 on every timing number.
+
+If the local ratio drop did transfer to the ranked host it would be worth
+**−0.0339 pts ≈ −2.76 frontier steps**, and the prefill component alone
+**−0.004454 pts ≈ −0.36 steps**. That product of "probably host-specific" and
+"large if real" is what makes it worth one cheap check rather than silence: two
+or three repeat arms plus one 512-token comparison against `e13a6fe`, which is
+about 25 minutes of the same harness. Follow-up #5 below.
+
+
 
 ## Verdict
 
@@ -300,6 +360,16 @@ any fraction of that is proportional.
    the retraction and it makes the result reproducible.
 4. **The fixed-window EOS defect** (diagnosis below) is a correctness bug in the
    scored session that I found while reading `begin`; it needs its own assignment.
+5. **Confirm or dismiss the PR #13 depth-curve cost** (Q5 incidental finding).
+   Cheapest decisive form: three repeat default arms on `e6e6f81` plus one
+   `e13a6fe`-vs-`e6e6f81` comparison at 512 decode tokens, ~25 min of harness
+   time, checking whether `effective_mean_draft_len` stays at 3.0 and whether the
+   MTP-leg `seed_prefill_seconds` rise survives repeats. If the curve is
+   M5-calibrated it should recover most of the gap at 512 tokens; if it does not,
+   the per-depth costs want a host-aware calibration rather than pinned
+   constants. I did not run this because it is decode-policy work outside my
+   assignment, and because burning my remaining slot on someone else's merged PR
+   is the advisor's call, not mine.
 
 ## The EOS / fixed-window defect (read-only diagnosis, not fixed)
 
