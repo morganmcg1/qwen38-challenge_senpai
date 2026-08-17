@@ -1,0 +1,62 @@
+I want to examine a saying that is repeated so often that it has stopped being
+examined, namely that to measure a thing is to change it. Stated loosely, the
+saying is either trivially true or plainly false, and the interest lies in the
+distinctions that separate those two readings. Let me begin with the version I
+take to be trivially true. If I put a cold thermometer into a small cup of
+warm water, the water gives up a little of its heat to the glass, and the
+number I read is therefore the temperature of the water after my intrusion, not
+before it. Nobody is troubled by this. It is a defect of the instrument, and
+it can be reduced by making the instrument smaller, or by extrapolating from
+several readings, or by choosing a method that touches nothing at all. The
+disturbance is real, but it is contingent. It belongs to my clumsiness rather
+than to the nature of measuring.
+
+Now consider the version I take to be plainly false, or at least badly stated.
+Some hold that because every observation involves an observer, no quantity has
+a determinate value until it is looked at, and therefore that measurement is
+not a discovery but a kind of authorship. I resist this. When I return to a
+room I left an hour ago and find the kettle cold, I do not conclude that the
+kettle had no temperature while I was absent and acquired one on my return. I
+conclude that it cooled, in accordance with the same rule that governed it
+while I watched. The rule, and not my attention, is doing the work. To make the
+observer the author of the quantity is to mistake the order of dependence: my
+knowledge depends on the kettle, and the kettle is quite indifferent to my
+knowledge.
+
+Against this an objection may be raised, and it is the strongest one I know. It
+holds that I have chosen a friendly example. Kettles are large and sluggish and
+tolerant of being examined. But there are things whose whole existence consists
+in a pattern of behaviour, and to observe such a thing is necessarily to enter
+the pattern. If I wish to know how a man behaves when unobserved, I cannot
+learn it by watching him, and no refinement of my technique will help, because
+the difficulty is not in my instrument but in the definition of what I am after.
+The disturbance here is not contingent at all. It is constitutive.
+
+I accept the objection, and I think it forces a division rather than a
+concession. There are properties a thing has independently of any procedure,
+and there are properties that are only defined relative to a procedure. The
+mass of a stone belongs to the first sort. The popularity of a policy belongs
+to the second, since there is no fact about popularity apart from some way of
+asking, and different ways of asking are different questions rather than better
+and worse approaches to one question. The saying I began with is true of the
+second sort and misleading about the first, and most of the confusion in
+ordinary talk comes from applying it indifferently to both.
+
+A second objection presses further. Even where the property is independent, my
+choice of what to measure shapes what is subsequently done, and so the
+measurement changes the world by way of the actions it licenses. A school that
+is graded on one number will reorganise itself around that number, and the
+number will consequently become a worse description of the school than it was
+on the day it was first taken. To this I say that the effect is genuine and
+important, but it is not a fact about measurement. It is a fact about
+incentives. The thermometer did not corrupt the school; the decision to pay for
+a reading did. Keeping these apart matters practically, because the two have
+opposite remedies. Against disturbance one refines the instrument. Against
+corruption one changes what depends on the result, and refining the instrument
+only makes the corruption more precise.
+
+My conclusion is modest. Measurement changes what it measures whenever the
+measuring is part of the thing, and otherwise it changes only what we do next.
+The first case calls for honesty about definitions, the second for care about
+consequences, and neither is served by the comfortable fatalism of the saying
+itself.
