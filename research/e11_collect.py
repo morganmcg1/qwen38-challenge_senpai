@@ -106,6 +106,8 @@ def collect(runs_root, label):
         "tokens": int(meta.get("tokens", 0) or 0),
         "started": meta.get("started", ""),
         "finished": meta.get("finished", ""),
+        "thermal_before": meta.get("thermal_before", ""),
+        "thermal_after": meta.get("thermal_after", ""),
         "h_curve_traced": curves[-1] if curves else "",
     }
     row.update({k: v for k, v in metrics.items()
@@ -163,6 +165,8 @@ def to_wandb(row, group, notes):
         "mlx_qwen_env": row.get("mlx_qwen_env", ""),
         "golden": row.get("golden", "<default>"),
         "head_provenance_sha256": row.get("head_provenance_sha256", ""),
+        "thermal_before": row.get("thermal_before", ""),
+        "thermal_after": row.get("thermal_after", ""),
         "git_head": sh("git", "rev-parse", "HEAD"),
         "host_model": sh("sysctl", "-n", "hw.model"),
         "host_chip": sh("sysctl", "-n", "machdep.cpu.brand_string"),
