@@ -10,30 +10,29 @@ disagree, stop and repair both before assigning or submitting work.
 
 ## Current frontier
 
-Observed from Yukon and the organizer remote at `2026-08-17T11:46:41Z`.
+Observed from Yukon and the organizer remote at `2026-08-17T16:44:50Z`.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `0b071ed9db211f17554bc5a13fb7381f14d709b3` |
-| Best promoted submission | `ba493f74-c0fe-440a-a956-f77d26232e54` |
-| Promoted source ref | `156b5b75bdfac82ae406487f531fd991e7fdfd30` |
-| Official score | `2.95338624520432` |
+| Organizer synced commit | `79683c633b13c63aa23f112756a9c6b5173705b0` |
+| Best promoted submission | `14b53255-e585-44bd-84d9-37b7b29c0be9` |
+| Promoted source ref | `79683c633b13c63aa23f112756a9c6b5173705b0` |
+| Official score | `3.02460155382533` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Submitted solver snapshot | `156b5b75bdfac82ae406487f531fd991e7fdfd30` |
+| Submitted solver snapshot | `79683c633b13c63aa23f112756a9c6b5173705b0` |
 
 The promoted receipt above is the public Yukon frontier used to bootstrap this
 campaign; it is not claimed as a Senpai-authored result.
 
-Campaign commit `d098212` imports that exact promoted submitted surface. The
-source is based on trusted organizer parent
-`d077e68567827e8d926272df2245226d72b889ac`; relative to the previous promoted
-`7351e62674bc600f0ca148d3a1b0604716a09db6` snapshot, its submitted delta spans
-eight editable files (`+217/-41`), including the adaptive schedule, target and
-head-state paths, quantized kernel twin, and proposal-head manifest. Trusted
-base ancestry was reviewed separately and was not imported as solver code.
+Campaign commit `29f1ee4` imports that exact promoted submitted surface.
+Relative to the previous promoted `156b5b75bdfac82ae406487f531fd991e7fdfd30`
+snapshot, its submitted delta changes only the readable and generated
+affine4/group-64 QMV kernel twins (`+58/-22`). The direct-nibble specialization
+applies at target widths M=6 and M=9. Trusted base ancestry was reviewed
+separately and was not imported as solver code.
 
-Campaign commit `8b85909` then reapplies the fixed-window post-EOS continuation
+Campaign commit `28e591f` then reapplies the fixed-window post-EOS continuation
 required by the current parent-owned 512-token contract. That overlay is not
 part of the promoted Yukon receipt above and must pass exact 512-token replay
 and official validation before it can itself be called promoted.
@@ -525,6 +524,8 @@ evidence or a changed condition; “try again” is not enough.
 | 2026-08-17 | `qwen-thorfinn/prefill-dequant-prize` / `dbfef047` (PR #20, E18) | is the 12.942% prefill dequant residual reachable, and on which kernel? | `422db045` | **r1 assigned, in flight.** Phase 1 is host-only and takes no benchmark lock: reproduce or refute my `split_k` arithmetic, instrument the dispatch *decision* for the six scored prefill shapes, and determine from runner-image / workflow / arch evidence whether ranked M5 satisfies `is_nax_available()`. **Phase 1 alone is a complete, mergeable result**, and an explicit UNRESOLVED with a named missing fact is a full pass | not submitted | Brief opens with my own self-correction: I concluded the scored prefill takes `qmm_splitk` after tracing only the outer dispatch, and asked him to check me because "I got the call graph wrong once already in this area; assume I can be wrong again." His parity false-pass hole from E14 and his per-arm worker `sha256` are now campaign requirements |
 | 2026-08-17 | advisor `senpai/qwen38-mtp-r1` / `1bb627ab` | record the refuted `qmm_splitk` conclusion and the campaign's process lessons | `422db045` | 1 file, `+218/-29`, zero editable/scored-path files. Habitability proved first: `swift build --build-tests -c debug --force-resolved-versions` exit 0 in `0.91` s. Adds the REFUTED subsection (verbatim `qmm_splitk` delegation, the `N <= 512` derivation, the eight-row `split_k` table, the `qmm()` NAX early return at `:697-699`), the SURVIVES subsection, and three standing rules | not submitted; documentation only | The standing rule this produced is the most transferable thing in it: **"a call-site trace is not a call-graph trace."** I read the outer dispatch, saw `qmm_splitk(...); return;`, and stopped one level too shallow — the callee delegates straight back to `qmm()` whenever `split_k <= 1`, which is *every* scored prefill shape |
 | 2026-08-17 | `qwen-alphonse/keylen-1024-residual` / `0d6853ca` (PR #21, E19) | close the campaign-level `key_len = 1024` positional exactness residual | `1bb627ab` | **r1 assigned, in flight.** Zero-GPU, host-only, takes no benchmark lock. Brief hands him the complete corrected mechanism (stride 32 vs `blocks = 64`, with the (a)/(b)/(c) argument and both verbatim key loops), the quantitative band table, `gqa_factor = 6` and the `split = 5` witness, and the candidate repair with five ranked attacks. **Deliverable 1 is to prove the live call path before anything else**; deliverables 1, 3 and 8 alone are a complete mergeable result if the `devc` question resolves against `'d'`/`'s'` in his first hour | not submitted | Both outcomes pre-registered so the result cannot be talked into significance either way. Brief also restates, verbatim, the **two advisor errors PR #2 caught me in**: ranking arms by `accepted_tokens_per_round` (anti-correlated with speed among cap-8 arms), and closing a direction on a point estimate that contradicted my own preregistered band — "when a band and a point estimate disagree, the point estimate is the thing that needs defending" |
+| 2026-08-17 | `codex/sync-organizer-frontier-20260817-6` / `29f1ee4` | exact promoted editable-snapshot import | `1c57496` | preservation, overlay, budget, and trusted-parity checks passed; both changed QMV twins are byte-identical to promoted source `79683c63`; regeneration audit is locally blocked by the missing Xcode Metal Toolchain | adopted public promoted `14b53255` at `3.02460155382533`; not a Senpai-authored submission | Exact organizer source `79683c63`; two affine4/group-64 QMV kernel twins changed relative to the previous promoted source |
+| 2026-08-17 | `codex/sync-organizer-frontier-20260817-6` / `28e591f` | fixed-window continuation after EOS on promoted source `79683c63` | `29f1ee4` | source overlay and trusted-parity checks passed; Swift test compilation remains blocked by the unchanged organizer `QwenMTPVerbTests.swift:755` type error, so full 512-token exact replay is still required | not submitted; not promoted | Reapplies the campaign's parent-owned fixed-window behavior as a separate overlay |
 
 ## Update checklist
 

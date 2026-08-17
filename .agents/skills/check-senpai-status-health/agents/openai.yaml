@@ -1,4 +1,4 @@
 interface:
   display_name: "Check Senpai Status and Health"
-  short_description: "Audit Senpai health, scientific advances and risks"
-  default_prompt: "Use $check-senpai-status-health to perform a fresh read-only campaign audit and report operational health, explicit major scientific progress and major issues, official submissions, and frontier movement."
+  short_description: "Audit health, diagnose stalls, and report research risks"
+  default_prompt: "Use $check-senpai-status-health to perform a fresh read-only campaign audit, diagnose any stuck or stopped agents with clean repository-specific fix recommendations, and report operational health, major scientific progress and issues, official submissions, and frontier movement."
