@@ -1,7 +1,7 @@
 {
   "host": {
     "chip": "Apple M4 Pro",
-    "gpu_cores": "10",
+    "gpu_cores": 20,
     "memsize_bytes": "51539607552",
     "macos_build": "25F84",
     "mlx_python": "0.29.3",

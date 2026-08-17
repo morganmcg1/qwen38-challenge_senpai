@@ -1831,66 +1831,6 @@ final class Qwen35DecoderLayer: Module {
     }
 }
 
-// MARK: - Prefill asyncEval ladder schedule
-
-/// Layer boundaries at which the prefill-width (`S >= 512`) forward fires
-/// `asyncEval`. The compiled default is what a submission runs; the
-/// `DARKBLOOM_QWEN_PREFILL_LADDER` override exists for the rung-schedule sweep
-/// and is the only prefix family besides `MLX_` that survives the trusted
-/// worker's environment allowlist. Grammar: `off`, `everyN:<k>` (rung at layer
-/// 0 and every `k`-th layer after), or `list:<i,j,...>` (explicit rungs).
-enum Qwen35PrefillLadder {
-    /// Shipped schedule: `i == 0 || i % 3 == 2`, 22 rungs over 64 layers.
-    static let compiledDefault = "everyN:3"
-    private static let maxLayers = 256
-
-    static let spec: String = {
-        let raw = ProcessInfo.processInfo.environment[
-            "DARKBLOOM_QWEN_PREFILL_LADDER"] ?? ""
-        return raw.isEmpty ? compiledDefault : raw
-    }()
-
-    static let rungMask: [Bool] = parse(spec)
-
-    static func parse(_ spec: String) -> [Bool] {
-        var mask = [Bool](repeating: false, count: maxLayers)
-        if spec == "off" { return mask }
-        if spec.hasPrefix("everyN:") {
-            guard let k = Int(spec.dropFirst("everyN:".count)), k > 0 else {
-                preconditionFailure("bad prefill ladder stride: \(spec)")
-            }
-            for i in 0 ..< maxLayers where i == 0 || i % k == k - 1 {
-                mask[i] = true
-            }
-            return mask
-        }
-        if spec.hasPrefix("list:") {
-            for field in spec.dropFirst("list:".count).split(separator: ",") {
-                guard let i = Int(field), i >= 0, i < maxLayers else {
-                    preconditionFailure("bad prefill ladder rung: \(field)")
-                }
-                mask[i] = true
-            }
-            return mask
-        }
-        preconditionFailure("unknown prefill ladder spec: \(spec)")
-    }
-
-    /// One-line provenance so every captured run proves which schedule ran.
-    /// Same gate and sink as the session phase trace. Touching `rungMask` here
-    /// forces the parse at model construction, never inside a timed forward.
-    static func traceSelection(layerCount: Int) {
-        let rungs = (0 ..< min(layerCount, maxLayers)).filter { rungMask[$0] }
-        guard ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
-        else { return }
-        FileHandle.standardError.write(Data("""
-            mtp-trace: prefill_ladder spec=\(spec) rungs=\(rungs.count) \
-            at=\(rungs.map(String.init).joined(separator: ","))
-
-            """.utf8))
-    }
-}
-
 // MARK: - Text Model
 
 public class Qwen35TextModelInner: Module {
@@ -1920,8 +1860,6 @@ public class Qwen35TextModelInner: Module {
         self.faIdx = args.fullAttentionInterval - 1
 
         super.init()
-
-        Qwen35PrefillLadder.traceSelection(layerCount: args.hiddenLayers)
     }
 
     /// Returns the pre-norm hidden state from the final layer.
@@ -1958,7 +1896,6 @@ public class Qwen35TextModelInner: Module {
         // schedule scaled from 40 to 64 layers, front rungs kept).
         let prefillLadder = inputs.dim(1) >= 512
         let ladderActive = inputs.dim(1) <= 9 || prefillLadder
-        let prefillRungs = prefillLadder ? Qwen35PrefillLadder.rungMask : []
         for (i, layer) in layers.enumerated() {
             let mask = layer.isLinear ? ssmMask : nil
             let attnMask =
@@ -1969,7 +1906,7 @@ public class Qwen35TextModelInner: Module {
                 cache: cacheArray?[i], nConfirmed: nConfirmed)
             if ladderActive {
                 if prefillLadder {
-                    if prefillRungs[i] {
+                    if i == 0 || i % 3 == 2 {
                         asyncEval(hiddenStates)
                     }
                 } else {

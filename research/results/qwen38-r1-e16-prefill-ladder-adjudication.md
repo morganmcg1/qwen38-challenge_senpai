@@ -1,12 +1,14 @@
 # E16 — Prefill ladder adjudication
 
-- Assignment: `qwen38-r1-e16-prefill-ladder-adjudication` (r1), PR #18
+- Assignment: `qwen38-r1-e16-prefill-ladder-adjudication` (r1 measurements, r2
+  bookkeeping), PR #18
 - Student: `qwen-alphonse`
-- Base: `senpai/qwen38-mtp-r1` @ `e6e6f81767e84cc8c39b48c09a4f5cac597cdbca`
-  (rebased mid-experiment from `e13a6fe0fd62a90d5042860dd01b03b7dfa8bcc4`; PR #13's
-  per-depth draft-cost curve merged in between. Q1–Q4 were measured on `e13a6fe`,
-  the prefill interval is re-confirmed on `e6e6f81` in Q5, and every ranked
-  conversion below uses the post-merge decode window.)
+- Base: `senpai/qwen38-mtp-r1` @ `b85e7827158eb8c29b6b290a9e2971812f7e70b4`
+  (r2 rebase target; **no arm was re-measured for r2** — see
+  "r2 — rebase, revert, and what did not change")
+- Measurement bases: Q1–Q4 on `e13a6fe0fd62a90d5042860dd01b03b7dfa8bcc4`, Q5 and
+  every ranked conversion on `e6e6f81767e84cc8c39b48c09a4f5cac597cdbca` (PR #13's
+  per-depth draft-cost curve merged in between).
 - Host: AWS Mac, Apple M4 Pro (20 GPU / 14 CPU cores), `hw.memsize = 51539607552`,
   macOS 26.5.2 (25F84), Swift 6.3.3, automatic low-memory profile.
   **Not the ranked M5**: every absolute number here is directional.
@@ -243,6 +245,16 @@ post-merge `R = 3.0972967` (solved from their own prize table; the promoted
 on-record `R` is 2.94661597308114, which would make every row below 7.19 %
 smaller). One frontier step = 0.0122890 points.
 
+**`p` is base-dependent and every points figure below inherits that.** `P` is
+base-invariant (Q5), but `D_mtp` is not: the same `P` over the pre-PR-13 decode
+leg gives `p = 0.3110454468716388` on `e13a6fe0fd62a90d5042860dd01b03b7dfa8bcc4`
+(`D_mtp(512) = 12.870633 s`) and `0.3322361` on
+`e6e6f81767e84cc8c39b48c09a4f5cac597cdbca` (`D_mtp(512) = 12.049719 s`), +6.81 %.
+The value used here is the one for `e6e6f81`; `b85e782` adds a further
+`segmentedStreakGate` and cross-row-QMV change to the decode leg, so any
+re-derivation on `b85e782` must re-measure `D_mtp` rather than reuse `0.3322361`.
+The φ column is base-invariant; only the points and frontier-step columns move.
+
 | φ (removable fraction of `P`) | source | points | frontier steps |
 |---|---|---:|---:|
 | 0.00060 – 0.00107 | **the shipped ladder (Q1)** | 0.000418 – 0.000746 | 0.03 – 0.06 |
@@ -369,15 +381,17 @@ any fraction of that is proportional.
 2. **Per-dispatch overhead on the small projections** (`out_proj`, `o_proj` gain
    4.0 % when pipelined) — ~0.4 % of `P`, a fusion question, still below the bar
    alone but additive with the dequant work.
-3. **`DARKBLOOM_QWEN_PREFILL_LADDER` is a 2 706-byte diagnostic knob on a
-   submitted path** (`Vendor/…/Qwen35.swift`). It defaults to the shipped ladder
-   when unset, so it is score-neutral, and it is the only submitted-path change in
-   this branch. Because the verdict is negative, the advisor should decide
-   **keep as a documented diagnostic or revert before any official submission**;
-   I have not reverted it unilaterally since it is the instrument that produced
-   the retraction and it makes the result reproducible.
-4. **The fixed-window EOS defect** (diagnosis below) is a correctness bug in the
-   scored session that I found while reading `begin`; it needs its own assignment.
+3. ~~`DARKBLOOM_QWEN_PREFILL_LADDER` is a 2 706-byte diagnostic knob on a
+   submitted path.~~ **Closed in r2: reverted.** The advisor decided it out of
+   the submitted path (structurally unreachable — the ranked `env:` block sets
+   only `MLXFAST_*` names and the harness strips them from the worker, so a
+   `DARKBLOOM_*` name can never be set on the ranked host; and the win it would
+   gate is 0.14 frontier steps). E16 now merges with **zero submitted-path
+   delta**. The instrument is preserved as
+   `research/e16-prefill-ladder-knob.patch`, which `git apply`s cleanly onto
+   `b85e782`, so every arm in this report stays reproducible.
+4. ~~The fixed-window EOS defect.~~ **Closed on the base, not by me:** `b85e782`
+   removes the whole apparatus (see the diagnosis section below).
 5. **Confirm or dismiss the PR #13 depth-curve cost** (Q5 incidental finding).
    Cheapest decisive form: three repeat default arms on `e6e6f81` plus one
    `e13a6fe`-vs-`e6e6f81` comparison at 512 decode tokens, ~25 min of harness
@@ -389,9 +403,31 @@ any fraction of that is proportional.
    assignment, and because burning my remaining slot on someone else's merged PR
    is the advisor's call, not mine.
 
-## The EOS / fixed-window defect (read-only diagnosis, not fixed)
+## The EOS / fixed-window defect (diagnosed in r1, **resolved on the r2 base**)
 
-Line numbers on the post-rebase base `e6e6f81`:
+**Status on `b85e782`: closed. Both diagnosed sites are gone, and no half-fix
+remains.** Verified read-only on the r2 base:
+
+```text
+Qwen36MTPBlockSession.swift:167   var reachedStopToken: Bool { false }
+Qwen36MTPBlockSession.swift:171   ... stopTokens _: ...        # parameter ignored
+Qwen36MTPBlockSession.swift:817   reachedStopToken: false
+Qwen36MTPBlockSession.swift:1127  reachedStopToken: false
+Qwen36MTPReferenceSession.swift   0 occurrences of "stopToken"
+QwenRuntimeMTPDriver.swift:121    while emitted.count < options.totalTokenCount
+```
+
+`reachedStopToken` is now a constant `false`, the `stopTokens` argument is
+accepted and discarded, and the driver loop is a pure fixed-window count. That is
+exactly the fix shape r1 recommended (delete both special cases, keep the window
+under parent control) applied at both sites, so the "establish or clear the second
+site" question the advisor raised is discharged: there is no surviving half-fix,
+and follow-up #4 below is closed on the base rather than deferred.
+
+The r1 diagnosis is retained verbatim below as the record of *why* the change was
+needed. Line numbers in it refer to the r1 base `e6e6f81`, **not** to `b85e782`.
+
+Line numbers on the r1 base `e6e6f81`:
 
 - **`Qwen36MTPBlockSession.swift:778-795`** — on a stop-token *primary* the session
   clears `pendingPrimary`/`pendingTop2`/`pendingHidden` and returns
@@ -416,8 +452,13 @@ items and a half-fix here would be worse than a clean assignment.
 
 ## Reproduction
 
+The `DARKBLOOM_QWEN_PREFILL_LADDER` knob was **reverted off the submitted path in
+r2** (see the r2 section below). The measurement code is preserved as a patch, so
+reproducing the sweeps takes one extra step:
+
 ```bash
-research/e12-run.sh build
+git apply research/e16-prefill-ladder-knob.patch   # re-adds the knob to Qwen35.swift
+research/e12-run.sh build                          # MUST rebuild after applying
 research/e12-run.sh ladder-sweep 64 1 q1on:default q1off:off q1ctl:everyN:3
 research/e12-run.sh ladder-sweep 64 1 q4a:list:0,1,2,5,11,23,47 q4b:everyN:12
 research/e12-run.sh ladder-sweep 64 1 q5post:default
@@ -432,11 +473,33 @@ research/e16_wandb.py --group qwen38-r1-e16-prefill-ladder-adjudication \
 nothing (compiled default). It is read once in `Qwen35.swift` when the prefill
 ladder is built; unset ⇒ byte-identical behaviour to the shipped build.
 
-### Known cosmetic defect in the committed `research/floor-e16.json`
+**Without the patch applied and rebuilt, every non-`default` LADDER value is
+inert** — the sweep will run and report, but all arms will silently measure the
+shipped ladder. `research/e12-run.sh` carries the same warning in its header.
+`prefill_floor.py` and `e16_wandb.py` are pure research tooling and need no patch.
 
-Its `host.gpu_cores` reads `"10"`. The real host has **20 GPU / 14 CPU cores**;
-the scrape picked the wrong `system_profiler` line. The code is fixed in this
-branch, so any future run self-reports correctly.
+### The `host.gpu_cores` field in the committed `research/floor-e16.json`
+
+r1 shipped `"gpu_cores": "10"` — a string, and the wrong number: the scrape read
+`hw.perflevel0.physicalcpu` (10 performance CPU cores) instead of the GPU core
+count. **r2 fixes the artifact to the integer `20`** and coerces the scrape in
+`research/prefill_floor.py` with `int(...)` so future runs self-report a real
+integer.
+
+**Deviation flagged:** the advisor's exit criterion asked for "an integer".
+I probed the host directly rather than just re-typing the r1 value:
+
+```text
+system_profiler SPDisplaysDataType | grep Cores   →  Total Number of Cores: 20
+sysctl hw.perflevel0.physicalcpu                  →  10
+```
+
+So `20` is the GPU core count and `10` was the mis-scraped CPU figure. I wrote
+`20` (integer) rather than `10` (integer) because it satisfies the criterion *and*
+is factually correct; writing an integer `10` would have frozen a known-wrong
+value into the artifact. If the advisor wanted the literal `10` preserved for
+byte-level continuity with the r1 review arithmetic, say so and I will change it —
+but see the next paragraph for why no result depends on it either way.
 
 I deliberately did **not** re-run the floor to refresh the artifact.
 `gpu_cores` is metadata scraped from `system_profiler` and is never read by the
@@ -444,5 +507,130 @@ budget: `ceiling_tflops` comes from a measured dense-bf16 GEMM sweep, not from a
 core count, so no number in Q2 or Q3 depends on it. Re-running would have
 re-measured the ceiling and shifted every quoted figure by a little, breaking the
 cross-reference between this write-up, the committed artifact, and the advisor's
-own arithmetic — a worse trade than one wrong metadata string that is called out
-here. Read the field as 20.
+own arithmetic — a worse trade than one metadata field, now corrected in place.
+
+## r2 — rebase, revert, and what did not change
+
+r2 is bookkeeping. **No GPU work, no re-measurement, no re-run of the 12 timed
+phases.** Every number above is the r1 measurement, unchanged.
+
+### Rebase onto `b85e782`
+
+Clean. `git rebase b85e782` replayed all r1 commits with no conflicts. The base
+move touched neither `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`
+nor anything under `research/`, so nothing in this experiment's measurement or
+tooling surface was disturbed. One operator commit already present upstream
+(raising the plausibility ceiling to 5.0, `AGENTS.md` + `senpai/program.md` only)
+was auto-skipped as already applied.
+
+### Submitted path reverted to zero delta
+
+`git checkout b85e782 -- Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`.
+**This branch now has zero submitted-path delta against the base.** I agree with
+the advisor's reasoning and would have reached the same conclusion:
+
+1. `DARKBLOOM_*` env names are **structurally unreachable on the ranked host**.
+   The harness strips `MLXFAST_*` and sets nothing else, so a `DARKBLOOM_`-prefixed
+   variable can never be set in the ranked leg. The knob's ranked behaviour is
+   therefore identical to the compiled default *by construction*, which means
+   shipping it buys exactly nothing and only widens the audited surface.
+2. The measured win is **0.14 frontier steps** (0.060 % of `P` serial). That is
+   inside noise and 5.9× below this assignment's own 1.5 %-of-`P` promotion bar —
+   Q4's stop rule (b) already fired on it.
+
+Carrying an env-var branch through the ranked build for a gain that is both
+unreachable and immaterial is a pure risk trade with no upside. The machinery is
+preserved in `research/e16-prefill-ladder-knob.patch` (4187 bytes,
+`git apply --check` clean against this head) so any future prefill-schedule
+experiment re-enables it in one command.
+
+Evidence, on the rebased head:
+
+```text
+$ git diff b85e782 -- Vendor/ Sources/ mtp-head.manifest.json mtp-head/ --stat
+(no output)
+
+$ ./senpai/validate-assignment-scope.sh b85e7827158eb8c29b6b290a9e2971812f7e70b4 \
+    Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+assignment scope OK: 1 submitted path(s) against BASE_SHA=b85e78271...
+
+$ ./senpai/check-editable-budget.sh b85e7827158eb8c29b6b290a9e2971812f7e70b4
+editable budget OK: source=2403812/3000000 bytes headroom=596188 growth=0/262144
+  exempt=2410/2147483648 files=154 (growth base=b85e782...; contract=b85e782...;
+  base source=2403812, exempt=2410, files=154)
+```
+
+`growth=0/262144` and `source == base source == 2403812` are the machine-checked
+form of "zero submitted-path delta". r1 reported `source=2408433`,
+`growth=2706` — the 4,621-byte difference is the reverted knob plus the base move.
+The scope script requires at least one path argument, so it is invoked with the
+r1-declared path; it passes because that path is now byte-identical to the base.
+
+### Item 13 — the E12 retraction is committed and unambiguous
+
+The tip of this branch is the assignment scaffold commit, so
+`git show --stat <tip>` is empty for any research file. The commits that carry the
+retraction are:
+
+```text
+$ git log --oneline --stat b85e782..HEAD -- research/e12-r1-seed-prefill-charge-report.md
+5649c47 e16: write up Q2/Q3/Q4 adjudication, post-merge ranked arithmetic, and verdict
+ research/e12-r1-seed-prefill-charge-report.md | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
+567b0c3 e16: append Q1 correction note retracting the e12 CPU/GPU split of P
+ research/e12-r1-seed-prefill-charge-report.md | 30 +++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+```
+
+`567b0c3` (pre-rebase `31f341e`) appends the correction note to the E12 report
+itself. It states in the report's own voice that "**Every measurement above stands.
+One *interpretation* above is retracted**", names the retracted claim as the
+73.8 % CPU / 26.2 % GPU split of `P`, gives the ladder-on/ladder-off table that
+disproves it, states the corrected split as **0.045 % CPU / 99.94 % GPU**, and
+**withdraws** E12's "attack the CPU three-quarters of `P`" next action. A reader
+who opens the E12 report cannot now act on the retracted number.
+
+### The advisor's §2 acceptance argument — acknowledged, no counter
+
+I read it adversarially looking for a finding that the base move could break, and
+I did not find one. Restating why each leg holds:
+
+- **The three editable runtime changes in `b85e782` are decode-round-only.** None
+  of them executes during `begin`/seed prefill, which is the only phase Q1–Q4
+  time. A decode-round change cannot move a prefill-only measurement.
+- **Prefill dispatches `qmm_splitk`, not cross-row QMV.** Confirmed in r1 while
+  building the Q3 budget. The base's QMV-adjacent work is on a different dispatch
+  family from the one that owns the 4.004 s.
+- **The closed budget has no cross-row QMV term.** Q3's decomposition closes to
+  `closure_error_seconds = 0` out of GEMM-at-ceiling + non-GEMM + named residual.
+  There is no term for the base's changes to perturb; if there were, the closure
+  error would not have been zero.
+- **Q1/Q4 are within-session contrasts.** Ladder-on vs ladder-off and the interior
+  schedules were measured in the same process, same build, same thermal window.
+  A base-level constant that shifts both arms equally cancels exactly.
+- **The verdict sits 5.9× inside its stop bar.** For the "prefill schedule is not
+  the prize" conclusion to flip, the base move would have to change the prefill
+  schedule's value by ~6×. Nothing in three decode-round edits can do that.
+- **Q5 already demonstrated base-move insensitivity empirically.** `P` measured
+  4.002279 s on `e6e6f81`, inside the `e13a6fe` band `[3.993803, 4.007064]`. That
+  is a direct observation that a base move does not move `P`, not an argument that
+  it should not.
+
+**One quantity does move, and it is now labelled:** `p = P/D`, the prefill share
+of a leg, has a base-dependent denominator. `p = 0.3110454468716388` on `e13a6fe`
+(`D_mtp` = 12.870633 s) and `0.3322361` on `e6e6f81` (`D_mtp` = 12.049719 s),
++6.81 %. Quoting `p` on `b85e782` requires re-measuring `D_mtp` on that base,
+which this revision does not do. The header now labels `p` base-dependent with its
+base SHA, and the φ column is base-invariant by construction. No Q1–Q5 conclusion
+routes through `p`.
+
+### The 5.0 plausibility ceiling is not a stop target
+
+`senpai/program.md:21` is explicit that the gate is an administrative, fail-closed
+sanity check and "not an optimization target, a reason to stop, or a reason to hold
+a candidate". I record it here only because the ceiling moved during this
+revision: it is now **5.0**, and this experiment's projected `R = 3.0972967` is
+nowhere near it. Nothing in E16 was shaped, split, delayed, or tuned with respect
+to any ceiling, and the largest prize this write-up hands off (dequant overhead,
+0.090180 pts ≈ 7.3 frontier steps) should be pursued at full strength regardless
+of where the resulting median lands.

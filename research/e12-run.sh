@@ -15,6 +15,11 @@
 # DARKBLOOM_QWEN_PREFILL_LADDER (`default` or empty keeps the compiled default,
 # i.e. no env dependence at all). `ladder-sweep` runs one arm per argument in
 # sequence, each behind its own lock acquisition and cool-down gate.
+#
+# E16 closed the rung-schedule question as a dead lever, so the knob it needed
+# is no longer carried on the submitted path. To reproduce a sweep, first apply
+# `git apply research/e16-prefill-ladder-knob.patch` and rebuild; without it any
+# LADDER other than `default` is inert and every arm runs the shipped ladder.
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 2

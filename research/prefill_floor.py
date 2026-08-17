@@ -136,7 +136,7 @@ def host_info():
             capture_output=True, text=True, check=True
         ).stdout.splitlines():
             if "Total Number of Cores" in line:
-                gpu_cores = line.split(":", 1)[1].strip()
+                gpu_cores = int(line.split(":", 1)[1].strip())
                 break
     except Exception:
         pass
