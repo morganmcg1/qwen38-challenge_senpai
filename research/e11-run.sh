@@ -29,7 +29,7 @@ golden="${E11_GOLDEN:-.mlxfast-private/e11/goldens/e11_prose_512_${tokens}.json}
 
 # all_tokens_matched compares only as many tokens as the golden carries, so a
 # short golden reports an exact match over a prefix of the decode window.
-golden_steps="$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["expected_tokens"]))' "${golden}" 2>/dev/null || echo 0)"
+golden_steps="$(python3 -c 'import json,sys; print(min(len(c["expected_tokens"]) for c in json.load(open(sys.argv[1]))["cases"]))' "${golden}" 2>/dev/null || echo 0)"
 if ((golden_steps < tokens)); then
   echo "e11-run: golden ${golden} covers ${golden_steps} of ${tokens} decode tokens" >&2
   exit 1
