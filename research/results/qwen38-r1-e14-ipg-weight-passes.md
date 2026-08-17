@@ -125,6 +125,24 @@ inverts.
 `h_ref = [0.1032, 0.0933, 0.2537, 0.3816, 0.2735, 0.2771, 0.2759, 0.3816]`
 (edward's shipped vector: `[.0842, .0775, .2426, .3754, .2919, .3000, .2870, .3909]`)
 
+The reference was remeasured from scratch three times across the session, so `h4` — the
+quantity every Q3 conclusion turns on — has an independent spread rather than a single
+reading:
+
+| reference | started | h4 |
+| --- | --- | ---: |
+| e14-ref1 | 10:04:23Z | 0.3816 |
+| e14-ref2 | 10:33:50Z | 0.3764 |
+| e14-ref3 | 10:49:23Z | 0.3880 |
+
+Mean **0.3820, spread +/-1.5%**. Edward's shipped 0.3754 sits 1.7% below that mean, i.e.
+just outside the spread and in the direction that makes depth 4 look *cheaper* on his
+vector than on mine. The Q3 threshold below is quoted on `h4 = 0.3816`; recomputing it on
+0.3764 or 0.3880 moves the required cut between 3.6% and 6.5% and changes no conclusion,
+because depth 4 loses to depth 3 and depth 7 on cost-per-token at every value in that range.
+
+`ref3 h = [0.0931, 0.0874, 0.2407, 0.3880, 0.2624, 0.2730, 0.2665, 0.3846]`
+
 Round-cost model fitted on the same session:
 `C(d) = G(d+1) + 4.20 ms + 3.96 ms/draft`, max |residual| 2.13 ms, `C(0) = 65.07 ms`.
 
@@ -229,8 +247,20 @@ references:
 | --- | --- | --- | ---: | ---: | ---: |
 | armE | 10:40:38Z | e14-ref1 | 36 min earlier | 1.1215 | 1.0762 |
 | armE2 | 10:56:18Z | e14-ref3 | 7 min earlier | **1.1241** | **1.0739** |
+| armA | 10:22:01Z | e14-ref1 | 18 min earlier | 0.9985 | 1.3932 |
+| armA3 | 11:02:30Z | e14-ref3 | 13 min earlier | **0.9985** | **1.3921** |
 
-Control span for armE2 is [1.0989, 1.1259]; start temps 39.73 / 39.59 C.
+Control span for armE2 is [1.0989, 1.1259] and for armA3 [0.9880, 1.0030]; start temps
+39.73 / 39.59 / 39.48 / 39.80 C against references at 39.51 (ref1) and 39.54 C (ref3).
+
+`armA3` is the decisive control on the drift hypothesis. It ran in the *same session and the
+same thermal window* as `armE2`, four minutes later and 0.2 C warmer, against the same
+reference — and its controls came back flat while `armE2`'s came back +12%. Two arms cannot
+drift in opposite directions in the same session. The elevated widths belong to the arm E
+patch, not to the machine. Independently of that, `armA`'s `M=5` ratio reproduces across
+sessions to **0.08%** (1.3932 vs 1.3921) and its control median to four decimal places,
+which fixes the run-to-run reproducibility of this fixture well below every effect reported
+here.
 
 #### The controls were never controls
 
