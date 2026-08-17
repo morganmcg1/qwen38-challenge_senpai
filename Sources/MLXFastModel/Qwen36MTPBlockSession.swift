@@ -526,7 +526,39 @@ public final class Qwen36MTPBlockSession {
     /// honest fit FOR THIS ROLLBACK MECHANISM; the wasted-work term a
     /// reject does keep (the drafted head steps past the break) is already
     /// inside the marginal the rule prices.
-    private static let headStepCostRatio = 0.18
+    ///
+    /// FIFTH FIT — per depth, and the scalar is retired. Forced-depth arms
+    /// d0..d8 on the declared affine-4/g64 head (N = 1778 pooled depth-0
+    /// rounds for C(0); 61/60/36/32 full-accept rounds at d3/d4/d6/d8) put
+    /// the marginals at the vector below, as fractions of a zero-draft round.
+    /// A scalar is not a cheap approximation of it but a mis-shaped one: the
+    /// retired 0.18 is ~2.2x TOO HIGH at d = 1..2, where it under-drafts a
+    /// nearly free prefix, and ~1.6-2.2x TOO LOW at d >= 4, where it
+    /// over-drafts a plateau. The knee at d = 3 (verify width 4) and the two
+    /// largest steps, d = 4 (width 5) and d = 8 (width 9), are exactly where
+    /// the affine-4 g64 crossrow kernel adds a weight pass
+    /// (ceil(M / IPG), IPG = ceil(M / ceil(M / 4)), quantized.h:1051), so the
+    /// shape is mechanical rather than fitted to one fixture.
+    ///
+    /// The curve prices every round instead of only truncating the deep tail,
+    /// which is why it wins where acceptance is LOW: on a held-out 512-token
+    /// prose golden it collapsed the schedule onto depth 2 and cut rejected
+    /// rows and GDN replays by ~24% each, for -7.66% seconds/token against
+    /// the scalar rule; on the copy-heavy local fixture, where acceptance is
+    /// 0.89-0.95 and almost nothing is rejected, the same change is worth
+    /// only ~-1%. A depth lever screened on the copy fixture alone is
+    /// unmeasured.
+    ///
+    /// HEAD-DEPENDENT, by construction: only the head-step term H moves
+    /// between heads, and it moves ~3.5x between the organizer-pinned bf16
+    /// head and the manifest-declared affine-4/g64 head. This vector is
+    /// fitted against the DECLARED head, which is the head the candidate leg
+    /// runs (`mtp-head.manifest.json`). Re-fit it after any head change, and
+    /// after any change to what a round costs at a given width.
+    private static let headStepCostRatioByDepth: [Double] = [
+        0.0842, 0.0775, 0.2426, 0.3754,
+        0.2919, 0.3000, 0.2870, 0.3909,
+    ]
 
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
@@ -582,9 +614,14 @@ public final class Qwen36MTPBlockSession {
             Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
             widthCap)
         guard cap > 0 else { return 0 }
-        let h = Self.headStepCostRatio
+        // Round cost after `d` steps is `1 + cumH` rather than `1 + d*h`, so
+        // the extend test `f(d+1) < f(d)` becomes
+        // `reach > h[d] * (1 + expected) / (1 + cumH)`. A flat vector reduces
+        // this to the retired scalar rule term for term.
+        let h = Self.headStepCostRatioByDepth
         var reach = 1.0
         var expected = 0.0
+        var cumH = 0.0
         var depth = 0
         while depth < cap {
             var p = positionAcceptEMA[depth]
@@ -598,9 +635,10 @@ public final class Qwen36MTPBlockSession {
                 p = Swift.min(p, conf2)
             }
             reach *= p
-            let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
+            let threshold = h[depth] * (1.0 + expected) / (1.0 + cumH)
             guard reach > threshold else { break }
             expected += reach
+            cumH += h[depth]
             depth += 1
         }
         return depth
