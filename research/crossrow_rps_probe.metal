@@ -76,22 +76,34 @@ CROSSROW_RB_PROBE(PROBE_NAME, PROBE_NA, PROBE_R)
 CROSSROW_SHIPPED_PROBE(PROBE_NAME, PROBE_NA)
 #endif
 
-// Negative control: a private array the compiler cannot promote to registers,
-// because the index is runtime data. If the gate does not flag this as spilled,
-// the gate is broken and every "spill-free" verdict in the grid is worthless.
+// Negative control. The accumulator array has the SAME declared type as the
+// kernel's, `vec<float, NA> acc[rows_per_simd]`, but is indexed by runtime data
+// so the compiler cannot promote it to registers. The gate matches allocas by
+// accumulator TYPE, so this is the input that must make it fire; a control that
+// spills some other shape would prove nothing about this gate.
+//
+// The first version of this control allocated `float ballast[NA * R]` and did
+// NOT fire, correctly: `[16 x float]` is not the accumulator type. It was a
+// broken control, not a broken gate, and it is recorded in the report.
 #ifdef PROBE_CELL_FORCED_SPILL
 [[kernel]] void PROBE_NAME(PROBE_ARGS) {
-  float ballast[PROBE_NA * PROBE_R];
-  for (int i = 0; i < PROBE_NA * PROBE_R; i++) {
-    ballast[i] = static_cast<float>(x[i]);
+  typedef vec<float, PROBE_NA> VF;
+  VF acc[PROBE_R];
+  for (int r = 0; r < PROBE_R; r++) {
+    acc[r] = VF(0.0f);
   }
-  const int pick = in_vec_size % (PROBE_NA * PROBE_R);
-  float total = 0.0f;
-  for (int i = 0; i < PROBE_NA * PROBE_R; i++) {
-    total += ballast[(pick + i * 7) % (PROBE_NA * PROBE_R)];
+  for (int k = 0; k < in_vec_size; k += 512) {
+    const int pick = (k / 512 + int(simd_lid)) % PROBE_R;
+    acc[pick] += VF(static_cast<float>(x[k + simd_lid]));
   }
-  if (simd_lid == 0 && simd_gid == 0) {
-    y[tid.x] = static_cast<bfloat16_t>(total);
+  for (int r = 0; r < PROBE_R; r++) {
+    for (int m = 0; m < PROBE_NA; m++) {
+      const float reduced = simd_sum(acc[r][m]);
+      if (simd_lid == 0) {
+        y[m * out_vec_size + int(tid.y) * PROBE_R + r] =
+            static_cast<bfloat16_t>(reduced);
+      }
+    }
   }
 }
 #endif
