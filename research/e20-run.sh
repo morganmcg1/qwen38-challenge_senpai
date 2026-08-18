@@ -5,10 +5,11 @@
 #   research/e20-run.sh LABEL=BUILD:MODE:DEPTH [...]
 #
 #     BUILD  INSTR | BASE          (directory under .mlxfast-private/e20/bins)
-#     MODE   0 | 1 | 2             (MLX_QWEN_ATTRIB)
+#     MODE   0 | 1 | 2 | 3         (MLX_QWEN_ATTRIB; 1 fine, 3 coarse, 2 inert)
 #     DEPTH  offered draft depth   (--mtp-depth via MLXFAST_QWEN_MTP_DEPTH)
 #
-# e.g. research/e20-run.sh A1=INSTR:1:8 B1=INSTR:2:8 B2=INSTR:2:8 A2=INSTR:1:8
+# e.g. research/e20-run.sh A1=INSTR:1:8 B1=INSTR:3:8 C1=INSTR:2:8 \
+#                          C2=INSTR:2:8 B2=INSTR:3:8 A2=INSTR:1:8
 #      research/e20-run.sh N1=INSTR:0:8 N0=BASE:0:8
 #
 # The label names the MEASUREMENT and the triple names the BUILD+CONFIG, so a
