@@ -12,199 +12,6 @@ import MLX
 import MLXLMCommon
 import MLXNN
 
-// MARK: - Verify-side layer-family attribution (research instrumentation)
-
-/// Per-family cost attribution for one target forward.
-///
-/// `MLX_QWEN_ATTRIB` selects the mode; the gate is read once and every entry
-/// point returns before touching state or the GPU when it is off.
-///
-/// - unset / `0`: completely inert.
-/// - `2`: one record per forward carrying only the row count and the
-///   unmodified forward wall time. No extra `eval`, no bucket timing — this is
-///   the width histogram at the untouched decode schedule.
-/// - `1`: mode 2 plus *fine* per-bucket timing: attention and MLP are split
-///   inside every layer, which costs `2 * layers + 3` blocking `eval`s.
-/// - `3`: mode 2 plus *coarse* per-layer timing: one boundary per decoder
-///   layer, so attention and MLP stay merged and the cost is `layers + 3`
-///   blocking `eval`s.
-///
-/// The `+ 3` is `drain`, `embed` and `head`, which both attributing modes
-/// charge identically.
-///
-/// A blocking `eval` both flushes the command buffer and stops the CPU from
-/// building the next subgraph while the GPU runs, so an attributing mode
-/// inflates the forward and can bias the split toward whichever family holds
-/// the most boundaries. Modes 2, 3 and 1 place 0, `layers + 3` and
-/// `2 * layers + 3` boundaries on the *same* forward, which is what makes that
-/// bias measurable rather than assumed.
-///
-/// Mode 3 is the falsification test, not a second opinion. Because the MLP
-/// buckets are keyed by host layer type, mode 1's `gdn + mlp_gdn` is the same
-/// quantity as mode 3's `gdn`, and likewise for the full-attention pair. The
-/// two modes therefore report the same GDN-versus-full-attention layer split
-/// while differing by 2x in boundary density: agreement says the split is a
-/// property of the model rather than of the instrument, and disagreement says
-/// the raw shares are not usable. A mode-1 or mode-3 wall clock is never a
-/// valid speed baseline.
-///
-/// The unattributed residual (`total_ns` minus the bucket sum) is the closure
-/// check: cache tails that no bucket output depends on land there rather than
-/// in a neighbour.
-///
-/// `MLX_` prefix on purpose: the trusted harness strips `MLXFAST_*` from the
-/// sandboxed worker's environment but forwards `MLX_*`.
-public enum Qwen35Attribution {
-
-    public enum Bucket: Int, CaseIterable {
-        case drain, embed, gdn, fullAttention, mlpGdn, mlpFullAttention, head, topTwo
-
-        fileprivate var key: String {
-            switch self {
-            case .drain: return "drain"
-            case .embed: return "embed"
-            case .gdn: return "gdn"
-            case .fullAttention: return "full_attention"
-            case .mlpGdn: return "mlp_gdn"
-            case .mlpFullAttention: return "mlp_full_attention"
-            case .head: return "head"
-            case .topTwo: return "top_two"
-            }
-        }
-    }
-
-    private static let mode =
-        Int(ProcessInfo.processInfo.environment["MLX_QWEN_ATTRIB"] ?? "0") ?? 0
-
-    /// Emit one record per forward.
-    public static let logging = mode == 1 || mode == 2 || mode == 3
-    /// Additionally time buckets, forcing an `eval` at every boundary.
-    public static let attributing = mode == 1 || mode == 3
-    /// Split attention from MLP inside each layer.
-    public static let fineGrained = mode == 1
-    /// Keep each decoder layer whole.
-    public static let coarseGrained = mode == 3
-
-    nonisolated(unsafe) private static var nanos =
-        [UInt64](repeating: 0, count: Bucket.allCases.count)
-    nonisolated(unsafe) private static var calls =
-        [Int](repeating: 0, count: Bucket.allCases.count)
-    nonisolated(unsafe) private static var rows = 0
-    nonisolated(unsafe) private static var forwardStart: UInt64 = 0
-    nonisolated(unsafe) private static var forwardIndex = 0
-    nonisolated(unsafe) private static var inForward = false
-
-    /// `MLX_QWEN_ATTRIB_OUT` names a file; without it the records go to stderr.
-    /// The worker's default sandbox denies `file-write*`, so the file sink
-    /// needs `MLXFAST_NO_SANDBOX=1` on the parent CLI. One benchmark invocation
-    /// spawns several model-holding processes, so the pid suffix keeps their
-    /// records apart instead of letting them clobber one path.
-    nonisolated(unsafe) private static let sink: FileHandle = {
-        let pid = ProcessInfo.processInfo.processIdentifier
-        guard
-            let base = ProcessInfo.processInfo.environment["MLX_QWEN_ATTRIB_OUT"],
-            !base.isEmpty
-        else { return FileHandle.standardError }
-        let path = "\(base).\(pid)"
-        guard
-            FileManager.default.createFile(atPath: path, contents: nil),
-            let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: path))
-        else { return FileHandle.standardError }
-        return handle
-    }()
-
-    @inline(__always) public static func now() -> UInt64 {
-        DispatchTime.now().uptimeNanoseconds
-    }
-
-    public static func beginForward(rows: Int) {
-        guard logging else { return }
-        for i in nanos.indices {
-            nanos[i] = 0
-            calls[i] = 0
-        }
-        Self.rows = rows
-        inForward = true
-        forwardStart = now()
-    }
-
-    /// Charge `body` to `bucket`, closing the window with a blocking `eval` so
-    /// the GPU work it enqueued is inside the measured span. Outside a
-    /// `beginForward`/`endForward` pair the body runs untouched, which keeps
-    /// the cache-repair path off the serialised schedule.
-    @inline(__always)
-    public static func timed(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
-        guard fineGrained, inForward else { return body() }
-        return charge(bucket, body)
-    }
-
-    /// Whole-layer form of `timed`, active only in the coarse mode so exactly
-    /// one of the two ever places a boundary.
-    @inline(__always)
-    public static func layerTimed(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
-        guard coarseGrained, inForward else { return body() }
-        return charge(bucket, body)
-    }
-
-    @inline(__always)
-    private static func charge(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
-        let t0 = now()
-        let out = body()
-        eval(out)
-        record(bucket, since: t0)
-        return out
-    }
-
-    /// Force work queued *before* this forward — for the verify forward that is
-    /// the draft head producing the candidate tokens — to land in its own
-    /// bucket instead of inflating whichever family owns the first boundary.
-    public static func drain(_ inputs: MLXArray) {
-        guard attributing, inForward else { return }
-        let t0 = now()
-        eval(inputs)
-        record(.drain, since: t0)
-    }
-
-    public static func record(_ bucket: Bucket, since t0: UInt64) {
-        guard attributing, inForward else { return }
-        nanos[bucket.rawValue] &+= now() &- t0
-        calls[bucket.rawValue] &+= 1
-    }
-
-    public static func endForward() {
-        guard logging, inForward else { return }
-        inForward = false
-        var line = "qwen-attrib: f=\(forwardIndex) rows=\(rows)"
-            + " total_ns=\(now() &- forwardStart)"
-        if attributing {
-            for bucket in Bucket.allCases where bucket != .topTwo {
-                line += " \(bucket.key)_ns=\(nanos[bucket.rawValue])"
-                    + " \(bucket.key)_n=\(calls[bucket.rawValue])"
-            }
-        }
-        forwardIndex &+= 1
-        sink.write(Data((line + "\n").utf8))
-    }
-
-    /// Record a span that runs outside the backbone forward, tagged with the
-    /// forward it follows.
-    public static func note(_ bucket: Bucket, rows: Int, since t0: UInt64) {
-        guard attributing else { return }
-        let span = now() &- t0
-        let line = "qwen-attrib-span: f=\(forwardIndex &- 1) rows=\(rows)"
-            + " \(bucket.key)_ns=\(span)\n"
-        sink.write(Data(line.utf8))
-    }
-
-    /// Mark the forward just completed as a scored verify round. Warmup and
-    /// seed-prefill forwards never reach this call, so it is what separates
-    /// shipped decode work from shape warmup in every logging mode.
-    public static func markVerifyRound(rows: Int) {
-        guard logging else { return }
-        sink.write(Data("qwen-attrib-verify: f=\(forwardIndex &- 1) rows=\(rows)\n".utf8))
-    }
-}
-
 // MARK: - Configuration
 
 private enum RopeParametersCodingKey: String, CodingKey {
@@ -2066,22 +1873,17 @@ final class Qwen35DecoderLayer: Module {
         // Port of omlx commit 696d90a:
         //   patches/mlx_lm_mtp/qwen35_model.py DecoderLayer.__call__
         // Passes nConfirmed through to the linear-attention sublayer.
-        Qwen35Attribution.layerTimed(isLinear ? .gdn : .fullAttention) {
-            let r = Qwen35Attribution.timed(isLinear ? .gdn : .fullAttention) {
-                if isLinear {
-                    return linearAttn!(
-                        inputLayerNorm(x), mask: ssmMask, cache: cache as? MambaCache,
-                        nConfirmed: nConfirmed)
-                } else {
-                    return selfAttn!(inputLayerNorm(x), mask: attentionMask, cache: cache)
-                }
-            }
-
-            let h = x + r
-            return Qwen35Attribution.timed(isLinear ? .mlpGdn : .mlpFullAttention) {
-                h + (mlp as! UnaryLayer)(postAttentionLayerNorm(h))
-            }
+        let r: MLXArray
+        if isLinear {
+            r = linearAttn!(
+                inputLayerNorm(x), mask: ssmMask, cache: cache as? MambaCache,
+                nConfirmed: nConfirmed)
+        } else {
+            r = selfAttn!(inputLayerNorm(x), mask: attentionMask, cache: cache)
         }
+
+        let h = x + r
+        return h + (mlp as! UnaryLayer)(postAttentionLayerNorm(h))
     }
 }
 
@@ -2130,9 +1932,6 @@ public class Qwen35TextModelInner: Module {
         cache: [KVCache?]? = nil,
         nConfirmed: Int = 0
     ) -> MLXArray {
-        Qwen35Attribution.beginForward(rows: inputs.dim(1))
-        Qwen35Attribution.drain(inputs)
-        let attribT0 = Qwen35Attribution.now()
         var hiddenStates = embedTokens(inputs)
 
         var cacheArray = cache
@@ -2142,10 +1941,6 @@ public class Qwen35TextModelInner: Module {
 
         let faMask = createAttentionMask(h: hiddenStates, cache: cacheArray?[faIdx])
         let ssmMask = createSSMMask(h: hiddenStates, cache: cacheArray?[ssmIdx] as? MambaCache)
-        if Qwen35Attribution.attributing {
-            eval(hiddenStates)
-            Qwen35Attribution.record(.embed, since: attribT0)
-        }
 
         // Decode-width asyncEval ladder: at S <= 2 (serial step / width-2 MTP
         // verify) the host builds a ~64-layer graph before anything reaches
@@ -2320,6 +2115,54 @@ private let qwen35DraftSelectKernel = MLXFast.metalKernel(
     ensureRowContiguous: false
 )
 
+// PROPOSAL SIDE ONLY. A coarse affine-2 compact readout chooses 32 rows; the
+// incumbent affine-4 compact readout evaluates those rows, and this single
+// SIMDgroup applies the incumbent value/id total order to select the proposal.
+// The target lm_head, verify values, cache state, and row ledger are untouched.
+private let qwen35DraftRerankKernel = MLXFast.metalKernel(
+    name: "qwen_mtp_draft_rerank",
+    inputNames: ["logits", "candidate_ids"],
+    outputNames: ["token_id"],
+    source: """
+        uint lane = thread_index_in_simdgroup;
+        float best_value = float(logits[lane]);
+        uint best_id = uint(candidate_ids[lane]);
+
+        for (uint offset = 16; offset > 0; offset >>= 1) {
+            float other_value = simd_shuffle_down(best_value, offset);
+            uint other_id = simd_shuffle_down(best_id, offset);
+            if (lane < offset && qwen_draft_rerank_better(
+                    other_value, other_id, best_value, best_id)) {
+                best_value = other_value;
+                best_id = other_id;
+            }
+        }
+
+        if (lane == 0) {
+            token_id[0] = int(
+                best_id < PREFIX_COUNT
+                    ? best_id
+                    : best_id + CONTROL_OFFSET);
+        }
+    """,
+    header: """
+        inline bool qwen_draft_rerank_better(
+            float candidate_value,
+            uint candidate_id,
+            float current_value,
+            uint current_id
+        ) {
+            bool candidate_nan = isnan(candidate_value);
+            bool current_nan = isnan(current_value);
+            if (candidate_nan != current_nan) { return !candidate_nan; }
+            if (candidate_value > current_value) { return true; }
+            if (candidate_value < current_value) { return false; }
+            return candidate_id < current_id;
+        }
+    """,
+    ensureRowContiguous: false
+)
+
 public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     public let vocabularySize: Int
     public let kvHeads: [Int]
@@ -2348,17 +2191,16 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     // public longcopy gate and REGRESSED: three of its committed argmax ids
     // live in [49_152, 248_044), the head could no longer propose them, and
     // the forced rejects cost more round-bases than the halved compact-head
-    // read saved (accept 1.00 -> 0.877, 21.1 -> 22.8 ms/token). The affine-4
-    // read is 283.208 MB per draft step (98_336 x 5_120 weights + bf16
-    // scales/biases at group 64), measured at 1.166 ms/call = 242.98 GB/s
-    // against a 227.13 GB/s host STREAM peak, so the ceiling of any further
-    // trim is small and the acceptance downside is not.
+    // read saved (accept 1.00 -> 0.877, 21.1 -> 22.8 ms/token). The read is
+    // ~315 MB of affine-4 rows per draft step (~0.6 ms), so the ceiling of
+    // any further trim is small and the acceptance downside is not.
     private static let compactDraftPrefixCount = 98_304
     private static let compactDraftControlStart = 248_044
     private static let compactDraftControlEnd = 248_070
     private static let compactDraftRealCount =
         compactDraftPrefixCount + compactDraftControlEnd - compactDraftControlStart
     private static let compactDraftPaddedCount = 98_336
+    private static let draftRerankCandidateCount = 32
 
     /// MTP head. Non-nil only when `_qwen35MTPEnabled == true` at init time
     /// AND `args.mtpNumHiddenLayers > 0`.
@@ -2528,7 +2370,6 @@ extension Qwen35TextModel: MTPCapable {
     ) -> (MLXArray, MLXArray) {
         let cacheOpt: [KVCache?] = cache.map { Optional($0) }
         let hidden = model(input.tokens, cache: cacheOpt, nConfirmed: nConfirmed)
-        let attribT0 = Qwen35Attribution.now()
         let normed = model.norm(hidden)
         let logits: MLXArray
         if let lmHead {
@@ -2536,11 +2377,6 @@ extension Qwen35TextModel: MTPCapable {
         } else {
             logits = model.embedTokens.asLinear(normed)
         }
-        if Qwen35Attribution.attributing {
-            eval(logits)
-            Qwen35Attribution.record(.head, since: attribT0)
-        }
-        Qwen35Attribution.endForward()
         // Return pre-norm hidden, not post-norm. The MTP module's pre_fc_norm_hidden
         // is the normalization step — it expects the raw backbone output as input.
         return (logits, hidden)
@@ -2554,7 +2390,6 @@ extension Qwen35TextModel: MTPCapable {
     ) -> (MLXArray, MLXArray, MLXArray?) {
         let cacheOpt: [KVCache?] = cache.map { Optional($0) }
         let hidden = model(input.tokens, cache: cacheOpt, nConfirmed: nConfirmed)
-        let attribT0 = Qwen35Attribution.now()
         let normed = model.norm(hidden)
         let logits: MLXArray
         if let lmHead {
@@ -2562,11 +2397,6 @@ extension Qwen35TextModel: MTPCapable {
         } else {
             logits = model.embedTokens.asLinear(normed)
         }
-        if Qwen35Attribution.attributing {
-            eval(logits, normed)
-            Qwen35Attribution.record(.head, since: attribT0)
-        }
-        Qwen35Attribution.endForward()
         return (logits, hidden, normed)
     }
 
@@ -2692,9 +2522,13 @@ extension Qwen35TextModel: MTPCapable {
         if let w = _draftHeadW, let s = _draftHeadS, let z = _draftHeadZ {
             let k = s.dim(1) * 64
             let bits = w.dim(1) * 32 / k
-            return quantizedMM(
+            let logits = quantizedMM(
                 x, w, scales: s, biases: z, transpose: true,
                 groupSize: 64, bits: bits, mode: .affine)
+            if w.dim(0) == Self.compactDraftPaddedCount {
+                return logits[0..., 0..., 0 ..< Self.compactDraftRealCount]
+            }
+            return logits
         }
         guard usesCompactDraftVocabulary else { return applyLMHead(x) }
         if _compactDraftHead == nil {
@@ -2714,9 +2548,14 @@ extension Qwen35TextModel: MTPCapable {
     /// `mapDraftTokenIds` are unchanged and still serve the declared-head path
     /// and the untimed warm.
     public func draftTokenID(_ x: MLXArray) -> MLXArray {
-        // A declared `draft_lm_head` is full-vocabulary and needs no remap, so
-        // the fused path (which bakes in the compact bounds) does not apply.
-        guard _draftHeadW == nil, usesCompactDraftVocabulary else {
+        if _draftHeadW != nil {
+            if let reranked = draftTokenIDWithDeclaredRerank(x) {
+                return reranked
+            }
+            return mapDraftTokenIds(
+                argMax(applyDraftLMHead(x), axis: -1).asType(.int32))
+        }
+        guard usesCompactDraftVocabulary else {
             return argMax(applyDraftLMHead(x), axis: -1).asType(.int32)
         }
         if _compactDraftHead == nil {
@@ -2741,12 +2580,69 @@ extension Qwen35TextModel: MTPCapable {
         return outputs[0]
     }
 
+    private func draftTokenIDWithDeclaredRerank(_ x: MLXArray) -> MLXArray? {
+        guard let coarseWeight = _draftHeadW,
+              let coarseScales = _draftHeadS,
+              let coarseBiases = _draftHeadZ,
+              coarseWeight.dim(0) == Self.compactDraftPaddedCount,
+              coarseWeight.dim(1) == 320,
+              coarseScales.shape == [Self.compactDraftPaddedCount, 80],
+              coarseBiases.shape == [Self.compactDraftPaddedCount, 80],
+              x.shape == [1, 1, configuration.hiddenSize]
+        else { return nil }
+
+        if _compactDraftHead == nil {
+            _compactDraftHead = makeCompactDraftHead()
+        }
+        guard let exact = _compactDraftHead as? QuantizedLinear,
+              exact.groupSize == 64,
+              exact.bits == 4,
+              exact.weight.shape == [Self.compactDraftPaddedCount, 640],
+              exact.scales.shape == [Self.compactDraftPaddedCount, 80],
+              let exactBiases = exact.biases,
+              exactBiases.shape == [Self.compactDraftPaddedCount, 80]
+        else { return nil }
+
+        let coarse = quantizedMM(
+            x, coarseWeight, scales: coarseScales, biases: coarseBiases,
+            transpose: true, groupSize: 64, bits: 2, mode: .affine
+        )[0..., 0..., 0 ..< Self.compactDraftRealCount]
+        let candidateCount = Self.draftRerankCandidateCount
+        let kth = Self.compactDraftRealCount - candidateCount
+        let candidateIDs = MLX.argPartition(
+            coarse, kth: kth, axis: -1
+        )[.ellipsis, (kth)...].reshaped([candidateCount])
+
+        let exactWeight = MLX.take(exact.weight, candidateIDs, axis: 0)
+        let exactScales = MLX.take(exact.scales, candidateIDs, axis: 0)
+        let exactZeroPoints = MLX.take(exactBiases, candidateIDs, axis: 0)
+        let exactLogits = quantizedMM(
+            x, exactWeight, scales: exactScales, biases: exactZeroPoints,
+            transpose: true, groupSize: 64, bits: 4, mode: .affine)
+
+        return qwen35DraftRerankKernel(
+            [exactLogits.reshaped([candidateCount]), candidateIDs],
+            template: [
+                ("PREFIX_COUNT", Self.compactDraftPrefixCount),
+                ("CONTROL_OFFSET",
+                 Self.compactDraftControlStart - Self.compactDraftPrefixCount),
+            ],
+            grid: (candidateCount, 1, 1),
+            threadGroup: (candidateCount, 1, 1),
+            outputShapes: [[1, 1]],
+            outputDTypes: [.int32]
+        )[0]
+    }
+
     /// Map compact draft IDs back to the tokenizer's full ID space without a
     /// host readback. The low `compactDraftPrefixCount` rows retain their
     /// IDs; the appended rows are Qwen's official text/control tokens
     /// 248,044 ... 248,069.
     public func mapDraftTokenIds(_ ids: MLXArray) -> MLXArray {
-        guard usesCompactDraftVocabulary else { return ids }
+        let declaredCompact =
+            _draftHeadW.map { $0.dim(0) == Self.compactDraftPaddedCount }
+            ?? false
+        guard usesCompactDraftVocabulary || declaredCompact else { return ids }
         return which(
             ids .< Self.compactDraftPrefixCount,
             ids,
@@ -2757,29 +2653,6 @@ extension Qwen35TextModel: MTPCapable {
         configuration.vocabularySize == 248_320
             && lmHead != nil && _draftHeadW == nil
     }
-
-    /// Draft-only readout precision, read once. The compact draft head is the
-    /// draft step's dominant memory traffic, so this requantizes that copy to
-    /// `draftHeadBits`. Only proposal quality can move: verify keeps the pinned
-    /// 4-bit `lmHead`, and acceptance is an exact token-ID match against the
-    /// target's argmax, so the emitted stream is unchanged either way.
-    ///
-    /// The compiled default is 3: at M=1 the readout falls off the crossrow
-    /// switch (`ntg.x == 1` has no case, `quantized.h:1804`) into
-    /// `qmv_fast_impl<T, 64, bits>` at BOTH widths, so 3-bit keeps the same
-    /// kernel template and moves 22.2% fewer bytes.
-    /// `MLX_QWEN_MTP_DRAFT_BITS` overrides it for arm selection.
-    ///
-    /// `MLX_` prefix on purpose: the trusted harness strips `MLXFAST_*` from
-    /// the sandboxed worker's environment but allows `MLX_` through.
-    private static let draftHeadBits: Int = {
-        guard
-            let raw = ProcessInfo.processInfo
-                .environment["MLX_QWEN_MTP_DRAFT_BITS"],
-            let bits = Int(raw), [2, 3, 4].contains(bits)
-        else { return 3 }
-        return bits
-    }()
 
     private func makeCompactDraftHead() -> Linear {
         guard let full = lmHead else {
@@ -2797,7 +2670,7 @@ extension Qwen35TextModel: MTPCapable {
         }
 
         if let quantized = full as? QuantizedLinear {
-            let compact = QuantizedLinear(
+            return QuantizedLinear(
                 weight: compactRows(quantized.weight),
                 bias: quantized.bias.map(compactRows),
                 scales: compactRows(quantized.scales),
@@ -2805,92 +2678,12 @@ extension Qwen35TextModel: MTPCapable {
                 groupSize: quantized.groupSize,
                 bits: quantized.bits,
                 mode: quantized.mode)
-            guard Self.draftHeadBits != quantized.bits else {
-                Self.traceDraftHead(
-                    bits: quantized.bits, sourceBits: quantized.bits,
-                    requantSeconds: 0)
-                return compact
-            }
-            let start = DispatchTime.now().uptimeNanoseconds
-            let repacked = Self.requantizedDraftHead(
-                compact, bits: Self.draftHeadBits)
-            let elapsed = DispatchTime.now().uptimeNanoseconds - start
-            Self.traceDraftHead(
-                bits: Self.draftHeadBits, sourceBits: quantized.bits,
-                requantSeconds: Double(elapsed) / 1e9)
-            return repacked
         }
         return Linear(
             weight: compactRows(full.weight),
             bias: full.bias.map(compactRows))
     }
 
-    /// Repack a compact draft head at `bits`, one row block at a time.
-    ///
-    /// Dequantizing the whole head at once would materialize ~1 GB of fp16;
-    /// the blocked form peaks at one block. Affine group-64 row widths stay
-    /// whole uint32 words at 2, 3, and 4 bits (`64 * bits % 32 == 0`), so
-    /// concatenating packed blocks along axis 0 is exact.
-    ///
-    /// Called ONLY from the memoized `makeCompactDraftHead()`, which
-    /// `warmAllDepths` materializes through `draftTokenID` before the trusted
-    /// parent starts any clock.
-    private static func requantizedDraftHead(
-        _ head: QuantizedLinear, bits: Int
-    ) -> QuantizedLinear {
-        guard let sourceBiases = head.biases else {
-            fatalError("draft head requantization requires affine biases")
-        }
-        let rows = head.weight.dim(0)
-        let blockRows = 8192
-        var weights: [MLXArray] = []
-        var scales: [MLXArray] = []
-        var biases: [MLXArray] = []
-        var start = 0
-        while start < rows {
-            let end = Swift.min(start + blockRows, rows)
-            let dense = dequantized(
-                head.weight[start ..< end],
-                scales: head.scales[start ..< end],
-                biases: sourceBiases[start ..< end],
-                groupSize: head.groupSize, bits: head.bits, mode: head.mode)
-            let packed = MLX.quantized(
-                dense, groupSize: head.groupSize, bits: bits, mode: head.mode)
-            guard let packedBiases = packed.biases else {
-                fatalError("affine quantization must produce biases")
-            }
-            eval(packed.wq, packed.scales, packedBiases)
-            weights.append(packed.wq)
-            scales.append(packed.scales)
-            biases.append(packedBiases)
-            start = end
-        }
-        let repacked = QuantizedLinear(
-            weight: concatenated(weights, axis: 0),
-            bias: head.bias,
-            scales: concatenated(scales, axis: 0),
-            biases: concatenated(biases, axis: 0),
-            groupSize: head.groupSize, bits: bits, mode: head.mode)
-        eval(repacked.weight, repacked.scales, repacked.biases!)
-        return repacked
-    }
-
-    /// Phase evidence for the memoized compact head: the line's POSITION in the
-    /// worker's stderr relative to `mtp-trace: begin` is what proves the
-    /// requant is paid in the untimed warm. Gated by the session's own
-    /// `MLX_QWEN_MTP_TRACE`; silent and free otherwise.
-    private static let traceDraftHeadEnabled =
-        ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
-    private static func traceDraftHead(
-        bits: Int, sourceBits: Int, requantSeconds: Double
-    ) {
-        guard traceDraftHeadEnabled else { return }
-        let line = "mtp-trace: draft-head materialised bits=\(bits) "
-            + "source_bits=\(sourceBits) "
-            + "requant_ms=\(String(format: "%.3f", requantSeconds * 1e3)) "
-            + "uptime_s=\(String(format: "%.6f", ProcessInfo.processInfo.systemUptime))\n"
-        FileHandle.standardError.write(Data(line.utf8))
-    }
 
     /// Allocate a fresh KV cache for the MTP head layers.
     /// omlx: patches/mlx_lm_mtp/qwen35_model.py TextModel.make_mtp_cache
