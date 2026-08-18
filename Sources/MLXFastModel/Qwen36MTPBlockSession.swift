@@ -540,6 +540,41 @@ public final class Qwen36MTPBlockSession {
     /// inside the marginal the rule prices.
     private static let headStepCostRatio = 0.18
 
+    /// PER-ROW PRICE (E25, from thorfinn's E22 follow-up #1). The scalar fit
+    /// above prices every row at the same `h`, so the marginal row is charged
+    /// `h/(1 + d*h)` — a curve that only ever FALLS with depth. The measured
+    /// curve does not: on the E21 8-prompt/512-token tape (1947 rounds, this
+    /// host, `.mlxfast-private/e21/runs/probe-*-S18I`) the mean round wall time
+    /// per proposed depth is 72.275 / 79.206 / 91.266 / 131.647 / 143.151 ms at
+    /// d = 1..5 (n = 193/995/583/167/9), so the RELATIVE step
+    /// (T(d+1) - T(d)) / T(d) is 0.0959, 0.1523, 0.4424, 0.0874 — a 4.4x spike
+    /// at the fifth verified row that the scalar form charges 0.1169 for.
+    ///
+    /// The spike is not a position artefact: depth and token offset are
+    /// uncorrelated here (mean offset 246-265 for d = 1..4), the OLS offset
+    /// slope is -0.067 ms per 1000 tokens, and T(4) - T(3) ~ 40 ms replicates
+    /// in all four position quartiles independently (n = 44/36/38/49). It is
+    /// also flat in accepted-row count at fixed depth (spread <= 3.6 ms), and
+    /// the price — not a cap — chose 99.4% of taped depths.
+    ///
+    /// Index d is the relative step for adding row d+1. Index 0 is 0 because
+    /// the tape holds no zero-draft round, and taking `max` with the shipped
+    /// curve then (a) leaves depths 0-1 bit-identical to the promoted schedule
+    /// and (b) makes this price a pure truncation of it, so it can only ever
+    /// stop a chain earlier than the promoted base — never extend one into
+    /// behaviour no tape has evaluated. Offline replay of all 1947 rounds:
+    /// -0.313 mean depth, 609 draft rows saved, 98 of 4098 tokens lost,
+    /// +5.27% pooled and +4.69% median-of-8 true decode per emitted token.
+    private static let measuredRowStepRatio: [Double] = [0.0, 0.095904, 0.152261, 0.442442]
+
+    /// Price of adding row `depth + 1`, as a fraction of the round's own cost.
+    private static func rowPriceCoefficient(_ depth: Int) -> Double {
+        let h = headStepCostRatio
+        let shipped = h / (1.0 + Double(depth) * h)
+        guard depth < measuredRowStepRatio.count else { return shipped }
+        return Swift.max(shipped, measuredRowStepRatio[depth])
+    }
+
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
     /// verify widths 6-9 drift from the serial trajectory in top-2 VALUES
@@ -626,7 +661,6 @@ public final class Qwen36MTPBlockSession {
         // there would describe the next round's inputs, not this one's.
         if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
         guard cap > 0 else { return 0 }
-        let h = Self.headStepCostRatio
         var reach = 1.0
         var expected = 0.0
         var depth = 0
@@ -642,7 +676,7 @@ public final class Qwen36MTPBlockSession {
                 p = Swift.min(p, conf2)
             }
             reach *= p
-            let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
+            let threshold = Self.rowPriceCoefficient(depth) * (1.0 + expected)
             if Self.traceRounds {
                 scheduleTrace += String(
                     format: "%d:%.6f/%.6f/%.6f;", depth, p, reach, threshold)
