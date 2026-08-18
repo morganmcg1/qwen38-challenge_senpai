@@ -16,6 +16,7 @@ between-arm serial gap means the host moved rather than the candidate.
 """
 
 import argparse
+import collections
 import json
 import statistics
 import sys
@@ -93,6 +94,46 @@ def arm_identity(arm):
 
 def ms_per_token(report):
     return 1000.0 * report["decode_seconds"] / report["decode_token_count"]
+
+
+CLIFF_DEPTH = 4
+
+
+def depth_profile(mtp):
+    """Per-round cost by chosen draft depth, on the trusted parent's clock.
+
+    ``effective_draft_lengths[i]`` is the number of draft rows round ``i``
+    proposed, so pairing it with ``block_request_seconds[i]`` prices each
+    depth without any trace instrumentation. Depth >= CLIFF_DEPTH is the
+    first depth whose verify width M = depth+1 crosses the measured
+    two-pass weight-stream cliff in ``affine_qmv_fast``.
+    """
+    depths = mtp["effective_draft_lengths"]
+    walls = mtp["block_request_seconds"]
+    by_depth = collections.defaultdict(list)
+    for depth, wall in zip(depths, walls):
+        by_depth[depth].append(1000.0 * wall)
+    below = [x for d, v in by_depth.items() if d < CLIFF_DEPTH for x in v]
+    above = [x for d, v in by_depth.items() if d >= CLIFF_DEPTH for x in v]
+    return {
+        "histogram": {str(d): len(v) for d, v in sorted(by_depth.items())},
+        "mean_ms_by_depth": {
+            str(d): statistics.mean(v) for d, v in sorted(by_depth.items())
+        },
+        "rounds": len(depths),
+        "rounds_above_cliff": len(above),
+        "rounds_above_cliff_share": len(above) / len(depths),
+        "mean_ms_below_cliff": statistics.mean(below) if below else None,
+        "mean_ms_above_cliff": statistics.mean(above) if above else None,
+        "cliff_excess_ms_per_round": (
+            statistics.mean(above) - statistics.mean(below)
+            if above and below else None
+        ),
+        "cliff_excess_ms_total": (
+            len(above) * (statistics.mean(above) - statistics.mean(below))
+            if above and below else 0.0
+        ),
+    }
 
 
 def collect_leg(prompt, arm, identity, runs_root):
@@ -237,6 +278,8 @@ def collect_leg(prompt, arm, identity, runs_root):
             "origin": head.get("origin"),
             "source": head.get("source"),
         },
+        "depth_profile": depth_profile(mtp),
+        "decode_seconds": mtp["decode_seconds"],
         "started": meta_last(meta, "started"),
         "finished": meta_last(meta, "finished"),
         "thermal_before": meta_last(meta, "thermal_before"),
@@ -246,6 +289,73 @@ def collect_leg(prompt, arm, identity, runs_root):
 
 def pct_gain(base, candidate):
     return 100.0 * (base - candidate) / base
+
+
+def cliff_attribution(base, cand):
+    """How much of the measured saving is just not crossing the cost cliff.
+
+    The candidate is a hard DEEP_CAP=3, so every base round at depth >=
+    CLIFF_DEPTH is a round the candidate cannot run. Pricing those rounds
+    at the base leg's own measured excess over its sub-cliff rounds gives
+    the share of the total decode saving that the cap alone explains; the
+    remainder is the price curve reshaping mass below the cliff.
+    """
+    saved_ms = 1000.0 * (base["decode_seconds"] - cand["decode_seconds"])
+    excess_ms = base["depth_profile"]["cliff_excess_ms_total"]
+    return {
+        "total_saved_ms": saved_ms,
+        "base_rounds_above_cliff": base["depth_profile"]["rounds_above_cliff"],
+        "base_rounds_above_cliff_share":
+            base["depth_profile"]["rounds_above_cliff_share"],
+        "candidate_rounds_above_cliff":
+            cand["depth_profile"]["rounds_above_cliff"],
+        "base_cliff_excess_ms_per_round":
+            base["depth_profile"]["cliff_excess_ms_per_round"],
+        "cliff_excess_ms_total": excess_ms,
+        "share_of_saving_from_cliff_avoidance": (
+            excess_ms / saved_ms if saved_ms > 0 else None
+        ),
+        "round_count_delta": (
+            cand["counters"]["round_count"] - base["counters"]["round_count"]
+        ),
+        "accepted_draft_delta": (
+            cand["counters"]["accepted_draft_total"]
+            - base["counters"]["accepted_draft_total"]
+        ),
+        "rejected_draft_delta": (
+            cand["counters"]["rejected_draft_total"]
+            - base["counters"]["rejected_draft_total"]
+        ),
+    }
+
+
+def pooled_cliff_attribution(per_prompt):
+    rows = [row["cliff_attribution"] for row in per_prompt.values()]
+    if not rows:
+        return None
+    saved = sum(r["total_saved_ms"] for r in rows)
+    excess = sum(r["cliff_excess_ms_total"] for r in rows)
+    return {
+        "total_saved_ms": saved,
+        "cliff_excess_ms_total": excess,
+        "share_of_saving_from_cliff_avoidance": (
+            excess / saved if saved > 0 else None
+        ),
+        "base_rounds_above_cliff": sum(
+            r["base_rounds_above_cliff"] for r in rows),
+        "candidate_rounds_above_cliff": sum(
+            r["candidate_rounds_above_cliff"] for r in rows),
+        "base_rounds": sum(
+            row["base"]["depth_profile"]["rounds"]
+            for row in per_prompt.values()),
+        "round_count_delta": sum(r["round_count_delta"] for r in rows),
+        "accepted_draft_delta": sum(r["accepted_draft_delta"] for r in rows),
+        "rejected_draft_delta": sum(r["rejected_draft_delta"] for r in rows),
+        "per_prompt_share": {
+            p: row["cliff_attribution"]["share_of_saving_from_cliff_avoidance"]
+            for p, row in per_prompt.items()
+        },
+    }
 
 
 def main():
@@ -304,6 +414,7 @@ def main():
                 "base": base["counters"]["effective_max_draft_len"],
                 "candidate": cand["counters"]["effective_max_draft_len"],
             },
+            "cliff_attribution": cliff_attribution(base, cand),
         }
 
     if missing and not args.allow_partial:
@@ -343,6 +454,7 @@ def main():
             "r2_modelled_arm_d_gain_pct": MODELLED_ARM_D_GAIN_PCT,
             "live_ranked_bar": LIVE_RANKED_BAR,
         },
+        "cliff_attribution_pooled": pooled_cliff_attribution(per_prompt),
         "per_prompt": per_prompt,
     }
 
@@ -377,6 +489,15 @@ def main():
             print(f"  r1 headline {R1_HEADLINE_GAIN_PCT:.4f}  modelled arm D {MODELLED_ARM_D_GAIN_PCT:.4f}")
             print(f"  host drift control: max |serial delta| "
                   f"{report['host_drift_control']['max_abs_serial_delta_pct']:.3f}%")
+            pooled = report["cliff_attribution_pooled"]
+            print(f"  cliff attribution: {pooled['base_rounds_above_cliff']}"
+                  f"/{pooled['base_rounds']} base rounds at depth "
+                  f">= {CLIFF_DEPTH} -> {pooled['candidate_rounds_above_cliff']};"
+                  f" {100.0 * pooled['share_of_saving_from_cliff_avoidance']:.1f}%"
+                  f" of {pooled['total_saved_ms']:.0f} ms saved")
+            print(f"  accepted drafts {pooled['accepted_draft_delta']:+d}"
+                  f"  rejected drafts {pooled['rejected_draft_delta']:+d}"
+                  f"  rounds {pooled['round_count_delta']:+d}")
 
     return 0 if not failures else 1
 
