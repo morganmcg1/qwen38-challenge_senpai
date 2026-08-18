@@ -335,19 +335,21 @@ def pooled_cliff_attribution(per_prompt):
         return None
     saved = sum(r["total_saved_ms"] for r in rows)
     excess = sum(r["cliff_excess_ms_total"] for r in rows)
+    deep = sum(r["base_rounds_above_cliff"] for r in rows)
+    base_rounds = sum(
+        row["base"]["depth_profile"]["rounds"] for row in per_prompt.values())
     return {
         "total_saved_ms": saved,
         "cliff_excess_ms_total": excess,
         "share_of_saving_from_cliff_avoidance": (
             excess / saved if saved > 0 else None
         ),
-        "base_rounds_above_cliff": sum(
-            r["base_rounds_above_cliff"] for r in rows),
+        "base_rounds_above_cliff": deep,
+        "base_rounds_above_cliff_share": deep / base_rounds if base_rounds else None,
+        "base_cliff_excess_ms_per_round": excess / deep if deep else None,
         "candidate_rounds_above_cliff": sum(
             r["candidate_rounds_above_cliff"] for r in rows),
-        "base_rounds": sum(
-            row["base"]["depth_profile"]["rounds"]
-            for row in per_prompt.values()),
+        "base_rounds": base_rounds,
         "round_count_delta": sum(r["round_count_delta"] for r in rows),
         "accepted_draft_delta": sum(r["accepted_draft_delta"] for r in rows),
         "rejected_draft_delta": sum(r["rejected_draft_delta"] for r in rows),

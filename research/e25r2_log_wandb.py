@@ -252,10 +252,55 @@ def timed_payload(timed: dict) -> tuple[dict, dict]:
             b["counters"]["accepted_draft_rate"],
             c["counters"]["accepted_draft_rate"])
 
+    cliff = wandb.Table(columns=[
+        "prompt", "total_saved_ms", "base_rounds_above_cliff",
+        "base_rounds_above_cliff_share", "candidate_rounds_above_cliff",
+        "base_cliff_excess_ms_per_round", "cliff_excess_ms_total",
+        "share_of_saving_from_cliff_avoidance", "round_count_delta",
+        "accepted_draft_delta", "rejected_draft_delta",
+    ])
+    for prompt in sorted(per_prompt):
+        a = per_prompt[prompt]["cliff_attribution"]
+        cliff.add_data(
+            prompt, a["total_saved_ms"], a["base_rounds_above_cliff"],
+            a["base_rounds_above_cliff_share"],
+            a["candidate_rounds_above_cliff"],
+            a["base_cliff_excess_ms_per_round"], a["cliff_excess_ms_total"],
+            a["share_of_saving_from_cliff_avoidance"],
+            a["round_count_delta"], a["accepted_draft_delta"],
+            a["rejected_draft_delta"])
+
+    depth_cost = wandb.Table(columns=[
+        "prompt", "arm", "depth", "rounds", "mean_parent_round_ms",
+    ])
+    for prompt in sorted(per_prompt):
+        for arm in ("base", "candidate"):
+            prof = per_prompt[prompt][arm]["depth_profile"]
+            for depth in sorted(prof["mean_ms_by_depth"], key=int):
+                depth_cost.add_data(
+                    prompt, arm, int(depth),
+                    prof["histogram"][depth],
+                    prof["mean_ms_by_depth"][depth])
+
+    pooled = timed["cliff_attribution_pooled"]
     drift = timed["host_drift_control"]
     summary = {
         # the assignment's primary metric, logged under its contract name
         "e25/mtp_true_decode_gain_pct_median_of_8": head["median_gain_pct"],
+        # mechanism: how much of the timed win is M=5 pass-cliff avoidance
+        "e25r2/cliff_share_of_saving":
+            pooled["share_of_saving_from_cliff_avoidance"],
+        "e25r2/cliff_base_rounds_above_cliff": pooled["base_rounds_above_cliff"],
+        "e25r2/cliff_base_rounds_above_cliff_share":
+            pooled["base_rounds_above_cliff_share"],
+        "e25r2/cliff_candidate_rounds_above_cliff":
+            pooled["candidate_rounds_above_cliff"],
+        "e25r2/cliff_excess_ms_per_round":
+            pooled["base_cliff_excess_ms_per_round"],
+        "e25r2/cliff_total_saved_ms": pooled["total_saved_ms"],
+        "e25r2/cliff_accepted_draft_delta": pooled["accepted_draft_delta"],
+        "e25r2/cliff_rejected_draft_delta": pooled["rejected_draft_delta"],
+        "e25r2/cliff_round_count_delta": pooled["round_count_delta"],
         "e25r2/timed_mean_gain_pct": head["mean_gain_pct"],
         "e25r2/timed_min_gain_pct": head["min_gain_pct"],
         "e25r2/timed_max_gain_pct": head["max_gain_pct"],
@@ -274,7 +319,14 @@ def timed_payload(timed: dict) -> tuple[dict, dict]:
         summary[f"e25r2/timed_gain_pct/{prompt}"] = gain
     for prompt, delta in drift["serial_delta_pct"].items():
         summary[f"e25r2/timed_serial_drift_pct/{prompt}"] = delta
-    return {"e25r2/timed_pairs": table}, summary
+    for prompt, share in pooled["per_prompt_share"].items():
+        summary[f"e25r2/cliff_share_of_saving/{prompt}"] = share
+    tables = {
+        "e25r2/timed_pairs": table,
+        "e25r2/cliff_attribution": cliff,
+        "e25r2/parent_clock_depth_cost": depth_cost,
+    }
+    return tables, summary
 
 
 def main() -> None:
