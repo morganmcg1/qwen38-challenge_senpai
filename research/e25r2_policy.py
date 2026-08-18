@@ -32,6 +32,12 @@ from e21_trace import parse_trace  # noqa: E402
 
 MAX_DEPTH = 8
 WARMUP_ROUNDS = 8
+# The trace snapshots `widthCap`, but the walk runs against
+# min(offeredDepth, maxDepth, widthCap). `offeredDepth < MAX_DEPTH` requires
+# fewer than MAX_DEPTH tokens left in the fixed window, and every round emits
+# at least one token, so only the final MAX_DEPTH rounds can be offer-bound
+# rather than price-bound. Those rounds are not replayable from the record.
+TAIL_ROUNDS = MAX_DEPTH
 SHIPPED_H = 0.18
 # E25 r1 arm D, as committed: max(base price, measured T-step ratio).
 R1_MEASURED_STEP = [0.0, 0.095904, 0.152261, 0.442442]
@@ -82,11 +88,7 @@ def load_rounds(run_dirs: list[Path]) -> list[dict]:
         sessions = parse_trace(d / "trace.txt")
         if len(sessions) != 1:
             raise SystemExit(f"{d}: expected one traced session, got {len(sessions)}")
-        # The trace snapshots `widthCap`, but the walk runs against
-        # min(offeredDepth, maxDepth, widthCap). Only the final round of the
-        # fixed 512-token window sees the parent offer fewer rows than the
-        # width cap, so that one round is not replayable from the record.
-        for r in sessions[0][WARMUP_ROUNDS:-1]:
+        for r in sessions[0][WARMUP_ROUNDS:-TAIL_ROUNDS]:
             if "ema" not in r or len(r["ema"]) < MAX_DEPTH:
                 continue
             if "shipped_depth" not in r:
@@ -94,6 +96,37 @@ def load_rounds(run_dirs: list[Path]) -> list[dict]:
             r["prompt"] = d.name
             rounds.append(r)
     return rounds
+
+
+def observed_depths(run_dirs: list[Path]) -> dict:
+    """Runtime depth histogram of an unforced arm, straight off its own trace.
+
+    Independent of the offline replay: whatever a price vector does in theory,
+    this is the depth the shipped binary actually selected. A price whose
+    `max_depth_observed` sits below the width cap is behaving as a hard cap.
+    """
+    hist, accepted, widths, rounds = {}, 0, {}, 0
+    for d in run_dirs:
+        sessions = parse_trace(d / "trace.txt")
+        if len(sessions) != 1:
+            raise SystemExit(f"{d}: expected one traced session, got {len(sessions)}")
+        for r in sessions[0][WARMUP_ROUNDS:-TAIL_ROUNDS]:
+            rounds += 1
+            hist[r["d"]] = hist.get(r["d"], 0) + 1
+            widths[r["cap"]] = widths.get(r["cap"], 0) + 1
+            accepted += r["acc"]
+    if not rounds:
+        raise SystemExit("observed_depths: no analysable rounds")
+    return {
+        "rounds": rounds,
+        "depth_histogram": dict(sorted(hist.items())),
+        "width_cap_histogram": dict(sorted(widths.items())),
+        "max_depth_observed": max(hist),
+        "rounds_at_depth_ge_4": sum(n for d, n in hist.items() if d >= 4),
+        "mean_depth": round(sum(d * n for d, n in hist.items()) / rounds, 4),
+        "mean_accepted": round(accepted / rounds, 4),
+        "tokens_per_round": round(1.0 + accepted / rounds, 4),
+    }
 
 
 def validate(rounds: list[dict]) -> dict:
@@ -197,6 +230,9 @@ def main() -> None:
     ap.add_argument("--runs-root", default=".mlxfast-private/e25/runs")
     ap.add_argument("--arm", default="FORCE")
     ap.add_argument("--prompts", default="english,narrative,technical")
+    ap.add_argument("--observed-arm", default="PRICE",
+                    help="unforced arm whose real runtime depths are reported")
+    ap.add_argument("--observed-prompts", default="english")
     ap.add_argument("--out")
     args = ap.parse_args()
 
@@ -221,6 +257,8 @@ def main() -> None:
     val = validate(rounds)
     cal = calibration(rounds)
     shrink = 1.0 / cal["pooled_ratio"]
+    obs = observed_depths([root / f"probe-{p}-{args.observed_arm}"
+                           for p in args.observed_prompts.split(",")])
 
     arms = {
         "base_shipped_h0.18": base_coeffs(),
@@ -248,12 +286,14 @@ def main() -> None:
         "arm": args.arm,
         "rounds": len(rounds),
         "warmup_rounds_dropped_per_prompt": WARMUP_ROUNDS,
+        "tail_rounds_dropped_per_prompt": TAIL_ROUNDS,
         "replay_validation": val,
         "calibration": cal,
         "belief_shrink_applied": round(shrink, 6),
         "measured_T_ms": {d: round(t_ms[d], 4) for d in sorted(t_ms) if d < MAX_DEPTH},
         "modelled_T8_ms": round(t_ms[MAX_DEPTH], 4),
         "arms": scored,
+        "observed_runtime_depths": obs,
     }
     if args.out:
         Path(args.out).write_text(json.dumps(report, indent=2, sort_keys=True))
@@ -274,6 +314,14 @@ def main() -> None:
         print(f"  {k:22s} | {v['ms_per_token']:8.4f} | {v['mean_depth']:6.3f} | "
               f"{v['vs_base_pct']:+7.3f}% | {v['depth_histogram']}")
     print("\n  coordinate optimum coeffs:", [round(c, 4) for c in best])
+    print(f"\nOBSERVED RUNTIME DEPTHS  arm={args.observed_arm} "
+          f"prompts={args.observed_prompts} rounds={obs['rounds']}")
+    print(f"  depth_histogram={obs['depth_histogram']} "
+          f"max_depth_observed={obs['max_depth_observed']} "
+          f"rounds_at_depth_ge_4={obs['rounds_at_depth_ge_4']}")
+    print(f"  width_cap_histogram={obs['width_cap_histogram']} "
+          f"mean_depth={obs['mean_depth']} "
+          f"tokens_per_round={obs['tokens_per_round']}")
 
 
 if __name__ == "__main__":

@@ -76,6 +76,11 @@ def weight_passes(depth: int) -> int:
 # tape
 # --------------------------------------------------------------------------
 WARMUP_ROUNDS = 8
+# Near the end of the fixed 512-token window the parent offers fewer draft rows
+# than the width cap, so the last 8 rounds are offer-bound rather than
+# forced-depth samples. Dropping them keeps this tape identical to the one
+# `e25r2_policy.py` replays.
+TAIL_ROUNDS = 8
 
 
 def load_force_tape(arm: str = "FORCE", prompts=PROMPTS,
@@ -122,7 +127,8 @@ def load_force_tape(arm: str = "FORCE", prompts=PROMPTS,
             rec = dict(traced) if traced else {"round": i + 1, "d": d,
                                                "acc": 0}
             rec.update(prompt=prompt, index=i, parent_ms=s * 1000.0,
-                       warm=i >= WARMUP_ROUNDS, traced=traced is not None)
+                       warm=WARMUP_ROUNDS <= i < len(depths) - TAIL_ROUNDS,
+                       traced=traced is not None)
             rounds.append(rec)
     if missing:
         raise SystemExit("e25r2_refit: no tape at " + ", ".join(missing))
@@ -507,7 +513,8 @@ def render(r: dict) -> str:
     add = L.append
     add(f"arm={r['arm']} prompts={','.join(r['prompts'])} "
         f"rounds {r['rounds_total']} -> {r['rounds_analysed']} "
-        f"(dropped first {r['warmup_rounds_dropped_per_prompt']}/prompt)")
+        f"(dropped first {r['warmup_rounds_dropped_per_prompt']} + last "
+        f"{r['tail_rounds_dropped_per_prompt']}/prompt)")
 
     add("\nFIDELITY + HEAD")
     for p, f in sorted(r["fidelity"].items()):
@@ -638,6 +645,7 @@ def main() -> None:
         "arm": args.arm,
         "prompts": list(prompts),
         "warmup_rounds_dropped_per_prompt": WARMUP_ROUNDS,
+        "tail_rounds_dropped_per_prompt": TAIL_ROUNDS,
         "rounds_total": len(all_rounds),
         "rounds_analysed": len(rounds),
         "fidelity": fidelity(legs),
