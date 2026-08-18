@@ -60,6 +60,19 @@ export E11_BINS_ROOT="${PWD}/.mlxfast-private/e25/bins"
 export E11_RUNS_ROOT="${PWD}/.mlxfast-private/e25/runs"
 export E11_TOKENS=512
 
+# THE HEAD THE RANKED CANDIDATE LEG ACTUALLY EXECUTES. `e11-run.sh` defaults to
+# `mtp-head-declared`, which on this host still holds the PREVIOUS declaration
+# (238934129 bytes, q4-qkv-islands-v1). Base d7619a7's mtp-head.manifest.json
+# declares q2-q4-rerank-v1 (427742600 bytes, sha256 559b24eb...), and that head
+# is what the new draft path was built for -- so a cost constant fitted against
+# the old head is fitted against a head no ranked leg runs. Provision it with
+# `research/fetch-declared-head.sh <this-path-without--run>`, which
+# digest-verifies the declared tree and stages this wrapper-readable sibling.
+export E11_HEAD_DIR="${E11_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-q2q4-run}"
+[[ -s "${E11_HEAD_DIR}/model.safetensors" ]] || {
+  echo "e25-run: declared head missing at ${E11_HEAD_DIR}; run research/fetch-declared-head.sh" >&2
+  exit 2; }
+
 prompt_file_for() {
   case "$1" in
     english) echo "research/e11_prose_gate_english_512.txt" ;;
@@ -140,6 +153,8 @@ run_one() {
       echo "gate_qualified_for_timing=false"
       echo "cool_gate_temp_c=40"
       echo "cool_gate_bypass_reason=host idles above the compile-time 40C gate"
+      echo "head_dir=${E11_HEAD_DIR}"
+      echo "head_safetensors_sha256=$(shasum -a 256 "${E11_HEAD_DIR}/model.safetensors" | awk '{print $1}')"
     } >> "${meta}"
   fi
   return "${rc}"

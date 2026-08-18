@@ -6,17 +6,24 @@
 #           priced h/(1 + d*h).  CONTROL.
 #   PRICE   HEAD verbatim: arm D, marginal row priced
 #           max(h/(1 + d*h), measuredRowStepRatio[d]).
+#   FORCE   r2 measurement instrument: BASE plus research/e25r2-force-depth.sh.
+#           Research-only, never submitted -- it cycles the taken depth over
+#           0..7 round by round so T(d) is measured at depths the price walk
+#           can never reach, while still tracing the shipped counterfactual.
 #
-# NEITHER ARM IS PATCHED. E21 materialised its control from HEAD and produced
-# its treatment with a keyed `sed`-style patch; the patch is the part that can
-# go wrong. Here both arms are `git show`n straight out of committed objects, so
-# each one is byte-identical to a blob a reviewer can name:
+# BASE AND PRICE ARE NOT PATCHED. E21 materialised its control from HEAD and
+# produced its treatment with a keyed `sed`-style patch; the patch is the part
+# that can go wrong. Here both scoring arms are `git show`n straight out of
+# committed objects, so each one is byte-identical to a blob a reviewer can name:
 #
 #   BASE  == ${base_sha}:${src}
 #   PRICE == HEAD:${src}
 #
 # and the ONLY difference between the two binaries is the committed E25 diff.
-# That is asserted below by blob digest, not inferred from a build log.
+# That is asserted below by blob digest, not inferred from a build log. FORCE is
+# necessarily patched -- forcing a depth the shipped rule refuses is the whole
+# point -- so it is checked by post-patch marks instead, and it is excluded from
+# every score comparison.
 #
 # Both arms therefore also carry E21's trace-gated schedule-signal
 # instrumentation, which is already in the base: the branch it adds to the timed
@@ -28,7 +35,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 src=Sources/MLXFastModel/Qwen36MTPBlockSession.swift
 root=.mlxfast-private/e25/bins
-base_sha=0d2eef9cac75d890de06a5eef4fd686c3c34c1ef
+base_sha=d7619a7f4606c2a0e1c46e04d8fae2e4e0e96602
 
 # The shipped scalar price, spelled exactly as the base spells it. If the base
 # ever moves this line the control assertion fails here rather than quietly
@@ -60,7 +67,7 @@ trap restore EXIT
 
 blob_for() {
   case "$1" in
-    BASE) echo "${base_sha}:${src}" ;;
+    BASE|FORCE) echo "${base_sha}:${src}" ;;
     PRICE) echo "HEAD:${src}" ;;
     *) return 2 ;;
   esac
@@ -78,6 +85,14 @@ materialise() {
   [[ "${want}" == "${got}" ]] || {
     echo "e25-build: $1: materialised file is not ${ref} (${got} != ${want})" >&2
     return 2; }
+  # FORCE is BASE plus the forced-depth instrument, so its provenance is the
+  # base blob AND the patch script, both digested into source-blob.txt below.
+  if [[ "$1" == FORCE ]]; then
+    research/e25r2-force-depth.sh "${src}" || return 2
+    [[ "$(git hash-object "${src}")" != "${want}" ]] || {
+      echo "e25-build: FORCE: patch left the file identical to ${ref}" >&2
+      return 2; }
+  fi
 }
 
 # Everything outside the priced threshold must be the base value on BOTH arms,
@@ -120,6 +135,20 @@ assert_arm() {
       grep -qF -- 'private static let measuredRowStepRatio: [Double] = [0.0, 0.095904, 0.152261, 0.442442]' "${src}" \
         || { echo "e25-build: PRICE: measured step-ratio table missing or changed" >&2; ok=0; }
       ;;
+    FORCE)
+      # The instrument must carry the BASE price (so the traced counterfactual
+      # is the shipped rule, not arm D) AND all three forcing marks.
+      grep -qF -- "${shipped_line}" "${src}" \
+        || { echo "e25-build: FORCE: shipped scalar price missing" >&2; ok=0; }
+      grep -qF -- 'rowPriceCoefficient' "${src}" \
+        && { echo "e25-build: FORCE: per-row price leaked into the instrument" >&2; ok=0; }
+      grep -qF -- 'private static let forcedDepthCycle: [Int] = [0, 1, 2, 3, 4, 5, 6, 7]' "${src}" \
+        || { echo "e25-build: FORCE: depth cycle missing" >&2; ok=0; }
+      grep -qF -- 'return Swift.min(forced, cap)' "${src}" \
+        || { echo "e25-build: FORCE: forced return missing" >&2; ok=0; }
+      grep -qF -- 'fullAcceptStreak >= Self.segmentedStreakGate' "${src}" \
+        && { echo "e25-build: FORCE: streak gate still clips the width cap" >&2; ok=0; }
+      ;;
   esac
   ((ok)) || return 2
 }
@@ -139,7 +168,9 @@ for arm in "$@"; do
   install -m 755 .build-worker/release/mlxfast-runtime-worker \
     "${out}/mlxfast-runtime-worker"
   cp "${src}" "${out}/source.swift"
-  git rev-parse "$(blob_for "${arm}")" > "${out}/source-blob.txt"
+  { git rev-parse "$(blob_for "${arm}")"
+    [[ "${arm}" != FORCE ]] \
+      || shasum -a 256 research/e25r2-force-depth.sh; } > "${out}/source-blob.txt"
   ( cd "${out}" && shasum -a 256 mlxfast-swift mlxfast-runtime-worker source.swift \
       > sha256.txt )
   cat "${out}/sha256.txt"
@@ -152,22 +183,33 @@ done
 # IDENTICAL in the trusted driver. A changed worker digest does not prove a
 # semantic change, but an unchanged worker digest proves the experiment is void,
 # and a changed cli digest proves the two legs were not driven identically.
-if [[ -s "${root}/BASE/sha256.txt" && -s "${root}/PRICE/sha256.txt" ]]; then
+built=()
+for arm in BASE PRICE FORCE; do
+  [[ -s "${root}/${arm}/sha256.txt" ]] && built+=("${arm}")
+done
+if ((${#built[@]} > 1)); then
+  digest() { awk -v f="$2" '$2==f{print $1}' "${root}/$1/sha256.txt"; }
   for f in mlxfast-runtime-worker source.swift; do
-    a="$(awk -v f="${f}" '$2==f{print $1}' "${root}/BASE/sha256.txt")"
-    b="$(awk -v f="${f}" '$2==f{print $1}' "${root}/PRICE/sha256.txt")"
-    if [[ "${a}" == "${b}" ]]; then
-      echo "e25-build: BASE and PRICE share ${f} digest ${a}; arms are not distinct" >&2
+    for i in "${!built[@]}"; do
+      for ((j = i + 1; j < ${#built[@]}; j++)); do
+        a="$(digest "${built[i]}" "${f}")"
+        b="$(digest "${built[j]}" "${f}")"
+        if [[ "${a}" == "${b}" ]]; then
+          echo "e25-build: ${built[i]} and ${built[j]} share ${f} digest ${a};" \
+            "those arms are not distinct" >&2
+          exit 2
+        fi
+      done
+    done
+  done
+  ref="$(digest "${built[0]}" mlxfast-swift)"
+  for arm in "${built[@]}"; do
+    got="$(digest "${arm}" mlxfast-swift)"
+    if [[ "${got}" != "${ref}" ]]; then
+      echo "e25-build: trusted driver differs between ${built[0]} and ${arm}" \
+        "(${ref} vs ${got})" >&2
       exit 2
     fi
-  done
-  a="$(awk '$2=="mlxfast-swift"{print $1}' "${root}/BASE/sha256.txt")"
-  b="$(awk '$2=="mlxfast-swift"{print $1}' "${root}/PRICE/sha256.txt")"
-  if [[ "${a}" != "${b}" ]]; then
-    echo "e25-build: trusted driver differs between arms (${a} vs ${b})" >&2
-    exit 2
-  fi
-  for arm in BASE PRICE; do
     n="$(nm -a "${root}/${arm}/mlxfast-swift" 2>/dev/null \
       | grep -c 'Qwen36MTPBlockSession' || true)"
     if [[ "${n}" != "0" ]]; then
@@ -176,6 +218,7 @@ if [[ -s "${root}/BASE/sha256.txt" && -s "${root}/PRICE/sha256.txt" ]]; then
       exit 2
     fi
   done
-  echo "e25-build: worker and source differ across arms; trusted driver identical (${a})"
+  echo "e25-build: worker and source differ across ${built[*]};" \
+    "trusted driver identical (${ref})"
 fi
 echo "e25-build: done"
