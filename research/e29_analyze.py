@@ -185,10 +185,49 @@ def reweight(by_width: dict[int, Aggregate],
     }
 
 
+def width_economics(by_width: dict[int, Aggregate]) -> dict[str, object]:
+    """Per-round cost divided by the tokens a fully accepted round commits.
+
+    A round of width M commits at most M tokens, so round_mean_ms / M is the
+    best case cost per token at that offered depth. It is an upper bound on the
+    achievable rate, not the observed rate, but it is the quantity that decides
+    whether offering one more draft token can ever pay for itself.
+    """
+    rows = {
+        m: {
+            "rounds": a.rounds,
+            "round_mean_ms": a.round_us / a.rounds / 1e3,
+            "full_accept_ms_per_token": a.round_us / a.rounds / 1e3 / m,
+        }
+        for m, a in sorted(by_width.items())
+    }
+    best = min(rows, key=lambda m: rows[m]["full_accept_ms_per_token"])
+    observed_us = sum(a.round_us for a in by_width.values())
+    committed = sum(m * a.rounds for m, a in by_width.items())
+    # Counterfactual: same committed tokens, every round run at the cheapest
+    # width. Ignores acceptance, so it bounds the schedule-side prize only.
+    ideal_us = committed * rows[best]["full_accept_ms_per_token"] * 1e3
+    return {
+        "per_width": rows,
+        "best_width": best,
+        "best_ms_per_token": rows[best]["full_accept_ms_per_token"],
+        "observed_round_total_ms": observed_us / 1e3,
+        "full_accept_tokens": committed,
+        "all_rounds_at_best_width_ms": ideal_us / 1e3,
+        "headroom_pct": (100.0 * (observed_us - ideal_us) / observed_us
+                         if observed_us else None),
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("run_dirs", nargs="+", type=Path)
     ap.add_argument("--json-out", type=Path)
+    ap.add_argument(
+        "--skip-warmup", type=int, default=2,
+        help="timed rounds to exclude from the steady-state view; the first "
+             "rounds JIT-compile new shapes and are reported separately "
+             "(default: 2)")
     args = ap.parse_args()
 
     doc: dict[str, object] = {}
@@ -226,8 +265,11 @@ def main() -> int:
         overall = Aggregate()
         for r in timed:
             overall.add(r)
+        steady_rounds = timed[max(args.skip_warmup, 0):]
+        steady = Aggregate()
         by_width: dict[int, Aggregate] = {}
-        for r in timed:
+        for r in steady_rounds:
+            steady.add(r)
             by_width.setdefault(r.width, Aggregate()).add(r)
 
         entry["sessions_in_file"] = last + 1
@@ -258,6 +300,22 @@ def main() -> int:
             }
             for m, a in sorted(by_width.items())
         }
+        entry["skip_warmup_rounds"] = max(args.skip_warmup, 0)
+        entry["steady_state"] = {
+            "rounds": steady.rounds,
+            "totals_ms": {
+                "round": steady.round_us / 1e3,
+                "host_tail": steady.host_tail_us / 1e3,
+                **{k: steady.seg_us[k] / 1e3 for k in SEGMENTS},
+            },
+            "share_of_round_pct": {
+                "host_tail": 100.0 * steady.host_tail_us / steady.round_us,
+                **{k: 100.0 * steady.seg_us[k] / steady.round_us
+                   for k in SEGMENTS},
+            },
+        } if steady.rounds else None
+        entry["width_economics"] = (
+            width_economics(by_width) if by_width else None)
         entry["reweighted_e21_512"] = reweight(by_width, E21_WIDTH_HISTOGRAM)
         doc[run_dir.name] = entry
 
@@ -280,6 +338,20 @@ def main() -> int:
               f" {'':>8} {overall.host_tail_us / overall.rounds / 1e3:>9.3f}")
         print(f"  {'ROUND':<18} {overall.round_us / 1e3:>10.2f}")
 
+        if steady.rounds and steady.rounds != overall.rounds:
+            print(f"  steady state ({steady.rounds} rounds, first "
+                  f"{entry['skip_warmup_rounds']} excluded): round "
+                  f"{steady.round_us / 1e3:.2f} ms, host tail "
+                  f"{steady.host_tail_us / 1e3:.2f} ms "
+                  f"({100.0 * steady.host_tail_us / steady.round_us:.2f}%), "
+                  f"vbuild "
+                  f"{100.0 * steady.seg_us['verify_build_us'] / steady.round_us:.2f}%"
+                  f", eval "
+                  f"{100.0 * steady.seg_us['eval_wall_us'] / steady.round_us:.2f}%"
+                  f", dbuild "
+                  f"{100.0 * steady.seg_us['draft_build_us'] / steady.round_us:.2f}%")
+
+        print(f"  per width, steady state only:")
         print(f"  {'M':>3} {'rounds':>7} {'round_ms':>9} {'host_ms':>8}"
               f" {'host%':>7} {'dbuild':>7} {'vbuild':>7} {'eval':>7}"
               f" {'readout':>8} {'commit':>7} {'upkeep':>7}")
@@ -291,6 +363,21 @@ def main() -> int:
                   f" {g('draft_build_us'):>7.3f} {g('verify_build_us'):>7.3f}"
                   f" {g('eval_wall_us'):>7.3f} {g('readout_us'):>8.3f}"
                   f" {g('commit_us'):>7.3f} {g('upkeep_us'):>7.3f}")
+
+        econ = entry["width_economics"]
+        if econ:
+            print(f"  full-accept economics (round_ms / M), steady state:")
+            for m, row in econ["per_width"].items():
+                mark = " <== cheapest" if m == econ["best_width"] else ""
+                print(f"  {m:>3} {row['rounds']:>7} "
+                      f"{row['round_mean_ms']:>9.3f}"
+                      f" -> {row['full_accept_ms_per_token']:>7.3f} ms/token"
+                      f"{mark}")
+            print(f"  every round at M={econ['best_width']}: "
+                  f"{econ['all_rounds_at_best_width_ms']:.2f} ms vs observed "
+                  f"{econ['observed_round_total_ms']:.2f} ms "
+                  f"({econ['headroom_pct']:.2f}% of round time, "
+                  f"full-acceptance bound only)")
 
         rw = entry["reweighted_e21_512"]
         if rw:
