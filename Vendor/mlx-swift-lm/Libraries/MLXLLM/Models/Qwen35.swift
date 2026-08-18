@@ -12,6 +12,199 @@ import MLX
 import MLXLMCommon
 import MLXNN
 
+// MARK: - Verify-side layer-family attribution (research instrumentation)
+
+/// Per-family cost attribution for one target forward.
+///
+/// `MLX_QWEN_ATTRIB` selects the mode; the gate is read once and every entry
+/// point returns before touching state or the GPU when it is off.
+///
+/// - unset / `0`: completely inert.
+/// - `2`: one record per forward carrying only the row count and the
+///   unmodified forward wall time. No extra `eval`, no bucket timing — this is
+///   the width histogram at the untouched decode schedule.
+/// - `1`: mode 2 plus *fine* per-bucket timing: attention and MLP are split
+///   inside every layer, which costs `2 * layers + 3` blocking `eval`s.
+/// - `3`: mode 2 plus *coarse* per-layer timing: one boundary per decoder
+///   layer, so attention and MLP stay merged and the cost is `layers + 3`
+///   blocking `eval`s.
+///
+/// The `+ 3` is `drain`, `embed` and `head`, which both attributing modes
+/// charge identically.
+///
+/// A blocking `eval` both flushes the command buffer and stops the CPU from
+/// building the next subgraph while the GPU runs, so an attributing mode
+/// inflates the forward and can bias the split toward whichever family holds
+/// the most boundaries. Modes 2, 3 and 1 place 0, `layers + 3` and
+/// `2 * layers + 3` boundaries on the *same* forward, which is what makes that
+/// bias measurable rather than assumed.
+///
+/// Mode 3 is the falsification test, not a second opinion. Because the MLP
+/// buckets are keyed by host layer type, mode 1's `gdn + mlp_gdn` is the same
+/// quantity as mode 3's `gdn`, and likewise for the full-attention pair. The
+/// two modes therefore report the same GDN-versus-full-attention layer split
+/// while differing by 2x in boundary density: agreement says the split is a
+/// property of the model rather than of the instrument, and disagreement says
+/// the raw shares are not usable. A mode-1 or mode-3 wall clock is never a
+/// valid speed baseline.
+///
+/// The unattributed residual (`total_ns` minus the bucket sum) is the closure
+/// check: cache tails that no bucket output depends on land there rather than
+/// in a neighbour.
+///
+/// `MLX_` prefix on purpose: the trusted harness strips `MLXFAST_*` from the
+/// sandboxed worker's environment but forwards `MLX_*`.
+public enum Qwen35Attribution {
+
+    public enum Bucket: Int, CaseIterable {
+        case drain, embed, gdn, fullAttention, mlpGdn, mlpFullAttention, head, topTwo
+
+        fileprivate var key: String {
+            switch self {
+            case .drain: return "drain"
+            case .embed: return "embed"
+            case .gdn: return "gdn"
+            case .fullAttention: return "full_attention"
+            case .mlpGdn: return "mlp_gdn"
+            case .mlpFullAttention: return "mlp_full_attention"
+            case .head: return "head"
+            case .topTwo: return "top_two"
+            }
+        }
+    }
+
+    private static let mode =
+        Int(ProcessInfo.processInfo.environment["MLX_QWEN_ATTRIB"] ?? "0") ?? 0
+
+    /// Emit one record per forward.
+    public static let logging = mode == 1 || mode == 2 || mode == 3
+    /// Additionally time buckets, forcing an `eval` at every boundary.
+    public static let attributing = mode == 1 || mode == 3
+    /// Split attention from MLP inside each layer.
+    public static let fineGrained = mode == 1
+    /// Keep each decoder layer whole.
+    public static let coarseGrained = mode == 3
+
+    nonisolated(unsafe) private static var nanos =
+        [UInt64](repeating: 0, count: Bucket.allCases.count)
+    nonisolated(unsafe) private static var calls =
+        [Int](repeating: 0, count: Bucket.allCases.count)
+    nonisolated(unsafe) private static var rows = 0
+    nonisolated(unsafe) private static var forwardStart: UInt64 = 0
+    nonisolated(unsafe) private static var forwardIndex = 0
+    nonisolated(unsafe) private static var inForward = false
+
+    /// `MLX_QWEN_ATTRIB_OUT` names a file; without it the records go to stderr.
+    /// The worker's default sandbox denies `file-write*`, so the file sink
+    /// needs `MLXFAST_NO_SANDBOX=1` on the parent CLI. One benchmark invocation
+    /// spawns several model-holding processes, so the pid suffix keeps their
+    /// records apart instead of letting them clobber one path.
+    nonisolated(unsafe) private static let sink: FileHandle = {
+        let pid = ProcessInfo.processInfo.processIdentifier
+        guard
+            let base = ProcessInfo.processInfo.environment["MLX_QWEN_ATTRIB_OUT"],
+            !base.isEmpty
+        else { return FileHandle.standardError }
+        let path = "\(base).\(pid)"
+        guard
+            FileManager.default.createFile(atPath: path, contents: nil),
+            let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: path))
+        else { return FileHandle.standardError }
+        return handle
+    }()
+
+    @inline(__always) public static func now() -> UInt64 {
+        DispatchTime.now().uptimeNanoseconds
+    }
+
+    public static func beginForward(rows: Int) {
+        guard logging else { return }
+        for i in nanos.indices {
+            nanos[i] = 0
+            calls[i] = 0
+        }
+        Self.rows = rows
+        inForward = true
+        forwardStart = now()
+    }
+
+    /// Charge `body` to `bucket`, closing the window with a blocking `eval` so
+    /// the GPU work it enqueued is inside the measured span. Outside a
+    /// `beginForward`/`endForward` pair the body runs untouched, which keeps
+    /// the cache-repair path off the serialised schedule.
+    @inline(__always)
+    public static func timed(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
+        guard fineGrained, inForward else { return body() }
+        return charge(bucket, body)
+    }
+
+    /// Whole-layer form of `timed`, active only in the coarse mode so exactly
+    /// one of the two ever places a boundary.
+    @inline(__always)
+    public static func layerTimed(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
+        guard coarseGrained, inForward else { return body() }
+        return charge(bucket, body)
+    }
+
+    @inline(__always)
+    private static func charge(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
+        let t0 = now()
+        let out = body()
+        eval(out)
+        record(bucket, since: t0)
+        return out
+    }
+
+    /// Force work queued *before* this forward — for the verify forward that is
+    /// the draft head producing the candidate tokens — to land in its own
+    /// bucket instead of inflating whichever family owns the first boundary.
+    public static func drain(_ inputs: MLXArray) {
+        guard attributing, inForward else { return }
+        let t0 = now()
+        eval(inputs)
+        record(.drain, since: t0)
+    }
+
+    public static func record(_ bucket: Bucket, since t0: UInt64) {
+        guard attributing, inForward else { return }
+        nanos[bucket.rawValue] &+= now() &- t0
+        calls[bucket.rawValue] &+= 1
+    }
+
+    public static func endForward() {
+        guard logging, inForward else { return }
+        inForward = false
+        var line = "qwen-attrib: f=\(forwardIndex) rows=\(rows)"
+            + " total_ns=\(now() &- forwardStart)"
+        if attributing {
+            for bucket in Bucket.allCases where bucket != .topTwo {
+                line += " \(bucket.key)_ns=\(nanos[bucket.rawValue])"
+                    + " \(bucket.key)_n=\(calls[bucket.rawValue])"
+            }
+        }
+        forwardIndex &+= 1
+        sink.write(Data((line + "\n").utf8))
+    }
+
+    /// Record a span that runs outside the backbone forward, tagged with the
+    /// forward it follows.
+    public static func note(_ bucket: Bucket, rows: Int, since t0: UInt64) {
+        guard attributing else { return }
+        let span = now() &- t0
+        let line = "qwen-attrib-span: f=\(forwardIndex &- 1) rows=\(rows)"
+            + " \(bucket.key)_ns=\(span)\n"
+        sink.write(Data(line.utf8))
+    }
+
+    /// Mark the forward just completed as a scored verify round. Warmup and
+    /// seed-prefill forwards never reach this call, so it is what separates
+    /// shipped decode work from shape warmup in every logging mode.
+    public static func markVerifyRound(rows: Int) {
+        guard logging else { return }
+        sink.write(Data("qwen-attrib-verify: f=\(forwardIndex &- 1) rows=\(rows)\n".utf8))
+    }
+}
+
 // MARK: - Configuration
 
 private enum RopeParametersCodingKey: String, CodingKey {
@@ -1873,17 +2066,22 @@ final class Qwen35DecoderLayer: Module {
         // Port of omlx commit 696d90a:
         //   patches/mlx_lm_mtp/qwen35_model.py DecoderLayer.__call__
         // Passes nConfirmed through to the linear-attention sublayer.
-        let r: MLXArray
-        if isLinear {
-            r = linearAttn!(
-                inputLayerNorm(x), mask: ssmMask, cache: cache as? MambaCache,
-                nConfirmed: nConfirmed)
-        } else {
-            r = selfAttn!(inputLayerNorm(x), mask: attentionMask, cache: cache)
-        }
+        Qwen35Attribution.layerTimed(isLinear ? .gdn : .fullAttention) {
+            let r = Qwen35Attribution.timed(isLinear ? .gdn : .fullAttention) {
+                if isLinear {
+                    return linearAttn!(
+                        inputLayerNorm(x), mask: ssmMask, cache: cache as? MambaCache,
+                        nConfirmed: nConfirmed)
+                } else {
+                    return selfAttn!(inputLayerNorm(x), mask: attentionMask, cache: cache)
+                }
+            }
 
-        let h = x + r
-        return h + (mlp as! UnaryLayer)(postAttentionLayerNorm(h))
+            let h = x + r
+            return Qwen35Attribution.timed(isLinear ? .mlpGdn : .mlpFullAttention) {
+                h + (mlp as! UnaryLayer)(postAttentionLayerNorm(h))
+            }
+        }
     }
 }
 
@@ -1932,6 +2130,9 @@ public class Qwen35TextModelInner: Module {
         cache: [KVCache?]? = nil,
         nConfirmed: Int = 0
     ) -> MLXArray {
+        Qwen35Attribution.beginForward(rows: inputs.dim(1))
+        Qwen35Attribution.drain(inputs)
+        let attribT0 = Qwen35Attribution.now()
         var hiddenStates = embedTokens(inputs)
 
         var cacheArray = cache
@@ -1941,6 +2142,10 @@ public class Qwen35TextModelInner: Module {
 
         let faMask = createAttentionMask(h: hiddenStates, cache: cacheArray?[faIdx])
         let ssmMask = createSSMMask(h: hiddenStates, cache: cacheArray?[ssmIdx] as? MambaCache)
+        if Qwen35Attribution.attributing {
+            eval(hiddenStates)
+            Qwen35Attribution.record(.embed, since: attribT0)
+        }
 
         // Decode-width asyncEval ladder: at S <= 2 (serial step / width-2 MTP
         // verify) the host builds a ~64-layer graph before anything reaches
@@ -2323,6 +2528,7 @@ extension Qwen35TextModel: MTPCapable {
     ) -> (MLXArray, MLXArray) {
         let cacheOpt: [KVCache?] = cache.map { Optional($0) }
         let hidden = model(input.tokens, cache: cacheOpt, nConfirmed: nConfirmed)
+        let attribT0 = Qwen35Attribution.now()
         let normed = model.norm(hidden)
         let logits: MLXArray
         if let lmHead {
@@ -2330,6 +2536,11 @@ extension Qwen35TextModel: MTPCapable {
         } else {
             logits = model.embedTokens.asLinear(normed)
         }
+        if Qwen35Attribution.attributing {
+            eval(logits)
+            Qwen35Attribution.record(.head, since: attribT0)
+        }
+        Qwen35Attribution.endForward()
         // Return pre-norm hidden, not post-norm. The MTP module's pre_fc_norm_hidden
         // is the normalization step — it expects the raw backbone output as input.
         return (logits, hidden)
@@ -2343,6 +2554,7 @@ extension Qwen35TextModel: MTPCapable {
     ) -> (MLXArray, MLXArray, MLXArray?) {
         let cacheOpt: [KVCache?] = cache.map { Optional($0) }
         let hidden = model(input.tokens, cache: cacheOpt, nConfirmed: nConfirmed)
+        let attribT0 = Qwen35Attribution.now()
         let normed = model.norm(hidden)
         let logits: MLXArray
         if let lmHead {
@@ -2350,6 +2562,11 @@ extension Qwen35TextModel: MTPCapable {
         } else {
             logits = model.embedTokens.asLinear(normed)
         }
+        if Qwen35Attribution.attributing {
+            eval(logits, normed)
+            Qwen35Attribution.record(.head, since: attribT0)
+        }
+        Qwen35Attribution.endForward()
         return (logits, hidden, normed)
     }
 
