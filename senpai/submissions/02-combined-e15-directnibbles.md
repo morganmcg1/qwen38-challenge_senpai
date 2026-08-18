@@ -7,6 +7,14 @@ description of what is actually packaged.
 **Model label:** `senpai` (a campaign label, not a distinct model — the target
 weights and the pinned MTP head are the ones the benchmark declares).
 
+> **⚠️ Read §8 first — novelty disclosure.** Between writing this note and
+> submitting it, the organizer promoted submission `caec88d4` (score
+> **3.14642585386152**, +1.56 %), whose *entire* diff is mechanism B below.
+> **Mechanism B is therefore no longer novel — upstream already has it, and our
+> tree is semantically identical to upstream there.** The novel content of this
+> submission is **mechanism A alone**. §8 gives the proof and also records that
+> the coverage estimate in §3.4 is **refuted by that promotion's own score**.
+
 ---
 
 ## 1. What is in this submission
@@ -18,11 +26,15 @@ cannot interact.
 | # | mechanism | submitted surface | claim |
 |---|---|---|---|
 | A | **3-bit compact draft-head readout as the compiled default** | `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` (+109/−4) | **+0.83 % modeled ranked**, from a directly measured +0.7754 % local mechanism-only effect |
-| B | **`DIRECT_NIBBLES` at crossrow QMV widths M = 3, 4, 5** | `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h` + its `mlx-generated/quantized.cpp` twin | **no speedup claimed.** Bit-exact ALU reduction; measured to cover only ~5 % of verify rounds at the shipped depth policy |
+| B | **`DIRECT_NIBBLES` at crossrow QMV widths M = 3, 4, 5** | `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h` + its `mlx-generated/quantized.cpp` twin | **not novel — superseded by `caec88d4`, see §8.1.** Bit-exact ALU reduction. Our tree is semantically identical to `upstream/main` here; the coverage estimate in §3.4 is refuted (§8.2) |
 
-Everything else in the tree is unchanged from the promoted frontier
-`bd007bc7` (`sourceRef d1530a409848b82a0a1890141c1483875d1e0173`, score
-3.13098700135133), which this branch merged at `1a66487`.
+This branch merged the then-current frontier `bd007bc7`
+(`sourceRef d1530a409848b82a0a1890141c1483875d1e0173`, score 3.13098700135133)
+at `1a66487`. **`upstream/main` has since advanced to
+`0d800b229e9494029eec2bd27b95bc249302e78d` (promoted submission `caec88d4`,
+score 3.14642585386152)** — a single commit that is exactly mechanism B. Modulo
+comments, everything in this tree outside `Qwen35.swift` is unchanged from that
+newer frontier; see §8.1 for the proof.
 
 The protected-path delta against `origin/main` is exactly three files:
 `quantized.h`, `mlx-generated/quantized.cpp`, `Qwen35.swift`.
@@ -172,6 +184,13 @@ over 8 scored shapes, so 8 × 7 = **56** of the 96 cells exercise M = 3, 4, 5 �
 which the run records as its 56/96 positive control.
 
 ### 3.4 Honest coverage — this is much smaller than we first thought
+
+> **🔴 RETRACTED — see §8.2.** Everything in this subsection is refuted by the
+> promotion of `caec88d4`, whose entire diff is mechanism B and which scored
+> **+1.56 %**. The "~5 %" figure below was sized from a **128-token** local
+> receipt and does not describe the **512-token** ranked workload. The
+> histogram this subsection dismisses is the one that was closer to the truth.
+> The subsection is kept verbatim as the record of a wrong call.
 
 The original in-kernel rationale cited a depth histogram `{1:19, 2:138, 3:67,
 4:21}` → widths `{2:19, 3:138, 4:67, 5:21}`, i.e. 226 of 245 rounds on M = 3..5.
@@ -386,3 +405,100 @@ We would rather under-claim than have a reviewer find these.
   relative to their predecessors, so run-to-run spread on this benchmark is
   comparable to the step size we are claiming. We would not be surprised by a
   null result, and we would report it as one.
+
+
+---
+
+## 8. Addendum — novelty disclosure and a refuted coverage estimate
+
+This section was written after §§1–7, immediately before submitting, and it
+withdraws part of what those sections claim. It is placed last only because it
+depends on them; it should be read first.
+
+### 8.1 Mechanism B is no longer novel — the frontier landed it independently
+
+While this submission was waiting for a free submission slot, `upstream/main`
+advanced from `d1530a409848b82a0a1890141c1483875d1e0173` to
+`0d800b229e9494029eec2bd27b95bc249302e78d`. That is a **single** commit,
+`Accept submission caec88d4-c566-4d5c-ab80-5ce6e9c9e86d` (solver
+`ivanfioravanti`, score **3.14642585386152**), and its complete diff is:
+
+```
+ Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp               | 6 +++---
+ Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | 6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+```
+
+Those six lines are, in both twins:
+
+```cpp
+case 3: ... qmv_fast_crossrow_affine4_g64_m<T, 3, 3>  ->  <T, 3, 3, true>
+case 4: ... qmv_fast_crossrow_affine4_g64_m<T, 4, 4>  ->  <T, 4, 4, true>
+case 5: ... qmv_fast_crossrow_affine4_g64_m<T, 5, 3>  ->  <T, 5, 3, true>
+```
+
+which is exactly mechanism B — same three cases, same template parameters, same
+`NA` values. We verified that our tree and the new frontier now agree on this
+**semantically, not merely in effect**: filtering the diff of both twins between
+`upstream/main` and our HEAD down to non-comment, non-blank changed lines yields
+**nothing**.
+
+```
+git diff upstream/main HEAD -- <quantized.cpp> <quantized.h> \
+  | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' \
+  | grep -vE '^[+-][[:space:]]*(//|\*|/\*)' | grep -vE '^[+-][[:space:]]*$'
+   -> empty
+```
+
+The only remaining difference in those two files is our comments. We are
+therefore **not claiming mechanism B as novel work**, and we would not want it
+counted as such. We are leaving it in the packaged tree because removing it
+would create a gratuitous conflict with the frontier and because our tree is
+byte-compatible with upstream's version of it modulo comments — not because we
+think it adds anything upstream does not already have.
+
+**The novel delta of this submission is mechanism A — the 3-bit compact draft
+readout in `Qwen35.swift` — and nothing else.**
+
+### 8.2 The §3.4 coverage estimate is refuted, and the refutation is instructive
+
+§3.4 says mechanism B covers "~5 % of verify rounds" and is worth submitting only
+as free exactness hygiene. **That is wrong, and `caec88d4`'s own score is the
+counter-evidence.** Because `d1530a4..0d800b2` contains *only* those six lines,
+the **+1.56 %** (+0.015439 absolute) attached to that promotion is attributable
+to the M = 3,4,5 direct-nibble change **alone**.
+
+The error was in our instrument, not our arithmetic. §3.4's histogram
+(`{1:1, 4:1, 5:8, 6:3, 7:5, 8:2}`, mean depth 5.7) was measured on a **128-token
+`--local-submit`** run. The ranked workload decodes **512** tokens. Draft depth
+is not stationary in sequence length on this model — as the sequence grows the
+accepted-depth mass moves *down*. A 512-token measurement of the same solver
+family gives `{1:19, 2:138, 3:67, 4:21}` → widths `{2:19, 3:138, 4:67, 5:21}`,
+i.e. **226 of 245 rounds land on M = 2..5**, the band mechanism B targets.
+
+Ironically, that is the very histogram §3.4 dismissed as "a different solver
+configuration". It *is* a different depth policy — but it was measured at the
+**ranked token count**, and on the axis that mattered here it was the more
+faithful of the two. Our replacement was measured on the shipped default but at
+**one quarter of the ranked sequence length**, and that turned out to be the
+larger error.
+
+The general lesson, which we are recording against ourselves: **a width or depth
+histogram measured on a short local run does not describe the ranked workload,
+and a dispatch-coverage claim must never be sized from a `--local-submit`
+receipt.** The in-kernel comment carrying the "~5 %" figure is now known-wrong
+and is being repaired separately.
+
+### 8.3 What this does and does not do to mechanism A
+
+Nothing in §8.1–§8.2 touches mechanism A. It is a draft-side readout change in
+`Qwen35.swift`; §2.5 proves it runs unconditionally at M = 1, where the crossrow
+`switch (ntg.x)` has no case at all, so it cannot interact with mechanism B in
+either direction (§4). Its measured local mechanism-only effect (+0.7754 %) and
+its modeled ranked transfer (+0.8334 %) were obtained on a tree that already
+contained mechanism B, so they are already measured *on top of* what the frontier
+now ships.
+
+The baseline this submission must beat has moved from **3.13098700135133** to
+**3.14642585386152**. We are submitting because mechanism A's modeled transfer
+clears the new bar, not because the combined tree cleared the old one.

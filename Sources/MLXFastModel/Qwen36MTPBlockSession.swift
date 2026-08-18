@@ -460,14 +460,23 @@ public final class Qwen36MTPBlockSession {
     /// stderr to the wrapper's log.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+    /// Opened O_APPEND so the reference, verify and timed workers can each
+    /// write the same file without a later process truncating an earlier
+    /// one's rounds. Falls back to stderr when no path is configured, which
+    /// the `mtp-timed` parent discards: `runtimeWorkerOptions` is called
+    /// there without `forwardsWorkerStderr`, so it defaults to false and the
+    /// drain installs a swallowing emitter.
+    private static let traceSink: FileHandle = {
+        guard let path = ProcessInfo.processInfo
+            .environment["MLX_QWEN_MTP_TRACE_PATH"], !path.isEmpty
+        else { return FileHandle.standardError }
+        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+        guard fd >= 0 else { return FileHandle.standardError }
+        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
+    }()
+
     private static func traceWrite(_ line: String) {
-        // stderr: the worker sandbox denies file-write*. NOTE the parent
-        // DROPS this on `mtp-timed` — that verb builds its worker options
-        // with the default `forwardsWorkerStderr: false`, so the drain's emit
-        // closure discards every line. Capturing this trace needs a verb that
-        // forwards worker stderr, or a writable sink under
-        // MLXFAST_NO_SANDBOX=1.
-        FileHandle.standardError.write(Data(line.utf8))
+        traceSink.write(Data(line.utf8))
     }
 
     /// Exact-value row dump for the LOCAL width-wall gate: hexfloat (`%a`)
@@ -611,6 +620,11 @@ public final class Qwen36MTPBlockSession {
         let cap = Swift.min(
             Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
             widthCap)
+        // Snapshot BEFORE the walk and before any drafting: by the time the
+        // round's trace line is emitted, the EMAs, the streak and `pendingTop2`
+        // have all been advanced by this round's own outcome, so reading them
+        // there would describe the next round's inputs, not this one's.
+        if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
         guard cap > 0 else { return 0 }
         let h = Self.headStepCostRatio
         var reach = 1.0
@@ -629,11 +643,39 @@ public final class Qwen36MTPBlockSession {
             }
             reach *= p
             let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
+            if Self.traceRounds {
+                scheduleTrace += String(
+                    format: "%d:%.6f/%.6f/%.6f;", depth, p, reach, threshold)
+            }
             guard reach > threshold else { break }
             expected += reach
             depth += 1
         }
         return depth
+    }
+
+    /// Trace-gated record of the schedule's inputs and its extension walk.
+    /// Written only when the phase trace is on, so the scored schedule runs
+    /// byte-identical arithmetic without it.
+    private var scheduleTrace = ""
+
+    /// Every scalar the schedule may legally read BEFORE it proposes anything:
+    /// the pending primary's target top-2 margin, the per-position EMAs, the
+    /// full-accept streak and the width cap in force. Recorded so an offline
+    /// fit can ask which of these separates a round that accepts its whole
+    /// chain from one that accepts nothing, without spending a second run.
+    private func snapshotScheduleSignal(widthCap: Int) {
+        let margin: Double
+        if let tail = pendingTop2, tail.1.count >= 2 {
+            margin = tail.1[0] - tail.1[1]
+        } else {
+            margin = Double.nan
+        }
+        let emas = positionAcceptEMA
+            .map { String(format: "%.6f", $0) }.joined(separator: ",")
+        scheduleTrace = String(
+            format: "m=%.6f streak=%d cap=%d ema=",
+            margin, fullAcceptStreak, widthCap) + emas + " sched="
     }
 
     /// Fold one round's acceptance outcome into the per-position EMAs.
@@ -1136,7 +1178,8 @@ public final class Qwen36MTPBlockSession {
                 + "readout_us=\((tReadDone - tEvalDone) / 1000) "
                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
-                + "round_us=\((tTailDone - tRound0) / 1000)\n"
+                + "round_us=\((tTailDone - tRound0) / 1000) "
+                + scheduleTrace + "\n"
             Self.traceWrite(line)
         }
         // No trailing eval: every host-read value was materialised by the

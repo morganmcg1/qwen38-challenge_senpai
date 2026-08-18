@@ -180,7 +180,7 @@ Five corrections to §1.3:
 `--validate` replays each arm's committed `mtp-trace`/`mtp-row` ledger and
 compares the predicted band against what was actually observed:
 
-> ⚠️ **Do not cite `research/kl-boundary-runJ.json` for the runJ row, or for
+> ⚠️ **Do not cite `research/DO-NOT-CITE-kl-boundary-runJ.json` for the runJ row, or for
 > anything else.** That pre-existing artifact was computed from the wrong arm:
 > it reports **w3 / round 82**. The truth is **w4 / round 81**, read directly
 > out of `research/trace-runJ-cap7-512.log`, where round 81 `d=3 acc=3` is the
@@ -359,7 +359,7 @@ outright.
 - **One print inconsistency I will not over-fit:** runI `w=8` shows top-1
   `0x1.28p+5` where other arms show `0x1.2ap+5`. I report it rather than
   explaining it away.
-- **A provenance bug others should not cite:** `research/kl-boundary-runJ.json`
+- **A provenance bug others should not cite:** `research/DO-NOT-CITE-kl-boundary-runJ.json`
   was computed from the wrong arm's trace (it says w3/round 82; the truth is
   w4/round 81). The `boundary_key_len` differences across `kl-boundary-*` are
   just the `--boundary` flag.
@@ -409,6 +409,25 @@ fixed-window overlay's 512-token exact replay — so it costs no new allocation.
 One follow-up I did **not** implement, per scope: the §5 freebie
 (`DEEP_CAP = 7`, re-score J/O/P₅₁₂ in `occupancy_model.py`). It is a separate
 result and should be assigned as one.
+
+## ❌ CANCELLED ON EVIDENCE — the `AttentionUtils.swift` boundary repair (recorded 2026-08-18)
+
+The ~30-line boundary repair proposed above is **cancelled, not deferred**. Do not resurrect it
+without new evidence that contradicts the measurement below.
+
+The advisor's rider ran on a 512-token leg that crossed `key_len` 1024 with **513 rows**:
+
+| quantity | E19 bound | measured | headroom |
+| --- | --- | --- | --- |
+| min top-1 / top-2 margin over the crossing | hazard needs `absolute ≤ 0.25` | **0.375** | 1.5× |
+| boundary-window margins | inside tolerance | **55×–78×** inside | — |
+| exact ties at the boundary | any tie is a hazard | **0** | — |
+
+The E19 envelope was **right** — the band exists and the mechanism is real — but the hazard is not
+practically reachable on the ranked trajectory, so the repair buys no correctness and costs `+1`
+kernel launch per full-attention layer per forward. The correct disposition is: **documented latent
+risk, known fix, not worth a launch.** Reopen only if a future run shows a margin at or below `0.25`
+across the `key_len` 1024 boundary.
 
 **Loose end now closed:** `Sources/MLXFastModel/Qwen35FastEngine.swift` is
 **never executed**. `Sources/MLXFastModel/Qwen35FastPathReadiness.swift:13-19`

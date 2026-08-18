@@ -11,20 +11,77 @@ disagree, stop and repair both before assigning or submitting work.
 ## Current frontier
 
 The organizer remote and the promoted Yukon row were refreshed at
-`2026-08-17T21:24:25Z`.
+`2026-08-18T01:30Z`. **`senpai/frontier-state.json` is STALE against this
+table** — it still pins `d1530a4` / `bd007bc7` / `3.13098700135133`. The
+submitter's gates 4 and 9 still pass with the stale pin (`d1530a4` is an
+ancestor of `0d800b2`, and the intervening range touches only the two
+quantized twins this campaign owns), so nothing is blocked; repair the JSON at
+the next frontier re-sync, not by hand-editing the score.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `d1530a409848b82a0a1890141c1483875d1e0173` |
-| Best promoted submission | `bd007bc7-e8ab-4919-baf4-d5e90068dd83` |
-| Promoted source ref | `d1530a409848b82a0a1890141c1483875d1e0173` |
-| Official score | `3.13098700135133` |
+| Organizer synced commit | `0d800b229e9494029eec2bd27b95bc249302e78d` |
+| Best promoted submission | `caec88d4-c566-4d5c-ab80-5ce6e9c9e86d` (solver `ivanfioravanti`) |
+| Promoted source ref | `0d800b229e9494029eec2bd27b95bc249302e78d` |
+| Official score | `3.14642585386152` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Submitted solver snapshot | `d1530a409848b82a0a1890141c1483875d1e0173` |
+| Previous frontier | `bd007bc7-e8ab-4919-baf4-d5e90068dd83` @ `d1530a4`, `3.13098700135133` |
+| Promotion delta | `+0.015439` score, `+1.56%` |
 
-The promoted receipt above is the public Yukon frontier used to bootstrap this
-campaign; it is not claimed as a Senpai-authored result.
+The promoted receipts above are the public Yukon frontier used to bootstrap and
+then to re-baseline this campaign; they are not claimed as Senpai-authored
+results.
+
+### `caec88d4` landed this campaign's own kernel change first
+
+The complete diff of promoted `caec88d4` is **six lines across exactly the two
+quantized twins this campaign owns**, flipping three template arguments to
+`DIRECT_NIBBLES=true`:
+
+```
+case 3: qmv_fast_crossrow_affine4_g64_m<T, 3, 3>  ->  <T, 3, 3, true>
+case 4: qmv_fast_crossrow_affine4_g64_m<T, 4, 4>  ->  <T, 4, 4, true>
+case 5: qmv_fast_crossrow_affine4_g64_m<T, 5, 3>  ->  <T, 5, 3, true>
+```
+
+That is **byte-for-byte advisor commit `67856b5`**, committed here before the
+promotion and not yet submitted at the time it landed. Semantic identity is
+proven, not asserted, and the proof is cheap to re-run:
+
+```sh
+git --no-pager diff upstream/main HEAD -- \
+  Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h \
+  Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/mlx-generated/quantized.cpp \
+  | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' \
+  | grep -vE '^[+-][[:space:]]*(//|\*|/\*)' | grep -vE '^[+-][[:space:]]*$'
+```
+
+This must return EMPTY (grep exit 1). Only comments differ.
+
+Two consequences, both load-bearing.
+
+First, the *size* of the win is now measured by someone else's ranked receipt
+rather than by our local estimate: **`+1.56%`**. Any campaign document that
+sized `DIRECT_NIBBLES` at M=3,4,5 near "5% of verify rounds" is refuted by this
+row. The local `--local-submit` harness could not have told us this — see the
+noise rule below.
+
+Second, the delay between committing a kernel win and submitting it is a **real
+scoop risk with a measured instance**. This is checklist item 53.
+
+The follow-on question — is there anything left in this kernel — is answered in
+[`research/crossrow-closure.md`](../research/crossrow-closure.md): no. Seven
+candidates are enumerated and closed there, including the two that matter most.
+Every FMA fusion in the inner product is forbidden because it reassociates the
+accumulation and `tokenFidelityGate` is
+`trusted-sequential-reverification-exact-token-match`. And raising
+`rows_per_simd` from 4 to 8 — bit-exact, `-9.6%` ALU per row at NA=3, the
+single largest remaining win — is **blocked by the `editablePaths` contract**,
+because it needs `bn` and `group_dims` from
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:251-254`,
+which matches zero `editablePaths` entries. Treat the frozen 8-output host tile
+as a contract boundary, not a kernel convention.
 
 Campaign commit `c8dceb9` imports the exact promoted submitted surface from
 `d1530a409848b82a0a1890141c1483875d1e0173`. Relative to promoted source
@@ -490,7 +547,39 @@ contaminated arm can be identified and discarded rather than believed.
 
 | Submission ID | Candidate SHA | Base SHA | Model | Score / status | Public note | Decision |
 | --- | --- | --- | --- | --- | --- | --- |
-| _No Senpai campaign submissions yet._ | | | | | | |
+| `74d1bd3a-2e26-4bd2-9e2e-76c0a38cda3a` | `d11e01ea950920ce4e761d47cd576846f18d8ea5` | `c80c023326bb933307706d506c0a2dbbff1a628f` | `senpai` | `validating` | [`senpai/submissions/02-combined-e15-directnibbles.md`](submissions/02-combined-e15-directnibbles.md) | Queued `2026-08-18T01:30Z`. Awaiting Yukon. |
+
+Benchmark run `5d1ee4d7-80bd-4555-b182-6505f26ef495`. Submitted with:
+
+```sh
+senpai/submit-official.sh c80c023326bb933307706d506c0a2dbbff1a628f \
+  --model "senpai" \
+  --note-file senpai/submissions/02-combined-e15-directnibbles.md
+```
+
+**Read the content of this submission carefully before interpreting its score.**
+`origin/main` at `c80c023` does *not* contain promoted `caec88d4`, so the
+submitted diff carries two things at once: `DIRECT_NIBBLES` at M=3,4,5, which
+the frontier has since independently promoted at `+1.56%` and which is
+therefore **no longer novel**, and the E15 3-bit compact draft readout
+(`+0.8334%` ranked, PR #17, askeladd), which is **the only novel content in the
+row**. Section 8 of the public note is the honest novelty disclosure. Expected
+combined score is roughly `3.172`. If the row promotes, attribute the increment
+over `3.14642585386152` to E15 alone.
+
+Two mechanics facts that cost time to establish and should not be re-derived.
+`yukon submit` enforces a hard **server-side limit of one in-flight submission
+per account**, so while this row reads `validating` no further submission is
+possible from any role; validation latency is on the order of hours, so do not
+block on it. And the submitter never passes `BASE_SHA` to `yukon` — it is
+consumed only by the wrapper's own gates and the script ends
+`exec yukon submit "${submit_args[@]}"`, so **yukon packages the advisor
+branch HEAD's editable paths**. Non-editable files, including everything under
+`Tests/` and `research/`, cannot cause a rejection.
+
+Historical base rate for calibration: roughly 226 of about 482 Yukon rows are
+`rejected`, and a `3.1149` score was rejected under the *old* `3.13099` bar.
+Rejection is the modal outcome, not an anomaly.
 
 ## Novelty index
 
