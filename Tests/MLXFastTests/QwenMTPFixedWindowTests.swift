@@ -7,24 +7,27 @@ import Testing
 //
 // The ranked leg decodes a FIXED count of parent-counted tokens (512). A stop
 // token inside that window is DATA, not a terminator: the parent owns the
-// window length, so emitting EOS at position 300 does not end the leg, it just
-// puts token 151645 at position 300 and keeps going. The organizer's own
-// trusted driver has always worked this way -- see the guard suite below, which
-// pins the two lines in Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift
-// that own the length -- and benchmark.json states it in
-// /scoring/mtpEmptyDraftRoundsLegalNote.
+// window length, so emitting stop token 248044 at emitted index 301 does not
+// end the leg, it just puts 248044 at index 301 and keeps going. The
+// organizer's own trusted driver has always worked this way -- see the guard
+// suite below, which pins the two lines in
+// Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift that own the length
+// -- and benchmark.json states it in /scoring/mtpEmptyDraftRoundsLegalNote.
 //
-// THE TRIPWIRE FIRED, AND E26 RE-ADJUDICATED IT ON EVIDENCE.
+// E26 CHANGED THE SHAPE DELIBERATELY, AND ARGUED IT FROM MEASUREMENT.
 //
 // History first. Campaign commit c8dceb9 imported the promoted submitted
 // surface from d1530a409848b82a0a1890141c1483875d1e0173 -- the frontier that
 // scores 3.13098700135133 -- and that surface truncates at EOS. The previous
 // revision of this header read the frontier score as settling the question
-// against post-EOS continuation, and turned the guard below into a tripwire
-// whose stated contract was: if the truncation shape ever changes, the question
-// "is live again and has to be argued from evidence rather than inherited".
+// against post-EOS continuation, and recast the guard below as a record of the
+// truncation shape, on this stated contract: if that shape ever changes, the
+// question "is live again and has to be argued from evidence rather than
+// inherited". Nothing tripped on its own -- a source guard that asserts today's
+// shape passes for as long as the shape holds, and it did pass at the base.
 //
-// E26 changed the shape deliberately, so here is the evidence.
+// E26 changed the shape on purpose, which is the case that clause covers, so
+// here is the evidence.
 //
 // 1. TRUNCATION IS NOT WHAT THE SERIAL REFERENCE DOES. The organizer's own
 //    shipped golden `correctness_prompts/public_longcopy_gate_english_512_1024`
@@ -37,8 +40,9 @@ import Testing
 //    token inside `scoring.decodeTokens`. It cannot show truncation is
 //    contract-legal, because the branch is never entered there. Locally, where
 //    the branch IS entered, it does not merely truncate: it nils the pendings
-//    and every later round throws `.notBegun`, which capped E14 and E20 at 301
-//    decode tokens on BOTH legs and is what forced E20 down from 512 to 256.
+//    and every later round throws `.notBegun`. E26 bisected that cap on the
+//    unchanged base: 302 requested tokens pass and 303 abort, at BOTH depth 2
+//    and depth 0, which is what forced earlier windows down from 512 to 256.
 // 3. THE PERTURBATION AND THE REPAIR ARE SEPARABLE. The old overlay bundled
 //    them: it removed the stop-token cap in the accept LOOP and replaced it
 //    with the pure `acceptedDraftPrefixCount`, changing accepted-prefix length
@@ -56,17 +60,31 @@ import Testing
 // adjudication, deliberately or by inheriting a sync -- and it still has to be
 // argued from evidence rather than from which side happens to compile.
 //
-// REVERT HISTORY. Continuation has been added and lost four times, every one of
-// those transitions driven by a merge rather than by a decision. E26 is the
-// first entry that carries a measurement:
+// REVERT HISTORY. Truncation is ORGANIZER-SUPPLIED -- it is already present at
+// the challenge import 5d02917 -- so every `Sync promoted organizer frontier`
+// reintroduces it and continuation has to be re-applied by hand. Continuation
+// has been added four times and lost three times, every loss driven by a merge
+// rather than by a decision, and E26 is the first entry with a measurement:
 //
 //   f1a874d  qwen: continue fixed decode windows past EOS   (added)
-//   330b44e  reverted f1a874d
-//   b219009  qwen: continue fixed decode windows past EOS   (re-added)
-//   bc552e5  "Retire the orphaned fixed-window EOS guard test" (deleted)
+//   330b44e  sync: truncation back
+//   b219009  re-added
+//   bc552e5  "Retire the orphaned fixed-window EOS guard test" (guard deleted)
+//   8b85909  re-added
+//   b85e782  merge the ledger records as CLOSING this defect
+//   29f1ee4  sync: truncation back
+//   28e591f  re-added
+//   f04df93  sync: truncation back -- and NEVER compensated
+//   0ac1457  ASSIGNMENT BASE: truncation live
 //   E26      continuation restored WITHOUT the accept-loop overlay, with a
 //            512-token exact-match run over a stop-token-crossing golden as the
 //            acceptance criterion (see research/results/qwen38-r1-e26-*.md)
+//
+// Note what f04df93 cost: senpai/campaign-ledger.md records this defect as
+// CLOSED at b85e782, b85e782 IS an ancestor of the base, and the defect is
+// nevertheless live at the base. A source-inspection close does not survive a
+// sync; a failing test does. Two ledger rows also asked for "full 512-token
+// exact replay" and never got it, which is the gap E26 fills.
 //
 // The same merge that produced the current base ALSO silently deleted
 // Tests/MLXFastTests/QwenQMVCostCurveTests.swift (722 lines at ef16dea4,
@@ -304,14 +322,17 @@ struct QwenMTPFixedWindowSourceGuardTests {
     static let driverPath =
         "Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift"
 
-    /// TRIPWIRE, NOT AN ALIGNMENT CLAIM.
+    /// REGRESSION GUARD, AND NOW AN ALIGNMENT CLAIM.
     ///
-    /// Asserts what the shipped session does TODAY, post-E26: it continues past
-    /// a stop token, and it does so WITHOUT the retired overlay's accept-loop
-    /// perturbation. A failure here is not a defect -- it means the
-    /// adjudication in this file's header changed, most likely because a
-    /// frontier sync re-inherited truncation, so it has to be argued from
-    /// evidence again.
+    /// The previous revision of this test recorded the opposite shape and
+    /// therefore passed at the base by design; it was documentation of the
+    /// defect, not a detector of it. E26 measured the shape instead, so this
+    /// asserts the adjudicated one: the session continues past a stop token,
+    /// and it does so WITHOUT the retired overlay's accept-loop perturbation.
+    ///
+    /// A failure here means truncation is back -- almost certainly re-inherited
+    /// by a frontier sync, as at f04df93 -- which caps local decode windows at
+    /// 302 tokens and is a defect under senpai/program.md.
     @Test
     func theEditableSessionContinuesPastEosWithoutTheOverlay() throws {
         let session = try S.text(Self.sessionPath)
