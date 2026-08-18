@@ -1437,9 +1437,11 @@ better trade for any experiment whose effect size is under ~5 %.
 
 ## 23. r2 blocked on
 
-### 23.1 GitHub read and write credential (two outages, both since RESOLVED)
+### 23.1 GitHub read and write credential (three outage windows, INTERMITTENT)
 
-Two separate GitHub outages interrupted r2 reporting:
+Three GitHub outage windows interrupted r2 reporting. The credential is
+**flapping**, not simply down: it recovered long enough to post one comment and
+then failed again about ten minutes later, on the same endpoint.
 
 1. An earlier window in which a raw
    `GET /repos/morganmcg1/qwen38-challenge_senpai/pulls/29` with the injected
@@ -1450,16 +1452,26 @@ Two separate GitHub outages interrupted r2 reporting:
    `post_assignment_comment` failed three times with the same reserved
    `comment_id`.
 
-**Both are resolved.** Access recovered and the pending interim comment posted
-as `issuecomment-5334334360`; a subsequent PR read confirmed the assignment is
-open at head `8ca8eb3f...` with **no advisor feedback missed** during either
-window, other than the maintenance-checkpoint request (`feedback_id`
-5334165606), which is acknowledged and honoured: the named job
-`fec86fc2-93a4-4691-b88b-04426e5a271a` finished exit 0, the later clean-redo
-job `290f9371-...` was allowed to finish rather than abandoned mid-leg, and
-**no further job was launched** -- all remaining r2 work was CPU-only analysis.
+3. A third window, opening immediately after the interim comment posted, in
+   which `submit_experiment_result` failed **twice** with the same
+   `HTTP 403` on the same `GET .../pulls/29` precondition read.
 
-This item is retained as a record, not as an open blocker.
+Window 2 ended cleanly: the pending interim comment posted as
+`issuecomment-5334334360`, confirming **no advisor feedback was missed**, other
+than the maintenance-checkpoint request (`feedback_id` 5334165606). That request
+is acknowledged and honoured: the named job
+`fec86fc2-93a4-4691-b88b-04426e5a271a` finished exit 0, the later clean-redo job
+`290f9371-...` was allowed to finish rather than abandoned mid-leg, and **no
+further job was launched** -- all remaining r2 work was CPU-only analysis.
+
+**Current state: the terminal result is committed locally but not yet
+published.** The result commit is complete and the worktree is clean; only the
+lease-push and structured-result upsert are outstanding, and both are blocked on
+the credential. I deliberately did **not** work around this with a raw
+`git push`, `gh`, or a hand-written label change, because the typed submission
+path owns the branch lease, result identity and draft/label reconciliation
+together. The submission should be retried unchanged once the credential is
+healthy; nothing about the evidence changes.
 
 ### 23.2 Ranked-pool measurement, and therefore the transfer question
 
