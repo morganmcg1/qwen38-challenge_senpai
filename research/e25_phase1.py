@@ -336,6 +336,12 @@ def fixed_window_accounting(reduced: dict) -> dict:
         for p, v in per.items()
         if PREREG["per_prompt_gain_pct"].get(p)
     ]
+    extra = {p: v["price_rounds"] - v["base_rounds"] for p, v in per.items()}
+    ratio_per = {
+        p: v["true_decode_gain_pct"] / PREREG["per_prompt_gain_pct"][p]
+        for p, v in per.items()
+        if PREREG["per_prompt_gain_pct"].get(p)
+    }
     return {
         "n_prompts": len(per),
         "tokens_emitted_all_legs_512": all(
@@ -350,9 +356,7 @@ def fixed_window_accounting(reduced: dict) -> dict:
         "base_declared_rows": base_rows,
         "price_declared_rows": price_rows,
         "realised_rows_saved": base_rows - price_rows,
-        "per_prompt_extra_rounds": {
-            p: v["price_rounds"] - v["base_rounds"] for p, v in per.items()
-        },
+        "per_prompt_extra_rounds": extra,
         "per_prompt_rows_saved": {
             p: v["base_declared_rows"] - v["price_declared_rows"]
             for p, v in per.items()
@@ -360,17 +364,30 @@ def fixed_window_accounting(reduced: dict) -> dict:
         "realised_over_predicted_gain_ratio_mean": (
             statistics.fmean(ratios) if ratios else None
         ),
-        "realised_over_predicted_gain_ratio_per_prompt": {
-            p: v["true_decode_gain_pct"] / PREREG["per_prompt_gain_pct"][p]
-            for p, v in per.items()
-            if PREREG["per_prompt_gain_pct"].get(p)
-        },
+        "realised_over_predicted_gain_ratio_per_prompt": ratio_per,
+        "extra_rounds_vs_attenuation_pearson_r": pearson(
+            [extra[p] for p in ratio_per], list(ratio_per.values())
+        ),
         "interpretation": (
             "Phase 0's projection is an upper bound: it credited the arm for "
             "rows it declined without charging it for the extra rounds the "
-            "fixed 512-token window then forces."
+            "fixed 512-token window then forces. The per-prompt correlation "
+            "between extra rounds spent and the realised/predicted ratio is "
+            "the direct test of that explanation: strongly negative means the "
+            "shortfall is the extra rounds rather than an unmodelled effect."
         ),
     }
+
+
+def pearson(xs: list[float], ys: list[float]) -> float | None:
+    if len(xs) < 3:
+        return None
+    mx, my = statistics.fmean(xs), statistics.fmean(ys)
+    num = sum((a - mx) * (b - my) for a, b in zip(xs, ys))
+    den = (
+        sum((a - mx) ** 2 for a in xs) * sum((b - my) ** 2 for b in ys)
+    ) ** 0.5
+    return num / den if den else None
 
 
 def log_wandb(payload: dict) -> list[dict]:
@@ -568,6 +585,15 @@ def main() -> int:
           f"(pre-registered 0) source={pre['histogram_source']}")
     print(f"histogram      : predicted={pre['predicted']}")
     print(f"                 realised ={pre['realised']}")
+    fw = pre["fixed_window_accounting"]
+    print(f"fixed window   : tokens_lost realised={fw['realised_tokens_lost']} "
+          f"(Phase 0 modelled {fw['phase0_modelled_tokens_lost']}); "
+          f"extra rounds={fw['extra_rounds_spent_by_arm']:+d}; "
+          f"rows saved={fw['realised_rows_saved']}")
+    print(f"attenuation    : realised/predicted mean="
+          f"{fw['realised_over_predicted_gain_ratio_mean']:.4f}  "
+          f"pearson(extra_rounds, ratio)="
+          f"{fw['extra_rounds_vs_attenuation_pearson_r']}")
     for p in reduced["prompts_paired"]:
         v = reduced["per_prompt"][p]
         pp = pre["per_prompt"].get(p, {})
