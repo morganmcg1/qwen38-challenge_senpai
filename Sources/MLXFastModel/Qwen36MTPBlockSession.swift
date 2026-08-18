@@ -460,11 +460,23 @@ public final class Qwen36MTPBlockSession {
     /// stderr to the wrapper's log.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+    /// Opened O_APPEND so the reference, verify and timed workers can each
+    /// write the same file without a later process truncating an earlier
+    /// one's rounds. Falls back to stderr when no path is configured, which
+    /// the `mtp-timed` parent discards: `runtimeWorkerOptions` is called
+    /// there without `forwardsWorkerStderr`, so it defaults to false and the
+    /// drain installs a swallowing emitter.
+    private static let traceSink: FileHandle = {
+        guard let path = ProcessInfo.processInfo
+            .environment["MLX_QWEN_MTP_TRACE_PATH"], !path.isEmpty
+        else { return FileHandle.standardError }
+        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+        guard fd >= 0 else { return FileHandle.standardError }
+        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
+    }()
+
     private static func traceWrite(_ line: String) {
-        // stderr: the worker sandbox denies file-write*, and the parent's
-        // drain forwards stderr lines when MLX_QWEN_MTP_TRACE=1 flips
-        // `forwardsWorkerStderr` on the local mtp-timed verb.
-        FileHandle.standardError.write(Data(line.utf8))
+        traceSink.write(Data(line.utf8))
     }
 
     /// Exact-value row dump for the LOCAL width-wall gate: hexfloat (`%a`)
