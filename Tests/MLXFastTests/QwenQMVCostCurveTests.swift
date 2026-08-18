@@ -470,16 +470,20 @@ struct CrossrowGate {
     var headerPath: String
     var headerSha256: String
     /// Bit widths admitted by an `... group_size == 64 && bits == B ...` clause
-    /// inside `affine_qmv_fast`, mapped from each `case` label under it to the
-    /// crossrow helper that case actually calls.
-    var coveredRows: [Int: [Int: String]]
+    /// inside `affine_qmv_fast`, keyed by the innermost `out_vec_size >= bound`
+    /// tier in effect, then by `case` label, then to the crossrow helper that
+    /// case actually calls including its template arguments. The tier level
+    /// matters: the promoted 4-bit gate calls a different helper for the same
+    /// width above and below 4096 outputs.
+    var coveredRows: [Int: [Int: [Int: String]]]
     var minOutVecSize: Int
     var gateLines: [Int]
 
     func inKernelPath(bits: Int, m: Int, n: Int) -> String {
-        guard n >= minOutVecSize, let callee = coveredRows[bits]?[m] else {
-            return "qmv_fast_impl"
-        }
+        guard n >= minOutVecSize, let tiers = coveredRows[bits],
+            let bound = tiers.keys.filter({ n >= $0 }).max(),
+            let callee = tiers[bound]?[m]
+        else { return "qmv_fast_impl" }
         return callee
     }
 
@@ -489,10 +493,12 @@ struct CrossrowGate {
             "header_sha256": headerSha256,
             "min_out_vec_size": minOutVecSize,
             "gate_lines": gateLines,
-            "covered_rows_by_bits": coveredRows
-                .reduce(into: [String: [String: String]]()) { out, entry in
-                    out["\(entry.key)"] = entry.value.reduce(into: [:]) {
-                        $0["\($1.key)"] = $1.value
+            "covered_rows_by_bits_by_out_vec_tier": coveredRows
+                .reduce(into: [String: [String: [String: String]]]()) { out, entry in
+                    out["\(entry.key)"] = entry.value.reduce(into: [:]) { tiers, tier in
+                        tiers["\(tier.key)"] = tier.value.reduce(into: [:]) {
+                            $0["\($1.key)"] = $1.value
+                        }
                     }
                 },
         ]
@@ -523,32 +529,52 @@ private func crossrowGate(file: StaticString = #filePath) -> CrossrowGate {
         $0.contains("affine_qmv_fast(") || $0.contains("[[kernel]] void affine_qmv_fast")
     }) else { fatalError("affine_qmv_fast not found in \(header.path)") }
 
-    var coveredRows: [Int: [Int: String]] = [:]
+    var coveredRows: [Int: [Int: [Int: String]]] = [:]
     var minOutVecSize = Int.max
     var gateLines: [Int] = []
     var activeBits: Int?
+    var outerBound = 0
+    var tier = 0
+    var pendingLabel: Int?
     for offset in kernelStart..<lines.count {
         let line = lines[offset]
         if line.hasPrefix("}") && offset > kernelStart + 4 { break }
+        if line.trimmingCharacters(in: .whitespaces).hasPrefix("//") { continue }
         if line.contains("group_size == 64"), line.contains("!batched"),
-            let bits = firstInt(in: line, after: "bits == ") {
+            let bits = firstInt(in: line, after: "bits == "),
+            let bound = firstInt(in: line, after: "out_vec_size >= ") {
             activeBits = bits
+            outerBound = bound
+            tier = bound
+            pendingLabel = nil
             gateLines.append(offset + 1)
-            coveredRows[bits] = coveredRows[bits] ?? [:]
-            if let bound = firstInt(in: line, after: "out_vec_size >= ") {
-                minOutVecSize = min(minOutVecSize, bound)
-            }
+            minOutVecSize = min(minOutVecSize, bound)
+            coveredRows[bits, default: [:]][bound] = coveredRows[bits]?[bound] ?? [:]
+            continue
         }
-        guard let bits = activeBits,
-            let label = firstInt(in: line, after: "case ")
-        else { continue }
-        // The callee can trail the label on the same line or sit on the next
-        // few; take the first crossrow identifier before the following case.
-        for body in offset..<min(offset + 4, lines.count) {
-            guard let callee = identifier(in: lines[body], startingWith: "qmv_fast_crossrow")
-            else { continue }
-            coveredRows[bits]?[label] = callee
-            break
+        guard let bits = activeBits else { continue }
+        // A nested `if (out_vec_size >= HI)` narrows the tier for the switch it
+        // guards; its `else` restores the enclosing gate bound.
+        if line.contains("if ("), let hi = firstInt(in: line, after: "out_vec_size >= ") {
+            tier = hi
+            pendingLabel = nil
+            coveredRows[bits, default: [:]][hi] = coveredRows[bits]?[hi] ?? [:]
+            continue
+        }
+        if line.contains("} else {") {
+            tier = outerBound
+            pendingLabel = nil
+            continue
+        }
+        if let label = firstInt(in: line, after: "case ") {
+            pendingLabel = label
+            continue
+        }
+        // The callee may sit many lines below its label behind a comment block,
+        // so scan forward until the call rather than a fixed window.
+        if let label = pendingLabel, let callee = crossrowCallee(in: line) {
+            coveredRows[bits, default: [:]][tier, default: [:]][label] = callee
+            pendingLabel = nil
         }
     }
     guard !coveredRows.isEmpty, minOutVecSize != Int.max else {
@@ -572,6 +598,19 @@ private func identifier(in line: String, startingWith prefix: String) -> String?
     guard let range = line.range(of: prefix) else { return nil }
     let rest = line[range.lowerBound...].prefix { $0.isLetter || $0.isNumber || $0 == "_" }
     return String(rest)
+}
+
+/// The crossrow helper invoked on `line`, with its template arguments, because
+/// the inputs-per-group and DIRECT_NIBBLES arguments distinguish call sites that
+/// share a name.
+private func crossrowCallee(in line: String) -> String? {
+    guard let range = line.range(of: "qmv_fast_crossrow") else { return nil }
+    let tail = line[range.lowerBound...]
+    let name = tail.prefix { $0.isLetter || $0.isNumber || $0 == "_" }
+    guard let args = tail.dropFirst(name.count).first, args == "<",
+        let close = tail.firstIndex(of: ">")
+    else { return String(name) }
+    return String(tail[tail.startIndex...close])
 }
 
 private func sha256Hex(_ data: Data) -> String {
