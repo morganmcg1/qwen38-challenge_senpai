@@ -162,6 +162,10 @@ def main() -> int:
         "realization_vs_phase1_serial_median":
             statistics.median(m / pred_ser for m in meas_ser),
         "correctness_all_clean": report["correctness_all_clean"],
+        "reference_rows_all_bit_identical": report["reference_rows_all_bit_identical"],
+        "worst_top2_logit_abs_delta": max(
+            (v.get("worst_top2_logit_abs_delta", 0.0) or 0.0)
+            for v in report["reference_row_identity"].values()),
         "cool_gate_passed_real_gate": report["cool_gate_passed_real_gate"],
         "gate_qualified_for_timing": report["gate_qualified_for_timing"],
         "entry_temp_spread_c": report["entry_temp_spread_c"],

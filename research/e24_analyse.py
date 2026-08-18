@@ -119,6 +119,63 @@ def pct(base: float, memo: float) -> float:
     return 100.0 * (base - memo) / base
 
 
+def reference_row_identity(prompt: str) -> dict:
+    """Compare BASE and MEMO reference rows value-for-value.
+
+    This is the strongest correctness instrument available here, and it covers
+    the exact gap the Phase 2 unit test could not: that test proved the memo
+    returns bit-identical constants, but `invScalePair` is private, so it could
+    not prove the four CALL SITES were rewired correctly.
+
+    `02-mtp-verify-output.json` is produced by the reference path, which runs
+    all 64 target layers -- including the 48 GatedDeltaNet layers whose QK-norm
+    constants E24 changes -- once per token over the full window.  Its rows
+    carry the exact top-two logits the trusted parent checks, not just an
+    argmax, so an identical ledger is far stronger evidence than a token match:
+    a perturbation that left the argmax intact would still move top1_logit.
+
+    Any mismatch is a hard fail.  The constants are input-independent, so the
+    only admissible outcome is bit-equality; a "small" logit delta would mean
+    the rewiring changed arithmetic and the change is not safe to promote.
+    """
+    out = {"prompt": prompt, "status": "missing"}
+    docs = {}
+    for arm in (BASE_ARM, MEMO_ARM):
+        p = RUNS / f"{prompt}-{arm}" / "reports" / "02-mtp-verify-output.json"
+        if not p.is_file():
+            return out
+        docs[arm] = json.loads(p.read_text())
+    a, b = docs[BASE_ARM], docs[MEMO_ARM]
+
+    out["rows"] = len(a["rows"])
+    out["emitted_tokens"] = len(a["emitted_tokens"])
+    mismatches = []
+    if a["seed_tokens"] != b["seed_tokens"]:
+        mismatches.append("seed_tokens differ")
+    if a["emitted_tokens"] != b["emitted_tokens"]:
+        n = sum(x != y for x, y in zip(a["emitted_tokens"], b["emitted_tokens"]))
+        mismatches.append(f"emitted_tokens differ at {n} positions")
+    if len(a["rows"]) != len(b["rows"]):
+        mismatches.append(f"row count {len(a['rows'])} vs {len(b['rows'])}")
+
+    worst_logit_delta = 0.0
+    for i, (ra, rb) in enumerate(zip(a["rows"], b["rows"])):
+        for key in ("sequential_argmax", "top2_tokens"):
+            if ra[key] != rb[key]:
+                mismatches.append(f"row {i} {key}: {ra[key]} vs {rb[key]}")
+        for x, y in zip(ra["top2_logits"], rb["top2_logits"]):
+            worst_logit_delta = max(worst_logit_delta, abs(x - y))
+        if ra["top1_logit"] != rb["top1_logit"]:
+            mismatches.append(f"row {i} top1_logit: {ra['top1_logit']} vs {rb['top1_logit']}")
+
+    out["worst_top2_logit_abs_delta"] = worst_logit_delta
+    out["mismatch_count"] = len(mismatches)
+    out["mismatches"] = mismatches[:10]
+    out["bit_identical"] = not mismatches and worst_logit_delta == 0.0
+    out["status"] = "bit_identical" if out["bit_identical"] else "MISMATCH"
+    return out
+
+
 def main(argv: list[str]) -> int:
     logs = [Path(a) for a in argv[argv.index("--logs") + 1:]] if "--logs" in argv else []
     gates = parse_gate_log(logs) if logs else {}
@@ -186,6 +243,22 @@ def main(argv: list[str]) -> int:
                   f"tripwire={v['drift_tripwire_passed']} -> {'OK' if ok else 'FAIL'}")
     print(f"  ALL LEGS CLEAN: {bad == 0}")
 
+    print("\nCROSS-ARM REFERENCE-ROW IDENTITY (BASE vs MEMO, 02-mtp-verify-output.json):")
+    identity = {p: reference_row_identity(p) for p in data}
+    ident_bad = 0
+    for prompt, v in identity.items():
+        ident_bad += v["status"] != "bit_identical"
+        print(f"  {prompt:<16} {v['status']:<14} rows={v.get('rows','?')} "
+              f"emitted={v.get('emitted_tokens','?')} "
+              f"worst|dtop2|={v.get('worst_top2_logit_abs_delta','?')} "
+              f"mismatches={v.get('mismatch_count','?')}")
+        for line in v.get("mismatches", []):
+            print(f"      {line}")
+    print(f"  ALL PROMPTS BIT-IDENTICAL: {ident_bad == 0}")
+    print("  This closes the Phase 2 unit-test gap: invScalePair is private, so the")
+    print("  unit test proved the memo but not the four call-site rewirings. These rows")
+    print("  carry exact top-two logits from all 64 target layers over the full window.")
+
     print("\nVERIFY-WIDTH HISTOGRAM at M = depth + 1 (MTP leg):")
     for prompt, arms in data.items():
         for arm, v in arms.items():
@@ -237,6 +310,8 @@ def main(argv: list[str]) -> int:
                "mtp_median_pct": statistics.median(mtp_e),
                "ser_median_pct": statistics.median(ser_e),
                "correctness_all_clean": bad == 0,
+               "reference_row_identity": identity,
+               "reference_rows_all_bit_identical": ident_bad == 0,
                "cool_gate_passed_real_gate": all_real,
                "gate_qualified_for_timing": all_real,
                "entry_temp_spread_c": (max(entry_all) - min(entry_all)) if entry_all else None,
