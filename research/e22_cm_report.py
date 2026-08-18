@@ -170,6 +170,16 @@ def s18_pricing(cost):
         n * cost[d + 1] for d, n in S18_DEPTH_HISTOGRAM.items() if d + 1 in cost
     )
     covered = sum(n for d, n in S18_DEPTH_HISTOGRAM.items() if d + 1 in cost)
+    # A scalar h fitted end-to-end cannot be wrong about the mean: it absorbs
+    # whatever constant best prices the observed mix. The C(1) anchor therefore
+    # overstates the correctable error. What a scalar provably cannot absorb is
+    # the dispersion of C(M) around that fitted mean, so report it separately.
+    fitted = actual / covered if covered else None
+    dispersion = (
+        {str(d + 1): cost[d + 1] / fitted for d in sorted(S18_DEPTH_HISTOGRAM) if d + 1 in cost}
+        if fitted
+        else {}
+    )
     return {
         "rounds": rounds,
         "rounds_priced": covered,
@@ -177,6 +187,14 @@ def s18_pricing(cost):
         "verify_seconds_if_constant": modelled,
         "verify_seconds_actual": actual,
         "understatement": actual / modelled if modelled else None,
+        "understatement_vs_c2": (
+            actual / (covered * cost[2]) if covered and 2 in cost else None
+        ),
+        "best_fit_constant_seconds": fitted,
+        "residual_after_best_fit_constant": dispersion,
+        "residual_span": (
+            max(dispersion.values()) / min(dispersion.values()) if dispersion else None
+        ),
         "marginal_cost_of_one_more_draft": {
             str(d): (cost[d + 2] / cost[d + 1])
             for d in sorted(S18_DEPTH_HISTOGRAM)
@@ -338,7 +356,17 @@ def main():
     print(f"  verify seconds at the measured C(M):           "
           f"{sp['verify_seconds_actual']*1e3:.2f} ms")
     print(f"  the constant-cost model understates verify by "
-          f"{(sp['understatement']-1)*100:.1f}%")
+          f"{(sp['understatement']-1)*100:.1f}% anchored at C(1), "
+          f"{(sp['understatement_vs_c2']-1)*100:.1f}% anchored at C(2)")
+    print(f"  best-fit constant (what a scalar h already absorbs): "
+          f"{sp['best_fit_constant_seconds']*1e3:.2f} ms/round")
+    print("  residual a scalar cannot absorb, C(M)/best-fit: " + "  ".join(
+        f"M={m}:{v:.3f}" for m, v in sorted(
+            sp["residual_after_best_fit_constant"].items(), key=lambda kv: int(kv[0]))))
+    print(f"  residual span (max/min over the mix): {sp['residual_span']:.3f}x")
+    print("  marginal cost of one more draft, C(M+1)/C(M): " + "  ".join(
+        f"depth {d}->{int(d)+1}:{v:.3f}" for d, v in sorted(
+            sp["marginal_cost_of_one_more_draft"].items(), key=lambda kv: int(kv[0]))))
 
     if b is not None:
         worst = max(
