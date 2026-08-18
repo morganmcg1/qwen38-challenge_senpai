@@ -3,7 +3,7 @@
 # per-round phase trace plus the CLI reports the harness would otherwise
 # delete with its scratch directory.
 #
-#   research/e29-run.sh LABEL=TRACE:DEPTH [...]
+#   research/e29-run.sh LABEL=TRACE:DEPTH[:LADDER] [...]
 #
 #     TRACE  0 | 1 | 2
 #              0  no trace (control that prices the trace perturbation)
@@ -53,8 +53,7 @@ status=0
 for spec in "$@"; do
   label="${spec%%=*}"
   cfg="${spec#*=}"
-  trace="${cfg%%:*}"
-  depth="${cfg#*:}"
+  IFS=: read -r trace depth ladder <<< "${cfg}"
   out="${runs_root}/${label}"
 
   rm -rf "${out}"; mkdir -p "${out}/reports"
@@ -83,10 +82,16 @@ for spec in "$@"; do
   else
     unset MLX_QWEN_MTP_TRACE_SYNC_HEAD
   fi
+  if [[ -n "${ladder:-}" ]]; then
+    export MLX_QWEN_MTP_LADDER="${ladder}"
+  else
+    unset MLX_QWEN_MTP_LADDER
+  fi
 
   {
     echo "label=${label}"
     echo "trace=${trace}"
+    echo "ladder=${ladder:-default}"
     echo "offered_depth=${depth}"
     echo "tokens=${tokens}"
     echo "head_dir=${head_dir}"
