@@ -49,12 +49,13 @@ PROMPTS = ("english", "narrative", "technical", "dramatic", "travel",
 # --------------------------------------------------------------------------
 # tape
 # --------------------------------------------------------------------------
-def load_tape(runs_root: Path = RUNS_ROOT) -> tuple[list[dict], dict]:
+def load_tape(runs_root: Path = RUNS_ROOT,
+              arm: str = "S18I") -> tuple[list[dict], dict]:
     """Pooled rounds of the timed MTP session, plus each prompt's leg reports."""
     rounds: list[dict] = []
     legs: dict[str, dict] = {}
     for prompt in PROMPTS:
-        run = runs_root / f"probe-{prompt}-S18I"
+        run = runs_root / f"probe-{prompt}-{arm}"
         sessions = parse_trace(run / "trace.txt")
         if len(sessions) != 1:
             raise SystemExit(f"{run}: expected one traced session, got {len(sessions)}")
@@ -573,9 +574,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", help="write the full report here")
     ap.add_argument("--runs-root", default=str(RUNS_ROOT))
+    ap.add_argument("--arm", default="S18I",
+                    help="tape label: probe-<prompt>-<arm> under --runs-root")
     args = ap.parse_args()
 
-    rounds, legs = load_tape(Path(args.runs_root))
+    rounds, legs = load_tape(Path(args.runs_root), args.arm)
     annotate_positions(rounds)
     led = ledger(rounds, legs)
     table = round_time_table(rounds)
@@ -584,7 +587,8 @@ def main() -> int:
 
     report: dict = {
         "credit": "thorfinn E22 follow-up #1 (two-piece boundary-aware marginal price, arm C)",
-        "tape": {"runs_root": args.runs_root, "prompts": list(PROMPTS)},
+        "tape": {"runs_root": args.runs_root, "arm": args.arm,
+                 "prompts": list(PROMPTS)},
         "ledger": led,
         "round_time_table": table,
         "position_control": pos,
