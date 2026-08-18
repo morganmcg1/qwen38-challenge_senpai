@@ -46,6 +46,101 @@ SHIPPED_H = 0.18
 
 H_GRID = [0.18, 0.22, 0.25, 0.28, 0.30, 0.325, 0.36, 0.40, 0.45, 0.50, 0.60]
 
+# E23 (alphonse, PR #27) counted the verify forward's Metal dispatches as a
+# function of the width M actually presented. The count is NON-MONOTONIC: the
+# Qwen35.swift:1008 fast path `nConfirmed == 1 && S >= 3 && mask == nil` routes
+# all 48 GDN layers through the packed prework kernel, so M>=3 is far cheaper
+# than M=2. The cost model above is linear in rows and therefore cannot see
+# this step; these tables let the same trajectories be re-costed against it.
+E23_DISPATCH = {1: 1480, 2: 1544, 3: 1016, 4: 1016, 5: 1016, 6: 1096, 8: 1096, 9: 1096}
+E23_GDN_DISPATCH = {1: 912, 2: 960, 3: 432, 4: 432, 5: 432, 6: 432, 8: 432, 9: 432}
+
+
+def dispatch_cost(width_histogram: dict) -> dict:
+    """Cost one width histogram against the E23 dispatch inventory."""
+    hist = {int(m): int(n) for m, n in width_histogram.items()}
+    rounds = sum(hist.values())
+    if not rounds:
+        return {"rounds": 0, "dispatches_per_round": 0.0, "gdn_dispatches_per_round": 0.0}
+    return {
+        "rounds": rounds,
+        "dispatches_per_round": sum(E23_DISPATCH[m] * n for m, n in hist.items()) / rounds,
+        "gdn_dispatches_per_round": sum(E23_GDN_DISPATCH[m] * n for m, n in hist.items()) / rounds,
+        "width_histogram": dict(sorted(hist.items())),
+    }
+
+
+def dispatch_accounting(rounds: list[dict], h_sweep: dict) -> dict:
+    """Answer E23's three questions for the E21 mechanism, then re-cost it.
+
+    E21 declines a WHOLE round, so `costModelDepth` returns 0 and the session
+    takes its non-drafting branch (Qwen36MTPBlockSession.swift:837). That branch
+    forwards ONE token with `nConfirmed: 0` (:848), where the drafting branch
+    forwards M = d+1 tokens with `nConfirmed: 1` (:998). So declination breaks
+    the Qwen35.swift:1008 gate twice over: S falls from d+1 to 1, AND nConfirmed
+    falls from 1 to 0. Only the mask term is untouched -- `createSSMMask`
+    (:1943) returns nil whenever the MambaCache carries no lengths and no left
+    padding (KVCache.swift:1396), which is every round of a single unpadded
+    request, on both paths.
+    """
+    shipped: dict[int, int] = {}
+    declined: dict[int, int] = {}
+    for r in rounds:
+        m = int(r["d"]) + 1
+        shipped[m] = shipped.get(m, 0) + 1
+        if int(r["acc"]) == 0:
+            declined[m] = declined.get(m, 0) + 1
+    after = dict(shipped)
+    for m, n in declined.items():
+        after[m] -= n
+    after[1] = after.get(1, 0) + sum(declined.values())
+    base = dispatch_cost(shipped)
+    oracle = dispatch_cost({m: n for m, n in after.items() if n})
+
+    sweep = {}
+    for key, entry in h_sweep.items():
+        pooled = entry["pooled"]
+        widths = {int(d) + 1: n for d, n in pooled["depth_histogram"].items()}
+        cost = dispatch_cost(widths)
+        cost["h"] = pooled["h"]
+        cost["dispatch_delta_pct"] = (
+            100.0 * (cost["dispatches_per_round"] - base["dispatches_per_round"])
+            / base["dispatches_per_round"]
+        )
+        cost["modelled_gain_pct"] = pooled["gain_pct"]
+        sweep[key] = cost
+
+    return {
+        "changes_S": True,
+        "changes_S_detail": (
+            "a declined round forwards 1 token instead of M=d+1 "
+            "(Qwen36MTPBlockSession.swift:837,848 vs :998), so S falls below the S>=3 gate"
+        ),
+        "changes_nConfirmed": True,
+        "changes_nConfirmed_detail": (
+            "the non-drafting branch passes nConfirmed: 0 (Qwen36MTPBlockSession.swift:848); "
+            "the drafting branch passes nConfirmed: 1 (:998)"
+        ),
+        "changes_mask": False,
+        "changes_mask_detail": (
+            "createSSMMask (Qwen35.swift:1943) returns nil unless the MambaCache carries "
+            "lengths or left padding (KVCache.swift:1396); a single unpadded request has "
+            "neither, on both paths"
+        ),
+        "gate_source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1008",
+        "shipped": base,
+        "rounds_at_dispatch_maximum_M2": shipped.get(2, 0),
+        "rounds_one_row_above_cliff_M3": shipped.get(3, 0),
+        "oracle_declined_rounds": sum(declined.values()),
+        "oracle_declined_width_histogram": dict(sorted(declined.items())),
+        "oracle": oracle,
+        "oracle_dispatch_delta_pct": (
+            100.0 * (oracle["dispatches_per_round"] - base["dispatches_per_round"])
+            / base["dispatches_per_round"]
+        ),
+        "h_sweep": sweep,
+    }
+
 
 def load_rounds(paths: list[str]) -> list[dict]:
     rounds: list[dict] = []
@@ -531,6 +626,7 @@ def main() -> int:
     # never credited at a cost the host did not actually charge on that prompt.
     prompt_x = {k: (anchors[k] or {}).get("h_measured") or x_score for k in by_prompt}
     report["oracle"] = oracle = evaluate(rounds, lambda r: int(r["acc"]) == 0, x_score)
+    report["e23_dispatch_accounting"] = dispatch_accounting(rounds, report["h_sweep"])
 
     scored = []
     for name, factory in PREDICATES.items():
@@ -674,6 +770,30 @@ def main() -> int:
             f"{p['rounds_truncated']:>6} {p['rounds_deepened']:>5} "
             f"{p['gain_pct']:>+8.3f} {row['worst_prompt_gain_pct']:>+8.3f}  "
             f"{p['depth_histogram']}{flag}"
+        )
+    print()
+    da = report["e23_dispatch_accounting"]
+    print(f"E23 dispatch re-costing (gate: {da['gate_source']})")
+    print(f"  changes S ........... {da['changes_S']}  -- {da['changes_S_detail']}")
+    print(f"  changes nConfirmed .. {da['changes_nConfirmed']}  -- {da['changes_nConfirmed_detail']}")
+    print(f"  changes mask ........ {da['changes_mask']}  -- {da['changes_mask_detail']}")
+    print(
+        f"  shipped {da['shipped']['dispatches_per_round']:.1f} dispatch/round "
+        f"({da['shipped']['gdn_dispatches_per_round']:.1f} GDN); "
+        f"{da['rounds_at_dispatch_maximum_M2']} rounds already at the M=2 maximum, "
+        f"{da['rounds_one_row_above_cliff_M3']} one row above the cliff at M=3"
+    )
+    print(
+        f"  perfect oracle declines {da['oracle_declined_rounds']} rounds "
+        f"{da['oracle_declined_width_histogram']} -> "
+        f"{da['oracle']['dispatches_per_round']:.1f} dispatch/round "
+        f"({da['oracle_dispatch_delta_pct']:+.2f}%)"
+    )
+    print(f"  {'h':>6} {'disp/round':>11} {'vs shipped':>11} {'modelled gain%':>15}")
+    for row in sorted(da["h_sweep"].values(), key=lambda r: r["h"]):
+        print(
+            f"  {row['h']:>6.3f} {row['dispatches_per_round']:>11.1f} "
+            f"{row['dispatch_delta_pct']:>+10.2f}% {row['modelled_gain_pct']:>+15.3f}"
         )
     print()
     print("separability (AUC for 'this round accepts nothing'; 0.500 = no signal)")
