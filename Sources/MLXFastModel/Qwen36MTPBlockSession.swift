@@ -65,8 +65,6 @@ public struct Qwen36MTPRoundResult {
     public let perRowTop2Logits: [[Double]]
     /// Trimmable-cache offset after the round: `seedTokenCount + committedTotal`.
     public let targetCacheOffset: Int
-    /// True when a stop token was committed this round; the parent stops asking.
-    public let reachedStopToken: Bool
 }
 
 /// Errors the session raises. Every one of these is a broken invariant, not a
@@ -162,7 +160,6 @@ public final class Qwen36MTPBlockSession {
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
     public private(set) var began = false
-    public private(set) var reachedStopToken = false
 
     public init(
         model: any Qwen36MTPTarget,
@@ -742,7 +739,7 @@ public final class Qwen36MTPBlockSession {
     /// round from the last round's accept run.
     public func generateRound(depth: Int) throws -> Qwen36MTPRoundResult {
         guard began, let primaryPending = pendingPrimary,
-              let tailPending = pendingTop2, let hidden = pendingHidden
+              pendingTop2 != nil, let hidden = pendingHidden
         else { throw Qwen36MTPSessionError.notBegun }
         guard depth >= Qwen36MTPLimits.serialControlDepth,
               depth <= Qwen36MTPLimits.maxDepth
@@ -787,31 +784,14 @@ public final class Qwen36MTPBlockSession {
             "draftPolicy returned \(draftCount) for an offer of \(depth); a "
                 + "round may propose 0 ... min(offer, maxDepth) drafts")
 
-        // A stop token as the primary ends the run BEFORE any drafting: there is
-        // nothing after it to predict, and drafting past it would charge the
-        // measurement for work no decoder performs. The round still declares its
-        // single target tail row (the row that produced this primary's successor
-        // candidate is the one already spent), so the ledger stays closed.
-        if stopTokens.contains(primary) {
-            reachedStopToken = true
-            // The tail row to declare is the row that produced this primary —
-            // its top-2 was read out of the previous round's batched eval.
-            let (tailTokens, tailLogits) = tailPending
-            pendingPrimary = nil
-            pendingTop2 = nil
-            pendingHidden = nil
-            return Qwen36MTPRoundResult(
-                tokens: committed,
-                declaredRows: 1,
-                draftTokens: [],
-                acceptedDraftCount: 0,
-                rejectedDraftCount: 0,
-                perRowTop2Tokens: [tailTokens],
-                perRowTop2Logits: [tailLogits],
-                targetCacheOffset: seedTokenCount + committedTokenCount,
-                reachedStopToken: true
-            )
-        }
+        // A STOP TOKEN IS COMMITTED LIKE ANY OTHER TOKEN, and this round keeps
+        // drafting past it. The parent owns the decode window: its loop runs to
+        // the configured total and it checks every emitted index against the
+        // serial trajectory (`QwenRuntimeMTPDriver.swift` :121, :216-226), which
+        // the shipped 1024-token golden continues for 722 tokens past its first
+        // `248044`. Ending the round here instead nilled the pendings and killed
+        // the session for good -- the next round threw `.notBegun` -- which
+        // capped both legs of every local window at 301 tokens.
 
         // NO DRAFTS THIS ROUND. Two ways to get here and they are not the same
         // thing. Depth 0 is THE TRUE SERIAL CONTROL -- the parent offered
@@ -874,8 +854,7 @@ public final class Qwen36MTPBlockSession {
                 rejectedDraftCount: 0,
                 perRowTop2Tokens: [tailTokens],
                 perRowTop2Logits: [tailLogits],
-                targetCacheOffset: seedTokenCount + committedTokenCount,
-                reachedStopToken: false
+                targetCacheOffset: seedTokenCount + committedTokenCount
             )
         }
 
@@ -1005,14 +984,7 @@ public final class Qwen36MTPBlockSession {
         // in ONE eval. The `.item()`/`.asArray` calls below then copy from
         // materialised buffers without waiting on the GPU. (MTPLX production
         // budget: 1 sync/cycle, batched_decode.py:504-525.)
-        let attribT0 = Qwen35Attribution.now()
         let (top2IDs, top2Values) = Self.linearTopTwoRows(verifyLogits)
-        if Qwen35Attribution.attributing {
-            eval(top2IDs, top2Values)
-            Qwen35Attribution.note(
-                .topTwo, rows: verifyTokens.dim(1), since: attribT0)
-        }
-        Qwen35Attribution.markVerifyRound(rows: verifyTokens.dim(1))
         var bundle: [MLXArray] = [top2IDs, top2Values]
         bundle.append(contentsOf: draftIdArrays)
         eval(cache.flatMap { $0.state } + bundle)
@@ -1188,15 +1160,6 @@ public final class Qwen36MTPBlockSession {
         // them. The rare generic-repair path ran its own second eval.
         // `pendingHidden` is likewise device-only until the next round.
 
-        // Truncate after the first committed stop token, keeping the stop token
-        // itself — the same rule the serial reference applies.
-        if let stopIndex = committed.firstIndex(where: { stopTokens.contains($0) }) {
-            let dropped = committed.count - (stopIndex + 1)
-            committed = Array(committed.prefix(stopIndex + 1))
-            committedTokenCount -= dropped
-            reachedStopToken = true
-        }
-
         return Qwen36MTPRoundResult(
             tokens: committed,
             declaredRows: draftCount + 1,
@@ -1205,8 +1168,7 @@ public final class Qwen36MTPBlockSession {
             rejectedDraftCount: drafts.count - acceptedCount,
             perRowTop2Tokens: perRowTop2Tokens,
             perRowTop2Logits: perRowTop2Logits,
-            targetCacheOffset: seedTokenCount + committedTokenCount,
-            reachedStopToken: reachedStopToken
+            targetCacheOffset: seedTokenCount + committedTokenCount
         )
     }
 
