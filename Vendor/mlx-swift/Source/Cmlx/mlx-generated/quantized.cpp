@@ -1164,7 +1164,7 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
   }
 }
 
-// IPG = ceil(M / ceil(M / 4)): the fewest weight streams reachable at NA <= 4,
+// IPG = ceil(M / ceil(M / 5)): the fewest weight streams reachable at NA <= 5,
 // with the remainder spread evenly so no group runs a one-row tail.
 template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
