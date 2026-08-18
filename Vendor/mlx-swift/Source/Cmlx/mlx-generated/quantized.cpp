@@ -1880,7 +1880,26 @@ template <typename T, int group_size, int bits, bool batched>
           // expression tree, so that reduction is bit-identical too. What
           // disappears is 12 * NA power-of-two multiplies per 512-element
           // k-block per simdgroup, against 64 * NA FMAs that stay: a free
-          // ~12% ALU cut on an ALU-bound kernel.
+          // ~12% ALU cut on a kernel that is ALU-bound AT THIS WIDTH.
+          // REGIME, MEASURED AND NARROWED (E22, research/e22-results.md).
+          // An earlier version of this line said "an ALU-bound kernel", full
+          // stop. That is too broad: the crossrow family is NOT uniformly
+          // ALU-bound, and the boundary sits just below this case.
+          // Round-weighted over the eight scored shapes, a verify round streams
+          // 14.412 GB of quantized weights and costs 59.871 ms at M = 1 =
+          // 240.7 GB/s, which is ON this host's measured read-dominated
+          // roofline (~250 GB/s; 226.9 GB/s mixed). M = 1 and M = 2 are
+          // BANDWIDTH-bound at roofline, and the curve shows it directly:
+          // C(2)/C(1) = 0.9991 on head.lm_head and 1.0085 on
+          // mlp.gate_up_fused. A second row is FREE, because the weight stream
+          // is unchanged and only ALU grows.
+          // ALU begins to bind from M >= 3 (C(3)/C(1) = 1.0274,
+          // C(4)/C(1) = 1.1917) and binds WORST at M = 4, where the round costs
+          // 83.031 ms for the same 14.412 GB = 173.6 GB/s, 28% off roofline.
+          // So this cut is worth something at M = 3,4,5 and worth ~nothing at
+          // M = 1,2 -- which is exactly why case 2 below is left byte-for-byte.
+          // That was a PREDICTION (research/crossrow-closure.md) before E22
+          // measured 0.9991, not a rationalisation after it.
           qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
@@ -1906,11 +1925,33 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          // 3+3+2, not 4+4. M = 8 is the only hot width whose EVEN split needs
-          // two simultaneous vec<float,4> accumulators in every active worker;
-          // M = 9 uses three-lane vectors and profiles CHEAPER despite more work
-          // (319 / 437 / 216 us for M = 7 / 8 / 9 in the public cross-row study)
-          // — a register cliff, not work scaling.
+          // 3+3+2, not 4+4. Original rationale: M = 8 is the only hot width
+          // whose EVEN split needs two simultaneous vec<float,4> accumulators
+          // in every active worker, and M = 9 uses three-lane vectors and was
+          // reported to profile CHEAPER despite more work (319 / 437 / 216 us
+          // for M = 7 / 8 / 9 in the public cross-row study) — a register
+          // cliff, not work scaling.
+          // THAT NON-MONOTONICITY IS REFUTED ON THIS HOST (E22,
+          // research/e22-results.md). The round-weighted curve over the eight
+          // scored shapes is monotone non-decreasing through this whole region:
+          // C_round(7) = 139.325 ms, C_round(8) = 177.758 ms,
+          // C_round(9) = 186.422 ms, giving C(8)/C(7) = 1.2759 and
+          // C(9)/C(8) = 1.0487. M = 9 is MORE expensive than M = 8, not
+          // cheaper, and the 216 us figure does not reproduce. Do not cite it.
+          // The real M = 7 -> 8 step is a STREAM boundary, not a register
+          // cliff: live streams = ceil(M / IPG), so M = 7 at IPG 4 runs 2
+          // streams and M = 8 at IPG 3 runs 3. E22 found exactly two
+          // structural boundaries in [1,9] — M = 4 -> 5 (1.4559x) and
+          // M = 7 -> 8 (1.2759x) — and both are ceil(M/IPG) transitions. The
+          // step at M = 8 -> 9 is ordinary (1.0487) because both run 3 streams.
+          // OPEN, DELIBERATELY NOT ACTED ON: <T,8,4,true> would run 2 streams
+          // instead of 3 and is template-legal (8 % 4 == 0 so no one-row tail,
+          // IPG 4 inside the wide helper's [2,4], NA = 4 costs 52 registers
+          // with first spill at NA = 6). It is not tried because M = 8 is not
+          // REACHED: the measured 512-token depth histogram (E21) is
+          // {1:193, 2:995, 3:583, 4:167, 5:9} over 1947 rounds, max depth 5,
+          // i.e. max M = 6. Retuning a width that never fires cannot pay, and
+          // would still owe the bitwise-vs-M=1 parity gate.
           // Exact: these lanes carry INDEPENDENT input rows and are never reduced
           // across (simd_sum reduces along K WITHIN a row), so moving a row from
           // lane 3 of a four-wide vector to lane 0 of a two-wide one cannot
@@ -1919,6 +1960,12 @@ template <typename T, int group_size, int bits, bool batched>
           // Receipts: 85d5bca3 2.91143, yzxoi 2.92675.
           // SYNERGY with the streak gate above, which is why they ship together:
           // gate 2 reaches the width-8 verify SOONER, so this kernel fires MORE.
+          // SCOPE, CORRECTED (E21): that synergy is real in the policy but was
+          // never observed in the workload. Over 1947 shipped-default rounds at
+          // the ranked 512-token length the depth never exceeded 5, so the
+          // width-8 verify fired ZERO times and this case contributed nothing
+          // to any measured score. Keep it for correctness and for policies
+          // that reach deeper; do not credit it with ranked gains.
           qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
