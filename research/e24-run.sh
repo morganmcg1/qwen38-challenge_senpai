@@ -27,8 +27,97 @@
 # WHY NOT THE PUBLIC GOLDEN: --local-iterate's shipped fixture is a copy task
 # capped near 300 decode tokens by a stop-token defect, so it cannot carry a
 # 512-token window. The prose set is generated here at the full 512 steps.
+#
+# THERMAL POLICY (settle + witness, then time with the wrapper gate off).
+# Measured on this host 2026-08-18: from 52.4C the die falls to ~42.5C in ~220s
+# and then plateaus with the GPU drawing 0.009W and 1.1% busy, i.e. the idle
+# floor sits ABOVE benchmark.sh's COOL_GATE_TEMP_C=40 and the gate is
+# unsatisfiable here. That is the condition E15 r2 hit (entry temps
+# 42.99-43.70C) and for which the authorized policy is MLXFAST_LOCAL_COOL_GATE=0
+# subject to four conditions, all of which this driver meets: arms are ABBA
+# counterbalanced, entry and exit temperatures are recorded per arm, the spread
+# is reported next to the effect, and the two false flags are carried verbatim
+# rather than softened.
+#
+# So each arm is preceded by a bounded settle that reuses the gate's own
+# semantics (target 40.0C, progress epsilon 0.25C, 90s stall exit). If it
+# reaches the target the REAL `./benchmark.sh --local-cool-gate-only` runs as a
+# witness -- at that point it passes on its first poll, so it cannot burn
+# budget. Whichever of the two outcomes an arm got is sealed into its meta.txt.
+# The settle is what equalizes entry temperature between arms; the gate being
+# off only stops benchmark-qwen-mtp.sh from aborting on a floor no amount of
+# waiting can clear. It is never disabled for one arm and not the other.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+settle_target_c="${E24_SETTLE_TARGET_C:-40.0}"
+settle_max_s="${E24_SETTLE_MAX_S:-240}"
+settle_stall_s="${E24_SETTLE_STALL_S:-90}"
+settle_epsilon_c="${E24_SETTLE_EPSILON_C:-0.25}"
+macmon_bin="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
+
+# The timed arms never run the wrapper gate: see THERMAL POLICY above.
+export MLXFAST_LOCAL_COOL_GATE=0
+
+gpu_temp_now() {
+  [[ -x "${macmon_bin}" ]] || return 0
+  "${macmon_bin}" pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty' 2>/dev/null
+}
+
+# Sets SETTLE_STATUS/REACHED_C/MIN_C/WAITED_S for seal_settle to append to the
+# arm's meta.txt once e11-run.sh has finished writing it.
+settle() {
+  local tag="$1" waited=0 t min="" stalled=0
+  SETTLE_STATUS="no_temperature_reader" SETTLE_REACHED_C="" SETTLE_MIN_C="" SETTLE_WAITED_S=""
+  while :; do
+    t="$(gpu_temp_now)"
+    if [[ -z "${t}" ]]; then
+      echo "e24-settle: ${tag}: no macmon reading; proceeding ungated" >&2
+      return 0
+    fi
+    if [[ -z "${min}" ]] || awk -v a="${t}" -v b="${min}" -v e="${settle_epsilon_c}" \
+      'BEGIN{exit !(a < b - e)}'; then
+      min="${t}"; stalled=0
+    else
+      stalled=$((stalled + 10))
+    fi
+    SETTLE_REACHED_C="${t}" SETTLE_MIN_C="${min}" SETTLE_WAITED_S="${waited}"
+    if awk -v a="${t}" -v b="${settle_target_c}" 'BEGIN{exit !(a<=b)}'; then
+      echo "e24-settle: ${tag}: reached ${t}C (target ${settle_target_c}C, min ${min}C, waited ${waited}s)" >&2
+      if MLXFAST_LOCAL_COOL_GATE=1 ./benchmark.sh --local-cool-gate-only; then
+        SETTLE_STATUS="passed_real_gate"
+      else
+        SETTLE_STATUS="real_gate_failed_after_settle"
+      fi
+      echo "e24-settle: ${tag}: cool_gate=${SETTLE_STATUS}" >&2
+      return 0
+    fi
+    if [[ "${stalled}" -ge "${settle_stall_s}" || "${waited}" -ge "${settle_max_s}" ]]; then
+      echo "e24-settle: ${tag}: STALLED at ${t}C (target ${settle_target_c}C, min ${min}C," \
+        "waited ${waited}s, no progress for ${stalled}s)" >&2
+      SETTLE_STATUS="stalled_above_${settle_target_c}C"
+      return 0
+    fi
+    sleep 10
+    waited=$((waited + 10))
+  done
+}
+
+# e11-run.sh rm -rf's the arm directory before it starts, so the settle outcome
+# can only be sealed after the arm has run.
+seal_settle() {
+  local meta="$1"
+  [[ -f "${meta}" ]] || return 0
+  {
+    echo "cool_gate=${SETTLE_STATUS}"
+    echo "settle_reached_c=${SETTLE_REACHED_C}"
+    echo "settle_min_c=${SETTLE_MIN_C}"
+    echo "settle_waited_s=${SETTLE_WAITED_S}"
+    echo "settle_target_c=${settle_target_c}"
+    echo "cool_gate_passed_real_gate=$([[ "${SETTLE_STATUS}" == passed_real_gate ]] && echo true || echo false)"
+    echo "gate_qualified_for_timing=$([[ "${SETTLE_STATUS}" == passed_real_gate ]] && echo true || echo false)"
+  } >> "${meta}"
+}
 
 # Eight registers mirroring the shape of the hidden pool.
 prompt_ids=(english narrative technical dramatic travel philosophy
@@ -115,7 +204,11 @@ for id in "$@"; do
   echo "=== e24-run: prompt ${id} (index ${idx}) arms ${arms[*]} ==="
   export E11_GOLDEN="${golden}"
   for arm in "${arms[@]}"; do
-    research/e11-run.sh "${id}-${arm}=${arm}" || { status=1; break 2; }
+    settle "${id}-${arm}"
+    research/e11-run.sh "${id}-${arm}=${arm}"
+    rc=$?
+    seal_settle "${E11_RUNS_ROOT}/${id}-${arm}/meta.txt"
+    ((rc == 0)) || { status=1; break 2; }
   done
 done
 exit "${status}"

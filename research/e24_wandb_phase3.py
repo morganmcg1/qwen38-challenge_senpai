@@ -56,7 +56,12 @@ def host_config() -> dict:
             "the serial-to-MTP ratio partly cancels the effect"),
         "ranked_host": "M5 (this host is M4 Pro: directional only)",
         "metallib_stale_both_arms": True,
-        "cool_gate_real": True,
+        # This host idles above COOL_GATE_TEMP_C=40, so the wrapper gate is
+        # unsatisfiable; timing ran under the E15-authorized
+        # MLXFAST_LOCAL_COOL_GATE=0 policy (ABBA, entry/exit temps, spread
+        # reported, flags carried verbatim).
+        "cool_gate_policy": "settle_then_gate_off_e15_authorized",
+        "cool_gate_real": False,
     }
 
 
@@ -157,8 +162,9 @@ def main() -> int:
         "realization_vs_phase1_serial_median":
             statistics.median(m / pred_ser for m in meas_ser),
         "correctness_all_clean": report["correctness_all_clean"],
-        "cool_gate_passed_real_gate": len(gates) >= 2 * len(rows),
-        "gate_qualified_for_timing": len(gates) >= 2 * len(rows),
+        "cool_gate_passed_real_gate": report["cool_gate_passed_real_gate"],
+        "gate_qualified_for_timing": report["gate_qualified_for_timing"],
+        "entry_temp_spread_c": report["entry_temp_spread_c"],
         "gate_passes_captured": len(gates),
         "timed_runs": 2 * len(rows),
     })

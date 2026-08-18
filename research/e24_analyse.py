@@ -36,6 +36,23 @@ import e17_analyse as e17  # noqa: E402
 
 RUNS = Path(".mlxfast-private/e24/runs")
 BASE_ARM, MEMO_ARM = "BASE", "MEMO"
+
+
+def gpu_temp_of(value):
+    """GPU degrees C from either an e11-run thermal line or a bare number."""
+    if not value:
+        return None
+    m = re.search(r"gpu_temp=([0-9.]+)C", value)
+    try:
+        return float(m.group(1)) if m else float(value)
+    except ValueError:
+        return None
+
+
+def fmt(x):
+    return "?" if x is None else f"{x:.3f}"
+
+
 PROMPTS = (
     "english", "narrative", "technical", "dramatic",
     "travel", "philosophy", "natural_history", "medicine",
@@ -178,24 +195,52 @@ def main(argv: list[str]) -> int:
                   f"M={dict(sorted(hist.items()))}")
 
     print("\nTHERMAL / GATE (entry temperature timing actually started at):")
+    entry_by_arm, entry_all, real_gate = {}, [], []
     for prompt, arms in data.items():
         for arm, v in arms.items():
-            label = f"{prompt}-{arm}"
-            g = gates.get(label)
             meta = v["meta"]
-            gs = (f"gate_entry={g['entry_temp_c']}C waited={g['waited_s']}s"
-                  if g else "gate_entry=NOT_CAPTURED")
-            print(f"  {label:<24}{gs:<40} pre={meta.get('thermal_before','?')}")
-            print(f"  {'':<24}post={meta.get('thermal_after','?')}")
-    print(f"\n  cool_gate_passed_real_gate={str(len(gates) >= 2 * len(data)).lower()} "
-          f"({len(gates)} gate passes captured for {2*len(data)} timed runs)")
-    print(f"  gate_qualified_for_timing={str(len(gates) >= 2 * len(data)).lower()}")
+            pre, post = gpu_temp_of(meta.get("thermal_before")), gpu_temp_of(meta.get("thermal_after"))
+            passed = meta.get("cool_gate_passed_real_gate", "unknown")
+            real_gate.append(passed)
+            if pre is not None:
+                entry_by_arm.setdefault(arm, []).append(pre)
+                entry_all.append(pre)
+            print(f"  {prompt}-{arm:<18} entry={fmt(pre)}C exit={fmt(post)}C "
+                  f"cool_gate={meta.get('cool_gate','?')} "
+                  f"settle(reached={fmt(gpu_temp_of(meta.get('settle_reached_c')))}C "
+                  f"min={fmt(gpu_temp_of(meta.get('settle_min_c')))}C "
+                  f"waited={meta.get('settle_waited_s','?')}s)")
+    if entry_all:
+        print(f"\n  entry-temperature spread across all timed legs: "
+              f"{max(entry_all) - min(entry_all):.3f}C "
+              f"(min {min(entry_all):.3f}C, max {max(entry_all):.3f}C)")
+        for arm, xs in sorted(entry_by_arm.items()):
+            print(f"    {arm:<6} mean entry {statistics.mean(xs):.3f}C over {len(xs)} legs")
+        if len(entry_by_arm) == 2:
+            (a, xa), (b, xb) = sorted(entry_by_arm.items())
+            print(f"    {a} - {b} mean entry bias: "
+                  f"{statistics.mean(xa) - statistics.mean(xb):+.3f}C "
+                  f"(ABBA cancels this to first order; a bias favouring the faster arm "
+                  f"would have the WARMER arm looking slower)")
+    all_real = bool(real_gate) and all(x == "true" for x in real_gate)
+    print(f"\n  cool_gate_passed_real_gate={str(all_real).lower()}  "
+          f"(carried verbatim from meta.txt: {sorted(set(real_gate))})")
+    print(f"  gate_qualified_for_timing={str(all_real).lower()}")
+    if not all_real:
+        print("  NOTE: this host's idle GPU floor sits above COOL_GATE_TEMP_C=40, so the")
+        print("  wrapper gate is unsatisfiable. Timing ran under the E15-authorized")
+        print("  MLXFAST_LOCAL_COOL_GATE=0 policy: ABBA order, per-arm entry/exit temps,")
+        print("  spread reported above, and both flags carried false rather than softened.")
 
     if "--json" in argv:
         out = {"rows": rows, "gates": gates,
                "mtp_median_pct": statistics.median(mtp_e),
                "ser_median_pct": statistics.median(ser_e),
                "correctness_all_clean": bad == 0,
+               "cool_gate_passed_real_gate": all_real,
+               "gate_qualified_for_timing": all_real,
+               "entry_temp_spread_c": (max(entry_all) - min(entry_all)) if entry_all else None,
+               "entry_temp_mean_by_arm": {a: statistics.mean(x) for a, x in entry_by_arm.items()},
                "arms": {p: {a: v for a, v in arms.items()} for p, arms in data.items()}}
         Path("research/results/e24-phase3.json").write_text(
             json.dumps(out, indent=2, default=str))
