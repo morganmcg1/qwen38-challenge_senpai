@@ -94,6 +94,10 @@ def main() -> int:
                     help="arm whose six-way split is the headline")
     ap.add_argument("--ladder-baseline", default="T1",
                     help="arm whose ladder is the shipped default")
+    ap.add_argument("--isolation-arm", default="L0",
+                    help="ladder-off arm; its host tail is the only segment "
+                         "view free of GPU-wait misattribution, so it supplies "
+                         "the primary metric")
     args = ap.parse_args()
 
     doc = json.loads(args.analysis.read_text())
@@ -211,6 +215,7 @@ def main() -> int:
                 "share_of_round_pct", {}).get("verify_build_us"),
             (entry.get("steady_state") or {}).get(
                 "share_of_round_pct", {}).get("host_tail"),
+            mtp.get("serial_seconds_per_token"),
         ])
 
     run.log({
@@ -239,20 +244,31 @@ def main() -> int:
                      "mtp_decode_speedup", "spt_delta_pct_vs_baseline",
                      "speedup_delta_pct_vs_baseline", "all_tokens_matched",
                      "steady_verify_build_share_pct",
-                     "steady_host_tail_share_pct"],
+                     "steady_host_tail_share_pct",
+                     "serial_seconds_per_token"],
             data=ladder_rows),
     })
 
     hm = leg(head, "mtp")
     steady = head.get("steady_state") or {}
     econ = head.get("width_economics") or {}
+    iso = arms.get(args.isolation_arm) or {}
+    iso_steady = iso.get("steady_state") or {}
     summary = {
         "e29/round_overhead_share_of_decode_pct":
-            (head.get("share_of_round_pct") or {}).get("host_tail"),
+            (iso.get("share_of_round_pct") or {}).get("host_tail"),
+        "e29/round_overhead_share_of_decode_steady_pct":
+            (iso_steady.get("share_of_round_pct") or {}).get("host_tail"),
+        "e29/round_overhead_arm": args.isolation_arm,
         "e29/baseline_round_overhead_share_of_decode_pct":
             E20_BASELINE_OVERHEAD_PCT,
         "e29/overhead_delta_is_measurement_correction": True,
         "e29/unaccounted_us": head.get("unaccounted_us"),
+        # Shipped-build host tail is NOT host CPU work: mid-forward asyncEval
+        # encodes inline, so GPU backpressure waits land in this bucket.
+        "e29/shipped_build_host_tail_share_pct":
+            (head.get("share_of_round_pct") or {}).get("host_tail"),
+        "e29/shipped_build_host_tail_is_gpu_wait_inclusive": True,
         "e29/host_tail_share_steady_pct":
             (steady.get("share_of_round_pct") or {}).get("host_tail"),
         "e29/best_full_accept_width": econ.get("best_width"),
@@ -271,15 +287,28 @@ def main() -> int:
         summary[f"e29/correctness/{k}"] = hm.get(k)
 
     if ladder_rows:
-        scored = [r for r in ladder_rows if r[3] is not None]
+        # Rank on MTP seconds/token, never on the local ratio: both local legs
+        # run the candidate build, so a ladder change also moves the serial
+        # baseline and inflates the ratio. Only the MTP leg maps to the ranked
+        # score, where the serial build is pinned.
+        scored = [r for r in ladder_rows if r[2] is not None]
         if scored:
-            best = max(scored, key=lambda r: r[3])
+            best = min(scored, key=lambda r: r[2])
             summary["e29/ladder/best_arm"] = best[0]
             summary["e29/ladder/best_rungs"] = best[1]
-            summary["e29/ladder/best_speedup"] = best[3]
-            summary["e29/ladder/best_speedup_delta_pct"] = best[5]
+            summary["e29/ladder/best_mtp_seconds_per_token"] = best[2]
+            summary["e29/ladder/best_mtp_spt_delta_pct"] = best[4]
+            summary["e29/ladder/best_local_ratio"] = best[3]
+            summary["e29/ladder/best_local_ratio_delta_pct"] = best[5]
+            summary["e29/ladder/ranked_relevant_metric"] = (
+                "mtp_seconds_per_token")
+            summary["e29/ladder/local_ratio_is_serial_contaminated"] = True
             summary["e29/ladder/all_arms_matched"] = all(
                 r[6] is True for r in scored)
+            serials = [r[9] for r in scored if r[9] is not None]
+            if len(serials) > 1:
+                summary["e29/ladder/serial_spt_spread_pct"] = (
+                    100.0 * (max(serials) - min(serials)) / min(serials))
 
     run.summary.update(summary)
     print(f"logged {run.url}")
