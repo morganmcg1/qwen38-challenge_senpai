@@ -41,8 +41,6 @@ import pathlib
 import statistics
 from typing import Callable
 
-DRAFT_COST = 0.362
-
 # `headStepCostRatio` as shipped in Qwen36MTPBlockSession.costModelDepth.
 SHIPPED_H = 0.18
 
@@ -97,7 +95,7 @@ def featurise(r: dict) -> dict:
     r["ema1"] = ema[1] if len(ema) > 1 else 0.0
     r["conf0"] = 1.0 / (1.0 + math.exp(-float(r["m"]) / 2.0))
     # The schedule's own yield forecast against its own drafting bill.
-    r["margin_over_cost"] = r["expected"] - DRAFT_COST * d
+    r["margin_over_cost"] = r["expected"] - SHIPPED_H * d
     return r
 
 
@@ -112,7 +110,7 @@ def cost_per_token(rounds: list[dict], declined: list[bool], x: float) -> tuple[
     return cost / yield_, cost, yield_
 
 
-def evaluate(rounds: list[dict], predicate: Callable[[dict], bool], x: float = DRAFT_COST) -> dict:
+def evaluate(rounds: list[dict], predicate: Callable[[dict], bool], x: float) -> dict:
     declined = [predicate(r) for r in rounds]
     base_cpt, base_cost, base_yield = cost_per_token(rounds, [False] * len(rounds), x)
     cpt, cost, yield_ = cost_per_token(rounds, declined, x)
@@ -464,14 +462,11 @@ def main() -> int:
         by_prompt.setdefault(r["prompt"], []).append(r)
 
     report: dict = {
-        "draft_cost_units": DRAFT_COST,
         "prompts": sorted(by_prompt),
         "pooled_summary": describe(rounds),
         "per_prompt_summary": {k: describe(v) for k, v in sorted(by_prompt.items())},
     }
 
-    oracle = evaluate(rounds, lambda r: int(r["acc"]) == 0)
-    report["oracle"] = oracle
     report["measured_cost_model"] = measure_draft_cost(rounds)
     report["measured_cost_model_per_prompt"] = {
         k: measure_draft_cost(v) for k, v in sorted(by_prompt.items())
@@ -532,15 +527,21 @@ def main() -> int:
     for row in report["h_sweep"].values():
         row["worst_prompt_gain_pct"] = min(row["per_prompt_gain_pct"].values())
 
+    # Every prompt is priced with its own leg-anchored marginal, so a rule is
+    # never credited at a cost the host did not actually charge on that prompt.
+    prompt_x = {k: (anchors[k] or {}).get("h_measured") or x_score for k in by_prompt}
+    report["oracle"] = oracle = evaluate(rounds, lambda r: int(r["acc"]) == 0, x_score)
+
     scored = []
     for name, factory in PREDICATES.items():
         for t in GRIDS[name]:
-            res = evaluate(rounds, factory(t))
+            res = evaluate(rounds, factory(t), x_score)
             res["predicate"] = name
             res["threshold"] = t
             # Worst single prompt, so a rule that only pays on one prompt loses.
             res["per_prompt_gain_pct"] = {
-                k: evaluate(v, factory(t))["gain_pct"] for k, v in sorted(by_prompt.items())
+                k: evaluate(v, factory(t), prompt_x[k])["gain_pct"]
+                for k, v in sorted(by_prompt.items())
             }
             res["worst_prompt_gain_pct"] = min(res["per_prompt_gain_pct"].values())
             scored.append(res)
@@ -551,8 +552,10 @@ def main() -> int:
 
     best = scored[0]
     report["sensitivity"] = {
-        f"X={x}": evaluate(rounds, PREDICATES[best["predicate"]](best["threshold"]), x)["gain_pct"]
-        for x in (0.18, 0.25, 0.362, 0.45, 0.5)
+        f"X={x:.4f}": evaluate(
+            rounds, PREDICATES[best["predicate"]](best["threshold"]), x
+        )["gain_pct"]
+        for x in (x_score, 0.18, 0.25, 0.362, 0.45, 0.5)
     }
 
     if args.json:
@@ -614,7 +617,7 @@ def main() -> int:
         f"measured cost model: round_us = {m['round_us_intercept']:.0f} "
         f"+ {m['draft_us_slope']:.0f}*d  (R2={m['r_squared']:.3f}, "
         f"n={m['rounds_used']})  =>  X = {m['draft_cost_units_measured']:.3f} "
-        f"vs assumed {DRAFT_COST}"
+        f"vs shipped {SHIPPED_H} (this estimator is biased up: no d=0 anchor)"
     )
     for d, st in m["mean_round_us_by_depth"].items():
         print(f"    d={d}: n={st['n']:>4}  mean {st['mean_us']:>9.0f} us")
