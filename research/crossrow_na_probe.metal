@@ -42,5 +42,73 @@ CROSSROW_NA_PROBE(crossrow_na4, 4)
 #ifdef CROSSROW_NA_PROBE_WIDE
 CROSSROW_NA_PROBE(crossrow_na5, 5)
 CROSSROW_NA_PROBE(crossrow_na6, 6)
-CROSSROW_NA_PROBE(crossrow_na8, 8)
+#endif
+
+// Every production dispatch site passes DIRECT_NIBBLES=true, which replaces the
+// shifted masks with pre-shifted activations and so changes the live-value
+// profile. The NA arms above are the historical DIRECT_NIBBLES=false form; these
+// are what the scored kernel actually compiles.
+#define CROSSROW_DN_PROBE(name, NA)                                        \
+  [[kernel]] void name(                                                    \
+      const device uint32_t* w [[buffer(0)]],                              \
+      const device bfloat16_t* scales [[buffer(1)]],                       \
+      const device bfloat16_t* biases [[buffer(2)]],                       \
+      const device bfloat16_t* x [[buffer(3)]],                            \
+      device bfloat16_t* y [[buffer(4)]],                                  \
+      const constant int& in_vec_size [[buffer(5)]],                       \
+      const constant int& out_vec_size [[buffer(6)]],                      \
+      uint3 tid [[threadgroup_position_in_grid]],                          \
+      uint simd_gid [[simdgroup_index_in_threadgroup]],                    \
+      uint simd_lid [[thread_index_in_simdgroup]]) {                       \
+    qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, NA, true>(              \
+        w, scales, biases, x, y, in_vec_size, out_vec_size,                \
+        int(tid.x) * NA, int(tid.y) * 8 + int(simd_gid) * 4, simd_lid);    \
+  }
+
+CROSSROW_DN_PROBE(crossrow_dn_na2, 2)
+CROSSROW_DN_PROBE(crossrow_dn_na3, 3)
+CROSSROW_DN_PROBE(crossrow_dn_na4, 4)
+
+#ifdef CROSSROW_NA_PROBE_WIDE
+CROSSROW_DN_PROBE(crossrow_dn_na5, 5)
+CROSSROW_DN_PROBE(crossrow_dn_na6, 6)
+#endif
+
+// Whole-width arms. `_m` picks one `_wide` body per input group plus a tail
+// body, so its AIR shows what a candidate dispatch-table entry really costs:
+// `allocas == 2` means two inlined bodies, not a spill. A spill shows up as an
+// extra `[4 x <NA x float>]` accumulator alloca.
+#define CROSSROW_M_PROBE(name, M, IPG)                                     \
+  [[kernel]] void name(                                                    \
+      const device uint32_t* w [[buffer(0)]],                              \
+      const device bfloat16_t* scales [[buffer(1)]],                       \
+      const device bfloat16_t* biases [[buffer(2)]],                       \
+      const device bfloat16_t* x [[buffer(3)]],                            \
+      device bfloat16_t* y [[buffer(4)]],                                  \
+      const constant int& in_vec_size [[buffer(5)]],                       \
+      const constant int& out_vec_size [[buffer(6)]],                      \
+      uint3 tid [[threadgroup_position_in_grid]],                          \
+      uint simd_gid [[simdgroup_index_in_threadgroup]],                    \
+      uint simd_lid [[thread_index_in_simdgroup]]) {                       \
+    qmv_fast_crossrow_affine4_g64_m<bfloat16_t, M, IPG, true>(             \
+        w, scales, biases, x, y, in_vec_size, out_vec_size,                \
+        tid, simd_gid, simd_lid);                                          \
+  }
+
+CROSSROW_M_PROBE(crossrow_m4_ipg2, 4, 2)
+CROSSROW_M_PROBE(crossrow_m4_ipg4, 4, 4)
+CROSSROW_M_PROBE(crossrow_m5_ipg3, 5, 3)
+CROSSROW_M_PROBE(crossrow_m6_ipg2, 6, 2)
+CROSSROW_M_PROBE(crossrow_m6_ipg3, 6, 3)
+CROSSROW_M_PROBE(crossrow_m6_ipg4, 6, 4)
+CROSSROW_M_PROBE(crossrow_m7_ipg4, 7, 4)
+CROSSROW_M_PROBE(crossrow_m8_ipg2, 8, 2)
+CROSSROW_M_PROBE(crossrow_m8_ipg3, 8, 3)
+CROSSROW_M_PROBE(crossrow_m8_ipg4, 8, 4)
+CROSSROW_M_PROBE(crossrow_m9_ipg3, 9, 3)
+
+#ifdef CROSSROW_NA_PROBE_WIDE
+CROSSROW_M_PROBE(crossrow_m5_ipg5, 5, 5)
+CROSSROW_M_PROBE(crossrow_m7_ipg5, 7, 5)
+CROSSROW_M_PROBE(crossrow_m9_ipg5, 9, 5)
 #endif

@@ -11,29 +11,35 @@ disagree, stop and repair both before assigning or submitting work.
 ## Current frontier
 
 The organizer remote and the promoted Yukon row were refreshed at
-`2026-08-18T01:30Z`. **`senpai/frontier-state.json` is STALE against this
-table** — it still pins `d1530a4` / `bd007bc7` / `3.13098700135133`. The
-submitter's gates 4 and 9 still pass with the stale pin (`d1530a4` is an
-ancestor of `0d800b2`, and the intervening range touches only the two
-quantized twins this campaign owns), so nothing is blocked; repair the JSON at
-the next frontier re-sync, not by hand-editing the score.
+`2026-08-18T17:01:12.000Z`. The advisor branch `senpai/qwen38-mtp-r1` carries
+the same pins in [`frontier-state.json`](frontier-state.json) (blob
+`97bb6ab4`), verified equal to `origin/main`'s copy; the earlier
+`d1530a4` / `bd007bc7` / `3.13098700135133` staleness warning is discharged.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `0d800b229e9494029eec2bd27b95bc249302e78d` |
-| Best promoted submission | `caec88d4-c566-4d5c-ab80-5ce6e9c9e86d` (solver `ivanfioravanti`) |
-| Promoted source ref | `0d800b229e9494029eec2bd27b95bc249302e78d` |
-| Official score | `3.14642585386152` |
+| Organizer synced commit | `474c75013f333f119bdc465d849f23917b195b20` |
+| Best promoted submission | `942e5ab2-1c46-4c50-b7c3-eaf948878ed0` |
+| Promoted source ref | `474c75013f333f119bdc465d849f23917b195b20` |
+| Official score | `3.2341518328631` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Previous frontier | `bd007bc7-e8ab-4919-baf4-d5e90068dd83` @ `d1530a4`, `3.13098700135133` |
-| Promotion delta | `+0.015439` score, `+1.56%` |
+| Submitted solver snapshot | `474c75013f333f119bdc465d849f23917b195b20` |
+| Previous frontier | `3a995c2b` @ `86fb1f0`, `3.23222998733732` |
+| Promotion delta | `+0.00192184552578` score, `+0.0595%` |
 
 The promoted receipts above are the public Yukon frontier used to bootstrap and
 then to re-baseline this campaign; they are not claimed as Senpai-authored
 results.
 
-### `caec88d4` landed this campaign's own kernel change first
+### Frontier history: superseded `caec88d4` landed this campaign's own kernel change first
+
+Everything from here to the end of this subsection is **history preserved on
+purpose**. `caec88d4` / `0d800b22` (`3.14642585386152`) is no longer the
+frontier — the table above is. The narrative is kept because its three findings
+are still load-bearing: the measured `+1.56%` scoop-risk instance, the
+`research/crossrow-closure.md` closure of the crossrow kernel, and the
+`editablePaths` contract boundary at the frozen 8-output host tile.
 
 The complete diff of promoted `caec88d4` is **six lines across exactly the two
 quantized twins this campaign owns**, flipping three template arguments to
@@ -68,7 +74,10 @@ row. The local `--local-submit` harness could not have told us this — see the
 noise rule below.
 
 Second, the delay between committing a kernel win and submitting it is a **real
-scoop risk with a measured instance**. This is checklist item 53.
+scoop risk with a measured instance**. This is the scoop-risk entry in the update
+checklist below (item 46 as of this revision). It was previously cross-referenced
+as "checklist item 53", a number the checklist has never reached in any of its
+revisions; the entry was written this session and the reference repointed.
 
 The follow-on question — is there anything left in this kernel — is answered in
 [`research/crossrow-closure.md`](../research/crossrow-closure.md): no. Seven
@@ -83,30 +92,39 @@ because it needs `bn` and `group_dims` from
 which matches zero `editablePaths` entries. Treat the frozen 8-output host tile
 as a contract boundary, not a kernel convention.
 
-Campaign commit `c8dceb9` imports the exact promoted submitted surface from
-`d1530a409848b82a0a1890141c1483875d1e0173`. Relative to promoted source
-`ed4dfd6b0e95bb1cafb26c694bc247f551d550fe`, its only executable change is
-`DIRECT_NIBBLES=true` for M=7 in the readable and runtime-effective affine4
-QMV twins. The intervening `0824e0e` warmup experiment was superseded and is
-absent: `Qwen36MTPBlockSession.swift` has returned to `ed4dfd6` semantics.
-The incumbent precision-island head remains unchanged, and no organizer
-policy, contract, fixture, workflow, guide, or dependency file changed.
+Campaign commit `006a369` imports the exact promoted submitted surface from
+`474c75013f333f119bdc465d849f23917b195b20`. Relative to `86fb1f0`, it
+restores the dedicated single-row affine-2/group-64 coarse-readout kernel and
+keeps the executable M=8 affine-4/group-64 4+4 split. Replace semantics also
+remove the prior full-memory residency and post-wire command-buffer policy.
+No organizer policy, contract, fixture, workflow, guide, dependency, head
+manifest, or other trusted file changed.
 
-The exact promoted bytes reintroduced the already-known abbreviated M=8
-comments in generated `quantized.cpp`. Campaign commit `08fb76a` is a separate
-canonical regeneration containing only the 3-line-to-13-line comment
-expansion. Removing full-line comments leaves both versions at SHA-256
-`b8a68ef536608000fe3a45331797f1ac3f0f57637165ced16a5458771a07a480`;
-no executable token changed. The full twin audit then passed 29/29.
+The declared head is
+`hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8`,
+tree digest `559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71`,
+and 427,742,600 bytes. It preserves the promoted 4-bit/group-64 precision-island
+head and adds the affine-2 compact `draft_lm_head` ABI: weight
+`[98,336, 320]`, scales/biases `[98,336, 80]`, followed by an exact affine-4
+rerank of a 32-token shortlist.
+
+The exact promoted readable header carried a contradictory M=8 3+3+2 comment
+beside the executable 4+4 call. Campaign commit `b4ed293` replaces only that
+comment with the checked-in generated twin's accurate 4+4 description.
+Executable kernel text is unchanged.
 
 **Plausibility ceiling: `5.0`.** Raised from `3.0` by operator commit
 `a5854b979499800a6f5f71a8d4fc14fd43ca4723` (2026-08-17, `AGENTS.md` +
 `senpai/program.md` only) and readable at
 `benchmark.json /scoring/decodeSpeedupCeiling` on base `b85e782`. It is a
 fail-closed administrative gate, **not** a stop target and not an optimization
-target (`senpai/program.md:21`). Headroom from the promoted `3.02460155382533`
-is `+1.97539844617467` score — at the stale `-0.4335` calibration roughly
-`4.56` s off a `~12.05` s candidate leg, i.e. about 38% of the whole MTP leg.
+target (`senpai/program.md:21`). Headroom from the **current** promoted
+`3.2341518328631` is `+1.7658481671369` score, i.e. the ceiling sits at
+`1.546x` the live bar — a further **+54.60%** relative decode speedup would be
+required to reach it. (The earlier form of this paragraph computed headroom from
+the long-superseded `3.02460155382533` and converted it to seconds through a
+stale `-0.4335` calibration; that conversion is deleted rather than re-derived,
+because no current lever needs it.)
 No lever measured this campaign is within an order of magnitude of that, so the
 ceiling changes nothing operationally except that a large legitimate result
 must not be held back. Docs corrected this session:
@@ -547,9 +565,13 @@ contaminated arm can be identified and discarded rather than believed.
 
 | Submission ID | Candidate SHA | Base SHA | Model | Score / status | Public note | Decision |
 | --- | --- | --- | --- | --- | --- | --- |
-| `74d1bd3a-2e26-4bd2-9e2e-76c0a38cda3a` | `d11e01ea950920ce4e761d47cd576846f18d8ea5` | `c80c023326bb933307706d506c0a2dbbff1a628f` | `senpai` | `validating` | [`senpai/submissions/02-combined-e15-directnibbles.md`](submissions/02-combined-e15-directnibbles.md) | Queued `2026-08-18T01:30Z`. Awaiting Yukon. |
+| `4437d061-7366-422c-a51d-1679995307ed` | `95f8311d97bb22e0d827b4698ed486b664f4adf6` | `d1530a40` | `senpai` | **`rejected`**, `2.86126590369985` (`-0.28516`, `-28.73%` vs the then-bar) | `senpai/submissions/01-*` | Causally closed: the manifest pinned our own fine-tuned head (`hf:morgan/…dev20-k4b06-lr1e5-q4-g64-islands@97aa5363`, 270,404,736 B). The head was worse than the organizer's; the kernel content was exonerated by a comment-stripped SHA-256 identity against the parent. |
+| `74d1bd3a-2e26-4bd2-9e2e-76c0a38cda3a` | `07b2f1b56f4abd714e1dbabd8d39c278cc5a4a9f` | `c80c023326bb933307706d506c0a2dbbff1a628f` | `senpai` | **`failed`** (no score; `2026-08-18T01:30Z`) | [`senpai/submissions/02-combined-e15-directnibbles.md`](submissions/02-combined-e15-directnibbles.md) | Ranked `failed`, not `rejected`: the workflow's correctness gate emitted no valid JSON payload (`qwen-mtp-ranked-benchmark.yml:2580`), stderr and artifacts are suppressed, and the run lands in the non-charged `score_present_validation_failed` bucket. This row's candidate SHA was recorded as `d11e01ea` in an earlier revision; Yukon reports `07b2f1b5`. |
+| `b360b4c8-01db-4e0c-b67f-03df1e8acc2f` | `81640b7891259d1b24e7bfd23ede0d09a31ab27b` | `036fd9ca` | `senpai` | **`failed`** (no score; `2026-08-18T03:33Z`) | same E15 note | Same failure signature as `74d1bd3a` and the same E15 requant payload (`61c4d962`). Manifest-touching submissions fail at `55.6%` versus a `36.25%` population rate, which is the strongest single predictor available. |
+| `9197ed62-621f-474d-bfba-e1efddd9dd4c` | announced `51c5b6688c7a54dfe3628e010ecb2321cf014034`; **Yukon reports `dbf91c6c4876a58b0decca130acf4…`** | `527306761f70e2c4024f347915328894db80c181` | `senpai` | **`rejected`**, `3.06938159465413` (`-0.173619`; created `2026-08-18T17:08Z`) | announced on issue #31 | Not Senpai-authored: launched by the operator. Submitted diff is **only `mtp-head.manifest.json`**, repointing the declared head to `hf:morgan/qwen38-27b-mtp-r20k-lr3-q4-g64-q2-rerank@fd4a99c5`. **This is the second scored confirmation that a fine-tuned replacement draft head is worse than the organizer's declared head**: the two head-quality plays in this table are the only two rows that produced a score, and both were rejected (`2.86126590369985` for the Dev20 head at `4437d061`, `3.06938159465413` here). Do not re-propose a replacement head; that lever is closed by measurement, not by argument. Two secondary facts are worth keeping: (i) Yukon's `commit` column reports a repackaged commit (`dbf91c6c…`) and not the announced candidate (`51c5b668…`), exactly as it did for `74d1bd3a` (announced `d11e01ea`, reported `07b2f1b5`), so never key a row on the announced SHA alone; (ii) applying the delta rule verified on `4437d061` (`2.86126590369985 + 0.28516 = 3.14642590…`, the then-bar) to this row gives an implied bar of `3.06938159465413 + 0.173619 ≈ 3.2430006`, which is **higher than the promoted `3.2341518328631`** even though `upstream/main` is still `474c75013f333f119bdc465d849f23917b195b20` with zero newer commits — either a promotion was in flight at evaluation time or the delta baseline is not the promoted frontier. Treat `3.2341518328631` as the ledgered bar and `≈3.2430006` as an open question. **With this row terminal, all four submissions are terminal and the single in-flight slot is FREE for the first time in the campaign.** |
 
-Benchmark run `5d1ee4d7-80bd-4555-b182-6505f26ef495`. Submitted with:
+Benchmark run `5d1ee4d7-80bd-4555-b182-6505f26ef495`. The `74d1bd3a` row was
+submitted with:
 
 ```sh
 senpai/submit-official.sh c80c023326bb933307706d506c0a2dbbff1a628f \
@@ -563,15 +585,29 @@ submitted diff carries two things at once: `DIRECT_NIBBLES` at M=3,4,5, which
 the frontier has since independently promoted at `+1.56%` and which is
 therefore **no longer novel**, and the E15 3-bit compact draft readout
 (`+0.8334%` ranked, PR #17, askeladd), which is **the only novel content in the
-row**. Section 8 of the public note is the honest novelty disclosure. Expected
-combined score is roughly `3.172`. If the row promotes, attribute the increment
-over `3.14642585386152` to E15 alone.
+row**. Section 8 of the public note is the honest novelty disclosure. The
+"expected combined score is roughly `3.172`" prediction that stood here is moot:
+the row came back `failed` with no score at all, so it never tested the
+prediction, and the bar has since moved to `3.2341518328631`.
+
+🔴 **`c80c023326bb933307706d506c0a2dbbff1a628f` is no longer a legal
+`BASE_SHA`.** The command above is preserved for provenance only. Since that
+submission, `origin/main` advanced eighteen commits and four of the ninety
+protected paths now differ at `c80c023`, so `submit-official.sh:382` rejects it.
+The current legal base is `527306761f70e2c4024f347915328894db80c181` — but only
+once the advisor branch descends from it, because `:186-194` also requires the
+base to be an ancestor of `HEAD`. See update-checklist item 47.
 
 Two mechanics facts that cost time to establish and should not be re-derived.
 `yukon submit` enforces a hard **server-side limit of one in-flight submission
-per account**, so while this row reads `validating` no further submission is
+per account**, so while any row reads `validating` no further submission is
 possible from any role; validation latency is on the order of hours, so do not
-block on it. And the submitter never passes `BASE_SHA` to `yukon` — it is
+block on it. As of `2026-08-18` all four rows above are terminal
+(`rejected`/`failed`/`failed`/`rejected`), so **the slot is free** — which makes
+update-checklist item 46 live: the delay between committing a measured kernel
+win and submitting it is itself a risk, because the frontier moves. Poll with
+`yukon submissions` (plural), run from the linked repository directory.
+And the submitter never passes `BASE_SHA` to `yukon` — it is
 consumed only by the wrapper's own gates and the script ends
 `exec yukon submit "${submit_args[@]}"`, so **yukon packages the advisor
 branch HEAD's editable paths**. Non-editable files, including everything under
@@ -625,6 +661,19 @@ evidence or a changed condition; “try again” is not enough.
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-ed4dfd6-r2` / `7ab7376` | canonical regeneration of promoted `quantized` twin | `f04df93` | comment-stripped source SHA is identical before/after; twin audit 29/29 and release build passed; full `swift test` remains blocked by unchanged organizer `QwenMTPVerbTests.swift:755` type error | not submitted; mechanical campaign repair only | Canonical output expands three comments to thirteen; no executable token changes; no AOT Metal source changed, so `mlx.metallib` rebuild is not applicable |
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-bd007bc` / `c8dceb9` | exact promoted editable-snapshot import | `1d1eeda` | preservation, campaign overlay, editable budget, trusted parity, and release build passed; full `swift test` rebuilt products but remains blocked by the unchanged organizer `QwenMTPVerbTests.swift:755` type error | adopted public promoted `bd007bc7-e8ab-4919-baf4-d5e90068dd83` / `d1530a409848b82a0a1890141c1483875d1e0173` at `3.13098700135133`; not a Senpai-authored submission | Net executable delta from `ed4dfd6` is the M=7 direct-nibbles flag in the readable/generated QMV twins; no organizer policy or dependency files changed |
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-bd007bc` / `08fb76a` | canonical regeneration of promoted `quantized` twin | `c8dceb9` | comment-stripped source SHA is identical before/after; twin audit 29/29; no AOT-only Metal source changed, so `mlx.metallib` rebuild is not applicable | not submitted; mechanical campaign repair only | Canonical output expands three comments to thirteen; no executable token changes |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-live-1` / `7906ea1` | exact promoted editable-snapshot import | `c80c023` | preservation, campaign overlay, editable budget, trusted parity, exact promoted-blob checks, and release build passed; full `swift test` reaches the unchanged trusted `QwenMTPVerbTests.swift:755` `String`/`Comment?` compile defect | adopted public promoted `824dc272-b560-4dc6-bf6c-42f58944f4cb` / `8dabcfb` at `3.19351254799833`; not a Senpai-authored submission | Four editable files changed; current q2/q4 rerank head and both M=1 MTP-only QMV dispatches are present; no trusted policy changed |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-live-1` / `7b740c7` | canonical regeneration of promoted `quantized` twin | `7906ea1` | comment-stripped source SHA is identical; `quantized` reproduces; 27/29 twins pass and both remaining NAX differences are isolated to compiler-owned system-section inventory with every vendored section byte-equal | not submitted; mechanical campaign repair only | Preserves exact promoted NAX blobs; no AOT-only Metal source changed, so `mlx.metallib` rebuild is not applicable |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-12d3756` / `d631025` | exact promoted editable-snapshot import | `23f2781` | preservation, campaign overlay, editable budget, trusted parity, exact promoted-blob checks, and release build passed; full `swift test` reaches the unchanged trusted `QwenMTPVerbTests.swift:755` `String`/`Comment?` compile defect | adopted public promoted `578535f7-95e6-4f95-a34c-281b9dbbbffc` / `12d3756` at `3.19580475139646`; not a Senpai-authored submission | Two editable QMV twins changed: M=8 affine4/group-64 moves from 3+3+2 to 4+4, while the prior M=1 affine2 coarse-readout and narrow affine4 fast paths are absent; proposal-head tree remains `559b24eb`; no trusted policy changed |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-12d3756` / `cc32c73` | canonical regeneration of promoted `quantized` twin | `d631025` | generated delta is comment-only; twin audit 29/29, final release build, and fresh AOT `mlx.metallib` build pass with Metal toolchain `32023.883` | not submitted; mechanical campaign repair only | Canonical output expands three comments to ten; executable tokens are unchanged; the fresh metallib covers the imported readable-header change |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-369cc05` / `ff5866b` | exact promoted editable-snapshot import | `d649aab` | preservation, campaign overlay, editable budget, trusted parity, exact 89-path promoted-blob checks, and release build passed; full `swift test` compiles the new Qwen35 source and reaches the byte-identical inherited `QwenMTPVerbTests.swift:755` `String`/`Comment?` defect | adopted public promoted `12864bc1-9c9e-4e3b-8964-e8b9e4da8d31` / `369cc05` at `3.21000579584503`; not a Senpai-authored submission | Current source combines the exact two-dispatch top-32 proposal shortlist with the restored M=8 3+3+2 QMV split; the replaced Qwen35 file does not retain the immediately prior `868cde8` fusion suite; proposal-head tree remains `559b24eb`; no trusted policy changed |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-369cc05` / `9d04199` | canonical regeneration of promoted `quantized` twin | `ff5866b` | generated delta is comment-only; explicit-toolchain twin audit 29/29, final release build, and fresh AOT `mlx.metallib` build pass with Metal toolchain `32023.883` | not submitted; mechanical campaign repair only | Canonical output expands the abbreviated M=8 comments; executable tokens are unchanged |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-dccba74` / `abca948` | exact promoted editable-snapshot import | `a187ec6` | preservation, campaign overlay, editable budget, trusted parity, exact promoted-blob checks, and release build pass; full `swift test` reaches the byte-identical inherited `QwenMTPVerbTests.swift:755` `String`/`Comment?` defect | adopted public promoted `72ce82dc-f751-485d-a7b3-94ab6471cf87` / `dccba745` at `3.22826053954006`; not a Senpai-authored submission | Two editable QMV twins changed: the proposal-only M=1 affine-2 fast path is restored and M=8 affine-4/group-64 moves from 3+3+2 to 4+4; proposal-head tree remains `559b24eb`; no trusted policy changed |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-dccba74` / `0b19827` | reconcile promoted M=8 readable/twin comment | `abca948` | comment-only delta; explicit-toolchain twin audit 29/29, frozen release build, and fresh AOT `mlx.metallib` build pass with Metal toolchain `32023.883` | not submitted; mechanical campaign repair only | Replaces a stale 3+3+2 narrative with the generated twin's accurate 4+4 description; executable tokens are unchanged |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-86fb1f0` / `8afb5e8` | exact promoted editable-snapshot import | `14ef8c2` | preservation, campaign overlay, editable budget, trusted parity, exact five-path import, and release build pass; full `swift test` reaches the byte-identical inherited `QwenMTPVerbTests.swift:755` `String`/`Comment?` defect | adopted public promoted `3a995c2b-3c42-48e8-b982-f36a8abda0e7` / `86fb1f0` at `3.23222998733732`; not a Senpai-authored submission | Five editable paths changed; the full-memory residency/command-buffer policy and Qwen35 fusion suite are present, the dedicated M=1 affine-2 QMV is absent, and the proposal-head manifest is unchanged; no trusted policy changed |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-86fb1f0` / `76b961f` | canonical regeneration of promoted `quantized` twin | `8afb5e8` | generated delta is comment-only; explicit-toolchain twin audit 29/29, frozen release build, and fresh AOT `mlx.metallib` build pass with Metal toolchain `32023.883` | not submitted; mechanical campaign repair only | Expands the abbreviated M=8 comment to the readable header's direct-nibble/IPG4 rationale; executable tokens are unchanged |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-474c750` / `006a369` | exact promoted editable-snapshot import | `50a5be6` | preservation, campaign overlay, editable budget, trusted parity, and exact 89-path import pass | adopted public promoted `942e5ab2-1c46-4c50-b7c3-eaf948878ed0` / `474c750` at `3.2341518328631`; not a Senpai-authored submission | Four editable paths changed; the M=1 affine-2 coarse-readout kernel is restored, executable M=8 remains 4+4, and the prior full-memory residency policy is removed; no trusted policy changed |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-474c750` / `b4ed293` | reconcile promoted M=8 readable/twin comment | `006a369` | comment-only delta; executable `<T,8,4,true>` call unchanged | not submitted; mechanical campaign repair only | Replaces the stale 3+3+2 narrative with the checked-in generated twin's 4+4 description |
+| 2026-08-18 | advisor `senpai/qwen38-mtp-r1` / `d7619a7` | end-to-end validation of the merged tree **at the scored token count**: a 513-row golden, then four timed legs (512×depth-2, 512×serial control, 256×depth-2, 128×depth-2) | `d7619a7f4606c2a0e1c46e04d8fae2e4e0e96602` | All four legs `all_tokens_matched = true` with `residual_divergence_count = 0`. The 512×depth-2 leg emitted 512 tokens over 176 rounds with 336 accepted, 16 rejected and 176 tails = **528 declared rows**, and `528 − 16 = 512` reproduces PR #30's finding F4 exactly (final target cache offset 1024). Reported-style ratio **2.1784×** (`0.0757904355` / `0.0347923830` seconds per token, both prefill-inclusive); true-decode ratio **2.5144×** (`34.517648` / `13.728098` s). E20's per-token numbers replicated within 3% on this tree (serial `67.417` ms vs `65.539`; depth-2 `26.813` vs `27.401`). Open lead recorded for follow-up: the 16 rejections at 512 have **no counterpart at 128 or 256**, where the accepted-draft rate is exactly `1.0`, and the reference's first stop token lands at index 300 — inside the 256→512 window. | not submitted (correctness/validation run, not a candidate) | job `a4bead4e-483d-4f1f-9e94-d2626a7f064f`, exit 0, 647.342 s; `research/e26-legs.sh` golden + legs; two harness defects found in that script and relayed (a `jq` selector on a non-existent `row_ledger` key silently writes 0-byte ledgers, and a `.matched` field name that should be `.all_tokens_matched`) |
 
 ## Update checklist
 
@@ -662,6 +711,178 @@ evidence or a changed condition; “try again” is not enough.
     *quantitative* prediction: the true mechanism (stride 32 vs 64) names an
     exact mismatch band per width, the false one named none. Before banking a
     mechanism, make it predict a number it could fail on.
+12. **Verify a merge empirically; a merge you did not inspect is a hypothesis.**
+    Run the merge, then compare the three blobs (merge-base, theirs, ours) for
+    every file the merge could touch. This session's `origin/main` merge was
+    predicted to be a sixteen-file integration and turned out to touch exactly
+    one file, because seven of eight candidates were byte-identical between
+    theirs and ours.
+13. **Taking `--theirs` on a vendored file can import the frontier's own
+    invariant violation.** Promoted `474c7501` reverted the `quantized.h` M=8
+    comment to a "3+3+2 register cliff" narrative while leaving the code at
+    `<T,8,4,true>`. A blind take inherits the contradiction; the campaign had to
+    repair it at `b4ed293`.
+14. **A waiver's negative control must attack the row that is live, not the row
+    that was live when the waiver was written.** A control that mutates a
+    superseded digest passes vacuously and proves nothing about the current
+    twin.
+15. **A gate that reads state from a different ref than your branch cannot be
+    fixed by editing your branch.** `submit-official.sh:196-218` reads
+    `senpai/frontier-state.json` from `origin/main`, not from `HEAD`; and
+    `:186-194` requires `BASE_SHA` to be an ancestor of *both* `HEAD` and
+    `origin/main`. The only repair is to move the ref the gate reads, or to
+    merge it.
+16. **A code comment's claim about the reference implementation is a testable
+    hypothesis, not documentation.** The frontier's "319/437/216 µs M=7/8/9
+    register cliff" comment was contradicted by E22's measured monotone
+    139.325/177.758/186.422 ms. Measure before inheriting a number from prose.
+17. **A job that exits nonzero may still have delivered its payload.** The
+    declared-head provisioning job exited 1 solely because an optional
+    `config.json` returned 404; the 427,742,600-byte `model.safetensors` was
+    already on disk and tree-digest-correct. Read the log before re-running.
+18. **A pinned-count constant may survive only as an error-message string.**
+    `MLXFastConstants.qwenMTPHeadTensorCount = 15` looked like it would reject
+    the 40-tensor declared head; it is referenced only inside a diagnostic
+    message. The live checks are `weightMap.count >= 3`, absence of an `mtp.`
+    prefix, and three named tensors.
+19. **A `Validate`/`Accept` commit's content is not necessarily the frontier's
+    intent.** `474c7501` is a single accept commit whose diff *reverts* two
+    mechanisms and adds one; the accept ceremony carries no guarantee that the
+    promoted overlay was authored on the current base.
+20. **The upstream frontier is not monotone.** Promoted scores went
+    3.19088 → 3.19351 → 3.19580 → 3.20989 → 3.21001 → 3.22826 → 3.23223 →
+    3.23415, but the *content* regressed twice along the way. Never infer that a
+    later promoted tree is a superset of an earlier one.
+21. **The frontier ships its own offline verifiers as public-but-uncalled
+    functions.** `qwen35VerifyDraftTop32(trials:seed:)` and
+    `qwen35BenchDraftTop32(iters:)` exist with zero call sites. An uncalled
+    verifier is not a gate; wire it into `Tests/` or it protects nothing.
+22. **Byte-identical-to-merge-base on both sides means a frontier re-sync is a
+    zero-conflict fast take.** Compute that before budgeting time for conflict
+    resolution.
+23. **A frontier insertion entirely below line N leaves every citation above N
+    valid.** Check where the insertion starts before re-grepping the whole
+    anchor table; and when a revert *removes* lines, expect a negative shift
+    (this session: +80, then −83).
+24. **Order a state-file bump after the merge commit that makes it true.** A
+    `frontier-state.json` that names a commit the branch does not yet contain is
+    a lie that the submit gate will not catch, because it reads state from
+    `origin/main`.
+25. **The bar moves in the third decimal.** Consecutive promotions differed by
+    `+0.00192184552578` (`+0.0595%`). Any local measurement whose noise floor is
+    ~1% cannot adjudicate a promotion-sized effect; size the experiment against
+    the *delta*, not the score.
+26. **A `swift build` that exits zero may have compiled nothing.** Count objects
+    newer than a pre-build stamp and check whether the binary was relinked.
+    Exit code alone is not a build proof, and neither is elapsed time.
+27. **A `--theirs` resolution on a vendored file can delete a symbol a
+    campaign-owned file still calls.** Grep the campaign surface for every
+    symbol the resolution removes before committing.
+28. **A ledger entry that says "closed by source inspection" is not a gate.**
+    The stop-token continuation fix has now been fixed four times and lost five
+    times (`f1a874d` → `330b44e` → `b219009` → `bc552e5` → `origin/main` via
+    `006a369`). Only an executable content assertion survives a frontier sync.
+29. **A reverted-then-re-submitted mechanism can return byte-for-byte.** E24's
+    constant-scalar hoist arrived free at `86fb1f02` with payload
+    `fd7a26d831cdc64c9ea0e437`. Race the frontier; do not bank an unpromoted
+    mechanism as safely ours.
+30. **Sync the *organizer* ref for content, but merge campaign `main` for
+    submission ancestry.** These are two different gates and both must be
+    satisfied: `:382` compares the protected surface `main_sha` ↔ `base_sha`
+    (content), while `:186-194` requires `base_sha ∈ ancestors(HEAD) ∩
+    ancestors(main_sha)` (ancestry). Satisfying one does not satisfy the other.
+31. **A waiver dies by closure, not only by drift.** When the underlying
+    question is answered, delete the waiver rather than refreshing its digests;
+    a refreshed waiver for a closed question is a permanent false positive.
+32. **A script that exits 0 on a clean tree is untested.** Exercise every gate
+    against a deliberately dirty or wrong input before trusting a green run.
+33. **Identify which product compiles the code you edited.** Only
+    `mlxfast-runtime-worker` contains the campaign model surface;
+    `.build/release/mlxfast-swift` has zero `Qwen36MTPBlockSession` symbols and
+    no `Cmlx.build` directory at all. Building the CLI proves nothing about a
+    model-surface edit.
+34. **Elapsed time is not a build proof, and a short build is not suspicious.**
+    A from-scratch worker release build is ~135–145 s here; an incremental no-op
+    double build is ~23 s; a metallib rebuild is ~45–48 s. Recompiling zero
+    objects and not relinking can be the correct outcome.
+35. **A promoted submission can be a stale-base REPLACE overlay that silently
+    reverts earlier frontier mechanisms.** `942e5ab2` discarded the
+    wired-memory residency policy, the command-buffer geometry, and the M=8
+    4+4 IPG split, added one 2-bit kernel, and still scored higher. Either the
+    discarded three were worth ≈nothing, or the new kernel is worth more than
+    the delta and is masked by three regressions.
+36. **A supervised build job dirties the worktree through sibling
+    `.build*.stale-<tag>/` directories, not `.build*/`.** `.gitignore` covers
+    the latter only. Remove the stale siblings before asserting a clean tree.
+37. **The Yukon poll subcommand is `yukon submissions` (plural), and it must run
+    from the linked repository directory.** `yukon submission list` does not
+    exist, and the plural form fails outside the workspace.
+38. **A kernel-presence probe must be validated on a known-present symbol
+    first.** `strings` on `mlx.metallib` finds nothing for kernels that are
+    provably compiled in, so a negative result from an unvalidated probe is
+    uninformative. Prove presence behaviourally through the dispatch gate.
+39. **Read the real gate, not your reproduction of it.** Two "extra" gates in a
+    local reproduction turned out to be verbatim script lines; one apparent
+    invention was `submit-official.sh:382` itself.
+40. **Test a "stale binary" hypothesis by asking which translation units that
+    binary contains.** The CLI could not be stale with respect to a model-surface
+    change because it never compiled that surface.
+41. **A verifier must reuse the exact field name the script under test uses.** A
+    checker reading `.matched` reported `null` forever against a harness that
+    writes `.all_tokens_matched`.
+42. **`2>/dev/null` on a `jq` extraction turns a missing field into a silent
+    empty file.** `research/e26-legs.sh:156-157` filters a non-existent
+    top-level `row_ledger` key, so every ledger artifact is 0 bytes with
+    `sha256 = e3b0c442…` — the SHA-256 of the empty string. Never suppress
+    `jq`'s stderr in an artifact-producing step.
+43. **Estimate merge cost from the three-way diff shape, not the line-count
+    asymmetry.** A 693-line ours versus 113-line theirs looked catastrophic; the
+    `base..theirs` diff was `+38/−21` in two hunks and git auto-merged 100% of
+    theirs' unique content.
+44. **A ledger cross-reference is only as good as the number it cites.** This
+    file carried "This is checklist item 53" while the checklist had never
+    exceeded eleven items in any of its seventeen revisions. Re-check a forward
+    reference whenever you renumber, and prefer naming the item over numbering
+    it.
+45. **A local ratio is a decoy; the absolute candidate wall time is the signal.**
+    `decode_seconds` is prefill-inclusive (53.8% of it at 128 tokens, 22.9% at
+    512 depth-2, 11.0% at 512 serial, 6.1989% ranked), so a `--local-submit`
+    receipt dilutes a decode-only effect by ~2.2× and can invert the sign of a
+    comparison.
+46. **Minimise the delay between committing a kernel win and submitting it.**
+    This is the scoop-risk item: the campaign held `DIRECT_NIBBLES` at M=3,4,5
+    long enough for the frontier to promote the same mechanism independently at
+    a measured `+1.56%`, which converted a novel result into a no-op. A
+    committed-but-unsubmitted mechanism has no claim.
+47. **`BASE_SHA` legality is an ancestry problem before it is a content
+    problem.** `submit-official.sh:186-194` forces
+    `base_sha ⊆ ancestors(merge_base(HEAD, origin/main)) ∪ {merge_base}`, while
+    `:382` forces the protected surface at `base_sha` to equal the protected
+    surface at `origin/main`. When the advisor branch has diverged from
+    `origin/main`, *no* commit satisfies both, and the only repair is to merge
+    `origin/main` into the advisor branch. Measured at this session's
+    divergence: `c80c023` passed ancestry and failed `:382` on four paths;
+    `5273067` passed `:382` with zero differing paths and failed ancestry until
+    the merge landed.
+48. **The tracker's identifiers are not the ones you announced; key every row on
+    the receipt UUID.** Yukon's `commit` column reports a repackaged commit, not
+    the candidate SHA the submitter announced. Observed twice: `74d1bd3a` was
+    announced at `d11e01ea` and is reported as `07b2f1b5`; `9197ed62` was
+    announced at `51c5b668` and is reported as `dbf91c6c`. The UUID is the only
+    stable join key between an announcement, a ledger row, and a Yukon row, so
+    record the announced SHA and the reported SHA as two separate facts and
+    never assume a mismatch means the wrong tree was submitted.
+49. **Read a result table's delta column as an arithmetic identity before
+    quoting any part of it.** Yukon prints `diff` as
+    `score − bar_at_evaluation`: `4437d061` scored `2.86126590369985` with
+    `-0.28516`, and `2.86126590369985 + 0.28516 = 3.14642590…`, which is the
+    `caec88d4` bar `3.14642585386152` to five decimals. That identity is worth
+    having, because it lets a rejected row *measure the bar that was live when
+    it ran* — applied to `9197ed62` it implies `≈3.2430006`, above the promoted
+    `3.2341518328631`, which is a fact about the frontier that no organizer
+    commit had yet published. The percentage printed beside the delta does not
+    divide out against the score, the bar, or their difference, so do not quote
+    it.
 
 ## Advisor process lessons, 2026-08-17
 
