@@ -5,7 +5,12 @@
 #
 #   research/e29-run.sh LABEL=TRACE:DEPTH [...]
 #
-#     TRACE  0 | 1   MLX_QWEN_MTP_TRACE (per-round six-way host/GPU split)
+#     TRACE  0 | 1 | 2
+#              0  no trace (control that prices the trace perturbation)
+#              1  MLX_QWEN_MTP_TRACE (per-round six-way host/GPU split)
+#              2  also MLX_QWEN_MTP_TRACE_SYNC_HEAD: drain the head chain
+#                 before the verify-build window so verify_build_us stops
+#                 absorbing head-chain GPU time. Attribution probe only.
 #     DEPTH  offered draft depth (MLXFAST_QWEN_MTP_DEPTH)
 #
 # e.g. research/e29-run.sh T1=1:8 N1=0:8
@@ -64,7 +69,7 @@ for spec in "$@"; do
   export MLXFAST_MACMON_BIN="${macmon_bin}"
   export MLXFAST_LOCAL_COOL_GATE=0
 
-  if [[ "${trace}" == "1" ]]; then
+  if [[ "${trace}" == "1" || "${trace}" == "2" ]]; then
     export MLX_QWEN_MTP_TRACE=1
     export MLX_QWEN_MTP_TRACE_PATH="${out}/rounds.trace"
     # The worker sandbox denies file-write*, and mtp-timed swallows worker
@@ -72,6 +77,11 @@ for spec in "$@"; do
     export MLXFAST_NO_SANDBOX=1
   else
     unset MLX_QWEN_MTP_TRACE MLX_QWEN_MTP_TRACE_PATH MLXFAST_NO_SANDBOX
+  fi
+  if [[ "${trace}" == "2" ]]; then
+    export MLX_QWEN_MTP_TRACE_SYNC_HEAD=1
+  else
+    unset MLX_QWEN_MTP_TRACE_SYNC_HEAD
   fi
 
   {

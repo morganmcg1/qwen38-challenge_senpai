@@ -457,6 +457,15 @@ public final class Qwen36MTPBlockSession {
     /// stderr to the wrapper's log.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+    /// Attribution probe only. `verify_build_us` measures the window in which
+    /// the host builds the verify graph WHILE the asynchronously submitted head
+    /// chain runs on the GPU, so a head-chain stall is indistinguishable from
+    /// host build cost there. Draining the chain before the window moves that
+    /// GPU time into `draft_build_us` and leaves `verify_build_us` as pure host
+    /// graph construction. Never enable on a timed candidate: it destroys the
+    /// head/verify overlap the round is designed around.
+    private static let traceSyncHeadChain =
+        ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_SYNC_HEAD"] == "1"
     /// Opened O_APPEND so the reference, verify and timed workers can each
     /// write the same file without a later process truncating an earlier
     /// one's rounds. Falls back to stderr when no path is configured, which
@@ -944,6 +953,9 @@ public final class Qwen36MTPBlockSession {
             draftIdArrays.append(draftId)
         }
         asyncEval(draftIdArrays[draftIdArrays.count - 1])
+        if Self.traceSyncHeadChain {
+            eval(draftIdArrays[draftIdArrays.count - 1])
+        }
         if Self.traceRounds { tDraftBuilt = DispatchTime.now().uptimeNanoseconds }
 
         // 2. Keep the generic pre-verify snapshot as a fallback, but use the
