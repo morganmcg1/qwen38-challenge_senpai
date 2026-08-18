@@ -207,6 +207,50 @@ def break_even_deep(round_ms: dict[int, float], depths=(6, 7, 8)) -> dict:
 # --------------------------------------------------------------------------
 # 3. report
 # --------------------------------------------------------------------------
+MEASURED_LOCAL_P = [0.6926, 0.5840, 0.5077, 0.4190, 0.3860, 0.6875, 0.4000, 0.4000]
+RANKED_MEAN_DRAFTS = [4.35, 4.89, 5.78, 5.33, 5.04]
+
+
+def pool_acceptance_gap(h: float = SHIPPED_H) -> dict:
+    """Acceptance a pool needs before the shipped rule drafts as deep as ranked.
+
+    The ranked h-sweep comment records mean draft lengths of 4.35-5.78 under
+    the shipped scalar rule at h=0.18. Inverting that rule's own threshold
+    walk under a uniform-p assumption bounds how much easier the hidden pool
+    is to draft on than this local fixture, whose per-position acceptance is
+    measured directly from the forced-depth pool.
+    """
+    def coeff(d: int) -> float:
+        return shipped_coefficient(d, h)
+
+    implied = {}
+    for target in range(1, 9):
+        lo, hi = 0.0, 1.0
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            if fires(coeff, [mid] * 8) >= target:
+                hi = mid
+            else:
+                lo = mid
+        implied[target] = hi if fires(coeff, [hi] * 8) >= target else None
+    ranked_mean = sum(RANKED_MEAN_DRAFTS) / len(RANKED_MEAN_DRAFTS)
+    ranked_depth = round(ranked_mean)
+    return {
+        "h": h,
+        "implied_uniform_p_for_depth": implied,
+        "local_measured_p": MEASURED_LOCAL_P,
+        "local_depth_under_shipped_rule": fires(coeff, MEASURED_LOCAL_P),
+        "ranked_mean_draft_lengths": RANKED_MEAN_DRAFTS,
+        "ranked_mean_draft_len": ranked_mean,
+        "ranked_implied_uniform_p": implied.get(ranked_depth),
+        "local_p_head": MEASURED_LOCAL_P[0],
+        "acceptance_gap": (
+            implied[ranked_depth] - MEASURED_LOCAL_P[0]
+            if implied.get(ranked_depth) is not None else None
+        ),
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", type=Path, default=None)
@@ -241,9 +285,24 @@ def main() -> int:
     for d in (6, 7, 8):
         print(f"  depth {d} beats it iff T({d}) < {be[f'T{d}_break_even_ms']:.3f} ms")
 
+    gap = pool_acceptance_gap()
+    print()
+    print("=== 4. pool acceptance gap: why a local depth cap need not transfer ===")
+    print(f"  local measured p per position: "
+          + " ".join(f"{v:.3f}" for v in MEASURED_LOCAL_P[:5]))
+    print(f"  shipped rule on the local pool reaches depth "
+          f"{gap['local_depth_under_shipped_rule']}")
+    for target, p in sorted(gap["implied_uniform_p_for_depth"].items()):
+        print(f"  depth {target} needs uniform p >= "
+              + (f"{p:.4f}" if p is not None else "unreachable"))
+    print(f"  ranked mean draft len {gap['ranked_mean_draft_len']:.2f} implies "
+          f"uniform p ~ {gap['ranked_implied_uniform_p']:.4f}, "
+          f"a gap of {gap['acceptance_gap']:+.4f} over local p0")
+
     if args.json:
-        args.json.write_text(json.dumps({"theorem": thm, "break_even": be},
-                                        indent=2, sort_keys=True) + "\n")
+        args.json.write_text(json.dumps(
+            {"theorem": thm, "break_even": be, "pool_acceptance_gap": gap},
+            indent=2, sort_keys=True) + "\n")
         print(f"\nwrote {args.json}")
     return 0
 
