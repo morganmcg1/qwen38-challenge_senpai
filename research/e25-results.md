@@ -585,7 +585,158 @@ price, not the hardware wall.
 
 ## 13. Deliverables (b) and (c): the price curve re-measured, with real `n` at depth 4–7
 
-<!-- POOL:CURVE -->
+Artifact: `research/e25r2-pool.json` (38,895 B). Reproduce with
+
+```bash
+python3 research/e25r2_refit.py \
+  --prompts english,narrative,technical,dramatic,travel,philosophy,natural_history,medicine \
+  --out research/e25r2-pool.json
+```
+
+The forced-depth probe binary FORCE round-robins the taken depth over
+`[0,1,2,3,4,5,6,7]` and removes the streak gate, so every depth gets real,
+comparable `n` on every prompt instead of only the depths the shipped rule
+happens to visit. All eight prompts contributed: 1954 rounds traced, **1826
+analysed** after dropping the first 8 and last 8 rounds of each prompt
+(8 warmup + 8 tail × 8 prompts = 128).
+
+### 13.1 `T(d)` on the trusted-parent clock
+
+| d | n | mean ms | sem | median ms | weight-stream passes |
+|---|---|---|---|---|---|
+| 0 | 232 | 68.616 | 0.141 | 68.722 | 1 |
+| 1 | 232 | 71.605 | 0.122 | 71.446 | 1 |
+| 2 | 231 | 78.916 | 0.145 | 78.692 | 1 |
+| 3 | 228 | 91.885 | 0.156 | 91.995 | 1 |
+| 4 | 228 | 132.257 | 0.140 | 133.350 | **2** |
+| 5 | 226 | 144.103 | 0.190 | 144.817 | 2 |
+| 6 | 225 | 156.788 | 0.136 | 157.515 | 2 |
+| 7 | 224 | 170.133 | 0.138 | 170.827 | 2 |
+
+The step from `d = 3` to `d = 4` costs **40.4 ms**, against 13.0 ms for the step
+before it and 11.8 ms for the step after it. That single discontinuity is the
+whole story of this experiment, and §12 of the r1 report already identified its
+mechanism: at `d = 4` the verify block is `M = 5` rows, which is the first width
+that needs a **second** pass over the 4-bit backbone weights
+(`ceil(M / IPG)`, `_m<T,5,3,true>`).
+
+### 13.2 The step ratios, and the one that is inadmissible
+
+`c_d = (T(d+1) − T(d)) / T(d)` is the quantity arm D calls a price.
+
+| d | measured `c_d` | admissibility ceiling `1/(d+1)` | admissible? | r1 `c_d` | shipped scalar |
+|---|---|---|---|---|---|
+| 0 | 0.043568 | 1.0 | yes | — | 0.18 |
+| 1 | 0.102093 | 0.5 | yes | 0.095904 | 0.15254 |
+| 2 | 0.164342 | 0.3333 | yes | 0.152261 | 0.13235 |
+| 3 | **0.439371** | **0.25** | **NO** | **0.442442** | 0.11688 |
+| 4 | 0.089570 | 0.2 | yes | — | — |
+| 5 | 0.088027 | 0.16667 | yes | — | — |
+| 6 | 0.085119 | 0.142857 | yes | — | — |
+
+Two things matter here.
+
+First, **r1's `c_3` replicates on the new base**: 0.439371 against r1's 0.442442,
+a 0.7 % difference, even though the base changed the draft kernel to 2-bit,
+changed acceptance with top-32 + rerank, and fused residual RMSNorm. The price
+curve was *not* stale in its decisive coefficient. Deliverable (b) is answered,
+and the answer is that re-measuring did not rescue arm D.
+
+Second, `c_3` is the **only** violation of the §12 admissibility ceiling, and it
+is a 76 % overshoot rather than a marginal one. This is why arm D behaves as a
+hard cap: a price of 0.4394 at depth 3 cannot be paid by any acceptance belief,
+because even a *certain* accept of all four pending rows only returns
+`1/(3+1) = 0.25` of a round.
+
+### 13.3 The realised rate: constant-depth argmax is 2, not 7
+
+Dividing measured `T(d)` by measured tokens-per-round gives the rate a
+*constant-depth* schedule would achieve.
+
+| d | tokens/round | ms/token | vs best |
+|---|---|---|---|
+| 0 | 1.0000 | 68.616 | −44.77 % |
+| 1 | 1.7284 | 41.428 | −8.52 % |
+| **2** | **2.0823** | **37.899** | **best** |
+| 3 | 2.3421 | 39.232 | −3.40 % |
+| 4 | 2.4079 | 54.926 | −27.13 % |
+| 5 | 2.2743 | 63.360 | −38.19 % |
+| 6 | 2.5644 | 61.139 | −34.08 % |
+| 7 | 2.3661 | 71.905 | −41.51 % |
+
+`argmax = 2` on both the mean and the median `T`. A 5,000-draw bootstrap over
+rounds puts the argmax share at **{1: 0.0005, 2: 0.80075, 3: 0.19875}** and
+never selects 4 or deeper. Depth 2 and depth 3 are within 3.4 % of each other,
+which is why the shipped adaptive rule oscillating between them is reasonable;
+depth 4 and beyond are not close.
+
+Per-prompt argmax: `dramatic 2, english 2, medicine 3, narrative 3,
+natural_history 1, philosophy 2, technical 2, travel 2`. No prompt wants depth
+4 or deeper.
+
+**This is the answer to deliverable (c).** The forced legs at `d = 4, 5, 6`
+(and 7) that r2 asked for do exist now with real `n ≈ 225` each, and they show
+that the deep rows are not merely mispriced — they are genuinely bad. Depth 4
+buys 15.6 % more tokens per round than depth 2 for 67.6 % more time.
+
+### 13.4 The cost model, and what it says the price *should* be
+
+Fitting `T = a + b·d + c·ceil((d+1)/IPG)` over all eight depths:
+
+```text
+T(d) = 30.120 + 10.172·d + 32.378·ceil((d+1)/IPG)   R² = 0.99271, max|resid| 6.118 ms
+```
+
+`b = 10.172 ms` is the per-draft-row marginal cost, which is the proposal head
+running once per draft token. `c = 32.378 ms` is the cost of one extra pass over
+the backbone weights. The model explains 99.3 % of the variance in `T(d)` from
+those two terms alone, which is strong independent support for the mechanism in
+§12.3 and means the `d = 3 → 4` step is **structural**, not noise or thermal
+drift.
+
+### 13.5 Confounder controls carried forward from r1
+
+* **Position / thermal drift.** OLS of round time on token position gives
+  **+3.0151 ms per 1000 tokens** (n = 1826) — i.e. about +1.5 ms across a
+  512-token leg, an order of magnitude below the 40.4 ms step being measured.
+  Splitting the pool into position quartiles reproduces the depth ordering
+  **perfectly in all four**:
+
+  | quartile | d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7 |
+  |---|---|---|---|---|---|---|---|---|
+  | q0 | 68.6 | 71.3 | 78.9 | 92.0 | 132.5 | 144.0 | 156.8 | 170.1 |
+  | q1 | 68.8 | 72.0 | 79.5 | 92.2 | 132.6 | 144.4 | 157.2 | 170.4 |
+  | q2 | 68.3 | 71.5 | 78.3 | 91.7 | 131.9 | 143.6 | 156.4 | 169.9 |
+  | q3 | 68.6 | 71.6 | 78.9 | 91.6 | 132.0 | 144.4 | 156.7 | 170.2 |
+
+  Because FORCE round-robins depth, depth is orthogonal to position by
+  construction; these quartiles confirm it rather than repair it.
+* **Instrument agreement.** `core_minus_parent` is −0.97 to −1.03 ms and the
+  trace-I/O `upkeep_bias` is 0.245–0.269 ms, i.e. ≤ 0.21 % of round time. Real
+  in mechanism, immaterial in size, and common-mode across depths.
+* **Fidelity.** All 8 prompts: `all_tokens_matched = true`, `parity_all_ok =
+  true`, `residual_divergence_count = 0`, `decode_token_count = 512`, declared
+  head `dadbfb806d80` / 427,746,170 B.
+* **Row accounting.** All 8 prompts: `accepted_agrees`, `proposed_agrees`,
+  `rows_closed` all true, `target_tail_total = 0`,
+  `max_rejected_tail_logit_delta = 0`.
+
+### 13.6 Conditional acceptance on the pooled tape
+
+| position | p | n |
+|---|---|---|
+| 0 | 0.6926 ± 0.0116 | 1594 |
+| 1 | 0.5840 ± 0.0161 | 935 |
+| 2 | 0.5077 ± 0.0234 | 457 |
+| 3 | 0.4190 ± 0.0369 | 179 |
+| 4 | 0.3860 ± 0.0645 | 57 |
+| 5 | 0.6875 ± 0.1159 | 16 |
+| 6 | 0.4000 ± 0.2191 | 5 |
+
+Acceptance decays smoothly through position 4 and then goes uninformative on
+`n ≤ 16`. There is no acceptance cliff at position 3 — **the cliff is entirely
+on the cost side**, which is the single most important structural fact in this
+report.
 
 ## 14. The instrument, and a defect in it that I found and fixed
 
@@ -640,7 +791,103 @@ r1's reducer had no tail exclusion at all.
 
 ## 15. Offline policy replay: the whole price design space
 
-<!-- POOL:POLICY -->
+Artifact: `research/e25r2-policy.json`. Reproduce with
+
+```bash
+python3 research/e25r2_policy.py --refit research/e25r2-pool.json \
+  --prompts english,narrative,technical,dramatic,travel,philosophy,natural_history,medicine \
+  --out research/e25r2-policy.json
+```
+
+The forced-depth tape records, for every round, the acceptance outcome at every
+position up to the forced depth. That makes the tape **replayable**: for any
+candidate price vector I can recompute the depth the greedy rule would have
+chosen and score it against the measured `T(d)` table, without spending a GPU
+run per arm. 1578 rounds are evaluable this way, and the engine reproduces the
+shipped arm exactly (`replay_exact = 1578/1578`, §14.2).
+
+### 15.1 Every arm in the design space
+
+| arm | ms/token | mean depth | vs base | depth histogram |
+|---|---|---|---|---|
+| `arm_d_r1_measured` | **39.8026** | 1.994 | **+0.322 %** | {1: 107, 2: 1373, 3: 98} |
+| `arm_d_refit_measured` | 39.8407 | 2.092 | +0.226 % | {1: 107, 2: 1219, 3: 252} |
+| `base_shipped_deep_cap_3` | 39.8407 | 2.092 | +0.226 % | {1: 107, 2: 1219, 3: 252} |
+| `coordinate_optimum` | 39.8458 | 1.981 | +0.213 % | {1: 31, 2: 1546, 3: 1} |
+| `base_shipped_h0.18` | 39.9308 | 2.099 | 0.000 % | {1: 107, 2: 1219, 3: 241, 4: 11} |
+| `base_shipped_deep_cap_4` | 39.9308 | 2.099 | 0.000 % | identical to base |
+| `base_shipped_deep_cap_5` | 39.9308 | 2.099 | 0.000 % | identical to base |
+| `free_deep_rows` | 79.2277 | 7.525 | −49.600 % | {1: 107, 8: 1471} |
+
+Read this table from the bottom up, because the controls carry most of the
+information.
+
+* **`free_deep_rows`** prices every deep row at zero, so the greedy rule always
+  runs to depth 8. It loses **49.6 %**. The deep rows are not a pricing artefact
+  that a better coefficient could unlock; they are expensive, and any rule that
+  buys them loses badly.
+* **`deep_cap_4` and `deep_cap_5` reproduce the base exactly** — same ms/token
+  to four decimals, same histogram. The shipped rule at `h = 0.18` already
+  almost never goes past depth 4 (11 rounds out of 1578, 0.7 %). So capping at 4
+  or 5 is a no-op: there is nothing there to cut.
+* **`deep_cap_3` gains +0.226 %** by removing exactly those 11 depth-4 rounds.
+  That is the *entire* mechanism available to a cap.
+
+### 15.2 The numerical identity that settles deliverable (a)
+
+`arm_d_refit_measured` and `base_shipped_deep_cap_3` are **the same row**:
+39.8407 ms/token, mean depth 2.092, and the byte-identical histogram
+{1: 107, 2: 1219, 3: 252}.
+
+That is not a coincidence or a rounding coincidence — it is the operational
+definition of equivalence. Feeding the refit measured price vector into the
+greedy rule produces, round for round across 1578 rounds, the same decisions as
+deleting arm D entirely and writing `DEEP_CAP = 3` above the shipped `h = 0.18`
+rule. **The advisor's objection is confirmed.** Arm D is not a price that
+happens to be steep; it is a hard cap wearing a price's clothing, and §12's
+proof says why: `c_3 = 0.4394 > 1/4` makes depth 4 unreachable for *every*
+acceptance belief, so the coefficient's numeric value is irrelevant beyond the
+fact that it exceeds the ceiling.
+
+### 15.3 The best arm found anywhere in this replay is +0.322 %
+
+Coordinate ascent over the eight coefficients converges to
+`[0.18, 0.12, 0.22, 0.1169, 0.1047, 0.0947, 0.0865, 0.0796]` at +0.213 %, which
+is **worse** than `arm_d_r1_measured` at +0.322 %.
+
+I want to be precise about what that does and does not establish. Coordinate
+ascent is a **local** search, and the fact that it is beaten by a
+hand-constructed arm proves the objective is not concave in these coordinates
+and that the search did not find the global optimum. So the honest claim is:
+
+> The best arm found anywhere in this replay is **+0.322 %**.
+
+not "+0.322 % is the provable ceiling of the price design space." I did not
+prove a ceiling. What I can say is that four independent probes of the space —
+the r1 measured vector, the refit vector, a family of explicit depth caps, and a
+coordinate search — all land between +0.21 % and +0.33 %, and the one arm that
+reaches outside that band (`free_deep_rows`) loses 49.6 %. The design space
+looks flat and small, and nothing in it is worth a submission.
+
+### 15.4 Belief calibration
+
+The replay needs the rule's acceptance beliefs to match reality, or its depth
+choices would be fiction. Predicted 2.153 tokens/round against actual 2.2548, a
+ratio of **0.9549**; I apply the reciprocal `shrink = 1.0472` so the replayed
+rule is neither systematically optimistic nor pessimistic. Per-forced-depth
+ratios are 0.9336 / 0.9349 / 0.9082 / 0.9486 / 1.0251 / 0.9145 / 1.0178 for
+`d = 1..7` — flat, with no depth-dependent bias that would distort the deep-row
+decisions specifically.
+
+### 15.5 The shipped PRICE binary agrees at runtime
+
+The replay is a model, so it needs a runtime check. Tracing the **real** PRICE
+binary on `english` gives `depth_histogram = {1: 30, 2: 169, 3: 40}`,
+`max_depth_observed = 3`, and `rounds_at_depth_ge_4 = 0` over 239 rounds, with
+`mean_depth = 2.0418`. Meanwhile `width_cap_histogram = {5: 222, 8: 17}` shows
+the hardware and streak gate **would have permitted** depth 4–8 in every one of
+those rounds. Arm D's own price is what held it at 3. The replay and the binary
+agree.
 
 ## 16. Deliverable (d): why a "measured but non-prohibitive" `d ≥ 3` price cannot exist
 
