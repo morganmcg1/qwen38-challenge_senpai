@@ -1078,6 +1078,92 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
   }
 }
 
+// Single-row (M == 1) affine2/g64 fast QMV for the coarse compact draft
+// readout (out_vec_size == 98_336, bits == 2) of the promoted draft-rerank
+// scheme, at 32 values per lane: each lane loads ONE uint64 (32 packed
+// 2-bit values) per row per k-block, halving load count and k-blocks versus
+// the generic 16-value form. Duo values are extracted by shift and
+// multiplied by the UNSCALED activation: (x / 4^k) * (w & (3 << 2k)) and
+// x * ((w >> 2k) & 3) are the same real product (power-of-two scaling is
+// exact in FP32), so every elementary product equals the generic
+// qmv_fast_impl<T, 64, 2> value; the wider lane coverage reassociates the
+// FP32 partial sums, which is safe for this stage because the coarse
+// shortlist is approximate by design and the exact affine-4 rerank plus
+// target verification decide every emitted token. The serial leg runs no
+// 2-bit matmul (all its projections are affine-4), and out_vec_size ==
+// 98_336 exists only in the compact draft readout, so the dispatch gate
+// below cannot touch the serial numerator or the denominator band.
+template <typename T>
+METAL_FUNC void qmv_fast_singlerow_affine2_g64(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const constant int& in_vec_size,
+    const constant int& out_vec_size,
+    uint3 tid,
+    uint simd_gid,
+    uint simd_lid) {
+  constexpr int rows_per_simd = 4;
+  constexpr int values_per_thread = 32;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;  // 32 values x 2 bits = 8 bytes
+  const int in_vec_size_w = in_vec_size / 4;   // weight bytes per output row
+  const int in_vec_size_g = in_vec_size / 64;  // scale groups per output row
+
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * rows_per_simd;
+
+  thread float result[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    result[r] = 0.0f;
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    thread ulong packed[rows_per_simd];
+    thread float scale_local[rows_per_simd];
+    thread float bias_local[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      const int row = out_row + r;
+      const device uint8_t* ws = reinterpret_cast<const device uint8_t*>(w) +
+          row * in_vec_size_w + k / 4 + simd_lid * bytes_per_lane;
+      packed[r] = *reinterpret_cast<const device ulong*>(ws);
+      // 32 values per lane = half of one 64-value group.
+      const int group_index =
+          row * in_vec_size_g + k / 64 + (simd_lid * values_per_thread) / 64;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = biases[group_index];
+    }
+
+    thread float x0[values_per_thread];
+    const device T* xm = x + k + simd_lid * values_per_thread;
+    float sum = 0.0f;
+    for (int i = 0; i < values_per_thread; i += 4) {
+      x0[i] = static_cast<float>(xm[i]);
+      x0[i + 1] = static_cast<float>(xm[i + 1]);
+      x0[i + 2] = static_cast<float>(xm[i + 2]);
+      x0[i + 3] = static_cast<float>(xm[i + 3]);
+      sum += xm[i] + xm[i + 1] + xm[i + 2] + xm[i + 3];
+    }
+
+    for (int r = 0; r < rows_per_simd; r++) {
+      float accum = 0.0f;
+      #pragma unroll
+      for (int j = 0; j < 32; j++) {
+        accum += x0[j] * float((packed[r] >> (2 * j)) & 0x03ul);
+      }
+      result[r] += scale_local[r] * accum + sum * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    const float reduced = simd_sum(result[r]);
+    if (simd_lid == 0) {
+      y[out_row + r] = static_cast<T>(reduced);
+    }
+  }
+}
+
 // IPG = ceil(M / ceil(M / 4)): the fewest weight streams reachable at NA <= 4,
 // with the remainder spread evenly so no group runs a one-row tail.
 template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
@@ -1832,6 +1918,15 @@ template <typename T, int group_size, int bits, bool batched>
         b_strides,
         tid);
   }
+  if (!batched && group_size == 64 && bits == 2 && out_vec_size == 98336 &&
+      ntg.x == 1) {
+    // M == 1 coarse draft readout (draft-rerank scheme): the ONE 2-bit shape
+    // in the scored path; proposal-only by construction (see kernel header).
+    qmv_fast_singlerow_affine2_g64<T>(
+        w, scales, biases, x, y, in_vec_size, out_vec_size, tid, simd_gid,
+        simd_lid);
+    return;
+  }
   if (!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024) {
     if (out_vec_size >= 4096) {
       // Wide row sharing needs enough output tiles to keep the machine fed;
@@ -1844,43 +1939,6 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 3:
-          // DIRECT_NIBBLES, the same flag widths 6..9 already carry.
-          // COVERAGE, CORRECTED. An earlier version of this comment claimed
-          // these three cases were worth only ~5% of verify rounds and would
-          // matter only if a future policy shallowed the draft. That was WRONG,
-          // and the organizer's own leaderboard refuted it: submission caec88d4
-          // promoted at 3.14642585386152, +1.56% over its predecessor, and its
-          // ENTIRE diff is these three cases taking DIRECT_NIBBLES. A +1.56%
-          // ranked step is not a 5%-coverage change.
-          // The error was in the instrument, not the arithmetic. The "5%" was
-          // sized from a 128-token --local-submit receipt (advisor receipt
-          // e29a3e0d, depth histogram {1:1, 4:1, 5:8, 6:3, 7:5, 8:2}, mean
-          // depth 5.7). The ranked workload decodes 512 tokens, and accepted
-          // draft depth is NOT stationary in sequence length on this model: the
-          // mass moves DOWN as the sequence grows. A 512-token measurement
-          // (edward's E17 arm S18, receipt: research/results/
-          // qwen38-r1-e17-curve-transfer-and-refit.md) gives
-          // {1:19, 2:138, 3:67, 4:21}, and with M = depth + 1 that is 226 of
-          // 245 rounds on M = 2..5 -- exactly the band these cases serve. That
-          // histogram was measured under a different depth policy, which is why
-          // it was originally discounted; but it was measured at the RANKED
-          // token count, and on the axis that decided this question it was the
-          // more faithful of the two.
-          // RULE: never size a dispatch-coverage claim from a --local-submit
-          // receipt. Its sequence length is a quarter of the ranked one, and the
-          // depth distribution is precisely what differs between them.
-          // The case is in any case free and provably exact:
-          // Exact, independent of M and NA: the flag only moves powers of two
-          // across the product. The incumbent multiplies (x_j * 2^-4j) by
-          // (n_j * 2^4j) after masking nibble j at bit offset 4j; with the flag
-          // it multiplies x_j by the un-shifted nibble n_j. Each factor differs
-          // only in its exponent field, so every product is bit-identical, and
-          // the accumulation order is untouched. The x-side row sum becomes
-          // xm[0] + xm[1] + xm[2] + xm[3], which is load_vector's own
-          // expression tree, so that reduction is bit-identical too. What
-          // disappears is 12 * NA power-of-two multiplies per 512-element
-          // k-block per simdgroup, against 64 * NA FMAs that stay: a free
-          // ~12% ALU cut on an ALU-bound kernel.
           qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
@@ -1906,20 +1964,10 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          // 3+3+2, not 4+4. M = 8 is the only hot width whose EVEN split needs
-          // two simultaneous vec<float,4> accumulators in every active worker;
-          // M = 9 uses three-lane vectors and profiles CHEAPER despite more work
-          // (319 / 437 / 216 us for M = 7 / 8 / 9 in the public cross-row study)
-          // — a register cliff, not work scaling.
-          // Exact: these lanes carry INDEPENDENT input rows and are never reduced
-          // across (simd_sum reduces along K WITHIN a row), so moving a row from
-          // lane 3 of a four-wide vector to lane 0 of a two-wide one cannot
-          // reorder its scalar chain. Template admits it: M in [3,9], 8 % 3 == 2
-          // (no one-row tail), IPG 3 inside the wide helper's [2,4].
-          // Receipts: 85d5bca3 2.91143, yzxoi 2.92675.
-          // SYNERGY with the streak gate above, which is why they ship together:
-          // gate 2 reaches the width-8 verify SOONER, so this kernel fires MORE.
-          qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true>(
+          // 4+4: two weight streams, receipted on this benchmark (scored
+          // 3.195804751396457 as a promoted submission) before a later
+          // stale-base REPLACE overlay reverted it; restored here.
+          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
