@@ -71,11 +71,17 @@ public enum Qwen35Attribution {
 
     /// `MLX_QWEN_ATTRIB_OUT` names a file; without it the records go to stderr.
     /// The worker's default sandbox denies `file-write*`, so the file sink
-    /// needs `MLXFAST_NO_SANDBOX=1` on the parent CLI.
+    /// needs `MLXFAST_NO_SANDBOX=1` on the parent CLI. One benchmark invocation
+    /// spawns several model-holding processes, so the pid suffix keeps their
+    /// records apart instead of letting them clobber one path.
     nonisolated(unsafe) private static let sink: FileHandle = {
+        let pid = ProcessInfo.processInfo.processIdentifier
         guard
-            let path = ProcessInfo.processInfo.environment["MLX_QWEN_ATTRIB_OUT"],
-            !path.isEmpty,
+            let base = ProcessInfo.processInfo.environment["MLX_QWEN_ATTRIB_OUT"],
+            !base.isEmpty
+        else { return FileHandle.standardError }
+        let path = "\(base).\(pid)"
+        guard
             FileManager.default.createFile(atPath: path, contents: nil),
             let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: path))
         else { return FileHandle.standardError }
