@@ -1869,9 +1869,18 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          // 4+4, not 3+3+2 -- see quantized.h for the direct-nibble traffic
-          // rationale, the ranked affine-2-head receipt, and exactness argument.
-          // This JIT twin is the runtime-effective source.
+          // 4+4, not 3+3+2. The earlier three-lane choice was measured before
+          // direct-nibble affine-4 reduced the inner loop's register pressure.
+          // With direct nibbles, two four-row groups stream each weight tile
+          // twice instead of the three streams paid by 3+3+2. The exact
+          // composition on the affine-2 shortlist frontier ranked at
+          // 3.19580475139646, +0.23% over its 3.19351254799833 parent
+          // (submission 578535f).
+          // Exact: these lanes carry INDEPENDENT input rows and are never reduced
+          // across (simd_sum reduces along K WITHIN a row), so moving rows
+          // between groups cannot reorder any row's scalar chain. Template
+          // admits the even split: M in [3,9], 8 % 4 == 0, IPG 4 inside the
+          // wide helper's [2,4].
           qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
