@@ -10,10 +10,14 @@ the pre-registered prediction lives in
 research/results/qwen38-r1-e20-verify-side-layer-family-attribution.md and is
 logged as config so the comparison is visible without leaving the run.
 
-Three views of the split are published side by side and never mixed:
-  scored    - verify forwards inside the timed window. The answer.
+Four views of the split are published side by side and never mixed:
+  headline  - mode-2 (zero-boundary) forward wall time apportioned by the
+              mode-1 scored shares. The answer.
+  scored    - raw shares from verify forwards inside the timed window.
   warmup    - the harness's shape-warming forwards. Context only.
-  corrected - scored, minus the fitted per-boundary instrumentation cost.
+  corrected - scored, minus the fitted per-boundary cost. FALSIFIED: the
+              linear-in-boundary-count model leaves 26-52% residual. Kept
+              only so the falsification is auditable.
 """
 
 from __future__ import annotations
@@ -282,8 +286,44 @@ def main() -> int:
         summary["agreement/max_abs_share_delta"] = agree.get("max_abs_share_delta")
         summary["agreement/source"] = agree.get("source")
 
+    # Headline: mode-2 (zero-boundary) forward wall time apportioned by the
+    # mode-1 family shares. This is the answer the assignment asked for.
+    headline_rows = []
+    ap = data.get("_apportioned") or {}
+    for m, r in sorted((ap.get("by_m") or {}).items(), key=lambda kv: int(kv[0])):
+        headline_rows.append(
+            [int(m), r["forwards"], r["unperturbed_ns_per_forward"] / 1e6,
+             r["unperturbed_seconds_at_width"]]
+            + [r.get(f"{f}_seconds") for f in ALL_SHARES]
+            + [r.get(f"{f}_share") for f in ALL_SHARES]
+            + [r["share_spread_pp"], ",".join(r["share_arms"])]
+        )
+        for f in ALL_SHARES:
+            summary[f"headline/M{m}/{f}_seconds"] = r.get(f"{f}_seconds")
+            summary[f"headline/M{m}/{f}_share"] = r.get(f"{f}_share")
+        summary[f"headline/M{m}/forward_ms"] = r["unperturbed_ns_per_forward"] / 1e6
+        summary[f"headline/M{m}/forwards"] = r["forwards"]
+        summary[f"headline/M{m}/share_spread_pp"] = r["share_spread_pp"]
+    for k, v in (ap.get("window_seconds") or {}).items():
+        summary[f"headline/window/{k}_seconds"] = v
+    if ap.get("window_seconds"):
+        summary["headline/window/total_seconds"] = sum(ap["window_seconds"].values())
+    if ap.get("verify_proper_seconds") is not None:
+        summary["headline/verify_proper/total_seconds"] = ap["verify_proper_seconds"]
+        for k, v in (ap.get("verify_proper_shares") or {}).items():
+            summary[f"headline/verify_proper/{k}_share"] = v
+    if ap.get("source"):
+        summary["headline/source"] = ap["source"]
+
     run.log(
         {
+            "headline_family_seconds": wandb.Table(
+                columns=["M", "forwards", "forward_ms", "seconds_at_width"]
+                + [f"{f}_seconds" for f in ALL_SHARES]
+                + [f"{f}_share" for f in ALL_SHARES]
+                + ["share_spread_pp", "share_arms"],
+                data=headline_rows,
+            ),
             "arms": wandb.Table(
                 columns=[
                     "label",

@@ -162,7 +162,8 @@ def summarize(forwards: list[dict[str, int]], min_count: int) -> dict:
             fam_ns = sum(entry[f"{p}_ns_mean"] for p in parts)
             entry[f"{fam}_ns_mean"] = fam_ns
             entry[f"{fam}_share"] = fam_ns / denom if denom else None
-        entry["embed_share"] = entry["embed_ns_mean"] / denom if denom else None
+        for b in ("embed", "drain"):
+            entry[f"{b}_share"] = entry[f"{b}_ns_mean"] / denom if denom else None
         for grp, parts in LAYER_GROUPS.items():
             grp_ns = sum(entry[f"{p}_ns_mean"] for p in parts)
             entry[f"{grp}_ns_mean"] = grp_ns
@@ -272,6 +273,80 @@ def corrected_split(entry: dict, key: str, fit: dict) -> dict:
     return out
 
 
+def apportioned_split(arms: dict, key: str) -> dict:
+    """Per-family seconds: unperturbed forward time x attributing-mode share.
+
+    The attributing modes measure *where* the time goes but inflate *how much*
+    there is. Mode 2 measures how much without any boundary at all. Because the
+    shares are near-identical at two boundary densities that differ by 2x, the
+    perturbation is close to proportional, so the mode-2 forward time split by
+    the mode-1 share is a better absolute estimate than either arm alone. This
+    replaces the linear `c * evals` extrapolation, which three boundary counts
+    falsify.
+    """
+    base: dict[int, list[float]] = defaultdict(list)
+    base_fwd: dict[int, list[int]] = defaultdict(list)
+    for entry in arms.values():
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("meta", {}).get("attrib_mode")) != "2":
+            continue
+        for m, e in ((entry.get(key) or {}).get("by_m") or {}).items():
+            if e["total_ns_median"] is not None:
+                base[m].append(e["total_ns_median"])
+                base_fwd[m].append(e["forwards"])
+    if not base:
+        return {}
+
+    # Only mode 1 resolves the MLP as its own bucket; mode 3 charges each whole
+    # decoder layer to its attention family. Averaging the two would silently
+    # move every MLP second into `gdn` and `full_attention`.
+    shares: dict[tuple[int, str], list[float]] = defaultdict(list)
+    labels: dict[int, set] = defaultdict(set)
+    for label, entry in arms.items():
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("meta", {}).get("attrib_mode")) != "1":
+            continue
+        for m, e in ((entry.get(key) or {}).get("by_m") or {}).items():
+            labels[m].add(label)
+            for fam in list(FAMILIES) + ["embed", "drain"]:
+                s = e.get(f"{fam}_share")
+                if s is not None:
+                    shares[(m, fam)].append(s)
+
+    out: dict[int, dict] = {}
+    total_s: dict[str, float] = defaultdict(float)
+    for m, vals in sorted(base.items()):
+        if m not in labels:
+            continue
+        per_fwd_ns = statistics.median(vals)
+        n_fwd = round(statistics.median(base_fwd[m]))
+        row = {
+            "m": m,
+            "forwards": n_fwd,
+            "unperturbed_ns_per_forward": per_fwd_ns,
+            "unperturbed_seconds_at_width": per_fwd_ns * n_fwd / 1e9,
+            "share_arms": sorted(labels[m]),
+        }
+        for fam in list(FAMILIES) + ["embed", "drain"]:
+            v = shares.get((m, fam))
+            if not v:
+                continue
+            s = statistics.mean(v)
+            row[f"{fam}_share"] = s
+            row[f"{fam}_ns_per_forward"] = s * per_fwd_ns
+            row[f"{fam}_seconds"] = s * per_fwd_ns * n_fwd / 1e9
+            total_s[fam] += row[f"{fam}_seconds"]
+        row["share_spread_pp"] = max(
+            (max(v) - min(v)) * 100
+            for fam in list(FAMILIES)
+            if (v := shares.get((m, fam)))
+        )
+        out[m] = row
+    return {"source": key, "by_m": out, "window_seconds": dict(total_s)}
+
+
 def report_fields(path: str | None) -> dict:
     if not path or not os.path.exists(path):
         return {}
@@ -326,9 +401,9 @@ def report_fields(path: str | None) -> dict:
 def print_split_table(by_m: dict, min_count: int, title: str) -> None:
     print(f"  {title}")
     print(
-        "  %-4s %-7s %-11s %-7s %8s %8s %8s %8s %8s %8s"
+        "  %-4s %-7s %-11s %-7s %8s %8s %8s %8s %8s %8s %8s"
         % ("M", "n_fwd", "total_us", "evals", "gdn%", "fullat%", "mlp%",
-           "head2%", "embed%", "resid%")
+           "head2%", "embed%", "drain%", "resid%")
     )
     for mm, e in sorted(by_m.items()):
         if e["forwards"] < min_count:
@@ -338,7 +413,7 @@ def print_split_table(by_m: dict, min_count: int, title: str) -> None:
             return "%8.2f" % (100 * x) if x is not None else "       -"
 
         print(
-            "  %-4d %-7d %-11.1f %-7.1f %s %s %s %s %s %s"
+            "  %-4d %-7d %-11.1f %-7.1f %s %s %s %s %s %s %s"
             % (
                 mm,
                 e["forwards"],
@@ -349,6 +424,7 @@ def print_split_table(by_m: dict, min_count: int, title: str) -> None:
                 pct(e["mlp_share"]),
                 pct(e["head_and_top_two_share"]),
                 pct(e["embed_share"]),
+                pct(e.get("drain_share")),
                 pct(e.get("residual_frac")),
             )
         )
@@ -448,6 +524,7 @@ def main() -> int:
     fit = fits.get(args.fit_source) or {}
     for entry in result.values():
         entry["corrected"] = corrected_split(entry, "attrib_scored", fit)
+    apportioned = apportioned_split(result, "attrib_scored")
 
     for label, entry in result.items():
         print(f"\n===== {label} =====")
@@ -532,7 +609,9 @@ def main() -> int:
             )
         corr = entry.get("corrected")
         if corr:
-            print("  BOUNDARY-CORRECTED split (c*calls removed per bucket)")
+            print("  BOUNDARY-CORRECTED split (FALSIFIED -- kept as diagnostic "
+                  "only; the linear-in-boundary-count model leaves 26-52% "
+                  "residual, see the fit table)")
             print(
                 "  %-4s %-7s %-10s %-10s %8s %8s %8s %8s %8s %8s"
                 % ("M", "n_fwd", "raw_us", "corr_us", "gdn%", "fullat%",
@@ -604,6 +683,42 @@ def main() -> int:
             % (100 * a["max_abs_share_delta"])
         )
     result["_layer_group_agreement"] = agree
+
+    if apportioned.get("by_m"):
+        print("\n===== HEADLINE: per-family seconds at the scored widths =====")
+        print("  mode-2 forward wall time x mode-1 share; arms="
+              f"{sorted({l for r in apportioned['by_m'].values() for l in r['share_arms']})}")
+        print(
+            "  %-4s %-6s %-11s %-9s %-9s %-9s %-9s %-9s %-9s"
+            % ("M", "n_fwd", "fwd_ms", "gdn_s", "fullat_s", "mlp_s", "head2_s",
+               "drain_s", "spread")
+        )
+        for mm, r in sorted(apportioned["by_m"].items()):
+            print(
+                "  %-4d %-6d %-11.3f %-9.4f %-9.4f %-9.4f %-9.4f %-9.4f %-9.2f"
+                % (mm, r["forwards"], r["unperturbed_ns_per_forward"] / 1e6,
+                   r.get("gdn_seconds", 0), r.get("full_attention_seconds", 0),
+                   r.get("mlp_seconds", 0), r.get("head_and_top_two_seconds", 0),
+                   r.get("drain_seconds", 0), r["share_spread_pp"])
+            )
+        w = apportioned["window_seconds"]
+        tot = sum(w.values())
+        print("  window totals (s): " + "  ".join(
+            f"{k}={v:.4f} ({100 * v / tot:.1f}%)" for k, v in sorted(w.items())
+        ))
+        print(f"  summed verify-forward seconds in the scored window: {tot:.4f}")
+        # `drain` is the draft head's queued work finishing inside the verify
+        # forward, so the assignment's four-way question is only well posed
+        # once it is removed from the denominator.
+        proper = {k: v for k, v in w.items() if k != "drain"}
+        ptot = sum(proper.values())
+        apportioned["verify_proper_seconds"] = ptot
+        apportioned["verify_proper_shares"] = {
+            k: v / ptot for k, v in proper.items()} if ptot else {}
+        print(f"  VERIFY-SIDE PROPER (drain removed): {ptot:.4f} s -> " + "  ".join(
+            f"{k}={100 * v / ptot:.1f}%" for k, v in sorted(proper.items())
+        ))
+    result["_apportioned"] = apportioned
 
     if args.json_out:
         with open(args.json_out, "w") as fh:
