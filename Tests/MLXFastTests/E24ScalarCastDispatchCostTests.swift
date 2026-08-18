@@ -252,8 +252,7 @@ struct E24ScalarCastDispatchCostTests {
             let a = arm as! [String: Any]
             #expect(
                 (a["r2_total"] as! Double) > 0.90,
-                "arm \(name) is not linear in dispatch count (r2 = \(a["r2_total"]!)); "
-                    + "the per-dispatch slope cannot be read from it"
+                "arm \(name) is not linear in dispatch count (r2 = \(a["r2_total"]!)); the per-dispatch slope cannot be read from it"
             )
         }
     }
