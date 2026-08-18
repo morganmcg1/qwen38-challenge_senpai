@@ -1,4 +1,51 @@
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"revision_id":"r1","base_sha":"0d2eef9cac75d890de06a5eef4fd686c3c34c1ef","credit":"thorfinn E22 follow-up #1 (two-piece boundary-aware marginal price, arm C)","primary_metric":{"name":"e25/mtp_true_decode_gain_pct_median_of_8","available":true,"value":3.8346226261260976},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"revision_id":"r2","base_sha":"d7619a7f4606c2a0e1c46e04d8fae2e4e0e96602","credit":"thorfinn E22 follow-up #1 (two-piece boundary-aware marginal price, arm C)","primary_metric":{"name":"e25/mtp_true_decode_gain_pct_median_of_8","available":true,"value":3.179674776020895},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+
+## r2 result (supersedes the r1 body below)
+
+Re-measured on base `d7619a7`, with the declared `q2-q4-rerank-v1` head, all
+gates green (`gates.all_pass = true`, zero failures, no missing legs).
+
+- **Primary metric `e25/mtp_true_decode_gain_pct_median_of_8` = +3.1797 %**
+  (mean +3.2772, min −1.3644, max +7.2377), **7/8 improved**.
+- W&B run [`ydgtamkp`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ydgtamkp),
+  group `qwen38-r1-e25-per-row-draft-price`.
+- Machine-readable evidence: [`research/e25r2-timed.json`](../e25r2-timed.json)
+  (16 timed legs), [`research/e25r2-pool.json`](../e25r2-pool.json) (forced-depth
+  price curve), [`research/e25r2-policy.json`](../e25r2-policy.json) (offline replay).
+
+**Deliverable (1) answered: arm D is a hard `DEEP_CAP = 3`, not a price.**
+`effective_max_draft_len` collapses 4/5 → 3 on 8/8 prompts,
+`candidate_rounds_above_cliff` = 0 on 8/8, and with the measured
+`c_3 = 0.4394 > 1/4` depth ≥ 4 fires **0 / 400,000** analytic draws. The wall is
+the measured `M = 5` weight-stream pass cliff, not arm D's `max(...)`.
+
+**Three retractions, all mine:**
+
+1. r1's **8/8** sweep does not reproduce — `natural_history` measures −1.364 %.
+2. Both **dose-response** claims (above-cliff share, and its host-normalised
+   replacement) are withdrawn: the correlation flips sign with subset choice
+   (−0.101 → +0.333 → +0.706 → **+0.227** at n=8).
+3. r1's claim that the in-source **h-sweep supports arm D** was a cross-era
+   comparison and is wrong; that evidence points the other way.
+
+**Measurement-resolution finding (§21.5), the most transferable result here:**
+re-running an identical `technical` BASE leg moved it **−3.397 %**, swinging that
+prompt's gain by **3.347 pct points**. Implied **σ ≈ 1.73 pct points** per
+per-prompt gain, so the headline is **+3.18 ± ~0.77**, is *not* distinguishable
+from r1's +3.8346, and `natural_history`'s regression is only **0.79 σ** from
+zero — I therefore do **not** claim it as a genuine per-prompt regression. This
+is caused by `MLXFAST_LOCAL_COOL_GATE=0`; see follow-up §22.7.
+
+- Decision: **local winner with a proved mechanism and a predicted ranked
+  regression — do not submit.** The ranked pool drafts at mean length 5.078
+  (implied uniform `p ≈ 0.8168`) versus local `p0 = 0.6926`; arm D caps at 3 and
+  would truncate the majority of ranked rounds, where a ~19 % draft shortening
+  already cost ~3 % of score. The submission slot is in any case busy
+  (receipt `9197ed62-621f-474d-bfba-e1efddd9dd4c`).
+- Live ranked bar re-anchored per deliverable (e): **3.2341518328631**
+  (submission `942e5ab2-1c46-4c50-b7c3-eaf948878ed0`, frontier `474c7501`).
+- Candidate files unchanged from r1: **one** —
+  `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` (`+36/−2`).
 
 **Credit: this experiment implements thorfinn's E22 follow-up #1 — the two-piece
 boundary-aware marginal price, arm C in that proposal.** The idea, the diagnosis

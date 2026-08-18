@@ -185,14 +185,16 @@ def policy_payload(policy: dict) -> tuple[dict, dict]:
     arms = policy["arms"]
     base = arms["base_shipped_h0.18"]["ms_per_token"]
     table = wandb.Table(columns=[
-        "arm", "ms_per_token", "gain_vs_shipped_pct", "mean_depth", "rounds",
-        "emitted_tokens", "depth_histogram",
+        "arm", "ms_per_token", "gain_vs_shipped_pct", "mean_depth",
+        "depth_cap", "rounds_hitting_cap", "coeffs", "depth_histogram",
     ])
     for name in sorted(arms, key=lambda a: arms[a]["ms_per_token"]):
         row = arms[name]
         table.add_data(name, row["ms_per_token"],
                        100.0 * (base - row["ms_per_token"]) / base,
-                       row["mean_depth"], row["rounds"], row["emitted_tokens"],
+                       row["mean_depth"], row["depth_cap"],
+                       row["rounds_hitting_cap"],
+                       json.dumps(row["coeffs"]),
                        json.dumps(row["depth_histogram"], sort_keys=True))
 
     best = min(arms, key=lambda a: arms[a]["ms_per_token"])
@@ -201,7 +203,7 @@ def policy_payload(policy: dict) -> tuple[dict, dict]:
     validation = policy["replay_validation"]
     summary = {
         "e25r2/policy_rounds": policy["rounds"],
-        "e25r2/policy_replay_exact": validation["replay_exact"],
+        "e25r2/policy_replay_exact": validation["exact"],
         "e25r2/policy_best_arm": best,
         "e25r2/policy_best_gain_vs_shipped_pct":
             100.0 * (base - arms[best]["ms_per_token"]) / base,
@@ -213,7 +215,7 @@ def policy_payload(policy: dict) -> tuple[dict, dict]:
             == arms["base_shipped_deep_cap_3"]["depth_histogram"]
             and arms["arm_d_refit_measured"]["ms_per_token"]
             == arms["base_shipped_deep_cap_3"]["ms_per_token"]),
-        "e25r2/policy_belief_ratio": cal["ratio"],
+        "e25r2/policy_belief_ratio": cal["pooled_ratio"],
         "e25r2/policy_belief_shrink": policy["belief_shrink_applied"],
         "e25r2/observed_max_depth": obs["max_depth_observed"],
         "e25r2/observed_rounds_at_depth_ge_4": obs["rounds_at_depth_ge_4"],

@@ -1081,6 +1081,245 @@ seconds-per-token across prompts should be read with that in mind; all
 comparisons in §13 and §15 are within-run or same-session.
 
 
+## 21. Matched BASE vs PRICE timing on base `d7619a7`, and what it retracts
+
+### 21.1 What was measured
+
+Sixteen timed legs: eight prompts x {BASE, PRICE}, ABBA-ordered within each
+pair, all on base `d7619a7`, the declared `q2-q4-rerank-v1` head
+(`d038fd41...`, 427,746,170 B), 512 seed + 512 decode tokens per leg, on the
+local Apple M4 Pro (`Mac16,11`, `applegpu_g16s`) -- **not** the ranked M5.
+
+Report: `research/e25r2-timed.json`, produced by `research/e25r2_timed.py`.
+It **exits 0 with `gates.all_pass = true`, zero gate failures and no missing
+legs**. The gates check row accounting, ledger closure, rejected-tail logit
+equality, emitted-token counts, parent-clock agreement, arm identity and
+`meta dirty == 0` on every leg.
+
+Per-leg `mlxfast-runtime-worker` sha256 was identical across every leg of a
+given arm (BASE `fbbf7cfc...`, PRICE `e5eb0e09...`), so arm identity is
+established by binary digest, not by trust.
+
+### 21.2 Headline
+
+`e25/mtp_true_decode_gain_pct_median_of_8` = **+3.1797 %**
+(mean +3.2772, min -1.3644, max +7.2377, **improved 7/8**).
+
+| prompt | base ms/tok | cand ms/tok | gain % | serial drift % | base d-bar | cand d-bar | deep-round % | cliff ms/rd | acc d | rounds d | max d |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| natural_history | 49.638 | 50.315 | **-1.364** | -0.202 | 2.204 | 1.981 | 5.38 | 48.91 | -8 | +8 | 4 -> 3 |
+| dramatic | 47.939 | 46.706 | +2.572 | +0.350 | 2.692 | 2.287 | 20.54 | 49.58 | -12 | +13 | 5 -> 3 |
+| narrative | 46.503 | 45.268 | +2.657 | +0.330 | 2.364 | 2.142 | 5.51 | 48.27 | -3 | +3 | 5 -> 3 |
+| technical | 45.390 | 44.058 | +2.935 | +0.119 | 2.516 | 2.275 | 8.52 | 54.16 | -5 | +6 | 4 -> 3 |
+| travel | 46.754 | 45.153 | +3.424 | -0.157 | 2.470 | 2.218 | 9.13 | 56.92 | -8 | +8 | 4 -> 3 |
+| philosophy | 46.583 | 44.909 | +3.593 | +0.316 | 2.572 | 2.294 | 8.30 | 48.37 | -6 | +6 | 5 -> 3 |
+| medicine | 47.492 | 45.041 | +5.162 | +0.220 | 2.638 | 2.271 | 12.66 | 49.26 | -7 | +7 | 5 -> 3 |
+| english | 49.629 | 46.037 | +7.238 | -0.109 | 2.336 | 2.138 | 9.31 | 55.93 | +2 | -1 | 4 -> 3 |
+
+Serial-control drift between the paired legs is small: max |drift| 0.3496 %,
+median 0.2111 %. Across all sixteen legs the serial phase spans
+**74.435 - 74.988 ms/tok (0.74 %)**, so within-pair host speed cannot
+manufacture gains of 2.6-7.2 %.
+
+### 21.3 The structural claim is exact and replicates 8/8
+
+Three counter-based facts hold on **every** prompt, with no timing noise:
+
+- `effective_max_draft_len` collapses **4 or 5 -> 3** on 8/8;
+- `candidate_rounds_above_cliff` = **0** on 8/8;
+- mean draft length falls on 8/8 (2.204-2.692 -> 1.981-2.294).
+
+This settles deliverable (1): **arm D is a hard `DEEP_CAP = 3`, not a price.**
+`research/e25r2_rule.py` confirms the mechanism analytically -- with the
+measured `c_3 = 0.4394 > 1/4`, depth >= 4 fires **0 / 400,000** draws under
+both monotone and iid acceptance models, and the corner-case slack at `p = 1`
+is -0.7698. The wall is intrinsic to the measured `M = 5` weight-stream pass
+cliff, not to arm D's `max(...)`.
+
+### 21.4 The gain is a near-break-even trade, and one prompt goes underwater
+
+The cap buys gross time by deleting above-cliff rounds, then gives much of it
+back as extra rounds and lost accepted drafts:
+
+| prompt | gain % | cliff rounds removed | cliff ms/rd | gross saved ms | rounds d | acc d | net saved ms | cost as % of gross |
+|---|---|---|---|---|---|---|---|---|
+| natural_history | -1.364 | 14 | 48.91 | 684.7 | +8 | -8 | **-346.8** | **150.6** |
+| dramatic | +2.572 | 46 | 49.58 | 2280.7 | +13 | -12 | +631.4 | 72.3 |
+| narrative | +2.657 | 13 | 48.27 | 627.5 | +3 | -3 | +632.7 | -0.8 |
+| technical | +2.935 | 19 | 54.16 | 1029.0 | +6 | -5 | +682.2 | 33.7 |
+| travel | +3.424 | 21 | 56.92 | 1195.3 | +8 | -8 | +819.6 | 31.4 |
+| philosophy | +3.593 | 19 | 48.37 | 919.1 | +6 | -6 | +856.9 | 6.8 |
+| medicine | +5.162 | 29 | 49.26 | 1428.5 | +7 | -7 | +1255.3 | 12.1 |
+| english | +7.238 | 23 | 55.93 | 1286.3 | -1 | +2 | **+1839.1** | **-43.0** |
+
+Collateral cost spans **-43 % to +151 %** of gross saving. `dramatic` is the
+sharpest counter-example to any "more cliff rounds means more gain" story: it
+has by far the most above-cliff rounds (20.54 %, 46 removed, 2280.7 ms gross)
+yet lands at only +2.572 % because it gives back 72.3 %.
+
+Pooled over 1878 base rounds: 184 above-cliff rounds (9.80 %) at 51.37 ms of
+excess each, gross 9451.2 ms, net 6370.3 ms -- **32.6 % given back** --
+with `accepted_draft_delta` -47, `rejected_draft_delta` -351,
+`round_count_delta` +50.
+
+I deliberately **do not quote a single "share of saving from cliff
+avoidance"**. Per-prompt it ranges 0.699-3.612 (undefined for
+`natural_history`, whose net saving is negative), and its pooled value has
+drifted 0.774 -> 1.082 -> 1.128 -> 1.214 -> **1.484** as n grew from 2 to 8.
+A statistic that moves that much with sample size is not a measurement.
+
+### 21.5 Run-to-run reproducibility, and why it dominates everything per-prompt
+
+An earlier job measured `technical` and `dramatic` while the worktree was
+dirty (`meta dirty=1`). Rather than discard those legs I archived them and
+**re-ran both pairs cleanly**, giving two independent replicates of the same
+arm, prompt, binary, head and host. The result is the most important
+methodological finding in r2:
+
+| prompt | leg | first run | clean redo | delta |
+|---|---|---|---|---|
+| technical | BASE | 46.986 | 45.390 | **-1.596 ms/tok (-3.397 %)** |
+| technical | PRICE | 44.034 | 44.058 | +0.023 ms/tok (+0.053 %) |
+| technical | **gain** | **+6.283** | **+2.935** | **-3.347 pct points** |
+| dramatic | BASE | 47.964 | 47.939 | -0.025 ms/tok (-0.052 %) |
+| dramatic | PRICE | 46.317 | 46.706 | +0.389 ms/tok (+0.840 %) |
+| dramatic | **gain** | **+3.433** | **+2.572** | **-0.861 pct points** |
+
+Repeating an identical measurement moved one leg by **3.4 %** and one
+per-prompt gain by **3.3 pct points**. The dirty flag itself cannot be the
+cause: the worker binary digests were identical, and the flag is only a
+`git status` line count recorded in `meta.txt`. The most likely cause is
+thermal state, since `MLXFAST_LOCAL_COOL_GATE=0` was set for all r2 legs and
+the wrapper emits exactly that warning ("hot-start timings are not comparable
+to gated runs").
+
+Treating each pair as two independent measurements of one quantity gives
+`sd(single gain) ~= |delta| / sqrt(2)`, so **sigma ~= 1.73 pct points** per
+per-prompt gain (pooled over the two replicates; only 2 degrees of freedom, so
+this estimate is itself uncertain). Consequences, which I apply to my own
+claims below:
+
+- **median SE ~= 0.77 pct points**, so the headline is **+3.18 +/- ~0.77**;
+- the headline is **not** distinguishable from r1's +3.8346;
+- `natural_history`'s -1.364 is only **0.79 sigma** from zero.
+
+### 21.6 Retraction 1: "8/8" and the natural_history regression
+
+r1 reported a clean **8/8** sweep at +3.8346 %. On base `d7619a7` that does
+not reproduce: `natural_history` measures **-1.364 %** with all gates green
+and only -0.202 % serial drift. So **the 8/8 claim is retracted**; the honest
+count is **7/8 improved**.
+
+But by §21.5 I must also refuse the tempting stronger claim. At 0.79 sigma,
+**`natural_history` is not established as a genuine per-prompt regression.**
+The defensible statement is: one prompt measured negative, arm D is not
+demonstrated to be a universal win, and a single prompt's sign is below this
+harness's resolution. The median is robust to it either way -- leave-one-out
+medians span only **2.9355 - 3.4239**, and dropping `natural_history` gives
+3.4239.
+
+### 21.7 Retraction 2: no covariate-gain relationship is identifiable at n = 8
+
+I earlier asserted an "inverted-U" dose-response between a prompt's
+above-cliff share and its gain, then proposed a host-normalised replacement.
+**Both are withdrawn.** The correlation flips sign with subset choice:
+
+| subset | r(above-cliff share, gain) |
+|---|---|
+| n=4 | "inverted-U" asserted |
+| n=6 set A | **-0.101** |
+| n=7 | **+0.333** |
+| n=6 set B | **+0.706** |
+| **n=8 final** | **+0.227** |
+
+The host-normalised version dies the same way: `r(base local_ratio, gain)` was
+**-0.729** on set A and **+0.056** on set B, and lands at **+0.013** on the
+full eight. Final-8 correlations are all weak: cliff ms/round +0.445, base
+mean draft length +0.336, accepted rate +0.160, base MTP ms/tok -0.034, base
+serial ms/tok -0.277.
+
+The decisive counter-example needs no statistics: `natural_history`
+(base 49.638 ms/tok, local ratio 1.5038) and `english` (49.629, 1.5016) are
+nearly identical on every covariate, yet their gains differ by
+**8.6 pct points**.
+
+§21.5 explains why this was always doomed: with sigma ~= 1.73 pct points on a
+per-prompt gain and a total spread of about 8.6, eight points cannot support
+any correlation claim. **The methodological finding is that per-prompt
+covariate analysis is not identifiable in this harness at n = 8.** Defensible
+evidence here is per-round (1878 pooled rounds) or counter-based (§21.3), not
+per-prompt.
+
+### 21.8 Honest residual
+
+`english` has a net saving (1839.1 ms) that **exceeds** its gross cliff saving
+(1286.3 ms), so cliff avoidance accounts for only ~70 % of its gain. It is
+also the only prompt where the cap improved *both* accepted drafts (+2) and
+round count (-1). I have no mechanism for the remaining ~30 % and am not
+claiming one; given §21.5 some of it is plausibly measurement noise.
+
+### 21.9 Why the offline replay under-predicted by ~10x
+
+The offline policy replay (§15) predicted arm D at **+0.322 %** against the
+shipped rule on the same 1578-round tape. The timed median is **+3.18 %**, a
+factor of **9.9x**. These do not contradict each other because they measure
+different things: the replay prices rounds with the fitted per-depth cost
+model `T = 30.120 + 10.172*d + 32.378*ceil((d+1)/IPG)` on a **fixed** tape,
+whereas the timed run lets the policy change which rounds occur at all. The
+replay therefore cannot see the +50 round-count delta, the -351 rejected
+drafts, or the second-order effects of never entering the two-pass regime.
+The replay is the right tool for ranking policies at fixed acceptance; it is
+the wrong tool for absolute speedup.
+
+### 21.10 Transfer to ranked, re-anchored on the live bar
+
+The live promoted bar is **3.2341518328631** (submission
+`942e5ab2-1c46-4c50-b7c3-eaf948878ed0`, frontier `474c7501`). I predict arm D
+**regresses** there, and I recommend against submitting it:
+
+- the ranked pool runs at mean draft length **5.078**, which under the shipped
+  rule implies a uniform acceptance of **0.8168**, versus local measured
+  `p0 = 0.6926` -- an acceptance gap of **+0.1242**;
+- arm D caps at 3, so on ranked it would truncate the *majority* of rounds;
+- the in-source h-sweep is the closest available natural experiment: raising
+  `h` 0.18 -> 0.32 shortened drafts by only ~19 % (4.35/4.89/5.78/5.33/5.04 ->
+  3.36/4.01/4.53/4.03/4.76) and **lost ~3 % of score** with the baseline leg
+  flat and candidate decode time *rising* 0.95 %. With 0.15 and 0.14 also
+  failing, `h = 0.18` is bracketed on both sides and is a true local optimum.
+
+I explicitly **withdraw my r1 claim that the h-sweep supports arm D**; that
+was a cross-era comparison and is wrong. The h-sweep evidence points the other
+way: that pool rewards depth.
+
+### 21.11 Honest label
+
+**Local winner with a proved mechanism and a predicted ranked regression.**
+
+- Proved: arm D is a hard `DEEP_CAP = 3` (8/8 counters, 0/400,000 analytic).
+- Measured: **+3.18 +/- ~0.77 %** median on 8 local prompts, 7/8 improved, all
+  gates green.
+- Bounded: the trade is near break-even (32.6 % of gross given back) and sign-
+  negative on one prompt.
+- Predicted: a material regression on the ranked pool, so **no Yukon
+  submission is recommended** (the submission slot is in any case busy,
+  receipt `9197ed62-621f-474d-bfba-e1efddd9dd4c`).
+- Retracted: r1's 8/8 sweep, both dose-response claims, and r1's reading of
+  the h-sweep.
+
+### 21.12 Limitations
+
+1. Local M4 Pro, not the ranked M5; `arch_gen` on the runner is unconfirmed,
+   though `get_qmv_batch_limit` gives vector_limit 10 for gen >= 15 so the
+   crossrow switch should be live there too.
+2. `MLXFAST_LOCAL_COOL_GATE=0` on all legs; §21.5 quantifies the cost of that
+   choice as sigma ~= 1.73 pct points per per-prompt gain.
+3. The noise estimate itself rests on only **two** replicate pairs.
+4. One pair per prompt; the ranked harness averages differently.
+5. Sub-cliff price design is worth at most +0.32 % (§15), so the interesting
+   lever is collapsing the cliff itself -- handed to thorfinn's E27, not
+   duplicated here.
+
+
 ## 22. r2 suggested follow-ups (not implemented)
 
 These are offered as evidence and hypotheses. I did not implement any of them.
@@ -1168,18 +1407,59 @@ offset introduced by writing the trace. A trace-off timed leg would remove it
 entirely and is worth adding if anyone later attributes cost *within* a round
 rather than across depths.
 
+### 22.7 Restore the cool gate and replicate pairs — the highest-value methodology fix
+
+This is the follow-up I would rank first, and it comes directly out of §21.5.
+Re-measuring an identical `technical` BASE leg moved it **-3.397 %**, which
+alone swung that prompt's reported gain by **3.347 pct points**. The implied
+per-prompt noise is **sigma ~= 1.73 pct points**, which is the same order as
+most of the per-prompt effects this campaign reports.
+
+Concretely, this means several r2/r1 numbers were over-read, including my own
+r1 "8/8 at +3.8346" and every per-prompt correlation in §21.7. It probably
+also affects other campaign experiments that compare single matched pairs at
+the few-percent level on this host.
+
+Two cheap changes would fix it:
+
+1. **Stop setting `MLXFAST_LOCAL_COOL_GATE=0`.** It was bypassed for
+   throughput, and the wrapper's own warning states that hot-start timings are
+   not comparable to gated runs. §21.5 is the first direct measurement of what
+   that costs.
+2. **Run at least two matched pairs per prompt** and report a per-prompt
+   spread, so the harness reports its own resolution instead of leaving the
+   reader to assume a single pair is exact.
+
+Cost is roughly 2x the timed budget, or the same budget over four prompts
+instead of eight. Given that the median moved 3.83 -> 3.18 between bases and
+the per-prompt sigma is 1.73, I think fewer prompts measured twice is the
+better trade for any experiment whose effect size is under ~5 %.
+
 ## 23. r2 blocked on
 
-### 23.1 GitHub read and write credential (blocked at submission time)
+### 23.1 GitHub read and write credential (two outages, both since RESOLVED)
 
-Throughout the final r2 turns, `get_prs` on this PR returned **HTTP 403** and a
-raw `GET /repos/morganmcg1/qwen38-challenge_senpai/pulls/29` with the injected
-token returned **HTTP 401 `Bad credentials`**. `post_assignment_comment` failed
-the same way, because it performs the same GET first. Consequence: **I could not
-confirm whether advisor feedback arrived after 2026-08-18T19:38:07Z.** Every
-conclusion in Part II is derived from the r2 assignment text as written. If the
-advisor posted a clarification in that window, it is not reflected here and this
-report should be re-read against it.
+Two separate GitHub outages interrupted r2 reporting:
+
+1. An earlier window in which a raw
+   `GET /repos/morganmcg1/qwen38-challenge_senpai/pulls/29` with the injected
+   token returned **HTTP 401 `Bad credentials`**.
+2. A later window in which `get_prs` **and** `post_assignment_comment` both
+   returned **HTTP 403**. Because reads and writes failed together, this was a
+   service/credential outage rather than a tool defect;
+   `post_assignment_comment` failed three times with the same reserved
+   `comment_id`.
+
+**Both are resolved.** Access recovered and the pending interim comment posted
+as `issuecomment-5334334360`; a subsequent PR read confirmed the assignment is
+open at head `8ca8eb3f...` with **no advisor feedback missed** during either
+window, other than the maintenance-checkpoint request (`feedback_id`
+5334165606), which is acknowledged and honoured: the named job
+`fec86fc2-93a4-4691-b88b-04426e5a271a` finished exit 0, the later clean-redo
+job `290f9371-...` was allowed to finish rather than abandoned mid-leg, and
+**no further job was launched** -- all remaining r2 work was CPU-only analysis.
+
+This item is retained as a record, not as an open blocker.
 
 ### 23.2 Ranked-pool measurement, and therefore the transfer question
 
