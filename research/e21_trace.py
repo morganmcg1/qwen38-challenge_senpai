@@ -23,6 +23,15 @@ from pathlib import Path
 ROUND_RE = re.compile(r"^mtp-trace: round=(\d+) ")
 KV_RE = re.compile(r"(\w+)=([^\s]+)")
 SCHED_RE = re.compile(r"(\d+):([-\d.eE]+)/([-\d.eE]+)/([-\d.eE]+);")
+# E25 r2 forced-depth instrument: appended to `sched=`, so it is inside that
+# whitespace-free token and KV_RE cannot see it.
+FORCED_RE = re.compile(r"shipped=(\d+);forced=(\d+);")
+
+# Phase timers, in round order. `round_us` spans all of them; `upkeep_us`
+# includes the trace's own per-row top-2 dump, which scales with accepted rows,
+# so a depth-vs-time fit must use the sum of the phases BEFORE it.
+PHASE_KEYS = ("draft_build_us", "verify_build_us", "eval_wall_us",
+              "readout_us", "commit_us", "upkeep_us")
 
 
 def parse_round(line):
@@ -43,9 +52,14 @@ def parse_round(line):
     for key in ("round", "d", "acc", "streak", "cap"):
         if key in kv:
             rec[key] = int(kv[key])
-    for key in ("m", "round_us", "eval_wall_us", "draft_build_us"):
+    for key in ("m", "round_us") + PHASE_KEYS:
         if key in kv:
             rec[key] = float(kv[key])
+    if sched_at >= 0:
+        forced = FORCED_RE.search(line[sched_at:])
+        if forced:
+            rec["shipped_depth"] = int(forced.group(1))
+            rec["forced_depth"] = int(forced.group(2))
     if "ema" in kv:
         rec["ema"] = [float(x) for x in kv["ema"].split(",") if x]
     return rec
