@@ -116,7 +116,8 @@ private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
     else { throw SourceGateError.missing("source: \"\"\"") }
     guard
         let sourceClose = lines[(sourceOpen + 1)...].firstIndex(where: {
-            $0.trimmingCharacters(in: .whitespaces) == "\"\"\""
+            let t = $0.trimmingCharacters(in: .whitespaces)
+            return t == "\"\"\"" || t == "\"\"\","
         })
     else { throw SourceGateError.missing("closing \"\"\"") }
 
