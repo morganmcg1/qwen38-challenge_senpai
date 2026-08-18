@@ -1,0 +1,52 @@
+{
+  "axis_size" : 5120,
+  "control_lsize" : 512,
+  "control_normed_differing_cells" : 50,
+  "control_normed_differing_rate" : 7.62939453125e-05,
+  "control_normed_max_ulp" : 1,
+  "control_residual_differing_cells" : 0,
+  "declared_lsize" : 1024,
+  "declared_n_reads" : 4,
+  "eps" : 9.9999999747524271e-07,
+  "families" : [
+    {
+      "cells" : 655360,
+      "family" : "normal",
+      "normed_differing_cells" : 0,
+      "normed_differing_rate" : 0,
+      "normed_max_ulp" : 0,
+      "residual_differing_cells" : 0
+    },
+    {
+      "cells" : 655360,
+      "family" : "outlier",
+      "normed_differing_cells" : 0,
+      "normed_differing_rate" : 0,
+      "normed_max_ulp" : 0,
+      "residual_differing_cells" : 0
+    },
+    {
+      "cells" : 655360,
+      "family" : "tied",
+      "normed_differing_cells" : 0,
+      "normed_differing_rate" : 0,
+      "normed_max_ulp" : 0,
+      "residual_differing_cells" : 0
+    },
+    {
+      "cells" : 655360,
+      "family" : "large",
+      "normed_differing_cells" : 0,
+      "normed_differing_rate" : 0,
+      "normed_max_ulp" : 0,
+      "residual_differing_cells" : 0
+    }
+  ],
+  "kernel" : "qwen35_fused_residual_rms_norm",
+  "max_normed_ulp" : 0,
+  "mlx_rms_looped_limit" : 4096,
+  "rows_per_family" : 128,
+  "schema" : "e28.fused_residual_rmsnorm.v1",
+  "total_normed_differing_cells" : 0,
+  "total_residual_differing_cells" : 0
+}
