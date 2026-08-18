@@ -1,0 +1,10 @@
+{
+  "arg_partition_us" : 1178.9548397064209,
+  "entry_point" : "qwen35BenchDraftTop32",
+  "iters" : 200,
+  "per_thread" : 7,
+  "schema" : "e28.draft_top32_bench.v1",
+  "speedup" : 1.1881511542971379,
+  "tiles" : 64,
+  "two_dispatch_us" : 992.25997924804688
+}

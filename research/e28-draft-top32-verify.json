@@ -1,0 +1,9 @@
+{
+  "entry_point" : "qwen35VerifyDraftTop32",
+  "first_bad_trial" : -1,
+  "mismatches" : 0,
+  "schema" : "e28.draft_top32_verify.v1",
+  "seed" : 1,
+  "tied_trials" : 256,
+  "trials" : 1024
+}
