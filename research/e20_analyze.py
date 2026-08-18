@@ -47,6 +47,9 @@ LAYER_GROUPS = {
     "gdn_layer": ["gdn", "mlp_gdn"],
     "full_attention_layer": ["full_attention", "mlp_full_attention"],
 }
+# Families reported as verify-side work. `drain` and the round overhead are
+# reported outside this set because neither is target-model work.
+VERIFY_SIDE = ["gdn", "full_attention", "mlp", "head_and_top_two", "embed"]
 
 FWD = re.compile(r"^qwen-attrib: (.*)$")
 SPAN = re.compile(r"^qwen-attrib-span: (.*)$")
@@ -274,15 +277,13 @@ def corrected_split(entry: dict, key: str, fit: dict) -> dict:
 
 
 def apportioned_split(arms: dict, key: str) -> dict:
-    """Per-family seconds: unperturbed forward time x attributing-mode share.
+    """Diagnostic split against the mode-2 *forward* clock. Superseded.
 
-    The attributing modes measure *where* the time goes but inflate *how much*
-    there is. Mode 2 measures how much without any boundary at all. Because the
-    shares are near-identical at two boundary densities that differ by 2x, the
-    perturbation is close to proportional, so the mode-2 forward time split by
-    the mode-1 share is a better absolute estimate than either arm alone. This
-    replaces the linear `c * evals` extrapolation, which three boundary counts
-    falsify.
+    Mode 2 still brackets each forward with its own start/end timestamps, and
+    only 46% of its block time falls inside that bracket, so `total_ns` is not
+    the round's work. `headline_split` uses the parent's block clock instead and
+    is the reported result; this stays because the two disagreeing denominators
+    are what identified the occupancy problem.
     """
     base: dict[int, list[float]] = defaultdict(list)
     base_fwd: dict[int, list[int]] = defaultdict(list)
@@ -347,6 +348,166 @@ def apportioned_split(arms: dict, key: str) -> dict:
     return {"source": key, "by_m": out, "window_seconds": dict(total_s)}
 
 
+def block_by_width(path: str | None) -> dict[int, list[float]]:
+    """Parent-clock block seconds keyed by decode width M = draft_len + 1.
+
+    `block_request_seconds` and `effective_draft_lengths` are per-round arrays
+    the trusted report emits in the same order, so this is the parent's own
+    view of exactly the rounds the instrument records.
+    """
+    if not path or not os.path.exists(path):
+        return {}
+    try:
+        d = json.load(open(path))
+    except Exception:
+        return {}
+    out: dict[int, list[float]] = defaultdict(list)
+    for b, n in zip(d.get("block_request_seconds") or [], d.get("effective_draft_lengths") or []):
+        out[n + 1].append(b)
+    return dict(out)
+
+
+def headline_split(arms: dict, key: str) -> dict:
+    """Absolute per-family seconds on the parent's clock.
+
+    Mode 1 measures *where* forward time goes, but its eval boundaries add real
+    work. That added work is `block_m1 - attributed_m1`, an absolute cost the
+    boundary-free mode-2 arms never pay, so removing it from the mode-2 block
+    time leaves the unperturbed target forward:
+
+        overhead(M)    = block_m1(M) - attributed_m1(M)
+        target_work(M) = block_m2(M) - overhead(M)
+        family(M)      = share_m1(M) * target_work(M) * rounds(M)
+
+    Every term is measured; nothing is a fitted or assumed occupancy constant.
+    `drain` is the draft head's queue landing inside the verify forward and
+    `round_overhead` is the residual scheduling cost, so both are reported
+    outside the verify-side families rather than folded into one of them.
+    """
+    blk: dict[str, dict[int, list[float]]] = {"1": defaultdict(list), "2": defaultdict(list)}
+    rounds: dict[int, list[int]] = defaultdict(list)
+    attributed: dict[int, list[float]] = defaultdict(list)
+    shares: dict[int, list[dict[str, float]]] = defaultdict(list)
+
+    for entry in arms.values():
+        if not isinstance(entry, dict):
+            continue
+        mode = str(entry.get("meta", {}).get("attrib_mode"))
+        if mode not in ("1", "2"):
+            continue
+        for m, vals in block_by_width(entry.get("report_path")).items():
+            blk[mode][m].append(statistics.fmean(vals))
+            if mode == "2":
+                rounds[m].append(len(vals))
+        if mode != "1":
+            continue
+        for m, e in ((entry.get(key) or {}).get("by_m") or {}).items():
+            if not e.get("attributed_ns_mean"):
+                continue
+            attributed[m].append(e["attributed_ns_mean"] / 1e9)
+            shares[m].append({f: e[f"{f}_share"] for f in VERIFY_SIDE + ["drain"]})
+
+    by_m: dict[int, dict] = {}
+    totals: dict[str, float] = defaultdict(float)
+    for m in sorted(set(blk["1"]) & set(blk["2"]) & set(attributed)):
+        b1 = statistics.fmean(blk["1"][m])
+        b2 = statistics.fmean(blk["2"][m])
+        a1 = statistics.fmean(attributed[m])
+        n = statistics.fmean(rounds[m])
+        overhead = b1 - a1
+        target_work = b2 - overhead
+        share = {f: statistics.fmean([s[f] for s in shares[m]]) for f in VERIFY_SIDE + ["drain"]}
+        row: dict = {
+            "m": m,
+            "rounds_per_window": n,
+            "mode1_arms": len(blk["1"][m]),
+            "mode2_arms": len(blk["2"][m]),
+            "mode1_forwards": len(shares[m]),
+            "block_m1_s": b1,
+            "attributed_m1_s": a1,
+            "instrument_overhead_s": overhead,
+            "block_m2_s": b2,
+            "target_work_s": target_work,
+            "instrument_inflation": b1 / b2 - 1.0 if b2 else None,
+            "mode1_occupancy": a1 / b1 if b1 else None,
+        }
+        verify_s = 0.0
+        for f in VERIFY_SIDE:
+            row[f"{f}_s"] = share[f] * target_work
+            verify_s += row[f"{f}_s"]
+            totals[f] += row[f"{f}_s"] * n
+        for f in VERIFY_SIDE:
+            row[f"{f}_share_of_verify"] = row[f"{f}_s"] / verify_s if verify_s else None
+        row["verify_side_s"] = verify_s
+        row["drain_s"] = share["drain"] * target_work
+        totals["drain"] += row["drain_s"] * n
+        totals["round_overhead"] += overhead * n
+        by_m[m] = row
+
+    window = sum(totals.values())
+    verify = sum(totals[f] for f in VERIFY_SIDE)
+    return {
+        "source": key,
+        "by_m": by_m,
+        "window_seconds": window,
+        "verify_side_seconds": verify,
+        "verify_side_share_of_window": verify / window if window else None,
+        "family_seconds": dict(totals),
+        "family_share_of_verify": (
+            {f: totals[f] / verify for f in VERIFY_SIDE} if verify else {}
+        ),
+        "family_share_of_window": (
+            {k: v / window for k, v in totals.items()} if window else {}
+        ),
+    }
+
+
+def marginal_fit(headline: dict, min_rounds: int = 5) -> dict:
+    """Split each family's per-round cost into fixed and per-row parts.
+
+    `cost(M) = a + b*M` fitted on the two best-sampled widths. `b` is what an
+    extra verified row actually costs, so the share of `b` -- not the share of
+    total time -- is what a wider-batch or fused-verify lever can address.
+    """
+    pts = sorted(
+        ((r["rounds_per_window"], m, r) for m, r in headline.get("by_m", {}).items()
+         if r["rounds_per_window"] >= min_rounds),
+        reverse=True,
+    )[:2]
+    if len(pts) < 2:
+        return {}
+    (_, m_hi, hi), (_, m_lo, lo) = sorted(pts, key=lambda p: -p[1])
+    if m_hi == m_lo:
+        return {}
+    out = {"fit_widths": [m_lo, m_hi], "by_family": {}}
+    for f in VERIFY_SIDE + ["target_work"]:
+        col = f"{f}_s" if f != "target_work" else "target_work_s"
+        b = (hi[col] - lo[col]) / (m_hi - m_lo)
+        a = hi[col] - b * m_hi
+        out["by_family"][f] = {
+            "fixed_s": a, "per_row_s": b,
+            "fixed_share_at_hi": a / hi[col] if hi[col] else None,
+        }
+    marg = sum(out["by_family"][f]["per_row_s"] for f in VERIFY_SIDE)
+    for f in VERIFY_SIDE:
+        out["by_family"][f]["share_of_marginal"] = (
+            out["by_family"][f]["per_row_s"] / marg if marg else None
+        )
+    held = {}
+    for m, r in headline.get("by_m", {}).items():
+        if m in (m_lo, m_hi):
+            continue
+        pred = (out["by_family"]["target_work"]["fixed_s"]
+                + out["by_family"]["target_work"]["per_row_s"] * m)
+        held[m] = {
+            "predicted_s": pred, "measured_s": r["target_work_s"],
+            "rel_error": pred / r["target_work_s"] - 1.0 if r["target_work_s"] else None,
+            "rounds": r["rounds_per_window"],
+        }
+    out["held_out"] = held
+    return out
+
+
 def report_fields(path: str | None) -> dict:
     if not path or not os.path.exists(path):
         return {}
@@ -373,6 +534,14 @@ def report_fields(path: str | None) -> dict:
         "emitted_token_total",
         "target_tail_total",
         "uses_native_mtp_head",
+        "mtp_depth",
+        "requested_draft_depth",
+        "is_serial_control",
+        "effective_max_draft_len",
+        "effective_mean_draft_len",
+        "non_drafting_round_count",
+        "verify_block_replayed_round_count",
+        "first_block_seconds",
     ]
     out = {k: d[k] for k in keep if k in d}
     if "decode_seconds" in out and "seed_prefill_seconds" in out:
@@ -384,17 +553,24 @@ def report_fields(path: str | None) -> dict:
             out["prefill_share_of_charged_window"] = (
                 out["seed_prefill_seconds"] / out["decode_seconds"]
             )
-    # The trusted row ledger carries the width histogram independently of the
-    # research instrumentation; disagreement between them is a real defect.
-    ledger = d.get("row_ledger") or []
-    if ledger:
-        per_round: dict[int, int] = defaultdict(int)
-        for row in ledger:
-            per_round[row["round"]] += 1
+    # The timed report carries no `row_ledger` (`retainLedger: false`), so the
+    # trusted width histogram comes from `effective_draft_lengths` instead. It
+    # is the parent's own per-round record, independent of the instrumentation,
+    # so disagreement with the instrument's histogram is a real defect.
+    drafts = d.get("effective_draft_lengths") or []
+    if drafts:
         hist: dict[int, int] = defaultdict(int)
-        for _, n in per_round.items():
-            hist[n] += 1
-        out["ledger_width_histogram"] = dict(sorted(hist.items()))
+        for n in drafts:
+            hist[n + 1] += 1
+        out["report_width_histogram"] = dict(sorted(hist.items()))
+    blocks = d.get("block_request_seconds") or []
+    if blocks:
+        out["block_seconds_sum"] = sum(blocks)
+        out["block_round_count"] = len(blocks)
+        if "decode_seconds_ex_prefill" in out:
+            out["block_closure_delta_s"] = (
+                out["decode_seconds_ex_prefill"] - out["block_seconds_sum"]
+            )
     return out
 
 
@@ -511,6 +687,7 @@ def main() -> int:
         entry = {
             "meta": info["meta"],
             "attrib_files": [os.path.basename(p) for p in info.get("attrib_paths", [])],
+            "report_path": info.get("report_path"),
             "mtp": report_fields(info.get("report_path")),
             "serial": report_fields(info.get("serial_report_path")),
             "attrib_scored": summarize(scored, args.min_count) if scored else None,
@@ -525,6 +702,7 @@ def main() -> int:
     for entry in result.values():
         entry["corrected"] = corrected_split(entry, "attrib_scored", fit)
     apportioned = apportioned_split(result, "attrib_scored")
+    headline = headline_split(result, "attrib_scored")
 
     for label, entry in result.items():
         print(f"\n===== {label} =====")
@@ -685,7 +863,9 @@ def main() -> int:
     result["_layer_group_agreement"] = agree
 
     if apportioned.get("by_m"):
-        print("\n===== HEADLINE: per-family seconds at the scored widths =====")
+        print("\n===== DIAGNOSTIC: split against the mode-2 forward clock =====")
+        print("  superseded by the headline below; kept because the gap between "
+              "the two denominators is what exposed the forward-occupancy fault")
         print("  mode-2 forward wall time x mode-1 share; arms="
               f"{sorted({l for r in apportioned['by_m'].values() for l in r['share_arms']})}")
         print(
@@ -719,6 +899,66 @@ def main() -> int:
             f"{k}={100 * v / ptot:.1f}%" for k, v in sorted(proper.items())
         ))
     result["_apportioned"] = apportioned
+
+    if headline.get("by_m"):
+        print("\n===== HEADLINE: per-family seconds on the parent block clock =====")
+        print("  target_work(M) = block_m2(M) - (block_m1(M) - attributed_m1(M))")
+        print(
+            "  %-4s %-7s %-9s %-9s %-8s %-9s %-9s %-7s %-7s"
+            % ("M", "rounds", "blk_m1ms", "attr_m1ms", "ovh_ms", "blk_m2ms",
+               "tgt_ms", "infl", "occ_m1")
+        )
+        for mm, r in sorted(headline["by_m"].items()):
+            print(
+                "  %-4d %-7.1f %-9.2f %-9.2f %-8.2f %-9.2f %-9.2f %-7.1f %-7.1f"
+                % (mm, r["rounds_per_window"], 1e3 * r["block_m1_s"],
+                   1e3 * r["attributed_m1_s"], 1e3 * r["instrument_overhead_s"],
+                   1e3 * r["block_m2_s"], 1e3 * r["target_work_s"],
+                   100 * r["instrument_inflation"], 100 * r["mode1_occupancy"])
+            )
+        print("\n  per-family seconds in the decode window:")
+        for fam, sec in sorted(headline["family_seconds"].items(),
+                               key=lambda kv: -kv[1]):
+            verify_pct = headline["family_share_of_verify"].get(fam)
+            print(
+                "    %-18s %8.4f s  %5.2f%% of window  %s"
+                % (fam, sec, 100 * headline["family_share_of_window"][fam],
+                   f"{100 * verify_pct:5.2f}% of verify" if verify_pct else "")
+            )
+        print(
+            "  window %.4f s; VERIFY-SIDE %.4f s = %.2f%% of the decode window"
+            % (headline["window_seconds"], headline["verify_side_seconds"],
+               100 * headline["verify_side_share_of_window"])
+        )
+
+        print("\n  per-round target-forward ms, and % of verify-side, by width:")
+        print("  %-4s %-6s %s" % ("M", "rounds", "".join(
+            "%-19s" % f for f in VERIFY_SIDE)))
+        for mm, r in sorted(headline["by_m"].items()):
+            print("  %-4d %-6.0f %s" % (mm, r["rounds_per_window"], "".join(
+                "%8.3f (%5.2f%%) " % (1e3 * r[f"{f}_s"],
+                                      100 * r[f"{f}_share_of_verify"])
+                for f in VERIFY_SIDE)))
+
+        fit = marginal_fit(headline)
+        if fit:
+            print("\n  cost(M) = a + b*M fitted on M=%d and M=%d:" % tuple(fit["fit_widths"]))
+            print("  %-18s %-10s %-11s %-11s %-10s"
+                  % ("family", "a (ms)", "b (ms/row)", "fixed@M=%d" % fit["fit_widths"][1],
+                     "of marginal"))
+            for f, v in fit["by_family"].items():
+                print("  %-18s %-10.3f %-11.3f %-11s %-10s"
+                      % (f, 1e3 * v["fixed_s"], 1e3 * v["per_row_s"],
+                         "%.1f%%" % (100 * v["fixed_share_at_hi"]),
+                         "%.1f%%" % (100 * v["share_of_marginal"])
+                         if v.get("share_of_marginal") is not None else "-"))
+            print("  held out: " + "  ".join(
+                "M=%d %.1f vs %.1f ms (%+.1f%%, n=%.0f)"
+                % (m, 1e3 * h["predicted_s"], 1e3 * h["measured_s"],
+                   100 * h["rel_error"], h["rounds"])
+                for m, h in sorted(fit["held_out"].items())))
+            headline["marginal_fit"] = fit
+    result["_headline"] = headline
 
     if args.json_out:
         with open(args.json_out, "w") as fh:

@@ -2,28 +2,37 @@
 """qwen38-r1-e20: publish the verify-side layer-family attribution to W&B.
 
 usage:
-  research/e20_log_wandb.py <e20_analyze.py --json-out file> [--group G]
+  research/e20_log_wandb.py <e20_analyze.py --json-out file>... [--group G]
                             [--notes ...] [--name N]
+
+Accepts one analysis file per session. The first is the headline session; the
+rest are merged so cross-session views (the perturbation ladder, the fixed vs
+per-row fit anchors) can be computed from logged data rather than asserted.
+Sessions are tagged by the common prefix of their arm labels (S, D, N).
 
 Everything published here is post-hoc analysis of arms that were already run;
 the pre-registered prediction lives in
 research/results/qwen38-r1-e20-verify-side-layer-family-attribution.md and is
 logged as config so the comparison is visible without leaving the run.
 
-Four views of the split are published side by side and never mixed:
-  headline  - mode-2 (zero-boundary) forward wall time apportioned by the
-              mode-1 scored shares. The answer.
-  scored    - raw shares from verify forwards inside the timed window.
-  warmup    - the harness's shape-warming forwards. Context only.
-  corrected - scored, minus the fitted per-boundary cost. FALSIFIED: the
-              linear-in-boundary-count model leaves 26-52% residual. Kept
-              only so the falsification is auditable.
+Views of the split are published side by side and never mixed:
+  headline    - mode-2 forward wall time reconciled against the parent's own
+                per-round block clock, then summed over the shipped width
+                histogram. The answer.
+  scored      - raw shares from verify forwards inside the timed window.
+  warmup      - the harness's shape-warming forwards. Context only.
+  corrected   - scored, minus the fitted per-boundary cost. FALSIFIED: the
+                linear-in-boundary-count model leaves 26-52% residual. Kept
+                only so the falsification is auditable.
+  apportioned - superseded diagnostic that apportioned the whole window by
+                pooled shares. Kept for audit, never quoted.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 
 import wandb
 
@@ -91,17 +100,136 @@ def arms_of(data: dict) -> dict:
     return {k: v for k, v in data.items() if not k.startswith("_")}
 
 
+def session_tag(labels) -> str:
+    return os.path.commonprefix(sorted(labels)) or "?"
+
+
+def cross_session_fit(sessions, min_rounds: int = 5) -> dict:
+    """Fixed vs per-row cost anchored on the two best-supported widths.
+
+    Those widths sit in different sessions (M=3 only occurs at offered depth 2,
+    M=9 only at depth 8), so the widest lever arm the campaign actually
+    measured is unavailable to any single-session fit.
+    """
+    best: dict = {}
+    for sess, _path, d in sessions:
+        for m, r in ((d.get("_headline") or {}).get("by_m") or {}).items():
+            n = r.get("rounds_per_window") or 0
+            if n < min_rounds:
+                continue
+            m = int(m)
+            if m not in best or n > best[m][1]:
+                best[m] = (sess, n, r)
+    if len(best) < 2:
+        return {}
+    lo_m, hi_m = min(best), max(best)
+    lo_sess, lo_n, lo = best[lo_m]
+    hi_sess, hi_n, hi = best[hi_m]
+    span = hi_m - lo_m
+
+    out: dict = {}
+    for fam in ALL_SHARES + ["target_work"]:
+        lo_ms = lo.get(f"{fam}_s", 0.0) * 1e3
+        hi_ms = hi.get(f"{fam}_s", 0.0) * 1e3
+        per_row = (hi_ms - lo_ms) / span
+        fixed = lo_ms - lo_m * per_row
+        out[fam] = {
+            "fixed_ms": fixed,
+            "per_row_ms": per_row,
+            "fixed_share_at_hi": fixed / hi_ms if hi_ms else None,
+            "share_of_marginal": None,
+            "lo_session": lo_sess,
+            "hi_session": hi_sess,
+            "lo_m": lo_m,
+            "hi_m": hi_m,
+            "lo_rounds": lo_n,
+            "hi_rounds": hi_n,
+        }
+    total = out["target_work"]["per_row_ms"]
+    if total:
+        for fam in ALL_SHARES:
+            out[fam]["share_of_marginal"] = out[fam]["per_row_ms"] / total
+    return out
+
+
+def perturbation_ladder(arms: dict) -> dict:
+    """Cost of the instrument itself, per offered depth, relative to BASE.
+
+    Grouped by (offered depth, build, attribution mode) so the inert mode-2
+    path is separable from the mode-1/mode-3 logging paths, and so the serial
+    control is compared against the same build as its MTP leg.
+    """
+    groups: dict = {}
+    for label, arm in sorted(arms.items()):
+        meta = arm.get("meta") or {}
+        key = (
+            str(meta.get("offered_depth")),
+            str(meta.get("build")),
+            str(meta.get("attrib_mode")),
+        )
+        g = groups.setdefault(key, {"labels": [], "mtp": [], "serial": []})
+        g["labels"].append(label)
+        mtp = (arm.get("mtp") or {}).get("decode_seconds_ex_prefill")
+        if mtp is not None:
+            g["mtp"].append(mtp)
+        ser = (arm.get("serial") or {}).get("sec_per_token_ex_prefill")
+        if ser is not None:
+            g["serial"].append(ser * 1e3)
+
+    def mean(xs):
+        return sum(xs) / len(xs) if xs else None
+
+    out: dict = {}
+    for key, g in groups.items():
+        mtp_mean = mean(g["mtp"])
+        spread = None
+        if mtp_mean and len(g["mtp"]) > 1:
+            spread = (max(g["mtp"]) - min(g["mtp"])) / mtp_mean * 100
+        out[key] = {
+            "n": len(g["labels"]),
+            "arms": ",".join(g["labels"]),
+            "mtp_mean_s": mtp_mean,
+            "mtp_spread_pct": spread,
+            "mtp_vs_base_pct": None,
+            "serial_mean_ms_per_tok": mean(g["serial"]),
+            "serial_vs_base_pct": None,
+        }
+
+    for key, v in out.items():
+        base = out.get((key[0], "BASE", "0"))
+        if base is None:
+            continue
+        if base["mtp_mean_s"] and v["mtp_mean_s"] is not None:
+            v["mtp_vs_base_pct"] = (v["mtp_mean_s"] / base["mtp_mean_s"] - 1) * 100
+        b_ser = base["serial_mean_ms_per_tok"]
+        if b_ser and v["serial_mean_ms_per_tok"] is not None:
+            v["serial_vs_base_pct"] = (v["serial_mean_ms_per_tok"] / b_ser - 1) * 100
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("analysis")
+    ap.add_argument("analysis", nargs="+")
     ap.add_argument("--group", default="qwen38-r1-e20")
     ap.add_argument("--name", default=None)
     ap.add_argument("--notes", default="")
     ap.add_argument("--base-sha", default="c0f7e370921a14f348fa1872f2176b1b43028752")
     args = ap.parse_args()
 
-    data = json.load(open(args.analysis))
-    arms = arms_of(data)
+    sessions = []
+    arms: dict = {}
+    arm_session: dict = {}
+    for path in args.analysis:
+        d = json.load(open(path))
+        a = arms_of(d)
+        sess = session_tag(a)
+        sessions.append((sess, path, d))
+        for label, arm in a.items():
+            arms[label] = arm
+            arm_session[label] = sess
+
+    data = sessions[0][2]
+    primary = sessions[0][0]
     any_meta = next(iter(arms.values()))["meta"] if arms else {}
 
     config = {
@@ -126,6 +254,8 @@ def main() -> int:
         "gate_qualified_for_timing": False,
         "no_sandbox": any_meta.get("no_sandbox"),
         "arms": sorted(arms),
+        "sessions": [s for s, _p, _d in sessions],
+        "headline_session": primary,
         "notes": args.notes,
     }
     for fam, share in PREREGISTERED.items():
@@ -161,6 +291,7 @@ def main() -> int:
         arm_rows.append(
             [
                 label,
+                arm_session[label],
                 meta.get("build"),
                 meta.get("attrib_mode"),
                 meta.get("offered_depth"),
@@ -194,10 +325,14 @@ def main() -> int:
                 / mtp["decode_seconds_ex_prefill"]
             )
 
-        hist = mtp.get("ledger_width_histogram") or {}
+        hist = mtp.get("report_width_histogram") or {}
         for m, n in hist.items():
-            width_rows.append([label, "ledger", int(m), n])
-            summary[f"{label}/ledger_width/M{m}"] = n
+            width_rows.append([label, "report", int(m), n])
+            summary[f"{label}/report_width/M{m}"] = n
+        for key in ("block_seconds_sum", "block_round_count", "block_closure_delta_s",
+                    "first_block_seconds"):
+            if key in mtp:
+                summary[f"{label}/mtp/{key}"] = mtp[key]
 
         for source in ("attrib_scored", "attrib_warmup"):
             a = arm.get(source) or {}
@@ -256,77 +391,242 @@ def main() -> int:
             for fam in ALL_SHARES:
                 summary[f"{label}/M{m}/corrected/{fam}_share"] = r.get(f"{fam}_share")
 
-    for source, fit in (data.get("_boundary_fits") or {}).items():
-        for m, f in sorted((fit.get("by_m") or {}).items(), key=lambda kv: int(kv[0])):
-            fit_rows.append(
-                [
-                    source.removeprefix("attrib_"),
-                    int(m),
-                    f["n_boundary_counts"],
-                    f["per_eval_ns"] / 1e3,
-                    f["gpu_ns_intercept"] / 1e3,
-                    f.get("max_abs_resid_frac"),
-                    len(f["points"]),
-                ]
-            )
-            if source == "attrib_scored":
-                summary[f"fit/M{m}/per_eval_us"] = f["per_eval_ns"] / 1e3
-                summary[f"fit/M{m}/unperturbed_total_us"] = f["gpu_ns_intercept"] / 1e3
-                summary[f"fit/M{m}/max_abs_resid_frac"] = f.get("max_abs_resid_frac")
-                summary[f"fit/M{m}/n_boundary_counts"] = f["n_boundary_counts"]
+    for sess, _path, d in sessions:
+        for source, fit in (d.get("_boundary_fits") or {}).items():
+            by_m = sorted((fit.get("by_m") or {}).items(), key=lambda kv: int(kv[0]))
+            for m, f in by_m:
+                fit_rows.append(
+                    [
+                        sess,
+                        source.removeprefix("attrib_"),
+                        int(m),
+                        f["n_boundary_counts"],
+                        f["per_eval_ns"] / 1e3,
+                        f["gpu_ns_intercept"] / 1e3,
+                        f.get("max_abs_resid_frac"),
+                        len(f["points"]),
+                    ]
+                )
+                if source == "attrib_scored":
+                    k = f"fit/{sess}/M{m}"
+                    summary[f"{k}/per_eval_us"] = f["per_eval_ns"] / 1e3
+                    summary[f"{k}/unperturbed_total_us"] = f["gpu_ns_intercept"] / 1e3
+                    summary[f"{k}/max_abs_resid_frac"] = f.get("max_abs_resid_frac")
+                    summary[f"{k}/n_boundary_counts"] = f["n_boundary_counts"]
 
-    agree = data.get("_layer_group_agreement") or {}
-    for m, groups in sorted((agree.get("by_m") or {}).items(), key=lambda kv: int(kv[0])):
-        for grp, g in groups.items():
-            agree_rows.append(
-                [int(m), grp, g["mode1_share"], g["mode3_share"], g["abs_delta"]]
+        for source, agree in (d.get("_layer_group_agreement") or {}).items():
+            src = source.removeprefix("attrib_")
+            by_m = sorted((agree.get("by_m") or {}).items(), key=lambda kv: int(kv[0]))
+            for m, groups in by_m:
+                for grp, g in groups.items():
+                    agree_rows.append(
+                        [sess, src, int(m), grp, g["mode1_share"], g["mode3_share"],
+                         g["abs_delta"]]
+                    )
+                    k = f"agreement/{sess}/{src}/M{m}/{grp}"
+                    summary[f"{k}/abs_delta"] = g["abs_delta"]
+            summary[f"agreement/{sess}/{src}/max_abs_share_delta"] = agree.get(
+                "max_abs_share_delta"
             )
-            summary[f"agreement/M{m}/{grp}/abs_delta"] = g["abs_delta"]
-    if agree:
-        summary["agreement/max_abs_share_delta"] = agree.get("max_abs_share_delta")
-        summary["agreement/source"] = agree.get("source")
+    # The stopping rule in section 1.7 is evaluated against the worst mode-1 vs
+    # mode-3 disagreement anywhere in the timed window, not per session. Warmup
+    # forwards are outside that window and are bounded separately.
+    for src in ("scored", "warmup"):
+        deltas = [r[6] for r in agree_rows if r[1] == src and r[6] is not None]
+        if deltas:
+            summary[f"agreement/{src}/max_abs_share_delta"] = max(deltas)
+    summary["agreement/max_abs_share_delta"] = summary.get(
+        "agreement/scored/max_abs_share_delta"
+    )
 
-    # Headline: mode-2 (zero-boundary) forward wall time apportioned by the
-    # mode-1 family shares. This is the answer the assignment asked for.
-    headline_rows = []
+    # Superseded diagnostic: whole-window apportionment by pooled shares. It
+    # ignores that the split moves with width, so it is logged for audit only.
+    diag_rows = []
     ap = data.get("_apportioned") or {}
     for m, r in sorted((ap.get("by_m") or {}).items(), key=lambda kv: int(kv[0])):
-        headline_rows.append(
+        diag_rows.append(
             [int(m), r["forwards"], r["unperturbed_ns_per_forward"] / 1e6,
              r["unperturbed_seconds_at_width"]]
             + [r.get(f"{f}_seconds") for f in ALL_SHARES]
             + [r.get(f"{f}_share") for f in ALL_SHARES]
             + [r["share_spread_pp"], ",".join(r["share_arms"])]
         )
+        summary[f"diagnostic_apportioned/M{m}/share_spread_pp"] = r["share_spread_pp"]
+    for k, v in (ap.get("verify_proper_shares") or {}).items():
+        summary[f"diagnostic_apportioned/verify_proper/{k}_share"] = v
+
+    # HEADLINE. Mode-2 forward time reconciled against the parent's own block
+    # clock at each width, then summed over the shipped width histogram.
+    headline_rows = []
+    ident_rows = []
+    fit_rows_marginal = []
+    for sess, _path, d in sessions:
+        h = d.get("_headline") or {}
+        if not h.get("by_m"):
+            continue
+        is_primary = sess == primary
+        headline_rows.append(
+            [sess, h["window_seconds"], h["verify_side_seconds"],
+             h["verify_side_share_of_window"]]
+            + [h["family_seconds"].get(f) for f in ALL_SHARES]
+            + [h["family_share_of_window"].get(f) for f in ALL_SHARES]
+            + [h["family_share_of_verify"].get(f) for f in FAMILIES + ["embed"]]
+        )
+        pre = "headline" if is_primary else f"headline/{sess}"
+        summary[f"{pre}/window_seconds"] = h["window_seconds"]
+        summary[f"{pre}/verify_side_seconds"] = h["verify_side_seconds"]
+        summary[f"{pre}/verify_side_share_of_window"] = h["verify_side_share_of_window"]
+        summary[f"{pre}/source"] = h.get("source")
         for f in ALL_SHARES:
-            summary[f"headline/M{m}/{f}_seconds"] = r.get(f"{f}_seconds")
-            summary[f"headline/M{m}/{f}_share"] = r.get(f"{f}_share")
-        summary[f"headline/M{m}/forward_ms"] = r["unperturbed_ns_per_forward"] / 1e6
-        summary[f"headline/M{m}/forwards"] = r["forwards"]
-        summary[f"headline/M{m}/share_spread_pp"] = r["share_spread_pp"]
-    for k, v in (ap.get("window_seconds") or {}).items():
-        summary[f"headline/window/{k}_seconds"] = v
-    if ap.get("window_seconds"):
-        summary["headline/window/total_seconds"] = sum(ap["window_seconds"].values())
-    if ap.get("verify_proper_seconds") is not None:
-        summary["headline/verify_proper/total_seconds"] = ap["verify_proper_seconds"]
-        for k, v in (ap.get("verify_proper_shares") or {}).items():
-            summary[f"headline/verify_proper/{k}_share"] = v
-    if ap.get("source"):
-        summary["headline/source"] = ap["source"]
+            summary[f"{pre}/{f}_seconds"] = h["family_seconds"].get(f)
+            summary[f"{pre}/{f}_share_of_window"] = h["family_share_of_window"].get(f)
+            if f in h["family_share_of_verify"]:
+                summary[f"{pre}/{f}_share_of_verify"] = h["family_share_of_verify"][f]
+        for fam in FAMILIES:
+            got = h["family_share_of_verify"].get(fam)
+            if got is not None and is_primary:
+                summary[f"prereg_error_pp/{fam}"] = (got - PREREGISTERED[fam]) * 100
+
+        for m, r in sorted(h["by_m"].items(), key=lambda kv: int(kv[0])):
+            ident_rows.append(
+                [sess, int(m), r["rounds_per_window"], r["block_m1_s"] * 1e3,
+                 r["attributed_m1_s"] * 1e3, r["instrument_overhead_s"] * 1e3,
+                 r["block_m2_s"] * 1e3, r["target_work_s"] * 1e3,
+                 r["instrument_inflation"], r["mode1_occupancy"],
+                 r["mode1_arms"], r["mode2_arms"], r["mode1_forwards"]]
+                + [r.get(f"{f}_s", 0.0) * 1e3 for f in ALL_SHARES]
+                + [r.get(f"{f}_share_of_verify") for f in FAMILIES + ["embed"]]
+            )
+            k = f"{pre}/M{m}"
+            summary[f"{k}/rounds"] = r["rounds_per_window"]
+            summary[f"{k}/block_m2_ms"] = r["block_m2_s"] * 1e3
+            summary[f"{k}/target_work_ms"] = r["target_work_s"] * 1e3
+            summary[f"{k}/instrument_inflation"] = r["instrument_inflation"]
+            summary[f"{k}/mode1_occupancy"] = r["mode1_occupancy"]
+            for f in FAMILIES + ["embed"]:
+                summary[f"{k}/{f}_share_of_verify"] = r.get(f"{f}_share_of_verify")
+                summary[f"{k}/{f}_ms"] = r.get(f"{f}_s", 0.0) * 1e3
+
+        mf = h.get("marginal_fit") or {}
+        for fam, v in sorted((mf.get("by_family") or {}).items()):
+            fit_rows_marginal.append(
+                [sess, "within_session", fam, v["fixed_s"] * 1e3,
+                 v["per_row_s"] * 1e3, v["fixed_share_at_hi"],
+                 v.get("share_of_marginal")]
+            )
+            if is_primary:
+                summary[f"marginal_fit/{fam}/fixed_ms"] = v["fixed_s"] * 1e3
+                summary[f"marginal_fit/{fam}/per_row_ms"] = v["per_row_s"] * 1e3
+                summary[f"marginal_fit/{fam}/fixed_share_at_hi"] = v[
+                    "fixed_share_at_hi"
+                ]
+                summary[f"marginal_fit/{fam}/share_of_marginal"] = v.get(
+                    "share_of_marginal"
+                )
+
+    # Preferred fit: anchored on the two widest-support widths in the whole
+    # campaign, which live in different sessions (M=3 in D, M=9 in S).
+    for fam, v in sorted(cross_session_fit(sessions).items()):
+        fit_rows_marginal.append(
+            [f"{v['lo_session']}+{v['hi_session']}", "cross_session", fam,
+             v["fixed_ms"], v["per_row_ms"], v["fixed_share_at_hi"],
+             v.get("share_of_marginal")]
+        )
+        summary[f"marginal_fit/cross_session/{fam}/fixed_ms"] = v["fixed_ms"]
+        summary[f"marginal_fit/cross_session/{fam}/per_row_ms"] = v["per_row_ms"]
+        summary[f"marginal_fit/cross_session/{fam}/fixed_share_at_hi"] = v[
+            "fixed_share_at_hi"
+        ]
+        summary[f"marginal_fit/cross_session/{fam}/share_of_marginal"] = v.get(
+            "share_of_marginal"
+        )
+
+    ladder_rows = []
+    for key, v in sorted(perturbation_ladder(arms).items()):
+        ladder_rows.append(
+            [key[0], key[1], key[2], v["n"], v["arms"], v["mtp_mean_s"],
+             v["mtp_spread_pct"], v["mtp_vs_base_pct"], v["serial_mean_ms_per_tok"],
+             v["serial_vs_base_pct"]]
+        )
+        k = f"ladder/d{key[0]}/{key[1]}_mode{key[2]}"
+        summary[f"{k}/mtp_mean_s"] = v["mtp_mean_s"]
+        summary[f"{k}/mtp_spread_pct"] = v["mtp_spread_pct"]
+        summary[f"{k}/mtp_vs_base_pct"] = v["mtp_vs_base_pct"]
+        summary[f"{k}/serial_ms_per_tok"] = v["serial_mean_ms_per_tok"]
+        summary[f"{k}/serial_vs_base_pct"] = v["serial_vs_base_pct"]
 
     run.log(
         {
-            "headline_family_seconds": wandb.Table(
+            "headline_split": wandb.Table(
+                columns=[
+                    "session",
+                    "window_s",
+                    "verify_side_s",
+                    "verify_side_share_of_window",
+                ]
+                + [f"{f}_seconds" for f in ALL_SHARES]
+                + [f"{f}_share_of_window" for f in ALL_SHARES]
+                + [f"{f}_share_of_verify" for f in FAMILIES + ["embed"]],
+                data=headline_rows,
+            ),
+            "headline_accounting_identity": wandb.Table(
+                columns=[
+                    "session",
+                    "M",
+                    "rounds",
+                    "block_m1_ms",
+                    "attributed_m1_ms",
+                    "instrument_overhead_ms",
+                    "block_m2_ms",
+                    "target_work_ms",
+                    "instrument_inflation",
+                    "mode1_occupancy",
+                    "mode1_arms",
+                    "mode2_arms",
+                    "mode1_forwards",
+                ]
+                + [f"{f}_ms" for f in ALL_SHARES]
+                + [f"{f}_share_of_verify" for f in FAMILIES + ["embed"]],
+                data=ident_rows,
+            ),
+            "headline_marginal_fit": wandb.Table(
+                columns=[
+                    "session",
+                    "kind",
+                    "family",
+                    "fixed_ms",
+                    "per_row_ms",
+                    "fixed_share_at_hi",
+                    "share_of_marginal",
+                ],
+                data=fit_rows_marginal,
+            ),
+            "perturbation_ladder": wandb.Table(
+                columns=[
+                    "offered_depth",
+                    "build",
+                    "attrib_mode",
+                    "n",
+                    "arms",
+                    "mtp_mean_s",
+                    "mtp_spread_pct",
+                    "mtp_vs_base_pct",
+                    "serial_mean_ms_per_tok",
+                    "serial_vs_base_pct",
+                ],
+                data=ladder_rows,
+            ),
+            "diagnostic_apportioned_family_seconds": wandb.Table(
                 columns=["M", "forwards", "forward_ms", "seconds_at_width"]
                 + [f"{f}_seconds" for f in ALL_SHARES]
                 + [f"{f}_share" for f in ALL_SHARES]
                 + ["share_spread_pp", "share_arms"],
-                data=headline_rows,
+                data=diag_rows,
             ),
             "arms": wandb.Table(
                 columns=[
                     "label",
+                    "session",
                     "build",
                     "attrib_mode",
                     "offered_depth",
@@ -372,6 +672,7 @@ def main() -> int:
             ),
             "boundary_overhead_fits": wandb.Table(
                 columns=[
+                    "session",
                     "source",
                     "M",
                     "n_boundary_counts",
@@ -383,8 +684,8 @@ def main() -> int:
                 data=fit_rows,
             ),
             "mode1_vs_mode3_agreement": wandb.Table(
-                columns=["M", "layer_group", "mode1_share", "mode3_share",
-                         "abs_delta"],
+                columns=["session", "source", "M", "layer_group", "mode1_share",
+                         "mode3_share", "abs_delta"],
                 data=agree_rows,
             ),
         }
