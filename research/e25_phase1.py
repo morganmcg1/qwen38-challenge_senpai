@@ -465,6 +465,20 @@ def log_wandb(payload: dict) -> list[dict]:
         summary[f"e25/serial_spread_pct/{p}"] = v["serial_spread_pct"]
         summary[f"e25/base_local_speedup/{p}"] = v["base_local_speedup"]
         summary[f"e25/price_local_speedup/{p}"] = v["price_local_speedup"]
+    fw = pre["fixed_window_accounting"]
+    for k in ("realised_tokens_lost", "phase0_modelled_tokens_lost",
+              "base_rounds", "price_rounds", "extra_rounds_spent_by_arm",
+              "base_declared_rows", "price_declared_rows",
+              "realised_rows_saved", "tokens_emitted_all_legs_512",
+              "realised_over_predicted_gain_ratio_mean",
+              "extra_rounds_vs_attenuation_pearson_r"):
+        summary[f"e25/fixed_window/{k}"] = fw[k]
+    for p, n in fw["per_prompt_extra_rounds"].items():
+        summary[f"e25/extra_rounds/{p}"] = n
+    for p, n in fw["per_prompt_rows_saved"].items():
+        summary[f"e25/rows_saved/{p}"] = n
+    for p, n in fw["realised_over_predicted_gain_ratio_per_prompt"].items():
+        summary[f"e25/realised_over_predicted/{p}"] = n
     for k, v in (payload.get("phase0") or {}).get("wandb_scalars", {}).items():
         summary[k] = v
     r.summary.update({k: v for k, v in summary.items() if v is not None})
@@ -472,6 +486,7 @@ def log_wandb(payload: dict) -> list[dict]:
     # A per-prompt table makes the prediction/realisation comparison inspectable
     # in the UI rather than only in the artifact.
     cols = ["prompt", "order", "predicted_gain_pct", "realised_gain_pct", "error_pp",
+            "realised_over_predicted", "extra_rounds", "rows_saved",
             "base_true_decode_s", "price_true_decode_s", "base_mean_depth",
             "price_mean_depth", "serial_spread_pct", "base_correct", "price_correct"]
     tbl = wandb.Table(columns=cols)
@@ -480,7 +495,11 @@ def log_wandb(payload: dict) -> list[dict]:
         pp = pre["per_prompt"].get(p, {})
         tbl.add_data(
             p, v["order"], pp.get("predicted_pct"), v["true_decode_gain_pct"],
-            pp.get("error_pp"), v["base_true_decode_s"], v["price_true_decode_s"],
+            pp.get("error_pp"),
+            fw["realised_over_predicted_gain_ratio_per_prompt"].get(p),
+            fw["per_prompt_extra_rounds"].get(p),
+            fw["per_prompt_rows_saved"].get(p),
+            v["base_true_decode_s"], v["price_true_decode_s"],
             v["base_mean_depth"], v["price_mean_depth"], v["serial_spread_pct"],
             v["base_correct"], v["price_correct"],
         )
