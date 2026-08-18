@@ -461,9 +461,12 @@ public final class Qwen36MTPBlockSession {
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
     private static func traceWrite(_ line: String) {
-        // stderr: the worker sandbox denies file-write*, and the parent's
-        // drain forwards stderr lines when MLX_QWEN_MTP_TRACE=1 flips
-        // `forwardsWorkerStderr` on the local mtp-timed verb.
+        // stderr: the worker sandbox denies file-write*. NOTE the parent
+        // DROPS this on `mtp-timed` — that verb builds its worker options
+        // with the default `forwardsWorkerStderr: false`, so the drain's emit
+        // closure discards every line. Capturing this trace needs a verb that
+        // forwards worker stderr, or a writable sink under
+        // MLXFAST_NO_SANDBOX=1.
         FileHandle.standardError.write(Data(line.utf8))
     }
 
@@ -960,7 +963,13 @@ public final class Qwen36MTPBlockSession {
         // in ONE eval. The `.item()`/`.asArray` calls below then copy from
         // materialised buffers without waiting on the GPU. (MTPLX production
         // budget: 1 sync/cycle, batched_decode.py:504-525.)
+        let attribT0 = Qwen35Attribution.now()
         let (top2IDs, top2Values) = Self.linearTopTwoRows(verifyLogits)
+        if Qwen35Attribution.attributing {
+            eval(top2IDs, top2Values)
+            Qwen35Attribution.note(
+                .topTwo, rows: verifyTokens.dim(1), since: attribT0)
+        }
         var bundle: [MLXArray] = [top2IDs, top2Values]
         bundle.append(contentsOf: draftIdArrays)
         eval(cache.flatMap { $0.state } + bundle)
