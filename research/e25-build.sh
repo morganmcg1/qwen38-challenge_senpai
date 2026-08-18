@@ -3,24 +3,26 @@
 # per-row draft-price contrast.
 #
 #   BASE    the promoted campaign base verbatim: scalar h = 0.18, marginal row
-#           priced h/(1 + d*h).  CONTROL.
-#   PRICE   HEAD verbatim: arm D, marginal row priced
-#           max(h/(1 + d*h), measuredRowStepRatio[d]).
+#           priced h/(1 + d*h).  The shipped policy, and in r3 the instrument
+#           that reproduces r1's price curve.
 #   FORCE   r2 measurement instrument: BASE plus research/e25r2-force-depth.sh.
 #           Research-only, never submitted -- it cycles the taken depth over
 #           0..7 round by round so T(d) is measured at depths the price walk
 #           can never reach, while still tracing the shipped counterfactual.
 #
-# BASE AND PRICE ARE NOT PATCHED. E21 materialised its control from HEAD and
-# produced its treatment with a keyed `sed`-style patch; the patch is the part
-# that can go wrong. Here both scoring arms are `git show`n straight out of
-# committed objects, so each one is byte-identical to a blob a reviewer can name:
+# r3 DELETED THE `PRICE` ARM. Arm D (the per-row price table) is obsolete: E27
+# raised the wide-QMV accumulator ceiling to NA=5, so the row-4 step it existed
+# to avoid is no longer mispriced. r3 is a measurement, not a policy arm, and
+# the branch source is now byte-identical to the base.
+#
+# BASE IS NOT PATCHED. E21 materialised its control from HEAD and produced its
+# treatment with a keyed `sed`-style patch; the patch is the part that can go
+# wrong. BASE is `git show`n straight out of a committed object, so it is
+# byte-identical to a blob a reviewer can name:
 #
 #   BASE  == ${base_sha}:${src}
-#   PRICE == HEAD:${src}
 #
-# and the ONLY difference between the two binaries is the committed E25 diff.
-# That is asserted below by blob digest, not inferred from a build log. FORCE is
+# asserted below by blob digest, not inferred from a build log. FORCE is
 # necessarily patched -- forcing a depth the shipped rule refuses is the whole
 # point -- so it is checked by post-patch marks instead, and it is excluded from
 # every score comparison.
@@ -35,13 +37,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 src=Sources/MLXFastModel/Qwen36MTPBlockSession.swift
 root=.mlxfast-private/e25/bins
-base_sha=d7619a7f4606c2a0e1c46e04d8fae2e4e0e96602
+base_sha=329d3644dc96972d6843ecfe759141b8b0ab539d
 
 # The shipped scalar price, spelled exactly as the base spells it. If the base
 # ever moves this line the control assertion fails here rather than quietly
 # timing something else.
 shipped_line='let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)'
-price_line='let threshold = Self.rowPriceCoefficient(depth) * (1.0 + expected)'
 
 if [[ -n "$(git status --porcelain -- "${src}")" ]]; then
   echo "e25-build: ${src} is dirty; commit or restore before building" >&2
@@ -68,7 +69,6 @@ trap restore EXIT
 blob_for() {
   case "$1" in
     BASE|FORCE) echo "${base_sha}:${src}" ;;
-    PRICE) echo "HEAD:${src}" ;;
     *) return 2 ;;
   esac
 }
@@ -127,14 +127,6 @@ assert_arm() {
       grep -qF -- 'rowPriceCoefficient' "${src}" \
         && { echo "e25-build: BASE: per-row price present in the control" >&2; ok=0; }
       ;;
-    PRICE)
-      grep -qF -- "${price_line}" "${src}" \
-        || { echo "e25-build: PRICE: per-row price missing" >&2; ok=0; }
-      grep -qF -- "${shipped_line}" "${src}" \
-        && { echo "e25-build: PRICE: shipped scalar price still live" >&2; ok=0; }
-      grep -qF -- 'private static let measuredRowStepRatio: [Double] = [0.0, 0.095904, 0.152261, 0.442442]' "${src}" \
-        || { echo "e25-build: PRICE: measured step-ratio table missing or changed" >&2; ok=0; }
-      ;;
     FORCE)
       # The instrument must carry the BASE price (so the traced counterfactual
       # is the shipped rule, not arm D) AND all three forcing marks.
@@ -184,7 +176,7 @@ done
 # semantic change, but an unchanged worker digest proves the experiment is void,
 # and a changed cli digest proves the two legs were not driven identically.
 built=()
-for arm in BASE PRICE FORCE; do
+for arm in BASE FORCE; do
   [[ -s "${root}/${arm}/sha256.txt" ]] && built+=("${arm}")
 done
 if ((${#built[@]} > 1)); then
