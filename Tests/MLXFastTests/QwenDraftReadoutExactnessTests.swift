@@ -695,14 +695,42 @@ struct QwenDraftReadoutExactnessTests {
 /// candidate-set oracle.
 @Suite
 struct QwenDraftTop32SelectionTests {
+    private static var env: [String: String] { ProcessInfo.processInfo.environment }
+
     private static var enabled: Bool {
-        ProcessInfo.processInfo.environment["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
+        env["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
+    }
+
+    /// Documented in `Qwen35.swift` beside the kernel and asserted here so a
+    /// silent retune of the selection geometry invalidates this audit loudly.
+    private static let auditedTiles = 64
+    private static let auditedPerThread = 7
+
+    private static func emit(_ name: String, _ payload: [String: Any]) throws {
+        print("E28_DRAFT_TOP32 \(name) \(payload)")
+        guard let dir = env["MLXFAST_DRAFT_TOP32_OUT_DIR"] else { return }
+        let data = try JSONSerialization.data(
+            withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: URL(fileURLWithPath: dir).appendingPathComponent("\(name).json"))
     }
 
     @Test(.enabled(if: QwenDraftTop32SelectionTests.enabled))
-    func theCustomTop32KernelMatchesArgPartitionIncludingHeavilyTiedRows() {
-        let (trials, bad, firstBad) = qwen35VerifyDraftTop32(trials: 64, seed: 1)
-        #expect(trials == 64)
+    func theCustomTop32KernelMatchesArgPartitionIncludingHeavilyTiedRows() throws {
+        let requested = Int(Self.env["MLXFAST_DRAFT_TOP32_TRIALS"] ?? "") ?? 256
+        let seed = UInt64(Self.env["MLXFAST_DRAFT_TOP32_SEED"] ?? "") ?? 1
+        let (trials, bad, firstBad) = qwen35VerifyDraftTop32(trials: requested, seed: seed)
+        try Self.emit(
+            "verify",
+            [
+                "schema": "e28.draft_top32_verify.v1",
+                "entry_point": "qwen35VerifyDraftTop32",
+                "trials": trials,
+                "seed": Int(seed),
+                "tied_trials": trials / 4,
+                "mismatches": bad,
+                "first_bad_trial": firstBad,
+            ])
+        #expect(trials == requested)
         #expect(
             bad == 0 && firstBad == -1,
             """
@@ -712,5 +740,38 @@ struct QwenDraftTop32SelectionTests {
             candidate-set tie-break drifted.
             """
         )
+    }
+
+    @Test(.enabled(if: QwenDraftTop32SelectionTests.enabled))
+    func theTwoDispatchTop32RunsAtItsAuditedSelectionGeometry() throws {
+        let iters = Int(Self.env["MLXFAST_DRAFT_TOP32_BENCH_ITERS"] ?? "") ?? 200
+        let (baseUs, mineUs, tiles, perThread) = qwen35BenchDraftTop32(iters: iters)
+        try Self.emit(
+            "bench",
+            [
+                "schema": "e28.draft_top32_bench.v1",
+                "entry_point": "qwen35BenchDraftTop32",
+                "iters": iters,
+                "arg_partition_us": baseUs,
+                "two_dispatch_us": mineUs,
+                "speedup": baseUs / mineUs,
+                "tiles": tiles,
+                "per_thread": perThread,
+            ])
+        #expect(
+            tiles == Self.auditedTiles && perThread == Self.auditedPerThread,
+            """
+            E28 / PR #33: the top-32 selection geometry moved to \
+            tiles=\(tiles) perThread=\(perThread), but the exactness audit on \
+            this PR was performed at tiles=\(Self.auditedTiles) \
+            perThread=\(Self.auditedPerThread). Re-run the audit.
+            """
+        )
+        // Timing is reported, not gated: the point of running the frontier's
+        // dead micro-benchmark is to prove it executes and to capture the
+        // numbers, not to add a flaky wall-clock assertion.
+        #expect(
+            baseUs > 0 && mineUs > 0,
+            "E28 / PR #33: qwen35BenchDraftTop32 returned a non-positive timing")
     }
 }
