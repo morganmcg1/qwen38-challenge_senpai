@@ -14,38 +14,59 @@ import Testing
 // that own the length -- and benchmark.json states it in
 // /scoring/mtpEmptyDraftRoundsLegalNote.
 //
-// THE OVERLAY IS GONE, AND WE DID NOT RESTORE IT.
+// THE TRIPWIRE FIRED, AND E26 RE-ADJUDICATED IT ON EVIDENCE.
 //
-// Campaign commit c8dceb9 imported the promoted submitted surface from
-// d1530a409848b82a0a1890141c1483875d1e0173 -- the frontier that scores
-// 3.13098700135133, the top of the board. That surface truncates at EOS:
-// `reachedStopToken` is a tracked mutable flag, `stopTokens` is stored and
-// consulted, and the pure prefix helper `acceptedDraftPrefixCount` no longer
-// exists. All fourteen call sites in this file broke at once.
+// History first. Campaign commit c8dceb9 imported the promoted submitted
+// surface from d1530a409848b82a0a1890141c1483875d1e0173 -- the frontier that
+// scores 3.13098700135133 -- and that surface truncates at EOS. The previous
+// revision of this header read the frontier score as settling the question
+// against post-EOS continuation, and turned the guard below into a tripwire
+// whose stated contract was: if the truncation shape ever changes, the question
+// "is live again and has to be argued from evidence rather than inherited".
 //
-// We deliberately did NOT restore the overlay, because the frontier settled the
-// question against it. A candidate scoring 3.131 on the official 512-token
-// exact-match runner WITH truncation is decisive evidence that truncation
-// passes the token-fidelity gate; post-EOS continuation was therefore never a
-// correctness fix, only a performance-shaped bet that no ranked run has ever
-// supported. Restoring it to keep a test compiling would be shipping an
-// unvalidated perturbation to defend our own test file, which is backwards.
+// E26 changed the shape deliberately, so here is the evidence.
 //
-// So the accept RULE survives here as an executable specification (every depth,
-// cost-curve and row-ledger argument the campaign makes is denominated in it),
-// and the source guard below flips from an alignment claim into a TRIPWIRE that
-// records what the shipped session actually does today. That turns a silent
-// frontier removal into a checkable campaign fact: if a later sync re-adds the
-// overlay, this file fails and the question is re-adjudicated on its merits
-// instead of being inherited by accident.
+// 1. TRUNCATION IS NOT WHAT THE SERIAL REFERENCE DOES. The organizer's own
+//    shipped golden `correctness_prompts/public_longcopy_gate_english_512_1024`
+//    puts stop token 248044 at `expected_tokens` index 301 and then continues
+//    for 722 more tokens (116 stop-token positions in the 1024). The removed
+//    comment claimed truncation was "the same rule the serial reference
+//    applies". The reference falsifies it.
+// 2. THE FRONTIER SCORE PROVES A NARROWER FACT THAN IT LOOKS. 3.131 with
+//    truncation shows only that the eight ranked prompts do not cross a stop
+//    token inside `scoring.decodeTokens`. It cannot show truncation is
+//    contract-legal, because the branch is never entered there. Locally, where
+//    the branch IS entered, it does not merely truncate: it nils the pendings
+//    and every later round throws `.notBegun`, which capped E14 and E20 at 301
+//    decode tokens on BOTH legs and is what forced E20 down from 512 to 256.
+// 3. THE PERTURBATION AND THE REPAIR ARE SEPARABLE. The old overlay bundled
+//    them: it removed the stop-token cap in the accept LOOP and replaced it
+//    with the pure `acceptedDraftPrefixCount`, changing accepted-prefix length
+//    on stop-adjacent rounds. That is the unvalidated performance bet the
+//    previous header rightly refused. E26 takes only the correctness half --
+//    the early return and the dead `reachedStopToken` flag go, the accept-loop
+//    cap and stored `stopTokens` STAY -- so acceptance behaviour on any window
+//    that never reaches a stop token is identical to the promoted frontier by
+//    construction, which is exactly what the ranked legs exercise.
 //
-// REVERT HISTORY. This literal has now been deleted four times, each time by a
-// frontier-sync merge rather than by a decision:
+// So the accept RULE survives below as an executable specification, and the
+// guard is re-pointed: it now pins "continuation WITHOUT the overlay", i.e. no
+// `reachedStopToken` in either direction and no `acceptedDraftPrefixCount`. A
+// failure still means the same thing it meant before -- someone changed the
+// adjudication, deliberately or by inheriting a sync -- and it still has to be
+// argued from evidence rather than from which side happens to compile.
+//
+// REVERT HISTORY. Continuation has been added and lost four times, every one of
+// those transitions driven by a merge rather than by a decision. E26 is the
+// first entry that carries a measurement:
 //
 //   f1a874d  qwen: continue fixed decode windows past EOS   (added)
 //   330b44e  reverted f1a874d
 //   b219009  qwen: continue fixed decode windows past EOS   (re-added)
 //   bc552e5  "Retire the orphaned fixed-window EOS guard test" (deleted)
+//   E26      continuation restored WITHOUT the accept-loop overlay, with a
+//            512-token exact-match run over a stop-token-crossing golden as the
+//            acceptance criterion (see research/results/qwen38-r1-e26-*.md)
 //
 // The same merge that produced the current base ALSO silently deleted
 // Tests/MLXFastTests/QwenQMVCostCurveTests.swift (722 lines at ef16dea4,
@@ -285,26 +306,28 @@ struct QwenMTPFixedWindowSourceGuardTests {
 
     /// TRIPWIRE, NOT AN ALIGNMENT CLAIM.
     ///
-    /// Asserts what the shipped session does TODAY: it truncates at EOS, the
-    /// same behaviour carried by the promoted 3.13098700135133 frontier. A
-    /// failure here is not a defect -- it means a sync re-introduced the
-    /// fixed-window overlay, so the post-EOS continuation question is live
-    /// again and has to be argued from evidence rather than inherited.
+    /// Asserts what the shipped session does TODAY, post-E26: it continues past
+    /// a stop token, and it does so WITHOUT the retired overlay's accept-loop
+    /// perturbation. A failure here is not a defect -- it means the
+    /// adjudication in this file's header changed, most likely because a
+    /// frontier sync re-inherited truncation, so it has to be argued from
+    /// evidence again.
     @Test
-    func theEditableSessionTruncatesAtEosToday() throws {
+    func theEditableSessionContinuesPastEosWithoutTheOverlay() throws {
         let session = try S.text(Self.sessionPath)
 
-        // `reachedStopToken` is a tracked mutable flag, not a stored `false`.
+        // No terminal flag in EITHER direction. E26 deleted it outright rather
+        // than storing a `false` nobody reads: a flag the session sets and no
+        // caller consumes is what produced the `.notBegun` cap in the first
+        // place, and the constant-false accessor is the overlay's shape.
         #expect(
-            session.contains("public private(set) var reachedStopToken = false"))
-        #expect(
-            session.contains("reachedStopToken = true"),
-            "the shipped session has a state in which a stop token was reached")
-        #expect(
-            !session.contains("public var reachedStopToken: Bool { false }"),
-            "the overlay's constant-false accessor must stay absent")
+            session.components(separatedBy: "reachedStopToken").count - 1 == 0,
+            "no terminal stop-token flag: not tracked, not stored false")
 
-        // `stopTokens` is stored and consulted, not accepted and dropped.
+        // `stopTokens` is still stored and consulted. It bounds a draft run in
+        // the accept loop, which is what keeps acceptance on stop-free windows
+        // -- every ranked window measured so far -- identical to the promoted
+        // frontier.
         #expect(
             !session.contains("stopTokens _: Set<Int>,"),
             "stopTokens must not be an ignored initialiser parameter")
@@ -312,10 +335,16 @@ struct QwenMTPFixedWindowSourceGuardTests {
             session.components(separatedBy: "stopTokens").count - 1 >= 2,
             "stopTokens must be consulted, not merely accepted")
 
-        // And the overlay's identity-blind prefix helper went with it.
+        // And the overlay's identity-blind prefix helper must STAY absent: it
+        // is the performance bet E26 deliberately did not take.
         #expect(
             !session.contains("static func acceptedDraftPrefixCount("),
             "the overlay's pure prefix helper must stay absent")
+
+        // The early return is gone: nothing nils the pendings on a stop token.
+        #expect(
+            !session.contains("if stopTokens.contains(primary) {"),
+            "a stop-token primary must be committed by the normal path")
     }
 
     /// THE ALIGNMENT INVARIANT, and the reason this file is worth keeping. The
