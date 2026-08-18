@@ -1080,3 +1080,122 @@ disclosures written verbatim into every run's `meta.txt`. Absolute
 seconds-per-token across prompts should be read with that in mind; all
 comparisons in §13 and §15 are within-run or same-session.
 
+
+## 22. r2 suggested follow-ups (not implemented)
+
+These are offered as evidence and hypotheses. I did not implement any of them.
+
+### 22.1 The cost-side cliff — evidence handed to thorfinn's E27, not duplicated
+
+The advisor assigned the cliff-collapsing lever to **thorfinn as E27**, and this
+experiment exists because of **thorfinn's E22 follow-up #1**, which asked whether
+the per-row price should be measured rather than assumed. r2 answers that
+question and, in doing so, localises the cliff precisely enough to be useful to
+E27:
+
+- The cliff is the **weight-stream pass count** inside Metal kernel
+  `affine_qmv_fast`, Tier A of the crossrow gate at
+  `Vendor/mlx-swift/Source/Cmlx/mlx-generated/metal/kernels/quantized.h:1917`
+  (runtime-effective twin `mlx-generated/quantized.cpp:1930`).
+- Passes are exactly `ceil(M / IPG)` where `M = depth + 1`. The switch ships
+  IPG 3 at `M = 5` (`crossrow_affine4_g64_m<T,5,3,true>`, `quantized.h:1938-1942`),
+  so `M = 5` needs **2** passes where `M = 4` needs 1. That single boundary is the
+  whole `c_3 = 0.4394` overshoot.
+- A single-pass `M = 5` specialisation would be `<T,5,5,true>`. The
+  `static_assert` at `quantized.h:1169` requires `M % IPG != 1`, and `5 % 5 == 0`,
+  so that instantiation is legal by the header's own rule. The open question is
+  register and threadgroup budget, not legality.
+- If `M = 5` became single-pass, measured `c_3` would fall from ~0.4394 toward
+  the ~0.09 regime seen at `c_4`–`c_6`, which is comfortably under the `1/4`
+  admissibility ceiling. Depth 4 would then be reachable **without** any change
+  to the price rule.
+
+That is the whole point of the negative result in §16: the price rule cannot be
+fixed, because the wall is in the hardware dispatch, not in the rule.
+
+### 22.2 Extend the forced cycle to mod 9 to measure `T(8)` directly
+
+`research/e25r2-force-depth.sh` cycles `[0,1,2,3,4,5,6,7]` on
+`(roundCount - 1) % 8`, so depth 8 (`M = 9`, the **second** pass cliff at
+`quantized.h:1961-1965`) is reported from the pass-count model only (§20.3).
+Changing the cycle to mod 9 measures it directly at the cost of one extra
+forced leg per prompt. Worth doing only if someone needs `T(8)` as a measured
+number rather than a modelled one.
+
+### 22.3 Attack acceptance instead of cost
+
+Conditional acceptance is monotone and there is **no cliff at position 3**
+(§13.6): `p0 = 0.693`, `p1 = 0.584`, `p2 = 0.508`, `p3 = 0.419`. Because the new
+declared head's `draftTokenIDWithDeclaredRerank` (`Qwen35.swift:3142`) is marked
+proposal-side only — verification and the row ledger are untouched
+(`Qwen35.swift:2376-2379`) — raising `p` at positions ≥ 3 is legal and does not
+touch the target answer. Concretely: the rerank currently takes the coarse
+affine-2 top-**32** and re-scores those rows in affine-4. Taking top-**64**
+costs one 64-row affine-4 QMV instead of a 32-row one, on the proposal side
+only. If that lifts `p3` from 0.42 toward `p2`'s 0.51, the reach product
+survives one position deeper. This is the cheapest untried lever I found.
+
+### 22.4 A ranked-pool constant-depth control
+
+Pooled realised-rate argmax on this fixture is `d = 2` with bootstrap share
+0.801 (§13.3), and the shipped adaptive rule already sits at mean depth 2.09 on
+this fixture — so there is almost nothing to win locally
+(`greedy_leaves_on_table_pct = 0.0`). But the in-source ranked h-sweep shows the
+shipped rule running at mean drafts of **4.35–5.78** on the ranked pool. Those
+two facts cannot both describe the same workload. The cheap decisive test is a
+ranked-pool constant-depth-2 leg against the shipped adaptive rule: if constant
+depth 2 wins there too, this fixture is representative and the price design
+space really is worth ≤ +0.32 %; if it loses badly, the fixture is
+unrepresentative and every local depth conclusion in this report needs a ranked
+replication before anyone acts on it. I cannot run this (§23.2).
+
+### 22.5 Confirm the ranked M5's `arch_gen`
+
+`get_qmv_batch_limit` (`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp:84-126`)
+returns **6** for `arch_gen == 13 || 14` and **10** otherwise. This host is Apple
+M4 Pro / `Mac16,11` / `applegpu_g16s`, so `arch_gen = 16`, limit 10, and the
+crossrow switch is live for every depth `0..8` (`M ≤ 9 < 10`). On a gen-13/14
+host, `M ≥ 6` would fall through to `qmm` instead and the measured curve above
+depth 5 would not describe the ranked machine at all. Nothing in the source
+lets me derive the M5's generation. Smallest resolving read:
+`mtl_device()->architecture()->name()` on the ranked runner.
+
+### 22.6 Remove the trace-I/O timer bias for future within-round attribution
+
+`upkeep_bias` is 0.245–0.269 ms per round (§13.5), i.e. ≤ 0.21 % of round time
+and immaterial to every conclusion here. It is, however, a real systematic
+offset introduced by writing the trace. A trace-off timed leg would remove it
+entirely and is worth adding if anyone later attributes cost *within* a round
+rather than across depths.
+
+## 23. r2 blocked on
+
+### 23.1 GitHub read and write credential (blocked at submission time)
+
+Throughout the final r2 turns, `get_prs` on this PR returned **HTTP 403** and a
+raw `GET /repos/morganmcg1/qwen38-challenge_senpai/pulls/29` with the injected
+token returned **HTTP 401 `Bad credentials`**. `post_assignment_comment` failed
+the same way, because it performs the same GET first. Consequence: **I could not
+confirm whether advisor feedback arrived after 2026-08-18T19:38:07Z.** Every
+conclusion in Part II is derived from the r2 assignment text as written. If the
+advisor posted a clarification in that window, it is not reflected here and this
+report should be re-read against it.
+
+### 23.2 Ranked-pool measurement, and therefore the transfer question
+
+This is the most important thing r2 could **not** settle. The official
+submission slot is busy (receipt `9197ed62-621f-474d-bfba-e1efddd9dd4c`) and
+`program.md` plus the assignment forbid me running `senpai/submit-official.sh`.
+So the central prediction of §19 — that arm D's `DEEP_CAP = 3` truncates the
+majority of ranked rounds and **regresses** against the live bar of
+`3.2341518328631` — is stated with an explicit mechanism and an explicit
+comparison class, but is **not measured**. It should not be treated as
+established. Anyone who wants to act on it should run §22.4 first.
+
+### 23.3 `T(8)` and the M5 generation
+
+Both are recorded above as follow-ups (§22.2, §22.5) because both are cheap;
+they are listed here too because until they are done, the depth-8 row of every
+table in this report is modelled rather than measured (§20.3), and the entire
+curve's transfer to the ranked M5 rests on an unverified `arch_gen` assumption.
+
