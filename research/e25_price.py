@@ -410,7 +410,7 @@ def gate(rounds: list[dict]) -> dict:
 # --------------------------------------------------------------------------
 def cost_arm(rounds: list[dict], depths: dict[tuple[str, int], int],
              round_ms: dict[int, dict], acc_ms: dict[str, dict] | None = None,
-             min_cell: int = 8) -> dict:
+             min_cell: int = 8, curve_ms: dict[int, dict] | None = None) -> dict:
     """Cost a truncation-only counterfactual in measured round-timer units.
 
     A round whose depth falls from d to d' keeps its own measured wall time and
@@ -418,6 +418,13 @@ def cost_arm(rounds: list[dict], depths: dict[tuple[str, int], int],
     falls to min(acc, d') because verification is prefix/first-failure. Tokens
     per round therefore fall, so the comparison is per EMITTED TOKEN, which is
     what a fixed 512-token window charges.
+
+    With `curve_ms` the round's own wall time is replaced by another build's
+    measured T(d) on BOTH sides. Keeping the taped time as the denominator
+    while pricing the delta on a second build would put two builds' clocks in
+    one ratio; charging one curve throughout keeps the comparison internal to
+    that build. The tape then supplies only what is build-independent: which
+    depth each round walked to and which rows the target accepted.
     """
     base_us = new_us = 0.0
     base_tok = new_tok = 0
@@ -440,8 +447,12 @@ def cost_arm(rounds: list[dict], depths: dict[tuple[str, int], int],
                 hi = acc_ms.get(f"d{d0}_acc{acc}")
                 if lo and hi and lo["n"] >= min_cell and hi["n"] >= min_cell:
                     delta_ms = lo["mean_ms"] - hi["mean_ms"]
-        base_us += us
-        new_us += us + 1000.0 * delta_ms
+        if curve_ms is None:
+            base_us += us
+            new_us += us + 1000.0 * delta_ms
+        else:
+            base_us += 1000.0 * curve_ms[d0]["mean_ms"]
+            new_us += 1000.0 * curve_ms[d1]["mean_ms"]
         base_tok += 1 + acc
         new_tok += 1 + acc1
         hist_base[d0] += 1
@@ -524,16 +535,55 @@ def project_score(per_prompt: dict, legs: dict) -> dict:
 
 
 def run_arm(rounds: list[dict], price, table: dict, cap_override: int | None = None,
-            acc_ms: dict | None = None) -> dict:
+            acc_ms: dict | None = None, curve_ms: dict | None = None) -> dict:
     depths = {}
     for r in rounds:
         depths[(r["prompt"], int(r["round"]))] = replay(r, price, cap_override)["depth"]
-    pooled = cost_arm(rounds, depths, table["round_ms"], acc_ms)
+    pooled = cost_arm(rounds, depths, table["round_ms"], acc_ms, curve_ms=curve_ms)
     per_prompt = {}
     for p in PROMPTS:
         sub = [r for r in rounds if r["prompt"] == p]
-        per_prompt[p] = cost_arm(sub, depths, table["round_ms"], acc_ms)
+        per_prompt[p] = cost_arm(sub, depths, table["round_ms"], acc_ms,
+                                 curve_ms=curve_ms)
     return {"pooled": pooled, "per_prompt": per_prompt}
+
+
+def load_cost_curve(path: Path) -> dict[int, dict]:
+    """A measured T(d) from an `e25r2_refit` report, keyed by int depth.
+
+    Accepts the whole refit report, its `time_parent_clock` block, or a bare
+    `{d: {"mean_ms": ...}}` map.
+    """
+    doc = json.loads(path.read_text())
+    for key in ("time_parent_clock", "round_ms"):
+        if isinstance(doc, dict) and key in doc:
+            doc = doc[key]
+    curve = {int(d): v for d, v in doc.items()}
+    if not curve or any("mean_ms" not in v for v in curve.values()):
+        raise SystemExit(f"{path}: no usable per-depth mean_ms curve")
+    return curve
+
+
+def curve_step_ratio(curve: dict[int, dict]) -> dict[int, float]:
+    step = {}
+    for d in sorted(curve):
+        if d + 1 in curve:
+            t0, t1 = curve[d]["mean_ms"], curve[d + 1]["mean_ms"]
+            step[d] = (t1 - t0) / t0
+    return step
+
+
+def build_arms(step: dict[int, float]) -> dict:
+    """The four priced arms plus the shipped anchor, over one price vector."""
+    return {
+        "A_shipped_scalar_h0.18": (shipped_price, None),
+        "B_cap_depth3": (shipped_price, 3),
+        "C_anchor_free_measured_step": (
+            anchor_free_price({**step, 0: SHIPPED_H}), None),
+        "C_anchor_free_step0_from_anchor": (
+            anchor_free_price({**step, 0: step.get(0, SHIPPED_H)}), None),
+        "D_no_deepen_max_shipped_measured": (no_deepen_price(step), None),
+    }
 
 
 # --------------------------------------------------------------------------
@@ -576,6 +626,9 @@ def main() -> int:
     ap.add_argument("--runs-root", default=str(RUNS_ROOT))
     ap.add_argument("--arm", default="S18I",
                     help="tape label: probe-<prompt>-<arm> under --runs-root")
+    ap.add_argument("--cost-curve", type=Path,
+                    help="an e25r2_refit report whose measured T(d) re-prices "
+                         "this tape's decisions on another build")
     args = ap.parse_args()
 
     rounds, legs = load_tape(Path(args.runs_root), args.arm)
@@ -597,15 +650,7 @@ def main() -> int:
         "unreachability_depth3": unreachability(step),
     }
 
-    arms = {
-        "A_shipped_scalar_h0.18": (shipped_price, None),
-        "B_cap_depth3": (shipped_price, 3),
-        "C_anchor_free_measured_step": (
-            anchor_free_price({**step, 0: SHIPPED_H}), None),
-        "C_anchor_free_step0_from_anchor": (
-            anchor_free_price({**step, 0: step.get(0, SHIPPED_H)}), None),
-        "D_no_deepen_max_shipped_measured": (no_deepen_price(step), None),
-    }
+    arms = build_arms(step)
     report["arms"] = {}
     for name, (price, cap) in arms.items():
         res = run_arm(rounds, price, table, cap)
@@ -614,6 +659,30 @@ def main() -> int:
         for p in PROMPTS:
             res["per_prompt"][p].pop("token_loss_rounds", None)
         report["arms"][name] = res
+
+    if args.cost_curve:
+        curve = load_cost_curve(args.cost_curve)
+        cstep = curve_step_ratio(curve)
+        missing = sorted({int(r["d"]) for r in rounds} - set(curve))
+        if missing:
+            raise SystemExit(
+                f"{args.cost_curve}: curve has no T(d) for taped depth(s) {missing}")
+        recost: dict = {
+            "curve_source": str(args.cost_curve),
+            "curve_round_ms": {d: v["mean_ms"] for d, v in sorted(curve.items())},
+            "curve_step_ratio": cstep,
+            "tape_step_ratio": step,
+            "unreachability_depth3": unreachability(cstep),
+            "arms": {},
+        }
+        for name, (price, cap) in build_arms(cstep).items():
+            res = run_arm(rounds, price, table, cap, curve_ms=curve)
+            res["projection"] = project_score(res["per_prompt"], legs)
+            res["deepening"] = deepening_breakdown(rounds, price)
+            for p in PROMPTS:
+                res["per_prompt"][p].pop("token_loss_rounds", None)
+            recost["arms"][name] = res
+        report["recost_on_cost_curve"] = recost
 
     acc_ms = table["round_ms_by_depth_and_accepted"]
     report["sensitivity_accept_conditioned_cost"] = {

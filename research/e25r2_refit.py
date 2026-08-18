@@ -620,13 +620,15 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", default="FORCE")
     ap.add_argument("--prompts", default=",".join(PROMPTS))
+    ap.add_argument("--runs-root", type=Path, default=RUNS_ROOT,
+                    help="tape root: <root>/probe-<prompt>-<arm>")
     ap.add_argument("--out", type=Path)
     ap.add_argument("--text", action="store_true",
                     help="human-readable summary instead of JSON")
     args = ap.parse_args()
 
     prompts = tuple(p for p in args.prompts.split(",") if p)
-    all_rounds, legs = load_force_tape(args.arm, prompts)
+    all_rounds, legs = load_force_tape(args.arm, prompts, args.runs_root)
     rounds = warm(all_rounds)
 
     # The parent's own per-round clock is the primary timer; the two trace
@@ -680,6 +682,11 @@ def main() -> None:
         "per_prompt_argmax": {
             p: empirical_rate_table(
                 [r for r in rounds if r["prompt"] == p], parent_ms)["argmax_depth"]
+            for p in prompts},
+        # Pooling hides whether one prompt carries the curve, so every prompt
+        # also gets its own T(d) and price vector.
+        "per_prompt_curve": {
+            p: time_table([r for r in rounds if r["prompt"] == p], parent_ms)
             for p in prompts},
     }
     text = json.dumps(report, indent=2, sort_keys=True, default=str)
