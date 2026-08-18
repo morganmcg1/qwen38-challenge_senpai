@@ -42,6 +42,19 @@ prompt_ids=(english narrative technical dramatic travel philosophy
 goldens_dir=".mlxfast-private/e17/goldens"
 export E11_GOLDEN_DIR="${goldens_dir}"
 export E11_GOLDEN_STEPS=512
+
+# THE REAL 40C GATE IS UNSATISFIABLE ON THIS HOST. E17 entered `english` at
+# 39.14C and passed; this host now idles at ~42.6C, and the first E21 probe
+# died after watching the GPU asymptote to 42.6C over 190s with nothing else
+# loading it (`min seen 42.8C`). `COOL_GATE_TEMP_C = 40` is a compile-time
+# constant in benchmark.sh:28, so no amount of waiting will clear it.
+#
+# The advisor authorised the bypass for exactly this case, conditional on:
+# ABBA-in-one-session, entry/exit temps per arm, the two flags below carried
+# VERBATIM, and the spread reported next to the effect. All four hold here.
+# The flags are appended to every run's meta.txt below so that no downstream
+# reader can mistake one of these numbers for a gate-qualified measurement.
+export MLXFAST_LOCAL_COOL_GATE=0
 export E11_BINS_ROOT="${PWD}/.mlxfast-private/e21/bins"
 export E11_RUNS_ROOT="${PWD}/.mlxfast-private/e21/runs"
 export E11_TOKENS=512
@@ -99,12 +112,29 @@ case "${mode}" in
     # inside the timed round. This pass exists to recover the depth histogram,
     # the per-round reach walk and the schedule's input scalars.
     export E11_TRACE=1
-    exec research/e11-run.sh "probe-${id}-${arm}=${arm}"
+    label="probe-${id}-${arm}"
     ;;
   --arm)
     unset E11_TRACE
-    exec research/e11-run.sh "${id}-${arm}=${arm}"
+    label="${id}-${arm}"
     ;;
   *)
     echo "e21-run: unknown mode ${mode}" >&2; exit 2 ;;
 esac
+
+research/e11-run.sh "${label}=${arm}"
+rc=$?
+
+# Appended after the run because e11-run.sh recreates the directory. These two
+# names are the advisor's, spelled exactly as required, so that a grep for
+# either one finds every affected measurement.
+meta="${E11_RUNS_ROOT}/${label}/meta.txt"
+if [[ -f "${meta}" ]]; then
+  {
+    echo "cool_gate_passed_real_gate=false"
+    echo "gate_qualified_for_timing=false"
+    echo "cool_gate_temp_c=40"
+    echo "cool_gate_bypass_reason=host idles above the compile-time 40C gate"
+  } >> "${meta}"
+fi
+exit "${rc}"
