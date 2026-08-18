@@ -1051,6 +1051,111 @@ evidence or a changed condition; “try again” is not enough.
     returns zero rows looks exactly like a board with no promoted rows, which is
     the worst possible failure mode for an intelligence query.
 
+67. **THE RANKED SERIAL LEG IS NOT PINNED. It is the candidate's own build,
+    measured in the same session.** I had recorded the opposite as an established
+    fact, and it was load-bearing for E29's verdict and for every score
+    projection I have written. Sources, three independent:
+    `benchmark.json` `/scoring/scoreAnchor = "serial = 1.0"`,
+    `/scoring/aggregation = "median_of_per_prompt_raw_serial_relative_speedup"`,
+    `/scoring/noopReferenceRole = "informational_diagnostic_not_scored"`;
+    `.github/workflows/qwen-mtp-ranked-benchmark.yml:128-129`
+    `raw_p = mean(serial depth-0 seconds/token) / mean(MTP seconds/token)` then
+    `score = median(raw_p over ALL 8 pool prompts)`; and `:3080-3090` in words —
+    *"Both means come from the SAME thermally-gated session for that prompt, so
+    the serial leg IS the normaliser and no pinned reference is consulted
+    anywhere in the scoring path."*
+    **Consequence: the score has TWO derivatives.** Anything that speeds up the
+    `S=1` decode path LOWERS the score. Every experiment must now report BOTH
+    legs; a ratio alone is ambiguous evidence and must be refused at review.
+    Why I got it wrong: the pool's pinned `noop_decode_speedup` *was* the
+    normaliser before the 2026-08-14 anchor move, and it is still carried in the
+    contract and validated at `:3061-3068` — as a reported diagnostic only.
+
+68. **The shipped `asyncEval` ladder is worth ~+20 % of SCORE if disabled,
+    entirely by slowing the control leg. DECLINED, and escalated.**
+    Mechanism: `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2118-2132`
+    rung set `[0,1,9,19,29,39,49,57]` with an `MLX_QWEN_MTP_LADDER` override, and
+    `:2196-2197` `ladderActive = inputs.dim(1) <= 9 || prefillLadder` — which
+    covers the serial step and every legal MTP verify width.
+    E29's four merged arms, schedules element-wise identical
+    (`accepted_draft_total = 222` in all four):
+
+    | arm | ladder | serial ms/tok | MTP ms/round | ratio vs default |
+    |---|---|---:|---:|---:|
+    | D0 | default | 66.8745 | 172.5586 | — |
+    | L0 | off | 80.3441 | 172.2081 | **+20.38 %** |
+    | L1 | front | 78.8334 | 172.1367 | +18.17 % |
+    | L2 | dense | 65.3695 | 171.5106 | −1.65 % |
+
+    The ladder helps the serial leg ~20 % and the MTP leg 0 %. It is therefore
+    score-NEGATIVE by construction, and it is INHERITED organizer code, not ours.
+    No mechanical guard exists — only `/scoring/decodeSpeedupFloor = 0.9` and
+    `/scoring/decodeSpeedupCeiling = 5.0`. The static reviewer would probably not
+    catch it either: `.github/scripts/run-submission-static-review.sh:433` lists
+    *"MLX scheduling or synchronization changes"* among things it must NOT fail,
+    and its `measurement-structure exploitation` clause is narrowly about
+    input-keyed caching whose reuse requires the harness to repeat an identical
+    computation.
+    **DECISION: do not ship it, and do not hand it to a student as a shipping
+    candidate.** A change whose entire effect is to slow the control so the ratio
+    looks better is not optimization, whatever an automated judge would pass.
+    Escalated to the human for a ruling; it stays a one-line change if they rule
+    otherwise. Corroborating: with a ceiling of 5.0 and the top row at
+    3.24326, nobody on the board is sitting at 4.x — so either nobody has found
+    this or nobody is taking it.
+
+69. **The command-buffer-geometry lever is closed, and it was closed by data we
+    already owned.** The ladder IS the runtime commit-geometry knob: each rung's
+    `asyncEval` forces a stream flush, i.e. one commit boundary. E29 therefore
+    already covered 0 / 2 / 8 / 17 forced commits above MLX's automatic
+    50-op/50-MB floor, and the MTP leg spread across that whole range is 0.61 %,
+    non-monotone, below the 0.86 % repeat-noise floor. Going *below* MLX's
+    automatic floor needs a patch to MLX internals. E31's accessible axis was
+    fully measured before E31 was written — I found this one turn too late,
+    after the assignment had gone out.
+
+70. **The 53.86 % "host tail" is a ladder accounting artefact, not a cost.** Same
+    four arms: host-tail share 53.86 / 4.35 / 5.66 / 35.86 % while round totals
+    are 6028.7 / 6022.2 / 6015.8 / 5998.3 ms. The tail is where the host blocks
+    *inside* `asyncEval` at the rungs. It moved 12× while the round moved 0.5 %.
+    I had relayed that tail to two students as a thing worth attacking.
+
+71. **Draft depth > 8 is hard-closed, permanently. Kill any proposal to widen
+    beyond M=9 on sight.** `Sources/MLXFastCore/Constants.swift:331`
+    `qwenMTPMaxDraftDepth = 8`, OPERATOR-RATIFIED; `MLXFastCore` is NOT in
+    `editablePaths`; the TRUSTED parent enforces it in
+    `QwenRuntimeMTPDriver.requireStructurallySound` over the draft count a round
+    *actually* proposed; and the doc pre-empts the split-knob workaround — *"a
+    submission that raised one and not the other would still be bounded by
+    `qwenMTPMaxDraftDepth` at the parent."* Confirmed independently at
+    `benchmark.json` `/scoring/mtpMaxDraftDepth = 8` and again in the
+    static-review prompt. The wide-crossrow cells `M = 3..9` are the complete
+    legal set, which is why that table stops where it does.
+
+72. **`editablePaths` mixes DIRECTORY prefixes with exact file paths.**
+    `Sources/MLXFastModel` and `Sources/MLXFastTransform` are directory entries;
+    the other 87 are exact files. An exact-match membership test reports
+    `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` as PROTECTED, which is
+    false — it is the single most-edited file in the campaign. Test membership as
+    "exact match OR path-prefix match". I briefly believed every scheduler
+    experiment we had ever run was discarded at rank.
+
+73. **Where the verify-forward GPU time actually is, and why the width lever is
+    finished.** E20 time attribution: MLP **59 %**, GDN 28 %, full attention 8 %,
+    LM head + top-two 5 %; MLP is also 65.1 % of the ~14.8 GB of byte traffic
+    (three affine-4-bit 17408x5120 projections per layer x 64 layers). E23:
+    dispatch count is NON-monotonic in M — 1096 at M=6..9 against 1544 at M=2 —
+    so there is no dispatch-count argument for narrow widths and a
+    dispatch-count argument against M=2 specifically. Weight passes are
+    `ceil(M/NA)`; at NA=5 that is 1,2,2,2,2 for M=5..9, i.e. **already the
+    minimum available for NA<=5 at every legal M**. The only remaining kernel
+    prize is a lower pass count, which needs NA>=6, which spills (144 regs,
+    2 allocas, against 125/1 at NA=5). `ceil(M/NA)` also bounds that prize
+    before anyone builds it: NA=6 buys **M=6 only** (2 passes -> 1), which is 23
+    of 78 rounds in the shipped depth histogram; M=9 is 34 of 78 and would need
+    NA=9.
+
+
 ## Advisor process lessons, 2026-08-17
 
 These are mechanism-free but they cost real time, so they belong in the ledger.
