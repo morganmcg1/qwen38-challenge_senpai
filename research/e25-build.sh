@@ -146,11 +146,14 @@ for arm in "$@"; do
   git checkout -- "${src}"
 done
 
-# A changed worker digest does not prove a semantic change (calibration fact b),
-# but an UNCHANGED pair of digests across two arms that must differ does prove
-# the experiment is void. Check it whenever both arms are present.
+# Only mlxfast-runtime-worker links MLXFastModel; MLXFastCLI reaches the trusted
+# harness target at Sources/MLXFastTrustedHarness, which does not depend on it.
+# So the two arms must differ in the worker and the source, and must be BYTE
+# IDENTICAL in the trusted driver. A changed worker digest does not prove a
+# semantic change, but an unchanged worker digest proves the experiment is void,
+# and a changed cli digest proves the two legs were not driven identically.
 if [[ -s "${root}/BASE/sha256.txt" && -s "${root}/PRICE/sha256.txt" ]]; then
-  for f in mlxfast-swift mlxfast-runtime-worker source.swift; do
+  for f in mlxfast-runtime-worker source.swift; do
     a="$(awk -v f="${f}" '$2==f{print $1}' "${root}/BASE/sha256.txt")"
     b="$(awk -v f="${f}" '$2==f{print $1}' "${root}/PRICE/sha256.txt")"
     if [[ "${a}" == "${b}" ]]; then
@@ -158,6 +161,21 @@ if [[ -s "${root}/BASE/sha256.txt" && -s "${root}/PRICE/sha256.txt" ]]; then
       exit 2
     fi
   done
-  echo "e25-build: BASE and PRICE digests differ for cli, worker and source"
+  a="$(awk '$2=="mlxfast-swift"{print $1}' "${root}/BASE/sha256.txt")"
+  b="$(awk '$2=="mlxfast-swift"{print $1}' "${root}/PRICE/sha256.txt")"
+  if [[ "${a}" != "${b}" ]]; then
+    echo "e25-build: trusted driver differs between arms (${a} vs ${b})" >&2
+    exit 2
+  fi
+  for arm in BASE PRICE; do
+    n="$(nm -a "${root}/${arm}/mlxfast-swift" 2>/dev/null \
+      | grep -c 'Qwen36MTPBlockSession' || true)"
+    if [[ "${n}" != "0" ]]; then
+      echo "e25-build: ${arm} driver links Qwen36MTPBlockSession (${n} symbols);" \
+        "identical cli digests would no longer prove driver invariance" >&2
+      exit 2
+    fi
+  done
+  echo "e25-build: worker and source differ across arms; trusted driver identical (${a})"
 fi
 echo "e25-build: done"
