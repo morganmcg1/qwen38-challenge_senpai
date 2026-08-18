@@ -1,0 +1,107 @@
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"revision_id":"r1","base_sha":"0d2eef9cac75d890de06a5eef4fd686c3c34c1ef","credit":"thorfinn E22 follow-up #1 (two-piece boundary-aware marginal price, arm C)","primary_metric":{"name":"e25/mtp_true_decode_gain_pct_median_of_8","available":true,"value":3.8346226261260976},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+
+**Credit: this experiment implements thorfinn's E22 follow-up #1 — the two-piece
+boundary-aware marginal price, arm C in that proposal.** The idea, the diagnosis
+of the scalar `headStepCostRatio` fit's failure mode, and the shape of the fix
+are thorfinn's. This report contributes the instrument gate, the measurement of
+the price curve, the confound controls, and the timed 8-prompt evaluation.
+
+Full analysis, derivations and legality argument: [`research/e25-results.md`](../e25-results.md).
+Machine-readable evidence: [`research/e25-phase0.json`](../e25-phase0.json) (price curve, arm simulation, pre-registration) and [`research/e25-phase1.json`](../e25-phase1.json) (timed matrix, fixed-window accounting).
+
+- Student / branch: `qwen-edward` / `qwen-edward/per-row-draft-price` (PR #29, assignment `qwen38-r1-e25-per-row-draft-price` r1)
+- Hypothesis and target cost: the shipped draft price `h / (1 + d·h)` with `h = 0.18` is a smooth scalar fit, but the *measured* per-row cost of the target verify is not smooth — E21's tape shows `T(4) − T(3) ≈ 40 ms` against `T(3) − T(2) ≈ 12 ms`. Replacing the fitted price with the measured one at each depth should stop the gate from buying rows whose real cost exceeds their expected value. Target cost: the rejected-row work, which is 45–55 % of all proposed rows on the local prose pool.
+- Decision: **green locally** (8/8 prompts, effect 6–130× the serial noise floor), **with a hard ranked-transfer caveat that argues against submitting** — see §7.3 of the full write-up and "Prompt or M5 transfer risk" below.
+- `BASE_SHA` / `UPSTREAM_SHA` / candidate commit: `0d2eef9cac75d890de06a5eef4fd686c3c34c1ef` / `d1530a409848b82a0a1890141c1483875d1e0173` / this branch head (the marker cannot contain its own commit; the head of record is in the typed `submit_experiment_result` payload)
+- Yukon promoted submission / source ref used as frontier: `bd007bc7-e8ab-4919-baf4-d5e90068dd83`, `sourceRef d1530a40`, score `3.13098700135133` per [`senpai/frontier-state.json`](../../senpai/frontier-state.json) (`observedAt 2026-08-17T21:24:25Z`). Source comments in the file I edited quote a live accepted bar of `3.14642585386152`; I did not query Yukon to reconcile the two, and did not need to, because I am not recommending a submission.
+- Submitted candidate files: **one** — `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` (`+36/−2`). Nothing else under `Sources/`, `benchmark.json`, `fixtures/`, `mtp-head/`, `tools/` or `Package*` is touched.
+- Supporting test, tooling, or documentation files (not submitted): `research/e25-build.sh`, `research/e25-run.sh`, `research/e25_price.py` (Phase 0: instrument gate, price fit, arm simulation), `research/e25_phase1.py` (Phase 1: reduction, fixed-window accounting, W&B), `research/e25_counters.py`, `research/e25_summary.py`, `research/e25-results.md`, `research/e25-phase0.json`, `research/e25-phase1.json`.
+- MTP head provenance and draft policy: pinned organizer head only, `sha256 07293af742df4599d94eda6e9db5782e7f5be10cd1b5fdef7691f4ef404ea81c`, identical on all 16 timed legs. No `MLXFAST_QWEN_MTP_HEAD_DIR` override anywhere; `uses_pinned_mtp_head` true on every run. `--mtp-depth 8` offered, serial control depth 0, the gate chooses per round.
+- Assignment-scope preflight: `senpai/validate-assignment-scope.sh 0d2eef9c Sources/MLXFastModel/Qwen36MTPBlockSession.swift` → `assignment scope OK: 1 submitted path(s)`.
+- Editable source bytes / headroom / growth / exempt-head bytes: `source=2426820/3000000`, `headroom=573180`, `growth=2216/262144`, `exempt=2410/2147483648`, `files=154`.
+- Scored-path reachability evidence: `costModelDepth` is called at `Qwen36MTPBlockSession.swift:199`, **before** proposal, inside `Qwen36MTPBlockSession`. `nm -a .build/release/mlxfast-swift | grep -c Qwen36MTPBlockSession` = **0**; the same grep against the runtime worker = **294**. So the trusted driver does not link the edited type and the scored worker does. The build harness asserts a byte-identical trusted-driver digest across both arms and refuses to proceed if either installed driver contains a `Qwen36MTPBlockSession` symbol.
+
+## Evidence
+
+- Host, memory profile, toolchain, and thermal policy: single-GPU Apple M-series host, **not the ranked M5**. Both arms built with `--force-resolved-versions` from one tree, no patching. Cool gate **bypassed** under the advisor's PR #29 §8 authorisation (`MLXFAST_LOCAL_COOL_GATE=0`); every `meta.txt` carries `cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`, `cool_gate_temp_c=40`, `cool_gate_bypass_reason=host idles above the compile-time 40C gate`. Mitigation is the counterbalanced ABBA schedule within one session plus the reported serial spread; entry/exit temperatures are recorded per arm.
+- Exact baseline and candidate commands:
+  ```bash
+  research/e25-build.sh BASE PRICE
+  E11_GOLDEN_DIR=.mlxfast-private/e17/goldens E11_GOLDEN_STEPS=512 \
+  E11_BINS_ROOT=$PWD/.mlxfast-private/e25/bins E11_RUNS_ROOT=$PWD/.mlxfast-private/e25/runs \
+  E11_TOKENS=512 MLXFAST_LOCAL_COOL_GATE=0 \
+    research/e25-run.sh --pairs BASE,PRICE english narrative technical
+  # ... dramatic travel philosophy / natural_history medicine, ABBA order index-derived
+  python3 research/e25_phase1.py --wandb
+  ```
+- Tests and risk-based checks: the **instrument gate** ran before any measurement was trusted — feeding `[0.18]×8` through the reimplemented gate reproduces all 1947 taped depths bit-identically (0 mismatches over 6580 walk steps, max |threshold error| `6.67e-7`), which is what licenses the arm simulation. Arm D's d0 and d1 coefficients are bit-identical to the shipped curve by construction. The build harness pins seven shared invariants across arms (`headStepCostRatio = 0.18`, `acceptEMAAlpha = 0.15`, `sdpaWidthWallDepthCap = 5`, `segmentedVerifyDepthCap = 8`, `segmentedStreakGate = 2`, the confidence terms, `reach *= p`, the trace snapshot line) and requires distinct worker+source digests per arm.
+- Exact-token and row-ledger verdict: **PASS on all 16 legs.** `all_pass = True`, `failures = []`; `mtp_all_tokens_matched` and `serial_all_tokens_matched` true everywhere, `mtp_parity_all_ok` true, `tokens_emitted_all_legs_512 = True`. Every declared row is accounted for: BASE `6592 = 1947 primary + 4645 proposed`, PRICE `6236 = 1971 primary + 4265 proposed`.
+- Divergent tokens or failure category, if any: none.
+- Generated-twin audit, if relevant: not relevant — no `.metal`, `.h` or `mlx-generated/*.cpp` file was touched.
+- Peak RAM or head/artifact size, if relevant: unchanged; the diff adds a 4-element static `[Double]` table and one function. No new allocation on the round path.
+
+| Metric | Baseline (BASE) | Candidate (PRICE) | Ratio / delta |
+| --- | ---: | ---: | ---: |
+| serial seconds/token (median of 8) | 0.0745233 | 0.0745504 | +0.036 % (noise floor) |
+| MTP seconds/token (median of 8) | 0.0497099 | 0.0473737 | **−4.70 %** |
+| local serial-relative speedup (median of 8) | 1.500250 | 1.572157 | **+0.071907** |
+| effective mean draft length (median of 8) | 2.3820 | 2.1944 | −0.1876 |
+| accepted draft rate (median of 8) | 0.4572 | 0.5008 | **+0.0436** |
+
+The `−4.70 %` MTP row is a **ratio of medians** and the primary metric below is a
+**median of per-prompt ratios**; they are different statistics over the same 16
+legs and neither is derived from the other. The primary metric is the contracted
+one.
+
+**Primary metric, as contracted:** `e25/mtp_true_decode_gain_pct_median_of_8`
+= **+3.8346 %** against a baseline of `0.0`, direction maximize. Pooled
+`+3.8337 %`, mean `+3.845 %`, range `+2.095 %` (`natural_history`) to `+5.919 %`
+(`medicine`). **PRICE wins on 8 of 8 prompts.** `depth_ge_4_realised = 0`,
+exactly as pre-registered. Per-prompt table, per-arm counters and the full
+fixed-window accounting are in §4 and §5.1 of the write-up.
+
+This is a median over **eight local prose prompts**, which is a stronger design
+than a one-prompt directional screen but is still **not** the ranked median over
+the eight hidden prompts, and both legs use the same candidate build.
+
+## Conclusion
+
+- What happened and why: replacing the fitted scalar price with the measured
+  per-row price makes the gate refuse depth 4 and 5 outright — `max depth` is
+  exactly **3** on every PRICE leg while BASE reaches 4 or 5 on every prompt.
+  The measured d3 coefficient is `0.442` against the shipped `0.153`, because
+  `T(4) − T(3) ≈ 40 ms` is a real cliff that the smooth fit averages away. The
+  refused rows were disproportionately rejected rows, so rejected rows fall on
+  all 8 prompts while accepted rows fall by at most 9, accept rate rises 8/8,
+  replayed rounds fall 8/8, and p50 block latency falls 8/8.
+- Evidence for or against the mechanism: strongly for, on this pool. The effect
+  is 6–130× the serial noise floor, the sign is consistent 8/8 under a
+  counterbalanced schedule, and the realised depth ceiling matches the
+  pre-registered prediction exactly. Two honest corrections narrow the claim:
+  (1) Phase 0's `+4.688 %` projection is an **upper bound** — it modelled 98
+  lost tokens, but the trusted parent owns a fixed 512-token window, so the arm
+  loses **0** tokens and instead spends **+24 extra rounds**, which recovers 229
+  of the 609 predicted row savings; I tested that explanation rather than
+  asserting it (`r = −0.7405`, n = 8, extra rounds vs gain attenuation).
+  (2) a prefill double-subtraction bug in my own reducer was found and fixed
+  before the matrix was reduced, and `assert_scored_unit()` now pins both legs of
+  every run to the trusted `score.json` per-token metric so the class of error
+  cannot recur silently. A useful side result: the BASE arm **independently
+  regenerated the E21 tape** — 1947 rounds and 4645 proposed rows, to the row.
+- Prompt or M5 transfer risk: **high, and it points the wrong way.** Source
+  comments record ranked scores for uniform `h = 0.32` → `2.84585` (−3 % vs the
+  bar), `h = 0.15` → `2.667`, `h = 0.14` → `2.766`, and the `h = 0.32` note
+  observes ranked per-prompt mean drafts of 4.35/4.89/5.78/5.33/5.04 and
+  concludes "this pool rewards depth". My tape has n = 167 at d4, n = 9 at d5,
+  and nothing above 5; local prose means are ≈ 2.4. Arm D is therefore *more*
+  aggressive than `h = 0.32` at exactly the depths the hidden pool occupies, and
+  its d4/d5 coefficients are extrapolated from n = 9. A clean 8/8 win at depth
+  ≈ 2.2 is weak evidence about a pool at depth ≈ 5.
+- Smallest useful next action: force depths 4–6 on a prose tape to get real n at
+  d4/d5/d6 and refit. That single measurement decides whether arm D's aggression
+  at d3 is right or whether the ranked pool needs a curve with a *falling* tail.
+- Recommendation: **do not submit to Yukon without a ranked-representative
+  check.** The mechanism is sound and the local result is real, so keep the
+  branch and the measured curve; the open question is entirely whether the price
+  holds at `d ≥ 4`, and this experiment cannot answer it. Compose later, after
+  the deep-depth refit.

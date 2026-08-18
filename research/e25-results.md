@@ -1,10 +1,12 @@
 # E25 — measured per-row draft price
 
-**Credit: this experiment implements [thorfinn's E22 follow-up #1](https://github.com/morganmcg1/qwen38-challenge_senpai/pull/29) — the
-two-piece boundary-aware marginal price, arm C in that proposal.** The idea,
-the diagnosis of the scalar fit's failure mode, and the shape of the fix are
-thorfinn's. This document contributes the instrument gate, the measurement of
-the price curve, the confound controls, and the timed 8-prompt evaluation.
+**Credit: this experiment implements thorfinn's E22 follow-up #1 — the two-piece
+boundary-aware marginal price, arm C in that proposal.** The idea, the diagnosis
+of the scalar fit's failure mode, and the shape of the fix are thorfinn's. This
+document contributes the instrument gate, the measurement of the price curve, the
+confound controls, and the timed 8-prompt evaluation. I read the proposal as
+quoted in the PR #29 assignment body and did not inspect thorfinn's branch, so I
+cite it by name rather than by commit.
 
 - Assignment: `qwen38-r1-e25-per-row-draft-price` (PR #29, revision `r1`)
 - `BASE_SHA`: `0d2eef9cac75d890de06a5eef4fd686c3c34c1ef`
@@ -137,9 +139,78 @@ ABBA within one session. Unit is the MTP leg's
 `decode_seconds / decode_token_count`, which `assert_scored_unit()` pins to the
 trusted `score.json` per-token metric on every run.
 
-<!-- RESULTS-TABLE -->
+### 4.1 Headline
 
-<!-- COUNTERS-TABLE -->
+**`e25/mtp_true_decode_gain_pct_median_of_8` = +3.835 %** (baseline `0.0`,
+maximize). Pooled `+3.834 %`, mean `+3.845 %`, min `+2.095 %`, max `+5.919 %`.
+**Arm PRICE wins on all 8 of 8 prompts.** Correctness `all_pass = True`,
+`failures = []` — every leg matched its golden and closed its row ledger.
+
+`depth_ge_4_realised = 0`, exactly as pre-registered, sourced from the timed
+runs' own `effective_draft_lengths` (not from a separate sweep).
+
+| prompt | order | base s/tok | price s/tok | **gain** | pre-reg | realised/pred | serial spread |
+|---|---|---|---|---|---|---|---|
+| english | A→B | 0.0496610 | 0.0483411 | **+2.658 %** | 4.223 | 0.629 | 0.166 % |
+| narrative | B→A | 0.0501758 | 0.0482309 | **+3.876 %** | 5.024 | 0.772 | 0.208 % |
+| technical | A→B | 0.0468828 | 0.0456082 | **+2.719 %** | 3.899 | 0.697 | 0.064 % |
+| dramatic | B→A | 0.0475128 | 0.0450053 | **+5.278 %** | 9.775 | 0.540 | 0.418 % |
+| travel | A→B | 0.0498239 | 0.0479341 | **+3.793 %** | 4.352 | 0.872 | 0.068 % |
+| philosophy | B→A | 0.0485857 | 0.0464367 | **+4.423 %** | 5.768 | 0.767 | 0.029 % |
+| natural_history | A→B | 0.0520129 | 0.0509232 | **+2.095 %** | 3.050 | 0.687 | 0.029 % |
+| medicine | B→A | 0.0497588 | 0.0468133 | **+5.919 %** | 6.940 | 0.853 | 0.429 % |
+
+`order` is the pre-registered ABBA schedule (`A` = BASE, `B` = PRICE), derived
+from the index of the prompt in the canonical 8-prompt list rather than from
+argument order, so it cannot drift with how the runs were batched. `serial
+spread` is the run-to-run spread of the *pinned serial* leg for that prompt; it
+is the noise floor of this rig and is 6–130× smaller than the effect it sits
+next to (`clears = True`, max spread `0.429 %` vs min effect `2.095 %`).
+
+Realised depth histogram `{1: 192, 2: 1264, 3: 515}` against the pre-registered
+`{1: 193, 2: 1419, 3: 335}`: the arm shifts mass from d2 to d3 more than the
+tape predicted, because on the live fixed window it also has to fill the extra
+rounds discussed in §5.1.
+
+### 4.2 Per-arm counters
+
+| prompt | arm | rounds | declared rows | accepted | rejected | accept rate | mean depth | max depth | non-drafting | true decode s | replayed | p50 block s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| english | BASE | 251 | 818 | 261 | 306 | 0.4603 | 2.2590 | 4 | 0 | 25.4264 | 102 | 0.08080 |
+| english | PRICE | 255 | 778 | 258 | 265 | 0.4933 | 2.0510 | 3 | 0 | 24.7507 | 86 | 0.08027 |
+| narrative | BASE | 250 | 836 | 263 | 323 | 0.4488 | 2.3440 | 4 | 0 | 25.6900 | 108 | 0.08087 |
+| narrative | PRICE | 251 | 794 | 262 | 281 | 0.4825 | 2.1633 | 3 | 0 | 24.6942 | 99 | 0.08066 |
+| technical | BASE | 231 | 790 | 281 | 278 | 0.5027 | 2.4199 | 5 | 0 | 24.0040 | 96 | 0.08127 |
+| technical | PRICE | 235 | 757 | 278 | 244 | 0.5326 | 2.2213 | 3 | 0 | 23.3514 | 87 | 0.08026 |
+| dramatic | BASE | 217 | 811 | 295 | 299 | 0.4966 | 2.7373 | 5 | 0 | 24.3266 | 94 | 0.08710 |
+| dramatic | PRICE | 226 | 760 | 286 | 248 | 0.5356 | 2.3628 | 3 | 0 | 23.0427 | 85 | 0.08133 |
+| travel | BASE | 251 | 828 | 262 | 315 | 0.4541 | 2.2988 | 5 | 0 | 25.5098 | 105 | 0.08106 |
+| travel | PRICE | 250 | 792 | 263 | 279 | 0.4852 | 2.1680 | 3 | 0 | 24.5423 | 93 | 0.07978 |
+| philosophy | BASE | 236 | 821 | 276 | 309 | 0.4718 | 2.4788 | 4 | 0 | 24.8759 | 105 | 0.08140 |
+| philosophy | PRICE | 238 | 777 | 274 | 265 | 0.5083 | 2.2647 | 3 | 0 | 23.7756 | 92 | 0.08091 |
+| natural_history | BASE | 275 | 841 | 237 | 329 | 0.4187 | 2.0582 | 4 | 0 | 26.6306 | 112 | 0.08005 |
+| natural_history | PRICE | 276 | 805 | 236 | 293 | 0.4461 | 1.9167 | 3 | 0 | 26.0727 | 94 | 0.07963 |
+| medicine | BASE | 236 | 847 | 276 | 335 | 0.4517 | 2.5890 | 5 | 0 | 25.4765 | 114 | 0.08878 |
+| medicine | PRICE | 240 | 773 | 272 | 261 | 0.5103 | 2.2208 | 3 | 0 | 23.9684 | 96 | 0.08077 |
+
+`true decode s` is the 512-token leg total; divide by 512 for the s/tok column
+in §4.1. The counters say the mechanism did exactly what it was built to do and
+nothing else:
+
+- **`max depth` is exactly 3 on every PRICE leg**, and BASE reaches 4 or 5 on
+  every prompt. The d3 coefficient `0.442` is the binding price; d4/d5 never
+  clear it. This is the arm's signature, and it is present 8/8.
+- **Accept rate rises on every prompt** (e.g. medicine `0.4517 → 0.5103`,
+  dramatic `0.4966 → 0.5356`). Rejected rows fall on all 8 while accepted rows
+  fall by at most 9, so the arm is removing rows that were going to be thrown
+  away.
+- **`non_drafting_rounds = 0` in all 16 legs.** Arm D declines *depth*, never
+  drafting itself, so it never takes the zero-draft path. This matters for
+  legality (§6): the round always proposes, verifies and reports.
+- `replayed` rounds fall on all 8 prompts (e.g. medicine `114 → 96`), consistent
+  with fewer rejected tails to repair.
+- `p50 block seconds` falls on all 8, i.e. the win is per-round latency and not
+  an artefact of the leg total.
 
 ---
 
@@ -151,12 +222,58 @@ Phase 0 modelled arm D as **losing 98 emitted tokens**. That was wrong. The
 trusted parent owns a fixed 512-token window and continues the trajectory, so a
 shallower schedule does not emit fewer tokens — it spends **extra rounds**.
 
-<!-- FIXED-WINDOW -->
+The measured fixed-window accounting over all 8 prompts:
 
-Each extra round re-adds a depth-1 row plus a primary commit, which is the whole
-attenuation. I tested this explanation rather than asserting it: per-prompt extra
-rounds vs realised/predicted ratio is strongly negatively correlated, so the
-shortfall is accounted for rather than left as an unmodelled effect.
+| quantity | BASE | PRICE | delta | Phase 0 predicted |
+|---|---|---|---|---|
+| tokens emitted per leg | 512 | 512 | 0 | — |
+| tokens lost | 0 | 0 | **0** | 98 |
+| rounds | 1947 | 1971 | **+24** | — |
+| declared rows | 6592 | 6236 | **−356** | −609 |
+
+`tokens_emitted_all_legs_512 = True` on all 16 legs, so `realised_tokens_lost`
+is **0** and Phase 0's 98 lost tokens simply do not exist on the live rig. The
+cost reappears as `extra_rounds_spent_by_arm = +24` and as rows-saved coming in
+at 356 rather than the predicted 609.
+
+The row shortfall and the extra rounds are the same fact: each extra round
+re-adds a depth-1 row plus a primary commit. `realised_rows_saved` 356 = 609
+predicted − 229 rows the arm had to re-propose, and PRICE's proposed-row count
+is `6236 − 1971 = 4265` against 4036 predicted, i.e. `+229`. So the 24 extra
+rounds and the 229 re-proposed rows close against each other exactly.
+
+**The BASE arm independently reproduced the E21 tape.** BASE ran 1947 rounds,
+which is exactly the tape's 1947 rounds, and its 6592 declared rows decompose as
+`1947 primary + 4645 proposed` — the tape's proposed-row count to the row. Phase
+0's instrument gate showed the model *replays* the tape; this shows the live
+binary *regenerates* it. The realised/predicted comparison below is therefore a
+comparison of the arm against itself on the same trajectory, not against a
+different decode.
+
+I tested the extra-rounds explanation rather than asserting it. Per prompt:
+
+| prompt | extra rounds | rows saved | realised/pred |
+|---|---|---|---|
+| travel | −1 | 36 | 0.872 |
+| natural_history | +1 | 36 | 0.687 |
+| narrative | +1 | 42 | 0.772 |
+| philosophy | +2 | 44 | 0.767 |
+| english | +4 | 40 | 0.629 |
+| technical | +4 | 33 | 0.697 |
+| medicine | +4 | 74 | 0.853 |
+| dramatic | +9 | 51 | 0.540 |
+
+`extra_rounds_vs_attenuation_pearson_r = −0.7405` (n = 8), with
+`realised_over_predicted_gain_ratio_mean = 0.7270`. The extremes behave as the
+mechanism requires: `travel` spent −1 rounds and kept 87 % of its predicted gain,
+`dramatic` spent +9 and kept 54 %. The shortfall is therefore accounted for
+rather than left as an unmodelled effect.
+
+Honest note on that correlation: at n = 6 it was −0.9666 and adding the last two
+prompts moved it to −0.7405, so extra rounds are the dominant term but not the
+only one — `medicine` kept 85 % despite +4 rounds because it also saved by far
+the most rows (74). I am reporting the weaker n = 8 figure rather than the n = 6
+one I saw first.
 
 **Phase 0's `+4.688 % median-of-8` must be read as an upper bound.** The
 pre-registration was left unmodified and the timed matrix is the ground truth.
