@@ -970,6 +970,7 @@ public final class Qwen36MTPBlockSession {
             Qwen35Attribution.note(
                 .topTwo, rows: verifyTokens.dim(1), since: attribT0)
         }
+        Qwen35Attribution.markVerifyRound(rows: verifyTokens.dim(1))
         var bundle: [MLXArray] = [top2IDs, top2Values]
         bundle.append(contentsOf: draftIdArrays)
         eval(cache.flatMap { $0.state } + bundle)

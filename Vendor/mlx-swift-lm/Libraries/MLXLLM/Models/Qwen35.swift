@@ -23,11 +23,30 @@ import MLXNN
 /// - `2`: one record per forward carrying only the row count and the
 ///   unmodified forward wall time. No extra `eval`, no bucket timing — this is
 ///   the width histogram at the untouched decode schedule.
-/// - `1`: mode 2 plus per-bucket timing, where each bucket boundary is closed
-///   with a blocking `eval`. That serialises the decode graph, so a mode-1 run
-///   reports a *within-run* cost split and its own wall clock is NOT a valid
-///   speed baseline. Comparing mode 1 against mode 2 measures exactly how much
-///   the attribution perturbs the thing it measures.
+/// - `1`: mode 2 plus *fine* per-bucket timing: attention and MLP are split
+///   inside every layer, which costs `2 * layers + 3` blocking `eval`s.
+/// - `3`: mode 2 plus *coarse* per-layer timing: one boundary per decoder
+///   layer, so attention and MLP stay merged and the cost is `layers + 3`
+///   blocking `eval`s.
+///
+/// The `+ 3` is `drain`, `embed` and `head`, which both attributing modes
+/// charge identically.
+///
+/// A blocking `eval` both flushes the command buffer and stops the CPU from
+/// building the next subgraph while the GPU runs, so an attributing mode
+/// inflates the forward and can bias the split toward whichever family holds
+/// the most boundaries. Modes 2, 3 and 1 place 0, `layers + 3` and
+/// `2 * layers + 3` boundaries on the *same* forward, which is what makes that
+/// bias measurable rather than assumed.
+///
+/// Mode 3 is the falsification test, not a second opinion. Because the MLP
+/// buckets are keyed by host layer type, mode 1's `gdn + mlp_gdn` is the same
+/// quantity as mode 3's `gdn`, and likewise for the full-attention pair. The
+/// two modes therefore report the same GDN-versus-full-attention layer split
+/// while differing by 2x in boundary density: agreement says the split is a
+/// property of the model rather than of the instrument, and disagreement says
+/// the raw shares are not usable. A mode-1 or mode-3 wall clock is never a
+/// valid speed baseline.
 ///
 /// The unattributed residual (`total_ns` minus the bucket sum) is the closure
 /// check: cache tails that no bucket output depends on land there rather than
@@ -38,14 +57,16 @@ import MLXNN
 public enum Qwen35Attribution {
 
     public enum Bucket: Int, CaseIterable {
-        case embed, gdn, fullAttention, mlp, head, topTwo
+        case drain, embed, gdn, fullAttention, mlpGdn, mlpFullAttention, head, topTwo
 
         fileprivate var key: String {
             switch self {
+            case .drain: return "drain"
             case .embed: return "embed"
             case .gdn: return "gdn"
             case .fullAttention: return "full_attention"
-            case .mlp: return "mlp"
+            case .mlpGdn: return "mlp_gdn"
+            case .mlpFullAttention: return "mlp_full_attention"
             case .head: return "head"
             case .topTwo: return "top_two"
             }
@@ -56,9 +77,13 @@ public enum Qwen35Attribution {
         Int(ProcessInfo.processInfo.environment["MLX_QWEN_ATTRIB"] ?? "0") ?? 0
 
     /// Emit one record per forward.
-    public static let logging = mode == 1 || mode == 2
-    /// Additionally time each bucket, forcing an `eval` at every boundary.
-    public static let attributing = mode == 1
+    public static let logging = mode == 1 || mode == 2 || mode == 3
+    /// Additionally time buckets, forcing an `eval` at every boundary.
+    public static let attributing = mode == 1 || mode == 3
+    /// Split attention from MLP inside each layer.
+    public static let fineGrained = mode == 1
+    /// Keep each decoder layer whole.
+    public static let coarseGrained = mode == 3
 
     nonisolated(unsafe) private static var nanos =
         [UInt64](repeating: 0, count: Bucket.allCases.count)
@@ -109,12 +134,35 @@ public enum Qwen35Attribution {
     /// the cache-repair path off the serialised schedule.
     @inline(__always)
     public static func timed(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
-        guard attributing, inForward else { return body() }
+        guard fineGrained, inForward else { return body() }
+        return charge(bucket, body)
+    }
+
+    /// Whole-layer form of `timed`, active only in the coarse mode so exactly
+    /// one of the two ever places a boundary.
+    @inline(__always)
+    public static func layerTimed(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
+        guard coarseGrained, inForward else { return body() }
+        return charge(bucket, body)
+    }
+
+    @inline(__always)
+    private static func charge(_ bucket: Bucket, _ body: () -> MLXArray) -> MLXArray {
         let t0 = now()
         let out = body()
         eval(out)
         record(bucket, since: t0)
         return out
+    }
+
+    /// Force work queued *before* this forward — for the verify forward that is
+    /// the draft head producing the candidate tokens — to land in its own
+    /// bucket instead of inflating whichever family owns the first boundary.
+    public static func drain(_ inputs: MLXArray) {
+        guard attributing, inForward else { return }
+        let t0 = now()
+        eval(inputs)
+        record(.drain, since: t0)
     }
 
     public static func record(_ bucket: Bucket, since t0: UInt64) {
@@ -146,6 +194,14 @@ public enum Qwen35Attribution {
         let line = "qwen-attrib-span: f=\(forwardIndex &- 1) rows=\(rows)"
             + " \(bucket.key)_ns=\(span)\n"
         sink.write(Data(line.utf8))
+    }
+
+    /// Mark the forward just completed as a scored verify round. Warmup and
+    /// seed-prefill forwards never reach this call, so it is what separates
+    /// shipped decode work from shape warmup in every logging mode.
+    public static func markVerifyRound(rows: Int) {
+        guard logging else { return }
+        sink.write(Data("qwen-attrib-verify: f=\(forwardIndex &- 1) rows=\(rows)\n".utf8))
     }
 }
 
@@ -2010,19 +2066,21 @@ final class Qwen35DecoderLayer: Module {
         // Port of omlx commit 696d90a:
         //   patches/mlx_lm_mtp/qwen35_model.py DecoderLayer.__call__
         // Passes nConfirmed through to the linear-attention sublayer.
-        let r = Qwen35Attribution.timed(isLinear ? .gdn : .fullAttention) {
-            if isLinear {
-                return linearAttn!(
-                    inputLayerNorm(x), mask: ssmMask, cache: cache as? MambaCache,
-                    nConfirmed: nConfirmed)
-            } else {
-                return selfAttn!(inputLayerNorm(x), mask: attentionMask, cache: cache)
+        Qwen35Attribution.layerTimed(isLinear ? .gdn : .fullAttention) {
+            let r = Qwen35Attribution.timed(isLinear ? .gdn : .fullAttention) {
+                if isLinear {
+                    return linearAttn!(
+                        inputLayerNorm(x), mask: ssmMask, cache: cache as? MambaCache,
+                        nConfirmed: nConfirmed)
+                } else {
+                    return selfAttn!(inputLayerNorm(x), mask: attentionMask, cache: cache)
+                }
             }
-        }
 
-        let h = x + r
-        return Qwen35Attribution.timed(.mlp) {
-            h + (mlp as! UnaryLayer)(postAttentionLayerNorm(h))
+            let h = x + r
+            return Qwen35Attribution.timed(isLinear ? .mlpGdn : .mlpFullAttention) {
+                h + (mlp as! UnaryLayer)(postAttentionLayerNorm(h))
+            }
         }
     }
 }
@@ -2073,6 +2131,7 @@ public class Qwen35TextModelInner: Module {
         nConfirmed: Int = 0
     ) -> MLXArray {
         Qwen35Attribution.beginForward(rows: inputs.dim(1))
+        Qwen35Attribution.drain(inputs)
         let attribT0 = Qwen35Attribution.now()
         var hiddenStates = embedTokens(inputs)
 
