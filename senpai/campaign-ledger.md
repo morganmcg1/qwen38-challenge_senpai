@@ -11,36 +11,48 @@ disagree, stop and repair both before assigning or submitting work.
 ## Current frontier
 
 The organizer remote and the promoted Yukon row were refreshed at
-`2026-08-17T21:24:25Z`.
+`2026-08-18T07:34:45Z`.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `d1530a409848b82a0a1890141c1483875d1e0173` |
-| Best promoted submission | `bd007bc7-e8ab-4919-baf4-d5e90068dd83` |
-| Promoted source ref | `d1530a409848b82a0a1890141c1483875d1e0173` |
-| Official score | `3.13098700135133` |
+| Organizer synced commit | `8dabcfb75c19dad6cbf5cc7cf9f26e1bd440a0dd` |
+| Best promoted submission | `824dc272-b560-4dc6-bf6c-42f58944f4cb` |
+| Promoted source ref | `8dabcfb75c19dad6cbf5cc7cf9f26e1bd440a0dd` |
+| Official score | `3.19351254799833` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Submitted solver snapshot | `d1530a409848b82a0a1890141c1483875d1e0173` |
+| Submitted solver snapshot | `8dabcfb75c19dad6cbf5cc7cf9f26e1bd440a0dd` |
 
 The promoted receipt above is the public Yukon frontier used to bootstrap this
 campaign; it is not claimed as a Senpai-authored result.
 
-Campaign commit `c8dceb9` imports the exact promoted submitted surface from
-`d1530a409848b82a0a1890141c1483875d1e0173`. Relative to promoted source
-`ed4dfd6b0e95bb1cafb26c694bc247f551d550fe`, its only executable change is
-`DIRECT_NIBBLES=true` for M=7 in the readable and runtime-effective affine4
-QMV twins. The intervening `0824e0e` warmup experiment was superseded and is
-absent: `Qwen36MTPBlockSession.swift` has returned to `ed4dfd6` semantics.
-The incumbent precision-island head remains unchanged, and no organizer
-policy, contract, fixture, workflow, guide, or dependency file changed.
+Campaign commit `7906ea1` imports the exact promoted submitted surface from
+`8dabcfb75c19dad6cbf5cc7cf9f26e1bd440a0dd`. The source chain after `d1530a4`
+contains three solver snapshots: `0d800b2` enables direct-nibble affine4/group-64
+QMV at M=3,4,5; `036fd9c` adds the affine-2 compact readout, 32-row exact
+affine-4 rerank, and its declared head; and `8dabcfb` adds M=1 fast dispatch for
+the coarse affine-2 readout and narrow affine-4 MTP projections. No organizer
+policy, contract, fixture, workflow, guide, dependency, or other trusted file
+changed.
 
-The exact promoted bytes reintroduced the already-known abbreviated M=8
-comments in generated `quantized.cpp`. Campaign commit `08fb76a` is a separate
-canonical regeneration containing only the 3-line-to-13-line comment
-expansion. Removing full-line comments leaves both versions at SHA-256
-`b8a68ef536608000fe3a45331797f1ac3f0f57637165ced16a5458771a07a480`;
-no executable token changed. The full twin audit then passed 29/29.
+The declared head is
+`hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8`,
+tree digest `559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71`,
+and 427,742,600 bytes. It preserves the promoted 4-bit/group-64 precision-island
+head and adds the affine-2 compact `draft_lm_head` ABI: weight
+`[98,336, 320]`, scales/biases `[98,336, 80]`, followed by an exact affine-4
+rerank of a 32-token shortlist.
+
+The exact promoted bytes again carried the abbreviated M=8 comments in generated
+`quantized.cpp`. Campaign commit `7b740c7` is the separate canonical
+3-line-to-13-line comment-only regeneration; removing full-line comments leaves
+both versions at SHA-256
+`6d15dec32469bf8c8ce115f56433202bbc5044e986622adb291211f77ce8a8e7`.
+With Metal toolchain 17F109, the canonical audit reports 27/29. For `gemm_nax`
+and `steel_attention_nax`, wrapper, root, prologue, and every vendored section
+are byte-equal; only compiler-owned absolute system-section inventory differs
+(`units.h` alone in the checked-in twins versus ten MPP headers plus the same
+`units.h` locally). Those two promoted NAX blobs are preserved unchanged.
 
 ## Same-host baselines
 
@@ -84,6 +96,8 @@ evidence or a changed condition; “try again” is not enough.
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-ed4dfd6-r2` / `7ab7376` | canonical regeneration of promoted `quantized` twin | `f04df93` | comment-stripped source SHA is identical before/after; twin audit 29/29 and release build passed; full `swift test` remains blocked by unchanged organizer `QwenMTPVerbTests.swift:755` type error | not submitted; mechanical campaign repair only | Canonical output expands three comments to thirteen; no executable token changes; no AOT Metal source changed, so `mlx.metallib` rebuild is not applicable |
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-bd007bc` / `c8dceb9` | exact promoted editable-snapshot import | `1d1eeda` | preservation, campaign overlay, editable budget, trusted parity, and release build passed; full `swift test` rebuilt products but remains blocked by the unchanged organizer `QwenMTPVerbTests.swift:755` type error | adopted public promoted `bd007bc7-e8ab-4919-baf4-d5e90068dd83` / `d1530a409848b82a0a1890141c1483875d1e0173` at `3.13098700135133`; not a Senpai-authored submission | Net executable delta from `ed4dfd6` is the M=7 direct-nibbles flag in the readable/generated QMV twins; no organizer policy or dependency files changed |
 | 2026-08-17 | `codex/sync-organizer-frontier-20260817-bd007bc` / `08fb76a` | canonical regeneration of promoted `quantized` twin | `c8dceb9` | comment-stripped source SHA is identical before/after; twin audit 29/29; no AOT-only Metal source changed, so `mlx.metallib` rebuild is not applicable | not submitted; mechanical campaign repair only | Canonical output expands three comments to thirteen; no executable token changes |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-live-1` / `7906ea1` | exact promoted editable-snapshot import | `c80c023` | preservation, campaign overlay, editable budget, trusted parity, exact promoted-blob checks, and release build passed; full `swift test` reaches the unchanged trusted `QwenMTPVerbTests.swift:755` `String`/`Comment?` compile defect | adopted public promoted `824dc272-b560-4dc6-bf6c-42f58944f4cb` / `8dabcfb` at `3.19351254799833`; not a Senpai-authored submission | Four editable files changed; current q2/q4 rerank head and both M=1 MTP-only QMV dispatches are present; no trusted policy changed |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-live-1` / `7b740c7` | canonical regeneration of promoted `quantized` twin | `7906ea1` | comment-stripped source SHA is identical; `quantized` reproduces; 27/29 twins pass and both remaining NAX differences are isolated to compiler-owned system-section inventory with every vendored section byte-equal | not submitted; mechanical campaign repair only | Preserves exact promoted NAX blobs; no AOT-only Metal source changed, so `mlx.metallib` rebuild is not applicable |
 
 ## Update checklist
 
