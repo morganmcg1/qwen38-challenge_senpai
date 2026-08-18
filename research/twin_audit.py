@@ -48,27 +48,73 @@ RULE = re.compile(r"^/{40,}$")
 # twin; ``regenerated_sha256`` is the digest of the same section as regenerated
 # from the readable vendored header. Both are pinned, so editing either comment
 # block re-reds the audit and forces this table to be revisited deliberately.
-# RETIRED WAIVER, kept as a record rather than as a live hole.
+# HISTORY OF THIS TABLE, so that the current row is read as a decision and not
+# as a convenience.
 #
-#   ("quantized", "mlx/backend/metal/kernels/quantized.h")
-#
-# was waived while promoted organizer frontier
+# The key ("quantized", "mlx/backend/metal/kernels/quantized.h") was first
+# waived while promoted organizer frontier
 # 79683c633b13c63aa23f112756a9c6b5173705b0 shipped the long M=8 register-cliff
 # rationale in the readable header and a short pointer comment in the
 # runtime-effective twin. Frontier sync c8dceb9 (organizer
-# d1530a409848b82a0a1890141c1483875d1e0173) and the campaign regeneration
-# 08fb76a removed that divergence: the two comment blocks are now byte-identical
-# and the audit is clean at 29/29 with no waiver applied.
+# d1530a409848b82a0a1890141c1483875d1e0173) plus the campaign regeneration
+# 08fb76a removed that divergence, the audit went clean at 29/29, and the row
+# was DELETED rather than left in place -- because a waiver whose digests point
+# at a body that no longer exists still keeps its (stem, header) key waivable,
+# and a future sync reintroducing ANY comment divergence in that exact section
+# would then only have to reproduce two digests to be waived silently.
 #
-# The row was deleted rather than left in place because a waiver that no longer
-# matches anything is worse than no waiver at all. Its digests are pinned to a
-# body that no longer exists, so it can never fire again for the divergence it
-# was written for -- but the ENTRY would keep the (stem, header) key waivable,
-# so a future sync that reintroduces ANY comment divergence in this exact
-# section would only have to reproduce two digests to be waived silently. The
-# negative control research/twin_waiver_negative_control.py is what detected
-# that this row had gone dead; it now asserts the empty-table state instead.
-KNOWN_COMMENT_DIVERGENCES = {}
+# The row is BACK, with new digests, for a divergence we did not author.
+#
+# Advisor-branch merge commit a6eed9f ("Sync advisor branch to promoted frontier
+# 036fd9c") resolved Vendor/.../kernels/quantized.h and
+# mlx-generated/quantized.cpp with --theirs, adopting the promoted frontier
+# 036fd9ca2a2cac3b51c62a63237bd5d28c024487 (submission
+# b1e2591b-13f2-4b17-baf1-2956ca9242df, ranked 3.19088426880882) byte-for-byte.
+# That frontier's own twin pair carries the divergence back again: the readable
+# header keeps a 13-line prose paragraph in the wide-crossrow ``case 8`` block
+# (the "M = 8 ... register cliff, not work scaling", the row-independence
+# exactness argument, a receipts line, and the streak-gate synergy note) while
+# the JIT twin keeps a 3-line pointer comment back to the header. Our previous
+# side of the merge had mirrored the two blocks; taking theirs reintroduced
+# their state.
+#
+# We record it here instead of re-editing the vendored kernel for two reasons.
+# (1) The divergence is COMMENT-ONLY and therefore semantically inert: the JIT
+#     twin is the runtime-effective source, its non-comment body is identical to
+#     the regenerated header body line for line (2928 == 2928 lines), and a
+#     comment-only twin edit has been measured on this campaign at +-0.07% of
+#     MTP true decode -- i.e. inside reproducibility noise.
+# (2) Re-editing a vendored file we just adopted verbatim would put our branch
+#     back out of byte-agreement with the promoted frontier for zero measurable
+#     benefit, and every subsequent frontier sync would re-conflict on it. The
+#     campaign-owned audit tool is the right place to carry an inherited fact.
+#
+# The waiver is still fail-closed on three independent conditions (see
+# comment_only_waiver below): both pinned digests plus a structural guard that
+# every non-comment line matches. So if the frontier -- or we -- ever change a
+# single line of CODE in this section, or change either comment block, the audit
+# reds immediately and this table must be revisited deliberately.
+#
+# research/twin_waiver_negative_control.py asserts the exact shape of this
+# table and independently re-derives that the waiver cannot mask a code change.
+KNOWN_COMMENT_DIVERGENCES = {
+    ("quantized", "mlx/backend/metal/kernels/quantized.h"): {
+        "checked_in_sha256": (
+            "6a3ec412c7b4ae1cdd32765fc04dfc3cee663fea31e5f401fb4ac5331e7d1ea0"
+        ),
+        "regenerated_sha256": (
+            "0031c13e7f8bf0368f537f18d063e0d09fc571ffdb2466a26365868793f32f78"
+        ),
+        "inherited_from": "036fd9ca2a2cac3b51c62a63237bd5d28c024487",
+        "adopted_by": "a6eed9f7ab068dc21017189b2a88a75a7a95c45b",
+        "note": (
+            "case 8 register-cliff rationale: 13-line paragraph in the readable "
+            "header, 3-line pointer in the runtime-effective JIT twin. "
+            "2992 checked-in vs 3002 regenerated lines, 2928 non-comment lines "
+            "identical on both sides."
+        ),
+    }
+}
 
 
 class AuditError(RuntimeError):

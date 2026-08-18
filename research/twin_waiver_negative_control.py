@@ -7,16 +7,32 @@ falsification test for that risk, and it is written so that it keeps its teeth
 whether or not any waiver is currently allowlisted.
 
 PART A -- THE LIVE TABLE.
-`KNOWN_COMMENT_DIVERGENCES` is currently EMPTY. The single row it used to carry
-(`quantized` / `mlx/backend/metal/kernels/quantized.h`) was inherited from
-promoted organizer frontier 79683c633b13c63aa23f112756a9c6b5173705b0 and went
-dead when frontier sync c8dceb9 plus campaign regeneration 08fb76a made the two
-comment blocks byte-identical. An earlier revision of THIS script detected that
-and said so; the row was then deleted, because a waiver whose digests point at a
-body that no longer exists still keeps its (stem, header) key waivable. Part A
-pins the empty state: it fails if a row reappears without this file being
-updated to justify it, and it fails if the real quantized.h section is divergent
-again.
+`KNOWN_COMMENT_DIVERGENCES` currently carries EXACTLY ONE row,
+(`quantized` / `mlx/backend/metal/kernels/quantized.h`), inherited -- not
+authored -- from promoted organizer frontier
+036fd9ca2a2cac3b51c62a63237bd5d28c024487 when advisor merge a6eed9f adopted that
+frontier's `quantized.h` / `mlx-generated/quantized.cpp` pair with `--theirs`.
+(The same key was waived once before, for frontier
+79683c633b13c63aa23f112756a9c6b5173705b0; it went dead at frontier sync c8dceb9
+plus campaign regeneration 08fb76a, an earlier revision of THIS script detected
+that, and the row was deleted -- because a waiver whose digests point at a body
+that no longer exists still keeps its (stem, header) key waivable.)
+
+Part A pins the live state and, crucially, attacks the LIVE row rather than only
+a synthetic one:
+
+  A1. the table has exactly the one expected key, and no other,
+  A2. the real quantized.h section really IS divergent (a live waiver that
+      matches nothing is a silent hole and must be deleted instead),
+  A3. the divergence really is comment-only -- every non-comment line matches,
+  A4. the two pinned digests really are the digests of the two live bodies, so
+      the row cannot be stale,
+  A5. the real pair is waived,
+  A6. THE TEETH: mutating ONE REAL CODE LINE inside the REAL checked-in section
+      makes the LIVE row refuse to waive. This is the property that matters --
+      it is proved against the row that actually ships, not against a synthetic
+      stand-in,
+  A7. the same for a one-character edit to either real comment block.
 
 PART B -- THE MACHINERY.
 The fail-closed logic must stay correct for the day a future frontier sync
@@ -83,9 +99,21 @@ regenerated_sections = dict(regenerated["sections"])
 
 print("PART A -- the live allowlist")
 
+# A1. Exactly one row, and it is the one this file documents.
 assert_true(
-    "KNOWN_COMMENT_DIVERGENCES is empty",
-    ta.KNOWN_COMMENT_DIVERGENCES == {},
+    "KNOWN_COMMENT_DIVERGENCES has exactly one row",
+    len(ta.KNOWN_COMMENT_DIVERGENCES) == 1,
+)
+assert_true(
+    f"the single row is keyed ({STEM!r}, {HEADER!r})",
+    set(ta.KNOWN_COMMENT_DIVERGENCES) == {(STEM, HEADER)},
+)
+
+LIVE_ROW = dict(ta.KNOWN_COMMENT_DIVERGENCES.get((STEM, HEADER), {}))
+
+assert_true(
+    "the live row records where the divergence was inherited from",
+    LIVE_ROW.get("inherited_from") == "036fd9ca2a2cac3b51c62a63237bd5d28c024487",
 )
 
 assert_true(
@@ -96,16 +124,85 @@ assert_true(
 real_checked = list(checked_sections.get(HEADER, []))
 real_regenerated = list(regenerated_sections.get(HEADER, []))
 
+# A2. A live waiver that matches nothing is a silent hole: it must be deleted,
+# not left in place. So the divergence it claims to cover must actually exist.
 assert_true(
-    f"{HEADER} has NO divergence at all (no waiver is needed)",
-    real_checked == real_regenerated,
+    f"{HEADER} IS divergent, so the live waiver covers something real",
+    real_checked != real_regenerated,
 )
 
-check(
-    "real section pair is not waivable with an empty table",
-    ta.comment_only_waiver(STEM, HEADER, real_checked, real_regenerated),
-    False,
+# A3. Structural: the divergence is comment-only.
+assert_true(
+    "the live divergence is comment-only (all non-comment lines match)",
+    ta.code_lines(real_checked) == ta.code_lines(real_regenerated),
 )
+
+# A4. The pinned digests are the digests of the LIVE bodies, so the row is not
+# stale. If a frontier sync moves either body, these two fail first and loudest.
+assert_true(
+    "pinned checked_in_sha256 == digest of the live checked-in body",
+    LIVE_ROW.get("checked_in_sha256") == ta.body_digest(real_checked),
+)
+assert_true(
+    "pinned regenerated_sha256 == digest of the live regenerated body",
+    LIVE_ROW.get("regenerated_sha256") == ta.body_digest(real_regenerated),
+)
+
+# A5. The waiver fires on the real pair.
+live_note = ta.comment_only_waiver(STEM, HEADER, real_checked, real_regenerated)
+check("real section pair IS waived by the live row", live_note, True)
+if live_note is not None:
+    assert_true(
+        "the live note names the header and reports the non-comment line count",
+        HEADER in live_note
+        and f"{len(ta.code_lines(real_checked))} non-comment" in live_note,
+    )
+
+# A6. THE TEETH. Attack the LIVE row directly: change one real CODE line inside
+# the real checked-in body and the live waiver must refuse. Every code line is
+# tried, not just one, so no single line is privileged.
+live_code_indices = [
+    i for i, line in enumerate(real_checked) if not line.strip().startswith("//")
+]
+assert_true(
+    "the live section has code lines to mutate",
+    len(live_code_indices) > 0,
+)
+live_code_leaks = []
+for i in live_code_indices:
+    mutated = list(real_checked)
+    mutated[i] = mutated[i] + " /*X*/"
+    if ta.comment_only_waiver(STEM, HEADER, mutated, real_regenerated) is not None:
+        live_code_leaks.append(i)
+assert_true(
+    f"the live row refuses to waive ANY of {len(live_code_indices)} "
+    "single-code-line mutations",
+    not live_code_leaks,
+)
+if live_code_leaks:
+    print(f"      leaked at checked-in line indices: {live_code_leaks[:10]}")
+
+# A7. A one-character edit to either real comment block must also refuse.
+live_comment_idx = next(
+    (i for i, line in enumerate(real_checked) if line.strip().startswith("//")),
+    None,
+)
+assert_true("the live section has a comment line", live_comment_idx is not None)
+if live_comment_idx is not None:
+    mutated = list(real_checked)
+    mutated[live_comment_idx] = mutated[live_comment_idx] + " x"
+    check(
+        "live row refuses a checked-in comment edit",
+        ta.comment_only_waiver(STEM, HEADER, mutated, real_regenerated),
+        False,
+    )
+    mutated_regen = list(real_regenerated)
+    mutated_regen[0] = mutated_regen[0] + " x"
+    check(
+        "live row refuses a regenerated-body edit",
+        ta.comment_only_waiver(STEM, HEADER, real_checked, mutated_regen),
+        False,
+    )
 
 print()
 print("PART B -- the fail-closed machinery, exercised on a synthetic waiver")
@@ -130,6 +227,9 @@ else:
         cbody != rbody and ta.code_lines(cbody) == ta.code_lines(rbody),
     )
 
+    # Temporarily SHADOW the live row with a synthetic one keyed identically, so
+    # Part B's assertions are about the machinery and not about the live digests.
+    # The finally block below restores the live row byte-for-byte.
     ta.KNOWN_COMMENT_DIVERGENCES[(STEM, HEADER)] = {
         "checked_in_sha256": ta.body_digest(cbody),
         "regenerated_sha256": ta.body_digest(rbody),
@@ -205,11 +305,22 @@ try:
             False,
         )
 finally:
-    ta.KNOWN_COMMENT_DIVERGENCES.pop((STEM, HEADER), None)
+    if LIVE_ROW:
+        ta.KNOWN_COMMENT_DIVERGENCES[(STEM, HEADER)] = dict(LIVE_ROW)
+    else:
+        ta.KNOWN_COMMENT_DIVERGENCES.pop((STEM, HEADER), None)
 
 assert_true(
-    "the synthetic row was removed again",
-    ta.KNOWN_COMMENT_DIVERGENCES == {},
+    "the synthetic row was replaced by the live row again",
+    ta.KNOWN_COMMENT_DIVERGENCES.get((STEM, HEADER)) == LIVE_ROW,
+)
+assert_true(
+    "the live table still has exactly one row after Part B",
+    set(ta.KNOWN_COMMENT_DIVERGENCES) == {(STEM, HEADER)},
+)
+assert_true(
+    "the live row still waives the real pair after Part B",
+    ta.comment_only_waiver(STEM, HEADER, real_checked, real_regenerated) is not None,
 )
 
 print()
@@ -217,6 +328,8 @@ if failures:
     print(f"NEGATIVE CONTROL FAILED: {len(failures)} case(s): {failures}")
     sys.exit(1)
 print(
-    "NEGATIVE CONTROL PASSED: the allowlist is empty and unnecessary, and the "
-    "waiver machinery cannot hide a code or comment change."
+    "NEGATIVE CONTROL PASSED: the one live allowlist row covers a real "
+    "comment-only divergence, its digests are current, it refuses to waive any "
+    "single-code-line mutation of the real section, and the waiver machinery "
+    "cannot hide a code or comment change."
 )
