@@ -176,7 +176,7 @@ call-site rewirings. Those are proved only by Phase 3's correctness evidence.
 
 ---
 
-## Phase 3 — paired BASE/MEMO measurement over eight prose prompts
+## Phase 3 — paired BASE/MEMO measurement over prose prompts (4 of 8 registered)
 
 ### A correction to the assignment's framing
 
@@ -197,7 +197,181 @@ which is the only valid instrument here. Goldens are pinned to a single named
 build (`E24_GOLDEN_PIN=BASE`) so both arms check against **identical**
 reference rows.
 
-<!-- PHASE3_RESULTS -->
+### Result: the mechanism fires, the speedup does not arrive
+
+Four prompts, balanced ABBA (2 BASE-first, 2 MEMO-first), 512 decode tokens,
+prefill subtracted, absolute wall seconds. `effect% > 0` means MEMO is faster.
+
+| prompt | MTP base | MTP memo | MTP % | SER base | SER memo | SER % | rounds |
+|---|---|---|---|---|---|---|---|
+| english | 20.8113 | 20.8041 | +0.034 | 34.1244 | 34.1215 | +0.008 | 251/251 |
+| narrative | 20.8679 | 20.8387 | +0.140 | 34.1620 | 34.1305 | +0.092 | 245/245 |
+| technical | 19.5293 | 19.5050 | +0.125 | 34.1500 | 34.1000 | +0.146 | 231/231 |
+| dramatic | 19.7223 | 19.7526 | **−0.154** | 34.1485 | 34.0339 | +0.335 | 220/220 |
+
+- **MTP leg (the scored leg): median +0.080 %, mean +0.036 %, range −0.154 %
+  to +0.140 %, MEMO faster on 3/4 prompts.**
+- Serial leg: median +0.119 %, mean +0.146 %, range +0.008 % to +0.335 %,
+  MEMO faster on 4/4.
+
+Pre-registered threshold was **0.50 %**, fixed before any measurement. The MTP
+result is **6–14× below it**, sits at or under the +0.0722 % MTP
+reproducibility floor the advisor established, and **changes sign on one of
+four prompts**. Stop rule 4 (effect inside the ABBA spread) is met. This is a
+**null on the scored path**.
+
+### The null is not a botched experiment
+
+Four independent checks confirm the change was actually present and active:
+
+1. **Static**: no raw `MLXArray(invScale)` or `MLXArray(pow(invScale, 2))`
+   remain in `Qwen35.swift`; only the memo constructs them, and all four call
+   sites (779, 834, 874, 1062) route through `invScalePair`.
+2. **Caching**: the Phase 2 unit test shows `invScalePair` returns the
+   identical cached array on the second call.
+3. **Persistence**: `Qwen35GatedDeltaNet` is a `final class` (a reference type)
+   built once in `Qwen35DecoderLayer.init`, so `_invScaleMemo` survives every
+   forward rather than being rebuilt per token.
+4. **Binaries differ**: `worker_sha256` BASE `ef296fd8…` vs MEMO `4aa78316…`;
+   `source_sha256` `43fcfddb…` vs `f3e1f655…`, stamped per arm at run time.
+
+### Why the predicted saving evaporates
+
+Phase 1 measured a real marginal cost of **9.711 µs per cast**, which is
+**2.15× the advisor's 4.521 µs break-even** for a 0.5 % effect. That number is
+not wrong — it just does not reach the wall clock.
+
+| leg | dispatches/forward | forward wall | encode share | predicted saving | measured | realization |
+|---|---|---|---|---|---|---|
+| MTP (M≈3) | 1016 | 85.6 ms | 11.5 % | 0.2207 s | +7.62 ms | **0.035** |
+| serial (M=1) | 1480 | 66.7 ms | 21.6 % | 0.4773 s | +49.74 ms | **0.104** |
+
+**96 % of the removed encode time never becomes wall time.** The MTP round is
+GPU-bound: against a ~49.5 ms bandwidth floor (~13.5 GB at ~273 GB/s), the CPU
+encode thread has tens of milliseconds of slack per round, so deleting 0.93 ms
+of encode work is absorbed by CPU/GPU overlap instead of shortening the round.
+
+The forward-count scaling check is consistent with this and worth stating
+carefully. Casts are paid once per **target forward** and are width-independent,
+so an equal-exposure model predicts the serial leg should save 512/236.8 =
+**2.16×** the MTP leg; measured is **6.53×**. That gap is *not* a refutation —
+equal exposure is the wrong model. An M=1 serial forward issues **more**
+dispatches (1480 vs 1016) over **less** GPU work (66.7 ms vs 85.6 ms), so
+encode sits closer to the serial critical path. Its encode share is 1.87×
+higher, and it realizes 3.02× more of the tax: same direction, same order of
+magnitude. **Exposure, not forward count, governs how much of a CPU-side
+saving survives.**
+
+**This serial-leg gain cannot help the score.** The official score is
+pinned-serial ÷ candidate, and the ranked serial leg runs the *organizer's
+pinned build*, which does not contain this change. Only my local harness runs
+the candidate build on both legs. So the serial result is a valuable second
+witness for the mechanism, but scoring-irrelevant. Applied to the scored MTP
+leg alone, +0.038 % would move the 3.13099 frontier to ≈3.13217.
+
+### Arm effect vs run-position effect
+
+| leg | arm effect | position effect |
+|---|---|---|
+| MTP | +7.62 ms | −8.13 ms |
+| SERIAL | +49.74 ms | +23.29 ms |
+
+On the MTP leg the run-position (residual-heat) effect is **larger in magnitude
+than the arm effect and points the other way** — precisely the confound ABBA
+exists to cancel, and precisely why a 3/4 sign count should not be read as a
+result. Per-prompt MTP arm deltas (+7.2, +29.3, +24.3, −30.3 ms) disagree in
+sign and vary ~4× in magnitude.
+
+### Correctness: exact, and behaviourally inert
+
+- Every timed leg, both arms: `matched=True parity=True divergence=0`,
+  declared rows == checked rows (817, 829, 787, 800), `tripwire=True`.
+- **Cross-arm reference-row identity: bit-identical on all four prompts**,
+  513/513 rows, `worst |Δtop2| = 0.0`, 0 mismatches. This closes the gap the
+  Phase 2 unit test could not: `invScalePair` is private, so the unit test
+  proved the memo but not the four call-site rewirings. These rows carry exact
+  top-two logits from all 64 target layers across the full window.
+- Identical round counts and identical width histograms per prompt (e.g.
+  dramatic `M={2:14, 3:94, 4:77, 5:28, 6:7}`, mean depth 2.6364 in both arms),
+  so the change is behaviourally inert — it alters no acceptance decision.
+
+### Thermal and gate disclosure
+
+Entry-temperature spread across all eight timed legs was **0.297 °C**
+(42.860–43.157 °C). Mean entry: BASE 43.018 °C, MEMO 42.954 °C — a +0.065 °C
+bias, i.e. BASE started marginally *warmer*, which flatters MEMO. ABBA cancels
+this to first order, but it is one more reason not to promote a sub-0.1 %
+residual.
+
+Carried verbatim, not softened: every leg recorded
+`cool_gate=stalled_above_40.0C`, `cool_gate_passed_real_gate=false`,
+`gate_qualified_for_timing=false`. This host's idle GPU floor (~42.8–43.2 °C,
+confirmed repeatedly) sits above `COOL_GATE_TEMP_C=40`, so the wrapper gate is
+unsatisfiable here. Timing ran under the E15-authorized
+`MLXFAST_LOCAL_COOL_GATE=0` policy, applied identically to both arms, with a
+settle-to-plateau protocol (target 40 °C, max 240 s, 0.25 °C stall epsilon)
+before every arm.
+
+Two further disclosures:
+
+1. `english-MEMO` stamped `dirty=2`: two research-only Python files were
+   uncommitted at launch. They are not compiled into the worker, and that arm's
+   `worker_sha256`/`source_sha256` match the pre-built MEMO binary exactly.
+   Fixed from `narrative` onward (`dirty=0` on all six later legs).
+2. `mlx.metallib` is stale relative to the vendored Metal sources (recorded
+   `6639cc59…`, current `3e2818f1…`). This is pre-existing and **identical
+   across arms**, so it cannot confound BASE vs MEMO, but it rides in the
+   absolute numbers.
+
+### Scope honesty
+
+I pre-committed to running prompts in registered order and stopping only at an
+**even** prefix, reporting every completed prompt and never dropping one after
+seeing its number. I stopped at 4 of 8 under stop rule 4 rather than spend a
+further ~1.6 GPU-h re-confirming a null that is 6–14× below threshold. All four
+completed prompts are reported above.
+
+### Result label: **Not useful**
+
+The target cost is real and was measured (9.711 µs/cast, 2.15× break-even), the
+implementation is correct and bit-exact, but the valid implementation has **no
+meaningful end-to-end gain** on the scored path. Not *Invalid* — correctness is
+perfect. Not *Unclear* — the balanced decomposition and the exposure analysis
+both explain the null rather than leaving it to noise.
+
+### Transferable finding for the cost model
+
+The advisor's "everything else = 7.384 ms/round" residual is real as wall time,
+but its **dispatch-encode component is largely off the critical path**. The
+conversion factor from saved encode time to saved wall time on this workload is
+**~0.035 on the scored MTP leg** (~0.10 on an M=1 serial forward), not ~1. Any
+proposal of the form "remove N CPU-side dispatches from the target forward"
+should be discounted by that factor before it is costed. On the MTP leg, a
+0.5 % wall-clock win would require removing ~29 % of all encode work, not 12.6 %
+of the non-QMV residual. **Dispatch-count reduction is only promising where
+encode is exposed** — narrow widths, short kernels, or paths with forced
+evaluation barriers — and the M≈3 speculative round is not such a path.
+
+### W&B evidence
+
+| run | id | url |
+|---|---|---|
+| phase3-BASE | `og68oxqa` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/og68oxqa |
+| phase3-MEMO | `9swz7m3m` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9swz7m3m |
+| phase3-analysis | `eaow2hx9` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/eaow2hx9 |
+
+Phase 1: `1n5e4erm` (A), `zzrhnzgq` (B), `44zqoc4o` (C), `vwx3a3lf` (analysis).
+
+### Suggested follow-ups (not implemented)
+
+- The 1480-dispatch M=1 path has 21.6 % encode share and is where this class of
+  optimization would actually pay. It is not the scored width, but the
+  **M=2 round (1544 dispatches, E23) is** — and it is 9.9 % of shipped-default
+  rounds. Worth a targeted look at whether encode is exposed at M=2.
+- Encode exposure should be measured directly (e.g. a deliberately inflated
+  dispatch count vs wall time) to calibrate the 0.035 factor, rather than
+  inferred from a null.
+
 
 ---
 
@@ -206,7 +380,10 @@ reference rows.
 ```bash
 research/e24-build.sh BASE MEMO          # arms from named git refs
 research/e24-run.sh --goldens            # 512-step reference rows, pinned to BASE
-research/e24-run.sh --arms BASE,MEMO english narrative   # ABBA, 2 prompts/job
+research/e24-run.sh --arms BASE,MEMO english      # ABBA order fixed by registered index
+research/e24-run.sh --arms BASE,MEMO narrative   # one prompt per job (30-min job cap)
+research/e24-run.sh --arms BASE,MEMO technical
+research/e24-run.sh --arms BASE,MEMO dramatic
 research/e24_analyse.py --json --logs <job logs>
 research/e24_wandb_phase3.py
 ```

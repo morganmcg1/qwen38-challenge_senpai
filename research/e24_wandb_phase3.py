@@ -171,6 +171,17 @@ def main() -> int:
         "entry_temp_spread_c": report["entry_temp_spread_c"],
         "gate_passes_captured": len(gates),
         "timed_runs": 2 * len(rows),
+        "mtp_arm_effect_s": report["order_decomposition"]["MTP"]["arm_effect_s"],
+        "mtp_position_effect_s": report["order_decomposition"]["MTP"]["position_effect_s"],
+        "serial_arm_effect_s": report["order_decomposition"]["SERIAL"]["arm_effect_s"],
+        "serial_position_effect_s": report["order_decomposition"]["SERIAL"]["position_effect_s"],
+        "schedule_balanced": report["order_decomposition"]["MTP"]["balanced"],
+        "mtp_realization": report["forward_count_scaling"]["mtp_realization"],
+        "serial_realization": report["forward_count_scaling"]["ser_realization"],
+        "serial_exposure_advantage": report["forward_count_scaling"]["serial_exposure_advantage"],
+        "scaling_equal_exposure_predicted_ratio":
+            report["forward_count_scaling"]["equal_exposure_predicted_ratio"],
+        "scaling_measured_ratio": report["forward_count_scaling"]["measured_ratio"],
     })
     table = wandb.Table(columns=[
         "prompt", "mtp_base_s", "mtp_memo_s", "mtp_effect_pct",
