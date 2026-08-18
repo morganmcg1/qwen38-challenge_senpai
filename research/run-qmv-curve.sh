@@ -3,7 +3,8 @@
 # `quantized_matmul` at the scored Qwen 3.8 27B shapes, through the vendored
 # MLX the scored worker links and through stock pip MLX, then summarize.
 #
-#   research/run-qmv-curve.sh TAG [BASE_SHA]
+#   research/run-qmv-curve.sh TAG [BASE_SHA] [--widths L] [--shapes-only]
+#                             [--reps N] [--inner N] [--skip-stock]
 #
 # Holds benchmark.sh's own local run lock for the whole measurement and passes
 # benchmark.sh's own 40C cool gate before each timed process, so this never
@@ -11,7 +12,28 @@
 set -euo pipefail
 
 tag="${1:?usage: run-qmv-curve.sh TAG [BASE_SHA]}"
-base_sha="${2:-}"
+shift
+base_sha=""
+if [[ $# -gt 0 && "${1}" != --* ]]; then
+  base_sha="${1}"
+  shift
+fi
+
+sweep_widths=""
+shapes_only=""
+sweep_reps=""
+sweep_inner=""
+skip_stock=""
+while [[ $# -gt 0 ]]; do
+  case "${1}" in
+    --widths) sweep_widths="${2:?--widths needs a comma-separated list}"; shift 2 ;;
+    --shapes-only) shapes_only=1; shift ;;
+    --reps) sweep_reps="${2:?--reps needs a count}"; shift 2 ;;
+    --inner) sweep_inner="${2:?--inner needs a count}"; shift 2 ;;
+    --skip-stock) skip_stock=1; shift ;;
+    *) echo "run-qmv-curve.sh: unknown argument ${1}" >&2; exit 2 ;;
+  esac
+done
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_root}"
@@ -66,6 +88,7 @@ mkdir -p "${out_dir}"
   echo "run-qmv-curve: tag=${tag} base_sha=${base_sha:-unset}"
   echo "run-qmv-curve: head=$(git rev-parse HEAD) dirty=$(git status --porcelain | wc -l | tr -d ' ')"
   echo "run-qmv-curve: host=$(sysctl -n machdep.cpu.brand_string) mem=$(sysctl -n hw.memsize)"
+  echo "run-qmv-curve: widths=${sweep_widths:-default} shapes_only=${shapes_only:-0} reps=${sweep_reps:-default} inner=${sweep_inner:-default} skip_stock=${skip_stock:-0}"
   date -u '+run-qmv-curve: started_utc=%Y-%m-%dT%H:%M:%SZ'
 } | tee "${out_dir}/identity.txt" >&2
 
@@ -106,12 +129,28 @@ swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-
 # this the first MLXArray fails to load the default metallib.
 tools/build-mlx-metallib.sh --all-build-roots
 
+eval "$(
+  awk '/^find_macmon\(\) \{/,/^\}/' benchmark.sh
+  awk '/^local_gpu_temp\(\) \{/,/^\}/' benchmark.sh
+)"
+COOL_GATE_MACMON_BIN="$(find_macmon || true)"
+
+# This host's idle GPU floor sits above benchmark.sh's 40C target, so the gate's
+# stall detector aborts before reaching it. Every width in the sweep is timed
+# round-robin inside one process, so a thermal floor biases all widths equally
+# and cancels in the C(M)/C(1) ratio the sweep exists to measure. The gate still
+# runs first; a stalled cool-down downgrades to a recorded thermal state instead
+# of discarding the measurement. Same contract as run-draft-bits-sweep.sh.
 cool_gate() {
   echo "run-qmv-curve: cool gate before ${1}" >&2
-  ./benchmark.sh --local-cool-gate-only
+  if ./benchmark.sh --local-cool-gate-only; then
+    echo "cool_gate_${1}=passed" | tee -a "${out_dir}/identity.txt" >&2
+  else
+    echo "cool_gate_${1}=stalled_above_40C" | tee -a "${out_dir}/identity.txt" >&2
+  fi
   local temp
-  temp="$(macmon pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty' 2>/dev/null || true)"
-  echo "run-qmv-curve: ${1} starting at gpu_temp_avg=${temp:-unknown}C" >&2
+  temp="$(local_gpu_temp || true)"
+  echo "gpu_temp_c_before_${1}=${temp:-unknown}" | tee -a "${out_dir}/identity.txt" >&2
   printf '%s %s\n' "${1}" "${temp:-unknown}" >>"${out_dir}/start-temps.txt"
 }
 
@@ -119,12 +158,19 @@ cool_gate() {
 cool_gate vendored
 MLXFAST_RUN_QMV_COST_CURVE=1 \
 MLXFAST_QMV_COST_CURVE_OUT="${out_dir}/vendored.json" \
+MLXFAST_QMV_COST_CURVE_WIDTHS="${sweep_widths}" \
+MLXFAST_QMV_COST_CURVE_SHAPES_ONLY="${shapes_only}" \
+MLXFAST_QMV_COST_CURVE_REPS="${sweep_reps}" \
+MLXFAST_QMV_COST_CURVE_INNER="${sweep_inner}" \
   swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
   --filter QwenQMVCostCurveTests 2>&1 | tee "${out_dir}/vendored.log"
+echo "gpu_temp_c_after_vendored=$(local_gpu_temp || true)" | tee -a "${out_dir}/identity.txt" >&2
 
 # --- stock pip MLX control ----------------------------------------------------
 python_bin="${MLXFAST_MLX_PYTHON_BIN:-/opt/homebrew/bin/python3}"
-if "${python_bin}" -c 'import mlx.core' >/dev/null 2>&1; then
+if [[ -n "${skip_stock}" ]]; then
+  echo "run-qmv-curve: --skip-stock; not running the stock control" >&2
+elif "${python_bin}" -c 'import mlx.core' >/dev/null 2>&1; then
   cool_gate stock
   "${python_bin}" research/qmv_cost_curve.py --out "${out_dir}/stock.json" \
     2>&1 | tee "${out_dir}/stock.log"
@@ -136,6 +182,9 @@ fi
 summary_python="${MLXFAST_PYTHON_BIN:-/Users/ec2-user/.senpai/aws-mac-runners/qwen38-mlx-senpai-r1/venv/bin/python3}"
 [[ -x "${summary_python}" ]] || summary_python="$(command -v python3)"
 
+# macOS ships bash 3.2, where `set -u` treats an empty array's `[@]` expansion as
+# unbound. The `${a[@]+...}` guard is the only portable way to pass an optional
+# flag list; without it --skip-stock kills the summary after a good measurement.
 stock_flag=()
 [[ -f "${out_dir}/stock.json" ]] && stock_flag=(--stock "${out_dir}/stock.json")
 wandb_flag=()
@@ -149,14 +198,14 @@ WANDB_PROJECT="${WANDB_PROJECT:-qwen38-mlx-challenge-senpai}" \
 WANDB_ENTITY="${WANDB_ENTITY:-wandb-applied-ai-team}" \
 "${summary_python}" research/qmv_cost_curve_summary.py \
   --vendored "${out_dir}/vendored.json" \
-  "${stock_flag[@]}" \
+  ${stock_flag[@]+"${stock_flag[@]}"} \
   --head-provenance "${out_dir}/head-provenance.json" \
   --out "${out_dir}/summary.json" \
   --tag "${tag}" \
   --host "$(sysctl -n machdep.cpu.brand_string)" \
   --base-sha "${base_sha:-unset}" \
   --na-max "${MLXFAST_QMV_NA_MAX:-4}" \
-  "${wandb_flag[@]}" 2>&1 | tee "${out_dir}/summary.log"
+  ${wandb_flag[@]+"${wandb_flag[@]}"} 2>&1 | tee "${out_dir}/summary.log"
 
 date -u '+run-qmv-curve: finished_utc=%Y-%m-%dT%H:%M:%SZ' >&2
 echo "run-qmv-curve: artifacts in ${out_dir}" >&2
