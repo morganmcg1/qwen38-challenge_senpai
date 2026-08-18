@@ -84,7 +84,7 @@ lock and no weights. Design choices worth recording:
 
 ## 4. Loose ends deliberately left alone
 
-- `research/kl-boundary-runJ.json` is **provenance-buggy** — computed from the
+- `research/DO-NOT-CITE-kl-boundary-runJ.json` is **provenance-buggy** — computed from the
   wrong arm's trace (claims w3/round 82; truth is w4/round 81). Do not cite it.
   The `boundary_key_len` spread across `kl-boundary-*` is just the `--boundary`
   flag, not a real disagreement.
