@@ -129,18 +129,32 @@ VECTOR_LIMIT = 10
 CROSSROW_MAX_INPUTS_PER_GROUP = 4
 
 
+# M -> streams, read out of the sweep payload's own parse of the live header.
+# `ceil(M / NA_max)` is only a guess at the switch: the tree ships
+# `..._m<T, 8, 3, true>`, so M=8 costs three weight streams where the formula
+# says two, and the second stream boundary is at M=7->8, not M=8->9. A payload
+# recorded before the harness emitted the parse keeps the old formula.
+LIVE_STREAMS = {}
+
+
 def weight_streams(m):
     if m >= VECTOR_LIMIT:
         return None
+    if m in LIVE_STREAMS:
+        return LIVE_STREAMS[m]
     return -(-m // CROSSROW_MAX_INPUTS_PER_GROUP)
 
 
-def stream_boundaries():
-    return [
-        m
-        for m in range(2, VECTOR_LIMIT)
-        if weight_streams(m) != weight_streams(m - 1)
-    ]
+def row_streams(shape, m):
+    r = row(shape, m)
+    if r is not None and r.get("weight_streams") is not None:
+        return r["weight_streams"]
+    return weight_streams(m)
+
+
+def stream_boundaries(shape=None):
+    at = (lambda m: row_streams(shape, m)) if shape else weight_streams
+    return [m for m in range(2, VECTOR_LIMIT) if at(m) != at(m - 1)]
 
 
 def kernel_family(m):
@@ -150,8 +164,9 @@ def kernel_family(m):
 def staircase_fit(shape):
     """Decide between the two competing cost laws for M < vector_limit.
 
-    Staircase: cost tracks `ceil(M / 4)` full weight reads, so achieved GB/s
-    against nominal bytes saws and against stream-corrected bytes flattens.
+    Staircase: cost tracks the live switch's own weight-stream count, so
+    achieved GB/s against nominal bytes saws and against stream-corrected
+    bytes flattens.
     Roofline: cost rises smoothly through one bandwidth/compute knee, so
     neither column flattens and the treads are not flat either. The flatter
     stream-corrected column is the discriminating evidence, because it says the
@@ -159,7 +174,7 @@ def staircase_fit(shape):
     """
     tread = {}
     for m in range(1, VECTOR_LIMIT):
-        tread.setdefault(weight_streams(m), []).append(m)
+        tread.setdefault(row_streams(shape, m), []).append(m)
     nominal, corrected, cost = {}, {}, {}
     for m in range(1, VECTOR_LIMIT):
         r = row(shape, m)
@@ -167,7 +182,7 @@ def staircase_fit(shape):
             continue
         cost[m] = r["seconds_per_call"]
         nominal[m] = shape["weight_bytes"] / cost[m] / 1e9
-        corrected[m] = weight_streams(m) * nominal[m]
+        corrected[m] = row_streams(shape, m) * nominal[m]
     if len(cost) < VECTOR_LIMIT - 1:
         return None
 
@@ -191,14 +206,14 @@ def staircase_fit(shape):
     # inside a tread, not against a tread spread that has accumulated three of
     # them. Increments are normalised by cost[1] so shapes are comparable.
     incr = {m: (cost[m] - cost[m - 1]) / cost[1] for m in range(2, VECTOR_LIMIT)}
-    boundaries = [m for m in stream_boundaries() if m in incr]
+    boundaries = [m for m in stream_boundaries(shape) if m in incr]
     interior = [m for m in incr if m not in boundaries]
     mean_boundary = sum(incr[m] for m in boundaries) / len(boundaries)
     mean_interior = sum(incr[m] for m in interior) / len(interior)
     step_excess = mean_boundary / mean_interior if mean_interior else None
-    # Rank test: a real `ceil(M/4)` stream boundary should make M=5 and M=9 the
-    # two most expensive increments in the whole range. This is scale-free and
-    # survives any monotone per-row cost added on top.
+    # Rank test: if streams drive cost, every stream boundary the live switch
+    # declares must occupy the top ranks of the increment order. This is
+    # scale-free and survives any monotone per-row cost added on top.
     order = sorted(incr, key=lambda m: incr[m], reverse=True)
     ranks = {m: order.index(m) + 1 for m in boundaries}
     boundaries_rank_first = sorted(ranks.values()) == list(range(1, len(boundaries) + 1))
@@ -216,7 +231,9 @@ def staircase_fit(shape):
         "cv_gbps_stream_corrected": cv_cor,
         "flatness_gain": cv_nom / cv_cor if cv_cor else None,
         "mean_gbps_stream_corrected": sum(corrected.values()) / len(corrected),
+        "steps_at_boundaries": {str(m): cost[m] / cost[m - 1] for m in boundaries},
         "step_at_m5": cost[5] / cost[4],
+        "step_at_m8": cost[8] / cost[7],
         "step_at_m9": cost[9] / cost[8],
         "tread_spread": {str(s): v for s, v in spread.items()},
         "increments": incr,
@@ -224,12 +241,12 @@ def staircase_fit(shape):
         "mean_interior_increment": mean_interior,
         "step_excess": step_excess,
         # Weight streams the measurement actually implies, if achieved
-        # bandwidth were held at the width-1 value. A true `ceil(M/4)` law
-        # would make these the integers 1,1,1,1,2,2,2,2,3.
+        # bandwidth were held at the width-1 value. A pure stream law would
+        # make these match `row_streams` exactly.
         "implied_streams": {m: nominal[1] / nominal[m] for m in nominal},
         # Cost of crossing a stream boundary once the ordinary per-row cost is
-        # removed, as a fraction of one full weight read. The `ceil(M/4)`
-        # correction assumes 1.0 here.
+        # removed, as a fraction of one full weight read. The stream correction
+        # assumes 1.0 here.
         "marginal_stream_cost": {
             str(m): incr[m] - mean_interior for m in boundaries
         },
@@ -595,6 +612,12 @@ def main():
     rf = vend["roofline"]
     widths = vend["widths"]
     shapes = vend["shapes"]
+    # Seed the global fallback from the widest shape's own parse of the live
+    # switch, so shapes recorded before the harness emitted per-row streams are
+    # scored against the shipped tree rather than against `ceil(M/NA_max)`.
+    for r in max(shapes, key=lambda s: s["n"])["rows"]:
+        if r.get("weight_streams") is not None:
+            LIVE_STREAMS[r["m"]] = r["weight_streams"]
 
     curves = []
     for s in shapes:
@@ -1170,7 +1193,7 @@ def main():
                     title="achieved GB/s against nominal weight bytes"),
                 "qmv/gbps_stream_corrected_by_shape": wandb.plot.line(
                     curve_table, "m", "gbps_stream_corrected", stroke="shape",
-                    title="achieved GB/s against ceil(M/4) stream-corrected bytes"),
+                    title="achieved GB/s against stream-corrected weight bytes"),
                 "qmv/cost_curve": curve_table,
                 "qmv/weighted_verify": verify_table,
                 "qmv/per_shape_roofline": knee_table,
