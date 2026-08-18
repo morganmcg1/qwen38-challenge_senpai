@@ -1,0 +1,116 @@
+{
+  "inventory": {
+    "tensors": 1847,
+    "total_elements": 4204731904,
+    "layer_elements": 3807414784,
+    "non_layer_elements": 397317120,
+    "layers_seen": 64,
+    "elements_per_layer": 59490856.0
+  },
+  "geometry": {
+    "ranked_m5_max_128gb": {
+      "max_ops": 50,
+      "max_mb": 512,
+      "threshold_elements": 536870912,
+      "ops_axis_commits": 19.0,
+      "element_axis_commits": 7.831923484802246,
+      "binding_axis": "ops",
+      "automatic_commits": 19.740060806274414
+    },
+    "local_m4_pro_48gib": {
+      "max_ops": 64,
+      "max_mb": 128,
+      "threshold_elements": 134217728,
+      "ops_axis_commits": 14.907692307692308,
+      "element_axis_commits": 31.327693939208984,
+      "binding_axis": "elements",
+      "automatic_commits": 31.327693939208984
+    },
+    "e29_claimed_50_50": {
+      "max_ops": 50,
+      "max_mb": 50,
+      "threshold_elements": 52428800,
+      "ops_axis_commits": 19.0,
+      "element_axis_commits": 80.198896484375,
+      "binding_axis": "elements",
+      "automatic_commits": 80.19889648437501
+    }
+  },
+  "ladder_fit": {
+    "table": [
+      {
+        "arm": "L0",
+        "ladder": "off",
+        "rungs": 0,
+        "serial_ms_per_token": 80.34414891153574,
+        "mtp_ms_per_token": 23.544082418084145,
+        "mtp_ms_per_round": 172.2081456865583,
+        "local_ratio": 3.4124986263989467,
+        "accepted_draft_total": 222
+      },
+      {
+        "arm": "L1",
+        "ladder": "front",
+        "rungs": 2,
+        "serial_ms_per_token": 78.83338257670403,
+        "mtp_ms_per_token": 23.534320294857025,
+        "mtp_ms_per_round": 172.1367427280971,
+        "local_ratio": 3.3497199659482644,
+        "accepted_draft_total": 222
+      },
+      {
+        "arm": "D0",
+        "ladder": "default",
+        "rungs": 8,
+        "serial_ms_per_token": 66.87450502067804,
+        "mtp_ms_per_token": 23.591996170580387,
+        "mtp_ms_per_round": 172.5586005619594,
+        "local_ratio": 2.8346268173810434,
+        "accepted_draft_total": 222
+      },
+      {
+        "arm": "L2",
+        "ladder": "dense",
+        "rungs": 17,
+        "serial_ms_per_token": 65.36954687908292,
+        "mtp_ms_per_token": 23.448719643056393,
+        "mtp_ms_per_round": 171.51063510349817,
+        "local_ratio": 2.787766149886144,
+        "accepted_draft_total": 222
+      }
+    ],
+    "round_mean_ms": 172.10353102002824,
+    "slope_us_per_boundary": -36.46495467481686,
+    "slope_se_us": 31.11183685453908,
+    "slope_ci95_us": [
+      -170.32838444955365,
+      97.39847509991992
+    ],
+    "mtp_spread_pct": 0.6110206855853721,
+    "serial_spread_pct": 22.907611796899918
+  },
+  "ceilings": {
+    "ranked": {
+      "commits_removed": 19.740060806274414,
+      "round_time_change_ms": 0.7198204225789252,
+      "round_time_change_pct": 0.41824849165654676,
+      "round_time_change_ci95_pct": [
+        -1.1171483870874668,
+        1.9536453704005607
+      ],
+      "best_case_speedup_pct": 1.1171483870874668
+    },
+    "local": {
+      "commits_removed": 31.327693939208984,
+      "round_time_change_ms": 1.1423629395597905,
+      "round_time_change_pct": 0.6637649633271325,
+      "round_time_change_ci95_pct": [
+        -1.772926795860378,
+        3.100456722514643
+      ],
+      "best_case_speedup_pct": 1.772926795860378
+    }
+  },
+  "max_active_tasks": 10,
+  "verify_dispatches": 969
+}
