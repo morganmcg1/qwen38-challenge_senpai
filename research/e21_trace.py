@@ -51,12 +51,37 @@ def parse_round(line):
     return rec
 
 
+BEGIN_RE = re.compile(r"^mtp-trace: begin ")
+
+
 def parse_trace(path):
-    rounds = []
+    """Split one trace file into sessions.
+
+    A single --local-iterate invocation drives several sessions through the
+    same worker: reference row generation at a fixed depth, the verify pass,
+    then the timed pass. They all write to one trace file, so pooling them
+    would mix a fixed-depth histogram into the scheduled one. Sessions are cut
+    at each `begin` record, and defensively at any round-counter reset.
+    """
+    sessions, cur, last_round = [], [], None
     for line in Path(path).read_text(errors="replace").splitlines():
-        if ROUND_RE.match(line):
-            rounds.append(parse_round(line))
-    return rounds
+        if BEGIN_RE.match(line):
+            if cur:
+                sessions.append(cur)
+            cur, last_round = [], None
+            continue
+        m = ROUND_RE.match(line)
+        if not m:
+            continue
+        n = int(m.group(1))
+        if last_round is not None and n <= last_round:
+            sessions.append(cur)
+            cur = []
+        last_round = n
+        cur.append(parse_round(line))
+    if cur:
+        sessions.append(cur)
+    return sessions
 
 
 def summarize(rounds):
@@ -110,17 +135,27 @@ def main():
                     help="trace.txt paths, optionally as label=path")
     ap.add_argument("--json", help="write the full report here")
     ap.add_argument("--dump-rounds", help="write per-round records here (JSONL)")
+    ap.add_argument("--session", default="-1",
+                    help="session index to report, or 'all' to list every one")
     args = ap.parse_args()
 
-    per_prompt, pooled = {}, []
+    per_prompt, pooled, sessions_seen = {}, [], {}
     for spec in args.traces:
         label, _, path = spec.partition("=")
         if not path:
             label, path = Path(spec).parent.name, spec
-        rounds = parse_trace(path)
-        if not rounds:
+        sessions = parse_trace(path)
+        if not sessions:
             print(f"warning: no round records in {path}", file=sys.stderr)
             continue
+        sessions_seen[label] = [
+            {"index": i, "round_count": len(s),
+             "depth_histogram": dict(sorted(Counter(r["d"] for r in s).items()))}
+            for i, s in enumerate(sessions)
+        ]
+        if args.session == "all":
+            continue
+        rounds = sessions[int(args.session)]
         per_prompt[label] = summarize(rounds)
         pooled.extend(rounds)
         if args.dump_rounds:
@@ -128,7 +163,8 @@ def main():
                 for r in rounds:
                     fh.write(json.dumps({"prompt": label, **r}) + "\n")
 
-    report = {"per_prompt": per_prompt, "pooled": summarize(pooled) if pooled else {}}
+    report = {"sessions_seen": sessions_seen, "per_prompt": per_prompt,
+              "pooled": summarize(pooled) if pooled else {}}
     if len(per_prompt) > 1:
         keys = ("effective_mean_draft_len", "effective_max_draft_len",
                 "round_count", "proposed_draft_rows", "draft_acceptance_rate_pct")
