@@ -22,10 +22,20 @@ is still a counterfactual over a FIXED input tape -- the EMA trajectory that fed
 the recorded `p` sequence was driven by the forced depths, not by the policy
 under test -- but it no longer has to refuse credit for going deeper.
 
-WHY round_us IS NOT THE FIT TARGET.  `upkeep_us` spans the trace's own per-row
-top-2 dump (`Self.traceRow` over 0 ... acceptedCount, between tCommitDone and
-tTailDone), so it scales with accepted rows and therefore with depth.  T(d) is
-fitted from the phases before it and the round_us variant is reported beside it.
+WHY THE PARENT'S CLOCK IS THE PRIMARY TIMER.  The trusted parent already
+publishes `block_request_seconds` and `effective_draft_lengths`, one entry per
+round, both computed from its own journal.  Pairing them measures T(d) on the
+clock that actually produces the score, needs nothing from the editable side,
+and -- unlike the trace, which only emits a line when a draft was proposed --
+covers d = 0.  T(0) was simply unmeasurable in r1.  The trace's `round_us` and
+`round_us - upkeep_us` are reported beside it as agreement checks; `upkeep_us`
+spans the trace's own per-row top-2 dump (`Self.traceRow` over
+0 ... acceptedCount) so it scales with accepted rows and therefore with depth.
+
+WARM-UP.  A depth's first dispatch pays kernel specialisation once: on english
+the first d = 5 round cost 339.9 ms against a 143.3 ms median.  The first full
+forced cycle (8 rounds) is dropped per prompt so that every depth's first-touch
+round is excluded by the same rule, and medians are reported beside means.
 """
 
 from __future__ import annotations
@@ -33,6 +43,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import statistics
 import sys
 from collections import Counter, defaultdict
@@ -64,9 +75,18 @@ def weight_passes(depth: int) -> int:
 # --------------------------------------------------------------------------
 # tape
 # --------------------------------------------------------------------------
+WARMUP_ROUNDS = 8
+
+
 def load_force_tape(arm: str = "FORCE", prompts=PROMPTS,
                     runs_root: Path = RUNS_ROOT):
-    """Pooled forced-depth rounds plus each prompt's two leg reports."""
+    """Pooled forced-depth rounds plus each prompt's two leg reports.
+
+    One record per round of the MTP leg, keyed on the parent's own journal:
+    `d` and `parent_ms` come from `effective_draft_lengths` and
+    `block_request_seconds`, so a d = 0 round exists even though the trace
+    emits no line for it.  Trace fields are merged in where they exist.
+    """
     rounds: list[dict] = []
     legs: dict[str, dict] = {}
     missing: list[str] = []
@@ -80,30 +100,109 @@ def load_force_tape(arm: str = "FORCE", prompts=PROMPTS,
         if len(sessions) != 1:
             raise SystemExit(
                 f"{run}: expected one traced session, got {len(sessions)}")
-        for r in sessions[0]:
-            r["prompt"] = prompt
-            rounds.append(r)
         serial = json.loads((run / "reports/03-mtp-timed.json").read_text())
         mtp = json.loads((run / "reports/04-mtp-timed.json").read_text())
         if not serial.get("is_serial_control") or mtp.get("is_serial_control"):
             raise SystemExit(f"{run}: leg reports are not (serial, mtp)")
-        legs[prompt] = {"serial": serial, "mtp": mtp}
+        legs[prompt] = {"serial": serial, "mtp": mtp,
+                        "trace_rounds": sessions[0]}
+
+        depths = mtp["effective_draft_lengths"]
+        secs = mtp["block_request_seconds"]
+        if not len(depths) == len(secs) == mtp["round_count"]:
+            raise SystemExit(f"{run}: parent per-round arrays disagree")
+        by_index = {r["round"] - 1: r for r in sessions[0]}
+        for i, (d, s) in enumerate(zip(depths, secs)):
+            traced = by_index.get(i)
+            if traced is not None and traced["d"] != d:
+                raise SystemExit(
+                    f"{run}: round {i} trace depth {traced['d']} != parent {d}")
+            if traced is None and d != 0:
+                raise SystemExit(f"{run}: round {i} depth {d} is untraced")
+            rec = dict(traced) if traced else {"round": i + 1, "d": d,
+                                               "acc": 0}
+            rec.update(prompt=prompt, index=i, parent_ms=s * 1000.0,
+                       warm=i >= WARMUP_ROUNDS, traced=traced is not None)
+            rounds.append(rec)
     if missing:
         raise SystemExit("e25r2_refit: no tape at " + ", ".join(missing))
     return rounds, legs
 
 
-def fidelity(legs: dict) -> dict:
-    """Every gate the trusted parent reports, per prompt, plus the head used."""
+def warm(rounds: list[dict]) -> list[dict]:
+    return [r for r in rounds if r["warm"]]
+
+
+def parent_ms(r: dict) -> float:
+    """Primary timer: the trusted parent's own per-round wall clock, in us."""
+    return r["parent_ms"] * 1000.0
+
+
+def ledger_crosscheck(legs: dict, rounds: list[dict]) -> dict:
+    """The editable trace against the parent's independent row accounting."""
     out = {}
     for prompt, pair in legs.items():
         mtp = pair["mtp"]
+        traced = [r for r in rounds if r["prompt"] == prompt and r["traced"]]
+        out[prompt] = {
+            "parent_accepted_draft_total": mtp["accepted_draft_total"],
+            "trace_accepted_sum": sum(r["acc"] for r in traced),
+            "parent_drafted_rows":
+                mtp["accepted_draft_total"] + mtp["rejected_draft_total"],
+            "trace_proposed_sum": sum(r["d"] for r in traced),
+            "parent_declared_rows_total": mtp["declared_rows_total"],
+            "parent_reference_checked_row_total":
+                mtp["reference_checked_row_total"],
+            "primary_plus_draft_rows":
+                mtp["round_count"] + mtp["accepted_draft_total"]
+                + mtp["rejected_draft_total"],
+            "max_rejected_tail_logit_delta":
+                mtp["max_rejected_tail_logit_delta"],
+            "verify_block_replayed_round_count":
+                mtp["verify_block_replayed_round_count"],
+        }
+        c = out[prompt]
+        c["accepted_agrees"] = (
+            c["parent_accepted_draft_total"] == c["trace_accepted_sum"])
+        c["proposed_agrees"] = (
+            c["parent_drafted_rows"] == c["trace_proposed_sum"])
+        c["rows_closed"] = (
+            c["parent_declared_rows_total"]
+            == c["parent_reference_checked_row_total"]
+            == c["primary_plus_draft_rows"])
+    return out
+
+
+def fidelity(legs: dict) -> dict:
+    """Every gate the trusted parent reports, per prompt, plus the head used.
+
+    `uses_pinned_mtp_head` is *not* "the organizer head": main.swift :1962 sets
+    it from `report.usesNativeMTPHead`, i.e. whether the leg drafted at all.
+    The head identity lives in `head_provenance`.
+    """
+    out = {}
+    for prompt, pair in legs.items():
+        mtp, serial = pair["mtp"], pair["serial"]
+        prov = mtp.get("head_provenance") or {}
         out[prompt] = {
             k: mtp.get(k) for k in (
                 "all_tokens_matched", "residual_divergence_count",
                 "parity_all_ok", "uses_pinned_mtp_head",
-                "declared_head_digest", "decode_tokens", "round_count")
+                "decode_token_count", "emitted_token_total", "round_count")
         }
+        out[prompt].update(
+            head_origin=prov.get("origin"), head_source=prov.get("source"),
+            head_bytes=prov.get("bytes"), head_sha256=prov.get("sha256"),
+            head_file_count=prov.get("file_count"),
+            serial_all_tokens_matched=serial.get("all_tokens_matched"),
+            serial_uses_pinned_mtp_head=serial.get("uses_pinned_mtp_head"),
+            serial_seconds_per_token=serial.get(
+                "parent_measured_seconds_per_token"),
+            mtp_seconds_per_token=mtp.get(
+                "parent_measured_seconds_per_token"))
+        sp = out[prompt]["serial_seconds_per_token"]
+        mp = out[prompt]["mtp_seconds_per_token"]
+        out[prompt]["round_robin_speedup"] = sp / mp if sp and mp else None
     return out
 
 
@@ -147,14 +246,17 @@ def time_table(rounds: list[dict], timer=core_us) -> dict:
                        if len(v) > 1 else 0.0),
             "weight_passes": weight_passes(d),
         }
-    step = {}
+    step, step_median = {}, {}
     for d in sorted(table):
         if d + 1 in table:
-            t0, t1 = table[d]["mean_ms"], table[d + 1]["mean_ms"]
             # The shipped rule's own definition: price of adding row d+1 as a
             # fraction of the round it extends (Qwen36MTPBlockSession :571).
+            t0, t1 = table[d]["mean_ms"], table[d + 1]["mean_ms"]
             step[d] = (t1 - t0) / t0
-    return {"round_ms": table, "step_ratio": step}
+            m0, m1 = table[d]["median_ms"], table[d + 1]["median_ms"]
+            step_median[d] = (m1 - m0) / m0
+    return {"round_ms": table, "step_ratio": step,
+            "step_ratio_median": step_median}
 
 
 def admissibility(step: dict) -> dict:
@@ -264,6 +366,69 @@ def expected_accepted(p_by_pos: dict, depth: int) -> float:
     return expected
 
 
+def empirical_rate_table(rounds: list[dict], timer, boots: int = 4000,
+                         seed: int = 20260818) -> dict:
+    """Realised tokens per ms at each forced depth, straight off the tape.
+
+    Needs no acceptance model: within a forced round-robin each depth sees a
+    fair sample of positions, so `mean(1 + acc) / mean(T)` is an unbiased
+    estimate of what a *constant* depth-d policy would deliver.  This table is
+    therefore both the price-curve evidence and the constant-depth policy
+    comparison, and it is the arm-G decision statistic in its weakest form.
+
+    Uncertainty is dominated by the granted-token count, not by T, so the
+    per-stratum sem and the bootstrap over rounds are what decide the argmax.
+    """
+    tok = defaultdict(list)
+    ms = defaultdict(list)
+    for r in rounds:
+        tok[r["d"]].append(1.0 + r["acc"])
+        ms[r["d"]].append(timer(r) / 1000.0)
+    out = {}
+    for d in sorted(tok):
+        mt, mm = statistics.mean(tok[d]), statistics.mean(ms[d])
+        med = statistics.median(ms[d])
+        n = len(tok[d])
+        s_tok = statistics.stdev(tok[d]) / math.sqrt(n) if n > 1 else 0.0
+        s_ms = statistics.stdev(ms[d]) / math.sqrt(n) if n > 1 else 0.0
+        rate = mt / mm
+        out[d] = {"n": n, "mean_tokens": mt, "sem_tokens": s_tok,
+                  "mean_T_ms": mm, "sem_T_ms": s_ms, "median_T_ms": med,
+                  "tokens_per_ms": rate,
+                  "sem_tokens_per_ms": rate * math.sqrt(
+                      (s_tok / mt) ** 2 + (s_ms / mm) ** 2),
+                  "tokens_per_ms_median_T": mt / med,
+                  "ms_per_token": mm / mt}
+
+    rng = random.Random(seed)
+    depths = sorted(tok)
+    wins = Counter()
+    for _ in range(boots):
+        best_d, best_r = None, -1.0
+        for d in depths:
+            n = len(tok[d])
+            idx = [rng.randrange(n) for _ in range(n)]
+            rt = sum(tok[d][i] for i in idx) / sum(ms[d][i] for i in idx)
+            if rt > best_r:
+                best_d, best_r = d, rt
+        wins[best_d] += 1
+    best = max(out, key=lambda d: out[d]["tokens_per_ms"])
+    best_med = max(out, key=lambda d: out[d]["tokens_per_ms_median_T"])
+    return {"by_depth": out, "argmax_depth": best,
+            "argmax_depth_median_T": best_med,
+            "bootstrap_draws": boots,
+            "bootstrap_argmax_share": {
+                d: wins[d] / boots for d in depths if wins[d]},
+            "gain_over_depth3_pct": (
+                100.0 * (out[best]["tokens_per_ms"]
+                         / out[3]["tokens_per_ms"] - 1.0)
+                if 3 in out else None),
+            "rate_vs_argmax_pct": {
+                d: 100.0 * (out[d]["tokens_per_ms"]
+                            / out[best]["tokens_per_ms"] - 1.0)
+                for d in depths}}
+
+
 def rate_table(table: dict, p_by_pos: dict) -> dict:
     """Emitted tokens per ms at each fixed depth, under the measured curve."""
     out = {}
@@ -337,53 +502,182 @@ def global_argmax_policy(table: dict, p_by_pos: dict, cap: int):
     return lambda r: best
 
 
+def render(r: dict) -> str:
+    L = []
+    add = L.append
+    add(f"arm={r['arm']} prompts={','.join(r['prompts'])} "
+        f"rounds {r['rounds_total']} -> {r['rounds_analysed']} "
+        f"(dropped first {r['warmup_rounds_dropped_per_prompt']}/prompt)")
+
+    add("\nFIDELITY + HEAD")
+    for p, f in sorted(r["fidelity"].items()):
+        add(f"  {p:<16} matched={f['all_tokens_matched']} "
+            f"parity={f['parity_all_ok']} div={f['residual_divergence_count']} "
+            f"tok={f['decode_token_count']}/{f['emitted_token_total']} "
+            f"speedup={f['round_robin_speedup']:.4f}")
+        add(f"                   head={f['head_origin']} "
+            f"bytes={f['head_bytes']} files={f['head_file_count']}")
+    add("\nPARENT LEDGER CROSSCHECK")
+    for p, c in sorted(r["ledger_crosscheck"].items()):
+        add(f"  {p:<16} accepted {c['trace_accepted_sum']}=="
+            f"{c['parent_accepted_draft_total']} {c['accepted_agrees']}  "
+            f"proposed {c['trace_proposed_sum']}=={c['parent_drafted_rows']} "
+            f"{c['proposed_agrees']}  rows_closed={c['rows_closed']} "
+            f"tail_delta={c['max_rejected_tail_logit_delta']} "
+            f"replayed={c['verify_block_replayed_round_count']}")
+
+    i = r["instrument"]
+    add(f"\nINSTRUMENT  marked={i['rounds_carrying_forced_mark']} "
+        f"taken==forced={i['taken_depth_equals_forced']}  "
+        f"forced_hist={i['forced_depth_histogram']}")
+    add(f"            taken_hist={i['taken_depth_histogram']}")
+    add(f"            shipped_counterfactual={i['shipped_counterfactual_histogram']}")
+
+    t = r["time_parent_clock"]["round_ms"]
+    ag = r["timer_agreement_ms"]
+    add("\nT(d) ON THE PARENT'S OWN CLOCK  (ms; trace timers as check)")
+    add(f"  {'d':>2} {'n':>4} {'mean':>8} {'sem':>6} {'median':>8} {'pass':>4}"
+        f" {'core-par':>9} {'raw-par':>8}")
+    for d, v in sorted(t.items(), key=lambda kv: int(kv[0])):
+        a = ag.get(d, {})
+        c = f"{a['core_minus_parent']:>9.3f}" if a else f"{'-':>9}"
+        w = f"{a['round_us_minus_parent']:>8.3f}" if a else f"{'-':>8}"
+        add(f"  {d:>2} {v['n']:>4} {v['mean_ms']:>8.3f} {v['sem_ms']:>6.3f} "
+            f"{v['median_ms']:>8.3f} {v['weight_passes']:>4} {c} {w}")
+
+    for label, key in (("mean", "admissibility_parent"),
+                       ("median", "admissibility_parent_median")):
+        add(f"\nPRICE ADMISSIBILITY ({label} T; a price can fire only if "
+            f"c_d < 1/(d+1))")
+        for d, v in sorted(r[key].items(), key=lambda kv: int(kv[0])):
+            flag = "ok " if v["admissible"] else "WALL"
+            add(f"  c_{d} = {v['measured_c']:.6f}  ceiling {v['ceiling']:.6f}"
+                f"  {flag}  shipped_scalar={v['shipped_scalar_c']:.5f}"
+                + (f"  r1={v['r1_c']}" if v["r1_c"] is not None else ""))
+
+    e = r["rate_empirical"]
+    add("\nREALISED RATE PER FORCED DEPTH  == constant-depth policy comparison")
+    add(f"  {'d':>2} {'n':>4} {'tok/round':>9} {'+-':>6} {'T_mean':>8}"
+        f" {'tok/ms':>9} {'+-':>8} {'ms/tok':>7} {'vs best':>8}")
+    for d, v in sorted(e["by_depth"].items(), key=lambda kv: int(kv[0])):
+        add(f"  {d:>2} {v['n']:>4} {v['mean_tokens']:>9.4f} "
+            f"{v['sem_tokens']:>6.4f} {v['mean_T_ms']:>8.3f} "
+            f"{v['tokens_per_ms']:>9.6f} {v['sem_tokens_per_ms']:>8.6f} "
+            f"{v['ms_per_token']:>7.3f} "
+            f"{e['rate_vs_argmax_pct'][d]:>+8.2f}%")
+    add(f"  argmax={e['argmax_depth']} argmax(medianT)="
+        f"{e['argmax_depth_median_T']} "
+        f"gain_over_depth3={e['gain_over_depth3_pct']:+.3f}%")
+    add(f"  bootstrap argmax share ({e['bootstrap_draws']} draws): "
+        f"{ {k: round(v, 3) for k, v in e['bootstrap_argmax_share'].items()} }")
+    add(f"  per-prompt argmax: {r['per_prompt_argmax']}")
+
+    m = r["rate_modelled"]
+    add(f"\nMODELLED RATE  argmax={m['global_argmax_depth']} "
+        f"greedy_first_local_max={m['greedy_first_local_max_depth']} "
+        f"greedy_leaves_on_table={m['greedy_leaves_on_table_pct']:+.3f}%")
+
+    add("\nCONDITIONAL ACCEPTANCE p_i (row i | rows < i accepted)")
+    for i_, v in sorted(r["acceptance"].items(), key=lambda kv: int(kv[0])):
+        add(f"  i={i_} reached={v['reached']:>4} accepted={v['accepted']:>4} "
+            f"p={v['p']:.4f} +-{v['sem']:.4f}")
+
+    pm = r["pass_count_model"]
+    if pm.get("fitted"):
+        add(f"\nPASS MODEL T = a + b*d + c*ceil((d+1)/IPG):  "
+            f"a={pm['intercept_ms']:.3f} b={pm['per_row_ms']:.3f} "
+            f"c={pm['per_weight_pass_ms']:.3f} R2={pm['r_squared']:.5f} "
+            f"max|resid|={pm['max_abs_residual_ms']:.3f} ms")
+
+    pc = r["position_control"]
+    add(f"\nPOSITION CONTROL  OLS drift = "
+        f"{pc['ols_ms_per_1000_tokens']:+.3f} ms per 1000 tokens of offset")
+    add(f"  {'d':>2}" + "".join(f" {q:>10}" for q in sorted(pc["by_quartile"])))
+    depths = sorted({int(d) for q in pc["by_quartile"].values() for d in q})
+    for d in depths:
+        cells = []
+        for q in sorted(pc["by_quartile"]):
+            v = pc["by_quartile"][q].get(str(d)) or pc["by_quartile"][q].get(d)
+            cells.append(f" {v['mean_ms']:>10.3f}" if v else f" {'-':>10}")
+        add(f"  {d:>2}" + "".join(cells))
+
+    add("\nPOLICY REPLAY ON THE FORCED TAPE (modelled ms from the T table)")
+    for k, v in r["replay"].items():
+        add(f"  {k:<24} ms/token={v['ms_per_token']:.4f} "
+            f"mean_depth={v['mean_depth']:.3f} tokens={v['emitted_tokens']:.0f} "
+            f"unevaluable={v['rounds_not_evaluable']}")
+    return "\n".join(L)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", default="FORCE")
     ap.add_argument("--prompts", default=",".join(PROMPTS))
     ap.add_argument("--out", type=Path)
+    ap.add_argument("--text", action="store_true",
+                    help="human-readable summary instead of JSON")
     args = ap.parse_args()
 
     prompts = tuple(p for p in args.prompts.split(",") if p)
-    rounds, legs = load_force_tape(args.arm, prompts)
+    all_rounds, legs = load_force_tape(args.arm, prompts)
+    rounds = warm(all_rounds)
 
-    core = time_table(rounds, core_us)
-    raw = time_table(rounds, lambda r: r["round_us"])
+    # The parent's own per-round clock is the primary timer; the two trace
+    # timers are independent checks that must reproduce it.
+    parent = time_table(rounds, parent_ms)
+    # The trace emits no line for a d = 0 round, so the trace timers can only
+    # be compared where a line exists.
+    traced = [r for r in rounds if r["traced"]]
+    core = time_table(traced, core_us)
+    raw = time_table(traced, lambda r: r["round_us"])
+    table = parent["round_ms"]
     p_by_pos = accept_table(rounds)
-    rates = rate_table(core["round_ms"], p_by_pos)
-    cap = max(core["round_ms"])
+    cap = max(table)
 
     report = {
         "arm": args.arm,
         "prompts": list(prompts),
+        "warmup_rounds_dropped_per_prompt": WARMUP_ROUNDS,
+        "rounds_total": len(all_rounds),
+        "rounds_analysed": len(rounds),
         "fidelity": fidelity(legs),
+        "ledger_crosscheck": ledger_crosscheck(legs, all_rounds),
         "instrument": instrument_ok(rounds),
+        "time_parent_clock": parent,
         "time_core": core,
         "time_round_us": raw,
-        "upkeep_bias_ms": {
-            d: raw["round_ms"][d]["mean_ms"] - core["round_ms"][d]["mean_ms"]
-            for d in core["round_ms"]},
+        "timer_agreement_ms": {
+            d: {"core_minus_parent":
+                    core["round_ms"][d]["mean_ms"] - v["mean_ms"],
+                "round_us_minus_parent":
+                    raw["round_ms"][d]["mean_ms"] - v["mean_ms"],
+                "upkeep_bias": raw["round_ms"][d]["mean_ms"]
+                               - core["round_ms"][d]["mean_ms"]}
+            for d, v in table.items() if d in core["round_ms"]},
+        "admissibility_parent": admissibility(parent["step_ratio"]),
+        "admissibility_parent_median": admissibility(parent["step_ratio_median"]),
         "admissibility_core": admissibility(core["step_ratio"]),
-        "admissibility_round_us": admissibility(raw["step_ratio"]),
-        "position_control": position_control(rounds, core_us),
-        "pass_count_model": pass_model(core["round_ms"]),
+        "position_control": position_control(rounds, parent_ms),
+        "pass_count_model": pass_model(table),
         "acceptance": p_by_pos,
-        "rate": rates,
+        "rate_empirical": empirical_rate_table(rounds, parent_ms),
+        "rate_modelled": rate_table(table, p_by_pos),
         "replay": {
             "shipped_counterfactual": replay(
-                rounds, lambda r: r.get("shipped_depth", r["d"]),
-                core["round_ms"]),
-            "forced_as_run": replay(rounds, lambda r: r["d"],
-                                    core["round_ms"]),
+                rounds, lambda r: r.get("shipped_depth", r["d"]), table),
+            "forced_as_run": replay(rounds, lambda r: r["d"], table),
             "arm_g_global_argmax": replay(
-                rounds, global_argmax_policy(core["round_ms"], p_by_pos, cap),
-                core["round_ms"]),
+                rounds, global_argmax_policy(table, p_by_pos, cap), table),
         },
+        "per_prompt_argmax": {
+            p: empirical_rate_table(
+                [r for r in rounds if r["prompt"] == p], parent_ms)["argmax_depth"]
+            for p in prompts},
     }
     text = json.dumps(report, indent=2, sort_keys=True, default=str)
     if args.out:
         args.out.write_text(text + "\n")
-    print(text)
+    print(render(report) if args.text else text)
 
 
 if __name__ == "__main__":
