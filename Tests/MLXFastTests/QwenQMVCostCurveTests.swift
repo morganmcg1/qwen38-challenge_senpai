@@ -30,27 +30,49 @@ struct QwenQMVCostCurveTests {
             "MLXFAST_QMV_COST_CURVE_OUT must name the JSON destination")
         let reps = Int(env["MLXFAST_QMV_COST_CURVE_REPS"] ?? "") ?? 15
         let inner = Int(env["MLXFAST_QMV_COST_CURVE_INNER"] ?? "") ?? 10
+        let widths =
+            (env["MLXFAST_QMV_COST_CURVE_WIDTHS"]?
+                .split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) })
+            .flatMap { $0.isEmpty ? nil : $0 } ?? scoredWidths
+        // The probe sections cost more wall clock than the scored shapes they
+        // annotate. A C(M) run that only needs the staircase can skip them.
+        let shapesOnly = env["MLXFAST_QMV_COST_CURVE_SHAPES_ONLY"] == "1"
+        let gate = crossrowGate()
 
         var payload: [String: Any] = [
             "source": "vendored-mlx-swift",
             "reps": reps,
             "inner_calls_per_rep": inner,
-            "widths": scoredWidths,
+            "widths": widths,
+            "shapes_only": shapesOnly,
         ]
         payload["device"] = describeDispatchDevice()
+        payload["crossrow_gate"] = gate.describe()
         payload["roofline"] = measureRoofline(reps: reps)
         payload["shapes"] = scoredShapes.map { shape in
-            sweep(shape: shape, widths: scoredWidths, reps: reps, inner: inner)
+            sweep(shape: shape, widths: widths, reps: reps, inner: inner, gate: gate)
         }
-        payload["dispatch_boundary_probes"] = dispatchBoundaryProbes.map { probe in
-            sweep(shape: probe.shape, widths: probe.widths, reps: reps, inner: inner)
-        }
-        payload["fast_path_probes"] = fastPathProbes.map { shape in
-            sweep(shape: shape, widths: [1, 4, 8, 9], reps: reps, inner: inner)
-        }
-        payload["head_fc_dtype_probe"] = measureHeadFCDtypes(reps: reps, inner: inner)
-        payload["gdn_recurrence"] = sweepGatedDelta(
-            widths: Array(1...12), reps: reps, inner: inner)
+        // Shapes-only still emits every section key so downstream readers keep
+        // one schema; only the expensive contents are dropped.
+        payload["dispatch_boundary_probes"] =
+            shapesOnly
+            ? []
+            : dispatchBoundaryProbes.map { probe in
+                sweep(
+                    shape: probe.shape, widths: probe.widths, reps: reps, inner: inner,
+                    gate: gate)
+            }
+        payload["fast_path_probes"] =
+            shapesOnly
+            ? []
+            : fastPathProbes.map { shape in
+                sweep(shape: shape, widths: [1, 4, 8, 9], reps: reps, inner: inner, gate: gate)
+            }
+        payload["head_fc_dtype_probe"] =
+            shapesOnly ? NSNull() : measureHeadFCDtypes(reps: reps, inner: inner)
+        payload["gdn_recurrence"] =
+            shapesOnly
+            ? NSNull() : sweepGatedDelta(widths: Array(1...12), reps: reps, inner: inner)
 
         let data = try JSONSerialization.data(
             withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
@@ -487,6 +509,28 @@ struct CrossrowGate {
         return callee
     }
 
+    /// How many rows the selected kernel shares one weight pass across, and how
+    /// many passes that implies at width `m`.
+    ///
+    /// `inputs_per_group` is read from the callee's own template arguments
+    /// rather than from `ceil(M/ceil(M/4))`: the live switch overrides that
+    /// formula at `case 8`, which ships `<T, 8, 3, true>` (3+3+2) where the
+    /// formula says 4. `qmv_fast_impl` shares nothing, so every row re-reads
+    /// the weights and `streams == m`.
+    func weightStreamModel(bits: Int, m: Int, n: Int)
+        -> (path: String, crossrow: Bool, ipg: Int, streams: Int)
+    {
+        let path = inKernelPath(bits: bits, m: m, n: n)
+        guard path != "qmv_fast_impl" else { return (path, false, 1, m) }
+        let args = path.drop(while: { $0 != "<" }).dropFirst().dropLast()
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        // `..._m<T, M, IPG, DIRECT_NIBBLES>` carries IPG third; the pair kernel
+        // `..._g64<T, M>` has no such parameter and is fixed at 2 rows/group.
+        let ipg = args.count >= 3 ? (Int(args[2]) ?? 2) : 2
+        return (path, true, ipg, (m + ipg - 1) / ipg)
+    }
+
     func describe() -> [String: Any] {
         [
             "header_path": headerPath,
@@ -663,9 +707,11 @@ private func sweep(
     shape: ScoredShape,
     widths: [Int],
     reps: Int,
-    inner: Int
+    inner: Int,
+    gate: CrossrowGate
 ) -> [String: Any] {
     let weight = syntheticQuantWeight(k: shape.k, n: shape.n)
+    let vectorLimit = hostDispatch.vectorLimit(k: shape.k, n: shape.n)
     var rows: [[String: Any]] = []
     var referenceRow0: [Float]? = nil
 
@@ -731,8 +777,23 @@ private func sweep(
             .asType(.float32).asArray(Float.self)
         if referenceRow0 == nil { referenceRow0 = row0 }
 
+        // The crossrow switch only exists inside `qmv`. Past the host's vector
+        // limit the launch is `qmm`, which tiles on its own terms, so the
+        // stream model is reported as absent rather than extrapolated.
+        let model: (path: String, crossrow: Bool, ipg: Any, streams: Any) =
+            m >= vectorLimit
+            ? ("qmm", false, NSNull(), NSNull())
+            : {
+                let g = gate.weightStreamModel(bits: 4, m: m, n: shape.n)
+                return (g.path, g.crossrow, g.ipg, g.streams)
+            }()
         rows.append([
             "m": m,
+            "bits": 4,
+            "in_kernel_path": model.path,
+            "crossrow": model.crossrow,
+            "inputs_per_group": model.ipg,
+            "weight_streams": model.streams,
             "seconds_per_call": samples[samples.count / 2],
             "seconds_per_call_min": samples[0],
             "seconds_per_call_max": samples[samples.count - 1],
