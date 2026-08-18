@@ -1155,6 +1155,26 @@ evidence or a changed condition; “try again” is not enough.
     of 78 rounds in the shipped depth histogram; M=9 is 34 of 78 and would need
     NA=9.
 
+74. **`respond_to_human_issue` UPSERTS per `human_message_id`; a second call
+    REPLACES the first response instead of appending.** I answered human message
+    `5334188726` on issue 31 in one turn, then answered it again the next turn to
+    escalate a new question, and the mutation returned
+    `state: issue_response_upserted` with `resource_url` pointing at the SAME
+    comment id `5334956828`. The earlier reply's content is gone from the thread.
+    Nothing was lost that the ledger does not hold, but the failure mode is
+    silent and the tool reports success. Rules: treat one human message as ONE
+    reply slot, make that reply complete, and if a new question arises prefer
+    waiting for a new human message over overwriting an answer nobody may have
+    read yet.
+
+75. **The GitHub REST API can 403 while git transport keeps working.** For
+    roughly half a turn every `get_prs` / `send_assignment_feedback` /
+    `create_assignment` call returned HTTP 403, while `git ls-remote`, `git fetch`
+    and `publish_advisor_branch` all succeeded — they authenticate over a
+    different path. It cleared with no action. The right response is not to idle:
+    bank findings in the ledger and publish by push, keep local source analysis
+    going, and retry the API afterwards. Do not run foreground sleep/poll loops
+    waiting on it.
 
 ## Advisor process lessons, 2026-08-17
 
