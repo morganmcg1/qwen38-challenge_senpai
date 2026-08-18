@@ -3,6 +3,7 @@
 # per-prompt paired measurement for the row-declination arms.
 #
 #   research/e21-run.sh --probe ID ARM        one TRACED, non-timed pass
+#   research/e21-run.sh --probe-sweep ARM ID... several TRACED passes
 #   research/e21-run.sh --arm ID ARM          one TIMED arm on one prompt
 #
 # WHY ONE ARM PER INVOCATION. E17's `english` pair took 23.1 min wall
@@ -93,48 +94,69 @@ if [[ "${1:-}" == "--order" ]]; then
   exit 0
 fi
 
+run_one() {
+  local mode="$1" id="$2" arm="$3" golden label rc
+
+  index_of "${id}" >/dev/null || return 2
+  [[ -s "${E11_BINS_ROOT}/${arm}/sha256.txt" ]] || {
+    echo "e21-run: arm ${arm} is not built" >&2; return 2; }
+
+  golden="$(golden_for "${id}")"
+  [[ -s "${golden}" ]] || {
+    echo "e21-run: missing golden ${golden}" >&2; return 2; }
+  export E11_GOLDEN="${golden}"
+
+  case "${mode}" in
+    --probe)
+      # Never a source of headline timing: the trace gate buys per-round file
+      # I/O inside the timed round. This pass exists to recover the depth
+      # histogram, the per-round reach walk and the schedule's input scalars.
+      export E11_TRACE=1
+      label="probe-${id}-${arm}"
+      ;;
+    --arm)
+      unset E11_TRACE
+      label="${id}-${arm}"
+      ;;
+    *)
+      echo "e21-run: unknown mode ${mode}" >&2; return 2 ;;
+  esac
+
+  research/e11-run.sh "${label}=${arm}"
+  rc=$?
+
+  # Appended after the run because e11-run.sh recreates the directory. These
+  # two names are the advisor's, spelled exactly as required, so that a grep
+  # for either one finds every affected measurement.
+  local meta="${E11_RUNS_ROOT}/${label}/meta.txt"
+  if [[ -f "${meta}" ]]; then
+    {
+      echo "cool_gate_passed_real_gate=false"
+      echo "gate_qualified_for_timing=false"
+      echo "cool_gate_temp_c=40"
+      echo "cool_gate_bypass_reason=host idles above the compile-time 40C gate"
+    } >> "${meta}"
+  fi
+  return "${rc}"
+}
+
+# Sweep mode exists only for the untimed probe pass, where the runs are
+# independent histogram samples rather than halves of a counterbalanced pair.
+# Timed arms stay one-per-invocation so the caller keeps owning the ABBA order.
+if [[ "${1:-}" == "--probe-sweep" ]]; then
+  sweep_arm="${2:?--probe-sweep needs ARM ID...}"
+  shift 2
+  worst=0
+  for sweep_id in "$@"; do
+    echo "e21-run: probe ${sweep_id} ${sweep_arm}"
+    run_one --probe "${sweep_id}" "${sweep_arm}" || worst=$?
+  done
+  exit "${worst}"
+fi
+
 mode="${1:?usage: research/e21-run.sh --probe|--arm ID ARM}"
 id="${2:?usage: research/e21-run.sh --probe|--arm ID ARM}"
 arm="${3:?usage: research/e21-run.sh --probe|--arm ID ARM}"
 
-index_of "${id}" >/dev/null || exit 2
-[[ -s "${E11_BINS_ROOT}/${arm}/sha256.txt" ]] || {
-  echo "e21-run: arm ${arm} is not built" >&2; exit 2; }
-
-golden="$(golden_for "${id}")"
-[[ -s "${golden}" ]] || {
-  echo "e21-run: missing golden ${golden}" >&2; exit 2; }
-export E11_GOLDEN="${golden}"
-
-case "${mode}" in
-  --probe)
-    # Never a source of headline timing: the trace gate buys per-round file I/O
-    # inside the timed round. This pass exists to recover the depth histogram,
-    # the per-round reach walk and the schedule's input scalars.
-    export E11_TRACE=1
-    label="probe-${id}-${arm}"
-    ;;
-  --arm)
-    unset E11_TRACE
-    label="${id}-${arm}"
-    ;;
-  *)
-    echo "e21-run: unknown mode ${mode}" >&2; exit 2 ;;
-esac
-
-research/e11-run.sh "${label}=${arm}"
-rc=$?
-
-# Appended after the run because e11-run.sh recreates the directory. These two
-# names are the advisor's, spelled exactly as required, so that a grep for
-# either one finds every affected measurement.
-meta="${E11_RUNS_ROOT}/${label}/meta.txt"
-if [[ -f "${meta}" ]]; then
-  {
-    echo "cool_gate_passed_real_gate=false"
-    echo "gate_qualified_for_timing=false"
-    echo "cool_gate_temp_c=40"
-    echo "cool_gate_bypass_reason=host idles above the compile-time 40C gate"
-  } >> "${meta}"
-fi
-exit "${rc}"
+run_one "${mode}" "${id}" "${arm}"
+exit $?
