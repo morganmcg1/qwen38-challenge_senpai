@@ -6,11 +6,15 @@ per-row draft price (arm PRICE / "arm D") beat the shipped scalar price (arm
 BASE) on MTP TRUE DECODE, and does the realised depth histogram match the
 Phase 0 offline prediction?
 
-Primary metric, per PR #29 section 8: per-prompt MTP true decode
-`decode_seconds - seed_prefill_seconds`, headline = MEDIAN OF 8.
-`decode_seconds` is prefill-INCLUSIVE (calibration fact (c)), which is exactly
-the contamination E25 was told to correct, so the prefill term is subtracted on
-BOTH arms and the pooled figure is reported as secondary only.
+Primary metric, per PR #29 section 8: per-prompt MTP true decode seconds per
+token, headline = median over the eight prompts. Pooled is secondary.
+
+Correction to the Phase 0 note: the report's `decode_seconds` EXCLUDES the seed
+prefill, which is reported separately as `seed_prefill_seconds`. Evidence:
+`decode_seconds / decode_token_count` reproduces the trusted
+`score.json:metrics.mtp_seconds_per_token` exactly on every leg. Subtracting the
+prefill term again, as originally planned here, would have double-counted it.
+`assert_scored_unit` now pins the unit to the trusted score file per run.
 
 Usage:
   research/e25_phase1.py [--runs DIR] [--out JSON] [--wandb]
@@ -21,11 +25,7 @@ import argparse
 import json
 import os
 import statistics
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from e21_trace import parse_trace  # noqa: E402
 
 PROMPTS = [
     "english", "narrative", "technical", "dramatic",
@@ -66,14 +66,35 @@ def read_meta(d: Path) -> dict:
 
 
 def read_leg(d: Path, name: str) -> dict | None:
+    """Return a report, or None while a run is still being written."""
     p = d / "reports" / name
     if not p.exists():
         return None
-    return json.loads(p.read_text())
+    try:
+        return json.loads(p.read_text())
+    except json.JSONDecodeError:
+        return None
 
 
 def true_decode(leg: dict) -> float:
-    return leg["decode_seconds"] - leg["seed_prefill_seconds"]
+    """Prefill-free decode wall time for one leg.
+
+    `decode_seconds` already excludes the seed prefill, which is reported
+    separately as `seed_prefill_seconds`; `assert_scored_unit` pins this against
+    the trusted score file so the definition cannot drift.
+    """
+    return leg["decode_seconds"]
+
+
+def assert_scored_unit(label: str, leg: dict, score: dict, key: str) -> None:
+    want = (score.get("metrics") or {}).get(key)
+    if want is None:
+        return
+    got = true_decode(leg) / leg["decode_token_count"]
+    if abs(got - want) > 1e-9:
+        raise SystemExit(
+            f"{label}: {key} mismatch: report gives {got!r}, score.json {want!r}"
+        )
 
 
 def load_run(runs: Path, label: str) -> dict | None:
@@ -86,7 +107,12 @@ def load_run(runs: Path, label: str) -> dict | None:
     meta = read_meta(d)
     score = {}
     if (d / "score.json").exists():
-        score = json.loads((d / "score.json").read_text())
+        try:
+            score = json.loads((d / "score.json").read_text())
+        except json.JSONDecodeError:
+            return None
+    assert_scored_unit(label, serial, score, "serial_seconds_per_token")
+    assert_scored_unit(label, mtp, score, "mtp_seconds_per_token")
 
     # Both legs of one --local-iterate run share the same build, so the serial
     # leg is a per-run control: its cross-arm spread is that prompt's noise
@@ -153,41 +179,6 @@ def correctness_ok(r: dict) -> bool:
         and r["mtp_emitted"] == 512
         and r["exit"] == "0"
     )
-
-
-def probe_histograms(runs: Path) -> dict:
-    """Realised depth histogram per prompt, from the traced (untimed) passes."""
-    out = {}
-    for arm in ARMS:
-        per_prompt, pooled = {}, {}
-        for p in PROMPTS:
-            t = runs / f"probe-{p}-{arm}" / "trace.txt"
-            if not t.exists():
-                continue
-            rounds = parse_trace(t)
-            h = {}
-            for r in rounds:
-                h[r.depth] = h.get(r.depth, 0) + 1
-            per_prompt[p] = {
-                "histogram": dict(sorted(h.items())),
-                "rounds": len(rounds),
-                "rows": sum(r.depth for r in rounds),
-                "mean_depth": (sum(r.depth for r in rounds) / len(rounds)) if rounds else 0.0,
-            }
-            for k, v in h.items():
-                pooled[k] = pooled.get(k, 0) + v
-        if per_prompt:
-            rounds = sum(v["rounds"] for v in per_prompt.values())
-            rows = sum(v["rows"] for v in per_prompt.values())
-            out[arm] = {
-                "per_prompt": per_prompt,
-                "pooled_histogram": dict(sorted(pooled.items())),
-                "pooled_rounds": rounds,
-                "pooled_rows": rows,
-                "pooled_mean_depth": rows / rounds if rounds else 0.0,
-                "depth_ge_4_rounds": sum(v for k, v in pooled.items() if k >= 4),
-            }
-    return out
 
 
 def reduce_runs(runs_root: Path) -> dict:
@@ -287,17 +278,13 @@ def reduce_runs(runs_root: Path) -> dict:
     }
 
 
-def compare_prereg(reduced: dict, probes: dict) -> dict:
+def compare_prereg(reduced: dict) -> dict:
     hl = reduced["headline"]
-    # Prefer the traced probe histogram when present, else the timed reports.
-    if "PRICE" in probes:
-        realised = probes["PRICE"]["pooled_histogram"]
-        ge4 = probes["PRICE"]["depth_ge_4_rounds"]
-        source = "traced_probe"
-    else:
-        realised = reduced["pooled_depth_histogram_timed"].get("PRICE", {})
-        ge4 = sum(v for k, v in realised.items() if int(k) >= 4)
-        source = "timed_report_effective_draft_lengths"
+    # Realised depths come from the timed runs themselves, so the histogram and
+    # the timing it explains can never come from two different passes.
+    realised = reduced["pooled_depth_histogram_timed"].get("PRICE", {})
+    ge4 = sum(v for k, v in realised.items() if int(k) >= 4)
+    source = "timed_report_effective_draft_lengths"
     pred = PREREG["depth_histogram"]
     keys = sorted({int(k) for k in realised} | set(pred))
     out = {
@@ -324,7 +311,66 @@ def compare_prereg(reduced: dict, probes: dict) -> dict:
                 "error_pp": v["true_decode_gain_pct"] - PREREG["per_prompt_gain_pct"][p],
             }
     out["per_prompt"] = per
+    out["fixed_window_accounting"] = fixed_window_accounting(reduced)
     return out
+
+
+def fixed_window_accounting(reduced: dict) -> dict:
+    """Quantify why Phase 0 over-projected the gain.
+
+    Phase 0 replayed a fixed tape and let the shallower schedule fall short of
+    512 tokens, scoring it as 98 "lost" tokens. The trusted parent actually owns
+    a fixed 512-token window and continues the trajectory, so the arm instead
+    spends extra rounds. Each extra round re-adds a depth-1 row plus a primary
+    commit, which is the whole attenuation.
+    """
+    per = reduced["per_prompt"]
+    if not per:
+        return {"n_prompts": 0}
+    base_rounds = sum(v["base_rounds"] for v in per.values())
+    price_rounds = sum(v["price_rounds"] for v in per.values())
+    base_rows = sum(v["base_declared_rows"] for v in per.values())
+    price_rows = sum(v["price_declared_rows"] for v in per.values())
+    ratios = [
+        v["true_decode_gain_pct"] / PREREG["per_prompt_gain_pct"][p]
+        for p, v in per.items()
+        if PREREG["per_prompt_gain_pct"].get(p)
+    ]
+    return {
+        "n_prompts": len(per),
+        "tokens_emitted_all_legs_512": all(
+            r["mtp_emitted"] == 512
+            for arm in ARMS for r in reduced["timed_runs"][arm].values()
+        ),
+        "phase0_modelled_tokens_lost": PREREG["tokens_lost_on_tape"],
+        "realised_tokens_lost": 0,
+        "base_rounds": base_rounds,
+        "price_rounds": price_rounds,
+        "extra_rounds_spent_by_arm": price_rounds - base_rounds,
+        "base_declared_rows": base_rows,
+        "price_declared_rows": price_rows,
+        "realised_rows_saved": base_rows - price_rows,
+        "per_prompt_extra_rounds": {
+            p: v["price_rounds"] - v["base_rounds"] for p, v in per.items()
+        },
+        "per_prompt_rows_saved": {
+            p: v["base_declared_rows"] - v["price_declared_rows"]
+            for p, v in per.items()
+        },
+        "realised_over_predicted_gain_ratio_mean": (
+            statistics.fmean(ratios) if ratios else None
+        ),
+        "realised_over_predicted_gain_ratio_per_prompt": {
+            p: v["true_decode_gain_pct"] / PREREG["per_prompt_gain_pct"][p]
+            for p, v in per.items()
+            if PREREG["per_prompt_gain_pct"].get(p)
+        },
+        "interpretation": (
+            "Phase 0's projection is an upper bound: it credited the arm for "
+            "rows it declined without charging it for the extra rounds the "
+            "fixed 512-token window then forces."
+        ),
+    }
 
 
 def log_wandb(payload: dict) -> list[dict]:
@@ -454,8 +500,7 @@ def main() -> int:
         return 2
 
     reduced = reduce_runs(runs_root)
-    probes = probe_histograms(runs_root)
-    pre = compare_prereg(reduced, probes)
+    pre = compare_prereg(reduced)
 
     phase0 = {}
     p0 = Path(args.phase0)
@@ -492,7 +537,6 @@ def main() -> int:
         },
         "prereg": PREREG,
         "reduced": reduced,
-        "probe_histograms": probes,
         "prereg_comparison": pre,
         "phase0": phase0,
     }
@@ -506,8 +550,14 @@ def main() -> int:
         print(f"MISSING        : {reduced['prompts_missing']}")
     print(f"correctness    : all_pass={reduced['correctness']['all_pass']} "
           f"failures={reduced['correctness']['failures']}")
-    print(f"MEDIAN OF 8    : {hl['median_of_8']}  (pre-registered "
-          f"{PREREG['median_of_8_true_decode_gain_pct']})")
+    n = hl["n_prompts"]
+    tag = "MEDIAN OF 8   " if n == len(PROMPTS) else f"median of {n} (PARTIAL)"
+    print(f"{tag} : {hl['median_of_8']}  (pre-registered "
+          f"{PREREG['median_of_8_true_decode_gain_pct']} over "
+          f"{len(PROMPTS)} prompts)")
+    if n != len(PROMPTS):
+        print("                 NOT the primary metric: the pre-registered "
+              "headline is the median over all eight prompts.")
     print(f"pooled         : {hl['pooled_gain_pct']}  (pre-registered "
           f"{PREREG['pooled_true_decode_gain_pct']})")
     print(f"per-prompt     : min={hl['min_gain_pct']} max={hl['max_gain_pct']} "
