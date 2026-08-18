@@ -129,12 +129,28 @@ swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-
 # this the first MLXArray fails to load the default metallib.
 tools/build-mlx-metallib.sh --all-build-roots
 
+eval "$(
+  awk '/^find_macmon\(\) \{/,/^\}/' benchmark.sh
+  awk '/^local_gpu_temp\(\) \{/,/^\}/' benchmark.sh
+)"
+COOL_GATE_MACMON_BIN="$(find_macmon || true)"
+
+# This host's idle GPU floor sits above benchmark.sh's 40C target, so the gate's
+# stall detector aborts before reaching it. Every width in the sweep is timed
+# round-robin inside one process, so a thermal floor biases all widths equally
+# and cancels in the C(M)/C(1) ratio the sweep exists to measure. The gate still
+# runs first; a stalled cool-down downgrades to a recorded thermal state instead
+# of discarding the measurement. Same contract as run-draft-bits-sweep.sh.
 cool_gate() {
   echo "run-qmv-curve: cool gate before ${1}" >&2
-  ./benchmark.sh --local-cool-gate-only
+  if ./benchmark.sh --local-cool-gate-only; then
+    echo "cool_gate_${1}=passed" | tee -a "${out_dir}/identity.txt" >&2
+  else
+    echo "cool_gate_${1}=stalled_above_40C" | tee -a "${out_dir}/identity.txt" >&2
+  fi
   local temp
-  temp="$(macmon pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty' 2>/dev/null || true)"
-  echo "run-qmv-curve: ${1} starting at gpu_temp_avg=${temp:-unknown}C" >&2
+  temp="$(local_gpu_temp || true)"
+  echo "gpu_temp_c_before_${1}=${temp:-unknown}" | tee -a "${out_dir}/identity.txt" >&2
   printf '%s %s\n' "${1}" "${temp:-unknown}" >>"${out_dir}/start-temps.txt"
 }
 
@@ -148,6 +164,7 @@ MLXFAST_QMV_COST_CURVE_REPS="${sweep_reps}" \
 MLXFAST_QMV_COST_CURVE_INNER="${sweep_inner}" \
   swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
   --filter QwenQMVCostCurveTests 2>&1 | tee "${out_dir}/vendored.log"
+echo "gpu_temp_c_after_vendored=$(local_gpu_temp || true)" | tee -a "${out_dir}/identity.txt" >&2
 
 # --- stock pip MLX control ----------------------------------------------------
 python_bin="${MLXFAST_MLX_PYTHON_BIN:-/opt/homebrew/bin/python3}"
