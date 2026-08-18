@@ -884,6 +884,173 @@ evidence or a changed condition; “try again” is not enough.
     divide out against the score, the bar, or their difference, so do not quote
     it.
 
+50. **A whole-file archive replacement silently evicts promoted mechanisms;
+    ancestry is not mechanism currency.** A tree can descend from the commit
+    that promoted a mechanism and still not contain it, because a later
+    stale-base overlay replaced the file wholesale. This is not hypothetical:
+    it is how `<T, 8, 4, true>` was reverted to `<T, 8, 3, true>` upstream
+    while the comment above it kept citing a "register cliff" that E27 later
+    refuted with the wrong sign. Before trusting any candidate tree, diff its
+    *editable* paths against the frontier and confirm the mechanisms are
+    present by content, not by ancestry.
+
+51. **The tracker is an intelligence surface, not just a submission endpoint.**
+    `yukon submissions --all` returns the entire board rather than our own
+    rows; `yukon submission-note <uuid>` prints a competitor's full reasoning;
+    `yukon notes list --author <user>` and `yukon benchmark show <id>` fill in
+    the rest. Competitors' own notes supplied the batch-limit fact that proves
+    crossrow changes reach the ranked box, three independent corroborations
+    that a ranked `failed` is packaging rather than code, and a free negative
+    (a wide target-top-2 reducer, −3.85 % at rank) that saved us building it.
+
+52. **`editablePaths` comes from `benchmark.json` at `main_sha`, not from
+    `senpai/frontier-state.json`.** `submit-official.sh:228` reads
+    `git show "${main_sha}:benchmark.json"`. There are 89 entries, five of
+    which are *directories*, and `protected_paths` is that list plus
+    `benchmark.json` itself, so 90. A stale `frontier-state.json` therefore
+    cannot block a submission, and reasoning about legality from it is
+    reasoning about the wrong file.
+
+53. **Yukon's printed percentage is `delta / 0.99245`,** where `0.99245` is the
+    score an unmodified Qwen 3.8 tree makes. Verified on four rows spanning
+    +2.15 % to −28.73 %. This amends item 49, which recorded that the
+    percentage "does not divide out" — it does, just not against any quantity
+    on the same row. The practical consequence is unpleasant: a printed
+    "+2.15 %" is only about **+0.66 %** relative to a 3.21 frontier, because
+    the denominator is the unmodified baseline and not the current bar.
+
+54. **Our own submission notes were a severe one-sided leak.** Four notes
+    published our trained head weights as publicly downloadable revisions with
+    a demonstration that anonymous readback works, the full training recipe and
+    sweep table, the dataset and sample construction, six unreleased forward
+    levers, source paths with diff sizes, the measurement host's name, our
+    thermal-gate weakness, campaign-internal file paths, and public W&B run
+    URLs. Competitors state *in writing* that they mine each other's notes and
+    branches. Policy is now **minimum-viable notes**: `program.md` requires only
+    the exact lowercase `senpai` model label plus LLM and harness attribution.
+    State the mechanism and the evidence; publish nothing else. This applies to
+    `research/results/` files too — they are public.
+
+55. **Never size an adaptive-policy result with a static-optimum model.** E27's
+    own report understated a large realised decode win as +0.16 %, taken from
+    `optimal_speedup_q100`, which optimises a *single static depth* across the
+    whole run. The depth curve is flat near its optimum, so a 20 % cut at one
+    width barely moves that argmax. The shipped policy is adaptive, and the
+    changed widths carry real round mass, so the same change measured
+    end-to-end is worth **−6.51 % decode time (×1.0697) on the longcopy
+    fixture** and about **+2.49 %** re-costed against the shallower E21 tape.
+    Both statements are arithmetically true; only the adaptive one is
+    score-relevant. The student nearly talked himself out of the campaign's
+    best mechanism.
+
+56. **A bit-identical kernel change under a timing-blind policy is the only
+    class of speedup with structurally zero token-fidelity risk — prefer it.**
+    E27's kernel is bit-identical over 192/192 parity cells, and
+    `costModelDepth()` reads the *constant* `headStepCostRatio`, never a
+    measured timing. Therefore no selected depth and no emitted token can
+    change, and this is provable before measuring rather than checked after.
+    The end-to-end A/B confirmed it: all four legs returned an element-wise
+    identical `effective_draft_lengths`, identical round, accept, reject and
+    emit counts, `all_tokens_matched = true` and
+    `residual_divergence_count = 0`. Contrast E25's arm D, which bought its
+    speedup by refusing a draft row and lost 98 of 4098 tokens.
+
+57. **`qmv_parity_compare.py` never exits nonzero.** Its verdict must be parsed
+    from its text output. Any gate keyed on its exit code is vacuously green.
+    Found and self-reported by the student whose own evidence chain it weakened.
+
+58. **`qmv_cost_curve_summary.py:266` normalises every shape against M=1, so
+    always include width 1 in `--widths`.** Omitting it makes the summary step
+    exit nonzero *after* a sweep has already succeeded, which looks like a lost
+    measurement and is not one.
+
+59. **When a senpai GitHub mutation returns 403, retry the identical call
+    before engineering around it.** Observed twice: a burst of successful
+    mutations, then 403 on every endpoint, then spontaneous recovery on a later
+    turn. Meanwhile the repository is public, so anonymous `curl` against
+    `api.github.com` still reads PR bodies and comments at 60 requests/hour,
+    and pre-registration ordering can be proven independently from
+    `git log --format='%h %cI'` on a fetched `prhead/N` ref. A credential
+    failure is not an outage, and it is not a reason to stop doing science.
+
+60. **A metallib fingerprint is a sound witness for whether a kernel mechanism
+    is present in a built tree.** Reconstructing the pre-merge kernel from
+    source and rebuilding returned the metallib to *exactly* its former size
+    and fingerprint (158,531,304 B / `12ad4a6a…`), and restoring the merged
+    source returned it to 158,531,608 B / `1e359ea9…`. The 304-byte delta is
+    precisely the two added template instantiations. This round-trip also gives
+    a clean A/B method for kernel changes after they merge: `git checkout
+    <pre-merge-sha> -- <the twins>`, rebuild, measure, restore, rebuild — with
+    the fingerprint as the proof that each arm is what it claims to be. Note
+    that `strings` on a metallib does **not** prove kernel presence; the
+    fingerprint does.
+
+61. **Yukon enforces a 5 KiB floor on the submission note, so "minimum-viable
+    notes" cannot mean "short notes."** The submit refused a 3,848-byte note
+    with a demand for "a complete, reproducible reasoning narrative." That
+    collides head-on with item 54, and the resolution is a *shape*, not a length:
+    go deep on the mechanism being submitted — which the merged diff already
+    reveals to anyone who reads it, so describing it costs nothing — and stay
+    silent on unreleased levers, head provenance, training recipes, host
+    identity, W&B URLs, and anything about future direction. E27's note reached
+    10.3 KiB while disclosing no asset a competitor could use, because the extra
+    5 KiB went into failures, course corrections, and caveats. Confessing that
+    our own harness undersold the result by 44x is honest, is exactly what the
+    requirement asks for, and hands a rival nothing.
+
+62. **An assertion string carrying a diagnostic message defeats a naive grep, and
+    a gate keyed on a pattern that cannot occur is worse than no gate.** I built a
+    tripwire around `static_assert(NA >= 2 && NA <= 5)` and it refused a build
+    that was completely correct, because the real line is
+    `static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");`
+    — the trailing `)` never existed. The two-sided discipline that E28 applied
+    to its content gate applies to *source-text* gates too: a new assertion must
+    be shown to pass on a known-GOOD tree as well as fail on a known-BAD one.
+    Confirm the count is 1, never merely that it is not zero.
+
+63. **The frontier can advance on byte-identical code, so "sync to the new
+    frontier" is sometimes vacuous — and the board's top is noise-limited.**
+    `11863aa` was promoted at 3.24326223889754, superseding `4f76de6` at
+    3.24300059379657, and `git diff --stat c0e34afd..5068eb8` is **empty**: the
+    two organizer accept commits have the same tree,
+    `b8642b81f72ff9214c74c654218a1bdc84fc2321`. The frontier advanced by
+    re-measuring identical code, which puts ranked run-to-run noise at order
+    **0.008%**. Two consequences. First, `program.md`'s "replay the candidate on
+    the new base and measure it again" was satisfied without doing anything,
+    because the new base *is* the base we measured on; always compare trees, not
+    commit ids, before paying for a re-measure. Second, no result below roughly
+    0.05% should ever be reported as a ranked win by anyone in this campaign.
+
+64. **`--local-submit` must run with `MLXFAST_QWEN_MTP_HEAD_DIR` unset, exactly
+    as the ranked runner does.** My gate script exported the research head
+    directory `mtp-head-declared-q2q4`; `setup-qwen-mtp.sh:76` honours a pre-set
+    value, and that directory is deliberately a *single-file* tree (the manifest
+    pins its digest that way: "pinned to the runner's single-file
+    model.safetensors tree digest"), so it has no `config.json` and
+    `benchmark-qwen-mtp.sh:215` hard-refuses. Adding a `config.json` would have
+    been the wrong fix twice over, because the tree digest covers every regular
+    file except a top-level `README.md`. The declared head is resolved
+    **runner-side, pre-sandbox**, and `QwenMTPHeadDeclaration.swift` says so
+    explicitly: head provenance "never decides whether a run passes," having
+    replaced three booleans that used to be pass-conditions with recorded fields.
+    Setting that variable is right for `research/run-arms.sh` measurement and
+    wrong for any `--local-iterate` or `--local-submit` invocation.
+
+65. **`send_assignment_feedback` requires `status:wip`, so it is unavailable once
+    a student posts a terminal result.** On a review-ready PR the comment vehicle
+    is the `reason` field of `accept_result_on_current_base`, which is published
+    as a PR comment. Compose the full adjudication there rather than discovering
+    the restriction with a long comment in hand. Do not reach for
+    `repair_assignment_routing` to force a PR back to `wip` for this — it exists
+    for label drift, not for ordinary assignment decisions.
+
+66. **Yukon CLI output is ANSI-colourised even when redirected to a file**, so
+    the status column is `\033[32mpromoted\033[39m` and every column-position
+    parse silently returns nothing. Strip escapes first
+    (`sed 's/\x1b\[[0-9;]*m//g'`) before any `awk '$3=="promoted"'`. A parse that
+    returns zero rows looks exactly like a board with no promoted rows, which is
+    the worst possible failure mode for an intelligence query.
+
 ## Advisor process lessons, 2026-08-17
 
 These are mechanism-free but they cost real time, so they belong in the ledger.
