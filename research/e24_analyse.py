@@ -176,6 +176,41 @@ def reference_row_identity(prompt: str) -> dict:
     return out
 
 
+def order_decomposition(data: dict, key: str) -> dict:
+    """Separate the ARM effect from the RUN-POSITION effect.
+
+    The single most dangerous confound here is that the second arm of a pair
+    runs from a different thermal/cache history than the first.  ABBA exists to
+    cancel that, but only if it is actually checked, so this reads the real
+    `started` timestamps rather than assuming the intended rotation happened.
+
+    With a balanced schedule (equal numbers of BASE-first and MEMO-first
+    prompts) the two effects are orthogonal:
+        arm      = mean(BASE - MEMO)      > 0 means MEMO is genuinely faster
+        position = mean(second - first)   > 0 means the second slot is slower
+    An effect that is really a position artifact shows up in `position` and
+    collapses in `arm`.
+    """
+    arm_deltas, pos_deltas, base_first = [], [], 0
+    for prompt, arms in data.items():
+        b, m = arms[BASE_ARM], arms[MEMO_ARM]
+        arm_deltas.append(b[key] - m[key])
+        b_started = b["meta"].get("started", "")
+        m_started = m["meta"].get("started", "")
+        if b_started and m_started:
+            if b_started < m_started:
+                base_first += 1
+                pos_deltas.append(m[key] - b[key])
+            else:
+                pos_deltas.append(b[key] - m[key])
+    n = len(data)
+    return {"n": n, "base_first": base_first, "memo_first": n - base_first,
+            "balanced": base_first * 2 == n,
+            "arm_effect_s": statistics.mean(arm_deltas),
+            "position_effect_s": statistics.mean(pos_deltas) if pos_deltas else None,
+            "arm_deltas_s": arm_deltas, "position_deltas_s": pos_deltas}
+
+
 def main(argv: list[str]) -> int:
     logs = [Path(a) for a in argv[argv.index("--logs") + 1:]] if "--logs" in argv else []
     gates = parse_gate_log(logs) if logs else {}
@@ -230,6 +265,42 @@ def main(argv: list[str]) -> int:
               f"realis {(r['mtp_base_s']-r['mtp_memo_s'])/pm:+.2f}   |   "
               f"SER pred {ps:.4f}s meas {r['ser_base_s']-r['ser_memo_s']:+.4f}s "
               f"realis {(r['ser_base_s']-r['ser_memo_s'])/ps:+.2f}")
+
+    print("\nARM vs RUN-POSITION DECOMPOSITION (the main confound ABBA exists to cancel):")
+    order = {}
+    for leg, key in (("MTP", "mtp_true_s"), ("SERIAL", "serial_true_s")):
+        d = order_decomposition(data, key)
+        order[leg] = d
+        pos = d["position_effect_s"]
+        print(f"  {leg:<7} arm effect {d['arm_effect_s']*1000:+7.2f} ms "
+              f"(MEMO faster if >0)   position effect "
+              f"{pos*1000:+7.2f} ms (second slot slower if >0)")
+        print(f"          schedule: {d['base_first']} BASE-first, {d['memo_first']} MEMO-first, "
+              f"balanced={d['balanced']}")
+    if not all(d["balanced"] for d in order.values()):
+        print("  WARNING: schedule is NOT balanced; arm and position effects are not "
+              "yet orthogonal. Only an even prefix of the registered order is reportable.")
+
+    # Forward-count scaling: the sharpest falsification test available.
+    # The 96 casts are paid once per TARGET FORWARD, independent of width M.
+    # The serial leg runs 512 forwards; the MTP leg runs one per round.  If the
+    # measured arm effect really is the cast mechanism, the SERIAL absolute
+    # saving must be ~(512/rounds)x the MTP absolute saving.  Noise has no
+    # reason to respect that ratio, so a mismatch is evidence against the
+    # mechanism even when the sign looks encouraging.
+    mean_rounds = statistics.mean(r["rounds_base"] for r in rows)
+    expected = 512.0 / mean_rounds
+    mtp_arm, ser_arm = order["MTP"]["arm_effect_s"], order["SERIAL"]["arm_effect_s"]
+    measured = ser_arm / mtp_arm if mtp_arm else float("nan")
+    print("\nFORWARD-COUNT SCALING TEST (casts are paid once per target forward):")
+    print(f"  serial forwards {512}, mean MTP rounds {mean_rounds:.1f} "
+          f"-> mechanism predicts SERIAL/MTP absolute saving = {expected:.2f}x")
+    print(f"  measured SERIAL/MTP absolute saving = {ser_arm*1000:+.2f}ms / "
+          f"{mtp_arm*1000:+.2f}ms = {measured:.2f}x")
+    print(f"  ratio disagrees with mechanism by {expected/measured:.2f}x"
+          if measured == measured and measured > 0 else "  ratio undefined")
+    scaling = {"expected_ratio": expected, "measured_ratio": measured,
+               "serial_forwards": 512, "mean_mtp_rounds": mean_rounds}
 
     print("\nCORRECTNESS (every timed leg, both arms):")
     bad = 0
@@ -310,6 +381,8 @@ def main(argv: list[str]) -> int:
                "mtp_median_pct": statistics.median(mtp_e),
                "ser_median_pct": statistics.median(ser_e),
                "correctness_all_clean": bad == 0,
+               "order_decomposition": order,
+               "forward_count_scaling": scaling,
                "reference_row_identity": identity,
                "reference_rows_all_bit_identical": ident_bad == 0,
                "cool_gate_passed_real_gate": all_real,
