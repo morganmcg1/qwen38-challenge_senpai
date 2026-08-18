@@ -177,11 +177,24 @@ private struct TrialTotals {
     var differingCells = 0
     var maxAbsDelta: Float = 0
     var maxRelDelta: Float = 0
+    var sumAbsDelta: Double = 0
+    // Survival counts of the relative score delta, in units of the coarsest
+    // bfloat16 ulp (2^-7). Counts aggregate additively across trials; sample
+    // percentiles would not.
+    var deltaOver1Ulp = 0
+    var deltaOver2Ulp = 0
+    var deltaOver4Ulp = 0
     var top32ChurnTrials = 0
     var top32SymmetricDifference = 0
     var coarseArgmaxChanges = 0
     var rerankTop1Changes = 0
     var rerankTrials = 0
+    var minRank32Gap = Float.greatestFiniteMagnitude
+    var exactRecallTrials = 0
+    var fastMissesExactTop1 = 0
+    var genericMissesExactTop1 = 0
+    var rerankOracleTrials = 0
+    var rerankDisagreesWithOracle = 0
     var chunkControlMismatches = 0
     var determinismMismatches = 0
 
@@ -191,13 +204,30 @@ private struct TrialTotals {
         differingCells += other.differingCells
         maxAbsDelta = Swift.max(maxAbsDelta, other.maxAbsDelta)
         maxRelDelta = Swift.max(maxRelDelta, other.maxRelDelta)
+        sumAbsDelta += other.sumAbsDelta
+        deltaOver1Ulp += other.deltaOver1Ulp
+        deltaOver2Ulp += other.deltaOver2Ulp
+        deltaOver4Ulp += other.deltaOver4Ulp
         top32ChurnTrials += other.top32ChurnTrials
         top32SymmetricDifference += other.top32SymmetricDifference
         coarseArgmaxChanges += other.coarseArgmaxChanges
         rerankTop1Changes += other.rerankTop1Changes
         rerankTrials += other.rerankTrials
+        minRank32Gap = Swift.min(minRank32Gap, other.minRank32Gap)
+        exactRecallTrials += other.exactRecallTrials
+        fastMissesExactTop1 += other.fastMissesExactTop1
+        genericMissesExactTop1 += other.genericMissesExactTop1
+        rerankOracleTrials += other.rerankOracleTrials
+        rerankDisagreesWithOracle += other.rerankDisagreesWithOracle
         chunkControlMismatches += other.chunkControlMismatches
         determinismMismatches += other.determinismMismatches
+    }
+
+    /// Rule of three: zero events in `n` trials bounds the true rate at 3/n
+    /// with about 95% confidence. Reporting the bound next to the count keeps
+    /// a null result from reading as a stronger claim than it is.
+    private static func ruleOfThree(_ events: Int, _ n: Int) -> Double {
+        n == 0 ? 1 : (events == 0 ? 3.0 / Double(n) : Double(events) / Double(n))
     }
 
     var payload: [String: Any] {
@@ -207,16 +237,35 @@ private struct TrialTotals {
             "differing_cells": differingCells,
             "differing_cell_rate": cellsCompared == 0
                 ? 0 : Double(differingCells) / Double(cellsCompared),
+            "mean_abs_delta": cellsCompared == 0 ? 0 : sumAbsDelta / Double(cellsCompared),
             "max_abs_delta": Double(maxAbsDelta),
             "max_rel_delta": Double(maxRelDelta),
+            "max_delta_ulps": Double(maxRelDelta) * 128.0,
+            "cells_over_1_ulp": deltaOver1Ulp,
+            "cells_over_2_ulp": deltaOver2Ulp,
+            "cells_over_4_ulp": deltaOver4Ulp,
             "top32_set_churn_trials": top32ChurnTrials,
             "top32_set_churn_rate": trials == 0 ? 0 : Double(top32ChurnTrials) / Double(trials),
+            "top32_set_churn_rate_bound": Self.ruleOfThree(top32ChurnTrials, trials),
             "top32_symmetric_difference": top32SymmetricDifference,
             "coarse_argmax_changes": coarseArgmaxChanges,
             "rerank_trials": rerankTrials,
             "rerank_top1_changes": rerankTop1Changes,
             "rerank_top1_change_rate": rerankTrials == 0
                 ? 0 : Double(rerankTop1Changes) / Double(rerankTrials),
+            "rerank_top1_change_rate_bound": Self.ruleOfThree(rerankTop1Changes, rerankTrials),
+            "min_rank32_gap": minRank32Gap == .greatestFiniteMagnitude
+                ? 0 : Double(minRank32Gap),
+            "exact_recall_trials": exactRecallTrials,
+            "fast_shortlist_misses_exact_top1": fastMissesExactTop1,
+            "generic_shortlist_misses_exact_top1": genericMissesExactTop1,
+            "fast_exact_top1_miss_rate": exactRecallTrials == 0
+                ? 0 : Double(fastMissesExactTop1) / Double(exactRecallTrials),
+            "generic_exact_top1_miss_rate": exactRecallTrials == 0
+                ? 0 : Double(genericMissesExactTop1) / Double(exactRecallTrials),
+            "fast_minus_generic_exact_top1_misses": fastMissesExactTop1 - genericMissesExactTop1,
+            "rerank_oracle_trials": rerankOracleTrials,
+            "rerank_disagrees_with_oracle": rerankDisagreesWithOracle,
             "chunk_control_mismatches": chunkControlMismatches,
             "determinism_mismatches": determinismMismatches,
         ]
@@ -286,10 +335,37 @@ struct QwenDraftReadoutExactnessTests {
         return concatenated(parts, axis: 0)
     }
 
-    private static func top32(_ scores: MLXArray) -> [Int32] {
+    /// The nominated candidate set, plus the score gap between the weakest
+    /// included candidate and the strongest excluded one. That gap is the
+    /// distance a floating-point wobble has to travel to change the shortlist,
+    /// so its minimum over a sample is the honest measure of how close the
+    /// natural input distribution actually gets to the membership boundary.
+    private static func shortlist(_ scores: MLXArray) -> (ids: [Int32], gap: Float) {
         let real = scores[0 ..< realCount, axis: 0]
-        let order = MLX.argPartition(real, kth: realCount - candidateCount, axis: -1)
-        return order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+        let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+        let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+        let f32 = real.asType(.float32)
+        let included = MLX.take(f32, MLXArray(ids), axis: 0).min().item(Float.self)
+        let excluded = f32[order[realCount - candidateCount - 1]].item(Float.self)
+        return (ids, included - excluded)
+    }
+
+    /// Exact affine-4 argmax over the whole transformed vocabulary, restricted
+    /// to the ids the compact draft head can actually represent, expressed as a
+    /// compact id. This is the ground truth the coarse shortlist is supposed to
+    /// contain.
+    private static func exactTop1Compact(_ x: MLXArray, exact: QuantizedRows) -> Int32 {
+        let logits = quantizedMM(
+            x, exact.weight, scales: exact.scales, biases: exact.biases,
+            transpose: true, groupSize: 64, bits: 4, mode: .affine
+        ).reshaped([-1])
+        let controlStart = prefixCount + controlOffset
+        let compact = concatenated(
+            [
+                logits[0 ..< prefixCount, axis: 0],
+                logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+            ], axis: 0)
+        return compact.argMax().item(Int32.self)
     }
 
     /// Exact affine-4 rerank over the nominated candidates, with the ties
@@ -353,7 +429,7 @@ struct QwenDraftReadoutExactnessTests {
         }
 
         let scores = coarse(vector(base), head)
-        let ranked = top32(scores)
+        let ranked = shortlist(scores).ids
         let member = Set(ranked)
         let realScores = scores[0 ..< realCount, axis: 0].asType(.float32).asArray(Float.self)
         // Weakest included candidate, and the strongest excluded one: the pair
@@ -394,8 +470,12 @@ struct QwenDraftReadoutExactnessTests {
         return zip(base, direction).map { $0 + t * $1 }
     }
 
+    private static func countOver(_ values: MLXArray, _ threshold: Float) -> Int {
+        (values .> MLXArray(threshold)).asType(.int32).sum().item(Int.self)
+    }
+
     private static func measure(
-        x: MLXArray, head: QuantizedRows, exact: QuantizedRows?
+        x: MLXArray, head: QuantizedRows, exact: QuantizedRows?, recall: Bool
     ) -> TrialTotals {
         var out = TrialTotals()
         out.trials = 1
@@ -418,25 +498,44 @@ struct QwenDraftReadoutExactnessTests {
         let b = generic2.asType(.float32)
         let delta = MLX.abs(a - b)
         out.maxAbsDelta = delta.max().item(Float.self)
+        out.sumAbsDelta = Double(delta.sum().item(Float.self))
         let denom = MLX.maximum(MLX.abs(a), MLX.abs(b)) + MLXArray(Float(1e-30))
-        out.maxRelDelta = (delta / denom).max().item(Float.self)
+        let rel = delta / denom
+        out.maxRelDelta = rel.max().item(Float.self)
+        out.deltaOver1Ulp = countOver(rel, 0x1p-7)
+        out.deltaOver2Ulp = countOver(rel, 0x1p-6)
+        out.deltaOver4Ulp = countOver(rel, 0x1p-5)
 
-        let fastTop = Set(top32(fast))
-        let genericTop = Set(top32(generic2))
+        let fastShortlist = shortlist(fast)
+        let genericShortlist = shortlist(generic2)
+        let fastTop = Set(fastShortlist.ids)
+        let genericTop = Set(genericShortlist.ids)
         let symmetric = fastTop.symmetricDifference(genericTop).count
         out.top32SymmetricDifference = symmetric
         out.top32ChurnTrials = symmetric == 0 ? 0 : 1
+        out.minRank32Gap = Swift.min(fastShortlist.gap, genericShortlist.gap)
 
         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
 
-        if let exact {
-            out.rerankTrials = 1
-            let fastWinner = rerankWinner(x, exact: exact, candidates: Array(fastTop).sorted())
-            let genericWinner = rerankWinner(
-                x, exact: exact, candidates: Array(genericTop).sorted())
-            out.rerankTop1Changes = fastWinner == genericWinner ? 0 : 1
+        guard let exact else { return out }
+
+        out.rerankTrials = 1
+        let fastWinner = rerankWinner(x, exact: exact, candidates: fastShortlist.ids.sorted())
+        let genericWinner = rerankWinner(
+            x, exact: exact, candidates: genericShortlist.ids.sorted())
+        out.rerankTop1Changes = fastWinner == genericWinner ? 0 : 1
+
+        guard recall else { return out }
+
+        let oracle = exactTop1Compact(x, exact: exact)
+        out.exactRecallTrials = 1
+        out.fastMissesExactTop1 = fastTop.contains(oracle) ? 0 : 1
+        out.genericMissesExactTop1 = genericTop.contains(oracle) ? 0 : 1
+        if out.fastMissesExactTop1 == 0 {
+            out.rerankOracleTrials = 1
+            out.rerankDisagreesWithOracle = fastWinner == mapDraftID(oracle) ? 0 : 1
         }
         return out
     }
@@ -471,49 +570,68 @@ struct QwenDraftReadoutExactnessTests {
         }
 
         let perFamily = Int(Self.env["MLXFAST_DRAFT_READOUT_TRIALS"] ?? "") ?? 16
+        let adversarialTrials =
+            Int(Self.env["MLXFAST_DRAFT_READOUT_ADVERSARIAL_TRIALS"] ?? "") ?? perFamily
+        // The exact-top-1 oracle reads the whole 715 MB transformed readout, so
+        // it is subsampled independently of the top-1 change rate, which needs
+        // every trial to reach its 1/4096 budget bound.
+        let recallStride = Swift.max(1, Int(Self.env["MLXFAST_DRAFT_READOUT_RECALL_STRIDE"] ?? "") ?? 1)
         var rng = SplitMix(UInt64(Self.env["MLXFAST_DRAFT_READOUT_SEED"] ?? "") ?? 0x5E_1D_28)
 
         var families: [[String: Any]] = []
         var grand = TrialTotals()
+        var natural = TrialTotals()
         for name in ["normal", "outlier", "tied", "adversarial"] {
+            let isAdversarial = name == "adversarial"
             var totals = TrialTotals()
-            for _ in 0 ..< perFamily {
+            for i in 0 ..< (isAdversarial ? adversarialTrials : perFamily) {
                 let values: [Float]
-                if name == "adversarial" {
+                if isAdversarial {
                     let base = Self.family("normal", rng: &rng)
                     let direction = Self.family("normal", rng: &rng)
                     values = Self.adversarial(base: base, direction: direction, head: head)
                 } else {
                     values = Self.family(name, rng: &rng)
                 }
-                totals.absorb(Self.measure(x: Self.vector(values), head: head, exact: exact))
+                totals.absorb(
+                    Self.measure(
+                        x: Self.vector(values), head: head, exact: exact,
+                        recall: i % recallStride == 0))
             }
             var entry = totals.payload
             entry["family"] = name
+            entry["adversarial"] = isAdversarial
             families.append(entry)
             grand.absorb(totals)
+            if !isAdversarial { natural.absorb(totals) }
         }
 
         let payload: [String: Any] = [
-            "schema": "e28.draft_readout_exactness.v1",
+            "schema": "e28.draft_readout_exactness.v2",
             "mechanism": "qmv_fast_singlerow_affine2_g64",
             "reference_arm": "qmv_fast_impl<T,64,2> via 2x49168 row slices",
             "self_consistency_arm": "qmv_fast_impl<T,64,2> via 4x24584 row slices",
             "head": headURL.path,
             "exact_rerank_available": exact != nil,
             "trials_per_family": perFamily,
+            "adversarial_trials": adversarialTrials,
+            "recall_stride": recallStride,
+            "seed": Self.env["MLXFAST_DRAFT_READOUT_SEED"] ?? "0x5E1D28",
+            // Pre-registered on PR #33 before the first measurement.
+            "kill_criterion_a_natural_rerank_top1_changes": 0,
+            "kill_criterion_b_natural_churn_rate": 1e-2,
+            "ranked_token_budget": 512 * 8,
             "families": families,
+            "natural_totals": natural.payload,
             "totals": grand.payload,
         ]
         let data = try JSONSerialization.data(
             withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
         try data.write(to: URL(fileURLWithPath: outPath))
-        print("E28_DRAFT_READOUT_EXACTNESS \(outPath) totals=\(grand.payload)")
+        print("E28_DRAFT_READOUT_EXACTNESS \(outPath) natural=\(natural.payload)")
 
-        // Hard invariants. Everything else is measured and reported, not
-        // asserted: a nonzero differing-cell count between two orderings of a
-        // 5120-term FP32 dot product is expected, and the audit's job is to
-        // quantify it and prove containment.
+        // Controls. If either of these fires the comparison itself is void and
+        // no verdict below it means anything.
         #expect(
             grand.determinismMismatches == 0,
             "E28 / PR #33: the inherited 2-bit arm is not deterministic run to run")
@@ -525,6 +643,46 @@ struct QwenDraftReadoutExactnessTests {
             an independent dot product; that assumption just failed.
             """
         )
+
+        // Pre-registered kill criteria, natural inputs only. A nonzero
+        // differing-cell count between two orderings of a 5120-term FP32 dot
+        // product is expected and is not asserted; only its escape into the
+        // emitted token is.
+        #expect(
+            natural.rerankTop1Changes == 0,
+            """
+            E28 / PR #33 kill criterion A: the inherited 2-bit readout changed \
+            the emitted token on \(natural.rerankTop1Changes) of \
+            \(natural.rerankTrials) natural trials. The ranked gate is exact \
+            token match over 4096 emitted tokens, so any nonzero rate here is \
+            an exactness defect in inherited code.
+            """
+        )
+        let churnRate =
+            natural.trials == 0 ? 0 : Double(natural.top32ChurnTrials) / Double(natural.trials)
+        #expect(
+            churnRate <= 1e-2,
+            """
+            E28 / PR #33 kill criterion B: top-32 membership churn on natural \
+            inputs was \(churnRate), above the pre-registered 1e-2 bound. At \
+            roughly a 1/32 chance that a churned candidate would have won the \
+            rerank, that implies a per-token risk at or above the 1/4096 \
+            ranked budget.
+            """
+        )
+        if natural.exactRecallTrials >= 64 {
+            #expect(
+                natural.fastMissesExactTop1 <= natural.genericMissesExactTop1,
+                """
+                E28 / PR #33 kill criterion D: the inherited arm's shortlist \
+                missed the true exact top-1 \(natural.fastMissesExactTop1) \
+                times against the generic arm's \
+                \(natural.genericMissesExactTop1) on identical inputs over \
+                \(natural.exactRecallTrials) trials. That is asymmetric \
+                proposal-quality loss attributable to the bespoke kernel.
+                """
+            )
+        }
     }
 }
 
