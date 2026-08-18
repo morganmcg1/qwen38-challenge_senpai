@@ -195,6 +195,26 @@ if [[ "${1:-}" == "--pairs" ]]; then
   exit "${worst}"
 fi
 
+# r3 runs TWO traced instruments (BASE = the shipped rule's own tape, FORCE =
+# the depth cycle) and compares curves BETWEEN them, so the probe passes need
+# the same within-prompt counterbalancing the timed arms get. Same rotation
+# rule, derived from the prompt index alone.
+if [[ "${1:-}" == "--probe-pairs" ]]; then
+  IFS=, read -r -a probe_arms <<< "${2:?--probe-pairs needs A,B ID...}"
+  shift 2
+  ((${#@})) || { echo "e25-run: --probe-pairs needs at least one prompt id" >&2; exit 2; }
+  worst=0
+  for probe_id in "$@"; do
+    read -r -a probe_ordered <<< "$(order_for "${probe_id}" "${probe_arms[@]}")" \
+      || { worst=2; continue; }
+    echo "e25-run: probe pair ${probe_id} order: ${probe_ordered[*]}"
+    for probe_arm in "${probe_ordered[@]}"; do
+      run_one --probe "${probe_id}" "${probe_arm}" || worst=$?
+    done
+  done
+  exit "${worst}"
+fi
+
 # Sweep mode exists only for the untimed probe pass, where the runs are
 # independent histogram samples rather than halves of a counterbalanced pair.
 if [[ "${1:-}" == "--probe-sweep" ]]; then
