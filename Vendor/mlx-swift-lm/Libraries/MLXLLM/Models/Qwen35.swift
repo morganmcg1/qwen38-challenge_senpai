@@ -586,6 +586,32 @@ final class Qwen35GatedDeltaNet: Module {
         return value
     }
 
+    // Input-independent per-layer memo of the QK-norm scale pair. Both are
+    // powers of `pow(Float(headKDim), -0.5)`, a compile-time constant, but
+    // `MLXArray(Float).asType(dtype)` is a real 1-thread
+    // `v_copy_float32_bfloat16` launch: `MLXArray(Float)` alone is free
+    // (`mlx_array_new_data`, no primitive), while `asType` only short-circuits
+    // on an equal dtype and `copy_gpu` only early-returns on a donatable or
+    // empty input. Rebuilding the pair in every GDN layer therefore cost 2 x 48
+    // = 96 launches per forward. Keyed by dtype because the packed-prework
+    // branch pins bfloat16 while the others follow the activation dtype.
+    //
+    // Bit-exact by construction: the cached value is the result of the same
+    // expression, evaluated once instead of per call. Holding it also makes it
+    // permanently non-donatable (`is_donatable` needs `use_count() == 1`), so
+    // no later kernel can reuse its buffer in place.
+    private var _invScaleMemo: [DType: (sq: MLXArray, lin: MLXArray)] = [:]
+    private func invScalePair(_ dtype: DType) -> (sq: MLXArray, lin: MLXArray) {
+        if let cached = _invScaleMemo[dtype] { return cached }
+        let invScale = pow(Float(headKDim), -0.5)
+        let value = (
+            sq: MLXArray(pow(invScale, 2)).asType(dtype),
+            lin: MLXArray(invScale).asType(dtype)
+        )
+        _invScaleMemo[dtype] = value
+        return value
+    }
+
     /// `gatedDeltaUpdate` with the g-gate's input-independent factor served
     /// from `negExpALog`. The prologue replicates the vendored function's
     /// arithmetic exactly (fp32 beta and g, fp32 state coercion) and the
@@ -750,14 +776,11 @@ final class Qwen35GatedDeltaNet: Module {
         let k = convSplit[1].reshaped(B, S, numKHeads, headKDim)
         let v = convSplit[2].reshaped(B, S, numVHeads, headVDim)
 
-        let dtype = q.dtype
-        let invScale = pow(Float(headKDim), -0.5)
+        let scale = invScalePair(q.dtype)
         let qNormed =
-            MLXArray(pow(invScale, 2)).asType(dtype)
-            * MLXFast.rmsNorm(q, weight: MLXArray.mlxNone, eps: 1e-6)
+            scale.sq * MLXFast.rmsNorm(q, weight: MLXArray.mlxNone, eps: 1e-6)
         let kNormed =
-            MLXArray(invScale).asType(dtype)
-            * MLXFast.rmsNorm(k, weight: MLXArray.mlxNone, eps: 1e-6)
+            scale.lin * MLXFast.rmsNorm(k, weight: MLXArray.mlxNone, eps: 1e-6)
 
         let (out, newSsmState) = gatedDeltaUpdateMemoG(
             q: qNormed,
@@ -808,11 +831,10 @@ final class Qwen35GatedDeltaNet: Module {
         let beta: MLXArray
         let newConvState: MLXArray
         if mixerHit {
-            let invScale = pow(Float(headKDim), -0.5)
+            let scale = invScalePair(.bfloat16)
             let outs = qwen35PackedGDNPreworkKernel(
                 [qkv, a, b, convState, conv1d.weight, aLog, dtBias,
-                 MLXArray(pow(invScale, 2)).asType(.bfloat16),
-                 MLXArray(invScale).asType(.bfloat16)],
+                 scale.sq, scale.lin],
                 template: [
                     ("Hk", numKHeads), ("Dk", headKDim),
                     ("Hv", numVHeads), ("Dv", headVDim),
@@ -849,14 +871,11 @@ final class Qwen35GatedDeltaNet: Module {
             let k = convSplit[1].reshaped(B, S, numKHeads, headKDim)
             v = convSplit[2].reshaped(B, S, numVHeads, headVDim)
 
-            let dtype = q.dtype
-            let invScale = pow(Float(headKDim), -0.5)
+            let scale = invScalePair(q.dtype)
             qNormed =
-                MLXArray(pow(invScale, 2)).asType(dtype)
-                * MLXFast.rmsNorm(q, weight: MLXArray.mlxNone, eps: 1e-6)
+                scale.sq * MLXFast.rmsNorm(q, weight: MLXArray.mlxNone, eps: 1e-6)
             kNormed =
-                MLXArray(invScale).asType(dtype)
-                * MLXFast.rmsNorm(k, weight: MLXArray.mlxNone, eps: 1e-6)
+                scale.lin * MLXFast.rmsNorm(k, weight: MLXArray.mlxNone, eps: 1e-6)
 
             // Keep the recurrence and conv prologue wide. The promoted
             // compiled g/beta launch reduction feeds the same single
@@ -1040,13 +1059,11 @@ final class Qwen35GatedDeltaNet: Module {
             let v = convSplit[2].reshaped(B, S, numVHeads, headVDim)
 
             let dtype = q.dtype
-            let invScale = pow(Float(headKDim), -0.5)
+            let scale = invScalePair(dtype)
             let qNormed =
-                MLXArray(pow(invScale, 2)).asType(dtype)
-                * MLXFast.rmsNorm(q, weight: MLXArray.mlxNone, eps: 1e-6)
+                scale.sq * MLXFast.rmsNorm(q, weight: MLXArray.mlxNone, eps: 1e-6)
             let kNormed =
-                MLXArray(invScale).asType(dtype)
-                * MLXFast.rmsNorm(k, weight: MLXArray.mlxNone, eps: 1e-6)
+                scale.lin * MLXFast.rmsNorm(k, weight: MLXArray.mlxNone, eps: 1e-6)
 
             // Replicates gatedDeltaUpdate's fp32 prologue, fusing beta/g while
             // serving the gate's input-independent factor from the layer memo.
