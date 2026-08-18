@@ -11,28 +11,30 @@ disagree, stop and repair both before assigning or submitting work.
 ## Current frontier
 
 The organizer remote and the promoted Yukon row were refreshed at
-`2026-08-18T13:28:00.844Z`.
+`2026-08-18T15:13:21.833Z`.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `dccba745af5ba465b27c1683d689f6d5e06e41a0` |
-| Best promoted submission | `72ce82dc-f751-485d-a7b3-94ab6471cf87` |
-| Promoted source ref | `dccba745af5ba465b27c1683d689f6d5e06e41a0` |
-| Official score | `3.22826053954006` |
+| Organizer synced commit | `86fb1f020fc1fddc7e55aceac4761e5054b71dd6` |
+| Best promoted submission | `3a995c2b-3c42-48e8-b982-f36a8abda0e7` |
+| Promoted source ref | `86fb1f020fc1fddc7e55aceac4761e5054b71dd6` |
+| Official score | `3.23222998733732` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Submitted solver snapshot | `369cc054d44f6247bf4c110c8e834219db5130b9` |
+| Submitted solver snapshot | `86fb1f020fc1fddc7e55aceac4761e5054b71dd6` |
 
 The promoted receipt above is the public Yukon frontier used to bootstrap this
 campaign; it is not claimed as a Senpai-authored result.
 
-Campaign commit `abca948` imports the exact promoted submitted surface from
-`dccba745af5ba465b27c1683d689f6d5e06e41a0`. Relative to the prior campaign
-frontier `369cc054`, the promoted surface restores the single-row affine-2,
-group-64 fast QMV used by the coarse 98,336-output proposal readout and changes
-the M=8 affine-4/group-64 split from 3+3+2 to 4+4. No organizer policy,
-contract, fixture, workflow, guide, dependency, head manifest, or other trusted
-file changed.
+Campaign commit `8afb5e8` imports the exact promoted submitted surface from
+`86fb1f020fc1fddc7e55aceac4761e5054b71dd6`. Relative to the prior campaign
+frontier `dccba745`, the promoted surface adds the full-memory Qwen-MTP command
+buffer and persistent-weight residency policy, memoizes the Gated DeltaNet
+normalization constants, fuses residual boundaries with RMSNorm, and removes
+two full-attention gate-layout copies. It removes the dedicated single-row
+affine-2 coarse-readout kernel and retains the M=8 affine-4/group-64 4+4 split.
+No organizer policy, contract, fixture, workflow, guide, dependency, head
+manifest, or other trusted file changed.
 
 The declared head is
 `hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8`,
@@ -42,12 +44,11 @@ head and adds the affine-2 compact `draft_lm_head` ABI: weight
 `[98,336, 320]`, scales/biases `[98,336, 80]`, followed by an exact affine-4
 rerank of a 32-token shortlist.
 
-The exact promoted readable header carried a stale 3+3+2 M=8 narrative while
-both readable and generated dispatch code used 4+4 and the generated twin
-already carried the accurate comment. Campaign commit `0b19827` reconciles only
-that readable comment. With explicit Metal toolchain
-`com.apple.dt.toolchain.Metal.32023.883`, the repaired tree passes all 29
-runtime-effective twins, the frozen release build, and a fresh AOT
+The exact promoted generated twin abbreviated the readable header's M=8 4+4
+rationale. Campaign commit `76b961f` expands only that comment to the canonical
+generated form. Executable kernel text is unchanged. With explicit Metal
+toolchain `com.apple.dt.toolchain.Metal.32023.883`, the repaired tree passes all
+29 runtime-effective twins, the frozen release build, and a fresh AOT
 `mlx.metallib` build.
 
 ## Same-host baselines
@@ -100,6 +101,8 @@ evidence or a changed condition; “try again” is not enough.
 | 2026-08-18 | `codex/sync-organizer-frontier-20260818-369cc05` / `9d04199` | canonical regeneration of promoted `quantized` twin | `ff5866b` | generated delta is comment-only; explicit-toolchain twin audit 29/29, final release build, and fresh AOT `mlx.metallib` build pass with Metal toolchain `32023.883` | not submitted; mechanical campaign repair only | Canonical output expands the abbreviated M=8 comments; executable tokens are unchanged |
 | 2026-08-18 | `codex/sync-organizer-frontier-20260818-dccba74` / `abca948` | exact promoted editable-snapshot import | `a187ec6` | preservation, campaign overlay, editable budget, trusted parity, exact promoted-blob checks, and release build pass; full `swift test` reaches the byte-identical inherited `QwenMTPVerbTests.swift:755` `String`/`Comment?` defect | adopted public promoted `72ce82dc-f751-485d-a7b3-94ab6471cf87` / `dccba745` at `3.22826053954006`; not a Senpai-authored submission | Two editable QMV twins changed: the proposal-only M=1 affine-2 fast path is restored and M=8 affine-4/group-64 moves from 3+3+2 to 4+4; proposal-head tree remains `559b24eb`; no trusted policy changed |
 | 2026-08-18 | `codex/sync-organizer-frontier-20260818-dccba74` / `0b19827` | reconcile promoted M=8 readable/twin comment | `abca948` | comment-only delta; explicit-toolchain twin audit 29/29, frozen release build, and fresh AOT `mlx.metallib` build pass with Metal toolchain `32023.883` | not submitted; mechanical campaign repair only | Replaces a stale 3+3+2 narrative with the generated twin's accurate 4+4 description; executable tokens are unchanged |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-86fb1f0` / `8afb5e8` | exact promoted editable-snapshot import | `14ef8c2` | preservation, campaign overlay, editable budget, trusted parity, exact five-path import, and release build pass; full `swift test` reaches the byte-identical inherited `QwenMTPVerbTests.swift:755` `String`/`Comment?` defect | adopted public promoted `3a995c2b-3c42-48e8-b982-f36a8abda0e7` / `86fb1f0` at `3.23222998733732`; not a Senpai-authored submission | Five editable paths changed; the full-memory residency/command-buffer policy and Qwen35 fusion suite are present, the dedicated M=1 affine-2 QMV is absent, and the proposal-head manifest is unchanged; no trusted policy changed |
+| 2026-08-18 | `codex/sync-organizer-frontier-20260818-86fb1f0` / `76b961f` | canonical regeneration of promoted `quantized` twin | `8afb5e8` | generated delta is comment-only; explicit-toolchain twin audit 29/29, frozen release build, and fresh AOT `mlx.metallib` build pass with Metal toolchain `32023.883` | not submitted; mechanical campaign repair only | Expands the abbreviated M=8 comment to the readable header's direct-nibble/IPG4 rationale; executable tokens are unchanged |
 
 ## Update checklist
 
