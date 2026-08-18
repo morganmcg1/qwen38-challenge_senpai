@@ -134,3 +134,182 @@ Every scored shape is strictly monotone in M. No shape shows an M=9 < M=7
 inversion and none produces the triple (319, 437, 216). The claimed inversion
 would require M=9 to run a cheaper configuration than M=7, which no dispatch
 table in this repository does.
+
+## Falsification arm: IPG changes at constant NA (commit `7b5183d`)
+
+Before touching `NA_max`, one build re-pointed three dispatch sites inside the
+legal `NA ∈ [2,4]` range and re-measured M = 4, 6, 7, 8. Predictions were written
+down first: two slower, one neutral, one control.
+
+| M | change | streams | peak regs | predicted | base (ms) | arm (ms) | arm/base |
+|---:|---|---:|---:|---|---:|---:|---:|
+| 4 | IPG 4→2 | 1→**2** | 104→62 | slower | 83.115 | 116.219 | **1.3983** |
+| 6 | IPG 3→4 | 2→2 | 83→**108** | neutral | 128.865 | 128.849 | **0.9999** |
+| 7 | unchanged | 2→2 | same | control | 139.078 | 139.112 | **1.0002** |
+| 8 | IPG 4→3 | 2→**3** | 104→87 | slower | 149.355 | 177.759 | **1.1902** |
+
+- **M=6 is the decisive control.** +30% lane registers at a constant stream count
+  costs 0.9999×, below the M=7 drift control at 1.0002×. Register pressure has no
+  measurable cost anywhere in the legal NA range on this host.
+- **The "register cliff at M=8" is refuted with the wrong sign.** `<T,8,3,true>`
+  uses *fewer* registers (87 vs 104) and is **19.0% slower**. The shipped
+  `<T,8,4,true>` is correct, but for the stream reason, not the register reason.
+  The two stories give opposite advice about widening accumulators, which is
+  exactly what the NA=5 arm then settled.
+- Cross-session anchor: this fresh `<T,8,3>` measured 177.759 ms against E22's
+  177.758 ms, 1 µs apart (0.0006%).
+
+One job in this arm (`42e7ac84-9190-4b62-ad1e-5bbb38d9fedd`, ~19:07 UTC) exited 1
+*after* the sweep passed (25.345 s) and `vendored.json` was written: the
+research-only `research/qmv_cost_curve_summary.py:266` normalises every shape
+against M=1, and `--widths 4,6,7,8` omits width 1. No measurement was lost.
+**Always include width 1 in `--widths`.**
+
+## Implementation (commit `0207de6`)
+
+Applied identically to `Vendor/mlx-swift/.../kernels/quantized.h` and its
+runtime-effective twin `Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`:
+
+1. `static_assert(NA >= 2 && NA <= 5, ...)` — raise the wide cap by one.
+2. `<T, 5, 3, true>` → `<T, 5, 5, true>` — 2 → **1** weight stream.
+3. `<T, 9, 3, true>` → `<T, 9, 5, true>` — 3 → **2** weight streams.
+
+M = 7 was deliberately left at `<T,7,4,true>`: IPG=5 gives 2 streams and 76
+dynamic loads either way. `python3 research/twin_audit.py` → rc 0,
+"TWIN AUDIT OK: 29 runtime-effective twin(s)".
+`crossrowGate()` in `Tests/MLXFastTests/QwenQMVCostCurveTests.swift:555` parses
+`quantized.h` at runtime, so no Swift test change was needed.
+
+Scope and budget, checked before the expensive work:
+`senpai/validate-assignment-scope.sh` → assignment scope OK, 2 submitted paths;
+`senpai/check-editable-budget.sh` → source 2,448,240 / 3,000,000 B, growth
+0 / 262,144 B, exempt 2,410 B / 2 GiB.
+
+## Pre-registered gates and outcomes
+
+All four criteria were posted publicly *before* any NA=5 timing existed
+(PR #32 comments `5332537783` and `5332728160`) and were not revised.
+
+| gate | condition | outcome |
+|---|---|---|
+| **K1** static | `_wide<T,5,true>` no spill alloca and `peak_live_regs <= 130`, NA=6 must still spill | **PASS** — 1 alloca, 125 regs; NA=6 spills `[4 x <6 x float>]` |
+| **K2** parity | `BIT-IDENTICAL`, 0 differing cells | **PASS** — 192/192 cells (96 per bit-width, bits ∈ {3,4}), 0 differing |
+| **K3** timing | `C_round(5)_NA5 <= 0.95 × 120.683 ms`, i.e. metric <= 1.383 | **PASS** — 96.423 ms, metric **1.1607** |
+| **K4** budget | <= 2 NA=5 builds, 1 A/B/A session | honored — 2 builds (parity arm + curve) |
+
+## Result: full width curve, base vs NA=5
+
+Both columns recomputed identically from each run's `vendored.json` as
+`C_round(M) = Σ_shapes calls_per_verify × seconds_per_call`.
+
+| M | base (ms) | NA=5 (ms) | NA=5/base | base C/M | NA=5 C/M |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 64.549 | 59.979 | 0.9292 | 64.549 | 59.979 |
+| 2 | 65.628 | 64.707 | 0.9860 | 32.814 | 32.353 |
+| 3 | 72.993 | 73.136 | 1.0020 | 24.331 | 24.379 |
+| 4 | 83.115 | 83.072 | 0.9995 | 20.779 | 20.768 |
+| 5 | 120.683 | **96.423** | **0.7990** | 24.137 | 19.285 |
+| 6 | 128.865 | 129.280 | 1.0032 | 21.478 | 21.547 |
+| 7 | 139.078 | 139.007 | 0.9995 | 19.868 | 19.858 |
+| 8 | 149.355 | 150.110 | 1.0051 | 18.669 | 18.764 |
+| 9 | 186.233 | **164.900** | **0.8854** | 20.693 | **18.322** |
+
+**Primary metric `C_round(5)/C_round(4)`: 1.4520 → 1.1607 (−0.2913).**
+The assignment's stated baseline of 1.4559 reproduced to within 0.27%.
+
+Only the two widths that were changed moved. The five untouched widths that sit
+mid-sweep (M = 3, 4, 6, 7, 8) all land within ±0.5%, which sets the noise floor.
+The cheapest per-token width moved from M=8 (18.669) to **M=9 (18.322)**, as
+predicted by the stream model.
+
+### Independent corroboration from the harness summary
+
+These fields are computed by the harness, not by the recompute above.
+
+| field | base | NA=5 |
+|---|---|---|
+| `stream_boundaries` | `[5, 9]` | **`[6]`** |
+| `optimal_depth_q100` | 7 | **8** |
+| `optimal_speedup_q100` | 2.914284 | 2.919089 |
+| `optimal_seconds_per_token_q100` | 0.02274622 | 0.02270877 |
+| `weighted_qmv_tax_9` | 2.88517 | **2.74929** |
+| `stop_rule_branch` | part_b_full | part_b_full |
+| `scored_shapes_off_fast_count` | 0 | 0 |
+| `staircase_shapes_rank_first` | 8/8 | 8/8 |
+| `peak_bandwidth_gb_s` | 227.59 | 226.999 |
+| `peak_tflops` | 7.4974 | 7.49258 |
+
+`stream_boundaries` moving `[5,9] → [6]` is exactly the new stream structure:
+under NA=5, M = 1..5 is one stream and M = 6..9 is two. Boundary detection reads
+the shipped dispatch tree (`qmv_cost_curve_summary.py:617`), not a guess.
+
+## Honest caveats
+
+1. **M=1 drifted −7.1% and M=2 −1.4% on unchanged widths.** M=1 is the first
+   width measured in each sweep, on the coldest GPU, so this is a warm-up/thermal
+   artifact rather than a code effect. It does not touch the primary metric, whose
+   numerator and denominator (M=5, M=4) sit mid-sweep with M=4 at 0.9995.
+2. **K2 cell count.** I pre-registered "96 cells"; the harness reports **192**,
+   because it runs 96 cells at each of bits ∈ {3,4}. My number covered one
+   bit-width. The binding condition (`BIT-IDENTICAL`, 0 differing) is unchanged
+   and was met at both bit-widths.
+3. **`qmv_parity_compare.py` never exits nonzero.** A diverging arm would also
+   exit 0, so the verdict must be parsed from its text, not from the job exit code.
+4. **`crossrow_na_max` still reports 4 in both summaries — cosmetic.**
+   `CROSSROW_MAX_INPUTS_PER_GROUP = args.na_max` is a CLI flag defaulting to 4 and
+   `research/run-qmv-curve.sh` never passes `--na-max`. It is not a readback of the
+   built kernel. The kernel is definitively NA=5 per (a) M=5 at −20.1%,
+   (b) `stream_boundaries` moving to `[6]`, and (c) the source at HEAD.
+5. **The end-to-end modelled win is much smaller than the headline metric.**
+   `optimal_speedup_q100` moves 2.9143 → 2.9191, only +0.16%, even though the
+   depth optimum moves 7 → 8, because the depth curve is flat near its optimum
+   (d = 3..8 spread 14.7%). The QMV verify tax genuinely drops
+   (`weighted_qmv_tax_9` 2.885 → 2.749), but decode wall time is not dominated by
+   the widths that changed.
+6. **Standing counter-evidence is now overturned.** Branch `crossrow-na5`
+   (`704af6f`) had measured NA=5 as 1.54× *slower* at M=5 while bit-exact
+   (pre-`DIRECT_NIBBLES`); `0a739c9` was 1.37×/1.13× slower and *not* bit-exact;
+   `84eedac` restored `NA_max=4`. This fresh same-base A/B supersedes those.
+7. **Host transfer risk.** Everything here is M4 Pro. The ranked runner is M5.
+
+## Reproduction
+
+```bash
+# baseline arm, at HEAD f0bb949 (base kernel source)
+research/run-qmv-curve.sh e27-base-r1 d7619a7f4606c2a0e1c46e04d8fae2e4e0e96602 \
+  --widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock
+
+# candidate arm, at HEAD 0207de6 (NA=5)
+research/run-qmv-curve.sh e27-na5-r1 d7619a7f4606c2a0e1c46e04d8fae2e4e0e96602 \
+  --widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock
+
+# K2 bit-exactness
+research/run-qmv-parity.sh base=d7619a7f4606c2a0e1c46e04d8fae2e4e0e96602 na5=0207de6
+```
+
+`run-qmv-curve.sh` performs no git operations; its second positional argument is a
+recorded label and the script measures the working tree. Both arms used identical
+parameters, so only HEAD differs.
+
+W&B project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`:
+
+- baseline `bg0yd4g3` — `qmv-cost-curve-e27-base-r1`
+- NA=5 `hy0qq9sk` — `qmv-cost-curve-e27-na5-r1`
+
+Candidate run identity: `head=0207de6476a089902b83fb658a2acd8883126f4e dirty=0`,
+`mem=51539607552`, `widths=1..9 shapes_only=1 reps=21 inner=10 skip_stock=1`,
+`2026-08-18T19:19:53Z → 19:28:47Z` (8 min 54 s wall). The cool gate stalled at
+42.1 C (`stalled_above_40C`), the same thermal entry state as the baseline.
+`sweepQuantizedMatmulOverVerifyWidth()` passed in 39.863 s.
+
+## Suggested follow-ups (not implemented)
+
+- Re-measure on the ranked M5 host before treating this as promotable. The whole
+  result is a bandwidth/stream story, and M5's memory system differs.
+- Ask whether M = 6, 7, 8 can reach one stream. That needs NA >= 6, which spills
+  (`[4 x <6 x float>]`); a split-accumulator or two-pass form might avoid the
+  spill, but nothing here suggests it would pay.
+- Plumb `--na-max` through `research/run-qmv-curve.sh` so `crossrow_na_max` stops
+  reporting a stale default.
+- Because the depth curve is flat near the optimum, the largest remaining decode
+  win is probably not in the QMV width table.
