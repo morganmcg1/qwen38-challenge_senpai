@@ -6,6 +6,7 @@
 #   research/e25-run.sh --probe ID ARM         one TRACED, non-timed pass
 #   research/e25-run.sh --arm ID ARM           one TIMED arm on one prompt
 #   research/e25-run.sh --pair ID A B          both TIMED arms, ABBA order
+#   research/e25-run.sh --pairs A,B ID...      several TIMED pairs, one job
 #
 # DESIGN COMMITMENTS, inherited verbatim from E17/E21 so all three remain
 # comparable, and fixed here before any arm was timed:
@@ -144,14 +145,37 @@ run_one() {
   return "${rc}"
 }
 
+run_pair() {
+  local pair_id="$1" rc=0 pair_arm
+  shift
+  local -a ordered
+  read -r -a ordered <<< "$(order_for "${pair_id}" "$@")" || return 2
+  echo "e25-run: pair ${pair_id} order: ${ordered[*]}"
+  for pair_arm in "${ordered[@]}"; do
+    run_one --arm "${pair_id}" "${pair_arm}" || { rc=$?; break; }
+  done
+  return "${rc}"
+}
+
 if [[ "${1:-}" == "--pair" ]]; then
   pair_id="${2:?--pair needs ID A B}"
   shift 2
-  read -r -a ordered <<< "$(order_for "${pair_id}" "$@")" || exit 2
-  echo "e25-run: pair ${pair_id} order: ${ordered[*]}"
+  run_pair "${pair_id}" "$@"
+  exit $?
+fi
+
+# Several pairs per job. Each pair is still counterbalanced within its own
+# prompt and still adjacent in time, so batching cannot move a thermal trend
+# onto one arm. A failing pair does not abandon the pairs after it: every
+# completed prompt is reported, and the worst status is returned so the failure
+# is still visible.
+if [[ "${1:-}" == "--pairs" ]]; then
+  IFS=, read -r -a pairs_arms <<< "${2:?--pairs needs A,B ID...}"
+  shift 2
+  ((${#@})) || { echo "e25-run: --pairs needs at least one prompt id" >&2; exit 2; }
   worst=0
-  for pair_arm in "${ordered[@]}"; do
-    run_one --arm "${pair_id}" "${pair_arm}" || { worst=$?; break; }
+  for pairs_id in "$@"; do
+    run_pair "${pairs_id}" "${pairs_arms[@]}" || worst=$?
   done
   exit "${worst}"
 fi
