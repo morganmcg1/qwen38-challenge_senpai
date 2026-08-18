@@ -180,6 +180,103 @@ def tables(report: dict) -> dict:
             "e25r2/fidelity_and_head": fid}
 
 
+def policy_payload(policy: dict) -> tuple[dict, dict]:
+    """Offline replay of the whole price design space on one fixed tape."""
+    arms = policy["arms"]
+    base = arms["base_shipped_h0.18"]["ms_per_token"]
+    table = wandb.Table(columns=[
+        "arm", "ms_per_token", "gain_vs_shipped_pct", "mean_depth", "rounds",
+        "emitted_tokens", "depth_histogram",
+    ])
+    for name in sorted(arms, key=lambda a: arms[a]["ms_per_token"]):
+        row = arms[name]
+        table.add_data(name, row["ms_per_token"],
+                       100.0 * (base - row["ms_per_token"]) / base,
+                       row["mean_depth"], row["rounds"], row["emitted_tokens"],
+                       json.dumps(row["depth_histogram"], sort_keys=True))
+
+    best = min(arms, key=lambda a: arms[a]["ms_per_token"])
+    cal = policy["calibration"]
+    obs = policy["observed_runtime_depths"]
+    validation = policy["replay_validation"]
+    summary = {
+        "e25r2/policy_rounds": policy["rounds"],
+        "e25r2/policy_replay_exact": validation["replay_exact"],
+        "e25r2/policy_best_arm": best,
+        "e25r2/policy_best_gain_vs_shipped_pct":
+            100.0 * (base - arms[best]["ms_per_token"]) / base,
+        "e25r2/policy_shipped_ms_per_token": base,
+        # arm D recomposed on the refit curve is numerically identical to the
+        # shipped rule truncated at depth 3: deliverable (a), a second way.
+        "e25r2/policy_arm_d_refit_equals_deep_cap_3": (
+            arms["arm_d_refit_measured"]["depth_histogram"]
+            == arms["base_shipped_deep_cap_3"]["depth_histogram"]
+            and arms["arm_d_refit_measured"]["ms_per_token"]
+            == arms["base_shipped_deep_cap_3"]["ms_per_token"]),
+        "e25r2/policy_belief_ratio": cal["ratio"],
+        "e25r2/policy_belief_shrink": policy["belief_shrink_applied"],
+        "e25r2/observed_max_depth": obs["max_depth_observed"],
+        "e25r2/observed_rounds_at_depth_ge_4": obs["rounds_at_depth_ge_4"],
+        "e25r2/observed_mean_depth": obs["mean_depth"],
+    }
+    for name, row in arms.items():
+        summary[f"e25r2/policy_arm/{name}/ms_per_token"] = row["ms_per_token"]
+        summary[f"e25r2/policy_arm/{name}/mean_depth"] = row["mean_depth"]
+    return {"e25r2/policy_arms": table}, summary
+
+
+def timed_payload(timed: dict) -> tuple[dict, dict]:
+    """Matched ABBA BASE vs PRICE legs: the experiment's primary metric."""
+    head = timed["headline"]
+    per_prompt = timed["per_prompt"]
+    table = wandb.Table(columns=[
+        "prompt", "base_ms_per_token", "candidate_ms_per_token", "gain_pct",
+        "serial_control_delta_pct", "base_mean_draft_len",
+        "candidate_mean_draft_len", "base_max_draft_len",
+        "candidate_max_draft_len", "base_local_ratio", "candidate_local_ratio",
+        "base_rounds", "candidate_rounds", "base_accepted_rate",
+        "candidate_accepted_rate",
+    ])
+    for prompt in sorted(per_prompt):
+        row = per_prompt[prompt]
+        b, c = row["base"], row["candidate"]
+        table.add_data(
+            prompt, b["decode_ms_per_token"], c["decode_ms_per_token"],
+            row["gain_pct"], row["serial_delta_pct"],
+            b["counters"]["effective_mean_draft_len"],
+            c["counters"]["effective_mean_draft_len"],
+            b["counters"]["effective_max_draft_len"],
+            c["counters"]["effective_max_draft_len"],
+            b["local_ratio"], c["local_ratio"],
+            b["counters"]["round_count"], c["counters"]["round_count"],
+            b["counters"]["accepted_draft_rate"],
+            c["counters"]["accepted_draft_rate"])
+
+    drift = timed["host_drift_control"]
+    summary = {
+        # the assignment's primary metric, logged under its contract name
+        "e25/mtp_true_decode_gain_pct_median_of_8": head["median_gain_pct"],
+        "e25r2/timed_mean_gain_pct": head["mean_gain_pct"],
+        "e25r2/timed_min_gain_pct": head["min_gain_pct"],
+        "e25r2/timed_max_gain_pct": head["max_gain_pct"],
+        "e25r2/timed_prompts_improved": head["prompts_improved"],
+        "e25r2/timed_n_prompts": head["n_prompts"],
+        "e25r2/timed_gates_pass": timed["gates"]["all_pass"],
+        "e25r2/timed_gate_failure_count": len(timed["gates"]["failures"]),
+        "e25r2/timed_max_abs_serial_drift_pct": drift["max_abs_serial_delta_pct"],
+        "e25r2/timed_median_abs_serial_drift_pct":
+            drift["median_abs_serial_delta_pct"],
+        "e25r2/timed_vs_r1_headline_pct_points":
+            head["median_gain_pct"] - R1_HEADLINE["r1_median_of_8_pct"]
+            if head["median_gain_pct"] is not None else None,
+    }
+    for prompt, gain in head["per_prompt_gain_pct"].items():
+        summary[f"e25r2/timed_gain_pct/{prompt}"] = gain
+    for prompt, delta in drift["serial_delta_pct"].items():
+        summary[f"e25r2/timed_serial_drift_pct/{prompt}"] = delta
+    return {"e25r2/timed_pairs": table}, summary
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("report", type=Path)
@@ -191,6 +288,10 @@ def main() -> None:
         "wall is intrinsic to the measured weight-stream pass cliff at M=5, "
         "not to arm D's max(). The realised-rate optimum over constant-depth "
         "policies is d=2-3, refuting my own r1 depth-7 pre-registration."))
+    ap.add_argument("--policy", type=Path,
+                    help="research/e25r2-policy.json offline replay report")
+    ap.add_argument("--timed", type=Path,
+                    help="research/e25r2-timed.json matched BASE vs PRICE report")
     args = ap.parse_args()
 
     report = json.loads(args.report.read_text())
@@ -327,11 +428,23 @@ def main() -> None:
     for p, d in report["per_prompt_argmax"].items():
         summary[f"e25r2/per_prompt_argmax/{p}"] = d
 
+    logged = tables(report)
+    for path, builder in ((args.policy, policy_payload),
+                          (args.timed, timed_payload)):
+        if path is None:
+            continue
+        extra_tables, extra_summary = builder(json.loads(path.read_text()))
+        logged.update(extra_tables)
+        summary.update(extra_summary)
+
     run.summary.update(summary)
-    run.log(tables(report))
+    run.log(logged)
 
     artifact = wandb.Artifact("e25r2-forced-depth-pool", type="analysis")
     artifact.add_file(str(args.report))
+    for path in (args.policy, args.timed):
+        if path is not None:
+            artifact.add_file(str(path))
     run.log_artifact(artifact)
 
     print(f"logged {run.url}")
