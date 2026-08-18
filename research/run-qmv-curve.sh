@@ -182,6 +182,9 @@ fi
 summary_python="${MLXFAST_PYTHON_BIN:-/Users/ec2-user/.senpai/aws-mac-runners/qwen38-mlx-senpai-r1/venv/bin/python3}"
 [[ -x "${summary_python}" ]] || summary_python="$(command -v python3)"
 
+# macOS ships bash 3.2, where `set -u` treats an empty array's `[@]` expansion as
+# unbound. The `${a[@]+...}` guard is the only portable way to pass an optional
+# flag list; without it --skip-stock kills the summary after a good measurement.
 stock_flag=()
 [[ -f "${out_dir}/stock.json" ]] && stock_flag=(--stock "${out_dir}/stock.json")
 wandb_flag=()
@@ -195,14 +198,14 @@ WANDB_PROJECT="${WANDB_PROJECT:-qwen38-mlx-challenge-senpai}" \
 WANDB_ENTITY="${WANDB_ENTITY:-wandb-applied-ai-team}" \
 "${summary_python}" research/qmv_cost_curve_summary.py \
   --vendored "${out_dir}/vendored.json" \
-  "${stock_flag[@]}" \
+  ${stock_flag[@]+"${stock_flag[@]}"} \
   --head-provenance "${out_dir}/head-provenance.json" \
   --out "${out_dir}/summary.json" \
   --tag "${tag}" \
   --host "$(sysctl -n machdep.cpu.brand_string)" \
   --base-sha "${base_sha:-unset}" \
   --na-max "${MLXFAST_QMV_NA_MAX:-4}" \
-  "${wandb_flag[@]}" 2>&1 | tee "${out_dir}/summary.log"
+  ${wandb_flag[@]+"${wandb_flag[@]}"} 2>&1 | tee "${out_dir}/summary.log"
 
 date -u '+run-qmv-curve: finished_utc=%Y-%m-%dT%H:%M:%SZ' >&2
 echo "run-qmv-curve: artifacts in ${out_dir}" >&2
