@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-19T01:10:00.000Z",
+  "observedAt": "2026-08-19T01:21:15.000Z",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -8,38 +8,11 @@
   "organizer": {
     "url": "https://github.com/Layr-Labs/qwen-3.8-mtp-challenge",
     "branch": "main",
-    "syncedCommit": "5068eb8d0bae032faca6e901de398fc732531160"
+    "syncedCommit": "0c90733d383f6b987a29682bf9eb9458a6172bfa"
   },
   "promotedSubmission": {
-    "id": "11863aa9-0dc0-4703-b7a4-eacd473810cb",
-    "sourceRef": "5068eb8d0bae032faca6e901de398fc732531160",
-    "score": 3.24326223889754
-  },
-  "boardTop": {
     "id": "0cd0a6b4-b539-4705-a1c7-cb271c1f9d3b",
-    "id8": "0cd0a6b4",
-    "solver": "ofou",
-    "score": 3.24929398547457,
-    "status": "accepted",
-    "promotedSourceRef": "0c90733d383f6b987a29682bf9eb9458a6172bfa",
-    "headProvenanceSha256Prefix": "559b24eb",
-    "note": "all top 14 rows are on head 559b24eb; official top-10 span 0.521 % but serial-normalised span is only 0.211 % -- ~60 % of top-of-board ordering is serial-leg variation. ofou has the SLOWEST serial leg of all 88 rows on this head (+1.9 sigma tailwind).",
-    "serialNormalisedScore": 3.239188
-  },
-  "ourBestRankedRow": {
-    "id": "ca9251b8-58cd-4d90-9a52-fa05f5657216",
-    "id8": "ca9251b8",
-    "score": 3.23250848263467,
-    "rank": 9,
-    "scoredRowCount": 408,
-    "gapToTopPct": -0.5166,
-    "submissionCommitSha": "2b0c36a078b7660c9215adee933336ff46da25af",
-    "status": "rejected",
-    "rejectionReason": "score did not improve current best",
-    "headProvenanceSha256Prefix": "559b24eb",
-    "note": "FIRST Senpai row ever to run the declared head artifact. effective_mean_draft_len bit-identical to the board top on 8/8 prompts; serial leg faster than top on 8/8 (mean -0.304 %), which COSTS score; beagle mtp_seconds_per_token is the worst of the top 12. Supersedes the retired '5.862 % median gap' framing, which was head artifact, not kernels.",
-    "serialNormalisedScore": 3.23083,
-    "serialNormalisedRank": 11,
-    "trueEngineeringGapPct": -0.258
+    "sourceRef": "0c90733d383f6b987a29682bf9eb9458a6172bfa",
+    "score": 3.24929398547457
   }
 }
