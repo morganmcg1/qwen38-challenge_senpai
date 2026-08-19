@@ -1,0 +1,112 @@
+==============================================================================
+CENSUS -- trusted-parent journal, 512 decode tokens, offered depth 8
+==============================================================================
+
+-- benchfixture
+   rounds 78    mean M 7.2692  max M 9  nondrafting 0
+   offered 489  accepted 434  rejected 55   accept rate 0.8875
+   R + A = 512 (must be 512)   tokens matched True  divergence 0
+   M hist {2: 1, 4: 5, 5: 5, 6: 23, 7: 4, 8: 6, 9: 34}
+   share M>=6: round 0.8590  row 0.9171   w(M=6): round 0.2949 row 0.2434
+
+-- medicine
+   rounds 229   mean M 3.6376  max M 6  nondrafting 0
+   offered 604  accepted 283  rejected 321  accept rate 0.4685
+   R + A = 512 (must be 512)   tokens matched True  divergence 0
+   M hist {2: 6, 3: 108, 4: 86, 5: 21, 6: 8}
+   share M>=6: round 0.0349  row 0.0576   w(M=6): round 0.0349 row 0.0576
+
+-- natural_history
+   rounds 260   mean M 3.2038  max M 5  nondrafting 0
+   offered 573  accepted 252  rejected 321  accept rate 0.4398
+   R + A = 512 (must be 512)   tokens matched True  divergence 0
+   M hist {2: 41, 3: 139, 4: 66, 5: 14}
+   share M>=6: round 0.0000  row 0.0000   w(M=6): round 0.0000 row 0.0000
+
+==============================================================================
+CONTROL -- does the phase trace perturb the counts it reports?
+==============================================================================
+medicine         VACUOUS: both directories hold the same run (2026-08-19T03:10:44Z); no untraced re-run exists
+natural_history  untraced rounds 260  traced rounds 260   element-wise IDENTICAL
+
+==============================================================================
+RANKED -- exact round count and accept rate from published rationals
+==============================================================================
+prompt     n = D/R      R     D     A     alpha   rho     tok/round
+plutarch   75/487       487   75    25    0.3333  0.8370  1.051
+drama      193/84       252   579   260   0.4491  1.0565  2.032
+           rejected by monotone rho: ['R=168/rho=1.585', 'R=336/rho=0.792', 'R=420/rho=0.634', 'R=504/rho=0.528']
+travel     563/212      212   563   300   0.5329  1.1030  2.415
+           rejected by monotone rho: ['R=424/rho=0.552']
+beagle     485/107      107   485   405   0.8351  1.5223  4.785
+           rejected by monotone rho: ['R=214/rho=0.761', 'R=321/rho=0.507', 'R=428/rho=0.381']
+medicine   472/99       99    472   413   0.8750  1.5414  5.172
+           rejected by monotone rho: ['R=198/rho=0.771', 'R=297/rho=0.514', 'R=396/rho=0.385', 'R=495/rho=0.308']
+essays     472/87       87    472   425   0.9004  1.7357  5.885
+           rejected by monotone rho: ['R=174/rho=0.868', 'R=261/rho=0.579', 'R=348/rho=0.434', 'R=435/rho=0.347']
+republic   469/89       89    469   423   0.9019  1.6849  5.753
+           rejected by monotone rho: ['R=178/rho=0.842', 'R=267/rho=0.562', 'R=356/rho=0.421', 'R=445/rho=0.337']
+botany     491/85       85    491   427   0.8697  1.7464  6.024
+           rejected by monotone rho: ['R=170/rho=0.873', 'R=255/rho=0.582', 'R=340/rho=0.437', 'R=425/rho=0.349', 'R=510/rho=0.291']
+
+rho(meanM) = 0.5430 + 0.1770*meanM     R^2 = 0.971116  (8 points, 2 params)
+prompt     meanM     rho       residual 
+plutarch   1.1540    0.8370    +0.08971
+drama      3.2976    1.0565    -0.07033
+travel     3.6557    1.1030    -0.08718
+beagle     5.5327    1.5223    -0.00022
+medicine   5.7677    1.5414    -0.02274
+essays     6.4253    1.7357    +0.05513
+republic   6.2697    1.6849    +0.03190
+botany     6.7765    1.7464    +0.00372
+implied M=1 round cost 0.7201 of a pinned serial token; per-row 0.1770
+
+==============================================================================
+BRACKET -- assumption-free bounds on the ranked M>=6 share
+==============================================================================
+prompt     round [min,max]      ROW [min,max]        TIME [min,max]      
+beagle     [0.1332, 0.8832]     [0.2166, 0.9578]     [0.1869, 0.9312]
+medicine   [0.1919, 0.9419]     [0.2995, 0.9799]     [0.2621, 0.9667]
+depth 0 excluded for both: the ranked worker publishes non_drafting_round_count = 0
+
+==============================================================================
+MAXENT -- the E34 inference class, scored against measured data
+==============================================================================
+arm              mean d   meas r>=6  maxent     meas row>=6 maxent    
+benchfixture     6.2692   0.8590     0.8257     0.9171     0.9049    
+medicine         2.6376   0.0349     0.1587     0.0576     0.3055    
+natural_history  2.2038   0.0000     0.0909     0.0000     0.1940    
+ranked beagle    4.5327   -          0.5062     -          0.6869    
+ranked medicine  4.7677   -          0.5510     -          0.7225    
+
+==============================================================================
+PAYOFF -- OUR row, corrected sigma and headroom
+==============================================================================
+our row ca9251b8   score 3.23250848260 (reported 3.23250848263)
+board top 0cd0a6b4 score 3.24929398550 (reported 3.24929398547)
+draft lengths differing from the RANKED section: none
+rows where raw_p != serial/candidate: none
+identical-tree pairs on the cached board: 0 -- sigma_score cannot be measured here, so it is imported
+sigma_score = 0.0923 % (ledger 131 / E35, effective on the crown's steep profile); 2 sigma = 0.1846 %
+
+gap to the board top, two labelled estimators:
+   R  official ratio-of-medians   -0.5166 %   (ours/top - 1)
+   R' mean_8(own serial)/cand_p   -0.5611 %   (ledger 131 quotes -0.561 %)
+      R' scores: ours 3.227649  top 3.245863  (6.1 sigma)
+
+our ascending order: ['plutarch', 'drama', 'travel', 'beagle', 'medicine', 'essays', 'republic', 'botany']
+scored cells (ranks 4,5) = beagle, medicine; binding upper neighbour = essays at raw_p 3.366118
+beagle    raw_p 3.120154 -> ceiling 3.366118  headroom +7.883 %  saturated score +3.8045 % (41.2 sigma)
+medicine  raw_p 3.344863 -> ceiling 3.366118  headroom +0.635 %  saturated score +0.3288 % (3.6 sigma)
+                                                 both saturated  score +4.1333 % (44.8 sigma)
+
+per 1 % speedup of a beagle cell holding candidate-leg TIME share phi  (sigma_score = 0.0923 %):
+   phi 0.1500 -> score +0.0725 %  (0.79 sigma; 2.5 % cell speedup needed for 2 sigma)
+   phi 0.2000 -> score +0.0967 %  (1.05 sigma; 1.9 % cell speedup needed for 2 sigma)
+   phi 0.2166 -> score +0.1048 %  (1.14 sigma; 1.8 % cell speedup needed for 2 sigma)
+   phi 0.2500 -> score +0.1210 %  (1.31 sigma; 1.5 % cell speedup needed for 2 sigma)
+   phi 0.2734 -> score +0.1323 %  (1.43 sigma; 1.4 % cell speedup needed for 2 sigma)
+   phi 0.3000 -> score +0.1452 %  (1.57 sigma; 1.3 % cell speedup needed for 2 sigma)
+   phi 0.5000 -> score +0.2425 %  (2.63 sigma; 0.8 % cell speedup needed for 2 sigma)
+
+wrote research/results/e37/r2-census.json
