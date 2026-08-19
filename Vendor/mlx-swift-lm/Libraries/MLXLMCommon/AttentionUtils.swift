@@ -193,11 +193,27 @@ enum SdpaWideChunkArm: String {
 /// causality, the selected arm and whether the chunk fired. The route each
 /// call takes is derived offline from the quoted dispatcher conditions, so this
 /// instrument stays free of any device query. Off unless
-/// `MLXFAST_E57_SDPA_TRACE=1`; the local research launcher captures worker
-/// stderr.
+/// `MLXFAST_E57_SDPA_TRACE=1`.
+///
+/// The sink mirrors `Qwen36MTPBlockSession.traceSink`: the `mtp-timed` parent
+/// discards worker stderr, so a readable trace needs an `O_APPEND` file that
+/// the reference, serial and decode workers can share. Every line carries the
+/// writing process id, which is what separates the three legs of one local
+/// run.
 enum SdpaWideChunkTrace {
     static let enabled =
         ProcessInfo.processInfo.environment["MLXFAST_E57_SDPA_TRACE"] == "1"
+
+    private static let sink: FileHandle = {
+        guard let path = ProcessInfo.processInfo
+            .environment["MLXFAST_E57_SDPA_TRACE_PATH"], !path.isEmpty
+        else { return FileHandle.standardError }
+        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+        guard fd >= 0 else { return FileHandle.standardError }
+        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
+    }()
+
+    private static let pid = ProcessInfo.processInfo.processIdentifier
 
     static func call(
         qL: Int, kL: Int, batch: Int, causal: Bool,
@@ -214,10 +230,10 @@ enum SdpaWideChunkTrace {
         } else {
             reason = "widthonly"
         }
-        let line = "e57-sdpa: qL=\(qL) kL=\(kL) b=\(batch) "
+        let line = "e57-sdpa: pid=\(pid) qL=\(qL) kL=\(kL) b=\(batch) "
             + "causal=\(causal ? 1 : 0) arm=\(arm.rawValue) "
             + "chunk=\(chunked ? 1 : 0) reason=\(reason)\n"
-        FileHandle.standardError.write(Data(line.utf8))
+        sink.write(Data(line.utf8))
     }
 }
 
