@@ -759,7 +759,7 @@ METAL_FUNC void qmv_quad_impl(
   }
 }
 
-template <typename T, int group_size, int bits, int E42_PASSES = 0>
+template <typename T, int group_size, int bits>
 METAL_FUNC void qmv_fast_impl(
     const device uint32_t* w,
     const device T* scales,
@@ -798,22 +798,6 @@ METAL_FUNC void qmv_fast_impl(
   biases += out_row * in_vec_size_g + simd_lid / scale_step_per_thread;
   x += tid.x * in_vec_size + simd_lid * values_per_thread;
   y += tid.x * out_vec_size + out_row;
-  // E42 (research-only, never submitted): re-run the whole accumulation
-  // region E42_PASSES extra times. Every pass re-initialises the accumulators
-  // and repeats the unchanged K loop in the unchanged order, so the surviving
-  // final pass is bit-identical to the base kernel by construction.
-  const device uint8_t* const e42_ws0 = ws;
-  const device T* const e42_scales0 = scales;
-  const device T* const e42_biases0 = biases;
-  const device T* const e42_x0 = x;
-  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
-  ws = e42_ws0;
-  scales = e42_scales0;
-  biases = e42_biases0;
-  x = e42_x0;
-  for (int row = 0; row < results_per_simdgroup; row++) {
-    result[row] = 0;
-  }
 
   for (int k = 0; k < in_vec_size; k += block_size) {
     U sum = load_vector<T, U, values_per_thread, bits>(x, x_thread);
@@ -832,7 +816,6 @@ METAL_FUNC void qmv_fast_impl(
     scales += block_size / group_size;
     biases += block_size / group_size;
     x += block_size;
-  }
   }
 
   for (int row = 0; row < results_per_simdgroup; row++) {
@@ -1983,12 +1966,12 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -1996,12 +1979,12 @@ template <typename T, int group_size, int bits, bool batched>
           // 4+4: two weight streams, receipted on this benchmark (scored
           // 3.195804751396457 as a promoted submission) before a later
           // stale-base REPLACE overlay reverted it; restored here.
-          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -2031,22 +2014,22 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64<T, 6>(
+          qmv_fast_crossrow_affine4_g64<T, 6, 2, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64<T, 7>(
+          qmv_fast_crossrow_affine4_g64<T, 7, 2, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          qmv_fast_crossrow_affine4_g64<T, 8>(
+          qmv_fast_crossrow_affine4_g64<T, 8, 2, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64<T, 9>(
+          qmv_fast_crossrow_affine4_g64<T, 9, 2, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -2054,12 +2037,6 @@ template <typename T, int group_size, int bits, bool batched>
           break;
       }
     }
-  }
-  if (ntg.x == 1) {
-    qmv_fast_impl<T, group_size, bits, 1>(
-        w, scales, biases, x, y, in_vec_size, out_vec_size,
-        tid, simd_gid, simd_lid);
-    return;
   }
   qmv_fast_impl<T, group_size, bits>(
       w,
