@@ -153,6 +153,11 @@ run crown-leg-selftest        python3 research/crown_leg_decomposition.py --self
 # requiring the gate to fail FOR THE RIGHT REASON. Both were 12/12 green and
 # nothing had run them.
 run noise-floors-selftest     python3 research/noise_floors.py selftest
+# Companion to noise-floors: that file is the authority on DENOMINATORS, this
+# one on the two leverage NUMERATORS. Its first assertion is that a uniform QMV
+# speedup has a NEGATIVE score derivative. If that ever flips green-to-red the
+# campaign's whole direction changes, so it is a gate and not a note.
+run qmv-leverage-selftest     python3 research/qmv_score_leverage.py selftest
 run scored-surface-controls   bash research/scored-surface-gate-controls.sh
 run frontier-revert-controls  bash research/frontier-revert-gate-controls.sh
 run metallib-guard-controls   bash research/metallib-guard-controls.sh

@@ -6877,3 +6877,221 @@ cannot do it through the legs either.
   wrong answer — the shape of lesson 10, this time in my own instrument. Fixed by indexing with
   `entry["..."]` so a wrong key raises, and by an explicit fail-closed exit when zero sets survive
   the join. **Assume-and-`.get()` is how an analysis script lies to you.**
+
+## 173. 🔴🔴🔴 A UNIFORM QMV SPEEDUP MAKES THE SCORE WORSE. The only QMV win worth having is one gated off M=1 — and we already have that gate for free. Plus: the register ceiling is priced at 8.4 sd and is the largest term in this kernel.
+
+Three results, in dependency order. The first is arithmetic on measured
+quantities and I am confident in it. The second follows from a code fact. The
+third is a decomposition resting on an attribution I have NOT tested, and it
+carries its own falsifier.
+
+### (A) The sign of a QMV speedup, which is not the sign everyone assumed
+
+Two measured inputs, both from askeladd's E42 (merged `65a73455`), which
+injected a large *bit-exact* regression and divided it out — escaping the MDE
+trap by choosing the effect size rather than fighting noise:
+
+    psi_mtp    = 0.6736    QMV share of the CANDIDATE leg (verify widths 2..9)
+    psi_serial = 0.8525    QMV share of the SERIAL leg (width 1 only)
+
+Combine with the score identity of item 103, verified with **0 mismatches**
+over the corpus:
+
+    raw_p = serial / mtp          <-- SERIAL IS THE NUMERATOR
+
+If a change multiplies QMV cost by (1 - x) wherever QMV runs, then each leg's
+total scales by (1 - psi_leg * x), and
+
+    d ln(raw_p) / dx = psi_mtp - psi_serial
+
+    UNIFORM QMV speedup : -0.1789 % of score per 1 %   <-- NEGATIVE
+    GATED off M=1       : +0.6736 % of score per 1 %
+
+**A uniform 10 % QMV win costs 1.789 % of score = 2.33 sd.** It is a
+board-visible LOSS. Every "make the quantized matvec faster" instinct in this
+campaign has had the wrong sign attached to it, because the serial leg is the
+numerator and it is *more* QMV-bound than the candidate leg.
+
+Gated, the same arithmetic gives the campaign its **first properly calibrated
+target** — causally measured numerator, measured denominator:
+
+    clears the crown gap 0.5193 % : 0.771 % QMV cost reduction (0.860 % at psi floor)
+    clears 1 sd          0.7678 % : 1.140 %                    (1.271 %)
+    clears 2 sd          1.5356 % : 2.280 %                    (2.542 %)
+
+The floor column uses askeladd's conservative psi_mtp = 0.604. Script:
+`/tmp/psi2.py`, which asserts the uniform sign is negative and both targets
+before printing.
+
+### (B) The gate already exists. We do not have to build it.
+
+Width 1 dispatches `qmv_fast_impl`. Widths 2..9 dispatch the crossrow
+`qmv_fast_crossrow_affine4_g64_m<...>` family. **They are different code
+paths.** Therefore any optimisation confined to the `_m` crossrow helpers
+cannot touch the serial leg, and automatically earns the gated +0.6736 %/%
+rather than the uniform -0.1789 %/%.
+
+This is a large, free, previously unrecognised advantage, and it makes the
+crossrow family the only place in the kernel worth optimising.
+
+🔴 The converse is the line item 103 draws, and it has not moved: *deliberately
+pessimising the M=1 path would also raise the score, and it is benchmark
+gaming.* Shape-gating our own optimisation off M=1 is legitimate because the
+optimisation is real; slowing M=1 is not, because nothing is.
+
+Corroboration that the legs really are separable this way: askeladd's m1
+control injected a regression into width-1 QMV and raw_p rose 2.315 -> 3.103.
+Slowing width 1 RAISES the score, which is only possible if width-1 QMV sits
+predominantly in the numerator.
+
+### (C) E27, decomposed: two local stream wins minus one shared ceiling step
+
+E27 moved M=5 and M=9 from IPG 3 to IPG 5 under NA<=5, and lost **0.3321 % of
+score**. It has been carried as "raising registers costs score", which is true
+and far too weak. Decomposing it prices the term:
+
+Local wins, from thorfinn's E46 refit `T = 16.757 + 27.532*ceil(M/IPG) +
+9.624*M` (max|resid| 0.770 ms) and askeladd's dispatched-width histogram
+(78 dispatches, 1/5/5/23/4/6/34 over M = 2/4/5/6/7/8/9):
+
+    M=5: 2 streams -> 1     local -22.9 %, weighted -1.171 % of QMV cost
+    M=9: 3 streams -> 2     local -14.8 %, weighted -7.963 % of QMV cost
+                                    total -9.134 % of QMV cost
+                            x psi_mtp = +6.153 % of score expected
+
+    observed                          -0.3321 % of score
+    residual                          -6.485 % of score = 8.4 sd
+
+That residual is the price of the shared register step: kernel-wide max
+**108** (`<T,7,4>`) -> **129** (`<T,9,5>`), Delta **+21**, measured, ledger
+5213. There is exactly one `[[kernel]]` and every helper is `METAL_FUNC`
+inline (alphonse E40), so the allocation is shared by every width — the wins
+are bought at two widths and the step is paid at all seven.
+
+**M=9 alone is 53.8 % of candidate-leg QMV time** (34 of 78 dispatches at the
+largest T). A 2-stream M=9 that stayed at <= 108 registers would be worth
+**+5.36 % of score = 7.0 sd**. Nothing else on the roadmap is within an order
+of magnitude of that; every other lever we have is *below* the 0.7678 % board
+floor (item 172, and `research/noise_floors.py` check 7 asserts it).
+
+Why M=9 cannot get there today: legal IPG requires `2 <= IPG <= NA_max` and
+`M % IPG != 1`. Under NA<=4 the only legal IPG for M=9 is 3, i.e. three
+streams. Two streams needs IPG 5, needs NA=5, and `<T,9,5>` measures 129.
+`static_assert(NA >= 2 && NA <= 4)` at `quantized.h:980` is the wall.
+
+🔴 **THE ATTRIBUTION IS A HYPOTHESIS AND I HAVE NOT TESTED IT.** Everything in
+(C) assumes the entire E27 shortfall is the register step. Named alternatives
+that would produce the same arithmetic:
+
+  (a) **The histogram is corpus-wide.** The score is the mean of the 4th and
+      5th order statistics = **beagle and medicine ONLY**; the other six
+      prompts have value 0.0000 (item: value ladder, beagle +0.1752 % / 79 %,
+      medicine +0.0455 % / 21 %). beagle's mean M is **5.533** against the
+      corpus 7.269. If beagle's and medicine's mixes are much less M=9-heavy,
+      `local_win(9)` is overstated *for the only two prompts that score*, and
+      the residual shrinks with it.
+  (b) T(M) and the 27.532 ms stream coefficient are microbenchmark numbers.
+      Only the RATIO transfers, and only if QMV time per dispatch really is
+      proportional to T(M).
+  (c) E27 shipped more than the two IPG cells; this treats it as if it did not.
+
+  **Falsifier, and it gates the whole item: measure the per-width dispatch
+  histogram FOR BEAGLE AND MEDICINE SEPARATELY.** If M=9 is not ~54 % of their
+  QMV time, (a) holds and the prize is smaller than stated. This is cheap,
+  it needs no timing precision, and it must run before anyone spends a turn
+  hunting 21 registers. Script: `/tmp/e27price.py`.
+
+  Note also that occupancy is a STEP function, so "0.309 % of score per
+  register" is arithmetic, not physics. It is only meaningful if 108 and 129
+  sit on opposite sides of exactly one boundary. thorfinn found
+  `maxTotalThreadsPerThreadgroup = 1024` saturated in both arms, so our
+  occupancy instrument is currently too weak to see the boundary at all —
+  which is why the step has stayed invisible.
+
+### (D) Retraction I must broadcast: 89 was never available
+
+I told thorfinn the register headroom was `108 -> 89`. alphonse retracted it
+himself: **89 holds only for the all-widths simdgroup_matrix variant, which is
+not bankable at net -7.341 %.** The bankable M in {7,8} variant leaves
+`_m<T,4,4>` at 104, so the ceiling is **104, a -3.7 % reduction, not -17.6 %**.
+His words: "Please stop using 89 as headroom." That correction reached a
+student through him and not through me, which is the sixth time I have quoted
+a constant without its tree.
+
+Nor does simdgroup_matrix help where the prize is: alphonse measured M=9 at
+**-10.37 %** (attn_out) and **-11.66 %** (mlp_down), because the fixed 8-row
+MMA tile makes candidate cost flat in M and M=9 needs a second tile (1.6x the
+plateau). The register lever and the M=9 stream lever do not currently compose.
+
+### (E) Gate suite 15 -> 25, and the category behind it
+
+thorfinn found `research/twin_audit.py` RED at HEAD. It exits 1 correctly and
+was in no suite. My standing "15/15 GREEN" was true and worthless.
+
+It was not a one-off. A sweep for "checks that exist but nothing runs" found
+**34 of 47** candidates named nowhere in `senpai/run-all-gates.sh`. Most are
+frozen per-experiment analyses that belong nowhere near a suite; nine were
+standing invariants, now wired in, including the two CONTROL suites that are
+what make the surface gates evidence rather than decoration (both 12/12 green,
+never run) — and `research/noise_floors.py selftest`, **which I wrote last turn
+and never wired in**.
+
+What twin_audit was red about, and why I did NOT fix it: `quantized.h` case 8
+carries 17 persuasive lines arguing for `<T,8,3>` above code dispatching
+`<T,8,4>`. Making the code match costs **+18.72 %** (E46, pre-registered ABBA,
+8/8 shapes, sign p=0.0078), corroborated at +19.02 % by E27 probe `7b5183d` on
+a different base. I rewrote the comment in both twins — and then the surface
+gates showed me the bill: **both paths are held byte-identical to the frontier
+on purpose** (the E27 revert, 0.3321 % of score), `scored-surface-gate.sh`
+ASSERTS that identity as part of the FRONTIER-TAKEN ack, and any edit converts
+them into files our overlay REPLACES on the tip. `mlx-generated/quantized.cpp`
+is also JIT-compiled Metal source, so comment lines there are not provably free
+on a benchmark where JIT cost is inside the timed window. And the trap is
+**inherited** — organizer `474c750` ships both blobs.
+
+So: record the divergence, do not remove it, defend the CODE instead. One
+fail-closed `KNOWN_COMMENT_DIVERGENCES` row (both bodies sha256-pinned, all
+3005 non-comment lines identical, provenance named), plus four
+`campaign-invariants` entries — `present` on `<T, 8, 4, true>`, `absent` on
+`<T, 8, 3, true>`, in both twins. Those guard CODE, not prose, deliberately: a
+comment-text invariant would have been satisfied by the very comment that
+caused the problem.
+
+Verified by CONSTRUCTION, applying the exact hazardous edit and asserting it
+landed:
+
+    state                twin_audit   invariants   violations
+    clean                0            0            0
+    .h only mutated      1 (RED)      1 (RED)      2
+    BOTH twins mutated   0 (green)    1 (RED)      4     <-- the whole point
+    restored             0            0            0
+
+Row 3 is the justification: a consistent edit to both twins is INVISIBLE to
+twin_audit, because twin_audit asks whether the files agree, not whether they
+are right.
+
+`twin_waiver_negative_control.py` asserted the waiver table was EMPTY.
+Emptiness was never the real invariant — a row is dangerous when it is DEAD.
+Replaced with "the table and the tree AGREE", which is strictly stronger here:
+"nothing waives any of 3005 single-code-line mutations" was trivially true
+against an empty table and is now a real exercise of the code-lines guard.
+
+### LESSONS
+
+  1. 🔴🔴🔴 **Ask what a change does to the NUMERATOR.** `raw_p = serial/mtp`
+     has been in the ledger since item 103 and I still had to be shown, by a
+     measured psi, that "make the kernel faster" carries a minus sign. A
+     performance campaign whose score is a RATIO is not a performance campaign.
+  2. 🔴🔴🔴 **Two levers that each look good can be the same lever with
+     opposite signs.** Stream count and register count are not independent
+     axes; buying one spends the other, and E27 is the receipt.
+  3. 🔴🔴 **A red gate outside the suite is indistinguishable from no gate** —
+     and it is a CATEGORY, not an incident. 34 of 47. Sweep for it.
+  4. 🔴🔴 **Fixing a wrong comment can cost more than the comment.** Ask what
+     the edit does to byte-identity with the frontier before improving prose on
+     a scored path.
+  5. 🔴🔴 **"Independent" means no shared mutable state, not "different
+     commands".** I ran twin_audit and a selftest that MUTATES the twin blob as
+     a parallel batch, and got a confident, wrong RED.
+  6. 🔴 **Quote no constant without its tree.** Sixth occurrence: my `89` had
+     to be retracted by the student I gave it to.
