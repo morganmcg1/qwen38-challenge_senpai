@@ -1640,6 +1640,121 @@ evidence or a changed condition; “try again” is not enough.
     `rows_per_simd`, `ceil(M/IPG)`, NA, or widths 5/6/7.
 
 
+98. 🔴🔴🔴 **The declared head artifact is the single strongest determinant of
+    ranked score in the entire population — and NOT ONE of our scored submissions
+    has ever used the winning one, so we have never had a valid ranked
+    measurement of our kernel work.** `head_provenance_sha256` is the *declared
+    head artifact* digest, not a runtime fingerprint; receipt
+    `research/e11-notes.md:1101`, "declared head (`head_provenance_sha256
+    07293af7...`, 2 files, 238937699 bytes)". Grouping all 627 ranked submissions
+    by that field:
+
+    | head artifact | rows | best | median |
+    |---|---:|---:|---:|
+    | **`559b24ebca35`** | **87** | **3.24929** | **3.18463** |
+    | `2edd8b91f222` | 3 | 3.19853 | 3.18331 |
+    | `477ba7266c6f` | 46 | 3.16766 | 3.10262 |
+    | `7d6270279586` | 64 | 3.08598 | 2.93339 |
+    | `2f6805e1c8b7` (**ours**, LR3) | 1 | 3.06938 | 3.06938 |
+    | `cc209e30d8a7` | 107 | 2.92976 | 2.86532 |
+    | `157f750eb467` | 66 | 2.83386 | 1.95397 |
+
+    **The `559b24eb` population's MEDIAN (3.18463) beats every other artifact's
+    BEST**, and no other artifact has ever exceeded 3.19853. Our own history:
+    `4437d061` → `5cbc5537` (2.86127), `9197ed62` → `2f6805e1` (3.06938, the LR3
+    head), two `failed` rows with no metrics, and `ca9251b8` still validating.
+    Count of our scored rows on `559b24eb`: **zero**. The ledger already knew
+    both scored rows were head plays (rows at `:568` and `:571`); what it did not
+    draw is the structural consequence — **the "we are 5.9 % behind the top"
+    number is an artifact of the head excursions and says nothing whatever about
+    our kernels.** `ca9251b8` (E27 + promoted memory policy, head `559b24eb`) is
+    the first honest ranked datapoint the campaign will ever have, which makes it
+    the most valuable pending unknown. Do not size any kernel decision against
+    `9197ed62`.
+
+    Mechanism, per prompt, ours (`9197ed62`) vs board top (`0cd0a6b4`) — a worse
+    head shows up as lower acceptance, and the s/tok penalty tracks it
+    monotonically:
+
+    | prompt | n ours | n top | Δn % | Δ mtp s/tok % |
+    |---|---:|---:|---:|---:|
+    | plutarch | 0.160 | 0.154 | +3.57 | +0.65 |
+    | drama | 2.163 | 2.298 | −5.84 | +2.44 |
+    | travel | 2.575 | 2.656 | −3.05 | +2.77 |
+    | beagle | 4.198 | 4.533 | −7.38 | +3.63 |
+    | medicine | 4.519 | 4.768 | −5.21 | +3.33 |
+    | essays | 5.000 | 5.425 | −7.84 | +3.20 |
+    | republic | 4.683 | 5.270 | −11.13 | +6.05 |
+    | botany | 5.040 | 5.776 | −12.76 | +9.88 |
+
+    Two corollaries worth keeping. (i) `qwen_mtp_weights_hash` is **identical**
+    (`b53e4991…`) between our row and the top's, so the backbone is not in play —
+    only the head. (ii) 🟢 **First ranked-side confirmation of the two-derivative
+    rule**: our `baseline_serial_seconds_per_token_mean` was 0.0379753 against
+    the top's 0.0380649 — our serial leg was **0.24 % faster, which cost us
+    0.24 % of score**. The retracted "pinned denominator" claim is now refuted
+    *and* the corrected model is confirmed from ranked telemetry, not from
+    documentation. (iii) This makes item 96 more important, not less: local runs
+    resolve `7bbb40de` (270,408,194 B) and `07293af7` (238,937,699 B) rather than
+    the declared `559b24eb` (427,742,600 B), i.e. every local acceptance number
+    in the campaign is measured on an artifact the population test says is
+    materially worse. Per-width *cost* ratios are within-head and still transfer;
+    acceptance, realised depth and round-mass weighting do not.
+
+99. 🟢🟢🟢 **E32 (askeladd, terminal, green): NA ≥ 6 is reachable spill-free, my
+    proposed mechanism for getting there was wrong, and the replacement is
+    free.** I told him to buy NA by spending `rows_per_simd`. That is a
+    **correctness wall, not a trade**: the host dispatch at
+    `backend/metal/quantized.cpp:251-254` is frozen (`bn = 8`,
+    `group_dims(32,2,1)`, `grid.y = (N+7)/8 = 2176`) and is **not** in
+    `editablePaths`, so any `r < 4` leaves rows of `N = 17408` unwritten — r=2
+    would compute 8704 of 17408 rows. Had thorfinn built what I described he
+    would have shipped silently wrong logits. The replacement covers the same 4
+    rows as `4/r` **sequential row blocks**: registers are live-range-bound so
+    residency halves, weight traffic is unchanged per block, and only the cheap
+    activation read is repeated. Decision table (coverage-preserving, frozen grid
+    intact):
+
+    | M | shipped | passes | target | regs/alloca | passes | ALU | weight passes |
+    |---:|---|---:|---|---|---:|---|---|
+    | 3/4/5 | `<T,3,3>`/`<T,4,4>`/`<T,5,5>` | 1 | unchanged | 83/104/125 | 1 | +0 % | — |
+    | **6** | `<T,6,3>` | **2** | **NA=6, r=2 blocked** | **117/1 clean** | **1** | **+6.4 %** | **−50 %** |
+    | 7 | `<T,7,4>` | 2 | NA=7, r=2 blocked | 134/1 clean | 1 | +8.5 % | −50 % |
+    | 8 | `<T,8,4>` | 2 | NA=8, r=2 blocked | 151/1 clean | 1 | +10.3 % | −50 % |
+    | 9 | `<T,9,5>` | 2 | NA=9, r=2 blocked | 168/1 clean | 1 | +11.7 % | −50 % |
+
+    🟢 **The de-risking fact: the primary target (NA=6, r=2, 117 regs) sits
+    BELOW the 125-register `<T,5,5>` cell that E27 already ships and already
+    measured fast.** My register model was **falsified**: the product model
+    `35.5 + 5.96·(r·NA)` has max residual 49 regs and does not even determine the
+    verdict (NA=6/r=4 spills at 144 while NA=12/r=2 is clean at 196). The correct
+    model is affine in NA at fixed r, `slope(r) = 8.36 + 3.19·r`, max residual
+    **0.25** — `r=2: 16 + 15·NA`, `r=4: 20 + 21·NA` — which reproduces E27's
+    62/83/104/125 ladder digit-for-digit and splits exactly into r-independent
+    x-side registers (5 floats/NA) and per-row acc/partial registers (2
+    floats/NA/row). Also carried: `<T,6,5>` (alphonse's E30 follow-up suggestion)
+    is **illegal** (`6 % 5 == 1` trips `static_assert(M % IPG != 1)`) and would
+    not help anyway (still 2 passes); and E27's `<T,8,3,true>` counter-example —
+    19 % slower with *fewer* registers — means spill-freedom is a gate, never a
+    predictor.
+
+100. 🟢 **The Yukon submissions API exposes competitors' `note` but no diff**, so
+    our `senpai/**` ledger and advisor briefs are **not** competitor-visible
+    through the API; only the `note` field is a leak, and only the static
+    reviewer sees `submission_diff`. Full single-submission key set:
+    `benchmarkId, claimedScore, createdAt, id, improved, note, officialMetrics,
+    officialScore, promotedSourceRef, promotionFinishedAt, promotionReason,
+    promotionSnapshotRef, promotionStatus, rejectionReason, solverAccountId,
+    solverAvatarUrl, solverProfileUrl, solverUsername, status,
+    submissionCommitSha, updatedAt`. Residual exposure is `submissionCommitSha` /
+    `promotionSnapshotRef` if the repo is reachable. Instrument trap that cost a
+    call: the submission envelope is **camelCase** (`solverUsername`,
+    `officialScore`, `officialMetrics`) while the nested `per_prompt` rows are
+    **snake_case** (`effective_mean_draft_len`, `head_provenance_sha256`,
+    `raw_ratio_of_means`) — a snake_case filter on the envelope silently returns
+    zero rows rather than erroring.
+
+
 ## Advisor process lessons, 2026-08-17
 
 These are mechanism-free but they cost real time, so they belong in the ledger.
