@@ -1783,3 +1783,1301 @@ These are mechanism-free but they cost real time, so they belong in the ledger.
   that needs defending** (carried forward from PR #2, still the most useful
   single line about my own failure mode). Related: a stop signal that is monotone
   in the mechanism I have in mind is not automatically monotone in the objective.
+
+## 2026-08-19: the first honest ranked row. We are rank 9, not 5.9 % behind.
+
+Submission `ca9251b8-58cd-4d90-9a52-fa05f5657216` (commit `2b0c36a0`, created
+2026-08-18 22:44, resolved 00:41) is **the first Senpai submission in this
+campaign that ran the declared head artifact**. It scored
+**3.23250848263467**, `rejected` with `score did not improve current best` —
+the benign class (61.4 % of all rejections; every rejection at score >= 3.0 is
+this one).
+
+### 101 — We are **rank 9 of 408** scored rows, 0.517 % behind #1
+
+| rank | id8 | solver | score |
+|---:|---|---|---:|
+| 1 | `0cd0a6b4` | ofou | 3.24929399 |
+| 2 | `b0994092` | fkiene | 3.24417897 |
+| 3 | `11863aa9` | companygardener | 3.24326224 |
+| 4 | `4f76de6e` | alfranli123 | 3.24300059 |
+| 5 | `de7981ae` | WillGasser | 3.24077781 |
+| 6 | `3ec77796` | xadenryan | 3.23460814 |
+| 7 | `942e5ab2` | Kamciosz | 3.23415183 |
+| 8 | `e9f38898` | Lieisyourlie | 3.23409850 |
+| **9** | **`ca9251b8`** | **morganmcg1 (us)** | **3.23250848** |
+| 10 | `efe01dcf` | paul-hf | 3.23244884 |
+| 11 | `3a995c2b` | SSHdotCodes | 3.23222999 |
+| 12 | `070f1189` | scarletbright | 3.23167066 |
+
+**All top 14 rows are on head `559b24eb`.** The head is the gate into the top
+cluster and we are now through it. Ranks 6..12 span **0.09 %** — seven rows
+inside a tenth of a percent.
+
+🔴 **This retires the "5.862 % median gap" framing entirely.** That number was
+measured on head `2f6805e1` (our LR3 trained head) and was almost all head
+artifact. Corrected standing: **3.23251, gap to #1 = 0.517 %.**
+
+Score identity re-confirmed exactly on both rows: sorted per-prompt
+`raw_ratio_of_means`, score = mean(4th, 5th) = **beagle + medicine**.
+Ours: mean(3.12015, 3.34486) = 3.2325085. Top: mean(3.14333, 3.35526) =
+3.2492940. Note that `officialMetrics.mtp_decode_speedup_median` (3.1202) is
+**not** the score — do not read it as one.
+
+### 102 — Acceptance is now a **closed** lever, by exact measurement
+
+`effective_mean_draft_len` is **bit-identical to the board top on 8/8 prompts**:
+plutarch 0.1540, drama 2.2976, travel 2.6557, beagle 4.5327, medicine 4.7677,
+republic 5.2697, essays 5.4253, botany 5.7765. Difference `+0.000 %` on every
+prompt. `qwen_mtp_weights_hash` identical (`b53e4991…`), `parity_all_ok` true,
+`mtp_depth` **8** on both rows.
+
+Consequences:
+
+- Our manifest declaration is **correct and working**. Do not touch
+  `mtp-head.manifest.json`.
+- **Every point of separation in the top cluster is per-row cost.** Within the
+  88 rows on head `559b24eb`, **73 carry this exact acceptance fingerprint** and
+  they span **2.325595 → 3.249294 (+39.7 %)**, median 3.196209. Identical
+  proposal/acceptance behaviour, 39.7 % of score range. Cost is the whole game.
+- 🔴 `mtp_depth = 8`, not 5. My earlier inference "n = 4.533 implies depth 5 at
+  p ~ 0.965" was **wrong**: the field is in `officialMetrics` and says 8. At
+  depth 8, n = 4.5327 implies uniform p ~ **0.871**. Any sizing that assumed
+  depth 5 or p = 0.965 must be redone.
+
+### 103 — 🔴 Our serial leg is faster than the top's on **8/8 prompts**, and that costs us score
+
+| prompt | serial ours | serial top | delta |
+|---|---:|---:|---:|
+| plutarch | 0.0379678 | 0.0380471 | −0.2085 % |
+| drama | 0.0379057 | 0.0380357 | −0.3417 % |
+| travel | 0.0379038 | 0.0380867 | −0.4800 % |
+| beagle | 0.0379849 | 0.0381076 | −0.3220 % |
+| medicine | 0.0380265 | 0.0381029 | −0.2005 % |
+| republic | 0.0379579 | 0.0380236 | −0.1728 % |
+| essays | 0.0378929 | 0.0379771 | −0.2219 % |
+| botany | 0.0379546 | 0.0381388 | −0.4828 % |
+| **mean** | **0.0379493** | **0.0380649** | **−0.304 %** |
+
+Population serial sd is 0.23 % per leg, so any single prompt is unremarkable —
+but **8/8 with the same sign is p = 2^-8 = 0.4 %**. This is systematic, not
+noise. It is also not a box-speed effect: a faster box would have moved *both*
+legs, and our MTP leg moved the **other** way.
+
+`R = serial / mtp`, so the serial leg is the **numerator**. Making the
+non-drafting decode path faster **lowers our score**. Sizing: had our serial
+matched the top's, beagle → 3.12015 × 1.00322 = 3.13020 and medicine →
+3.34486 × 1.00201 = 3.35158, giving **3.24089 — rank 5**, from *undoing* an
+optimisation.
+
+**Doctrine (competitor-confirmed).** newjordan, accepted 3.1935: *"The narrow
+[1024, 4096) branch never fires in the serial leg … the 2-bit branch fires only
+when `bits == 2 && out_vec_size == 98336`. So the serial numerator and the
+serial-denominator band are byte-for-byte unchanged."* Every shipped
+optimisation must be **shape-gated off the M=1 path**.
+
+🔴 **The ethical line, stated once.** Shape-gating or reverting *our own*
+optimisation so it no longer fires on the serial leg is legitimate engineering —
+we simply stop shipping a change that is counterproductive under the metric.
+**Deliberately injecting a pessimisation into the serial leg is benchmark
+gaming** and `Review submitted code for benchmark bypasses` is a live rejection
+class with 18 hits. Never cross that line.
+
+### 104 — Our candidate leg is the **worst of the top 12** on beagle
+
+Per-row verify cost via the exact re-parameterisation
+`h̄ = [(1 + 0.99·n)/R − 1]/n`:
+
+| id8 | solver | score | h̄ beagle | h̄ medicine | mtp beagle |
+|---|---|---:|---:|---:|---:|
+| `0cd0a6b4` | ofou | 3.249294 | **0.16452** | 0.14783 | **0.0121233** |
+| `b0994092` | fkiene | 3.244179 | 0.16480 | 0.14867 | 0.0121385 |
+| `11863aa9` | companygardener | 3.243262 | 0.16498 | 0.14872 | 0.0121454 |
+| `4f76de6e` | alfranli123 | 3.243001 | 0.16602 | 0.14787 | 0.0121258 |
+| `3ec77796` | xadenryan | 3.234608 | 0.16725 | 0.14860 | 0.0121261 |
+| `942e5ab2` | Kamciosz | 3.234152 | 0.16635 | 0.14948 | 0.0121587 |
+| `e9f38898` | Lieisyourlie | 3.234099 | 0.16563 | 0.15012 | 0.0121339 |
+| **`ca9251b8`** | **us** | **3.232508** | **0.16738 (worst)** | 0.14894 | **0.0121740 (worst)** |
+| `efe01dcf` | paul-hf | 3.232449 | 0.16660 | 0.14963 | 0.0121346 |
+| `3a995c2b` | SSHdotCodes | 3.232230 | 0.16648 | 0.14978 | 0.0121476 |
+| `070f1189` | scarletbright | 3.231671 | 0.16626 | 0.15009 | 0.0121559 |
+| `a4a69447` | rinaldofesta | 3.229695 | 0.16712 | 0.14977 | 0.0121619 |
+
+Our beagle `mtp_seconds_per_token_mean` is the **highest (slowest) of the top
+12**, and our medicine h̄ is mid-pack. So we hold rank 9 *despite* the worst
+wide-width candidate performance in the cluster.
+
+Per-prompt MTP-leg penalty vs the top, ordered by n:
+
+| prompt | n | mtp delta |
+|---|---:|---:|
+| plutarch | 0.154 | +0.049 % |
+| drama | 2.298 | −0.008 % |
+| travel | 2.656 | −0.037 % |
+| beagle | 4.533 | **+0.418 %** |
+| medicine | 4.768 | +0.110 % |
+| republic | 5.270 | **+0.426 %** |
+| essays | 5.425 | **+0.506 %** |
+| botany | 5.776 | +0.206 % |
+
+🔴 **The penalty is zero on every narrow prompt and appears only where n > 4.5.**
+Narrow rounds (M <= 4) are at parity with the top; the wide widths are where we
+lose. This is the first **ranked-side** localisation of our deficit to the wide
+crossrow dispatch, and it is independent confirmation of E33's target. It is
+also a caution: E27 made M=5 and M=9 single-pass and measured −6.56 % E2E
+locally, yet on the ranked box our wide widths are the cluster's worst. Either
+E27's local gain did not transfer, or it did and we would otherwise be far
+worse. **We cannot distinguish without a control row on this head**, and no
+duplicate-commit pairs exist in the 88-row population to calibrate from.
+
+Corrected sizing for E33, replacing "+8 % to +25 % of score" (which was derived
+from the phantom 5.9 % gap and is **wrong by an order of magnitude**): a
+uniform 5.4 % reduction in h̄ on the central pair — e.g. a 0.82 per-row cost
+ratio on M=6 rounds carrying ~30 % of round mass — yields beagle 3.1947 and
+medicine 3.4215, i.e. **3.30809, +1.81 % over the top**. On a board where
+ranks 6..12 span 0.09 %, +1.81 % is enormous. Size against **0.517 %**, not
+against 5.9 %.
+
+### 105 — 🔴 RETRACTION: "our M=6/IPG/NA line is not scooped" was false
+
+I asserted, and repeated in four assignment briefs, that *"no note among 627
+mentions IPG, `rows_per_simd`, `ceil(M/IPG)`, NA, or widths 5/6/7."* A correct
+scan of all 628 notes (every row has a note):
+
+| term | notes | top scorer mentioning it |
+|---|---:|---|
+| `crossrow` | **175** | `11863aa9` companygardener 3.24326 (accepted) |
+| `qmv_fast` | **147** | `11863aa9` 3.24326 |
+| `IPG` | **96** | `e9f38898` Lieisyourlie 3.23410 |
+| `warmAllDepths` | **78** | **`0cd0a6b4` ofou 3.24929 — the #1, plus ranks 2, 3, 4** |
+| `weight stream` | 62 | `e9f38898` 3.23410 |
+| `sdpaWidthWallDepthCap` | **48** | `efe01dcf` paul-hf 3.23245 |
+| `values_per_thread` | 13 | `72ce82dc` scarletbright 3.22826 (accepted) |
+| `rows_per_simd` | 3 | `e9f38898` 3.23410 |
+
+The earlier grep was broken (it must have run against a truncated row set).
+**Lesson: a zero-hit result on a corpus scan is a claim about my tooling, not
+about the world, and must be validated on a known-positive before it is
+believed — let alone repeated to four students as "nobody else is here."** This
+is the same discipline I demand of students' negative controls and I failed to
+apply it to myself.
+
+What survives: the specific **row-blocked `4/r` coverage-preserving
+reformulation** of the wide crossrow QMV is not described in any note. The
+**axis** is crowded; the mechanism is still ours.
+
+### 106 — `values_per_thread = 32` is already shipped at rank, on a path we do not care about
+
+From `e9f38898` (Lieisyourlie, rank 8), quoting the promoted `#530` body for
+`qmv_fast_singlerow_affine2_g64<T>`: *"`values_per_thread = 32` — one `uint64`
+load (32 packed 2-bit values) per output row per k-block … `rows_per_simd = 4`
+… this halves packed loads and scale/bias lookups versus the generic 16-value
+form, and quarters the k-block count."* Dispatch gate: `bits == 2 &&
+out_vec_size == 98336 && ntg.x == 1`.
+
+And explicitly untouched by them: *"Every `bits == 4` dispatch cell, including
+the live M=8 `4+4` (`qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>`)."*
+
+So: the axis is proven not to spill on ranked M5 hardware, on the **2-bit
+single-row draft readout** — a path our own E31 measured at 0.013 % of round
+time. **E36's target (the wide 4-bit crossrow MLP QMV, 59 % of verify time)
+remains untouched by anyone.** The gate `ntg.x == 1` is also a textbook
+worked example of item 103's shape-gating doctrine.
+
+### 107 — 🔴 The FP32 reassociation legality boundary, and a ranked-measured hazard
+
+Lieisyourlie's own numerics section: *"The wider lane coverage reassociates the
+FP32 partial-sum tree (32 products accumulate per lane-interior before the
+k-block add, versus 16 in the generic per-byte-quad order). That perturbs
+rounding at the last-ulp level. It is legal **for this stage** by the promoted
+draft-rerank contract: the coarse shortlist is approximate by design, the exact
+affine-4 rerank … decides the proposal, and the unchanged target verification
+decides every emitted token."*
+
+The converse is measured. companygardener, on the **target** side: *"Half-footprint
+splits each affine-4/group-64 group across eight lanes instead of four …
+the pairing and the within-lane K tile change, so last-ulp target logits move.
+The public fixture can pass … while a hidden prompt flips a near-tie argmax."*
+That scored 3.22444 and was rejected; their follow-up accepted at 3.24326 says
+simply *"Stay off the verify reduction tree."*
+
+**Rule: reassociation is licensed on the coarse/draft path and forbidden on the
+verify path.** E33 row-blocks a kernel used by the verify leg, so it must
+preserve the per-row K-reduction order exactly, not merely produce
+"numerically equivalent" results. Row blocking changes which rows a thread
+visits, not the within-row accumulation order — but that must be *demonstrated*,
+because the local fixture cannot detect the failure.
+
+### 108 — 🔴 `headStepCostRatio` 0.18 → 0.16 is a clean isolated ranked A/B: −1.164 %
+
+`a1326b4b` (Lieisyourlie, 2026-08-18 05:23, **3.15370**), base `036fd9ca` at
+**3.19088**. Their own description: *"This archive changes only
+`private static let headStepCostRatio = 0.16` … Amal's `Qwen35.swift` rerank,
+`mtp-head.manifest.json`, kernels, warmup, streak gate, and depth caps are
+byte-identical."*
+
+**One constant, everything else byte-identical, −1.164 % at rank.** Lowering `h`
+makes the cost model price a draft step *cheaper*, so the session drafts more
+deeply — and that is measured worse. This is the ranked-side falsification of the
+"`h = 0.18` is mis-calibrated, lower it" line that E25 kept circling, and it
+converges with the already-established "deeper is worse at the ranked operating
+point."
+
+Note the direction carefully: it does **not** close `sdpaWidthWallDepthCap`
+5 → 4, which pushes capped rounds *shallower* (M=6 → M=5). That is the opposite
+sign and remains open.
+
+Their own dead-axis table, worth carrying wholesale:
+
+| archive | score | mechanism |
+|---|---:|---|
+| `3ba27d91` | 3.21191 REJ | fusion restore on top-32 tip |
+| `b0f127d5` | 3.20407 REJ | AndNormed warm |
+| `eee31a36` | 3.18005 REJ | mid-width nibble on Amal head |
+| `a1326b4b` | 3.15370 REJ | **h 0.18 → 0.16** |
+| `a56eecd4` | 3.12613 REJ | mid-width on welt head |
+| `9100a4e…` | 3.07827 REJ | cold prior 0.90·0.99^d |
+
+Also confirmed by them: *"`RuntimeStartupMemoryPolicy.swift` — SSH's full-memory
+wire and 512 MiB / 50-op command-buffer geometry stay"* — independent agreement
+with our E31 command-buffer geometry finding.
+
+### 109 — `NAX` in competitor notes is Apple's M5 neural-accelerator path, **not** our NA
+
+19 notes mention `NAX`; the usages are *"NAX M=512 tile"*, *"Paired GQA
+attention and NAX unroll-count experiment"*, *"NAX paths are not in this diff."*
+This is the same NAX our own ledger already adjudicates at lines 258 and 310
+(*"SURVIVES: the decode QMV path is non-NAX on both hosts"*). Lieisyourlie's
+*"do not copy … #532 NAX"* therefore does **not** pre-kill E33's NA axis or
+E36's `values_per_thread` axis. I checked this specifically because a
+dead-axis list from a rank-8 competitor naming our mechanism would have been
+grounds to cancel two live assignments.
+
+### 110 — `warmAllDepths` self-calibration is in the top 4 rows and we have never touched it
+
+78 notes mention `warmAllDepths`, including **ranks 1, 2, 3 and 4**. The
+mechanism, from AndreasHad04 (`a0110f2a`): *"`warmAllDepths` already dispatches a
+verify at every legal width … OUTSIDE every scored window. It now runs that
+sequence three times: pass 0 compiles …, passes 1 and 2 are timed and the
+per-width minimum is kept."*
+
+🔴 **This is the structural answer to the campaign's single biggest epistemic
+problem.** Every width/depth constant we have argued about — `h = 0.18`,
+`sdpaWidthWallDepthCap`, `costModelDepth`, the `F`/`S` split — is a
+hand-tuned constant fitted on an M4 Pro with the wrong head artifact, and item
+102 shows the ranked operating point is not the local one. A cost model
+calibrated *on the ranked box, inside the untimed warm*, replaces all of them
+with measurements. It also explains why item 108's hand-tuned `h` lost: the
+constant was wrong for that tree, and a self-calibrating model would not have
+been.
+
+Adjacent unexploited items from the same scan, recorded for sequencing and
+**not** yet verified against source by me:
+
+- **Prefill is charged inside `decode_seconds` on both legs** (paul-hf,
+  `efe01dcf`, rank 10): ~0.53 s of a ~9.5 % share on the candidate leg vs
+  ~2.8 % on serial. Our measured prefill is 0.00102–0.00103 s/tok on both rows,
+  within 0.4 % of the top — an *asymmetric* lever we have never worked.
+- **The `K >= 1024` SDPA family boundary** (zeeshan8281 `4287f727`; corroborated
+  by fkiene `b0994092`, rank 2, accepted): 512 seed + 512 decode crosses 1024
+  mid-window, and *"the JIT tax is candidate-leg-only and does not cancel in the
+  paired ratio."* Existing warm seeds only 512.
+- **`costModelDepth`'s absorbing barrier** (WillGasser `de7981ae`, rank 5):
+  *"`positionAcceptEMA[0] <= 0.18` is an absorbing state. Once a prompt enters
+  it, the session cannot draft for the remainder of the window and cannot
+  observe the evidence that would release it."* Matches plutarch exactly
+  (n = 0.154, 427 non-drafting rounds of 512) — but item 101's order statistics
+  prove plutarch is worth **exactly zero** unless it clears 3.143, and its
+  best-ever value across 405 runs is 2.221. The barrier only matters if it can
+  latch on beagle or medicine.
+
+### 111 — 🔴 SELF-CORRECTION to item 103: the 8/8 serial sign test was real but **irrelevant**, and my sizing of it was wrong
+
+Item 103 claimed our serial leg is systematically faster (8/8 prompts, mean
+−0.304 %) and sized "matching the top's serial" at +0.26 % of score, i.e.
+rank 5. **The sign test survives; the sizing does not.** I tested my own
+independence assumption before telling four students, and it failed.
+
+**Variance decomposition of the serial leg over all 88 rows on head `559b24eb`:**
+
+- grand mean 0.0379908 s/tok
+- between-run sd of the per-run mean: **0.1207 %**
+- within-run sd across the 8 prompts: **0.1766 %**
+- i.i.d. legs would give a between-run sd of 0.1766/√8 = 0.0625 %; observed is
+  ~2× that, so a genuine **run-level offset of σ ≈ 0.10 %** exists on top of
+  per-leg noise.
+
+Our run's offset from the grand mean is **−0.109 %, i.e. 1.05 σ — entirely
+unremarkable.** We are the 20th fastest of 88 (23rd percentile). The outlier is
+in the other direction: **ofou (#1) has the slowest serial leg of all 88 rows**
+(0.0380649, +0.195 % ≈ +1.9 σ), and their official margin over rank 2 is
+0.157 %.
+
+**The decisive error.** Only beagle and medicine are scored. Our fast serial legs
+were on **travel (−0.26 % vs grand), essays (−0.28 %), drama (−0.20 %)** —
+all non-central prompts, worth exactly zero. On the central pair our serial was
+at or *above* the grand mean (beagle 0.0379849 vs 0.0379827; medicine 0.0380265
+vs 0.0379903). **We had no serial deficit where it counts.** I aggregated over
+prompts whose weight is zero, which is the exact mistake I warn students about
+in every brief.
+
+`corr(serial_mean, mtp_mean) = +0.043` over the population and `+0.050` in the
+top cluster ⇒ **no box-speed effect**; the two legs are independent, so serial
+variation is pure noise with respect to candidate-leg engineering — **and it is
+being scored.** `corr(serial_mean, score) = +0.695` within the 21-row top
+cluster: a slower serial leg predicts a higher score, exactly as `R = serial/mtp`
+demands.
+
+**What stands from 103:** the shape-gating doctrine, and the rule that a
+serial-leg speedup is a red flag rather than a bonus. **What is withdrawn:** the
+claim that we carry a self-inflicted serial optimisation worth +0.26 %. There is
+no such lever. Do not go looking for it.
+
+### 112 — Normalising the serial leg removes ~60 % of the visible spread at the top of the board
+
+Recomputing every row's per-prompt ratio against the population per-prompt
+**grand-mean serial numerator**, holding each run's own measured MTP leg fixed,
+then re-deriving the median-of-8:
+
+| official | id8 | solver | official | serial-normalised | delta | norm rank |
+|---:|---|---|---:|---:|---:|---:|
+| 1 | `0cd0a6b4` | ofou | 3.249294 | **3.239188** | −0.311 % | **1** |
+| 2 | `b0994092` | fkiene | 3.244179 | 3.237870 | −0.194 % | 3 |
+| 3 | `11863aa9` | companygardener | 3.243262 | 3.235729 | −0.232 % | 7 |
+| 4 | `4f76de6e` | alfranli123 | 3.243001 | 3.236262 | −0.208 % | 5 |
+| 5 | `de7981ae` | WillGasser | 3.240778 | **3.239135** | −0.051 % | **2** |
+| 6 | `3ec77796` | xadenryan | 3.234608 | 3.237514 | +0.090 % | 4 |
+| 7 | `942e5ab2` | Kamciosz | 3.234152 | 3.230224 | −0.121 % | 14 |
+| 8 | `e9f38898` | Lieisyourlie | 3.234099 | 3.233800 | −0.009 % | 9 |
+| **9** | **`ca9251b8`** | **us** | **3.232508** | **3.230830** | **−0.052 %** | **11** |
+| 10 | `efe01dcf` | paul-hf | 3.232449 | 3.236053 | +0.112 % | 6 |
+| 11 | `3a995c2b` | SSHdotCodes | 3.232230 | 3.233897 | +0.052 % | 8 |
+| 15 | `72ce82dc` | scarletbright | 3.228261 | 3.217915 | −0.320 % | 21 |
+
+**Official top-10 span 0.521 % → serial-normalised top-10 span 0.211 %.** About
+60 % of the ordering at the top of this board is serial-leg variation rather
+than candidate-leg engineering. Movements are large: WillGasser 5→2,
+paul-hf 10→6, xadenryan 6→4; companygardener 3→7, Kamciosz 7→14,
+scarletbright 15→21.
+
+**Our true engineering position: `norm` 3.230830, −0.258 % from the best**
+(ofou and WillGasser effectively tied at 3.2392). Our *official* rank is 9 and
+our *normalised* rank is 11 — we were mildly helped, not hurt, by serial noise.
+
+Three consequences that should govern the endgame:
+
+1. 🔴 **The real engineering gap is 0.258 %, not 0.517 %.** Half the apparent
+   gap is a tailwind ofou received.
+2. 🔴 **Do not re-roll an identical tree.** Expected value is ~0 and the
+   per-submission sd on score is order 0.1–0.2 %, which cannot reliably close
+   0.517 %. Spend slots on real mechanism.
+3. 🔴 **When E33 lands, expect ±0.2 % of measurement noise on the ranked
+   result.** A single submission that lands within 0.2 % of the top is a coin
+   flip, so a mechanism must be worth clearly more than that before we read a
+   ranked row as confirmation. This is the honest replacement for the
+   competitor folklore figure of "±1.5–3 % ranked noise", which our own
+   88-row population contradicts: per-leg sd is 0.18 % and run-level sd 0.10 %.
+
+**Method note.** This normalisation is only licensed because acceptance is
+bit-identical across this population (item 102) and the two legs are
+uncorrelated (item 111). It is a re-weighting of measured quantities, not a
+model fit. The per-prompt grand-mean serials are tight — 0.0379805 (drama) to
+0.0380036 (travel), a 0.06 % spread over 88 runs — so the reference is stable.
+
+### 113 — 🟢 VERIFIED OPENING: our shape warm stops at KV 512, and the SDPA dispatch switches kernel families at KV 1024
+
+Two competitor claims from the notes scan (item 110) turned out to be checkable
+against our own source in minutes. Both check out, and together they describe a
+cost we are paying inside every scored window.
+
+**The boundary is real.** `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/scaled_dot_product_attention.cpp:745-753`:
+
+```cpp
+    // We route to the 2 pass fused attention if
+    // - The device is large and the sequence length long
+    // - The sequence length is even longer and we have gqa
+    bool do_causal = do_causal_ && q.shape(2) > 1;
+    char devc = d.get_architecture().back();
+    if (((devc == 'd' || devc == 's') && k.shape(2) >= 1024) ||
+        (k.shape(1) < q.shape(1) && k.shape(2) >= 4096)) {
+      sdpa_vector_2pass(s, d, q, k, v, o, scale_, do_causal, mask, sinks);
+    } else {
+      sdpa_vector(s, d, q, k, v, o, scale_, do_causal, mask, sinks);
+    }
+```
+
+`k.shape(2)` is the live KV length. At KV >= 1024 the dispatch leaves
+`sdpa_vector` for **`sdpa_vector_2pass`, a different kernel** with its own
+pipeline. The second clause (GQA at KV >= 4096) cannot fire on this track.
+
+**Our warm stops below it.** `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:308`
+seeds the throwaway warm cache with exactly `Array(repeating: 0, count: 512)`,
+and the surrounding comment shows we already learned this lesson once at a
+smaller scale:
+
+> *"Warming the legal widths behind an 8-token prefix left the long-prefix
+> variants to materialise inside a later scored round (the ranked prompt-5
+> receipt showed a repeatable 0.368 s one-off stall). Seed the throwaway cache
+> at the track's real 512-token prefix so every width below compiles in the same
+> long-context dispatch family as decode."*
+
+**But the track is 512 seed + `decodeTokens` 512.** The live KV length therefore
+runs 512 -> 1024 and **crosses the boundary mid-window**, so the first
+`sdpa_vector_2pass` dispatch of the run happens *inside* the scored window. We
+fixed the 8 -> 512 instance of exactly this bug and stopped one token short of
+the real boundary.
+
+**Why it does not cancel in the paired ratio.** With per-token means
+`serial ~ 0.0380` and `mtp ~ 0.0121`, a one-off cost `C` shared by both legs adds
+`c = C/512` to each and gives `(0.0380 + c)/(0.0121 + c)`, which is
+**monotonically decreasing in `c`**. A shared one-off stall therefore *depresses*
+the ratio, and removing it from both legs raises the score. fkiene (rank 2,
+accepted 3.24418) states the stronger asymmetric form: *"Serial depth-0 does not
+assemble `[primary] + drafts`. The JIT tax is therefore candidate-leg-only and
+does not cancel in the paired ratio."* Either way the sign is in our favour.
+
+**Why this is actionable now.** `warmAllDepths` is declared at
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:283` — **an editable path**.
+Its callers (`Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift:196,283,309`
+and the `MLXFastHarness` twin) are **not** editable, but we do not need them: the
+implementation is ours. The warm is documented as running *"OUTSIDE every scored
+window"*, so extending it is free of scored cost.
+
+**The one open uncertainty, which must be settled before this is believed.** The
+boundary is gated on `d.get_architecture().back()` being `'d'` or `'s'`. Our host
+is an M4 Pro and the ranked box is an M5 Max; **I have not established the
+architecture character on either.** If the ranked box reports neither, the branch
+never fires and this opening is empty. That is one print statement, and it is the
+first thing the assignment must do.
+
+**Sequencing.** This needs a GPU timing slot, which thorfinn holds for E33, so it
+queues behind rung 1. It is currently the strongest candidate for the next round,
+ahead of the other two adjacent levers in item 110, because the mechanism is
+verified in source rather than inferred from a note.
+
+**ADDENDUM (same turn), two facts that de-risk it substantially.**
+
+1. 🟢 **The fix does not depend on resolving the architecture character.** The
+   branch keys on `k.shape(2)`, the live KV length, which we control directly.
+   Extending the throwaway warm cache past 1024 and re-warming the widths covers
+   **both** kernel families whatever the arch char is, and it is strictly
+   additive inside a warm that is already documented as running outside every
+   scored window. So the *safety* of the change is arch-independent; the arch
+   char only decides whether it *helps*. That inverts the risk profile — the
+   experiment can proceed before the uncertainty is settled, which is not how I
+   framed it above.
+2. 🟢 **The arch gate is env-overridable**, so the uncertainty is testable on the
+   M4 Pro without an M5. `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp:560-562`:
+
+   ```cpp
+     arch_ = env::metal_gpu_arch();
+     if (arch_.empty()) {
+       arch_ = std::string(device_->architecture()->name()->utf8String());
+   ```
+
+   and `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/utils.h:205-208`:
+
+   ```cpp
+   inline const std::string& metal_gpu_arch() {
+     static std::string gpu_arch_ = get_var("MLX_METAL_GPU_ARCH", "");
+     return gpu_arch_;
+   }
+   ```
+
+   ⚠️ **Use it only as a mechanism probe, never as a performance measurement.**
+   The same string feeds `get_architecture_gen()` and the NAX availability check
+   (`device.cpp:924-926`, `can_use_nax &= gen >= (arch == 'p' ? 18 : 17)`), so
+   forcing it changes kernel selection elsewhere. It can answer "does the family
+   switch at KV 1024 and does the first dispatch cost anything"; it cannot
+   produce a transferable speedup number. This is the same trap as item 111 in
+   miniature: a knob that makes a branch observable is not a knob that makes a
+   measurement valid.
+
+   Neither the local M4 Pro nor the ranked M5 Max arch string is established —
+   there is no Python MLX in this environment, so it requires a build. It stays
+   the first step, but it no longer blocks the work.
+
+### 114 — 🟢 `warmAllDepths` currently compiles but never *measures*, and that is the campaign's epistemic fix
+
+Reading `warmAllDepthShapes` end to end: it seeds a 512-token throwaway cache,
+walks the head draft step `maxDepth` times, and warms the committed-history K/V
+paths. **It times nothing.** There is no per-width measurement anywhere in it.
+
+AndreasHad04 (`a0110f2a`) describes the unexploited form: *"`warmAllDepths`
+already dispatches a verify at every legal width … OUTSIDE every scored window.
+It now runs that sequence three times: pass 0 compiles …, passes 1 and 2 are
+timed and the per-width minimum is kept."*
+
+🔴 **This is the structural answer to the campaign's single biggest epistemic
+problem.** Every width/depth constant we have argued about — `headStepCostRatio
+= 0.18`, `sdpaWidthWallDepthCap = 5`, `costModelDepth = 700`, and the `F`/`S`
+split in `T(M) = F·M + ceil(M/IPG)·S` — is hand-fitted on an M4 Pro against the
+wrong head artifact, while item 102 shows the ranked operating point is not the
+local one. A cost model calibrated **on the ranked box, inside the untimed
+warm**, replaces every one of them with a measurement taken on the machine that
+scores us.
+
+It also explains item 108 mechanistically: `h` 0.18 -> 0.16 lost 1.164 % because
+a hand-picked constant was wrong for that tree. A self-calibrating model cannot
+make that class of error, and it is the only depth-policy change on the board
+that does not require us to guess a number. Note that `warmAllDepths` appears in
+**78 notes including ranks 1, 2, 3 and 4** — the top of the board is already
+working this surface, so treat the timing-instrumented form as contested rather
+than free.
+
+### 115 — 🟢 The local GPU is `applegpu_g16s`: the SDPA two-pass branch *does* fire on this box, and the in-tree comment mislabels it
+
+Item 113 left one open uncertainty: the `sdpa_vector_2pass` branch is gated on
+`char devc = d.get_architecture().back()` being `'d'` or `'s'`, and I had
+established neither host's architecture string. I settled it by compiling a
+twelve-line Metal probe (`/tmp/archprobe.m`, `clang -framework Metal`) rather
+than waiting for a full build:
+
+```
+device.name         = Apple M4 Pro
+architecture.name   = applegpu_g16s
+MLX arch_gen        = 16
+MLX devc (back)     = 's'
+SDPA 2pass at KV>=1024 on this box? YES
+```
+
+The string format is decoded by `device.cpp:566-572`: the last three characters
+are `<tens><ones><tier>`, so `applegpu_g16s` is generation 16, tier `'s'`. The
+tier switch at `device.cpp:573-595` is the in-tree documentation of the tier
+characters, and it also sets the command-buffer geometry:
+
+| tier | in-tree comment | `max_ops_per_buffer_` | `max_mb_per_buffer_` |
+|---|---|---:|---:|
+| `'p'` | `// phone` | 20 | 40 |
+| `'g'` | `// base, pro` | 40 | 40 |
+| `'s'` | `// max` | 50 | 50 |
+| `'d'` | `// ultra` | 50 | 50 |
+| default | `// default to medium` | 40 | 40 |
+
+Two consequences, one of which is a warning about reading source comments as
+facts.
+
+1. 🔴 **The comment is wrong for this generation.** Our box is an M4 **Pro** and
+   it reports tier `'s'`, which the comment labels `// max`. So the mapping from
+   Apple marketing tier to MLX tier character is *not* what the comment says, and
+   nobody should infer the ranked M5 Max's character from it. What we can say is
+   that both `'s'` and `'d'` take the two-pass branch, and that a Max-class part
+   is overwhelmingly unlikely to report `'p'` or `'g'`, so the branch almost
+   certainly fires on the ranked box too.
+2. 🟢 **Our local box already has the ranked box's command-buffer geometry** — 50
+   ops, 50 MB — because `'s'` and `'d'` share the same limits. That is a real
+   piece of good news for transferability, and it retroactively strengthens E31:
+   the command-buffer geometry we measured locally is the geometry the ranked box
+   uses, not a smaller-tier variant. Note also that this is where the "50-op"
+   figure in E31 comes from; the 512 MiB number in my earlier summary of E31 is a
+   different limit and the two should not be quoted together.
+
+The env override `MLX_METAL_GPU_ARCH` (item 113 addendum) turned out not to be
+needed to answer the question. It remains available, and remains a mechanism
+probe only, for the reasons given there.
+
+### 116 — 🔴 SELF-FALSIFICATION of item 113: the warm's 512-token seed is correctly sized, and the KV-1024 opening is worth approximately nothing
+
+Item 113 claimed the scored track is "512 seed + 512 decode, so the live KV
+length crosses the 1024 boundary **mid-window**", and I queued it as the next
+round's strongest candidate. The fixture says otherwise.
+`fixtures/qwen3_8_27b_mtp_track.json`, `timed_prompt_pool_note`:
+
+> Each entry IS a timed MTP reference-rows golden … generated on box 3 with
+> `mtp-verify --emitted <plan> --generate 513` … from a DIFFERENT **512-token
+> prose seed** (8 distinct domains), and each returned
+> `reference_self_consistent=true` with **513 rows**.
+
+So the seed is 512 tokens and the window decodes 512 tokens (`decodeTokens 512`).
+The live KV length therefore runs **512 → 1024**, and `k.shape(2) >= 1024` first
+becomes true in the **final round of the window**, not mid-window. The warm seeds
+the throwaway cache at exactly 512 — which covers the window's *entire* range
+bar the last step. My "we fixed the 8 → 512 instance of this bug and stopped one
+token short" was rhetorically satisfying and quantitatively empty: 512 is the
+right number, and the one token we stop short of is the one that does not matter.
+
+There is also a **ranked-data refutation** that is independent of the source
+reading. The only thing this mechanism can produce is a **fixed, per-window,
+one-off cost** (a pipeline creation for the second kernel family). A constant
+absolute offset across all eight windows is a one-parameter model, and it is
+**disfavoured at p ≈ 0.017** (χ² = 17.1 on 7 dof) against our measured
+per-prompt deficits, because drama and travel show zero or slightly negative
+deficit where a fixed cost predicts +0.18 % and +0.20 %. The model that does fit
+is a wide-prompt-only rate step (item 118, p ≈ 0.30).
+
+**Item 113 is demoted from "next round's strongest candidate" to low priority.**
+It is not proven dead — a fixed cost confined to some sessions is not excluded —
+but it no longer justifies a student-week, and the mechanism cannot explain the
+deficit we actually have. This is the second time in two turns that item 113 has
+been corrected by evidence I went looking for after writing it, and the lesson is
+the same one as item 105 and item 111: *a mechanism verified in source is not a
+mechanism sized against data.* I verified the branch existed and then sized it
+from a track geometry I had not read.
+
+### 117 — 🔴🔴 The track fixture publishes the organizers' own noise measurement, and it confirms the score identity exactly
+
+`fixtures/qwen3_8_27b_mtp_track.json` has been in the tree the whole campaign and
+I had never read it end to end. It contains, published and operator-ratified,
+several things the campaign has been reconstructing by inference.
+
+**(a) The score identity, confirmed independently of my empirical derivation.**
+`scoring_semantics`:
+
+> `aggregation`: `median_of_per_prompt_raw_serial_relative_speedup`
+> `per_prompt_score`: `raw_p = mean(serial depth-0 seconds/token over p's accepted pairs) / mean(candidate seconds/token over the same pairs)`
+> `published_score`: `median(raw_p over all timed prompts)`
+> `median_rule`: `even_n_mean_of_two_central_order_statistics`
+> `median_rule_note`: 8 is EVEN, so the rule matters: the score is the mean of the two central order statistics, NOT the lower-median rule used by the per-pair `mtp_decode_speedup_median` diagnostic
+
+That is exactly the identity I reverse-engineered from two ranked rows — mean of
+the 4th and 5th sorted `raw_ratio_of_means` — and it independently confirms that
+`officialMetrics.mtp_decode_speedup_median` is *not* the score. It also confirms
+`R = serial / candidate`, i.e. the serial leg is the numerator (item 103/111).
+`prompt_selection` confirms there is no per-run draw: all 8 are always timed.
+
+**(b) 🔴 A real noise measurement, which retires my ±0.2 % guidance.** The
+`calibration` block reports six thermally-gated sessions of an **unmodified**
+tree across **both** ranked boxes, with session medians:
+
+```
+box 2:  0.995231  0.993918  0.994609
+box 3:  0.993847  0.993622  0.993008
+```
+
+Total spread 0.0022 = **0.12 %**; standard deviation **0.078 %** of the mean.
+This is run-to-run noise **on the published score statistic itself**, measured by
+the organizers, across boxes. My ±0.2 % figure (itself derived from the 88-row
+serial variance decomposition in item 111) was conservative by about 2.5×.
+
+Per-prompt, `noop_decode_speedup_spread_pct` gives beagle 0.144, botany 0.331,
+drama 0.219, essays 0.155, medicine 0.207, plutarch 0.437, republic 0.269,
+travel 0.167 — but `noop_decode_speedup_note` states these are conservative
+propagations `sqrt(CV_serial² + CV_mtp²)` that **over-state true paired spread by
+roughly 1.4–1.9×** because the two legs share a thermal session and are
+positively correlated, and it publishes the **exact pair-level ratios where they
+were available: beagle 0.104 %, botany 0.281 %, drama 0.116 %.** Every ranked row
+has `accepted_pair_count = 1` on all eight prompts, so the pair-level figure is
+the correct noise scale for a single submission's per-prompt ratio.
+
+Consequences that change how we should be operating:
+
+- 🟢 **Our 0.258 % serial-normalised gap to #1 is ≈ 3.3 σ — unambiguously real.**
+- 🟢 **The detection threshold for a single ranked run is ≈ 0.16 % (2 σ), not
+  0.5 %.** A clean 0.2 % is a measurable result. This materially lowers the bar
+  every current assignment has to clear, and I have told all four students the
+  wrong (harsher) number.
+- 🔴 **The ranks 6–12 band spans 0.09 %, which is barely one σ.** Our nominal
+  rank inside that band is noise. "Rank 9" and "rank 6" are the same result.
+- 🔴 The competitor folklore "±1.5–3 % ranked noise" is wrong by an order of
+  magnitude, and now demonstrably so from the organizers' own data.
+
+**(c) 🟢 The organizers confirm the serial leg is prompt-independent.** From
+`noop_decode_speedup_note`, on an outlier: *"the depth-0 leg does
+prompt-independent work, so all serial readings are interchangeable and sit at
+~0.03800."* This is direct validation of the serial-normalising method in item
+112, and it improves the estimator: a run's serial offset should be estimated by
+**pooling all eight of its serial readings**, not per-prompt. The pinned on-box
+serial calibration is 0.037994794617407023, against our 88-row grand mean of
+0.0379908 — agreement to 1 part in 10⁴.
+
+**(d) 🟡 The central pair is tree-dependent.** The calibration block's per-prompt
+raw ratios for a stock tree are beagle 0.9837, botany 0.8467, drama 0.9587,
+essays 1.0044, medicine 1.0726, plutarch 0.9701, republic 1.0116, travel 1.0581;
+the 4th and 5th sorted are **beagle and essays**, mean 0.99404 — reproducing
+`expected_raw_median` 0.9940390645 exactly. On *our* tree the central pair is
+beagle and medicine. So "only beagle and medicine carry weight" is a statement
+about our current operating point, not a property of the track, and it can
+rotate under a large enough change.
+
+### 118 — 🟢 Our deficit against #1 is a clean step at the draft-width boundary: parity below n = 3, +0.38 ± 0.06 % above n = 4.5
+
+Testing our per-prompt MTP-leg deficits against the organizers' pair-level noise
+(item 117b) rather than eyeballing them changes the picture in a useful way.
+Per-prompt deficit, absolute cost over the 512-token window, and significance
+against the true paired σ:
+
+| prompt | n | Δ% | Δ ms | σ% | σ | significant |
+|---|---:|---:|---:|---:|---:|---|
+| plutarch | 0.154 | +0.049 | +7.6 | 0.265 | +0.18 | no |
+| drama | 2.298 | −0.008 | −0.8 | 0.116 | −0.07 | no |
+| travel | 2.656 | −0.037 | −3.3 | 0.101 | −0.36 | no |
+| **beagle** | 4.533 | **+0.418** | +26.0 | 0.104 | **+4.02** | **YES** |
+| medicine | 4.768 | +0.110 | +6.4 | 0.125 | +0.87 | no |
+| **republic** | 5.270 | **+0.426** | +24.3 | 0.163 | **+2.61** | **YES** |
+| **essays** | 5.425 | **+0.506** | +29.0 | 0.094 | **+5.38** | **YES** |
+| botany | 5.776 | +0.206 | +11.7 | 0.281 | +0.73 | no |
+
+Model comparison, inverse-variance weighted:
+
+| model | params | χ² / dof | p |
+|---|---:|---|---|
+| constant rate across all 8 | 1 | 25.9 / 7 | 0.0005 — rejected |
+| constant absolute offset across all 8 | 1 | 17.1 / 7 | 0.017 — disfavoured |
+| **two-level step at the width boundary** | **2** | **7.2 / 6** | **0.30 — fits** |
+
+The step model reads: prompts with n < 3 are at **−0.019 ± 0.073 %** — parity
+with the leader, indistinguishable from zero — and prompts with n > 4.5 are at
+**+0.380 ± 0.056 %**, which is 6.8 σ from zero. One parameter, one boundary, and
+it lands exactly where the wide crossrow dispatch changes behaviour.
+
+Caveat I cannot remove with this fixture: **inside** the wide group, all five
+windows have nearly the same wall time (5.67–6.23 s), so a per-token rate penalty
+and a fixed ~22 ms per-window cost are numerically degenerate there (χ² 7.11 vs
+7.20). What *is* excluded is a fixed cost applying to **all** prompts, because
+the three narrow windows have very different durations (8.9–15.5 s) and show no
+deficit. Separating rate from fixed cost within the wide group would need a
+high-n prompt at a different window length, which the track does not provide.
+
+Medicine is the persistent outlier in every model at about −2.2 σ: we are
+essentially tied with the leader on medicine. That matters because medicine is
+one of the two scoring prompts.
+
+**Order-statistic saturation caps**, computed on our own sorted ratios:
+
+```
+1 plutarch 1.25280   2 drama 1.91668   3 travel 2.17980
+4 beagle   3.12015  <- central        5 medicine 3.34486  <- central
+6 essays   3.36612  <- caps the 5th   7 republic 3.39402   8 botany 3.42536
+```
+
+- **beagle has +7.88 % of headroom** before it would pass essays and stop paying
+  at the margin. No saturation risk; the wide-width line has room.
+- **medicine has only +0.64 % of headroom.** Beyond that, further medicine gains
+  are worth zero and essays becomes the binding prompt. Nobody should be
+  optimising medicine specifically.
+
+Putting items 117 and 118 together gives the campaign's operating target in one
+line: **the statistically real, addressable deficit is beagle's +0.418 %, worth
+about +0.21 % of score at the 0.5 marginal weight of a central order statistic —
+which is essentially the whole 0.258 % serial-normalised gap.** The wide-width
+kernel line (E33) is aimed at exactly this, and is confirmed as the main line.
+
+### 119 — 🟢 Acceptance closure is now established on two independent fields, and the realised-depth question has a local counter rather than a source read
+
+**(a) A second identical fingerprint.** Item 102 established that
+`effective_mean_draft_len` is bit-identical to the board leader on 8/8 prompts.
+`non_drafting_round_count` is *also* identical on 8/8: zero on seven prompts and
+**449 on plutarch** for both rows. Sixteen matching per-prompt quantities across
+two independently developed trees. We and the leader run the same draft schedule
+round for round; the entire difference between rank 1 and rank 10 is time per
+round. Acceptance is closed, and now on two fields rather than one.
+
+Incidentally this explains plutarch's degeneracy: ~449 of its ~504 rounds draft
+nothing at all, which is why its ratio is 1.2528 and why it is worth exactly zero
+to the score.
+
+**(b) 🔴 "The candidate declares no depth."** `scoring_semantics`
+→ `effective_depth_provenance`:
+
+> The candidate declares no depth. `effective_mean_draft_len`,
+> `effective_max_draft_len`, `non_drafting_round_count` and
+> `effective_draft_lengths` are derived by the trusted parent from its own round
+> journal and sealed per prompt and per run.
+
+This settles the item 102 / 113 open question in the direction I flagged as
+possible: `officialMetrics.mtp_depth: 8` and `mtp_max_draft_depth: 8` are
+**configuration echoes, not realised depth**. So *both* of my competing
+inferences — "depth 5 at p ≈ 0.965" and "depth 8 at p ≈ 0.871" — remain
+unsupported, and no ranked field will settle it: `effective_max_draft_len` and
+`effective_draft_lengths` are sealed per run but are **not** in the public API
+per-prompt payload (which exposes only `accepted_pair_count`,
+`effective_mean_draft_len`, `head_provenance_sha256`,
+`mtp_seconds_per_token_mean`, `non_drafting_round_count`,
+`noop_reference_decode_speedup`, `parity_ok`, `prefill_seconds_per_token`,
+`prompt_sha256`, `raw_ratio_of_means`, `serial_seconds_per_token_mean`).
+
+**(c) 🟢 But our own harness emits it.** `effective_max_draft_len` appears in
+local timed artifacts as a per-prompt, per-leg counter — e.g. in
+`research/e25r2-timed.json` at
+`per_prompt/<name>/{base,candidate}/counters/effective_max_draft_len`, which in
+that (Qwen 3.6-era) run read base 4–5 and candidate 3. So the realised-depth
+question is answerable by **reading a counter from one local timed run on the
+current tree**, not by source archaeology and not by inference from n. That is a
+much cheaper and much more reliable route than the one I gave edward, and it is
+the single most useful correction I can hand him.
+
+### 120 — 🟢 E36 TERMINAL (merged, PR #41): `values_per_thread` is closed on the verify path by ranked parity failures, not by registers — and my register model is falsified
+
+askeladd returned a complete terminal answer in one revision, zero GPU, zero
+shipped bytes (11 files, all `research/`, growth 0/262144). Merged at
+`1e3dc494`. Four results, in descending order of what they cost me.
+
+**(a) 🔴 The axis is closed, and by somebody else's ranked failures.** The
+re-ordered first question — *can `values_per_thread` be raised on the wide
+crossrow QMV without altering the per-row reduction order?* — is answered **NO,
+and not fixably: `values_per_thread` IS the lane→K partition
+(`quantized.h:1020`).** No setting above or below 16 preserves the order. Then,
+instructed to read the 13 `values_per_thread` notes (item 105's corrected scan),
+he found the confirming evidence:
+
+- companygardener `5c74b78b` — wide affine4/g64 QMV footprint cut for "width-3
+  and width-4 target verification", vpt 16→8, block 512→256 — **FAILED the
+  official untimed Qwen-MTP correctness-and-parity gate.**
+- `6154a6f1` — same change at verify width 3 — **FAILED the same gate.**
+- Their next row `11863aa9` (3.24326, accepted and promoted) records the rule:
+  *"Target-side footprint cuts fail official MTP parity. Stay off the verify
+  reduction tree."*
+
+🔴 **The observation that makes this decisive is his, not mine: `5c74b78b` moved
+vpt DOWN to 8 — the register-cheapest cell in the entire 262-cell grid (117 regs
+at M=6/NA=6/r=2, 8 private bytes).** If this axis were a register trade, v=8 was
+a free win. It failed parity twice anyway. **Registers were never the binding
+constraint; the lane→K partition always was.** That also closes the v=8 column,
+which local compilation could never have done, at zero M5 transfer risk.
+
+This is the third independent confirmation of the item 107 reassociation
+boundary, and the first that arrives as a *pair of ranked gate failures* rather
+than a note's assertion.
+
+**(b) 🔴 My register model is falsified by measurement, with a mechanism.** I
+predicted `slope ≈ 8.36·(vpt/16) + 3.19·r`, i.e. 155 registers at
+NA=6/r=2/vpt=32 (and I misquoted "~196" in the brief, from a different cell).
+**Measured 106 — bit-identical to vpt=16.** Over 262 cells (2 arms × r∈{1,2,3,4}
+× vpt∈{8,16,32,64} × NA 2..12), registers are **unchanged across vpt 8→64 for
+every spill-free cell at NA≥4, r≤2**; the r-slopes 11/15/18/21 hold at every vpt
+with zero spread at r=2.
+
+My error was **structural, not calibration**: I assumed the kernel materialises
+`x_thread`, so the x-side term should scale with vpt. It does not — crossrow
+re-reads four activations into `a0..a3` (`quantized.h:1014-1035`). vpt's real
+cost is **`r·vpt/2` private bytes in all 262 cells, and zero registers.**
+
+Superseding fit, replacing mine everywhere: **`slope(r) = 8.00 + 3.30·r`, max
+residual 0.40.** Validity gates passed before any new number was shown: E27
+ladder reproduced digit-for-digit (62/83/104/125), known-BAD NA=6/r=4 gave
+144+spill, 14/14 controls matched pre-declared verdicts.
+
+**(c) 🟢 The composition verdict: the axes DO compose in registers, and it does
+not matter.** `M=6/NA=6/r=2` is **117 registers at every one of vpt
+8/16/32/64**; `M=9/NA=9/r=2` is 168 at all four. So E33's rung-1 headroom claim
+(117 vs the 125 the shipped `<T,5,5>` already uses) is confirmed at four
+independent vpt settings rather than one. thorfinn gets NA, not vpt — **but the
+reason is the parity wall in (a), not contention.**
+
+**(d) 🟢 My k-block arithmetic was right, and was then strengthened.** The vpt-64
+wall reproduces exactly (`5120 % 2048 = 1024`), and additionally hits **K=17408
+(down_proj)**; the ragged-block escape I invited him to find **does not exist** —
+no K tail, no bounds check, and `_m` is a tail over M, not K. Six shapes overrun
+at vpt 64, five of them on the wide crossrow band (his own post-submission
+correction of "five scored projections", against his own published number, when
+the verdict did not depend on it).
+
+**(e) 🟢 Why the kernel chose 16, found rather than invented.** Generic
+`qmv_fast_impl` materialises `x_thread[vpt]` at `:774`, sized by
+`packs_per_thread = bits==2 ? 1 : 2` at `:761` — real upstream code, never
+re-derived for crossrow, inherited by copy. Plus `512 = 16 × SIMD_SIZE`. Plus the
+one that matters most: **16 is the pinned serial build's width, hence the only
+parity-safe width on the verify path.**
+
+**Reporting discipline worth recording as the campaign's standard.** He reported
+`vpt_attributable_delta = 0` when the primary metric moved 5→9 and the +4 could
+have been banked — it belongs to E32's row blocking. He withdrew his own
+follow-up (order-preserving unroll-by-2) **before** anyone spent on it, because
+xadenryan had already built it (`37911ea4`, `ace21f9d` failed policy review,
+`d95b11d5` validating) and aimed it at M==1 — the wrong side of `R = serial/mtp`.
+
+### 121 — 🟢 `get_qmv_batch_limit` resolves to 10 on the ranked box: E33's dispatch is live, and the Apple generation ladder is now anchored
+
+askeladd escalated the one open risk that could have invalidated E33 wholesale,
+and it is now closed. `get_qmv_batch_limit`
+(`Vendor/.../backend/metal/quantized.cpp:84-126`) is consumed at `:1415/:1483`
+and gated at `:1417` as `if (M >= vector_limit) { …qmm… }`, so **`qmv` runs only
+when `M < vector_limit`.** For our shapes (D, O > 4096):
+
+| `arch_gen` | tier | `vector_limit` | M=6..9 in `qmv`? |
+|---|---|---:|---|
+| **13 or 14** | non-`'d'` | **6** | 🔴 **no — all fall to qmm** |
+| 13 or 14 | `'d'` | 12 | yes |
+| anything else | non-`'d'` | **10** | 🟢 yes |
+| anything else | `'d'` | 12 | 🟢 yes |
+
+Had the ranked M5 parsed to arch_gen 13/14 non-`'d'`, **every one of M=6..9 would
+have left `qmv` entirely** and the whole crossrow NA line — E32, E33, E36 — would
+be tuning a dispatch the ranked box never executes. Correct escalation, and
+correctly scoped: the M5 arch string genuinely is not in the repo.
+
+**Resolved to 10, by three independent lines:**
+
+1. 🔴 **An accepted ranked row states it outright.** `088f763b` (accepted,
+   1.25132): *"At decode M=1 those three GEMVs all miss the NAX qmm path (**qmv
+   batch limit is 10**; see research)."*
+2. 🔴 **NAX liveness on the ranked box forces `gen ≥ 17`.** `52cdbf5e`: *"The M4
+   Max does not support NAX/MPP tensor ops; **the ranked M5 box does**."*
+   `device.cpp:924-926` gates `can_use_nax &= gen >= (arch == 'p' ? 18 : 17)`, so
+   a live NAX path requires gen ≥ 17 and the 13/14 branch cannot fire. I checked
+   this specifically because a *dead* NAX axis would have been consistent with
+   gen < 17 and would NOT have closed the risk — the notes assert the path is
+   live on the ranked box, not merely compiled.
+3. 🟢 **The generation ladder is anchored by direct measurement.** Our probe
+   (item 115) gives this box `applegpu_g16s`, **gen 16**. Competitor notes agree
+   independently: `d9cbec0f` *"The available development machines are M3 Max and
+   M4. They do not cross MLX's M5-generation NAX availability threshold"*, and
+   *"The M4 correctly kept the NAX guard disengaged."* So M4 = 16, M5 = 17, and
+   arch_gen 13/14 is M1/M2-era silicon.
+
+Belt and braces: **every branch except gen∈{13,14}-non-`'d'` returns ≥ 10**, and
+`'d'` returns 12 even in the 13/14 branch, so M=6..9 stay in `qmv` under every
+configuration the ranked box could plausibly report.
+
+🟢 **thorfinn is unblocked; E33 rung 1 needs no change.** I have asked him to add
+a one-line assertion that the cell he times is actually reached — the cheapest
+possible guard against this class of error now that the gate's location is known.
+
+**The transferable lesson is the inverse of item 105.** askeladd scoped his
+search to the repository, which was the right instinct, and the answer lived in
+the competitor corpus he had already mined for `values_per_thread`. Item 105's
+lesson was that a zero-hit corpus scan is a claim about tooling; this is its
+complement — **the corpus is a source of positive facts about the ranked
+environment, not only of prior-art kills.** Two of the three lines above are
+competitor notes describing hardware we cannot touch.
+
+### 122 — 🔴 Prefill is reported but NOT scored: every prefill optimisation is worth exactly zero, and item 110's "adjacent lever" was never a lever
+
+Item 110 listed "prefill inside `decode_seconds`" as an adjacent unexploited
+lever, on the strength of a paul-hf note putting prefill at ~9.5 % of the
+candidate leg against ~2.8 % of the serial leg. A competitor built an entire
+submission on the stronger form of the claim — `d9cbec0f`: *"targets a different
+large budget: **the charged 512-token seed prefill** on the ranked M5."*
+
+It is not charged. Tested on 32 cells — 8 prompts × 4 independent rows (ours plus
+ranks 1, 2, 3) — against two hypotheses:
+
+| hypothesis | worst relative error over 32 cells |
+|---|---|
+| `raw = serial_s_per_tok / mtp_s_per_tok` (prefill **excluded**) | **3.9 × 10⁻¹¹** |
+| `raw = (pf + serial) / (pf + mtp)` (prefill **included**) | 5–7 % |
+
+The first is exact to floating-point round-trip precision on every cell; the
+second is not close. **`raw_ratio_of_means` is exactly the ratio of the two
+per-token decode means, and `prefill_seconds_per_token` is sealed for information
+only.** Tool: `research/prefill_charged.py`.
+
+Consequences:
+
+- 🔴 **Prefill optimisation is worth exactly 0.000 % of score.** Removed from
+  item 110's adjacent-lever list permanently. Our prefill is already at parity
+  with the leader (0.001027 vs 0.001031, within 0.4 %), so we were never going to
+  gain there anyway, but the point is stronger than that: we could halve prefill
+  and score identically.
+- 🟡 **paul-hf's arithmetic is right and their conclusion is irrelevant.** ~9 % of
+  the candidate leg's *wall time* is prefill — that follows mechanically from
+  prefill ≈ 0.53 s against a candidate decode of ≈ 6.2 s and a serial decode of
+  ≈ 19.4 s, and the apparent 9.5 %-vs-2.8 % asymmetry is nothing but the 3.2×
+  decode ratio re-expressed. It is a true statement about wall time and a false
+  statement about score.
+- 🟢 `d9cbec0f` has status `failed`, so its premise was never tested at rank. Note
+  the pattern: a competitor spent a submission on a lever that ten lines of
+  arithmetic against their own published telemetry would have closed. That is the
+  same failure mode as my item 113, and the same cure — **check what the score
+  actually integrates before optimising anything.**
+
+This also tightens item 117(a): the score is `median(serial_p/mtp_p)` over the
+eight prompts under the even-n mean-of-two-central-order-statistics rule, with
+*no* other term. There is no prefill component, no warm component, and no
+prompt-count weighting. Everything outside the 512-token decode window is free,
+and everything inside it is priced at the per-token mean.
+
+---
+
+## 123 — 🔴🔴 Every top-12 rival has **bit-identical acceptance** to ours. The entire competitive spread is wall-clock speed at fixed work.
+
+The submissions *list* endpoint carries `officialMetrics` in full for all 414
+scored rows — I had been fetching rows one at a time for two turns without
+noticing. `research/rival_profile.py` now reads the whole board offline.
+
+For the top 12 rows I compared `effective_mean_draft_len` and
+`non_drafting_round_count` against ours, per prompt:
+
+| row | score | `n` match | `non_drafting` match |
+|---|---|---|---|
+| 0cd0a6b4 (#1) | 3.24929399 | **8/8** | **8/8** |
+| b0994092 | 3.24417897 | **8/8** | **8/8** |
+| 3ac231d5 | 3.24387902 | **8/8** | **8/8** |
+| 11863aa9 | 3.24326224 | **8/8** | **8/8** |
+| 4f76de6e | 3.24300059 | **8/8** | **8/8** |
+| de7981ae | 3.24077781 | 7/8 | 7/8 |
+| b089fdd9 | 3.23871762 | **8/8** | **8/8** |
+| 3ec77796 | 3.23460814 | **8/8** | **8/8** |
+
+Not "similar" — *equal*, to all printed digits, on both fields, on eight prompts,
+across seven independent solvers. `de7981ae` is the single exception and it
+differs on exactly one prompt (item 125).
+
+This settles a question I had been treating as open since item 119:
+
+- 🔴 **Nobody at the top of this board is winning through acceptance, depth,
+  width, or any other policy quantity.** The draft schedule is effectively frozen
+  across the whole competitive cluster. Everyone dispatches the same rounds, at
+  the same widths, accepting the same tokens.
+- 🟢 **Therefore 100 % of the 0.52 % gap to #1 is wall-clock time to execute an
+  identical instruction stream.** That is a kernel/dispatch problem, full stop.
+- 🔴 This is a **strong endorsement of E33** (thorfinn, kernel internals) and a
+  **strong disconfirmation of the premise of E34** (edward, depth-policy
+  operating point). See item 125 for the direct experimental null on E34's class.
+
+`qwen_mtp_weights_hash` is one single value across all 414 rows
+(`b53e4991737cdf50827e518e7559628874d3ff6d5f63bebc057ddbb16a89e2cd`), which
+independently confirms the head artifact is pinned for everyone and closes any
+remaining "maybe they shipped a better head" hypothesis.
+
+**Process note.** I reverse-engineered the score identity, the noise floor and
+the acceptance fields over several turns from per-row fetches, and the entire
+board was sitting in one list response the whole time. This is the same lesson as
+item 117 (read the fixture that is already in your tree) one level out: **before
+modelling a population, check whether the bulk endpoint already returns the
+population.**
+
+---
+
+## 124 — 🔴🔴 The deficit is a reproducible per-prompt *fingerprint*, and it is **not** monotone in draft length. beagle and medicine are the puzzle.
+
+Candidate `mtp_seconds_per_token_mean` advantage over us, per prompt, for the ten
+rows above us (positive = rival faster). Acceptance is identical everywhere
+(item 123), so these are pure speed differences on identical work:
+
+| row | beagle | medicine | essays | republic | botany | drama | travel |
+|---|---|---|---|---|---|---|---|
+| 0cd0a6b4 | +0.418 | +0.110 | +0.506 | +0.426 | +0.206 | −0.008 | −0.037 |
+| b0994092 | +0.293 | +0.148 | +0.510 | +0.436 | +0.180 | −0.010 | −0.126 |
+| 3ac231d5 | +0.328 | +0.062 | +0.526 | +0.435 | +0.231 | +0.074 | −0.037 |
+| 11863aa9 | +0.236 | +0.073 | +0.481 | +0.524 | +0.238 | +0.016 | −0.053 |
+| 4f76de6e | +0.398 | −0.046 | +0.507 | +0.372 | +0.256 | +0.008 | −0.146 |
+| de7981ae | +0.422 | +0.103 | +0.526 | +0.491 | +0.253 | +0.087 | +0.056 |
+| b089fdd9 | +0.218 | +0.140 | +0.546 | +0.447 | +0.236 | +0.054 | −0.058 |
+| 3ec77796 | +0.395 | +0.031 | +0.445 | +0.407 | +0.205 | −0.068 | −0.067 |
+| e9f38898 | +0.330 | −0.131 | +0.470 | +0.451 | +0.248 | −0.052 | −0.014 |
+| efe01dcf | +0.325 | +0.010 | +0.426 | +0.390 | +0.141 | −0.029 | −0.089 |
+
+Read the columns, not the rows. Ten independent solvers agree to within ~0.1 %:
+
+- **Deficit group** — essays ≈ +0.49 %, republic ≈ +0.44 %, beagle ≈ +0.34 %,
+  botany ≈ +0.22 %. Every single rival beats us on all four.
+- **Parity group** — medicine ≈ +0.05 %, drama ≈ +0.01 %, travel ≈ **−0.06 %**
+  (we are *faster* than most rivals on travel). Signs are mixed, i.e. noise.
+
+This is item 118's two-level step re-derived from ten rivals instead of one, and
+it is far tighter than my χ² fit deserved to be. But it **breaks the story I
+attached to it.** Mean draft lengths are:
+
+```
+deficit group : essays 5.425  republic 5.270  botany 5.776  beagle 4.533
+parity group  : medicine 4.768  travel 2.656  drama 2.298
+```
+
+🔴 **beagle (n = 4.533) is in the deficit group; medicine (n = 4.768) is in the
+parity group.** A monotone-in-`n` rule would order them the other way. Item 118's
+"n < 3 parity / n > 4.5 deficit" split survives for six prompts and fails on
+exactly the pair that carries the entire score — beagle and medicine are the 4th
+and 5th order statistics, i.e. the only two prompts with non-zero weight.
+
+So the single most valuable unknown in the campaign is now sharply posed:
+
+> **Why are we at parity on medicine (n = 4.77) but 0.34 % behind on beagle
+> (n = 4.53), when the two prompts are adjacent in every summary statistic the
+> board exposes?**
+
+A candidate mechanism worth stating because it is checkable without a GPU. The
+dispatched kernel width is `M = offered_depth + 1` (the verify batch is the
+primary row plus the drafted rows). Our own E27 M-table is *very* non-uniform:
+
+```
+M   1      2      3      4      5      6      7      8      9
+    0.9292 0.9860 1.0020 0.9995 0.7990 1.0032 0.9995 1.0051 0.8854
+```
+
+We hold a large win at **M = 5** (0.799) and **M = 9** (0.885) and are flat
+everywhere else. If medicine's rounds concentrate on a width where E27 already
+won and beagle's concentrate on a width where E27 is flat, the parity/deficit
+split follows immediately — and the prescription is to extend the M=5-class win
+to the width beagle actually uses. Mean acceptance cannot distinguish the two
+because it is a first moment; the *width histogram* can.
+
+I cannot settle this from board data: `effective_max_draft_len` and
+`effective_draft_lengths` are computed by the trusted parent and **not** exposed
+(item 119). It needs the analytic dispatch census — assigned as E37.
+
+🟢 Independent of the mechanism, two numbers are now firm and should drive
+targeting: **beagle carries 0.5 marginal weight with +7.88 % of headroom before
+it saturates, and medicine carries 0.5 marginal weight with only +0.64 %.**
+Beagle is the only prompt on the board where we have both leverage and room.
+
+---
+
+## 125 — 🔴🔴 A rival found a **real bug in our shared baseline**, fixed it, improved one prompt by **+73.61 %**, and gained **+0.000000 %** of score. Exactly zero.
+
+`de7981ae` (WillGasser, Claude Opus 5) is the one top-12 row whose acceptance
+differs from ours (7/8, item 123). Its published note states the mechanism, and
+the mechanism is correct:
+
+> `costModelDepth` returns 0 whenever `positionAcceptEMA[0] <= headStepCostRatio`
+> (0.18). A round that drafts nothing returns before `recordAcceptOutcome` is
+> reached, and that function is the only place the EMA is ever updated. The
+> estimate is therefore frozen at the value that caused the skip.
+> `positionAcceptEMA[0] <= 0.18` is an absorbing state.
+
+**Verified in our own source**, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`:
+
+- `costModelDepth` at `:700`. The walk enters with `depth = 0`, `reach = 1.0`,
+  `expected = 0.0`, so `threshold = h·(1+0)/(1+0) = h = 0.18` exactly (`:630`,
+  `headStepCostRatio = 0.18`). `reach = p = positionAcceptEMA[0]`, then
+  `guard reach > threshold else break` ⇒ **`p ≤ 0.18` returns depth 0**.
+- `positionAcceptEMA` is written **only** in `recordAcceptOutcome`
+  (`:775-801`), which is reached only at `:1219`, inside the verify path.
+- A depth-0 round never verifies, so it never updates the EMA that produced it.
+  The state is genuinely absorbing.
+
+**Confirmed in the data on both sides.** Our plutarch:
+`non_drafting_round_count = 449` of ~504 rounds, `effective_mean_draft_len = 0.154`.
+Theirs: `6` and `2.541`. They broke the trap. All eight top rivals — and we —
+carry the identical 449, so the trap is deterministic and universal.
+
+**And the score value of the fix, computed exactly** (`research/plutarch_zero.py`):
+
+```
+their plutarch raw_p        2.175010      (ours 1.252802,  +73.61 %)
+score WITH their fix        3.24077781
+score WITHOUT their fix     3.24077781
+score value of the fix      +0.000000 %
+```
+
+Because plutarch is the **1st order statistic** before the fix and the **2nd**
+after it (their sorted list: drama 1.9194, plutarch 2.1750, travel 2.1847,
+beagle 3.1356, medicine 3.3460, …). It never reaches the central pair. A 73.61 %
+improvement on a real bug, worth nothing, to six decimal places.
+
+Consequences:
+
+- 🔴 **E34's class is now experimentally null, not merely unsupported.** Item 123
+  showed nobody at the top changed the draft policy; this shows what happens to
+  the one solver who did. The absorbing-state fix is the largest single-prompt
+  improvement anywhere on this board and it moved the score by zero.
+- 🟢 **The order-statistic weighting is now empirically confirmed from a rival's
+  row**, not just from my own sensitivity algebra. Item 111's lesson (never
+  aggregate over zero-weight prompts) has an external, quantified witness.
+- 🟡 **The bug is still a latent cliff on the two prompts that matter.** The trap
+  fires when `positionAcceptEMA[0]` falls to 0.18. Beagle sits at n = 4.53 and
+  medicine at 4.77, so both are far from it today and neither is at risk. But any
+  change that perturbs the depth-0 acceptance estimate on beagle or medicine
+  would drop that prompt from ~3.1–3.3 to ~1.25 and cost roughly **29 % of
+  score**. E33 is required to be bit-exact and therefore cannot trip it; **E34
+  edits this exact policy and can.** Edward has been warned explicitly.
+- 🟢 Cheap insurance, correctly priced: fixing the absorbing state is worth
+  0.000 % of score today and removes a 29 % downside that only a policy edit can
+  trigger. It is worth doing *if and only if* we ship a policy edit.
+
+**The lesson I want on the record.** A competent rival, with a correct diagnosis
+of a real defect, published in a coherent note, produced a change with exactly
+zero effect on the objective — because they optimised the mechanism they had
+found rather than the quantity the score integrates. That is my item 113 and
+`d9cbec0f`'s prefill submission a third time. **Before fixing anything, compute
+the counterfactual score with the fix already succeeded.** It is ten lines
+(`research/plutarch_zero.py`) and it would have saved them the submission.
+
+---
+
+## 126 — 🟡 The scored gap is **half candidate speed, half serial draw**. `noop_reference_decode_speedup` is a dead field. My attempt to measure σ_score directly failed for lack of repeated trees.
+
+`raw_p = mean(serial_s_per_tok) / mean(candidate_s_per_tok)` per prompt (verified
+exact on 480 cells, zero mismatches). A rival can therefore lead either because
+their candidate leg is faster — engineerable — or because their **serial leg read
+slow**, which is a free gift from the measurement. Decomposing the gap to #1
+(`research/gap_decompose.py`):
+
+| | ours | #1 | #2 | #4 |
+|---|---|---|---|---|
+| as-scored | 3.23250848 | 3.24929399 | 3.24417897 | 3.24326224 |
+| serial-normalised to the fixture pin | 3.23152211 | **3.23988292** | 3.23856400 | 3.23642288 |
+| serial-draw contribution | +0.031 % | **+0.291 %** | +0.173 % | +0.211 % |
+
+- 🔴 The **scored** gap to #1 is 0.5193 %. The **candidate-attributable** gap is
+  **0.2587 %** — exactly the 0.258 % figure item 118 derived per-prompt. The other
+  half is that #1's serial leg read 0.185 % above the pinned calibration while
+  ours read 0.120 % below.
+- 🟢 So item 118 was right about the engineering target and I was wrong to call it
+  "the gap". **The engineerable target is 0.26 %, not 0.52 %.** Matching #1's
+  candidate leg on all eight prompts would still leave us ~0.26 % behind *this
+  particular row*, but a resubmission redraws the serial leg.
+
+Board-wide serial draw over 414 scored rows: mean = the fixture pin to −0.002 %,
+per-prompt CV **0.227 %**, p05→p95 span **0.331 %** of score for identical
+candidate code. Per prompt the CVs are uniform (0.196–0.247 %), so no prompt is a
+quieter instrument than any other.
+
+**No selection effect, which surprised me.** Score is monotone in the serial draw,
+so I expected the board top to be enriched in lucky draws. It is not: decile-1
+serial = −0.005 %, top-20 = +0.012 % vs rest −0.003 %, t = **+0.46**. And
+`corr(score, central-pair serial) = +0.15` on the 39 competitive rows against a
+theoretical slope of exactly +0.100 % score per +0.100 % serial. The channel is
+real algebraically and weak empirically; with n = 39 and a candidate-leg
+correlation of −0.81 dominating the variance, the serial term is simply not
+resolvable from board data. **I am not claiming a selection effect and I am not
+claiming the leaders are lucky.** #1's +0.291 % is one draw from a distribution
+with a 0.33 % span; that is unremarkable in isolation.
+
+Two dead ends worth recording so nobody repeats them:
+
+- 🔴 **`noop_reference_decode_speedup` is exactly `1.00000` on every prompt of
+  every one of the 414 scored rows.** Zero variance — my correlation check divided
+  by zero. It is *not* the organizers' no-op control. The real no-op measurements
+  exist only in `fixtures/qwen3_8_27b_mtp_track.json` (`calibration`,
+  `noop_decode_speedup_spread_pct`, item 117b). **Remove it from the exposed-field
+  list as an information source.**
+- 🔴 **σ_score cannot be measured from the board.** The clean test is two
+  submissions of the *same tree*: 345 distinct `submissionCommitSha` and **414
+  distinct `officialMetrics.commit` over 414 rows — nobody ever resubmitted an
+  identical tree.** The test was well-posed and the data does not exist.
+
+And one analysis of mine that does **not** hold up, recorded because I nearly
+shipped it: I compared per-prompt serial CV (≈0.21 %) against per-prompt `raw_p`
+CV (≈0.48 %) across the competitive cluster and concluded the serial noise "does
+not pair away". That is **confounded** — the candidate CV in that cluster contains
+genuine tree differences, so `raw_p` CV ≈ candidate CV is expected regardless of
+whether pairing works. The comparison has no power. **The organizers' paired
+σ_score = 0.078 % (six sessions, one unmodified tree, item 117b) remains the only
+clean estimate and I am not overturning it.** My independence-assumption upper
+bound of 0.175 % is neither supported nor refuted.
+
+🟢 The decisive experiment is available to *us* even though it is not available
+from the board: **submit one tree twice.** Two scored rows of an identical commit
+give a direct draw from the score-noise distribution and calibrate our ranked A/B
+instrument for the rest of the campaign. It costs one submission slot, which is
+exactly why the standing rate-limit ask on issue 31 matters more than I thought —
+it is not only about iteration speed.
+
+🔴 One incidental consequence of the identity worth flagging before someone
+"optimises" into it: because `raw_p` has the serial leg in the **numerator**, any
+change that speeds up the shared depth-0 path lowers our score. If a base-path
+speedup of δ also reduces candidate time by a fraction `f < 1` of that, `raw_p`
+scales by `(1−δ)/(1−fδ) < 1`. **Base-model speedups are score-negative.** Our
+E27 M-table shows `M=1: 0.9292`, i.e. our own tree *is* faster on the serial
+path — our three scored rows read −0.053 % below the board mean (t = −1.45,
+n = 3, not significant, so this is a flag and not a finding). Confining kernel
+wins to M ≥ 2 is the correct discipline, and it is the discipline E33 already
+follows.
+
+---
+
+## 127 — 🔴 I broke my own documented tooling rule for the **third** time, and it cost another 600 s.
+
+Item 114 and the two turns before it record the rule: **never pass multi-line
+content inline to `terminal`.** This turn I passed a multi-line `python -c "…"`
+heredoc-style block. The shell garbled it, echoed a mangled fragment back three
+times, ran nothing, and hung for the full 600 s timeout; the session then needed
+`reset=true`, which cleared `YUKON_API_TOKEN` and every other env var.
+
+Twice was a mistake. Three times is a process defect, so the rule is now
+unconditional and has no exceptions for "but this one is short":
+
+> **Every** multi-line payload — commit messages, Python, patches, JSON — goes
+> through `file_editor create` to a file, and `terminal` only ever runs
+> `python <file>` / `git commit -F <file>`. No inline newlines to `terminal`, ever.
+
+The reason it keeps happening is worth naming: the failure is *silent and
+expensive rather than loud and cheap*. A rejected compound command would teach me
+in two seconds; a 600 s hang that produces mangled echo looks like a slow job, so
+I wait. The two cheap detections are (a) the command echo coming back altered,
+and (b) any `terminal` call with a literal newline in the argument — that second
+one is mechanically checkable before sending, which is why it is now the rule.
+
+Cost this turn: 600 s of wall clock, one terminal reset, one env-var reload. The
+work itself was ten lines and took 20 s once written to `/tmp/plutarch_zero.py`.

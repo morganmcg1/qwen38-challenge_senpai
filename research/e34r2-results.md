@@ -277,17 +277,28 @@ low-memory command-buffer profile — and that ranked acceptance on deep prompts
 
 The advisor asked (feedback `e34-r2-...`, item 7) for the effective
 `get_max_ops_mb_per_buffer()` tuple and the `applegpu_*` arch string, noting that
-three experiments are blocked on it. `research/archprobe.m` enumerates the Metal
-device and prints them. It runs no compute and no timing, so it does not contend
-with the precision-timing slot.
+three experiments are blocked on it. `research/archprobe.m` already existed on the
+base — the advisor added it in `8ded37b` (ledger 115-119) for the SDPA two-pass
+question — so this extends that tool rather than adding a second one, and runs
+it. It enumerates the Metal device only: no compute, no timing, so it does not
+contend with the precision-timing slot.
 
 ```
-device.name              = Apple M4 Pro
-device.architecture.name = applegpu_g16s
-gpu_families             = Apple7 Apple8 Apple9 Metal3 Common3
+device.name         = Apple M4 Pro
+architecture.name   = applegpu_g16s
+MLX arch_gen        = 16
+MLX devc (back)     = 's'
+SDPA 2pass at KV>=1024 on this box? YES
+_nax gen threshold  = 17
+_nax available (arch gate only)? NO
+MLX stock budget    = 50 ops / 50 mebi-elements
 threadgroup_memory_bytes = 32768
 recommended_wset_bytes   = 40200896512
 ```
+
+The three added lines are the `_nax` gate, its threshold, and the arch-derived
+stock command-buffer budget. Everything else was already printed by the existing
+tool; the finding below is what the tool says when it is run.
 
 ### 8.1 🔴 `_nax` kernels cannot execute on this box
 
