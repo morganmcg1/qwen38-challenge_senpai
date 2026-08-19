@@ -12,13 +12,16 @@ A. campaign shipped surface (baseline -> PR base) [informational]
   total: 5 files, +229/-74
 
 B. THIS branch on the shipped surface (must be empty) [gating]
-  range: 0491f9e..8710b62
+  range: 0491f9e..f918aef
     (no files)
   total: 0 files, +0/-0
 
 C. this branch on campaign scaffolding [informational]
-  range: 0491f9e..8710b62
+  range: 0491f9e..f918aef
     +186   -0     research/e37-run.sh
+    +604   -0     research/e37_alloc_regime.py
+    +155   -0     research/e37_shipped_surface.py
+    +126   -0     research/e37_wandb_addendum.py
     +182   -0     research/e37_wandb_log.py
     +244   -0     research/e37_width_census.py
     +567   -0     research/e37r2_census.py
@@ -27,10 +30,14 @@ C. this branch on campaign scaffolding [informational]
     +231   -0     research/results/e37/medicine-rounds.txt
     +23    -0     research/results/e37/natural_history-meta.txt
     +262   -0     research/results/e37/natural_history-rounds.txt
+    +252   -0     research/results/e37/r2-alloc-regime.json
+    +61    -0     research/results/e37/r2-alloc-regime.txt
     +2067  -0     research/results/e37/r2-census.json
     +112   -0     research/results/e37/r2-console.txt
-    +617   -0     research/results/qwen38-r1-e37-draft-width-census-beagle-medicine.md
-  total: 12 files, +4636/-0
+    +32    -0     research/results/e37/r2-shipped-surface.json
+    +43    -0     research/results/e37/r2-shipped-surface.txt
+    +732   -0     research/results/qwen38-r1-e37-draft-width-census-beagle-medicine.md
+  total: 19 files, +6024/-0
 
 -- negative control --------------------------------------------------------
   predicate on a known-dirty range (5273067..0491f9e5): VIOLATION reported (5 files) -- control OK

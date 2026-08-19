@@ -425,21 +425,23 @@ negative controls**, each a targeted edit that must flip its target check to
 |---|---|---|---|
 | `MLX_MAX_MB_PER_BUFFER` | 128 forced / 512 | 128 **forced** (`overwrite=1`) / 512 **default** (`overwrite=0`) | C2, C6 |
 | `MLX_MAX_OPS_PER_BUFFER` | 64 forced / 50 | same, with the same forced-vs-default asymmetry | C2, C6 |
-| `Memory.cacheLimit` | 6 GiB / MLX default | 6 GiB / MLX default = `min(1.5·maxRec, 0.95·memsize)` — order **120 GiB** on a 128 GiB box | C4, C10 |
+| `Memory.cacheLimit` | 6 GiB / MLX default | 6 GiB / MLX default = `min(1.5·maxRec, 0.95·memsize)` = **121.6 GiB** on a 128 GiB box whenever `maxRec >= 81.1 GiB`, which Apple's ~75 %-of-RAM recommendation satisfies | C4, C10 |
 | clear cache after warmup | true / false | **inverted**: **no** clear locally, **one** clear on ranked | C7, C8, C9 |
 | wired residency | OFF / ON | OFF / ON, same `>= 96 GiB` gate | C9 |
 
 **Why that row inverts.** `clearAllocatorCacheAfterWarmup` is *never read on
 this path*. Its only consumers are `LagunaRuntimeWeights.swift:395` and the two
 DFlash workers (`:205`, `:204`) — the flag is inert for the MTP worker, which
-inlines the policy by hand at `QwenRuntimeMTPWorker.swift:487` (both copies) and
-applies only the two command-buffer budgets and the cache limit. The shipped
+inlines the policy by hand (trusted `QwenRuntimeMTPWorker.swift:487`, harness
+`:498`) and applies only the two command-buffer budgets and the cache limit,
+never the clear. The shipped
 test suite agrees by omission: it pins the clear-after-warm ordering for the
 *Laguna* initializer only. Meanwhile the single post-warm `Memory.clearCache()`
-reachable from an MTP session sits inside `wireResidentWeightsIfEnabled()`
-(`Qwen36MTPBlockSession.swift:235`), behind the *same* `physicalMemory >= 96 GiB`
-gate as wired residency. So the box that clears its allocator cache after warm
-is the **ranked** one; this 48 GiB host never clears.
+reachable from an MTP session is the *only* `clearCache` in that file
+(`Qwen36MTPBlockSession.swift:235`) and sits inside
+`wireResidentWeightsIfEnabled()` behind the *same* `physicalMemory >= 96 GiB`
+gate as wired residency (`:225`). So the box that clears its allocator cache
+after warm is the **ranked** one; this 48 GiB host never clears.
 
 **The conclusion survives, and in a stronger form than the one offered.**
 
@@ -453,9 +455,15 @@ is the **ranked** one; this 48 GiB host never clears.
    on both boxes or on neither.
 2. **The residual first-touch cost is regime-dependent, and this box is the
    punishing one — on the rows that survived.** The ranked box runs a cache
-   limit ~20× larger (order 120 GiB against a forced 6 GiB) and keeps the
-   weights wired, both of which make a fresh allocation likelier to be served
-   from the retained pool there than here. That is the addendum's conclusion and
+   limit ~20× larger (121.6 GiB against a forced 6 GiB) and keeps the weights
+   wired, both of which make a fresh allocation likelier to be served from the
+   retained pool there than here. The local policy is in fact harsher than
+   *stock MLX on this same host*: unforced, this 48 GiB box would cache up to
+   `0.95 × 48 = 45.6 GiB` (binding whenever `maxRec >= 30.4 GiB`), so the 6 GiB
+   cap is a 7.6× reduction against its own default, not only against ranked.
+   Both multiples are arithmetic on the formula in C10 with the one input I did
+   not measure — `maxRec` on either box — entering only through the stated
+   inequality. That is the addendum's conclusion and
    it holds — but it is carried by the cache-limit and residency rows, not by
    the clear-after-warm row, which runs the other way, and not by warm-buffer
    retention: a *gap* shape has by construction no warm-phase buffer to retain,
