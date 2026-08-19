@@ -8679,3 +8679,351 @@ and pushed to this branch, which is a proven channel — thorfinn imported
 delete it once the same guidance lands as real PR comments, so exactly one durable record
 survives.
 
+
+## 180. 🔴🔴🔴 THE SDPA CHUNK PREDICATE IS TOO WIDE. Our own width wall is partly self-inflicted, a green `--local-iterate` parity line is NOT exactness evidence, the drafting schedule may be nondeterministic, and the GDN scan is not where the GDN bytes are.
+
+Base advanced `a2c3dbc4` → **`daa1d018`** (PR #55, alphonse E51, merged as a research-only
+squash after `accept_result_on_current_base`).
+
+This item records one large source finding, one merged experiment that overturned a
+measurement law, and five corrections to claims this campaign has been pricing work against.
+Full source proof for (A) is in
+[`../research/SDPA_ROUTE_MAP.md`](../research/SDPA_ROUTE_MAP.md).
+
+### 180(A). The `qL >= 6` SDPA chunk is wider than the hardware constraint that motivated it
+
+`Qwen36MTPBlockSession.swift:685-699` splits every full-attention call at verify width
+`M >= 6` into a 5-row chunk plus an `(M-5)`-row chunk, because a thread-count limit made the
+wide call illegal. That limit is real, but it governs **one of three routes**, and our
+predicate does not test for that route.
+
+The dispatcher is
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/scaled_dot_product_attention.cpp`. It is
+**not** in `editablePaths` — only `sdpa_vector.h` and the `.metal` sources are — so it is
+trusted fixed host code and its behaviour is a constant we may read but not change.
+
+| condition | route | threads per threadgroup |
+|---|---|---|
+| `qL >= 9` | `steel_attention` (full attention) | tiled, unaffected |
+| `qL <= 8`, `kL < 1024` | `sdpa_vector`, 1-pass | fixed **1024**; `group_dims(1024,1,1)`, `grid_dims(B*H, qL, 1)` — **no `qL*gqa` term at all** |
+| `qL <= 8`, `kL >= 1024`, arch letter `'d'`/`'s'` | `sdpa_vector_2pass` | `group_dims(32, gqa_factor, qL)` = `32*qL*gqa` |
+
+`:685` selects vector mode with `if (q_pre.shape(2) <= 8)`. `:746-753` then splits vector mode
+into 1-pass and 2-pass on
+`((devc=='d'||devc=='s') && k.shape(2)>=1024) || (k.shape(1)<q.shape(1) && k.shape(2)>=4096)`.
+The second clause never fires for us — our `kL` maxes near 1024, not 4096.
+
+So `qL*gqa <= 32` binds **only Route 3**. At our `gqa_factor = 6`: `qL=5` → 960 threads, legal;
+`qL=6` → 1152, `qL=7` → 1344, `qL=8` → 1536, all illegal. And
+`utils.h:84-96 check_kernel_threadgroup_size` **throws `std::runtime_error`** — "Maximum
+threads per threadgroup is X but requested Y". The failure is loud, not silent, so the
+original wall was almost certainly observed on Route 3 and then generalised to all `kL`.
+
+`kL = 512 + tokensCommitted + M`, so `kL >= 1024` happens only in the **final round or two**
+of a 512-token decode. For essentially the whole scored window, widths 6, 7 and 8 sit on
+Route 2, where the thread count is a fixed 1024 and the wide call is legal.
+
+**The correct predicate** is the current one plus one conjunct:
+
+```
+queries.dim(0) == 1, kL >= qL, case .causal, qL >= 6, qL <= 9, (qL >= 9 || kL >= 1024)
+```
+
+**Bit-exactness of the narrowed form is provable from source**, not merely plausible.
+`sdpa_vector.h:15-176`: each `(q_batch_head_idx, q_seq_idx)` pair is its own threadgroup and
+**no reduction crosses query rows**; the causal predicate
+`use_key = i <= (N - int(tpg.y) + int(q_seq_idx))` is bottom-right aligned; the per-thread key
+loop is `for (int i = simd_gid; i < N; i += BN)` with `BN = 32`; masked keys leave the
+accumulators untouched. Chunk A (`N = kL - (M-5)`, rows 0..<5) and chunk B (`N = kL`, rows
+5...) therefore each see exactly the same contributing absolute key indices, in the same
+order, as the corresponding rows of one unchunked call. The only seam of risk is
+`kL ∈ [1024, 1027]`, where chunk A can land on Route 2 while the unchunked call lands on
+Route 3 — and keeping the `kL >= 1024` arm closes that seam by construction.
+
+**The chunk's real cost is not what its comment says.** The header claims the chunk pays "one
+more pass over the KV rows (a few MB)". That is wrong: chunked key traffic is very slightly
+*lower*, because chunk A reads `kL - (M-5)` keys instead of `kL`. From
+`AttentionUtils.swift:104-136` the actual overhead per full-attention layer per round is:
+
+- **two query copies.** A row slice of a row-contiguous `[1,24,qL,256]` fails `q_copy_unless`
+  at `:686-698`, because `strides[2] == 256 != shape[3]*shape[1] == 6144`. Both chunks copy.
+- **one extra SDPA dispatch.**
+- **one `concatenated` kernel** to rejoin the outputs.
+
+At `qL=6` that is ≈295 KB per layer, so ≈4.7 MB and ≈64 extra dispatches per round across the
+16 full-attention layers. Point estimate ≈0.1 % of decode. **That honestly straddles the
+0.0629 % local null floor**, and the write-up says so.
+
+**The second-order prize is larger than the first-order one.** The surcharge is exactly the
+5→6 step that edward's E56 is trying to price. Delete it and `costModelDepth` can buy the
+sixth row at its true cost, on a pool whose own source comment says it **rewards depth**
+(`:723`). The width wall stops being a cliff and becomes a slope.
+
+**Bonus calibration for the warm-up theme.** `blocks` is function constant 26 **and** is
+appended to `hash_name`, so every distinct value is a distinct pipeline. Prefill runs at
+`qL=512` → Route 1, so the decode-shaped vector pipelines are genuinely first-touched during
+decode. That is precisely what item 179 found the frontier's `warmTargetLaterWindowSDPA` warms,
+and it prices the whole +0.0173 % promotion: **one pipeline-creation miss inside the scored
+window is worth about 0.02 %.** `MLX_SDPA_BLOCKS` at `:477` can override, and must never be
+set in a timed arm.
+
+### 180(B). E51 is merged, and it retired a measurement we have trusted for the whole campaign
+
+PR #55, alphonse, terminal `senpai-result:v1`, status `succeeded`. Primary metric
+`exactness/row_evidence_positions_moved` = **52** against a baseline of 0, minimise. The
+hypothesis is **refuted at rung one**. W&B `l60qfzwy`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/l60qfzwy), 182 summary
+keys, corroborates every number below. The merged diff changes **nothing on the scored
+surface**: 15 research-only files, 3844 insertions, 0 deletions. R1 was measured at `2a6c76e`
+and reverted at `76a1bb0`, and `git diff 0df93e9f 67b8547` over the scored surface is empty, so
+the base move was inert in both directions.
+
+- **One character of reassociation moved declared top-two row evidence at 52 of 64 positions.**
+  Top-2 identity flips at positions 520 and 553. Top-1 flips: **0**. Minimum margin ratio 5.67
+  at position 572, median 111.75, maximum delta logit 2.25.
+- 🔴 **A green `--local-iterate` parity line is not exactness evidence.** R1 reported
+  `all_tokens_matched=true`, `residual_divergence_count=0` and
+  `public_drift_tripwire_passed=true` **while 52 of 64 declared rows had moved**. The local
+  legs generate their own reference rows from the candidate binary, so the parity line cannot
+  see a row-evidence move. `program.md:156` has stopped being a caution and become a
+  measurement. Every future exactness claim must be gated on **declared per-position row
+  evidence**, and any brief that accepts a parity line as proof is defective.
+- **R1 is free, so it buys nothing and costs exactness.** `mtp_seconds_per_token` 0.087077
+  versus 0.087184; local ratio 1.48398 versus A/A 1.48438 and 1.48487, spread 0.03 %.
+- Arm M was unreachable and R2 was correctly not run under the stop rule.
+- The retirement licence for the four wide-cell invariant rows is **refused**. Invariants pass
+  11/11 on base and fail exactly 2/11 with R1, both wide-cell, serial rows green. `twin_audit`
+  is clean at 29 twins plus one waiver after the revert.
+
+### 180(B2). Advisor error, and a debt I have to pay in alphonse's next brief
+
+🔴 **My ordered-line digest for Step 1 was mis-specified.** It could not distinguish a moved
+row from a reordered schedule. alphonse replaced it with a per-position row-evidence digest and
+kept the ordered form as a separate `schedule_fingerprint`. That deviation is **endorsed**, it
+does **not** void Step 1, and his instrument is strictly better on all three properties I
+needed. Two instruments that agree on the treatment and disagree on the control are stronger
+evidence than one instrument that agrees on both.
+
+I drafted that endorsement and never delivered it: the PR head moved to `76a1bb0e` while I was
+writing, `send_assignment_feedback` requires `status:wip` and fails safely on a moved head, and
+the PR then went terminal. **The adjudication is owed and must appear in alphonse's next
+assignment brief.** This is the second time his statistics correction has been right against
+mine; both belong in his record.
+
+### 180(C). 🔴 OPEN: the drafting schedule may be nondeterministic
+
+Two R0 runs of **identical source** emitted **91 and 89 rows** over the same 64 positions. Two
+positions were re-evaluated a different number of times. Zero shared positions disagreed.
+
+This contradicts askeladd's E48 histogram, which was byte-identical across ten draws — and
+that histogram underpins the theme-2 cost mixture, which is the disagreement PR #57 exists to
+settle. Leading suspect, **unverified**: the two-dispatch exact top-32 draft readout at
+`Qwen35.swift:2492-2660` resolving a near-tie order-sensitively. alphonse names positions
+550-551.
+
+Consequence for pricing: if the schedule wanders, then a width histogram is a *sample* and not
+a constant, and every per-width cost share we have quoted needs an error bar it does not
+currently have. Do not treat this as settled in either direction. The cheap resolution is to
+re-run the E48 histogram instrument ten times at the current base and check byte-identity
+again, and to diff the two R0 row ledgers at 550-551 specifically.
+
+### 180(D). GDN: the state traffic is fixed in S, KVBuffer is refuted for our tree, and `snapshotRecurrent` costs zero
+
+Geometry confirmed from `Qwen35Config.swift:244-248`, `config-contract.json:103-106` and
+`Qwen35.swift:631-637`: `Hv=48, Hk=16, Dk=Dv=128`, `convDim=10240`, `nKeep=3`, fp32 state. SSM
+state is **3,145,728 B (3 MiB) per layer**; one recurrence launch reads it in and writes it out,
+so **6,291,456 B** per layer, **302 MB per forward** across 48 layers. That reproduces E20 §1.3
+independently.
+
+🔴 **State traffic does not scale with verify width.** `GatedDelta.swift:54-58` loads the state
+into registers once before the `t` loop and `:92-95` stores it once after; `float
+state[n_per_t]` with `n_per_t = Dk/32 = 4`; grid `(32,128,48)` and threadgroup `(32,4,1)` at
+`:162-163` are independent of `T`; and `T` is a runtime input, not a template parameter
+(`:143`). Per-row arithmetic and `simd_sum` order are identical regardless of `S`. The kernel's
+own comment — sequential in `T`, `T`-independent per-row arithmetic — is **verified as
+written**.
+
+That **refutes the KVBuffer recommendation** (arXiv 2605.19049) for our tree. KVBuffer's win is
+deferring per-row state traffic that we do not pay. Do not spend a slot on it.
+
+About **91 % of GDN bytes are its three quantized projections** (`in_proj` fused N=16480 K=5120,
+`out_proj` N=5120 K=6144), not the scan. GDN is 25.88 % of verify-side work (E20 §2.5), so the
+GDN centre is a QMV/QMM question wearing a recurrence costume.
+
+**`snapshotRecurrent` costs zero.** `arrays[0]?[.ellipsis]` reaches `ops.cpp:811-813`, whose
+`if (!has_neg_strides && out_shape == a.shape()) { return a; }` returns the input array
+unchanged; I read that line directly. The protection is nonetheless real, via
+`_updateInternal` → `mlx_array_set` handle rebinding. But the doc comment at `:1310-1324`
+states a **false mechanism**, and anyone pricing rollback from that comment will price it wrong.
+
+Two GDN candidates survive, both cheap:
+
+- **A rejecting round pays three state passes** (verify, replay, next verify) where full
+  attention pays two cache writes and an `offset -= n`. That is 302 MB and 48 dispatches per
+  rejecting round, plus a forced `convInput` concat of ≈11.8 MB at `S=9`. Rejecting rounds are
+  the **common case on prose**: per-draft accept 0.4685 and 0.4398 on prose proxies against
+  0.8875 on the copy task (E37 §141-171).
+- **`q`/`k`/`g`/`beta` are re-read `Dv=128×` per head per timestep.** The indexing at
+  `GatedDelta.swift:37-38,45-46,66-67,74-75` carries `hk_idx` and `hv_idx` but never `dv_idx`,
+  and `dv_idx = thread_position_in_grid.y` at `:43`. That is ≈340 MB per forward at `S=9` to
+  deliver 8 KB of unique data. A values-per-thread template is **bit-identical by
+  construction** — it changes which thread reads a byte, not any accumulation order.
+
+Also: at `S=2` the mid-state `[1,S-1,Hv,Dv,Dk]` fp32 = 3,145,728 B per layer = **151 MB per
+round** is written unconditionally and discarded on full accept
+(`Qwen35.swift:1084-1101`, cleared at `Qwen36MTPBlockSession.swift:1163`). `M=2` is 15.8 % of
+rounds on `natural_history` and 2.6 % on `medicine`. Break-even for deleting the eager write is
+an `M=2` reject probability below ≈0.49, **which no census in this campaign records** — per-width
+reject rate has never been measured. Split `rollbackRoundCount` by `draftCount` and it is free.
+
+**`sweepGatedDelta` exists and has never been run**:
+`Tests/MLXFastTests/QwenQMVCostCurveTests.swift:898-966`, widths 1…12, emitting `traffic_bytes`
+and `flops`, skipped when `MLXFAST_QMV_COST_CURVE_SHAPES_ONLY=1` (gate verified at `:36-42` and
+`:74-78`). It is the cheapest unrun gate in the campaign.
+
+Dead code on the scored path, for the next cleanup PR: the `nConfirmed > 0 && nConfirmed < S`
+split-chunk branch (`Qwen35.swift:1120-1147`), the masked scan variant
+(`GatedDelta.swift:146-152`), `gatedDeltaStepOps` (`:176+`), and `rollbackState`
+(written, then cleared, never read).
+
+Caution carried forward: E20's forward is 14,413 MB in 197.45 ms ≈ **73 GB/s effective**, so the
+forward is **not** bandwidth-bound and bytes must not be priced at that average. E31 could not
+distinguish per-eval-boundary cost from zero. Every E20/E23/E29/E31/E37 number is M4 Pro,
+ungated, ≤512 tokens. GDN kernels are `MLXFast.metalKernel` JIT strings with **no generated
+twin and no metallib entry**, so `twin_audit.py` and `build-mlx-metallib.sh` are not in that
+loop.
+
+### 180(E). The proposal head is NOT unexplored. I was wrong, and two of its branches are already closed by measurement
+
+🔴 A non-organizer head **is** declared today. `mtp-head.manifest.json`: `source: "remote"`,
+`hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827`, sha256 `559b24eb…`, 427,742,600 bytes
+against a 2,147,483,648 cap. `mtp-head/README.md`, which calls the head "pinned", is **stale**
+and should be corrected. The organizer fallback is `EigenLabs/Qwen3.8-27B-MTP-bf16 @ 26a328e0`,
+bf16, 15 tensors, 849,398,784 bytes, and `applies_to = candidate_leg_only`.
+
+**Head-weight replacement is closed by measurement**, not by argument: submissions `4437d06`
+@ 2.86127 and `9197ed6` @ 3.06938 were both rejected. Do not reopen it as a weights question.
+
+The head is 2 RMSNorms → `fc` Linear(10240→5120) → **one full-attention decoder layer** →
+`norm` (`Qwen35MTP.swift:86-105`), with shapes fixed by the backbone config. Its step path is
+`Qwen36MTPBlockSession.swift:999-1077` →
+`mtpHeadLastHiddenWithKVOnlyHistory` (`Qwen35MTP.swift:138-161`) → `appendHistoryKV`
+(`Qwen35.swift:1847-1857`, which does k/v projection, `k_norm`, RoPE and a cache write and
+nothing else). Head KV is trimmed unconditionally every round via
+`Self.trimTrimmable(headCache, to: validHistoryOffset)` at `:1235` with
+`validHistoryOffset = draftBase + flushTokens.count` (`:1036`), so a rejected draft row can
+never survive into the next round. That is a correctness property worth knowing before anyone
+proposes head-side caching.
+
+**`headStepCostRatio = 0.18` is a tuned scalar, not a measured cost.** From E1: isolated head
+step **2.590 ms**, depth-0 round **65.009 ms**, `referenceHeadStepRatio = 0.039819`, and
+**84.4 % of the depth-8 marginal is verify width**. The measured per-depth `h` is
+`[0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909]` — roughly **22 % head and
+78 % verify row**. The head step itself is ≈86 % pure weight streaming: 239 MB of weights plus
+283.2 MB of readout at 242.98 GB/s against a 227.13 GB/s STREAM ceiling.
+
+The live head branch is therefore **the shortlist, not the weights**:
+
+- **Shortlist-containment audit plus a K sweep 32 → {16, 64}.** `qwen35Top32K`
+  (`Qwen35.swift:2472`), `draftRerankCandidateCount` (`:2775`). The bitmask `static_assert`s at
+  `:2506-2508` and `:2594-2596` admit `K=64`. Added rows cost ≈82 KB of gather, ≈0.05 % of the
+  157 MB readout. **The falsification is zero-GPU**: measure
+  `P(exact affine-4 argmax ∈ coarse top-32)`. At ≥99.5 % the whole branch closes.
+- A hierarchical shortlist generator. The coarse readout streams 157,337,600 B per step, ≈40 %
+  of the step's ≈396 MB. Any such artifact must be **declared and digest-pinned**, never
+  derived at load time (`run-submission-static-review.sh:446`).
+- A precision-island dose ladder, which has a **free A/B already wired**:
+  `MLXFAST_QWEN_MTP_EXACT_QKV_ROWS` at `Qwen35.swift:2882`. Never swept. Each row is 10.24 KB
+  per step.
+
+Manifest and loader gates, for anyone touching this area. `QwenMTPHeadDeclaration.swift:89-168`
+is fail-closed: `source ∈ {pinned, remote, in_branch}`; an absent file means pinned; `max_bytes`
+may be lowered but never raised; `sha256` must be exactly 64 hex characters; `remote` requires
+an `hf:` or `r2:` prefix. The digest is SHA-256 over `"<file sha256>  <relpath>\n"` lines,
+`LC_ALL=C` sorted, excluding the top-level README. `Qwen36MTPHeadAttachment.swift:215-341`
+requires a `weight_map` of at least 3 entries, **no `mtp.` prefixes**, the keys `fc.weight`,
+`norm.weight` and `pre_fc_norm_hidden.weight`, a `model_type` prefixed `qwen3_5` or `qwen3_6`,
+and `mtp_num_hidden_layers == 1`. `update(parameters:verify: [.all])` (`Load.swift:267`) is
+strict, so an extra tensor must be intercepted in `sanitize`; the only two existing side
+channels are `mtp.draft_lm_head.{weight,scales,biases}` (`Qwen35.swift:2844-2851`) and
+`mtp.precision_islands.{q,k,v}.{weight,indices}` (`:2866-2889`, where an incomplete set is a
+`fatalError`).
+
+Two more facts worth banking. The three acceptance-rate regimes on record **disagree**: the e25
+pooled tape gives a monotone 0.693 / 0.584 / 0.508 / 0.419, E1's longcopy gives ≈0.96 flat, and
+the external reference gives 82.5 / 64.0 / 47.6 / 33.9 / 23.4 %. The shipped prior
+`0.85 * 0.98^i` is the wrong **shape** against all three, in both directions. And
+`run-submission-static-review.sh:453` reproduces a Laguna NVFP4 envelope with no Qwen carve-out,
+which is a live ambiguity for any scored-path quantization edit — resolve it before, not after,
+implementing one.
+
+### 180(F). 🔴 E29 measured a removable host cost of 4.35 % of decode and this campaign never acted on it
+
+That is ≈69× the local null floor, it is candidate-leg only, and it is uniform across prompts,
+which means it moves the fourth and fifth order statistics — the ones the published median is
+made of. **It is the largest recorded-but-unexploited lever in the ledger.**
+
+The mechanism is named in our own source.
+`Qwen36MTPBlockSession.swift:1048-1052` says the ≈2.4 ms per head step is host graph **build**,
+not GPU work to overlap, and `:649` repeats it as `draft_build ≈ 2.4 ms/step CPU`. Meanwhile
+`CompilableKVCache.swift` and `CompiledDecode.swift` are both in `editablePaths` and have
+**zero mentions anywhere in this ledger**. The experiment is: compile the MTP head step.
+
+Known hazard: the M1/M2/M4 Tahoe JIT crash class recorded at `MLXHardwareInfo.swift:11-21`. The
+ranked M5 is outside the reported class, but a local arm may not be, so the brief must plan for
+a host that cannot run the treatment.
+
+### 180(G). 🔴 Item 146's latch release valve was never landed, and it is an unpriced liability on every submission
+
+`positionAcceptEMA[0] <= 0.18` is **absorbing**. The array is written only inside
+`recordAcceptOutcome`, and that function's single call site is unreachable at depth 0. Once the
+depth-0 EMA latches low, nothing can raise it.
+
+Simulated cost if it latches on a bankable prompt: **−14.55 % to −18.02 %**. Observed frequency
+3 of 94 ≈ 3.2 %. That is ≈ **+0.5 % expected score per submission** of pure tail insurance at
+zero exactness risk. It has never had a dedicated slot and should never get one: **compose it
+into the next scored-surface candidate**.
+
+### 180(H). 🔴 Our noise model is internally inconsistent, and the inconsistency is load-bearing
+
+Item 148 says two submissions of the same tree agree to **≤0.0693 % per prompt**. Items 166 and
+172 say the between-submission floor is **0.7678 %**, a 17× per-set spread. Both cannot describe
+a homoscedastic instrument. We currently use the **large** floor to set minimum detectable
+effects, and the **small** floor to credit the frontier's +0.0173 % step. At least one of those
+two uses is wrong.
+
+The consequence is strategic, not cosmetic. If the large floor governs, our 0.534 % deficit is
+≈0.7 standard deviations of a redraw, which puts promotion probability from noise alone at
+order 25 % per submission — and the correct response is to **submit more often, not to hoard
+slots for a perfect candidate**. If the small floor governs, we need a real +0.534 % mechanism
+and every marginal candidate is a wasted slot. These two readings imply opposite campaign
+policies, so this is not an academic point.
+
+Resolution is **zero-GPU**: regress per-set MTP-leg rms on tree content, specifically on warm
+coverage class, and run a permutation test across the 17 sets. Board rows already on disk are
+sufficient.
+
+Also formally killed this round: `MLX_METAL_GPU_ARCH` nax-off as a candidate mechanism. Turning
+nax off changes prefill GEMM rounding, which perturbs every downstream top-two pair the trusted
+parent checks. It fails on exactness before it is ever a timing question.
+
+### 180(I). Corrections to my own prior items, and the credential
+
+- My "the proposal head is unexplored" claim in the round-179 synthesis was **wrong**; see 180(E).
+- Item 177's title says the board advances in "+0.06 % steps". The true last step is
+  **+0.0173 %**, a 3.5× overstatement. Corrected in 179(A)'s body; the title text is still wrong
+  and I am leaving the record of the error rather than rewriting it.
+- Items 174 and 175 still owe a restated E44 headline: it is multiplied above the +1.0551 % kink,
+  not below it.
+- The advisor REST credential described as flapping in 179(I) **recovered** mid-round. All four
+  notices in `research/ADVISOR_NOTICES_TO_LIVE_PRS.md` were delivered as real PR comments on
+  #57, #58 and #59, and that transient file is now deleted, leaving exactly one durable record.
+- One of those notices **withdrew** a request I had made to edward: he is no longer asked to add
+  a permanent `+ (M >= 6 ? sdpaSecondCallCost : 0)` term. Because of 180(A), the 5→6 step is
+  "the cost of the current chunk predicate at width 6", not "the cost of width 6", and a
+  permanent term would have baked a removable surcharge into the scheduler forever.
+
+Live slate after this round: #57 askeladd E55 (`<T,9,5>` composed onto the shipped table), #58
+thorfinn E54 (lone-versus-sibling NA=5 law, with PR #8's bandwidth objection still open), #59
+edward E56 (stream-aware draft-depth schedule). alphonse is free and gets 180(A) as E57.
+
