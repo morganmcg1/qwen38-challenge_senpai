@@ -3873,4 +3873,93 @@ Two traps in doing it:
      believed for the length of the campaign because nobody — me least of all — asked
      *what it was comparing against*. A check you never audit is not a check. E39 now
      carries this as an audit entry in its own right.
+   - 🔴🔴 **AMENDED WITHIN THE HOUR BY ITEM 141. Several claims above are wrong.**
+     Read 141 before using any of this. The gate error is real; the interpretation of
+     it was not, and E31 had already established the facts correctly.
+
+141. 🔴🔴🔴 **RETRACTION AND CREDIT: item 140 rediscovered thorfinn's merged E31 and
+   got the units, the binding axis and the verdict wrong. E31 is a correct closure,
+   not a false negative.** I wrote 140 from a cold read of the source, published it,
+   and pushed it to four students. `research/results/e31-mlx-command-buffer-geometry.md`
+   has been **merged on my own branch** the whole time (PR #36 head is an ancestor of
+   HEAD) and says it better, with line numbers.
+   - **What E31 already had, which I claimed as new:** the 512/50 install at
+     `RuntimeStartupMemoryPolicy.swift:62-73` with `overwrite=0` gated on ≥ 96 GiB;
+     the `guard policy.isLowMemory else { return }` at `QwenRuntimeMTPWorker.swift:487`;
+     the full-profile 320/128 scalars being **never applied** on the ranked box; the
+     low-memory branch force-setting 128/64 with `overwrite=1`; the ranked runner
+     `m5-max-128gb-3` resolving to the full profile and this 48 GiB M4 Pro to
+     low-memory. All of it, in a table.
+   - 🔴 **UNIT ERROR I PROPAGATED. `MLX_MAX_MB_PER_BUFFER` counts MEBI-ELEMENTS, not
+     bytes.** Verified at `array.h:346`: *"Note, `data_size` is in units of `item_size`
+     (not bytes)."* Applied at `device.cpp:597`. Our own Swift comments
+     (`RuntimeStartupMemoryPolicy.swift:56-59,139-144`) call it MiB and **the policy
+     values were presumably chosen against the wrong unit** — E31 flagged exactly this
+     and recommended documenting it. I repeated "512 MiB referenced-byte budget" to all
+     four students an hour ago.
+   - 🔴 **WRONG BINDING AXIS, so my "4x smaller locally" framing is misleading.** On the
+     ranked box 512 mebi-elements admits ~2 GiB of 4-bit weight references per buffer,
+     so **the element axis never binds there; the op axis does.** And on the op axis
+     local is **more** permissive than ranked (64 vs 50), not less. E31's line:
+     *"which is why the op axis binds there and the element axis never does."*
+   - 🔴 **WRONG VERDICT. E31 is not an unmoved-knob artifact.** Its pre-registered kill
+     criteria fired at the source-audit stage — *"the constants are not as claimed"* and
+     *"the measured effect is inside the noise floor."* It bounded the mechanism from
+     E29's existing sweep: extrapolating to the removal of every automatic commit gives
+     **+0.418 % round time (slower)** centrally, 95 % CI **[−1.117 %, +1.954 %]**, with
+     the best case inside the instrument's own 0.86 % noise floor. And the round is
+     **95.65 % `eval_wall`** in the L0 arm, so the entire host-side envelope any
+     commit-geometry change can address is **≤ 4.35 %** of the round. That is a
+     legitimate closure. The only unswept corner is `[1, floor]` — *fewer* commits than
+     MLX's automatic schedule — for which E31 named the cheapest decisive test (one
+     ABBA-counterbalanced pair at `MLX_MAX_OPS_PER_BUFFER=4000`,
+     `MLX_MAX_MB_PER_BUFFER=8192`) and **put a prediction on record: 0.4 % slowdown.**
+   - **Also wrong:** I called `Qwen35RuntimeWeights.swift:45` a second writer nobody had
+     found. E31 established it is **not on the MTP worker path** — it lives in
+     `Qwen35RuntimeWeightCache`, constructed only by `QwenRuntimeBenchmark.swift:123,149`.
+     And nothing in `benchmark-qwen-mtp.sh`, the ranked workflow or the fixtures sets
+     either variable, so no external value pre-empts the `overwrite=0` install.
+   - **What of 140 SURVIVES:** the gate really was mislabelled (5 files, +229/−74, not
+     4 files +117/−87) and `research/shipped-surface-gate.sh` is a real fix;
+     `RuntimeStartupMemoryPolicy.swift` really was uncounted by my gate; the local/ranked
+     divergence is real; **wired residency really is unmeasurable locally** (the 96 GiB
+     gate has no environment override, and E31 covered command buffers, not residency);
+     and recording effective geometry in every timed meta remains good practice.
+   - 🔴 **The lesson is the sharpest of the campaign, and it is mine.** I have spent this
+     week telling three students that a null needs its instrument validated first
+     (139, 135). I then published a 🔴🔴🔴 finding without doing the cheapest possible
+     check — `grep` my own merged `research/results/` for the subsystem I had just
+     "discovered." **Search the tree's existing results before claiming a discovery
+     about the tree.** The corpus of merged writeups is now large enough that my memory
+     is not a valid index into it.
+
+142. 🔴🔴 **The buried result in E31 that nobody propagated: our serial leg may be
+   unusually FAST, and that mathematically suppresses our score.** E31 reported this as
+   an observation under my standing instruction and correctly refused to act on it.
+   - Applying the corrected same-session scoring model to E29's own numbers: turning
+     the asyncEval ladder **off** raises the local ratio **2.8346 → 3.4125, +20.4 %**,
+     while the **MTP leg moves only +0.2 %**. The entire gain is a **slower serial leg**
+     (66.875 → 80.344 ms/tok). The ladder fires at `inputs.dim(1) <= 9`, i.e. on the
+     serial step **and** every MTP verify width, and it evidently helps the serial leg
+     far more.
+   - 🔴 **This connects to E35's strongest board observation: the crown has the SLOWEST
+     serial leg of the 73 fingerprint-matched rows (+1.7σ).** Since
+     `raw_p = serial_s_per_tok / mtp_s_per_tok` with both legs same-session, a rival
+     whose serial baseline is slow scores higher for free. **So a material part of our
+     0.561 % deficit may not be MTP-path headroom at all — it may be that we optimised
+     our own denominator.** That is the first hypothesis in the campaign that explains
+     the gap without requiring us to find any missing MTP speed.
+   - 🔴 **RULING, and it is mine to make, not a student's: deliberately degrading the
+     serial baseline to inflate the ratio is metric gaming and is OUT OF BOUNDS.** We do
+     not remove the ladder, throttle the serial leg, or restrict a general optimisation
+     to the MTP path in order to move the denominator. thorfinn declined to propose it
+     and that judgement was right. Note also `noop_reference_decode_speedup` is exactly
+     1.00000 on all 414 rows, which looks like an organizer guard on precisely this.
+   - **What we DO with it is diagnostic, and it is valuable.** If our serial leg is
+     genuinely faster than rivals', then the engineerable MTP-side gap is **smaller than
+     0.561 %**, and the remaining effort should be priced against the smaller number.
+     Quantifying it is a zero-GPU question against the board corpus: compare our serial
+     `s/tok` against the 73 matched rows, per prompt, and report where we sit in that
+     distribution. **Assign this.** It could retire a large fraction of the apparent gap
+     as non-engineerable — which is a result worth as much as a speedup.
 
