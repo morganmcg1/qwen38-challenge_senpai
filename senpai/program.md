@@ -24,6 +24,28 @@ Each leg starts with a 512-token seed and then generates 512 tokens that the tru
 
 For each prompt, the pinned serial build and candidate run as a thermally gated pair in alternating order. The current ranked setup accepts one pair per prompt, for eight pairs and sixteen timed phases in total.
 
+### Ranked And Local Causal Boundaries
+
+The ranked numerator and denominator come from different workspaces. The
+runner-owned, prebuilt baseline workspace produces
+`baseline_serial_seconds_per_token_mean`; the submitted candidate workspace
+produces `candidate_mtp_seconds_per_token_mean`. Candidate-editable code cannot
+change the ranked serial numerator. For every candidate edit `x`:
+
+```text
+d ln(ranked baseline serial time) / dx = 0
+```
+
+Therefore, any compliant edit that lowers candidate MTP seconds per token
+improves every affected ranked `raw_p`. Never subtract a locally measured
+serial-path share, including `psi_serial`, when pricing official value.
+`psi_serial` describes only the local same-build harness, where both legs use
+the candidate binary and a broad improvement may cancel in the local ratio.
+Label every score model and measurement `harness=ranked` or `harness=local`;
+an unlabeled model is invalid. Before pricing new work, run
+`senpai/verify-ranked-score-boundary.sh`. If it fails, re-read the enforcing
+workflow and re-derive the model instead of weakening the check.
+
 On each round, the candidate may choose any draft count from zero up to the limit offered by the parent, with an absolute maximum of eight. Choosing zero is a useful serial control, but the goal is a real score above `1.0`: any drafting and state-management work must repay its own cost.
 
 The organizer's original calibrated depth-2 tree scored about `0.994`. That is a historical starting point, not the current campaign frontier. A research round or one promoted result is a checkpoint, not a reason to stop. Continue until the operator stops the campaign or no safe, distinct, runnable experiment remains.
@@ -41,6 +63,14 @@ Bound infrastructure, documentation, audit, and gate-rehearsal work to the small
 Advance a credible local winner promptly. Reconcile it with the latest promoted source, preserve only the still-novel mechanism, run the smallest decisive exact 512-token matched check, run the normal pre-submit chain once, and submit autonomously when it passes. Official evaluation is part of the research loop: do not wait for certainty that only the official M5 runner can provide, and do not reserve submissions for perfect candidates. Avoid duplicate submissions, but prefer a well-supported official measurement over indefinite local refinement.
 
 Keep all available research capacity productive. Review terminal results promptly, assign the next distinct runnable questions without waiting for a human, and run independent mechanisms in parallel. If a frontier move invalidates a baseline, replay only the affected evidence; do not restart the whole programme or discard valid causal results.
+
+The AWS Mac fleet has one physical Mac per student. The advisor is co-located
+only with Edward; Alphonse, Thorfinn, and Askeladd each use a different Mac.
+Process locks, device locks, thermal state, and the one-model-holder rule are
+host-local. Run independent GPU work concurrently on distinct Macs and
+coordinate only roles that share a host. Revalidate placement from live
+launcher state at the start of a campaign generation; never infer a
+campaign-wide GPU queue from a per-host lock or a role name.
 
 Every advisor research cycle must end in a concrete forward state: a new candidate submitted, a candidate rejected with decisive evidence and the next experiment assigned, or a live candidate experiment or validation in progress. If none exists, use the current profiles, ledger, student suggestions, and frontier diff to create the next falsifiable assignments immediately. Do not stop at synthesis, readiness, or a clean repository. Continue until the operator explicitly stops the campaign or no safe, distinct, runnable experiment remains.
 
@@ -83,7 +113,17 @@ The advisor owns updates to the campaign base. Use the repository-local `sync-or
 
 Never run `yukon sync`, `yukon sync --harness-only`, or `yukon reset` in this maintained checkout. Those commands are designed for ordinary solver checkouts and may reset campaign history or repoint `origin`.
 
-Before timing, record `BASE_SHA`, `UPSTREAM_SHA`, the host, the toolchain, the memory profile, and the exact proposal head. Work based on an older frontier can remain useful evidence, but it must be replayed on the current base and measured again before promotion. A branch name or `Validate submission` commit does not prove which submission Yukon promoted.
+Before timing, record an experiment identity tuple: `BASE_SHA`, candidate
+commit and built-worker fingerprint, submitted-surface and generated-twin or
+metallib digests, proposal-head digest, host/instance/chip, toolchain, memory
+and thermal mode, token window and fixture, exact cell or dispatch shape, and
+harness/reference source. Compare or aggregate evidence only when these fields
+match except for the one dimension named by the experiment. Mark every inferred,
+interpolated, or extrapolated value. Never substitute one width, shape, source
+table, host generation, token window, or harness for another without replay.
+Work based on an older frontier can remain useful evidence, but it must be
+replayed on the current base and measured again before promotion. A branch name
+or `Validate submission` commit does not prove which submission Yukon promoted.
 
 Do not commit generated weights, downloaded models, caches, local scores, hidden material, credentials, or large measurement artifacts. Preserve unrelated user changes and never use destructive Git commands to force a clean tree.
 
@@ -155,6 +195,13 @@ An ungated result is directional causal evidence within that counterbalanced ses
 
 The local modes use one public fixture and default to 64 decode tokens for `--local-iterate` and 128 for `--local-submit`. They generate their own reference rows from the candidate, so matching those rows locally does not prove a match against the organizer's hidden reference and cannot reproduce the hidden eight-prompt result. Both local legs also use the same candidate build. Schedule and head changes therefore show up directly in the local serial-to-MTP ratio, while a general target or kernel improvement may speed both legs and cancel in that ratio. Always compare absolute candidate seconds per token with a fresh, unchanged `BASE_SHA` run as well as comparing the ratio.
 
+The local ratio is not a causal estimate of the ranked numerator. Use matched
+absolute candidate MTP time to screen broad candidate-runtime and kernel
+changes. Use the local serial-to-MTP ratio as direct evidence only for changes
+whose causal path is confined to the candidate MTP leg, such as schedule or
+head policy. Keep local and ranked equations in separate named functions or
+tables so a local cancellation term cannot leak into official pricing.
+
 The parent owns the configured decode length and continues the serial trajectory for the full window even when EOS appears inside it. An editable session that stops at EOS and later throws `notBegun` is a solver defect, not permission to shorten the ranked contract. A shorter exact run may be used as a clearly labelled directional screen, but a 256-token result is not a ranked-equivalent headline. Fix and validate fixed-window continuation against the public golden, including exact post-EOS tokens and row-ledger closure, then measure credible candidates against a fresh same-host base over 512 decode tokens. Do not change the trusted parent or fixture to hide the failure, and do not wait for human direction.
 
 When they explain a result, also inspect draft depth, accepted and rejected tokens, round count, rollback behavior, and block latency. Do not compare with an old result from another commit, machine, temperature, token window, memory profile, or head.
@@ -185,18 +232,35 @@ Each research agent owns one clear question at a time. Record positive, negative
 
 ### Experiment Workflow
 
-1. Record the base, upstream commit, host, toolchain, memory profile, and exact head.
-2. State one question, the measured cost or source evidence behind it, the result you expect, and a stop rule.
-3. Prove that the scored worker reaches the code and list candidate files separately from research-only files.
-4. Check submission scope and byte budget before expensive work.
-5. Measure a fresh, unchanged base under the local mode you will use for the candidate.
+1. Record the full experiment identity tuple, including the exact base, built
+   artifact, host, cell, token window, head, reference source, and harness.
+2. State one causal question, its official-score path, the measured cost behind
+   it, the expected effect, the minimum useful effect, and a stop rule. Stress
+   test the proposed equation at zero and with both signs before using it.
+3. Prove that the scored worker reaches the exact current-tree cell and list
+   candidate files separately from research-only files.
+4. Check submission scope, byte budget, and
+   `senpai/verify-ranked-score-boundary.sh` before expensive work.
+5. Measure a fresh, unchanged base under the local mode and exact identity tuple
+   you will use for the candidate.
 6. Implement one mechanism.
-7. Run the cheapest compile, test, or numerical check that protects the boundary you changed.
-8. Run one matched `--local-iterate` measurement and compare absolute time, the local ratio, and relevant counters with the fresh base.
-9. Stop, revise, or advance using the written stop rule. Repeat only when noise or one specific uncertainty could change the decision.
+7. Before replicated timing, run a gate capable of falsifying the changed
+   boundary. For precision, reduction-order, packing, recurrence, cache, or
+   replay changes, use actual floating-point values at the touched cells, a
+   positive control that proves the comparison can fail, and the shortest
+   end-to-end exact-token and row-ledger run. Integer-only inputs, an argmax
+   match, or candidate-generated local reference rows cannot substitute for
+   this gate.
+8. Run the smallest matched timing measurement and compare absolute candidate
+   time, the local ratio, and relevant counters with the fresh base. Weight
+   nonuniform per-cell effects by current-tree cost before summing them.
+9. Stop, revise, or advance using the written stop rule. Run replicated timing
+   only after the causal path, provenance, and risk gate remain valid and only
+   when noise could change the decision.
 10. For a credible winner:
     - Run the full Swift tests once and add opt-in runtime tests when the changed boundary needs them.
-    - Run `--local-submit`.
+    - Run a full 512-token exactness check, including post-EOS continuation and
+      row-ledger closure, then run `--local-submit`.
     - Inspect the exact submitted diff and any generated Metal twins.
     - Recheck submission scope and byte budget.
     - Report evidence that another agent can reproduce.

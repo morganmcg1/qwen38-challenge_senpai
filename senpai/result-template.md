@@ -19,18 +19,24 @@ real measured value, not a missing-value sentinel.
 - Decision: green locally, ambiguous, invalid, or dead
 - `BASE_SHA` / `UPSTREAM_SHA` / candidate commit:
 - Yukon promoted submission / source ref used as frontier:
+- Candidate build fingerprint:
+- Submitted-surface / generated-twin / metallib digests, if applicable:
 - Submitted candidate files:
 - Supporting test, tooling, or documentation files:
-- MTP head provenance and draft policy:
+- MTP head provenance, digest, and draft policy:
+- Token window, fixture, reference source, and harness (`local` or `ranked`):
+- Exact cell: shape, width/M, dispatch family, source form, and M5 variant:
+- Official causal path and score equation:
 - Assignment-scope preflight:
 - Editable source bytes / headroom / growth / exempt-head bytes:
 - Scored-path reachability evidence:
 
 ## Evidence
 
-- Host, memory profile, toolchain, and thermal policy:
+- Host, instance, chip, memory profile, toolchain, and thermal policy:
 - Exact baseline and candidate commands:
-- Tests and risk-based checks:
+- Cheapest real falsification gate and positive-control verdict:
+- Tests and risk-based checks, in execution order:
 - Exact-token and row-ledger verdict:
 - Divergent tokens or failure category, if any:
 - Generated-twin audit, if relevant:
@@ -47,6 +53,10 @@ real measured value, not a missing-value sentinel.
 
 The local score is a one-prompt directional measurement. It is not the ranked
 median across eight hidden prompts.
+
+State whether every compared identity field matched. Label every inference,
+interpolation, or extrapolation and identify its source tree and domain. Never
+present a local cancellation term as part of the ranked score equation.
 
 ## Conclusion
 

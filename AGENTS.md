@@ -69,6 +69,15 @@ for each hidden prompt p:
 published score = median(raw_1 ... raw_8)
 ```
 
+The ranked legs come from different workspaces. The trusted, prebuilt baseline
+workspace produces the serial numerator; the submitted candidate workspace
+produces the MTP denominator. Candidate-editable code cannot change the ranked
+serial numerator, so any compliant reduction in candidate MTP time improves
+the affected `raw_p`. Never subtract a local serial-path share such as
+`psi_serial` when pricing official value. The local same-build harness has a
+different causal graph and must be labeled separately. Run
+`senpai/verify-ranked-score-boundary.sh` before using a derived score model.
+
 All eight hidden prompts are measured. Because eight is even, the median is the
 mean of the two central ordered values. There is no no-op normalization and no
 prompt lottery. The published median must be at least `0.90` and no greater
@@ -295,10 +304,21 @@ They use one public fixture and cannot reproduce the ranked eight-prompt,
 
 The local serial and candidate legs use the same local build. A general target
 runtime or kernel improvement can speed both sides and cancel in the local
-ratio, even though it counts officially because the ranked serial denominator
+ratio, even though it counts officially because the ranked serial numerator
 comes from a pinned baseline workspace. Compare absolute candidate
 seconds/token against a fresh, same-host `BASE_SHA` run as well as the local
 serial/MTP ratio.
+
+Label every measurement and formula `harness=local` or `harness=ranked`. Use
+matched absolute candidate MTP time as the primary local signal for broad
+runtime and kernel changes; the local ratio may contain same-build cancellation
+that does not exist officially.
+
+The AWS Mac fleet assigns one physical Mac to each student. The advisor shares
+only Edward's Mac; Alphonse, Thorfinn, and Askeladd each run on another Mac.
+Locks, device occupancy, and thermal state are host-local. Run independent jobs
+concurrently across distinct Macs and coordinate only co-located roles. Verify
+the live placement rather than inferring a fleet-wide queue.
 
 Run only one model-holding process at a time. The wrapper takes a per-user lock
 and checks for orphaned workers; direct model commands do not. Inspect reported
@@ -324,19 +344,34 @@ confirming the same kernel family executes.
 
 One experiment should answer one causal question. For each arm:
 
-1. Record `BASE_SHA`, `UPSTREAM_SHA`, host, toolchain, memory profile, and head
-   provenance.
-2. Prove reachability from the native-MTP worker and name the cost removed.
-3. Check editable scope and byte budget.
-4. Measure an unchanged same-host baseline and save its artifact outside the
+1. Record an identity tuple: `BASE_SHA`, `UPSTREAM_SHA`, candidate commit and
+   built-worker fingerprint, submitted-surface/twin/metallib digests, head
+   digest, host/instance/chip, toolchain, memory and thermal mode, token window,
+   fixture/reference source, exact cell/shape/dispatch, and harness.
+2. State the official causal path, expected direction, minimum useful effect,
+   and stop rule. Stress-test any score equation at zero and both signs.
+3. Prove reachability from the current native-MTP worker and name the cost
+   removed. Never transfer a constant or fitted model from another tree or cell
+   without replay.
+4. Check editable scope, byte budget, and the ranked score-boundary tripwire.
+5. Measure an unchanged same-host baseline and save its artifact outside the
    submission surface.
-5. Implement one mechanism and run the cheapest decisive correctness check.
-6. Measure the candidate under matched conditions.
-7. Compare absolute candidate time, paired ratio, draft/accept telemetry,
-   rollback, and block latency where relevant.
-8. Reject, revise, or advance using a predeclared stop rule.
-9. Record positive, negative, invalid, and ambiguous results in the campaign
-   ledger so later agents do not repeat them.
+6. Implement one mechanism. Before long timing, run the cheapest gate capable
+   of falsifying the changed boundary. Numerical and reduction-order edits need
+   actual floating-point touched-cell coverage, a positive control, and the
+   shortest end-to-end exact-token/row-ledger run; integer-only or argmax checks
+   are insufficient.
+7. Measure the candidate under the same identity tuple. Start with the smallest
+   decisive timing run; replicate only when noise could change the decision.
+8. Compare absolute candidate time, paired ratio, draft/accept telemetry,
+   rollback, and block latency where relevant. Cost-weight per-cell effects
+   before aggregating them.
+9. Reject, revise, or advance using the predeclared stop rule. Label every
+   inference, interpolation, and extrapolation; never substitute M=8 for M=9,
+   M4 for M5, local for ranked, or an abandoned dispatch table for the current
+   tree.
+10. Record positive, negative, invalid, and ambiguous results in the campaign
+    ledger so later agents do not repeat them.
 
 A microbenchmark is useful only when it bounds a named end-to-end cost.
 Dispatch-count reduction is not a result unless it removes bytes, arithmetic,
