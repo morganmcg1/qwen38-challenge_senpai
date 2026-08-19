@@ -133,6 +133,30 @@ if [ ! -f benchmark.json ]; then
   exit 1
 fi
 
+# --- refuse to certify a tree we have not committed -------------------------
+# Found the hard way at ledger 162. Every comparison below is `frontier..HEAD`,
+# so an uncommitted edit to a packaged file is INVISIBLE to this gate. That is
+# precisely the state you are in while reconciling with the tip: I reverted E27
+# in the worktree, re-ran the gates, and they certified the OLD tree while
+# reporting the new one's repo root. A gate that grades a commit while you are
+# about to submit a worktree is not a gate, it is a decoration. So: if any
+# packaged path is dirty, fail closed and say which. You cannot certify what you
+# have not committed.
+dirty="$(git status --porcelain -- $(python3 -c '
+import json, shlex
+paths = json.load(open("benchmark.json")).get("editablePaths") or []
+print(" ".join(shlex.quote(p) for p in paths))
+' 2>/dev/null) 2>/dev/null)"
+if [ -n "${dirty}" ]; then
+  bad "packaged paths have UNCOMMITTED changes, and every comparison this gate"
+  bad "makes is against HEAD, so those changes would not be examined at all:"
+  printf '%s\n' "${dirty}" | sed 's/^/        /' >&2
+  printf '      Commit (or stash) them, then re-run. Do not read the report\n' >&2
+  printf '      below as covering the tree you are holding.\n' >&2
+  note "frontier-revert gate: FAIL -- dirty packaged surface, nothing certified"
+  exit 1
+fi
+
 changed="$(git diff --numstat "${frontier_sha}" HEAD 2>/dev/null)"
 packaged="$(printf '%s\n' "${changed}" | python3 -c '
 import json, sys

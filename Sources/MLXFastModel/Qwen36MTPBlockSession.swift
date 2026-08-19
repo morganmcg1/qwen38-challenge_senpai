@@ -356,6 +356,44 @@ public final class Qwen36MTPBlockSession {
         let primedDraftID = model.draftTokenID(
             primed[0..., (primed.dim(1) - 1) ..< primed.dim(1), 0...])
         eval(primedDraftID)
+        // VERIFY-CONCAT JIT WARM. Scored rounds assemble verifyTokens as
+        // concatenated([host primary] + device draftIds) over int32 [1, 1]
+        // arrays. The width loop below feeds callWithHidden a single host
+        // [1, width] tensor, so it never compiles that multi-input concat.
+        // MLX JIT-specializes copy/concat by dtype and input count
+        // (ml-explore/mlx metal JIT; first launch pays Metal library
+        // compile — see Kernel Management / JIT Compilation). Those
+        // copyint32int32 kernels otherwise land inside scored round 1.
+        // Values are zeros / already-eval'd draft IDs and the result is
+        // discarded: shape + dtype + host/device mix select the kernels.
+        // Warm every legal extra-count 0...maxDepth so an adaptive
+        // draftPolicy that returns 0..8 does not hit a cold width later.
+        //
+        // PROVENANCE, and why this block keeps disappearing. Authored by
+        // fkiene and PROMOTED at 1cb1f43a7246d57af8b96dad468583364779aa73,
+        // scoring 3.24417896624589 against the 3.24326223889754 base
+        // (+0.0283 %). The very next promotion (ofou, ef42e0432727, now
+        // upstream/main) branched from a commit PREDATING fkiene and submitted;
+        // because `yukon submit` REPLACES whole files rather than merging,
+        // `git diff 1cb1f43a upstream/main` on this file is 0 insertions and
+        // 19 deletions -- exactly these lines, deleted by an author who never
+        // opened the file. It is therefore absent from the live tip AND from
+        // every tree descended from that base, including ours. Restored here
+        // with its receipt so the next whole-file overlay has to argue with
+        // the number instead of silently dropping it again.
+        //
+        // Placement is load-bearing: this sits in `warmAllDepthShapes`, i.e.
+        // in the warm-up path OUTSIDE the timed window, so the JIT cost it
+        // moves is paid before measurement starts. The comment 12 lines above
+        // records the same hazard biting a previous candidate that warmed the
+        // wrong expression: first MTP block 0.941 s vs 0.402 s.
+        for extra in 0 ... maxDepth {
+            var parts = [MLXArray([Int32(0)]).reshaped([1, 1])]
+            for _ in 0 ..< extra {
+                parts.append(primedDraftID)
+            }
+            eval(concatenated(parts, axis: 1))
+        }
         let foldHidden = MLXArray.zeros([1, 2, hDim], dtype: row.dtype)
         let foldTokens = MLXArray([Int32(0), Int32(0)]).reshaped([1, 2])
         let folded = model.mtpHeadLastHiddenWithKVOnlyHistory(

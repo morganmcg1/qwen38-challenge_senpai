@@ -21,19 +21,27 @@
 # Blank lines and lines beginning with # are ignored.
 #
 # ---------------------------------------------------------------------------
-# Status as of ledger 161. Every entry below is MUST-REBASE, which is why the
-# gate is BLOCKED. That is the correct reading of our tree: it is three commits
-# of frontier behind and would revert the current crown.
+# Status as of ledger 162. THE REBASE IS DONE. Four of the six files that were
+# MUST-REBASE at ledger 161 now match upstream/main byte for byte and have left
+# this file entirely, which is the correct end state for an ack: a reconciled
+# file needs no waiver, it needs no diff.
+#
+#   TAKEN FROM THE TIP (no longer differ, entries deleted):
+#     Qwen35RuntimeWeights.swift        crown hunk 1  (128 -> 512)
+#     RuntimeStartupMemoryPolicy.swift  crown hunks 2,3 (overwrite=1, 512/50)
+#     quantized.cpp                     E27 dropped
+#     quantized.h                       E27 dropped
+#
+# The two entries that remain are deliberate. For BOTH of them I ran
+# `git blame` on the TIP's copy before writing the word INTENTIONAL, because the
+# gate's question is not "did we change this file" but "whose accepted work do
+# we delete". The answer decides the verdict, and for both files the lines we
+# delete are traceable to the PRISTINE CHALLENGE IMPORT (David Tai, 5d029178,
+# 2026-08-14) or to an inherited bot commit -- not to a recent promotion. That
+# is a materially different act from reverting the crown, and last turn I could
+# not tell the two apart because I had not blamed a single line.
 # ---------------------------------------------------------------------------
 
-Sources/MLXFastModel/Qwen35RuntimeWeights.swift|MUST-REBASE|Our copy sets MLX_MAX_MB_PER_BUFFER to 128 where the tip sets 512. This is hunk 1 of 3 of the current crown, measured at +0.186 % over our submit base. We would delete it and gain nothing.
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift|INTENTIONAL-REPLACEMENT|We delete the tip's stop-token early-exit (its two sites plus the reachedStopToken field). Blame on the tip puts `if stopTokens.contains(primary)` at ^5d029178 -- David Tai's pristine challenge import -- so this is inherited code, NOT frontier work: `git diff 1cb1f43a upstream/main` on this file is 0 insertions / 19 deletions, i.e. the tip's own last edit here DELETED a promotion. E26 proves the exit kills the session (pendings nil'd, next round throws .notBegun, both legs capped at emitted index 302) and research/crown_leg_decomposition.py proves it is score-NEUTRAL on ranked: effective_mean_draft_len agrees to full repr on all 8 prompts across base, ours and the crown, and base and crown BOTH carry the exit, so it never fires inside the 512-token window. Pure insurance, zero measured cost. This fix has been made four times and lost five; Tests/MLXFastTests/QwenMTPSyncContentGateTests.swift is the executable content assertion that keeps it. We also ADD BACK fkiene's 19-line verify-concat JIT warm (promoted at 1cb1f43a, 3.24417896624589 vs 3.24326223889754 base, +0.0283 %), which ofou's stale-base whole-file overlay deleted and which is therefore absent from the tip; it sits in warmAllDepthShapes, outside the timed window. The rest is round-granularity trace instrumentation behind MLX_QWEN_MTP_TRACE.
 
-Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift|MUST-REBASE|Our copy uses setenv overwrite=0 and the 320/128 full-profile constants where the tip uses overwrite=1 and 512/50. Hunks 2 and 3 of the crown. Item 145 catalogued these constants as dead and queued them for deletion; that verdict is what this gate exists to prevent recurring.
-
-Sources/MLXFastModel/Qwen36MTPBlockSession.swift|MUST-REBASE|Carries our E27 and E29 work, but our copy predates fkiene 1cb1f43a, so the overlay also deletes fkiene's 19-line verify-concat JIT warm. We have not read the tip's version of this file. Rival board notes already misattribute that deletion to ofou as a deliberate mechanism.
-
-Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift|MUST-REBASE|Carries E29(c), the MLX_QWEN_MTP_LADDER rung-set override, which has never been scored. The tip's copy has not been diffed against ours line by line.
-
-Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp|MUST-REBASE|Our E27 static_assert and IPG change, plus whatever the tip has moved in the generated twin since 5068eb8d. Not reconciled.
-
-Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h|MUST-REBASE|Our E27 overlay already deleted 17 lines here that we never wrote, including a 12-line frontier comment arguing 3+3+2 over 4+4. That deletion shipped in our scored submission. This file is the proven instance of the failure mode, not a hypothetical one.
+Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift|INTENTIONAL-REPLACEMENT|We delete two copies of the tip's `switch i { case 0,1,9,19,29,39,49,57: }` decode-ladder dispatch and replace them with a Set<Int> membership test whose default rung set is byte-identical to that switch, so the shipped schedule is unchanged and MLX_QWEN_MTP_LADDER makes it overridable for attribution runs. Blame on the tip puts those lines at 86fb1f02 (yukon-autoresearch bot, 2026-08-18 14:56) -- an inherited bot commit, not a mechanism anyone promoted for its own sake. Cost is bounded and its SIGN is favourable: the lookup is 64x per forward, the serial leg pays it once per token while the MTP leg pays it once per ~3.5 tokens, so d(raw_p) = c*(mtp - serial*forwards_per_tok)/mtp^2 > 0. At the modelled c = 1 us/step that is +0.00025 % -- a gain of ~1/400 sigma_score, not a cost. Kept because it is how E29(c) attribution runs are performed; it is the one instrument here that lives at LAYER granularity, and the rule I am applying is that instrumentation may live at round granularity freely but must justify itself at layer granularity.
