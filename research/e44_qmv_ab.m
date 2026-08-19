@@ -281,6 +281,73 @@ static Fidelity checkArm(id<MTLCommandQueue> queue,
   return f;
 }
 
+// One-hot readout of the packed-weight mapping.
+//
+// Setting x[0][k0] = 1 and everything else 0 makes the exact answer
+// y[0][n] = scale[n][k0 / 64] * q[n][k0] + bias[n][k0 / 64], with no summation
+// and therefore no cancellation. So this reads what k each arm actually paired
+// with each nibble, against the weights the harness itself wrote. If an arm's
+// outputs are a permutation of the expected list, this names the permutation;
+// no reasoning about the packing convention is involved.
+static void probeMapping(id<MTLCommandQueue> queue,
+                         id<MTLComputePipelineState> base,
+                         id<MTLComputePipelineState> cand,
+                         Operands *o, int m, int nprobe) {
+  const int row = 0;  // read output row 0
+  uint16_t *xp = (uint16_t *)o->x.contents;
+  const uint32_t *w = (const uint32_t *)o->w.contents;
+  const uint16_t *scales = (const uint16_t *)o->scales.contents;
+  const uint16_t *biases = (const uint16_t *)o->biases.contents;
+  const int groups_per_row = o->k / 64;
+  const int words_per_row = o->k / 8;
+
+  double *expect = calloc(nprobe, sizeof(double));
+  for (int k0 = 0; k0 < nprobe; k0++) {
+    double s = bf16_to_f32(scales[row * groups_per_row + k0 / 64]);
+    double b = bf16_to_f32(biases[row * groups_per_row + k0 / 64]);
+    uint32_t packed = w[row * words_per_row + k0 / 8];
+    expect[k0] = s * (double)((packed >> (4 * (k0 % 8))) & 0xf) + b;
+  }
+
+  memset(o->x.contents, 0, o->x.length);
+  fprintf(stderr,
+          "e44_qmv_ab:   one-hot probe M=%d row=%d  "
+          "(expect[k] = scale*nibble(k%%8 of word k/8) + bias)\n", m, row);
+  fprintf(stderr, "e44_qmv_ab:     k0   expected        base      -> k?"
+                  "        cand      -> k?\n");
+  for (int k0 = 0; k0 < nprobe; k0++) {
+    xp[k0] = f32_to_bf16(1.0f);
+    double got[2];
+    id<MTLComputePipelineState> psos[2] = {base, cand};
+    for (int a = 0; a < 2; a++) {
+      memset(o->y.contents, 0, o->y.length);
+      id<MTLCommandBuffer> cb = [queue commandBuffer];
+      id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
+      encodeDispatch(enc, psos[a], o, m);
+      [enc endEncoding];
+      [cb commit];
+      [cb waitUntilCompleted];
+      got[a] = bf16_to_f32(((const uint16_t *)o->y.contents)[row]);
+    }
+    // Which k does each arm's answer correspond to, if any?
+    int which[2] = {-1, -1};
+    for (int a = 0; a < 2; a++) {
+      double best = 1e30;
+      for (int kk = 0; kk < nprobe; kk++) {
+        double d = fabs(got[a] - expect[kk]);
+        if (d < best) { best = d; which[a] = kk; }
+      }
+      // Only claim a match if it is far closer than bf16 store noise allows.
+      if (best > 1e-3 * fabs(expect[which[a]]) + 1e-9) which[a] = -1;
+    }
+    fprintf(stderr,
+            "e44_qmv_ab:    %3d  %+.6f  %+.6f  %4d  %+.6f  %4d\n",
+            k0, expect[k0], got[0], which[0], got[1], which[1]);
+    xp[k0] = 0;
+  }
+  free(expect);
+}
+
 static void captureSampled(Operands *o, int m, int samples, float *out) {
   const uint16_t *y = (const uint16_t *)o->y.contents;
   const int stride = o->n / samples > 0 ? o->n / samples : 1;
@@ -298,7 +365,7 @@ int main(int argc, char **argv) {
     const char *base_path = NULL, *cand_path = NULL, *out_path = NULL;
     const char *fn_name = "affine_qmv_fast_bfloat16_t_64_4_false";
     const char *widths_arg = "1,2,3,4,5,6,7,8,9";
-    int pairs = 5, reps = 25, inner = 20, samples = 32;
+    int pairs = 5, reps = 25, inner = 20, samples = 32, probe = 0;
 
     for (int i = 1; i < argc; i++) {
       if (!strcmp(argv[i], "--base") && i + 1 < argc) base_path = argv[++i];
@@ -310,6 +377,7 @@ int main(int argc, char **argv) {
       else if (!strcmp(argv[i], "--reps") && i + 1 < argc) reps = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--inner") && i + 1 < argc) inner = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--samples") && i + 1 < argc) samples = atoi(argv[++i]);
+      else if (!strcmp(argv[i], "--probe") && i + 1 < argc) probe = atoi(argv[++i]);
       else {
         fprintf(stderr, "e44_qmv_ab: unknown argument %s\n", argv[i]);
         return 2;
@@ -373,6 +441,14 @@ int main(int argc, char **argv) {
       Operands o = makeOperands(device, shapes[s], max_m);
       fprintf(stderr, "e44_qmv_ab: shape %s  w=%.1fMB\n", shapes[s].name,
               (double)o.w.length / 1e6);
+
+      if (probe > 0) {
+        // Diagnostic only: settles the mapping before any timing is trusted.
+        for (int wi = 0; wi < n_widths; wi++) {
+          probeMapping(queue, arm[0], arm[1], &o, widths[wi], probe);
+        }
+        continue;
+      }
 
       // --- fidelity, before any timing ---------------------------------------
       // The candidate is not expected to be bit-equal (the matrix unit fixes its

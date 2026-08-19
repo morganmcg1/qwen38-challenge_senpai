@@ -19,12 +19,14 @@ widths="1,2,3,4,5,6,7,8,9"
 pairs=5
 reps=25
 inner=20
+probe=0
 while [[ $# -gt 0 ]]; do
   case "${1}" in
     --widths) widths="${2:?--widths needs a list}"; shift 2 ;;
     --pairs) pairs="${2:?--pairs needs a count}"; shift 2 ;;
     --reps) reps="${2:?--reps needs a count}"; shift 2 ;;
     --inner) inner="${2:?--inner needs a count}"; shift 2 ;;
+    --probe) probe="${2:?--probe needs a k count}"; shift 2 ;;
     *) echo "run-e44-qmv-ab.sh: unknown argument ${1}" >&2; exit 2 ;;
   esac
 done
@@ -137,6 +139,7 @@ set +e
   --cand "${out_dir}/cand.metal" \
   --out "${out_dir}/ab.json" \
   --widths "${widths}" --pairs "${pairs}" --reps "${reps}" --inner "${inner}" \
+  --probe "${probe}" \
   2>&1 | tee "${out_dir}/ab.log"
 harness_status="${PIPESTATUS[0]}"
 set -e
