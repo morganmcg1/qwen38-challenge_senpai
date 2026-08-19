@@ -86,3 +86,49 @@ Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | absent 
 Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true> | Twin of the quantized.h entry above; this is the copy that is actually compiled. Same receipts.
 
 Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | absent | qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true> | Twin of the quantized.h entry above. Same receipts.
+
+# ---------------------------------------------------------------------------
+# The BF16 affine-bias expression tree, both twins.
+#
+# WHY. `qmv_fast_crossrow_affine4_g64_wide` with DIRECT_NIBBLES=true -- which is
+# ALL SEVEN shipped wide cells, M=3..9 -- computes the affine bias-correction sum
+# as a four-term BF16 expression tree summed into a float accumulator. That is
+# NOT sloppiness. It is a byte-for-byte replication of what `load_vector`'s
+# bits==4 branch does on the SERIAL leg (`sum += x[i] + x[i+1] + x[i+2] + x[i+3]`
+# with x of type `const device bfloat16_t*`), and it is the reason the wide MTP
+# cells and `qmv_fast_impl` agree BIT-FOR-BIT on affine-4. The nibble-extraction
+# difference between the two is provably exact -- power-of-two scaling is exact
+# in FP32 -- so the bias tree is the ONLY place the two legs could diverge.
+#
+# THE TRAP THIS DEFENDS AGAINST, precisely. Four floats `xc[0..3]` are already
+# materialised in registers on the line ABOVE by `static_cast<float>(xm[i])`.
+# Rewriting the tree as `sums[m] += xc[0] + xc[1] + xc[2] + xc[3];` is STRICTLY
+# FEWER INSTRUCTIONS and ~2 orders of magnitude more accurate against exact
+# double. It looks like a free win from every angle a reviewer normally checks:
+# fewer ops, no new registers, better numerics, one line. It is also the single
+# edit that breaks bit-compatibility between the MTP leg and the serial leg.
+#
+# The author who introduced DIRECT_NIBBLES had those floats too and left the
+# free performance on the table to keep the tree. Their comment says so:
+# "Preserve the incumbent BF16 expression tree used for the affine bias
+# correction; only the qdot nibble extraction changes." It arrived in 79683c6
+# "Accept submission 14b53255-e585-44bd-84d9-37b7b29c0be9" -- an ACCEPTED
+# submission, i.e. one that cleared the ranked pipeline including parity.
+#
+# This guards the CODE, not the comment, deliberately: a comment-text invariant
+# would be satisfied by leaving the comment in place above a changed line, which
+# is the most likely form of the mistake.
+#
+# Not covered: whether bit-exactness with `qmv_fast_impl` is REQUIRED or merely
+# PRESERVED is unmeasured as of ledger 175. If an experiment establishes that
+# reassociation here is safe, retire these two rows WITH the receipt. Until
+# then, red is the correct colour for this edit.
+# ---------------------------------------------------------------------------
+
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | present | sums\[m\] \+= xm\[0\] \+ xm\[1\] \+ xm\[2\] \+ xm\[3\]; | The BF16 affine-bias expression tree in the wide cross-row cell. Must stay BF16 and must stay in this association, because it mirrors `load_vector`'s bits==4 branch on the serial leg exactly and that mirroring is what makes the MTP and serial legs bit-identical on affine-4. Promoting it to the already-materialised `xc[0..3]` floats is fewer instructions and more accurate and is exactly the edit that must not happen silently. See ledger 175(A).
+
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | sums\[m\] \+= xm\[0\] \+ xm\[1\] \+ xm\[2\] \+ xm\[3\]; | Twin of the quantized.h entry above; this is the copy that is actually compiled into the metallib. Same receipts.
+
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | present | sum \+= x\[i\] \+ x\[i \+ 1\] \+ x\[i \+ 2\] \+ x\[i \+ 3\]; | The OTHER half of the same identity: `load_vector`'s BF16 four-term tree, which is what the wide cell is mirroring. Guarding only the wide cell would let someone "fix" the serial leg instead and break the pair from the far side. Six occurrences across the bits==2 and bits==4 branches of `load_vector` and `load_vector_safe`; this is an existence check, so it cannot tell you which one changed -- `research/twin_audit.py` and the diff do that.
+
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | sum \+= x\[i\] \+ x\[i \+ 1\] \+ x\[i \+ 2\] \+ x\[i \+ 3\]; | Twin of the quantized.h entry above. Same receipts.

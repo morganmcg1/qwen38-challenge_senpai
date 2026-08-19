@@ -7330,3 +7330,305 @@ and that the flip threshold equals `psi_serial - psi_mtp` exactly. A future
    implication is *more* dangerous than an unflagged one, because it arrives
    with borrowed credibility. The fix cost one source read I could have done
    before writing the brief instead of after sending it.
+
+### 175 — E44 r2 MERGED: the campaign's first above-floor lever, and 🔴 the discovery that the two QMV legs are **bit-compatible by deliberate design**
+
+alphonse's E44 r2 (PR 49, head `d5701210`, W&B `dn6hk8u7`) is merged into
+`senpai/qwen38-mtp-r1` at `454410ea`. Recorded base was `9fe0dc5d`, live base
+`df13c932`; accepted on the moved base after verifying `git diff df13c932
+d5701210 -- Sources Vendor benchmark.json` **EMPTY** and `git merge-tree
+--write-tree df13c932 d5701210` → tree `9837d0a5` with **zero conflicts**,
+differing from `df13c932` only inside `research/`. 26/26 gates PASS at
+`454410ea` against crown `0c90733d`.
+
+#### The result
+
+Narrow simdgroup-matrix QMV cell restricted to **M ∈ {7,8}**, base scalar cells
+everywhere else. **+11.421 % mean over the replaced widths**, four cells
+independently resolved (9 pairs × 50 reps × 20 inner, ABBA, df=8):
+
+| shape | M | speedup | 95 % CI |
+|---|---|---|---|
+| `attn_out` | 7 | +11.389 % | [11.284, 11.495] |
+| `attn_out` | 8 | +17.050 % | [16.876, 17.225] |
+| `mlp_down` | 7 | +4.596 % | [4.506, 4.685] |
+| `mlp_down` | 8 | +12.649 % | [12.478, 12.820] |
+
+- **Gate A** lane-corrected kernel-wide max **104** vs bound ≤108; entry
+  163→**160**; 0 allocas, no new alloca type; threadgroup 0→0.
+- **Gate B** 24 cells, 1,009,254,400 elements, `bad=0 worst_abs=0.0`; dispatch
+  verified mechanically from the emitted JIT sources as exactly M ∈ {7,8}.
+- **Gate C** true **A/A control** (byte-identical arms, same sha256, 0 diff
+  hunks) resolved **0/18** cells on a true zero, worst |effect| **0.263 %**.
+- All four r1 transfer predictions confirmed within 1 pp ⇒ the **89→104
+  allocation-regime caveat is closed empirically**.
+- Flat-tile mechanism confirmed: candidate spread 0.86 % (attn) / 1.33 % (mlp)
+  against base rise +7.7 % / +7.8 %.
+
+Score, **per width, never pooled** (`research/e44_census_score.py`, askeladd's
+E42 census `f{7,8} = 0.1225`, ψ_mtp = 0.6736):
+
+| shape mixture | effective speedup | dScore |
+|---|---|---|
+| all `mlp_down` | +9.555 % | **+0.789 %** |
+| cost-proportional | +10.835 % | **+0.895 %** |
+| equal per cell | +12.215 % | **+1.009 %** |
+| all `attn_out` | +14.875 % | **+1.228 %** |
+
+If beagle's 5.533 mean width halves `f{7,8}` to ~0.06 → **+0.386 .. +0.601 %**:
+nothing clears the **0.7678 %** board floor, only the attn end clears the
+0.5193 % crown gap. His verdict, adopted verbatim: **"reliably crown-gap-sized
+and only conditionally board-floor-sized."** Ceiling term retracted from
+"89 as headroom" to **104 (−3.70 %)**, adverse in sign, bound not measurement,
+`|dScore| ≤ 0.1186 %`. This gates thorfinn's E46.
+
+#### 🔴 His methodological finding, which is fully general: pooling-then-weighting is BIASED, not merely coarse
+
+```
+pool then weight:   0.6736 x 11.421 % x 0.1225        = +0.942 %
+weight then sum:    same census, same equal shape mix = +1.009 %
+                                             BIAS     =  0.066 pp
+```
+
+`M=8` both **wins more** (+14.85 % vs +7.99 %) **and carries more census cost**
+(7.55 % vs 4.71 %). Positively correlated ⇒ the pooled mean systematically
+**understates**. My own +0.921 % was low for exactly this reason. The content is
+`Cov(win, cost) ≠ 0`, and it applies to **every** `%cost → %score` conversion
+this campaign performs. He also took my beagle caveat, carried it through
+linearly, and **returned my own flattering headline smaller**.
+
+#### 🔴 One pre-registered condition NOT met, reported rather than absorbed
+
+"No resolved untouched-width regression" **FAILED**: 4/14 guard cells clear the
+control floor with **MIXED signs** (attn M1 +0.539, attn M5 +0.341, attn M2
+−0.663, mlp M1 −0.347). The A/A control proves the *design* is clean on
+identical binaries, so this is real scatter between two **different** binaries,
+best explained by register allocation and code layout — **which he explicitly did
+not prove**. Mixed signs are the tell that this is scatter, not a tax. His tool
+now takes the **LARGER** of the control floor (0.263 %) and guard floor (0.663 %).
+
+#### The blocker as he stated it
+
+`cand_vs_base_max_rel` exactly **0.0 at all 14 untouched widths**, but **1.6788**
+(attn M7,M8) and **0.52381** (mlp M7,M8). The candidate is ~2 orders **more
+accurate** against exact double (max_rel 6.3e-1 → 3.6e-3, rms 5.7e-2 → 1.7e-3)
+because the MMA accumulates in fp32. **"More accurate" is not "matches the serial
+token stream."** And 🔴 **Gate B is structurally silent**: its operands are
+exactly-representable integers ≤ 120, so **no rounding occurs by construction**.
+Finding the blind spot in the instrument he built, and stating it as the reason
+his own pass does not count, is rarer than the result.
+
+---
+
+## 🔴🔴🔴 175(A) — THE WIDE MTP CELLS ARE BIT-COMPATIBLE WITH THE SERIAL LEG **ON PURPOSE**, AND A PREVIOUS ACCEPTED SUBMISSION LEFT A COMMENT SAYING SO
+
+Verified by source read at `454410ea`. **I nearly published the opposite of this
+and it is worth recording how close I came** — see the process lesson.
+
+**Serial leg**, `qmv_fast_impl` (`kernels/quantized.h:750`), which M=1 falls
+through to at `:2026`:
+
+```
+:772   typedef float U;
+:790   U sum = load_vector<T, U, values_per_thread, bits>(x, x_thread);
+:799   result[row] += qdot<U, values_per_thread, bits>(wl, x_thread, s, b, sum);
+```
+
+and `load_vector`'s `bits == 4` branch (`:62-70`), with `x` of type
+`const device T*`, `T = bfloat16_t`, `U = float`:
+
+```
+:64      sum += x[i] + x[i + 1] + x[i + 2] + x[i + 3];
+:66      x_thread[i + 1] = x[i + 1] / 16.0f;   // etc: /256, /4096
+```
+
+⇒ 🔴 **the serial leg's affine bias-correction sum is a four-term BF16
+expression tree accumulated into a float.** The float accumulator is not the
+arithmetic; the tree is.
+
+**MTP leg**, `qmv_fast_crossrow_affine4_g64_wide` (`:969`). Every shipped wide
+cell instantiates `DIRECT_NIBBLES = true` — verified, all seven:
+
+```
+:1929 <T,3,3,true>  :1934 <T,4,4,true>  :1939 <T,5,3,true>  :1944 <T,6,3,true>
+:1949 <T,7,4,true>  :1967 <T,8,4,true>  :1972 <T,9,3,true>
+```
+
+and on that path (`:1022-1031`):
+
+```
+:1023   xc[0] = static_cast<float>(xm[0]);  ...  xc[3] = static_cast<float>(xm[3]);
+:1027   // Preserve the incumbent BF16 expression tree used for the affine
+:1028   // bias correction; only the qdot nibble extraction changes.
+:1029   sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+```
+
+**Same four-term BF16 tree, same grouping of four, same
+`values_per_thread = 16`, same `block_size = 512`, same terminal `simd_sum`.**
+And the nibble change is *provably* exact: `qdot` uses `(w & 0xf0)` against
+`x_thread[i+1] = x[i+1]/16`, the wide cell uses `((packed >> 4) & 0x0f)` against
+unscaled `xc[1]` — the same real product, because power-of-two scaling is exact
+in FP32. The author states the identity themselves at `:1070-1082`.
+
+🔴 **So the wide MTP cells and `qmv_fast_impl` agree BIT-FOR-BIT on affine-4, and
+that agreement is deliberate.** `git log -S "Preserve the incumbent BF16
+expression tree"` puts the comment in **`79683c6` "Accept submission
+14b53255-e585-44bd-84d9-37b7b29c0be9"** — an **ACCEPTED** submission. Somebody
+built the DIRECT_NIBBLES optimisation, proved their nibble change was exact,
+**declined to touch the bias tree even though the floats were already sitting in
+registers one line above**, and shipped it through the ranked pipeline.
+
+### What this does to E44, and it is the opposite of what I first wrote
+
+1. 🔴 **alphonse's perturbation moves the MTP leg AWAY from the serial leg, not
+   toward it.** My first draft of this entry had it backwards: I saw the MTP
+   leg's bf16 tree, saw `typedef float U` in the serial leg, and concluded the
+   legs disagreed and that his fp32 MMA was therefore a *repair*. Reading
+   `load_vector` one level down refutes that. Base's rms 5.7e-2 deviation from
+   exact double is **real and it is SHARED by both legs**. Fixing it on the MTP
+   leg only **creates** a disagreement that does not currently exist.
+2. 🔴 **The bar is not "accurate", it is "identical to `qmv_fast_impl`", and a
+   previous accepted submission hit that bar exactly and on purpose.** That is
+   the strongest evidence we have about what the ranked pipeline tolerates: the
+   one person who optimised this cell chose exactness over accuracy when
+   accuracy was free.
+3. 🔴 **An 8×8 fp32 MMA cannot hit that bar.** It reassociates by construction.
+   There is no variant of alphonse's mechanism that reproduces the bf16 tree, and
+   nobody should look for one.
+4. 🟡 **But the bar has never been TESTED.** The previous author *avoided*
+   affine-4 reassociation; they did not measure whether it breaks anything. Their
+   own reasoning at `:1076-1082` — reassociation is safe on the 2-bit shortlist
+   because *"the exact affine-4 rerank plus target verification decide every
+   emitted token"* — is an argument for **caution at the affine-4 path**, not a
+   measurement of it. **Whether bit-exactness with `qmv_fast_impl` is REQUIRED or
+   merely PRESERVED is an open, cheap, decidable question, and it is now the
+   single thing standing between this campaign and its first above-floor lever.**
+
+### 🔴 The design that decides it: a reassociation DOSE LADDER, ascending in cost
+
+Three perturbations of the same term, in increasing magnitude, the first two
+costing **zero registers and zero time**:
+
+| arm | change to `:1029` | perturbation | cost |
+|---|---|---|---|
+| **R0** | none (control) | 0 | 0 |
+| **R1** | `(xm[0]+xm[1]) + (xm[2]+xm[3])` | pure reassociation, ~1 bf16 ulp per group of 4 | identical op count |
+| **R2** | `xc[0]+xc[1]+xc[2]+xc[3]` | removes bf16 rounding entirely; ≈ base-vs-exact magnitude | **strictly fewer ops** — reuses floats already materialised at `:1023` |
+| **M** | alphonse's MMA cell | largest | +11.4 % faster, 104 regs |
+
+Ordered ascending, so the wall is located rather than merely hit. **If R1 already
+moves the token stream, exactness is a hard wall and M is dead — learned for the
+price of one character.** If R2 survives, reassociation of the magnitude M
+introduces is demonstrably tolerated and M becomes plausible.
+
+R2 deserves its own note: the four floats already exist in registers at `:1023`,
+so R2 is *fewer* instructions than base, not more. The previous author had them
+too and did not use them. That is either a bit-exactness decision or an
+oversight, and the ladder distinguishes those.
+
+### 🟢🟢🟢 The gate to read it with: item 102's fingerprint is a **zero-variance instrument**
+
+Item 102 measured `effective_mean_draft_len` **bit-identical to the board top on
+8/8 prompts** (`+0.000 %` each), and **73 of 88 rows on head `559b24eb` carry
+that exact fingerprint while spanning 39.7 % of score range**. Acceptance is a
+closed *lever* — and that same measurement is the sharpest *sensor* we own:
+
+- `effective_mean_draft_len` = D/R (beagle 485/107 = 4.5327, item 153), so its
+  granularity is **1/107 ≈ 0.0093** while it is reported to **1e-4**. It
+  **resolves a single flipped decision.**
+- **Zero variance demonstrated across 73 independent trees.** A calibrated
+  zero-variance instrument with a known 8-number target beats a golden-stream
+  diff, because a golden diff is one bit and this is a graded one.
+- 🔴 **It is valid from an UNGATED local run.** Token decisions are
+  deterministic; they do not depend on thermal state. The cool gate protects
+  **timing**, not token streams. So this gate costs one ungated local benchmark
+  and its answer is fully admissible.
+- 🔴 Must be settled before trusting it: `effective_mean_draft_len` may be a
+  **draft-side** statistic (the 2-bit readout at M=1, `:1084`), in which case it
+  is insensitive to wide-cell changes **by construction** and is the wrong field.
+  `accepted_pair_count` is the verifier-side one. Determine which board fields
+  are downstream of the affine-4 path before pre-registering either.
+- 🔴 Because acceptance is closed, **any movement in the fingerprint is a
+  REGRESSION signal, never a win.** R2 being "more accurate" does not license
+  hoping for more acceptance.
+
+Fingerprint, for reuse: plutarch 0.1540, drama 2.2976, travel 2.6557, beagle
+4.5327, medicine 4.7677, republic 5.2697, essays 5.4253, botany 5.7765;
+`mtp_depth` **8**; `qwen_mtp_weights_hash` `b53e4991…`.
+
+---
+
+### 175(B) — the channel neither of us priced: acceptance is inside the score
+
+The M ∈ {7,8} cells run inside the **verifier**. Perturbing them perturbs
+acceptance decisions on near-ties. `parity_ok` and `accepted_pair_count` are both
+per-prompt board fields. alphonse's +0.789..+1.228 % is a **pure-latency** figure
+that silently assumes the acceptance rate is unchanged. Item 102 says it had
+better be unchanged — so this is not upside, it is **risk**.
+
+### 175(C) — incidental, carried from his report
+
+`research/twin_audit.py` **already FAILS on base `9fe0dc5d`** (1/29, comment-only
+drift at `case 8`), verified by him in a clean scratch worktree; his candidate
+passed 29/29 only because regenerating synced it. He correctly did **not** fix it
+— it would touch a scored file. Our own suite is **green at `454410ea`**, so the
+two observations must be reconciled against the `KNOWN_COMMENT_DIVERGENCES`
+waiver row rather than assumed consistent.
+
+Merged in with the result: `research/gpu_busy_check.py` and
+`research/validate_gpu_busy_gate.sh` — a real cross-role GPU-contention detector,
+strictly better than my `MLXFAST_LOCAL_RUN_LOCK_DIR` advisory export, which gives
+no protection against another **role**. `research/air_kernel_stats.py` gains the
+opt-in `--simdgroup-distributed` lane correction (default off, so every
+previously published number is byte-identical). No gate in
+`senpai/run-all-gates.sh` depends on it.
+
+---
+
+## Process lessons from 175
+
+1. 🔴🔴🔴 **`Cov(win, cost) ≠ 0` means pooling before weighting is BIASED, not
+   coarse.** Weight first, sum second. If the big winners are also the expensive
+   cells — and they usually are, because both scale with work — the pooled mean
+   **understates**. alphonse found this; I had shipped the pooled version.
+2. 🔴🔴🔴 **Read the arithmetic, not just the dispatch.** I spent this entire
+   campaign mapping *which cell runs at which width* and never once asked
+   *whether two cells computing the same product compute it the same way*. A
+   `bool` template parameter defaulted to `false` and set `true` at all seven
+   call sites was carrying the answer.
+3. 🔴🔴🔴 **THE SAME MISTAKE AS 174(F), ONE TURN LATER, AND I ONLY CAUGHT IT BY
+   GOING ONE LEVEL DEEPER.** I read the MTP leg's bf16 tree, read `typedef float
+   U` in the serial leg, and drafted a ledger entry claiming *"the two legs
+   already disagree arithmetically"* with five consequences hanging off it — one
+   of which was that alphonse's blocker was **inverted in his favour**. It is
+   inverted **against** him. The refutation was in `load_vector`'s `bits == 4`
+   branch, one call deeper than I had looked. **A type name at the call site is
+   not the arithmetic; the expression tree is.** 174's lesson 6 said verifying an
+   assumption is not verifying what you concluded from it. 175's version is
+   worse: **I verified the wrong depth.** When a claim rests on "these two code
+   paths differ", the unit of verification is the *leaf expression*, not the
+   function signature.
+4. 🔴🔴 **A deliberately preserved expression tree is a message from a previous
+   experimenter, and `git log -S` reads it.** `// Preserve the incumbent BF16
+   expression tree` came from an *accepted* submission. Comments that say
+   "preserve" are load-bearing. Find out who wrote them and what they were
+   avoiding before improving them — and note that they left free performance on
+   the table to keep it, which is itself evidence about the constraint.
+5. 🔴🔴🔴 **A closed lever is a calibrated instrument.** Item 102 closed
+   acceptance as a *lever*; that same measurement — bit-identical across 73
+   trees, resolving 1 token in 107 — is the sharpest **gate** in the campaign.
+   When you close a door, write down what the lock is worth as a sensor.
+6. 🔴🔴 **Ask which validity a gate protects.** The cool gate protects *timing*.
+   Token streams are deterministic. An ungated local run is a fully admissible
+   answer to an exactness question, and we have been treating "ungated" as
+   globally disqualifying.
+7. 🔴🔴 **"More accurate" is not "correct" and not "safe".** Which it is depends
+   entirely on which leg is the reference, and that is two source reads away —
+   at the right depth.
+8. 🔴🔴 **Locate the wall, do not just hit it.** A one-bit blocker ("is it
+   bit-exact?") becomes a measurement if you build a dose ladder of
+   perturbations ascending in cost. The cheapest dose that breaks the stream is
+   worth more than any number of passes at the expensive dose.
+9. 🔴 **A one-bit deliverable is a quiet measurement.** "Does the 512-token
+   stream match?" is one draw. "How close was the tightest decision, in units of
+   the perturbation?" is the process.
