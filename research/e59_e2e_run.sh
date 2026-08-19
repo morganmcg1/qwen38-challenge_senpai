@@ -237,7 +237,8 @@ echo "status=${rc}" >> "${out}/meta.txt"
 # Log while measuring, never once at session end: a session that dies on leg 4
 # must still leave legs 1-3 on the board.
 if ((rc == 0)); then
-  python3 research/e59_wandb_log.py --stage rung4-leg --leg "${out}" \
+  python3 research/e59_wandb_log.py \
+    --stage "${E59_LEG_STAGE:-rung4-leg}" --leg "${out}" \
     >> "${out}/wandb.log" 2>&1 \
     || echo "e59_e2e_run: W&B logging failed for ${tag}; see ${out}/wandb.log" >&2
 fi

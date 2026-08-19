@@ -355,28 +355,28 @@ LEG_COLUMNS = [
 ]
 
 
-def log_rung4_leg(run, path: pathlib.Path) -> None:
+def log_rung4_leg(run, path: pathlib.Path, ns: str = "rung4") -> None:
     rec = read_leg(path)
     table = wandb.Table(columns=LEG_COLUMNS)
     table.add_data(*[
         json.dumps(rec[name]) if isinstance(rec[name], dict) else rec[name]
         for name in LEG_COLUMNS])
-    run.log({f"rung4/leg/{rec['tag']}": table})
+    run.log({f"{ns}/leg/{rec['tag']}": table})
     run.log({
-        f"rung4/{rec['tag']}/serial_seconds_per_token": rec["serial_seconds_per_token"],
-        f"rung4/{rec['tag']}/mtp_seconds_per_token": rec["mtp_seconds_per_token"],
-        f"rung4/{rec['tag']}/mtp_seconds_per_token_prefill_removed":
+        f"{ns}/{rec['tag']}/serial_seconds_per_token": rec["serial_seconds_per_token"],
+        f"{ns}/{rec['tag']}/mtp_seconds_per_token": rec["mtp_seconds_per_token"],
+        f"{ns}/{rec['tag']}/mtp_seconds_per_token_prefill_removed":
             rec["mtp_seconds_per_token_prefill_removed"],
-        f"rung4/{rec['tag']}/score": rec["score"],
+        f"{ns}/{rec['tag']}/score": rec["score"],
     })
     run.summary.update({
-        f"rung4/{rec['tag']}/arm": rec["arm"],
-        f"rung4/{rec['tag']}/all_tokens_matched": rec["all_tokens_matched"],
-        f"rung4/{rec['tag']}/row_ledger_closes": rec["row_ledger_closes"],
-        f"rung4/{rec['tag']}/gpu_temp_entry_c": rec["gpu_temp_entry_c"],
-        f"rung4/{rec['tag']}/width_histogram": json.dumps(rec["width_histogram"]),
+        f"{ns}/{rec['tag']}/arm": rec["arm"],
+        f"{ns}/{rec['tag']}/all_tokens_matched": rec["all_tokens_matched"],
+        f"{ns}/{rec['tag']}/row_ledger_closes": rec["row_ledger_closes"],
+        f"{ns}/{rec['tag']}/gpu_temp_entry_c": rec["gpu_temp_entry_c"],
+        f"{ns}/{rec['tag']}/width_histogram": json.dumps(rec["width_histogram"]),
     })
-    print("logged rung4 leg %s (arm %s)" % (rec["tag"], rec["arm"]))
+    print("logged %s leg %s (arm %s)" % (ns, rec["tag"], rec["arm"]))
 
 
 def log_rung4(run) -> None:
@@ -441,10 +441,10 @@ def log_gates(run) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True,
-                    choices=["rung1", "rung2", "rung2-e2e", "rung3",
-                             "rung4-leg", "rung4", "gates"])
+                    choices=["rung1", "rung2", "rung2-e2e", "rung2b-leg",
+                             "rung3", "rung4-leg", "rung4", "gates"])
     ap.add_argument("--leg", type=pathlib.Path,
-                    help="one run directory for --stage rung4-leg")
+                    help="one run directory for --stage rung4-leg or rung2b-leg")
     ap.add_argument("--legs", type=pathlib.Path, nargs="*", default=[],
                     help="run directories for --stage rung2-e2e")
     ap.add_argument("--resume", default=None)
@@ -460,10 +460,11 @@ def main() -> int:
             log_rung2_e2e(run, args.legs)
         elif args.stage == "rung3":
             log_rung3(run)
-        elif args.stage == "rung4-leg":
+        elif args.stage in ("rung4-leg", "rung2b-leg"):
             if args.leg is None:
-                raise SystemExit("e59_wandb_log: --stage rung4-leg needs --leg DIR")
-            log_rung4_leg(run, args.leg)
+                raise SystemExit(f"e59_wandb_log: --stage {args.stage} needs --leg DIR")
+            log_rung4_leg(run, args.leg,
+                          ns="rung4" if args.stage == "rung4-leg" else "rung2b")
         elif args.stage == "rung4":
             log_rung4(run)
         else:
