@@ -1187,12 +1187,19 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
 
 // Cross-row affine4/g64 QMV through the simdgroup matrix unit.
 //
-// The scalar cross-row cells above shrink weight traffic by widening the number
-// of x rows one worker holds, but NA is capped at 4 by register pressure, so a
-// width-8 verify still streams the weight tile twice and every nibble is
-// decoded once per x row. Here one simdgroup owns a whole 8(out) x 8(in) output
-// tile and the nibble decode is amortised over all eight x rows by the matrix
-// unit, so the weight tile is streamed exactly once for M in [4, 8].
+// One simdgroup owns a whole 8(out) x 8(in) output tile, so the cost of this
+// cell is set by the TILE and is flat in M: measured plateau 139.76 us
+// (n=k=5120) and 458.99 us (n=5120, k=17408), cv 2.28 % / 2.00 % across
+// M = 4..8, while the scalar cells rise +71.3 % / +78.6 % over the same range.
+// The sign of the trade is therefore set by where the rising scalar cost crosses
+// the flat tile cost, which is bracketed in M in [6, 7] -- and that, not weight
+// traffic, is why the dispatch below claims only M = 7 and 8.
+//
+// It does stream the weight tile once for M <= 8 where the scalar cells stream
+// it ceil(M / NA) times with NA <= 4, but that mechanism was PRE-REGISTERED and
+// REFUTED: it predicts a win from M = 5 and a larger win on the k=17408 shape,
+// and the measurement shows neither (M = 4 was -41.7 % / -52.4 %, and both wins
+// are smaller on the deeper shape). Do not reason from it.
 //
 // Operands are transposed relative to the usual (M, K) x (K, N) reading:
 //
@@ -1217,14 +1224,17 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
 // each. A cross-row-complete worker needs only one x-group, so this cell claims
 // tid.x == 0 and hands the two simdgroups either two different output tiles
 // (M <= 8) or the two x-tiles of one output tile (M == 9). No threadgroup
-// memory and no barrier are needed in either case.
+// memory and no barrier are needed in either case. m_rows is RUNTIME, so the
+// two-tile branch survives compilation even though the dispatch below never
+// reaches it; specialising the cell to one tile is an open follow-up.
 //
 // NOTE ON EXACTNESS: individual products are bit-identical to the scalar cells
 // (a masked-nibble product and a direct-nibble product are two roundings of the
 // same real value), but the matrix unit fixes its own summation order for each
-// 8-wide step, so this cell is NOT bit-equal to the M == 1 readout. It is a
-// speed probe first; it must clear its cost bar before any exactness work is
-// worth doing.
+// 8-wide step, so this cell is NOT bit-equal to the M == 1 readout. Neither are
+// the scalar cross-row cells it sits beside, which is why exactness on the
+// scored path is settled by the golden run and not by an algebraic identity.
+// That run is the gate this cell has NOT yet passed.
 template <typename T>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_sgmm(
     const device uint32_t* w,
@@ -2050,19 +2060,36 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 4:
+          qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>(
+              w, scales, biases, x, y, in_vec_size, out_vec_size,
+              tid, simd_gid, simd_lid);
+          return;
         case 5:
+          qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>(
+              w, scales, biases, x, y, in_vec_size, out_vec_size,
+              tid, simd_gid, simd_lid);
+          return;
         case 6:
+          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>(
+              w, scales, biases, x, y, in_vec_size, out_vec_size,
+              tid, simd_gid, simd_lid);
+          return;
         case 7:
         case 8:
-        case 9:
-          // E44 probe: one simdgroup-matrix cell for the whole [4, 9] envelope.
-          // The six scalar per-width cells it replaces each streamed the weight
-          // tile ceil(M / NA) times with NA capped at 4; this one streams it
-          // once for M <= 8 and twice at M = 9. m_rows stays RUNTIME, so the
-          // variant tree loses six inlined bodies and gains one.
+          // E44 r2: the simdgroup-matrix cell, dispatched ONLY where it wins.
+          // Its cost is flat in M because one simdgroup owns a whole 8-row
+          // output tile, while the scalar cells above rise with M; the crossover
+          // sits in M in [6, 7], so this claims 7 and 8 and nothing else. M = 9
+          // needs a second tile and profiles ~1.6x the plateau, which is why it
+          // stays on <T, 9, 3>.
           qmv_fast_crossrow_affine4_g64_sgmm<T>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               int(ntg.x), tid, simd_gid, simd_lid);
+          return;
+        case 9:
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>(
+              w, scales, biases, x, y, in_vec_size, out_vec_size,
+              tid, simd_gid, simd_lid);
           return;
         default:
           break;
