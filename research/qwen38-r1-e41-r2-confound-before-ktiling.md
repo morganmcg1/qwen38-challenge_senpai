@@ -3,7 +3,15 @@
 PR #46 · branch `qwen-thorfinn/r2-confound-before-ktiling` · base
 `senpai/qwen38-mtp-r1` @ `04ad6bf11437c269df85a47e91faa769c74fe6da`
 
-<!-- VERDICT AND NUMBERS ARE FILLED IN AFTER THE ARM CURVE LANDS. -->
+## Verdict
+
+**ILP / register tile. K-tiled activation staging is dead and deliverable (b)
+was not built.**
+
+E38's R2 is the halved register tile and the extra sequential loop, not the
+activation re-read. Shrinking the re-read distance does not refund the tax — it
+**adds** to it. A future NA=6 single-weight-pass scheme must budget the full
+~+11 % at M=6 as unavoidable, because there is no locality left to recover.
 
 ## Question
 
@@ -149,10 +157,172 @@ All ratios below are **kernel-level only**.
 | editable budget | source 2 467 227 / 3 000 000; growth 11 938 / 262 144 |
 
 Thermal honesty, as required for an ungated local arm: this host's real 40 °C
-cool gate cannot be reached (it stalls at ~43.4 °C), so both curves record
+cool gate cannot be reached (it stalls at ~43.4 °C), so every curve records
 `cool_gate_vendored=stalled_above_40C`. Entry and exit GPU temperatures are
 logged per arm, and `cool_gate_passed_real_gate=false` /
 `gate_qualified_for_timing=false` are preserved verbatim in the W&B record. E38
 measured under the same condition, which is what makes the anchor comparable.
-These are **directional causal kernel measurements within one counterbalanced
-session**, not gate-qualified numbers and not any kind of score.
+These are **directional causal kernel measurements**, not gate-qualified numbers
+and not any kind of score.
+
+Precisely on counterbalancing: these are three sequential runs forming an
+**A-B-A bracket**, not one interleaved ABBA session. That cancels monotone drift
+to first order and yields a measured per-width floor, but it is weaker than true
+interleaving, and the M=9 residual below shows the limit of the design.
+
+## Runs
+
+| tag | role | head | W&B | entry °C | exit °C |
+|---|---|---|---|---|---|
+| `e41-base-r1` | base (A) | `5d97fe3` | `thrh88b8` | 43.42 | 68.08 |
+| `e41-arm-r1` | ladder arm (B) | `dfe39af` | `kw7yrfoy` | 43.24 | 69.29 |
+| `e41-base-r2` | base replicate (A) | `5c6693a` (twins = `5d97fe3`) | `ryws3yex` | 43.40 | 86.62 |
+
+All three `dirty=0`, `--reps 21 --inner 10`, shapes-only, widths 1–9, one host.
+Ratios below use the per-width **geometric mean of both base runs** as the
+reference, so monotone drift across the A-B-A sequence cancels to first order.
+
+## Result
+
+### The session replicates E38 before anything new is read off it
+
+M=6 anchor ρ = **1.1065** against E38's **1.1054**, inside the registered band
+[1.0954, 1.1154]. Dispatch readback **PASS** for all 12 treated and control
+instantiations; fidelity **PASS**, 0 bitwise failures in both builds.
+
+### The NA=4 ladder: reuse distance buys nothing
+
+| rung | reuse distance | ρ | tax |
+|---|---|---|---|
+| M=4 | `KT=64`, spans K | 1.2066 | +20.66 % |
+| M=8 | `KT=4`, 2 048 values — **discriminator** | **1.2297** | **+22.97 %** |
+| M=7 | `KT=1`, 512 values — bound | 1.2222 | +22.22 % |
+
+- **Locality recovery (`KT=64 → KT=4`) = −11.2 % of the tax** (−2.31 pp).
+- Total recovery (`KT=64 → KT=1`) = −7.5 % of the tax (−1.56 pp).
+- Registered rule: MEM needed **≥ +50 %** (i.e. ≥ +10.33 pp); ILP was ≤ +10 %.
+
+Measured recovery is **negative**, so the rule fires **ILP**. Three independent
+observations make this more than a threshold crossing:
+
+1. **Sign consistency, 8/8 scored shapes.** The M=4 → M=8 step is negative at
+   every shape (−0.52 pp to −3.57 pp), across K ∈ {5 120, 6 144, 17 408} and
+   N from 4 096 to 248 320.
+2. **The `KT=1` rung is also worse than `KT=64`**, which closes the "not
+   adjacent enough" escape. Even 512-value adjacency refunds nothing.
+3. **The confounded NA=3 pair moves the same way**: M=3 (`KT=1`) ρ = 1.1493
+   versus the M=6 anchor 1.1065, a −40.2 % "recovery". If MEM were real, the
+   NA=3 K-tiled form should have beaten the sequential one. Note M=3 sits
+   *earlier* in the sweep than M=6, so accumulated heat would bias this pair the
+   other way; it does not rescue MEM.
+
+This is mechanically coherent with the census: `KT` holds `peak_live_regs`,
+`device_loads`, `vector_float_ops`, `loop_backedges` and `allocas` invariant, so
+the only thing a smaller tile can buy is reuse distance and the only thing it
+can cost is loop bookkeeping. We measure the cost and none of the benefit, which
+means the re-read was never on the critical path.
+
+### The control gate failed, and the replicate explains why
+
+The pre-registered control gate **FAILED** and is reported as such: with the
+bracket applied, untreated widths give M1 = 0.9958, M2 = 1.0081, M5 = 1.0010,
+M9 = 1.0090 — worst 0.90 % against my registered ±0.46 % band. Against base-r1
+alone it was worse: M1 = 0.9726, worst 2.74 %.
+
+The replicate measures each width's **own** floor, because base-r2 is the same
+build timed again — `|base2/base − 1|`:
+
+| M | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|---|---|
+| floor % | **4.61** | 0.73 | 0.24 | **0.04** | 0.16 | **0.07** | **0.01** | **0.06** | 0.05 |
+
+Reading this honestly:
+
+- **My registered ±0.46 % band was mis-specified.** It was derived from
+  score-level σ, not from measured kernel-level reproducibility, and it is
+  simultaneously far too loose for M=4/7/8 and impossibly tight for M=1.
+- **M=1 was never interpretable.** Its own floor is 4.61 % — it is the first
+  width in the sweep and absorbs warmup/JIT (its mean-vs-min spread is
+  22.25 % / 16.43 %, an order of magnitude above every other width). After the
+  A-B-A correction its deviation is 0.42 %, *below* its own floor.
+- **The widths that carry the verdict are the most reproducible in the sweep.**
+  Worst floor across M=4, 6, 7, 8 is **0.07 %**, against a measured step of
+  **2.31 pp** — a ratio of about **33×**.
+- **Two controls exceed their own floor: M=2 (0.81 % vs 0.73 %, marginal) and
+  M=9 (0.90 % vs 0.05 %).** M=9 is the real one, and it is **not thermal**:
+  base-r2 exited at 86.62 °C against base-r1's 68.08 °C, yet the two agree at
+  M=9 to 0.05 %, so M=9 throughput is insensitive across that range. The
+  remaining explanation is a **build-level artifact** — every width is
+  JIT-compiled from one `quantized.cpp` source string, and the arm build's extra
+  instantiations enlarge that compilation unit. An "untreated width" is
+  therefore not a perfectly clean control in this harness.
+
+That artifact is bounded at ≈0.9 pp by M=9 itself. The gap between the measured
+step (−2.31 pp) and the MEM threshold (+10.33 pp) is **12.6 pp**, so the
+artifact is ~14× too small to change the verdict. Separately, the step is a
+difference of two ratios sharing both sessions, so a session-level multiplicative
+drift `d` perturbs it only by `(d−1) × step` — visible in the data, since
+applying the bracket moved locality recovery from −0.114 to −0.112 and the anchor
+from 1.1086 to 1.1065.
+
+### Per-shape at the discriminating step
+
+| shape | base µs | M=4 ρ | M=8 ρ | step |
+|---|---|---|---|---|
+| `linear_attn.in_proj_fused_qkvzba` | 495.76 | 1.1996 | 1.2243 | −0.0246 |
+| `linear_attn.out_proj` | 220.34 | 1.1818 | 1.1985 | −0.0167 |
+| `full_attn.qkv_proj_fused` | 435.47 | 1.2021 | 1.2289 | −0.0268 |
+| `full_attn.o_proj` | 217.63 | 1.2036 | 1.2088 | −0.0052 |
+| `mlp.gate_up_fused` | 987.87 | 1.2126 | 1.2297 | −0.0171 |
+| `mlp.down` | 546.34 | 1.2069 | 1.2426 | −0.0357 |
+| `head.lm_head` | 6 715.09 | 1.2292 | 1.2433 | −0.0141 |
+| `head.compact_draft_vocab` | 2 691.90 | 1.2232 | 1.2410 | −0.0178 |
+
+### Value — kernel-level only, and conditional
+
+ψ·φ = 0.0459 is **back-solved from the crown, not measured**; every score figure
+inherits that and I do not claim it. On that basis the measured M=6 tax alone
+would be worth **−0.4889 %** of score if paid, and the same tax with this
+ladder's "recovery" applied is also **−0.4889 %**, because the recovery is
+negative. Neither is a gain over the shipped base, which pays no tax at all: the
+tax only matters as the price deliverable (b) would have to pay to buy one weight
+pass at NA=6, so (b)'s value would be that weight-pass saving **minus** whatever
+tax survives K-tiling. E41 measured the second term and found it survives intact.
+Context: crown 0.5193 %, engineerable gap 0.2586 %, σ_score 0.0978 %.
+
+## What this means for the campaign
+
+- **Do not build K-tiled activation staging.** The mechanism it targets does not
+  exist at these shapes.
+- **The row-tile tax is a hard floor for NA=6 single-weight-pass schemes.** Price
+  any future proposal in that direction against ~+11 % at M=6 (NA=3) and ~+21 %
+  at NA=4, with no staging discount available.
+- **The register tile, not the activation stream, is the binding resource.** The
+  census already showed `xkt_na6_r1` fits at 105 registers while `xkt_na6_r2`
+  needs 135 against a 128 wall. Work that *raises* rows per SIMD or *reduces*
+  accumulator pressure is the direction with headroom; work that subdivides K is
+  not.
+
+## Scored surface
+
+The ladder is measurement scaffolding for a mechanism that just died, so the
+scored surface is **reverted to the base** on this branch. Leaving the arm
+dispatch table in place would be a ~21 % kernel regression at M=4/7/8 if it were
+ever merged. The ladder remains fully reproducible from git history — `5d97fe3`
+for the template, `dfe39af` for the arm table — plus the committed census.
+
+## Suggested follow-ups (not implemented)
+
+1. **Attribute the M=9 build artifact.** A ~0.9 % cross-kernel effect from
+   enlarging the JIT compilation unit, if real and general, is a measurement
+   hazard for every future A/B in this harness, and possibly a small free win if
+   the shipped source string can be trimmed. The cheap test is a build whose only
+   change is adding unreachable instantiations.
+2. **Retire the score-derived control band for kernel-level work.** Per-width
+   floors from a same-build replicate cost one extra curve and are one to two
+   orders of magnitude more informative. M=1 should be excluded from control sets
+   or given a warmup pass.
+3. **Price the NA=6 weight-pass saving directly.** E41 measured only the cost
+   side. Whether *any* NA=6 scheme is viable now depends entirely on whether the
+   single-weight-pass saving exceeds ~+11 %, which is a separate measurement and
+   the one that decides the whole direction.
