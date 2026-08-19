@@ -204,11 +204,58 @@ fi
 # noise and a correctness-breaking one never executes. Reuse benchmark.sh's
 # definitions rather than restating them, the same way research/run-qmv-curve.sh
 # reuses its thermal helpers, so the two can never drift apart.
-eval "$(
+#
+# Every arm is then checked BY NAME, the way the transform-cache block below is,
+# because this extraction fails SILENTLY and in the one direction that hurts.
+# An awk pattern that no longer matches emits nothing, `eval ""` succeeds,
+# `metallib_rebuild_required` is left undefined, `if metallib_rebuild_required`
+# exits 127, `set -e` exempts an `if` condition, the branch reads FALSE, and the
+# rebuild this block exists to force is skipped without a word -- which is
+# precisely the failure described in the paragraph above. A guard against a
+# silent failure must not itself be able to fail silently.
+#
+# A PARTIAL extraction is worse than a total one, so the arms are checked
+# separately. Lose only the RUNTIME_WORKER_BIN arm and MLX_METALLIB resolves to
+# `$(dirname "")/mlx.metallib` = `./mlx.metallib`; `find -newer` on a path that
+# does not exist is swallowed by the reused function's own `2>/dev/null || true`,
+# and the answer is once again a confident "not stale". Hence the coupling
+# between the two variable arms is asserted, not just their non-emptiness.
+#
+# METALLIB-GUARD-BEGIN (extracted verbatim by research/metallib-guard-controls.sh)
+metallib_reuse_definitions="$(
   awk '/^RUNTIME_WORKER_BIN=/' benchmark.sh
   awk '/^MLX_METALLIB=/' benchmark.sh
   awk '/^metallib_rebuild_required\(\) \{/,/^\}/' benchmark.sh
 )"
+if ! eval "${metallib_reuse_definitions}"; then
+  echo "benchmark-qwen-mtp.sh: could not evaluate benchmark.sh's metallib-freshness definitions;" >&2
+  echo "benchmark-qwen-mtp.sh: benchmark.sh has been refactored -- refusing to time a possibly stale mlx.metallib" >&2
+  exit 1
+fi
+if ! declare -F metallib_rebuild_required >/dev/null 2>&1; then
+  echo "benchmark-qwen-mtp.sh: could not reuse benchmark.sh's metallib_rebuild_required();" >&2
+  echo "benchmark-qwen-mtp.sh: benchmark.sh has been refactored -- refusing to time a possibly stale mlx.metallib" >&2
+  exit 1
+fi
+# With MLXFAST_MLX_METALLIB set the caller owns the artifact and the reused
+# function returns 1 by design, so the path arms below are not load-bearing.
+if [[ -z "${MLXFAST_MLX_METALLIB:-}" ]]; then
+  if [[ -z "${RUNTIME_WORKER_BIN:-}" ]]; then
+    echo "benchmark-qwen-mtp.sh: could not reuse benchmark.sh's RUNTIME_WORKER_BIN;" >&2
+    echo "benchmark-qwen-mtp.sh: benchmark.sh has been refactored -- refusing to time a possibly stale mlx.metallib" >&2
+    exit 1
+  fi
+  if [[ "${MLX_METALLIB:-}" != "$(dirname "${RUNTIME_WORKER_BIN}")/mlx.metallib" ]]; then
+    echo "benchmark-qwen-mtp.sh: benchmark.sh's MLX_METALLIB (${MLX_METALLIB:-<unset>}) does not sit beside its RUNTIME_WORKER_BIN (${RUNTIME_WORKER_BIN});" >&2
+    echo "benchmark-qwen-mtp.sh: the extraction is partial -- refusing to time a possibly stale mlx.metallib" >&2
+    exit 1
+  fi
+  if [[ ! -e "${MLX_METALLIB}" ]]; then
+    echo "benchmark-qwen-mtp.sh: missing ${MLX_METALLIB}; run ./setup.sh first" >&2
+    exit 1
+  fi
+fi
+# METALLIB-GUARD-END
 if metallib_rebuild_required; then
   echo "benchmark-qwen-mtp.sh: mlx.metallib is stale (vendored kernel sources changed after it was built); rebuilding with tools/build-mlx-metallib.sh"
   if ! tools/build-mlx-metallib.sh --all-build-roots; then

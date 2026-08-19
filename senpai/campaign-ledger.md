@@ -5378,3 +5378,217 @@ Two traps in doing it:
      against, because the two answers differ by 22×.** Both gates belong in CI. And
      `shipped-surface-gate.sh`'s own header comment — *"A check you never audit is not a
      check"* — was written about the wrong baseline and applies to itself.
+
+160. 🔴🔴🔴 **THE CROWN IS SIXTEEN LINES AND I CATALOGUED THEM AS DEAD CODE. Six hundred
+     rival submission trees were sitting in the local git object store the whole time;
+     our best score was a 3.4σ REGRESSION on the tree we were handed; and alphonse's
+     width deficit is not a mechanism, it is our own overlay.**
+
+     I set out to close one loose end -- item 158(J), where I told alphonse our own
+     `submissionCommitSha 2b0c36a0…` "is not a resolvable git object locally", so the
+     shipped-surface gate verifies HEAD rather than the submitted snapshot. I tried
+     `git fetch origin 2b0c36a078b7660c9215adee933336ff46da25af`. It resolved
+     immediately. Then `git for-each-ref --points-at` showed the object had **already
+     been there**, at `refs/remotes/upstream/submissions/ca9251b8-…`, because
+     `remote.upstream.fetch` is `+refs/heads/*:refs/remotes/upstream/*` and the
+     organizer keeps **one branch per submission**. There are **600** such refs local.
+     🔴 **My "not resolvable" claim was simply false — my fifth error of the campaign,
+     and by far the most expensive, because it is the one that stopped us looking.**
+
+     **(A) OUR BEST SUBMISSION WAS A REGRESSION ON THE TREE WE STARTED FROM.**
+     `2b0c36a078` (ours, 3.23250848263467) has parent `5068eb8d0bae`, "Accept submission
+     11863aa9". That accept commit's tree is `b8642b81f72ff9214c74c654218a1bdc84fc2321`
+     — **byte-identical** to the validated tree of companygardener's row `0cbaf6a7f7`,
+     which scored **3.24326223889754**. So our overlay was applied to a 3.24326 tree and
+     produced 3.23251: **−0.01075376 = −0.3316 %**. The overlay, on the shipped surface,
+     is three files: `Qwen36MTPBlockSession.swift +62/−47`, `quantized.cpp +4/−4`,
+     `quantized.h +7/−17` (the `+7/−17` **is E27**). Work identity holds on **8 of 8**
+     legs (`effective_mean_draft_len` byte-identical) and head provenance is `559b24eb`
+     on both rows. This is the cleanest controlled comparison in the campaign: one base
+     tree, one overlay, two ranked measurements. Everything else we have compared
+     confounded the base.
+
+     **(B) DECOMPOSITION, because an MTP overlay must not move the serial leg.**
+     `raw_p = serial/mtp`, so `dln(raw_p) = dln(serial) − dln(mtp)` (verified to 1e−6 on
+     all 8 legs). Per leg, ours vs the base tree:
+
+     | prompt | width | d serial % | d mtp % | d raw_p % |
+     |---|---|---|---|---|
+     | plutarch | 0.154 | −0.0858 | +0.0836 | −0.1694 |
+     | drama | 2.298 | −0.0651 | +0.0160 | −0.0811 |
+     | travel | 2.656 | −0.3695 | −0.0527 | −0.3168 |
+     | beagle | 4.533 | −0.3856 | **+0.2353** | −0.6209 |
+     | medicine | 4.768 | +0.0113 | **+0.0733** | −0.0620 |
+     | botany | 5.270 | −0.3088 | **+0.5225** | −0.8313 |
+     | essays | 5.425 | −0.4880 | **+0.4803** | −0.9683 |
+     | republic | 5.776 | −0.3543 | **+0.2375** | −0.5918 |
+
+     MTP legs: narrow **+0.0157 %** (n=3), wide **+0.3098 %** (n=5), contrast
+     **+0.2941 pp**, **5 of 5** wide legs slower, sd 0.1878 %, t **+3.69** on 4 df.
+     Serial legs: mean **−0.2557 %**. Score decomposition on the two legs that set the
+     score (beagle 4th, medicine 5th): total −0.3321 %, of which **−0.1543 %** is MTP
+     (the overlay can own it) and **−0.1872 %** is a serial shift **an MTP-only overlay
+     cannot cause**.
+
+     **(C) 🔴🔴 alphonse's DEFICIT IS OUR OVERLAY.** His E40 us-vs-plateau numbers are
+     wide **+0.3258 %**, narrow **−0.0166 %**, contrast **0.342 pp**. This overlay A/B
+     gives wide **+0.3098 %**, narrow **+0.0157 %**, contrast **0.294 pp**. The same
+     quantity to within 0.016 pp, because the plateau rows *are* (near) the accepted
+     frontier tree and our row is that tree **plus our overlay**. H1–H5 were an attempt
+     to explain a deficit that is **the diff we submitted**. It is now localised to
+     **three files and 73 changed lines**, and its wide-leg concentration points at the
+     only wide-width-specific change in the overlay: **E27's `case 5:`/`case 9:` IPG
+     3→5**. Item 158(F) predicted exactly this — E27 lifts the single kernel-wide
+     register max 108→129, taxing every width, and its M=5/M=9 gains need not pay for
+     that in the ranked mixture. 🔴 **So E27, the change we credit with our best score,
+     is the prime suspect for having cost us 0.154 %. We went 3.069→3.233 because the
+     FRONTIER moved, not because of E27.**
+
+     **(D) A FREE HARNESS-NOISE MEASUREMENT, AND A HEADLINE I ALMOST CIRCULATED.**
+     companygardener `0cbaf6a7f7` (3.24326223889754) and alfranli123 `c0e34afd85`
+     (3.24300059379657) have the **same shipped-surface tree**. Two solvers, two
+     submissions, **one artifact**, work-identical on 8/8 legs. Their scores differ by
+     **−0.008068 %** and my first instinct was to write "σ_score = 0.0978 % is 12×
+     overstated". 🟢 **The second route refutes it, and this time I caught it myself.**
+     Per-leg noise on that identical tree is **serial sd 0.3475 %** (|max| 0.4978 %) and
+     **MTP sd 0.0995 %** (|max| 0.1617 %) — one and two orders larger than the score
+     difference. The score reproduced well only because beagle (−0.269 %) and medicine
+     (+0.236 %) — precisely the two central order statistics — happened to **cancel**.
+     That is one draw of a cancellation, not a variance estimate. **σ_score = 0.0978 %
+     stands; n=1 tells us almost nothing about it.** What the pair *does* give us is
+     per-leg yardsticks, and they sharpen (B): our wide-leg MTP effect is
+     0.3098 / (0.0995/√5) = **7.0 SE**, while the serial shift is only
+     0.2557 / (0.3475/√8) = **2.1 SE**. 🔴 So the overlay's MTP cost is solid and the
+     serial component is probably box drift. Note its direction: our serial leg got
+     **faster**, and a faster serial leg **lowers** `raw_p`. If that is the box and not
+     our code, **resubmitting the same tree scores ~0.19 % higher for free** — and we
+     have made only 5 submissions ever, 2 of which failed.
+
+     **(E) 🔴🔴🔴 THE CROWN, IN FULL, IS THREE HUNKS IN TWO FILES.**
+     `git diff 5068eb8d ef42e0432727 -- Sources/ Vendor/ mtp-head.manifest.json` is
+     **2 files, +11/−5**. ofou's 3.24929398547457 differs from the tree our own
+     submission was built on by:
+
+     1. `Qwen35RuntimeWeights.swift:45` — `setenv("MLX_MAX_MB_PER_BUFFER", "128", 1)`
+        → `"512"`. Comment: *"Do not clobber the 512 MiB Qwen-MTP full-profile budget
+        with the older 128 MiB serial-path default."*
+     2. `RuntimeStartupMemoryPolicy.swift:71-72` — `setenv(…, "512", 0)` /
+        `setenv(…, "50", 0)` → **overwrite `1`**. Comment: *"the ranked worker / parent
+        may already have exported the stock 50 MiB MLX default. overwrite=0 left that in
+        place and the 512 MiB post-wire budget never landed."*
+     3. `RuntimeStartupMemoryPolicy.swift:145-146` — `maxMegabytesPerCommandBuffer: 320,
+        maxOperationsPerCommandBuffer: 128` → `512, 50`.
+
+     🔴 **I found all three sites and drew the wrong conclusion at every one.** Item 145
+     recorded "Effective: ranked 512/50 (`RuntimeStartupMemoryPolicy.swift:71-72`)" and
+     "**Struct 320/128 (`:145-146`) DEAD**", and my carried TODO list says "**delete dead
+     320/128 constants**". Item 147 recorded the init-order hazard — env vars read once
+     as function-local statics in the `Device` ctor — as a *hazard to watch*. The crown
+     author treated the same three sites as **live and wrong**, and was right.
+
+     Verified in our tree at HEAD, all three defects present and unchanged: the `"128"`
+     force-set fires (`config.numHiddenLayers >= 16`; this model has 64), and it uses
+     **overwrite=1** while the policy's 512 uses **overwrite=0**. 🔴 **So in BOTH possible
+     orderings, 128 wins: if the policy runs first, `Qwen35RuntimeWeights` overwrites it;
+     if it runs second, its overwrite=0 declines to replace the 128 already present.**
+     Item 145's "ranked 512/50" is therefore **wrong — the ranked box runs 128**, and the
+     "post-wire full profile" this campaign has discussed for days **never landed on any
+     of our submissions**. `benchmark.json`'s `editablePaths` contains
+     `Sources/MLXFastModel`, so **both files are shippable by us**.
+
+     **(F) THE CROWN GAP, FULLY ACCOUNTED, WITH NO NEW MECHANISM.** crown − ours =
+     +0.5193 %:
+     - **+0.186 %** — the crown's 16-line command-buffer fix (crown 3.24929 vs our base
+       3.24326), which we do not have and have never tried.
+     - **+0.154 %** — our own overlay's MTP cost, wide-leg, 7.0 SE, removable by us.
+     - **+0.187 %** — a serial-leg shift at 2.1 SE, probably box drift, worth a
+       resubmission rather than a mechanism.
+
+     🔴 **Zero of it requires K-tiling, the register ceiling, ψ, or ρ.** The kernel-physics
+     programme has been costing a gap that is our own regression plus drift plus a
+     `setenv` overwrite flag. The programme is still good science — item 157's spill law
+     and item 158's single-kernel structure are true and were cross-validated by two
+     students — but it was never on the critical path to the crown, and I did not know
+     that because I had not read the trees.
+
+     **(G) THE FRONTIER LINEAGE IS A REPLACE OVERLAY AND IT CAN REVERT ACCEPTED WORK.**
+     Our overlay **deletes** 47 lines of the session file and 17 of `quantized.h` that
+     the accepted frontier had. Our own replacement comment in `quantized.h` says a
+     previous 4+4 configuration "scored 3.195804751396457 as a promoted submission
+     before a later **stale-base REPLACE overlay reverted it**" — we documented the
+     hazard and then reproduced it. Related: the frontier's `case 8:` carried a 12-line
+     rationale arguing for **3+3+2** above code that reads `<T, 8, 4, true>` = **4+4**,
+     with receipts from a 2.91-era board and a claim that M=9 profiles *cheaper* than
+     M=8 (319/437/216 µs) that our E33 per-width table (M7 138.694 < M8 149.490 < M9
+     164.443 ms) gives no sign of. **A comment that contradicts its own code is where
+     the "register cliff at M=8" folklore came from.**
+
+     **(H) TREE CENSUS.** Of the top 14 head-matched rows, 9 resolve locally. Distances
+     from our base on the shipped surface: crown `ef42e043` 2 files +11/−5; fkiene
+     `1cb1f43a72` **1 file +19/−0**; companygardener and alfranli123 **0 files** (they
+     *are* the base); WillGasser 3 files +63/−206; xadenryan 2 files +245/−1; paul-hf
+     2 files +44/−16; scarletbright 2 files **+0/−115**. 🔴 alphonse's "six independent
+     plateau rows" is **five distinct trees**, because two of them are one artifact
+     measured twice — item 149's trap in its strongest form, and it inflates any sd
+     taken across those six.
+
+     **(I) SHIPPED SURFACE, THIRD BASELINE.** New `research/scored-surface-gate.sh` pins
+     the scored commit, its score, its author, its subject and its lineage parent; states
+     the ancestry relation rather than assuming it (the scored tree is **not** an ancestor
+     of HEAD — divergent lineages); prints the overlay the organizer actually applied;
+     and reports the **unscored** shipped delta with a mandatory acknowledgement per file.
+     Today that is **44 inserted and 19 deleted lines that have never been measured by the
+     board**: `Qwen36MTPBlockSession.swift +12/−0` (E29 drain probe, off by default) and
+     `Qwen35.swift +32/−19` (E29(c) ladder rung set; default rungs identical to the
+     scored `switch`, but a `Set<Int>.contains` hash lookup replaced a jump table 64× per
+     forward pass — modelled ~1 µs/step ≈ 0.002 % on both legs of `raw_p`, so it largely
+     cancels). `research/scored-surface-gate-controls.sh` mutates it 10 ways and requires
+     each to fail **with the gate's own diagnostic**, not merely exit 1. 🟢 **Those
+     controls immediately caught a real defect in the controls themselves** (the gate
+     locates the repo from its own path, so a copy run from `/tmp` silently analysed
+     `/tmp`), which is the third time mutation controls have caught something my reading
+     did not.
+
+     **(J) INSTRUMENT FIXED.** `benchmark-qwen-mtp.sh`'s metallib-freshness block reused
+     three definitions from `benchmark.sh` by `awk` and then trusted them. A pattern that
+     stops matching emits nothing, `eval ""` succeeds, `metallib_rebuild_required` is
+     undefined, `if metallib_rebuild_required` exits 127, `set -e` exempts an `if`
+     condition, and **the rebuild is skipped in silence** — the exact failure the block
+     exists to prevent. Now every arm is checked by name, with the two variable arms
+     asserted for *coupling* (lose only `RUNTIME_WORKER_BIN` and `MLX_METALLIB` becomes
+     `./mlx.metallib`, whose `find -newer` failure the reused function swallows, yielding
+     another confident "not stale"). `research/metallib-guard-controls.sh` runs 19
+     controls including a **control on the absence of the guard**, which reproduces the
+     old silent pass. Every local kernel measurement in this campaign depended on that
+     rebuild firing.
+
+     **(K) WHAT THIS DOES TO THE FOUR LIVE ASSIGNMENTS.** All four are mid-flight and
+     the GitHub REST API has been 403 since ~05:40 UTC, so none of them has been told.
+     Queued in `senpai/pending-feedback/`.
+     - **alphonse E40** — his deficit is our overlay; H1–H5 collapse into "which of three
+       files"; and his six-row reference class is five trees. His single-kernel finding
+       and F2/F4 survive intact and are what make E27 the prime suspect.
+     - **thorfinn E41** — R2/K-tiling was justified to him as "the only mechanism that
+       clears the crown". That justification is **withdrawn**: the crown needs no new
+       mechanism. E41 is still worth finishing for the ILP-vs-loads question, at lower
+       stakes and with the corrected stop condition.
+     - **askeladd E42 (ψ)** and **edward E43 (ρ)** — both were pricing kernel changes
+       through the `sensitivity · ψ · φ · x` chain. Still sound, no longer critical path.
+     - 🔴 **The actionable prize belongs to nobody yet**: apply the crown's three hunks,
+       verify locally that `MLX_MAX_MB_PER_BUFFER` actually reaches the `Device` ctor as
+       512 (item 147's init-order hazard is the reason the *original* fix failed, so the
+       new one needs a readout, not an assertion), and submit.
+
+     **PROCESS.** Five lessons, the first three new.
+     1. 🔴🔴🔴 **"Not available" is a claim requiring evidence, exactly like any other.**
+        I asserted the submission commit was unresolvable, wrote it into a student brief
+        as a known gap, and never ran the one command that disproves it. The cost was not
+        one wrong sentence; it was days of inferring rival behaviour from prose while
+        their source sat in `.git`.
+     2. 🔴🔴🔴 **"Dead code" is a measurement, not a reading.** I marked 320/128 dead and
+        queued it for deletion. It was the crown.
+     3. 🔴🔴 **Verify the baseline your score was measured against, not just the tree you
+        hold.** We attributed a frontier advance to our own change for a day.
+     4. 🔴🔴 A dramatic ratio needs its second route before it is spoken (D).
+     5. 🔴 A gate written by the person with the blind spot inherits it — again (I).
+
