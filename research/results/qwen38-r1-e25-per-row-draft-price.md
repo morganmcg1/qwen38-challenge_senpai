@@ -1,6 +1,73 @@
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"revision_id":"r2","base_sha":"d7619a7f4606c2a0e1c46e04d8fae2e4e0e96602","credit":"thorfinn E22 follow-up #1 (two-piece boundary-aware marginal price, arm C)","primary_metric":{"name":"e25/mtp_true_decode_gain_pct_median_of_8","available":true,"value":3.179674776020895},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"revision_id":"r3","base_sha":"329d3644dc96972d6843ecfe759141b8b0ab539d","credit":"thorfinn E22 follow-up #1 (two-piece boundary-aware marginal price, arm C); E27 M5 weight-stream fix (thorfinn)","primary_metric":{"name":"e25/measured_row_step_ratio_at_depth_3","available":true,"value":0.1812497742996191},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
 
-## r2 result (supersedes the r1 body below)
+## r3 result (measurement only; supersedes the r2 body below)
+
+Re-measured on base `329d3644` (E27 merged), declared `q2-q4-rerank-v1` head
+(`d038fd41…`), 16 legs over 8 prompts × {BASE, FORCE}, 512 seed + 512 decode
+tokens each. **No arm, no cap, no policy** — `git diff 329d3644 -- Sources/
+Vendor/` is empty for the whole revision.
+
+- **Primary metric `e25/measured_row_step_ratio_at_depth_3` = 0.181250**
+  (baseline `0.442442`, minimize, **Δ −0.261192**, −59.0 %).
+- W&B run [`95umlz5m`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/95umlz5m),
+  group `qwen38-r1-e25-per-row-draft-price`, 232 summary keys.
+- Evidence: [`research/e25r3-refit-post-force.json`](../e25r3-refit-post-force.json),
+  [`research/e25r3-refit-post-base.json`](../e25r3-refit-post-base.json),
+  [`research/e25r3-refit-pre.json`](../e25r3-refit-pre.json),
+  [`research/e25r3-recost-post.json`](../e25r3-recost-post.json),
+  [`research/e25r3-recost-pre.json`](../e25r3-recost-pre.json),
+  [`research/e25r3-recost-basetape.json`](../e25r3-recost-basetape.json).
+  Pre-registration: [`research/e25-r3-prereg.md`](../e25-r3-prereg.md) (`150c957`,
+  committed before the first leg).
+
+**The wall moved one row deeper; it was not removed.** `T(4)` fell
+`132.257 → 108.346` ms (−18.08 %) and no other depth moved by more than 0.79 %.
+`c_3` dropped under its `1/4` ceiling (`0.4394 → 0.1813`) but `c_4` rose through
+its `1/5` ceiling (`0.0896 → 0.3279`). The reachable depth set widened from
+`{0..3}` to `{0..4}` — on both instruments, on 8/8 prompts.
+
+**The economic optimum did not move at all.** Realised-rate argmax over
+constant-depth policies is depth **2** before and after (bootstrap share 80 %).
+Depth 4 improved from −31.0 % to −15.9 % versus depth 2 and still does not pay,
+because acceptance saturates near 2.4 tokens/round from depth 3 onward.
+
+**My pre-registered verdict is falsified.** I predicted residual headroom
+< +1.0 % and "the lever is closed". Measured: **+3.63 % pooled / +3.71 %
+median-of-8** on the r1 1947-round tape re-costed on the post-E27 curve
+(from +6.11 / +5.36 pre-E27), and **+3.99 / +4.10** on a fresh post-E27 BASE
+tape. My explicit falsifier (headroom > +1.5 %) triggered. I conflated the M=5
+dispatch cliff with the mis-calibrated scalar `h = 0.18`; E27 fixed the first
+and left the second, and arm C/D's win was mostly the second all along. Arm B
+(`DEEP_CAP = 3`) behaved as a cliff effect and did collapse, +3.31 → +1.19 %.
+
+**Everything else I registered was accurate**: advisor band [0.13, 0.23] hit
+(0.1813); my `c_3` point 0.1754 (error 0.0059); my `c_4` point 0.3343 (error
+0.0064); mean depth 2.30 ± 0.25 (measured 2.4577); depth ≥ 4 share 5–12 %
+(measured 9.37 %).
+
+**Exactness receipt:** the pre- and post-E27 FORCE tapes are separate builds yet
+reproduce a bit-identical acceptance table (1594 rounds; `p_i` = 0.6926 /
+0.5840 / 0.5077 / 0.4190 / 0.3860 …). E27 changed time, not tokens. All 16 legs:
+`all_tokens_matched` 16/16, `residual_divergence_count` 0, parity 16/16, rows
+closed 16/16, exit 0.
+
+**Base drift checked, not assumed:** the advisor branch moved to `a88b4d33`
+mid-run. Both scored-path deltas are inert with no env override, and
+`ladderActive = inputs.dim(1) <= 9` is a *context* line in that diff — `<= 9`
+was already at `329d3644`. **This curve transfers to `a88b4d33` unchanged.**
+
+- Decision: **not useful as a candidate, valuable as measurement.** Nothing was
+  submitted; r3 proposed no code change. Live bar re-anchored to
+  **3.24326223889754** (`11863aa9-…`, frontier `5068eb8d`).
+- ⚠️ Two of 16 legs recorded `dirty=2/3` from `research/*.py` edits made while
+  the last pair was in flight. Worker and source digests are identical across
+  all 8 FORCE legs, so the executed code was unchanged; disclosed in §32.3.
+- Not gate-qualified: `MLXFAST_LOCAL_COOL_GATE=0` on every leg with all four
+  disclosures preserved verbatim; ABBA-counterbalanced; M4 Pro, not the ranked M5.
+
+Full analysis: [`research/e25-results.md`](../e25-results.md) Part III (§24–§33).
+
+## r2 result (superseded by r3 above)
 
 Re-measured on base `d7619a7`, with the declared `q2-q4-rerank-v1` head, all
 gates green (`gates.all_pass = true`, zero failures, no missing legs).

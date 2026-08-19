@@ -1491,3 +1491,525 @@ they are listed here too because until they are done, the depth-8 row of every
 table in this report is modelled rather than measured (§20.3), and the entire
 curve's transfer to the ranked M5 rests on an unverified `arch_gen` assumption.
 
+
+
+# Part III — revision r3
+
+**Scope.** Measurement only, as instructed: no arm D, no row-5 cap, no policy
+arm, and no edit to `Vendor/.../kernels/quantized.h` or its generated twin
+(thorfinn's twin-locked surface). `git diff 329d3644 -- Sources/ Vendor/` is
+**empty** for the whole of r3.
+
+**Base.** `329d3644dc96972d6843ecfe759141b8b0ab539d` (E27 merged).
+**Bar re-anchored** to `3.24326223889754` (companygardener `11863aa`,
+submission `11863aa9-0dc0-4703-b7a4-eacd473810cb`, organizer `5068eb8d`), per
+the r3 instruction; deltas below `0.05 %` are treated as unmeasurable.
+
+**Credit.** The two-piece boundary-aware marginal price and arm C replayed
+throughout Part III are **thorfinn's E22 follow-up #1** (PR #26). E22 supplied
+the per-width verify cost curve and E23 (alphonse, PR #27) the dispatch
+inventory. E27 — the change this revision measures — is thorfinn's M5
+weight-stream fix.
+
+
+## 24. Headline: the wall moved one row deeper, and the optimum did not move at all
+
+`e25/measured_row_step_ratio_at_depth_3` = **0.181250**
+(baseline `0.442442`, direction **minimize**, delta **−0.261192**, a 59.0 %
+reduction). Pooled over all eight prompts, FORCE instrument, trusted-parent
+clock.
+
+Three findings, in decreasing order of how much they should change the
+campaign's plan:
+
+1. **E27 did exactly what it was supposed to do, and only that.** `T(4)` fell
+   `132.257 → 108.346` ms (−23.911 ms, −18.08 %). Every other depth moved by
+   less than 0.8 %. Acceptance is *bit-identical* pre and post (§26.3).
+2. **The admissibility wall moved from depth 3 to depth 4 — it was not
+   removed.** `c_3` fell under its `1/4` ceiling, but `c_4` rose through its
+   `1/5` ceiling (`0.089570 → 0.327897`). The reachable depth set widened by
+   exactly one row, from `{0..3}` to `{0..4}`.
+3. **The economic optimum never moved.** The realised-rate argmax over
+   constant-depth policies is depth **2** before *and* after E27, with an
+   unchanged bootstrap share of 80 %. Depth 4 improved from −31.0 % to −15.9 %
+   against depth 2 and is still nowhere near paying.
+
+**Therefore my own pre-registered verdict — "the lever is closed" — is
+falsified.** ~+3.6 to +4.1 % of modelled price headroom survives E27 (§27).
+I was wrong about the reason the lever mattered; §30 is the accounting.
+
+
+## 25. Deliverable (a): recomposition and anchors
+
+Merged `origin/senpai/qwen38-mtp-r1` at `329d3644` (`aaf03f5`), then reverted
+the r2 arm-D diff so the measured build is the advisor's base byte-for-byte
+(`150c957`). `Qwen36MTPBlockSession.swift` at my head hashes to
+`8a5d878e8663c55ba636ff1732e8ceb8510bf89f`, identical to the blob at
+`329d3644`.
+
+All six anchors verified at the lines the assignment gave:
+
+| anchor | line | present |
+|---|---|---|
+| `warmAllDepths` | 283 | yes |
+| `positionAcceptEMA` | 588 | yes |
+| `headStepCostRatio = 0.18` | 621 | yes |
+| `segmentedVerifyDepthCap` | 660 | yes |
+| `costModelDepth` | 691 | yes |
+| `maxDepth` | 1706 | yes |
+
+E27's cells are at `quantized.h:1939` (`<T,5,5,true>`) and `:1948`
+(`<T,9,5,true>`). Neither file was touched.
+
+**Predictions were pre-registered and committed before any r3 leg ran**
+(`150c957`, `research/e25-r3-prereg.md`, 22:50 UTC; first leg 22:53:56 UTC).
+Nothing in §30 is retrofitted.
+
+
+## 26. Deliverable (b): the price curve re-measured, all five row steps
+
+### 26.1 Pooled `T(d)`, eight prompts, trusted-parent clock
+
+Instrument: FORCE arm, depth cycled `0..7` round by round inside each leg, so
+prompt, position, cache length and temperature are common mode by
+construction. 1,594 forced-cycle rounds after dropping each prompt's first 8
+(first-touch specialisation) and last 8 (offer-bound tail).
+
+| d | M | passes | `T` pre (ms) | `T` post (ms) | Δ (ms) | Δ % |
+|---|---|---|---|---|---|---|
+| 0 | 1 | 1 | 68.616 | 68.072 | −0.544 | −0.79 % |
+| 1 | 2 | 1 | 71.605 | 71.368 | −0.237 | −0.33 % |
+| 2 | 3 | 1 | 78.916 | 78.829 | −0.087 | −0.11 % |
+| 3 | 4 | 1 | 91.885 | 91.721 | −0.164 | −0.18 % |
+| 4 | 5 | 2 | 132.257 | **108.346** | **−23.911** | **−18.08 %** |
+| 5 | 6 | 2 | 144.103 | 143.872 | −0.231 | −0.16 % |
+| 6 | 7 | 2 | 156.788 | 156.549 | −0.239 | −0.15 % |
+| 7 | 8 | 2 | 170.133 | 170.321 | +0.188 | +0.11 % |
+
+The maximum change at any depth other than 4 is **0.79 %**. E27 is a
+single-cell fix and the measurement sees it as one.
+
+### 26.2 All five row steps, and the wall that moved
+
+`c_d = (T(d+1) − T(d)) / T(d)` is the shipped rule's own definition
+(`Qwen36MTPBlockSession.swift:571`). A price can select depth `d+1` at all only
+if `c_d < 1/(d+1)`.
+
+| step | ceiling | `c_d` pre | admissible | `c_d` post (FORCE) | admissible | `c_d` post (BASE) |
+|---|---|---|---|---|---|---|
+| `c_0` | 1.0000 | 0.043568 | yes | 0.048419 | yes | — |
+| `c_1` | 0.5000 | 0.102093 | yes | 0.104545 | yes | 0.101946 |
+| `c_2` | 0.3333 | 0.164342 | yes | 0.163542 | yes | 0.160585 |
+| `c_3` | 0.2500 | 0.439371 | **NO** | **0.181250** | **yes** | 0.173524 |
+| `c_4` | 0.2000 | 0.089570 | yes | **0.327897** | **NO** | 0.316415 |
+| `c_5` | 0.1667 | 0.088027 | yes | 0.088112 | yes | — |
+| `c_6` | 0.1429 | 0.085119 | yes | 0.087975 | yes | — |
+
+The two instruments are independent — FORCE cycles depth deliberately, BASE is
+the shipped adaptive rule as actually run — and they agree on both the value
+and the sign of the wall move.
+
+Per prompt, post-E27, every one of the eight prompts shows the same pattern:
+
+| prompt | `c_3` FORCE | `c_3` BASE | `c_4` FORCE |
+|---|---|---|---|
+| english | 0.1768 | 0.1721 | 0.3368 |
+| narrative | 0.1781 | 0.1685 | 0.3217 |
+| technical | 0.1819 | 0.1811 | 0.3279 |
+| dramatic | 0.1870 | 0.1790 | 0.3301 |
+| travel | 0.1799 | 0.1638 | 0.3316 |
+| philosophy | 0.1823 | 0.1729 | 0.3316 |
+| natural_history | 0.1738 | 0.1764 | 0.3263 |
+| medicine | 0.1917 | 0.1690 | 0.3186 |
+| **mean ± sd** | **0.1814 ± 0.0057** | **0.1729 ± 0.0058** | **0.3281 ± 0.0058** |
+
+`c_3 < 0.25` on 16/16 prompt-instrument cells; `c_4 > 0.20` on 8/8. Pre-E27
+the same table read `c_3 = 0.4397 ± 0.0091`, above the ceiling on 8/8. No
+single prompt is carrying the pooled number in either direction.
+
+### 26.3 The exactness receipt: E27 changed time, not tokens
+
+The pre- and post-E27 FORCE tapes are separate processes on separate builds,
+yet the conditional acceptance table is **bit-identical**:
+
+| position `i` | reached | accepted | `p_i` pre | `p_i` post |
+|---|---|---|---|---|
+| 0 | 1594 | 1104 | 0.6926 | 0.6926 |
+| 1 | 935 | 546 | 0.5840 | 0.5840 |
+| 2 | 457 | 232 | 0.5077 | 0.5077 |
+| 3 | 179 | 75 | 0.4190 | 0.4190 |
+| 4 | 57 | 22 | 0.3860 | 0.3860 |
+| 5 | 16 | 11 | 0.6875 | 0.6875 |
+| 6 | 5 | 2 | 0.4000 | 0.4000 |
+
+Same round count, same reached counts, same accept counts, same depths. This
+is a stronger exactness statement than `all_tokens_matched` alone: the whole
+draft/accept trajectory is reproduced, and only the clock differs.
+
+### 26.4 The pass-count model no longer describes the build
+
+| | intercept | per row | per weight pass | R² | max abs resid |
+|---|---|---|---|---|---|
+| pre-E27 | 30.120 ms | 10.172 ms | **32.378 ms** | 0.9927 | 6.118 ms |
+| post-E27 | 44.850 ms | 13.851 ms | **11.872 ms** | 0.9538 | 15.650 ms |
+
+The fit degrades because `IPG_BY_M` still charges `M = 5` two weight-stream
+passes and E27 made that false. The per-pass coefficient collapsing by 2.7×
+*is* the E27 effect showing up in the structural model. **`IPG_BY_M` should be
+re-derived against the post-E27 dispatch table** — recorded as a follow-up
+(§33), not fixed here, because r3 is measurement only.
+
+
+## 27. Deliverable (c): the 1947-round tape replayed, and the remaining headroom
+
+### 27.1 Method, and the clock trap I avoided
+
+`research/e25_price.py --cost-curve` replays a recorded tape's **decisions**
+against another build's measured `T(d)`. It charges that one curve on **both**
+sides of the ratio. Keeping the taped wall time as the denominator while
+pricing the delta on a second build would put two builds' clocks in one ratio,
+which would have manufactured most of an apparent "improvement".
+
+Two controls run before any conclusion rests on this code:
+
+- the r1 tape on its own clock still yields `c_3 = 0.442442` and
+  **+5.2745 % pooled / +4.6881 % median-of-8**, bit-identical to r2;
+- the archived pre-E27 tapes refit to r2's pooled curve exactly
+  (68.616 / 71.605 / 78.916 / 91.885 / 132.257 / 144.103 / 156.788 / 170.133).
+
+The pre-E27 tapes were archived to `.mlxfast-private/e25/runs-pre-e27/` before
+the post-E27 legs overwrote them, so every comparison here is the same eight
+prompts, not a remembered number.
+
+### 27.2 Headroom, best priced arm against the shipped `h = 0.18` anchor
+
+| tape | curve | best arm | pooled | median-of-8 | mean depth |
+|---|---|---|---|---|---|
+| r1, 1947 rounds | pre-E27 | C/D | **+6.1118 %** | **+5.3642 %** | 2.386 → 1.996 |
+| r1, 1947 rounds | post-E27 | C/D | **+3.6332 %** | **+3.7119 %** | 2.386 → 1.997 |
+| post-E27 BASE, 1878 rounds | post-E27 | C/D | **+3.9928 %** | **+4.1019 %** | 2.467 → 2.051 |
+| post-E27 BASE, 1878 rounds | own trace clock | C/D | +3.7536 % | +3.8957 % | 2.467 → 2.062 |
+| r1 | post-E27 | B (`cap 3`) | +1.5078 % | +1.1923 % | 2.386 → 2.291 |
+
+E27 closed roughly **40 %** of the modelled price headroom (`+5.36 → +3.71 %`
+median on the same tape). It did not close the lever.
+
+Arm B — the hard `DEEP_CAP = 3` that r2 measured at +3.18 % — loses most of its
+value (`+3.31 → +1.19 %` median), which is expected: its entire mechanism was
+dodging the depth-3 cliff, and E27 removed the cliff. **Arm C/D's value is
+mostly not the cliff**, which is why it survives.
+
+### 27.3 Why the surviving headroom is real: two instruments agree on over-drafting
+
+The shipped rule runs at mean depth **2.4577** (post-E27 BASE, 1750 analysed
+rounds; histogram `{1: 124, 2: 884, 3: 578, 4: 145, 5: 19}`, depth ≥ 4 =
+9.37 %). The realised-rate table says the optimum constant depth is **2**:
+
+| d | tok/round | `T` (ms) | ms/token | vs best |
+|---|---|---|---|---|
+| 0 | 1.0000 | 68.072 | 68.072 | −44.39 % |
+| 1 | 1.7284 | 71.368 | 41.290 | −8.31 % |
+| **2** | **2.0823** | **78.829** | **37.858** | **best** |
+| 3 | 2.3421 | 91.721 | 39.162 | −3.33 % |
+| 4 | 2.4079 | 108.346 | 44.996 | −15.86 % |
+| 5 | 2.2743 | 143.872 | 63.259 | −40.15 % |
+
+Arm C/D pulls mean depth `2.467 → 2.051`, i.e. straight toward that argmax.
+The price replay and the rate table are independent instruments and they agree:
+**the shipped `h = 0.18` scalar over-drafts**, and that mis-calibration is
+orthogonal to the cliff E27 fixed.
+
+The reason is visible in the tok/round column: acceptance saturates near 2.4
+from depth 3 onward. Making a deep row cheaper cannot help when the row is
+usually rejected.
+
+### 27.4 A trap in the FORCE tape that would have supported the wrong verdict
+
+The FORCE tape's own replay reports the shipped counterfactual at 40.5956
+ms/token and the global-argmax policy at 40.1944 — a gap of only **+0.99 %**,
+which reads as "lever closed" and is what I expected.
+
+It is biased. On the FORCE tape the recorded `p` sequence was driven by the
+*forced* depths, so the shipped counterfactual runs at mean depth **1.67** —
+already near the optimum — leaving little to win. The real shipped rule sits at
+mean depth **2.46**. The adaptive BASE tape is the correct instrument for
+"how far is the shipped rule from optimal", and it says +4.10 %.
+
+Reporting only the FORCE replay would have produced a confident, wrong,
+convenient conclusion. Both numbers are above; the BASE one is the answer.
+
+### 27.5 Calibration: the offline replay over-predicts
+
+r2 *measured* a timed arm D at **+3.18 %** median where this replay predicted
+**+5.36 %** — an over-prediction factor of ~1.7×. Applying the same factor to
+the post-E27 prediction of +3.71 % suggests a true remaining headroom near
+**+2.2 %** median. That is still well above the `+1.0 %` I pre-registered, so
+the falsification in §30 does not depend on the replay's optimism.
+
+### 27.6 The wall's protective side effect is gone
+
+Pre-E27, `c_3 > 1/4` made depth 4 **analytically unreachable**: the corner
+slack with all reach probabilities at 1 was `−0.3181`. Post-E27 the corner
+slack is `+0.4563` — a measured-price rule is now *free* to select depth 4,
+which the rate table says costs 15.9 %.
+
+Empirically it does not: across 1947 + 1878 replayed rounds, arm C's selected
+depth histogram tops out at 3 (`{1: 193, 2: 1566, 3: 188}` on the r1 tape) and
+**every** deepening request is `1→2` (186 and 124 respectively). The reach term
+is too small for depth 4 to fire in practice.
+
+So this is a latent hazard, not an observed one: the guard rail that used to be
+free is now load-bearing on the acceptance statistics alone. **Any post-E27
+price rule should carry an explicit depth cap**, because the arithmetic that
+used to enforce one no longer does.
+
+
+## 28. Deliverable: the realised depth histogram, as instructed
+
+Weighting per-row prices by a best-static-depth model was the r2 mistake; the
+r3 instruction was to weight by the *realised* histogram and report it.
+
+Post-E27 BASE, 1750 analysed rounds over 8 prompts:
+
+| depth | rounds | share |
+|---|---|---|
+| 1 | 124 | 7.09 % |
+| 2 | 884 | 50.51 % |
+| 3 | 578 | 33.03 % |
+| 4 | 145 | 8.29 % |
+| 5 | 19 | 1.09 % |
+
+Mean depth **2.4577**, max 5, depth ≥ 4 share **9.37 %**. Rounds are
+price-bound, not cap-bound: 1862 / 1878 (99.15 %) exit on the price, 16 on a
+cap.
+
+Weighted by this histogram, 91 % of rounds sit at depths 1–3 where E27 changed
+`T` by under 0.8 %, and 9.4 % sit at depth ≥ 4 where it changed `T` by 18 %.
+That is why E27's large single-cell win translates into a modest whole-decode
+effect, and why the price rule's remaining value comes from the 41 % of rounds
+at depth ≥ 3 that should mostly be at depth 2.
+
+
+## 29. Fidelity and accounting, all sixteen legs
+
+| check | BASE (8 legs) | FORCE (8 legs) |
+|---|---|---|
+| `all_tokens_matched` | 8/8 | 8/8 |
+| `residual_divergence_count` | 0 | 0 |
+| `parity_all_ok` | 8/8 | 8/8 |
+| rows closed (`declared == reference_checked == primary + drafts`) | 8/8 | 8/8 |
+| trace accepted sum == parent `accepted_draft_total` | 8/8 | 8/8 |
+| trace proposed sum == parent drafted rows | 8/8 | 8/8 |
+| exit code | 0 | 0 |
+
+Replay engine acid test on the post-E27 BASE tape: 1878 rounds,
+`scalar_form_depth_mismatches = 0`, `per_row_0p18x8_bit_identical = true`,
+6495 walk steps compared, `max_abs_threshold_error = 6.63e-07`,
+`max_abs_reach_error = 1.08e-06` (the trace's own print precision).
+
+FORCE instrument gate: 1594 marked rounds, taken depth == forced depth on
+**1594/1594**.
+
+Local-iterate round-robin speedups on the BASE legs, for context only (they use
+candidate-generated reference rows and are **not** rankable): median 1.5689,
+range 1.4759–1.6239.
+
+
+## 30. Prediction adjudication — I was wrong, and here is the accounting
+
+Registered at `150c957` before the first leg.
+
+| prediction | registered | measured | verdict |
+|---|---|---|---|
+| advisor band for `c_3` | [0.13, 0.23] | 0.181250 | **hit** |
+| advisor point | 0.18 | 0.181250 | hit, error 0.00125 |
+| my `c_3` point | 0.1754 | 0.181250 | hit, error 0.0059 |
+| my `c_4` point | 0.3343 | 0.327897 | hit, error 0.0064 |
+| my mean depth | 2.30 ± 0.25 | 2.4577 | hit |
+| my depth ≥ 4 share | 5–12 % | 9.37 % | hit |
+| **my residual headroom** | **< +1.0 % pooled** | **+3.63 to +3.99 %** | **FALSIFIED** |
+| **my verdict** | **"lever is closed"** | lever is open | **FALSIFIED** |
+
+Falsifier tripwires: `c_3 ≥ 0.30` — not triggered. `c_3` outside band — not
+triggered. `c_4 < 0.20` — not triggered. **Headroom > +1.5 % — triggered.**
+
+**Why I was wrong.** I predicted the price curve correctly to three decimal
+places and still drew the wrong conclusion, because I conflated two
+independent defects:
+
+1. the **M=5 dispatch cliff**, which made `c_3` prohibitive and which E27 fixed;
+2. the **mis-calibrated scalar `h = 0.18`**, which makes the shipped rule draft
+   to mean depth 2.46 when the realised optimum is 2.
+
+I assumed (1) was the reason a measured-price rule beat the scalar, so removing
+(1) should collapse the gap. In fact arm C/D's win was mostly (2) all along —
+r2's own evidence showed arm C truncating 706 rounds, far more than the 176 a
+depth-3 cap touches, and I did not follow that through. E27 removed the cliff
+and left the mis-calibration untouched, so most of the headroom survived.
+
+The one thing that *did* behave as a cliff effect is arm B, whose median gain
+fell from +3.31 % to +1.19 %. If I had pre-registered per-arm predictions
+instead of a single pooled verdict, the falsification would have been
+localised to the arm it belongs to.
+
+
+## 31. Base drift: this curve transfers to the advisor's current head
+
+`senpai/qwen38-mtp-r1` advanced from my pinned `329d3644` to
+`a88b4d33bbd1ade0638dfb3302551bf61606be8b` (E28/E29 merges) while r3 was
+measuring. Two scored-path files changed, so I diffed them rather than assume:
+
+- **`Qwen36MTPBlockSession.swift` (+12 lines):** a head-chain drain probe gated
+  on `MLX_QWEN_MTP_TRACE_SYNC_HEAD == "1"`, off by default, and documented in
+  source as never to be enabled on a timed candidate.
+- **`Qwen35.swift`:** the decode ladder rung set became a read-once
+  `let qwen35DecodeLadderRungs` with an `MLX_QWEN_MTP_LADDER` override. With the
+  variable unset the set is `[0, 1, 9, 19, 29, 39, 49, 57]` — identical to the
+  `switch` it replaced.
+
+The line worth calling out explicitly, because it looks like a behaviour change
+in the diff and is not:
+
+```swift
+let ladderActive = inputs.dim(1) <= 9 || prefillLadder
+```
+
+That is a **context** line. `<= 9` was already present at `329d3644` (verified
+by `git show 329d3644:…Qwen35.swift`); E29 only corrected a stale `S <= 2`
+comment above it. The widened ladder is not new behaviour on the new head.
+
+Net scored-path delta with no environment override: a `switch` replaced by a
+`Set<Int>.contains` at two sites × 64 layers, order 1 µs against a 68–108 ms
+round — about **0.001 %**, far under the 0.05 % unmeasurable floor. **The r3
+price curve applies unchanged to `a88b4d33`; it does not need re-running.**
+
+`frontier-state.json` at `a88b4d33` records score `3.24326223889754` and
+submission `11863aa9-…`, exactly the anchor r3 told me to use.
+
+
+## 32. Legality, provenance and caveats
+
+### 32.1 Legality
+
+r3 ran no candidate and proposed no submission. The FORCE arm is an
+instrument: it forces a depth cycle and is never a candidate. No reference or
+golden data influenced timed generation or draft selection; the declared head
+`mtp-head-declared-q2q4-run` (`d038fd41…`) was used for the price-curve
+measurement only and never with `--local-iterate` / `--local-submit` scoring
+claims. No prompt lookup, n-gram drafting, cross-request state, phase
+detection, or trusted-file edit. `research/twin_audit.py` →
+**`TWIN AUDIT OK: 29 runtime-effective twin(s)`**.
+
+### 32.2 Arm identity
+
+Swift release builds are not bit-reproducible on this host (§7.1, §20.4), so
+arm identity rides on digests recorded per leg. Across all sixteen legs there
+is exactly **one** `(worker, source, head)` triple per arm:
+
+| arm | worker sha256 | source sha256 | head safetensors |
+|---|---|---|---|
+| BASE | `f2dfbe7c922fa75c…` | `9ba9b8fdecd15a74…` | `d038fd41e2d5dab1…` |
+| FORCE | `8fcc7ebdc9947357…` | `c5c2a0cdff175d94…` | `d038fd41e2d5dab1…` |
+
+Trusted driver `c9bfcaf9c58d5b5b…` on every leg. Both arms build from base blob
+`8a5d878e8663…`; FORCE adds the instrument patch only.
+
+### 32.3 ⚠️ Two legs ran with a dirty worktree, and why it does not affect them
+
+14 of 16 legs recorded `dirty=0`. Two did not:
+
+| leg | dirty | started | cause |
+|---|---|---|---|
+| `probe-natural_history-FORCE` | 2 | 23:50:01Z | `research/e25_price.py`, `research/e25r2_refit.py` modified |
+| `probe-medicine-FORCE` | 3 | 23:54:17Z | the above plus untracked `research/e25r3_log_wandb.py` |
+
+I edited analysis scripts while the last probe pair was in flight. That was
+careless and I am recording it rather than quietly re-running.
+
+It does not affect the measurement, and the evidence is in the table in §32.2:
+the three dirty paths are all `research/*.py` analysis code that is not
+compiled into and not read by the worker, the binaries were built before the
+legs started, and `worker_sha256` / `source_sha256` are **identical across all
+eight FORCE legs including these two**. `probe-medicine-BASE` shows
+`head_sha=d5bb599d` for the same reason — I committed those scripts between
+legs. Had any digest differed, the legs would have been discarded.
+
+### 32.4 Cool-gate bypass
+
+`MLXFAST_LOCAL_COOL_GATE=0` on every r3 leg, with the four required
+disclosures written verbatim into each `meta.txt`:
+`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`,
+`cool_gate_temp_c=40`, `cool_gate_bypass_reason=host idles above the
+compile-time 40C gate`. Arms were ABBA-counterbalanced in probe pairs within
+one session; entry/exit GPU temperature is recorded per leg (e.g. the final
+leg entered at 61.84 °C and exited at 64.69 °C).
+
+These are **directional, counterbalanced, not gate-qualified** measurements and
+are never an official or ranked score. The pre/post comparison is the same
+eight prompts in the same session structure, and the effect it reports
+(−23.9 ms at one depth, < 0.8 % everywhere else) is an order of magnitude
+larger than the thermal spread.
+
+### 32.5 Host
+
+Apple M4 Pro (`Mac16,11`, `applegpu_g16s`) — **not** the ranked M5. Whether the
+E27 cell behaves the same on M5's `_nax` variants is unverified here and is the
+single largest transfer risk in Part III.
+
+### 32.6 Stale `mlx.metallib`
+
+Unchanged known condition from §20.2: the local `mlx.metallib` is stale
+relative to the readable Metal sources, which is non-masking for this
+experiment because every kernel family involved is JIT-compiled from its
+generated twin. `twin_audit.py` passes (§32.1).
+
+### 32.7 `T(8)` is still modelled
+
+The forced cycle covers 0..7. Depth 8 (`M = 9`) is modelled only, and after
+§26.4 the model that produced it is now known to be mis-specified for the
+post-E27 build, so the previously reported `T(8)` should be treated as retired
+rather than merely uncertain.
+
+### 32.8 GitHub availability
+
+Two `post_assignment_comment` attempts failed with HTTP 403 at ~23:14 and
+~23:29 UTC while `get_prs` succeeded, consistent with the REST-vs-transport
+outage windows already recorded in §23.1. The comment posted unchanged on
+retry at 00:0x UTC. No workaround was attempted.
+
+
+## 33. Follow-ups
+
+### 33.1 Suggested (not implemented, and not blocked)
+
+1. **Re-derive `IPG_BY_M` against the post-E27 dispatch table.** §26.4 shows
+   the pass-count model's per-pass coefficient collapsing 32.4 → 11.9 ms and
+   R² falling to 0.954. The table in `e25r2_refit.py` and in alphonse's E23
+   inventory still describes the pre-E27 build. Cheap, source-only, and it
+   gates any future width-cost reasoning.
+2. **Re-price the scalar `h`, or replace it.** The single largest surviving
+   effect in E25 is that `h = 0.18` drafts to mean depth 2.46 against a
+   realised optimum of 2. A scalar re-fit is a one-constant change and,
+   unlike arm D, does not depend on a cliff that no longer exists. Worth a
+   matched timed arm on the current base.
+3. **Give any measured-price rule an explicit depth cap.** §27.6: the
+   arithmetic guard that made depth 4 unreachable is gone, and depth 4 costs
+   15.9 %. This is currently latent, not observed, but it is one acceptance
+   shift away from firing.
+4. **Ask whether the M=6 cell is the next E27.** Post-E27 the largest step is
+   now `c_4 = 0.328` at `T(5) − T(4) = 35.5 ms`. If the same treatment applies
+   to `<T,6,…>` as to `<T,5,5,true>`, the wall moves again. This is thorfinn's
+   surface, not mine.
+
+### 33.2 Blocked on
+
+1. **M5 transfer of the E27 cell.** Needs the ranked host; not available to me.
+   Until then §26's curve is M4 Pro evidence and the `_nax` variants are
+   unverified (§32.5).
+2. **A gate-qualified version of this curve.** Needs a host that idles below
+   the 40 °C gate. The bypass is permitted and disclosed, but the numbers are
+   not gate-qualified and cannot be compared with gated historical runs.
+3. **Whether the surviving +3.6–4.1 % is real on the ranked pool.** Needs a
+   timed arm and ultimately an official submission; r3 is measurement only and
+   I did not run either.
+
