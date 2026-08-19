@@ -14,15 +14,20 @@ and changes exactly two things:
    of `qmv_fast_impl` (E42 measured x = 0.9030 vs 0.4271 per extra pass). Applying
    the same level everywhere is a 2.11x over-dose of the candidate leg and would
    return a confidently wrong sign. So the two families take separate levels, and
-   the intended dose match is `m1_level / crossrow_level ~= 0.9030/0.4271 = 2.114`.
+   a matched dose needs `m1_level / crossrow_level ~= 0.9030/0.4271 = 2.114`.
+
+   Levels are integers, so no arm matches exactly, and two arms at the same ratio
+   would make the two-unknown MTP-leg system singular. The arms therefore sit at
+   ratios 2 and 1.5: both under-dose width 1, which is the direction that makes a
+   rise in raw_p a one-sided proof rather than an estimate.
 
 Nothing here ships. Every arm is a deliberate regression; the branch ends with both
 twins byte-identical to the base.
 
 Usage
 -----
-    research/e48_perturb.py --crossrow-level 1 --m1-level 2   # Arm U-lo
-    research/e48_perturb.py --crossrow-level 2 --m1-level 4   # Arm U-hi
+    research/e48_perturb.py --crossrow-level 1 --m1-level 2   # Arm U-lo, x1/xX ~ 0.95
+    research/e48_perturb.py --crossrow-level 2 --m1-level 3   # Arm U-hi, x1/xX ~ 0.71
     research/e48_perturb.py --revert
     research/e48_perturb.py --self-test
 """
