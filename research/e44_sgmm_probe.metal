@@ -97,21 +97,19 @@ E44_WIDE_CELL(e44_wide_na3, 3)
 E44_WIDE_CELL(e44_wide_na4, 4)
 
 #if defined(E44_SGMM)
-// The candidate cells. NT is the number of 8-wide input tiles, so NT=1 serves
-// M in [4, 8] and NT=2 serves M=9; `m_rows` stays a runtime value, which is why
-// one cell replaces six per-width instantiations.
-#define E44_SGMM_CELL(name, NT, MROWS)                                     \
+// The candidate cell. `m_rows` is a runtime value in the shipped dispatch
+// (int(ntg.x)), which is why ONE instantiation replaces six per-width ones.
+#define E44_SGMM_CELL(name, MROWS)                                         \
   [[kernel]] void name(E44_CELL_ARGS) {                                    \
-    qmv_fast_crossrow_affine4_g64_sgmm<bfloat16_t, NT>(                    \
+    qmv_fast_crossrow_affine4_g64_sgmm<bfloat16_t>(                        \
         w, scales, biases, x, y, in_vec_size, out_vec_size, MROWS, tid,     \
         simd_gid, simd_lid);                                               \
   }
 
-// int(ntg.x) is runtime, so the shipped cell is `nt1` for M in [4,8] and `nt2`
-// for M=9; the fixed-M forms are the same code with a constant-folded bound and
-// exist only to show that constant folding does not change the footprint.
-E44_SGMM_CELL(e44_sgmm_nt1_runtime, 1, int(in_vec_size & 0xf))
-E44_SGMM_CELL(e44_sgmm_nt2_runtime, 2, int(in_vec_size & 0xf))
-E44_SGMM_CELL(e44_sgmm_nt1_m8, 1, 8)
-E44_SGMM_CELL(e44_sgmm_nt2_m9, 2, 9)
+// `runtime` is the shipped form. The fixed-M forms are the same code with a
+// constant-folded bound and exist only to show whether constant folding, and
+// with it the m_tiles == 2 path at M = 9, changes the footprint.
+E44_SGMM_CELL(e44_sgmm_runtime, int(in_vec_size & 0xf))
+E44_SGMM_CELL(e44_sgmm_m8, 8)
+E44_SGMM_CELL(e44_sgmm_m9, 9)
 #endif
