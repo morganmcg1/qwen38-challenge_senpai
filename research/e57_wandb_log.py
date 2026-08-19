@@ -252,8 +252,9 @@ def log_rung3(run, arms: list[pathlib.Path]) -> None:
             "mtp_seconds_per_token")
         summary[f"rung3/{path.name}/gpu_temp_entry_c"] = row[2]
         summary[f"rung3/{path.name}/gpu_temp_exit_c"] = row[3]
-    summary["rung3/cool_gate_passed_real_gate"] = False
-    summary["rung3/gate_qualified_for_timing"] = False
+    gated = all(meta(path).get("cool_gate") == "1" for path in arms)
+    summary["rung3/cool_gate_passed_real_gate"] = gated
+    summary["rung3/gate_qualified_for_timing"] = gated
     run.log({"rung3/legs": table})
     run.summary.update(summary)
 

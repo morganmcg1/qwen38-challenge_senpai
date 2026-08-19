@@ -43,7 +43,9 @@ private struct DispatchRecord {
     var threadgroup: MTLSize
 }
 
-private final class DispatchLedger {
+/// `@unchecked Sendable` because every mutable field is reached only under
+/// `lock`, and the swizzled Metal selectors can be called from any thread.
+private final class DispatchLedger: @unchecked Sendable {
     static let shared = DispatchLedger()
 
     private let lock = NSLock()
