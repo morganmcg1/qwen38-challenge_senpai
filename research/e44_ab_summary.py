@@ -174,8 +174,28 @@ def main() -> int:
         # measurement failure as a mechanism failure.
         above_bar = best["speedup_pct"] >= BAR_PCT
         resolved = best["ci95_hi_pct"] < 0.0  # interval excludes no-change
-        clears = above_bar and resolved
-        if clears:
+        # A best-width pass is necessary and not sufficient: E27 shipped a
+        # correct per-width table, won at the widths it targeted, and still lost
+        # score to a cost charged elsewhere. So a single winning width can never
+        # carry the verdict while the replaced widths regress on net.
+        regressed = [r for r in touched
+                     if r["speedup_pct"] < 0.0 and r["ci95_lo_pct"] > 0.0]
+        net_regression = mean_touched < 0.0
+        named = ", ".join("{} M={} {:+.2f} %".format(
+            r["shape"].split("_")[0], r["m"], r["speedup_pct"])
+            for r in regressed)
+        print(f"replaced widths that regress with a resolved interval: "
+              f"{len(regressed)}/{len(touched)}"
+              + (f"  ({named})" if regressed else ""))
+        summary["regressed_touched_widths"] = float(len(regressed))
+        summary["net_regression_over_touched"] = float(net_regression)
+        clears = above_bar and resolved and not net_regression
+        if above_bar and resolved and net_regression:
+            verdict = (f"BEST-WIDTH ONLY -> M={best['m']} clears the bar but the "
+                       f"replaced widths are {mean_touched:+.3f} % on net with "
+                       f"{len(regressed)} resolved regressions. Not bankable as "
+                       f"dispatched; the winning widths must be isolated first")
+        elif clears:
             verdict = "CLEARED -> exactness work is authorised"
         elif above_bar and not resolved:
             verdict = (f"UNRESOLVED -> point estimate is above the bar but the "
@@ -194,6 +214,33 @@ def main() -> int:
         summary["best_above_bar"] = float(above_bar)
         summary["best_interval_resolved"] = float(resolved)
     summary["worst_cand_max_rel"] = worst_cand
+
+    # The pre-registered mechanism was weight-stream halving. It predicted the
+    # win at M=5..8 and larger on mlp_down; the data contradicts both. The
+    # surviving explanation is a fixed 8-row MMA tile: candidate cost flat in M
+    # up to 8, base cost rising, so the sign of the effect is set by where those
+    # two curves cross. Record the flatness so that claim is auditable evidence
+    # rather than narrative.
+    cost_model = []
+    for shape in sorted({r["shape"] for r in table}):
+        cand_p = [r["cand_us"] for r in table
+                  if r["shape"] == shape and 4 <= r["m"] <= 8]
+        base_p = [r["base_us"] for r in table
+                  if r["shape"] == shape and 4 <= r["m"] <= 8]
+        if len(cand_p) < 2:
+            continue
+        mean_p = statistics.fmean(cand_p)
+        sd_p = statistics.stdev(cand_p)
+        base_rise = 100.0 * (base_p[-1] / base_p[0] - 1.0)
+        key = shape.split("_")[0]
+        summary[f"cost_model/{key}/cand_plateau_us"] = mean_p
+        summary[f"cost_model/{key}/cand_plateau_cv_pct"] = 100.0 * sd_p / mean_p
+        summary[f"cost_model/{key}/base_rise_m4_to_m8_pct"] = base_rise
+        cost_model.append([shape, mean_p, sd_p, 100.0 * sd_p / mean_p, base_rise])
+    print("\n--- cost model: is the candidate flat in M? ---")
+    for shape, mean_p, sd_p, cv, rise in cost_model:
+        print(f"{shape:24s} cand M=4..8 plateau {mean_p:8.2f} us  "
+              f"cv {cv:5.2f} %   base rise M4->M8 {rise:+6.1f} %")
 
     if args.wandb:
         import wandb
@@ -242,6 +289,10 @@ def main() -> int:
                 data=[[r["shape"], r["m"], r["pair"], r["base_s"], r["cand_s"],
                        r.get("session_elapsed_s", float("nan"))]
                       for r in timing]),
+            "cost_model": wandb.Table(
+                columns=["shape", "cand_plateau_us", "cand_plateau_sd_us",
+                         "cand_plateau_cv_pct", "base_rise_m4_to_m8_pct"],
+                data=cost_model),
             **summary,
         })
         run.summary.update(summary)
