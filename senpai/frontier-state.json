@@ -23,7 +23,8 @@
     "status": "accepted",
     "promotedSourceRef": "0c90733d383f6b987a29682bf9eb9458a6172bfa",
     "headProvenanceSha256Prefix": "559b24eb",
-    "note": "all top 14 rows are on head 559b24eb; ranks 6..12 span 0.09 %"
+    "note": "all top 14 rows are on head 559b24eb; official top-10 span 0.521 % but serial-normalised span is only 0.211 % -- ~60 % of top-of-board ordering is serial-leg variation. ofou has the SLOWEST serial leg of all 88 rows on this head (+1.9 sigma tailwind).",
+    "serialNormalisedScore": 3.239188
   },
   "ourBestRankedRow": {
     "id": "ca9251b8-58cd-4d90-9a52-fa05f5657216",
@@ -36,6 +37,9 @@
     "status": "rejected",
     "rejectionReason": "score did not improve current best",
     "headProvenanceSha256Prefix": "559b24eb",
-    "note": "FIRST Senpai row ever to run the declared head artifact. effective_mean_draft_len bit-identical to the board top on 8/8 prompts; serial leg faster than top on 8/8 (mean -0.304 %), which COSTS score; beagle mtp_seconds_per_token is the worst of the top 12. Supersedes the retired '5.862 % median gap' framing, which was head artifact, not kernels."
+    "note": "FIRST Senpai row ever to run the declared head artifact. effective_mean_draft_len bit-identical to the board top on 8/8 prompts; serial leg faster than top on 8/8 (mean -0.304 %), which COSTS score; beagle mtp_seconds_per_token is the worst of the top 12. Supersedes the retired '5.862 % median gap' framing, which was head artifact, not kernels.",
+    "serialNormalisedScore": 3.23083,
+    "serialNormalisedRank": 11,
+    "trueEngineeringGapPct": -0.258
   }
 }

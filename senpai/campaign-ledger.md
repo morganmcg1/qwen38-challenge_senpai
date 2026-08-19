@@ -2090,3 +2090,96 @@ Adjacent unexploited items from the same scan, recorded for sequencing and
   prove plutarch is worth **exactly zero** unless it clears 3.143, and its
   best-ever value across 405 runs is 2.221. The barrier only matters if it can
   latch on beagle or medicine.
+
+### 111 — 🔴 SELF-CORRECTION to item 103: the 8/8 serial sign test was real but **irrelevant**, and my sizing of it was wrong
+
+Item 103 claimed our serial leg is systematically faster (8/8 prompts, mean
+−0.304 %) and sized "matching the top's serial" at +0.26 % of score, i.e.
+rank 5. **The sign test survives; the sizing does not.** I tested my own
+independence assumption before telling four students, and it failed.
+
+**Variance decomposition of the serial leg over all 88 rows on head `559b24eb`:**
+
+- grand mean 0.0379908 s/tok
+- between-run sd of the per-run mean: **0.1207 %**
+- within-run sd across the 8 prompts: **0.1766 %**
+- i.i.d. legs would give a between-run sd of 0.1766/√8 = 0.0625 %; observed is
+  ~2× that, so a genuine **run-level offset of σ ≈ 0.10 %** exists on top of
+  per-leg noise.
+
+Our run's offset from the grand mean is **−0.109 %, i.e. 1.05 σ — entirely
+unremarkable.** We are the 20th fastest of 88 (23rd percentile). The outlier is
+in the other direction: **ofou (#1) has the slowest serial leg of all 88 rows**
+(0.0380649, +0.195 % ≈ +1.9 σ), and their official margin over rank 2 is
+0.157 %.
+
+**The decisive error.** Only beagle and medicine are scored. Our fast serial legs
+were on **travel (−0.26 % vs grand), essays (−0.28 %), drama (−0.20 %)** —
+all non-central prompts, worth exactly zero. On the central pair our serial was
+at or *above* the grand mean (beagle 0.0379849 vs 0.0379827; medicine 0.0380265
+vs 0.0379903). **We had no serial deficit where it counts.** I aggregated over
+prompts whose weight is zero, which is the exact mistake I warn students about
+in every brief.
+
+`corr(serial_mean, mtp_mean) = +0.043` over the population and `+0.050` in the
+top cluster ⇒ **no box-speed effect**; the two legs are independent, so serial
+variation is pure noise with respect to candidate-leg engineering — **and it is
+being scored.** `corr(serial_mean, score) = +0.695` within the 21-row top
+cluster: a slower serial leg predicts a higher score, exactly as `R = serial/mtp`
+demands.
+
+**What stands from 103:** the shape-gating doctrine, and the rule that a
+serial-leg speedup is a red flag rather than a bonus. **What is withdrawn:** the
+claim that we carry a self-inflicted serial optimisation worth +0.26 %. There is
+no such lever. Do not go looking for it.
+
+### 112 — Normalising the serial leg removes ~60 % of the visible spread at the top of the board
+
+Recomputing every row's per-prompt ratio against the population per-prompt
+**grand-mean serial numerator**, holding each run's own measured MTP leg fixed,
+then re-deriving the median-of-8:
+
+| official | id8 | solver | official | serial-normalised | delta | norm rank |
+|---:|---|---|---:|---:|---:|---:|
+| 1 | `0cd0a6b4` | ofou | 3.249294 | **3.239188** | −0.311 % | **1** |
+| 2 | `b0994092` | fkiene | 3.244179 | 3.237870 | −0.194 % | 3 |
+| 3 | `11863aa9` | companygardener | 3.243262 | 3.235729 | −0.232 % | 7 |
+| 4 | `4f76de6e` | alfranli123 | 3.243001 | 3.236262 | −0.208 % | 5 |
+| 5 | `de7981ae` | WillGasser | 3.240778 | **3.239135** | −0.051 % | **2** |
+| 6 | `3ec77796` | xadenryan | 3.234608 | 3.237514 | +0.090 % | 4 |
+| 7 | `942e5ab2` | Kamciosz | 3.234152 | 3.230224 | −0.121 % | 14 |
+| 8 | `e9f38898` | Lieisyourlie | 3.234099 | 3.233800 | −0.009 % | 9 |
+| **9** | **`ca9251b8`** | **us** | **3.232508** | **3.230830** | **−0.052 %** | **11** |
+| 10 | `efe01dcf` | paul-hf | 3.232449 | 3.236053 | +0.112 % | 6 |
+| 11 | `3a995c2b` | SSHdotCodes | 3.232230 | 3.233897 | +0.052 % | 8 |
+| 15 | `72ce82dc` | scarletbright | 3.228261 | 3.217915 | −0.320 % | 21 |
+
+**Official top-10 span 0.521 % → serial-normalised top-10 span 0.211 %.** About
+60 % of the ordering at the top of this board is serial-leg variation rather
+than candidate-leg engineering. Movements are large: WillGasser 5→2,
+paul-hf 10→6, xadenryan 6→4; companygardener 3→7, Kamciosz 7→14,
+scarletbright 15→21.
+
+**Our true engineering position: `norm` 3.230830, −0.258 % from the best**
+(ofou and WillGasser effectively tied at 3.2392). Our *official* rank is 9 and
+our *normalised* rank is 11 — we were mildly helped, not hurt, by serial noise.
+
+Three consequences that should govern the endgame:
+
+1. 🔴 **The real engineering gap is 0.258 %, not 0.517 %.** Half the apparent
+   gap is a tailwind ofou received.
+2. 🔴 **Do not re-roll an identical tree.** Expected value is ~0 and the
+   per-submission sd on score is order 0.1–0.2 %, which cannot reliably close
+   0.517 %. Spend slots on real mechanism.
+3. 🔴 **When E33 lands, expect ±0.2 % of measurement noise on the ranked
+   result.** A single submission that lands within 0.2 % of the top is a coin
+   flip, so a mechanism must be worth clearly more than that before we read a
+   ranked row as confirmation. This is the honest replacement for the
+   competitor folklore figure of "±1.5–3 % ranked noise", which our own
+   88-row population contradicts: per-leg sd is 0.18 % and run-level sd 0.10 %.
+
+**Method note.** This normalisation is only licensed because acceptance is
+bit-identical across this population (item 102) and the two legs are
+uncorrelated (item 111). It is a re-weighting of measured quantities, not a
+model fit. The per-prompt grand-mean serials are tight — 0.0379805 (drama) to
+0.0380036 (travel), a 0.06 % spread over 88 runs — so the reference is stable.
