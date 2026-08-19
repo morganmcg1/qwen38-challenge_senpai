@@ -2002,6 +2002,14 @@ def main() -> int:
                                 "tree_count": pool["tree_count"],
                                 "pooled_legs": pool["pooled_legs"],
                                 "trees": pool["trees"],
+                                "kept": pool["pool"],
+                                "solvers": {rid: rows[rid]["solver"]
+                                            for rid in pool["candidate_rows"]},
+                                "scores": {rid: rows[rid]["score"]
+                                           for rid in pool["candidate_rows"]},
+                                "legs_used": {
+                                    rid: pool["identity"][rid]["n_identical"]
+                                    for rid in pool["candidate_rows"]},
                                 "duplicate_groups": pool["duplicate_groups"],
                                 "shared_prompts": pool["shared_prompts"]},
                        "replicate_noise": noise}
