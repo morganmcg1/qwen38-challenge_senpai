@@ -577,10 +577,46 @@ E49 settled both halves of the M=9 question (ledger 178):
 our 0.53 % deficit to the live frontier `59b321e`. One lever spans our entire gap to
 first place.
 
-**The only remaining obstacle is a source constraint, not a physical price:**
-`static_assert(NA >= 2 && NA <= 4)` at `quantized.h:980`. Two streams at M=9 needs
-IPG 5, which needs NA=5. Legal IPG requires `2 <= IPG <= NA_max` and `M % IPG != 1`.
-That assert is the next thing to attack, and E49 has removed the reason we were afraid to.
+#### 🔴 STOP — do not read this as "lift the assert and collect +1.36 %". I nearly did.
+
+My first draft of this section said the `static_assert(NA >= 2 && NA <= 4)` at
+`quantized.h:980` was "the next thing to attack, and E49 has removed the reason we were
+afraid to". **That is wrong, and it is exactly the error ledger 178(C) had just finished
+warning about.** Corrected within the same session:
+
+**PR #8 (thorfinn, merged) already attacked NA=5 and it was REFUTED — on bandwidth
+grounds, not register grounds.** The manipulation fired as designed (`weight_streams`
+2→1 at M=5, 3→2 at M=9) and **both boundary widths got 1.13–1.54× SLOWER under two
+independent implementations**. Cause: one NA=5 group sustains **95.5 GB/s** where one
+NA≤4 group sustains **165.6**; break-even needs ~131 GB/s. The boundary widths are where
+this kernel *saturates* memory (M=9 at 239.5 GB/s = 88 % of peak), and splitting across
+streams is what generates the memory-level parallelism that gets it there.
+
+**Arm 2 refuted the *register* tax. It says nothing about the wide-5 group-throughput
+collapse, which is what actually killed NA=5.** Removing one of two independent
+objections does not clear the path.
+
+#### The real open question, and it is sharp
+
+E27 (IPG 5 at M=5 and M=9 under NA≤5) **lost 0.3321 % of score**. PR #8 says why for the
+`wide` path. But E49 Arm 1 measures the crossrow cell `<T,9,5>` as **12.26 % FASTER** than
+`<T,9,3>` in isolated builds. Both are careful measurements, so one of these must hold:
+
+1. **Different families.** PR #8's "wide-5" load path and E49's
+   `qmv_fast_crossrow_affine4_g64_m<T,9,IPG>` are different kernels with different
+   throughput behaviour, and the crossrow tier escapes the wide-5 collapse. Then the
+   lever is real and the assert genuinely is the obstacle.
+2. **Same family, and the isolated build is the artefact.** thorfinn already flagged that
+   his iso builds carry only one crossrow body, so their behaviour need not match the
+   shipped table. Then the +12.26 % is a build artefact and the lever is not real.
+
+**This is the decisive question for the campaign's best lever, and it is answerable.**
+thorfinn's `e27_replica` composite (job 5) is pointed straight at it: it should reproduce
+E27's loss on the current base and show whether the crossrow M=9 win survives in the
+shipped dispatch table. Do not compose, and do not lift the assert, until that lands.
+
+Mechanics for whoever picks this up: legal IPG requires `2 <= IPG <= NA_max` and
+`M % IPG != 1`; two streams at M=9 needs IPG 5, hence NA_max 5, hence the assert.
 
 ### Base change at `ccd1af6` is scientifically inert for all four PRs
 

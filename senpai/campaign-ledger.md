@@ -8209,8 +8209,35 @@ term in this kernel". It also retires the framing in 176(C) that E44's ceiling b
 
 **What survives:** the `static_assert(NA >= 2 && NA <= 4)` wall at `quantized.h:980` is
 still what stops a 2-stream M=9, and the *local* two-stream win at M=9 is real and
-measured (Arm 1, −12.26 %, ~68× replicate spread). The wall is now the only obstacle,
-and it is a source constraint rather than a physical price.
+measured (Arm 1, −12.26 %, ~68× replicate spread).
+
+🔴 **What does NOT follow — caught in this same session, and it is 178(C)'s error
+repeating within twenty minutes of my writing 178(C).** My first draft of the research
+state said the assert was "the next thing to attack, and E49 has removed the reason we
+were afraid to". **False.** **PR #8 (thorfinn, merged) already attacked NA=5 and it was
+refuted on BANDWIDTH grounds**, not register grounds: the manipulation fired as designed
+(`weight_streams` 2→1 at M=5, 3→2 at M=9) and both boundary widths came back
+**1.13–1.54× SLOWER under two independent implementations**, because one NA=5 group
+sustains **95.5 GB/s** against **165.6** for NA≤4 (break-even ~131). The boundary widths
+are where this kernel *saturates* memory — M=9 runs at 239.5 GB/s, 88 % of peak — and the
+extra stream is what generates the memory-level parallelism that gets it there.
+
+**Arm 2 removed one of two independent objections and I briefly read it as removing
+both.** Registers are not the price; the wide-5 group-throughput collapse still is. The
+generalised lesson, which is new and worth more than the specific catch: 🔴 **when a
+mechanism has two independent recorded objections, refuting one raises its value by zero
+until the other is addressed.** The pleasure of retiring a big scary number (8.4 sd)
+creates real pressure to over-read the clearance.
+
+**The genuine open question, now sharp.** E27 (IPG 5 at M=5 and M=9) lost 0.3321 % of
+score and PR #8 explains that for the `wide` path — yet E49 Arm 1 measures the crossrow
+cell `<T,9,5>` **12.26 % faster** than `<T,9,3>`. Both are careful measurements, so
+either (1) PR #8's wide-5 load path and
+`qmv_fast_crossrow_affine4_g64_m<T,9,IPG>` are different families and the crossrow tier
+escapes the collapse, in which case the lever is real; or (2) they are the same family and
+the isolated single-body build is the artefact, which thorfinn himself flagged as a
+limitation. thorfinn's `e27_replica` composite is pointed straight at this. **Do not
+compose and do not lift the assert until it lands.**
 
 ### 178(B). The prize, re-priced honestly: +5.36 % → ≈ +1.36 %
 
@@ -8232,10 +8259,16 @@ modelled −14.80 % (×0.83), share **20.48 %** rather than **53.45 %** (×0.38)
 substitution kink (×0.81 at this size). He did not hard-code the share; the table shows
 the sensitivity.
 
-🟢 **It is still the best lever we have, and item 177(B) makes it better than it looks.**
-+1.36 % is **2.6× the 0.5193 % board floor** — and it is **2.6× our measured 0.53 %
-deficit to the live frontier** (`59b321e`, 3.24985583421771). A lever that alone spans
-our whole gap to first place is worth composing even after a 3.9× haircut.
+🟢 **It is still the largest lever we have priced, and item 177(B) makes it matter more
+than it looks.** +1.36 % is **2.6× the 0.5193 % board floor** — and it is **2.6× our
+measured 0.53 % deficit to the live frontier** (`59b321e`, 3.24985583421771). A lever that
+alone spans our whole gap to first place justifies real effort even after a 3.9× haircut.
+
+⚠️ **This valuation is CONDITIONAL on 178(A)'s open question.** It prices the local
+crossrow M=9 win as if it survives in the shipped dispatch table. PR #8's bandwidth
+refutation of NA=5 is unaddressed, so the number is a *ceiling on the prize if the
+mechanism is reachable*, not an expected value. Quote it with that condition attached, or
+178(C)'s failure mode repeats with a different number.
 
 ### 178(C). The real error was the histogram, and 173(C) named it as alternative (a)
 
