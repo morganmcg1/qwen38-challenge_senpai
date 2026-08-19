@@ -22,7 +22,15 @@ MAIN = 3.24929398547457   # upstream/main = 0c90733 (ofou), "Accept submission 0
 BASE = 3.24326223889754   # 5068eb8d tree == companygardener; the base we submitted onto
 OURS = 3.23250848263467   # our best official submission (2b0c36a0)
 FKIENE = 3.24417896624589  # 1cb1f43a, the tree the organizer overlaid the crown ONTO
-SIGMA_PCT = 0.0978        # sigma_score, ledger 160 replicate pair
+# 🔴 CORRECTED, ledger 166. This script compares SEPARATE BOARD SUBMISSIONS
+# (main vs base vs ours), which is a BETWEEN-SUBMISSION question. It previously
+# divided by 0.0978 %, a WITHIN-RUN replicate sd -- too small by 7.9x, so every
+# "sigma_score" it printed was inflated by that factor. The retired value is
+# kept below only so the inflation is visible in the output.
+from noise_floors import SCORE_BETWEEN_SUBMISSION, SCORE_WITHIN_RUN
+
+SIGMA_PCT = SCORE_BETWEEN_SUBMISSION.pct          # 0.7678 %, 17 whole-tree sets
+SIGMA_PCT_RETIRED = SCORE_WITHIN_RUN.pct          # within-run; DO NOT divide by
 
 
 def pct(x):

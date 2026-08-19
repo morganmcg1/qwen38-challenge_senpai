@@ -6437,3 +6437,443 @@ Two traps in doing it:
      5. 🔴 **Distinguish "your tools are old" from "your tree is different".** For alphonse
         and edward a rebase is free and changes no measurement; for askeladd it changes
         what is being measured. The same word "stale" covered both and should not.
+
+166. 🔴🔴🔴 **I HAVE BEEN QUOTING A WITHIN-RUN NOISE FIGURE AS A BETWEEN-SUBMISSION ONE ALL
+     CAMPAIGN. THE BOARD'S REAL REPLICATION FLOOR IS 0.77 %, NOT 0.0978 %, AND EVERY LEVER
+     ON OUR ROADMAP — INCLUDING THE ENTIRE CROWN GAP — SITS BELOW IT.** edward's E45 r2
+     (`2a595853`, terminal) is the most consequential result of the campaign, and it is a
+     measurement of the *scoreboard*, not of the model. I tried twice to break it and
+     failed, which is the only reason it is written here as fact.
+
+     **His design.** Group the ranked submission refs by **whole tree**
+     (`git rev-parse <ref>^{tree}`, not a fingerprint), keep the trees that different
+     solvers submitted more than once, and look at the spread of `officialScore` *within*
+     a group. A group is byte-identical code measured more than once, so any spread is
+     measurement. He found 13 such sets / 31 rows and a pooled within-tree score relative
+     sd of **0.7353 %**. He then showed **13 of 13 sets are covariate-invariant**: within a
+     set every row agrees on `head_provenance_sha256` for all 8 prompts,
+     `qwen_mtp_weights_hash`, `effective_mean_draft_len`, `non_drafting_round_count`, and
+     the whole scoring policy. **Only the commit differs.** There is no behavioural
+     covariate left to blame.
+
+     **My independent replication, slightly WORSE than his.** Same grouping over all 653
+     refs, taking every ref with a score rather than his filtered set: **17** replicated
+     trees, N=40, k=17, dof=23, pooled within-tree score rel sd **0.7678 %**. I found four
+     sets he did not (`cacb95d016f1`, `79d33d7b4522`, `aad242ca3093`, `ebed7b055f83`).
+
+     | quantity | value | in replication sd |
+     |---|---:|---:|
+     | pooled within-tree score rel sd (mine, 17 sets) | **0.7678 %** | 1.00 |
+     | pooled within-tree score rel sd (edward, 13 sets) | 0.7353 % | 0.96 |
+     | `SIGMA_SCORE_PCT` I have been quoting | 0.0978 % | 0.13 |
+     | crown gap over base | 0.5193 % | **0.68 sd** |
+     | engineerable gap | 0.2586 % | 0.34 sd |
+     | our next submission's expected gain | **+0.0283 %** | **0.037 sd** |
+
+     **The single most quotable fact.** Tree `2d65604a66d4` contains the board crown
+     itself (ofou, `3.249294`, accepted+promoted from `0c90733d`) **and a byte-identical
+     twin submitted by jonathan308 that scored `3.229453` — 0.6125 % lower.** The crown's
+     lead over base is 0.68 sd of replication noise. **The top of this leaderboard is
+     substantially a favourable draw**, which retro-explains the 1.9σ serial-leg tailwind
+     I had already noticed in item 103 without being willing to draw the conclusion.
+
+     **Why the ratio does not save us.** The natural hope is that a globally fast or slow
+     host is absorbed by the pinned serial leg and divides out of `raw_p = serial / mtp`.
+     It does not. His decomposition: candidate-leg (mtp) rel sd **0.7875 %**, serial-leg
+     rel sd **0.2063 %**, per-prompt ratio rel sd **0.7647 %**, and
+     `ratio sd / candidate sd = 0.9711`. **The score inherits 97 % of the candidate-leg
+     noise while the serial leg is four times quieter.** The noise is *differential*, not
+     common-mode, so pinned-serial normalisation provides no protection.
+
+     **Two attempts of mine to explain it away, both failed — recorded because failing to
+     break it is the evidence.**
+
+     1. *Is the floor time- or instance-scoped?* If close-in-time pairs were quiet we
+        could try to be measured back-to-back against a reference. `createdAt` is on every
+        board row, so this is free. Result: mean within-pair range **0.6720 %** for the six
+        pairs at or below the 1.57 h median gap versus **0.8960 %** for the six above.
+        Directionally consistent but nowhere near explanatory, and fatal to the idea: the
+        quiet sets sit at gaps 0.79 h, 1.56 h, 2.77 h and 8.21 h while the *noisiest* set
+        (2.0321 % range) sits at 2.06 h. **Time gap does not predict spread. There is no
+        back-to-back escape.**
+     2. *Are the quiet sets promotion artifacts rather than independent measurements?* If a
+        promoted row's score were carried over rather than re-measured, its twin would agree
+        by construction and would bias the floor downward. Refuted cleanly: the four quiet
+        sets are one both-promoted (`b8642b81`, 0.0057 %), one both-rejected (`dc6c614e`,
+        0.0560 %) and two mixed; the thirteen noisy sets show the identical mixture, and the
+        crown's own set is mixed *and* noisy. **Promotion status does not track the split.**
+        Excluding the quiet sets anyway moves the floor the wrong way for us, to
+        **0.8438 %** (N=32, k=13) — crown gap 0.62 sd, ours 0.034 sd. **The conclusion is
+        invariant to the exclusion**, which is the strongest form this result could take.
+
+     **The precise shape of my error, because "I used the wrong number" is not specific
+     enough to be useful.** `SIGMA_SCORE_PCT = 0.0978 %` is almost exactly the MTP
+     *replicate* sd of 0.0995 % recorded in item 155 — i.e. it is a **within-run** figure,
+     the spread of repeated timings inside one measurement session. The question I kept
+     applying it to — *will this tree outrank that tree when the organizer measures it* —
+     is a **between-submission** question, and the two differ by 7.9×. Both numbers are
+     correct; I attached one to the other's question. **Ask which variance component a
+     figure was estimated from before dividing an effect by it.**
+
+     **What follows, and it redefines the campaign's theory of value.**
+
+     - **Stop quoting P(clear crown) off 0.0978 %.** The honest figure for our staged
+       submission is `Φ(0.0283 / 0.7678) ≈ 51.5 %` — a coin flip, not the 61 % on record.
+       The 61 % must be retracted wherever it appears.
+     - **The board cannot adjudicate anything we are able to build.** Engineerable gap
+       0.34 sd, full crown gap 0.68 sd. A submission is a lottery ticket whose expected
+       value is real but tiny, and a *rejection tells us almost nothing* — "score did not
+       improve current best" is the modal rejection (4 of the 6 mid-tier trees in item 167)
+       and at this floor it is largely a statement about the draw.
+     - **Therefore local, pre-registered, ABBA-counterbalanced A/B with an assumption-free
+       null arm is not merely good practice here — it is the only instrument on the
+       campaign that can establish that an effect is real.** This retrospectively justifies
+       every hour spent on `run-all-gates.sh`, the pre-registration discipline, and
+       alphonse's byte-identical `M∈{1,2,3}` guard arm. It also means a student who reports
+       "the board did not move" has reported nothing, and I must stop treating board
+       silence as evidence.
+     - **Do not chase multi-submission variance harvesting.** With a 0.77 % floor and a
+       +0.03 % true effect, resubmitting an identical tree until it draws high is the
+       dominant *scoring* strategy, and edward's own data shows the field already doing it
+       (`715b1c7576a3` submitted four times by four solvers). It is not a bypass, but it
+       wins on noise rather than on speed, it burns an account shared with the Dev40
+       workstream, and it is not what we are here to do. Flagged to the human rather than
+       actioned.
+
+     **Three further findings in the same result, none of which I would have asked for.**
+     (a) The width-8 stream cost measures **+0.4910 % ± 0.3315 %** (t=1.48, 4/7 groups) —
+     against a 0.77 % floor that is an **underpowered null, not an absence**, and his
+     low-drafting negative control passes 14/14 while observed pair sd matches
+     `sqrt(2) ×` replication sd in 8 of 8 prompts, which validates the noise model rather
+     than merely asserting it. (b) 🔴 **`ΔT(8)` in ms is not identified**, because no
+     per-width round histogram is published for the ranked board — so **the falsification
+     test I specified in the assignment cannot be run at all.** That is my design error:
+     I wrote `Δleg(p) = n_8(p)·ΔT(8)/tokens(p)` with "the cross-prompt ratio of Δleg must
+     equal that of `n_8`" as a free falsifier, without checking that `n_8(p)` is
+     obtainable for the board. It is obtainable *locally* — askeladd published
+     `1/5/5/23/4/6/34` for his pinned fixture in the same session — but a local histogram
+     cannot identify a ranked-board coefficient. **Check that every quantity in a
+     pre-registered falsifier is actually published before pre-registering it.**
+     (c) He independently re-derived the shipped table as **stream-minimal at all seven
+     widths**, making that the third independent confirmation.
+
+167. 🔴🔴 **MY BEST LEAD OF THE TURN DIED ON ITS OWN FALSIFIER, AND THE CORPSE IS WORTH MORE
+     THAN THE LEAD WAS: THE `[1024, 4096)` DISPATCH TIER IS LIVE ON THE SCORED MTP PATH,
+     NOT DEAD CODE, AND IT RUNS AT TWICE THE MINIMAL WEIGHT-STREAM COUNT.**
+
+     **The lead.** alphonse's E44 Gate 0 established a hard floor: the `<4096` cells
+     `qmv_fast_crossrow_affine4_g64<T,M>` read **89** registers, above `<T,3,3>`=83,
+     `<T,5,3>`=87, `<T,6,3>`=83 and `<T,9,3>`=83, and they inline into the same single
+     `[[kernel]]`, so the kernel-wide max cannot fall below 89. His total available
+     movement is `108 → 89` = **−17.6 %**. I thought those cells might be **unreachable on
+     this model** — every scored 4-bit g64 decode projection in the measured inventory has
+     `out_vec_size ≥ 4096` (minimum 5120) — which would have unpinned his ceiling
+     substantially.
+
+     **The falsifier I set for myself, and its answer.** Enumerate every quantized 4-bit
+     g64 projection width from the model source rather than from the inventory. Full
+     attention (`Qwen35.swift:1683-1691`) declares **separate** q/k/v/o projections, and
+     with `num_attention_heads = 24`, `head_dim = 256`, `kv_heads = 4`:
+
+     | projection | in | out | tier |
+     |---|---:|---:|---|
+     | `q_proj` | 5120 | 24·256·**2** = 12288 (q + gate) | ≥4096 |
+     | `k_proj` | 5120 | 4·256 = **1024** | **[1024,4096)** |
+     | `v_proj` | 5120 | 4·256 = **1024** | **[1024,4096)** |
+     | `o_proj` | 6144 | 5120 | ≥4096 |
+     | `_kvW` (MTP head K/V pack) | 5120 | 1024+1024 = **2048** | **[1024,4096)** |
+
+     The `×2` on `q_proj` reconciles the two disagreeing inventories in this ledger:
+     12288+1024+1024 = **14336**, exactly the `full_attn.qkv_proj` width at line 3451,
+     which also confirms that the table at line 280 systematically halves every width
+     (its conclusion survives, since all `N ≫ 512` either way).
+
+     **It is reached on the scored path, at cross-row widths.** `Qwen35MTP.swift:139-156`:
+
+     ```
+     guard layers.count == 1, cache.count == 1, hidden.dim(1) > 1, ...
+     let historyCount = fused.dim(1) - 1
+     layers[0].appendHistoryKV(fused[0..., 0 ..< historyCount, 0...], cache: cache[0])
+     ```
+
+     `appendHistoryKV` → `kv(x)` → `quantizedMM` at width **2048** with
+     **M = historyCount = W − 1** rows for proposal width `W`. M=1 falls to
+     `qmv_fast_impl`; **M ∈ [2..9] lands in the mid tier.** The host gate is satisfied
+     (`N % 8 == 0`: 2048 ✓, `K % 512 == 0`: 5120 ✓). **So the mid tier is live, alphonse's
+     89 floor is real, and his −17.6 % ceiling and his refusal to claim more both stand.**
+
+     **The residue.** The mid tier hardcodes `inputs_per_group = 2` (non-`_m` helper at
+     `quantized.h:860`), so against the minimal legal IPG under `NA ≤ 4` it streams the
+     weights **1.5–2× more often than necessary at every M ≥ 3** (M=3,4,7,8 are 2.00×;
+     M=5,6 are 1.50×; M=9 is 1.67×) — on the **denominator** of `raw_p`, where faster
+     raises the score. thorfinn's E46 (item 168) has now *measured* that streams are the
+     cost driver, so this is a mechanism-backed inefficiency rather than a combinatorial
+     observation.
+
+     **But I am not assigning it, for two reasons stated with their numbers.** (i) The
+     direct value is **≈ 0.05 %**: `_kvW` is a single layer, ~5.9 MB including scales and
+     biases, one saved stream ≈ 21.6 µs at 273 GB/s, ~0.26 rounds/token against an ~11.7
+     ms/token MTP leg. That is below alphonse's 0.5040 % MDE and — after item 166 — a
+     twentieth of the board's replication floor. (ii) The real value is that collapsing the
+     mid tier onto the wide tier's **existing** `_m` instantiations would make the distinct
+     89-register cells stop existing, which is the difference between alphonse's candidate
+     being capped at 89 and his candidate's own number being the answer.
+
+     **The rival corpus was searched BEFORE any of this was written up, per the standing
+     lesson, and it changed the recommendation.** 6 of 653 ranked trees already route the
+     mid tier through the tuned `_m` helper; two fingerprints are essentially this exact
+     change.
+
+     | fingerprint | submitter | status | score |
+     |---|---|---|---:|
+     | `7899a1345189` | scarletbright | rejected | 3.15840 |
+     | `7899a1345189` | scarletbright | rejected | 3.13957 |
+     | `c5a55ad318c2` | tjboudreaux | rejected | 3.09606 |
+     | `740738d1a99d` | ofou | rejected | 2.41432 |
+     | `1b50fb8b3105` | SSHdotCodes | **failed** | — |
+     | `e95b191cfbe4` | vibecodooor | **failed** | — |
+
+     - 🟢 All four rejections are `"score did not improve current best"` — a **score**
+       outcome, not a review objection. **This shape of change has cleared the "Review
+       submitted code for benchmark bypasses" step at least four independent times**,
+       which materially de-risks it.
+     - 🔴 `1b50fb8b3105` — the *cleanest* instance of exactly this change — **failed the
+       "Qwen-MTP correctness and parity gate (untimed)"**. Whole-tree attribution, so it is
+       not proof, but it points at the weak joint: the non-`_m` helper is a **separate
+       implementation**, not "the `_m` helper with IPG=2". Whether `_m<T,M,2,true>` is
+       bit-identical to `<T,M>` is a **claim requiring proof on the integer harness**, not
+       an inference from the shipped M=8 lane-independence comment. Exactness first, timing
+       second, or not at all.
+     - None of the four scores is attributable: whole trees, many changes each, and the
+       list endpoint carries **no** `head_provenance_sha256`, so I cannot even confirm they
+       ran the same corpus head. **3.158 is not a price for this change.**
+     - Do **not** delete the tier. It is live, and removing a dispatch branch the scored
+       model uses is both wrong and the most reviewable diff we could ship.
+
+168. 🟢 **thorfinn's E46 CONFIRMED THE MECHANISM THE WHOLE STREAM-MINIMALITY FRAMEWORK RESTS
+     ON, WITH A PRE-REGISTERED CONTRAST THAT COULD HAVE KILLED IT.** `512359f4`, terminal,
+     four-leg **ABBA** block (base-r1, arm-r1, arm-r2, base-r2) so run order is balanced
+     against drift. Scored surface byte-identical to `01f69e18`; research-only.
+
+     | hypothesis | registered predictions survived |
+     |---|---|
+     | `H_streams` | **3 / 3** |
+     | `H_groupwidth` | 0 / 2 |
+     | `H_M6breakpoint` | 1 / 3 |
+
+     - **Contrast A** (`<T,6,3>` vs `<T,6,4>`, streams 2→2, group width changes):
+       **+0.263 ms**, *below* its own 0.426 ms replicate floor and **14× smaller than the
+       worst untreated control**. A null where a null was predicted.
+     - **Contrast B** (`<T,8,4>` vs `<T,8,3>`, streams 2→3): **+27.947 ms = +18.72 %**,
+       **7.3× the worst control, 8/8 shapes slower, sign-test p = 0.0078**.
+
+     ⇒ **the cost driver is the weight-stream count `ceil(M/IPG)`, not group width and not
+     an M≥6 breakpoint.** The two contrasts were chosen precisely so that A holds streams
+     fixed while B moves them, so this is an identified mechanism rather than a
+     correlation. It converts "the shipped table is stream-minimal at all seven widths"
+     from a combinatorial property into a statement about cost, and it is why item 167's
+     mid-tier inefficiency is worth recording at all. He also downgraded M=1 from a control
+     to a warmup width on his own initiative, which was correct.
+
+169. 🟢 **askeladd's E42 IS TERMINAL AND HE ANSWERED THE EXACT QUESTION I HAD ASKED TWICE, IN
+     A FORM THAT CANNOT BE MISQUOTED.** `65a73455`. The quotable sentence, with the tree
+     attached, as the campaign's constant-quoting doctrine demands:
+
+     > **ψ = 0.672 was measured on tree `04ad6bf11437c269df85a47e91faa769c74fe6da`** — E27
+     > present, `static_assert(NA >= 2 && NA <= 5)`, 129-register shared allocation, single
+     > weight-stream boundary at 5→6 — **over the seven verify widths the pinned fixture
+     > actually dispatches, M ∈ {2,4,5,6,7,8,9}** (round histogram 1/5/5/23/4/6/34 of 78,
+     > mean M 7.269; **M = 3 is never dispatched**), **of which the two-stream widths M ≥ 6
+     > carry 91 % of the treated QMV cost.**
+
+     No-modelling split: ψ(2..9) = 0.6736, ψ(6..9) = 0.6133, single-stream {2,4,5} = 0.0603
+     by difference. Two process points worth keeping: he **refused to report output from
+     gates that are ABSENT at his merge-base** (`verify-student-instruments.sh`,
+     `verify-kernel-table.sh`, `verify-base-drift.sh`, `run-all-gates.sh` are all missing at
+     `04ad6bf1`) and verified the substantive claim from source instead — the correct
+     response to my own admission, and the opposite of the fail-open behaviour that has
+     cost this campaign repeatedly. And he **released the GPU explicitly** so E46 could
+     start timing, stating there was no ordering to negotiate because no overlap remained.
+     That is the coordination the harness cannot provide (item 170).
+
+170. 🔴🔴 **THE BENCHMARK HARNESS PROVIDES NO MUTUAL EXCLUSION BETWEEN STUDENTS, AND ITS
+     COMMENT SAYS OTHERWISE.** alphonse's finding; verified independently before relaying.
+     `benchmark.sh:630-636` anchors the lock at
+     `${MLXFAST_LOCAL_RUN_LOCK_DIR:-${HOME}/.cache/mlxfast}/mlxfast-local-benchmark-$(id -u).lock`,
+     with a comment claiming `${HOME}` is stable "across clones/worktrees, which
+     intentionally share one lock". True **within** a role, silently false **across** roles:
+     each role has its own `$HOME`, and both
+     `roles/advisor/home/.cache/mlxfast` and `roles/student-qwen-edward/home/.cache/mlxfast`
+     already exist on this host under the **same uid 501**. Identical lock *filename*,
+     different *directory* ⇒ **the lock serialises a student against itself only.** Two
+     students can simultaneously believe they hold the machine.
+
+     Two further, independent holes in the same guard: (i) `local_run_guard_enabled()`
+     requires `LOCAL_ITERATE=1` or `LOCAL_SUBMIT=1`, so **a bare timing harness takes no
+     lock at all**; (ii) `acquire_local_run_lock` opens with
+     `local_run_guard_enabled || return 0`, and alphonse extracted the guard *functions*
+     without that *predicate*, so it failed command-not-found (127), `|| return 0` fired,
+     and both the lock and `abort_if_model_already_resident` **returned success having done
+     nothing** — including on runs where he had asserted the host was idle first.
+
+     **Fix: export a shared `MLXFAST_LOCAL_RUN_LOCK_DIR`** (the variable is already
+     honoured, so no source change). 🔴 **Explicitly NOT a `benchmark.sh` edit**: the ranked
+     pipeline runs a step named *"Review submitted code for benchmark bypasses (Qwen-MTP
+     policy)"* with 18 live rejections under it, and editing the measurement harness is the
+     single most reviewable diff available to us. Contention is the worst possible failure
+     mode here because it does not corrupt a run into an error — it inflates whichever arm
+     overlapped, which reads as a real effect with a plausible mechanism and is invisible
+     afterwards.
+
+     Calibration for how large unmodelled noise can be: on alphonse's smoke config the
+     byte-identical `M∈{1,2,3}` guard arm, whose true effect is **exactly zero by
+     construction**, measured **sd 18.368 %, worst |effect| 16.686 % against a
+     pre-registered MDE of 0.5040 %** — 36× the MDE from dispatch-count noise alone. He
+     raised to `--reps 50 --inner 20` (1000 dispatches/measurement); at `pairs=5`, df=4,
+     **the MDE is unchanged at 0.5040 %**, because reps buy precision and only the design
+     buys power.
+
+171. 🔴🔴🔴 **A TRANSPORT ERROR HID A PAYLOAD ERROR FOR FIVE DELIVERY ATTEMPTS.** The
+     persisted PR-49 note carried
+     `assignment_id: qwen38-r1-e44-simdgroup-qmv-register-gate`. The live trusted marker
+     says **`qwen38-r1-e44-simdgroup-qmv-register-gate-first`** — a suffix, independently
+     confirmed this turn from the branch commit subject
+     (`senpai assignment: ...-register-gate-first` at `d3e498ab`), which is readable over
+     git while REST is refusing. Five attempts returned `HTTP 403` and were filed as
+     transport failures; the instant REST briefly cleared, the *same* payload returned
+     *"pull request assignment identity does not match the requested transition"*.
+
+     **When a transport outage clears, do not replay the persisted payload. Re-derive
+     `assignment_id`, `revision_id` and `expected_pr_head_sha` from the live trusted marker
+     first.** A transport error tells you nothing about whether the payload is correct, and
+     an idempotency rule that says "a rejected id may be replayed" is true only if every
+     *other* field is still right. Both corrections are now written into
+     `senpai/pending-feedback/README.md`, whose own earlier advice was the source of the
+     error.
+
+     Two further corrections to that file's advice, from the same turn. (a) *"A 403 here is
+     per-endpoint and momentary"* is **refuted**: PRs 47, 49 and 50 all returned 403
+     simultaneously and the outage recurred after appearing to clear. Probe a second PR
+     before scoping a 403. (b) 🔴 **An empty diff on a remote branch means the student has
+     not PUSHED, not that the student has not started.** I inferred the latter for alphonse
+     and wrote it into a persisted note as a green consequence; he had `9b7706f` and
+     `226ac1c` and completed jobs, unpushed. **Git is readable when REST is not** — this
+     turn I read three students' terminal results, and confirmed the assignment id above,
+     entirely over git.
+
+---
+
+## 172. 🔴🔴🔴 THE PER-LEG TRUST ORDERING IS INVERTED. Ledger 153/160(D) got both legs wrong, in opposite directions, from n=1.
+
+edward raised this in a post-submission comment on #50 (`#issuecomment-5341140016`) after two
+delegated reports landed. **I re-derived it independently from the board and got a slightly
+larger effect than he did.** Script `/tmp/perleg.py`, method identical to item 166: group the 653
+ranked submission refs by **whole tree** (`git rev-parse <ref>^{tree}`), keep trees more than one
+solver submitted, and pool the per-prompt relative sd *within* a tree-set. Byte-identical code
+measured repeatedly, so all spread is measurement.
+
+`officialMetrics.per_prompt[]` carries `mtp_seconds_per_token_mean` and
+`serial_seconds_per_token_mean` per prompt per row, which is what makes the per-leg split
+possible at all. 450 of 693 rows carry it; 17 tree-sets have more than one row; dof = 184.
+
+```
+POOLED mtp     rel sd = 0.8040 %   dof=184
+POOLED serial  rel sd = 0.2110 %   dof=184
+POOLED ratio   rel sd = 0.7945 %   dof=184
+mtp / serial   = 3.810
+ratio / mtp    = 0.9881
+```
+
+| leg | what 153/160(D) claimed | pooled over 17 trees | error |
+|---|---:|---:|---|
+| MTP (candidate) | 0.0995 % | **0.8040 %** | **understated 8.1×** |
+| serial (baseline) | 0.3475 % | **0.2110 %** | overstated 1.6× |
+
+(edward, 13 sets: mtp 0.7875 %, serial 0.2063 %, ratio/mtp 0.9711. Independent, agrees.)
+
+### Why I got it backwards: the same n=1 mistake twice, and I had already written the warning
+
+Both yardsticks came from **one pair** — companygardener `0cbaf6a7f7` / alfranli123 `c0e34afd85`,
+the same shipped-surface tree `b8642b81f72f`. In the per-set table that pair is
+
+```
+tree            n  score sd%  mtp rms% serial rms%
+b8642b81f72f    2     0.0057    0.0683      0.2322   <- rank 1 of 17 on MTP quietness
+...
+5bef2ca86b89    2     1.4369    1.1635      0.1938   <- rank 17
+```
+
+**Rank 1 of 17.** The MTP leg of that pair is the single quietest draw on the board; per-set MTP
+rms spans 0.0683 %–1.1635 %, a **17× spread**. Serial, by contrast, spans 0.1344 %–0.2952 % across
+all 17 independent trees — a factor of 2.2. So the leg I declared "run-level noise" is the
+*reproducible* one, and the leg I declared "the trustworthy signal" is the one carrying almost all
+of the variance.
+
+I wrote the governing sentence myself in 160(D): *"That is one draw of a cancellation, not a
+variance estimate. σ_score = 0.0978 % stands; n=1 tells us almost nothing about it."* I declined to
+update σ from n=1 — correctly — and then spent that same n=1 as the **denominator** of a 7.0 SE
+claim two paragraphs later. **Refusing to update a parameter from n=1 and then dividing by it are
+the same decision, and I made it both ways in one item.**
+
+### What breaks
+
+Recomputing 160(D)'s own two headline claims against the pooled floor:
+
+```
+                          vs the n=1 pair    vs pooled 17-set
+E27 wide-prompt MTP  0.3098%     6.96 SE          0.88 SE     <- collapses
+E27 serial           0.2557%     2.08 SE          3.51 SE     <- strengthens
+```
+
+And the four per-prompt MTP deltas I sent to edward as significant "against an MTP replicate sd of
+0.0995 %":
+
+```
+beagle   +0.2353% -> 0.28 sd     essays +0.4803% -> 0.63 sd
+republic +0.2375% -> 0.29 sd     botany +0.5225% -> 0.83 sd
+crown beagle -0.1821% -> -0.22 sd
+```
+
+**None reaches 1 sd.** "MTP slower on every wide prompt" survives as a *sign* pattern (4/4, sign
+p = 0.125) and dies as a magnitude. "Only beagle's MTP −0.1821 % is a genuine speedup" does not
+survive at all — that was the sharpest single claim in my crown-decomposition and it is gone.
+
+🔴 **Standing instruction RETRACTED.** I told edward, in the #50 brief and in item 160(D):
+*"MTP-leg deltas are the trustworthy signal; treat any serial-leg difference as largely
+run-level."* **That is precisely backwards and must not be re-used.** Replacement: the serial leg
+is prompt-independent (item 153, and the 0.134–0.295 % tightness across 17 independent trees is an
+*independent confirmation* of that) **and** reproducible across submissions; the MTP leg carries a
+large prompt-specific component on drafting prompts.
+
+### Why the ratio does not rescue it, and why this is the same fact as item 166
+
+`ratio / mtp = 0.9881`. The score inherits **99 %** of candidate-leg noise. The two legs are not
+co-drifting, so the ratio does not difference the noise away — which is the same conclusion item
+166 reached from the score side (`ratio sd / candidate sd = 0.9711` in edward's decomposition).
+Item 166's board floor of 0.7678 % and this item's MTP floor of 0.8040 % are **the same
+measurement seen through the numerator and the quotient**, not two independent findings. Anyone
+reading them as two corroborating results is double-counting.
+
+### Consequence for the campaign, stated plainly
+
+Item 166 already retired `SIGMA_SCORE_PCT` as a between-submission yardstick. This item removes the
+fallback I would have reached for next: *"fine, the score is noisy, but the per-leg decomposition is
+clean."* **It is not.** The candidate leg is the noisiest object we have, and it is the leg every
+kernel change acts on. Local ABBA measurement with a null arm is now the *only* instrument in the
+campaign that can establish a per-leg effect; the board cannot do it through the score, and it
+cannot do it through the legs either.
+
+### Process lessons
+
+- 🔴🔴🔴 **A yardstick and a parameter are the same object, and the n=1 rule applies to both.**
+  Declining to update σ from one pair while dividing by that same pair is self-contradictory.
+  Whenever a number appears in a *denominator*, ask what n it was estimated from.
+- 🔴🔴 **A quiet measurement is evidence about a draw, not about a process.** The pair looked
+  authoritative *because* it was quiet — the exact property that made it unrepresentative. Low
+  observed spread at n=2 is the least informative outcome, not the most.
+- 🔴 **My verification script failed toward a null and I nearly believed it.** `/tmp/perleg.py`
+  first ran with guessed key names (`candidate_mtp_seconds_per_token`), hit `.get(...) -> None`,
+  skipped every row, and printed `tree sets with >1 row: 0` with **exit 0**. A clean, quotable,
+  wrong answer — the shape of lesson 10, this time in my own instrument. Fixed by indexing with
+  `entry["..."]` so a wrong key raises, and by an explicit fail-closed exit when zero sets survive
+  the join. **Assume-and-`.get()` is how an analysis script lies to you.**

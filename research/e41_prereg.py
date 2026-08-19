@@ -228,7 +228,14 @@ def verdict(r_ktall: float, r_kt4: float, r_kt1: float) -> str:
 SCORE_SENSITIVITY = 1.00
 CROWN_PCT = 0.5193
 GAP_PCT = 0.2586
-SIGMA_SCORE_PCT = 0.0978
+# 🔴 CORRECTED, ledger 166. This is a PRE-REGISTRATION instrument: it sizes
+# effects against the noise of a future BOARD measurement, so it needs the
+# BETWEEN-SUBMISSION floor (0.7678 %, 17 whole-tree sets), not the WITHIN-RUN
+# replicate sd 0.0978 % it used to carry. Under the old value CROWN_PCT looked
+# like 5.3 sigma and GAP_PCT like 2.6 sigma; they are 0.68 and 0.34.
+from noise_floors import SCORE_BETWEEN_SUBMISSION
+
+SIGMA_SCORE_PCT = SCORE_BETWEEN_SUBMISSION.pct
 # psi (QMV share of the candidate leg) is NOT measured and is being measured by
 # askeladd. phi (M=6 share of QMV cost) = 0.201 on this fixture. E38's implied
 # psi*phi = 0.0459 is back-solved, not measured, so every score number below is
