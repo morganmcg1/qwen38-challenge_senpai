@@ -39,6 +39,7 @@ import pathlib
 import random
 import subprocess
 import sys
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import e43_ranked_step as e43                                    # noqa: E402
@@ -1068,9 +1069,15 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
     our = rows[pool["our_row"]]
     out = {"tol_frac": tol_frac, "families": {}, "enumeration": {},
            "ray_equivalence": {}, "excess": {}, "value": {}}
+    t0 = time.time()
+
+    def stage(label: str) -> None:
+        print("[%7.1fs] %s" % (time.time() - t0, label), file=sys.stderr,
+              flush=True)
 
     # (a) the pooled enumeration, and whether pooling excludes any reading
     for family in SINGLE:
+        stage("enumerate %s" % family)
         bundle = build_bundle(rows, pool, family)
         solo = pooled_enumerate(bundle, family, tol_frac, node_cap=node_cap,
                                 trees=[pool["our_row"]])
@@ -1093,6 +1100,7 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
     # (c) per-family and cross-family bracket on T(6) - T(5)
     union_lo = union_hi = None
     for family in SINGLE:
+        stage("delta union %s" % family)
         sels = out["families"][family]["selections"]
         if not sels:
             out["families"][family]["delta"] = {"n_feasible": 0, "lo": None,
@@ -1136,6 +1144,7 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
     pairs = (("step6", "quadratic"), ("step5", "step6"), ("step6", "step7"),
              ("step5", "quadratic"), ("step7", "quadratic"))
     for fa, fb in pairs:
+        stage("ray equivalence %s vs %s" % (fa, fb))
         oa, ob = observations(our, fa, prim), observations(our, fb, prim)
         scan = equivalent_witness_scan(oa, ob, fa, fb)
         sels = out["families"]["step6"]["selections"]
@@ -1150,6 +1159,7 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
     for label, rid in (("ours", pool["our_row"]), ("crown", FRONTIER_ROW)):
         if rid not in rows:
             continue
+        stage("excess and value %s" % label)
         out["excess"][label] = {}
         out["value"][label] = {}
         for family in ("step6", "quadratic"):
@@ -1172,6 +1182,7 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
     if do_threshold:
         out["threshold"] = {}
         for family in ("step6", "quadratic"):
+            stage("threshold %s" % family)
             bundle = build_bundle(rows, pool, family)
             lower_solo = family_threshold(bundle, family, iters=12,
                                           trees=[pool["our_row"]])
