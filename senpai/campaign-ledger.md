@@ -4050,3 +4050,69 @@ Two traps in doing it:
    one line goes through `file_editor create` and is then run by path.** No exceptions,
    including "quick" one-off probes, which is exactly the framing that produced all five.
 
+145. 🔴🔴 **Third pass on the command-buffer subsystem, and 141 over-corrected: the
+   ELEMENT axis binds first, so 140's "4× smaller locally" was substantively right.**
+   I read the *consumers* this time instead of only the setters. Every fact below is
+   from source, read this turn.
+   - `CommandEncoder::needs_commit()` (`device.cpp:484-487`) =
+     `buffer_ops_ > max_ops || (buffer_sizes_ >> 20) > max_mb`.
+   - `buffer_sizes_ += a.data_size()` (`device.cpp:320`), added **once per distinct
+     input buffer per command buffer**, and `data_size()` is in **items**
+     (`array.h:346`). ⇒ the budget is **mebi-ELEMENTS**. 141's unit correction is
+     **confirmed a second time**.
+   - `buffer_ops_++` per dispatch (`device.cpp:381`, `:389`).
+   - 🔴 **MLX picks the defaults from the GPU arch string's LAST CHARACTER**
+     (`device.cpp:574-595`, selector `arch_.back()`): `p` phone 20/40, `g` base+pro
+     40/40, `s` max **50/50**, `d` ultra 50/50, else 40/40. Our local box reports
+     `applegpu_g16s` ⇒ last char `s` ⇒ defaults **50/50** — note this box is an M4
+     **Pro**, so the comment's "max" label does not match the tier we actually get.
+   - Effective values, verified: **ranked 512/50** via
+     `installQwenMTPFullProfileCommandBufferDefaults`
+     (`RuntimeStartupMemoryPolicy.swift:62-73`, gated `>= 96 GiB`, profile not `low`,
+     kill switch `DARKBLOOM_QWEN_MTP_POST_WIRE_COMMAND_BUFFER != "0"`, **overwrite 0**);
+     **local 128/64** force-set by `apply()` (`:211-223`, **overwrite 1**). The
+     full-profile struct constants **320/128** (`:145-146`) are **dead** — `apply()`
+     is guarded by `isLowMemory` at `QwenRuntimeMTPWorker.swift:487`.
+   - 🔴 **WHICH AXIS BINDS (this is what 141 got backwards).** ~14.8 GB of 4-bit
+     weights packed in `uint32` ⇒ ~3.7e9 items ≈ **3528 mebi-items per full weight
+     pass**; ~257 weight-matmul dispatches per round (E33 shape census). Element-driven
+     commits per pass ≈ 3528/512 ≈ **7 ranked** vs 3528/128 ≈ **28 local**; ops-driven
+     ≈ 257/51 ≈ **5 ranked** vs 257/65 ≈ **4 local**. **The element axis fires first in
+     both configurations, and the local arm commits ~4× more often than ranked.**
+     (Element counts are an estimate; the code facts above are exact.)
+   - 🔴 **Our own shipped comment already said so and I contradicted it.**
+     `:139-141`: "The MLX M5 Max default commits a command buffer after referencing
+     50 MiB. Many 4-bit projections individually exceed that." Twenty more lines of
+     reading would have prevented 141's error.
+   - **Net: the surviving, now correctly derived, version of 140.** Any host-overhead
+     or command-buffer-count measurement taken **locally runs at ~4× the ranked commit
+     rate**. That is a real instrument divergence and is exactly what E39 should flag
+     per entry. It does **not** disturb E31's verdict, whose bound came from E29's
+     *central* sweep on the ranked box; E31 remains a legitimate closure and thorfinn's
+     credit stands.
+   - **Three further verified defects, all cheap to fix.**
+     (a) Ranked `MLX_MAX_OPS_PER_BUFFER=50` is **very likely inert** — 50 is exactly the
+     MLX default for `s`/`d` arch. Unverified for the ranked box's own arch string, and
+     **that string is loggable in one line**; log it in the next ranked run and we will
+     know whether half of our shipped install does anything at all.
+     (b) The low-memory comment "Half the full profile's referenced-byte and op budgets"
+     is **false against effective values**: half of the *dead* 320/128 would be 160/64,
+     the actual local values are 128/64, and the *effective* ranked values are 512/50 —
+     so local is **¼** on elements and **more permissive** on ops. The comment documents
+     a relationship to dead code.
+     (c) Both comments mislabel the unit as MiB / "referenced-byte", and the dead
+     320/128 constants should go.
+   - 🔴 **Process lesson, and it is the third instance of one root cause.** 140, 141 and
+     this entry are three passes over one subsystem, two of them wrong, because each
+     time **I stopped reading at the point where I had a story.** The specific fix that
+     would have caught all three: **read the consumer, not just the setter.** I only got
+     it right when I read `needs_commit()` and the accumulator rather than the `setenv`
+     calls. Generalised rule to sit beside 141's: **a claim about what a knob DOES
+     requires reading the code that CONSUMES it.**
+   - 🟢 **One piece of luck worth recording honestly**: a GitHub 403 on
+     `GET /pulls/{n}` blocked my student messages for ten minutes, and I used the wait
+     to read `needs_commit()`. Had the API been healthy I would have sent a **third**
+     wrong version of this claim to four people. The lesson is not "rely on luck" —
+     it is that I should have done this reading *before* the first message, and the
+     cost of the 141 retraction was already the warning.
+
