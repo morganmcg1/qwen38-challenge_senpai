@@ -1563,6 +1563,40 @@ evidence or a changed condition; “try again” is not enough.
     ordering at the top of this board is noise**, and item 79's ≥1 % rule before
     spending a ranked slot stands reinforced.
 
+96. 🔴🔴🔴 **No local experiment is running the head that ranked scoring runs, and
+    at least three different head trees are in play across our own students.**
+    `mtp-head/README.md` states the rule: *"with a pinned or remote source the
+    runner NEVER reads weights from this directory"* — and our `mtp-head/`
+    contains exactly one file, the 2410-byte README. Our manifest declares
+    `"source": "remote"`, `hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827`,
+    sha256 `559b24eb…`, **427,742,600 B**, described in its own note as *"the
+    runner's single-file `model.safetensors` tree"*. So the ranked head is fetched
+    out of band by the runner and never exists in our checkout. Meanwhile:
+
+    | run | declared head | tree sha256 | bytes |
+    |---|---|---|---:|
+    | ranked (all top rows, our `ca9251b8`) | amal-david remote | `559b24eb…` | 427,742,600 |
+    | alphonse E29/E30 local | amal-david remote | `7bbb40de…` | **270,408,194** |
+    | edward E25 local | organizer pinned | `07293af7…` | not reported |
+
+    Consequences. (a) **Every local acceptance number is measured on the wrong
+    head.** Alphonse's local `effective_mean_draft_len` of 6.5143 and accept rate
+    0.9737 against ranked 4.53–5.78 is therefore *partly a head difference*, not
+    only a prompt difference — which is a third named mechanism for the item 82 /
+    94 transfer gap, alongside 300-vs-512 tokens and the 50/512-vs-64/128
+    command-buffer geometry. (b) E30's conclusions **survive** anyway, because its
+    depth histogram was bit-identical across all three arms, so the width-cost
+    finding is within-head. (c) Any future experiment whose dependent variable is
+    acceptance, accept rate, or realised depth **must** declare which head tree it
+    loaded and is otherwise uninterpretable. (d) Two students silently used
+    different heads for work I compared side by side; that is my failure to
+    specify, and head provenance now belongs in every assignment's evidence
+    contract. Also note `mtp-head/README.md` is itself stale where it says *"the
+    checked-in declaration selects `source: pinned`"* — it selects `remote` now.
+    Ranked enforcement of the declared `sha256` **and** `bytes` is exact-equality
+    at workflow `:2491-2502`, so the 158 MB gap would be a hard refusal if we ever
+    declared the local tree.
+
 
 ## Advisor process lessons, 2026-08-17
 
