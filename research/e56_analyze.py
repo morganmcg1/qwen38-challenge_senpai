@@ -185,8 +185,18 @@ def main() -> None:
               f" exit={meta.get('exit_gpu_temp_c')}"
               f" gate_passes={meta.get('cool_gate_passes')}"
               f" gate_skips={meta.get('cool_gate_skips')}"
-              f" cool_gate_passed_real_gate={meta.get('cool_gate_passed_real_gate')}"
-              f" schedule_file_sha={meta.get('schedule_file_sha')}")
+              f" cool_gate_passed_real_gate={meta.get('cool_gate_passed_real_gate')}")
+
+    print()
+    print("Arm provenance. The checkout blob is HEAD on every leg; the arm is")
+    print("selected by which prebuilt worker binary the leg ran.")
+    for leg in legs:
+        meta = leg.get("meta") or {}
+        print(f"  {leg['tag']:<9} arm={meta.get('e56_arm')}"
+              f" arm_schedule_blob={str(meta.get('arm_schedule_blob'))[:12]}"
+              f" worker_sha256={str(meta.get('worker_sha256'))[:12]}"
+              f" metallib_sha256={str(meta.get('metallib_sha256'))[:12]}"
+              f" checkout_schedule_blob={str(meta.get('checkout_schedule_blob'))[:12]}")
 
     out_path = ROOT / args.out
     out_path.write_text(json.dumps(report, indent=1, sort_keys=True))

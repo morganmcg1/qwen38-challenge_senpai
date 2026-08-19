@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# One E56 timed leg: select the arm's schedule, rebuild, measure, log, unwind.
+# One E56 timed leg against a prebuilt arm.
 #
 #   research/e56_run_leg.sh ARM TAG [--tokens N]
 #
 # ARM is `base` (the campaign base's scalar-price schedule) or `sched` (this
-# branch's stream-aware price). The only file that differs between the two arms
-# is the block session, so a `base` leg checks that one file out at the base
-# commit, rebuilds, measures, and puts it back on every exit path -- including
-# a crash or a job timeout -- so the branch's scored surface is never left
-# holding another arm's bytes.
+# branch's stream-aware price). research/e56_build_arms.sh has already built
+# both worker binaries and published them outside the checkout, so this script
+# only selects one of them. It never edits, checks out, or stashes anything:
+# the work tree stays on HEAD for the whole session, which removes the failure
+# mode where a hard kill during a `base` leg leaves base bytes on the branch.
 set -uo pipefail
 
 arm="${1:?usage: e56_run_leg.sh ARM TAG [--tokens N]}"
@@ -23,6 +23,11 @@ while (($#)); do
   esac
 done
 
+case "${arm}" in
+  base|sched) ;;
+  *) echo "e56_run_leg: unknown arm ${arm}" >&2; exit 2 ;;
+esac
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_root}"
 
@@ -30,33 +35,24 @@ cd "${repo_root}"
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 
 readonly SCHEDULE_FILE="Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
-readonly E56_BASE_SHA="${E56_BASE_SHA:-a2c3dbc497fd76b3e4f99c529a3eb5e8b2090abf}"
-
-head_sha="$(git rev-parse HEAD)"
-patched=0
-
-unwind() {
-  if ((patched)); then
-    git checkout -q "${head_sha}" -- "${SCHEDULE_FILE}" || true
-  fi
-}
-trap unwind EXIT
-trap 'exit 143' TERM
-trap 'exit 130' INT
+arm_dir="${E56_ARM_DIR:-${HOME}/e56-arms}/${arm}"
+worker="${arm_dir}/mlxfast-runtime-worker"
+metallib="${arm_dir}/mlx.metallib"
 
 if [[ -n "$(git status --porcelain)" ]]; then
-  echo "e56_run_leg: worktree is dirty; refusing to time over uncommitted work" >&2
+  echo "e56_run_leg: work tree is dirty; refusing to time over uncommitted work" >&2
+  exit 1
+fi
+if [[ ! -x "${worker}" || ! -s "${metallib}" ]]; then
+  echo "e56_run_leg: arm ${arm} is not built; run research/e56_build_arms.sh first" >&2
   exit 1
 fi
 
-case "${arm}" in
-  base)
-    git checkout -q "${E56_BASE_SHA}" -- "${SCHEDULE_FILE}" || exit 1
-    patched=1
-    ;;
-  sched) ;;
-  *) echo "e56_run_leg: unknown arm ${arm}" >&2; exit 2 ;;
-esac
+# benchmark.sh and the trusted CLI both resolve the scored binary through this
+# variable, and the CLI verifies the metallib beside it, so the sidecar has to
+# be named too.
+export MLXFAST_RUNTIME_WORKER_EXECUTABLE="${worker}"
+export MLXFAST_MLX_METALLIB="${metallib}"
 
 # Same search order as benchmark.sh's find_macmon, so this leg records the
 # temperature from the same reader the cool gate itself used. setup.sh installs
@@ -87,7 +83,7 @@ gpu_temp() {
 }
 
 echo "=== e56 leg ${tag} (${arm}) at $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-research/rebuild.sh || exit 1
+cat "${arm_dir}/arm.txt"
 
 out="research/out/${tag}"
 entry_temp="$(gpu_temp)"
@@ -103,9 +99,12 @@ gate_skipped="$(grep -c 'skipping the GPU cool-down gate' "${out}/trace.txt" 2>/
 {
   echo "e56_arm=${arm}"
   echo "e56_tag=${tag}"
-  echo "e56_base_sha=${E56_BASE_SHA}"
-  echo "e56_head_sha=${head_sha}"
-  echo "schedule_file_sha=$(git hash-object "${SCHEDULE_FILE}")"
+  echo "e56_head_sha=$(git rev-parse HEAD)"
+  echo "checkout_schedule_blob=$(git hash-object "${SCHEDULE_FILE}")"
+  echo "worker_path=${worker}"
+  echo "worker_sha256=$(shasum -a 256 "${worker}" | cut -d' ' -f1)"
+  echo "metallib_sha256=$(shasum -a 256 "${metallib}" | cut -d' ' -f1)"
+  grep -E '^(schedule_blob|built)=' "${arm_dir}/arm.txt" 2>/dev/null | sed 's/^/arm_/'
   echo "entry_gpu_temp_c=${entry_temp:-unavailable}"
   echo "exit_gpu_temp_c=${exit_temp:-unavailable}"
   echo "cool_gate_passes=${gate_lines}"
