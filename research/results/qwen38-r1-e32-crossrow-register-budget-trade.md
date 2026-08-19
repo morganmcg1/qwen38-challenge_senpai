@@ -19,9 +19,9 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   `research/generated/crossrow_rps_wide.h`, `research/crossrow_rps_probe.metal`,
   `research/crossrow_rps_sweep.py`, `research/e32_analysis.py`,
   `research/e32-rps-grid.json`, `research/e32-rps-analysis.txt`,
-  `research/e32_wandb_log.py`.
-- Assignment-scope preflight: `git diff --stat d2fcebb -- .` lists 9 files (the
-  8 above plus this report), all under `research/`. No `quantized.h`, no
+  `research/e32-occupancy.txt`, `research/e32_wandb_log.py`.
+- Assignment-scope preflight: `git diff --stat d2fcebb -- .` lists 10 files (the
+  9 above plus this report), all under `research/`. No `quantized.h`, no
   `mlx-generated/`, no `Sources/`, and the shipped
   `static_assert(NA >= 2 && NA <= 5, ...)` is untouched.
 - Scored-path reachability: the sweep's anchor arm calls the **shipped**
@@ -42,6 +42,11 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   python3 research/crossrow_rps_sweep.py --out research/e32-rps-grid.json \
       --jobs 4 --keep-air /tmp/e32_air
   python3 research/e32_analysis.py research/e32-rps-grid.json
+
+  # pipeline reflection for (b), over the same 77 AIR objects
+  xcrun metallib /tmp/e32_air/*.air -o /tmp/e32_air/probe.metallib
+  swiftc -O research/crossrow_na_occupancy.swift -o /tmp/e32_air/na_occupancy
+  /tmp/e32_air/na_occupancy /tmp/e32_air/probe.metallib   # -> research/e32-occupancy.txt
   ```
   Per cell: `metal -std=metal3.1 -O2 -S` then
   `metal-opt -passes=default<O3>`, which is E27's pipeline. Dropping the
@@ -51,7 +56,9 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   `allocas`, `acc_spill`, `status`), with `gate validation: 10/10` again and an
   empty failure list. `e32_analysis.py` over the committed grid reproduces
   `e32-rps-analysis.txt` byte for byte, and `crossrow_rps_gen.py --check` still
-  passes against `quantized.h`. `senpai/check-editable-budget.sh` reports
+  passes against `quantized.h`. The pipeline reflection was likewise re-run from
+  fresh AIR and is now committed as `research/e32-occupancy.txt` rather than
+  quoted from a scratch directory. `senpai/check-editable-budget.sh` reports
   `growth=0/262144` — zero shipped-surface bytes.
 
 ### How the probe stays honest
@@ -105,7 +112,8 @@ expected verdict.
 `peak_live_regs / allocas`, `SPILL` = an accumulator-typed alloca survived `-O2`
 plus `default<O3>`. Threadgroup memory is **0 bytes in every cell** (no
 `addrspace(3)` reference anywhere in the grid, confirmed independently by
-`staticThreadgroupMemoryLength == 0` from pipeline reflection).
+`staticThreadgroupMemoryLength == 0` from pipeline reflection —
+`research/e32-occupancy.txt`, 77/77 cells).
 
 | NA | r=1 | r=2 | r=3 | r=4 |
 |---|---|---|---|---|
@@ -150,7 +158,10 @@ correctness wall, not a performance trade, and it applies to every `NA >= 6`
 cell in the r ≤ 3 columns above.
 
 **On theoretical occupancy I have to report a tool failure rather than a
-number.** `maxTotalThreadsPerThreadgroup` is **1024 for all 77 cells**,
+number.** `maxTotalThreadsPerThreadgroup` is **1024 for all 77 cells**
+(`research/e32-occupancy.txt`, from E27's own
+`crossrow_na_occupancy.swift` run unmodified over this grid's metallib;
+`threadExecutionWidth` is 32 everywhere too),
 including the deliberately spilled controls with 64-float private arrays. It
 does not discriminate register pressure here, and the reason is structural: the
 dispatch uses 64 threads per threadgroup, so a 1024-thread ceiling was never
