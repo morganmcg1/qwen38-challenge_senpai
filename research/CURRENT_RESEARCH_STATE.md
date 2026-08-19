@@ -28,8 +28,9 @@ Keep this file to current hypotheses, live slots, and where we go next. Prune it
 | our best official submission | **3.23250848263467** — receipt `ca9251b`, candidate `2b0c36a`, rejected |
 | **our deficit** | **0.01734735158304 = 0.534 %** |
 | our official submissions | six, under solver `morganmcg1`; four scored, none promoted |
-| board floor (between-submission) | 0.7678 % |
-| within-tree resubmission agreement | **≤ 0.0693 % per prompt** (item 148, six submissions of one tree) |
+| **ranked instrument jitter, per prompt per leg** | **0.2257 %** — measured, n=408, serial leg |
+| **rel sd of the published median of 8** | **0.1415 %** point, **0.2636 %** worst case |
+| **ranked MDE at 2 sd on the median** | **+0.283 %** point, **+0.527 %** worst case |
 | local end-to-end null floor | **0.0629 %** — askeladd's E48 `base2` arm |
 | ranked score leverage `psi_mtp` | **0.693391** [0.692292, 0.694490] |
 | the leader's last step | **+0.0173 %** |
@@ -42,21 +43,52 @@ candidate-editable code cannot move the ranked serial numerator, so any complian
 lowers candidate MTP seconds per token improves every affected `raw_p`. Never subtract a
 locally measured serial share such as `psi_serial` when pricing official value.
 
-### 🔴 Our noise model is internally inconsistent, and it is load-bearing
+### ✅ RESOLVED: the ranked noise model, measured from the pinned serial leg
 
-Item 148 says six submissions of one identical tree agree to **≤ 0.0693 % per prompt**. Items
-166/172 say the between-submission floor is **0.7678 %** with a 17× per-set spread. **Both
-cannot describe one homoscedastic instrument**, and we currently use the large floor for MDE
-arithmetic while implicitly using the small one to credit the frontier's +0.0173 % step to a
-warm-up.
+`research/board_noise_identification.py` settles ledger item 180(H). Both floors the ledger has
+been quoting are wrong.
 
-This decides what a submission slot is worth. If the large floor governs, our 0.534 % deficit
-is about **0.7 sd of a redraw**, the leader's last two steps are indistinguishable from
-resubmission lottery draws, and any legitimate new mechanism composed on our best tree has
-order-25 % promotion probability per submission from noise alone — which argues for submitting
-**more often**, not for hoarding slots. If the small floor governs, sub-floor composition is
-rational and the leader is genuinely stepping. **Resolving this is zero-GPU** and it is the
-highest-leverage open analysis question we have.
+**The identification.** The ranked serial leg is a prebuilt, pinned binary in the runner-owned
+baseline workspace, and no candidate edit can move it. So the spread of `serial_spt` across all
+408 content-unique board submissions is **pure instrument noise**, with one independent draw per
+submission per prompt.
+
+| measurement | value |
+|---|---|
+| per-prompt rel sd of the serial leg | **0.2257 %** (n=408, all 8 prompts agree to 0.20–0.24 %) |
+| distinct serial values per prompt | 407–408 of 408 — effective n is the full sample |
+| within-day rel sd | 0.196–0.241 % |
+| between-day rel sd | 0.016–0.043 % |
+| upper bound on the candidate leg | 0.5505 % (tightest behaviour class, still holds content) |
+
+The within-day term is **10× the between-day term**, so this is iid per-measurement jitter and
+not slow thermal drift. The runner's thermal gate works; the instrument still jitters.
+
+**Consequences.** Taking the candidate leg's own jitter at the same relative scale and the two
+legs as independent (`corr(serial_spt, mtp_spt) ≈ +0.05` within a behaviour class, so no
+common-mode cancellation):
+
+| quantity | point estimate | worst case |
+|---|---|---|
+| per-prompt `raw_ratio` rel sd | 0.3193 % | 0.5950 % |
+| rel sd of the published median of 8 | **0.1415 %** | **0.2636 %** |
+| detectable at 2 sd | **+0.283 %** | **+0.527 %** |
+| our 0.534 % deficit, in sd | 3.77 | 2.03 |
+| P(a redraw of an unchanged tree promotes) | 8.0e-5 | 2.1e-2 |
+
+- Item 148's **0.0693 %** is roughly **3× below** the measured per-leg jitter. It cannot be the
+  instrument's floor; it was a lucky pair or a mis-specified comparison.
+- Items 166/172's **0.7678 %** is **content granularity**, not noise: `mtp_spt` varies 11.2 %
+  and `raw_ratio` 9.9 % across submissions, which is real tree difference.
+- **Resubmitting an unchanged tree cannot close the deficit even in the worst case.** The
+  "submit more often to win the lottery" reading is dead.
+- **This re-prices every banked mechanism.** In median-sd units, using the point estimate:
+  E29's 4.35 % host cost = **31 sd**; the M=9 prize at +1.36 % = **9.6 sd**; E44's ceiling at
+  +0.7437 % = **5.3 sd**; the latch valve at ≈+0.5 % = **3.5 sd**; the SDPA chunk at ≈+0.1 % =
+  **0.7 sd**, compose-only. Each of the top three would alone put us above the live frontier.
+- The frontier's own +0.0173 % step is **0.12 sd**. It is not a detectable improvement on this
+  instrument; fkiene was promoted by a draw, a real sub-noise gain, or both. Do not treat
+  +0.02 % warm-up work as a reproducible frontier mechanism.
 
 ---
 
@@ -259,11 +291,14 @@ Ordered by expected value, not by convenience.
    facility was never tried. This is the largest recorded-but-unexploited lever we have.
    Hazard: the M1/M2/M4 Tahoe JIT crash class (`MLXHardwareInfo.swift:11-21`) may block local
    measurement; ranked M5 is outside the reported class.
-3. **Resolve the noise-model inconsistency** (see "Where we stand"). Zero GPU: regress per-set
-   MTP-leg variance on tree content, specifically warm coverage. It decides whether submission
-   cadence or mechanism size dominates near the frontier, and it plausibly *upgrades* warm-up
-   composition from a mean effect to a variance reduction that sharpens every future ranked
-   observation.
+3. ~~Resolve the noise-model inconsistency.~~ **DONE, zero GPU** —
+   `research/board_noise_identification.py`, see "Where we stand". The ranked instrument jitters
+   at 0.2257 % per prompt per leg, the published median at 0.1415 %, and the answer is that
+   mechanism size dominates: a promoting candidate needs a real **+0.53 % or better**. The one
+   remaining sub-question worth an hour is whether the candidate leg's own jitter is really the
+   same relative scale as the serial leg's; the dataset bounds it above at 0.5505 % but cannot
+   identify it from below, because `mean_draft_len` identity does not imply identical candidate
+   work.
 4. **Land the latch release valve.** `positionAcceptEMA[0] <= 0.18` is an absorbing state:
    it is written only inside `recordAcceptOutcome`, whose single call site is unreachable at
    depth 0. Simulated at **−14.55 % to −18.02 %** when it hits a bankable prompt, observed at

@@ -9025,5 +9025,87 @@ parent checks. It fails on exactness before it is ever a timing question.
 
 Live slate after this round: #57 askeladd E55 (`<T,9,5>` composed onto the shipped table), #58
 thorfinn E54 (lone-versus-sibling NA=5 law, with PR #8's bandwidth objection still open), #59
-edward E56 (stream-aware draft-depth schedule). alphonse is free and gets 180(A) as E57.
+edward E56 (stream-aware draft-depth schedule), #60 alphonse E57 (180(A), the SDPA chunk
+predicate bisection).
+
+### 180(J). ✅ 180(H) IS RESOLVED, zero GPU. The ranked instrument jitters at 0.2257 % per prompt per leg, both floors we have been quoting are wrong, and "submit more often to win the lottery" is dead
+
+New instrument: [`../research/board_noise_identification.py`](../research/board_noise_identification.py).
+Data: `research/e53-board-facts.json`, edward's E53 pull, 408 content-unique board submissions
+× 8 prompts with `raw_ratio`, `mtp_spt`, `serial_spt`, `commit`, `head`, `solver`, `score`,
+`mean_draft_len`. No GPU, no student slot, no new measurement.
+
+**The identification we had been missing was sitting in the data all along.** The ranked serial
+leg comes from the runner-owned, prebuilt baseline workspace. Item 176 already established that
+no candidate edit can move it. Therefore **the spread of `serial_spt` across every submission
+ever measured is pure instrument noise**, with one independent draw per submission per prompt.
+
+| measurement | value |
+|---|---|
+| per-prompt rel sd of the serial leg | **0.2257 %** |
+| n per prompt | 408 |
+| agreement across the 8 prompts | 0.2009 % to 0.2372 % |
+| serial mean across prompts | 0.0379878 to 0.0380044 s/token — prompt content does not move the serial leg at all |
+| distinct serial values per prompt | 407 or 408 of 408 |
+| within-day rel sd | 0.1964 % to 0.2408 % |
+| between-day rel sd | 0.0156 % to 0.0427 % |
+
+Two things follow immediately. First, **the effective sample size is the full 408**: item 152's
+"content-distinct trees reproduce telemetry to 16 digits" does not apply to `serial_spt`, where
+essentially every value is unique. Second, **the within-day term is about 10× the between-day
+term**, so this is iid per-measurement jitter rather than slow thermal drift. The runner's
+thermal gate is working. The instrument still jitters.
+
+**The candidate leg is bounded above but not identified from below.** Grouping submissions by the
+exact 8-tuple of `mean_draft_len` gives 133 behaviour classes; the tightest class with n ≥ 4
+(n=20) shows a candidate-leg rel sd of **0.5505 %**, and the largest (n=151) shows 4.28 %. That
+spread is expected and instructive: **`mean_draft_len` identity does not imply identical
+candidate work**, because the entire campaign consists of making the same schedule faster. So
+0.5505 % is an upper bound that still contains real content variation, and the honest reading is
+a point estimate at the serial leg's own 0.2257 % with 0.5505 % as the pessimistic bracket.
+
+**No common-mode cancellation exists.** `corr(serial_spt, mtp_spt)` within a behaviour class is
+**+0.0487**. The "thermally gated pair in alternating order" does not make the two legs' noise
+move together, so the ratio does not cancel it.
+
+| quantity | point estimate | worst case |
+|---|---|---|
+| per-prompt `raw_ratio` rel sd | 0.3193 % | 0.5950 % |
+| rel sd of the published median of 8 | **0.1415 %** | **0.2636 %** |
+| detectable at 2 sd on the median | **+0.283 %** | **+0.527 %** |
+| our 0.534 % deficit, in median sd | **3.77** | **2.03** |
+| P(a redraw of an unchanged tree promotes) | 8.0e-5 | 2.1e-2 |
+
+**Both numbers this ledger has been quoting are wrong.**
+
+- Item 148's **≤ 0.0693 % per prompt** is about **3× below** the measured per-leg jitter. It
+  cannot be the instrument's floor. Treat it as a lucky pair or a mis-specified comparison and
+  stop using it to credit sub-0.1 % effects.
+- Items 166/172's **0.7678 %** is **content granularity, not noise**. Across submissions
+  `mtp_spt` varies 11.2 % and `raw_ratio` 9.9 %; that is real tree difference, and using it as
+  an MDE inflated every minimum detectable effect by 2.4× to 5.4×.
+
+**The strategic conclusion reverses the one I wrote in 180(H).** Submitting an unchanged tree
+cannot close a 0.534 % deficit even under the pessimistic bracket, so slot cadence is not the
+lever. **Mechanism size is.** Re-priced in point-estimate median-sd units:
+
+| banked mechanism | claimed effect | median sd | verdict |
+|---|---|---|---|
+| E29 removable host cost (compile the head step) | 4.35 % | **31 sd** | by far the largest lever we hold |
+| M=9 QMV prize (item 178) | +1.36 % | **9.6 sd** | clears the frontier alone; live in #57 |
+| E44 ceiling bound | +0.7437 % | **5.3 sd** | clears the frontier alone |
+| item 146 latch release valve | ≈+0.5 % expected | **3.5 sd** | free tail insurance; compose it |
+| SDPA chunk predicate (180(A)) | ≈+0.1 % | **0.7 sd** | compose-only, never a headline |
+
+Each of the top three would alone put us above 3.24986. That ordering is now the campaign's
+assignment priority, and it says the same thing 180(F) said: **E29's 4.35 % is the single
+highest-value unexploited experiment we have, by roughly 3× over the next best.**
+
+One correction this forces on item 179. **The frontier's +0.0173 % step is 0.12 median sd.** It
+is not a detectable improvement on this instrument. fkiene's promotion is consistent with a
+draw, with a real sub-noise gain, or with both, and 179's framing of `warmTargetLaterWindowSDPA`
+as a priced mechanism is too strong. Importing it remains cheap and defensible on dispatch
+grounds — a pipeline-creation miss inside the scored window really does cost about 0.02 %
+(180(A)) — but it must never be presented as a measured +0.0173 % mechanism, and no future
+candidate should rest on it.
 
