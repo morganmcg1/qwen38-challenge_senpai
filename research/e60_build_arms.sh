@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Build the three E60 arms as prebuilt binaries, one arm at a time.
+# Build the E60 arms as prebuilt binaries, one arm at a time.
 #
 #   A  upstream/main versions of the two scored files. That ref is the promoted
 #      frontier 9e1ff9ec (submission 59b321ee), which is organizer main
 #      0c90733d plus the +70-line untimed warmTargetLaterWindowSDPA.
-#   B  our campaign base, unchanged.
-#   C  arm B plus the hand-applied warm (research/e60-artifacts/arm-c-warm.patch).
+#   B  the campaign base, which is HEAD with the warm reverted.
+#   C  HEAD, which is the campaign base plus the hand-applied warm.
+#
+# Since the d2139c92 merge, HEAD carries the warm, so arm C builds the tree
+# unchanged and arm B reverse-applies the warm patch.
 #
 # Each arm leaves .build/release/mlxfast-swift and
 # .build-worker/release/mlxfast-runtime-worker copied into
@@ -41,11 +44,11 @@ build_arm() {
   echo "=== arm ${arm}: preparing source ==="
   case "${arm}" in
     A) git checkout upstream/main -- "${files[@]}" || return 1 ;;
-    B) : ;;
-    C)
-      git apply --check research/e60-artifacts/arm-c-warm.patch || return 1
-      git apply research/e60-artifacts/arm-c-warm.patch || return 1
+    B)
+      git apply --check -R research/e60-artifacts/arm-c-warm.patch || return 1
+      git apply -R research/e60-artifacts/arm-c-warm.patch || return 1
       ;;
+    C) : ;;
     *) echo "e60: unknown arm ${arm}" >&2; return 2 ;;
   esac
 
@@ -80,6 +83,9 @@ build_arm() {
     done
     echo "cli_sha256=$(shasum -a 256 "${bin_root}/${arm}/mlxfast-swift" | awk '{print $1}')"
     echo "worker_sha256=$(shasum -a 256 "${bin_root}/${arm}/mlxfast-runtime-worker" | awk '{print $1}')"
+    echo "worker_text_sha256=$(python3 research/e60_text_section_sha.py \
+      "${bin_root}/${arm}/mlxfast-runtime-worker" | awk '{print $1}')"
+    echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   } > "${bin_root}/${arm}/provenance.txt"
   cat "${bin_root}/${arm}/provenance.txt"
 
