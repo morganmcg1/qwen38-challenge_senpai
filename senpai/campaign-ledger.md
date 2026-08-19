@@ -5592,3 +5592,126 @@ Two traps in doing it:
      4. 🔴🔴 A dramatic ratio needs its second route before it is spoken (D).
      5. 🔴 A gate written by the person with the blind spot inherits it — again (I).
 
+
+161. 🔴🔴🔴 **WE ARE NOT STUCK BEHIND THE CROWN. WE HAVE BEEN DELETING IT. `yukon submit`
+     replaces whole files, our checkout is three accepted commits stale, and every
+     submission we make reverts the frontier back to our own base. A rebase that ships
+     none of our work is worth +0.5196 %, which would tie for first.**
+
+     Item 160 ended with a queued task: "apply the crown's three hunks and validate."
+     Before applying anything I ran `git fetch upstream --prune`, because item 160's own
+     first lesson is that stale local state is a claim, not a fact. 653 refs, up from
+     600 — and among them a ref I had never looked at:
+
+     ```
+     upstream/main = 0c90733d383f6b987a29682bf9eb9458a6172bfa
+     "Accept submission 0cd0a6b4-b539-4705-a1c7-cb271c1f9d3b"
+     yukon-autoresearch[bot], 2026-08-19 00:07:37 +0000   parent 1cb1f43a7246 (fkiene)
+     ```
+
+     **The crown was promoted to `main` seven hours ago.** `upstream/main` carries all
+     three 512-hunks verbatim. So the thing I was about to "apply" is already the base
+     that any new submission overlays. Applying it is not an improvement — and *not*
+     applying it is an active loss. That inverts the entire task.
+
+     **(A) `yukon submit` is a whole-file REPLACE, and this is refuted-alternative, not
+     assumed.** The decisive case is sitting in the object store:
+
+     - fkiene `1cb1f43a` added a 19-line verify-concat JIT warm to
+       `Qwen36MTPBlockSession.swift` and scored **3.24417896624589** (+0.0283 % over base).
+     - ofou branched from `5068eb8d`, which **predates** fkiene, and never opened that
+       file: `git diff 5068eb8d ef42e043` is 2 files, +11/−5, memory policy only.
+     - Yet `git diff 1cb1f43a 0c90733` — the overlay the organizer actually applied for
+       ofou — **deletes all 19 of fkiene's lines.**
+
+     A three-way merge preserves a hunk the author never touched. This did not. Therefore
+     every file we package overwrites the tip's copy wholesale, **including regions we
+     have never read**. That is a property of the submission system, established from two
+     diffs, and it does not depend on anyone's prose.
+
+     **(B) What our tree would do to live `main` right now.** `git diff upstream/main HEAD`
+     restricted to `editablePaths` — 6 files, **98 lines of the live tip deleted**:
+
+     | file | +/− | what we delete |
+     |---|---|---|
+     | `Qwen35RuntimeWeights.swift` | +1/−3 | `MLX_MAX_MB_PER_BUFFER` 512 → **128** |
+     | `RuntimeStartupMemoryPolicy.swift` | +4/−8 | `setenv` overwrite 1 → **0**; 512/50 → **320/128** |
+     | `Qwen36MTPBlockSession.swift` | +74/−47 | our E27/E29 work **and** fkiene's 19-line warm |
+     | `Qwen35.swift` | +32/−19 | E29(c) ladder, never scored |
+     | `quantized.cpp` | +4/−4 | E27 twin |
+     | `quantized.h` | +7/−17 | E27, incl. the 12-line frontier comment we already deleted once |
+
+     The first two rows are the crown, in reverted form, in our working tree today. Item
+     145 catalogued those exact constants as dead and **queued them for deletion**.
+
+     **(C) The decomposition — and the tautology I nearly published as its confirmation.**
+     Writing `crown = main/base − 1` and `overlay = ours/base − 1`, then computing
+     `main·(1−crown)·(1+overlay)`, reproduces our official score to 0.004 σ. I wrote that
+     down as a stunning validation before noticing it is **division**: the identity
+     `(main/base)·(base/ours) = main/ours` holds for any three numbers. The agreement is
+     algebra and confirms nothing. What is real is only this:
+
+     - crown hunks over our submit base: **+0.1860 %** (1.90 σ_score, **one** route)
+     - our overlay over the same base: **−0.3316 %** (3.39 σ_score, **two** routes — the
+       per-prompt legs agree independently: wide MTP +0.3098 %, 5/5 slower, t = +3.69 on 4 df)
+     - together they exhaust the +0.5193 % gap *by construction*, so the finding is not
+       the arithmetic but **which lines each factor names**, and that we hold one of them
+       in reverted form.
+
+     Consequences, with about one σ_score of slack on each prediction:
+
+     | action | expected |
+     |---|---|
+     | rebase onto `main`, ship **nothing** of ours | ~**3.24929** (ties first) |
+     | rebase and keep our overlay | ~3.23852 |
+     | submit HEAD as it stands | ~3.23250 — *what we have already done twice* |
+
+     **(D) Rivals are reasoning from overlay artifacts as if they were authored decisions.**
+     newjordan's in-flight note (`status: validating`, 01:24 UTC) states that "ofou
+     **deleted** that concat warm" and builds a whole plan on it ("the crown just deleted
+     it, do not restore it"). The diff of ofou's tree against ofou's own base contains no
+     such deletion. It was collateral damage from a stale base — the same error class we
+     made in 160 when we credited ourselves with a frontier advance. 🟢 **Our git-derived
+     diff outranks the board's prose, and here it contradicts it.**
+
+     **(E) The instrument.** `research/frontier-revert-gate.sh` + 12 mutation controls, all
+     passing. It answers the one question no existing gate can: *what does our next
+     submission delete from the live tip?* The other three all look **backward** —
+     `shipped-surface` at the campaign baseline, `inherited-surface` at pristine upstream,
+     `scored-surface` at our own last scored tree. None looks at the tree we are about to
+     overwrite. Design notes:
+
+     - `editablePaths` is read from `benchmark.json`, not hardcoded, so the packaged set
+       cannot drift from the real one (control 11 proves the filter is load-bearing:
+       `senpai/` and `research/` differ hugely and must **not** appear).
+     - The frontier sha is deliberately **not** pinned — it moves hourly. Its *shape* is
+       asserted instead: author `yukon-autoresearch[bot]`, subject `Accept|Validate
+       submission …`. Control 10 aims the gate at our own `HEAD` and requires refusal,
+       because a gate pointed at a tree we authored reports zero reverts, truthfully and
+       uselessly.
+     - **Fetch** staleness, not commit age, is a hard failure — `main` may legitimately sit
+       still, but a frontier fetched yesterday gives false comfort.
+     - Two status words only. `INTENTIONAL-REPLACEMENT` requires having read the tip's
+       copy plus a ≥40-char reason; `MUST-REBASE` is a **named blocker**, not an escape
+       hatch, and the gate fails while any entry carries it. All six entries carry it now,
+       so the gate is BLOCKED — which is the correct reading of our tree.
+     - 🔴 The trap specific to this gate: its correct answer *today* is FAIL, so "it
+       failed" is not evidence it works. **Control 2 drives it to a clean PASS** by
+       promoting every entry, proving the blocker is data-driven and not baked in.
+
+     **PROCESS.** Four lessons.
+     1. 🔴🔴🔴 **"We are behind" and "we are deleting the thing ahead of us" demand opposite
+        actions, and for a day I could not tell them apart.** I measured the gap correctly,
+        decomposed it correctly, and inferred the wrong task from it — because I never
+        asked what our submission *removes*. Always ask what a change deletes, not only
+        what it adds.
+     2. 🔴🔴🔴 **A stale fetch is a stale claim.** Item 160's lesson was "not available is a
+        claim requiring evidence." The identical error was still live one item later: I
+        held 600 refs and treated them as the board. One `git fetch` moved the crown from
+        "target to copy" to "base we are erasing." **Re-fetch before every conclusion that
+        depends on someone else's state.**
+     3. 🔴🔴 **An exact numerical agreement between quantities defined in terms of each
+        other is not evidence.** Second occurrence in two items (σ_score in 160, this in
+        161). Before quoting an agreement, ask whether the two sides can *fail* to agree.
+     4. 🔴 A gate whose correct answer is FAIL needs a control that makes it PASS,
+        otherwise "hardcoded to fail" and "working" are indistinguishable.

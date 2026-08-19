@@ -1,0 +1,39 @@
+# Acknowledgements for research/frontier-revert-gate.sh
+#
+# One line per file our submission packages that differs from the live
+# leaderboard tip:
+#
+#     path | STATUS | why
+#
+# STATUS must be exactly one of:
+#
+#   INTENTIONAL-REPLACEMENT
+#       We have READ the frontier's copy of this file, we know which of its
+#       lines our overlay deletes, and we accept that. Requires a reason of at
+#       least 40 characters naming what is being dropped.
+#
+#   MUST-REBASE
+#       We have NOT reconciled our copy with the frontier's. Our overlay would
+#       delete accepted work we have not read. This is a NAMED BLOCKER: the gate
+#       fails while any entry carries it. It exists so the condition is visible
+#       and attributable, not so it can be waved through.
+#
+# Blank lines and lines beginning with # are ignored.
+#
+# ---------------------------------------------------------------------------
+# Status as of ledger 161. Every entry below is MUST-REBASE, which is why the
+# gate is BLOCKED. That is the correct reading of our tree: it is three commits
+# of frontier behind and would revert the current crown.
+# ---------------------------------------------------------------------------
+
+Sources/MLXFastModel/Qwen35RuntimeWeights.swift|MUST-REBASE|Our copy sets MLX_MAX_MB_PER_BUFFER to 128 where the tip sets 512. This is hunk 1 of 3 of the current crown, measured at +0.186 % over our submit base. We would delete it and gain nothing.
+
+Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift|MUST-REBASE|Our copy uses setenv overwrite=0 and the 320/128 full-profile constants where the tip uses overwrite=1 and 512/50. Hunks 2 and 3 of the crown. Item 145 catalogued these constants as dead and queued them for deletion; that verdict is what this gate exists to prevent recurring.
+
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift|MUST-REBASE|Carries our E27 and E29 work, but our copy predates fkiene 1cb1f43a, so the overlay also deletes fkiene's 19-line verify-concat JIT warm. We have not read the tip's version of this file. Rival board notes already misattribute that deletion to ofou as a deliberate mechanism.
+
+Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift|MUST-REBASE|Carries E29(c), the MLX_QWEN_MTP_LADDER rung-set override, which has never been scored. The tip's copy has not been diffed against ours line by line.
+
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp|MUST-REBASE|Our E27 static_assert and IPG change, plus whatever the tip has moved in the generated twin since 5068eb8d. Not reconciled.
+
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h|MUST-REBASE|Our E27 overlay already deleted 17 lines here that we never wrote, including a 12-line frontier comment arguing 3+3+2 over 4+4. That deletion shipped in our scored submission. This file is the proven instance of the failure mode, not a hypothetical one.
