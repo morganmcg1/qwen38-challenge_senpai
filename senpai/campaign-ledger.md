@@ -7095,3 +7095,168 @@ against an empty table and is now a real exercise of the code-lines guard.
      a parallel batch, and got a confident, wrong RED.
   6. 🔴 **Quote no constant without its tree.** Sixth occurrence: my `89` had
      to be retracted by the student I gave it to.
+
+## 174. 🟢 THE CAMPAIGN HAS ITS FIRST LEVER PRICED ABOVE THE BOARD FLOOR, AND IT IS A STUDENT'S REFUTED EXPERIMENT SEEN THROUGH A NUMBER HE DID NOT HAVE. Plus: the 7-sigma M=9 prize rests on a cell nobody has ever run.
+
+### (A) E44 r1 was reported as a failure. Re-priced, its surviving fragment is the best lead we have.
+
+alphonse's E44 r1 (`023a3fcf`) is headlined **failed**: net **−7.341 %** over
+the widths it replaced, three of four predictions missed, and he called his own
+mechanism wrong in his own summary. That verdict is correct **as an answer to
+the question he asked**, which was about all widths M ∈ [4,9].
+
+But the per-width table underneath it is not a failure:
+
+```
+             M=7      M=8          M=4
+attn_out   +10.46   +16.65      -41.72
+mlp_down    +4.46   +13.05      -52.39
+```
+
+bit-exact (20/20 lines, `worst_abs 0.0` over 778,567,680 elements per arm),
+Gate 0 passed on pre-registered terms. He recommended narrowing to M ∈ {7,8}
+himself, and r2 is that. What neither of us had at the time was the conversion
+from a per-width percentage to a **score**. We have it now, and it is the whole
+point of item 173:
+
+```
+f{7,8} = 0.1234   share of candidate-leg QMV cost at M in {7,8}
+                  (askeladd E42 histogram x thorfinn E46 T(M), corpus-wide)
+
+M in {7,8} are VERIFY widths -> the serial leg never dispatches them
+                             -> GATED by construction -> +psi_mtp per 1 %
+
+  mlp_down only    +0.7279 % of score   0.95 sd   1.40x crown gap
+  equal shape mix  +0.9275 % of score   1.21 sd   1.79x crown gap
+  attn_out only    +1.1270 % of score   1.47 sd   2.17x crown gap
+```
+
+🟢 **Every shape mix clears the 0.5193 % crown gap; two of three clear the
+0.7678 % board floor.** Nothing else in this campaign has been priced above
+that floor with a mechanism that is already built, already measured faster at
+exactly the widths it touches, and already proved bit-exact.
+
+🔴 **And it only works because it is width-restricted.** The identical cell
+body applied uniformly is worth **−0.179 %/%**, not **+0.674 %/%**. The reason
+this fragment is valuable is precisely the reason the whole was not: M=4 was
+catastrophic, so the range collapsed to the widths where the serial leg cannot
+follow. **The gate that makes it bankable was produced by the failure.**
+
+Banked in `research/qmv_score_leverage.py` as `width_set_share()`,
+`mechanism_value()` and `e44_narrow()`, with the selftest raised 15 → 24. Two
+of the new assertions are the ones I would want to trip: `mechanism_value`
+**raises** if asked to price a width-1-touching change as gated (rather than
+returning a plausible positive number), and the three shape mixes must stay
+ordered. Relayed to alphonse on PR 49 with all four caveats attached.
+
+### (B) 🔴 The 7-sigma M=9 prize rests on a cell that has never been timed.
+
+Item 173(C) priced a 2-stream M=9 at **+5.36 % of score = 7.0 sd** using
+thorfinn's E46 refit. I then read what E46 actually measured: **two contrasts**,
+`<T,6,3>` vs `<T,6,4>` (a predicted null, delivered) and `<T,8,4>` vs `<T,8,3>`
+(+18.72 %). Both excellent. **Neither is `<T,9,5>`.** I quoted a model past its
+data — the sixth-and-a-half instance of the constant-without-its-tree failure,
+this time with the model rather than the constant.
+
+It is not baseless: E46 contrast B measures *the same 3→2 stream transition*
+one width away and implies **−15.77 %**, against the refit's **−14.80 %** at
+M=9. Two routes agreeing at ~15 %. But M=8 buys 2 streams **for free** under
+`NA<=4`, while M=9 buys them for **+21 registers**, and that is exactly the
+confound. E49 (PR 53, thorfinn) splits it:
+
+- **H_local_eaten** — `<T,9,5>` is not faster even in isolation ⇒ the prize
+  never existed and no route to it is worth building.
+- **H_shared_tax** — it is ~15 % faster in isolation but taxes every untouched
+  width through the one shared allocation ⇒ the prize is real and the roadmap's
+  top item becomes "2-stream M=9 in ≤108 registers".
+
+Pre-registered from E27's own loss: `(1+c_local)(1+c_ceiling) = 1+c_net` with
+`c_local = −9.134 %` and `c_net = +0.4947 %` gives **c_ceiling = +10.6 % of QMV
+cost, charged to widths whose source did not change**. ≤2 % refutes 173(C).
+E38 arm (b) — 117 registers against an already-129 ceiling, no tax — is a real
+null already in hand and is the harness control.
+
+🔴 The residual is **robust to E27's own measurement error**: at the board floor
+−0.3321 % is only 0.43 sd, i.e. not distinguishable from zero, but since the
+*expected* +6.153 % dwarfs it, treating E27 as exactly 0 moves the residual only
+to −6.153 %. **The attribution is dominated by the prediction, not the
+measurement** — which is why Arm 1, not Arm 2, is the critical path.
+
+### (C) Three assignments, deliberately non-competing for the GPU.
+
+| PR | student | asks |
+|---|---|---|
+| 52 | askeladd | E48 — is the uniform sign real (3 injection arms, ≥2 doses each), and the per-width histogram for **beagle and medicine separately** |
+| 53 | thorfinn | E49 — `<T,9,5>` isolated, then the shared-ceiling dose-response on untouched widths |
+| 54 | edward | E50 — **zero GPU**: has any of 693 board trees ever moved the serial leg, and the cross-leg slope done as errors-in-variables |
+
+E50 is zero-GPU **on purpose**. The harness has no mutual exclusion (item 170),
+so a third timing student would have been a third contender for a resource two
+already need.
+
+🔴 **E50 carries a methodological trap I nearly set for edward.** A naive OLS of
+`ln(serial)` on `ln(mtp)` across trees is biased **toward 0** by attenuation
+(looks like gating even under a uniform field) *and* **toward +1** by
+common-mode run noise if both legs are timed together. Opposite directions,
+neither small. The fix is that the null model is already in the data: trees
+submitted more than once (`715b1c7576a3`, 4× by 4 solvers) have true signal
+exactly zero, so they yield both the noise variance and the common-mode
+covariance for free. **The variance-harvesting behaviour we declined to imitate
+turns out to be the control arm we needed.**
+
+### (D) The cross-link neither student could have made.
+
+alphonse's r2 pre-registration says the width census "is the highest-value
+missing number" and refuses to predict `f`. askeladd's E48 Part 1 measures
+exactly that, for the only two prompts that score. Neither knew. I have asked
+askeladd for the `{7,8}` and `{4,5,6}` cost shares alongside the M=9 share he
+was already asked for, and told alphonse **not** to run a census and **not** to
+block on one.
+
+Also asked of alphonse: report **per (width, shape)**, never pooled. A pooled
+mean cannot be re-weighted once someone has the census, and the shape spread
+here (0.7279 → 1.1270) is nearly as wide as the board floor itself. **The shape
+census matters almost as much as the width census, and neither exists.**
+
+### (E) Corrections I owe, both from students.
+
+1. 🔴 **alphonse was right that I over-framed r2 as a two-sided trade.** I said
+   the width win and the ceiling change had opposite score signs and implied
+   comparability. He priced the ceiling half at **−0.0064 % of score** against a
+   ~0.63 % floor — 1/100 of resolvable. The sign analysis stands; the symmetry
+   did not. His formulation — *priced and bounded, never measured, not claimed
+   in either direction including if it comes out positive* — is better than mine
+   and is adopted.
+2. 🔴 **The pending-feedback queue is empty for the first time**, and the GPU
+   note got there by being **rewritten, not replayed**. Its three addressees
+   (PRs 47/50/51) had all merged; the hazard became live again only when PRs 52
+   and 53 were created. **An owed message whose recipients have moved on is not
+   owed — it is a different message to different people.** Ask who needs the
+   content now, not who was on the envelope. `pr49b` was retired unsent because
+   all three of its contents had reached alphonse or the ledger by other paths.
+
+### Process
+
+1. 🔴🔴🔴 **Re-price every refuted experiment when the conversion factor
+   changes.** E44 r1 was filed as a failure under the only question it was asked.
+   ψ_serial did not exist when it was designed. The result did not change; the
+   exchange rate did, and a fragment of a refuted experiment is now the best lead
+   on the board. **A negative result is negative with respect to a question, and
+   questions get re-asked at new prices.**
+2. 🔴🔴 **A model is a constant with more places to hide.** "Quote no constant
+   without its tree" has to extend to fitted models: I quoted E46's refit at
+   M=9 when E46's *data* stopped at M=8. Ask which cells the fit saw, not just
+   what tree it came from.
+3. 🔴🔴 **Check whether the two biases in your estimator point the same way.**
+   Attenuation and common-mode noise both apply to E50's slope and they point
+   opposite ways, so "the bias is small" and "the biases cancel" are different
+   claims and neither is free.
+4. 🔴 **Two students' blockers can be each other's deliverables.** alphonse
+   needs `f`; askeladd is measuring the histogram `f` comes from. Neither said
+   so. Reading both pre-registrations in the same sitting is what surfaced it —
+   **the advisor's comparative advantage is the cross-product, not any single
+   PR.**
+5. 🔴 **A literal `%%` in a bare `print()` is a lie in the output.** Introduced
+   two of them into the very instrument whose job is to publish percentages, in
+   the same edit that fixed a third. Format bugs in a reporting tool are silent
+   and they discredit correct arithmetic.

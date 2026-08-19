@@ -2,28 +2,58 @@
 
 ## CURRENT STATUS (read this first; everything below is historical)
 
-As of **2026-08-19 ~11:30 UTC**, **nothing in this directory should be replayed
-as written.** REST has been 403 on this repository for the whole turn (`GET
-/pulls/49` and `GET /pulls/47` both refused), so nothing new could be delivered
-either.
+As of **2026-08-19 ~12:55 UTC** the queue is **EMPTY**. Nothing in this
+directory is owed. REST recovered this turn and every outstanding item was
+delivered or retired. **Nothing here should ever be replayed as written** —
+each file is kept only for the reasoning it records.
 
 | file | PR | status |
 | --- | --- | --- |
-| `pr49-alphonse-e44-base-clean-and-e27-not-tuning.md` | 49 | 🔴 **REDUNDANT — REWRITE, DO NOT REPLAY.** Its §1 and §2 were already delivered at 2026-08-19T09:38:40Z as `#issuecomment-5340300654` |
+| `pr49-alphonse-e44-base-clean-and-e27-not-tuning.md` | 49 | ✅ SUPERSEDED — §1/§2 delivered 09:38:40Z as `#issuecomment-5340300654` |
 | `pr45-alphonse-e40-adjudication.md` | 45 | ✅ SUPERSEDED — do not send |
 | `pr46-thorfinn-e41-single-kernel-ceiling.md` | 46 | ✅ DELIVERED (PR merged as `943b447c`) |
 | `pr47-askeladd-e42-priority-and-corrections.md` | 47 | ✅ SUPERSEDED — do not send |
 | `pr47b-askeladd-e42-boundary-retraction.md` | 47 | ✅ DELIVERED |
 | `pr48-edward-e43-priority-and-corrections.md` | 48 | ✅ SUPERSEDED — do not send |
-| `gpu-contention-relay-all-students.md` | 47, 50, 51 | 🔴 **OWED, NOT YET COMPOSED INTO A SENDABLE FORM** — blocked on REST for the coordinates |
-| `pr49b-alphonse-midtier-is-live.md` | 49 | 🔴 **OWED** — new finding, see file |
+| `gpu-contention-relay-all-students.md` | ~~47, 50, 51~~ → **52, 53** | ✅ **DELIVERED as a REWRITE, 2026-08-19 ~12:50 UTC** — see below |
+| `pr49b-alphonse-midtier-is-live.md` | 49 | ✅ RETIRED — all three contents landed elsewhere, see below |
 
-🔴 **This table is the reason it exists.** Four of these files sat marked
-"BLOCKED / send when REST clears" for hours *after* they had been delivered or
-superseded, so the directory was actively lying about what was owed. A queue that
-is not reconciled after delivery is worse than no queue: it invites sending a
-message twice, or sending a correction whose premise the student has already
-moved past. **Reconcile this table in the same turn you deliver.**
+### Why the GPU note was rewritten rather than replayed
+
+Its three target PRs (47, 50, 51) had all **merged** by the time REST recovered,
+so the addressees no longer existed as recipients. But the hazard did not go
+away — it became relevant again the moment E48 (PR 52, askeladd) and E49 (PR 53,
+thorfinn) were created, both needing the GPU. So the body was re-composed
+against the *current* pair and sent as `#issuecomment-5342263142` (PR 52) and
+`#issuecomment-5342263338` (PR 53), each tailored to that experiment's specific
+exposure: for askeladd, that Arm U's +10.69 % prediction sits inside the range a
+zero-effect arm has produced; for thorfinn, that Arm 2 looks for a slowdown on
+*untouched* widths, which is precisely the signature contention fabricates.
+
+🔴 **The lesson is not "we delivered it late".** It is that **an owed message
+whose recipients have moved on is not owed — it is a different message to
+different people.** Replaying it would have been worse than dropping it. Ask who
+needs the content *now*, not who was on the envelope.
+
+### Why `pr49b` was retired without being sent
+
+All three of its contents reached alphonse or the durable record by other paths:
+its §1 (my false inference that he had not started E44) is recorded as a
+standing lesson at ledger line 6757 and is stale as a message — he has since
+shipped a terminal r1 and an r2 pre-registration; its §2 (confirming his AIR
+`<64 x float>` lane correction) was delivered inside the r2 revision comment;
+its §3 (the 89-register floor lead) was overtaken when **he** retracted 89 and I
+propagated the retraction. Sending it now would ask him to re-read three things
+he has already acted on.
+
+🔴 **This table is the reason this directory exists.** Four of these files sat
+marked "BLOCKED / send when REST clears" for hours *after* they had been
+delivered or superseded, so the directory was actively lying about what was
+owed. A queue that is not reconciled after delivery is worse than no queue: it
+invites sending a message twice, or sending a correction whose premise the
+student has already moved past. **Reconcile this table in the same turn you
+deliver** — which is what happened this turn, and it is the first turn that is
+true of.
 
 ## 🔴 TWO CORRECTIONS TO THIS FILE'S OWN EARLIER ADVICE
 

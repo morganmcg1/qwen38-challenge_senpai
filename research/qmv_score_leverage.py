@@ -88,6 +88,33 @@ def stream_win(m):
     return (STREAM_MS / T_BY_WIDTH[m]) * qmv_share(m)
 
 
+def width_set_share(widths):
+    """Share of candidate-leg QMV cost carried by a SET of widths.
+
+    This is alphonse's `f`: the quantity that converts a per-width speedup into
+    a score. He pre-registered a sensitivity table over it and correctly
+    refused to predict it, because E43 left the depth mixture unidentified.
+    Corpus-wide it is computable from HIST; per-prompt it is not, which is
+    caveat (a) and the reason E48 exists.
+    """
+    return sum(qmv_share(m) for m in widths if m in T_BY_WIDTH)
+
+
+def mechanism_value(widths, win_pct, gated=True, psi=None):
+    """Score % from removing win_pct of QMV cost AT `widths` only.
+
+    Gated by construction whenever 1 not in widths: the serial leg dispatches
+    width 1 alone, so a change confined to wider cells cannot touch the
+    numerator. That is the free gate of item 173(B) -- and it is exactly why a
+    width-restricted mechanism is worth +psi_mtp per 1 % while a uniform one is
+    worth -0.1789 per 1 %.
+    """
+    if 1 in widths and gated:
+        raise ValueError("width 1 is the serial leg; such a change is NOT gated")
+    lev = (psi if psi is not None else PSI_MTP) - (0.0 if gated else PSI_SERIAL)
+    return lev * width_set_share(widths) * win_pct
+
+
 def target_for(score_pct, gated=True, psi=None):
     """QMV cost reduction needed to move the score by score_pct."""
     lev = (psi if psi is not None else PSI_MTP) - (0.0 if gated else PSI_SERIAL)
@@ -149,7 +176,42 @@ def report():
     print("  an order of magnitude; every other lever is BELOW the %.4f %% floor."
           % sd)
     print()
+    f78, e44 = e44_narrow()
+    print()
+    print("E44 r2 NARROW VARIANT, M in {7,8}   (alphonse, PR 49) -- GATED")
+    print("  f{7,8} = %.4f of candidate-leg QMV cost, corpus-wide" % f78)
+    for k in ("mlp_down only", "equal shape mix", "attn_out only"):
+        print("    %-16s  %+.4f %% of score   %5.2f sd   %4.2fx crown gap"
+              % (k, e44[k], e44[k] / sd, e44[k] / 0.5193))
+    print("  🔴 The FIRST buildable item this campaign has priced above the")
+    print("     %.4f %% board floor. Already measured faster at exactly these" % sd)
+    print("     widths, and bit-exact. Its whole value rides on f, which is")
+    print("     CORPUS-WIDE here -- see caveat (a), and E48 Part 1.")
+    print()
     caveats()
+
+
+def e44_narrow():
+    """Price alphonse's E44 r2 narrow simdgroup-matrix variant, M in {7,8}.
+
+    r1 (023a3fcf) measured the SAME cell body faster at exactly these widths and
+    bit-exact (20/20 lines, worst_abs 0.0 over 778,567,680 elements/arm):
+        attn_out  M7 +10.46 %   M8 +16.65 %
+        mlp_down  M7  +4.46 %   M8 +13.05 %
+    It was catastrophic at M=4 (-41.7 / -52.4 %), which is why only the narrow
+    range survived. Reported per (width, shape) so this can be re-weighted once
+    a per-(width, shape) census exists; pooling would destroy that.
+    """
+    wins = {("attn_out", 7): 10.46, ("attn_out", 8): 16.65,
+            ("mlp_down", 7): 4.46, ("mlp_down", 8): 13.05}
+    f = width_set_share((7, 8))
+    out = {}
+    for label, sel in (("attn_out only", lambda k: k[0] == "attn_out"),
+                       ("mlp_down only", lambda k: k[0] == "mlp_down"),
+                       ("equal shape mix", lambda k: True)):
+        v = [wins[k] for k in wins if sel(k)]
+        out[label] = mechanism_value((7, 8), sum(v) / len(v))
+    return f, out
 
 
 def caveats():
@@ -173,6 +235,17 @@ def caveats():
     print("      straddle exactly one boundary. thorfinn found")
     print("      maxTotalThreadsPerThreadgroup saturated at 1024 in both arms,")
     print("      so our occupancy instrument cannot currently see the boundary.")
+    print("  (e) E44's win % was measured on a tree whose kernel-wide max was")
+    print("      89; the bankable variant leaves _m<T,4,4>=104 instantiated, so")
+    print("      the SAME cell runs under a 16.9 % larger shared allocation.")
+    print("      alphonse pre-registered that transfer loss at ~+0.16 % of cell")
+    print("      time, falsified if any of the four cells flips sign or falls")
+    print("      below +2 %. Until r2 lands, e44_narrow() prices a cell body")
+    print("      measured in a DIFFERENT allocation regime -- caveat, not a")
+    print("      correction, but it is the reason r2 exists.")
+    print("      Note the shape spread (0.7279 -> 1.1270) is nearly as wide as")
+    print("      the board floor itself, so the SHAPE census matters almost as")
+    print("      much as the width census. Neither exists yet.")
 
 
 def selftest():
@@ -231,12 +304,44 @@ def selftest():
         HIST[9] = saved
     ck("the constructed mutation was reverted", HIST[9] == 34)
 
+    # Width-set shares must compose and must never exceed the whole.
+    ck("share of all measured widths is 1",
+       abs(width_set_share([w for w in HIST if w in T_BY_WIDTH]) - 1.0) < 1e-9)
+    ck("share of the empty set is 0", width_set_share(()) == 0.0)
+    ck("{7,8} share equals its parts",
+       abs(width_set_share((7, 8)) - (qmv_share(7) + qmv_share(8))) < 1e-12)
+
+    # 🔴 A change that touches width 1 is NOT gated, and asking for it to be
+    # priced as gated must RAISE, not silently return a wrong positive number.
+    raised = False
+    try:
+        mechanism_value((1, 7), 10.0)
+    except ValueError:
+        raised = True
+    ck("pricing width 1 as gated raises", raised)
+    ck("ungated is worth less than gated",
+       mechanism_value((7, 8), 10.0, gated=False)
+       < mechanism_value((7, 8), 10.0, gated=True))
+
+    # E44 r2 narrow variant. Pinned so a silent edit to HIST or psi is caught.
+    f78, e44 = e44_narrow()
+    ck("f{7,8} is 0.1234", abs(f78 - 0.12343) < 5e-5, "got %.5f" % f78)
+    ck("E44 narrow clears the board floor on an equal shape mix",
+       e44["equal shape mix"] > SCORE_BETWEEN_SUBMISSION.pct,
+       "got %+.4f vs floor %.4f" % (e44["equal shape mix"],
+                                    SCORE_BETWEEN_SUBMISSION.pct))
+    ck("E44 narrow clears the crown gap even on its WORST shape mix",
+       e44["mlp_down only"] > 0.5193, "got %+.4f" % e44["mlp_down only"])
+    ck("E44 shape mixes are ordered mlp < equal < attn",
+       e44["mlp_down only"] < e44["equal shape mix"] < e44["attn_out only"])
+
     print()
     if bad:
         print("SELFTEST FAILED: %d case(s): %s" % (len(bad), bad))
         return 1
-    print("SELFTEST PASSED: uniform sign negative, gated targets 1.140 %% / "
-          "0.771 %%, M=9 dominant, E27 residual large and negative.")
+    print("SELFTEST PASSED: uniform sign negative, gated targets 1.140 % / "
+          "0.771 %, M=9 dominant, E27 residual large and negative, E44 narrow "
+          "above the board floor on every shape mix.")
     return 0
 
 
