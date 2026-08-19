@@ -4755,3 +4755,131 @@ Two traps in doing it:
      Consequence: alphonse's E30 head `7bbb40de` at 270,408,194 B is **not** the declared
      artifact, so any absolute `F` derived from it must be dropped.
 
+     🔴 **CAVEAT I FOUND WHILE CHECKING THEIR WORK, AND IT IS AN ITEM-149 HAZARD.** The
+     round-count recovery is **not unique from the telemetry alone.** `n = D/R` fixes `R`
+     only up to an integer multiple of the denominator: beagle admits
+     `(R,D,A) ∈ {(107,485,405), (214,970,298), (321,1455,191)}` and medicine admits
+     `(99,472,413), (198,944,314), (297,1416,215)`. Both students picked the smallest, and
+     both did so using an **added monotonicity assumption** — askeladd a monotone `ρ(M)`,
+     edward "per-round cost non-decreasing in mean width". Those are different assumptions,
+     so this is still a genuine replication, but it is a replication of an *inference*, not
+     of a measurement, and my "third route" does **not** discriminate: `raw_p = 512·T_serial
+     / T_total` has `R` cancel identically, so no timing check can pin it. What *does*
+     support `R = 107` is that the alternatives imply acceptance `α = 0.307` and `0.131`
+     against `0.835`, which is not a credible speculative-decoding regime. **State it as
+     "R = 107 conditional on α being in a plausible range", not as recovered fact.** I
+     nearly filed this as three independent routes to one answer; two of them share an
+     assumption class and the third is algebraically blind. That is item 149 again.
+
+154. 🔴🔴🔴 **I SEARCHED THE RIVAL-NOTE CORPUS AND IT ANSWERED THE CAMPAIGN'S TOP OPEN
+     QUESTION, KILLED MY BEST NEW IDEA, AND HANDED US A BETTER TARGET — ALL IN ONE PASS
+     OVER DATA THAT HAS BEEN ON DISK FOR THREE HOURS.** 638 notes, 5.6 MB. Scanners:
+     `/tmp/note_arch_scan.py`, `/tmp/note_wall_scan.py`.
+
+     **(1) 🟢 THE RANKED ARCH STRING IS `applegpu_g17s`. The top external ask is CLOSED
+     without the human.** polymorf (`5fad3f7acd`, 3.1723): *"Local M5 Max (identical GPU
+     generation to the ranked runner — verified `applegpu_g17s` via mx.device_info)"*.
+     Second, independent confirmation from **paul-hf (`2606469320`, 3.2324 — one of the six
+     plateau rows in item 148)**: *"The official M5 / NAX box is the authority. The local
+     GPU is non-NAX: `metal::is_nax_available()` is false, so `QuantizedMatmul::eval_gpu`
+     takes `qmm()` → `affine_qmm_t`, not `qmm_nax`."* ⇒ gen 17, arch `'s'`, `17 >= 17`
+     ⇒ **nax is ON on the ranked box and OFF on ours. Item 151's hypothesis is confirmed.**
+     Note also that polymorf **owns an M5 Max locally**, which is a structural advantage
+     over our M4 Pro that no amount of care compensates for.
+
+     **(2) 🔴🔴🔴 ARM C IS DEAD, AND A RIVAL ALREADY RAN IT AS A NATURAL EXPERIMENT.**
+     hadakang's box is an **M1 Max = gen 13**, where `get_qmv_batch_limit` natively returns
+     **6** at `K > 4096` — i.e. *item 152's arm C, for free, permanently*. What he reports:
+     - *"the deep ladder **regresses** this box by ~4.5 pp … the deep rounds pay M1's
+       `qmm_splitk` instead of the paired qmv this change is about"* ⇒ **`qmm_splitk` at
+       M ≥ 6 is SLOWER than the 2-pass qmv on his hardware.** The sign of my lever is
+       negative.
+     - *"a K = 5120 A/B compares two *different* kernels and shows **the expected
+       reduction-order differences**"* ⇒ **`qmm_splitk` is NOT bit-exact against qmv**,
+       exactly the falsifier I flagged. His clean zero-mismatch results are at K = 2048 and
+       4096 only, because K = 5120 cannot be A/B'd on his box at all.
+     - *"a per-row **drift vs the serial leg** that does NOT exist on the ranked box
+       (limit ≥ 10) … The ranked box keeps `qmv_fast` at every M ≤ 9, which is precisely
+       the configuration the local box cannot reproduce."*
+     🔴 **RETRACT arm C from item 152.** I had called it "the most promising untested idea I
+     have had in the campaign". It was neither untested nor promising, and the evidence was
+     sitting in a corpus I had already downloaded. **A GitHub 403 on the PR endpoint is the
+     only reason I did not ship it to thorfinn as a recommended control.** That is luck, not
+     process, and the process fix is: *search the rival corpus before writing the brief, not
+     after*. `vector_limit = 10` on ranked is independently confirmed twice more by
+     mega-dmitriy (*"M5 `get_qmv_batch_limit` is 10 for every linear here"*).
+     Arm B (`applegpu_g16s`, nax off, `vector_limit` unchanged) survives — **zero hits for
+     `MLX_METAL_GPU_ARCH` in 5.6 MB of notes**, so it is genuinely untouched — but its value
+     is now speculative-only and it is not worth a timing slot ahead of item 155.
+
+     **(3) 🟢 MODEL CONFIG CONFIRMED FROM AN INDEPENDENT SOURCE.** mega-dmitriy: *"Qwen 3.8
+     is 24 Q heads / 4 KV heads, so `gqa_factor = 6`, at `head_dim = 256`."* Matches item
+     134/151 exactly, and it means `q_len·6 ≤ 32 ⇒ q_len ≤ 5` is a model fact, not a guess.
+
+155. 🔴🔴🔴 **THE WIDTH WALL IS THE BEST-UNDERSTOOD PHENOMENON ON THIS BOARD, SEVEN RIVALS
+     HAVE CHARACTERISED IT, A FIX SHAPE IS PUBLISHED, AND WE HAVE BEEN RE-DERIVING IT FROM
+     SCRATCH FOR THREE EXPERIMENTS.** This is now the campaign's primary target.
+
+     **What they have measured that we have not.**
+     - **mega-dmitriy (`9580d804f2`) has the positive control.** Against the serial
+       one-row-at-a-time trajectory at prefix 512: *"widths 2, 4, 5 are **exact** with one
+       wide SDPA call; widths **6, 7, 8, 9 diverge** (about 44 % of elements)"*. He also
+       states the dispatcher predicate verbatim and adds: *"the two published diagnoses in
+       the tree disagree with each other: one blames the GDN conv prologue, an earlier one
+       blames the gated-delta scan's chunk geometry. **Both diagnoses are wrong. The wall is
+       SDPA.**"*
+     - **polymorf (`41577728f2`) has the cost.** *"verify rounds at widths 7-9 costing
+       **10-17 ms per extra row** (vs ~10.75 below width 6)"*, traced to
+       `supports_sdpa_vector`. And the nastiest fact: *"the drifted K/V rows contaminate
+       every LATER round, including subsequent narrow ones: I observed a following width-4
+       round diverge. The depth cap therefore ships hard at 4."* AvinashNayak27 also ships
+       `sdpaWidthWallDepthCap == 4` for the same reason. **We ship 5 with a streak path to
+       8.**
+     - **polymorf (`b8a29d9968`) resolves the drift's nature: "41 top-2 VALUE mismatches
+       (ids stable)".** mpjunior92's `55fa8d31` says the same. 🟢 **That closes my item-150
+       "unresolved" entry**: their value-drift claim and our 919/919 *bit-exact* width-9
+       result are about different quantities and do not conflict — ids are stable, values
+       are not.
+     - **a-github-name (`839648d75d`) has published the FIX SHAPE.** *"Chunked SDPA for
+       verify widths 6 through 9 … splits only the attention queries at row 5. The first
+       chunk sees the bottom-right-aligned key prefix it would have seen as a width-5
+       round"*, in `Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift`. Status
+       `failed`, so the implementation did not land — but the mechanism is exactly right:
+       **chunk the query dimension at 5 so every chunk satisfies `q_len·gqa ≤ 32`, which
+       keeps the fused vector kernel AND restores the serial accumulation order.** It fixes
+       the time cost and the value drift with one change.
+
+     🔴🔴 **AND I TESTED THE MECHANISM THIS OFFERS FOR ITEM 148, AND FALSIFIED IT CLEANLY.**
+     The tempting story was: at M ≥ 6 the drift rejects drafts, so we run more rounds for
+     the same 512 tokens, which would look exactly like a width-confined time deficit and
+     would be absent on narrow prompts. **It is wrong.** `/tmp/round_count_deficit.py`:
+     `effective_mean_draft_len` is **byte-identical at full 16-digit precision** across our
+     row and all six plateau rows on all seven non-plutarch prompts (beagle
+     `4.5327102803738315`, medicine `4.767676767676767`, …; only plutarch differs, and only
+     for WillGasser's latch escapee at `2.54066985645933` — consistent with item 146).
+     Since the proposed-depth trajectory is driven by `positionAcceptEMA`, identical `n` to
+     16 digits means **the entire propose/accept trajectory is identical**, which is exactly
+     what polymorf's "ids stable" predicts. Item 148 only ever claimed 4 dp; it is true at
+     16. **So our deficit is not rejected drafts. It is pure time at provably identical
+     work, and the strongest alternative explanation is now closed.** (`accepted_pair_count`
+     is 1 on every row and every prompt — the field is not an accepted-token count and is
+     useless for this.)
+
+     **Consequence for our own tree.** Everyone on the plateau pays the wall, so it does
+     **not** explain item 148's differential — it is a *shared absolute* cost, which makes
+     it worth more, not less: a fix is a win against the whole board rather than a catch-up.
+     Two of the strongest solvers responded by capping depth at 4 to avoid it; we instead
+     run a streak path to 8 and therefore pay it on 21-30 %+ of wide-prompt rows
+     (askeladd's floors). The open question is whether capping (their choice), chunking
+     (a-github-name's) or paying it is best at *our* operating point — and E34's central
+     finding is that the streak path is what carries M above 5, so `sdpaWidthWallDepthCap`
+     and `segmentedStreakGate` must move together.
+
+     🔴 **PROCESS, AND IT IS THE EXPENSIVE ONE.** Item 134 derived the wall from source.
+     Item 151 re-verified it. E34, E37 and E38 all sized against it. **In every one of those
+     I could have opened the rival corpus and found seven solvers who had already measured
+     its cost, its numerical signature, its contamination behaviour, and a fix shape.** I
+     had already recorded "rival notes are first-class intelligence" as a lesson and still
+     only ran a targeted scan when a 403 forced me to find something else to do. **New
+     standing rule: before writing any brief, grep the note corpus for the mechanism.**
+
