@@ -152,16 +152,24 @@ CLANG_MODULE_CACHE_PATH="${PWD}/.build-worker/clang-module-cache" \
 if ((status == 0)); then
   tools/build-mlx-metallib.sh --all-build-roots > "${out}/build-metallib.log" 2>&1 || status=1
 fi
-# Freshness, not existence: a silently-skipped rebuild would time the previous
-# arm and read as a null.
+# Content, not mtime: read this arm's routing back out of the image that will
+# be timed. The QMV family is JIT-compiled from a source string inside
+# mlx-generated/quantized.cpp, so every width's dispatch call is linked into
+# the worker verbatim and the binary can be asked directly which arm it is.
+#
+# An mtime comparison cannot do this job. llbuild signs C and C++ inputs by
+# content, so rewriting a file with identical bytes correctly relinks nothing
+# and leaves a product older than its sources. That is exactly the `shipped`
+# arm, whose bytes equal the base bytes by construction.
+#
+# Only the worker is probed. mlxfast-swift embeds no Metal text at all; it is a
+# driver that spawns the worker, so its build status is the whole of its
+# contribution here.
 if ((status == 0)); then
-  for product in .build/release/mlxfast-swift .build-worker/release/mlxfast-runtime-worker; do
-    stale="$(find Package.swift Package.resolved Sources Vendor -newer "${product}" -print -quit 2>/dev/null || true)"
-    [[ -z "${stale}" ]] || {
-      echo "e59_e2e_run: ${product} is older than ${stale}; refusing to time a stale binary" >&2
-      status=1
-    }
-  done
+  python3 research/e59_binary_probe.py "${out}/arm.json" \
+    .build-worker/release/mlxfast-runtime-worker \
+    > "${out}/binary-probe.log" 2>&1 || status=1
+  cat "${out}/binary-probe.log"
 fi
 ((status == 0)) || { echo "e59_e2e_run: build failed for ${arm}" >&2; exit 5; }
 
@@ -182,6 +190,7 @@ fi
   echo "twin_digests=$(shasum -a 256 "${SCORED_FILES[@]}" | awk '{printf "%s ", $1}')"
   echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
   echo "worker_sha256=$(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | cut -d' ' -f1)"
+  echo "worker_binary_probe=$(head -1 "${out}/binary-probe.log" | cut -d' ' -f1-3)"
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   echo "cool_gate_requested=$((1 - hot))"
   echo "startup_memory_profile=${DARKBLOOM_STARTUP_MEMORY_PROFILE}"
