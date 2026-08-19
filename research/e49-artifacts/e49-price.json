@@ -1,0 +1,64 @@
+{
+  "ceiling": {
+    "control-free": {
+      "leg_pct": -0.087568,
+      "score_pct": -0.08756800000000453,
+      "tax_pct": 0.13
+    },
+    "shipped-referenced": {
+      "leg_pct": -0.1434768,
+      "score_pct": -0.14347679999998642,
+      "tax_pct": 0.213
+    }
+  },
+  "e27": {
+    "ceiling_bound_pct": 0.14347679999998642,
+    "e49_m9_score_pct": 1.3624928190187235,
+    "m5_must_add_qmv_pct": 2.515725681441098,
+    "m5_requirement": {
+      "10.0": 25.157256814410978,
+      "15.0": 16.771504542940654,
+      "20.0": 12.578628407205489,
+      "30.0": 8.385752271470327
+    },
+    "observed_score_pct": -0.3321,
+    "residual_pct": -1.6945928190187236,
+    "unexplained_pct": -1.5511160190187372
+  },
+  "harness": "ranked",
+  "kink_pct": 1.0550943463804252,
+  "leverage_ref": "ccd1af6",
+  "marginal_weights": {
+    "beagle": 0.483693625973383,
+    "medicine": 0.516306374026617
+  },
+  "measured": {
+    "ceiling_tax_control_free_pct": 0.13,
+    "ceiling_tax_pct": 0.213,
+    "m9_win_pct": 12.255
+  },
+  "prize_by_share": {
+    "15.0": {
+      "leg_gain_pct": 1.2382452,
+      "qmv_removed_pct": 1.83825,
+      "score_pct": 1.1436832468677993
+    },
+    "20.48": {
+      "leg_gain_pct": 1.6906174464000003,
+      "qmv_removed_pct": 2.5098240000000005,
+      "score_pct": 1.3624928190187235
+    },
+    "30.0": {
+      "leg_gain_pct": 2.4764904,
+      "qmv_removed_pct": 3.6765,
+      "score_pct": 1.742614557499933
+    },
+    "53.45": {
+      "leg_gain_pct": 4.412280396,
+      "qmv_removed_pct": 6.5502975,
+      "score_pct": 2.6789438397881504
+    }
+  },
+  "saturation_cap_pct": 4.715610629070932,
+  "target_for_10_6": null
+}

@@ -1,0 +1,1385 @@
+{
+  "all_ok": true,
+  "arms": [
+    {
+      "dispatched_reg_max": 108,
+      "dispatched_widths": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "doc": "the tip, unmodified: kernel-wide max 108 at <T,7,4>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 163,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_acc_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": [
+          "[4 x <2 x float>]"
+        ],
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": []
+      },
+      "entry_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 55,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 1
+      },
+      "entry_point_reg_max": 163,
+      "family": "control",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "shipped",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "dispatched_reg_max": 83,
+      "dispatched_widths": [
+        9
+      ],
+      "doc": "only case 9 in the wide tier, <T,9,3> (3 streams)",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 135,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_acc_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": [
+          "[4 x <2 x float>]"
+        ],
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": []
+      },
+      "entry_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 42,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 1
+      },
+      "entry_point_reg_max": 135,
+      "family": "isolated",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 3
+      },
+      "na_cells": {
+        "3": [],
+        "4": [],
+        "5": [],
+        "6": [],
+        "7": [],
+        "8": [],
+        "9": [
+          3
+        ]
+      },
+      "name": "iso3",
+      "status": "ok",
+      "streams": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 3
+      },
+      "width_cells": {
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "dispatched_reg_max": 129,
+      "dispatched_widths": [
+        9
+      ],
+      "doc": "only case 9 in the wide tier, <T,9,5> (2 streams)",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 181,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_acc_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": [
+          "[4 x <2 x float>]"
+        ],
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": []
+      },
+      "entry_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 43,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 1
+      },
+      "entry_point_reg_max": 181,
+      "family": "isolated",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 5
+      },
+      "na_cells": {
+        "3": [],
+        "4": [],
+        "5": [],
+        "6": [],
+        "7": [],
+        "8": [],
+        "9": [
+          4,
+          5
+        ]
+      },
+      "name": "iso5",
+      "status": "ok",
+      "streams": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 2
+      },
+      "width_cells": {
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1456,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45
+        }
+      }
+    },
+    {
+      "dispatched_reg_max": 108,
+      "dispatched_widths": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "doc": "unreachable case 10 = <T,4,4> (104 regs, below the 108 max)",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 164,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_acc_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": [
+          "[4 x <2 x float>]"
+        ],
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": []
+      },
+      "entry_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 56,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 1
+      },
+      "entry_point_reg_max": 164,
+      "family": "shared",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "dose_null",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "dispatched_reg_max": 108,
+      "dispatched_widths": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "doc": "unreachable case 10 = <T,9,5> (129): E27's exact ceiling, no dispatched width changed",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 181,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_acc_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": [
+          "[4 x <2 x float>]"
+        ],
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": []
+      },
+      "entry_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 57,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 1
+      },
+      "entry_point_reg_max": 181,
+      "family": "shared",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "dose_129",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "dispatched_reg_max": 108,
+      "dispatched_widths": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "doc": "unreachable case 10 = <T,12,6>: a deliberately large dose well past 129, so a null is a null at a dose we cannot have missed",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 197,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_acc_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": [
+          "[4 x <2 x float>]",
+          "[4 x <6 x float>]"
+        ],
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": []
+      },
+      "entry_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 57,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 1
+      },
+      "entry_point_reg_max": 197,
+      "family": "shared",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "dose_big",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "dispatched_reg_max": 108,
+      "dispatched_widths": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "doc": "unreachable case 10 = <T,16,8>: the largest dose that compiles",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 230,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_acc_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": [
+          "[4 x <2 x float>]",
+          "[4 x <8 x float>]"
+        ],
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": []
+      },
+      "entry_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 57,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 1
+      },
+      "entry_point_reg_max": 230,
+      "family": "shared",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "dose_huge",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "dispatched_reg_max": 129,
+      "dispatched_widths": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "doc": "E27's M=9 edit on the full table: local + shared together",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 181,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_acc_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": [
+          "[4 x <2 x float>]"
+        ],
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": []
+      },
+      "entry_allocas": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 56,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 1
+      },
+      "entry_point_reg_max": 181,
+      "family": "composite",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 5
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          4,
+          5
+        ]
+      },
+      "name": "e27_replica",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 2
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1456,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45
+        }
+      }
+    }
+  ],
+  "dispatched_reg_max": {
+    "dose_129": 108,
+    "dose_big": 108,
+    "dose_huge": 108,
+    "dose_null": 108,
+    "e27_replica": 129,
+    "iso3": 83,
+    "iso5": 129,
+    "shipped": 108
+  },
+  "dose_candidates": {
+    "<T,10,5>": {
+      "acc_alloca_types": [],
+      "allocas": 1,
+      "na_cells": [
+        5
+      ],
+      "over_shipped_max": 17,
+      "peak_live_regs": 125,
+      "status": "ok",
+      "streams": 2
+    },
+    "<T,12,6>": {
+      "acc_alloca_types": [
+        "[4 x <6 x float>]"
+      ],
+      "allocas": 2,
+      "na_cells": [
+        6
+      ],
+      "over_shipped_max": 36,
+      "peak_live_regs": 144,
+      "status": "ok",
+      "streams": 2
+    },
+    "<T,14,7>": {
+      "acc_alloca_types": [
+        "[4 x <7 x float>]"
+      ],
+      "allocas": 2,
+      "na_cells": [
+        7
+      ],
+      "over_shipped_max": 49,
+      "peak_live_regs": 157,
+      "status": "ok",
+      "streams": 2
+    },
+    "<T,16,8>": {
+      "acc_alloca_types": [
+        "[4 x <8 x float>]"
+      ],
+      "allocas": 2,
+      "na_cells": [
+        8
+      ],
+      "over_shipped_max": 69,
+      "peak_live_regs": 177,
+      "status": "ok",
+      "streams": 2
+    },
+    "<T,4,4>": {
+      "acc_alloca_types": [],
+      "allocas": 1,
+      "na_cells": [
+        4
+      ],
+      "over_shipped_max": -4,
+      "peak_live_regs": 104,
+      "status": "ok",
+      "streams": 1
+    },
+    "<T,5,5>": {
+      "acc_alloca_types": [],
+      "allocas": 1,
+      "na_cells": [
+        5
+      ],
+      "over_shipped_max": 17,
+      "peak_live_regs": 125,
+      "status": "ok",
+      "streams": 1
+    },
+    "<T,7,4>": {
+      "acc_alloca_types": [],
+      "allocas": 2,
+      "na_cells": [
+        3,
+        4
+      ],
+      "over_shipped_max": 0,
+      "peak_live_regs": 108,
+      "status": "ok",
+      "streams": 2
+    },
+    "<T,8,5>": {
+      "acc_alloca_types": [],
+      "allocas": 2,
+      "na_cells": [
+        3,
+        5
+      ],
+      "over_shipped_max": 21,
+      "peak_live_regs": 129,
+      "status": "ok",
+      "streams": 2
+    },
+    "<T,9,5>": {
+      "acc_alloca_types": [],
+      "allocas": 2,
+      "na_cells": [
+        4,
+        5
+      ],
+      "over_shipped_max": 21,
+      "peak_live_regs": 129,
+      "status": "ok",
+      "streams": 2
+    }
+  },
+  "entry_point_reg_max": {
+    "dose_129": 181,
+    "dose_big": 197,
+    "dose_huge": 230,
+    "dose_null": 164,
+    "e27_replica": 181,
+    "iso3": 135,
+    "iso5": 181,
+    "shipped": 163
+  },
+  "head": "1f7e1bf2134c242ca80a031d2fd81278fabbc763",
+  "instrument_caveat": "peak_live_regs is a textual peak-live-SSA heuristic (ledger 157). Shape and direction only; the absolute number is not a hardware register count and no decision here rests on its level.",
+  "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>",
+  "shipped_max": 108
+}

@@ -1,0 +1,96 @@
+{
+  "arm1_isolated": {
+    "contrast": "<T,9,5> (2 streams) vs <T,9,3> (3 streams), isolated kernels",
+    "isolation": "only case 9 survives in the >=4096 crossrow switch, so the cell under test is the only crossrow body the shared allocation must cover. Census: entry heuristic 135 (iso3) vs 181 (iso5), against 163 for the shipped table.",
+    "measured_reference_t9_ipg3_ms": 186.098,
+    "predicted_ms_from_e46_refit": -27.532,
+    "predicted_pct_from_contrast_b": -15.77,
+    "predicted_pct_from_e46_refit": -14.8,
+    "readout": "T(9) = sum over the 8 scored shapes of calls_per_verify * seconds_per_call, ms, identical to E46."
+  },
+  "arm2_shared": {
+    "dose_knob": "an unreachable `case 10:` in the >=4096 switch. ntg.x == M and the workload never verifies more than 9 rows, so the cell is compiled and allocated for but never executed: no dispatched width's instructions change.",
+    "doses": [
+      {
+        "arm": "shipped",
+        "cell_max": 108,
+        "entry_heuristic": 163,
+        "role": "control"
+      },
+      {
+        "arm": "dose_null",
+        "cell": "<T,4,4> = 104 regs",
+        "cell_max": 108,
+        "entry_heuristic": 164,
+        "role": "null: adds a branch WITHOUT raising the max. Reproduces E38 arm (b)'s null (117 under a 129 ceiling, no tax). Predicted 0 %; it is also the contention detector, because a peer student's GPU work would inflate this arm exactly like a real tax."
+      },
+      {
+        "arm": "dose_129",
+        "cell": "<T,9,5> = 129 regs",
+        "cell_max": 129,
+        "entry_heuristic": 181,
+        "role": "E27's exact ceiling. Predicted +10.6 %."
+      },
+      {
+        "arm": "dose_big",
+        "cell": "<T,12,6> = 144 regs",
+        "cell_max": 144,
+        "entry_heuristic": 197,
+        "role": "dose-response: if the 108->129 interval contains a step, a larger dose must not be smaller."
+      },
+      {
+        "arm": "dose_huge",
+        "cell": "<T,16,8> = 177 regs",
+        "cell_max": 177,
+        "entry_heuristic": 230,
+        "role": "a dose we cannot have missed. A null here refutes the mechanism far more strongly than a null at 129 alone."
+      },
+      {
+        "arm": "e27_replica",
+        "cell_max": 129,
+        "entry_heuristic": 181,
+        "role": "composite: E27's own M=9 edit. Falsifies composite == local + tax rather than assuming it."
+      }
+    ],
+    "ordering": "palindromic within a session so every arm has the same mean sweep position and linear thermal drift cancels; the null is interleaved between positive doses, never run once at the start.",
+    "prediction_kind": "integral across 108 -> 129, not a per-register slope",
+    "prediction_pct_at_129": 10.6,
+    "untouched_widths": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  "assignment": "qwen38-r1-e49-m9-two-stream-local-vs-shared",
+  "base_sha": "fb0a09d3912477d94ed631bdb90fd04172d7b4cf",
+  "decision_rules": {
+    "arm1_eaten": "delta_pct(9) >= -2 % => H_local_eaten. STOP. Do not run arm 2; report that ledger 173(C)'s largest roadmap item does not exist.",
+    "arm1_local_win": "delta_pct(9) <= -8 % => the 2-stream prize is real in isolation; run arm 2.",
+    "arm1_middle": "-8 % < delta_pct(9) < -2 % => a partial local win. Report the interval and still run arm 2, because the tax question stays decision-relevant at any non-zero local win.",
+    "arm2_confirmed": "pooled tax over untouched widths >= +8 % at dose_129 => 173(C)'s attribution is confirmed. STOP; the follow-up is a design problem, not a measurement.",
+    "arm2_invalid": "|tax| > 2 % on dose_null invalidates the ladder: either the harness moves under a recompile alone, or something else was on the GPU. Report and do not interpret the positive doses.",
+    "arm2_refuted": "|pooled tax| <= 2 % at dose_129 AND at the larger doses => 173(C) is refuted and E27's loss is something else.",
+    "control_bar": "the largest |delta_pct| on any width whose code is byte-identical between the two builds. E46's worst untreated control was +6.41 % at M=1 (a warmup width) and <=0.4 % everywhere else.",
+    "effect": "delta_pct(M) = 100 * (T_treated(M) / T_control(M) - 1)",
+    "no_significance_chasing": "reps buy precision, only the design buys power. No arm is extended to chase a p-value.",
+    "replicate_floor": "MDE(M) = max(|T_a1 - T_a2|, |T_b1 - T_b2|) over the same-build replicates, as E46. With n=2 the honest floor is the observed same-build spread, not a t-statistic."
+  },
+  "e46_refit": {
+    "a_ms_per_row": 9.624,
+    "b_ms_per_stream": 27.532,
+    "c": 16.757,
+    "source": "research/qwen38-r1-e46-stream-vs-groupwidth.md, PR #51, base 01f69e18"
+  },
+  "head_at_preregistration": "1f7e1bf2134c242ca80a031d2fd81278fabbc763",
+  "instrument_honesty": {
+    "contention": "MLXFAST_LOCAL_RUN_LOCK_DIR=/tmp/mlxfast-shared so the run lock is shared with askeladd's PR 52, plus a per-leg AGXAccelerator utilization gate whose first (interval) sample is discarded and which requires 3 consecutive busy samples. The gate is self-tested against real Metal load in both directions before any leg is trusted.",
+    "register_readout": "There is no true register or occupancy readout on this box (ledger 157). peak_live_regs is a textual peak-live-SSA heuristic; it is used ONLY to choose and order the doses, never as a result.",
+    "scored_surface": "Every arm patches quantized.h and its generated twin and reverts them on every exit path. The branch keeps zero scored-surface diff versus the frontier.",
+    "thermal": "This host's idle GPU floor is ~43.2 C, above benchmark.sh's 40 C target, so every leg records cool_gate_passed_real_gate=false and gate_qualified_for_timing=false. Directional causal evidence inside one counterbalanced session only; never a ranked or gate-qualified score.",
+    "timing_readout": "research/run-qmv-curve.sh, the same harness and the same T(M) definition as E46, so E46's numbers are directly comparable."
+  }
+}
