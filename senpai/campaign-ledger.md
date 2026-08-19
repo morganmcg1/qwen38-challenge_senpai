@@ -1051,7 +1051,11 @@ evidence or a changed condition; “try again” is not enough.
     returns zero rows looks exactly like a board with no promoted rows, which is
     the worst possible failure mode for an intelligence query.
 
-67. **THE RANKED SERIAL LEG IS NOT PINNED. It is the candidate's own build,
+67. 🔴 **RETRACTED — WRONG. See item 76.** The serial leg runs the pinned baseline
+    tree; the denominator never moves. Kept here only so the mistake and its cost
+    stay visible. Original text follows.
+
+    **THE RANKED SERIAL LEG IS NOT PINNED. It is the candidate's own build,
     measured in the same session.** I had recorded the opposite as an established
     fact, and it was load-bearing for E29's verdict and for every score
     projection I have written. Sources, three independent:
@@ -1071,7 +1075,12 @@ evidence or a changed condition; “try again” is not enough.
     normaliser before the 2026-08-14 anchor move, and it is still carried in the
     contract and validated at `:3061-3068` — as a reported diagnostic only.
 
-68. **The shipped `asyncEval` ladder is worth ~+20 % of SCORE if disabled,
+68. 🔴 **RETRACTED — THE EXPLOIT DOES NOT EXIST. See items 76 and 84.** Disabling
+    the ladder cannot slow a denominator we do not run; it would only slow our own
+    candidate leg. The escalation is withdrawn. Kept here so the reasoning error
+    stays auditable. Original text follows.
+
+    **The shipped `asyncEval` ladder is worth ~+20 % of SCORE if disabled,
     entirely by slowing the control leg. DECLINED, and escalated.**
     Mechanism: `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2118-2132`
     rung set `[0,1,9,19,29,39,49,57]` with an `MLX_QWEN_MTP_LADDER` override, and
@@ -1175,6 +1184,219 @@ evidence or a changed condition; “try again” is not enough.
     bank findings in the ledger and publish by push, keep local source analysis
     going, and retry the API afterwards. Do not run foreground sleep/poll loops
     waiting on it.
+
+76. 🔴🔴🔴 **RETRACTION OF ITEMS 67 AND 68: the ranked serial denominator IS
+    pinned, and candidate code cannot move it.** Last turn I "corrected" the
+    campaign's standing premise on documentation alone. The premise was right and
+    the correction was wrong. Four receipts, in ascending order of authority:
+    - `.github/workflows/qwen-mtp-ranked-benchmark.yml:2907-2908`, describing the
+      only timed measurement: *"Per accepted pair, alternating order: **baseline:
+      pinned baseline tree**, serial K=1 target decode over the hidden benchmark
+      golden; **candidate: this workspace**, native-MTP speculative decode over
+      the SAME golden."*
+    - the same file `:2374-2375`: *"the BASELINE leg keeps the section-9d pinned
+      head out of the pinned baseline tree unconditionally. That asymmetry is what
+      keeps the paired ratio anchored: **the denominator never moves**."*
+    - `:2971` hands the wrapper `--baseline "${MLXFAST_QWEN_MTP_BASELINE_RESOLVED}"`,
+      resolved from `/opt/bench-runner/baseline/qwen3.8-27b-mtp-v1/current`
+      (`:224`), i.e. a box-owned tree, not the submission workspace. The contract
+      agrees: `mtp_head_delivery.applies_to = "candidate_leg_only"`.
+    - **the population test, which is the one that settles it.** Over the 402
+      scored ranked submissions on this board (item 77), `baseline_serial_seconds_
+      per_token_mean` has sd **0.106 %** (range 0.037907–0.038111) while
+      `candidate_mtp_seconds_per_token_mean` has sd **25.9 %** (0.013929–0.041381).
+      `corr(score, baseline_serial) = +0.049`; `corr(score, candidate_mtp) =
+      −0.942`. The single worst candidate on the board decodes at 0.041381 s/tok
+      (score 0.9266) and still reports a serial leg of 0.038035. 402 different
+      candidate trees, one denominator.
+
+    **What misled me** was the workflow's own comment at `:3083-3085`: *"Both means
+    come from the SAME thermally-gated session for that prompt, so the serial leg
+    IS the normaliser and no pinned reference is consulted anywhere in the scoring
+    path."* Both halves are true and neither says what I read into them. The
+    *session* is shared — which is exactly why the denominator's noise is only
+    0.1 % — while the *tree* that runs the serial leg is the pinned baseline. "No
+    pinned reference" retires the `noop_decode_speedup` divisor, not the serial
+    binary.
+
+    Consequences:
+    - **Item 68's ~20 % `asyncEval`-ladder score exploit DOES NOT EXIST.** You
+      cannot slow a denominator you do not run. Disabling the ladder can only slow
+      our own candidate leg — `ladderActive` covers `S <= 9`, which includes the
+      candidate's non-drafting `S = 1` rounds (451 of them on plutarch alone) and
+      every verify width. The escalation to the human is **withdrawn**; there was
+      never a decision to make.
+    - **There is exactly ONE derivative: candidate MTP seconds per token.**
+      `corr = −0.942` is the whole game.
+    - Reporting the serial leg is still worth doing, but as a **free in-session
+      thermal control** — a population sd of 0.106 % makes it the tightest
+      instrument on the board — never as a term we can move.
+    - The E30/E31/E32 briefs that carried the two-derivative claim were corrected
+      in writing the same turn.
+
+    **Process lesson, and it is the expensive one:** I shipped a correction to
+    three students and an ethics escalation to the operator from documentation
+    alone, when the data that refutes it was one authenticated GET away. *When a
+    scoring claim can be tested against the board's own telemetry, test it before
+    publishing it.* Publishing a retraction one turn later costs more than the
+    hour the test would have taken.
+
+77. 🟢🟢🟢 **The ranked benchmark publishes FULL PER-PROMPT TELEMETRY for every
+    submission on the board — ours and every competitor's — and the campaign
+    never read it.** One authenticated GET:
+    ```
+    curl -H "Authorization: Bearer $YUKON_API_TOKEN" \
+      https://api.yukon.org/api/benchmarks/5d1ee4d7-80bd-4555-b182-6505f26ef495/submissions
+    ```
+    `YUKON_API_TOKEN` is already in the advisor shell environment; the benchmark
+    id comes from `yukon benchmark list`. The response is ~8 MB, 623 submissions,
+    each carrying `status`, `officialScore`, `submissionCommitSha`,
+    `promotionStatus`, `promotedSourceRef`, the solver's full public `note`, and
+    `officialMetrics` with **`per_prompt[8]`**: `raw_ratio_of_means`,
+    `serial_seconds_per_token_mean`, `mtp_seconds_per_token_mean`,
+    `effective_mean_draft_len`, `non_drafting_round_count`,
+    `prefill_seconds_per_token`, `head_provenance_sha256`, `parity_ok`. Prompt
+    identity comes from `fixtures/qwen3_8_27b_mtp_track.json`
+    `timed_prompt_pool[].sha256 -> r2_path`.
+    Why it sat unread: `yukon submissions` hard-truncates the `metrics` column at
+    80 characters, has no `--json`, and ignores `COLUMNS`. `GET
+    /api/submissions/<id>` needs the full UUID, which the table does not print —
+    take UUIDs from the list endpoint or from `git ls-remote upstream
+    'refs/heads/submissions/*'`. **Read this before designing any experiment.**
+
+78. 🔴🔴 **The score is decided by exactly TWO of the eight prompts, and they are
+    `beagle` and `medicine`.** `median_rule =
+    even_n_mean_of_two_central_order_statistics`, so with n=8 the score is the
+    mean of the 4th and 5th ranked per-prompt ratios and `d(score)/d(prompt)` is
+    **0.5** for those two and **0** for the other six. At the frontier row
+    (`b0994092`, 3.24418) the sorted ratios are
+
+    | rank | prompt | ratio | mean draft rows |
+    |---|---|---:|---:|
+    | 1 | plutarch | 1.253 | 0.15 |
+    | 2 | drama | 1.924 | 2.30 |
+    | 3 | travel | 2.188 | 2.66 |
+    | **4** | **beagle** | **3.141** | **4.53** |
+    | **5** | **medicine** | **3.347** | **4.77** |
+    | 6 | essays | 3.394 | 5.43 |
+    | 7 | republic | 3.420 | 5.27 |
+    | 8 | botany | 3.449 | 5.78 |
+
+    (4th + 5th)/2 = 3.2442 ✓. **The bottom three are unreachable and worth
+    nothing**: travel would need +43 % and plutarch +150 % merely to enter the
+    window. The receipt that this is arithmetic and not theory: WillGasser's
+    `de7981ae` scores **plutarch at 2.175** with 6 non-drafting rounds where every
+    other frontier clone scores 1.253 with 449 — a **+74 % gain on that prompt** —
+    and his board score is 3.24078, inside the clone band. Kill any proposal aimed
+    at plutarch, drama or travel. Beagle is also the *low* member of the top
+    cluster (3.141 against 3.347–3.449) and has the shortest drafts of the five,
+    so it is simultaneously the cheapest and the highest-leverage prompt on the
+    board.
+
+79. **Ranked repeatability, measured properly.** Per-leg session noise is sd
+    **0.106 %** (the serial-leg population, item 76). Two byte-identical trees
+    (`c0e34afd`, `5068eb8d`) scored 0.008 % apart — a lucky pair, not the noise.
+    The top eight rows share one head digest and one per-prompt draft-length
+    vector yet span **3.23223–3.24418 (0.37 %)**. Working rule: **< 0.5 % is not
+    resolvable on one ranked run; require ≥ 1 % projected gain before spending a
+    slot**, and never quote the 0.008 % pair as the noise floor again.
+
+80. 🔴🔴🔴 **The MTP HEAD is the dominant lever on this leaderboard, and our own
+    trained head cost us ~5 % of score.** Ranked maxima by `head_provenance_sha256`:
+
+    | head digest | subs | solvers | best score |
+    |---|---:|---:|---:|
+    | `157f750e` (organizer-pinned) | 66 | 19 | 2.834 |
+    | `cc209e30` | 107 | 52 | 2.930 |
+    | `7d627027` | 64 | 27 | 3.086 |
+    | `477ba726` | 46 | 21 | 3.168 |
+    | **`559b24eb`** | **83** | **30** | **3.244** |
+    | `5cbc5537` (ours) | 1 | 1 | 2.861 |
+    | `2f6805e1` (ours) | 1 | 1 | 3.069 |
+
+    Every generation is a competitor-published head on Hugging Face at an
+    immutable revision, adopted by dozens of solvers through the promoted tree's
+    `mtp-head.manifest.json`. The board's whole trajectory is that ladder. Our
+    rejected 3.069 row declared **our own** head
+    `hf:morgan/qwen38-27b-mtp-r20k-lr3-q4-g64-q2-rerank@fd4a99c5` (`2f6805e1`,
+    427,742,680 B, "40-tensor LR3 refinement"); the frontier declares
+    `hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae628274` (`559b24eb`,
+    427,742,600 B). At comparable code our head proposes **5–13 % fewer draft rows
+    on 7 of 8 prompts** (beagle 4.198 vs 4.53, botany 5.040 vs 5.78, republic
+    4.683 vs 5.27, essays 5.000 vs 5.43, medicine 4.519 vs 4.77, drama 2.163 vs
+    2.30, travel 2.575 vs 2.66) — it is simply worse at acceptance, and the
+    contract says acceptance is the game
+    (`mtp_head_delivery.safety_argument`: *"a substituted head can move the accept
+    rate — which is the game — and cannot move the output"*). Draft-length
+    *decisions* cannot be explained by the kernel or memory-policy lines that also
+    differed, which is what makes the attribution safe. The pending `ca9251b8`
+    declares `559b24eb`, so the loss is already reverted. **Rule: never ship a head
+    that has not beaten the best public head on ranked evidence. It is one JSON
+    file in `optionalEditablePaths`, and getting it wrong is worth more than every
+    kernel result the campaign has produced.**
+
+81. 🔴🔴 **`yukon submit` is a REPLACE overlay, so anything the promoted tree has
+    and our branch lacks is silently REVERTED by our own submission.**
+    `git diff --stat 5068eb8d dbf91c6c` (promoted → our rejected 3.069 row):
+    `Qwen36MTPBlockSession.swift` **−83**, `RuntimeStartupMemoryPolicy.swift`
+    **−32**, `quantized.h` −16, manifest ±8. Among the deletions was the promoted
+    tree's `wireResidentWeightsIfEnabled` wired-memory ticket, gated on
+    `physicalMemory >= 96 GiB` — it fires on the 128 GB ranked box and **can never
+    fire on our 48 GiB M4 Pro**, so we cannot measure it locally and must not
+    delete it. (Do not confuse it with the competitor negative "raising the wired
+    limit *with headroom* is harmful"; this is the promoted variant,
+    `wiredZHDefaultFraction = 1.0`, slack 64 MB.) Current HEAD keeps it and
+    `RuntimeStartupMemoryPolicy.swift` is byte-identical to promoted. **Standing
+    pre-submission gate: `git diff --stat <promotedSourceRef> HEAD -- Sources
+    Vendor mtp-head.manifest.json`, and account for every deletion in writing.**
+    `promotedSourceRef` is a field on the promoted submission record (item 77);
+    today it is `5068eb8d0bae032faca6e901de398fc732531160`.
+
+82. 🔴🔴 **The local box under-states the value of speculation by ~1.34×, so it
+    lies about width and depth economics.** Same E27 build, two boxes:
+    `--local-submit` score 1.7660 (serial 0.097995, MTP 0.055489 s/tok) against
+    ranked 3.0694 (serial 0.037975, MTP 0.016055). Ranked serial is 2.58× faster
+    than local serial; ranked MTP is **3.46×** faster than local MTP. **The MTP
+    leg gains 1.34× more from the ranked hardware than the serial leg does.**
+    Consequences: (a) a depth/width policy tuned on local timings is tuned to the
+    wrong cost curve; (b) locally, *narrowing and shallowing* look profitable and
+    on the ranked box they are not — the frontier's ranked mean draft is 4.53–5.78
+    rows while our local prose tapes sit at 2.39; (c) a locally measured width
+    cliff (E25's `stepRatio[3] = 0.442`) may not exist on the scoring box and must
+    never be used to size a ranked gain on its own.
+
+83. 🔴 **Ranked width mass, measured, per prompt — weight every per-M kernel claim
+    with it.** Frontier `effective_mean_draft_len`: botany 5.78, essays 5.43,
+    republic 5.27, medicine 4.77, beagle 4.53, travel 2.66, drama 2.30, plutarch
+    0.15. Verify width is `M = drafts + 1`, so the two prompts that decide the
+    score (item 78) sit at **M ≈ 5.5 and M ≈ 5.8** — not at the M=8/9 mass of our
+    local E27 fixture (mean draft 6.2692, histogram `{1:1,3:5,4:5,5:23,6:4,7:6,8:34}`).
+    E27's per-M ratios are M=5 **0.7990**, M=6/7/8 ≈ 1.00, M=9 0.8854, so the
+    ranked prize is concentrated at **M=5 and M=6**, and the M=6 pass-count cell
+    that `NA=6` alone would buy is worth considerably more than the local
+    histogram implied.
+
+84. **The `asyncEval` ladder is inherited from a competitor's promoted submission,
+    not from the organizer baseline.** `git grep DecodeLadderRungs 5d02917` (the
+    yukon baseline) returns nothing; the promoted `5068eb8d` carries the same rungs
+    `[0, 1, 9, 19, 29, 39, 49, 57]` hardcoded as a `switch`, with
+    `ladderActive = inputs.dim(1) <= 9 || prefillLadder`. Our branch's only change
+    is refactoring that switch into an overridable `Set` (`MLX_QWEN_MTP_LADDER`,
+    `research/e29-run.sh`) plus a stale-comment fix from "S <= 2" to "S <= 9". So
+    every frontier row ships it, ours included, and per item 76 it is an ordinary
+    candidate-leg latency optimization — **keep it**. E29's local +20.38 %
+    serial-leg number is a property of the *local* harness's serial arm and has no
+    ranked analogue.
+
+85. **The `M = 8` dispatch cell is contested between two receipted competitor
+    trees, and our branch takes one side without having measured it.** Promoted
+    `5068eb8d` dispatches `qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true>` (IPG 3,
+    "3+3+2", `ceil(8/3) = 3` weight passes) with an in-code claim of 319/437/216 µs
+    at M=7/8/9 and "a register cliff, not work scaling"; our HEAD dispatches
+    `<T, 8, 4, true>` (IPG 4, 2 passes) citing a promoted receipt of
+    3.195804751396457. Both are legal (`8 % 4 == 0`, `8 % 3 == 2`). One cell, no
+    correctness risk, two contradicting competitor receipts, and by item 83 the
+    ranked mass at M=8 is smaller than at M=5–6. Queue it; do not rush it.
 
 ## Advisor process lessons, 2026-08-17
 
