@@ -91,7 +91,7 @@ def load_legs(arm: str) -> list[dict]:
 
 
 def load_curve(arm: str) -> dict | None:
-    path = CURVES / f"e42-{arm}" / "summary.json"
+    path = CURVES / f"e42-{arm}" / "vendored.json"
     if not path.exists():
         return None
     payload = json.loads(path.read_text())
@@ -140,6 +140,7 @@ def histogram(widths: list[int]) -> dict[int, int]:
 
 
 def mean(xs):
+    xs = list(xs)
     return sum(xs) / len(xs)
 
 
