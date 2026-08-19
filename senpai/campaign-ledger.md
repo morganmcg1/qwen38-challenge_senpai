@@ -9946,3 +9946,257 @@ now carry an explicit register or shape counter that did not exist at assignment
 time, and all four carry the ranked MDE of **+0.283 %** (worst case +0.527 %)
 alongside the local 0.0629 % null floor, so cell-level and promotion-level
 conclusions cannot be conflated.
+
+---
+
+## 183. Pipeline identity, read from source: Law D dies, warm coverage is demoted, and the +5.36 % prize gets a route (2026-08-19)
+
+While all four students were mid-experiment I read the pipeline-identity chain
+end to end: how a Metal library is named, how it is cached, and which of our
+per-round quantities actually enter that name. The answer overturns two claims I
+published in items 181 and 182, refutes a law I endorsed one turn earlier, and
+promotes a mechanism the ledger has already priced at **+5.36 % of score**.
+
+Every fact below is from the live tree at `0dd6d28`. No GPU time was used.
+
+### (A) The naming chain, in full
+
+Three distinct cost units hide behind the phrase "pipeline warm". They differ by
+about an order of magnitude and must never be summed with one unit.
+
+| unit | what happens on first touch | families |
+|---|---|---|
+| **JIT source compile** | `Device::get_library(name, builder)` misses, `build_library_` calls `newLibrary(source)` on a multi-thousand-line source string | quantized, `steel_attention`, every `MLXFast.metalKernel` |
+| **metallib specialization** | `newFunction(desc)` with `FunctionConstantValues`, then `newComputePipelineState` | `sdpa_vector`, `sdpa_vector_2pass` |
+| **plain pipeline create** | `newFunction(name)` then `newComputePipelineState`, no constants | `sdpa_vector_2pass_2` |
+
+`Device::get_kernel` caches on `hash_name` inside `library_kernels_[mtl_lib]`
+(`device.cpp:843-860`), and `get_library` caches on the library name. So a
+quantity changes cost only if it appears in one of those two names.
+
+### (B) 🔴🔴🔴 `M` is absent from the QMV pipeline identity, and the escape hatch is outside our surface
+
+The host builds the QMV kernel name at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:260-268`:
+
+```cpp
+concatenate(kname,
+    mode + (fast ? "_qmv_fast_" : "_qmv_"),
+    type_string, "_gs_", group_size, "_b_", bits,
+    B > 1 ? "_batch_1" : "_batch_0");
+```
+
+**`M` is not in it.** `get_quantized_kernel` (`jit_kernels.cpp:915-932`) then sets
+`lib_name = kernel_name` and finishes with `d.get_kernel(kernel_name, lib)` — the
+one-argument form, so `hash_name` is unused and no function constants exist.
+
+Inside the kernel, `affine_qmv_fast` (`quantized.h:1869`) is a single
+`[[kernel]]` and selects the width at run time with `switch (ntg.x)` at `:1922`
+and `:1980`.
+
+⇒ **One library, one pipeline, one register allocation, for every width
+M = 1…9.** alphonse's E40 reached the shared-allocation conclusion from the
+inline structure; this is the independent confirmation from the naming chain.
+
+The new part is the **escape hatch, and it is closed**. Splitting the allocation
+would need a second entry point selected by a distinct kernel name, and the
+kernel name is built by `backend/metal/quantized.cpp`, which is **not** in
+`editablePaths`. `quantized.metal` is editable but dead for this family, because
+the runtime-effective source is the JIT string in `mlx-generated/quantized.cpp`.
+
+**No submittable edit can give an NA=5 cell its own pipeline.** Any
+register-hungry per-width specialization must pay for itself across the entire
+width mixture. That closes a family permanently.
+
+### (C) 🔴 Law D is refuted, one turn after I endorsed it
+
+askeladd measured `sizeof(vec<float,5>) = 32` and `alignof = 32` on device. Both
+are correct. **The inference that an NA=5 group therefore carries NA=8's
+register footprint is wrong, and our own E32 data already refuted it.**
+
+E32's register ladder is **affine in NA with maximum residual 0.25 registers**
+across NA = 2…12:
+
+```
+r = 2:  regs = 16 + 15*NA
+r = 4:  regs = 20 + 21*NA
+```
+
+It reproduces the measured `r=4` ladder 62 / 83 / 104 / 125 for NA = 2/3/4/5
+digit for digit, and NA=12 at `r=2` (196).
+
+If the 8-lane storage layout reached the register allocator, NA = 5, 6, 7 and 8
+would all cost what NA=8 costs, the ladder would be a **staircase** rather than
+affine, and the NA 4 → 5 step at `r=4` would be about `4 x 21 = +84`.
+
+**E27 measured that step as `+21`** — kernel-wide max `108` (`<T,7,4>`) → `129`
+(`<T,9,5>`), exactly one NA step on the affine line (item, line 5213).
+
+So `sizeof` describes the memory layout of the type. The accumulator is a
+thread-local array that never escapes, the compiler scalarises it, and the
+padding lanes are dead. **Law D's premise fails.** What survives is the
+shared-ceiling term, which is Law C's already-priced twin and costs a measured
+**+21 registers taxing all seven widths**.
+
+I predicted D over C on the record in item 182. That was wrong, and the
+refutation was already in our ledger. **This is the third time in three items
+that I published a 🔴🔴🔴 finding that our own merged record contradicts** (141,
+181(C), now 182(B)). The corrective discipline is narrow and I am adopting it
+verbatim: **before publishing a claim about a per-shape or per-width cost, grep
+the ledger for the quantity, then verify the quantity appears in the kernel
+name, the library name, or `hash_name`.** Two of the three failures would have
+been caught by the first half and the third by the second half.
+
+### (D) ✅ thorfinn's open question, answered from source
+
+Item 182(B) flagged as open whether the qmv grid x extent is `M` regardless of
+`IPG`. It is. `quantized.cpp:250-253`:
+
+```cpp
+int bn = 8;
+int bk = 32;
+MTL::Size group_dims(bk, 2, 1);
+MTL::Size grid_dims(M, (N + bn - 1) / bn, B);
+```
+
+The host knows nothing about `IPG`; `IPG` exists only in the Metal source. So
+`ntg.x == M` at every `IPG`, and `first_m = tid.x * IPG; if (first_m >= M)
+return;` culls the surplus. At `M=9, IPG=3` threadgroups 0-2 work and 3-8 return
+at once; at `IPG=5`, 0-1 work and 2-8 return.
+
+**Raising `IPG` never reduces the launch count. It reduces the number of working
+groups, hence the number of passes over the weights.** The feared cost term that
+grows with `IPG` does not exist. thorfinn's `bn` instinct was right and his
+number was from the wrong function: `bn = 8` here, and the
+`bn = min(group_size,32)*2 = 64` he found belongs to the `qmm` split-k path.
+`out_row = tid.y * 8 + simd_gid * rows_per_simd` matches `bn = 8` exactly.
+
+Item 99 already recorded this host site as frozen and non-editable. The
+x-extent and its `IPG`-independence are new.
+
+### (E) 🔴🔴🔴 Warm coverage is demoted from top direction to compose-only
+
+I made per-width warm coverage the highest-value next assignment in item 181(G)
+and again in the research state. **The central inference was wrong.** Three
+independent source facts remove it.
+
+1. **No per-width QMV pipeline exists** — (B) above. So neither paul-hf's
+   flush-width head warm nor our own `for width in 1...(maxDepth+1)` loop can be
+   buying QMV pipeline coverage, and item 181(G)'s "a one-off JIT miss whose
+   *count* equals the number of distinct widths visited" is false for QMV.
+2. **The only per-width JIT library family in the scored path is already
+   warmed.** `MLXFast.metalKernel` identity does include template *values*:
+   `metal_kernel.cpp:289-296` builds
+   `kernel_name = "custom_kernel_" + name + "_" + template_hash + dtypes`, and
+   `custom_kernel.cpp:71` keys `get_library` on it. Auditing every template site:
+
+   | site | kernel | width in template? |
+   |---|---|---|
+   | `Qwen35.swift:840` | `qwen35PackedGDNPreworkKernel` | **YES — `("T", S)`, gated `S >= 3 && S <= 9`** |
+   | `Qwen35.swift:1086` | GDN recurrence | no — `Dk/Dv/Hk/Hv` only |
+   | `GatedDelta.swift:161` | GDN scan | no |
+   | `Qwen35.swift:3140` | `qwen35DraftSelectKernel` | no — compile-time constants |
+   | `Qwen35.swift:3209` | `qwen35DraftRerankKernel` | no — compile-time constants |
+
+   So exactly **seven** per-width source libraries exist, S = 3…9, all on the
+   target side. Our warm loop calls `model.callWithHidden` — the **full target
+   forward** — at every width `1…maxDepth+1`, so it already compiles all seven
+   outside the decode rounds. The loop's own comment says so. **Our warm is
+   already complete on the only axis that carries a source compile.** The head
+   path has no per-width JIT library at all, so instance (b) has nothing to buy.
+3. **Warm work is itself inside the timed leg.** `program.md` puts seed
+   processing and decoding in the same timed leg, so warming a pipeline does not
+   remove its compile cost — it moves it earlier. A warm can only win by
+   overlapping host compile latency with GPU work that is already queued, or by
+   removing a repeated miss. That is a second-order mechanism, and it is
+   consistent with the frontier's 70-line warm producing a board delta of 0.12
+   median sd.
+
+What survives: **the SDPA `blocks` 64/128 split.** `blocks` is function constant
+26 and is appended to `hash_name` at
+`scaled_dot_product_attention.cpp:520-528`, and `sdpa_vector`/`sdpa_vector_2pass`
+resolve through `d.get_kernel(kname, hash_name, func_consts)` against
+`default_library_` — so they are **metallib specializations, not source
+compiles**. Only `steel_attention` (qL >= 9) is JIT, and our chunk currently
+avoids it. Two-pass needs `kL >= 1024`, which needs
+`tokensCommitted + M >= 512`, i.e. `tokensCommitted >= 503`: **the last one or
+two rounds of a 512-token window, and no more.**
+
+⇒ The whole remaining warm-coverage prize is at most two metallib
+specializations in the final rounds. That is a **compose-only** item, not a
+student slot. 182(E)'s observation stands — the frontier probably warmed
+`blocks = 64` while its window uses `blocks = 128` — but the prize is small and
+the correct response is to carry the extended warm on some other slot, not to
+spend one on it.
+
+### (F) 🔴🔴🔴 The replacement top direction, already priced in our own ledger
+
+With warm coverage demoted, the ledger's own arithmetic is the strongest thing
+on the board and nothing else is close:
+
+> **M=9 alone is 53.8 % of candidate-leg QMV time.** A 2-stream M=9 that stayed
+> at <= 108 registers would be worth **+5.36 % of score = 7.0 sd**.
+
+E27 tried to buy that and paid the shared ceiling: it moved M=5 and M=9 from
+IPG 3 to IPG 5, won both cells locally (M5 ratio 0.7990, M9 0.8854), measured
+**−6.56 % end-to-end locally**, and then lost **0.3321 % of published score**
+with the MTP leg **+0.1995 % slower**. The register step was `108 → 129`.
+
+Item 99 already found the route that avoids the step, and it has never been
+built. Buying NA by lowering `rows_per_simd` is a **correctness wall**, because
+the frozen host grid writes 8 rows per `tid.y` and any `r < 4` would leave half
+of `N = 17408` unwritten. The replacement covers the same 4 rows as `4/r`
+**sequential row blocks**: registers become live-range-bound, so peak residency
+follows the `r=2` line `16 + 15*NA`, while every row is still written.
+
+For M=9 at IPG=5 that is `16 + 15*5 = 91` registers per block against the
+current kernel-wide max of 108 set by `<T,7,4>`. **The ceiling would not move at
+all**, and the 3-stream to 2-stream pass reduction is captured. The known cost
+is the x re-read per block — the measured "r=2 tax" of **+10.54 %** at NA=4 —
+against a measured M=9 break-even of **12.43 %**. Thin, but positive, and the
+tax may grow with NA, which is exactly what the experiment must measure.
+
+**Gate: the register census must read 108, not 129.** That single number decides
+the experiment before any timing.
+
+**Falsifier first, zero GPU, and it gates the whole family.** Our cost mixture
+comes from a corpus-wide histogram whose mean M is 7.269, while the published
+score is the mean of the 4th and 5th order statistics — `beagle`
+(`mean_draft_len` 4.5327) and `medicine` (4.7677) and nothing else. If M=9 is
+not about 54 % of *their* QMV time, the +5.36 % is overstated for the only two
+prompts that score. The ledger has carried this as unmet since the E27
+decomposition. It must run before anyone hunts 21 registers.
+
+### (G) Consequences for the four live slots
+
+| PR | consequence |
+|---|---|
+| #58 thorfinn | grid question answered; Law D dropped; census reinterpreted as "confirm the step is +21 and nothing else"; P1 still first |
+| #57 askeladd | E55 is mechanism-identical to the M=9 half of E27, which already failed the local-to-ranked transfer at the same register step; a local win is **expected** and is **not** submission evidence; census first |
+| #60 alphonse | the `blocks` question is a metallib specialization, not a source compile; its prize is at most two pipelines in the final one or two rounds |
+| #59 edward | unaffected mechanically; the beagle/medicine width mixture is a natural addition to his simulator, at zero GPU |
+
+### (H) What I am recording as durable rules
+
+- **Three warm units, never one.** JIT source compile, metallib specialization,
+  plain pipeline create. Label every warm claim with its unit.
+- **A quantity costs a pipeline only if it appears in the kernel name, the
+  library name, or `hash_name`.** Verify that before pricing any per-shape work.
+- **Warming does not remove cost inside a single timed leg**; it can only
+  overlap it or remove a repeat.
+- **The QMV register allocation is shared across all widths and cannot be
+  split** within `editablePaths`.
+- `sizeof`/`alignof` describe memory layout and do not predict register
+  footprint for a non-escaping thread-local array.
+
+W&B evidence for the numbers reused above: E27 base cost curve
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/bg0yd4g3
+(`bg0yd4g3`); E27 NA=5 cost curve
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/hy0qq9sk
+(`hy0qq9sk`); E49 M=9 two-stream
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/92a0u0fl
+(`92a0u0fl`); E49 shipped control
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/twd7gz0z
+(`twd7gz0z`); E46 stream versus group width
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9gc2wstc
+(`9gc2wstc`).
