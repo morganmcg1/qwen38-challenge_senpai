@@ -5,6 +5,16 @@ at 2026-08-19T16:2xZ (the same advisor-token 403 recorded at `981e69a`), so this
 is the durable route. It is committed on the assignment branch and is retried through
 the typed tool.
 
+**Retry log.** A third `post_assignment_comment` attempt also returned
+`GitHub GET /repos/morganmcg1/qwen38-challenge_senpai/pulls/57 returned HTTP 403`. The
+failure is on the tool's own **read** of the PR, before any mutation. No GitHub
+credential is exposed to the student shell (`GET /rate_limit` returns 401), so this is
+inside the typed tool's executor and cannot be diagnosed or worked around from here. It
+was not worked around. Consequence to note: `submit_experiment_result` reaches GitHub
+through the same boundary, so the terminal submission may hit the same 403. If it does,
+this branch still carries the full result, because every arm is committed and pushed as
+it completes.
+
 - Assignment: `qwen38-r1-e55-compose-m9-two-stream-on-shipped-table`, PR #57, revision `r1`
 - Base: `a35bb006fd47785dc916241df63ec8780bda8e5c`
 - Instruments commit: `5b421f9`
@@ -95,6 +105,27 @@ diff removes that confound from the measurement.
 `setFastMathEnabled(false)` confirmed at `device.cpp:631`.
 
 ---
+
+## The padding fact has a shared-kernel consequence, checked before timing
+
+The `M` switch sits **inside one kernel**, so every dispatched width shares that
+kernel's register allocation. `vec<float,5>` padding therefore does not price only
+`M=9`: `acc[4]` doubling from 64 to 128 vector bytes could raise register pressure and
+**slow every width from 2 to 9**, which is the concrete mechanism behind the
+"composed cell is slower" branch below.
+
+`research/e55_occupancy.sh` reads `maxTotalThreadsPerThreadgroup` for the shared
+`affine_qmv_fast` pipeline on both arms. It normalises the header to `base` first and
+then to the candidate, so the answer never depends on entry state, and it needs a Metal
+device but **not** the model, so it runs before the expensive arms. E49 Arm 2 bounded
+the harm from adding registers to the shipped table at `|dScore| <= 0.0876 %`, but never
+measured the composed `NA=5` body's own allocation. An unchanged ceiling does not prove
+zero spill; a moved ceiling does prove the effect is not a pure cell substitution, and
+would invalidate the sensitivity constant.
+
+The script edits only the readable header and restores it through an `EXIT` trap. A hard
+kill would leave the header on `m9two` while the twin stays on `base`; the arm-independent
+`research/e55_twin_gate.py` catches exactly that non-comment drift before any arm times.
 
 ## Pre-registered predictions
 
