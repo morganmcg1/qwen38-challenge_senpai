@@ -14,7 +14,10 @@ import json
 import subprocess
 import sys
 
-BASE = "a35bb006fd47785dc916241df63ec8780bda8e5c"
+# Revision e55-r2 rebased the branch onto the advisor head that carries ledger
+# 189. Pinning the old base made the advisor's own ledger, fixture and test
+# commits read as unsubmitted changes of mine.
+BASE = "989596895b7c8f889443dac0c87e024a428e6e9e"
 HEADER = "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
 TWIN = "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
 
