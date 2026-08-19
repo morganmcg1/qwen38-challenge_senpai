@@ -10529,3 +10529,352 @@ out:
   share from scratch while items 110, 122, E16, E17 and E20 all already held
   pieces of it. This is the rule 183(C) established, and I broke it in the same
   round I wrote it.
+
+---
+
+## 187. E54 closes the cell-timing question and opens a worse one: every single-cell QMV composite is forecast to LOSE at rank, and only a route that leaves the register ceiling unmoved survives
+
+Base `7cba4ddb` (E54 merged from PR #58). Primary W&B run
+[`9qt2x4cp`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9qt2x4cp),
+16 runs total. Instruments now on base: `research/e54_arms.py`,
+`e54_analyze.py`, `e54_bandwidth.py`, `e54_price.py`, `e54_reg_census.py`,
+`e54_parity.sh`, `e54_routing.py`, `e54_session.sh`, `e54_shares.py`,
+`e54_vec5_probe.metal`, `e54_vec5_proof.py`. New in this item:
+`research/e54_gap_decomposition.py`.
+
+### 187(A) Law A' survives, Law C is falsified in both directions, and my published prediction was wrong by 20 points
+
+thorfinn measured the four crossrow cells in isolation on the real shipped
+table, ABBA, widths 1-10, 21 reps x 10 inner, an isolated build per leg, host
+M4 Pro 48 GiB.
+
+| cell | structure | groups | traffic | Law A' predicts | measured | reproduced by |
+|---|---|---|---|---|---|---|
+| M=5 `<T,5,5>` | lone NA=5 | 2 -> 1 | x0.501 | -19.00 | **-20.253** | P4 at -20.110 |
+| M=7 `<T,7,5>` | sibling 5+2 | 2 -> 2 | x1.000 | 0.00 | **+0.994** | - |
+| M=8 `<T,8,5>` | sibling 5+3 | 2 -> 2 | x1.000 | 0.00 | **+1.345** | - |
+| M=9 `<T,9,5>` | sibling 5+4 | 3 -> 2 | x0.668 | -12.26 | **-11.548** | E49 at -12.255 |
+
+I predicted Law C -- that the lone NA=5 cell would regress end to end because
+it loses sibling overlap. The lone NA=5 cell is the **fastest** cell in the
+table. Law C's sibling-overlap term has the wrong **sign**, not merely the
+wrong magnitude. My blind prereg of +25.8 % was the worst entry in the table.
+
+Law A' (achieved-rate ladder) now explains both regressions with **no new
+term**: M=7 rate 209.0 -> 206.9 GB/s (-0.98 %) against a measured time of
+**+0.994 %**; M=8 194.2 -> 191.6 (-1.33 %) against **+1.345 %**. Agreement to
+0.01 points on both.
+
+### 187(B) The bandwidth objection is closed by measurement, with a published out-of-sample prediction first
+
+Lone-group achieved rate falls linearly at **-24.3 GB/s per row**: NA=2 223.8,
+NA=3 199.7, NA=4 175.2, NA=5 150.9. thorfinn published the extrapolation
+**151.7** before measuring and the measurement returned **150.9** -- 0.5 % out
+of sample. At M=5 the break-even rate is **120.4 GB/s** against a sustained
+**148.4 GB/s**, so the NA=5 traffic penalty is real but **subcritical**.
+
+This is the method to repeat: he closed a standing objection by measurement and
+committed to the number in advance.
+
+### 187(C) The register census reproduces E27 untuned and lands an out-of-sample hit on the affine ladder
+
+Kernel maximum / production entry `affine_qmv_fast<bfloat16_t,64,4,false>`:
+
+| variant | kernel max | entry | delta max | delta entry | dose vs full |
+|---|---|---|---|---|---|
+| `shipped` | 108 | 163 | +0 | +0 | 0 % |
+| `e27_m5_only` | 125 | 182 | +17 | +19 | **95.0 %** |
+| `e27_m9_only` | 129 | 181 | +21 | +18 | **90.0 %** |
+| `e27_full` | 129 | 183 | +21 | +20 | 100 % |
+
+`<T,5,5>` measures 125 = `20 + 21*5` **exactly** on the `r=4` affine ladder
+from 183(C) -- an out-of-sample hit. The census reproduces E27's 108 -> 129 and
+163 -> 183 with no tuning.
+
+**Law D stays retracted.** Eight-lane padding would predict +84 at NA 4->5;
+E27 measured +21.
+
+Instrument limit he published himself: a **+4 constant over-count on mixed-NA
+cells** (`<T,5,3>` 87 vs 83, `<T,7,4>` 108 vs 104, `<T,9,5>` 129 vs 125) and
+**exact on single-group cells** (`<T,3,3>` 83, `<T,4,4>` 104, `<T,5,5>` 125).
+A constant offset cancels in every difference, so every *step* survives. This
+is why the instrument is still usable, and publishing the error term is what
+makes it usable.
+
+### 187(D) The `vec<float,5>` gate, and its honest limit
+
+`sizeof` 32, `alignof` 32, AIR `alloca [4 x <5 x float>], align 32`, all five
+lanes numerically correct. This independently reproduces askeladd's padding
+constant **on a different host**. thorfinn published the limit unprompted:
+`acc_alloca_types` is empty for the real cells because the accumulators are
+register-promoted, so this is a front-end and memory-layout fact, **not** a
+register-cost measurement. He retracted his own "Law D mechanism confirmed
+exactly" and named the reason.
+
+### 187(E) THE HEADLINE: cell timing is no longer the campaign unknown. The step from cell timing to score is.
+
+P4 measured E27's exact composite on the real shipped table, then priced it
+`harness=ranked`:
+
+| mixture | priced | board | gap |
+|---|---|---|---|
+| e48 | **+2.2118** | -0.3321 | 2.54 |
+| e53_low | +2.0447 | -0.3321 | 2.38 |
+| e53_mid | +2.2890 | -0.3321 | 2.62 |
+| e53_high | +2.5334 | -0.3321 | 2.87 |
+
+**The sign differs under every mixture**, and the gap is 2.4-2.9 points against
+a ranked jitter of 0.2257 % per prompt per leg. thorfinn's phrasing is the right
+one: *"Cell timing is no longer the campaign unknown: the step from cell timing
+to score is."* Any promotion priced from per-width QMV cell timings inherits
+this gap.
+
+Per-width prices (`harness=ranked`, from `e54_price.py`):
+
+| cell | win % | e48 share | e48 price | e53_mid share | e53_mid price |
+|---|---|---|---|---|---|
+| M=5 | 20.253 | 12.1744 | **+1.3481** | 22.3363 | **+2.0187** |
+| M=7 | -0.994 | 4.6307 | -0.0310 | 14.1607 | -0.0948 |
+| M=8 | -1.345 | 4.7603 | -0.0431 | 8.3949 | -0.0761 |
+| M=9 | 12.255 | 21.6296 | **+1.4084** | 6.7712 | **+0.5590** |
+
+### 187(F) P4 bounds the shared-ceiling term at approximately zero in the width sweep -- and the same instrument is demonstrably blind
+
+Untreated crossrow widths under P4's dose: M=3 +0.123, M=4 -0.207, M=6 +0.056,
+M=7 -0.069, M=8 +0.364, against a **0.991 %** detection bar. That is a bound,
+not a proof of absence.
+
+thorfinn drew the correct conclusion against his own instrument: the same
+width-sweep harness predicts **+2.2 %** for a composite the board scored
+**-0.3321 %**, so it is **demonstrably blind** to whatever costs E27 its
+points. A bound from a blind instrument bounds nothing that matters.
+
+Cross-check with E49 Arm 2 (ledger 178(A)), whose harness is confirmed to be
+the **isolated width sweep and not an end-to-end decode leg**: `dose_null`
+`<T,4,4>` 104/164 delta +1 pooled **+0.272 %** worst +0.758 % 7/7 widths
+slower; `dose_129` `<T,9,5>` 129/181 delta +18 pooled **-0.035 %** 3/7;
+`dose_big` `<T,12,6>` 144/197 delta +34 +0.213 % 6/7; `dose_huge` `<T,16,8>`
+177/230 delta +67 +0.078 % 4/7. **No dose-response, and the largest value sits
+at the NULL dose.**
+
+Therefore: **nobody has ever measured the shared register ceiling in an
+end-to-end decode leg, and nobody has ever reported the absolute serial-leg
+seconds per token for a QMV table edit.** Both omissions are now the campaign's
+critical path.
+
+### 187(G) Correctness and gates
+
+Bitwise parity **0/192** on all four pairs. The positive control (lanes 3 and 4
+swapped) **DIVERGES 8/8 at exactly (bits=4, M=5)**, so the instrument can fail.
+`bits=3` never enters a crossrow kernel -- the family is specialised
+`affine4_g64`. Routing isolation was read from **built binaries**: P1/P2/P3
+each change one cell leaving 23/24 controls byte-identical; P4 changes (4,5) and
+(4,9) leaving 22/24.
+
+All 16 legs passed the **real 40 C gate** at 39.87-40.01 C, spread 0.14 C, no
+ungated mode. Budget `source=2458949/3000000 headroom=541051 growth=0/262144
+files=154`. Scope OK, `senpai/verify-ranked-score-boundary.sh` PASS.
+
+Arm digests: `iso_m5_ipg3 b99ff7bd`, `iso_m5_ipg5 cc259829`, `iso_m7_ipg4
+485f5fad`, `iso_m7_ipg5 13b17cc6`, `iso_m8_ipg4 9d73f23d`, `iso_m8_ipg5
+b7ac4b0a`, `shipped 75d45143`, `e27_full e50ca0eb`. Both replicate legs of
+every arm carry the same digest.
+
+Honest limits he published: the host is M4 Pro, not the ranked M5; P2 clears
+its bar by only 0.11 points.
+
+### 187(H) E54's ranked pricer is NONLINEAR -- consume its numbers, never linearise them
+
+`e49_price.py --harness ranked` recomputes the eight per-prompt raw ratios and
+**re-medians** them. Per-cell prices therefore do **not** sum to the composite:
+1.3481 + 1.4084 = 2.7565, against a measured composite of 2.2118. A linearised
+`psi * share * win` model gives 3.4416 against the same 2.2118.
+
+`research/e54_gap_decomposition.py` consumes his published numbers as inputs
+and retains a `linear_score_pct()` only for contrast. Self-test check 5 asserts
+the nonlinearity still holds, so the design decision stays justified rather
+than assumed.
+
+### 187(I) My corrections shrink but do not close his gap
+
+Applying 186(B)'s median-pair dilution and 186(D)'s transfer law:
+
+| mixture | naive | x0.9125 | /3.55 | x h_lo | x h_hi | board |
+|---|---|---|---|---|---|---|
+| e48 | +2.2118 | +2.0183 | **+0.5685** | +1.6838 | +1.7391 | -0.3321 |
+| e53_mid | +2.2890 | +2.0887 | **+0.5884** | +1.7426 | +1.7998 | -0.3321 |
+
+Residual after every correction I have: **+0.90 points** under the traffic
+branch, **+2.02 to +2.13** under the h-ratio branch. The corrections are real
+and they are not enough.
+
+### 187(J) A named inconsistency in my own published work
+
+I hold **two transfer estimates for the same class of term, differing by 3x**:
+
+- **/3.55**, mechanistic (186(D)): prefill GEMM transfers 7.58x, a depth-0
+  round 2.14x.
+- **x0.834..0.862**, calibrated: the two-parameter depth transfer
+  `g in [0.7388, 0.7778]`, mean-pinned at depth 4.
+
+Both are defensible and they cannot both be right for a QMV width-ladder
+change. **Rule: carry both as a band. Do not silently pick the convenient
+branch.** Every forecast below is reported under both, and the `ceil_only`
+control in 187(M) is designed so its conclusion holds under either.
+
+### 187(K) 🔴 Under BOTH residual shapes, a single-cell QMV composite loses at rank
+
+Two shapes fit the one anchor I have:
+
+- **additive tax** `A = board - corrected` = **-0.90 to -2.13** points;
+- **multiplicative** `k = board / corrected` = **-0.19 to -0.58** (no
+  mechanism, one anchor, so it is a curve-fit and nothing more).
+
+`<T,5,5>` alone, corrected: e48 +0.35..+1.06; e53_mid +0.52..+1.59. Forecast
+score, all twelve cells:
+
+| mixture | transfer | additive | multiplicative |
+|---|---|---|---|
+| e48 | /3.55 | **-0.5541** | -0.2024 |
+| e48 | x h_lo | **-0.9896** | -0.2024 |
+| e48 | x h_hi | **-1.0112** | -0.2024 |
+| e53_mid | /3.55 | **-0.4016** | -0.2929 |
+| e53_mid | x h_lo | **-0.5379** | -0.2929 |
+| e53_mid | x h_hi | **-0.5446** | -0.2929 |
+
+`<T,9,5>` alone: e48 corrected +0.36..+1.11 -> additive -0.54..-0.94, mult
+-0.21; e53_mid corrected +0.14..+0.44 -> additive -0.78..-1.65, mult -0.08.
+Range **-0.08 % to -1.65 %, every cell negative.**
+
+The mechanism is 187(C)'s dose column: `e27_m5_only` carries **95.0 %** of the
+full entry dose and `e27_m9_only` **90.0 %**. **Neither single cell escapes the
+ceiling.** Splitting E27 into its parts keeps essentially all of the cost and
+discards most of the benefit.
+
+I had a single-cell `<T,5,5>` promotion assignment drafted and I am not sending
+it.
+
+### 187(L) The one surviving QMV route leaves the kernel maximum unmoved
+
+The shipped true kernel maximum is `<T,7,4>` at `r=4` = **104**.
+
+- `<T,5,5>` at `r=4` = `20 + 21*5` = **125** -> raises the ceiling.
+- `<T,5,5>` at `r=2` = `16 + 15*5` = **91** -> does **not** raise it.
+
+⚠️ Two ledger lines disagree on the `r=2` intercept: 183(C) fits
+`16 + 15*NA` (196 at NA=12), while the E44 anchors (`rb_na6_r2=117`,
+thorfinn's `83 -> 66`) fit `15 + 17*NA` -> **100** at NA=5. Both sit below 104,
+so the conclusion is robust, but **measure the census; do not assume the
+intercept.**
+
+**The correctness wall and its exact fix.** The host grid is IPG-blind and
+frozen: `grid_dims(M, (N+7)/8, B)`, `group_dims(32,2,1)`, so 2 simdgroups must
+cover 8 rows per `tid.y`. At `r=2`, `out_row = tid.y*8 + simd_gid*rows_per_simd`
+leaves rows `{4,5,6,7}` unwritten -- item 99's wall. The fix is **two
+sequential row blocks**:
+
+```
+for (int rb = 0; rb < 2; ++rb) {
+    int out_row = tid.y*8 + simd_gid*4 + rb*2;
+    ...
+}
+```
+
+simd 0 writes {0,1} then {2,3}; simd 1 writes {4,5} then {6,7}. Same 8 rows,
+same per-row dot products, same within-row accumulation order, therefore
+**bit-exact by construction**. The known cost is `x` re-read per row block,
+measured as an **`r=2` tax of +10.54 % at NA=4**; at NA=5 the `x` volume is
+25 % larger, so it must be measured rather than carried over.
+
+At face value the net cell win becomes **-9.713 %**:
+
+| mixture | diluted | /3.55 | x h_lo..h_hi |
+|---|---|---|---|
+| e48 | +0.5900 | +0.1662 | +0.4922..+0.5084 |
+| e53_mid | +0.8834 | **+0.2489** | **+0.7370..+0.7612** |
+
+🔴 Under the **additive** shape this arm's ceiling tax is **zero by
+construction**, so the forecast is the corrected prediction itself. The
+e53_mid x h corner **closes the entire 0.5367 % deficit and takes the
+frontier.**
+
+### 187(M) The decisive control nobody has run: `ceil_only` in an end-to-end decode leg
+
+Three arms, real shipped table, end-to-end 512-token decode, ABBA:
+
+- **A `base`** -- fresh, 163 registers at entry.
+- **B `ceil_only`** -- an unreachable `case 10:` sized so the entry allocation
+  reaches approximately 182, byte-identical at every reachable width. This is
+  askeladd's own E49 Arm 2 design, promoted from the isolated width sweep to a
+  real decode leg. Correctness is free by construction because the case is
+  never dispatched.
+- **C `m5_r4`** -- `case 5 -> <T,5,5>`, 182.
+
+Match B's dose to C's and report both censuses. The decomposition is then:
+`m5_r4 = cell win + ceiling tax`, `ceil_only = ceiling tax`, and the difference
+is the **in-round cell win, measured for the first time**. Without arm B a null
+or negative result is **unattributable**.
+
+🔴 **Report the absolute SERIAL leg**, not only the ratio:
+`candidate_mtp_seconds_per_token`, **`serial_decode_seconds_per_token`**, the
+ratio, round count, mean draft length, the per-width histogram, and the exact
+row-evidence digest. Rationale from 183(B): at M=1 the serial leg shares the
+single QMV allocation, so a shared regression **inflates** the local ratio
+exactly as a shared improvement cancels in it. `program.md` warns about the
+cancellation direction; **the inflation direction has never been measured.**
+
+Prereg: B's MTP leg slower by **+0.99..+2.33 %** under the additive shape
+against a **null** under the multiplicative shape; B's serial leg slower
+similarly against a null; `C - B` approximately **-0.712 %** of leg under both.
+The local null floor is 0.0629 % and the 3x guard band is **0.1887 %**, so the
+additive prediction is **16-37x the floor**.
+
+Local fixture cost weights are **M9 53.45 %, M6 25.19 %, M8 7.55 %, M5
+5.07 %** against a ranked M=5 share of 12.17 % (e48) or 22.34 % (e53_mid).
+**The local fixture under-weights M=5 by 2.40x-4.41x, so the local test is
+biased against the cell under test.** The predicted local MTP-leg effect of
+`<T,5,5>` alone is **-0.7119 %** = 11.3x the null floor. As a sanity check on
+the same model, E27's composite predicts **-4.992 %** locally against an
+observed **-6.560 %**.
+
+### 187(N) Stop rules
+
+1. B slows the MTP leg by more than 3x the floor -> the **additive** shape is
+   supported, the width sweep is proven blind in-round, report immediately and
+   proceed to the `r=2` route.
+2. B is null in-round **and** C shows the cell win -> the additive shape is
+   refuted, the multiplicative shape stands, and **no per-width QMV cell edit
+   can ever win at rank**. That closes the entire QMV width-table direction and
+   retires E27, E44, E46, E49, E54 and PR #57. Report and stop.
+3. B moves one leg but not the other -> the ceiling cost is width-dependent,
+   183(B) is incomplete, stop and report.
+4. `<T,5,5>` at `r=2` censuses above 104 -> the `r=2` route is dead.
+
+### 187(O) Consequences for live work
+
+- askeladd's PR #57 must **not** take `<T,9,5>` to a submittable candidate, and
+  must **not** compose M=5 + M=9 -- that composition **is** E27 exactly, the
+  -0.3321 % anchor. His arm becomes a **physics measurement**: it reads
+  `psi_mtp * f9 * 11.548 %` directly and so settles the E48-vs-E53 mixture
+  dispute, where the two mixtures disagree **3.2x** on `f9` (M=9 share 21.63 %
+  vs 6.77 %; prices +1.4084 vs +0.5590). That is a promotion, not a
+  demotion.
+- thorfinn owns the `ceil_only` control at M=5 plus the `r=2` row-block route.
+- The single-cell `<T,5,5>` promotion is cancelled before it was assigned.
+
+### 187(P) Rules this item adds
+
+- **A per-width QMV cell edit cannot escape the shared register ceiling.**
+  `e27_m5_only` carries 95 % and `e27_m9_only` 90 % of E27's full entry dose.
+  Every single-cell composite is forecast negative at rank under both residual
+  shapes. Only an edit that leaves the kernel maximum unchanged can win.
+- **A shared regression INFLATES the local serial/mtp ratio**, exactly as a
+  shared improvement cancels in it. Report absolute both-leg seconds per token
+  for any edit that touches a shared allocation.
+- **E54's ranked pricer is nonlinear.** Consume its published numbers; do not
+  linearise or sum them.
+- **Carry both transfer estimates as a band** until one is falsified.
+- **A bound from an instrument proven blind on a known anchor bounds nothing.**
+  P4's approximately-zero shared-ceiling term and E49 Arm 2's absent
+  dose-response are both width-sweep results, and the width sweep mispredicts
+  E27 by 2.5 points.
