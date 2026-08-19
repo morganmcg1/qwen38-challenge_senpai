@@ -50,6 +50,9 @@ TREATED = {
 DRAFT_SIDE_SHAPE = "head.compact_draft_vocab"
 # Cross-build reproduction tolerance for an untreated calibration cell.
 UNTREATED_DRIFT_TOL = 0.02
+# The serial control leg runs at depth 0, so every round is a single target row.
+SERIAL_ROUND_WIDTH = 1
+nan = float("nan")
 
 
 def arm_family(arm: str) -> str:
@@ -270,11 +273,20 @@ def analyse(base: dict, arm: dict, base_curve: dict, arm_curve: dict) -> dict:
                     cell["arm_verify_seconds"] - cell["base_verify_seconds"]
                 )
         if not weights:
-            raise SystemExit(f"e42_analyze: {arm['arm']} treated no dispatched width")
+            # The m1 control: width 1 is never a target verify width in the MTP
+            # leg (nd = 0), yet the draft head still issues width-1 calls there.
+            # Weight the treated width directly rather than failing; the MTP-leg
+            # occupancy is then unknown and is reported as such.
+            for m in sorted(treated & set(cells)):
+                weights.append(1.0)
+                xs.append(cells[m]["x"])
+        if not weights:
+            raise SystemExit(f"e42_analyze: {arm['arm']} treated no measured width")
         return sum(w * x for w, x in zip(weights, xs)) / sum(weights), xs, acc
 
     x_bar, xs, acc = weighted(x_by_m)
     q_treated, q_total, dq = acc["q_treated"], acc["q_total"], acc["dq"]
+    mtp_leg_treated = bool(set(hist) & treated)
 
     t_base = base["mtp_decode_seconds"]
     t_arm = arm["mtp_decode_seconds"]
@@ -304,7 +316,34 @@ def analyse(base: dict, arm: dict, base_curve: dict, arm_curve: dict) -> dict:
     # must slow it down. Both directions are checks, not free parameters.
     serial_frac = arm["serial_decode_seconds"] / base["serial_decode_seconds"] - 1.0
 
+    # For m1 the serial leg is the PRIMARY measurement, not a control: every one
+    # of its rounds is a single M=1 target row, so its treated weighting is
+    # exact and needs no histogram at all.
+    serial: dict = {"primary_leg": "mtp"}
+    if SERIAL_ROUND_WIDTH in treated:
+        s_base = base["serial_decode_seconds"]
+        s_arm = arm["serial_decode_seconds"]
+        rounds = round(s_base / base["serial_seconds_per_token"])
+        cell = x_by_m[SERIAL_ROUND_WIDTH]
+        q_ser = rounds * cell["base_verify_seconds"]
+        dq_ser = rounds * (cell["arm_verify_seconds"] - cell["base_verify_seconds"])
+        serial = {
+            "primary_leg": "serial",
+            "serial_rounds": rounds,
+            "serial_x_width_1": cell["x"],
+            "psi_eff_serial": serial_frac / cell["x"],
+            "q_serial_predicted_seconds": q_ser,
+            "occupancy_share_serial": q_ser / s_base,
+            "alpha_absorption_serial": (s_arm - s_base) / dq_ser if dq_ser else nan,
+            "serial_decode_seconds_base": s_base,
+            "serial_decode_seconds_arm": s_arm,
+        }
+
     return {
+        **serial,
+        "mtp_leg_has_treated_verify_width": mtp_leg_treated,
+        "raw_p_sign_expected": "up" if SERIAL_ROUND_WIDTH in treated else "down",
+        "raw_p_sign_observed": "up" if arm["raw_p"] > base["raw_p"] else "down",
         "arm": arm["arm"],
         "family": fam,
         "level": arm["level"],
@@ -493,6 +532,28 @@ def main() -> int:
             f"[{res['psi_eff_low']:.4f}, {res['psi_eff_high']:.4f}]  "
             + "  ".join(f"{k}={v:.4f}" for k, v in res["psi_eff_variants"].items())
         )
+        flip = "PASS" if res["raw_p_sign_observed"] == res["raw_p_sign_expected"] else "FAIL"
+        print(
+            f"        raw_p sign expected {res['raw_p_sign_expected']}, "
+            f"observed {res['raw_p_sign_observed']}  -> {flip}"
+        )
+        if res["primary_leg"] == "serial":
+            print(
+                "        PRIMARY LEG IS SERIAL (depth 0, all M=1): "
+                f"{res['serial_rounds']} rounds, x(1)={res['serial_x_width_1']:+.4f}"
+            )
+            print(
+                f"        psi_eff(serial) = {res['psi_eff_serial']:.4f}    "
+                f"occupancy(serial) = {res['occupancy_share_serial']:.4f}    "
+                f"alpha(serial) = {res['alpha_absorption_serial']:.4f}"
+            )
+            print(
+                "        the MTP-leg psi above is the width-1 share of the MTP "
+                "leg (draft-head calls); its occupancy is not identified because "
+                "width 1 is not a target verify width there "
+                f"(mtp_leg_has_treated_verify_width="
+                f"{res['mtp_leg_has_treated_verify_width']})"
+            )
 
     by_fam: dict[str, list[dict]] = {}
     for res in results:
