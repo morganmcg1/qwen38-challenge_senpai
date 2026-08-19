@@ -33,8 +33,8 @@ FAMILY_RULES = [
         ),
     ),
     ("gdn", re.compile(r"gated_delta|gdn|ssm_kernel")),
-    ("norm_rope", re.compile(r"rms_norm|rms_looped|rms_single|_rope|rope_|layer_norm")),
     ("qk_rms_rope", re.compile(r"attention_qk_rms_rope")),
+    ("norm_rope", re.compile(r"rms_norm|rms_looped|rms_single|_rope|rope_|layer_norm")),
     ("top2_readout", re.compile(r"top2|top_2|top32|draft_select|draft_rerank")),
     (
         "elementwise_copy",
