@@ -154,7 +154,11 @@ All ratios below are **kernel-level only**.
 | host | Apple M4 Pro, 48 GiB |
 | scope | `quantized.h` + `mlx-generated/quantized.cpp` only (2 paths) |
 | twin lock | `cpp = cpp[0:13] + h + cpp[-6:]`; `twin_audit.py` OK, 29 runtime-effective twins |
-| editable budget | source 2 467 227 / 3 000 000; growth 11 938 / 262 144 |
+| editable budget *as measured* | source 2 467 227 / 3 000 000; growth 11 938 / 262 144 |
+
+That budget row describes the **builds that were timed**, which necessarily
+carried the ladder. The branch's final scored surface is reverted to zero diff
+and zero growth — see [Scored surface](#scored-surface).
 
 Thermal honesty, as required for an ungated local arm: this host's real 40 °C
 cool gate cannot be reached (it stalls at ~43.4 °C), so every curve records
@@ -306,10 +310,26 @@ Context: crown 0.5193 %, engineerable gap 0.2586 %, σ_score 0.0978 %.
 ## Scored surface
 
 The ladder is measurement scaffolding for a mechanism that just died, so the
-scored surface is **reverted to the base** on this branch. Leaving the arm
-dispatch table in place would be a ~21 % kernel regression at M=4/7/8 if it were
-ever merged. The ladder remains fully reproducible from git history — `5d97fe3`
-for the template, `dfe39af` for the arm table — plus the committed census.
+scored surface is **reverted to the assignment base `04ad6bf`** on this branch:
+
+```text
+validate-assignment-scope.sh   OK, 2 submitted paths
+check-editable-budget.sh       source=2455289/3000000  growth=0/262144
+twin_audit.py                  OK, 29 runtime-effective twins
+git diff 04ad6bf -- <h> <cpp>  empty
+```
+
+The revert goes all the way to `04ad6bf`, not back to the base build `5d97fe3`.
+Keeping `5d97fe3`'s template generalization (`krange` / `wide` / `rowblocked` /
+`K_TILE_BLOCKS`) would leave dead parameterization with no consumer, and it is
+not free: it is the same enlarged JIT compilation unit that follow-up 1 names as
+the leading explanation for the unexplained M=9 residual. Pruning it removes a
+measurement hazard rather than removing optionality. Leaving the *arm* dispatch
+table would be worse still — a ~21 % kernel regression at M=4/7/8 if merged.
+
+The ladder remains fully reproducible from this branch's history — `5d97fe3` for
+the template, `dfe39af` for the arm table, `ae272aa` for the restored-base
+bracket — plus the committed census, so nothing measured here is lost.
 
 ## Suggested follow-ups (not implemented)
 
