@@ -1,0 +1,23 @@
+prompt_id=natural_history
+prompt_file=research/e17_prose_natural_history_512.txt
+prompt_sha256=10251cd46b6c6d4bc768900fd8a9db51b9a0aad522c3eb96d8c758f43456a567
+tokens=512
+offered_depth=8
+golden=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-askeladd/workspace/target/.mlxfast-private/e37/goldens/e17_prose_natural_history_512_512.json
+golden_steps_covered=512
+head_dir=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run
+head_safetensors_sha256=d038fd41e2d5dab1b3905c115d859fdc98dfbfde9862c14ebb82c2b3247ec2f1
+head_sha=fb7ea831ec660dcfac0636bedf7015e73a2c8b71
+dirty=0
+pass=traced-census
+cool_gate_passed_real_gate=false
+gate_qualified_for_timing=false
+timing_claims_permitted=false
+trace_perturbs_timing=true
+thermal_before=gpu_temp=39.174442291259766C cpu_temp=39.79072189331055C gpu_power=0.008303165435791016W
+started=2026-08-19T03:06:41Z
+exit=0
+cli_sha256=fa42e0f9eaff117c8ad507fa4b3768c8ab4bc0492b6731694db8abc51ab98361
+worker_sha256=79f3ad5d2ad782921ae91b15c696fd2169e20296f00c23c841b6388d8a6ab97f
+thermal_after=gpu_temp=63.909610748291016C cpu_temp=45.92880630493164C gpu_power=0.017306331545114517W
+finished=2026-08-19T03:10:41Z
