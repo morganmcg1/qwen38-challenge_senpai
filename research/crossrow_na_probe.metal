@@ -162,9 +162,37 @@ CROSSROW_M_PROBE(crossrow_m9_ipg5, 9, 5)
   }
 
 CROSSROW_M_RB_PROBE(crossrow_m6_ipg6_r2, 6, 6, 2)
+// E38 arm (a): the shipped 3+3 weight schedule, row-blocked. Same grid and same
+// weight traffic as the shipped cell, twice the activation reads. It exists to
+// price the activation tile on its own.
+CROSSROW_M_RB_PROBE(crossrow_m6_ipg3_r2, 6, 3, 2)
 
 #ifdef CROSSROW_NA_PROBE_WIDE
 CROSSROW_M_RB_PROBE(crossrow_m7_ipg7_r2, 7, 7, 2)
 CROSSROW_M_RB_PROBE(crossrow_m8_ipg8_r2, 8, 8, 2)
 CROSSROW_M_RB_PROBE(crossrow_m9_ipg9_r2, 9, 9, 2)
 #endif
+
+// E38 arm (b): the same single weight stream as crossrow_m6_ipg6_r2, but with
+// the two row blocks handed to two x-blocks instead of looped in one. Register
+// pressure must match the sequential form exactly -- each threadgroup still
+// holds only R accumulators -- so a difference here would mean the placement
+// changed more than tid.x.
+#define CROSSROW_M_RBX_PROBE(name, M, IPG, R)                              \
+  [[kernel]] void name(                                                    \
+      const device uint32_t* w [[buffer(0)]],                              \
+      const device bfloat16_t* scales [[buffer(1)]],                       \
+      const device bfloat16_t* biases [[buffer(2)]],                       \
+      const device bfloat16_t* x [[buffer(3)]],                            \
+      device bfloat16_t* y [[buffer(4)]],                                  \
+      const constant int& in_vec_size [[buffer(5)]],                       \
+      const constant int& out_vec_size [[buffer(6)]],                      \
+      uint3 tid [[threadgroup_position_in_grid]],                          \
+      uint simd_gid [[simdgroup_index_in_threadgroup]],                    \
+      uint simd_lid [[thread_index_in_simdgroup]]) {                       \
+    qmv_fast_crossrow_affine4_g64_m<bfloat16_t, M, IPG, true, R, true>(    \
+        w, scales, biases, x, y, in_vec_size, out_vec_size,                \
+        tid, simd_gid, simd_lid);                                          \
+  }
+
+CROSSROW_M_RBX_PROBE(crossrow_m6_ipg6_r2_xb, 6, 6, 2)
