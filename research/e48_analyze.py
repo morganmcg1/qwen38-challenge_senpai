@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import pathlib
 import statistics
 import subprocess
@@ -46,10 +47,11 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUNS = ROOT / ".mlxfast-private/e48/runs"
 CURVES = ROOT / ".mlxfast-private/qmv-curve"
 
-# (crossrow_level, m1_level) as spliced by research/e48_perturb.py. The levels
-# are deliberately non-proportional between ulo and uhi: proportional doses make
-# the two-unknown MTP-leg system singular.
-DOSES = {"base": (0, 0), "base2": (0, 0), "ulo": (1, 2), "uhi": (2, 3)}
+# (crossrow_level, m1_level) as spliced by research/e48_perturb.py. The g arms
+# carry m1_level 0, so their MTP-leg response is pure crossrow and their serial
+# leg is a structural-churn control (scaffolding present, dose zero).
+DOSES = {"base": (0, 0), "base2": (0, 0), "ulo": (1, 2), "g1": (1, 0), "g2": (2, 0)}
+NULL_ARMS = ("base", "base2")
 CROSSROW_WIDTHS = frozenset(range(2, 10))
 # Cross-build reproduction tolerance for a shape's per-call cost.
 REPRO_TOL = 0.02
@@ -213,32 +215,99 @@ def coverage_gap(base_curve: dict, hist: dict[int, int], mtp_seconds: float) -> 
     }
 
 
-def solve_two_arms(arms: dict[str, dict]) -> dict:
-    """Identify psi_mtp_w1 and psi_mtp_X from two non-proportional dosed arms."""
-    lo, hi = arms["ulo"], arms["uhi"]
-    a11, a12, b1 = lo["x1"], lo["xbar_X"], lo["mtp_frac"]
-    a21, a22, b2 = hi["x1"], hi["xbar_X"], hi["mtp_frac"]
-    det = a11 * a22 - a12 * a21
-    out = {"determinant": det, "dose_proportionality": (a11 / a21) / (a12 / a22)}
-    if abs(det) < 1e-9:
+def solve_psi_mtp(arms: dict[str, dict], stable: bool = False) -> dict:
+    """psi_mtp from the crossrow-only (Arm G) arms, plus every control they license.
+
+    An Arm G arm doses only the crossrow family, so its MTP-leg response is
+    psi_mtp_X * xbar_X with no width-1 term to divide out, and its serial leg
+    carries the pass-loop scaffolding at dose zero. That makes psi_mtp a direct
+    per-arm quotient and the serial leg a structural-churn control.
+    """
+    xk, xXk = ("x1_stable", "xbar_X_stable") if stable else ("x1", "xbar_X")
+    g = {k: v for k, v in arms.items() if v["m1_level"] == 0 and v["crossrow_level"] > 0}
+    out: dict = {"arms_used": sorted(g), "dosimetry": "stable_shapes" if stable else "as_measured"}
+    if not g:
         out["identified"] = False
         return out
     out["identified"] = True
-    out["psi_mtp_w1"] = (b1 * a22 - b2 * a12) / det
-    out["psi_mtp_X"] = (a11 * b2 - a21 * b1) / det
-    out["psi_mtp_total"] = out["psi_mtp_w1"] + out["psi_mtp_X"]
-    # The serial leg is depth 0, so it is pure width-1 QMV: two arms, one unknown.
-    out["psi_serial_per_arm"] = {k: arms[k]["serial_frac"] / arms[k]["x1"] for k in ("ulo", "uhi")}
-    out["psi_serial"] = mean(out["psi_serial_per_arm"].values())
-    out["psi_serial_form_residual_pct"] = 100.0 * (
-        out["psi_serial_per_arm"]["uhi"] / out["psi_serial_per_arm"]["ulo"] - 1.0
-    )
-    out["uniform_coefficient"] = out["psi_mtp_total"] - out["psi_serial"]
-    out["uniform_sign"] = "negative" if out["uniform_coefficient"] < 0 else "positive"
-    out["uniform_raw_p_ratio"] = {
-        f"x={x}": (1 + out["psi_serial"] * x) / (1 + out["psi_mtp_total"] * x)
-        for x in (0.5, 0.9, 1.0, 1.8)
+    out["psi_mtp_per_arm"] = {k: v["mtp_frac"] / v[xXk] for k, v in g.items()}
+    out["psi_mtp"] = mean(out["psi_mtp_per_arm"].values())
+    out["psi_mtp_interval"] = [min(out["psi_mtp_per_arm"].values()), max(out["psi_mtp_per_arm"].values())]
+
+    # Two doses test the functional form, not just the point: a linear cost model
+    # predicts the same quotient at every dose.
+    if len(g) >= 2:
+        lo, hi = sorted(g, key=lambda k: g[k][xXk])
+        out["form_test"] = {
+            "low_arm": lo,
+            "high_arm": hi,
+            "dose_ratio_xX": g[hi][xXk] / g[lo][xXk],
+            "psi_mtp_form_residual_pct": 100.0
+            * (out["psi_mtp_per_arm"][hi] / out["psi_mtp_per_arm"][lo] - 1.0),
+        }
+
+    # Scaffolding at dose zero must cost nothing, or every arm's dose attribution
+    # is wrong. This is measured on the same build and thermal window as the dose.
+    out["structural_churn_control"] = {
+        "what": "serial leg of each Arm G arm: pass-loop scaffolding present, E42_PASSES=0",
+        "serial_frac_per_arm": {k: v["serial_frac"] for k, v in g.items()},
+        "worst_abs_serial_frac": max(abs(v["serial_frac"]) for v in g.values()),
     }
+
+    # ulo and an Arm G arm at the SAME crossrow level differ only in the width-1
+    # dose, so differencing the MTP legs isolates psi_mtp_w1 with no crossrow term.
+    if "ulo" in arms:
+        u = arms["ulo"]
+        twin = next((k for k, v in g.items() if v["crossrow_level"] == u["crossrow_level"]), None)
+        if twin:
+            out["psi_mtp_w1_by_differencing"] = {
+                "paired_with": twin,
+                "shared_crossrow_level": u["crossrow_level"],
+                "mtp_frac_difference": u["mtp_frac"] - arms[twin]["mtp_frac"],
+                "psi_mtp_w1": (u["mtp_frac"] - arms[twin]["mtp_frac"]) / u[xk],
+                "covers": "4-bit qmv_fast_impl width-1 only",
+                "excludes": (
+                    "the 2-bit draft readout at quantized.h:1908, which no arm doses; "
+                    "so this is a LOWER bound on total candidate width-1 exposure"
+                ),
+            }
+    return out
+
+
+def local_uniform_coefficient(arms: dict[str, dict], stable: bool = False) -> dict:
+    """The withdrawn quantity, reported for the record from the ulo arm.
+
+    Has no ranked meaning: the ranked baseline is a separately built pinned tree,
+    so d ln(serial)/dx = 0 there. Kept because it validates the local two-leg
+    cost model that E42's psi values were measured under.
+    """
+    if "ulo" not in arms:
+        return {"available": False}
+    xk, xXk = ("x1_stable", "xbar_X_stable") if stable else ("x1", "xbar_X")
+    u = arms["ulo"]
+    psi_serial = u["serial_frac"] / u[xk]
+    psi_mtp_tot = u["mtp_frac"] / u[xXk]
+    # raw_p is flat at the level ratio rho* where the two legs move together.
+    slope = psi_serial * (u[xk] / DOSES["ulo"][1]) / (1.0 + u["serial_frac"])
+    rho = DOSES["ulo"][1] / DOSES["ulo"][0]
+    out = {
+        "available": True,
+        "dosimetry": "stable_shapes" if stable else "as_measured",
+        "ranked_meaning": "NONE: psi_serial is not in the ranked score (pinned baseline binary)",
+        "psi_serial_local": psi_serial,
+        "psi_mtp_total_local": psi_mtp_tot,
+        "uniform_coefficient_local": psi_mtp_tot - psi_serial,
+        "realised_level_ratio_rho": rho,
+        "null_crossing_level_ratio_rho_star": rho - math.log(u["raw_p_ratio"]) / slope
+        if slope
+        else nan,
+        "ledger_173A_claim": -0.1789,
+    }
+    out["overstatement_factor_vs_173A"] = (
+        abs(out["ledger_173A_claim"] / out["uniform_coefficient_local"])
+        if out["uniform_coefficient_local"]
+        else nan
+    )
     return out
 
 
@@ -266,7 +335,7 @@ def one_sided_bound(arm: dict) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--arms", nargs="+", default=["base", "ulo", "uhi", "base2"])
+    ap.add_argument("--arms", nargs="+", default=["base", "ulo", "g1", "g2", "base2"])
     ap.add_argument("--wandb", action="store_true")
     args = ap.parse_args()
 
@@ -317,8 +386,8 @@ def main() -> int:
                 exclude = frozenset()
 
     dosed = {}
-    for arm in ("ulo", "uhi"):
-        if arm not in arms or not curves.get(arm):
+    for arm in args.arms:
+        if arm in NULL_ARMS or not curves.get(arm):
             continue
         rec = arms[arm]
         x_all = per_width_slowdown(base_curve, curves[arm])
@@ -339,36 +408,42 @@ def main() -> int:
             "all_tokens_matched": rec["all_tokens_matched"],
             "row_ledger_closes": rec["row_ledger_closes"],
         }
-        entry.update(one_sided_bound(entry))
+        if entry["m1_level"]:
+            entry.update(one_sided_bound(entry))
         dosed[arm] = entry
     payload["dosed_arms"] = dosed
 
     gap = coverage_gap(base_curve, base["width_histogram"], base["mtp_decode_seconds"])
     payload["coverage_gap"] = gap
 
-    if len(dosed) == 2:
-        payload["identified"] = solve_two_arms(dosed)
-        stable = {k: dict(v, x1=v["x1_stable"], xbar_X=v["xbar_X_stable"]) for k, v in dosed.items()}
-        payload["identified_stable_shapes"] = solve_two_arms(stable)
-        for key in ("identified", "identified_stable_shapes"):
-            ident = payload[key]
-            if not ident.get("identified"):
-                continue
-            for label in ("scaled", "upper"):
-                corrected = ident["psi_mtp_total"] + gap[f"psi_mtp_additive_correction_{label}"]
-                coeff = corrected - ident["psi_serial"]
-                ident[f"psi_mtp_total_gap_corrected_{label}"] = corrected
-                ident[f"uniform_coefficient_gap_corrected_{label}"] = coeff
-                ident[f"uniform_sign_gap_corrected_{label}"] = (
-                    "negative" if coeff < 0 else "positive"
+    # psi_mtp is the primary estimand: the ranked score is
+    # baseline_serial_seconds_per_token_mean / candidate_mtp_seconds_per_token_mean
+    # against a separately built pinned baseline, so it is the only coefficient a
+    # candidate-side QMV change can move.
+    for label, stable in (("psi_mtp", False), ("psi_mtp_stable_shapes", True)):
+        est = solve_psi_mtp(dosed, stable=stable)
+        if est.get("identified"):
+            for tag in ("scaled", "upper"):
+                est[f"psi_mtp_gap_corrected_{tag}"] = (
+                    est["psi_mtp"] + gap[f"psi_mtp_additive_correction_{tag}"]
                 )
-            # The correction is strictly positive, so a measured positive sign is
-            # already conclusive and a measured negative sign must survive the
-            # UPPER bound to support ledger 173(A).
-            ident["sign_robust_to_coverage_gap"] = (
-                ident["uniform_coefficient"] > 0
-                or ident["uniform_coefficient_gap_corrected_upper"] < 0
-            )
+            est["ranked_dscore_per_pct_qmv_win"] = est["psi_mtp"]
+            est["ranked_gating_premium"] = 0.0
+        payload[label] = est
+
+    payload["withdrawn_uniform_sign"] = {
+        "status": "WITHDRAWN BY ADVISOR, not answered by this experiment",
+        "why": (
+            "the ranked baseline is a separately built pinned tree "
+            "(/opt/bench-runner/baseline/qwen3.8-27b-mtp-v1/current, never built from "
+            "candidate source; .github is absent from benchmark.json editablePaths), so "
+            "d ln(serial)/dx = 0 on ranked and psi_serial has no ranked leverage"
+        ),
+        "provenance": "edward E50 / PR 54, relayed on PR 52 comment 5342984599; "
+        "re-verified from the workflow independently here",
+        "local_frame_as_measured": local_uniform_coefficient(dosed, stable=False),
+        "local_frame_stable_shapes": local_uniform_coefficient(dosed, stable=True),
+    }
 
     payload["arms"] = {k: strip(v) for k, v in arms.items()}
     payload["width_histogram_spread"] = width_spread(args.arms)
@@ -424,11 +499,13 @@ def git_head() -> str:
 def log_wandb(payload: dict) -> None:
     import wandb
 
-    ident = payload.get("identified", {})
+    est = payload.get("psi_mtp", {})
+    est_stable = payload.get("psi_mtp_stable_shapes", {})
+    local = payload["withdrawn_uniform_sign"]["local_frame_as_measured"]
     run = wandb.init(
         entity="wandb-applied-ai-team",
         project="qwen38-mlx-challenge-senpai",
-        name="e48-uniform-qmv-sign",
+        name="e48-psi-mtp-arm-g",
         job_type="analysis",
         tags=["e48", "qwen3.8-27b-mtp-v1", "injected-regression", "ungated-local"],
         config={
@@ -444,25 +521,31 @@ def log_wandb(payload: dict) -> None:
             "official_or_ranked_score": False,
         },
     )
+    churn = est.get("structural_churn_control", {})
+    diff = est.get("psi_mtp_w1_by_differencing", {})
     summary = {
-        "psi_serial": ident.get("psi_serial"),
-        "psi_mtp_w1": ident.get("psi_mtp_w1"),
-        "psi_mtp_X": ident.get("psi_mtp_X"),
-        "psi_mtp_total": ident.get("psi_mtp_total"),
-        "uniform_coefficient": ident.get("uniform_coefficient"),
-        "uniform_sign": ident.get("uniform_sign"),
-        "uniform_coefficient_gap_corrected_scaled": ident.get(
-            "uniform_coefficient_gap_corrected_scaled"
-        ),
-        "uniform_coefficient_gap_corrected_upper": ident.get(
-            "uniform_coefficient_gap_corrected_upper"
-        ),
-        "sign_robust_to_coverage_gap": ident.get("sign_robust_to_coverage_gap"),
-        "psi_serial_form_residual_pct": ident.get("psi_serial_form_residual_pct"),
-        "identified": ident.get("identified"),
+        # primary: the only coefficient a candidate-side QMV change moves on ranked
+        "psi_mtp": est.get("psi_mtp"),
+        "psi_mtp_lo": (est.get("psi_mtp_interval") or [None, None])[0],
+        "psi_mtp_hi": (est.get("psi_mtp_interval") or [None, None])[1],
+        "psi_mtp_stable_shapes": est_stable.get("psi_mtp"),
+        "psi_mtp_gap_corrected_scaled": est.get("psi_mtp_gap_corrected_scaled"),
+        "psi_mtp_gap_corrected_upper": est.get("psi_mtp_gap_corrected_upper"),
+        "psi_mtp_form_residual_pct": est.get("form_test", {}).get("psi_mtp_form_residual_pct"),
+        "ranked_dscore_per_pct_qmv_win": est.get("ranked_dscore_per_pct_qmv_win"),
+        "ranked_gating_premium": est.get("ranked_gating_premium"),
+        "identified": est.get("identified"),
+        # controls
+        "churn_worst_abs_serial_frac": churn.get("worst_abs_serial_frac"),
+        "psi_mtp_w1_by_differencing": diff.get("psi_mtp_w1"),
         "untreated_share_of_candidate_qmv_upper": payload["coverage_gap"][
             "untreated_share_of_candidate_qmv_upper"
         ],
+        # withdrawn quantity, local frame only, kept for the record
+        "local_uniform_coefficient": local.get("uniform_coefficient_local"),
+        "local_psi_serial": local.get("psi_serial_local"),
+        "local_rho_star": local.get("null_crossing_level_ratio_rho_star"),
+        "uniform_sign_status": "withdrawn_by_advisor",
     }
     for arm, rec in payload.get("dosed_arms", {}).items():
         for key in (
