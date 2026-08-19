@@ -90,8 +90,13 @@ cell to AIR and checked the design's core claim. Results in
   `loop_backedges` (=4) and `allocas` (=2). This is the census evidence that the
   `KT=64 → KT=4` step changes reuse distance and nothing else.
 - **No timed cell spills.** `xkt_na3_r2` = 77 regs, `xkt_na4_r2` = 97,
-  `xkt_na6_r1` = **105** (fits under the 128 wall), `xkt_na6_r2` = 135 (over —
-  excluded from timing). Spill-gate controls fired correctly.
+  `xkt_na6_r1` = **105**, `xkt_na6_r2` = 135 (excluded from timing as the largest
+  allocation, not because 128 is a literal limit — see the vocabulary note below).
+  Spill-gate controls fired correctly on all three deliberate spill cells.
+  Separately, my `acc_spill` detector reports `False` for `xrb_na6_r4` even though
+  its `alloca_types` contain `[1 x [4 x <6 x float>]]` — the accumulator array the
+  advisor identifies as *the* spilling cell. The pattern match misses the nested
+  form, so read `alloca_types` directly rather than trusting that flag.
 
 `xkt_na6_r1` fitting at 105 registers is the concrete shape deliverable (b)
 would use, and it needs **no threadgroup memory and no barrier**.
@@ -301,11 +306,89 @@ Context: crown 0.5193 %, engineerable gap 0.2586 %, σ_score 0.0978 %.
 - **The row-tile tax is a hard floor for NA=6 single-weight-pass schemes.** Price
   any future proposal in that direction against ~+11 % at M=6 (NA=3) and ~+21 %
   at NA=4, with no staging discount available.
-- **The register tile, not the activation stream, is the binding resource.** The
-  census already showed `xkt_na6_r1` fits at 105 registers while `xkt_na6_r2`
-  needs 135 against a 128 wall. Work that *raises* rows per SIMD or *reduces*
-  accumulator pressure is the direction with headroom; work that subdivides K is
-  not.
+- **The register tile, not the activation stream, is the binding resource.**
+  Phrased in spill terms per the advisor's §4 correction, not as a literal
+  128-register limit: `peak_live_regs` is a lane-weighted textual heuristic whose
+  *shape* is usable and whose *absolute* value is not, and the shipped max of 129
+  is already "over" 128 and ships fine. The robust, non-heuristic readout is the
+  accumulator alloca. Every K-tiled cell moves its accumulators into memory
+  (`xkt_na4_r2_* -> [2 x [2 x <4 x float>]]`, 97 regs) while the sequential
+  row-blocked anchor keeps them in registers (`xrb_na3_r2`, 66 regs, no float
+  alloca). Subdividing K therefore *costs* accumulator residency; it does not buy
+  locality.
+
+## Reconciliation with advisor feedback of 2026-08-19T07:41Z
+
+That feedback arrived while this result was being packaged. It directs "no
+revision — E41 stays as briefed", so the verdict above is unchanged. Four items
+are load-bearing and are answered here rather than left implicit.
+
+### The base moved under this experiment
+
+The advisor branch is now `e468efd` and **E27 is reverted**: `static_assert(NA<=5)`
+is back to `NA<=4`, and `case 5:`/`case 9:` are back to IPG 3. Everything measured
+here is on `04ad6bf`, so all absolute timings belong to a tree that no longer
+exists. What transfers and what does not:
+
+- **The verdict transfers.** ILP-vs-MEM is a property of the `_wide` loop nest and
+  its accumulator residency. E27's revert changed the dispatch table, not that
+  loop body, and the recovery figure is a difference between two ratios taken
+  from the *same* arm build.
+- **The controls do not transfer.** M=5 and M=9 were two of my four untreated
+  controls, and `case 5:`/`case 9:` are exactly the cells E27's revert changed.
+  Anyone re-running this needs a fresh control set on `e468efd`.
+
+### Replacement stop condition, answered: the arm did NOT raise the kernel-wide max
+
+The advisor's corrected gate is "report the kernel-wide max per arm, and flag any
+treated cell above the ceiling", because all eight width cells inline into one
+`affine_qmv_fast` entry point and therefore share one allocation equal to the max
+over cells. From the committed census:
+
+| treated (timed) cell | regs |
+|---|---|
+| `xrb_na3_r2` (M=6 anchor) | 66 |
+| `xkt_na3_r2_kt1` | 77 |
+| `xkt_na4_r2_kt1` / `_kt4` / `_kt64` | 97 |
+
+Max over treated cells = **97**, under both the old-base ceiling of 129 and the
+rebased ceiling of **108**. The untreated widths kept their shipped allocations,
+so the arm's kernel-wide max equals the base's and **the contamination confound
+the advisor warned about did not occur in E41**. This matters for the control
+gate: a raised shared allocation would have taxed every width and would have been
+a tidy explanation for my M=2/M=9 residuals. It is ruled out, so those residuals
+still need the build-level explanation, and M=9 remains bounded-but-unexplained.
+
+### The advisor's r=2 ladder prediction is already confirmed by this census
+
+The +17/NA reading of the r=2 ladder is directly in the committed data, and the
+r=4 ladder gives the contrasting +21/NA:
+
+```text
+r = 4 (shipped)      na2 62   na3 83   na4 104  na5 125     step +21
+r = 2 (row-blocked)  na3 66   na4 83            na6 117     step +17
+```
+
+`na4_r2 = 83` and `na6_r2 = 117` are both **measured**, 34 apart across two NA
+steps, and the measured `na3 -> na4` step of +17 confirms the ladder is linear.
+So **`na5_r2 = 100`**, which is under the rebased 108 ceiling. Honest caveat: this
+is interpolation between two measured neighbours, not a direct compile of NA=5 at
+r=2. I did not run that compile, for two reasons — it needs the `_rowblocked`
+template this branch just pruned, and on `e468efd` NA=5 is no longer permitted by
+`static_assert(NA<=4)`, so the compile has to be done deliberately on the new
+tree rather than smuggled in here.
+
+The consequence is the one the advisor drew: **register cost per additional NA is
+a function of `rows_per_simd`, not a constant.** Combined with this experiment's
+result, that closes a loop — E41 priced r=4 -> r=2 at ~+11 % (NA=3) / ~+21 %
+(NA=4) with no K-tiling discount, so the open question is precisely whether a
+wider NA at r=2 repays that fixed tax. That is follow-up 3 below, now with a
+concrete first target.
+
+### Vocabulary
+
+"128-register wall" is retired throughout in favour of spill and of the
+kernel-wide max, per §4 of the feedback.
 
 ## Scored surface
 
@@ -338,8 +421,13 @@ Each curve must run at the head that carries its build, because
 checkout option — its second argument is provenance only. All three curves need a
 clean worktree.
 
+The census probes the E41 template, so it only compiles at `5d97fe3`/`dfe39af`.
+At this branch's tip the template is pruned and **every census cell fails to
+compile** — that is expected, not a regression. Its committed JSON is the record.
+
 ```bash
 # 0. AIR census, before any GPU time: proves KT holds the instruction mix fixed
+#    (must be run at 5d97fe3; fails at the branch tip by design)
 python3 research/e41_ktile_census.py          # -> research/e41-ktile-census.json
 
 # 1. base (A) — check out 5d97fe3 (template landed, dispatch table untouched)
@@ -382,7 +470,13 @@ runtime, so do not edit either twin while a curve or parity job is in flight.
    floors from a same-build replicate cost one extra curve and are one to two
    orders of magnitude more informative. M=1 should be excluded from control sets
    or given a warmup pass.
-3. **Price the NA=6 weight-pass saving directly.** E41 measured only the cost
-   side. Whether *any* NA=6 scheme is viable now depends entirely on whether the
-   single-weight-pass saving exceeds ~+11 %, which is a separate measurement and
-   the one that decides the whole direction.
+3. **Price the wider-NA-at-r=2 saving directly, starting at NA=5.** E41 measured
+   only the cost side. The direction now has a concrete first target, because the
+   r=2 ladder predicts `na5_r2 = 100` under the rebased 108 ceiling: NA=5 at r=2
+   should raise the kernel-wide max by **nothing**, where NA=5 at r=4 costs 125 and
+   is what sank E27. The decisive question is therefore whether NA=5's extra
+   accepted tokens repay E41's measured ~+11 % (NA=3) to ~+21 % (NA=4) row-tile
+   tax, which no K-tiling discount can reduce. Two things to settle first, both
+   cheap: compile NA=5 at r=2 directly on `e468efd` rather than trusting my
+   interpolation, and resolve whether `static_assert(NA<=4)` now forbids the cell
+   outright.
