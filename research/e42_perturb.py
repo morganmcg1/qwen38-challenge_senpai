@@ -295,6 +295,10 @@ LO_CASE_ANCHORS = {w: (_strip_markers(t) if t else None) for w, t in LO_CASE_REP
 ARMS = {
     "p2": range(2, 10),
     "p6": range(6, 10),
+    # M=6 alone. Ranked telemetry cannot separate a step at M>=6 from a plain
+    # quadratic in M, and the two disagree by 4.4x on T(6)-T(5); a single-width
+    # injection prices that boundary causally instead of inferring a mixture.
+    "m6": range(6, 7),
     "m1": range(0, 0),
 }
 
@@ -386,7 +390,14 @@ def self_test(base_sha: str) -> None:
     base = base_header(base_sha)
     checks = 0
     structural = apply_edits(base, STRUCT_EDITS)
-    for arm, level in [("p2", 1), ("p2", 2), ("p6", 1), ("p6", 2), ("m1", 1)]:
+    for arm, level in [
+        ("p2", 1),
+        ("p2", 2),
+        ("p6", 1),
+        ("p6", 2),
+        ("m6", 2),
+        ("m1", 1),
+    ]:
         text = build_arm(base, arm, level)
         assert text != base, (arm, level)
         # the repeat loop exists once per treated kernel body (3rd is qmv_fast_impl)
@@ -430,6 +441,7 @@ def self_test(base_sha: str) -> None:
             assert len(diff) == 2 * len(list(ARMS[arm])), (arm, len(diff))
             checks += 2
     assert build_arm(base, "p6", 1) != build_arm(base, "p2", 1)
+    assert build_arm(base, "m6", 2) != build_arm(base, "p6", 2)
     checks += 1
     print(f"E42 PERTURB SELF-TEST PASSED ({checks} checks)")
 

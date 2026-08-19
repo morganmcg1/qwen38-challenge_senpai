@@ -42,6 +42,7 @@ CURVES = ROOT / ".mlxfast-private/qmv-curve"
 TREATED = {
     "p2": set(range(2, 10)),
     "p6": set(range(6, 10)),
+    "m6": {6},
     "m1": {1},
 }
 # The draft-side compact vocabulary readout is bits=2 and M=1 only, so it is
