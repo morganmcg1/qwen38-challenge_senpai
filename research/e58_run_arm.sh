@@ -116,6 +116,22 @@ gpu_temp() {
   echo ""
 }
 
+# benchmark-qwen-mtp.sh checks that the two binaries EXIST and reuses only
+# benchmark.sh's metallib-freshness test; it never reaches benchmark.sh's own
+# binary-freshness gate (benchmark.sh:1793). So an edit made after the last
+# ./setup.sh is silently timed against the OLD worker: the first E58 smoke run
+# produced zero census lines for exactly that reason, because the census hook
+# was not in .build-worker/release/mlxfast-runtime-worker at all. Build both
+# products here, before the entry temperature is read.
+mkdir -p .build/clang-module-cache .build-worker/clang-module-cache
+CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-${PWD}/.build/clang-module-cache}" \
+  swift build -c release --force-resolved-versions --product mlxfast-swift \
+  > "${out}/build-cli.log" 2>&1 || { echo "e58: trusted CLI build failed" >&2; exit 1; }
+CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-${PWD}/.build-worker/clang-module-cache}" \
+  swift build -c release --force-resolved-versions --scratch-path .build-worker \
+  --product mlxfast-runtime-worker \
+  > "${out}/build-worker.log" 2>&1 || { echo "e58: worker build failed" >&2; exit 1; }
+
 {
   echo "tag=${tag}"
   echo "census=${census}"

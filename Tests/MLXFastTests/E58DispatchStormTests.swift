@@ -87,7 +87,10 @@ struct E58DispatchStormTests {
         /// command buffer, and waits for the last buffer. The wait is what puts
         /// the whole storm on the caller's critical path, the way a dependent
         /// MLX chain is.
-        func metalStorm(count: Int, opsPerBuffer: Int, barrier: Bool) -> Int {
+        func metalStorm(
+            count: Int, opsPerBuffer: Int, barrier: Bool,
+            rebindArguments: Bool = false, wait: Bool = true
+        ) -> Int {
             var remaining = count
             var buffers = 0
             var last: MTLCommandBuffer?
@@ -101,6 +104,15 @@ struct E58DispatchStormTests {
                 encoder.setBuffer(scratch, offset: 0, index: 0)
                 for _ in 0 ..< batch {
                     if barrier { encoder.memoryBarrier(scope: .buffers) }
+                    if rebindArguments {
+                        // A real kernel rebinds its own arguments before every
+                        // dispatch. Four buffers is the low end of what the
+                        // quantized and attention kernels bind.
+                        encoder.setComputePipelineState(pipeline)
+                        for index in 0 ..< 4 {
+                            encoder.setBuffer(scratch, offset: 0, index: index)
+                        }
+                    }
                     encoder.dispatchThreads(
                         MTLSize(width: 1, height: 1, depth: 1),
                         threadsPerThreadgroup: MTLSize(width: 1, height: 1, depth: 1))
@@ -110,14 +122,21 @@ struct E58DispatchStormTests {
                 buffers += 1
                 last = buffer
             }
-            last?.waitUntilCompleted()
+            if wait { last?.waitUntilCompleted() }
             return buffers
         }
 
-        func mlxStorm(count: Int) {
+        /// `scalarOperand` reproduces the shape of a Swift-side scalar promotion
+        /// (`x + 1`), which allocates a fresh one-element array per op. The
+        /// array-operand form reuses one preallocated operand, so the pair
+        /// separates MLX's per-op cost from Swift's scalar-bridging cost.
+        func mlxStorm(count: Int, scalarOperand: Bool) {
             var chained = MLXArray([Float(0)])
-            eval(chained)
-            for _ in 0 ..< count { chained = chained + Float(1) }
+            let one = MLXArray([Float(1)])
+            eval(chained, one)
+            for _ in 0 ..< count {
+                chained = scalarOperand ? chained + Float(1) : chained + one
+            }
             eval(chained)
         }
 
@@ -165,9 +184,25 @@ struct E58DispatchStormTests {
                 metalStorm(count: 4096, opsPerBuffer: opsPerBuffer, barrier: true)
             }
         }
+        for opsPerBuffer in [50, 64, 128, 256] {
+            measure(mode: "metal_rebind", opsPerBuffer: opsPerBuffer, dispatches: 4096) {
+                metalStorm(
+                    count: 4096, opsPerBuffer: opsPerBuffer, barrier: true,
+                    rebindArguments: true)
+            }
+        }
+        measure(mode: "metal_encode_only", opsPerBuffer: 64, dispatches: 4096) {
+            metalStorm(count: 4096, opsPerBuffer: 64, barrier: false, wait: false)
+        }
         for dispatches in [64, 256, 1024, 4096] {
-            measure(mode: "mlx", opsPerBuffer: -1, dispatches: dispatches) {
-                mlxStorm(count: dispatches)
+            measure(mode: "mlx_scalar", opsPerBuffer: -1, dispatches: dispatches) {
+                mlxStorm(count: dispatches, scalarOperand: true)
+                return -1
+            }
+        }
+        for dispatches in [64, 256, 1024, 4096] {
+            measure(mode: "mlx_array", opsPerBuffer: -1, dispatches: dispatches) {
+                mlxStorm(count: dispatches, scalarOperand: false)
                 return -1
             }
         }
