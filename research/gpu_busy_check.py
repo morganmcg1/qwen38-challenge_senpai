@@ -14,7 +14,16 @@ including a neighbour's microbenchmark. A timed session is continuous GPU work,
 so a low maximum across a short window is positive evidence that the GPU is free
 rather than mere absence of evidence.
 
-    research/gpu_busy_check.py [--seconds 12] [--threshold 5]
+That counter is an interval measurement accumulated since its previous read, not
+an instantaneous gauge, which drives two decisions here. The first read after a
+gap reports an unbounded prior window, so it is taken as an unscored priming
+read: on an idle host it lands at 7-9% and every later read is 0%, and running
+the check twice back to back makes the second run read 0% throughout. Isolated
+single samples are also not evidence of a neighbour, because a competing timed
+session holds the GPU for minutes; the verdict therefore needs a run of
+consecutive busy samples rather than one peak.
+
+    research/gpu_busy_check.py [--seconds 12] [--threshold 5] [--consecutive 3]
 
 Exit 0 if the GPU looks idle, 1 if it looks busy, so a runner can gate on it.
 """
@@ -43,8 +52,16 @@ def main() -> int:
     ap.add_argument("--seconds", type=float, default=12.0)
     ap.add_argument("--threshold", type=int, default=5,
                     help="max busy %% still considered idle")
+    ap.add_argument("--consecutive", type=int, default=3,
+                    help="consecutive busy samples required for a BUSY verdict")
     ap.add_argument("--interval", type=float, default=1.0)
     args = ap.parse_args()
+
+    primer = sample()
+    if primer is None:
+        print("gpu_busy_check: no AGXAccelerator utilization counter")
+        return 2
+    time.sleep(args.interval)
 
     samples: list[int] = []
     deadline = time.monotonic() + args.seconds
@@ -58,11 +75,23 @@ def main() -> int:
 
     peak = max(samples)
     mean = sum(samples) / len(samples)
-    busy = peak > args.threshold
+    ordered = sorted(samples)
+    mid = len(ordered) // 2
+    median = (ordered[mid] if len(ordered) % 2
+              else (ordered[mid - 1] + ordered[mid]) / 2)
+
+    longest = current = 0
+    for value in samples:
+        current = current + 1 if value > args.threshold else 0
+        longest = max(longest, current)
+
+    busy = longest >= args.consecutive
     print(f"gpu_busy_check: n={len(samples)} over {args.seconds:.0f}s  "
-          f"peak={peak}%  mean={mean:.1f}%  threshold={args.threshold}%  "
+          f"peak={peak}%  mean={mean:.1f}%  median={median}%  "
+          f"longest_busy_run={longest}  threshold={args.threshold}%  "
+          f"consecutive_required={args.consecutive}  "
           f"verdict={'BUSY' if busy else 'IDLE'}")
-    print(f"gpu_busy_check: samples={samples}")
+    print(f"gpu_busy_check: primer_discarded={primer}%  samples={samples}")
     return 1 if busy else 0
 
 

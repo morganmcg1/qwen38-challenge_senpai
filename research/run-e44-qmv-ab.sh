@@ -43,8 +43,15 @@ cd "${repo_root}"
 # definitions, then verify each name really got defined, so a refactor of
 # benchmark.sh stops this script instead of letting it run unguarded.
 LOCAL_RUN_LOCK_OWNED=""
+# benchmark.sh's guards open with `local_run_guard_enabled || return 0`, and that
+# predicate is only true for a --local-iterate or --local-submit run. Both
+# variables must therefore be set here, or the guards no-op on an undefined
+# command and this script times without a lock or a resident-model scan.
+LOCAL_ITERATE=1
+LOCAL_SUBMIT=0
 run_lock_definitions="$(
   awk '/^readonly RESIDENT_MODEL_PROCESS_PATTERN=/' benchmark.sh
+  awk '/^local_run_guard_enabled\(\) \{/,/^\}/' benchmark.sh
   awk '/^local_run_lock_path\(\) \{/,/^\}/' benchmark.sh
   awk '/^acquire_local_run_lock\(\) \{/,/^\}/' benchmark.sh
   awk '/^release_local_run_lock\(\) \{/,/^\}/' benchmark.sh
@@ -56,7 +63,8 @@ if ! eval "${run_lock_definitions}"; then
   exit 1
 fi
 for reused in \
-  local_run_lock_path acquire_local_run_lock release_local_run_lock \
+  local_run_guard_enabled local_run_lock_path \
+  acquire_local_run_lock release_local_run_lock \
   list_resident_model_processes abort_if_model_already_resident
 do
   if ! declare -F "${reused}" >/dev/null 2>&1; then
@@ -66,6 +74,10 @@ do
 done
 if [[ -z "${RESIDENT_MODEL_PROCESS_PATTERN:-}" ]]; then
   echo "run-e44-qmv-ab.sh: benchmark.sh's RESIDENT_MODEL_PROCESS_PATTERN is empty; refusing to run unguarded" >&2
+  exit 1
+fi
+if ! local_run_guard_enabled; then
+  echo "run-e44-qmv-ab.sh: benchmark.sh's run guard reports itself disabled; refusing to run unguarded" >&2
   exit 1
 fi
 
@@ -83,15 +95,17 @@ abort_if_model_already_resident
 # fail-closed: refuse rather than produce a confounded session.
 gpu_busy_verdict="skipped"
 if [[ "${probe}" == "0" && "${coverage}" == "0" ]]; then
-  if gpu_busy_line="$(python3 "${repo_root}/research/gpu_busy_check.py" \
-        --seconds "${gpu_busy_seconds}")"; then
-    gpu_busy_verdict="idle"
-  else
-    gpu_busy_verdict="busy"
-  fi
+  gpu_busy_status=0
+  gpu_busy_line="$(python3 "${repo_root}/research/gpu_busy_check.py" \
+      --seconds "${gpu_busy_seconds}")" || gpu_busy_status=$?
+  case "${gpu_busy_status}" in
+    0) gpu_busy_verdict="idle" ;;
+    1) gpu_busy_verdict="busy" ;;
+    *) gpu_busy_verdict="counter_unavailable" ;;
+  esac
   echo "${gpu_busy_line}" >&2
-  if [[ "${gpu_busy_verdict}" == "busy" ]]; then
-    echo "run-e44-qmv-ab.sh: another job is using this GPU; refusing to time." >&2
+  if [[ "${gpu_busy_verdict}" != "idle" ]]; then
+    echo "run-e44-qmv-ab.sh: GPU busy gate returned ${gpu_busy_verdict}; refusing to time." >&2
     echo "run-e44-qmv-ab.sh: coordinate, then rerun." >&2
     exit 3
   fi
