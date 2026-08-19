@@ -57,7 +57,8 @@ ARMS = ("base", "m9two", "base2")
 LEGS = ("leg-1", "leg-2")
 ROW_FIELDS = ("sequential_argmax", "top1_logit", "top2_logits", "top2_tokens")
 LEDGER_FIELDS = ("top2_tokens", "top2_logits", "token", "reference_token",
-                 "accepted", "kind", "round", "draft_index")
+                 "reference_margin", "reference_checked_by", "accepted", "kind",
+                 "round", "draft_index")
 EOS_TOKEN_ID = 248044
 
 
@@ -202,6 +203,8 @@ def compare_ledger(a: dict, b: dict) -> dict:
                 gaps = [ulp_gap(p, q) for p, q in zip(va, vb)]
                 rec["ulp"] = gaps
                 max_ulp = max([max_ulp] + [abs(g) for g in gaps])
+            elif f == "reference_margin":
+                rec["ulp"] = ulp_gap(va, vb)
             mism[f].append(rec)
     out["field_mismatch_counts"] = {f: len(v) for f, v in mism.items()}
     out["field_first_mismatches"] = {f: v[:5] for f, v in mism.items()}
@@ -286,8 +289,9 @@ def negative_control() -> dict:
     # to fail even in runs where no ledger was produced.
     la = {"row_ledger": [
         {"top2_tokens": [1, 2], "top2_logits": [1.5, 0.5], "token": 1,
-         "reference_token": 1, "accepted": True, "kind": "draft", "round": 0,
-         "draft_index": 0}]}
+         "reference_token": 1, "reference_margin": 1.0,
+         "reference_checked_by": "serial_golden", "accepted": True,
+         "kind": "draft", "round": 0, "draft_index": 0}]}
     lb = copy.deepcopy(la)
     lb["row_ledger"][0]["top2_logits"][0] = math.nextafter(1.5, math.inf)
     r = compare_ledger(la, lb)
@@ -299,6 +303,16 @@ def negative_control() -> dict:
     r = compare_ledger(la, lb)
     cases["C_ledger_acceptance_flipped"] = (
         r["field_mismatch_counts"]["accepted"] == 1 and not r["identical"])
+    lb = copy.deepcopy(la)
+    lb["row_ledger"][0]["reference_margin"] = math.nextafter(1.0, math.inf)
+    r = compare_ledger(la, lb)
+    cases["C_ledger_reference_margin_one_ulp"] = (
+        r["field_mismatch_counts"]["reference_margin"] == 1 and not r["identical"])
+    lb = copy.deepcopy(la)
+    lb["row_ledger"][0]["reference_checked_by"] = "verify_block_replay"
+    r = compare_ledger(la, lb)
+    cases["C_ledger_reference_source_changed"] = (
+        r["field_mismatch_counts"]["reference_checked_by"] == 1 and not r["identical"])
     cases["C_ledger_absent_is_not_a_pass"] = not compare_ledger({}, {})["identical"]
 
     return {"cases": cases, "all_fired": all(cases.values())}
