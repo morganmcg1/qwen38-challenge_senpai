@@ -378,13 +378,58 @@ def stop_rules(arms: dict, cmp: dict, null: dict) -> dict:
             "serial_null_pct": serial_null,
             "meaning": "the dispatch model is wrong; M=1 should not reach case 9",
         },
-        "rule5_bitwise_delta_at_m_le_9": {
-            "hard_stop": not (matched and ledger),
-            "all_tokens_matched": matched,
-            "row_ledger_closes": ledger,
-            "note": "512-token exactness is the gate; local rows are candidate-generated",
-        },
+        "rule5_bitwise_delta_at_m_le_9": rule5(matched, ledger),
     }
+
+
+def rule5(matched: bool, ledger: bool) -> dict:
+    """The hard-stop verdict, backed by cross-arm evidence when it exists.
+
+    `all_tokens_matched` and ledger closure are self-consistency properties of one
+    arm, so on their own they cannot see a base-versus-candidate delta. PATH C
+    supplies the cross-arm reading and is preferred whenever it is present.
+    """
+    out = {
+        "hard_stop": not (matched and ledger),
+        "all_tokens_matched": matched,
+        "row_ledger_closes": ledger,
+        "cross_arm_evidence": None,
+        "note": "self-consistency only; PATH C absent, so no cross-arm reading",
+    }
+    path = pathlib.Path("research/e55-exactness.json")
+    if not path.exists():
+        return out
+    x = json.loads(path.read_text())
+    v = x["verdicts"]
+    c = x.get("path_c_wide_row_ledger")
+    cross = bool(x.get("direct_bitwise_wide_evidence_present"))
+    out["cross_arm_evidence"] = {
+        "path_c_present_and_provenance_gated": cross,
+        "path_c_wide_rows_bitwise_identical": v.get(
+            "path_c_wide_rows_bitwise_identical"),
+        "path_c_max_abs_ulp_top2_logits": (
+            c.get("max_abs_ulp_top2_logits") if c else None),
+        "path_c_rows": (c["row_count"][0] if c else None),
+        "path_b_wide_argmax_trajectory_identical": v.get(
+            "path_b_wide_argmax_trajectory_identical"),
+        "widths_exercised": x.get("widths_exercised"),
+        "negative_controls_all_fired": v.get("negative_controls_all_fired"),
+    }
+    if cross:
+        out["hard_stop"] = not (
+            matched and ledger
+            and v["path_c_wide_rows_bitwise_identical"]
+            and v["path_b_wide_argmax_trajectory_identical"]
+            and v["negative_controls_all_fired"])
+        out["note"] = (
+            "cross-arm: all %d wide rows bitwise identical at M in %s, "
+            "provenance-gated" % (c["row_count"][0],
+                                  sorted(int(k) for k in x["widths_exercised"])))
+    else:
+        out["note"] = (
+            "PATH C present but not provenance-gated, so it carries no "
+            "cross-arm meaning")
+    return out
 
 
 def git_head() -> str:
