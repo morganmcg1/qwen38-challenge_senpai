@@ -16,9 +16,14 @@ tag="${2:?usage: e56_run_leg.sh ARM TAG [--tokens N]}"
 shift 2
 
 tokens=256
+depth=""
 while (($#)); do
   case "$1" in
     --tokens) tokens="$2"; shift 2 ;;
+    # The parent's offered per-round draft ceiling. The base walk wants depth 8
+    # at this fixture's acceptance, so an offer of k pins every round to verify
+    # width k+1 and turns this leg into one point of a fixed-width cost curve.
+    --depth) depth="$2"; shift 2 ;;
     *) echo "e56_run_leg: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -53,6 +58,9 @@ fi
 # be named too.
 export MLXFAST_RUNTIME_WORKER_EXECUTABLE="${worker}"
 export MLXFAST_MLX_METALLIB="${metallib}"
+if [[ -n "${depth}" ]]; then
+  export MLXFAST_QWEN_MTP_DEPTH="${depth}"
+fi
 
 # Same search order as benchmark.sh's find_macmon, so this leg records the
 # temperature from the same reader the cool gate itself used. setup.sh installs
@@ -99,6 +107,7 @@ gate_skipped="$(grep -c 'skipping the GPU cool-down gate' "${out}/trace.txt" 2>/
 {
   echo "e56_arm=${arm}"
   echo "e56_tag=${tag}"
+  echo "offered_depth=${MLXFAST_QWEN_MTP_DEPTH:-8}"
   echo "e56_head_sha=$(git rev-parse HEAD)"
   echo "checkout_schedule_blob=$(git hash-object "${SCHEDULE_FILE}")"
   echo "worker_path=${worker}"
