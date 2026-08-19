@@ -273,12 +273,75 @@ def log_tax(run, arm_dirs) -> None:
     (ARTIFACTS / "tax-arms.json").write_text(json.dumps(rows, indent=2, sort_keys=True))
 
 
+def log_analysis(run, path) -> None:
+    report = json.loads(pathlib.Path(path).read_text())
+    table = wandb.Table(
+        columns=[
+            "method",
+            "measures",
+            "ns_per_dispatch",
+            "candidate_ms_per_round",
+            "beagle_percent_of_ranked_round",
+            "medicine_percent_of_ranked_round",
+        ]
+    )
+    what = {
+        "in_situ_pipelined_tax": "one more dispatch in the stream, in situ",
+        "census_host_encode_and_submit": "host time inside Metal, real path",
+        "storm_serialised_floor": "trivial dispatch, encode+submit+wait",
+        "e57_real_dispatch_regression_contaminated": (
+            "real composed-SDPA dispatches, includes their arithmetic"
+        ),
+    }
+    payload = {}
+    for method, row in report["projection"].items():
+        table.add_data(
+            method,
+            what.get(method, ""),
+            row["ns_per_dispatch"],
+            row["candidate_ms_per_round"],
+            row["beagle_percent_of_ranked_round"],
+            row["medicine_percent_of_ranked_round"],
+        )
+        payload[f"projection/{method}/ns_per_dispatch"] = row["ns_per_dispatch"]
+        payload[f"projection/{method}/candidate_ms_per_round"] = row[
+            "candidate_ms_per_round"
+        ]
+        for leg in RANKED:
+            payload[f"projection/{method}/{leg}_percent_of_ranked_round"] = row[
+                f"{leg}_percent_of_ranked_round"
+            ]
+    payload["projection/table"] = table
+    for label, slope in report["slopes"].items():
+        key = label.split()[0]
+        for field, value in slope.items():
+            payload[f"slope/{key}/{field}"] = value
+    payload["projection/median_pair_dilution"] = MEDIAN_PAIR_DILUTION
+    payload["projection/ranked_mde_percent_2sd"] = RANKED_MDE_PERCENT
+    payload["projection/local_null_floor_percent"] = LOCAL_NULL_FLOOR_PERCENT
+    run.log(payload)
+    run.summary.update(
+        {
+            "verdict": "not_useful",
+            "rung2_gate_percent": 2.0,
+            "rung2_opened": False,
+            "best_estimate_percent_of_ranked_round": report["projection"][
+                "in_situ_pipelined_tax"
+            ]["beagle_percent_of_ranked_round"],
+            "pessimistic_on_path_percent_of_ranked_round": report["projection"][
+                "census_host_encode_and_submit"
+            ]["beagle_percent_of_ranked_round"],
+        }
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage", required=True)
     parser.add_argument("--storm", nargs="*", default=[])
     parser.add_argument("--census")
     parser.add_argument("--arms", nargs="*", default=[])
+    parser.add_argument("--analysis")
     args = parser.parse_args()
 
     run = resume_run()
@@ -288,6 +351,8 @@ def main() -> int:
         log_census(run, args.census)
     elif args.stage == "tax":
         log_tax(run, args.arms)
+    elif args.stage == "analysis":
+        log_analysis(run, args.analysis)
     else:
         print(f"e58: unknown stage {args.stage}", file=sys.stderr)
         return 2
