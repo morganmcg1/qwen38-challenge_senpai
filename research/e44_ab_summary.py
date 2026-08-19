@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""Summarize the E44 section 7.3 paired A/B microbenchmark and log it to W&B.
+
+Every claim gets an interval. The pre-registered detection threshold for this
+experiment is MDE(exact, df=4) = 0.5040 %; the achieved interval is computed from
+the observed pairwise spread and reported next to it, so a null result can be
+distinguished from an underpowered one.
+
+    research/e44_ab_summary.py .mlxfast-private/e44-qmv-ab/TAG [--wandb]
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import pathlib
+import statistics
+import sys
+
+# Pre-registered in the assignment. Not recomputed from the data.
+PREREG_MDE_PCT = 0.5040
+# The assignment's promotion bar for this mechanism.
+BAR_PCT = 5.0
+# Widths the candidate actually replaces; 1..3 are the untouched-width guard.
+TOUCHED = range(4, 10)
+
+# Student t, df = 4. Two-sided 95 % critical value, and the one-sided 80 %-power
+# companion. Hardcoded so the summary has no scipy dependency.
+T_975_DF4 = 2.7764451051977987
+T_800_DF4 = 0.9409645
+MDE_FACTOR_DF4 = (T_975_DF4 + T_800_DF4) / math.sqrt(5)
+
+
+def load(run_dir: pathlib.Path) -> tuple[dict, dict]:
+    payload = json.loads((run_dir / "ab.json").read_text())
+    identity: dict[str, str] = {}
+    for line in (run_dir / "identity.txt").read_text().splitlines():
+        if "=" in line:
+            key, _, value = line.partition("=")
+            identity[key.strip()] = value.strip()
+    return payload, identity
+
+
+def paired_stats(deltas: list[float]) -> dict:
+    n = len(deltas)
+    mean = statistics.fmean(deltas)
+    sd = statistics.stdev(deltas) if n > 1 else float("nan")
+    half = T_975_DF4 * sd / math.sqrt(n) if n > 1 else float("nan")
+    return {
+        "n_pairs": n,
+        "mean_pct": mean,
+        "sd_pct": sd,
+        "ci95_lo_pct": mean - half,
+        "ci95_hi_pct": mean + half,
+        "achieved_mde_pct": MDE_FACTOR_DF4 * sd if n > 1 else float("nan"),
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("run_dir", type=pathlib.Path)
+    parser.add_argument("--wandb", action="store_true")
+    args = parser.parse_args()
+
+    payload, identity = load(args.run_dir)
+    rows = payload["measurements"]
+
+    fidelity = [r for r in rows if r["kind"] == "fidelity"]
+    timing = [r for r in rows if r["kind"] == "timing"]
+
+    shapes = sorted({r["shape"] for r in timing})
+    widths = sorted({r["m"] for r in timing})
+
+    print(f"device        : {payload['device']}  ({payload['architecture']})")
+    print(f"function      : {payload['function']}")
+    print(f"design        : {payload['order']}, pairs={payload['pairs']}, "
+          f"reps={payload['reps']}, inner={payload['inner']}")
+    print(f"base arm      : {identity.get('base_metal_sha256', '?')[:16]} "
+          f"@ {identity.get('base_sha', '?')[:8]}")
+    print(f"cand arm      : {identity.get('cand_metal_sha256', '?')[:16]} "
+          f"@ {identity.get('head', '?')[:8]}")
+    print(f"thermal       : real_gate={identity.get('cool_gate_passed_real_gate')} "
+          f"gate_qualified={identity.get('gate_qualified_for_timing')} "
+          f"entry={identity.get('gpu_temp_c_entry')}C "
+          f"exit={identity.get('gpu_temp_c_exit')}C")
+    print(f"pre-registered MDE(exact, df=4) = {PREREG_MDE_PCT:.4f} %   "
+          f"bar = {BAR_PCT:.1f} %")
+
+    print("\n--- fidelity vs exact double reference (before any timing) ---")
+    print(f"{'shape':<26}{'M':>3}{'base max_rel':>15}{'cand max_rel':>15}"
+          f"{'cand rms_rel':>15}")
+    worst_cand = 0.0
+    for r in fidelity:
+        worst_cand = max(worst_cand, r["cand_max_rel"])
+        print(f"{r['shape']:<26}{r['m']:>3}{r['base_max_rel']:>15.3e}"
+              f"{r['cand_max_rel']:>15.3e}{r['cand_rms_rel']:>15.3e}")
+    print(f"worst candidate max_rel = {worst_cand:.3e}")
+
+    summary: dict[str, float] = {}
+    table: list[dict] = []
+    print("\n--- paired timing, candidate minus base ---")
+    for shape in shapes:
+        print(f"\n{shape}")
+        print(f"{'M':>3}{'base us':>11}{'cand us':>11}{'delta %':>10}"
+              f"{'sd %':>8}{'95% CI':>20}{'MDE %':>9}  verdict")
+        for m in widths:
+            pairs = [r for r in timing if r["shape"] == shape and r["m"] == m]
+            if not pairs:
+                continue
+            base_us = statistics.fmean(p["base_s"] for p in pairs) * 1e6
+            cand_us = statistics.fmean(p["cand_s"] for p in pairs) * 1e6
+            deltas = [100.0 * (p["cand_s"] - p["base_s"]) / p["base_s"]
+                      for p in pairs]
+            st = paired_stats(deltas)
+            speedup = -st["mean_pct"]  # positive means the candidate is faster
+            if st["ci95_hi_pct"] < 0.0:
+                verdict = "faster"
+            elif st["ci95_lo_pct"] > 0.0:
+                verdict = "slower"
+            else:
+                verdict = "null"
+            if m in TOUCHED and speedup >= BAR_PCT and st["ci95_hi_pct"] < 0.0:
+                verdict += " CLEARS BAR"
+            tag = "" if m in TOUCHED else " (guard)"
+            print(f"{m:>3}{base_us:>11.2f}{cand_us:>11.2f}"
+                  f"{st['mean_pct']:>+10.3f}{st['sd_pct']:>8.3f}"
+                  f"  [{st['ci95_lo_pct']:+7.3f},{st['ci95_hi_pct']:+7.3f}]"
+                  f"{st['achieved_mde_pct']:>9.3f}  {verdict}{tag}")
+            row = {"shape": shape, "m": m, "base_us": base_us,
+                   "cand_us": cand_us, "speedup_pct": speedup, **st}
+            table.append(row)
+            key = f"{shape}/M{m}"
+            summary[f"{key}/speedup_pct"] = speedup
+            summary[f"{key}/ci95_lo_pct"] = -st["ci95_hi_pct"]
+            summary[f"{key}/ci95_hi_pct"] = -st["ci95_lo_pct"]
+            summary[f"{key}/base_us"] = base_us
+            summary[f"{key}/cand_us"] = cand_us
+
+    touched = [r for r in table if r["m"] in TOUCHED]
+    guard = [r for r in table if r["m"] not in TOUCHED]
+    best = max(touched, key=lambda r: r["speedup_pct"], default=None)
+    print("\n--- decision ---")
+    if touched:
+        mean_touched = statistics.fmean(r["speedup_pct"] for r in touched)
+        print(f"mean speedup over replaced widths M in [4, 9]: "
+              f"{mean_touched:+.3f} %")
+        summary["mean_speedup_touched_pct"] = mean_touched
+    if guard:
+        mean_guard = statistics.fmean(r["speedup_pct"] for r in guard)
+        print(f"mean effect on untouched-width guard M in [1, 3]: "
+              f"{mean_guard:+.3f} % (expected ~0; a large value means the "
+              f"harness, not the kernel, moved)")
+        summary["mean_effect_guard_pct"] = mean_guard
+    if best:
+        print(f"best replaced width: {best['shape']} M={best['m']} "
+              f"{best['speedup_pct']:+.3f} % "
+              f"[{-best['ci95_hi_pct']:+.3f}, {-best['ci95_lo_pct']:+.3f}]")
+        summary["best_speedup_pct"] = best["speedup_pct"]
+        clears = (best["speedup_pct"] >= BAR_PCT and best["ci95_hi_pct"] < 0.0)
+        print(f"{BAR_PCT:.1f} % bar: {'CLEARED' if clears else 'NOT CLEARED'} "
+              f"-> {'exactness work is authorised' if clears else 'STOP before exactness work'}")
+        summary["clears_bar"] = float(clears)
+    summary["worst_cand_max_rel"] = worst_cand
+
+    if args.wandb:
+        import wandb
+        run = wandb.init(
+            project="qwen38-mlx-challenge-senpai",
+            entity="wandb-applied-ai-team",
+            job_type="microbenchmark",
+            name=f"e44-sgmm-qmv-ab-{args.run_dir.name}",
+            tags=["e44", "simdgroup-matrix", "qmv_fast", "affine4-g64",
+                  "section-7.3", "paired-abba", "microbenchmark"],
+            config={
+                **{f"identity/{k}": v for k, v in identity.items()},
+                "device": payload["device"],
+                "architecture": payload["architecture"],
+                "function": payload["function"],
+                "order": payload["order"],
+                "pairs": payload["pairs"],
+                "reps": payload["reps"],
+                "inner": payload["inner"],
+                "prereg_mde_pct": PREREG_MDE_PCT,
+                "bar_pct": BAR_PCT,
+                "touched_widths": list(TOUCHED),
+                # Preserved verbatim: this is a counterbalanced ungated local
+                # arm, which is directional causal evidence and never a score.
+                "cool_gate_passed_real_gate":
+                    identity.get("cool_gate_passed_real_gate"),
+                "gate_qualified_for_timing":
+                    identity.get("gate_qualified_for_timing"),
+            },
+        )
+        cols = ["shape", "m", "base_us", "cand_us", "speedup_pct", "sd_pct",
+                "ci95_lo_pct", "ci95_hi_pct", "achieved_mde_pct", "n_pairs"]
+        wandb.log({
+            "per_width": wandb.Table(
+                columns=cols,
+                data=[[r[c] for c in cols] for r in table]),
+            "fidelity": wandb.Table(
+                columns=["shape", "m", "base_max_rel", "cand_max_rel",
+                         "cand_rms_rel", "cand_vs_base_max_rel"],
+                data=[[r["shape"], r["m"], r["base_max_rel"],
+                       r["cand_max_rel"], r["cand_rms_rel"],
+                       r["cand_vs_base_max_rel"]] for r in fidelity]),
+            "raw_pairs": wandb.Table(
+                columns=["shape", "m", "pair", "base_s", "cand_s",
+                         "session_elapsed_s"],
+                data=[[r["shape"], r["m"], r["pair"], r["base_s"], r["cand_s"],
+                       r.get("session_elapsed_s", float("nan"))]
+                      for r in timing]),
+            **summary,
+        })
+        run.summary.update(summary)
+        print(f"\nW&B run: {run.url}  id={run.id}")
+        run.finish()
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
