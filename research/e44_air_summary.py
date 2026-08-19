@@ -30,7 +30,12 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from air_kernel_stats import ALLOCA, kernels, peak_live_registers  # noqa: E402
+from air_kernel_stats import (  # noqa: E402
+    ALLOCA,
+    kernels,
+    peak_live_breakdown,
+    peak_live_registers,
+)
 
 # `@x = internal addrspace(3) global [64 x float] undef, align 4`
 TG_GLOBAL = re.compile(r"^@([\w.]+)\s*=.*addrspace\(3\)\s+global\s+(.+?),\s*align")
@@ -63,12 +68,12 @@ BASE_TABLE = {
 CAND_TABLE = {
     2: "e44_narrow_m2",
     3: "e44_m3_ipg3",
-    4: "e44_sgmm_nt1_runtime",
-    5: "e44_sgmm_nt1_runtime",
-    6: "e44_sgmm_nt1_runtime",
-    7: "e44_sgmm_nt1_runtime",
-    8: "e44_sgmm_nt1_runtime",
-    9: "e44_sgmm_nt2_runtime",
+    4: "e44_sgmm_runtime",
+    5: "e44_sgmm_runtime",
+    6: "e44_sgmm_runtime",
+    7: "e44_sgmm_runtime",
+    8: "e44_sgmm_runtime",
+    9: "e44_sgmm_runtime",
 }
 # The <4096 branch is inlined into the same kernel by both arms, so it bounds
 # the kernel-wide maximum from below for both.
@@ -101,15 +106,51 @@ def measure(path: pathlib.Path) -> dict[str, dict[str, int]]:
     stats = {}
     for name, body in kernels(path).items():
         allocas = [ALLOCA.search(line).group(1) for line in body if ALLOCA.search(line)]
+        naive = peak_live_registers(body, False)[0]
+        lane = peak_live_registers(body, True)[0]
+        split = peak_live_breakdown(body)
+        # The breakdown is a second, independent sweep over the same intervals;
+        # if it disagreed with the published peaks it would not be evidence.
+        assert split["naive_peak_naive_total"] == naive, name
+        assert split["lane_peak_lane_total"] == lane, name
         stats[name] = {
-            "naive": peak_live_registers(body, False)[0],
-            "lane": peak_live_registers(body, True)[0],
+            "naive": naive,
+            "lane": lane,
             "allocas": len(allocas),
             "alloca_types": sorted(set(allocas)),
             "loads": sum(1 for line in body if re.search(r"=\s*load\s", line)),
             "mma": sum(1 for line in body if "simdgroup_matrix" in line),
+            "split": split,
         }
     return stats
+
+
+def report_split(label: str, stats: dict, names: list[str]) -> None:
+    """Adjudicate the naive-vs-corrected verdict split value by value.
+
+    A naive number above the gate is only an instrument artifact if the whole
+    excess sits in distributed `<32k x T>` values. Printing the two peak points
+    separately is what makes that checkable: the ordinary-value subtotal at the
+    lane peak is the part of the pressure that is NOT a modelling artifact.
+    """
+    shown = [n for n in names if n in stats and stats[n]["naive"] != stats[n]["lane"]]
+    if not shown:
+        return
+    print()
+    print("%s: verdict-split accounting (distributed = simdgroup matrices)" % label)
+    print("  at the NAIVE peak point            | at the LANE peak point")
+    print("  %-30s %7s %5s %7s | %7s %5s %7s"
+          % ("kernel", "total", "dist", "ordin.", "total", "dist", "ordin."))
+    for name in shown:
+        s = stats[name]["split"]
+        print("  %-30s %7d %5d %7d | %7d %5d %7d"
+              % (name,
+                 s["naive_peak_naive_total"],
+                 s["naive_peak_distributed_values"],
+                 s["naive_peak_ordinary"],
+                 s["lane_peak_lane_total"],
+                 s["lane_peak_distributed_values"],
+                 s["lane_peak_ordinary"]))
 
 
 def table_max(stats: dict, table: dict[int, str], key: str) -> tuple[str, int]:
@@ -160,6 +201,8 @@ def report_cells(path: pathlib.Path) -> None:
         for name in anchors:
             print("  %-20s naive=%d lane=%d" % (name, stats[name]["naive"], stats[name]["lane"]))
 
+    report_split("cells", stats, sorted(stats))
+
     tg = threadgroup_bytes(path)
     print()
     print("static threadgroup memory in module: %d bytes%s"
@@ -174,16 +217,21 @@ def report_entry(base_path: pathlib.Path, cand_path: pathlib.Path) -> None:
             print("  MISSING %s" % name)
             continue
         b, c = base[name], cand[name]
+        new_types = sorted(set(c["alloca_types"]) - set(b["alloca_types"]))
         print("%-44s %-18s %-18s %s"
               % (name,
                  "%d / %d" % (b["naive"], b["lane"]),
                  "%d / %d" % (c["naive"], c["lane"]),
                  "%d -> %d %s" % (b["allocas"], c["allocas"],
-                                  c["alloca_types"] or "")))
+                                  ("NEW TYPES " + repr(new_types)) if new_types
+                                  else "no new alloca type")))
+        print("      base alloca types: %s" % (b["alloca_types"] or "none"))
+        print("      cand alloca types: %s" % (c["alloca_types"] or "none"))
     for label, path in (("base", base_path), ("cand", cand_path)):
         tg = threadgroup_bytes(path)
         print("  %-4s static threadgroup memory: %d bytes%s"
               % (label, sum(b for _, b in tg), (" " + repr(tg)) if tg else ""))
+    report_split("entry (cand)", cand, list(ENTRY_KERNELS))
 
 
 def selftest() -> int:

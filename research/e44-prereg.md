@@ -149,3 +149,105 @@ the gate is reported **inconclusive**, not passed.
   step-family-conditional and say nothing about a per-pass change across
   `M >= 4`. This mechanism is attractive *because* it is a per-pass weight-traffic
   change at every width `M >= 4`, not an `M = 6` boundary change.
+
+---
+
+## Gate 0 RESULT (reproduce with `research/e44_sgmm_air.sh`)
+
+Toolchain `Apple metal version 32023.883`; probe compiled `-std=metal3.1 -O2`
+then `metal-opt -passes=default<O3>`. Base `quantized.h` @ `efff400c`
+sha256 `75d45143959eb3bd...`; candidate sha256 `e1594483af795dfc...`.
+
+### VERDICT: **PASS** (all five pre-registered conditions)
+
+| # | Pre-registered condition | Bound | Measured | Result |
+|---|--------------------------|-------|----------|--------|
+| a | lane-corrected kernel-wide max register allocation | `<= 108` | **89** (`e44_narrow_m2`) | **PASS** (-17.6 %) |
+| b | new alloca *type* in the production entry (fails alone) | none new | entry type set unchanged; new cell has **0 allocas** | **PASS** |
+| c | production entry lane-corrected peak | `<= 163` | **143** (allocas 55 -> 47) | **PASS** (-12.3 %) |
+| d | static threadgroup bytes | no increase | 0 -> 0 | **PASS** |
+| e | naive/lane split fully explained | must be | yes, see below | **PASS** |
+
+### Kernel-wide maxima, by tree
+
+The number that binds the kernel-wide max is *not* the new cell. Every register
+figure below names the tree it came from.
+
+```
+tree                        naive  lane  allocas  loads
+e44_sgmm_runtime (NEW)        344   34      0      28
+e44_sgmm_m8      (NEW)        343   33      0      28
+e44_sgmm_m9      (NEW)        343   33      0      28
+e44_narrow_m2..m9 (kept)       89   89      5      80   <- binds kernel-wide max
+e44_m3_ipg3  (base, replaced)  83   83
+e44_m4_ipg4  (base, replaced) 104  104
+e44_m5_ipg3  (base, replaced)  87   87
+e44_m6_ipg3  (base, replaced)  83   83
+e44_m7_ipg4  (base, replaced) 108  108   <- bound the BASE kernel-wide max
+e44_m8_ipg4  (base, replaced) 104  104
+e44_m9_ipg3  (base, replaced)  83   83
+NA anchor NA=2/3/4             62/83/104 (reproduced exactly)
+```
+
+Per-M, lane-corrected, base -> candidate:
+`2 89->89 · 3 83->83 · 4 104->34 · 5 87->34 · 6 83->34 · 7 108->34 · 8 104->34 · 9 83->34`.
+
+Production entry AIR shrank 8047 -> 5869 lines (post-O3 14488 -> 9885).
+The `bits==2` entry (57) and the `batch_1` entry (31) are byte-for-byte
+unchanged, confirming the change is confined to the affine-4/g64 wide path.
+
+### Naive vs lane-corrected split (condition e)
+
+`simdgroup_matrix<float,8,8>` is a *distributed* type: one SSA value occupies
+2 registers per lane, not 64. The naive per-value cost of 64 is a counting
+artifact, so both peaks are published and fully decomposed:
+
+* new cell: naive peak 344 = 5 distributed values (5x64 = 320) + 24 ordinary;
+  lane peak 34 = 5x2 + 24. **Identical live set**, only the per-value cost differs.
+* production entry: naive peak 395 = 5 distributed (320) + 75 ordinary;
+  lane peak 143 with **0 distributed values live** at that program point
+  (the entry's peak is in scalar prologue/epilogue code, not inside the cell).
+
+### Feasibility through *both* compile paths
+
+* **AOT**: `tools/build-mlx-metallib.sh` wrote `.build-worker/release/mlx.metallib`
+  cleanly. Only warning is the pre-existing `quantized.h:1091 unused parameter
+  'out_vec_size'` in the 2-bit singlerow cell.
+* **JIT (runtime-effective)**: `Vendor/mlx-swift/Package.swift:25,284` compiles
+  `jit_kernels.cpp` and *excludes* `nojit_kernels.cpp`, so the string in
+  `mlx-generated/quantized.cpp` is what the scored worker actually compiles.
+  `research/jit_string_compile.py` reassembles that exact 211,288-byte
+  concatenation (utils + gemm + quantized_utils + quantized preambles plus
+  `[[host_name]]` instantiations) and compiles it with
+  `xcrun metal -std=metal4.0 -fno-fast-math -c` and **no `-I`**. It passes.
+* **The trap this proves we avoided**: adding
+  `#include ".../steel/gemm/mma.h"` to `quantized.h` would make MLX's generator
+  expand that quoted include *into* the twin, producing duplicate definitions in
+  the JIT string that an AOT-only build cannot see. The cell instead reuses
+  `mlx::steel::BaseMMAFrag`, already reachable because `qmm_t_impl` requires
+  `mlx::steel::BlockMMA`.
+
+### Prediction scorecard
+
+1. cell peak in 60-95: **MISS -- measured 34.** The band assumed a persistent
+   `uint4` weight staging plus separate fragment storage. The shipped cell loads
+   one `uint32` per step and keeps `float2` accumulators, so ordinary pressure is
+   24, not 60-95.
+2. naive count exceeds 108: **HIT** (344) -- and it is a pure counting artifact.
+3. binding cell migrates to the narrow `M<=3` cell at 89: **HIT.**
+4. the `M in {1,2,3}` arm stays a guard, not a confirmation: predicted effect
+   ~ -0.17 %, below the 0.5040 % MDE, so it cannot confirm anything. **HELD.**
+
+### Compliance gates
+
+* `research/twin_audit.py` -> `TWIN AUDIT OK: 29 runtime-effective twin(s)`
+* `senpai/validate-assignment-scope.sh efff400c... quantized.h quantized.cpp` -> OK
+* `senpai/check-editable-budget.sh efff400c...` -> source 2,466,538 / 3,000,000;
+  candidate growth 7,589 / 262,144; exempt 2,410; files 154
+
+### Consequence
+
+Gate 0 passes, so section 7.3 (the paired local microbenchmark) is authorised.
+Exactness work stays deferred behind the >= 5 % bar: the matrix unit fixes its
+own 8-wide summation order, so this cell is *not* bit-equal to the M=1 readout
+and no exactness claim is made or implied here.

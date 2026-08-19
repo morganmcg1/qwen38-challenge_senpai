@@ -89,6 +89,64 @@ def peak_live_registers(body: list[str], distributed: bool = False) -> tuple[int
     return peak, peak_count
 
 
+def peak_live_breakdown(body: list[str]) -> dict[str, int]:
+    """Split the peak into distributed (simdgroup-matrix) and ordinary values.
+
+    The naive and lane-corrected peaks can sit at DIFFERENT program points, so
+    their difference is not required to be a multiple of the per-matrix
+    correction. This reports both points explicitly so the claim "the naive
+    number is a `<32k x T>` artifact" is checkable rather than asserted: at each
+    peak it gives the distributed subtotal under both weightings and the
+    ordinary-value remainder.
+    """
+    defs: dict[str, tuple[int, int, int]] = {}
+    last_use: dict[str, int] = {}
+    for i, line in enumerate(body):
+        match = DEF.match(line)
+        name, rhs = (match.group(1), match.group(2)) if match else (None, line)
+        for ref in SSA_REF.findall(rhs):
+            last_use[ref] = i
+        if name and name not in defs:
+            defs[name] = (i, value_width(rhs, False), value_width(rhs, True))
+
+    # Four independent sweeps over the same live intervals: total under each
+    # weighting, plus the distributed subtotals and their value count.
+    channels = ("naive", "lane", "dist_naive", "dist_lane", "dist_count")
+    delta = {c: [0] * (len(body) + 2) for c in channels}
+    for name, (start, naive, lane) in defs.items():
+        stop = last_use.get(name, start)
+        if stop <= start:
+            continue
+        contribution = {"naive": naive, "lane": lane}
+        if naive != lane:
+            contribution.update(
+                dist_naive=naive, dist_lane=lane, dist_count=1
+            )
+        for channel, amount in contribution.items():
+            delta[channel][start] += amount
+            delta[channel][stop] -= amount
+
+    running = dict.fromkeys(channels, 0)
+    series = {c: [] for c in channels}
+    for i in range(len(body)):
+        for channel in channels:
+            running[channel] += delta[channel][i]
+            series[channel].append(running[channel])
+
+    out = {}
+    for tag, key in (("naive_peak", "naive"), ("lane_peak", "lane")):
+        point = max(range(len(body)), key=lambda i: series[key][i]) if body else 0
+        out[f"{tag}_naive_total"] = series["naive"][point]
+        out[f"{tag}_lane_total"] = series["lane"][point]
+        out[f"{tag}_distributed_values"] = series["dist_count"][point]
+        out[f"{tag}_distributed_naive"] = series["dist_naive"][point]
+        out[f"{tag}_distributed_lane"] = series["dist_lane"][point]
+        out[f"{tag}_ordinary"] = (
+            series["naive"][point] - series["dist_naive"][point]
+        )
+    return out
+
+
 def kernels(path: pathlib.Path) -> dict[str, list[str]]:
     out: dict[str, list[str]] = {}
     name = None
