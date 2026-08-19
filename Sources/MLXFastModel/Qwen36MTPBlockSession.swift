@@ -708,23 +708,44 @@ public final class Qwen36MTPBlockSession {
         return marginal[1] / ((marginal[0] + marginal[2]) / 2.0)
     }()
 
+    /// Verify widths whose weight-stream crossing this schedule prices.
+    ///
+    /// The live dispatch table puts a crossing at width 5 and at width 9, and
+    /// the two crossings do not pay off in the same place. Width 5 sits inside
+    /// the band the ranked prompts actually use: verify widths 4-6 are 67.0 to
+    /// 74.1 % of beagle's candidate-leg QMV time and 61.2 to 65.2 % of
+    /// medicine's. Width 9 is 2.9 to 8.6 % of beagle's and 6.6 to 7.8 % of
+    /// medicine's, against 53.5 % on the public local fixture, so pricing it
+    /// buys local time on a width the score-setting prompts almost never run.
+    /// This set is therefore the experiment's treatment: it names which
+    /// crossings the walk is allowed to see.
+    static let pricedBoundaryWidths: Set<Int> = [5]
+
+    /// Depth steps this price closes at EVERY acceptance rate, on every
+    /// prompt. `QwenMTPDepthCostModelTests` recomputes the closed set from the
+    /// live table and fails if it differs, so a price can no longer turn the
+    /// walk into a fixed width cap without saying so here.
+    static let declaredClosedDepthSteps: [Int] = []
+
     /// Cost of the `depth -> depth + 1` extension, as a fraction of a depth-0
     /// round. The shipped rule priced every extension at the single scalar
     /// `headStepCostRatio`; the machine does not charge that. Crossing a
     /// weight-stream boundary buys a further pass over the backbone, and the
-    /// two boundaries this table places (verify width 4 -> 5 and 8 -> 9) are
+    /// two crossings the live table places (verify width 4 -> 5 and 8 -> 9) are
     /// exactly the two largest marginals in the measured depth-cost curve
     /// (24.4 ms and 25.4 ms against a ~19 ms plateau, E1).
     ///
-    /// The MEAN of this table is pinned to `headStepCostRatio`, so the average
-    /// price of a draft row is unchanged and only its SHAPE moves. That
-    /// matters: `h` is bracketed on both sides by ranked receipts (0.14, 0.15
-    /// and 0.32 all measured worse), so any change that also moved the average
-    /// price would be an unmeasurable mixture of a retune and this mechanism.
+    /// The MEAN of this table is pinned to `headStepCostRatio` whichever
+    /// crossings `pricedBoundaryWidths` selects, so the average price of a
+    /// draft row is unchanged and only its SHAPE moves. That matters: `h` is
+    /// bracketed on both sides by ranked receipts (0.14, 0.15 and 0.32 all
+    /// measured worse), so any change that also moved the average price would
+    /// be an unmeasurable mixture of a retune and this mechanism.
     static let marginalCostRatio: [Double] = {
         let crossesBoundary = (0 ..< Qwen36MTPLimits.maxDepth).map { depth in
-            verifyWeightStreams(width: depth + 2)
-                > verifyWeightStreams(width: depth + 1)
+            pricedBoundaryWidths.contains(depth + 2)
+                && verifyWeightStreams(width: depth + 2)
+                    > verifyWeightStreams(width: depth + 1)
         }
         let boundaries = Double(crossesBoundary.filter { $0 }.count)
         let rows = Double(Qwen36MTPLimits.maxDepth)

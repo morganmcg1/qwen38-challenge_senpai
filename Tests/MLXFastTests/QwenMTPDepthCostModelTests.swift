@@ -60,13 +60,27 @@ struct QwenMTPDepthCostModelTests {
             live[Int(row[0])!] = Int(row[1])!
         }
         #expect(!live.isEmpty, "no `_m` dispatch cells parsed from quantized.h")
+        let schedule = Qwen36MTPBlockSession.verifyInputsPerGroup
+        let movedWidths = Set(live.keys).union(schedule.keys)
+            .filter { live[$0] != schedule[$0] }
+            .sorted()
+        let movedDetail = movedWidths.map { width in
+            let before = schedule[width].map(String.init) ?? "absent"
+            let after = live[width].map(String.init) ?? "absent"
+            let streamsBefore = Qwen36MTPBlockSession.verifyWeightStreams(width: width)
+            let streamsAfter = live[width].map { (width + $0 - 1) / $0 }
+                .map(String.init) ?? "1"
+            return "width \(width): IPG \(before) -> \(after), "
+                + "weight streams \(streamsBefore) -> \(streamsAfter)"
+        }
         #expect(
-            live == Qwen36MTPBlockSession.verifyInputsPerGroup,
+            movedWidths.isEmpty,
             """
-            The QMV dispatch table moved. Live \(live.sorted(by: { $0.key < $1.key })), \
-            schedule \(Qwen36MTPBlockSession.verifyInputsPerGroup.sorted(by: { $0.key < $1.key })). \
+            The QMV dispatch table moved at \(movedWidths). \
+            \(movedDetail.joined(separator: "; ")). \
             The depth schedule's stream staircase is now stale: re-derive \
-            `verifyInputsPerGroup` and re-measure the schedule before shipping.
+            `verifyInputsPerGroup`, recheck which widths `pricedBoundaryWidths` \
+            should name, and re-measure the schedule before shipping.
             """)
     }
 
@@ -80,16 +94,27 @@ struct QwenMTPDepthCostModelTests {
         let mean = marginals.reduce(0.0, +) / Double(marginals.count)
         #expect(abs(mean - 0.18) < 1e-12, "mean price drifted from the live h")
 
-        let withinTier = marginals.enumerated().filter { depth, _ in
-            Qwen36MTPBlockSession.verifyWeightStreams(width: depth + 2)
-                == Qwen36MTPBlockSession.verifyWeightStreams(width: depth + 1)
+        let priced = { (depth: Int) -> Bool in
+            Qwen36MTPBlockSession.pricedBoundaryWidths.contains(depth + 2)
+                && Qwen36MTPBlockSession.verifyWeightStreams(width: depth + 2)
+                    > Qwen36MTPBlockSession.verifyWeightStreams(width: depth + 1)
         }
-        let crossings = marginals.enumerated().filter { depth, _ in
-            Qwen36MTPBlockSession.verifyWeightStreams(width: depth + 2)
-                > Qwen36MTPBlockSession.verifyWeightStreams(width: depth + 1)
-        }
-        #expect(crossings.map(\.offset) == [3, 7],
-                "weight-stream crossings moved off verify widths 4->5 and 8->9")
+        let withinTier = marginals.enumerated().filter { !priced($0.offset) }
+        let crossings = marginals.enumerated().filter { priced($0.offset) }
+        // Every width this schedule prices must still be a live crossing. If
+        // the dispatch table stops adding a weight stream there, the surcharge
+        // is charging for work the machine no longer does.
+        let pricedButFlat = Qwen36MTPBlockSession.pricedBoundaryWidths.filter {
+            Qwen36MTPBlockSession.verifyWeightStreams(width: $0)
+                <= Qwen36MTPBlockSession.verifyWeightStreams(width: $0 - 1)
+        }.sorted()
+        #expect(pricedButFlat.isEmpty,
+                """
+                `pricedBoundaryWidths` names \(pricedButFlat) where the live \
+                dispatch table adds no weight stream, so the schedule charges \
+                for a pass the machine no longer makes.
+                """)
+        #expect(crossings.count == Qwen36MTPBlockSession.pricedBoundaryWidths.count)
         for (_, value) in withinTier {
             #expect(abs(value - withinTier[0].element) < 1e-12)
         }
@@ -134,15 +159,21 @@ struct QwenMTPDepthCostModelTests {
                 / Qwen36MTPBlockSession.cumulativeCostRatio[depth]
             return bestCase >= 1.0
         }
-        // Depth 7 is the 8 -> 9 verify step. It is closed on purpose: a ninth
-        // row costs 13.5% more round time and buys at most 12.5% more tokens,
-        // so it cannot repay itself even at perfect acceptance.
-        #expect(closed == [7],
+        // A closed step that prices a crossing is the session-1 failure: the
+        // walk pays for a boundary it can never cross, so the schedule is a
+        // width cap wearing a walk.
+        let closedBoundaries = closed.filter {
+            Qwen36MTPBlockSession.pricedBoundaryWidths.contains($0 + 2)
+        }
+        #expect(closed == Qwen36MTPBlockSession.declaredClosedDepthSteps,
                 """
-                Closed depth steps are \(closed), expected [7]. A step listed \
-                here can never be taken, whatever the prompt or the acceptance \
-                rate, so the schedule is a fixed cap rather than a walk at that \
-                depth. Re-derive the price or document the new closure.
+                Closed depth steps are \(closed), declared \
+                \(Qwen36MTPBlockSession.declaredClosedDepthSteps); of those, \
+                \(closedBoundaries) price a weight-stream crossing the walk can \
+                never take. A step listed here is unreachable whatever the \
+                prompt or the acceptance rate, so the schedule is a fixed cap \
+                rather than a walk at that depth. Re-derive the price or declare \
+                the new closure in `declaredClosedDepthSteps`.
                 """)
     }
 
