@@ -262,19 +262,24 @@ private enum SdpaChunkProbe {
     }
 }
 
+/// The two probes below swizzle Metal pipeline and dispatch entry points for the
+/// whole process, so they are opt-in: a plain `swift test` skips them instead of
+/// perturbing every other GPU suite in the same run.
+private func e57ProbeEnabled() -> Bool {
+    ProcessInfo.processInfo.environment["MLXFAST_E57_DISPATCH_COUNT"] == "1"
+}
+
 @Suite(.serialized)
 struct E57SdpaChunkDispatchCountTests {
-    private var enabled: Bool {
-        ProcessInfo.processInfo.environment["MLXFAST_E57_DISPATCH_COUNT"] == "1"
-    }
-
     private var runsThrowingCell: Bool {
         ProcessInfo.processInfo.environment["MLXFAST_E57_DISPATCH_COUNT_THROW"] == "1"
     }
 
-    @Test func countsTheChunkSurcharge() throws {
-        try #require(enabled, "set MLXFAST_E57_DISPATCH_COUNT=1 to run the GPU probe")
-
+    @Test(
+        .enabled(
+            if: e57ProbeEnabled(),
+            "set MLXFAST_E57_DISPATCH_COUNT=1 to run the GPU probe"))
+    func countsTheChunkSurcharge() throws {
         guard let device = MTLCreateSystemDefaultDevice() else {
             Issue.record("no Metal device")
             return
@@ -372,9 +377,11 @@ struct E57SdpaChunkDispatchCountTests {
     /// Each width also carries an A/A control: the unsplit call is evaluated
     /// twice, and any difference there would mean the comparison is measuring
     /// nondeterminism instead of the chunk.
-    @Test func chunkChangesTheAttentionOutputBitwise() throws {
-        try #require(enabled, "set MLXFAST_E57_DISPATCH_COUNT=1 to run the GPU probe")
-
+    @Test(
+        .enabled(
+            if: e57ProbeEnabled(),
+            "set MLXFAST_E57_DISPATCH_COUNT=1 to run the GPU probe"))
+    func chunkChangesTheAttentionOutputBitwise() throws {
         // kL stays below the 2-pass boundary: the only cell that could abort is
         // an unsplit wide call at kL >= 1024, and that one belongs to --throw.
         let kL = 768
