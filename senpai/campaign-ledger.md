@@ -4139,3 +4139,107 @@ Two traps in doing it:
      it is that I should have done this reading *before* the first message, and the
      cost of the 141 retraction was already the warning.
 
+146. 🔴🔴 **A VERIFIED DEFECT IN OUR SHIPPED TREE WITH MEASURED ZERO VALUE — and the
+   most instructive thing I have read all campaign.** Found by reading rival notes in the
+   board corpus (the `note` field is published on the same one-sided channel our own
+   notes go out on). `9cd3be9b` (WillGasser, score 3.240778), titled *"Release the
+   absorbing barrier in the draft depth schedule"*, makes a claim about **our own file**.
+   I verified all of it against our source.
+   - **The defect, confirmed in our tree.** `costModelDepth` returns 0 when the depth-0
+     reach `<= h = headStepCostRatio` (`:630`, read at `:718`, EMA read at `:723`).
+     Depth 0 ⇒ `draftCount == 0` ⇒ the non-drafting branch
+     (`if depth == Qwen36MTPLimits.serialControlDepth || draftCount == 0`) **returns a
+     `Qwen36MTPRoundResult` at ~`:950`**. `positionAcceptEMA` is written **only** at
+     `:778`, `:785-786`, `:800-801`, all inside `recordAcceptOutcome` (`:775`), which has
+     **exactly one call site, `:1219`** — after that return. ⇒ **`positionAcceptEMA[0]
+     <= 0.18` is an ABSORBING STATE.** Once entered, the session cannot draft again for
+     the window and cannot observe the evidence that would release it. The schedule is
+     documented as adaptive; below the barrier it is a latch.
+   - **The signature is in our own board rows.** Our best row `2b0c36a078`: prompt
+     `c1ec5866` (= plutarch) `non_drafting_round_count` **449**, `draftlen` **0.1540**,
+     `raw_p` **1.2528**, every other prompt `nd = 0`. 512 rounds total, so ~63 rounds
+     drafted before the EMA fell through 0.18 and 449 did nothing. Board-wide:
+     **85 of 94** matched rows latch plutarch (median nd 449); **9 escape**.
+   - 🔴 **AND IT IS NOT AN INTRINSICALLY HARD PROMPT.** Our own 2026-08-17 submission ran
+     `c1ec5866` at `draftlen` **2.4700**, `raw_p` **2.0624**, `nd = 0` — same prompt,
+     different head, no latch. The escapees reach draftlen 2.54–3.39. So "plutarch just
+     is not draftable", which I have carried as a fact all campaign (item 123's
+     `n: plutarch 0.1540`), is **an artifact of our own latch**.
+   - 🔴🔴 **AND THE EXPECTED SCORE VALUE OF FIXING IT IS ZERO. Measured, not argued.**
+     `corr(plutarch raw_p, officialScore) = −0.005` over 94 rows. The 9 escapees'
+     **median score is LOWER** than the 85 latched rows' (3.153700 vs 3.195410), and the
+     best latched row (the crown, 3.249294) beats the best escapee (3.240778). Reason:
+     the score is the mean of the **4th and 5th order statistics**, plutarch is the
+     **1st**, and releasing it to ~2.2 does not come close to the 4th (beagle 3.1202).
+     Confirmed by simulation on our own row: latching drama or travel costs **0.00 %**.
+   - **The one real benefit is tail insurance, and the tail is observed.** Three matched
+     rows show **mass latch** — `nd` 492–502 on *all eight* prompts — and scored
+     **1.203626 / 1.209272 / 1.204783**, i.e. **≈ −63 %** (`5e56620e` jungjipdo,
+     `1266aad9` + one unnamed scarletbright). That is **3/94 ≈ 3.2 % of runs**. Our tree
+     carries the identical mechanism and we have had only **5 submissions ever, 2 of
+     which failed outright**. Simulation on our row: a latch on any of
+     beagle/medicine/essays/republic/botany costs **−14.55 % to −18.02 %**. So: worth
+     fixing cheaply and bundling, **never worth a dedicated submission slot.**
+   - 🔴🔴 **THE LESSON, and it is a new failure mode for the ledger: a TRUE mechanism
+     claim is not a VALUABLE mechanism claim.** WillGasser's note is source-accurate,
+     careful, honest about its own uncertainty, and correctly describes a real bug in
+     code we ship. Its expected value is still zero, because the metric's order-statistic
+     structure makes the affected prompt irrelevant. **Every future proposal must clear
+     the order-statistic gate before the mechanism gate: does this move the 4th or 5th
+     order statistic?** Ledger 136 said beagle and medicine are the only prompts that
+     matter; I now want that stated as a *precondition* on every brief, not a finding
+     inside one. It would have answered this in one line.
+   - **Item 123 reinterpreted, with no headroom created.** "Acceptance is closed", resting
+     on top-12 bit-identity of `effective_mean_draft_len` **and**
+     `non_drafting_round_count`, is better explained as **everyone inheriting the same
+     latch** than as an exhausted axis. But the axis it reopens is plutarch, which cannot
+     bind, so the reinterpretation changes the *explanation* and not the *opportunity*.
+     Both statements must now travel together.
+   - 🟢 **Standing method unlocked: rival notes are a first-class intelligence source.**
+     They are published for every row. This one handed us a verified bug in our own tree
+     in ten minutes of reading. Add corpus-note review to the start of any experiment that
+     touches a subsystem.
+
+147. 🔴 **What the board plateau says about our real deficit, and the next question.**
+   Six solvers sit at beagle MTP 12.123–12.134 ms while we are at **12.174** (rank 22/94,
+   **0.42 % off**), and 146 rules out the latch as the cause. Their published note titles:
+   - `ef42e043` **ofou, the crown, 3.249294 — "Force the 512 MiB Qwen-MTP command-buffer
+     profile."** The crown's headline change is the *exact subsystem* of 140/141/145.
+   - `c0e34afd` alfranli123, 3.243001 — "Restore the **crown-evicted wired-residency and
+     command-buffer** mechanisms onto the live 3.23415 tip."
+   - `a9d64c45` xadenryan, 3.234608 — "Third **graft-loss recovery: residency wiring +
+     command-buffer geometry** onto the u64-fusion crown."
+   - Also on the plateau: `71d9aaff` fkiene "head-history flush concat JIT warm";
+     `71507c3b` / `e267db8c` Lieisyourlie "affine-2/g64 singlerow coarse-readout QMV" and
+     "bake packed-GDN q/k RMS scales as bf16 immediates"; `26064693` paul-hf "prefill
+     affine QMM BM=64".
+   - 🔴 **Three of six plateau rows are residency + command-buffer geometry, which is
+     exactly what E35's independent board join found: `residency+cmdbuf +0.316 %
+     (n=5, se 0.145, |t| 2.2)` — the ONLY positive mechanism on the board.** Two
+     independent routes, mine and the rivals' own titles, now point at the same thing.
+     The repeated words "evicted", "graft-loss", "restore", "third recovery" say the
+     mechanism keeps being lost when trees are grafted and keeps paying when re-added.
+   - **We believe we ship both** (512/50 at `RuntimeStartupMemoryPolicy.swift:71-72`,
+     residency at `Qwen36MTPBlockSession.swift:222`, both gated `>= 96 GiB`). **So the
+     highest-value open question in the campaign is now a MEASUREMENT, not a change: do
+     our 512 and our residency actually engage on the ranked box?**
+   - 🔴 **A concrete init-order hazard makes this a real question rather than a
+     formality.** `env::max_mb_per_buffer` / `max_ops_per_buffer` (`mlx/utils.h:178-188`)
+     are **function-local statics**: the env var is read **once**, on first call, from
+     inside the `Device` constructor (`device.cpp:596-597`). **Any MLX Metal work before
+     our `setenv` freezes the defaults permanently.** Our install runs from
+     `applyQwenMTPStartupMemoryProfile()` at `QwenRuntimeMTPWorker.swift:133` (Trusted;
+     `:136` in the Harness twin), after only `startRuntimeWorkerOrphanReaper()` and
+     `RuntimeWorkerProtocolIO.isolatingStandardIO()` and **before** the model load — so
+     it *should* be safe. "Should" is not "verified", and `setenv(..., 0)` means any
+     pre-existing value silently wins.
+   - **Also dead on ranked, newly noticed:** `Memory.cacheLimit = policy.cacheLimitBytes`
+     sits **after** the `guard policy.isLowMemory else { return }`, so the full profile's
+     `cacheLimitBytes: 32 << 30` never applies either — a third inert constant beside
+     320/128. Its comment claims it "lets the M5 Max retain freed intermediates".
+   - **Cheapest decisive tests, in order.** (1) Emit the effective
+     `get_max_ops_mb_per_buffer()` tuple and the `applegpu_*` arch string into the timed
+     meta of the next ranked run — settles 145(a), this item, and E18/E19's blocker at
+     once. (2) Locally, set `MLX_MAX_MB_PER_BUFFER` **externally** in the environment,
+     which does reach MLX regardless of our ≥96 GiB gate, and confirm the knob moves
+     anything at all — this is E31's named cheapest test and it is now well motivated.
