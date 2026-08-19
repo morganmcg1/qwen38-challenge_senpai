@@ -58,8 +58,11 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   `e32-rps-analysis.txt` byte for byte, and `crossrow_rps_gen.py --check` still
   passes against `quantized.h`. The pipeline reflection was likewise re-run from
   fresh AIR and is now committed as `research/e32-occupancy.txt` rather than
-  quoted from a scratch directory. `senpai/check-editable-budget.sh` reports
-  `growth=0/262144` — zero shipped-surface bytes.
+  quoted from a scratch directory; `e32_wandb_log.py` now *parses* the two
+  reflection scalars out of that file instead of carrying them as literals, and
+  it reads back the same `1024` / `0` the W&B run already carries.
+  `senpai/check-editable-budget.sh` reports `growth=0/262144` — zero
+  shipped-surface bytes.
 
 ### How the probe stays honest
 

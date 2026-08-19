@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import math
 import pathlib
+import re
 import sys
 
 import wandb
@@ -22,6 +23,28 @@ from e32_analysis import alu_per_tile, fit  # noqa: E402
 PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
 SHIPPED_IPG = {3: 3, 4: 4, 5: 5, 6: 3, 7: 4, 8: 4, 9: 5}
+# crossrow_na_occupancy.swift output over this grid's metallib. Parsed rather
+# than hardcoded so the logged scalar cannot drift from the committed evidence.
+OCCUPANCY = pathlib.Path("research/e32-occupancy.txt")
+# The Swift printer pads names to 18 chars, so a longer name runs straight into
+# maxThreads with no separator; anchor on the three trailing integers instead.
+OCC_ROW = re.compile(r"^(?P<name>.*?)(?P<max>\d{3,4})\s+(?P<width>\d+)\s+(?P<tgmem>\d+)\s*$")
+
+
+def occupancy_reflection(path: pathlib.Path = OCCUPANCY) -> tuple[int, int, int]:
+    """Return (cells, uniform maxTotalThreadsPerThreadgroup, uniform tgMem bytes)."""
+    rows = []
+    for line in path.read_text().splitlines()[2:]:  # device= line, then the header
+        m = OCC_ROW.match(line)
+        if m:
+            rows.append((int(m["max"]), int(m["tgmem"])))
+    if not rows:
+        sys.exit(f"{path}: no reflection rows parsed")
+    maxima = {r[0] for r in rows}
+    tgmem = {r[1] for r in rows}
+    if len(maxima) != 1 or len(tgmem) != 1:
+        sys.exit(f"{path}: reflection is not uniform: maxThreads={maxima} tgMem={tgmem}")
+    return len(rows), maxima.pop(), tgmem.pop()
 
 
 def main() -> None:
@@ -30,6 +53,8 @@ def main() -> None:
     cells = [c for c in data["cells"] if c["status"] == "ok"]
     relaxed = {(c["na"], c["r"]): c for c in cells if c["arm"] == "grid_relaxed"}
     blocked = {(c["na"], c["r"]): c for c in cells if c["arm"] == "coverage_preserving"}
+    # Fail before opening a run if the reflection artifact is missing or ragged.
+    occ_cells, occ_max_threads, occ_tgmem = occupancy_reflection()
 
     run = wandb.init(
         entity=ENTITY,
@@ -131,8 +156,9 @@ def main() -> None:
         "gate_controls_checked": sum(1 for c in cells if "expect_acc_spill" in c),
         "rounds_with_fewer_weight_passes": covered,
         "rounds_total_in_quoted_histogram": sum(hist.values()),
-        "max_total_threads_per_threadgroup_all_cells": 1024,
-        "static_threadgroup_memory_bytes_all_cells": 0,
+        "max_total_threads_per_threadgroup_all_cells": occ_max_threads,
+        "static_threadgroup_memory_bytes_all_cells": occ_tgmem,
+        "occupancy_cells_reflected": occ_cells,
         "prediction_1_na6_r2_spill_free": "CORRECT",
         "prediction_2_na9_r2_spill_free": "CORRECT",
         "prediction_3_affine_in_product": "FALSIFIED",
