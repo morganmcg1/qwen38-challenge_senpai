@@ -15,6 +15,7 @@ bracketed rather than assumed.
 """
 import argparse
 import json
+import math
 import os
 import re
 import statistics as st
@@ -141,6 +142,24 @@ def main():
     treated = [m for m in widths if m in P.ARM_MAP]
     control = [m for m in widths if m in P.UNTREATED]
 
+    # A-B-A: with a base replicate taken after the arm, the per-width geometric
+    # mean of the two bases is the drift-cancelling reference, because the arm
+    # sits between them in time and monotone drift cancels to first order. This
+    # is what makes program.md's counterbalancing condition operative instead of
+    # merely reported. Without a replicate the single base is the reference.
+    if "base2" in runs:
+        cref = {m: math.sqrt(runs["base"]["c"][m] * runs["base2"]["c"][m])
+                for m in widths}
+        sref = {m: {n: math.sqrt(v * runs["base2"]["per_shape"][m][n])
+                    for n, v in per.items()
+                    if n in runs["base2"]["per_shape"][m]}
+                for m, per in runs["base"]["per_shape"].items() if m in widths}
+    else:
+        cref = dict(runs["base"]["c"])
+        sref = {m: dict(per) for m, per in runs["base"]["per_shape"].items()}
+    baseref = dict(tag="geomean(base,base2)" if "base2" in runs else args.base,
+                   c=cref, per_shape=sref)
+
     out = {"base_tag": args.base, "arm_tag": args.arm, "base2_tag": args.base2,
            "widths": widths, "treated": treated, "control": control}
 
@@ -196,17 +215,19 @@ def main():
         flag = "  <-- treated" if m in treated else ""
         print(f"  M={m}  base {jb:7.2f}   arm {ja:7.2f}{flag}")
 
-    print("\n[4] C_round(M), ms, and the raw arm/base ratio")
+    print(f"\n[4] C_round(M), ms, and the raw arm/base ratio "
+          f"(base = {baseref['tag']})")
     print(f"  {'M':>3} {'base':>9} {'arm':>9} {'arm/base':>9}  role")
     out["c_round_ms"] = {}
     for m in widths:
-        cb, ca = runs["base"]["c"][m], runs["arm"]["c"][m]
+        cb, ca = baseref["c"][m], runs["arm"]["c"][m]
         role = P.ARM_MAP[m][1] if m in P.ARM_MAP else "untreated control"
-        out["c_round_ms"][m] = {"base": cb * 1e3, "arm": ca * 1e3, "ratio_raw": ca / cb}
+        out["c_round_ms"][m] = {"base": cb * 1e3, "arm": ca * 1e3, "ratio_raw": ca / cb,
+                                "base_r1": runs["base"]["c"][m] * 1e3}
         print(f"  {m:>3} {cb*1e3:9.3f} {ca*1e3:9.3f} {ca/cb:9.4f}  {role}")
 
     print("\n[5] CONTROLS: untreated widths must not move")
-    spread = {m: runs["arm"]["c"][m] / runs["base"]["c"][m] for m in control}
+    spread = {m: runs["arm"]["c"][m] / baseref["c"][m] for m in control}
     drift = st.median(spread.values())
     worst = max(abs(v - 1) for v in spread.values())
     ctl_ok = worst <= P.CONTROL_BAND
@@ -224,7 +245,7 @@ def main():
                       "band": P.CONTROL_BAND, "pass": ctl_ok}
 
     print("\n[6] ANCHOR: does the session replicate E38's arm(a)?")
-    rho_anchor = (runs["arm"]["c"][ANCHOR_M] / runs["base"]["c"][ANCHOR_M]) / drift
+    rho_anchor = (runs["arm"]["c"][ANCHOR_M] / baseref["c"][ANCHOR_M]) / drift
     lo, hi = P.PRED_M6_ANCHOR
     anchor_ok = lo <= rho_anchor <= hi
     print(f"  M={ANCHOR_M} rho (drift-adjusted) = {rho_anchor:.4f}")
@@ -238,7 +259,7 @@ def main():
     print("\n[7] THE LADDER (NA=4, drift-adjusted rho; only the k_tile constant differs)")
     rho = {}
     for m, label in LADDER:
-        rho[m] = (runs["arm"]["c"][m] / runs["base"]["c"][m]) / drift
+        rho[m] = (runs["arm"]["c"][m] / baseref["c"][m]) / drift
         print(f"  M={m}  {label:<20} rho = {rho[m]:.4f}   tax = {rho[m]-1:+.4f}")
     out["ladder_rho"] = rho
 
@@ -273,7 +294,7 @@ def main():
         print("  -> partial. Report the fraction; (b)'s ceiling is that fraction of R2.")
 
     print("\n[9] CROSS-NA CHECK (NA=3: M=6 sequential tax vs M=3 K-tiled adjacency)")
-    rho3 = (runs["arm"]["c"][3] / runs["base"]["c"][3]) / drift
+    rho3 = (runs["arm"]["c"][3] / baseref["c"][3]) / drift
     print(f"  M=6 rho {rho_anchor:.4f} (r=2, BPC=1, full-K passes)")
     print(f"  M=3 rho {rho3:.4f} (r=2, BPC=2, KT=1)")
     na3_rec = P.total_recovery(rho_anchor, rho3)
@@ -285,10 +306,10 @@ def main():
 
     print("\n[10] PER-SHAPE AT THE DISCRIMINATING STEP")
     print(f"  {'shape':<34}{'base us':>10}{'M4 rho':>9}{'M8 rho':>9}{'step':>9}")
-    for name in runs["base"]["per_shape"][DISCRIMINATOR_M]:
-        b4 = runs["base"]["per_shape"][4].get(name)
+    for name in baseref["per_shape"][DISCRIMINATOR_M]:
+        b4 = baseref["per_shape"][4].get(name)
         a4 = runs["arm"]["per_shape"][4].get(name)
-        b8 = runs["base"]["per_shape"][DISCRIMINATOR_M].get(name)
+        b8 = baseref["per_shape"][DISCRIMINATOR_M].get(name)
         a8 = runs["arm"]["per_shape"][DISCRIMINATOR_M].get(name)
         if not all((b4, a4, b8, a8)):
             continue
