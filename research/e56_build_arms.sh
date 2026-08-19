@@ -47,7 +47,8 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 publish() {
-  local arm="$1" dest="${ARM_DIR}/${arm}"
+  local arm="$1"
+  local dest="${ARM_DIR}/${arm}"
   echo "=== e56 build arm ${arm} (schedule blob $(git hash-object "${SCHEDULE_FILE}")) ==="
   mkdir -p "${dest}" || return 1
   research/rebuild.sh || return 1
