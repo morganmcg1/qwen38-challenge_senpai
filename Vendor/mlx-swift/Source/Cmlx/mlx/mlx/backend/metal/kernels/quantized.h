@@ -2040,6 +2040,19 @@ template <typename T, int group_size, int bits, bool batched>
       // Wide row sharing needs enough output tiles to keep the machine fed;
       // below 4096 outputs the reduced x-group count thins the grid, so the
       // promoted pair kernel is kept there byte-for-byte.
+      //
+      // E41 MEASUREMENT ARM (not a promotion candidate). Every case below keeps
+      // the promoted <M, IPG, true> prefix and appends the row/K-tile shape, so
+      // one build carries the whole K-tile distance ladder and the untreated
+      // widths 1, 2, 5 and 9 stay byte-for-byte identical to the base:
+      //   M=4 KT=64 (spans K in one tile, loop kept) -> no re-read locality
+      //   M=8 KT=4  (4*512 = 2048 values)            -> discriminator
+      //   M=7 KT=1  (512 values)                     -> total-recovery bound
+      //   M=3 KT=1  at NA=3                          -> second NA point
+      //   M=6 KT=0  (loop folded away)               -> E38 arm(a) tax anchor
+      // 4/(ROWS_PER_SIMD * BLOCKS_PER_CALL) sequential calls keep the emitted
+      // instruction mix, trip counts and accumulator count fixed across the
+      // ladder, so only the reuse distance of x[k] varies.
       switch (ntg.x) {
         case 2:
           qmv_fast_crossrow_affine4_g64<T, 2>(
@@ -2047,12 +2060,12 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 3:
-          qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true, 2, 2, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 4:
-          qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true, 2, 2, 64>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -2062,12 +2075,12 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 2, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true, 2, 2, 1>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -2075,7 +2088,7 @@ template <typename T, int group_size, int bits, bool batched>
           // 4+4: two weight streams, receipted on this benchmark (scored
           // 3.195804751396457 as a promoted submission) before a later
           // stale-base REPLACE overlay reverted it; restored here.
-          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true, 2, 2, 4>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
