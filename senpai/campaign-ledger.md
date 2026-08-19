@@ -4883,3 +4883,113 @@ Two traps in doing it:
      only ran a targeted scan when a 403 forced me to find something else to do. **New
      standing rule: before writing any brief, grep the note corpus for the mechanism.**
 
+156. 🔴🔴🔴 **ITEM 155 IS WRONG AND I FOUND OUT BY READING OUR OWN TREE: WE ALREADY SHIP
+     a-github-name's CHUNKED-SDPA FIX. IT IS INHERITED, REACHABLE, LOAD-BEARING, AND
+     COMPLETELY UNTESTED.** One turn after making "grep the rival notes before writing a
+     brief" a standing rule, I wrote item 155 naming the SDPA width wall the campaign's
+     primary target and prepared to assign a student to build the chunk fix — without
+     grepping *our own source tree* for it. It has been in the tree since before our first
+     submission. The rule was too narrow: **check the artifact you are about to build
+     before you build it, starting with the local tree, then merged `research/`, then the
+     note corpus.**
+
+     **The code.** `Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift:104-142`,
+     inside `attentionWithCacheUpdate`, in the plain-cache `else` branch:
+     `let qL = queries.dim(2); let kL = cachedKeys.dim(2);`
+     `if queries.dim(0) == 1, qL >= 6, qL <= 9, kL >= qL, case .causal = mask { let split = 5;`
+     `let kSplit = kL - (qL - split); outA = sdpa(queries[..., 0..<5, ...], keys[..., 0..<kSplit, ...], .causal);`
+     `outB = sdpa(queries[..., 5..., ...], cachedKeys, .causal); return concatenated([outA, outB], axis: 2) }`
+     Its own comment names the mechanism exactly as a-github-name's note does: the fused
+     sdpa-vector path serves `qL * gqa <= 32`, above it the dispatch changes kernel family
+     and the accumulation order of every score, and splitting the queries at row 5 keeps
+     both halves on the fused path with windows byte-identical to two consecutive <= 5-row
+     rounds at the same offsets.
+
+     **Provenance.** Introduced by `b6ce964b16bbb7836480a29e9f5e436bb99a35dd`,
+     author `yukon-autoresearch[bot]`, **Sat Aug 15 21:15:26 2026 UTC**, subject
+     "Validate submission c08eb406-7383-4681-b12f-62e2fc35bf29", also reachable as
+     `upstream/submissions/c08eb406-...` and `subs/c08eb406-...`. It touched three files:
+     `Qwen36MTPBlockSession.swift` (+145), `Qwen35.swift` (387 changed), `AttentionUtils.swift`
+     (+39). Verified: chunk present in `HEAD` and in the shipped-surface gate baseline
+     `527306761f70e2c4024f347915328894db80c181`, **absent** from the pristine upstream
+     baseline `5d029178765cf727e7ee530b0b4c731d566f908a`, and `b6ce964` **is an ancestor of
+     HEAD** (`git merge-base --is-ancestor` ⇒ true). It predates all five of our submissions
+     (first was 08-17T22:03). It is **not** one of the 5 files in our +229/-74 shipped
+     surface, which is exactly why 15 turns of surface auditing never showed it to me: my
+     gate reports *what we changed*, and this is something we *inherited and ship*.
+
+     **Reachability chain — the chunk FIRES on the scored verify path (source read).**
+     (a) Main model `Qwen35.swift:2184`: `let faMask = createAttentionMask(h: hiddenStates, cache: cacheArray?[faIdx])`.
+     (b) That resolves to the single-cache overload `KVCache.swift:353-374`, which delegates
+     `cache.makeMask(n: n, windowSize: nil, returnArray: false)`.
+     (c) `newCache` (`Qwen35.swift:2812-2819`) returns `MambaCache()` for linear layers and
+     **`KVCacheSimple()`** for attention layers.
+     (d) `KVCacheSimple` (`KVCache.swift:385`) **does not override `makeMask`** (0 occurrences
+     in the class body) ⇒ it inherits `BaseKVCache.makeMask` (`:160-174`), which returns
+     `.none` at n==1 and **`.causal`** at n>1 whenever `returnArray` is false and
+     `windowSize` is nil — both true here.
+     (e) `Qwen35Attention.callAsFunction` (`:1859-1930`) passes that mask straight through to
+     `attentionWithCacheUpdate` at `:1918`.
+     ⇒ at verify widths 6..9, B==1, plain `KVCacheSimple`, mask `.causal`, `kL >= qL`: **every
+     guard is satisfied and the chunk branch is taken.** The MTP head's own attention reaches
+     it too (`Qwen35MTP.swift:122` and `:159` build the mask the same way).
+
+     **Consequences, in order of size.**
+     - 🔴 **Items 134 and 151's "the wall bites at M=6 ⇒ unfused fallback" is FALSE for our
+       binary.** The predicate derivation
+       (`supports_sdpa_vector = (q_len<=8) && (q_len<=k_len) && head_dim ok && (q_len*gqa)<=32`,
+       gqa=6 ⇒ q_len <= 5) is still correct *about stock MLX*, and item 151's re-verification
+       stands as a statement about the library. It is simply **not what our tree executes**:
+       the chunk intercepts 6..9 before the predicate is ever evaluated on a wide q.
+     - 🔴🔴 **Item 155's "the width wall is NOW THE PRIMARY TARGET" is RETRACTED.** The SDPA
+       half of the width wall is already fixed in our tree. What remains at M>=6 is the
+       **quantised weight-pass doubling** — `IPG = ceil(M/ceil(M/5))`, the `<T,6,3>` kernel
+       cell, +20.59 ms of the local +32.68 ms 5→6 step — which is nax-free on both boxes
+       (item 152: there is no `qmv_nax`) and is **exactly thorfinn's E38 target.** This
+       finding therefore *confirms and narrows* the existing main line rather than opening a
+       new one. The E38 brief gets stronger: the step it attacks is now the whole remaining
+       step, not a fraction of it.
+     - 🟢 **Item 155's open question "cap (rivals) vs chunk (a-github-name) vs pay (us)" is
+       CLOSED.** We already chunk. polymorf and AvinashNayak27 ship a hard depth cap of 4
+       because they are protecting against a hazard we have removed; polymorf scores 3.1723
+       against our 3.2325. The chunk is a structural asset and **no experiment may regress
+       it** — `sdpaWidthWallDepthCap`, `segmentedStreakGate` and `AttentionUtils.swift` must
+       move together, and any of them moving must re-run the exactness check below.
+     - 🔴 **My "empirical positive control" for the chunk was WEAK and I am withdrawing it.**
+       I first reasoned that our 919/919 bit-exact width-9 result proves the chunk works,
+       because mega-dmitriy reports ~44 % element divergence at widths 6-9 unchunked. That is
+       invalid: our 919/919 was over **token ids**, and polymorf's `b8a29d9968` reports
+       precisely "41 top-2 VALUE mismatches (**ids stable**)" *without* the chunk. Id
+       stability is consistent with chunk-on and chunk-off alike, so it discriminates
+       nothing. The reachability chain above is a source read; **the exactness claim in the
+       chunk's own comment is, as of now, unverified by any measurement of ours.**
+     - 🔴🔴 **The chunk has ZERO test coverage.** The only files in the tree containing
+       `WIDE-DECODE` / `kSplit` are `AttentionUtils.swift` itself; the only test that
+       references `attentionWithCacheUpdate` at all is `CBv2CoreTests.swift`, which exercises
+       the **CBv2 branch that returns at `:77` — before the chunk**. So an inherited,
+       numerically delicate, unreviewed component fires only at widths >= 6, i.e. only on
+       the wide prompts, i.e. only where 100 % of our score value lives (beagle 79 %,
+       medicine 21 %), and nothing anywhere checks that it is right.
+     - 🔴 **Why this is a live risk and not a curiosity.** polymorf's contamination result
+       says drifted K/V rows corrupt every *later* round including subsequent narrow ones. If
+       the chunk's bottom-right-alignment argument fails at any (qL, kL) — the guard admits
+       `kL == qL`, where `kSplit = kL - (qL - 5) = 5` and chunk A sees a square 5x5 window —
+       we would be silently shipping value drift into the two prompts that carry the entire
+       score, and it would look like a small uniform slowdown, not a failure. Compare item
+       148: our deficit is +0.005 % on narrow prompts and +0.326 % on wide ones,
+       corr(draftlen, deficit_pct) = +0.71. **A defect gated on qL >= 6 has exactly that
+       signature.** I do not claim it is the cause — the chunk is most likely correct as
+       designed, and item 155's own byte-identical `effective_mean_draft_len` finding shows
+       the *propose* trajectory is unchanged — but it is the first mechanism I have found
+       whose reachability condition matches the deficit's shape, and it is untested.
+     - 🟡 The chunk's cost is bounded and small by construction: one extra pass over KV rows
+       (a few MB), one extra dispatch, one `concatenated`, never a second pass over weights.
+       Attention is ~8 % of leg time. Even eliminating the chunk entirely cannot deliver the
+       -1.9…-2.9 % beagle move the crown needs, so **it is a correctness asset, not a speed
+       lever**, and it must not be reopened as one.
+
+     **Next action recorded:** an exactness + reachability audit of the chunk with a bypass
+     negative control, at every width 6..9 and across kL regimes including the `kL == qL`
+     corner, plus a following-narrow-round check for polymorf's contamination mode. Cheap,
+     local, bounded, and it either retires the last unaudited component on the scoring path
+     or finds a P0.
