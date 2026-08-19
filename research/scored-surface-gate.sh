@@ -77,6 +77,11 @@ SCORED_SUBJECT="Validate submission ca9251b8-58cd-4d90-9a52-fa05f5657216"
 SCORED_AUTHOR="yukon-autoresearch[bot]"
 SCORED_PARENT="5068eb8d0bae032faca6e901de398fc732531160"
 
+# The live research frontier. FRONTIER-TAKEN acknowledgements are asserted
+# against this ref, so it must resolve; a gate that silently skips its own
+# strongest assertion because a ref is missing is worse than no gate.
+FRONTIER_REF="${SCORED_GATE_FRONTIER_REF:-upstream/main}"
+
 SURFACE_PATHS=(
   "Sources/"
   "Vendor/"
@@ -93,8 +98,27 @@ SURFACE_PATHS=(
 #   HOT-PATH-REFACTOR     changes code that runs on every decode step. Behaviour
 #                         is intended to be identical but the emitted work is
 #                         not textually identical. Must carry a modelled cost.
+#   FRONTIER-TAKEN        the file is BYTE-IDENTICAL to the live research
+#                         frontier (${FRONTIER_REF}). The delta versus the scored
+#                         tree is therefore the ORGANIZER'S OWN promoted work,
+#                         not ours: it is unscored only because our last scored
+#                         row predates that promotion. This is the strongest
+#                         justification available and it is the only status word
+#                         this gate VERIFIES rather than believes -- see the
+#                         FRONTIER-TAKEN assertion loop below. An entry that
+#                         stops being byte-identical fails, so this class of
+#                         acknowledgement cannot rot into a lie the way a
+#                         free-text reason can. Ledger 162 added it after four
+#                         hand-written acks went stale in a single rebase.
+#   WARM-PATH-ONLY        added code executes only in the warm-up path, outside
+#                         the timed window, so it cannot appear in a scored
+#                         measurement except by moving cost OUT of it.
 ACK_UNSCORED=(
-  "Sources/MLXFastModel/Qwen36MTPBlockSession.swift|PROBE-OFF-BY-DEFAULT|E29 head-chain drain probe behind MLX_QWEN_MTP_TRACE_SYNC_HEAD; body is one eval() inside 'if Self.traceSyncHeadChain', so a timed run pays one static-let bool test per round. Comment already warns it destroys head/verify overlap if enabled."
+  "Sources/MLXFastModel/Qwen35RuntimeWeights.swift|FRONTIER-TAKEN|Buffer cap MLX_MAX_MB_PER_BUFFER raised 128 to 512. Adopted verbatim from the frontier so our whole-file overlay stops REVERTING an organizer-accepted promotion. Byte-identity is asserted by this gate, so no cost model is owed: the frontier is already the measured configuration."
+  "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift|FRONTIER-TAKEN|Frontier memory policy taken verbatim: setenv overwrite flag 0 to 1 and the 320/128 MiB pair to 512/50. These were the crown's actual mechanism, not dead constants; a previous turn nearly deleted them as unused. Byte-identity to the frontier is asserted below."
+  "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp|FRONTIER-TAKEN|E27 per-width register widening REVERTED to the frontier. E27 cost 0.3321 percent of score: mean MTP leg plus 0.1995 percent, slower on every wide prompt (beagle 0.2353, essays 0.4803, republic 0.2375, botany 0.5225 against an MTP replicate sd of 0.0995 percent). See research/crown_leg_decomposition.py. JIT twin of the kernel header below."
+  "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h|FRONTIER-TAKEN|E27 reverted with its twin. Cells return to T,5,3 and T,9,3, dropping the kernel-wide register max from 129 to 108 and the production entry affine_qmv_fast bfloat16_t,64,4,false from 183 to 163. Because there is exactly one [[kernel]] and every helper is METAL_FUNC inline (alphonse E40), that allocation is shared by every width, which is why two local per-width wins lost the score."
+  "Sources/MLXFastModel/Qwen36MTPBlockSession.swift|WARM-PATH-ONLY|Two additions. (1) fkiene's verify-concat JIT warm, promoted at 1cb1f43a7246d57af8b96dad468583364779aa73 scoring 3.24417896624589 against base 3.24326223889754 (plus 0.0283 percent), deleted from the frontier by a later whole-file overlay whose author never opened the file; restored inside warmAllDepthShapes, i.e. OUTSIDE the timed window, so it can only move JIT cost out of the measured region. (2) E29 head-chain drain probe behind MLX_QWEN_MTP_TRACE_SYNC_HEAD: body is one eval() inside 'if Self.traceSyncHeadChain', so a timed run pays one static-let bool test per round."
   "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift|HOT-PATH-REFACTOR|E29(c) makes the decode asyncEval rung schedule overridable via MLX_QWEN_MTP_LADDER. Default rung set [0,1,9,19,29,39,49,57] is identical to the scored switch, but a Set<Int>.contains hash lookup replaced a jump table, 64x per forward pass. Modelled cost ~1 us/step: ~0.002 % of a 38 ms serial step and ~0.002 % of a 59 ms MTP round, and it appears on BOTH legs of raw_p so it largely cancels in the ratio. That is ~50x below sigma_score = 0.0978 %."
 )
 
@@ -135,6 +159,30 @@ if [ -z "${rev_full}" ]; then
   exit 1
 fi
 note "  subject rev   : ${rev_full}  (${REV})"
+
+# --- refuse to certify a worktree we have not committed ----------------------
+# See the header of research/lib/dirty-packaged-surface.sh. This gate reports
+# what we would SUBMIT, so certifying an uncommitted tree here is the worst case.
+#
+# ORDERING IS DELIBERATE and it is not cosmetic. This block sits AFTER the pin
+# assertions above, because a gate must establish that its own pins are sound
+# before it makes any statement at all -- and because putting it first broke
+# control 12, which copies this gate into a decoy repo containing none of the
+# objects it pins and requires it to fail on the MISSING SCORED COMMIT rather
+# than on anything else. A control that demands a specific diagnostic is a
+# control that pins the gate's reasoning ORDER, which is worth preserving.
+if [ -r "${_gate_root}/research/lib/dirty-packaged-surface.sh" ]; then
+  # shellcheck source=research/lib/dirty-packaged-surface.sh
+  . "${_gate_root}/research/lib/dirty-packaged-surface.sh"
+  if ! refuse_if_packaged_surface_dirty "${REV}" "scored-surface gate"; then
+    note "scored-surface gate: FAIL -- dirty packaged surface, nothing certified"
+    exit 1
+  fi
+else
+  bad "research/lib/dirty-packaged-surface.sh is missing, so this gate cannot establish that the packaged surface is committed. Failing closed rather than certifying a tree I have not read."
+  note "scored-surface gate: FAIL"
+  exit 1
+fi
 
 # --- lineage relation, stated rather than assumed ----------------------------
 if git merge-base --is-ancestor "${SCORED_COMMIT}" "${rev_full}" 2>/dev/null; then
@@ -212,6 +260,37 @@ for entry in "${ACK_UNSCORED[@]}"; do
     bad "ACK_UNSCORED entry for '${path}' has no substantive reason."
   fi
 done
+
+# --- FRONTIER-TAKEN entries must EARN the label -------------------------------
+# This is the one acknowledgement class the gate verifies instead of believing.
+# The claim "this delta is the organizer's own promoted work, not ours" is
+# exactly the claim `git diff --quiet <frontier> HEAD -- <path>` decides, so
+# decide it. Four hand-written acknowledgements went stale in a single rebase
+# (ledger 162); the failure mode of a prose reason is that it keeps passing
+# after it stops being true.
+frontier_sha="$(git rev-parse --verify "${FRONTIER_REF}" 2>/dev/null || true)"
+have_frontier_ack=0
+for entry in "${ACK_UNSCORED[@]}"; do
+  rest="${entry#*|}"
+  [ "${rest%%|*}" = "FRONTIER-TAKEN" ] && have_frontier_ack=1
+done
+if [ "${have_frontier_ack}" -eq 1 ] && [ -z "${frontier_sha}" ]; then
+  bad "ACK_UNSCORED contains FRONTIER-TAKEN entries but frontier ref '${FRONTIER_REF}' does not resolve, so their central claim cannot be checked. Run 'git fetch upstream' or set SCORED_GATE_FRONTIER_REF."
+elif [ "${have_frontier_ack}" -eq 1 ]; then
+  note "  FRONTIER-TAKEN VERIFICATION (against ${FRONTIER_REF} = ${frontier_sha:0:12}):"
+  for entry in "${ACK_UNSCORED[@]}"; do
+    path="${entry%%|*}"
+    rest="${entry#*|}"
+    [ "${rest%%|*}" = "FRONTIER-TAKEN" ] || continue
+    if git diff --quiet "${frontier_sha}" "${rev_full}" -- "${path}" 2>/dev/null; then
+      note "    byte-identical to frontier   ${path}"
+    else
+      note "    NOT identical to frontier    ${path}"
+      bad "ACK_UNSCORED marks '${path}' FRONTIER-TAKEN, but it is NOT byte-identical to ${FRONTIER_REF}. Either the frontier moved under us or we edited a file we claimed only to adopt. Re-adjudicate with 'git diff ${FRONTIER_REF} ${REV} -- ${path}' and 'git blame' on the deleted lines before changing the label."
+    fi
+  done
+  note ""
+fi
 
 note "  WHY EACH UNSCORED DELTA IS CARRIED:"
 for entry in "${ACK_UNSCORED[@]}"; do

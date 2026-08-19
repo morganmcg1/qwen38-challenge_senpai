@@ -67,50 +67,128 @@ expect_pass() {
   fi
 }
 
+# --- derive the mutation targets from the subject, never from memory ----------
+# Controls 3, 4 and 5 used to name a path AND its STATUS word literally. One
+# rebase renamed a status (PROBE-OFF-BY-DEFAULT -> WARM-PATH-ONLY) and added a
+# FRONTIER-TAKEN class, and all three mutations silently matched nothing: they
+# ran the UNMODIFIED gate, it passed, and the harness recorded "refusal absent"
+# without ever saying the mutation had not been applied. A control that cannot
+# fire is worse than no control, so the targets are now read out of the gate's
+# own table and every mutation asserts that it changed the file.
+ack_paths() {
+  awk '/^ACK_UNSCORED=\(/ { f = 1; next } f && /^\)/ { exit } f' "${GATE}" \
+    | awk -F'|' '{ sub(/^[[:space:]]*"/, "", $1); print $1 }'
+}
+
+# drop_ack <mutant-file> <path> -- remove that path's ACK entry, by path ONLY.
+# Matching on "path| is enough to identify an entry and is immune to renaming
+# the status word, which is what broke the literal versions.
+drop_ack() {
+  local file="$1" path="$2" before after
+  before="$(wc -l < "${file}")"
+  grep -vF "\"${path}|" "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
+  after="$(wc -l < "${file}")"
+  if [ "${before}" -eq "${after}" ]; then
+    printf '  FAIL  %-56s (vacuous: no ACK entry matched)\n' "setup for ${path}"
+    nfail=$((nfail + 1))
+    return 1
+  fi
+  return 0
+}
+
+# No mapfile: the system bash here is 3.2.57, where mapfile does not exist and
+# an unset array under `set -u` would take the targets out silently.
+ACK_PATHS=()
+while IFS= read -r line; do
+  [ -n "${line}" ] && ACK_PATHS+=("${line}")
+done < <(ack_paths)
+ACK_COUNT="${#ACK_PATHS[@]}"
+ACK_FIRST=""
+ACK_LAST=""
+if [ "${ACK_COUNT}" -ge 1 ]; then
+  ACK_FIRST="${ACK_PATHS[0]}"
+  ACK_LAST="${ACK_PATHS[$((ACK_COUNT - 1))]}"
+fi
+
 echo "scored-surface gate: mutation negative controls"
 echo "  subject: ${GATE}"
+echo "  derived ACK targets: ${ACK_COUNT} entries; first=${ACK_FIRST##*/} last=${ACK_LAST##*/}"
 echo
+
+# An empty or single-entry table must not let controls 2/3 pass by vacuum.
+if [ "${ACK_COUNT}" -lt 2 ] || [ "${ACK_FIRST}" = "${ACK_LAST}" ]; then
+  printf '  FAIL  %-56s (need >=2 distinct ACK entries to mutate)\n' "control setup  ACK table too small"
+  nfail=$((nfail + 2))
+fi
 
 # --- control 1: unmodified gate must pass -----------------------------------
 cp "${GATE}" "${work}/m0.sh"
 expect_pass "control 1  unmodified gate passes" "${work}/m0.sh"
 
 # --- control 2: an unscored file with no acknowledgement must be refused ----
-# This is the gate's primary job. Drop the Qwen35.swift acknowledgement and the
-# gate must notice that a shipped file differs from the scored tree unexplained.
+# This is the gate's primary job. Drop the FIRST acknowledgement and the gate
+# must notice that a shipped file differs from the scored tree unexplained. The
+# needle names the derived path, so the control also proves the gate blames the
+# right file rather than merely failing somewhere.
 cp "${GATE}" "${work}/m1.sh"
-sed -i '' '/^  "Vendor\/mlx-swift-lm\/Libraries\/MLXLLM\/Models\/Qwen35.swift|HOT-PATH-REFACTOR/d' "${work}/m1.sh"
-expect_fail "control 2  unacknowledged unscored file refused" "${work}/m1.sh" "is not acknowledged in ACK_UNSCORED"
+if drop_ack "${work}/m1.sh" "${ACK_FIRST}"; then
+  expect_fail "control 2  unacknowledged unscored file refused" "${work}/m1.sh" \
+    "${ACK_FIRST}' differs from the scored tree and is not acknowledged"
+fi
 
-# --- control 3: the same for the other file, so one ACK cannot mask another --
+# --- control 3: the same for another entry, so one ACK cannot mask another ---
 cp "${GATE}" "${work}/m2.sh"
-sed -i '' '/^  "Sources\/MLXFastModel\/Qwen36MTPBlockSession.swift|PROBE-OFF-BY-DEFAULT/d' "${work}/m2.sh"
-expect_fail "control 3  the other file, unacknowledged, refused" "${work}/m2.sh" "Qwen36MTPBlockSession.swift"
+if drop_ack "${work}/m2.sh" "${ACK_LAST}"; then
+  expect_fail "control 3  another entry, unacknowledged, refused" "${work}/m2.sh" \
+    "${ACK_LAST}' differs from the scored tree and is not acknowledged"
+fi
 
 # --- control 4: a stale acknowledgement must be refused ---------------------
-# The table has to rot loudly. Add an entry for a path that does NOT differ from
-# the scored tree; leaving such entries is how an ACK list becomes fiction.
+# The table has to rot loudly. Add an entry for a path that CANNOT appear in the
+# unscored delta: benchmark.json sits outside SURFACE_PATHS (Sources/, Vendor/,
+# mtp-head.manifest.json), so the gate never diffs it and the entry is stale by
+# construction rather than by today's tree. The previous version of this control
+# named a Sources/ file that "does not differ" -- until a rebase made it differ,
+# at which point the control tested nothing.
 cp "${GATE}" "${work}/m3.sh"
-sed -i '' 's|^ACK_UNSCORED=(|ACK_UNSCORED=(\
-  "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift\|PROBE-OFF-BY-DEFAULT\|a plausible sounding reason that is long enough to pass the length check"|' "${work}/m3.sh"
-expect_fail "control 4  stale acknowledgement refused" "${work}/m3.sh" "no longer differs from the scored tree"
+python3 - "${work}/m3.sh" "benchmark.json|PROBE-OFF-BY-DEFAULT|a plausible sounding reason long enough to clear the length check" <<'PY'
+import sys
+path, entry = sys.argv[1], sys.argv[2]
+s = open(path).read()
+needle = "ACK_UNSCORED=(\n"
+if needle not in s:
+    sys.exit("control 4 vacuous: no ACK_UNSCORED=( opener in the gate")
+open(path, "w").write(s.replace(needle, needle + '  "' + entry + '"\n', 1))
+PY
+if [ $? -eq 0 ]; then
+  expect_fail "control 4  stale acknowledgement refused" "${work}/m3.sh" "no longer differs from the scored tree"
+else
+  printf '  FAIL  %-56s (mutation could not be applied)\n' "control 4  stale acknowledgement refused"
+  nfail=$((nfail + 1))
+fi
 
 # --- control 5: an acknowledgement with no substantive reason must be refused
 # Done in python, not sed: the ACK entries are pipe-delimited and BSD sed has no
 # way to write this substitution without the delimiter colliding with the data.
+# The STATUS word is matched as a class, not spelled out, and the substitution
+# count is asserted -- spelling it out is what made this control vacuous.
 cp "${GATE}" "${work}/m4.sh"
-python3 - "${work}/m4.sh" <<'PY'
+python3 - "${work}/m4.sh" "${ACK_FIRST}" <<'PY'
 import re, sys
-p = sys.argv[1]
-s = open(p).read()
-s = re.sub(
-    r'"Sources/MLXFastModel/Qwen36MTPBlockSession\.swift\|PROBE-OFF-BY-DEFAULT\|[^"]*"',
-    '"Sources/MLXFastModel/Qwen36MTPBlockSession.swift|PROBE-OFF-BY-DEFAULT|fine"',
-    s,
-)
-open(p, 'w').write(s)
+path, target = sys.argv[1], sys.argv[2]
+s = open(path).read()
+pat = re.compile(r'("' + re.escape(target) + r'\|[A-Z0-9-]+\|)[^"]*"')
+s2, n = pat.subn(r'\1fine"', s)
+if n != 1:
+    sys.exit("control 5 vacuous: %d ACK entries matched %s" % (n, target))
+open(path, "w").write(s2)
 PY
-expect_fail "control 5  acknowledgement with no reason refused" "${work}/m4.sh" "has no substantive reason"
+if [ $? -eq 0 ]; then
+  expect_fail "control 5  acknowledgement with no reason refused" "${work}/m4.sh" "has no substantive reason"
+else
+  printf '  FAIL  %-56s (mutation could not be applied)\n' "control 5  acknowledgement with no reason refused"
+  nfail=$((nfail + 1))
+fi
 
 # --- control 6: a missing scored commit must fail with the fetch instruction -
 # The pre-existing situation: the sha the API reports is not in the local object

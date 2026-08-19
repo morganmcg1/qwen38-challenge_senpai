@@ -41,11 +41,16 @@ SURFACE_PATHS=("Sources/" "Vendor/" "mtp-head.manifest.json")
 CAMPAIGN_BASE="527306761f70e2c4024f347915328894db80c181"
 
 # --- the five files THIS campaign changed (ledger 140) ----------------------
-OURS="Sources/MLXFastModel/Qwen36MTPBlockSession.swift
-Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift
-Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
-Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
-Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+# LEDGER 162: this list used to be hardcoded, and it went stale the moment the
+# shipped surface was rebased onto the frontier -- Qwen35RuntimeWeights.swift
+# entered our delta and mlx-generated/quantized.cpp left it, so the gate called
+# a file we changed "inherited" and demanded an audit acknowledgement for it.
+# It is now DERIVED from CAMPAIGN_BASE below, because git already knows which
+# files this campaign touched and a second hand-maintained copy of that fact can
+# only drift. research/shipped-surface-gate.sh owns the question "did the set
+# change?" and fails loudly on drift; this gate owns "how much did we write?"
+# and should simply ask. Single source of truth, one place to update.
+OURS=""
 
 # --- inherited files we have SEEN, with audit status ------------------------
 # A file here is acknowledged as present, NOT certified as correct. The status
@@ -63,6 +68,7 @@ Sources/MLXFastTrustedHarness/QwenRuntimeLocalIterate.swift|UNAUDITED|twin of th
 Sources/MLXFastTrustedHarness/QwenRuntimeMTP.swift|UNAUDITED|+15 lines
 Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift|UNAUDITED|+6 lines; owns effectiveDraftLengths
 Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift|UNAUDITED|+40/-1 MTP head forward
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp|AUDITED|ledger 162: the JIT twin of kernels/quantized.h. Was OURS until E27 was reverted; it is now byte-identical to the frontier, asserted by scored-surface-gate.sh FRONTIER-TAKEN, so it left our authored set and re-entered the inherited one. It differs from pristine only by the frontier's own promoted cross-row work. Its code must stay in lockstep with kernels/quantized.h or the AOT metallib and the runtime JIT compile different kernels; shipped-surface-gate.sh checks that over CODE lines only, because generated source does not carry the header's comments
 Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift|AUDITED|ledger 156: chunked SDPA at qL 6..9, fires on scored verify path, ZERO test coverage
 Vendor/mlx-swift-lm/Libraries/MLXLMCommon/KVCache.swift|PARTIAL|ledger 159: one 58-line append at :1243 adding rollbackCheckpoints + prefixReplayTape to MambaCache; does NOT touch makeMask/KVCacheSimple/createAttentionMask, so ledger 156 reachability rests on pristine code
 mtp-head.manifest.json|UNAUDITED|+5/-13; selects the head artifact"
@@ -72,9 +78,45 @@ fail=0
 note() { printf '%s\n' "$*"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 
+# LEDGER 162: membership below was tested with `printf ... | grep -qxF`. Under
+# `set -o pipefail` that construct is unsafe: grep -q exits on the first match,
+# the producer can then die of SIGPIPE (141), and pipefail propagates 141 as the
+# condition's status -- silently inverting the test. A control in
+# research/frontier-revert-gate-controls.sh broke in exactly that way and reported
+# a vacuous pass for weeks before I noticed. The three sites that use this helper
+# decide whether a shipped file counts as OURS or INHERITED, i.e. they produce the
+# authorship percentage this gate exists to report, so they must not be able to
+# fail quietly. Pure builtin, no pipe, no external process.
+contains_line() { # $1 = newline-separated haystack, $2 = exact needle
+  # NOT $(printf ...): command substitution strips trailing newlines, which would
+  # make the LAST entry of the haystack unmatchable. Literal $'\n' concatenation
+  # keeps both sentinels.
+  local hay=$'\n'"$1"$'\n'
+  local needle=$'\n'"$2"$'\n'
+  case "${hay}" in
+    *"${needle}"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 note "inherited-surface gate"
 note "  pristine $PRISTINE"
 note "  rev      $(git rev-parse --short "$REV") $(git log -1 --format=%s "$REV")"
+
+# Refuse to certify a worktree we have not committed; see the header of
+# research/lib/dirty-packaged-surface.sh.
+_gate_root_ih="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "${_gate_root_ih}" ] && [ -r "${_gate_root_ih}/research/lib/dirty-packaged-surface.sh" ]; then
+  # shellcheck source=research/lib/dirty-packaged-surface.sh
+  . "${_gate_root_ih}/research/lib/dirty-packaged-surface.sh"
+  ( cd "${_gate_root_ih}" && refuse_if_packaged_surface_dirty "$REV" "inherited-surface gate" ) || {
+    note "inherited-surface gate: FAIL -- dirty packaged surface, nothing certified"
+    exit 1
+  }
+else
+  bad "research/lib/dirty-packaged-surface.sh is missing, so this gate cannot establish that the packaged surface is committed. Failing closed."
+  exit 1
+fi
 
 if ! git cat-file -e "${PRISTINE}^{commit}" 2>/dev/null; then
   bad "pristine commit $PRISTINE does not exist in this repository"
@@ -89,6 +131,21 @@ if ! git merge-base --is-ancestor "$PRISTINE" "$REV"; then
 fi
 
 numstat="$(git diff --numstat "$PRISTINE" "$REV" -- "${SURFACE_PATHS[@]}")"
+
+# Derive "our" files rather than trusting a second copy of the fact. See the
+# comment at the OURS declaration: the hardcoded list went stale on the rebase.
+if ! git cat-file -e "${CAMPAIGN_BASE}^{commit}" 2>/dev/null; then
+  bad "campaign base $CAMPAIGN_BASE is not in this repository, so the set of files this campaign changed cannot be derived and every authorship number below would be a guess."
+  exit 1
+fi
+OURS="$(git diff --name-only "$CAMPAIGN_BASE" "$REV" -- "${SURFACE_PATHS[@]}")"
+if [ -z "$OURS" ]; then
+  bad "this campaign changed NO packaged file relative to $CAMPAIGN_BASE. That is either a wrong base or an empty submission; refusing to report a 0 % authorship figure as if it were meaningful."
+  exit 1
+fi
+note ""
+note "  files THIS campaign changed, derived from ${CAMPAIGN_BASE:0:12}:"
+printf '%s\n' "$OURS" | sed 's/^/    /'
 ours_sorted="$(printf '%s\n' "$OURS" | sort)"
 ack_paths="$(printf '%s\n' "$ACK" | awk -F'|' 'NF{print $1}' | sort)"
 
@@ -110,7 +167,7 @@ own_ins=$(git diff --numstat "$CAMPAIGN_BASE" "$REV" -- "${SURFACE_PATHS[@]}" \
 own_files_vs_pristine=0
 while IFS=$'\t' read -r add del path; do
   [ -n "${path:-}" ] || continue
-  if printf '%s\n' "$ours_sorted" | grep -qxF "$path"; then
+  if contains_line "$ours_sorted" "$path"; then
     own_files_vs_pristine=$((own_files_vs_pristine + add))
   fi
 done <<< "$numstat"
@@ -121,7 +178,7 @@ note "  INHERITED files (never authored by this campaign):"
 inherited_count=0
 while IFS=$'\t' read -r add del path; do
   [ -n "${path:-}" ] || continue
-  printf '%s\n' "$ours_sorted" | grep -qxF "$path" && continue
+  contains_line "$ours_sorted" "$path" && continue
   inherited_count=$((inherited_count + 1))
   status="$(printf '%s\n' "$ACK" | awk -F'|' -v p="$path" '$1==p{print $2}')"
   if [ -z "$status" ]; then
@@ -135,7 +192,8 @@ done <<< "$numstat"
 # an ACK entry for a file that is no longer shipped is also drift
 while IFS= read -r p; do
   [ -n "$p" ] || continue
-  if ! printf '%s\n' "$numstat" | awk -F'\t' 'NF{print $3}' | grep -qxF "$p"; then
+  _shipped_paths="$(awk -F'\t' 'NF{print $3}' <<< "$numstat")"
+  if ! contains_line "$_shipped_paths" "$p"; then
     bad "ACK lists '$p' but it is no longer in the shipped delta -- remove it"
   fi
 done <<< "$ack_paths"

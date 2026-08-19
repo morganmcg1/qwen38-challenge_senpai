@@ -52,15 +52,49 @@ echo "frontier-revert gate: mutation negative controls"
 echo "  subject: ${GATE}"
 echo
 
-# --- control 1: the true current state is BLOCKED ---------------------------
-bash "${GATE}" > "${work}/out.txt" 2>&1
+# --- the target file every mutation control needs ----------------------------
+# LEDGER 162: controls 3 and 5 used to hardcode
+# Sources/MLXFastModel/Qwen35RuntimeWeights.swift as "a packaged file that
+# differs from the frontier". The rebase made that file byte-identical to the
+# frontier, so removing or shortening its entry changed nothing and both controls
+# silently became vacuous -- they reported rc=0 and looked like gate defects when
+# in fact the CONTROLS had rotted. The rule that follows: a control must
+# CONSTRUCT its own input and never depend on the live tree's state. So the
+# target is derived from the acknowledgement table itself, whose every entry the
+# gate independently asserts describes a real difference (that is control 4).
+TARGET="$(awk -F'|' '!/^[[:space:]]*#/ && NF >= 3 { print $1; exit }' "${ACKS}")"
+if [ -z "${TARGET}" ]; then
+  echo "  controls: the acknowledgement table has no entries, so controls 3 and 5"
+  echo "            cannot be constructed. That is a legitimate state only if the"
+  echo "            tree is fully reconciled; refusing to report them as passing."
+  nfail=$((nfail + 2))
+fi
+echo "  derived mutation target: ${TARGET:-<none>}"
+echo
+
+# --- control 1: a MUST-REBASE entry BLOCKS ----------------------------------
+# LEDGER 162: this control used to run the gate unmutated and assert BLOCKED,
+# because BLOCKED was the correct answer on the day it was written. Then the
+# rebase landed, the gate correctly went green, and the control failed while the
+# gate was working perfectly -- it was asserting a fact about the TREE, not a
+# property of the GATE. It is now the exact mirror of control 2: control 2
+# promotes every entry to INTENTIONAL-REPLACEMENT and demands PASS, control 1
+# downgrades one entry to MUST-REBASE and demands BLOCKED. Together they prove
+# the verdict tracks the table in both directions, on any tree.
+if [ -n "${TARGET}" ]; then
+  awk -F'|' -v t="${TARGET}" 'BEGIN{OFS="|"} !/^[[:space:]]*#/ && NF >= 3 && $1 == t { $2 = "MUST-REBASE" } { print }' \
+    "${ACKS}" > "${work}/one_must_rebase.txt"
+else
+  cp "${ACKS}" "${work}/one_must_rebase.txt"
+fi
+FRONTIER_ACKS="${work}/one_must_rebase.txt" bash "${GATE}" > "${work}/out.txt" 2>&1
 rc=$?
 if [ "${rc}" -eq 1 ] && grep -q "MUST-REBASE" "${work}/out.txt" \
    && grep -q "frontier-revert gate: BLOCKED" "${work}/out.txt"; then
-  printf '  PASS  %-58s (exit 1, blocked on named MUST-REBASE)\n' "control 1  unmodified gate blocks today"
+  printf '  PASS  %-58s (exit 1, blocked on named MUST-REBASE)\n' "control 1  a MUST-REBASE entry blocks"
   pass=$((pass + 1))
 else
-  printf '  FAIL  %-58s rc=%s\n' "control 1  unmodified gate blocks today" "${rc}"
+  printf '  FAIL  %-58s rc=%s\n' "control 1  a MUST-REBASE entry blocks" "${rc}"
   head -6 "${work}/out.txt" | sed 's/^/          /'
   nfail=$((nfail + 1))
 fi
@@ -83,8 +117,9 @@ else
 fi
 
 # --- control 3: a packaged file with no entry at all -------------------------
-grep -v '^Sources/MLXFastModel/Qwen35RuntimeWeights.swift|' "${work}/all_intentional.txt" \
-  > "${work}/missing_entry.txt"
+# Target derived above, not hardcoded. See the LEDGER 162 note at its definition.
+awk -F'|' -v t="${TARGET}" '!($1 == t && !/^[[:space:]]*#/ && NF >= 3)' \
+  "${work}/all_intentional.txt" > "${work}/missing_entry.txt"
 expect_fail "control 3  unlisted packaged file refused" "is not listed in" \
   "FRONTIER_ACKS=${work}/missing_entry.txt"
 
@@ -98,7 +133,8 @@ expect_fail "control 4  stale acknowledgement refused" "no longer differs from t
   "FRONTIER_ACKS=${work}/stale.txt"
 
 # --- control 5: a reason too short to be a reason ----------------------------
-sed 's#^Sources/MLXFastModel/Qwen35RuntimeWeights.swift|INTENTIONAL-REPLACEMENT|.*#Sources/MLXFastModel/Qwen35RuntimeWeights.swift|INTENTIONAL-REPLACEMENT|fine#' \
+# Target derived above, not hardcoded. See the LEDGER 162 note at its definition.
+awk -F'|' -v t="${TARGET}" 'BEGIN{OFS="|"} !/^[[:space:]]*#/ && NF >= 3 && $1 == t { print $1, $2, "fine"; next } { print }' \
   "${work}/all_intentional.txt" > "${work}/shortreason.txt"
 expect_fail "control 5  acknowledgement with no reason refused" "no substantive reason" \
   "FRONTIER_ACKS=${work}/shortreason.txt"
@@ -156,7 +192,17 @@ leaked=0
 grep -q "senpai/campaign-ledger.md" "${work}/out.txt" && leaked=1
 grep -q "research/frontier-revert-gate.sh" "${work}/out.txt" && leaked=1
 differs_outside=0
-git diff --numstat upstream/main HEAD -- senpai/ research/ 2>/dev/null | grep -q . && differs_outside=1
+# LEDGER 162: this line used to be
+#     git diff --numstat upstream/main HEAD -- senpai/ research/ | grep -q . && differs_outside=1
+# and it silently stopped working. `grep -q` exits on the FIRST match, git then
+# dies of SIGPIPE with status 141, and `set -o pipefail` makes the whole pipeline
+# return 141 -- so the `&&` never fired and the control reported differs_outside=0,
+# i.e. "there is nothing outside the packaged set to leak", which made the control
+# vacuous. It passed for weeks because the diff was small enough to fit in the
+# pipe buffer before grep exited; it broke when research/ grew. A control whose
+# own MEASUREMENT can fail silently is worse than no control. No pipe now.
+_outside="$(git diff --numstat upstream/main HEAD -- senpai/ research/ 2>/dev/null || true)"
+[ -n "${_outside}" ] && differs_outside=1
 if [ "${leaked}" -eq 0 ] && [ "${differs_outside}" -eq 1 ]; then
   printf '  PASS  %-58s (unpackaged files differ but are excluded)\n' "control 11 editablePaths filter is load-bearing"
   pass=$((pass + 1))

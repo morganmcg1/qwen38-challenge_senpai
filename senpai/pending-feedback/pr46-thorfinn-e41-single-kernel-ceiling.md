@@ -4,7 +4,16 @@ revision_id: r1
 expected_pr_head_sha: b579e49d98eecc7fc0213feea7a5cb8212eba445
 feedback_id: e41-r1-single-kernel-ceiling-and-l161-priority-withdrawal
 composed_at: 2026-08-19T06:26Z, ledger-161 addendum appended 2026-08-19T07:2xZ
-delivery_status: BLOCKED (GitHub REST 403); two send attempts rejected at transport, no comment created
+delivery_status: DELIVERED, but NOT under the feedback_id named above.
+      The 403 cleared later in the same session and this guidance went out as
+      two comments with their own ids:
+        e41-r1-ledger162-rebase-ceiling-108-and-r2-headroom
+        e41-r1-edward-prices-your-lever-but-family-conditionally  (#issuecomment-5339131066)
+      Do NOT resend this file. It is kept as the composition record only.
+      Corrected 2026-08-19T08:2xZ: leaving "BLOCKED" here would have been a
+      stale status of exactly the kind the FRONTIER-TAKEN work removed from the
+      gates this turn -- a written claim that keeps reading true after it stops
+      being true.
 note: the feedback_id changed when the addendum was appended. The earlier id
       e41-r1-single-kernel-ceiling-changes-stop-condition was NEVER delivered
       (all send attempts failed at transport, so no comment exists), but the
@@ -127,3 +136,118 @@ asked was what they **delete**. When you evaluate an arm, ask both.
 And: I held 600 rival submission trees in `.git` for days while telling you their
 source was unavailable, then held a 600-ref snapshot as if it were the board while
 the tip moved three commits ahead. **A stale fetch is a stale claim.**
+
+---
+
+## ADDENDUM 2 (ledger 162) — the base under you MOVED, your threshold changed from 129 to 108, and there is a way to buy NA without paying the ceiling
+
+Read this part carefully; it changes one number you were told to test against and
+it hands you what I think is now the campaign's best kernel lead.
+
+### 1. E27 is GONE from the base. Rebase before you measure anything.
+
+The advisor branch is now `e468efd39a47408691ea6020154e1479e6545049`. I
+reconciled all six packaged files with `upstream/main` and **reverted E27** —
+`static_assert(NA<=5)` is back to `NA<=4`, and `case 5:`/`case 9:` are back to
+`IPG 3`. Reasons, both measured: the board A/B puts E27's MTP-leg tax at
++0.2353/+0.4803/+0.2375/+0.5225 % on the four widest prompts against an MTP-leg
+replicate sd of 0.0995 %, and alphonse's per-cell table explains it through the
+shared allocation in §1 above. `research/crown_leg_decomposition.py` is committed
+and prints all of it from the ranked corpus.
+
+**So any register or timing number you take on the old base is now against a tree
+that no longer exists.** Pull before you build.
+
+### 2. Your stop-condition threshold is now 108, not 129
+
+This is the same rule as §2 above with E27's cell removed from the max:
+
+| readout | with E27 (your brief) | **on the rebased base** |
+| --- | --- | --- |
+| per-cell kernel-wide max | 129 (`<T,9,5>`) | **108** (`<T,7,4>`) |
+| production entry `affine_qmv_fast<bfloat16_t,64,4,false>` | 183 | **163** |
+
+Flag any treated cell above **108**, and check the production entry against
+**163**. Use the production entry as the authoritative one — it is the allocation
+that actually ships; the per-cell `_wide` numbers are for attribution. The margin
+you have to play inside just got 21 registers TIGHTER, which is the bad news, and
+§3 is the good news.
+
+### 3. 🟢 The r=2 ladder is +17/NA, not +21/NA — so NA=5 at r=2 lands at ~100, UNDER the 108 ceiling
+
+This falls straight out of your own E38 numbers and I do not think either of us
+saw it, because we were reading the two ladders as separate experiments rather
+than as one surface.
+
+```
+r = 4 (the wide helper as shipped)   na2 62  na3  83  na4 104  na5 125  na6 144*  (*spills)
+r = 2 (your row-blocked arm)         na3 66  na4  83  na5 100  na6 117   na7 134  na8 151  na9 168
+       step: +21 at r=4              step: +17 at r=2
+```
+
+The r=2 row is anchored at **two** points you measured, not extrapolated from
+one: `rb_na6_r2 = 117`, and your own `regs 83 -> 66` observation, which is
+exactly na3 moving from r=4 to r=2. Both anchors are consistent with a uniform
++17 step, and they bracket na5 from opposite sides. **Predicted `na5_r2 = 100.**
+
+If that holds, it is important: **the register cost of a wider NA is not fixed —
+it is a function of `rows_per_simd`, and r=2 buys ~17-21 registers of headroom.**
+E27 failed because NA=5 at r=4 costs 125 and raises a shared ceiling of 108. NA=5
+at r=2 would cost ~100 and raise **nothing**.
+
+**Check it first, because it is one compile and it is falsifiable.** alphonse's
+`research/e40_cell_air.sh` already emits per-cell numbers and reproduced the r=4
+anchor 62/83/104/125 exactly; point it at NA=5 with r=2. If it comes back ≤108,
+you have found the shape of a real candidate. If it comes back above 108, say so
+and this paragraph dies — I would rather you kill it in one compile than build
+on it.
+
+### 4. What that candidate would be, and its honest ceiling
+
+"E27 done right": take the M=5 and M=9 stream saving (`ceil(5/5)=1` vs 2,
+`ceil(9/5)=2` vs 3) at **r=2** so the shared ceiling never moves, and let every
+other width keep running its untouched r=4 cell.
+
+The arithmetic, with its assumptions exposed:
+
+- E27's measured local M-table gave **M5 0.7990** and **M9 0.8854** at r=4/IPG5.
+- Your R2 tax is **+10.54 %**, and under this construction it applies **only to
+  the two treated cells**, not kernel-wide.
+- So a first-order estimate is M5 ≈ 0.799 × 1.1054 ≈ **0.883** and M9 ≈ 0.885 ×
+  1.1054 ≈ **0.978** — still a win at M=5, roughly a wash at M=9.
+- alphonse's vertex enumeration bounds beagle at **≤5.70 %** of decode time on
+  M ∈ {5,9}. At that bound and M5's 11.7 % saving the beagle MTP leg moves
+  ≤ ~0.67 %, worth ≤ ~0.32 % of score at the beagle-alone sensitivity 0.4827.
+
+🔴 **Three ways that estimate is optimistic, and you should treat all three as
+live rather than as caveats.** (a) The 5.70 % share is an upper bound that
+alphonse *expects to be falsified downward or upward* by askeladd's census — get
+his number before you believe mine. (b) Multiplying E27's r=4 M-table by your
+r=2 tax assumes the two effects compose, and E38 measured the tax on a
+row-blocked arm, not on an IPG-widened one. (c) E27's M-table was taken at
+128/64 with residency off, on the 48 GiB box; the rebased base now carries the
+crown's 512/50 profile, so the memory regime underneath it has changed.
+
+### 5. You cannot escape the shared ceiling by adding a kernel, and I checked
+
+The obvious fix for §1 is to give the wide widths their own `[[kernel]]` entry
+point so they get their own allocation. **It is unavailable.** I parsed
+`benchmark.json`: `editablePaths` (89 entries) contains
+`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp` and
+`.../kernels/quantized.h`, but **not**
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp`, which is the
+host that names the kernel. We may edit kernels; we may not edit the predicate
+that dispatches them. So the single shared allocation is a **hard constraint of
+the design**, not an accident to route around, and §3 is the only lever that
+buys NA under it. alphonse reached the same conclusion from the other side.
+
+### 6. One correction to §2 of this note, before you act on it
+
+§2 above told you to flag cells above 129 and called 129 "the shipped max". That
+was true when I wrote it and it is false now, and the reason is worth naming: I
+quoted a ceiling without saying which tree it belonged to. **A register ceiling
+is a property of a tree, not of a kernel family.** Same class of error as the
+sensitivity constant — the fourth of its kind from me — and the same fix applies:
+`research/crown_leg_decomposition.py` and alphonse's `e40_cell_air.sh` both
+re-derive their numbers on every run, and any ceiling I quote you from now on
+comes with the SHA it was measured on.
