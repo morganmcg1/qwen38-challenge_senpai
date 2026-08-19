@@ -655,11 +655,16 @@ def model_comparison(obs: list, tol_frac: float) -> dict:
     lin = wls([[1.0, o["x"]] for o in obs], y, w)
     step = wls([[1.0, o["x"], o["q_maxent"]] for o in obs], y, w)
     quad = wls([[1.0, o["x"], o["x2_maxent"]] for o in obs], y, w)
+    linrej = wls([[1.0, o["x"], o["rejects_per_round"]] for o in obs], y, w)
+    steprej = wls([[1.0, o["x"], o["q_maxent"], o["rejects_per_round"]]
+                   for o in obs], y, w)
     ratios = {
         "linear_over_step": lin["rms_ms"] / step["rms_ms"]
                             if step["rms_ms"] else float("inf"),
         "quadratic_over_step": quad["rms_ms"] / step["rms_ms"]
                                if step["rms_ms"] else float("inf"),
+        "linear_reject_over_step": linrej["rms_ms"] / step["rms_ms"]
+                                   if step["rms_ms"] else float("inf"),
     }
     verdict = ("step decisive" if ratios["quadratic_over_step"]
                >= PREREG["decisive_residual_ratio"]
@@ -667,11 +672,14 @@ def model_comparison(obs: list, tol_frac: float) -> dict:
                <= PREREG["inconclusive_residual_ratio"]
                else "indeterminate")
     return {"linear": lin, "step": step, "quadratic": quad,
+            "linear_reject": linrej, "step_reject": steprej,
             "ratios": ratios,
             "prereg_verdict_step_vs_smooth": verdict,
             "linear_T1_ms": lin["beta"][0] + lin["beta"][1],
             "step_T1_ms": step["beta"][0] + step["beta"][1],
-            "step_magnitude_ms_maxent": step["beta"][2]}
+            "step_magnitude_ms_maxent": step["beta"][2],
+            "step_magnitude_ms_with_reject_term": steprej["beta"][2],
+            "reject_cost_ms_per_reject": steprej["beta"][3]}
 
 
 def linear_only_tolerance(obs: list) -> dict:
@@ -734,6 +742,12 @@ def prompt_rows(o: dict, tol_frac: float, family: str = "step") -> tuple:
     rhs = [o["y"] + eps, -(o["y"] - eps)]
     if family == "linear":
         return ([[1.0, o["x"]], [-1.0, -o["x"]]], rhs)
+    if family == "linear_reject":
+        # The leading rival explanation for the curvature: cost is linear in M
+        # but rejected drafts also cost something.  rejects/round is a known
+        # constant per reading, not a bracketed nuisance, so this family is as
+        # falsifiable as `linear` is.
+        return ([[1.0, o["x"], o["rej"]], [-1.0, -o["x"], -o["rej"]]], rhs)
     lo, hi = ((o["x2_lo"], o["x2_hi"]) if family == "quadratic"
               else (o["q_lo"], o["q_hi"]))
     return ([[1.0, o["x"], lo], [-1.0, -o["x"], -hi]], rhs)
@@ -765,10 +779,13 @@ def enumerate_selections(prompts: dict, tol_frac: float,
             if not br["feasible"]:
                 continue            # no rho at all: the reading is impossible
             cache[name].append((cand["R"], prompt_rows(
-                dict(br, x=p["mean_M"], y=cand["per_round_ms"]),
+                dict(br, x=p["mean_M"], y=cand["per_round_ms"],
+                     rej=(cand["D"] - cand["A"]) / cand["R"]),
                 tol_frac, family)))
     order = sorted(ORDER, key=lambda nm: prompts[nm]["mean_M"])
     box = BOX[:2] if family == "linear" else BOX
+    if family == "linear_reject":
+        box = BOX[:2] + [("r", 0.0, 400.0)]
     box_rows, box_rhs = [], []
     for i, (_, lo, hi) in enumerate(box):
         r = [0.0] * len(box)
@@ -1115,6 +1132,12 @@ def verdicts(bracket: dict, comparison: dict, lin_tol: dict,
                                     else (hi - lo) / LOCAL_STEP_5_6,
         "e34r2_discount_claim_pct": 19.14,
         "e34r2_claim_supported": False if contains_local else None,
+        "reject_cost_rival_threshold_frac":
+            thresholds["linear_reject"]["threshold_frac"],
+        "reject_cost_explains_curvature":
+            thresholds["linear_reject"]["threshold_frac"] is not None
+            and thresholds["linear_reject"]["threshold_frac"]
+            <= PAIR_NOISE_DEFAULT,
         "linear_rejection_factor_maxent": lin_tol["rejection_factor"],
         "linear_rejection_factor_assumption_free":
             None if lin is None else lin / PAIR_NOISE_DEFAULT,
@@ -1155,7 +1178,7 @@ def analyse(args) -> dict:
     # family needs to explain the row at all, over every admissible reading and
     # every admissible rho.  No point estimate of rho enters.
     thresholds = {fam: family_threshold(prompts, fam)
-                  for fam in ("linear", "step", "quadratic")}
+                  for fam in ("linear", "linear_reject", "step", "quadratic")}
 
     # Round recovery without any bound on T(1): keep every reading combination
     # the step family can actually fit, and take the union of the brackets.
@@ -1278,23 +1301,30 @@ def print_report(rep: dict) -> None:
     th = rep["deliverable_a_family_thresholds"]
     print("\n(a) ASSUMPTION-FREE FAMILY TEST  minimum per-prompt slack needed "
           "to explain the row")
-    for fam in ("linear", "step", "quadratic"):
+    for fam in ("linear", "linear_reject", "step", "quadratic"):
         t = th[fam]["threshold_frac"]
-        print("  %-10s %s  = %s x measured pair noise (%.3f %%)"
+        print("  %-14s %s  = %s x measured pair noise (%.3f %%)"
               % (fam, "infeasible to 40 %" if t is None else "%.4f %%" % (100 * t),
                  "n/a" if t is None else "%.1f" % (t / PAIR_NOISE_DEFAULT),
                  100 * PAIR_NOISE_DEFAULT))
     cmp_ = rep["deliverable_a_model_comparison"]
     lt = rep["deliverable_a_linear_only_tolerance"]
     print("\n(a) MODEL COMPARISON under max-entropy rho (named assumption)")
-    for key in ("linear", "step", "quadratic"):
+    for key in ("linear", "linear_reject", "step", "quadratic", "step_reject"):
         f = cmp_[key]
-        print("  %-9s k=%d rms %7.4f ms  R2 %.6f  chi2/dof %10.1f"
+        print("  %-13s k=%d rms %7.4f ms  R2 %.6f  chi2/dof %10.1f"
               % (key, f["params"], f["rms_ms"], f["r2"], f["chi2_per_dof"]))
-    print("  residual ratios: linear/step %.3f   quadratic/step %.3f -> %s"
+    print("  residual ratios: linear/step %.3f  quadratic/step %.3f  "
+          "linear+reject/step %.3f -> %s"
           % (cmp_["ratios"]["linear_over_step"],
              cmp_["ratios"]["quadratic_over_step"],
+             cmp_["ratios"]["linear_reject_over_step"],
              cmp_["prereg_verdict_step_vs_smooth"]))
+    print("  step magnitude %.3f ms alone, %.3f ms once a reject term is "
+          "added (%.3f ms per reject/round)"
+          % (cmp_["step_magnitude_ms_maxent"],
+             cmp_["step_magnitude_ms_with_reject_term"],
+             cmp_["reject_cost_ms_per_reject"]))
     print("  linear-implied T(1) %.3f ms vs zero-accept upper bound %.3f ms"
           % (cmp_["linear_T1_ms"], t1["kappa_local"]["upper_ms"]))
     print("  same at this reading only: linear needs %.3f %% slack -> %.1fx "
@@ -1588,9 +1618,13 @@ def self_test() -> int:
             me = maxent_rho(x, nd / R, nd)
             q = sum(v for m, v in me.items() if m >= STEP_M)
             y = 27.0 + 4.0 * x + step_ms * q
+            D, A = round((x - 1.0) * R), DECODE_TOKENS - R
             out[nm] = {"mean_M": x, "non_drafting": nd, "ratio": 1.0,
-                       "feasible": [{"R": R, "per_round_ms": y},
-                                    {"R": 2 * R, "per_round_ms": y / 2}]}
+                       "feasible": [{"R": R, "D": D, "A": A,
+                                     "per_round_ms": y},
+                                    {"R": 2 * R, "D": 2 * D,
+                                     "A": DECODE_TOKENS - 2 * R,
+                                     "per_round_ms": y / 2}]}
         return out, {nm: out[nm]["feasible"][0]["R"] for nm in ORDER}
 
     s_prompts, s_truth = synth(32.85)
@@ -1620,6 +1654,12 @@ def self_test() -> int:
        str(th_lin))
     ck("threshold_zero_on_linear_data",
        family_threshold(l_prompts, "linear")["threshold_frac"] == 0.0)
+    # The reject-cost rival must be at least as permissive as plain linear:
+    # it nests it at r = 0, so its threshold can never be larger.
+    ck("linear_reject_nests_linear",
+       family_threshold(s_prompts, "linear_reject")["threshold_frac"]
+       <= th_lin["threshold_frac"] + 1e-9,
+       "%s vs %s" % (family_threshold(s_prompts, "linear_reject"), th_lin))
 
     # 9. phi closed form: with a pass-count weighting phi(M>=6) = 2q/(1+q).
     o = {"x": 5.5327, "rho1": 0.0, "q_lo": br["q_lo"], "q_hi": br["q_hi"]}
