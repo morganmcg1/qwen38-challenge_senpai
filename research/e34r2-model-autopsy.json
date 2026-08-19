@@ -1,0 +1,950 @@
+{
+  "added_rows_from_cross_check": [
+    "baa75efa",
+    "26d0e934",
+    "a1326b4b"
+  ],
+  "askeladd_bracket": {
+    "bracket": {
+      "beagle": [
+        0.1332,
+        0.9065
+      ],
+      "medicine": [
+        0.1919,
+        0.9535
+      ]
+    },
+    "e34_r1_simulation": {
+      "beagle": 0.538,
+      "medicine": 0.593
+    },
+    "inside_bracket": {
+      "beagle": true,
+      "medicine": true
+    }
+  },
+  "dropped_phantom_row": {
+    "id": "a874233e",
+    "quoted_in_advisor_table": {
+      "beagle_n": 4.583,
+      "beagle_raw_p": 3.06986
+    },
+    "reason": "officialMetrics is null and the submission has no beagle per-prompt entry, so the quoted pair is not a measurement.",
+    "solver": "jonathan308",
+    "status": "validating"
+  },
+  "elimination": {
+    "acceptance_rate_threshold": 0.4856410648714812,
+    "at_calibrated_rate": {
+      "accept_rate": 0.8776167556789896,
+      "local_step_exceeds_bound_by_pct": 9.669516572847648,
+      "max_ranked_step_T6_over_T5": 1.2217065317102915,
+      "q_possible": false,
+      "q_required_for_M6_to_win": 1.5328355220028231
+    },
+    "central_prompts_clear_threshold": true,
+    "local_fixture_acceptance_rate_range": [
+      0.276,
+      0.359
+    ],
+    "local_ladder_T5_ms": 96.163,
+    "local_ladder_T6_ms": 128.843,
+    "local_measured_rate_reaches_threshold": false,
+    "local_step_T6_over_T5": 1.3398396472655802,
+    "ranked_measured_rates": {
+      "beagle": 0.8350515463917526,
+      "botany": 0.869653767820774,
+      "drama": 0.44905008635578586,
+      "essays": 0.9004237288135594,
+      "medicine": 0.875,
+      "plutarch": 0.3333333333333333,
+      "republic": 0.9019189765458422,
+      "travel": 0.5328596802841918
+    },
+    "ranked_prompts_clearing_threshold": [
+      "beagle",
+      "botany",
+      "essays",
+      "medicine",
+      "republic",
+      "travel"
+    ],
+    "sensitivity": [
+      {
+        "a4_accepted_from_4_proposals": 1.2,
+        "assumed_accept_rate": 0.3,
+        "max_ranked_step_T6_over_T5": 1.4545454545454546,
+        "q_is_possible": true,
+        "q_required_for_M6_to_win": 0.7476472239842766
+      },
+      {
+        "a4_accepted_from_4_proposals": 1.6,
+        "assumed_accept_rate": 0.4,
+        "max_ranked_step_T6_over_T5": 1.3846153846153846,
+        "q_is_possible": true,
+        "q_required_for_M6_to_win": 0.8835830828905087
+      },
+      {
+        "a4_accepted_from_4_proposals": 2.0,
+        "assumed_accept_rate": 0.5,
+        "max_ranked_step_T6_over_T5": 1.3333333333333333,
+        "q_is_possible": false,
+        "q_required_for_M6_to_win": 1.0195189417967407
+      },
+      {
+        "a4_accepted_from_4_proposals": 2.4,
+        "assumed_accept_rate": 0.6,
+        "max_ranked_step_T6_over_T5": 1.2941176470588236,
+        "q_is_possible": false,
+        "q_required_for_M6_to_win": 1.1554548007029728
+      },
+      {
+        "a4_accepted_from_4_proposals": 2.8,
+        "assumed_accept_rate": 0.7,
+        "max_ranked_step_T6_over_T5": 1.263157894736842,
+        "q_is_possible": false,
+        "q_required_for_M6_to_win": 1.2913906596092048
+      },
+      {
+        "a4_accepted_from_4_proposals": 3.2,
+        "assumed_accept_rate": 0.8,
+        "max_ranked_step_T6_over_T5": 1.2380952380952381,
+        "q_is_possible": false,
+        "q_required_for_M6_to_win": 1.4273265185154371
+      },
+      {
+        "a4_accepted_from_4_proposals": 3.5104670227159582,
+        "assumed_accept_rate": 0.8776167556789896,
+        "max_ranked_step_T6_over_T5": 1.2217065317102915,
+        "q_is_possible": false,
+        "q_required_for_M6_to_win": 1.5328355220028231
+      },
+      {
+        "a4_accepted_from_4_proposals": 3.6,
+        "assumed_accept_rate": 0.9,
+        "max_ranked_step_T6_over_T5": 1.2173913043478262,
+        "q_is_possible": false,
+        "q_required_for_M6_to_win": 1.563262377421669
+      },
+      {
+        "a4_accepted_from_4_proposals": 4.0,
+        "assumed_accept_rate": 1.0,
+        "max_ranked_step_T6_over_T5": 1.2,
+        "q_is_possible": false,
+        "q_required_for_M6_to_win": 1.6991982363279012
+      }
+    ],
+    "threshold_meaning": "For a per-draft acceptance rate at or above 0.4856 the required marginal acceptance exceeds 1, so NO acceptance-side term - higher average acceptance, streak-path selection, or a perfect head - can make the M=6 round beat the M=5 round on the local ladder. Below it, the acceptance side is still in play.",
+    "verdict": "CONFIRMED. The threshold is 0.4856. Reconstructing our own ranked row exactly (see reconstruct_rounds) measures per-prompt acceptance of 0.3333-0.9019, clearing the threshold on 6 of 8 prompts INCLUDING BOTH central prompts. On the prompts that decide the median, no acceptance-side term can rescue the wide round, so the residual is forced into the cost term and the ranked width step must be below 1.22171. Directly measuring that step from the same reconstruction gives 1.12462, which satisfies the bound."
+  },
+  "geometry": {
+    "calls_per_command_buffer_local": {
+      "M5": 2,
+      "M6": 1
+    },
+    "calls_per_command_buffer_ranked": {
+      "M5": 10,
+      "M6": 5
+    },
+    "caution": "The ~1900-threadgroup occupancy knee was located under local geometry. Command-buffer packing and occupancy are both dispatch-side, so the knee's location is geometry-dependent and is not measured at ranked geometry. It is not a machine constant.",
+    "confound": "Under local geometry the buffer-flush boundary and the weight-pass boundary both fall at M=6, so the step-vs-smooth fit cannot attribute the step to either one.",
+    "elimination_bound_on_ranked_step": 1.2217065317102915,
+    "geometry": {
+      "local_48gib": {
+        "cache_limit_gib": 6,
+        "clear_cache_after_warmup": true,
+        "max_mb_per_buffer": 128,
+        "max_ops_per_buffer": 64,
+        "wired_residency": false
+      },
+      "ranked_128gib": {
+        "cache_limit_gib": null,
+        "clear_cache_after_warmup": false,
+        "max_mb_per_buffer": 512,
+        "max_ops_per_buffer": 50,
+        "wired_residency": true
+      }
+    },
+    "local_measured_step": 1.3398396472655802,
+    "local_step_exceeds_bound_by_pct": 9.669516572847648,
+    "mlp_down_mb_per_call": {
+      "M5_estimated": 50.15,
+      "M6_measured": 100.3
+    },
+    "prediction": {
+      "P1": "Re-running the width ladder at ranked command-buffer geometry (DARKBLOOM_STARTUP_MEMORY_PROFILE=full MLX_MAX_MB_PER_BUFFER=512 MLX_MAX_OPS_PER_BUFFER=50) COMPRESSES the M=5->6 step: T(6)/T(5) falls below the locally measured 1.3398.",
+      "P1_target": "Quantitatively, the ranked rows require T(6)/T(5) < 1.2217, so the predicted compression is at least 9.67%.",
+      "P2": "The widths that change most are M>=6. Widths M=1..5 sit under the 128 MB budget on both geometries and should move materially less than the M>=6 widths.",
+      "falsifier": "If T(6)/T(5) stays at or above 1.30 under ranked geometry, command-buffer geometry is NOT the explanation and the residual belongs to threadgroup occupancy or elsewhere."
+    }
+  },
+  "primary_metric": {
+    "baseline": 3.24929398547457,
+    "candidate_rescaled": 3.563809083470352,
+    "cap4_arm_central_pair": 3.3389220921043172,
+    "cap4_central_prompts": [
+      "beagle",
+      "medicine"
+    ],
+    "central_prompts_correct": false,
+    "delta": 0.3145150979957818,
+    "delta_pct": 9.679490357036613,
+    "detection_threshold_2sigma_pct": 0.1846,
+    "name": "e34/predicted_ranked_central_pair_at_best_cap",
+    "observed_central_prompts": [
+      "beagle",
+      "medicine"
+    ],
+    "r1_value": 3.77855631847542,
+    "shipped_arm_central_pair": 3.044253835639841,
+    "shipped_central_prompts": [
+      "medicine",
+      "republic"
+    ],
+    "sigma_score_pct": 0.0923,
+    "status": "WITHDRAWN",
+    "withdrawal_reason": "Withdrawn as a decision input. The r1 value 3.778556 came from a model that gets 0 of 5 signs right on the shallower declared-head rows. Repairing MT1 and MT3 fixes magnitude and transfer but leaves the sign record unchanged at 0 of 5, and the repaired model also mis-orders the central pair (predicts medicine, republic, ranked reality is beagle, medicine). A median of eight numbers is decided by exactly the ordering the model gets wrong, so no value from this family - r1's or the repaired one - should size a ranked decision. The repaired number 3.563809 is reported only so the withdrawal is auditable."
+  },
+  "ranked_reconstruction": {
+    "acceptance_rate_by_prompt": {
+      "beagle": 0.8350515463917526,
+      "botany": 0.869653767820774,
+      "drama": 0.44905008635578586,
+      "essays": 0.9004237288135594,
+      "medicine": 0.875,
+      "plutarch": 0.3333333333333333,
+      "republic": 0.9019189765458422,
+      "travel": 0.5328596802841918
+    },
+    "caveat": "Ranked mean width is the MEAN of an adaptive policy's width distribution, not a fixed width, so this is a ladder in mean width. It is directly comparable with the fixed-width local ladder only under near-linearity, which is itself part of what is being tested. The claim that survives without that assumption is the absence of a 30 ms cliff between prompts whose mean widths straddle 6.",
+    "central_prompts_reconstructed": [
+      "beagle",
+      "medicine"
+    ],
+    "fit": {
+      "intercept_ms": 20.542973053565746,
+      "r_squared": 0.9705866089941704,
+      "slope_ms_per_width": 6.792182104074413
+    },
+    "median_matches_official": true,
+    "median_reproduced": 3.232505,
+    "monotone_chains_surviving": 1,
+    "near_zero_row": {
+      "all_unique": true,
+      "all_zero_accepted": true,
+      "candidate_width1_ms_range": [
+        31.4194,
+        31.5063
+      ],
+      "id": "c91581eb",
+      "k_measured_mean": 1.2089721720907278,
+      "k_measured_range": [
+        1.2058572412501627,
+        1.211545190246261
+      ],
+      "meaning": "This submission proposes 18-27 drafts across 512 rounds and has ZERO accepted, on all eight prompts. Its candidate leg is therefore serial decoding through the candidate build, and it still scores 1.206-1.212. Any model whose denominator is the candidate's own width-1 time must score exactly 1.000 here. MT3 is measured, not inferred.",
+      "rows": [
+        {
+          "acceptance_rate": 0.0,
+          "accepted_total": 0,
+          "candidates": 1,
+          "per_round_ms": 31.4806,
+          "prompt": "p0",
+          "proposed_total": 21,
+          "raw_p": 1.21028,
+          "rounds": 512,
+          "serial_ms": 38.1003
+        },
+        {
+          "acceptance_rate": 0.0,
+          "accepted_total": 0,
+          "candidates": 1,
+          "per_round_ms": 31.5063,
+          "prompt": "p1",
+          "proposed_total": 27,
+          "raw_p": 1.20585,
+          "rounds": 512,
+          "serial_ms": 37.9921
+        },
+        {
+          "acceptance_rate": 0.0,
+          "accepted_total": 0,
+          "candidates": 1,
+          "per_round_ms": 31.4704,
+          "prompt": "p2",
+          "proposed_total": 24,
+          "raw_p": 1.20785,
+          "rounds": 512,
+          "serial_ms": 38.0115
+        },
+        {
+          "acceptance_rate": 0.0,
+          "accepted_total": 0,
+          "candidates": 1,
+          "per_round_ms": 31.4673,
+          "prompt": "p3",
+          "proposed_total": 19,
+          "raw_p": 1.21018,
+          "rounds": 512,
+          "serial_ms": 38.0811
+        },
+        {
+          "acceptance_rate": 0.0,
+          "accepted_total": 0,
+          "candidates": 1,
+          "per_round_ms": 31.4857,
+          "prompt": "p4",
+          "proposed_total": 23,
+          "raw_p": 1.20836,
+          "rounds": 512,
+          "serial_ms": 38.0462
+        },
+        {
+          "acceptance_rate": 0.0,
+          "accepted_total": 0,
+          "candidates": 1,
+          "per_round_ms": 31.4382,
+          "prompt": "p5",
+          "proposed_total": 18,
+          "raw_p": 1.21155,
+          "rounds": 512,
+          "serial_ms": 38.0888
+        },
+        {
+          "acceptance_rate": 0.0,
+          "accepted_total": 0,
+          "candidates": 1,
+          "per_round_ms": 31.5001,
+          "prompt": "p6",
+          "proposed_total": 25,
+          "raw_p": 1.2062,
+          "rounds": 512,
+          "serial_ms": 37.9954
+        },
+        {
+          "acceptance_rate": 0.0,
+          "accepted_total": 0,
+          "candidates": 1,
+          "per_round_ms": 31.4194,
+          "prompt": "p7",
+          "proposed_total": 18,
+          "raw_p": 1.2115,
+          "rounds": 512,
+          "serial_ms": 38.0647
+        }
+      ],
+      "solver": "scarletbright"
+    },
+    "official_score": 3.23250848263467,
+    "rows": [
+      {
+        "acceptance_rate": 0.3333333333333333,
+        "accepted_total": 25,
+        "candidates_after_filter": 1,
+        "candidates_before_filter": 1,
+        "mean_width": 1.1540041067761808,
+        "per_round_ms": 31.862064887063656,
+        "prompt": "plutarch",
+        "proposed_total": 75,
+        "raw_p": 1.2528,
+        "rounds": 487,
+        "unique_before_filter": true
+      },
+      {
+        "acceptance_rate": 0.44905008635578586,
+        "accepted_total": 260,
+        "candidates_after_filter": 1,
+        "candidates_before_filter": 5,
+        "mean_width": 3.2976190476190474,
+        "per_round_ms": 40.18123174603175,
+        "prompt": "drama",
+        "proposed_total": 579,
+        "raw_p": 1.91668,
+        "rounds": 252,
+        "unique_before_filter": false
+      },
+      {
+        "acceptance_rate": 0.5328596802841918,
+        "accepted_total": 300,
+        "candidates_after_filter": 1,
+        "candidates_before_filter": 2,
+        "mean_width": 3.6556603773584904,
+        "per_round_ms": 41.995350943396225,
+        "prompt": "travel",
+        "proposed_total": 563,
+        "raw_p": 2.1798,
+        "rounds": 212,
+        "unique_before_filter": false
+      },
+      {
+        "acceptance_rate": 0.8350515463917526,
+        "accepted_total": 405,
+        "candidates_after_filter": 1,
+        "candidates_before_filter": 4,
+        "mean_width": 5.5327102803738315,
+        "per_round_ms": 58.25315887850467,
+        "prompt": "beagle",
+        "proposed_total": 485,
+        "raw_p": 3.12015,
+        "rounds": 107,
+        "unique_before_filter": false
+      },
+      {
+        "acceptance_rate": 0.875,
+        "accepted_total": 413,
+        "candidates_after_filter": 1,
+        "candidates_before_filter": 5,
+        "mean_width": 5.767676767676767,
+        "per_round_ms": 58.79518383838384,
+        "prompt": "medicine",
+        "proposed_total": 472,
+        "raw_p": 3.34486,
+        "rounds": 99,
+        "unique_before_filter": false
+      },
+      {
+        "acceptance_rate": 0.9019189765458422,
+        "accepted_total": 423,
+        "candidates_after_filter": 1,
+        "candidates_before_filter": 5,
+        "mean_width": 6.269662921348314,
+        "per_round_ms": 64.33826516853932,
+        "prompt": "republic",
+        "proposed_total": 469,
+        "raw_p": 3.39402,
+        "rounds": 89,
+        "unique_before_filter": false
+      },
+      {
+        "acceptance_rate": 0.9004237288135594,
+        "accepted_total": 425,
+        "candidates_after_filter": 1,
+        "candidates_before_filter": 5,
+        "mean_width": 6.425287356321839,
+        "per_round_ms": 66.24868045977011,
+        "prompt": "essays",
+        "proposed_total": 472,
+        "raw_p": 3.36612,
+        "rounds": 87,
+        "unique_before_filter": false
+      },
+      {
+        "acceptance_rate": 0.869653767820774,
+        "accepted_total": 427,
+        "candidates_after_filter": 1,
+        "candidates_before_filter": 6,
+        "mean_width": 6.776470588235294,
+        "per_round_ms": 66.74371764705883,
+        "prompt": "botany",
+        "proposed_total": 491,
+        "raw_p": 3.42536,
+        "rounds": 85,
+        "unique_before_filter": false
+      }
+    ],
+    "unique_anchor_prompts": [
+      "plutarch"
+    ]
+  },
+  "ranked_vs_local_shape": {
+    "anchor": {
+      "local_ms": 59.37456262833676,
+      "mean_width": 1.1540041067761808,
+      "prompt": "plutarch",
+      "ranked_ms": 31.862064887063656
+    },
+    "local_overstates_step_pct": 19.137277955026597,
+    "local_step_T6_over_T5": 1.3398396472655802,
+    "mean_overstatement_narrow_pct": 1.0843795570052217,
+    "mean_overstatement_wide_pct": 8.49391892172578,
+    "ranked_T5_ms": 54.503883573937806,
+    "ranked_T6_ms": 61.29606567801222,
+    "ranked_step_T6_over_T5": 1.1246183144887356,
+    "rows": [
+      {
+        "local_overstates_pct": 0.9154023596701144,
+        "local_shape": 1.27264356008649,
+        "mean_width": 3.2976190476190474,
+        "prompt": "drama",
+        "ranked_per_round_ms": 40.18123174603175,
+        "ranked_shape": 1.2610994261814388
+      },
+      {
+        "local_overstates_pct": 1.253356754340329,
+        "local_shape": 1.3345557691152177,
+        "mean_width": 3.6556603773584904,
+        "prompt": "travel",
+        "ranked_per_round_ms": 41.995350943396225,
+        "ranked_shape": 1.318036074945249
+      },
+      {
+        "local_overstates_pct": 4.622520864342827,
+        "local_shape": 1.9128051969584379,
+        "mean_width": 5.5327102803738315,
+        "prompt": "beagle",
+        "ranked_per_round_ms": 58.25315887850467,
+        "ranked_shape": 1.8282920170109904
+      },
+      {
+        "local_overstates_pct": 10.666433234948558,
+        "local_shape": 2.0421317042225984,
+        "mean_width": 5.767676767676767,
+        "prompt": "medicine",
+        "ranked_per_round_ms": 58.79518383838384,
+        "ranked_shape": 1.8453036250721881
+      },
+      {
+        "local_overstates_pct": 9.680161799582866,
+        "local_shape": 2.2147438838638887,
+        "mean_width": 6.269662921348314,
+        "prompt": "republic",
+        "ranked_per_round_ms": 64.33826516853932,
+        "ranked_shape": 2.0192748146295236
+      },
+      {
+        "local_overstates_pct": 7.759119266437597,
+        "local_shape": 2.2405639697905935,
+        "mean_width": 6.425287356321839,
+        "prompt": "essays",
+        "ranked_per_round_ms": 66.24868045977011,
+        "ranked_shape": 2.079233743782494
+      },
+      {
+        "local_overstates_pct": 9.741359443317045,
+        "local_shape": 2.2988297634981563,
+        "mean_width": 6.776470588235294,
+        "prompt": "botany",
+        "ranked_per_round_ms": 66.74371764705883,
+        "ranked_shape": 2.0947706271905027
+      }
+    ]
+  },
+  "replay": {
+    "calibrated_acceptance_rate": 0.8776167556789896,
+    "calibrated_k": 1.213199652988399,
+    "corrected_sign_correct_count": 7,
+    "corrected_sign_correct_on_shallower": 0,
+    "n_compared": 14,
+    "n_shallower": 6,
+    "r1_sign_correct_count": 7,
+    "r1_sign_correct_on_shallower": 0,
+    "rows": [
+      {
+        "beagle_n_proposed": 0.041,
+        "corrected_predicted_raw_p": 1.252882289024177,
+        "corrected_sign_correct": true,
+        "corrected_vs_ours_pct": -59.84544688479153,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 1.21028,
+        "measured_vs_ours_pct": -61.21083922247328,
+        "r1_predicted_raw_p": 1.1327240591088845,
+        "r1_predicted_vs_ours_pct": -63.69648705642727,
+        "r1_sign_correct": true,
+        "row": "c91581eb"
+      },
+      {
+        "beagle_n_proposed": 0.041,
+        "corrected_predicted_raw_p": 1.252882289024177,
+        "corrected_sign_correct": true,
+        "corrected_vs_ours_pct": -59.84544688479153,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 1.20367,
+        "measured_vs_ours_pct": -61.422688011794314,
+        "r1_predicted_raw_p": 1.1327240591088845,
+        "r1_predicted_vs_ours_pct": -63.69648705642727,
+        "r1_sign_correct": true,
+        "row": "baa75efa"
+      },
+      {
+        "beagle_n_proposed": 0.0509,
+        "corrected_predicted_raw_p": 1.2624266380556113,
+        "corrected_sign_correct": true,
+        "corrected_vs_ours_pct": -59.53955296842744,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 1.20544,
+        "measured_vs_ours_pct": -61.36595996987324,
+        "r1_predicted_raw_p": 1.1426246428827616,
+        "r1_predicted_vs_ours_pct": -63.37917590876203,
+        "r1_sign_correct": true,
+        "row": "26d0e934"
+      },
+      {
+        "beagle_n_proposed": 1.0,
+        "corrected_predicted_raw_p": 2.1144635261472087,
+        "corrected_sign_correct": true,
+        "corrected_vs_ours_pct": -32.23199121365291,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 2.00142,
+        "measured_vs_ours_pct": -35.855006970818714,
+        "r1_predicted_raw_p": 2.0264630860496324,
+        "r1_predicted_vs_ours_pct": -35.05238254412024,
+        "r1_sign_correct": true,
+        "row": "77d5f0f7"
+      },
+      {
+        "beagle_n_proposed": 3.5352,
+        "corrected_predicted_raw_p": 3.2470939704374118,
+        "corrected_sign_correct": false,
+        "corrected_vs_ours_pct": 4.068521399208747,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 2.66656,
+        "measured_vs_ours_pct": -14.537442110154963,
+        "r1_predicted_raw_p": 3.229630174870267,
+        "r1_predicted_vs_ours_pct": 3.5088112709410257,
+        "r1_sign_correct": false,
+        "row": "505caf3d"
+      },
+      {
+        "beagle_n_proposed": 4.2793,
+        "corrected_predicted_raw_p": 3.2151961544841763,
+        "corrected_sign_correct": false,
+        "corrected_vs_ours_pct": 3.04620465311527,
+        "is_shallower_than_ours": true,
+        "measured_raw_p": 3.11026,
+        "measured_vs_ours_pct": -0.3169719404515936,
+        "r1_predicted_raw_p": 3.2114065407934214,
+        "r1_predicted_vs_ours_pct": 2.924748515084885,
+        "r1_sign_correct": false,
+        "row": "6a57c528"
+      },
+      {
+        "beagle_n_proposed": 4.3393,
+        "corrected_predicted_raw_p": 3.1913649271405555,
+        "corrected_sign_correct": false,
+        "corrected_vs_ours_pct": 2.282419984313422,
+        "is_shallower_than_ours": true,
+        "measured_raw_p": 3.0765,
+        "measured_vs_ours_pct": -1.3989712033075419,
+        "r1_predicted_raw_p": 3.1885254954524176,
+        "r1_predicted_vs_ours_pct": 2.1914169335582434,
+        "r1_sign_correct": false,
+        "row": "0d47d685"
+      },
+      {
+        "beagle_n_proposed": 4.3839,
+        "corrected_predicted_raw_p": 3.1742074118093053,
+        "corrected_sign_correct": false,
+        "corrected_vs_ours_pct": 1.7325260583403113,
+        "is_shallower_than_ours": true,
+        "measured_raw_p": 3.06026,
+        "measured_vs_ours_pct": -1.919459000368584,
+        "r1_predicted_raw_p": 3.1720520725534342,
+        "r1_predicted_vs_ours_pct": 1.6634479929950263,
+        "r1_sign_correct": false,
+        "row": "581cc3a9"
+      },
+      {
+        "beagle_n_proposed": 4.3839,
+        "corrected_predicted_raw_p": 3.1742074118093053,
+        "corrected_sign_correct": false,
+        "corrected_vs_ours_pct": 1.7325260583403113,
+        "is_shallower_than_ours": true,
+        "measured_raw_p": 3.04472,
+        "measured_vs_ours_pct": -2.4175119785907806,
+        "r1_predicted_raw_p": 3.1720520725534342,
+        "r1_predicted_vs_ours_pct": 1.6634479929950263,
+        "r1_sign_correct": false,
+        "row": "a1326b4b"
+      },
+      {
+        "beagle_n_proposed": 4.3964,
+        "corrected_predicted_raw_p": 3.1694809256128367,
+        "corrected_sign_correct": false,
+        "corrected_vs_ours_pct": 1.5810433989659645,
+        "is_shallower_than_ours": true,
+        "measured_raw_p": 3.01183,
+        "measured_vs_ours_pct": -3.471627966604185,
+        "r1_predicted_raw_p": 3.1675140375036377,
+        "r1_predicted_vs_ours_pct": 1.518005144100032,
+        "r1_sign_correct": false,
+        "row": "9100a4e7"
+      },
+      {
+        "beagle_n_proposed": 4.4537,
+        "corrected_predicted_raw_p": 3.1482599967450238,
+        "corrected_sign_correct": false,
+        "corrected_vs_ours_pct": 0.9009181207641825,
+        "is_shallower_than_ours": true,
+        "measured_raw_p": 3.07681,
+        "measured_vs_ours_pct": -1.3890357835360523,
+        "r1_predicted_raw_p": 3.1471392146461565,
+        "r1_predicted_vs_ours_pct": 0.8649973445557624,
+        "r1_sign_correct": false,
+        "row": "6f37594f"
+      },
+      {
+        "beagle_n_proposed": 4.5327,
+        "corrected_predicted_raw_p": 3.12015,
+        "corrected_sign_correct": true,
+        "corrected_vs_ours_pct": 0.0,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 3.12015,
+        "measured_vs_ours_pct": 0.0,
+        "r1_predicted_raw_p": 3.12015,
+        "r1_predicted_vs_ours_pct": 0.0,
+        "r1_sign_correct": true,
+        "row": "ca9251b8"
+      },
+      {
+        "beagle_n_proposed": 4.6019,
+        "corrected_predicted_raw_p": 3.096556592336015,
+        "corrected_sign_correct": true,
+        "corrected_vs_ours_pct": -0.7561626096176499,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 3.00622,
+        "measured_vs_ours_pct": -3.6514270147268713,
+        "r1_predicted_raw_p": 3.0974972921589607,
+        "r1_predicted_vs_ours_pct": -0.7260134237469185,
+        "r1_sign_correct": true,
+        "row": "0691113e"
+      },
+      {
+        "beagle_n_proposed": 4.6296,
+        "corrected_predicted_raw_p": 3.087368597139075,
+        "corrected_sign_correct": true,
+        "corrected_vs_ours_pct": -1.0506354778111682,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 3.06201,
+        "measured_vs_ours_pct": -1.8633719532714865,
+        "r1_predicted_raw_p": 3.0886756342702255,
+        "r1_predicted_vs_ours_pct": -1.0087452760211724,
+        "r1_sign_correct": true,
+        "row": "96a84b1b"
+      },
+      {
+        "beagle_n_proposed": 4.7358,
+        "corrected_predicted_raw_p": 3.0534247256501965,
+        "corrected_sign_correct": true,
+        "corrected_vs_ours_pct": -2.1385277742994258,
+        "is_shallower_than_ours": false,
+        "measured_raw_p": 3.06265,
+        "measured_vs_ours_pct": -1.8428601189045435,
+        "r1_predicted_raw_p": 3.05608514904731,
+        "r1_predicted_vs_ours_pct": -2.053261892943936,
+        "r1_sign_correct": true,
+        "row": "74ec0ec7"
+      }
+    ]
+  },
+  "semantics": {
+    "all_identities_hold": true,
+    "measured_acceptance_rate_range": [
+      0.2756339581036384,
+      0.359039190897598
+    ],
+    "plutarch_impossibility": {
+      "drafting_rounds_implied": -5.325823223570183,
+      "impossible": true,
+      "n": 0.154,
+      "non_drafting_round_count": 449,
+      "rounds_implied_if_n_were_accepted": 443.6741767764298
+    },
+    "r1_implied_acceptance_rate": {
+      "beagle": 1.0,
+      "botany": 1.0,
+      "drama": 0.9999999999999999,
+      "essays": 1.0,
+      "medicine": 1.0,
+      "plutarch": 0.9999999999999998,
+      "republic": 1.0,
+      "travel": 1.0
+    },
+    "source": "Sources/MLXFastTrustedHarness/QwenRuntimeMTP.swift:363-374",
+    "tapes": [
+      {
+        "accepted_total": 278,
+        "effective_mean_draft_len": 3.451063829787234,
+        "emitted_minus_rounds_plus_accepted": -1,
+        "identity_proposed_eq_acc_plus_rej": true,
+        "identity_rows_eq_rounds_plus_proposed": true,
+        "proposed_total": 811,
+        "rejected_total": 533,
+        "round_count": 235,
+        "tape": "probe-dramatic-FORCE",
+        "true_acceptance_rate": 0.34278668310727495
+      },
+      {
+        "accepted_total": 263,
+        "effective_mean_draft_len": 3.464,
+        "emitted_minus_rounds_plus_accepted": -1,
+        "identity_proposed_eq_acc_plus_rej": true,
+        "identity_rows_eq_rounds_plus_proposed": true,
+        "proposed_total": 866,
+        "rejected_total": 603,
+        "round_count": 250,
+        "tape": "probe-english-FORCE",
+        "true_acceptance_rate": 0.30369515011547343
+      },
+      {
+        "accepted_total": 273,
+        "effective_mean_draft_len": 3.4602510460251046,
+        "emitted_minus_rounds_plus_accepted": 0,
+        "identity_proposed_eq_acc_plus_rej": true,
+        "identity_rows_eq_rounds_plus_proposed": true,
+        "proposed_total": 827,
+        "rejected_total": 554,
+        "round_count": 239,
+        "tape": "probe-medicine-FORCE",
+        "true_acceptance_rate": 0.3301088270858525
+      },
+      {
+        "accepted_total": 268,
+        "effective_mean_draft_len": 3.4571428571428573,
+        "emitted_minus_rounds_plus_accepted": -1,
+        "identity_proposed_eq_acc_plus_rej": true,
+        "identity_rows_eq_rounds_plus_proposed": true,
+        "proposed_total": 847,
+        "rejected_total": 579,
+        "round_count": 245,
+        "tape": "probe-narrative-FORCE",
+        "true_acceptance_rate": 0.31641086186540734
+      },
+      {
+        "accepted_total": 250,
+        "effective_mean_draft_len": 3.4618320610687023,
+        "emitted_minus_rounds_plus_accepted": 0,
+        "identity_proposed_eq_acc_plus_rej": true,
+        "identity_rows_eq_rounds_plus_proposed": true,
+        "proposed_total": 907,
+        "rejected_total": 657,
+        "round_count": 262,
+        "tape": "probe-natural_history-FORCE",
+        "true_acceptance_rate": 0.2756339581036384
+      },
+      {
+        "accepted_total": 261,
+        "effective_mean_draft_len": 3.4661354581673307,
+        "emitted_minus_rounds_plus_accepted": 0,
+        "identity_proposed_eq_acc_plus_rej": true,
+        "identity_rows_eq_rounds_plus_proposed": true,
+        "proposed_total": 870,
+        "rejected_total": 609,
+        "round_count": 251,
+        "tape": "probe-philosophy-FORCE",
+        "true_acceptance_rate": 0.3
+      },
+      {
+        "accepted_total": 284,
+        "effective_mean_draft_len": 3.4541484716157207,
+        "emitted_minus_rounds_plus_accepted": -1,
+        "identity_proposed_eq_acc_plus_rej": true,
+        "identity_rows_eq_rounds_plus_proposed": true,
+        "proposed_total": 791,
+        "rejected_total": 507,
+        "round_count": 229,
+        "tape": "probe-technical-FORCE",
+        "true_acceptance_rate": 0.359039190897598
+      },
+      {
+        "accepted_total": 270,
+        "effective_mean_draft_len": 3.4650205761316872,
+        "emitted_minus_rounds_plus_accepted": -1,
+        "identity_proposed_eq_acc_plus_rej": true,
+        "identity_rows_eq_rounds_plus_proposed": true,
+        "proposed_total": 842,
+        "rejected_total": 572,
+        "round_count": 243,
+        "tape": "probe-travel-FORCE",
+        "true_acceptance_rate": 0.32066508313539194
+      }
+    ],
+    "verdict": "effective_mean_draft_len counts drafts PROPOSED per round, over all rounds"
+  },
+  "transfer": {
+    "k_lower_bound": 1.213199652988399,
+    "k_lower_bound_pct": 21.319965298839904,
+    "note": "A single k >= max(k_min) reconciles every prompt, so the violation is systematic and not a Jensen artifact.",
+    "prompts_violating": 6,
+    "rows": [
+      {
+        "exceeds_proposed": true,
+        "excess_over_proposed": 0.1137147168041445,
+        "implied_accepted_per_round": 0.2677147168041445,
+        "k_min_required": 1.0985396159481322,
+        "ladder_shape_T(M)/T(1)": 1.0119051060058626,
+        "mean_width": 1.154,
+        "n_proposed": 0.154,
+        "prompt": "plutarch",
+        "raw_p": 1.2528
+      },
+      {
+        "exceeds_proposed": false,
+        "excess_over_proposed": -0.8293156196834142,
+        "implied_accepted_per_round": 1.468284380316586,
+        "k_min_required": 0.7485093341571403,
+        "ladder_shape_T(M)/T(1)": 1.2877915877019566,
+        "mean_width": 3.2976,
+        "n_proposed": 2.2976,
+        "prompt": "drama",
+        "raw_p": 1.91668
+      },
+      {
+        "exceeds_proposed": false,
+        "excess_over_proposed": -0.711986574960461,
+        "implied_accepted_per_round": 1.943713425039539,
+        "k_min_required": 0.8052393317393493,
+        "ladder_shape_T(M)/T(1)": 1.3504511537937145,
+        "mean_width": 3.6557,
+        "n_proposed": 2.6557,
+        "prompt": "travel",
+        "raw_p": 2.1798
+      },
+      {
+        "exceeds_proposed": true,
+        "excess_over_proposed": 0.5065756845285971,
+        "implied_accepted_per_round": 5.039275684528597,
+        "k_min_required": 1.0915603022988047,
+        "ladder_shape_T(M)/T(1)": 1.9355722271456812,
+        "mean_width": 5.5327,
+        "n_proposed": 4.5327,
+        "prompt": "beagle",
+        "raw_p": 3.12015
+      },
+      {
+        "exceeds_proposed": true,
+        "excess_over_proposed": 1.1443096499243293,
+        "implied_accepted_per_round": 5.912009649924329,
+        "k_min_required": 1.1983996480268269,
+        "ladder_shape_T(M)/T(1)": 2.066457086372622,
+        "mean_width": 5.7677,
+        "n_proposed": 4.7677,
+        "prompt": "medicine",
+        "raw_p": 3.34486
+      },
+      {
+        "exceeds_proposed": true,
+        "excess_over_proposed": 1.3366978643413656,
+        "implied_accepted_per_round": 6.606397864341366,
+        "k_min_required": 1.213199652988399,
+        "ladder_shape_T(M)/T(1)": 2.2411175727725134,
+        "mean_width": 6.2697,
+        "n_proposed": 5.2697,
+        "prompt": "republic",
+        "raw_p": 3.39402
+      },
+      {
+        "exceeds_proposed": true,
+        "excess_over_proposed": 1.206505124845524,
+        "implied_accepted_per_round": 6.631805124845524,
+        "k_min_required": 1.1877741311449308,
+        "ladder_shape_T(M)/T(1)": 2.2672409554161836,
+        "mean_width": 6.4253,
+        "n_proposed": 5.4253,
+        "prompt": "essays",
+        "raw_p": 3.36612
+      },
+      {
+        "exceeds_proposed": true,
+        "excess_over_proposed": 1.1915835412441194,
+        "implied_accepted_per_round": 6.96808354124412,
+        "k_min_required": 1.1758405579936722,
+        "ladder_shape_T(M)/T(1)": 2.3262032432340307,
+        "mean_width": 6.7765,
+        "n_proposed": 5.7765,
+        "prompt": "botany",
+        "raw_p": 3.42536
+      }
+    ]
+  }
+}
