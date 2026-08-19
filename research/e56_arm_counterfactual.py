@@ -338,19 +338,37 @@ def main() -> None:
             report["counterfactual"][prompt][name] = replay_arms(
                 fit, prices, truth, args.windows, args.seed)
 
+    # The revision asks for each arm's gain twice. `ranked_mixture` reads each
+    # score-setting prompt's own acceptance process. `local_fixture` asks what
+    # the same arm would be worth if both prompts behaved like the public local
+    # fixture, which is the weighting a local-only reading implicitly applies.
+    # The gap between the two is the transfer risk, stated as a number.
     for name in truths:
-        if not name.startswith("ranked"):
-            continue
-        report["score"][name] = {}
+        ranked_block, local_block = {}, {}
         for arm in ARMS:
-            gains = {
+            ranked_gains = {
                 prompt: report["counterfactual"][prompt][name][arm]["leg_gain_pct"]
                 for prompt in RANKED_TARGET_MEAN
             }
-            report["score"][name][arm] = {
-                "leg_gain_pct": gains,
-                "score_pct": Q.score_pct_from_leg_gains(gains),
+            local_gain = (report["counterfactual"]["local_fixture"][name][arm]
+                          ["leg_gain_pct"])
+            local_gains = {prompt: local_gain for prompt in RANKED_TARGET_MEAN}
+            ranked_block[arm] = {
+                "leg_gain_pct": ranked_gains,
+                "score_pct": Q.score_pct_from_leg_gains(ranked_gains),
             }
+            local_block[arm] = {
+                "leg_gain_pct": local_gains,
+                "score_pct": Q.score_pct_from_leg_gains(local_gains),
+            }
+        report["score"][name] = {
+            "ranked_mixture": ranked_block,
+            "local_fixture": local_block,
+            "gap_pct": {
+                arm: (ranked_block[arm]["score_pct"]
+                      - local_block[arm]["score_pct"]) for arm in ARMS
+            },
+        }
 
     for prompt, fit in prompt_fits.items():
         report["decision_diff"][prompt] = decision_diff(
@@ -405,13 +423,21 @@ def print_report(report: dict) -> None:
                       f"{row['mean_draft_len']:>11.4f}"
                       f"{row['stops_at_width_5']:>15.4f}")
 
-    print("\nRANKED SCORE, per truth curve (positive is a better score)")
-    for truth, arms in report["score"].items():
+    print("\nSCORE PER ARM, WEIGHTED TWO WAYS (positive is a better score)")
+    print("  ranked = each prompt's own acceptance; local = both prompts")
+    print("  weighted as though they behaved like the public local fixture")
+    for truth, block in report["score"].items():
         print(f"  {truth}")
-        for arm, row in arms.items():
-            gains = "  ".join(f"{name} {value:+.4f} %"
-                              for name, value in row["leg_gain_pct"].items())
-            print(f"    {arm:<7}{gains:<44}score {row['score_pct']:+.4f} %")
+        print(f"    {'arm':<7}{'ranked score':>14}{'local score':>14}"
+              f"{'gap':>10}   ranked leg gains")
+        for arm in ARMS:
+            gains = "  ".join(
+                f"{name} {value:+.4f} %" for name, value
+                in block["ranked_mixture"][arm]["leg_gain_pct"].items())
+            print(f"    {arm:<7}"
+                  f"{block['ranked_mixture'][arm]['score_pct']:>+14.4f}"
+                  f"{block['local_fixture'][arm]['score_pct']:>+14.4f}"
+                  f"{block['gap_pct'][arm]:>+10.4f}   {gains}")
 
     print("\nWHERE THE ARMS DISAGREE WITH THE SHIPPED WALK")
     for prompt, arms in report["decision_diff"].items():
