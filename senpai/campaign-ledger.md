@@ -1422,6 +1422,148 @@ evidence or a changed condition; “try again” is not enough.
     correctness risk, two contradicting competitor receipts, and by item 83 the
     ranked mass at M=8 is smaller than at M=5–6. Queue it; do not rush it.
 
+87. 🔴🔴🔴 **Ranked `effective_mean_draft_len` is bit-identical across the entire
+    top of the board, so the whole leaderboard is competing on ONE axis: per-row
+    verify cost.** Across the top 14 accepted rows (14 different solvers,
+    3.19088–3.24929), `effective_mean_draft_len` has standard deviation
+    **0.000 %** on every one of the eight prompts — beagle 4.5327103, medicine
+    4.7677, essays 5.4253, republic 5.2700, botany 5.7757, travel 2.6557, drama
+    2.2976, plutarch 0.1540, repeated to every printed digit. Meanwhile
+    `raw_ratio_of_means` varies 0.26 % (plutarch) to 0.86 % (botany). Identical
+    accepted-row trajectories with different ratios means **every point of
+    separation at the top is decode speed at a fixed operating point**, not
+    acceptance. Corollary: the accepted/rejected row sequence is a deterministic
+    function of (head, target checkpoint, prompt) and the default schedule, and
+    73 of the 86 scored rows that declare head `559b24eb` sit on exactly that
+    default. Reproduce with `/tmp/decomp.py`, `/tmp/nmove.py`.
+
+88. 🔴🔴🔴 **More rows is NOT better at the ranked operating point: the implied
+    per-row price rises steeply above the default depth, and every submission
+    that drafted deeper than the default scored worse.** Within head `559b24eb`,
+    solving `h̄ = [(1+0.99 n)/R − 1]/n` on beagle:
+
+    | beagle n | beagle R | implied h̄ | score | solver |
+    |---:|---:|---:|---:|---|
+    | 4.2793 | 3.1103 | 0.1598 | 3.18367 | jeromelaurens |
+    | **4.5327 (default)** | **3.1433** | **0.1645** | **3.24929** | **ofou (board top)** |
+    | 4.3839 | 3.0603 | 0.1699 | 3.16292 | xadenryan |
+    | 4.6019 | 3.0062 | 0.1843 | 3.07216 | andreolf |
+    | 4.7358 | 3.0626 | 0.1810 | 3.16408 | welttowelt |
+
+    Nine non-default rows, all below the default cluster's best. Going from
+    n = 4.533 to n = 4.736 made beagle's `mtp_seconds_per_token_mean` 2.6 %
+    *worse* (0.012130 → 0.012449). Confounded — these are different kernels, so
+    this is not a clean marginal-price measurement — but the sign is uniform
+    across nine rows. **The marginal row at the ranked operating point costs more
+    than it returns.** This is edward's E25 thesis (the price curve is a step
+    function, not the shipped smooth `h/(1+d·h)`) confirmed on ranked data, in a
+    depth region his local fixture never visits.
+
+89. 🔴🔴🔴 **The score-maximising schedule is not the throughput-maximising
+    schedule, because the objective is an order statistic.** Two competitors got
+    plutarch to draft — n = 0.154 → **2.897**, ratio 1.2489 → **2.2209**, a
+    **+78 %** gain on that prompt, with `non_drafting_round_count` 449 → 0 — and
+    both still scored *below* the board top (xadenryan 3.16292, Lieisyourlie
+    3.15370). Lifting plutarch moved it from rank 1 to rank 3; the central pair
+    stayed beagle+medicine; and the same aggression pushed beagle's h̄ from
+    0.1645 to 0.1699, losing on the prompt that binds. **Aggregate throughput
+    work on the six non-binding prompts is worth exactly zero, and is negative
+    whenever it raises per-row cost on beagle or medicine.** Retire item 85's
+    implicit suggestion that plutarch is a prize; it is an instrument only.
+
+90. 🔴🔴🔴 **The binding widths are M = 5, 6, 7, and `M = 6` is the worst per-row
+    width in the dispatch table — this is the single highest-value remaining
+    kernel target.** `M = n + 1`, so beagle's n = 4.5327 → **M ≈ 5.53** and
+    medicine's n = 4.7677 → **M ≈ 5.77**. Kernel receipt,
+    `quantized.h:1154`: *"IPG = ceil(M / ceil(M / 5)): the fewest weight streams
+    reachable at NA <= 5"*. So weight passes are `ceil(M/5)` and per-row weight
+    traffic is `passes/M`:
+
+    | M | IPG | passes | per-row traffic |
+    |---:|---:|---:|---:|
+    | 3 | 3 | 1 | 0.333 |
+    | 4 | 4 | 1 | 0.250 |
+    | 5 | 5 | 1 | **0.200** |
+    | **6** | **3** | **2** | **0.333 ← worst** |
+    | 7 | 4 | 2 | 0.286 |
+    | 8 | 4 | 2 | 0.250 |
+    | 9 | 5 | 2 | 0.222 |
+
+    Two consequences. (a) **The current table is already pass-optimal at NA ≤ 5**
+    — every cell equals `ceil(M/ceil(M/5))`, so there is no IPG win left without
+    raising NA, and this also settles item 86 in our HEAD's favour: `<T,8,4>` is
+    2 passes, the promoted `<T,8,3>` is `ceil(8/3) = 3`. (b) **M = 6 cannot go
+    below 2 passes without NA = 6** (IPG 6 → 1 pass; IPG 5 is illegal because
+    `6 % 5 == 1`; IPG 4 and 3 are both 2 passes), and NA = 6 costs 144 registers
+    with 2 allocas at `rows_per_simd = 4`. NA = 6 buys exactly one cell, M = 6,
+    taking its per-row traffic 0.333 → **0.167, the best in the table.** That is
+    askeladd's E32 register-budget trade, and it is now the campaign's main line.
+
+91. 🔴🔴 **Independent confirmation that M = 6 is the prize, from a completely
+    different instrument.** Alphonse's E30 (PR #35) measured, post-E27, that the
+    best width flipped 8 → 9 and that **70 % of the entire remaining best-width
+    headroom on his fixture is the nine M = 6 rounds** (160.3 of 229.8 ms;
+    M = 6 costs 23.71 ms/tok against the best width's 20.74). Two instruments
+    that share no code — the ranked per-prompt telemetry via `M = n + 1`, and a
+    local six-way round tape — independently name M = 6. Treat that convergence
+    as the strongest prioritisation signal in the campaign so far.
+
+92. 🔴🔴 **E25's binding price coefficient was a pass-count boundary, and E27
+    moved that boundary — so the whole depth-truncation family was chasing a
+    stale artifact.** Edward's measured `measuredRowStepRatio[3] = 0.442442`
+    (against the shipped 0.153) is the `T(3) → T(4)` step, i.e. **M = 4 → M = 5**.
+    Pre-E27, M = 5 dispatched `<T,5,3>` = `ceil(5/3)` = **2 passes** while M = 4
+    was 1 pass, so his "cliff" was exactly the 1 → 2 weight-pass boundary. E27
+    (`cf2c0db2`, 2026-08-18 22:56) made M = 5 single-pass; his base
+    `0d2eef9c` is 2026-08-18 04:49 and `git merge-base --is-ancestor cf2c0db2
+    0d2eef9c` returns non-ancestor. Propagating E27's measured M = 5 ratio 0.7990
+    through his own table: `T(3) = 91.2664`, `T(4)_pre = 131.658`,
+    `T(4)_post = 105.195`, **new d3 coefficient 0.1526 versus the shipped 0.153.**
+    Pre-registered prediction for the E25 r4 refit: (i) the d3 coefficient
+    collapses onto the shipped curve and arm D's mechanism evaporates; (ii) **a
+    new cliff appears one step later, at d4 = the M = 5 → M = 6 step**, because
+    that is where the 1 → 2 pass boundary now lives. This is the load-bearing
+    generalisation: **the true verify cost is a step function of `ceil(M/5)`,
+    which the smooth `h/(1+d·h)` price cannot express at all.**
+
+93. 🔴🔴 **Arm D would have been a structural ~18 % ranked loss, and the local
+    evidence said the opposite.** E25's PRICE arm sets max depth to exactly 3
+    (`depth_ge_4_realised = 0`) and wins 8/8 locally at +3.83 %. But its local
+    tape has mean depth 2.386 (per-prompt 2.058–2.737) while **every scoring
+    prompt realises 4.53–5.78** — the fixture never visits the scored region.
+    Holding α = 0.99 and each prompt's h̄ fixed and moving n to 3 collapses all
+    five deep prompts into 2.66–2.74, putting the 4th/5th pair at ≈2.66, i.e.
+    **−18 %**. Assumption-free version: to *hold* 3.244 at n = 3 you would need
+    h̄ ≤ **0.0746** on the central prompts, under half the shipped price. Add to
+    the established-negative list: **any hard depth cap below 6.** Generalise the
+    lesson: a local fixture whose depth histogram does not overlap the ranked
+    one cannot test a depth policy at all, in either direction.
+
+94. 🟢🟢 **Local and ranked do not even run the same command-buffer geometry**, so
+    the local↔ranked transfer gap of item 82 now has a second named mechanism.
+    Thorfinn's E31 (PR #36) found that the scored worker force-installs the
+    geometry from editable Swift before the first Metal device touch: **50 ops /
+    512 on the ranked M5 Max, 64 ops / 128 on this 48 GiB host** — never the arch
+    default, and never the same on both. E31 also corrects two inherited claims:
+    `MLX_MAX_MB_PER_BUFFER` accumulates `array::data_size()`, which `array.h:346`
+    documents as *units of `item_size`, not bytes*, so it is a **mebi-element**
+    cap admitting 4× the bytes its name implies for the 4-bit `uint32`-packed
+    backbone; and `gpu::finalize` commits without `notify_new_task`, so ladder
+    rungs never enter the `MAX_ACTIVE_TASKS = 10` in-flight accounting. Terminal
+    negative on the axis itself: per-boundary cost **−36.5 µs (95 % CI −170.3 …
+    +97.4)**, consistent with zero and negatively signed.
+
+95. **Board top moved to 3.24929398547457** (`0cd0a6b4`, solver `ofou`),
+    superseding 3.24417896624589 (`b0994092`, fkiene) and the still-*promoted*
+    3.24326223889754 (`11863aa9`, companygardener, `promotedSourceRef
+    5068eb8d0bae032faca6e901de398fc732531160`). All top 12 declare head
+    `559b24eb`, which is the head our pending `ca9251b8` also declares. The top-14
+    span is 3.19088–3.24929 = 1.8 %, and the top-10 clone cluster spans 0.53 %
+    against a per-prompt ratio spread of 0.26–0.86 % — so **most of the visible
+    ordering at the top of this board is noise**, and item 79's ≥1 % rule before
+    spending a ranked slot stands reinforced.
+
+
 ## Advisor process lessons, 2026-08-17
 
 These are mechanism-free but they cost real time, so they belong in the ledger.
