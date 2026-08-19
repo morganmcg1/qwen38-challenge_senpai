@@ -338,26 +338,36 @@ def main() -> int:
     # up to 8, base cost rising, so the sign of the effect is set by where those
     # two curves cross. Record the flatness so that claim is auditable evidence
     # rather than narrative.
+    # Flatness is only a claim about widths the MMA cell actually serves with a
+    # single 8-row tile. Averaging a scalar cell into the plateau would make the
+    # narrow arm look ragged for a reason that has nothing to do with the tile.
+    plateau_widths = sorted(m for m in touched_widths if m <= 8)
     cost_model = []
     for shape in sorted({r["shape"] for r in table}):
         cand_p = [r["cand_us"] for r in table
-                  if r["shape"] == shape and 4 <= r["m"] <= 8]
+                  if r["shape"] == shape and r["m"] in plateau_widths]
         base_p = [r["base_us"] for r in table
-                  if r["shape"] == shape and 4 <= r["m"] <= 8]
+                  if r["shape"] == shape and r["m"] in plateau_widths]
         if len(cand_p) < 2:
             continue
         mean_p = statistics.fmean(cand_p)
         sd_p = statistics.stdev(cand_p)
         base_rise = 100.0 * (base_p[-1] / base_p[0] - 1.0)
+        spread = 100.0 * (max(cand_p) - min(cand_p)) / max(cand_p)
         key = shape.split("_")[0]
         summary[f"cost_model/{key}/cand_plateau_us"] = mean_p
         summary[f"cost_model/{key}/cand_plateau_cv_pct"] = 100.0 * sd_p / mean_p
-        summary[f"cost_model/{key}/base_rise_m4_to_m8_pct"] = base_rise
-        cost_model.append([shape, mean_p, sd_p, 100.0 * sd_p / mean_p, base_rise])
-    print("\n--- cost model: is the candidate flat in M? ---")
-    for shape, mean_p, sd_p, cv, rise in cost_model:
-        print(f"{shape:24s} cand M=4..8 plateau {mean_p:8.2f} us  "
-              f"cv {cv:5.2f} %   base rise M4->M8 {rise:+6.1f} %")
+        summary[f"cost_model/{key}/cand_plateau_spread_pct"] = spread
+        summary[f"cost_model/{key}/base_rise_pct"] = base_rise
+        cost_model.append([shape, mean_p, sd_p, 100.0 * sd_p / mean_p, spread,
+                           base_rise])
+    span = (f"M={plateau_widths[0]}..{plateau_widths[-1]}"
+            if plateau_widths else "none")
+    print(f"\n--- cost model: is the candidate flat over its single-tile "
+          f"widths {span}? ---")
+    for shape, mean_p, sd_p, cv, spread, rise in cost_model:
+        print(f"{shape:24s} cand plateau {mean_p:8.2f} us  cv {cv:5.2f} %  "
+              f"spread {spread:5.2f} %   base rise over {span} {rise:+6.1f} %")
 
     # The two halves of this mechanism have OPPOSITE score signs, so an
     # aggregate speedup is not interpretable as score. Reported separately, each
@@ -449,7 +459,8 @@ def main() -> int:
                       for r in timing]),
             "cost_model": wandb.Table(
                 columns=["shape", "cand_plateau_us", "cand_plateau_sd_us",
-                         "cand_plateau_cv_pct", "base_rise_m4_to_m8_pct"],
+                         "cand_plateau_cv_pct", "cand_plateau_spread_pct",
+                         "base_rise_pct"],
                 data=cost_model),
             **summary,
         })
