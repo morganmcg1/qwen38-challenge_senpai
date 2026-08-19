@@ -24,7 +24,10 @@ log_root="research/out/e60/build"
 mkdir -p "${bin_root}" "${log_root}"
 
 restore_base() {
-  git checkout -- "${files[@]}"
+  # --source=HEAD --staged is required: `git checkout upstream/main -- FILE`
+  # also writes the index, so a plain worktree restore would copy the arm's own
+  # staged content straight back.
+  git restore --source=HEAD --staged --worktree -- "${files[@]}"
 }
 
 dirty="$(git status --porcelain -- "${files[@]}" | wc -l | tr -d ' ')"
