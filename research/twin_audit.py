@@ -219,6 +219,42 @@ KNOWN_COMMENT_DIVERGENCES = {
 }
 
 
+# ---------------------------------------------------------------------------
+# DEAD-WAIVER DETECTION
+#
+# The comment block above says a waiver whose digests point at a body that no
+# longer exists is a SILENT HOLE. Until 2026-08-19 this file only said that; it
+# did not check it. The hole is not hypothetical and it has a concrete author:
+#
+#   alphonse's E44 r2 REGENERATED the twin as part of building his candidate.
+#   Regeneration synchronises the comment, the divergence disappears, and the
+#   audit prints "29/29, 0 waivers" -- passing, with the waiver row still in the
+#   table pointing at a body that is gone. The next real divergence in that
+#   section would then be compared against a stale pin, and the failure mode is
+#   a PASS.
+#
+# So: a declared waiver whose stem WAS audited and which was never exercised is
+# now a hard failure. Stems not audited in this invocation (`twin_audit.py
+# <stem>`) are exempt, because absence of evidence is not a dead waiver.
+#
+# The correct response to this failure is to DELETE the row, not to re-pin it.
+# Re-pinning a waiver against a body you just regenerated launders a real
+# divergence into an allowlisted one.
+# ---------------------------------------------------------------------------
+
+WAIVERS_EXERCISED = set()
+
+
+def dead_waivers(audited_stems):
+    """Declared waivers whose stem was audited but which never fired."""
+    audited = set(audited_stems)
+    return sorted(
+        key
+        for key in KNOWN_COMMENT_DIVERGENCES
+        if key[0] in audited and key not in WAIVERS_EXERCISED
+    )
+
+
 class AuditError(RuntimeError):
     pass
 
@@ -250,6 +286,7 @@ def comment_only_waiver(stem, header, current_body, expected_body):
         return None
     if code_lines(current_body) != code_lines(expected_body):
         return None
+    WAIVERS_EXERCISED.add((stem, header))
     return (
         f"WAIVED {stem}: comment-only divergence in {header} "
         f"({len(current_body)} checked-in vs {len(expected_body)} regenerated "
@@ -410,6 +447,7 @@ def main():
     stems = sys.argv[1:] or default_stems()
     failures = []
     waivers = []
+    completed = []
     with tempfile.TemporaryDirectory(prefix="qwen38-twin-audit-") as directory:
         temporary = pathlib.Path(directory)
         for stem in stems:
@@ -427,6 +465,11 @@ def main():
             if difference:
                 failures.append(f"{stem}: {difference}")
             else:
+                # Only a stem that compared CLEAN end-to-end proves a waiver was
+                # unnecessary. `first_difference` returns at the FIRST drift, so
+                # a stem that failed may simply never have reached the waived
+                # section.
+                completed.append(stem)
                 for note in notes:
                     print(note)
                 waivers.extend(notes)
@@ -435,6 +478,19 @@ def main():
                     f"{len(checked['system_sections'])} normalized toolchain section(s)"
                     + (f", {len(notes)} allowlisted waiver(s)" if notes else "")
                 )
+
+    # Only stems that completed a full comparison can exercise a waiver. A stem
+    # that bailed out early (missing twin, AuditError) has already produced its
+    # own failure and must not also be blamed for a dead waiver it never got the
+    # chance to fire.
+    for key in dead_waivers(completed):
+        failures.append(
+            f"{key[0]}: DEAD WAIVER for {key[1]} -- declared in "
+            "KNOWN_COMMENT_DIVERGENCES but never exercised on this tree. The "
+            "divergence it describes no longer exists, most likely because the "
+            "twin was regenerated. DELETE the row; do not re-pin it against a "
+            "body you just generated."
+        )
 
     if failures:
         for failure in failures:

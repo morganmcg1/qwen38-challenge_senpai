@@ -382,6 +382,78 @@ assert_true(
 )
 
 print()
+print("PART D -- DEAD-WAIVER DETECTION (added 2026-08-19, ledger 175)")
+print(
+    "  A waiver whose digests point at a body that no longer exists is a silent\n"
+    "  hole: the audit prints a PASS with the row still in the table, and the\n"
+    "  NEXT real divergence in that section gets compared against a stale pin.\n"
+    "  twin_audit.py said so in a comment for weeks without checking it. The\n"
+    "  concrete trigger is regeneration -- alphonse's E44 r2 regenerated the twin\n"
+    "  and passed 29/29 with ZERO waivers used while the row was still present.\n"
+    "  These four cases prove the new check fires, does not misfire, and leaves\n"
+    "  no residue."
+)
+
+_saved_exercised = set(ta.WAIVERS_EXERCISED)
+try:
+    # D1 POSITIVE CONTROL. Nothing exercised, the waived stem audited clean =>
+    # the row is dead and must be reported. If this case ever passes silently
+    # the whole check is decoration.
+    ta.WAIVERS_EXERCISED.clear()
+    dead = ta.dead_waivers([STEM])
+    assert_true(
+        "D1 dead waiver on a clean audit of the waived stem IS reported",
+        dead == [(STEM, HEADER)],
+    )
+
+    # D2 The check must not fire once the waiver has actually done its job.
+    ta.WAIVERS_EXERCISED.add((STEM, HEADER))
+    assert_true(
+        "D2 exercised waiver is NOT reported dead",
+        ta.dead_waivers([STEM]) == [],
+    )
+
+    # D3 A stem that was never audited is EXEMPT. `twin_audit.py unary` must not
+    # fail because a quantized waiver did not fire -- absence of evidence is not
+    # a dead waiver, and a check that conflated them would make every
+    # single-stem invocation red.
+    ta.WAIVERS_EXERCISED.clear()
+    assert_true(
+        "D3 waived stem not audited => exempt, not reported",
+        ta.dead_waivers(["unary"]) == [],
+    )
+
+    # D4 A synthetic SECOND row on the same stem must also be caught, so the
+    # check is keyed on (stem, header) and not merely on "this stem has some
+    # waiver somewhere".
+    synthetic = (STEM, "mlx/backend/metal/kernels/does-not-exist.h")
+    ta.KNOWN_COMMENT_DIVERGENCES[synthetic] = {
+        "checked_in_sha256": "0" * 64,
+        "regenerated_sha256": "1" * 64,
+        "inherited_from": "synthetic",
+        "adopted_by": "synthetic",
+        "note": "synthetic row, removed below",
+    }
+    ta.WAIVERS_EXERCISED.add((STEM, HEADER))
+    assert_true(
+        "D4 second row on an exercised stem is still caught individually",
+        ta.dead_waivers([STEM]) == [synthetic],
+    )
+    del ta.KNOWN_COMMENT_DIVERGENCES[synthetic]
+    assert_true(
+        "D4 synthetic row removed without residue",
+        synthetic not in ta.KNOWN_COMMENT_DIVERGENCES,
+    )
+finally:
+    ta.WAIVERS_EXERCISED.clear()
+    ta.WAIVERS_EXERCISED.update(_saved_exercised)
+
+assert_true(
+    "D5 module state restored exactly",
+    ta.WAIVERS_EXERCISED == _saved_exercised,
+)
+
+print()
 if failures:
     print(f"NEGATIVE CONTROL FAILED: {len(failures)} case(s): {failures}")
     sys.exit(1)
