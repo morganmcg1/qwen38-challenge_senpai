@@ -198,6 +198,106 @@ def census(name: str, prompt: dict, cost: dict[int, float]) -> dict:
     }
 
 
+def solve_normal_equations(x: list[list[float]], y: list[float]) -> list[float]:
+    n = len(x[0])
+    aug = [
+        [sum(x[r][i] * x[r][j] for r in range(len(x))) for j in range(n)]
+        + [sum(x[r][i] * y[r] for r in range(len(x)))]
+        for i in range(n)
+    ]
+    for i in range(n):
+        piv = max(range(i, n), key=lambda r: abs(aug[r][i]))
+        aug[i], aug[piv] = aug[piv], aug[i]
+        for r in range(n):
+            if r != i:
+                f = aug[r][i] / aug[i][i]
+                for c in range(i, n + 1):
+                    aug[r][c] -= f * aug[i][c]
+    return [aug[i][n] / aug[i][i] for i in range(n)]
+
+
+MODELS: dict[str, list] = {
+    "linear": [lambda m: 1.0, lambda m: float(m)],
+    "quadratic": [lambda m: 1.0, lambda m: float(m), lambda m: float(m * m)],
+    "cubic": [
+        lambda m: 1.0,
+        lambda m: float(m),
+        lambda m: float(m * m),
+        lambda m: float(m**3),
+    ],
+    "step_ge6_plus_linear": [
+        lambda m: 1.0,
+        lambda m: float(m),
+        lambda m: 1.0 if m >= 6 else 0.0,
+    ],
+    "step_ge6_plus_quadratic": [
+        lambda m: 1.0,
+        lambda m: float(m),
+        lambda m: float(m * m),
+        lambda m: 1.0 if m >= 6 else 0.0,
+    ],
+    # The mechanistic form: cost is (weight passes) x (per-pass linear cost),
+    # where passes = ceil(M / IPG) is 1 for M<=5 and 2 for M>=6.
+    "passes_x_linear": [
+        lambda m: 1.0,
+        lambda m: float(m),
+        lambda m: 2.0 if m >= 6 else 1.0,
+        lambda m: float(m) * (2.0 if m >= 6 else 1.0),
+    ],
+}
+
+
+def discriminate(qmv: dict[int, float]) -> dict:
+    """Priority B: does the local curve separate a step at M>=6 from a quadratic?
+
+    The ranked corpus cannot: both families fit it with zero slack yet disagree
+    4.4x on T(6)-T(5). Nine directly measured widths do separate them.
+    """
+    widths = sorted(qmv)
+    y = [qmv[m] for m in widths]
+    out: dict[str, dict] = {}
+    for name, basis in MODELS.items():
+        design = [[f(m) for f in basis] for m in widths]
+        beta = solve_normal_equations(design, y)
+        resid = [
+            y[i] - sum(beta[j] * design[i][j] for j in range(len(beta)))
+            for i in range(len(widths))
+        ]
+        rms = (sum(r * r for r in resid) / len(resid)) ** 0.5
+        pred = {m: sum(beta[j] * basis[j](m) for j in range(len(beta))) for m in widths}
+        out[name] = {
+            "k_params": len(beta),
+            "rms_ms": rms,
+            "max_abs_residual_ms": max(abs(r) for r in resid),
+            "residuals_ms": {str(m): resid[i] for i, m in enumerate(widths)},
+            "predicted_step_6_minus_5_ms": pred[6] - pred[5],
+        }
+    first_diff = {
+        str(widths[i]): y[i] - y[i - 1] for i in range(1, len(widths))
+    }
+    second_diff = {
+        str(widths[i]): y[i] - 2 * y[i - 1] + y[i - 2] for i in range(2, len(widths))
+    }
+    return {
+        "measured_step_6_minus_5_ms": qmv[6] - qmv[5],
+        "first_differences_ms": first_diff,
+        "second_differences_ms": second_diff,
+        "second_difference_sign_changes": sum(
+            1
+            for a, b in zip(list(second_diff.values()), list(second_diff.values())[1:])
+            if a * b < 0
+        ),
+        # A quadratic has CONSTANT second differences by construction, so any
+        # sign change in the measured second differences refutes it outright,
+        # independently of any fit residual.
+        "quadratic_refuted_by_second_difference_sign_change": any(
+            a * b < 0
+            for a, b in zip(list(second_diff.values()), list(second_diff.values())[1:])
+        ),
+        "models": out,
+    }
+
+
 def local_census(hist: dict[int, int], cost: dict[int, float]) -> dict:
     total = sum(c * cost[m] for m, c in hist.items())
     hit = sum(c * cost[m] for m, c in hist.items() if m in TARGET_WIDTHS)
@@ -229,6 +329,33 @@ def main() -> int:
         print(f"   {m}   {qmv[m]:9.3f}  {cost[m]:9.3f}       {1 if m <= 5 else 2}")
     print(f"\n  non-QMV per round = {NON_QMV_MS_PER_ROUND:.2f} ms")
     print(f"  Q(6)-Q(5) = {qmv[6] - qmv[5]:.3f} ms   <- the 1->2 weight-pass step")
+
+    disc = discriminate(qmv)
+    print("\n=== priority B: step at M>=6 vs plain quadratic, on 9 measured widths ===")
+    print(
+        "  measured Q(6)-Q(5) = "
+        f"{disc['measured_step_6_minus_5_ms']:.3f} ms"
+    )
+    print(
+        "  first  differences "
+        + " ".join(f"{k}:{v:+7.2f}" for k, v in disc["first_differences_ms"].items())
+    )
+    print(
+        "  second differences "
+        + " ".join(f"{k}:{v:+7.2f}" for k, v in disc["second_differences_ms"].items())
+    )
+    print(
+        f"  second-difference sign changes = {disc['second_difference_sign_changes']}"
+        f" -> quadratic refuted outright: "
+        f"{disc['quadratic_refuted_by_second_difference_sign_change']}"
+    )
+    print("  model                     k      rms ms   max|res|   predicted T(6)-T(5)")
+    for name, res in disc["models"].items():
+        print(
+            f"  {name:24s} {res['k_params']}  {res['rms_ms']:10.4f} "
+            f"{res['max_abs_residual_ms']:10.3f} "
+            f"{res['predicted_step_6_minus_5_ms']:14.3f} ms"
+        )
 
     print("\n=== the one FULLY measured decode-time census (public fixture) ===")
     loc = local_census(hist, cost)
@@ -328,6 +455,7 @@ def main() -> int:
         "qmv_ms_per_round": {str(m): v for m, v in qmv.items()},
         "decode_ms_per_round": {str(m): v for m, v in cost.items()},
         "target_widths": list(TARGET_WIDTHS),
+        "width_model_discrimination": disc,
         "local_fixture_census": loc,
         "ranked_census": results,
         "absolute_ranked_share_is_identified": False,
