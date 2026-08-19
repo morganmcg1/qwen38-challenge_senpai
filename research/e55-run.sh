@@ -25,5 +25,9 @@ export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-sh
 # the same non-comment-identity guard pinned to the divergence, so it holds for
 # base, m9two and base2 alike. research/twin_audit.py remains the promotion gate.
 export E42_TWIN_GATE="research/e55_twin_gate.py"
+# Binary freshness is proven from the built artefact, not from mtimes: the
+# scored worker must embed THIS arm's M=9 dispatch literal and none of the
+# other arms'. See research/e55_binary_assert.sh for why mtime cannot work.
+export E42_BINARY_ASSERT="research/e55_binary_assert.sh"
 
 exec research/e42-run.sh "$@"

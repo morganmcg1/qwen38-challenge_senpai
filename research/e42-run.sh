@@ -134,13 +134,38 @@ if ((status == 0)); then
     --scratch-path .build-worker --product mlxfast-runtime-worker || status=1
   # Freshness, not existence: a silently-skipped rebuild would time the previous
   # arm and read as a null.
+  #
+  # This used to compare product mtimes against Sources/ and Vendor/. That test
+  # is unsound in both directions and was removed on 2026-08-19 after it blocked
+  # two E55 arms:
+  #   * llbuild is content-addressed, so a byte-identical relink is SKIPPED and
+  #     the product mtime does not move even when the build is up to date. Any
+  #     content-neutral mtime bump under the watched trees makes the test
+  #     permanently unsatisfiable.
+  #   * mlxfast-swift embeds none of the quantized JIT string, so its mtime
+  #     cannot witness a kernel edit at all.
+  # E42_BINARY_ASSERT replaces it with a content proof read from the built
+  # artefact. Set it to a command that exits 0 only when the scored binary holds
+  # this arm's runtime-effective source.
   for product in .build/release/mlxfast-swift .build-worker/release/mlxfast-runtime-worker; do
-    stale="$(find Package.swift Package.resolved Sources Vendor -newer "${product}" -print -quit 2>/dev/null || true)"
-    [[ -z "${stale}" ]] || {
-      echo "e42-run: ${product} is older than ${stale}; refusing to time a stale binary" >&2
+    [[ -x "${product}" ]] || {
+      echo "e42-run: ${product} is missing after a successful build" >&2
       status=1
     }
   done
+  if ((status == 0)); then
+    if [[ -n "${E42_BINARY_ASSERT:-}" ]]; then
+      # `set -o pipefail` is in force, so the hook's own status propagates. The
+      # hook writes key=value lines to stdout and its human verdict to stderr.
+      ${E42_BINARY_ASSERT} | tee -a "${out}/meta.txt" || {
+        echo "e42-run: refusing to time a binary that failed ${E42_BINARY_ASSERT}" >&2
+        status=1
+      }
+    else
+      echo "e42-run: WARNING no E42_BINARY_ASSERT set; binary freshness is unproven" >&2
+      echo "binary_assert=none" >> "${out}/meta.txt"
+    fi
+  fi
 fi
 
 if ((status == 0)); then
