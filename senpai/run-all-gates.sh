@@ -73,6 +73,7 @@ run scored-surface            bash research/scored-surface-gate.sh
 run shipped-surface           bash research/shipped-surface-gate.sh
 run inherited-surface         bash research/inherited-surface-gate.sh
 run frontier-revert           bash research/frontier-revert-gate.sh
+run frontier-revert-selftest  bash research/selftest-frontier-revert-gate.sh
 run base-drift                bash senpai/verify-base-drift.sh
 run trusted-parity            bash senpai/verify-trusted-parity.sh "$CROWN"
 run campaign-overlay          bash senpai/verify-campaign-overlay.sh "$CROWN"
