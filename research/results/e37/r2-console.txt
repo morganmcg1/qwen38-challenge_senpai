@@ -26,7 +26,7 @@ CENSUS -- trusted-parent journal, 512 decode tokens, offered depth 8
 ==============================================================================
 CONTROL -- does the phase trace perturb the counts it reports?
 ==============================================================================
-medicine         VACUOUS: both directories hold the same run (2026-08-19T03:10:44Z); no untraced re-run exists
+medicine         untraced rounds 229  traced rounds 229   element-wise IDENTICAL
 natural_history  untraced rounds 260  traced rounds 260   element-wise IDENTICAL
 
 ==============================================================================
