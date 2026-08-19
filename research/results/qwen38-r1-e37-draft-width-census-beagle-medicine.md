@@ -554,6 +554,14 @@ saturated beagle cell is +3.80 % of score), but a sub-1 % kernel win inside it i
 | `w(M=6)` rows | 0.0000 | 0.0576 | **0.2434** | — | — |
 | `all_tokens_matched` | true | true | **true** | — | — |
 
+**W&B:** r2 run `h977ws5a` —
+<https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/h977ws5a>
+(state `finished`), carrying the width census, per-arm provenance and thermal
+record, the traced-vs-untraced control, the ranked resolution with its rejected
+readings, the ρ fit, the brackets, the payoff tables, and the
+`e37-width-census` artifact including this report. The r1 run is `afefx5kd`;
+its structural-claim summary keys are superseded by `h977ws5a`.
+
 ---
 
 ## Conclusion
