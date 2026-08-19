@@ -2595,3 +2595,138 @@ question is answerable by **reading a counter from one local timed run on the
 current tree**, not by source archaeology and not by inference from n. That is a
 much cheaper and much more reliable route than the one I gave edward, and it is
 the single most useful correction I can hand him.
+
+### 120 — 🟢 E36 TERMINAL (merged, PR #41): `values_per_thread` is closed on the verify path by ranked parity failures, not by registers — and my register model is falsified
+
+askeladd returned a complete terminal answer in one revision, zero GPU, zero
+shipped bytes (11 files, all `research/`, growth 0/262144). Merged at
+`1e3dc494`. Four results, in descending order of what they cost me.
+
+**(a) 🔴 The axis is closed, and by somebody else's ranked failures.** The
+re-ordered first question — *can `values_per_thread` be raised on the wide
+crossrow QMV without altering the per-row reduction order?* — is answered **NO,
+and not fixably: `values_per_thread` IS the lane→K partition
+(`quantized.h:1020`).** No setting above or below 16 preserves the order. Then,
+instructed to read the 13 `values_per_thread` notes (item 105's corrected scan),
+he found the confirming evidence:
+
+- companygardener `5c74b78b` — wide affine4/g64 QMV footprint cut for "width-3
+  and width-4 target verification", vpt 16→8, block 512→256 — **FAILED the
+  official untimed Qwen-MTP correctness-and-parity gate.**
+- `6154a6f1` — same change at verify width 3 — **FAILED the same gate.**
+- Their next row `11863aa9` (3.24326, accepted and promoted) records the rule:
+  *"Target-side footprint cuts fail official MTP parity. Stay off the verify
+  reduction tree."*
+
+🔴 **The observation that makes this decisive is his, not mine: `5c74b78b` moved
+vpt DOWN to 8 — the register-cheapest cell in the entire 262-cell grid (117 regs
+at M=6/NA=6/r=2, 8 private bytes).** If this axis were a register trade, v=8 was
+a free win. It failed parity twice anyway. **Registers were never the binding
+constraint; the lane→K partition always was.** That also closes the v=8 column,
+which local compilation could never have done, at zero M5 transfer risk.
+
+This is the third independent confirmation of the item 107 reassociation
+boundary, and the first that arrives as a *pair of ranked gate failures* rather
+than a note's assertion.
+
+**(b) 🔴 My register model is falsified by measurement, with a mechanism.** I
+predicted `slope ≈ 8.36·(vpt/16) + 3.19·r`, i.e. 155 registers at
+NA=6/r=2/vpt=32 (and I misquoted "~196" in the brief, from a different cell).
+**Measured 106 — bit-identical to vpt=16.** Over 262 cells (2 arms × r∈{1,2,3,4}
+× vpt∈{8,16,32,64} × NA 2..12), registers are **unchanged across vpt 8→64 for
+every spill-free cell at NA≥4, r≤2**; the r-slopes 11/15/18/21 hold at every vpt
+with zero spread at r=2.
+
+My error was **structural, not calibration**: I assumed the kernel materialises
+`x_thread`, so the x-side term should scale with vpt. It does not — crossrow
+re-reads four activations into `a0..a3` (`quantized.h:1014-1035`). vpt's real
+cost is **`r·vpt/2` private bytes in all 262 cells, and zero registers.**
+
+Superseding fit, replacing mine everywhere: **`slope(r) = 8.00 + 3.30·r`, max
+residual 0.40.** Validity gates passed before any new number was shown: E27
+ladder reproduced digit-for-digit (62/83/104/125), known-BAD NA=6/r=4 gave
+144+spill, 14/14 controls matched pre-declared verdicts.
+
+**(c) 🟢 The composition verdict: the axes DO compose in registers, and it does
+not matter.** `M=6/NA=6/r=2` is **117 registers at every one of vpt
+8/16/32/64**; `M=9/NA=9/r=2` is 168 at all four. So E33's rung-1 headroom claim
+(117 vs the 125 the shipped `<T,5,5>` already uses) is confirmed at four
+independent vpt settings rather than one. thorfinn gets NA, not vpt — **but the
+reason is the parity wall in (a), not contention.**
+
+**(d) 🟢 My k-block arithmetic was right, and was then strengthened.** The vpt-64
+wall reproduces exactly (`5120 % 2048 = 1024`), and additionally hits **K=17408
+(down_proj)**; the ragged-block escape I invited him to find **does not exist** —
+no K tail, no bounds check, and `_m` is a tail over M, not K. Six shapes overrun
+at vpt 64, five of them on the wide crossrow band (his own post-submission
+correction of "five scored projections", against his own published number, when
+the verdict did not depend on it).
+
+**(e) 🟢 Why the kernel chose 16, found rather than invented.** Generic
+`qmv_fast_impl` materialises `x_thread[vpt]` at `:774`, sized by
+`packs_per_thread = bits==2 ? 1 : 2` at `:761` — real upstream code, never
+re-derived for crossrow, inherited by copy. Plus `512 = 16 × SIMD_SIZE`. Plus the
+one that matters most: **16 is the pinned serial build's width, hence the only
+parity-safe width on the verify path.**
+
+**Reporting discipline worth recording as the campaign's standard.** He reported
+`vpt_attributable_delta = 0` when the primary metric moved 5→9 and the +4 could
+have been banked — it belongs to E32's row blocking. He withdrew his own
+follow-up (order-preserving unroll-by-2) **before** anyone spent on it, because
+xadenryan had already built it (`37911ea4`, `ace21f9d` failed policy review,
+`d95b11d5` validating) and aimed it at M==1 — the wrong side of `R = serial/mtp`.
+
+### 121 — 🟢 `get_qmv_batch_limit` resolves to 10 on the ranked box: E33's dispatch is live, and the Apple generation ladder is now anchored
+
+askeladd escalated the one open risk that could have invalidated E33 wholesale,
+and it is now closed. `get_qmv_batch_limit`
+(`Vendor/.../backend/metal/quantized.cpp:84-126`) is consumed at `:1415/:1483`
+and gated at `:1417` as `if (M >= vector_limit) { …qmm… }`, so **`qmv` runs only
+when `M < vector_limit`.** For our shapes (D, O > 4096):
+
+| `arch_gen` | tier | `vector_limit` | M=6..9 in `qmv`? |
+|---|---|---:|---|
+| **13 or 14** | non-`'d'` | **6** | 🔴 **no — all fall to qmm** |
+| 13 or 14 | `'d'` | 12 | yes |
+| anything else | non-`'d'` | **10** | 🟢 yes |
+| anything else | `'d'` | 12 | 🟢 yes |
+
+Had the ranked M5 parsed to arch_gen 13/14 non-`'d'`, **every one of M=6..9 would
+have left `qmv` entirely** and the whole crossrow NA line — E32, E33, E36 — would
+be tuning a dispatch the ranked box never executes. Correct escalation, and
+correctly scoped: the M5 arch string genuinely is not in the repo.
+
+**Resolved to 10, by three independent lines:**
+
+1. 🔴 **An accepted ranked row states it outright.** `088f763b` (accepted,
+   1.25132): *"At decode M=1 those three GEMVs all miss the NAX qmm path (**qmv
+   batch limit is 10**; see research)."*
+2. 🔴 **NAX liveness on the ranked box forces `gen ≥ 17`.** `52cdbf5e`: *"The M4
+   Max does not support NAX/MPP tensor ops; **the ranked M5 box does**."*
+   `device.cpp:924-926` gates `can_use_nax &= gen >= (arch == 'p' ? 18 : 17)`, so
+   a live NAX path requires gen ≥ 17 and the 13/14 branch cannot fire. I checked
+   this specifically because a *dead* NAX axis would have been consistent with
+   gen < 17 and would NOT have closed the risk — the notes assert the path is
+   live on the ranked box, not merely compiled.
+3. 🟢 **The generation ladder is anchored by direct measurement.** Our probe
+   (item 115) gives this box `applegpu_g16s`, **gen 16**. Competitor notes agree
+   independently: `d9cbec0f` *"The available development machines are M3 Max and
+   M4. They do not cross MLX's M5-generation NAX availability threshold"*, and
+   *"The M4 correctly kept the NAX guard disengaged."* So M4 = 16, M5 = 17, and
+   arch_gen 13/14 is M1/M2-era silicon.
+
+Belt and braces: **every branch except gen∈{13,14}-non-`'d'` returns ≥ 10**, and
+`'d'` returns 12 even in the 13/14 branch, so M=6..9 stay in `qmv` under every
+configuration the ranked box could plausibly report.
+
+🟢 **thorfinn is unblocked; E33 rung 1 needs no change.** I have asked him to add
+a one-line assertion that the cell he times is actually reached — the cheapest
+possible guard against this class of error now that the gate's location is known.
+
+**The transferable lesson is the inverse of item 105.** askeladd scoped his
+search to the repository, which was the right instinct, and the answer lived in
+the competitor corpus he had already mined for `values_per_thread`. Item 105's
+lesson was that a zero-hit corpus scan is a claim about tooling; this is its
+complement — **the corpus is a source of positive facts about the ranked
+environment, not only of prior-art kills.** Two of the three lines above are
+competitor notes describing hardware we cannot touch.
