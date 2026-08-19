@@ -1,0 +1,296 @@
+{
+  "arm": "FORCE",
+  "arms": {
+    "arm_d_r1_measured": {
+      "coeffs": [
+        0.18,
+        0.152542,
+        0.152261,
+        0.442442,
+        0.104651,
+        0.094737,
+        0.086538,
+        0.079646
+      ],
+      "depth_cap": 8,
+      "depth_histogram": {
+        "1": 107,
+        "2": 1373,
+        "3": 98
+      },
+      "mean_depth": 1.994296577946768,
+      "ms_per_token": 39.80255677220657,
+      "rounds_hitting_cap": 0,
+      "tokens_per_ms": 0.025124014161278265,
+      "vs_base_pct": 0.3222
+    },
+    "arm_d_refit_measured": {
+      "coeffs": [
+        0.18,
+        0.152542,
+        0.132353,
+        0.164342,
+        0.104651,
+        0.094737,
+        0.086538,
+        0.079646
+      ],
+      "depth_cap": 8,
+      "depth_histogram": {
+        "1": 107,
+        "2": 1219,
+        "3": 252
+      },
+      "mean_depth": 2.0918884664131814,
+      "ms_per_token": 39.84068638089137,
+      "rounds_hitting_cap": 0,
+      "tokens_per_ms": 0.02509996917321249,
+      "vs_base_pct": 0.2262
+    },
+    "base_shipped_deep_cap_3": {
+      "coeffs": [
+        0.18,
+        0.152542,
+        0.132353,
+        0.116883,
+        0.104651,
+        0.094737,
+        0.086538,
+        0.079646
+      ],
+      "depth_cap": 3,
+      "depth_histogram": {
+        "1": 107,
+        "2": 1219,
+        "3": 252
+      },
+      "mean_depth": 2.0918884664131814,
+      "ms_per_token": 39.84068638089137,
+      "rounds_hitting_cap": 252,
+      "tokens_per_ms": 0.02509996917321249,
+      "vs_base_pct": 0.2262
+    },
+    "base_shipped_deep_cap_4": {
+      "coeffs": [
+        0.18,
+        0.152542,
+        0.132353,
+        0.116883,
+        0.104651,
+        0.094737,
+        0.086538,
+        0.079646
+      ],
+      "depth_cap": 4,
+      "depth_histogram": {
+        "1": 107,
+        "2": 1219,
+        "3": 241,
+        "4": 11
+      },
+      "mean_depth": 2.098859315589354,
+      "ms_per_token": 39.93080303994352,
+      "rounds_hitting_cap": 11,
+      "tokens_per_ms": 0.02504332304561172,
+      "vs_base_pct": 0.0
+    },
+    "base_shipped_deep_cap_5": {
+      "coeffs": [
+        0.18,
+        0.152542,
+        0.132353,
+        0.116883,
+        0.104651,
+        0.094737,
+        0.086538,
+        0.079646
+      ],
+      "depth_cap": 5,
+      "depth_histogram": {
+        "1": 107,
+        "2": 1219,
+        "3": 241,
+        "4": 11
+      },
+      "mean_depth": 2.098859315589354,
+      "ms_per_token": 39.93080303994352,
+      "rounds_hitting_cap": 0,
+      "tokens_per_ms": 0.02504332304561172,
+      "vs_base_pct": 0.0
+    },
+    "base_shipped_h0.18": {
+      "coeffs": [
+        0.18,
+        0.152542,
+        0.132353,
+        0.116883,
+        0.104651,
+        0.094737,
+        0.086538,
+        0.079646
+      ],
+      "depth_cap": 8,
+      "depth_histogram": {
+        "1": 107,
+        "2": 1219,
+        "3": 241,
+        "4": 11
+      },
+      "mean_depth": 2.098859315589354,
+      "ms_per_token": 39.93080303994352,
+      "rounds_hitting_cap": 0,
+      "tokens_per_ms": 0.02504332304561172,
+      "vs_base_pct": 0.0
+    },
+    "coordinate_optimum": {
+      "coeffs": [
+        0.18,
+        0.12,
+        0.22,
+        0.116883,
+        0.104651,
+        0.094737,
+        0.086538,
+        0.079646
+      ],
+      "depth_cap": 8,
+      "depth_histogram": {
+        "1": 31,
+        "2": 1546,
+        "3": 1
+      },
+      "mean_depth": 1.9809885931558935,
+      "ms_per_token": 39.84581217399135,
+      "rounds_hitting_cap": 0,
+      "tokens_per_ms": 0.02509674029565226,
+      "vs_base_pct": 0.2133
+    },
+    "free_deep_rows": {
+      "coeffs": [
+        0.18,
+        0.152542,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "depth_cap": 8,
+      "depth_histogram": {
+        "1": 107,
+        "8": 1471
+      },
+      "mean_depth": 7.525348542458809,
+      "ms_per_token": 79.22767586021632,
+      "rounds_hitting_cap": 0,
+      "tokens_per_ms": 0.012621852012475147,
+      "vs_base_pct": -49.5999
+    }
+  },
+  "belief_shrink_applied": 1.04723,
+  "calibration": {
+    "by_forced_depth": {
+      "1": {
+        "actual_tokens": 1.7354,
+        "bias": -0.1152,
+        "n": 223,
+        "predicted_tokens": 1.6202,
+        "ratio": 0.9336
+      },
+      "2": {
+        "actual_tokens": 2.0921,
+        "bias": -0.1361,
+        "n": 228,
+        "predicted_tokens": 1.956,
+        "ratio": 0.9349
+      },
+      "3": {
+        "actual_tokens": 2.3421,
+        "bias": -0.2149,
+        "n": 228,
+        "predicted_tokens": 2.1272,
+        "ratio": 0.9082
+      },
+      "4": {
+        "actual_tokens": 2.4071,
+        "bias": -0.1237,
+        "n": 226,
+        "predicted_tokens": 2.2834,
+        "ratio": 0.9486
+      },
+      "5": {
+        "actual_tokens": 2.2711,
+        "bias": 0.057,
+        "n": 225,
+        "predicted_tokens": 2.3281,
+        "ratio": 1.0251
+      },
+      "6": {
+        "actual_tokens": 2.567,
+        "bias": -0.2195,
+        "n": 224,
+        "predicted_tokens": 2.3475,
+        "ratio": 0.9145
+      },
+      "7": {
+        "actual_tokens": 2.3661,
+        "bias": 0.0422,
+        "n": 224,
+        "predicted_tokens": 2.4082,
+        "ratio": 1.0178
+      }
+    },
+    "n": 1578,
+    "pooled_actual": 2.2548,
+    "pooled_predicted": 2.153,
+    "pooled_ratio": 0.9549
+  },
+  "measured_T_ms": {
+    "0": 68.6159,
+    "1": 71.6054,
+    "2": 78.9158,
+    "3": 91.885,
+    "4": 132.2566,
+    "5": 144.1029,
+    "6": 156.7879,
+    "7": 170.1335
+  },
+  "modelled_T8_ms": 208.6274,
+  "observed_runtime_depths": {
+    "depth_histogram": {
+      "1": 30,
+      "2": 169,
+      "3": 40
+    },
+    "max_depth_observed": 3,
+    "mean_accepted": 0.9874,
+    "mean_depth": 2.0418,
+    "rounds": 239,
+    "rounds_at_depth_ge_4": 0,
+    "tokens_per_round": 1.9874,
+    "width_cap_histogram": {
+      "5": 222,
+      "8": 17
+    }
+  },
+  "prompts": [
+    "english",
+    "narrative",
+    "technical",
+    "dramatic",
+    "travel",
+    "philosophy",
+    "natural_history",
+    "medicine"
+  ],
+  "replay_validation": {
+    "exact": true,
+    "mismatches": [],
+    "reproduced": 1578,
+    "rounds": 1578
+  },
+  "rounds": 1578,
+  "tail_rounds_dropped_per_prompt": 8,
+  "warmup_rounds_dropped_per_prompt": 8
+}

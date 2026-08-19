@@ -1,0 +1,1158 @@
+{
+  "arm_identity": {
+    "BASE": {
+      "arm": "BASE",
+      "cli_sha256": "c9bfcaf9c58d5b5bd31466f4bab8c90a5d693bf8f0afd2818840deef0fd060b7",
+      "source_blob": "7ce81abe55275f6b25712026ba3d5908396ebe30",
+      "source_sha256": "96e3b4f00b18b49dfde35300a8bfa2319853a0693f0be58c469cf2321ad35033",
+      "worker_sha256": "fbbf7cfcc6ec9aa15dfc3cf1b23bac3d1539d9908752338dc97123555e9424ce"
+    },
+    "PRICE": {
+      "arm": "PRICE",
+      "cli_sha256": "c9bfcaf9c58d5b5bd31466f4bab8c90a5d693bf8f0afd2818840deef0fd060b7",
+      "source_blob": "64673bab9c024d38639c291d71269be8ac0046ef",
+      "source_sha256": "ae4b639074369ee5faca8e110be019b616555eb8b576afc76d62ad7e52f26122",
+      "worker_sha256": "e5eb0e09436e24b06af6d97376591a873809c3a6d4ead7e5ca12b6c7cccd92f6"
+    }
+  },
+  "base_arm": "BASE",
+  "candidate_arm": "PRICE",
+  "cliff_attribution_pooled": {
+    "accepted_draft_delta": -47,
+    "base_cliff_excess_ms_per_round": 51.36510132910974,
+    "base_rounds": 1878,
+    "base_rounds_above_cliff": 184,
+    "base_rounds_above_cliff_share": 0.0979765708200213,
+    "candidate_rounds_above_cliff": 0,
+    "cliff_excess_ms_total": 9451.178644556192,
+    "per_prompt_share": {
+      "dramatic": 3.6124037611970405,
+      "english": 0.6994357796898061,
+      "medicine": 1.1379513805728558,
+      "narrative": 0.9918781189485941,
+      "natural_history": null,
+      "philosophy": 1.0726311785011242,
+      "technical": 1.5084112504675646,
+      "travel": 1.458340611683982
+    },
+    "rejected_draft_delta": -351,
+    "round_count_delta": 50,
+    "share_of_saving_from_cliff_avoidance": 1.4836249098239183,
+    "total_saved_ms": 6370.328903198242
+  },
+  "gates": {
+    "all_pass": true,
+    "failures": []
+  },
+  "headline": {
+    "definition": "median over prompts of (BASE-PRICE)/BASE*100 on decode_seconds/decode_token_count",
+    "max_gain_pct": 7.237734805075953,
+    "mean_gain_pct": 3.2771560608069903,
+    "median_gain_pct": 3.179674776020895,
+    "metric": "e25/mtp_true_decode_gain_pct_median_of_8",
+    "min_gain_pct": -1.3644409758393699,
+    "n_prompts": 8,
+    "per_prompt_gain_pct": {
+      "dramatic": 2.5722485248923923,
+      "english": 7.237734805075953,
+      "medicine": 5.162424709837244,
+      "narrative": 2.6572163953683523,
+      "natural_history": -1.3644409758393699,
+      "philosophy": 3.5927154750795594,
+      "technical": 2.9354514788953767,
+      "travel": 3.4238980731464137
+    },
+    "prompts_improved": 7
+  },
+  "host_drift_control": {
+    "max_abs_serial_delta_pct": 0.34955768401946186,
+    "median_abs_serial_delta_pct": 0.21109483939217227,
+    "note": "both arms run a byte-identical depth-0 serial leg; a large gap means host drift",
+    "serial_delta_pct": {
+      "dramatic": 0.34955768401946186,
+      "english": -0.10892505867231117,
+      "medicine": 0.2203907298833483,
+      "narrative": 0.3304976059312249,
+      "natural_history": -0.20179894890099623,
+      "philosophy": 0.3155608359863114,
+      "technical": 0.11943876185590008,
+      "travel": -0.1574092750438192
+    }
+  },
+  "missing_legs": [],
+  "per_prompt": {
+    "dramatic": {
+      "base": {
+        "counters": {
+          "accepted_draft_rate": 0.47761194029850745,
+          "accepted_draft_total": 288,
+          "declared_rows_total": 827,
+          "effective_max_draft_len": 5,
+          "effective_mean_draft_len": 2.6919642857142856,
+          "first_block_seconds": 0.14636492729187012,
+          "max_block_request_seconds_after_first": 0.21255803108215332,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.08749604225158691,
+          "rejected_draft_total": 315,
+          "round_count": 224,
+          "verify_block_replayed_round_count": 101
+        },
+        "decode_ms_per_token": 47.93881834484637,
+        "decode_seconds": 24.54467499256134,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": 49.580244797872936,
+          "cliff_excess_ms_total": 2280.691260702155,
+          "histogram": {
+            "1": 15,
+            "2": 94,
+            "3": 69,
+            "4": 37,
+            "5": 9
+          },
+          "mean_ms_above_cliff": 131.1447542646657,
+          "mean_ms_below_cliff": 81.56450946679276,
+          "mean_ms_by_depth": {
+            "1": 71.26288414001465,
+            "2": 76.59120762601812,
+            "3": 90.5792160310607,
+            "4": 128.97655770585342,
+            "5": 140.0584512286716
+          },
+          "rounds": 224,
+          "rounds_above_cliff": 46,
+          "rounds_above_cliff_share": 0.20535714285714285
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:39:39Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.5642355389749674,
+        "prefill_seconds_per_token": 0.007799404440447688,
+        "run_dir": ".mlxfast-private/e25/runs/dramatic-BASE",
+        "seed_prefill_seconds": 3.9932950735092163,
+        "serial_decode_ms_per_token": 74.98760335147381,
+        "started": "2026-08-18T21:35:34Z",
+        "thermal_before": "gpu_temp=62.28034973144531C cpu_temp=42.08790588378906C gpu_power=0.012506339699029922W all_power=0.3575020432472229W"
+      },
+      "candidate": {
+        "counters": {
+          "accepted_draft_rate": 0.5092250922509225,
+          "accepted_draft_total": 276,
+          "declared_rows_total": 779,
+          "effective_max_draft_len": 3,
+          "effective_mean_draft_len": 2.2869198312236287,
+          "first_block_seconds": 0.10625708103179932,
+          "max_block_request_seconds_after_first": 0.20506691932678223,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.08205604553222656,
+          "rejected_draft_total": 266,
+          "round_count": 237,
+          "verify_block_replayed_round_count": 95
+        },
+        "decode_ms_per_token": 46.70571279712021,
+        "decode_seconds": 23.91332495212555,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": null,
+          "cliff_excess_ms_total": 0.0,
+          "histogram": {
+            "1": 11,
+            "2": 147,
+            "3": 79
+          },
+          "mean_ms_above_cliff": null,
+          "mean_ms_below_cliff": 84.04773046195758,
+          "mean_ms_by_depth": {
+            "1": 75.47955079512163,
+            "2": 79.64763511605814,
+            "3": 93.42828732502612
+          },
+          "rounds": 237,
+          "rounds_above_cliff": 0,
+          "rounds_above_cliff_share": 0.0
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:35:30Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.5999215930284256,
+        "prefill_seconds_per_token": 0.007799128768965602,
+        "run_dir": ".mlxfast-private/e25/runs/dramatic-PRICE",
+        "seed_prefill_seconds": 3.993153929710388,
+        "serial_decode_ms_per_token": 74.7254784218967,
+        "started": "2026-08-18T21:31:27Z",
+        "thermal_before": "gpu_temp=61.85209655761719C cpu_temp=41.87053298950195C gpu_power=0.015339863486588001W all_power=0.03791838139295578W"
+      },
+      "cliff_attribution": {
+        "accepted_draft_delta": -12,
+        "base_cliff_excess_ms_per_round": 49.580244797872936,
+        "base_rounds_above_cliff": 46,
+        "base_rounds_above_cliff_share": 0.20535714285714285,
+        "candidate_rounds_above_cliff": 0,
+        "cliff_excess_ms_total": 2280.691260702155,
+        "rejected_draft_delta": -49,
+        "round_count_delta": 13,
+        "share_of_saving_from_cliff_avoidance": 3.6124037611970405,
+        "total_saved_ms": 631.350040435791
+      },
+      "gain_pct": 2.5722485248923923,
+      "local_ratio_delta": 0.03568605405345826,
+      "max_draft_len": {
+        "base": 5,
+        "candidate": 3
+      },
+      "mean_draft_len_delta": -0.40504445449065685,
+      "serial_delta_pct": 0.34955768401946186
+    },
+    "english": {
+      "base": {
+        "counters": {
+          "accepted_draft_rate": 0.4592720970537262,
+          "accepted_draft_total": 265,
+          "declared_rows_total": 824,
+          "effective_max_draft_len": 4,
+          "effective_mean_draft_len": 2.3360323886639676,
+          "first_block_seconds": 0.14653193950653076,
+          "max_block_request_seconds_after_first": 0.23789596557617188,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.08165597915649414,
+          "rejected_draft_total": 312,
+          "round_count": 247,
+          "verify_block_replayed_round_count": 107
+        },
+        "decode_ms_per_token": 49.6287050191313,
+        "decode_seconds": 25.409896969795227,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": 55.92752224910333,
+          "cliff_excess_ms_total": 1286.3330117293767,
+          "histogram": {
+            "1": 23,
+            "2": 141,
+            "3": 60,
+            "4": 23
+          },
+          "mean_ms_above_cliff": 137.42241133814272,
+          "mean_ms_below_cliff": 81.49488908903939,
+          "mean_ms_by_depth": {
+            "1": 72.24704389986785,
+            "2": 79.18649193242932,
+            "3": 90.46462972958882,
+            "4": 137.42241133814272
+          },
+          "rounds": 247,
+          "rounds_above_cliff": 23,
+          "rounds_above_cliff_share": 0.0931174089068826
+        },
+        "failures": [],
+        "finished": "2026-08-18T20:16:38Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.5015650422900306,
+        "prefill_seconds_per_token": 0.007800050778314471,
+        "run_dir": ".mlxfast-private/e25/runs/english-BASE",
+        "seed_prefill_seconds": 3.9936259984970093,
+        "serial_decode_ms_per_token": 74.52072855085135,
+        "started": "2026-08-18T20:12:34Z",
+        "thermal_before": "gpu_temp=42.540374755859375C cpu_temp=40.64863586425781C gpu_power=0.008683515712618828W all_power=0.09719386696815491W"
+      },
+      "candidate": {
+        "counters": {
+          "accepted_draft_rate": 0.5076045627376425,
+          "accepted_draft_total": 267,
+          "declared_rows_total": 772,
+          "effective_max_draft_len": 3,
+          "effective_mean_draft_len": 2.138211382113821,
+          "first_block_seconds": 0.1142129898071289,
+          "max_block_request_seconds_after_first": 0.2249521017074585,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07673203945159912,
+          "rejected_draft_total": 259,
+          "round_count": 246,
+          "verify_block_replayed_round_count": 86
+        },
+        "decode_ms_per_token": 46.03671096265316,
+        "decode_seconds": 23.570796012878418,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": null,
+          "cliff_excess_ms_total": 0.0,
+          "histogram": {
+            "1": 23,
+            "2": 166,
+            "3": 57
+          },
+          "mean_ms_above_cliff": null,
+          "mean_ms_below_cliff": 79.5840083098993,
+          "mean_ms_by_depth": {
+            "1": 71.87112517978834,
+            "2": 76.56259565468294,
+            "3": 91.49542607759174
+          },
+          "rounds": 246,
+          "rounds_above_cliff": 0,
+          "rounds_above_cliff_share": 0.0
+        },
+        "failures": [],
+        "finished": "2026-08-18T20:20:41Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.6204871881196827,
+        "prefill_seconds_per_token": 0.007798800710588694,
+        "run_dir": ".mlxfast-private/e25/runs/english-PRICE",
+        "seed_prefill_seconds": 3.992985963821411,
+        "serial_decode_ms_per_token": 74.6019002981484,
+        "started": "2026-08-18T20:16:42Z",
+        "thermal_before": "gpu_temp=60.76091384887695C cpu_temp=45.17156982421875C gpu_power=0.014923990704119205W all_power=0.03258637711405754W"
+      },
+      "cliff_attribution": {
+        "accepted_draft_delta": 2,
+        "base_cliff_excess_ms_per_round": 55.92752224910333,
+        "base_rounds_above_cliff": 23,
+        "base_rounds_above_cliff_share": 0.0931174089068826,
+        "candidate_rounds_above_cliff": 0,
+        "cliff_excess_ms_total": 1286.3330117293767,
+        "rejected_draft_delta": -53,
+        "round_count_delta": -1,
+        "share_of_saving_from_cliff_avoidance": 0.6994357796898061,
+        "total_saved_ms": 1839.100956916809
+      },
+      "gain_pct": 7.237734805075953,
+      "local_ratio_delta": 0.1189221458296521,
+      "max_draft_len": {
+        "base": 4,
+        "candidate": 3
+      },
+      "mean_draft_len_delta": -0.19782100655014645,
+      "serial_delta_pct": -0.10892505867231117
+    },
+    "medicine": {
+      "base": {
+        "counters": {
+          "accepted_draft_rate": 0.4685430463576159,
+          "accepted_draft_total": 283,
+          "declared_rows_total": 833,
+          "effective_max_draft_len": 5,
+          "effective_mean_draft_len": 2.6375545851528384,
+          "first_block_seconds": 0.11526799201965332,
+          "max_block_request_seconds_after_first": 0.1999199390411377,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.08797109127044678,
+          "rejected_draft_total": 321,
+          "round_count": 229,
+          "verify_block_replayed_round_count": 111
+        },
+        "decode_ms_per_token": 47.49225382693112,
+        "decode_seconds": 24.316033959388733,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": 49.257479042842476,
+          "cliff_excess_ms_total": 1428.4668922424319,
+          "histogram": {
+            "1": 6,
+            "2": 108,
+            "3": 86,
+            "4": 21,
+            "5": 8
+          },
+          "mean_ms_above_cliff": 131.74634966357002,
+          "mean_ms_below_cliff": 82.48887062072754,
+          "mean_ms_by_depth": {
+            "1": 71.65720065434773,
+            "2": 77.05692560584457,
+            "3": 90.06608086963033,
+            "4": 128.58975501287551,
+            "5": 140.03241062164307
+          },
+          "rounds": 229,
+          "rounds_above_cliff": 29,
+          "rounds_above_cliff_share": 0.12663755458515283
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:22:07Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.5726911724757018,
+        "prefill_seconds_per_token": 0.0078075898345559835,
+        "run_dir": ".mlxfast-private/e25/runs/medicine-BASE",
+        "seed_prefill_seconds": 3.9974859952926636,
+        "serial_decode_ms_per_token": 74.69064835458994,
+        "started": "2026-08-18T21:18:04Z",
+        "thermal_before": "gpu_temp=62.10710144042969C cpu_temp=45.602928161621094C gpu_power=0.014572523534297943W all_power=0.030330626294016838W"
+      },
+      "candidate": {
+        "counters": {
+          "accepted_draft_rate": 0.5149253731343284,
+          "accepted_draft_total": 276,
+          "declared_rows_total": 772,
+          "effective_max_draft_len": 3,
+          "effective_mean_draft_len": 2.2711864406779663,
+          "first_block_seconds": 0.10773003101348877,
+          "max_block_request_seconds_after_first": 0.18675196170806885,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07686805725097656,
+          "rejected_draft_total": 260,
+          "round_count": 236,
+          "verify_block_replayed_round_count": 94
+        },
+        "decode_ms_per_token": 45.040501980111,
+        "decode_seconds": 23.060737013816833,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": null,
+          "cliff_excess_ms_total": 0.0,
+          "histogram": {
+            "1": 8,
+            "2": 156,
+            "3": 72
+          },
+          "mean_ms_above_cliff": null,
+          "mean_ms_below_cliff": 80.78665854567188,
+          "mean_ms_by_depth": {
+            "1": 71.58075273036957,
+            "2": 77.59064206710228,
+            "3": 88.73423933982849
+          },
+          "rounds": 236,
+          "rounds_above_cliff": 0,
+          "rounds_above_cliff_share": 0.0
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:18:00Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.654644904322689,
+        "prefill_seconds_per_token": 0.007802636828273535,
+        "run_dir": ".mlxfast-private/e25/runs/medicine-PRICE",
+        "seed_prefill_seconds": 3.99495005607605,
+        "serial_decode_ms_per_token": 74.52603708952665,
+        "started": "2026-08-18T21:14:02Z",
+        "thermal_before": "gpu_temp=61.52388000488281C cpu_temp=45.417476654052734C gpu_power=0.06211886927485466W all_power=0.1149945855140686W"
+      },
+      "cliff_attribution": {
+        "accepted_draft_delta": -7,
+        "base_cliff_excess_ms_per_round": 49.257479042842476,
+        "base_rounds_above_cliff": 29,
+        "base_rounds_above_cliff_share": 0.12663755458515283,
+        "candidate_rounds_above_cliff": 0,
+        "cliff_excess_ms_total": 1428.4668922424319,
+        "rejected_draft_delta": -61,
+        "round_count_delta": 7,
+        "share_of_saving_from_cliff_avoidance": 1.1379513805728558,
+        "total_saved_ms": 1255.2969455718994
+      },
+      "gain_pct": 5.162424709837244,
+      "local_ratio_delta": 0.08195373184698718,
+      "max_draft_len": {
+        "base": 5,
+        "candidate": 3
+      },
+      "mean_draft_len_delta": -0.3663681444748721,
+      "serial_delta_pct": 0.2203907298833483
+    },
+    "narrative": {
+      "base": {
+        "counters": {
+          "accepted_draft_rate": 0.496415770609319,
+          "accepted_draft_total": 277,
+          "declared_rows_total": 794,
+          "effective_max_draft_len": 5,
+          "effective_mean_draft_len": 2.364406779661017,
+          "first_block_seconds": 0.0972059965133667,
+          "max_block_request_seconds_after_first": 0.237807035446167,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07685399055480957,
+          "rejected_draft_total": 281,
+          "round_count": 236,
+          "verify_block_replayed_round_count": 93
+        },
+        "decode_ms_per_token": 46.50329682044685,
+        "decode_seconds": 23.809687972068787,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": 48.27203245646544,
+          "cliff_excess_ms_total": 627.5364219340507,
+          "histogram": {
+            "1": 21,
+            "2": 122,
+            "3": 80,
+            "4": 12,
+            "5": 1
+          },
+          "mean_ms_above_cliff": 129.58277188814603,
+          "mean_ms_below_cliff": 81.31073943168059,
+          "mean_ms_by_depth": {
+            "1": 71.83546679360526,
+            "2": 76.70849757116349,
+            "3": 90.81641733646393,
+            "4": 128.65466872851053,
+            "5": 140.72000980377197
+          },
+          "rounds": 236,
+          "rounds_above_cliff": 13,
+          "rounds_above_cliff_share": 0.05508474576271186
+        },
+        "failures": [],
+        "finished": "2026-08-18T20:28:47Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.60661210975275,
+        "prefill_seconds_per_token": 0.007798166014254093,
+        "run_dir": ".mlxfast-private/e25/runs/narrative-BASE",
+        "seed_prefill_seconds": 3.9926609992980957,
+        "serial_decode_ms_per_token": 74.71275981515646,
+        "started": "2026-08-18T20:24:45Z",
+        "thermal_before": "gpu_temp=61.573246002197266C cpu_temp=45.39259338378906C gpu_power=0.011928151361644268W all_power=0.02503032237291336W"
+      },
+      "candidate": {
+        "counters": {
+          "accepted_draft_rate": 0.53515625,
+          "accepted_draft_total": 274,
+          "declared_rows_total": 751,
+          "effective_max_draft_len": 3,
+          "effective_mean_draft_len": 2.1422594142259412,
+          "first_block_seconds": 0.10810506343841553,
+          "max_block_request_seconds_after_first": 0.2536810636520386,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07672703266143799,
+          "rejected_draft_total": 238,
+          "round_count": 239,
+          "verify_block_replayed_round_count": 78
+        },
+        "decode_ms_per_token": 45.267603592947125,
+        "decode_seconds": 23.177013039588928,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": null,
+          "cliff_excess_ms_total": 0.0,
+          "histogram": {
+            "1": 21,
+            "2": 163,
+            "3": 55
+          },
+          "mean_ms_above_cliff": null,
+          "mean_ms_below_cliff": 80.26766427890027,
+          "mean_ms_by_depth": {
+            "1": 73.42506022680374,
+            "2": 78.21846300838915,
+            "3": 88.9533823186701
+          },
+          "rounds": 239,
+          "rounds_above_cliff": 0,
+          "rounds_above_cliff_share": 0.0
+        },
+        "failures": [],
+        "finished": "2026-08-18T20:24:42Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.6450138735474016,
+        "prefill_seconds_per_token": 0.007798507809638977,
+        "run_dir": ".mlxfast-private/e25/runs/narrative-PRICE",
+        "seed_prefill_seconds": 3.9928359985351562,
+        "serial_decode_ms_per_token": 74.46583593264222,
+        "started": "2026-08-18T20:20:45Z",
+        "thermal_before": "gpu_temp=61.31450271606445C cpu_temp=45.29750061035156C gpu_power=0.014174742624163628W all_power=0.027203857898712158W"
+      },
+      "cliff_attribution": {
+        "accepted_draft_delta": -3,
+        "base_cliff_excess_ms_per_round": 48.27203245646544,
+        "base_rounds_above_cliff": 13,
+        "base_rounds_above_cliff_share": 0.05508474576271186,
+        "candidate_rounds_above_cliff": 0,
+        "cliff_excess_ms_total": 627.5364219340507,
+        "rejected_draft_delta": -43,
+        "round_count_delta": 3,
+        "share_of_saving_from_cliff_avoidance": 0.9918781189485941,
+        "total_saved_ms": 632.6749324798584
+      },
+      "gain_pct": 2.6572163953683523,
+      "local_ratio_delta": 0.038401763794651655,
+      "max_draft_len": {
+        "base": 5,
+        "candidate": 3
+      },
+      "mean_draft_len_delta": -0.22214736543507563,
+      "serial_delta_pct": 0.3304976059312249
+    },
+    "natural_history": {
+      "base": {
+        "counters": {
+          "accepted_draft_rate": 0.4397905759162304,
+          "accepted_draft_total": 252,
+          "declared_rows_total": 833,
+          "effective_max_draft_len": 4,
+          "effective_mean_draft_len": 2.203846153846154,
+          "first_block_seconds": 0.10998201370239258,
+          "max_block_request_seconds_after_first": 0.25932204723358154,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07667398452758789,
+          "rejected_draft_total": 321,
+          "round_count": 260,
+          "verify_block_replayed_round_count": 106
+        },
+        "decode_ms_per_token": 49.638005904853344,
+        "decode_seconds": 25.414659023284912,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": 48.9105198718391,
+          "cliff_excess_ms_total": 684.7472782057474,
+          "histogram": {
+            "1": 41,
+            "2": 139,
+            "3": 66,
+            "4": 14
+          },
+          "mean_ms_above_cliff": 128.66870846067155,
+          "mean_ms_below_cliff": 79.75818858883245,
+          "mean_ms_by_depth": {
+            "1": 70.791994653097,
+            "2": 76.63647819766038,
+            "3": 91.90260822122747,
+            "4": 128.66870846067155
+          },
+          "rounds": 260,
+          "rounds_above_cliff": 14,
+          "rounds_above_cliff_share": 0.05384615384615385
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:09:51Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.503805700332147,
+        "prefill_seconds_per_token": 0.00779812503606081,
+        "run_dir": ".mlxfast-private/e25/runs/natural_history-BASE",
+        "seed_prefill_seconds": 3.9926400184631348,
+        "serial_decode_ms_per_token": 74.64591623283923,
+        "started": "2026-08-18T21:05:47Z",
+        "thermal_before": "gpu_temp=47.060489654541016C cpu_temp=41.73854446411133C gpu_power=0.008706764318048954W all_power=0.022647902369499207W"
+      },
+      "candidate": {
+        "counters": {
+          "accepted_draft_rate": 0.4595103578154426,
+          "accepted_draft_total": 244,
+          "declared_rows_total": 799,
+          "effective_max_draft_len": 3,
+          "effective_mean_draft_len": 1.9813432835820894,
+          "first_block_seconds": 0.1141049861907959,
+          "max_block_request_seconds_after_first": 0.24010193347930908,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07856392860412598,
+          "rejected_draft_total": 287,
+          "round_count": 268,
+          "verify_block_replayed_round_count": 94
+        },
+        "decode_ms_per_token": 50.31528719700873,
+        "decode_seconds": 25.76142704486847,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": null,
+          "cliff_excess_ms_total": 0.0,
+          "histogram": {
+            "1": 51,
+            "2": 171,
+            "3": 46
+          },
+          "mean_ms_above_cliff": null,
+          "mean_ms_below_cliff": 81.22114725966952,
+          "mean_ms_by_depth": {
+            "1": 71.8467960170671,
+            "2": 79.79192092404728,
+            "3": 96.92744327628094
+          },
+          "rounds": 268,
+          "rounds_above_cliff": 0,
+          "rounds_above_cliff_share": 0.0
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:13:58Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.4865571692819695,
+        "prefill_seconds_per_token": 0.007799156242981553,
+        "run_dir": ".mlxfast-private/e25/runs/natural_history-PRICE",
+        "seed_prefill_seconds": 3.993167996406555,
+        "serial_decode_ms_per_token": 74.79655090719461,
+        "started": "2026-08-18T21:09:55Z",
+        "thermal_before": "gpu_temp=61.463661193847656C cpu_temp=45.33687973022461C gpu_power=0.01147451251745224W all_power=0.02449650689959526W"
+      },
+      "cliff_attribution": {
+        "accepted_draft_delta": -8,
+        "base_cliff_excess_ms_per_round": 48.9105198718391,
+        "base_rounds_above_cliff": 14,
+        "base_rounds_above_cliff_share": 0.05384615384615385,
+        "candidate_rounds_above_cliff": 0,
+        "cliff_excess_ms_total": 684.7472782057474,
+        "rejected_draft_delta": -34,
+        "round_count_delta": 8,
+        "share_of_saving_from_cliff_avoidance": null,
+        "total_saved_ms": -346.76802158355713
+      },
+      "gain_pct": -1.3644409758393699,
+      "local_ratio_delta": -0.01724853105017754,
+      "max_draft_len": {
+        "base": 4,
+        "candidate": 3
+      },
+      "mean_draft_len_delta": -0.22250287026406457,
+      "serial_delta_pct": -0.20179894890099623
+    },
+    "philosophy": {
+      "base": {
+        "counters": {
+          "accepted_draft_rate": 0.48047538200339557,
+          "accepted_draft_total": 283,
+          "declared_rows_total": 818,
+          "effective_max_draft_len": 5,
+          "effective_mean_draft_len": 2.572052401746725,
+          "first_block_seconds": 0.1507800817489624,
+          "max_block_request_seconds_after_first": 0.2062150239944458,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.08788609504699707,
+          "rejected_draft_total": 306,
+          "round_count": 229,
+          "verify_block_replayed_round_count": 101
+        },
+        "decode_ms_per_token": 46.582589857280254,
+        "decode_seconds": 23.85028600692749,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": 48.37413715539421,
+          "cliff_excess_ms_total": 919.1086059524899,
+          "histogram": {
+            "1": 4,
+            "2": 111,
+            "3": 95,
+            "4": 17,
+            "5": 2
+          },
+          "mean_ms_above_cliff": 131.04874209353798,
+          "mean_ms_below_cliff": 82.67460493814377,
+          "mean_ms_by_depth": {
+            "1": 71.41128182411194,
+            "2": 77.83925318503165,
+            "3": 88.7985769071077,
+            "4": 129.92030732771929,
+            "5": 140.64043760299683
+          },
+          "rounds": 229,
+          "rounds_above_cliff": 19,
+          "rounds_above_cliff_share": 0.08296943231441048
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:04:41Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.6053494739609548,
+        "prefill_seconds_per_token": 0.007809646427631378,
+        "run_dir": ".mlxfast-private/e25/runs/philosophy-BASE",
+        "seed_prefill_seconds": 3.9985389709472656,
+        "serial_decode_ms_per_token": 74.78133612312376,
+        "started": "2026-08-18T21:00:39Z",
+        "thermal_before": "gpu_temp=62.02973556518555C cpu_temp=45.50602340698242C gpu_power=0.014899145811796188W all_power=1.5526567697525024W"
+      },
+      "candidate": {
+        "counters": {
+          "accepted_draft_rate": 0.5139146567717996,
+          "accepted_draft_total": 277,
+          "declared_rows_total": 774,
+          "effective_max_draft_len": 3,
+          "effective_mean_draft_len": 2.293617021276596,
+          "first_block_seconds": 0.10948407649993896,
+          "max_block_request_seconds_after_first": 0.20459198951721191,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07677793502807617,
+          "rejected_draft_total": 262,
+          "round_count": 235,
+          "verify_block_replayed_round_count": 90
+        },
+        "decode_ms_per_token": 44.909009942784905,
+        "decode_seconds": 22.99341309070587,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": null,
+          "cliff_excess_ms_total": 0.0,
+          "histogram": {
+            "1": 4,
+            "2": 158,
+            "3": 73
+          },
+          "mean_ms_above_cliff": null,
+          "mean_ms_below_cliff": 80.85192873122844,
+          "mean_ms_by_depth": {
+            "1": 71.14875316619873,
+            "2": 76.61615368686145,
+            "3": 90.55145146095589
+          },
+          "rounds": 235,
+          "rounds_above_cliff": 0,
+          "rounds_above_cliff_share": 0.0
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:00:35Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.6599198158379438,
+        "prefill_seconds_per_token": 0.007798929698765278,
+        "run_dir": ".mlxfast-private/e25/runs/philosophy-PRICE",
+        "seed_prefill_seconds": 3.9930520057678223,
+        "serial_decode_ms_per_token": 74.5453555136919,
+        "started": "2026-08-18T20:56:36Z",
+        "thermal_before": "gpu_temp=61.34536361694336C cpu_temp=45.294525146484375C gpu_power=0.014442269690334797W all_power=0.02677096612751484W"
+      },
+      "cliff_attribution": {
+        "accepted_draft_delta": -6,
+        "base_cliff_excess_ms_per_round": 48.37413715539421,
+        "base_rounds_above_cliff": 19,
+        "base_rounds_above_cliff_share": 0.08296943231441048,
+        "candidate_rounds_above_cliff": 0,
+        "cliff_excess_ms_total": 919.1086059524899,
+        "rejected_draft_delta": -44,
+        "round_count_delta": 6,
+        "share_of_saving_from_cliff_avoidance": 1.0726311785011242,
+        "total_saved_ms": 856.8729162216187
+      },
+      "gain_pct": 3.5927154750795594,
+      "local_ratio_delta": 0.05457034187698895,
+      "max_draft_len": {
+        "base": 5,
+        "candidate": 3
+      },
+      "mean_draft_len_delta": -0.27843538047012917,
+      "serial_delta_pct": 0.3155608359863114
+    },
+    "technical": {
+      "base": {
+        "counters": {
+          "accepted_draft_rate": 0.5151515151515151,
+          "accepted_draft_total": 289,
+          "declared_rows_total": 784,
+          "effective_max_draft_len": 4,
+          "effective_mean_draft_len": 2.515695067264574,
+          "first_block_seconds": 0.11103808879852295,
+          "max_block_request_seconds_after_first": 0.2624549865722656,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07707607746124268,
+          "rejected_draft_total": 272,
+          "round_count": 223,
+          "verify_block_replayed_round_count": 93
+        },
+        "decode_ms_per_token": 45.3899004496634,
+        "decode_seconds": 23.23962903022766,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": 54.15895292141367,
+          "cliff_excess_ms_total": 1029.0201055068599,
+          "histogram": {
+            "1": 9,
+            "2": 109,
+            "3": 86,
+            "4": 19
+          },
+          "mean_ms_above_cliff": 135.76183193608335,
+          "mean_ms_below_cliff": 81.60287901466968,
+          "mean_ms_by_depth": {
+            "1": 71.05557123819987,
+            "2": 76.50205520314908,
+            "3": 89.17166465936705,
+            "4": 135.76183193608335
+          },
+          "rounds": 223,
+          "rounds_above_cliff": 19,
+          "rounds_above_cliff_share": 0.08520179372197309
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:27:22Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.6463537343454904,
+        "prefill_seconds_per_token": 0.007837939308956265,
+        "run_dir": ".mlxfast-private/e25/runs/technical-BASE",
+        "seed_prefill_seconds": 4.013024926185608,
+        "serial_decode_ms_per_token": 74.7278321068734,
+        "started": "2026-08-18T21:23:22Z",
+        "thermal_before": "gpu_temp=46.482723236083984C cpu_temp=41.60862350463867C gpu_power=0.00796557031571865W all_power=0.020068444311618805W"
+      },
+      "candidate": {
+        "counters": {
+          "accepted_draft_rate": 0.54510556621881,
+          "accepted_draft_total": 284,
+          "declared_rows_total": 750,
+          "effective_max_draft_len": 3,
+          "effective_mean_draft_len": 2.2751091703056767,
+          "first_block_seconds": 0.10451793670654297,
+          "max_block_request_seconds_after_first": 0.23942101001739502,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07676589488983154,
+          "rejected_draft_total": 237,
+          "round_count": 229,
+          "verify_block_replayed_round_count": 83
+        },
+        "decode_ms_per_token": 44.05750194564462,
+        "decode_seconds": 22.557440996170044,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": null,
+          "cliff_excess_ms_total": 0.0,
+          "histogram": {
+            "1": 11,
+            "2": 144,
+            "3": 74
+          },
+          "mean_ms_above_cliff": null,
+          "mean_ms_below_cliff": 81.04421165832787,
+          "mean_ms_by_depth": {
+            "1": 72.47789339585738,
+            "2": 76.72212852372064,
+            "3": 90.72812344576862
+          },
+          "rounds": 229,
+          "rounds_above_cliff": 0,
+          "rounds_above_cliff_share": 0.0
+        },
+        "failures": [],
+        "finished": "2026-08-18T21:31:23Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.69411734241146,
+        "prefill_seconds_per_token": 0.007808898575603962,
+        "run_dir": ".mlxfast-private/e25/runs/technical-PRICE",
+        "seed_prefill_seconds": 3.9981560707092285,
+        "serial_decode_ms_per_token": 74.63857810944319,
+        "started": "2026-08-18T21:27:26Z",
+        "thermal_before": "gpu_temp=61.44344711303711C cpu_temp=45.34553527832031C gpu_power=0.013651207089424133W all_power=0.043427422642707825W"
+      },
+      "cliff_attribution": {
+        "accepted_draft_delta": -5,
+        "base_cliff_excess_ms_per_round": 54.15895292141367,
+        "base_rounds_above_cliff": 19,
+        "base_rounds_above_cliff_share": 0.08520179372197309,
+        "candidate_rounds_above_cliff": 0,
+        "cliff_excess_ms_total": 1029.0201055068599,
+        "rejected_draft_delta": -35,
+        "round_count_delta": 6,
+        "share_of_saving_from_cliff_avoidance": 1.5084112504675646,
+        "total_saved_ms": 682.1880340576172
+      },
+      "gain_pct": 2.9354514788953767,
+      "local_ratio_delta": 0.047763608065969576,
+      "max_draft_len": {
+        "base": 4,
+        "candidate": 3
+      },
+      "mean_draft_len_delta": -0.2405858969588972,
+      "serial_delta_pct": 0.11943876185590008
+    },
+    "travel": {
+      "base": {
+        "counters": {
+          "accepted_draft_rate": 0.4964788732394366,
+          "accepted_draft_total": 282,
+          "declared_rows_total": 798,
+          "effective_max_draft_len": 4,
+          "effective_mean_draft_len": 2.4695652173913043,
+          "first_block_seconds": 0.14693307876586914,
+          "max_block_request_seconds_after_first": 0.29538798332214355,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07737696170806885,
+          "rejected_draft_total": 286,
+          "round_count": 230,
+          "verify_block_replayed_round_count": 98
+        },
+        "decode_ms_per_token": 46.753927832469344,
+        "decode_seconds": 23.938011050224304,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": 56.91786039443244,
+          "cliff_excess_ms_total": 1195.2750682830813,
+          "histogram": {
+            "1": 11,
+            "2": 121,
+            "3": 77,
+            "4": 21
+          },
+          "mean_ms_above_cliff": 138.388230687096,
+          "mean_ms_below_cliff": 81.47037029266357,
+          "mean_ms_by_depth": {
+            "1": 75.9819962761619,
+            "2": 76.97359293945564,
+            "3": 89.32078813577627,
+            "4": 138.388230687096
+          },
+          "rounds": 230,
+          "rounds_above_cliff": 21,
+          "rounds_above_cliff_share": 0.09130434782608696
+        },
+        "failures": [],
+        "finished": "2026-08-18T20:52:29Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.5943999218631224,
+        "prefill_seconds_per_token": 0.007820884697139263,
+        "run_dir": ".mlxfast-private/e25/runs/travel-BASE",
+        "seed_prefill_seconds": 4.004292964935303,
+        "serial_decode_ms_per_token": 74.54445888288319,
+        "started": "2026-08-18T20:48:20Z",
+        "thermal_before": "gpu_temp=52.39500427246094C cpu_temp=49.09775161743164C gpu_power=0.010359404608607292W all_power=0.22710943222045898W"
+      },
+      "candidate": {
+        "counters": {
+          "accepted_draft_rate": 0.5189393939393939,
+          "accepted_draft_total": 274,
+          "declared_rows_total": 766,
+          "effective_max_draft_len": 3,
+          "effective_mean_draft_len": 2.2184873949579833,
+          "first_block_seconds": 0.10602295398712158,
+          "max_block_request_seconds_after_first": 0.22861194610595703,
+          "non_drafting_round_count": 0,
+          "p50_block_request_seconds": 0.07672703266143799,
+          "rejected_draft_total": 254,
+          "round_count": 238,
+          "verify_block_replayed_round_count": 87
+        },
+        "decode_ms_per_token": 45.15312099829316,
+        "decode_seconds": 23.1183979511261,
+        "depth_profile": {
+          "cliff_excess_ms_per_round": null,
+          "cliff_excess_ms_total": 0.0,
+          "histogram": {
+            "1": 14,
+            "2": 158,
+            "3": 66
+          },
+          "mean_ms_above_cliff": null,
+          "mean_ms_below_cliff": 80.35687188140484,
+          "mean_ms_by_depth": {
+            "1": 72.60159083775112,
+            "2": 76.55859521672696,
+            "3": 91.09477563337846
+          },
+          "rounds": 238,
+          "rounds_above_cliff": 0,
+          "rounds_above_cliff_share": 0.0
+        },
+        "failures": [],
+        "finished": "2026-08-18T20:56:32Z",
+        "head": {
+          "bytes": 427746170,
+          "file_count": 2,
+          "origin": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+          "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+          "source": "remote"
+        },
+        "local_ratio": 1.653524653988334,
+        "prefill_seconds_per_token": 0.007799423765391111,
+        "run_dir": ".mlxfast-private/e25/runs/travel-PRICE",
+        "seed_prefill_seconds": 3.993304967880249,
+        "serial_decode_ms_per_token": 74.66179877519608,
+        "started": "2026-08-18T20:52:33Z",
+        "thermal_before": "gpu_temp=61.673240661621094C cpu_temp=45.4195671081543C gpu_power=0.013829866424202919W all_power=0.024996643885970116W"
+      },
+      "cliff_attribution": {
+        "accepted_draft_delta": -8,
+        "base_cliff_excess_ms_per_round": 56.91786039443244,
+        "base_rounds_above_cliff": 21,
+        "base_rounds_above_cliff_share": 0.09130434782608696,
+        "candidate_rounds_above_cliff": 0,
+        "cliff_excess_ms_total": 1195.2750682830813,
+        "rejected_draft_delta": -32,
+        "round_count_delta": 8,
+        "share_of_saving_from_cliff_avoidance": 1.458340611683982,
+        "total_saved_ms": 819.6130990982056
+      },
+      "gain_pct": 3.4238980731464137,
+      "local_ratio_delta": 0.05912473212521152,
+      "max_draft_len": {
+        "base": 4,
+        "candidate": 3
+      },
+      "mean_draft_len_delta": -0.251077822433321,
+      "serial_delta_pct": -0.1574092750438192
+    }
+  },
+  "prompts_measured": [
+    "dramatic",
+    "english",
+    "medicine",
+    "narrative",
+    "natural_history",
+    "philosophy",
+    "technical",
+    "travel"
+  ],
+  "prompts_requested": [
+    "english",
+    "narrative",
+    "technical",
+    "dramatic",
+    "travel",
+    "philosophy",
+    "natural_history",
+    "medicine"
+  ],
+  "reference_points": {
+    "live_ranked_bar": 3.2341518328631,
+    "r1_headline_gain_pct": 3.8346226261260976,
+    "r2_modelled_arm_d_gain_pct": 0.322
+  }
+}

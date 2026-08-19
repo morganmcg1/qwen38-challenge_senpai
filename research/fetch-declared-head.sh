@@ -58,3 +58,29 @@ got_sha="$( (cd "${dest}" \
   exit 1
 }
 echo "fetch-declared-head.sh: declared head verified at ${dest} (${got_bytes} bytes, sha256 ${got_sha})"
+
+# --- local-wrapper run tree --------------------------------------------------
+# The verified tree is ONE file, exactly as the ranked runner stages it, and
+# `Qwen36MTPHeadAttachment.verifyHeadTree` supports that shape directly: with no
+# `model.safetensors.index.json` present it takes the declared-head branch and
+# validates structure from the safetensors header, never reading `config.json`.
+# `benchmark-qwen-mtp.sh` still refuses a head directory without a non-empty
+# `config.json`, so a run tree needs one. Adding it to ${dest} would change the
+# tree digest and destroy the property that makes ${dest} checkable, hence a
+# sibling: `model.safetensors` HARDLINKED (same inode, no second 427 MB) plus
+# the organizer head-family `config.json`, which is inert on this code path.
+run_dest="${dest}-run"
+pinned_config="$(dirname "${dest}")/mtp-head/config.json"
+[[ -s "${pinned_config}" ]] || {
+  echo "fetch-declared-head.sh: ${pinned_config} is missing; run ./setup-qwen-mtp.sh" >&2
+  exit 1
+}
+mkdir -p "${run_dest}"
+rm -f "${run_dest}/model.safetensors"
+ln "${dest}/model.safetensors" "${run_dest}/model.safetensors"
+cp "${pinned_config}" "${run_dest}/config.json"
+[[ ! -e "${run_dest}/model.safetensors.index.json" ]] || {
+  echo "fetch-declared-head.sh: ${run_dest} carries an index.json; that would send the loader down the pinned-tree branch" >&2
+  exit 1
+}
+echo "fetch-declared-head.sh: run tree staged at ${run_dest} (E11_HEAD_DIR / MLXFAST_QWEN_MTP_HEAD_DIR)"
