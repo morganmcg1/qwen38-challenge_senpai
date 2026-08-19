@@ -1,0 +1,139 @@
+diff --git a/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h b/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+index cafb33f..99f7d6b 100644
+--- a/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
++++ b/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+@@ -746,7 +746,7 @@ METAL_FUNC void qmv_quad_impl(
+   }
+ }
+ 
+-template <typename T, int group_size, int bits>
++template <typename T, int group_size, int bits, int E42_PASSES = 0>
+ METAL_FUNC void qmv_fast_impl(
+     const device uint32_t* w,
+     const device T* scales,
+@@ -785,6 +785,22 @@ METAL_FUNC void qmv_fast_impl(
+   biases += out_row * in_vec_size_g + simd_lid / scale_step_per_thread;
+   x += tid.x * in_vec_size + simd_lid * values_per_thread;
+   y += tid.x * out_vec_size + out_row;
++  // E42 (research-only, never submitted): re-run the whole accumulation
++  // region E42_PASSES extra times. Every pass re-initialises the accumulators
++  // and repeats the unchanged K loop in the unchanged order, so the surviving
++  // final pass is bit-identical to the base kernel by construction.
++  const device uint8_t* const e42_ws0 = ws;
++  const device T* const e42_scales0 = scales;
++  const device T* const e42_biases0 = biases;
++  const device T* const e42_x0 = x;
++  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
++  ws = e42_ws0;
++  scales = e42_scales0;
++  biases = e42_biases0;
++  x = e42_x0;
++  for (int row = 0; row < results_per_simdgroup; row++) {
++    result[row] = 0;
++  }
+ 
+   for (int k = 0; k < in_vec_size; k += block_size) {
+     U sum = load_vector<T, U, values_per_thread, bits>(x, x_thread);
+@@ -804,6 +820,7 @@ METAL_FUNC void qmv_fast_impl(
+     biases += block_size / group_size;
+     x += block_size;
+   }
++  }
+ 
+   for (int row = 0; row < results_per_simdgroup; row++) {
+     result[row] = simd_sum(result[row]);
+@@ -856,7 +873,7 @@ inline float2 qdot_affine4_loaded_pair(
+   return scale * accum + sum * bias;
+ }
+ 
+-template <typename T, int M>
++template <typename T, int M, int E42_ROWS_PER_GROUP_ECHO = 2, int E42_PASSES = 0>
+ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
+     const device uint32_t* w,
+     const device T* scales,
+@@ -887,6 +904,11 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
+   const bool has_pair = first_m + 1 < M;
+   thread float2 pair_result[rows_per_simd];
+   thread float single_result[rows_per_simd];
++  // E42 (research-only, never submitted): re-run the whole accumulation
++  // region E42_PASSES extra times. Every pass re-initialises the accumulators
++  // and repeats the unchanged K loop in the unchanged order, so the surviving
++  // final pass is bit-identical to the base kernel by construction.
++  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
+   for (int r = 0; r < rows_per_simd; r++) {
+     pair_result[r] = 0.0f;
+     single_result[r] = 0.0f;
+@@ -935,6 +957,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
+       }
+     }
+   }
++  }
+ 
+   if (has_pair) {
+     for (int r = 0; r < rows_per_simd; r++) {
+@@ -965,7 +988,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
+ // footprint stays near the two-input kernel's. load_vector, the qdot
+ // expression, the K accumulation order and simd_sum are unchanged for every
+ // output element.
+-template <typename T, int NA, bool DIRECT_NIBBLES = false>
++template <typename T, int NA, bool DIRECT_NIBBLES = false, int E42_PASSES = 0>
+ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+     const device uint32_t* w,
+     const device T* scales,
+@@ -987,6 +1010,11 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+   const int in_vec_size_g = in_vec_size / 64;
+ 
+   VF acc[rows_per_simd];
++  // E42 (research-only, never submitted): re-run the whole accumulation
++  // region E42_PASSES extra times. Every pass re-initialises the accumulators
++  // and repeats the unchanged K loop in the unchanged order, so the surviving
++  // final pass is bit-identical to the base kernel by construction.
++  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
+   for (int r = 0; r < rows_per_simd; r++) {
+     acc[r] = VF(0.0f);
+   }
+@@ -1053,6 +1081,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+       acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+     }
+   }
++  }
+ 
+   for (int r = 0; r < rows_per_simd; r++) {
+     for (int m = 0; m < NA; m++) {
+@@ -1153,7 +1182,7 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
+ 
+ // IPG = ceil(M / ceil(M / 5)): the fewest weight streams reachable at NA <= 5,
+ // with the remainder spread evenly so no group runs a one-row tail.
+-template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
++template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false, int E42_PASSES = 0>
+ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
+     const device uint32_t* w,
+     const device T* scales,
+@@ -1174,12 +1203,12 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
+   }
+   const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
+   if (TAIL == 0 || M - first_m >= IPG) {
+-    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES>(
++    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES, E42_PASSES>(
+         w, scales, biases, x, y, in_vec_size, out_vec_size,
+         first_m, out_row, simd_lid);
+   } else {
+     qmv_fast_crossrow_affine4_g64_wide<
+-        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES>(
++        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES, E42_PASSES>(
+         w, scales, biases, x, y, in_vec_size, out_vec_size,
+         first_m, out_row, simd_lid);
+   }
+@@ -2013,6 +2042,12 @@ template <typename T, int group_size, int bits, bool batched>
+       }
+     }
+   }
++  if (ntg.x == 1) {
++    qmv_fast_impl<T, group_size, bits, 1>(
++        w, scales, biases, x, y, in_vec_size, out_vec_size,
++        tid, simd_gid, simd_lid);
++    return;
++  }
+   qmv_fast_impl<T, group_size, bits>(
+       w,
+       scales,
