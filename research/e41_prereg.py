@@ -65,6 +65,7 @@ recoverable by loop structure and is NOT the discriminating step.
 from __future__ import annotations
 
 import argparse
+import textwrap
 
 # --- what E38 measured, on the same host and instrument -----------------------
 CONTROL_BAND = 0.0046  # untreated-width ratio band, E38 measured
@@ -121,25 +122,70 @@ def predicted_regs(na: int, kt: str, r: int = 2) -> tuple[int, int]:
 REGISTERED_CELLS = {
     # cell name -> (na, r, KT, used in a timed arm?)
     "xkt_na3_r2_kt1": (3, 2, "1", True),
-    "xkt_na4_r2_ktall": (4, 2, "all", True),
+    "xkt_na4_r2_kt64": (4, 2, "all", True),
     "xkt_na4_r2_kt4": (4, 2, "4", True),
     "xkt_na4_r2_kt1": (4, 2, "1", True),
     # priced in advance so deliverable (b) is not a surprise: this is the cell
     # the crown arithmetic needs, one weight pass at M=6.
-    "xkt_na6_r2_ktall": (6, 2, "all", False),
+    "xkt_na6_r2_kt64": (6, 2, "all", False),
     "xkt_na6_r2_kt1": (6, 2, "1", False),
-    "xkt_na6_r1_ktall": (6, 1, "all", False),
+    "xkt_na6_r1_kt64": (6, 1, "all", False),
 }
 
 # --- the arm map: which cell each width dispatches in the arm build -----------
 ARM_MAP = {
     3: ("xkt_na3_r2_kt1", "NA=3 max locality + adjacency"),
-    4: ("xkt_na4_r2_ktall", "NA=4 no locality, no adjacency"),
+    4: ("xkt_na4_r2_kt64", "NA=4 no locality, no adjacency"),
     6: ("xrb_na3_r2", "E38 arm(a) replication anchor, NA=3 sequential full-K"),
-    7: ("xkt_na4_r2_kt4", "NA=4 locality, no adjacency  <-- DISCRIMINATOR"),
-    8: ("xkt_na4_r2_kt1", "NA=4 locality + adjacency"),
+    7: ("xkt_na4_r2_kt1", "NA=4+3 locality + adjacency, total-recovery bound"),
+    8: ("xkt_na4_r2_kt4", "NA=4 locality, no adjacency  <-- DISCRIMINATOR"),
 }
 UNTREATED = [1, 2, 5, 9]  # must stay inside CONTROL_BAND; 1 and 2 are the global null
+
+# --- amendments made before any GPU time, from the compile-only census ---------
+# research/e41_ktile_census.py ran before the arm build existed. Two registered
+# choices did not survive it, and both are recorded here rather than silently
+# rewritten. research/e41-ktile-census.json is the evidence.
+CENSUS_AMENDMENTS = [
+    (
+        "KT=all is spelled KT=64, not KT=0",
+        "KT=0 sets k_tile = in_vec_size, and the compiler proves that loop is "
+        "trip count 1 and deletes it: loop_backedges 4 -> 3 at every (NA, r). "
+        "The top rung would then have been a structurally different program from "
+        "the rungs below it, so a KT=all -> KT=4 step would have confounded "
+        "re-read distance with one loop level. KT=64 is 32768 values, wider than "
+        "the widest scored K (17408 in mlp.down), so it still spans K in one tile "
+        "but keeps the loop. With KT in {1, 2, 4, 64} the census measures "
+        "IDENTICAL peak_live_regs, device_loads, vector_float_ops, "
+        "loop_backedges and alloca count at every (NA, r): the rungs differ by "
+        "exactly one immediate constant.",
+    ),
+    (
+        "the discriminator moves from M=7 to M=8, the bound from M=8 to M=7",
+        "M=7 is IPG=4 with TAIL=3, so it dispatches an NA=4 group AND an NA=3 "
+        "group; M=4 and M=8 are pure NA=4. Comparing the discriminating rung at "
+        "M=7 against KT=all at M=4 would have mixed the KT step with an NA "
+        "composition change. Putting KT=4 at M=8 makes the discriminating step "
+        "M=4 -> M=8 pure NA=4 and one immediate constant apart. KT=1 keeps the "
+        "mixed width because both hypotheses predict it recovers, so it is a "
+        "bound, not a test.",
+    ),
+]
+
+# Measured by the census before the arm build. Registered band vs measurement,
+# scored honestly: two of the seven registered cells fell outside their band.
+CENSUS_MEASURED_REGS = {
+    "xkt_na3_r2_kt1": 77,
+    "xkt_na4_r2_kt64": 97,
+    "xkt_na4_r2_kt4": 97,
+    "xkt_na4_r2_kt1": 97,
+    "xkt_na6_r2_kt64": 135,
+    "xkt_na6_r2_kt1": 135,
+    "xkt_na6_r1_kt64": 105,
+}
+# The incumbent cells the refactor must not have touched, and did not.
+CENSUS_NON_PERTURBATION = {"xship_na2": 62, "xship_na3": 83,
+                           "xship_na4": 104, "xship_na5": 125}
 
 # --- registered timing predictions -------------------------------------------
 # Ratios are arm/base at the same M, so anything not in ARM_MAP is a control.
@@ -230,7 +276,7 @@ def main() -> None:
     print("E41 PRE-REGISTRATION\n")
     print("Question: is R2 (+10.54 % at M=6) the activation re-read (MEM) or the")
     print("          halved register tile and extra loop (ILP)?\n")
-    print("Discriminating step: KT=all -> KT=4 at NA=4, which changes ONLY the")
+    print("Discriminating step: KT=64 -> KT=4 at NA=4, which changes ONLY the")
     print("re-read distance. KT=1 is the total-recovery bound, not the test.\n")
 
     print("registered register predictions (AIR peak_live_regs, wall = 128)")
@@ -242,6 +288,24 @@ def main() -> None:
     print("  hard gate: a timed arm must be <= 128 with no accumulator alloca.")
     print("  a cell that spills is not a discriminator and will not be timed.\n")
 
+    print("registered band vs compile-only census, scored before any GPU time")
+    for name, measured in CENSUS_MEASURED_REGS.items():
+        na, r, kt, timed = REGISTERED_CELLS[name]
+        lo, hi = predicted_regs(na, kt, r)
+        hit = "in band" if lo <= measured <= hi else f"MISS by {min(abs(measured-lo), abs(measured-hi))}"
+        fits = "fits" if measured <= REG_WALL else "OVER WALL"
+        print(f"  {name:22s} predicted {lo}-{hi}  measured {measured:>3}  {hit:12s} {fits}")
+    print("  non-perturbation gate: " + ", ".join(
+        f"{k}={v}" for k, v in CENSUS_NON_PERTURBATION.items()) +
+        " -- unchanged from E32/E36, so the base build is still the base\n")
+
+    print("amendments made before any GPU time (census-driven)")
+    for i, (what, why) in enumerate(CENSUS_AMENDMENTS, 1):
+        print(f"  {i}. {what}")
+        for line in textwrap.wrap(why, 74):
+            print(f"     {line}")
+    print()
+
     print("arm map (one build; ratio = arm/base at the same M)")
     for m, (cell, why) in sorted(ARM_MAP.items()):
         print(f"  M={m}: {cell:18s} {why}")
@@ -251,10 +315,10 @@ def main() -> None:
     print(f"  M=6 anchor        rho in [{PRED_M6_ANCHOR[0]:.4f}, {PRED_M6_ANCHOR[1]:.4f}]"
           "   (E38 replication; a miss invalidates the session, not the arms)")
     print(f"  M=4 KT=all        rho in [{PRED_KTALL_NA4[0]:.2f}, {PRED_KTALL_NA4[1]:.2f}]")
-    print(f"  MEM  predicts     M=7 KT=4 recovers >= {LOCALITY_STEP_MEM:.0%} of the tax")
-    print(f"  ILP  predicts     M=7 KT=4 recovers <= {LOCALITY_STEP_ILP:.0%}, or a step"
+    print(f"  MEM  predicts     M=8 KT=4 recovers >= {LOCALITY_STEP_MEM:.0%} of the tax")
+    print(f"  ILP  predicts     M=8 KT=4 recovers <= {LOCALITY_STEP_ILP:.0%}, or a step"
           f" inside +-{CONTROL_BAND*100:.2f} %")
-    print("  both predict M=8 KT=1 recovers; that is why KT=1 cannot be the test\n")
+    print("  both predict M=7 KT=1 recovers; that is why KT=1 cannot be the test\n")
 
     print("stop rules")
     print("  - any timed cell over 128 regs or with an accumulator alloca: do not time it")

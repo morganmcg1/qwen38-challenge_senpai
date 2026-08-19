@@ -956,42 +956,37 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
   }
 }
 
-// Wider row sharing for the affine4/g64 multi-row QMV. Same contract as
-// qmv_fast_crossrow_affine4_g64: the frozen host launches M x-groups for each
-// 8-output tile, so a group that claims NA adjacent input rows lets the
-// remaining host groups return without reading weights. NA up to 4 shares one
-// nibble mask and one integer-to-float conversion across NA inputs while
-// holding only four x values per input live at a time, so the register
-// footprint stays near the two-input kernel's. load_vector, the qdot
-// expression, the K accumulation order and simd_sum are unchanged for every
-// output element.
-template <typename T, int NA, bool DIRECT_NIBBLES = false>
-METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+// The k-range core of the wide crossrow QMV, factored out of
+// qmv_fast_crossrow_affine4_g64_wide so a caller can visit a half-open range of
+// k blocks for one row block at a time. `out_row` is that row block's first
+// output row and `acc` is the caller's accumulator tile for it.
+//
+// Everything inside is byte-for-byte the incumbent body: load_vector, the qdot
+// expression, the per-k-block order and the scale/bias fold are untouched. A
+// caller can only choose WHICH k blocks and WHICH rows a call covers, never the
+// order in which one output element's terms are summed.
+template <typename T, int NA, bool DIRECT_NIBBLES, int ROWS_PER_SIMD>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_krange(
     const device uint32_t* w,
     const device T* scales,
     const device T* biases,
     const device T* x,
-    device T* y,
     const int in_vec_size,
-    const int out_vec_size,
     int first_m,
     int out_row,
-    uint simd_lid) {
-  static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");
+    uint simd_lid,
+    int k_begin,
+    int k_end,
+    thread vec<float, NA> acc[ROWS_PER_SIMD]) {
   typedef vec<float, NA> VF;
-  constexpr int rows_per_simd = 4;
+  constexpr int rows_per_simd = ROWS_PER_SIMD;
   constexpr int values_per_thread = 16;
   constexpr int block_size = values_per_thread * SIMD_SIZE;
   constexpr int bytes_per_lane = 8;
   const int in_vec_size_w = in_vec_size / 2;
   const int in_vec_size_g = in_vec_size / 64;
 
-  VF acc[rows_per_simd];
-  for (int r = 0; r < rows_per_simd; r++) {
-    acc[r] = VF(0.0f);
-  }
-
-  for (int k = 0; k < in_vec_size; k += block_size) {
+  for (int k = k_begin; k < k_end; k += block_size) {
     thread uint16_t packed[rows_per_simd][4];
     thread float scale_local[rows_per_simd];
     thread float bias_local[rows_per_simd];
@@ -1053,15 +1048,132 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
       acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
     }
   }
+}
 
-  for (int r = 0; r < rows_per_simd; r++) {
-    for (int m = 0; m < NA; m++) {
-      const float reduced = simd_sum(acc[r][m]);
-      if (simd_lid == 0) {
-        y[(first_m + m) * out_vec_size + out_row + r] =
-            static_cast<T>(reduced);
+// Wider row sharing for the affine4/g64 multi-row QMV. Same contract as
+// qmv_fast_crossrow_affine4_g64: the frozen host launches M x-groups for each
+// 8-output tile, so a group that claims NA adjacent input rows lets the
+// remaining host groups return without reading weights. NA up to 4 shares one
+// nibble mask and one integer-to-float conversion across NA inputs while
+// holding only four x values per input live at a time, so the register
+// footprint stays near the two-input kernel's. load_vector, the qdot
+// expression, the K accumulation order and simd_sum are unchanged for every
+// output element.
+//
+// ROWS_PER_SIMD is how many of a simdgroup's four owed rows one accumulator
+// tile covers, BLOCKS is how many such tiles this call holds live, and
+// K_TILE_BLOCKS is how many k blocks one tile of K spans, 0 meaning all of it.
+// The incumbent is <4, 1, 0>, where both added loops have trip count 1.
+//
+// Cutting ROWS_PER_SIMD is what lets NA exceed 5 without spilling, and it costs
+// one extra pass over the activation tile per row block. K_TILE_BLOCKS decides
+// how far apart in k those passes are: at 0 the next row block re-reads the tile
+// a whole K later, at n it re-reads what the previous block touched n k blocks
+// ago. Only the distance moves -- the loads, the trip counts, the accumulator
+// count and each row's k order are identical across K_TILE_BLOCKS.
+template <
+    typename T,
+    int NA,
+    bool DIRECT_NIBBLES = false,
+    int ROWS_PER_SIMD = 4,
+    int BLOCKS = 1,
+    int K_TILE_BLOCKS = 0>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  static_assert(NA >= 2 && NA <= 9, "wide multi-row QMV supports NA in [2, 9]");
+  static_assert(
+      ROWS_PER_SIMD >= 1 && ROWS_PER_SIMD <= 4 && 4 % ROWS_PER_SIMD == 0,
+      "an accumulator tile must tile the frozen 4 rows per simdgroup exactly");
+  static_assert(
+      BLOCKS >= 1 && BLOCKS * ROWS_PER_SIMD <= 4,
+      "a call holds at most the 4 rows a simdgroup owes");
+  static_assert(
+      K_TILE_BLOCKS >= 0, "K_TILE_BLOCKS counts k blocks, 0 meaning all of K");
+  typedef vec<float, NA> VF;
+  constexpr int rows_per_simd = ROWS_PER_SIMD;
+  constexpr int values_per_thread = 16;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  const int k_tile =
+      K_TILE_BLOCKS > 0 ? K_TILE_BLOCKS * block_size : in_vec_size;
+
+  VF acc[BLOCKS][rows_per_simd];
+  for (int b = 0; b < BLOCKS; b++) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[b][r] = VF(0.0f);
+    }
+  }
+
+  for (int kt = 0; kt < in_vec_size; kt += k_tile) {
+    const int k_end = kt + k_tile < in_vec_size ? kt + k_tile : in_vec_size;
+    for (int b = 0; b < BLOCKS; b++) {
+      qmv_fast_crossrow_affine4_g64_krange<T, NA, DIRECT_NIBBLES, ROWS_PER_SIMD>(
+          w, scales, biases, x, in_vec_size, first_m,
+          out_row + b * rows_per_simd, simd_lid, kt, k_end, acc[b]);
+    }
+  }
+
+  for (int b = 0; b < BLOCKS; b++) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < NA; m++) {
+        const float reduced = simd_sum(acc[b][r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + m) * out_vec_size + out_row + b * rows_per_simd + r] =
+              static_cast<T>(reduced);
+        }
       }
     }
+  }
+}
+
+// Coverage-preserving row blocking. The host grid is frozen at 8 output rows per
+// threadgroup over 2 simdgroups (backend/metal/quantized.cpp: bn = 8,
+// group_dims(32, 2, 1), grid.y = (N + 7) / 8), so a simdgroup owes exactly 4
+// rows and 2 x 4 x 2176 = 17408 = N for the MLP. This wrapper covers them as
+// 4 / (ROWS_PER_SIMD * BLOCKS_PER_CALL) calls, so the same rows are written
+// whatever the tile shape:
+//
+//   <R=4, BPC=1>  the incumbent: one call, one tile, one pass over K.
+//   <R=2, BPC=1>  two calls, each a separate pass over K a whole K apart.
+//   <R=2, BPC=2>  one call holding both tiles, k-tiled by K_TILE_BLOCKS.
+//
+// Each call reads only its own rows' weights, so no weight byte is read twice;
+// only the x-side load and conversion repeat.
+template <
+    typename T,
+    int NA,
+    bool DIRECT_NIBBLES,
+    int ROWS_PER_SIMD,
+    int BLOCKS_PER_CALL = 4 / ROWS_PER_SIMD,
+    int K_TILE_BLOCKS = 0>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_rowblocked(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  constexpr int rows_per_call = ROWS_PER_SIMD * BLOCKS_PER_CALL;
+  static_assert(
+      rows_per_call >= 1 && rows_per_call <= 4 && 4 % rows_per_call == 0,
+      "the calls must tile a simdgroup's 4 owed rows exactly");
+  for (int c = 0; c < 4 / rows_per_call; c++) {
+    qmv_fast_crossrow_affine4_g64_wide<
+        T, NA, DIRECT_NIBBLES, ROWS_PER_SIMD, BLOCKS_PER_CALL, K_TILE_BLOCKS>(
+        w, scales, biases, x, y, in_vec_size, out_vec_size, first_m,
+        out_row + c * rows_per_call, simd_lid);
   }
 }
 
@@ -1153,7 +1265,14 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
 
 // IPG = ceil(M / ceil(M / 5)): the fewest weight streams reachable at NA <= 5,
 // with the remainder spread evenly so no group runs a one-row tail.
-template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
+template <
+    typename T,
+    int M,
+    int IPG,
+    bool DIRECT_NIBBLES = false,
+    int ROWS_PER_SIMD = 4,
+    int BLOCKS_PER_CALL = 4 / ROWS_PER_SIMD,
+    int K_TILE_BLOCKS = 0>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
     const device uint32_t* w,
     const device T* scales,
@@ -1174,12 +1293,14 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
   }
   const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
   if (TAIL == 0 || M - first_m >= IPG) {
-    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES>(
+    qmv_fast_crossrow_affine4_g64_rowblocked<
+        T, IPG, DIRECT_NIBBLES, ROWS_PER_SIMD, BLOCKS_PER_CALL, K_TILE_BLOCKS>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         first_m, out_row, simd_lid);
   } else {
-    qmv_fast_crossrow_affine4_g64_wide<
-        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES>(
+    qmv_fast_crossrow_affine4_g64_rowblocked<
+        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES, ROWS_PER_SIMD,
+        BLOCKS_PER_CALL, K_TILE_BLOCKS>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         first_m, out_row, simd_lid);
   }
