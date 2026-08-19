@@ -73,5 +73,8 @@ compare "P4 shipped vs e27_full" BIT-IDENTICAL \
 compare "POSITIVE CONTROL <T,5,5> vs lane 3<->4" "DIVERGES at M=5 only" \
   "${d}/iso_m5_ipg5.json" "${d}/iso_m5_ipg5_lane_perturb.json"
 
+"${py}" research/e54_routing.py --parity-dir "${d}" \
+  --out "${out}/parity-routing.md"
+
 date -u "+e54_parity: === %Y-%m-%dT%H:%M:%SZ parity complete ==="
 echo "e54_parity: within-pair verdicts written to ${verdicts}"

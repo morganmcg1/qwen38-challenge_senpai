@@ -1,0 +1,57 @@
+### P1 <T,5,3> vs <T,5,5>  (expected: BIT-IDENTICAL)
+reference arm: iso_m5_ipg3 (192 cells, bits=[3, 4])
+
+=== iso_m5_ipg5 vs iso_m5_ipg3 ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 0 differing
+cells differing: 0
+cells differing by (bits, M): []
+verdict: BIT-IDENTICAL
+
+### P2 <T,7,4> vs <T,7,5>  (expected: BIT-IDENTICAL)
+reference arm: iso_m7_ipg4 (192 cells, bits=[3, 4])
+
+=== iso_m7_ipg5 vs iso_m7_ipg4 ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 0 differing
+cells differing: 0
+cells differing by (bits, M): []
+verdict: BIT-IDENTICAL
+
+### P3 <T,8,4> vs <T,8,5>  (expected: BIT-IDENTICAL)
+reference arm: iso_m8_ipg4 (192 cells, bits=[3, 4])
+
+=== iso_m8_ipg5 vs iso_m8_ipg4 ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 0 differing
+cells differing: 0
+cells differing by (bits, M): []
+verdict: BIT-IDENTICAL
+
+### P4 shipped vs e27_full  (expected: BIT-IDENTICAL)
+reference arm: shipped (192 cells, bits=[3, 4])
+
+=== e27_full vs shipped ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 0 differing
+cells differing: 0
+cells differing by (bits, M): []
+verdict: BIT-IDENTICAL
+
+### POSITIVE CONTROL <T,5,5> vs lane 3<->4  (expected: DIVERGES at M=5 only)
+reference arm: iso_m5_ipg5 (192 cells, bits=[3, 4])
+
+=== iso_m5_ipg5_lane_perturb vs iso_m5_ipg5 ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 8 differing
+cells differing: 8
+cells differing by (bits, M): [(4, 5)]
+verdict: DIVERGES
+ bits    M    NA set  shapes differing
+    4    5     {3,2}                 8
+
