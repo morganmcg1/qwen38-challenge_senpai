@@ -759,7 +759,7 @@ METAL_FUNC void qmv_quad_impl(
   }
 }
 
-template <typename T, int group_size, int bits, int E42_PASSES = 0>
+template <typename T, int group_size, int bits>
 METAL_FUNC void qmv_fast_impl(
     const device uint32_t* w,
     const device T* scales,
@@ -798,22 +798,6 @@ METAL_FUNC void qmv_fast_impl(
   biases += out_row * in_vec_size_g + simd_lid / scale_step_per_thread;
   x += tid.x * in_vec_size + simd_lid * values_per_thread;
   y += tid.x * out_vec_size + out_row;
-  // E42 (research-only, never submitted): re-run the whole accumulation
-  // region E42_PASSES extra times. Every pass re-initialises the accumulators
-  // and repeats the unchanged K loop in the unchanged order, so the surviving
-  // final pass is bit-identical to the base kernel by construction.
-  const device uint8_t* const e42_ws0 = ws;
-  const device T* const e42_scales0 = scales;
-  const device T* const e42_biases0 = biases;
-  const device T* const e42_x0 = x;
-  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
-  ws = e42_ws0;
-  scales = e42_scales0;
-  biases = e42_biases0;
-  x = e42_x0;
-  for (int row = 0; row < results_per_simdgroup; row++) {
-    result[row] = 0;
-  }
 
   for (int k = 0; k < in_vec_size; k += block_size) {
     U sum = load_vector<T, U, values_per_thread, bits>(x, x_thread);
@@ -832,7 +816,6 @@ METAL_FUNC void qmv_fast_impl(
     scales += block_size / group_size;
     biases += block_size / group_size;
     x += block_size;
-  }
   }
 
   for (int row = 0; row < results_per_simdgroup; row++) {
@@ -886,7 +869,7 @@ inline float2 qdot_affine4_loaded_pair(
   return scale * accum + sum * bias;
 }
 
-template <typename T, int M, int E42_ROWS_PER_GROUP_ECHO = 2, int E42_PASSES = 0>
+template <typename T, int M>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64(
     const device uint32_t* w,
     const device T* scales,
@@ -917,11 +900,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
   const bool has_pair = first_m + 1 < M;
   thread float2 pair_result[rows_per_simd];
   thread float single_result[rows_per_simd];
-  // E42 (research-only, never submitted): re-run the whole accumulation
-  // region E42_PASSES extra times. Every pass re-initialises the accumulators
-  // and repeats the unchanged K loop in the unchanged order, so the surviving
-  // final pass is bit-identical to the base kernel by construction.
-  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
   for (int r = 0; r < rows_per_simd; r++) {
     pair_result[r] = 0.0f;
     single_result[r] = 0.0f;
@@ -970,7 +948,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
       }
     }
   }
-  }
 
   if (has_pair) {
     for (int r = 0; r < rows_per_simd; r++) {
@@ -1001,7 +978,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
 // footprint stays near the two-input kernel's. load_vector, the qdot
 // expression, the K accumulation order and simd_sum are unchanged for every
 // output element.
-template <typename T, int NA, bool DIRECT_NIBBLES = false, int E42_PASSES = 0>
+template <typename T, int NA, bool DIRECT_NIBBLES = false>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
     const device uint32_t* w,
     const device T* scales,
@@ -1023,11 +1000,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
   const int in_vec_size_g = in_vec_size / 64;
 
   VF acc[rows_per_simd];
-  // E42 (research-only, never submitted): re-run the whole accumulation
-  // region E42_PASSES extra times. Every pass re-initialises the accumulators
-  // and repeats the unchanged K loop in the unchanged order, so the surviving
-  // final pass is bit-identical to the base kernel by construction.
-  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
   for (int r = 0; r < rows_per_simd; r++) {
     acc[r] = VF(0.0f);
   }
@@ -1093,7 +1065,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
     for (int r = 0; r < rows_per_simd; r++) {
       acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
     }
-  }
   }
 
   for (int r = 0; r < rows_per_simd; r++) {
@@ -1195,7 +1166,7 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
 
 // IPG = ceil(M / ceil(M / 4)): the fewest weight streams reachable at NA <= 4,
 // with the remainder spread evenly so no group runs a one-row tail.
-template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false, int E42_PASSES = 0>
+template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
     const device uint32_t* w,
     const device T* scales,
@@ -1216,12 +1187,12 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
   }
   const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
   if (TAIL == 0 || M - first_m >= IPG) {
-    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES, E42_PASSES>(
+    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         first_m, out_row, simd_lid);
   } else {
     qmv_fast_crossrow_affine4_g64_wide<
-        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES, E42_PASSES>(
+        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         first_m, out_row, simd_lid);
   }
@@ -1963,55 +1934,45 @@ template <typename T, int group_size, int bits, bool batched>
       // promoted pair kernel is kept there byte-for-byte.
       switch (ntg.x) {
         case 2:
-          qmv_fast_crossrow_affine4_g64<T, 2, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 3:
-          qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true, 2>(
+          qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 4:
-          qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true, 2>(
+          qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 5:
-          qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true, 2>(
+          qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 2>(
+          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true, 2>(
+          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          // 3+3+2, not 4+4. M = 8 is the only hot width whose EVEN split needs
-          // two simultaneous vec<float,4> accumulators in every active worker;
-          // M = 9 uses three-lane vectors and profiles CHEAPER despite more work
-          // (319 / 437 / 216 us for M = 7 / 8 / 9 in the public cross-row study)
-          // — a register cliff, not work scaling.
-          // Exact: these lanes carry INDEPENDENT input rows and are never reduced
-          // across (simd_sum reduces along K WITHIN a row), so moving a row from
-          // lane 3 of a four-wide vector to lane 0 of a two-wide one cannot
-          // reorder its scalar chain. Template admits it: M in [3,9], 8 % 3 == 2
-          // (no one-row tail), IPG 3 inside the wide helper's [2,4].
-          // Receipts: 85d5bca3 2.91143, yzxoi 2.92675.
-          // SYNERGY with the streak gate above, which is why they ship together:
-          // gate 2 reaches the width-8 verify SOONER, so this kernel fires MORE.
-          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true, 2>(
+          // 4+4: two weight streams, receipted on this benchmark (scored
+          // 3.195804751396457 as a promoted submission) before a later
+          // stale-base REPLACE overlay reverted it; restored here.
+          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true, 2>(
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -2021,42 +1982,42 @@ template <typename T, int group_size, int bits, bool batched>
     } else {
       switch (ntg.x) {
         case 2:
-          qmv_fast_crossrow_affine4_g64<T, 2, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 3:
-          qmv_fast_crossrow_affine4_g64<T, 3, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 3>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 4:
-          qmv_fast_crossrow_affine4_g64<T, 4, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 4>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 5:
-          qmv_fast_crossrow_affine4_g64<T, 5, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 5>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64<T, 6, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 6>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64<T, 7, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 7>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          qmv_fast_crossrow_affine4_g64<T, 8, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 8>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64<T, 9, 2, 2>(
+          qmv_fast_crossrow_affine4_g64<T, 9>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -2064,12 +2025,6 @@ template <typename T, int group_size, int bits, bool batched>
           break;
       }
     }
-  }
-  if (ntg.x == 1) {
-    qmv_fast_impl<T, group_size, bits, 0>(
-        w, scales, biases, x, y, in_vec_size, out_vec_size,
-        tid, simd_gid, simd_lid);
-    return;
   }
   qmv_fast_impl<T, group_size, bits>(
       w,
