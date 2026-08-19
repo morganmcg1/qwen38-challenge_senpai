@@ -130,7 +130,19 @@ local E2E leg.
 
 Columns: entry, what was actually run, instrument, n, MDE, the effect that
 would matter, verdict. Pre/post-E27 and head are called out where they change
-the verdict. E27 anchor: `f0bb949`, 2026-08-18 18:47:01 +0000.
+the verdict.
+
+**E27 anchor.** The assignment defines E27 by the fact that it *"changed the
+M=5 cell by −20.1 %."* That is `21d98b7`, **2026-08-18 19:35:40 +0000**
+("E27 results: NA=5 collapses the M=5 weight-stream cliff, 1.4520 → 1.1607";
+the ratio change is −20.06 %). E27 opened earlier — `f0bb949` at 18:47:01 is
+its static AIR probe and `0207de6` at 19:10:57 is work item 3 — but neither
+carries the M=5 finding, so **19:35:40 is the boundary that matters for
+transfer**. Using an opening commit as the anchor would move the cut 48 minutes
+earlier and misclassify anything run in that window. E29's timed arms ran
+18:48–19:30, i.e. squarely inside it: they are **PRE-E27**, independently
+confirmed by `git merge-base --is-ancestor` against E29's base `d7619a7f`,
+which does not contain E27's results.
 
 | # | entry | what was run | instrument | n | MDE | effect that matters | verdict |
 |---|---|---|---|---|---|---|---|
@@ -178,24 +190,74 @@ the verdict. E27 anchor: `f0bb949`, 2026-08-18 18:47:01 +0000.
   titles** (`:641-644`). CLOSED for "a depth *constant* re-prices 0 of 6 wins";
   **structural depth work remains open.**
 
+### "Was this measured under ranked memory geometry?" — asked for as a column
+
+The advisor asked for this as a ninth column. The table is already eight wide,
+so I answer it in grouped form instead; the content is the same.
+
+**For every timed entry on the list, the answer is no.** Every local timing
+artifact this campaign owns — E27's M-table, E33's per-width ladder and
+per-shape attribution, edward's `S = 23.911 ms`, E29, E25, my own E30 — was
+produced at **128 mebi-elements / 64 ops with residency off**, against the
+ranked box's **512 / 50 with residency on**.
+
+| entry class | measured under ranked geometry? | does that invalidate it? |
+|---|---|---|
+| 1, 2a, 3, 9, 12, 15, 17 (static / algebraic) | n/a — nothing was timed | **No.** Analytic results do not depend on dispatch batching. |
+| 2b, 7, 8, 10, 18, 19 (local timed, paired ratio) | **No** | **Not automatically.** A *paired ratio* within one fixed geometry is still a valid contrast; both arms saw the same batching. |
+| any absolute-millisecond claim | **No** | **Yes, for transfer.** No local absolute figure describes the ranked box. |
+| 11 (command-buffer geometry) | **No, and fatally** | **Yes.** Here the geometry *is* the independent variable, so measuring it at the wrong setting is disqualifying, not merely non-transferable. |
+| 13, 14, 16, 20, 22 (competitor ranked rows) | **Yes** — they ran on the ranked box | Geometry is not the issue; **n = 1** is. |
+
+The honest summary is narrower than "everything is invalid": the paired-ratio
+structure of most campaign work protects it. The systematic question mark falls
+on (a) every absolute millisecond figure, and (b) any mechanism that plausibly
+interacts with dispatch batching. That second set is not hypothetical — E33's
+own finding is that **narrow-output, few-threadgroup, short-kernel shapes lose**
+under row blocking, and short kernels are exactly the ones most sensitive to
+command-buffer packing. E33's per-shape attribution therefore deserves a replay
+under the Correction-1 recipe before it is relied on further; I did not have
+the GPU budget to do that here and it is not on the re-test list because it is
+a re-measurement of a *positive*, not a negative.
+
 ### The entry I am adding — #23, the shipped-surface gate
 
 The assignment states the shipped surface is *"frozen at E27, 4 files,
-+117/−87, and I re-verify it on every submission."* The true shipped diff is
-**5 files**:
++117/−87, and I re-verify it on every submission."* Against the true campaign
+baseline `5273067` the shipped diff is **5 files, +229/−74**:
+
+```
+$ git diff --stat 5273067 HEAD -- Sources/ Vendor/
+ Sources/MLXFastModel/Qwen36MTPBlockSession.swift   | 204 ++++++-----
+ Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift |  32 ++++
+ .../Libraries/MLXLLM/Models/Qwen35.swift           |  51 ++++--
+ .../Source/Cmlx/mlx-generated/quantized.cpp        |   8 +-
+ .../Cmlx/mlx/mlx/backend/metal/kernels/quantized.h |   8 +-
+ 5 files changed, 229 insertions(+), 74 deletions(-)
+```
 
 | file | diff |
 |---|---|
-| `Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift` | **+32 / −0** ← never counted |
-| `Sources/MLXFastModel/Qwen35.swift` | +32 / −19 |
-| `Vendor/…/quantized.h` | +4 / −4 |
-| `Vendor/…/quantized.cpp` | +4 / −4 |
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | **+157 / −47** |
+| `Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift` | **+32 / −0** ← never counted by the gate |
+| `…/MLXLLM/Models/Qwen35.swift` | +32 / −19 |
+| `…/mlx-generated/quantized.cpp` | +4 / −4 |
+| `…/metal/kernels/quantized.h` | +4 / −4 |
 
 A gate that reports a stable count while missing a file is a **config echo**,
 not a measurement — the same failure mode as an under-powered null, and it is
-verifying the wrong thing on every submission. I could not re-run the gate
-locally to cross-check: **`5068eb8d…` is not a valid git object in this
-checkout**, which is itself worth investigating.
+verifying the wrong thing on every submission.
+
+🔴 **Correction to my own first pass.** I originally reported this entry as
+"5 files" while listing only four, having omitted the largest one
+(`Qwen36MTPBlockSession.swift`, +157/−47), and I gave no total. I had also
+reached for `5068eb8d`, which is **not a valid git object in this checkout**,
+and reported that as a blocker instead of using the baseline `5273067` that was
+supplied in the assignment feedback. The advisor's figures were right and mine
+were incomplete; the verdict is unchanged but the arithmetic above is the
+authoritative version. This is the same error class the audit is about — a
+check that ran and was believed without anyone asking what it compared — so it
+belongs in the record rather than in a silent edit.
 
 ---
 
@@ -435,6 +497,25 @@ All three pass the worker allowlist (`QwenRuntimeWorker.swift:2623-2655`:
 **This is what makes entry 11 re-testable locally at all** — it is the only way
 to put this box in the ranked op-bound regime.
 
+⚠️ **OOM hazard — read before running this on a 48 GiB box.** Setting
+`DARKBLOOM_STARTUP_MEMORY_PROFILE=full` does more than unblock the caps: it
+takes the whole low-memory branch out of play, which on this host removes two
+protections that exist precisely because the box is small —
+
+- the **6 GiB allocator cache cap** (`RuntimeStartupMemoryPolicy.swift:107`,
+  `cacheLimitBytes: 6 << 30`) is replaced by the full profile's **32 GiB**
+  (`:138`, `cacheLimitBytes: 32 << 30`) — which is *two thirds of this box's
+  entire RAM*; and
+- **`clearAllocatorCacheAfterWarmup`** flips from `true` (`:114`) to `false`
+  (`:147`), so the warmup arena is never released.
+
+On a 48 GiB machine holding ~14 GiB of transformed weights plus head and KV,
+that is a real risk of a mid-run OOM, and an OOM part-way through an ABBA
+session destroys the counterbalancing rather than just costing one leg. Anyone
+running this should raise the caps **without** removing the cache protections
+where possible, watch RSS on the first pair, and treat the first run as a
+throwaway smoke test. The recipe is correct; it is not free.
+
 🔴 **Correction 2 — the MTP worker does not call `policy.apply()`.**
 `QwenRuntimeMTPWorker.swift:481-489` **inlines** it:
 `guard policy.isLowMemory else { return }` then `setenv(..., 1)` forcing 128/64.
@@ -464,7 +545,7 @@ actually be decisive**, not the most thorough.
 | # | entry | plausible effect | cheapest decisive instrument | cost | why it is decisive |
 |---|---|---|---|---|---|
 | **1** | **4 — qmm for M ≥ 4** | **up to +61 % on the projection path** | paired microbenchmark of the **right** mechanism: row-batching into `qmm`, n ≥ 5 | ~0 GPU-min, no E2E leg | The closing test measured padding across `vector_limit`. Nobody has ever benchmarked the actual mechanism. Largest unmeasured ceiling on the list, at the lowest cost. |
-| **2** | **11 — command-buffer caps** | +0.27 – 0.6 % (Laguna cmdbuf-alone receipt +0.6 %) | local ABBA at `OPS=4000`, `MB=8192` **under the Correction-1 recipe**, 2 pairs | 4 legs | Correction 1 puts this box in the ranked op-bound regime, so the mechanism claim transfers. Sweeps the `[1, floor]` direction E31 declared unswept. |
+| **2** | **11 — command-buffer caps** | +0.27 – 0.6 % (Laguna cmdbuf-alone receipt +0.6 %) | local ABBA at `OPS=4000`, `MB=8192` **under the Correction-1 recipe**, 2 pairs ⚠️ **OOM hazard, see §3.7** | 4 legs + 1 throwaway smoke run | Correction 1 puts this box in the ranked op-bound regime, so the mechanism claim transfers. Sweeps the `[1, floor]` direction E31 declared unswept. |
 | **3** | **18 — KV-1024 warm** | unquantified; source says *"not proven dead"* | paired local E2E, n = 5 (MDE → 0.527 %) | 10 legs | The χ² fit never had a power statement; n = 5 brings the MDE under the mechanism's own plausible size. |
 | **4** | **8 — argPartition top-32** | ~0.2 – 0.5 % | paired local E2E, n = 5 | 10 legs | Currently one leg with **no repeat at all**; any replication is a strict improvement. |
 | **5** | **2b — rows_per_simd ≠ 4 (E2E)** | ~0.2 – 0.4 % | paired local E2E, n = 5 | 10 legs | Structural half (2a) stays closed; only the E2E half needs power. |
@@ -499,7 +580,7 @@ are **eight**, in descending order of how much damage the citation is doing.
 | **5** | **7 — E25 arm D** | Well powered locally (+3.18 ± 0.77 %, 4.1σ) and still wrong: **construct validity**. Fixture depth 2.06–2.74 vs scored 4.53–5.78. More replicates would never have caught this — it is the counter-example to *"just add legs."* | *"Measured a depth regime the scored path does not visit."* |
 | **6** | **10 — host round overhead** | MDE **4.86 %** (exact) against a 0.185 % bar — the worst instrument on the list — and its noise floor is the **contaminated D0/N1 pair** (differs by `trace` flag *and* a refactor). | *"Uninformative. Needs a genuine same-config repeat first."* |
 | **7** | **8 — argPartition top-32** | One timed leg, **no repeat of any kind**. The σ is borrowed. | *"Single observation; no null was established."* |
-| **8** | **23 — shipped surface "4 files, +117/−87"** | Misses `RuntimeStartupMemoryPolicy.swift` (**+32/−0**). A gate reporting a stable count while missing a file is a **config echo**. | *"5 files. Recount against `promotedSourceRef`."* |
+| **8** | **23 — shipped surface "4 files, +117/−87"** | Wrong baseline. Against `5273067` it is **5 files, +229/−74**, and the gate never counted `RuntimeStartupMemoryPolicy.swift` (**+32/−0**). A gate reporting a stable count while missing a file is a **config echo**. | *"5 files, +229/−74 against `5273067`. Recount on every submission."* |
 
 ### Two corrections rather than strikes
 
@@ -569,8 +650,10 @@ python3 research/e39_mde.py --n-required --sd 0.2974 --target 0.185 --design pai
 ### Deviations and limits
 
 - **No GPU runs**, per the constraint. Every re-test proposal is in §4.
-- `5068eb8d…` is **not a valid git object in this checkout**, so I could not
-  re-run the advisor's shipped-surface gate diff to cross-check entry 23.
+- Entry 23 was **corrected after first submission**. My initial pass used the
+  wrong reference (`5068eb8d`, not a valid git object here) and omitted the
+  largest shipped file. The figures now in §2 are recomputed against `5273067`
+  and agree with the advisor's.
 - PR #36's comment thread was not readable from this role, so E31's advisor
   stop-instruction is known only through its citation at
   `e31-mlx-command-buffer-geometry.md:164-166`.
