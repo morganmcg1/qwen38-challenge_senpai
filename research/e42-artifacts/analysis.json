@@ -849,27 +849,27 @@
   "linearity": {
     "m1": {
       "psi_eff_by_level": {
-        "1": 0.0415391216104408
+        "L1": 0.0415391216104408
       },
       "ratio_l2_over_l1": null
     },
     "m6": {
       "psi_eff_by_level": {
-        "2": 0.18240377824821186
+        "L2": 0.18240377824821186
       },
       "ratio_l2_over_l1": null
     },
     "p2": {
       "psi_eff_by_level": {
-        "1": 0.6728653937143869,
-        "2": 0.6736463257623782
+        "L1": 0.6728653937143869,
+        "L2": 0.6736463257623782
       },
       "ratio_l2_over_l1": 1.001160606646272
     },
     "p6": {
       "psi_eff_by_level": {
-        "1": 0.6145491237923574,
-        "2": 0.6133469034719006
+        "L1": 0.6145491237923574,
+        "L2": 0.6133469034719006
       },
       "ratio_l2_over_l1": 0.9980437360108205
     }
@@ -878,6 +878,318 @@
   "parity": {
     "all_bit_identical": true,
     "arms": {
+      "m1L1": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "B",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
+      },
+      "m6L2": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "B",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
+      },
       "p2L1": {
         "by_bits": {
           "3": {
@@ -1345,18 +1657,175 @@
           "4": 64
         },
         "verdict": "BIT-IDENTICAL"
+      },
+      "p6L2": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "B",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
       }
     },
-    "cells_compared_total": 576,
+    "cells_compared_total": 1152,
     "cells_differing_total": 0,
     "coverage": {
       "bits_3_note": "bits=3 cells are pure controls for p2/p6/m6 (their guard requires bits==4) but are treated by m1 at width 1, because m1's insert sits downstream of the bit-width gate.",
       "cross_group_reference_check": {
-        "cross_group_cells_compared": 0,
+        "cross_group_cells_compared": 192,
         "cross_group_differing_cells": 0,
-        "cross_group_ref_digests_identical": null,
+        "cross_group_ref_digests_identical": true,
         "groups_with_ref": [
-          "A"
+          "A",
+          "B"
         ]
       },
       "grid": {
@@ -1500,12 +1969,13 @@
       }
     },
     "groups": [
-      "A"
+      "A",
+      "B"
     ]
   },
   "phi_local": {
-    "1": 0.9133314471708688,
-    "2": 0.9104880113133021
+    "L1": 0.9133314471708688,
+    "L2": 0.9104880113133021
   },
   "power": {
     "mde": {

@@ -665,7 +665,10 @@ def main() -> int:
         if 1 in vals and 2 in vals and vals[1]:
             ratio = vals[2] / vals[1]
             line += f"   ratio L2/L1 = {ratio:.4f}"
-        linearity[fam] = {"psi_eff_by_level": vals, "ratio_l2_over_l1": ratio}
+        linearity[fam] = {
+            "psi_eff_by_level": {f"L{lv}": v for lv, v in sorted(vals.items())},
+            "ratio_l2_over_l1": ratio,
+        }
         print(f"{fam:>7} {line}")
 
     print("\n=== psi from the ladder slope (no absolute cost prediction) ===")
@@ -710,8 +713,8 @@ def main() -> int:
         print("\n=== phi_local = psi_eff(p6) / psi_eff(p2), per level ===")
         phi_local = {}
         for lv in sorted(set(p2) & set(p6)):
-            phi_local[lv] = p6[lv]["psi_eff"] / p2[lv]["psi_eff"]
-            print(f"     L{lv} phi_local = {phi_local[lv]:.4f}")
+            phi_local[f"L{lv}"] = p6[lv]["psi_eff"] / p2[lv]["psi_eff"]
+            print(f"     L{lv} phi_local = {phi_local[f'L{lv}']:.4f}")
 
     # Session drift envelope from the base bracket. Every psi_eff is a ratio to
     # `base`, so a bracket wider than the smallest effect would void the session.

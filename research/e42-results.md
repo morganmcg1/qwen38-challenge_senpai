@@ -2,6 +2,8 @@
 
 Assignment: PR #47, `qwen38-r1-e42-psi-phi-by-injected-regression`, revision `r1`.
 Pre-registration: `research/e42-prereg.md` (commit `dc379d5`, before any arm ran).
+W&B: [`bitem8ak`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/bitem8ak)
+(4 tables, 90 summary keys).
 
 **Nothing in E42 ships.** The final commit reverts every kernel edit and proves
 `git diff 04ad6bf11437c269df85a47e91faa769c74fe6da HEAD -- Sources Vendor benchmark.json`
@@ -46,16 +48,16 @@ tokens are unchanged by construction.
 | m1 sign-flip control | **done**, raw_p flipped up |
 | m6 single-width arm (priority B) | **done** |
 | bit-exactness, end to end on the scored path | **done**, every arm |
-| bit-exactness, 192-cell parity rig | pending |
+| bit-exactness, 192-cell parity rig | **done**, 6/6 arms BIT-IDENTICAL |
 | denominator measured per width, `--shapes-only` | **done**, no ranked-geometry replay |
 | ψ and φ reported separately, with intervals | **done** |
 | requirement #4: marginal vs occupancy | **done**, `asyncEval` ladder |
 | MDE for every null, unmodified `research/e39_mde.py` | **done** |
 | fixture pinned, `effectiveDraftLengths` element-wise equal | **done** |
-| revert proof: empty diff against base | pending, final commit |
+| revert proof: empty diff against base | **done** at `c8e41e9` |
 
-Status is as of this revision of the document; the sections below state exactly
-which arms are measured.
+Every deliverable is measured. The sections below state exactly which arm each
+number comes from.
 
 ## 2. Provenance
 
@@ -83,6 +85,44 @@ advisor reverted it on the newer base, so any comparison across those two trees
 is not like-for-like. The retired-family hunks guarded on
 `physicalMemory >= 96 GiB` were **inactive in every measurement here**, because
 this box is 48 GiB.
+
+### 2.1 Which table these numbers were measured on
+
+The advisor asked me to choose between staying on `04ad6bf1` and rebasing onto
+the tip, and declined to choose for me. **I chose to stay on `04ad6bf1`.**
+
+Reason: all seven arms, the base curve, the ladder slopes, the cross-arm
+intercept check, and the 1152 parity comparisons are one internally consistent
+session on one tree. A rebase would invalidate the base arm and every ratio
+taken against it, and would cost seven arm re-runs plus two parity groups —
+roughly five hours of exclusive GPU time — to reproduce numbers whose scientific
+content is a *decomposition*, not a candidate. Nothing here ships, so the value
+of these numbers is the structure they expose, and that structure is strictly
+richer on this tree: `04ad6bf1` has exactly one stream boundary in the
+dispatched range, so a single ladder separates "crosses a boundary" from "does
+not" on both sides. On the tip the one boundary I could measure at M=6 is
+structurally empty.
+
+Accordingly, every per-width number in this document carries this label:
+
+> measured on the E27 table `04ad6bf1`, boundary 5→6
+
+What transfers to the tip and what does not:
+
+| quantity | transfers? | why |
+|---|---|---|
+| ψ = QMV share of the MTP leg | **yes, approximately** | a share of leg time; the QMV family and its call counts are identical on both trees |
+| ψ falls with width | **yes** | driven by non-QMV growth (6.273×) outpacing QMV growth (2.240×), neither of which is an IPG property |
+| φ_local(M≥6), φ_local(M=6) | **yes, as shares** | width shares of *this fixture's* histogram; independent of the IPG table |
+| Q(M) absolute ms/round | **no** | register ceiling differs at every width (129 here vs 108 shipped) |
+| ΔQ(M) increments | **no** | the boundary is at 5→6 here and at 4→5 and 8→9 on the tip |
+| "the quadratic is refuted" | **yes** | a sign-change argument on measured second differences; it needs *a* boundary, not this boundary |
+| decode-time share of M∈{5,9} | **no** | width 5 is single-stream here and two-stream on the tip |
+| the 5.70 %/3.74 % threshold straddles | **no** | they are built from this tree's C(M) |
+
+The one thing I would most like and do not have is the tip-side ladder. Together
+the two rows would form a 2×2 in which the bend moves with a template argument,
+which no smooth function of M can do. I did not measure it and do not claim it.
 
 ## 3. Scope and the injection
 
@@ -372,9 +412,11 @@ so the conclusion does not depend on the choice.
 width **ceiling**: its 0.8875 accept rate saturates drafting at depth 8, giving
 mean M 7.27 against beagle's 5.53. This is *local* φ. Ranked ρ(M) is edward's.
 
-Per-width shares from the isolated `--shapes-only` curve:
+Per-width shares from the isolated `--shapes-only` curve. These are **ψ·φ(M)**,
+width M's QMV share of the *whole leg* — not ψ at width M. Measured on the E27
+table `04ad6bf1`, boundary 5→6.
 
-| width | ψ(M) from curve | ψ_eff measured end-to-end | agreement |
+| width | ψ·φ(M) from curve | ψ_eff measured end-to-end | agreement |
 |---|---|---|---|
 | M=5 | 0.0294 | — | — |
 | **M=6** | **0.1814** | **0.1824** (m6L2) | **0.55 %** |
@@ -384,6 +426,16 @@ The curve and the end-to-end injection are independent instruments — one times
 isolated kernel dispatches with a raised op-per-buffer fence, the other times a
 512-token decode leg — and they agree on the width-6 share to **0.55 %**. That
 is the strongest internal validation in this experiment.
+
+🔴 **A labelling error worth recording, because it inverted a direction.** An
+earlier draft called this column "per-width ψ" and concluded that ψ *rises* with
+width. The numbers are right; the label and the conclusion were not. ψ·φ(M)
+rises with width because the round count and per-round cost at M rise. ψ within
+a round does the opposite — see §8.1: non-QMV grows 6.273× from M=1 to mean
+M 7.27 while QMV grows 2.240×, so ψ **falls** as width rises, from 0.8525 at
+M=1 to 0.6736 at mean 7.27. Both of those are measured, from different arms
+(m1 and p2), not modelled. The consequence is favourable and is why §12 states
+ψ = 0.672 as a *lower* bound for beagle, whose mean M is 5.53.
 
 ### 6.1 The mechanism of the M=6 step
 
@@ -461,6 +513,45 @@ rounds here, so that share is non-zero whatever the stream count is. It is the
 **ladder increments above**, not the injection arm, that locate the boundary.
 Those are separate instruments answering separate questions and conflating them
 would make a share look like structural evidence.
+
+#### The arms alone reproduce the boundary ratio, with no curve and no model
+
+The strongest form of the boundary result does not use the isolated curve at all.
+p2 treats widths 2..9 and p6 treats widths 6..9, and both are measured against
+the same base leg, so the **difference of their ψ_eff is exactly the widths that
+separate the two gates** — dispatched widths {2, 4, 5}, which on this tree are
+precisely the single-stream widths (M=3 is never dispatched).
+
+| quantity | value | source |
+|---|---|---|
+| ψ_eff(p2), widths 2..9 | 0.6736 | leg timing |
+| ψ_eff(p6), widths 6..9 (two-stream) | 0.6133 | leg timing |
+| difference = widths {2,4,5} (single-stream) | **0.0603** | subtraction only |
+| two-stream rounds | **67 / 78** | fixture histogram |
+| single-stream rounds | **11 / 78** | fixture histogram |
+
+Per-round cost ratio of a two-stream width to a single-stream width:
+
+```
+(0.6133 / 67) / (0.0603 / 11) = 1.670×
+```
+
+The isolated curve, which shares no timing code with the legs, gives the same
+ratio as a round-count-weighted mean of Q(M):
+
+```
+two-stream   (23·128.316 + 4·138.173 + 6·149.087 + 34·163.958) / 67 = 148.852 ms
+single-stream           (1·66.771 + 5·82.205 + 5·95.514) / 11      =  86.851 ms
+ratio = 1.714×
+```
+
+**Agreement 2.6 %.** This is the third independent instrument to land on the
+boundary — ladder increments, the m6 injection arm, and now a pure subtraction of
+two leg measurements — and the only one that needs neither a fitted model nor the
+`--shapes-only` harness. It also fixes the weight of the headline ψ: the
+cost-weighted two-stream share is 9973.054 / 10928.420 = **0.9126**, so
+**ψ = 0.672 is a two-stream ψ carrying about 91 % of the weight**, and any
+single-stream-heavy prompt sits outside it.
 
 ### 6.2 Priority B: the step is real, and a quadratic is refuted
 
@@ -615,6 +706,36 @@ parsed explicitly. Any differing cell is a hard stop, not a tolerance.
 `research/e42-parity.sh` wraps the runner with a group-private output directory
 and exits 1 if any arm reports `DIVERGES`.
 
+Both layers are complete. All six treated arms are bit-identical to the
+reference arm on all 192 cells:
+
+| arm | group | cells compared | differing | bits=4 | bits=3 | verdict |
+|---|---|---|---|---|---|---|
+| p2L1 | A | 192 | **0** | 96 / 0 | 96 / 0 | BIT-IDENTICAL |
+| p2L2 | A | 192 | **0** | 96 / 0 | 96 / 0 | BIT-IDENTICAL |
+| p6L1 | A | 192 | **0** | 96 / 0 | 96 / 0 | BIT-IDENTICAL |
+| p6L2 | B | 192 | **0** | 96 / 0 | 96 / 0 | BIT-IDENTICAL |
+| m6L2 | B | 192 | **0** | 96 / 0 | 96 / 0 | BIT-IDENTICAL |
+| m1L1 | B | 192 | **0** | 96 / 0 | 96 / 0 | BIT-IDENTICAL |
+
+1152 cell comparisons, zero differing. Group A ran as one supervised job in
+844 s and group B in 930 s, each exiting 0.
+
+**Cross-group reference determinism: IDENTICAL, 192 cells compared, 0
+differing.** Group A and group B built the test binary independently from the
+same base twins, so this is evidence that the rig is reproducible across builds
+rather than only self-consistent inside one build. Without it, six
+`BIT-IDENTICAL` verdicts would be consistent with a rig that silently compares
+each arm against itself.
+
+The result is what the construction predicts and is therefore weak evidence
+about the *design* and strong evidence about the *implementation*: a rolled loop
+that recomputes an identical accumulation cannot change the result, so the value
+of this rig is that it would have caught an implementation slip — a
+reassociated accumulator, a hoisted load, an off-by-one in the pass bound —
+which is exactly the failure mode that would have invalidated every ψ number
+here.
+
 ### 9.1 What the coverage number actually covers
 
 The suite reports `covering_cells_by_bits`, which counts cells whose
@@ -671,10 +792,25 @@ python3 research/e42_perturb.py --self-test          # 191 checks
 python3 research/e42_perturb.py --arm p2 --level 2   # or p6 / m6 / m1
 python3 research/twin_audit.py quantized
 bash research/e42-run.sh p2L2 --curve --legs 2
-python3 research/e42_analyze.py --arms base p2L1 p2L2 p6L1 p6L2 m6L2 m1L1 --wandb
-python3 research/e42_width_census.py
 python3 research/e42_perturb.py --revert
+
+# bit-exactness, one supervised job per group (each takes the run lock)
+bash research/e42-parity-prebuild.sh
+bash research/e42-parity.sh A p2L1=bf64ead p2L2=afc8916 p6L1=6b8ae93
+bash research/e42-parity.sh B p6L2=78cd88d m6L2=04f28ac m1L1=d984b45
+python3 research/e42_covering_cells.py
+
+python3 research/e42_width_census.py
+python3 research/e42_leg_decomposition.py
+python3 research/e42_analyze.py \
+  --arms base p2L1 p2L2 p6L1 p6L2 m6L2 m1L1 --parity-groups A B --wandb
 ```
+
+Every arm's reference is `04ad6bf11437c269df85a47e91faa769c74fe6da`; the arm
+commits are `p2L1=bf64ead p2L2=afc8916 p6L1=6b8ae93 p6L2=78cd88d m6L2=04f28ac
+m1L1=d984b45`. The parity runner deliberately leaves one arm's twins in the
+worktree while it runs and restores base twins on exit, so do not run it
+concurrently with anything that inspects the tree.
 
 `--local-iterate` never rebuilds Swift, so `research/e42-run.sh` rebuilds both
 SwiftPM roots explicitly and asserts product freshness before timing. The curve
@@ -683,15 +819,21 @@ cost is isolated from ranked geometry.
 
 ## 12. What this does and does not license
 
-**Does**: ψ ≈ 0.672 for the QMV family on this fixture and host, with a
-0.12 %-linear instrument and two agreeing estimators; the M=6 weight-pass step
-is real and a smooth-in-M cost model is refuted; per-width ψ(M) is available as
-a cost table.
+**Does**: ψ ≈ 0.672 for the QMV family on this fixture and host, interval
+[0.659, 0.674] with a conservative floor of **0.604** that must be quoted
+alongside it wherever ψ is load-bearing; a 0.12 %-linear instrument; three
+agreeing estimators for the M=6 boundary and a smooth-in-M cost model refuted
+arithmetically; per-width ψ·φ(M) available as a cost table; and — because
+non-QMV cost grows 2.800× steeper in width than QMV cost — the statement that
+**0.672 is a lower bound for a narrower-mean prompt such as beagle** (mean M
+5.53 against 7.27 here). That is a two-point monotonicity argument, not an
+extrapolation, and it holds only in direction.
 
 **Does not**: any score claim. This is one public fixture at a width ceiling on
-an M4 Pro, ungated, with the ranked runner being an M5. ψ is a *ceiling on the
+an M4 Pro, ungated, with the ranked runner being an M5, and it is a **two-stream
+ψ at ~91 % cost weight** on the E27 table `04ad6bf1`. ψ is a *ceiling on the
 prize* from QMV work, not a prediction that any particular kernel change earns
-it.
+it, and no per-width absolute time here transfers to the shipped table.
 
 ## 13. Suggested follow-ups (not implemented)
 
@@ -709,3 +851,11 @@ it.
 4. **Use the injection as a general sensitivity probe.** Any family with an
    editable kernel can be measured this way; the MDE trap is not specific to
    QMV.
+5. **Run the same `--shapes-only` ladder on the tip.** This is the cheapest
+   remaining experiment and the only one that would turn §6.1 from a one-sided
+   observation into a 2×2. The tip's boundaries are 4→5 and 8→9, so the
+   mechanism predicts large increments *there* and an ordinary increment at 5→6,
+   which is the exact reverse of my row. No smooth function of M can produce
+   that reversal, and no timed leg is needed — the ladder alone settles it.
+   `senpai/verify-kernel-table.sh` should be run first so the row is labelled
+   with the table it was measured on.
