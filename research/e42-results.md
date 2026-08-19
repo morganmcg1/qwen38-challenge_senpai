@@ -155,11 +155,17 @@ accept rate 0.8875, mean draft 6.2692, 78 rounds, and
 histogram identical everywhere: `M2:1 M4:5 M5:5 M6:23 M7:4 M8:6 M9:34`. M=3 is
 never dispatched on this fixture.
 
-| arm | commit | MTP s | serial s | raw_p | x̄ (kernel) | ψ_eff | α | serial Δ |
-|---|---|---|---|---|---|---|---|---|
-| base | `8ec793f` | 16.266 | 37.662 | 2.3154 | — | — | — | — |
-| p2L1 | `bf64ead` | 26.149 | 37.621 | 1.4387 | +0.9030 | **0.6729** | 1.0015 | −0.111 % |
-| p2L2 | `afc8916` | 36.188 | 37.583 | 1.0386 | +1.8180 | **0.6736** | 1.0027 | −0.210 % |
+| arm | commit | treated | MTP s | serial s | raw_p | x̄ (kernel) | MTP leg Δ | ψ_eff | α |
+|---|---|---|---|---|---|---|---|---|---|
+| base | `8ec793f` | — | 16.266 | 37.662 | 2.3154 | — | — | — | — |
+| p2L1 | `bf64ead` | 2..9 | 26.149 | 37.621 | 1.4387 | +0.9030 | +60.757 % | **0.6729** | 1.0015 |
+| p2L2 | `afc8916` | 2..9 | 36.188 | 37.583 | 1.0386 | +1.8180 | +122.470 % | **0.6736** | 1.0027 |
+| p6L1 | `6b8ae93` | 6..9 | 25.393 | 37.583 | 1.4801 | +0.9129 | +56.105 % | **0.6145** | 1.0023 |
+| m6L2 | `04f28ac` | 6 only | 21.684 | 37.603 | 1.7341 | +1.8261 | +33.308 % | **0.1824** | 1.0053 |
+
+Serial-leg drift across arms: −0.111 %, −0.210 %, −0.210 %, −0.159 % — all well
+inside the 0.4315 % MDE, as required, since the serial leg is entirely width 1
+and therefore untreated in every arm above.
 
 `α` is the additivity check: predicted-over-observed leg time under the
 assumption that the injection adds cost without changing anything else. α ≈ 1 to
@@ -196,9 +202,10 @@ geometry is replayed. Three defensible denominators give:
 
 | arm | as measured | drift corrected | stable shapes only | interval |
 |---|---|---|---|---|
-| p2L1 | 0.6729 | — | — | [0.6040, 0.6729] |
-| p2L2 | 0.6736 | — | — | [0.6592, 0.6739] |
-| p6L1 | 0.6145 | — | — | [0.5541, 0.6145] |
+| p2L1 | 0.6729 | 0.6040 | 0.6691 | [0.6040, 0.6729] |
+| p2L2 | 0.6736 | 0.6592 | 0.6739 | [0.6592, 0.6739] |
+| p6L1 | 0.6145 | 0.5541 | 0.6125 | [0.5541, 0.6145] |
+| m6L2 | 0.1824 | 0.1722 | 0.1942 | [0.1722, 0.1942] |
 
 **Preferred ψ ≈ 0.672**, interval **[0.659, 0.674]** from the tightest arm.
 
@@ -217,23 +224,38 @@ Pooling over M≥6 hides the question. Ranked telemetry brackets φ(M≥6) to
 0.2351–0.9380 on beagle, but **φ(M=6) alone only to 0.0000–0.9701** — it cannot
 be bounded away from zero from ranked data at all.
 
-| quantity | value | ranked bracket | verdict |
+**The m6 arm answers this.** It injects into width 6 *alone* — a distinct kernel
+instantiation, `x̄ = +1.8261` with **spread 0.0000** because a single width has no
+spread — and produces a signed end-to-end leg effect of **+33.308 %** with the
+trajectory unchanged.
+
+| quantity | measured | ranked bracket | verdict |
 |---|---|---|---|
-| φ_local(M≥6) | **0.9133** (p6L1) | 0.2351–0.9380 | inside, near the top |
-| φ_local(M=6) | see §6.2 | 0.0000–0.9701 | **bounded away from zero** |
+| φ_local(M≥6) | **0.9132** (p6L1) | 0.2351–0.9380 | inside, near the top |
+| **φ_local(M=6)** | **0.2708**, interval [0.2557, 0.2883] | 0.0000–0.9701 | **bounded away from zero** |
+| φ_local(M∈{7,8,9}) | **0.6424** by subtraction | — | — |
 
-φ_local sits near the top of the ranked bracket because this fixture is a width
-**ceiling**: its 0.8875 accept rate saturates drafting at depth 8, giving mean
-M 7.27 against beagle's 5.53. This is *local* φ. Ranked ρ(M) is edward's.
+φ_local(M=6) = ψ_eff(m6L2) / ψ_eff(p2L2) = 0.1824 / 0.6736. The ranked corpus
+cannot bound φ(M=6) away from zero at all; a single injected width pins it to
+±6 % of its own value. Cross-level use of L1 and L2 arms is licensed by the
+0.12 % linearity result in §5.
 
-Per-width shares from the curve, corroborated by α ≈ 1 and the 0.27 % slope
-agreement:
+φ_local sits near the top of the pooled ranked bracket because this fixture is a
+width **ceiling**: its 0.8875 accept rate saturates drafting at depth 8, giving
+mean M 7.27 against beagle's 5.53. This is *local* φ. Ranked ρ(M) is edward's.
 
-| width | ψ(M) |
-|---|---|
-| M=5 | 0.0294 |
-| M=6 | 0.1814 |
-| M=9 | 0.3427 |
+Per-width shares from the isolated `--shapes-only` curve:
+
+| width | ψ(M) from curve | ψ_eff measured end-to-end | agreement |
+|---|---|---|---|
+| M=5 | 0.0294 | — | — |
+| **M=6** | **0.1814** | **0.1824** (m6L2) | **0.55 %** |
+| M=9 | 0.3427 | — | — |
+
+The curve and the end-to-end injection are independent instruments — one times
+isolated kernel dispatches with a raised op-per-buffer fence, the other times a
+512-token decode leg — and they agree on the width-6 share to **0.55 %**. That
+is the strongest internal validation in this experiment.
 
 ### 6.1 The mechanism of the M=6 step
 
@@ -328,7 +350,30 @@ a per-round width histogram or any second width moment — would close it.
 
 ## 8. Requirement #4: marginal cost vs occupancy
 
-Via the `asyncEval` ladder at `Sources/.../Qwen35.swift:2187-2197`.
+The concern behind this requirement is the `asyncEval` ladder at
+`Sources/MLXFastModel/Qwen35.swift:2187-2197`: if QMV work overlaps with other
+scheduled work, then the *occupancy* share of QMV (how much of the timeline it
+sits on) can exceed its *marginal* share (how much leg time a change to it
+actually costs). Optimising against occupancy when marginal cost is lower is
+exactly how a kernel win evaporates end to end.
+
+The injection measures the marginal share directly; the isolated curve measures
+occupancy. They can be compared arm by arm:
+
+| arm | treated | marginal (ψ_eff) | occupancy (curve) | marginal / occupancy |
+|---|---|---|---|---|
+| p2L1 | 2..9 | 0.6729 | 0.6718 | 1.0016 |
+| p2L2 | 2..9 | 0.6736 | 0.6718 | 1.0027 |
+| p6L1 | 6..9 | 0.6145 | 0.6131 | 1.0023 |
+| m6L2 | 6 only | 0.1824 | 0.1814 | 1.0055 |
+
+**Marginal cost equals occupancy to within 0.6 % at every width set tested**, and
+the ratio is slightly *above* 1 rather than below, so there is no hidden
+overlap discount. The practical consequence: for this family, on this fixture and
+host, an occupancy-based cost model is a sound basis for deciding what to
+optimise. That is not a general licence — it is a measured fact about the QMV
+family at these widths, and the same check should be repeated for any family
+whose dispatches are expected to overlap.
 
 ## 9. Bit-exactness
 
