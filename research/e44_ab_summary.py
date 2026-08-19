@@ -18,6 +18,10 @@ import pathlib
 import statistics
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+from e44_air_summary import dispatch_table_from_header  # noqa: E402
+
 # Pre-registered in the assignment. Not recomputed from the data.
 PREREG_MDE_PCT = 0.5040
 # The assignment's promotion bar for this mechanism.
@@ -25,11 +29,29 @@ BAR_PCT = 5.0
 # Widths the candidate actually replaces; 1..3 are the untouched-width guard.
 TOUCHED = range(4, 10)
 
-# Student t, df = 4. Two-sided 95 % critical value, and the one-sided 80 %-power
-# companion. Hardcoded so the summary has no scipy dependency.
-T_975_DF4 = 2.7764451051977987
-T_800_DF4 = 0.9409645
-MDE_FACTOR_DF4 = (T_975_DF4 + T_800_DF4) / math.sqrt(5)
+# Score identity: raw_p = serial_leg / mtp_leg, so a speedup on the SERIAL leg
+# hurts. askeladd's E42 measured both QMV shares causally and bit-exactly.
+PSI_MTP = 0.6736
+PSI_SERIAL = 0.8525
+
+# Student t by df: two-sided 95 % critical value and the one-sided 80 %-power
+# companion. Hardcoded so the summary has no scipy dependency. df=4 keeps the
+# exact constants r1 published, so its numbers are unmoved by this generalisation.
+T_975 = {1: 12.706205, 2: 4.302653, 3: 3.182446, 4: 2.7764451051977987,
+         5: 2.570582, 6: 2.446912, 7: 2.364624, 8: 2.306004, 9: 2.262157,
+         10: 2.228139, 11: 2.200985, 12: 2.178813, 13: 2.160369, 14: 2.144787,
+         15: 2.131450, 16: 2.119905, 17: 2.109816, 18: 2.100922, 19: 2.093024,
+         20: 2.085963}
+T_800 = {1: 1.376382, 2: 1.060660, 3: 0.978472, 4: 0.9409645, 5: 0.919544,
+         6: 0.905703, 7: 0.896030, 8: 0.888890, 9: 0.883404, 10: 0.879058,
+         11: 0.875530, 12: 0.872609, 13: 0.870152, 14: 0.868055, 15: 0.866245,
+         16: 0.864667, 17: 0.863279, 18: 0.862049, 19: 0.860951, 20: 0.859964}
+
+
+def t_quantiles(df: int) -> tuple[float, float]:
+    if df in T_975:
+        return T_975[df], T_800[df]
+    return 1.959964, 0.841621  # normal limit
 
 
 def load(run_dir: pathlib.Path) -> tuple[dict, dict]:
@@ -44,27 +66,74 @@ def load(run_dir: pathlib.Path) -> tuple[dict, dict]:
 
 def paired_stats(deltas: list[float]) -> dict:
     n = len(deltas)
+    t975, t800 = t_quantiles(n - 1)
     mean = statistics.fmean(deltas)
     sd = statistics.stdev(deltas) if n > 1 else float("nan")
-    half = T_975_DF4 * sd / math.sqrt(n) if n > 1 else float("nan")
+    half = t975 * sd / math.sqrt(n) if n > 1 else float("nan")
     return {
         "n_pairs": n,
         "mean_pct": mean,
         "sd_pct": sd,
         "ci95_lo_pct": mean - half,
         "ci95_hi_pct": mean + half,
-        "achieved_mde_pct": MDE_FACTOR_DF4 * sd if n > 1 else float("nan"),
+        "achieved_mde_pct": ((t975 + t800) / math.sqrt(n) * sd
+                             if n > 1 else float("nan")),
     }
+
+
+def zero_effect_cells(run_dir: pathlib.Path) -> list[dict]:
+    """Per-cell effects from an A/A session, where the true effect is 0 at every
+    width. r1 read its floor from three cheap guard widths only; this reads it
+    from every width the decision is actually made at."""
+    payload, _ = load(run_dir)
+    timing = [r for r in payload["measurements"] if r["kind"] == "timing"]
+    cells = []
+    for shape in sorted({r["shape"] for r in timing}):
+        for m in sorted({r["m"] for r in timing if r["shape"] == shape}):
+            pairs = [r for r in timing if r["shape"] == shape and r["m"] == m]
+            st = paired_stats([100.0 * (r["cand_s"] - r["base_s"]) / r["base_s"]
+                               for r in pairs])
+            cells.append({"shape": shape, "m": m, "effect_pct": -st["mean_pct"],
+                          **st})
+    return cells
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("run_dir", type=pathlib.Path)
     parser.add_argument("--wandb", action="store_true")
+    parser.add_argument("--touched", default="4,5,6,7,8,9",
+                        help="widths the candidate replaces (default: r1's "
+                             "all-widths arm)")
+    parser.add_argument("--control", type=pathlib.Path,
+                        help="A/A session directory; its cells have a true "
+                             "effect of exactly zero and set the floor")
+    parser.add_argument("--wandb-name", default=None)
     args = parser.parse_args()
+    touched_widths = {int(w) for w in args.touched.split(",") if w.strip()}
+    touched_label = ", ".join(str(w) for w in sorted(touched_widths))
 
     payload, identity = load(args.run_dir)
     rows = payload["measurements"]
+
+    # `--touched` is a claim about which widths the candidate arm actually
+    # changes, and it silently poisons the guard if it is wrong: widths that did
+    # change get averaged into a "zero-effect" floor. The two arm sources are in
+    # the run directory, so the claim is checked against them rather than
+    # trusted.
+    arms = (args.run_dir / "base.metal", args.run_dir / "cand.metal")
+    if all(a.is_file() for a in arms):
+        base_dispatch = dispatch_table_from_header(arms[0])
+        cand_dispatch = dispatch_table_from_header(arms[1])
+        changed = {m for m, cell in base_dispatch.items()
+                   if cand_dispatch.get(m) != cell}
+        if changed != touched_widths:
+            raise SystemExit(
+                f"{args.run_dir}: --touched says {sorted(touched_widths)} but "
+                f"the arm sources differ at {sorted(changed)}. Refusing: a "
+                f"width that changed cannot serve as a zero-effect guard.")
+        print(f"touched widths verified against both arm sources: "
+              f"{sorted(changed) if changed else 'none (A/A control)'}")
 
     fidelity = [r for r in rows if r["kind"] == "fidelity"]
     timing = [r for r in rows if r["kind"] == "timing"]
@@ -120,9 +189,9 @@ def main() -> int:
                 verdict = "slower"
             else:
                 verdict = "null"
-            if m in TOUCHED and speedup >= BAR_PCT and st["ci95_hi_pct"] < 0.0:
+            if m in touched_widths and speedup >= BAR_PCT and st["ci95_hi_pct"] < 0.0:
                 verdict += " CLEARS BAR"
-            tag = "" if m in TOUCHED else " (guard)"
+            tag = "" if m in touched_widths else " (guard)"
             print(f"{m:>3}{base_us:>11.2f}{cand_us:>11.2f}"
                   f"{st['mean_pct']:>+10.3f}{st['sd_pct']:>8.3f}"
                   f"  [{st['ci95_lo_pct']:+7.3f},{st['ci95_hi_pct']:+7.3f}]"
@@ -137,13 +206,36 @@ def main() -> int:
             summary[f"{key}/base_us"] = base_us
             summary[f"{key}/cand_us"] = cand_us
 
-    touched = [r for r in table if r["m"] in TOUCHED]
-    guard = [r for r in table if r["m"] not in TOUCHED]
+    control_cells = zero_effect_cells(args.control) if args.control else []
+    floor_pct = float("nan")
+    if control_cells:
+        floor_pct = max(abs(c["effect_pct"]) for c in control_cells)
+        resolved = [c for c in control_cells
+                    if c["ci95_lo_pct"] > 0.0 or c["ci95_hi_pct"] < 0.0]
+        print("\n--- A/A control: same design, both arms are the base bytes ---")
+        print(f"{'shape':<26}{'M':>3}{'effect %':>11}{'sd %':>8}"
+              f"{'MDE %':>9}  resolved on a true zero")
+        for c in control_cells:
+            flag = ("YES" if (c["ci95_lo_pct"] > 0.0 or c["ci95_hi_pct"] < 0.0)
+                    else "no")
+            print(f"{c['shape']:<26}{c['m']:>3}{c['effect_pct']:>+11.3f}"
+                  f"{c['sd_pct']:>8.3f}{c['achieved_mde_pct']:>9.3f}  {flag}")
+        print(f"true effect is exactly 0 in all {len(control_cells)} cells: "
+              f"worst |effect| = {floor_pct:.3f} %, "
+              f"sd of effects = "
+              f"{statistics.stdev([c['effect_pct'] for c in control_cells]):.3f} %, "
+              f"intervals excluding zero = {len(resolved)}/{len(control_cells)}")
+        print(f"RESOLUTION FLOOR taken from this control: {floor_pct:.3f} % "
+              f"-- no effect below it is believable whatever its interval says")
+
+    touched = [r for r in table if r["m"] in touched_widths]
+    guard = [r for r in table if r["m"] not in touched_widths]
+    guard_label = ", ".join(str(m) for m in sorted({r["m"] for r in guard}))
     best = max(touched, key=lambda r: r["speedup_pct"], default=None)
     print("\n--- decision ---")
     if touched:
         mean_touched = statistics.fmean(r["speedup_pct"] for r in touched)
-        print(f"mean speedup over replaced widths M in [4, 9]: "
+        print(f"mean speedup over replaced widths M in {{{touched_label}}}: "
               f"{mean_touched:+.3f} %")
         summary["mean_speedup_touched_pct"] = mean_touched
     if guard:
@@ -155,15 +247,24 @@ def main() -> int:
         # interval says.
         floor = (statistics.stdev([r["speedup_pct"] for r in guard])
                  if len(guard) > 1 else float("nan"))
-        print(f"mean effect on untouched-width guard M in [1, 3]: "
-              f"{mean_guard:+.3f} % (expected exactly 0; identical code in "
-              f"both arms)")
+        print(f"mean effect on untouched-width guard M in {{{guard_label}}}: "
+              f"{mean_guard:+.3f} % (identical code in both arms; any effect "
+              f"is the shared register allocation, not the cell)")
         print(f"empirical noise floor from the guard: sd={floor:.3f} % over "
               f"{len(guard)} zero-effect measurement(s), "
               f"worst |effect|="
               f"{max(abs(r['speedup_pct']) for r in guard):.3f} %")
         summary["mean_effect_guard_pct"] = mean_guard
         summary["guard_noise_floor_sd_pct"] = floor
+        if control_cells:
+            over = [r for r in guard if abs(r["speedup_pct"]) > floor_pct]
+            print(f"untouched widths whose |effect| exceeds the "
+                  f"{floor_pct:.3f} % control floor: {len(over)}/{len(guard)}"
+                  + ("".join("  ({} M={} {:+.3f} %)".format(
+                      r["shape"].split("_")[0], r["m"], r["speedup_pct"])
+                      for r in over) if over else ""))
+            summary["control_floor_pct"] = floor_pct
+            summary["guard_cells_over_control_floor"] = float(len(over))
     if best:
         print(f"best replaced width: {best['shape']} M={best['m']} "
               f"{best['speedup_pct']:+.3f} % "
@@ -242,13 +343,49 @@ def main() -> int:
         print(f"{shape:24s} cand M=4..8 plateau {mean_p:8.2f} us  "
               f"cv {cv:5.2f} %   base rise M4->M8 {rise:+6.1f} %")
 
+    # The two halves of this mechanism have OPPOSITE score signs, so an
+    # aggregate speedup is not interpretable as score. Reported separately, each
+    # with its own sign, and never summed into one number.
+    if touched:
+        gated = PSI_MTP
+        uniform = PSI_MTP - PSI_SERIAL
+        mean_touched = statistics.fmean(r["speedup_pct"] for r in touched)
+        print("\n--- score decomposition (psi_mtp=%.4f, psi_serial=%.4f) ---"
+              % (PSI_MTP, PSI_SERIAL))
+        print(f"width term   M in {{{touched_label}}}: MTP leg only, the serial "
+              f"leg never dispatches these widths")
+        print(f"             dScore = {gated:+.3f} % per 1 % of MTP-leg QMV cost "
+              f"removed; mean win here = {mean_touched:+.3f} %")
+        print(f"             ->  dScore = {gated * mean_touched:+.3f} % x f, "
+              f"f = share of MTP-leg QMV cost dispatched at these widths")
+        row = "  ".join(f"f={f:.2f}: {gated * mean_touched * f:+.3f} %"
+                        for f in (0.05, 0.10, 0.25, 0.50))
+        print(f"             {row}")
+        print(f"             f is UNIDENTIFIED (E43): this is a sensitivity "
+              f"table, not a prediction")
+        if guard:
+            mean_guard = statistics.fmean(r["speedup_pct"] for r in guard)
+            print(f"ceiling term M in {{{guard_label}}}: uniform, it acts through "
+                  f"one shared register allocation and so also speeds up M=1")
+            print(f"             dScore = {uniform:+.3f} % per 1 % -- ADVERSE, "
+                  f"because the serial leg is more QMV-dominated than the "
+                  f"candidate leg")
+            worst_guard = max(abs(r["speedup_pct"]) for r in guard)
+            bound = floor_pct if floor_pct == floor_pct else worst_guard
+            print(f"             measured mean effect {mean_guard:+.3f} %, "
+                  f"below the {bound:.3f} % floor, so it is BOUNDED and not "
+                  f"measured: |dScore| <= {abs(uniform) * bound:.4f} %")
+            summary["score/width_term_per_1pct"] = gated
+            summary["score/ceiling_term_per_1pct"] = uniform
+            summary["score/width_term_at_f1_pct"] = gated * mean_touched
+
     if args.wandb:
         import wandb
         run = wandb.init(
             project="qwen38-mlx-challenge-senpai",
             entity="wandb-applied-ai-team",
             job_type="microbenchmark",
-            name=f"e44-sgmm-qmv-ab-{args.run_dir.name}",
+            name=args.wandb_name or f"e44-sgmm-qmv-ab-{args.run_dir.name}",
             tags=["e44", "simdgroup-matrix", "qmv_fast", "affine4-g64",
                   "section-7.3", "paired-abba", "microbenchmark"],
             config={
@@ -262,7 +399,7 @@ def main() -> int:
                 "inner": payload["inner"],
                 "prereg_mde_pct": PREREG_MDE_PCT,
                 "bar_pct": BAR_PCT,
-                "touched_widths": list(TOUCHED),
+        "touched_widths": sorted(touched_widths),
                 # Preserved verbatim: this is a counterbalanced ungated local
                 # arm, which is directional causal evidence and never a score.
                 "cool_gate_passed_real_gate":
