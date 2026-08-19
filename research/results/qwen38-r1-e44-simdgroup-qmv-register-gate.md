@@ -13,6 +13,14 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   5 % bar at +11.421 %, but it is NOT shippable yet.** Its outputs are not
   bit-identical to base at the replaced widths, so the golden-decode exactness
   gate is a real open risk, not a formality.
+- **The win is reported per width and per shape, not pooled.** The four
+  independently resolved cells and their score conversions are in
+  *Width term resolved per width and per shape*; the pooled `+11.421 %` is a
+  headline only. Applying askeladd's E42 census (`f{7,8} = 0.1225`) per width
+  gives **dScore +0.789 % … +1.228 %** depending on the shape mixture — against
+  a 0.7678 % board floor and a 0.5193 % crown gap — and that range **halves to
+  +0.386 … +0.601 % if `f` is recomputed on the two prompts that actually set
+  the median**. Four caveats are attached to those numbers in that section.
 - **`BASE_SHA`:** `9fe0dc5dbdb30af4c807ea71873df99e2da72aa2` (r1 used
   `efff400c1b5554be2e8993b01856653d55de7664`). `UPSTREAM_SHA` unchanged from
   base. The shipped-surface diff `efff400c → 9fe0dc5d` over
@@ -31,6 +39,7 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   r1's run was `3fi0jrgh`.
 - **Reproduction.** From `e66ddd0` (the measured candidate), on this host:
   ```bash
+  export MLXFAST_LOCAL_RUN_LOCK_DIR=/tmp/mlxfast-shared   # cross-role GPU lock
   research/run-e44-qmv-ab.sh r2cov 9fe0dc5d --coverage 1 --widths 1,4,6,7,8,9
   research/run-e44-qmv-ab.sh r2ab  9fe0dc5d --pairs 9 --reps 50 --inner 20 \
       --widths 1,2,3,4,5,6,7,8,9
@@ -39,6 +48,7 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   python3 research/e44_ab_summary.py .mlxfast-private/e44-qmv-ab/r2ab \
       --touched 7,8 --control .mlxfast-private/e44-qmv-ab/r2aa
   research/e44_sgmm_air.sh          # Gate A, compile-only
+  python3 research/e44_census_score.py   # census -> per-cell score, no GPU
   ```
   Runtime: Gate B 4.6 min, Gate C primary 6.7 min, A/A control 11.0 min.
   Peak memory is negligible (a microbenchmark holding tens of MB); the harness
@@ -276,13 +286,99 @@ where `f` is the share of MTP-leg QMV cost dispatched at `M ∈ {7,8}`.
 |---|---|---|---|---|
 | dScore | +0.385 % | +0.769 % | +1.923 % | +3.847 % |
 
-**`f` is not identified.** edward's E43 showed a step at `M ≥ 6` and a plain
-quadratic both fit the ranked row with zero slack. This is a sensitivity table,
-not a prediction, and I am not converting it into a score claim. Note the risk
-direction is now benign in a way r1's was not: the narrow arm is *neutral by
-construction* at every width it does not touch, so a mixture concentrated at
-`M ≤ 6` or `M = 9` makes this candidate worthless rather than harmful, whereas
-the all-widths arm would have been a large regression.
+The sensitivity table above was written before a census existed. It is
+superseded by the measured `f` below and is kept only to show what was claimed
+in advance. Note that the risk direction is benign in a way r1's was not: the
+narrow arm is *neutral by construction* at every width it does not touch, so a
+mixture concentrated at `M ≤ 6` or `M = 9` makes this candidate worthless
+rather than harmful, whereas the all-widths arm would have been a large
+regression.
+
+### Width term resolved per width and per shape — the re-weightable form
+
+A pooled mean cannot be re-weighted once a real width census lands, so the
+primary result is also carried as four independent cells. For one cell,
+
+> `dScore(M, shape) = ψ_mtp × speedup(M, shape) × f(M) × s(shape | M)`
+
+with `ψ_mtp = 0.6736`, `f(M)` the share of MTP-leg QMV cost dispatched at that
+width, and `s(shape | M)` that shape's share of the cost within the width.
+
+| shape | M | speedup | 95 % CI | dScore per 1 pp of `f(M)` | dScore at census `f(M)`, `s = 1` |
+|---|---|---|---|---|---|
+| `attn_out` | 7 | +11.389 % | [+11.284, +11.495] | +0.07672 % | +0.361 % |
+| `mlp_down` | 7 | +4.596 % | [+4.506, +4.685] | +0.03096 % | +0.146 % |
+| `attn_out` | 8 | +17.050 % | [+16.876, +17.225] | +0.11485 % | +0.867 % |
+| `mlp_down` | 8 | +12.649 % | [+12.478, +12.820] | +0.08520 % | +0.643 % |
+
+The two shape rows at a given `M` are **alternatives, not addends**: the last
+column asks what that width would be worth if all of its QMV cost were that one
+shape. Every cell is independently resolved, so any future census can be applied
+directly to this table without re-running anything.
+
+### Applying askeladd's E42 corpus census
+
+askeladd supplied a real dispatch census (tree
+`04ad6bf11437c269df85a47e91faa769c74fe6da`): 78 dispatches distributed
+1 / 5 / 5 / 23 / 4 / 6 / 34 over `M = 2 / 4 / 5 / 6 / 7 / 8 / 9`, mean `M`
+7.269. Cost-weighting those counts with thorfinn's E46 refit
+`T = 16.757 + 27.532·ceil(M/IPG) + 9.624·M` gives the cost shares
+
+| M | 2 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|
+| cost share | 0.54 % | 3.50 % | 5.07 % | 25.19 % | 4.71 % | 7.55 % | 53.45 % |
+
+so **`f{7,8} = 0.1225`**. This is the first non-speculative value for `f`. I did
+not measure it: askeladd's E48 / PR 52 owns that census and I consumed it rather
+than reproducing it.
+
+Applying it per width and then summing, for four mixtures of the two shapes:
+
+| shape mixture | effective speedup over `M ∈ {7,8}` | dScore |
+|---|---|---|
+| all `mlp_down` | +9.555 % | **+0.789 %** |
+| cost-proportional (one call of each per layer) | +10.835 % | **+0.895 %** |
+| equal weight per cell | +12.215 % | **+1.009 %** |
+| all `attn_out` | +14.875 % | **+1.228 %** |
+
+**Why the per-width form matters, concretely.** Pooling first and weighting
+afterwards gives `0.6736 × 11.421 % × 0.1225 = +0.942 %`. Weighting each width
+first and then summing gives **+1.009 %** for the very same equal-shape mixture.
+The 0.067 pp gap is not rounding: `M = 8` both wins more (+14.85 % mean vs
++7.99 % at `M = 7`) and carries more census cost (7.55 % vs 4.71 %), so the
+pooled mean systematically understates the census-weighted value. That gap is
+the entire reason the four-cell table above is the artifact to keep and the
+pooled `11.421 %` is only a headline.
+
+Four caveats travel with every number in this subsection.
+
+1. **The census is corpus-wide; the score is not.** The published score is the
+   median over eight prompts, i.e. the mean of the 4th and 5th order statistics —
+   in practice beagle and medicine, not the corpus. beagle's mean draft width is
+   5.533 against the corpus 7.269, so `f{7,8}` on the two prompts that actually
+   set the score is very likely **lower** than 0.1225. `dScore` is linear in `f`,
+   so halving it to 0.06 moves the range to **+0.386 … +0.601 %**. Against the
+   0.7678 % board floor and the 0.5193 % crown gap: at the census `f` all four
+   mixtures clear both, though the `mlp_down`-dominated end clears the board
+   floor by only 0.021 pp and so should not be treated as clearing it at all;
+   at the halved `f` **nothing** clears the board floor and only the
+   `attn_out`-dominated end still clears the crown gap. The honest statement is
+   that this candidate is reliably crown-gap-sized and only conditionally
+   board-floor-sized, until the census is recomputed on the two prompts that
+   set the median.
+2. **Quote the range, not the midpoint.** The shape mixture `s(shape | M)` is
+   not identified either, and it moves the answer by a factor of 1.56
+   (+0.789 % to +1.228 %). Reporting a single midpoint would hide that.
+3. **`T(M)` is a microbenchmark aggregate.** Only its ratios transfer; the cost
+   shares inherit the same host-transfer risk as every absolute timing in this
+   report.
+4. **The bankable register ceiling is 104, not 89.** I retract the "89 as
+   headroom" framing from r1. The measured kernel-wide maximum is 104, so the
+   ceiling move is −3.70 %, it gates thorfinn's E46 at that value, and by the
+   next subsection it is **adverse** — it subtracts from the numbers above
+   rather than adding to them.
+
+None of this is bankable while the exactness blocker below is open.
 
 ### Ceiling term — adverse, and NOT powered
 
@@ -410,9 +506,12 @@ it.
   this is not a broken statistic; my best explanation is register-allocation and
   code-layout scatter between two genuinely different binaries, but I have not
   proved that and I am not claiming the arm is neutral at untouched widths.
-- **What this is worth in score:** unknown, and honestly so. `+7.693 % × f` with
-  `f` unidentified. The ceiling term is adverse and bounded at
-  `|dScore| ≤ 0.1186 %`.
+- **What this is worth in score:** reported per width and per shape, never
+  pooled. Under askeladd's E42 census (`f{7,8} = 0.1225`) the width term is
+  **+0.789 % … +1.228 %** across shape mixtures, falling to **+0.386 … +0.601 %**
+  if `f` is recomputed on the two prompts that set the median — which beagle's
+  5.533 mean draft width suggests it should be. The ceiling term is adverse and
+  bounded at `|dScore| ≤ 0.1186 %`.
 - **Why it is still not bankable:** the outputs are not bit-identical to base at
   `M ∈ {7,8}`. Until a fixed-window exact decode against the golden passes, the
   speed number is not convertible into a submission.
@@ -426,10 +525,17 @@ it.
    candidate.** This is the only thing standing between a confirmed +11.4 % and a
    submittable candidate. It should be run before any further tuning, because a
    failure here retires the whole mechanism and a pass converts it immediately.
-2. **Identify `f`.** The width term is `+7.693 % × f` and `f` is the single
-   largest uncertainty in this result. A decode-time histogram of dispatched `M`
-   on the MTP leg would collapse the sensitivity table to a number. This is
-   edward's E43 territory and I did not touch it.
+2. **Recompute `f` on the two prompts that set the median.** askeladd's E42
+   census already collapsed the corpus-wide sensitivity table to
+   `f{7,8} = 0.1225`, which is why this result now quotes a score range instead
+   of `× f`. What remains open is that the score is the mean of the 4th and 5th
+   order statistics over eight prompts, not a corpus mean, and beagle's 5.533
+   mean draft width is well below the corpus 7.269. A per-prompt histogram
+   restricted to beagle and medicine would move this result by roughly a factor
+   of two, in the unfavourable direction, and is now the single largest
+   uncertainty in it. This is askeladd's E48 / PR 52 territory and I did not
+   touch it. The second-largest is the shape mixture `s(shape | M)`, which is a
+   1.56× spread and would fall out of the same instrumentation almost free.
 3. **Reconsider `M = 9`.** It needs a second 8-row tile, so it was excluded here,
    but the base cost at M=9 is the highest on the curve (202.84 / 647.25 µs) and
    r1 measured the two-tile candidate at −10.37 % / −11.66 % there. A two-tile
