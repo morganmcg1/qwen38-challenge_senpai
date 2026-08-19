@@ -176,16 +176,72 @@ jq --arg p "$victim" '(.overlays[] | select(.path == $p) | .kind) = "bogus"' \
 expect_fail "unknown overlay kind" "unknown overlay kind"
 
 # 5. A campaign-owned allow-list entry must not launder a trusted path.
-jq '.campaignOwnedPrefixes += ["Sources/"]' "$BACKUP" > "$MANIFEST"
+# The victim is DERIVED. This case used to name Sources/MLXFastCLI/main.swift
+# literally; the rebase made that file organizer-identical, so the perturbation
+# silently stopped perturbing anything and printed a NOTE that read like an
+# insight. If no trusted (non-editable) path under Sources/ differs today, say
+# so plainly instead of naming a file that proves nothing.
+# The victim is taken from the GATE'S OWN baseline report, not recomputed from
+# benchmark.json. editablePaths entries are directory PREFIXES and the gate
+# matches them as such; a first attempt here used exact membership and nominated
+# an editable file, so the perturbation "failed" for a reason that was in the
+# self-test rather than in the gate. Whatever the gate reports is, by definition,
+# a path it considers trusted and differing.
 set +e
-laundered="$("$GATE" "$UPSTREAM_SHA" "$REV" 2>&1)"
+baseline_report="$("$GATE" "$UPSTREAM_SHA" "$REV" 2>&1)"
 set -e
-cp "$BACKUP" "$MANIFEST"
-if contains "$laundered" "Sources/MLXFastCLI/main.swift"; then
-  echo "detected    allow-list laundering is visible (path still reported)"
+launder_victim="$(printf '%s\n' "$baseline_report" \
+  | sed -n 's|.*[ :]\(Sources/[^ ][^ ]*\)$|\1|p' | head -1)"
+if [ -z "$launder_victim" ]; then
+  echo "NOTE        no trusted Sources/ path differs at $REV, so allow-list"
+  echo "            laundering is NOT EXERCISABLE in this tree. Recorded as"
+  echo "            untested rather than reported as passing."
 else
-  echo "NOTE        widening campaignOwnedPrefixes to Sources/ hides main.swift;" >&2
-  echo "            that is exactly why the allow-list is narrow and reviewed." >&2
+  jq '.campaignOwnedPrefixes += ["Sources/"]' "$BACKUP" > "$MANIFEST"
+  set +e
+  laundered="$("$GATE" "$UPSTREAM_SHA" "$REV" 2>&1)"
+  set -e
+  cp "$BACKUP" "$MANIFEST"
+  if contains "$laundered" "$launder_victim"; then
+    echo "detected    allow-list laundering is visible ($launder_victim still reported)"
+  else
+    echo "UNDETECTED  widening campaignOwnedPrefixes to Sources/ hid $launder_victim" >&2
+    failures=$((failures + 1))
+  fi
+fi
+
+# 6. A declaration for a path that NO LONGER DIFFERS must be refused.
+# This is the case that was missing entirely, and its absence hid a real event:
+# the rebase made Sources/MLXFastCLI/main.swift organizer-identical while the
+# manifest still declared a seam in it, and the gate's only symptom was the
+# declared-overlay count falling from 3 to 2. Adopted-by-frontier and
+# reverted-by-rebase are indistinguishable in a diff and demand opposite
+# responses, so the gate must refuse to stay quiet.
+# The victim is any path that is IDENTICAL in both trees -- derived, so it cannot
+# rot into a file that has started to differ. Editability is deliberately NOT
+# filtered: the presence check is editability-independent by design, because a
+# declaration has to be true about whatever it names.
+same_victim=""
+alldiff="$(git diff --name-only "$UPSTREAM_SHA" "$REV" --)"
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  case $'\n'"$alldiff"$'\n' in *$'\n'"$p"$'\n'*) continue ;; esac
+  same_victim="$p"
+  break
+done <<EOF
+$(git ls-tree -r --name-only "$UPSTREAM_SHA" -- Sources Tests)
+EOF
+if [ -z "$same_victim" ]; then
+  echo "UNDETECTED  could not derive an identical trusted path to declare" >&2
+  failures=$((failures + 1))
+else
+  echo "stale-decl  $same_victim (identical in both trees)"
+  jq --arg p "$same_victim" \
+    '.overlays += [{"path": $p, "kind": "seam", "organizerBlob": "deadbeef",
+                    "why": "self-test perturbation: declares an overlay that does not exist"}]' \
+    "$BACKUP" > "$MANIFEST"
+  expect_fail "declaration for a path that no longer differs" \
+    "declared overlay no longer differs from the organizer: $same_victim"
 fi
 
 selftest_complete=1

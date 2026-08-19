@@ -152,6 +152,64 @@ done <<EOF
 $(git diff --name-only "$UPSTREAM_SHA" "$REV" --)
 EOF
 
+# --- a declaration must still describe something real ------------------------
+# The loop above walks the DIFF, so an overlay that has STOPPED differing is
+# never visited and never checked. The manifest goes on asserting an overlay
+# that does not exist and the gate goes on passing -- the stale-acknowledgement
+# failure this campaign has now hit in three separate instruments (ledger 162).
+# It already hid a real event: the rebase made Sources/MLXFastCLI/main.swift
+# byte-identical to the organizer while the manifest still declared a seam in
+# it, and the only visible trace was the declared-overlay COUNT dropping from 3
+# to 2 in a line nobody reads. A declaration that cannot fail is not a
+# declaration.
+#
+# Branch scoping is honoured: an overlay marked `branches` is only required to
+# be present in revisions that actually CONTAIN that branch tip. The test is
+# "branch tip is an ancestor of REV", not the reverse -- the reverse would be
+# true for the campaign base and would demand branch-only overlays on main.
+diff_paths="$(git diff --name-only "$UPSTREAM_SHA" "$REV" --)"
+while IFS= read -r path; do
+  [ -n "$path" ] || continue
+  case $'\n'"$diff_paths"$'\n' in
+    *$'\n'"$path"$'\n'*) continue ;;
+  esac
+
+  entry="$(jq -c --arg p "$path" '.overlays[] | select(.path == $p)' "$MANIFEST")"
+  in_scope=1
+  branch_list="$(printf '%s' "$entry" | jq -r '(.branches // [])[]')"
+  if [ -n "$branch_list" ]; then
+    in_scope=0
+    while IFS= read -r branch; do
+      [ -n "$branch" ] || continue
+      tip="$(git rev-parse --verify --quiet "refs/heads/$branch" \
+        || git rev-parse --verify --quiet "refs/remotes/origin/$branch")" || tip=""
+      if [ -z "$tip" ]; then
+        echo "  FAIL  declared overlay names an unresolvable branch \"$branch\": $path" >&2
+        echo "        Refusing to skip a presence check on a branch that cannot be read." >&2
+        failures=$((failures + 1))
+        in_scope=0
+        break
+      fi
+      if git merge-base --is-ancestor "$tip" "$REV"; then in_scope=1; break; fi
+    done <<INNER
+$branch_list
+INNER
+  fi
+
+  if [ "$in_scope" -eq 1 ]; then
+    echo "  FAIL  declared overlay no longer differs from the organizer: $path" >&2
+    echo "        The manifest still describes an overlay here. Either the frontier" >&2
+    echo "        ADOPTED it or a rebase REVERTED it, and those need opposite" >&2
+    echo "        responses. Delete the entry recording which, or restore the" >&2
+    echo "        overlay; do not leave a declaration that cannot fail." >&2
+    failures=$((failures + 1))
+  else
+    echo "  ok    [scope] overlay not required in this revision: $path"
+  fi
+done <<EOF
+$(jq -r '.overlays[].path' "$MANIFEST")
+EOF
+
 if [ "$failures" -ne 0 ]; then
   echo "trusted parity FAILED: $failures problem(s), $declared declared overlay(s)" >&2
   exit 1
