@@ -377,18 +377,41 @@ static void probeMapping(id<MTLCommandQueue> queue,
 // tolerance. One dropped, duplicated or misplaced nibble moves the sum by at
 // least 1 and is therefore visible. Sweeping the word index covers every k with
 // per-nibble resolution, and a single dispatch yields every (m, n) at once, so
-// the same sweep also proves the m and n tiling. It says nothing about the
-// affine arithmetic -- that is what the random-x fidelity check is for.
-static void probeCoverage(id<MTLCommandQueue> queue,
-                          id<MTLComputePipelineState> base,
-                          id<MTLComputePipelineState> cand,
-                          Operands *o, int m, int word_stride) {
+// the same sweep also proves the m and n tiling.
+//
+// That pass zeroes the biases, so it proves the weight path and says nothing
+// about the second affine term. Pass "bias" is its mirror: scales 0, and
+// bias[n][g] set to a distinct small integer per (row, group), so the exact
+// answer is bias[n][word / 8] * 8 -- again an exact integer under 121. That
+// reads back which group's bias was paired with which x-sum, per output row, and
+// because the sweep moves the eight nonzero x through every position of every
+// group it holds the group reduction to per-nibble resolution as well. The two
+// passes together cover both affine terms exactly; neither depends on a
+// tolerance.
+typedef enum { COV_SCALE_PATH = 0, COV_BIAS_PATH = 1 } CoveragePass;
+
+static int coverageBias(int row, int group) {
+  return 1 + ((row + group) % 15);  // 1..15, exact in bfloat16, *8 stays < 121
+}
+
+static void probeCoveragePass(id<MTLCommandQueue> queue,
+                              id<MTLComputePipelineState> base,
+                              id<MTLComputePipelineState> cand,
+                              Operands *o, int m, int word_stride,
+                              CoveragePass pass) {
   const int words_per_row = o->k / 8;
-  const size_t n_groups = (size_t)o->n * o->k / 64;
+  const int groups_per_row = o->k / 64;
   uint16_t *sp = (uint16_t *)o->scales.contents;
   uint16_t *bp = (uint16_t *)o->biases.contents;
   const uint16_t one = f32_to_bf16(1.0f);
-  for (size_t i = 0; i < n_groups; i++) { sp[i] = one; bp[i] = 0; }
+  for (int row = 0; row < o->n; row++) {
+    for (int g = 0; g < groups_per_row; g++) {
+      size_t i = (size_t)row * groups_per_row + g;
+      sp[i] = (pass == COV_SCALE_PATH) ? one : 0;
+      bp[i] = (pass == COV_SCALE_PATH) ? 0
+                                       : f32_to_bf16((float)coverageBias(row, g));
+    }
+  }
   memset(o->x.contents, 0, o->x.length);
   uint16_t *xp = (uint16_t *)o->x.contents;
   const uint32_t *w = (const uint32_t *)o->w.contents;
@@ -412,9 +435,14 @@ static void probeCoverage(id<MTLCommandQueue> queue,
       [cb commit];
       [cb waitUntilCompleted];
       for (int row = 0; row < o->n; row++) {
-        uint32_t packed = w[row * words_per_row + word];
-        int want = 0;
-        for (int nib = 0; nib < 8; nib++) want += (packed >> (4 * nib)) & 0xf;
+        int want;
+        if (pass == COV_SCALE_PATH) {
+          uint32_t packed = w[row * words_per_row + word];
+          want = 0;
+          for (int nib = 0; nib < 8; nib++) want += (packed >> (4 * nib)) & 0xf;
+        } else {
+          want = 8 * coverageBias(row, word / 8);
+        }
         for (int mm = 0; mm < m; mm++) {
           float got = bf16_to_f32(y[mm * o->n + row]);
           double d = fabs((double)got - (double)want);
@@ -439,10 +467,19 @@ static void probeCoverage(id<MTLCommandQueue> queue,
     }
   }
   fprintf(stderr,
-          "e44_qmv_ab:   coverage M=%d words=%d(stride %d) elements=%ld  "
+          "e44_qmv_ab:   coverage[%s] M=%d words=%d(stride %d) elements=%ld  "
           "base bad=%ld worst_abs=%.1f  cand bad=%ld worst_abs=%.1f\n",
-          m, (words_per_row + word_stride - 1) / word_stride, word_stride,
-          checked, bad[0], worst_abs[0], bad[1], worst_abs[1]);
+          pass == COV_SCALE_PATH ? "scale" : "bias ", m,
+          (words_per_row + word_stride - 1) / word_stride, word_stride, checked,
+          bad[0], worst_abs[0], bad[1], worst_abs[1]);
+}
+
+static void probeCoverage(id<MTLCommandQueue> queue,
+                          id<MTLComputePipelineState> base,
+                          id<MTLComputePipelineState> cand,
+                          Operands *o, int m, int word_stride) {
+  probeCoveragePass(queue, base, cand, o, m, word_stride, COV_SCALE_PATH);
+  probeCoveragePass(queue, base, cand, o, m, word_stride, COV_BIAS_PATH);
 }
 
 static void captureSampled(Operands *o, int m, int samples, float *out) {
