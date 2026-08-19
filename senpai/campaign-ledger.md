@@ -7986,3 +7986,173 @@ Cheap and permanent consequence, adopted: `research/qmv_score_leverage.py`'s sel
 evaluates the ranked uniform leverage across the full `psi_mtp_w1` range in [0, 1] and
 asserts it is positive throughout ("RANKED uniform leverage has NO sign flip to find"),
 rather than only at the default. Sign behaviour over a *range*, not at a point.
+
+---
+
+## 177. 🔴🔴🔴 MAINTENANCE CHECKPOINT (2026-08-19T15:05Z): we have six official submissions, our best is **0.53 % off the live frontier**, and the board is now advancing in +0.06 % steps.
+
+Human issue #31 requested a maintenance checkpoint before a tested harness upgrade:
+persist conclusions, commit and push cleanly, launch no new jobs or delegated tasks.
+This item records what the checkpoint found. It contains no new measurement of my own
+— it is a reconciliation of live Yukon state, four in-flight PRs, and two interim
+student results against what the campaign records claimed.
+
+### 177(A). The official record, read from Yukon rather than from our own files
+
+`yukon submissions --all eigenlabs/qwen38-challenge` — 706 rows, 96 distinct solvers,
+7 rows `validating` at the moment of reading.
+
+| receipt | created | status | score | commit |
+|---|---|---|---|---|
+| `4437d06` | 8/17 22:03 | rejected | 2.86126590369985 | `95f8311` |
+| `74d1bd3` | 8/18 01:30 | **failed** | n/a | — |
+| `b360b4c` | 8/18 03:33 | **failed** | n/a | — |
+| `9197ed6` | 8/18 17:08 | rejected | 3.06938159465413 | `dbf91c6` |
+| `ca9251b` | 8/18 22:44 | rejected | **3.23250848263467** | `2b0c36a` |
+| `2c76644` | 8/19 06:19 | rejected | 3.0721325825532 | `e277c57` |
+
+🔴 `research/CURRENT_RESEARCH_STATE.md` said **"Senpai has zero official
+submissions"** and named a frontier of 3.02460155382533. Both statements were badly
+stale. The file had not been refreshed since 2026-08-16 17:40 UTC while six
+submissions landed. Corrected at this checkpoint.
+
+**Read `rejected` correctly.** It means the ranked run completed and scored but did
+not exceed the frontier live at landing time. Only `74d1bd3` and `b360b4c` are
+infrastructure failures. Four of our six submissions produced a real ranked number,
+which is a far better campaign position than "zero submissions" implied.
+
+### 177(B). The race is decided in the third decimal place, and that changes what counts as a win
+
+| | submission | solver | score |
+|---|---|---|---|
+| live promoted frontier | `59b321e` | fkiene | **3.24985583421771** |
+| previous frontier (what our files record) | `0cd0a6b` | ofou | 3.24929398547457 |
+| our best | `ca9251b` | senpai | **3.23250848263467** |
+
+- Our deficit to the frontier: **0.01734735158304 = 0.53 %**.
+- The frontier's own last step: **+0.000562, i.e. +0.06 %**.
+
+🟢 **This is the most useful number in this checkpoint.** A 0.5 %-scale lever is now
+*board-moving*, not noise. Every prior instinct to dismiss a sub-1 % effect as
+uninteresting was calibrated against a board that no longer exists. Item 174 priced
+the first lever above the board floor; 177(B) says the floor is lower than we thought,
+so more of the measured levers now clear it. Specifically, thorfinn's E49 Arm 1 result
+below is a **−12.26 % cell-level** effect — two orders of magnitude above this floor
+at its own cell, and worth composing even after per-cell cost weighting shrinks it.
+
+The corollary is unpleasant and must be stated: **frontier staleness now costs
+score.** `senpai/frontier-state.json` records the second-place row. We are pricing
+candidates against a target that has already moved.
+
+### 177(C). The `ccd1af6` base move is scientifically inert — verified, not assumed
+
+All four live PRs (#52, #53, #55, #56) fired `research_base_changed` from bases
+`45b7c6a` / `0df93e9` / `fb0a09d` to `ccd1af6`. For every one of the three source
+bases:
+
+```
+git diff --name-only <base> ccd1af6 -- Sources/ benchmark.json \
+    mtp-head.manifest.json fixtures/ .github/      ->  0 files
+```
+
+The complete delta is `research/` (25), `senpai/` (10), `AGENTS.md` (1). **No replay,
+no remeasurement, no cancellation is warranted for any of the four.** Their arms stay
+valid on their recorded bases. This is the cheap check that should be run on *every*
+`research_base_changed` event before spending a student's GPU on a replay: a
+documentation-only base move must never trigger one.
+
+### 177(D). Two interim student results worth banking now, both still `wip`
+
+Neither is terminal; both are recorded so the harness upgrade cannot lose them.
+
+**E49 / PR #53 (thorfinn) — Arm 1 is decisive and `H_local_eaten` is refuted.**
+Four-leg ABBA, `<T,9,3>` vs `<T,9,5>` at M=9:
+
+- **−12.26 %** at M=9 (−22.808 ms), against a replicate spread of 0.333 ms — **~68×
+  the noise**.
+- Nine byte-identical control widths move ≤ 0.33 %; the M=1 blemish (+0.88 %) sits
+  inside its own 1.504 ms spread and does **not** survive as an effect.
+- Predictions were −14.8 % (E46 refit) and −15.77 % (contrast B): **same sign, same
+  order, consistently 2–3 points optimistic.** Our width-cost model is directionally
+  sound and mildly over-confident.
+- 🟢 **All four legs passed the real 40 °C cool gate** (entries 38.51–39.27 °C) with
+  the GPU-idle gate clean. These are **gate-qualified**, not `COOL_GATE=0`
+  counterbalanced arms — which also **corrects E46's recorded claim** that this host
+  cannot pass the real gate (E46 logged a 43.2 °C floor).
+- Arm 1's own shared-tax readout is **+0.14 % pooled**, i.e. no sign of item 173(C)'s
+  +10.6 % register tax at this dose — but in *isolated* builds carrying one crossrow
+  body. Arm 2's unreachable-`case 10:` ladder tests it on the real dispatch table and
+  is the measurement that decides.
+- Honest caveat on the record: identical bitwise failures at **M=10 only** (the `qmm`
+  splitk path) in **both** arms, so it is a property of the 9→10 padding path, not of
+  `<T,9,5>`. M=9 has no bitwise failures in either build.
+
+**E48 / PR #52 (askeladd) — `psi_mtp` measured at two doses, and it transfers.**
+
+- `psi_mtp = 0.693391` [0.692292, 0.694490]; realised dose ratio **2.0092**
+  (measured). Doubling the dose moves the inferred elasticity by **−0.317 %**, so one
+  linear coefficient spans a 39-point and a 56-point effect. That is a real
+  elasticity, not a slope fitted at one operating point.
+- vs E42's 0.6736 on `04ad6bf1`: **+2.9 %**. It survives the IPG change, so the
+  ledger's dScore corrections stand and **every dScore is slightly under-priced**,
+  including alphonse's merged +11.421 %.
+- Gap-corrected lower bounds **0.710161 / 0.726931**. A coverage gap makes these
+  *bounds*: the 2-bit compact draft readout (`qmv_fast_singlerow_affine2_g64`,
+  `out_vec_size == 98336`) and GDN `in_proj_a/b` (n=48) escape both injection arms.
+  The serial leg has neither gap, so the bound is one-directional with a certain sign.
+- 🟢 **Arm U-lo is a direct measurement of the 176 cancellation.** A ~66 % QMV
+  slowdown in *both* legs moved the local score ratio by **+0.096 %**, inside the
+  0.058–0.074 % within-arm spread, against item 173(A)'s prediction of **+9.88 %** —
+  a ~400× cancellation. A source argument (176) and an independent measurement now
+  agree that `psi_serial` has no ranked leverage.
+- Student self-correction worth keeping: his own local uniform coefficient was first
+  quoted as −0.0265 from *inherited* E42 dosimetry, then corrected to **−0.0769**
+  using the in-arm curve (2.33× overstatement of 173(A), not 6.8×). `rho* = 1.9952`
+  is denominator-free and unaffected. He caught and published this against his own
+  argument's interest.
+- Harness fiction found and reported: `QwenQMVCostCurveTests.swift:396` probes
+  `linear_attn.in_proj_fused_qkvzba`, but that fusion **does not exist at runtime** —
+  `Qwen35GatedDelta.swift:254-255` issues separate `linear(...)` calls. Harmless
+  (`calls_per_verify = 0`, so it never entered a denominator) but it is very likely
+  the unstable cell that forced E42's three-denominator interval.
+
+### 177(E). Two operational findings for the resumed service
+
+1. 🔴 **GitHub reads were returning HTTP 403 during this checkpoint.** `get_prs` on
+   #52, #53, #55, #56 all failed with 403; askeladd independently reported a 403
+   window ~13:05–13:32Z. The PR slate in this item therefore comes from trusted
+   controller event payloads, not from a live PR read. Re-verify PR state on resume.
+2. 🔴 **This workspace is a fresh clone without `senpai/bootstrap-checkout.sh` having
+   run.** `git remote -v` shows **only `origin`** — no `upstream` — and `yukon`
+   commands fail with "this repo is not linked to Yukon" unless the benchmark is
+   passed explicitly (`yukon submissions --all eigenlabs/qwen38-challenge` works).
+   Run the bootstrap before any sync or submission on resume.
+
+### 177(F). Why `frontier-state.json` was left alone
+
+`promotedSubmission.sourceRef` must be a full 40-hex commit — enforced by
+`senpai/submit-official.sh:213` and `senpai/bootstrap-checkout.sh:35`. The Yukon table
+truncates the frontier commit to `9e1ff9e…`, `yukon submission-note 59b321e` is empty,
+and the `upstream` remote is absent, so the full ref cannot be verified locally.
+Writing a partial or guessed ref would break the submit guard's own consistency check
+between the recorded organizer commit and the promoted source.
+
+Updating that file is properly part of a `sync-organizer-frontier` pass, which
+requires a clean build, twin audit, and exactness verification — exactly the work
+issue #31 told me not to start. **Recording an unverifiable ref to make a file look
+current is the failure mode this ledger already documents twice** (items 176(B),
+176(D)): a number that has been written down stops being questioned. Left stale and
+loudly flagged instead.
+
+### Resume priorities, in order
+
+1. Run `senpai/bootstrap-checkout.sh`; re-verify PR state once GitHub reads recover.
+2. Re-query Yukon, then `sync-organizer-frontier` onto the live promoted row
+   (`59b321e`, 3.24985583421771) with the full verification chain. Our deficit is
+   0.53 %, so the target must be current before anything is priced against it.
+3. Reconcile #52 and #53 as they reach terminal state. E49 Arm 2 decides whether the
+   M=9 two-stream prize survives the real dispatch table; that is the campaign's best
+   live candidate lever.
+4. Keep #55 and #56 running; assign nothing new until the frontier sync lands, so new
+   work is priced against the right target.
+

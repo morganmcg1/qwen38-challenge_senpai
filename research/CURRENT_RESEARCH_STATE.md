@@ -1,10 +1,15 @@
 # SENPAI Research State
 
-- **2026-08-16 17:40 UTC**
+- **2026-08-19 15:10 UTC** (maintenance checkpoint, human issue #31)
 - Track `qwen3.8-27b-mtp-v1`; advisor branch `senpai/qwen38-mtp-r1`;
-  `BASE_SHA` = the live head of that branch (`git rev-parse
-  origin/senpai/qwen38-mtp-r1`), which now contains the `b219009` EOS fix;
-  `UPSTREAM_SHA = 7351e62674bc600f0ca148d3a1b0604716a09db6`.
+  `BASE_SHA = ccd1af6733367a77256e16774e230370bac78470`;
+  `UPSTREAM_SHA = 0c90733d383f6b987a29682bf9eb9458a6172bfa` (the value actually
+  synced into this tree, per `senpai/frontier-state.json`).
+- Most recent human research direction: issue #31 asked for a maintenance
+  checkpoint — persist conclusions, commit and push cleanly, launch no new jobs
+  or delegated tasks, because a tested harness upgrade is waiting. Issue #22
+  (execute aggressively toward the winning frontier) remains the standing
+  research directive once service resumes.
 
 This is a **living document**. Durable measurements, source-line citations, and
 closed questions live in [`ESTABLISHED_FACTS.md`](ESTABLISHED_FACTS.md); the
@@ -74,16 +79,54 @@ delegates to me.)*
 
 ## Where we stand
 
-The promoted frontier is submission `14b53255-e585-44bd-84d9-37b7b29c0be9` at
-score **3.02460155382533**, source
-`79683c633b13c63aa23f112756a9c6b5173705b0`. **Senpai has zero official
-submissions.**
+**Live Yukon state, observed 2026-08-19T15:05Z** (`yukon submissions --all
+eigenlabs/qwen38-challenge`; 706 rows, 96 distinct solvers, 7 rows `validating`
+at the time of reading):
 
-*(The immediately previous frontier — `ba493f74-c0fe-440a-a956-f77d26232e54`
-at 2.95338624520432, source `156b5b75…` — is superseded by +0.07121530862101
-score. The older `e6c5ef35-0d86-4cec-a5d6-366e2e59cdcd` receipt at
-2.9042110287045 is superseded by +0.12039052512083; its `7351e626…` value is a
-`sourceRef`, not a commit in this repository.)*
+| what | submission | solver | score | commit |
+|---|---|---|---|---|
+| live promoted frontier | `59b321e` | fkiene | **3.24985583421771** | `9e1ff9e…` |
+| previous frontier (our recorded row) | `0cd0a6b` | ofou | 3.24929398547457 | `ef42e04…` |
+| **our best official** | `ca9251b` | senpai | **3.23250848263467** | `2b0c36a` |
+
+**Senpai has six official submissions, not zero.** The "zero" claim in earlier
+revisions of this file is retracted — it was written before the first submission
+and never updated.
+
+| receipt | created (UTC-ish, board local) | status | score |
+|---|---|---|---|
+| `4437d06` | 8/17 22:03 | rejected | 2.86126590369985 |
+| `74d1bd3` | 8/18 01:30 | **failed** | n/a |
+| `b360b4c` | 8/18 03:33 | **failed** | n/a |
+| `9197ed6` | 8/18 17:08 | rejected | 3.06938159465413 |
+| `ca9251b` | 8/18 22:44 | rejected | **3.23250848263467** |
+| `2c76644` | 8/19 06:19 | rejected | 3.0721325825532 |
+
+Read `rejected` correctly: the ranked run **completed and scored**, but did not
+exceed the frontier that was live when it landed. Only `74d1bd3` and `b360b4c`
+are true infrastructure failures.
+
+🔴 **The race is far tighter than any earlier revision of this file implies.**
+Our best official score is **0.01734735158304 below** the live promoted frontier
+(3.23250848263467 vs 3.24985583421771) — a **0.53 %** deficit. The top of the
+board is now advancing in increments of **+0.000562 (+0.06 %)**, so the frontier
+is being contested by many solvers making very small gains. Two consequences:
+
+1. A lever worth ~0.5 % of candidate decode time is now a **board-moving**
+   lever, not noise. This retroactively raises the value of the small,
+   well-measured wins the students are producing.
+2. Frontier staleness is expensive. `senpai/frontier-state.json` still records
+   `0cd0a6b` / 3.24929398547457, which is now second place.
+
+⚠️ **`senpai/frontier-state.json` was deliberately NOT edited at this
+checkpoint.** Its `promotedSubmission.sourceRef` must be a full 40-hex commit
+(enforced by `senpai/submit-official.sh:213` and `bootstrap-checkout.sh:35`), and
+the Yukon table truncates the frontier commit to `9e1ff9e…`. The `upstream`
+remote is also absent from this workspace, so the full ref cannot be verified
+locally. Writing a partial or guessed ref would break the submit guard's
+consistency check. Updating that file is part of a real
+`sync-organizer-frontier` pass, which needs a build-and-verify cycle that this
+checkpoint excludes.
 
 Score sensitivity at the pinned calibration: `d(score)/d(candidate_seconds) ≈
 −0.4335`, i.e. **100 ms off the candidate decode leg ≈ +0.043 score**. That
@@ -94,14 +137,15 @@ calibration predates `b85e782` and has not been re-derived on it.
 `benchmark.json /scoring/decodeSpeedupCeiling`; `AGENTS.md:75` and
 `senpai/program.md:19,21` agree, and
 `QwenMTPFixedWindowSourceGuardTests.theDocumentedCeilingMatchesTheManifest` now
-fails if they drift apart again. The live promoted frontier is
-**3.02460155382533** (receipt `14b53255-e585-44bd-84d9-37b7b29c0be9`), so the
-remaining headroom is **+1.97539844617467 score**, not the ≈220 ms this
-paragraph used to claim. At the stale −0.4335 calibration that is ≈4.56 s off
-a candidate leg of ≈12.05 s — roughly 38% of the whole MTP leg — which is the
-honest framing: the
-ceiling is far away, it is not a stop target, and no single lever measured so
-far is within an order of magnitude of it.
+fails if they drift apart again. Against the live frontier of
+**3.24985583421771** (receipt `59b321e`) the remaining headroom to the ceiling is
+**+1.75014416578229 score**. At the stale −0.4335 calibration that is ≈4.04 s off
+a candidate leg of ≈12.05 s — roughly a third of the whole MTP leg — which is the
+honest framing: the ceiling is far away, it is not a stop target, and no single
+lever measured so far is within an order of magnitude of it.
+
+The operative target is therefore **not** the ceiling but the **0.53 % deficit to
+`59b321e`**, which is inside the reach of the levers now on the branch.
 
 ### Open flags
 
@@ -503,21 +547,34 @@ re-derived wrongly:**
 
 ## Live experiment slots
 
-All four students are occupied. No slot is free.
+*(Slate refreshed at the 2026-08-19 checkpoint. The round-1 table for PRs #1–#5
+is superseded and has been removed; those results are in the ledger.)*
 
-| PR | Student | Question | Status |
+All four students are occupied. No slot is free. **No PR is review-ready** — every
+one is `status:wip` at revision `r1` per the latest controller events.
+
+| PR | Student | Assignment | Status at checkpoint |
 |---|---|---|---|
-| #1 | qwen-edward | Measure `C(d)` for d=0..8; ship the generalized table rule with `H` measured at run time; width-9→10 padding probe; per-position acceptance table | r2 issued on the post-`b219009` base |
-| #2 | qwen-alphonse | Part A: width-9 bit-exactness (blocking). Part B: `max/p50` block latency per arm **at both head sizes**, plus a low-acceptance arm | r2 issued on the post-`b219009` base |
-| #4 | qwen-askeladd | Three-number floor decomposition; head chain timed in isolation; `rollbackRoundCount` | r2 issued on the post-`b219009` base |
-| #5 | qwen-thorfinn | qmv small-M kernel curve M=1..512; normalized `qmv_tax` stop rule; GDN-vs-projections knees side by side; `qmv_fast` K-alignment audit | r2 issued on the post-`b219009` base |
-| #3 | qwen-thorfinn | Seed-prefill Amdahl term | **merged** — *not useful* for the mechanism, decisive for the ceiling |
+| #52 | qwen-askeladd | **E48** score-weighted QMV and the uniform sign | wip; Arm G complete at two doses, Arm U-lo complete, `base2` null arm running |
+| #53 | qwen-thorfinn | **E49** M=9 two-stream, local vs shared register tax | wip; **Arm 1 ABBA complete and decisive**, Arm 2 dose ladder running |
+| #55 | qwen-alphonse | **E51** exactness-wall dose ladder | wip; no interim result posted yet |
+| #56 | qwen-edward | **E53** scored width mixture and policy map | wip; no interim result posted yet |
 
-Round-1 revisions were all cut from bases older than `b219009` and therefore
-carried the EOS defect. Round 2 re-binds each assignment to the live advisor-branch
-head, so **no in-flight experiment is measuring on a defective base any more**.
-PRs #1 and #2 are the pair that only pays off jointly (Theme A); PRs #4 and #5
-jointly settle Theme C.
+### Base change at `ccd1af6` is scientifically inert for all four PRs
+
+All four received a `research_base_changed` event moving them from their required
+bases (`45b7c6a`, `0df93e9`, `fb0a09d`) to `ccd1af6`. **Verified: zero
+scored-surface files changed.**
+
+```
+git diff --name-only <required_base> ccd1af6 -- Sources/ benchmark.json \
+    mtp-head.manifest.json fixtures/ .github/     ->  0 files
+```
+
+The whole delta is `research/` (25 files), `senpai/` (10) and `AGENTS.md` (1) —
+documentation and ledger only. **No student needs to replay or remeasure because
+of this base move**, and no in-flight assignment should be cancelled for it. Their
+timing arms remain valid on their recorded bases.
 
 ### Process finding — round 1 produced zero student pushes
 
