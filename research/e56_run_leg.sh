@@ -123,6 +123,7 @@ gate_skipped="$(grep -c 'skipping the GPU cool-down gate' "${out}/trace.txt" 2>/
 
 # Log while the session is still running. A leg that logs only at session end
 # is lost if the workspace is retagged mid-session (thorfinn, 15:02Z).
-python3 research/e56_log_leg.py --tag "${tag}" --arm "${arm}" || true
+python3 research/e56_log_leg.py --tag "${tag}" --arm "${arm}" \
+  --session "${E56_SESSION:-}" || true
 
 exit "${status}"
