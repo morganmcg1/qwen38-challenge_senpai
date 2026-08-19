@@ -130,6 +130,25 @@ def main() -> int:
         # candidate's own binary.
         summary["exactness/max_rejected_tail_logit_delta_is_cross_arm"] = False
 
+    disposition_path = pathlib.Path("research/e55-swift-test-disposition.json")
+    if disposition_path.exists():
+        s = json.loads(disposition_path.read_text())
+        summary.update({
+            "swift_test/base_vs_candidate_failing_sets_identical":
+                s["base_vs_candidate_failing_sets_identical"],
+            "swift_test/runtime_gate_adds_no_failure":
+                s["runtime_gate_adds_no_failure"],
+            "swift_test/runtime_gate_provably_took_effect":
+                s["runtime_gate_provably_took_effect"],
+            "swift_test/no_phantom_run_entry": s["no_phantom_run_entry"],
+            "swift_test/verdict_ok": s["verdict_ok"],
+            "swift_test/issues": s["arms"]["base_twins_no_runtime"]["issues"],
+            "swift_test/distinct_failing_tests": len(
+                s["arms"]["base_twins_no_runtime"]["distinct_failing_tests"]),
+            "swift_test/failing_test_names": json.dumps(
+                s["arms"]["base_twins_no_runtime"]["distinct_failing_tests"]),
+        })
+
     api = wandb.Api()
     run = api.run("%s/%s" % (PROJECT, args.run))
     run.summary.update(summary)
