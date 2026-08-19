@@ -278,6 +278,62 @@ def width_mix_identical(arms: dict) -> dict:
     }
 
 
+# Weight streams per dispatched width, read from the shipped
+# `out_vec_size >= 4096` switch in mlx-generated/quantized.cpp:1934-1980. Each
+# working group re-reads the whole weight matrix, so streams = ceil(M / IPG).
+#   M=1 serial path (qmv_fast_impl, no case 1)      -> 1
+#   M=2 qmv_fast_crossrow_affine4_g64<T,2> pair     -> 1
+#   M=3 _m<T,3,3>  IPG 3 -> 1      M=4 _m<T,4,4>  IPG 4 -> 1
+#   M=5 _m<T,5,3>  IPG 3 -> 2      M=6 _m<T,6,3>  IPG 3 -> 2
+#   M=7 _m<T,7,4>  IPG 4 -> 2      M=8 _m<T,8,4>  IPG 4 -> 2
+#   M=9 _m<T,9,3>  IPG 3 -> 3
+SHIPPED_WEIGHT_STREAMS = {1: 1, 2: 1, 3: 1, 4: 1, 5: 2, 6: 2, 7: 2, 8: 2, 9: 3}
+
+
+def local_width_cost_model(arms: dict) -> dict:
+    """Price the MEASURED local histogram, which is not the ranked mixture.
+
+    The pre-registered predictions use ranked-mixture `f9` values: 21.630 % from
+    E48 and 4.6-8.9 % from edward's E53 board telemetry. This fixture is one
+    public English long-copy prompt whose acceptance is far higher than the board
+    average, so it dispatches a much deeper width mix and its own local `f9` is
+    correspondingly larger. QMV is bandwidth bound at these shapes (PR #8
+    measured M=9 at 239.5 GB/s, 88 % of peak), so cost per round is taken
+    proportional to the number of weight streams.
+
+    This block therefore prices what the local instrument can actually see. It
+    does NOT settle the ranked f9 disagreement: the two are different mixtures.
+    """
+    out = {}
+    for arm, rec in arms.items():
+        hist = {int(w): int(n) for w, n in rec["width_histogram"].items()}
+        unknown = sorted(w for w in hist if w not in SHIPPED_WEIGHT_STREAMS)
+        cost = {w: n * SHIPPED_WEIGHT_STREAMS[w] for w, n in hist.items() if w in SHIPPED_WEIGHT_STREAMS}
+        total = sum(cost.values())
+        f9 = (cost.get(9, 0) / total) if total else float("nan")
+        out[arm] = {
+            "rounds_total": sum(hist.values()),
+            "max_dispatched_width": max(hist) if hist else None,
+            "widths_outside_shipped_table": unknown,
+            "weight_stream_cost_by_width": cost,
+            "weight_stream_cost_total": total,
+            "local_f9_stream_share": f9,
+            "local_f9_pct": 100.0 * f9,
+            "predicted_local_mtp_leg_pct": -SENSITIVITY_PCT_PER_F9 * f9,
+        }
+    return {
+        "model": "cost per round proportional to weight streams = ceil(M / IPG)",
+        "streams_by_width": SHIPPED_WEIGHT_STREAMS,
+        "source": "mlx-generated/quantized.cpp:1934-1980 (out_vec_size >= 4096 switch)",
+        "caveat": (
+            "local f9 is NOT ranked f9; this fixture accepts far more drafts than "
+            "the board average, so the local leg change cannot by itself select "
+            "between the E48 and E53 ranked mixtures"
+        ),
+        "by_arm": out,
+    }
+
+
 def leg_spread(arms: dict) -> dict:
     out = {}
     for arm, rec in arms.items():
@@ -384,6 +440,7 @@ def main() -> int:
         "leg_spread": leg_spread(arms),
         "fidelity": fidelity(arms),
         "width_mix": width_mix_identical(arms),
+        "local_width_cost_model": local_width_cost_model(arms),
         "session_null": session_null(arms),
     }
 
@@ -467,6 +524,15 @@ def log_wandb(payload: dict) -> None:
             if key in rec:
                 summary[f"{arm}/{key}"] = rec[key]
         summary[f"{arm}/m9_rounds"] = payload["width_mix"]["m9_rounds"].get(arm)
+        local = payload["local_width_cost_model"]["by_arm"].get(arm, {})
+        for key in (
+            "local_f9_pct",
+            "predicted_local_mtp_leg_pct",
+            "max_dispatched_width",
+            "weight_stream_cost_total",
+        ):
+            if key in local:
+                summary[f"{arm}/{key}"] = local[key]
         meta = payload["provenance"][arm]
         summary[f"{arm}/entry_gpu_temp_c"] = meta["entry_gpu_temp_c"]
         summary[f"{arm}/exit_gpu_temp_c"] = meta["exit_gpu_temp_c"]

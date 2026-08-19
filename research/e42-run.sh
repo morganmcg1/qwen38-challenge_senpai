@@ -29,7 +29,15 @@ curve_widths="${E42_CURVE_WIDTHS:-1,2,3,4,5,6,7,8,9}"
 curve_reps="${E42_CURVE_REPS:-21}"
 curve_inner="${E42_CURVE_INNER:-10}"
 
-macmon_bin="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
+macmon_bin="${MLXFAST_MACMON_BIN:-}"
+if [[ -z "${macmon_bin}" ]]; then
+  for macmon_cand in "${HOME}/bin/macmon" "$(command -v macmon 2>/dev/null || true)"; do
+    if [[ -n "${macmon_cand}" && -x "${macmon_cand}" ]]; then
+      macmon_bin="${macmon_cand}"
+      break
+    fi
+  done
+fi
 sample_thermal() {
   [[ -x "${macmon_bin}" ]] || { echo "unavailable"; return 0; }
   "${macmon_bin}" pipe -s1 2>/dev/null \
@@ -60,6 +68,22 @@ done
 [[ -s "weights/model.safetensors.index.json" ]] || {
   echo "e42-run: no transformed weights at weights/" >&2
   echo "e42-run: run './benchmark.sh --transform-only' first, outside any arm" >&2
+  exit 2
+}
+# This driver always exports MLXFAST_LOCAL_COOL_GATE=0, and program.md permits
+# that ungated mode only when entry and exit GPU temperature are recorded for
+# every arm. sample_thermal degrades to the string "unavailable", so a missing
+# macmon would still produce complete-looking timings whose protocol condition
+# was never met -- measured 2026-08-19, when the E55 base arm recorded
+# thermal_before=unavailable because macmon lives at /opt/homebrew/bin, not
+# ${HOME}/bin. Refuse to time instead.
+[[ -x "${macmon_bin}" ]] || {
+  echo "e42-run: no usable macmon (${macmon_bin:-none found})" >&2
+  echo "e42-run: the ungated protocol requires per-arm GPU temperatures; set MLXFAST_MACMON_BIN" >&2
+  exit 2
+}
+[[ "$(sample_thermal)" == gpu_temp=* ]] || {
+  echo "e42-run: macmon at ${macmon_bin} did not return a GPU temperature" >&2
   exit 2
 }
 

@@ -279,3 +279,111 @@ the head the ranked **candidate** leg executes. `research/fetch-declared-head.sh
 provides it; without that step every timed candidate leg runs the wrong head.
 
 The branch is pushed after every arm, per the advisor's warning about the retag.
+
+---
+
+# ADDENDUM 1 — registered 2026-08-19T17:10Z, after the `base` arm, before any candidate arm
+
+The `base` arm measured the dispatched verify-width histogram. That histogram is a
+property of **the fixture and the base build only**: the candidate changes which kernel
+serves M=9, never the schedule, so nothing here is fitted to the effect under test.
+This addendum is registered **before the `m9two` arm runs**, so the new prediction is a
+genuine prediction and not a post-hoc correction.
+
+## The local mixture is far deeper than the ranked mixture
+
+Measured on `base`, 78 rounds, 512 decode tokens:
+
+| width M | rounds | weight streams | stream-cost |
+|---|---|---|---|
+| 2 | 1 | 1 | 1 |
+| 4 | 5 | 1 | 5 |
+| 5 | 5 | 2 | 10 |
+| 6 | 23 | 2 | 46 |
+| 7 | 4 | 2 | 8 |
+| 8 | 6 | 2 | 12 |
+| **9** | **34** | **3** | **102** |
+| total | 78 | — | **184** |
+
+Streams are read from the shipped `out_vec_size >= 4096` switch at
+`mlx-generated/quantized.cpp:1934-1980`: each working group re-reads the whole weight
+matrix, so streams `= ceil(M / IPG)`. QMV is bandwidth bound at these shapes, so cost
+per round is taken proportional to streams.
+
+```
+local f9 = 102 / 184 = 55.435 %
+```
+
+`accepted_draft_rate = 0.8875` and `effective_mean_draft_len = 6.27` on this fixture.
+The pre-registered `f9` values are ranked-mixture quantities: 21.630 % from E48's
+score-weighted share, and 4.6-8.9 % from edward's E53 board telemetry. **This one
+public English long-copy prompt accepts far more drafts than the board average, so it
+dispatches a much deeper width mix, and its local `f9` is 2.6x to 12x the ranked
+estimates.**
+
+## Revised prediction for the local instrument
+
+```
+predicted local MTP-leg change = -psi_mtp x 12.255 % x local_f9
+                               = -8.49751 % x 0.55435
+                               = -4.711 %
+```
+
+- **Registered prediction: MTP leg −4.711 %**, which is **94.8x** the +0.0497 % MTP-leg
+  null floor.
+- Serial-leg prediction is **unchanged at 0 %**. It remains the best falsifier.
+- Guard band unchanged at `3 x null = 0.1491 %`.
+
+## What this does and does not settle
+
+🟢 **It makes the composition question sharper.** The two competing answers to Risk 3
+are now separated by roughly 4.7 percentage points instead of 1.8:
+
+| answer | mechanism | predicted local MTP leg |
+|---|---|---|
+| 1 — crossrow tier escapes PR #8's group-throughput collapse | the isolated −12.255 % cell win transfers | **≈ −4.71 %** |
+| 2 — same family, isolated single-body build was the artefact | no transfer, or a slowdown | **≈ 0 %, or positive** |
+
+🔴 **It does NOT settle the ranked `f9` disagreement, and I am withdrawing that
+deliverable as stated.** The advisor's framing was that this instrument reads the
+product directly and therefore selects between the E48 and E53 mixtures. That holds
+only if the local and ranked width mixtures agree, and they demonstrably do not. The
+local leg change prices **local** `f9 = 55.4 %`. Selecting a **ranked** `f9` needs the
+ranked width histogram, which this fixture cannot supply.
+
+The pre-registered three-row selection table is therefore **void as a ranked-mixture
+selector**. I keep reporting `f9_implied` from the measured leg change, but it must be
+read as *local* `f9`, and its agreement with 55.4 % tests the stream-cost model rather
+than the board mixture.
+
+🔴 **Consequence for the submission decision.** A local MTP-leg improvement of ~4.7 %
+must **not** be priced as a ~4.7 % ranked gain. Under the same `psi_mtp` and cell win,
+the ranked prize is `8.49751 % x ranked_f9`: **1.84 %** at E48's mixture, **0.76 %** at
+edward's upper bound, **0.39 %** at his lower bound. The local number confirms the
+mechanism; the ranked mixture sets the prize. I will state both and promise neither.
+
+## Also confirmed on `base`
+
+- `max_dispatched_width = 9`, and **no width outside the shipped table** — so the
+  advisor's M=10 caveat does not arise on this fixture, and any M ≤ 9 bitwise delta
+  remains a hard stop.
+- `all_tokens_matched = true`, `row_ledger_closes = true`, 567 declared rows over 78
+  rounds.
+- Leg spread `sd = 0.119 %` on MTP decode seconds, consistent with the E48 null.
+- `mtp_seconds_per_token = 0.03343756` against E48's `0.033438` — cross-session
+  agreement to about `5e-7`, which is far finer than the effect under test.
+
+## One protocol defect found and fixed before the timed comparison
+
+The `base` arm recorded `thermal_before=unavailable`. `e42-run.sh` resolved macmon only
+at `${HOME}/bin/macmon`, while it is installed at `/opt/homebrew/bin/macmon`, so
+`sample_thermal` silently degraded to a string. `program.md` permits
+`MLXFAST_LOCAL_COOL_GATE=0` **only** when entry and exit GPU temperature are recorded
+for every arm, so that arm did not satisfy the ungated protocol even though its timings
+were clean.
+
+Fixed: macmon is resolved from `MLXFAST_MACMON_BIN`, then `${HOME}/bin`, then `PATH`,
+and the driver now **refuses to time** when no GPU temperature can be read. Verified
+reading `gpu_temp=45.09 C`. The thermal-less `base` arm is preserved under
+`.mlxfast-private/e55/discarded/base-nothermal/` and **is not used in the comparison**;
+`base` is re-run with temperatures so all three arms satisfy the protocol.
