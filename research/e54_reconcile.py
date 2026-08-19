@@ -25,11 +25,14 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).resolve().parent
+REPO = HERE.parent
+sys.path.insert(0, str(HERE))
 
 from e54_prereg import BW_NA5, BW_NA_LE4
 from e54_price import E27_SCORE_PCT, M9_WIN_PCT, SHARES, _load_leverage
-
-REPO = pathlib.Path(__file__).resolve().parent.parent
 
 
 def implied_gbps(m5_delta_pct: float) -> float:
@@ -73,7 +76,7 @@ def main() -> int:
     args = ap.parse_args()
 
     L = _load_leverage()
-    shares = json.loads(pathlib.Path(SHARES).read_text())
+    shares = json.loads((REPO / SHARES).read_text())
 
     mixes = {"e48": (shares["askeladd_e48"]["per_width"]["5"],
                      shares["askeladd_e48"]["per_width"]["9"])}
@@ -147,7 +150,7 @@ def main() -> int:
     print("  P1 a win beyond the bar       -> the two cells CANNOT explain E27;")
     print("                                   residual belongs to another mechanism")
 
-    dest = pathlib.Path(args.out)
+    dest = REPO / args.out
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(out, indent=2, sort_keys=True, default=str) + "\n")
     print("\nwrote %s" % dest)
