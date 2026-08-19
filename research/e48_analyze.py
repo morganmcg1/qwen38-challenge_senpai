@@ -162,6 +162,44 @@ def crossrow_xbar(x_by_m: dict[int, dict], hist: dict[int, int]) -> float:
     return sum(w * x for w, x in zip(weights, xs)) / sum(weights)
 
 
+def coverage_gap(base_curve: dict, hist: dict[int, int], mtp_seconds: float) -> dict:
+    """Candidate-leg QMV that NO arm treats, so psi_mtp comes out a lower bound.
+
+    Two families escape both injections:
+
+    * the 2-bit compact draft readout. `quantized.h:1908` dispatches
+      `qmv_fast_singlerow_affine2_g64` at `ntg.x == 1 && out_vec_size == 98336`
+      and RETURNS, upstream of both crossrow tiers and of the `qmv_fast_impl`
+      fall-through the m1 dose patches. It is candidate-leg-only by construction.
+    * GDN `in_proj_b` / `in_proj_a`, n=48 (`Qwen35GatedDelta.swift:254-255`).
+      `out_vec_size < 1024` sends them to `qmv_fast_impl` at every width, so the
+      crossrow dose misses them and the m1 dose only catches width 1. The curve
+      models all four GDN input projections as one fused n=16480 shape
+      (`QwenQMVCostCurveTests.swift:396`), so their bandwidth is already inside
+      the treated total; only ~0.6 % of that shape's width is a/b columns.
+
+    The serial leg has neither: at depth 0 every backbone shape falls through to
+    `qmv_fast_impl`, which the m1 dose treats in full (E42 measured its
+    alpha at 0.9733). So the asymmetry runs one way -- psi_mtp is understated,
+    psi_serial is not -- and the uniform coefficient psi_mtp - psi_serial is a
+    LOWER bound. A measured positive coefficient is therefore conclusive; a
+    measured negative one has to clear this correction first.
+    """
+    treated = sum(count * verify_cost_per_round(base_curve, m) for m, count in hist.items())
+    draft = base_curve.get(DRAFT_SIDE_SHAPE)
+    draft_steps = sum(count * (m - 1) for m, count in hist.items())
+    untreated = draft_steps * draft["rows"][1]["seconds_per_call"] if draft else 0.0
+    return {
+        "treated_verify_qmv_seconds": treated,
+        "untreated_draft_readout_seconds": untreated,
+        "draft_steps": draft_steps,
+        "untreated_share_of_candidate_qmv": untreated / (treated + untreated),
+        "psi_mtp_additive_correction": untreated / mtp_seconds,
+        "note": "isolated single-op dispatch cost, so the correction is indicative, not exact",
+        "direction": "psi_mtp measured is a LOWER bound; uniform coefficient is a LOWER bound",
+    }
+
+
 def solve_two_arms(arms: dict[str, dict]) -> dict:
     """Identify psi_mtp_w1 and psi_mtp_X from two non-proportional dosed arms."""
     lo, hi = arms["ulo"], arms["uhi"]
@@ -292,10 +330,25 @@ def main() -> int:
         dosed[arm] = entry
     payload["dosed_arms"] = dosed
 
+    gap = coverage_gap(base_curve, base["width_histogram"], base["mtp_decode_seconds"])
+    payload["coverage_gap"] = gap
+
     if len(dosed) == 2:
         payload["identified"] = solve_two_arms(dosed)
         stable = {k: dict(v, x1=v["x1_stable"], xbar_X=v["xbar_X_stable"]) for k, v in dosed.items()}
         payload["identified_stable_shapes"] = solve_two_arms(stable)
+        for key in ("identified", "identified_stable_shapes"):
+            ident = payload[key]
+            if not ident.get("identified"):
+                continue
+            corrected = ident["psi_mtp_total"] + gap["psi_mtp_additive_correction"]
+            coeff = corrected - ident["psi_serial"]
+            ident["psi_mtp_total_gap_corrected"] = corrected
+            ident["uniform_coefficient_gap_corrected"] = coeff
+            ident["uniform_sign_gap_corrected"] = "negative" if coeff < 0 else "positive"
+            ident["sign_robust_to_coverage_gap"] = (
+                ident["uniform_coefficient"] > 0 or coeff < 0
+            )
 
     payload["arms"] = {k: strip(v) for k, v in arms.items()}
     payload["width_histogram_spread"] = width_spread(args.arms)
@@ -378,8 +431,14 @@ def log_wandb(payload: dict) -> None:
         "psi_mtp_total": ident.get("psi_mtp_total"),
         "uniform_coefficient": ident.get("uniform_coefficient"),
         "uniform_sign": ident.get("uniform_sign"),
+        "uniform_coefficient_gap_corrected": ident.get("uniform_coefficient_gap_corrected"),
+        "uniform_sign_gap_corrected": ident.get("uniform_sign_gap_corrected"),
+        "sign_robust_to_coverage_gap": ident.get("sign_robust_to_coverage_gap"),
         "psi_serial_form_residual_pct": ident.get("psi_serial_form_residual_pct"),
         "identified": ident.get("identified"),
+        "untreated_share_of_candidate_qmv": payload["coverage_gap"][
+            "untreated_share_of_candidate_qmv"
+        ],
     }
     for arm, rec in payload.get("dosed_arms", {}).items():
         for key in (
