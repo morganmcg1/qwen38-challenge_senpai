@@ -552,6 +552,78 @@ def git_head() -> str:
     ).stdout.strip()
 
 
+def log_wandb_part1(run, wandb, summary: dict) -> dict | None:
+    """Part 1 shares from research/e48_score_weighted_shares.py, if it has been run.
+
+    Logged into the same run as Part 2 because the shares only price a mechanism
+    once multiplied by psi_mtp, which Part 2 measures.
+    """
+    path = ROOT / "research/e48-artifacts/score-weighted-shares.json"
+    if not path.exists():
+        return None
+    shares = json.loads(path.read_text())
+    weighted = shares["score_weighted"]
+    superseded = shares["score_weighted_superseded_79_21"]
+    summary["part1/weights"] = json.dumps(weighted["weights"])
+    for slice_name, value in weighted["slices"].items():
+        summary[f"part1/{slice_name}"] = value
+        summary[f"part1/{slice_name}_superseded_79_21"] = superseded["slices"][slice_name]
+    for prompt, rec in shares["per_prompt_maxent_tilt"].items():
+        for slice_name, value in rec["slices"].items():
+            summary[f"part1/{prompt}/{slice_name}"] = value
+        summary[f"part1/{prompt}/mean_m"] = rec["mean_m"]
+    for slice_name, value in shares["corpus"]["slices"].items():
+        summary[f"part1/corpus/{slice_name}"] = value
+    summary["part1/kink_pct"] = shares["repricing"]["kink_pct"]
+    summary["part1/saturation_cap_pct"] = shares["repricing"]["saturation_cap_pct"]
+    summary["part1/identification"] = shares["identification"]
+
+    share_table = wandb.Table(columns=["basis", "weights", "M9", "f_7_8", "f_4_5_6"])
+    rows = {
+        "corpus_E42": (None, shares["corpus"]["slices"]),
+        "beagle_unweighted": (None, shares["per_prompt_maxent_tilt"]["beagle"]["slices"]),
+        "medicine_unweighted": (None, shares["per_prompt_maxent_tilt"]["medicine"]["slices"]),
+        "score_weighted_marginal": (weighted["weights"], weighted["slices"]),
+        "score_weighted_SUPERSEDED_79_21": (superseded["weights"], superseded["slices"]),
+    }
+    for basis, (weights, sl) in rows.items():
+        share_table.add_data(
+            basis,
+            json.dumps(weights) if weights else "",
+            sl["M9"],
+            sl["f_7_8"],
+            sl["f_4_5_6"],
+        )
+
+    reprice_table = wandb.Table(
+        columns=[
+            "mechanism",
+            "slice",
+            "qmv_pct",
+            "beagle_leg_pct",
+            "medicine_leg_pct",
+            "score_pct_order_statistic",
+            "score_pct_naive_rate",
+            "rate_error_pp",
+            "above_kink",
+        ]
+    )
+    for name, rec in shares["repricing"]["mechanisms"].items():
+        reprice_table.add_data(
+            name,
+            rec["slice"],
+            rec["qmv_cost_reduction_pct"],
+            rec["per_prompt_leg_gain_pct"]["beagle"],
+            rec["per_prompt_leg_gain_pct"]["medicine"],
+            rec["score_pct_order_statistic"],
+            rec["score_pct_naive_weighted_rate"],
+            rec["rate_model_error_pct_points"],
+            rec["above_kink"],
+        )
+        summary[f"part1/repricing/{name}/score_pct"] = rec["score_pct_order_statistic"]
+    return {"part1_cost_shares": share_table, "part1_repricing": reprice_table}
+
+
 def log_wandb(payload: dict) -> None:
     import wandb
 
@@ -603,6 +675,42 @@ def log_wandb(payload: dict) -> None:
         "local_rho_star": local.get("null_crossing_level_ratio_rho_star"),
         "uniform_sign_status": "withdrawn_by_advisor",
     }
+    est_all = [
+        v
+        for src in (est, est_stable)
+        for v in (src.get("psi_mtp_per_arm") or {}).values()
+    ]
+    if est_all:
+        summary["psi_mtp_envelope_lo"] = min(est_all)
+        summary["psi_mtp_envelope_hi"] = max(est_all)
+        summary["psi_mtp_envelope_width_pct"] = 100.0 * (max(est_all) - min(est_all)) / (
+            sum(est_all) / len(est_all)
+        )
+    local_stable = payload["withdrawn_uniform_sign"].get("local_frame_stable_shapes", {})
+    psi_serial_variants = [
+        v
+        for v in (
+            local.get("psi_serial_local"),
+            local.get("psi_serial_local_offset_corrected"),
+            local_stable.get("psi_serial_local"),
+            local_stable.get("psi_serial_local_offset_corrected"),
+        )
+        if v is not None
+    ]
+    if psi_serial_variants:
+        summary["local_psi_serial_lo"] = min(psi_serial_variants)
+        summary["local_psi_serial_hi"] = max(psi_serial_variants)
+        # a leg cannot be more than 100 % QMV, so >1 is proof the width-1
+        # dosimeter is not measuring what it claims to measure
+        summary["local_psi_serial_exceeds_unity"] = max(psi_serial_variants) > 1.0
+    coeff_variants = [
+        v
+        for src in (local, local_stable)
+        for v in (src.get("uniform_coefficient_local_interval") or [])
+    ]
+    if coeff_variants:
+        summary["local_uniform_coefficient_envelope_lo"] = min(coeff_variants)
+        summary["local_uniform_coefficient_envelope_hi"] = max(coeff_variants)
     for arm, rec in payload.get("dosed_arms", {}).items():
         for key in (
             "serial_frac",
@@ -628,7 +736,6 @@ def log_wandb(payload: dict) -> None:
         summary[f"{arm}/entry_gpu_temp_c"] = meta["entry_gpu_temp_c"]
         summary[f"{arm}/exit_gpu_temp_c"] = meta["exit_gpu_temp_c"]
         summary[f"{arm}/head_sha"] = meta["head_sha"]
-    run.summary.update({k: v for k, v in summary.items() if v is not None})
 
     arm_table = wandb.Table(
         columns=[
@@ -656,8 +763,8 @@ def log_wandb(payload: dict) -> None:
             rec["raw_p_ratio"],
             rec["x1"],
             rec["xbar_X"],
-            rec["realised_dose_ratio_x1_over_xX"],
-            rec["one_sided_verdict"],
+            rec.get("realised_dose_ratio_x1_over_xX"),
+            rec.get("one_sided_verdict"),
         )
     width_table = wandb.Table(columns=["arm", "m", "x"])
     for arm, rec in payload.get("dosed_arms", {}).items():
@@ -668,10 +775,15 @@ def log_wandb(payload: dict) -> None:
         hist_table.add_data(
             draw["arm"], draw["leg"], draw["rounds"], draw["mean_m"], json.dumps(draw["histogram"])
         )
-    run.log({"arms": arm_table, "per_width_x": width_table, "width_histograms": hist_table})
+    logged = {"arms": arm_table, "per_width_x": width_table, "width_histograms": hist_table}
+    shares = log_wandb_part1(run, wandb, summary)
+    if shares is not None:
+        logged.update(shares)
+    run.summary.update({k: v for k, v in summary.items() if v is not None})
+    run.log(logged)
     run.finish()
-    print(f"wandb_run_url={run.url}")
-    print(f"wandb_run_id={run.id}")
+    print(f"wandb_run_url={run.url}", file=sys.stderr)
+    print(f"wandb_run_id={run.id}", file=sys.stderr)
 
 
 if __name__ == "__main__":

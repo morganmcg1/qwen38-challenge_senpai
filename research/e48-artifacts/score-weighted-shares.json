@@ -112,9 +112,33 @@
   },
   "score_weighted": {
     "weights": {
+      "beagle": 0.483693625973383,
+      "medicine": 0.516306374026617
+    },
+    "weights_source": "qmv_score_leverage.marginal_weights(), computed from the crown order statistics; NOT re-inlined here",
+    "cost_shares": {
+      "2": 0.049545,
+      "3": 0.0,
+      "4": 0.131471,
+      "5": 0.121744,
+      "6": 0.387034,
+      "7": 0.046307,
+      "8": 0.047603,
+      "9": 0.216296
+    },
+    "slices": {
+      "M9": 0.2162963966853488,
+      "f_7_8": 0.09391018934458673,
+      "f_4_5_6": 0.6402490054794339
+    }
+  },
+  "score_weighted_superseded_79_21": {
+    "weights": {
       "beagle": 0.79,
       "medicine": 0.21
     },
+    "status": "SUPERSEDED, retained for the record",
+    "reason": "E40 leg-effect split (+0.363 % beagle vs +0.088 % medicine, 4.1x) mislabelled in the E48 brief as an order-statistic marginal weight; withdrawn by the advisor on PR 52 comment 5343772907. Using it as a weight double-counts the heterogeneity and biases every slice DOWNWARD, because medicine drafts longer than beagle (mean_m 5.7677 vs 5.5327).",
     "cost_shares": {
       "2": 0.053519,
       "3": 0.0,
@@ -129,6 +153,41 @@
       "M9": 0.20480225000000002,
       "f_7_8": 0.09157736,
       "f_4_5_6": 0.65010135
+    }
+  },
+  "repricing": {
+    "method": "qmv_score_leverage.score_pct_from_leg_gains(), which re-sorts the eight order statistics; the naive weighted rate is reported beside it only to show the size of the error the rate model makes",
+    "kink_pct": 1.0550943463804252,
+    "saturation_cap_pct": 4.715610629070932,
+    "mechanisms": {
+      "alphonse_E44r2_simdgroup_M7_8": {
+        "slice": "f_7_8",
+        "qmv_cost_reduction_pct": 11.421,
+        "magnitude_provenance": "measured, alphonse E44 r1/r2 mean over attn_out and mlp_down at M in {7,8}",
+        "psi_mtp_used": 0.693390924409709,
+        "per_prompt_leg_gain_pct": {
+          "beagle": 0.712556,
+          "medicine": 0.772863
+        },
+        "score_pct_order_statistic": 0.7436927010921579,
+        "score_pct_naive_weighted_rate": 0.7436927010921563,
+        "rate_model_error_pct_points": -1.5543122344752192e-15,
+        "above_kink": false
+      },
+      "hypothetical_M9_at_the_same_11_421_pct": {
+        "slice": "M9",
+        "qmv_cost_reduction_pct": 11.421,
+        "magnitude_provenance": "NOT MEASURED. Same size as alphonse's cell, chosen only for slice-to-slice comparability and to exercise the kink.",
+        "psi_mtp_used": 0.693390924409709,
+        "per_prompt_leg_gain_pct": {
+          "beagle": 1.559467,
+          "medicine": 1.856639
+        },
+        "score_pct_order_statistic": 1.2990562406356432,
+        "score_pct_naive_weighted_rate": 1.7128987361280847,
+        "rate_model_error_pct_points": 0.41384249549244156,
+        "above_kink": true
+      }
     }
   },
   "identification": "PREDICTION ONLY. beagle/medicine prompts are hidden (R2-only in the track fixture) and officialMetrics exposes no per-round width histogram, so these shares are a max-entropy extrapolation from one measured statistic per prompt, not a measurement."

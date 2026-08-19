@@ -18,6 +18,13 @@ import json
 import math
 from dataclasses import dataclass
 
+from qmv_score_leverage import (
+    kink_pct,
+    marginal_weights,
+    saturation_cap_pct,
+    score_pct_from_leg_gains,
+)
+
 # Dispatch switch of this base, kernels/quantized.h:1922-1979 (out_vec_size >= 4096).
 # M=2 uses the pair kernel qmv_fast_crossrow_affine4_g64<T,2> (inputs_per_group 2).
 IPG = {2: 2, 3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 3}
@@ -29,8 +36,44 @@ CORPUS_HISTOGRAM = {2: 1, 3: 0, 4: 5, 5: 5, 6: 23, 7: 4, 8: 6, 9: 34}
 # E42 ranked_census, derived from officialMetrics per-prompt effective_mean_draft_len.
 MEAN_M = {"beagle": 5.5327102803738315, "medicine": 5.767676767676767}
 
-# Marginal value ratio from the order-statistic structure (advisor, PR 52).
-SCORE_WEIGHT = {"beagle": 0.79, "medicine": 0.21}
+# 🔴 SUPERSEDED. The brief called this "the marginal value ratio from the
+# order-statistic structure"; the advisor withdrew that on PR 52 (comment
+# 5343772907). It is really E40's per-prompt LEG-EFFECT split (+0.363 % vs
+# +0.088 %), i.e. how much room each prompt has, not what a unit of gain in each
+# is worth. Retained only so the propagation of the mislabelled constant stays on
+# the record.
+SUPERSEDED_WEIGHT = {"beagle": 0.79, "medicine": 0.21}
+SUPERSEDED_REASON = (
+    "E40 leg-effect split (+0.363 % beagle vs +0.088 % medicine, 4.1x) mislabelled "
+    "in the E48 brief as an order-statistic marginal weight; withdrawn by the "
+    "advisor on PR 52 comment 5343772907. Using it as a weight double-counts the "
+    "heterogeneity and biases every slice DOWNWARD, because medicine drafts longer "
+    "than beagle (mean_m 5.7677 vs 5.5327)."
+)
+
+# E48 Arm G, two doses, this base. Measured, not inherited.
+PSI_MTP = 0.693390924409709
+PSI_MTP_INTERVAL = (0.6922916384758034, 0.6944902103436144)
+
+# Mechanisms to re-price, as candidate-leg QMV cost reductions at the named slice.
+# Only alphonse's magnitude is measured; the M=9 row deliberately reuses the SAME
+# 11.421 % so the two slices are comparable, and so the order-statistic kink shows
+# up on a mechanism large enough to cross it. It is NOT a claim about the size of
+# any particular M=9 proposal.
+MECHANISMS = {
+    "alphonse_E44r2_simdgroup_M7_8": {
+        "slice": "f_7_8",
+        "qmv_pct": 11.421,
+        "magnitude_provenance": "measured, alphonse E44 r1/r2 mean over attn_out and "
+        "mlp_down at M in {7,8}",
+    },
+    "hypothetical_M9_at_the_same_11_421_pct": {
+        "slice": "M9",
+        "qmv_pct": 11.421,
+        "magnitude_provenance": "NOT MEASURED. Same size as alphonse's cell, chosen "
+        "only for slice-to-slice comparability and to exercise the kink.",
+    },
+}
 
 
 def cost(m: int) -> float:
@@ -110,14 +153,62 @@ def main() -> None:
         }
     out["per_prompt_maxent_tilt"] = per_prompt
 
-    combined = {
-        m: sum(SCORE_WEIGHT[p] * per_prompt[p]["cost_shares"][m] for p in SCORE_WEIGHT)
-        for m in sorted(IPG)
-    }
+    def weighted(weights: dict[str, float]) -> dict[int, float]:
+        return {
+            m: sum(weights[p] * per_prompt[p]["cost_shares"][m] for p in weights)
+            for m in sorted(IPG)
+        }
+
+    weights = marginal_weights()
+    combined = weighted(weights)
     out["score_weighted"] = {
-        "weights": SCORE_WEIGHT,
+        "weights": weights,
+        "weights_source": "qmv_score_leverage.marginal_weights(), computed from the "
+        "crown order statistics; NOT re-inlined here",
         "cost_shares": {m: round(v, 6) for m, v in combined.items()},
         "slices": slices(combined).as_dict(),
+    }
+
+    superseded = weighted(SUPERSEDED_WEIGHT)
+    out["score_weighted_superseded_79_21"] = {
+        "weights": SUPERSEDED_WEIGHT,
+        "status": "SUPERSEDED, retained for the record",
+        "reason": SUPERSEDED_REASON,
+        "cost_shares": {m: round(v, 6) for m, v in superseded.items()},
+        "slices": slices(superseded).as_dict(),
+    }
+
+    # Re-pricing. The score is the mean of order statistics 4 and 5, so a constant
+    # %/% rate is only valid while the scored pair keeps its membership. Compute the
+    # score change by re-sorting the per-prompt ratios instead of multiplying a rate.
+    repricing = {}
+    for mech, spec in MECHANISMS.items():
+        leg_gains = {
+            p: PSI_MTP * per_prompt[p]["slices"][spec["slice"]] * spec["qmv_pct"]
+            for p in MEAN_M
+        }
+        order_stat_pct = score_pct_from_leg_gains(leg_gains)
+        naive_rate_pct = sum(
+            weights[p] * leg_gains[p] for p in weights
+        )
+        repricing[mech] = {
+            "slice": spec["slice"],
+            "qmv_cost_reduction_pct": spec["qmv_pct"],
+            "magnitude_provenance": spec["magnitude_provenance"],
+            "psi_mtp_used": PSI_MTP,
+            "per_prompt_leg_gain_pct": {p: round(v, 6) for p, v in leg_gains.items()},
+            "score_pct_order_statistic": order_stat_pct,
+            "score_pct_naive_weighted_rate": naive_rate_pct,
+            "rate_model_error_pct_points": naive_rate_pct - order_stat_pct,
+            "above_kink": max(leg_gains.values()) > kink_pct(),
+        }
+    out["repricing"] = {
+        "method": "qmv_score_leverage.score_pct_from_leg_gains(), which re-sorts the "
+        "eight order statistics; the naive weighted rate is reported beside it only "
+        "to show the size of the error the rate model makes",
+        "kink_pct": kink_pct(),
+        "saturation_cap_pct": saturation_cap_pct(),
+        "mechanisms": repricing,
     }
     out["identification"] = (
         "PREDICTION ONLY. beagle/medicine prompts are hidden (R2-only in the track "

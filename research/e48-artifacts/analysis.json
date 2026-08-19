@@ -1,0 +1,696 @@
+{
+  "base_sha": "fb0a09d3912477d94ed631bdb90fd04172d7b4cf",
+  "head_sha": "5bb6d0de90e3ce7e32d0338394073a1bad799f0a",
+  "doses": {
+    "base": [
+      0,
+      0
+    ],
+    "ulo": [
+      1,
+      2
+    ],
+    "g1": [
+      1,
+      0
+    ],
+    "g2": [
+      2,
+      0
+    ],
+    "base2": [
+      0,
+      0
+    ]
+  },
+  "arm_order": [
+    "base",
+    "ulo",
+    "g1",
+    "g2",
+    "base2"
+  ],
+  "counterbalancing": "bracketed A B B' A: the two zero-dose arms bookend the dosed arms in one session, so monotone drift shows up as the base/base2 spread reported below",
+  "provenance": {
+    "base": {
+      "head_sha": "54a3c507a7bf75b9d069af2340cd0f193fd77977",
+      "twin_digests": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281 350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb ",
+      "metallib_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+      "started": "2026-08-19T13:07:02Z",
+      "entry_gpu_temp_c": 38.98564910888672,
+      "exit_gpu_temp_c": 59.9671630859375,
+      "per_leg_exit_gpu_temp_c": [
+        61.79317855834961,
+        62.55385971069336
+      ],
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "official_or_ranked_score": "false"
+    },
+    "ulo": {
+      "head_sha": "62755f0c92e637fa799702c8cfe5a8e445fdec67",
+      "twin_digests": "065bf28c33e0670a6ae4b455d7eb716f848a5df21b96cb5a9e273efbf14d868d b6270d02ab9aff93cb0a43e97774cc533ccf296e8b78b4081e784f73f4ae9ca5 ",
+      "metallib_fingerprint": "183135a47e84d6e0822f10025fa24fcc61d1d3e19d21fc8cf5bc283d1424b927",
+      "started": "2026-08-19T13:29:18Z",
+      "entry_gpu_temp_c": 39.5124626159668,
+      "exit_gpu_temp_c": 64.07028198242188,
+      "per_leg_exit_gpu_temp_c": [
+        66.94427490234375,
+        68.24195098876953
+      ],
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "official_or_ranked_score": "false"
+    },
+    "g1": {
+      "head_sha": "be5cfe7fe93a28118942b69c1042b8d46c923ec3",
+      "twin_digests": "fa0391d542729edca2cc3c37f0dc7b5dbc5e6560ee1a655eb161b528f794946c 9ecc31024881b8050603f367e665245c1878ae630c6571bd411b0c6625f32513 ",
+      "metallib_fingerprint": "9a2de8670733bd76c4231d98bc07e3bb7b79c8669cd696d478315d9a0b77f9fb",
+      "started": "2026-08-19T13:54:47Z",
+      "entry_gpu_temp_c": 40.20443344116211,
+      "exit_gpu_temp_c": 60.051231384277344,
+      "per_leg_exit_gpu_temp_c": [
+        63.0953254699707,
+        63.685302734375
+      ],
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "official_or_ranked_score": "false"
+    },
+    "g2": {
+      "head_sha": "210651528f6d489f97917c952564a45d4da227e6",
+      "twin_digests": "8e6054b6ff1ed0051bcf34863130ea3960ba5a6cdadc2b755c4b5981281d31e2 274bca355d6dbc14ee27104133e8bede77c4c42e88d3f643b9c7fcc9f55cbc49 ",
+      "metallib_fingerprint": "14ac5789dc21e469b620de5582b1d5a2c5607d982ab91321a8c4771e1de3a16d",
+      "started": "2026-08-19T14:12:50Z",
+      "entry_gpu_temp_c": 44.6101188659668,
+      "exit_gpu_temp_c": 60.685791015625,
+      "per_leg_exit_gpu_temp_c": [
+        63.373111724853516,
+        63.99964904785156
+      ],
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "official_or_ranked_score": "false"
+    },
+    "base2": {
+      "head_sha": "feaadccfa15887242764090a37fae85590818d90",
+      "twin_digests": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281 350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb ",
+      "metallib_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+      "started": "2026-08-19T14:32:51Z",
+      "entry_gpu_temp_c": 43.287593841552734,
+      "exit_gpu_temp_c": 61.2476692199707,
+      "per_leg_exit_gpu_temp_c": [
+        62.911460876464844,
+        63.84855651855469
+      ],
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "official_or_ranked_score": "false"
+    }
+  },
+  "entry_gpu_temp_spread_c": 5.624469757080078,
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "null_arm": {
+    "what": "byte-identical zero-dose repeat of base, separate build and session slot",
+    "serial_frac": -0.00013341707668468317,
+    "mtp_frac": 0.0004973394693674749,
+    "raw_p_base": 2.1969211117934533,
+    "raw_p_repeat": 2.1955402039100846,
+    "raw_p_ratio": 0.9993714349250159,
+    "irreproducible_shapes": [
+      "full_attn.qkv_proj_fused",
+      "mlp.down"
+    ],
+    "curve_repro_tolerance": 0.02
+  },
+  "dosed_arms": {
+    "ulo": {
+      "crossrow_level": 1,
+      "m1_level": 2,
+      "serial_frac": 0.6606007521776756,
+      "mtp_frac": 0.6590049856463551,
+      "raw_p": 2.199034525396331,
+      "raw_p_ratio": 1.0009619888449943,
+      "x1": 0.829258034847095,
+      "xbar_X": 0.9156671246091335,
+      "x1_stable": 0.6343227356804912,
+      "xbar_X_stable": 0.91356553826294,
+      "x_by_width": {
+        "1": 0.829258034847095,
+        "2": 0.5049003513546435,
+        "3": 0.8374181620915468,
+        "4": 0.8535577245967156,
+        "5": 0.912490643966487,
+        "6": 0.9071019326252538,
+        "7": 0.9068006607103103,
+        "8": 0.9185793734963261,
+        "9": 0.9286714271616674
+      },
+      "all_tokens_matched": true,
+      "row_ledger_closes": true,
+      "realised_dose_ratio_x1_over_xX": 0.9056326393732619,
+      "raw_p_direction": "up",
+      "one_sided_verdict": "uniform sign NEGATIVE (proved: under-dosed width 1 and raw_p still rose)"
+    },
+    "g1": {
+      "crossrow_level": 1,
+      "m1_level": 0,
+      "serial_frac": 0.00013473400535302105,
+      "mtp_frac": 0.6353890742802291,
+      "raw_p": 1.3435441478431498,
+      "raw_p_ratio": 0.6115577571860783,
+      "x1": 0.06942181354876586,
+      "xbar_X": 0.9148999724068916,
+      "x1_stable": 0.10457691743136732,
+      "xbar_X_stable": 0.9137316130090378,
+      "x_by_width": {
+        "1": 0.06942181354876586,
+        "2": 0.4947588432519614,
+        "3": 0.8311258059680169,
+        "4": 0.8544044055299636,
+        "5": 0.917144219287475,
+        "6": 0.9067907163451836,
+        "7": 0.9094820945249542,
+        "8": 0.9138196118678037,
+        "9": 0.9274331943809895
+      },
+      "all_tokens_matched": true,
+      "row_ledger_closes": true
+    },
+    "g2": {
+      "crossrow_level": 2,
+      "m1_level": 0,
+      "serial_frac": -0.0006490461547461468,
+      "mtp_frac": 1.2725779381751638,
+      "raw_p": 0.9660814226972083,
+      "raw_p_ratio": 0.43974333785183084,
+      "x1": 0.042298637292435215,
+      "xbar_X": 1.8382107589468484,
+      "x1_stable": 0.06741545798071313,
+      "xbar_X_stable": 1.8348206736621262,
+      "x_by_width": {
+        "1": 0.042298637292435215,
+        "2": 1.1492363400794305,
+        "3": 1.6817477993702084,
+        "4": 1.7162089245374634,
+        "5": 1.8253617420581287,
+        "6": 1.8200998279884484,
+        "7": 1.8208320130456817,
+        "8": 1.8357024659583083,
+        "9": 1.8649109945160003
+      },
+      "all_tokens_matched": true,
+      "row_ledger_closes": true
+    }
+  },
+  "coverage_gap": {
+    "treated_verify_qmv_seconds": 11.802987039,
+    "draft_steps": 489,
+    "untreated_draft_readout_seconds_4bit_proxy_upper": 0.5742103038,
+    "untreated_draft_readout_seconds_2bit_scaled": 0.2871051519,
+    "untreated_share_of_candidate_qmv_upper": 0.0463925950194231,
+    "untreated_share_of_candidate_qmv_scaled": 0.023747143310958292,
+    "psi_mtp_additive_correction_upper": 0.03354027348054416,
+    "psi_mtp_additive_correction_scaled": 0.01677013674027208,
+    "note": "the correction's SIGN is certain because untreated candidate QMV has positive cost; only its magnitude is uncertain, and the one-sided bound below does not depend on the magnitude",
+    "direction": "psi_mtp measured is a LOWER bound; uniform coefficient is a LOWER bound"
+  },
+  "dosimeter_reproducibility": {
+    "crossrow_level_1": {
+      "arms": [
+        "ulo",
+        "g1"
+      ],
+      "per_width_abs_diff": {
+        "2": 0.010141508102682106,
+        "3": 0.006292356123529963,
+        "4": 0.0008466809332479119,
+        "5": 0.004653575320987979,
+        "6": 0.0003112162800702478,
+        "7": 0.0026814338146439187,
+        "8": 0.00475976162852243,
+        "9": 0.001238232780677917
+      },
+      "worst_abs_diff": 0.010141508102682106,
+      "mean_abs_diff": 0.0038655956230453092,
+      "xbar_X_disagreement_pct": -0.08378068641149428
+    },
+    "width1_cell_at_true_dose_zero": {
+      "g1": 0.06942181354876586,
+      "g2": 0.042298637292435215
+    },
+    "verdict": "crossrow dosimeter reproduces across builds; width-1 dosimeter does not, so psi_mtp is identified and psi_serial is not"
+  },
+  "psi_mtp": {
+    "arms_used": [
+      "g1",
+      "g2"
+    ],
+    "dosimetry": "as_measured",
+    "identified": true,
+    "psi_mtp_per_arm": {
+      "g1": 0.6944902103436144,
+      "g2": 0.6922916384758034
+    },
+    "psi_mtp": 0.693390924409709,
+    "psi_mtp_interval": [
+      0.6922916384758034,
+      0.6944902103436144
+    ],
+    "form_test": {
+      "low_arm": "g1",
+      "high_arm": "g2",
+      "dose_ratio_xX": 2.0091931515867665,
+      "psi_mtp_form_residual_pct": -0.3165734858556313
+    },
+    "structural_churn_control": {
+      "what": "serial leg of each Arm G arm: pass-loop scaffolding present, E42_PASSES=0",
+      "serial_frac_per_arm": {
+        "g1": 0.00013473400535302105,
+        "g2": -0.0006490461547461468
+      },
+      "worst_abs_serial_frac": 0.0006490461547461468
+    },
+    "psi_mtp_w1_by_differencing": {
+      "paired_with": "g1",
+      "shared_crossrow_level": 1,
+      "mtp_frac_difference": 0.023615911366126063,
+      "psi_mtp_w1": 0.028478363035072125,
+      "covers": "4-bit qmv_fast_impl width-1 only",
+      "excludes": "the 2-bit draft readout at quantized.h:1908, which no arm doses; so this is a LOWER bound on total candidate width-1 exposure"
+    },
+    "psi_mtp_gap_corrected_scaled": 0.710161061149981,
+    "psi_mtp_gap_corrected_upper": 0.7269311978902531,
+    "ranked_dscore_per_pct_qmv_win": 0.693390924409709,
+    "ranked_gating_premium": 0.0
+  },
+  "psi_mtp_stable_shapes": {
+    "arms_used": [
+      "g1",
+      "g2"
+    ],
+    "dosimetry": "stable_shapes",
+    "identified": true,
+    "psi_mtp_per_arm": {
+      "g1": 0.6953782327699155,
+      "g2": 0.6935707431480049
+    },
+    "psi_mtp": 0.6944744879589602,
+    "psi_mtp_interval": [
+      0.6935707431480049,
+      0.6953782327699155
+    ],
+    "form_test": {
+      "low_arm": "g1",
+      "high_arm": "g2",
+      "dose_ratio_xX": 2.0080520883148845,
+      "psi_mtp_form_residual_pct": -0.2599289906891067
+    },
+    "structural_churn_control": {
+      "what": "serial leg of each Arm G arm: pass-loop scaffolding present, E42_PASSES=0",
+      "serial_frac_per_arm": {
+        "g1": 0.00013473400535302105,
+        "g2": -0.0006490461547461468
+      },
+      "worst_abs_serial_frac": 0.0006490461547461468
+    },
+    "psi_mtp_w1_by_differencing": {
+      "paired_with": "g1",
+      "shared_crossrow_level": 1,
+      "mtp_frac_difference": 0.023615911366126063,
+      "psi_mtp_w1": 0.03723011968157076,
+      "covers": "4-bit qmv_fast_impl width-1 only",
+      "excludes": "the 2-bit draft readout at quantized.h:1908, which no arm doses; so this is a LOWER bound on total candidate width-1 exposure"
+    },
+    "psi_mtp_gap_corrected_scaled": 0.7112446246992322,
+    "psi_mtp_gap_corrected_upper": 0.7280147614395043,
+    "ranked_dscore_per_pct_qmv_win": 0.6944744879589602,
+    "ranked_gating_premium": 0.0
+  },
+  "withdrawn_uniform_sign": {
+    "status": "WITHDRAWN BY ADVISOR, not answered by this experiment",
+    "why": "the ranked baseline is a separately built pinned tree (/opt/bench-runner/baseline/qwen3.8-27b-mtp-v1/current, never built from candidate source; .github is absent from benchmark.json editablePaths), so d ln(serial)/dx = 0 on ranked and psi_serial has no ranked leverage",
+    "provenance": "edward E50 / PR 54, relayed on PR 52 comment 5342984599; re-verified from the workflow independently here",
+    "local_frame_as_measured": {
+      "available": true,
+      "dosimetry": "as_measured",
+      "ranked_meaning": "NONE: psi_serial is not in the ranked score (pinned baseline binary)",
+      "psi_serial_local": 0.7966166433340404,
+      "psi_mtp_total_local": 0.7196992967588102,
+      "uniform_coefficient_local": -0.0769173465752302,
+      "realised_level_ratio_rho": 2.0,
+      "null_crossing_level_ratio_rho_star": 1.9951658804260664,
+      "ledger_173A_claim": -0.1789,
+      "width1_dosimeter_offset_at_dose_zero": 0.06942181354876586,
+      "psi_serial_local_offset_corrected": 0.8693988699945229,
+      "uniform_coefficient_local_offset_corrected": -0.1496995732357127,
+      "uniform_coefficient_local_interval": [
+        -0.1496995732357127,
+        -0.0769173465752302
+      ],
+      "overstatement_factor_vs_173A_interval": [
+        1.1950601871009288,
+        2.3258732648171128
+      ],
+      "note": "psi_mtp uses only the crossrow dosimeter, which reproduces across independent builds; psi_serial uses only the width-1 dosimeter, which does not. The withdrawn sign rested on the weaker half of the instrument."
+    },
+    "local_frame_stable_shapes": {
+      "available": true,
+      "dosimetry": "stable_shapes",
+      "ranked_meaning": "NONE: psi_serial is not in the ranked score (pinned baseline binary)",
+      "psi_serial_local": 1.0414268873225767,
+      "psi_mtp_total_local": 0.7213549089202641,
+      "uniform_coefficient_local": -0.3200719784023126,
+      "realised_level_ratio_rho": 2.0,
+      "null_crossing_level_ratio_rho_star": 1.9951658804260664,
+      "ledger_173A_claim": -0.1789,
+      "width1_dosimeter_offset_at_dose_zero": 0.10457691743136732,
+      "psi_serial_local_offset_corrected": 1.2470145670258306,
+      "uniform_coefficient_local_offset_corrected": -0.5256596581055665,
+      "uniform_coefficient_local_interval": [
+        -0.5256596581055665,
+        -0.3200719784023126
+      ],
+      "overstatement_factor_vs_173A_interval": [
+        0.3403342775908288,
+        0.5589367769493795
+      ],
+      "note": "psi_mtp uses only the crossrow dosimeter, which reproduces across independent builds; psi_serial uses only the width-1 dosimeter, which does not. The withdrawn sign rested on the weaker half of the instrument."
+    }
+  },
+  "arms": {
+    "base": {
+      "arm": "base",
+      "family": "base",
+      "level": 0,
+      "legs": 2,
+      "mtp_decode_seconds": 17.120024502277374,
+      "serial_decode_seconds": 37.61134600639343,
+      "mtp_seconds_per_token": 0.0334375478560105,
+      "serial_seconds_per_token": 0.07345966016873717,
+      "raw_p": 2.1969211117934533,
+      "accepted_draft_rate": 0.8875255623721882,
+      "effective_mean_draft_len": 6.269230769230769,
+      "all_tokens_matched": true,
+      "round_count": 78,
+      "declared_rows_total": 567,
+      "width_histogram": {
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34,
+        "4": 5,
+        "2": 1
+      },
+      "seed_prefill_seconds": 4.009829998016357,
+      "p50_block_request_seconds": 0.1649264693260193,
+      "has_curve": false,
+      "mtp_decode_seconds_sd_pct": 0.01969722268159168,
+      "row_ledger_closes": true
+    },
+    "ulo": {
+      "arm": "ulo",
+      "family": "base",
+      "level": 0,
+      "legs": 2,
+      "mtp_decode_seconds": 28.402206003665924,
+      "serial_decode_seconds": 62.457429468631744,
+      "mtp_seconds_per_token": 0.05547305860091001,
+      "serial_seconds_per_token": 0.12198716693092138,
+      "raw_p": 2.199034525396331,
+      "accepted_draft_rate": 0.8875255623721882,
+      "effective_mean_draft_len": 6.269230769230769,
+      "all_tokens_matched": true,
+      "round_count": 78,
+      "declared_rows_total": 567,
+      "width_histogram": {
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34,
+        "4": 5,
+        "2": 1
+      },
+      "seed_prefill_seconds": 3.996011972427368,
+      "p50_block_request_seconds": 0.3083065152168274,
+      "has_curve": false,
+      "mtp_decode_seconds_sd_pct": 0.00835006677087653,
+      "row_ledger_closes": true
+    },
+    "g1": {
+      "arm": "g1",
+      "family": "base",
+      "level": 0,
+      "legs": 2,
+      "mtp_decode_seconds": 27.997901022434235,
+      "serial_decode_seconds": 37.61641353368759,
+      "mtp_seconds_per_token": 0.054683400434441864,
+      "serial_seconds_per_token": 0.07346955768298358,
+      "raw_p": 1.3435441478431498,
+      "accepted_draft_rate": 0.8875255623721882,
+      "effective_mean_draft_len": 6.269230769230769,
+      "all_tokens_matched": true,
+      "round_count": 78,
+      "declared_rows_total": 567,
+      "width_histogram": {
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34,
+        "4": 5,
+        "2": 1
+      },
+      "seed_prefill_seconds": 3.998444080352783,
+      "p50_block_request_seconds": 0.30208951234817505,
+      "has_curve": false,
+      "mtp_decode_seconds_sd_pct": 0.013203490075661078,
+      "row_ledger_closes": true
+    },
+    "g2": {
+      "arm": "g2",
+      "family": "base",
+      "level": 0,
+      "legs": 2,
+      "mtp_decode_seconds": 38.9065899848938,
+      "serial_decode_seconds": 37.58693450689316,
+      "mtp_seconds_per_token": 0.0759894335642457,
+      "serial_seconds_per_token": 0.0734119814587757,
+      "raw_p": 0.9660814226972083,
+      "accepted_draft_rate": 0.8875255623721882,
+      "effective_mean_draft_len": 6.269230769230769,
+      "all_tokens_matched": true,
+      "round_count": 78,
+      "declared_rows_total": 567,
+      "width_histogram": {
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34,
+        "4": 5,
+        "2": 1
+      },
+      "seed_prefill_seconds": 4.003979921340942,
+      "p50_block_request_seconds": 0.43931394815444946,
+      "has_curve": false,
+      "mtp_decode_seconds_sd_pct": 0.006953377084107493,
+      "row_ledger_closes": true
+    },
+    "base2": {
+      "arm": "base2",
+      "family": "base",
+      "level": 0,
+      "legs": 2,
+      "mtp_decode_seconds": 17.128538966178894,
+      "serial_decode_seconds": 37.60632801055908,
+      "mtp_seconds_per_token": 0.03345417766831815,
+      "serial_seconds_per_token": 0.07344985939562321,
+      "raw_p": 2.1955402039100846,
+      "accepted_draft_rate": 0.8875255623721882,
+      "effective_mean_draft_len": 6.269230769230769,
+      "all_tokens_matched": true,
+      "round_count": 78,
+      "declared_rows_total": 567,
+      "width_histogram": {
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34,
+        "4": 5,
+        "2": 1
+      },
+      "seed_prefill_seconds": 4.008084058761597,
+      "p50_block_request_seconds": 0.16491198539733887,
+      "has_curve": false,
+      "mtp_decode_seconds_sd_pct": 0.11493857555798676,
+      "row_ledger_closes": true
+    }
+  },
+  "width_histogram_spread": {
+    "draws": [
+      {
+        "arm": "base",
+        "leg": "1",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "base",
+        "leg": "2",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "ulo",
+        "leg": "1",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "ulo",
+        "leg": "2",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "g1",
+        "leg": "1",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "g1",
+        "leg": "2",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "g2",
+        "leg": "1",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "g2",
+        "leg": "2",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "base2",
+        "leg": "1",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      },
+      {
+        "arm": "base2",
+        "leg": "2",
+        "rounds": 78,
+        "mean_m": 7.269230769230769,
+        "histogram": {
+          "5": 5,
+          "6": 23,
+          "7": 4,
+          "8": 6,
+          "9": 34,
+          "4": 5,
+          "2": 1
+        }
+      }
+    ],
+    "n_draws": 10,
+    "identical_across_all_draws": true,
+    "mean_m_range": [
+      7.269230769230769,
+      7.269230769230769
+    ],
+    "mean_m_sd_pct": 0.0
+  }
+}
