@@ -4449,3 +4449,309 @@ Two traps in doing it:
      He also named his own failure mode: he reported an invalid-git-object lookup as a
      blocker while the baseline he needed was in the assignment feedback.
 
+151. 🔴🔴🔴 **THE RANKED BOX MAY NOT RUN THE SAME KERNELS WE DO, AND THE DIVERGENCE IS
+     CONCENTRATED IN EXACTLY THE WIDTH REGIME THE WHOLE CAMPAIGN IS BETTING ON.**
+     Found by edward (E34 r2), verified by me in source before I acted on it. This is a
+     validity threat to every local kernel measurement we have taken.
+
+     **The gate.** `metal::is_nax_available()` (`Vendor/.../backend/metal/device.cpp:913-930`)
+     is a function-local `static bool` computed once:
+
+     ```
+     can_use_nax  = __builtin_available(macOS 26.2, ...)
+     can_use_nax &= gen >= (arch == 'p' ? 18 : 17)
+     ```
+
+     `arch` and `gen` come from `Device::arch_` / `arch_gen_`, parsed at `:566-573` from
+     the **last three characters** of the architecture string: `ag_tens = arch_[n-3]`,
+     `ag_ones = arch_[n-2]`, `arch = arch_.back()`. Our `applegpu_g16s` ⇒ `gen = 16`,
+     `arch = 's'` ⇒ `16 >= 17` is **false** ⇒ **nax is unavailable on this host.**
+     macOS 26.5.2 clears the availability half; it is the generation half that fails.
+     An M5 that reports `g17s` would give `17 >= 17` ⇒ **nax available on ranked.**
+     I have NOT measured the ranked arch string. That single log line is now the
+     highest-value external ask in the campaign (see item 152 for the second reason).
+
+     **All five nax decision sites, with reachability for OUR model:**
+
+     | site | function | reachable at scored widths? |
+     |---|---|---|
+     | `scaled_dot_product_attention.cpp:177` | `sdpa_full_self_attention_metal` | 🟢 **NO** — dead on both boxes |
+     | `quantized.cpp:697` | `qmm` | 🟢 **NO** — `M <= 9 < vector_limit` |
+     | `quantized.cpp:892` | `gather_qmm` | ❓ only if MoE/gather is on the path |
+     | `quantized.cpp:1237` | `gather_qmm_rhs` | ❓ same |
+     | `matmul.cpp:915`, `:2443`, `:2517` | dense GEMM / `gather_mm_rhs` | 🔴 **YES, and not shape-gated** |
+
+     - The **SDPA site is dead for us at every width**, and this is worth stating
+       precisely because it looks like the most dangerous one. `sdpa_full_self_attention_metal`
+       is only entered when `supports_sdpa_full` holds, and that requires
+       `query_head_dim ∈ {64, 80, 128}` (`:625-626`). Our head_dim is **256**, which is
+       in `sdpa_vector_supported_head_dim` `{64, 96, 128, 256}` but **not** in the full
+       list. So `sdpa_full` is unreachable for this model on any box, nax or not.
+     - 🟢 **Item 134's width-wall derivation re-verified line by line and it stands.**
+       `supports_sdpa_vector = (q_len <= 8) && (q_len <= k_len) && head_dim ok &&
+       (q_len * gqa_factor) <= 32` (`:634-637`). With `gqa_factor = 6`: `q_len <= 5`.
+       At `q_len = 6` **both** predicates fail ⇒ unfused fallback. The wall bites at
+       M = 6. I had recorded the `q_len·gqa ≤ 32` clause from memory; it is verbatim.
+     - 🔴 **And that is exactly what makes the dense-matmul sites bite.** At M ≥ 6 we
+       fall off fused SDPA onto the **unfused** path, which is dense `q @ kᵀ` and
+       `attn @ v` matmuls — and those go through `matmul.cpp`, where
+       `use_nax = is_nax_available() && !complex && (tf32 || dtype != float32)` has
+       **no shape gate at all**. Worse, `:923` reads `if (!use_nax && ... ) return
+       steel_gemm_splitk_axpby(...)`, so nax does not merely swap a kernel — it
+       **disables the split-K algorithm** for dense matmul at every shape.
+     - Exposure bound: our time attribution is MLP 59 % / GDN 28 % / attn 8 % /
+       LM-head+top2 5 %. The 59 % MLP term is quantised `qmv` and is **nax-free at
+       M ≤ 9 on both boxes**, so the dominant term of every local ladder is safe. Up
+       to ~36 % of leg time is potentially measured on the wrong kernel family, and it
+       is concentrated on the attention path, which is precisely the part that changes
+       character at M = 6.
+
+     🔴 **What this does and does not explain.** It does **not** explain item 148: that
+     is an us-versus-rivals comparison on the *same* box, so nax availability is
+     identical on both sides of it. It *does* supply the first mechanism for edward's
+     ranked-vs-local step discrepancy, and it prices E38 (item 153).
+
+     **Two things it changes immediately.** (1) `get_qmv_batch_limit` is arch-keyed too
+     (`quantized.cpp:84-126`) — see item 152. (2) askeladd's warm-coverage negative has
+     to be stated as a claim about **shape** coverage rather than kernel identity;
+     warm-up runs the same shapes whatever family the box picks, so the negative
+     survives, but only in that formulation.
+
+152. 🔴🔴🔴 **`MLX_METAL_GPU_ARCH` IS A ONE-ENV-VAR LEVER ON A DISPATCH DECISION WE
+     CANNOT OTHERWISE REACH, AND IT LANDS ON THE SINGLE BIGGEST KNOWN COST CLIFF.**
+     This is the most promising untested idea I have had in the campaign and it needs no
+     kernel edit at all.
+
+     **The chain.** `Device::Device()` at `device.cpp:560` does
+     `arch_ = env::metal_gpu_arch()` and only falls back to the real device name if that
+     is empty. `env::metal_gpu_arch()` (`mlx/utils.h:205-208`) is
+     `static std::string gpu_arch_ = get_var("MLX_METAL_GPU_ARCH", "")`. So **the whole
+     architecture string is spoofable from the environment**, and everything keyed off
+     it moves with it.
+
+     **The target.** `get_qmv_batch_limit(D, O, d)` (`quantized.cpp:84-126`) keys on
+     `arch_gen` and `arch_.back()`:
+
+     ```
+     gen 13 or 14, 's' :  D,O <= 2048 -> 14 ;  <= 4096 -> 10 ;  else -> 6
+     gen >= 15    , 's' :  D,O <= 2048 -> 18 ;  <= 4096 -> 12 ;  else -> 10
+     ```
+
+     It is called as `get_qmv_batch_limit(K, N, d)` and every large shape we care about
+     lands in the `else` case (mlp.down K=17408 N=5120; gate/up K=5120 N=17408;
+     fc K=10240 N=5120; draft_lm_head K=2560 N=98336). So `vector_limit` is **10** here
+     and **6** under a spoofed `applegpu_g14s`. `QuantizedMatmul::eval_gpu` `:1415-1440`:
+
+     ```
+     int vector_limit = transpose_ ? get_qmv_batch_limit(K, N, d) : 4;
+     if (M >= vector_limit) {  if (transpose_ && B == 1) { qmm_splitk(...); return; }  qmm(...); return; }
+     dispatch_qmv(...);
+     ```
+
+     Our quantised linears are `transpose_ == true`, `B == 1` ⇒ lowering `vector_limit`
+     to 6 routes **M = 6..9 from `dispatch_qmv` into `qmm_splitk`.**
+
+     🔴🔴 **And `qmm_splitk` already implements the thing E33 and E38 are trying to build
+     by hand.** `bm = 32, bn = 32`, grid `(n_tiles, m_tiles, split_k)` with
+     `m_tiles = ceil(M/32) = 1` for all our widths, so one threadgroup tile covers all M
+     rows and **the weights are read exactly once**, against `ceil(M/IPG) = ceil(6/5) = 2`
+     passes on the shipped qmv path. E33 measured M=6 mlp.down at **211 GB/s = 77 % of
+     peak**, i.e. bandwidth-bound, and attributed **+20.59 ms of the +32.68 ms** 5→6 step
+     to that second weight pass. Halving weight traffic at M ≥ 6 is the entire E33/E38
+     prize. Sanity check on the split: `current_tgs = 1 · ceil(5120/32) = 160`,
+     `split_k = max(1, 512/160) = 3`, decremented to **2** because `17408 % (3·k_align) ≠ 0`
+     — so it does not degenerate to the `split_k <= 1` fallback into `qmm`.
+
+     🔴 **Why the env var is the ONLY route.** `Vendor/.../backend/metal/quantized.cpp`
+     — the **host** dispatch file where `get_qmv_batch_limit` and the `vector_limit` gate
+     live — is **absent from `benchmark.json` `editablePaths`**. That was established
+     independently twice (`research/crossrow-closure.md:217` F1, and E32's result at
+     `:147`). We cannot edit the constant. We *can* change the input it reads.
+
+     **Safety of the spoof, checked site by site.** Keep the last character `s` and only
+     the generation digits move, so:
+     - `max_ops_per_buffer_` / `max_mb_per_buffer_` defaults (`device.cpp:573-595`,
+       keyed on `arch_.back()`): **unchanged** (50/50). ✓
+     - `matmul.cpp:208,372,918,2303,2514` and `sdpa:443,747` all read
+       `arch.back()` only ⇒ GEMM tile params and `min_tmn_threshold`: **unchanged**. ✓
+     - `device_info.cpp:32`: reporting only. ✓
+     - `get_qmv_batch_limit`: **10 → 6.** 🔴 the intended change.
+     - `is_nax_available()`: gen 14 < 17 ⇒ **nax off.** On *this* box nax is already off
+       (gen 16), so **locally the spoof is a clean single-variable change.** On the
+       ranked box it would be a two-variable change and must not be submitted blind.
+     - `arch_` is used at **no library-selection or kernel-naming site** (only
+       `device.h:156/159` accessors), so spoofing cannot break the metallib load. ✓
+
+     **Install site exists and is proven.** `applyQwenMTPStartupMemoryProfile()` is
+     called at `QwenRuntimeMTPWorker.swift:133`, immediately after the protocol IO
+     isolation and before any weight load — hence before the first `metal::device()`
+     call that constructs `Device`. That is the same ordering requirement the existing
+     command-buffer `setenv`s already satisfy (item 145/147). Both harness twins must
+     move together.
+
+     🔴 **The hard falsifier, and it is the first thing to test: BIT-EXACTNESS.**
+     `qmm_splitk` accumulates partial products over `split_k` K-partitions and reduces
+     them, so its rounding differs from `dispatch_qmv`. The MTP verify pass decides
+     acceptance by comparing target logits to drafts; last-bit changes can flip an
+     argmax, change `effective_mean_draft_len`, and break `parity_ok` against serial
+     greedy decoding. E33 by contrast kept **192/192 parity cells bit-identical**. So
+     this lever trades a guaranteed-safe property for a possible 2× traffic win, and the
+     parity check is free (`--local-iterate`, no timing gate) and must gate everything
+     else. Note the asymmetry that makes it testable at all: the serial leg runs at
+     M = 1, on `dispatch_qmv`, untouched by the spoof.
+
+     **Second, weaker lever in the same mechanism:** spoofing `'d'` (ultra) raises
+     `vector_limit` to 12/18/32 — the wrong direction — but it also changes
+     `min_tmn_threshold` and GEMM tile params, so it is not a clean probe. Ignore it.
+
+     🟢🟢 **STRUCTURAL FACT THAT DE-RISKS THE WHOLE THING: THERE IS NO `qmv_nax`.**
+     I enumerated the kernels in `kernels/quantized_nax.h` / `.metal`: the only entry
+     points are `affine_qmm_t_nax`, `affine_qmm_n_nax`, `affine_gather_qmm_{t,n}_nax`
+     and `qmm_rhs_nax_{nn,nt}`. **No matvec variant exists.** Two consequences, both
+     good:
+     - The quantised **matvec** path — where every scored width lives, `M ≤ 9 <
+       vector_limit = 10` — runs the **identical kernel family on both boxes**. The 59 %
+       MLP term of every local ladder is valid on ranked by construction. Item 151's
+       exposure bound is now structural, not an estimate.
+     - `qmm_splitk` is reached **before** the nax gate is consulted (`:1419-1424` takes
+       the `transpose_ && B == 1` branch and returns; the `is_nax_available()` test lives
+       inside `qmm` at `:697`, which is only reached on the *other* branch). So
+       `qmm_splitk` behaves identically on both boxes, nax or not. 🔴 **The local
+       measurement of the `vector_limit` lever therefore TRANSFERS to ranked for the
+       quantised path.** That is unusual in this campaign and it is why this experiment
+       is worth the timing slot.
+
+     🔴🔴 **MANIFEST-LEVEL EVIDENCE THAT RANKED HAS NAX, which I did not expect to find.**
+     `benchmark.json` `editablePaths` (89 entries) **includes** `kernels/quantized_nax.h`,
+     `kernels/quantized_nax.metal`, `kernels/fp_quantized_nax.h`, `.metal`, and the JIT
+     twins `mlx-generated/quantized_nax.cpp` and `fp_quantized_nax.cpp`. The organisers
+     put a kernel family in the editable set that **cannot execute on this host at all**.
+     The only reading under which that is not a mistake is that it executes on the ranked
+     host. Independent of edward's gen-parse argument, and cheaper. (It also confirms the
+     host dispatch is deliberately excluded: `backend/metal/quantized.cpp` is absent while
+     `kernels/quantized.h`, `kernels/quantized.metal` and `mlx-generated/quantized.cpp`
+     are all present. `steel/gemm` and `steel/attn` are present as directory prefixes.)
+
+     🔴🔴🔴 **THREE ARMS FROM ONE ENV VAR, AND ARM B IS A BRIDGE.** Because
+     `vector_limit = 6` requires `gen ∈ {13,14}` while nax requires `gen ≥ 17`, the two
+     effects cannot be separated in a single ranked arm — but they can be separated
+     across arms, and one of the comparisons is fully measurable locally:
+
+     | arm | `MLX_METAL_GPU_ARCH` | `vector_limit` | nax | available |
+     |---|---|---|---|---|
+     | **A** | unset (ranked native `g17s`?) | 10 | **ON** | ranked only |
+     | **B** | `applegpu_g16s` | 10 | off | ranked **and** = our local native |
+     | **C** | `applegpu_g14s` | **6** | off | ranked and local |
+
+     - **C vs B is the `vector_limit` lever, single-variable, and we are natively arm B.**
+       So the local C-vs-B ladder predicts the ranked C-vs-B effect on the quantised
+       path directly. Do this first; it needs no ranked access and no ranked arch string.
+     - **A vs B is the nax question, single-variable, ranked-only.** It is also the arm
+       that would make every local measurement in this campaign valid by construction.
+       And there is a real reason to think nax may *cost* us: `matmul.cpp:923` **disables
+       `steel_gemm_splitk_axpby` whenever nax is on**, and split-K exists precisely for
+       "small M×N with large K", which is the decode shape class. A kernel family tuned
+       for prefill/training shapes replacing an optimisation aimed at our shapes is a
+       plausible net loss that **every row on the plateau is paying**. If so it is a
+       differentiated win, since nobody else appears to have touched the arch string.
+     - ⚠️ **A vs B cannot explain item 148** — that is a same-box comparison, so nax is on
+       for the rivals too. Do not conflate the two.
+
+     🔴 **THE CAVEAT THAT WOULD KILL A NAIVE SUBMISSION: the spoof hits BOTH LEGS.**
+     `raw_p = serial_s_per_tok / mtp_s_per_tok`. The serial leg decodes at M = 1, so
+     `vector_limit` is irrelevant to it — arm C is MTP-only and therefore scores cleanly.
+     But **nax-off (arm B) changes the dense matmuls in the serial leg too**, so any
+     uniform speed-up partly cancels in the ratio and only the *differential* survives.
+     The MTP leg carries more dense-matmul work than serial at M ≥ 6 because that is
+     where the unfused-SDPA fallback lives, so the differential should favour us — but it
+     is a differential, not the raw effect, and it must be predicted as one.
+     `noop_reference_decode_speedup` (`k = 1.2090`, item 153) is the instrument that
+     isolates the serial-side component.
+
+     **Committed as `research/arch_lever_audit.py`: 19 structural checks + 16 mutation
+     negative controls, 19/19 and 16/16, OVERALL PASS.** Two things that run taught me
+     that the prose above did not:
+     - 🔴 **askeladd's ambiguous-anchor guard fired on my own code on the first run.**
+       My check for the `vector_limit` gate matched **two** sites, because
+       `int vector_limit = transpose_ ? get_qmv_batch_limit(K, N, d) : 4;` appears
+       verbatim in both `QuantizedMatmul::eval_gpu` (`:1415`) and `GatherQMM::eval_gpu`
+       (`:1483`). The mutation was therefore not evidence about either site. I adopted his
+       rule the same hour I wrote the rule down and it caught me anyway; that is the
+       argument for making every negative control refuse an ambiguous anchor by default.
+     - **Consequence for arm C's blast radius:** `GatherQMM` has its own `vector_limit`
+       gate off the same function, so the spoof reroutes gathers too if any are on the
+       path. `gather_qmm`'s nax site (`:892`) is the `❓` row of item 151's table and is
+       still unresolved — resolve it by dispatch counting, not by reading the model class.
+
+153. 🔴🔴 **E34 r2 and E37 r2 both landed, and between them the ranked width ladder
+     became a campaign primitive — which immediately re-prices E38, our biggest live
+     bet.**
+
+     🟢 **Independent replication, integer-exact.** askeladd (PR #42) and edward (PR #39)
+     recovered the ranked per-prompt round counts from published telemetry
+     independently, from different constraints — askeladd from `R + A = 512` plus
+     rational reduction of the 12-dp `effective_mean_draft_len` under a monotone-`ρ`
+     constraint, edward from `512 = rounds + accepted`, `accepted <= n·rounds`, and
+     "per-round cost non-decreasing in mean width". **Same integers:** beagle
+     `R=107, A=405, α=0.835`; medicine `R=99, A=413, α=0.875`. I checked it a third way
+     against our own row: beagle `12.174 ms/tok × 512 / 107 = 58.25 ms/round` versus
+     edward's 58.253. Three routes, one answer. This is now a primitive, not an
+     inference. It also validates item 148's per-round deficits (beagle 0.21 ms/round,
+     medicine 0.052 ms/round) which were computed off the same denominators.
+
+     **New ranked scalars.** Pinned serial **37.9908 ms/token** over 88 rows × 8 prompts,
+     prompt-independent (agrees with our row's 37.89–38.03). And `k = 1.2090`, measured
+     directly rather than inferred: row `c91581eb` reconstructs as **512 rounds and zero
+     accepted on all 8 prompts** yet scores 1.206–1.212 — i.e. the MTP path with the
+     drafting switched off is still ~21 % faster than serial. That is a floor nobody had.
+
+     🔴 **THE CLAIM I AM NOT ACCEPTING, AND WHY IT MATTERS.** Edward fits
+     `per_round = 20.543 + 6.792·M` (R² 0.9706 over 8 prompts) and concludes "there is no
+     30 ms cliff at mean width 6", reporting ranked `T(6)/T(5) = 1.1246` against our
+     local `128.843/96.163 = 1.3398` — hence "local overstates the 5→6 step by 19.14 %".
+     **The ratio is read off a straight line fitted to the data, so it cannot test for a
+     step; it assumes there is none.** Two further reasons the test as run is weak:
+     the 8 points are **mean** widths over a mixture of integer M, which smears any step
+     into a slope change; and he already knows how to do this properly, because in r1 he
+     fitted step-vs-smooth on the LOCAL ladder and found **step beats smooth by 3.4×**.
+     The right test is the same model comparison on the ranked reconstruction, using the
+     recovered `ρ(M)` shares to build `per_round = Σ_M ρ(M)·T(M)` under (a) linear `T`
+     and (b) linear-plus-step-at-M≥6 `T`, and reporting the residual ratio. That is
+     zero-GPU and it is the single most valuable thing anyone can do for E38's pricing.
+
+     **Why E38's pricing is at stake.** E38 needs beagle −1.9…−2.9 % or both central legs
+     −1.14…−1.71 % to deliver its projected +0.93…+1.40 %, and that sizing descends from
+     the local +32.68 ms 5→6 step. Of that step, **+20.59 ms is the second weight pass**
+     — quantised `qmv`, nax-free on both boxes, and it transfers. The residual ~12.09 ms
+     (37 %) is the part that includes the unfused-SDPA fallback and its dense matmuls,
+     which is exactly the part item 151 says may be cheaper on ranked. So the honest
+     position today is: **E38's mechanism transfers, its magnitude is bounded above by
+     the local ladder, and the discount is somewhere in 0–37 %.** I told thorfinn the
+     both-leg crown threshold was −0.640 %; the correct figure is **−0.52 %** (item 148),
+     and that correction is in his favour.
+
+     **Withdrawals I accept from edward.** The primary metric
+     (`predicted_ranked_central_pair_at_best_cap`, 3.7786 → 3.5638) is **withdrawn**, not
+     re-issued, because the model still mis-orders the central pair (predicts
+     medicine+republic; reality is beagle+medicine) and a median of eight is decided by
+     exactly that ordering. Sign record unchanged at 7/14 overall and **0/6** on the
+     shallower rows. He also withdrew his own mechanism — `array.h:346` makes `data_size`
+     item-size units, `device.cpp:320/486` make the budget **mebi-elements** (confirming
+     my correction), and `set_input_array` dedupes per buffer pointer, so
+     "mlp.down drops calls-per-command-buffer 2→1 at M=6" does not survive. Named errors:
+     **MT1** `effective_mean_draft_len` counts drafts **PROPOSED**, not accepted
+     (`QwenRuntimeMTP.swift:363-374`) — so r1's `1+n` token credit *was* a 100 %
+     acceptance assumption; **MT2** `weight_passes(M)` is shape-blind across three
+     `out_vec_size` regimes; **MT3** `k` was inferred from the local ladder, not measured.
+     Provenance: `a874233e` is a **phantom row** (`status=validating`, null
+     `officialMetrics`, no beagle entry), three scored declared-head rows were missing,
+     and 6 of 8 `raw_p` values were wrong. Four self-named errors and a withdrawn primary
+     is what a good result looks like when the model is wrong.
+
+     🟢 **Head provenance settled with no run** (E34 r1, carried here because it closes a
+     suspicion of mine): `559b24eb` is the sha256 of the one-line **tree manifest**;
+     `d038fd41` is the sha256 **of the file**. Both describe the same single-file
+     427,742,600-byte tree and match the declared manifest, `head_verified: true`.
+     Consequence: alphonse's E30 head `7bbb40de` at 270,408,194 B is **not** the declared
+     artifact, so any absolute `F` derived from it must be dropped.
+
