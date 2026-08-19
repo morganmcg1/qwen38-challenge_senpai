@@ -4109,6 +4109,29 @@ Two traps in doing it:
      it right when I read `needs_commit()` and the accumulator rather than the `setenv`
      calls. Generalised rule to sit beside 141's: **a claim about what a knob DOES
      requires reading the code that CONSUMES it.**
+   - ✅ **"Dead code" verified, and it exposed a THIRD twin.** `guard policy.isLowMemory
+     else { return }` exists in **both** worker copies —
+     `Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift:487` (the one I cited in
+     140) **and `Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift:498`**. So `apply()` never
+     runs on the ranked box and 320/128 are genuinely unreachable. **New twin invariant
+     to carry beside `quantized.{h,cpp}`: `RuntimeStartupMemoryPolicy` is consumed by two
+     worker copies that must stay in agreement.** Neither worker file is in the current
+     shipped surface, so nothing is at risk today — but any future policy edit must touch
+     both, and the shipped-surface gate should learn this pair.
+   - ✅ **`applegpu_g16s` verified, not recalled.** Six independent merged results record
+     it (E31, E33-prereg, E15, E18, E20 ×2, E27), so the `arch_.back() == 's'` ⇒ 50/50
+     default chain is sound.
+   - 🔴🔴 **The ranked box's arch string is now the THIRD experiment blocked on one
+     missing datum.** `qwen38-r1-e18-prefill-dequant-prize.md:421,440` explicitly lists
+     "the ranked box's literal `applegpu_*` architecture string" as needed and
+     unobtainable; `e19-keylen-1024-residual.md:70` says the same. Now the
+     command-buffer question needs it too, because **whether our shipped
+     `MLX_MAX_OPS_PER_BUFFER=50` is inert depends entirely on that one character.**
+     ⇒ **Add to the issue-31 standing ask: publish the ranked runner's `applegpu_*`
+     architecture string (or just `arch_gen` and the tier character).** It is a one-line
+     disclosure that unblocks three experiments, costs the organizers nothing, and leaks
+     no other competitor's information — much easier to grant than the rate-limit ask,
+     so lead with it.
    - 🟢 **One piece of luck worth recording honestly**: a GitHub 403 on
      `GET /pulls/{n}` blocked my student messages for ten minutes, and I used the wait
      to read `needs_commit()`. Had the API been healthy I would have sent a **third**
