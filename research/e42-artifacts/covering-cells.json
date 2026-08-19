@@ -1,0 +1,151 @@
+{
+  "bits_3_note": "bits=3 cells are pure controls for p2/p6/m6 (their guard requires bits==4) but are treated by m1 at width 1, because m1's insert sits downstream of the bit-width gate.",
+  "cross_group_reference_check": {
+    "cross_group_cells_compared": 192,
+    "cross_group_differing_cells": 0,
+    "cross_group_ref_digests_identical": true,
+    "groups_with_ref": [
+      "A",
+      "B"
+    ]
+  },
+  "grid": {
+    "bits": [
+      4,
+      3
+    ],
+    "cells_by_bits": {
+      "3": 96,
+      "4": 96
+    },
+    "cells_total": 192,
+    "shapes": 8,
+    "widths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
+  },
+  "m1_note": "m1 has 0 crossrow-covering cells by construction: its edit is a width-1 dispatch before the generic fall-through, so the cells it treats are exactly the qmv_fast_impl cells the crossrow metric excludes. Both numbers are reported; neither alone is honest.",
+  "per_arm": {
+    "m1L1": {
+      "control_cells": 176,
+      "crossrow_covering_cells": 0,
+      "family": "m1",
+      "mechanism": "generic",
+      "treated_cells": 16,
+      "treated_cells_by_bits": {
+        "3": 8,
+        "4": 8
+      },
+      "treated_widths": [
+        1
+      ]
+    },
+    "m6L2": {
+      "control_cells": 184,
+      "crossrow_covering_cells": 8,
+      "family": "m6",
+      "mechanism": "crossrow",
+      "treated_cells": 8,
+      "treated_cells_by_bits": {
+        "4": 8
+      },
+      "treated_widths": [
+        6
+      ]
+    },
+    "p2L1": {
+      "control_cells": 128,
+      "crossrow_covering_cells": 64,
+      "family": "p2",
+      "mechanism": "crossrow",
+      "treated_cells": 64,
+      "treated_cells_by_bits": {
+        "4": 64
+      },
+      "treated_widths": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    "p2L2": {
+      "control_cells": 128,
+      "crossrow_covering_cells": 64,
+      "family": "p2",
+      "mechanism": "crossrow",
+      "treated_cells": 64,
+      "treated_cells_by_bits": {
+        "4": 64
+      },
+      "treated_widths": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    "p6L1": {
+      "control_cells": 160,
+      "crossrow_covering_cells": 32,
+      "family": "p6",
+      "mechanism": "crossrow",
+      "treated_cells": 32,
+      "treated_cells_by_bits": {
+        "4": 32
+      },
+      "treated_widths": [
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    "p6L2": {
+      "control_cells": 160,
+      "crossrow_covering_cells": 32,
+      "family": "p6",
+      "mechanism": "crossrow",
+      "treated_cells": 32,
+      "treated_cells_by_bits": {
+        "4": 32
+      },
+      "treated_widths": [
+        6,
+        7,
+        8,
+        9
+      ]
+    }
+  },
+  "suite_metric_covering_cells_by_bits": {
+    "4": 64
+  },
+  "suite_metric_definition": "cells whose in_kernel_path != 'qmv_fast_impl'; a crossrow-reach metric, not a per-arm treatment metric",
+  "treated_union_cells": 80,
+  "untreated_cells": 112,
+  "untreated_composition": {
+    "bits_3_all": 88,
+    "bits_4_crossrow_widths_outside_any_arm": 0,
+    "bits_4_generic": 24
+  }
+}

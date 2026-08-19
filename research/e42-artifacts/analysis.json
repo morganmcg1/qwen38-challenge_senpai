@@ -1,0 +1,2584 @@
+{
+  "arms": {
+    "base": {
+      "accepted_draft_rate": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "base",
+      "declared_rows_total": 567,
+      "effective_mean_draft_len": 6.269230769230769,
+      "family": "base",
+      "has_curve": true,
+      "legs": 2,
+      "level": 0,
+      "mtp_decode_seconds": 16.266386449337006,
+      "mtp_decode_seconds_all": [
+        16.271031975746155,
+        16.261740922927856
+      ],
+      "mtp_decode_seconds_sd_pct": 0.0403886042707962,
+      "mtp_seconds_per_token": 0.03177028603386134,
+      "p50_block_request_seconds": 0.16581594944000244,
+      "raw_p": 2.3153544891413764,
+      "round_count": 78,
+      "row_ledger_closes": true,
+      "seed_prefill_seconds": 3.993957996368408,
+      "serial_decode_seconds": 37.66242057085037,
+      "serial_decode_seconds_all": [
+        37.56702208518982,
+        37.757819056510925
+      ],
+      "serial_seconds_per_token": 0.07355941517744213,
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "widths": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        6,
+        6,
+        8,
+        8,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        9,
+        6,
+        6,
+        6,
+        5,
+        6,
+        9,
+        5,
+        6,
+        6,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        4,
+        6,
+        7,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        2
+      ]
+    },
+    "m1L1": {
+      "accepted_draft_rate": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "m1L1",
+      "declared_rows_total": 567,
+      "effective_mean_draft_len": 6.269230769230769,
+      "family": "m1",
+      "has_curve": true,
+      "legs": 2,
+      "level": 1,
+      "mtp_decode_seconds": 16.554977476596832,
+      "mtp_decode_seconds_all": [
+        16.55719494819641,
+        16.552760004997253
+      ],
+      "mtp_decode_seconds_sd_pct": 0.01894281290768773,
+      "mtp_seconds_per_token": 0.03233394038397819,
+      "p50_block_request_seconds": 0.16883248090744019,
+      "raw_p": 3.1033460761676204,
+      "round_count": 78,
+      "row_ledger_closes": true,
+      "seed_prefill_seconds": 4.0092480182647705,
+      "serial_decode_seconds": 51.37582552433014,
+      "serial_decode_seconds_all": [
+        51.39115297794342,
+        51.36049807071686
+      ],
+      "serial_seconds_per_token": 0.1003434092272073,
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "widths": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        6,
+        6,
+        8,
+        8,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        9,
+        6,
+        6,
+        6,
+        5,
+        6,
+        9,
+        5,
+        6,
+        6,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        4,
+        6,
+        7,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        2
+      ]
+    },
+    "m6L2": {
+      "accepted_draft_rate": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "m6L2",
+      "declared_rows_total": 567,
+      "effective_mean_draft_len": 6.269230769230769,
+      "family": "m6",
+      "has_curve": true,
+      "legs": 2,
+      "level": 2,
+      "mtp_decode_seconds": 21.684413492679596,
+      "mtp_decode_seconds_all": [
+        21.69407606124878,
+        21.674750924110413
+      ],
+      "mtp_decode_seconds_sd_pct": 0.06301731666624143,
+      "mtp_seconds_per_token": 0.042352370102889836,
+      "p50_block_request_seconds": 0.1837979555130005,
+      "raw_p": 1.7340815137001688,
+      "round_count": 78,
+      "row_ledger_closes": true,
+      "seed_prefill_seconds": 4.011527061462402,
+      "serial_decode_seconds": 37.602520525455475,
+      "serial_decode_seconds_all": [
+        37.57428598403931,
+        37.63075506687164
+      ],
+      "serial_seconds_per_token": 0.07344242290128022,
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "widths": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        6,
+        6,
+        8,
+        8,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        9,
+        6,
+        6,
+        6,
+        5,
+        6,
+        9,
+        5,
+        6,
+        6,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        4,
+        6,
+        7,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        2
+      ]
+    },
+    "p2L1": {
+      "accepted_draft_rate": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "p2L1",
+      "declared_rows_total": 567,
+      "effective_mean_draft_len": 6.269230769230769,
+      "family": "p2",
+      "has_curve": true,
+      "legs": 2,
+      "level": 1,
+      "mtp_decode_seconds": 26.1492919921875,
+      "mtp_decode_seconds_all": [
+        26.13517999649048,
+        26.16340398788452
+      ],
+      "mtp_decode_seconds_sd_pct": 0.07632090273358495,
+      "mtp_seconds_per_token": 0.05107283592224121,
+      "p50_block_request_seconds": 0.3021625876426697,
+      "raw_p": 1.4386939285544278,
+      "round_count": 78,
+      "row_ledger_closes": true,
+      "seed_prefill_seconds": 3.995229959487915,
+      "serial_decode_seconds": 37.62077248096466,
+      "serial_decode_seconds_all": [
+        37.70265090465546,
+        37.538894057273865
+      ],
+      "serial_seconds_per_token": 0.0734780712518841,
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "widths": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        6,
+        6,
+        8,
+        8,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        9,
+        6,
+        6,
+        6,
+        5,
+        6,
+        9,
+        5,
+        6,
+        6,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        4,
+        6,
+        7,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        2
+      ]
+    },
+    "p2L2": {
+      "accepted_draft_rate": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "p2L2",
+      "declared_rows_total": 567,
+      "effective_mean_draft_len": 6.269230769230769,
+      "family": "p2",
+      "has_curve": true,
+      "legs": 2,
+      "level": 2,
+      "mtp_decode_seconds": 36.187900483608246,
+      "mtp_decode_seconds_all": [
+        36.19570696353912,
+        36.18009400367737
+      ],
+      "mtp_decode_seconds_sd_pct": 0.030507516725490392,
+      "mtp_seconds_per_token": 0.07067949313204736,
+      "p50_block_request_seconds": 0.43981045484542847,
+      "raw_p": 1.0385578597788998,
+      "round_count": 78,
+      "row_ledger_closes": true,
+      "seed_prefill_seconds": 4.009071946144104,
+      "serial_decode_seconds": 37.58321499824524,
+      "serial_decode_seconds_all": [
+        37.528843998909,
+        37.63758599758148
+      ],
+      "serial_seconds_per_token": 0.07340471679344773,
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "widths": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        6,
+        6,
+        8,
+        8,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        9,
+        6,
+        6,
+        6,
+        5,
+        6,
+        9,
+        5,
+        6,
+        6,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        4,
+        6,
+        7,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        2
+      ]
+    },
+    "p6L1": {
+      "accepted_draft_rate": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "p6L1",
+      "declared_rows_total": 567,
+      "effective_mean_draft_len": 6.269230769230769,
+      "family": "p6",
+      "has_curve": true,
+      "legs": 2,
+      "level": 1,
+      "mtp_decode_seconds": 25.392663061618805,
+      "mtp_decode_seconds_all": [
+        25.4030100107193,
+        25.38231611251831
+      ],
+      "mtp_decode_seconds_sd_pct": 0.05762607770439341,
+      "mtp_seconds_per_token": 0.04959504504222423,
+      "p50_block_request_seconds": 0.30180203914642334,
+      "raw_p": 1.480089872031858,
+      "round_count": 78,
+      "row_ledger_closes": true,
+      "seed_prefill_seconds": 3.9947389364242554,
+      "serial_decode_seconds": 37.58343195915222,
+      "serial_decode_seconds_all": [
+        37.619699001312256,
+        37.54716491699219
+      ],
+      "serial_seconds_per_token": 0.07340514054521918,
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "widths": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        6,
+        6,
+        8,
+        8,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        9,
+        6,
+        6,
+        6,
+        5,
+        6,
+        9,
+        5,
+        6,
+        6,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        4,
+        6,
+        7,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        2
+      ]
+    },
+    "p6L2": {
+      "accepted_draft_rate": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "p6L2",
+      "declared_rows_total": 567,
+      "effective_mean_draft_len": 6.269230769230769,
+      "family": "p6",
+      "has_curve": true,
+      "legs": 2,
+      "level": 2,
+      "mtp_decode_seconds": 34.54523950815201,
+      "mtp_decode_seconds_all": [
+        34.5494350194931,
+        34.54104399681091
+      ],
+      "mtp_decode_seconds_sd_pct": 0.01717559097619365,
+      "mtp_seconds_per_token": 0.06747117091435939,
+      "p50_block_request_seconds": 0.4387094974517822,
+      "raw_p": 1.0879324443609786,
+      "round_count": 78,
+      "row_ledger_closes": true,
+      "seed_prefill_seconds": 4.006515026092529,
+      "serial_decode_seconds": 37.58288550376892,
+      "serial_decode_seconds_all": [
+        37.576290011405945,
+        37.5894809961319
+      ],
+      "serial_seconds_per_token": 0.07340407324954867,
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "widths": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        6,
+        6,
+        8,
+        8,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        9,
+        6,
+        6,
+        6,
+        5,
+        6,
+        9,
+        5,
+        6,
+        6,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        4,
+        6,
+        7,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        2
+      ]
+    }
+  },
+  "cool_gate_passed_real_gate": false,
+  "cross_arm_intercept_check": [
+    {
+      "measured_intercept_difference_seconds": 0.9807535659055127,
+      "measured_ms_per_round": 12.57376366545529,
+      "narrower_gate": "p6",
+      "predicted_from_curve_seconds": 0.9553666003,
+      "predicted_ms_per_round": 12.248289747435896,
+      "ratio_measured_over_predicted": 1.0265730093532062,
+      "wider_gate": "p2",
+      "widths_only_in_wider_gate": [
+        2,
+        4,
+        5
+      ]
+    }
+  ],
+  "drift": {},
+  "gate_qualified_for_timing": false,
+  "linearity": {
+    "m1": {
+      "psi_eff_by_level": {
+        "L1": 0.0415391216104408
+      },
+      "ratio_l2_over_l1": null
+    },
+    "m6": {
+      "psi_eff_by_level": {
+        "L2": 0.18240377824821186
+      },
+      "ratio_l2_over_l1": null
+    },
+    "p2": {
+      "psi_eff_by_level": {
+        "L1": 0.6728653937143869,
+        "L2": 0.6736463257623782
+      },
+      "ratio_l2_over_l1": 1.001160606646272
+    },
+    "p6": {
+      "psi_eff_by_level": {
+        "L1": 0.6145491237923574,
+        "L2": 0.6133469034719006
+      },
+      "ratio_l2_over_l1": 0.9980437360108205
+    }
+  },
+  "official_or_ranked_score": false,
+  "parity": {
+    "all_bit_identical": true,
+    "arms": {
+      "m1L1": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "B",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
+      },
+      "m6L2": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "B",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
+      },
+      "p2L1": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "A",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
+      },
+      "p2L2": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "A",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
+      },
+      "p6L1": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "A",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
+      },
+      "p6L2": {
+        "by_bits": {
+          "3": {
+            "compared": 96,
+            "differing": 0
+          },
+          "4": {
+            "compared": 96,
+            "differing": 0
+          }
+        },
+        "cells_compared": 192,
+        "cells_differing": 0,
+        "device": {
+          "architecture": "applegpu_g16s",
+          "architecture_class": "s",
+          "architecture_gen": 16,
+          "max_buffer_size_bytes": 30150672384,
+          "memory_size_bytes": 51539607552,
+          "nax_available": false,
+          "predicted_vector_limits": [
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.in_proj_fused_qkvzba",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "linear_attn.out_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 14336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.qkv_proj_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 6144,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "full_attn.o_proj",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 34816,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.gate_up_fused",
+              "vector_limit": 10
+            },
+            {
+              "k": 17408,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "mlp.down",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 248320,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.lm_head",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 98336,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "head.compact_draft_vocab",
+              "vector_limit": 10
+            },
+            {
+              "k": 2048,
+              "k_mod_512": 0,
+              "n": 2048,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k2048_n2048",
+              "vector_limit": 18
+            },
+            {
+              "k": 4096,
+              "k_mod_512": 0,
+              "n": 4096,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k4096_n4096",
+              "vector_limit": 12
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 5120,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "probe.k5120_n5120",
+              "vector_limit": 10
+            },
+            {
+              "k": 5120,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5120_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5184,
+              "k_mod_512": 64,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": false,
+              "shape": "fastprobe.k5184_n16480",
+              "vector_limit": 10
+            },
+            {
+              "k": 5632,
+              "k_mod_512": 0,
+              "n": 16480,
+              "n_mod_8": 0,
+              "qmv_fast": true,
+              "shape": "fastprobe.k5632_n16480",
+              "vector_limit": 10
+            }
+          ]
+        },
+        "differing_cells": [],
+        "group": "B",
+        "suite_covering_cells_by_bits": {
+          "4": 64
+        },
+        "verdict": "BIT-IDENTICAL"
+      }
+    },
+    "cells_compared_total": 1152,
+    "cells_differing_total": 0,
+    "coverage": {
+      "bits_3_note": "bits=3 cells are pure controls for p2/p6/m6 (their guard requires bits==4) but are treated by m1 at width 1, because m1's insert sits downstream of the bit-width gate.",
+      "cross_group_reference_check": {
+        "cross_group_cells_compared": 192,
+        "cross_group_differing_cells": 0,
+        "cross_group_ref_digests_identical": true,
+        "groups_with_ref": [
+          "A",
+          "B"
+        ]
+      },
+      "grid": {
+        "bits": [
+          4,
+          3
+        ],
+        "cells_by_bits": {
+          "3": 96,
+          "4": 96
+        },
+        "cells_total": 192,
+        "shapes": 8,
+        "widths": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "m1_note": "m1 has 0 crossrow-covering cells by construction: its edit is a width-1 dispatch before the generic fall-through, so the cells it treats are exactly the qmv_fast_impl cells the crossrow metric excludes. Both numbers are reported; neither alone is honest.",
+      "per_arm": {
+        "m1L1": {
+          "control_cells": 176,
+          "crossrow_covering_cells": 0,
+          "family": "m1",
+          "mechanism": "generic",
+          "treated_cells": 16,
+          "treated_cells_by_bits": {
+            "3": 8,
+            "4": 8
+          },
+          "treated_widths": [
+            1
+          ]
+        },
+        "m6L2": {
+          "control_cells": 184,
+          "crossrow_covering_cells": 8,
+          "family": "m6",
+          "mechanism": "crossrow",
+          "treated_cells": 8,
+          "treated_cells_by_bits": {
+            "4": 8
+          },
+          "treated_widths": [
+            6
+          ]
+        },
+        "p2L1": {
+          "control_cells": 128,
+          "crossrow_covering_cells": 64,
+          "family": "p2",
+          "mechanism": "crossrow",
+          "treated_cells": 64,
+          "treated_cells_by_bits": {
+            "4": 64
+          },
+          "treated_widths": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        "p2L2": {
+          "control_cells": 128,
+          "crossrow_covering_cells": 64,
+          "family": "p2",
+          "mechanism": "crossrow",
+          "treated_cells": 64,
+          "treated_cells_by_bits": {
+            "4": 64
+          },
+          "treated_widths": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        "p6L1": {
+          "control_cells": 160,
+          "crossrow_covering_cells": 32,
+          "family": "p6",
+          "mechanism": "crossrow",
+          "treated_cells": 32,
+          "treated_cells_by_bits": {
+            "4": 32
+          },
+          "treated_widths": [
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        "p6L2": {
+          "control_cells": 160,
+          "crossrow_covering_cells": 32,
+          "family": "p6",
+          "mechanism": "crossrow",
+          "treated_cells": 32,
+          "treated_cells_by_bits": {
+            "4": 32
+          },
+          "treated_widths": [
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      },
+      "suite_metric_covering_cells_by_bits": {
+        "4": 64
+      },
+      "suite_metric_definition": "cells whose in_kernel_path != 'qmv_fast_impl'; a crossrow-reach metric, not a per-arm treatment metric",
+      "treated_union_cells": 80,
+      "untreated_cells": 112,
+      "untreated_composition": {
+        "bits_3_all": 88,
+        "bits_4_crossrow_widths_outside_any_arm": 0,
+        "bits_4_generic": 24
+      }
+    },
+    "groups": [
+      "A",
+      "B"
+    ]
+  },
+  "phi_local": {
+    "L1": 0.9133314471708688,
+    "L2": 0.9104880113133021
+  },
+  "power": {
+    "mde": {
+      "returncode": 0,
+      "stdout": "MDE (normal, 80 % power, two-sided) = 0.2138\nMDE (exact noncentral-t)             = 0.4315   [2.02x the normal figure]"
+    },
+    "worst_within_arm_sd_pct": 0.07632090273358495
+  },
+  "results": [
+    {
+      "all_tokens_matched": true,
+      "alpha_absorption": 1.001523492875379,
+      "arm": "p2L1",
+      "calibration_width_untreated": 1,
+      "dq_predicted_seconds": 9.8678719103,
+      "dt_measured_seconds": 9.882905542850494,
+      "family": "p2",
+      "level": 1,
+      "mtp_decode_seconds_arm": 26.1492919921875,
+      "mtp_decode_seconds_base": 16.266386449337006,
+      "mtp_delta_frac": 0.6075661348408028,
+      "mtp_leg_has_treated_verify_width": true,
+      "occupancy_share_total_qmv": 0.6718418474464208,
+      "occupancy_share_treated": 0.6718418474464208,
+      "primary_leg": "mtp",
+      "psi_eff": 0.6728653937143869,
+      "psi_eff_high": 0.6728653937143869,
+      "psi_eff_low": 0.6039872768870305,
+      "psi_eff_variants": {
+        "as_measured": 0.6728653937143869,
+        "drift_corrected": 0.6039872768870305,
+        "stable_shapes_only": 0.669060377760933
+      },
+      "q_total_predicted_seconds": 10.9284391234,
+      "q_treated_predicted_seconds": 10.9284391234,
+      "raw_p_arm": 1.4386939285544278,
+      "raw_p_base": 2.3153544891413764,
+      "raw_p_delta": -0.8766605605869486,
+      "raw_p_sign_expected": "down",
+      "raw_p_sign_observed": "down",
+      "serial_delta_frac": -0.0011058261591913032,
+      "trajectory_identical_to_base": true,
+      "treated_widths_dispatched": [
+        2,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "unstable_shapes_dropped": [
+        "full_attn.qkv_proj_fused",
+        "linear_attn.in_proj_fused_qkvzba"
+      ],
+      "untreated_widths_dispatched": [],
+      "x_bar_treated": 0.9029534592154967,
+      "x_bar_treated_drift_corrected": 1.0059253863296886,
+      "x_bar_treated_stable_shapes": 0.9080886494490589,
+      "x_by_width": {
+        "2": 0.4914937721220509,
+        "4": 0.8503783755950829,
+        "5": 0.8725477795522081,
+        "6": 0.910032210099474,
+        "7": 0.9084728418033547,
+        "8": 0.9175179016016519,
+        "9": 0.9077312209259474
+      },
+      "x_by_width_all": {
+        "1": -0.051333877030492636,
+        "2": 0.4914937721220509,
+        "3": 0.8371484320504341,
+        "4": 0.8503783755950829,
+        "5": 0.8725477795522081,
+        "6": 0.910032210099474,
+        "7": 0.9084728418033547,
+        "8": 0.9175179016016519,
+        "9": 0.9077312209259474
+      },
+      "x_spread_treated": 0.426024129479601,
+      "x_untreated_calibration": -0.051333877030492636,
+      "x_untreated_calibration_by_shape": {
+        "full_attn.o_proj": 0.002816517030919341,
+        "full_attn.qkv_proj_fused": 0.02484029972290913,
+        "head.lm_head": -0.0002336792363017981,
+        "linear_attn.in_proj_fused_qkvzba": -0.24607765528031844,
+        "linear_attn.out_proj": -0.0023401893568396614,
+        "mlp.down": 0.0006867945451938251,
+        "mlp.gate_up_fused": 0.006692015209125435
+      },
+      "x_untreated_calibration_stable_shapes": 0.0037903404695942555
+    },
+    {
+      "all_tokens_matched": true,
+      "alpha_absorption": 1.0026858676976078,
+      "arm": "p2L2",
+      "calibration_width_untreated": 1,
+      "dq_predicted_seconds": 19.8681508098,
+      "dt_measured_seconds": 19.92151403427124,
+      "family": "p2",
+      "level": 2,
+      "mtp_decode_seconds_arm": 36.187900483608246,
+      "mtp_decode_seconds_base": 16.266386449337006,
+      "mtp_delta_frac": 1.2247043371506283,
+      "mtp_leg_has_treated_verify_width": true,
+      "occupancy_share_total_qmv": 0.6718418474464208,
+      "occupancy_share_treated": 0.6718418474464208,
+      "primary_leg": "mtp",
+      "psi_eff": 0.6736463257623782,
+      "psi_eff_high": 0.6738637411677777,
+      "psi_eff_low": 0.6592011909689361,
+      "psi_eff_variants": {
+        "as_measured": 0.6736463257623782,
+        "drift_corrected": 0.6592011909689361,
+        "stable_shapes_only": 0.6738637411677777
+      },
+      "q_total_predicted_seconds": 10.9284391234,
+      "q_treated_predicted_seconds": 10.9284391234,
+      "raw_p_arm": 1.0385578597788998,
+      "raw_p_base": 2.3153544891413764,
+      "raw_p_delta": -1.2767966293624766,
+      "raw_p_sign_expected": "down",
+      "raw_p_sign_observed": "down",
+      "serial_delta_frac": -0.0021030398844421594,
+      "trajectory_identical_to_base": true,
+      "treated_widths_dispatched": [
+        2,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "unstable_shapes_dropped": [
+        "linear_attn.in_proj_fused_qkvzba",
+        "mlp.down"
+      ],
+      "untreated_widths_dispatched": [],
+      "x_bar_treated": 1.818022737323784,
+      "x_bar_treated_drift_corrected": 1.8578612325479562,
+      "x_bar_treated_stable_shapes": 1.817436170446368,
+      "x_by_width": {
+        "2": 1.1172541016577635,
+        "4": 1.714899137349295,
+        "5": 1.7537626232205117,
+        "6": 1.8239642679352097,
+        "7": 1.8229962033531315,
+        "8": 1.838206298855587,
+        "9": 1.8326476245085224
+      },
+      "x_by_width_all": {
+        "1": -0.013939968382808199,
+        "2": 1.1172541016577635,
+        "3": 1.6821032820873438,
+        "4": 1.714899137349295,
+        "5": 1.7537626232205117,
+        "6": 1.8239642679352097,
+        "7": 1.8229962033531315,
+        "8": 1.838206298855587,
+        "9": 1.8326476245085224
+      },
+      "x_spread_treated": 0.7209521971978234,
+      "x_untreated_calibration": -0.013939968382808199,
+      "x_untreated_calibration_by_shape": {
+        "full_attn.o_proj": 0.008058736170782232,
+        "full_attn.qkv_proj_fused": 0.013882263170960751,
+        "head.lm_head": -0.0024204322200394035,
+        "linear_attn.in_proj_fused_qkvzba": -0.09432703165991041,
+        "linear_attn.out_proj": -0.008543258243552065,
+        "mlp.down": 0.0240727061934618,
+        "mlp.gate_up_fused": 0.005221718631178929
+      },
+      "x_untreated_calibration_stable_shapes": 0.003978171614840598
+    },
+    {
+      "all_tokens_matched": true,
+      "alpha_absorption": 1.0023484253778043,
+      "arm": "p6L1",
+      "calibration_width_untreated": 1,
+      "dq_predicted_seconds": 9.1048944471,
+      "dt_measured_seconds": 9.1262766122818,
+      "family": "p6",
+      "level": 1,
+      "mtp_decode_seconds_arm": 25.392663061618805,
+      "mtp_decode_seconds_base": 16.266386449337006,
+      "mtp_delta_frac": 0.5610512599529303,
+      "mtp_leg_has_treated_verify_width": true,
+      "occupancy_share_total_qmv": 0.6718418474464208,
+      "occupancy_share_treated": 0.6131092823942152,
+      "primary_leg": "mtp",
+      "psi_eff": 0.6145491237923574,
+      "psi_eff_high": 0.6145491237923574,
+      "psi_eff_low": 0.5540547850420188,
+      "psi_eff_variants": {
+        "as_measured": 0.6145491237923574,
+        "drift_corrected": 0.5540547850420188,
+        "stable_shapes_only": 0.6125311742045365
+      },
+      "q_total_predicted_seconds": 10.9284391234,
+      "q_treated_predicted_seconds": 9.973072523099999,
+      "raw_p_arm": 1.480089872031858,
+      "raw_p_base": 2.3153544891413764,
+      "raw_p_delta": -0.8352646171095184,
+      "raw_p_sign_expected": "down",
+      "raw_p_sign_observed": "down",
+      "serial_delta_frac": -0.00209727921097258,
+      "trajectory_identical_to_base": true,
+      "treated_widths_dispatched": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "unstable_shapes_dropped": [
+        "linear_attn.in_proj_fused_qkvzba"
+      ],
+      "untreated_widths_dispatched": [
+        2,
+        4,
+        5
+      ],
+      "x_bar_treated": 0.9129477827430719,
+      "x_bar_treated_drift_corrected": 1.012627767325177,
+      "x_bar_treated_stable_shapes": 0.9159554379930774,
+      "x_by_width": {
+        "2": 0.00031819590149995136,
+        "4": -0.0006625884710143026,
+        "5": 0.003445875082407568,
+        "6": 0.9089160898300885,
+        "7": 0.9107645121737062,
+        "8": 0.9134446234160336,
+        "9": 0.915218964340272
+      },
+      "x_by_width_all": {
+        "1": -0.04952728278939622,
+        "2": 0.00031819590149995136,
+        "3": -0.0019722434805573563,
+        "4": -0.0006625884710143026,
+        "5": 0.003445875082407568,
+        "6": 0.9089160898300885,
+        "7": 0.9107645121737062,
+        "8": 0.9134446234160336,
+        "9": 0.915218964340272
+      },
+      "x_spread_treated": 0.006302874510183409,
+      "x_untreated_calibration": -0.04952728278939622,
+      "x_untreated_calibration_by_shape": {
+        "full_attn.o_proj": 0.005023627742825054,
+        "full_attn.qkv_proj_fused": 0.007419952318417966,
+        "head.lm_head": -0.0013155275525129628,
+        "linear_attn.in_proj_fused_qkvzba": -0.24607798761200428,
+        "linear_attn.out_proj": -0.01529089128305583,
+        "mlp.down": 0.016984230382976362,
+        "mlp.gate_up_fused": 0.0065603650190113605
+      },
+      "x_untreated_calibration_stable_shapes": 0.007261549451602178
+    },
+    {
+      "all_tokens_matched": true,
+      "alpha_absorption": 1.0003875672486269,
+      "arm": "p6L2",
+      "calibration_width_untreated": 1,
+      "dq_predicted_seconds": 18.271771518599998,
+      "dt_measured_seconds": 18.278853058815002,
+      "family": "p6",
+      "level": 2,
+      "mtp_decode_seconds_arm": 34.54523950815201,
+      "mtp_decode_seconds_base": 16.266386449337006,
+      "mtp_delta_frac": 1.1237193408472121,
+      "mtp_leg_has_treated_verify_width": true,
+      "occupancy_share_total_qmv": 0.6718418474464208,
+      "occupancy_share_treated": 0.6131092823942152,
+      "primary_leg": "mtp",
+      "psi_eff": 0.6133469034719006,
+      "psi_eff_high": 0.6133469034719006,
+      "psi_eff_low": 0.5665056532105165,
+      "psi_eff_variants": {
+        "as_measured": 0.6133469034719006,
+        "drift_corrected": 0.5665056532105165,
+        "stable_shapes_only": 0.6028652981416965
+      },
+      "q_total_predicted_seconds": 10.9284391234,
+      "q_treated_predicted_seconds": 9.973072523099999,
+      "raw_p_arm": 1.0879324443609786,
+      "raw_p_base": 2.3153544891413764,
+      "raw_p_delta": -1.2274220447803978,
+      "raw_p_sign_expected": "down",
+      "raw_p_sign_observed": "down",
+      "serial_delta_frac": -0.0021117885116234136,
+      "trajectory_identical_to_base": true,
+      "treated_widths_dispatched": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "unstable_shapes_dropped": [
+        "full_attn.o_proj",
+        "linear_attn.in_proj_fused_qkvzba",
+        "linear_attn.out_proj"
+      ],
+      "untreated_widths_dispatched": [
+        2,
+        4,
+        5
+      ],
+      "x_bar_treated": 1.8321105633472778,
+      "x_bar_treated_drift_corrected": 1.9835977531359816,
+      "x_bar_treated_stable_shapes": 1.8639642127537002,
+      "x_by_width": {
+        "2": -0.004650363092625565,
+        "4": -0.0010996059540153702,
+        "5": 0.0015950259029915426,
+        "6": 1.8253388602946021,
+        "7": 1.8288666650113523,
+        "8": 1.833829709096897,
+        "9": 1.8357413717605664
+      },
+      "x_by_width_all": {
+        "1": -0.05077332882070962,
+        "2": -0.004650363092625565,
+        "3": 0.0008226526628904995,
+        "4": -0.0010996059540153702,
+        "5": 0.0015950259029915426,
+        "6": 1.8253388602946021,
+        "7": 1.8288666650113523,
+        "8": 1.833829709096897,
+        "9": 1.8357413717605664
+      },
+      "x_spread_treated": 0.01040251146596427,
+      "x_untreated_calibration": -0.05077332882070962,
+      "x_untreated_calibration_by_shape": {
+        "full_attn.o_proj": -0.037812337298448795,
+        "full_attn.qkv_proj_fused": 0.010466832524193226,
+        "head.lm_head": 0.001334256510563181,
+        "linear_attn.in_proj_fused_qkvzba": -0.25154750249414937,
+        "linear_attn.out_proj": -0.022146914789422323,
+        "mlp.down": 0.014277765499164374,
+        "mlp.gate_up_fused": 0.010190114068441058
+      },
+      "x_untreated_calibration_stable_shapes": 0.010836264418922825
+    },
+    {
+      "all_tokens_matched": true,
+      "alpha_absorption": 1.0053447607538455,
+      "arm": "m6L2",
+      "calibration_width_untreated": 1,
+      "dq_predicted_seconds": 5.389222936099999,
+      "dt_measured_seconds": 5.41802704334259,
+      "family": "m6",
+      "level": 2,
+      "mtp_decode_seconds_arm": 21.684413492679596,
+      "mtp_decode_seconds_base": 16.266386449337006,
+      "mtp_delta_frac": 0.3330811708068955,
+      "mtp_leg_has_treated_verify_width": true,
+      "occupancy_share_total_qmv": 0.6718418474464208,
+      "occupancy_share_treated": 0.1814340566229625,
+      "primary_leg": "mtp",
+      "psi_eff": 0.18240377824821186,
+      "psi_eff_high": 0.19423376559578726,
+      "psi_eff_low": 0.17216953382332426,
+      "psi_eff_variants": {
+        "as_measured": 0.18240377824821186,
+        "drift_corrected": 0.17216953382332426,
+        "stable_shapes_only": 0.19423376559578726
+      },
+      "q_total_predicted_seconds": 10.9284391234,
+      "q_treated_predicted_seconds": 2.9512764801,
+      "raw_p_arm": 1.7340815137001688,
+      "raw_p_base": 2.3153544891413764,
+      "raw_p_delta": -0.5812729754412076,
+      "raw_p_sign_expected": "down",
+      "raw_p_sign_observed": "down",
+      "serial_delta_frac": -0.0015904459800244464,
+      "trajectory_identical_to_base": true,
+      "treated_widths_dispatched": [
+        6
+      ],
+      "unstable_shapes_dropped": [
+        "full_attn.qkv_proj_fused",
+        "linear_attn.in_proj_fused_qkvzba",
+        "mlp.down",
+        "mlp.gate_up_fused"
+      ],
+      "untreated_widths_dispatched": [
+        2,
+        4,
+        5,
+        7,
+        8,
+        9
+      ],
+      "x_bar_treated": 1.8260650848670714,
+      "x_bar_treated_drift_corrected": 1.9346115622796214,
+      "x_bar_treated_stable_shapes": 1.7148468999981108,
+      "x_by_width": {
+        "2": -0.0020342279573483113,
+        "4": 0.000701830743043308,
+        "5": 0.001905492264046238,
+        "6": 1.8260650848670714,
+        "7": 0.001283960391169403,
+        "8": 0.001468959575316342,
+        "9": 0.0007885679541252966
+      },
+      "x_by_width_all": {
+        "1": -0.03698836289196328,
+        "2": -0.0020342279573483113,
+        "3": 0.0029599679130780654,
+        "4": 0.000701830743043308,
+        "5": 0.001905492264046238,
+        "6": 1.8260650848670714,
+        "7": 0.001283960391169403,
+        "8": 0.001468959575316342,
+        "9": 0.0007885679541252966
+      },
+      "x_spread_treated": 0.0,
+      "x_untreated_calibration": -0.03698836289196328,
+      "x_untreated_calibration_by_shape": {
+        "full_attn.o_proj": -0.0014347544423733982,
+        "full_attn.qkv_proj_fused": 0.10171992171398969,
+        "head.lm_head": -0.001433786555654737,
+        "linear_attn.in_proj_fused_qkvzba": -0.2390990222137146,
+        "linear_attn.out_proj": -0.01436500163238652,
+        "mlp.down": 0.024658202178355237,
+        "mlp.gate_up_fused": 0.020045627376426012
+      },
+      "x_untreated_calibration_stable_shapes": -0.007549549159602709
+    },
+    {
+      "all_tokens_matched": true,
+      "alpha_absorption": NaN,
+      "alpha_absorption_serial": 0.973265634540416,
+      "arm": "m1L1",
+      "calibration_width_untreated": 2,
+      "dq_predicted_seconds": 0.0,
+      "dt_measured_seconds": 0.28859102725982666,
+      "family": "m1",
+      "level": 1,
+      "mtp_decode_seconds_arm": 16.554977476596832,
+      "mtp_decode_seconds_base": 16.266386449337006,
+      "mtp_delta_frac": 0.017741557300305466,
+      "mtp_leg_has_treated_verify_width": false,
+      "occupancy_share_serial": 0.8759337366205597,
+      "occupancy_share_total_qmv": 0.6718418474464208,
+      "occupancy_share_treated": 0.0,
+      "primary_leg": "serial",
+      "psi_eff": 0.0415391216104408,
+      "psi_eff_high": 0.04411254285571382,
+      "psi_eff_low": 0.033849220520400826,
+      "psi_eff_serial": 0.8525162039873666,
+      "psi_eff_variants": {
+        "as_measured": 0.0415391216104408,
+        "drift_corrected": 0.04411254285571382,
+        "stable_shapes_only": 0.033849220520400826
+      },
+      "q_serial_predicted_seconds": 32.9897847808,
+      "q_total_predicted_seconds": 10.9284391234,
+      "q_treated_predicted_seconds": 0.0,
+      "raw_p_arm": 3.1033460761676204,
+      "raw_p_base": 2.3153544891413764,
+      "raw_p_delta": 0.787991587026244,
+      "raw_p_sign_expected": "up",
+      "raw_p_sign_observed": "up",
+      "serial_decode_seconds_arm": 51.37582552433014,
+      "serial_decode_seconds_base": 37.66242057085037,
+      "serial_delta_frac": 0.36411374376965955,
+      "serial_rounds": 512,
+      "serial_x_width_1": 0.4271047776765253,
+      "trajectory_identical_to_base": true,
+      "treated_widths_dispatched": [],
+      "unstable_shapes_dropped": [
+        "full_attn.o_proj",
+        "full_attn.qkv_proj_fused",
+        "linear_attn.out_proj",
+        "mlp.gate_up_fused"
+      ],
+      "untreated_widths_dispatched": [
+        2,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "x_bar_treated": 0.4271047776765253,
+      "x_bar_treated_drift_corrected": 0.4021884967805123,
+      "x_bar_treated_stable_shapes": 0.5241348848672212,
+      "x_by_width": {
+        "2": 0.017769565898751782,
+        "4": -0.003915784865317851,
+        "5": 0.005206240498236481,
+        "6": 0.0036334031637847986,
+        "7": 7.652714816575035e-05,
+        "8": 0.004310297051247414,
+        "9": 0.012814877895382715
+      },
+      "x_by_width_all": {
+        "1": 0.4271047776765253,
+        "2": 0.017769565898751782,
+        "3": -0.002797458515082285,
+        "4": -0.003915784865317851,
+        "5": 0.005206240498236481,
+        "6": 0.0036334031637847986,
+        "7": 7.652714816575035e-05,
+        "8": 0.004310297051247414,
+        "9": 0.012814877895382715
+      },
+      "x_spread_treated": 0.0,
+      "x_untreated_calibration": 0.017769565898751782,
+      "x_untreated_calibration_by_shape": {
+        "full_attn.o_proj": 0.03738060703733548,
+        "full_attn.qkv_proj_fused": 0.03424227052098128,
+        "head.lm_head": -0.0003579255522502267,
+        "linear_attn.in_proj_fused_qkvzba": -0.013376640267411921,
+        "linear_attn.out_proj": 0.020995190049551082,
+        "mlp.down": 0.008490418332977923,
+        "mlp.gate_up_fused": 0.034394817198899696
+      },
+      "x_untreated_calibration_stable_shapes": -0.0003800045056205903
+    }
+  ],
+  "slope_psi": {
+    "p2": {
+      "curve_vs_slope_pct": 0.2680737622334117,
+      "non_qmv_ms_per_round": 68.05962882083999,
+      "non_qmv_seconds": 5.308651048025519,
+      "pairwise_slopes": [
+        {
+          "q_treated_seconds": 10.945088522543513,
+          "x_from": 0.0,
+          "x_to": 0.9029534592154967
+        },
+        {
+          "q_treated_seconds": 10.95779146502681,
+          "x_from": 0.0,
+          "x_to": 1.818022737323784
+        },
+        {
+          "q_treated_seconds": 10.970326216364132,
+          "x_from": 0.9029534592154967,
+          "x_to": 1.818022737323784
+        }
+      ],
+      "points_x_bar_and_leg_seconds": [
+        [
+          0.0,
+          16.266386449337006
+        ],
+        [
+          0.9029534592154967,
+          26.1492919921875
+        ],
+        [
+          1.818022737323784,
+          36.187900483608246
+        ]
+      ],
+      "psi_from_slope": 0.6736428791631289,
+      "q_treated_seconds_from_curve": 10.9284391234,
+      "q_treated_seconds_from_slope": 10.957735401311487,
+      "slope_spread_pct": 0.2303185183463981
+    },
+    "p6": {
+      "curve_vs_slope_pct": 0.039198675201856936,
+      "non_qmv_ms_per_round": 80.63339248629528,
+      "non_qmv_seconds": 6.289404613931032,
+      "pairwise_slopes": [
+        {
+          "q_treated_seconds": 9.996493539707933,
+          "x_from": 0.0,
+          "x_to": 0.9129477827430719
+        },
+        {
+          "q_treated_seconds": 9.976937759378135,
+          "x_from": 0.0,
+          "x_to": 1.8321105633472778
+        },
+        {
+          "q_treated_seconds": 9.957514207131856,
+          "x_from": 0.9129477827430719,
+          "x_to": 1.8321105633472778
+        }
+      ],
+      "points_x_bar_and_leg_seconds": [
+        [
+          0.0,
+          16.266386449337006
+        ],
+        [
+          0.9129477827430719,
+          25.392663061618805
+        ],
+        [
+          1.8321105633472778,
+          34.54523950815201
+        ]
+      ],
+      "psi_from_slope": 0.6133496131104534,
+      "q_treated_seconds_from_curve": 9.973072523099999,
+      "q_treated_seconds_from_slope": 9.976981835405974,
+      "slope_spread_pct": 0.39069262848357406
+    }
+  }
+}

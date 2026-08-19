@@ -1,0 +1,29 @@
+{
+  "psi_serial_measured_by_m1": 0.8525162039873666,
+  "psi_mtp_measured_by_p2_slope": 0.6736428791631289,
+  "serial": {
+    "rounds": 512,
+    "ms_per_round": 73.55941517744213,
+    "qmv_ms_per_round": 62.71059339460365,
+    "non_qmv_ms_per_round": 10.848821782838485,
+    "non_qmv_share": 0.1474837960126334
+  },
+  "mtp": {
+    "rounds": 78,
+    "mean_width": 7.269230769230769,
+    "ms_per_round": 208.54341601714108,
+    "qmv_ms_per_round": 140.4837871963011,
+    "non_qmv_ms_per_round": 68.05962882083998,
+    "non_qmv_share": 0.326357120836871,
+    "non_qmv_seconds_of_leg": 5.308651048025518
+  },
+  "growth_serial_to_mtp": {
+    "qmv": 2.240192279991884,
+    "non_qmv": 6.27345809371687,
+    "non_qmv_over_qmv": 2.800410549463905
+  },
+  "mtp_non_qmv_ms_per_round_from_p2_intercept": 68.05962882083999,
+  "mtp_non_qmv_intercept_is_identical_by_construction": true,
+  "serial_qmv_ms_per_round_from_curve": 64.4331734,
+  "serial_qmv_curve_vs_injection_pct": 2.7468724375754094
+}
