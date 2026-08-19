@@ -1597,6 +1597,48 @@ evidence or a changed condition; “try again” is not enough.
     at workflow `:2491-2502`, so the 158 MB gap would be a hard refusal if we ever
     declared the local tree.
 
+97. 🔴🔴🔴 **The scoring prompts run predominantly at depth 5 = M = 6, which is
+    both the worst per-row width and the width nobody on the board has touched.
+    Two experiments size at +6 % and +25 % before discounting.**
+    `effective_mean_draft_len` is an exact rational, so the counts recover
+    exactly (`/tmp/ratio.py`). Board top `0cd0a6b4`: beagle **485 accepted rows
+    over 107 drafting rounds**, medicine 472/99, essays 472/87, republic 469/89,
+    botany 491/85, drama 193/84, travel 563/212, plutarch 75/487 with 449
+    non-drafting.
+
+    Now use the schedule: `sdpaWidthWallDepthCap = 5` caps depth at 5 (M ≤ 6)
+    unless `fullAcceptStreak >= 2` opens `segmentedVerifyDepthCap = 8` (M ≤ 9).
+    Under a geometric accept model `n(d, p) = Σ_{i=1..d} p^i`, beagle's
+    n = 4.5327 is reproduced by **depth 5 at p ≈ 0.965** (n = 4.499), whereas
+    depth 8 at the same p would give **6.84** — far too high. So the central
+    prompts cannot be depth-8 dominated; they sit at depth 5, i.e. **M = 6**.
+    (And in the alternative reading, a depth-5/depth-8 mix, *both* widths are
+    2-pass, so the conclusion below is unchanged.)
+
+    Sizing, calibrated off E27's measured M=5 two-pass→one-pass ratio 0.7990,
+    which decomposes a 2-pass round into `fixed = 0.598` and `stream = 0.201`
+    per pass (`/tmp/prize.py`):
+
+    | option | change | cost/token | score sizing |
+    |---|---|---:|---:|
+    | **A** | NA=6 makes M=6 single-pass (askeladd E32) | **−20.1 %** | 3.249 → **~4.07 (+25 %)** |
+    | **B** | snap the depth cap 5 → 4, so every round is single-pass M=5 | **−5.8 %** | 3.249 → **~3.45 (+6.1 %)** |
+
+    Option B costs 0.84 accepted rows per round and is a **one-constant change**
+    with no kernel work. Note it is the *opposite* of E25's arm D: arm D capped at
+    depth 3 and lost ~18 %, while depth 4 is exactly the largest single-pass
+    width. That is the whole content of item 92's step-function insight.
+
+    **Discount honestly.** Both numbers are upper-leaning: A assumes every round
+    is M=6 and that the full M=5 pass saving transfers to M=6; B assumes the
+    accept rate is unchanged at shallower depth, which is precisely what E25 must
+    test; and the fixed/stream split is transferred from one width on one fixture.
+    A at half the round share and two-thirds of the saving is still **+8 %**. The
+    bar is 1 %. Both are worth a ranked slot, and A is worth the register fight.
+    Sanity check in favour of a large untapped prize: per their own public notes,
+    the competitors have worked **M=8 only**, and no note among 626 mentions IPG,
+    `rows_per_simd`, `ceil(M/IPG)`, NA, or widths 5/6/7.
+
 
 ## Advisor process lessons, 2026-08-17
 
