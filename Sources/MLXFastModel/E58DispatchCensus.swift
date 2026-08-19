@@ -44,13 +44,42 @@ public enum E58DispatchCensus {
     /// costs anything at all. The pair brackets the marginal price.
     static let taxWaits = (environment["MLX_E58_DISPATCH_TAX_WAIT"] ?? "1") != "0"
 
+    /// RESEARCH PROBE ONLY. MLX caches both command-buffer limits once, when it
+    /// constructs its device. On this 48 GiB host the trusted worker force-sets
+    /// 128 MiB and 64 ops with overwrite=1 AFTER `resolve()` returns, so no
+    /// editable writer can change the limits by `setenv` alone. Setting these
+    /// variables writes the requested limits and then touches MLX, which pins
+    /// the device before the trusted override runs. It exists only to show
+    /// whether the round's command-buffer geometry responds to the limits at
+    /// all, it is never part of a candidate, and it is reverted with the rest of
+    /// this instrument.
+    static let probeBufferMegabytes = environment["MLX_E58_BUFFER_LIMIT_MB"]
+    static let probeBufferOps = environment["MLX_E58_BUFFER_LIMIT_OPS"]
+
     /// Called from the earliest editable startup hook, before the backbone and
     /// head loads create any Metal pipeline. Installing later would leave the
     /// pipelines built during weight loading and warmup unmapped, and their
     /// dispatches would be counted as `<unmapped>`.
     public static func installIfRequested() {
         if censusEnabled { DispatchLedger.shared.install() }
+        pinBufferLimitsIfRequested()
         if taxPerRound > 0 { DispatchTax.shared.prepare() }
+    }
+
+    private static func pinBufferLimitsIfRequested() {
+        guard probeBufferMegabytes != nil || probeBufferOps != nil else { return }
+        if let megabytes = probeBufferMegabytes {
+            setenv("MLX_MAX_MB_PER_BUFFER", megabytes, 1)
+        }
+        if let ops = probeBufferOps {
+            setenv("MLX_MAX_OPS_PER_BUFFER", ops, 1)
+        }
+        // Touching MLX here constructs its device, which reads and caches both
+        // limits, so the trusted worker's later overwrite cannot move them.
+        let pin = MLXArray([Float(0)]) + Float(1)
+        eval(pin)
+        DispatchLedger.shared.noteBufferLimitProbe(
+            megabytes: probeBufferMegabytes, ops: probeBufferOps)
     }
 
     public static func beginRound(round: Int, width: Int, depth: Int) {
@@ -163,6 +192,14 @@ private final class DispatchLedger: @unchecked Sendable {
             "device_class": String(describing: deviceClass),
             "hooks": results.map { "\($0.key)=\($0.value ? 1 : 0)" }
                 .sorted().joined(separator: ","),
+        ])
+    }
+
+    func noteBufferLimitProbe(megabytes: String?, ops: String?) {
+        write([
+            "event": "buffer_limit_probe",
+            "requested_mb": megabytes ?? "<unset>",
+            "requested_ops": ops ?? "<unset>",
         ])
     }
 
