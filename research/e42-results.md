@@ -41,9 +41,9 @@ tokens are unchanged by construction.
 | deliverable | status |
 |---|---|
 | p2 arm (M≥2 → ψ) at ≥2 magnitudes | **done**, L1 and L2 |
-| p6 arm (M≥6 → ψ·φ) at ≥2 magnitudes | L1 done, L2 running |
-| linearity across magnitudes | **done** for p2 (the scientific core) |
-| m1 sign-flip control | pending |
+| p6 arm (M≥6 → ψ·φ) at ≥2 magnitudes | **done**, L1 and L2 |
+| linearity across magnitudes | **done** for both p2 and p6 (the scientific core) |
+| m1 sign-flip control | running |
 | m6 single-width arm (priority B) | **done** |
 | bit-exactness, end to end on the scored path | **done**, every arm |
 | bit-exactness, 192-cell parity rig | pending |
@@ -166,11 +166,17 @@ never dispatched on this fixture.
 | p2L1 | `bf64ead` | 2..9 | 26.149 | 37.621 | 1.4387 | +0.9030 | +60.757 % | **0.6729** | 1.0015 |
 | p2L2 | `afc8916` | 2..9 | 36.188 | 37.583 | 1.0386 | +1.8180 | +122.470 % | **0.6736** | 1.0027 |
 | p6L1 | `6b8ae93` | 6..9 | 25.393 | 37.583 | 1.4801 | +0.9129 | +56.105 % | **0.6145** | 1.0023 |
+| p6L2 | `78cd88d` | 6..9 | 34.545 | 37.583 | 1.0879 | +1.8321 | +112.372 % | **0.6133** | 1.0004 |
 | m6L2 | `04f28ac` | 6 only | 21.684 | 37.603 | 1.7341 | +1.8261 | +33.308 % | **0.1824** | 1.0053 |
 
-Serial-leg drift across arms: −0.111 %, −0.210 %, −0.210 %, −0.159 % — all well
-inside the 0.4315 % MDE, as required, since the serial leg is entirely width 1
-and therefore untreated in every arm above.
+Serial-leg drift across arms: −0.111 %, −0.210 %, −0.210 %, −0.211 %, −0.159 % —
+all well inside the 0.4315 % MDE, as required, since the serial leg is entirely
+width 1 and therefore untreated in every arm above.
+
+The spread of `x` over the treated widths is the gate-tightness signature and it
+tracks the gate exactly: p2 treats seven dispatched widths and reads 0.4260 /
+0.7210, p6 treats four and reads 0.0063 / 0.0104, and m6 treats exactly one and
+reads **0.0000** because a single-width arm has nothing to spread over.
 
 `α` is the additivity check: predicted-over-observed leg time under the
 assumption that the injection adds cost without changing anything else. α ≈ 1 to
@@ -179,26 +185,50 @@ assumption that the injection adds cost without changing anything else. α ≈ 1
 ### Linearity — the scientific core
 
 ψ must not depend on the injection magnitude. Measured at two magnitudes a
-factor 2.013 apart in kernel cost:
+factor ~2 apart in kernel cost, on **both** gated families:
 
-**ψ_eff(L2) / ψ_eff(L1) = 1.0012** — 0.12 %, versus a 0.4315 % MDE.
+| family | ψ_eff(L1) | ψ_eff(L2) | ratio |
+|---|---|---|---|
+| p2 (M≥2) | 0.6729 | 0.6736 | **1.0012** |
+| p6 (M≥6) | 0.6145 | 0.6133 | **0.9980** |
 
-If the instrument were mis-specified — DCE, occupancy change, cache-pressure
-nonlinearity, or a leg-time term I had not accounted for — ψ would drift with
-magnitude. It does not, to a tenth of a percent.
+0.12 % and 0.20 %, versus a 0.4315 % MDE. If the instrument were mis-specified —
+DCE, occupancy change, cache-pressure nonlinearity, or a leg-time term I had not
+accounted for — ψ would drift with magnitude. It does not, to a fifth of a
+percent, and it does not on either gate. That the two families' ratios bracket
+1.0 from opposite sides is what a noise-limited estimate of a true constant looks
+like; a systematic magnitude effect would push both the same way.
 
 ### An independent ψ that predicts no absolute cost
 
 The ratio estimator still leans on the curve's absolute calibration. A second
 estimator avoids that entirely: regress leg time on the *ladder slope* only.
 
-- treated QMV work `Q_treated` = **10.9577 s**, pairwise spread **0.230 %**
-- ⇒ **ψ = 0.6736**
-- non-QMV intercept **5.3087 s = 68.06 ms/round**
-- the isolated `--shapes-only` curve independently predicts 10.9284 s, agreeing
-  to **+0.268 %**
+| family | Q_treated from slope | pairwise spread | ψ from slope | non-QMV intercept | curve prediction |
+|---|---|---|---|---|---|
+| p2 | **10.9577 s** | 0.230 % | **0.6736** | 5.3087 s = **68.06 ms/round** | 10.9284 s (**+0.268 %**) |
+| p6 | **9.9770 s** | 0.391 % | **0.6133** | 6.2894 s = **80.63 ms/round** | 9.9731 s (**+0.039 %**) |
 
-Two estimators with different failure modes agree to a quarter of a percent.
+Two estimators with different failure modes agree to a quarter of a percent on
+p2 and to four hundredths of a percent on p6.
+
+#### The cross-arm intercept check
+
+The two intercepts above are the strongest validation in this experiment,
+because they were not fitted to the quantity they predict. Each intercept comes
+from **leg timing alone**; the gates are compile-time template selections; so the
+*difference* of the two intercepts must equal the **curve-measured** QMV cost of
+exactly the widths that separate the two gates — dispatched widths {2, 4, 5}:
+
+| quantity | value |
+|---|---|
+| curve prediction, 1×Q(2) + 5×Q(4) + 5×Q(5) over 78 rounds | **12.248 ms/round** |
+| measured difference of two independently built arms' intercepts | **12.574 ms/round** |
+| ratio | **1.0266** |
+
+A leg-only quantity predicts a curve-only quantity to 2.7 % with no shared code
+path and no shared fit. Reproduced by
+`research/e42_analyze.py` as `cross_arm_intercept_check`.
 
 ### ψ interval over three denominators
 
@@ -210,6 +240,7 @@ geometry is replayed. Three defensible denominators give:
 | p2L1 | 0.6729 | 0.6040 | 0.6691 | [0.6040, 0.6729] |
 | p2L2 | 0.6736 | 0.6592 | 0.6739 | [0.6592, 0.6739] |
 | p6L1 | 0.6145 | 0.5541 | 0.6125 | [0.5541, 0.6145] |
+| p6L2 | 0.6133 | 0.5665 | 0.6029 | [0.5665, 0.6133] |
 | m6L2 | 0.1824 | 0.1722 | 0.1942 | [0.1722, 0.1942] |
 
 **Preferred ψ ≈ 0.672**, interval **[0.659, 0.674]** from the tightest arm.
@@ -222,7 +253,8 @@ reading at an untreated width is expected: it is the cost of the inert
 restructuring, and the calibration cell is there to price it.
 
 What is *not* explicable that way is the sign. The untreated M=1 calibration cell
-reads −5.13 % (p2L1), −1.39 % (p2L2), −4.95 % (p6L1), −3.70 % (m6L2): an inert
+reads −5.13 % (p2L1), −1.39 % (p2L2), −4.95 % (p6L1), −5.08 % (p6L2),
+−3.70 % (m6L2): an inert
 restructuring cannot make the kernel meaningfully *faster*. It is **one shape**:
 `linear_attn.in_proj_fused_qkvzba` at −24.61 %, whose *within-curve* spread is
 32.6 % (base) to 146.2 % (arm) — i.e. that cell is not a stable measurement at
@@ -278,14 +310,25 @@ trajectory unchanged.
 
 | quantity | measured | ranked bracket | verdict |
 |---|---|---|---|
-| φ_local(M≥6) | **0.9132** (p6L1) | 0.2351–0.9380 | inside, near the top |
-| **φ_local(M=6)** | **0.2708**, interval [0.2557, 0.2883] | 0.0000–0.9701 | **bounded away from zero** |
-| φ_local(M∈{7,8,9}) | **0.6424** by subtraction | — | — |
+| φ_local(M≥6) | **0.9105** (L2), 0.9132 (L1) | 0.2351–0.9380 | inside, near the top |
+| **φ_local(M=6)** | **0.2708**, interval [0.2612, 0.2882] | 0.0000–0.9701 | **bounded away from zero** |
+| φ_local(M∈{7,8,9}) | **0.6397** by subtraction | — | — |
 
 φ_local(M=6) = ψ_eff(m6L2) / ψ_eff(p2L2) = 0.1824 / 0.6736. The ranked corpus
 cannot bound φ(M=6) away from zero at all; a single injected width pins it to
-±6 % of its own value. Cross-level use of L1 and L2 arms is licensed by the
-0.12 % linearity result in §5.
+±5 % of its own value.
+
+φ_local(M≥6) is now measured at both magnitudes — 0.9132 at L1 and 0.9105 at L2,
+agreeing to **0.30 %** — so the pooled φ carries the same linearity guarantee as
+ψ. Cross-level use of the L1 and L2 arms is licensed by that result and by §5.
+
+The interval on φ(M=6) applies the drift correction **consistently to numerator
+and denominator**, because it is a common-mode correction on a shared calibration
+cell: as-measured 0.1824/0.6736 = 0.2708, drift-corrected 0.1722/0.6592 = 0.2612,
+stable-shapes 0.1942/0.6739 = 0.2882. Pairing the extreme numerator with the
+opposite-extreme denominator — which double-counts a correction that cancels in
+the ratio — would give the wider [0.2555, 0.2946]; that bound is also above zero,
+so the conclusion does not depend on the choice.
 
 φ_local sits near the top of the pooled ranked bracket because this fixture is a
 width **ceiling**: its 0.8875 accept rate saturates drafting at depth 8, giving
@@ -412,6 +455,7 @@ occupancy. They can be compared arm by arm:
 | p2L1 | 2..9 | 0.6729 | 0.6718 | 1.0016 |
 | p2L2 | 2..9 | 0.6736 | 0.6718 | 1.0027 |
 | p6L1 | 6..9 | 0.6145 | 0.6131 | 1.0023 |
+| p6L2 | 6..9 | 0.6133 | 0.6131 | **1.0004** |
 | m6L2 | 6 only | 0.1824 | 0.1814 | 1.0055 |
 
 **Marginal cost equals occupancy to within 0.6 % at every width set tested**, and

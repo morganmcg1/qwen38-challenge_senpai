@@ -426,6 +426,47 @@ def slope_psi(base: dict, results: list[dict]) -> dict | None:
     }
 
 
+def intercept_difference(
+    base: dict, base_curve: dict, slopes: dict
+) -> list[dict]:
+    """Cross-arm check: two families' fitted intercepts must differ by the
+    curve-measured cost of exactly the widths that separate their gates.
+
+    Each family's intercept comes from leg timing alone and each family's gate
+    is a compile-time template selection, so the difference of two intercepts is
+    a leg-only estimate of a curve-only quantity with no shared code path. It is
+    the only check here that validates the slope fit against something it was
+    not fitted to.
+    """
+    hist = base["width_histogram"]
+    rounds = base["round_count"]
+    out = []
+    for wide, narrow in itertools.permutations(sorted(slopes), 2):
+        extra = TREATED[wide] - TREATED[narrow]
+        if not extra or not TREATED[narrow] < TREATED[wide]:
+            continue
+        dispatched = sorted(set(hist) & extra)
+        if not dispatched:
+            continue
+        predicted = sum(
+            hist[m] * verify_cost_per_round(base_curve, m) for m in dispatched
+        )
+        measured = slopes[narrow]["non_qmv_seconds"] - slopes[wide]["non_qmv_seconds"]
+        out.append(
+            {
+                "wider_gate": wide,
+                "narrower_gate": narrow,
+                "widths_only_in_wider_gate": dispatched,
+                "predicted_from_curve_seconds": predicted,
+                "predicted_ms_per_round": 1000.0 * predicted / rounds,
+                "measured_intercept_difference_seconds": measured,
+                "measured_ms_per_round": 1000.0 * measured / rounds,
+                "ratio_measured_over_predicted": measured / predicted,
+            }
+        )
+    return out
+
+
 def mde(sd_pct: float, n: int, design: str = "two_sample") -> dict:
     """Delegate to research/e39_mde.py, unmodified, so nulls stay auditable."""
     proc = subprocess.run(
@@ -592,6 +633,21 @@ def main() -> int:
             f"({sl['curve_vs_slope_pct']:+.3f} % vs slope)"
         )
 
+    intercepts = intercept_difference(base, base_curve, slopes)
+    if intercepts:
+        print(
+            "\n=== cross-arm intercept check "
+            "(leg-only quantity predicting a curve-only quantity) ==="
+        )
+        for it in intercepts:
+            print(
+                f"{it['wider_gate']}-vs-{it['narrower_gate']} differ at widths "
+                f"{it['widths_only_in_wider_gate']}: "
+                f"curve predicts {it['predicted_ms_per_round']:.3f} ms/round, "
+                f"intercepts differ by {it['measured_ms_per_round']:.3f} ms/round "
+                f"-> ratio {it['ratio_measured_over_predicted']:.4f}"
+            )
+
     phi_local = None
     p2 = {r["level"]: r for r in by_fam.get("p2", [])}
     p6 = {r["level"]: r for r in by_fam.get("p6", [])}
@@ -643,6 +699,7 @@ def main() -> int:
         "results": results,
         "linearity": linearity,
         "slope_psi": slopes,
+        "cross_arm_intercept_check": intercepts,
         "phi_local": phi_local,
         "power": power,
         "drift": drift,

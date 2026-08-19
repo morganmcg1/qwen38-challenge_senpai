@@ -710,6 +710,22 @@
     }
   },
   "cool_gate_passed_real_gate": false,
+  "cross_arm_intercept_check": [
+    {
+      "measured_intercept_difference_seconds": 0.9807535659055127,
+      "measured_ms_per_round": 12.57376366545529,
+      "narrower_gate": "p6",
+      "predicted_from_curve_seconds": 0.9553666003,
+      "predicted_ms_per_round": 12.248289747435896,
+      "ratio_measured_over_predicted": 1.0265730093532062,
+      "wider_gate": "p2",
+      "widths_only_in_wider_gate": [
+        2,
+        4,
+        5
+      ]
+    }
+  ],
   "drift": {},
   "gate_qualified_for_timing": false,
   "linearity": {
