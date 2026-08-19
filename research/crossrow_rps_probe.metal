@@ -42,7 +42,7 @@
 // 2 simdgroups x R rows each, so tiles are 2*R rows tall.
 #define CROSSROW_RPS_PROBE(name, NA, R)                                    \
   [[kernel]] void name(PROBE_ARGS) {                                       \
-    qmv_fast_crossrow_affine4_g64_wide_rps<bfloat16_t, NA, R, true>(       \
+    qmv_fast_crossrow_affine4_g64_wide_rps<bfloat16_t, NA, true, R>(       \
         w, scales, biases, x, y, in_vec_size, out_vec_size,                \
         int(tid.x) * NA, int(tid.y) * (2 * R) + int(simd_gid) * R,         \
         simd_lid);                                                         \
@@ -51,7 +51,7 @@
 // Coverage-preserving. out_row is the SHIPPED expression, unchanged.
 #define CROSSROW_RB_PROBE(name, NA, R)                                     \
   [[kernel]] void name(PROBE_ARGS) {                                       \
-    qmv_fast_crossrow_affine4_g64_rowblocked<bfloat16_t, NA, R, true>(     \
+    qmv_fast_crossrow_affine4_g64_rowblocked_rps<bfloat16_t, NA, true, R>(     \
         w, scales, biases, x, y, in_vec_size, out_vec_size,                \
         int(tid.x) * NA, int(tid.y) * 8 + int(simd_gid) * 4, simd_lid);    \
   }

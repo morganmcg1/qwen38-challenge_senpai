@@ -30,17 +30,19 @@ SHIPPED = pathlib.Path(
 GENERATED = pathlib.Path("research/generated/crossrow_rps_wide.h")
 
 SIGNATURE = "METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide("
-TEMPLATE_LINE = "template <typename T, int NA, bool DIRECT_NIBBLES = false>"
+TEMPLATE_LINE = (
+    "template <typename T, int NA, bool DIRECT_NIBBLES = false, int ROWS_PER_SIMD = 4>"
+)
 
 # (description, exact old text, exact new text). Every entry must match exactly
 # once in the extracted body; anything else means the shipped kernel moved under
 # the probe and the sweep would be measuring a stale structure.
+#
+# E33 shipped `ROWS_PER_SIMD` and the coverage-preserving wrapper into the
+# production kernel, so the two rewrites that used to synthesise them are gone.
+# What is left is the probe's reason to exist: a private symbol name, and an NA
+# bound wide enough to locate a boundary the shipped bound now sits inside.
 REWRITES = [
-    (
-        "add ROWS_PER_SIMD template parameter",
-        TEMPLATE_LINE,
-        "template <typename T, int NA, int ROWS_PER_SIMD, bool DIRECT_NIBBLES = false>",
-    ),
     (
         "rename so the probe cannot shadow the shipped symbol",
         SIGNATURE,
@@ -48,13 +50,8 @@ REWRITES = [
     ),
     (
         "widen the NA bound inside the probe only",
-        '  static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");',
-        '  static_assert(NA >= 2 && NA <= 16, "probe-only NA bound; shipped bound is [2, 5]");',
-    ),
-    (
-        "lift rows_per_simd to a template parameter",
-        "  constexpr int rows_per_simd = 4;",
-        "  constexpr int rows_per_simd = ROWS_PER_SIMD;",
+        '  static_assert(NA >= 2 && NA <= 9, "wide multi-row QMV supports NA in [2, 9]");',
+        '  static_assert(NA >= 2 && NA <= 16, "probe-only NA bound");',
     ),
 ]
 
@@ -81,8 +78,12 @@ ROWBLOCKED = """
 // so the frozen 8-rows-per-threadgroup host geometry is still covered when
 // ROWS_PER_SIMD < 4. Weight rows are still read once each; the x-side pass is
 // repeated once per block.
-template <typename T, int NA, int ROWS_PER_SIMD, bool DIRECT_NIBBLES = false>
-METAL_FUNC void qmv_fast_crossrow_affine4_g64_rowblocked(
+//
+// This is the probe's own copy over the renamed probe body. The production
+// wrapper of the same shape is `qmv_fast_crossrow_affine4_g64_rowblocked` in
+// quantized.h; the `_rps` suffix keeps the two from colliding.
+template <typename T, int NA, bool DIRECT_NIBBLES, int ROWS_PER_SIMD>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_rowblocked_rps(
     const device uint32_t* w,
     const device T* scales,
     const device T* biases,
@@ -95,7 +96,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_rowblocked(
     uint simd_lid) {
   static_assert(4 % ROWS_PER_SIMD == 0, "row blocks must tile 4 rows exactly");
   for (int b = 0; b < 4 / ROWS_PER_SIMD; b++) {
-    qmv_fast_crossrow_affine4_g64_wide_rps<T, NA, ROWS_PER_SIMD, DIRECT_NIBBLES>(
+    qmv_fast_crossrow_affine4_g64_wide_rps<T, NA, DIRECT_NIBBLES, ROWS_PER_SIMD>(
         w, scales, biases, x, y, in_vec_size, out_vec_size, first_m,
         out_row + b * ROWS_PER_SIMD, simd_lid);
   }
