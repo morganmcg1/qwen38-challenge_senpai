@@ -120,6 +120,7 @@
     }
   },
   "cool_gate_passed_real_gate": false,
+  "drift": {},
   "gate_qualified_for_timing": false,
   "linearity": {},
   "official_or_ranked_score": false,

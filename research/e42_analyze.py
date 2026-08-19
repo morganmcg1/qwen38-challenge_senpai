@@ -406,6 +406,29 @@ def main() -> int:
             phi_local[lv] = p6[lv]["psi_eff"] / p2[lv]["psi_eff"]
             print(f"     L{lv} phi_local = {phi_local[lv]:.4f}")
 
+    # Session drift envelope from the base bracket. Every psi_eff is a ratio to
+    # `base`, so a bracket wider than the smallest effect would void the session.
+    drift = {}
+    bracket = [a for a in arms if arm_family(a) == "base"]
+    if len(bracket) > 1:
+        first, last = arms[bracket[0]], arms[bracket[-1]]
+        drift = {
+            "arms": bracket,
+            "mtp_drift_pct": 100.0
+            * (last["mtp_decode_seconds"] / first["mtp_decode_seconds"] - 1.0),
+            "serial_drift_pct": 100.0
+            * (last["serial_decode_seconds"] / first["serial_decode_seconds"] - 1.0),
+            "raw_p_drift": last["raw_p"] - first["raw_p"],
+            "trajectory_identical": first["widths"] == last["widths"],
+        }
+        print("\n=== base bracket drift envelope ===")
+        print(
+            f"{bracket[0]} -> {bracket[-1]}   MTP {drift['mtp_drift_pct']:+.4f} %   "
+            f"serial {drift['serial_drift_pct']:+.4f} %   "
+            f"raw_p {drift['raw_p_drift']:+.4f}   "
+            f"trajectory identical={drift['trajectory_identical']}"
+        )
+
     sds = [
         r["mtp_decode_seconds_sd_pct"]
         for r in arms.values()
@@ -425,6 +448,7 @@ def main() -> int:
         "linearity": linearity,
         "phi_local": phi_local,
         "power": power,
+        "drift": drift,
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
