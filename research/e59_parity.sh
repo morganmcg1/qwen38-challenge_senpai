@@ -66,7 +66,7 @@ compare "CANDIDATE base vs m5_rb2" "BIT-IDENTICAL at every width" \
   "${d}/shipped.json" "${d}/m5_rb2.json"
 compare "CANDIDATE base vs m5_rbx" "BIT-IDENTICAL at every width" \
   "${d}/shipped.json" "${d}/m5_rbx.json"
-compare "CONTROL ARM base vs ceil_only" "identical at M<=9, DIVERGES at M=10" \
+compare "CONTROL ARM base vs ceil_only" "identical at every reachable M<=9" \
   "${d}/shipped.json" "${d}/ceil_only.json"
 compare "POSITIVE CONTROL m5_rb2 vs lanes 3<->4" "DIVERGES at M=5 only" \
   "${d}/m5_rb2.json" "${d}/m5_rb2_lane_perturb.json"
