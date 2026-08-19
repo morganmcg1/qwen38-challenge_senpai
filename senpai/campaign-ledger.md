@@ -10862,7 +10862,74 @@ observed **-6.560 %**.
 - thorfinn owns the `ceil_only` control at M=5 plus the `r=2` row-block route.
 - The single-cell `<T,5,5>` promotion is cancelled before it was assigned.
 
-### 187(P) Rules this item adds
+
+### 187(P) The shipped ceiling of 104 is a LEGALITY FLOOR, not a tuning choice -- which makes the `r=2` route the unique survivor for a structural reason
+
+187(L) established that only an edit leaving the kernel maximum unmoved can
+win. That raises the dual question, which is cheaper to answer and which I had
+not asked: can the ceiling be **lowered**? A lower ceiling would be a pure win
+with no cell-timing cost at all, and under the additive shape it would pay on
+the *current* shipped table without adding any cell.
+
+`research/e59_ceiling_floor.py` (self-test 9 checks, exits 0) answers it by
+enumerating every legal configuration against the `_m` wrapper's own
+constraints: `static_assert(M % IPG != 1)` at `quantized.h:1169`, `NA >= 2` at
+`:980`, and the shipped chooser `IPG = ceil(M / ceil(M / 4))`.
+
+The chooser reproduces the shipped table exactly at all seven widths, and the
+`r=4` ladder reproduces all three exact single-group census anchors with zero
+residual, so the model is anchored before it is used.
+
+| M | legal IPG | cheapest legal NA | regs there | streams there |
+|---|---|---|---|---|
+| 3 | 1, 3 | 3 | 83 | 1 |
+| 4 | 1, 2, 4 | 2 | 62 | 2 |
+| 5 | 1, 3, 5 | 3 | 83 | 2 |
+| 6 | 1, 2, 3, 4, 6 | 2 | 62 | 3 |
+| **7** | **1, 4, 5, 7** | **4** | **104** | 2 |
+| 8 | 1, 2, 3, 4, 5, 6, 8 | 2 | 62 | 4 |
+| 9 | 1, 3, 5, 6, 7, 9 | 3 | 83 | 3 |
+
+**The lowest kernel maximum reachable by any legal retabling is 104, and it is
+pinned by M=7 alone.** M=7 has no legal accumulator count below 4 because
+`7 % 2 == 1` and `7 % 3 == 1` both trip the wrapper's own static assert. The
+shipped table is therefore already sitting on its floor.
+
+Two consequences:
+
+1. **There is no free ceiling reduction.** M=4, M=6 and M=8 could each drop to
+   NA=2 at 62 registers, but that lowers nothing -- the maximum stays pinned at
+   104 by M=7 -- while adding a stream to each of those widths and so paying
+   real cell time for zero occupancy benefit. This direction is closed before
+   it costs a GPU slot.
+
+2. **The `r=2` row-block route is not one option among several that happen to
+   fit under 104. It is the only route that can ever fit.** Any NA=5 cell at
+   `r=4` costs `+21` registers and no retabling elsewhere can buy that back,
+   because every other width is already at or above its own floor and M=7
+   cannot move at all. Against the immovable 104:
+
+   | configuration | registers | verdict |
+   |---|---|---|
+   | `<T,5,5>` at `r=4`, `20+21*NA` | **125** | raises the ceiling |
+   | `<T,5,5>` at `r=2`, 183(C) `16+15*NA` | **91** | fits |
+   | `<T,5,5>` at `r=2`, E44 `15+17*NA` | **100** | fits |
+
+Both competing `r=2` intercepts sit strictly below the floor, so 187(L)'s
+conclusion is robust to that disagreement. The census must still be measured
+rather than assumed, exactly as 187(L) requires -- the two fits differ by 9
+registers and only measurement settles which ladder is right.
+
+**Caveat on scope.** This closes ceiling reduction *by retabling within the
+`_m` family*. It does not close routing `case 7:` out of the `_m` family
+entirely, the way `case 2:` already uses the non-`_m`
+`qmv_fast_crossrow_affine4_g64<T,2>`. That is a larger change with its own
+M=7 timing cost and its own correctness surface, and it is only worth pricing
+if the `ceil_only` control in 187(M) returns stop-rule 1 and proves the
+additive tax is real and large. Recorded as a conditional follow-up, not as
+current work.
+
+### 187(Q) Rules this item adds
 
 - **A per-width QMV cell edit cannot escape the shared register ceiling.**
   `e27_m5_only` carries 95 % and `e27_m9_only` 90 % of E27's full entry dose.
@@ -10878,3 +10945,7 @@ observed **-6.560 %**.
   P4's approximately-zero shared-ceiling term and E49 Arm 2's absent
   dose-response are both width-sweep results, and the width sweep mispredicts
   E27 by 2.5 points.
+- **The shipped QMV register ceiling of 104 cannot be lowered.** It is a
+  legality floor pinned by M=7, whose only legal accumulator counts are
+  {4, 5, 7}. There is no free occupancy win by retabling, and the `r=2`
+  row-block route is the only route that can ever fit under it.
