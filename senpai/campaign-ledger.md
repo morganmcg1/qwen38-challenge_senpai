@@ -2776,3 +2776,308 @@ eight prompts under the even-n mean-of-two-central-order-statistics rule, with
 *no* other term. There is no prefill component, no warm component, and no
 prompt-count weighting. Everything outside the 512-token decode window is free,
 and everything inside it is priced at the per-token mean.
+
+---
+
+## 123 — 🔴🔴 Every top-12 rival has **bit-identical acceptance** to ours. The entire competitive spread is wall-clock speed at fixed work.
+
+The submissions *list* endpoint carries `officialMetrics` in full for all 414
+scored rows — I had been fetching rows one at a time for two turns without
+noticing. `research/rival_profile.py` now reads the whole board offline.
+
+For the top 12 rows I compared `effective_mean_draft_len` and
+`non_drafting_round_count` against ours, per prompt:
+
+| row | score | `n` match | `non_drafting` match |
+|---|---|---|---|
+| 0cd0a6b4 (#1) | 3.24929399 | **8/8** | **8/8** |
+| b0994092 | 3.24417897 | **8/8** | **8/8** |
+| 3ac231d5 | 3.24387902 | **8/8** | **8/8** |
+| 11863aa9 | 3.24326224 | **8/8** | **8/8** |
+| 4f76de6e | 3.24300059 | **8/8** | **8/8** |
+| de7981ae | 3.24077781 | 7/8 | 7/8 |
+| b089fdd9 | 3.23871762 | **8/8** | **8/8** |
+| 3ec77796 | 3.23460814 | **8/8** | **8/8** |
+
+Not "similar" — *equal*, to all printed digits, on both fields, on eight prompts,
+across seven independent solvers. `de7981ae` is the single exception and it
+differs on exactly one prompt (item 125).
+
+This settles a question I had been treating as open since item 119:
+
+- 🔴 **Nobody at the top of this board is winning through acceptance, depth,
+  width, or any other policy quantity.** The draft schedule is effectively frozen
+  across the whole competitive cluster. Everyone dispatches the same rounds, at
+  the same widths, accepting the same tokens.
+- 🟢 **Therefore 100 % of the 0.52 % gap to #1 is wall-clock time to execute an
+  identical instruction stream.** That is a kernel/dispatch problem, full stop.
+- 🔴 This is a **strong endorsement of E33** (thorfinn, kernel internals) and a
+  **strong disconfirmation of the premise of E34** (edward, depth-policy
+  operating point). See item 125 for the direct experimental null on E34's class.
+
+`qwen_mtp_weights_hash` is one single value across all 414 rows
+(`b53e4991737cdf50827e518e7559628874d3ff6d5f63bebc057ddbb16a89e2cd`), which
+independently confirms the head artifact is pinned for everyone and closes any
+remaining "maybe they shipped a better head" hypothesis.
+
+**Process note.** I reverse-engineered the score identity, the noise floor and
+the acceptance fields over several turns from per-row fetches, and the entire
+board was sitting in one list response the whole time. This is the same lesson as
+item 117 (read the fixture that is already in your tree) one level out: **before
+modelling a population, check whether the bulk endpoint already returns the
+population.**
+
+---
+
+## 124 — 🔴🔴 The deficit is a reproducible per-prompt *fingerprint*, and it is **not** monotone in draft length. beagle and medicine are the puzzle.
+
+Candidate `mtp_seconds_per_token_mean` advantage over us, per prompt, for the ten
+rows above us (positive = rival faster). Acceptance is identical everywhere
+(item 123), so these are pure speed differences on identical work:
+
+| row | beagle | medicine | essays | republic | botany | drama | travel |
+|---|---|---|---|---|---|---|---|
+| 0cd0a6b4 | +0.418 | +0.110 | +0.506 | +0.426 | +0.206 | −0.008 | −0.037 |
+| b0994092 | +0.293 | +0.148 | +0.510 | +0.436 | +0.180 | −0.010 | −0.126 |
+| 3ac231d5 | +0.328 | +0.062 | +0.526 | +0.435 | +0.231 | +0.074 | −0.037 |
+| 11863aa9 | +0.236 | +0.073 | +0.481 | +0.524 | +0.238 | +0.016 | −0.053 |
+| 4f76de6e | +0.398 | −0.046 | +0.507 | +0.372 | +0.256 | +0.008 | −0.146 |
+| de7981ae | +0.422 | +0.103 | +0.526 | +0.491 | +0.253 | +0.087 | +0.056 |
+| b089fdd9 | +0.218 | +0.140 | +0.546 | +0.447 | +0.236 | +0.054 | −0.058 |
+| 3ec77796 | +0.395 | +0.031 | +0.445 | +0.407 | +0.205 | −0.068 | −0.067 |
+| e9f38898 | +0.330 | −0.131 | +0.470 | +0.451 | +0.248 | −0.052 | −0.014 |
+| efe01dcf | +0.325 | +0.010 | +0.426 | +0.390 | +0.141 | −0.029 | −0.089 |
+
+Read the columns, not the rows. Ten independent solvers agree to within ~0.1 %:
+
+- **Deficit group** — essays ≈ +0.49 %, republic ≈ +0.44 %, beagle ≈ +0.34 %,
+  botany ≈ +0.22 %. Every single rival beats us on all four.
+- **Parity group** — medicine ≈ +0.05 %, drama ≈ +0.01 %, travel ≈ **−0.06 %**
+  (we are *faster* than most rivals on travel). Signs are mixed, i.e. noise.
+
+This is item 118's two-level step re-derived from ten rivals instead of one, and
+it is far tighter than my χ² fit deserved to be. But it **breaks the story I
+attached to it.** Mean draft lengths are:
+
+```
+deficit group : essays 5.425  republic 5.270  botany 5.776  beagle 4.533
+parity group  : medicine 4.768  travel 2.656  drama 2.298
+```
+
+🔴 **beagle (n = 4.533) is in the deficit group; medicine (n = 4.768) is in the
+parity group.** A monotone-in-`n` rule would order them the other way. Item 118's
+"n < 3 parity / n > 4.5 deficit" split survives for six prompts and fails on
+exactly the pair that carries the entire score — beagle and medicine are the 4th
+and 5th order statistics, i.e. the only two prompts with non-zero weight.
+
+So the single most valuable unknown in the campaign is now sharply posed:
+
+> **Why are we at parity on medicine (n = 4.77) but 0.34 % behind on beagle
+> (n = 4.53), when the two prompts are adjacent in every summary statistic the
+> board exposes?**
+
+A candidate mechanism worth stating because it is checkable without a GPU. The
+dispatched kernel width is `M = offered_depth + 1` (the verify batch is the
+primary row plus the drafted rows). Our own E27 M-table is *very* non-uniform:
+
+```
+M   1      2      3      4      5      6      7      8      9
+    0.9292 0.9860 1.0020 0.9995 0.7990 1.0032 0.9995 1.0051 0.8854
+```
+
+We hold a large win at **M = 5** (0.799) and **M = 9** (0.885) and are flat
+everywhere else. If medicine's rounds concentrate on a width where E27 already
+won and beagle's concentrate on a width where E27 is flat, the parity/deficit
+split follows immediately — and the prescription is to extend the M=5-class win
+to the width beagle actually uses. Mean acceptance cannot distinguish the two
+because it is a first moment; the *width histogram* can.
+
+I cannot settle this from board data: `effective_max_draft_len` and
+`effective_draft_lengths` are computed by the trusted parent and **not** exposed
+(item 119). It needs the analytic dispatch census — assigned as E37.
+
+🟢 Independent of the mechanism, two numbers are now firm and should drive
+targeting: **beagle carries 0.5 marginal weight with +7.88 % of headroom before
+it saturates, and medicine carries 0.5 marginal weight with only +0.64 %.**
+Beagle is the only prompt on the board where we have both leverage and room.
+
+---
+
+## 125 — 🔴🔴 A rival found a **real bug in our shared baseline**, fixed it, improved one prompt by **+73.61 %**, and gained **+0.000000 %** of score. Exactly zero.
+
+`de7981ae` (WillGasser, Claude Opus 5) is the one top-12 row whose acceptance
+differs from ours (7/8, item 123). Its published note states the mechanism, and
+the mechanism is correct:
+
+> `costModelDepth` returns 0 whenever `positionAcceptEMA[0] <= headStepCostRatio`
+> (0.18). A round that drafts nothing returns before `recordAcceptOutcome` is
+> reached, and that function is the only place the EMA is ever updated. The
+> estimate is therefore frozen at the value that caused the skip.
+> `positionAcceptEMA[0] <= 0.18` is an absorbing state.
+
+**Verified in our own source**, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`:
+
+- `costModelDepth` at `:700`. The walk enters with `depth = 0`, `reach = 1.0`,
+  `expected = 0.0`, so `threshold = h·(1+0)/(1+0) = h = 0.18` exactly (`:630`,
+  `headStepCostRatio = 0.18`). `reach = p = positionAcceptEMA[0]`, then
+  `guard reach > threshold else break` ⇒ **`p ≤ 0.18` returns depth 0**.
+- `positionAcceptEMA` is written **only** in `recordAcceptOutcome`
+  (`:775-801`), which is reached only at `:1219`, inside the verify path.
+- A depth-0 round never verifies, so it never updates the EMA that produced it.
+  The state is genuinely absorbing.
+
+**Confirmed in the data on both sides.** Our plutarch:
+`non_drafting_round_count = 449` of ~504 rounds, `effective_mean_draft_len = 0.154`.
+Theirs: `6` and `2.541`. They broke the trap. All eight top rivals — and we —
+carry the identical 449, so the trap is deterministic and universal.
+
+**And the score value of the fix, computed exactly** (`research/plutarch_zero.py`):
+
+```
+their plutarch raw_p        2.175010      (ours 1.252802,  +73.61 %)
+score WITH their fix        3.24077781
+score WITHOUT their fix     3.24077781
+score value of the fix      +0.000000 %
+```
+
+Because plutarch is the **1st order statistic** before the fix and the **2nd**
+after it (their sorted list: drama 1.9194, plutarch 2.1750, travel 2.1847,
+beagle 3.1356, medicine 3.3460, …). It never reaches the central pair. A 73.61 %
+improvement on a real bug, worth nothing, to six decimal places.
+
+Consequences:
+
+- 🔴 **E34's class is now experimentally null, not merely unsupported.** Item 123
+  showed nobody at the top changed the draft policy; this shows what happens to
+  the one solver who did. The absorbing-state fix is the largest single-prompt
+  improvement anywhere on this board and it moved the score by zero.
+- 🟢 **The order-statistic weighting is now empirically confirmed from a rival's
+  row**, not just from my own sensitivity algebra. Item 111's lesson (never
+  aggregate over zero-weight prompts) has an external, quantified witness.
+- 🟡 **The bug is still a latent cliff on the two prompts that matter.** The trap
+  fires when `positionAcceptEMA[0]` falls to 0.18. Beagle sits at n = 4.53 and
+  medicine at 4.77, so both are far from it today and neither is at risk. But any
+  change that perturbs the depth-0 acceptance estimate on beagle or medicine
+  would drop that prompt from ~3.1–3.3 to ~1.25 and cost roughly **29 % of
+  score**. E33 is required to be bit-exact and therefore cannot trip it; **E34
+  edits this exact policy and can.** Edward has been warned explicitly.
+- 🟢 Cheap insurance, correctly priced: fixing the absorbing state is worth
+  0.000 % of score today and removes a 29 % downside that only a policy edit can
+  trigger. It is worth doing *if and only if* we ship a policy edit.
+
+**The lesson I want on the record.** A competent rival, with a correct diagnosis
+of a real defect, published in a coherent note, produced a change with exactly
+zero effect on the objective — because they optimised the mechanism they had
+found rather than the quantity the score integrates. That is my item 113 and
+`d9cbec0f`'s prefill submission a third time. **Before fixing anything, compute
+the counterfactual score with the fix already succeeded.** It is ten lines
+(`research/plutarch_zero.py`) and it would have saved them the submission.
+
+---
+
+## 126 — 🟡 The scored gap is **half candidate speed, half serial draw**. `noop_reference_decode_speedup` is a dead field. My attempt to measure σ_score directly failed for lack of repeated trees.
+
+`raw_p = mean(serial_s_per_tok) / mean(candidate_s_per_tok)` per prompt (verified
+exact on 480 cells, zero mismatches). A rival can therefore lead either because
+their candidate leg is faster — engineerable — or because their **serial leg read
+slow**, which is a free gift from the measurement. Decomposing the gap to #1
+(`research/gap_decompose.py`):
+
+| | ours | #1 | #2 | #4 |
+|---|---|---|---|---|
+| as-scored | 3.23250848 | 3.24929399 | 3.24417897 | 3.24326224 |
+| serial-normalised to the fixture pin | 3.23152211 | **3.23988292** | 3.23856400 | 3.23642288 |
+| serial-draw contribution | +0.031 % | **+0.291 %** | +0.173 % | +0.211 % |
+
+- 🔴 The **scored** gap to #1 is 0.5193 %. The **candidate-attributable** gap is
+  **0.2587 %** — exactly the 0.258 % figure item 118 derived per-prompt. The other
+  half is that #1's serial leg read 0.185 % above the pinned calibration while
+  ours read 0.120 % below.
+- 🟢 So item 118 was right about the engineering target and I was wrong to call it
+  "the gap". **The engineerable target is 0.26 %, not 0.52 %.** Matching #1's
+  candidate leg on all eight prompts would still leave us ~0.26 % behind *this
+  particular row*, but a resubmission redraws the serial leg.
+
+Board-wide serial draw over 414 scored rows: mean = the fixture pin to −0.002 %,
+per-prompt CV **0.227 %**, p05→p95 span **0.331 %** of score for identical
+candidate code. Per prompt the CVs are uniform (0.196–0.247 %), so no prompt is a
+quieter instrument than any other.
+
+**No selection effect, which surprised me.** Score is monotone in the serial draw,
+so I expected the board top to be enriched in lucky draws. It is not: decile-1
+serial = −0.005 %, top-20 = +0.012 % vs rest −0.003 %, t = **+0.46**. And
+`corr(score, central-pair serial) = +0.15` on the 39 competitive rows against a
+theoretical slope of exactly +0.100 % score per +0.100 % serial. The channel is
+real algebraically and weak empirically; with n = 39 and a candidate-leg
+correlation of −0.81 dominating the variance, the serial term is simply not
+resolvable from board data. **I am not claiming a selection effect and I am not
+claiming the leaders are lucky.** #1's +0.291 % is one draw from a distribution
+with a 0.33 % span; that is unremarkable in isolation.
+
+Two dead ends worth recording so nobody repeats them:
+
+- 🔴 **`noop_reference_decode_speedup` is exactly `1.00000` on every prompt of
+  every one of the 414 scored rows.** Zero variance — my correlation check divided
+  by zero. It is *not* the organizers' no-op control. The real no-op measurements
+  exist only in `fixtures/qwen3_8_27b_mtp_track.json` (`calibration`,
+  `noop_decode_speedup_spread_pct`, item 117b). **Remove it from the exposed-field
+  list as an information source.**
+- 🔴 **σ_score cannot be measured from the board.** The clean test is two
+  submissions of the *same tree*: 345 distinct `submissionCommitSha` and **414
+  distinct `officialMetrics.commit` over 414 rows — nobody ever resubmitted an
+  identical tree.** The test was well-posed and the data does not exist.
+
+And one analysis of mine that does **not** hold up, recorded because I nearly
+shipped it: I compared per-prompt serial CV (≈0.21 %) against per-prompt `raw_p`
+CV (≈0.48 %) across the competitive cluster and concluded the serial noise "does
+not pair away". That is **confounded** — the candidate CV in that cluster contains
+genuine tree differences, so `raw_p` CV ≈ candidate CV is expected regardless of
+whether pairing works. The comparison has no power. **The organizers' paired
+σ_score = 0.078 % (six sessions, one unmodified tree, item 117b) remains the only
+clean estimate and I am not overturning it.** My independence-assumption upper
+bound of 0.175 % is neither supported nor refuted.
+
+🟢 The decisive experiment is available to *us* even though it is not available
+from the board: **submit one tree twice.** Two scored rows of an identical commit
+give a direct draw from the score-noise distribution and calibrate our ranked A/B
+instrument for the rest of the campaign. It costs one submission slot, which is
+exactly why the standing rate-limit ask on issue 31 matters more than I thought —
+it is not only about iteration speed.
+
+🔴 One incidental consequence of the identity worth flagging before someone
+"optimises" into it: because `raw_p` has the serial leg in the **numerator**, any
+change that speeds up the shared depth-0 path lowers our score. If a base-path
+speedup of δ also reduces candidate time by a fraction `f < 1` of that, `raw_p`
+scales by `(1−δ)/(1−fδ) < 1`. **Base-model speedups are score-negative.** Our
+E27 M-table shows `M=1: 0.9292`, i.e. our own tree *is* faster on the serial
+path — our three scored rows read −0.053 % below the board mean (t = −1.45,
+n = 3, not significant, so this is a flag and not a finding). Confining kernel
+wins to M ≥ 2 is the correct discipline, and it is the discipline E33 already
+follows.
+
+---
+
+## 127 — 🔴 I broke my own documented tooling rule for the **third** time, and it cost another 600 s.
+
+Item 114 and the two turns before it record the rule: **never pass multi-line
+content inline to `terminal`.** This turn I passed a multi-line `python -c "…"`
+heredoc-style block. The shell garbled it, echoed a mangled fragment back three
+times, ran nothing, and hung for the full 600 s timeout; the session then needed
+`reset=true`, which cleared `YUKON_API_TOKEN` and every other env var.
+
+Twice was a mistake. Three times is a process defect, so the rule is now
+unconditional and has no exceptions for "but this one is short":
+
+> **Every** multi-line payload — commit messages, Python, patches, JSON — goes
+> through `file_editor create` to a file, and `terminal` only ever runs
+> `python <file>` / `git commit -F <file>`. No inline newlines to `terminal`, ever.
+
+The reason it keeps happening is worth naming: the failure is *silent and
+expensive rather than loud and cheap*. A rejected compound command would teach me
+in two seconds; a 600 s hang that produces mangled echo looks like a slow job, so
+I wait. The two cheap detections are (a) the command echo coming back altered,
+and (b) any `terminal` call with a literal newline in the argument — that second
+one is mechanically checkable before sending, which is why it is now the rule.
+
+Cost this turn: 600 s of wall clock, one terminal reset, one env-var reload. The
+work itself was ten lines and took 20 s once written to `/tmp/plutarch_zero.py`.
