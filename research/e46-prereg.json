@@ -1,0 +1,149 @@
+{
+  "base_sha": "01f69e18f3878c9565fee479581581d85cf481ce",
+  "contrast_B_band_lenient_ms": [
+    10.1455,
+    30.436500000000002
+  ],
+  "contrast_B_band_strict_ms": [
+    15.218250000000001,
+    25.36375
+  ],
+  "e41_base_sha": "04ad6bf11437c269df85a47e91faa769c74fe6da",
+  "e41_coefficients": {
+    "a_per_row": 11.798,
+    "b_per_stream": 20.291,
+    "c_intercept": 16.432
+  },
+  "e41_measured_d1_on_na5_table": {
+    "3->4": 9.911,
+    "4->5": 13.495,
+    "5->6": 32.673,
+    "6->7": 9.827,
+    "7->8": 11.01,
+    "8->9": 14.948
+  },
+  "experiment": "qwen38-r1-e46-stream-vs-groupwidth-fixed-m",
+  "head_at_preregistration": "a0a47502e73395d761c0af085366dbf823b7d38b",
+  "hypotheses": {
+    "H_M6breakpoint": {
+      "claim": "E43's fitted 36.278*[M>=6] indicator, a property of the width itself rather than of the table",
+      "contrast_A": "delta = 0 (M fixed)",
+      "contrast_B": "delta = 0 (M fixed)",
+      "step2": "argmax d1 = 5->6"
+    },
+    "H_groupwidth": {
+      "claim": "T is set by the widest group's row count / group balance",
+      "contrast_A": "delta > 0 (widest group 3 -> 4 rows, split 3+3 -> 4+2)",
+      "contrast_B": "delta < 0 (widest group 4 -> 3 rows)",
+      "step2": "no specific prediction; the shipped table's widest group is 4 at M=4,7,8 and 3 elsewhere, so d1 would not be flat"
+    },
+    "H_streams": {
+      "claim": "T is set by ceil(M/IPG), the number of threadgroups that read the full weight tile; +20.291 ms per marginal stream",
+      "contrast_A": "delta = 0 (2 streams both arms)",
+      "contrast_B": "delta = +20.291 ms (2 -> 3 streams)",
+      "step2": "argmax d1 in {4->5, 8->9}, both ~32.089; the other four ~11.798"
+    }
+  },
+  "mde_rule": "MDE(M) = max(|T_base1 - T_base2|, |T_arm1 - T_arm2|) at that width; a signed effect requires |delta(M)| > MDE(M)",
+  "not_shipped": "contrast B makes M=8 worse on purpose and contrast A is a probe; the branch's scored surface must return to zero diff vs BASE_SHA",
+  "predicted_T_ms": {
+    "3": 72.117,
+    "4": 83.915,
+    "5": 116.004,
+    "6": 127.802,
+    "7": 139.6,
+    "8": 151.398,
+    "9": 183.487
+  },
+  "predicted_d1_ms": {
+    "3->4": 11.798,
+    "4->5": 32.089,
+    "5->6": 11.798,
+    "6->7": 11.798,
+    "7->8": 11.798,
+    "8->9": 32.089
+  },
+  "run_config": {
+    "arm_edit": "case 6: <T,6,3,true> -> <T,6,4,true>; case 8: <T,8,4,true> -> <T,8,3,true>, in quantized.h AND its generated twin",
+    "controls": "widths 1,2,3,4,5,7,9 are byte-identical between the builds",
+    "flags": "--widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock",
+    "harness": "research/run-qmv-curve.sh",
+    "metric": "T(M) = sum over the 8 scored shapes of calls_per_verify * seconds_per_call, in ms",
+    "order": [
+      "e46-base-r1",
+      "e46-arm-r1",
+      "e46-arm-r2",
+      "e46-base-r2"
+    ],
+    "thermal": "this host's real 40C gate is unreachable (~43.4C floor); every arm records entry/exit GPU temperature and preserves cool_gate_passed_real_gate=false, gate_qualified_for_timing=false"
+  },
+  "sign_test": "secondary, distribution-free: the per-shape sign of delta over the 8 scored shapes; 8/8 agreement is p = 0.0078 two-sided",
+  "stop_rules": [
+    "1. step 2's argmax d1 is 5->6  -> the stream reading is falsified; stop",
+    "2. |delta_A| > MDE(6), or delta_B outside the lenient band -> the mechanism is renamed; stop and report",
+    "3. any arm's measured kernel-wide register max exceeds 108 -> stop",
+    "4. measured r=2 tax at NA=5 >= 21.20% -> the NA=5 axis closes; stop"
+  ],
+  "tables": {
+    "01f69e1": {
+      "boundaries": [
+        "4->5",
+        "8->9"
+      ],
+      "ipg": [
+        3,
+        4,
+        3,
+        3,
+        4,
+        4,
+        3
+      ],
+      "na_ceiling": 4,
+      "streams": [
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "twin_equals_header": true
+    },
+    "04ad6bf": {
+      "boundaries": [
+        "5->6"
+      ],
+      "ipg": [
+        3,
+        4,
+        5,
+        3,
+        4,
+        4,
+        5
+      ],
+      "na_ceiling": 5,
+      "streams": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2
+      ],
+      "twin_equals_header": true
+    }
+  },
+  "widths": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ]
+}
