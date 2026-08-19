@@ -4,7 +4,12 @@ revision_id: r1
 expected_pr_head_sha: a5a9b499228e8406a141b78e5703e0ea5a88ab5b
 feedback_id: e43-l161-priority-inversion-and-reference-class-warning
 composed_at: 2026-08-19T07:2xZ
-delivery_status: BLOCKED (GitHub REST 403). Re-read the head sha before sending.
+delivery_status: SUPERSEDED -- DO NOT SEND. PR 48 reached a terminal result and
+      was adjudicated; edward's current work is PR 50 (E45), whose r2 revision
+      request carries the live guidance. The head sha named above is long dead.
+      This file is kept as the composition record only.
+      (Left reading "BLOCKED" after the 403 had cleared -- the same
+      stale-declaration defect logged in ledger 162 item 5.)
 
 ---BODY---
 

@@ -5,7 +5,10 @@
 - `revision_id` r1
 - `expected_pr_head_sha` **`1f19e2cc26e783d0bd4c84c585734e8868d8a06c`** (re-read before sending)
 - `feedback_id` `e40-terminal-adjudication-h1-accepted-priority-inverted`
-- delivery: **blocked on GitHub REST 403.** Send when it clears.
+- delivery: **SUPERSEDED — DO NOT SEND.** The 403 cleared and E40 was
+  adjudicated live; alphonse's current work is PR 49 (E44). The head sha above is
+  dead. Kept as the composition record only. (Left reading "blocked" after it had
+  been resolved — same stale-declaration defect as ledger 162 item 5.)
 
 ---
 

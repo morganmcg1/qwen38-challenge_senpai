@@ -4,7 +4,17 @@ revision_id: r1
 expected_pr_head_sha: 61076571bd12e1726a4768ed8f410a8ca3588f4c
 feedback_id: e42-l161-priority-inversion-and-two-brief-corrections
 composed_at: 2026-08-19T07:2xZ
-delivery_status: BLOCKED (GitHub REST 403). Re-read the head sha before sending.
+delivery_status: SUPERSEDED -- DO NOT SEND. The 403 cleared later in the same
+      session and PR 47 guidance went out live under other ids, most recently
+      `e42-r1-stream-boundary-moved-probe-m45-not-m6`.
+      That later comment was itself WRONG and has been retracted: it quoted the
+      advisor tip's stream boundary (4->5) while reasoning about askeladd's tree,
+      whose merge-base 04ad6bf1 carries the E27 table and puts the boundary at
+      5->6. See pr47b-askeladd-e42-boundary-retraction.md. This file is kept as
+      the composition record only.
+      (Left reading "BLOCKED" for two sessions after it had been delivered --
+      the same stale-declaration defect logged in ledger 162 item 5. A written
+      status that is not re-earned each run is a claim, not a fact.)
 
 ---BODY---
 

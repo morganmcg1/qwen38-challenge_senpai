@@ -71,9 +71,12 @@ __pycache__/
 .mlxfast-local-qwen-mtp/
 .mlxfast-private/
 wandb/
-# SENPAI-CAMPAIGN-END
 
-# Senpai research measurement artifacts (evidence lives in W&B, not Git)
+# Senpai research measurement artifacts (evidence lives in W&B, not Git).
+# These were originally appended AFTER the campaign end-marker, which put them
+# outside the declared overlay and made verify-campaign-overlay.sh red from
+# 7f89dd5 onward. Moved inside the block; the patterns are unchanged and the
+# duplicate trailing wandb/ was dropped.
 research/raw-*.log
 research/trace-*.log
 research/score-*.json
@@ -90,4 +93,4 @@ research/fb7-*.json
 research/capture-*/
 # research-only measurement artifacts (qwen38-r1-e1-depth-cost-curve)
 research/out/
-wandb/
+# SENPAI-CAMPAIGN-END
