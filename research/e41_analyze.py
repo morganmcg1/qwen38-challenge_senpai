@@ -241,6 +241,28 @@ def main():
               f"median {st.median(br.values()):.4f} "
               f"range {min(br.values()):.4f}..{max(br.values()):.4f}")
         out["base2_over_base"] = br
+        # The registered +/-0.46% band came from score-level sigma, not from
+        # measured kernel reproducibility. base2/base is the same build timed
+        # twice, so |base2/base - 1| is each width's own empirical floor. This
+        # is reported alongside the registered gate, and does not replace it.
+        print("  per-width floor from the replicate (same build twice) vs the "
+              "arm deviation:")
+        floors, over = {}, []
+        for m in widths:
+            floor, dev = abs(br[m] - 1), abs(runs["arm"]["c"][m] / cref[m] - 1)
+            floors[m] = {"floor": floor, "arm_dev": dev,
+                         "exceeds_own_floor": bool(m in control and dev > floor)}
+            tag = ("  <-- treated" if m in treated else
+                   ("  <-- control ABOVE its floor" if dev > floor else "  control"))
+            if m in control and dev > floor:
+                over.append(m)
+            print(f"    M={m}  floor {floor*100:5.2f} %   arm dev "
+                  f"{dev*100:5.2f} %{tag}")
+        lw = [m for m, _ in LADDER] + [ANCHOR_M]
+        print(f"    worst floor across the ladder+anchor widths {sorted(lw)}: "
+              f"{max(floors[m]['floor'] for m in lw)*100:.2f} %")
+        print(f"    controls exceeding their own floor: {over or 'none'}")
+        out["width_floors"] = floors
     out["control"] = {"spread": spread, "median_drift": drift, "worst_abs_dev": worst,
                       "band": P.CONTROL_BAND, "pass": ctl_ok}
 
