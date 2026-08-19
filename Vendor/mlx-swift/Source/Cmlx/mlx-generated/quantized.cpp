@@ -2066,7 +2066,7 @@ template <typename T, int group_size, int bits, bool batched>
     }
   }
   if (ntg.x == 1) {
-    qmv_fast_impl<T, group_size, bits, 2>(
+    qmv_fast_impl<T, group_size, bits, 0>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         tid, simd_gid, simd_lid);
     return;
