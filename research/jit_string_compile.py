@@ -19,10 +19,17 @@ AOT build, so this reproduces the JIT string byte-for-byte and compiles it.
 Usage:
     research/jit_string_compile.py                       # default qmv_fast cells
     research/jit_string_compile.py 'affine_qmv_fast<bfloat16_t, 64, 4, false>'
+    research/jit_string_compile.py --emit /tmp/arm.metal --rev efff400c -- CELL
+
+`--emit` writes the assembled string instead of only compiling it, so an A/B
+harness can hand the same bytes to `newLibraryWithSource:`. `--rev` reads the
+generated twins from a git revision, which is what makes a base arm and a
+candidate arm available to one process in one session.
 """
 
 from __future__ import annotations
 
+import argparse
 import pathlib
 import re
 import subprocess
@@ -46,27 +53,53 @@ DEFAULT_CELLS = (
 )
 
 
-def preamble(stem: str) -> str:
-    text = (GEN_DIR / f"{stem}.cpp").read_text()
+def preamble(stem: str, rev: str | None) -> str:
+    relative = f"Vendor/mlx-swift/Source/Cmlx/mlx-generated/{stem}.cpp"
+    if rev is None:
+        text = (GEN_DIR / f"{stem}.cpp").read_text()
+    else:
+        text = subprocess.run(
+            ["git", "show", f"{rev}:{relative}"],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        ).stdout
     match = PREAMBLE_BODY.search(text)
     if not match:
         raise SystemExit(f"{stem}.cpp: no R\"preamble(...)\" body")
     return match.group(1) + "\n"
 
 
+def host_name(cell: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_]+", "_", cell).strip("_")
+
+
 def template_def(cell: str) -> str:
     # jit_kernels.cpp get_template_definition, with the AOT host name.
-    name = re.sub(r"[^A-Za-z0-9_]+", "_", cell).strip("_")
     return (
-        f'\ntemplate [[host_name("{name}")]] [[kernel]] '
+        f'\ntemplate [[host_name("{host_name(cell)}")]] [[kernel]] '
         f"decltype({cell}) {cell};\n"
     )
 
 
+def assemble(cells: tuple[str, ...], rev: str | None) -> str:
+    source = "".join(preamble(stem, rev) for stem in PREAMBLES)
+    return source + "".join(template_def(cell) for cell in cells)
+
+
 def main() -> int:
-    cells = tuple(sys.argv[1:]) or DEFAULT_CELLS
-    source = "".join(preamble(stem) for stem in PREAMBLES)
-    source += "".join(template_def(cell) for cell in cells)
+    parser = argparse.ArgumentParser(add_help=True)
+    parser.add_argument("--emit", type=pathlib.Path)
+    parser.add_argument("--rev")
+    parser.add_argument("cells", nargs="*")
+    args = parser.parse_args()
+
+    cells = tuple(args.cells) or DEFAULT_CELLS
+    source = assemble(cells, args.rev)
+
+    if args.emit is not None:
+        args.emit.write_text(source)
+        print(f"{args.emit} {len(source)} "
+              f"{args.rev or 'worktree'} {' '.join(host_name(c) for c in cells)}")
+        return 0
 
     with tempfile.TemporaryDirectory(prefix="qwen38-jit-") as directory:
         path = pathlib.Path(directory) / "jit.metal"
