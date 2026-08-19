@@ -1,0 +1,324 @@
+diff --git a/Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp b/Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+index 16a99d0..821ec5f 100644
+--- a/Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
++++ b/Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+@@ -978,7 +978,17 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
+ // footprint stays near the two-input kernel's. load_vector, the qdot
+ // expression, the K accumulation order and simd_sum are unchanged for every
+ // output element.
+-template <typename T, int NA, bool DIRECT_NIBBLES = false>
++//
++// ROWS_PER_SIMD is how many of a simdgroup's output rows one call covers. The
++// frozen host grid owes each simdgroup 4 rows, so anything below 4 is only
++// legal through qmv_fast_crossrow_affine4_g64_rowblocked.
++//
++// NA is bounded only by the widest legal M. Which (NA, ROWS_PER_SIMD) pairs are
++// spill-free is a measured property of the toolchain, not an invariant, so it
++// belongs to the dispatch table below and to E32's AIR grid -- not to a
++// static_assert that would freeze one machine's register allocator into the
++// kernel.
++template <typename T, int NA, bool DIRECT_NIBBLES = false, int ROWS_PER_SIMD = 4>
+ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+     const device uint32_t* w,
+     const device T* scales,
+@@ -990,9 +1000,9 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+     int first_m,
+     int out_row,
+     uint simd_lid) {
+-  static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");
++  static_assert(NA >= 2 && NA <= 9, "wide multi-row QMV supports NA in [2, 9]");
+   typedef vec<float, NA> VF;
+-  constexpr int rows_per_simd = 4;
++  constexpr int rows_per_simd = ROWS_PER_SIMD;
+   constexpr int values_per_thread = 16;
+   constexpr int block_size = values_per_thread * SIMD_SIZE;
+   constexpr int bytes_per_lane = 8;
+@@ -1078,6 +1088,49 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+   }
+ }
+ 
++// Coverage-preserving row blocking. The host grid is frozen at 8 output rows
++// per threadgroup over 2 simdgroups (backend/metal/quantized.cpp: bn = 8,
++// group_dims(32, 2, 1), grid.y = (N + 7) / 8), so a simdgroup owes exactly 4
++// rows and 2 x 4 x 2176 = 17408 = N for the MLP. Covering those 4 rows as
++// 4 / ROWS_PER_SIMD sequential blocks writes the same 17408 rows while holding
++// only ROWS_PER_SIMD accumulators live, which is what makes NA > 5 spill-free.
++// Each block reads only its own rows' weights, so no weight byte is read
++// twice; only the x-side load and conversion repeat.
++//
++// BLOCKS is how many of the 4 / ROWS_PER_SIMD blocks THIS call covers. The
++// default runs them all in one threadgroup; passing 1 lets the caller hand each
++// block to a different x-block instead, which changes where the blocks run
++// without changing what they compute.
++template <
++    typename T,
++    int NA,
++    bool DIRECT_NIBBLES,
++    int ROWS_PER_SIMD,
++    int BLOCKS = 4 / ROWS_PER_SIMD>
++METAL_FUNC void qmv_fast_crossrow_affine4_g64_rowblocked(
++    const device uint32_t* w,
++    const device T* scales,
++    const device T* biases,
++    const device T* x,
++    device T* y,
++    const int in_vec_size,
++    const int out_vec_size,
++    int first_m,
++    int out_row,
++    uint simd_lid) {
++  static_assert(
++      ROWS_PER_SIMD >= 1 && ROWS_PER_SIMD <= 4 && 4 % ROWS_PER_SIMD == 0,
++      "row blocks must tile the frozen 4 rows per simdgroup exactly");
++  static_assert(
++      BLOCKS >= 1 && BLOCKS <= 4 / ROWS_PER_SIMD,
++      "a call covers at least one and at most all of a simdgroup's row blocks");
++  for (int b = 0; b < BLOCKS; b++) {
++    qmv_fast_crossrow_affine4_g64_wide<T, NA, DIRECT_NIBBLES, ROWS_PER_SIMD>(
++        w, scales, biases, x, y, in_vec_size, out_vec_size, first_m,
++        out_row + b * ROWS_PER_SIMD, simd_lid);
++  }
++}
++
+ // Single-row (M == 1) affine2/g64 fast QMV for the coarse compact draft
+ // readout (out_vec_size == 98_336, bits == 2) of the promoted draft-rerank
+ // scheme, at 32 values per lane: each lane loads ONE uint64 (32 packed
+@@ -1164,9 +1217,25 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
+   }
+ }
+ 
+-// IPG = ceil(M / ceil(M / 5)): the fewest weight streams reachable at NA <= 5,
+-// with the remainder spread evenly so no group runs a one-row tail.
+-template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
++// IPG is the inputs one weight stream serves, so the kernel makes ceil(M / IPG)
++// passes over the weights, with any remainder spread evenly so no group runs a
++// one-row tail. ROWS_PER_SIMD blocks the frozen 4 rows per simdgroup, which is
++// what lets IPG exceed 5 without spilling.
++//
++// Raising IPG to cut weight streams also cuts ceil(M / IPG), and the host grid
++// is grid.x = M threadgroups, so the x-blocks the smaller quotient no longer
++// claims just return at `first_m >= M`. ROW_BLOCKS_IN_X spends them instead:
++// each (input group, row block) pair gets its own x-block, so a single weight
++// stream keeps the same threadgroup count the multi-stream table had. The rows,
++// the k order, the lane-to-slice map and simd_sum are untouched, so every output
++// element keeps the same floating-point expression tree -- only tid.x changes.
++template <
++    typename T,
++    int M,
++    int IPG,
++    bool DIRECT_NIBBLES = false,
++    int ROWS_PER_SIMD = 4,
++    bool ROW_BLOCKS_IN_X = false>
+ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
+     const device uint32_t* w,
+     const device T* scales,
+@@ -1181,18 +1250,28 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
+   static_assert(M >= 3 && M <= 9, "wide multi-row QMV dispatch covers M in [3, 9]");
+   static_assert(M % IPG != 1, "a one-input tail group is not instantiated");
+   constexpr int TAIL = M % IPG;
+-  const int first_m = int(tid.x) * IPG;
++  constexpr int ROW_BLOCKS = 4 / ROWS_PER_SIMD;
++  constexpr int X_GROUPS = (M + IPG - 1) / IPG;
++  constexpr int X_PER_GROUP = ROW_BLOCKS_IN_X ? ROW_BLOCKS : 1;
++  constexpr int BLOCKS_PER_CALL = ROW_BLOCKS_IN_X ? 1 : ROW_BLOCKS;
++  static_assert(
++      !ROW_BLOCKS_IN_X || X_GROUPS * ROW_BLOCKS <= M,
++      "spreading row blocks over x needs one of the M host x-blocks each");
++  const int first_m = (int(tid.x) / X_PER_GROUP) * IPG;
+   if (first_m >= M) {
+     return;
+   }
+-  const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
++  const int out_row = int(tid.y) * 8 + int(simd_gid) * 4 +
++      (int(tid.x) % X_PER_GROUP) * ROWS_PER_SIMD;
+   if (TAIL == 0 || M - first_m >= IPG) {
+-    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES>(
++    qmv_fast_crossrow_affine4_g64_rowblocked<
++        T, IPG, DIRECT_NIBBLES, ROWS_PER_SIMD, BLOCKS_PER_CALL>(
+         w, scales, biases, x, y, in_vec_size, out_vec_size,
+         first_m, out_row, simd_lid);
+   } else {
+-    qmv_fast_crossrow_affine4_g64_wide<
+-        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES>(
++    qmv_fast_crossrow_affine4_g64_rowblocked<
++        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES, ROWS_PER_SIMD,
++        BLOCKS_PER_CALL>(
+         w, scales, biases, x, y, in_vec_size, out_vec_size,
+         first_m, out_row, simd_lid);
+   }
+@@ -1954,7 +2033,12 @@ template <typename T, int group_size, int bits, bool batched>
+               tid, simd_gid, simd_lid);
+           return;
+         case 6:
+-          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>(
++          // The one width the ceil(M/IPG) table cannot serve at NA <= 5:
++          // 3+3 costs two weight streams for six rows, the worst per-row
++          // weight traffic in the legal table. NA=6 makes it one stream,
++          // paid for by covering the frozen 4 rows as two 2-row blocks.
++          // IPG=5 is illegal here (6 % 5 == 1) and would still be 2 streams.
++          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 2>(
+               w, scales, biases, x, y, in_vec_size, out_vec_size,
+               tid, simd_gid, simd_lid);
+           return;
+diff --git a/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h b/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+index cafb33f..a1b0f75 100644
+--- a/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
++++ b/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+@@ -965,7 +965,17 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
+ // footprint stays near the two-input kernel's. load_vector, the qdot
+ // expression, the K accumulation order and simd_sum are unchanged for every
+ // output element.
+-template <typename T, int NA, bool DIRECT_NIBBLES = false>
++//
++// ROWS_PER_SIMD is how many of a simdgroup's output rows one call covers. The
++// frozen host grid owes each simdgroup 4 rows, so anything below 4 is only
++// legal through qmv_fast_crossrow_affine4_g64_rowblocked.
++//
++// NA is bounded only by the widest legal M. Which (NA, ROWS_PER_SIMD) pairs are
++// spill-free is a measured property of the toolchain, not an invariant, so it
++// belongs to the dispatch table below and to E32's AIR grid -- not to a
++// static_assert that would freeze one machine's register allocator into the
++// kernel.
++template <typename T, int NA, bool DIRECT_NIBBLES = false, int ROWS_PER_SIMD = 4>
+ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+     const device uint32_t* w,
+     const device T* scales,
+@@ -977,9 +987,9 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+     int first_m,
+     int out_row,
+     uint simd_lid) {
+-  static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");
++  static_assert(NA >= 2 && NA <= 9, "wide multi-row QMV supports NA in [2, 9]");
+   typedef vec<float, NA> VF;
+-  constexpr int rows_per_simd = 4;
++  constexpr int rows_per_simd = ROWS_PER_SIMD;
+   constexpr int values_per_thread = 16;
+   constexpr int block_size = values_per_thread * SIMD_SIZE;
+   constexpr int bytes_per_lane = 8;
+@@ -1065,6 +1075,49 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
+   }
+ }
+ 
++// Coverage-preserving row blocking. The host grid is frozen at 8 output rows
++// per threadgroup over 2 simdgroups (backend/metal/quantized.cpp: bn = 8,
++// group_dims(32, 2, 1), grid.y = (N + 7) / 8), so a simdgroup owes exactly 4
++// rows and 2 x 4 x 2176 = 17408 = N for the MLP. Covering those 4 rows as
++// 4 / ROWS_PER_SIMD sequential blocks writes the same 17408 rows while holding
++// only ROWS_PER_SIMD accumulators live, which is what makes NA > 5 spill-free.
++// Each block reads only its own rows' weights, so no weight byte is read
++// twice; only the x-side load and conversion repeat.
++//
++// BLOCKS is how many of the 4 / ROWS_PER_SIMD blocks THIS call covers. The
++// default runs them all in one threadgroup; passing 1 lets the caller hand each
++// block to a different x-block instead, which changes where the blocks run
++// without changing what they compute.
++template <
++    typename T,
++    int NA,
++    bool DIRECT_NIBBLES,
++    int ROWS_PER_SIMD,
++    int BLOCKS = 4 / ROWS_PER_SIMD>
++METAL_FUNC void qmv_fast_crossrow_affine4_g64_rowblocked(
++    const device uint32_t* w,
++    const device T* scales,
++    const device T* biases,
++    const device T* x,
++    device T* y,
++    const int in_vec_size,
++    const int out_vec_size,
++    int first_m,
++    int out_row,
++    uint simd_lid) {
++  static_assert(
++      ROWS_PER_SIMD >= 1 && ROWS_PER_SIMD <= 4 && 4 % ROWS_PER_SIMD == 0,
++      "row blocks must tile the frozen 4 rows per simdgroup exactly");
++  static_assert(
++      BLOCKS >= 1 && BLOCKS <= 4 / ROWS_PER_SIMD,
++      "a call covers at least one and at most all of a simdgroup's row blocks");
++  for (int b = 0; b < BLOCKS; b++) {
++    qmv_fast_crossrow_affine4_g64_wide<T, NA, DIRECT_NIBBLES, ROWS_PER_SIMD>(
++        w, scales, biases, x, y, in_vec_size, out_vec_size, first_m,
++        out_row + b * ROWS_PER_SIMD, simd_lid);
++  }
++}
++
+ // Single-row (M == 1) affine2/g64 fast QMV for the coarse compact draft
+ // readout (out_vec_size == 98_336, bits == 2) of the promoted draft-rerank
+ // scheme, at 32 values per lane: each lane loads ONE uint64 (32 packed
+@@ -1151,9 +1204,25 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
+   }
+ }
+ 
+-// IPG = ceil(M / ceil(M / 5)): the fewest weight streams reachable at NA <= 5,
+-// with the remainder spread evenly so no group runs a one-row tail.
+-template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
++// IPG is the inputs one weight stream serves, so the kernel makes ceil(M / IPG)
++// passes over the weights, with any remainder spread evenly so no group runs a
++// one-row tail. ROWS_PER_SIMD blocks the frozen 4 rows per simdgroup, which is
++// what lets IPG exceed 5 without spilling.
++//
++// Raising IPG to cut weight streams also cuts ceil(M / IPG), and the host grid
++// is grid.x = M threadgroups, so the x-blocks the smaller quotient no longer
++// claims just return at `first_m >= M`. ROW_BLOCKS_IN_X spends them instead:
++// each (input group, row block) pair gets its own x-block, so a single weight
++// stream keeps the same threadgroup count the multi-stream table had. The rows,
++// the k order, the lane-to-slice map and simd_sum are untouched, so every output
++// element keeps the same floating-point expression tree -- only tid.x changes.
++template <
++    typename T,
++    int M,
++    int IPG,
++    bool DIRECT_NIBBLES = false,
++    int ROWS_PER_SIMD = 4,
++    bool ROW_BLOCKS_IN_X = false>
+ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
+     const device uint32_t* w,
+     const device T* scales,
+@@ -1168,18 +1237,28 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
+   static_assert(M >= 3 && M <= 9, "wide multi-row QMV dispatch covers M in [3, 9]");
+   static_assert(M % IPG != 1, "a one-input tail group is not instantiated");
+   constexpr int TAIL = M % IPG;
+-  const int first_m = int(tid.x) * IPG;
++  constexpr int ROW_BLOCKS = 4 / ROWS_PER_SIMD;
++  constexpr int X_GROUPS = (M + IPG - 1) / IPG;
++  constexpr int X_PER_GROUP = ROW_BLOCKS_IN_X ? ROW_BLOCKS : 1;
++  constexpr int BLOCKS_PER_CALL = ROW_BLOCKS_IN_X ? 1 : ROW_BLOCKS;
++  static_assert(
++      !ROW_BLOCKS_IN_X || X_GROUPS * ROW_BLOCKS <= M,
++      "spreading row blocks over x needs one of the M host x-blocks each");
++  const int first_m = (int(tid.x) / X_PER_GROUP) * IPG;
+   if (first_m >= M) {
+     return;
+   }
+-  const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
++  const int out_row = int(tid.y) * 8 + int(simd_gid) * 4 +
++      (int(tid.x) % X_PER_GROUP) * ROWS_PER_SIMD;
+   if (TAIL == 0 || M - first_m >= IPG) {
+-    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES>(
++    qmv_fast_crossrow_affine4_g64_rowblocked<
++        T, IPG, DIRECT_NIBBLES, ROWS_PER_SIMD, BLOCKS_PER_CALL>(
+         w, scales, biases, x, y, in_vec_size, out_vec_size,
+         first_m, out_row, simd_lid);
+   } else {
+-    qmv_fast_crossrow_affine4_g64_wide<
+-        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES>(
++    qmv_fast_crossrow_affine4_g64_rowblocked<
++        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES, ROWS_PER_SIMD,
++        BLOCKS_PER_CALL>(
+         w, scales, biases, x, y, in_vec_size, out_vec_size,
+         first_m, out_row, simd_lid);
+   }
+@@ -1941,7 +2020,12 @@ template <typename T, int group_size, int bits, bool batched>
+               tid, simd_gid, simd_lid);
+           return;
+         case 6:
+-          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>(
++          // The one width the ceil(M/IPG) table cannot serve at NA <= 5:
++          // 3+3 costs two weight streams for six rows, the worst per-row
++          // weight traffic in the legal table. NA=6 makes it one stream,
++          // paid for by covering the frozen 4 rows as two 2-row blocks.
++          // IPG=5 is illegal here (6 % 5 == 1) and would still be 2 streams.
++          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 2>(
+               w, scales, biases, x, y, in_vec_size, out_vec_size,
+               tid, simd_gid, simd_lid);
+           return;

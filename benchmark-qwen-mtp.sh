@@ -197,6 +197,26 @@ if [[ ! -x "${swift_bin}" ]]; then
   exit 1
 fi
 
+# Existence is not freshness, and this runner never reaches benchmark.sh's own
+# check: `--local-cool-gate-only` returns long before the rebuild at
+# benchmark.sh:1773. So a kernel edit made after the last ./setup.sh was timed
+# against the PREVIOUS mlx.metallib, silently -- a real decode change reads as
+# noise and a correctness-breaking one never executes. Reuse benchmark.sh's
+# definitions rather than restating them, the same way research/run-qmv-curve.sh
+# reuses its thermal helpers, so the two can never drift apart.
+eval "$(
+  awk '/^RUNTIME_WORKER_BIN=/' benchmark.sh
+  awk '/^MLX_METALLIB=/' benchmark.sh
+  awk '/^metallib_rebuild_required\(\) \{/,/^\}/' benchmark.sh
+)"
+if metallib_rebuild_required; then
+  echo "benchmark-qwen-mtp.sh: mlx.metallib is stale (vendored kernel sources changed after it was built); rebuilding with tools/build-mlx-metallib.sh"
+  if ! tools/build-mlx-metallib.sh --all-build-roots; then
+    echo "benchmark-qwen-mtp.sh: mlx.metallib rebuild failed; fix the kernel edit (or rerun ./setup.sh) and retry" >&2
+    exit 1
+  fi
+fi
+
 if [[ ! -s "${public_golden_path}" ]]; then
   echo "benchmark-qwen-mtp.sh: missing public correctness fixture ${public_golden_path}" >&2
   echo "benchmark-qwen-mtp.sh: re-sync the repository (public fixtures live in correctness_prompts/)" >&2

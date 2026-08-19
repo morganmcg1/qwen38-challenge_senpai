@@ -1,0 +1,108 @@
+{
+  "per_width": [
+    {
+      "verify_width": 1,
+      "arch_ms": 60.021829700000005,
+      "ranked_ms": 59.9494749,
+      "ratio": 0.9987945252525348,
+      "delta_pct": -0.12054747474652405,
+      "trusted": false
+    },
+    {
+      "verify_width": 2,
+      "arch_ms": 64.2179996,
+      "ranked_ms": 64.338149,
+      "ratio": 1.001870961424342,
+      "delta_pct": 0.18709614243419548,
+      "trusted": false
+    },
+    {
+      "verify_width": 3,
+      "arch_ms": 72.5015392,
+      "ranked_ms": 72.58807759999999,
+      "ratio": 1.001193607762744,
+      "delta_pct": 0.1193607762743909,
+      "trusted": true
+    },
+    {
+      "verify_width": 4,
+      "arch_ms": 82.5164041,
+      "ranked_ms": 82.8674281,
+      "ratio": 1.004253990510476,
+      "delta_pct": 0.42539905104759246,
+      "trusted": true
+    },
+    {
+      "verify_width": 5,
+      "arch_ms": 96.14649370000001,
+      "ranked_ms": 96.14664219999999,
+      "ratio": 1.000001544518102,
+      "delta_pct": 0.0001544518102081227,
+      "trusted": true
+    },
+    {
+      "verify_width": 6,
+      "arch_ms": 128.99550559999997,
+      "ranked_ms": 129.0724495,
+      "ratio": 1.0005964851228122,
+      "delta_pct": 0.05964851228121848,
+      "trusted": true
+    },
+    {
+      "verify_width": 7,
+      "arch_ms": 138.64424449999999,
+      "ranked_ms": 138.99196149999997,
+      "ratio": 1.0025079800553856,
+      "delta_pct": 0.250798005538555,
+      "trusted": true
+    },
+    {
+      "verify_width": 8,
+      "arch_ms": 149.6337208,
+      "ranked_ms": 150.14058980000001,
+      "ratio": 1.0033873982234092,
+      "delta_pct": 0.3387398223409166,
+      "trusted": true
+    },
+    {
+      "verify_width": 9,
+      "arch_ms": 164.67096510000002,
+      "ranked_ms": 164.7317391,
+      "ratio": 1.0003690632405238,
+      "delta_pct": 0.03690632405237704,
+      "trusted": true
+    }
+  ],
+  "trusted_widths": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "n_trusted": 7,
+  "mean_delta_pct": 0.17585813476360837,
+  "sd_delta_pp": 0.16395787825776345,
+  "se_delta_pp": 0.0619702530514066,
+  "t_stat": 2.837783066945484,
+  "df": 6,
+  "abs_max_delta_pct": 0.42539905104759246,
+  "n_positive_of_n": [
+    7,
+    7
+  ],
+  "width_trend_pearson_r": -0.08001284681375309,
+  "drift_envelope_pct": 0.311,
+  "within_drift_envelope": true,
+  "cost_curve_mde_normal_pct": 1.041,
+  "cost_curve_mde_exact_pct": 1.304,
+  "mean_over_mde_normal": 0.1689319258055796,
+  "base_sha_match": true,
+  "host_match": true,
+  "arch_base_sha": "54248ce258376db756be02fd65a814a903e2d601",
+  "ranked_base_sha": "54248ce258376db756be02fd65a814a903e2d601",
+  "host": "Apple M4 Pro",
+  "verdict": "GEOMETRY-INVARIANT: shape-level cost curves transfer to ranked geometry; residual is drift-shaped (no width ordering) and far below the curve MDE"
+}
