@@ -667,6 +667,67 @@ public final class Qwen36MTPBlockSession {
     /// inside the marginal the rule prices.
     private static let headStepCostRatio = 0.18
 
+    /// Inputs per group the wide-tensor QMV dispatch runs at each verify
+    /// width, from the shipped `out_vec_size >= 4096` switch in
+    /// `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h`.
+    /// `QwenMTPDepthCostModelTests` re-parses that switch and fails if this
+    /// table drifts from it, so a retuned IPG cannot leave a stale staircase
+    /// inside the schedule.
+    static let verifyInputsPerGroup: [Int: Int] = [
+        3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 3,
+    ]
+
+    /// Weight passes over the 4-bit backbone for one verify width. Widths 1
+    /// and 2 do not use the `_m` cells at all and read the weights once.
+    static func verifyWeightStreams(width: Int) -> Int {
+        guard let inputsPerGroup = verifyInputsPerGroup[width] else { return 1 }
+        return (width + inputsPerGroup - 1) / inputsPerGroup
+    }
+
+    /// Measured isolated head step over a measured depth-0 round: 2.590 ms /
+    /// 65.009 ms (E1, this host class, declared 4-bit head). This is the part
+    /// of one extra draft's cost that does NOT scale with verify width; the
+    /// remaining 78% of `headStepCostRatio` is the extra verify row.
+    static let referenceHeadStepRatio = 0.039819
+
+    /// Extra verify cost of crossing a weight-stream boundary, over the cost
+    /// of one more row inside a tier: 27.532 / 9.624 from thorfinn's E46 QMV
+    /// refit. RATIO ONLY — that fit's levels are microbenchmark time and
+    /// exceed the measured whole-round cost, so they are never used as time.
+    static let verifyStreamSurchargeRatio = 27.532 / 9.624
+
+    /// Cost of the `depth -> depth + 1` extension, as a fraction of a depth-0
+    /// round. The shipped rule priced every extension at the single scalar
+    /// `headStepCostRatio`; the machine does not charge that. Crossing a
+    /// weight-stream boundary buys a further pass over the backbone, and the
+    /// two boundaries this table places (verify width 4 -> 5 and 8 -> 9) are
+    /// exactly the two largest marginals in the measured depth-cost curve
+    /// (24.4 ms and 25.4 ms against a ~19 ms plateau, E1).
+    ///
+    /// The MEAN of this table is pinned to `headStepCostRatio`, so the average
+    /// price of a draft row is unchanged and only its SHAPE moves. That
+    /// matters: `h` is bracketed on both sides by ranked receipts (0.14, 0.15
+    /// and 0.32 all measured worse), so any change that also moved the average
+    /// price would be an unmeasurable mixture of a retune and this mechanism.
+    static let marginalCostRatio: [Double] = {
+        let raw = (0 ..< Qwen36MTPLimits.maxDepth).map { depth -> Double in
+            verifyWeightStreams(width: depth + 2)
+                > verifyWeightStreams(width: depth + 1)
+                ? 1.0 + verifyStreamSurchargeRatio
+                : 1.0
+        }
+        let mean = raw.reduce(0.0, +) / Double(raw.count)
+        let scale = (headStepCostRatio - referenceHeadStepRatio) / mean
+        return raw.map { referenceHeadStepRatio + scale * $0 }
+    }()
+
+    /// Cost of a round at each depth, as a fraction of a depth-0 round.
+    static let cumulativeCostRatio: [Double] = {
+        var out: [Double] = [1.0]
+        for step in marginalCostRatio { out.append(out[out.count - 1] + step) }
+        return out
+    }()
+
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
     /// verify widths 6-9 drift from the serial trajectory in top-2 VALUES
@@ -753,7 +814,6 @@ public final class Qwen36MTPBlockSession {
         // there would describe the next round's inputs, not this one's.
         if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
         guard cap > 0 else { return 0 }
-        let h = Self.headStepCostRatio
         var reach = 1.0
         var expected = 0.0
         var depth = 0
@@ -769,7 +829,12 @@ public final class Qwen36MTPBlockSession {
                 p = Swift.min(p, conf2)
             }
             reach *= p
-            let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
+            // Extending pays when the round's time per emitted token falls:
+            //   C(d+1) / (1 + expected + reach) < C(d) / (1 + expected)
+            // <=> reach > marginal(d) * (1 + expected) / C(d).
+            // With a flat marginal this is the scalar rule it replaces.
+            let threshold = Self.marginalCostRatio[depth] * (1.0 + expected)
+                / Self.cumulativeCostRatio[depth]
             if Self.traceRounds {
                 scheduleTrace += String(
                     format: "%d:%.6f/%.6f/%.6f;", depth, p, reach, threshold)
