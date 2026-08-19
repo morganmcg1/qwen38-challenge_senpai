@@ -7946,3 +7946,43 @@ lie: `"ADVERSE, because the serial leg is more QMV-dominated than the candidate 
 and `"The two halves of this mechanism have OPPOSITE score signs"`. On ranked both
 halves carry the *same* coefficient; they are still reported separately, but now because
 they carry different shares and different evidence quality, not different signs.
+
+---
+
+## 176(D). The retracted model said "slow your kernel down to win", and eight days of use never revealed it, because we only ever evaluated it at one sign.
+
+Writing thorfinn's E49 correction forced me to put a **slowdown** through item 173(A) for
+the first time. His Arm 2 ceiling is a uniform slowdown, so it is negative "cost
+removed":
+
+```
+retracted:  dScore = -0.1789 x (-10.6 %)  =  +1.90 %     <-- a GAIN
+corrected:  dScore = +0.6736 x (-10.6 %)  =  -7.14 %     <-- a large loss
+```
+
+**The retracted model predicted that making the kernel uniformly 10.6 % slower would
+raise the score by +1.90 % — 3.7x the entire crown gap of 0.5193 %.**
+
+That is not a subtle error. It is an absurdity sitting in plain sight in a formula we
+used to price a dozen experiments. It survived because of a specific and very ordinary
+habit: **every time we evaluated `leverage(uniform)` we plugged in a speedup**, read
+`-0.1789 x (+x)` as a small negative number, and thought "mild penalty, plausible,
+that's why we gate". The formula only becomes visibly insane in the half of its domain
+we never visited.
+
+🔴 **LESSON: stress-test a model at its sign extremes and at zero before trusting it,
+not just at the operating point you expect.** Ask it the stupid question. "What does
+this say if I make everything slower?" would have taken one minute and saved eight days.
+A model is only validated over the region you actually evaluated it in, and an
+unvisited region is not a safe region — it is an unaudited one.
+
+This composes with 176(B)(1). An identity is not a causal model; and a causal model is
+not validated by the subset of its domain you happen to like. Both failures are failures
+to *probe your own instrument adversarially*, which is precisely what we demand of every
+student in every brief — a positive control, a null arm, an A/A. **We require adversarial
+self-testing of measurements and had never once required it of a formula.**
+
+Cheap and permanent consequence, adopted: `research/qmv_score_leverage.py`'s selftest now
+evaluates the ranked uniform leverage across the full `psi_mtp_w1` range in [0, 1] and
+asserts it is positive throughout ("RANKED uniform leverage has NO sign flip to find"),
+rather than only at the default. Sign behaviour over a *range*, not at a point.
