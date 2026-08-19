@@ -27,6 +27,7 @@ gate-qualified or an official score.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import pathlib
 import statistics
@@ -339,9 +340,49 @@ def analyse(base: dict, arm: dict, base_curve: dict, arm_curve: dict) -> dict:
         "occupancy_share_total_qmv": q_total / t_base,
         "dq_predicted_seconds": dq,
         "dt_measured_seconds": t_arm - t_base,
+        "mtp_decode_seconds_base": t_base,
+        "mtp_decode_seconds_arm": t_arm,
         "alpha_absorption": (t_arm - t_base) / dq if dq else float("nan"),
         "trajectory_identical_to_base": arm["widths"] == base["widths"],
         "all_tokens_matched": arm["all_tokens_matched"],
+    }
+
+
+def slope_psi(base: dict, results: list[dict]) -> dict | None:
+    """psi from the slope of leg time against measured kernel slowdown.
+
+    Points are (x_bar, T) plus the untreated origin (0, T_base). The slope is
+    the treated QMV seconds the leg actually pays in situ, so psi = slope/T_base
+    needs no absolute cost prediction at all, and the spread of the pairwise
+    slopes is an empirical error bar instead of an assumption. It is also the
+    strongest form of the linearity test: a single psi exists iff the slopes
+    agree.
+    """
+    if len(results) < 2:
+        return None
+    t0 = base["mtp_decode_seconds"]
+    pts = [(0.0, t0)] + sorted(
+        (r["x_bar_treated"], r["mtp_decode_seconds_arm"]) for r in results
+    )
+    slopes = []
+    for (x1, t1), (x2, t2) in itertools.combinations(pts, 2):
+        slopes.append(
+            {"x_from": x1, "x_to": x2, "q_treated_seconds": (t2 - t1) / (x2 - x1)}
+        )
+    qs = [s["q_treated_seconds"] for s in slopes]
+    q_mean = sum(qs) / len(qs)
+    rounds = base["round_count"]
+    return {
+        "points_x_bar_and_leg_seconds": pts,
+        "pairwise_slopes": slopes,
+        "q_treated_seconds_from_slope": q_mean,
+        "slope_spread_pct": 100.0 * (max(qs) - min(qs)) / q_mean,
+        "psi_from_slope": q_mean / t0,
+        "non_qmv_seconds": t0 - q_mean,
+        "non_qmv_ms_per_round": 1000.0 * (t0 - q_mean) / rounds,
+        "q_treated_seconds_from_curve": results[0]["q_treated_predicted_seconds"],
+        "curve_vs_slope_pct": 100.0
+        * (q_mean / results[0]["q_treated_predicted_seconds"] - 1.0),
     }
 
 
@@ -469,6 +510,26 @@ def main() -> int:
         linearity[fam] = {"psi_eff_by_level": vals, "ratio_l2_over_l1": ratio}
         print(f"{fam:>7} {line}")
 
+    print("\n=== psi from the ladder slope (no absolute cost prediction) ===")
+    slopes = {}
+    for fam, group in sorted(by_fam.items()):
+        sl = slope_psi(base, group)
+        if sl is None:
+            print(f"{fam:>7} needs >=2 magnitudes for a slope")
+            continue
+        slopes[fam] = sl
+        print(
+            f"{fam:>7} Q_treated={sl['q_treated_seconds_from_slope']:.4f} s "
+            f"(pairwise spread {sl['slope_spread_pct']:.3f} %)  "
+            f"psi_from_slope={sl['psi_from_slope']:.4f}"
+        )
+        print(
+            f"        non-QMV intercept {sl['non_qmv_seconds']:.4f} s = "
+            f"{sl['non_qmv_ms_per_round']:.2f} ms/round;  "
+            f"isolated curve predicted {sl['q_treated_seconds_from_curve']:.4f} s "
+            f"({sl['curve_vs_slope_pct']:+.3f} % vs slope)"
+        )
+
     phi_local = None
     p2 = {r["level"]: r for r in by_fam.get("p2", [])}
     p6 = {r["level"]: r for r in by_fam.get("p6", [])}
@@ -519,6 +580,7 @@ def main() -> int:
         "arms": arms,
         "results": results,
         "linearity": linearity,
+        "slope_psi": slopes,
         "phi_local": phi_local,
         "power": power,
         "drift": drift,
@@ -614,7 +676,15 @@ def log_wandb(payload: dict) -> None:
             width_table.add_data(res["arm"], int(m), x, hist.get(str(m), hist.get(m, 0)))
 
     run.log({"arms": arms_table, "psi_phi": res_table, "x_by_width": width_table})
-    summary = {"linearity": payload["linearity"], "phi_local": payload["phi_local"]}
+    summary = {
+        "linearity": payload["linearity"],
+        "phi_local": payload["phi_local"],
+        "slope_psi": payload["slope_psi"],
+    }
+    for fam, sl in payload["slope_psi"].items():
+        summary[f"psi_from_slope/{fam}"] = sl["psi_from_slope"]
+        summary[f"slope_spread_pct/{fam}"] = sl["slope_spread_pct"]
+        summary[f"non_qmv_ms_per_round/{fam}"] = sl["non_qmv_ms_per_round"]
     for res in payload["results"]:
         summary[f"psi_eff/{res['arm']}"] = res["psi_eff"]
         summary[f"psi_eff_low/{res['arm']}"] = res["psi_eff_low"]
