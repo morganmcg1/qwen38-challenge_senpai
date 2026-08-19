@@ -51,6 +51,17 @@ done
 [[ -s "${head_dir}/config.json" && -s "${head_dir}/model.safetensors" ]] || {
   echo "e42-run: declared head run tree missing at ${head_dir}" >&2; exit 2; }
 [[ -s "${fixture}" ]] || { echo "e42-run: missing fixture ${fixture}" >&2; exit 2; }
+# The transformed weights/ tree is ~15 GB, is not in Git, and a launch retag can
+# delete it: measured 2026-08-19T15:02Z, which cost an E55 arm a full metallib
+# build before the failure surfaced. benchmark-qwen-mtp.sh's own fallback cannot
+# repair it from inside a timing leg either, because MLXFAST_SWIFT_BIN points at
+# research/capture-cli.sh below and run-offline.sh's sandbox refuses to exec a
+# shell script. Fail in seconds instead, and name the command that does work.
+[[ -s "weights/model.safetensors.index.json" ]] || {
+  echo "e42-run: no transformed weights at weights/" >&2
+  echo "e42-run: run './benchmark.sh --transform-only' first, outside any arm" >&2
+  exit 2
+}
 
 dirty="$(git status --porcelain -- \
   Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h \
