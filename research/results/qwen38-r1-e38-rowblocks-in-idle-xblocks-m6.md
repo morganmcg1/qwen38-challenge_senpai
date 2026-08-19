@@ -85,7 +85,7 @@ Pre-registration `13023f0`, committed before any kernel code existed.
 | 25 | M = 1 global null (serial leg) | unreachable | source-unreachable, §6.3 | pass |
 | 26 | coverage: every (m, n) written exactly once | exhaustive | 4 arms × 6 shapes, **pass** | pass |
 | 27 | `row0_bitwise_matches_m1`, all arms | true | **64/64 rows, worst \|Δ\| = 0** | pass |
-| 28 | 192-cell cross-build parity digest | bit-identical | §13 | *pending, filled from the run* |
+| 28 | 192-cell cross-build parity digest | bit-identical | **384/384 cells 0 differing (128 of them *covering*); source digests distinct** | pass |
 | 29 | `twin_audit.py` | `TWIN AUDIT OK` | **29 runtime-effective twins** | pass |
 | 30 | JIT/PSO pre-flight, no M=6 first-round spike | no spike | §7.2 | pass |
 
@@ -530,4 +530,111 @@ a synthetic width-proportional effect that the trend arm *does* catch and a flat
 
 ## 13. 192-cell cross-build parity digest
 
-*(filled in when the digest completes; it does not replace an arm above)*
+`row0_bitwise_matches_m1` (control 27) only ever compares a build **against
+itself**: it asks whether row 0 at width M reproduces the M = 1 result inside one
+binary. That is necessary but it cannot detect an arm that is self-consistently
+wrong. This digest closes that hole by hashing the full `quantized_matmul` output
+at every scored shape and width, once per separately-built arm, and comparing
+across builds.
+
+```bash
+research/run-qmv-parity.sh \
+  base=54248ce258376db756be02fd65a814a903e2d601 \
+  armb=b6306d78020a1a7a42e9e0f5f57478a7a098cdc2 \
+  arma=fa0d33ddb73ef4727806b06397a639a6d1164b5f
+```
+
+192 cells per arm = 8 scored shapes × 12 widths × 2 quantisation bit-widths
+{3, 4}. Untimed by design: one call per cell, no repetitions, no cool gate. It
+still takes the local run lock so it can never overlap a model-holding run.
+
+### 13.1 The pass is not vacuous — source digests first
+
+A cross-build digest comparison returns `BIT-IDENTICAL` **for free** if the two
+arms accidentally built the same source, so the twin hashes come before the
+verdict. The driver records them per arm and additionally fails closed if a
+requested patch leaves both twins unchanged.
+
+| arm | `quantized.h` | `quantized.cpp` |
+|---|---|---|
+| base | `3dfca9d2…` | `8db134cc…` |
+| arm (b) | `09218824…` | `987043fc…` |
+| arm (a) | `d046b610…` | `a736e825…` |
+
+All three distinct ⇒ three genuinely different kernels were compiled, so a
+bit-identical verdict carries information.
+
+🟢 The same digests also verify the headline provenance claim by hash rather than
+by eye: `git show HEAD:…quantized.h` = `3dfca9d2…` and `…quantized.cpp` =
+`8db134cc…`, i.e. **the branch tip's twins are byte-for-byte `BASE_SHA`**, which
+is what "submitted candidate files: none, growth 0 bytes" means.
+
+### 13.2 Verdict
+
+Verbatim comparator output, `research/qmv_parity_compare.py`, base as reference:
+
+```text
+reference arm: base (192 cells, bits=[3, 4])
+
+=== armb vs base ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 0 differing
+cells differing: 0
+cells differing by (bits, M): []
+verdict: BIT-IDENTICAL
+
+=== arma vs base ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 0 differing
+cells differing: 0
+cells differing by (bits, M): []
+verdict: BIT-IDENTICAL
+```
+
+**Both treated arms reproduce the base kernel's output exactly, on all 192 cells,
+at both quantisation bit-widths — 384 cross-build cell comparisons, 0 differing.**
+
+### 13.3 How much of that is actually load-bearing
+
+🟡 **"384 cells" overstates the power of this check, and the driver reports the
+number that does not.** The digest records:
+
+```text
+cells_by_bits           {"3": 96, "4": 96}
+covering_cells_by_bits  {"4": 64}
+```
+
+Only **64 cells per arm are *covering*** — i.e. cells where the `crossrow` cell
+under test is the kernel actually dispatched. The `bits = 3` half never reaches
+the crossrow path at all, and 32 of the `bits = 4` cells are outside its width
+coverage. So the honest statement is:
+
+- **128 covering comparisons** (64 × 2 treated arms) exercise the changed code and
+  found 0 differences;
+- the remaining 256 comparisons confirm the two builds are otherwise identical —
+  useful as a guard against collateral damage, but not evidence about the cell
+  under test.
+
+I am reporting the 64 rather than hiding behind the 192, because a reader who
+takes "192 cells" as the coverage of the change would over-trust this check by
+3×.
+
+This is what makes the timing result a *cost* result. arm (b) is not faster
+because it computes something cheaper or coarser; on every covering cell it
+computes bit-for-bit the same numbers by a different schedule, so −1.09 % is
+attributable to scheduling alone. Symmetrically, arm (a)'s +10.85 % is a pure
+scheduling penalty and not the price of some numerical difference — which is
+precisely what R2 needs in order to mean "row-blocking costs 10.5 %".
+
+Combined with control 27 (`row0_bitwise_matches_m1` true on 64/64 rows, worst
+|Δ| = 0, all three arms) and the exhaustive `(m, n)` write-once coverage proof of
+§6.2, the correctness case rests on three independent instruments: one
+within-build, one cross-build, one static. They fail in different ways, which is
+the point of having three.
+
+🟡 What this still does **not** prove: these are the *public* scored shapes on an
+M4 Pro, not the organizer's hidden reference on M5. It rules out a
+self-consistently wrong arm; it cannot rule out a host-specific near-tie. Since
+no arm is being submitted, that residual risk is not carried anywhere.

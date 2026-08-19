@@ -24,6 +24,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import e38_m6_step as S  # noqa: E402
 import e38_prereg as P  # noqa: E402
 import e38_value as V  # noqa: E402
+import qmv_parity_compare as C  # noqa: E402
 
 PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
@@ -66,6 +67,63 @@ def _ranked_geom(
 ) -> dict | None:
     p = pathlib.Path(path)
     return json.loads(p.read_text()) if p.exists() else None
+
+
+def _parity(out_dir: str = ".mlxfast-private/qmv-parity") -> dict | None:
+    """Cross-build digest comparison of each arm against base.
+
+    A digest comparison reports bit-identical for free when two arms happen to
+    build the same source, so the per-arm twin hashes are carried alongside the
+    verdict and their distinctness is what makes the pass informative.
+    """
+    d = pathlib.Path(out_dir)
+    if not (d / "base.json").exists():
+        return None
+
+    def twin_digests(arm: str) -> list[str]:
+        f = d / f"{arm}.twins.txt"
+        if not f.exists():
+            return []
+        return [ln.split()[0] for ln in f.read_text().splitlines() if ln.strip()]
+
+    ref = C.load(str(d / "base.json"))
+    payload = json.loads((d / "base.json").read_text())
+    arms = [p.stem for p in sorted(d.glob("*.json")) if p.stem != "base"]
+
+    per_arm = {}
+    for arm in arms:
+        cur = C.load(str(d / f"{arm}.json"))
+        shared = set(ref) & set(cur)
+        differing = [k for k in sorted(shared) if ref[k] != cur[k]]
+        per_arm[arm] = {
+            "cells_compared": len(shared),
+            "cells_differing": len(differing),
+            "differing_by_bits_m": sorted({(b, m) for _, b, m in differing}),
+            "bit_identical": not differing,
+            "twin_digests": twin_digests(arm),
+        }
+
+    base_twins = twin_digests("base")
+    distinct = len({tuple(base_twins)}
+                   | {tuple(v["twin_digests"]) for v in per_arm.values()})
+    return {
+        "arms": arms,
+        "cells_per_arm": len(ref),
+        "bits": sorted({b for _, b, _ in ref}),
+        "cells_by_bits": payload.get("cells_by_bits"),
+        # cells where the crossrow cell under test is the kernel actually
+        # dispatched; the remainder still validate the build but do not
+        # exercise the changed code
+        "covering_cells_by_bits": payload.get("covering_cells_by_bits"),
+        "per_arm": per_arm,
+        "total_cells_compared": sum(v["cells_compared"] for v in per_arm.values()),
+        "total_cells_differing": sum(v["cells_differing"] for v in per_arm.values()),
+        "all_bit_identical": all(v["bit_identical"] for v in per_arm.values()),
+        "base_twin_digests": base_twins,
+        # a cross-build digest match is free if two arms built the same source,
+        # so distinctness is what makes the pass informative rather than vacuous
+        "all_source_digests_distinct": distinct == 1 + len(arms),
+    }
 
 
 def main() -> None:
@@ -269,6 +327,19 @@ def main() -> None:
                               bool(row["trusted"]))
         tables["e38/ranked_geometry"] = rg_table
 
+    par = _parity()
+    if par is not None:
+        par_table = wandb.Table(columns=[
+            "arm", "cells_compared", "cells_differing", "bit_identical",
+            "twin_digest_quantized_h", "twin_digest_quantized_cpp"])
+        par_table.add_data("base (reference)", par["cells_per_arm"], 0, True,
+                           *(par["base_twin_digests"] + ["", ""])[:2])
+        for arm, v in par["per_arm"].items():
+            par_table.add_data(arm, v["cells_compared"], v["cells_differing"],
+                               v["bit_identical"],
+                               *(v["twin_digests"] + ["", ""])[:2])
+        tables["e38/parity_digest"] = par_table
+
     run.log(tables)
 
     prim = d["primary"]
@@ -364,6 +435,22 @@ def main() -> None:
                 "call and is insensitive to MLX_MAX_OPS_PER_BUFFER by "
                 "construction, so this is not evidence about end-to-end "
                 "command-buffer behaviour"),
+        })
+
+    if par is not None:
+        run.summary.update({
+            "e38/parity_cells_per_arm": par["cells_per_arm"],
+            "e38/parity_bits": par["bits"],
+            "e38/parity_cells_by_bits": par["cells_by_bits"],
+            "e38/parity_covering_cells_by_bits": par["covering_cells_by_bits"],
+            "e38/parity_total_cells_compared": par["total_cells_compared"],
+            "e38/parity_total_cells_differing": par["total_cells_differing"],
+            "e38/parity_all_bit_identical": par["all_bit_identical"],
+            # without this the bit-identical verdict would be vacuous: two arms
+            # that accidentally built the same source always match
+            "e38/parity_all_source_digests_distinct":
+                par["all_source_digests_distinct"],
+            "e38/parity_arms": par["arms"],
         })
 
     run.finish()
