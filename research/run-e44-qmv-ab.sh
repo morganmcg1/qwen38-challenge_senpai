@@ -22,6 +22,7 @@ inner=20
 probe=0
 coverage=0
 gpu_busy_seconds=12
+cand_rev=""
 while [[ $# -gt 0 ]]; do
   case "${1}" in
     --widths) widths="${2:?--widths needs a list}"; shift 2 ;;
@@ -30,6 +31,7 @@ while [[ $# -gt 0 ]]; do
     --inner) inner="${2:?--inner needs a count}"; shift 2 ;;
     --probe) probe="${2:?--probe needs a k count}"; shift 2 ;;
     --coverage) coverage="${2:?--coverage needs a word stride}"; shift 2 ;;
+    --cand-rev) cand_rev="${2:?--cand-rev needs a rev}"; shift 2 ;;
     --gpu-busy-seconds) gpu_busy_seconds="${2:?needs seconds}"; shift 2 ;;
     *) echo "run-e44-qmv-ab.sh: unknown argument ${1}" >&2; exit 2 ;;
   esac
@@ -124,6 +126,7 @@ COOL_GATE_MACMON_BIN="$(find_macmon || true)"
 {
   echo "tag=${tag}"
   echo "base_sha=${base_sha}"
+  echo "cand_rev=${cand_rev:-worktree}"
   echo "head=$(git rev-parse HEAD)"
   echo "dirty_files=$(git status --porcelain | wc -l | tr -d ' ')"
   echo "host_cpu=$(sysctl -n machdep.cpu.brand_string)"
@@ -139,8 +142,11 @@ COOL_GATE_MACMON_BIN="$(find_macmon || true)"
 cell='affine_qmv_fast<bfloat16_t, 64, 4, false>'
 python3 research/jit_string_compile.py --emit "${out_dir}/base.metal" \
   --rev "${base_sha}" "${cell}" | tee -a "${out_dir}/identity.txt" >&2
+# --cand-rev builds the candidate arm from a revision instead of the worktree.
+# Passing the base sha makes both arms the same bytes, which is the A/A control
+# that measures this design's true resolution floor at every width.
 python3 research/jit_string_compile.py --emit "${out_dir}/cand.metal" \
-  "${cell}" | tee -a "${out_dir}/identity.txt" >&2
+  ${cand_rev:+--rev "${cand_rev}"} "${cell}" | tee -a "${out_dir}/identity.txt" >&2
 {
   echo "base_metal_sha256=$(shasum -a 256 "${out_dir}/base.metal" | cut -d' ' -f1)"
   echo "cand_metal_sha256=$(shasum -a 256 "${out_dir}/cand.metal" | cut -d' ' -f1)"

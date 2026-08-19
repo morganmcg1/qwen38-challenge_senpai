@@ -85,7 +85,16 @@ def zero_effect_cells(run_dir: pathlib.Path) -> list[dict]:
     """Per-cell effects from an A/A session, where the true effect is 0 at every
     width. r1 read its floor from three cheap guard widths only; this reads it
     from every width the decision is actually made at."""
-    payload, _ = load(run_dir)
+    payload, identity = load(run_dir)
+    # The whole claim of a control is that its true effect is zero, which holds
+    # only if the two arms are the same bytes. A control whose arms differ would
+    # quietly inflate the floor and hide a real regression behind it.
+    base_sha, cand_sha = (identity.get("base_metal_sha256"),
+                          identity.get("cand_metal_sha256"))
+    if base_sha is None or cand_sha is None or base_sha != cand_sha:
+        raise SystemExit(
+            f"{run_dir}: control arms are not identical bytes "
+            f"(base={base_sha}, cand={cand_sha}). This is not an A/A control.")
     timing = [r for r in payload["measurements"] if r["kind"] == "timing"]
     cells = []
     for shape in sorted({r["shape"] for r in timing}):
