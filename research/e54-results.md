@@ -57,10 +57,32 @@ One prediction is worth recording because it was made before the measurement
 existed: I extrapolated the lone-group ladder to **151.7 GB/s** for NA=5 and the
 measurement returned **150.9**.
 
-## Law D: mechanism confirmed exactly, consequence not visible
+## Registers: the ladder is affine, so Law D's padding step does not exist
 
+The advisor retracted Law D in PR comment 5346563541 while this experiment was
+running, and the census data here supports that retraction rather than the original
+claim. An earlier draft of this document called Law D "confirmed". That was wrong,
+and this section replaces it.
+
+Law D asserted a padding staircase: `vec<float,5>` occupies 8 lanes, so crossing
+NA=4 → NA=5 should cost a whole extra padded vector. E32's register ladder is
+**affine in NA instead**:
+
+```
+rows_per_simd = 4:  registers = 20 + 21 * NA     NA=2,3,4,5 -> 62, 83, 104, 125
+rows_per_simd = 2:  registers = 16 + 15 * NA     NA=12      -> 196
+```
+
+Maximum residual over NA=2..12 is 0.25 registers. An 8-lane padding step would put
+**+84** registers at NA 4 → 5. E27 measured **+21** (ledger line 5213). +21 is exactly
+the affine slope, that is, one ordinary accumulator row. Padding is refuted.
+`sizeof(vec<float,5>) == 32` remains true as a memory-layout fact, but `acc` is a
+non-escaping thread-local, the compiler scalarises it, and the padding lanes are dead.
+My own `vec<float,5>` gate passing with `max_ulp = 0` is consistent with that.
+
+**The census here confirms the affine ladder independently.**
 `research/e54_reg_census.py` drives the E46 compile machinery with the real
-`research/e54_arms.py` patches, so it measures the source that was timed.
+`research/e54_arms.py` patches, so it measures the source that was timed:
 
 | arm | kernel max | entry `affine_qmv_fast bfloat16_t,64,4,false` |
 | --- | --- | --- |
@@ -69,28 +91,66 @@ measurement returned **150.9**.
 | `e27_m9_only` | **129 (+21)** | 181 (+18) |
 | `e27_full` | **129 (+21)** | **183 (+20)** |
 
-Both numbers the E27 revert recorded, 108 → 129 and 163 → 183, reproduce to the
-digit and untuned. Law D's mechanism is therefore confirmed: adding NA=5 cells does
-raise the shared register maximum.
+`<T,5,5>` measures **125**, which is `20 + 21 * 5` to the register. Both numbers the
+E27 revert recorded, 108 → 129 and 163 → 183, reproduce untuned, and that +21 step is
+the affine slope rather than a cliff.
 
-Law D's distinguishing *consequence* is that widths the edited cell never executes
-must slow down. P4 is the first experiment able to test that, because it keeps all
-seven width cases live. They did not slow down:
+Honest limit on my own instrument: the counter over-counts by a constant **+4** in
+three cells, `<T,5,3>` 87 against 83, `<T,7,4>` 108 against 104 and `<T,9,5>` 129
+against 125, and is exact elsewhere. It is a textual-liveness heuristic, so it
+over-counts live ranges. The over-count is constant, which is why every *step* it
+reports is still correct.
+
+What survives Law D's retraction is only a **shared-ceiling term**: one kernel serves
+all widths, so +21 registers is charged to all seven width cases at once. The advisor
+calls this Law C's already-priced twin, not a new law.
+
+**P4 prices that shared-ceiling term at approximately zero.** P4 keeps all seven
+width cases live and edits only `(4,5)` and `(4,9)`. The untreated crossrow widths did
+not move:
 
 ```
 M=3 +0.123   M=4 -0.207   M=6 +0.056   M=7 -0.069   M=8 +0.364     bar 0.991 %
 ```
 
-I am deliberately not calling this a refutation. The width sweep is the same
-instrument that predicts +2.2 % of score for a composite the board scored at
-−0.3321 %, so it is demonstrably blind to whatever costs E27 its points. An
-instrument that missed a 2.5-point effect cannot be trusted to exclude a 0.3-point
-one. Law D stands as unresolved at the end-to-end level, and the honest statement is
-that **the register rise is real and the width sweep cannot see it costing anything.**
+Every value is inside the bar. This is a bound, not a proof of exact zero: the width
+sweep is the same instrument that predicts +2.2 % of score for a composite the board
+scored at −0.3321 %, so it is demonstrably blind to whatever costs E27 its points. The
+supported statement is that **the +21 register rise is real, it is a shared ceiling
+rather than a padding cliff, and the width sweep can bound its width-sweep cost below
+1 %.**
 
 **Attribution matters for PR #57.** `<T,9,5>` alone moves the kernel maximum the full
 108 → 129. It is not a partial contributor to E27's rise; it accounts for all of it,
 while carrying the least score weight of the four cells.
+
+I am adopting the advisor's durable rule from the same comment: before publishing a
+per-shape or per-width cost claim, grep the ledger for the quantity, then verify the
+quantity appears in the kernel name, the library name or the `hash_name`.
+
+## Grid extent and pipeline identity, from source
+
+Two source facts from the advisor's comment bear directly on Law A′, and I record
+them here because one of them corrects an earlier claim of mine.
+
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:250-253` sets
+`bn = 8`, `bk = 32`, `group_dims(bk, 2, 1)` and `grid_dims(M, (N + bn - 1) / bn, B)`.
+The host knows nothing about IPG, so `ntg.x == M` always. **Correction: a PR comment
+of mine cited `bn = 64` at `quantized.cpp:323`. That is the `qmm` split-k path, not
+this one.** `out_row = tid.y * 8 + simd_gid * rows_per_simd` is consistent with
+`bn = 8`.
+
+The consequence supports A′ directly: raising IPG never reduces the launch count. It
+reduces working groups, and therefore weight passes. **Price IPG changes as passes,
+not as launches** — which is what A′ does.
+
+`quantized.cpp:260-268` builds the kernel name from mode, `_qmv_fast_` or `_qmv_`,
+type, group size, bits and batch flag. **M is not in that identity.**
+`get_quantized_kernel` sets `lib_name = kernel_name`, calls the one-argument
+`d.get_kernel(kernel_name, lib)`, leaves `hash_name` unused and declares no function
+constants. So there is one library, one pipeline and one register allocation for
+M=1..9, which is why the ceiling is shared at all. Splitting the pipeline per width
+would need `backend/metal/quantized.cpp`, which is not in `editablePaths`.
 
 ## The result that outranks the law table
 
@@ -224,6 +284,11 @@ The scored surface is byte-identical to base. **This experiment ships no candida
 | Law B | regress | regress | regress | falsified |
 | **my blind prediction** | **+25.8** | — | — | **wrong, by the largest margin here** |
 
+The advisor's corrected discriminator reads this outcome as **Law A on the edited cell
+plus a shared-ceiling tax, the E27 signature** — not as a Law D signature. The
+measurement agrees: the cell wins, the shared ceiling rises by +21 registers, and the
+untreated widths stay inside the bar.
+
 I pre-registered a prediction that contradicted my own hypothesis, derived from the
 E27 board reconciliation and committed at `80a4218` before any timing existed. It was
 the worst prediction in the table. The reconciliation was internally consistent and
@@ -235,7 +300,9 @@ cell timing, is the premise P4 has now falsified.
 
 1. The width sweep is a QMV microbenchmark. It does not reproduce board score, and
    P4 quantifies by how much it fails to.
-2. Law D is unresolved end-to-end, not refuted. See above.
+2. Law D is retracted, and the census here supports the retraction. What remains is a
+   shared-ceiling term that P4 bounds below the 0.991 % bar rather than measures. See
+   above.
 3. `bandwidth_reliable: false` rows, where modelled traffic exceeds stream peak, are
    excluded from every achieved-rate figure. Those are `qmv_fast_impl` fallback rows.
 4. The three cells above 100 % of measured stream peak, M=5 at 240.5 and M=9 at
