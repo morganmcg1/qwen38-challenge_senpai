@@ -70,11 +70,11 @@ All arms: 2 legs, 512-token `--local-iterate`, same host, same fixture, same hea
 |---|---|---|---|---|---|---|---|
 | `base` | 0/0 | 0.073460 | 0.033438 | 2.196921 | — | — | — |
 | `g1` | 1/0 | 0.073470 | 0.054683 | 1.343544 | **+0.013** | +63.539 | **−38.844** |
+| `g2` | 2/0 | 0.073412 | 0.075989 | 0.966081 | **−0.065** | +127.258 | **−56.026** |
 | `ulo` | 1/2 | 0.121987 | 0.055473 | 2.199035 | +66.060 | +65.900 | **+0.096** |
-| `g2` | 2/0 | *(pending)* | | | | | |
 | `base2` | 0/0 | *(pending)* | | | | | |
 
-Per-leg `raw_p` spread: `base` 0.105 %, `g1` 0.144 %, `ulo` 0.116 %.
+Per-leg `raw_p` spread: `base` 0.105 %, `g1` 0.144 %, `g2` 0.076 %, `ulo` 0.116 %.
 
 **Fidelity (advisor Risk 4).** `all_tokens_matched=True` in every arm;
 `accepted_draft_rate = 0.88752556` identical to 8 s.f. across all arms;
@@ -82,30 +82,56 @@ Per-leg `raw_p` spread: `base` 0.105 %, `g1` 0.144 %, `ulo` 0.116 %.
 bit-exact — it does not perturb the trajectory, so the dose response is a clean
 cost derivative.
 
-### `psi_mtp`
+### `psi_mtp` — the headline number
 
-From `g1`: `mtp_frac = 0.635389` at realised `xbar_X = 0.914900` ⇒
+Each Arm G arm gives an independent estimate from its own measured dose:
 
-**`psi_mtp = 0.694490`**
+| arm | measured `xbar_X` | `mtp_frac` | `psi_mtp` |
+|---|---|---|---|
+| `g1` | 0.914900 | 0.635389 | 0.694490 |
+| `g2` | 1.838211 | 1.272578 | 0.692292 |
 
-Gap-corrected variants (see coverage gap below): **0.711260** (2-bit-scaled) and
-**0.728030** (4-bit upper). All three are **lower bounds**.
+**`psi_mtp = 0.693391`, interval [0.692292, 0.694490]**
+
+**Two-dose functional-form test.** The realised dose ratio between the arms was
+**2.0092** (measured, not assumed — the `L=2` injection delivered almost exactly
+twice the `L=1` dose). Doubling the dose changes the inferred elasticity by
+**−0.317 %**. A single linear-in-dose coefficient describes the candidate leg
+across a 39-point and a 56-point effect, so `psi_mtp` is a genuine elasticity over
+this range, not a local slope fitted at one operating point.
+
+Gap-corrected variants (see coverage gap below): **0.710161** (2-bit-scaled) and
+**0.726931** (4-bit upper). All of these are **lower bounds**.
 
 **Advisor Risk 3 answered: `psi_mtp` transfers across the IPG change.** E42
-measured 0.6736 on base `04ad6bf1`; this base gives 0.694490, i.e. **+3.1 %**.
+measured 0.6736 on base `04ad6bf1`; this base gives 0.693391, i.e. **+2.9 %**.
 The parameter is stable across the intervening dispatch-shape change, so ledger
 dScore corrections built on it survive. Direction of the correction: every dScore
 in the ledger — including alphonse's merged +11.421 % — is slightly **under**-priced.
 
-**The advisor's own Arm G prediction validates.** `1/(1+0.6736x)` evaluated at the
-realised `xbar_X = 0.91490` predicts −38.130 %; measured **−38.844 %** —
-**0.71 pp** agreement on a 39-point effect.
+**The advisor's own Arm G prediction validates at both doses.** Evaluating
+`1/(1 + 0.6736 x)` at each realised dose:
+
+| arm | realised `xbar_X` | predicted `raw_p` Δ% | measured | miss |
+|---|---|---|---|---|
+| `g1` | 0.914900 | −38.130 | **−38.844** | 0.71 pp |
+| `g2` | 1.838211 | −55.322 | **−56.026** | 0.70 pp |
+
+The miss is the same size and the same sign at both doses — exactly the signature
+of a prediction made with a `psi_mtp` that is 2.9 % too small, and not of a
+mis-specified functional form.
 
 ### Structural-churn control
 
-`g1`'s serial leg carries the full dose scaffolding compiled in at dose 0 and moved
-**+0.0135 %** — inside the null spread. The scaffolding is free, so the dose
-attribution is validated on the scored path rather than assumed.
+Each Arm G serial leg carries the full dose scaffolding compiled in at dose 0:
+
+| arm | serial Δ |
+|---|---|
+| `g1` | +0.0135 % |
+| `g2` | −0.0649 % |
+
+Worst absolute deviation **0.065 %**, and the two straddle zero. The scaffolding is
+free, so the dose attribution is validated on the scored path rather than assumed.
 
 ### The finding I did not expect: `psi_serial` was never identifiable
 
@@ -118,9 +144,20 @@ turns them into an accidental dosimeter-reproducibility test:
 | worst (M=2) | **0.01014** |
 | `xbar_X` agreement | **0.084 %** |
 
-The crossrow dosimeter is reproducible to sub-percent. But the **width-1 cell at
-TRUE dose zero reads `x = 0.06942`** instead of 0 — seven times the worst crossrow
-disagreement — and that offset divides straight into `psi_serial`.
+Per-width absolute disagreement: M2 0.01014, M3 0.00629, M4 0.00085, M5 0.00465,
+M6 0.00031, M7 0.00268, M8 0.00476, M9 0.00124.
+
+The crossrow dosimeter is reproducible to sub-percent. The width-1 dosimeter is not.
+`g1` and `g2` both carry **width-1 dose exactly zero**, so both cells must read 0:
+
+| arm | width-1 dose applied | width-1 cell reads |
+|---|---|---|
+| `g1` | 0 | **0.06942** |
+| `g2` | 0 | **0.04230** |
+
+Two independent builds at true zero disagree by **0.0271** — 2.7× the worst crossrow
+disagreement, 87× the best — and neither reads zero. That offset divides straight
+into `psi_serial`.
 
 **So `psi_mtp` is identified and `psi_serial` never was.** This single fact
 retro-explains E42's three-denominator interval, the unstable
@@ -128,6 +165,44 @@ retro-explains E42's three-denominator interval, the unstable
 candidates, and my own repeated arithmetic slips on the uniform coefficient. The
 unpinnable parameter turned out to be exactly the one the advisor's withdrawal
 showed has no ranked leverage — the two findings are independent and agree.
+
+### Second unplanned finding: arithmetic converts to time *differently at M=2*
+
+The dose is a fixed amount of redundant arithmetic per dispatch, so the realised
+per-width dose is a direct read of **how much of an injected ALU op actually costs
+time at that width**. Normalising each width against the arm's mean crossrow dose:
+
+| width | `g1` (dose 1) | `g2` (dose 2) |
+|---|---|---|
+| 2 | **0.541** | **0.625** |
+| 3 | 0.908 | 0.915 |
+| 4 | 0.934 | 0.934 |
+| 5 | 1.002 | 0.993 |
+| 6 | 0.991 | 0.990 |
+| 7 | 0.994 | 0.991 |
+| 8 | 0.999 | 0.999 |
+| 9 | 1.014 | 1.015 |
+
+The pattern **reproduces at both dose levels**: widths ≥5 convert injected
+arithmetic at essentially 100 %, M=4 at ~93 %, M=3 at ~91 %, and **M=2 at only
+54–63 %**. The natural reading is that at M=2 the crossrow kernel is weight-traffic
+bound and has ALU slack that absorbs roughly 40 % of injected work, while at M≥5 it
+is arithmetic-limited and every op costs full time.
+
+**Why this matters beyond this experiment.** `psi_mtp = 0.693` is an average over
+*this* decode's realised width mix, which is heavily M≥5 (72 of 78 rounds; M=4 is 5
+rounds, M=2 is 1). So the M=2 shortfall barely moves the number here. But it means a
+single conversion factor should not be applied per width:
+
+- an **arithmetic-reduction** QMV win converts at ~full rate at M≥5 and at roughly
+  half rate at M=2;
+- a **weight-traffic** win should convert *better* at M=2 than this dosimeter implies,
+  because the dosimeter only probes the ALU axis.
+
+That distinction bears directly on ledger 173(C) (M=9-targeted) versus alphonse's
+M∈{7,8} work — both sit in the region where the two axes agree — but it would matter
+for any future width-1/2-targeted proposal, and for the hidden prompts, which Part 1
+estimates run shallower than this fixture.
 
 ### Local uniform coefficient (the withdrawn quantity), reported as an interval
 
@@ -158,10 +233,14 @@ It covers **only** the 4-bit `qmv_fast_impl` width-1 path and **excludes the 2-b
 ### Coverage gap (verified still open)
 
 `qmv_fast_singlerow_affine2_g64` is instantiated only as `<T>` and is therefore
-**undosed in every arm**. Untreated candidate-leg share is 5.00 % (4-bit upper) or
-2.56 % (2-bit scaled); the additive correction to `psi_mtp` is +0.0353 / +0.0177.
-The serial leg has no such gap. This is why every `psi_mtp` figure above is a
-lower bound.
+**undosed in every arm**. Measured over 489 draft steps against 11.803 s of treated
+verify QMV, the untreated candidate-leg share is **4.639 %** (4-bit proxy upper) or
+**2.375 %** (2-bit scaled); the additive correction to `psi_mtp` is **+0.03354** /
+**+0.01677**. The serial leg has no such gap.
+
+The correction's **sign is certain** — untreated candidate QMV has strictly positive
+cost — and only its magnitude is uncertain. That is what makes every `psi_mtp`
+figure above a one-sided lower bound rather than a point estimate with unknown bias.
 
 Separately: `QwenQMVCostCurveTests.swift:396`'s `in_proj_fused_qkvzba` shape is a
 **harness fiction** — GDN `a`/`b` are separate `linear` calls
