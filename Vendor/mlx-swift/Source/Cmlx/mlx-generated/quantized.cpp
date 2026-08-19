@@ -1946,32 +1946,32 @@ template <typename T, int group_size, int bits, bool batched>
       // promoted pair kernel is kept there byte-for-byte.
       switch (ntg.x) {
         case 2:
-          qmv_fast_crossrow_affine4_g64<T, 2, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 2, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 3:
-          qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 4:
-          qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 5:
-          qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -1979,12 +1979,12 @@ template <typename T, int group_size, int bits, bool batched>
           // 4+4: two weight streams, receipted on this benchmark (scored
           // 3.195804751396457 as a promoted submission) before a later
           // stale-base REPLACE overlay reverted it; restored here.
-          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -1994,42 +1994,42 @@ template <typename T, int group_size, int bits, bool batched>
     } else {
       switch (ntg.x) {
         case 2:
-          qmv_fast_crossrow_affine4_g64<T, 2, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 2, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 3:
-          qmv_fast_crossrow_affine4_g64<T, 3, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 3, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 4:
-          qmv_fast_crossrow_affine4_g64<T, 4, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 4, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 5:
-          qmv_fast_crossrow_affine4_g64<T, 5, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 5, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64<T, 6, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 6, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64<T, 7, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 7, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          qmv_fast_crossrow_affine4_g64<T, 8, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 8, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64<T, 9, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 9, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
