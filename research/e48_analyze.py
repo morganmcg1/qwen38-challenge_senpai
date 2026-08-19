@@ -287,6 +287,10 @@ def local_uniform_coefficient(arms: dict[str, dict], stable: bool = False) -> di
     u = arms["ulo"]
     psi_serial = u["serial_frac"] / u[xk]
     psi_mtp_tot = u["mtp_frac"] / u[xXk]
+    # An Arm G arm doses width 1 at zero, so its width-1 curve cell should read
+    # x = 0. Whatever it actually reads is the width-1 dosimeter's error at dose
+    # zero, and it divides straight into psi_serial.
+    offset = next((v[xk] for v in arms.values() if v["m1_level"] == 0), None)
     # raw_p is flat at the level ratio rho* where the two legs move together.
     slope = psi_serial * (u[xk] / DOSES["ulo"][1]) / (1.0 + u["serial_frac"])
     rho = DOSES["ulo"][1] / DOSES["ulo"][0]
@@ -303,11 +307,62 @@ def local_uniform_coefficient(arms: dict[str, dict], stable: bool = False) -> di
         else nan,
         "ledger_173A_claim": -0.1789,
     }
-    out["overstatement_factor_vs_173A"] = (
-        abs(out["ledger_173A_claim"] / out["uniform_coefficient_local"])
-        if out["uniform_coefficient_local"]
-        else nan
+    coeffs = [out["uniform_coefficient_local"]]
+    if offset:
+        # Subtracting the dose-zero offset is one defensible treatment; leaving it
+        # in is the other. Which is right depends on whether the offset is an
+        # additive bias or noise, and this design cannot tell them apart, so the
+        # honest answer is the interval spanned by both.
+        psi_serial_corr = u["serial_frac"] / (u[xk] - offset)
+        coeffs.append(psi_mtp_tot - psi_serial_corr)
+        out["width1_dosimeter_offset_at_dose_zero"] = offset
+        out["psi_serial_local_offset_corrected"] = psi_serial_corr
+        out["uniform_coefficient_local_offset_corrected"] = coeffs[-1]
+    out["uniform_coefficient_local_interval"] = [min(coeffs), max(coeffs)]
+    out["overstatement_factor_vs_173A_interval"] = sorted(
+        abs(out["ledger_173A_claim"] / c) for c in coeffs if c
     )
+    out["note"] = (
+        "psi_mtp uses only the crossrow dosimeter, which reproduces across "
+        "independent builds; psi_serial uses only the width-1 dosimeter, which does "
+        "not. The withdrawn sign rested on the weaker half of the instrument."
+    )
+    return out
+
+
+def dosimeter_reproducibility(dosed: dict[str, dict]) -> dict:
+    """Do two independent builds at the same crossrow dose measure the same x?
+
+    This is what decides whether psi_mtp is identified. Arms sharing a crossrow
+    level must agree per width; the width-1 cell of an m1_level=0 arm must read 0.
+    """
+    out: dict = {}
+    by_level: dict[int, list[str]] = {}
+    for name, rec in dosed.items():
+        by_level.setdefault(rec["crossrow_level"], []).append(name)
+    for level, names in sorted(by_level.items()):
+        if len(names) < 2:
+            continue
+        a, b = names[0], names[1]
+        diffs = {
+            m: dosed[b]["x_by_width"][m] - dosed[a]["x_by_width"][m]
+            for m in dosed[a]["x_by_width"]
+            if m in dosed[b]["x_by_width"] and int(m) in CROSSROW_WIDTHS
+        }
+        out[f"crossrow_level_{level}"] = {
+            "arms": [a, b],
+            "per_width_abs_diff": {m: abs(v) for m, v in sorted(diffs.items(), key=lambda kv: int(kv[0]))},
+            "worst_abs_diff": max(abs(v) for v in diffs.values()),
+            "mean_abs_diff": mean(abs(v) for v in diffs.values()),
+            "xbar_X_disagreement_pct": 100.0 * (dosed[b]["xbar_X"] / dosed[a]["xbar_X"] - 1.0),
+        }
+    zero = {k: v["x_by_width"].get(1) for k, v in dosed.items() if v["m1_level"] == 0}
+    if zero:
+        out["width1_cell_at_true_dose_zero"] = zero
+        out["verdict"] = (
+            "crossrow dosimeter reproduces across builds; width-1 dosimeter does not, "
+            "so psi_mtp is identified and psi_serial is not"
+        )
     return out
 
 
@@ -415,6 +470,7 @@ def main() -> int:
 
     gap = coverage_gap(base_curve, base["width_histogram"], base["mtp_decode_seconds"])
     payload["coverage_gap"] = gap
+    payload["dosimeter_reproducibility"] = dosimeter_reproducibility(dosed)
 
     # psi_mtp is the primary estimand: the ranked score is
     # baseline_serial_seconds_per_token_mean / candidate_mtp_seconds_per_token_mean
