@@ -46,6 +46,8 @@ TREATED = {
 # The draft-side compact vocabulary readout is bits=2 and M=1 only, so it is
 # outside every arm's affine4 gate and outside the verify mix.
 DRAFT_SIDE_SHAPE = "head.compact_draft_vocab"
+# Cross-build reproduction tolerance for an untreated calibration cell.
+UNTREATED_DRIFT_TOL = 0.02
 
 
 def arm_family(arm: str) -> str:
@@ -110,7 +112,9 @@ def load_curve(arm: str) -> dict | None:
     return out
 
 
-def verify_cost_per_round(curve: dict, m: int) -> float:
+def verify_cost_per_round(
+    curve: dict, m: int, exclude: frozenset[str] = frozenset()
+) -> float:
     """Predicted QMV seconds for one target verify forward at width m.
 
     Isolated single-op dispatch cost from a --shapes-only curve, which is why
@@ -119,6 +123,8 @@ def verify_cost_per_round(curve: dict, m: int) -> float:
     total = 0.0
     for name, shape in curve.items():
         if name == DRAFT_SIDE_SHAPE or not shape["calls_per_verify"]:
+            continue
+        if name in exclude:
             continue
         row = shape["rows"].get(m)
         if row is None:
@@ -194,15 +200,17 @@ def summarise_arm(arm: str, legs: list[dict], curve: dict | None) -> dict:
     return rec
 
 
-def per_width_slowdown(base_curve: dict, arm_curve: dict) -> dict[int, dict]:
+def per_width_slowdown(
+    base_curve: dict, arm_curve: dict, exclude: frozenset[str] = frozenset()
+) -> dict[int, dict]:
     """x(M) per dispatched width, aggregated over the verify shape mix."""
     out = {}
     ms = sorted(
         set(base_curve["mlp.down"]["rows"]) & set(arm_curve["mlp.down"]["rows"])
     )
     for m in ms:
-        b = verify_cost_per_round(base_curve, m)
-        a = verify_cost_per_round(arm_curve, m)
+        b = verify_cost_per_round(base_curve, m, exclude)
+        a = verify_cost_per_round(arm_curve, m, exclude)
         per_shape = {}
         for name in base_curve:
             if name == DRAFT_SIDE_SHAPE or not base_curve[name]["calls_per_verify"]:
@@ -221,6 +229,21 @@ def per_width_slowdown(base_curve: dict, arm_curve: dict) -> dict[int, dict]:
     return out
 
 
+def unstable_shapes(x_by_m: dict[int, dict], ref_width: int) -> list[str]:
+    """Shapes whose untreated calibration cell moved more than the tolerance.
+
+    An untreated width must reproduce across builds. A shape that fails there
+    is measuring session noise, not the injected regression, so it is dropped
+    from the robust denominator rather than silently averaged in.
+    """
+    cell = x_by_m.get(ref_width)
+    if cell is None:
+        return []
+    return sorted(
+        n for n, x in cell["x_by_shape"].items() if abs(x) > UNTREATED_DRIFT_TOL
+    )
+
+
 def analyse(base: dict, arm: dict, base_curve: dict, arm_curve: dict) -> dict:
     """psi_eff, alpha and the occupancy share for one perturbation arm."""
     fam = arm["family"]
@@ -228,27 +251,52 @@ def analyse(base: dict, arm: dict, base_curve: dict, arm_curve: dict) -> dict:
     hist = arm["width_histogram"]
     x_by_m = per_width_slowdown(base_curve, arm_curve)
 
-    # Weight x(M) by each width's share of BASE treated QMV cost, so the
-    # denominator is not itself inflated by the perturbation.
-    weights, xs = [], []
-    q_treated = q_total = dq = 0.0
-    for m, count in sorted(hist.items()):
-        cell = x_by_m[m]
-        q_total += count * cell["base_verify_seconds"]
-        if m in treated:
-            w = count * cell["base_verify_seconds"]
-            weights.append(w)
-            xs.append(cell["x"])
-            q_treated += w
-            dq += count * (cell["arm_verify_seconds"] - cell["base_verify_seconds"])
-    if not weights:
-        raise SystemExit(f"e42_analyze: {arm['arm']} treated no dispatched width")
-    x_bar = sum(w * x for w, x in zip(weights, xs)) / sum(weights)
+    def weighted(cells: dict[int, dict]) -> tuple[float, list[float], dict]:
+        # Weight x(M) by each width's share of BASE treated QMV cost, so the
+        # denominator is not itself inflated by the perturbation.
+        weights, xs = [], []
+        acc = {"q_treated": 0.0, "q_total": 0.0, "dq": 0.0}
+        for m, count in sorted(hist.items()):
+            cell = cells[m]
+            acc["q_total"] += count * cell["base_verify_seconds"]
+            if m in treated:
+                w = count * cell["base_verify_seconds"]
+                weights.append(w)
+                xs.append(cell["x"])
+                acc["q_treated"] += w
+                acc["dq"] += count * (
+                    cell["arm_verify_seconds"] - cell["base_verify_seconds"]
+                )
+        if not weights:
+            raise SystemExit(f"e42_analyze: {arm['arm']} treated no dispatched width")
+        return sum(w * x for w, x in zip(weights, xs)) / sum(weights), xs, acc
+
+    x_bar, xs, acc = weighted(x_by_m)
+    q_treated, q_total, dq = acc["q_treated"], acc["q_total"], acc["dq"]
 
     t_base = base["mtp_decode_seconds"]
     t_arm = arm["mtp_decode_seconds"]
     dt_frac = t_arm / t_base - 1.0
     psi_eff = dt_frac / x_bar
+
+    # An untreated dispatched width is the cross-build calibration cell: it must
+    # read x ~ 0. Whatever it does read is the honest error bar on x_bar, so psi
+    # is reported as an interval over three denominators, not one point.
+    ref_width = min(set(x_by_m) - treated, default=None)
+    x_ref = x_by_m[ref_width]["x"] if ref_width is not None else 0.0
+    x_bar_dc = (1.0 + x_bar) / (1.0 + x_ref) - 1.0
+    dropped = unstable_shapes(x_by_m, ref_width) if ref_width is not None else []
+    if dropped:
+        x_by_m_stable = per_width_slowdown(base_curve, arm_curve, frozenset(dropped))
+        x_bar_stable, _, _ = weighted(x_by_m_stable)
+        x_ref_stable = x_by_m_stable[ref_width]["x"]
+    else:
+        x_bar_stable, x_ref_stable = x_bar, x_ref
+    psi_variants = {
+        "as_measured": psi_eff,
+        "drift_corrected": dt_frac / x_bar_dc,
+        "stable_shapes_only": dt_frac / x_bar_stable,
+    }
 
     # The serial leg is depth 0: pure M=1, so p2/p6 must leave it alone and m1
     # must slow it down. Both directions are checks, not free parameters.
@@ -261,10 +309,24 @@ def analyse(base: dict, arm: dict, base_curve: dict, arm_curve: dict) -> dict:
         "treated_widths_dispatched": sorted(set(hist) & treated),
         "untreated_widths_dispatched": sorted(set(hist) - treated),
         "x_by_width": {m: x_by_m[m]["x"] for m in sorted(hist)},
+        "x_by_width_all": {m: x_by_m[m]["x"] for m in sorted(x_by_m)},
         "x_bar_treated": x_bar,
         "x_spread_treated": (max(xs) - min(xs)) if len(xs) > 1 else 0.0,
         "mtp_delta_frac": dt_frac,
         "psi_eff": psi_eff,
+        # Drift accounting on the untreated calibration cell.
+        "calibration_width_untreated": ref_width,
+        "x_untreated_calibration": x_ref,
+        "x_untreated_calibration_by_shape": (
+            x_by_m[ref_width]["x_by_shape"] if ref_width is not None else {}
+        ),
+        "unstable_shapes_dropped": dropped,
+        "x_bar_treated_drift_corrected": x_bar_dc,
+        "x_bar_treated_stable_shapes": x_bar_stable,
+        "x_untreated_calibration_stable_shapes": x_ref_stable,
+        "psi_eff_variants": psi_variants,
+        "psi_eff_low": min(psi_variants.values()),
+        "psi_eff_high": max(psi_variants.values()),
         "serial_delta_frac": serial_frac,
         "raw_p_base": base["raw_p"],
         "raw_p_arm": arm["raw_p"],
@@ -377,6 +439,17 @@ def main() -> int:
             f"        psi_eff = {res['psi_eff']:.4f}    "
             f"occupancy(treated) = {res['occupancy_share_treated']:.4f}    "
             f"alpha = {res['alpha_absorption']:.4f}"
+        )
+        print(
+            f"        calibration width M={res['calibration_width_untreated']} "
+            f"reads x={res['x_untreated_calibration']:+.4f} "
+            f"(stable-shape subset {res['x_untreated_calibration_stable_shapes']:+.4f}, "
+            f"dropped {res['unstable_shapes_dropped'] or 'none'})"
+        )
+        print(
+            "        psi_eff interval "
+            f"[{res['psi_eff_low']:.4f}, {res['psi_eff_high']:.4f}]  "
+            + "  ".join(f"{k}={v:.4f}" for k, v in res["psi_eff_variants"].items())
         )
 
     by_fam: dict[str, list[dict]] = {}
@@ -515,6 +588,12 @@ def log_wandb(payload: dict) -> None:
         "mtp_delta_frac",
         "serial_delta_frac",
         "psi_eff",
+        "psi_eff_low",
+        "psi_eff_high",
+        "calibration_width_untreated",
+        "x_untreated_calibration",
+        "x_bar_treated_drift_corrected",
+        "x_bar_treated_stable_shapes",
         "occupancy_share_treated",
         "occupancy_share_total_qmv",
         "alpha_absorption",
@@ -538,8 +617,13 @@ def log_wandb(payload: dict) -> None:
     summary = {"linearity": payload["linearity"], "phi_local": payload["phi_local"]}
     for res in payload["results"]:
         summary[f"psi_eff/{res['arm']}"] = res["psi_eff"]
+        summary[f"psi_eff_low/{res['arm']}"] = res["psi_eff_low"]
+        summary[f"psi_eff_high/{res['arm']}"] = res["psi_eff_high"]
         summary[f"alpha/{res['arm']}"] = res["alpha_absorption"]
         summary[f"x_bar/{res['arm']}"] = res["x_bar_treated"]
+        summary[f"x_untreated_calibration/{res['arm']}"] = res[
+            "x_untreated_calibration"
+        ]
     summary["power"] = payload["power"]
     run.summary.update(summary)
     print(f"wandb_run_url={run.url}")
