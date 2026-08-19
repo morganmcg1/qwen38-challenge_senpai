@@ -1,0 +1,63 @@
+# Campaign invariants for senpai/verify-campaign-invariants.sh
+#
+# WHY THIS FILE EXISTS
+#
+# research/frontier-revert-acks.txt is FILE-GRANULAR. It answers "is it
+# intentional that our copy of this path differs from the leaderboard tip?"
+# with one verdict per path. That is the right granularity for the question it
+# asks, and the wrong granularity for this one:
+#
+#   A promoted-frontier sync reintroduces `reachedStopToken` into
+#   Qwen36MTPBlockSession.swift. The file still differs from the tip for the
+#   other three reasons we carry, so the ack is still satisfied and the
+#   frontier-revert gate still PASSES -- on a tree whose fixed decode window
+#   now terminates early.
+#
+# That is not hypothetical. `reachedStopToken` has been removed and
+# reintroduced FIVE times in this repository's history:
+#
+#   present  5d02917  (pristine upstream)
+#   removed  f1a874d  "qwen: continue fixed decode windows past EOS"
+#   present  d098212  "Sync promoted organizer frontier"
+#   removed  8b85909  "Preserve fixed decode windows on promoted frontier"
+#   present  29f1ee4  "Sync promoted organizer frontier"
+#   removed  28e591f  "Preserve fixed decode windows on promoted frontier"
+#   present  f04df93  "Sync promoted organizer frontier"
+#   removed  07345f4  "E26: commit stop tokens like any other token"
+#
+# Every reintroduction arrived inside a commit whose subject says "sync", and
+# every removal needed a human to notice. This gate is that human, written down.
+#
+# FORMAT
+#
+#     path | absent|present | REGEX | provenance
+#
+# Exactly four `|`-separated fields. A line with any other field count is a
+# HARD FAIL, not a skip -- that is deliberate, because a regex containing a
+# literal `|` would otherwise be silently truncated into a weaker check that
+# still passes.
+#
+# REGEX is a POSIX ERE, matched with `grep -E` against the file's full text.
+#
+#   absent   -> zero matching lines. Non-zero is a failure.
+#   present  -> at least one matching line. Zero is a failure.
+#
+# WHAT THIS FILE DOES NOT COVER, stated so nobody reads more into a PASS:
+#
+#   * It is a LINE-EXISTENCE check, not a semantic one. `present` cannot tell
+#     live code from a comment or a string literal, and cannot tell one
+#     occurrence from five. A merge that duplicates a guarded block satisfies
+#     `present`.
+#   * It says nothing about paths not listed here.
+#   * `absent` is the strong direction. Prefer it when the hazard is
+#     "code comes back".
+#
+# A missing path, a missing table, an unparseable line, or zero invariants
+# evaluated are all hard failures. A gate whose every check is keyed off this
+# table must treat an empty table as "no evidence", never as "no problems".
+
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift | absent | reachedStopToken | Removed at 07345f4 "E26: commit stop tokens like any other token"; reintroduced by every promoted-frontier sync (d098212, 29f1ee4, f04df93) and re-removed twice (8b85909, 28e591f). The scored harness measures a FIXED decode window; an early return on EOS shortens the window and silently changes what is timed. Empirically safe to omit on ranked: our own ca9251b8 carried the removal and produced a full score (3.23250848263467, rank 9/408) with all legs passing.
+
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift | present | for extra in 0 \.\.\. maxDepth | fkiene's 19-line verify-concat JIT warm, promoted at 1cb1f43a scoring 3.24417896624589 vs base 3.24326223889754 = +0.0283 %. Deleted from the live tip by ofou's whole-file overlay by an author who never opened this file. It is the single measured positive we are carrying, and it is the reason our next submission is worth making at all.
+
+Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift | present | inputs\.dim\(1\) <= 9 | The decode ladder's width guard. The crown has `<= 9` here too, so this is NOT a divergence -- it is listed because the adjacent COMMENT still says "S <= 2". A comment-guided "fix" that trusts the prose over the code would narrow the guard and silently disable the ladder for widths 3..9, which is most of the scored decode surface. This entry exists so that edit turns a gate red instead of costing a submission.

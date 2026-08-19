@@ -74,6 +74,11 @@ run shipped-surface           bash research/shipped-surface-gate.sh
 run inherited-surface         bash research/inherited-surface-gate.sh
 run frontier-revert           bash research/frontier-revert-gate.sh
 run frontier-revert-selftest  bash research/selftest-frontier-revert-gate.sh
+# Line-granular companion to frontier-revert, which is FILE-granular: a sync
+# that reintroduces `reachedStopToken` while the file still differs for other
+# reasons satisfies the ack and leaves frontier-revert GREEN on a broken tree.
+run campaign-invariants       bash senpai/verify-campaign-invariants.sh
+run campaign-invariants-selftest bash senpai/selftest-campaign-invariants.sh
 run base-drift                bash senpai/verify-base-drift.sh
 run trusted-parity            bash senpai/verify-trusted-parity.sh "$CROWN"
 run campaign-overlay          bash senpai/verify-campaign-overlay.sh "$CROWN"
