@@ -1,0 +1,887 @@
+{
+  "T_arm_ms": {
+    "1": 63.51507825,
+    "2": 65.20515510000001,
+    "3": 73.0710842,
+    "4": 82.87170705,
+    "5": 120.48405814999998,
+    "6": 129.05700080000003,
+    "7": 138.67258405,
+    "8": 177.2095562,
+    "9": 185.60287810000003
+  },
+  "T_arm_per_run_ms": {
+    "arm1": {
+      "1": 66.35669010000001,
+      "2": 65.14904210000002,
+      "3": 73.30980530000001,
+      "4": 82.76317239999999,
+      "5": 120.29545339999999,
+      "6": 128.84391940000003,
+      "7": 138.63011160000002,
+      "8": 177.218417,
+      "9": 185.66235740000002
+    },
+    "arm2": {
+      "1": 60.6734664,
+      "2": 65.26126810000001,
+      "3": 72.83236310000001,
+      "4": 82.9802417,
+      "5": 120.67266289999999,
+      "6": 129.2700822,
+      "7": 138.7150565,
+      "8": 177.20069540000003,
+      "9": 185.54339880000003
+    }
+  },
+  "T_base_all_widths_ms": {
+    "1": 59.68653569999999,
+    "2": 64.26567415000001,
+    "3": 73.45495505,
+    "4": 82.6200815,
+    "5": 120.33787410000001,
+    "6": 128.79365835,
+    "7": 138.84849425,
+    "8": 149.26261025,
+    "9": 186.09776405000002
+  },
+  "T_base_all_widths_per_run_ms": {
+    "base1": {
+      "1": 59.522688099999996,
+      "2": 64.22992550000001,
+      "3": 74.27389600000001,
+      "4": 82.4741313,
+      "5": 120.1332397,
+      "6": 128.73716720000002,
+      "7": 138.78890990000002,
+      "8": 149.1850933,
+      "9": 186.1949594
+    },
+    "base2": {
+      "1": 59.8503833,
+      "2": 64.30142280000001,
+      "3": 72.6360141,
+      "4": 82.7660317,
+      "5": 120.54250850000001,
+      "6": 128.8501495,
+      "7": 138.90807859999998,
+      "8": 149.34012719999998,
+      "9": 186.00056870000003
+    }
+  },
+  "T_base_ms": {
+    "3": 73.45495505,
+    "4": 82.6200815,
+    "5": 120.33787410000001,
+    "6": 128.79365835,
+    "7": 138.84849425,
+    "8": 149.26261025,
+    "9": 186.09776405000002
+  },
+  "T_base_per_run_ms": {
+    "base1": {
+      "3": 74.27389600000001,
+      "4": 82.4741313,
+      "5": 120.1332397,
+      "6": 128.73716720000002,
+      "7": 138.78890990000002,
+      "8": 149.1850933,
+      "9": 186.1949594
+    },
+    "base2": {
+      "3": 72.6360141,
+      "4": 82.7660317,
+      "5": 120.54250850000001,
+      "6": 128.8501495,
+      "7": 138.90807859999998,
+      "8": 149.34012719999998,
+      "9": 186.00056870000003
+    }
+  },
+  "argmax_d1": "4->5",
+  "bitwise_failures": {
+    "arm1": [],
+    "arm2": [],
+    "base1": [],
+    "base2": []
+  },
+  "contrast": {
+    "A": {
+      "delta_ms": 0.26334245000003875,
+      "m": 6,
+      "mde_ms": 0.42616279999996287,
+      "null": true
+    },
+    "B": {
+      "band_lenient": [
+        10.1455,
+        30.436500000000002
+      ],
+      "band_strict": [
+        15.218250000000001,
+        25.36375
+      ],
+      "delta_ms": 27.946945950000014,
+      "in_lenient_band": true,
+      "in_strict_band": false,
+      "m": 8,
+      "mde_ms": 0.1550338999999623,
+      "real": true
+    }
+  },
+  "control_worst": {
+    "delta_ms": 3.8285425500000088,
+    "m": 1,
+    "pct": 6.414415755746415
+  },
+  "controls_exceeding_floor": [
+    2,
+    7,
+    9
+  ],
+  "d1_ms": {
+    "3->4": 9.165126450000002,
+    "4->5": 37.71779260000001,
+    "5->6": 8.45578424999998,
+    "6->7": 10.0548359,
+    "7->8": 10.414116000000007,
+    "8->9": 36.83515380000003
+  },
+  "d1_replicate_floor_ms": {
+    "3->4": 1.9297823000000154,
+    "4->5": 0.1173683999999966,
+    "5->6": 0.2962865000000203,
+    "6->7": 0.006186399999968728,
+    "7->8": 0.035865200000012365,
+    "8->9": 0.3494245999999279
+  },
+  "delta_ms": {
+    "1": 3.8285425500000088,
+    "2": 0.9394809500000036,
+    "3": -0.3838708499999939,
+    "4": 0.25162555,
+    "5": 0.1461840499999738,
+    "6": 0.26334245000003875,
+    "7": -0.1759101999999757,
+    "8": 27.946945950000014,
+    "9": -0.4948859499999969
+  },
+  "dispatch": {
+    "3": {
+      "arm1": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>"
+        ],
+        "streams": [
+          1
+        ],
+        "want_ipg": 3,
+        "want_streams": 1
+      },
+      "arm2": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>"
+        ],
+        "streams": [
+          1
+        ],
+        "want_ipg": 3,
+        "want_streams": 1
+      },
+      "base1": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>"
+        ],
+        "streams": [
+          1
+        ],
+        "want_ipg": 3,
+        "want_streams": 1
+      },
+      "base2": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>"
+        ],
+        "streams": [
+          1
+        ],
+        "want_ipg": 3,
+        "want_streams": 1
+      }
+    },
+    "4": {
+      "arm1": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>"
+        ],
+        "streams": [
+          1
+        ],
+        "want_ipg": 4,
+        "want_streams": 1
+      },
+      "arm2": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>"
+        ],
+        "streams": [
+          1
+        ],
+        "want_ipg": 4,
+        "want_streams": 1
+      },
+      "base1": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>"
+        ],
+        "streams": [
+          1
+        ],
+        "want_ipg": 4,
+        "want_streams": 1
+      },
+      "base2": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>"
+        ],
+        "streams": [
+          1
+        ],
+        "want_ipg": 4,
+        "want_streams": 1
+      }
+    },
+    "5": {
+      "arm1": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 3,
+        "want_streams": 2
+      },
+      "arm2": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 3,
+        "want_streams": 2
+      },
+      "base1": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 3,
+        "want_streams": 2
+      },
+      "base2": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 3,
+        "want_streams": 2
+      }
+    },
+    "6": {
+      "arm1": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 4, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 4,
+        "want_streams": 2
+      },
+      "arm2": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 4, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 4,
+        "want_streams": 2
+      },
+      "base1": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 3,
+        "want_streams": 2
+      },
+      "base2": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 3,
+        "want_streams": 2
+      }
+    },
+    "7": {
+      "arm1": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 4,
+        "want_streams": 2
+      },
+      "arm2": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 4,
+        "want_streams": 2
+      },
+      "base1": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 4,
+        "want_streams": 2
+      },
+      "base2": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 4,
+        "want_streams": 2
+      }
+    },
+    "8": {
+      "arm1": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true>"
+        ],
+        "streams": [
+          3
+        ],
+        "want_ipg": 3,
+        "want_streams": 3
+      },
+      "arm2": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true>"
+        ],
+        "streams": [
+          3
+        ],
+        "want_ipg": 3,
+        "want_streams": 3
+      },
+      "base1": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 4,
+        "want_streams": 2
+      },
+      "base2": {
+        "ipg": [
+          4
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>"
+        ],
+        "streams": [
+          2
+        ],
+        "want_ipg": 4,
+        "want_streams": 2
+      }
+    },
+    "9": {
+      "arm1": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>"
+        ],
+        "streams": [
+          3
+        ],
+        "want_ipg": 3,
+        "want_streams": 3
+      },
+      "arm2": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>"
+        ],
+        "streams": [
+          3
+        ],
+        "want_ipg": 3,
+        "want_streams": 3
+      },
+      "base1": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>"
+        ],
+        "streams": [
+          3
+        ],
+        "want_ipg": 3,
+        "want_streams": 3
+      },
+      "base2": {
+        "ipg": [
+          3
+        ],
+        "ok": true,
+        "path": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>"
+        ],
+        "streams": [
+          3
+        ],
+        "want_ipg": 3,
+        "want_streams": 3
+      }
+    }
+  },
+  "dispatch_readback_ok": true,
+  "entry_temp_c": {
+    "max": 43.29737854003906,
+    "min": 43.212406158447266,
+    "spread": 0.08497238159179688
+  },
+  "hypothesis_scorecard": {
+    "H_M6breakpoint": {
+      "contrast A: null at fixed M": true,
+      "contrast B: null at fixed M": false,
+      "step 2: argmax d1 = 5->6": false
+    },
+    "H_groupwidth": {
+      "contrast A: positive when the widest group grows 3 -> 4": false,
+      "contrast B: negative when the widest group shrinks 4 -> 3": false
+    },
+    "H_streams": {
+      "contrast A: null at constant streams": true,
+      "contrast B: positive, within the lenient band": true,
+      "step 2: argmax d1 at a stream boundary": true
+    }
+  },
+  "identity": {
+    "arm1": {
+      "base_sha": "01f69e18f3878c9565fee479581581d85cf481ce",
+      "cool_gate_vendored": "stalled_above_40C",
+      "dirty": "0",
+      "gpu_temp_c_after_vendored": "68.25711059570312",
+      "gpu_temp_c_before_vendored": "43.26642608642578",
+      "head": "f11d4c9704c9123264994e3cb34e97dcd44b0df7",
+      "host": "Apple",
+      "inner": "10",
+      "mem": "51539607552",
+      "reps": "21",
+      "shapes_only": "1",
+      "skip_stock": "1",
+      "started_utc": "2026-08-19T10:10:20Z",
+      "tag": "e46-arm-r1",
+      "widths": "1,2,3,4,5,6,7,8,9"
+    },
+    "arm2": {
+      "base_sha": "01f69e18f3878c9565fee479581581d85cf481ce",
+      "cool_gate_vendored": "stalled_above_40C",
+      "dirty": "0",
+      "gpu_temp_c_after_vendored": "88.1380386352539",
+      "gpu_temp_c_before_vendored": "43.212406158447266",
+      "head": "524d9262442de871c2fc2cce7b4a18c0e986d5d6",
+      "host": "Apple",
+      "inner": "10",
+      "mem": "51539607552",
+      "reps": "21",
+      "shapes_only": "1",
+      "skip_stock": "1",
+      "started_utc": "2026-08-19T10:20:15Z",
+      "tag": "e46-arm-r2",
+      "widths": "1,2,3,4,5,6,7,8,9"
+    },
+    "base1": {
+      "base_sha": "01f69e18f3878c9565fee479581581d85cf481ce",
+      "cool_gate_vendored": "stalled_above_40C",
+      "dirty": "0",
+      "gpu_temp_c_after_vendored": "69.70988464355469",
+      "gpu_temp_c_before_vendored": "43.29737854003906",
+      "head": "91694035d485ce30ace08f39d31891c32aeb4dfc",
+      "host": "Apple",
+      "inner": "10",
+      "mem": "51539607552",
+      "reps": "21",
+      "shapes_only": "1",
+      "skip_stock": "1",
+      "started_utc": "2026-08-19T10:00:02Z",
+      "tag": "e46-base-r1",
+      "widths": "1,2,3,4,5,6,7,8,9"
+    },
+    "base2": {
+      "base_sha": "01f69e18f3878c9565fee479581581d85cf481ce",
+      "cool_gate_vendored": "stalled_above_40C",
+      "dirty": "0",
+      "gpu_temp_c_after_vendored": "89.49411010742188",
+      "gpu_temp_c_before_vendored": "43.251495361328125",
+      "head": "16cefd0d62513cfa37ed9ddb674ae71318d4d2d3",
+      "host": "Apple",
+      "inner": "10",
+      "mem": "51539607552",
+      "reps": "21",
+      "shapes_only": "1",
+      "skip_stock": "1",
+      "started_utc": "2026-08-19T10:31:22Z",
+      "tag": "e46-base-r2",
+      "widths": "1,2,3,4,5,6,7,8,9"
+    }
+  },
+  "jit_spread_pct": {
+    "3": {
+      "arm1": 5.308449130751631,
+      "arm2": 7.918546257081986,
+      "base1": 5.630455529640619,
+      "base2": 4.714372137239656
+    },
+    "4": {
+      "arm1": 7.501702984002086,
+      "arm2": 5.797912531899492,
+      "base1": 3.6446876416664367,
+      "base2": 3.9766692092397955
+    },
+    "5": {
+      "arm1": 3.5354948563320274,
+      "arm2": 3.6067546473676666,
+      "base1": 4.172997374287371,
+      "base2": 2.188313069471981
+    },
+    "6": {
+      "arm1": 3.2689747003994705,
+      "arm2": 2.8238397145514273,
+      "base1": 1.4580491850205486,
+      "base2": 3.6702168006914353
+    },
+    "7": {
+      "arm1": 2.9683057770881054,
+      "arm2": 2.5591685226429006,
+      "base1": 3.3637614105289417,
+      "base2": 3.4144206115940303
+    },
+    "8": {
+      "arm1": 1.3464872389377975,
+      "arm2": 2.444354101026534,
+      "base1": 3.5695514323983586,
+      "base2": 1.4307690106509185
+    },
+    "9": {
+      "arm1": 1.2738853503184695,
+      "arm2": 1.5130973064470103,
+      "base1": 2.01112494516429,
+      "base2": 1.0449393099493387
+    }
+  },
+  "mde_ms": {
+    "1": 5.683223700000004,
+    "2": 0.11222599999999305,
+    "3": 1.6378819000000129,
+    "4": 0.29190040000000306,
+    "5": 0.4092688000000011,
+    "6": 0.42616279999996287,
+    "7": 0.11916869999994972,
+    "8": 0.1550338999999623,
+    "9": 0.1943906999999634
+  },
+  "order": [
+    "e46-base-r1",
+    "e46-arm-r1",
+    "e46-arm-r2",
+    "e46-base-r2"
+  ],
+  "prior_replication": {
+    "arm_head": "7b5183da9839537f6d7caf65adae46449ff77ea1",
+    "arm_tag": "e27-ipg-falsify-r1",
+    "arm_widths": "4,6,7,8",
+    "base_head": "f0bb9499a77b2ae8bf31213ef8166fa86ca7ecd1",
+    "base_tag": "e27-base-r1",
+    "base_widths": "1,2,3,4,5,6,7,8,9",
+    "delta": {
+      "4": {
+        "delta_ms": 33.104536200000034,
+        "pct": 39.83001483380535
+      },
+      "6": {
+        "delta_ms": -0.0162675000000001,
+        "pct": -0.012623634169728337
+      },
+      "7": {
+        "delta_ms": 0.03470889999998561,
+        "pct": 0.024956516655061378
+      },
+      "8": {
+        "delta_ms": 28.404601400000008,
+        "pct": 19.018240963218247
+      }
+    },
+    "replicates": {
+      "A": true,
+      "B": true
+    },
+    "sweep_matched": false
+  },
+  "refit_m6_indicator": {
+    "a_per_row": 19.720876514285717,
+    "b_indicator": -10.410072958333389,
+    "c_intercept": 13.25413082619047,
+    "max_abs_resid_ms": 11.348459732142828
+  },
+  "refit_shipped_streams": {
+    "a_per_row": 9.623980826785717,
+    "b_per_stream": 27.531580187500023,
+    "c_intercept": 16.756814341071433,
+    "max_abs_resid_ms": 0.7702013267857808
+  },
+  "sign_test": {
+    "A": {
+      "m": 6,
+      "n": 8,
+      "n_positive": 4,
+      "p_two_sided": 1.0,
+      "per_shape_pct": {
+        "full_attn.o_proj": 2.410835359304331,
+        "full_attn.qkv_proj_fused": 0.2394952431289843,
+        "head.compact_draft_vocab": -0.1418655915293221,
+        "head.lm_head": -0.24072172619366006,
+        "linear_attn.in_proj_fused_qkvzba": -0.004383913958383445,
+        "linear_attn.out_proj": 0.11086302641851731,
+        "mlp.down": -0.11134516494106794,
+        "mlp.gate_up_fused": 0.39651894974457313
+      },
+      "per_shape_us": {
+        "full_attn.o_proj": 4.5833499999999905,
+        "full_attn.qkv_proj_fused": 0.906250000000039,
+        "head.compact_draft_vocab": -3.252050000000263,
+        "head.lm_head": -13.758349999999469,
+        "linear_attn.in_proj_fused_qkvzba": -0.018749999999997068,
+        "linear_attn.out_proj": 0.21454999999997917,
+        "mlp.down": -0.5270500000000748,
+        "mlp.gate_up_fused": 3.3375000000001287
+      }
+    },
+    "B": {
+      "m": 8,
+      "n": 8,
+      "n_positive": 8,
+      "p_two_sided": 0.0078125,
+      "per_shape_pct": {
+        "full_attn.o_proj": 16.46150007397862,
+        "full_attn.qkv_proj_fused": 18.64705839255287,
+        "head.compact_draft_vocab": 21.11572376267141,
+        "head.lm_head": 21.34488993549748,
+        "linear_attn.in_proj_fused_qkvzba": 18.937234126932733,
+        "linear_attn.out_proj": 14.83288455498164,
+        "mlp.down": 16.53550882241617,
+        "mlp.gate_up_fused": 20.367858161100273
+      },
+      "per_shape_us": {
+        "full_attn.o_proj": 35.65835,
+        "full_attn.qkv_proj_fused": 81.44374999999998,
+        "head.compact_draft_vocab": 566.5770999999995,
+        "head.lm_head": 1429.9875499999994,
+        "linear_attn.in_proj_fused_qkvzba": 93.59175,
+        "linear_attn.out_proj": 32.60825000000003,
+        "mlp.down": 90.40825000000002,
+        "mlp.gate_up_fused": 199.9937000000001
+      }
+    }
+  },
+  "step2": {
+    "ranked": [
+      [
+        "4->5",
+        37.71779260000001
+      ],
+      [
+        "8->9",
+        36.83515380000003
+      ],
+      [
+        "7->8",
+        10.414116000000007
+      ],
+      [
+        "6->7",
+        10.0548359
+      ],
+      [
+        "3->4",
+        9.165126450000002
+      ],
+      [
+        "5->6",
+        8.45578424999998
+      ]
+    ],
+    "supports_H_M6breakpoint": false,
+    "supports_H_streams": true
+  },
+  "survivors": [
+    "H_streams"
+  ],
+  "tags": {
+    "arm1": "e46-arm-r1",
+    "arm2": "e46-arm-r2",
+    "base1": "e46-base-r1",
+    "base2": "e46-base-r2"
+  },
+  "verdict": {
+    "lines": [
+      "exactly one reading satisfies every registered prediction: H_streams",
+      "contrast A |+0.263| ms vs the worst untreated control |3.829| ms: A is SMALLER than the noise on unchanged code",
+      "contrast B +27.947 ms is 7.3x the worst untreated control"
+    ],
+    "mechanism_name": "weight-stream count ceil(M/IPG): the number of threadgroups that each re-read the whole weight tile",
+    "surviving": "H_streams",
+    "worst_control_abs_ms": 3.8285425500000088
+  },
+  "widths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ]
+}

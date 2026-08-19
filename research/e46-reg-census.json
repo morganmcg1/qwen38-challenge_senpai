@@ -1,0 +1,1090 @@
+{
+  "all_arms_equal": true,
+  "all_ok": true,
+  "any_exceeds_ceiling": false,
+  "ceiling": 108,
+  "cells": [
+    {
+      "argmax_width": 7,
+      "arm": "shipped",
+      "contrast": "A",
+      "edits": [],
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13038,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 55,
+          "device_loads": 858,
+          "peak_live_regs": 163,
+          "peak_live_values": 90
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 163,
+      "exceeds_ceiling": false,
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "kernel_wide_reg_max": 108,
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "A1_m6_ipg3",
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bf": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "treated_m": 6,
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "argmax_width": 6,
+      "arm": "treated",
+      "contrast": "A",
+      "edits": [
+        [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>",
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 4, true>"
+        ]
+      ],
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13631,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 56,
+          "device_loads": 894,
+          "peak_live_regs": 164,
+          "peak_live_values": 91
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 164,
+      "exceeds_ceiling": false,
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 4,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "kernel_wide_reg_max": 108,
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          2,
+          4
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "A2_m6_ipg4",
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bf": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "treated_m": 6,
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 1198,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 72,
+          "ipg": 4,
+          "na_cells": [
+            2,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "argmax_width": 7,
+      "arm": "shipped",
+      "contrast": "B",
+      "edits": [],
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13038,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 55,
+          "device_loads": 858,
+          "peak_live_regs": 163,
+          "peak_live_values": 90
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 163,
+      "exceeds_ceiling": false,
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "kernel_wide_reg_max": 108,
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "B1_m8_ipg4",
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bf": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "treated_m": 8,
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "argmax_width": 7,
+      "arm": "treated",
+      "contrast": "B",
+      "edits": [
+        [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>",
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true>"
+        ]
+      ],
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13459,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 56,
+          "device_loads": 886,
+          "peak_live_regs": 164,
+          "peak_live_values": 91
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 164,
+      "exceeds_ceiling": false,
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 3,
+        "9": 3
+      },
+      "kernel_wide_reg_max": 108,
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          2,
+          3
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "B2_m8_ipg3",
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bf": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 3,
+        "9": 3
+      },
+      "treated_m": 8,
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "argmax_width": 6,
+      "arm": "treated",
+      "contrast": "A+B",
+      "edits": [
+        [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>",
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 4, true>"
+        ],
+        [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>",
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true>"
+        ]
+      ],
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 14052,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 57,
+          "device_loads": 922,
+          "peak_live_regs": 165,
+          "peak_live_values": 92
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 165,
+      "exceeds_ceiling": false,
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 4,
+        "7": 4,
+        "8": 3,
+        "9": 3
+      },
+      "kernel_wide_reg_max": 108,
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          2,
+          4
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          2,
+          3
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "AB_timed_arm",
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bf": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 3,
+        "9": 3
+      },
+      "treated_m": 0,
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 1198,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 72,
+          "ipg": 4,
+          "na_cells": [
+            2,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    }
+  ],
+  "dirty_paths": 3,
+  "entry_max_equal": false,
+  "entry_point_reg_max": {
+    "A1_m6_ipg3": 163,
+    "A2_m6_ipg4": 164,
+    "AB_timed_arm": 165,
+    "B1_m8_ipg4": 163,
+    "B2_m8_ipg3": 164
+  },
+  "head": "a0a47502e73395d761c0af085366dbf823b7d38b",
+  "kernel_wide_reg_max": {
+    "A1_m6_ipg3": 108,
+    "A2_m6_ipg4": 108,
+    "AB_timed_arm": 108,
+    "B1_m8_ipg4": 108,
+    "B2_m8_ipg3": 108
+  },
+  "occupancy_equal_across_arms": true,
+  "occupancy_max_threads": {
+    "A1_m6_ipg3": {
+      "affine_qmv_fast_bf": 1024
+    },
+    "A2_m6_ipg4": {
+      "affine_qmv_fast_bf": 1024
+    },
+    "AB_timed_arm": {
+      "affine_qmv_fast_bf": 1024
+    },
+    "B1_m8_ipg4": {
+      "affine_qmv_fast_bf": 1024
+    },
+    "B2_m8_ipg3": {
+      "affine_qmv_fast_bf": 1024
+    }
+  },
+  "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>",
+  "readouts": {
+    "entry_point_reg_max": "affine_qmv_fast, everything inlined",
+    "kernel_wide_reg_max": "max over width cases ..._m<T, M, IPG, true>"
+  }
+}
