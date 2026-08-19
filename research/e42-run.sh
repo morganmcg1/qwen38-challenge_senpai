@@ -55,6 +55,19 @@ if ((dirty)); then
 fi
 python3 research/twin_audit.py quantized || exit 2
 
+# The kernel ships as a source string inside a C++ translation unit, so a Metal
+# syntax or template-arity error survives `swift build` and only surfaces as a
+# JIT failure minutes into the run. quantized.metal carries the
+# instantiate_quantized_* macros, so compiling it exercises every width case the
+# JIT will build, for ~24s.
+if ! xcrun -sdk macosx metal -std=metal3.1 -O2 -c \
+    Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal \
+    -I Vendor/mlx-swift/Source/Cmlx/mlx -o /dev/null 2>"${TMPDIR:-/tmp}/e42-metalcc.err"; then
+  echo "e42-run: quantized.metal does not compile at this arm; not spending a run" >&2
+  grep 'error:' "${TMPDIR:-/tmp}/e42-metalcc.err" | head -5 >&2
+  exit 2
+fi
+
 out="${root}/runs/${tag}"
 rm -rf "${out}"; mkdir -p "${out}/reports"
 

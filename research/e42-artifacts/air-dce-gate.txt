@@ -19,3 +19,27 @@ e42_pair_p0: lines=458 allocas=7 fma_f32=0 fmul=18 fadd=20 float_ops=38 vector_f
 e42_pair_p1: lines=462 allocas=7 fma_f32=0 fmul=18 fadd=20 float_ops=38 vector_float_ops=12 flops=38 device_loads=11 loads=35 loop_backedges=13 peak_live_regs=42 peak_live_values=34 types=['[16 x float]', '[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
 e42_pair_p2: lines=464 allocas=7 fma_f32=0 fmul=18 fadd=20 float_ops=38 vector_float_ops=12 flops=38 device_loads=11 loads=35 loop_backedges=13 peak_live_regs=42 peak_live_values=34 types=['[16 x float]', '[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
 
+
+== whole-PSO gate: the REAL scored kernel entry ==
+# xcrun -sdk macosx metal -std=metal3.1 -O2 -S \
+#   Vendor/mlx-swift/.../metal/kernels/quantized.metal -I Vendor/mlx-swift/Source/Cmlx/mlx
+# quantized.metal carries the instantiate_quantized_* macros, so this compiles
+# EVERY width case at every dtype/group_size/bits -- the same instantiations the
+# JIT builds. All five arm/level splices compile with 0 errors.
+# --match affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0
+
+psobase    lines=6963 allocas=110 fma_f32=0 fmul=225 fadd=280 float_ops=505 vector_float_ops=216 flops=505 device_loads=169 loads=472 loop_backedges=212 peak_live_regs=208 peak_live_values=138 types=['[16 x float]', '[4 x <2 x float>]', '[4 x <3 x float>]', '[4 x <4 x float>]', '[4 x <5 x float>]', '[4 x [4 x i16]', '[4 x float]']
+p22        lines=7141 allocas=110 fma_f32=0 fmul=225 fadd=280 float_ops=505 vector_float_ops=216 flops=505 device_loads=169 loads=472 loop_backedges=230 peak_live_regs=208 peak_live_values=138 types=['[16 x float]', '[4 x <2 x float>]', '[4 x <3 x float>]', '[4 x <4 x float>]', '[4 x <5 x float>]', '[4 x [4 x i16]', '[4 x float]']
+p61        lines=7040 allocas=110 fma_f32=0 fmul=225 fadd=280 float_ops=505 vector_float_ops=216 flops=505 device_loads=169 loads=472 loop_backedges=222 peak_live_regs=208 peak_live_values=138 types=['[16 x float]', '[4 x <2 x float>]', '[4 x <3 x float>]', '[4 x <4 x float>]', '[4 x <5 x float>]', '[4 x [4 x i16]', '[4 x float]']
+
+peak_live_regs=208 is IDENTICAL across base, p2L2 and p6L1, as are allocas,
+fmul, fadd, float_ops, device_loads and loads. The only delta is
+loop_backedges, and it matches the treated-cell count exactly:
+  p2 (widths 2-9): +18 = 10 inlined >=4096-tier bodies (2,3,4,5,6,8 -> 1 each;
+                        7,9 -> 2 each, two distinct NA groups) + 8 lower-tier
+                        pair-kernel bodies.  observed 230-212 = +18
+  p6 (widths 6-9): +10 = 6 upper-tier bodies (6,8 -> 1; 7,9 -> 2) + 4 lower-tier
+                        pair bodies.        observed 222-212 = +10
+So every treated cell got its pass loop, no untreated cell did, and no loop was
+eliminated. Level 2 adds no backedge over level 1 (same rolled loop), which is
+why p2L2 and p2L1 share the +18.
