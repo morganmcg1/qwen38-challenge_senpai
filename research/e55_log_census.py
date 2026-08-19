@@ -149,6 +149,67 @@ def main() -> int:
                 s["arms"]["base_twins_no_runtime"]["distinct_failing_tests"]),
         })
 
+    ceiling_path = pathlib.Path("research/e55-ceiling-term.json")
+    if ceiling_path.exists():
+        t = json.loads(ceiling_path.read_text())
+        reg = t["register_decomposition"]
+        fit = t["measured_vs_two_term"]
+        pr = t["ranked_prereg"]
+        bs = t["advisor_prize_back_solve"]
+        gap = t["width_mixture_gap"]
+        anom = t["e27_conversion_anomaly"]
+        summary.update({
+            "ceiling/hard_gate_shipped_table_reads_108":
+                reg["hard_gate_shipped_reads_108"],
+            "ceiling/candidate_register_identical_to_e27":
+                reg["candidate_is_register_identical_to_e27"],
+            "ceiling/e27_ceiling_set_by_widths":
+                json.dumps(reg["e27_ceiling_set_by_widths"]),
+            "ceiling/e27_case5_cell_below_ceiling":
+                reg["e27_case5_is_below_ceiling"],
+            "ceiling/widths_where_candidate_differs_from_e27":
+                json.dumps(reg["widths_where_candidate_differs_from_e27"]),
+            # The second term is a requested correction to a model whose arms had
+            # already run, so it is explicitly not a pre-registration.
+            "ceiling/two_term_is_pre_registration": False,
+            "ceiling/predicted_one_term_pct":
+                fit["predicted_pct"]["one_term_cell_only"],
+            "ceiling/predicted_two_term_e27_pct":
+                fit["predicted_pct"]["two_term_e27_ceiling_magnitude"],
+            "ceiling/predicted_two_term_e49_local_pct":
+                fit["predicted_pct"]["two_term_e49_local_dose_reading"],
+            "ceiling/residual_one_term_pp":
+                fit["residual_pp"]["one_term_cell_only"],
+            "ceiling/residual_two_term_e27_pp":
+                fit["residual_pp"]["two_term_e27_ceiling_magnitude"],
+            "ceiling/best_fitting_variant": fit["best_fitting_variant"],
+            "ceiling/fit_improvement_factor": fit["fit_improvement_factor"],
+            "ranked_prereg/h_ceiling_dscore_pct":
+                json.dumps(pr["h_ceiling"]["predicted_ranked_dscore_pct"]),
+            "ranked_prereg/h_m5cell_dscore_pct":
+                json.dumps(pr["h_m5cell"]["predicted_ranked_dscore_pct"]),
+            "ranked_prereg/separation_pct": pr["separation_pct"],
+            "ranked_prereg/separation_in_ranked_mde": pr["separation_in_mde"],
+            "ranked_prereg/discriminating": pr["discriminating"],
+            "prize/implied_ranked_f9_band_pct":
+                json.dumps(bs["implied_ranked_f9_band_pct"]),
+            "prize/implied_band_exceeds_e48_mixture":
+                bs["implied_band_exceeds_e48"],
+            "prize/e49_m9_half_implied_f9_pct":
+                bs["e49_m9_half_1_3625"]["implied_f9_pct_no_g"],
+            "mixture/local_mean_verify_width": gap["local_mean_verify_width"],
+            "mixture/central_pair_gap_rows_min": gap["gap_rows_min"],
+            "mixture/central_pair_gap_rows_max": gap["gap_rows_max"],
+            "mixture/gap_positive_under_both_readings":
+                gap["gap_positive_under_both_readings"],
+            "anomaly/e27_implied_dscore_per_mtp_leg":
+                anom["implied_dscore_per_mtp_leg"],
+            "anomaly/e27_conversion_ratio_to_psi_mtp": anom["ratio_to_psi_mtp"],
+            "ceiling/negative_controls_all_fire":
+                t["negative_controls"]["all_fire"],
+            "ceiling/verdict_ok": t["verdict_ok"],
+        })
+
     api = wandb.Api()
     run = api.run("%s/%s" % (PROJECT, args.run))
     run.summary.update(summary)
