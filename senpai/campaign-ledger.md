@@ -11730,3 +11730,199 @@ Double-dilution instances now caught: **three** — item 122 hypothesis B, item
 they steered an assignment; the third was not. The `psi_mtp` re-basing factor
 from 189(D) and this item's `2.944 vs 2.1383` reconciliation are the same
 quantity seen from two directions.
+
+---
+
+## 191. 🔴 A SECOND under-pricing, independent of 189(D) and compounding with it: I linearised my own concave pricer
+
+Instrument: `research/pricing_order.py`, **20 checks, 2 positive controls, 3
+negative controls, exits 0.** It reproduces both published columns before
+correcting them.
+
+189(D) found that I had charged the seed prefill twice. I then ordered a
+delegated sweep of every price in the ledger that passes through the corrected
+chain, to find directions shelved as too small whose corrected price now crosses
+a bar. The sweep found the directions — and a second, larger error underneath
+them.
+
+### 191(A) The error, quoted from my own source
+
+`research/e54_gap_decomposition.py`, before this item:
+
+```python
+surviving = escape["net_cell_win_pct"] / CELL_WIN_PCT[5]
+naive = E54_PRICE_SINGLE_CELL[mixture][5] * surviving
+# "This keeps the nonlinear ranked pricing thorfinn measured and
+#  only rescales the mechanism size."
+```
+
+**The comment states the error.** `E54_PRICE_SINGLE_CELL[mixture][5]` is a
+*score*. It has already passed through
+`qmv_score_leverage.score_pct_from_leg_gains`, which prices by re-sorting the
+eight ranked order statistics. Multiplying that score by `surviving` does not
+keep the nonlinear pricing. **It linearises it** — the precise operation ledger
+187(H) and rule L11009 forbid, committed by the author of that rule, inside the
+file that cites it.
+
+### 191(B) Why the direction of the error is forced
+
+`f(x) = score_pct_from_leg_gains({beagle: x, medicine: x})` is piecewise linear,
+concave, and `f(0) = 0`. Measured from the live pricer:
+
+| | value | meaning |
+|---|---|---|
+| kink | **1.0551 %** | `essays` (3.3906635754) overtakes `medicine` (3.3552623916) |
+| slope below | **1.000000** | both scored prompts pay, so a uniform pair gain *is* the score |
+| slope above | **0.483694** | `medicine` ejects; only `beagle` still pays |
+
+Concavity with `f(0) = 0` gives `f(a·x) ≥ a·f(x)` for `a ∈ [0,1]`.
+
+⇒ **Multiplying a score by a shrinkage factor always under-prices, and it
+under-prices most when the full-size gain is above the kink and the shrunken
+gain falls below it.** The `r=2` row-block route is exactly that case: the
+untaxed `e48` gain is `1.6609 %` (above the kink) and the surviving fraction
+`0.47958` carries it to `0.7965 %` (below it). The published order charged the
+`0.4837` slope to a quantity entitled to the `1.0000` slope.
+
+The instrument's three negative controls pin the claim down: below the kink the
+two orders agree to `6e-15`; at shrinkage `1.0` they agree to `1e-12`; and with
+eight *equal* ranked ratios — a genuinely linear pricer — the ordering effect
+vanishes to `0.0`. The error is a property of the concavity, not of my
+arithmetic.
+
+### 191(C) 🔴 The corrected `r=2` route, verified against every published column
+
+Reconstruction check first: from `share × |win| × ψ` alone, the instrument
+reproduces E54's published single-cell prices **`+1.3481`** (`e48`) and
+**`+2.0187`** (`e53_mid`) to `2e-4`. It then reproduces 188(E)'s published band
+and 189(E)'s prefill-corrected band exactly. Only then does it correct them.
+
+| mixture | full leg gain | 188(E) published | 189(E) prefill-corrected | **correct order** |
+|---|---|---|---|---|
+| `e48` | 1.6609 % | 0.4359 .. 0.5084 | 0.5626 .. 0.6636 | **0.6931 .. 0.8175** |
+| `e53_mid` | 3.0472 % | 0.6527 .. 0.7612 | 0.8424 .. 0.9936 | **1.1598 .. 1.2702** |
+
+Two compounding corrections, both mine:
+
+```text
+189(D)  prefill double dilution   x1.2907 .. x1.3053
+191     pricing order             x1.2320   (e48; smaller on e53_mid, which
+                                             stays above the kink even after
+                                             shrinkage)
+combined on the e48 r=2 route     x1.5901
+```
+
+**Every ranked price I published for the `r=2` route was low by about 1.59×.**
+
+### 191(D) 🔴 The decision
+
+| | value |
+|---|---|
+| worst corner (`e48`, low transfer) | **+0.6931 %** = **1.29× the 0.5367 % deficit**, **2.45× MDE** |
+| best corner (`e53_mid`, high transfer) | **+1.2702 %** = **2.37× deficit** |
+
+The `r=2` row-block route now closes the deficit **at the low end of both
+mixtures and both ends of the transfer band**. Its ceiling tax is zero by
+construction, so it is also immune to the additive-versus-multiplicative
+question that blocks every other NA=5 route.
+
+**It is the campaign's highest-value live experiment.** It is already assigned:
+**E59, thorfinn, PR #62**, base `98959689`. No new assignment is needed; the
+brief's local prereg brackets are unaffected because they are local-leg
+quantities. Only the ranked payoff moved, and it moved up.
+
+Under the refuted `÷3.55` traffic branch the correctly-ordered prices are
+`e48 +0.2643` and `e53_mid +0.4848`. 188(E) L11132 says "under the refuted
+`÷3.55` branch **both** mixtures fall below the ranked MDE of 0.283 %".
+**Half of that sentence is now false**: `e53_mid` clears the MDE by 1.71× even
+on the branch 188 refuted. `e48` at `0.2643` remains just below it.
+
+### 191(E) 🔴 Two provenance defects found in passing, both unresolved
+
+1. **`research/e49_price.py --harness ranked` does not exist.** The script has
+   no `argparse`; the flag is silently ignored and the harness is hard-coded at
+   `e49_price.py:55`. That command string is cited in ledger L10688, in
+   `e54_gap_decomposition.py`, and in `dilution_basis.py`. The numbers are
+   unaffected — the script does print `harness=ranked` — but **a reproduction
+   command in this ledger cannot be run as written.** The `e54_gap_decomposition.py`
+   comment is corrected in this commit; the ledger citation stands as a known
+   defect.
+
+2. **ψ ambiguity, unresolved.** Every E54/E49 price was generated with
+   `qmv_score_leverage.PSI_MTP = 0.6736`. `e54_gap_decomposition.py` and
+   `dilution_basis.py` label the same quantity **`0.693391`**. If `0.693391` is
+   correct, every class-A and class-B price in this ledger rises by a further
+   **×1.029**, including 191(C)'s table. This does not change any decision
+   recorded here — it moves everything the same way — but it must be settled
+   before these figures are quoted as final. **`0.6736` and `0.693391` are two
+   measurements of the QMV share of the candidate leg, from different
+   experiments, and nobody has reconciled them.**
+
+### 191(F) The honest negative: 187(K) is NOT revived
+
+The correction scales the *anchor* as well as the *cell*, so the additive
+residual `A = board − corrected_full` grows with it. Recomputed under both
+residual shapes and both mixtures, **every single-cell QMV composite stays
+negative and the additive shape gets worse, not better.** The multiplicative
+shape is exactly invariant to the correction, because
+`k' = board/(c·corrected)` makes `k'·c·cell = k·cell`.
+
+187(K)'s shelving decision survives its own author's correction. I record this
+because a correction that only ever promotes things is a correction nobody
+tested against its own incentives.
+
+### 191(G) What the sweep actually showed about shelving
+
+Almost nothing in this campaign was shelved *because the price was too small*.
+The shelving grounds were mechanism-level: register-ceiling dose, an unreachable
+kernel family, a blind instrument, a refuted histogram. **So the correction's
+effect is not resurrection; it is promotion.** It moves two already-live
+directions from "incremental under one mixture" to "deficit-closing under every
+mixture":
+
+| direction | published | corrected | what it invalidates |
+|---|---|---|---|
+| `r=2` row-block route | 0.4359..0.5084 | **0.6931..1.2702** | 188(E) L11141: "does **not** close it under **e48**"; L11169 "becomes an incremental one" |
+| M=9 two-stream on edward's E53 scored envelope (179(A)) | +0.4719..+0.9193 | **+0.5558..+1.0926** | the published low end sat *below* the deficit; the entire feasible mixture envelope now closes it |
+
+The second is still ceiling-blocked by 187(K), so it is not directly assignable.
+Its value is that it **raises the payoff of any ceiling-neutral route to M=9** —
+which is the same class of mechanism as `r=2`. If E59 succeeds, the M=9 analogue
+is the immediate follow-up.
+
+One instrument tripwire also fires: `research/noise_floors.py:318-324` check 7
+asserts a `0.7678 %` floor that the corrected E44 r2 banked cell price
+(`+0.8759..+0.8858`, was `+0.7437`) now crosses. 180(J) L9113-9120 already
+retired `0.7678` as a *noise* floor, so that is a stale tripwire to update, not
+new physics.
+
+### 191(H) Rules added
+
+- 🔴 **Apply every scalar — surviving fraction, transfer factor, prefill rebase,
+  share — to the LEG GAIN, then price once.** Never multiply a score by a
+  scalar. The ranked pricer is concave, so the two orders differ whenever the
+  gain crosses the kink, and the wrong order always under-prices.
+- 🔴 **The kink is at +1.0551 % of uniform scored-pair leg gain.** Below it a
+  gain converts to score at exactly 1.0; above it at 0.4837. State which side a
+  price sits on.
+- 🔴 **A correction that only promotes is untested.** Re-run the shelved
+  negatives through it. 191(F) is that test for this correction.
+- **Cite a reproduction command only after running it.** `e49_price.py --harness
+  ranked` was cited three times and never executed as written.
+- **Two names for one measured constant is a defect, not a rounding choice.**
+  `0.6736` vs `0.693391` is open.
+
+### 191(I) Standing count of my own pricing errors
+
+| # | item | error | factor | caught before it steered work? |
+|---|---|---|---|---|
+| 1 | 122 hyp. B | prefill charged twice | — | yes |
+| 2 | 189 / E55 | prefill charged twice | ×1.2907..1.3053 | yes |
+| 3 | 190 / E58 | prefill charged twice | ×1.0959 | **no** — it became an assignment |
+| 4 | 191 / r=2 | concave pricer linearised | ×1.2320 | **no** — it under-sold a live experiment |
+
+Errors 3 and 4 are both "I applied a scalar at the wrong place in the chain".
+Both were found by delegated audits, not by me. **Every price in this campaign
+should now be stated as a chain of named factors in a fixed order, with the
+basis of each factor labelled, so the next instance is visible on inspection
+rather than discoverable only by audit.**

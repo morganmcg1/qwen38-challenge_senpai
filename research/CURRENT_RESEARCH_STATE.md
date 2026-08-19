@@ -1,7 +1,7 @@
 # SENPAI Research State
 
-- 2026-08-19, after merging E54 (PR #58) and reviewing E55 (PR #57).
-  Campaign base `7cba4ddb`.
+- 2026-08-19, after merging E54 (PR #58), reviewing E55 (PR #57), and auditing
+  my own pricing chain twice (ledger 190, 191). Campaign base `6870bdb4`.
 - Most recent human research direction: issue #22 -- execute aggressively
   toward the winning frontier. Issue #31 is complete and closed. No new human
   direction is outstanding.
@@ -44,6 +44,41 @@ calibrations sharing no input agree on the underlying round-basis share to
 0.36 %. **This flips the `r=2` route from closing the deficit under one mixture
 to closing it under both.**
 
+🔴🔴 **A THIRD and a FOURTH pricing error landed this round, both mine, both
+found by delegated audit, both compounding with 189(D).**
+
+- **190 / E58.** The dispatch prize published as "2.2 % of the ranked leg /
+  2.0 % of score / 7.1 sd" carried the **local** dispatch count onto the ranked
+  leg. Ranked `beagle` runs 107 rounds at mean draft 4.5327; our local arm ran
+  76 at 6.5132, and dispatches per round are a step function of width.
+  Recomputing gives **0.86 .. 3.44 %** of the ranked leg, and the `x0.9125` that
+  produced "2.0 %" was a third double dilution. **E58 survives**: the low end is
+  3.0x MDE, and the corrected per-prompt table shows the band is near-uniform
+  across all eight prompts, so it moves the median directly rather than through
+  the central-pair weight. Instrument `research/e58_dispatch_repricing.py`,
+  20 checks, exits 0.
+- **191 / the `r=2` route.** I multiplied a **score** by a shrinkage factor.
+  The ranked pricer is **concave** — kink at `+1.0551 %`, slope `1.0000` below
+  and `0.4837` above — so `f(a.x) >= a.f(x)` and the wrong order always
+  under-prices. Every `r=2` price I published is low by a further **1.59x**.
+  Instrument `research/pricing_order.py`, 20 checks, 2 positive and 3 negative
+  controls, exits 0; it reproduces both published columns before correcting
+  them.
+
+**Corrected `r=2` route: `+0.6931 .. +1.2702 %` of score** — 1.29x to 2.37x the
+deficit, at the low end of *both* mixtures and *both* ends of the transfer band,
+with a ceiling tax of zero by construction. It is the campaign's
+highest-value live experiment and it is already assigned as **E59 / PR #62**.
+
+Standing count of my pricing errors: **four**. Two were caught before they
+steered work; two were not. Errors 3 and 4 are both "a scalar applied at the
+wrong place in the chain". **Every price must now be stated as a chain of named
+factors in a fixed order with the basis of each factor labelled.**
+
+Unresolved and blocking final figures: `psi` is `0.6736` in the live pricer and
+`0.693391` in my own files. If `0.693391` is right, every price above rises a
+further `x1.029`. Nobody has reconciled the two measurements.
+
 Three consequences drive everything currently in flight.
 
 1. **Only an edit that leaves the QMV kernel maximum unmoved can win.**
@@ -73,7 +108,7 @@ Three consequences drive everything currently in flight.
 | #57 | qwen-askeladd | E55 `<T,9,5>` end to end. **Terminal result in, revision requested.** Clean -4.2952 % local leg win, bitwise exact at 512 tokens including post-EOS continuation, 14/14 negative controls firing. Census 129 against the shipped 108, so it fails the register gate and is **not a candidate on merit**. It is nonetheless **register-identical to E27** while carrying only one of E27's two cells, so an official score contrasted with E27's receipt isolates the M=5 cell at rank **with the ceiling term cancelling exactly**. Revision asks for `--local-submit` plus reconciliation of 189(G). |
 | #59 | qwen-edward | E56 stream-aware draft depth schedule. |
 | #61 | qwen-alphonse | E58 round dispatch census and buffer batching -- also an independent occupancy cross-check on the ceiling question. |
-| E59 (assigning) | qwen-thorfinn | The `r=2` row-block route itself, gated on its own register census. It is now the **highest-value assignment in the campaign**: frontier-taking under every mixture on the table and immune to the ceiling question by construction. |
+| #62 | qwen-thorfinn | E59, the `r=2` row-block route itself, gated on its own register census. **The highest-value experiment in the campaign**: `+0.6931..+1.2702 %` after the 190/191 corrections, frontier-taking at the low end of every mixture and every transfer end, and immune to the ceiling question by construction. |
 
 ## Potential next research directions
 
@@ -90,11 +125,14 @@ ever fit under it.
 
 Its ceiling tax is **zero by construction**, which makes it immune to the
 additive-versus-multiplicative question that governs everything else in the
-QMV direction. With 189(D)'s dilution correction the calibrated forecast is
-**+0.84..+0.99 %** under e53_mid and **+0.56..+0.66 %** under e48 -- **both
-above the 0.5367 % deficit**, and 2.0x to 3.5x the ranked MDE. Gated on
-measuring the real `r=2` tax at NA=5 (+10.54 % at NA=4, but the `x` volume is
-25 % larger) and on its own register census.
+QMV direction. After **both** pricing corrections (189(D) prefill rebase and
+191 shrink-then-price) the calibrated forecast is **+1.1598..+1.2702 %** under
+e53_mid and **+0.6931..+0.8175 %** under e48 — **1.29x to 2.37x the 0.5367 %
+deficit**, and 2.45x to 4.49x the ranked MDE, at the low end of both mixtures
+and both ends of the transfer band. Even on the `/3.55` branch that 188 refuted,
+e53_mid clears the MDE by 1.71x. Gated on measuring the real `r=2` tax at NA=5
+(+10.54 % at NA=4, but the `x` volume is 25 % larger) and on its own register
+census. Assigned as E59 / PR #62.
 
 **The mixture dispute is still open, and nothing in flight resolves it**
 (188(E), retracted). #57 measured the **local** fixture's `f9 = 55.4 %`, which
@@ -121,11 +159,85 @@ the single reachable `kL=1024` round, at qL=4 with no chunk. The ranked
 512+512 window **always** reaches this boundary. This is a survival direction,
 not a speed direction.
 
-**Tier 2 -- dispatch-count reduction.** 186(D) prices a dispatch at ~22 us.
-Arm A's 6163 SDPA dispatches are 0.74 % of the local leg but **2.2 %** of the
-ranked beagle leg, which is 2.0 % of score = 7.1 sd. This is a latency-bound
-term, so it transfers at 1:1 or better -- the most favourable transfer class we
-have. PR #61 owns the census.
+**Tier 2 -- dispatch-count reduction. Re-priced by ledger 190; the published
+"2.2 % / 2.0 % / 7.1 sd" is withdrawn.** A dispatch costs **at most** 22.26 us
+(the constant divides a timing delta by a dispatch-count delta, and the added
+dispatches did real work). Arm A's 6163 SDPA dispatches are at most 0.748 % of
+the local leg. The ranked count must be **recomputed**, not carried: ranked
+`beagle` runs 107 rounds at mean draft 4.5327 against our 76 at 6.5132, and
+dispatches per round are a step function of width. Two routes agree:
+**0.86 .. 3.44 %** of the ranked leg by direct recount, **1.90 %** by 188(A)'s
+`R/tau` at `tau = 1`. Low end is 3.0x MDE. This is a latency-bound term, the
+most favourable transfer class we have. **The band is near-uniform across all
+eight prompts (0.85 .. 3.5 %), so the win moves the median directly rather than
+through the central-pair weight** -- a better argument than the beagle-specific
+one E58 was assigned on. PR #61 owns the census, and must now report it **per
+round width** `d(M)` for `M = 1..9`, because a leg total is unidentifiable at
+rank by 184(D) while a per-width table is not.
+
+**🔴 Tier 1 QUEUE -- assign to the next free student, in this order.** From a
+frontier-model synthesis over the full ledger, checked against `benchmark.json`,
+the 712-tree rival field, and every refutation on record. All four have a
+zero-GPU or near-zero-GPU first rung, so none of them blocks on a Mac.
+
+1. **Certified exact target LM-head screening.** The verify epilogue evaluates
+   all 248,320 exact target logits per round (~715 MB of unique weight stream)
+   and then reduces top-two. Only rows that can reach top-2 need exact
+   evaluation. An offline, input-independent conservative bound plane (per-row
+   block-max plus per-group scale norms) screens rows; survivors get exact
+   affine-4 evaluation with **identical per-row arithmetic**, so top-two IDs and
+   values are bit-identical whenever the survivor set provably contains the true
+   top-2. It lands in a **new kernel library**, so it has **zero interaction
+   with the 108-register floor**, and the sidecar lives in
+   `Sources/MLXFastTransform/`, which **no rival tree has touched**. LM-head plus
+   top-2 is 5 % of local round time and is bandwidth-class, so it transfers near
+   1:1. A 60-80 % cut is `+2.0..+2.9 %` of score; even 25 % capture clears the
+   deficit. **First rung is free**: dump traced per-round hidden vectors, compute
+   the bound plane in Python, measure survivor density p50/p99. Kill if plane
+   bytes plus survivor bytes reach ~0.5x the stock stream. Named by
+   `laguna-to-qwen-speedup-map.md` as the largest unclaimed concept, and
+   Laguna's version was **promoted**. Never measured here -- grep confirms it.
+2. **`mx.compile` the head draft chain.** Each draft step pays ~2.4 ms of **host
+   graph build** (`Qwen36MTPBlockSession.swift:649, 1048-1049` says so in its own
+   source). At beagle/medicine depths that is 11-13 ms per round of host time --
+   the transfer class ledger 190 just re-priced upward. `CompiledDecode.swift`
+   and `CompilableKVCache.swift` are editable and have **zero mentions across all
+   712 rival trees**. The full target is ineligible (48 SSM layers) but the head
+   is fc plus one full-attention layer plus norms, which is exactly the eligible
+   shape. 181(C) retracted the *recovery* claim, not the mechanism: E29 closed
+   commit geometry, never graph build. Realistic capture `+0.5..+2.0 %`.
+   Use an `MLX_`-prefixed switch; `MLXFAST_` is stripped by the worker allowlist.
+3. **Hierarchical certified shortlist for the head's coarse readout.** The flat
+   2-bit scan over 98,336 compact-vocab rows is ~40 % of every head step, and the
+   head step is ~86 % pure weight streaming at a measured, saturated 243 GB/s, so
+   byte cuts convert near 1:1. Replace it with an 8-bit per-block-of-64 upper
+   bound (~1/32 of the bytes) plus an exact 2-bit scan of only the blocks that
+   can reach the top-32 shortlist. The shortlist is provably identical, so drafts
+   are identical and the frozen accept trajectory is preserved. The artifact
+   derives from declared head weights and must be digest-pinned under
+   `mtp-head/` (428 MB of the 2 GiB cap is used). **This changes zero weights**,
+   so it is not the head-replacement direction that two scored receipts closed.
+   `+1.5..+2.2 %`. First rung is free: first-stage recall of the true top-32 and
+   surviving-block density, from traced steps.
+4. **A composition vehicle for the five exact sub-MDE wins.** Five hand-verified
+   bit-exact micro-wins have never landed because each is individually sub-MDE
+   and the ledger keeps deferring them for want of a vehicle: the frontier's
+   `warmTargetLaterWindowSDPA` import (the only mechanism present in the promoted
+   frontier and absent from us), `pendingPrimaryDevice`, dead-KV-GEMM elision,
+   fused last-merge plus final RMSNorm, and the top-32 finalize k-way merge.
+   One PR, five hunks, each with its own bit-exactness fingerprint A/B, one
+   pooled ABBA absolute-leg measurement, leave-one-out attribution only if the
+   pooled result clears 3x the local floor. Aggregate `+0.2..+0.5 %` at near-zero
+   risk. **Hand-apply hunk by hunk; never file-copy** (181(J)'s `reachedStopToken`
+   trap).
+
+Lower in the same synthesis and not yet worth a slot: GDN checkpoint economics
+(the scan writes `(S-1) x 151 MB` of fp32 mid-states per drafting round and
+nobody has measured who consumes them -- the free first rung is to split
+`rollbackRoundCount` by `draftCount`); GDN values-per-thread (bit-identical by
+construction, but the loads are largely L2-served); and a receipt-calibrated
+acceptance prior, which belongs to edward's live E56 as a calibration arm rather
+than a competing slot.
 
 **Tier 2 -- compose-only wins, never a dedicated slot.** paul-hf's dead-KV-GEMM
 elision (provably bit-exact, ~0.04 %); `pendingPrimaryDevice` (pure slice);
