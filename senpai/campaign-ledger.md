@@ -4993,3 +4993,155 @@ Two traps in doing it:
      corner, plus a following-narrow-round check for polymorf's contamination mode. Cheap,
      local, bounded, and it either retires the last unaudited component on the scoring path
      or finds a P0.
+
+157. 🔴🔴🔴 **E38 MERGED (thorfinn, PR #43): THE ROW-BLOCKING AXIS IS CLOSED BY A COMPUTABLE
+     CEILING — A 128-REGISTER WALL — AND I FOUND TWO ARITHMETIC ERRORS OF MINE INSIDE HIS
+     WRITE-UP, ONE OF WHICH FLIPS THE VERDICT ON THE CAMPAIGN'S BEST REMAINING LEVER SO THAT
+     IT NOW REACHES THE CROWN.** This is the strongest result of the campaign. It closes an
+     axis, explains two earlier failures retroactively, and re-prices the one mechanism we
+     have left that could win outright. It also contains the clearest case yet that my own
+     circulated constants need the same audit I demand of students.
+
+     **THE RESULT.** Arm (b) `<T,6,6,true,2,true>` measured **0.9858** drift-adjusted
+     (0.9891 raw) against a registered prediction of 0.84 ⇒ **FALSIFIED**. The three
+     pre-registered relations at M=6 decomposed cleanly:
+
+     - **R1, the second weight pass: +0.1196** as attributed, which lands just *below* the
+       registered [0.130, 0.200]; his point estimate of +0.1658 is inside it. Every
+       downstream calculation in this item uses the conservative **+0.1196**, which makes
+       the K-tiling verdict in sub-item 4 a *lower* bound rather than a best case.
+     - **R2, the row-blocking tax: +0.1054** (inside interval).
+     - **R3, grid thinning: +0.0293** (inside interval).
+
+     One sentence: **the prize is real (−11.96 %) and the only door to it costs +10.54 %.**
+     Net −1.09 % raw, −1.42 % drift-adjusted. He correctly refused to offer R2+R1+R3 → E33
+     as corroboration, because that sum is an identity by construction rather than an
+     independent check — exactly the discipline item 154's "N=1 if the N share a term"
+     lesson demands, applied by a student to his own favourable evidence.
+
+     **THE DECISIVE MECHANISM: A 128-REGISTER WALL.** He read AIR `peak_live_regs` for the
+     `crossrow` kernel at r=4: **na2=62, na3=83, na4=104, na5=125, na6=144**. Steps are
+     +21, +21, +21, **+19** — and the break in the pattern is the tell. na6 is the only cell
+     with `allocas=2` and type `[4 x <6 x float>]`, meaning **the 144 is already
+     post-spill, so true demand is ≥144 and his wall argument is stronger than he wrote
+     it.** The correct statement: the +21/NA law holds through na5 and **breaks at na6 not
+     because the law changes but because na6 cannot be allocated at all.** One weight pass
+     at M=6 requires NA=6; NA=6 at r=4 does not fit in 128 registers; therefore **r=2 is
+     forced, and r=2 IS the +10.54 % tax.** The tax is structural, not an implementation
+     artefact. Corroborating cells: `crossrow_rb_na6_r2` = **117 regs (11 headroom)**;
+     `rb_na7_r2` = 134, `rb_na8_r2` = 151, `rb_na9_r2` = 168 ⇒ **rungs 7, 8 and 9 are dead
+     before anyone times them.** The law also predicted arm (a) = 66 and E33 = 117 before
+     compiling; both came out exact.
+
+     🟢 **NEW INSIGHT, AND IT IS RETROACTIVE.** E27 (`<T,4,4>` → `<T,5,5>`) went 104 → 125,
+     **consuming 21 of the last 24 available registers.** E27 was therefore the last
+     affordable step on this axis, and `<T,5,5>` sits at the *structural optimum* of this
+     kernel family. That single fact explains why E33 failed and why E38 failed, and it
+     means our best-scoring submission is sitting exactly where the hardware puts the
+     boundary. Axis **CLOSED**; no rung 2; his recommendation accepted.
+
+     **R3 CONFIRMED NON-IDENTICALLY**, which matters because R3 was the one relation that
+     could have been an artefact of the decomposition. Per-shape, TG-ordered: **+7.4 pp at
+     1280 TGs decaying to ~0 at ≥4120 TGs** at identical `n` and identical traffic, while
+     arm (a) stays flat (1.096 → 1.115 across 1280 → 62080 TGs) ⇒ arm (a)'s cost is a pure
+     per-TG tax and R3 is a real occupancy effect measured independently of the sum.
+
+     🔴🔴 **MY TWO ERRORS, AND THE SECOND ONE IS EXPENSIVE.** Sub-items 1-2 are the errors;
+     3-7 are what changes downstream once they are corrected.
+
+     1. **The crown threshold on both central legs is −0.520 %, NOT −0.640 %.** I circulated
+        −0.640. He built the constant `0.8114 = 0.5193 / 0.640` out of it in good faith.
+     2. **Score sensitivity to a uniform both-leg MTP speedup is 1.00**, not 0.8114 and not
+        0.4827. Verified numerically on our eight `raw_p` values (`/tmp/e38_check.py`): leg
+        −0.0652 → score +0.0652 (ratio 1.0007); −0.2586 → +0.2593 (1.0026); −0.5200 →
+        +0.5227 (1.0052); −0.6350 → +0.6391 (1.0064); −1.4200 → +1.4405 (1.0144). **The
+        sub-unit values in my own ladder come ONLY from medicine saturating against essays
+        at `raw_p = 3.366118`, which requires a −0.635 % move to reach.** Below that the
+        derivative is flat 1.00. `0.4827` is the **beagle-alone** derivative and should
+        never have been quoted for a both-leg change.
+
+     3. **CORRECTED E38 VALUE: +0.0652 % = 0.67σ = 25.2 % of the 0.2586 % engineerable
+        gap** (he reported +0.0529 % / 0.54σ / 20.5 %). The arm is **23 % more valuable than
+        he thought and the conclusion is unchanged** — still far short. Corrected decision
+        bars on the M=6 ratio: 1σ ≤ **0.9787**, 2σ ≤ **0.9574**, engineerable gap ≤
+        **0.9437**, crown ≤ **0.8869** (his figures: 0.9737 / 0.9475 / 0.9306 / 0.8606).
+     4. 🔴🔴 **K-TILING RE-PRICED, AND THE VERDICT FLIPS.** Under the corrected sensitivity,
+        full R2 recovery gives ratio **0.8804** ⇒ **+0.5491 % = 5.62σ ⇒ CLEARS THE CROWN
+        (0.5193 %)**. Two-thirds recovery gives 0.9155 ⇒ +0.3878 % = 3.97σ, which clears the
+        engineerable gap but not the crown. Under his 0.8114, full recovery is +0.4456 % and
+        **misses**. So my error had converted a crown-reaching mechanism into a
+        non-crown-reaching one. **K-tiling is now the only single mechanism identified
+        anywhere in this campaign whose full success reaches the crown.** It goes to the top
+        of the queue — but see item 7 below, which is why E41 exists and why we are not
+        building it yet.
+     5. 🔴 **ψ IS NOW THE BINDING UNCERTAINTY.** The chain `score gain = sensitivity · ψ ·
+        φ · x` (item 137) has `ψ·φ = 0.0459` back-solved from a leg movement he correctly
+        refused to measure directly. With φ = 0.201 that implies **ψ ≈ 0.228**, against our
+        own MLP time attribution of **59 %** — a **2.6× discrepancy**, and every downstream
+        number scales **linearly** in ψ. A marginal-vs-occupancy-share distinction may
+        reconcile them: the asyncEval ladder at `Qwen35.swift:2187-2197` can hide GPU time
+        behind host graph building, so the *marginal* share of a kernel can be far below its
+        *occupancy* share. Until ψ is measured, every crown claim above is provisional.
+     6. **M=6 STEP SPLIT REVISED — HIS SUPERSEDES MINE.** +32.850 ms = weight stream
+        **+15.401** + residual **+17.448**, against my E33-derived +20.590 / +12.090. Step
+        totals agree across sessions to **0.52 %**; the split does not. Consequence: the
+        **Nax-free transferable fraction drops from 63.0 % to 46.9 %.** I take his split
+        because it is measured within one session against one build; mine was assembled
+        across two.
+     7. 🔴 **THE CONTRADICTION, AND IT IS WHAT GENERATED E41.** His own §3 cache-residency
+        argument proves that the 209 KB activation tile is cache-served: M=6 `mlp.down` is
+        0.4752 ms moving 100.3 MB = **211 GB/s = 77 % of the 273 GB/s peak**, and
+        DRAM-served activations would require **492 GB/s = 180 % of peak**, which is
+        impossible. **But a doubled read of a cache-served tile cannot cost 10.54 %.**
+        Therefore R2 is probably **ILP and loop overhead**, not loads — and his own counter
+        table says so (`vector_float_ops` 48 → 24, `float_ops` 60 → 36, `loop_backedges`
+        2 → 3, regs 83 → 66). **K-tiling removes the loads and keeps r=2, so it recovers R2
+        only under the hypothesis his own bandwidth arithmetic argues against.** This is the
+        single most consequential open question on the board: the crown-reaching lever in
+        item 4 is conditional on a mechanism attribution that item 7 undermines. E41
+        (thorfinn, PR #46) exists to resolve the R2 confound *before* anyone writes K-tiling
+        code — which is the standing rule from item 156 applied one item later.
+
+     **PRACTICES TO BANK, AND HE EARNED ALL OF THESE.** He **refused the E2E leg** on the
+     grounds that my unmodified `research/e39_mde.py` left it 6.4×/9.7× under-powered, and
+     **substituted no aggregate** for the beagle/medicine legs he could not measure — item
+     150's lesson executed without being reminded. He reported
+     `covering_cells_by_bits = {"4": 64}`, i.e. only **128 of 384** comparisons actually
+     cover the change, and said explicitly that quoting 384 would over-trust the result 3×.
+     He proved the three twin **source digests distinct**, because a cross-build match is
+     free if both arms built the same source. He reported that the **first version of his
+     write-once (m,n) proof genuinely failed** rather than quietly shipping the second. And
+     he **named the R2 confound he could not remove** instead of leaving me to find it.
+
+     **METHOD BANKED:** ranked geometry is **invariant at shape level**, so local
+     `--shapes-only` curves need no ranked replay (~9.5 min saved per curve). His own caveat
+     is the reason to trust it: M≥3 mean +0.176 %, t = +2.84, 7/7 positive, but the width
+     trend is **absent** (r = −0.080) while buffer pressure is monotone in M, and the whole
+     effect sits inside the 0.311 % drift envelope at 0.17× curve MDE ⇒ drift-shaped, not
+     signal. His fence on it: **a one-op-per-call probe is insensitive to
+     `MLX_MAX_OPS_PER_BUFFER` by construction** and must never be cited for end-to-end
+     command buffers.
+
+     **VERIFIED BY ME, NOT TAKEN:** `git diff origin/senpai/qwen38-mtp-r1 bd67cdfe --
+     Sources Vendor benchmark.json` is **EMPTY**, and the shipped-surface gate at his head
+     reports the same 5 files / +229 / −74 as the baseline. His research-only claim holds.
+
+     **DELIVERABLE (g), WITH A FRAGILITY I AM RECORDING BECAUSE IT REINSTATES A BUG WE
+     ALREADY PAID FOR.** `benchmark-qwen-mtp.sh` now rebuilds `mlx.metallib`; the file is
+     **not** an `editablePath`, so nothing ships. He reuses `benchmark.sh`'s
+     `RUNTIME_WORKER_BIN`, `MLX_METALLIB` and `metallib_rebuild_required` by `awk`
+     extraction plus `eval` rather than restating them, and I verified all three patterns
+     resolve against today's file (3/3 matched, 15-line body, terminates on `}`).
+     🟡 **But if `benchmark.sh` ever reformats one of those lines, `awk` yields nothing,
+     `metallib_rebuild_required` is undefined, the shell returns 127, the `if` evaluates
+     **false**, and the rebuild is skipped silently — which is exactly the bug this
+     deliverable was written to fix.** It needs a `declare -f` fail-closed guard before we
+     rely on it in anger.
+
+     🔴 **PROCESS LESSON, NEW AND GENERAL: A "CORRECTION" CAN INTRODUCE A SECOND ERROR.**
+     thorfinn's self-correction 0.4827 → 0.8114 moved in the *right direction* and
+     overshot, because he composed the *right* crown gap with a *wrong* threshold of mine.
+     Direction-of-travel is not validation. **Check both inputs of a corrected constant, not
+     just the sign of the change.** Companion to item 156's rule: I am now the most likely
+     source of an unaudited load-bearing constant in this campaign, because my numbers get
+     copied into briefs without anyone re-deriving them.
