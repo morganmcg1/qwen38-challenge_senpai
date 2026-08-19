@@ -331,6 +331,46 @@ The ladder remains fully reproducible from this branch's history — `5d97fe3` f
 the template, `dfe39af` for the arm table, `ae272aa` for the restored-base
 bracket — plus the committed census, so nothing measured here is lost.
 
+## Reproduction
+
+Each curve must run at the head that carries its build, because
+`run-qmv-curve.sh` records `head=`/`dirty=` at job start and has no per-SHA
+checkout option — its second argument is provenance only. All three curves need a
+clean worktree.
+
+```bash
+# 0. AIR census, before any GPU time: proves KT holds the instruction mix fixed
+python3 research/e41_ktile_census.py          # -> research/e41-ktile-census.json
+
+# 1. base (A) — check out 5d97fe3 (template landed, dispatch table untouched)
+research/run-qmv-curve.sh e41-base-r1 04ad6bf11437c269df85a47e91faa769c74fe6da \
+  --widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock
+
+# 2. arm (B) — check out dfe39af (dispatch table selects the ladder)
+research/run-qmv-curve.sh e41-arm-r1 04ad6bf11437c269df85a47e91faa769c74fe6da \
+  --widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock
+
+# 3. base replicate (A) — 5c6693a, whose twins are byte-identical to 5d97fe3
+research/run-qmv-curve.sh e41-base-r2 04ad6bf11437c269df85a47e91faa769c74fe6da \
+  --widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock
+
+# 4. cross-build fidelity parity (checks out twins per SHA, restores from HEAD)
+research/run-qmv-parity.sh \
+  base=5d97fe3727d67a42be09dce77aedc21ffaf1095f \
+  arm=dfe39af7dfcbf10828bf0bad4ad46ae51bcb5dd0
+
+# 5. analysis (A-B-A bracket) and durable logging
+python3 research/e41_analyze.py --base e41-base-r1 --arm e41-arm-r1 \
+  --base2 e41-base-r2 --json-out research/e41-artifacts/e41-metrics.json
+python3 research/e41_wandb_log.py research/e41-artifacts/e41-metrics.json
+```
+
+Omitting `--base2` reproduces the un-bracketed numbers (anchor 1.1086, locality
+recovery −0.114) and the worse raw control deviations (M1 0.9726, worst 2.74 %).
+
+Host: Apple M4 Pro, 48 GiB. `CrossrowGate` reads `quantized.h` from disk at test
+runtime, so do not edit either twin while a curve or parity job is in flight.
+
 ## Suggested follow-ups (not implemented)
 
 1. **Attribute the M=9 build artifact.** A ~0.9 % cross-kernel effect from
