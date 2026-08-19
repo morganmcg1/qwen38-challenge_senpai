@@ -13031,3 +13031,200 @@ organizer main `0c90733d` **nor** the live frontier `9e1ff9ec`. Commit `d32342d`
 on `main` regenerated a promoted quantized twin, so `main` is a third distinct
 tree. Item 193(A)'s rule applies here too: identify a tree by its content, never
 by the branch name or commit subject that produced it.
+
+## 195. Advisor pricing error six is a provenance failure, not an arithmetic one: I priced a direction from the living plan instead of the measurement, and the two campaign records disagree with each other
+
+Earlier this round I ranked "the E29 host-graph lever" third in the campaign's
+tier-1 queue, wrote it into `research/CURRENT_RESEARCH_STATE.md`, and told
+alphonse in a PR comment that it would be his next assignment. The sentence I
+published was:
+
+> decode-side host cost, which E29 measured at about `2.4 ms` per draft step of
+> graph build, roughly `4.35 %` of decode, and which nothing in this campaign has
+> ever acted on.
+
+**Every clause is wrong, and this campaign's own records already say so.** I
+delegated a source-mapping agent to design the experiment; it returned the
+refutation instead, with citations. I then reproduced each citation myself before
+recording this item, because a subagent claiming a retraction is exactly the kind
+of claim that must not be taken on trust.
+
+### 195(A) The three corrections
+
+| published claim | truth | source |
+|---|---|---|
+| `2.4 ms` per **draft step** of graph build | `2.4 ms` per **round**, for the whole 64-layer **verify** graph | `research/results/e29-round-overhead-host-graph.md:130-131` |
+| `4.35 %` of decode is a removable host cost | retracted by 181(C). It is arm 2's host-tail *share* of four E29 ladder arms. The share moved `53.86 / 4.35 / 5.66 / 35.86 %` while round totals moved `6028.7 / 6022.2 / 6015.8 / 5998.3 ms`. A partition share that swings 12x while its total swings 0.5 % is direct evidence the host tail is not on the critical path. It is a **ceiling on all host-side work**, not a measured recovery. | `senpai/campaign-ledger.md:9240-9258`; ledger item 70 at `:1126-1131` |
+| nothing has acted on it | askeladd measured it directly in PR #4 and closed it. `draft_build_us` is not host-bound: **93.4 %** of its `17,486 us` mean is `tail_async`, because `async_eval()` walks the tape on the calling thread and throttles at `MAX_ACTIVE_TASKS = 10`. Steady-state host-only is **`599 us` per round, `0.350 %` of a round**, about `33 us` per draft step against my assumed `2,400`. A **70x** overestimate. Recorded verdict: "Compiled decode is dead: at most 599 us per round of total prize. Do not spend a student." | `research/RESEARCH_STATE_ARCHIVE_2026-08-19.md:1749-1763` |
+
+The direction is closed. Its entire ceiling is `0.35 %` of a round, and the one
+sweep that touched that envelope found nothing above its own noise floor.
+
+### 195(B) The mechanism of the error, which is the part worth keeping
+
+The first five recorded advisor pricing errors were all **basis or domain
+confusions**: two quantities with the same name and different domains, or a
+scalar applied to the wrong denominator. Item 192 concluded that "a constant's
+name must carry its domain" and I believed that was the whole family.
+
+This one is different. The arithmetic was never the problem. **I read a claim in
+`research/CURRENT_RESEARCH_STATE.md` and treated it as evidence.** That document
+is a living plan. It is edited, pruned, and rewritten every round precisely so it
+stays short, and short summaries lose their provenance first. The claim had been
+correct when first written, was refuted two items later, and the refutation never
+propagated back into the plan.
+
+**New standing rule: the living research-state document is a plan, not evidence.
+Before pricing any direction from it, grep the ledger and the archive for the
+subsystem and cite the measurement, not the summary.** This applies to students
+reading it as much as to the advisor writing it.
+
+### 195(C) The two campaign records disagree, and that is the deeper defect
+
+`senpai/campaign-ledger.md:9264` still reads:
+
+> What survives: `mx.compile` of the head step is still an untouched mechanism
+> (`CompiledDecode.swift` and `CompilableKVCache.swift` are in `editablePaths`
+> and untouched by the entire 712-tree field).
+
+That sentence is false as written, and it is false **inside the very item that
+retracted the surrounding claim**. 181(C) was written without citing PR #4,
+whose direct sub-step timers are the measurement that closes the mechanism.
+Those timers live only in `research/RESEARCH_STATE_ARCHIVE_2026-08-19.md`.
+
+So a future agent grepping the ledger for "compile" would find 181(C), read
+"untouched mechanism", and walk straight back into my error. **The ledger has the
+narrative and the archive has the measurement.** That asymmetry is the real
+defect; my published sentence was only its first casualty.
+
+This item is the merge. From here the ledger carries PR #4's number, so grepping
+the ledger alone is sufficient for this subsystem. Where else the two records
+diverge is unknown and is not worth a full audit, but every future retraction
+must be written into the ledger with its measurement inline, not by reference.
+
+Recorded honestly: 181(C) itself opens with "This is the second time I have
+published a triple-red finding without grepping the merged ledger for the
+subsystem first". This is the third. The countermeasure that failed was
+"grep the ledger", and it failed because the ledger did not contain the number.
+The countermeasure that would have worked is "cite a measurement with a file and
+line, or do not publish the price". That is the rule now.
+
+### 195(D) What actually survives on the head path
+
+Two structural facts, both verified in source, neither of them an assignment.
+
+**One sub-graph is unconditionally eligible for `compile`.** `draftTokenID`
+(`Qwen35.swift:3122-3127`, implementation `:3155-3218`) has fixed shape, no
+cache, no RoPE offset, no attention mask, and no data-dependent extent. It runs
+once per draft step. It is proposal-only, so it carries **zero exactness risk by
+construction**: the trusted parent re-checks every emitted token, and a defective
+proposal can only lower the acceptance rate. Its prize nevertheless sits inside
+the same `599 us` per round envelope, so it is worth at most about `0.35 %`, and
+only if `compile` traces its two custom `fast::Kernel` dispatches
+(`qwen35DraftTop32` at `:3189`, `qwen35DraftRerankKernel` at `:3207`). A cheap
+curiosity, not a slot.
+
+**A compiled head must pay before it can win.** Promoting the head cache from
+`KVCacheSimple` to `CompilableKVCache` disables the fused QK RMSNorm plus RoPE
+kernel, because `hasArrayOffset` excludes it at `Qwen35.swift:1880-1885`. One
+fused launch becomes four eager operations (`qNorm`, `kNorm`, two
+`applyRotaryPosition`). `CompilableKVCache.offset` and `trim` also perform a
+`.item()` readback (`CompilableKVCache.swift:105-112`, `:237-244`), and the
+session calls `trimTrimmable` every round at
+`Qwen36MTPBlockSession.swift:1234`. Any future compiled-head experiment must
+measure those losses first.
+
+The target forward is decisively ineligible and this is now settled rather than
+assumed: `newCache` returns `MambaCache()` for the 48 `isLinear` layers
+(`Qwen35.swift:2812-2819`), `CompiledDecode.setupCompiledDecode` returns `nil`
+for any cache that is not `KVCacheSimple` or `RotatingKVCache`
+(`CompiledDecode.swift:132-138`), and `:175-176` states that MambaCache is
+unsupported. No `CompilableMambaCache` exists in this tree.
+
+Also settled: `CompiledDecode` is **dead code on the scored path**.
+`CompilableKVCache.swift:27-30` says so in the source, and its only production
+caller is `GenerationBatch.setupCompiledDecodeIfEligible()`
+(`GenerationBatch.swift:650-680`), which the scored worker never reaches. Do not
+confuse it with `MLXHardwareInfo.isCompiledDecodeSupported`
+(`MLXHardwareInfo.swift:33-38`, env `MLX_COMPILED_DECODE`, default true), which
+gates the small `compile(shapeless:)` activation fusions that **are** live on the
+scored path at `Qwen35.swift:186, 229, 248, 895, 953, 1224`. Two different
+things, similar names. `RuntimeStartupMemoryPolicy.swift:119-130` already records
+that turning the latter off made sub-64 GiB machines silently skip decode
+closures the ranked box runs.
+
+### 195(E) The lever the failed search actually found
+
+`Qwen36MTPBlockSession.swift:668` ships
+
+```swift
+private static let headStepCostRatio = 0.18
+```
+
+while the doc comment eight lines above it says "h = 0.20 is the honest fit FOR
+THIS ROLLBACK MECHANISM", `:719` describes an earlier revision that "raised
+`headStepCostRatio` 0.18 -> 0.32", and PR #4's standing finding 6 measured
+**h approximately 0.224** directly
+(`research/RESEARCH_STATE_ARCHIVE_2026-08-19.md:1745-1763`).
+
+`h` enters the greedy marginal-cost walk at `:756`. The shipped value therefore
+**under-prices every head step by roughly a quarter**, which biases the scheduler
+toward drafting deeper than the true marginal cost justifies. That is the same
+failure direction as edward's stream-boundary staircase, and it multiplies into
+the same decision at the same call site, so it is routed into E56 as a factor
+rather than issued as a separate experiment. Splitting two corrections to one
+rule across two students would produce two numbers that cannot be composed.
+
+Two cautions were sent with it. `h = 0.224` was measured **before E55**, which
+cut verify-side cost by `4.2952 %` without touching the head, so the true `h` has
+almost certainly risen; edward should re-measure on `d2139c92` if he can, and
+label `0.224` as directional if he cannot. And `h` must not be swept and
+argmaxed: fitting a scheduler constant to one local fixture will not transfer to
+the ranked width mixture, which edward himself showed is very different from the
+local histogram.
+
+### 195(F) Also corrected, from the same source read
+
+Three smaller record defects found while verifying the above.
+
+- The head's single decoder layer carries a dense `Qwen35FusedMLP` at
+  `5120 -> 17408 -> 5120` (`Qwen35MTP.swift:40-43`, `intermediate_size: 17408`).
+  That MLP, not the attention, is most of the head's weight stream. The campaign
+  has been describing the head as "fc plus one full-attention layer plus norms",
+  which is true but hides where the bytes are.
+- `Qwen35MTP.swift:37-39` states that the head's linears "stay bf16". That is
+  stale against the declared artifact: the shipped manifest pins
+  `qwen38-mtp-head-q2-q4-rerank-v1`, whose weights are side-channelled at
+  `Qwen35.swift:2843-2852` with precision islands installed at `:2866-2891`, so
+  the head-layer linears are quantized. Added to the documentation-debt list.
+- The generic repair fallback at `Qwen36MTPBlockSession.swift:1204-1215`, a
+  second 64-layer forward and a second blocking eval, has been **measured zero
+  times**. It is a candidate for the post-winner cleanup PR, alongside the dead
+  GDN paths already listed.
+
+### 195(G) What a student can measure today with no new instrumentation
+
+Recorded because it was not written down anywhere and it changes what a cheap
+rung can cost. The per-round host breakdown already exists behind
+`MLX_QWEN_MTP_TRACE=1`, with the sink at `MLX_QWEN_MTP_TRACE_PATH` and an
+attribution probe at `MLX_QWEN_MTP_TRACE_SYNC_HEAD=1`
+(`Qwen36MTPBlockSession.swift:579-603`, `:588-589`). All three reach the
+sandboxed worker, because the environment allowlist keeps the `MLX_` prefix and
+drops `MLXFAST_` (`QwenRuntimeWorker.swift:2639-2646`).
+
+Emitted fields and their intervals: `draft_build_us` (`:883` to `:1080`),
+`verify_build_us` (`:1080` to `:1111`), `eval_wall_us` (`:1111` to `:1124`),
+`readout_us` (`:1124` to `:1157`), `commit_us` (`:1157` to `:1227`),
+`upkeep_us` (`:1227` to `:1269`), `round_us` (`:883` to `:1269`), emitted at
+`:1266-1279`. Existing parsers consume this format: `research/e21_trace.py`,
+`research/e29_analyze.py`, `research/depth_cost_curve.py`,
+`research/e30_log_wandb.py`.
+
+Two caveats are written in the source itself and must be quoted whenever these
+fields are used. `verify_build_us` is not pure host build, because the head chain
+runs asynchronously inside that window (`:581-587`), and enabling the sync probe
+"destroys the head/verify overlap the round is designed around". `draft_build_us`
+is not pure host build either, for the `async_eval` tape-walk reason that is the
+whole subject of 195(A). **Neither field may be quoted as host time without that
+caveat attached.** Quoting `draft_build_us` as host time is precisely how the
+`2,400 us` figure entered the record.

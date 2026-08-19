@@ -222,10 +222,19 @@ board (`_advisor_scratch/ranked-mechanism-ledger.md`).
 2. **Finish the single-weight-stream sweep of the QMV width table.** This is the
    only direction with a measured `-4.30 %` leg result behind it and a
    zero-parameter model that predicts where the next win is.
-3. **Attack decode-side host cost.** E29 measured about `2.4 ms` per draft step
-   of host graph build, roughly `4.35 %` of decode, and nothing has ever acted on
-   it. `CompiledDecode.swift` and `CompilableKVCache.swift` are editable and have
-   zero ledger mentions.
+3. **Repair the scheduler's cost model.** Two constants in the same greedy walk
+   are wrong at once: the flat per-row price ignores the weight-stream staircase
+   (edward's E56 thesis), and `headStepCostRatio` ships `0.18` against a directly
+   measured `0.224`. Both under-price a deep round, so both bias the scheduler
+   toward drafting too deep. Routed into E56 as a factor design.
+
+🔴 **Decode-side host cost is CLOSED, not open.** Ledger 195 records that I
+priced it from this document instead of from the measurement, and every clause
+was wrong: E29's `2.4 ms` is per **round** for the 64-layer verify graph, not per
+draft step; the `4.35 %` was retracted by 181(C) as a ladder accounting artefact;
+and askeladd's PR #4 measured steady-state host-only at **`599 us` per round,
+`0.350 %` of a round**, a 70x overestimate in my premise. His verdict, which
+stands: "Compiled decode is dead. Do not spend a student."
 
 ## In flight
 
@@ -251,10 +260,11 @@ Ordered by expected value against the `0.5366 %` deficit.
 3. **The `3a7f09f4` one-line arm** at `Qwen36MTPBlockSession.swift:1123`. The
    only genuine absent ranked-measured mechanism. Cheap, needs exactness because
    it interacts with rollback and replay.
-4. **`mx.compile` the head draft chain / remove the E29 host graph build.**
-   `+0.5 %` to `+2.0 %`. The head is fc plus one full-attention layer plus norms,
-   an eligible shape; the full target is ineligible because of its 48 recurrent
-   layers.
+4. **Repair `headStepCostRatio` inside E56.** Shipped `0.18`, measured `0.224`,
+   and the code's own comment says `0.20`. One line at
+   `Qwen36MTPBlockSession.swift:668`, entering the greedy walk at `:756`. Must be
+   re-measured on `d2139c92` because E55 cut verify cost without touching the
+   head, so the true `h` has probably risen. Do not sweep and argmax it.
 5. **Certified exact target LM-head screening**, `+2.0 %` to `+2.9 %`. An
    offline input-independent conservative bound plane screens rows of the
    248,320-entry readout; survivors get exact affine-4 with identical per-row
@@ -304,8 +314,23 @@ and so perturbs the reported top-two evidence.
 
 ## Standing method rules
 
+- 🔴🔴 **THIS DOCUMENT IS A PLAN, NOT EVIDENCE.** Before pricing any direction
+  from it, grep `senpai/campaign-ledger.md` **and**
+  `research/RESEARCH_STATE_ARCHIVE_2026-08-19.md` for the subsystem, and cite the
+  measurement with a file and line. **Cite a measurement, or do not publish the
+  price.** Advisor pricing error six (ledger 195) was caused by trusting a
+  summary in this file that had been refuted two ledger items after it was
+  written. Summaries lose their provenance first; that is what makes them short.
 - 🔴 **`origin/main` is the branch `senpai/submit-official.sh` trusts.** It is
   currently diverged and blocks every submission. Do not bypass the guard.
+- 🔴 **A retraction must be written into the ledger with its measurement inline,
+  never by reference.** The ledger held the narrative and the archive held the
+  number, so grepping the ledger alone returned a false "untouched mechanism".
+- **`draft_build_us` and `verify_build_us` are not host time.** 93.4 % of
+  `draft_build_us` is `tail_async`, because `async_eval()` walks the tape on the
+  calling thread; `verify_build_us` overlaps the asynchronous head chain by
+  design. Never quote either as host cost without that caveat. That is exactly
+  how a 70x overestimate entered the record.
 - 🔴 **Group count is weight stream count** in the wide QMV template, and
   `reg = 20 + 21*max(NA) + 4*[two distinct NA sizes]` reproduces every shipped
   cell.
