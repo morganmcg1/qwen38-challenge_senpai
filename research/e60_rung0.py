@@ -17,7 +17,10 @@ import pathlib
 import statistics
 
 LOCAL_NULL_FLOOR_PERCENT = 0.0629
-RANKED_MDE_PERCENT = 0.283
+# Ledger 193 retracted the +0.283 % ranked MDE. The measured 95 % threshold for
+# a single ranked A/B pair is 2.10 %, from 37 within-group pairs over 18
+# byte-identical submitted surfaces.
+RANKED_SINGLE_PAIR_THRESHOLD_PERCENT = 2.10
 
 
 def read_meta(leg: pathlib.Path) -> dict:
@@ -35,6 +38,9 @@ def collect(tokens: int) -> dict:
     legs = {}
     for path in sorted(glob.glob(f"research/out/e60-t{tokens}-*")):
         leg = pathlib.Path(path)
+        # The declared thermal warm-up leg is discarded before any arm is read.
+        if not leg.name.split("-")[2][:-1].isdigit():
+            continue
         meta = read_meta(leg)
         record = {
             "tag": leg.name,
@@ -130,6 +136,63 @@ def arm_summary(legs: dict) -> dict:
     return arms
 
 
+def blocks(legs: dict, left: str, right: str, size: int = 4) -> dict:
+    """Split the session into counterbalanced blocks and estimate the effect twice.
+
+    Each block is its own palindrome, so monotone drift cancels inside it and the
+    two block estimates are independent measurements of one quantity. Their
+    disagreement is the null for the effect estimator itself, which is what a
+    same-arm pair cannot give: a same-arm pair measures leg repeatability, not
+    the repeatability of a two-arm contrast.
+    """
+    good = sorted(
+        (leg for leg in legs.values() if leg.get("ok")), key=lambda leg: leg["order"]
+    )
+    estimates = []
+    for start in range(0, len(good) - size + 1, size):
+        chunk = good[start : start + size]
+        arms_in_chunk = {leg["arm"] for leg in chunk}
+        if arms_in_chunk != {left, right}:
+            continue
+        left_mean = statistics.fmean(
+            leg["mtp_seconds_per_token"] for leg in chunk if leg["arm"] == left
+        )
+        right_mean = statistics.fmean(
+            leg["mtp_seconds_per_token"] for leg in chunk if leg["arm"] == right
+        )
+        estimates.append(
+            {
+                "order": [leg["arm"] for leg in chunk],
+                "tags": [leg["tag"] for leg in chunk],
+                f"{left}_mtp_seconds_per_token": left_mean,
+                f"{right}_mtp_seconds_per_token": right_mean,
+                "delta_seconds_per_token": left_mean - right_mean,
+                "percent": (left_mean - right_mean) / right_mean * 100.0,
+            }
+        )
+    if len(estimates) < 2:
+        return {"blocks": estimates, "resolved": False}
+
+    percents = [estimate["percent"] for estimate in estimates]
+    pooled = statistics.fmean(percents)
+    disagreement = max(percents) - min(percents)
+    # sd(single block) = disagreement / sqrt(2), so sd(pooled of two) =
+    # disagreement / 2, and a two-sd bar on the pooled effect is exactly the
+    # observed disagreement. One degree of freedom, so this is a coarse bar.
+    return {
+        "blocks": estimates,
+        "resolved": True,
+        "pooled_percent": pooled,
+        "pooled_delta_seconds_per_token": statistics.fmean(
+            estimate["delta_seconds_per_token"] for estimate in estimates
+        ),
+        "block_disagreement_percent": disagreement,
+        "two_sd_bar_percent": disagreement,
+        "significant_at_two_sd": abs(pooled) > disagreement,
+        "degrees_of_freedom": len(estimates) - 1,
+    }
+
+
 def contrasts(arms: dict) -> dict:
     out = {}
     for left, right in (("B", "A"), ("C", "A"), ("C", "B")):
@@ -147,7 +210,9 @@ def contrasts(arms: dict) -> dict:
             "percent": percent,
             "faster_arm": left if delta < 0 else right,
             "exceeds_local_null_floor": abs(percent) > LOCAL_NULL_FLOOR_PERCENT,
-            "exceeds_ranked_mde": abs(percent) > RANKED_MDE_PERCENT,
+            "exceeds_ranked_single_pair_threshold": (
+                abs(percent) > RANKED_SINGLE_PAIR_THRESHOLD_PERCENT
+            ),
             "serial_percent": (
                 arms[left]["serial_seconds_per_token"]
                 - arms[right]["serial_seconds_per_token"]
@@ -177,12 +242,13 @@ def main() -> int:
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "local_null_floor_percent": LOCAL_NULL_FLOOR_PERCENT,
-        "ranked_mde_percent_2sd": RANKED_MDE_PERCENT,
+        "ranked_single_pair_threshold_percent": RANKED_SINGLE_PAIR_THRESHOLD_PERCENT,
         "entry_temperature_spread_c": (max(temps) - min(temps)) if temps else None,
         "entry_temperatures_c": temps,
         "legs": legs,
         "arms": arms,
         "contrasts": contrasts(arms),
+        "counterbalanced_blocks": blocks(legs, "C", "B"),
     }
     text = json.dumps(report, indent=2, default=str)
     if args.json_out:

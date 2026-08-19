@@ -1,0 +1,480 @@
+{
+  "harness": "local",
+  "local_mode": "--local-iterate",
+  "token_window": 300,
+  "mlx_max_mb_per_buffer": 512,
+  "mlx_max_ops_per_buffer": 50,
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "local_null_floor_percent": 0.0629,
+  "ranked_single_pair_threshold_percent": 2.1,
+  "entry_temperature_spread_c": 13.529800415039062,
+  "entry_temperatures_c": [
+    41.78375244140625,
+    53.323509216308594,
+    54.73283767700195,
+    54.26737976074219,
+    54.609214782714844,
+    55.31355285644531
+  ],
+  "legs": {
+    "e60-t300-1A": {
+      "tag": "e60-t300-1A",
+      "arm": "A",
+      "order": 1,
+      "gpu_temp_entry_c": 41.78375244140625,
+      "gpu_temp_exit_c": 62.48331069946289,
+      "exit": 0,
+      "worker_env": [
+        "MLX_MAX_OPS_PER_BUFFER=50",
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+        "MLX_MAX_MB_PER_BUFFER=512"
+      ],
+      "worker_sha256": "a35a4750b1e12da670c0df7fc36cd008e71ae47cb37fc515020e7bf63ed8a145",
+      "ok": true,
+      "decode_tokens": 300,
+      "mtp_seconds_per_token": 0.03835919658342997,
+      "serial_seconds_per_token": 0.07986648678779602,
+      "mtp_decode_speedup": 2.0820688101245572,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_draft_rate": 0.9924528301886792,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "rounds": 37.0,
+      "drafted_rows": 265.0,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0
+    },
+    "e60-t300-2B": {
+      "tag": "e60-t300-2B",
+      "arm": "B",
+      "order": 2,
+      "gpu_temp_entry_c": 53.323509216308594,
+      "gpu_temp_exit_c": 63.74411392211914,
+      "exit": 0,
+      "worker_env": [
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+        "MLX_MAX_MB_PER_BUFFER=512",
+        "MLX_MAX_OPS_PER_BUFFER=50"
+      ],
+      "worker_sha256": "0fc3c89558ce012facaf12bcc1a6116e7be4798923e865b2321906473c8f7bde",
+      "ok": true,
+      "decode_tokens": 300,
+      "mtp_seconds_per_token": 0.0383946700890859,
+      "serial_seconds_per_token": 0.07987959345181783,
+      "mtp_decode_speedup": 2.080486517177406,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_draft_rate": 0.9924528301886792,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "rounds": 37.0,
+      "drafted_rows": 265.0,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0
+    },
+    "e60-t300-3C": {
+      "tag": "e60-t300-3C",
+      "arm": "C",
+      "order": 3,
+      "gpu_temp_entry_c": 54.73283767700195,
+      "gpu_temp_exit_c": 63.528987884521484,
+      "exit": 0,
+      "worker_env": [
+        "MLX_MAX_OPS_PER_BUFFER=50",
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+        "MLX_MAX_MB_PER_BUFFER=512"
+      ],
+      "worker_sha256": "508251e8e08f4710d60ea29e24bd5596c66cff88967f8dd9e6ef4f6d0ce0f6ef",
+      "ok": true,
+      "decode_tokens": 300,
+      "mtp_seconds_per_token": 0.03834097981452942,
+      "serial_seconds_per_token": 0.07972353339195251,
+      "mtp_decode_speedup": 2.0793295783677666,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_draft_rate": 0.9924528301886792,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "rounds": 37.0,
+      "drafted_rows": 265.0,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0
+    },
+    "e60-t300-4C": {
+      "tag": "e60-t300-4C",
+      "arm": "C",
+      "order": 4,
+      "gpu_temp_entry_c": 54.26737976074219,
+      "gpu_temp_exit_c": 62.979244232177734,
+      "exit": 0,
+      "worker_env": [
+        "MLX_MAX_OPS_PER_BUFFER=50",
+        "MLX_MAX_MB_PER_BUFFER=512",
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full"
+      ],
+      "worker_sha256": "508251e8e08f4710d60ea29e24bd5596c66cff88967f8dd9e6ef4f6d0ce0f6ef",
+      "ok": true,
+      "decode_tokens": 300,
+      "mtp_seconds_per_token": 0.038342223167419434,
+      "serial_seconds_per_token": 0.07975537339846293,
+      "mtp_decode_speedup": 2.0800925666259626,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_draft_rate": 0.9924528301886792,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "rounds": 37.0,
+      "drafted_rows": 265.0,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0
+    },
+    "e60-t300-5B": {
+      "tag": "e60-t300-5B",
+      "arm": "B",
+      "order": 5,
+      "gpu_temp_entry_c": 54.609214782714844,
+      "gpu_temp_exit_c": 64.46060180664062,
+      "exit": 0,
+      "worker_env": [
+        "MLX_MAX_MB_PER_BUFFER=512",
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+        "MLX_MAX_OPS_PER_BUFFER=50"
+      ],
+      "worker_sha256": "0fc3c89558ce012facaf12bcc1a6116e7be4798923e865b2321906473c8f7bde",
+      "ok": true,
+      "decode_tokens": 300,
+      "mtp_seconds_per_token": 0.03835066358248393,
+      "serial_seconds_per_token": 0.07966648300488789,
+      "mtp_decode_speedup": 2.0773169369949134,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_draft_rate": 0.9924528301886792,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "rounds": 37.0,
+      "drafted_rows": 265.0,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0
+    },
+    "e60-t300-6A": {
+      "tag": "e60-t300-6A",
+      "arm": "A",
+      "order": 6,
+      "gpu_temp_entry_c": 55.31355285644531,
+      "gpu_temp_exit_c": 63.03476333618164,
+      "exit": 0,
+      "worker_env": [
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+        "MLX_MAX_OPS_PER_BUFFER=50",
+        "MLX_MAX_MB_PER_BUFFER=512"
+      ],
+      "worker_sha256": "a35a4750b1e12da670c0df7fc36cd008e71ae47cb37fc515020e7bf63ed8a145",
+      "ok": true,
+      "decode_tokens": 300,
+      "mtp_seconds_per_token": 0.038421910206476846,
+      "serial_seconds_per_token": 0.0800209367275238,
+      "mtp_decode_speedup": 2.082690222779047,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_draft_rate": 0.9924528301886792,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "rounds": 37.0,
+      "drafted_rows": 265.0,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0
+    }
+  },
+  "arms": {
+    "A": {
+      "legs": [
+        {
+          "tag": "e60-t300-1A",
+          "arm": "A",
+          "order": 1,
+          "gpu_temp_entry_c": 41.78375244140625,
+          "gpu_temp_exit_c": 62.48331069946289,
+          "exit": 0,
+          "worker_env": [
+            "MLX_MAX_OPS_PER_BUFFER=50",
+            "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+            "MLX_MAX_MB_PER_BUFFER=512"
+          ],
+          "worker_sha256": "a35a4750b1e12da670c0df7fc36cd008e71ae47cb37fc515020e7bf63ed8a145",
+          "ok": true,
+          "decode_tokens": 300,
+          "mtp_seconds_per_token": 0.03835919658342997,
+          "serial_seconds_per_token": 0.07986648678779602,
+          "mtp_decode_speedup": 2.0820688101245572,
+          "effective_mean_draft_len": 7.162162162162162,
+          "accepted_draft_rate": 0.9924528301886792,
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "rounds": 37.0,
+          "drafted_rows": 265.0,
+          "accepted_rows": 263.0,
+          "rejected_rows": 2.0
+        },
+        {
+          "tag": "e60-t300-6A",
+          "arm": "A",
+          "order": 6,
+          "gpu_temp_entry_c": 55.31355285644531,
+          "gpu_temp_exit_c": 63.03476333618164,
+          "exit": 0,
+          "worker_env": [
+            "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+            "MLX_MAX_OPS_PER_BUFFER=50",
+            "MLX_MAX_MB_PER_BUFFER=512"
+          ],
+          "worker_sha256": "a35a4750b1e12da670c0df7fc36cd008e71ae47cb37fc515020e7bf63ed8a145",
+          "ok": true,
+          "decode_tokens": 300,
+          "mtp_seconds_per_token": 0.038421910206476846,
+          "serial_seconds_per_token": 0.0800209367275238,
+          "mtp_decode_speedup": 2.082690222779047,
+          "effective_mean_draft_len": 7.162162162162162,
+          "accepted_draft_rate": 0.9924528301886792,
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "rounds": 37.0,
+          "drafted_rows": 265.0,
+          "accepted_rows": 263.0,
+          "rejected_rows": 2.0
+        }
+      ],
+      "failed_legs": [],
+      "tags": [
+        "e60-t300-1A",
+        "e60-t300-6A"
+      ],
+      "mtp_seconds_per_token": 0.03839055339495341,
+      "serial_seconds_per_token": 0.07994371175765991,
+      "mtp_within_arm_spread_percent": 0.1633569133575472,
+      "serial_within_arm_spread_percent": 0.19319835961079682,
+      "local_ratio": 2.082379516451802,
+      "rounds": 37.0,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "gpu_temp_entry_c": [
+        41.78375244140625,
+        55.31355285644531
+      ],
+      "gpu_temp_exit_c": [
+        62.48331069946289,
+        63.03476333618164
+      ],
+      "worker_env": [
+        "MLX_MAX_OPS_PER_BUFFER=50",
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+        "MLX_MAX_MB_PER_BUFFER=512"
+      ],
+      "worker_sha256": "a35a4750b1e12da670c0df7fc36cd008e71ae47cb37fc515020e7bf63ed8a145"
+    },
+    "B": {
+      "legs": [
+        {
+          "tag": "e60-t300-2B",
+          "arm": "B",
+          "order": 2,
+          "gpu_temp_entry_c": 53.323509216308594,
+          "gpu_temp_exit_c": 63.74411392211914,
+          "exit": 0,
+          "worker_env": [
+            "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+            "MLX_MAX_MB_PER_BUFFER=512",
+            "MLX_MAX_OPS_PER_BUFFER=50"
+          ],
+          "worker_sha256": "0fc3c89558ce012facaf12bcc1a6116e7be4798923e865b2321906473c8f7bde",
+          "ok": true,
+          "decode_tokens": 300,
+          "mtp_seconds_per_token": 0.0383946700890859,
+          "serial_seconds_per_token": 0.07987959345181783,
+          "mtp_decode_speedup": 2.080486517177406,
+          "effective_mean_draft_len": 7.162162162162162,
+          "accepted_draft_rate": 0.9924528301886792,
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "rounds": 37.0,
+          "drafted_rows": 265.0,
+          "accepted_rows": 263.0,
+          "rejected_rows": 2.0
+        },
+        {
+          "tag": "e60-t300-5B",
+          "arm": "B",
+          "order": 5,
+          "gpu_temp_entry_c": 54.609214782714844,
+          "gpu_temp_exit_c": 64.46060180664062,
+          "exit": 0,
+          "worker_env": [
+            "MLX_MAX_MB_PER_BUFFER=512",
+            "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+            "MLX_MAX_OPS_PER_BUFFER=50"
+          ],
+          "worker_sha256": "0fc3c89558ce012facaf12bcc1a6116e7be4798923e865b2321906473c8f7bde",
+          "ok": true,
+          "decode_tokens": 300,
+          "mtp_seconds_per_token": 0.03835066358248393,
+          "serial_seconds_per_token": 0.07966648300488789,
+          "mtp_decode_speedup": 2.0773169369949134,
+          "effective_mean_draft_len": 7.162162162162162,
+          "accepted_draft_rate": 0.9924528301886792,
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "rounds": 37.0,
+          "drafted_rows": 265.0,
+          "accepted_rows": 263.0,
+          "rejected_rows": 2.0
+        }
+      ],
+      "failed_legs": [],
+      "tags": [
+        "e60-t300-2B",
+        "e60-t300-5B"
+      ],
+      "mtp_seconds_per_token": 0.03837266683578491,
+      "serial_seconds_per_token": 0.07977303822835285,
+      "mtp_within_arm_spread_percent": 0.11468190832368498,
+      "serial_within_arm_spread_percent": 0.2671459576604122,
+      "local_ratio": 2.0789017270861594,
+      "rounds": 37.0,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "gpu_temp_entry_c": [
+        53.323509216308594,
+        54.609214782714844
+      ],
+      "gpu_temp_exit_c": [
+        63.74411392211914,
+        64.46060180664062
+      ],
+      "worker_env": [
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+        "MLX_MAX_MB_PER_BUFFER=512",
+        "MLX_MAX_OPS_PER_BUFFER=50"
+      ],
+      "worker_sha256": "0fc3c89558ce012facaf12bcc1a6116e7be4798923e865b2321906473c8f7bde"
+    },
+    "C": {
+      "legs": [
+        {
+          "tag": "e60-t300-3C",
+          "arm": "C",
+          "order": 3,
+          "gpu_temp_entry_c": 54.73283767700195,
+          "gpu_temp_exit_c": 63.528987884521484,
+          "exit": 0,
+          "worker_env": [
+            "MLX_MAX_OPS_PER_BUFFER=50",
+            "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+            "MLX_MAX_MB_PER_BUFFER=512"
+          ],
+          "worker_sha256": "508251e8e08f4710d60ea29e24bd5596c66cff88967f8dd9e6ef4f6d0ce0f6ef",
+          "ok": true,
+          "decode_tokens": 300,
+          "mtp_seconds_per_token": 0.03834097981452942,
+          "serial_seconds_per_token": 0.07972353339195251,
+          "mtp_decode_speedup": 2.0793295783677666,
+          "effective_mean_draft_len": 7.162162162162162,
+          "accepted_draft_rate": 0.9924528301886792,
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "rounds": 37.0,
+          "drafted_rows": 265.0,
+          "accepted_rows": 263.0,
+          "rejected_rows": 2.0
+        },
+        {
+          "tag": "e60-t300-4C",
+          "arm": "C",
+          "order": 4,
+          "gpu_temp_entry_c": 54.26737976074219,
+          "gpu_temp_exit_c": 62.979244232177734,
+          "exit": 0,
+          "worker_env": [
+            "MLX_MAX_OPS_PER_BUFFER=50",
+            "MLX_MAX_MB_PER_BUFFER=512",
+            "DARKBLOOM_STARTUP_MEMORY_PROFILE=full"
+          ],
+          "worker_sha256": "508251e8e08f4710d60ea29e24bd5596c66cff88967f8dd9e6ef4f6d0ce0f6ef",
+          "ok": true,
+          "decode_tokens": 300,
+          "mtp_seconds_per_token": 0.038342223167419434,
+          "serial_seconds_per_token": 0.07975537339846293,
+          "mtp_decode_speedup": 2.0800925666259626,
+          "effective_mean_draft_len": 7.162162162162162,
+          "accepted_draft_rate": 0.9924528301886792,
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "rounds": 37.0,
+          "drafted_rows": 265.0,
+          "accepted_rows": 263.0,
+          "rejected_rows": 2.0
+        }
+      ],
+      "failed_legs": [],
+      "tags": [
+        "e60-t300-3C",
+        "e60-t300-4C"
+      ],
+      "mtp_seconds_per_token": 0.03834160149097443,
+      "serial_seconds_per_token": 0.07973945339520772,
+      "mtp_within_arm_spread_percent": 0.003242829828864868,
+      "serial_within_arm_spread_percent": 0.03993005363683113,
+      "local_ratio": 2.0797110724968646,
+      "rounds": 37.0,
+      "effective_mean_draft_len": 7.162162162162162,
+      "accepted_rows": 263.0,
+      "rejected_rows": 2.0,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "gpu_temp_entry_c": [
+        54.73283767700195,
+        54.26737976074219
+      ],
+      "gpu_temp_exit_c": [
+        63.528987884521484,
+        62.979244232177734
+      ],
+      "worker_env": [
+        "MLX_MAX_OPS_PER_BUFFER=50",
+        "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+        "MLX_MAX_MB_PER_BUFFER=512"
+      ],
+      "worker_sha256": "508251e8e08f4710d60ea29e24bd5596c66cff88967f8dd9e6ef4f6d0ce0f6ef"
+    }
+  },
+  "contrasts": {
+    "B-A": {
+      "delta_seconds_per_token": -1.7886559168497906e-05,
+      "percent": -0.046591042813280116,
+      "faster_arm": "B",
+      "exceeds_local_null_floor": false,
+      "exceeds_ranked_single_pair_threshold": false,
+      "serial_percent": -0.21349212533992631
+    },
+    "C-A": {
+      "delta_seconds_per_token": -4.8951903978980416e-05,
+      "percent": -0.12751028482286825,
+      "faster_arm": "C",
+      "exceeds_local_null_floor": true,
+      "exceeds_ranked_single_pair_threshold": false,
+      "serial_percent": -0.2555027255569239
+    },
+    "C-B": {
+      "delta_seconds_per_token": -3.106534481048251e-05,
+      "percent": -0.08095696070180905,
+      "faster_arm": "C",
+      "exceeds_local_null_floor": true,
+      "exceeds_ranked_single_pair_threshold": false,
+      "serial_percent": -0.04210048142957992
+    }
+  },
+  "counterbalanced_blocks": {
+    "blocks": [],
+    "resolved": false
+  }
+}
