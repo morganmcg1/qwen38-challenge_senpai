@@ -15,8 +15,28 @@ non-decreasing first differences while the measured ones drop 22.846 ms after
 the boundary.
 
 `streams(M)` is therefore a SOURCE-DERIVED regressor with no fitted breakpoint.
-But it is a property of ONE TREE. Two consequences, both of which this script
-exists to make checkable rather than assumed:
+
+SCOPE, ADDED AFTER THE FACT AND THE MOST IMPORTANT LINE IN THIS FILE
+--------------------------------------------------------------------
+That fit was derived and measured on thorfinn's merge-base `04ad6bf1`, which
+sits inside the window where E27 had set M5=5/M9=5 and raised the wide helper's
+bound to NA<=5. Its stream vector is 1,1,1,2,2,2,2 and its ONLY boundary is at
+5->6. The tree we ship has vector 1,1,2,2,2,2,3 with boundaries at 4->5 and
+8->9, and so does every plateau tree. So:
+
+  * the coefficients 16.432 / 20.291 / 11.798 and every absolute T(M) level are
+    scoped to `04ad6bf1`, not universal;
+  * on the shipped table the same model becomes a ZERO-PARAMETER OUT-OF-SAMPLE
+    PREDICTION -- the 32 ms jump must MOVE to 4->5 and a second one must APPEAR
+    at 8->9 -- which is what E46 (PR #51) tests;
+  * the model-free falsification of the quadratic is UNAFFECTED, because it uses
+    only the monotonicity of first differences under any quadratic.
+
+Run `census REV...` and put the table next to every number you quote. Never
+quote a boundary, an IPG or a register ceiling without its tree.
+
+`streams(M)` is a property of ONE TREE. Two consequences, both of which this
+script exists to make checkable rather than assumed:
 
   1. Any ranked inference that pools per-round costs across solvers is pooling
      across possibly-different stream structures. Before pooling, compute
@@ -261,7 +281,49 @@ def selftest():
 # census / ab
 # --------------------------------------------------------------------------
 
+def report_revs(revs):
+    """Report the dispatch table for each NAMED rev. Fails closed.
+
+    This function is the whole point of `census REV...` and for one session it
+    did not exist: census() accepted `extra` and never read it, so
+    `census <tree>` printed the board-wide aggregate and ignored the argument
+    entirely. Plausible output that is not about what you asked is worse than an
+    error, and I had already told a student to run exactly that command for
+    every tree he pools. Anything unresolvable or lacking the family is an
+    explicit nonzero exit, never a quiet omission.
+    """
+    bad = 0
+    for rev in revs:
+        resolved = resolve(rev)
+        if resolved is None:
+            print("UNRESOLVED  %s" % rev)
+            print("            not a git object and not a unique submission-id")
+            print("            prefix under %s" % SUBMISSION_GLOB)
+            bad += 1
+            continue
+        tbl = dispatch_table(rev)
+        if tbl is None:
+            print("NO-FAMILY   %s  (resolved %s)" % (rev, resolved))
+            print("            tree predates the cross-row QMV family, so it has")
+            print("            no per-width dispatch table to report")
+            bad += 1
+            continue
+        st = streams(tbl)
+        bd = boundaries(st)
+        print("%s  (resolved %s)" % (rev, resolved))
+        print("  IPG       : %s" % fmt(tbl))
+        print("  streams   : %s" % fmt(st))
+        print("  boundaries: %s" % (", ".join(
+            "%d->%d (%d->%d streams)" % x for x in bd) or "none"))
+        print()
+    if bad:
+        print("%d of %d requested rev(s) could not be reported" % (bad, len(revs)))
+    return 1 if bad else 0
+
+
 def census(extra):
+    if extra:
+        return report_revs(extra)
     seen = collections.Counter()
     examples = {}
     missing = 0
@@ -358,8 +420,11 @@ def main():
     if mode == "selftest":
         return selftest()
     if mode == "census":
-        census(sys.argv[2:])
-        return 0
+        # Propagate the status. This used to `return 0` unconditionally, so an
+        # unresolvable rev would have exited clean even once report_revs began
+        # detecting it -- a fail-closed check behind a fail-open caller is still
+        # fail-open.
+        return census(sys.argv[2:]) or 0
     if mode == "ab":
         ab()
         return 0
