@@ -116,6 +116,14 @@ Two measurement caveats worth stating up front:
   the dispatch table's cost function, which is a structural property of
   `ceil(M/IPG)`; the absolute millisecond levels should not be transferred to
   M5 without re-measurement.
+- **M=1 is a warmup width, not a usable control.** It is measured first in every
+  sweep and absorbs first-touch pipeline cost. Its mean-vs-min spread is 19.4 %
+  in `base-r1` and 41.5 % in `arm-r1` — the latter needed a fresh 90 s Swift
+  rebuild — against 3.3 % at M=6 and 1.4 % at M=8. The spread falls
+  monotonically with M, which is the signature of a first-touch cost rather than
+  anything the edit did. The registered `MDE(M)` rule prices M=1 out
+  automatically, since the same-build replicate disagrees there by about as much
+  as the arm does. Neither contrast width is JIT-contaminated.
 
 Registered decision rules, from `research/e46_prereg.py`:
 
