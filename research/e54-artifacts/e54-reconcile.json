@@ -1,8 +1,9 @@
 {
   "bandwidth_reference": {
+    "breakeven_gbps_this_host": 120.21,
     "bw_na5_measured_pr8_gbps": 95.5,
     "bw_na_le4_measured_pr8_gbps": 165.6,
-    "note": "<T,5,3> reads the matrix twice at the NA<=4 rate and <T,5,5> reads it once, so a required M=5 SLOWDOWN pins the bandwidth the lone NA=5 group would have to sustain. Every value below the measured 95.5 GB/s is a claim that a lone group is slower than the only NA=5 bandwidth measurement we have."
+    "note": "<T,5,5> moves half the traffic of <T,5,3>, so it breaks even when the lone NA=5 group sustains half the rate <T,5,3> achieves. E49's shipped-table legs measured that rate on this host, so the break-even is measured rather than modelled. An implied rate near PR #8's 95.5 GB/s means the board result and the only direct NA=5 bandwidth measurement agree."
   },
   "board_observed_pct": -0.3321,
   "harness": "ranked",
@@ -17,7 +18,7 @@
   "sign_convention": "negative = <T,5,5> faster than <T,5,3>",
   "solved": {
     "e48": {
-      "implied_lone_group_gbps": 65.81,
+      "implied_lone_group_gbps": 95.54,
       "m5_delta_pct_required": 25.823,
       "m9_half_alone_score_pct": 1.4084,
       "reachable": true,
@@ -25,7 +26,7 @@
       "share_pct_m9": 21.6296
     },
     "e53_high": {
-      "implied_lone_group_gbps": 77.81,
+      "implied_lone_group_gbps": 112.97,
       "m5_delta_pct_required": 6.412,
       "m9_half_alone_score_pct": 0.7364,
       "reachable": true,
@@ -33,7 +34,7 @@
       "share_pct_m9": 8.9201
     },
     "e53_low": {
-      "implied_lone_group_gbps": 78.62,
+      "implied_lone_group_gbps": 114.15,
       "m5_delta_pct_required": 5.315,
       "m9_half_alone_score_pct": 0.3816,
       "reachable": true,
@@ -41,7 +42,7 @@
       "share_pct_m9": 4.6223
     },
     "e53_mid": {
-      "implied_lone_group_gbps": 78.17,
+      "implied_lone_group_gbps": 113.49,
       "m5_delta_pct_required": 5.922,
       "m9_half_alone_score_pct": 0.559,
       "reachable": true,
