@@ -143,6 +143,7 @@ def compile_cell(cell: dict, workdir: pathlib.Path) -> dict:
         peak_live_values=peak_vals,
         air_lines=len(body),
         device_loads=sum(1 for line in body if "addrspace(1)" in line and "= load" in line),
+        threadgroup_refs=sum(1 for line in body if "addrspace(3)" in line),
         pipeline="metal -O2 -S | metal-opt -passes=default<O3>",
     )
     return out

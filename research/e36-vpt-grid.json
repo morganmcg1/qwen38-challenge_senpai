@@ -28,6 +28,7 @@
       "peak_live_values": 30,
       "air_lines": 249,
       "device_loads": 20,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -56,6 +57,7 @@
       "peak_live_values": 42,
       "air_lines": 359,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -88,6 +90,7 @@
       "peak_live_values": 45,
       "air_lines": 474,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -116,6 +119,7 @@
       "peak_live_values": 32,
       "air_lines": 309,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -148,6 +152,7 @@
       "peak_live_values": 42,
       "air_lines": 454,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -180,6 +185,7 @@
       "peak_live_values": 47,
       "air_lines": 560,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -208,6 +214,7 @@
       "peak_live_values": 35,
       "air_lines": 369,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -240,6 +247,7 @@
       "peak_live_values": 38,
       "air_lines": 411,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -272,6 +280,7 @@
       "peak_live_values": 41,
       "air_lines": 646,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -304,6 +313,7 @@
       "peak_live_values": 36,
       "air_lines": 331,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -336,6 +346,7 @@
       "peak_live_values": 40,
       "air_lines": 467,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -368,6 +379,7 @@
       "peak_live_values": 41,
       "air_lines": 732,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -400,6 +412,7 @@
       "peak_live_values": 38,
       "air_lines": 372,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -432,6 +445,7 @@
       "peak_live_values": 42,
       "air_lines": 523,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -467,6 +481,7 @@
       "peak_live_values": 44,
       "air_lines": 812,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -499,6 +514,7 @@
       "peak_live_values": 40,
       "air_lines": 413,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -531,6 +547,7 @@
       "peak_live_values": 44,
       "air_lines": 579,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -566,6 +583,7 @@
       "peak_live_values": 43,
       "air_lines": 621,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -598,6 +616,7 @@
       "peak_live_values": 42,
       "air_lines": 454,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -630,6 +649,7 @@
       "peak_live_values": 46,
       "air_lines": 635,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -665,6 +685,7 @@
       "peak_live_values": 44,
       "air_lines": 662,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -697,6 +718,7 @@
       "peak_live_values": 44,
       "air_lines": 495,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -729,6 +751,7 @@
       "peak_live_values": 48,
       "air_lines": 691,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -764,6 +787,7 @@
       "peak_live_values": 45,
       "air_lines": 703,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -796,6 +820,7 @@
       "peak_live_values": 30,
       "air_lines": 219,
       "device_loads": 14,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -828,6 +853,7 @@
       "peak_live_values": 37,
       "air_lines": 320,
       "device_loads": 20,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -860,6 +886,7 @@
       "peak_live_values": 44,
       "air_lines": 515,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -892,6 +919,7 @@
       "peak_live_values": 33,
       "air_lines": 260,
       "device_loads": 18,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -924,6 +952,7 @@
       "peak_live_values": 36,
       "air_lines": 376,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -956,6 +985,7 @@
       "peak_live_values": 41,
       "air_lines": 601,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -988,6 +1018,7 @@
       "peak_live_values": 33,
       "air_lines": 301,
       "device_loads": 22,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1020,6 +1051,7 @@
       "peak_live_values": 38,
       "air_lines": 432,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1052,6 +1084,7 @@
       "peak_live_values": 41,
       "air_lines": 687,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1084,6 +1117,7 @@
       "peak_live_values": 35,
       "air_lines": 342,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1116,6 +1150,7 @@
       "peak_live_values": 40,
       "air_lines": 488,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1148,6 +1183,7 @@
       "peak_live_values": 41,
       "air_lines": 773,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1180,6 +1216,7 @@
       "peak_live_values": 37,
       "air_lines": 383,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1212,6 +1249,7 @@
       "peak_live_values": 42,
       "air_lines": 544,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1247,6 +1285,7 @@
       "peak_live_values": 44,
       "air_lines": 853,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1279,6 +1318,7 @@
       "peak_live_values": 39,
       "air_lines": 424,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1311,6 +1351,7 @@
       "peak_live_values": 44,
       "air_lines": 600,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1346,6 +1387,7 @@
       "peak_live_values": 43,
       "air_lines": 662,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1378,6 +1420,7 @@
       "peak_live_values": 41,
       "air_lines": 465,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1410,6 +1453,7 @@
       "peak_live_values": 46,
       "air_lines": 656,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1445,6 +1489,7 @@
       "peak_live_values": 44,
       "air_lines": 703,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1477,6 +1522,7 @@
       "peak_live_values": 43,
       "air_lines": 506,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1509,6 +1555,7 @@
       "peak_live_values": 48,
       "air_lines": 712,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1544,6 +1591,7 @@
       "peak_live_values": 45,
       "air_lines": 744,
       "device_loads": 60,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1576,6 +1624,7 @@
       "peak_live_values": 30,
       "air_lines": 239,
       "device_loads": 18,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1608,6 +1657,7 @@
       "peak_live_values": 37,
       "air_lines": 360,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1640,6 +1690,7 @@
       "peak_live_values": 64,
       "air_lines": 595,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1672,6 +1723,7 @@
       "peak_live_values": 33,
       "air_lines": 280,
       "device_loads": 22,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1704,6 +1756,7 @@
       "peak_live_values": 36,
       "air_lines": 416,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1736,6 +1789,7 @@
       "peak_live_values": 41,
       "air_lines": 681,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1768,6 +1822,7 @@
       "peak_live_values": 33,
       "air_lines": 321,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1800,6 +1855,7 @@
       "peak_live_values": 38,
       "air_lines": 472,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1832,6 +1888,7 @@
       "peak_live_values": 41,
       "air_lines": 767,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1864,6 +1921,7 @@
       "peak_live_values": 35,
       "air_lines": 362,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1896,6 +1954,7 @@
       "peak_live_values": 40,
       "air_lines": 528,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1928,6 +1987,7 @@
       "peak_live_values": 41,
       "air_lines": 853,
       "device_loads": 60,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1960,6 +2020,7 @@
       "peak_live_values": 37,
       "air_lines": 403,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -1992,6 +2053,7 @@
       "peak_live_values": 42,
       "air_lines": 584,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2027,6 +2089,7 @@
       "peak_live_values": 44,
       "air_lines": 933,
       "device_loads": 64,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2059,6 +2122,7 @@
       "peak_live_values": 39,
       "air_lines": 444,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2091,6 +2155,7 @@
       "peak_live_values": 44,
       "air_lines": 640,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2126,6 +2191,7 @@
       "peak_live_values": 43,
       "air_lines": 742,
       "device_loads": 68,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2158,6 +2224,7 @@
       "peak_live_values": 41,
       "air_lines": 485,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2190,6 +2257,7 @@
       "peak_live_values": 46,
       "air_lines": 696,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2225,6 +2293,7 @@
       "peak_live_values": 44,
       "air_lines": 783,
       "device_loads": 72,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2257,6 +2326,7 @@
       "peak_live_values": 43,
       "air_lines": 526,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2289,6 +2359,7 @@
       "peak_live_values": 48,
       "air_lines": 752,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2324,6 +2395,7 @@
       "peak_live_values": 45,
       "air_lines": 824,
       "device_loads": 76,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2356,6 +2428,7 @@
       "peak_live_values": 30,
       "air_lines": 278,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2388,6 +2461,7 @@
       "peak_live_values": 58,
       "air_lines": 439,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2421,6 +2495,7 @@
       "peak_live_values": 46,
       "air_lines": 517,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2453,6 +2528,7 @@
       "peak_live_values": 33,
       "air_lines": 319,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2485,6 +2561,7 @@
       "peak_live_values": 61,
       "air_lines": 495,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2518,6 +2595,7 @@
       "peak_live_values": 43,
       "air_lines": 603,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2550,6 +2628,7 @@
       "peak_live_values": 33,
       "air_lines": 360,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2582,6 +2661,7 @@
       "peak_live_values": 38,
       "air_lines": 551,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2615,6 +2695,7 @@
       "peak_live_values": 43,
       "air_lines": 689,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2647,6 +2728,7 @@
       "peak_live_values": 35,
       "air_lines": 401,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2679,6 +2761,7 @@
       "peak_live_values": 40,
       "air_lines": 607,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2712,6 +2795,7 @@
       "peak_live_values": 43,
       "air_lines": 775,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2744,6 +2828,7 @@
       "peak_live_values": 37,
       "air_lines": 442,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2776,6 +2861,7 @@
       "peak_live_values": 42,
       "air_lines": 663,
       "device_loads": 60,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2812,6 +2898,7 @@
       "peak_live_values": 46,
       "air_lines": 855,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2844,6 +2931,7 @@
       "peak_live_values": 39,
       "air_lines": 483,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2876,6 +2964,7 @@
       "peak_live_values": 44,
       "air_lines": 719,
       "device_loads": 64,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2912,6 +3001,7 @@
       "peak_live_values": 45,
       "air_lines": 664,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2944,6 +3034,7 @@
       "peak_live_values": 41,
       "air_lines": 524,
       "device_loads": 50,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -2976,6 +3067,7 @@
       "peak_live_values": 46,
       "air_lines": 775,
       "device_loads": 68,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3012,6 +3104,7 @@
       "peak_live_values": 46,
       "air_lines": 705,
       "device_loads": 50,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3044,6 +3137,7 @@
       "peak_live_values": 43,
       "air_lines": 565,
       "device_loads": 54,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3076,6 +3170,7 @@
       "peak_live_values": 48,
       "air_lines": 831,
       "device_loads": 72,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3112,6 +3207,7 @@
       "peak_live_values": 47,
       "air_lines": 746,
       "device_loads": 54,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3140,6 +3236,7 @@
       "peak_live_values": 29,
       "air_lines": 238,
       "device_loads": 20,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3168,6 +3265,7 @@
       "peak_live_values": 39,
       "air_lines": 350,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3200,6 +3298,7 @@
       "peak_live_values": 40,
       "air_lines": 489,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3232,6 +3331,7 @@
       "peak_live_values": 45,
       "air_lines": 474,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3260,6 +3360,7 @@
       "peak_live_values": 30,
       "air_lines": 298,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3292,6 +3393,7 @@
       "peak_live_values": 37,
       "air_lines": 445,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3324,6 +3426,7 @@
       "peak_live_values": 42,
       "air_lines": 453,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3356,6 +3459,7 @@
       "peak_live_values": 47,
       "air_lines": 560,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3384,6 +3488,7 @@
       "peak_live_values": 32,
       "air_lines": 358,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3416,6 +3521,7 @@
       "peak_live_values": 31,
       "air_lines": 402,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3448,6 +3554,7 @@
       "peak_live_values": 36,
       "air_lines": 524,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3480,6 +3587,7 @@
       "peak_live_values": 41,
       "air_lines": 646,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3512,6 +3620,7 @@
       "peak_live_values": 32,
       "air_lines": 320,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3544,6 +3653,7 @@
       "peak_live_values": 31,
       "air_lines": 458,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3576,6 +3686,7 @@
       "peak_live_values": 36,
       "air_lines": 595,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3608,6 +3719,7 @@
       "peak_live_values": 41,
       "air_lines": 732,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3640,6 +3752,7 @@
       "peak_live_values": 33,
       "air_lines": 361,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3672,6 +3785,7 @@
       "peak_live_values": 31,
       "air_lines": 514,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3704,6 +3818,7 @@
       "peak_live_values": 36,
       "air_lines": 666,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3739,6 +3854,7 @@
       "peak_live_values": 44,
       "air_lines": 812,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3771,6 +3887,7 @@
       "peak_live_values": 34,
       "air_lines": 402,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3803,6 +3920,7 @@
       "peak_live_values": 31,
       "air_lines": 570,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3835,6 +3953,7 @@
       "peak_live_values": 36,
       "air_lines": 737,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3870,6 +3989,7 @@
       "peak_live_values": 43,
       "air_lines": 621,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3902,6 +4022,7 @@
       "peak_live_values": 35,
       "air_lines": 443,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3934,6 +4055,7 @@
       "peak_live_values": 31,
       "air_lines": 626,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -3969,6 +4091,7 @@
       "peak_live_values": 42,
       "air_lines": 800,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4004,6 +4127,7 @@
       "peak_live_values": 44,
       "air_lines": 662,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4036,6 +4160,7 @@
       "peak_live_values": 36,
       "air_lines": 484,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4068,6 +4193,7 @@
       "peak_live_values": 31,
       "air_lines": 682,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4103,6 +4229,7 @@
       "peak_live_values": 43,
       "air_lines": 867,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4138,6 +4265,7 @@
       "peak_live_values": 45,
       "air_lines": 703,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4170,6 +4298,7 @@
       "peak_live_values": 37,
       "air_lines": 525,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4202,6 +4331,7 @@
       "peak_live_values": 31,
       "air_lines": 738,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4234,6 +4364,7 @@
       "peak_live_values": 38,
       "air_lines": 574,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4266,6 +4397,7 @@
       "peak_live_values": 31,
       "air_lines": 802,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4294,6 +4426,7 @@
       "peak_live_values": 27,
       "air_lines": 383,
       "device_loads": 12,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4322,6 +4455,7 @@
       "peak_live_values": 33,
       "air_lines": 645,
       "device_loads": 16,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4354,6 +4488,7 @@
       "peak_live_values": 29,
       "air_lines": 208,
       "device_loads": 14,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4386,6 +4521,7 @@
       "peak_live_values": 34,
       "air_lines": 311,
       "device_loads": 20,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4418,6 +4554,7 @@
       "peak_live_values": 39,
       "air_lines": 413,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4450,6 +4587,7 @@
       "peak_live_values": 44,
       "air_lines": 515,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4482,6 +4620,7 @@
       "peak_live_values": 31,
       "air_lines": 249,
       "device_loads": 18,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4514,6 +4653,7 @@
       "peak_live_values": 31,
       "air_lines": 367,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4546,6 +4686,7 @@
       "peak_live_values": 36,
       "air_lines": 484,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4578,6 +4719,7 @@
       "peak_live_values": 41,
       "air_lines": 601,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4610,6 +4752,7 @@
       "peak_live_values": 30,
       "air_lines": 290,
       "device_loads": 22,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4642,6 +4785,7 @@
       "peak_live_values": 31,
       "air_lines": 423,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4674,6 +4818,7 @@
       "peak_live_values": 36,
       "air_lines": 555,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4706,6 +4851,7 @@
       "peak_live_values": 41,
       "air_lines": 687,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4738,6 +4884,7 @@
       "peak_live_values": 31,
       "air_lines": 331,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4770,6 +4917,7 @@
       "peak_live_values": 31,
       "air_lines": 479,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4802,6 +4950,7 @@
       "peak_live_values": 36,
       "air_lines": 626,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4834,6 +4983,7 @@
       "peak_live_values": 41,
       "air_lines": 773,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4866,6 +5016,7 @@
       "peak_live_values": 32,
       "air_lines": 372,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4898,6 +5049,7 @@
       "peak_live_values": 31,
       "air_lines": 535,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4930,6 +5082,7 @@
       "peak_live_values": 36,
       "air_lines": 697,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4965,6 +5118,7 @@
       "peak_live_values": 44,
       "air_lines": 853,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -4997,6 +5151,7 @@
       "peak_live_values": 33,
       "air_lines": 413,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5029,6 +5184,7 @@
       "peak_live_values": 31,
       "air_lines": 591,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5061,6 +5217,7 @@
       "peak_live_values": 36,
       "air_lines": 768,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5096,6 +5253,7 @@
       "peak_live_values": 43,
       "air_lines": 662,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5128,6 +5286,7 @@
       "peak_live_values": 34,
       "air_lines": 454,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5160,6 +5319,7 @@
       "peak_live_values": 31,
       "air_lines": 647,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5195,6 +5355,7 @@
       "peak_live_values": 42,
       "air_lines": 831,
       "device_loads": 50,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5230,6 +5391,7 @@
       "peak_live_values": 44,
       "air_lines": 703,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5262,6 +5424,7 @@
       "peak_live_values": 35,
       "air_lines": 495,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5294,6 +5457,7 @@
       "peak_live_values": 31,
       "air_lines": 703,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5329,6 +5493,7 @@
       "peak_live_values": 43,
       "air_lines": 898,
       "device_loads": 54,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5364,6 +5529,7 @@
       "peak_live_values": 45,
       "air_lines": 744,
       "device_loads": 60,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5396,6 +5562,7 @@
       "peak_live_values": 36,
       "air_lines": 536,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5428,6 +5595,7 @@
       "peak_live_values": 31,
       "air_lines": 759,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5460,6 +5628,7 @@
       "peak_live_values": 37,
       "air_lines": 585,
       "device_loads": 50,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5492,6 +5661,7 @@
       "peak_live_values": 31,
       "air_lines": 823,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5520,6 +5690,7 @@
       "peak_live_values": 24,
       "air_lines": 525,
       "device_loads": 22,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5552,6 +5723,7 @@
       "peak_live_values": 31,
       "air_lines": 608,
       "device_loads": 16,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5584,6 +5756,7 @@
       "peak_live_values": 29,
       "air_lines": 228,
       "device_loads": 18,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5616,6 +5789,7 @@
       "peak_live_values": 34,
       "air_lines": 351,
       "device_loads": 28,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5648,6 +5822,7 @@
       "peak_live_values": 52,
       "air_lines": 473,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5680,6 +5855,7 @@
       "peak_live_values": 64,
       "air_lines": 595,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5712,6 +5888,7 @@
       "peak_live_values": 31,
       "air_lines": 269,
       "device_loads": 22,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5744,6 +5921,7 @@
       "peak_live_values": 31,
       "air_lines": 407,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5776,6 +5954,7 @@
       "peak_live_values": 36,
       "air_lines": 544,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5808,6 +5987,7 @@
       "peak_live_values": 41,
       "air_lines": 681,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5840,6 +6020,7 @@
       "peak_live_values": 30,
       "air_lines": 310,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5872,6 +6053,7 @@
       "peak_live_values": 31,
       "air_lines": 463,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5904,6 +6086,7 @@
       "peak_live_values": 36,
       "air_lines": 615,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5936,6 +6119,7 @@
       "peak_live_values": 41,
       "air_lines": 767,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -5968,6 +6152,7 @@
       "peak_live_values": 31,
       "air_lines": 351,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6000,6 +6185,7 @@
       "peak_live_values": 31,
       "air_lines": 519,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6032,6 +6218,7 @@
       "peak_live_values": 36,
       "air_lines": 686,
       "device_loads": 50,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6064,6 +6251,7 @@
       "peak_live_values": 41,
       "air_lines": 853,
       "device_loads": 60,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6096,6 +6284,7 @@
       "peak_live_values": 32,
       "air_lines": 392,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6128,6 +6317,7 @@
       "peak_live_values": 31,
       "air_lines": 575,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6160,6 +6350,7 @@
       "peak_live_values": 36,
       "air_lines": 757,
       "device_loads": 54,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6195,6 +6386,7 @@
       "peak_live_values": 44,
       "air_lines": 933,
       "device_loads": 64,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6227,6 +6419,7 @@
       "peak_live_values": 33,
       "air_lines": 433,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6259,6 +6452,7 @@
       "peak_live_values": 31,
       "air_lines": 631,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6291,6 +6485,7 @@
       "peak_live_values": 36,
       "air_lines": 828,
       "device_loads": 58,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6326,6 +6521,7 @@
       "peak_live_values": 43,
       "air_lines": 742,
       "device_loads": 68,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6358,6 +6554,7 @@
       "peak_live_values": 34,
       "air_lines": 474,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6390,6 +6587,7 @@
       "peak_live_values": 31,
       "air_lines": 687,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6425,6 +6623,7 @@
       "peak_live_values": 42,
       "air_lines": 891,
       "device_loads": 62,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6460,6 +6659,7 @@
       "peak_live_values": 44,
       "air_lines": 783,
       "device_loads": 72,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6492,6 +6692,7 @@
       "peak_live_values": 35,
       "air_lines": 515,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6524,6 +6725,7 @@
       "peak_live_values": 31,
       "air_lines": 743,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6559,6 +6761,7 @@
       "peak_live_values": 43,
       "air_lines": 958,
       "device_loads": 66,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6594,6 +6797,7 @@
       "peak_live_values": 45,
       "air_lines": 824,
       "device_loads": 76,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6626,6 +6830,7 @@
       "peak_live_values": 36,
       "air_lines": 556,
       "device_loads": 50,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6658,6 +6863,7 @@
       "peak_live_values": 31,
       "air_lines": 799,
       "device_loads": 60,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6690,6 +6896,7 @@
       "peak_live_values": 37,
       "air_lines": 605,
       "device_loads": 54,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6722,6 +6929,7 @@
       "peak_live_values": 31,
       "air_lines": 863,
       "device_loads": 64,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6754,6 +6962,7 @@
       "peak_live_values": 27,
       "air_lines": 375,
       "device_loads": 14,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6786,6 +6995,7 @@
       "peak_live_values": 31,
       "air_lines": 648,
       "device_loads": 24,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6818,6 +7028,7 @@
       "peak_live_values": 29,
       "air_lines": 267,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6850,6 +7061,7 @@
       "peak_live_values": 55,
       "air_lines": 430,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6882,6 +7094,7 @@
       "peak_live_values": 75,
       "air_lines": 592,
       "device_loads": 62,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6915,6 +7128,7 @@
       "peak_live_values": 46,
       "air_lines": 517,
       "device_loads": 26,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6947,6 +7161,7 @@
       "peak_live_values": 31,
       "air_lines": 308,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -6979,6 +7194,7 @@
       "peak_live_values": 56,
       "air_lines": 486,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7011,6 +7227,7 @@
       "peak_live_values": 76,
       "air_lines": 663,
       "device_loads": 66,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7044,6 +7261,7 @@
       "peak_live_values": 43,
       "air_lines": 603,
       "device_loads": 30,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7076,6 +7294,7 @@
       "peak_live_values": 30,
       "air_lines": 349,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7108,6 +7327,7 @@
       "peak_live_values": 31,
       "air_lines": 542,
       "device_loads": 52,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7140,6 +7360,7 @@
       "peak_live_values": 77,
       "air_lines": 734,
       "device_loads": 70,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7173,6 +7394,7 @@
       "peak_live_values": 43,
       "air_lines": 689,
       "device_loads": 34,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7205,6 +7427,7 @@
       "peak_live_values": 31,
       "air_lines": 390,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7237,6 +7460,7 @@
       "peak_live_values": 31,
       "air_lines": 598,
       "device_loads": 56,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7269,6 +7493,7 @@
       "peak_live_values": 36,
       "air_lines": 805,
       "device_loads": 74,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7302,6 +7527,7 @@
       "peak_live_values": 43,
       "air_lines": 775,
       "device_loads": 38,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7334,6 +7560,7 @@
       "peak_live_values": 32,
       "air_lines": 431,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7366,6 +7593,7 @@
       "peak_live_values": 31,
       "air_lines": 654,
       "device_loads": 60,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7398,6 +7626,7 @@
       "peak_live_values": 36,
       "air_lines": 876,
       "device_loads": 78,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7434,6 +7663,7 @@
       "peak_live_values": 46,
       "air_lines": 855,
       "device_loads": 42,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7466,6 +7696,7 @@
       "peak_live_values": 33,
       "air_lines": 472,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7498,6 +7729,7 @@
       "peak_live_values": 31,
       "air_lines": 710,
       "device_loads": 64,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7530,6 +7762,7 @@
       "peak_live_values": 36,
       "air_lines": 947,
       "device_loads": 82,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7566,6 +7799,7 @@
       "peak_live_values": 45,
       "air_lines": 664,
       "device_loads": 46,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7598,6 +7832,7 @@
       "peak_live_values": 34,
       "air_lines": 513,
       "device_loads": 50,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7630,6 +7865,7 @@
       "peak_live_values": 31,
       "air_lines": 766,
       "device_loads": 68,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7665,6 +7901,7 @@
       "peak_live_values": 42,
       "air_lines": 1010,
       "device_loads": 86,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7701,6 +7938,7 @@
       "peak_live_values": 46,
       "air_lines": 705,
       "device_loads": 50,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7733,6 +7971,7 @@
       "peak_live_values": 35,
       "air_lines": 554,
       "device_loads": 54,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7765,6 +8004,7 @@
       "peak_live_values": 31,
       "air_lines": 822,
       "device_loads": 72,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7800,6 +8040,7 @@
       "peak_live_values": 43,
       "air_lines": 1077,
       "device_loads": 90,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7836,6 +8077,7 @@
       "peak_live_values": 47,
       "air_lines": 746,
       "device_loads": 54,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7868,6 +8110,7 @@
       "peak_live_values": 36,
       "air_lines": 595,
       "device_loads": 58,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7900,6 +8143,7 @@
       "peak_live_values": 31,
       "air_lines": 878,
       "device_loads": 76,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7932,6 +8176,7 @@
       "peak_live_values": 37,
       "air_lines": 644,
       "device_loads": 62,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7964,6 +8209,7 @@
       "peak_live_values": 31,
       "air_lines": 942,
       "device_loads": 80,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -7996,6 +8242,7 @@
       "peak_live_values": 27,
       "air_lines": 414,
       "device_loads": 22,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8028,6 +8275,7 @@
       "peak_live_values": 31,
       "air_lines": 727,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8061,6 +8309,7 @@
       "peak_live_values": 14,
       "air_lines": 266,
       "device_loads": 1,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8098,6 +8347,7 @@
       "peak_live_values": 44,
       "air_lines": 853,
       "device_loads": 48,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8131,6 +8381,7 @@
       "peak_live_values": 13,
       "air_lines": 292,
       "device_loads": 1,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8164,6 +8415,7 @@
       "peak_live_values": 24,
       "air_lines": 277,
       "device_loads": 1,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8196,6 +8448,7 @@
       "peak_live_values": 20,
       "air_lines": 149,
       "device_loads": 17,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8228,6 +8481,7 @@
       "peak_live_values": 25,
       "air_lines": 148,
       "device_loads": 17,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8260,6 +8514,7 @@
       "peak_live_values": 12,
       "air_lines": 160,
       "device_loads": 17,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8293,6 +8548,7 @@
       "peak_live_values": 41,
       "air_lines": 687,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8326,6 +8582,7 @@
       "peak_live_values": 41,
       "air_lines": 773,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8359,6 +8616,7 @@
       "peak_live_values": 31,
       "air_lines": 608,
       "device_loads": 16,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8391,6 +8649,7 @@
       "peak_live_values": 44,
       "air_lines": 515,
       "device_loads": 32,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8423,6 +8682,7 @@
       "peak_live_values": 41,
       "air_lines": 601,
       "device_loads": 36,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8455,6 +8715,7 @@
       "peak_live_values": 41,
       "air_lines": 687,
       "device_loads": 40,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     },
     {
@@ -8487,6 +8748,7 @@
       "peak_live_values": 41,
       "air_lines": 773,
       "device_loads": 44,
+      "threadgroup_refs": 0,
       "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
     }
   ]
