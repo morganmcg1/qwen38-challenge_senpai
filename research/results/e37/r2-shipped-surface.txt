@@ -1,0 +1,43 @@
+==============================================================================
+E37 r2 addendum - shipped surface, with both ends of every range named
+==============================================================================
+
+A. campaign shipped surface (baseline -> PR base) [informational]
+  range: 5273067..0491f9e
+    +157   -47    Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+    +32    -0     Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift
+    +32    -19    Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+    +4     -4     Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+    +4     -4     Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+  total: 5 files, +229/-74
+
+B. THIS branch on the shipped surface (must be empty) [gating]
+  range: 0491f9e..8710b62
+    (no files)
+  total: 0 files, +0/-0
+
+C. this branch on campaign scaffolding [informational]
+  range: 0491f9e..8710b62
+    +186   -0     research/e37-run.sh
+    +182   -0     research/e37_wandb_log.py
+    +244   -0     research/e37_width_census.py
+    +567   -0     research/e37r2_census.py
+    +122   -0     research/results/e37/census.json
+    +23    -0     research/results/e37/medicine-meta.txt
+    +231   -0     research/results/e37/medicine-rounds.txt
+    +23    -0     research/results/e37/natural_history-meta.txt
+    +262   -0     research/results/e37/natural_history-rounds.txt
+    +2067  -0     research/results/e37/r2-census.json
+    +112   -0     research/results/e37/r2-console.txt
+    +617   -0     research/results/qwen38-r1-e37-draft-width-census-beagle-medicine.md
+  total: 12 files, +4636/-0
+
+-- negative control --------------------------------------------------------
+  predicate on a known-dirty range (5273067..0491f9e5): VIOLATION reported (5 files) -- control OK
+
+-- verdict -----------------------------------------------------------------
+  shipped-surface bytes added by this branch: 0 files, +0/-0
+  non-research files touched by this branch : none
+  assignment-scope rule (research/ only)    : PASS
+  negative control                          : PASS
+  wrote research/results/e37/r2-shipped-surface.json

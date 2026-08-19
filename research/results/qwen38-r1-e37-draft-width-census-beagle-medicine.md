@@ -18,6 +18,7 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 - **Submitted candidate files:** **none.** The diff touches only `research/`.
 - **Supporting tooling / documentation files:** `research/e37-run.sh`,
   `research/e37r2_census.py`, `research/e37_width_census.py` (r1),
+  `research/e37_alloc_regime.py`, `research/e37_shipped_surface.py`,
   `research/e37_wandb_log.py`, `research/results/e37/*`, this report.
 - **MTP head provenance and draft policy:** declared proposal head from
   `mtp-head.manifest.json` — tree digest
@@ -28,7 +29,9 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   `costModelDepth` at its shipped literals; nothing was forced or overridden.
 - **Assignment-scope preflight:** diff confined to `research/`. No `Sources/`,
   `Vendor/`, `mtp-head.manifest.json`, fixture, workflow or trusted file was
-  modified. `git status` was clean at every `run_job` launch
+  modified — re-derived against the *named* campaign baseline `5273067` in §6e
+  (`0 files, +0/−0` on the shipped surface, negative control live).
+  `git status` was clean at every `run_job` launch
   (`dirty=0` in each r2 `meta.txt`).
 - **Editable source bytes / headroom / growth:** unchanged — **0** candidate
   bytes added against the 3 000 000 / 524 288 / **262 144** limits.
@@ -46,6 +49,8 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 | b | report accept rate beside the histogram; is thorfinn's window degenerate; which side of beagle, and by what mechanism | §2b, §2c, §2d |
 | c | deliverables 1–2 on a fixture that reaches the regime; validate or break E34's `.538` / `.593`; measured `w(M=6)` vs thorfinn's 20.1 % and my floor ≥ .2167 | §4, §5 |
 | d | withdraw the structural claim; keep the falsified-H1 verdict | §0, below |
+| e | *(addendum 1)* say how the split allocator regime bears on the warm-coverage negative | §6d |
+| f | *(addendum 2)* the shipped surface is 5 files, +229/−74 against `5273067`, not 4 / +117/−87 | §6e |
 
 **Withdrawn.** r1 §2a concluded: *"M = 7, 8, 9 are never dispatched locally at
 all… A live scored code path exists that no local `--local-iterate` run can
@@ -402,23 +407,100 @@ agrees.
 scored width, and there is no warm-coverage headroom to harvest. I recommend
 closing that line.
 
-### 6d. Addendum — the negative holds *a fortiori* on the ranked box
+### 6d. Addendum — the allocator regime, re-derived rather than adopted
 
-`Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift` splits local from ranked:
-its `apply()` is guarded by `physicalMemoryBytes >= 96 GiB`, so on this 48 GiB
-host it **runs** (`MLX_MAX_MB_PER_BUFFER=128`, `MLX_MAX_OPS_PER_BUFFER=64`,
-cache limit 6 GiB, clear-cache-after-warmup **true**, wired residency **off**),
-while the 128 GiB ranked box **skips it entirely**.
+The addendum supplied a local-vs-ranked regime table and concluded my
+warm-coverage negative is conservative. The whole claim is about which branch a
+`guard` takes, so it is checkable, and I checked it instead of quoting it.
+`research/e37_alloc_regime.py` is that check: **13 structural assertions**
+(brace-matched function bodies, so a check cannot be satisfied by a coincidental
+string elsewhere in the file) over the shipped policy, both MTP worker copies,
+the MTP block session and the vendored MLX allocator/device — plus **13 mutation
+negative controls**, each a targeted edit that must flip its target check to
+`FAIL`. Both halves pass 13/13. Console and JSON are committed.
 
-Two consequences:
+**Four rows confirm; one is inverted on the path that runs this census.**
 
-1. The warm-coverage negative was reached under the **more punishing** allocator
-   regime — small buffers, aggressive cache clearing, no wired residency. If
-   first-touch allocator cost were going to show up anywhere, it would show up
-   here. It does not, so the negative transfers to the ranked box a fortiori.
-2. It **cannot** contaminate the counts. Memory geometry is not an input to
-   `costModelDepth` (§1), so every histogram in this report is unaffected by
-   which side of the 96 GiB guard the host falls on.
+| row | addendum | verified — Qwen-MTP worker path | check |
+|---|---|---|---|
+| `MLX_MAX_MB_PER_BUFFER` | 128 forced / 512 | 128 **forced** (`overwrite=1`) / 512 **default** (`overwrite=0`) | C2, C6 |
+| `MLX_MAX_OPS_PER_BUFFER` | 64 forced / 50 | same, with the same forced-vs-default asymmetry | C2, C6 |
+| `Memory.cacheLimit` | 6 GiB / MLX default | 6 GiB / MLX default = `min(1.5·maxRec, 0.95·memsize)` — order **120 GiB** on a 128 GiB box | C4, C10 |
+| clear cache after warmup | true / false | **inverted**: **no** clear locally, **one** clear on ranked | C7, C8, C9 |
+| wired residency | OFF / ON | OFF / ON, same `>= 96 GiB` gate | C9 |
+
+**Why that row inverts.** `clearAllocatorCacheAfterWarmup` is *never read on
+this path*. Its only consumers are `LagunaRuntimeWeights.swift:395` and the two
+DFlash workers (`:205`, `:204`) — the flag is inert for the MTP worker, which
+inlines the policy by hand at `QwenRuntimeMTPWorker.swift:487` (both copies) and
+applies only the two command-buffer budgets and the cache limit. The shipped
+test suite agrees by omission: it pins the clear-after-warm ordering for the
+*Laguna* initializer only. Meanwhile the single post-warm `Memory.clearCache()`
+reachable from an MTP session sits inside `wireResidentWeightsIfEnabled()`
+(`Qwen36MTPBlockSession.swift:235`), behind the *same* `physicalMemory >= 96 GiB`
+gate as wired residency. So the box that clears its allocator cache after warm
+is the **ranked** one; this 48 GiB host never clears.
+
+**The conclusion survives, and in a stronger form than the one offered.**
+
+1. **The negative is regime-*invariant*, not merely conservative.** §6c is a
+   claim about *pipeline* coverage. `MetalAllocator::clear_cache()` frees
+   buffers only, and compiled pipelines live in `Device::library_kernels_`,
+   which no allocator knob can reach (C11); `MLX_MAX_*_PER_BUFFER` are
+   Device-scope command-buffer commit thresholds read once at Device
+   construction and present at no kernel-selection site (C12). No memory-policy
+   setting on either box can create, hide or evict a PSO. G1–G4 are shape gaps
+   on both boxes or on neither.
+2. **The residual first-touch cost is regime-dependent, and this box is the
+   punishing one — on the rows that survived.** The ranked box runs a cache
+   limit ~20× larger (order 120 GiB against a forced 6 GiB) and keeps the
+   weights wired, both of which make a fresh allocation likelier to be served
+   from the retained pool there than here. That is the addendum's conclusion and
+   it holds — but it is carried by the cache-limit and residency rows, not by
+   the clear-after-warm row, which runs the other way, and not by warm-buffer
+   retention: a *gap* shape has by construction no warm-phase buffer to retain,
+   so retention can only help it through size-bucket reuse. **My bound was taken
+   under the less favourable of the two allocator regimes and transfers
+   upward.**
+3. **The counts are untouched either way.** Memory and command-buffer geometry
+   are not inputs to `costModelDepth` (§1), so every histogram above is
+   unaffected by which side of either gate the host falls on.
+
+Two side findings, both checkable, neither disturbing anything above:
+
+- **The full profile is applied on no host at all.** All five application sites
+  are `isLowMemory`-guarded (C13), so the policy's 320 MB / 128 ops / 32 GiB
+  full-profile constants never execute anywhere. This is documented intent —
+  `QwenRuntimeDFlashWorker.swift:124` says the full profile "stays a deliberate
+  no-op, so the ranked box keeps the stock allocator behavior the pinned
+  baseline was measured with" — but a reader of the struct would conclude the
+  ranked box runs 320/128, and it does not: it runs 512/50, installed by the
+  separate `>= 96 GiB` block inside `resolve()` that fires *before* the
+  low/full branch and independently of it.
+- **The 64–96 GiB band gets neither treatment** (C1 against C2/C3): such a host
+  is above the low-memory threshold and below the command-buffer installer's
+  gate, so it runs stock MLX geometry with no campaign setting at all. No
+  campaign machine is in that band today; it is a latent trap for anyone who
+  reads "ranked-like" as ">= 64 GiB".
+
+### 6e. The shipped-surface baseline — re-derived, not accepted
+
+Addendum item 2 retracts the "frozen at 4 files, +117/−87" constraint. I
+re-derived the replacement rather than adopting it. Against the true campaign
+baseline `5273067`, `Sources/` + `Vendor/` differ by **5 files, +229/−74** —
+the corrected figure exactly — and the fifth file is indeed
+`RuntimeStartupMemoryPolicy.swift` (+32/−0), the subsystem §6d is about.
+
+My branch's contribution to that surface is **0 files, +0/−0**, and no
+non-`research/` path appears in my diff at all.
+
+`research/e37_shipped_surface.py` records this. It prints **both ends of every
+range it compares**, because the failure being retired was a gate that never
+named its own baseline, and it carries a negative control: the same
+zero-bytes-added predicate, evaluated on a range that genuinely edits shipped
+files, must report a violation — it reports 5. A scope check that has never seen
+a non-zero input is not evidence, which is the same objection the r2 request
+raised against my proxies.
 
 ---
 
@@ -513,7 +595,11 @@ saturated beagle cell is +3.80 % of score), but a sub-1 % kernel win inside it i
   research/await-lock-then-run.sh 600 research/e37-run.sh --census benchfixture natural_history
   research/await-lock-then-run.sh 600 research/e37-run.sh --census medicine
   python3 research/e37r2_census.py | tee research/results/e37/r2-console.txt
+  # addendum, zero GPU, read-only on the tree (both exit non-zero on failure):
+  python3 research/e37_alloc_regime.py    | tee research/results/e37/r2-alloc-regime.txt
+  python3 research/e37_shipped_surface.py | tee research/results/e37/r2-shipped-surface.txt
   python3 research/e37_wandb_log.py research/results/e37/r2-census.json
+  python3 research/e37_wandb_addendum.py  # updates run h977ws5a in place
   ```
 
 - **Committed raw artifacts:** `research/results/e37/r2-census.json` (per-arm
@@ -521,7 +607,11 @@ saturated beagle cell is +3.80 % of score), but a sub-1 % kernel win inside it i
   alternatives, ρ fit, brackets, payoff) and
   `research/results/e37/r2-console.txt` (full console transcript). The r1
   artifacts (`census.json`, `*-rounds.txt`, `*-meta.txt`) are retained unchanged
-  for comparison.
+  for comparison. Addendum: `r2-alloc-regime.json` / `.txt` (13 checks, 13
+  mutation controls, derived regime, cited line numbers) and
+  `r2-shipped-surface.json` / `.txt`. The surface JSON's `head` names the commit
+  the gate ran against — one commit behind the commit that publishes it, which
+  adds `research/` paths only and so cannot move the gated predicate.
 - **Metal / twin audit:** not relevant — no Metal source was touched.
   `metallib_fingerprint` is recorded **read-only** in each `meta.txt`
   (`1e359ea9…`). I deliberately did **not** rebuild `mlx.metallib`: a rebuild
@@ -559,8 +649,13 @@ saturated beagle cell is +3.80 % of score), but a sub-1 % kernel win inside it i
 (state `finished`), carrying the width census, per-arm provenance and thermal
 record, the traced-vs-untraced control, the ranked resolution with its rejected
 readings, the ρ fit, the brackets, the payoff tables, and the
-`e37-width-census` artifact including this report. The r1 run is `afefx5kd`;
-its structural-claim summary keys are superseded by `h977ws5a`.
+`e37-width-census` artifact including this report. The addendum was **resumed
+onto the same run** rather than forked to a new id — it adds no measurement —
+and contributes the `addendum_alloc_checks`, `addendum_alloc_negative_controls`
+and `addendum_alloc_regime` tables, the `addendum/*` and `surface/*` summary
+keys, and the `e37-addendum` artifact. `research/e37_wandb_addendum.py` re-runs
+both gates before logging and refuses to publish a failing one. The r1 run is
+`afefx5kd`; its structural-claim summary keys are superseded by `h977ws5a`.
 
 ---
 
@@ -586,6 +681,14 @@ its structural-claim summary keys are superseded by `h977ws5a`.
   regime but from above; the ranked pair remains bracketed rather than matched. A
   forced-depth harness is still the clean instrument, but it is no longer a
   precondition for touching `M >= 6`.
+- **The warm-coverage negative is conservative in the direction that matters.**
+  Its core — no PSO is missed at any scored width — is invariant to the startup
+  memory policy, because allocator knobs cannot reach `Device::library_kernels_`.
+  Its residual — the one-time first-touch allocation a shape gap would pay — was
+  measured on the box with the smaller allocator cache (a forced 6 GiB against
+  MLX's ~120 GiB default) and without wired residency, so it transfers upward to
+  the ranked box. One row of the regime table I was given inverts on this code
+  path (§6d) and the conclusion is unaffected.
 - **Sizing.** Work in the `M >= 6` beagle cell should be sized against
   **σ_score = 0.0923 %** and a **0.561 %** engineerable gap, not against 0.078 %
   and 0.2587 %. At the floor, a 1 % cell win is 1.1σ; ~1.8 % is needed to be
@@ -615,3 +718,15 @@ its structural-claim summary keys are superseded by `h977ws5a`.
 5. **Submit one tree twice** to obtain a σ_score of our own. Zero rows on the
    board have ever been resubmitted identically (confirmed here), so the campaign
    is importing a σ it has never measured.
+6. **Decide whether `clearAllocatorCacheAfterWarmup` should be honoured by the
+   MTP worker.** Today it is set by the low profile and read by nobody on that
+   path (§6d, C7/C8), so a local box carries warm scratch into its decode window
+   while the ranked box clears it. Either wire it up or delete it, but the
+   current state is a flag that documents an intent the worker does not execute.
+   Not attempted here: it is a `Sources/` change, and any allocator edit needs a
+   gate-qualified timing arm this experiment is not permitted to produce.
+7. **Point the shipped-surface gate at a named baseline in CI.** `5273067` is
+   the baseline; `research/e37_shipped_surface.py` shows the shape of the check
+   (both ends printed, negative control included) and agrees with the advisor's
+   corrected 5 / +229/−74. Two independent implementations now report the same
+   number, which is the cheapest available guard against a third silent drift.
