@@ -335,6 +335,63 @@ def log_analysis(run, path) -> None:
     )
 
 
+def log_buffer(run, path) -> None:
+    """The counterbalanced MLX_MAX_OPS_PER_BUFFER session at a fixed 512 MiB."""
+    report = json.loads(pathlib.Path(path).read_text())
+    table = wandb.Table(
+        columns=[
+            "ops_per_buffer_limit",
+            "runs",
+            "candidate_dispatches_per_buffer",
+            "candidate_buffers_per_round",
+            "mtp_seconds_per_token",
+            "mtp_within_pair_spread_percent",
+            "serial_seconds_per_token",
+            "gpu_temp_entry_c_mean",
+        ]
+    )
+    payload = {}
+    for ops, entry in sorted(report["arms"].items(), key=lambda kv: int(kv[0])):
+        entry_mean = sum(entry["gpu_temp_entry_c"]) / len(entry["gpu_temp_entry_c"])
+        table.add_data(
+            entry["ops_per_buffer_limit"],
+            ",".join(entry["runs"]),
+            entry["candidate_dispatches_per_buffer"],
+            entry["candidate_buffers_per_round"],
+            entry["mtp_seconds_per_token"],
+            entry["mtp_within_pair_spread_percent"],
+            entry["serial_seconds_per_token"],
+            entry_mean,
+        )
+        for field in (
+            "mtp_seconds_per_token",
+            "mtp_within_pair_spread_percent",
+            "serial_seconds_per_token",
+            "candidate_dispatches_per_buffer",
+            "candidate_buffers_per_round",
+        ):
+            payload[f"buffer/ops{ops}/{field}"] = entry[field]
+    payload["buffer/table"] = table
+    for field, value in report["effect"].items():
+        if isinstance(value, (int, float, bool)):
+            payload[f"buffer/effect/{field}"] = value
+    run.log(payload)
+    run.summary.update(
+        {
+            "buffer_sweep_verdict": "regression",
+            "buffer_sweep_candidate_delta_percent": report["effect"][
+                "candidate_delta_percent"
+            ],
+            "buffer_sweep_ns_per_removed_buffer": report["effect"][
+                "ns_per_removed_buffer"
+            ],
+            "buffer_sweep_entry_temp_spread_c": report["effect"]["entry_temp_spread_c"],
+            "cool_gate_passed_real_gate": report["cool_gate_passed_real_gate"],
+            "gate_qualified_for_timing": report["gate_qualified_for_timing"],
+        }
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage", required=True)
@@ -342,6 +399,7 @@ def main() -> int:
     parser.add_argument("--census")
     parser.add_argument("--arms", nargs="*", default=[])
     parser.add_argument("--analysis")
+    parser.add_argument("--buffer")
     args = parser.parse_args()
 
     run = resume_run()
@@ -353,6 +411,8 @@ def main() -> int:
         log_tax(run, args.arms)
     elif args.stage == "analysis":
         log_analysis(run, args.analysis)
+    elif args.stage == "buffer":
+        log_buffer(run, args.buffer)
     else:
         print(f"e58: unknown stage {args.stage}", file=sys.stderr)
         return 2
