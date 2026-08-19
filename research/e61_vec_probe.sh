@@ -19,12 +19,16 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+# A `!` prefix marks a variant that is EXPECTED to fail its lane gate. The two
+# fast-math variants are contrast arms: they must fail, and a pass would mean
+# the probe had stopped discriminating. The exit status reports whether every
+# variant met its expectation, not whether every variant passed.
 specs=("$@")
 if [[ ${#specs[@]} -eq 0 ]]; then
   specs=(
     "mlxmatch=-std=metal4.0 -fno-fast-math"
-    "fastmath40=-std=metal4.0"
-    "fastmath31=-std=metal3.1"
+    "!fastmath40=-std=metal4.0"
+    "!fastmath31=-std=metal3.1"
     "nocontract31=-std=metal3.1 -ffp-contract=off"
   )
 fi
@@ -35,15 +39,28 @@ swiftc -O research/e61_vec_check.swift -o "${tmp}/e61_vec_check"
 
 status=0
 for spec in "${specs[@]}"; do
+  expect_pass=1
+  if [[ "${spec}" == '!'* ]]; then
+    expect_pass=0
+    spec="${spec#!}"
+  fi
   name="${spec%%=*}"
   flags="${spec#*=}"
   [[ "${flags}" == "${name}" ]] && flags=""
   out="research/e61-artifacts/e61-vec-probe-${name}.json"
-  echo "=== e61_vec_probe: variant=${name} flags='${flags}' ==="
+  echo "=== e61_vec_probe: variant=${name} flags='${flags}' expect=$( ((expect_pass)) && echo PASS || echo FAIL) ==="
   # shellcheck disable=SC2086
   xcrun -sdk macosx metal -O2 ${flags} \
     -c research/e61_vec_probe.metal -o "${tmp}/e61-${name}.air"
   xcrun -sdk macosx metallib "${tmp}/e61-${name}.air" -o "${tmp}/e61-${name}.metallib"
-  "${tmp}/e61_vec_check" "${tmp}/e61-${name}.metallib" "${out}" || status=$?
+  rc=0
+  "${tmp}/e61_vec_check" "${tmp}/e61-${name}.metallib" "${out}" || rc=$?
+  got_pass=$(( rc == 0 ? 1 : 0 ))
+  if ((got_pass == expect_pass)); then
+    echo "e61_vec_probe: ${name} met its expectation"
+  else
+    echo "e61_vec_probe: ${name} MISSED its expectation (rc=${rc})" >&2
+    status=1
+  fi
 done
 exit "${status}"
