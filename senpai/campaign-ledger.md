@@ -12751,6 +12751,12 @@ once; a cell with two groups reads them twice.
 | 8 | `<T,8,4>` | 2 | 104 | `<T,8,8>` | 188 | no, +59 |
 | 9 | `<T,9,5>` | 1 (E55) | 129 | shipped | - | - |
 
+🔴 **SUPERSEDED, register column only.** The `NA >= 6` register figures above are
+law extrapolations. askeladd measured them in E61 rung 0: `<T,6,6>` is **144**,
+`<T,7,7>` is **157**, `<T,8,8>` is **177**. The ceiling rise for the M=6 route is
+therefore `+15`, not `+17`. See 196(A). The break-even bandwidths below contain
+no register term and are unaffected.
+
 The cost model is askeladd's own, with no parameter fitted by me:
 `T = eta(n_groups) * sum_g W / bw(NA_g)`, using E54's measured lone-group
 bandwidth ladder `223.8 / 199.7 / 175.2 / 150.9` GB/s at NA = 2/3/4/5 and the
@@ -13228,3 +13234,232 @@ is not pure host build either, for the `async_eval` tape-walk reason that is the
 whole subject of 195(A). **Neither field may be quoted as host time without that
 caveat attached.** Quoting `draft_build_us` as host time is precisely how the
 `2,400 us` figure entered the record.
+
+## 196. Two measured corrections to records published this round, one new rule for local Metal probes, and the closed disposition of the `eval` root-set idea
+
+Item 194 was published on the same day as the measurements that correct part of
+it. That is the normal way a fast campaign works, but the correction has to be
+written into the ledger with the measurement inline, per the rule added in 195.
+This item does that, and adds two things that were not written down anywhere.
+
+### 196(A) The affine-4 `r=4` register law is measured-exact through `NA = 5` and then breaks, in our favour
+
+Item 194(B) published a single-weight-stream affordability table. Its rows for
+`NA >= 6` were **extrapolations** of askeladd's law
+
+```text
+reg = 20 + 21 * max(NA) + 4 * [two distinct NA group sizes]
+```
+
+which had been validated on shipped cells only, all of which have `NA <= 5`.
+askeladd then measured the extrapolated cells directly in E61 rung 0 (PR #64,
+CPU-only register census, 28 s). The law loses above `NA = 5`.
+
+| `NA` | law `20 + 21*NA` | measured | residual | source of the measurement |
+| --- | --- | --- | --- | --- |
+| 3 | 83 | 83 | 0 | shipped `<T,3,3>` |
+| 4 | 104 | 104 | 0 | shipped `<T,4,4>` |
+| 5 | 125 | **125** | 0 | thorfinn, E59 rung 1, arm `iso_m5_ipg5_r4` |
+| 6 | 146 | **144** | **-2** | askeladd, E61 rung 0, `<T,6,6>` |
+| 7 | 167 | **157** | **-10** | askeladd, E61 rung 0, `<T,7,7>` |
+| 8 | 188 | **177** | **-11** | askeladd, E61 rung 0, `<T,8,8>` |
+
+The measured per-step increments are `21, 21, 19, 13, 20`. The `13` at `NA = 7`
+is out of pattern and has no explanation; nothing may be built on that single
+cell. The law remains exact, residual zero, on all seven shipped cells, and the
+shipped table maximum is confirmed at **129**, set by `case 9` since E55.
+
+Three consequences.
+
+**One. The ceiling rise under test in E61 is `129 -> 144`, that is `+15`, not the
+`+17` the assignment derived from the law.** The cost side of the M=6
+single-weight-stream trade is cheaper than 194(B) assumed. The direction of the
+argument is unchanged.
+
+**Two. The break-even bandwidths in 194(B) are unaffected.** They come from the
+bandwidth model `T = eta(n_groups) * sum_g W / bw(NA_g)` and contain no register
+term. `M5 > 120.49`, `M6 > 114.00`, `M7 > 106.55`, `M8 > 100.01`, `M9 > 92.56`
+GB/s all stand as published. Only the register column of 194(B) is superseded.
+
+**Three. The obvious mechanical cause is refuted by askeladd's own layout
+census.** He measured `sizeof`/`alignof` of `vec<float,N>` on this device at
+`8/8` for `N = 2`, `16/16` for `N = 3, 4`, and `32/32` for `N = 5, 6, 7, 8`.
+The 32-byte form therefore begins at `N = 5`, where the law is measured-exact.
+The break begins at `N = 6`. **The accumulator's storage class is not the
+trigger.** Whatever changes is an allocator or spill heuristic inside the Metal
+compiler. `lane_bleed_mask` and `lanewise_arith_fault_mask` are zero at every
+`N`, all lanes stay distinct, and the `NA = 2` against `NA = 4` reference
+cross-check is exact, so there is no aliasing or padding hazard in the wider
+accumulator. `maxTotalThreadsPerThreadgroup` is 1024 for every arm measured, so
+no arm loses occupancy at the threadgroup limit.
+
+### 196(B) 🔴 New campaign rule: a local Metal probe of a scored kernel must compile with `-std=metal4.0 -fno-fast-math`
+
+This is the most transferable thing E61 rung 0 produced, and it nearly killed
+the experiment as a false negative.
+
+askeladd's first lane-fidelity probe reported a **128-ulp mismatch from `NA = 6`
+upward**, which under the assignment's own stop rule would have ended E61 before
+rung 1. It is an artefact of the probe's build, not of the kernel.
+
+| probe variant | metal flags | `NA=5` | `NA=6` | `NA=7` | `NA=8` | verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| `mlxmatch` | `-std=metal4.0 -fno-fast-math` | 0 | **0** | **0** | **0** | PASS |
+| `nocontract31` | `-std=metal3.1 -ffp-contract=off` | 0 | **0** | **0** | **0** | PASS |
+| `fastmath40` | `-std=metal4.0` | 0 | 128 | 128 | 128 | FAIL |
+| `fastmath31` | `-std=metal3.1` | 0 | 128 | 128 | 128 | FAIL |
+
+(Maximum ulp over lanes. All twelve positive controls are caught in every
+variant, so the probe still discriminates in the passing builds.)
+
+The scored runtime JIT compiles with fast math **off**. `Device::build_library_`
+in `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp:631-632`:
+
+```cpp
+options->setFastMathEnabled(false);
+options->setLanguageVersion(get_metal_version());
+```
+
+and `get_metal_version()` returns `MTL::LanguageVersion4_0` on macOS 26. Under
+`xcrun metal`'s default fast math the compiler reassociates differently once the
+accumulator crosses the 32-byte form. The per-lane ulp pattern at `NA = 8`,
+`[3, 18, 32, 10, 32, 128, 57, 1]`, is a reassociation signature and not a lane
+collision.
+
+**Rule.** Any local `xcrun metal` or `metal-opt` numerical check of a scored
+kernel must reproduce both settings, or its disagreements are meaningless. A
+disagreement produced under default fast math is not evidence about the scored
+kernel. Register censuses and static disassembly are far less sensitive than ulp
+comparisons, but pin the flags there too so that one command line serves both.
+
+This rule does **not** relax anything. A passing local probe under matched flags
+clears the accumulator shape only. Bitwise exactness end to end at 512 tokens
+against the shipped kernel body, with a positive control that proves the
+comparison can fail, remains the gate.
+
+### 196(C) The `eval` root-set idea is real, tiny, and GPU-neutral: adopt it as a free rider, never as an assignment
+
+A one-line change in `Qwen36MTPBlockSession.swift` passes a large array bundle to
+`eval`, where most members are already ancestors of the others. A rival board
+submission carries the same reduction and moved `+0.260 %`. A delegated
+source-analysis agent priced it end to end. The verdict is **do not spend a GPU
+slot; fold it into the next composed candidate as a free rider**.
+
+The findings are worth keeping because two of them refute intuitions that have
+appeared repeatedly in this campaign.
+
+**MLX prefix slices always alias; they never copy.** `ops.cpp:811-813`
+short-circuits a full-range slice at the front end. Otherwise `Slice::eval_gpu`
+reaches `slice_gpu`, then `slice()`, then `shared_buffer_slice()`, which calls
+`copy_shared_buffer(...)` **unconditionally**
+(`backend/gpu/primitives.cpp:208-217`, `backend/gpu/slicing.cpp:9-16`,
+`backend/common/slicing.cpp:20-69`). `check_contiguity` only sets flags. So the
+byte-traffic hypothesis behind this idea is **dead**: the change moves zero
+bytes.
+
+**Therefore the GPU time delta is exactly zero.** What the change removes is
+host graph-walk work. `eval` already deduplicates by array id
+(`transforms.cpp:156-166`) and skips already-evaluated inputs (`:192-194`). The
+marginal host cost of a duplicate root is about `0.3-0.5 us`. The marginal cost
+of a **new** `Slice` node root is about `2-5 us`, because each one costs an
+autorelease pool entry, an `unordered_set<shared_ptr>` allocation, and an
+`addCompletedHandler` block (`backend/metal/eval.cpp:29-69`).
+
+Per round the expression `cache.flatMap { $0.state }` builds **128 MLXArray
+objects**: 96 that already exist (48 `MambaCache` layers, two arrays each,
+returned directly at `KVCache.swift:1316-1318` with no new op) and **32 that are
+new `Slice` nodes** (16 `KVCacheSimple` layers, two each; the full-range
+short-circuit fires only when `offset == keys.dim(2)`, which happens only on
+multiples of 256, `KVCache.swift:446`). Estimated saving: about `45-160 us` of
+critical-path host time, plus `160-320 us` of tape-end slice evaluations that are
+mostly hidden. **Expected true effect `+0.05 %` to `+0.3 %`, and it cannot
+exceed about `0.5 %`.** The rival's `+0.260 %` is consistent with that.
+
+Correctness was checked and is safe: rollback at `:1345-1366` uses pre-verify
+references; deferred convolution-state slices evaluate on the next round as
+ancestors (`Qwen35.swift:1000-1004`); and on rejected rounds those 48 slice
+evaluations are skipped entirely.
+
+**`snapshotRecurrent` (`:1327-1334`) is free, and the doc comment that implies
+otherwise is wrong.** Its 96 `[.ellipsis]` "copies" hit the full-range
+short-circuit at `ops.cpp:811-813` and never reach the GPU. This is not a defect
+and must not be reopened as one. The false doc comment is at
+`KVCache.swift:1310-1324`.
+
+The same redundant root pattern appears at nine other sites in
+`Qwen36MTPBlockSession.swift`: `:317, :407, :420, :430, :444, :447, :475, :513,
+:967, :1216`. Only `:967` and `:1216` are inside a repeated path; prune those two
+in the same commit if the rider is adopted. The host-side effect can be observed
+for free through the existing `traceRounds` timestamps `tVerifyBuilt` (`:1112`)
+and `tEvalDone` (`:1124`) on any local run that is happening anyway.
+
+### 196(D) Seven candidate directions returned by the idea-generation agent, with the gate that decides each
+
+Recorded so that a later agent does not re-derive them, and so that each one
+carries its kill condition from the start. None is assigned yet. Ordering is by
+the advisor's expected value, not by the agent's.
+
+1. **Round-boundary GPU idle gap.** Encode the next round's first head step
+   before the blocking eval at `:1123`, so the GPU is not starved while the host
+   runs readout, commit, rollback, trim and upkeep. Variant (a) speculates on the
+   full-accept branch, about 44 % of rounds, and repairs with the existing
+   `trimTrimmable(headCache, to: validHistoryOffset)` at `:1235`. Variant (b) is
+   unconditionally correct through a GPU epilogue that computes first-mismatch
+   and selects the `(hidden, token)` pair on device. **Zero mentions in the
+   ledger and zero coverage in the 712-tree field census.** Rung 0 is two
+   `traceRounds` timestamps; kill if the gap is under 1 ms. Partially
+   substitutive with head compilation. Cap any speculation at one head step.
+2. **Generalised x-group `rbx` wrapper at `M = 5` and `M = 9`.** Recovers a lower
+   table maximum while keeping E55's win. Gated by E61 rung 4's `ballast` arm:
+   if raising the table maximum with unchanged scored routes is a null, this
+   whole family is worthless.
+3. **Gated DeltaNet `dv`-blocking.** `GatedDelta.swift:44` sets
+   `dv_idx = thread_position_in_grid.y`, while `q`, `k`, `g` and `beta` are
+   indexed only by `hk_idx`/`hv_idx`, so every thread on the `dv` axis re-reads
+   the same bytes. Claimed bit-identical by construction, because it changes
+   which thread reads a byte and not the accumulation order. **Counter-evidence:
+   E20 measured this forward at about 73 GB/s, so it is probably not bandwidth
+   bound and the ceiling may be under 1 %.** Cheapest gate is the existing
+   `sweepGatedDelta` helper, `Tests/MLXFastTests/QwenQMVCostCurveTests.swift:898-966`.
+4. **Zero-GPU shortlist containment audit.** `P(exact affine-4 argmax is inside
+   the coarse top-K)` for `K` in `{16, 32, 64}`. `qwen35Top32K` at
+   `Qwen35.swift:2472`, `draftRerankCandidateCount` at `:2775` with a bitmask
+   that admits `K = 64`. At or above `99.5 %` this closes a branch; below it,
+   opens one. Entry gate for directions in the certified-screening family.
+5. **Gated DeltaNet rollback economics from a free counter.** Split
+   `rollbackRoundCount` by `draftCount`. Break-even at `M = 2` is a reject
+   probability of about `0.49`, and **per-width reject rate has never been
+   measured**. Mid-state site `Qwen35.swift:1084-1101`, cleared at
+   `Qwen36MTPBlockSession.swift:1163`.
+6. **Precision-island dose sweep.** `MLXFAST_QWEN_MTP_EXACT_QKV_ROWS` off and on,
+   over the islands at `Qwen35.swift:2866-2891` (`qOutputCount: 12_288`,
+   `kOutputCount: 1_024`, plus V), about 10.24 KB per row per step. Never swept
+   (180(E)). Needs no new code. ⚠️ **Verify reachability first: the worker
+   environment allowlist drops the `MLXFAST_` prefix**
+   (`QwenRuntimeWorker.swift:2639-2646`), so this switch may not reach the worker
+   at all in its current form.
+7. **Two bold directions.** Tree-shaped native-MTP proposals at the first
+   low-confidence position, whose rung 0a is simply reading the trusted parent's
+   row-verification contract to see whether it hard-codes chains. And
+   transform-side weight layout in `Sources/MLXFastTransform/`, which **no field
+   tree has ever touched** (181(I)) and which is legal because the fixture pins
+   the raw checkpoint and the transformed tree is generated on-box (fixture line
+   106). Its step 0 is resolving the NVFP4-envelope ambiguity at
+   `.github/scripts/run-submission-static-review.sh:453`.
+
+One framing note from the agent, retained because it is the correct way to price
+host-side work: host and latency costs transfer to rank at at least one to one,
+while the ranked round is about `3.6x` shorter than the local round. So a fixed
+host cost per round is worth roughly three times more at rank than it appears
+locally (186(D)). The `/3.55` divisor that 188 refuted applies to QMV decode
+changes, not to fixed per-round host latency. Round-cost improvements convert to
+score at about `x0.9125`.
+
+### 196(E) The submission blocker did not move
+
+`origin/main` is still `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`, and
+`git merge-base --is-ancestor d2139c92 origin/main` still fails. The candidate at
+`d2139c92` passed every gate in the pre-submit chain, and the recipe to unblock
+it is recorded verbatim in 194(G). Nothing about the candidate needs to change.
+Per `senpai/program.md`, the blocker is recorded and the campaign continues
+without waiting.
