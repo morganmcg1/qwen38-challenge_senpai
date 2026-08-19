@@ -1,0 +1,114 @@
+E44 Gate 0 register readout (compile-only, zero GPU)
+  toolchain:  Apple metal version 32023.883 (metalfe-32023.883)
+  worktree:   e66ddd0
+  baseline:   9fe0dc5 Merge pull request #47 from morganmcg1/qwen-askeladd/psi-phi-by-injected-regression
+  cells:      research/e44_sgmm_probe.metal
+  entry:      research/e40_qmv_entry_probe.metal
+
+  arm:        CANDIDATE (worktree quantized.h defines the sgmm cell)
+
+=== 1. per-cell footprint (worktree header) ===
+In file included from research/e44_sgmm_probe.metal:24:
+In file included from Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/gemm.h:6:
+In file included from Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/mma.h:11:
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/utils/integral_constant.h:104:6: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+  if constexpr (start < stop) {
+     ^
+1 warning generated.
+  [cells] AIR     8459 lines, O3    15525 lines
+
+candidate dispatch table derived from Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+  2:e44_narrow_m2  3:e44_m3_ipg3  4:e44_m4_ipg4  5:e44_m5_ipg3  6:e44_m6_ipg3  7:e44_sgmm_runtime  8:e44_sgmm_runtime  9:e44_m9_ipg3
+
+per-cell footprint (regs: naive / lane-corrected)
+cell                        naive     lane  allocas    loads alloca types
+e44_m3_ipg3                    83       83        1       42 ['[4 x [4 x i16]']
+e44_m4_ipg4                   104      104        1       46 ['[4 x [4 x i16]']
+e44_m5_ipg3                    87       87        2       78 ['[4 x [4 x i16]']
+e44_m6_ipg3                    83       83        1       42 ['[4 x [4 x i16]']
+e44_m7_ipg4                   108      108        2       86 ['[4 x [4 x i16]']
+e44_m8_ipg4                   104      104        1       46 ['[4 x [4 x i16]']
+e44_m9_ipg3                    83       83        1       42 ['[4 x [4 x i16]']
+e44_narrow_m2                  89       89        5       80 ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e44_narrow_m3                  89       89        5       80 ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e44_narrow_m4                  89       89        5       80 ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e44_narrow_m5                  89       89        5       80 ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e44_narrow_m6                  89       89        5       80 ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e44_narrow_m7                  89       89        5       80 ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e44_narrow_m8                  89       89        5       80 ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e44_narrow_m9                  89       89        5       80 ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e44_sgmm_m8                   343       33        0       28 
+e44_sgmm_m9                   343       33        0       28 
+e44_sgmm_runtime              344       34        0       28 
+e44_wide_na2                   62       62        1       40 ['[4 x [4 x i16]']
+e44_wide_na3                   83       83        1       44 ['[4 x [4 x i16]']
+e44_wide_na4                  104      104        1       48 ['[4 x [4 x i16]']
+
+KERNEL-WIDE MAXIMUM (what one register allocation must satisfy)
+arm        binding cell                naive     lane
+base       e44_m7_ipg4 / e44_m7_ipg4      108      108
+cand       e44_sgmm_runtime / e44_m4_ipg4      344      104
+
+per-M dispatch table (naive / lane-corrected)
+M    base cell                     base regs cand cell                     cand regs
+2    e44_narrow_m2                   89 / 89 e44_narrow_m2                   89 / 89
+3    e44_m3_ipg3                     83 / 83 e44_m3_ipg3                     83 / 83
+4    e44_m4_ipg4                   104 / 104 e44_m4_ipg4                   104 / 104
+5    e44_m5_ipg3                     87 / 87 e44_m5_ipg3                     87 / 87
+6    e44_m6_ipg3                     83 / 83 e44_m6_ipg3                     83 / 83
+7    e44_m7_ipg4                   108 / 108 e44_sgmm_runtime               344 / 34
+8    e44_m8_ipg4                   104 / 104 e44_sgmm_runtime               344 / 34
+9    e44_m9_ipg3                     83 / 83 e44_m9_ipg3                     83 / 83
+
+inner packing-factor anchor (E13/E27/E32/E40 read 62/83/104 for NA=2/3/4)
+  e44_wide_na2         naive=62 lane=62
+  e44_wide_na3         naive=83 lane=83
+  e44_wide_na4         naive=104 lane=104
+
+cells: verdict-split accounting (distributed = simdgroup matrices)
+  at the NAIVE peak point            | at the LANE peak point
+  kernel                           total  dist  ordin. |   total  dist  ordin.
+  e44_sgmm_m8                        343     5      23 |      33     5      23
+  e44_sgmm_m9                        343     5      23 |      33     5      23
+  e44_sgmm_runtime                   344     5      24 |      34     5      24
+
+static threadgroup memory in module: 0 bytes (none)
+
+=== 2. production entry point, baseline vs worktree ===
+  [base] quantized.h sha256 75d45143959eb3bd
+  [cand] quantized.h sha256 0f891abe2592d72d
+  [base] dispatch table matches the built-in BASE_TABLE: yes
+In file included from research/e40_qmv_entry_probe.metal:24:
+In file included from Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/gemm.h:6:
+In file included from Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/mma.h:11:
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/utils/integral_constant.h:104:6: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+  if constexpr (start < stop) {
+     ^
+1 warning generated.
+  [entry-base] AIR     8047 lines, O3    14488 lines
+In file included from research/e40_qmv_entry_probe.metal:24:
+In file included from Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/gemm.h:6:
+In file included from Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/mma.h:11:
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/utils/integral_constant.h:104:6: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+  if constexpr (start < stop) {
+     ^
+1 warning generated.
+  [entry-cand] AIR     7361 lines, O3    12894 lines
+
+entry kernel                                 base naive/lane    cand naive/lane    allocas b->c
+e40_affine_qmv_fast_bf16_gs64_b4_batch0      163 / 163          396 / 160          55 -> 52 no new alloca type
+      base alloca types: ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+      cand alloca types: ['[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e40_affine_qmv_fast_bf16_gs64_b4_batch1      31 / 31            31 / 31            1 -> 1 no new alloca type
+      base alloca types: ['[4 x float]']
+      cand alloca types: ['[4 x float]']
+e40_affine_qmv_fast_bf16_gs64_b2_batch0      57 / 57            57 / 57            5 -> 5 no new alloca type
+      base alloca types: ['[4 x float]', '[4 x i64]']
+      cand alloca types: ['[4 x float]', '[4 x i64]']
+  base static threadgroup memory: 0 bytes
+  cand static threadgroup memory: 0 bytes
+
+entry (cand): verdict-split accounting (distributed = simdgroup matrices)
+  at the NAIVE peak point            | at the LANE peak point
+  kernel                           total  dist  ordin. |   total  dist  ordin.
+  e40_affine_qmv_fast_bf16_gs64_b4_batch0     396     5      76 |     160     0     160

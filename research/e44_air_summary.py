@@ -75,6 +75,49 @@ CAND_TABLE = {
     8: "e44_sgmm_runtime",
     9: "e44_sgmm_runtime",
 }
+# A hardcoded dispatch table is the campaign's most repeated error: it is quoted
+# from whichever tree the author last read. `--dispatch-from` derives the table
+# from the header actually being measured, so the arm cannot silently disagree
+# with the tree, and the tables above become a self-check rather than an input.
+WIDE_BRANCH = re.compile(
+    r"if \(out_vec_size >= 4096\) \{(.*?)\n    \} else \{", re.DOTALL
+)
+CASE_LABEL = re.compile(r"^\s*case (\d+):\s*$")
+CALL_M = re.compile(r"qmv_fast_crossrow_affine4_g64_m<T, (\d+), (\d+), true>")
+CALL_N = re.compile(r"qmv_fast_crossrow_affine4_g64<T, (\d+)>")
+CALL_SGMM = re.compile(r"qmv_fast_crossrow_affine4_g64_sgmm<T>")
+
+
+def dispatch_table_from_header(path: pathlib.Path) -> dict[int, str]:
+    """Map each `ntg.x` case in the >=4096 branch to its probe cell name."""
+    branch = WIDE_BRANCH.search(path.read_text())
+    if not branch:
+        raise SystemExit(f"{path}: no >=4096 dispatch branch found")
+    table: dict[int, str] = {}
+    pending: list[int] = []
+    for line in branch.group(1).splitlines():
+        label = CASE_LABEL.match(line)
+        if label:
+            pending.append(int(label.group(1)))
+            continue
+        if not pending:
+            continue
+        if CALL_SGMM.search(line):
+            cell = "e44_sgmm_runtime"
+        elif (match := CALL_M.search(line)) is not None:
+            cell = f"e44_m{match.group(1)}_ipg{match.group(2)}"
+        elif (match := CALL_N.search(line)) is not None:
+            cell = f"e44_narrow_m{match.group(1)}"
+        else:
+            continue
+        for m in pending:
+            table[m] = cell
+        pending = []
+    if not table:
+        raise SystemExit(f"{path}: dispatch branch parsed but no cells matched")
+    return table
+
+
 # The <4096 branch is inlined into the same kernel by both arms, so it bounds
 # the kernel-wide maximum from below for both.
 NARROW_TABLE = {m: f"e44_narrow_m{m}" for m in range(2, 10)}
@@ -160,9 +203,15 @@ def table_max(stats: dict, table: dict[int, str], key: str) -> tuple[str, int]:
     return binding, stats[binding][key]
 
 
-def report_cells(path: pathlib.Path) -> None:
+def report_cells(path: pathlib.Path, header: pathlib.Path | None = None) -> None:
     stats = measure(path)
-    have_cand = all(c in stats for c in CAND_TABLE.values())
+    cand_table = CAND_TABLE
+    if header is not None:
+        cand_table = dispatch_table_from_header(header)
+        print(f"candidate dispatch table derived from {header}")
+        print("  " + "  ".join(f"{m}:{cell}" for m, cell in sorted(cand_table.items())))
+        print()
+    have_cand = all(c in stats for c in cand_table.values())
 
     print("per-cell footprint (regs: naive / lane-corrected)")
     print("%-24s %8s %8s %8s %8s %s" % ("cell", "naive", "lane", "allocas", "loads", "alloca types"))
@@ -175,7 +224,7 @@ def report_cells(path: pathlib.Path) -> None:
     print()
     print("KERNEL-WIDE MAXIMUM (what one register allocation must satisfy)")
     print("%-10s %-24s %8s %8s" % ("arm", "binding cell", "naive", "lane"))
-    for label, table in (("base", BASE_TABLE), ("cand", CAND_TABLE)):
+    for label, table in (("base", BASE_TABLE), ("cand", cand_table)):
         if label == "cand" and not have_cand:
             print("%-10s %-24s %8s %8s" % (label, "(cell absent from tree)", "-", "-"))
             continue
@@ -188,7 +237,7 @@ def report_cells(path: pathlib.Path) -> None:
     print("%-4s %-24s %14s %-24s %14s" % ("M", "base cell", "base regs", "cand cell", "cand regs"))
     for m in sorted(BASE_TABLE):
         base = BASE_TABLE[m]
-        cand = CAND_TABLE[m]
+        cand = cand_table[m]
         cand_txt = ("%d / %d" % (stats[cand]["naive"], stats[cand]["lane"])) if cand in stats else "-"
         print("%-4d %-24s %14s %-24s %14s"
               % (m, base, "%d / %d" % (stats[base]["naive"], stats[base]["lane"]),
@@ -255,6 +304,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("air_ll", nargs="*")
     ap.add_argument("--cells", action="store_true")
+    ap.add_argument("--dispatch-from", type=pathlib.Path,
+                    help="derive the candidate table from this header instead of "
+                         "the built-in one")
     ap.add_argument("--entry", action="store_true")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
@@ -262,7 +314,7 @@ def main() -> int:
     if args.selftest:
         return selftest()
     if args.cells:
-        report_cells(pathlib.Path(args.air_ll[0]))
+        report_cells(pathlib.Path(args.air_ll[0]), args.dispatch_from)
         return 0
     if args.entry:
         report_entry(pathlib.Path(args.air_ll[0]), pathlib.Path(args.air_ll[1]))

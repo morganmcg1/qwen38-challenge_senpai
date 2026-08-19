@@ -66,7 +66,7 @@ echo "=== 1. per-cell footprint (worktree header) ==="
 compile "${CELLS}" cells ${SGMM_FLAG[@]+"${SGMM_FLAG[@]}"} \
   || { echo "FAIL: cell probe did not compile"; exit 1; }
 echo
-python3 research/e44_air_summary.py "${OUT}/cells.o3.ll" --cells
+python3 research/e44_air_summary.py "${OUT}/cells.o3.ll" --cells --dispatch-from "${HDR}"
 echo
 
 echo "=== 2. production entry point, baseline vs worktree ==="
@@ -75,6 +75,21 @@ mkdir -p "${BASE_SHADOW}"
 git show "${BASE_REV}:${HDR}" > "${BASE_SHADOW}/quantized.h" || exit 1
 echo "  [base] quantized.h sha256 $(shasum -a 256 "${BASE_SHADOW}/quantized.h" | cut -c1-16)"
 echo "  [cand] quantized.h sha256 $(shasum -a 256 "${HDR}" | cut -c1-16)"
+python3 - "${BASE_SHADOW}/quantized.h" <<'PY'
+import pathlib, sys
+
+sys.path.insert(0, "research")
+from e44_air_summary import BASE_TABLE, dispatch_table_from_header
+
+derived = dispatch_table_from_header(pathlib.Path(sys.argv[1]))
+same = derived == BASE_TABLE
+print(f"  [base] dispatch table matches the built-in BASE_TABLE: "
+      f"{'yes' if same else 'NO'}")
+if not same:
+    print(f"         derived: {derived}")
+    print(f"         builtin: {BASE_TABLE}")
+    raise SystemExit(1)
+PY
 compile "${ENTRY}" entry-base -I "${OUT}/shadow-base" || { echo "FAIL: baseline entry arm"; exit 1; }
 compile "${ENTRY}" entry-cand || { echo "FAIL: candidate entry arm"; exit 1; }
 echo
