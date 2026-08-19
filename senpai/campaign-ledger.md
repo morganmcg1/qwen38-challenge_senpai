@@ -12951,3 +12951,83 @@ streak gate", which same-parent twins `f03469a9` (gate 3->2, +0.542 %) and
 `93ce739b` (gate 3->0, +0.544 %) confirm at rank, since gate 0 against gate 2
 differs by `+0.002 %`. Missed entirely until now: the round-bundle cache-state
 drop above, and head-weight streaming as a first-class lever.
+
+### 194(G) The unblock is small, and I verified it without mutating anything
+
+I checked every other precondition the guard applies after the ancestry test, so
+that when `origin/main` moves there is no second surprise. All of them already
+pass:
+
+| guard check | line | result |
+|---|---|---|
+| `recorded_upstream_sha` is an ancestor of `upstream/main` | 222 | `0c90733d` is an ancestor of `9e1ff9ec`, OK |
+| organizer `benchmark.json` equals campaign main's | 241 | identical |
+| organizer trusted surface has not advanced | 370 | `git diff --name-only 0c90733d 9e1ff9ec` returns exactly one file, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`, which is editable |
+
+So the organizer side needs no sync. Only the campaign branch is stale.
+
+I then used `git merge-tree --write-tree`, which computes a merge without
+touching any ref, worktree, or index, to find out exactly what a human would
+face:
+
+```
+$ git merge-tree --write-tree origin/main d2139c92
+70d8a30addb75de2901b0549bb53608b3abbf12f
+...
+Auto-merging Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+Auto-merging Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+Auto-merging Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+CONFLICT (content): Merge conflict in senpai/campaign-ledger.md
+CONFLICT (content): Merge conflict in senpai/frontier-state.json
+```
+
+**Exactly two files conflict, and neither is scored.** Both are campaign
+bookkeeping. Every file on the submitted surface auto-merges.
+
+`git diff --stat origin/main d2139c92` over `benchmark.json` plus every
+`editablePaths` entry is four files: `Qwen36MTPBlockSession.swift` (159),
+`Qwen35.swift` (51), `quantized.cpp` (20), `quantized.h` (4). 684 files differ
+overall; only these four are scored.
+
+There is one trap, and it is worth naming because it is silent. The auto-merged
+tree's protected surface is **not** byte-identical to the measured base:
+
+```
+$ git diff --stat 70d8a30a d2139c92 -- <benchmark.json + editablePaths>
+ Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | 16 +++-------------
+```
+
+Inspected, that difference is **comment text only**. `origin/main` still carries
+the stale "3+3+2, not 4+4" rationale block above a call that has read
+`qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>` for many rounds; our branch
+replaced that block with the correct "4+4" note. The dispatch call itself is
+identical on both sides, so the compiled kernel is unchanged. This closes one of
+the recorded documentation debts as a side effect.
+
+It still matters operationally, because the guard's snapshot test at line 383 is
+a textual `git diff --quiet`, not a semantic one. A merge resolved only at the
+two visible conflicts would leave `main` textually different from the measured
+base and the guard would refuse a second time. The guard fails closed, which is
+correct, but the second refusal would look like a new problem rather than the
+same one.
+
+**Verified unblock recipe.** After merging the advisor branch into `main`,
+resolve `senpai/campaign-ledger.md` and `senpai/frontier-state.json` in favour of
+the advisor branch, and take the advisor branch's version of every protected
+path, for example
+`git checkout d2139c92 -- benchmark.json <editablePaths...>`. The
+post-merge test that must pass before pushing is
+
+```bash
+git diff --quiet <merged main> d2139c924c7a7d98ca6026eea63867c2776abbca \
+  -- benchmark.json $(python3 -c "import json;print(' '.join(json.load(open('benchmark.json'))['editablePaths']))")
+```
+
+An empty diff means `senpai/submit-official.sh` will pass line 383. Combined
+with the three organizer-side checks above, that is the complete set.
+
+Note also that `origin/main`'s protected surface currently equals **neither**
+organizer main `0c90733d` **nor** the live frontier `9e1ff9ec`. Commit `d32342d`
+on `main` regenerated a promoted quantized twin, so `main` is a third distinct
+tree. Item 193(A)'s rule applies here too: identify a tree by its content, never
+by the branch name or commit subject that produced it.

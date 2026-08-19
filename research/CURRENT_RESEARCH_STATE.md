@@ -54,8 +54,37 @@ raw `git push` is a forbidden reproduction of a typed GitHub mutation; and a
 fast-forward merge is impossible anyway because `main` holds four commits we do
 not have. Recorded in full as ledger 194(D).
 
-The note is written and ready. After `main` moves, submission is one command
-with every gate above already green.
+### The unblock is small, and I verified it with `git merge-tree` without mutating anything
+
+Every other guard precondition already passes: `0c90733d` is an ancestor of
+`upstream/main` `9e1ff9ec`; organizer `benchmark.json` equals campaign main's;
+and the organizer trusted surface has not advanced (`0c90733d..9e1ff9ec` changes
+exactly one file, `Qwen36MTPBlockSession.swift`, which is editable). **The
+organizer side needs no sync. Only the campaign branch is stale.**
+
+Merging the advisor branch into `main` conflicts on **exactly two files, and
+neither is scored**: `senpai/campaign-ledger.md` and
+`senpai/frontier-state.json`. Every file on the submitted surface auto-merges.
+
+One silent trap. The auto-merged protected surface is not byte-identical to the
+measured base: `quantized.cpp` differs by **comment text only**, because
+`origin/main` still carries the stale "3+3+2, not 4+4" block above a call that
+has read `<T, 8, 4, true>` for many rounds. The compiled kernel is unchanged, but
+the guard's line-383 test is a textual `git diff --quiet`, so a merge resolved
+only at the two visible conflicts would be refused again.
+
+**Verified recipe.** Merge, resolve the two bookkeeping files in favour of the
+advisor branch, then take the advisor branch's version of every protected path
+(`git checkout d2139c92 -- benchmark.json <editablePaths...>`). The test that
+must pass before pushing:
+
+```bash
+git diff --quiet <merged main> d2139c924c7a7d98ca6026eea63867c2776abbca \
+  -- benchmark.json $(python3 -c "import json;print(' '.join(json.load(open('benchmark.json'))['editablePaths']))")
+```
+
+An empty diff means the guard will pass. The note is written and ready; after
+that, submission is one command with every gate above already green.
 
 ---
 
