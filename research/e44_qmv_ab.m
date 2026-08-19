@@ -241,6 +241,14 @@ typedef struct {
   double max_rel;   // vs the double reference
   double rms_rel;
   double max_rel_vs_base;
+  // The element that produced max_rel, so a large relative number can be read
+  // against the magnitude it was divided by instead of being taken at face
+  // value: a near-cancelling output turns rounding-scale absolute error into a
+  // large ratio.
+  int worst_m;
+  int worst_row;
+  double worst_want;
+  double worst_got;
 } Fidelity;
 
 static Fidelity checkArm(id<MTLCommandQueue> queue,
@@ -256,7 +264,7 @@ static Fidelity checkArm(id<MTLCommandQueue> queue,
   [cb waitUntilCompleted];
 
   const uint16_t *y = (const uint16_t *)o->y.contents;
-  Fidelity f = {0.0, 0.0, 0.0};
+  Fidelity f = {0};
   double sq = 0.0;
   int count = 0;
   const int stride = o->n / samples > 0 ? o->n / samples : 1;
@@ -266,7 +274,13 @@ static Fidelity checkArm(id<MTLCommandQueue> queue,
       double got = (double)bf16_to_f32(y[mm * o->n + row]);
       double scale = fabs(want) > 1e-6 ? fabs(want) : 1e-6;
       double rel = fabs(got - want) / scale;
-      if (rel > f.max_rel) f.max_rel = rel;
+      if (rel > f.max_rel) {
+        f.max_rel = rel;
+        f.worst_m = mm;
+        f.worst_row = row;
+        f.worst_want = want;
+        f.worst_got = got;
+      }
       sq += rel * rel;
       if (base_y) {
         double bv = (double)base_y[mm * o->n + row / stride];
@@ -348,6 +362,89 @@ static void probeMapping(id<MTLCommandQueue> queue,
   free(expect);
 }
 
+// Exact coverage proof over every (m, n, k).
+//
+// The one-hot probe reads the k mapping but only exercises one term of one
+// group, so it cannot see a group that is summed twice or skipped. This probe
+// closes that gap without giving up exactness. Every scale is forced to 1 and
+// every bias to 0, and x is set to 1 on exactly the eight k values packed in one
+// weight word, zero everywhere else. The exact answer is then
+//
+//   y[m][n] = sum of the eight nibbles of w[n][word]
+//
+// an integer in [0, 120], which bfloat16 represents without loss, so the
+// comparison can demand bit equality of the stored result rather than a
+// tolerance. One dropped, duplicated or misplaced nibble moves the sum by at
+// least 1 and is therefore visible. Sweeping the word index covers every k with
+// per-nibble resolution, and a single dispatch yields every (m, n) at once, so
+// the same sweep also proves the m and n tiling. It says nothing about the
+// affine arithmetic -- that is what the random-x fidelity check is for.
+static void probeCoverage(id<MTLCommandQueue> queue,
+                          id<MTLComputePipelineState> base,
+                          id<MTLComputePipelineState> cand,
+                          Operands *o, int m, int word_stride) {
+  const int words_per_row = o->k / 8;
+  const size_t n_groups = (size_t)o->n * o->k / 64;
+  uint16_t *sp = (uint16_t *)o->scales.contents;
+  uint16_t *bp = (uint16_t *)o->biases.contents;
+  const uint16_t one = f32_to_bf16(1.0f);
+  for (size_t i = 0; i < n_groups; i++) { sp[i] = one; bp[i] = 0; }
+  memset(o->x.contents, 0, o->x.length);
+  uint16_t *xp = (uint16_t *)o->x.contents;
+  const uint32_t *w = (const uint32_t *)o->w.contents;
+  const uint16_t *y = (const uint16_t *)o->y.contents;
+
+  long checked = 0, bad[2] = {0, 0}, shown[2] = {0, 0};
+  double worst_abs[2] = {0.0, 0.0};
+  id<MTLComputePipelineState> psos[2] = {base, cand};
+  const char *label[2] = {"base", "cand"};
+
+  for (int word = 0; word < words_per_row; word += word_stride) {
+    for (int mm = 0; mm < m; mm++) {
+      for (int j = 0; j < 8; j++) xp[mm * o->k + word * 8 + j] = one;
+    }
+    for (int a = 0; a < 2; a++) {
+      memset(o->y.contents, 0, o->y.length);
+      id<MTLCommandBuffer> cb = [queue commandBuffer];
+      id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
+      encodeDispatch(enc, psos[a], o, m);
+      [enc endEncoding];
+      [cb commit];
+      [cb waitUntilCompleted];
+      for (int row = 0; row < o->n; row++) {
+        uint32_t packed = w[row * words_per_row + word];
+        int want = 0;
+        for (int nib = 0; nib < 8; nib++) want += (packed >> (4 * nib)) & 0xf;
+        for (int mm = 0; mm < m; mm++) {
+          float got = bf16_to_f32(y[mm * o->n + row]);
+          double d = fabs((double)got - (double)want);
+          if (d > worst_abs[a]) worst_abs[a] = d;
+          if (got != (float)want) {
+            bad[a]++;
+            if (shown[a] < 8) {
+              fprintf(stderr,
+                      "e44_qmv_ab:     %s MISMATCH word=%d k=[%d,%d) m=%d n=%d "
+                      "want=%d got=%.4f\n",
+                      label[a], word, word * 8, word * 8 + 8, mm, row, want,
+                      got);
+              shown[a]++;
+            }
+          }
+          if (a == 0) checked++;
+        }
+      }
+    }
+    for (int mm = 0; mm < m; mm++) {
+      for (int j = 0; j < 8; j++) xp[mm * o->k + word * 8 + j] = 0;
+    }
+  }
+  fprintf(stderr,
+          "e44_qmv_ab:   coverage M=%d words=%d(stride %d) elements=%ld  "
+          "base bad=%ld worst_abs=%.1f  cand bad=%ld worst_abs=%.1f\n",
+          m, (words_per_row + word_stride - 1) / word_stride, word_stride,
+          checked, bad[0], worst_abs[0], bad[1], worst_abs[1]);
+}
+
 static void captureSampled(Operands *o, int m, int samples, float *out) {
   const uint16_t *y = (const uint16_t *)o->y.contents;
   const int stride = o->n / samples > 0 ? o->n / samples : 1;
@@ -365,7 +462,7 @@ int main(int argc, char **argv) {
     const char *base_path = NULL, *cand_path = NULL, *out_path = NULL;
     const char *fn_name = "affine_qmv_fast_bfloat16_t_64_4_false";
     const char *widths_arg = "1,2,3,4,5,6,7,8,9";
-    int pairs = 5, reps = 25, inner = 20, samples = 32, probe = 0;
+    int pairs = 5, reps = 25, inner = 20, samples = 32, probe = 0, coverage = 0;
 
     for (int i = 1; i < argc; i++) {
       if (!strcmp(argv[i], "--base") && i + 1 < argc) base_path = argv[++i];
@@ -378,6 +475,7 @@ int main(int argc, char **argv) {
       else if (!strcmp(argv[i], "--inner") && i + 1 < argc) inner = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--samples") && i + 1 < argc) samples = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--probe") && i + 1 < argc) probe = atoi(argv[++i]);
+      else if (!strcmp(argv[i], "--coverage") && i + 1 < argc) coverage = atoi(argv[++i]);
       else {
         fprintf(stderr, "e44_qmv_ab: unknown argument %s\n", argv[i]);
         return 2;
@@ -442,10 +540,17 @@ int main(int argc, char **argv) {
       fprintf(stderr, "e44_qmv_ab: shape %s  w=%.1fMB\n", shapes[s].name,
               (double)o.w.length / 1e6);
 
+      // Diagnostics run instead of timing, never alongside it: both of them
+      // overwrite the operands they read.
       if (probe > 0) {
-        // Diagnostic only: settles the mapping before any timing is trusted.
         for (int wi = 0; wi < n_widths; wi++) {
           probeMapping(queue, arm[0], arm[1], &o, widths[wi], probe);
+        }
+        continue;
+      }
+      if (coverage > 0) {
+        for (int wi = 0; wi < n_widths; wi++) {
+          probeCoverage(queue, arm[0], arm[1], &o, widths[wi], coverage);
         }
         continue;
       }
@@ -463,15 +568,29 @@ int main(int argc, char **argv) {
         captureSampled(&o, m, samples, base_y);
         Fidelity fc = checkArm(queue, arm[1], &o, m, samples, base_y);
         fprintf(stderr,
-                "e44_qmv_ab:   fidelity M=%d base max_rel=%.3e cand max_rel=%.3e "
-                "cand rms_rel=%.3e cand_vs_base=%.3e\n",
-                m, fb.max_rel, fc.max_rel, fc.rms_rel, fc.max_rel_vs_base);
+                "e44_qmv_ab:   fidelity M=%d  base max_rel=%.3e rms=%.3e  "
+                "cand max_rel=%.3e rms=%.3e  cand_vs_base=%.3e\n",
+                m, fb.max_rel, fb.rms_rel, fc.max_rel, fc.rms_rel,
+                fc.max_rel_vs_base);
+        fprintf(stderr,
+                "e44_qmv_ab:     worst element  base m=%d n=%d want=%+.6f "
+                "got=%+.6f abs=%.2e   cand m=%d n=%d want=%+.6f got=%+.6f "
+                "abs=%.2e\n",
+                fb.worst_m, fb.worst_row, fb.worst_want, fb.worst_got,
+                fabs(fb.worst_got - fb.worst_want), fc.worst_m, fc.worst_row,
+                fc.worst_want, fc.worst_got,
+                fabs(fc.worst_got - fc.worst_want));
         fprintf(out,
                 "%s    {\"kind\":\"fidelity\",\"shape\":\"%s\",\"m\":%d,"
-                "\"base_max_rel\":%.6e,\"cand_max_rel\":%.6e,"
-                "\"cand_rms_rel\":%.6e,\"cand_vs_base_max_rel\":%.6e}",
+                "\"base_max_rel\":%.6e,\"base_rms_rel\":%.6e,"
+                "\"cand_max_rel\":%.6e,\"cand_rms_rel\":%.6e,"
+                "\"cand_vs_base_max_rel\":%.6e,"
+                "\"base_worst\":{\"m\":%d,\"n\":%d,\"want\":%.6e,\"got\":%.6e},"
+                "\"cand_worst\":{\"m\":%d,\"n\":%d,\"want\":%.6e,\"got\":%.6e}}",
                 first_row ? "" : ",\n", shapes[s].name, m, fb.max_rel,
-                fc.max_rel, fc.rms_rel, fc.max_rel_vs_base);
+                fb.rms_rel, fc.max_rel, fc.rms_rel, fc.max_rel_vs_base,
+                fb.worst_m, fb.worst_row, fb.worst_want, fb.worst_got,
+                fc.worst_m, fc.worst_row, fc.worst_want, fc.worst_got);
         first_row = 0;
         free(base_y);
       }
