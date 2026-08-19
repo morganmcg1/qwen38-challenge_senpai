@@ -2731,7 +2731,20 @@ complement — **the corpus is a source of positive facts about the ranked
 environment, not only of prior-art kills.** Two of the three lines above are
 competitor notes describing hardware we cannot touch.
 
-### 122 — 🔴 Prefill is reported but NOT scored: every prefill optimisation is worth exactly zero, and item 110's "adjacent lever" was never a lever
+### 122 — ⛔ CORRECTED BY ITEM 186. The conclusion below is WRONG: the prefill IS scored
+
+> **Do not act on this item.** Item 186 shows that its hypothesis B charged the
+> prefill a *second* time, because `mtp_spt` already contains it, so refuting B
+> is not evidence that the prefill is uncharged. The trusted source
+> (`QwenRuntimeMTPDriver.swift:94-197`, `QwenRuntimeMTP.swift:347-349`) starts the
+> decode clock before `beginMTPDecode` and never subtracts `seedPrefillSeconds`.
+> The prefill is **8.44 % of the ranked `beagle` leg and 9.05 % of `medicine`**,
+> so a round-cost win converts to score at **x0.9125**, not x1. The direction
+> stays closed for a different and stronger reason: the ranked prefill runs on
+> `qmm_nax`, which needs GPU generation >= 17, and this host is generation 16.
+> Read item 186 instead.
+
+### 122 (original text, retained for the record) — Prefill is reported but NOT scored: every prefill optimisation is worth exactly zero, and item 110's "adjacent lever" was never a lever
 
 Item 110 listed "prefill inside `decode_seconds`" as an adjacent unexploited
 lever, on the strength of a paul-hf note putting prefill at ~9.5 % of the
@@ -10200,3 +10213,319 @@ https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/twd7gz0z
 (`twd7gz0z`); E46 stream versus group width
 https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9gc2wstc
 (`9gc2wstc`).
+
+---
+
+## 184 — The ranked receipt is invertible: exact round counts, drafts and accepts for all eight hidden prompts
+
+`mean_draft_len` in a ranked receipt is not a lossy summary. It is an exact
+rational `P/R` whose reduced denominator divides the round count, so four
+constraints recover the whole per-prompt history from two published moments.
+Tool: `research/prompt_round_reconstruction.py` (`--self-test` exits 0, 7/7).
+
+- **C1 exactness**: `mean_draft_len == Fraction(P, R)` at a denominator bound of 1024.
+- **C2 closure**: `R + A == 512` and `0 <= A <= P`. One primary token per round
+  plus every accepted draft fills the window exactly.
+- **C3 census**: `R >= non_drafting_rounds` and `P >= R - non_drafting_rounds`.
+- **C4 weight floor**: `(512 * mtp_spt - K) / R >= c1`. No round can be cheaper
+  than a depth-0 round.
+
+### 184(B) Per-prompt ground truth for submission `ca9251b8`
+
+| prompt | R | P | A | mean depth | per-draft accept |
+|---|---|---|---|---|---|
+| plutarch | 487 | 75 | 25 | 0.154 | 0.3333 |
+| drama | 252 | 579 | 260 | 2.298 | 0.4491 |
+| travel | 212 | 563 | 300 | 2.656 | 0.5329 |
+| **beagle** | **107** | **485** | **405** | **4.533** | **0.8351** |
+| **medicine** | **99** | **472** | **413** | **4.768** | **0.8750** |
+| republic | 89 | 469 | 423 | 5.270 | 0.9019 |
+| essays | 87 | 472 | 425 | 5.425 | 0.9004 |
+| botany | 85 | 491 | 427 | 5.776 | 0.8697 |
+
+plutarch's 449 non-drafting rounds pin `R = 487` uniquely because `2 * 487 > 512`.
+Under the prefill-corrected weight floor (item 186) only `drama` stays
+ambiguous, and its alternative `R = 168` misprices the round by `+55 %` against
+`+1.5 %`, a margin over 30x. **The earlier prefill-blind run left four prompts
+ambiguous, so the correction strengthened the identification rather than
+weakening it.**
+
+### 184(C) Acceptance regimes, resolved from ranked ground truth rather than a local fixture
+
+Per-draft acceptance runs `0.333` (plutarch) to `0.902` (republic). The shipped
+prior `positionAcceptEMA = 0.85 * 0.98^i` is close for the deep prompts and
+badly wrong for the shallow ones. **The local public fixture sits at mean draft
+`6.269`, above every hidden prompt including `botany` at `5.776`, and far above
+the two prompts that set the median (`beagle` 4.533, `medicine` 4.768).** Any
+width-mixture argument taken from the local fixture over-weights wide widths.
+
+### 184(D) The M=9 share on the median pair is NOT identifiable from the two published moments
+
+Linear programming over the exact moment polytope, with vertices enumerated
+exactly (a 3-equality polytope has at most 3 nonzero coordinates, so the triple
+enumeration is complete, not a heuristic):
+
+| prompt | f8_min | f8_max | M9 QMV share min | max |
+|---|---|---|---|---|
+| **beagle** | 0.0000 | 0.4660 | **0.00 %** | **70.34 %** |
+| **medicine** | 0.0000 | 0.4495 | **0.00 %** | **67.12 %** |
+| essays | 0.1140 | 0.5854 | 16.43 % | 78.68 % |
+| botany | 0.0000 | 0.6118 | 0.00 % | 79.46 % |
+
+The local fixture's `53.45 %` lies inside both median-pair intervals, so it is
+neither confirmed nor refuted. **Recorded as a definitive null: no method based
+on the two published moments can settle the M=9 share.** It needs a
+scheduler-faithful simulation or a per-round width trace. A closed-form
+replacement for the LP is now available as `cum_hull_bounds`, validated against
+the LP with an exterior probe that proves the check can fail.
+
+### 184(E) Standing rules
+
+- **A ranked `mean_draft_len` is an exact rational whose reduced denominator
+  divides the round count.** Invert the receipt before speculating about it.
+- **Discriminate ambiguous round counts by cost residual, and report the margin.**
+- **Do not price a width-mixture claim off the local fixture.** It is deeper than
+  every hidden prompt.
+
+---
+
+## 185 — E57 verdict: the SDPA wide-decode chunk is a DISCOUNT, and three of my SDPA claims were wrong
+
+alphonse's E57 (PR #60, merged) answered the width-wall question and refuted my
+route map at the top. W&B: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/g4efi05h (`g4efi05h`).
+
+### 185(A) The real SDPA gate is upstream of the selector I named
+
+`ScaledDotProductAttention::use_fallback` at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/scaled_dot_product_attention.cpp:591-639`
+decides first, not the `:685` selector:
+
+- `supports_sdpa_full` requires head_dim in `{64, 80, 128}` (`:625-632`). **Our
+  head_dim is 256, so it is FALSE at every width.**
+- `supports_sdpa_vector` requires `qL * gqa <= 32` (`:634-637`), which **caps the
+  fused vector path at `qL <= 5`.**
+
+Consequences: **the `qL >= 9` steel and `_nax` `sdpa_full_self_attention_*` route
+NEVER fires on this model**, so `steel_attention.cpp` and
+`steel_attention_nax.cpp` being editable is irrelevant to us. My claim that
+`qL * gqa <= 32` binds only the 2-pass route was wrong. `research/SDPA_ROUTE_MAP.md`
+is corrected.
+
+### 185(B) The chunk keeps both halves on the fused kernel, so removing it COSTS dispatches
+
+Measured dispatches per SDPA call: unsplit `qL=5` -> 1 (`kL<1024`) or 2
+(`kL>=1024`); **unsplit `qL` 6..9 -> 8** (composed fallback: `arangeint32` x2,
+`sv_Multiply`, `g2_GreaterEqual`, `steel_gemm_fused_nt`, `g2_Select`,
+`block_softmax_precise`, `steel_gemm_fused_nn`); chunked `qL` 6..9 -> 4 or 6.
+
+The chunk splits a wide call into a 5-row and a `(qL-5)`-row call, **both `<= 5`**,
+so both pass `supports_sdpa_vector`. **My ledger's cost estimate for removing it
+had the sign backwards**: removal adds about 4 dispatches per layer, roughly 64
+per round.
+
+Arm results: A (base) PASS, 571/571 rows, `residual_divergence_count=0`, mtp
+0.035845 s/tok, 6163 SDPA dispatches. B (narrow to `qL=9` only)
+`all_tokens_matched=1` **but 396 of 512 positions moved declared top-two row
+evidence and 18 changed a top-two id**; 8389 dispatches, +0.27 % s/token. C
+(chunk off) **FAILED `rejected_tail_diverged`** at step 300 with a margin of
+`0.125`, which is **12.5x the `1e-2` `referenceMargin`**; 10957 dispatches.
+
+**Verdict: keep the chunk.** It is why widths 6-9 are exact, which settles the
+documented contradiction at `Qwen36MTPBlockSession.swift:670-699` in favour of
+its second paragraph.
+
+### 185(C) `kL >= 1025` is unreachable, so my `blocks = 128` hypothesis is dead
+
+Calls with `qL>=6 && kL>=1024` were **0 in every leg of all three arms**. A
+512-token seed plus 512 generated tokens caps `kL` at exactly 1024, and only 1
+of 76 rounds reaches it, at `qL=4`. **The frontier's
+`warmTargetLaterWindowSDPA` padding to `kL == 1024` warms the only reachable
+boundary variant, so the frontier is CORRECT on that axis.** My 182(E)/183(E)
+claim that it may have warmed the wrong pipeline is refuted, and the extended
+SDPA `blocks` warm leaves the compose-only list entirely.
+
+### 185(D) A latent exactness risk that survives
+
+Arm A itself declared two distinct tuples at positions 1022 and 1024, both in
+round 76, the single `kL=1024` round, at `qL=4` with no chunk. It still passed
+with `residual_divergence_count=0`. The transition it tracks is
+`sdpa_vector` 1-pass to 2-pass, and **the ranked 512+512 window always reaches
+that boundary**, so this is a live near-tie risk on hidden prompts.
+
+### 185(E) RETRACTION: warm work is NOT inside the timed leg
+
+183(E) argued that warm coverage was demoted partly because "warm work is itself
+inside the timed leg." **That is false.** `QwenRuntimeMTPDriver.swift:84` calls
+`client.warmMTPDecode()` under the comment "Untimed phase start, BEFORE the
+clock." This is the fourth self-contradiction in four items (141, 181(C),
+182(B), 183(C)).
+
+183(E)'s *conclusion* stands on its two surviving grounds: there is no per-width
+QMV pipeline (183(B)), and the 7 per-width source libraries (S=3..9) are already
+compiled by our warm loop. **Warming is genuinely free; the demotion holds only
+because nothing is left un-warmed.** The 512-zero seed warm at
+`Qwen36MTPBlockSession.swift:463-475` is therefore free, and its removal must
+not be assigned.
+
+### 185(F) Standing rules
+
+- **For head_dim 256 there is no fused SDPA above `qL = 5`.**
+- **`kL` cannot exceed 1024 in a 512+512 window.**
+- **A moved-position count is a presence detector, not a severity order.** Arm C
+  moved fewer positions than Arm B and failed where B passed.
+
+---
+
+## 186 — 🔴🔴🔴 The seed prefill IS scored. Item 122 refuted the wrong hypothesis, and the correction yields a transfer law that re-prices the whole campaign
+
+### 186(A) Item 122's argument does not support its conclusion
+
+Item 122 concluded: *"Prefill optimisation is worth exactly 0.000 % of score."*
+It tested two hypotheses against 32 board cells:
+
+| hypothesis | worst relative error |
+|---|---|
+| A `raw = serial_spt / mtp_spt` | 3.9e-11 |
+| B `raw = (pf + serial_spt) / (pf + mtp_spt)` | 5-7 % |
+
+**Hypothesis B charges the prefill a second time**, because `mtp_spt` already
+contains it. Hypothesis A is consistent with the prefill being inside `mtp_spt`
+*and* with it being outside, so the test **cannot discriminate**. Refuting a
+double charge is not evidence of a zero charge.
+
+The trusted source settles it:
+
+```
+QwenRuntimeMTPDriver.swift:94    let started = Date()
+QwenRuntimeMTPDriver.swift:95    client.beginMTPDecode(...)     the seed prefill
+QwenRuntimeMTPDriver.swift:197   decodeSeconds = now - started
+QwenRuntimeMTP.swift:347-349     seedPrefillSeconds is "deliberately NOT
+                                 subtracted from decodeSeconds"
+QwenRuntimeMTP.swift:442-443     decodeSecondsPerToken = decodeSeconds / count
+```
+
+and the driver's own comment at `:90-93`: *"The seed prefill IS charged to the
+decode measurement... the clock starts immediately before the request so the
+seed cost cannot be hidden outside the window."*
+
+**Item 122 is corrected. Prefill is scored.** Item 122's other supporting point —
+that our prefill is at parity with the leader — is also not a reason to ignore
+the term. Parity means it is *unexploited*, which is the opposite of worthless.
+
+### 186(B) The score identity has THREE factors, exact to 5e-11
+
+`K = 512 * prefill_seconds_per_token` is observed per prompt in the receipt, and
+is a near-constant `525.7-528.2 ms` (spread 0.46 %) as a fixed 512-token seed
+must be. Then
+
+```
+raw_p = build_factor  x  spec_factor  x  dilution_p
+build_factor = serial_spt / c1                 uniform 1.2464-1.2508
+spec_factor  = (512 / R_p) * c1 / round_ms_p
+dilution_p   = 1 - K / leg_p
+```
+
+| prompt | leg (ms) | K/leg | dilution | build | spec |
+|---|---|---|---|---|---|
+| plutarch | 15517 | 3.39 % | 0.96606 | 1.2489 | 1.0384 |
+| drama | 10126 | 5.21 % | 0.94799 | 1.2468 | 1.6216 |
+| travel | 8903 | 5.93 % | 0.94085 | 1.2468 | 1.8583 |
+| **beagle** | 6233 | **8.44 %** | **0.91552** | 1.2494 | 2.7277 |
+| **medicine** | 5821 | **9.05 %** | **0.90953** | 1.2508 | 2.9402 |
+| republic | 5726 | 9.22 % | 0.90803 | 1.2485 | 2.9937 |
+| essays | 5764 | 9.12 % | 0.90863 | 1.2464 | 2.9723 |
+| botany | 5673 | 9.28 % | 0.90724 | 1.2484 | 3.0245 |
+
+`K / serial_leg` is `2.70-2.72 %` on every prompt, as it must be when the serial
+legs are all about 19.4 s.
+
+🔴 **A fractional round-cost win converts to score at x0.9125 on the median pair.
+Every round-cost projection in this ledger, including all of mine, was 9.6 % too
+high.** Corrected values: the M=9 two-stream prize moves from `+5.36 %` through
+the depth-slope correction to `+3.96..4.17 %`, then to **`+3.61..3.81 %` of
+score** after dilution. Still 12.8-13.5 sd against the `+0.283 %` ranked MDE.
+
+### 186(C) Prefill is scored but UNREACHABLE, which is why the direction stays closed
+
+| work | M4 Pro (ours) | ranked M5 | M5 advantage |
+|---|---|---|---|
+| 512-token seed prefill, 84 % GEMM | 3.9938 s | **0.5269 s** | **7.58x** |
+| depth-0 decode round | 65.009 ms | **30.402 ms** | **2.14x** |
+
+In TFLOP/s on `2 * 27e9 * 512 = 2.765e13` FLOPs: ranked **52.5**, ours **6.92**
+against E16's measured dense-bf16 ceiling of `7.401`. **We run prefill at 93.5 %
+of our own ceiling; the ranked host is on a different ceiling.** That is the
+`qmm_nax` signature — `quantized.cpp:473` takes the neural-accelerator GEMM when
+`is_nax_available()`, which needs GPU generation >= 17, and 182(D) established
+this host as `applegpu_g16s`, generation 16.
+
+⇒ **The ranked prefill executes a kernel family we cannot run, cannot measure,
+and cannot tune.** E16's closed M4 Pro prefill budget (84.148 % GEMM, 12.942 %
+dequant overhead, scheduling dead) describes work the ranked host never does.
+Halving ranked prefill would be worth `+4.37 %` of score, and there is no local
+path to it. **Reopen only if we obtain a generation >= 17 host.**
+
+### 186(D) 🔴 The transfer law, stated so it can be falsified
+
+> The more a cost term is arithmetic-bound, the better it transfers to the
+> ranked M5, and therefore the LESS a local reduction of it is worth at rank. A
+> local win on a compute-bound or memory-traffic-bound term must be divided by
+> up to **3.55**. A local win on a latency-bound or dispatch-bound term
+> transfers at 1:1 or better, because the ranked leg is 2.9x shorter in wall
+> time while host-side per-dispatch cost is roughly host-independent.
+
+Three independent measurements support it:
+
+1. Prefill (compute-bound) transfers at 7.58x; the depth-0 round transfers at
+   2.14x. Ratio **3.55x**.
+2. Fitting all eight prompts to the E1 ladder needs its slope scaled by
+   `g` in **[0.7388, 0.7778]**: marginal drafting cost on M5, relative to its own
+   depth-0 round, is **22-26 % cheaper** than on M4 Pro. Deeper drafting is more
+   arithmetic per round, so it transfers better than the fixed part of the round —
+   the same sign as (1). **The single-factor transfer is refuted
+   calibration-independently: the joint `c1` band is empty by 10.12 %.**
+3. E27 cut QMV weight passes, a memory-traffic win: **-6.56 % locally**, then
+   **-0.33 % of published score**, a 6.75-point sign flip. Under the law both
+   halves point the same way, because the traffic saving is worth less on M5 while
+   the register pressure it bought is occupancy-bound and worth more.
+
+**Immediate consequence.** E57 priced a dispatch at about **22 microseconds**
+(Arm B added 2226 SDPA dispatches for +0.27 % of local s/token). Arm A's 6163
+SDPA dispatches are then about 136 ms: `0.74 %` of our 18.35 s local leg, which
+is why I dismissed it, but **`2.2 %` of the ranked `beagle` leg of 6.23 s**, or
+`2.0 %` of score after dilution — `7.1 sd`. And SDPA is one family of many.
+**Dispatch-count reduction is worth roughly 3x more at rank than locally, and the
+campaign has been pricing it locally.** Assigned as E58.
+
+### 186(E) `(K, g)` would NOT have been identifiable without the receipt field
+
+Before finding `prefill_seconds_per_token`, I scanned the joint feasible set of a
+constant prefill charge `K` against the ladder slope `g`. The admissible set is a
+**curve, not a point**: `K = 0` pairs with `g in [0.830, 0.918]` and `K = 1750 ms`
+with `g in [0.486, 0.504]`, feasible up to `K <= 1810 ms`. Two useful facts fell
+out:
+
+- **No `K` in `[0, 3000] ms` rescues an exact `g = 1` transfer.** Removing a
+  constant per-leg charge cannot repair the ladder's *shape*, because `K/R` is
+  largest exactly for the deep prompts that already want a cheaper ladder. The
+  `g < 1` finding is robust to the prefill omission.
+- The identified bound `K <= 1810 ms` was a real prediction, and the observed
+  `K = 526.6 ms` satisfies it comfortably. Had prefill transferred at the
+  round-cost scale it would have been `3.9938 * 0.4677 = 1868 ms`, near the edge;
+  the observed value being 3.55x smaller is the same asymmetry seen a fourth way.
+
+### 186(F) Standing rules
+
+- **Prefill is inside the timed leg. Multiply every round-cost score projection
+  by the median-pair dilution `x0.9125`.**
+- **Label every local measurement as compute-bound or latency-bound before
+  converting it to a ranked score delta**, and divide compute-bound wins by up to
+  3.55. An unlabelled conversion is invalid.
+- **Refuting hypothesis B is not evidence for the negation of hypothesis A.**
+  Item 122 tested a double charge and concluded a zero charge. Before publishing a
+  null, write down the hypothesis that would survive the test and check whether it
+  is the one you meant to reject.
+- **Grep the ledger before publishing a cost claim.** I re-derived the prefill
+  share from scratch while items 110, 122, E16, E17 and E20 all already held
+  pieces of it. This is the rule 183(C) established, and I broke it in the same
+  round I wrote it.

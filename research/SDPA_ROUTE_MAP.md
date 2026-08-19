@@ -6,7 +6,114 @@ width wall, the warm path, or any draft-depth schedule that prices attention.
 Every claim here is read from source in this checkout. No claim is measured.
 The measurements this map calls for are named at the end.
 
+---
+
+## ⛔ CORRECTION BANNER — 2026-08-20 — READ THIS FIRST
+
+**The central conclusion of the original map is REFUTED.** E57 (PR #60, merged,
+W&B run `g4efi05h`) measured the routing directly and inspected the deciding
+source. Ledger items 185(A), 185(B), and 185(C) carry the full record.
+
+Everything below the banner is retained as a record of the reasoning, not as
+guidance. Four specific claims are dead:
+
+1. **The `qL >= 6` chunk predicate is CORRECT, not "too wide."** The original
+   map read the route selector at `scaled_dot_product_attention.cpp:685` and
+   never reached the function that runs **before** it.
+   `ScaledDotProductAttention::use_fallback` at
+   **`scaled_dot_product_attention.cpp:591-639`** decides first:
+   - `supports_sdpa_full` requires `head_dim` in `{64, 80, 128}`
+     (`:625-632`). Our head dimension is **256**, so this is **FALSE at every
+     width**.
+   - `supports_sdpa_vector` requires `qL * gqa <= 32` (`:634-637`) with **no
+     `kL` condition whatsoever**. With `gqa = 6` this caps the fused vector
+     path at **`qL <= 5`, unconditionally.**
+
+   The rule the original comment quoted is therefore not a route-2 detail that
+   needs `kL >= 1024`. It is the **top-level gate on all fused attention**.
+
+2. **The chunk is a DISCOUNT, and it is load-bearing.** Measured dispatches per
+   SDPA call (`research/out/e57-rung1/`):
+
+   | shape | dispatches |
+   |---|---|
+   | unsplit `qL <= 5`, `kL < 1024` | 1 |
+   | unsplit `qL <= 5`, `kL >= 1024` | 2 |
+   | **unsplit `qL` 6..9** | **8** |
+   | chunked `qL` 6..9, `kL < 1024` | 4 (headTransposed) / 6 (contiguous) |
+   | chunked `qL` 6..9, `kL >= 1024` | 6 / 8 |
+
+   The unsplit path at `qL >= 6` is an **8-dispatch composed fallback**
+   (`arangeint32` x2, `sv_Multiply`, `g2_GreaterEqual`, `steel_gemm_fused_nt`,
+   `g2_Select`, `block_softmax_precise`, `steel_gemm_fused_nn`) that
+   materialises a `24 x qL x kL` bf16 score tensor. The chunk splits into a
+   5-row and a `(qL - 5)`-row call, **both of which are `<= 5`**, so both pass
+   `supports_sdpa_vector` and stay fused. Removing the chunk **adds** about 4
+   dispatches per full-attention layer, roughly **64 per round**. The original
+   map's cost estimate had the **sign backwards**. Arm C (chunk off) fired
+   **10957** SDPA dispatches versus the base's **6163**, and it **failed
+   correctness** (`rejected_tail_diverged` at step 300, round 37, declared
+   top-1 2523 versus reference 248045 at margin **0.125 = 12.5x** the `1e-2`
+   `referenceMargin`).
+
+3. **The `qL >= 9` steel / `_nax` route never fires.** Because
+   `supports_sdpa_full` is false at head dimension 256, `sdpa_full_self_attention_*`
+   is unreachable on this model at every width. The measured proof: unsplit
+   `qL = 6, kL = 1030` returned with **8 dispatches**, not a throw and not a
+   steel kernel (`research/out/e57-rung1/throw.log:829-830`). Outcome 3 of the
+   original plan — a threadgroup-limit throw at `qL >= 6` — is falsified; no
+   such throw is reachable. The editability of `steel_attention.cpp` and
+   `steel_attention_nax.cpp` is therefore **irrelevant to the scored path**.
+
+4. **`kL >= 1025` is UNREACHABLE, so the `blocks = 128` promotion is dead
+   code for us.** A 512-token seed plus 512 generated tokens caps `kL` at
+   **exactly 1024**. Measured across all three E57 arms: calls with
+   `qL >= 6 && kL >= 1024` = **0 in every leg**; `blocks_64_calls = 16`,
+   `blocks_128_calls = **0**`. Only **1 of 76 rounds** reaches `kL = 1024`, and
+   it does so at **`qL = 4`**.
+
+   Consequence: the frontier's `warmTargetLaterWindowSDPA`, which pads to
+   `kL == 1024`, **warms the only reachable boundary variant**. The frontier is
+   correct and my earlier 182(E)/183(E) claim that it "warmed the wrong
+   pipeline" is **refuted**.
+
+### One live risk this correction exposes
+
+The base itself is not bit-stable at the `kL = 1024` boundary. E57 Arm A — the
+**shipped, passing** base — declared two distinct top-two tuples at positions
+**1022** and **1024**, both in round 76, the single round that reaches
+`kL = 1024`, at **`qL = 4` with no chunk**. Position 1022 agrees on top-1
+(6009) but reports top-2 31098 versus 98138; position 1024 reports
+`0x1.4ap+4` versus `0x1.4ep+4`. This tracks the `sdpa_vector` one-pass to
+two-pass transition at `:746-753`.
+
+**The ranked 512 + 512 window always reaches this boundary.** That is a latent
+near-tie exposure on hidden prompts, in code we ship today, and it is not
+caused by the chunk.
+
+### What survives
+
+- The bit-exactness argument for the chunk *on the fused one-pass route*
+  (`sdpa_vector.h:15-176`, no reduction crosses query rows, bottom-right
+  aligned causal predicate) is **sound and confirmed**: chunk versus unsplit
+  showed **0 differing elements at `qL = 5`**, and the A/A control showed 0
+  differing elements at every width. At `qL` 6..9 about 63 % of elements
+  differ, max absolute 1.95e-3 to 4.88e-3 — because there the comparison is
+  fused-vector against the composed fallback, which is a genuine kernel-family
+  change.
+- The function-constant and `hash_name` inventory in Route 2 and Route 3 below
+  is accurate as source reading.
+- The `kL = 512 + tokensCommitted + M` derivation is accurate. Its
+  **conclusion** about which route serves the window is wrong.
+
+---
+
 ## Why this map exists
+
+> ⛔ **Refuted premise. Retained for the record.** See the correction banner.
+> The corrected statement is: `AttentionUtils.swift`'s chunk predicate is
+> right, the fused path ends at `qL = 5`, and the chunk is a dispatch discount
+> that keeps both halves fused.
 
 `Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift` carries the
 WIDE-DECODE EXACTNESS CHUNK. Its comment says:
@@ -17,17 +124,43 @@ WIDE-DECODE EXACTNESS CHUNK. Its comment says:
 The chunk therefore fires for `qL >= 6` (because `gqa = 24/4 = 6`, so
 `6 * 6 = 36 > 32`).
 
-The `qL * gqa <= 32` rule is real. The `qL >= 6` predicate that was derived
-from it is **too wide**. The rule governs one of the three SDPA routes, and
-that route needs `kL >= 1024`, which our scored window reaches only in its
-final round or two.
+**[REFUTED]** The `qL * gqa <= 32` rule is real. The `qL >= 6` predicate that
+was derived from it is **too wide**. The rule governs one of the three SDPA
+routes, and that route needs `kL >= 1024`, which our scored window reaches only
+in its final round or two.
+
+**[CORRECT READING]** The `qL * gqa <= 32` rule is the top-level gate in
+`use_fallback` at `:634-637`, it carries no `kL` term, and it makes `qL >= 6`
+exactly the right predicate. The comment in `AttentionUtils.swift` was right
+all along; this map misread which function enforced it. Note that
+`Qwen36MTPBlockSession.swift:670-699` contains two paragraphs that contradict
+each other on this point — E57 settles it in favour of the **second**.
 
 ## The three routes
+
+> ⛔ **Incomplete.** There is a **fourth** path, and it is the one that runs at
+> `qL >= 6`: the **8-dispatch composed fallback** taken when `use_fallback`
+> returns true. The three routes below are the three *fused* routes, and all
+> three require `qL <= 5` on this model. Read `use_fallback` at
+> `:591-639` **before** the selector at `:685`.
 
 Host routing lives in
 `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/scaled_dot_product_attention.cpp`.
 That file is **not** in `benchmark.json` `editablePaths`. It is trusted, fixed
 host code. We route around it; we do not change it.
+
+**The deciding gate, which this map originally missed** (`:591-639`):
+
+```cpp
+// supports_sdpa_full  (:625-632)   requires head_dim in {64, 80, 128}
+//                                  -> FALSE for us, head_dim == 256
+// supports_sdpa_vector (:634-637)  requires qL * gqa <= 32
+//                                  -> with gqa == 6, requires qL <= 5
+// if neither holds, use_fallback() == true and the composed 8-dispatch
+// fallback runs. No kL term appears in either condition.
+```
+
+Only if `use_fallback` returns false do we reach the selector below.
 
 `:685` selects vector mode with no GQA term at all:
 
@@ -125,10 +258,37 @@ overrides the value; do not set it in a timed arm.
 
 ### Route 3 - full attention, `steel_attention`
 
+> ⛔ **DEAD PATH.** `supports_sdpa_full` requires head dimension in
+> `{64, 80, 128}` (`:625-632`) and ours is **256**, so `use_fallback` returns
+> true long before `q_pre.shape(2) <= 8` is tested. `sdpa_full_self_attention_*`
+> is unreachable on this model at every width. Measured: unsplit `qL = 6`,
+> `kL = 1030` returned 8 composed-fallback dispatches, no steel kernel and no
+> throw. `steel_attention.cpp` and `steel_attention_nax.cpp` are editable and
+> irrelevant.
+
 `qL >= 9` fails `q_pre.shape(2) <= 8` and goes to
 `sdpa_full_self_attention_metal`. This is a tiled matmul-style kernel whose
 `bq` tile is far wider than nine rows. It is a genuinely different kernel
 family with a genuinely different accumulation order.
+
+### Route 4 - the composed fallback (the one that actually runs at `qL >= 6`)
+
+Added 2026-08-20 from E57 measurement. When `use_fallback` returns true, MLX
+does not dispatch an attention kernel at all. It composes attention out of
+eight primitive dispatches:
+
+```text
+arangeint32, arangeint32, sv_Multiply, g2_GreaterEqual,
+steel_gemm_fused_nt, g2_Select, block_softmax_precise, steel_gemm_fused_nn
+```
+
+The two `arange` and the `GreaterEqual`/`Select` pair build the causal mask on
+the fly. `steel_gemm_fused_nt` materialises the full `24 x qL x kL` bf16 score
+tensor, `block_softmax_precise` normalises it, and `steel_gemm_fused_nn`
+applies it to V. At `qL = 9`, `kL = 1024` that intermediate is about 442 KB per
+layer per call, and there are 16 full-attention layers.
+
+This is the path the chunk **avoids**. That is why the chunk is a discount.
 
 ## What `kL` actually is in the scored window
 
@@ -144,14 +304,33 @@ kL = 512 + tokensCommitted + M
 or the last two.** Prefill itself runs at `qL = 512`, which is Route 3, so no
 decode-shaped vector pipeline is created there.
 
+**[CORRECTED 2026-08-20]** The derivation above is right and the measurement
+sharpens it: `kL` reaches **exactly 1024** and never exceeds it, in **1 round
+of 76**, and that round runs at **`qL = 4`**. So `qL >= 6 && kL >= 1024` has
+measured frequency **zero**, and `kL >= 1025` is unreachable. Prefill at
+`qL = 512` does not take Route 3 either — it takes the composed fallback, like
+every other `qL >= 6` shape.
+
 Consequence, for the whole scored window except its final round or two:
 
-- Route 1 is the route.
-- `qL = 6, 7, 8` are legal single calls on Route 1.
-- The `qL >= 6` chunk splits a legal single call into two calls for no
-  kernel-family reason.
+- **[REFUTED]** Route 1 is the route.
+- **[REFUTED]** `qL = 6, 7, 8` are legal single calls on Route 1.
+- **[REFUTED]** The `qL >= 6` chunk splits a legal single call into two calls
+  for no kernel-family reason.
+
+**[CORRECT]** Route 1 serves `qL <= 5` only. At `qL` 6..9 the unsplit call
+leaves the fused family entirely and costs 8 dispatches. The chunk turns that
+into two fused calls at 4-6 dispatches. There is a kernel-family reason, it is
+the whole reason, and the chunk is on the cheap side of it.
 
 ## What the chunk costs when it is not needed
+
+> ⛔ **SIGN ERROR. This entire section has the cost backwards.** The chunk does
+> not cost dispatches; it **saves** about 4 per full-attention layer, roughly 64
+> per round. Removing it measured **+77.8 % SDPA dispatches** (6163 -> 10957)
+> and **failed correctness**. Retained to show how the error was made: the
+> section prices "one call becomes two calls" while the real comparison is
+> "eight dispatches become four."
 
 Read the code, not the comment. Per full-attention layer per round, at
 `qL in {6, 7, 8}`:
@@ -196,6 +375,27 @@ Times 16 layers is about 4.7 MB per round, plus 64 extra dispatches per round
 traffic is only about 12 microseconds; the dispatch count is the term to fear.
 
 ## Calibrating the dispatch-overhead prize against the board
+
+> ✅ **VINDICATED 2026-08-20, against my own later objection.** This section's
+> reading of `warmTargetLaterWindowSDPA` is **correct**, and it is the one part
+> of the map that E57 confirmed rather than refuted.
+>
+> `kL = 1024` is the **only** reachable Route 2 boundary in a 512 + 512 window,
+> it is touched in exactly **1 round of 76**, and that round is the **last**
+> one — so the pipeline is otherwise created inside the timed leg, exactly as
+> claimed here. Measured: `blocks_64_calls = 16`, `blocks_128_calls = 0`. The
+> frontier's `qL in {1, 5, 4}` choice is also exactly right: `1` is the serial
+> step, `5` is chunk A, `4` is chunk B of width 9 — and 4 and 5 are the only
+> widths that survive `supports_sdpa_vector`.
+>
+> **I was wrong later, not here.** Ledger 182(E) and 183(E) claimed the frontier
+> "warmed the wrong pipeline" and proposed extending the warm to `kL >= 1025` to
+> reach `blocks = 128`. That is **unreachable**: 512 + 512 caps `kL` at exactly
+> 1024. The extended-warm proposal is deleted from the compose list. This
+> section had it right the first time.
+>
+> The retraction inside the section — that +0.0173 % is 0.12 median sd and
+> cannot price the mechanism — also stands, and remains the correct standard.
 
 The promoted frontier submission `59b321e` at 3.24985583421771 is, in its
 entirety, 70 added lines in `Qwen36MTPBlockSession.swift`:
@@ -304,6 +504,15 @@ them separately and together rather than arguing the ranking.
 
 ## The correct predicate
 
+> ⛔ **REFUTED, AND THE SHIPPED PREDICATE IS ALREADY CORRECT.** Do not apply the
+> narrowed predicate below. It would push widths 6, 7, 8 onto the composed
+> fallback: **more** dispatches, a materialised score tensor, and a
+> demonstrated correctness failure. E57 Arm B implemented exactly this
+> narrowing (chunk restricted to `qL == 9`) and measured **+36.1 % dispatches**,
+> **+0.27 %** seconds per token, and **396 of 512 positions** moving their
+> declared top-two row evidence with 18 changing a top-two id — while the
+> token-match line stayed green. Keep `qL >= 6, qL <= 9` exactly as shipped.
+
 Route 3 avoidance still needs a chunk at `qL = 9`: unchunked, `qL = 9` leaves
 vector mode entirely. Route 2's thread cap still needs a chunk at
 `qL >= 6` when `kL >= 1024`, or the run throws. Nothing needs a chunk at
@@ -367,6 +576,33 @@ recommended predicate keeps chunking whenever `kL >= 1024`, which closes that
 seam by construction.
 
 ## Measurements this map asks for
+
+> ✅ **ALL FIVE WERE RUN, in E57. The map's hypothesis lost; the measurement
+> programme was sound.** Results, in order:
+>
+> 1. Exactness gate with a positive control: **run.** The A/A control returned 0
+>    differing elements at every width, proving the comparison could detect a
+>    change; chunk-off then **failed** `rejected_tail_diverged`. The predicted
+>    `Maximum threads per threadgroup` throw **did not occur** and is not
+>    reachable — the fallback composes instead of throwing.
+> 2. Architecture letter and generation: **`applegpu_g16s`**, `devc == 's'`,
+>    generation **16**, `_nax` unavailable (needs >= 17), max threads per
+>    threadgroup 1024, max threadgroup memory 32768 B. Route 2 **is** reachable
+>    here, and it fires in exactly 1 round of 76, at `qL = 4`.
+> 3. Dispatch counts: **counted, not inferred.** The predicted delta was "4
+>    fewer dispatches at widths 6-8." Measured: **4 more.** Sign error.
+> 4. Matched absolute candidate seconds per token: **+0.27 %** for the narrowed
+>    predicate. A loss.
+> 5. `kL >= 1024` guard exercised: **yes, once per leg**, and it never coincides
+>    with `qL >= 6`.
+>
+> The closing estimate below ("around 0.1 %") was the right order of magnitude
+> for the *effect size* and the wrong **sign**. Note that the reasoning behind
+> it — that dispatch overhead is worth chasing — was later vindicated from the
+> opposite direction: the 22 us/dispatch figure this experiment produced is now
+> the basis of E58, and under the ledger-186(D) transfer law it prices at about
+> **2.0 % of ranked score**, roughly 7 sd. The map asked the right question
+> about dispatches and got the arithmetic backwards.
 
 1. **The exactness check is the gate, and it must be able to fail.** Run the
    full 512-token public-golden check with the narrowed predicate, including
