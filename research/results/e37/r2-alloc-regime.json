@@ -1,0 +1,252 @@
+{
+  "schema": "e37-r2-alloc-regime/1",
+  "repo_relative_sources": {
+    "policy": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+    "session": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+    "mtp_worker_trusted": "Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift",
+    "mtp_worker_harness": "Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift",
+    "mlx_allocator": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/allocator.cpp",
+    "mlx_device_h": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.h"
+  },
+  "checks": [
+    {
+      "id": "C1",
+      "what": "low profile is selected by physicalMemory < 64 GiB",
+      "pass": true,
+      "detail": "low profile iff physicalMemory < 64 GiB (auto branch)",
+      "evidence": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift:fullProfileMinimumPhysicalMemoryBytes"
+    },
+    {
+      "id": "C2",
+      "what": "the 512/50 command-buffer defaults are gated at >=96 GiB",
+      "pass": true,
+      "detail": "installer gated >=96 GiB; installs 512/50 with overwrite=0 (default, not forced)",
+      "evidence": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift"
+    },
+    {
+      "id": "C3",
+      "what": "the installer runs inside resolve() on both boxes",
+      "pass": true,
+      "detail": "installer runs inside resolve() on BOTH boxes, before the low/full branch",
+      "evidence": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift"
+    },
+    {
+      "id": "C4",
+      "what": "low-profile constants",
+      "pass": true,
+      "detail": "low: cache 6 GiB, 128 MB/buf, 64 ops/buf, clear-after-warmup flag TRUE, no env overrides",
+      "evidence": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift"
+    },
+    {
+      "id": "C5",
+      "what": "full-profile constants (never applied on the MTP path)",
+      "pass": true,
+      "detail": "full: cache 32 GiB, 320 MB/buf, 128 ops/buf, clear flag FALSE",
+      "evidence": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift"
+    },
+    {
+      "id": "C6",
+      "what": "MTP worker forces 128/64 + 6 GiB only when low-memory",
+      "pass": true,
+      "detail": "both MTP worker copies: low-memory-only, then FORCE 128/64 (overwrite=1) and set cacheLimit; ranked returns at the guard",
+      "evidence": "Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift / Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift"
+    },
+    {
+      "id": "C7",
+      "what": "MTP worker ignores clearAllocatorCacheAfterWarmup and apply()",
+      "pass": true,
+      "detail": "neither MTP worker reads clearAllocatorCacheAfterWarmup nor calls apply(): the flag is INERT on this path",
+      "evidence": "Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift / Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift"
+    },
+    {
+      "id": "C8",
+      "what": "clear-after-warmup consumers are Laguna + DFlash only",
+      "pass": true,
+      "detail": "the clear-after-warmup flag is honoured only by Laguna + the two DFlash workers",
+      "evidence": "Sources/**"
+    },
+    {
+      "id": "C9",
+      "what": "the only post-warm clearCache on the MTP path is >=96 GiB gated",
+      "pass": true,
+      "detail": "the ONLY post-warm clearCache on the MTP session path sits behind the same >=96 GiB gate as wired residency: it runs on RANKED, not locally",
+      "evidence": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+    },
+    {
+      "id": "C10",
+      "what": "MLX's default cache limit formula",
+      "pass": true,
+      "detail": "MLX default cache limit = min(1.5 x maxRecommendedWorkingSet, 0.95 x memsize)",
+      "evidence": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/allocator.cpp"
+    },
+    {
+      "id": "C11",
+      "what": "clear_cache() cannot evict a compiled pipeline",
+      "pass": true,
+      "detail": "clear_cache() frees BUFFERS only; compiled pipelines live in Device::library_kernels_ and no allocator knob can evict them",
+      "evidence": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/allocator.cpp / Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.h"
+    },
+    {
+      "id": "C12",
+      "what": "command-buffer knobs are Device-scope only",
+      "pass": true,
+      "detail": "MLX_MAX_*_PER_BUFFER are Device-scope commit thresholds read once at Device construction; they appear in no kernel-selection site",
+      "evidence": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal"
+    },
+    {
+      "id": "C13",
+      "what": "the full profile is applied on no host (documented no-op)",
+      "pass": true,
+      "detail": "all 5 application sites are low-memory-guarded: the 320/128/32 GiB full-profile constants are applied on NO host (documented intent)",
+      "evidence": "Sources/MLXFastModel/LagunaRuntimeWeights.swift / Sources/MLXFastTrustedHarness/QwenRuntimeDFlashWorker.swift / Sources/MLXFastHarness/QwenRuntimeDFlashWorker.swift / Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift / Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift"
+    }
+  ],
+  "negative_controls": [
+    {
+      "id": "M1",
+      "target": "C2",
+      "file": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M2",
+      "target": "C1",
+      "file": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M3",
+      "target": "C6",
+      "file": "Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M4",
+      "target": "C7",
+      "file": "Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M5",
+      "target": "C6",
+      "file": "Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M6",
+      "target": "C9",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M7",
+      "target": "C10",
+      "file": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/allocator.cpp",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M8",
+      "target": "C12",
+      "file": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/allocator.cpp",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M9",
+      "target": "C4",
+      "file": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M10",
+      "target": "C3",
+      "file": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M11",
+      "target": "C8",
+      "file": "Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M12",
+      "target": "C11",
+      "file": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/allocator.cpp",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    },
+    {
+      "id": "M13",
+      "target": "C13",
+      "file": "Sources/MLXFastModel/LagunaRuntimeWeights.swift",
+      "ok": true,
+      "why": "target check flipped to FAIL"
+    }
+  ],
+  "regime": [
+    {
+      "host": "local (this host)",
+      "gib": 48,
+      "low_profile": true,
+      "mlx_max_mb_per_buffer": "128 (forced)",
+      "mlx_max_ops_per_buffer": "64 (forced)",
+      "memory_cache_limit": "6 GiB (forced)",
+      "postwarm_clear_cache": false,
+      "wired_residency": false,
+      "notes": [
+        "wired residency OFF and NO post-warm clearCache: warm-phase buffers stay in the (capped) pool"
+      ]
+    },
+    {
+      "host": "ranked",
+      "gib": 128,
+      "low_profile": false,
+      "mlx_max_mb_per_buffer": "512 (default)",
+      "mlx_max_ops_per_buffer": "50 (default)",
+      "memory_cache_limit": "MLX default = min(1.5 x maxRec, 0.95 x memsize)",
+      "postwarm_clear_cache": true,
+      "wired_residency": true,
+      "notes": [
+        "guard policy.isLowMemory returns before any cacheLimit assignment, so the FULL-profile 320/128/32 GiB constants are never applied here",
+        "wired residency ON and one Memory.clearCache() after warm, both from wireResidentWeightsIfEnabled (C9)"
+      ]
+    },
+    {
+      "host": "unbanded",
+      "gib": 72,
+      "low_profile": false,
+      "mlx_max_mb_per_buffer": "MLX built-in",
+      "mlx_max_ops_per_buffer": "MLX built-in",
+      "memory_cache_limit": "MLX default = min(1.5 x maxRec, 0.95 x memsize)",
+      "postwarm_clear_cache": false,
+      "wired_residency": false,
+      "notes": [
+        "neither gate fires in the 64-96 GiB band: this host gets no campaign command-buffer geometry at all",
+        "wired residency OFF and NO post-warm clearCache: warm-phase buffers stay in the (capped) pool"
+      ]
+    }
+  ],
+  "key_lines": {
+    "installer_gate": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift:66",
+    "low_threshold": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift:29",
+    "mtp_guard_trusted": "Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift:487",
+    "mtp_guard_harness": "Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift:498",
+    "wired_gate": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift:225",
+    "session_clear_cache": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift:235",
+    "mlx_cache_limit": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/allocator.cpp:92"
+  },
+  "positive_pass": true,
+  "controls_pass": true,
+  "gate_pass": true
+}

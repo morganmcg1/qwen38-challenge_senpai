@@ -1,0 +1,23 @@
+prompt_id=medicine
+prompt_file=research/e17_prose_medicine_512.txt
+prompt_sha256=9015ef47ed7fa4823133086b012ca034c7d6c099e761aeee2b4adea3a9783c36
+tokens=512
+offered_depth=8
+golden=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-askeladd/workspace/target/.mlxfast-private/e37/goldens/e17_prose_medicine_512_512.json
+golden_steps_covered=512
+head_dir=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run
+head_safetensors_sha256=d038fd41e2d5dab1b3905c115d859fdc98dfbfde9862c14ebb82c2b3247ec2f1
+head_sha=fb7ea831ec660dcfac0636bedf7015e73a2c8b71
+dirty=1
+pass=traced-census
+cool_gate_passed_real_gate=false
+gate_qualified_for_timing=false
+timing_claims_permitted=false
+trace_perturbs_timing=true
+thermal_before=gpu_temp=61.407169342041016C cpu_temp=45.35906982421875C gpu_power=0.01483704149723053W
+started=2026-08-19T03:10:44Z
+exit=0
+cli_sha256=fa42e0f9eaff117c8ad507fa4b3768c8ab4bc0492b6731694db8abc51ab98361
+worker_sha256=79f3ad5d2ad782921ae91b15c696fd2169e20296f00c23c841b6388d8a6ab97f
+thermal_after=gpu_temp=64.76911163330078C cpu_temp=46.154598236083984C gpu_power=0.014867187477648258W
+finished=2026-08-19T03:14:46Z

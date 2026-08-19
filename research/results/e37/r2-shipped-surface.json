@@ -1,0 +1,32 @@
+{
+  "schema": "e37-r2-shipped-surface/1",
+  "baseline": "527306761f70e2c4024f347915328894db80c181",
+  "base": "0491f9e54c4df28f3c69d8b114574fda366c5062",
+  "head": "f918aef51ae122a4ab53aed3c77a87bc57316266",
+  "shipped_paths": [
+    "Sources",
+    "Vendor"
+  ],
+  "campaign_shipped_surface": {
+    "files": [
+      "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+      "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+      "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+    ],
+    "n_files": 5,
+    "insertions": 229,
+    "deletions": 74
+  },
+  "branch_on_shipped_surface": {
+    "n_files": 0,
+    "insertions": 0,
+    "deletions": 0
+  },
+  "branch_non_research_files": [],
+  "head_note": "`head` is the commit this gate ran against. The commit that publishes this file adds research/ paths only, which cannot alter the gating predicate (shipped surface = Sources + Vendor).",
+  "scope_pass": true,
+  "negative_control_fires": true,
+  "gate_pass": true
+}

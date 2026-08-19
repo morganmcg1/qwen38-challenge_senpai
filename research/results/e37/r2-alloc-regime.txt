@@ -1,0 +1,61 @@
+==============================================================================
+E37 r2 addendum - startup memory regime on the QWEN-MTP worker path
+==============================================================================
+
+-- source checks (positive pass) --------------------------------------------
+  [PASS] C1   low profile is selected by physicalMemory < 64 GiB
+         low profile iff physicalMemory < 64 GiB (auto branch)
+  [PASS] C2   the 512/50 command-buffer defaults are gated at >=96 GiB
+         installer gated >=96 GiB; installs 512/50 with overwrite=0 (default, not forced)
+  [PASS] C3   the installer runs inside resolve() on both boxes
+         installer runs inside resolve() on BOTH boxes, before the low/full branch
+  [PASS] C4   low-profile constants
+         low: cache 6 GiB, 128 MB/buf, 64 ops/buf, clear-after-warmup flag TRUE, no env overrides
+  [PASS] C5   full-profile constants (never applied on the MTP path)
+         full: cache 32 GiB, 320 MB/buf, 128 ops/buf, clear flag FALSE
+  [PASS] C6   MTP worker forces 128/64 + 6 GiB only when low-memory
+         both MTP worker copies: low-memory-only, then FORCE 128/64 (overwrite=1) and set cacheLimit; ranked returns at the guard
+  [PASS] C7   MTP worker ignores clearAllocatorCacheAfterWarmup and apply()
+         neither MTP worker reads clearAllocatorCacheAfterWarmup nor calls apply(): the flag is INERT on this path
+  [PASS] C8   clear-after-warmup consumers are Laguna + DFlash only
+         the clear-after-warmup flag is honoured only by Laguna + the two DFlash workers
+  [PASS] C9   the only post-warm clearCache on the MTP path is >=96 GiB gated
+         the ONLY post-warm clearCache on the MTP session path sits behind the same >=96 GiB gate as wired residency: it runs on RANKED, not locally
+  [PASS] C10  MLX's default cache limit formula
+         MLX default cache limit = min(1.5 x maxRecommendedWorkingSet, 0.95 x memsize)
+  [PASS] C11  clear_cache() cannot evict a compiled pipeline
+         clear_cache() frees BUFFERS only; compiled pipelines live in Device::library_kernels_ and no allocator knob can evict them
+  [PASS] C12  command-buffer knobs are Device-scope only
+         MLX_MAX_*_PER_BUFFER are Device-scope commit thresholds read once at Device construction; they appear in no kernel-selection site
+  [PASS] C13  the full profile is applied on no host (documented no-op)
+         all 5 application sites are low-memory-guarded: the 320/128/32 GiB full-profile constants are applied on NO host (documented intent)
+
+-- derived regime ----------------------------------------------------------
+                       local 48 GiB     ranked 128 GiB   64-96 GiB band
+profile                low              full(unapplied)  full(unapplied)
+MLX_MAX_MB_PER_BUFFER  128 (forced)     512 (default)    MLX built-in
+MLX_MAX_OPS_PER_BUFFER 64 (forced)      50 (default)     MLX built-in
+Memory.cacheLimit      6 GiB (forced)   MLX default      MLX default
+clearCache after warm  no               YES              no
+wired residency        OFF              ON               OFF
+
+-- negative controls (each mutation MUST break its check) -------------------
+  [OK] M1   C2 -> check fails as required
+  [OK] M2   C1 -> check fails as required
+  [OK] M3   C6 -> check fails as required
+  [OK] M4   C7 -> check fails as required
+  [OK] M5   C6 -> check fails as required
+  [OK] M6   C9 -> check fails as required
+  [OK] M7   C10 -> check fails as required
+  [OK] M8   C12 -> check fails as required
+  [OK] M9   C4 -> check fails as required
+  [OK] M10  C3 -> check fails as required
+  [OK] M11  C8 -> check fails as required
+  [OK] M12  C11 -> check fails as required
+  [OK] M13  C13 -> check fails as required
+
+-- verdict -----------------------------------------------------------------
+  positive checks : PASS (13/13)
+  negative controls: PASS (13/13 mutations killed their check)
+  gate            : PASS
+  wrote research/results/e37/r2-alloc-regime.json
