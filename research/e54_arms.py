@@ -165,6 +165,22 @@ ARMS: dict[str, dict] = {
         "steps": [("relax", {}), ("swap_ipg", {"m": 5, "ipg": 5}),
                   ("swap_ipg", {"m": 9, "ipg": 5})],
     },
+    # Census-only: which half of E27 raises the shared register max. Never timed.
+    "e27_m5_only": {
+        "family": "composite",
+        "doc": "real table, case 5 -> <T,5,5> only: E27's M=5 half alone",
+        "cell": "<T,5,5>",
+        "steps": [("relax", {}), ("swap_ipg", {"m": 5, "ipg": 5})],
+        "never_time": True,
+    },
+    "e27_m9_only": {
+        "family": "composite",
+        "doc": "real table, case 9 -> <T,9,5> only: E27's M=9 half alone, and "
+               "exactly what askeladd composes on PR #57",
+        "cell": "<T,9,5>",
+        "steps": [("relax", {}), ("swap_ipg", {"m": 9, "ipg": 5})],
+        "never_time": True,
+    },
     "iso_m5_ipg5_lane_perturb": {
         "family": "positive_control",
         "doc": "iso_m5_ipg5 with rows 3 and 4 written to each other's lane in "

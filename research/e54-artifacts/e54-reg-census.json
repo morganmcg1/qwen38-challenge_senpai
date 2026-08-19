@@ -1,0 +1,836 @@
+{
+  "arms": {
+    "e27_full": {
+      "argmax_width": 9,
+      "arm": "e27_full",
+      "cell": "<T,5,5>+<T,9,5>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13554,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 55,
+          "device_loads": 882,
+          "peak_live_regs": 183,
+          "peak_live_values": 89
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 183,
+      "exceeds_ceiling": true,
+      "family": "composite",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 5
+      },
+      "kernel_wide_reg_max": 129,
+      "present_widths": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "real_table": true,
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 1,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 2
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 777,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 44,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 125,
+          "peak_live_values": 41
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1456,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45
+        }
+      }
+    },
+    "iso_m5_ipg3": {
+      "argmax_width": 5,
+      "arm": "iso_m5_ipg3",
+      "cell": "<T,5,3>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7768,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 43,
+          "device_loads": 538,
+          "peak_live_regs": 139,
+          "peak_live_values": 87
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 139,
+      "exceeds_ceiling": null,
+      "family": "isolated",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 3,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "kernel_wide_reg_max": 87,
+      "present_widths": [
+        5
+      ],
+      "real_table": false,
+      "status": "ok",
+      "streams": {
+        "3": 0,
+        "4": 0,
+        "5": 2,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "width_cells": {
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        }
+      }
+    },
+    "iso_m5_ipg5": {
+      "argmax_width": 5,
+      "arm": "iso_m5_ipg5",
+      "cell": "<T,5,5>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7433,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 42,
+          "device_loads": 514,
+          "peak_live_regs": 177,
+          "peak_live_values": 83
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 177,
+      "exceeds_ceiling": null,
+      "family": "isolated",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 5,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "kernel_wide_reg_max": 125,
+      "present_widths": [
+        5
+      ],
+      "real_table": false,
+      "status": "ok",
+      "streams": {
+        "3": 0,
+        "4": 0,
+        "5": 1,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "width_cells": {
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 777,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 44,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 125,
+          "peak_live_values": 41
+        }
+      }
+    },
+    "iso_m7_ipg4": {
+      "argmax_width": 7,
+      "arm": "iso_m7_ipg4",
+      "cell": "<T,7,4>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7940,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 43,
+          "device_loads": 546,
+          "peak_live_regs": 160,
+          "peak_live_values": 87
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 160,
+      "exceeds_ceiling": null,
+      "family": "isolated",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 4,
+        "8": 0,
+        "9": 0
+      },
+      "kernel_wide_reg_max": 108,
+      "present_widths": [
+        7
+      ],
+      "real_table": false,
+      "status": "ok",
+      "streams": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 2,
+        "8": 0,
+        "9": 0
+      },
+      "width_cells": {
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        }
+      }
+    },
+    "iso_m7_ipg5": {
+      "argmax_width": 7,
+      "arm": "iso_m7_ipg5",
+      "cell": "<T,7,5>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7940,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 43,
+          "device_loads": 546,
+          "peak_live_regs": 181,
+          "peak_live_values": 87
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 181,
+      "exceeds_ceiling": null,
+      "family": "isolated",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 5,
+        "8": 0,
+        "9": 0
+      },
+      "kernel_wide_reg_max": 129,
+      "present_widths": [
+        7
+      ],
+      "real_table": false,
+      "status": "ok",
+      "streams": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 2,
+        "8": 0,
+        "9": 0
+      },
+      "width_cells": {
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 5,
+          "na_cells": [
+            2,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45
+        }
+      }
+    },
+    "iso_m8_ipg4": {
+      "argmax_width": 8,
+      "arm": "iso_m8_ipg4",
+      "cell": "<T,8,4>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7347,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 42,
+          "device_loads": 510,
+          "peak_live_regs": 156,
+          "peak_live_values": 83
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 156,
+      "exceeds_ceiling": null,
+      "family": "isolated",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 4,
+        "9": 0
+      },
+      "kernel_wide_reg_max": 104,
+      "present_widths": [
+        8
+      ],
+      "real_table": false,
+      "status": "ok",
+      "streams": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 2,
+        "9": 0
+      },
+      "width_cells": {
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        }
+      }
+    },
+    "iso_m8_ipg5": {
+      "argmax_width": 8,
+      "arm": "iso_m8_ipg5",
+      "cell": "<T,8,5>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 8026,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 43,
+          "device_loads": 550,
+          "peak_live_regs": 181,
+          "peak_live_values": 87
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 181,
+      "exceeds_ceiling": null,
+      "family": "isolated",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 5,
+        "9": 0
+      },
+      "kernel_wide_reg_max": 129,
+      "present_widths": [
+        8
+      ],
+      "real_table": false,
+      "status": "ok",
+      "streams": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 2,
+        "9": 0
+      },
+      "width_cells": {
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 1370,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 80,
+          "ipg": 5,
+          "na_cells": [
+            3,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45
+        }
+      }
+    },
+    "shipped": {
+      "argmax_width": 7,
+      "arm": "shipped",
+      "cell": null,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13038,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 55,
+          "device_loads": 858,
+          "peak_live_regs": 163,
+          "peak_live_values": 90
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 163,
+      "exceeds_ceiling": false,
+      "family": "control",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "kernel_wide_reg_max": 108,
+      "present_widths": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "real_table": true,
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    }
+  },
+  "ceiling": 108,
+  "law_d": {
+    "delta_entry_point_reg_max": 20,
+    "delta_kernel_wide_reg_max": 21,
+    "instrument": "real-table shipped vs e27_full",
+    "reproduces_recorded_129_to_108": true,
+    "supported": true
+  },
+  "recorded_e27": {
+    "entry_point_reg_max": 183,
+    "kernel_wide_reg_max": 129
+  },
+  "recorded_tip": {
+    "entry_point_reg_max": 163,
+    "kernel_wide_reg_max": 108
+  }
+}
