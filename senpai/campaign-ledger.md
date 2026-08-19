@@ -6337,3 +6337,103 @@ Two traps in doing it:
         model came from.** E46 was fully drafted and correctly priced against coefficients
         that turned out to be scoped to an abandoned tree. The arithmetic was right and
         the assignment would still have been wrong.
+
+165. 🔴🔴 **THE SAME TOOL FAILED OPEN A SECOND TIME IN ONE SESSION, AND THIS TIME IT WOULD
+     HAVE PRINTED A STUDENT'S OWN STOP-EARLY CLAUSE BACK TO HIM AS A RESULT. Then my
+     ad-hoc check for the general case was itself fail-open, for a reason worth
+     memorising.**
+
+     **(a) `ab` asserted a conclusion over an empty set, and that was the DEFAULT.**
+     `research/stream_dispatch_census.py ab` is the mode carrying edward's E45 deliverables
+     (b) and (c) and thorfinn's external check on E46 contrast B. With no
+     `refs/remotes/upstream/submissions/*` present it printed
+
+         trees scanned : 0   ...   fingerprints with >1 table (A/Bs) : 0
+         NO clean A/B exists: every pair differing in the dispatch table
+         also differs elsewhere. The cross-solver contrast is
+         observational only and must be labelled as such.
+
+     and exited **0**. Demonstrated rather than reasoned: the pre-fix file run in a fresh
+     `git init` directory produces exactly that with `EXIT=0`; the fixed file in the same
+     directory exits 1 and refuses to print it.
+
+     🔴 **It is the default state of a student checkout.** `senpai/bootstrap-checkout.sh`
+     adds the `upstream` remote and sets its URLs, and **never runs `git fetch upstream`**.
+     So the remote is configured and there is nothing behind it. This was not an edge case
+     I had to contrive; it is what a student gets.
+
+     Now read that output against edward's own stopping rule: *"stop early and say so in
+     one sentence at the top if the fingerprint groups turn out to be too small to beat the
+     within-arm spread."* The false sentence and the true one are nearly indistinguishable
+     in tone, and the false one arrives with a clean exit status. He could have written
+     "the ranked route is finished" — redirecting the campaign — on a check that examined
+     nothing. **"Examined nothing" and "examined everything and found nothing" must never
+     share an exit code or a sentence.**
+
+     Fixed: `ab` fails closed on an empty or family-less ref set and prints the fetch
+     refspec; the genuine no-A/B case now says *among the N trees examined*; `main()`
+     propagates `ab`'s status as it already did for `census`'s. The decision is extracted
+     into `ab_verdict(scanned, with_table, n_multi)` and unit-tested on constructed counts,
+     **because the failing branch is unreachable from this workspace** — the refs are
+     always here — so it was precisely the branch that running the tool could never
+     exercise. Six cases including incoherent counts; mutation-checked, stubbing the empty
+     case fails 2 of 6 rather than passing.
+
+     **(b) My ad-hoc check for the general class was fail-open, via a git behaviour I did
+     not know.** Asked "which instruments does each student actually have", I wrote a quick
+     loop using `git rev-parse "$rev:$path"`. For a path absent at that rev, `git rev-parse`
+     **echoes the argument back to stdout** and exits 128 — so `2>/dev/null || echo ABSENT`
+     captured *argument+ABSENT*, which matched neither the current blob nor `ABSENT`, and
+     every **ABSENT** file was reported as merely **STALE**. Understated in exactly the
+     direction that makes you relax: "out of date" invites a rebase later, "does not exist"
+     invites one now. **Test existence with `git cat-file -e`; never with bare
+     `git rev-parse`.** Use `--verify` when you do want a SHA.
+
+     **(c) Two gates, because this is now a class with three instances.**
+     `senpai/verify-student-instruments.sh` classifies every runnable `research/` and
+     `senpai/` instrument at a branch's merge-base as CURRENT / STALE / ABSENT, and states
+     whether the **scored surface** also differs — i.e. whether rebasing is free. No
+     declared instrument list, deliberately: a hand-maintained list rots and then
+     under-reports. Runnable code only, because a gate that prints 114 lines of stale
+     ledger and pending-feedback notes will not be run, and a gate nobody runs is the
+     failure mode of item 164(d). Selftest: 10 cases on revs whose truth I established by
+     hand, plus assertions that ABSENT and STALE are distinguishable and that `classify()`
+     is not constant.
+
+     Its first run paid for it. **askeladd's base `04ad6bf1` differs from the tip on the
+     SCORED SURFACE in 5 files** — the E27 window — which is the mechanical form of the
+     E41/E42 scope error from item 164, now visible in one command instead of after a
+     merge. He also lacks **all four surface gates**, `verify-base-drift.sh` and
+     `verify-kernel-table.sh`, so he could not have checked his own scope had he wanted to.
+     alphonse and edward are scored-surface-**identical** to the tip, so alphonse's E44
+     register ceiling will land on the shipped 108 table — which matters, because 164(f)
+     makes that measurement decisive for the whole remaining kernel axis.
+
+     `senpai/run-all-gates.sh` resolves the crown **live** by `ls-remote` — never a local
+     mirror — and runs all ten gates with their arguments, capturing each exit code
+     separately. It reports **rc=2 (usage) as loudly as rc=1**, since a gate invoked
+     without its arguments is a gate never run, which is exactly how the overlay gate hid
+     a real violation since `7f89dd5`. Negative-controlled end to end: re-injecting a
+     post-`SENPAI-CAMPAIGN-END` `.gitignore` line turns `campaign-overlay` red and the
+     runner exits 1. All ten green at `1edeeabc`.
+
+     **(d) Lessons.**
+
+     1. 🔴🔴🔴 **A tool that fails open toward a NULL is the most dangerous kind**, because
+        a null is publishable, quotable, and closes a line of work. Both defects in this
+        file biased toward "there is nothing there". If an instrument I wrote returns a
+        null, the instrument is the first suspect, not the finding.
+     2. 🔴🔴 **Test the branch your environment cannot reach.** The empty-ref-set path was
+        unreachable from this workspace, so running the tool — the thing I keep correctly
+        insisting on — could never have found it. Reachability by running and coverage are
+        different properties; the second needs constructed inputs.
+     3. 🔴🔴 **Check that a primitive fails the way you assume.** `git rev-parse` printing
+        an unresolvable argument to stdout inverted my check's verdict. I have been treating
+        "command failed" as "output unusable" and they are not the same.
+     4. 🔴 **A gate that emits mostly noise is a gate that will not be run**, and is
+        therefore indistinguishable from no gate. Filtering to runnable code cut 114 lines
+        to 71 and made the one line that mattered — askeladd's scored-surface divergence —
+        legible.
+     5. 🔴 **Distinguish "your tools are old" from "your tree is different".** For alphonse
+        and edward a rebase is free and changes no measurement; for askeladd it changes
+        what is being measured. The same word "stale" covered both and should not.
