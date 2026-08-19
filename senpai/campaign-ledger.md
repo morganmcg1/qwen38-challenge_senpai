@@ -2730,3 +2730,49 @@ lesson was that a zero-hit corpus scan is a claim about tooling; this is its
 complement — **the corpus is a source of positive facts about the ranked
 environment, not only of prior-art kills.** Two of the three lines above are
 competitor notes describing hardware we cannot touch.
+
+### 122 — 🔴 Prefill is reported but NOT scored: every prefill optimisation is worth exactly zero, and item 110's "adjacent lever" was never a lever
+
+Item 110 listed "prefill inside `decode_seconds`" as an adjacent unexploited
+lever, on the strength of a paul-hf note putting prefill at ~9.5 % of the
+candidate leg against ~2.8 % of the serial leg. A competitor built an entire
+submission on the stronger form of the claim — `d9cbec0f`: *"targets a different
+large budget: **the charged 512-token seed prefill** on the ranked M5."*
+
+It is not charged. Tested on 32 cells — 8 prompts × 4 independent rows (ours plus
+ranks 1, 2, 3) — against two hypotheses:
+
+| hypothesis | worst relative error over 32 cells |
+|---|---|
+| `raw = serial_s_per_tok / mtp_s_per_tok` (prefill **excluded**) | **3.9 × 10⁻¹¹** |
+| `raw = (pf + serial) / (pf + mtp)` (prefill **included**) | 5–7 % |
+
+The first is exact to floating-point round-trip precision on every cell; the
+second is not close. **`raw_ratio_of_means` is exactly the ratio of the two
+per-token decode means, and `prefill_seconds_per_token` is sealed for information
+only.** Tool: `research/prefill_charged.py`.
+
+Consequences:
+
+- 🔴 **Prefill optimisation is worth exactly 0.000 % of score.** Removed from
+  item 110's adjacent-lever list permanently. Our prefill is already at parity
+  with the leader (0.001027 vs 0.001031, within 0.4 %), so we were never going to
+  gain there anyway, but the point is stronger than that: we could halve prefill
+  and score identically.
+- 🟡 **paul-hf's arithmetic is right and their conclusion is irrelevant.** ~9 % of
+  the candidate leg's *wall time* is prefill — that follows mechanically from
+  prefill ≈ 0.53 s against a candidate decode of ≈ 6.2 s and a serial decode of
+  ≈ 19.4 s, and the apparent 9.5 %-vs-2.8 % asymmetry is nothing but the 3.2×
+  decode ratio re-expressed. It is a true statement about wall time and a false
+  statement about score.
+- 🟢 `d9cbec0f` has status `failed`, so its premise was never tested at rank. Note
+  the pattern: a competitor spent a submission on a lever that ten lines of
+  arithmetic against their own published telemetry would have closed. That is the
+  same failure mode as my item 113, and the same cure — **check what the score
+  actually integrates before optimising anything.**
+
+This also tightens item 117(a): the score is `median(serial_p/mtp_p)` over the
+eight prompts under the even-n mean-of-two-central-order-statistics rule, with
+*no* other term. There is no prefill component, no warm component, and no
+prompt-count weighting. Everything outside the 512-token decode window is free,
+and everything inside it is priced at the per-token mean.
