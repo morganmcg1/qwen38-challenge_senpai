@@ -8167,3 +8167,170 @@ loudly flagged instead.
 4. Keep #55 and #56 running; assign nothing new until the frontier sync lands, so new
    work is priced against the right target.
 
+
+---
+
+## 178. 🔴🔴🔴 ITEM 173(C) IS REFUTED. The shared register tax does not exist, the "largest term in this kernel" was a mis-weighted histogram, and the M=9 prize re-prices 3.9× down to +1.36 % — which still beats both the board floor and our own frontier deficit.
+
+Two students delivered inside twenty minutes of the maintenance checkpoint. Both refuted
+something the campaign was carrying, and one of them refuted me. Recorded here because
+the advisor REST credential is still down (178(G)) and I cannot yet answer them on their
+PRs.
+
+### 178(A). The register tax: tested at last, and it is not there
+
+Item 173(C) attributed E27's entire **−6.485 % of score** residual (8.4 sd) to one shared
+register step, kernel-wide max **108** (`<T,7,4>`) → **129** (`<T,9,5>`), Δ+21. I wrote
+in that item, in capitals, that **the attribution was a hypothesis and I had not tested
+it**. thorfinn's E49 Arm 2 tested it.
+
+The dose is an **unreachable `case 10:`** in the `>=4096` tier: `ntg.x == M`, nothing
+verifies more than 9 rows, so the cell is compiled and register-allocated for but never
+executed. **No dispatched width's instructions change at all.** Every width M=3..9 is an
+untouched control in every arm — a far cleaner design than the five controls I asked for.
+
+| dose | injected cell | entry heuristic | Δ regs | **pooled tax** | worst width | widths slower |
+|---|---|---|---|---|---|---|
+| `dose_null` | `<T,4,4>` (104) | 164 | **+1** | **+0.272 %** | +0.758 % | 7/7 |
+| `dose_129` | `<T,9,5>` (129) | 181 | **+18** | **−0.035 %** | +0.271 % | 3/7 |
+| `dose_big` | `<T,12,6>` (144) | 197 | **+34** | **+0.213 %** | +0.755 % | 6/7 |
+| `dose_huge` | `<T,16,8>` (177) | 230 | **+67** | **+0.078 %** | +0.282 % | 4/7 |
+
+🔴 **There is no dose–response, and the largest pooled value sits at the NULL dose
+(+1 register).** At +67 registers the tax is +0.078 %. 173(C) needed **+10.6 %** at
+`dose_129`; the measurement is **−0.035 %**, and the effect is excluded at three doses
+beyond the one that matters. Pre-registered `arm2_refuted` fires. Arm 1's isolated-build
+hint (+0.14 % pooled) is confirmed on the real shipped dispatch table.
+
+**What this kills:** "raising registers costs score" as a *quantified* campaign term, the
+8.4 sd pricing, and item 173's headline claim that the register ceiling "is the largest
+term in this kernel". It also retires the framing in 176(C) that E44's ceiling bound
+"gates thorfinn's register trades" — there is no tax at this dose for a bound to gate.
+
+**What survives:** the `static_assert(NA >= 2 && NA <= 4)` wall at `quantized.h:980` is
+still what stops a 2-stream M=9, and the *local* two-stream win at M=9 is real and
+measured (Arm 1, −12.26 %, ~68× replicate spread). The wall is now the only obstacle,
+and it is a source constraint rather than a physical price.
+
+### 178(B). The prize, re-priced honestly: +5.36 % → ≈ +1.36 %
+
+thorfinn imported `research/qmv_score_leverage.py` from the advisor tip rather than
+re-inlining constants — exactly the discipline item 176(B) demanded after the void model
+was found copied into a second script. The module reports `kink_pct = 1.0551 %`,
+`saturation_cap_pct = 4.7156 %`, `marginal_weights = beagle 0.483694 / medicine
+0.516306`, and mechanically confirms **`target_for(10.6) → None`**: the +10.6 % ceiling
+was outside the reachable range of the score function all along.
+
+| M=9 share of scored QMV | ψ | QMV cost removed | leg gain | score (constant rate) | **score (order-stat)** |
+|---|---|---|---|---|---|
+| **20.48 %** (E48 P1) | 0.6736 | 2.511 % | +1.691 % | +1.691 % | **+1.363 %** |
+| 20.48 % | 0.693391 | 2.511 % | +1.741 % | +1.741 % | **+1.387 %** |
+| 53.45 % (retracted) | 0.6736 | 6.553 % | +4.414 % | +4.414 % | +2.680 % |
+
+**3.9× reduction from three compounding corrections:** measured −12.26 % rather than
+modelled −14.80 % (×0.83), share **20.48 %** rather than **53.45 %** (×0.38), and the
+substitution kink (×0.81 at this size). He did not hard-code the share; the table shows
+the sensitivity.
+
+🟢 **It is still the best lever we have, and item 177(B) makes it better than it looks.**
++1.36 % is **2.6× the 0.5193 % board floor** — and it is **2.6× our measured 0.53 %
+deficit to the live frontier** (`59b321e`, 3.24985583421771). A lever that alone spans
+our whole gap to first place is worth composing even after a 3.9× haircut.
+
+### 178(C). The real error was the histogram, and 173(C) named it as alternative (a)
+
+173(C) listed the alternatives that would produce the same arithmetic. Alternative **(a)
+— "the histogram is corpus-wide"** — is the one that was true. The published score is the
+mean of the 4th and 5th order statistics, i.e. **beagle and medicine only**, and M=9's
+share of *scored* QMV time is **20.48 %**, not the corpus-wide **53.45 %**.
+
+**Lesson, and it is not the same as 176(D):** the number was wrong because it was
+weighted over the wrong population, and the item that used it **listed that exact failure
+as hypothesis (a) and shipped the number anyway** in its headline as "8.4 sd" and "the
+largest term in this kernel". Flagging a caveat in the body does not stop a
+prominently-stated figure from being reused as fact — every downstream mention of +5.36 %
+dropped the caveat. 🔴 **When an attribution is untested, the uncertainty belongs in the
+headline number itself (a range, or no number), not in a paragraph below it.**
+
+A consequence worth stating: with the share corrected, E27's expected gain shrinks too,
+so the residual that 173(C) was trying to explain is **roughly half** its recorded size
+and the register step is no longer available as its cause. E27's remaining shortfall is
+smaller and **still unexplained**. thorfinn's job 5 runs an `e27_replica` composite;
+treat his terminal result as the authority on where that residual sits.
+
+### 178(D). E51 Step 0b: the scored path compiles with SAFE math, so my prediction 1 was wrong
+
+I predicted R1's AIR would be identical to R0's — that BF16 reassociation would be a
+no-op dose because the compiler would reassociate anyway. alphonse refuted it with one
+source line: `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp`,
+`Device::build_library_`, calls **`options->setFastMathEnabled(false)`**. Safe math means
+the compiler **may not** reassociate, so the tree we write is the tree that runs.
+
+| unit | R1 vs R0, safe math (scored) | R1 vs R0, fast math |
+|---|---|---|
+| isolated tree | **DIFFERS** | IDENTICAL |
+| shipped `..._wide<bf16,3,true>` / `<bf16,4,true>` | **DIFFERS**, 4 lines | IDENTICAL |
+| production `affine_qmv_fast<bf16,64,4,false>` | **DIFFERS**, 36 lines | IDENTICAL |
+| **runtime-effective JIT string** | **DIFFERS, 36 lines** | — |
+
+Under safe math R0 emits the left-leaning chain `((x0+x1)+x2)+x3` as three
+`fadd bfloat` then one `fpext bfloat → float`; R1 emits the balanced pair. **The BF16
+tree is real, it survives the compiler, and the fp32 accumulator sits downstream of BF16
+rounding.** R2 swaps 3 `fadd bfloat` for 3 `fadd float` (19 changed FP ops per cell) and
+is ~4 AIR lines *cheaper* in the isolated cell (669 → 665) with `peak_live_regs`
+unchanged at 102.
+
+🟢 **Source-form chain proven end to end, not assumed** — this is the provenance
+`senpai/program.md` requires before touching a kernel: `Package.swift:284` excludes
+`nojit_kernels.cpp`; `jit_kernels.cpp:915-932` → `metal::quantized()` →
+`device.cpp:770-788` → `build_library_` → `newLibrary` at `device.cpp:637`. Therefore the
+runtime-effective source is the **JIT string in `mlx-generated/quantized.cpp`**;
+`mlx.metallib` is built from the readable header but **is never consulted for this
+family**; and `mlx-generated/metal/quantized.h` **is compiled by nothing**. Toolchain
+confirmed at the ranked pin (`metalfe-32023.883`).
+
+That last clause is a standing trap for every future kernel experiment: editing
+`mlx-generated/metal/quantized.h` alone changes nothing that runs.
+
+### 178(E). Instrument hygiene: a regex that erased dataflow produced a false null
+
+alphonse's first AIR canonicaliser used `s/%[A-Za-z0-9_.-]+/%_/g`, which erases operand
+dataflow. Left-associative and balanced trees compared **IDENTICAL**, and it printed
+"dose of zero" — he was one step from reporting my prediction 1 as *confirmed* on an
+artefact. He caught it himself and `research/e51_air_canon.py` now carries its own
+positive control.
+
+This is the third member of the family in 176(B)/176(D): **an instrument that cannot fail
+is not an instrument.** A canonicaliser must be shown to distinguish two things that
+genuinely differ before any null it reports is believed. Note the asymmetry that makes
+this dangerous: an over-aggressive canonicaliser fails *toward* the null, which is the
+direction that looks like a clean negative result.
+
+### 178(F). Two honest deviations, both recorded by the students rather than smoothed over
+
+1. **thorfinn's thermal pre-registration was wrong in the safe direction.** He predicted
+   `cool_gate_passed_real_gate=false` from E46's 43.2 °C floor; every E49 leg passed the
+   real 40 °C gate with `MLXFAST_LOCAL_COOL_GATE` never disabled. He recorded it as a
+   deviation instead of editing the pre-registration after the fact. E46's recorded
+   thermal claim about this host is corrected.
+2. **The M=10 bitwise deltas are a pre-existing base property, not a fidelity effect.**
+   Eight deltas appear identically in the byte-identical `shipped` control, on the `qmm`
+   splitk path, at **M=10 only**. Max scored verify width is **9** (1 primary + 8 drafts),
+   so this is outside the scored range. **No leg shows any delta at M ≤ 9.** Keep it on
+   the record as a property of the 9→10 padding path.
+
+### 178(G). 🔴 The advisor REST credential is still down, and it is now blocking science
+
+`get_prs` and `respond_to_human_issue` both return **403** for the advisor, while
+`publish_advisor_branch` (git push over HTTPS) succeeds every time. **Student credentials
+work** — alphonse, thorfinn and askeladd are all posting normally, and alphonse reports
+his own earlier 403 has cleared. So the failure is specific to the advisor identity, not
+the repository or the network.
+
+Consequences to state plainly: thorfinn has a terminal-quality Arm 1 + Arm 2 result and
+alphonse has a decisive Step 0b, and **I cannot acknowledge, redirect, or disposition
+either on GitHub.** Both are proceeding on their own pre-registered plans, which is why
+pre-registration matters — the campaign degrades gracefully rather than stalling. This
+ledger entry is the durable substitute until the credential recovers. First action when
+it does: answer #53 and #55, then re-post the issue #31 checkpoint reply.
+

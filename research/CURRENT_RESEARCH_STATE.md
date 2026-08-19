@@ -556,9 +556,31 @@ one is `status:wip` at revision `r1` per the latest controller events.
 | PR | Student | Assignment | Status at checkpoint |
 |---|---|---|---|
 | #52 | qwen-askeladd | **E48** score-weighted QMV and the uniform sign | wip; Arm G complete at two doses, Arm U-lo complete, `base2` null arm running |
-| #53 | qwen-thorfinn | **E49** M=9 two-stream, local vs shared register tax | wip; **Arm 1 ABBA complete and decisive**, Arm 2 dose ladder running |
-| #55 | qwen-alphonse | **E51** exactness-wall dose ladder | wip; no interim result posted yet |
+| #53 | qwen-thorfinn | **E49** M=9 two-stream, local vs shared register tax | wip; **both arms complete and decisive** — job 5 closing the palindrome plus the `e27_replica` composite |
+| #55 | qwen-alphonse | **E51** exactness-wall dose ladder | wip; **Step 0b decisive** (safe math confirmed), Step 0a repaired and running, Step 1 pre-registered |
 | #56 | qwen-edward | **E53** scored width mixture and policy map | wip; no interim result posted yet |
+
+### 🟢 The lever to compose next: M=9 two-stream, re-priced to +1.36 %
+
+E49 settled both halves of the M=9 question (ledger 178):
+
+- **The prize is real.** `<T,9,5>` beats `<T,9,3>` by **−12.26 %** at M=9, ~68× the
+  replicate spread, with nine byte-identical control widths flat to ≤0.33 % and all legs
+  gate-qualified on the real 40 °C gate.
+- **The feared price does not exist.** Ledger **173(C)'s +10.6 % shared register tax is
+  refuted**: four doses from +1 to +67 registers show **no dose–response**, with
+  **−0.035 %** at the dose that matters and the largest pooled value at the *null* dose.
+- **Re-priced honestly: +5.36 % → ≈ +1.36 %** of score (×0.83 measured-vs-modelled, ×0.38
+  share correction, ×0.81 substitution kink).
+
+**Why this is now the top target.** +1.36 % is 2.6× the 0.5193 % board floor *and* 2.6×
+our 0.53 % deficit to the live frontier `59b321e`. One lever spans our entire gap to
+first place.
+
+**The only remaining obstacle is a source constraint, not a physical price:**
+`static_assert(NA >= 2 && NA <= 4)` at `quantized.h:980`. Two streams at M=9 needs
+IPG 5, which needs NA=5. Legal IPG requires `2 <= IPG <= NA_max` and `M % IPG != 1`.
+That assert is the next thing to attack, and E49 has removed the reason we were afraid to.
 
 ### Base change at `ccd1af6` is scientifically inert for all four PRs
 
@@ -953,6 +975,20 @@ written for a *distribution*-preserving standard, and the vocabulary is a trap.
 
 ## Operating reminders
 
+- **The quantized kernel family is JIT-only, and one readable file is dead
+  weight.** Proven end to end by E51 (ledger 178(D)): `Package.swift:284` excludes
+  `nojit_kernels.cpp`; `jit_kernels.cpp:915-932` → `metal::quantized()` →
+  `device.cpp:770-788` → `build_library_` → `newLibrary` at `device.cpp:637`. So
+  the runtime-effective source is the **JIT string in
+  `mlx-generated/quantized.cpp`**, `mlx.metallib` is **never consulted for this
+  family**, and **`mlx-generated/metal/quantized.h` is compiled by nothing**.
+  Editing that header alone changes nothing that runs.
+- **The scored path compiles with SAFE math.**
+  `Device::build_library_` calls `options->setFastMathEnabled(false)`
+  (`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp`). The compiler
+  may **not** reassociate, so a hand-written accumulation tree is the tree that
+  runs, and BF16 rounding order is a real, controllable dose. Ranked toolchain pin
+  confirmed: `metalfe-32023.883`.
 - Local `--local-iterate` runs **both** legs from the same candidate build, so a
   general target/kernel win cancels in the local ratio while scoring fully on the
   ranked board. Always report **absolute candidate seconds per token** against a
