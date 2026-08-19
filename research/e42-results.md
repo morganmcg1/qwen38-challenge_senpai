@@ -214,14 +214,22 @@ geometry is replayed. Three defensible denominators give:
 
 **Preferred ψ ≈ 0.672**, interval **[0.659, 0.674]** from the tightest arm.
 
-The drift term is worth naming honestly. The untreated M=1 calibration cell
-reads −5.13 % (p2L1), −1.39 % (p2L2), −4.95 % (p6L1) — apparently impossible,
-since M=1 is untreated. It is **one shape**:
+The drift term is worth naming honestly, and it is not pure noise. Every arm
+carries the same *structural* template change (the extra `E42_PASSES` parameter
+and the surrounding loop) at **all** widths, including untreated ones, where it
+is inert because `E42_PASSES = 0` gives exactly one pass. So a small non-zero
+reading at an untreated width is expected: it is the cost of the inert
+restructuring, and the calibration cell is there to price it.
+
+What is *not* explicable that way is the sign. The untreated M=1 calibration cell
+reads −5.13 % (p2L1), −1.39 % (p2L2), −4.95 % (p6L1), −3.70 % (m6L2): an inert
+restructuring cannot make the kernel meaningfully *faster*. It is **one shape**:
 `linear_attn.in_proj_fused_qkvzba` at −24.61 %, whose *within-curve* spread is
 32.6 % (base) to 146.2 % (arm) — i.e. that cell is not a stable measurement at
 all. Restricted to reproducing shapes the same calibration reads **+0.38 %,
-+0.40 %, +0.73 %**, consistent with zero. I report the interval rather than
-silently dropping the unstable shape.
++0.40 %, +0.73 %** — small, positive, and exactly the sign the inert
+restructuring predicts. I report the interval over all three denominators rather
+than silently dropping the unstable shape.
 
 ## 6. φ — but per width, not pooled
 
