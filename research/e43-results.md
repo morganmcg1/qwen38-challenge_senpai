@@ -54,6 +54,7 @@ comparison is restricted to `head_provenance_sha256 == 559b24eb…`.
 | Zero-accept anchor | `c91581eb` scarletbright, score 1.209272, k ∈ [1.2059, 1.2115] |
 | Shipped-surface diff | `git diff 04ad6bf1 HEAD -- Sources Vendor benchmark.json` → **empty** (shown below) |
 | GPU seconds | **0** |
+| W&B | run `piz9gjgg` — https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/piz9gjgg |
 
 ---
 
