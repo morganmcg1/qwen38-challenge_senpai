@@ -12674,3 +12674,280 @@ not a new mechanism. It is to finish certifying that tree and submit it. E60
 rung 1 is exactly that certification, so E60 rung 1 is now the campaign's
 critical path and I have told alphonse to deliver it ahead of the rest of the
 experiment.
+
+## 194. E55 is merged, the register ceiling it bought makes a second larger win nearly free, and official submission is blocked by a diverged `origin/main`
+
+This item records one merge, one structural discovery that follows from it, one
+retracted-motivation correction, and one hard operational blocker that stops
+every official submission until a human moves a branch.
+
+### 194(A) PR #57 is merged: the base is now `d2139c92`
+
+Askeladd's E55 replaced the shipped two-weight-stream `<T,5,3>`-style call at
+`case 9` of the wide cross-row QMV dispatch table with the single-weight-stream
+form `<T,9,5>`, in both runtime-effective twins:
+
+```
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp:1975
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1972
+  qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>(
+```
+
+Evidence merged on: MTP leg `0.03343178` -> `0.03199581` s/token, **-4.2952 %**,
+against a same-session null of `+0.0497 %` (86x the null). PATH C bitwise
+identity at 512 decode tokens including the post-EOS continuation,
+`max_abs_ulp_top2_logits = 0`, 14/14 negative controls fired, and a
+gate-qualified `--local-submit` PASS behind the real 40 C gate. W&B runs
+`wxezisvs`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wxezisvs),
+`f4ej9y1n`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/f4ej9y1n),
+`o8ig3ht7`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/o8ig3ht7).
+
+The base moved `98959689` -> `cffe973f` while the result was in review, so the
+sequence was `accept_result_on_current_base` and then `merge_experiment`. The
+acceptance was not a judgement call: `git diff cffe973f 9681648f -- Sources/
+Vendor/ mtp-head.manifest.json mtp-head/ Package.swift Package.resolved
+benchmark.json` was **empty**, so the intervening merges had not touched the
+scored surface at all and the measured delta transferred exactly. New base:
+
+```
+d2139c924c7a7d98ca6026eea63867c2776abbca
+```
+
+The one argument against merging was item 187's E27 board receipt, which read a
+129-register table maximum as costing `0.3321 %` of ranked score. Item 193
+retracted that receipt: it is a single ranked pair against a difference standard
+deviation of `1.069 %`. The credible ceiling cost is E49 arm 2's local bound,
+`<= 0.0876 %`, which is 49x smaller than the measured gain.
+
+### 194(B) The register law reproduces every shipped cell, and it says one more single-stream cell is already paid for
+
+Askeladd's census law, calibrated at M=5 and validated out of sample at M=9 by
+thorfinn, is
+
+```
+reg = 20 + 21 * max(NA over groups) + 4 * [two distinct NA group sizes]
+```
+
+I applied it to every cell of the live table with
+`_advisor_scratch/stream_table.py`. It reproduces every shipped cell and both
+students' independent measurements (83, 87, 104, 108, 125, 129) with no fitted
+parameter.
+
+The template's second parameter is `IPG`, inputs per group, at
+`quantized.h:1156-1186`. Each x-group re-reads the whole weight matrix, so
+**group count is weight stream count**. A cell with one group reads the weights
+once; a cell with two groups reads them twice.
+
+| M | shipped call | groups | regs | one-group form | regs | free under the 129 max? |
+|---|---|---|---|---|---|---|
+| 3 | `<T,3,3>` | 1 | 83 | already one stream | - | - |
+| 4 | `<T,4,4>` | 1 | 104 | already one stream | - | - |
+| 5 | `<T,5,3>` | 2 | 87 | **`<T,5,5>`** | **125** | **yes** |
+| 6 | `<T,6,3>` | 2 | 83 | `<T,6,6>` | 146 | no, +17 |
+| 7 | `<T,7,4>` | 2 | 108 | `<T,7,7>` | 167 | no, +38 |
+| 8 | `<T,8,4>` | 2 | 104 | `<T,8,8>` | 188 | no, +59 |
+| 9 | `<T,9,5>` | 1 (E55) | 129 | shipped | - | - |
+
+The cost model is askeladd's own, with no parameter fitted by me:
+`T = eta(n_groups) * sum_g W / bw(NA_g)`, using E54's measured lone-group
+bandwidth ladder `223.8 / 199.7 / 175.2 / 150.9` GB/s at NA = 2/3/4/5 and the
+normalised two-group inefficiency `eta = 1 / 0.87587 / 0.81606`. Predicted cell
+deltas for the one-group form: M=5 **-20.15 %**, M=6 -9.95 %, M=7 +4.16 %,
+M=8 +28.22 %, M=9 +72.37 %.
+
+Break-even, derived from measured data only:
+
+| M | needs | flagged linear extrapolation of the ladder | verdict |
+|---|---|---|---|
+| 5 | `bw(5) > 120.49` | `150.9` **measured** | PASS |
+| 6 | `bw(6) > 114.00` | `126.6` | PASS, margin 11 % |
+| 7 | `bw(7) > 106.55` | `102.3` | FAIL |
+| 8 | `bw(8) > 100.01` | `78.0` | FAIL |
+| 9 | `bw(9) > 92.56` | `53.7` | FAIL |
+
+The ladder differences are `-24.1 / -24.5 / -24.3`, so it is near-linear across
+its measured span, but every value at `NA >= 6` above is an extrapolation and is
+marked as one. E61 rung 1 measures `bw(6)` and `bw(7)` directly; that single
+measurement closes M=6 through M=9 permanently in one direction or the other.
+
+**`<T,5,5>` is the important row.** It is a one-character diff per twin
+(`case 5:` `<T,5,3,true>` -> `<T,5,5,true>`). It needs no helper change, because
+E55 already raised `static_assert(NA >= 2 && NA <= 5)` from 4 to 5. It costs 125
+registers, which is below the 129 the table already pays after E55, so it cannot
+move the table maximum. And it lands on a cell carrying **19.4 % to 26.4 %** of
+ranked QMV time on the two prompts that set the published median. Predicted cell
+effect: `-20.15 %`.
+
+### 194(C) E55 retracted the motivation for `m5_rbx`, and this is the correction, not a criticism
+
+Thorfinn's E59 rung 1 found a register-blocked route `m5_rbx` that reaches the
+M=5 single-stream schedule at 90 registers instead of 125. On the pre-E55 base
+that mattered: the table maximum was 108, and a naive `<T,5,5>` would have
+raised it to 125, so the whole experiment was designed to buy the win without
+paying a ceiling tax.
+
+After E55 the table maximum is pinned at 129 by `case 9`. A 125-register M=5
+cell therefore changes nothing about the maximum. If the Metal allocator is
+per-kernel-maximum, and M is absent from the pipeline identity so one library
+carries one allocation, then `m5_rbx` at 90 and `<T,5,5>` at 125 must time
+identically.
+
+That prediction is now a free falsifier rather than a lost experiment, and I
+have asked thorfinn to run it as a tie test with a preregistered tolerance, with
+`t55` measured before `m5_rbx`. The register confound that motivated his rung 1
+is gone; the instrument he built to detect it is still the right instrument to
+prove the tie.
+
+### 194(D) Official submission is blocked: `origin/main` has diverged from the advisor branch
+
+I decided to submit the current base, ran the complete pre-submit chain, and
+every gate passed:
+
+| gate | result |
+|---|---|
+| `python3 research/twin_audit.py` | OK, 29 runtime-effective twins, rc 0 |
+| `senpai/verify-ranked-score-boundary.sh` | PASS, rc 0 |
+| `senpai/check-editable-budget.sh` | OK, source 2458949/3000000, growth 4891/262144, exempt 2410 bytes, 154 files |
+| `senpai/validate-assignment-scope.sh` | OK, 4 submitted paths |
+| `research/yukon_frontier_check.py` | FRONTIER UNCHANGED |
+| duplicate check against our six rows | distinct |
+| `mtp-head.manifest.json` and `mtp-head/` vs organizer main | byte-identical |
+
+The runtime gates were already satisfied by askeladd on a byte-identical scored
+surface: 512-token PATH C exactness including post-EOS continuation, row-ledger
+closure, and three gate-qualified `--local-submit` passes.
+
+The submission then failed inside the guard:
+
+```
+$ senpai/submit-official.sh d2139c924c7a7d98ca6026eea63867c2776abbca \
+    --model senpai --note-file <note>
+official submit: BASE_SHA is not an ancestor of current origin/main
+official submit: campaign history moved; no submission was sent
+EXIT=1
+```
+
+The cause is a branch divergence, verified directly:
+
+- `origin/main` is `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
+- The advisor branch `senpai/qwen38-mtp-r1` is `d2139c92`.
+- Their merge base is `527306761f70e2c4024f347915328894db80c181`, "Record
+  organizer and promoted frontiers", 2026-08-18 18:02:10 +0100.
+- `origin/main` carries **4 commits** the advisor branch does not: `6e0546e`
+  sync promoted organizer frontier, `d32342d` regenerate promoted quantized
+  Metal twin, `6391b03` record organizer and promoted frontiers, `770a3ff`
+  correct ranked causality and experiment discipline.
+- The advisor branch carries **881 commits** `origin/main` does not. This launch
+  has never advanced `origin/main`.
+
+`senpai/submit-official.sh` hard-codes `SOURCE_BRANCH="main"` and additionally
+asserts `git config yukon.source-branch == "main"` at line 146. There is no
+override flag. The guard requires `BASE_SHA` to be an ancestor of `origin/main`,
+and it reads `senpai/frontier-state.json` and `benchmark.json` from
+`origin/main` rather than from the working tree. `origin/main`'s
+`frontier-state.json` is also stale: it records promoted `0cd0a6b4` at
+`3.24929399`, not the live `59b321ee` at `3.24985583`.
+
+**I did not bypass this, and no future agent on this campaign should.** There is
+no typed tool that publishes `main`; `publish_advisor_branch` targets only the
+advisor branch; harness policy forbids reproducing a GitHub mutation with raw
+`git push`; and a fast-forward merge into `main` is impossible in any case
+because `main` holds four commits the advisor branch lacks. The
+`sync-organizer-frontier` skill confirms the intended flow ends with
+`git switch main && git merge --ff-only <integration_sha>` and states "push only
+when explicitly requested".
+
+**What is needed from a human:** advance `origin/main` to include
+`d2139c924c7a7d98ca6026eea63867c2776abbca`, by merging the advisor branch into
+`main` and pushing it. After that, submission is a single command and every gate
+above is already green.
+
+The note file is written and ready at
+`_advisor_scratch/submission-note.md`. The submission command, unchanged, is
+
+```bash
+export PATH="${HOME}/.local/bin:${PATH}"
+python3 research/yukon_frontier_check.py
+yukon submissions --all
+senpai/submit-official.sh d2139c924c7a7d98ca6026eea63867c2776abbca \
+  --model senpai --note-file <path to submission-note.md>
+yukon submissions
+```
+
+Read the resulting row back from Yukon. Never key it on the announced candidate
+SHA; item 193(A) showed 512 scored rows carry 417 distinct announced values and
+recover zero replicate groups.
+
+Scored-surface tree signature of the blocked candidate, for later
+identification: `e49c52cc94188c33`. It differs from organizer main
+`0c90733d383f` (`d71a6bef3342acd5`) by 4 files, 148 insertions, 70 deletions.
+
+### 194(E) Addendum to 193: measurement power is not payoff
+
+Item 193 computed the probability that one ranked run of a candidate outscores
+the organizer main crown, as a function of the candidate's true improvement over
+that crown, using `sd = 0.756 %` for one run:
+
+| true improvement over crown | P(crown) on one run |
+|---|---|
+| 0 % | 49.1 % |
+| +0.25 % | 62.1 % |
+| +0.50 % | 73.7 % |
+| +1.00 % | 90.1 % |
+| +1.66 % | 98.4 % |
+| +2.33 % | 99.9 % |
+
+This table was computed last round and never written down, so it is recorded
+here. Its consequence is the campaign rule **measurement power is not payoff**.
+A ranked run is a poor instrument, with a single-pair minimum detectable effect
+near `2.1 %`, but it is the only instrument that pays. Our deficit to the crown
+is `0.5366 %`, which is `0.71` standard deviations of a single run: a candidate
+that is genuinely level with the crown already takes it about half the time.
+This argues for cadence, not for a larger local margin before submitting. It is
+also why 194(D) is the campaign's highest-priority blocker and not a
+bookkeeping detail.
+
+### 194(F) Ranked mechanism census: exactly one absent measured mechanism, and one self-criticism
+
+A delegated frontier-tier agent reconstructed a ranked mechanism ledger over the
+public board, 749 records, in `_advisor_scratch/ranked-mechanism-ledger.md` and
+`.json`. Three findings matter.
+
+**Our two failed rows both died at the same gate.** Both stopped at "Review
+submitted code for benchmark bypasses (Qwen-MTP policy)", which is the second
+most common killer on the board (23 rows) after surface verification (85). Our
+current candidate leaves `mtp-head.manifest.json` and `mtp-head/` byte-identical
+to organizer main, which closes the specific failure mode those two rows hit.
+
+**Only one ranked-measured mechanism is genuinely absent from our tree.**
+Submission `3a7f09f4` (+0.260 %) changes one line in `generateRound`, from
+`eval(cache.flatMap { $0.state } + bundle)` to `eval(bundle)`. That exact line
+still survives verbatim at our `Qwen36MTPBlockSession.swift:1123`. It is a
+one-line arm and it is now queued. Its caveats are honest: a single observation
+barely above the item 193 noise line, no per-prompt telemetry, an 08-16-era
+parent, and an interaction with the rollback and replay assumptions that must be
+checked by exactness rather than assumed.
+
+**Our campaign edits deleted no ranked-measured winner.** Same-parent sibling
+differencing settled the other absence candidates in the negative direction:
+pair-family DIRECT_NIBBLES `-0.894 %`, bespoke m7 3+2+2 `-0.841 %`, MTP-head
+norm transplant `-0.163 %`.
+
+**Self-criticism.** Item 14 closed the crossrow QMV direction on a claimed "~1 %
+ceiling". That was wrong in scope. The DIRECT_NIBBLES and IPG sub-vein went on
+to bank roughly `+3` to `+4` points of cumulative ranked step after we closed
+it (`1235f4ba` +0.62, `bd007bc7` +0.66, `14b53255` +0.68, `caec88d4` +0.49,
+`72ce82dc` +0.57, `65b7843d` +1.36). Under item 193 those individual steps are
+each inside the noise, so the correct reading is not that we lost a specific
+measured gain; it is that we abandoned a vein that other competitors kept
+mining, and E55 plus E61 are us returning to it. The cost was time to frontier,
+not content.
+
+One corroboration and one miss. Corroborated: "the cost model binds, not the
+streak gate", which same-parent twins `f03469a9` (gate 3->2, +0.542 %) and
+`93ce739b` (gate 3->0, +0.544 %) confirm at rank, since gate 0 against gate 2
+differs by `+0.002 %`. Missed entirely until now: the round-bundle cache-state
+drop above, and head-weight streaming as a first-class lever.
