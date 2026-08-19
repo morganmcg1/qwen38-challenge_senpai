@@ -148,19 +148,51 @@ def main() -> int:
         summary["mean_speedup_touched_pct"] = mean_touched
     if guard:
         mean_guard = statistics.fmean(r["speedup_pct"] for r in guard)
+        # M in 1..3 run byte-identical code in both arms, so the true effect
+        # there is exactly zero. Their spread is therefore a direct measurement
+        # of the harness noise floor, which is worth more than any assumed sd:
+        # no effect smaller than this is believable no matter what the paired
+        # interval says.
+        floor = (statistics.stdev([r["speedup_pct"] for r in guard])
+                 if len(guard) > 1 else float("nan"))
         print(f"mean effect on untouched-width guard M in [1, 3]: "
-              f"{mean_guard:+.3f} % (expected ~0; a large value means the "
-              f"harness, not the kernel, moved)")
+              f"{mean_guard:+.3f} % (expected exactly 0; identical code in "
+              f"both arms)")
+        print(f"empirical noise floor from the guard: sd={floor:.3f} % over "
+              f"{len(guard)} zero-effect measurement(s), "
+              f"worst |effect|="
+              f"{max(abs(r['speedup_pct']) for r in guard):.3f} %")
         summary["mean_effect_guard_pct"] = mean_guard
+        summary["guard_noise_floor_sd_pct"] = floor
     if best:
         print(f"best replaced width: {best['shape']} M={best['m']} "
               f"{best['speedup_pct']:+.3f} % "
               f"[{-best['ci95_hi_pct']:+.3f}, {-best['ci95_lo_pct']:+.3f}]")
         summary["best_speedup_pct"] = best["speedup_pct"]
-        clears = (best["speedup_pct"] >= BAR_PCT and best["ci95_hi_pct"] < 0.0)
-        print(f"{BAR_PCT:.1f} % bar: {'CLEARED' if clears else 'NOT CLEARED'} "
-              f"-> {'exactness work is authorised' if clears else 'STOP before exactness work'}")
+        # Three outcomes, not two. Reporting "NOT CLEARED" for an underpowered
+        # session and for a genuinely small effect would invite reading a
+        # measurement failure as a mechanism failure.
+        above_bar = best["speedup_pct"] >= BAR_PCT
+        resolved = best["ci95_hi_pct"] < 0.0  # interval excludes no-change
+        clears = above_bar and resolved
+        if clears:
+            verdict = "CLEARED -> exactness work is authorised"
+        elif above_bar and not resolved:
+            verdict = (f"UNRESOLVED -> point estimate is above the bar but the "
+                       f"95 % interval does not exclude no-change; "
+                       f"achieved MDE {best['achieved_mde_pct']:.3f} % vs "
+                       f"pre-registered {PREREG_MDE_PCT:.4f} %. Underpowered, "
+                       f"not negative: add pairs before concluding")
+        elif resolved:
+            verdict = ("NOT CLEARED -> effect is real but below the bar")
+        else:
+            verdict = ("NOT CLEARED -> no resolved effect at this power; "
+                       f"achieved MDE {best['achieved_mde_pct']:.3f} % vs "
+                       f"pre-registered {PREREG_MDE_PCT:.4f} %")
+        print(f"{BAR_PCT:.1f} % bar: {verdict}")
         summary["clears_bar"] = float(clears)
+        summary["best_above_bar"] = float(above_bar)
+        summary["best_interval_resolved"] = float(resolved)
     summary["worst_cand_max_rel"] = worst_cand
 
     if args.wandb:
