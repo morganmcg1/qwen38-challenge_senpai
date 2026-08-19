@@ -79,6 +79,8 @@ run campaign-overlay          bash senpai/verify-campaign-overlay.sh "$CROWN"
 run kernel-table-selftest     bash senpai/verify-kernel-table.sh selftest
 run student-instruments-selftest bash senpai/verify-student-instruments.sh selftest
 run census-selftest           python3 research/stream_dispatch_census.py selftest
+run stream-optimality-selftest python3 research/stream_optimality.py selftest
+run crown-leg-selftest        python3 research/crown_leg_decomposition.py --selftest
 
 echo
 echo "gates run: $ran   failures: $fail   did-not-run: $usage"

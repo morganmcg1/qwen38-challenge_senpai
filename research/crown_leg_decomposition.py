@@ -95,10 +95,26 @@ def pick(rows: list[dict], sha_prefix: str) -> dict:
 
 
 def prompt_table(row: dict) -> dict[str, dict]:
+    """Per-prompt metrics for one row, keyed by prompt name. Fails closed.
+
+    Audited after two fail-open defects were found elsewhere in this campaign's
+    tooling. The load-bearing protection is downstream -- main() re-derives the
+    score from these rows and compares it against officialScore -- so a
+    truncated prompt set is caught there. But two gaps were open here:
+    an unrecognised prompt hash was silently keyed by its own hash, and the
+    prompt count was never asserted, so a row measured on a DIFFERENT corpus
+    could be tabulated without complaint. Both now raise.
+    """
     out = {}
     for p in row["officialMetrics"]["per_prompt"]:
         key = (p.get("prompt_sha256") or "")[:8]
-        name = PROMPTS.get(key, key)
+        if key not in PROMPTS:
+            raise SystemExit(
+                f"row {row['id']} carries unknown prompt {key!r}: the corpus "
+                f"differs from the 8 prompts this decomposition is defined "
+                f"over, so no comparison is valid"
+            )
+        name = PROMPTS[key]
         head = (p.get("head_provenance_sha256") or "")[:8]
         if head != HEAD_PROVENANCE:
             raise SystemExit(
@@ -106,6 +122,14 @@ def prompt_table(row: dict) -> dict[str, dict]:
                 f"not {HEAD_PROVENANCE}: not comparable"
             )
         out[name] = p
+    if len(out) != len(PROMPTS):
+        missing = sorted(set(PROMPTS.values()) - set(out))
+        raise SystemExit(
+            f"row {row['id']} has {len(out)} of {len(PROMPTS)} prompts "
+            f"(missing {missing}). score_from_rows() takes the 4th and 5th "
+            f"order statistics by INDEX, so a short table would silently "
+            f"return the wrong score rather than fail"
+        )
     return out
 
 
@@ -266,7 +290,56 @@ def selftest() -> int:
         assert abs(d - row["officialScore"]) < SCORE_TOL, (sha, d, row["officialScore"])
     # 3. dln sign convention: a slower leg is positive.
     assert dln(2.0, 1.0) > 0
-    print("selftest: OK (ratio identity, score rule, dln sign)")
+
+    # 4. NEGATIVE CONTROLS on the fail-closed guards. A guard that has never
+    #    been made to fire is an assumption, not a check -- and the score rule
+    #    indexes order statistics 3 and 4 positionally, so a short table returns
+    #    a WRONG NUMBER rather than raising.
+    import copy
+
+    good = pick(rows, next(iter(TREES.values())))
+
+    dropped = copy.deepcopy(good)
+    dropped["officialMetrics"]["per_prompt"] = \
+        dropped["officialMetrics"]["per_prompt"][:5]
+    try:
+        prompt_table(dropped)
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("a 5-prompt row was accepted; score_from_rows "
+                             "would have returned the 4th/5th of FIVE")
+
+    # Show the wrong answer the guard prevents, so the guard's value is a
+    # measured quantity rather than an argument.
+    short = {k: v for k, v in list(prompt_table(good).items())[:5]}
+    wrong = score_from_rows(short)
+    right = score_from_rows(prompt_table(good))
+    assert abs(wrong - right) > SCORE_TOL, (
+        "expected the truncated score to differ materially", wrong, right)
+
+    alien = copy.deepcopy(good)
+    alien["officialMetrics"]["per_prompt"][0]["prompt_sha256"] = "dead" * 16
+    try:
+        prompt_table(alien)
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("an unknown prompt hash was accepted")
+
+    foreign = copy.deepcopy(good)
+    foreign["officialMetrics"]["per_prompt"][0]["head_provenance_sha256"] = \
+        "beef" * 16
+    try:
+        prompt_table(foreign)
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("a foreign MTP head was accepted")
+
+    print("selftest: OK (ratio identity, score rule, dln sign, 3 negative "
+          "controls; truncation would have shifted the score by %.4f)"
+          % abs(wrong - right))
     return 0
 
 
