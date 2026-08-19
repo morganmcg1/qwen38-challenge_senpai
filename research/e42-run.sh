@@ -59,7 +59,12 @@ if ((dirty)); then
   echo "e42-run: twins are uncommitted; commit the arm first so timed runs are reproducible" >&2
   exit 2
 fi
-python3 research/twin_audit.py quantized || exit 2
+# The campaign gate pins its comment-only waiver to WHOLE-BODY digests, so any
+# code edit in the quantized section de-pins it and one pinned pair cannot cover
+# both arms of an A/B on that section. E55_TWIN_GATE lets such an experiment
+# substitute a gate pinned to the divergence instead of the body. The default is
+# unchanged.
+python3 "${E42_TWIN_GATE:-research/twin_audit.py}" quantized || exit 2
 
 # The kernel ships as a source string inside a C++ translation unit, so a Metal
 # syntax or template-arity error survives `swift build` and only surfaces as a
