@@ -77,6 +77,9 @@ def local_submit_summary() -> dict:
     for key, value in s.items():
         if isinstance(value, (int, float, bool, str)):
             out[f"submit/{key}"] = value
+    for key, value in s.get("metrics", {}).items():
+        if isinstance(value, (int, float, bool, str)):
+            out[f"submit/metrics/{key}"] = value
     return out
 
 
