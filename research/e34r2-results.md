@@ -272,3 +272,137 @@ low-memory command-buffer profile — and that ranked acceptance on deep prompts
 4. **Fix `weight_passes(M)` for the three `out_vec_size` regimes** (MT2) before
    the cost model is used for another decision.
 5. Fix the two stale source claims in §5.
+
+## 8. Addendum — the arch string, and why it is worth more than the rest of r2
+
+The advisor asked (feedback `e34-r2-...`, item 7) for the effective
+`get_max_ops_mb_per_buffer()` tuple and the `applegpu_*` arch string, noting that
+three experiments are blocked on it. `research/archprobe.m` enumerates the Metal
+device and prints them. It runs no compute and no timing, so it does not contend
+with the precision-timing slot.
+
+```
+device.name              = Apple M4 Pro
+device.architecture.name = applegpu_g16s
+gpu_families             = Apple7 Apple8 Apple9 Metal3 Common3
+threadgroup_memory_bytes = 32768
+recommended_wset_bytes   = 40200896512
+```
+
+### 8.1 🔴 `_nax` kernels cannot execute on this box
+
+`device.cpp:924-926` gates the whole `_nax` family:
+
+```cpp
+auto arch = d.get_architecture().back();
+auto gen  = d.get_architecture_gen();
+can_use_nax &= gen >= (arch == 'p' ? 18 : 17);
+```
+
+`arch_gen_` is parsed positionally from the two digits at `arch_[size-3]` and
+`arch_[size-2]` (`device.cpp:563-571`), so `applegpu_g16s` gives `gen = 16` and
+`arch = 's'`. The threshold for a non-`p` arch is 17, and **16 >= 17 is false**.
+
+`program.md` states that "`_nax` variants run on the ranked M5 and are
+first-class targets". Both statements cannot describe the same kernel family:
+either the ranked box runs `_nax` and this box provably does not, or `program.md`
+is wrong about the ranked box. Under the first reading — the one `program.md`
+asserts — **every local kernel measurement in this campaign was taken on the
+non-`nax` path while the ranked score is produced on the `nax` path.** That
+covers the E27 causal ladder, E30's per-width absolutes, E33's dispatch-table
+work, and my own `T(M)` ladder. `quantized.cpp` references `nax` 23 times, so the
+divergence reaches the quantized matvec dispatch this campaign has been tuning.
+
+This is a second, independent local-to-ranked divergence, distinct from the
+memory-profile split, and it is the better explanation of §3's result: if the
+ranked box dispatches `_nax` quantized matvec, the local dispatch table is not
+the ranked dispatch table, and the local M=6 cliff belongs to a kernel family
+that never executes at rank. That is consistent with the reconstruction finding
+no cliff at mean width 6 in ranked telemetry.
+
+I have **not** measured the ranked M5's arch string; I can only prove the local
+side and combine it with `program.md`'s claim. Confirming it needs one line of
+worker-log telemetry, which is why item 7 is worth doing.
+
+`MLX_METAL_GPU_ARCH` (`utils.h:205`, consumed at `device.cpp:560`) overrides the
+arch string outright, so a forced value can be used to test ranked selection
+locally — but it must keep the `<letter><digits><letter>` shape or `arch_gen_`
+silently reads 0 and every gen-keyed branch changes at once.
+
+### 8.2 The command-buffer budget is in mebi-elements, and it is dtype-dependent
+
+The advisor's unit correction is confirmed, with the citation: `array.h:346`
+states `data_size` is "in units of `item_size` (not bytes)"; `device.cpp:320`
+accumulates `buffer_sizes_ += a.data_size()`; `device.cpp:486` tests
+`(buffer_sizes_ >> 20) > max_mb`. So the budget is **mebi-elements**.
+
+Two refinements the correction did not carry:
+
+- Because it counts elements, the byte budget depends on dtype. 4-bit affine
+  weights packed in `uint32` are 4 B/element, `fp16` activations 2 B/element, so
+  512 mebi-elements is about 2 GiB of packed weights or 1 GiB of `fp16`. Any
+  reasoning that converts the budget to megabytes is wrong by a dtype-dependent
+  factor of 2 to 4.
+- `set_input_array` only accumulates on `all_inputs_.insert(a.buffer().ptr()).second`,
+  so a buffer referenced many times inside one command buffer is counted **once**,
+  and outputs are not counted at all.
+
+🔴 **That second point weakens my own §3 mechanism.** I attributed the local
+M=5→6 step to `mlp.down` at 100.3 MB/call dropping calls-per-command-buffer from
+2 to 1 exactly at M=6. Under element units with per-buffer dedup, the weight is
+counted once per command buffer however many rounds reference it, and only the
+activations scale with M, so the flush boundary does not move with M the way I
+claimed. The measured result in §3 stands — it comes from ranked telemetry — but
+the command-buffer *explanation* for it does not, and §8.1 is the better
+candidate. I am withdrawing the flush-boundary attribution.
+
+### 8.3 The stock default on this box is 50/50, not 40/40
+
+`device.cpp:572-595` picks the default budget from the **last character** of the
+arch string: `p` 20/40, `g` 40/40, `s` 50/50, `d` 50/50, otherwise 40/40. This
+box reports `s`, so its stock default is **50 ops / 50 mebi-elements** — even
+though it is a *Pro*, not a Max. The switch's `// max` comment is a label, not a
+fact about the part.
+
+Consequences for the four-way table in the advisor's earlier note:
+
+- The local `apply()` path forces 128/64 with `setenv(..., 1)`
+  (`RuntimeStartupMemoryPolicy.swift:211-224`), which **raises** the budget from
+  the stock 50/50. It is smaller only relative to the ranked 512, not relative to
+  stock, so "the referenced-byte budget is 4x smaller locally" is the wrong
+  comparison.
+- The ranked >= 96 GiB path installs 512/50 with `setenv(..., 0)`
+  (`RuntimeStartupMemoryPolicy.swift:66-72`), i.e. pre-existing values win. If the
+  ranked arch also ends in `s` or `d`, then `MLX_MAX_OPS_PER_BUFFER=50` is
+  **exactly the stock default and installs nothing**, and the only real ranked
+  change is mb 50 -> 512.
+- The comment at `RuntimeStartupMemoryPolicy.swift:212-214` says the budgets are
+  "per-profile absolutes (the pre-policy code force-set them identically)", but
+  the >= 96 GiB branch uses no-overwrite semantics while `apply()` uses force.
+  The two paths are not symmetric and the comment says they are.
+
+The probe also confirms that a fresh process on this box sees
+`MLX_MAX_MB_PER_BUFFER`, `MLX_MAX_OPS_PER_BUFFER`,
+`DARKBLOOM_STARTUP_MEMORY_PROFILE` and `MLXFAST_LOCAL_COOL_GATE` all unset, so
+the no-overwrite install does take effect here; the risk the advisor raised is
+that `env::max_mb_per_buffer` is a function-local `static`
+(`utils.h:178-188`) first evaluated inside the `Device` constructor
+(`device.cpp:596-597`), so any MLX Metal work before the install freezes the
+defaults permanently.
+
+### 8.4 Folding in the rest of the advisor's corrections
+
+- **Engineerable deficit is ~0.26 %, not 0.561 %.** Halved throughout; §6's
+  sizing statements should be read against 0.2586 %.
+- **The cost-model knob axis is closed.** `headStepCostRatio`, the streak gate and
+  the depth cap are all closed by two independent sources: the crown's published
+  local sweeps (0.18->0.32 scored 2.846; 0.15 and 0.14 below baseline; streak gate
+  1 scored 2.833; gate 0 tied) and our own 0.18->0.16 at -1.164 %. This r2 is
+  consistent with that closure: it withdraws the cap prediction rather than
+  re-issuing it, and §4 shows the model that produced it cannot order the central
+  pair. I am recording the closure and not sweeping those knobs again.
+- **Report per prompt on beagle and medicine only.** The reconstruction in §3 is
+  already per prompt; the two that carry the score are beagle (mean M 5.533,
+  83.5 % acceptance, 58.253 ms/round) and medicine (5.768, 87.5 %, 58.795).
+  Aggregates over all eight are reported for the reconstruction's validation
+  only, never as a decision input.
