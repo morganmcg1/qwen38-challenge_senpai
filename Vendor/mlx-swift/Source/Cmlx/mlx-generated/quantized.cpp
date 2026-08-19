@@ -869,7 +869,7 @@ inline float2 qdot_affine4_loaded_pair(
   return scale * accum + sum * bias;
 }
 
-template <typename T, int M, int E42_ROWS_PER_GROUP_ECHO = 2, int E42_PASSES = 0>
+template <typename T, int M>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64(
     const device uint32_t* w,
     const device T* scales,
@@ -900,11 +900,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
   const bool has_pair = first_m + 1 < M;
   thread float2 pair_result[rows_per_simd];
   thread float single_result[rows_per_simd];
-  // E42 (research-only, never submitted): re-run the whole accumulation
-  // region E42_PASSES extra times. Every pass re-initialises the accumulators
-  // and repeats the unchanged K loop in the unchanged order, so the surviving
-  // final pass is bit-identical to the base kernel by construction.
-  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
   for (int r = 0; r < rows_per_simd; r++) {
     pair_result[r] = 0.0f;
     single_result[r] = 0.0f;
@@ -953,7 +948,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
       }
     }
   }
-  }
 
   if (has_pair) {
     for (int r = 0; r < rows_per_simd; r++) {
@@ -984,7 +978,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64(
 // footprint stays near the two-input kernel's. load_vector, the qdot
 // expression, the K accumulation order and simd_sum are unchanged for every
 // output element.
-template <typename T, int NA, bool DIRECT_NIBBLES = false, int E42_PASSES = 0>
+template <typename T, int NA, bool DIRECT_NIBBLES = false>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
     const device uint32_t* w,
     const device T* scales,
@@ -1006,11 +1000,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
   const int in_vec_size_g = in_vec_size / 64;
 
   VF acc[rows_per_simd];
-  // E42 (research-only, never submitted): re-run the whole accumulation
-  // region E42_PASSES extra times. Every pass re-initialises the accumulators
-  // and repeats the unchanged K loop in the unchanged order, so the surviving
-  // final pass is bit-identical to the base kernel by construction.
-  for (int e42_pass = 0; e42_pass <= E42_PASSES; e42_pass++) {
   for (int r = 0; r < rows_per_simd; r++) {
     acc[r] = VF(0.0f);
   }
@@ -1076,7 +1065,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
     for (int r = 0; r < rows_per_simd; r++) {
       acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
     }
-  }
   }
 
   for (int r = 0; r < rows_per_simd; r++) {
@@ -1178,7 +1166,7 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
 
 // IPG = ceil(M / ceil(M / 5)): the fewest weight streams reachable at NA <= 5,
 // with the remainder spread evenly so no group runs a one-row tail.
-template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false, int E42_PASSES = 0>
+template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
     const device uint32_t* w,
     const device T* scales,
@@ -1199,12 +1187,12 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
   }
   const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
   if (TAIL == 0 || M - first_m >= IPG) {
-    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES, E42_PASSES>(
+    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         first_m, out_row, simd_lid);
   } else {
     qmv_fast_crossrow_affine4_g64_wide<
-        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES, E42_PASSES>(
+        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES>(
         w, scales, biases, x, y, in_vec_size, out_vec_size,
         first_m, out_row, simd_lid);
   }
@@ -1966,12 +1954,12 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -1979,12 +1967,12 @@ template <typename T, int group_size, int bits, bool batched>
           // 4+4: two weight streams, receipted on this benchmark (scored
           // 3.195804751396457 as a promoted submission) before a later
           // stale-base REPLACE overlay reverted it; restored here.
-          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true, 1>(
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -2014,22 +2002,22 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 6:
-          qmv_fast_crossrow_affine4_g64<T, 6, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 6>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64<T, 7, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 7>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          qmv_fast_crossrow_affine4_g64<T, 8, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 8>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64<T, 9, 2, 1>(
+          qmv_fast_crossrow_affine4_g64<T, 9>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
