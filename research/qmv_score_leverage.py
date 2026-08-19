@@ -115,6 +115,143 @@ E27_SCORE_PCT = -0.3321
 E27_REG_DELTA = 21
 E27_WIDTHS_CHANGED = (5, 9)
 
+# ---------------------------------------------------------------------------
+# ORDER STATISTICS AND THE SUBSTITUTION KINK                     (ledger 177)
+# ---------------------------------------------------------------------------
+# Everything above converts %QMV-cost into %score at a CONSTANT rate. That is
+# only true while the scored pair keeps its membership. The score is the mean of
+# the 4th and 5th order statistics of eight per-prompt raw speedups, so a
+# mechanism that lifts only the scored prompts eventually pushes one of them out
+# of the pair, and from that point its marginal value COLLAPSES.
+#
+# Measured, not assumed. Source: `.mlxfast-private/ranked-telemetry.json`,
+# crown submission solverUsername=ofou, officialScore 3.24929398547457,
+# createdAt 2026-08-18T21:48:43, submissionCommitSha ef42e0432727.
+#
+# The scored field is the RAW median. Verified across all 411 metrics-bearing
+# board rows: officialScore == officialMetrics.mtp_decode_speedup_raw_median
+# with ZERO mismatches. `decode_speedup_ceiling` (which the organizers raised
+# 3 -> 5 at 2026-08-17T11:10:46Z, and which 136 submissions touched from below)
+# clips only the cosmetic `mtp_decode_speedup_median` field. It never clips the
+# score, so it is not a confound for any board-derived noise floor.
+# `raw_ratio_of_means` is published rounded to 10 decimals while officialScore
+# carries full precision, so the reconstruction agrees only to ~2.5e-11. That
+# residual is the board's own rounding, not a modelling error -- do not "fix" it
+# by fitting a fudge term.
+CROWN_ORDER_STATS = (
+    ("plutarch", 1.2560334838),   # rank 1   nd = 449 -- see NON_DRAFTING note
+    ("drama",    1.9231089575),   # rank 2
+    ("travel",   2.1895159531),   # rank 3
+    ("beagle",   3.1433255794),   # rank 4  <-- SCORED
+    ("medicine", 3.3552623916),   # rank 5  <-- SCORED
+    ("essays",   3.3906635754),   # rank 6  <-- THE SUBSTITUTE, +1.055 % over medicine
+    ("botany",   3.4143725007),   # rank 7
+    ("republic", 3.4490615187),   # rank 8
+)
+CROWN_SCORE = 3.24929398547457
+SCORED_PROMPTS = ("beagle", "medicine")
+
+# 🔴 `non_drafting_round_count` is NOT 0 on the candidate. It is 0 on the seven
+# high-acceptance prompts and 449 on plutarch, on BOTH the crown tree and our
+# own 3.23250848263467 tree, and nonzero on plutarch in 320 of 371 healthy board
+# rows (mode 449, n=303). The ledger's flat "nd = 0" was a generalisation of a
+# measurement taken on beagle/medicine. The CONCLUSION it supported -- that the
+# 4-bit width-1 verifier kernel is worth about zero -- survives, but for a
+# different and stronger reason: plutarch's raw speedup is 1.2528 against a
+# rank-4 value of 3.1202, so it would have to improve by +149 % to acquire any
+# marginal weight at all. The reason is the ORDER STATISTICS, which are pinned
+# in the non-editable workflow, not a property of the candidate binary.
+NON_DRAFTING_ROUNDS = {"plutarch": 449}
+
+
+def _median_of_eight(values):
+    """Mean of the two central order statistics. The organizers' rule, verbatim:
+    officialMetrics.median_rule == 'even_n_mean_of_two_central_order_statistics'
+    (distinct=1 across all 371 healthy board rows)."""
+    s = sorted(values)
+    n = len(s)
+    if n % 2:
+        return s[n // 2]
+    return 0.5 * (s[n // 2 - 1] + s[n // 2])
+
+
+def score_from_leg_gains(gains_pct, stats=CROWN_ORDER_STATS):
+    """Score after applying per-prompt percentage speedups to the raw ratios.
+
+    The kink is COMPUTED, by re-sorting, not modelled by a piecewise formula.
+    That is deliberate: ledger 176(D) burned eight days on an analytic
+    coefficient that was never stress-tested at its sign extremes. A re-sort
+    cannot have the wrong sign anywhere, so there is nothing to get wrong.
+    """
+    for name in gains_pct:
+        if name not in dict(stats):
+            raise KeyError("unknown prompt %r; expected one of %r"
+                           % (name, tuple(n for n, _ in stats)))
+    return _median_of_eight([r * (1.0 + (gains_pct[n] if n in gains_pct else 0.0) / 100.0)
+                             for n, r in stats])
+
+
+def score_pct_from_leg_gains(gains_pct, stats=CROWN_ORDER_STATS):
+    """Percentage score change from per-prompt percentage leg speedups."""
+    base = score_from_leg_gains({}, stats)
+    return 100.0 * (score_from_leg_gains(gains_pct, stats) / base - 1.0)
+
+
+def marginal_weights(stats=CROWN_ORDER_STATS):
+    """{prompt: % of score per 1 % leg speedup} for the two scored prompts.
+
+    d score / d ratio = 1/2 for each member of the pair, so the weight is
+    (ratio / 2) / score -- LARGER for the faster member. These come out near
+    0.484 and 0.516, i.e. very nearly equal.
+
+    🔴 Do not confuse these with the ledger's "beagle 79 % / medicine 21 %".
+    That pair is the split of ONE mechanism's value (E40's width-deficit
+    closure, whose per-prompt LEG effects were +0.363 % and +0.088 %, a 4.1x
+    difference). It is an effect split, not a score weight. Multiplying by it
+    as if it were a weight double-counts the heterogeneity.
+    """
+    base = score_from_leg_gains({}, stats)
+    ranked = sorted(stats, key=lambda t: t[1])
+    return {name: 0.5 * ratio / base for name, ratio in (ranked[3], ranked[4])}
+
+
+def substitution_headroom(prompt, stats=CROWN_ORDER_STATS):
+    """% leg speedup `prompt` can absorb before it stops paying at full rate.
+
+    A scored prompt keeps paying while it stays inside the pair. Passing the
+    OTHER member is harmless -- they simply swap ranks 4 and 5. Passing rank 6
+    ejects it, and from there its marginal value is exactly zero.
+    """
+    ranked = sorted(stats, key=lambda t: t[1])
+    names = [n for n, _ in ranked]
+    if prompt not in names:
+        raise KeyError("unknown prompt %r" % (prompt,))
+    i = names.index(prompt)
+    if i not in (3, 4):
+        return 0.0        # not in the scored pair: no rate to lose
+    return 100.0 * (ranked[5][1] / ranked[i][1] - 1.0)
+
+
+def saturation_cap_pct(stats=CROWN_ORDER_STATS):
+    """Max % score obtainable from an arbitrarily large gain on the scored pair.
+
+    Once both scored prompts overtake ranks 6 and 7, the pair becomes those two
+    and further gains are worth nothing. This is a HARD ceiling on every
+    beagle/medicine-only mechanism in the campaign, however good it is.
+    """
+    ranked = sorted(stats, key=lambda t: t[1])
+    base = score_from_leg_gains({}, stats)
+    return 100.0 * (0.5 * (ranked[5][1] + ranked[6][1]) / base - 1.0)
+
+
+def kink_pct(stats=CROWN_ORDER_STATS):
+    """Uniform scored-pair leg gain at which the marginal rate first drops.
+
+    Below it, a uniform gain on the pair converts 1:1 into score. Above it, only
+    the rank-4 prompt still pays, at roughly half the rate.
+    """
+    return min(substitution_headroom(p, stats) for p in SCORED_PROMPTS)
+
 
 def leverage(gated, psi_mtp_w1=0.0, harness=HARNESS_RANKED):
     """Score % per 1 % QMV cost reduction. `gated` = does it skip M=1?
@@ -274,13 +411,23 @@ def target_for(score_pct, gated=True, psi=None,
                harness=HARNESS_RANKED, psi_mtp_w1=0.0):
     """QMV cost reduction needed to move the score by score_pct.
 
-    Returns None when the leverage is non-positive, i.e. when no amount of the
-    mechanism reaches the target. Under the LOCAL harness an ungated mechanism
-    with psi_mtp_w1 < PSI_SERIAL - PSI_MTP has negative leverage and this is None;
-    under RANKED that case does not arise, because leverage is always positive.
+    Returns None when the target is UNREACHABLE, for either of two reasons:
+
+      1. the leverage is non-positive -- under the LOCAL harness an ungated
+         mechanism with psi_mtp_w1 < PSI_SERIAL - PSI_MTP has negative leverage.
+         Under RANKED this case does not arise, leverage is always positive.
+      2. 🔴 the target exceeds `saturation_cap_pct()`. A QMV mechanism acts on
+         the scored prompts, and once they leave the 4th/5th order statistics no
+         further speedup is worth anything. Returning a finite cost reduction
+         for an unreachable score would be a tool that fails open toward an
+         encouraging number, which is the most dangerous kind (ledger 175).
     """
     lev = _lev(gated, psi, harness, psi_mtp_w1)
-    return None if lev <= 0 else score_pct / lev
+    if lev <= 0:
+        return None
+    if score_pct > saturation_cap_pct():
+        return None
+    return score_pct / lev
 
 
 def e27_residual():
@@ -369,6 +516,27 @@ def report():
     print("     widths, and bit-exact. Its whole value rides on f, which is")
     print("     CORPUS-WIDE here -- see caveat (a), and E48 Part 1.")
     print()
+    print("ORDER STATISTICS: THE SUBSTITUTION KINK   (measured, ledger 177)")
+    print("  rank  prompt      raw_ratio   nd     marginal %/1% leg gain")
+    mw = marginal_weights()
+    for i, (name, ratio) in enumerate(sorted(CROWN_ORDER_STATS, key=lambda t: t[1]), 1):
+        nd = NON_DRAFTING_ROUNDS[name] if name in NON_DRAFTING_ROUNDS else 0
+        tag = "  <== SCORED  %+.4f" % mw[name] if name in mw else ""
+        print("   %d    %-10s %10.6f  %4d%s" % (i, name, ratio, nd, tag))
+    print("  KINK      +%.4f %% uniform gain on the scored pair. Below it the"
+          % kink_pct())
+    print("            conversion is exactly 1:1. Above it %s leaves the pair,"
+          % min(SCORED_PROMPTS, key=lambda p: substitution_headroom(p)))
+    print("            essays substitutes, and the marginal rate roughly HALVES.")
+    print("  CAP       +%.4f %% -- the most any beagle/medicine-only mechanism"
+          % saturation_cap_pct())
+    print("            can ever be worth, at any size. target_for() returns None")
+    print("            above this rather than a comforting finite number.")
+    print("  🔴 The crown gap is 0.5193 %, BELOW the kink, so closing it is")
+    print("     still 1:1. But any dScore claim above +%.3f %% must be" % kink_pct())
+    print("     re-derived piecewise with score_pct_from_leg_gains(), including")
+    print("     the top of E44 r2's +0.789..+1.228 % range and E49's ceiling.")
+    print()
     caveats()
 
 
@@ -437,6 +605,15 @@ def selftest():
                              "" if cond else "   " + detail))
         if not cond:
             bad.append(name)
+
+    def _raises(fn, exc):
+        """True iff fn() raises exc. A tool that silently accepts a typo'd
+        prompt name and returns 0.0 is a tool that fails open toward a null."""
+        try:
+            fn()
+        except exc:
+            return True
+        return False
 
     # 🔴 THE headline sign, CORRECTED in ledger 176 (edward E50, merged 26fd0ac).
     # These three assertions previously read "uniform QMV leverage is NEGATIVE",
@@ -630,15 +807,91 @@ def selftest():
     ck("E44 shape mixes are ordered mlp < equal < attn",
        e44["mlp_down only"] < e44["equal shape mix"] < e44["attn_out only"])
 
+    # ------------------------------------------------------------------
+    # ORDER STATISTICS AND THE SUBSTITUTION KINK (ledger 177).
+    # Stress-tested at zero, at both signs, and past saturation, because a
+    # formula evaluated only at plausible inputs is not tested (ledger 176(D)).
+    # ------------------------------------------------------------------
+    ck("crown order stats reproduce the official score to 1e-9",
+       abs(score_from_leg_gains({}) - CROWN_SCORE) < 1e-9,
+       "got %.12f vs %.12f" % (score_from_leg_gains({}), CROWN_SCORE))
+    ck("no leg gain is no score change (the null)",
+       score_pct_from_leg_gains({}) == 0.0)
+    ck("a UNIFORM gain on all eight prompts converts exactly 1:1",
+       abs(score_pct_from_leg_gains({n: 3.0 for n, _ in CROWN_ORDER_STATS}) - 3.0) < 1e-9,
+       "got %+.6f" % score_pct_from_leg_gains({n: 3.0 for n, _ in CROWN_ORDER_STATS}))
+    ck("a gain on an UNSCORED prompt is worth exactly zero",
+       score_pct_from_leg_gains({"republic": 5.0, "botany": 5.0,
+                                 "essays": 5.0, "travel": 5.0}) == 0.0)
+    # 🔴 THE SLOWDOWN CASE. 176(D) shipped a model that paid you to slow down.
+    # Every sign path here is checked, not just the encouraging one.
+    ck("a SLOWDOWN of the scored pair is a LOSS",
+       score_pct_from_leg_gains({p: -5.0 for p in SCORED_PROMPTS}) < 0.0,
+       "got %+.6f" % score_pct_from_leg_gains({p: -5.0 for p in SCORED_PROMPTS}))
+    ck("a slowdown of an UNSCORED prompt above the pair is worth zero",
+       score_pct_from_leg_gains({"republic": -1.0}) == 0.0)
+    ck("score is monotone non-decreasing in a scored-pair gain",
+       all(score_from_leg_gains({p: x for p in SCORED_PROMPTS})
+           <= score_from_leg_gains({p: x + 0.25 for p in SCORED_PROMPTS}) + 1e-12
+           for x in [i * 0.25 for i in range(-8, 60)]))
+    # The kink itself: below it the rate is 1:1, above it the rate has dropped.
+    k = kink_pct()
+    ck("kink is where medicine meets essays, +1.055 %",
+       abs(k - 1.0551) < 0.002, "got %+.4f" % k)
+    ck("below the kink the scored-pair rate is 1:1",
+       abs(score_pct_from_leg_gains({p: k * 0.5 for p in SCORED_PROMPTS})
+           - k * 0.5) < 1e-9)
+    ck("above the kink the MARGINAL rate is strictly less than 1:1",
+       (score_pct_from_leg_gains({p: 2 * k for p in SCORED_PROMPTS})
+        - score_pct_from_leg_gains({p: k for p in SCORED_PROMPTS})) < 0.75 * k,
+       "marginal %+.4f over %+.4f of dose" % (
+           score_pct_from_leg_gains({p: 2 * k for p in SCORED_PROMPTS})
+           - score_pct_from_leg_gains({p: k for p in SCORED_PROMPTS}), k))
+    ck("the scored pair SATURATES: a 1000 % gain buys the cap, not 1000 %",
+       abs(score_pct_from_leg_gains({p: 1000.0 for p in SCORED_PROMPTS})
+           - saturation_cap_pct()) < 1e-9)
+    ck("saturation cap is finite and near +4.72 %",
+       abs(saturation_cap_pct() - 4.7156) < 0.01,
+       "got %+.4f" % saturation_cap_pct())
+    ck("saturation cap comfortably exceeds the 0.5193 % crown gap",
+       saturation_cap_pct() > 0.5193)
+    ck("the crown gap sits BELOW the kink, so closing it is still 1:1",
+       0.5193 < k, "gap 0.5193 vs kink %+.4f" % k)
+    # target_for must refuse an unreachable target instead of returning a number.
+    ck("target_for refuses a target above the saturation cap",
+       target_for(saturation_cap_pct() + 0.01) is None)
+    ck("target_for still answers for the crown gap", target_for(0.5193) is not None)
+    # Marginal weights: near-equal, and NOT the 79/21 effect split.
+    mw = marginal_weights()
+    ck("marginal weights are near 0.484 / 0.516 and sum to ~1",
+       abs(mw["beagle"] - 0.4837) < 0.002 and abs(mw["medicine"] - 0.5163) < 0.002
+       and abs(sum(mw.values()) - 1.0) < 1e-9,
+       "got %r" % {k2: round(v, 4) for k2, v in mw.items()})
+    ck("medicine's marginal weight EXCEEDS beagle's (it is the faster member)",
+       mw["medicine"] > mw["beagle"])
+    ck("marginal weights are NOT the ledger's 79/21 effect split",
+       abs(mw["beagle"] - 0.79) > 0.25)
+    ck("beagle has far more headroom than medicine",
+       substitution_headroom("beagle") > 7.0 > 2.0 > substitution_headroom("medicine"))
+    ck("an unscored prompt has zero headroom by definition",
+       substitution_headroom("republic") == 0.0)
+    ck("an unknown prompt raises rather than defaulting",
+       _raises(lambda: substitution_headroom("nonesuch"), KeyError))
+    ck("an unknown prompt in a gain map raises rather than being ignored",
+       _raises(lambda: score_from_leg_gains({"nonesuch": 1.0}), KeyError))
+
     print()
     if bad:
         print("SELFTEST FAILED: %d case(s): %s" % (len(bad), bad))
         return 1
     print("SELFTEST PASSED: RANKED uniform sign POSITIVE (+psi_mtp) and LOCAL "
           "uniform sign negative, gating vacuous on ranked, gated pricing "
-          "harness-invariant at 1.140 % / 0.771 % targets, M=9 dominant, E27 "
+          "harness-invariant at 1.140 %% / 0.771 %% targets, M=9 dominant, E27 "
           "residual large and negative, E44 narrow above the board floor on "
-          "every shape mix.")
+          "every shape mix; order statistics reproduce the crown score, the "
+          "scored pair kinks at +%.3f %% and saturates at +%.3f %%, a slowdown "
+          "is a loss at every dose, and target_for refuses the unreachable."
+          % (kink_pct(), saturation_cap_pct()))
     return 0
 
 
