@@ -66,6 +66,30 @@ M5_E27 = "qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>"
 M9_SHIPPED = "qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>"
 M9_NA5 = "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>"
 
+# The harm-only control. It adds an NA=5 body to the ONE `[[kernel]]` without
+# changing any cell the host can dispatch: the offered draft depth caps M at 9,
+# so `case 10` is reachable code that never runs. If the shared-allocation
+# channel is what E27 lost the board to, this arm carries that cost with zero
+# M=9 gain, so a timed arm measures the harm term directly instead of inferring
+# it from a model residual.
+CASE9_TAIL = """        case 9:
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>(
+              w, scales, biases, x, y, in_vec_size, out_vec_size,
+              tid, simd_gid, simd_lid);
+          return;
+        default:"""
+CASE9_TAIL_PLUS_10 = """        case 9:
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>(
+              w, scales, biases, x, y, in_vec_size, out_vec_size,
+              tid, simd_gid, simd_lid);
+          return;
+        case 10:
+          qmv_fast_crossrow_affine4_g64_m<T, 10, 5, true>(
+              w, scales, biases, x, y, in_vec_size, out_vec_size,
+              tid, simd_gid, simd_lid);
+          return;
+        default:"""
+
 # The campaign's recorded values for the two arms whose numbers are on the record.
 RECORDED = {
     "base_na4_table": {"kernel_wide_reg_max": 108, "entry_batch0": 163},
@@ -80,6 +104,9 @@ ARMS = [
     {"name": "e27_both_cells", "rev": BASE_REV,
      "edits": [(ASSERT_4, ASSERT_5), (M5_SHIPPED, M5_E27), (M9_SHIPPED, M9_NA5)],
      "role": "positive_control"},
+    {"name": "harm_only_case10", "rev": BASE_REV,
+     "edits": [(ASSERT_4, ASSERT_5), (CASE9_TAIL, CASE9_TAIL_PLUS_10)],
+     "role": "harm_only_design"},
 ]
 
 
@@ -210,6 +237,18 @@ def main() -> int:
             m for m in WIDTHS
             if c["width_cells"][m]["peak_live_regs"]
             == b["width_cells"][m]["peak_live_regs"])
+        h = by["harm_only_case10"]
+        payload["harm_only_vs_base"] = {
+            "entry_batch0_delta": h["entry_batch0"] - b["entry_batch0"],
+            "kernel_wide_reg_max_delta":
+                h["kernel_wide_reg_max"] - b["kernel_wide_reg_max"],
+            "dispatched_widths_all_identical_to_base": all(
+                h["width_cells"][m]["peak_live_regs"]
+                == b["width_cells"][m]["peak_live_regs"] for m in WIDTHS),
+            "carries_candidate_entry_share":
+                (h["entry_batch0"] - b["entry_batch0"])
+                / max(c["entry_batch0"] - b["entry_batch0"], 1),
+        }
     pathlib.Path(args.out).write_text(json.dumps(payload, indent=2, sort_keys=True))
 
     print("E55 register census   head=%s   base=%s candidate=%s"
@@ -237,6 +276,8 @@ def main() -> int:
     for name, res in checks.items():
         print("  %-17s %s" % (name, res))
     print("positive control fired (E27 table != base): %s" % control_fired)
+    if payload.get("harm_only_vs_base"):
+        print("harm-only design: %s" % payload["harm_only_vs_base"])
     if payload.get("candidate_vs_base"):
         print("candidate vs base : %s" % payload["candidate_vs_base"])
         print("candidate vs E27  : %s" % payload["candidate_vs_e27"])
