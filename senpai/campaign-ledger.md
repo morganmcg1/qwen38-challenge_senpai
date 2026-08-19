@@ -2324,3 +2324,274 @@ that does not require us to guess a number. Note that `warmAllDepths` appears in
 **78 notes including ranks 1, 2, 3 and 4** — the top of the board is already
 working this surface, so treat the timing-instrumented form as contested rather
 than free.
+
+### 115 — 🟢 The local GPU is `applegpu_g16s`: the SDPA two-pass branch *does* fire on this box, and the in-tree comment mislabels it
+
+Item 113 left one open uncertainty: the `sdpa_vector_2pass` branch is gated on
+`char devc = d.get_architecture().back()` being `'d'` or `'s'`, and I had
+established neither host's architecture string. I settled it by compiling a
+twelve-line Metal probe (`/tmp/archprobe.m`, `clang -framework Metal`) rather
+than waiting for a full build:
+
+```
+device.name         = Apple M4 Pro
+architecture.name   = applegpu_g16s
+MLX arch_gen        = 16
+MLX devc (back)     = 's'
+SDPA 2pass at KV>=1024 on this box? YES
+```
+
+The string format is decoded by `device.cpp:566-572`: the last three characters
+are `<tens><ones><tier>`, so `applegpu_g16s` is generation 16, tier `'s'`. The
+tier switch at `device.cpp:573-595` is the in-tree documentation of the tier
+characters, and it also sets the command-buffer geometry:
+
+| tier | in-tree comment | `max_ops_per_buffer_` | `max_mb_per_buffer_` |
+|---|---|---:|---:|
+| `'p'` | `// phone` | 20 | 40 |
+| `'g'` | `// base, pro` | 40 | 40 |
+| `'s'` | `// max` | 50 | 50 |
+| `'d'` | `// ultra` | 50 | 50 |
+| default | `// default to medium` | 40 | 40 |
+
+Two consequences, one of which is a warning about reading source comments as
+facts.
+
+1. 🔴 **The comment is wrong for this generation.** Our box is an M4 **Pro** and
+   it reports tier `'s'`, which the comment labels `// max`. So the mapping from
+   Apple marketing tier to MLX tier character is *not* what the comment says, and
+   nobody should infer the ranked M5 Max's character from it. What we can say is
+   that both `'s'` and `'d'` take the two-pass branch, and that a Max-class part
+   is overwhelmingly unlikely to report `'p'` or `'g'`, so the branch almost
+   certainly fires on the ranked box too.
+2. 🟢 **Our local box already has the ranked box's command-buffer geometry** — 50
+   ops, 50 MB — because `'s'` and `'d'` share the same limits. That is a real
+   piece of good news for transferability, and it retroactively strengthens E31:
+   the command-buffer geometry we measured locally is the geometry the ranked box
+   uses, not a smaller-tier variant. Note also that this is where the "50-op"
+   figure in E31 comes from; the 512 MiB number in my earlier summary of E31 is a
+   different limit and the two should not be quoted together.
+
+The env override `MLX_METAL_GPU_ARCH` (item 113 addendum) turned out not to be
+needed to answer the question. It remains available, and remains a mechanism
+probe only, for the reasons given there.
+
+### 116 — 🔴 SELF-FALSIFICATION of item 113: the warm's 512-token seed is correctly sized, and the KV-1024 opening is worth approximately nothing
+
+Item 113 claimed the scored track is "512 seed + 512 decode, so the live KV
+length crosses the 1024 boundary **mid-window**", and I queued it as the next
+round's strongest candidate. The fixture says otherwise.
+`fixtures/qwen3_8_27b_mtp_track.json`, `timed_prompt_pool_note`:
+
+> Each entry IS a timed MTP reference-rows golden … generated on box 3 with
+> `mtp-verify --emitted <plan> --generate 513` … from a DIFFERENT **512-token
+> prose seed** (8 distinct domains), and each returned
+> `reference_self_consistent=true` with **513 rows**.
+
+So the seed is 512 tokens and the window decodes 512 tokens (`decodeTokens 512`).
+The live KV length therefore runs **512 → 1024**, and `k.shape(2) >= 1024` first
+becomes true in the **final round of the window**, not mid-window. The warm seeds
+the throwaway cache at exactly 512 — which covers the window's *entire* range
+bar the last step. My "we fixed the 8 → 512 instance of this bug and stopped one
+token short" was rhetorically satisfying and quantitatively empty: 512 is the
+right number, and the one token we stop short of is the one that does not matter.
+
+There is also a **ranked-data refutation** that is independent of the source
+reading. The only thing this mechanism can produce is a **fixed, per-window,
+one-off cost** (a pipeline creation for the second kernel family). A constant
+absolute offset across all eight windows is a one-parameter model, and it is
+**disfavoured at p ≈ 0.017** (χ² = 17.1 on 7 dof) against our measured
+per-prompt deficits, because drama and travel show zero or slightly negative
+deficit where a fixed cost predicts +0.18 % and +0.20 %. The model that does fit
+is a wide-prompt-only rate step (item 118, p ≈ 0.30).
+
+**Item 113 is demoted from "next round's strongest candidate" to low priority.**
+It is not proven dead — a fixed cost confined to some sessions is not excluded —
+but it no longer justifies a student-week, and the mechanism cannot explain the
+deficit we actually have. This is the second time in two turns that item 113 has
+been corrected by evidence I went looking for after writing it, and the lesson is
+the same one as item 105 and item 111: *a mechanism verified in source is not a
+mechanism sized against data.* I verified the branch existed and then sized it
+from a track geometry I had not read.
+
+### 117 — 🔴🔴 The track fixture publishes the organizers' own noise measurement, and it confirms the score identity exactly
+
+`fixtures/qwen3_8_27b_mtp_track.json` has been in the tree the whole campaign and
+I had never read it end to end. It contains, published and operator-ratified,
+several things the campaign has been reconstructing by inference.
+
+**(a) The score identity, confirmed independently of my empirical derivation.**
+`scoring_semantics`:
+
+> `aggregation`: `median_of_per_prompt_raw_serial_relative_speedup`
+> `per_prompt_score`: `raw_p = mean(serial depth-0 seconds/token over p's accepted pairs) / mean(candidate seconds/token over the same pairs)`
+> `published_score`: `median(raw_p over all timed prompts)`
+> `median_rule`: `even_n_mean_of_two_central_order_statistics`
+> `median_rule_note`: 8 is EVEN, so the rule matters: the score is the mean of the two central order statistics, NOT the lower-median rule used by the per-pair `mtp_decode_speedup_median` diagnostic
+
+That is exactly the identity I reverse-engineered from two ranked rows — mean of
+the 4th and 5th sorted `raw_ratio_of_means` — and it independently confirms that
+`officialMetrics.mtp_decode_speedup_median` is *not* the score. It also confirms
+`R = serial / candidate`, i.e. the serial leg is the numerator (item 103/111).
+`prompt_selection` confirms there is no per-run draw: all 8 are always timed.
+
+**(b) 🔴 A real noise measurement, which retires my ±0.2 % guidance.** The
+`calibration` block reports six thermally-gated sessions of an **unmodified**
+tree across **both** ranked boxes, with session medians:
+
+```
+box 2:  0.995231  0.993918  0.994609
+box 3:  0.993847  0.993622  0.993008
+```
+
+Total spread 0.0022 = **0.12 %**; standard deviation **0.078 %** of the mean.
+This is run-to-run noise **on the published score statistic itself**, measured by
+the organizers, across boxes. My ±0.2 % figure (itself derived from the 88-row
+serial variance decomposition in item 111) was conservative by about 2.5×.
+
+Per-prompt, `noop_decode_speedup_spread_pct` gives beagle 0.144, botany 0.331,
+drama 0.219, essays 0.155, medicine 0.207, plutarch 0.437, republic 0.269,
+travel 0.167 — but `noop_decode_speedup_note` states these are conservative
+propagations `sqrt(CV_serial² + CV_mtp²)` that **over-state true paired spread by
+roughly 1.4–1.9×** because the two legs share a thermal session and are
+positively correlated, and it publishes the **exact pair-level ratios where they
+were available: beagle 0.104 %, botany 0.281 %, drama 0.116 %.** Every ranked row
+has `accepted_pair_count = 1` on all eight prompts, so the pair-level figure is
+the correct noise scale for a single submission's per-prompt ratio.
+
+Consequences that change how we should be operating:
+
+- 🟢 **Our 0.258 % serial-normalised gap to #1 is ≈ 3.3 σ — unambiguously real.**
+- 🟢 **The detection threshold for a single ranked run is ≈ 0.16 % (2 σ), not
+  0.5 %.** A clean 0.2 % is a measurable result. This materially lowers the bar
+  every current assignment has to clear, and I have told all four students the
+  wrong (harsher) number.
+- 🔴 **The ranks 6–12 band spans 0.09 %, which is barely one σ.** Our nominal
+  rank inside that band is noise. "Rank 9" and "rank 6" are the same result.
+- 🔴 The competitor folklore "±1.5–3 % ranked noise" is wrong by an order of
+  magnitude, and now demonstrably so from the organizers' own data.
+
+**(c) 🟢 The organizers confirm the serial leg is prompt-independent.** From
+`noop_decode_speedup_note`, on an outlier: *"the depth-0 leg does
+prompt-independent work, so all serial readings are interchangeable and sit at
+~0.03800."* This is direct validation of the serial-normalising method in item
+112, and it improves the estimator: a run's serial offset should be estimated by
+**pooling all eight of its serial readings**, not per-prompt. The pinned on-box
+serial calibration is 0.037994794617407023, against our 88-row grand mean of
+0.0379908 — agreement to 1 part in 10⁴.
+
+**(d) 🟡 The central pair is tree-dependent.** The calibration block's per-prompt
+raw ratios for a stock tree are beagle 0.9837, botany 0.8467, drama 0.9587,
+essays 1.0044, medicine 1.0726, plutarch 0.9701, republic 1.0116, travel 1.0581;
+the 4th and 5th sorted are **beagle and essays**, mean 0.99404 — reproducing
+`expected_raw_median` 0.9940390645 exactly. On *our* tree the central pair is
+beagle and medicine. So "only beagle and medicine carry weight" is a statement
+about our current operating point, not a property of the track, and it can
+rotate under a large enough change.
+
+### 118 — 🟢 Our deficit against #1 is a clean step at the draft-width boundary: parity below n = 3, +0.38 ± 0.06 % above n = 4.5
+
+Testing our per-prompt MTP-leg deficits against the organizers' pair-level noise
+(item 117b) rather than eyeballing them changes the picture in a useful way.
+Per-prompt deficit, absolute cost over the 512-token window, and significance
+against the true paired σ:
+
+| prompt | n | Δ% | Δ ms | σ% | σ | significant |
+|---|---:|---:|---:|---:|---:|---|
+| plutarch | 0.154 | +0.049 | +7.6 | 0.265 | +0.18 | no |
+| drama | 2.298 | −0.008 | −0.8 | 0.116 | −0.07 | no |
+| travel | 2.656 | −0.037 | −3.3 | 0.101 | −0.36 | no |
+| **beagle** | 4.533 | **+0.418** | +26.0 | 0.104 | **+4.02** | **YES** |
+| medicine | 4.768 | +0.110 | +6.4 | 0.125 | +0.87 | no |
+| **republic** | 5.270 | **+0.426** | +24.3 | 0.163 | **+2.61** | **YES** |
+| **essays** | 5.425 | **+0.506** | +29.0 | 0.094 | **+5.38** | **YES** |
+| botany | 5.776 | +0.206 | +11.7 | 0.281 | +0.73 | no |
+
+Model comparison, inverse-variance weighted:
+
+| model | params | χ² / dof | p |
+|---|---:|---|---|
+| constant rate across all 8 | 1 | 25.9 / 7 | 0.0005 — rejected |
+| constant absolute offset across all 8 | 1 | 17.1 / 7 | 0.017 — disfavoured |
+| **two-level step at the width boundary** | **2** | **7.2 / 6** | **0.30 — fits** |
+
+The step model reads: prompts with n < 3 are at **−0.019 ± 0.073 %** — parity
+with the leader, indistinguishable from zero — and prompts with n > 4.5 are at
+**+0.380 ± 0.056 %**, which is 6.8 σ from zero. One parameter, one boundary, and
+it lands exactly where the wide crossrow dispatch changes behaviour.
+
+Caveat I cannot remove with this fixture: **inside** the wide group, all five
+windows have nearly the same wall time (5.67–6.23 s), so a per-token rate penalty
+and a fixed ~22 ms per-window cost are numerically degenerate there (χ² 7.11 vs
+7.20). What *is* excluded is a fixed cost applying to **all** prompts, because
+the three narrow windows have very different durations (8.9–15.5 s) and show no
+deficit. Separating rate from fixed cost within the wide group would need a
+high-n prompt at a different window length, which the track does not provide.
+
+Medicine is the persistent outlier in every model at about −2.2 σ: we are
+essentially tied with the leader on medicine. That matters because medicine is
+one of the two scoring prompts.
+
+**Order-statistic saturation caps**, computed on our own sorted ratios:
+
+```
+1 plutarch 1.25280   2 drama 1.91668   3 travel 2.17980
+4 beagle   3.12015  <- central        5 medicine 3.34486  <- central
+6 essays   3.36612  <- caps the 5th   7 republic 3.39402   8 botany 3.42536
+```
+
+- **beagle has +7.88 % of headroom** before it would pass essays and stop paying
+  at the margin. No saturation risk; the wide-width line has room.
+- **medicine has only +0.64 % of headroom.** Beyond that, further medicine gains
+  are worth zero and essays becomes the binding prompt. Nobody should be
+  optimising medicine specifically.
+
+Putting items 117 and 118 together gives the campaign's operating target in one
+line: **the statistically real, addressable deficit is beagle's +0.418 %, worth
+about +0.21 % of score at the 0.5 marginal weight of a central order statistic —
+which is essentially the whole 0.258 % serial-normalised gap.** The wide-width
+kernel line (E33) is aimed at exactly this, and is confirmed as the main line.
+
+### 119 — 🟢 Acceptance closure is now established on two independent fields, and the realised-depth question has a local counter rather than a source read
+
+**(a) A second identical fingerprint.** Item 102 established that
+`effective_mean_draft_len` is bit-identical to the board leader on 8/8 prompts.
+`non_drafting_round_count` is *also* identical on 8/8: zero on seven prompts and
+**449 on plutarch** for both rows. Sixteen matching per-prompt quantities across
+two independently developed trees. We and the leader run the same draft schedule
+round for round; the entire difference between rank 1 and rank 10 is time per
+round. Acceptance is closed, and now on two fields rather than one.
+
+Incidentally this explains plutarch's degeneracy: ~449 of its ~504 rounds draft
+nothing at all, which is why its ratio is 1.2528 and why it is worth exactly zero
+to the score.
+
+**(b) 🔴 "The candidate declares no depth."** `scoring_semantics`
+→ `effective_depth_provenance`:
+
+> The candidate declares no depth. `effective_mean_draft_len`,
+> `effective_max_draft_len`, `non_drafting_round_count` and
+> `effective_draft_lengths` are derived by the trusted parent from its own round
+> journal and sealed per prompt and per run.
+
+This settles the item 102 / 113 open question in the direction I flagged as
+possible: `officialMetrics.mtp_depth: 8` and `mtp_max_draft_depth: 8` are
+**configuration echoes, not realised depth**. So *both* of my competing
+inferences — "depth 5 at p ≈ 0.965" and "depth 8 at p ≈ 0.871" — remain
+unsupported, and no ranked field will settle it: `effective_max_draft_len` and
+`effective_draft_lengths` are sealed per run but are **not** in the public API
+per-prompt payload (which exposes only `accepted_pair_count`,
+`effective_mean_draft_len`, `head_provenance_sha256`,
+`mtp_seconds_per_token_mean`, `non_drafting_round_count`,
+`noop_reference_decode_speedup`, `parity_ok`, `prefill_seconds_per_token`,
+`prompt_sha256`, `raw_ratio_of_means`, `serial_seconds_per_token_mean`).
+
+**(c) 🟢 But our own harness emits it.** `effective_max_draft_len` appears in
+local timed artifacts as a per-prompt, per-leg counter — e.g. in
+`research/e25r2-timed.json` at
+`per_prompt/<name>/{base,candidate}/counters/effective_max_draft_len`, which in
+that (Qwen 3.6-era) run read base 4–5 and candidate 3. So the realised-depth
+question is answerable by **reading a counter from one local timed run on the
+current tree**, not by source archaeology and not by inference from n. That is a
+much cheaper and much more reliable route than the one I gave edward, and it is
+the single most useful correction I can hand him.
