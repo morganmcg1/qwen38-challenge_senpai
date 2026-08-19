@@ -266,14 +266,37 @@ def selftest():
             failures.append("excluded path absent from HEAD, fingerprint would "
                             "not be kernel-blind: %s" % p)
 
+    # 5. ab()'s fail-closed decision, on CONSTRUCTED counts. The empty-ref-set
+    #    case is unreachable from this repo -- the refs are always here -- so it
+    #    is exactly the branch no amount of running the tool would exercise.
+    #    Before this existed, `ab` over ZERO trees printed "NO clean A/B exists"
+    #    and exited 0: a false conclusion asserted over an empty set, in the one
+    #    mode a student had already been told to run.
+    ab_cases = [
+        ((0, 0, 0), "empty"),        # refs missing entirely
+        ((653, 0, 0), "no-family"),  # refs present, all predate the family
+        ((653, 476, 0), "no-ab"),    # genuine finding: looked, found none
+        ((653, 476, 10), "ok"),      # the live case
+        ((1, 1, 1), "ok"),           # minimal non-degenerate
+        ((0, 476, 10), "empty"),     # incoherent counts must not read as ok
+    ]
+    for args, want in ab_cases:
+        got = ab_verdict(*args)
+        if got != want:
+            failures.append("ab_verdict%s = %r, want %r" % (args, got, want))
+    # "examined nothing" and "found nothing" must not share a verdict.
+    if ab_verdict(0, 0, 0) == ab_verdict(653, 476, 0):
+        failures.append("ab_verdict cannot distinguish an empty ref set from a "
+                        "genuine no-A/B finding")
+
     if failures:
         print("SELFTEST FAIL (%d)" % len(failures))
         for f in failures:
             print("  - %s" % f)
         return 1
     print("SELFTEST PASS: %d arithmetic checks, %d pinned trees, HEAD==crown "
-          "dispatch table, fingerprint exclusions present."
-          % (12, len(PINS)))
+          "dispatch table, fingerprint exclusions present, %d ab_verdict "
+          "fail-closed cases." % (12, len(PINS), len(ab_cases)))
     return 0
 
 
@@ -367,9 +390,37 @@ def census(extra):
                  or "none"))
 
 
+def ab_verdict(scanned, with_table, n_multi):
+    """Decide ab()'s verdict from counts alone, so it can be unit-tested.
+
+    Returns one of "empty" / "no-family" / "no-ab" / "ok". Extracted precisely
+    because the interesting cases ("examined nothing") cannot be produced from
+    this repo, where the refs are always present -- so the branch that mattered
+    was the one branch no run of the script could ever reach here.
+    """
+    if scanned == 0:
+        return "empty"
+    if with_table == 0:
+        return "no-family"
+    if n_multi == 0:
+        return "no-ab"
+    return "ok"
+
+
 def ab():
+    """Find rival-tree A/Bs that differ ONLY in the QMV dispatch table.
+
+    Fails closed on an empty or implausibly small ref set. This mattered: with
+    no `refs/remotes/upstream/submissions/*` fetched, the earlier version
+    printed the *scientific conclusion* "NO clean A/B exists" over ZERO trees
+    and exited 0. That is the worst available behaviour -- a reader would drop a
+    free ranked-box identification on the strength of a check that never ran.
+    "Examined nothing" and "examined everything and found nothing" must not
+    share an exit code or a sentence.
+    """
     groups = collections.defaultdict(list)
     scanned = 0
+    with_table = 0
     for name, obj in submission_refs():
         scanned += 1
         tbl = dispatch_table(obj)
@@ -378,20 +429,41 @@ def ab():
         fp = non_kernel_fingerprint(obj)
         if fp is None:
             continue
+        with_table += 1
         groups[fp].append((name[:8], tuple(sorted(tbl.items()))))
 
     multi = {fp: v for fp, v in groups.items() if len({t for _, t in v}) > 1}
     print("trees scanned                      : %d" % scanned)
-    print("trees with a dispatch table        : %d"
-          % sum(len(v) for v in groups.values()))
+    print("trees with a dispatch table        : %d" % with_table)
     print("distinct non-kernel fingerprints   : %d" % len(groups))
     print("fingerprints with >1 table (A/Bs)  : %d" % len(multi))
     print()
-    if not multi:
-        print("NO clean A/B exists: every pair differing in the dispatch table")
-        print("also differs elsewhere. The cross-solver contrast is")
-        print("observational only and must be labelled as such.")
-        return
+
+    verdict = ab_verdict(scanned, with_table, len(multi))
+    if verdict == "empty":
+        print("FAIL: examined ZERO trees. %s matched nothing in this" %
+              SUBMISSION_GLOB)
+        print("checkout, so this run says nothing whatever about rival trees.")
+        print("Fetch them first:")
+        print("  git fetch upstream '+refs/heads/*:refs/remotes/upstream/*'")
+        print("This is NOT the same as 'no A/B exists' and must never be read")
+        print("as that. Refusing to print a conclusion.")
+        return 1
+    if verdict == "no-family":
+        print("FAIL: %d trees scanned but NONE carries the cross-row QMV" %
+              scanned)
+        print("family, so no dispatch table could be read from any of them.")
+        print("Expected ~476 of ~653. Your ref set is probably truncated.")
+        return 1
+
+    if verdict == "no-ab":
+        print("NO clean A/B exists among the %d trees examined: every pair" %
+              with_table)
+        print("differing in the dispatch table also differs elsewhere. The")
+        print("cross-solver contrast is observational only and must be")
+        print("labelled as such. (This IS a finding -- %d trees were read.)"
+              % with_table)
+        return 0
 
     for fp, members in sorted(multi.items(), key=lambda kv: -len(kv[1])):
         by_tbl = collections.defaultdict(list)
@@ -413,6 +485,7 @@ def ab():
             print("   n=%-2d streams %s" % (len(names), fmt(st)))
             print("        %s" % ", ".join(names))
         print()
+    return 0
 
 
 def main():
@@ -426,8 +499,9 @@ def main():
         # fail-open.
         return census(sys.argv[2:]) or 0
     if mode == "ab":
-        ab()
-        return 0
+        # Same fail-open as census() had: ab() can now report an empty or
+        # table-less ref set, and that status must reach the shell.
+        return ab() or 0
     print(__doc__)
     return 2
 
