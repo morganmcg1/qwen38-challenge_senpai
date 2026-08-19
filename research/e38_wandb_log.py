@@ -61,6 +61,13 @@ def _in_band(r: dict) -> bool:
     return bool(r["lo"] <= r["measured"] <= r["hi"])
 
 
+def _ranked_geom(
+    path: str = "research/e38-artifacts/e38-ranked-geom.json",
+) -> dict | None:
+    p = pathlib.Path(path)
+    return json.loads(p.read_text()) if p.exists() else None
+
+
 def main() -> None:
     resume_id = _flag("--resume")
     positional = [a for a in sys.argv[1:]
@@ -238,7 +245,7 @@ def main() -> None:
     ladder_step = wandb.Table(columns=list(step.keys()))
     ladder_step.add_data(*step.values())
 
-    run.log({
+    tables = {
         "e38/ladder": ladder,
         "e38/shapes_m6": shapes,
         "e38/relations": relations,
@@ -250,7 +257,19 @@ def main() -> None:
         "e38/mde": mde,
         "e38/score_bars": bars,
         "e38/m5_to_m6_step": ladder_step,
-    })
+    }
+
+    rg = _ranked_geom()
+    if rg is not None:
+        rg_table = wandb.Table(columns=[
+            "M", "arch_ms", "ranked_ms", "delta_pct", "trusted"])
+        for row in rg["per_width"]:
+            rg_table.add_data(row["verify_width"], row["arch_ms"],
+                              row["ranked_ms"], row["delta_pct"],
+                              bool(row["trusted"]))
+        tables["e38/ranked_geometry"] = rg_table
+
+    run.log(tables)
 
     prim = d["primary"]
     ratio_b = prim["value"]
@@ -323,6 +342,30 @@ def main() -> None:
         "e38/air_regs_shipped_high_water": 125,
         "e38/rung2_dead_on_registers": True,
     })
+
+    if rg is not None:
+        run.summary.update({
+            # deliverable (d): does the ranked runner's MLX buffer geometry move
+            # the shape-level cost curve? A width-ordered residual would mean it
+            # does; a flat one of drift size means the local curves transfer.
+            "e38/ranked_geom_mean_delta_pct": rg["mean_delta_pct"],
+            "e38/ranked_geom_sd_delta_pp": rg["sd_delta_pp"],
+            "e38/ranked_geom_t_stat": rg["t_stat"],
+            "e38/ranked_geom_df": rg["df"],
+            "e38/ranked_geom_abs_max_delta_pct": rg["abs_max_delta_pct"],
+            "e38/ranked_geom_width_trend_pearson_r": rg["width_trend_pearson_r"],
+            "e38/ranked_geom_m6_delta_pct": next(
+                r["delta_pct"] for r in rg["per_width"] if r["verify_width"] == 6),
+            "e38/ranked_geom_mean_over_mde": rg["mean_over_mde_normal"],
+            "e38/ranked_geom_within_drift_envelope": rg["within_drift_envelope"],
+            "e38/ranked_geom_verdict": rg["verdict"],
+            "e38/ranked_geom_scope": (
+                "shape-level GEMM only; a --shapes-only probe issues one op per "
+                "call and is insensitive to MLX_MAX_OPS_PER_BUFFER by "
+                "construction, so this is not evidence about end-to-end "
+                "command-buffer behaviour"),
+        })
+
     run.finish()
     print(f"logged {run.url}")
 

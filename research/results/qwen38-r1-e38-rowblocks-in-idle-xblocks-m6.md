@@ -17,8 +17,10 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   `research/e38_analyze.py`, `research/e38_value.py`, `research/e38_corrections.py`,
   `research/e38_coverage_proof.py`, `research/e38_bitwise_check.py`,
   `research/e38_anchor_check.py`, `research/e38_m6_step.py`,
-  `research/run-qmv-curve-ranked-geom.sh`, `research/e38_wandb_log.py`,
-  `research/e38-artifacts/` (AIR registers, both arm patches, metrics JSON)
+  `research/e38_ranked_geom.py`, `research/run-qmv-curve-ranked-geom.sh`,
+  `research/run-qmv-parity.sh`, `research/e38_wandb_log.py`,
+  `research/e38-artifacts/` (AIR registers, both arm patches, metrics JSON,
+  ranked-geometry JSON)
 - MTP head provenance: organizer-pinned; no `mtp-head.manifest.json` declared, unchanged
 - Assignment-scope preflight: `assignment scope OK: 2 submitted path(s)`
 - Editable budget: `source=2455289/3000000 headroom=544711 growth=0/262144 exempt=2410`
@@ -83,7 +85,7 @@ Pre-registration `13023f0`, committed before any kernel code existed.
 | 25 | M = 1 global null (serial leg) | unreachable | source-unreachable, §6.3 | pass |
 | 26 | coverage: every (m, n) written exactly once | exhaustive | 4 arms × 6 shapes, **pass** | pass |
 | 27 | `row0_bitwise_matches_m1`, all arms | true | **64/64 rows, worst \|Δ\| = 0** | pass |
-| 28 | 192-cell cross-build parity digest | bit-identical | §6.1 | pass |
+| 28 | 192-cell cross-build parity digest | bit-identical | §13 | *pending, filled from the run* |
 | 29 | `twin_audit.py` | `TWIN AUDIT OK` | **29 runtime-effective twins** | pass |
 | 30 | JIT/PSO pre-flight, no M=6 first-round spike | no spike | §7.2 | pass |
 
