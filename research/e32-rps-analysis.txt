@@ -1,0 +1,98 @@
+## (a) Register/spill grid -- one body per simdgroup pass (grid_relaxed)
+
+| NA | r=1 | r=2 | r=3 | r=4 |
+|---|---|---|---|---|
+| 2 | 38/1 | 46/1 | 54/1 | 62/1 |
+| 3 | 49/1 | 61/1 | 72/1 | 83/1 |
+| 4 | 60/1 | 76/1 | 90/1 | 104/1 |
+| 5 | 71/1 | 91/1 | 108/1 | 125/1 |
+| 6 | 82/1 | 106/1 | 126/1 | 144/2 SPILL |
+| 7 | 93/1 | 121/1 | 144/1 | 157/2 SPILL |
+| 8 | 104/1 | 136/1 | 168/2 SPILL | 177/2 SPILL |
+| 9 | 115/1 | 151/1 | 187/2 SPILL | 197/2 SPILL |
+| 10 | 126/1 | 166/1 | 195/2 SPILL | 217/2 SPILL |
+| 11 | 137/1 | 181/1 | - | - |
+| 12 | 156/0 | 196/1 | - | - |
+
+## Max spill-free NA per rows_per_simd
+
+  r=1: spill-free through NA=12  (>12 untested)
+  r=2: spill-free through NA=12  (>12 untested)
+  r=3: spill-free through NA=7  (8 spills)
+  r=4: spill-free through NA=5  (6 spills)
+
+## (b) Threadgroups to cover the MLP N=17408, and what is legal
+
+  frozen host grid: bn=8, group_dims(32,2,1), grid.y = (N+7)/8 = 2176 threadgroups
+| r | rows/threadgroup | threadgroups needed | frozen grid launches | legal? |
+|---|---|---|---|---|
+| 1 | 2 | 8704 | 2176 | NO - covers 4352 of 17408 rows |
+| 2 | 4 | 4352 | 2176 | NO - covers 8704 of 17408 rows |
+| 3 | 6 | 2901.33 | 2176 | NO - covers 13056 of 17408 rows |
+| 4 | 8 | 2176 | 2176 | yes |
+
+## Coverage-preserving form: r rows per block x 4/r blocks, frozen grid intact
+
+| NA | r | regs/allocas | spill | AIR lines vs 1-block | ALU/tile |
+|---|---|---|---|---|---|
+| 2 | 1 | 39/1 | clean | 1.05x | 568 |
+| 2 | 2 | 49/1 | clean | 1.03x | 440 |
+| 2 | 4 | 62/1 | clean | 1.00x | 376 |
+| 3 | 1 | 51/1 | clean | 1.04x | 788 |
+| 3 | 2 | 66/1 | clean | 1.02x | 596 |
+| 3 | 4 | 83/1 | clean | 1.00x | 500 |
+| 4 | 1 | 63/1 | clean | 1.04x | 1008 |
+| 4 | 2 | 83/1 | clean | 1.02x | 752 |
+| 4 | 4 | 104/1 | clean | 1.00x | 624 |
+| 5 | 1 | 75/1 | clean | 1.03x | 1228 |
+| 5 | 2 | 100/1 | clean | 1.02x | 908 |
+| 5 | 4 | 125/1 | clean | 1.00x | 748 |
+| 6 | 1 | 87/1 | clean | 1.03x | 1448 |
+| 6 | 2 | 117/1 | clean | 1.02x | 1064 |
+| 6 | 4 | 144/2 | SPILL | 1.00x | 872 |
+| 7 | 1 | 99/1 | clean | 1.03x | 1668 |
+| 7 | 2 | 134/1 | clean | 1.02x | 1220 |
+| 7 | 4 | 157/2 | SPILL | 1.00x | 996 |
+| 8 | 1 | 111/1 | clean | 1.02x | 1888 |
+| 8 | 2 | 151/1 | clean | 1.01x | 1376 |
+| 8 | 4 | 177/2 | SPILL | 1.00x | 1120 |
+| 9 | 1 | 123/1 | clean | 1.02x | 2108 |
+| 9 | 2 | 168/1 | clean | 1.01x | 1532 |
+| 9 | 4 | 197/2 | SPILL | 1.00x | 1244 |
+| 10 | 1 | 135/1 | clean | 1.02x | 2328 |
+| 10 | 2 | 185/1 | clean | 1.01x | 1688 |
+| 10 | 4 | 217/2 | SPILL | 1.00x | 1368 |
+
+## (3) Register model: is it affine in the product rows_per_simd x NA?
+
+  product model  regs = 35.5 + 5.96*(r*NA)   max |residual| = 49.0
+  advisor predicted regs(NA=9, r=2) ~ 125; product fit says 143; MEASURED 151
+
+  same product, different verdict:
+    NA=6 r=4: 24 accumulator floats, 144 regs, SPILL
+    NA=12 r=2: 24 accumulator floats, 196 regs, clean
+
+  per-r NA slope (registers per unit of NA at fixed r):
+    r=1: regs = 14.2 + 11.36*NA   max |residual| = 5.45
+    r=2: regs = 16.0 + 15.00*NA   max |residual| = 0.00
+    r=3: regs = 18.0 + 18.00*NA   max |residual| = 0.00
+    r=4: regs = 20.0 + 21.00*NA   max |residual| = 0.00
+
+  slope(r) = 8.36 + 3.19*r  (max |residual| 0.25)
+    NA-only registers per NA:      8.36  <- a0..a3 + sums, 5 floats/NA
+    per-row registers per NA:      3.19  <- acc + partial, 2 floats/NA/row
+    ratio 2.62 against the 5:2 live-float ratio = 2.50
+
+## (c) DECISION: best legal cell per M, frozen grid respected
+
+| M | shipped IPG/passes | best legal (NA=IPG, r) | M%IPG!=1 | passes | spill | ALU/tile vs shipped |
+|---|---|---|---|---|---|---|
+| 3 | 3/1 | NA=3, r=4 | True | 1 | clean | 500 vs 500 (+0.0% ALU, +0% weight passes) |
+| 4 | 4/1 | NA=4, r=4 | True | 1 | clean | 624 vs 624 (+0.0% ALU, +0% weight passes) |
+| 5 | 5/1 | NA=5, r=4 | True | 1 | clean | 748 vs 748 (+0.0% ALU, +0% weight passes) |
+| 6 | 3/2 | NA=6, r=2 | True | 1 | clean | 1064 vs 1000 (+6.4% ALU, -50% weight passes) |
+| 7 | 4/2 | NA=7, r=2 | True | 1 | clean | 1220 vs 1124 (+8.5% ALU, -50% weight passes) |
+| 8 | 4/2 | NA=8, r=2 | True | 1 | clean | 1376 vs 1248 (+10.3% ALU, -50% weight passes) |
+| 9 | 5/2 | NA=9, r=2 | True | 1 | clean | 1532 vs 1372 (+11.7% ALU, -50% weight passes) |
+
+  rounds whose weight-pass count falls: 67/78 (86%) on the advisor-quoted depth histogram
