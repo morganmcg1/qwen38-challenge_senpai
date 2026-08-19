@@ -37,6 +37,7 @@ sync_head=0
 tax=0
 tax_mode=metal
 tax_ops_per_buffer=64
+tax_wait=1
 tokens=512
 row_trace=0
 hot=0
@@ -48,6 +49,7 @@ while (($#)); do
     --tax) tax="$2"; shift 2 ;;
     --tax-mode) tax_mode="$2"; shift 2 ;;
     --tax-ops-per-buffer) tax_ops_per_buffer="$2"; shift 2 ;;
+    --tax-wait) tax_wait="$2"; shift 2 ;;
     --tokens) tokens="$2"; shift 2 ;;
     --trace) row_trace=1; shift ;;
     --hot) hot=1; shift ;;
@@ -95,6 +97,7 @@ if ((tax > 0)); then
   export MLX_E58_DISPATCH_TAX="${tax}"
   export MLX_E58_DISPATCH_TAX_MODE="${tax_mode}"
   export MLX_E58_DISPATCH_TAX_OPS_PER_BUFFER="${tax_ops_per_buffer}"
+  export MLX_E58_DISPATCH_TAX_WAIT="${tax_wait}"
 fi
 if ((row_trace)); then
   : > "${trace_path}"
@@ -140,6 +143,7 @@ CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-${PWD}/.build-worker/clang-m
   echo "tax=${tax}"
   echo "tax_mode=${tax_mode}"
   echo "tax_ops_per_buffer=${tax_ops_per_buffer}"
+  echo "tax_wait=${tax_wait}"
   echo "tokens=${tokens}"
   echo "row_trace=${row_trace}"
   echo "cool_gate=$((1 - hot))"

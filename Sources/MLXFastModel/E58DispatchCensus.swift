@@ -38,6 +38,11 @@ public enum E58DispatchCensus {
     static let taxMode = environment["MLX_E58_DISPATCH_TAX_MODE"] ?? "metal"
     static let taxOpsPerBuffer =
         Int(environment["MLX_E58_DISPATCH_TAX_OPS_PER_BUFFER"] ?? "") ?? 64
+    /// A blocking tax prices a SERIALISED dispatch: encode, submit and wait. A
+    /// non-blocking tax prices a PIPELINED dispatch, which is what a real round
+    /// issues, so its slope answers whether one more dispatch in the stream
+    /// costs anything at all. The pair brackets the marginal price.
+    static let taxWaits = (environment["MLX_E58_DISPATCH_TAX_WAIT"] ?? "1") != "0"
 
     /// Called from the earliest editable startup hook, before the backbone and
     /// head loads create any Metal pipeline. Installing later would leave the
@@ -446,6 +451,6 @@ private final class DispatchTax: @unchecked Sendable {
             buffer.commit()
             last = buffer
         }
-        last?.waitUntilCompleted()
+        if E58DispatchCensus.taxWaits { last?.waitUntilCompleted() }
     }
 }
