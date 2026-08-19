@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+"""E44 Gate 0 summary: kernel-wide register/spill/threadgroup readout per arm.
+
+Three readouts, because the campaign has no true register readout on this box
+(see campaign-ledger item on E40 E: `-mllvm -stats` disabled, `-Rpass*` silent,
+`metal-objdump` stops at AIR, pipeline reflection cannot discriminate):
+
+  regs      lane-weighted peak-live-SSA textual heuristic. Shape usable, the
+            absolute number is not. Printed naive AND lane-corrected, because
+            AIR models an 8x8 simdgroup matrix as one simdgroup-wide
+            `<64 x float>` value whose 64 elements live across 32 lanes, so the
+            naive count over-reports it by exactly 32x.
+  allocas   private-memory arrays that survived -O2/-O3. A genuine compiler
+            outcome, and the discriminator E40 recommended over the register
+            heuristic.
+  tg_bytes  static threadgroup-memory bytes. `affine_qmv_fast` is ONE kernel, so
+            a threadgroup array declared for one width cell is allocated for
+            every dispatch of every width -- the same shared-allocation channel
+            as registers, which no earlier experiment has had to measure.
+
+Run with --selftest to check the lane correction against a synthetic body.
+"""
+
+from __future__ import annotations
+
+import argparse
+import pathlib
+import re
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+from air_kernel_stats import ALLOCA, kernels, peak_live_registers  # noqa: E402
+
+# `@x = internal addrspace(3) global [64 x float] undef, align 4`
+TG_GLOBAL = re.compile(r"^@([\w.]+)\s*=.*addrspace\(3\)\s+global\s+(.+?),\s*align")
+ARRAY = re.compile(r"\[(\d+)\s+x\s+(.+)\]$")
+SCALAR_BYTES = {
+    "float": 4,
+    "i32": 4,
+    "i64": 8,
+    "double": 8,
+    "half": 2,
+    "bfloat": 2,
+    "i16": 2,
+    "i8": 1,
+    "i1": 1,
+}
+
+# The >=4096 dispatch table of the post-E27-revert base tree, and the candidate
+# table, keyed by the runtime `ntg.x` value each case answers. `narrow_m2` is the
+# same `qmv_fast_crossrow_affine4_g64<T,2>` both branches call at M=2.
+BASE_TABLE = {
+    2: "e44_narrow_m2",
+    3: "e44_m3_ipg3",
+    4: "e44_m4_ipg4",
+    5: "e44_m5_ipg3",
+    6: "e44_m6_ipg3",
+    7: "e44_m7_ipg4",
+    8: "e44_m8_ipg4",
+    9: "e44_m9_ipg3",
+}
+CAND_TABLE = {
+    2: "e44_narrow_m2",
+    3: "e44_m3_ipg3",
+    4: "e44_sgmm_nt1_runtime",
+    5: "e44_sgmm_nt1_runtime",
+    6: "e44_sgmm_nt1_runtime",
+    7: "e44_sgmm_nt1_runtime",
+    8: "e44_sgmm_nt1_runtime",
+    9: "e44_sgmm_nt2_runtime",
+}
+# The <4096 branch is inlined into the same kernel by both arms, so it bounds
+# the kernel-wide maximum from below for both.
+NARROW_TABLE = {m: f"e44_narrow_m{m}" for m in range(2, 10)}
+ENTRY_KERNELS = (
+    "e40_affine_qmv_fast_bf16_gs64_b4_batch0",
+    "e40_affine_qmv_fast_bf16_gs64_b4_batch1",
+    "e40_affine_qmv_fast_bf16_gs64_b2_batch0",
+)
+
+
+def type_bytes(text: str) -> int:
+    text = text.strip()
+    match = ARRAY.match(text)
+    if match:
+        return int(match.group(1)) * type_bytes(match.group(2))
+    return SCALAR_BYTES.get(text.split()[0], 4)
+
+
+def threadgroup_bytes(path: pathlib.Path) -> list[tuple[str, int]]:
+    out = []
+    for line in path.read_text().splitlines():
+        match = TG_GLOBAL.match(line)
+        if match:
+            out.append((match.group(1), type_bytes(match.group(2))))
+    return out
+
+
+def measure(path: pathlib.Path) -> dict[str, dict[str, int]]:
+    stats = {}
+    for name, body in kernels(path).items():
+        allocas = [ALLOCA.search(line).group(1) for line in body if ALLOCA.search(line)]
+        stats[name] = {
+            "naive": peak_live_registers(body, False)[0],
+            "lane": peak_live_registers(body, True)[0],
+            "allocas": len(allocas),
+            "alloca_types": sorted(set(allocas)),
+            "loads": sum(1 for line in body if re.search(r"=\s*load\s", line)),
+            "mma": sum(1 for line in body if "simdgroup_matrix" in line),
+        }
+    return stats
+
+
+def table_max(stats: dict, table: dict[int, str], key: str) -> tuple[str, int]:
+    cells = set(table.values()) | set(NARROW_TABLE.values())
+    present = [c for c in cells if c in stats]
+    binding = max(present, key=lambda c: stats[c][key])
+    return binding, stats[binding][key]
+
+
+def report_cells(path: pathlib.Path) -> None:
+    stats = measure(path)
+    have_cand = all(c in stats for c in CAND_TABLE.values())
+
+    print("per-cell footprint (regs: naive / lane-corrected)")
+    print("%-24s %8s %8s %8s %8s %s" % ("cell", "naive", "lane", "allocas", "loads", "alloca types"))
+    for name in sorted(stats):
+        s = stats[name]
+        print("%-24s %8d %8d %8d %8d %s"
+              % (name, s["naive"], s["lane"], s["allocas"], s["loads"],
+                 s["alloca_types"] or ""))
+
+    print()
+    print("KERNEL-WIDE MAXIMUM (what one register allocation must satisfy)")
+    print("%-10s %-24s %8s %8s" % ("arm", "binding cell", "naive", "lane"))
+    for label, table in (("base", BASE_TABLE), ("cand", CAND_TABLE)):
+        if label == "cand" and not have_cand:
+            print("%-10s %-24s %8s %8s" % (label, "(cell absent from tree)", "-", "-"))
+            continue
+        b_naive, v_naive = table_max(stats, table, "naive")
+        b_lane, v_lane = table_max(stats, table, "lane")
+        print("%-10s %-24s %8d %8d" % (label, f"{b_naive} / {b_lane}", v_naive, v_lane))
+
+    print()
+    print("per-M dispatch table (naive / lane-corrected)")
+    print("%-4s %-24s %14s %-24s %14s" % ("M", "base cell", "base regs", "cand cell", "cand regs"))
+    for m in sorted(BASE_TABLE):
+        base = BASE_TABLE[m]
+        cand = CAND_TABLE[m]
+        cand_txt = ("%d / %d" % (stats[cand]["naive"], stats[cand]["lane"])) if cand in stats else "-"
+        print("%-4d %-24s %14s %-24s %14s"
+              % (m, base, "%d / %d" % (stats[base]["naive"], stats[base]["lane"]),
+                 cand if cand in stats else "(absent)", cand_txt))
+
+    anchors = [n for n in sorted(stats) if n.startswith("e44_wide_na")]
+    if anchors:
+        print()
+        print("inner packing-factor anchor (E13/E27/E32/E40 read 62/83/104 for NA=2/3/4)")
+        for name in anchors:
+            print("  %-20s naive=%d lane=%d" % (name, stats[name]["naive"], stats[name]["lane"]))
+
+    tg = threadgroup_bytes(path)
+    print()
+    print("static threadgroup memory in module: %d bytes%s"
+          % (sum(b for _, b in tg), (" " + repr(tg)) if tg else " (none)"))
+
+
+def report_entry(base_path: pathlib.Path, cand_path: pathlib.Path) -> None:
+    base, cand = measure(base_path), measure(cand_path)
+    print("%-44s %-18s %-18s %s" % ("entry kernel", "base naive/lane", "cand naive/lane", "allocas b->c"))
+    for name in ENTRY_KERNELS:
+        if name not in base or name not in cand:
+            print("  MISSING %s" % name)
+            continue
+        b, c = base[name], cand[name]
+        print("%-44s %-18s %-18s %s"
+              % (name,
+                 "%d / %d" % (b["naive"], b["lane"]),
+                 "%d / %d" % (c["naive"], c["lane"]),
+                 "%d -> %d %s" % (b["allocas"], c["allocas"],
+                                  c["alloca_types"] or "")))
+    for label, path in (("base", base_path), ("cand", cand_path)):
+        tg = threadgroup_bytes(path)
+        print("  %-4s static threadgroup memory: %d bytes%s"
+              % (label, sum(b for _, b in tg), (" " + repr(tg)) if tg else ""))
+
+
+def selftest() -> int:
+    # A `<64 x float>` simdgroup-matrix value is one value per SIMDGROUP: the
+    # naive lane weighting must read 64 and the corrected one 2, while an
+    # ordinary `<4 x float>` must be untouched by the flag.
+    body = [
+        "  %1 = tail call fast <64 x float> @air.simdgroup_matrix_8x8_init_filled.v64f32.f32(float 0.0)",
+        "  %2 = fadd <4 x float> %1, %1",
+        "  ret void %1 %2",
+    ]
+    naive = peak_live_registers(body, False)[0]
+    lane = peak_live_registers(body, True)[0]
+    ok = naive == 68 and lane == 6
+    print("selftest: naive=%d (expect 68 = 64 + 4) lane=%d (expect 6 = 2 + 4) -> %s"
+          % (naive, lane, "PASS" if ok else "FAIL"))
+    return 0 if ok else 1
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("air_ll", nargs="*")
+    ap.add_argument("--cells", action="store_true")
+    ap.add_argument("--entry", action="store_true")
+    ap.add_argument("--selftest", action="store_true")
+    args = ap.parse_args()
+
+    if args.selftest:
+        return selftest()
+    if args.cells:
+        report_cells(pathlib.Path(args.air_ll[0]))
+        return 0
+    if args.entry:
+        report_entry(pathlib.Path(args.air_ll[0]), pathlib.Path(args.air_ll[1]))
+        return 0
+    ap.error("one of --cells, --entry, --selftest is required")
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
