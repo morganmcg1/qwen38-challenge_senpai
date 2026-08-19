@@ -1,0 +1,446 @@
+{
+ "contrasts": {
+  "accepted_draft_rate": {
+   "base": [
+    0.9911504424778761,
+    0.9911504424778761
+   ],
+   "base_mean": 0.9911504424778761,
+   "base_null_spread_pct": 0.0,
+   "delta_pct": -0.15266469282013695,
+   "sched": [
+    0.9896373056994818,
+    0.9896373056994818
+   ],
+   "sched_mean": 0.9896373056994818,
+   "sched_spread_pct": 0.0
+  },
+  "effective_mean_draft_len": {
+   "base": [
+    6.848484848484849,
+    6.848484848484849
+   ],
+   "base_mean": 6.848484848484849,
+   "base_null_spread_pct": 0.0,
+   "delta_pct": -56.64397549353302,
+   "sched": [
+    2.9692307692307693,
+    2.9692307692307693
+   ],
+   "sched_mean": 2.9692307692307693,
+   "sched_spread_pct": 0.0
+  },
+  "mtp_decode_speedup": {
+   "base": [
+    2.0278537625818074,
+    2.025512515176614
+   ],
+   "base_mean": 2.0266831388792106,
+   "base_null_spread_pct": 0.11552113698880133,
+   "delta_pct": 1.5227391628304554,
+   "sched": [
+    2.057016933785669,
+    2.058071539697143
+   ],
+   "sched_mean": 2.057544236741406,
+   "sched_spread_pct": 0.05125556440740162
+  },
+  "mtp_seconds_per_token": {
+   "base": [
+    0.040753851644694805,
+    0.04077900014817715
+   ],
+   "base_mean": 0.040766425896435976,
+   "base_null_spread_pct": 0.061689252686094286,
+   "delta_pct": -1.3404773278746118,
+   "sched": [
+    0.04025667207315564,
+    0.040183250326663256
+   ],
+   "sched_mean": 0.04021996119990945,
+   "sched_spread_pct": 0.18255051547029133
+  },
+  "serial_seconds_per_token": {
+   "base": [
+    0.08264285139739513,
+    0.0825983751565218
+   ],
+   "base_mean": 0.08262061327695847,
+   "base_null_spread_pct": 0.05383189389340987,
+   "delta_pct": 0.16184427689729386,
+   "sched": [
+    0.08280865615233779,
+    0.08270000386983156
+   ],
+   "sched_mean": 0.08275433001108468,
+   "sched_spread_pct": 0.13129498177518187
+  }
+ },
+ "correctness": {
+  "all_tokens_matched": {
+   "baseA": true,
+   "baseA2": true,
+   "schedB": true,
+   "schedB2": true
+  },
+  "decode_tokens": {
+   "baseA": 256,
+   "baseA2": 256,
+   "schedB": 256,
+   "schedB2": 256
+  },
+  "head_provenance_sha256": {
+   "baseA": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+   "baseA2": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+   "schedB": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+   "schedB2": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d"
+  },
+  "mtp_depth": {
+   "baseA": 8,
+   "baseA2": 8,
+   "schedB": 8,
+   "schedB2": 8
+  },
+  "public_drift_tripwire_passed": {
+   "baseA": true,
+   "baseA2": true,
+   "schedB": true,
+   "schedB2": true
+  },
+  "residual_divergence_count": {
+   "baseA": 0,
+   "baseA2": 0,
+   "schedB": 0,
+   "schedB2": 0
+  },
+  "uses_pinned_mtp_head": {
+   "baseA": true,
+   "baseA2": true,
+   "schedB": true,
+   "schedB2": true
+  }
+ },
+ "legs": [
+  {
+   "arm": "base",
+   "meta": {
+    "arm": "baseA",
+    "arm_built": "2026-08-19T17:45:27Z",
+    "arm_schedule_blob": "328399d33b15ea902ce831076c50856b6ab818c7",
+    "base_sha": "d6431660d682064df8143c633ef59000f52fb00e",
+    "checkout_schedule_blob": "ba2211483562f619dbc388f65959cdb09f5adede",
+    "cool_gate_passed_real_gate": "true",
+    "cool_gate_passes": "3",
+    "cool_gate_skips": "0",
+    "dirty": "0",
+    "e56_arm": "base",
+    "e56_head_sha": "d6431660d682064df8143c633ef59000f52fb00e",
+    "e56_tag": "baseA",
+    "entry_gpu_temp_c": "39.03242874145508",
+    "exit": "0",
+    "exit_gpu_temp_c": "55.25141525268555",
+    "finished": "2026-08-19T17:54:26Z",
+    "h_vector": "<measured-default>",
+    "head_dir": "<setup-default>",
+    "metallib_sha256": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+    "metallib_source_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+    "started": "2026-08-19T17:47:27Z",
+    "tokens": "256",
+    "trace": "1",
+    "worker_path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/e56-arms/base/mlxfast-runtime-worker",
+    "worker_sha256": "75cc5550b96c989375ebb70f89597b84241ae9fa8bf97da2abfd58726fdfc407"
+   },
+   "metrics": {
+    "accepted_draft_rate": 0.9911504424778761,
+    "all_tokens_matched": true,
+    "decode_tokens": 256,
+    "effective_mean_draft_len": 6.848484848484849,
+    "head_provenance_sha256": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+    "mode": "qwen-mtp-local-iterate",
+    "mtp_decode_speedup": 2.0278537625818074,
+    "mtp_depth": 8,
+    "mtp_seconds_per_token": 0.040753851644694805,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "official_score": false,
+    "oracle": "candidate-local-mtp-golden-rows",
+    "public_drift_tripwire_passed": true,
+    "rankable": false,
+    "ranked_decode_speedup_floor": 0.9,
+    "residual_divergence_count": 0,
+    "serial_seconds_per_token": 0.08264285139739513,
+    "uses_pinned_mtp_head": true
+   },
+   "passed": true,
+   "score": 2.0278537625818074,
+   "status": "ok",
+   "tag": "baseA",
+   "widths": {
+    "count": {
+     "1": 0,
+     "2": 1,
+     "3": 0,
+     "4": 0,
+     "5": 1,
+     "6": 6,
+     "7": 3,
+     "8": 3,
+     "9": 19
+    },
+    "mean_verify_width": 7.848484848484849,
+    "rounds": 33,
+    "share": {
+     "1": 0.0,
+     "2": 0.0303,
+     "3": 0.0,
+     "4": 0.0,
+     "5": 0.0303,
+     "6": 0.18182,
+     "7": 0.09091,
+     "8": 0.09091,
+     "9": 0.57576
+    }
+   }
+  },
+  {
+   "arm": "sched",
+   "meta": {
+    "arm": "schedB",
+    "arm_built": "2026-08-19T17:45:54Z",
+    "arm_schedule_blob": "ba2211483562f619dbc388f65959cdb09f5adede",
+    "base_sha": "d6431660d682064df8143c633ef59000f52fb00e",
+    "checkout_schedule_blob": "ba2211483562f619dbc388f65959cdb09f5adede",
+    "cool_gate_passed_real_gate": "true",
+    "cool_gate_passes": "3",
+    "cool_gate_skips": "0",
+    "dirty": "0",
+    "e56_arm": "sched",
+    "e56_head_sha": "d6431660d682064df8143c633ef59000f52fb00e",
+    "e56_tag": "schedB",
+    "entry_gpu_temp_c": "48.715476989746094",
+    "exit": "0",
+    "exit_gpu_temp_c": "55.1993293762207",
+    "finished": "2026-08-19T18:03:00Z",
+    "h_vector": "<measured-default>",
+    "head_dir": "<setup-default>",
+    "metallib_sha256": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+    "metallib_source_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+    "started": "2026-08-19T17:54:49Z",
+    "tokens": "256",
+    "trace": "1",
+    "worker_path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/e56-arms/sched/mlxfast-runtime-worker",
+    "worker_sha256": "ca1fc9941d27d4fbc87dabce66df613fb93c1512bf725972a4cc6f31949f637f"
+   },
+   "metrics": {
+    "accepted_draft_rate": 0.9896373056994818,
+    "all_tokens_matched": true,
+    "decode_tokens": 256,
+    "effective_mean_draft_len": 2.9692307692307693,
+    "head_provenance_sha256": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+    "mode": "qwen-mtp-local-iterate",
+    "mtp_decode_speedup": 2.057016933785669,
+    "mtp_depth": 8,
+    "mtp_seconds_per_token": 0.04025667207315564,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "official_score": false,
+    "oracle": "candidate-local-mtp-golden-rows",
+    "public_drift_tripwire_passed": true,
+    "rankable": false,
+    "ranked_decode_speedup_floor": 0.9,
+    "residual_divergence_count": 0,
+    "serial_seconds_per_token": 0.08280865615233779,
+    "uses_pinned_mtp_head": true
+   },
+   "passed": true,
+   "score": 2.057016933785669,
+   "status": "ok",
+   "tag": "schedB",
+   "widths": {
+    "count": {
+     "1": 0,
+     "2": 1,
+     "3": 0,
+     "4": 64,
+     "5": 0,
+     "6": 0,
+     "7": 0,
+     "8": 0,
+     "9": 0
+    },
+    "mean_verify_width": 3.9692307692307693,
+    "rounds": 65,
+    "share": {
+     "1": 0.0,
+     "2": 0.01538,
+     "3": 0.0,
+     "4": 0.98462,
+     "5": 0.0,
+     "6": 0.0,
+     "7": 0.0,
+     "8": 0.0,
+     "9": 0.0
+    }
+   }
+  },
+  {
+   "arm": "sched",
+   "meta": {
+    "arm": "schedB2",
+    "arm_built": "2026-08-19T17:45:54Z",
+    "arm_schedule_blob": "ba2211483562f619dbc388f65959cdb09f5adede",
+    "base_sha": "d6431660d682064df8143c633ef59000f52fb00e",
+    "checkout_schedule_blob": "ba2211483562f619dbc388f65959cdb09f5adede",
+    "cool_gate_passed_real_gate": "true",
+    "cool_gate_passes": "3",
+    "cool_gate_skips": "0",
+    "dirty": "0",
+    "e56_arm": "sched",
+    "e56_head_sha": "d6431660d682064df8143c633ef59000f52fb00e",
+    "e56_tag": "schedB2",
+    "entry_gpu_temp_c": "49.1020622253418",
+    "exit": "0",
+    "exit_gpu_temp_c": "55.9621467590332",
+    "finished": "2026-08-19T18:12:01Z",
+    "h_vector": "<measured-default>",
+    "head_dir": "<setup-default>",
+    "metallib_sha256": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+    "metallib_source_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+    "started": "2026-08-19T18:03:22Z",
+    "tokens": "256",
+    "trace": "1",
+    "worker_path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/e56-arms/sched/mlxfast-runtime-worker",
+    "worker_sha256": "ca1fc9941d27d4fbc87dabce66df613fb93c1512bf725972a4cc6f31949f637f"
+   },
+   "metrics": {
+    "accepted_draft_rate": 0.9896373056994818,
+    "all_tokens_matched": true,
+    "decode_tokens": 256,
+    "effective_mean_draft_len": 2.9692307692307693,
+    "head_provenance_sha256": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+    "mode": "qwen-mtp-local-iterate",
+    "mtp_decode_speedup": 2.058071539697143,
+    "mtp_depth": 8,
+    "mtp_seconds_per_token": 0.040183250326663256,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "official_score": false,
+    "oracle": "candidate-local-mtp-golden-rows",
+    "public_drift_tripwire_passed": true,
+    "rankable": false,
+    "ranked_decode_speedup_floor": 0.9,
+    "residual_divergence_count": 0,
+    "serial_seconds_per_token": 0.08270000386983156,
+    "uses_pinned_mtp_head": true
+   },
+   "passed": true,
+   "score": 2.058071539697143,
+   "status": "ok",
+   "tag": "schedB2",
+   "widths": {
+    "count": {
+     "1": 0,
+     "2": 1,
+     "3": 0,
+     "4": 64,
+     "5": 0,
+     "6": 0,
+     "7": 0,
+     "8": 0,
+     "9": 0
+    },
+    "mean_verify_width": 3.9692307692307693,
+    "rounds": 65,
+    "share": {
+     "1": 0.0,
+     "2": 0.01538,
+     "3": 0.0,
+     "4": 0.98462,
+     "5": 0.0,
+     "6": 0.0,
+     "7": 0.0,
+     "8": 0.0,
+     "9": 0.0
+    }
+   }
+  },
+  {
+   "arm": "base",
+   "meta": {
+    "arm": "baseA2",
+    "arm_built": "2026-08-19T17:45:27Z",
+    "arm_schedule_blob": "328399d33b15ea902ce831076c50856b6ab818c7",
+    "base_sha": "d6431660d682064df8143c633ef59000f52fb00e",
+    "checkout_schedule_blob": "ba2211483562f619dbc388f65959cdb09f5adede",
+    "cool_gate_passed_real_gate": "true",
+    "cool_gate_passes": "3",
+    "cool_gate_skips": "0",
+    "dirty": "0",
+    "e56_arm": "base",
+    "e56_head_sha": "d6431660d682064df8143c633ef59000f52fb00e",
+    "e56_tag": "baseA2",
+    "entry_gpu_temp_c": "49.20217514038086",
+    "exit": "0",
+    "exit_gpu_temp_c": "55.8181266784668",
+    "finished": "2026-08-19T18:21:14Z",
+    "h_vector": "<measured-default>",
+    "head_dir": "<setup-default>",
+    "metallib_sha256": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+    "metallib_source_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+    "started": "2026-08-19T18:12:24Z",
+    "tokens": "256",
+    "trace": "1",
+    "worker_path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/e56-arms/base/mlxfast-runtime-worker",
+    "worker_sha256": "75cc5550b96c989375ebb70f89597b84241ae9fa8bf97da2abfd58726fdfc407"
+   },
+   "metrics": {
+    "accepted_draft_rate": 0.9911504424778761,
+    "all_tokens_matched": true,
+    "decode_tokens": 256,
+    "effective_mean_draft_len": 6.848484848484849,
+    "head_provenance_sha256": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+    "mode": "qwen-mtp-local-iterate",
+    "mtp_decode_speedup": 2.025512515176614,
+    "mtp_depth": 8,
+    "mtp_seconds_per_token": 0.04077900014817715,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "official_score": false,
+    "oracle": "candidate-local-mtp-golden-rows",
+    "public_drift_tripwire_passed": true,
+    "rankable": false,
+    "ranked_decode_speedup_floor": 0.9,
+    "residual_divergence_count": 0,
+    "serial_seconds_per_token": 0.0825983751565218,
+    "uses_pinned_mtp_head": true
+   },
+   "passed": true,
+   "score": 2.025512515176614,
+   "status": "ok",
+   "tag": "baseA2",
+   "widths": {
+    "count": {
+     "1": 0,
+     "2": 1,
+     "3": 0,
+     "4": 0,
+     "5": 1,
+     "6": 6,
+     "7": 3,
+     "8": 3,
+     "9": 19
+    },
+    "mean_verify_width": 7.848484848484849,
+    "rounds": 33,
+    "share": {
+     "1": 0.0,
+     "2": 0.0303,
+     "3": 0.0,
+     "4": 0.0,
+     "5": 0.0303,
+     "6": 0.18182,
+     "7": 0.09091,
+     "8": 0.09091,
+     "9": 0.57576
+    }
+   }
+  }
+ ],
+ "null_floor_pct": 0.0629
+}
