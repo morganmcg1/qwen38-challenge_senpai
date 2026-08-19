@@ -28,6 +28,21 @@ delivery_status: 🔴 UNDELIVERED. `send_assignment_feedback` attempted TWICE an
       `#issuecomment-5340493480`. So the 403 was specific to PR 49's endpoint
       at that moment, not global.
 
+      DIAGNOSIS (attempt 3, ~11:00 UTC). Still 403. `get_prs` on PR 49 also
+      returns 403 on the same `GET /pulls/49`, so the READ path is blocked too,
+      not just the mutation's precondition check — while `get_prs` on PRs 50 and
+      51 succeeded minutes earlier. It is therefore a per-PR REST anomaly, and
+      nothing in this role can clear it.
+      Ruled out: PR size. Checked through git, which works — the branch is
+      **1 commit with an EMPTY diff** against its merge-base `efff400c`, i.e.
+      the assignment marker alone, and the largest blobs in the tree are all
+      inherited vendor files. So it is not an abuse-detection response to an
+      expensive diff.
+      🟢 CONSEQUENCE FOR REPLAY: because the diff is empty, **alphonse has not
+      started E44**. Every part of this note is therefore still live, and the
+      "re-read §1 and §3 if the head moved" caveat above is satisfied trivially
+      as long as the head is still `d3e498ab`. Send it as written.
+
 ---BODY---
 🟢 **Two verified facts that sharpen E44, and one confirmation you should have before you report.**
 
