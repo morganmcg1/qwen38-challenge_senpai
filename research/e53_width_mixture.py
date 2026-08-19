@@ -123,6 +123,102 @@ def accept_probs(q: float, decay: float) -> list[float]:
     return [min(1.0, q * decay ** i) for i in range(MAX_DEPTH)]
 
 
+class BurstAcceptance:
+    """Two-state acceptance: prose is locally easy or locally hard.
+
+    The IID family below is refuted by the published pair (n, A/D): see
+    `iid_frontier`. The failure direction says acceptance must be positively
+    correlated with the depth the schedule chooses, which is what a persistent
+    easy/hard state plus an informative top-2 margin produces.
+
+    `share_easy` is the stationary probability of the easy state and
+    `persistence` interpolates from independent rounds (0) to sticky runs (1).
+    The two margin levels are FIXED, not fitted: an easy round's pending primary
+    is assumed unambiguous and a hard round's nearly tied.
+    """
+
+    MARGIN_EASY = 10.0
+    MARGIN_HARD = 0.5
+
+    def __init__(self, share_easy: float, persistence: float,
+                 q_easy: float, q_hard: float) -> None:
+        self.share_easy = share_easy
+        self.persistence = persistence
+        self.q_easy = q_easy
+        self.q_hard = q_hard
+        self.easy = True
+
+    def step(self, rng: random.Random) -> tuple[list[float], float]:
+        stay = self.persistence + (1.0 - self.persistence) * (
+            self.share_easy if self.easy else 1.0 - self.share_easy)
+        if rng.random() >= stay:
+            self.easy = not self.easy
+        q = self.q_easy if self.easy else self.q_hard
+        margin = self.MARGIN_EASY if self.easy else self.MARGIN_HARD
+        return [q] * MAX_DEPTH, margin
+
+
+def run_burst_window(model: BurstAcceptance, rng: random.Random) -> dict:
+    sched = Schedule()
+    emitted = 0
+    widths: dict[int, int] = {}
+    drafted_total = accepted_total = rounds = non_drafting = 0
+    while emitted < TOTAL_TOKENS:
+        remaining = TOTAL_TOKENS - emitted
+        offered = max(1, min(OFFERED_DEPTH, MAX_DEPTH, remaining - 1))
+        probs, margin = model.step(rng)
+        depth = sched.depth(offered, margin)
+        accepted = 0
+        for index in range(depth):
+            if rng.random() < probs[index]:
+                accepted += 1
+            else:
+                break
+        rounds += 1
+        drafted_total += depth
+        accepted_total += accepted
+        if depth == 0:
+            non_drafting += 1
+        widths[depth + 1] = widths.get(depth + 1, 0) + 1
+        emitted += 1 + accepted
+        sched.record(accepted, depth)
+        if rounds > 4 * TOTAL_TOKENS:
+            raise RuntimeError("schedule failed to close the window")
+    return {
+        "rounds": rounds,
+        "drafted": drafted_total,
+        "accepted": accepted_total,
+        "non_drafting": non_drafting,
+        "mean_draft_len": drafted_total / rounds,
+        "accept_ratio": accepted_total / drafted_total if drafted_total else 0.0,
+        "widths": widths,
+    }
+
+
+def burst_aggregate(share_easy: float, persistence: float, q_easy: float,
+                    q_hard: float, windows: int, seed: int) -> dict:
+    rng = random.Random(seed)
+    runs = []
+    for _ in range(windows):
+        model = BurstAcceptance(share_easy, persistence, q_easy, q_hard)
+        model.easy = rng.random() < share_easy
+        runs.append(run_burst_window(model, rng))
+    widths: dict[int, int] = {}
+    for run in runs:
+        for width, count in run["widths"].items():
+            widths[width] = widths.get(width, 0) + count
+    total_rounds = sum(widths.values())
+    drafted = sum(r["drafted"] for r in runs)
+    accepted = sum(r["accepted"] for r in runs)
+    return {
+        "mean_draft_len": drafted / total_rounds,
+        "accept_ratio": accepted / drafted if drafted else 0.0,
+        "rounds": statistics.mean(r["rounds"] for r in runs),
+        "non_drafting": statistics.mean(r["non_drafting"] for r in runs),
+        "mixture": {w: widths[w] / total_rounds for w in sorted(widths)},
+    }
+
+
 def run_window(q: float, decay: float, margin_mean: float | None,
                rng: random.Random) -> dict:
     """One 512-token ranked decode window under the shipped schedule."""
@@ -202,6 +298,86 @@ def fit_q(target_mean: float, decay: float, margin_mean: float | None,
     return 0.5 * (low + high), result
 
 
+def iid_frontier(windows: int, seed: int) -> list[dict]:
+    """(mean draft length, accept ratio, round count) reachable under IID q."""
+    curve = []
+    for step in range(5, 100, 5):
+        q = step / 100.0
+        run = aggregate(q, 1.0, None, windows, seed)
+        curve.append({
+            "q": q,
+            "mean_draft_len": run["mean_draft_len"],
+            "accept_ratio": run["accept_ratio"],
+            "rounds": run["rounds"],
+        })
+    return curve
+
+
+def legal_round_counts(numerator: int, denominator: int) -> list[dict]:
+    """R is pinned to multiples of the reduced denominator of D/R.
+
+    `effective_mean_draft_len` is an exact rational; with 512 = R + A the pair
+    (R, A) is therefore restricted to a short list, and each member implies one
+    accept ratio. Ledger 153 picked the smallest under a monotonicity
+    assumption; this function states the whole list instead.
+    """
+    out = []
+    multiple = 1
+    while True:
+        rounds = denominator * multiple
+        drafts = numerator * multiple
+        accepted = TOTAL_TOKENS - rounds
+        if accepted <= 0:
+            break
+        out.append({
+            "rounds": rounds,
+            "drafts": drafts,
+            "accepted": accepted,
+            "accept_ratio": accepted / drafts,
+            "accepted_per_round": accepted / rounds,
+        })
+        multiple += 1
+    return out
+
+
+def solve_burst(target_mean: float, target_ratio: float, persistence: float,
+                q_easy: float, windows: int, seed: int) -> dict | None:
+    """Match (mean draft length, accept ratio) by nested bisection."""
+
+    def match_mean(share_easy: float) -> tuple[float, dict]:
+        low, high = 0.0, q_easy
+        run = None
+        for _ in range(24):
+            mid = 0.5 * (low + high)
+            run = burst_aggregate(share_easy, persistence, q_easy, mid,
+                                  windows, seed)
+            if run["mean_draft_len"] < target_mean:
+                low = mid
+            else:
+                high = mid
+        return 0.5 * (low + high), run
+
+    lo_share, hi_share = 0.05, 0.98
+    _, lo_run = match_mean(lo_share)
+    _, hi_run = match_mean(hi_share)
+    if not (min(lo_run["accept_ratio"], hi_run["accept_ratio"]) <= target_ratio
+            <= max(lo_run["accept_ratio"], hi_run["accept_ratio"])):
+        return None
+    rising = hi_run["accept_ratio"] > lo_run["accept_ratio"]
+    best = None
+    for _ in range(18):
+        mid_share = 0.5 * (lo_share + hi_share)
+        q_hard, run = match_mean(mid_share)
+        best = {"share_easy": mid_share, "q_hard": q_hard, "q_easy": q_easy,
+                "persistence": persistence, **run}
+        above = run["accept_ratio"] > target_ratio
+        if above == rising:
+            hi_share = mid_share
+        else:
+            lo_share = mid_share
+    return best
+
+
 def cost_shares(mixture: dict[int, float]) -> dict[str, float]:
     total = sum(share * cost_ms(width) for width, share in mixture.items())
     blocks = {"f456": (4, 5, 6), "f78": (7, 8), "f9": (9,), "f123": (1, 2, 3)}
@@ -272,9 +448,46 @@ VARIANTS = [
 ]
 
 
+BURST_GRID = [
+    {"persistence": p, "q_easy": q}
+    for p in (0.0, 0.5, 0.8, 0.9, 0.95)
+    for q in (0.96, 0.99, 1.0)
+]
+
+
+def burst_section(report: dict, windows: int, seed: int) -> None:
+    """Feasible set of burst models that match BOTH published constraints."""
+    report["burst"] = {}
+    for prompt, published in PROMPTS.items():
+        target_mean = published["mean_draft_len"]
+        target_ratio = published["ledger153"]["alpha"]
+        solutions = []
+        for point in BURST_GRID:
+            found = solve_burst(target_mean, target_ratio, point["persistence"],
+                                point["q_easy"], windows, seed)
+            if found is None:
+                solutions.append({**point, "feasible": False})
+                continue
+            shares = cost_shares(found["mixture"])
+            solutions.append({
+                **point,
+                "feasible": True,
+                "share_easy": found["share_easy"],
+                "q_hard": found["q_hard"],
+                "mean_draft_len": found["mean_draft_len"],
+                "accept_ratio": found["accept_ratio"],
+                "rounds": found["rounds"],
+                "non_drafting": found["non_drafting"],
+                "mixture": found["mixture"],
+                "shares": shares,
+            })
+        report["burst"][prompt] = solutions
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--windows", type=int, default=200)
+    parser.add_argument("--burst-windows", type=int, default=40)
     parser.add_argument("--seed", type=int, default=20260819)
     parser.add_argument("--plutarch-mean", type=float, default=None,
                         help="fit plutarch too, to test the absorbing state")
@@ -282,6 +495,11 @@ def main() -> None:
     selftest()
 
     report: dict = {"variants": {}, "prompts": {}, "weights": WEIGHTS}
+    report["iid_frontier"] = iid_frontier(args.windows, args.seed)
+    report["legal_round_counts"] = {
+        "beagle": legal_round_counts(485, 107),
+        "medicine": legal_round_counts(472, 99),
+    }
     for variant in VARIANTS:
         report["variants"][variant["name"]] = variant
 
@@ -302,6 +520,34 @@ def main() -> None:
                 "mixture": fitted["mixture"],
                 "shares": shares,
             }
+
+    burst_section(report, args.burst_windows, args.seed)
+
+    # Composites over the feasible burst set, at both weightings.
+    report["burst_composite"] = {}
+    for label, weights in (("marginal_483_517", WEIGHTS),
+                           ("advisor_wrong_79_21",
+                            {"beagle": 0.79, "medicine": 0.21})):
+        rows = []
+        beagle_solutions = {(s["persistence"], s["q_easy"]): s
+                            for s in report["burst"]["beagle"] if s["feasible"]}
+        medicine_solutions = {(s["persistence"], s["q_easy"]): s
+                              for s in report["burst"]["medicine"] if s["feasible"]}
+        for key in sorted(set(beagle_solutions) & set(medicine_solutions)):
+            per_prompt = {"beagle": beagle_solutions[key]["shares"],
+                          "medicine": medicine_solutions[key]["shares"]}
+            total = sum(weights[p] * per_prompt[p]["mean_cost_ms"] for p in PROMPTS)
+            rows.append({
+                "persistence": key[0],
+                "q_easy": key[1],
+                **{
+                    field: sum(
+                        weights[p] * per_prompt[p][field] * per_prompt[p]["mean_cost_ms"]
+                        for p in PROMPTS) / total
+                    for field in ("f456", "f78", "f9", "f123")
+                },
+            })
+        report["burst_composite"][label] = rows
 
     # Score-weighted composites, plus the wrong 79/21 weights for comparison.
     for label, weights in (("marginal_483_517", WEIGHTS),
@@ -364,7 +610,43 @@ def main() -> None:
             print(f"                f456={fit['shares']['f456']:.4f} "
                   f"f78={fit['shares']['f78']:.4f} f9={fit['shares']['f9']:.4f} "
                   f"f123={fit['shares']['f123']:.4f} | rho {mix}")
-    print("\n=== composite at marginal weights 0.483694 / 0.516306")
+    print("\n=== IID frontier: no q reproduces the published pair")
+    for point in report["iid_frontier"]:
+        print(f"  q={point['q']:.2f} n={point['mean_draft_len']:.4f} "
+              f"A/D={point['accept_ratio']:.4f} R={point['rounds']:.1f}")
+    for prompt in PROMPTS:
+        legal = report["legal_round_counts"][prompt]
+        print(f"  {prompt} legal (R, A, A/D): "
+              + "; ".join(f"({row['rounds']}, {row['accepted']}, "
+                          f"{row['accept_ratio']:.4f})" for row in legal))
+
+    print("\n=== burst models that match BOTH published constraints")
+    for prompt in PROMPTS:
+        print(f"  -- {prompt}")
+        for row in report["burst"][prompt]:
+            if not row["feasible"]:
+                print(f"     persistence={row['persistence']:.2f} "
+                      f"q_easy={row['q_easy']:.2f}  INFEASIBLE")
+                continue
+            mix = " ".join(f"{w}:{row['mixture'][w]:.3f}" for w in sorted(row["mixture"]))
+            print(f"     persistence={row['persistence']:.2f} q_easy={row['q_easy']:.2f} "
+                  f"-> share_easy={row['share_easy']:.3f} q_hard={row['q_hard']:.3f} "
+                  f"n={row['mean_draft_len']:.4f} A/D={row['accept_ratio']:.4f} "
+                  f"R={row['rounds']:.1f} nd={row['non_drafting']:.2f}")
+            print(f"        f456={row['shares']['f456']:.4f} f78={row['shares']['f78']:.4f} "
+                  f"f9={row['shares']['f9']:.4f} f123={row['shares']['f123']:.4f} | rho {mix}")
+    print("\n=== burst composite at marginal weights 0.483694 / 0.516306")
+    for row in report["burst_composite"]["marginal_483_517"]:
+        print(f"  persistence={row['persistence']:.2f} q_easy={row['q_easy']:.2f} "
+              f"f456={row['f456']:.4f} f78={row['f78']:.4f} f9={row['f9']:.4f} "
+              f"f123={row['f123']:.4f}")
+    print("=== burst composite at the wrong 0.79 / 0.21")
+    for row in report["burst_composite"]["advisor_wrong_79_21"]:
+        print(f"  persistence={row['persistence']:.2f} q_easy={row['q_easy']:.2f} "
+              f"f456={row['f456']:.4f} f78={row['f78']:.4f} f9={row['f9']:.4f} "
+              f"f123={row['f123']:.4f}")
+
+    print("\n=== IID composite at marginal weights 0.483694 / 0.516306")
     for name, comp in report["composite_marginal_483_517"].items():
         print(f"  {name:<13} f456={comp['f456']:.4f} f78={comp['f78']:.4f} "
               f"f9={comp['f9']:.4f} f123={comp['f123']:.4f}")
