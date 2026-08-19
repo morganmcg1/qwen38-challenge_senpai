@@ -16,6 +16,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 repo_root="${PWD}"
 
 root="${E42_ROOT:-${repo_root}/.mlxfast-private/e42}"
+base_sha="${E42_BASE_SHA:-04ad6bf11437c269df85a47e91faa769c74fe6da}"
+curve_prefix="${E42_CURVE_PREFIX:-e42}"
+# benchmark.sh derives the run lock from $HOME, which differs per role while the
+# uid does not, so the default lock gives zero mutual exclusion against another
+# student timing on the same box. The shared parent restores it for both.
+export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 tokens="${E42_TOKENS:-512}"
 fixture="${E42_FIXTURE:-correctness_prompts/public_longcopy_gate_english_512_256.json}"
 head_dir="${E42_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
@@ -74,7 +80,7 @@ rm -rf "${out}"; mkdir -p "${out}/reports"
 {
   echo "tag=${tag}"
   echo "head_sha=$(git rev-parse HEAD)"
-  echo "base_sha=04ad6bf11437c269df85a47e91faa769c74fe6da"
+  echo "base_sha=${base_sha}"
   echo "dirty=$(git status --porcelain | wc -l | tr -d ' ')"
   echo "twin_digests=$(shasum -a 256 \
     Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h \
@@ -100,7 +106,7 @@ if ((want_curve)); then
   echo "=== e42-run: cost curve ${tag} ==="
   # Rebuilds both build roots itself, which is also what makes the legs below
   # run against this arm's metallib.
-  research/run-qmv-curve.sh "e42-${tag}" \
+  research/run-qmv-curve.sh "${curve_prefix}-${tag}" \
     --widths "${curve_widths}" --shapes-only \
     --reps "${curve_reps}" --inner "${curve_inner}" --skip-stock
   rc=$?
