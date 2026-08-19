@@ -92,6 +92,11 @@ SHIPPED_IPG = {2: 2, 3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 3}
 LOCAL_NULL_FLOOR_PCT = 0.0629
 
 # Ranked minimum detectable effect at 2 sd, per cent of published median.
+# RETRACTED by ledger 193(E): this is 2 sd of the SERIAL leg's jitter applied to the
+# score, and the median over eight prompts does not average the candidate-leg common
+# mode away. The measured single-pair ranked MDE is 2.10 %, 7.4x larger. The value
+# below is kept so this module's published arithmetic stays reproducible; import
+# research/ranked_noise.py for any NEW ranked pricing.
 RANKED_MDE_PCT = 0.283
 RANKED_MDE_WORST_PCT = 0.527
 

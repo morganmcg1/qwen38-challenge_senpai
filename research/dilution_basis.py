@@ -60,6 +60,13 @@ import json
 
 # ---------------------------------------------------------------- constants
 
+# NAMING WARNING, resolved in ledger 192(R). `research/qmv_score_leverage.py`
+# also defines `PSI_MTP`, at 0.6736. That is a DIFFERENT MEASURED QUANTITY:
+# ledger 173(A)'s no-modelling split over dispatched verify widths 2..9 only.
+# This one is E48's share over ALL widths of the same local leg. The difference,
+# 0.693391 - 0.6736 = 0.019791, is the width-1 QMV share `psi_mtp_w1`. The two
+# numbers are consistent; only the name collides. Never substitute one for the
+# other.
 PSI_MTP = 0.693391                      # E48, local LEG basis (PR #52)
 PSI_MTP_INTERVAL = (0.692292, 0.694490)
 
@@ -95,6 +102,11 @@ TRANSFER_UNION = (0.7388, 0.8617)
 
 # Board state, ledger 187.
 DEFICIT_PCT = 0.5367
+# RETRACTED by ledger 193(E): this is 2 sd of the SERIAL leg's jitter applied to the
+# score, and the median over eight prompts does not average the candidate-leg common
+# mode away. The measured single-pair ranked MDE is 2.10 %, 7.4x larger. The value
+# below is kept so this module's published arithmetic stays reproducible; import
+# research/ranked_noise.py for any NEW ranked pricing.
 RANKED_MDE_PCT = 0.283
 
 # Ledger 187(L): the r=2 row-block x re-read tax at NA=4.

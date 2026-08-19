@@ -49,6 +49,11 @@ RANKED = {
     },
 }
 MEDIAN_PAIR_DILUTION = 0.9125
+# RETRACTED by ledger 193(E): this is 2 sd of the SERIAL leg's jitter applied to the
+# score, and the median over eight prompts does not average the candidate-leg common
+# mode away. The measured single-pair ranked MDE is 2.10 %, 7.4x larger. The value
+# below is kept so this module's published arithmetic stays reproducible; import
+# research/ranked_noise.py for any NEW ranked pricing.
 RANKED_MDE_PERCENT = 0.283
 LOCAL_NULL_FLOOR_PERCENT = 0.0629
 

@@ -11926,3 +11926,1305 @@ Both were found by delegated audits, not by me. **Every price in this campaign
 should now be stated as a chain of named factors in a fixed order, with the
 basis of each factor labelled, so the next instance is visible on inspection
 rather than discoverable only by audit.**
+
+## 192. 🔴🔴 The board decomposes: 62 % of our deficit is our own scored-surface change, 35 % is base staleness, 3 % is the frontier's warm
+
+This item reads the board the way it should have been read months ago. Every
+scored rival tree is a local git ref. The organizer's accept commits are also
+scored rows. Joining those two facts turns the public leaderboard into a
+**measured experiment matrix on the ranked M5**, with no local harness in the
+loop at all.
+
+Everything below is reproducible offline from `refs/remotes/upstream/submissions`
+plus `research/e53-board-facts.json`. Run the commands before trusting the
+arithmetic.
+
+### 192(A) The reading method
+
+`research/rival_tree_census.py`'s docstring states it plainly and I had not used
+it for this purpose: `git fetch upstream` brings down one
+`upstream/submissions/<uuid>` ref per organizer submission, and **a submission
+commit's first parent is the organizer main of its day**. So for any submission
+`S`:
+
+- `git diff S^..S -- Sources/ Vendor/ mtp-head.manifest.json Package.swift` is
+  exactly what `S` proposed over the main it was built on.
+- `score(S)` and `score(main-of-its-day)` are both public rows.
+- Therefore `score(S) / score(S^)` is a **ranked A/B measurement of that diff**,
+  run on the official M5, at the official token window, on all eight hidden
+  prompts.
+
+This is the only source of ranked causal evidence available to us that does not
+cost a submission. We have been treating the board as a scoreboard. It is a
+results table.
+
+### 192(B) Organizer main scores 3.24929399
+
+```
+git rev-parse upstream/submissions/0cd0a6b4-b539-4705-a1c7-cb271c1f9d3b
+  -> 0c90733d383f6b987a29682bf9eb9458a6172bfa
+git log --oneline -1 0c90733d
+  -> 0c90733 Accept submission 0cd0a6b4-b539-4705-a1c7-cb271c1f9d3b
+```
+
+`0cd0a6b4` is `ofou`'s submission, board score **`3.24929399`**. Its accept
+commit `0c90733d` is organizer main. It is also the commit recorded in
+`senpai/frontier-state.json` as `organizer.syncedCommit`.
+
+So **plain organizer main is worth `3.24929399` on the ranked M5.** Not `0.994`.
+The `0.994` figure in `program.md` is the organizer's *original* calibrated
+depth-2 tree; main has since absorbed every promoted submission.
+
+### 192(C) The promoted frontier is main plus 70 lines, worth `+0.0173 %` — 181(D) RETRACTED
+
+```
+git rev-parse upstream/main
+  -> 9e1ff9ec...   (= upstream/submissions/59b321ee-eb5c-40ec-bb49-5218e4b8cd31)
+git diff --stat 'upstream/submissions/59b321ee...^' upstream/submissions/59b321ee... \
+  -- Sources/ Vendor/ mtp-head.manifest.json Package.swift
+  -> Sources/MLXFastModel/Qwen36MTPBlockSession.swift | 70 ++++++
+     1 file changed, 70 insertions(+)
+```
+
+The parent is `0c90733d`. So the promoted frontier `59b321ee` by `fkiene`, score
+**`3.24985583421771`**, is organizer main plus exactly one untimed warm,
+`warmTargetLaterWindowSDPA`.
+
+```
+3.24985583421771 / 3.24929399 - 1 = +0.017291 %
+```
+
+Ranked jitter is `0.2257 %` per prompt per leg. **The warm is inside noise by an
+order of magnitude.**
+
+🔴 **Ledger 181(D) said "the frontier's entire speed advantage is ONE 70-line
+untimed warm". That is retracted.** The frontier leads the board because
+organizer main leads the board. The warm contributes `0.0173` percentage points
+of a `0.5366` point gap, which is **3 %** of it.
+
+The mechanism is still real and still free. Reading the imported source, it
+host-extends throwaway full-attention K/V to `kL >= 1024` and dispatches the
+three fused-vector shapes the scored path fires (`qL = 1`, `5`, `4`), so the
+first decode step past the 512-row seed does not first-touch those pipeline
+variants inside the scored window. There is no `mlx-generated/sdpa*.cpp` twin,
+so that family loads from `mlx.metallib` and the first touch is pipeline-state
+creation, not a JIT source compile. That bounds the recoverable cost at a few
+milliseconds, which is consistent with the `+0.0173 %` the board measured.
+
+**Consequence for planning: the warm is not worth a student slot on its own.** It
+is worth taking because it is now part of organizer main, it is untimed, and it
+is token-neutral. It is carried as arm C of E60 and nothing more.
+
+### 192(D) Our own E27 submission cost `-0.3316 %` against the main it was built on
+
+```
+git rev-parse upstream/submissions/ca9251b8-58cd-4d90-9a52-fa05f5657216
+  -> 2b0c36a078b7660c9215adee933336ff46da25af          (our candidate)
+git rev-parse upstream/submissions/ca9251b8-...^
+  -> 5068eb8d0bae032faca6e901de398fc732531160
+git log --oneline -1 5068eb8d
+  -> 5068eb8 (upstream/submissions/11863aa9-...) Accept submission 11863aa9-...
+```
+
+`11863aa9` is `companygardener`'s submission, board score **`3.24326224`**. Our
+`ca9251b8` scored **`3.23250848263467`**.
+
+```
+3.23250848263467 / 3.24326224 - 1 = -0.33158 %
+```
+
+This independently confirms `E27_BOARD_PCT = -0.3321` recorded in
+`research/e54_gap_decomposition.py` from the receipts, to `0.0005` percentage
+points. It is now derived twice, by two unrelated routes.
+
+Our submitted diff was three files: `Qwen36MTPBlockSession.swift`,
+`Vendor/.../mlx-generated/quantized.cpp`, and
+`Vendor/.../backend/metal/kernels/quantized.h`. **Our local pricer predicted
+`+2.21 %` to `+2.53 %` for that composite.** The board said `-0.33 %`. 187(P4)
+already labelled the pricer "demonstrably blind" for this case; 192 gives the
+exact reference point it was blind against.
+
+### 192(E) The deficit decomposes exactly
+
+Multiplicative, and it closes to five decimal places:
+
+```
+frontier / ours
+  = (frontier / main_new) x (main_new / main_old) x (main_old / ours)
+  = 1.00017291 x 1.00185982 x 1.00332661
+  = 1.00536642
+```
+
+| component | ratio | percentage points of the gap | share |
+|---|---|---:|---:|
+| **our own E27 scored-surface change** | `x1.00332661` | **0.3327** | **62 %** |
+| organizer main advanced after we submitted | `x1.00185982` | 0.1860 | 35 % |
+| the frontier's 70-line warm | `x1.00017291` | 0.0173 | 3 % |
+| **total deficit to the frontier** | `x1.00536642` | **0.5366** | 100 % |
+
+🔴 **Sixty-two percent of the gap we have spent this campaign trying to close is
+a hole we dug ourselves, and thirty-five percent is base staleness. Only three
+percent is a mechanism a rival holds and we do not.**
+
+### 192(F) Our current base has never been measured on the ranked M5
+
+```
+git diff --stat 0c90733d HEAD -- Sources/ Vendor/ mtp-head.manifest.json \
+  mtp-head/ Package.swift Package.resolved benchmark.json
+  -> Sources/MLXFastModel/Qwen36MTPBlockSession.swift   | 159 +++++---
+     Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift |  51 ++---
+     2 files changed, 144 insertions(+), 66 deletions(-)
+```
+
+Two files. Fourteen hunks in the block session, plus the `Qwen35` hunks. **No
+ranked run has ever seen this composite.** Every board row we own carries a
+different, older surface, and the E27 quantized table that cost `0.331 %` is no
+longer in our tree — we reverted it and never re-measured.
+
+Note also `git merge-base --is-ancestor 0c90733d HEAD` returns **NO**. Our base
+is a parallel history whose scored surface happens to sit two files away from
+organizer main. That is why no one noticed: the ancestry check that would have
+flagged staleness does not apply.
+
+The immediate implication is arithmetic. If our two-file composite is neutral,
+submitting our current base should land near **`3.2493`**, which is `+0.5193 %`
+over our best row and `0.0173 %` behind the crown. If the composite is positive
+by more than `0.0173 %`, **it takes the board outright.** If it is negative, we
+have been compounding a regression for the whole campaign and rung 2 of E60
+names the hunk group.
+
+### 192(G) E60 assigned to alphonse — PR #63
+
+Three arms, one session, palindromic leg order `A B C C B A`:
+
+- **A** = organizer main scored surface (`upstream/main` versions of both files)
+- **B** = our base `38e43f07`, unchanged
+- **C** = B plus `warmTargetLaterWindowSDPA`, hand-applied hunk by hunk
+
+Headline metric is **absolute candidate `mtp_seconds_per_token` at 512 decode
+tokens**. The local ratio is inadmissible for this question: `Qwen35.swift` sits
+on both local legs, so a target-side change cancels locally while remaining a
+pure ranked gain, because the ranked numerator comes from the runner-owned
+prebuilt baseline workspace and `d ln(ranked serial time)/dx = 0` for every
+candidate edit.
+
+Rung 1 certifies the winning arm for official submission. Rung 2 bisects only if
+B is slower than A by more than the `0.0629 %` local null floor.
+
+**The hunk is hand-applied, never file-copied.** 181(J) records the
+`reachedStopToken` trap from the last time a rival file was copied wholesale.
+
+### 192(H) 🔴 Command-buffer geometry joins the experiment identity tuple
+
+From alphonse's E58 (PR #61, merged; W&B `tz1064t5`).
+
+`Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift`:
+
+```
+:66   guard physicalMemoryBytes >= (UInt64(96) << 30) else { return }
+:67   requestedProfile != "low"
+:68-69 DARKBLOOM_QWEN_MTP_POST_WIRE_COMMAND_BUFFER != "0"     (kill switch)
+:75   setenv("MLX_MAX_MB_PER_BUFFER", "512", 1)
+:76   setenv("MLX_MAX_OPS_PER_BUFFER", "50", 1)
+```
+
+Header comments at `:14` and `:51` name the target: "the ranked 128 GiB box".
+
+🔴 **That force-set fires at rank and has never fired on any machine this
+campaign has measured on.** Every student host is 48 GiB. Every ABBA arm, null
+floor, marginal-cost curve and dispatch census in this ledger was measured at a
+command-buffer geometry the scored runner does not use. Measured packing: 12.95
+operations per buffer at the MLX default, **27.22 at the ranked setting**, 48.39
+at 512/256. A factor of 2.1 between local and ranked.
+
+**New standing rule: `MLX_MAX_MB_PER_BUFFER` and `MLX_MAX_OPS_PER_BUFFER` are
+mandatory fields of the experiment identity tuple. Every timed arm from now on
+exports `512` and `50` and reports achieved operations per buffer as proof the
+setting took.** E60 and E59 rungs 3–4 are the first experiments to honour it.
+
+`:75-76` is candidate-editable and is the only live writer on the ranked memory
+profile: `apply()` at `:220-225` is reached only through
+`guard policy.isLowMemory` at `QwenRuntimeMTPWorker.swift:487`. Changing the `50`
+changes ranked behaviour. That makes command-buffer geometry a **live
+candidate-editable lever**, in the file with the lowest failure rate in the
+712-tree corpus (20 % against a 42.7 % baseline).
+
+🔴 **Boundary: do not use an early MLX touch to pin the limits ahead of a trusted
+setenv.** Alphonse noted the possibility and correctly flagged it as an
+integrity question rather than an exploit. If we want a different value we edit
+the editable constant. Pinning to defeat a trusted-code decision is not a
+legitimate mechanism.
+
+Stale test to fix in the next cleanup PR:
+`RuntimeStartupMemoryPolicyTests.swift:83-84` asserts `320/128` while the source
+ships `512/50`.
+
+### 192(I) E58 result: the dispatch-overhead direction is a clean null, and E57's price was loose by 288x
+
+Census, `harness=local`, 512 tokens, `all_tokens_matched=true`,
+`residual_divergence_count=0`, mean draft `6.5132`:
+
+| leg | dispatches/round | rounds | buffers | ops/buffer |
+|---|---:|---:|---:|---:|
+| candidate | **1048.62** | 76 | 7419 | 10.74 |
+| serial depth-0 | **1705.41** | 512 | — | 38.83 |
+
+Our "several hundred" prior was 2x low. `M=3` never occurs. The count is nearly
+width-invariant at about `+10` dispatches per unit `M` on a base of 1000. Phase
+split: `draft_head` 192.53 (18.4 %), `target_verify` 856.09 (81.6 %). Dispatches
+per token: serial `1705.41` against candidate `155.66`, an `11.0x` reduction.
+
+Three prices, deliberately **not** averaged because they measure different
+things:
+
+| method | ns/dispatch | % of ranked beagle round |
+|---|---:|---:|
+| in-situ tax, pipelined | **77.2** | **0.152** |
+| census host encode + commit | 428.2 | 0.842 |
+| synthetic storm, serialised | 940.0 | 1.848 |
+
+About **82 % of host submission cost is already hidden behind GPU execution**.
+`0.152 %` of round maps to `0.139 %` of score, roughly half the `0.283 %` ranked
+minimum detectable effect. **Clean null; direction closed.**
+
+🔴 **E57's 22.5 microsecond figure is rejected as an overhead price.** Its added
+dispatches were composed-SDPA fallback members including two steel GEMMs and a
+precise softmax, and that fallback fires **zero** times inside decode rounds in
+the base — only during warmup and seed prefill. My ceiling was loose by about
+**288x**. This is the second time a per-dispatch cost obtained by dividing a
+timing delta by a dispatch-count delta has been quoted as if it were a unit
+cost. It is an **upper bound**, and a very loose one when the added dispatches do
+real work.
+
+### 192(J) 🔴 Buffer boundaries are pipelining opportunities. Bigger command buffers measured SLOWER.
+
+Rung 2 of E58, direct measurement, ops 50 against 256 at fixed 512 MiB, census
+off, 512 tokens, ABBA:
+
+- candidate **`+0.1868 %` slower** (`0.0357701` -> `0.0358369` s/token)
+- serial `+0.7859 %` slower
+- **complete separation**: `max(A) = 0.03577600 < min(B) = 0.03582578`
+- removing `16.85` buffers per round **costs `+26.7` microseconds each**
+
+That is **opposite in sign** to the synthetic storm's `+7.76` microseconds per
+buffer submission cost. A command-buffer boundary is not only a cost; it is a
+point where the GPU can overlap with host encoding of the next buffer.
+
+Temperature confound rejected on his own data: the two A runs differ by
+`7.58 °C` at entry but only `0.033 %` in time, and **the hotter run was faster**.
+
+He also caught the exact cancellation `program.md` warns about: "the local
+speedup ratio ROSE `0.598 %` while the candidate slowed". The decision rested on
+matched absolute candidate seconds per token, as it must.
+
+And he self-corrected a real methodological error mid-experiment: "a mean below a
+cap does not prove the cap is slack". Packing moved `12.95 -> 27.22 -> 48.39`
+across `128/64`, `512/50`, `512/256` with identical dispatch counts, so the cap
+**is** binding.
+
+🔴 **Untested direction, deliberately left open:** fewer than 50 operations per
+buffer. The slope is one-directional and must not be extrapolated across 5x —
+that is exactly the error class recorded in 192(K) below. It needs its own
+measured sweep.
+
+### 192(K) My fifth pricing error, caught by a tool precondition rather than by me
+
+I drafted feedback telling edward that his E56 Step 0 priced at `+1.10 %` to
+`+2.48 %` and "promotes in all six scenarios". `send_assignment_feedback`
+rejected the comment on routing, because he had already submitted a terminal
+result. I then read that result and found the error: **I had applied his session-1
+local leg gains to the ranked prompts without the transfer factor he himself
+measured.** His host charges `0.425` to `0.456` of a depth-0 round per
+within-tier row, against the ranked-calibrated `h = 0.18`. That is **2.4x**. In
+his words, "a depth-cutting mechanism flatters itself here". Every number I had
+written needed dividing by about `2.4` before anything else happened to it.
+
+Running count of advisor pricing errors:
+
+1. item 122 hypothesis B — prefill charged twice. Caught before assignment.
+2. 189 / E55 — prefill charged twice, `x1.2907..1.3053`. Caught before assignment.
+3. 190 / E58 — prefill charged twice, `x1.0959`. **Became an assignment.**
+4. 191 — concave pricer linearised, `x1.2320`. **Under-sold a live experiment.**
+5. **E56 — local-to-ranked transfer factor omitted, `/2.4`. Caught only by a tool
+   precondition.**
+
+The pattern is stable and it is not arithmetic. Every one of the five is a
+**unit or basis confusion**: a leg quantity treated as a round quantity, a score
+treated as a leg gain, a per-operation ratio walked through a whole round, a
+local cost curve used as a ranked cost curve. New rule, enforced in code below:
+**keep each basis in a separately named function and let a control prove the two
+conventions agree.**
+
+### 192(L) `research/live_experiment_payoff.py` — the ranked payoff instrument
+
+21 checks, 2 positive controls, 3 negative controls, exits 0.
+
+It prices on **our own published board row `ca9251b8`**, not on the crown tree,
+because that is the row a new submission replaces. It reproduces our published
+score `3.23250848263467` from the eight `raw_p` values to `5e-5`, and reproduces
+ledger 191's corrected E59 band to `2e-4`.
+
+Two findings from building it:
+
+🔴 **Its own negative control caught a live bug in my scenario construction.** I
+had linearly extrapolated per-prompt gain in mean draft length from two anchors
+`0.235` apart, with a **negative** fitted slope. Extrapolating that to plutarch
+is a `19x` reach and it returned `+17.9 %`. Replaced with strict interpolation
+inside the anchor interval, nearest-anchor above, and zero below. **New rule:
+never extrapolate a two-point fit outside its anchor interval.**
+
+🔴 **Separately named basis functions**, after I flipped conventions by hand
+inline: `score_from_leg_gains` takes leg **reduction** percentages;
+`score_from_raw_changes` takes `raw_p` **change** percentages where negative is a
+regression. A control verifies the two agree under `g = 100 * x / (1 + x)`.
+
+It also adds `headroom_pct(prompt)` and `e59_tax_curve_at_share(share_m5, ...)`.
+
+🔴 **Headroom, `harness=ranked`, measured against the next order statistic:**
+
+| prompt | `raw_p` | headroom before the median stops paying |
+|---|---:|---:|
+| beagle | 3.1202 | **+7.2015 %** — pays in full |
+| medicine | 3.3449 | **+0.6338 %** — saturates |
+| essays | 3.3661 | +0.8289 % |
+| republic | 3.3940 | +0.9252 % |
+
+**New rule: check headroom before pricing a per-prompt gain.** A mechanism that
+puts its gain on medicine and its loss on beagle can be a large local win and a
+board regression.
+
+### 192(M) 🔴 E59 and E56 are substitutive, not additive
+
+Verified from source. The shipped stream count is `streams(M) = ceil(M / IPG)`,
+giving `M4 = 1`, **`M5 = 2`**, `M6 = 2`. Thorfinn's E59 moves `case 5:` to
+`<T,5,5>` with `IPG = 5`, so `streams(M5)` becomes **1**.
+
+**E59 deletes the 4-to-5 boundary that edward's own attribution says produces
+100 % of E56's gain.** Naive summation of the two overstates the composite by
+about `2x`. E56's `8 -> 9` residual alone prices at `+0.42 %` to `+0.53 %`.
+
+**A 2x2 factorial — `base` / E56 / E59 / both — is the only way to size the
+composite.** Queued as an assignment for the round after both terminal results
+land.
+
+### 192(N) E59 rung 1 and rung 2 both passed decisively
+
+Rung 1: **both row-block mappings hold the QMV kernel maximum at 108, so the
+ceiling dose is ZERO.** That retires the register gate that has blocked the
+entire QMV width-table direction since E44.
+
+| arm | kernel max | entry | M4 | **M5** | M6 | M9 |
+|---|---:|---:|---:|---:|---:|---:|
+| `shipped` | **108** | 163 | 104 | 87 | 83 | 83 |
+| `m5_rb2` | **108** | 162 | 104 | **100** | 83 | 83 |
+| `m5_rbx` | **108** | 162 | 104 | **90** | 83 | 83 |
+| `ceil_only` | 125 | 177 | 104 | 87 | 83 | 83 |
+
+🔴 **The ladder dispute is settled without a retraction of either fit.** `rbx` at
+90 matches 183(C)'s pure `r=2` ladder `16 + 15*NA = 91`; `rb2` at 100 matches
+E44's `15 + 17*NA = 100` exactly. **Both fits are correct inside their own build
+form. Sequential row-blocking costs about 10 more registers at the same `NA`.**
+My brief's false dichotomy is retracted instead.
+
+Rung 2: 192 cells per arm, **zero differences** for all three candidates, with
+**three defect controls that each fired at exactly the treated cell and nowhere
+else**. He also corrected a preregistration that was wrong in our favour: he had
+required `ceil_only` to differ at `M=10` and it does not, which makes arm C a
+cleaner register-pressure instrument than I designed.
+
+🔴 **I mis-set his rung 3 stop rule and corrected it.** My `-6 %` net-cell-win
+bar fires where the route is still worth `2.4x` to `3.3x` the ranked minimum
+detectable effect and still closes the whole deficit alone. **Corrected to
+`-2 %`**, with everything between `-2 %` and `-6 %` reported to me rather than
+decided by him.
+
+### 192(O) E56 session 2 is a real local win that the board would not pay for
+
+Edward's ABBA session, 256 decode tokens, real thermal gate on all four legs:
+candidate `-2.3529 %` against a null-arm floor of `0.0028 %`, which is **14x the
+schedule-replicate spread**. Every leg exact. The engagement gate is met: the
+base runs 19 of 33 rounds at width 9 and the schedule runs none.
+
+🔴 He then **refuted his own session 1 algebraically**, and it is the same failure
+class as my 190 and 191. Session 1 charged thorfinn's E46 refit ratio
+`27.532 / 9.624 = 2.861` — a **per-operation** ratio — inside a **whole-round**
+walk. Because `reach <= 1` and `expected >= (d+1) * reach`, a step is
+unreachable at every acceptance rate when
+`marginal[d] * (d+1) / cumulative[d] >= 1`. The old table gave `1.0415` at depth
+3 and `1.3636` at depth 7, so session 1 was an **unconditional width-4 cap**. The
+98.5 % width-4 histogram confirms it.
+
+Priced on our board row, both corners fail:
+
+| corner | beagle | medicine | new score | against our row |
+|---|---:|---:|---:|---:|
+| worst | `-0.740 %` | `+1.353 %` | 3.231605 | **`-0.0292 %`** |
+| best | `-0.148 %` | `+2.135 %` | 3.240841 | **`+0.2565 %`** |
+
+**The schedule spends its gain where the board cannot pay and takes its loss
+where the board charges in full.** medicine saturates after `+0.634 %`, so `0.72`
+to `1.50` percentage points of its medicine gain buys nothing; beagle has
+`7.2 %` of headroom so its regression is charged at full rate. Revision `e56-r2`
+asks for a four-arm split with a `sched_45_only` arm, because `M` in `{4,5,6}` is
+`67.0 %` to `74.1 %` of beagle's QMV time at rank.
+
+### 192(P) 🔴 A local width histogram is not the ranked width mixture
+
+Edward's ranked width mixture, built by porting the shipped greedy walk and
+driving it with E53 two-state acceptance fits, is a major reusable result.
+
+| M | beagle QMV time share | medicine QMV time share |
+|---|---:|---:|
+| 4 | 13.12–15.28 % | 10.14–11.67 % |
+| **5** | **21.82–26.39 %** | **19.35–21.55 %** |
+| 6 | 32.09–34.67 % | 30.90–32.11 % |
+| 7 | 10.87–13.47 % | 16.83–17.96 % |
+| 8 | 5.96–8.70 % | 8.32–11.82 % |
+| **9** | **2.93–8.55 %** | **6.62–7.79 %** |
+
+🔴 **`M=9` is 2.93–8.55 % of ranked beagle QMV time, against 53.45 % on the local
+fixture.** His own session-1 base arm ran mean width `7.851` with `65.95 %` of
+QMV time at `M=9`. The two-stream `M=9` direction therefore reprices from
+`+3.61–3.81 %` down to roughly **`+0.3–0.9 %`** of score. It is a model-based
+interval, not an identification interval, and it is stated as such.
+
+This number also replaced my E59 brief's `e48` corner of `12.1744 %`, which was
+an artefact of a mixture built for a different question, and it is what moved
+E59's price up to `+1.08 %` to `+2.33 %`.
+
+### 192(Q) What changed in the plan
+
+- **Retracted:** 181(D)'s claim that the frontier's advantage is one warm. It is
+  `3 %` of the gap.
+- **Demoted:** importing `warmTargetLaterWindowSDPA` as a dedicated experiment.
+  It rides along as arm C of E60.
+- **Promoted to the top of the queue:** measuring and submitting our own
+  composite. It is the only action that can move `97 %` of the gap.
+- **Closed:** the dispatch-overhead direction (E58 rung 1) and the
+  larger-command-buffer direction (E58 rung 2).
+- **Opened:** smaller command buffers, needing its own sweep, never an
+  extrapolation of E58's one-directional slope.
+- **New identity-tuple fields:** `MLX_MAX_MB_PER_BUFFER`,
+  `MLX_MAX_OPS_PER_BUFFER`.
+- **New standing rules:** check headroom before pricing a per-prompt gain; never
+  extrapolate a two-point fit outside its anchor interval; keep leg-reduction and
+  `raw_p`-change in separately named functions; a local cost curve is not a
+  ranked cost curve.
+
+### 192(R) The two `PSI_MTP` values are not a contradiction. They are a name collision.
+
+Carried as an outstanding debt for several rounds: `research/qmv_score_leverage.py`
+defines `PSI_MTP = 0.6736` while `research/dilution_basis.py` defines
+`PSI_MTP = 0.693391`. I had recorded this as "two names for one measured
+constant is a defect" and assumed one of them was stale.
+
+Neither is stale. They measure different things.
+
+- `0.6736` is ledger 173(A)'s **no-modelling split over dispatched verify widths
+  2 to 9 only**. The same split reports `psi(6..9) = 0.6133` and single-stream
+  `{2,4,5} = 0.0603`.
+- `0.693391` is E48's share over **all widths** of the same local candidate leg,
+  interval `[0.692292, 0.694490]`.
+
+The difference closes exactly:
+
+```
+0.693391 - 0.6736 = 0.019791
+```
+
+and `0.019791` is `psi_mtp_w1`, the width-1 QMV share that
+`qmv_score_leverage.py` already carries as a free argument and documents at its
+lines 280 to 291 as "still NOT zero ... carried entirely by that 2-bit draft
+readout". The module's own algebra says the total leg share is
+`PSI_MTP + psi_mtp_w1`. It is.
+
+**So the numbers were consistent all along and the defect was purely a name
+collision.** Both definition sites now carry an explicit cross-reference naming
+the other quantity and forbidding substitution. No published price changes.
+
+This is worth recording as a method point rather than a bookkeeping note. I
+spent several rounds treating a `1.029x` discrepancy as an unresolved
+measurement conflict, when the two symbols simply had different domains. **A
+constant's name must carry its domain.** `PSI_MTP_W2_TO_W9` and
+`PSI_MTP_ALL_WIDTHS` would have made the identity obvious on sight, and would
+have prevented the same class of confusion that produced all five recorded
+advisor pricing errors: every one of them is a basis or domain confusion, not
+arithmetic.
+
+## 193. The ranked instrument is 7.4x noisier than the campaign believed, our deficit is half of one standard deviation, and the correct response is cadence
+
+Item 192 established that every organizer submission ref carries its own parent
+on the organizer main chain, so `score(S)/score(S^)` reads as a ranked A/B
+measurement at zero submission cost. That method is sound. What item 192 did
+not do is ask how noisy that measurement is. This item answers that question,
+and the answer changes campaign strategy more than any single mechanism result
+so far.
+
+I delegated a validity audit, then reproduced every load-bearing number myself
+before recording it, because the audit contradicted a published campaign
+constant. The reproduction scripts are
+`_advisor_scratch/verify193.py`, `verify193b.py`, and `verify193c.py`. They read
+only `_advisor_scratch/yukon_all.json` (767 rows, 512 scored) and local git.
+
+### 193(A) The replicate key is the git tree of the submitted surface, not the announced SHA
+
+A ranked run is a replicate of another when the two submitted surfaces are
+byte-identical. The only sound key is the git tree:
+
+```
+sig(ref) = join(git rev-parse ref:<p> for p in
+                Sources Vendor mtp-head.manifest.json mtp-head
+                Package.swift Package.resolved benchmark.json)
+```
+
+The announced `submissionCommitSha` is not a key. 512 scored rows carry 417
+distinct values of it and recover **zero** replicate groups. The tree signature
+recovers **18 replicate surfaces covering 44 rows and 37 within-group pairs**.
+This is the same standing rule the campaign already holds for reading a Yukon
+row back: never key on the announced candidate SHA.
+
+### 193(B) The measured noise of the ranked instrument
+
+From those 18 groups, 44 rows, 26 degrees of freedom:
+
+| quantity | value |
+|---|---|
+| pooled sd of ONE ranked run | **0.756 %** |
+| sd of the difference of two ranked runs | **1.069 %** |
+| 95 % two-sided threshold for one (S, S^) pair | **2.10 %** |
+| median disagreement of two runs of a byte-identical surface | **1.113 %** |
+| replicate pairs agreeing to better than 0.30 % | 27.0 % |
+| replicate pairs differing by more than 1.00 % | **51.4 %** |
+| max observed replicate spread | 2.126 % |
+
+Over half of all identical-surface pairs disagree by more than a full percent.
+
+### 193(C) The cleanest possible confirmation: five pairs with a literally empty diff
+
+Five (S, S^) pairs exist where `git diff S^..S` produces no output at all. The
+true effect is exactly zero by construction, so these are the instrument
+measuring a known null:
+
+| child | parent | parent score | child score | delta | promotionStatus |
+|---|---|---|---|---|---|
+| `11863aa9` | `4f76de6e` | 3.24300059 | 3.24326224 | **+0.0081 %** | **promoted** |
+| `b3091386` | `12b1c699` | 2.92520777 | 2.92975886 | +0.1556 % | None |
+| `dc70080f` | `0cd0a6b4` | 3.24929399 | 3.22945266 | **-0.6106 %** | None |
+| `b92784b8` | `c08eb406` | 2.72743223 | 2.70892278 | -0.6786 % | None |
+| `7ea9817b` | `5b656013` | 2.51003299 | 2.47806324 | **-1.2737 %** | None |
+
+Root mean square about zero: **0.7043 %**, agreeing with the 0.756 % pooled sd
+from an entirely separate construction. A promoted step of +0.0081 % on a
+provably empty diff is in the public record.
+
+### 193(D) The noise lives on the CANDIDATE leg, and that is the source of the campaign's error
+
+Splitting the same 18 groups per prompt per leg, 296 prompt-level pairs each:
+
+| leg | median pair delta | mean |
+|---|---|---|
+| pinned serial (runner-owned, prebuilt) | **0.181 %** | 0.232 % |
+| candidate MTP (built fresh per run) | **0.589 %** | 0.840 % |
+| ratio | **3.62x** | |
+
+The campaign's published ranked jitter of **0.2257 %** is an excellent estimate
+of the **serial** leg. I now measure that leg at 0.181-0.232 %. The error was
+applying a serial-leg number to the score. The score is dominated by the
+candidate leg, which is 3.62x noisier, and the pinned baseline is rock stable:
+regressed over 109.8 h, slope +0.000058 %/h, t = 0.48, total drift +0.0064 %.
+
+### 193(E) RETRACTION: the ranked MDE of +0.283 % is wrong by 7.4x
+
+The campaign has priced every ranked decision against `MDE = 2 sd = +0.283 %`,
+derived from 0.2257 %/leg by assuming the median of eight prompts averages the
+noise down. Both inputs fail. The 0.2257 % is the wrong leg (193(D)), and the
+median buys almost nothing because the candidate-leg noise is a per-run common
+mode that moves all eight prompts together.
+
+**The correct single-pair ranked MDE is approximately +2.1 %.** Every claim of
+the form "this is N x MDE" computed against +0.283 % must be divided by 7.4
+before it means anything at rank.
+
+This does not touch the **local** floor. The local end-to-end null floor of
+0.0629 % was measured directly on this fleet and stands.
+
+### 193(F) RETRACTION of the delegated agent's bimodality claim, and the method rule behind it
+
+The audit reported a clean two-state structure: an empty gap between 0.35 % and
+0.8 %, with about 30 % of runs in a discrete state making the candidate leg
+1.4 % slower. That would have been the most actionable finding of the session,
+so I tried to reproduce it and **could not**.
+
+The claim came from sorting each run's *excess over its own group's minimum*.
+That construction is biased: the minimum is itself a random draw, so it
+manufactures exactly one zero per group. With 18 groups it manufactures 18
+zeros, which is precisely the fake left mode. Reading the same data as unbiased
+pair deltas, the sorted vector is continuous and the largest gap anywhere in it
+is **0.336 pp**:
+
+```
+0.008 0.023 0.033 0.061 0.077 0.079 0.155 0.163 0.174 0.207 0.350 0.362
+0.385 0.428 0.614 0.683 0.876 0.928 1.113 1.122 1.145 1.191 1.239 1.240
+1.260 1.272 1.290 1.294 1.302 1.317 1.449 1.460 1.546 1.624 1.960 2.053 2.126
+```
+
+There is no discrete slow state. There is a broad, right-skewed, continuous
+spread. The practical conclusion is unchanged and if anything cleaner, but the
+mechanism hunt the bimodality would have justified is not warranted.
+
+**New standing method rule: never read mode structure from a deviation taken
+about a group extremum.** Centre on the group mean, or use pair deltas.
+
+### 193(G) The promotion test is chain membership, and the commit subject is meaningless
+
+```bash
+git merge-base --is-ancestor upstream/submissions/<uuid> upstream/main   # 0 == promoted
+```
+
+Verified as a perfect biconditional over every scored row with a local ref:
+promoted and on main **54**, promoted but not on main **0**, on main but not
+promoted **0**. The commit subject verb is noise: 35 promoted commits say
+`Validate`, 19 say `Accept`, and one `Accept` commit was never promoted at all.
+Also confirmed: across all 661 ref-parent pairs, **zero** diffs touch anything
+outside the editable surface.
+
+### 193(H) Our deficit is half of one standard deviation, and organizer main's own replicate is worse than our deficit
+
+This is the finding that matters.
+
+| quantity | value |
+|---|---|
+| live promoted frontier `59b321ee` | 3.24985583 |
+| organizer main `0cd0a6b4` | 3.24929399 |
+| **organizer main's own identical-tree replicate `dc70080f`** | **3.22945266** |
+| our best official row `ca9251b8` | 3.23250848 |
+| our published deficit vs the frontier | **0.5366 %** |
+| sd of one ranked run | **0.756 %** |
+
+Organizer main resubmitted its own byte-identical tree and scored **0.6106 %
+lower**, which is **larger than our entire deficit**. Our best row at 3.23251
+sits **above** organizer main's own second draw of 3.22945.
+
+**We are not 0.5366 % behind the frontier. We are at the frontier, inside the
+instrument.** The deficit is 0.71 sd of a single run.
+
+Item 192's decomposition of that deficit into three components of 0.0173,
+0.1860 and 0.3327 pp remains arithmetically correct, but every component is
+between one sixth and one half of one sd of a single ranked pair. **None of the
+three is individually measurable.** In particular the claim that our own E27
+change cost us 0.3327 pp rests on one pair with sd 1.069 % and is not
+supported. What survives is a one-sided inference at reduced power: E27 did not
+deliver the +2.21 to +2.53 % our local pricer predicted, because an effect
+twice the sd would probably have shown. The instrument was never able to see
+the difference between "E27 cost 0.33 %" and "E27 did nothing".
+
+### 193(I) Consequence: local measurement is 17x more sensitive than ranked, so decide locally and submit to claim
+
+| instrument | null floor / sd of a difference |
+|---|---|
+| local end-to-end, matched identity tuple, ABBA | **0.0629 %** |
+| ranked, one (S, S^) pair | **1.069 %** |
+
+Ranked is **17x** coarser. This inverts a habit the campaign has been drifting
+into. Official submissions are not how we measure mechanisms; they are how we
+claim the frontier. Every question that can be settled on a student Mac must be
+settled there. This is exactly why E60's headline is absolute local candidate
+seconds per token and not a ranked comparison, and that design is now
+retrospectively the right one for a second reason.
+
+### 193(J) Consequence: submission cadence dominates mechanism size near the frontier
+
+With sd(one run) = 0.756 % and a deficit of 0.5366 %, a certified candidate
+whose true score equals organizer main's has a probability near **one half** of
+outscoring the live frontier on any given ranked run. The exact figure for a
+candidate with true score equal to organizer main is
+`P(Z > (3.24986/3.24929 - 1)/0.00756) = P(Z > 0.023) = 49 %`.
+
+`program.md` forbids duplicate official submissions, and that rule stands: the
+answer is not to resubmit one tree repeatedly. The answer is that **each
+distinct, honest, certified candidate we submit carries a free draw from a
+distribution whose spread exceeds our entire deficit.** Hoarding submission
+slots for a perfect candidate is therefore strictly wrong. `program.md` already
+says "do not reserve submissions for perfect candidates"; item 193 supplies the
+quantitative reason.
+
+Selection bias follows directly. Conditioned on promotion, a truly null change
+shows `E[observed | true = 0, observed > 0] = sd x sqrt(2/pi) = +0.60 %`. Most
+of the public promoted chain's small steps are this. **Do not read the promoted
+chain as a ranked ladder of real mechanisms, and do not rank mechanisms by the
+size of the step that promoted them.** Item 192's mechanism census keeps its
+value as a source of *ideas*; it loses its value as a source of *prices*.
+
+### 193(K) What this does and does not change
+
+Unchanged: correctness, exactness, provenance, scope and thermal gates; the
+local floor; every local causal result; the ranked score boundary
+(`d ln(ranked serial time)/dx = 0`) which 193(D) independently corroborates by
+measuring the pinned leg as the quiet one.
+
+Changed: the ranked MDE, from +0.283 % to about +2.1 % for a single pair; the
+interpretation of our deficit, from an engineering gap to instrument spread;
+the value of a submission slot, upward; the value of a ranked A/B on one pair,
+sharply downward.
+
+**Immediate action.** Our current base is organizer main plus 144 insertions and
+66 deletions across exactly two files, and it has never been measured at rank.
+Under 193(H) and 193(J) the highest-value action available to this campaign is
+not a new mechanism. It is to finish certifying that tree and submit it. E60
+rung 1 is exactly that certification, so E60 rung 1 is now the campaign's
+critical path and I have told alphonse to deliver it ahead of the rest of the
+experiment.
+
+## 194. E55 is merged, the register ceiling it bought makes a second larger win nearly free, and official submission is blocked by a diverged `origin/main`
+
+This item records one merge, one structural discovery that follows from it, one
+retracted-motivation correction, and one hard operational blocker that stops
+every official submission until a human moves a branch.
+
+### 194(A) PR #57 is merged: the base is now `d2139c92`
+
+Askeladd's E55 replaced the shipped two-weight-stream `<T,5,3>`-style call at
+`case 9` of the wide cross-row QMV dispatch table with the single-weight-stream
+form `<T,9,5>`, in both runtime-effective twins:
+
+```
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp:1975
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1972
+  qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>(
+```
+
+Evidence merged on: MTP leg `0.03343178` -> `0.03199581` s/token, **-4.2952 %**,
+against a same-session null of `+0.0497 %` (86x the null). PATH C bitwise
+identity at 512 decode tokens including the post-EOS continuation,
+`max_abs_ulp_top2_logits = 0`, 14/14 negative controls fired, and a
+gate-qualified `--local-submit` PASS behind the real 40 C gate. W&B runs
+`wxezisvs`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wxezisvs),
+`f4ej9y1n`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/f4ej9y1n),
+`o8ig3ht7`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/o8ig3ht7).
+
+The base moved `98959689` -> `cffe973f` while the result was in review, so the
+sequence was `accept_result_on_current_base` and then `merge_experiment`. The
+acceptance was not a judgement call: `git diff cffe973f 9681648f -- Sources/
+Vendor/ mtp-head.manifest.json mtp-head/ Package.swift Package.resolved
+benchmark.json` was **empty**, so the intervening merges had not touched the
+scored surface at all and the measured delta transferred exactly. New base:
+
+```
+d2139c924c7a7d98ca6026eea63867c2776abbca
+```
+
+The one argument against merging was item 187's E27 board receipt, which read a
+129-register table maximum as costing `0.3321 %` of ranked score. Item 193
+retracted that receipt: it is a single ranked pair against a difference standard
+deviation of `1.069 %`. The credible ceiling cost is E49 arm 2's local bound,
+`<= 0.0876 %`, which is 49x smaller than the measured gain.
+
+### 194(B) The register law reproduces every shipped cell, and it says one more single-stream cell is already paid for
+
+Askeladd's census law, calibrated at M=5 and validated out of sample at M=9 by
+thorfinn, is
+
+```
+reg = 20 + 21 * max(NA over groups) + 4 * [two distinct NA group sizes]
+```
+
+I applied it to every cell of the live table with
+`_advisor_scratch/stream_table.py`. It reproduces every shipped cell and both
+students' independent measurements (83, 87, 104, 108, 125, 129) with no fitted
+parameter.
+
+The template's second parameter is `IPG`, inputs per group, at
+`quantized.h:1156-1186`. Each x-group re-reads the whole weight matrix, so
+**group count is weight stream count**. A cell with one group reads the weights
+once; a cell with two groups reads them twice.
+
+| M | shipped call | groups | regs | one-group form | regs | free under the 129 max? |
+|---|---|---|---|---|---|---|
+| 3 | `<T,3,3>` | 1 | 83 | already one stream | - | - |
+| 4 | `<T,4,4>` | 1 | 104 | already one stream | - | - |
+| 5 | `<T,5,3>` | 2 | 87 | **`<T,5,5>`** | **125** | **yes** |
+| 6 | `<T,6,3>` | 2 | 83 | `<T,6,6>` | 146 | no, +17 |
+| 7 | `<T,7,4>` | 2 | 108 | `<T,7,7>` | 167 | no, +38 |
+| 8 | `<T,8,4>` | 2 | 104 | `<T,8,8>` | 188 | no, +59 |
+| 9 | `<T,9,5>` | 1 (E55) | 129 | shipped | - | - |
+
+The cost model is askeladd's own, with no parameter fitted by me:
+`T = eta(n_groups) * sum_g W / bw(NA_g)`, using E54's measured lone-group
+bandwidth ladder `223.8 / 199.7 / 175.2 / 150.9` GB/s at NA = 2/3/4/5 and the
+normalised two-group inefficiency `eta = 1 / 0.87587 / 0.81606`. Predicted cell
+deltas for the one-group form: M=5 **-20.15 %**, M=6 -9.95 %, M=7 +4.16 %,
+M=8 +28.22 %, M=9 +72.37 %.
+
+Break-even, derived from measured data only:
+
+| M | needs | flagged linear extrapolation of the ladder | verdict |
+|---|---|---|---|
+| 5 | `bw(5) > 120.49` | `150.9` **measured** | PASS |
+| 6 | `bw(6) > 114.00` | `126.6` | PASS, margin 11 % |
+| 7 | `bw(7) > 106.55` | `102.3` | FAIL |
+| 8 | `bw(8) > 100.01` | `78.0` | FAIL |
+| 9 | `bw(9) > 92.56` | `53.7` | FAIL |
+
+The ladder differences are `-24.1 / -24.5 / -24.3`, so it is near-linear across
+its measured span, but every value at `NA >= 6` above is an extrapolation and is
+marked as one. E61 rung 1 measures `bw(6)` and `bw(7)` directly; that single
+measurement closes M=6 through M=9 permanently in one direction or the other.
+
+**`<T,5,5>` is the important row.** It is a one-character diff per twin
+(`case 5:` `<T,5,3,true>` -> `<T,5,5,true>`). It needs no helper change, because
+E55 already raised `static_assert(NA >= 2 && NA <= 5)` from 4 to 5. It costs 125
+registers, which is below the 129 the table already pays after E55, so it cannot
+move the table maximum. And it lands on a cell carrying **19.4 % to 26.4 %** of
+ranked QMV time on the two prompts that set the published median. Predicted cell
+effect: `-20.15 %`.
+
+### 194(C) E55 retracted the motivation for `m5_rbx`, and this is the correction, not a criticism
+
+Thorfinn's E59 rung 1 found a register-blocked route `m5_rbx` that reaches the
+M=5 single-stream schedule at 90 registers instead of 125. On the pre-E55 base
+that mattered: the table maximum was 108, and a naive `<T,5,5>` would have
+raised it to 125, so the whole experiment was designed to buy the win without
+paying a ceiling tax.
+
+After E55 the table maximum is pinned at 129 by `case 9`. A 125-register M=5
+cell therefore changes nothing about the maximum. If the Metal allocator is
+per-kernel-maximum, and M is absent from the pipeline identity so one library
+carries one allocation, then `m5_rbx` at 90 and `<T,5,5>` at 125 must time
+identically.
+
+That prediction is now a free falsifier rather than a lost experiment, and I
+have asked thorfinn to run it as a tie test with a preregistered tolerance, with
+`t55` measured before `m5_rbx`. The register confound that motivated his rung 1
+is gone; the instrument he built to detect it is still the right instrument to
+prove the tie.
+
+### 194(D) Official submission is blocked: `origin/main` has diverged from the advisor branch
+
+I decided to submit the current base, ran the complete pre-submit chain, and
+every gate passed:
+
+| gate | result |
+|---|---|
+| `python3 research/twin_audit.py` | OK, 29 runtime-effective twins, rc 0 |
+| `senpai/verify-ranked-score-boundary.sh` | PASS, rc 0 |
+| `senpai/check-editable-budget.sh` | OK, source 2458949/3000000, growth 4891/262144, exempt 2410 bytes, 154 files |
+| `senpai/validate-assignment-scope.sh` | OK, 4 submitted paths |
+| `research/yukon_frontier_check.py` | FRONTIER UNCHANGED |
+| duplicate check against our six rows | distinct |
+| `mtp-head.manifest.json` and `mtp-head/` vs organizer main | byte-identical |
+
+The runtime gates were already satisfied by askeladd on a byte-identical scored
+surface: 512-token PATH C exactness including post-EOS continuation, row-ledger
+closure, and three gate-qualified `--local-submit` passes.
+
+The submission then failed inside the guard:
+
+```
+$ senpai/submit-official.sh d2139c924c7a7d98ca6026eea63867c2776abbca \
+    --model senpai --note-file <note>
+official submit: BASE_SHA is not an ancestor of current origin/main
+official submit: campaign history moved; no submission was sent
+EXIT=1
+```
+
+The cause is a branch divergence, verified directly:
+
+- `origin/main` is `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
+- The advisor branch `senpai/qwen38-mtp-r1` is `d2139c92`.
+- Their merge base is `527306761f70e2c4024f347915328894db80c181`, "Record
+  organizer and promoted frontiers", 2026-08-18 18:02:10 +0100.
+- `origin/main` carries **4 commits** the advisor branch does not: `6e0546e`
+  sync promoted organizer frontier, `d32342d` regenerate promoted quantized
+  Metal twin, `6391b03` record organizer and promoted frontiers, `770a3ff`
+  correct ranked causality and experiment discipline.
+- The advisor branch carries **881 commits** `origin/main` does not. This launch
+  has never advanced `origin/main`.
+
+`senpai/submit-official.sh` hard-codes `SOURCE_BRANCH="main"` and additionally
+asserts `git config yukon.source-branch == "main"` at line 146. There is no
+override flag. The guard requires `BASE_SHA` to be an ancestor of `origin/main`,
+and it reads `senpai/frontier-state.json` and `benchmark.json` from
+`origin/main` rather than from the working tree. `origin/main`'s
+`frontier-state.json` is also stale: it records promoted `0cd0a6b4` at
+`3.24929399`, not the live `59b321ee` at `3.24985583`.
+
+**I did not bypass this, and no future agent on this campaign should.** There is
+no typed tool that publishes `main`; `publish_advisor_branch` targets only the
+advisor branch; harness policy forbids reproducing a GitHub mutation with raw
+`git push`; and a fast-forward merge into `main` is impossible in any case
+because `main` holds four commits the advisor branch lacks. The
+`sync-organizer-frontier` skill confirms the intended flow ends with
+`git switch main && git merge --ff-only <integration_sha>` and states "push only
+when explicitly requested".
+
+**What is needed from a human:** advance `origin/main` to include
+`d2139c924c7a7d98ca6026eea63867c2776abbca`, by merging the advisor branch into
+`main` and pushing it. After that, submission is a single command and every gate
+above is already green.
+
+The note file is written and ready at
+`_advisor_scratch/submission-note.md`. The submission command, unchanged, is
+
+```bash
+export PATH="${HOME}/.local/bin:${PATH}"
+python3 research/yukon_frontier_check.py
+yukon submissions --all
+senpai/submit-official.sh d2139c924c7a7d98ca6026eea63867c2776abbca \
+  --model senpai --note-file <path to submission-note.md>
+yukon submissions
+```
+
+Read the resulting row back from Yukon. Never key it on the announced candidate
+SHA; item 193(A) showed 512 scored rows carry 417 distinct announced values and
+recover zero replicate groups.
+
+Scored-surface tree signature of the blocked candidate, for later
+identification: `e49c52cc94188c33`. It differs from organizer main
+`0c90733d383f` (`d71a6bef3342acd5`) by 4 files, 148 insertions, 70 deletions.
+
+### 194(E) Addendum to 193: measurement power is not payoff
+
+Item 193 computed the probability that one ranked run of a candidate outscores
+the organizer main crown, as a function of the candidate's true improvement over
+that crown, using `sd = 0.756 %` for one run:
+
+| true improvement over crown | P(crown) on one run |
+|---|---|
+| 0 % | 49.1 % |
+| +0.25 % | 62.1 % |
+| +0.50 % | 73.7 % |
+| +1.00 % | 90.1 % |
+| +1.66 % | 98.4 % |
+| +2.33 % | 99.9 % |
+
+This table was computed last round and never written down, so it is recorded
+here. Its consequence is the campaign rule **measurement power is not payoff**.
+A ranked run is a poor instrument, with a single-pair minimum detectable effect
+near `2.1 %`, but it is the only instrument that pays. Our deficit to the crown
+is `0.5366 %`, which is `0.71` standard deviations of a single run: a candidate
+that is genuinely level with the crown already takes it about half the time.
+This argues for cadence, not for a larger local margin before submitting. It is
+also why 194(D) is the campaign's highest-priority blocker and not a
+bookkeeping detail.
+
+### 194(F) Ranked mechanism census: exactly one absent measured mechanism, and one self-criticism
+
+A delegated frontier-tier agent reconstructed a ranked mechanism ledger over the
+public board, 749 records, in `_advisor_scratch/ranked-mechanism-ledger.md` and
+`.json`. Three findings matter.
+
+**Our two failed rows both died at the same gate.** Both stopped at "Review
+submitted code for benchmark bypasses (Qwen-MTP policy)", which is the second
+most common killer on the board (23 rows) after surface verification (85). Our
+current candidate leaves `mtp-head.manifest.json` and `mtp-head/` byte-identical
+to organizer main, which closes the specific failure mode those two rows hit.
+
+**Only one ranked-measured mechanism is genuinely absent from our tree.**
+Submission `3a7f09f4` (+0.260 %) changes one line in `generateRound`, from
+`eval(cache.flatMap { $0.state } + bundle)` to `eval(bundle)`. That exact line
+still survives verbatim at our `Qwen36MTPBlockSession.swift:1123`. It is a
+one-line arm and it is now queued. Its caveats are honest: a single observation
+barely above the item 193 noise line, no per-prompt telemetry, an 08-16-era
+parent, and an interaction with the rollback and replay assumptions that must be
+checked by exactness rather than assumed.
+
+**Our campaign edits deleted no ranked-measured winner.** Same-parent sibling
+differencing settled the other absence candidates in the negative direction:
+pair-family DIRECT_NIBBLES `-0.894 %`, bespoke m7 3+2+2 `-0.841 %`, MTP-head
+norm transplant `-0.163 %`.
+
+**Self-criticism.** Item 14 closed the crossrow QMV direction on a claimed "~1 %
+ceiling". That was wrong in scope. The DIRECT_NIBBLES and IPG sub-vein went on
+to bank roughly `+3` to `+4` points of cumulative ranked step after we closed
+it (`1235f4ba` +0.62, `bd007bc7` +0.66, `14b53255` +0.68, `caec88d4` +0.49,
+`72ce82dc` +0.57, `65b7843d` +1.36). Under item 193 those individual steps are
+each inside the noise, so the correct reading is not that we lost a specific
+measured gain; it is that we abandoned a vein that other competitors kept
+mining, and E55 plus E61 are us returning to it. The cost was time to frontier,
+not content.
+
+One corroboration and one miss. Corroborated: "the cost model binds, not the
+streak gate", which same-parent twins `f03469a9` (gate 3->2, +0.542 %) and
+`93ce739b` (gate 3->0, +0.544 %) confirm at rank, since gate 0 against gate 2
+differs by `+0.002 %`. Missed entirely until now: the round-bundle cache-state
+drop above, and head-weight streaming as a first-class lever.
+
+### 194(G) The unblock is small, and I verified it without mutating anything
+
+I checked every other precondition the guard applies after the ancestry test, so
+that when `origin/main` moves there is no second surprise. All of them already
+pass:
+
+| guard check | line | result |
+|---|---|---|
+| `recorded_upstream_sha` is an ancestor of `upstream/main` | 222 | `0c90733d` is an ancestor of `9e1ff9ec`, OK |
+| organizer `benchmark.json` equals campaign main's | 241 | identical |
+| organizer trusted surface has not advanced | 370 | `git diff --name-only 0c90733d 9e1ff9ec` returns exactly one file, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`, which is editable |
+
+So the organizer side needs no sync. Only the campaign branch is stale.
+
+I then used `git merge-tree --write-tree`, which computes a merge without
+touching any ref, worktree, or index, to find out exactly what a human would
+face:
+
+```
+$ git merge-tree --write-tree origin/main d2139c92
+70d8a30addb75de2901b0549bb53608b3abbf12f
+...
+Auto-merging Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+Auto-merging Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+Auto-merging Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+CONFLICT (content): Merge conflict in senpai/campaign-ledger.md
+CONFLICT (content): Merge conflict in senpai/frontier-state.json
+```
+
+**Exactly two files conflict, and neither is scored.** Both are campaign
+bookkeeping. Every file on the submitted surface auto-merges.
+
+`git diff --stat origin/main d2139c92` over `benchmark.json` plus every
+`editablePaths` entry is four files: `Qwen36MTPBlockSession.swift` (159),
+`Qwen35.swift` (51), `quantized.cpp` (20), `quantized.h` (4). 684 files differ
+overall; only these four are scored.
+
+There is one trap, and it is worth naming because it is silent. The auto-merged
+tree's protected surface is **not** byte-identical to the measured base:
+
+```
+$ git diff --stat 70d8a30a d2139c92 -- <benchmark.json + editablePaths>
+ Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | 16 +++-------------
+```
+
+Inspected, that difference is **comment text only**. `origin/main` still carries
+the stale "3+3+2, not 4+4" rationale block above a call that has read
+`qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>` for many rounds; our branch
+replaced that block with the correct "4+4" note. The dispatch call itself is
+identical on both sides, so the compiled kernel is unchanged. This closes one of
+the recorded documentation debts as a side effect.
+
+It still matters operationally, because the guard's snapshot test at line 383 is
+a textual `git diff --quiet`, not a semantic one. A merge resolved only at the
+two visible conflicts would leave `main` textually different from the measured
+base and the guard would refuse a second time. The guard fails closed, which is
+correct, but the second refusal would look like a new problem rather than the
+same one.
+
+**Verified unblock recipe.** After merging the advisor branch into `main`,
+resolve `senpai/campaign-ledger.md` and `senpai/frontier-state.json` in favour of
+the advisor branch, and take the advisor branch's version of every protected
+path, for example
+`git checkout d2139c92 -- benchmark.json <editablePaths...>`. The
+post-merge test that must pass before pushing is
+
+```bash
+git diff --quiet <merged main> d2139c924c7a7d98ca6026eea63867c2776abbca \
+  -- benchmark.json $(python3 -c "import json;print(' '.join(json.load(open('benchmark.json'))['editablePaths']))")
+```
+
+An empty diff means `senpai/submit-official.sh` will pass line 383. Combined
+with the three organizer-side checks above, that is the complete set.
+
+Note also that `origin/main`'s protected surface currently equals **neither**
+organizer main `0c90733d` **nor** the live frontier `9e1ff9ec`. Commit `d32342d`
+on `main` regenerated a promoted quantized twin, so `main` is a third distinct
+tree. Item 193(A)'s rule applies here too: identify a tree by its content, never
+by the branch name or commit subject that produced it.
+
+## 195. Advisor pricing error six is a provenance failure, not an arithmetic one: I priced a direction from the living plan instead of the measurement, and the two campaign records disagree with each other
+
+Earlier this round I ranked "the E29 host-graph lever" third in the campaign's
+tier-1 queue, wrote it into `research/CURRENT_RESEARCH_STATE.md`, and told
+alphonse in a PR comment that it would be his next assignment. The sentence I
+published was:
+
+> decode-side host cost, which E29 measured at about `2.4 ms` per draft step of
+> graph build, roughly `4.35 %` of decode, and which nothing in this campaign has
+> ever acted on.
+
+**Every clause is wrong, and this campaign's own records already say so.** I
+delegated a source-mapping agent to design the experiment; it returned the
+refutation instead, with citations. I then reproduced each citation myself before
+recording this item, because a subagent claiming a retraction is exactly the kind
+of claim that must not be taken on trust.
+
+### 195(A) The three corrections
+
+| published claim | truth | source |
+|---|---|---|
+| `2.4 ms` per **draft step** of graph build | `2.4 ms` per **round**, for the whole 64-layer **verify** graph | `research/results/e29-round-overhead-host-graph.md:130-131` |
+| `4.35 %` of decode is a removable host cost | retracted by 181(C). It is arm 2's host-tail *share* of four E29 ladder arms. The share moved `53.86 / 4.35 / 5.66 / 35.86 %` while round totals moved `6028.7 / 6022.2 / 6015.8 / 5998.3 ms`. A partition share that swings 12x while its total swings 0.5 % is direct evidence the host tail is not on the critical path. It is a **ceiling on all host-side work**, not a measured recovery. | `senpai/campaign-ledger.md:9240-9258`; ledger item 70 at `:1126-1131` |
+| nothing has acted on it | askeladd measured it directly in PR #4 and closed it. `draft_build_us` is not host-bound: **93.4 %** of its `17,486 us` mean is `tail_async`, because `async_eval()` walks the tape on the calling thread and throttles at `MAX_ACTIVE_TASKS = 10`. Steady-state host-only is **`599 us` per round, `0.350 %` of a round**, about `33 us` per draft step against my assumed `2,400`. A **70x** overestimate. Recorded verdict: "Compiled decode is dead: at most 599 us per round of total prize. Do not spend a student." | `research/RESEARCH_STATE_ARCHIVE_2026-08-19.md:1749-1763` |
+
+The direction is closed. Its entire ceiling is `0.35 %` of a round, and the one
+sweep that touched that envelope found nothing above its own noise floor.
+
+### 195(B) The mechanism of the error, which is the part worth keeping
+
+The first five recorded advisor pricing errors were all **basis or domain
+confusions**: two quantities with the same name and different domains, or a
+scalar applied to the wrong denominator. Item 192 concluded that "a constant's
+name must carry its domain" and I believed that was the whole family.
+
+This one is different. The arithmetic was never the problem. **I read a claim in
+`research/CURRENT_RESEARCH_STATE.md` and treated it as evidence.** That document
+is a living plan. It is edited, pruned, and rewritten every round precisely so it
+stays short, and short summaries lose their provenance first. The claim had been
+correct when first written, was refuted two items later, and the refutation never
+propagated back into the plan.
+
+**New standing rule: the living research-state document is a plan, not evidence.
+Before pricing any direction from it, grep the ledger and the archive for the
+subsystem and cite the measurement, not the summary.** This applies to students
+reading it as much as to the advisor writing it.
+
+### 195(C) The two campaign records disagree, and that is the deeper defect
+
+`senpai/campaign-ledger.md:9264` still reads:
+
+> What survives: `mx.compile` of the head step is still an untouched mechanism
+> (`CompiledDecode.swift` and `CompilableKVCache.swift` are in `editablePaths`
+> and untouched by the entire 712-tree field).
+
+That sentence is false as written, and it is false **inside the very item that
+retracted the surrounding claim**. 181(C) was written without citing PR #4,
+whose direct sub-step timers are the measurement that closes the mechanism.
+Those timers live only in `research/RESEARCH_STATE_ARCHIVE_2026-08-19.md`.
+
+So a future agent grepping the ledger for "compile" would find 181(C), read
+"untouched mechanism", and walk straight back into my error. **The ledger has the
+narrative and the archive has the measurement.** That asymmetry is the real
+defect; my published sentence was only its first casualty.
+
+This item is the merge. From here the ledger carries PR #4's number, so grepping
+the ledger alone is sufficient for this subsystem. Where else the two records
+diverge is unknown and is not worth a full audit, but every future retraction
+must be written into the ledger with its measurement inline, not by reference.
+
+Recorded honestly: 181(C) itself opens with "This is the second time I have
+published a triple-red finding without grepping the merged ledger for the
+subsystem first". This is the third. The countermeasure that failed was
+"grep the ledger", and it failed because the ledger did not contain the number.
+The countermeasure that would have worked is "cite a measurement with a file and
+line, or do not publish the price". That is the rule now.
+
+### 195(D) What actually survives on the head path
+
+Two structural facts, both verified in source, neither of them an assignment.
+
+**One sub-graph is unconditionally eligible for `compile`.** `draftTokenID`
+(`Qwen35.swift:3122-3127`, implementation `:3155-3218`) has fixed shape, no
+cache, no RoPE offset, no attention mask, and no data-dependent extent. It runs
+once per draft step. It is proposal-only, so it carries **zero exactness risk by
+construction**: the trusted parent re-checks every emitted token, and a defective
+proposal can only lower the acceptance rate. Its prize nevertheless sits inside
+the same `599 us` per round envelope, so it is worth at most about `0.35 %`, and
+only if `compile` traces its two custom `fast::Kernel` dispatches
+(`qwen35DraftTop32` at `:3189`, `qwen35DraftRerankKernel` at `:3207`). A cheap
+curiosity, not a slot.
+
+**A compiled head must pay before it can win.** Promoting the head cache from
+`KVCacheSimple` to `CompilableKVCache` disables the fused QK RMSNorm plus RoPE
+kernel, because `hasArrayOffset` excludes it at `Qwen35.swift:1880-1885`. One
+fused launch becomes four eager operations (`qNorm`, `kNorm`, two
+`applyRotaryPosition`). `CompilableKVCache.offset` and `trim` also perform a
+`.item()` readback (`CompilableKVCache.swift:105-112`, `:237-244`), and the
+session calls `trimTrimmable` every round at
+`Qwen36MTPBlockSession.swift:1234`. Any future compiled-head experiment must
+measure those losses first.
+
+The target forward is decisively ineligible and this is now settled rather than
+assumed: `newCache` returns `MambaCache()` for the 48 `isLinear` layers
+(`Qwen35.swift:2812-2819`), `CompiledDecode.setupCompiledDecode` returns `nil`
+for any cache that is not `KVCacheSimple` or `RotatingKVCache`
+(`CompiledDecode.swift:132-138`), and `:175-176` states that MambaCache is
+unsupported. No `CompilableMambaCache` exists in this tree.
+
+Also settled: `CompiledDecode` is **dead code on the scored path**.
+`CompilableKVCache.swift:27-30` says so in the source, and its only production
+caller is `GenerationBatch.setupCompiledDecodeIfEligible()`
+(`GenerationBatch.swift:650-680`), which the scored worker never reaches. Do not
+confuse it with `MLXHardwareInfo.isCompiledDecodeSupported`
+(`MLXHardwareInfo.swift:33-38`, env `MLX_COMPILED_DECODE`, default true), which
+gates the small `compile(shapeless:)` activation fusions that **are** live on the
+scored path at `Qwen35.swift:186, 229, 248, 895, 953, 1224`. Two different
+things, similar names. `RuntimeStartupMemoryPolicy.swift:119-130` already records
+that turning the latter off made sub-64 GiB machines silently skip decode
+closures the ranked box runs.
+
+### 195(E) The lever the failed search actually found
+
+`Qwen36MTPBlockSession.swift:668` ships
+
+```swift
+private static let headStepCostRatio = 0.18
+```
+
+while the doc comment eight lines above it says "h = 0.20 is the honest fit FOR
+THIS ROLLBACK MECHANISM", `:719` describes an earlier revision that "raised
+`headStepCostRatio` 0.18 -> 0.32", and PR #4's standing finding 6 measured
+**h approximately 0.224** directly
+(`research/RESEARCH_STATE_ARCHIVE_2026-08-19.md:1745-1763`).
+
+`h` enters the greedy marginal-cost walk at `:756`. The shipped value therefore
+**under-prices every head step by roughly a quarter**, which biases the scheduler
+toward drafting deeper than the true marginal cost justifies. That is the same
+failure direction as edward's stream-boundary staircase, and it multiplies into
+the same decision at the same call site, so it is routed into E56 as a factor
+rather than issued as a separate experiment. Splitting two corrections to one
+rule across two students would produce two numbers that cannot be composed.
+
+Two cautions were sent with it. `h = 0.224` was measured **before E55**, which
+cut verify-side cost by `4.2952 %` without touching the head, so the true `h` has
+almost certainly risen; edward should re-measure on `d2139c92` if he can, and
+label `0.224` as directional if he cannot. And `h` must not be swept and
+argmaxed: fitting a scheduler constant to one local fixture will not transfer to
+the ranked width mixture, which edward himself showed is very different from the
+local histogram.
+
+### 195(F) Also corrected, from the same source read
+
+Three smaller record defects found while verifying the above.
+
+- The head's single decoder layer carries a dense `Qwen35FusedMLP` at
+  `5120 -> 17408 -> 5120` (`Qwen35MTP.swift:40-43`, `intermediate_size: 17408`).
+  That MLP, not the attention, is most of the head's weight stream. The campaign
+  has been describing the head as "fc plus one full-attention layer plus norms",
+  which is true but hides where the bytes are.
+- `Qwen35MTP.swift:37-39` states that the head's linears "stay bf16". That is
+  stale against the declared artifact: the shipped manifest pins
+  `qwen38-mtp-head-q2-q4-rerank-v1`, whose weights are side-channelled at
+  `Qwen35.swift:2843-2852` with precision islands installed at `:2866-2891`, so
+  the head-layer linears are quantized. Added to the documentation-debt list.
+- The generic repair fallback at `Qwen36MTPBlockSession.swift:1204-1215`, a
+  second 64-layer forward and a second blocking eval, has been **measured zero
+  times**. It is a candidate for the post-winner cleanup PR, alongside the dead
+  GDN paths already listed.
+
+### 195(G) What a student can measure today with no new instrumentation
+
+Recorded because it was not written down anywhere and it changes what a cheap
+rung can cost. The per-round host breakdown already exists behind
+`MLX_QWEN_MTP_TRACE=1`, with the sink at `MLX_QWEN_MTP_TRACE_PATH` and an
+attribution probe at `MLX_QWEN_MTP_TRACE_SYNC_HEAD=1`
+(`Qwen36MTPBlockSession.swift:579-603`, `:588-589`). All three reach the
+sandboxed worker, because the environment allowlist keeps the `MLX_` prefix and
+drops `MLXFAST_` (`QwenRuntimeWorker.swift:2639-2646`).
+
+Emitted fields and their intervals: `draft_build_us` (`:883` to `:1080`),
+`verify_build_us` (`:1080` to `:1111`), `eval_wall_us` (`:1111` to `:1124`),
+`readout_us` (`:1124` to `:1157`), `commit_us` (`:1157` to `:1227`),
+`upkeep_us` (`:1227` to `:1269`), `round_us` (`:883` to `:1269`), emitted at
+`:1266-1279`. Existing parsers consume this format: `research/e21_trace.py`,
+`research/e29_analyze.py`, `research/depth_cost_curve.py`,
+`research/e30_log_wandb.py`.
+
+Two caveats are written in the source itself and must be quoted whenever these
+fields are used. `verify_build_us` is not pure host build, because the head chain
+runs asynchronously inside that window (`:581-587`), and enabling the sync probe
+"destroys the head/verify overlap the round is designed around". `draft_build_us`
+is not pure host build either, for the `async_eval` tape-walk reason that is the
+whole subject of 195(A). **Neither field may be quoted as host time without that
+caveat attached.** Quoting `draft_build_us` as host time is precisely how the
+`2,400 us` figure entered the record.
