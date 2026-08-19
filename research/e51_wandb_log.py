@@ -224,9 +224,36 @@ def log_e2e(run, arms: list[pathlib.Path]) -> None:
     run.summary.update(summary)
 
 
+def log_margin(run, paths: list[pathlib.Path]) -> None:
+    """Decisive-margin distribution for whichever arm moved the sensor."""
+    columns = ["arm", "pos", "top1_id_ref", "top1_id_cand", "top1_id_flipped",
+               "top2_id_flipped", "margin", "delta_logit", "ratio",
+               "values_moved"]
+    table = wandb.Table(columns=columns)
+    summary: dict = {}
+    for path in paths:
+        blob = json.loads(path.read_text())
+        arm = blob["summary"]["candidate"]
+        for row in blob["per_position"]:
+            table.add_data(arm, *[row[c] for c in columns[1:]])
+        for key, value in blob["summary"].items():
+            if isinstance(value, (int, float, bool)) or value is None:
+                summary[f"margin/{arm}/{key}"] = value
+        summary[f"margin/{arm}/flipped_positions"] = str(
+            blob["summary"]["flipped_positions"])
+        summary[f"margin/{arm}/top1_id_flips"] = sum(
+            1 for r in blob["per_position"] if r["top1_id_flipped"])
+        summary[f"margin/{arm}/top2_only_id_flips"] = sum(
+            1 for r in blob["per_position"]
+            if r["top2_id_flipped"] and not r["top1_id_flipped"])
+    run.log({"margin/per_position": table})
+    run.summary.update(summary)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--stage", required=True, choices=["step0", "e2e"])
+    parser.add_argument("--stage", required=True,
+                        choices=["step0", "e2e", "margin"])
     parser.add_argument("--arms", nargs="*", type=pathlib.Path, default=[])
     parser.add_argument("--resume")
     args = parser.parse_args()
@@ -234,6 +261,10 @@ def main() -> int:
     run = start_run(args.resume)
     if args.stage == "step0":
         log_step0(run)
+    elif args.stage == "margin":
+        if not args.arms:
+            raise SystemExit("--stage margin needs --arms (margin JSON paths)")
+        log_margin(run, args.arms)
     else:
         if not args.arms:
             raise SystemExit("--stage e2e needs --arms")
