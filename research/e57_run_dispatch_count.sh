@@ -33,8 +33,15 @@ else
   log="${out}/legal.log"
 fi
 
-swift test --force-resolved-versions \
-  --filter E57SdpaChunkDispatchCountTests > "${log}" 2>&1
+# Cmlx searches for mlx.metallib next to the RUNNING executable, and the xctest
+# bundle is a third location that only exists after the tests are built. Build
+# the tests first, then publish, then run.
+{
+  swift build --build-tests --force-resolved-versions \
+    && tools/build-mlx-metallib.sh --all-build-roots \
+    && swift test --force-resolved-versions \
+      --filter E57SdpaChunkDispatchCountTests
+} > "${log}" 2>&1
 status=$?
 echo "e57_run_dispatch_count: throwing=${throwing} exit=${status} log=${log}"
 tail -40 "${log}"
