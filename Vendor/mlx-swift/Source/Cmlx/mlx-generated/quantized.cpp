@@ -1039,7 +1039,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
           xc[3] = static_cast<float>(xm[3]);
           // Preserve the incumbent BF16 expression tree used for the affine
           // bias correction; only the qdot nibble extraction changes.
-          sums[m] += (xm[0] + xm[1]) + (xm[2] + xm[3]);
+          sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
         } else {
           sums[m] += load_vector<T, float, 4, 4>(xm, xc);
         }
