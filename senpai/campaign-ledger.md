@@ -2183,3 +2183,102 @@ bit-identical across this population (item 102) and the two legs are
 uncorrelated (item 111). It is a re-weighting of measured quantities, not a
 model fit. The per-prompt grand-mean serials are tight — 0.0379805 (drama) to
 0.0380036 (travel), a 0.06 % spread over 88 runs — so the reference is stable.
+
+### 113 — 🟢 VERIFIED OPENING: our shape warm stops at KV 512, and the SDPA dispatch switches kernel families at KV 1024
+
+Two competitor claims from the notes scan (item 110) turned out to be checkable
+against our own source in minutes. Both check out, and together they describe a
+cost we are paying inside every scored window.
+
+**The boundary is real.** `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/scaled_dot_product_attention.cpp:745-753`:
+
+```cpp
+    // We route to the 2 pass fused attention if
+    // - The device is large and the sequence length long
+    // - The sequence length is even longer and we have gqa
+    bool do_causal = do_causal_ && q.shape(2) > 1;
+    char devc = d.get_architecture().back();
+    if (((devc == 'd' || devc == 's') && k.shape(2) >= 1024) ||
+        (k.shape(1) < q.shape(1) && k.shape(2) >= 4096)) {
+      sdpa_vector_2pass(s, d, q, k, v, o, scale_, do_causal, mask, sinks);
+    } else {
+      sdpa_vector(s, d, q, k, v, o, scale_, do_causal, mask, sinks);
+    }
+```
+
+`k.shape(2)` is the live KV length. At KV >= 1024 the dispatch leaves
+`sdpa_vector` for **`sdpa_vector_2pass`, a different kernel** with its own
+pipeline. The second clause (GQA at KV >= 4096) cannot fire on this track.
+
+**Our warm stops below it.** `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:308`
+seeds the throwaway warm cache with exactly `Array(repeating: 0, count: 512)`,
+and the surrounding comment shows we already learned this lesson once at a
+smaller scale:
+
+> *"Warming the legal widths behind an 8-token prefix left the long-prefix
+> variants to materialise inside a later scored round (the ranked prompt-5
+> receipt showed a repeatable 0.368 s one-off stall). Seed the throwaway cache
+> at the track's real 512-token prefix so every width below compiles in the same
+> long-context dispatch family as decode."*
+
+**But the track is 512 seed + `decodeTokens` 512.** The live KV length therefore
+runs 512 -> 1024 and **crosses the boundary mid-window**, so the first
+`sdpa_vector_2pass` dispatch of the run happens *inside* the scored window. We
+fixed the 8 -> 512 instance of exactly this bug and stopped one token short of
+the real boundary.
+
+**Why it does not cancel in the paired ratio.** With per-token means
+`serial ~ 0.0380` and `mtp ~ 0.0121`, a one-off cost `C` shared by both legs adds
+`c = C/512` to each and gives `(0.0380 + c)/(0.0121 + c)`, which is
+**monotonically decreasing in `c`**. A shared one-off stall therefore *depresses*
+the ratio, and removing it from both legs raises the score. fkiene (rank 2,
+accepted 3.24418) states the stronger asymmetric form: *"Serial depth-0 does not
+assemble `[primary] + drafts`. The JIT tax is therefore candidate-leg-only and
+does not cancel in the paired ratio."* Either way the sign is in our favour.
+
+**Why this is actionable now.** `warmAllDepths` is declared at
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:283` — **an editable path**.
+Its callers (`Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift:196,283,309`
+and the `MLXFastHarness` twin) are **not** editable, but we do not need them: the
+implementation is ours. The warm is documented as running *"OUTSIDE every scored
+window"*, so extending it is free of scored cost.
+
+**The one open uncertainty, which must be settled before this is believed.** The
+boundary is gated on `d.get_architecture().back()` being `'d'` or `'s'`. Our host
+is an M4 Pro and the ranked box is an M5 Max; **I have not established the
+architecture character on either.** If the ranked box reports neither, the branch
+never fires and this opening is empty. That is one print statement, and it is the
+first thing the assignment must do.
+
+**Sequencing.** This needs a GPU timing slot, which thorfinn holds for E33, so it
+queues behind rung 1. It is currently the strongest candidate for the next round,
+ahead of the other two adjacent levers in item 110, because the mechanism is
+verified in source rather than inferred from a note.
+
+### 114 — 🟢 `warmAllDepths` currently compiles but never *measures*, and that is the campaign's epistemic fix
+
+Reading `warmAllDepthShapes` end to end: it seeds a 512-token throwaway cache,
+walks the head draft step `maxDepth` times, and warms the committed-history K/V
+paths. **It times nothing.** There is no per-width measurement anywhere in it.
+
+AndreasHad04 (`a0110f2a`) describes the unexploited form: *"`warmAllDepths`
+already dispatches a verify at every legal width … OUTSIDE every scored window.
+It now runs that sequence three times: pass 0 compiles …, passes 1 and 2 are
+timed and the per-width minimum is kept."*
+
+🔴 **This is the structural answer to the campaign's single biggest epistemic
+problem.** Every width/depth constant we have argued about — `headStepCostRatio
+= 0.18`, `sdpaWidthWallDepthCap = 5`, `costModelDepth = 700`, and the `F`/`S`
+split in `T(M) = F·M + ceil(M/IPG)·S` — is hand-fitted on an M4 Pro against the
+wrong head artifact, while item 102 shows the ranked operating point is not the
+local one. A cost model calibrated **on the ranked box, inside the untimed
+warm**, replaces every one of them with a measurement taken on the machine that
+scores us.
+
+It also explains item 108 mechanistically: `h` 0.18 -> 0.16 lost 1.164 % because
+a hand-picked constant was wrong for that tree. A self-calibrating model cannot
+make that class of error, and it is the only depth-policy change on the board
+that does not require us to guess a number. Note that `warmAllDepths` appears in
+**78 notes including ranks 1, 2, 3 and 4** — the top of the board is already
+working this surface, so treat the timing-instrumented form as contested rather
+than free.
