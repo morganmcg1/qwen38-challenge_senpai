@@ -77,6 +77,17 @@ Every arm reports entry/exit GPU temperature in
 permitted local measurement mode; these are directional causal results within a
 counterbalanced session, **not** comparable to gated historical runs.
 
+**Entry GPU temperature across the seven arms: 39.41 – 43.27 °C, spread
+3.86 °C**; exit 59.55 – 63.14 °C. The smallest effect reported here is m1's
+MTP-leg move at +1.774 % and the largest is +122.470 %, against a 3.86 °C entry
+spread on a host whose real gate is 40 °C — so the thermal envelope cannot
+account for any effect in this document.
+
+The harness emits no peak-memory field, so **peak memory is not reported**. What
+exists instead is the register-level evidence in §4: `peak_live_regs = 208`,
+identical for base, p2L2 and p6L1 on the scored PSO, so no arm changed occupancy.
+No arm hit an allocation failure on this 48 GiB host.
+
 Register counts in this report were measured on tree **`04ad6bf1`**. On the
 rebased advisor base the same ladder's max is 108 and the production entry
 `affine_qmv_fast<bfloat16_t,64,4,false>` is 163 — different tree, different
@@ -697,7 +708,29 @@ Two independent layers:
 1. **End-to-end, on the scored path**: every arm produced
    `all_tokens_matched=true` and `residual_divergence_count=0` over the full
    512-token window, with `effective_draft_lengths` element-wise equal to base.
-   That is the contract the trusted parent actually checks.
+   That is the contract the trusted parent actually checks. The speculation
+   bookkeeping is identical too — **`accepted_draft_total=434`,
+   `rejected_draft_total=55`, `round_count=78`,
+   `verify_block_replayed_round_count=12`, `non_drafting_round_count=0` in all
+   seven arms** — so rollback and replay behaviour did not move either, which is
+   a stronger statement than equal draft lengths alone.
+
+   Block latency moves exactly as the injected ladder requires and nowhere else:
+
+   | arm | p50 block (ms) | max block (ms) |
+   |---|---|---|
+   | base | 166.17 | 247.79 |
+   | p2L1 | 302.17 | 374.48 |
+   | p2L2 | 439.37 | 520.72 |
+   | p6L1 | 301.65 | 383.57 |
+   | p6L2 | 438.65 | 489.51 |
+   | m6L2 | 183.73 | 485.60 |
+   | m1L1 | **168.76** | 250.69 |
+
+   m1L1 is the control: its p50 is +1.56 % over base, matching the +1.774 % MTP
+   leg move, because m1 treats only width 1 and the MTP leg's verify pass never
+   dispatches there.
+
 2. **Per-width, at kernel level**: the 192-cell parity rig
    (8 shapes × widths 1..12 × bits {4,3}) via `research/run-qmv-parity.sh`.
 
