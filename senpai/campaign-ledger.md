@@ -11,26 +11,26 @@ disagree, stop and repair both before assigning or submitting work.
 ## Current frontier
 
 The organizer remote and the promoted Yukon row were refreshed at
-`2026-08-18T17:01:12.000Z`.
+`2026-08-19T01:21:15.000Z`.
 
 | Field | Value |
 | --- | --- |
 | Organizer source | `Layr-Labs/qwen-3.8-mtp-challenge` |
-| Organizer synced commit | `474c75013f333f119bdc465d849f23917b195b20` |
-| Best promoted submission | `942e5ab2-1c46-4c50-b7c3-eaf948878ed0` |
-| Promoted source ref | `474c75013f333f119bdc465d849f23917b195b20` |
-| Official score | `3.2341518328631` |
+| Organizer synced commit | `0c90733d383f6b987a29682bf9eb9458a6172bfa` |
+| Best promoted submission | `0cd0a6b4-b539-4705-a1c7-cb271c1f9d3b` |
+| Promoted source ref | `0c90733d383f6b987a29682bf9eb9458a6172bfa` |
+| Official score | `3.24929398547457` |
 | Campaign `BASE_SHA` | Fetch `origin/main`, then run `git rev-parse origin/main`; the Git ref is authoritative because a file cannot contain the hash of its own commit |
-| Submitted solver snapshot | `474c75013f333f119bdc465d849f23917b195b20` |
+| Submitted solver snapshot | `0c90733d383f6b987a29682bf9eb9458a6172bfa` |
 
 The promoted receipt above is the public Yukon frontier used to bootstrap this
 campaign; it is not claimed as a Senpai-authored result.
 
-Campaign commit `006a369` imports the exact promoted submitted surface from
-`474c75013f333f119bdc465d849f23917b195b20`. Relative to `86fb1f0`, it
-restores the dedicated single-row affine-2/group-64 coarse-readout kernel and
-keeps the executable M=8 affine-4/group-64 4+4 split. Replace semantics also
-remove the prior full-memory residency and post-wire command-buffer policy.
+Campaign commit `6e0546e` imports the exact promoted submitted surface from
+`0c90733d383f6b987a29682bf9eb9458a6172bfa`. Relative to `474c750`, it
+restores the full-memory residency ticket and post-wire command-buffer policy,
+keeps the 512 MiB full-profile buffer budget from being overwritten by the
+older 128 MiB serial-path default, and retains the incumbent proposal-head ABI.
 No organizer policy, contract, fixture, workflow, guide, dependency, head
 manifest, or other trusted file changed.
 
@@ -42,10 +42,10 @@ head and adds the affine-2 compact `draft_lm_head` ABI: weight
 `[98,336, 320]`, scales/biases `[98,336, 80]`, followed by an exact affine-4
 rerank of a 32-token shortlist.
 
-The exact promoted readable header carried a contradictory M=8 3+3+2 comment
-beside the executable 4+4 call. Campaign commit `b4ed293` replaces only that
-comment with the checked-in generated twin's accurate 4+4 description.
-Executable kernel text is unchanged.
+Campaign commit `d32342d` canonically regenerates the `quantized` generated
+twin after the promoted readable header restored its longer M=8 rationale.
+The executable `<T,8,4,true>` call is unchanged; the generated delta is
+comment-only, and the Apple twin audit passes all 29 families.
 
 ## Same-host baselines
 
@@ -101,6 +101,8 @@ evidence or a changed condition; “try again” is not enough.
 | 2026-08-18 | `codex/sync-organizer-frontier-20260818-86fb1f0` / `76b961f` | canonical regeneration of promoted `quantized` twin | `8afb5e8` | generated delta is comment-only; explicit-toolchain twin audit 29/29, frozen release build, and fresh AOT `mlx.metallib` build pass with Metal toolchain `32023.883` | not submitted; mechanical campaign repair only | Expands the abbreviated M=8 comment to the readable header's direct-nibble/IPG4 rationale; executable tokens are unchanged |
 | 2026-08-18 | `codex/sync-organizer-frontier-20260818-474c750` / `006a369` | exact promoted editable-snapshot import | `50a5be6` | preservation, campaign overlay, editable budget, trusted parity, and exact 89-path import pass | adopted public promoted `942e5ab2-1c46-4c50-b7c3-eaf948878ed0` / `474c750` at `3.2341518328631`; not a Senpai-authored submission | Four editable paths changed; the M=1 affine-2 coarse-readout kernel is restored, executable M=8 remains 4+4, and the prior full-memory residency policy is removed; no trusted policy changed |
 | 2026-08-18 | `codex/sync-organizer-frontier-20260818-474c750` / `b4ed293` | reconcile promoted M=8 readable/twin comment | `006a369` | comment-only delta; executable `<T,8,4,true>` call unchanged | not submitted; mechanical campaign repair only | Replaces the stale 3+3+2 narrative with the checked-in generated twin's 4+4 description |
+| 2026-08-19 | `codex/sync-organizer-frontier-dev40-20260819-0c90733` / `6e0546e` | exact promoted editable-snapshot import | `5273067` | preservation, campaign overlay, editable budget, trusted parity, exact 89-path import, frozen Apple release/worker/Metal builds, and one-token exact MTP verification pass | adopted public promoted `0cd0a6b4-b539-4705-a1c7-cb271c1f9d3b` / `0c90733` at `3.24929398547457`; not a Senpai-authored submission | Three organizer Swift paths change relative to `474c750`: full-memory residency and the post-wire 512 MiB command-buffer profile return; the proposal-head ABI and trusted policy remain unchanged |
+| 2026-08-19 | `codex/sync-organizer-frontier-dev40-20260819-0c90733` / `d32342d` | canonical regeneration of promoted `quantized` twin | `6e0546e` | generated delta is comment-only; Apple twin audit 29/29 and frozen CLI, worker, and Metal builds pass | not submitted; mechanical campaign repair only | Reproduces the promoted readable header's longer M=8 rationale in the runtime-effective twin; executable `<T,8,4,true>` text is unchanged |
 
 ## Update checklist
 
