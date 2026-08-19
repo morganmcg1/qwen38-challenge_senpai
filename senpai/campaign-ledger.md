@@ -12410,3 +12410,267 @@ E59's price up to `+1.08 %` to `+2.33 %`.
   extrapolate a two-point fit outside its anchor interval; keep leg-reduction and
   `raw_p`-change in separately named functions; a local cost curve is not a
   ranked cost curve.
+
+### 192(R) The two `PSI_MTP` values are not a contradiction. They are a name collision.
+
+Carried as an outstanding debt for several rounds: `research/qmv_score_leverage.py`
+defines `PSI_MTP = 0.6736` while `research/dilution_basis.py` defines
+`PSI_MTP = 0.693391`. I had recorded this as "two names for one measured
+constant is a defect" and assumed one of them was stale.
+
+Neither is stale. They measure different things.
+
+- `0.6736` is ledger 173(A)'s **no-modelling split over dispatched verify widths
+  2 to 9 only**. The same split reports `psi(6..9) = 0.6133` and single-stream
+  `{2,4,5} = 0.0603`.
+- `0.693391` is E48's share over **all widths** of the same local candidate leg,
+  interval `[0.692292, 0.694490]`.
+
+The difference closes exactly:
+
+```
+0.693391 - 0.6736 = 0.019791
+```
+
+and `0.019791` is `psi_mtp_w1`, the width-1 QMV share that
+`qmv_score_leverage.py` already carries as a free argument and documents at its
+lines 280 to 291 as "still NOT zero ... carried entirely by that 2-bit draft
+readout". The module's own algebra says the total leg share is
+`PSI_MTP + psi_mtp_w1`. It is.
+
+**So the numbers were consistent all along and the defect was purely a name
+collision.** Both definition sites now carry an explicit cross-reference naming
+the other quantity and forbidding substitution. No published price changes.
+
+This is worth recording as a method point rather than a bookkeeping note. I
+spent several rounds treating a `1.029x` discrepancy as an unresolved
+measurement conflict, when the two symbols simply had different domains. **A
+constant's name must carry its domain.** `PSI_MTP_W2_TO_W9` and
+`PSI_MTP_ALL_WIDTHS` would have made the identity obvious on sight, and would
+have prevented the same class of confusion that produced all five recorded
+advisor pricing errors: every one of them is a basis or domain confusion, not
+arithmetic.
+
+## 193. The ranked instrument is 7.4x noisier than the campaign believed, our deficit is half of one standard deviation, and the correct response is cadence
+
+Item 192 established that every organizer submission ref carries its own parent
+on the organizer main chain, so `score(S)/score(S^)` reads as a ranked A/B
+measurement at zero submission cost. That method is sound. What item 192 did
+not do is ask how noisy that measurement is. This item answers that question,
+and the answer changes campaign strategy more than any single mechanism result
+so far.
+
+I delegated a validity audit, then reproduced every load-bearing number myself
+before recording it, because the audit contradicted a published campaign
+constant. The reproduction scripts are
+`_advisor_scratch/verify193.py`, `verify193b.py`, and `verify193c.py`. They read
+only `_advisor_scratch/yukon_all.json` (767 rows, 512 scored) and local git.
+
+### 193(A) The replicate key is the git tree of the submitted surface, not the announced SHA
+
+A ranked run is a replicate of another when the two submitted surfaces are
+byte-identical. The only sound key is the git tree:
+
+```
+sig(ref) = join(git rev-parse ref:<p> for p in
+                Sources Vendor mtp-head.manifest.json mtp-head
+                Package.swift Package.resolved benchmark.json)
+```
+
+The announced `submissionCommitSha` is not a key. 512 scored rows carry 417
+distinct values of it and recover **zero** replicate groups. The tree signature
+recovers **18 replicate surfaces covering 44 rows and 37 within-group pairs**.
+This is the same standing rule the campaign already holds for reading a Yukon
+row back: never key on the announced candidate SHA.
+
+### 193(B) The measured noise of the ranked instrument
+
+From those 18 groups, 44 rows, 26 degrees of freedom:
+
+| quantity | value |
+|---|---|
+| pooled sd of ONE ranked run | **0.756 %** |
+| sd of the difference of two ranked runs | **1.069 %** |
+| 95 % two-sided threshold for one (S, S^) pair | **2.10 %** |
+| median disagreement of two runs of a byte-identical surface | **1.113 %** |
+| replicate pairs agreeing to better than 0.30 % | 27.0 % |
+| replicate pairs differing by more than 1.00 % | **51.4 %** |
+| max observed replicate spread | 2.126 % |
+
+Over half of all identical-surface pairs disagree by more than a full percent.
+
+### 193(C) The cleanest possible confirmation: five pairs with a literally empty diff
+
+Five (S, S^) pairs exist where `git diff S^..S` produces no output at all. The
+true effect is exactly zero by construction, so these are the instrument
+measuring a known null:
+
+| child | parent | parent score | child score | delta | promotionStatus |
+|---|---|---|---|---|---|
+| `11863aa9` | `4f76de6e` | 3.24300059 | 3.24326224 | **+0.0081 %** | **promoted** |
+| `b3091386` | `12b1c699` | 2.92520777 | 2.92975886 | +0.1556 % | None |
+| `dc70080f` | `0cd0a6b4` | 3.24929399 | 3.22945266 | **-0.6106 %** | None |
+| `b92784b8` | `c08eb406` | 2.72743223 | 2.70892278 | -0.6786 % | None |
+| `7ea9817b` | `5b656013` | 2.51003299 | 2.47806324 | **-1.2737 %** | None |
+
+Root mean square about zero: **0.7043 %**, agreeing with the 0.756 % pooled sd
+from an entirely separate construction. A promoted step of +0.0081 % on a
+provably empty diff is in the public record.
+
+### 193(D) The noise lives on the CANDIDATE leg, and that is the source of the campaign's error
+
+Splitting the same 18 groups per prompt per leg, 296 prompt-level pairs each:
+
+| leg | median pair delta | mean |
+|---|---|---|
+| pinned serial (runner-owned, prebuilt) | **0.181 %** | 0.232 % |
+| candidate MTP (built fresh per run) | **0.589 %** | 0.840 % |
+| ratio | **3.62x** | |
+
+The campaign's published ranked jitter of **0.2257 %** is an excellent estimate
+of the **serial** leg. I now measure that leg at 0.181-0.232 %. The error was
+applying a serial-leg number to the score. The score is dominated by the
+candidate leg, which is 3.62x noisier, and the pinned baseline is rock stable:
+regressed over 109.8 h, slope +0.000058 %/h, t = 0.48, total drift +0.0064 %.
+
+### 193(E) RETRACTION: the ranked MDE of +0.283 % is wrong by 7.4x
+
+The campaign has priced every ranked decision against `MDE = 2 sd = +0.283 %`,
+derived from 0.2257 %/leg by assuming the median of eight prompts averages the
+noise down. Both inputs fail. The 0.2257 % is the wrong leg (193(D)), and the
+median buys almost nothing because the candidate-leg noise is a per-run common
+mode that moves all eight prompts together.
+
+**The correct single-pair ranked MDE is approximately +2.1 %.** Every claim of
+the form "this is N x MDE" computed against +0.283 % must be divided by 7.4
+before it means anything at rank.
+
+This does not touch the **local** floor. The local end-to-end null floor of
+0.0629 % was measured directly on this fleet and stands.
+
+### 193(F) RETRACTION of the delegated agent's bimodality claim, and the method rule behind it
+
+The audit reported a clean two-state structure: an empty gap between 0.35 % and
+0.8 %, with about 30 % of runs in a discrete state making the candidate leg
+1.4 % slower. That would have been the most actionable finding of the session,
+so I tried to reproduce it and **could not**.
+
+The claim came from sorting each run's *excess over its own group's minimum*.
+That construction is biased: the minimum is itself a random draw, so it
+manufactures exactly one zero per group. With 18 groups it manufactures 18
+zeros, which is precisely the fake left mode. Reading the same data as unbiased
+pair deltas, the sorted vector is continuous and the largest gap anywhere in it
+is **0.336 pp**:
+
+```
+0.008 0.023 0.033 0.061 0.077 0.079 0.155 0.163 0.174 0.207 0.350 0.362
+0.385 0.428 0.614 0.683 0.876 0.928 1.113 1.122 1.145 1.191 1.239 1.240
+1.260 1.272 1.290 1.294 1.302 1.317 1.449 1.460 1.546 1.624 1.960 2.053 2.126
+```
+
+There is no discrete slow state. There is a broad, right-skewed, continuous
+spread. The practical conclusion is unchanged and if anything cleaner, but the
+mechanism hunt the bimodality would have justified is not warranted.
+
+**New standing method rule: never read mode structure from a deviation taken
+about a group extremum.** Centre on the group mean, or use pair deltas.
+
+### 193(G) The promotion test is chain membership, and the commit subject is meaningless
+
+```bash
+git merge-base --is-ancestor upstream/submissions/<uuid> upstream/main   # 0 == promoted
+```
+
+Verified as a perfect biconditional over every scored row with a local ref:
+promoted and on main **54**, promoted but not on main **0**, on main but not
+promoted **0**. The commit subject verb is noise: 35 promoted commits say
+`Validate`, 19 say `Accept`, and one `Accept` commit was never promoted at all.
+Also confirmed: across all 661 ref-parent pairs, **zero** diffs touch anything
+outside the editable surface.
+
+### 193(H) Our deficit is half of one standard deviation, and organizer main's own replicate is worse than our deficit
+
+This is the finding that matters.
+
+| quantity | value |
+|---|---|
+| live promoted frontier `59b321ee` | 3.24985583 |
+| organizer main `0cd0a6b4` | 3.24929399 |
+| **organizer main's own identical-tree replicate `dc70080f`** | **3.22945266** |
+| our best official row `ca9251b8` | 3.23250848 |
+| our published deficit vs the frontier | **0.5366 %** |
+| sd of one ranked run | **0.756 %** |
+
+Organizer main resubmitted its own byte-identical tree and scored **0.6106 %
+lower**, which is **larger than our entire deficit**. Our best row at 3.23251
+sits **above** organizer main's own second draw of 3.22945.
+
+**We are not 0.5366 % behind the frontier. We are at the frontier, inside the
+instrument.** The deficit is 0.71 sd of a single run.
+
+Item 192's decomposition of that deficit into three components of 0.0173,
+0.1860 and 0.3327 pp remains arithmetically correct, but every component is
+between one sixth and one half of one sd of a single ranked pair. **None of the
+three is individually measurable.** In particular the claim that our own E27
+change cost us 0.3327 pp rests on one pair with sd 1.069 % and is not
+supported. What survives is a one-sided inference at reduced power: E27 did not
+deliver the +2.21 to +2.53 % our local pricer predicted, because an effect
+twice the sd would probably have shown. The instrument was never able to see
+the difference between "E27 cost 0.33 %" and "E27 did nothing".
+
+### 193(I) Consequence: local measurement is 17x more sensitive than ranked, so decide locally and submit to claim
+
+| instrument | null floor / sd of a difference |
+|---|---|
+| local end-to-end, matched identity tuple, ABBA | **0.0629 %** |
+| ranked, one (S, S^) pair | **1.069 %** |
+
+Ranked is **17x** coarser. This inverts a habit the campaign has been drifting
+into. Official submissions are not how we measure mechanisms; they are how we
+claim the frontier. Every question that can be settled on a student Mac must be
+settled there. This is exactly why E60's headline is absolute local candidate
+seconds per token and not a ranked comparison, and that design is now
+retrospectively the right one for a second reason.
+
+### 193(J) Consequence: submission cadence dominates mechanism size near the frontier
+
+With sd(one run) = 0.756 % and a deficit of 0.5366 %, a certified candidate
+whose true score equals organizer main's has a probability near **one half** of
+outscoring the live frontier on any given ranked run. The exact figure for a
+candidate with true score equal to organizer main is
+`P(Z > (3.24986/3.24929 - 1)/0.00756) = P(Z > 0.023) = 49 %`.
+
+`program.md` forbids duplicate official submissions, and that rule stands: the
+answer is not to resubmit one tree repeatedly. The answer is that **each
+distinct, honest, certified candidate we submit carries a free draw from a
+distribution whose spread exceeds our entire deficit.** Hoarding submission
+slots for a perfect candidate is therefore strictly wrong. `program.md` already
+says "do not reserve submissions for perfect candidates"; item 193 supplies the
+quantitative reason.
+
+Selection bias follows directly. Conditioned on promotion, a truly null change
+shows `E[observed | true = 0, observed > 0] = sd x sqrt(2/pi) = +0.60 %`. Most
+of the public promoted chain's small steps are this. **Do not read the promoted
+chain as a ranked ladder of real mechanisms, and do not rank mechanisms by the
+size of the step that promoted them.** Item 192's mechanism census keeps its
+value as a source of *ideas*; it loses its value as a source of *prices*.
+
+### 193(K) What this does and does not change
+
+Unchanged: correctness, exactness, provenance, scope and thermal gates; the
+local floor; every local causal result; the ranked score boundary
+(`d ln(ranked serial time)/dx = 0`) which 193(D) independently corroborates by
+measuring the pinned leg as the quiet one.
+
+Changed: the ranked MDE, from +0.283 % to about +2.1 % for a single pair; the
+interpretation of our deficit, from an engineering gap to instrument spread;
+the value of a submission slot, upward; the value of a ranked A/B on one pair,
+sharply downward.
+
+**Immediate action.** Our current base is organizer main plus 144 insertions and
+66 deletions across exactly two files, and it has never been measured at rank.
+Under 193(H) and 193(J) the highest-value action available to this campaign is
+not a new mechanism. It is to finish certifying that tree and submit it. E60
+rung 1 is exactly that certification, so E60 rung 1 is now the campaign's
+critical path and I have told alphonse to deliver it ahead of the rest of the
+experiment.

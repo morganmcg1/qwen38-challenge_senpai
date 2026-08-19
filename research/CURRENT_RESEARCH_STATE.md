@@ -1,8 +1,9 @@
 # SENPAI Research State
 
-- 2026-08-19, after merging E58 (PR #61), assigning E60 (PR #63), and reading
-  the organizer submission refs as a ranked experiment matrix (ledger 192).
-  Campaign base `38e43f07a0dde9f4abad96d69c1497e2e83db403`.
+- 2026-08-19, after merging E58 (PR #61), assigning E60 (PR #63), reading the
+  organizer submission refs as a ranked experiment matrix (ledger 192), and then
+  measuring how noisy that matrix actually is (ledger 193).
+  Campaign base `a19dae9adfde2580a20a62fbbde3d5432c16cb1b`.
 - Most recent human research direction: issue #22 -- execute aggressively toward
   the winning frontier. Issue #31 is complete and closed. No new human direction
   is outstanding.
@@ -13,34 +14,80 @@
 |---|---|
 | live promoted frontier | **3.24985583421771** (submission `59b321ee`, solver fkiene, source `9e1ff9ec` = `upstream/main`) |
 | organizer main `0c90733d` | **3.24929399** (submission `0cd0a6b4`, solver ofou) |
+| **organizer main's own identical-tree replicate** `dc70080f` | **3.22945266** (**0.6144 % below its own twin**) |
 | our best official submission | **3.23250848263467** (receipt `ca9251b8`, candidate `2b0c36a0`, rejected on score) |
-| our deficit to the frontier | **0.5366 %** |
-| ranked jitter per prompt per leg | **0.2257 %** (n = 408) |
-| ranked MDE at 2 sd | **+0.283 %** (worst case +0.527 %) |
-| local end-to-end null floor | **0.0629 %** |
+| our deficit to the frontier | **0.5366 %** = **0.71 sd of one ranked run** |
+| **sd of ONE official ranked run** | **0.756 %** (18 identical-surface groups, 44 rows, dof 26) |
+| **sd of a difference of two ranked runs** | **1.069 %** |
+| **ranked MDE, single (S, S^) pair** | **+2.10 %** |
+| local end-to-end null floor | **0.0629 %** (**17x more sensitive than ranked**) |
 
-## 🔴 The deficit decomposition, and why it changes everything
+## 🔴🔴 We are not behind the frontier. We are at it, inside the instrument.
 
-Every scored rival tree is a local git ref under `refs/remotes/upstream/submissions`,
-and a submission commit's first parent is the organizer main of its day. So
-`score(S) / score(S^)` is a **ranked A/B measurement of that submission's diff**,
-run on the official M5, on all eight hidden prompts, at zero cost to us.
+Ledger 193 measured the official instrument by finding every pair of ranked runs
+whose **submitted surface is byte-identical** (keyed on the git tree, never on
+the announced commit SHA, which recovers zero groups). Those pairs are the
+instrument measuring a known null.
 
-Reading the board that way (ledger 192):
+- Median disagreement of two runs of the **same tree**: **1.113 %**.
+- **51.4 %** of identical-surface pairs disagree by more than **1.00 %**.
+- Five (S, S^) pairs have a literally **empty** `git diff` and scored
+  `+0.0081, +0.1556, -0.6106, -0.6786, -1.2737 %`. One of them was **promoted**.
+- The noise is on the **candidate** leg (median pair delta 0.589 %), not the
+  pinned serial leg (0.181 %) -- a ratio of **3.62x**. The pinned baseline does
+  not drift: +0.000058 %/h over 109.8 h, t = 0.48.
 
-| component | ratio | points of the gap | share |
-|---|---|---:|---:|
-| **our own E27 scored-surface change** | `x1.00332661` | **0.3327** | **62 %** |
-| organizer main advanced after we submitted | `x1.00185982` | 0.1860 | 35 % |
-| the frontier's 70-line untimed warm | `x1.00017291` | 0.0173 | 3 % |
-| **total deficit to the frontier** | `x1.00536642` | **0.5366** | 100 % |
+**Organizer main resubmitted its own byte-identical tree and scored 0.6144 %
+lower -- more than our entire deficit. Our best row sits above organizer main's
+own second draw.**
 
-Sixty-two percent of the gap is a hole we dug ourselves. Thirty-five percent is
-base staleness. Only three percent is a mechanism a rival holds and we do not.
+### RETRACTED: the ranked MDE of +0.283 %
 
-**Our current base has never been measured on the ranked M5.** It differs from
-organizer main by exactly two files, 144 inserted and 66 deleted lines, and the
-E27 quantized table that cost `0.331 %` is no longer in it.
+That figure was 2 sd of a **serial-leg** jitter (0.2257 %) applied to the
+**score**, assuming the median over eight prompts averages it down. The score is
+dominated by the candidate leg, whose noise is a per-run common mode across all
+eight prompts, so the median averages away almost nothing. **The published
+ranked MDE was wrong by 7.4x.** Divide every "N x MDE" claim priced against
++0.283 % by 7.4. `research/ranked_noise.py` is now the single authority; the ten
+historical modules keep their own arithmetic and carry a pointer to it.
+
+The local floor is untouched and every local causal result stands.
+
+### What this does to ledger 192's decomposition
+
+The arithmetic is still right, but each of its three components (0.0173, 0.1860,
+0.3327 points) is between one sixth and one half of **one sd of a single pair**.
+None is individually measurable. In particular "our E27 change cost us 0.33 %"
+is **not supported** -- it rests on one pair with sd 1.069 %. What survives is a
+weaker one-sided reading: E27 did not deliver the +2.21 to +2.53 % our local
+pricer predicted, because an effect near 2 sd would probably have shown.
+
+## 🔴 Two strategy changes that follow immediately
+
+1. **Decide locally, submit to claim.** Ranked is 17x coarser than a local ABBA
+   pair. No official submission can validate a mechanism worth less than ~2 %.
+   Every question that a student Mac can settle must be settled there.
+2. **Cadence beats mechanism size at the frontier.** A certified candidate whose
+   true score equals organizer main has a **49 %** chance of outscoring the live
+   frontier on any given run. Duplicate submissions stay forbidden, but hoarding
+   slots for a perfect candidate is strictly wrong: every distinct, honest,
+   certified candidate carries a free draw from a distribution whose spread
+   exceeds our whole deficit.
+
+Selection bias follows: a truly null change that gets promoted shows
+`E[observed | true 0, observed > 0] = +0.60 %`. **Do not rank rival mechanisms by
+the size of the step that promoted them.** Ledger 192's census keeps its value as
+a source of ideas and loses it as a source of prices.
+
+## 🔴 Critical path: certify our current base and submit it
+
+Our base is organizer main plus **144 insertions and 66 deletions across exactly
+two files**, and it has **never been measured at rank**. Under the two changes
+above, the highest-value action available is not a new mechanism -- it is to
+finish certifying that tree and submit it. **E60 rung 1 is exactly that
+certification and is now the campaign's critical path.**
+
+The E27 quantized table is no longer in that tree.
 
 Two retractions follow:
 

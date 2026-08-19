@@ -15,6 +15,11 @@ RANKED = {
     "beagle": {"leg_ms": 6233.1, "rounds": 107, "ms_per_round": 53.33, "dilution": 0.91552},
     "medicine": {"leg_ms": 5820.7, "rounds": 99, "ms_per_round": 53.48, "dilution": 0.90953},
 }
+# RETRACTED by ledger 193(E): this is 2 sd of the SERIAL leg's jitter applied to the
+# score, and the median over eight prompts does not average the candidate-leg common
+# mode away. The measured single-pair ranked MDE is 2.10 %, 7.4x larger. The value
+# below is kept so this module's published arithmetic stays reproducible; import
+# research/ranked_noise.py for any NEW ranked pricing.
 RANKED_MDE_PERCENT = 0.283
 
 # ns per dispatch. Each entry names what it actually measures.

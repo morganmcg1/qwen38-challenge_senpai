@@ -79,6 +79,11 @@ DILUTION_MEDIAN_PAIR = 0.9125          # mean(beagle, medicine)
 FULL_ATTENTION_LAYERS = 16             # 64 layers = 48 GDN + 16 full attention
 LOCAL_PREFILL_SHARE = 0.23389          # E55, MTP leg
 TRANSFER_R = 65.009 / 30.402           # 188(A), = 2.1383
+# RETRACTED by ledger 193(E): this is 2 sd of the SERIAL leg's jitter applied to the
+# score, and the median over eight prompts does not average the candidate-leg common
+# mode away. The measured single-pair ranked MDE is 2.10 %, 7.4x larger. The value
+# below is kept so this module's published arithmetic stays reproducible; import
+# research/ranked_noise.py for any NEW ranked pricing.
 RANKED_JITTER_PCT = 0.2257             # per prompt per leg, n=408
 RANKED_MDE_PCT = 0.283                 # 2 sd
 MAX_DRAFT = 8                          # segmentedVerifyDepthCap
