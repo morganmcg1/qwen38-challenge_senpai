@@ -1,6 +1,7 @@
 # SENPAI Research State
 
-- 2026-08-19, after merging E54 (PR #58). Campaign base `7cba4ddb`.
+- 2026-08-19, after merging E54 (PR #58) and reviewing E55 (PR #57).
+  Campaign base `7cba4ddb`.
 - Most recent human research direction: issue #22 -- execute aggressively
   toward the winning frontier. Issue #31 is complete and closed. No new human
   direction is outstanding.
@@ -32,6 +33,17 @@ board result of **-0.3321 %**. The sign differs under every mixture and the gap
 survives all of my published corrections, leaving +0.90 points (traffic branch)
 or +2.02..+2.13 (h-ratio branch).
 
+🔴 **A second binding correction landed with E55 (189(D)), and it is mine.**
+`psi_mtp = 0.693391` is a share of the **local** candidate leg, and the local
+leg carries a **23.4 %** seed prefill against the ranked **8.75 %**. Every
+ranked price published through `psi_mtp x ... x 0.9125` therefore charged the
+prefill twice and is **low by 1.29x to 1.31x**. As a ranked leg elasticity
+`psi_mtp` is **0.8167..0.8259**. Instrument `research/dilution_basis.py`,
+12 self-tests including two positive and one negative control, exits 0. Two
+calibrations sharing no input agree on the underlying round-basis share to
+0.36 %. **This flips the `r=2` route from closing the deficit under one mixture
+to closing it under both.**
+
 Three consequences drive everything currently in flight.
 
 1. **Only an edit that leaves the QMV kernel maximum unmoved can win.**
@@ -58,30 +70,38 @@ Three consequences drive everything currently in flight.
 
 | PR | student | question |
 |---|---|---|
-| #57 | qwen-askeladd | `<T,9,5>` end to end. Repositioned from candidate build to **physics measurement**: it reads `psi_mtp * f9 * 11.548 %` and settles the E48-vs-E53 mixture dispute, where the two mixtures disagree 3.2x on the M=9 share. Must add a `ceil_only` control and must not compose M=5+M=9 (that composition is E27 exactly). |
+| #57 | qwen-askeladd | E55 `<T,9,5>` end to end. **Terminal result in, revision requested.** Clean -4.2952 % local leg win, bitwise exact at 512 tokens including post-EOS continuation, 14/14 negative controls firing. Census 129 against the shipped 108, so it fails the register gate and is **not a candidate on merit**. It is nonetheless **register-identical to E27** while carrying only one of E27's two cells, so an official score contrasted with E27's receipt isolates the M=5 cell at rank **with the ceiling term cancelling exactly**. Revision asks for `--local-submit` plus reconciliation of 189(G). |
 | #59 | qwen-edward | E56 stream-aware draft depth schedule. |
 | #61 | qwen-alphonse | E58 round dispatch census and buffer batching -- also an independent occupancy cross-check on the ceiling question. |
-| E59 (pending) | qwen-thorfinn | Is E27's residual an **additive** shared-ceiling tax or a **multiplicative** transfer factor? One bit-exact `ceil_only` control answers it, and only one QMV route survives either answer. |
+| E59 (assigning) | qwen-thorfinn | The `r=2` row-block route itself, gated on its own register census. It is now the **highest-value assignment in the campaign**: frontier-taking under every mixture on the table and immune to the ceiling question by construction. |
 
 ## Potential next research directions
 
-**Tier 1 -- the surviving QMV route.** `<T,5,5>` at `rows_per_simd = 2` over
-two sequential row blocks. It is bit-exact by construction (same 8 rows, same
-per-row dot products, same within-row accumulation order) and censuses at 91
-registers against a shipped kernel maximum of 104, so it does **not** raise the
-ceiling. That maximum is a **legality floor** pinned by M=7, whose only legal
-accumulator counts are {4, 5, 7} (188/187(P)), so no retabling can lower it and
-this is the only route that can ever fit under it. Under the additive shape its
-ceiling tax is zero and the calibrated forecast is **+0.65..+0.76 %** under the
-e53_mid mixture, which closes the entire 0.5367 % deficit, against
-**+0.44..+0.51 %** under e48, which does not. Gated on measuring the real `r=2`
-tax at NA=5 (+10.54 % at NA=4, but the `x` volume is 25 % larger).
+**🔴 Tier 1, and it is now the campaign's best single idea -- the surviving QMV
+route.** `<T,5,5>` at `rows_per_simd = 2` over two sequential row blocks. It is
+bit-exact by construction (same 8 rows, same per-row dot products, same
+within-row accumulation order) and is predicted to census at 91 or 100
+registers against a shipped kernel maximum of **108**, so it does **not** raise
+the ceiling. That maximum is a **legality floor** pinned by M=7, whose only
+legal accumulator counts are {4, 5, 7} and whose cheapest legal split {4,3} is
+mixed and so pays askeladd's `+4` (187(P), corrected). No retabling can lower
+it, and no NA=5 table can read below 125, so this is the only route that can
+ever fit under it.
 
-**🔴 The two live experiments are coupled** (188(E)). askeladd's #57 M=9 arm
-settles the E48-vs-E53 mixture dispute, and that mixture decides whether
-thorfinn's `r=2` route takes the frontier or merely clears the MDE. I had been
-treating them as independent probes of the same structure. They are not: one
-supplies a parameter the other's promotion decision depends on.
+Its ceiling tax is **zero by construction**, which makes it immune to the
+additive-versus-multiplicative question that governs everything else in the
+QMV direction. With 189(D)'s dilution correction the calibrated forecast is
+**+0.84..+0.99 %** under e53_mid and **+0.56..+0.66 %** under e48 -- **both
+above the 0.5367 % deficit**, and 2.0x to 3.5x the ranked MDE. Gated on
+measuring the real `r=2` tax at NA=5 (+10.54 % at NA=4, but the `x` volume is
+25 % larger) and on its own register census.
+
+**The mixture dispute is still open, and nothing in flight resolves it**
+(188(E), retracted). #57 measured the **local** fixture's `f9 = 55.4 %`, which
+confirms my own local cost-weighting of 53.45 % to 3.6 % and says nothing about
+the ranked share. 184(D) proved the ranked share is unidentifiable from the
+receipt by any moment-based method. The route must therefore be priced across
+the whole mixture band -- which, after 189(D), it survives at both ends.
 
 **Tier 1 -- RESOLVED this round (188).** The `/3.55` divisor is **refuted** for
 QMV decode changes. The 7.58x prefill advantage is the `qmm_nax` *matmul*

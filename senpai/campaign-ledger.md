@@ -10756,14 +10756,21 @@ it.
 
 ### 187(L) The one surviving QMV route leaves the kernel maximum unmoved
 
-The shipped true kernel maximum is `<T,7,4>` at `r=4` = **104**.
+The shipped true kernel maximum is `<T,7,4>` at `r=4` = **108**.
+
+⚠️ **Corrected in 187(P) and 189(C).** I first wrote 104 here, priced from the
+bare `r=4` ladder `20 + 21*NA`. Both students measured **108**. The bare ladder
+is only valid on a *uniform* cell, and `<T,7,4>` is **mixed** (groups {4,3}).
+askeladd's law adds `+4` for a second distinct group size. The correction is
+adverse in sign to my own argument and I keep the conclusion anyway, because
+the conclusion gets *stronger*, not weaker.
 
 - `<T,5,5>` at `r=4` = `20 + 21*5` = **125** -> raises the ceiling.
 - `<T,5,5>` at `r=2` = `16 + 15*5` = **91** -> does **not** raise it.
 
 ⚠️ Two ledger lines disagree on the `r=2` intercept: 183(C) fits
 `16 + 15*NA` (196 at NA=12), while the E44 anchors (`rb_na6_r2=117`,
-thorfinn's `83 -> 66`) fit `15 + 17*NA` -> **100** at NA=5. Both sit below 104,
+thorfinn's `83 -> 66`) fit `15 + 17*NA` -> **100** at NA=5. Both sit below 108,
 so the conclusion is robust, but **measure the census; do not assume the
 intercept.**
 
@@ -10848,7 +10855,9 @@ observed **-6.560 %**.
    retires E27, E44, E46, E49, E54 and PR #57. Report and stop.
 3. B moves one leg but not the other -> the ceiling cost is width-dependent,
    183(B) is incomplete, stop and report.
-4. `<T,5,5>` at `r=2` censuses above 104 -> the `r=2` route is dead.
+4. `<T,5,5>` at `r=2` censuses above 108 -> the `r=2` route is dead.
+   (The bound was written as 104 and is corrected in 187(P). 108 is the real
+   shipped maximum and the real legality floor.)
 
 ### 187(O) Consequences for live work
 
@@ -10863,7 +10872,11 @@ observed **-6.560 %**.
 - The single-cell `<T,5,5>` promotion is cancelled before it was assigned.
 
 
-### 187(P) The shipped ceiling of 104 is a LEGALITY FLOOR, not a tuning choice -- which makes the `r=2` route the unique survivor for a structural reason
+### 187(P) The shipped ceiling of 108 is a LEGALITY FLOOR, not a tuning choice -- which makes the `r=2` route the unique survivor for a structural reason
+
+⚠️ **This section is the corrected version.** The commit that first published it
+said 104 everywhere. See the correction note at the end; the structure survives
+the correction and the margin gets larger.
 
 187(L) established that only an edit leaving the kernel maximum unmoved can
 win. That raises the dual question, which is cheaper to answer and which I had
@@ -10876,49 +10889,104 @@ enumerating every legal configuration against the `_m` wrapper's own
 constraints: `static_assert(M % IPG != 1)` at `quantized.h:1169`, `NA >= 2` at
 `:980`, and the shipped chooser `IPG = ceil(M / ceil(M / 4))`.
 
-The chooser reproduces the shipped table exactly at all seven widths, and the
-`r=4` ladder reproduces all three exact single-group census anchors with zero
-residual, so the model is anchored before it is used.
+The register model is askeladd's E55 law, which has **zero fitted parameters**
+and reproduces all six independent census observations exactly:
 
-| M | legal IPG | cheapest legal NA | regs there | streams there |
+```
+peak_live_regs = 20 + 21*max(NA) + 4*[the cell has two distinct NA group sizes]
+```
+
+| NA groups | class | observed | predicted | measured in |
 |---|---|---|---|---|
-| 3 | 1, 3 | 3 | 83 | 1 |
-| 4 | 1, 2, 4 | 2 | 62 | 2 |
-| 5 | 1, 3, 5 | 3 | 83 | 2 |
-| 6 | 1, 2, 3, 4, 6 | 2 | 62 | 3 |
-| **7** | **1, 4, 5, 7** | **4** | **104** | 2 |
-| 8 | 1, 2, 3, 4, 5, 6, 8 | 2 | 62 | 4 |
-| 9 | 1, 3, 5, 6, 7, 9 | 3 | 83 | 3 |
+| {3} | uniform | 83 | 83 | base M3, M6, M9 |
+| {4} | uniform | 104 | 104 | base M4, M8 |
+| {5} | uniform | 125 | 125 | E27 M5 |
+| {2,3} | mixed | 87 | 87 | base M5 |
+| {3,4} | mixed | 108 | 108 | base M7 |
+| {4,5} | mixed | 129 | 129 | E55 M9, E27 M9 |
 
-**The lowest kernel maximum reachable by any legal retabling is 104, and it is
+The `+4` term is **real, not an instrument artefact**: it is read out of the
+census's own `peak_live_values` (41 -> 45) and `allocas` (1 -> 2) on the mixed
+cells. A cell holding two different accumulator widths materialises a second
+accumulator array. See 189(C) for why this retires thorfinn's earlier
+"over-count" caveat.
+
+The chooser reproduces the shipped table exactly at all seven widths:
+
+| M | IPG | NA groups | class | regs |
+|---|---|---|---|---|
+| 3 | 3 | {3} | uniform | 83 |
+| 4 | 4 | {4} | uniform | 104 |
+| 5 | 3 | {3,2} | **mixed** | **87** |
+| 6 | 3 | {3,3} | uniform | 83 |
+| **7** | **4** | **{4,3}** | **mixed** | **108** |
+| 8 | 4 | {4,4} | uniform | 104 |
+| 9 | 3 | {3,3,3} | uniform | 83 |
+
+Kernel maximum **108**, which is exactly what both the E54 and the E55 censuses
+report for the shipped binary. The model is anchored before it is used.
+
+Now the cheapest legal configuration per width:
+
+| M | legal IPG | cheapest legal NA groups | regs there | streams there |
+|---|---|---|---|---|
+| 3 | 1, 3 | {3} | 83 | 1 |
+| 4 | 1, 2, 4 | {2,2} | 62 | 2 |
+| 5 | 1, 3, 5 | {3,2} | 87 | 2 |
+| 6 | 1, 2, 3, 4, 6 | {2,2,2} | 62 | 3 |
+| **7** | **1, 4, 5, 7** | **{4,3}** | **108** | 2 |
+| 8 | 1, 2, 3, 4, 5, 6, 8 | {2,2,2,2} | 62 | 4 |
+| 9 | 1, 3, 5, 6, 7, 9 | {3,3,3} | 83 | 3 |
+
+**The lowest kernel maximum reachable by any legal retabling is 108, and it is
 pinned by M=7 alone.** M=7 has no legal accumulator count below 4 because
-`7 % 2 == 1` and `7 % 3 == 1` both trip the wrapper's own static assert. The
-shipped table is therefore already sitting on its floor.
+`7 % 2 == 1` and `7 % 3 == 1` both trip the wrapper's own static assert, and its
+only legal split {4,3} is mixed and therefore pays the `+4`. The shipped table
+is already sitting on its floor.
 
-Two consequences:
+Three consequences:
 
 1. **There is no free ceiling reduction.** M=4, M=6 and M=8 could each drop to
    NA=2 at 62 registers, but that lowers nothing -- the maximum stays pinned at
-   104 by M=7 -- while adding a stream to each of those widths and so paying
+   108 by M=7 -- while adding a stream to each of those widths and so paying
    real cell time for zero occupancy benefit. This direction is closed before
    it costs a GPU slot.
 
-2. **The `r=2` row-block route is not one option among several that happen to
-   fit under 104. It is the only route that can ever fit.** Any NA=5 cell at
-   `r=4` costs `+21` registers and no retabling elsewhere can buy that back,
-   because every other width is already at or above its own floor and M=7
-   cannot move at all. Against the immovable 104:
+2. **No NA=5 table can read below 125, and only M=5 attains it.** Every other
+   width that carries an NA=5 group must also carry a smaller group, so it is
+   mixed and reads 129. This is askeladd's own corollary and it is why E55's
+   M=9-only edit censuses at exactly the same 129 as E27's full composite.
+
+3. **The `r=2` row-block route is not one option among several that happen to
+   fit under 108. It is the only route that can ever fit.** Any NA=5 cell at
+   `r=4` costs at least `+17` registers over the floor and no retabling
+   elsewhere can buy that back, because every other width is already at or
+   above its own floor and M=7 cannot move at all. Against the immovable 108:
 
    | configuration | registers | verdict |
    |---|---|---|
-   | `<T,5,5>` at `r=4`, `20+21*NA` | **125** | raises the ceiling |
-   | `<T,5,5>` at `r=2`, 183(C) `16+15*NA` | **91** | fits |
-   | `<T,5,5>` at `r=2`, E44 `15+17*NA` | **100** | fits |
+   | `<T,5,5>` at `r=4`, `20+21*NA` | **125** | raises the ceiling by 17 |
+   | `<T,5,5>` at `r=2`, 183(C) `16+15*NA` | **91** | fits, headroom 17 |
+   | `<T,5,5>` at `r=2`, E44 `15+17*NA` | **100** | fits, headroom 8 |
 
 Both competing `r=2` intercepts sit strictly below the floor, so 187(L)'s
 conclusion is robust to that disagreement. The census must still be measured
 rather than assumed, exactly as 187(L) requires -- the two fits differ by 9
 registers and only measurement settles which ladder is right.
+
+**Correction note, recorded because the error was mine and it was published.**
+The first version of this section, and the first version of
+`research/e59_ceiling_floor.py`, priced every cell on the bare `r=4` ladder
+`20 + 21*NA` and reported a shipped maximum and a legality floor of **104**.
+That omitted the mixed-group `+4`. Both students had already measured 108 in
+their censuses and I did not reconcile my model against their instrument before
+publishing. The direction of the error matters: I under-stated the floor, which
+means I under-stated the `r=2` route's headroom. `<T,5,5>` at `r=2` clears the
+real floor by 17 registers on the 183(C) ladder and by 8 on the E44 ladder,
+where the 104-based version claimed 13 and 4. **The argument's structure is
+unchanged and its margin is larger.** I record it rather than quietly editing
+the number, because a model that disagrees with a measured instrument and is
+published anyway is the exact failure mode this ledger exists to catch.
 
 **Caveat on scope.** This closes ceiling reduction *by retabling within the
 `_m` family*. It does not close routing `case 7:` out of the `_m` family
@@ -10945,10 +11013,18 @@ current work.
   P4's approximately-zero shared-ceiling term and E49 Arm 2's absent
   dose-response are both width-sweep results, and the width sweep mispredicts
   E27 by 2.5 points.
-- **The shipped QMV register ceiling of 104 cannot be lowered.** It is a
+- **The shipped QMV register ceiling of 108 cannot be lowered.** It is a
   legality floor pinned by M=7, whose only legal accumulator counts are
-  {4, 5, 7}. There is no free occupancy win by retabling, and the `r=2`
-  row-block route is the only route that can ever fit under it.
+  {4, 5, 7} and whose cheapest legal split {4,3} is mixed. There is no free
+  occupancy win by retabling, and the `r=2` row-block route is the only route
+  that can ever fit under it.
+- **Price a register cell with the mixed-group term, never the bare ladder.**
+  `20 + 21*max(NA)` is valid only on a uniform cell. A cell with two distinct
+  group sizes costs `+4` more, and that term is measured, not modelled. I
+  published 104 for `<T,7,4>` against two student censuses that both said 108.
+- **Reconcile a model against an existing measured instrument before
+  publishing it.** Both censuses were already in the ledger when I wrote the
+  bare-ladder version.
 
 ---
 
@@ -11065,10 +11141,28 @@ PR #57 M=9 arm is what settles the mixture dispute -- the two mixtures disagree
 3.2× on `f9` -- so **his measurement decides whether thorfinn's route can
 win.**
 
-I had been treating #57 and E59 as two independent probes of the same
-structure. They are not independent: one supplies a parameter the other's
-promotion decision depends on. Neither is redundant, and #57's repositioning
-from candidate build to physics measurement is further justified by this.
+⚠️ **RETRACTED, and the retraction is mine.** The dependence of the promotion
+decision on `f9` is correct and stands. The claim that **#57 settles it** is
+wrong. #57 returned `f9 = 55.4 %`, but that is the **local fixture's** width
+mixture, measured on a 512-token local run. The e48-versus-e53 dispute is about
+the **ranked** eight-prompt mixture, which no local run can observe. The two
+numbers are not the same quantity and are not even close: my own cost-weighting
+of the local fixture already put M=9 at 53.45 %, so #57's 55.4 % is an
+out-of-sample confirmation of *my local weighting* (agreement 3.6 %) and
+supplies exactly zero information about the ranked share.
+
+184(D) already proved this is not an oversight but a definitive null: **no
+moment-based method can bound the ranked M=9 share** from the receipt, because
+the identification intervals on beagle (0.00–70.34 %) and medicine
+(0.00–67.12 %) span nearly the whole range. The ranked mixture dispute can only
+be settled by a ranked measurement, or by an instrument nobody has built.
+
+**Corrected consequence.** #57 and E59 are still coupled through `f9_ranked`,
+but **nothing currently in flight resolves it.** The route must therefore be
+priced across the full mixture band 0.4359..0.7612 and judged on whether that
+band's *lower* end justifies the slot. It does: even the e48 lower end,
+0.4359 %, clears the ranked MDE of 0.283 % by 1.54×. The route is worth
+running; it just cannot be promised as frontier-taking in advance.
 
 Under e48 the route still clears the MDE by 1.5–1.8×, so it remains worth
 running either way. It simply stops being a frontier-taking result and becomes
@@ -11098,5 +11192,297 @@ settled. It does not settle the shape.
   directly; `h ∈ [0.8343, 0.8617]` mean-pinned at depth 4. Report the union
   unless one form is specifically justified.
 - **Check whether live experiments are coupled before calling them
-  independent.** #57 supplies the mixture parameter that E59's promotion
-  decision depends on.
+  independent.** E59's promotion decision depends on `f9_ranked`.
+- 🔴 **A local width histogram is not the ranked width mixture.** I asserted
+  #57 would settle `f9` and it could not: it measures the local fixture, and
+  184(D) already proved the ranked share is unidentifiable from the receipt.
+  Before claiming experiment A supplies experiment B's parameter, check that A
+  observes the same quantity B consumes, under the same `harness=` label.
+
+---
+
+## 189. E55 verdict: a clean -4.30 % local win that is not a candidate, a register law with zero fitted parameters, and the dilution error it exposed in MY OWN pricing chain
+
+askeladd's PR #57 (W&B
+[`wxezisvs`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wxezisvs),
+[`f4ej9y1n`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/f4ej9y1n),
+[`o8ig3ht7`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/o8ig3ht7))
+returned `status: succeeded` with the summary "COMPOSITION WORKS LOCALLY; THE
+ADVISOR'S REGISTER GATE FAILS." Both halves of that sentence are correct, and
+the second half is the reason the result is worth more than the first.
+
+### 189(A) What he measured
+
+A 4-line byte-neutral edit in 2 twins (readable header plus the
+runtime-effective JIT string) routes `case 9:` to `<T,9,5>`. ABBA
+`base / m9two / base2`, 512-token window, Apple M4 Pro, permitted ungated mode
+with `cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`,
+`official_or_ranked_score=false` preserved verbatim and entry GPU temperatures
+42.96 / 45.31 / 46.07 C recorded.
+
+| quantity | base bracket | candidate | delta |
+|---|---|---|---|
+| `candidate_mtp_leg_seconds_per_token` | 0.03343178 | 0.03199581 | **-4.2952 %** |
+| MTP round cost, seed prefill removed | | | **-5.5439 %** |
+| serial leg | | | +0.004659 % |
+| serial round cost | | | -0.0074 % |
+| seed prefill | | | -0.2055 % |
+
+The primary effect is **86x** the +0.0497 % null. All three falsifiers hold: a
+shared regression or a shared improvement would have moved the serial leg and
+it did not. `raw_p` 2.196153 / 2.294457 / 2.195452 on the three arms; 78
+rounds, 567 rows, 434 accepted, 55 rejected, mean draft 6.269, and the width
+histogram is identical on all three arms, so the win is cell timing and not a
+changed accept trajectory.
+
+**The measurement selects no published mixture.** My preregistered brackets
+were -1.838 % (E48 f9), -0.756 % and -0.391 % (edward). The measured -4.2952 %
+is **2.34x the largest of them**. 189(F) explains why that is not the mixture
+dispute being settled.
+
+Exactness is the cleanest this campaign has seen. PATH C is bitwise identical
+at 512 tokens including post-EOS continuation: EOS at index 300, 212 tokens
+generated after it, window closed at 513. `max_abs_ulp_top2_logits = 0` and
+zero deltas in all 10 ledger fields, provenance-gated on distinct worker
+digests (base `m9_na=3`, candidate `m9_na=5`). **14 of 14 negative controls
+fire**, so the comparison can demonstrably fail. No delta at any M <= 9.
+
+Gates: `swift test` shows the same 9 pre-existing failures on base and
+candidate; `twin_audit` rc=0; scored-surface rc=0; scope rc=0; budget growth
+0/262144; `senpai/verify-ranked-score-boundary.sh` rc=0. The packaged diff is
+exactly the 2 submitted twins with the JIT twin included, plus 30 research-only
+files, 0 outside `research/`.
+
+### 189(B) The register law, with zero parameters fitted by him
+
+```
+peak_live_regs = 20 + 21*max(NA) + 4*[the cell has two distinct NA group sizes]
+```
+
+The `+4` is not fitted. He read it out of the census's own `peak_live_values`
+(41 -> 45) and `allocas` (1 -> 2). The `r=2` ladder misses the shipped cells by
+34 registers, which independently proves the shipped kernel runs
+`rows_per_simd = 4`. Six observations, six exact predictions, listed in the
+corrected 187(P).
+
+### 189(C) The `+4` is REAL, which settles a student disagreement AND my own error
+
+Two people had already met this term and both mishandled it.
+
+**thorfinn** published the `+4` on mixed-NA cells as an **instrument
+over-count**, and claimed `<T,7,4>` was "truly" 104. That caveat is now
+**retracted**: a cell holding two different accumulator widths materialises a
+second accumulator array, and the census's `allocas` field says so directly.
+His `<T,7,4>` "true 104" is really **108**.
+
+**I** made the larger error. Ledger 187(P) and the first version of
+`research/e59_ceiling_floor.py` priced every cell on the bare ladder
+`20 + 21*NA` and published a shipped maximum and a legality floor of **104** --
+against two student censuses that had both already measured **108**. The
+corrected instrument now implements askeladd's law, passes 9 self-tests, and
+reproduces 108. 187(P) carries the correction note.
+
+The correction is adverse to my own convenience and I keep the conclusion
+anyway, because it makes the conclusion stronger: the floor is higher than I
+said, so the `r=2` route clears it by **17** registers on the 183(C) ladder and
+**8** on the E44 ladder, where the 104-based version claimed 13 and 4.
+
+### 189(D) 🔴 THE HEADLINE, and it is a correction to MY OWN pricing chain
+
+askeladd found that the seed prefill is inside his **local** leg too, at
+**23.389 %** of the MTP leg (serial leg 10.634 %), against the ranked
+median-pair **8.75 %**. His leg budget closes to **1.06e-4 percentage points**
+on all 12 legs, with `leg - prefill - sum(blocks)` equal to +70 microseconds out
+of 17.1 seconds on every MTP leg. Reading the prefill as outside the leg leaves
+4.00 seconds unexplained. My `K = seed_tokens x prefill_seconds_per_token`
+identity from 186(B) reproduces his `seed_prefill_seconds` to **zero relative
+error**, out of sample.
+
+He then asked me a question I owed him an answer to, because I own `psi_mtp`:
+his win reads **-4.2952 %** on the leg and **-5.5439 %** on the round cost, a
+ratio of exactly **1.2907**, and 186(B)'s `x0.9125` gives **+3.9195 %** or
+**+5.0589 %** depending on which one it multiplies. Which is the ranked score
+change?
+
+**The answer is the ROUND basis, and the reason is that the leg basis charges
+the seed prefill twice.** The local leg is already diluted by the *local*
+prefill share; multiplying it by 0.9125 then applies the *ranked* prefill share
+a second time. This is precisely the failure mode ledger 186(A) caught in item
+122's hypothesis B. It is the second time this campaign has been caught
+charging the prefill twice, which is why 189(J) makes it a standing rule.
+
+**And that answer indicts my own constant.** Instrument:
+`research/dilution_basis.py`, self-test 12 checks including 2 positive controls
+and 1 negative control, exits 0.
+
+`psi_mtp = 0.693391` is a **local LEG share**, proven by source rather than
+asserted:
+
+```
+Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift
+    :94   let started = Date()                    <- the clock origin
+    :95   client.beginMTPDecode(seedTokens:)      <- the seed prefill runs HERE
+    :197  let decodeSeconds = Date().timeIntervalSince(started)
+
+research/e42_analyze.py:161   leg[key]["decode_seconds"]   <- what psi_mtp reads
+research/e30_log_wandb.py:183 names the same field
+                              "mtp_decode_seconds_prefill_inclusive"
+```
+
+`research/e49_price.py:78` then computes `leg = PSI_MTP * removed` and feeds it
+to `score_pct_from_leg_gains`, which consumes **ranked** per-prompt leg
+speedups. That silently equates a leg share measured at 23.4 % prefill with one
+that applies at 8.75 % prefill. My own `research/e54_gap_decomposition.py` then
+multiplied by 0.9125 on top, charging the prefill a further time.
+
+The correct re-basing is **one factor, not two**:
+
+```
+psi_mtp_ranked_leg = psi_mtp_local_leg * (1 - p_ranked) / (1 - p_local)
+                   = 0.693391 * 0.9125 / 0.7661
+                   = 0.8259           (0.8167 using his amplification for p_local)
+```
+
+**Every ranked price I have published through `psi_mtp x ... x 0.9125` is low
+by a factor of 1.2907 to 1.3053.**
+
+The correction is not a re-derivation of one number by itself. Two calibrations
+that share **no input** agree on the crossrow QMV share of the round cost:
+
+| route | inputs | Q/R |
+|---|---|---|
+| `psi_mtp / (1 - p_local)` | E48 dose response, E55 prefill share | 0.89496 .. 0.90508 |
+| E55 round win / (f9_local x E54 cell win) | E55 timing, E54 cell timing | 0.86656 .. 0.89817 |
+
+They disagree by **0.36 %** on the closest pair. This also bounds a fact I did
+not otherwise hold: `Q/R <= 1` forces the E48 legs to have run **at least 353
+decode tokens**, so `psi_mtp` was calibrated on a long window and the re-basing
+is legitimate rather than an extrapolation.
+
+### 189(E) What the correction does to the two live decisions
+
+| mixture | quantity | published | corrected |
+|---|---|---|---|
+| e48 | M=9 cell alone | +0.9495 .. +1.1074 % | **+1.2255 .. +1.4455 %** |
+| e48 | `r=2` route | +0.4359 .. +0.5084 % | **+0.5626 .. +0.6636 %** |
+| e53_mid | M=9 cell alone | +0.3769 .. +0.4395 % | **+0.4864 .. +0.5737 %** |
+| e53_mid | `r=2` route | +0.6527 .. +0.7612 % | **+0.8424 .. +0.9937 %** |
+
+🔴 **The `r=2` route now closes the 0.5367 % deficit under BOTH mixtures.**
+188(E) recorded that it closed under e53_mid and did not close under e48. That
+is no longer true: the corrected e48 lower bound is +0.5626 %, above the
+deficit, and it clears the ranked MDE of 0.283 % by 2.0x to 2.3x.
+
+This is a genuine decision change. The `r=2` row-block route was an incremental
+result under one mixture and unpromotable under the other. It is now
+**frontier-taking under every mixture on the table**, and it carries **zero
+ceiling dose by construction** (91 or 100 registers against the 108 floor), so
+it is immune to the additive-versus-multiplicative question that governs
+everything else in the QMV direction. It becomes the highest-value assignment
+in the campaign.
+
+### 189(F) The correction I owe askeladd: his `f9 = 55.4 %` is LOCAL
+
+His arm did **not** settle the ranked mixture dispute, and I had claimed in
+188(E) that it would. It measured the **local fixture's** width mixture. My own
+cost-weighting of that same fixture already put M=9 at **53.45 %**, so his
+55.4 % agrees with my local weighting to **3.6 %** and is a welcome
+out-of-sample confirmation of *that* -- while supplying exactly zero
+information about the ranked share.
+
+184(D) already proved this is a definitive null and not an oversight: the
+identification intervals on beagle (0.00-70.34 %) and medicine (0.00-67.12 %)
+span nearly the whole range, so **no moment-based method can bound the ranked
+M=9 share.** 188(E) carries the retraction.
+
+Third out-of-sample agreement, and this one is his: his local prefill of
+7.8117 ms per token reproduces my M5-over-M4-Pro prefill ratio of **7.58** as
+**7.572 .. 7.608**, agreement to **0.10 %**, using none of my ranked numbers.
+
+### 189(G) 🔴 A named student-versus-student tension that must be reconciled
+
+askeladd closed Risk 3 and PR #8 with a one-parameter stream model
+`r = cost(NA=5 group) / cost(NA<=4 group)`, over-determined and self-consistent
+at 1.632 (E49 M=9), 1.598 (E27 M=5) and 1.656 (E27 M=9), spread 2.13 %. From
+it he predicts **+29.9 .. +31.6 %** regression for `<T,7,5>` and `<T,8,5>`.
+
+thorfinn's E54 **measured those exact cells**: `<T,7,5>` **+0.994 %** and
+`<T,8,5>` **+1.345 %**. That is a **30x disagreement**, and thorfinn's Law A'
+(the achieved-bandwidth ladder, -24.3 GB/s per row) explains both to within
+0.01 percentage points.
+
+askeladd did not have E54's numbers when he wrote his model. One of two things
+is true: either his `r` is not the parameter he thinks it is on sibling-group
+cells, or Law A' is fitting the right answer for the wrong reason. This is the
+single largest unexplained conflict in the current evidence base and it is
+assigned back to askeladd, who can settle it with no GPU from E54's published
+numbers.
+
+### 189(H) Why E55 is still worth an official submission although it is not a candidate on merit
+
+He explicitly does **not** present it as a submission candidate, and on merit
+he is right: the census is 129 against the shipped 108, so it pays the full
+ceiling dose, and 189(E)'s corrected M=9 price minus the additive tax
+(-0.90 .. -2.13 points) still straddles zero under e48 and is negative under
+e53_mid, while the multiplicative shape makes it negative under both.
+
+**But his own analysis contains the argument for submitting it anyway, and it
+is better than anything I had.** E55 moves the census 108 -> 129 through
+`case 9:` **alone**, which makes it **register-identical to E27** while
+carrying only one of E27's two cells. Therefore:
+
+> An official E55 score, contrasted with E27's existing receipt, isolates the
+> M=5 cell at rank **with the ceiling term cancelling exactly**.
+
+That is a *ranked* measurement of the additive-versus-multiplicative question.
+It is strictly stronger than the local `ceil_only` proxy I had drafted for
+thorfinn, because it needs no assumption about how a local ceiling effect
+transfers. All four of our rejected submissions still returned an
+`officialScore`, so the number comes back either way, and under the e48 mixture
+with a small tax the corrected price reaches +0.55 %, which would take the
+frontier outright.
+
+`program.md` is explicit that official evaluation is part of the research loop
+and that a well-supported official measurement beats indefinite local
+refinement. Submitting is the correct call.
+
+### 189(I) Decision on PR #57
+
+**Revision requested, not merged and not closed.** The result is scientifically
+excellent and the exactness evidence is the strongest in the campaign, but one
+step of the pre-submit chain was never run: `./benchmark-qwen-mtp.sh
+--local-submit`. He stopped because branch B of my own gate told him to, which
+was the right thing to do with the information he had.
+
+His source note on why it would add little is accurate as far as correctness
+goes -- `--local-submit` differs from `--local-iterate` only in default token
+count (128 vs 64), default golden fixture, and the `mode` string in
+`score.json`, and the 256-step expected sequence is a strict prefix of the
+1024-step one, so it is not a stronger correctness check than his PATH C run.
+But it is the gate `senpai/submit-official.sh` expects, and I am not going to
+submit a candidate that skipped a step of the documented chain.
+
+The revision asks for exactly three things: rebase onto the current base, run
+`--local-submit` once, and reconcile 189(G). Nothing else.
+
+### 189(J) Rules this item adds
+
+- 🔴 **A local win measured on the LEG has already paid the LOCAL prefill
+  dilution. Never multiply it by the ranked `x0.9125`.** Convert on the
+  ROUND-cost basis, or re-base the leg number by
+  `(1 - p_ranked)/(1 - p_local)` first. Charging the prefill twice is now a
+  twice-caught campaign failure mode (item 122 hypothesis B, and this).
+- 🔴 **`psi_mtp = 0.693391` is a LOCAL LEG share, not a ranked one.** As a
+  ranked leg elasticity it is **0.8167 .. 0.8259**. Every price published
+  through `psi_mtp x ... x 0.9125` is low by **1.291x .. 1.305x**.
+- **State the prefill share of any harness before quoting a share of its
+  leg.** A leg share is meaningless without the token window that produced it.
+- **The mixed-group `+4` is real**, read from `peak_live_values` and `allocas`.
+  Price a register cell with it; the bare `20 + 21*max(NA)` ladder is valid
+  only on a uniform cell.
+- **A local width histogram is not the ranked width mixture** (see 188(G)).
+- **A result that fails the advisor's gate can be worth more than one that
+  passes it.** E55 failed the register gate and, precisely because it failed in
+  a *register-identical* way to E27, it became the campaign's only route to a
+  ranked measurement of the ceiling term.
+
