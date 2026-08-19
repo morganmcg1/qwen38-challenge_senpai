@@ -257,6 +257,66 @@ def main() -> int:
             "stream/verdict_ok": s["verdict_ok"],
         })
 
+    c12_path = pathlib.Path("research/e55-comment12-corrections.json")
+    if c12_path.exists():
+        c = json.loads(c12_path.read_text())
+        a, b = c["section_a_prefill_dilution"], c["section_b_register_law"]
+        mtp, ser = a["effects"]["mtp"], a["effects"]["serial"]
+        dil, gate = a["dilution"], b["hard_gate"]
+        summary.update({
+            "dilution/prefill_is_inside_the_local_timed_leg":
+                a["prefill_is_inside_the_local_timed_leg"],
+            "dilution/local_mtp_leg_dilution": dil["local_mtp_leg_dilution"],
+            "dilution/local_mtp_prefill_frac_of_leg": dil["local_mtp_prefill_frac_of_leg"],
+            "dilution/local_serial_leg_dilution": dil["local_serial_leg_dilution"],
+            "dilution/ranked_dilution_mean": dil["ranked_dilution_mean"],
+            "dilution/local_over_ranked_dilution_penalty":
+                dil["local_over_ranked_dilution_penalty"],
+            "dilution/local_prefill_seconds_per_token":
+                dil["local_prefill_seconds_per_token"],
+            "dilution/prefill_transfer_ratio_range":
+                json.dumps(dil["prefill_transfer_ratio_range"]),
+            "dilution/prefill_transfer_ratio_rel_gap_vs_advisor_758":
+                dil["prefill_transfer_ratio_rel_gap_vs_advisor"],
+            "leg/mtp_leg_pct": mtp["leg_pct"],
+            "leg/mtp_round_cost_pct": mtp["round_cost_pct"],
+            "leg/mtp_round_cost_amplification": mtp["amplification_round_over_leg"],
+            "leg/mtp_leg_budget_unexplained_pp": mtp["identity_gap_unexplained_pp"],
+            "leg/serial_round_cost_pct": ser["round_cost_pct"],
+            "leg/prefill_null_pct": mtp["prefill_pct"],
+            "leg/base_null_round_cost_pct": mtp["base_null_round_cost_pct"],
+            "leg/parent_overhead_frac_of_leg": mtp["parent_overhead_frac_of_leg"],
+            "conv/dscore_pct_reading_L_literal":
+                a["conversion"]["reading_L_literal"]["dscore_pct"],
+            "conv/dscore_pct_reading_L_transfer_floor":
+                a["conversion"]["reading_L_literal"]["dscore_pct_transfer_floor"],
+            "conv/dscore_pct_reading_R_undiluted":
+                a["conversion"]["reading_R_undiluted"]["dscore_pct"],
+            "conv/dscore_pct_reading_R_transfer_floor":
+                a["conversion"]["reading_R_undiluted"]["dscore_pct_transfer_floor"],
+            "conv/implied_ranked_f9_pct_for_dscore_4p5":
+                a["f9_backsolve"]["implied_f9_pct_for_dscore_4p5"],
+            "conv/implied_ranked_f9_pct_for_dscore_4p7":
+                a["f9_backsolve"]["implied_f9_pct_for_dscore_4p7"],
+            "reglaw/formula": b["law"],
+            "reglaw/mixed_penalty": b["mixed_penalty"],
+            "reglaw/free_parameters_fitted": b["free_parameters_fitted_by_me"],
+            "reglaw/exact": b["exact"],
+            "reglaw/max_abs_residual": b["max_abs_residual"],
+            "reglaw/r2_ladder_max_abs_residual": b["r2_ladder_max_abs_residual"],
+            "gate/branch": gate["branch"],
+            "gate/candidate_kernel_wide_reg_max": gate["candidate_kernel_wide_reg_max"],
+            "gate/base_kernel_wide_reg_max": gate["base_kernel_wide_reg_max"],
+            "gate/candidate_reads_108": gate["candidate_reads_108"],
+            "gate/no_na5_table_can_read_108": gate["no_na5_table_can_read_108"],
+            "gate/min_cell_regs_over_any_na5_width":
+                gate["min_cell_regs_over_any_na5_width"],
+            "gate/predicted_ceiling_for_case7_or_case8_na5":
+                gate["predicted_ceiling_for_case7_or_case8_na5"],
+            "c12/negative_controls_all_fire": all(c["negative_controls"].values()),
+            "c12/verdict_ok": c["verdict_ok"],
+        })
+
     api = wandb.Api()
     run = api.run("%s/%s" % (PROJECT, args.run))
     run.summary.update(summary)
