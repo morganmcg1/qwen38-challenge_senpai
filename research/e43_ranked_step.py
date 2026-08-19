@@ -76,6 +76,9 @@ LOCAL_STEP_RESIDUAL = 17.448
 PAIR_NOISE = {"beagle": 0.00104, "botany": 0.00281, "drama": 0.00116}
 PAIR_NOISE_DEFAULT = 0.00281   # widest measured prompt, used where unmeasured
 
+CROWN_GAP_PCT = 0.5193         # score gain that would take the board crown
+SIGMA_SCORE_PCT = 0.0978       # run-to-run spread of the published score
+
 
 def load_corpus(refresh: bool) -> list[dict]:
     if refresh or not CACHE.exists():
@@ -963,18 +966,38 @@ def score_after(ratios: dict, deltas: dict) -> float:
 def value_report(obs: list, bracket: dict) -> dict:
     ratios = {o["name"]: o["ratio"] for o in obs}
     base = score_of(ratios)
-    out = {"base_score": base, "arms": {}}
+
+    def gain_pct(frac, end):
+        deltas = {nm: frac * bracket["excess"][nm][end] for nm in CENTRAL}
+        return 100.0 * (score_after(ratios, deltas) / base - 1.0), deltas
+
+    out = {"base_score": base, "arms": {}, "crown_gap_pct": CROWN_GAP_PCT,
+           "sigma_score_pct": SIGMA_SCORE_PCT, "fraction_needed": {}}
     for frac in (0.10, 0.25, 0.469, 1.0):
         for end in ("e_lo_frac", "e_hi_frac"):
-            deltas = {}
-            for name in CENTRAL:
-                deltas[name] = frac * bracket["excess"][name][end]
-            gained = score_after(ratios, deltas)
+            g, deltas = gain_pct(frac, end)
             out["arms"]["removed_%.3f_%s" % (frac, end)] = {
                 "delta_beagle": deltas["beagle"],
                 "delta_medicine": deltas["medicine"],
-                "score": gained,
-                "score_gain_pct": 100.0 * (gained / base - 1.0)}
+                "score": base * (1.0 + g / 100.0), "score_gain_pct": g}
+
+    # How much of the identified excess a fix must actually remove to be worth
+    # running: the score is a median, so this is bisected on the recomputed
+    # order statistic rather than read off a derivative.
+    for target, label in ((SIGMA_SCORE_PCT, "one_sigma"),
+                          (CROWN_GAP_PCT, "crown")):
+        for end in ("e_lo_frac", "e_hi_frac"):
+            if gain_pct(1.0, end)[0] < target:
+                out["fraction_needed"]["%s_%s" % (label, end)] = None
+                continue
+            lo, hi = 0.0, 1.0
+            for _ in range(40):
+                mid = 0.5 * (lo + hi)
+                if gain_pct(mid, end)[0] >= target:
+                    hi = mid
+                else:
+                    lo = mid
+            out["fraction_needed"]["%s_%s" % (label, end)] = hi
     return out
 
 
@@ -1337,6 +1360,11 @@ def print_report(rep: dict) -> None:
         print("  %-24s beagle -%.2f %% medicine -%.2f %% -> %.6f (%+.4f %%)"
               % (key, 100 * a["delta_beagle"], 100 * a["delta_medicine"],
                  a["score"], a["score_gain_pct"]))
+    print("  fraction of the identified excess a fix must remove:")
+    for key in sorted(val["fraction_needed"]):
+        f = val["fraction_needed"][key]
+        print("    %-22s %s" % (key, "unreachable" if f is None
+                                else "%.2f %%" % (100 * f)))
 
     mde = rep["mde"]
     print("\nMDE  80 %% power at s = %s ms (draws %d, tol %.3f %%); "
@@ -1612,6 +1640,23 @@ def self_test() -> int:
        score_after(ratios, {"beagle": 0.5, "medicine": 0.5})
        <= 0.5 * (3.3661 + 3.3940) + 1e-9,
        str(score_after(ratios, {"beagle": 0.5, "medicine": 0.5})))
+
+    # 10b. value_report's bisection: at the returned fraction the recomputed
+    #      median really does clear the target, and just below it does not.
+    vobs = [{"name": nm, "ratio": r} for nm, r in ratios.items()]
+    vbr = {"excess": {nm: {"e_lo_frac": 0.05, "e_hi_frac": 0.30}
+                      for nm in CENTRAL}}
+    vr = value_report(vobs, vbr)
+    for key, target in (("crown_e_hi_frac", CROWN_GAP_PCT),
+                        ("one_sigma_e_hi_frac", SIGMA_SCORE_PCT)):
+        f = vr["fraction_needed"][key]
+        got = 100.0 * (score_after(
+            ratios, {nm: f * 0.30 for nm in CENTRAL}) / vr["base_score"] - 1.0)
+        below = 100.0 * (score_after(
+            ratios, {nm: 0.98 * f * 0.30 for nm in CENTRAL})
+            / vr["base_score"] - 1.0)
+        ck("fraction_needed_%s" % key, got >= target > below,
+           "f=%s gain=%s below=%s target=%s" % (f, got, below, target))
 
     # 11. feasible_rounds respects both hard identities.
     fr = feasible_rounds(4.5327, 6188.0, 0)
