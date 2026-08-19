@@ -31,11 +31,21 @@ import Testing
 // `sdpa_vector` 1-pass is a fixed (1024, 1, 1) (:358), `sdpa_vector_2pass`
 // requests (32, gqa_factor, qL) (:484), and the steel path uses (32, wm, wn).
 //
+// What this suite measured: the width gate lives in
+// `ScaledDotProductAttention::use_fallback` (:591-639), upstream of every
+// kernel choice. This target has head_dim 256, which excludes `supports_sdpa_full`
+// (64, 80 or 128 only, :625-632), and gqa_factor 6, so `qL * gqa <= 32`
+// (:634-637) caps `supports_sdpa_vector` at qL <= 5. A wide unsplit call
+// therefore never reaches the fused vector primitive; it runs an 8-dispatch
+// composed graph of `steel_gemm_fused` plus `block_softmax_precise`, while the
+// chunked form stays in the fused family at 4 dispatches. The chunk is a
+// dispatch discount, not a surcharge.
+//
 // Enable with MLXFAST_E57_DISPATCH_COUNT=1. MLXFAST_E57_DISPATCH_COUNT_OUT
 // names an optional JSON output path. MLXFAST_E57_DISPATCH_COUNT_THROW=1 runs
-// the illegal cell -- one unchunked wide call at kL >= 1024 -- which is
-// expected to abort the process from an uncaught C++ runtime_error, so it must
-// be run in its own process.
+// the cell that was pre-registered as illegal -- one unchunked wide call at
+// kL >= 1024. It now returns normally, for the reason above, but it keeps its
+// own process because the pre-registered prediction was a process abort.
 
 private struct DispatchRecord {
     var kernel: String

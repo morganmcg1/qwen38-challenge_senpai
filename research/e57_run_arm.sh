@@ -44,6 +44,19 @@ case "${chunk_arm}" in
   *) echo "e57_run_arm.sh: --chunk-arm must be base, narrow or off" >&2; exit 2 ;;
 esac
 
+# E57 reverted the arm selector out of the scored file once rung 2 decided the
+# question, so narrow and off now need that instrument put back. Without it the
+# environment value is ignored and the run silently measures base again.
+instrument="Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift"
+if [[ "${chunk_arm}" != base ]] \
+   && ! grep -q MLX_E57_SDPA_CHUNK_ARM "${instrument}"; then
+  echo "e57_run_arm.sh: ${instrument} carries no arm selector, so --chunk-arm" \
+       "${chunk_arm} would silently run base." >&2
+  echo "e57_run_arm.sh: restore it with" \
+       "'git checkout 9673a6b -- ${instrument}' first." >&2
+  exit 2
+fi
+
 out="research/out/${tag}"
 rm -rf "${out}"
 mkdir -p "${out}"

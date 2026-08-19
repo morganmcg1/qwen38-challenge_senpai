@@ -16,8 +16,10 @@ The run id lives in research/e57-artifacts/wandb-run-id.txt.
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -64,6 +66,145 @@ def identity() -> dict:
         "full_attention_layers": 16,
         "null_floor_percent": 0.0629,
         "live_promoted_frontier": 3.24985583421771,
+    }
+
+
+ROW = re.compile(r"^mtp-row: pos=(\d+) ids=(\d+),(\d+) v=(\S+)")
+RND = re.compile(r"^mtp-trace: round=(\d+) d=(\d+) acc=(\d+)")
+SDPA = re.compile(
+    r"^e57-sdpa: pid=(\d+) qL=(\d+) kL=(\d+) b=\d+ causal=\d arm=\w+ chunk=(\d)")
+VIOLATION = re.compile(r"contract violation \[(\w+)\].*")
+
+# Measured on applegpu_g16s: head_dim 256 excludes sdpa_full at every width and
+# qL * gqa_factor <= 32 caps the fused vector primitive at qL <= 5, so a wide
+# unsplit call runs the 8-dispatch composed graph. See research/e57-artifacts.
+COMPOSED_FALLBACK_DISPATCHES = 8
+CHUNK_CONCAT_DISPATCHES = 2
+MAX_VECTOR_QL = 5
+
+
+def trace_facts(path: pathlib.Path) -> dict:
+    """Row evidence, round shape and dispatch totals for one arm directory."""
+    evidence: dict[int, set] = collections.defaultdict(set)
+    rounds: list[tuple[int, int, int]] = []
+    calls: dict[int, list] = collections.defaultdict(list)
+    trace = path / "trace.txt"
+    if not trace.exists():
+        return {}
+    with trace.open(errors="replace") as handle:
+        for line in handle:
+            row = ROW.match(line)
+            if row:
+                evidence[int(row.group(1))].add(
+                    (row.group(2), row.group(3), row.group(4)))
+                continue
+            call = SDPA.match(line)
+            if call:
+                calls[int(call.group(1))].append(
+                    (int(call.group(2)), int(call.group(3)),
+                     int(call.group(4))))
+                continue
+            rnd = RND.match(line)
+            if rnd:
+                rounds.append(tuple(int(g) for g in rnd.groups()))
+
+    # The timed decode leg is the worker leg that runs by far the most wide
+    # verify calls; every other leg only warms those shapes.
+    timed_pid = max(
+        calls, key=lambda pid: sum(1 for q, _, _ in calls[pid] if 6 <= q <= 9),
+        default=None)
+    dispatches = 0
+    for qL, kL, chunk in calls.get(timed_pid, []):
+        if chunk:
+            halves = [MAX_VECTOR_QL, qL - MAX_VECTOR_QL] if qL > MAX_VECTOR_QL \
+                else [qL]
+            dispatches += CHUNK_CONCAT_DISPATCHES + sum(
+                2 if kL >= 1024 else 1 for _ in halves)
+        elif qL * 6 > 32:
+            dispatches += COMPOSED_FALLBACK_DISPATCHES
+        else:
+            dispatches += 2 if kL >= 1024 else 1
+
+    coverage: dict[int, int] = {}
+    position = 512
+    for _, depth, accepted in rounds:
+        for p in range(position + 1, position + accepted + 2):
+            coverage[p] = depth + 1
+        position += accepted + 1
+
+    violation = ""
+    err = path / "wrapper.err"
+    if err.exists():
+        for line in err.read_text(errors="replace").splitlines():
+            found = VIOLATION.search(line)
+            if found:
+                violation = line.strip()
+    return {
+        "evidence": dict(evidence),
+        "round_count": len(rounds),
+        "timed_leg_pid": timed_pid,
+        "timed_leg_sdpa_dispatches": dispatches,
+        "timed_leg_width_histogram": json.dumps(dict(sorted(
+            collections.Counter(q for q, _, _ in calls.get(timed_pid, []))
+            .items()))),
+        "position_width": coverage,
+        "contract_violation": violation,
+    }
+
+
+def moved_facts(reference: dict, arm: dict) -> dict:
+    """How one arm's declared row evidence moved against the reference arm."""
+    left, right = reference.get("evidence", {}), arm.get("evidence", {})
+    shared = sorted(set(left) & set(right))
+    moved = [p for p in shared if left[p] != right[p]]
+    new_top1 = new_top2 = value_only = 0
+    for p in moved:
+        if {t[0] for t in right[p]} - {t[0] for t in left[p]}:
+            new_top1 += 1
+        elif {t[1] for t in right[p]} - {t[1] for t in left[p]}:
+            new_top2 += 1
+        else:
+            value_only += 1
+    widths = collections.Counter(
+        arm.get("position_width", {}).get(p) for p in moved)
+    return {
+        "shared_positions": len(shared),
+        "moved_positions": len(moved),
+        "moved_fraction": len(moved) / len(shared) if shared else None,
+        "first_moved_position": moved[0] if moved else None,
+        "first_moved_verify_width":
+            arm.get("position_width", {}).get(moved[0]) if moved else None,
+        "moved_new_top1_token_id": new_top1,
+        "moved_new_top2_token_id": new_top2,
+        "moved_hexfloat_value_only": value_only,
+        "moved_by_verify_width": json.dumps(
+            {str(k): v for k, v in sorted(widths.items(), key=lambda kv: (
+                kv[0] is None, kv[0]))}),
+    }
+
+
+def boundary_facts(path: pathlib.Path, timed_pid: int | None) -> dict:
+    routes = path / "routes.json"
+    if not routes.exists():
+        return {}
+    blob = json.loads(routes.read_text())
+    legs = [leg for leg in blob["legs"] if leg["pid"] == timed_pid] \
+        or blob["legs"][-1:]
+    leg = legs[0]
+    boundary = leg["kl_boundary"]
+    return {
+        "timed_leg_kl_range": json.dumps(leg["kl_range"]),
+        "timed_leg_chunk_reasons": json.dumps(leg["chunk_reason_histogram"]),
+        "timed_leg_routes": json.dumps(leg["route_histogram"]),
+        "calls_ql_ge6_and_kl_ge1024": leg["calls_ql_ge6_and_kl_ge1024"],
+        "calls_kl_eq_1024": boundary["calls_kl_eq_1024"],
+        "calls_kl_ge_1025": boundary["calls_kl_ge_1025"],
+        "first_kl_at_or_above_1024": boundary["first_kl_at_or_above_1024"],
+        "first_ql_at_or_above_1024": boundary["first_ql_at_or_above_1024"],
+        "rounds_from_first_boundary_to_end":
+            boundary["rounds_from_first_boundary_to_end"],
+        "blocks_64_calls": boundary["blocks_64_calls"],
+        "blocks_128_calls": boundary["blocks_128_calls"],
     }
 
 
@@ -208,14 +349,37 @@ def log_rung2(run, arms: list[pathlib.Path]) -> None:
         rows.append(row)
         table.add_data(*[row.get(name) for name in columns])
 
+    facts = [trace_facts(path) for path in arms]
+    detail_columns = [
+        "arm", "chunk_arm", "exit", "contract_violation", "round_count",
+        "timed_leg_sdpa_dispatches", "timed_leg_width_histogram",
+        "timed_leg_chunk_reasons", "moved_positions", "moved_fraction",
+        "first_moved_position", "first_moved_verify_width",
+        "moved_new_top1_token_id", "moved_new_top2_token_id",
+        "moved_hexfloat_value_only", "moved_by_verify_width",
+        "calls_ql_ge6_and_kl_ge1024", "calls_kl_eq_1024", "calls_kl_ge_1025",
+        "blocks_64_calls", "blocks_128_calls",
+    ]
+    detail = wandb.Table(columns=detail_columns)
+
     summary: dict = {}
     reference = rows[0]
-    for row in rows:
+    for index, (path, row) in enumerate(zip(arms, rows)):
         key = f"rung2/{row['arm']}"
         for name, item in row.items():
             if name == "arm":
                 continue
             summary[f"{key}/{name}"] = item
+        extra = dict(facts[index])
+        extra.pop("evidence", None)
+        extra.pop("position_width", None)
+        extra.update(boundary_facts(path, facts[index].get("timed_leg_pid")))
+        extra.update(moved_facts(facts[0], facts[index]))
+        for name, item in extra.items():
+            summary[f"{key}/{name}"] = item
+        detail.add_data(*[
+            row["arm"] if name == "arm" else row.get(name, extra.get(name))
+            for name in detail_columns])
         if row is not reference:
             summary[f"{key}/row_evidence_moved_vs_armA"] = (
                 row["row_evidence_fingerprint"]
@@ -225,7 +389,13 @@ def log_rung2(run, arms: list[pathlib.Path]) -> None:
     summary["rung2/gate"] = (
         "canonical per-position declared top-two row-evidence digest, not the "
         "--local-iterate parity line")
-    run.log({"rung2/arms": table})
+    summary["rung2/stop_rule_fired"] = any(
+        moved_facts(facts[0], fact)["moved_positions"] > 0
+        for fact, row in zip(facts[1:], rows[1:])
+        if row["chunk_arm"] == "narrow")
+    summary["rung2/verdict"] = (
+        "keep the shipped wide-decode chunk predicate unchanged")
+    run.log({"rung2/arms": table, "rung2/detail": detail})
     run.summary.update(summary)
 
 
