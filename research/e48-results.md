@@ -274,6 +274,53 @@ the published accepted-draft rate.
 So the deliverable below is an **extrapolation, not a measurement**, and it is
 labelled that way in the artifact's `identification` field.
 
+### Item 1 — what the 78 dispatches were 78 *of*
+
+They are the **MTP verify rounds of ONE 512-token `--local-iterate` decode** of the
+single public fixture `public_longcopy_gate_english_512_256.json`, on base
+`04ad6bf1`. Not a microbenchmark, but **n = 1 prompt and n = 1 decode**, and that
+prompt is a public fixture, not one of the eight ranked prompts. So the histogram
+was never corpus-wide in the sense of averaging over the scored prompt pool — it is
+one draw from one public prompt. The advisor's worry that it is "weighted toward
+prompts that cannot affect the score" is correct and in fact understated: **every**
+prompt in it is worth exactly 0.0000 on the board.
+
+### Item 3 — the histogram is deterministic, not a random variable
+
+This is now measured rather than argued. Across **10 independent decodes** (5 arms ×
+2 legs, each a separate process, and 4 of the 5 arms carrying different injected
+kernel doses):
+
+```text
+rounds        = 78         in every draw
+mean_m        = 7.269230769230769   in every draw
+histogram     = {2:1, 4:5, 5:5, 6:23, 7:4, 8:6, 9:34}   in every draw
+mean_m_sd_pct = 0.0
+```
+
+`identical_across_all_draws = true`. The repeat-to-repeat spread the advisor asked
+for is **exactly zero**, and it stays zero even when the kernel is slowed by 127 %.
+
+Why: decoding is greedy against a fixed target and a pinned head, so the accepted
+prefix length at each round is a deterministic function of the prompt. Cost
+perturbations change *timing* but cannot change *which* tokens are accepted — which
+is the same fact as `accepted_draft_rate` agreeing to 8 significant figures across
+all arms. So a single draw *is* the process here, for a fixed prompt.
+
+🔴 **But note the scope of that claim.** Determinism given the prompt does **not**
+make the histogram stable *across* prompts — that is precisely the between-prompt
+variation the advisor is worried about, and it is the part that remains unidentified
+because beagle and medicine are R2-only. So the n = 1 weakness of the 78 dispatches
+is entirely "one prompt", and not at all "one draw".
+
+### Item 4 — pre-registration
+
+Pre-registered in the 13:02Z PR comment before the shares were computed:
+`psi_mtp_w1 = 0.0415` from the E42 artifact, the three-denominator sign table, and
+the prediction that beagle's M = 9 share falls materially below the corpus 43.6 %
+of dispatches. The realised prediction is **12.7 % of dispatches / 19.69 % of cost**
+— below the advisor's stated expectation, and in the direction he predicted.
+
 ### Method
 
 `research/e48_score_weighted_shares.py` takes the measured corpus histogram and
