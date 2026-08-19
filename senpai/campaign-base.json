@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "comment": [
+    "The research base this campaign's results are adjudicated against.",
+    "senpai/verify-base-drift.sh compares this against the LIVE remote branch via",
+    "git ls-remote, not against refs/remotes/origin/main, because this checkout's",
+    "origin fetch refspec covers only the advisor branch and therefore can never",
+    "update a local mirror of main. Update baseSha only deliberately, and record",
+    "why, because every result measured against the previous base then has a",
+    "changed base and must be re-adjudicated rather than assumed to transfer."
+  ],
+  "baseBranch": "main",
+  "baseSha": "6391b03a39dfd56daac0f67e62851d0a86187963",
+  "recordedAt": "2026-08-19T09:30:00.000Z",
+  "history": [
+    {
+      "baseSha": "527306761f70e2c4024f347915328894db80c181",
+      "note": "Campaign base for items up to ledger 162. Quoted as 'unchanged' for several sessions while main had in fact advanced three commits; the local mirror could not move because of the scoped fetch refspec. That is the defect senpai/verify-base-drift.sh exists to make impossible."
+    },
+    {
+      "baseSha": "6391b03a39dfd56daac0f67e62851d0a86187963",
+      "note": "Organizer resynced main onto the promoted crown frontier 0c90733d (score 3.24929398547457): commits 6e0546e sync, d32342d twin regeneration, 6391b03 frontier record. This is the same frontier the advisor branch had already rebased onto by hand, so the shipped surface did not move under us -- but it means the +0.5193 % crown gap is now IN the base rather than ahead of it."
+    }
+  ]
+}
