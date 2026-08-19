@@ -316,9 +316,29 @@ INSTRUMENTS = {
         sd=0.30, n=3, design="paired", unit="% of kernel time", own_repeats=False,
         provenance="BORROWED: no campaign microbenchmark publishes its own repeat sd; "
                    "0.30 % is the nearest comparable (E33 pooled arm spread)"),
+    "competitor_ranked_n1": dict(
+        sd=SIGMA_SCORE_PCT, n=1, design="two_sample", unit="% of score",
+        own_repeats=False,
+        provenance="BORROWED: a single competitor ranked row carries no repeat of its "
+                   "own; sigma_score is imported and the row is confounded by every "
+                   "other mechanism in that submission"),
+    "board_family_n5": dict(
+        sd=0.324, n=5, design="single", unit="% of score", own_repeats=True,
+        provenance="E35 residency+cmdbuf family join, se 0.145 over n=5 -> "
+                   "implied row sd 0.324 %; refreshed 646-row corpus gives se 0.143"),
+    "algebraic": dict(
+        sd=0.0, n=1, design="single", unit="exact", own_repeats=True,
+        provenance="closed-form identity or counting argument; variance is "
+                   "structurally zero, so MDE is zero and power is not the "
+                   "failure mode"),
     "static_analysis": dict(
         sd=float("inf"), n=1, design="single", unit="n/a", own_repeats=False,
         provenance="no timed arm; MDE is undefined and no null can be read from it"),
+    "hardware_gated_out": dict(
+        sd=float("inf"), n=0, design="single", unit="n/a", own_repeats=False,
+        provenance="the mechanism's code path cannot execute on the available host, "
+                   "so no n makes the contrast observable; MDE is undefined for a "
+                   "reason no sample size fixes"),
 }
 
 
@@ -330,6 +350,11 @@ def audit_table() -> str:
             rows.append("%-21s %-11s %-5s %-9s %-10s %-11s %s"
                         % (name, spec["design"], spec["n"], "inf",
                            "undefined", "undefined", spec["own_repeats"]))
+            continue
+        if spec["sd"] == 0.0:
+            rows.append("%-21s %-11s %-5d %-9.4f %-10s %-11s %s"
+                        % (name, spec["design"], spec["n"], 0.0,
+                           "0 (exact)", "0 (exact)", spec["own_repeats"]))
             continue
         norm = mde(spec["sd"], spec["n"], spec["design"])
         try:

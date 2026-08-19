@@ -33,6 +33,20 @@ sys.path.insert(0, "research")
 import within_head_cost as w  # noqa: E402
 
 TARGET_FAMILY = "residency+cmdbuf"
+
+# Grouping the five family rows by the contrast each one actually measures.
+# INTRODUCE and FORCE are distinct code changes; the three RESTORE rows are
+# the same two donor files (from 86fb1f0) re-applied to the same 942e5ab2
+# parent after a yukon replace-overlay dropped them, so they replicate one
+# contrast rather than supplying three.
+RESIDENCY_CONTRASTS = [
+    ("INTRODUCE", ["3a995c2b"],
+     "first appearance, bundled with 4 other mechanisms"),
+    ("RESTORE", ["4f76de6e", "11863aa9", "3ec77796"],
+     "same donor diff re-applied to 942e5ab2 by 3 solvers"),
+    ("FORCE", ["0cd0a6b4"],
+     "crown: setenv overwrite 0->1 and 320/128 -> 512/50"),
+]
 E35_REPORTED = dict(delta=0.316, n=5, se=0.145, t=2.2, serial=0.071)
 
 
@@ -200,6 +214,31 @@ def main() -> int:
         print("   solver-clustered mean %+0.3f %%, se %.3f, |t| %.2f on %d df"
               % (st.mean(means), se_a, abs(st.mean(means) / se_a) if se_a else
                  float("nan"), len(means) - 1))
+
+    # Distinct solvers and distinct commits both overstate independence here.
+    # The unit that matters is the CONTRAST: which diff was applied to which
+    # parent. Three of these rows re-apply the same donor files after a
+    # replace-overlay drop, so they are one contrast measured three times.
+    print()
+    print("   contrast identity (the unit that actually matters):")
+    contrast_means = []
+    for label, members, note in RESIDENCY_CONTRASTS:
+        present = [i for i in ids if i[:8] in members]
+        if not present:
+            continue
+        vals = [detail[i]["delta"] for i in present]
+        contrast_means.append(st.mean(vals))
+        print("     %-9s n=%d  mean %+0.3f %%  %s"
+              % (label, len(present), st.mean(vals), note))
+        print("               rows: %s" % ", ".join(i[:8] for i in present))
+    if len(contrast_means) > 1:
+        sd_c = st.stdev(contrast_means)
+        se_c = sd_c / math.sqrt(len(contrast_means))
+        print("   contrast-clustered mean %+0.3f %%, se %.3f, |t| %.2f on %d df"
+              % (st.mean(contrast_means), se_c,
+                 abs(st.mean(contrast_means) / se_c) if se_c else float("nan"),
+                 len(contrast_means) - 1))
+        print("   effective n falls 5 -> %d" % len(contrast_means))
 
     print()
     print("-- 4. MULTI-MECHANISM CONTAMINATION --")
