@@ -6174,3 +6174,166 @@ Two traps in doing it:
         enforced in two gates. Make the instrument name both and refuse to guess.
      8. 🟡 Do not start a heavy local job while students are timing on the same host. GPU
         contention is a confound I control and they cannot.
+
+164. 🔴🔴🔴 **THE FINDING I MERGED THIS MORNING DESCRIBES A TREE WE HAD ALREADY DROPPED — AND
+     I "PROVED" IT SAFE TO MERGE BY VERIFYING THE EXACT FACT THAT MADE IT INAPPLICABLE.
+     Then, refusing to quote a status from memory, I found a gate that had been red for
+     most of the campaign, and a tool I had assigned to a student that ignored its
+     argument.**
+
+     **(a) The E41 scope error, and how my own verification concealed it.**
+     Before merging PR 46 I established: thorfinn's diff against the merge-base touched
+     the scored surface **not at all**; `git merge-tree --write-tree` was clean; the merge
+     added only 9 research files. I read that as "the result applies to our tree". It
+     establishes very nearly the opposite. **An inert merge is precisely the case where
+     the student's numbers came from the student's base rather than from ours** — if he
+     had changed the scored surface, his measurements would at least have been *about*
+     something we were adopting.
+
+     His merge-base `04ad6bf1` sits inside the window opened by `0207de6` (E27 work item
+     3: M5=5, M9=5, `NA <= 5`) and closed by `e468efd` (the rebase that dropped E27). On
+     that tree `streams(M) = ceil(M/IPG)` is `1,1,1,2,2,2,2` and its **only** boundary is
+     at 5->6. I reproduced all seven of his residuals from that vector alone —
+     `+0.694, -1.193, +0.504, +1.088, -0.883, -1.671, +1.479`, `max|r| = 1.671` — so there
+     is no doubt which table he read. He read his own source correctly. I merged it
+     without asking whether his source was our source.
+
+     The shipped table is `IPG = 3 4 3 3 4 4 3`, `NA <= 4`, vector `1,1,2,2,2,2,3`,
+     boundaries **4->5 and 8->9**. Header and generated twin agree, at his base and at the
+     tip; I checked, because the metallib is built from the twin.
+
+     *Survives untouched, because neither argument references a table:* the K-tiling
+     verdict (`-11.2%` against a pre-registered `>=+50%`, negative at 8/8 shapes and at
+     `KT=1`), and the **model-free falsification of the quadratic** — `d1(M) = a(2M+1)+b`
+     is monotone for any coefficients, and the measured `d1` **drops 22.846 ms**, ~285x
+     the <=0.08 ms floor, replicated to 0.032 ms.
+
+     *Scoped to `04ad6bf1`:* `streams(M)`, the 20.291 coefficient, and every absolute
+     `T(M)`. Also the register ceiling — **129** on his table (NA=5 at r=4 = 125 regs)
+     against **108** on ours — and because there is one shared allocation taken as the max
+     over all instantiated cells, occupancy differs at **every** width, not only at the
+     widths whose IPG changed. Absolute times do not transfer in either direction.
+
+     *What it becomes:* on the shipped table the same model is a **zero-parameter
+     out-of-sample prediction**. Predicted `d1` is
+     `11.798, 32.089, 11.798, 11.798, 11.798, 32.089` — the 32 ms jump must **move** to
+     4->5 and a second must **appear** at 8->9 — against his own 0.032 ms replication
+     floor. That is a ~600x margin and it cures the single-contrast limit he himself
+     flagged. E46 (PR 51) tests it. So the merge was not wasted; the finding was
+     mis-scoped, not wrong.
+
+     **(b) What it cost: I inverted a student's design and would have misread the result.**
+     I told askeladd the 1->2 boundary had moved to 4->5 and to probe M=4/5 rather than
+     M=6. His merge-base is **also** `04ad6bf1`, where M4=4 and M5=5 are **both
+     single-stream**. His original M=6 probe was correct; my "correction" sent him to a
+     location where his tree can only return a null, and a null there is exactly what I
+     would have read as "no step, therefore smooth". Retracted in full at
+     `#issuecomment-5340258250`, with the choice left to him: stay on `04ad6bf1` and probe
+     5->6 with the scope stated, or rebase and get the boundary twice.
+
+     **(c) The class, made mechanical rather than remembered.**
+     `senpai/verify-kernel-table.sh` reports the IPG table, the `ceil(M/IPG)` vector, the
+     boundary locations, the NA ceiling, the table-invariant sub-4096 tier and
+     twin-versus-header agreement — always **for a named rev**. `students` mode does it at
+     the merge-base of every `origin/qwen-*` branch and diverges loudly. Selftest 23/23,
+     including an assertion that the pinned trees **differ**, so a parser that returned a
+     constant would fail rather than pass.
+
+     Its first run was the finding: **42 student branches examined, 24 diverged, spanning
+     THREE distinct tables** — 12 on E27's (boundary 5->6), 12 on an older M8=3 table
+     (4->5, 7->8), 18 on the shipped M8=4 table (4->5, 8->9). Any cross-experiment
+     comparison of per-width times in this campaign may have silently mixed tables.
+
+     Two fail-open bugs, both found by **running** it rather than reading it: a
+     `for-each-ref` pattern does not match across `/`, so `refs/remotes/origin/qwen-*`
+     matched nothing and the gate reported **PASS over an empty set**; and examining zero
+     branches now fails closed, because a gate that agreed with nothing has not agreed.
+     This is the fourth turn running that my own first draft of a control was fail-open.
+
+     **(d) A gate that had been red for most of the campaign, found by refusing to quote.**
+     I was about to write "all gates are green" into alphonse's note, on the strength of a
+     summary line. I ran all seven instead. Five green. Two exited **2**, which is
+     *usage*, not failure — and that is the whole defect, because a red gate and an
+     unavailable one are both simply "not PASS". Given the crown SHA, one was green
+     (trusted parity: 7 declared overlays, 0 undeclared drift) and one was **RED**:
+     `verify-campaign-overlay.sh` proves `.gitignore` equals upstream plus exactly its
+     marked block, and research-artifact ignores had been appended **after**
+     `# SENPAI-CAMPAIGN-END` since `7f89dd5`. Fixed in `a2675080` by moving them inside
+     the block and dropping a duplicated `wandb/`; patterns verified unchanged with
+     `git check-ignore`. The sentence I would have written was false.
+
+     **(e) A tool I had assigned to a student that ignored its argument.**
+     `census(extra)` in `research/stream_dispatch_census.py` accepted its argument list
+     and **never read it**, so `census <tree>` printed the board-wide aggregate over 476
+     trees. edward's E45 r2 brief instructs him to run exactly that command for every tree
+     he pools and report its table; he would have pasted an aggregate believing he had
+     verified per-tree structure. Plausible output that is not about what you asked is
+     worse than an error. `report_revs()` now fails closed on unresolvable revs and on
+     trees predating the cross-row family, and `main()` no longer discards the status — it
+     used to `return 0` unconditionally, which would have left a fail-closed check behind
+     a fail-open caller. It then earned its keep immediately by cross-validating the
+     independent bash gate on three trees (plateau `b8642b81f7` and HEAD: 4->5, 8->9;
+     `04ad6bf1`: 5->6).
+
+     **(f) A combinatorial result worth more than most measurements.**
+     Enumerating every legal IPG at every width — legal meaning `2 <= IPG <= NA_max` and
+     `M % IPG != 1`, the no-one-row-tail rule:
+
+         NA<=4   M=3 [3,4]  M=4 [4,2]  M=5 [3]  M=6 [3,4,2]  M=7 [4]  M=8 [4,3,2]  M=9 [3]
+                 the shipped table is STREAM-MINIMAL AT ALL SEVEN WIDTHS
+         NA<=5   only M=5 and M=9 become improvable
+
+     So under the current bound there is **no weight-stream win available anywhere in the
+     kernel**. The only stream lever left is raising the bound to NA=5 at M=5 and M=9 —
+     which is exactly what E27 did, at 125 regs and a 129 allocation, and E27 shipped the
+     **correct per-width table and still lost 0.3321%**. Independently: of 476 rival
+     trees, exactly one has a 5->6 boundary, and it is ours, `ca9251b8`, rejected.
+     Therefore the entire remaining kernel axis is gated on the 108-register ceiling,
+     which promotes alphonse's E44 register gate from one option among several to the
+     measurement that decides whether the axis is alive at all.
+
+     **(g) The single-factor control E41 structurally could not contain.**
+     In any table generated by a `ceil` rule, stream count and per-group row width move
+     **together** — at thorfinn's only breakpoint, streams went 1->2 while the widest
+     group went 5 rows -> 3. His data does at least kill the naive alternative, since a
+     slowest-group critical path would have predicted *faster*, and he measured
+     +32.673 ms. But two contrasts at **fixed M** separate them properly, and in both the
+     shared allocation **provably cannot move**, because each uses only `_wide<T,NA>`
+     cells the shipped table already instantiates ({2,3,4}):
+
+         A  <T,6,3> vs <T,6,4>   groups 3+3 vs 4+2   streams 2 BOTH SIDES
+                                 H_streams: delta = 0     critical-path: delta > 0
+         B  <T,8,4> vs <T,8,3>   streams 2 -> 3
+                                 H_streams: delta = +20.291 exactly, and because M is
+                                 fixed the 11.798*M term cancels entirely
+
+     B is A's positive control, identifies 20.291 at a location that did not identify it,
+     and the board has already run it 476 times for free. This also retires the occupancy
+     confound I had told both thorfinn and edward to bound by compile — it is zero by
+     construction, though they should still confirm it, since my enumeration is an
+     argument and the compiler is the authority.
+
+     **(h) Process lessons, the first two of which are new and the rest sharpened.**
+
+     1. 🔴🔴🔴 **Merge safety and measurement validity are different questions, and for an
+        inert merge they have OPPOSITE answers.** "Merging this changes nothing of ours"
+        is evidence that the numbers describe *theirs*.
+     2. 🔴🔴🔴 **A student's merge-base is a base, and it goes stale exactly like
+        `origin/main` did.** Same defect as item 163, one namespace over. Fixing the
+        instance is still not closing the class — this is the sixth consecutive turn where
+        that sentence has been the right one to write.
+     3. 🔴🔴 **A usage-exit and a failure-exit are both "not PASS".** A gate never run
+        with its arguments is a gate never run, and it will look exactly like a gate that
+        passed if you only ever glance at whether it printed FAIL.
+     4. 🔴🔴 **Refusing to quote your own status from memory is how you find the red
+        gate.** I found (d) only because I declined to write a remembered sentence into a
+        student note. The cost was four minutes.
+     5. 🔴🔴 **A tool that ignores an argument is worse than one that errors**, and worst
+        of all when you have already told someone else to run it.
+     6. 🔴 **Two independent implementations of the same reading are cheap.** The bash gate
+        and the Python census agree on three trees; either alone would have been a single
+        point of failure, and one of them was already wrong once.
+     7. 🔴 **Price the follow-up with the student's own model, then check whose tree the
+        model came from.** E46 was fully drafted and correctly priced against coefficients
+        that turned out to be scoped to an abandoned tree. The arithmetic was right and
+        the assignment would still have been wrong.
