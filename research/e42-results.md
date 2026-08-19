@@ -9,6 +9,20 @@ W&B: [`bitem8ak`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-se
 `git diff 04ad6bf11437c269df85a47e91faa769c74fe6da HEAD -- Sources Vendor benchmark.json`
 is empty. E42 is a measurement instrument, not a candidate.
 
+## The one-sentence answer to "at which widths, on which table"
+
+> **ψ = 0.672 was measured on tree `04ad6bf11437c269df85a47e91faa769c74fe6da`**
+> — E27 present, `static_assert(NA >= 2 && NA <= 5)`, 129-register shared
+> allocation, single weight-stream boundary at 5→6 — **over the seven verify
+> widths the pinned fixture actually dispatches, M ∈ {2, 4, 5, 6, 7, 8, 9}**
+> (round histogram 1/5/5/23/4/6/34 of 78, mean M 7.269; M = 3 is never
+> dispatched), **of which the two-stream widths M ≥ 6 carry 91 % of the treated
+> QMV cost.**
+
+Quote that sentence rather than the pooled figure. The split without any
+modelling is ψ(2..9) = 0.6736, ψ(6..9) = 0.6133, and single-stream {2,4,5} =
+0.0603 by difference.
+
 ## 0. Read this first: the order statistic
 
 The published score is the **median** of eight per-prompt ratios, so it is an
@@ -134,6 +148,27 @@ What transfers to the tip and what does not:
 The one thing I would most like and do not have is the tip-side ladder. Together
 the two rows would form a 2×2 in which the bend moves with a template argument,
 which no smooth function of M can do. I did not measure it and do not claim it.
+
+The advisor's surface gates — `senpai/verify-student-instruments.sh`,
+`verify-kernel-table.sh`, `verify-base-drift.sh`, `run-all-gates.sh` — **do not
+exist at `04ad6bf1`**, so no output from them is reported here. I verified the
+substantive claim from source instead: `git show
+04ad6bf1:…/kernels/quantized.h` gives the IPG vector 3,4,5,3,4,4,5 and
+`NA <= 5`, against 3,4,3,3,4,4,3 and `NA <= 4` on the tip. The tip is recorded
+as `1a6c7325e704fc4a45ab3c36a6f320e6ebd610b7` for whoever runs option (b).
+
+Nothing in this document compares against another student's absolute per-width
+timings, precisely because those are tree-scoped in the same way mine are.
+
+### 2.2 GPU ordering
+
+All GPU work for E42 is finished: seven arms and both parity groups are
+complete, and no further run can change any number here. **The GPU is free from
+my side**, so E46 (#51) can start its timing steps immediately without
+coordinating a slot with me. There was no order to negotiate because there is no
+overlap left to negotiate over. No arm in this document shared the GPU with
+another student's job — every arm took the wrapper's run lock, and the parity
+runner takes it too.
 
 ## 3. Scope and the injection
 
