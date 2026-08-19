@@ -1,0 +1,87 @@
+{
+  "contrasts": {
+    "dose_129": {
+      "per_width_pct": {
+        "3": -0.141,
+        "4": -0.284,
+        "5": -0.144,
+        "6": -0.084,
+        "7": 0.014,
+        "8": -0.061,
+        "9": -0.119
+      },
+      "pooled_pct": -0.117,
+      "register_delta_vs_dose_null": 17,
+      "worst_pct": 0.014
+    },
+    "dose_big": {
+      "per_width_pct": {
+        "3": 0.34,
+        "4": 0.063,
+        "5": 0.144,
+        "6": 0.14,
+        "7": -0.055,
+        "8": 0.177,
+        "9": 0.102
+      },
+      "pooled_pct": 0.13,
+      "register_delta_vs_dose_null": 33,
+      "worst_pct": 0.34
+    },
+    "dose_huge": {
+      "per_width_pct": {
+        "3": -0.13,
+        "4": -0.205,
+        "5": 0.026,
+        "6": 0.071,
+        "7": -0.04,
+        "8": 0.206,
+        "9": 0.037
+      },
+      "pooled_pct": -0.005,
+      "register_delta_vs_dose_null": 66,
+      "worst_pct": 0.206
+    }
+  },
+  "control_leg_rank": {
+    "mean": 4.43,
+    "median_rank_if_unbiased": 5.0,
+    "per_width": {
+      "3": 2,
+      "4": 6,
+      "5": 7,
+      "6": 5,
+      "7": 5,
+      "8": 3,
+      "9": 3
+    }
+  },
+  "reference": "dose_null",
+  "replicate_spread_pct": {
+    "dose_129": {
+      "max": 0.268,
+      "mean": 0.131
+    },
+    "dose_big": {
+      "max": 0.089,
+      "mean": 0.066
+    },
+    "dose_huge": {
+      "max": 0.77,
+      "mean": 0.222
+    },
+    "dose_null": {
+      "max": 0.688,
+      "mean": 0.377
+    }
+  },
+  "widths": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ]
+}
