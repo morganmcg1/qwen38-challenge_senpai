@@ -612,6 +612,46 @@ Two independent layers:
 
 `research/qmv_parity_compare.py` never exits non-zero, so the verdict line is
 parsed explicitly. Any differing cell is a hard stop, not a tolerance.
+`research/e42-parity.sh` wraps the runner with a group-private output directory
+and exits 1 if any arm reports `DIVERGES`.
+
+### 9.1 What the coverage number actually covers
+
+The suite reports `covering_cells_by_bits`, which counts cells whose
+`in_kernel_path` is anything other than `qmv_fast_impl`. On this base that is
+`{4: 64}` and nothing at bits=3, because the crossrow gate hardcodes
+`bits == 4`. That metric answers "did this cell reach a crossrow body". It is
+the right question for p2/p6/m6 and the wrong question for m1.
+
+m1's edit is an `ntg.x == 1` dispatch inserted immediately *before* the generic
+fall-through, so every cell m1 treats is a `qmv_fast_impl` cell — precisely the
+cells the shared metric excludes. Quoting only the suite number would report m1
+as zero coverage; quoting only my number would claim crossrow coverage m1 does
+not have. `research/e42_covering_cells.py` emits both from the reference arm's
+own cell table:
+
+| arm | mechanism | crossrow-covering | treated | by bits | controls |
+|---|---|---|---|---|---|
+| p2L1 | crossrow | 64 | 64 | {4: 64} | 128 |
+| p2L2 | crossrow | 64 | 64 | {4: 64} | 128 |
+| p6L1 | crossrow | 32 | 32 | {4: 32} | 160 |
+| p6L2 | crossrow | 32 | 32 | {4: 32} | 160 |
+| m6L2 | crossrow | 8 | 8 | {4: 8} | 184 |
+| m1L1 | generic | **0** | **16** | {3: 8, 4: 8} | 176 |
+
+Treated union 80 / 192. The 112 untreated cells are 24 bits=4 generic cells
+(widths 10..12, which have no switch case and so run with the default
+`E42_PASSES = 0`) plus all 88 bits=3 cells at widths 2..12. bits=3 is a pure
+control for p2/p6/m6 and is *treated* by m1 at width 1, because m1's insert
+sits downstream of the bit-width gate. Both facts are load-bearing: the bits=3
+column is the evidence that the crossrow arms cannot perturb an excluded bit
+width, and m1's bits=3 cells are the evidence that its insert really is at the
+generic fall-through rather than inside the gate.
+
+The script additionally compares the reference arm's digests between the two
+parity groups. The groups are separate test-binary builds of the same base
+twins, so a match is independent evidence that the rig is deterministic and not
+merely self-consistent within one build.
 
 ## 10. MDE for every null
 
