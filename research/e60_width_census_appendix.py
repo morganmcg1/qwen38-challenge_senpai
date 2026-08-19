@@ -65,6 +65,185 @@ def window_of(census: dict) -> int:
     return census["legs"]["serial(depth0)"]["rounds"]
 
 
+SEED_TOKENS = 512
+KL_BUCKET = 128
+
+
+def load_rounds() -> list[dict]:
+    """Per-round records from the raw census logs, keyed by (M, kL).
+
+    kL is the key length the target sees while it verifies the round:
+    seed + tokens already committed + the M rows under verification. A round
+    record carries its own width and accepted count, so the committed prefix is
+    a running sum and needs no extra measurement.
+    """
+    rounds = []
+    for path in sorted(glob.glob("research/out/e58-*/census.jsonl")):
+        by_pid: dict[int, list[dict]] = {}
+        for line in open(path):
+            event = json.loads(line)
+            if event.get("event") == "round":
+                by_pid.setdefault(event["pid"], []).append(event)
+        for events in by_pid.values():
+            events.sort(key=lambda e: e["round"])
+            leg = "serial(depth0)" if max(e["width"] for e in events) == 1 else "candidate(mtp)"
+            committed = 0
+            for index, event in enumerate(events):
+                width = event["width"]
+                previous = events[index - 1] if index else None
+                rounds.append(
+                    {
+                        "source": pathlib.Path(path).parent.name,
+                        "leg": leg,
+                        "window": sum(1 + e["accepted"] for e in events),
+                        "round": event["round"],
+                        "M": width,
+                        "committed": committed,
+                        "kL": SEED_TOKENS + committed + width,
+                        "rejected_in_previous_round": (
+                            None
+                            if previous is None
+                            else (previous["width"] - 1) - previous["accepted"]
+                        ),
+                        "dispatches": sum(
+                            phase["dispatches"] for phase in event["phases"].values()
+                        ),
+                        "families": {
+                            family: count
+                            for phase in event["phases"].values()
+                            for family, count in phase["kernels"].items()
+                        },
+                    }
+                )
+                committed += 1 + event["accepted"]
+    return rounds
+
+
+def report_rollback(rounds: list[dict]) -> dict:
+    """Split d at fixed M by the previous round's rejected-draft count.
+
+    M is set by the previous round's accepted count, so a round that follows a
+    rejection is systematically narrow AND carries that rejection's recurrent
+    state repair. Width and repair work are therefore confounded in any table
+    keyed on M alone.
+    """
+    candidate = [r for r in rounds if r["leg"] == "candidate(mtp)"]
+    table: dict[tuple[int, int], dict] = {}
+    for record in candidate:
+        rejected = record["rejected_in_previous_round"]
+        if rejected is None:
+            continue
+        entry = table.setdefault(
+            (record["M"], rejected), {"rounds": 0, "dispatches": 0, "gdn": 0}
+        )
+        entry["rounds"] += 1
+        entry["dispatches"] += record["dispatches"]
+        entry["gdn"] += sum(
+            count
+            for family, count in record["families"].items()
+            if "gated_delta" in family or "gdn" in family
+        )
+
+    print()
+    print("d split by the PREVIOUS round's rejected drafts, candidate leg")
+    print("M | rejected in previous round | rounds | d | gated-DeltaNet dispatches")
+    for (width, rejected) in sorted(table):
+        entry = table[(width, rejected)]
+        print(
+            f"{width} | {rejected} | {entry['rounds']} | "
+            f"{entry['dispatches'] / entry['rounds']:.2f} | "
+            f"{entry['gdn'] / entry['rounds']:.2f}"
+        )
+    return {
+        f"M{width}_rej{rejected}": {
+            "M": width,
+            "rejected_in_previous_round": rejected,
+            "rounds": entry["rounds"],
+            "dispatches_per_round": entry["dispatches"] / entry["rounds"],
+            "gdn_dispatches_per_round": entry["gdn"] / entry["rounds"],
+        }
+        for (width, rejected), entry in sorted(table.items())
+    }
+
+
+def kL_table(rounds: list[dict]) -> dict[tuple[int, int], dict]:
+    table: dict[tuple[int, int], dict] = {}
+    for record in rounds:
+        key = (record["M"], record["kL"] // KL_BUCKET * KL_BUCKET)
+        entry = table.setdefault(key, {"rounds": 0, "dispatches": 0, "windows": set()})
+        entry["rounds"] += 1
+        entry["dispatches"] += record["dispatches"]
+        entry["windows"].add(record["window"])
+    for entry in table.values():
+        entry["d"] = entry["dispatches"] / entry["rounds"]
+        entry["windows"] = sorted(entry["windows"])
+    return table
+
+
+def report_kL(rounds: list[dict]) -> dict:
+    """Test whether d(M) stops disagreeing across windows once kL is held fixed."""
+    candidate = [r for r in rounds if r["leg"] == "candidate(mtp)"]
+    table = kL_table(candidate)
+
+    print()
+    print("d(M, kL_bucket), candidate leg, all E58 censuses pooled")
+    print(f"kL = {SEED_TOKENS} + tokensCommitted + M, bucketed at {KL_BUCKET}")
+    print("M | kL bucket | rounds | d | source windows")
+    for (width, bucket) in sorted(table):
+        entry = table[(width, bucket)]
+        print(
+            f"{width} | {bucket}-{bucket + KL_BUCKET - 1} | {entry['rounds']} | "
+            f"{entry['d']:.2f} | {entry['windows']}"
+        )
+
+    print()
+    print("Widths whose whole-leg d(M) disagreed across windows, re-read at fixed kL:")
+    resolved = {}
+    for width in sorted({w for w, _ in table}):
+        buckets = {b: table[(width, b)] for w, b in table if w == width}
+        if len(buckets) < 2:
+            continue
+        values = [entry["d"] for entry in buckets.values()]
+        resolved[width] = {
+            "buckets": {
+                str(b): {"d": e["d"], "rounds": e["rounds"], "windows": e["windows"]}
+                for b, e in buckets.items()
+            },
+            "spread": max(values) - min(values),
+        }
+        print(f"  M={width}: spread across kL buckets {max(values) - min(values):+.2f}")
+        for bucket in sorted(buckets):
+            entry = buckets[bucket]
+            print(
+                f"    kL {bucket}-{bucket + KL_BUCKET - 1}: d={entry['d']:.2f} "
+                f"over {entry['rounds']} rounds, windows {entry['windows']}"
+            )
+
+    crossings = sorted({r["kL"] for r in candidate if r["kL"] >= 1024})
+    print()
+    print(
+        f"rounds at kL >= 1024 (the two-pass SDPA predicate): "
+        f"{len(crossings)} distinct kL values, "
+        f"{sum(1 for r in candidate if r['kL'] >= 1024)} of {len(candidate)} rounds"
+    )
+    return {
+        "bucket_width": KL_BUCKET,
+        "table": {
+            f"M{width}_kL{bucket}": {
+                "M": width,
+                "kL_bucket_start": bucket,
+                "rounds": entry["rounds"],
+                "dispatches_per_round": entry["d"],
+                "source_windows": entry["windows"],
+            }
+            for (width, bucket), entry in sorted(table.items())
+        },
+        "cross_window_widths": resolved,
+        "rounds_at_or_above_1024": sum(1 for r in candidate if r["kL"] >= 1024),
+        "candidate_rounds": len(candidate),
+    }
+
+
 def prove_geometry_invariance(censuses: list[dict]) -> dict:
     """Compare only legs that share a window, so geometry is the sole variable."""
     by_window: dict[int, list[dict]] = {}
@@ -208,9 +387,15 @@ def main() -> int:
     print(f"  round-weighted mean d(M)         = {mean_dispatches:.2f}")
     print(f"  leg's own recorded mean          = {recorded:.2f}")
 
+    per_round = load_rounds()
+    kL = report_kL(per_round)
+    rollback = report_rollback(per_round)
+
     if args.json:
         out = {
             "geometry_invariance": invariance,
+            "kL_census": kL,
+            "rollback_split": rollback,
             "unobserved_widths": missing,
             "families": families,
             "long_window_tokens": window_of(long_census),
