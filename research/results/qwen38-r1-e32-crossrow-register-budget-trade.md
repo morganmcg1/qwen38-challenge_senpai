@@ -30,6 +30,9 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 
 - Host: Apple M4 Pro, `metal 32023.883`, `air64-apple-darwin25.5.0`.
   **Zero GPU timing. No benchmark, no timing lock, no seconds-per-token.**
+- W&B: [`qsky4vvs`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/qsky4vvs)
+  — carries the full 77-cell grid, the gate-control verdicts, and the decision
+  table as logged tables.
 - Commands:
   ```bash
   python3 research/crossrow_rps_gen.py            # derive the probe body
@@ -263,8 +266,9 @@ down, which is exactly why the width lever looked closed.
 - **What happened:** the width lever is open, but the advisor's axis is closed.
   `rows_per_simd` cannot be lowered — the frozen host grid makes any `r < 4` a
   correctness failure, not a trade. The same register relief is available for
-  free by covering the tile in `4/r` sequential row blocks, and at `r = 2` that
-  is spill-free through at least `NA = 12`, covering every legal `M`.
+  free by covering the tile in `4/r` sequential row blocks; the row-blocked form
+  at `r = 2` is clean through `NA = 10` (the whole legal `M` range), and the
+  single-block body at `r = 2` is clean through `NA = 12`.
 - **Evidence for the mechanism:** anchors reproduce E27 exactly; 10/10 gate
   controls behave; the row-blocked form keeps one extra rolled loop and no
   accumulator alloca.
