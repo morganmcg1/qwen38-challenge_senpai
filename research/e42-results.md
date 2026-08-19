@@ -43,7 +43,7 @@ tokens are unchanged by construction.
 | p2 arm (M≥2 → ψ) at ≥2 magnitudes | **done**, L1 and L2 |
 | p6 arm (M≥6 → ψ·φ) at ≥2 magnitudes | **done**, L1 and L2 |
 | linearity across magnitudes | **done** for both p2 and p6 (the scientific core) |
-| m1 sign-flip control | running |
+| m1 sign-flip control | **done**, raw_p flipped up |
 | m6 single-width arm (priority B) | **done** |
 | bit-exactness, end to end on the scored path | **done**, every arm |
 | bit-exactness, 192-cell parity rig | pending |
@@ -168,10 +168,15 @@ never dispatched on this fixture.
 | p6L1 | `6b8ae93` | 6..9 | 25.393 | 37.583 | 1.4801 | +0.9129 | +56.105 % | **0.6145** | 1.0023 |
 | p6L2 | `78cd88d` | 6..9 | 34.545 | 37.583 | 1.0879 | +1.8321 | +112.372 % | **0.6133** | 1.0004 |
 | m6L2 | `04f28ac` | 6 only | 21.684 | 37.603 | 1.7341 | +1.8261 | +33.308 % | **0.1824** | 1.0053 |
+| m1L1 | `d984b45` | 1 only | 16.555 | **51.376** | **3.1033** | +0.4271 | +1.774 % | 0.0415 † | — |
 
-Serial-leg drift across arms: −0.111 %, −0.210 %, −0.210 %, −0.211 %, −0.159 % —
-all well inside the 0.4315 % MDE, as required, since the serial leg is entirely
-width 1 and therefore untreated in every arm above.
+† m1's primary leg is the **serial** one; see §5.1. Its MTP-leg figure is the
+draft head's width-1 share, not a verify-width share.
+
+Serial-leg drift across the five arms that do not treat width 1: −0.111 %,
+−0.210 %, −0.210 %, −0.211 %, −0.159 % — all well inside the 0.4315 % MDE, as
+required, since the serial leg is entirely width 1 and therefore untreated in
+every one of them. m1 is the exception by construction and moves it +36.411 %.
 
 The spread of `x` over the treated widths is the gate-tightness signature and it
 tracks the gate exactly: p2 treats seven dispatched widths and reads 0.4260 /
@@ -297,6 +302,39 @@ Prediction 2 is the interesting one to be wrong about: if ψ(serial) came out
 well below 0.87, it would mean the curve's absolute calibration is off in a way
 the MTP-leg arms happen not to expose.
 
+#### Scored, after the fact
+
+| # | predicted | measured | verdict |
+|---|---|---|---|
+| 1 | raw_p rises | 2.3154 → **3.1033**, +0.7880 | ✅ |
+| 2 | ψ(serial) ≈ 0.875 | **0.8525** | ✅ within 2.6 % |
+| 3 | serial slows ≈ +79 % | **+36.411 %** | ❌ **point value wrong** |
+| 4 | MTP leg barely moves | **+1.774 %** | ✅ |
+| 5 | MTP occupancy not identified | reported as unidentified | ✅ |
+
+**Prediction 3 is a real miss and stays on the record as one.** I assumed x(1)
+would land near the ≈0.90 the other arms measured. It did not: width 1 runs the
+**non-crossrow `qmv_fast_impl` fallback**, a different kernel with a different
+work profile, and it measured x(1) = **+0.4271**. The prediction's *form* is
+intact — 0.875 × 0.4271 = **+37.4 %** against **+36.411 %** measured, agreeing to
+2.6 % — so the coefficient was right and the denominator guess was wrong. Had I
+written the prediction as a coefficient rather than as a leg percentage it would
+have been correct; that is the lesson, not the number.
+
+The leg asymmetry is the result that matters: **+36.411 % serial against +1.774 %
+MTP, a factor of 20.5, from an injection confined to one template
+instantiation.** Six arms moved raw_p down and this one moved it up. ψ is an
+attribution, not a global slowdown artefact — and nothing else in this experiment
+could have established that.
+
+α(serial) = **0.9733** is the only α below 1 anywhere here, i.e. the serial leg
+absorbs ~2.7 % of an injected width-1 slowdown where the MTP leg absorbs none.
+That is the small overlap effect requirement #4 anticipated, appearing on the leg
+with the *least* work to overlap and 512 rounds to hide it in.
+
+Trajectory unchanged (`trajectory_identical_to_base: true`) and
+`all_tokens_matched: true`, so the 36 % serial slowdown did not perturb decoding.
+
 ## 6. φ — but per width, not pooled
 
 Pooling over M≥6 hides the question. Ranked telemetry brackets φ(M≥6) to
@@ -359,14 +397,70 @@ if (first_m >= M) return;
 Working groups = `ceil(M / IPG)`, and **each group streams the whole weight
 matrix**. With the base IPG table `{3:3, 4:4, 5:5, 6:3, 7:4, 8:4, 9:5}`:
 
-**weight passes = 1 for M ≤ 5, and 2 for M ≥ 6.**
+**weight streams = 1 for M ≤ 5, and 2 for M ≥ 6 — on this base.**
 
-That is a structural discontinuity at exactly M=6, not a smooth cost curve. It
-is independently corroborated by the committed
-`research/e34-ranked-operating-point.json` (`/dispatch/weight_passes/*`), which
-also records `weight_passes_pre_e27` of M=5→2 and M=9→3 and
-`single_pass_top_width_now = 5`: E27's IPG 3→5 bought exactly one weight pass at
-each of M ∈ {5, 9}.
+That is a structural discontinuity, not a smooth cost curve. It is independently
+corroborated by the committed `research/e34-ranked-operating-point.json`
+(`/dispatch/weight_passes/*`), which also records `weight_passes_pre_e27` of
+M=5→2 and M=9→3 and `single_pass_top_width_now = 5`: E27's IPG 3→5 bought
+exactly one weight stream at each of M ∈ {5, 9}.
+
+#### 🔴 The step location is a property of the IPG table, not of the width
+
+This is the single most transferable thing in this document and it is easy to
+get wrong. `streams(M) = ⌈M / IPG(M)⌉` is read straight out of the `case M:`
+switch, so **changing a template argument moves the boundary**. My base
+`04ad6bf1` still carries E27; the live tip has it reverted, and the two trees
+therefore have different boundaries:
+
+| case | base `04ad6bf1` | streams | live tip (E27 reverted) | streams |
+|---|---|---|---|---|
+| 3 | `<T,3,3>` | 1 | `<T,3,3>` | 1 |
+| 4 | `<T,4,4>` | 1 | `<T,4,4>` | 1 |
+| 5 | **`<T,5,5>`** | **1** | `<T,5,3>` | **2** |
+| 6 | `<T,6,3>` | **2** | `<T,6,3>` | 2 |
+| 7 | `<T,7,4>` | 2 | `<T,7,4>` | 2 |
+| 8 | `<T,8,4>` | 2 | `<T,8,4>` | 2 |
+| 9 | **`<T,9,5>`** | **2** | `<T,9,3>` | **3** |
+
+Read from source with `git show 04ad6bf1:…/kernels/quantized.h`, not from notes.
+
+So on this base `streams(M) = 1,1,1,1,2,2,2,2` for M = 2..9: the **only** stream
+boundary in the dispatched range is **5→6**, and there is no 2→3 boundary at all.
+On the tip the boundaries are 4→5 and 8→9 and the 5→6 increment is structurally
+empty. **Every Q(M) figure in this document is an E27-present `04ad6bf1` number
+and does not transfer to the tip.**
+
+The useful consequence is that the model becomes two-sided on this tree, which is
+a sharper test than a same-tree replicate: the mechanism predicts a step at 5→6
+*and no step* at 4→5 or 8→9, whereas any smooth function of M predicts no such
+asymmetry.
+
+| increment | streams here | **measured ΔQ (ms)** | streams on tip |
+|---|---|---|---|
+| 2→3 | 1→1 | +5.54 | 1→1 |
+| 3→4 | 1→1 | +9.89 | 1→1 |
+| 4→5 | 1→1 | +13.31 | **1→2** |
+| **5→6** | **1→2** | **+32.80** | 2→2 |
+| 6→7 | 2→2 | +9.86 | 2→2 |
+| 7→8 | 2→2 | +10.91 | 2→2 |
+| 8→9 | 2→2 | +14.87 | **2→3** |
+
+The one increment that crosses a boundary here is 2.2×–5.9× every increment that
+does not. The two increments that cross on the *tip* but not here are ordinary.
+
+Only the `04ad6bf1` row of that design is mine. A tip-side per-width measurement
+would complete a 2×2 in which the bend moves with a template argument — and no
+smooth function of M can do that — but I have not measured the tip and do not
+claim it.
+
+#### What this does *not* say
+
+The m6 injection arm measures **φ(M=6), a share**, and M=6 carries 23 of 78
+rounds here, so that share is non-zero whatever the stream count is. It is the
+**ladder increments above**, not the injection arm, that locate the boundary.
+Those are separate instruments answering separate questions and conflating them
+would make a share look like structural evidence.
 
 ### 6.2 Priority B: the step is real, and a quadratic is refuted
 
@@ -465,6 +559,45 @@ host, an occupancy-based cost model is a sound basis for deciding what to
 optimise. That is not a general licence — it is a measured fact about the QMV
 family at these widths, and the same check should be repeated for any family
 whose dispatches are expected to overlap.
+
+## 8.1 Both legs decomposed, with both shares measured
+
+ψ(MTP) comes from the p2 arms and ψ(serial) from m1, so neither term is a curve
+prediction. `research/e42_leg_decomposition.py`, artifact
+`research/e42-artifacts/leg-decomposition.json`:
+
+| per round | serial (M = 1) | MTP (mean M 7.27) | growth |
+|---|---|---|---|
+| QMV | **62.711 ms** | **140.484 ms** | **2.240×** |
+| non-QMV | **10.849 ms** | **68.060 ms** | **6.273×** |
+| total | 73.559 ms | 208.543 ms | 2.835× |
+| non-QMV share | 14.7 % | **32.6 %** | — |
+
+**Non-QMV work scales 2.800× more steeply with row count than QMV does**, and the
+mechanism is the same weight-stream amortisation as §6.1: one stream serves a
+whole group of rows, so QMV is sublinear in M, while per-row attention,
+recurrence and normalisation work plus the speculation machinery are not.
+
+Two consequences worth carrying forward:
+
+- **One third of the candidate leg — 5.309 s of 16.266 s — is not QMV at all**,
+  which is a larger absolute pool than the stream boundary, and its share grows
+  with depth. It is a different axis from anything E42 was asked about; flagged,
+  not implemented.
+- **ψ falls with width, so 0.672 is the pessimistic end.** ψ(M=1) = 0.8525 and
+  ψ(mean M 7.27) = 0.6736. Any prompt with a lower mean width than this fixture
+  should read a *higher* ψ, so 0.672 is a lower bound for beagle (mean M 5.53) —
+  subject to a monotonicity for which I have two points and not a curve.
+
+Independent check: the isolated `--shapes-only` curve puts Q(1) = **64.433 ms**
+against the injection-measured serial QMV of **62.711 ms**, **+2.75 %** — curve
+against leg, no shared code path.
+
+One check I wrote and then deleted, because it was not one: the p2 ladder
+intercept **is** `mtp.non_qmv_ms_per_round` by construction, since
+`psi_from_slope ≡ q_mean/t0`. Its "0.00 % agreement" was an identity. The script
+now records `mtp_non_qmv_intercept_is_identical_by_construction: true` so nobody
+re-reads it as corroboration.
 
 ## 9. Bit-exactness
 
