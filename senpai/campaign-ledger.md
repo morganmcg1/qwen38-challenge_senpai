@@ -5145,3 +5145,154 @@ Two traps in doing it:
      just the sign of the change.** Companion to item 156's rule: I am now the most likely
      source of an unaudited load-bearing constant in this campaign, because my numbers get
      copied into briefs without anyone re-deriving them.
+
+158. 🔴🔴 **alphonse's E40 INTERIM CAUGHT TWO REAL ERRORS OF MINE — ONE OF WHICH I HAD BEEN
+     CIRCULATING IN THREE BRIEFS — AND HIS STRUCTURAL FINDING ABOUT THE QMV KERNEL ELIMINATES
+     A HYPOTHESIS ON thorfinn's AXIS, REFORMULATES ITEM 157's CENTRAL CLAIM, AND PUTS A
+     CEILING ON THE CROWN ESTIMATE. I fixed the instrument, not just the numbers.**
+
+     **A. THE E27 M-TABLE I HAVE BEEN CIRCULATING IS CONTAMINATED AT M=6.** I carried
+     `6: 1.0150`. E27's own report says **1.0032**. The 1.0150 is **E33's row-blocking arm**
+     from item 129 (130.781/128.843) — a different, **falsified** experiment that is not in
+     the shipped surface. I verified this myself in
+     `research/results/qwen38-r1-e27-m5-weight-stream-cliff.md`. Consequence: the "1.50 %
+     per-M6 tax" premise in the E40 brief **does not exist in our tree**, and the tension I
+     flagged between it and medicine's ≤0.29 % bound was an artefact of my own mis-citation.
+     E27's report says the five untouched widths land within ±0.5 %, "which sets the noise
+     floor". **Corrected table: 1:0.9292 2:0.9860 3:1.0020 4:0.9995 5:0.7990 6:1.0032
+     7:0.9995 8:1.0051 9:0.8854.**
+
+     **B. σ IN ITEM 148 WAS OVERSTATED BY 9.5 %.** `research/board_plateau_deficit.py` used
+     `statistics.pstdev` on n=6 where sample `stdev` is wanted — the plateau six are a
+     *sample* of the row population, so the unbiased estimator carries the n−1 denominator.
+     Ratio √(5/6) = 0.9129. Corrected: beagle **+4.78** (not 5.24), medicine +1.32, drama
+     +0.28, travel −0.62, essays +31.18, republic +8.05, botany +8.21. His leave-one-out on
+     beagle spans +4.07…+6.86. Every conclusion unchanged.
+     🟢 **And I went one step past what he asked.** Testing **one** new observation against a
+     sample of n requires the *prediction* sd `s·√(1+1/n)`, not `s`. On that footing beagle
+     is **+4.42**, medicine +1.22, essays +28.87, republic +7.45, botany +7.60. The tool now
+     reports both and labels which is which. **beagle survives every version of the
+     statistic: 5.24 → 4.78 → 4.42.**
+
+     **C. THE WORK-IDENTITY PREMISE WAS ASSERTED FOR SEVEN PROMPTS AND ASSUMED FOR THE
+     EIGHTH.** Item 148 claimed all seven rows carry identical `effective_mean_draft_len` "on
+     every prompt" and labelled plutarch "latch-dominated". That is wrong: WillGasser
+     `9cd3be9b9913` has plutarch draftlen **2.54066985645933** against our
+     **0.1540041067761807** — he escapes the acceptance latch. Plutarch compares **different
+     work** and its deficit is meaningless.
+     🔴 **And his "zero effect on conclusions" is too generous to me, because plutarch is IN
+     the narrow control group.** Striking it drops item 148's within-row control from **three
+     prompts to two**: the narrow mean moves +0.005 % → **−0.0166 %** while wide stays
+     **+0.3258 %**. The contrast therefore *widens* from 0.321 to 0.342 pp — the point
+     estimate is **stronger** — but **the control that rules out common-mode, thermal, box
+     and session explanations now rests on two prompts instead of three, and that is a real
+     loss of power which is mine, not his.**
+
+     **D. THE INSTRUMENT IS FIXED, NOT JUST THE NUMBERS.**
+     `research/board_plateau_deficit.py` now (i) uses sample `stdev` throughout, (ii) reports
+     `sigma_pred` beside `sigma`, (iii) carries a **WORK-IDENTITY GATE** that compares
+     `effective_mean_draft_len` at full precision across ours ∪ plateau for every prompt,
+     prints the offending row and value, marks the prompt `WORK!=`, and **excludes it from
+     the group means** — so the tool now fails loudly on exactly the error I made — and
+     (iv) has **−0.520 % restored to the ladder** as the crown threshold, with a comment
+     naming why (item 157). Self-checks still pass: score identity to 1.8e-15, ledger-149
+     sd-identity 0/8 mismatches.
+     **On the cohort count:** his 89 against my 94 is **not an error either way** — different
+     snapshots (653 vs 638 rows) and different definitions (all-8-on-head *with* a commit sha
+     vs all-8-on-head). On my snapshot: 94 all-8, of which 10 are sha-less and all
+     `rejected`, leaving 84. 🟢 **I checked the thing that actually matters — σ_score is
+     robust to the choice:** row-mean sd/mean is 0.1219 % on all 94, 0.1148 % on the 84 with
+     a sha, and 0.1319 % excluding rejected rows (n=14). **σ_score = 0.0978 % stands.**
+
+     **E. 🔴🔴 THE STRUCTURAL FINDING, AND IT IS THE VALUABLE PART.** `affine_qmv_fast`
+     (`quantized.h:1869`) is the **only** `[[kernel]]` entry on this path. The
+     `switch (ntg.x)` that selects `qmv_fast_crossrow_affine4_g64_m<T,M,NA,true>` for M=2..9
+     sits **inside** it, switches on a **runtime** value, and every `METAL_FUNC` helper
+     inlines. I read `:1915-1975` myself and confirm it. **Therefore all eight width cells
+     compile into ONE kernel with ONE register allocation = the max over all cells.** His
+     base kernel-wide max **108** (`<T,7,4>`) → E27 candidate **129** (`<T,9,5>`), Δ = +21
+     (+19.4 %), corroborated at the production entry
+     `affine_qmv_fast<bfloat16_t,64,4,false>` 163 → 183, with `batch1` and the 2-bit control
+     **byte-identical**. His `_wide` NA=2/3/4/5 anchor is **62/83/104/125** — the **same four
+     numbers thorfinn measured for `crossrow` at r=4** ⇒ the two students' independent
+     measurements are cross-validated on four shared points, which is why I treat this as
+     load-bearing rather than as a lead.
+
+     **Three consequences, and I would not have obtained any of them from either student
+     alone:**
+
+     1. 🟢 **A third hypothesis for thorfinn's R2 is eliminated for free.** E38 arm (b)
+        `<T,6,6,true,2,true>` = **117** registers; the base kernel-wide max is **129**; since
+        117 < 129, **arm (b) never raised the ceiling, so the +10.54 % R2 tax is NOT a
+        kernel-wide register-ceiling effect.** Neither of us had this hypothesis, because it
+        only exists once you know the cells share one allocation. R2 is therefore
+        ILP/loop-overhead **or** loads — precisely the dichotomy E41 was built to separate.
+        **E41 got narrower, not wider.**
+     2. 🔴 **Item 157's wall claim must be restated in spill terms.** There is **no true
+        register or occupancy readout on this box**: `-mllvm -stats` returns "Statistics are
+        disabled", `-Rpass*` is silent, `metal-objdump --disassemble` stops at AIR and never
+        reaches AGX ISA, `metal-readobj` has no register fields, E13 already failed the
+        offline AGX translator route (AIR 2.8 vs 2.5), and E32 found
+        `maxTotalThreadsPerThreadgroup` = 1024 for all 77 cells **including spilling ones**,
+        so pipeline reflection cannot discriminate. `peak_live_regs` is a lane-weighted
+        peak-live-SSA **textual heuristic** — shape usable, absolute number not. **The direct
+        evidence: the shipped kernel's own max is 129, which would already be "over" a hard
+        128-register wall — incoherent if 128 were a literal allocation limit on this
+        measurement scale.** So the robust form of item 157 is **not "144 > 128"** but
+        **"na6 at r=4 is the only cell that spills (`allocas=2`, `[4 x <6 x float>]`) while
+        na5 does not"**, and spill-alloca detection **is** a genuine compiler outcome.
+        **Verdict unchanged; foundation better.** 🔴 Standing correction: **stop quoting "the
+        128-register wall" as a hardware constant — quote the spill.**
+     3. 🔴 **The crown estimate is now explicitly conditional.** My **+0.5491 %** for full R2
+        recovery assumes K-tiling recovers R2 **without raising the kernel-wide ceiling**.
+        Under the single-kernel structure, a K-tiled cell above 129 taxes **every** width,
+        including the narrow ones that carry most of the decode time, and that cost appears
+        nowhere in my arithmetic. **+0.5491 % is an upper bound conditional on the ceiling
+        not moving**, and thorfinn must report his arm's kernel-wide max as a first-class
+        number.
+
+     **F. 🟡 WHERE I DISAGREE WITH HIM: "H1 CONFIRMED" OVERSTATES WHAT HE MEASURED, AND THE
+     HONEST VERSION IS MORE INTERESTING.** His ceiling mechanism makes a falsifiable
+     prediction about E27's *own* table — the untouched widths M=3,4,6,7,8 should each carry
+     a small positive tax — and it is testable at zero cost (`/tmp/e40_ceiling_check.py`).
+     Result: mean **+0.1860 %**, sample sd 0.242 %, SE 0.108 %, **t = +1.72 on 4 df, 3 of 5
+     cells positive.** Correct **sign** and the right **order of magnitude** against the
+     +0.3258 % wide-prompt deficit — but **not significant**, and two cells are negative.
+     🟢 **The genuinely valuable version, which neither of us wrote:** the plateau runs the
+     **base** tree, so E27's base→cand comparison at untouched widths and the us−plateau
+     wide-prompt deficit are **estimates of the same broad tax by two fully independent
+     routes**, and they agree to **1.3 SE**. The ceiling would account for roughly **57 %
+     (0.186 / 0.326)** of the wide deficit, with a wide interval. That is a much stronger
+     claim than "confirmed" *and* it is falsifiable. Caveats that must travel with it: E27's
+     table is local M4 Pro at 128/64 with residency off, so it does not settle occupancy
+     tiers on the ranked `g17s` box; and the two estimands are not identical (an unweighted
+     mean over five widths versus a time-weighted mixture).
+
+     **G. PRACTICES BANKED.** He attacked my instrument before using it, as instructed, and
+     built **five** reference classes — two selected **orthogonally to score**. The
+     narrow-leg-matched class (n=15, built on legs of *proven zero score value*) returns
+     **+0.2704 %, i.e. 84 % of the plateau estimate**, which is the first real evidence that
+     **selection on outcome is not the cause** of the wide-leg deficit. He correctly refused
+     to read his two negative point estimates as evidence, because their MDEs (5.97 %,
+     9.61 %) are 30–100× the effect. He reported that our board row's `submissionCommitSha`
+     `2b0c36a0…` is **not a resolvable git object locally**, so the shipped-surface gate
+     verifies **HEAD, not the submitted snapshot** — a provenance hole I had never stated.
+     And he handed askeladd a **falsifiable one-counter prediction**: the maximum decode-time
+     share on M∈{5,9} consistent with the observed deficit is **5.70 %** (beagle) and
+     **3.74 %** (medicine); above that, "E27 kernel tax alone" is refuted and a second
+     mechanism is mandatory. He expects it to falsify. 🟢 **That is one student handing
+     another a decisive test — the first time that has happened in this campaign, and it is
+     worth more than either result standing alone.**
+
+     **H. 🔴 The 403 returned mid-turn** and blocks both reads and mutations on PRs 45–48, so
+     this item is written before the feedback it describes could be delivered. Ledger first,
+     delivery when it clears.
+
+     🔴 **PROCESS LESSON — FOURTH OF THIS CLASS, AND THE PATTERN IS NOW UNDENIABLE. Every
+     load-bearing number I circulate must be re-derived from its primary source before it
+     enters a brief.** Item 157 was my *threshold* composed into a student's constant. This
+     item is my *M-table cell* composed into a brief's premise, plus my *`pstdev`* composed
+     into every σ that three students quote. **All three were caught by students; none by
+     me.** The fix in (D) is the structural answer — put the assertion inside the tool so the
+     tool catches it — and I am extending the rule: **any constant quoted in two or more
+     briefs must be emitted by a self-testing script, not typed.**
