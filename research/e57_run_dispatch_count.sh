@@ -26,6 +26,7 @@ mkdir -p "${out}" research/e57-artifacts
 
 export MLXFAST_E57_DISPATCH_COUNT=1
 export MLXFAST_E57_DISPATCH_COUNT_OUT="${PWD}/research/e57-artifacts/dispatch-counts.json"
+export MLXFAST_E57_BITWISE_OUT="${PWD}/research/e57-artifacts/bitwise-whole-vs-chunked.json"
 if ((throwing)); then
   export MLXFAST_E57_DISPATCH_COUNT_THROW=1
   log="${out}/throw.log"

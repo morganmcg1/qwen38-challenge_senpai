@@ -335,16 +335,109 @@ struct E57SdpaChunkDispatchCountTests {
         }
 
         if runsThrowingCell {
-            // Route 3 reachability: qL = 6 at kL >= 1024 asks
-            // sdpa_vector_2pass for 32 * 6 * 6 = 1152 threads per threadgroup.
-            // utils.h:84-96 throws, and an uncaught C++ exception ends the
-            // process. Anything printed after this line means the throw did not
-            // happen.
+            // Route-3 reachability. The pre-registered reading was that an
+            // unsplit qL = 6 call at kL >= 1024 asks sdpa_vector_2pass for
+            // 32 * 6 * 6 = 1152 threads per threadgroup and that utils.h then
+            // throws, ending the process. The legal cells above falsify the
+            // premise: at qL >= 6 the dispatcher leaves the vector family for
+            // steel_gemm_fused, whose threadgroup is a width-independent
+            // (32, 2, 2). This cell is therefore now expected to RETURN, and it
+            // still runs in its own process because the pre-registered
+            // prediction was an abort.
             print("e57-probe: entering the illegal cell qL=6 kL=1030 unchunked")
             let cell = SdpaChunkProbe.measure(
                 form: "whole", layout: "contiguous", qL: 6, kL: 1030)
             print("e57-probe: the illegal cell RETURNED, dispatches=\(cell.dispatches) "
                 + "threadgroups=\(cell.sdpaThreadgroups)")
+        }
+    }
+
+    /// The cheapest decisive check on the boundary the arms move: given ONE set
+    /// of queries, keys and values, does the chunked form return the same bits
+    /// as the unsplit call? The dispatch counter shows the two forms run
+    /// different kernel families at `qL >= 6`, so this test says whether that
+    /// difference is observable in the attention output itself, before any
+    /// 512-token allocation is spent on the end-to-end row digest.
+    ///
+    /// Each width also carries an A/A control: the unsplit call is evaluated
+    /// twice, and any difference there would mean the comparison is measuring
+    /// nondeterminism instead of the chunk.
+    @Test func chunkChangesTheAttentionOutputBitwise() throws {
+        try #require(enabled, "set MLXFAST_E57_DISPATCH_COUNT=1 to run the GPU probe")
+
+        // kL stays below the 2-pass boundary: the only cell that could abort is
+        // an unsplit wide call at kL >= 1024, and that one belongs to --throw.
+        let kL = 768
+        var cells: [[String: Any]] = []
+        for layout in ["contiguous", "headTransposed"] {
+            for qL in [5, 6, 7, 8, 9] {
+                MLXRandom.seed(UInt64(20_570_000 + qL))
+                let queries = SdpaChunkProbe.queries(qL: qL, layout: layout)
+                let keys = SdpaChunkProbe.cacheSlice(length: kL)
+                let values = SdpaChunkProbe.cacheSlice(length: kL)
+                eval(queries, keys, values)
+
+                let whole = SdpaChunkProbe.whole(
+                    queries: queries, keys: keys, values: values)
+                let wholeAgain = SdpaChunkProbe.whole(
+                    queries: queries, keys: keys, values: values)
+                eval(whole, wholeAgain)
+                let reference = whole.asType(.float32).asArray(Float.self)
+                let control = wholeAgain.asType(.float32).asArray(Float.self)
+
+                var candidate = reference
+                if qL >= 6 {
+                    let chunked = SdpaChunkProbe.chunked(
+                        queries: queries, keys: keys, values: values)
+                    eval(chunked)
+                    #expect(chunked.shape == whole.shape)
+                    candidate = chunked.asType(.float32).asArray(Float.self)
+                }
+
+                func compare(_ other: [Float]) -> (Int, Float, Float) {
+                    var differing = 0
+                    var maxAbsolute: Float = 0
+                    var maxRelative: Float = 0
+                    for index in reference.indices where reference[index] != other[index] {
+                        differing += 1
+                        let absolute = abs(reference[index] - other[index])
+                        maxAbsolute = max(maxAbsolute, absolute)
+                        let scale = max(abs(reference[index]), abs(other[index]))
+                        if scale > 0 {
+                            maxRelative = max(maxRelative, absolute / scale)
+                        }
+                    }
+                    return (differing, maxAbsolute, maxRelative)
+                }
+
+                let (controlDiffering, _, _) = compare(control)
+                let (differing, maxAbsolute, maxRelative) = compare(candidate)
+                cells.append([
+                    "query_layout": layout,
+                    "qL": qL,
+                    "kL": kL,
+                    "elements": reference.count,
+                    "aa_control_differing_elements": controlDiffering,
+                    "chunk_differing_elements": differing,
+                    "chunk_differing_fraction":
+                        Double(differing) / Double(reference.count),
+                    "chunk_max_absolute_difference": Double(maxAbsolute),
+                    "chunk_max_relative_difference": Double(maxRelative),
+                ])
+                // A repeated unsplit call must be bit-identical, otherwise the
+                // chunk comparison above measures nondeterminism.
+                #expect(controlDiffering == 0)
+            }
+        }
+
+        let json = try JSONSerialization.data(
+            withJSONObject: ["cells": cells],
+            options: [.prettyPrinted, .sortedKeys])
+        print(String(decoding: json, as: UTF8.self))
+        if let path = ProcessInfo.processInfo
+            .environment["MLXFAST_E57_BITWISE_OUT"], !path.isEmpty
+        {
+            try json.write(to: URL(fileURLWithPath: path))
         }
     }
 }

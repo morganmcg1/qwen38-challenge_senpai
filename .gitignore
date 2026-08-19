@@ -95,3 +95,4 @@ research/capture-*/
 research/out/
 # SENPAI-CAMPAIGN-END
 research/e57-artifacts/dispatch-counts.json
+research/e57-artifacts/bitwise-whole-vs-chunked.json
