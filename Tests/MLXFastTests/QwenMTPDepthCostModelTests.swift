@@ -94,7 +94,14 @@ struct QwenMTPDepthCostModelTests {
             #expect(abs(value - withinTier[0].element) < 1e-12)
         }
         for (_, value) in crossings {
-            #expect(value > withinTier[0].element * 2.0)
+            let ratio = value / withinTier[0].element
+            #expect(abs(ratio - Qwen36MTPBlockSession.verifyStreamCostRatio)
+                < 1e-12,
+                """
+                A boundary row is priced at \(ratio)x an ordinary row, but the \
+                measured round-level surcharge is \
+                \(Qwen36MTPBlockSession.verifyStreamCostRatio)x.
+                """)
         }
 
         var cumulative = 1.0
@@ -103,6 +110,40 @@ struct QwenMTPDepthCostModelTests {
                 < 1e-12)
             cumulative += step
         }
+    }
+
+    /// A price can close a depth step silently. The walk extends while
+    /// `reach > marginalCostRatio[d] * (1 + expected) / cumulativeCostRatio[d]`,
+    /// `reach` is a product of probabilities so it never exceeds 1, and
+    /// `expected` is a sum of partial products each at least `reach`, so
+    /// `expected >= (d + 1) * reach` once the walk has reached depth `d`.
+    /// Substituting gives a necessary condition that depends on the price
+    /// alone: if `marginalCostRatio[d] * (d + 1) / cumulativeCostRatio[d] >= 1`
+    /// the step is unreachable at EVERY acceptance rate, on every prompt.
+    ///
+    /// The first version of this cost model closed depth 3 that way, and the
+    /// schedule then behaved as an unconditional width-4 cap while still
+    /// looking like a walk. Nothing in the other tests could see it. This test
+    /// pins which steps are closed so that the next change to the price has to
+    /// say so out loud.
+    @Test
+    func onlyTheDeclaredDepthStepsAreClosedAtEveryAcceptanceRate() throws {
+        let closed = (0 ..< Qwen36MTPLimits.maxDepth).filter { depth in
+            let bestCase = Qwen36MTPBlockSession.marginalCostRatio[depth]
+                * Double(depth + 1)
+                / Qwen36MTPBlockSession.cumulativeCostRatio[depth]
+            return bestCase >= 1.0
+        }
+        // Depth 7 is the 8 -> 9 verify step. It is closed on purpose: a ninth
+        // row costs 13.5% more round time and buys at most 12.5% more tokens,
+        // so it cannot repay itself even at perfect acceptance.
+        #expect(closed == [7],
+                """
+                Closed depth steps are \(closed), expected [7]. A step listed \
+                here can never be taken, whatever the prompt or the acceptance \
+                rate, so the schedule is a fixed cap rather than a walk at that \
+                depth. Re-derive the price or document the new closure.
+                """)
     }
 
     /// The wide-decode chunk is the only reason a verify above width 5 issues
