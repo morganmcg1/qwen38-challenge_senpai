@@ -165,7 +165,17 @@ EFFECTS = {
     "our next submission's gain": 0.0283,
     "E27 score cost (measured)": -0.3321,
     "E40 width-8 stream cost":    0.4910,
-    "alphonse E44 predicted":    -0.17,
+    # Sign CORRECTED (was -0.17, from the retired psi_serial coefficient that
+    # ledger 178(A) withdrew). E48's ranked coefficient is +0.693391 %/%, so a
+    # QMV win is a GAIN, not a cost. This value is E44 r2's 11.421 % cell win
+    # priced on askeladd's E48 score-weighted mixture.
+    #
+    # THE TWO LIVE MIXTURES DISAGREE, and check 7 below is the tripwire.
+    # edward's E53 mixture prices the same cell win at +1.1251 .. +1.3008 %,
+    # which EXCEEDS the board floor. If PR #57 confirms edward's split, put his
+    # number here and let check 7 FAIL -- that failure is the signal it was
+    # built to give, not a nuisance to silence.
+    "alphonse E44 predicted":     0.7437,
     "local A/B MDE (pairs=5)":    0.5040,
 }
 

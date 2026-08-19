@@ -8389,3 +8389,293 @@ clears. Do not spend the first minutes of the resumed service retrying the same 
 once, and if it still fails, treat the advisor GitHub identity as a harness-level defect to
 report rather than an advisor-side condition to work around.
 
+
+## 179. 🔴🔴🔴 THE FRONTIER SOURCE IS READABLE. The whole 3.24986 promotion is 70 lines of untimed warm-up, our base and the frontier have DIVERGED with each holding what the other lacks, and the QMV-versus-SDPA call path is now settled from source.
+
+`senpai/bootstrap-checkout.sh` ran successfully at 2026-08-19T16:09Z and configured the
+`upstream` remote (push URL `DISABLED`). That single unblocking step changed the campaign's
+information position more than any measurement this round, because `upstream/main` is
+`9e1ff9ec7152a04b753f2efb91c3e559909ea4b9` — **the exact commit Yukon reports for the
+promoted frontier submission `59b321e` at 3.24985583421771.** The leader's source is now
+sitting in this checkout and can be diffed.
+
+That identification is corroborated through two independent channels: Yukon's board reports
+the promoted commit as `9e1ff9e…` (truncated), and Git independently resolves
+`upstream/main` to the full `9e1ff9ec7152a04b753f2efb91c3e559909ea4b9`. It does not rest on
+the truncated string alone.
+
+### 179(A). The entire last promotion is 70 inserted lines of untimed warm-up
+
+```
+git diff --stat 0c90733 9e1ff9e            # organizer commit -> organizer commit
+ Sources/MLXFastModel/Qwen36MTPBlockSession.swift | 70 +++++++++++++++++
+ 1 file changed, 70 insertions(+)
+```
+
+One file. Seventy insertions. **Zero deletions.** `git diff --name-status` over *all* paths
+returns that one line. The content is a single new private function,
+`warmTargetLaterWindowSDPA`, called at the end of the seed-warm path. It host-extends
+throwaway full-attention K/V to `kL >= 1024` with zero padding, then dispatches
+`MLXFast.scaledDotProductAttention` at `qL` in `[1, 5, 4]` and discards the results. Its
+purpose is to move first-touch Metal pipeline compilation for later-window SDPA out of the
+scored window.
+
+Read that carefully, because it re-frames the whole race:
+
+- The mechanism is **untimed** and **token-neutral** — throwaway caches, dummy K/V that never
+  enter a scored forward, results discarded.
+- It moved the frontier from 3.24929398547457 to 3.24985583421771, i.e. **+0.00056184874314,
+  or +0.0173 %.**
+- Our own deficit to that frontier is 0.01734735158304, i.e. **0.534 %** — about **31× the
+  size of the step the leader just took.**
+
+**The leader is advancing the board in ~0.02 % increments while our in-flight mechanisms are
+priced at ~1 %.** thorfinn's E49 Arm 1 measured a **−12.255 %** isolated `<T,9,5>` QMV cell
+win (W&B `92a0u0fl`), which edward's E53 repricing puts at **+0.47…+0.92 %** ranked, and
+E44 r2's M ∈ {7,8} cell at **+1.13…+1.30 %** ranked. Those are 27–75× the leader's step. This
+is not a hopeless chase; it is a chase against small steps with large tools.
+
+The corollary is a discipline, not a licence: a 0.0173 % mechanism was worth promoting
+because on the official runner it is *reliably* positive. We cannot measure 0.0173 % locally
+— it is **below askeladd's 0.0629 % end-to-end null floor** (E48 `base2`, W&B `yd949eze`). So
+mechanisms of this class are justified by *receipt and source argument*, never by a local
+A/B, and they must be **composed into a candidate rather than screened as experiments.**
+
+### 179(B). Our base and the frontier have DIVERGED, and each holds what the other lacks
+
+`git diff HEAD upstream/main` restricted to the scored surface is **two files, 136
+insertions, 144 deletions**. Reading the direction carefully (`-` = ours only, `+` = theirs
+only):
+
+| content | ours (`a2c3dbc4`) | frontier (`9e1ff9e`) | verdict |
+|---|---|---|---|
+| `warmTargetLaterWindowSDPA` (later-window SDPA precompile) | **absent** | present | **import — real IP, promoted receipt** |
+| VERIFY-CONCAT JIT warm (multi-input `concatenated` warm, widths 0…maxDepth) | present | **absent** | **keep — ours is ahead** |
+| EOS truncation + `reachedStopToken` | **removed (E26)** | present | **reject — see 179(C)** |
+| `MLX_QWEN_MTP_LADDER` env override for the asyncEval rung set | present | absent | keep (research affordance) |
+| `traceSyncHeadChain`, file-backed `traceSink`, `scheduleTrace` | present | absent | keep (trace-gated only) |
+| `costModelDepth`, `headStepCostRatio` 0.18, `sdpaWidthWallDepthCap` 5, `segmentedVerifyDepthCap` 8, `segmentedStreakGate` 2 | — | — | **byte-identical; absent from the diff** |
+
+Two consequences worth stating separately.
+
+**First, the scheduler and every width constant are identical between our base and the
+frontier.** They do not appear in the diff at all. So the leader runs the same greedy
+marginal-depth walk, the same `h = 0.18`, the same width caps and the same streak gate that
+we do. Nothing in the current frontier contradicts edward's E53 reading of the schedule.
+
+**Second, the VERIFY-CONCAT warm block carries its own receipt and its own erasure story**,
+recorded in the comment we restored: authored by fkiene, PROMOTED at `1cb1f43a` scoring
+3.24417896624589 against a 3.24326223889754 base (+0.0283 %), then deleted by the *next*
+promotion because that solver branched from a commit predating fkiene and `yukon submit`
+**replaces whole files rather than merging**. It is still absent from `upstream/main` today.
+We hold a +0.0283 % mechanism the current frontier does not have. Combined with 179(A)'s
++0.0173 %, the two warm-ups are of the same order and are plausibly additive, because they
+warm different kernel families (int32 copy/concat versus SDPA).
+
+### 179(C). 🔴 The EOS truncation is ORGANIZER-SUPPLIED, and a naive frontier sync re-breaks our 512-token windows for the FOURTH time
+
+`upstream/main` contains an early return on a stop-token primary plus a post-round
+`committed = Array(committed.prefix(stopIndex + 1))` truncation, and a `reachedStopToken`
+flag. Our base deliberately does not, and `Tests/MLXFastTests/QwenMTPFixedWindowTests.swift`
+**fails if it comes back**, in both directions (`components(separatedBy: "reachedStopToken")
+.count - 1 == 0`).
+
+I initially suspected this was a benchmark escape — a candidate leg stopping early, skipping
+the expensive long-KV tail, and inflating `raw_p`. **That is refuted by our own test file, and
+I am recording the refutation so nobody else spends time on it.** The trusted driver owns the
+window by COUNT and has no stop-token concept whatsoever:
+
+```
+while emitted.count < options.totalTokenCount
+let remaining = options.totalTokenCount - emitted.count
+```
+
+`reachedStopToken` is read by **nothing** — not in our tree, and not in `upstream/main`
+either, where it appears only inside the editable session file. It is a dead flag on both
+sides. So truncation buys no score. What it does is nil the pendings so that every later
+round throws `.notBegun`, which E26 bisected on the unchanged base: **302 requested tokens
+pass and 303 abort**, at both depth 2 and depth 0. That is what previously capped our local
+windows at 256/301 tokens.
+
+The revert history in that test file is the operational lesson:
+
+> "Truncation is ORGANIZER-SUPPLIED — it is already present at the challenge import
+> `5d02917` — so every `Sync promoted organizer frontier` reintroduces it and continuation
+> has to be re-applied by hand. Continuation has been added four times and lost three times,
+> **every loss driven by a merge rather than by a decision.**"
+
+**Standing campaign rule, now with a fourth confirmed instance waiting to happen: never sync
+the organizer frontier wholesale onto this base.** Cherry-pick named mechanisms. Any sync
+that touches `Qwen36MTPBlockSession.swift` must be followed by
+`swift test --force-resolved-versions` and an explicit read of
+`QwenMTPFixedWindowTests.swift` before anything is measured. E26 separated the correctness
+half from the performance bet on purpose: `stopTokens` is still stored and still bounds a
+draft run in the accept loop, so acceptance on any stop-free window — every ranked window
+measured so far — is identical to the promoted frontier *by construction*.
+
+### 179(D). The live call path is SETTLED from source: QMV dispatches at full width 1…9, and only the SDPA chunks
+
+This was a genuine risk to two live experiments and it is now closed.
+`Qwen36MTPBlockSession.swift:685-699`:
+
+> "Quantized projections at M in 6..9 still ride the per-row-exact QMV dispatch (host qmv
+> batch limit 10+ on this generation for these shapes). The one op whose ARITHMETIC changes
+> above width 5 is the sdpa: `qL * gqa > 32` falls off the fused vector path.
+> `attentionWithCacheUpdate` therefore splits a 6..9-row causal decode attention into two
+> <= 5-row sdpa calls … **the chunk lives at the sdpa only.**"
+
+Implementation, `Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift:104-136`:
+the split is on `queries.dim(2)` **inside the attention helper**, guarded by
+`queries.dim(0) == 1, qL >= 6, qL <= 9, kL >= qL, case .causal`, with `split = 5` and
+`kSplit = kL - (qL - split)`. Nothing upstream of that helper splits the verify width.
+
+Therefore the per-verify dispatch geometry is:
+
+| verify width M | QMV dispatches | SDPA calls | SDPA `qL` fired |
+|---|---|---|---|
+| 1–5 | 1, at M | 1 | M |
+| 6 | 1, at **M=6** | **2** | 5 + 1 |
+| 7 | 1, at **M=7** | **2** | 5 + 2 |
+| 8 | 1, at **M=8** | **2** | 5 + 3 |
+| 9 | 1, at **M=9** | **2** | 5 + 4 |
+
+**This validates the live slate.** The alternative — a pre-projection chunk — would have made
+thorfinn's `<T,9,5>` win and askeladd's E55 composition both unreachable-path work, exactly
+the failure mode `program.md` warns about ("a file being editable does not mean the scored
+worker executes it"). It is not the case. `case 7`, `case 8` and `case 9` of the QMV dispatch
+table are live scored cells at their full widths.
+
+### 179(E). A concrete, source-derived improvement ON the frontier's own mechanism: the warm set is incomplete
+
+The frontier warms `qL` in `[1, 5, 4]`. Its comment explains the choice as "qL=1 (serial /
+chunk-B of width 6) plus the exactness-chunk pair qL=5 / qL=4" — i.e. it covers widths 1, 6
+and 9. From the table in 179(D), the **complete** set of decode-time SDPA query lengths is
+`{1, 2, 3, 4, 5}`. The frontier therefore **never warms `qL = 2` or `qL = 3`**, which are
+chunk B of width 7 and width 8 respectively.
+
+Widths 7 and 8 are not rare: askeladd's E48 puts M ∈ {7,8} at **9.391 %** of candidate-leg
+QMV cost and edward's E53 at **21.2–25.1 %**. Under either mixture those widths fire, so the
+`qL = 2` and `qL = 3` later-window SDPA pipelines are first-touched **inside the scored
+window** on the current frontier.
+
+The queued composition, therefore, is not a copy. It is: import
+`warmTargetLaterWindowSDPA`, keep our VERIFY-CONCAT warm, and **complete the warm set to
+`qL ∈ {1,2,3,4,5}`**. Open questions the assignment must answer rather than assume:
+
+1. Chunk A reads a **slice** `cachedKeys[0..., 0..., 0..<kSplit, 0...]`, while the frontier's
+   warm passes a freshly concatenated contiguous array. If a sliced non-contiguous view
+   selects a different kernel, the warm misses its target. Verify against dispatch evidence.
+2. The frontier pads to exactly `kL = 1024`. Our window runs `kL` from 512 to ~1024
+   continuously. Whether SDPA variant selection buckets on `kL` needs checking; if it does,
+   warm several points. Extra warm-up is free — it is outside the timed window.
+3. The guard `faCount == 16` must be confirmed against our tree (16 FA + 48 GDN), and the
+   whole function must remain a **no-op on wrong geometry** rather than a silent partial warm.
+4. Expected effect is order 0.01–0.05 %, i.e. **below our 0.0629 % local null floor.** This is
+   explicitly *not* a locally screenable experiment. It is justified by the official receipt
+   plus the completeness argument, and it must be **composed into a candidate**, with a test
+   that fails if the warm set and the `qL >= 6` chunk predicate ever disagree.
+
+### 179(F). E56 gains a second staircase, and it sits where the traffic is
+
+edward's E56 brief named the QMV weight-stream boundaries at 4→5 and 8→9. 179(D) exposes a
+**larger and higher-traffic step his cost model also cannot see**: crossing width 5→6 doubles
+the SDPA call count across all 16 full-attention layers, while `costModelDepth` prices that
+sixth row at `h = 0.18` of one head step, identically to the third or fourth row.
+
+Three reasons this is the better boundary to attack first:
+
+1. It is inside the **64.0 %** of candidate-leg QMV cost that askeladd's deterministic width
+   histogram assigns to M ∈ {4,5,6}, not out in the 21 %/9 % tail.
+2. `sdpaWidthWallDepthCap = 5` means depth ≤ 5, i.e. **width ≤ 6**. Every round that has not
+   earned the 2-round full-accept streak has its ceiling at precisely the width that just
+   began paying double SDPA. That is the default operating point, not an edge case.
+3. The existing `h` bracket cannot have ruled it out. `h` is a **global** price — 0.14 → 2.766,
+   0.15 → 2.667, 0.18 → best, 0.32 → 2.845 with candidate decode time up 0.95 % — and its
+   recorded failure mode was dragging prompt 6 from 0.17 drafts to 0.06. A **width-6-specific**
+   surcharge asks a different and never-asked question: does the sixth row's extra accepted
+   token repay a second SDPA dispatch across 16 FA layers?
+
+Honest prior: `:723` records that **this pool rewards depth**, so the likely answer is that
+the sixth row does repay it and the surcharge is zero. That is a good result — it converts an
+unpriced step into a measured one.
+
+### 179(G). Records reconciled; `syncedCommit` deliberately NOT advanced
+
+`senpai/frontier-state.json` was stale by design (177(F)) because Yukon truncates the source
+ref to `9e1ff9e…` and `yukon submission-note 59b321e` is empty, while both
+`submit-official.sh:213` and `bootstrap-checkout.sh:35` require full 40-hex. `upstream/main`
+supplies the full SHA, so `promotedSubmission` is now `59b321ee-eb5c-40ec-bb49-5218e4b8cd31`
+/ `9e1ff9ec7152a04b753f2efb91c3e559909ea4b9` / `3.24985583421771`. `bootstrap-checkout.sh`
+re-runs clean and `verify-ranked-score-boundary.sh` PASSES.
+
+**`organizer.syncedCommit` stays at `0c90733`, on purpose.** The trusted delta
+`0c90733 → 9e1ff9e` is empty — one editable file, zero trusted files — so advancing it would
+pass every gate (`submit-official.sh:220` only requires it to be an ancestor of
+`upstream/main`). I am not advancing it because we have **not** performed a sync, and a
+record implying our base carries `9e1ff9e`'s editable content is precisely the confusion that
+has cost this campaign continuation three times (179(C)). The empty trusted delta is the
+useful fact: **a future frontier sync has no contract work to do, only editable cherry-picks.**
+
+Also repaid this round: `research/noise_floors.py`'s `EFFECTS["alphonse E44 predicted"]` was
+still `-0.17`, carrying the sign of the `psi_serial` coefficient that 178(A) retired. It is
+now `+0.7437` (E44 r2's 11.421 % cell win on askeladd's mixture) with the disagreement
+recorded inline: edward's mixture prices the same cell at +1.1251…+1.3008 %, which **exceeds
+the board floor**, so if PR #57 confirms his split then check 7 should be allowed to FAIL —
+that is the signal the check exists to give.
+
+### 179(H). Three merges landed, four experiments are live, and the central disagreement is unresolved
+
+Merged this round, each with base-change inertness **verified rather than assumed** (`git diff
+--name-only <base> <tip>` over `Sources/ benchmark.json mtp-head.manifest.json fixtures/
+.github/ Package.swift tools/ Vendor/` returned 0 files for every required base):
+
+- **PR #53** thorfinn E49 — `<T,9,5>` isolated cell −12.255 % (MDE 0.333 ms, nine
+  byte-identical controls ≤ 0.33 %); register tax refuted with no dose-response, ceiling
+  |dScore| ≤ 0.1435 % shipped-referenced and ≤ 0.0876 % control-free. W&B `92a0u0fl`.
+- **PR #52** askeladd E48 — `psi_mtp = 0.693391`, ranked gating premium 0.0, and the
+  **0.0629 % end-to-end null floor** that makes every later effect claim credible.
+  W&B `yd949eze`.
+- **PR #56** edward E53 — schedule is a greedy marginal-cost walk, M = drafts PROPOSED + 1,
+  board intervals are **identification intervals not standard errors** (~1 observation, not
+  371 draws), and the E49-versus-E44 ranking **inverts** under his mixture. Zero GPU by
+  design.
+
+Base advanced `981e69a` → `1247c57f` → `a35bb006` → **`a2c3dbc4`**.
+
+**The central open disagreement stands.** askeladd and edward roughly swap the narrow-width
+split and agree on its total:
+
+| share of candidate-leg QMV cost | askeladd E48 | edward E53 |
+|---|---|---|
+| M ∈ {4,5,6} | 64.025 % | 65.0–68.9 % — agree |
+| M ∈ {7,8} | **9.391 %** | **21.2–25.1 %** |
+| M = 9 | **21.630 %** | **4.6–8.9 %** |
+| {7,8} + 9 | 31.02 % | 25.8–34.0 % — agree |
+
+Neither is a GPU measurement; both are inferences from published board telemetry, and edward
+declined to claim falsification ("telemetry pins f78+f9 better than the split inside it").
+**PR #57 settles it by direct measurement**, because the two hypotheses are 2.4–4.7× apart in
+the quantity askeladd's instrument reads and all three predictions (−1.84 %, −0.76 %, −0.39 %
+on the MTP leg) are ≥ 6× his null floor.
+
+Live slate: #55 alphonse E51 (exactness-wall dose ladder), #57 askeladd E55 (compose
+`<T,9,5>` onto the shipped table, to a submittable candidate), #58 thorfinn E54
+(lone-versus-sibling NA=5 law), #59 edward E56 (stream-aware draft-depth schedule). All four
+students occupied; no GPU idle.
+
+### 179(I). The advisor REST credential is intermittent, not simply down
+
+178(G) recorded a continuous 403 outage. The behaviour this round is different and worth
+distinguishing: `get_prs` for four PRs **succeeded** at 16:0xZ, then `get_prs` for a single PR
+returned 403, then all three `send_assignment_feedback` calls returned 403, while `git fetch`
+over HTTPS and every local gate worked throughout. So the advisor identity is **flapping**,
+not hard-down.
+
+Operational consequence: do not burn a cycle retrying. The 179(D)/179(F) guidance for #57,
+#58 and #59 is written to
+[`../research/ADVISOR_NOTICES_TO_LIVE_PRS.md`](../research/ADVISOR_NOTICES_TO_LIVE_PRS.md)
+and pushed to this branch, which is a proven channel — thorfinn imported
+`research/qmv_score_leverage.py` from the advisor tip during E49. That file stays transient:
+delete it once the same guidance lands as real PR comments, so exactly one durable record
+survives.
+
