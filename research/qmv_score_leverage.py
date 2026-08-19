@@ -72,9 +72,37 @@ E27_REG_DELTA = 21
 E27_WIDTHS_CHANGED = (5, 9)
 
 
-def leverage(gated):
-    """Score % per 1 % QMV cost reduction. `gated` = does it skip M=1?"""
-    return PSI_MTP - (0.0 if gated else PSI_SERIAL)
+def leverage(gated, psi_mtp_w1=0.0):
+    """Score % per 1 % QMV cost reduction. `gated` = does it skip M=1?
+
+    🔴 `psi_mtp_w1` is the CANDIDATE leg's own width-1 QMV share, and it is
+    NOT MEASURED. PSI_MTP = 0.6736 was measured by injecting into widths 2..9
+    only, so the candidate leg's TOTAL QMV share is PSI_MTP + psi_mtp_w1.
+
+    The point of carrying it explicitly is that the two leverages depend on it
+    completely differently:
+
+      GATED   (widths 2..9)  = PSI_MTP                     -- INVARIANT to it.
+              The serial leg decodes one token at a time, so it dispatches
+              width 1 and cannot be touched by a change confined to 2..9,
+              whatever the candidate leg does at width 1.
+
+      UNIFORM (all widths)   = PSI_MTP + psi_mtp_w1 - PSI_SERIAL
+              If psi_mtp_w1 >= 0.1789 the uniform SIGN FLIPS non-negative and
+              item 173(A)'s headline is wrong.
+
+    Verified from source on this base (kernels/quantized.h): the 4-bit switch
+    at :1917 has cases 2..9 and NO case 1, so width-1 4-bit falls through to
+    qmv_fast_impl at :2026. But :1908 dispatches a width-1 2-bit coarse DRAFT
+    readout (out_vec_size == 98336) on the candidate leg, so "width 1 implies
+    serial leg" is not a theorem and psi_mtp_w1 cannot be assumed zero without
+    measurement. askeladd's E42 m1 control may already determine it: solve
+    raw_p ratio = (1 + PSI_SERIAL*x)/(1 + psi_mtp_w1*x) at his known dose.
+    E48 (PR 52) carries this.
+    """
+    if gated:
+        return PSI_MTP
+    return PSI_MTP + psi_mtp_w1 - PSI_SERIAL
 
 
 def qmv_share(m):
@@ -263,6 +291,20 @@ def selftest():
     ck("gated QMV leverage is POSITIVE", leverage(True) > 0)
     ck("gated leverage equals psi_mtp exactly", leverage(True) == PSI_MTP)
     ck("serial leg is MORE QMV-bound than candidate", PSI_SERIAL > PSI_MTP)
+
+    # 🔴 The unmeasured quantity. GATED must be invariant to it; UNIFORM must
+    # not be. If someone ever "simplifies" leverage() so the gated branch reads
+    # psi_mtp_w1, every target in this file silently acquires a dependency on a
+    # number nobody has measured.
+    ck("gated leverage is INVARIANT to the candidate leg's width-1 QMV share",
+       leverage(True, 0.0) == leverage(True, 0.30) == PSI_MTP)
+    ck("uniform leverage DOES depend on it",
+       leverage(False, 0.30) > leverage(False, 0.0))
+    ck("uniform sign flips once width-1 candidate QMV reaches 0.1789",
+       leverage(False, 0.0) < 0 <= leverage(False, 0.1789),
+       "%.4f -> %.4f" % (leverage(False, 0.0), leverage(False, 0.1789)))
+    ck("the flip threshold is exactly the uniform gap",
+       abs((PSI_SERIAL - PSI_MTP) - 0.1789) < 1e-9)
 
     # Targets, pinned so a silent edit to psi is caught.
     ck("1 sd target is 1.140 %", abs(target_for(SCORE_BETWEEN_SUBMISSION.pct) - 1.1398) < 2e-3,

@@ -7235,6 +7235,66 @@ census matters almost as much as the width census, and neither exists.**
    content now, not who was on the envelope. `pr49b` was retired unsent because
    all three of its contents had reached alphonse or the ledger by other paths.
 
+### (F) 🔴 I verified my own load-bearing assumption from source, and found that I had attached the WRONG CONSEQUENCE to it. The targets are more robust than I claimed.
+
+E48's Risk 1 said: if the candidate leg dispatches width-1 QMV, then *"the free
+gate in 173(B) does not exist, and both my targets are wrong."* I read the
+dispatch to settle it, and the source both confirmed the code fact and refuted
+my inference.
+
+```
+kernels/quantized.h, this base
+:1908   bits==2 && out_vec_size==98336 && ntg.x==1  -> qmv_fast_singlerow_affine2_g64
+                                                       M==1 coarse DRAFT readout
+:1917   bits==4 && out_vec_size>=1024   switch (ntg.x) { case 2..9; default: break; }
+                                                       <-- there is NO case 1
+:2026   fall-through                    -> qmv_fast_impl<T, group_size, bits>
+```
+
+🟢 The 4-bit claim holds: widths 2..9 reach the crossrow family, width 1 reaches
+`qmv_fast_impl`, and no `case 1` exists.
+
+🔴 But `:1908` **is a width-1 dispatch on the candidate leg** — the 2-bit coarse
+draft readout. So *"width 1 implies serial leg"* is **not a theorem**, and I had
+been treating it as one.
+
+**And yet the targets survive, because they never needed it:**
+
+```
+GATED (widths 2..9):   the serial leg decodes one token at a time, so it
+                       dispatches width 1 and cannot be touched by a change
+                       confined to 2..9 -- WHATEVER the candidate leg does at
+                       width 1.  psi_mtp = 0.6736 was measured by injecting
+                       into exactly widths 2..9.
+                       => +0.6736 %/%, and 0.771 / 1.140 / 2.280 % all STAND.
+
+UNIFORM (all widths):  d ln(raw_p)/dx = psi_mtp + psi_mtp_w1 - psi_serial
+                       psi_mtp_w1 = candidate leg's OWN width-1 QMV share,
+                       WHICH NOBODY HAS MEASURED.
+                       psi_mtp_w1 >= 0.1789  =>  the uniform SIGN FLIPS.
+```
+
+So the exposure is confined to **173(A)'s headline**, and the entire gated
+programme — including E44's `+0.9275 %` and the M=9 prize — is independent of
+it. That is the opposite of what I told askeladd, and the wrong version would
+have had him stop the assignment over something that threatens neither Arm G nor
+Part 1.
+
+It also exposes a design fault of mine: **Arm U's predicted
+`(1+0.8525x)/(1+0.6736x)` silently assumes `psi_mtp_w1 = 0`**, so as written Arm
+U jointly tests the framework and that assumption and cannot separate them.
+
+🟢 **The cheapest fix needs no GPU: askeladd already has the data.** His E42 m1
+control injected into width-1 QMV at a known dose and raw_p went 2.315 → 3.103.
+Solving `ratio = (1 + psi_serial*x)/(1 + psi_mtp_w1*x)` at his dose yields
+`psi_mtp_w1` directly. Sent as a correction on PR 52, with Risk 1's stopping
+rule withdrawn.
+
+Banked: `leverage()` now takes `psi_mtp_w1` explicitly and the selftest (24 → 28)
+asserts that **gated leverage is invariant to it while uniform leverage is not**,
+and that the flip threshold equals `psi_serial - psi_mtp` exactly. A future
+"simplification" that lets the gated branch read `psi_mtp_w1` now reds the suite.
+
 ### Process
 
 1. 🔴🔴🔴 **Re-price every refuted experiment when the conversion factor
@@ -7260,3 +7320,13 @@ census matters almost as much as the width census, and neither exists.**
    two of them into the very instrument whose job is to publish percentages, in
    the same edit that fixed a third. Format bugs in a reporting tool are silent
    and they discredit correct arithmetic.
+6. 🔴🔴🔴 **Verifying an assumption is not the same as verifying what you
+   CONCLUDED from it, and the second is where I was wrong.** I identified the
+   width-1 dispatch question correctly, flagged it as the most load-bearing
+   thing in E48, told a student to check it — and mis-stated its consequence,
+   which would have made his check useless even if he performed it perfectly.
+   **When you flag a risk, derive its consequence as carefully as you derived
+   the risk.** A correctly identified uncertainty carrying a wrongly propagated
+   implication is *more* dangerous than an unflagged one, because it arrives
+   with borrowed credibility. The fix cost one source read I could have done
+   before writing the brief instead of after sending it.
