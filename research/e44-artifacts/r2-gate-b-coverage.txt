@@ -1,0 +1,67 @@
+E44 r2 Gate B: exact integer coverage of the dequantization mapping
+run_dir=.mlxfast-private/e44-qmv-ab/r2cov
+
+tag=r2cov
+base_sha=9fe0dc5dbdb30af4c807ea71873df99e2da72aa2
+head=da3ed1ae0ed6cfc31a54cc0262973f46c2bd075e
+dirty_files=0
+host_cpu=Apple M4 Pro
+host_mem=51539607552
+metal_toolchain=Apple metal version 32023.883 (metalfe-32023.883)
+widths=1,4,6,7,8,9 pairs=5 reps=25 inner=20
+started_utc=2026-08-19T12:14:19Z
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-alphonse/workspace/target/.mlxfast-private/e44-qmv-ab/r2cov/base.metal 206415 9fe0dc5dbdb30af4c807ea71873df99e2da72aa2 affine_qmv_fast_bfloat16_t_64_4_false
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-alphonse/workspace/target/.mlxfast-private/e44-qmv-ab/r2cov/cand.metal 212115 worktree affine_qmv_fast_bfloat16_t_64_4_false
+base_metal_sha256=0c461cb840fe74315663e3cbd7c59b3c322cf3834d3ca210416fb0181a425871
+cand_metal_sha256=ced19edc3136874b9e4736aa6115cb5beb58340e8866e35a4e435983a9cbf2e6
+arm_source_diff_hunks=4
+gpu_busy_precheck=skipped
+gpu_busy_precheck_detail=none
+cool_gate_real_outcome=stalled_above_40C
+cool_gate_passed_real_gate=false
+gate_qualified_for_timing=false
+gpu_temp_c_entry=42.93717575073242
+gpu_temp_c_exit=55.04788589477539
+harness_exit=0
+finished_utc=2026-08-19T12:18:55Z
+
+--- dispatch table derived from the emitted runtime-effective JIT arm sources ---
+  M=2  base=e44_narrow_m2        cand=e44_narrow_m2        
+  M=3  base=e44_m3_ipg3          cand=e44_m3_ipg3          
+  M=4  base=e44_m4_ipg4          cand=e44_m4_ipg4          
+  M=5  base=e44_m5_ipg3          cand=e44_m5_ipg3          
+  M=6  base=e44_m6_ipg3          cand=e44_m6_ipg3          
+  M=7  base=e44_m7_ipg4          cand=e44_sgmm_runtime     CHANGED
+  M=8  base=e44_m8_ipg4          cand=e44_sgmm_runtime     CHANGED
+  M=9  base=e44_m9_ipg3          cand=e44_m9_ipg3          
+changed widths: [7, 8]
+
+--- coverage: every packed word, every element, integer bit-equality ---
+e44_qmv_ab:   coverage[scale] M=1 words=640(stride 1) elements=3276800  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=1 words=640(stride 1) elements=3276800  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=4 words=640(stride 1) elements=13107200  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=4 words=640(stride 1) elements=13107200  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=6 words=640(stride 1) elements=19660800  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=6 words=640(stride 1) elements=19660800  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=7 words=640(stride 1) elements=22937600  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=7 words=640(stride 1) elements=22937600  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=8 words=640(stride 1) elements=26214400  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=8 words=640(stride 1) elements=26214400  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=9 words=640(stride 1) elements=29491200  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=9 words=640(stride 1) elements=29491200  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=1 words=2176(stride 1) elements=11141120  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=1 words=2176(stride 1) elements=11141120  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=4 words=2176(stride 1) elements=44564480  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=4 words=2176(stride 1) elements=44564480  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=6 words=2176(stride 1) elements=66846720  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=6 words=2176(stride 1) elements=66846720  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=7 words=2176(stride 1) elements=77987840  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=7 words=2176(stride 1) elements=77987840  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=8 words=2176(stride 1) elements=89128960  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=8 words=2176(stride 1) elements=89128960  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[scale] M=9 words=2176(stride 1) elements=100270080  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+e44_qmv_ab:   coverage[bias ] M=9 words=2176(stride 1) elements=100270080  base bad=0 worst_abs=0.0  cand bad=0 worst_abs=0.0
+
+cells=24
+cells_with_bad_nonzero=0
+elements_total=1009254400

@@ -1,0 +1,160 @@
+E44 r2 Gate C: paired timing (primary A/B) + A/A control
+
+=== primary run dir: .mlxfast-private/e44-qmv-ab/r2ab ===
+tag=r2ab
+base_sha=9fe0dc5dbdb30af4c807ea71873df99e2da72aa2
+cand_rev=worktree
+head=61569c1038e867f950e6397058cb3efb5c19b848
+dirty_files=0
+host_cpu=Apple M4 Pro
+host_mem=51539607552
+metal_toolchain=Apple metal version 32023.883 (metalfe-32023.883)
+widths=1,2,3,4,5,6,7,8,9 pairs=9 reps=50 inner=20
+started_utc=2026-08-19T12:20:39Z
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-alphonse/workspace/target/.mlxfast-private/e44-qmv-ab/r2ab/base.metal 206415 9fe0dc5dbdb30af4c807ea71873df99e2da72aa2 affine_qmv_fast_bfloat16_t_64_4_false
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-alphonse/workspace/target/.mlxfast-private/e44-qmv-ab/r2ab/cand.metal 212115 worktree affine_qmv_fast_bfloat16_t_64_4_false
+base_metal_sha256=0c461cb840fe74315663e3cbd7c59b3c322cf3834d3ca210416fb0181a425871
+cand_metal_sha256=ced19edc3136874b9e4736aa6115cb5beb58340e8866e35a4e435983a9cbf2e6
+arm_source_diff_hunks=4
+gpu_busy_precheck=idle
+gpu_busy_precheck_detail=gpu_busy_check: n=12 over 12s  peak=0%  mean=0.0%  median=0.0%  longest_busy_run=0  threshold=5%  consecutive_required=3  verdict=IDLE
+gpu_busy_check: primer_discarded=13%  samples=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+cool_gate_real_outcome=stalled_above_40C
+cool_gate_passed_real_gate=false
+gate_qualified_for_timing=false
+gpu_temp_c_entry=42.92355728149414
+gpu_temp_c_exit=69.98560333251953
+harness_exit=0
+finished_utc=2026-08-19T12:27:20Z
+
+=== A/A control run dir: .mlxfast-private/e44-qmv-ab/r2aa ===
+tag=r2aa
+base_sha=9fe0dc5dbdb30af4c807ea71873df99e2da72aa2
+cand_rev=9fe0dc5dbdb30af4c807ea71873df99e2da72aa2
+head=8dc9c758d2a9e063752f7cc1d8feafb9943b935a
+dirty_files=0
+host_cpu=Apple M4 Pro
+host_mem=51539607552
+metal_toolchain=Apple metal version 32023.883 (metalfe-32023.883)
+widths=1,2,3,4,5,6,7,8,9 pairs=9 reps=50 inner=20
+started_utc=2026-08-19T12:27:52Z
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-alphonse/workspace/target/.mlxfast-private/e44-qmv-ab/r2aa/base.metal 206415 9fe0dc5dbdb30af4c807ea71873df99e2da72aa2 affine_qmv_fast_bfloat16_t_64_4_false
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r1/roles/student-qwen-alphonse/workspace/target/.mlxfast-private/e44-qmv-ab/r2aa/cand.metal 206415 9fe0dc5dbdb30af4c807ea71873df99e2da72aa2 affine_qmv_fast_bfloat16_t_64_4_false
+base_metal_sha256=0c461cb840fe74315663e3cbd7c59b3c322cf3834d3ca210416fb0181a425871
+cand_metal_sha256=0c461cb840fe74315663e3cbd7c59b3c322cf3834d3ca210416fb0181a425871
+arm_source_diff_hunks=0
+gpu_busy_precheck=idle
+gpu_busy_precheck_detail=gpu_busy_check: n=12 over 12s  peak=0%  mean=0.0%  median=0.0%  longest_busy_run=0  threshold=5%  consecutive_required=3  verdict=IDLE
+gpu_busy_check: primer_discarded=0%  samples=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+cool_gate_real_outcome=stalled_above_40C
+cool_gate_passed_real_gate=false
+gate_qualified_for_timing=false
+gpu_temp_c_entry=42.887107849121094
+gpu_temp_c_exit=70.56835174560547
+harness_exit=0
+finished_utc=2026-08-19T12:38:49Z
+
+=== full analysis ===
+touched widths verified against both arm sources: [7, 8]
+device        : Apple M4 Pro  (applegpu_g16s)
+function      : affine_qmv_fast_bfloat16_t_64_4_false
+design        : ABBA, pairs=9, reps=50, inner=20
+base arm      : 0c461cb840fe7431 @ 9fe0dc5d
+cand arm      : ced19edc3136874b @ 61569c10
+thermal       : real_gate=false gate_qualified=false entry=42.92355728149414C exit=69.98560333251953C
+pre-registered MDE(exact, df=4) = 0.5040 %   bar = 5.0 %
+
+--- fidelity vs exact double reference (before any timing) ---
+shape                       M   base max_rel   cand max_rel   cand rms_rel
+attn_out_n5120_k5120        1      8.645e-02      8.645e-02      1.612e-02
+attn_out_n5120_k5120        2      6.267e-01      6.267e-01      8.915e-02
+attn_out_n5120_k5120        3      6.267e-01      6.267e-01      7.295e-02
+attn_out_n5120_k5120        4      6.267e-01      6.267e-01      6.933e-02
+attn_out_n5120_k5120        5      6.267e-01      6.267e-01      6.246e-02
+attn_out_n5120_k5120        6      6.267e-01      6.267e-01      5.705e-02
+attn_out_n5120_k5120        7      6.267e-01      3.636e-03      1.662e-03
+attn_out_n5120_k5120        8      6.267e-01      3.636e-03      1.657e-03
+attn_out_n5120_k5120        9      6.267e-01      6.267e-01      5.366e-02
+mlp_down_n5120_k17408       1      6.083e-02      6.083e-02      1.326e-02
+mlp_down_n5120_k17408       2      1.099e+00      1.099e+00      1.383e-01
+mlp_down_n5120_k17408       3      1.099e+00      1.099e+00      1.212e-01
+mlp_down_n5120_k17408       4      1.099e+00      1.099e+00      1.059e-01
+mlp_down_n5120_k17408       5      1.099e+00      1.099e+00      9.524e-02
+mlp_down_n5120_k17408       6      1.099e+00      1.099e+00      8.696e-02
+mlp_down_n5120_k17408       7      1.099e+00      3.281e-03      1.670e-03
+mlp_down_n5120_k17408       8      1.099e+00      3.692e-03      1.682e-03
+mlp_down_n5120_k17408       9      1.099e+00      1.099e+00      8.152e-02
+worst candidate max_rel = 1.099e+00
+
+--- paired timing, candidate minus base ---
+
+attn_out_n5120_k5120
+  M    base us    cand us   delta %    sd %              95% CI    MDE %  verdict
+  1      47.21      46.96    -0.539   1.310  [ -1.546, +0.468]    1.395  null (guard)
+  2      64.41      64.83    +0.663   0.373  [ +0.376, +0.950]    0.397  slower (guard)
+  3      86.18      86.14    -0.044   0.190  [ -0.191, +0.102]    0.203  null (guard)
+  4      95.90      95.84    -0.065   0.312  [ -0.305, +0.176]    0.333  null (guard)
+  5     134.26     133.80    -0.341   0.749  [ -0.917, +0.235]    0.798  null (guard)
+  6     144.25     144.02    -0.167   0.321  [ -0.414, +0.080]    0.342  null (guard)
+  7     154.03     136.48   -11.389   0.137  [-11.495,-11.284]    0.146  faster CLEARS BAR
+  8     165.96     137.66   -17.050   0.227  [-17.225,-16.876]    0.241  faster CLEARS BAR
+  9     202.84     202.56    -0.140   0.058  [ -0.184, -0.095]    0.062  faster (guard)
+
+mlp_down_n5120_k17408
+  M    base us    cand us   delta %    sd %              95% CI    MDE %  verdict
+  1     206.53     207.24    +0.347   0.704  [ -0.194, +0.888]    0.749  null (guard)
+  2     241.09     240.62    -0.195   0.224  [ -0.368, -0.023]    0.239  faster (guard)
+  3     258.82     258.30    -0.202   0.228  [ -0.377, -0.027]    0.243  faster (guard)
+  4     293.21     293.85    +0.219   0.197  [ +0.068, +0.371]    0.210  slower (guard)
+  5     420.27     419.85    -0.101   0.202  [ -0.256, +0.054]    0.215  null (guard)
+  6     450.36     449.93    -0.097   0.125  [ -0.194, -0.001]    0.134  faster (guard)
+  7     486.07     463.74    -4.596   0.116  [ -4.685, -4.506]    0.124  faster
+  8     523.81     457.55   -12.649   0.223  [-12.820,-12.478]    0.237  faster CLEARS BAR
+  9     647.25     646.59    -0.101   0.127  [ -0.199, -0.003]    0.136  faster (guard)
+
+--- A/A control: same design, both arms are the base bytes ---
+shape                       M   effect %    sd %    MDE %  resolved on a true zero
+attn_out_n5120_k5120        1     +0.085   0.369    0.393  no
+attn_out_n5120_k5120        2     +0.068   0.247    0.264  no
+attn_out_n5120_k5120        3     -0.263   0.702    0.747  no
+attn_out_n5120_k5120        4     +0.000   0.222    0.236  no
+attn_out_n5120_k5120        5     +0.034   0.203    0.216  no
+attn_out_n5120_k5120        6     +0.113   0.148    0.158  no
+attn_out_n5120_k5120        7     +0.010   0.167    0.178  no
+attn_out_n5120_k5120        8     -0.049   0.244    0.260  no
+attn_out_n5120_k5120        9     +0.049   0.234    0.249  no
+mlp_down_n5120_k17408       1     -0.071   0.178    0.190  no
+mlp_down_n5120_k17408       2     -0.110   0.167    0.178  no
+mlp_down_n5120_k17408       3     +0.021   0.208    0.222  no
+mlp_down_n5120_k17408       4     +0.039   0.183    0.195  no
+mlp_down_n5120_k17408       5     +0.049   0.110    0.117  no
+mlp_down_n5120_k17408       6     -0.034   0.083    0.088  no
+mlp_down_n5120_k17408       7     -0.003   0.166    0.177  no
+mlp_down_n5120_k17408       8     +0.018   0.108    0.115  no
+mlp_down_n5120_k17408       9     -0.013   0.053    0.056  no
+true effect is exactly 0 in all 18 cells: worst |effect| = 0.263 %, sd of effects = 0.085 %, intervals excluding zero = 0/18
+RESOLUTION FLOOR taken from this control: 0.263 % -- no effect below it is believable whatever its interval says
+
+--- decision ---
+mean speedup over replaced widths M in {7, 8}: +11.421 %
+mean effect on untouched-width guard M in {1, 2, 3, 4, 5, 6, 9}: +0.055 % (identical code in both arms; any effect is the shared register allocation, not the cell)
+empirical noise floor from the guard: sd=0.296 % over 14 zero-effect measurement(s), worst |effect|=0.663 %
+untouched widths whose |effect| exceeds the 0.263 % control floor: 4/14  (attn M=1 +0.539 %)  (attn M=2 -0.663 %)  (attn M=5 +0.341 %)  (mlp M=1 -0.347 %)
+best replaced width: attn_out_n5120_k5120 M=8 +17.050 % [+16.876, +17.225]
+replaced widths that regress with a resolved interval: 0/4
+5.0 % bar: CLEARED -> exactness work is authorised
+
+--- cost model: is the candidate flat over its single-tile widths M=7..8? ---
+attn_out_n5120_k5120     cand plateau   137.07 us  cv  0.61 %  spread  0.86 %   base rise over M=7..8   +7.7 %
+mlp_down_n5120_k17408    cand plateau   460.64 us  cv  0.95 %  spread  1.33 %   base rise over M=7..8   +7.8 %
+
+--- score decomposition (psi_mtp=0.6736, psi_serial=0.8525) ---
+width term   M in {7, 8}: MTP leg only, the serial leg never dispatches these widths
+             dScore = +0.674 % per 1 % of MTP-leg QMV cost removed; mean win here = +11.421 %
+             ->  dScore = +7.693 % x f, f = share of MTP-leg QMV cost dispatched at these widths
+             f=0.05: +0.385 %  f=0.10: +0.769 %  f=0.25: +1.923 %  f=0.50: +3.847 %
+             f is UNIDENTIFIED (E43): this is a sensitivity table, not a prediction
+ceiling term M in {1, 2, 3, 4, 5, 6, 9}: uniform, it acts through one shared register allocation and so also speeds up M=1
+             dScore = -0.179 % per 1 % -- ADVERSE, because the serial leg is more QMV-dominated than the candidate leg
+             floors: A/A control (identical binaries) 0.263 %, untouched-width guard (different binaries) 0.663 % -- using the larger
+             measured mean effect +0.055 %, below the 0.663 % floor, so it is BOUNDED and not measured: |dScore| <= 0.1186 %
