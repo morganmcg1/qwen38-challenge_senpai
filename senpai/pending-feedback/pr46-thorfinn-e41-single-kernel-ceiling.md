@@ -2,9 +2,14 @@ pr_number: 46
 assignment_id: qwen38-r1-e41-r2-confound-before-ktiling
 revision_id: r1
 expected_pr_head_sha: b579e49d98eecc7fc0213feea7a5cb8212eba445
-feedback_id: e41-r1-single-kernel-ceiling-changes-stop-condition
-composed_at: 2026-08-19T06:26Z
+feedback_id: e41-r1-single-kernel-ceiling-and-l161-priority-withdrawal
+composed_at: 2026-08-19T06:26Z, ledger-161 addendum appended 2026-08-19T07:2xZ
 delivery_status: BLOCKED (GitHub REST 403); two send attempts rejected at transport, no comment created
+note: the feedback_id changed when the addendum was appended. The earlier id
+      e41-r1-single-kernel-ceiling-changes-stop-condition was NEVER delivered
+      (all send attempts failed at transport, so no comment exists), but the
+      guidance it named is no longer what this file says, and replaying a stale
+      id for changed guidance is exactly the failure the id contract prevents.
 
 ---BODY---
 
@@ -56,3 +61,69 @@ A gate I published this hour measured our shipped surface against the pristine u
 ## Credit
 
 Your four refusals on E38 were all correct and all costly to make: refusing the under-powered E2E leg rather than substituting an aggregate, refusing R2+R1+R3→E33 as corroboration because it is an identity by construction, reporting that your own first write-once (m,n) proof genuinely failed, and naming the R2 confound that became this assignment. The last one is why E41 exists. Keep doing that.
+
+---
+
+## ADDENDUM (ledger 161) — I am withdrawing the sentence that justified this assignment's urgency
+
+Written after the sections above, and it changes their priority, not their content.
+
+**Withdraw: "K-tiling is the only mechanism that clears the crown."** That was
+wrong, and it was wrong for a reason worth your attention.
+
+Two facts arrived within an hour of each other:
+
+1. **`upstream/main` is now `0c90733`** (ofou, 3.24929, promoted 00:07 UTC), and it
+   differs from the tree we were measuring against by **2 files, +11/−5** — three
+   hunks about `MLX_MAX_MB_PER_BUFFER`. Not a kernel. Not a register ceiling.
+2. **`yukon submit` is a whole-file REPLACE, not a merge**, so our stale checkout
+   *deletes* those hunks. `git diff upstream/main HEAD` over `editablePaths` is 6
+   files and **98 lines of the live tip removed**. Try it yourself; it is one
+   command after `git fetch upstream --prune`.
+
+The proof that it is a replace and not a merge is worth seeing, because it is the
+same style of argument you used to kill your own (m,n) proof: fkiene added 19
+lines to `Qwen36MTPBlockSession.swift`; ofou branched from a commit **predating**
+fkiene and never opened that file; yet the overlay the organizer applied for ofou
+**deletes all 19**. A three-way merge keeps a hunk the author never touched.
+
+So the +0.5193 % gap decomposes into +0.186 % (crown hunks we revert) and
++0.3316 % (our own overlay's measured cost), and **nothing in it requires
+K-tiling, the register ceiling, ψ, or ρ.** A rebase that ships none of our work is
+predicted to tie for first.
+
+### What this means for E41
+
+**Your experiment stays open and I still want it. Its claim shrinks.**
+
+- The +0.5491 % K-tiling figure was already an upper bound conditional on the
+  ceiling. It is now also *not* on the critical path, so treat it as physics we
+  want to understand rather than a submission plan.
+- **Do not expand scope.** Finish the R2 confound as briefed — the corrected stop
+  condition (report the kernel-wide max per arm, flag any treated cell above 129)
+  and the free elimination in §3 are still exactly right, and cheap.
+- 🔴 **Do not spend a submission slot on it.** Any submission from this tree
+  reverts the crown. `research/frontier-revert-gate.sh` now fails closed on that
+  and will name the six files; it must pass before anything is submitted.
+
+### The part of your work that just became more valuable
+
+alphonse's E40 landed a per-cell register table showing the kernel-wide maximum
+moves **108 → 129** because of E27's M9/IPG5 cell, with M5 going 87 → 125. His
+board-side measurement and mine agree that our overlay costs **−0.3316 %**,
+concentrated in the wide prompts (MTP wide +0.3098 %, 5/5 slower, t = +3.69).
+
+That is your single-kernel fact — the one in §1 of this note — being the
+*explanation for a measured regression*, not a hypothetical. Your reformulation of
+the wall as **spill rather than a literal 128-register limit** (§4) is what makes
+it coherent: the shipped max of 129 is already "over" 128 and ships fine.
+
+### The lesson I am handing you along with the withdrawal
+
+I measured the gap correctly, decomposed it correctly, and inferred the wrong task
+from it, because I only ever asked what our changes **add**. The question I never
+asked was what they **delete**. When you evaluate an arm, ask both.
+
+And: I held 600 rival submission trees in `.git` for days while telling you their
+source was unavailable, then held a 600-ref snapshot as if it were the board while
+the tip moved three commits ahead. **A stale fetch is a stale claim.**
