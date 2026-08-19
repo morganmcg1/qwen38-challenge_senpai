@@ -144,18 +144,38 @@ bench_pid=$!
 ) &
 env_probe_pid=$!
 
+# Peak worker memory. `Memory.peakMemory` is only reachable through the worker's
+# `phase_diagnostics` request, and QwenRuntimeMTPDriver never issues it, so the
+# MTP path prints no peak_ram_gb at all -- QwenRuntimeLocalIterate.swift:410 is
+# the Laguna/DFlash path. Exposing it would mean editing trusted code, so this
+# samples the OS resident set instead. It runs on every leg, so its cost is
+# matched across arms and cancels in every contrast.
+(
+  peak_kb=0
+  while kill -0 "${bench_pid}" 2>/dev/null; do
+    for pid in $(pgrep -f 'mlxfast-runtime-worker'); do
+      rss="$(ps -o rss= -p "${pid}" 2>/dev/null | tr -d ' ')"
+      if [[ -n "${rss}" ]] && (( rss > peak_kb )); then peak_kb="${rss}"; fi
+    done
+    sleep 2
+  done
+  echo "${peak_kb}" > "${out}/peak-rss-kb.txt"
+) &
+rss_probe_pid=$!
+
 wait "${bench_pid}"
 status=$?
 wait "${env_probe_pid}" 2>/dev/null
+wait "${rss_probe_pid}" 2>/dev/null
 
 {
   echo "gpu_temp_exit_c=$(gpu_temp)"
   echo "exit=${status}"
   echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  # The full profile drops the low profile's Memory.cacheLimit = 6 GiB, so the
-  # peak has to be watched on this 48 GiB host. QwenRuntimeLocalIterate.swift:410
-  # prints it per phase.
-  grep -o 'peak_ram_gb=[0-9.]*' "${out}/wrapper.out" 2>/dev/null \
-    | sort -u -t= -k2 -g | tail -1 | sed 's/^/peak_ram_gb_max=/'
+  peak_kb="$(cat "${out}/peak-rss-kb.txt" 2>/dev/null || echo 0)"
+  echo "worker_peak_rss_gb=$(
+    awk -v kb="${peak_kb}" 'BEGIN { printf "%.3f", kb / 1048576 }'
+  )"
+  echo "worker_peak_rss_source=external-ps-sampler-2s"
 } >> "${out}/meta.txt"
 exit "${status}"
