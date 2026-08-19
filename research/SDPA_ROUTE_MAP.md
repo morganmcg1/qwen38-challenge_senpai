@@ -209,26 +209,98 @@ This map explains that submission exactly. Warming `kL >= 1024` creates the
 touched inside the timed window, in its final round. `qL = 1` is the serial
 step, `qL = 5` is chunk A, `qL = 4` is chunk B of width 9.
 
-It scored **+0.0173 %** over its base. Total decode is roughly
-512 x 0.0131 s ~= 6.7 s, so +0.0173 % is about 1.2 ms - the right order for a
-small number of Metal pipeline specialisations. **A pipeline-creation miss
-inside the scored window is worth roughly 0.02 %.** That is the unit of the
-current board: our 0.5338 % deficit is about 31 of the leader's last step.
+It scored **+0.0173 %** over its base. **That number must NOT be used to price
+the mechanism, and an earlier revision of this document did exactly that.**
+`research/board_noise_identification.py` measures the published median's
+relative standard deviation at **0.1415 %** (worst case 0.2636 %), so
++0.0173 % is **0.12 median sd** — an unresolvable draw, not a measured effect.
+The derived claim that "a pipeline-creation miss inside the scored window is
+worth roughly 0.02 %" was circular and is retracted.
+
+The mechanism's own leg evidence is better than its board score. Across the
+eight prompts the frontier's candidate leg improved on **7 of 8** against its
+parent, median `mtp_spt` 11.7397 -> 11.7277 ms (**-0.102 %**). The published
+delta is small only because the pinned serial numerator happened to fall
+0.248 % on `medicine`. Direction and leg-level consistency support the
+mechanism; the board magnitude is luck.
 
 Two things follow.
 
-**The frontier's own warm set is incomplete, in two independent ways.**
+**`qL` IS NOT IN THE PIPELINE IDENTITY. An earlier revision of this document
+claimed the frontier warm was incomplete because it omits `qL = 2` and
+`qL = 3`. That claim was WRONG and is retracted here.** Verified against
+`scaled_dot_product_attention.cpp`:
 
-- It warms `qL in {1, 5, 4}` and never `qL = 2` or `qL = 3`, which are chunk B
-  of widths 7 and 8. Those are live scored widths.
-- If the ranked host is `devc == 's'`, `blocks` takes **two** values in our
-  range: 64 at `kL == 1024` and 128 above it. Padding to exactly 1024 warms
-  pipeline A and misses pipeline B. Warming one `kL == 1024` shape and one
-  `kL >= 1025` shape covers both.
+- `kname` for Route 2 is `"sdpa_vector_"` + dtype + `"_"` + `q.shape(-1)` +
+  `"_"` + `v.shape(-1)` (`:340-348`), and for Route 3
+  `"sdpa_vector_2pass_1_"` + the same three fields (`:429-437`). **Neither
+  carries `qL` or `kL`.**
+- `hash_name` appends only the mask mode, `_qt`/`_qnt`, `_c`/`_nc` and
+  `_sinks`/`_nosinks` (`:375-378`); the function-constant list is
+  `has_mask`(20), `query_transposed`(21), `do_causal`(22), `bool_mask`(23),
+  `float_mask`(24), `has_sinks`(25) (`:366-373`). **No `qL` term.**
 
-**Removing the unnecessary chunk is worth more than importing the warm.** The
-warm is a one-off pipeline cost near 0.02 %. The chunk overhead is 64
-dispatches per round on every width-6-to-8 round in the window.
+So warming a single `qL = 4` shape already creates the pipeline that `qL = 2`
+and `qL = 3` use. `qL` reaches pipeline identity through exactly two indirect
+paths, and only two:
+
+1. `:746` `bool do_causal = do_causal_ && q.shape(2) > 1;` forces
+   `do_causal = false` at `qL == 1` whatever mask the caller passes. So a
+   `qL = 1, .causal` warm and a live `qL = 1, .none` call select the **same**
+   `_nc` pipeline, and every `qL >= 2` causal call selects `_c`. Two pipelines,
+   not one per width.
+2. `blocks` on Route 3 only (see below).
+
+The frontier's `qL in {1, 5, 4}` is therefore itself redundant: `{1, 4}`
+covers the same two pipelines.
+
+**One genuine gap remains, and it is the `blocks` axis.** `blocks` is function
+constant 26 and is appended to `hash_name`, so each value is a distinct
+pipeline. On `devc == 's'`, `:446-458` sets `blocks = 64`, promoted to `128`
+when `N > 1024 && n_simds > 4`; `n_simds = gqa_factor * qL = 6 * qL >= 6`, so
+the `n_simds` clause is always satisfied and the condition reduces to
+`kL > 1024`. The frontier pads to **exactly** 1024, so it warms `blocks = 64`
+and never `blocks = 128`. The live window runs `kL = 512 + tokensCommitted + M`,
+which takes both `kL == 1024` and `kL > 1024`. **Warming one `kL == 1024` shape
+and one `kL >= 1025` shape is a strictly additive superset of the frontier's
+own mechanism, at zero fidelity risk.** Null if the ranked host reports
+`devc == 'd'`, where `blocks = 128` throughout our range — so the arch letter
+must be reported before this is priced.
+
+**Both mechanisms are live, and they are separable but confounded.** An earlier
+revision asserted the chunk removal is worth more than the warm import. That
+ranking rested on the retracted 0.02 % figure and is withdrawn.
+
+The evidence that actually discriminates is the shape of our deficit. Our best
+submission `ca9251b8` carries a `mean_draft_len` 8-tuple **identical to the
+frontier's to four decimal places**, so the accept trajectory is not the
+difference; our candidate leg is simply slower on **8 of 8** prompts. And the
+excess scales with draft depth:
+
+| prompt | our `mtp_spt` excess | `mean_draft_len` |
+|---|---|---|
+| `essays` | +0.814 % | 5.43 |
+| `republic` | +0.594 % | 5.27 |
+| `botany` | +0.498 % | 5.78 |
+| `beagle` | +0.454 % | 4.53 |
+| `medicine` | +0.291 % | 4.77 |
+| `travel` | +0.080 % | 2.66 |
+| `plutarch` | +0.020 % | 0.15 |
+
+Two hypotheses fit that ordering, and both predict roughly the same total
+(~23 ms on a ~6.2 s leg):
+
+- **H1, warm coverage.** A one-off pipeline miss whose *count* rises with the
+  number of distinct shapes the window visits. Deep-drafting prompts visit more
+  widths, so they pay more misses.
+- **H2, chunk overhead.** A per-round cost of 2 query copies + 1 extra SDPA
+  dispatch + 1 concat per full-attention layer, over 16 layers, on every
+  width-6-to-8 round. Deep-drafting prompts have more such rounds.
+
+**`mean_draft_len` and `1 / leg_time` are collinear on this pool** — deep
+drafting is what makes a leg fast — so per-prompt board data cannot separate
+H1 from H2. They are independent code changes, both zero-arithmetic, so measure
+them separately and together rather than arguing the ranking.
 
 ## The correct predicate
 

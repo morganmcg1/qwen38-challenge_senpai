@@ -1,8 +1,8 @@
 # SENPAI Research State
 
-- **2026-08-19 17:20 UTC**
+- **2026-08-19 17:34 UTC**
 - Track `qwen3.8-27b-mtp-v1`; advisor branch `senpai/qwen38-mtp-r1`;
-  `BASE_SHA = daa1d0185d4d3fa1383539d07242e3654a587d6d`;
+  `BASE_SHA = e64961658db3593445d074b5fb3bcbcf0a033c2d`;
   `UPSTREAM_SHA = 0c90733d383f6b987a29682bf9eb9458a6172bfa` — the value actually synced into
   this tree. The organizer tip is `9e1ff9ec7152a04b753f2efb91c3e559909ea4b9` and the trusted
   delta between the two is **empty**, so a future sync has no contract work to do, only
@@ -82,13 +82,70 @@ common-mode cancellation):
   and `raw_ratio` 9.9 % across submissions, which is real tree difference.
 - **Resubmitting an unchanged tree cannot close the deficit even in the worst case.** The
   "submit more often to win the lottery" reading is dead.
-- **This re-prices every banked mechanism.** In median-sd units, using the point estimate:
-  E29's 4.35 % host cost = **31 sd**; the M=9 prize at +1.36 % = **9.6 sd**; E44's ceiling at
-  +0.7437 % = **5.3 sd**; the latch valve at ≈+0.5 % = **3.5 sd**; the SDPA chunk at ≈+0.1 % =
-  **0.7 sd**, compose-only. Each of the top three would alone put us above the live frontier.
+- **This re-prices every banked mechanism.** In median-sd units, using the point estimate: the
+  M=9 prize at +1.36 % = **9.6 sd**; E44's ceiling at +0.7437 % = **5.3 sd**; the latch valve at
+  ≈+0.5 % = **3.5 sd**; the SDPA chunk at ≈+0.1 % = **0.7 sd**, compose-only.
+- ❌ **E29's "4.35 % removable host cost = 31 sd" is RETRACTED** (ledger 181(C)). It was arm 2's
+  host-tail *share* of four ladder arms, and ledger item 70 had already ruled the tail an
+  accounting artefact: it moved 12× while the round total moved 0.5 %.
 - The frontier's own +0.0173 % step is **0.12 sd**. It is not a detectable improvement on this
-  instrument; fkiene was promoted by a draw, a real sub-noise gain, or both. Do not treat
-  +0.02 % warm-up work as a reproducible frontier mechanism.
+  instrument; fkiene was promoted by a draw, a real sub-noise gain, or both. **Never quote that
+  number as the size of the mechanism it shipped** — the derived "0.02 % per pipeline miss" unit
+  was circular and is retracted too.
+
+### 🔴🔴🔴 RESOLVED: what our deficit actually is
+
+`research/order_statistic_targeting.py` plus the 712-tree corpus (ledger 181) settle this.
+
+**Our accept trajectory is already the frontier's.** Our best submission `ca9251b8` and the
+promoted frontier report a **byte-identical `mean_draft_len` 8-tuple** and the same head digest.
+So do all six trees at the top of the board. Not one diff at the top of the board is a
+scheduling or head change. Our `costModelDepth`, `h = 0.18` and every width constant are already
+byte-identical to the frontier.
+
+**The whole deficit is candidate-leg execution overhead, and it scales with draft depth:**
+
+| prompt | our `mtp_spt` excess | `mean_draft_len` | sets the median? |
+|---|---|---|---|
+| `essays` | +0.814 % | 5.43 | no (rank 6) |
+| `republic` | +0.594 % | 5.27 | no (rank 7) |
+| `botany` | +0.498 % | 5.78 | no (rank 8) |
+| **`beagle`** | **+0.454 %** | 4.53 | **YES (rank 4)** |
+| **`medicine`** | **+0.291 %** | 4.77 | **YES (rank 5)** |
+| `travel` | +0.080 % | 2.66 | no (rank 3) |
+| `plutarch` | +0.020 % | 0.15 | no (rank 1) |
+
+Median `mtp_spt` 11.7713 vs 11.7277 ms = **+0.372 %**, slower on **8 of 8** prompts. **This
+points at per-round and per-shape dispatch/host overhead, not per-token arithmetic.** Reject any
+hypothesis that requires different tokens, different depths, or different arithmetic.
+
+⚠️ **`mean_draft_len` and `1 / leg_time` are collinear on this pool** — deep drafting is what
+makes a leg fast — so board data alone cannot separate "cost per wide round" from "one-off cost
+per distinct shape visited". Only a local experiment separates them.
+
+### 🔴🔴🔴 Only two prompts convert speed into score, and `beagle` is 98.5 % of the board
+
+`published == median(raw_ratio)` reconstructs to <3.2e-11 for every tree; the median of 8 is the
+mean of the 4th and 5th order statistics. Across all 408 scored submissions, central-pair
+membership is `beagle` **402 (98.5 %)**, `medicine` 201, `republic` 131, `botany` 67, `essays` 9,
+`travel` 4, `plutarch` 2, **`drama` 0**. The pair is `beagle+medicine` for both the frontier and
+our best submission.
+
+The pool is bimodal: `drama`, `plutarch`, `travel` cap at ~2.0–2.3 while the other five reach
+3.15–3.55, so the three low prompts hold ranks 1–3 in nearly every tree and **can never enter the
+median**. `beagle` is the weakest of the five high prompts, which is why it is rank 4 almost
+always.
+
+- **`beagle` carries 79 % of our deficit.** `beagle` −0.85 % and `medicine` −0.24 % average to
+  −0.545 %, reproducing the observed 0.5367 %.
+- A gain confined to `drama`/`plutarch`/`travel` is worth **exactly zero**. This re-derives from a
+  second direction why item 146's latch valve simulated at 0.00 %.
+- A gain confined to `essays`/`botany` is worth **≈zero** (ranks 6 and 8).
+- A `medicine`-only gain saturates after **0.64 %**, when `essays` takes rank 5.
+
+**This is scoring geometry, not permission to specialise.** `program.md` forbids hidden-prompt
+specialisation and runtime prompt detection. The legitimate use is to break ties: prefer general
+mechanisms that help the deep-drafting mid-speed regime `beagle` and `medicine` occupy.
 
 ---
 
@@ -157,19 +214,52 @@ cost step that E56 (#59) is currently trying to price around, so `costModelDepth
 sixth row at its true marginal cost — on a pool whose own source comment says it **rewards
 depth** (`:723`).
 
-### 4. Warm-up and compile placement is the frontier's own current lever
+### 4. 🔴🔴🔴 WARM COVERAGE IS THE TOP PRIORITY — it is the only content difference between us and the frontier that can move time
 
-Both the leader's last promotion (+0.0173 %) and the mechanism we hold that they lack
-(+0.0283 %) are untimed warm-ups that move first-touch Metal compilation out of the scored
-window. `SDPA_ROUTE_MAP.md` calibrates the unit: a pipeline-creation miss inside the scored
-window is worth roughly **0.02 %**. This class is real, free and token-neutral but sits **below
-our 0.0629 % local null floor**, so it is composed into a candidate, never screened as a local
-A/B.
+`git diff HEAD upstream/main -- Sources/MLXFastModel/Qwen36MTPBlockSession.swift` resolves to
+three content groups. Two are things we removed on purpose: EOS truncation and
+`reachedStopToken` (E26; our tests forbid its return) and a stderr trace variant. **The third is
+the entire remainder: `warmTargetLaterWindowSDPA`, 70 inserted lines, zero deletions.**
 
-Two independent gaps in the frontier's own warm set: it never warms `qL = 2` or `qL = 3` (chunk
-B of widths 7 and 8), and on an `'s'`-class host `blocks` takes **two** values in our range
-(64 at `kL == 1024`, 128 above), so padding to exactly 1024 warms one pipeline and misses the
-other.
+It host-extends throwaway full-attention K/V so `kL == 1024` exactly, fires SDPA at
+`qL ∈ {1, 5, 4}`, and discards the outputs. We hold the 512-zero seed warm it builds on
+(`:463-475`, identical to theirs); we do **not** hold this. Our warm tops out at
+`kL ≈ 512 + width`, so we never create a `kL >= 1024` pipeline before timing. `program.md` puts
+seed processing **and** decode in the same timed leg, so any pipeline first-touched in that window
+is a real timed cost.
+
+Its board delta is noise (0.12 median sd) but its **leg** evidence is sound: the frontier's
+candidate leg improved on **7 of 8** prompts against its parent, median `mtp_spt` −0.102 %.
+
+**A second warm gap nobody has connected (ledger 181(G)).** paul-hf's `0a45fedd` warms the head
+flush width over `S = 1 … maxDepth+1` against a 512-row-populated head cache. **We prime the head
+at M=512 and fold at M=2** (`:397-406`), so every head QMV width from 3 to 9 is cold at first
+use. Absent from our tree **and from the frontier's**.
+
+This is the hypothesis that resolves the collinearity above **without** invoking a per-round
+cost: a one-off JIT miss whose *count* equals the number of distinct widths the window visits. On
+`essays` (`mean_draft_len` 5.43) widths 3–9 all occur — up to seven misses. On `plutarch` (0.15)
+about zero. A one-off cost that is nonetheless ordered by draft depth, at the right total
+magnitude (~23 ms on a ~6.2 s leg).
+
+**Corrections to my own route map (ledger 181(E)), both verified in the trusted dispatcher:**
+
+- ❌ **`qL` is NOT in the pipeline identity.** `kname` is the route name plus dtype and the two
+  head dims (`:340-348`, `:429-437`); `hash_name` appends only mask mode, `_qt`/`_qnt`, `_c`/`_nc`,
+  `_sinks` (`:375-378`). So warming `qL = 4` already creates the pipeline `qL = 2` and `qL = 3`
+  use. My "missing `qL = 2` and `qL = 3`" claim was wrong and would have bought a null experiment.
+  `qL` reaches identity only via `:746` `do_causal = do_causal_ && q.shape(2) > 1` (so `qL == 1`
+  forces `_nc` regardless of the mask argument) and via `blocks`. `{1, 4}` covers both pipelines.
+- ✅ **The `blocks` gap is real.** `blocks` is function constant 26 and is appended to
+  `hash_name`. On `devc == 's'`, `:446-458` gives 64 promoted to 128 when
+  `N > 1024 && n_simds > 4`; `n_simds = 6·qL >= 6` always, so the condition is just `kL > 1024`.
+  Padding to exactly 1024 warms 64 and misses 128, while the live window visits both. **One extra
+  throwaway dispatch at `kL >= 1025` makes our warm a strictly additive superset of the promoted
+  frontier's.** Null if the ranked host is `devc == 'd'` — the arch letter must be reported first,
+  which is already Rung 0 of E57.
+- ❌ The derived unit "a pipeline miss is worth roughly 0.02 %" was computed from the frontier's
+  +0.0173 % board step, which is 0.12 median sd. Circular; retracted. This class is **no longer**
+  assumed to sit below the local null floor.
 
 ### 5. Gated DeltaNet: the scan is NOT the cost, and the published fix does not apply
 
@@ -266,12 +356,12 @@ What survives is head **runtime**:
 | #57 | askeladd | E55 — compose `<T,9,5>` onto the real shipped table to a **submittable candidate**; settles theme 2 | `status:wip` r1 |
 | #58 | thorfinn | E54 — lone-versus-sibling NA=5 law across M=5/7/8/9; I predicted **Law C** on the record | `status:wip` r1 |
 | #59 | edward | E56 — draft-depth schedule staircases; theme 3 changed what he should conclude | `status:wip` r1 |
-| #60 | alphonse | E57 — narrow the SDPA chunk predicate (theme 3) | assigning |
+| #60 | alphonse | E57 — narrow the SDPA chunk predicate (theme 3) | `status:wip` r1 — **brief needs a correction: `qL` is NOT in the SDPA pipeline identity** |
 
 Merged: **#55** (alphonse E51 — refuted at rung one, instruments retained), **#53** (thorfinn
 E49), **#52** (askeladd E48), **#56** (edward E53). Base advanced
-`981e69a` → `1247c57f` → `a35bb006` → `a2c3dbc4` → `67b8547` → `daa1d018`, each with
-base-change inertness verified rather than assumed.
+`981e69a` → `1247c57f` → `a35bb006` → `a2c3dbc4` → `67b8547` → `daa1d018` → `e6496165`, each
+with base-change inertness verified rather than assumed.
 
 ---
 
@@ -282,15 +372,49 @@ Ordered by expected value, not by convenience.
 1. **Submit whatever #57 produces, if it survives exactness.** A 0.39–1.84 % MTP-leg win on a
    0.534 % deficit is a submission, not a screen. Official evaluation is part of the research
    loop.
-2. **🔴 Compile the MTP head step.** E29 measured a *genuinely removable host cost of 4.35 % of
-   decode* and the campaign never acted on it — **69× the local null floor**, candidate-leg
-   only, uniform across prompts, so it moves the 4th/5th order statistics. The session's own
-   comment says the ~2.4 ms/step is host graph **build**, not GPU work to overlap
-   (`Qwen36MTPBlockSession.swift:1048-1052`, `:649`). `CompilableKVCache.swift` and
-   `CompiledDecode.swift` are in `editablePaths` and have **zero ledger mentions** — the
-   facility was never tried. This is the largest recorded-but-unexploited lever we have.
-   Hazard: the M1/M2/M4 Tahoe JIT crash class (`MLXHardwareInfo.swift:11-21`) may block local
-   measurement; ranked M5 is outside the reported class.
+2. **🔴 WARM-COVERAGE COMPLETION — the highest-value next assignment.** One hypothesis:
+   *incomplete pipeline warm coverage costs timed-window JIT misses, and the cost scales with
+   the number of distinct shapes the scored window visits.* This is the only mechanism found so
+   far whose predicted signature matches all three independent observations — the frozen accept
+   trajectory, the depth-ordered deficit, and the frontier's one 70-line untimed edit. Three
+   instances, measured separately **and** together so attribution survives:
+   - (a) hand-apply the frontier's `warmTargetLaterWindowSDPA`, reduced to `qL ∈ {1,4}` (the
+     `qL=2`/`qL=3` gap does not exist — see below), and **extended with a second dispatch pair
+     at `kL >= 1025`** so the `blocks=128` variant is also warmed. The frontier pads to exactly
+     `kL == 1024` and therefore warms only `blocks=64`, while the live window
+     `kL = 512 + tokensCommitted + M` visits both. This makes our warm a strictly additive
+     superset of the promoted frontier's at zero fidelity risk.
+   - (b) paul-hf's flush-width head warm (`0a45fedd`, 3.24001): replace the single 2-row head
+     "fold" warm with a loop over `S = 1 … maxDepth+1`, each run against a 512-row-populated
+     head cache and then trimmed back to 512, so round-2's head QMV families `M = 3…9` for
+     `fc`, `kv()` and the island overlay compile **outside** the timed window. We prime the head
+     at `M=512` and fold at `M=2` (`Qwen36MTPBlockSession.swift:397-406`), so every head QMV
+     width 3–9 is cold at first use. Absent from our tree **and** from the frontier's.
+   - (c) **keep VERIFY-CONCAT** (`:359-396`). The board provides no evidence against it: the one
+     submission that deleted it (ofou `0cd0a6b4`) branched from a pre-fkiene commit and Yukon
+     replaced the whole file, so the deletion was incidental, and that submission's candidate
+     leg improved on only 5/8 prompts.
+
+   All three are untimed, zero-arithmetic, discard-output. Instance (b) resolves the
+   depth-collinearity **without** a per-round cost: a one-off JIT miss whose *count* equals the
+   number of distinct widths visited. `essays` (mean draft length 5.43) visits widths 3–9, up to
+   7 misses; `plutarch` (0.15) visits ≈0. That is a one-off cost ordered by draft depth with the
+   right total magnitude. Requirements for the assignment: report the `d.get_architecture()`
+   arch letter first (the `blocks` axis is null on `devc=='d'`); compare **matched absolute
+   candidate seconds/token against a fresh unchanged base**, not the local ratio; ABBA
+   counterbalance with entry/exit temperatures; hand-apply every hunk (never copy a rival file —
+   see the `reachedStopToken` trap).
+
+   ~~E29 measured a genuinely removable host cost of 4.35 % of decode.~~ **RETRACTED.** The
+   4.35 % is arm 2's host-tail *share* of four E29 ladder arms, and ledger item 70 already ruled
+   that share an accounting artefact: the shares moved 12× (53.86 / 4.35 / 5.66 / 35.86 %) while
+   the round totals moved 0.5 % (6028.7 / 6022.2 / 6015.8 / 5998.3 ms). E31 used the same number
+   correctly as a *ceiling* on all host-side work, not as a recovery. What survives is only that
+   `mx.compile` of the head step is untouched by the entire 712-tree rival field; its ceiling is
+   that same 4.35 % and its prior is ≈0, so it is **speculative, not first**. It also has a
+   structural blocker: `CompiledDecode` requires every layer to be a compilable fixed-shape
+   cache and explicitly excludes SSM, and our target has 48 Gated DeltaNet layers, so only the
+   single-layer head is eligible (`makeMTPCache()` returns exactly one `KVCacheSimple`).
 3. ~~Resolve the noise-model inconsistency.~~ **DONE, zero GPU** —
    `research/board_noise_identification.py`, see "Where we stand". The ranked instrument jitters
    at 0.2257 % per prompt per leg, the published median at 0.1415 %, and the answer is that
@@ -314,10 +438,31 @@ Ordered by expected value, not by convenience.
    silent temporal misalignment where a masked depthwise convolution over stacked candidate
    tokens captures `{t1,t1}` instead of `{t0,t1}` unless the mask is applied. This is a
    correctness question, not a speed question, and it is cheap.
-7. **Census the high-scoring NON-promoted rival trees.** Their note titles are recorded but no
-   diff was ever inspected: paul-hf "prefill affine QMM BM=64" at 3.2324 (which would reopen a
-   door E18 closed structurally) and Lieisyourlie "bake packed-GDN q/k RMS scales as bf16
-   immediates" at 3.2439 (which targets the 28 % GDN cost centre). Zero GPU.
+7. **`MLX_MAX_OPS_PER_BUFFER` 50 → 100 — the second assignment to fire.**
+   `RuntimeStartupMemoryPolicy.swift:76`. igneous-prose's `646a3dee` is a 2-line change and had
+   the **fastest candidate leg of ranks 13–18** (−0.037 % `mtp_spt` versus its parent, second
+   only to the rank-1 tip). Structural key finding:
+   `installQwenMTPFullProfileCommandBufferDefaults` force-sets the variable with `overwrite=1`
+   from `resolve()` before MLX's first device access, while the trusted worker's own `setenv`
+   pair sits behind `guard policy.isLowMemory else { return }`
+   (`Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift:487`,
+   `Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift:498`). On the ranked 128 GiB box the struct
+   constant at `:150` (`maxOperationsPerCommandBuffer: 50`) is therefore **dead** and line 76 is
+   the only writer. This is exactly the unswept `[1, floor]` corner E31 named (and predicted a
+   0.4 % slowdown for) and which was never run. Sweep `{50, 100, 128, 256}` at a fixed 512 MiB,
+   ABBA. It does **not** reopen ledger item 69: that closed the `asyncEval` ladder, which adds
+   commits *above* MLX's floor, whereas this moves the floor itself.
+
+   ~~Census the high-scoring NON-promoted rival trees.~~ **DONE, zero GPU** —
+   `research/rival_tree_census.py` and `research/corpus_surface_map.py` over all 712 readable
+   `upstream/submissions/*` refs. See ledger 181(F)–181(J). Headlines: churn does not predict
+   score (Pearson −0.075); the field plays on 27 of 154 editable files and 127 are untouched;
+   ranks 1–6 are one promotion chain in which #3, #4 and #6 are regressions against their own
+   parents, so **board score is not a valid price for a rival mechanism — `mtp_spt` is**. Both
+   named trees were inspected and both are now **do-not-slot**: paul-hf's real content is the
+   dead-KV-GEMM elision plus the flush-width head warm (now direction 2b), and Lieisyourlie's
+   baked bf16 GDN scale immediates measured −0.0003 and would license FMA contraction on a path
+   we already memoise (`Qwen35.swift:743-745`).
 8. **Shortlist-containment audit** (theme 6) — zero-GPU falsification of the cheapest remaining
    head lever.
 9. **Close the E27 reconciliation.** −1.5511 % remains unexplained; the `e27_replica` leg never
@@ -325,6 +470,40 @@ Ordered by expected value, not by convenience.
    replay. Weaker than it looks: #57 settles the mixture question that gives E27 its relevance.
 10. **Close or kill the NA=5 bandwidth objection** with achieved GB/s per group at the winning
     cells. Two recorded objections; only one is refuted.
+
+### Compose-only — worth carrying on any slot, never worth a slot of its own
+
+Each item below was inspected in the 712-tree rival census. Each is small, has a bounded
+mechanism, and is priced by `mtp_spt` rather than by board score.
+
+- **Dead-KV-GEMM elision** (paul-hf, `Qwen35.swift:1759-1766`, `:1812`). Provably bit-exact by
+  inspection: the `putAlong` index vector is a bijection of `0..<kOut+vOut`, so every base column
+  is overwritten and the operation is a scatter onto `zeros`. Confined to the head, so the local
+  ratio **is** valid evidence here. ~0.04 %. Precondition: dump the
+  `mtp.precision_islands.k.indices` / `v.indices` shapes and ranges and confirm full cover
+  (4 KV heads × 256 head dim = 1024 per side, 2048 total).
+- **`pendingPrimaryDevice`** (fkiene, `7f777a36`). `Self.devicePrimaryToken(top2IDs, row:)` is a
+  pure slice `top2IDs[row..<row+1, 0..<1]`, which makes the verify concat all-device. Integer
+  only, identical by construction. 🔴 The same code and comments appear byte-identically under a
+  second username (`055bc201`, jonathan308), so shared lineage is likely — count the two refs as
+  **one** piece of evidence.
+- **Fused last-merge plus final RMSNorm** (`bc0b2fea`). We already ship
+  `qwen35FusedResidualRMSNorm` for interior pairs (`:2055`, `:2086`, `:2102`), but
+  `Qwen35.swift:2228` is still `hiddenStates = delta.map { base + $0 } ?? base` followed by a
+  separate `model.norm(hidden)`. ~15 lines. It runs on **both** legs, so screen it on matched
+  absolute time, not the local ratio. Verify `n_reads=4` / `lsize=1024` matches `rms_looped` at
+  axis 5120 (`RMS_LOOPED_LIMIT = 4096`, `defines.h:16`, dispatch `normalization.cpp:57-60`).
+- **Top-32 finalize k-way merge** (DawgZter, `d909492b`). Zero floating-point arithmetic; pure
+  `uint (ord,idx)` selection; 256 → 32 threads; no threadgroup memory and no barriers. It lands
+  on `Qwen35.swift:2492-2660`, our leading suspect for the 91-versus-89 row nondeterminism, so
+  bundle it with a ten-draw byte-identity replay. Our constants `Tiles=64, K=32, TG=256` satisfy
+  their `static_assert(LISTS == 2*SIMD_SIZE)`.
+- **The latch release valve** (item 146). Take WillGasser's `latchProbeInterval = 4` as given.
+
+**Demoted out of this list:** Lieisyourlie's `hidden`-deferral (`5ad14a0b`, dropping `hidden`
+from our `:513-514` eval list). Its one ranked measurement is negative on **both** score-setting
+prompts (beagle +0.049 %, plutarch +0.384 %) and it is a genuine zero-sum deferral, not a
+removal.
 
 ### Explicitly closed — do not spend a slot
 
@@ -350,6 +529,12 @@ Ordered by expected value, not by convenience.
 - 🔴 **Never sync the organizer frontier wholesale.** It re-introduces the EOS truncation that
   caps local windows at 302 tokens. Continuation has been added four times and lost three, every
   loss driven by a merge rather than by a decision. Cherry-pick named mechanisms only.
+- 🔴 **Never copy a rival file. Hand-apply every hunk.** `reachedStopToken` is present in **all
+  six** top rival trees — 7 sites in the frontier's `Qwen36MTPBlockSession.swift` (`:69`, `:165`,
+  `:904`, `:920`, `:986`, `:1297`, `:1309`) — and is completely absent from our `Sources/`.
+  Yukon replaces whole files rather than merging them, so importing a rival *file* would silently
+  restore all seven sites and reintroduce the `.notBegun` abort that E26 bisected. This hazard
+  applies to every import in the compose-only list and to direction 2.
 - Max scored verify width is **9**. M=10 bitwise deltas are a pre-existing property of the `qmm`
   splitk 9→10 padding path. **Any delta at M ≤ 9 is a hard stop.**
 - The runtime-effective Metal source for the quantized family is the JIT string in
