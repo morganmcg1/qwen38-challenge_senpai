@@ -37,6 +37,34 @@ tokens="${E29_TOKENS:-256}"
 # label, and the trace gate is exactly the variable under test.
 for v in $(env | sed -n 's/^\(MLX_QWEN_[A-Z_]*\)=.*/\1/p'); do unset "${v}"; done
 
+# --- every knob this script sets must still have a READER in the shipped source
+# An env var with no reader is not an experiment arm, it is a no-op wearing the
+# label of one: the run completes, the report says ladder=0,1,9,... and the
+# measured schedule is whatever the default is. `yukon submit` replaces whole
+# files, so the reader can vanish in a rebase or an overlay authored by someone
+# who never opened the file (ledger 161/162) while this script keeps "working".
+# Fail loudly at the top instead of publishing a mislabelled arm.
+require_env_reader() {
+  local var="$1" src="$2"
+  if [ ! -f "${src}" ]; then
+    echo "e29-run: FAIL: ${var} reader source is missing: ${src}" >&2
+    exit 1
+  fi
+  if ! grep -q "${var}" "${src}"; then
+    echo "e29-run: FAIL: no reader for ${var} in ${src}." >&2
+    echo "  The knob would be exported and silently ignored, and the arm would" >&2
+    echo "  measure the DEFAULT schedule under an override label. Restore the" >&2
+    echo "  reader, or delete the arm; do not run it." >&2
+    exit 1
+  fi
+}
+require_env_reader MLX_QWEN_MTP_LADDER \
+  "${repo_root}/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+require_env_reader MLX_QWEN_MTP_TRACE \
+  "${repo_root}/Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+require_env_reader MLX_QWEN_MTP_TRACE_SYNC_HEAD \
+  "${repo_root}/Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+
 macmon_bin="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
 sample_thermal() {
   [[ -x "${macmon_bin}" ]] || { echo "unavailable"; return 0; }

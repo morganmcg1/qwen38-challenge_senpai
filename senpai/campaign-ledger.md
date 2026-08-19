@@ -5715,3 +5715,220 @@ Two traps in doing it:
         161). Before quoting an agreement, ask whether the two sides can *fail* to agree.
      4. 🔴 A gate whose correct answer is FAIL needs a control that makes it PASS,
         otherwise "hardcoded to fail" and "working" are indistinguishable.
+
+
+162. 🔴🔴🔴 **THE REBASE SHIPPED. THEN SIX OF MY OWN INSTRUMENTS TURNED OUT TO BE LYING —
+     FOUR OF THEM SILENTLY, ONE FOR WEEKS. A control I wrote to catch exactly this class
+     could not fail, because a pipeline killed its own producer with SIGPIPE and
+     `pipefail` swallowed the verdict. Two experiments merged; the headline of one of them
+     is withdrawn by its own author and the other's first sentence is wrong.**
+
+     **(A) THE REBASE, AND WHAT `git blame` DECIDED.** Item 161 established that our
+     submissions were reverting the frontier. The rebase is now shipped and the advisor
+     branch is `efff400c1b5554be2e8993b01856653d55de7664`. The adjudication was not "take
+     everything upstream has": for each of the five shipped files I asked `git blame` on
+     the tip **who wrote the line we were about to overwrite**, which separates two
+     actions that look identical in a diff:
+     - *Reverting the crown* — the 320/128 MiB pair and `MLX_MAX_MB_PER_BUFFER`, and E27's
+       per-width register widening. Taken verbatim from the frontier.
+     - *Replacing pristine code on purpose* — our own instrumented paths. Kept.
+
+     Shipped surface vs campaign base `527306761f70e2c4024f347915328894db80c181` is now
+     **5 files, +281/−72**, and the authorship readout is unchanged in substance: **5.5 %
+     of the shipped surface is ours, 14 of 19 files are inherited.**
+
+     🔴 **fkiene's verify-concat JIT warm is restored** (promoted at
+     `1cb1f43a7246d57af8b96dad468583364779aa73`, scoring **3.24417896624589** against base
+     **3.24326223889754**, i.e. **+0.0283 %**). It had been deleted from the frontier by a
+     later whole-file overlay whose author never opened the file. It is restored **inside
+     `warmAllDepthShapes`**, i.e. OUTSIDE the timed window, so it can only move JIT cost
+     out of the measured region.
+
+     **(B) WHAT THE REBASED TREE IS WORTH: A TIE PLUS A RECEIPT, NOT A WIN.** Crown/main is
+     **3.24929398547457** (`ef42e0432727`, ofou, promoted 2026-08-18T21:48:43). The rebased
+     tree should land near **3.2502** — crown plus fkiene's +0.0283 % — which against
+     σ_score = **0.0978 %** is **0.29σ**. Nobody should call that a lead.
+
+     🔴 And the crown's own margin over base (+0.1858 %) does not decompose into anything
+     mechanical. Per leg: mean **serial +0.0486 % (SLOWER)**, mean MTP **−0.0089 %**. Only
+     **beagle** moved on the MTP leg with any authority (−0.1821 %). The scored statistic is
+     the mean of the **4th and 5th order statistics**, so the crown is roughly **1.9σ of
+     luck in which prompts landed 4th and 5th**. Two further constraints follow and both
+     bind on future work:
+     - The serial leg is **prompt-independent** (37.9908 ms/tok, item 153), so **serial-leg
+       noise cannot be averaged down across prompts**: serial sd **0.3475 %** vs MTP
+       **0.0995 %**.
+     - E26 is **neutral on ranked** hardware. It is not a lever; it is not a regression.
+
+     **(C) MERGED — E40, alphonse (PR 45).** `affine_qmv_fast` at `quantized.h:1869` is the
+     **only** `[[kernel]]` on this path; the width switch is on a **runtime** value and every
+     helper is `METAL_FUNC` inline. Therefore **one register allocation, equal to the max
+     over all eight width cells**, is shared by every width. Post-revert that max is
+     **108** at `<T,7,4>`, production entry `affine_qmv_fast<bfloat16_t,64,4,false>` =
+     **163**; with E27 it was **129 / 183**.
+
+     🔴 **This is why E27 lost.** Its per-width table was *correct and reproducible* (M5
+     0.7990, M9 0.8854) and it still cost **−0.3321 %** of score: mean MTP leg **+0.1995 %**,
+     slower on **every** wide prompt (beagle +0.2353, essays +0.4803, republic +0.2375,
+     botany +0.5225, against MTP replicate sd 0.0995 % ≈ 3.6σ). **A benchmark at the widths
+     you improved cannot see the cost you charged at the widths you did not touch.**
+
+     🔴 **Host dispatch is NOT editable.** `benchmark.json` `editablePaths` (89 entries)
+     contains `mlx-generated/quantized.cpp` and `kernels/quantized.h` but **not**
+     `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp`. So a per-width
+     `[[kernel]]` split is unavailable, the single shared allocation is a **hard
+     constraint**, and `group_dims(32,2,1)` / `grid_dims(M, ceil(N/8), B)` are fixed.
+     E40 also closed the `qmm` question: `vector_limit ≥ 10 > 9` for every scored
+     projection, so `qmm`/`qmm_splitk` are never reached at any legal MTP width.
+
+     The r=2 register ladder (anchors `rb_na6_r2=117`, thorfinn's `83→66`) predicts
+     **na5_r2 = 100 < 108**, which is the standing prediction any register-budget arm has
+     to beat.
+
+     **(D) MERGED — E43, edward (PR 48), with its headline withdrawn by its author.** Second
+     time this campaign he has withdrawn his own claim: his E34 r2 "ranked discounts the
+     local M=6 step by 19.14 %" is **gone**. `--self-test` 51 checks / 0 failures from a
+     clean extraction; scope diff over `Sources Vendor benchmark.json` empty.
+
+     What E43 establishes **assumption-free**:
+     - **Superlinearity in M is decisive.** A linear family needs **5.7011 %** per-prompt
+       slack against **0.281 %** measured pair noise — **20.3×** — and this survives adding
+       a physical reject cost r ≥ 0 (identical 5.7011 %).
+     - **Round counts are PINNED without assuming monotonicity**, which answers my own
+       ledger-149 objection: **42** of **226,017,792** reading combinations are feasible, and
+       every one gives beagle **107**, medicine **99**, essays **87**, republic **89**, botany
+       **85**. Pins survive 0.562 % and 2 % tolerance and dissolve at 5 %/10 %. The linear
+       family has **0 feasible readings at every tolerance**. Still ambiguous: plutarch,
+       drama, travel.
+     - **φ cannot be bounded away from zero at M=6.** beagle φ(M≥6) 0.2351–0.9380 and
+       medicine 0.3220–0.9701, but **φ(M=6) alone is 0.0000–0.9380 / 0.0000–0.9701**.
+     - Value ladder from base **3.23250848**: removing 10 % of the low excess is
+       **+1.1504 %**, 10 % of the high excess **+2.6633 %**, and the saturation cap is
+       **+4.5649 %** (3.380068). Closing the crown gap needs **3.15 %** of the excess on the
+       low reading or **1.11 %** on the high; one σ needs 0.60 % / 0.21 %.
+
+     🔴 **THE DEFECT, AND IT IS IN HIS FIRST SENTENCE — IT IS CROSS-FAMILY.** He publishes
+     two fits, **both fitting with ZERO slack**, residual ratio **1.174**, inside his own
+     pre-registered inconclusive band (≤1.5):
+
+     ```
+     step       T(M) = 31.268 + 1.452M + 36.278[M>=6]   ->  T(6)-T(5) = 37.730 ms
+     quadratic  T(M) = 33.639 - 1.930M + 0.955M^2       ->  T(6)-T(5) =  8.575 ms
+     his reported bracket on the increment                   [14.786, 80.483]
+     ```
+
+     **8.575 lies BELOW the lower end of his own bracket.** The bracket is on `s` *within*
+     the step family, not on the 5→6 increment *across* families. The quadratic reading
+     implies a ≈74 % discount — the very claim he withdrew. So on the discount question the
+     honest verdict is his assignment's own stop-early class, and `e_p = s·q_p` inherits a
+     decomposition his §(c) says the data does not license. **Total cost can be identified
+     while its split into baseline and removable excess is not — and a fix earns only the
+     excess.**
+
+     **(E) E43 CORRECTS askeladd.** `non_drafting_round_count = 0` on 7 of 8 prompts, so
+     **ρ(M=1) = 0 exactly**, and beagle's M≥6 round-share upper bound drops
+     **.90654 → .883175**. The .90654 figure requires leaving ρ(1) free. Lower bound .13318
+     confirmed exactly; row-share lower bounds .2166/.2995 reproduced exactly.
+
+     **(F) SIX INSTRUMENT DEFECTS. All seven gates were green before I touched them; three
+     were lying.** Committed as `4c32bbbdf038a2badd67710671146a99a845b019`.
+     1. **Stale prose acknowledgements → a machine-verified class.** Four hand-written acks
+        in the scored gate went stale in ONE rebase. All four deltas are byte-identical to
+        `upstream/main`, so the gate now **asserts** that with
+        `git diff --quiet <frontier> <rev> -- <path>` under a new `FRONTIER-TAKEN` status,
+        and fails closed when the frontier ref does not resolve. **A free-text reason keeps
+        passing after it stops being true; `FRONTIER-TAKEN` re-earns itself every run.**
+     2. **The twin check was a false-positive generator.** The entire `quantized.h` delta vs
+        baseline is **13 added / 3 removed COMMENT lines, zero code**, and
+        `mlx-generated/quantized.cpp` is a generated string that **does not carry the
+        header's comments** — so *any* comment-only header edit fired it. It now compares
+        **code-only** counts and prints raw and code counts separately.
+     3. **Three more gates graded a commit while I held a different worktree.** I "fixed"
+        this class last turn — in the frontier gate only — and assumed the class was
+        closed. It was not. New shared helper `research/lib/dirty-packaged-surface.sh`
+        derives the packaged set from `editablePaths`, fails closed if that is unreadable,
+        and names the dirty files. 🔴 In the scored gate it must sit **after** the pin
+        assertions, because control 12 requires the "not in the local object store"
+        diagnostic from a repo holding none of the pinned objects. **Ordering is part of
+        the contract.**
+     4. **Hardcoded `OURS` rotted on the rebase** and the inherited gate called a file we
+        wrote "inherited". `OURS` is now derived from `CAMPAIGN_BASE..REV`. The shipped gate
+        owns "did the set change?"; the inherited gate owns "how much did we write?".
+     5. 🔴🔴 **`cmd | grep -q` under `set -o pipefail` fails SILENTLY.** `grep -q` exits on
+        the first match, the producer dies of **SIGPIPE (141)**, `pipefail` returns 141, and
+        the `&& flag=1` never runs. Proven: `pipeline_rc=141`, flag never set. **It passed
+        for weeks because the diff used to fit in the pipe buffer, and broke when
+        `research/` grew** — so the control silently stopped controlling at a moment
+        unrelated to anything it measured. Replaced with a pipe-free `$(...)`; three
+        sibling sites hardened with a pure-builtin `contains_line()` using
+        `hay=$'\n'"$1"$'\n'` and **not** `$(printf …)`, which strips trailing newlines and
+        would make the last element unmatchable.
+     6. **Six controls encoded today's tree instead of constructing their inputs.** Frontier
+        controls 1/3/5 and scored controls 3/4/5 named a path — or a path *and* its STATUS
+        word — literally. A rebase renamed a status and made a hardcoded "file that
+        differs" byte-identical, so the mutations matched **nothing**: they ran the
+        unmodified gate, it passed, and the harness scored the refusal as absent without
+        ever reporting that the mutation had not been applied. Controls now derive their
+        targets from the table under test and **every mutation asserts that it changed the
+        file**, printing `vacuous` if not. Verified by meta-test: aiming a control at a
+        non-existent path now yields two loud failures instead of twelve quiet passes.
+        Control 1 was rewritten as the exact **mirror** of control 2 — it had been asserting
+        a fact about today's tree rather than about the gate. No `mapfile`: system bash is
+        **3.2.57**, where an unset array under `set -u` would remove the targets silently.
+
+     Both control suites now run **12/12**, and all seven gates are green on `efff400c`.
+
+     **(G) A DEFECT IN THE FRONTIER, RECORDED AND DELIBERATELY NOT PATCHED.** `upstream/main`
+     carries a 12-line comment asserting M=8 uses `"3+3+2, not 4+4"` and `"IPG 3"`, directly
+     above code reading `<T,8,4,true>`, which **is** 4+4. **Main's comment contradicts main's
+     own code.** We do not fix it: byte-identity with the frontier is the only thing that
+     stops the next whole-file overlay reverting us silently. Anyone reading that comment
+     for a register or occupancy argument is reading a false statement.
+
+     **(H) QUEUED — and one queued item was itself a stale claim.** I have been carrying
+     "ledger 156 cites `AttentionUtils.swift:104-142` without its real prefix" across
+     several turns. It is **false**: line 4896 already reads
+     `Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift:104-142` in full, and
+     after this item is written the only unqualified occurrence in the whole ledger is the
+     one *this paragraph* originally introduced by asserting the defect. 🔴 **A carried TODO
+     is a claim with no owner re-checking it** — the same failure as a stale prose
+     acknowledgement, in my own notes rather than in a gate. Verify before repeating.
+     **Closed in this commit instead of re-queued:** `research/e29-run.sh` exported
+     `MLX_QWEN_MTP_LADDER`, `MLX_QWEN_MTP_TRACE` and `MLX_QWEN_MTP_TRACE_SYNC_HEAD` with no
+     check that the shipped source still *reads* them. **An env var with no reader is not an
+     experiment arm — it is a no-op wearing the label of one**: the run completes, the report
+     prints `ladder=0,1,9,...`, and the schedule measured is the default. Since `yukon
+     submit` replaces whole files, the reader can vanish in an overlay while the script keeps
+     "working". `require_env_reader` now hard-fails at startup for all three knobs, and it is
+     tested in **both** directions: reader missing from an existing file → rc=1 with the
+     mislabelled-arm diagnostic; reader file deleted → rc=1 naming the missing source.
+
+     Still genuinely open: the gates are not wired into CI; 12 pre-existing Swift test
+     failures; `mtp-head/README.md` is stale; two orphan `qwen-thorfinn/*` branches. And
+     653+ rival trees remain readable at `refs/remotes/upstream/submissions/*` — judged in
+     scope, recorded rather than quietly exploited.
+
+     **PROCESS.** Five lessons, and the first three are the same lesson at three depths.
+     1. 🔴🔴🔴 **Writing the control is how you find the defect.** The mutation control for
+        the twin check is what revealed that the gate read HEAD instead of the worktree —
+        in a gate where I had already "fixed" that class. **Fixing an instance is not
+        closing a class.** Re-run the class over every sibling before claiming it.
+     2. 🔴🔴🔴 **A control that cannot fail is worse than no control**, because it converts
+        "untested" into "tested" in the reader's mind. Six of mine could not fail. The
+        remedy is structural: a control must **construct its own input** and **assert its
+        own mutation landed**, and the harness must distinguish "the gate did not refuse"
+        from "the mutation was never applied."
+     3. 🔴🔴🔴 **A measurement whose own failure is silent is not a measurement.** SIGPIPE
+        under `pipefail` broke a control at a moment governed by the size of an unrelated
+        directory. Prefer forms that cannot fail quietly to forms that are merely correct
+        today.
+     4. 🔴🔴 **Derive, don't duplicate — one owner per fact.** Hardcoded `OURS`, hardcoded
+        ack targets and hardcoded file sets all rotted in the *same single rebase*. Every
+        constant quoted without the tree it belongs to is a future error; this is the
+        seventh of that class.
+     5. 🔴🔴 **Prefer a machine-verified acknowledgement to a prose one**, and re-read your
+        own queued drafts before sending them: PR 48's head moved between turns and the
+        note I had drafted as "guidance" was obsolete on arrival — it needed an
+        adjudication instead. A written status that is not re-earned each run is a claim,
+        not a fact. (The `pending-feedback` draft for PR 46 still read `BLOCKED (403)` after
+        the guidance had shipped under two different ids; corrected in the same commit.)
