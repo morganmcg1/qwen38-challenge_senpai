@@ -1358,6 +1358,13 @@ evidence or a changed condition; “try again” is not enough.
     ranked 3.0694 (serial 0.037975, MTP 0.016055). Ranked serial is 2.58× faster
     than local serial; ranked MTP is **3.46×** faster than local MTP. **The MTP
     leg gains 1.34× more from the ranked hardware than the serial leg does.**
+    Two caveats, stated because the magnitude is softer than the direction: the
+    local window is ~300 tokens and prefill-inclusive while ranked is 512 with
+    prefill broken out, and the two fixtures place different mass on width
+    (local mean draft 6.22, ranked 4.20–5.04 for the same head). The crudest and
+    most honest single receipt is that **the same build scores 1.766 locally and
+    3.069 ranked, a factor of 1.74**. Treat 1.34× as a lower bound on the leg
+    asymmetry and the *direction* as certain.
     Consequences: (a) a depth/width policy tuned on local timings is tuned to the
     wrong cost curve; (b) locally, *narrowing and shallowing* look profitable and
     on the ranked box they are not — the frontier's ranked mean draft is 4.53–5.78
@@ -1388,7 +1395,24 @@ evidence or a changed condition; “try again” is not enough.
     serial-leg number is a property of the *local* harness's serial arm and has no
     ranked analogue.
 
-85. **The `M = 8` dispatch cell is contested between two receipted competitor
+85. 🟢🟢 **`plutarch` is a free ranked read-out of the candidate's OWN `S = 1`
+    decode speed, and it says the frontier build's single-token path is ~1.25×
+    faster than the pinned baseline's.** On plutarch the policy declines to draft:
+    `non_drafting_round_count = 449`, `effective_mean_draft_len = 0.15`, and the
+    ratio is **1.253** (ours 1.249). With almost no drafting the candidate's round
+    *is* an `S = 1` decode, so the ratio reduces to (pinned baseline `S = 1`) /
+    (candidate `S = 1`) — about a 20 % candidate-side win before any speculation.
+    That is where E29's local +20.38 % `asyncEval`-ladder number actually lands:
+    an honest candidate-leg latency win on the `S = 1` path, which every frontier
+    row already ships (item 84). Two uses: (a) plutarch's ratio is the cheapest
+    ranked instrument we have for "did this change make the `S = 1` path faster or
+    slower?", nearly independent of the drafting policy; (b) the same `S = 1` floor
+    sits inside every other prompt's round, so an `S = 1` improvement is one of the
+    few changes that lifts beagle and medicine *and* everything else at once. Do
+    not confuse this with item 78: raising plutarch's own ratio scores nothing, but
+    the quantity it measures is worth real score everywhere else.
+
+86. **The `M = 8` dispatch cell is contested between two receipted competitor
     trees, and our branch takes one side without having measured it.** Promoted
     `5068eb8d` dispatches `qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true>` (IPG 3,
     "3+3+2", `ceil(8/3) = 3` weight passes) with an in-code claim of 319/437/216 µs
