@@ -188,14 +188,27 @@ def coverage_gap(base_curve: dict, hist: dict[int, int], mtp_seconds: float) -> 
     treated = sum(count * verify_cost_per_round(base_curve, m) for m, count in hist.items())
     draft = base_curve.get(DRAFT_SIDE_SHAPE)
     draft_steps = sum(count * (m - 1) for m, count in hist.items())
-    untreated = draft_steps * draft["rows"][1]["seconds_per_call"] if draft else 0.0
+    # The curve probes every shape at affine-4, and its own M=1 row reports
+    # `qmv_fast_impl`. The real readout is 2-bit on the singlerow kernel, which
+    # moves about half the weight bytes, so the 4-bit row is an upper bound and
+    # half of it is the bandwidth-scaled estimate. `calls_per_verify` is 0 for
+    # this shape, so it never entered the x-bar denominator either way.
+    hi = draft_steps * draft["rows"][1]["seconds_per_call"] if draft else 0.0
+    lo = 0.5 * hi
     return {
         "treated_verify_qmv_seconds": treated,
-        "untreated_draft_readout_seconds": untreated,
         "draft_steps": draft_steps,
-        "untreated_share_of_candidate_qmv": untreated / (treated + untreated),
-        "psi_mtp_additive_correction": untreated / mtp_seconds,
-        "note": "isolated single-op dispatch cost, so the correction is indicative, not exact",
+        "untreated_draft_readout_seconds_4bit_proxy_upper": hi,
+        "untreated_draft_readout_seconds_2bit_scaled": lo,
+        "untreated_share_of_candidate_qmv_upper": hi / (treated + hi),
+        "untreated_share_of_candidate_qmv_scaled": lo / (treated + lo),
+        "psi_mtp_additive_correction_upper": hi / mtp_seconds,
+        "psi_mtp_additive_correction_scaled": lo / mtp_seconds,
+        "note": (
+            "the correction's SIGN is certain because untreated candidate QMV has "
+            "positive cost; only its magnitude is uncertain, and the one-sided "
+            "bound below does not depend on the magnitude"
+        ),
         "direction": "psi_mtp measured is a LOWER bound; uniform coefficient is a LOWER bound",
     }
 
@@ -341,13 +354,20 @@ def main() -> int:
             ident = payload[key]
             if not ident.get("identified"):
                 continue
-            corrected = ident["psi_mtp_total"] + gap["psi_mtp_additive_correction"]
-            coeff = corrected - ident["psi_serial"]
-            ident["psi_mtp_total_gap_corrected"] = corrected
-            ident["uniform_coefficient_gap_corrected"] = coeff
-            ident["uniform_sign_gap_corrected"] = "negative" if coeff < 0 else "positive"
+            for label in ("scaled", "upper"):
+                corrected = ident["psi_mtp_total"] + gap[f"psi_mtp_additive_correction_{label}"]
+                coeff = corrected - ident["psi_serial"]
+                ident[f"psi_mtp_total_gap_corrected_{label}"] = corrected
+                ident[f"uniform_coefficient_gap_corrected_{label}"] = coeff
+                ident[f"uniform_sign_gap_corrected_{label}"] = (
+                    "negative" if coeff < 0 else "positive"
+                )
+            # The correction is strictly positive, so a measured positive sign is
+            # already conclusive and a measured negative sign must survive the
+            # UPPER bound to support ledger 173(A).
             ident["sign_robust_to_coverage_gap"] = (
-                ident["uniform_coefficient"] > 0 or coeff < 0
+                ident["uniform_coefficient"] > 0
+                or ident["uniform_coefficient_gap_corrected_upper"] < 0
             )
 
     payload["arms"] = {k: strip(v) for k, v in arms.items()}
@@ -431,13 +451,17 @@ def log_wandb(payload: dict) -> None:
         "psi_mtp_total": ident.get("psi_mtp_total"),
         "uniform_coefficient": ident.get("uniform_coefficient"),
         "uniform_sign": ident.get("uniform_sign"),
-        "uniform_coefficient_gap_corrected": ident.get("uniform_coefficient_gap_corrected"),
-        "uniform_sign_gap_corrected": ident.get("uniform_sign_gap_corrected"),
+        "uniform_coefficient_gap_corrected_scaled": ident.get(
+            "uniform_coefficient_gap_corrected_scaled"
+        ),
+        "uniform_coefficient_gap_corrected_upper": ident.get(
+            "uniform_coefficient_gap_corrected_upper"
+        ),
         "sign_robust_to_coverage_gap": ident.get("sign_robust_to_coverage_gap"),
         "psi_serial_form_residual_pct": ident.get("psi_serial_form_residual_pct"),
         "identified": ident.get("identified"),
-        "untreated_share_of_candidate_qmv": payload["coverage_gap"][
-            "untreated_share_of_candidate_qmv"
+        "untreated_share_of_candidate_qmv_upper": payload["coverage_gap"][
+            "untreated_share_of_candidate_qmv_upper"
         ],
     }
     for arm, rec in payload.get("dosed_arms", {}).items():
