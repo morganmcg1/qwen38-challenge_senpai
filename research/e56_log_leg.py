@@ -82,6 +82,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tag", required=True)
     parser.add_argument("--arm", required=True)
+    parser.add_argument("--session", default="",
+                        help="session label, so replicate sessions of the "
+                             "same tag stay distinguishable in W&B")
     args = parser.parse_args()
 
     out_dir = ROOT / "research" / "out" / args.tag
@@ -96,14 +99,16 @@ def main() -> None:
         "experiment": "qwen38-r1-e56-stream-aware-draft-depth-schedule",
         "arm": args.arm,
         "tag": args.tag,
+        "session": args.session or "s1",
         "host": subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"],
                                capture_output=True, text=True).stdout.strip(),
         "cool_gate_env": os.environ.get("MLXFAST_LOCAL_COOL_GATE", "default"),
         **meta,
     }
 
+    name = f"e56-{args.session}-{args.tag}" if args.session else f"e56-{args.tag}"
     run = wandb.init(entity=ENTITY, project=PROJECT, group=GROUP,
-                     name=f"e56-{args.tag}", job_type="local-iterate",
+                     name=name, job_type="local-iterate",
                      config=config, reinit=True)
     run.log({k: v for k, v in metrics.items() if isinstance(v, (int, float))})
     run.summary.update({k: v for k, v in metrics.items()
