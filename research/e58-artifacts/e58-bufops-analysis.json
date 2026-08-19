@@ -1,0 +1,89 @@
+{
+  "arms": {
+    "256": {
+      "all_tokens_matched": [
+        true,
+        true
+      ],
+      "candidate_buffers_per_round": 21.670179789212646,
+      "candidate_dispatches_per_buffer": 48.39,
+      "effective_mean_draft_len": [
+        6.5131578947368425,
+        6.5131578947368425
+      ],
+      "gpu_temp_entry_c": [
+        51.155941009521484,
+        50.5092887878418
+      ],
+      "gpu_temp_exit_c": [
+        60.598609924316406,
+        61.45817947387695
+      ],
+      "mtp_seconds_per_token": 0.03583690419327468,
+      "mtp_within_pair_spread_percent": 0.06210891130924194,
+      "ops_per_buffer_limit": 256,
+      "residual_divergence_count": [
+        0,
+        0
+      ],
+      "runs": [
+        "b1",
+        "b2"
+      ],
+      "serial_seconds_per_token": 0.07504932722076774,
+      "serial_within_pair_spread_percent": 0.038976912691101304
+    },
+    "50": {
+      "all_tokens_matched": [
+        true,
+        true
+      ],
+      "candidate_buffers_per_round": 38.52387950036737,
+      "candidate_dispatches_per_buffer": 27.22,
+      "effective_mean_draft_len": [
+        6.5131578947368425,
+        6.5131578947368425
+      ],
+      "gpu_temp_entry_c": [
+        43.173648834228516,
+        50.745792388916016
+      ],
+      "gpu_temp_exit_c": [
+        61.968379974365234,
+        62.8719596862793
+      ],
+      "mtp_seconds_per_token": 0.035770099610090256,
+      "mtp_within_pair_spread_percent": 0.032990649932727295,
+      "ops_per_buffer_limit": 50,
+      "residual_divergence_count": [
+        0,
+        0
+      ],
+      "runs": [
+        "a1",
+        "a2"
+      ],
+      "serial_seconds_per_token": 0.0744641162455082,
+      "serial_within_pair_spread_percent": 0.05211978862772664
+    }
+  },
+  "cool_gate_passed_real_gate": false,
+  "effect": {
+    "beagle_percent_of_ranked_round": -0.8439001102969491,
+    "beagle_percent_of_score": -0.7726074289790629,
+    "buffers_removed_per_round": 16.853699711154725,
+    "candidate_delta_ms_per_round": 0.4500519288213629,
+    "candidate_delta_percent": 0.18676096491936076,
+    "clears_ranked_mde": false,
+    "entry_temp_spread_c": 7.982292175292969,
+    "local_null_floor_percent": 0.0629,
+    "medicine_percent_of_ranked_round": -0.8415331503765201,
+    "medicine_percent_of_score": -0.7653996462619563,
+    "ns_per_removed_buffer": -26703.450075326386,
+    "ranked_mde_percent": 0.283,
+    "serial_delta_percent": 0.7858966234556546
+  },
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "session": "e58-bufops"
+}
