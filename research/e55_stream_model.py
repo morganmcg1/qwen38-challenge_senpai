@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 from pathlib import Path
 
 # Shipped table on the campaign base, as stated in the assignment body.
@@ -303,6 +304,62 @@ def risk3_verdict(ident: dict) -> dict:
     }
 
 
+TWINS = (
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+)
+INSTANTIATION = re.compile(
+    r"qmv_fast_crossrow_affine4_g64_m<\s*T\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\w+)\s*>"
+)
+
+
+def candidate_instantiations() -> dict:
+    """Check the model's structural claim against the worktree, not against prose.
+
+    The claim published for Risk 3 is that the candidate forms no LONE NA=5
+    group. That is only true if exactly one cell moves to IPG=5 and that cell is
+    M=9. Read it from both twins rather than asserting it.
+    """
+    per_twin = {}
+    for path in TWINS:
+        text = Path(path).read_text()
+        inst = sorted(
+            (int(m), int(ipg)) for m, ipg, _ in INSTANTIATION.findall(text)
+        )
+        per_twin[path] = {
+            "instantiations": [{"m": m, "ipg": ipg} for m, ipg in inst],
+            "cells": {
+                str(m): {"ipg": ipg, "groups": groups(m, ipg)} for m, ipg in inst
+            },
+        }
+
+    sets = [
+        [(c["m"], c["ipg"]) for c in v["instantiations"]] for v in per_twin.values()
+    ]
+    twins_agree = all(s == sets[0] for s in sets)
+
+    cells = per_twin[TWINS[0]]["cells"]
+    ipg5 = [int(m) for m, c in cells.items() if c["ipg"] == 5]
+    lone = [int(m) for m, c in cells.items() if c["groups"] == [5]]
+    with_na5 = [int(m) for m, c in cells.items() if 5 in c["groups"]]
+
+    return {
+        "per_twin": per_twin,
+        "twins_carry_identical_instantiation_set": twins_agree,
+        "cells_at_ipg5": ipg5,
+        "cells_forming_any_na5_group": with_na5,
+        "cells_forming_a_lone_na5_group": lone,
+        "no_lone_na5_group_in_candidate": lone == [],
+        "exactly_one_cell_moved_to_ipg5": len(ipg5) == 1,
+        "reading": (
+            "Both twins carry the same seven instantiations, and exactly one sits "
+            "at IPG=5: M={m}, whose groups are {g}. The NA=5 group therefore always "
+            "has an NA<=4 sibling, so the candidate forms no lone NA=5 group. That "
+            "is the structural feature the model attributes E27's M=5 risk to."
+        ).format(m=ipg5, g=cells[str(ipg5[0])]["groups"] if ipg5 else None),
+    }
+
+
 def negative_controls() -> dict:
     c = {}
 
@@ -355,6 +412,7 @@ def main() -> int:
     r_hi = max(ident["r_estimates"]["e49_arm1_m9_cell"], ident["r_estimates"]["e27_m5_cell"])
     preds = predictions(r_lo, r_hi)
     controls = negative_controls()
+    inst = candidate_instantiations()
 
     doc = {
         "experiment": "E55",
@@ -365,6 +423,7 @@ def main() -> int:
         "identification": ident,
         "predictions": preds,
         "break_even": break_even(r_lo, r_hi),
+        "candidate_instantiations": inst,
         "risk3": risk3_verdict(ident),
         "r_interval": [r_lo, r_hi],
         "negative_controls": controls,
@@ -373,6 +432,9 @@ def main() -> int:
         ident["independent_cells_agree_within_5pct"]
         and ident["collapse_is_real"]
         and preds["pr8_range_consistent_with_model"]
+        and inst["twins_carry_identical_instantiation_set"]
+        and inst["exactly_one_cell_moved_to_ipg5"]
+        and inst["no_lone_na5_group_in_candidate"]
         and controls["all_fire"]
     )
 
@@ -409,6 +471,13 @@ def main() -> int:
           f"..{preds['m7_m8_predicted_ratio_range'][1]:.4f}x ; PR #8 quoted "
           f"{PR8_BOUNDARY_SLOWDOWN_RANGE[0]}..{PR8_BOUNDARY_SLOWDOWN_RANGE[1]}x ; "
           f"consistent={preds['pr8_range_consistent_with_model']}")
+    print()
+    print("candidate twins, read from the worktree:")
+    print(f"  twins carry identical instantiation set : "
+          f"{inst['twins_carry_identical_instantiation_set']}")
+    print(f"  cells at IPG=5                          : {inst['cells_at_ipg5']}")
+    print(f"  cells forming any NA=5 group            : {inst['cells_forming_any_na5_group']}")
+    print(f"  cells forming a LONE NA=5 group         : {inst['cells_forming_a_lone_na5_group']}")
     print()
     print(f"  negative controls all fire : {controls['all_fire']}")
     print(f"  verdict_ok                 : {doc['verdict_ok']}")

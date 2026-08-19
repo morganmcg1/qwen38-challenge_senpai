@@ -58,6 +58,183 @@
       }
     ]
   },
+  "candidate_instantiations": {
+    "cells_at_ipg5": [
+      9
+    ],
+    "cells_forming_a_lone_na5_group": [],
+    "cells_forming_any_na5_group": [
+      9
+    ],
+    "exactly_one_cell_moved_to_ipg5": true,
+    "no_lone_na5_group_in_candidate": true,
+    "per_twin": {
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": {
+        "cells": {
+          "3": {
+            "groups": [
+              3
+            ],
+            "ipg": 3
+          },
+          "4": {
+            "groups": [
+              4
+            ],
+            "ipg": 4
+          },
+          "5": {
+            "groups": [
+              3,
+              2
+            ],
+            "ipg": 3
+          },
+          "6": {
+            "groups": [
+              3,
+              3
+            ],
+            "ipg": 3
+          },
+          "7": {
+            "groups": [
+              4,
+              3
+            ],
+            "ipg": 4
+          },
+          "8": {
+            "groups": [
+              4,
+              4
+            ],
+            "ipg": 4
+          },
+          "9": {
+            "groups": [
+              5,
+              4
+            ],
+            "ipg": 5
+          }
+        },
+        "instantiations": [
+          {
+            "ipg": 3,
+            "m": 3
+          },
+          {
+            "ipg": 4,
+            "m": 4
+          },
+          {
+            "ipg": 3,
+            "m": 5
+          },
+          {
+            "ipg": 3,
+            "m": 6
+          },
+          {
+            "ipg": 4,
+            "m": 7
+          },
+          {
+            "ipg": 4,
+            "m": 8
+          },
+          {
+            "ipg": 5,
+            "m": 9
+          }
+        ]
+      },
+      "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": {
+        "cells": {
+          "3": {
+            "groups": [
+              3
+            ],
+            "ipg": 3
+          },
+          "4": {
+            "groups": [
+              4
+            ],
+            "ipg": 4
+          },
+          "5": {
+            "groups": [
+              3,
+              2
+            ],
+            "ipg": 3
+          },
+          "6": {
+            "groups": [
+              3,
+              3
+            ],
+            "ipg": 3
+          },
+          "7": {
+            "groups": [
+              4,
+              3
+            ],
+            "ipg": 4
+          },
+          "8": {
+            "groups": [
+              4,
+              4
+            ],
+            "ipg": 4
+          },
+          "9": {
+            "groups": [
+              5,
+              4
+            ],
+            "ipg": 5
+          }
+        },
+        "instantiations": [
+          {
+            "ipg": 3,
+            "m": 3
+          },
+          {
+            "ipg": 4,
+            "m": 4
+          },
+          {
+            "ipg": 3,
+            "m": 5
+          },
+          {
+            "ipg": 3,
+            "m": 6
+          },
+          {
+            "ipg": 4,
+            "m": 7
+          },
+          {
+            "ipg": 4,
+            "m": 8
+          },
+          {
+            "ipg": 5,
+            "m": 9
+          }
+        ]
+      }
+    },
+    "reading": "Both twins carry the same seven instantiations, and exactly one sits at IPG=5: M=[9], whose groups are [5, 4]. The NA=5 group therefore always has an NA<=4 sibling, so the candidate forms no lone NA=5 group. That is the structural feature the model attributes E27's M=5 risk to.",
+    "twins_carry_identical_instantiation_set": true
+  },
   "experiment": "E55",
   "identification": {
     "collapse_is_real": true,

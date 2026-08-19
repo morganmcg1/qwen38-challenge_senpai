@@ -247,6 +247,12 @@ def main() -> int:
             "stream/pr8_numbers_used_in_fit": s["pr8_numbers_used_in_fit"],
             "stream/uses_only_dimensionless_ratios":
                 s["uses_only_dimensionless_ratios"],
+            "stream/twins_identical_instantiation_set":
+                s["candidate_instantiations"]["twins_carry_identical_instantiation_set"],
+            "stream/cells_at_ipg5":
+                json.dumps(s["candidate_instantiations"]["cells_at_ipg5"]),
+            "stream/no_lone_na5_group_in_candidate":
+                s["candidate_instantiations"]["no_lone_na5_group_in_candidate"],
             "stream/negative_controls_all_fire": s["negative_controls"]["all_fire"],
             "stream/verdict_ok": s["verdict_ok"],
         })
