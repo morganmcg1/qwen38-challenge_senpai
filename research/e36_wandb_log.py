@@ -2,10 +2,12 @@
 """Log the E36 values_per_thread x NA x rows_per_simd grid to W&B.
 
 E36 measures no time, so there is no metric series to stream: the durable record
-is the grid, the gate-control verdicts, the K-coverage table and the composition
-decision.
+is the grid, the gate-control verdicts, the K-coverage table, the ranked-board
+prior art and the composition decision.
 
   python3 research/e36_wandb_log.py research/e36-vpt-grid.json
+  python3 research/e36_wandb_log.py research/e36-vpt-grid.json \
+      --board research/e36-board-vpt-evidence.json --resume <run_id>
 """
 
 from __future__ import annotations
@@ -27,8 +29,33 @@ SHIPPED_IPG = {3: 3, 4: 4, 5: 5, 6: 3, 7: 4, 8: 4, 9: 5}
 E27_LADDER = {2: 62, 3: 83, 4: 104, 5: 125}
 
 
+def _flag(name: str) -> str | None:
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else None
+
+
+def board_table(path: pathlib.Path):
+    """Ranked prior art: the 13 board notes that mention values_per_thread."""
+    doc = json.loads(path.read_text())
+    table = wandb.Table(columns=[
+        "submission_id", "solver", "created_at", "official_score", "status",
+        "promotion_status", "rejection_reason", "excerpt",
+    ])
+    for s in doc["submissions"]:
+        table.add_data(
+            s["id"][:8], s["solver"], s["created_at"][:19],
+            s["official_score"] if s["official_score"] is not None else float("nan"),
+            s["status"], str(s["promotion_status"]),
+            (s["rejection_reason"] or "")[:180],
+            (s["excerpts"][0] if s["excerpts"] else "")[:900],
+        )
+    failures = [f["id"][:8] for f in doc["verify_path_parity_failures"]]
+    return table, doc, failures
+
+
 def main() -> None:
-    path = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "research/e36-vpt-grid.json")
+    positional = [a for a in sys.argv[1:] if not a.startswith("--")
+                  and a not in {_flag("--board"), _flag("--resume")}]
+    path = pathlib.Path(positional[0] if positional else "research/e36-vpt-grid.json")
     data = json.loads(path.read_text())
     cells = [c for c in data["cells"] if c["status"] == "ok"]
     by = {(c["arm"], c["na"], c["r"], c["v"]): c for c in cells}
@@ -42,9 +69,12 @@ def main() -> None:
 
     k_legal = {v: all(k % (v * 32) == 0 for _, k, _, _ in SCORED_SHAPES) for v in V_VALUES}
 
+    resume_id = _flag("--resume")
     run = wandb.init(
         entity=ENTITY,
         project=PROJECT,
+        id=resume_id,
+        resume="must" if resume_id else None,
         name="e36-values-per-thread-composes-with-na",
         job_type="static-analysis",
         tags=["e36", "crossrow-qmv", "values-per-thread", "register-budget",
@@ -222,6 +252,26 @@ def main() -> None:
         "verdict_vpt_recommended_for_verify_path": False,
         "verdict_blocking_constraint": "fp32 accumulation order, not registers",
     })
+
+    board = _flag("--board")
+    if board:
+        table, doc, failures = board_table(pathlib.Path(board))
+        run.log({"board_prior_art": table})
+        run.summary.update({
+            "board_rows_total": doc["board_rows_total"],
+            "board_notes_mentioning_values_per_thread":
+                doc["notes_mentioning_values_per_thread"],
+            # The decisive external evidence: same axis, same kernel, ranked runner.
+            "ranked_verify_path_parity_failures": len(failures),
+            "ranked_verify_path_parity_failure_ids": ",".join(failures),
+            "ranked_failure_gate":
+                "Qwen-MTP correctness and parity gate (untimed)",
+            "ranked_failure_direction_includes_lower_vpt": True,
+            "lesson_row_score":
+                doc["lesson_recorded_by_next_accepted_row"]["official_score"],
+            "verdict_axis_closed_by_ranked_evidence": True,
+        })
+
     print(f"logged {run.url}")
     run.finish()
 

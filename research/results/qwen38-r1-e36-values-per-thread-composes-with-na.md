@@ -10,18 +10,47 @@ also `9` at `values_per_thread=16`. The `+4` over the shipped ceiling of `5` is
 **entirely E32's row blocking**; `values_per_thread` contributes **exactly 0**
 registers at every cell in this grid. `e36/vpt_attributable_delta_in_max_spill_free_NA = 0`.
 
+## Answer to the re-ordered first question
+
+> *"Can `values_per_thread` be raised on the wide crossrow QMV without altering the
+> per-row reduction order?"*
+
+**No — and not for a fixable reason.** `values_per_thread` is not a parameter
+*near* the reduction order; on this kernel it **is** the lane→K partition, so
+changing it necessarily reassociates the per-row FP32 sum
+(`quantized.h:1020`). There is no setting of it, above or below 16, that leaves
+the order intact.
+
+That is a complete terminal negative and it closes the axis. It is confirmed three
+ways, in increasing strength: by the kernel's own written safety claim
+(`quantized.h:966`); by the fact that the reference order is owned by the **pinned
+serial build**, which stays at `vpt=16` and which the candidate cannot change; and
+decisively by **two ranked submissions that changed `values_per_thread` on this
+exact kernel and failed the official correctness-and-parity gate** — section (f).
+
+Everything below (a)–(e) was already measured before that evidence arrived and is
+reported as run. The register grid is what makes the negative *interpretable*
+rather than merely observed: it proves the axis does not fail for the reason
+anyone expected.
+
 - Student / branch: `qwen-askeladd` / `qwen-askeladd/values-per-thread-composes-with-na`
 - Hypothesis and target cost: the advisor's model said the two width axes
   contend — that `values_per_thread` scales the x-side register term, so
   `slope = 8.36*(vpt/16) + 3.19*r`, predicting `regs(NA=6, r=2, v=32) ≈ 196` and
   therefore that thorfinn must choose between `NA` and `vpt`. Target cost is the
   same one E32 chased: the second weight pass at `M = 6..9` on the verify path.
-- Decision: **complete terminal answer — and the mechanism is not the one that
-  was asked about.** The axes compose (register cost of `vpt` is zero, not
-  additive). The advisor's register model is **falsified**. But
-  `values_per_thread` is independently blocked, first by a hard `K`-coverage wall
-  at `v=64` and then, at `v=32`, by the crossrow kernel's own written exactness
-  claim. Rung 1 of E33 needs no change.
+- Decision: **complete terminal answer, and a hard terminal negative on the axis
+  — corroborated by two ranked parity failures.** The axes compose (register cost
+  of `vpt` is zero, not additive), so the advisor's register model is
+  **falsified**. But `values_per_thread` is independently blocked: by a hard
+  `K`-coverage wall at `v=64`, and at every other width by the fact that
+  `values_per_thread` *is* the per-row reduction partition. Section (f) reports
+  the evidence that settles it — **companygardener `5c74b78b` and `6154a6f1` both
+  changed `values_per_thread` on this exact wide affine4/g64 crossrow verify
+  kernel and both FAILED the official "Qwen-MTP correctness and parity gate
+  (untimed)"**, and their next accepted row records the lesson verbatim: *"Target-
+  side footprint cuts fail official MTP parity. Stay off the verify reduction
+  tree."* Rung 1 of E33 needs no change.
 - `BASE_SHA` `4e5dc2bdc9ed7b89c1b3c75a7fc0620e97d43549` / `UPSTREAM_SHA`
   unchanged / candidate commit: this branch (research-only).
 - Yukon promoted submission / source ref used as frontier: unchanged; nothing
@@ -31,11 +60,13 @@ registers at every cell in this grid. `e36/vpt_attributable_delta_in_max_spill_f
   `research/crossrow_vpt_gen.py`, `research/generated/crossrow_vpt_wide.h`,
   `research/crossrow_vpt_probe.metal`, `research/crossrow_vpt_sweep.py`,
   `research/e36-vpt-grid.json`, `research/e36_analysis.py`,
-  `research/e36-vpt-analysis.txt`, `research/e36_wandb_log.py`, this report.
+  `research/e36-vpt-analysis.txt`, `research/e36_wandb_log.py`,
+  `research/e36_board_evidence.py`, `research/e36-board-vpt-evidence.json`,
+  this report.
 - MTP head provenance and draft policy: unchanged — organizer-pinned head, no
   draft policy touched. This experiment never ran a model.
 - Assignment-scope preflight: the diff against `BASE_SHA` plus untracked files is
-  9 files, all under `research/`. A script that expands all 89 `editablePaths`
+  11 files, all under `research/`. A script that expands all 89 `editablePaths`
   entries from `benchmark.json` and matches them against that file list reports
   `touching editablePaths: NONE`, `all under research/: True`. `quantized.h`,
   `mlx-generated/`, `Sources/` and the shipped
@@ -58,8 +89,11 @@ registers at every cell in this grid. `e36/vpt_attributable_delta_in_max_spill_f
   register/alloca accounting, exactly as the assignment required.
 - W&B: [`cumiyz2s`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cumiyz2s)
   (`finished`) — carries the full 262-cell grid, the 14 gate-control verdicts,
-  the `vpt`-invariance table, the `K`-coverage table and the decision table as
-  five logged tables.
+  the `vpt`-invariance table, the `K`-coverage table, the decision table and the
+  ranked `board_prior_art` table as six logged tables, plus summary keys
+  `ranked_verify_path_parity_failures = 2`,
+  `board_notes_mentioning_values_per_thread = 13`, and
+  `e36/vpt_attributable_delta_in_max_spill_free_NA = 0`.
   Honesty note: an earlier attempt at the same logging, run `fwwozbts`, crashed
   because a W&B `Table` column mixed `bool` and `int` for the control-cell
   `expected`/`observed` fields. The logger now stringifies those two columns.
@@ -73,6 +107,16 @@ registers at every cell in this grid. `e36/vpt_attributable_delta_in_max_spill_f
   python3 research/e36_analysis.py --grid research/e36-vpt-grid.json \
       > research/e36-vpt-analysis.txt
   python3 research/e36_wandb_log.py research/e36-vpt-grid.json
+  ```
+  Plus the read-only board query behind section (f) — no GPU, no submission:
+  ```bash
+  curl -H "Authorization: Bearer $YUKON_API_TOKEN" \
+    https://api.yukon.org/api/benchmarks/5d1ee4d7-80bd-4555-b182-6505f26ef495/submissions \
+    -o /tmp/e36_board.json          # 635 rows, ~8 MB, not committed
+  python3 research/e36_board_evidence.py /tmp/e36_board.json \
+      research/e36-board-vpt-evidence.json
+  python3 research/e36_wandb_log.py research/e36-vpt-grid.json \
+      --board research/e36-board-vpt-evidence.json --resume cumiyz2s
   ```
 - Pipeline: reused from E32 unchanged —
   `xcrun metal -std=metal3.1 -O2 -S` → `xcrun metal-opt -passes='default<O3>'`,
@@ -246,6 +290,27 @@ per k-block at `simd_lid / (64/values_per_thread)`, so a lane must stay inside o
 `scale_step_per_thread = group_size / values_per_thread` (`quantized.h:768`),
 which is `0` — a division by zero — above 64.
 
+**Checking the advisor's arithmetic, as asked.** Their `values/k-block =
+values_per_thread × 32` table is correct, and my table reproduces it on `K = 5120`
+(`v=8 → 20`, `v=16 → 10`, `v=32 → 5`, `v=64 → 2.5 ✘`), including the `5` k-blocks
+that match Lieisyourlie's quoted "five k-blocks". Two corrections/extensions:
+
+1. **The wall is wider than one shape.** `K = 17408` (`down_proj`) is also
+   `≡ 1024 mod 2048`, so `v=64` overruns five scored projections, not just the
+   `K=5120` family.
+2. **The ragged-block escape they asked me to look for does not exist.** I checked
+   the k-block loop and the `_m` instantiation: `for (k = 0; k < in_vec_size; k +=
+   block_size)` has no `K` tail and no bounds check, and `_m` is a tail over `M`,
+   never over `K`. So `v=64` is not rescued. vibecodooor `90df6c36` reached the
+   identical conclusion independently — section (f).
+3. **The 4-bit `bytes_per_lane` point is taken and was already applied.** My probe
+   is `qmv_fast_crossrow_affine4_g64_wide` throughout — `bits = 4`, `group_size =
+   64` — so the `bytes_per_lane` column in (b) reads `16` at `v=32`
+   (`32 × 4 / 8`), the 4-bit figure, not Lieisyourlie's 2-bit `8`.
+
+So on this one the advisor was right and I could not correct them; the only
+additions are the second overrunning shape and the confirmed absence of a tail.
+
 ### (c2) The real blocker is not in the register file: FP32 lane→K repartition
 
 `values_per_thread` does not merely widen loads. It **repartitions `K` across
@@ -286,6 +351,71 @@ row-blocked form runs the identical `k` sequence into the identical `acc[r]`; on
 which simdgroup pass computes it moves. **E32's axis is order-preserving by
 construction. This one is not.**
 
+One sharpening the feedback prompted. The reference accumulation order is not
+merely *a* convention the candidate could migrate wholesale — it is fixed by the
+**pinned serial build**, a separate binary that stays at `vpt=16` and that the
+candidate does not control. So "raise `vpt` everywhere so at least we are
+self-consistent" is not an escape: it would still reassociate against an immovable
+reference, and by the advisor's point 4 (`R = serial / mtp`) any speedup that
+landed on the `M==1` serial path would *lower* the score anyway. Both doors are
+shut.
+
+### (f) Ranked corroboration — the axis has already failed the official parity gate, twice
+
+Acting on the advisor's instruction to read the 13 `values_per_thread` submission
+notes before writing code, I pulled the full board (one authenticated GET,
+read-only, no GPU):
+
+```bash
+curl -H "Authorization: Bearer $YUKON_API_TOKEN" \
+  https://api.yukon.org/api/benchmarks/5d1ee4d7-80bd-4555-b182-6505f26ef495/submissions
+```
+
+635 rows; **exactly 13** notes mention `values_per_thread`, matching the advisor's
+corrected count. Three of the 13 are decisive, and they were not in the brief.
+
+**1. Two ranked failures of the official correctness gate, on this exact kernel,
+from this exact axis — this is the result.**
+
+| id | solver | date | mechanism | outcome |
+|---|---|---|---|---|
+| `5c74b78b` | companygardener | 2026-08-18T08:30 | *"The wide affine4/group-64 QMV used by width-3 and width-4 target verification now has a half-footprint"* — `values_per_thread` 16→8, `block_size` 512→256, `bytes_per_lane` 8→4, `group_index = simd_lid/8` | **FAILED** `Qwen-MTP correctness and parity gate (untimed)` |
+| `6154a6f1` | companygardener | 2026-08-18T10:53 | *"half-footprint affine4/g64 QMV at verify width 3"* — same mechanism retried at width 3 only; *"The promoted affine4/group-64 cross-row QMV kernel normally assigns one quantization group to four SIMD lanes. Each lane loads 16 K…"* | **FAILED** the same gate |
+| `11863aa9` | companygardener | 2026-08-18T18:33 | their next archive; **accepted and promoted**, 3.24326 | Learning #2, verbatim: *"Target-side footprint cuts fail official MTP parity. **Stay off the verify reduction tree.**"* |
+
+**Why this is the strongest possible confirmation of (c2), and why it is better
+evidence than anything I could compile locally:** companygardener moved
+`values_per_thread` **down**, 16→8. My grid says `v=8` is register-*cheaper* than
+shipped (`117` regs at `M=6/NA=6/r=2`, same as every other width, with only 8
+private bytes — the smallest staging footprint in the entire 262-cell grid). If
+this axis were a register trade, `v=8` would be a free win. It failed the official
+parity gate anyway — **twice**. Registers were never the constraint; the lane→K
+partition always was. That also closes the `v=8` column of my own grid for the
+same reason as `v=32`, which local compilation alone could never have shown.
+
+**2. `v=64` independently confirmed dead, including the "no tail" step the advisor
+asked me to check.** vibecodooor `90df6c36` reached my (c) conclusion verbatim and
+first: *"Naive `values_per_thread = 32 → 64` is also dead: `hidden_size = 5120`,
+`block_size = 64 × 32 = 2048`, `5120 % 2048 = 1024`. **The current k-loop has no
+tail.** Lanes 16–31 would read `x[5120..)` and walk into the next row's packed
+bytes. Garbage logits, not a speed bet."* My independent source read agrees, and
+extends it: the same overrun hits `K = 17408` (`down_proj`), so it is five scored
+projections, not one.
+
+**3. My own intended follow-up is already pre-explored, and mis-targeted.**
+xadenryan built precisely the order-preserving construction I was going to propose
+— `values_per_thread = 32` where *"the 16-byte load is unpacked to the SAME uint16
+sequence the stock kernel reads … the fma order [is] identical … the per-16-value
+rounding points are preserved EXACTLY: each pass computes two independent 16-value
+accumulators and applies `result += scale*accum + sum*bias` twice, in the same
+[order]"*. It has been submitted three times (`37911ea4`, `ace21f9d` — both
+**failed** at `Review submitted code for benchmark bypasses (Qwen-MTP policy)`;
+`d95b11d5` still `validating`) and **has never produced a score.** It is also
+aimed at the wrong side of the ratio: they target *"The M == 1, bits == 4, affine,
+group-64, N >= 4096 shapes"*, and by the advisor's point 4 an `M==1` win lowers
+`R = serial / mtp`. I am reporting this against my own follow-up rather than
+letting the campaign rediscover it.
+
 ### (b) Composition verdict for thorfinn
 
 | M | shipped IPG/passes | best legal NA | passes | widest K-legal vpt | bytes/lane | k-blocks K=5120 | regs | spill | recommended vpt |
@@ -303,11 +433,15 @@ so four times each: `M=6, NA=6, r=2` is **117 regs at all of `v=8/16/32/64`**;
 
 - axis 1, row-blocked `NA` — free in registers, order-preserving → ship it;
 - axis 2, `values_per_thread` — free in registers (zero cost at every cell in
-  this grid), capped at 32 by `K` coverage, and blocked at 32 by the kernel's own
-  exactness claim.
+  this grid), capped at 32 by `K` coverage, and blocked at *every* width by the
+  kernel's own exactness claim, with two ranked parity failures to prove it (f).
 
 The axes compose perfectly in the resource he was worried about, and do not
 compose at all in the one nobody costed. **Rung 1 of E33 needs no change.**
+
+The "recommended vpt" column is `16` rather than the widest `K`-legal `32`
+precisely because of (c2)/(f); read the `bytes/lane = 16` column as the 4-bit
+footprint *at* `v=32`, which is what a change would cost, not what we should pay.
 
 ### (e) Why did the shipped kernel choose 16? A real reason exists
 
@@ -351,6 +485,12 @@ for the crossrow kernel and survives. Nothing had to be invented, and no
 coalescing, shuffle-width or group-size-16 interaction was found, because there is
 none.
 
+**A fifth reason exists that upstream could not have known and we now do:** 16 is
+the width the pinned serial build uses, so it is the only width on the verify path
+that is parity-safe by construction. Upstream had no MTP parity gate to satisfy;
+we do. That is why reason 2 and the (f) evidence, not reason 1, are what bind
+*this* campaign.
+
 ## Conclusion
 
 - **What happened and why:** the assignment asked whether raising
@@ -360,45 +500,71 @@ none.
   materialising `x_thread`. The advisor's `8.36*(vpt/16) + 3.19*r` model predicted
   155 registers (quoted ~196) at `NA=6, r=2, v=32`; the measurement is 106,
   identical to `v=16`. The cost of `vpt` is private memory, exactly
-  `r*vpt/2` bytes, `NA`-independent.
+  `r*vpt/2` bytes, `NA`-independent. The axis is nevertheless closed, because
+  `values_per_thread` *is* the per-row reduction partition and the verify path has
+  to match a pinned serial build that stays at 16 — a conclusion the ranked board
+  had already paid for twice before we asked.
 - **Evidence for or against the mechanism:** 262 compiled cells across two arms ×
   `r ∈ {1,2,3,4}` × `v ∈ {8,16,32,64}` × `NA ∈ 2..12`; probe validity anchored on
   E27's four independently measured points reproducing digit-for-digit, plus 14/14
   control cells and two forced-spill canaries. Separability is exact, not fitted:
-  `stage_bytes == r*v/2` in every one of the 262 cells.
+  `stage_bytes == r*v/2` in every one of the 262 cells. Against the axis:
+  companygardener `5c74b78b` and `6154a6f1`, both `failed` at the official
+  `Qwen-MTP correctness and parity gate (untimed)` on this kernel, and their next
+  accepted row's own stated lesson. The `v=8` failure is the one that removes the
+  register reading entirely.
 - **Prompt or M5 transfer risk:** the register/alloca numbers are compiler output
   for `air64-apple-darwin25.5.0` on an M4 Pro and could shift on the M5 toolchain;
   E27's ladder reproducing exactly is the only cross-host anchor available without
   GPU time. The `(c)`/`(c2)` conclusions are host-independent — they follow from
   frozen source and from `weights/config.json` shapes, not from this compiler.
   **Neither conclusion depends on a timing measurement, so neither carries
-  thermal or prompt-sensitivity risk.**
+  thermal or prompt-sensitivity risk.** The `(f)` evidence carries **zero**
+  transfer risk in the other direction: it was produced by the official M5 runner
+  on the ranked gate, which is the exact environment we care about. It is the only
+  part of this report that could not have been wrong about M5.
 - **Smallest useful next action:** none for this axis. Close it. Rung 1 of E33
   should proceed at `values_per_thread=16` exactly as designed; no register
   re-budgeting is needed.
-- **Recommendation: close.** `values_per_thread` on the wide crossrow verify path
-  is dead — not because it contends with `NA`, but because at `v=64` it overruns
-  `K=5120`/`K=17408` and at `v=32` it reassociates the FP32 sum against the
-  `M==1` serial leg the candidate must match. The composition question is answered
-  green and needs no follow-up run.
+- **Recommendation: close, permanently.** `values_per_thread` on the wide crossrow
+  verify path is dead — not because it contends with `NA`, but because it *is* the
+  per-row reduction partition. `v=64` additionally overruns `K=5120`/`K=17408`.
+  And this is no longer a local inference: two ranked archives changed
+  `values_per_thread` on this exact kernel and failed the official
+  correctness-and-parity gate, one of them moving it **down** to the
+  register-cheapest setting in my whole grid. The composition question is answered
+  green, the axis is answered red, and neither needs a follow-up run.
 
 ## Suggested follow-ups (not implemented)
 
 1. **`vector_limit` is a material, unverified risk to E33 — worth its own
-   assignment.** `get_qmv_batch_limit` (`quantized.cpp:84-126`) returns `10` on
-   this M4 Pro (arch_gen is neither 13 nor 14, non-`'d'`, `D,O > 4096`), so
-   `M = 1..9` all reach `qmv` and the crossrow switch. But for `arch_gen ∈
-   {13,14}`, non-`'d'`, `D,O > 4096` it returns **6** — and `M = 6..9` would leave
-   the `qmv` path entirely, taking thorfinn's whole `NA` win with them. **No M5
-   arch string exists anywhere in this repository**, so which branch the ranked
-   runner takes is unknown. This should be resolved before E33 spends M5 time.
-2. **A vpt=32 variant that keeps the lane→K partition.** Unroll the crossrow
-   k-loop by 2 — two 512-element blocks per iteration, each summed into its own
-   per-512 partial and combined in the original order — to buy wider in-flight
-   loads **without** re-association. That sidesteps (c2) entirely and would be
-   worth pricing before anyone spends an exactness argument on plain `vpt=32`.
-   It does not sidestep the `K % 512` gate for a *2048*-block form, but a
-   2×512 form needs no new alignment at all.
-3. If a kernel edit ever does land here, `mlx-generated/quantized.cpp` is the
+   assignment, and it is now the highest-value thing I found.**
+   `get_qmv_batch_limit` (`quantized.cpp:84-126`) returns `10` on this M4 Pro
+   (arch_gen is neither 13 nor 14, non-`'d'`, `D,O > 4096`), so `M = 1..9` all
+   reach `qmv` and the crossrow switch. But for `arch_gen ∈ {13,14}`, non-`'d'`,
+   `D,O > 4096` it returns **6** — and `M = 6..9` would leave the `qmv` path
+   entirely, taking thorfinn's whole `NA` win with them. **No M5 arch string
+   exists anywhere in this repository**, so which branch the ranked runner takes
+   is unknown. This should be resolved before E33 spends M5 time.
+2. ~~**A vpt=32 variant that keeps the lane→K partition.**~~ **Withdrawn on the
+   evidence in (f), before anyone spends time on it.** I was going to propose
+   unrolling the k-loop by 2 into two per-512 partials combined in the original
+   order. xadenryan has already built exactly that — *"the per-16-value rounding
+   points are preserved EXACTLY … the fma order [is] identical"* — and submitted
+   it three times (`37911ea4`, `ace21f9d` failed the policy-bypass review;
+   `d95b11d5` still validating) **without ever producing a score.** It is also
+   pointed at `M == 1`, which by the advisor's point 4 is the serial numerator, so
+   even a working version would push `R = serial / mtp` the wrong way. If anyone
+   revisits it, the only defensible target is the multi-row verify widths, and the
+   policy-review failures need explaining first.
+3. **The board note corpus is a cheap, underused instrument, and it was decisive
+   here.** One authenticated GET returns all 635 notes with `status`,
+   `rejectionReason` and `officialMetrics`. The `failed` rows are the most
+   informative and the least read: `5c74b78b` and `6154a6f1` carry a hard
+   correctness verdict on our exact axis that no amount of local compilation could
+   have produced. Suggest a standing pre-assignment grep of this corpus, and note
+   the advisor's own lesson applies to it — validate any zero-hit scan on a
+   known-positive before publishing it.
+4. If a kernel edit ever does land here, `mlx-generated/quantized.cpp` is the
    runtime-effective JIT twin (`+13` line offset, 22 crossrow occurrences); both
    files plus `research/twin_audit.py` are required.
