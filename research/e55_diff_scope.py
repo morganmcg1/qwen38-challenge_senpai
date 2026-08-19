@@ -10,6 +10,7 @@ designed fail-closed behaviour, not new drift. This script separates the two:
      runtime-effective JIT twin;
   3. no other dispatch cell moved, and the JIT source grew by 0 bytes.
 """
+import json
 import subprocess
 import sys
 
@@ -35,10 +36,12 @@ block = [
     if ln[:1] in ("+", "-") and not ln.startswith(("+++", "---")) and ln[1:].strip()
 ]
 noncomment = [ln for ln in block if not ln[1:].strip().startswith("//")]
+# The advisor's fixed audit waives this section outright, so an empty drift block
+# is the strongest outcome, not a missing one. Only non-comment drift may fail.
 check(
-    "audit drift block is comment-only",
-    bool(block) and not noncomment,
-    f"{len(block)} drift lines, {len(noncomment)} non-comment",
+    "audit passes with no non-comment drift",
+    proc.returncode == 0 and not noncomment,
+    f"rc={proc.returncode}, {len(block)} drift lines, {len(noncomment)} non-comment",
 )
 
 for name, path in (("header", HEADER), ("twin", TWIN)):
@@ -75,16 +78,65 @@ for tag in ("<T, 2>", "<T, 3, 3, true>", "<T, 4, 4, true>", "<T, 5, 3, true>",
     untouched = untouched and b == c
 check("every other dispatch cell unchanged (incl. case 5 and case 8)", untouched)
 
-check(
-    "JIT source byte delta is zero",
-    len(twn) == len(base_twin),
-    f"base={len(base_twin)} candidate={len(twn)} delta={len(twn) - len(base_twin)}",
-)
-check(
-    "readable header byte delta is zero",
-    len(hdr) == len(base_hdr),
-    f"base={len(base_hdr)} candidate={len(hdr)} delta={len(hdr) - len(base_hdr)}",
-)
+def blob_bytes(ref: str, path: str) -> int:
+    sha = subprocess.run(["git", "rev-parse", f"{ref}:{path}"],
+                         capture_output=True, text=True).stdout.strip()
+    return int(subprocess.run(["git", "cat-file", "-s", sha],
+                              capture_output=True, text=True).stdout.strip())
+
+
+# len() on a decoded str counts characters, and both files carry multi-byte UTF-8,
+# so the submitted byte budget must be read from the blob sizes instead.
+for label, path in (("JIT source", TWIN), ("readable header", HEADER)):
+    b = blob_bytes(BASE, path)
+    c = len(open(path, "rb").read())
+    check(f"{label} byte delta is zero", b == c,
+          f"base={b} candidate={c} delta={c - b}")
+
+
+# Step 7 of the promotion chain: a local win that depends on an unsubmitted file
+# is not a candidate, so classify every changed file against benchmark.json.
+def editable_paths() -> set:
+    spec = json.load(open("benchmark.json"))
+    found = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "editablePaths":
+                    found.append(value)
+                else:
+                    walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(spec)
+    return {p for group in found for p in (group if isinstance(group, list) else [group])}
+
+
+submitted = editable_paths()
+changed = subprocess.run(
+    ["git", "diff", "--name-only", BASE, "HEAD"], capture_output=True, text=True
+).stdout.split()
+in_set = [f for f in changed if f in submitted]
+research_only = [f for f in changed if f not in submitted]
+stray = [f for f in research_only if not f.startswith("research/")]
+
+print("    submitted paths changed:")
+for f in in_set:
+    print(f"      {f}")
+check("both twins are in benchmark.json editablePaths",
+      sorted(in_set) == sorted([HEADER, TWIN]),
+      f"{len(in_set)} submitted, expected exactly the 2 twins")
+check("the runtime-effective JIT twin is submitted", TWIN in in_set)
+check("every unsubmitted change is research-only",
+      not stray,
+      f"{len(research_only)} research-only, {len(stray)} outside research/"
+      + (f": {stray}" if stray else ""))
+check("research/ is compiled by no target",
+      "research" not in open("Package.swift").read(),
+      "Package.swift does not reference research/")
 
 print(f"\nE55_DIFF_SCOPE={'PASS' if ok else 'FAIL'}")
 sys.exit(0 if ok else 1)
