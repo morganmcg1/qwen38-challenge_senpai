@@ -100,7 +100,17 @@ fi
 out="${root}/runs/${tag}"
 rm -rf "${out}"; mkdir -p "${out}/reports"
 
-macmon_bin="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
+# benchmark.sh's own `find_macmon` prefers an override, then PATH, then the
+# usual install locations, which is why its cool gate reads temperatures here
+# while this leg record did not: `${HOME}/bin/macmon` is the ranked boxes'
+# layout and does not exist in this role home. macmon is on PATH at
+# /opt/homebrew/bin/macmon. Search the same order so entry and exit temperature
+# are recorded for every leg.
+macmon_bin="${MLXFAST_MACMON_BIN:-}"
+if [[ -z "${macmon_bin}" ]]; then
+  macmon_bin="$(command -v macmon 2>/dev/null || true)"
+fi
+[[ -n "${macmon_bin}" ]] || macmon_bin="${HOME}/bin/macmon"
 gpu_temp() {
   [[ -x "${macmon_bin}" ]] || { echo ""; return 0; }
   "${macmon_bin}" pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty'
@@ -186,7 +196,17 @@ fi
   echo "fixture=${fixture}"
   echo "fixture_sha256=$(shasum -a 256 "${fixture}" | cut -d' ' -f1)"
   echo "head_dir=${head_dir}"
+  # Three numbers, because they answer three different questions and one of
+  # them was already mistaken for another. The file digest identifies the
+  # weights. The single-file tree digest is the only one comparable with
+  # mtp-head.manifest.json, whose `sha256` is a TREE digest under the rule in
+  # QwenMTPHeadDeclaration.swift:181-233. The run-directory tree digest differs
+  # from both, because this directory adds the config.json the local loader
+  # needs, and it is what the worker reports as head_provenance_sha256.
   echo "head_safetensors_sha256=$(shasum -a 256 "${head_dir}/model.safetensors" | cut -d' ' -f1)"
+  echo "head_manifest_declared_sha256=$(python3 -c 'import json,sys;print(json.load(open("mtp-head.manifest.json"))["sha256"])' 2>/dev/null)"
+  echo "head_single_file_tree_sha256=$(python3 research/e59_head_tree_digest.py "${head_dir}" --only model.safetensors)"
+  echo "head_run_dir_tree_sha256=$(python3 research/e59_head_tree_digest.py "${head_dir}")"
   echo "twin_digests=$(shasum -a 256 "${SCORED_FILES[@]}" | awk '{printf "%s ", $1}')"
   echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
   echo "worker_sha256=$(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | cut -d' ' -f1)"
