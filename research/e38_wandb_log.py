@@ -21,7 +21,9 @@ import sys
 import wandb
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
+import e38_m6_step as S  # noqa: E402
 import e38_prereg as P  # noqa: E402
+import e38_value as V  # noqa: E402
 
 PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
@@ -33,6 +35,11 @@ AIR_REGS = [
     ("arm_a _m<T,6,3,true,2>", 66, "[2 x [4 x i16]]", 3, 66),
     ("arm_b _m<T,6,6,true,2,true>", 106, "[2 x [4 x i16]]", 2, None),
     ("e33   _m<T,6,6,true,2>", 117, "[2 x [4 x i16]]", 3, 117),
+    # the register wall that makes row-blocking mandatory at NA=6, and the
+    # rung-2 cells that are over it before any timing
+    ("wall  _m<T,6,6,true,4> (crossrow_na6)", 144, "[4 x <6 x float>]", 2, None),
+    ("rung2 _m<T,7,7,true,2>", 134, "[2 x [4 x i16]]", 3, None),
+    ("rung2 _m<T,8,8,true,2>", 151, "[2 x [4 x i16]]", 3, None),
 ]
 
 INSTANTIATION = {
@@ -173,6 +180,64 @@ def main() -> None:
                          float(i["gpu_temp_c_before_vendored"]),
                          float(i["gpu_temp_c_after_vendored"]))
 
+    # Advisor 5337633069/5337689508: only beagle (our 4th order statistic) and
+    # medicine (our 5th) can move the score, so the per-prompt legs are logged
+    # separately and no aggregate over the eight prompts is recorded.
+    ratio = d["primary"]["value"]
+    leg = V.leg_pct(ratio)
+    prompts = wandb.Table(columns=[
+        "prompt", "order_statistic", "carries_score_weight", "deficit_pct",
+        "deficit_ms_per_round", "ranked_rounds", "plateau_between_row_sd_pct",
+        "predicted_leg_movement_pct", "share_of_deficit_closed",
+        "predicted_ms_per_round", "measured_this_round"])
+    for name, p in V.PROMPTS.items():
+        share = leg / p["deficit_pct"]
+        prompts.add_data(name, p["order_stat"], True, p["deficit_pct"],
+                         p["deficit_ms_per_round"], p["rounds"],
+                         p["plateau_sd_pct"], leg, share,
+                         share * p["deficit_ms_per_round"], False)
+
+    # Every null states its MDE (advisor 5337633069 item 7); the exact
+    # noncentral-t figure is reported next to the normal one because at n=2
+    # paired the normal approximation understates the floor 5.83x.
+    sd, ctl_widths, drift = V.controls_sd_pct(d)
+    se_curve = sd * math.sqrt(1.0 + 1.0 / len(ctl_widths))
+    mde = wandb.Table(columns=[
+        "null", "design", "n", "sd_pct", "mde_normal_pct", "mde_exact_pct",
+        "effect_pct", "detected", "note"])
+    mde.add_data("m6_cost_curve_effect", "1 treated width vs controls",
+                 len(ctl_widths), sd, V.normal_mde(se_curve),
+                 V.exact_mde(se_curve, len(ctl_widths) - 1), (ratio - 1) * 100.0,
+                 True, f"controls M>=3 only: {ctl_widths}; drift {drift:+.4f}%")
+    for n in (4, 2):
+        se = V.E2E_PAIR_SD_PCT / math.sqrt(n)
+        mde.add_data("end_to_end_decode_leg", "paired legs", n,
+                     V.E2E_PAIR_SD_PCT, V.normal_mde(se),
+                     V.exact_mde(se, n - 1), leg, False,
+                     "NOT RUN: predicted movement is under the floor")
+    for name, p in V.PROMPTS.items():
+        mde.add_data(f"{name}_leg_vs_plateau", "single board reading", 1,
+                     p["plateau_sd_pct"], V.normal_mde(p["plateau_sd_pct"]),
+                     float("nan"), leg, False,
+                     "not measured this round; E2E arm skipped")
+    mde.add_data("untreated_widths", "1 treated width vs controls",
+                 len(ctl_widths), sd, V.normal_mde(se_curve),
+                 V.exact_mde(se_curve, len(ctl_widths) - 1),
+                 d["control_worst_abs_dev"] * 100.0, False,
+                 "flat within the floor")
+
+    bars = wandb.Table(columns=["target", "score_pct", "required_ratio", "cleared"])
+    for label, target in (("1_sigma", V.SIGMA_SCORE_PCT),
+                          ("2_sigma", 2 * V.SIGMA_SCORE_PCT),
+                          ("engineerable_gap", V.ENGINEERABLE_PCT),
+                          ("crown", V.CROWN_GAP_PCT)):
+        need = V.ratio_for_score(target)
+        bars.add_data(label, target, need, bool(ratio <= need))
+
+    step = S.step_summary()
+    ladder_step = wandb.Table(columns=list(step.keys()))
+    ladder_step.add_data(*step.values())
+
     run.log({
         "e38/ladder": ladder,
         "e38/shapes_m6": shapes,
@@ -181,6 +246,10 @@ def main() -> None:
         "e38/air_registers": air,
         "e38/jit_preflight": preflight,
         "e38/thermal_provenance": thermal,
+        "e38/scoring_prompts": prompts,
+        "e38/mde": mde,
+        "e38/score_bars": bars,
+        "e38/m5_to_m6_step": ladder_step,
     })
 
     prim = d["primary"]
@@ -225,6 +294,34 @@ def main() -> None:
         "e38/entry_temp_min_c": min(temps),
         "e38/entry_temp_max_c": max(temps),
         "e38/entry_temp_spread_c": max(temps) - min(temps),
+        # corrected value chain: a kernel change moves BOTH scoring legs, so the
+        # sensitivity is the advisor's "both legs" ladder row, not the
+        # beagle-only 0.4827 used in the interim comment
+        "e38/leg_movement_pct_corrected": leg,
+        "e38/score_gain_pct_corrected": V.score_pct(ratio_b),
+        "e38/score_gain_sigmas": V.score_pct(ratio_b) / V.SIGMA_SCORE_PCT,
+        "e38/share_of_engineerable_gap": V.score_pct(ratio_b) / V.ENGINEERABLE_PCT,
+        "e38/sigma_score_pct_corrected": V.SIGMA_SCORE_PCT,
+        "e38/engineerable_gap_pct_corrected": V.ENGINEERABLE_PCT,
+        "e38/score_per_leg_pct_both_legs": V.SCORE_PER_LEG_PCT,
+        "e38/ratio_required_for_crown": V.ratio_for_score(V.CROWN_GAP_PCT),
+        "e38/ratio_required_for_engineerable_gap":
+            V.ratio_for_score(V.ENGINEERABLE_PCT),
+        "e38/mde_cost_curve_normal_pct": V.normal_mde(se_curve),
+        "e38/mde_cost_curve_exact_pct": V.exact_mde(se_curve, len(ctl_widths) - 1),
+        "e38/mde_e2e_n4_normal_pct": V.normal_mde(V.E2E_PAIR_SD_PCT / 2.0),
+        "e38/mde_e2e_n4_exact_pct": V.exact_mde(V.E2E_PAIR_SD_PCT / 2.0, 3),
+        "e38/e2e_underpowered_factor_exact":
+            V.exact_mde(V.E2E_PAIR_SD_PCT / 2.0, 3) / abs(leg),
+        "e38/control_sd_pct_m3_plus": sd,
+        "e38/beagle_leg_measured": False,
+        "e38/medicine_leg_measured": False,
+        "e38/m5_to_m6_step_pct": step["step_pct"],
+        "e38/m5_to_m6_priced_weight_stream_ms": step["priced_weight_stream_ms"],
+        "e38/m5_to_m6_residual_ms": step["residual_one_more_row_ms"],
+        "e38/air_regs_na6_r4_wall": 144,
+        "e38/air_regs_shipped_high_water": 125,
+        "e38/rung2_dead_on_registers": True,
     })
     run.finish()
     print(f"logged {run.url}")

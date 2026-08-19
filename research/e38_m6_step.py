@@ -40,6 +40,22 @@ def per_shape(tag: str) -> dict[str, dict[int, float]]:
     return out
 
 
+def step_summary(base: str = "e38-base-r1", arm_a: str = "e38-arma-r1",
+                 arm_b: str = "e38-armb-r1") -> dict:
+    bs, a, b = per_shape(base), per_shape(arm_a), per_shape(arm_b)
+    tot = {m: sum(CALLS[s] * bs[s][m] for s in SCORED) / 1000.0 for m in bs[SCORED[0]]}
+    wgt = sum(CALLS[s] * (a[s][6] - b[s][6]) for s in SCORED) / 1000.0
+    return {
+        "c_round_m5_ms": tot[5],
+        "c_round_m6_ms": tot[6],
+        "step_pct": (tot[6] / tot[5] - 1.0) * 100.0,
+        "priced_weight_stream_ms": wgt,
+        "residual_one_more_row_ms": tot[6] - wgt - tot[5],
+        "neighbour_row_below_ms": tot[5] - tot[4],
+        "neighbour_row_above_ms": tot[7] - tot[6],
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="e38-base-r1")
