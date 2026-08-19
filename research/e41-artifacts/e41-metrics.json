@@ -1,0 +1,196 @@
+{
+  "base_tag": "e41-base-r1",
+  "arm_tag": "e41-arm-r1",
+  "base2_tag": "",
+  "widths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "treated": [
+    3,
+    4,
+    6,
+    7,
+    8
+  ],
+  "control": {
+    "spread": {
+      "1": 0.9726479237046955,
+      "2": 1.0044136099674588,
+      "5": 1.0002581712234895,
+      "9": 1.0092276632440187
+    },
+    "median_drift": 1.0023358905954742,
+    "worst_abs_dev": 0.02735207629530445,
+    "band": 0.0046,
+    "pass": false
+  },
+  "identity": {
+    "base": {
+      "tag": "e41-base-r1",
+      "base_sha": "04ad6bf11437c269df85a47e91faa769c74fe6da",
+      "head": "5d97fe3727d67a42be09dce77aedc21ffaf1095f",
+      "dirty": "0",
+      "host": "Apple",
+      "mem": "51539607552",
+      "widths": "1,2,3,4,5,6,7,8,9",
+      "shapes_only": "1",
+      "reps": "21",
+      "inner": "10",
+      "skip_stock": "1",
+      "started_utc": "2026-08-19T06:31:48Z",
+      "cool_gate_vendored": "stalled_above_40C",
+      "gpu_temp_c_before_vendored": "43.42403030395508",
+      "gpu_temp_c_after_vendored": "68.0827407836914"
+    },
+    "arm": {
+      "tag": "e41-arm-r1",
+      "base_sha": "04ad6bf11437c269df85a47e91faa769c74fe6da",
+      "head": "dfe39af7dfcbf10828bf0bad4ad46ae51bcb5dd0",
+      "dirty": "0",
+      "host": "Apple",
+      "mem": "51539607552",
+      "widths": "1,2,3,4,5,6,7,8,9",
+      "shapes_only": "1",
+      "reps": "21",
+      "inner": "10",
+      "skip_stock": "1",
+      "started_utc": "2026-08-19T06:42:47Z",
+      "cool_gate_vendored": "stalled_above_40C",
+      "gpu_temp_c_before_vendored": "43.239715576171875",
+      "gpu_temp_c_after_vendored": "69.29022979736328"
+    }
+  },
+  "dispatch_readback_ok": true,
+  "bitwise_failures": {
+    "base": [],
+    "arm": []
+  },
+  "jit_spread_pct": {
+    "1": {
+      "base": 22.24754711950975,
+      "arm": 16.431982314571695
+    },
+    "2": {
+      "base": 6.26962647879835,
+      "arm": 8.19401276495763
+    },
+    "3": {
+      "base": 3.770894886741723,
+      "arm": 5.450137331492685
+    },
+    "4": {
+      "base": 5.538849548937825,
+      "arm": 2.6236410005722153
+    },
+    "5": {
+      "base": 5.386114764104156,
+      "arm": 4.856597561976864
+    },
+    "6": {
+      "base": 4.1014440190744805,
+      "arm": 2.870110624906369
+    },
+    "7": {
+      "base": 3.0753558052434484,
+      "arm": 2.0696435039064465
+    },
+    "8": {
+      "base": 2.2267006877075093,
+      "arm": 1.5001936396302424
+    },
+    "9": {
+      "base": 3.1803862295367975,
+      "arm": 2.8300448072272553
+    }
+  },
+  "c_round_ms": {
+    "1": {
+      "base": 62.88745620000001,
+      "arm": 61.1673537,
+      "ratio_raw": 0.9726479237046955
+    },
+    "2": {
+      "base": 64.6193257,
+      "arm": 64.9045302,
+      "ratio_raw": 1.0044136099674588
+    },
+    "3": {
+      "base": 72.89876339999999,
+      "arm": 84.06380159999999,
+      "ratio_raw": 1.1531581288798651
+    },
+    "4": {
+      "base": 82.73898750000001,
+      "arm": 100.2676354,
+      "ratio_raw": 1.2118547546886524
+    },
+    "5": {
+      "base": 96.29229649999999,
+      "arm": 96.31715639999999,
+      "ratio_raw": 1.0002581712234895
+    },
+    "6": {
+      "base": 128.93338649999998,
+      "arm": 143.27011499999998,
+      "ratio_raw": 1.1111948494426616
+    },
+    "7": {
+      "base": 138.7068968,
+      "arm": 170.30738749999998,
+      "ratio_raw": 1.227822058088174
+    },
+    "8": {
+      "base": 149.6812203,
+      "arm": 184.95901940000002,
+      "ratio_raw": 1.23568620718948
+    },
+    "9": {
+      "base": 164.63421560000003,
+      "arm": 166.1534047,
+      "ratio_raw": 1.0092276632440187
+    }
+  },
+  "anchor": {
+    "m": 6,
+    "rho": 1.1086052688211292,
+    "band": [
+      1.0954,
+      1.1154
+    ],
+    "pass": true
+  },
+  "ladder_rho": {
+    "4": 1.209030591500326,
+    "8": 1.2328065060659212,
+    "7": 1.224960683946717
+  },
+  "locality_recovery": -0.11374370801394419,
+  "total_recovery": -0.07620938319148436,
+  "verdict": "ILP_OR_TILE: no loop-structural recovery at all; K-tiling dead",
+  "na3": {
+    "rho_m6": 1.1086052688211292,
+    "rho_m3": 1.150470755062746,
+    "recovery": -0.3854830128966252
+  },
+  "value": {
+    "psi_phi_backsolved": 0.0459,
+    "psi_phi_is_measured": false,
+    "tax_score_pct_if_paid": -0.49849818388898304,
+    "tax_score_pct_after_recovery": -0.49849818388898304
+  },
+  "gates": {
+    "dispatch_readback": true,
+    "fidelity": true,
+    "controls": false,
+    "anchor": true
+  },
+  "all_gates_pass": false
+}
