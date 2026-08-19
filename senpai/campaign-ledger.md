@@ -3441,11 +3441,61 @@ dominant term after all, or E27's narrow shapes lost while its wide shapes carri
 the aggregate — we have no per-shape breakdown for E27 to tell. That ambiguity is
 exactly what the two arms above resolve.
 
+### 🟢 Quantified with `research/xgroup_census.py` (`--self-test` passes, 0 failures)
+
+Working threadgroups `= ceil(M/IPG)·ceil(n/8)`, and traffic for each M=6 arm:
+
+| shape | n | k | shipped TGs / W MB | E33 TGs / W MB | E38 TGs / W MB | E33 obs ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| head.lm_head | 248320 | 5120 | 62080 / 1430 | 31040 / 715 | 62080 / 715 | **0.9830** |
+| head.compact_draft_vocab | 98336 | 5120 | 24584 / 566 | 12292 / 283 | 24584 / 283 | 0.9868 |
+| mlp.gate_up_fused | 34816 | 5120 | 8704 / 200 | 4352 / 100 | 8704 / 100 | 0.9941 |
+| linear_attn.in_proj | 16480 | 5120 | 4120 / 95 | 2060 / 47 | 4120 / 47 | 0.9947 |
+| full_attn.qkv_proj | 14336 | 5120 | 3584 / 83 | 1792 / 41 | 3584 / 41 | 1.0148 |
+| full_attn.o_proj | 5120 | 6144 | 1280 / 35 | 640 / 18 | 1280 / 18 | 1.0414 |
+| linear_attn.out_proj | 5120 | 6144 | 1280 / 35 | 640 / 18 | 1280 / 18 | 1.0492 |
+| **mlp.down** | 5120 | 17408 | 1280 / 100 | 640 / 50 | 1280 / 50 | **1.0592** |
+
+Three things fall out.
+
+1. 🔴 **The traffic ratio (E33 total bytes ÷ shipped total bytes) is exactly
+   `1.3571` for all eight shapes** — both the weight and the activation term scale
+   with `n`, so they cancel. **A traffic model cannot explain a sign flip that a
+   constant predictor is blind to.** Whatever killed E33 is not bytes.
+2. Working threadgroups run 640 → 31040 and the observed ratio is **perfectly rank
+   ordered** by it (Kendall τ = −1.0, 25 concordant pairs, 0 discordant). 🟡 This is
+   *not* independent of thorfinn's "monotone in `n`" — `TGs ∝ n` at a fixed cell, so
+   it is the same ordering renamed. **Its value is that threadgroups are
+   manipulable independently of `n`, and `n` is not.** The sign flips between 1792
+   (1.0148) and 2060 (0.9947), i.e. a knee near **1900 working threadgroups ≈ 95
+   per core**.
+3. **The shipped M=6 `mlp.down` cell is weight-bandwidth-bound.** Per call
+   0.4752 ms (30.4096/64) moving 100.3 MB of weights = **211 GB/s = 77 % of the
+   273 GB/s peak**. Counting activations as DRAM too would need 492 GB/s = 180 % of
+   peak, which is impossible — so the 209 KB activation tile really is cache-served,
+   which is why doubling activation "traffic" is nearly free and why the weight
+   halving is the term that matters. E38 keeps the shipped stream count and halves
+   the bytes.
+
+🟡 **The counter-evidence, sharpened rather than dissolved.** E27's M=5 change
+(`<T,5,3>` → `<T,5,5>`) halved weight passes *and* halved threadgroups 1280 → 640 on
+these same shapes, left activation traffic exactly unchanged (the census self-test
+asserts this: `Σ_g inputs(g) = M` makes the tail group cancel), and won −20.1 %. So
+halving threadgroups is survivable when nothing else changes. The one thing E33 added
+on top is that each surviving threadgroup runs **two sequential row blocks** instead
+of one pass — doubling its duration and its x reads. E38 removes exactly that and
+nothing else. **If E38 lands near 0.84 the serialization was the cost; if it lands
+near E33's 1.015 the doubled activation reads were, and the whole NA>5 direction is
+dead.** Two outcomes, both decisive.
+
 **Process note.** I nearly wrote this assignment on thorfinn's occupancy sentence
 without checking it. The check took four minutes, changed "640 threadgroups on 20
 cores" into `ceil(M/IPG)·ceil(n/8)` with a named source line, and turned a vague
 follow-up into a falsifiable design. Item 128-2's rule generalises: **before
 building on an inference, find the line of source that makes it arithmetic.**
+It also caught two errors in my own first census (an activation formula that
+double-counted the threadgroup change, and a GB/s that was 1000× low) — both found
+by `--self-test` assertions I wrote *because* they encoded facts I already believed.
 
 ---
 
