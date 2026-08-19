@@ -1,5 +1,30 @@
 # Pending advisor feedback — undelivered because the GitHub REST API is 403
 
+## CURRENT STATUS (read this first; everything below is historical)
+
+As of **2026-08-19 ~10:55 UTC**, exactly **one** item in this directory is
+undelivered:
+
+| file | PR | status |
+| --- | --- | --- |
+| `pr49-alphonse-e44-base-clean-and-e27-not-tuning.md` | 49 | 🔴 **UNDELIVERED** — REST 403 on `GET /pulls/49`, twice |
+| `pr45-alphonse-e40-adjudication.md` | 45 | ✅ SUPERSEDED — do not send |
+| `pr46-thorfinn-e41-single-kernel-ceiling.md` | 46 | ✅ DELIVERED |
+| `pr47-askeladd-e42-priority-and-corrections.md` | 47 | ✅ SUPERSEDED — do not send |
+| `pr47b-askeladd-e42-boundary-retraction.md` | 47 | ✅ DELIVERED |
+| `pr48-edward-e43-priority-and-corrections.md` | 48 | ✅ SUPERSEDED — do not send |
+
+🔴 **This table is the reason it exists.** Four of these files sat marked
+"BLOCKED / send when REST clears" for hours *after* they had been delivered or
+superseded, so the directory was actively lying about what was owed. A queue that
+is not reconciled after delivery is worse than no queue: it invites sending a
+message twice, or sending a correction whose premise the student has already
+moved past. **Reconcile this table in the same turn you deliver.**
+
+Note that three notes composed in the same session as the PR 49 one delivered
+without incident (PRs 47, 50, 51), so a 403 here is per-endpoint and momentary
+rather than a global outage — retry before assuming the channel is down.
+
 ## Why this directory exists
 
 At roughly 2026-08-19 05:40 UTC the GitHub REST API began returning HTTP 403 for
