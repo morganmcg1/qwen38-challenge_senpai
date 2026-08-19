@@ -93,15 +93,8 @@ def load_ref_cells(groups: list[str]) -> tuple[list[dict], dict]:
     return primary["entries"], check
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--groups", nargs="+", default=["A", "B"])
-    ap.add_argument(
-        "--out", default=str(REPO / "research" / "e42-artifacts" / "covering-cells.json")
-    )
-    args = ap.parse_args()
-
-    entries, cross_group = load_ref_cells(args.groups)
+def build_payload(groups: list[str]) -> dict:
+    entries, cross_group = load_ref_cells(groups)
     shapes = sorted({e["shape"] for e in entries})
     widths = sorted({e["m"] for e in entries})
     bits_list = sorted({e["bits"] for e in entries}, reverse=True)
@@ -192,12 +185,31 @@ def main() -> int:
         ),
         "cross_group_reference_check": cross_group,
     }
+    return payload
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--groups", nargs="+", default=["A", "B"])
+    ap.add_argument(
+        "--out", default=str(REPO / "research" / "e42-artifacts" / "covering-cells.json")
+    )
+    args = ap.parse_args()
+
+    payload = build_payload(args.groups)
+    grid = payload["grid"]
+    per_arm = payload["per_arm"]
+    cross_group = payload["cross_group_reference_check"]
+    total = grid["cells_total"]
 
     out = pathlib.Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
-    print(f"grid: {len(shapes)} shapes x {len(widths)} widths x {bits_list} = {total} cells")
+    print(
+        f"grid: {grid['shapes']} shapes x {len(grid['widths'])} widths "
+        f"x {grid['bits']} = {total} cells"
+    )
     print(f"suite covering_cells_by_bits: {payload['suite_metric_covering_cells_by_bits']}")
     print()
     print(f"{'arm':<6} {'mech':<9} {'crossrow-cov':>12} {'treated':>8} {'by bits':<14} {'controls':>9}")
@@ -209,8 +221,11 @@ def main() -> int:
             f"{r['control_cells']:>9}"
         )
     print()
-    print(f"treated union: {len(treated_union)} / {total}   untreated: {len(untreated)}")
-    print(f"untreated composition: {untreated_split}")
+    print(
+        f"treated union: {payload['treated_union_cells']} / {total}   "
+        f"untreated: {payload['untreated_cells']}"
+    )
+    print(f"untreated composition: {payload['untreated_composition']}")
     if cross_group["cross_group_ref_digests_identical"] is not None:
         verdict = "IDENTICAL" if cross_group["cross_group_ref_digests_identical"] else "DIFFER"
         print(

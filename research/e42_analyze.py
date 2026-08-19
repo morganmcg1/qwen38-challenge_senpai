@@ -34,6 +34,8 @@ import statistics
 import subprocess
 import sys
 
+from e42_covering_cells import build_payload
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUNS = ROOT / ".mlxfast-private/e42/runs"
 CURVES = ROOT / ".mlxfast-private/qmv-curve"
@@ -487,11 +489,64 @@ def mde(sd_pct: float, n: int, design: str = "two_sample") -> dict:
     return {"stdout": proc.stdout.strip(), "returncode": proc.returncode}
 
 
+def load_parity(groups: list[str]) -> dict:
+    """Per-arm bit-exactness verdicts from the 192-cell parity grid."""
+    root = ROOT / ".mlxfast-private" / "e42" / "parity"
+    arms: dict[str, dict] = {}
+    present: list[str] = []
+    for group in groups:
+        gdir = root / group
+        ref_path = gdir / "ref.json"
+        if not ref_path.exists():
+            continue
+        present.append(group)
+        ref = {
+            (e["shape"], e["bits"], e["m"]): e["digest"]
+            for e in json.loads(ref_path.read_text())["entries"]
+        }
+        for path in sorted(gdir.glob("*.json")):
+            if path.stem == "ref":
+                continue
+            doc = json.loads(path.read_text())
+            by_bits: dict[str, dict[str, int]] = {}
+            differing: list[dict] = []
+            for e in doc["entries"]:
+                slot = by_bits.setdefault(str(e["bits"]), {"compared": 0, "differing": 0})
+                slot["compared"] += 1
+                if ref[(e["shape"], e["bits"], e["m"])] != e["digest"]:
+                    slot["differing"] += 1
+                    differing.append(
+                        {"shape": e["shape"], "bits": e["bits"], "m": e["m"]}
+                    )
+            arms[path.stem] = {
+                "group": group,
+                "cells_compared": len(doc["entries"]),
+                "cells_differing": len(differing),
+                "by_bits": by_bits,
+                "differing_cells": differing[:20],
+                "verdict": "DIVERGES" if differing else "BIT-IDENTICAL",
+                "suite_covering_cells_by_bits": doc.get("covering_cells_by_bits", {}),
+                "device": doc.get("device"),
+            }
+    if not arms:
+        return {"groups": [], "arms": {}, "all_bit_identical": None}
+
+    return {
+        "groups": present,
+        "arms": arms,
+        "coverage": build_payload(present),
+        "all_bit_identical": all(a["verdict"] == "BIT-IDENTICAL" for a in arms.values()),
+        "cells_compared_total": sum(a["cells_compared"] for a in arms.values()),
+        "cells_differing_total": sum(a["cells_differing"] for a in arms.values()),
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arms", nargs="+", required=True)
     ap.add_argument("--base", default="base")
     ap.add_argument("--wandb", action="store_true")
+    ap.add_argument("--parity-groups", nargs="+", default=["A", "B"])
     ap.add_argument("--out", default="research/e42-artifacts/analysis.json")
     args = ap.parse_args()
 
@@ -694,6 +749,26 @@ def main() -> int:
         print(f"worst within-arm sd = {sd:.4f} %")
         print(power["mde"]["stdout"])
 
+    parity = load_parity(args.parity_groups)
+    if parity["arms"]:
+        cov = parity["coverage"]
+        print(f"\n=== bit-exactness, {parity['coverage']['grid']['cells_total']}-cell parity grid ===")
+        print(f"{'arm':<6} {'grp':<4} {'compared':>8} {'differing':>9} {'treated':>7}  verdict")
+        for arm, rec in sorted(parity["arms"].items()):
+            treated = cov["per_arm"].get(arm, {}).get("treated_cells", "?")
+            print(
+                f"{arm:<6} {rec['group']:<4} {rec['cells_compared']:>8} "
+                f"{rec['cells_differing']:>9} {treated:>7}  {rec['verdict']}"
+            )
+        print(f"all_bit_identical = {parity['all_bit_identical']}")
+        ref_check = cov["cross_group_reference_check"]
+        if ref_check["cross_group_ref_digests_identical"] is not None:
+            print(
+                f"cross-group ref determinism: "
+                f"{'IDENTICAL' if ref_check['cross_group_ref_digests_identical'] else 'DIFFER'} "
+                f"({ref_check['cross_group_cells_compared']} cells)"
+            )
+
     payload = {
         "arms": arms,
         "results": results,
@@ -703,6 +778,7 @@ def main() -> int:
         "phi_local": phi_local,
         "power": power,
         "drift": drift,
+        "parity": parity,
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
@@ -795,6 +871,45 @@ def log_wandb(payload: dict) -> None:
             width_table.add_data(res["arm"], int(m), x, hist.get(str(m), hist.get(m, 0)))
 
     run.log({"arms": arms_table, "psi_phi": res_table, "x_by_width": width_table})
+    parity = payload.get("parity") or {}
+    if parity.get("arms"):
+        cov = parity["coverage"]
+        parity_table = wandb.Table(
+            columns=[
+                "arm",
+                "group",
+                "cells_compared",
+                "cells_differing",
+                "bits4_compared",
+                "bits4_differing",
+                "bits3_compared",
+                "bits3_differing",
+                "mechanism",
+                "crossrow_covering_cells",
+                "treated_cells",
+                "verdict",
+            ]
+        )
+        for arm, rec in sorted(parity["arms"].items()):
+            c = cov["per_arm"].get(arm, {})
+            b4 = rec["by_bits"].get("4", {})
+            b3 = rec["by_bits"].get("3", {})
+            parity_table.add_data(
+                arm,
+                rec["group"],
+                rec["cells_compared"],
+                rec["cells_differing"],
+                b4.get("compared"),
+                b4.get("differing"),
+                b3.get("compared"),
+                b3.get("differing"),
+                c.get("mechanism"),
+                c.get("crossrow_covering_cells"),
+                c.get("treated_cells"),
+                rec["verdict"],
+            )
+        run.log({"parity/arms": parity_table})
+
     summary = {
         "linearity": payload["linearity"],
         "phi_local": payload["phi_local"],
@@ -814,6 +929,20 @@ def log_wandb(payload: dict) -> None:
             "x_untreated_calibration"
         ]
     summary["power"] = payload["power"]
+    if parity.get("arms"):
+        cov = parity["coverage"]
+        summary["parity/all_bit_identical"] = parity["all_bit_identical"]
+        summary["parity/cells_compared_total"] = parity["cells_compared_total"]
+        summary["parity/cells_differing_total"] = parity["cells_differing_total"]
+        summary["parity/groups"] = parity["groups"]
+        summary["parity/treated_union_cells"] = cov["treated_union_cells"]
+        summary["parity/untreated_cells"] = cov["untreated_cells"]
+        summary["parity/suite_covering_cells_by_bits"] = cov[
+            "suite_metric_covering_cells_by_bits"
+        ]
+        summary["parity/cross_group_ref_digests_identical"] = cov[
+            "cross_group_reference_check"
+        ]["cross_group_ref_digests_identical"]
     run.summary.update(summary)
     print(f"wandb_run_url={run.url}")
     print(f"wandb_run_id={run.id}")
