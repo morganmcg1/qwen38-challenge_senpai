@@ -325,10 +325,31 @@ def add_rps(text: str) -> str:
                          "wide prologue")
 
 
+def _strip_metal_comments(body: str) -> str:
+    """Inject the wrapper as code only, keeping its prose in this file.
+
+    `research/twin_audit.py` waives the base tree's one comment-only twin
+    divergence by pinning each side's comment stream. askeladd's E55 revision
+    moved that pin off the whole body precisely so that a code edit applied to
+    both twins would pass, but a comment ADDED identically to both twins still
+    changes both digests and de-pins the waiver. Injecting comment-free Metal
+    keeps both pins intact and leaves the audit asserting the property it
+    exists for: that the twins' code lines agree.
+
+    The wrapper constants above stay fully commented. This is a generator, so
+    the prose belongs beside the template that produces the kernel, not in
+    every generated copy of it. Every comment in those constants is a full-line
+    `//`, which a line filter removes exactly.
+    """
+    return "".join(line + "\n" for line in body.split("\n")[:-1]
+                   if not line.lstrip().startswith("//"))
+
+
 def add_wrapper(text: str, kind: str) -> str:
     body = {"rb2": WRAPPER_RB2, "rbx": WRAPPER_RBX,
             "rb2t": WRAPPER_RB2T, "rbx4": WRAPPER_RBX4}[kind]
-    return _replace_once(text, WRAPPER_ANCHOR, body + WRAPPER_ANCHOR,
+    return _replace_once(text, WRAPPER_ANCHOR,
+                         _strip_metal_comments(body) + WRAPPER_ANCHOR,
                          "wrapper insertion point")
 
 
