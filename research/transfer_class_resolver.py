@@ -96,6 +96,11 @@ H_LO, H_HI = 0.8343, 0.8617
 R2_DILUTED = {"e48": 0.5900, "e53_mid": 0.8834}
 
 DEFICIT_PCT = 0.5367
+# RETRACTED by ledger 193(E): this is 2 sd of the SERIAL leg's jitter applied to the
+# score, and the median over eight prompts does not average the candidate-leg common
+# mode away. The measured single-pair ranked MDE is 2.10 %, 7.4x larger. The value
+# below is kept so this module's published arithmetic stays reproducible; import
+# research/ranked_noise.py for any NEW ranked pricing.
 RANKED_MDE_PCT = 0.283
 
 

@@ -1,0 +1,73 @@
+{
+  "arms": {
+    "base_twins_no_runtime": {
+      "distinct_failing_tests": [
+        "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+        "participantDocsExposeDefaultCLIInstallDirectory",
+        "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+        "startupMemoryPolicyKeepsRanked128GiBProfile",
+        "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+        "theCheckedInDeclarationSelectsThePinnedHead",
+        "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+        "theQwenMTPTrackIsArmedOnQwen38",
+        "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
+      ],
+      "gated_probe_outcomes": [
+        "skipped"
+      ],
+      "issues": 40,
+      "log": "base-swift-test.log",
+      "suites": 47,
+      "tests": 685
+    },
+    "candidate_no_runtime": {
+      "distinct_failing_tests": [
+        "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+        "participantDocsExposeDefaultCLIInstallDirectory",
+        "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+        "startupMemoryPolicyKeepsRanked128GiBProfile",
+        "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+        "theCheckedInDeclarationSelectsThePinnedHead",
+        "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+        "theQwenMTPTrackIsArmedOnQwen38",
+        "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
+      ],
+      "gated_probe_outcomes": [
+        "skipped"
+      ],
+      "issues": 40,
+      "log": "cand-swift-test.log",
+      "suites": 47,
+      "tests": 685
+    },
+    "candidate_with_runtime": {
+      "distinct_failing_tests": [
+        "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+        "participantDocsExposeDefaultCLIInstallDirectory",
+        "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+        "startupMemoryPolicyKeepsRanked128GiBProfile",
+        "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+        "theCheckedInDeclarationSelectsThePinnedHead",
+        "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+        "theQwenMTPTrackIsArmedOnQwen38",
+        "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
+      ],
+      "gated_probe_outcomes": [
+        "started",
+        "passed"
+      ],
+      "issues": 40,
+      "log": "cand-swift-test-runtime.log",
+      "suites": 47,
+      "tests": 685
+    }
+  },
+  "base_vs_candidate_failing_sets_identical": true,
+  "limitation": "One host and one toolchain. This shows the candidate twins do not change the failing set; it does not audit why those tests fail on the campaign base.",
+  "no_phantom_run_entry": true,
+  "positive_control": "theMetallibIsBesideTheTestBundleWhenGatedTestsAreRequested is .enabled(if: MLXFAST_RUN_MLX_RUNTIME_TESTS == 1). It is skipped without the variable and passes with it, so its outcome proves the gate changed state and the metallib was loadable.",
+  "question": "Are the swift test issues pre-existing, and does enabling the opt-in MLX runtime tests add any failure?",
+  "runtime_gate_adds_no_failure": true,
+  "runtime_gate_provably_took_effect": true,
+  "verdict_ok": true
+}
