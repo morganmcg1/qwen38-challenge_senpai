@@ -856,6 +856,130 @@ def equivalent_witness_scan(obs_a: list, obs_b: list, family_a: str,
             "n_both_cones_legal": len(legal), "best": pick}
 
 
+def offset_ray(box_a: dict, box_b: dict, names: list, lam_min: float = 1e-6,
+               lam_max: float = 1e4, box: float = 1e6) -> dict:
+    """The strict ray test: g_B,p = alpha + lambda * g_A,p, with no x column.
+
+    This is the version pooling could have broken.  Two half-planes per prompt
+    in (alpha, lambda), so it is an exact two-variable LP.
+    """
+    rows, rhs = [], []
+    for nm in names:
+        rows.append([1.0, box_a[nm][0]])
+        rhs.append(box_b[nm][1])
+        rows.append([-1.0, -box_a[nm][1]])
+        rhs.append(-box_b[nm][0])
+    for i, (lo, hi) in enumerate(((-box, box), (lam_min, lam_max))):
+        r = [0.0, 0.0]
+        r[i] = 1.0
+        rows.append(list(r))
+        rhs.append(hi)
+        r[i] = -1.0
+        rows.append(list(r))
+        rhs.append(-lo)
+    lo = e43.lp_extreme(rows, rhs, [0.0, 1.0], "min")
+    hi = e43.lp_extreme(rows, rhs, [0.0, 1.0], "max")
+    return {"feasible": bool(lo["feasible"]),
+            "lambda_lo": lo["value"], "lambda_hi": hi["value"],
+            "witness_lo": lo["x"], "witness_hi": hi["x"]}
+
+
+def pooled_ray_equivalence(bundles_a: dict, bundles_b: dict, family_a: str,
+                           family_b: str) -> dict:
+    """Can the pooled shared-shape design separate the families at all?
+
+    In the pooled model every tree keeps its own (a_t, b_t, s_t) and only the
+    per-prompt shape value is shared, so family B is indistinguishable from A
+    exactly when u_p = g_B,p - lambda * g_A,p lies in span{1, x_t.} for every
+    pooled tree t.  Two facts decide it, and both are checked here rather than
+    assumed:
+
+    1. The work-identity filter keeps a leg only when `effective_mean_draft_len`
+       and `non_drafting_round_count` match ours exactly, and x_p is n_p + 1.
+       So every pooled tree contributes the *same* x vector and, because rho is
+       a function of the same two integers, the *same* admissible shape box.
+       Pooling therefore adds rows in y and no new regressor variation at all.
+    2. Even with the x column removed -- the strictest pooled reading, where a
+       per-tree slope may not absorb the offset -- the two shape columns are
+       still exactly affinely related inside their admissible boxes.
+
+    The demo then maps one shared A-shape to its B image and shows the pooled
+    worst-relative miss is equal to machine precision while the implied
+    T(6) - T(5) differs per tree, so the pooled threshold is the same number for
+    both families at any tree count, noise level, or tolerance.
+    """
+    trees = list(bundles_a.keys())
+    ref = trees[0]
+    xa = {o["name"]: o["x"] for o in bundles_a[ref]}
+    x_gap = max((abs(o["x"] - xa[o["name"]])
+                 for t in trees for o in bundles_a[t] if o["name"] in xa),
+                default=0.0)
+    box_a, box_b = shape_box(bundles_a), shape_box(bundles_b)
+    solo_a = {o["name"]: (o["g_lo"][0], o["g_hi"][0]) for o in bundles_a[ref]}
+    solo_b = {o["name"]: (o["g_lo"][0], o["g_hi"][0]) for o in bundles_b[ref]}
+    box_gap = max(max(abs(box_a[nm][i] - solo_a[nm][i]),
+                      abs(box_b[nm][i] - solo_b[nm][i]))
+                  for nm in box_a for i in (0, 1))
+    names = sorted(box_a, key=ORDER.index)
+    ray = offset_ray(box_a, box_b, names)
+    out = {"trees": trees, "n_legs": sum(len(v) for v in bundles_a.values()),
+           "x_identical_across_trees": x_gap < 1e-12, "x_max_gap": x_gap,
+           "box_equals_single_row": box_gap < 1e-12, "box_max_gap": box_gap,
+           "offset_ray": ray, "demo": None}
+    if not ray["feasible"]:
+        return out
+    lam = math.sqrt(max(ray["lambda_lo"], 1e-9) * ray["lambda_hi"])
+    # Any offset in the LP slice at this lambda works, so take the interval
+    # directly rather than re-solving.
+    a_lo = max(box_b[nm][0] - lam * box_a[nm][1] for nm in names)
+    a_hi = min(box_b[nm][1] - lam * box_a[nm][0] for nm in names)
+    if a_lo > a_hi:
+        lam, alpha = ray["witness_lo"][1], ray["witness_lo"][0]
+    else:
+        alpha = 0.5 * (a_lo + a_hi)
+    shape_a, shape_b = {}, {}
+    for nm in names:
+        lo = max(box_a[nm][0], (box_b[nm][0] - alpha) / lam)
+        hi = min(box_a[nm][1], (box_b[nm][1] - alpha) / lam)
+        if lo > hi + 1e-12:
+            return {**out, "demo": {"admissible": False, "prompt": nm}}
+        shape_a[nm] = 0.5 * (lo + hi)
+        shape_b[nm] = alpha + lam * shape_a[nm]
+    per_tree = {}
+    for t in trees:
+        ra = raw_fit(bundles_a[t], shape_a)
+        rb = raw_fit(bundles_b[t], shape_b)
+        fa = fit_at_shape(bundles_a[t], family_a, shape_a)
+        fb = fit_at_shape(bundles_b[t], family_b, shape_b)
+        per_tree[t] = {
+            "raw_a": ra["worst_rel"], "raw_b": rb["worst_rel"],
+            "raw_gap": abs(ra["worst_rel"] - rb["worst_rel"]),
+            "pred_gap_ms": max(abs(p - q) for p, q in zip(ra["pred"],
+                                                          rb["pred"])),
+            "cone_a": fa["worst_rel"], "cone_b": fb["worst_rel"],
+            "cone_gap": abs(fa["worst_rel"] - fb["worst_rel"]),
+            "clamped_a": fa["clamped"], "clamped_b": fb["clamped"],
+            "delta_a": sum(c * v for c, v in
+                           zip(delta_5_6_coeffs(family_a), ra["beta"])),
+            "delta_b": sum(c * v for c, v in
+                           zip(delta_5_6_coeffs(family_b), rb["beta"]))}
+    out["demo"] = {
+        "admissible": True, "alpha": alpha, "lambda": lam,
+        "shape_a": shape_a, "shape_b": shape_b,
+        "pooled_raw_a": max(v["raw_a"] for v in per_tree.values()),
+        "pooled_raw_b": max(v["raw_b"] for v in per_tree.values()),
+        "pooled_raw_gap": max(v["raw_gap"] for v in per_tree.values()),
+        "pooled_pred_gap_ms": max(v["pred_gap_ms"] for v in per_tree.values()),
+        "pooled_cone_a": pooled_shape_cost(bundles_a, family_a, shape_a),
+        "pooled_cone_b": pooled_shape_cost(bundles_b, family_b, shape_b),
+        "n_clamped_a": sum(1 for v in per_tree.values() if v["clamped_a"]),
+        "n_clamped_b": sum(1 for v in per_tree.values() if v["clamped_b"]),
+        "per_tree": per_tree,
+        "delta_gap_ms": max(abs(v["delta_a"] - v["delta_b"])
+                            for v in per_tree.values())}
+    return out
+
+
 # --------------------------------------------------------------------------
 # Deliverable (b) and (c): family-conditional excess, value, and the increment
 # --------------------------------------------------------------------------
@@ -1076,9 +1200,10 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
               flush=True)
 
     # (a) the pooled enumeration, and whether pooling excludes any reading
+    bundles_by_family = {}
     for family in SINGLE:
         stage("enumerate %s" % family)
-        bundle = build_bundle(rows, pool, family)
+        bundle = bundles_by_family[family] = build_bundle(rows, pool, family)
         solo = pooled_enumerate(bundle, family, tol_frac, node_cap=node_cap,
                                 trees=[pool["our_row"]])
         pooled = pooled_enumerate(bundle, family, tol_frac, node_cap=node_cap)
@@ -1155,6 +1280,12 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
             "primary": scan, "feasible_at_every_step6_reading": every,
             "n_readings_checked": len(sels)}
 
+    # the same question asked of the pooled design itself, not of one row
+    stage("pooled ray equivalence")
+    out["pooled_ray"] = pooled_ray_equivalence(
+        tree_bundles(rows, pool, "step6", prim),
+        tree_bundles(rows, pool, "quadratic", prim), "step6", "quadratic")
+
     # (b) family-conditional excess and value, for our row and the board crown
     for label, rid in (("ours", pool["our_row"]), ("crown", FRONTIER_ROW)):
         if rid not in rows:
@@ -1163,9 +1294,9 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
         out["excess"][label] = {}
         out["value"][label] = {}
         for family in ("step6", "quadratic"):
-            sel = prim if rid == pool["our_row"] else crown_selection(rows[rid],
-                                                                     family,
-                                                                     tol_frac)
+            sel = (prim if rid == pool["our_row"]
+                   else crown_selection(bundles_by_family[family], rid, family,
+                                        tol_frac))
             if sel is None:
                 out["excess"][label][family] = {"feasible": False}
                 continue
@@ -1178,49 +1309,51 @@ def analyse(rows: dict, pool: dict, noise: dict, tol_frac: float,
         out["value"][label]["family_free"] = leg_fraction_needed(
             {nm: rows[rid]["prompts"][nm]["ratio"] for nm in ORDER})
 
-    # the pooled shared-shape threshold, bracketed from both sides
+    # The pooled shared-shape witness: a certified *upper* bound on the pooled
+    # threshold for each family.  Cheap, because it is a local search over the
+    # shape box rather than a reading enumeration.
+    out["shared_shape"] = {}
+    for family in ("step6", "quadratic"):
+        stage("shared-shape witness %s" % family)
+        bundles = tree_bundles(rows, pool, family, prim)
+        sh = search_shape(bundles, family)
+        out["shared_shape"][family] = {
+            "upper_bound_at_primary_reading": sh["worst_rel"],
+            "witness_shape": sh["shape"],
+            "certified": certify_witness(bundles, family, sh["shape"],
+                                         sh["worst_rel"] * 1.000001),
+            "per_tree_fit": {rid: {"beta": v["beta"],
+                                   "worst_rel": v["worst_rel"]}
+                             for rid, v in sh["per_tree"].items()}}
+
+    # The matching *lower* bound needs a reading enumeration per bisection step,
+    # which costs minutes per family, so it is opt-in.
     if do_threshold:
         out["threshold"] = {}
         for family in ("step6", "quadratic"):
-            stage("threshold %s" % family)
-            bundle = build_bundle(rows, pool, family)
-            lower_solo = family_threshold(bundle, family, iters=12,
-                                          trees=[pool["our_row"]])
-            lower_pool = family_threshold(bundle, family, iters=12)
-            bundles = tree_bundles(rows, pool, family, prim)
-            sh = search_shape(bundles, family)
+            stage("threshold lower bound %s" % family)
+            bundle = bundles_by_family[family]
             out["threshold"][family] = {
-                "lower_bound_solo": lower_solo,
-                "lower_bound_pooled": lower_pool,
-                "upper_bound_at_primary_reading": sh["worst_rel"],
-                "witness_shape": sh["shape"],
-                "certified": certify_witness(bundles, family, sh["shape"],
-                                             sh["worst_rel"] * 1.000001),
-                "per_tree_fit": {rid: {"beta": v["beta"],
-                                       "worst_rel": v["worst_rel"]}
-                                 for rid, v in sh["per_tree"].items()}}
+                "lower_bound_solo": family_threshold(
+                    bundle, family, iters=8, trees=[pool["our_row"]]),
+                "lower_bound_pooled": family_threshold(bundle, family, iters=8)}
 
     out["power"] = power_statement(out, noise)
     return out
 
 
-def crown_selection(row: dict, family: str, tol_frac: float) -> dict | None:
-    """One admissible reading for a row outside the pool, for the value table.
+def crown_selection(bundle: dict, rid: str, family: str,
+                    tol_frac: float) -> dict | None:
+    """One admissible reading for a single pooled row, for the value table.
 
-    The crown row is not work-identical to ours, so it gets its own single
-    feasible reading rather than the pooled enumeration: the value table only
-    needs a consistent reading, not the whole admissible set.
+    The value table needs *a* consistent reading, not the whole admissible set,
+    so this reuses the pruned depth-first enumeration restricted to that one row
+    and stops at the first hit.  A blind scan of the raw cross product is far
+    slower and can be effectively unbounded.
     """
-    cand = reading_candidates(row)
-    best = None
-    for combo in itertools.product(*(cand[nm] for nm in ORDER)):
-        sel = dict(zip(ORDER, combo))
-        obs = observations(row, family, sel)
-        rows_p, rhs_p = polytope(obs, family, tol_frac)
-        if e43.lp_feasible(rows_p, rhs_p):
-            best = sel
-            break
-    return best
+    hit = pooled_enumerate(bundle, family, tol_frac, first_only=True,
+                           trees=[rid])["selections"]
+    return hit[0] if hit else None
 
 
 def power_statement(res: dict, noise: dict) -> dict:
@@ -1231,15 +1364,22 @@ def power_statement(res: dict, noise: dict) -> dict:
     if scan.get("best"):
         gap = scan["best"]["pred_gap_ms"]
     y_scale = 100.0                      # ms/round, order of the observed legs
+    pr = res.get("pooled_ray") or {}
+    demo = pr.get("demo") or {}
     return {
         "replicate_sigma_pct": noise["pooled_pct"],
         "replicate_sigma_ms_at_100ms_round": noise["pooled_pct"] / 100.0 * y_scale,
         "between_family_prediction_gap_ms": gap,
+        "pooled_cost_gap": demo.get("pooled_cost_gap"),
+        "pooled_x_column_identical": pr.get("x_identical_across_trees"),
+        "pooled_box_equals_one_row": pr.get("box_equals_single_row"),
         "trees_needed_to_separate": None,
         "note": ("the two families' predictions differ by machine epsilon at a "
                  "shared admissible rho, so the misfit pooling would have to "
-                 "detect is zero rather than small; no tree count and no noise "
-                 "reduction separates them"),
+                 "detect is zero rather than small; the work-identity filter "
+                 "also makes every pooled tree carry the same x column and the "
+                 "same admissible shape box as one row, so no tree count and "
+                 "no noise reduction separates them"),
     }
 
 
@@ -1305,6 +1445,28 @@ def report(res: dict, pool: dict, noise: dict) -> None:
                  b["delta_a"], b["delta_b"],
                  b["a_in_cone"] and b["b_in_cone"], v["n_readings_checked"],
                  v["feasible_at_every_step6_reading"]))
+    pr = res.get("pooled_ray") or {}
+    if pr:
+        print("    pooled design, %d legs over %d trees:" % (pr["n_legs"],
+                                                             len(pr["trees"])))
+        print("      x column identical across trees: %s (max gap %.3g)"
+              % (pr["x_identical_across_trees"], pr["x_max_gap"]))
+        print("      pooled shape box equals one row: %s (max gap %.3g)"
+              % (pr["box_equals_single_row"], pr["box_max_gap"]))
+        print("      offset-only ray (no x column) feasible: %s  lam=[%.4g,%.4g]"
+              % (pr["offset_ray"]["feasible"], pr["offset_ray"]["lambda_lo"],
+                 pr["offset_ray"]["lambda_hi"]))
+        d = pr.get("demo") or {}
+        if d.get("admissible"):
+            print("      unconstrained pooled worst-rel: step6 %.10f  "
+                  "quadratic %.10f  gap %.3g"
+                  % (d["pooled_raw_a"], d["pooled_raw_b"], d["pooled_raw_gap"]))
+            print("      identical misfit, T(6)-T(5) differs by up to %.3f ms"
+                  % d["delta_gap_ms"])
+            print("      cone-projected: step6 %.6f (%d/%d trees clamped)  "
+                  "quadratic %.6f (%d clamped) <- the only asymmetry"
+                  % (d["pooled_cone_a"], d["n_clamped_a"], len(pr["trees"]),
+                     d["pooled_cone_b"], d["n_clamped_b"]))
     print()
     print("(b) excess and score value, per family")
     for label in res["excess"]:
@@ -1335,16 +1497,23 @@ def report(res: dict, pool: dict, noise: dict) -> None:
                          fmt(v["fraction_needed"]["crown_hi_frac"]),
                          fmt(v["fraction_needed"]["crown_lo_frac"]),
                          v["arms"]["removed_1.00_hi_frac"]["score_gain_pct"]))
+    if "shared_shape" in res:
+        print()
+        print("pooled shared-shape witness at the E43 primary reading "
+              "(certified upper bound on the pooled threshold)")
+        for family, t in res["shared_shape"].items():
+            print("    %-10s upper %.6f  certified %s  vs tol %.5f -> %s"
+                  % (family, t["upper_bound_at_primary_reading"],
+                     t["certified"]["all_feasible"], res["tol_frac"],
+                     "within" if t["upper_bound_at_primary_reading"]
+                     <= res["tol_frac"] else "above"))
     if "threshold" in res:
         print()
-        print("pooled shared-shape threshold, bracketed both sides")
+        print("pooled threshold lower bounds (shared-shape coupling dropped)")
         for family, t in res["threshold"].items():
-            print("    %-10s lower solo %.6f  lower pooled %.6f  "
-                  "upper (witness) %.6f  certified %s"
-                  % (family, t["lower_bound_solo"]["threshold_frac"] or 0.0,
-                     t["lower_bound_pooled"]["threshold_frac"] or 0.0,
-                     t["upper_bound_at_primary_reading"],
-                     t["certified"]["all_feasible"]))
+            print("    %-10s lower solo %s  lower pooled %s"
+                  % (family, fmt(t["lower_bound_solo"]["threshold_frac"]),
+                     fmt(t["lower_bound_pooled"]["threshold_frac"])))
     p = res["power"]
     print()
     print("power: replicate sd %.4f %% (~%.4f ms on a 100 ms round); "
@@ -1624,6 +1793,49 @@ def self_test() -> int:
        all(ray_equivalence(observations(our, "step6", s),
                            observations(our, "quadratic", s))["feasible"]
            for s in solo["selections"]), str(len(solo["selections"])))
+
+    # --- and the same question asked of the pooled design -----------------
+    pray = pooled_ray_equivalence(
+        tree_bundles(rows, pool, "step6", E43_PRIMARY),
+        tree_bundles(rows, pool, "quadratic", E43_PRIMARY),
+        "step6", "quadratic")
+    ck("pooled_ray_uses_all_legs", pray["n_legs"] == pool["pooled_legs"],
+       "%d legs" % pray["n_legs"])
+    ck("pooled_x_column_identical", pray["x_identical_across_trees"],
+       "max gap %.3g mean-M units" % pray["x_max_gap"])
+    ck("pooled_shape_box_equals_one_row", pray["box_equals_single_row"],
+       "max gap %.3g" % pray["box_max_gap"])
+    ck("pooled_offset_only_ray_feasible", pray["offset_ray"]["feasible"],
+       "lam [%.4f, %.4f]" % (pray["offset_ray"]["lambda_lo"],
+                             pray["offset_ray"]["lambda_hi"]))
+    pd = pray["demo"]
+    ck("pooled_demo_admissible", bool(pd and pd["admissible"]), str(bool(pd)))
+    ck("pooled_unconstrained_cost_identical", pd["pooled_raw_gap"] < 1e-12,
+       "%.10f vs %.10f, gap %.3g" % (pd["pooled_raw_a"], pd["pooled_raw_b"],
+                                     pd["pooled_raw_gap"]))
+    ck("pooled_unconstrained_predictions_identical",
+       pd["pooled_pred_gap_ms"] < 1e-9, "%.3e ms" % pd["pooled_pred_gap_ms"])
+    ck("pooled_raw_gap_far_below_replicate_noise",
+       pd["pooled_raw_gap"] < 1e-6 * noise["pooled_pct"] / 100.0,
+       "%.3g vs sd %.6f" % (pd["pooled_raw_gap"], noise["pooled_pct"] / 100.0))
+    ck("pooled_delta_still_differs", pd["delta_gap_ms"] > 1.0,
+       "%.3f ms apart at identical pooled misfit" % pd["delta_gap_ms"])
+    ck("pooled_every_tree_matches_unconstrained",
+       all(v["raw_gap"] < 1e-12 for v in pd["per_tree"].values()),
+       "worst tree gap %.3g" % max(v["raw_gap"]
+                                   for v in pd["per_tree"].values()))
+    # the cone is the only thing that can tell the two parameterisations apart:
+    # same column space, different admissible orthant.
+    ck("monotonicity_cone_is_the_only_asymmetry",
+       pd["pooled_cone_a"] != pd["pooled_cone_b"]
+       and (pd["n_clamped_a"] > 0) != (pd["n_clamped_b"] > 0),
+       "cone cost step6 %.6f (%d clamped) vs quadratic %.6f (%d clamped)"
+       % (pd["pooled_cone_a"], pd["n_clamped_a"], pd["pooled_cone_b"],
+          pd["n_clamped_b"]))
+    ck("offset_ray_stricter_than_free_x",
+       pray["offset_ray"]["lambda_lo"] >= ray["lambda_lo"] - 1e-9,
+       "offset lam_lo %.4f >= free lam_lo %.4f"
+       % (pray["offset_ray"]["lambda_lo"], ray["lambda_lo"]))
 
     # --- brackets and the cross-family union ------------------------------
     br6 = bracket(obs6, "step6", tol, delta_5_6_coeffs("step6"))
