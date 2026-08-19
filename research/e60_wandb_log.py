@@ -62,6 +62,7 @@ def identity() -> dict:
         "host_physical_memory_gib": 48,
         "harness": "local",
         "local_mode": "--local-iterate",
+        "darkbloom_startup_memory_profile": "full",
         "mlx_max_mb_per_buffer": 512,
         "mlx_max_ops_per_buffer": 50,
         "command_buffer_geometry": "ranked",
@@ -121,6 +122,15 @@ def leg_record(leg: pathlib.Path) -> dict:
         "staged_worker_sha256": meta.get("staged_worker_sha256"),
         "mlx_max_mb_per_buffer": int(meta.get("mlx_max_mb_per_buffer", 0) or 0),
         "mlx_max_ops_per_buffer": int(meta.get("mlx_max_ops_per_buffer", 0) or 0),
+        "darkbloom_startup_memory_profile": meta.get(
+            "darkbloom_startup_memory_profile"
+        ),
+        "low_memory_notice_count": int(meta.get("low_memory_notice_count", -1) or -1),
+        "low_memory_notice_count_under_auto": int(
+            meta.get("low_memory_notice_count_under_auto", -1) or -1
+        ),
+        "peak_ram_gb_max": float(meta["peak_ram_gb_max"])
+        if meta.get("peak_ram_gb_max") else None,
     }
     worker_env = leg / "worker-env.txt"
     record["worker_env_proof"] = (
