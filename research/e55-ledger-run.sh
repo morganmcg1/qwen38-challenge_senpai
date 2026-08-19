@@ -55,6 +55,16 @@ CLANG_MODULE_CACHE_PATH="${PWD}/.build-worker/clang-module-cache" \
   --scratch-path .build-worker --product mlxfast-runtime-worker \
   || fail "mlxfast-runtime-worker build failed"
 
+# `quantized.h` is a Metal header: `quantized.metal` and `fp_quantized.metal`
+# both include it, so an edit to it changes BOTH the JIT twin and the metallib.
+# benchmark-qwen-mtp.sh detects the resulting staleness and rebuilds, which is
+# why every timed arm ran with a metallib matching its own sources. A direct CLI
+# invocation gets no such rebuild, so without this step the run would mix this
+# arm's JIT source with the previous arm's metallib -- a configuration no timed
+# arm was in. Rebuild unconditionally: it is idempotent and cheap when current.
+echo "=== e55-ledger-run: ${arm}: rebuild mlx.metallib for this arm ==="
+tools/build-mlx-metallib.sh --all-build-roots || fail "metallib rebuild failed"
+
 echo "=== e55-ledger-run: ${arm}: assert the worker holds this arm's source ==="
 research/e55_binary_assert.sh | tee "${meta}" || fail "binary assert failed"
 
@@ -77,6 +87,13 @@ print(len(json.load(open('${golden}'))['rows']))
   echo "git_head=$(git rev-parse HEAD)"
   echo "worker_sha256=$(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | cut -d' ' -f1)"
   echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
+  # Both the source fingerprint and the built artefact, so a reader can tell a
+  # matched arm from a mixed one without rerunning anything.
+  echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint 2>/dev/null | tail -1)"
+  for lib in .build-worker/release/mlx.metallib \
+             .build-worker/arm64-apple-macosx/release/mlx.metallib; do
+    [[ -e "${lib}" ]] && echo "metallib_sha256[${lib}]=$(shasum -a 256 "${lib}" | cut -d' ' -f1)"
+  done
 } >> "${meta}"
 
 echo "=== e55-ledger-run: ${arm}: mtp-verify --golden (${tokens} tokens, depth ${depth}) ==="
