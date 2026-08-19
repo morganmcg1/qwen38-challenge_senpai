@@ -21,6 +21,7 @@ reps=25
 inner=20
 probe=0
 coverage=0
+gpu_busy_seconds=12
 while [[ $# -gt 0 ]]; do
   case "${1}" in
     --widths) widths="${2:?--widths needs a list}"; shift 2 ;;
@@ -29,6 +30,7 @@ while [[ $# -gt 0 ]]; do
     --inner) inner="${2:?--inner needs a count}"; shift 2 ;;
     --probe) probe="${2:?--probe needs a k count}"; shift 2 ;;
     --coverage) coverage="${2:?--coverage needs a word stride}"; shift 2 ;;
+    --gpu-busy-seconds) gpu_busy_seconds="${2:?needs seconds}"; shift 2 ;;
     *) echo "run-e44-qmv-ab.sh: unknown argument ${1}" >&2; exit 2 ;;
   esac
 done
@@ -72,6 +74,28 @@ trap cleanup EXIT
 
 acquire_local_run_lock
 abort_if_model_already_resident
+
+# The run lock is scoped to ${HOME} and every role has its own, so it cannot
+# exclude a neighbouring student on this shared host, and the resident-model scan
+# does not see a microbenchmark that holds only tens of megabytes. Sample the
+# driver's GPU busy counter instead, which sees any process's GPU work. Timing
+# while a neighbour times would silently void both sets of numbers, so this is
+# fail-closed: refuse rather than produce a confounded session.
+gpu_busy_verdict="skipped"
+if [[ "${probe}" == "0" && "${coverage}" == "0" ]]; then
+  if gpu_busy_line="$(python3 "${repo_root}/research/gpu_busy_check.py" \
+        --seconds "${gpu_busy_seconds}")"; then
+    gpu_busy_verdict="idle"
+  else
+    gpu_busy_verdict="busy"
+  fi
+  echo "${gpu_busy_line}" >&2
+  if [[ "${gpu_busy_verdict}" == "busy" ]]; then
+    echo "run-e44-qmv-ab.sh: another job is using this GPU; refusing to time." >&2
+    echo "run-e44-qmv-ab.sh: coordinate, then rerun." >&2
+    exit 3
+  fi
+fi
 
 out_dir="${repo_root}/.mlxfast-private/e44-qmv-ab/${tag}"
 rm -rf -- "${out_dir}"
@@ -129,6 +153,8 @@ else
 fi
 entry_temp="$(local_gpu_temp || true)"
 {
+  echo "gpu_busy_precheck=${gpu_busy_verdict}"
+  echo "gpu_busy_precheck_detail=${gpu_busy_line:-none}"
   echo "cool_gate_real_outcome=${cool_gate_real}"
   echo "cool_gate_passed_real_gate=$([[ "${cool_gate_real}" == passed ]] && echo true || echo false)"
   echo "gate_qualified_for_timing=${gate_qualified}"
