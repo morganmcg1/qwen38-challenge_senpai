@@ -2255,6 +2255,48 @@ queues behind rung 1. It is currently the strongest candidate for the next round
 ahead of the other two adjacent levers in item 110, because the mechanism is
 verified in source rather than inferred from a note.
 
+**ADDENDUM (same turn), two facts that de-risk it substantially.**
+
+1. 🟢 **The fix does not depend on resolving the architecture character.** The
+   branch keys on `k.shape(2)`, the live KV length, which we control directly.
+   Extending the throwaway warm cache past 1024 and re-warming the widths covers
+   **both** kernel families whatever the arch char is, and it is strictly
+   additive inside a warm that is already documented as running outside every
+   scored window. So the *safety* of the change is arch-independent; the arch
+   char only decides whether it *helps*. That inverts the risk profile — the
+   experiment can proceed before the uncertainty is settled, which is not how I
+   framed it above.
+2. 🟢 **The arch gate is env-overridable**, so the uncertainty is testable on the
+   M4 Pro without an M5. `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp:560-562`:
+
+   ```cpp
+     arch_ = env::metal_gpu_arch();
+     if (arch_.empty()) {
+       arch_ = std::string(device_->architecture()->name()->utf8String());
+   ```
+
+   and `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/utils.h:205-208`:
+
+   ```cpp
+   inline const std::string& metal_gpu_arch() {
+     static std::string gpu_arch_ = get_var("MLX_METAL_GPU_ARCH", "");
+     return gpu_arch_;
+   }
+   ```
+
+   ⚠️ **Use it only as a mechanism probe, never as a performance measurement.**
+   The same string feeds `get_architecture_gen()` and the NAX availability check
+   (`device.cpp:924-926`, `can_use_nax &= gen >= (arch == 'p' ? 18 : 17)`), so
+   forcing it changes kernel selection elsewhere. It can answer "does the family
+   switch at KV 1024 and does the first dispatch cost anything"; it cannot
+   produce a transferable speedup number. This is the same trap as item 111 in
+   miniature: a knob that makes a branch observable is not a knob that makes a
+   measurement valid.
+
+   Neither the local M4 Pro nor the ranked M5 Max arch string is established —
+   there is no Python MLX in this environment, so it requires a build. It stays
+   the first step, but it no longer blocks the work.
+
 ### 114 — 🟢 `warmAllDepths` currently compiles but never *measures*, and that is the campaign's epistemic fix
 
 Reading `warmAllDepthShapes` end to end: it seeds a 512-token throwaway cache,
