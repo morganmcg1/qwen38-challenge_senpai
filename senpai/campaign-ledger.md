@@ -11486,3 +11486,247 @@ The revision asks for exactly three things: rebase onto the current base, run
   a *register-identical* way to E27, it became the campaign's only route to a
   ranked measurement of the ceiling term.
 
+
+### 189(K) Submission risk for E55, priced from our own receipt history rather than from argument
+
+Before asking askeladd for `--local-submit` I priced the ranked-pipeline risk
+of an NA=5 kernel twin edit. Three facts from our own six receipts settle it,
+and none of them needed a new measurement.
+
+**1. The two failures were manifest-touching, and E55 is not.** `74d1bd3a` and
+`b360b4c8` both `failed` at "Review submitted code for benchmark bypasses
+(Qwen-MTP policy)" with no score. Both carried the same E15 requant payload and
+both touched `mtp-head.manifest.json`. The ledger records manifest-touching
+submissions failing at **55.6 %** against a **36.25 %** population rate, which
+is the strongest single predictor we hold. **E55 touches two quantized twins and
+no manifest**, so it sits in the lower-risk population.
+
+**2. 🔴 An NA=5 crossrow QMV kernel has ALREADY passed the ranked M5
+correctness and parity gate.** `ca9251b8` -- our best official row at
+`3.23250848263467` -- **is** the E27 submission, and E27 raised `case 5:` to
+IPG 5, shipping `vec<float,5>` accumulators on the ranked host. It was rejected
+with `"score did not improve current best"`, which is a **score** outcome, not a
+review objection.
+
+This bounds a hazard I would otherwise have had to treat as open. 182(C)
+established that NA=5 codegen is not bit-stable under lane perturbation, and
+askeladd's bitwise proof was run on an Apple M4 Pro at GPU generation 16 while
+the ranked host is an M5 at generation 17. Local bitwise exactness does not
+transfer across a codegen generation by argument. But it does not have to:
+**the same `vec<float,5>` path already produced a valid ranked score on
+gen-17 hardware.** E55 moves the identical accumulator width to `case 9:`
+instead of `case 5:`.
+
+**3. E55 is register-identical to E27, which is the whole point.** The censuses
+line up exactly with the campaign's stored anchors: `e27_m5_only` 125/182,
+`e27_m9_only` 129/181, `e27_full` 129/183, and askeladd's E55 arm reads
+**129**, matching `e27_m9_only`. E27's receipt therefore covers **both** NA=5
+cells at a peak of 129, and E55 covers **only the M=9 cell at the same peak of
+129**. The difference between the two official scores is the M=5 cell alone,
+with the shared ceiling term cancelling exactly.
+
+**Consequence.** The E55 submission is a low-risk shape by our own receipt
+history, and its scientific value does not depend on it scoring well. Submit it
+when the revision lands.
+
+**Two standing cautions that still apply.**
+
+- **Never key a row on the announced candidate SHA.** Yukon reported
+  `07b2f1b5` where we announced `d11e01ea`, and `dbf91c6c` where we announced
+  `51c5b668`. Read the row back from Yukon after submitting.
+- **Do not re-propose a replacement proposal head.** Two scored rows closed
+  that lever by measurement: `4437d061` at `2.86126590369985` (Dev20 head) and
+  `9197ed62` at `3.06938159465413` (r20k head). Both were the only two
+  head-quality plays that produced a score, and both lost.
+
+
+---
+
+## 190. 🔴 The dispatch prize was mis-derived three ways, and E58 survives all three
+
+Instrument: `research/e58_dispatch_repricing.py`, **20 checks, 2 positive
+controls, 1 negative control, exits 0.** It reproduces the published chain
+exactly — defects included — before correcting it, so the correction cannot be
+confused with a different calculation.
+
+I ordered a delegated audit of every "% of ranked leg" and "% of score" claim in
+items 185 and 186 after 189(D) caught me double-diluting my own prices. The
+audit found a third instance. It is in **my own item 186(D)**, and it is the one
+I turned into an assignment.
+
+### 190(A) The claim under audit
+
+Ledger `:10492-10496`, item 186(D), "Immediate consequence":
+
+> E57 priced a dispatch at about **22 microseconds** (Arm B added 2226 SDPA
+> dispatches for +0.27 % of local s/token). Arm A's 6163 SDPA dispatches are
+> then about 136 ms: `0.74 %` of our 18.35 s local leg, which is why I dismissed
+> it, but **`2.2 %` of the ranked `beagle` leg of 6.23 s**, or `2.0 %` of score
+> after dilution — `7.1 sd`. And SDPA is one family of many.
+> **Assigned as E58.**
+
+That paragraph is the entire value proposition of E58, now live as PR #61
+(alphonse). The instrument reproduces every number in it:
+
+| step | published | reproduced |
+|---|---|---|
+| Arm A leg | 18.35 s | 18.3526 s |
+| per dispatch | ~22 µs | 22.26 µs |
+| Arm A SDPA total | ~136 ms | 137.2 ms |
+| local leg share | 0.74 % | 0.748 % |
+| ranked beagle leg share | 2.2 % | 2.201 % |
+| "after dilution" | 2.0 % | 2.008 % |
+
+So the audit is not a disagreement about inputs. Every defect below is in the
+reasoning that connects them.
+
+### 190(B) D1 — the 22 µs constant is an upper bound, not a point estimate
+
+The ledger never writes the denominator. It is recoverable: `+0.27 %` of
+`0.035845 s/tok × 512 tok = 18.3526 s` is `49.55 ms`, over `8389 − 6163 = 2226`
+added dispatches, giving `22.26 µs`. **The arithmetic is sound.** My audit
+agent's first claim — that the constant is underived — is wrong, and I record
+that here so the retraction is not lost.
+
+The real defect is what the constant means. E57 Arm B did not add *empty*
+dispatches. Narrowing the chunk predicate to `qL = 9` pushed widths 6, 7 and 8
+off the fused vector path onto the composed fallback, which ledger `:10320-10324`
+enumerates: `arangeint32` ×2, `sv_Multiply`, `g2_GreaterEqual`,
+`steel_gemm_fused_nt`, `g2_Select`, `block_softmax_precise`,
+`steel_gemm_fused_nn`. Those dispatches carry real arithmetic and real
+intermediate traffic.
+
+⇒ **Attributing 100 % of the +0.27 % to launch overhead makes 22.26 µs a
+ceiling on per-dispatch cost, and every number downstream of it an upper bound.**
+
+### 190(C) 🔴 D2 — the ranked dispatch COUNT was carried across, not recomputed
+
+`136 ms / 6.23 s` asserts that the ranked `beagle` leg issues the same 6163 SDPA
+dispatches our local arm issued. It does not:
+
+| | rounds | mean draft |
+|---|---|---|
+| local E57 Arm A | 76 | 6.5132 |
+| ranked `beagle` | **107** | **4.5327** |
+
+**+41 % rounds and −30 % mean draft.** Dispatches per round are a *step function*
+of width — 185(B) measured `qL ≤ 5 → 1 or 2` per full-attention layer and
+`qL 6..9 → 4 or 6` — so the count cannot be carried between two runs with
+different round counts and different width mixtures.
+
+184(D) proved the ranked width histogram is unidentifiable from the receipt, so
+the recomputed count is an **interval**, not a number. Bounding the wide-round
+fraction `w` from the mean draft alone (mass at draft 4 and 8 for the minimum,
+at draft 0 and 5 for the maximum) over 16 full-attention layers:
+
+| prompt | rounds | draft | wide frac | dispatches | ranked leg share |
+|---|---|---|---|---|---|
+| plutarch | 487 | 0.154 | 0.00–0.03 | 7792–16544 | **1.12–2.37 %** |
+| drama | 252 | 2.298 | 0.00–0.46 | 4032–15475 | **0.89–3.40 %** |
+| travel | 212 | 2.656 | 0.00–0.53 | 3392–13991 | **0.85–3.50 %** |
+| **beagle** | 107 | 4.533 | 0.13–0.91 | 2396–9632 | **0.86–3.44 %** |
+| **medicine** | 99 | 4.768 | 0.19–0.95 | 2496–9210 | **0.95–3.52 %** |
+| republic | 89 | 5.270 | 0.32–1.00 | 2780–8544 | **1.08–3.32 %** |
+| essays | 87 | 5.425 | 0.36–1.00 | 2880–8352 | **1.11–3.23 %** |
+| botany | 85 | 5.777 | 0.44–1.00 | 3172–8160 | **1.24–3.20 %** |
+
+The published `2.2 %` is a point inside a **4.0× band** it never acknowledged.
+
+The same defect shows up as an unreconciled constant. `136 ms / 6.23 s` implies
+a leg-time multiplier of **2.9444×**. 188(A) derives the campaign's formal
+transfer multiplier as `R/τ` with **`R = 2.1383`**. Nothing in the ledger ever
+reconciled `2.944` with `2.138`. The gap is exactly the leg-versus-round prefill
+mismatch, which is the same disease as D3 below.
+
+### 190(D) 🔴 D3 — a THIRD uncaught double dilution, and it is mine
+
+`2.2 %` was computed as `137 ms ÷ 6233 ms`, where 6233 ms is the ranked `beagle`
+**leg**. The ranked leg is prefill-inclusive: 186(B) measures `K/leg = 8.44 %` on
+`beagle`. **So `2.2 %` is already a leg-basis fraction, already diluted once.**
+
+Multiplying it by `0.9125` to reach `2.0 %` charges the same prefill a second
+time. That is precisely the failure rule 189(J) forbids. The ledger named two
+instances — item 122 hypothesis B, and item 189 / E55. **This is the third, and
+unlike the other two it was not caught before it became an assignment.**
+
+Minor units error in the opposite direction: `2.008 / 0.283 = 7.09`, so the
+published "`7.1 sd`" is 7.1 × **MDE**, not 7.1 standard deviations. The MDE is
+itself 2 sd, so that label understates its own claim by 2×. Two errors pointing
+opposite ways is not a defence; it means neither figure was checked.
+
+### 190(E) The corrected value proposition — and why E58 gets stronger, not weaker
+
+Two routes that share no arithmetic:
+
+- **Route A, recompute the count directly:** `0.86 %` to `3.44 %` of the ranked
+  `beagle` leg.
+- **Route B, 188(A)'s `R/τ` at `τ = 1`:** local leg `0.748 %` ÷ `0.76611` =
+  `0.976 %` round basis; × `R = 2.1383` = `2.086 %` ranked round basis; ×
+  `0.9125` = **`1.904 %`** ranked leg basis.
+
+Route B lands inside route A's band. Both remain upper bounds, because D1's
+constant is a ceiling and E58 can only remove *some* dispatches.
+
+Against the `+0.283 %` ranked MDE: route A's **low end is 3.0× MDE** and route B
+is **6.7× MDE**.
+
+🔴 **But the per-prompt table above carries the finding that matters, and it is
+not the one E58 was assigned on.** The published argument was `beagle`-specific,
+and a `beagle`-only win moves the median only through the central-pair weight.
+The recomputed table shows the band is **near-uniform across all eight prompts**
+— every prompt lands in roughly `0.85 %` to `3.5 %`, because prompts with many
+rounds have narrow rounds and prompts with few rounds have wide ones, and the
+two effects very nearly cancel. **A uniform relative win moves every `raw_p` by
+the same relative amount and therefore moves the median by exactly that amount,
+with no central-pair weighting at all.**
+
+That is a *better* argument than the one I published. The headline number was
+wrong in three ways; the direction was never in doubt.
+
+### 190(F) What E58 must now report, and why it is worth more than the assignment asked for
+
+A single leg-total dispatch count **cannot be transferred to rank**, because the
+ranked width histogram is unidentifiable (184(D)). The 4.0× band above is the
+permanent price of reporting one number.
+
+A census reported **per round width** escapes it:
+
+```text
+d(M) for M = 1..9  =  dispatches issued in one round of target width M
+```
+
+Then the ranked count is `sum_M n_M · d(M)` for **any** candidate histogram
+`{n_M}`, which turns an unidentifiable point into a function of a quantity the
+campaign already brackets. Every future host-latency price in this campaign can
+be evaluated against that one table without a new GPU run.
+
+Requested from alphonse on PR #61 by `send_assignment_feedback`. He also must
+measure **his own arm's** local prefill share rather than inheriting E55's
+`23.389 %`, which was measured on a different experiment, a different arm and a
+different width mixture — 187's identity-tuple rule forbids the substitution I
+made when I wrote route B above, and route B is therefore itself provisional.
+
+### 190(G) Rules added
+
+- 🔴 **A dispatch, kernel-launch or per-round count measured locally is not the
+  ranked count.** Round count and width mixture both differ. Recompute the count
+  from the ranked round count and a bounded width mixture, then price it. Never
+  divide a local absolute cost by a ranked leg time.
+- 🔴 **Report host-latency censuses per round width, never as a leg total.** A
+  leg total is unidentifiable at rank by 184(D); a per-width table is not.
+- 🔴 **A per-dispatch cost obtained by dividing a timing delta by a dispatch-count
+  delta is an upper bound** whenever the added dispatches perform work. State it
+  as a ceiling.
+- **When an audit contradicts the ledger, reproduce the published chain first.**
+  This instrument reproduces all six published figures before correcting two of
+  them, which is how D1 was cleared and D2/D3 were confirmed.
+- **Say "MDE" or "sd", never both.** The campaign's MDE is 2 sd; the two labels
+  differ by 2×.
+
+### 190(H) Standing count
+
+Double-dilution instances now caught: **three** — item 122 hypothesis B, item
+189 / E55, item 190 / E58. All three are mine. The first two were caught before
+they steered an assignment; the third was not. The `psi_mtp` re-basing factor
+from 189(D) and this item's `2.944 vs 2.1383` reconciliation are the same
+quantity seen from two directions.
