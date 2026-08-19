@@ -1,0 +1,2060 @@
+{
+  "workdir": "/tmp/e32_air",
+  "gate_validation_failures": [],
+  "cells": [
+    {
+      "name": "xrb_na2_r1",
+      "arm": "coverage_preserving",
+      "na": 2,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na2_r1",
+        "PROBE_NA": 2,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 39,
+      "peak_live_values": 30,
+      "air_lines": 219,
+      "device_loads": 14,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na2_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na2_r2",
+      "arm": "coverage_preserving",
+      "na": 2,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na2_r2",
+        "PROBE_NA": 2,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 49,
+      "peak_live_values": 37,
+      "air_lines": 320,
+      "device_loads": 20,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na2_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na2_r4",
+      "arm": "coverage_preserving",
+      "na": 2,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na2_r4",
+        "PROBE_NA": 2,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 62,
+      "peak_live_values": 44,
+      "air_lines": 515,
+      "device_loads": 32,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na2_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na3_r1",
+      "arm": "coverage_preserving",
+      "na": 3,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na3_r1",
+        "PROBE_NA": 3,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 51,
+      "peak_live_values": 33,
+      "air_lines": 260,
+      "device_loads": 18,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na3_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na3_r2",
+      "arm": "coverage_preserving",
+      "na": 3,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na3_r2",
+        "PROBE_NA": 3,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 66,
+      "peak_live_values": 36,
+      "air_lines": 376,
+      "device_loads": 24,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na3_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na3_r4",
+      "arm": "coverage_preserving",
+      "na": 3,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na3_r4",
+        "PROBE_NA": 3,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 83,
+      "peak_live_values": 41,
+      "air_lines": 601,
+      "device_loads": 36,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na3_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na4_r1",
+      "arm": "coverage_preserving",
+      "na": 4,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na4_r1",
+        "PROBE_NA": 4,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 63,
+      "peak_live_values": 33,
+      "air_lines": 301,
+      "device_loads": 22,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na4_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na4_r2",
+      "arm": "coverage_preserving",
+      "na": 4,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na4_r2",
+        "PROBE_NA": 4,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 83,
+      "peak_live_values": 38,
+      "air_lines": 432,
+      "device_loads": 28,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na4_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na4_r4",
+      "arm": "coverage_preserving",
+      "na": 4,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na4_r4",
+        "PROBE_NA": 4,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 104,
+      "peak_live_values": 41,
+      "air_lines": 687,
+      "device_loads": 40,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na4_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na5_r1",
+      "arm": "coverage_preserving",
+      "na": 5,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na5_r1",
+        "PROBE_NA": 5,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 75,
+      "peak_live_values": 35,
+      "air_lines": 342,
+      "device_loads": 26,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na5_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na5_r2",
+      "arm": "coverage_preserving",
+      "na": 5,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na5_r2",
+        "PROBE_NA": 5,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 100,
+      "peak_live_values": 40,
+      "air_lines": 488,
+      "device_loads": 32,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na5_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na5_r4",
+      "arm": "coverage_preserving",
+      "na": 5,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na5_r4",
+        "PROBE_NA": 5,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 125,
+      "peak_live_values": 41,
+      "air_lines": 773,
+      "device_loads": 44,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na5_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na6_r1",
+      "arm": "coverage_preserving",
+      "na": 6,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na6_r1",
+        "PROBE_NA": 6,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 87,
+      "peak_live_values": 37,
+      "air_lines": 383,
+      "device_loads": 30,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na6_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na6_r2",
+      "arm": "coverage_preserving",
+      "na": 6,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na6_r2",
+        "PROBE_NA": 6,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 117,
+      "peak_live_values": 42,
+      "air_lines": 544,
+      "device_loads": 36,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na6_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na6_r4",
+      "arm": "coverage_preserving",
+      "na": 6,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na6_r4",
+        "PROBE_NA": 6,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <6 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <6 x float>]"
+      ],
+      "peak_live_regs": 144,
+      "peak_live_values": 44,
+      "air_lines": 853,
+      "device_loads": 48,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na6_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na7_r1",
+      "arm": "coverage_preserving",
+      "na": 7,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na7_r1",
+        "PROBE_NA": 7,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 99,
+      "peak_live_values": 39,
+      "air_lines": 424,
+      "device_loads": 34,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na7_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na7_r2",
+      "arm": "coverage_preserving",
+      "na": 7,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na7_r2",
+        "PROBE_NA": 7,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 134,
+      "peak_live_values": 44,
+      "air_lines": 600,
+      "device_loads": 40,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na7_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na7_r4",
+      "arm": "coverage_preserving",
+      "na": 7,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na7_r4",
+        "PROBE_NA": 7,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <7 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <7 x float>]"
+      ],
+      "peak_live_regs": 157,
+      "peak_live_values": 43,
+      "air_lines": 662,
+      "device_loads": 52,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na7_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na8_r1",
+      "arm": "coverage_preserving",
+      "na": 8,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na8_r1",
+        "PROBE_NA": 8,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 111,
+      "peak_live_values": 41,
+      "air_lines": 465,
+      "device_loads": 38,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na8_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na8_r2",
+      "arm": "coverage_preserving",
+      "na": 8,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na8_r2",
+        "PROBE_NA": 8,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 151,
+      "peak_live_values": 46,
+      "air_lines": 656,
+      "device_loads": 44,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na8_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na8_r4",
+      "arm": "coverage_preserving",
+      "na": 8,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na8_r4",
+        "PROBE_NA": 8,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <8 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <8 x float>]"
+      ],
+      "peak_live_regs": 177,
+      "peak_live_values": 44,
+      "air_lines": 703,
+      "device_loads": 56,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na8_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na9_r1",
+      "arm": "coverage_preserving",
+      "na": 9,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na9_r1",
+        "PROBE_NA": 9,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 123,
+      "peak_live_values": 43,
+      "air_lines": 506,
+      "device_loads": 42,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na9_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na9_r2",
+      "arm": "coverage_preserving",
+      "na": 9,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na9_r2",
+        "PROBE_NA": 9,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 168,
+      "peak_live_values": 48,
+      "air_lines": 712,
+      "device_loads": 48,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na9_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na9_r4",
+      "arm": "coverage_preserving",
+      "na": 9,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na9_r4",
+        "PROBE_NA": 9,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <9 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <9 x float>]"
+      ],
+      "peak_live_regs": 197,
+      "peak_live_values": 45,
+      "air_lines": 744,
+      "device_loads": 60,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na9_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na10_r1",
+      "arm": "coverage_preserving",
+      "na": 10,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na10_r1",
+        "PROBE_NA": 10,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 135,
+      "peak_live_values": 45,
+      "air_lines": 547,
+      "device_loads": 46,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na10_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na10_r2",
+      "arm": "coverage_preserving",
+      "na": 10,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na10_r2",
+        "PROBE_NA": 10,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 185,
+      "peak_live_values": 50,
+      "air_lines": 768,
+      "device_loads": 52,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na10_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrb_na10_r4",
+      "arm": "coverage_preserving",
+      "na": 10,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RB": null,
+        "PROBE_NAME": "xrb_na10_r4",
+        "PROBE_NA": 10,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <10 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <10 x float>]"
+      ],
+      "peak_live_regs": 217,
+      "peak_live_values": 46,
+      "air_lines": 785,
+      "device_loads": 64,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrb_na10_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na2_r1",
+      "arm": "grid_relaxed",
+      "na": 2,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na2_r1",
+        "PROBE_NA": 2,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 38,
+      "peak_live_values": 29,
+      "air_lines": 208,
+      "device_loads": 14,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na2_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na2_r2",
+      "arm": "grid_relaxed",
+      "na": 2,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na2_r2",
+        "PROBE_NA": 2,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 46,
+      "peak_live_values": 34,
+      "air_lines": 311,
+      "device_loads": 20,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na2_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na2_r3",
+      "arm": "grid_relaxed",
+      "na": 2,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na2_r3",
+        "PROBE_NA": 2,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 54,
+      "peak_live_values": 39,
+      "air_lines": 413,
+      "device_loads": 26,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na2_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na2_r4",
+      "arm": "grid_relaxed",
+      "na": 2,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na2_r4",
+        "PROBE_NA": 2,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 62,
+      "peak_live_values": 44,
+      "air_lines": 515,
+      "device_loads": 32,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na2_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na3_r1",
+      "arm": "grid_relaxed",
+      "na": 3,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na3_r1",
+        "PROBE_NA": 3,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 49,
+      "peak_live_values": 31,
+      "air_lines": 249,
+      "device_loads": 18,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na3_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na3_r2",
+      "arm": "grid_relaxed",
+      "na": 3,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na3_r2",
+        "PROBE_NA": 3,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 61,
+      "peak_live_values": 31,
+      "air_lines": 367,
+      "device_loads": 24,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na3_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na3_r3",
+      "arm": "grid_relaxed",
+      "na": 3,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na3_r3",
+        "PROBE_NA": 3,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 72,
+      "peak_live_values": 36,
+      "air_lines": 484,
+      "device_loads": 30,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na3_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na3_r4",
+      "arm": "grid_relaxed",
+      "na": 3,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na3_r4",
+        "PROBE_NA": 3,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 83,
+      "peak_live_values": 41,
+      "air_lines": 601,
+      "device_loads": 36,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na3_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na4_r1",
+      "arm": "grid_relaxed",
+      "na": 4,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na4_r1",
+        "PROBE_NA": 4,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 60,
+      "peak_live_values": 30,
+      "air_lines": 290,
+      "device_loads": 22,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na4_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na4_r2",
+      "arm": "grid_relaxed",
+      "na": 4,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na4_r2",
+        "PROBE_NA": 4,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 76,
+      "peak_live_values": 31,
+      "air_lines": 423,
+      "device_loads": 28,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na4_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na4_r3",
+      "arm": "grid_relaxed",
+      "na": 4,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na4_r3",
+        "PROBE_NA": 4,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 90,
+      "peak_live_values": 36,
+      "air_lines": 555,
+      "device_loads": 34,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na4_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na4_r4",
+      "arm": "grid_relaxed",
+      "na": 4,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na4_r4",
+        "PROBE_NA": 4,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 104,
+      "peak_live_values": 41,
+      "air_lines": 687,
+      "device_loads": 40,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na4_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na5_r1",
+      "arm": "grid_relaxed",
+      "na": 5,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na5_r1",
+        "PROBE_NA": 5,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 71,
+      "peak_live_values": 31,
+      "air_lines": 331,
+      "device_loads": 26,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na5_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na5_r2",
+      "arm": "grid_relaxed",
+      "na": 5,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na5_r2",
+        "PROBE_NA": 5,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 91,
+      "peak_live_values": 31,
+      "air_lines": 479,
+      "device_loads": 32,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na5_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na5_r3",
+      "arm": "grid_relaxed",
+      "na": 5,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na5_r3",
+        "PROBE_NA": 5,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 108,
+      "peak_live_values": 36,
+      "air_lines": 626,
+      "device_loads": 38,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na5_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na5_r4",
+      "arm": "grid_relaxed",
+      "na": 5,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na5_r4",
+        "PROBE_NA": 5,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 125,
+      "peak_live_values": 41,
+      "air_lines": 773,
+      "device_loads": 44,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na5_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na6_r1",
+      "arm": "grid_relaxed",
+      "na": 6,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na6_r1",
+        "PROBE_NA": 6,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 82,
+      "peak_live_values": 32,
+      "air_lines": 372,
+      "device_loads": 30,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na6_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na6_r2",
+      "arm": "grid_relaxed",
+      "na": 6,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na6_r2",
+        "PROBE_NA": 6,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 106,
+      "peak_live_values": 31,
+      "air_lines": 535,
+      "device_loads": 36,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na6_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na6_r3",
+      "arm": "grid_relaxed",
+      "na": 6,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na6_r3",
+        "PROBE_NA": 6,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 126,
+      "peak_live_values": 36,
+      "air_lines": 697,
+      "device_loads": 42,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na6_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na6_r4",
+      "arm": "grid_relaxed",
+      "na": 6,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na6_r4",
+        "PROBE_NA": 6,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <6 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <6 x float>]"
+      ],
+      "peak_live_regs": 144,
+      "peak_live_values": 44,
+      "air_lines": 853,
+      "device_loads": 48,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na6_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na7_r1",
+      "arm": "grid_relaxed",
+      "na": 7,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na7_r1",
+        "PROBE_NA": 7,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 93,
+      "peak_live_values": 33,
+      "air_lines": 413,
+      "device_loads": 34,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na7_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na7_r2",
+      "arm": "grid_relaxed",
+      "na": 7,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na7_r2",
+        "PROBE_NA": 7,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 121,
+      "peak_live_values": 31,
+      "air_lines": 591,
+      "device_loads": 40,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na7_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na7_r3",
+      "arm": "grid_relaxed",
+      "na": 7,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na7_r3",
+        "PROBE_NA": 7,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 144,
+      "peak_live_values": 36,
+      "air_lines": 768,
+      "device_loads": 46,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na7_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na7_r4",
+      "arm": "grid_relaxed",
+      "na": 7,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na7_r4",
+        "PROBE_NA": 7,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <7 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <7 x float>]"
+      ],
+      "peak_live_regs": 157,
+      "peak_live_values": 43,
+      "air_lines": 662,
+      "device_loads": 52,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na7_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na8_r1",
+      "arm": "grid_relaxed",
+      "na": 8,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na8_r1",
+        "PROBE_NA": 8,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 104,
+      "peak_live_values": 34,
+      "air_lines": 454,
+      "device_loads": 38,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na8_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na8_r2",
+      "arm": "grid_relaxed",
+      "na": 8,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na8_r2",
+        "PROBE_NA": 8,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 136,
+      "peak_live_values": 31,
+      "air_lines": 647,
+      "device_loads": 44,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na8_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na8_r3",
+      "arm": "grid_relaxed",
+      "na": 8,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na8_r3",
+        "PROBE_NA": 8,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[3 x <8 x float>]",
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[3 x <8 x float>]"
+      ],
+      "peak_live_regs": 168,
+      "peak_live_values": 42,
+      "air_lines": 831,
+      "device_loads": 50,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na8_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na8_r4",
+      "arm": "grid_relaxed",
+      "na": 8,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na8_r4",
+        "PROBE_NA": 8,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <8 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <8 x float>]"
+      ],
+      "peak_live_regs": 177,
+      "peak_live_values": 44,
+      "air_lines": 703,
+      "device_loads": 56,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na8_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na9_r1",
+      "arm": "grid_relaxed",
+      "na": 9,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na9_r1",
+        "PROBE_NA": 9,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 115,
+      "peak_live_values": 35,
+      "air_lines": 495,
+      "device_loads": 42,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na9_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na9_r2",
+      "arm": "grid_relaxed",
+      "na": 9,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na9_r2",
+        "PROBE_NA": 9,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 151,
+      "peak_live_values": 31,
+      "air_lines": 703,
+      "device_loads": 48,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na9_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na9_r3",
+      "arm": "grid_relaxed",
+      "na": 9,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na9_r3",
+        "PROBE_NA": 9,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[3 x <9 x float>]",
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[3 x <9 x float>]"
+      ],
+      "peak_live_regs": 187,
+      "peak_live_values": 43,
+      "air_lines": 898,
+      "device_loads": 54,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na9_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na9_r4",
+      "arm": "grid_relaxed",
+      "na": 9,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na9_r4",
+        "PROBE_NA": 9,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <9 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <9 x float>]"
+      ],
+      "peak_live_regs": 197,
+      "peak_live_values": 45,
+      "air_lines": 744,
+      "device_loads": 60,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na9_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na10_r1",
+      "arm": "grid_relaxed",
+      "na": 10,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na10_r1",
+        "PROBE_NA": 10,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 126,
+      "peak_live_values": 36,
+      "air_lines": 536,
+      "device_loads": 46,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na10_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na10_r2",
+      "arm": "grid_relaxed",
+      "na": 10,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na10_r2",
+        "PROBE_NA": 10,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 166,
+      "peak_live_values": 31,
+      "air_lines": 759,
+      "device_loads": 52,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na10_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na10_r3",
+      "arm": "grid_relaxed",
+      "na": 10,
+      "r": 3,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na10_r3",
+        "PROBE_NA": 10,
+        "PROBE_R": 3
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[3 x <10 x float>]",
+        "[3 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[3 x <10 x float>]"
+      ],
+      "peak_live_regs": 195,
+      "peak_live_values": 42,
+      "air_lines": 710,
+      "device_loads": 58,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na10_r3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na10_r4",
+      "arm": "grid_relaxed",
+      "na": 10,
+      "r": 4,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na10_r4",
+        "PROBE_NA": 10,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <10 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <10 x float>]"
+      ],
+      "peak_live_regs": 217,
+      "peak_live_values": 46,
+      "air_lines": 785,
+      "device_loads": 64,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na10_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na11_r1",
+      "arm": "grid_relaxed",
+      "na": 11,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na11_r1",
+        "PROBE_NA": 11,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[1 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 137,
+      "peak_live_values": 37,
+      "air_lines": 585,
+      "device_loads": 50,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na11_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na11_r2",
+      "arm": "grid_relaxed",
+      "na": 11,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na11_r2",
+        "PROBE_NA": 11,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 181,
+      "peak_live_values": 31,
+      "air_lines": 823,
+      "device_loads": 56,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na11_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na12_r1",
+      "arm": "grid_relaxed",
+      "na": 12,
+      "r": 1,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na12_r1",
+        "PROBE_NA": 12,
+        "PROBE_R": 1
+      },
+      "status": "ok",
+      "allocas": 0,
+      "alloca_types": [],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 156,
+      "peak_live_values": 24,
+      "air_lines": 525,
+      "device_loads": 22,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na12_r1.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xrps_na12_r2",
+      "arm": "grid_relaxed",
+      "na": 12,
+      "r": 2,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xrps_na12_r2",
+        "PROBE_NA": 12,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 196,
+      "peak_live_values": 31,
+      "air_lines": 608,
+      "device_loads": 16,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xrps_na12_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xctl_spill_na4_r4",
+      "arm": "negative_control",
+      "na": 4,
+      "r": 4,
+      "expect_acc_spill": true,
+      "defines": {
+        "PROBE_CELL_FORCED_SPILL": null,
+        "PROBE_NAME": "xctl_spill_na4_r4",
+        "PROBE_NA": 4,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x <4 x float>]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <4 x float>]"
+      ],
+      "peak_live_regs": 38,
+      "peak_live_values": 14,
+      "air_lines": 266,
+      "device_loads": 1,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xctl_spill_na4_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xctl_e27_spill_na6_r4",
+      "arm": "negative_control",
+      "na": 6,
+      "r": 4,
+      "expect_acc_spill": true,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xctl_e27_spill_na6_r4",
+        "PROBE_NA": 6,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <6 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <6 x float>]"
+      ],
+      "peak_live_regs": 144,
+      "peak_live_values": 44,
+      "air_lines": 853,
+      "device_loads": 48,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xctl_e27_spill_na6_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xctl_spill_na9_r2",
+      "arm": "negative_control",
+      "na": 9,
+      "r": 2,
+      "expect_acc_spill": true,
+      "defines": {
+        "PROBE_CELL_FORCED_SPILL": null,
+        "PROBE_NAME": "xctl_spill_na9_r2",
+        "PROBE_NA": 9,
+        "PROBE_R": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[2 x <9 x float>]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[2 x <9 x float>]"
+      ],
+      "peak_live_regs": 63,
+      "peak_live_values": 13,
+      "air_lines": 292,
+      "device_loads": 1,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xctl_spill_na9_r2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xctl_spill_na16_r4",
+      "arm": "negative_control",
+      "na": 16,
+      "r": 4,
+      "expect_acc_spill": true,
+      "defines": {
+        "PROBE_CELL_FORCED_SPILL": null,
+        "PROBE_NAME": "xctl_spill_na16_r4",
+        "PROBE_NA": 16,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x <16 x float>]"
+      ],
+      "acc_spill": true,
+      "acc_alloca_types": [
+        "[4 x <16 x float>]"
+      ],
+      "peak_live_regs": 99,
+      "peak_live_values": 24,
+      "air_lines": 277,
+      "device_loads": 1,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xctl_spill_na16_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xctl_clean_na4_r4",
+      "arm": "positive_control",
+      "na": 4,
+      "r": 4,
+      "expect_acc_spill": false,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xctl_clean_na4_r4",
+        "PROBE_NA": 4,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 104,
+      "peak_live_values": 41,
+      "air_lines": 687,
+      "device_loads": 40,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xctl_clean_na4_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xctl_clean_na5_r4",
+      "arm": "positive_control",
+      "na": 5,
+      "r": 4,
+      "expect_acc_spill": false,
+      "defines": {
+        "PROBE_CELL_RPS": null,
+        "PROBE_NAME": "xctl_clean_na5_r4",
+        "PROBE_NA": 5,
+        "PROBE_R": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 125,
+      "peak_live_values": 41,
+      "air_lines": 773,
+      "device_loads": 44,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xctl_clean_na5_r4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xship_na2",
+      "arm": "shipped_anchor",
+      "na": 2,
+      "r": 4,
+      "expect_acc_spill": false,
+      "defines": {
+        "PROBE_CELL_SHIPPED": null,
+        "PROBE_NAME": "xship_na2",
+        "PROBE_NA": 2
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 62,
+      "peak_live_values": 44,
+      "air_lines": 515,
+      "device_loads": 32,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xship_na2.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xship_na3",
+      "arm": "shipped_anchor",
+      "na": 3,
+      "r": 4,
+      "expect_acc_spill": false,
+      "defines": {
+        "PROBE_CELL_SHIPPED": null,
+        "PROBE_NAME": "xship_na3",
+        "PROBE_NA": 3
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 83,
+      "peak_live_values": 41,
+      "air_lines": 601,
+      "device_loads": 36,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xship_na3.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xship_na4",
+      "arm": "shipped_anchor",
+      "na": 4,
+      "r": 4,
+      "expect_acc_spill": false,
+      "defines": {
+        "PROBE_CELL_SHIPPED": null,
+        "PROBE_NAME": "xship_na4",
+        "PROBE_NA": 4
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 104,
+      "peak_live_values": 41,
+      "air_lines": 687,
+      "device_loads": 40,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xship_na4.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    },
+    {
+      "name": "xship_na5",
+      "arm": "shipped_anchor",
+      "na": 5,
+      "r": 4,
+      "expect_acc_spill": false,
+      "defines": {
+        "PROBE_CELL_SHIPPED": null,
+        "PROBE_NAME": "xship_na5",
+        "PROBE_NA": 5
+      },
+      "status": "ok",
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "acc_spill": false,
+      "acc_alloca_types": [],
+      "peak_live_regs": 125,
+      "peak_live_values": 41,
+      "air_lines": 773,
+      "device_loads": 44,
+      "threadgroup_refs": 0,
+      "air_object": "/tmp/e32_air/xship_na5.air",
+      "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+    }
+  ]
+}
