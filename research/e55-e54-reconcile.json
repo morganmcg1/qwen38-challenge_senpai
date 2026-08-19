@@ -1,0 +1,293 @@
+{
+ "answers": "advisor revision e55-r2 item 3: stream model versus E54",
+ "eta_curve": {
+  "eta_1": 1.0,
+  "eta_2": 0.8758651256835965,
+  "eta_3": 0.8160587351783081,
+  "reading": "eta falls with the concurrent working-group count, so each extra concurrent group costs LESS than a full extra weight pass. That is cross-group reuse of the same weight rows, and it is the same effect E54's honest limit 4 sees from the byte side as cells above 100 % of measured stream peak."
+ },
+ "eta_identification": {
+  "E49_arm1_M9": {
+   "eta_ratio": 1.068977127494093,
+   "eta_ratio_name": "eta(2)/eta(3)",
+   "n_control": 3,
+   "n_treated": 2
+  },
+  "P1_M5": {
+   "eta_ratio": 1.1407021548637344,
+   "eta_ratio_name": "eta(1)/eta(2)",
+   "n_control": 2,
+   "n_treated": 1
+  },
+  "P4_M5": {
+   "eta_ratio": 1.1427544429075682,
+   "eta_ratio_name": "eta(1)/eta(2)",
+   "n_control": 2,
+   "n_treated": 1
+  },
+  "P4_M9": {
+   "eta_ratio": 1.0775966126723446,
+   "eta_ratio_name": "eta(2)/eta(3)",
+   "n_control": 3,
+   "n_treated": 2
+  }
+ },
+ "eta_replication": {
+  "eta(1)/eta(2)": {
+   "estimates": [
+    1.1407021548637344,
+    1.1427544429075682
+   ],
+   "n_independent_measurements": 2,
+   "spread_pct": 0.17975275254514678
+  },
+  "eta(2)/eta(3)": {
+   "estimates": [
+    1.0775966126723446,
+    1.068977127494093
+   ],
+   "n_independent_measurements": 2,
+   "spread_pct": 0.8030923901625113
+  }
+ },
+ "ladder_versus_flat_at_group_preserving_cells": {
+  "e54_own_control_bars_pct": {
+   "P2_M7": 0.884,
+   "P3_M8": 0.482
+  },
+  "flat_is_refuted_at": [
+   "P2_M7",
+   "P3_M8"
+  ],
+  "flat_residual_points": {
+   "P2_M7": -0.9946187560370356,
+   "P3_M8": -1.34491728806303
+  },
+  "mean_abs_points": {
+   "flat": 1.1697680220500328,
+   "third_structure": 1.5617070884394457
+  },
+  "reading": "On worst-case and on mean absolute residual the FLAT ladder fits the two group-preserving cells better than the rate ladder does, because the ladder over-predicts M=7 by 2.5 points. What refutes flat is not my fit, it is E54's own control bar: M=8 moves +1.345 % against a 0.482 % bar, so a genuinely nonzero NA penalty exists there. So the supported statement is that the group-preserving penalty is small, positive and of order 1 %, and that the lone-group ladder gets its sign and order right while over-stating it. Two observations cannot pin the size, and I do not claim they do.",
+  "third_structure_residual_points": {
+   "P2_M7": 2.5451127873256096,
+   "P3_M8": 0.5783013895532818
+  },
+  "worst_abs_points": {
+   "flat": 1.34491728806303,
+   "third_structure": 2.5451127873256096
+  }
+ },
+ "lone_group_rate_ladder_gbps": {
+  "2": 223.78388049125397,
+  "3": 199.69315188368424,
+  "4": 175.2379899351266,
+  "5": 150.94646615142443
+ },
+ "negative_controls": {
+  "identity_check_catches_a_perturbed_rate": {
+   "fired": true
+  },
+  "ladder_bound_is_respected": {
+   "fired": true
+  },
+  "residual_metric_detects_a_perturbed_measurement": {
+   "fired": true,
+   "perturbed_residual_points": 4.488944474849865,
+   "unperturbed_residual_points": 0.5783013895532818
+  },
+  "reversed_ladder_implies_an_unphysical_rate": {
+   "fired": true,
+   "measured_stream_peak_gbps": 225.63327499920143,
+   "note": "the true ladder implies 1.07x measured peak, which E54's honest limit 4 already attributes to cross-group cache reuse; the reversed ladder implies 1.58x, which no reuse account supports",
+   "reversed_implied_aggregate_gbps": 356.91945331694507,
+   "true_ladder_implied_aggregate_gbps": 240.96550284666662
+  },
+  "stream_model_fails_its_holdout": {
+   "fired": true,
+   "worst_residual_points": 29.77710475491604
+  }
+ },
+ "new_falsifiable_predictions": {
+  "eta_2_must_be_shared": "any future two-group cell must reuse eta(2) = 0.87587 without refitting; a cell that needs its own eta falsifies the structure.",
+  "m7_ipg4_to_ipg5_predicted_delta_pct": 3.5397315433626453,
+  "note": "M=6 cannot move to IPG=5: TAIL = 6 % 5 = 1 and the wide helper asserts NA >= 2, so {5,1} is illegal. The prediction below is therefore the only untested group-preserving cell the shipped table can express, and it is a prediction of the third structure with zero free parameters."
+ },
+ "r_is_bimodal_in_the_group_count_change": {
+  "delta_n_minus_1": {
+   "estimates": [
+    1.5949292349986504,
+    1.5977987432097045,
+    1.6535754324488305
+   ],
+   "mean": 1.6154344702190617,
+   "spread_pct": 3.6303668475161013
+  },
+  "delta_n_zero": {
+   "estimates": [
+    1.0198923751207407,
+    1.0268983457612606
+   ],
+   "mean": 1.0233953604410007,
+   "spread_pct": 0.6845810437816408
+  },
+  "reading": "Within each design structure r is tight; across the two structures it separates by more than 1.5x. My model has no term that can produce that split, so r was absorbing the group-count change. The Delta n = 0 value near 1.02 is the true NA=5 penalty with no stream removed.",
+  "separation_factor": 1.578504781888927
+ },
+ "rank_deficiency": {
+  "e54_group_preserving_cells": [
+   7,
+   8
+  ],
+  "every_calibration_cell_reduces_the_group_count": true,
+  "my_calibration_cells": {
+   "e27_m5_cell": 1.598,
+   "e27_m9_cell": 1.6562000000000001,
+   "e49_arm1_m9_cell": 1.6323523880653155
+  },
+  "reading": "All three cells I fitted r on drop a working group, so r is collinear with the group-count change and identifies a product, not a per-group cost. E54 supplies the missing contrast."
+ },
+ "retraction_threshold_points": 10.0,
+ "self_tests": {
+  "checks": [
+   "rate-time identity closes on every constant-traffic pair",
+   "all r-calibration cells reduce the working-group count",
+   "r separates into two tight clusters by group-count change",
+   "independent eta estimates replicate within 5 %",
+   "eta is monotone decreasing in the concurrent group count",
+   "the retraction is driven by a residual above the pre-set threshold",
+   "all negative controls fire"
+  ],
+  "failures": [],
+  "passed": true
+ },
+ "source": "research/e54-artifacts/e54-bandwidth.json",
+ "stream_model_out_of_sample": {
+  "holdout": {
+   "P2_M7": {
+    "m": 7,
+    "measured_delta_pct": 0.9946187560370356,
+    "predicted_delta_pct": 30.771723510953073,
+    "residual_points": 29.77710475491604
+   },
+   "P3_M8": {
+    "m": 8,
+    "measured_delta_pct": 1.34491728806303,
+    "predicted_delta_pct": 30.771723510953073,
+    "residual_points": 29.426806222890043
+   }
+  },
+  "r_estimates": {
+   "P1_M5": {
+    "control_groups": [
+     3,
+     2
+    ],
+    "delta_working_groups": -1,
+    "implied_r": 1.5949292349986504,
+    "m": 5,
+    "measured_ratio": 0.7974646174993252,
+    "treated_groups": [
+     5
+    ]
+   },
+   "P2_M7": {
+    "control_groups": [
+     4,
+     3
+    ],
+    "delta_working_groups": 0,
+    "implied_r": 1.0198923751207407,
+    "m": 7,
+    "measured_ratio": 1.0099461875603704,
+    "treated_groups": [
+     5,
+     2
+    ]
+   },
+   "P3_M8": {
+    "control_groups": [
+     4,
+     4
+    ],
+    "delta_working_groups": 0,
+    "implied_r": 1.0268983457612606,
+    "m": 8,
+    "measured_ratio": 1.0134491728806303,
+    "treated_groups": [
+     5,
+     3
+    ]
+   },
+   "P4_M5": {
+    "control_groups": [
+     3,
+     2
+    ],
+    "delta_working_groups": -1,
+    "implied_r": 1.5977987432097045,
+    "m": 5,
+    "measured_ratio": 0.7988993716048522,
+    "treated_groups": [
+     5
+    ]
+   },
+   "P4_M9": {
+    "control_groups": [
+     3,
+     3,
+     3
+    ],
+    "delta_working_groups": -1,
+    "implied_r": 1.6535754324488305,
+    "m": 9,
+    "measured_ratio": 0.8845251441496103,
+    "treated_groups": [
+     5,
+     4
+    ]
+   }
+  },
+  "r_mean_from_group_reducing_cells": 1.6154344702190617
+ },
+ "third_structure_out_of_sample": {
+  "P2_M7": {
+   "free_parameters": 0,
+   "m": 7,
+   "measured_delta_pct": 0.9946187560370356,
+   "predicted_delta_pct": 3.5397315433626453,
+   "residual_points": 2.5451127873256096
+  },
+  "P3_M8": {
+   "free_parameters": 0,
+   "m": 8,
+   "measured_delta_pct": 1.34491728806303,
+   "predicted_delta_pct": 1.9232186776163118,
+   "residual_points": 0.5783013895532818
+  }
+ },
+ "thorfinn_rate_agreement_is_an_identity": {
+  "pairs": {
+   "P2_M7": {
+    "abs_residual_points": 1.0880185641326534e-14,
+    "implied_by_seconds_delta_pct": -0.9848235166267982,
+    "reported_gbps_delta_pct": -0.9848235166267874
+   },
+   "P3_M8": {
+    "abs_residual_points": 1.7763568394002505e-15,
+    "implied_by_seconds_delta_pct": -1.3270693035746794,
+    "reported_gbps_delta_pct": -1.3270693035746777
+   }
+  },
+  "reading": "Where the working-group count does not change, traffic is fixed and aggregate GB/s is bytes/time by definition, so gbps_delta_pct is seconds_delta_pct restated. E54's 0.01-point agreement at P2 and P3 therefore confirms arithmetic, not Law A'. Law A' AS STATED (cost scales with the working-group count and not with NA) predicts 0.00 % at both cells and the measurement is +0.994 % and +1.345 %. That is a real residual, small but nonzero, and it is what the rate ladder has to explain."
+ },
+ "verdict": {
+  "improvement_factor": 11.699719125691736,
+  "retained_from_law_a_prime": "working-group traffic is the leading term and E54's lone-group rate ladder is a real direct measurement. Law A' is incomplete rather than wrong: as stated it predicts 0.00 % at M=7 and M=8, its P2/P3 confirmation is an algebraic identity, and E54's own control bar refutes 0.00 % at M=8. I do not claim the ladder pins the size of that residual; see ladder_versus_flat_at_group_preserving_cells.",
+  "retained_from_my_model": "the SIGN rule survives: a cell profits from NA=5 only when the move removes a working group, which is true at M=5 and M=9 and false at M=6, M=7 and M=8. The MAGNITUDE does not survive: I priced the group-preserving penalty at +29.9..+31.6 % and it is +1.0..+1.3 %, about 25x too large.",
+  "retracted": "e55_stream_model_r_as_a_per_group_cost_ratio",
+  "worst_out_of_sample_residual_points": {
+   "my_e55_stream_model": 29.77710475491604,
+   "third_structure": 2.5451127873256096
+  }
+ }
+}
