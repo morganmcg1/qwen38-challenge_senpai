@@ -134,7 +134,7 @@ def log_rung0(run, routes: list[pathlib.Path]) -> None:
     run.summary.update(summary)
 
 
-def log_rung1(run, dispatch: pathlib.Path) -> None:
+def log_rung1(run, dispatch: pathlib.Path, bitwise: pathlib.Path | None) -> None:
     blob = json.loads(dispatch.read_text())
     columns = ["form", "query_layout", "qL", "kL", "dispatches",
                "kernel_counts", "sdpa_threadgroups", "kernel_sequence"]
@@ -152,6 +152,30 @@ def log_rung1(run, dispatch: pathlib.Path) -> None:
         summary[f"{key}/kernels"] = json.dumps(cell["kernel_counts"])
         summary[f"{key}/sdpa_threadgroups"] = json.dumps(cell["sdpa_threadgroups"])
     run.log({"rung1/cells": table})
+
+    if bitwise is not None:
+        bits = json.loads(bitwise.read_text())
+        bit_columns = ["query_layout", "qL", "kL", "elements",
+                       "aa_control_differing_elements", "chunk_differing_elements",
+                       "chunk_differing_fraction", "chunk_max_absolute_difference",
+                       "chunk_max_relative_difference"]
+        bit_table = wandb.Table(columns=bit_columns)
+        for cell in bits["cells"]:
+            bit_table.add_data(*[cell[name] for name in bit_columns])
+            key = (f"rung1/bitwise/{cell['query_layout']}/qL{cell['qL']}")
+            summary[f"{key}/chunk_differing_fraction"] = cell[
+                "chunk_differing_fraction"]
+            summary[f"{key}/chunk_max_absolute_difference"] = cell[
+                "chunk_max_absolute_difference"]
+            summary[f"{key}/aa_control_differing_elements"] = cell[
+                "aa_control_differing_elements"]
+        summary["rung1/bitwise/aa_control_clean"] = all(
+            cell["aa_control_differing_elements"] == 0 for cell in bits["cells"])
+        summary["rung1/bitwise/chunk_changes_output_at_ql_ge6"] = all(
+            cell["chunk_differing_elements"] > 0
+            for cell in bits["cells"] if cell["qL"] >= 6)
+        run.log({"rung1/bitwise": bit_table})
+
     run.summary.update(summary)
 
 
@@ -265,6 +289,7 @@ def main() -> int:
         "--stage", required=True, choices=["rung0", "rung1", "rung2", "rung3"])
     parser.add_argument("--routes", nargs="*", type=pathlib.Path, default=[])
     parser.add_argument("--dispatch", type=pathlib.Path)
+    parser.add_argument("--bitwise", type=pathlib.Path)
     parser.add_argument("--arms", nargs="*", type=pathlib.Path, default=[])
     parser.add_argument("--resume")
     args = parser.parse_args()
@@ -277,7 +302,7 @@ def main() -> int:
     elif args.stage == "rung1":
         if not args.dispatch:
             raise SystemExit("--stage rung1 needs --dispatch")
-        log_rung1(run, args.dispatch)
+        log_rung1(run, args.dispatch, args.bitwise)
     elif args.stage == "rung2":
         if not args.arms:
             raise SystemExit("--stage rung2 needs --arms")
