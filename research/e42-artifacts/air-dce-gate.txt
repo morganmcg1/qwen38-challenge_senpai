@@ -1,0 +1,21 @@
+# E42 AIR dead-code-elimination gate
+# base = -DE42_BASE (unpatched header text), arm = p2/level-1 patched header
+# probe: research/e42_air_probe.metal; stats: research/air_kernel_stats.py
+# xcrun -sdk macosx metal -std=metal3.1 -S -O2 [-DE42_BASE] research/e42_air_probe.metal -I Vendor/mlx-swift/Source/Cmlx/mlx
+
+== base ==
+e42_na3_p0: lines=291 allocas=5 fma_f32=0 fmul=6 fadd=10 float_ops=16 vector_float_ops=12 flops=16 device_loads=7 loads=16 loop_backedges=11 peak_live_regs=50 peak_live_values=32 types=['[4 x <3 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_na5_p0: lines=291 allocas=5 fma_f32=0 fmul=6 fadd=10 float_ops=16 vector_float_ops=12 flops=16 device_loads=7 loads=16 loop_backedges=11 peak_live_regs=70 peak_live_values=30 types=['[4 x <5 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_pair_p0: lines=458 allocas=7 fma_f32=0 fmul=18 fadd=20 float_ops=38 vector_float_ops=12 flops=38 device_loads=11 loads=35 loop_backedges=12 peak_live_regs=42 peak_live_values=34 types=['[16 x float]', '[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+
+== arm ==
+e42_na3_p0: lines=288 allocas=5 fma_f32=0 fmul=6 fadd=10 float_ops=16 vector_float_ops=12 flops=16 device_loads=7 loads=16 loop_backedges=11 peak_live_regs=50 peak_live_values=32 types=['[4 x <3 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_na3_p1: lines=303 allocas=5 fma_f32=0 fmul=6 fadd=10 float_ops=16 vector_float_ops=12 flops=16 device_loads=7 loads=16 loop_backedges=12 peak_live_regs=50 peak_live_values=32 types=['[4 x <3 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_na3_p2: lines=305 allocas=5 fma_f32=0 fmul=6 fadd=10 float_ops=16 vector_float_ops=12 flops=16 device_loads=7 loads=16 loop_backedges=12 peak_live_regs=50 peak_live_values=32 types=['[4 x <3 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_na5_p0: lines=288 allocas=5 fma_f32=0 fmul=6 fadd=10 float_ops=16 vector_float_ops=12 flops=16 device_loads=7 loads=16 loop_backedges=11 peak_live_regs=70 peak_live_values=30 types=['[4 x <5 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_na5_p1: lines=303 allocas=5 fma_f32=0 fmul=6 fadd=10 float_ops=16 vector_float_ops=12 flops=16 device_loads=7 loads=16 loop_backedges=12 peak_live_regs=70 peak_live_values=30 types=['[4 x <5 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_na5_p2: lines=305 allocas=5 fma_f32=0 fmul=6 fadd=10 float_ops=16 vector_float_ops=12 flops=16 device_loads=7 loads=16 loop_backedges=12 peak_live_regs=70 peak_live_values=30 types=['[4 x <5 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_pair_p0: lines=458 allocas=7 fma_f32=0 fmul=18 fadd=20 float_ops=38 vector_float_ops=12 flops=38 device_loads=11 loads=35 loop_backedges=12 peak_live_regs=42 peak_live_values=34 types=['[16 x float]', '[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_pair_p1: lines=462 allocas=7 fma_f32=0 fmul=18 fadd=20 float_ops=38 vector_float_ops=12 flops=38 device_loads=11 loads=35 loop_backedges=13 peak_live_regs=42 peak_live_values=34 types=['[16 x float]', '[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+e42_pair_p2: lines=464 allocas=7 fma_f32=0 fmul=18 fadd=20 float_ops=38 vector_float_ops=12 flops=38 device_loads=11 loads=35 loop_backedges=13 peak_live_regs=42 peak_live_values=34 types=['[16 x float]', '[4 x <2 x float>]', '[4 x [4 x i16]', '[4 x float]']
+
