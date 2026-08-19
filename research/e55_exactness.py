@@ -217,6 +217,45 @@ def compare_ledger(a: dict, b: dict) -> dict:
     return out
 
 
+def ledger_provenance(base_path: str, cand_path: str) -> dict:
+    """Prove the two PATH C ledgers came from two differently built binaries.
+
+    Without this, an identical-ledger result is also consistent with having
+    compared one arm against itself.
+    """
+    def meta(p: str) -> dict:
+        f = pathlib.Path(p).with_name(pathlib.Path(p).stem + "-meta.txt")
+        if not f.exists():
+            return {}
+        out = {}
+        for line in f.read_text().splitlines():
+            if "=" in line:
+                k, _, v = line.partition("=")
+                out[k.strip()] = v.strip()
+        return out
+
+    mb, mc = meta(base_path), meta(cand_path)
+    if not mb or not mc:
+        return {"meta_present": False, "arms_provably_distinct_binaries": False}
+    differ = ("worker_sha256", "metallib_sha256[.build-worker/release/mlx.metallib]",
+              "e55_binary_assert_m9_na", "e55_binary_assert_wide_bound")
+    shared = ("golden_sha256", "head_dir", "tokens", "depth")
+    return {
+        "meta_present": True,
+        "base": {k: mb.get(k) for k in differ + shared + ("arm", "git_head")},
+        "candidate": {k: mc.get(k) for k in differ + shared + ("arm", "git_head")},
+        "fields_that_must_differ": {k: mb.get(k) != mc.get(k) for k in differ},
+        "fields_that_must_match": {k: mb.get(k) == mc.get(k) for k in shared},
+        "base_dispatches_m9_na": mb.get("e55_binary_assert_m9_na"),
+        "candidate_dispatches_m9_na": mc.get("e55_binary_assert_m9_na"),
+        "arms_provably_distinct_binaries": (
+            mb.get("worker_sha256") != mc.get("worker_sha256")
+            and mb.get("e55_binary_assert_m9_na") == "3"
+            and mc.get("e55_binary_assert_m9_na") == "5"
+            and all(mb.get(k) == mc.get(k) for k in shared)),
+    }
+
+
 def eos_report(payload: dict) -> dict:
     em = payload["emitted_tokens"]
     hits = [i for i, t in enumerate(em) if t == EOS_TOKEN_ID]
@@ -347,8 +386,17 @@ def main() -> int:
         path_c = compare_ledger(
             json.loads(pathlib.Path(args.ledger_base).read_text()),
             json.loads(pathlib.Path(args.ledger_candidate).read_text()))
+        path_c["provenance"] = ledger_provenance(
+            args.ledger_base, args.ledger_candidate)
 
     neg = negative_control()
+    if path_c is not None:
+        # The failure this guards against is real: comparing one arm against
+        # itself also yields an all-zero ledger diff.
+        neg["cases"]["C_self_comparison_is_not_distinct_arms"] = not (
+            ledger_provenance(args.ledger_candidate, args.ledger_candidate)
+            ["arms_provably_distinct_binaries"])
+        neg["all_fired"] = all(neg["cases"].values())
 
     payload = {
         "arms": list(ARMS),
@@ -384,6 +432,9 @@ def main() -> int:
         "path_b_null_identical": b_null,
         "path_c_wide_rows_bitwise_identical": (
             path_c["identical"] if path_c else None),
+        "path_c_arms_provably_distinct_binaries": (
+            path_c["provenance"]["arms_provably_distinct_binaries"]
+            if path_c else None),
         "golden_hash_shared_across_all_arms": len(ghash) == 1,
         "all_correctness_gates_passed": all(
             v["passed"] for v in payload["correctness_gate"].values()),
@@ -394,13 +445,19 @@ def main() -> int:
     payload["widths_exercised"] = path_b["candidate_vs_base_leg-1"]["widths_exercised"]
     payload["hard_stop_tripped"] = not (a_cand and b_cand) or (
         path_c is not None and not path_c["identical"])
-    payload["direct_bitwise_wide_evidence_present"] = path_c is not None
+    # A matched pair of ledgers only carries cross-arm meaning when the two arms
+    # provably ran different binaries, so provenance gates the claim itself.
+    payload["direct_bitwise_wide_evidence_present"] = bool(
+        path_c is not None
+        and path_c["provenance"]["arms_provably_distinct_binaries"])
     payload["verdict_ok"] = (
         a_cand and a_null and b_cand and b_null
         and payload["verdicts"]["golden_hash_shared_across_all_arms"]
         and payload["verdicts"]["all_correctness_gates_passed"]
         and neg["all_fired"]
-        and (path_c is None or path_c["identical"]))
+        and (path_c is None
+             or (path_c["identical"]
+                 and path_c["provenance"]["arms_provably_distinct_binaries"])))
 
     pathlib.Path(args.out).write_text(json.dumps(payload, indent=2, sort_keys=True))
 
@@ -431,6 +488,17 @@ def main() -> int:
                  path_c.get("max_abs_ulp_top2_logits"),
                  path_c.get("widths_in_ledger"),
                  path_c.get("field_mismatch_counts")))
+        pv = path_c["provenance"]
+        print("  arms provably distinct binaries : %s"
+              % pv["arms_provably_distinct_binaries"])
+        print("    base      m9_na=%s worker=%s"
+              % (pv.get("base_dispatches_m9_na"),
+                 (pv.get("base") or {}).get("worker_sha256", "")[:12]))
+        print("    candidate m9_na=%s worker=%s"
+              % (pv.get("candidate_dispatches_m9_na"),
+                 (pv.get("candidate") or {}).get("worker_sha256", "")[:12]))
+        print("    must differ: %s" % pv.get("fields_that_must_differ"))
+        print("    must match : %s" % pv.get("fields_that_must_match"))
     print()
     print("negative control (each must be reported):")
     for k, v in neg["cases"].items():

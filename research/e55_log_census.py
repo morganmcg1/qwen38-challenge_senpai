@@ -28,6 +28,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", required=True)
     ap.add_argument("--census", default="research/e55-reg-census.json")
+    ap.add_argument("--exactness", default="research/e55-exactness.json")
     args = ap.parse_args()
 
     c = json.loads(pathlib.Path(args.census).read_text())
@@ -77,6 +78,57 @@ def main() -> int:
         # E27 essays leg: what case 5 plus the shared harm must be worth for
         # E27's +0.4803 % board result to hold at this mixture.
         summary["pricing/e27_essays_case5_plus_harm_%s_pct" % name] = 0.4803 - gain
+
+    exactness_path = pathlib.Path(args.exactness)
+    if exactness_path.exists():
+        x = json.loads(exactness_path.read_text())
+        v = x["verdicts"]
+        # Each key names its OWN row population and reading, so a reader cannot
+        # mistake the M=1 golden pass for evidence about the changed dispatch.
+        summary.update({
+            "exactness/path_a_m1_golden_bitwise_identical":
+                v["path_a_m1_golden_bitwise_identical"],
+            "exactness/path_a_covers_changed_dispatch": False,
+            "exactness/path_b_wide_argmax_trajectory_identical":
+                v["path_b_wide_argmax_trajectory_identical"],
+            "exactness/path_b_reading": "argmax-level",
+            "exactness/path_c_wide_rows_bitwise_identical":
+                v["path_c_wide_rows_bitwise_identical"],
+            "exactness/path_c_present": x["direct_bitwise_wide_evidence_present"],
+            "exactness/wide_rows_covered": x["wide_rows_covered_argmax_level"],
+            "exactness/widths_exercised": json.dumps(x["widths_exercised"]),
+            "exactness/golden_hash_shared_across_all_arms":
+                v["golden_hash_shared_across_all_arms"],
+            "exactness/all_correctness_gates_passed":
+                v["all_correctness_gates_passed"],
+            "exactness/negative_controls_all_fired": v["negative_controls_all_fired"],
+            "exactness/negative_control_count": len(x["negative_control"]["cases"]),
+            "exactness/hard_stop_tripped": x["hard_stop_tripped"],
+            "exactness/verdict_ok": x["verdict_ok"],
+        })
+        c_path = x.get("path_c_wide_row_ledger")
+        if c_path:
+            summary["exactness/path_c_max_abs_ulp_top2_logits"] = c_path[
+                "max_abs_ulp_top2_logits"]
+            summary["exactness/path_c_rows"] = c_path["row_count"][0]
+            pv = c_path["provenance"]
+            summary["exactness/path_c_arms_provably_distinct_binaries"] = pv[
+                "arms_provably_distinct_binaries"]
+            summary["exactness/path_c_base_m9_na"] = pv["base_dispatches_m9_na"]
+            summary["exactness/path_c_candidate_m9_na"] = pv[
+                "candidate_dispatches_m9_na"]
+            summary["exactness/path_c_base_worker_sha256"] = pv["base"][
+                "worker_sha256"]
+            summary["exactness/path_c_candidate_worker_sha256"] = pv["candidate"][
+                "worker_sha256"]
+        eos = next(iter(x["eos"].values()))
+        summary["exactness/eos_position"] = json.dumps(eos["eos_positions"])
+        summary["exactness/tokens_after_first_eos"] = eos["tokens_after_first_eos"]
+        summary["exactness/window_closed"] = eos["window_closed"]
+        # Withdrawn as cross-arm evidence: both sides of that comparison come
+        # from the same build, because the verify-block replay runs on the
+        # candidate's own binary.
+        summary["exactness/max_rejected_tail_logit_delta_is_cross_arm"] = False
 
     api = wandb.Api()
     run = api.run("%s/%s" % (PROJECT, args.run))

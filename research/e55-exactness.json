@@ -55,7 +55,7 @@
     }
   },
   "decode_tokens": 512,
-  "direct_bitwise_wide_evidence_present": false,
+  "direct_bitwise_wide_evidence_present": true,
   "eos": {
     "base/leg-1": {
       "emitted_token_count": 513,
@@ -136,7 +136,10 @@
       "B_draft_len_changed_at_round_40": true,
       "C_ledger_absent_is_not_a_pass": true,
       "C_ledger_acceptance_flipped": true,
-      "C_ledger_top2_logit_one_ulp": true
+      "C_ledger_reference_margin_one_ulp": true,
+      "C_ledger_reference_source_changed": true,
+      "C_ledger_top2_logit_one_ulp": true,
+      "C_self_comparison_is_not_distinct_arms": true
     }
   },
   "path_a_reference_golden_m1": {
@@ -444,7 +447,93 @@
       }
     }
   },
-  "path_c_wide_row_ledger": null,
+  "path_c_wide_row_ledger": {
+    "covers_changed_dispatch": true,
+    "field_first_mismatches": {
+      "accepted": [],
+      "draft_index": [],
+      "kind": [],
+      "reference_checked_by": [],
+      "reference_margin": [],
+      "reference_token": [],
+      "round": [],
+      "token": [],
+      "top2_logits": [],
+      "top2_tokens": []
+    },
+    "field_mismatch_counts": {
+      "accepted": 0,
+      "draft_index": 0,
+      "kind": 0,
+      "reference_checked_by": 0,
+      "reference_margin": 0,
+      "reference_token": 0,
+      "round": 0,
+      "token": 0,
+      "top2_logits": 0,
+      "top2_tokens": 0
+    },
+    "identical": true,
+    "max_abs_ulp_top2_logits": 0,
+    "provenance": {
+      "arms_provably_distinct_binaries": true,
+      "base": {
+        "arm": "base",
+        "depth": "8",
+        "e55_binary_assert_m9_na": "3",
+        "e55_binary_assert_wide_bound": "4",
+        "git_head": "d86bb32768ef7243f56def413b066a0af6ad83e4",
+        "golden_sha256": "66858d9561663b62e58a97191428da0a3816cdb00f67a93f724c7b2d0cf2301e",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "metallib_sha256[.build-worker/release/mlx.metallib]": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+        "tokens": "512",
+        "worker_sha256": "ae671e1c246ac4affe7ea12481353f0e0da27668cf8c4b9a8824eeba1a29a650"
+      },
+      "base_dispatches_m9_na": "3",
+      "candidate": {
+        "arm": "m9two",
+        "depth": "8",
+        "e55_binary_assert_m9_na": "5",
+        "e55_binary_assert_wide_bound": "5",
+        "git_head": "9505f22077cd784da78a25fd45fd30ea8efd6557",
+        "golden_sha256": "66858d9561663b62e58a97191428da0a3816cdb00f67a93f724c7b2d0cf2301e",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "metallib_sha256[.build-worker/release/mlx.metallib]": "9e271c6be0e500d01876729970798375f85b83c24fc8a19b66dc8424fd194242",
+        "tokens": "512",
+        "worker_sha256": "1eb9e491ba1d5c64e892cc959a451af0544f7c9727b4314686195c83db9862ef"
+      },
+      "candidate_dispatches_m9_na": "5",
+      "fields_that_must_differ": {
+        "e55_binary_assert_m9_na": true,
+        "e55_binary_assert_wide_bound": true,
+        "metallib_sha256[.build-worker/release/mlx.metallib]": true,
+        "worker_sha256": true
+      },
+      "fields_that_must_match": {
+        "depth": true,
+        "golden_sha256": true,
+        "head_dir": true,
+        "tokens": true
+      },
+      "meta_present": true
+    },
+    "reading": "logit-level bitwise",
+    "row_count": [
+      567,
+      567
+    ],
+    "row_population": "candidate wide-dispatch rows, mtp-verify row_ledger",
+    "shape_matches": true,
+    "widths_in_ledger": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    }
+  },
   "verdict_ok": true,
   "verdicts": {
     "all_correctness_gates_passed": true,
@@ -454,7 +543,8 @@
     "path_a_null_identical": true,
     "path_b_null_identical": true,
     "path_b_wide_argmax_trajectory_identical": true,
-    "path_c_wide_rows_bitwise_identical": null
+    "path_c_arms_provably_distinct_binaries": true,
+    "path_c_wide_rows_bitwise_identical": true
   },
   "wide_rows_covered_argmax_level": 567,
   "widths_exercised": {
