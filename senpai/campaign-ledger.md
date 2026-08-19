@@ -5932,3 +5932,245 @@ Two traps in doing it:
         adjudication instead. A written status that is not re-earned each run is a claim,
         not a fact. (The `pending-feedback` draft for PR 46 still read `BLOCKED (403)` after
         the guidance had shipped under two different ids; corrected in the same commit.)
+
+163. 🔴🔴🔴 **THE BASE MOVED ONTO THE CROWN AND I COULD NOT HAVE SEEN IT: `origin/main` IS A
+     LOCAL MIRROR THAT THE FETCH REFSPEC MAKES INCAPABLE OF CHANGING. Meanwhile thorfinn
+     named the step — it is the weight-stream count, read from source, not curvature — and
+     the board turned out to have been running our own A/B 476 times.**
+
+     **(a) The instrument defect, which is the most important item here.**
+     `remote.origin.fetch` in this checkout is a single scoped line,
+     `+refs/heads/senpai/qwen38-mtp-r1:refs/remotes/origin/senpai/qwen38-mtp-r1`. So
+     `git fetch origin` **never updates `refs/remotes/origin/main`**. For several sessions I
+     read that ref, found `527306761f70e2c4024f347915328894db80c181`, and wrote "campaign
+     base, unchanged" into a summary. It was not a measurement. It was a reading that was
+     **structurally incapable of changing.** The truth, from `git ls-remote`, is that main
+     had advanced three commits:
+
+     ```
+     6e0546e  Sync promoted organizer frontier 0c90733d383f6b987a29682bf9eb9458a6172bfa
+     d32342d  Regenerate promoted quantized Metal twin
+     6391b03  Record organizer and promoted frontiers
+     ```
+
+     `senpai/frontier-state.json` on main now reads `organizer.syncedCommit 0c90733d…` and
+     `promotedSubmission.score 3.24929398547457`. **The organizer has synced main onto the
+     same crown frontier this campaign spent a session rebasing onto by hand.** Old main is
+     still an ancestor of both new main and our HEAD, so no result was invalidated and no
+     rebase is needed — but the strategic consequence is large and is recorded in (f).
+
+     Remedy shipped: `senpai/verify-base-drift.sh` + `senpai/campaign-base.json`. The gate
+     asks the **remote** via `git ls-remote` instead of trusting a mirror of it, and reports
+     three things separately: real drift, the **stale-mirror condition itself**, and whether
+     drift was a fast-forward or a rewind — because an advance and a rewind need opposite
+     responses. Fails closed on an unreachable remote. Selftest 7/7 over constructed inputs
+     including a meta-test that the counter is wired to the evaluator at all. Neither
+     `git config` nor `git update-ref` is available to this role, so the root cause **cannot
+     be repaired from inside the campaign** and the gate is the only standing defence; the
+     verified remedy, an explicit refspec fetch
+     (`git fetch origin '+refs/heads/main:refs/remotes/origin/main'`), is printed in the
+     failure text.
+
+     **(b) E41 merged (#46). thorfinn gave the step a name and killed his own follow-up's
+     premise.** Verdict: the M=6 row-tile tax is **ILP / register tile, not memory**.
+     Locality recovery `KT=64 → KT=4` is **−11.2 %** of the tax against a pre-registered
+     `≥ +50 %` for MEM; negative at 8/8 shapes; negative even at adjacency `KT=1`, which
+     closes the "not close enough" escape. K-tiled activation staging is dead and he
+     deliberately did not build it. He also refused the arm I specified, correctly: adjacent
+     row blocks read identical `x[k]` addresses with no intervening store, so CSE may
+     legally delete the second load, and an unrolled arm therefore moves both mechanisms at
+     once **in the direction that falsely kills K-tiling**.
+
+     The secondary finding is the campaign's new spine. Reading `IPG` out of the `case M:`
+     switch and setting `streams(M) = ceil(M / IPG(M))`:
+
+     ```
+     T(M) = 16.432 + 20.291·streams(M) + 11.798·M        max|resid| 1.674 ms, M = 3..9
+     ```
+
+     `streams(M)` is **source-derived**, so this has one *fewer* free parameter than a step
+     model with a fitted indicator and **no free breakpoint**. I reproduced the residuals by
+     hand (+0.694, −1.193, +0.504, +1.088, −0.883, −1.671, +1.479). And the quadratic family
+     is falsified **model-free**: for any `a, b, c`, `d1(M) = a(2M+1) + b` is monotone in M,
+     while the measured first differences `9.911, 13.495, 32.673, 9.827, 11.010, 14.948`
+     **drop 22.846 ms** after the boundary, replicated to 0.032 ms across two base runs
+     against a ≤0.08 ms floor. No noise model required, which is why it beats any residual
+     comparison. Limits he stated and I am holding: three parameters on seven points, residual
+     ~20× the floor, and the 20.291 coefficient is carried by **one** contrast — a
+     one-boundary estimate wearing a three-parameter fit's clothes.
+
+     **(c) 🔴 The boundary I sent two students to no longer exists, and I would have misread
+     the null.** I told askeladd to look for a signed effect at M=6 and wrote "if he gets a
+     clean signed effect at M=6, your value case stops being family-conditional." I verified
+     the switch on the live tip myself: `case 5:` is `<T,5,3>` ⇒ `ceil(5/3) = 2` and
+     `case 6:` is `<T,6,3>` ⇒ 2. **Both sides of 5→6 are two-stream.** The E27 revert moved
+     `case 5:` from IPG 5 to IPG 3, so the 1→2 boundary is at **4→5** and a 2→3 boundary
+     appeared at **8→9**. A probe at M=6 reads a null, and I would have read that null as
+     "no step, therefore smooth convexity" — the exact inverse of the truth. thorfinn flagged
+     it as time-critical and he was right. Corrected to him and to askeladd the same turn.
+
+     **(d) 🟢🟢 THE BOARD HAS BEEN RUNNING OUR EXPERIMENT 476 TIMES.**
+     `research/stream_dispatch_census.py` (selftested) reads the dispatch table out of every
+     rival tree at `refs/remotes/upstream/submissions/*`. Of 653 refs, **177 predate the
+     cross-row family — so that family is a *submission* contribution, not organizer code —
+     and the remaining 476 ship 12 DISTINCT dispatch tables.** Different solvers ran
+     different stream structures on the *same ranked hardware* against the *same scored
+     corpus*.
+
+     A naive group comparison is worthless: two representatives of the two largest tables
+     differ in **14 files** including `Qwen35.swift` and `mtp-head.manifest.json`. So `ab`
+     mode fingerprints each tree on the blob SHAs of every file **except** the two QMV kernel
+     files and reports fingerprint groups holding more than one table — trees byte-identical
+     everywhere except the QMV kernel. **Ten such groups exist.** Three matter:
+
+     ```
+     cb6151db87fc  11 trees, differing width [8] ONLY
+                   n=8 streams(8)=2  (incl. 942e5ab2, a previously promoted frontier)
+                   n=3 streams(8)=3
+     e95589cbfdc3  11 trees, differing width [8] ONLY
+                   n=3 streams(8)=2 | n=7 streams(8)=3 | n=1 streams(8)=4   THREE-LEVEL DOSE
+     ae0ff0917146  13 trees, differing width [7] only
+     ```
+
+     This identifies the marginal weight stream on the **ranked** box with no depth-mixture
+     assumption, no fitted breakpoint and no local-to-ranked transfer, via
+     `Δleg(p) = n_8(p)·ΔT(8)/tokens(p)`, and it carries a free falsification test: the
+     cross-prompt ratio of `Δleg` must equal the cross-prompt ratio of `n_8` with **no extra
+     parameters**. The within-arm spread across the 8 identical-arm trees is the noise floor,
+     measured rather than assumed. Zero GPU seconds. E45 revised onto it (r2).
+
+     🔴 The confound that must travel with it: `<T,8,3>` and `<T,8,4>` differ in register
+     footprint, and there is **one** `[[kernel]]` with **one** allocation taken as the max
+     over all width cells. So the contrast is stream count **plus** any occupancy change at
+     every other width. Bounded by a compile, not by argument.
+
+     **(e) 🔴 E27 was, mechanically, the "make M=5 a single weight stream" experiment — and
+     the board proves it.** `ca9251b8`, our own E27 submission, is the **only** tree among
+     476 rivals whose stream boundary sits at 5→6, because E27 raised `case 5:` to IPG 5.
+     Its per-width table was correct and reproducible and it still **lost 0.3321 % of
+     score**, because IPG 5 at r=4 costs 125 registers and pushed the shared allocation to
+     129, taxing every width it never intended to touch. This retro-fits E27 into the stream
+     model exactly, and it is now the cautionary anchor for E46.
+
+     **(f) The pricing that follows, and why it is on a knife edge.** From thorfinn's own
+     coefficients on the current tree:
+
+     ```
+     M=5: 2 streams 116.004 ms -> 1 stream 95.713 ms   break-even r=2 tax = 21.20 %
+     M=9: 3 streams 183.487 ms -> 2 streams 163.196 ms break-even r=2 tax = 12.43 %
+     ```
+
+     His measured NA=3 tax is **10.86 %**; his NA=4 rungs are 20.90 / 22.50 / 23.28 %, and
+     since all are K-tiled and K-tiling *adds* cost, **20.90 % is an upper bound on the pure
+     r=2 tax at NA=4**. If the tax keeps roughly doubling per NA step it lands near 30 % at
+     NA=5 and **the entire wider-NA axis is closed on paper**. Only below ~12.4 % do both
+     widths win. E46 assigned to price it: pre-registered prediction, then a compile-only
+     register gate (must stay ≤ **108**; his own ladder mispredicted `na6_r2` by 3 and
+     `na6_r1` by 11, so interpolation is not admissible), then one curve, and a build only
+     for widths that clear their own threshold.
+
+     🟢 E46 also buys a **free out-of-sample test of the stream model**: the current tree's
+     boundaries are 4→5 and 8→9, so the model predicts, with no refitting,
+     `d1 = 11.8 | 32.1 | 11.8 | 11.8 | 11.8 | 32.1`. That identifies the 20.291 coefficient
+     **twice independently** instead of once, which is the replication his one-boundary
+     estimate needs.
+
+     **(g) ψ = 0.672 [0.659, 0.674], conservative floor 0.604** — askeladd's causal injected
+     regression, against the **0.228** implied by back-solving `ψ·φ = 0.0459`. A **2.9×**
+     correction, landing just above our independent MLP attribution of 59 % in the direction
+     that makes sense, since QMV also serves the attention projections and the LM head.
+     Everything priced linearly in ψ moves by that factor. thorfinn has withdrawn `ψ·φ` as a
+     value claim. Open question put to askeladd: **at which widths was ψ measured** — a
+     stream-removing fix needs ψ at the boundary width, not pooled over widths that are all
+     two-stream. His own honesty note that `STRUCT_EDITS` are present at untreated widths, so
+     the calibration cell should read a small **positive** x, is why the stable-shape subset
+     (+0.38/+0.40/+0.73 %) is believable and the negative aggregates are not.
+
+     **(h) 🟢 Two instruments meeting in the middle.** 20.291 ms local, divided by the ~1.7×
+     local-to-ranked round-cost ratio, is ~12 ms/round — **inside** edward's independently
+     derived ranked excess band for beagle (9.751–26.878 ms/round), reached by a completely
+     different route. This is the strongest convergent evidence the campaign has produced
+     about where the time goes, and it is the reason to spend another session on this axis
+     rather than close it.
+
+     **(i) The second silently-blind instrument, and the manifest made true.**
+     `senpai/verify-trusted-parity.sh` looped over the **diff**, so a declared overlay that
+     stopped differing was never visited. It had already hidden a real event: the rebase made
+     `Sources/MLXFastCLI/main.swift` byte-identical to the organizer while the manifest still
+     declared a seam in it, and the sole symptom was the declared-overlay count falling 3 → 2
+     in a line nobody reads. Post-loop presence check added, naming **both** possibilities
+     ("the frontier ADOPTED it or a rebase REVERTED it, and those need opposite responses"),
+     branch-scoped by `git merge-base --is-ancestor <tip> $REV` and failing closed on an
+     unresolvable branch. Before deleting the entry I verified the capability was intact:
+     our file equals `upstream/main` byte-for-byte, `forwardsWorkerStderr && !officialRun` is
+     at `main.swift:2311`, and `git log -S` attributes the expression to the pristine commit
+     `5d02917` — the frontier owns that code. Manifest now declares **7** overlays, including
+     five previously-undeclared test-file drifts and `benchmark-qwen-mtp.sh` whose
+     `mustContain` is the fail-closed assertion itself, so it can only ABORT a local run,
+     never flatter a number.
+
+     **(j) main's generated twin is out of sync with main's own header.** New main's
+     `kernels/quantized.h` is byte-identical to the crown, but its
+     `mlx-generated/quantized.cpp` still carries the older `3+3+2, not 4+4` comment above
+     code that dispatches `<T,8,4,true>`, i.e. 4+4. So commit `d32342d "Regenerate promoted
+     quantized Metal twin"` did **not** regenerate the twin from main's header. Comment-only,
+     zero runtime effect, and our tree carries the crown's version. Recorded, not patched:
+     byte-identity with the crown on that file is what stops the next overlay reverting us.
+     thorfinn spotted the same contradiction independently while building the stream table.
+
+     **(k) 🔴 Zero of 653 rival trees use `simdgroup_matrix` in `quantized.h`.** Relevant to
+     alphonse's E44 Gate 0. Read it carefully: it means he duplicates nobody, and there is no
+     free negative evidence to harvest — but it is **absence of evidence under a selection
+     filter**. The filter is weaker than it looks, because 378 rejected and 215 *failed*
+     submissions are visible too, so if people had tried and merely lost we would expect to
+     see some. Seeing none is mild evidence the construct dies **before** submission, which
+     is exactly the JIT-twin feasibility risk his Gate 0 is aimed at.
+
+     **(l) The submission decision: not this turn, and the reason is other people's
+     measurements.** Our tree is **not** default-inert against the crown: the trace hooks are
+     all env-gated, but `warmAllDepthShapes` and a `targetCacheOffset` change run
+     unconditionally. So a submission would measure the fkiene warm restoration, worth
+     **+0.0283 %** — against σ_score **0.0978 %**, i.e. **0.29σ**. Positive expected rank
+     value (P ≈ 61 % of clearing the crown) and a rejection costs only a slot, so it is worth
+     doing; but it **cannot measure** the effect it would carry, and claiming otherwise would
+     be the "an under-powered null is not a null" error I correct in students every session.
+     🔴 The decisive reason to defer is different and better: **askeladd has a probe on the
+     GPU now and thorfinn is about to start one.** A `--local-submit` preflight is a heavy
+     job on this host and would contaminate their timings — injecting exactly the confound
+     this session has spent itself eliminating. Deferred deliberately, not forgotten. The
+     metallib was rebuilt this turn (all six roots) so the preflight is otherwise ready, and
+     the invocation base remains an ancestor of both HEAD and main.
+
+     **(m) PROCESS.**
+     1. 🔴🔴🔴 **A reading that cannot change is not a measurement.** The refspec case is the
+        purest example this campaign has produced: not a wrong number, but a number that was
+        *incapable* of being wrong. Ask the source of truth, not a local cache of it. Every
+        "unchanged" I have written deserves the question "by what mechanism could this have
+        changed, and would I have seen it?"
+     2. 🔴🔴🔴 **Fixing an instance is still not closing a class.** Fifth turn running. The
+        loop-over-the-diff blindness in `verify-trusted-parity.sh` is the same defect as the
+        stale prose acks in the scored gate, which is the same defect as the stale mirror: a
+        declaration whose subject vanished is never re-earned.
+     3. 🔴🔴 **A subshell discards the counter.** `out=$(evaluate …)` runs the callee in a
+        subshell, so every `FAILURES++` is thrown away and the gate reads 0 failures no
+        matter what happened. This produced a false negative in my own selftest on first run.
+        Same family as the SIGPIPE-under-`pipefail` and `mapfile`-in-bash-3.2 traps already
+        recorded. Capture through a temp file when the callee mutates state.
+     4. 🔴🔴 **Two namespaces that look alike.** The board's `id` (`ca9251b8-…`) names a
+        SUBMISSION; `b8642b81f7` names a TREE. Only the latter is a git object. Conflating
+        them made a lookup miss indistinguishable from "this tree has no cross-row kernel" —
+        a real absence and a failed resolution reported identically. `resolve()` now handles
+        both and fails closed.
+     5. 🔴🔴 **Price the follow-up before building it, using the student's own model.** E46's
+        entire value is that two of three gates can close the axis without a build, and the
+        break-even arithmetic came out of thorfinn's own coefficients. The corollary: when a
+        student's model prices their own next step as negative, say so and let them argue.
+     6. 🔴 **Identical trajectories do not imply identical costs.** edward's pooling licence
+        was `effective_mean_draft_len` identical to 16 digits, which proves the same ρ. It
+        does **not** prove the same `T(M)`: two trees with identical ρ and different IPG
+        tables have different per-round costs. The evidence supported one claim and was used
+        for another.
+     7. 🔴 **Adopted-by-the-frontier and reverted-by-a-rebase are identical in a diff.** Now
+        enforced in two gates. Make the instrument name both and refuse to guess.
+     8. 🟡 Do not start a heavy local job while students are timing on the same host. GPU
+        contention is a confound I control and they cannot.
