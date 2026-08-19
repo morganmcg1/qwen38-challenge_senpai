@@ -132,6 +132,8 @@ def main() -> int:
     ap.add_argument("--arm1", required=True)
     ap.add_argument("--arm2", default="")
     ap.add_argument("--base2", default="")
+    ap.add_argument("--e27-base", default="", help="prior-art base curve to compare")
+    ap.add_argument("--e27-arm", default="", help="prior-art IPG-falsification arm")
     ap.add_argument("--json-out")
     args = ap.parse_args()
 
@@ -402,7 +404,61 @@ def main() -> int:
                                   "per_shape_us": {sh: dd for sh, dd, _ in rows},
                                   "per_shape_pct": {sh: pc for sh, _, pc in rows}}
 
-    print("\n[7] VERDICT")
+    if args.e27_base and args.e27_arm:
+        print("\n[7] INDEPENDENT PRIOR REPLICATION  (E27 `7b5183d`, a different "
+              "base tree, n=1)")
+        pb, pbi = load(args.e27_base)
+        pa, pai = load(args.e27_arm)
+        tpb, _ = t_of_m(pb)
+        tpa, _ = t_of_m(pa)
+        print(f"  prior base {args.e27_base} head={pbi.get('head','?')[:12]} "
+              f"widths={pbi.get('widths','?')}")
+        print(f"  prior arm  {args.e27_arm} head={pai.get('head','?')[:12]} "
+              f"widths={pai.get('widths','?')}")
+        # The prior arm swept a SHORTER width list than its base, so each width
+        # sat at a different sweep position -- and therefore a different GPU
+        # temperature -- in the two runs. That is the confound E46 removes by
+        # sweeping 1..9 in every arm.
+        if pbi.get("widths") != pai.get("widths"):
+            print("  NOTE: the prior base and arm swept different width lists, so "
+                  "each width sat at a different thermal position in the two runs; "
+                  "E46 matches the sweep by construction.")
+        print(f"\n  {'M':>3} {'prior d':>9} {'prior %':>8} {'E46 d':>9} "
+              f"{'E46 %':>8}  role")
+        prior = {}
+        for m in sorted(set(tpb) & set(tpa)):
+            dp = (tpa[m] - tpb[m]) * 1e3
+            pp = (tpa[m] / tpb[m] - 1) * 100
+            prior[m] = {"delta_ms": dp, "pct": pp}
+            role = ("contrast A" if m == 6 else "contrast B" if m == 8 else
+                    "prior-only cell" if m == 4 else "control")
+            here = (f"{deltas[m]:9.3f} {deltas[m]/tb_all[m]*100:8.2f}"
+                    if m in deltas else f"{'-':>9} {'-':>8}")
+            print(f"  {m:>3} {dp:9.3f} {pp:8.2f} {here}  {role}")
+        # A is a predicted NULL and B a predicted POSITIVE, so they replicate in
+        # different senses: A by both landing inside the noise, B by both being a
+        # large positive step. A sign match on a null would mean nothing.
+        agree = {}
+        if 6 in prior and 6 in deltas:
+            agree["A"] = bool(abs(prior[6]["pct"]) < 1.0 and abs(dA) <= max(mdeA, 1.0))
+            print(f"\n  contrast A replicates as a NULL: "
+                  f"prior {prior[6]['pct']:+.2f} %, E46 {dA/tb_all[6]*100:+.2f} % "
+                  f"-> {'YES' if agree['A'] else 'NO'}")
+        if 8 in prior and 8 in deltas:
+            agree["B"] = bool(prior[8]["delta_ms"] > 0 and dB > 0)
+            print(f"  contrast B replicates as a POSITIVE STEP: "
+                  f"prior {prior[8]['delta_ms']:+.3f} ms ({prior[8]['pct']:+.2f} %), "
+                  f"E46 {dB:+.3f} ms ({dB/tb_all[8]*100:+.2f} %) "
+                  f"-> {'YES' if agree['B'] else 'NO'}")
+        out["prior_replication"] = {
+            "base_tag": args.e27_base, "arm_tag": args.e27_arm,
+            "base_head": pbi.get("head"), "arm_head": pai.get("head"),
+            "base_widths": pbi.get("widths"), "arm_widths": pai.get("widths"),
+            "sweep_matched": pbi.get("widths") == pai.get("widths"),
+            "delta": prior, "replicates": agree,
+        }
+
+    print("\n[8] VERDICT")
     verdict, mech = [], None
     if step2_m6:
         verdict.append("stop rule 1 FIRES: step 2's argmax d1 is 5->6")
