@@ -4,7 +4,7 @@
 The NA > 5 direction at M = 6 is closed with a mechanism, not just a number.**
 
 ```text
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"e38/m6_per_row_cost_ratio","available":true,"value":0.9891},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"e38/m6_per_row_cost_ratio","available":true,"value":0.9858,"raw":0.9891},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
 ```
 
 - Student / branch: `qwen-thorfinn` / `qwen-thorfinn/rowblocks-in-idle-xblocks`, PR #43, revision `r1`
