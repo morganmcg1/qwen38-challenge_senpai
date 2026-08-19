@@ -6405,6 +6405,392 @@
   "ranked_linear": 3.16878032755095,
   "ranked_quadratic": 3.1904856181422416
  },
+ "score_order_statistics": {
+  "measured": {
+   "median": 3.2492939855,
+   "central_prompts": [
+    "beagle",
+    "medicine"
+   ],
+   "order": [
+    "plutarch",
+    "drama",
+    "travel",
+    "beagle",
+    "medicine",
+    "essays",
+    "republic",
+    "botany"
+   ]
+  },
+  "board_kernel_replay_shipped": {
+   "scaled_local": {
+    "median": 3.180418597435353,
+    "central_prompts": [
+     "beagle",
+     "botany"
+    ],
+    "order": [
+     "plutarch",
+     "drama",
+     "travel",
+     "beagle",
+     "botany",
+     "medicine",
+     "essays",
+     "republic"
+    ]
+   },
+   "ranked_linear": {
+    "median": 3.16878032755095,
+    "central_prompts": [
+     "beagle",
+     "medicine"
+    ],
+    "order": [
+     "plutarch",
+     "drama",
+     "travel",
+     "beagle",
+     "medicine",
+     "botany",
+     "essays",
+     "republic"
+    ]
+   },
+   "ranked_quadratic": {
+    "median": 3.1904856181422416,
+    "central_prompts": [
+     "beagle",
+     "medicine"
+    ],
+    "order": [
+     "plutarch",
+     "drama",
+     "travel",
+     "beagle",
+     "medicine",
+     "botany",
+     "essays",
+     "republic"
+    ]
+   }
+  },
+  "our_kernel": {
+   "scaled_local": {
+    "w3_s3": {
+     "median": 3.593218695741945,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "botany",
+      "essays",
+      "republic"
+     ]
+    },
+    "w4_s4": {
+     "median": 3.6337448214223156,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "botany",
+      "republic",
+      "essays"
+     ]
+    },
+    "w4_s8": {
+     "median": 3.452613939809897,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "botany",
+      "essays",
+      "republic"
+     ]
+    },
+    "w5_s5": {
+     "median": 3.289660937604187,
+     "central_prompts": [
+      "beagle",
+      "botany"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "botany",
+      "medicine",
+      "essays",
+      "republic"
+     ]
+    },
+    "w5_s8": {
+     "median": 3.298541638854023,
+     "central_prompts": [
+      "beagle",
+      "botany"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "botany",
+      "medicine",
+      "essays",
+      "republic"
+     ]
+    },
+    "w8_s8": {
+     "median": 3.3192503540576257,
+     "central_prompts": [
+      "beagle",
+      "botany"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "botany",
+      "medicine",
+      "republic",
+      "essays"
+     ]
+    }
+   },
+   "ranked_linear": {
+    "w3_s3": {
+     "median": 3.6056149438139373,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "essays",
+      "botany",
+      "republic"
+     ]
+    },
+    "w4_s4": {
+     "median": 3.9302239870686932,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "republic",
+      "botany",
+      "essays"
+     ]
+    },
+    "w4_s8": {
+     "median": 3.619757369619265,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "botany",
+      "republic",
+      "essays"
+     ]
+    },
+    "w5_s5": {
+     "median": 3.2951293566043542,
+     "central_prompts": [
+      "botany",
+      "beagle"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "botany",
+      "beagle",
+      "medicine",
+      "essays",
+      "republic"
+     ]
+    },
+    "w5_s8": {
+     "median": 3.3795053470759946,
+     "central_prompts": [
+      "beagle",
+      "botany"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "botany",
+      "medicine",
+      "republic",
+      "essays"
+     ]
+    },
+    "w8_s8": {
+     "median": 3.432885657877044,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "botany",
+      "republic",
+      "essays"
+     ]
+    }
+   },
+   "ranked_quadratic": {
+    "w3_s3": {
+     "median": 3.5290004471373124,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "essays",
+      "botany",
+      "republic"
+     ]
+    },
+    "w4_s4": {
+     "median": 3.7717001469352502,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "botany",
+      "republic",
+      "essays"
+     ]
+    },
+    "w4_s8": {
+     "median": 3.525696014713521,
+     "central_prompts": [
+      "beagle",
+      "medicine"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "medicine",
+      "botany",
+      "republic",
+      "essays"
+     ]
+    },
+    "w5_s5": {
+     "median": 3.313057207783521,
+     "central_prompts": [
+      "beagle",
+      "botany"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "botany",
+      "medicine",
+      "essays",
+      "republic"
+     ]
+    },
+    "w5_s8": {
+     "median": 3.337578830967434,
+     "central_prompts": [
+      "beagle",
+      "botany"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "botany",
+      "medicine",
+      "essays",
+      "republic"
+     ]
+    },
+    "w8_s8": {
+     "median": 3.3701994481783704,
+     "central_prompts": [
+      "beagle",
+      "botany"
+     ],
+     "order": [
+      "plutarch",
+      "drama",
+      "travel",
+      "beagle",
+      "botany",
+      "medicine",
+      "republic",
+      "essays"
+     ]
+    }
+   }
+  }
+ },
  "score_prediction": {
   "measured_central_pair": 3.2492939855,
   "board_top_score": 3.24929398547457,
@@ -6466,7 +6852,19 @@
    3.5498030777031806,
    4.007309559247659
   ],
-  "interval_basis": "max |board-kernel replay error| across cost models, widened by half the across-model spread at each model's own best arm"
+  "interval_basis": "max |board-kernel replay error| across cost models, widened by half the across-model spread at each model's own best arm",
+  "published_median": {
+   "measured": 3.2492939855,
+   "best_arm": {
+    "scaled_local": "w4_s4",
+    "ranked_linear": "w4_s4",
+    "ranked_quadratic": "w4_s4"
+   },
+   "predicted_at_best_arm": 3.77855631847542,
+   "board_kernel_replay_error": 0.08051365794905019,
+   "central_pair_minus_median": 0.0,
+   "central_pair_is_still_the_median_at_best_arm": true
+  }
  },
  "sensitivity": {
   "beagle": {
@@ -6667,5 +7065,180 @@
    "relative_gain_max": 0.10767550477321097,
    "relative_gain_median": 0.08465773090034334
   }
+ },
+ "local_counters": {
+  "source": "research/e25r2-timed.json",
+  "per_prompt": {
+   "base": {
+    "dramatic": {
+     "effective_max_draft_len": 5,
+     "effective_mean_draft_len": 2.6919642857142856,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.47761194029850745,
+     "round_count": 224,
+     "replayed_rounds": 101
+    },
+    "english": {
+     "effective_max_draft_len": 4,
+     "effective_mean_draft_len": 2.3360323886639676,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.4592720970537262,
+     "round_count": 247,
+     "replayed_rounds": 107
+    },
+    "medicine": {
+     "effective_max_draft_len": 5,
+     "effective_mean_draft_len": 2.6375545851528384,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.4685430463576159,
+     "round_count": 229,
+     "replayed_rounds": 111
+    },
+    "narrative": {
+     "effective_max_draft_len": 5,
+     "effective_mean_draft_len": 2.364406779661017,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.496415770609319,
+     "round_count": 236,
+     "replayed_rounds": 93
+    },
+    "natural_history": {
+     "effective_max_draft_len": 4,
+     "effective_mean_draft_len": 2.203846153846154,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.4397905759162304,
+     "round_count": 260,
+     "replayed_rounds": 106
+    },
+    "philosophy": {
+     "effective_max_draft_len": 5,
+     "effective_mean_draft_len": 2.572052401746725,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.48047538200339557,
+     "round_count": 229,
+     "replayed_rounds": 101
+    },
+    "technical": {
+     "effective_max_draft_len": 4,
+     "effective_mean_draft_len": 2.515695067264574,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.5151515151515151,
+     "round_count": 223,
+     "replayed_rounds": 93
+    },
+    "travel": {
+     "effective_max_draft_len": 4,
+     "effective_mean_draft_len": 2.4695652173913043,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.4964788732394366,
+     "round_count": 230,
+     "replayed_rounds": 98
+    }
+   },
+   "candidate": {
+    "dramatic": {
+     "effective_max_draft_len": 3,
+     "effective_mean_draft_len": 2.2869198312236287,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.5092250922509225,
+     "round_count": 237,
+     "replayed_rounds": 95
+    },
+    "english": {
+     "effective_max_draft_len": 3,
+     "effective_mean_draft_len": 2.138211382113821,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.5076045627376425,
+     "round_count": 246,
+     "replayed_rounds": 86
+    },
+    "medicine": {
+     "effective_max_draft_len": 3,
+     "effective_mean_draft_len": 2.2711864406779663,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.5149253731343284,
+     "round_count": 236,
+     "replayed_rounds": 94
+    },
+    "narrative": {
+     "effective_max_draft_len": 3,
+     "effective_mean_draft_len": 2.1422594142259412,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.53515625,
+     "round_count": 239,
+     "replayed_rounds": 78
+    },
+    "natural_history": {
+     "effective_max_draft_len": 3,
+     "effective_mean_draft_len": 1.9813432835820894,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.4595103578154426,
+     "round_count": 268,
+     "replayed_rounds": 94
+    },
+    "philosophy": {
+     "effective_max_draft_len": 3,
+     "effective_mean_draft_len": 2.293617021276596,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.5139146567717996,
+     "round_count": 235,
+     "replayed_rounds": 90
+    },
+    "technical": {
+     "effective_max_draft_len": 3,
+     "effective_mean_draft_len": 2.2751091703056767,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.54510556621881,
+     "round_count": 229,
+     "replayed_rounds": 83
+    },
+    "travel": {
+     "effective_max_draft_len": 3,
+     "effective_mean_draft_len": 2.2184873949579833,
+     "non_drafting_round_count": 0,
+     "accepted_draft_rate": 0.5189393939393939,
+     "round_count": 238,
+     "replayed_rounds": 87
+    }
+   }
+  },
+  "summary": {
+   "base": {
+    "max_draft_len_range": [
+     4,
+     5
+    ],
+    "max_width_M_reached": 6,
+    "mean_draft_len_range": [
+     2.203846153846154,
+     2.6919642857142856
+    ],
+    "mean_width_M_range": [
+     3.203846153846154,
+     3.6919642857142856
+    ],
+    "reaches_shipped_wall_M6": true
+   },
+   "candidate": {
+    "max_draft_len_range": [
+     3,
+     3
+    ],
+    "max_width_M_reached": 4,
+    "mean_draft_len_range": [
+     1.9813432835820894,
+     2.293617021276596
+    ],
+    "mean_width_M_range": [
+     2.981343283582089,
+     3.293617021276596
+    ],
+    "reaches_shipped_wall_M6": false
+   }
+  },
+  "ranked_mean_width_range": [
+   1.1540041067761808,
+   6.776470588235294
+  ]
  }
 }

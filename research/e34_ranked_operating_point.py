@@ -826,6 +826,62 @@ def sensitivity(profile: dict, calib: dict, cost, *, names=CENTRAL,
     return out
 
 
+def local_counters(path: str = "research/e25r2-timed.json") -> dict:
+    """The trusted parent's realised-depth counters from an existing local run.
+
+    The advisor asked for a fresh timed run to read
+    `effective_max_draft_len`.  E34 is under a zero-GPU constraint, and the
+    counter is already on disk, so this reads it instead.  The point of the
+    table is the operating-point gap: the local fixture's realised depth does
+    not reach the width wall on either leg, so no local run can decide a
+    question about ranked rounds that sit two rows deeper.
+    """
+    src = REPO / path
+    doc = json.loads(src.read_text())
+    legs: dict[str, dict] = {}
+    for name, entry in doc.get("per_prompt", {}).items():
+        for leg in ("base", "candidate"):
+            counters = (entry.get(leg) or {}).get("counters") or {}
+            if not counters:
+                continue
+            legs.setdefault(leg, {})[name] = {
+                "effective_max_draft_len": counters.get("effective_max_draft_len"),
+                "effective_mean_draft_len": counters.get("effective_mean_draft_len"),
+                "non_drafting_round_count": counters.get("non_drafting_round_count"),
+                "accepted_draft_rate": counters.get("accepted_draft_rate"),
+                "round_count": counters.get("round_count"),
+                "replayed_rounds": counters.get("verify_block_replayed_round_count"),
+            }
+    summary = {}
+    for leg, prompts in legs.items():
+        maxima = [v["effective_max_draft_len"] for v in prompts.values()]
+        means = [v["effective_mean_draft_len"] for v in prompts.values()]
+        summary[leg] = {
+            "max_draft_len_range": [min(maxima), max(maxima)],
+            "max_width_M_reached": max(maxima) + 1,
+            "mean_draft_len_range": [min(means), max(means)],
+            "mean_width_M_range": [min(means) + 1, max(means) + 1],
+            "reaches_shipped_wall_M6": max(maxima) + 1 >= 6,
+        }
+    return {
+        "source": path,
+        "per_prompt": legs,
+        "summary": summary,
+        "ranked_mean_width_range": None,  # filled by main() from the ledger
+    }
+
+
+def order_statistics(values: dict[str, float]) -> dict:
+    """Published-score rule: mean of the two central order statistics of 8."""
+    ranked = sorted(values.items(), key=lambda kv: kv[1])
+    lo, hi = ranked[3], ranked[4]
+    return {
+        "median": (lo[1] + hi[1]) / 2.0,
+        "central_prompts": [lo[0], hi[0]],
+        "order": [name for name, _ in ranked],
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="research/e34-ranked-operating-point.json")
@@ -974,6 +1030,29 @@ def main() -> None:
             for name in CENTRAL)
     result["board_kernel_replay"] = replay
 
+    # The published score is the median of ALL EIGHT prompts, so an arm that
+    # lifts beagle and medicine could push them out of the central pair and
+    # make the assignment's central-pair metric an overestimate. Re-rank every
+    # arm to check rather than assume; which prompts are central is not
+    # invariant across arms.
+    board_replay_ratios = {
+        label: {name: counterfactual(name, profile, calib[name], cost, arm="w5_s8",
+                                     trials=args.trials)["predicted_ratio"]
+                for name in profile["prompts"]}
+        for label, cost in board_models.items()
+    }
+    result["score_order_statistics"] = {
+        "measured": order_statistics(
+            {n: e["ratio"] for n, e in profile["prompts"].items()}),
+        "board_kernel_replay_shipped": {
+            label: order_statistics(vals) for label, vals in board_replay_ratios.items()},
+        "our_kernel": {
+            label: {arm: order_statistics(
+                {n: caps[n][label][arm]["predicted_ratio"] for n in profile["prompts"]})
+                for arm in CAP_ARMS}
+            for label in models},
+    }
+
     measured_central = statistics.mean(profile["prompts"][n]["ratio"] for n in CENTRAL)
     modelled = {label: {arm: central_pair(label, arm) for arm in CAP_ARMS}
                 for label in models}
@@ -1000,7 +1079,39 @@ def main() -> None:
                           "by half the across-model spread at each model's own best arm",
     }
 
+    median_arms = result["score_order_statistics"]["our_kernel"]
+    best_median_arm = {label: max(median_arms[label],
+                                  key=lambda a: median_arms[label][a]["median"])
+                       for label in models}
+    median_at_best = statistics.mean(
+        median_arms[label][best_median_arm[label]]["median"] for label in models)
+    median_replay_err = max(
+        abs(result["score_order_statistics"]["board_kernel_replay_shipped"][label]["median"]
+            - result["score_order_statistics"]["measured"]["median"])
+        for label in models)
+    central_pair_metric = result["score_prediction"][
+        "predicted_ranked_central_pair_at_best_cap"]
+    result["score_prediction"]["published_median"] = {
+        "measured": result["score_order_statistics"]["measured"]["median"],
+        "best_arm": best_median_arm,
+        "predicted_at_best_arm": median_at_best,
+        "board_kernel_replay_error": median_replay_err,
+        "central_pair_minus_median": central_pair_metric - median_at_best,
+        "central_pair_is_still_the_median_at_best_arm":
+            all(median_arms[label][best_median_arm[label]]["central_prompts"] == list(CENTRAL)
+                or sorted(median_arms[label][best_median_arm[label]]["central_prompts"])
+                == sorted(CENTRAL)
+                for label in models),
+    }
+
     result["sensitivity"] = sensitivity(profile, calib, scaled, trials=max(8, args.trials // 2))
+
+    counters = local_counters()
+    counters["ranked_mean_width_range"] = [
+        min(e["mean_width"] for e in profile["prompts"].values()),
+        max(e["mean_width"] for e in profile["prompts"].values()),
+    ]
+    result["local_counters"] = counters
 
     out = pathlib.Path(args.out)
     out.write_text(json.dumps(result, indent=1, default=str))
@@ -1037,6 +1148,15 @@ def main() -> None:
                    "ledger_mean_width": profile["prompts"][name]["mean_width"]}
             for name in profile["prompts"]},
         "score_prediction": result["score_prediction"],
+        "order_statistics": {
+            "measured": result["score_order_statistics"]["measured"],
+            "our_kernel_w5_s8": {l: result["score_order_statistics"]["our_kernel"][l]["w5_s8"]
+                                 for l in models},
+            "our_kernel_w4_s4": {l: result["score_order_statistics"]["our_kernel"][l]["w4_s4"]
+                                 for l in models},
+        },
+        "local_counters": result["local_counters"]["summary"],
+        "ranked_mean_width_range": result["local_counters"]["ranked_mean_width_range"],
     }, indent=1))
 
 
