@@ -58,10 +58,17 @@ MAX_REACHABLE_WIDTH = 9
 
 def predict(na_values: list[int], rows_per_simd: int) -> dict:
     top = max(na_values)
-    mixed = len(set(na_values)) > 1
+    mix = 4 if len(set(na_values)) > 1 else 0
     if rows_per_simd == 4:
-        return {"e55_law_r4": 20 + 21 * top + (4 if mixed else 0)}
-    return {"ledger_183c_r2": 16 + 15 * top, "e44_anchors_r2": 15 + 17 * top}
+        return {"e55_law_r4": 20 + 21 * top + mix}
+    # Rung 1 measured the two uniform r=2 fits directly at NA=5: rbx = 90 and
+    # rb2 = 100. Those measurements, not the two competing closed forms, are the
+    # anchor a mixed r=2 cell should be predicted from; askeladd's `+4` carries
+    # over because it prices a second accumulator size, not a row count.
+    return {"ledger_183c_r2": 16 + 15 * top + mix,
+            "e44_anchors_r2": 15 + 17 * top + mix,
+            "rung1_rbx_anchor_r2": 90 + mix if top == 5 else 0,
+            "rung1_rb2_anchor_r2": 100 + mix if top == 5 else 0}
 
 
 def compile_probe(shadow: pathlib.Path, tag: str, probe: pathlib.Path,
@@ -154,9 +161,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="research/e59-artifacts/e59-reg-census.json")
     ap.add_argument("--arms", default=",".join(ARMS))
+    ap.add_argument("--detail", default="5,9",
+                    help="widths to print a per-cell detail table for")
     args = ap.parse_args()
 
     names = [a.strip() for a in args.arms.split(",") if a.strip()]
+    detail = [int(w) for w in args.detail.split(",") if w.strip()]
     with tempfile.TemporaryDirectory(prefix="e59-reg-census-") as tmp:
         results = {n: census_arm(n, pathlib.Path(tmp)) for n in names}
 
@@ -184,30 +194,36 @@ def main() -> int:
               % (n, r["kernel_wide_reg_max"], r["reachable_reg_max"],
                  r["entry_point_reg_max"], per, flag))
 
-    print("\nM=5 CELL DETAIL   (the cell under test)")
-    print("  %-22s %-26s %4s %5s %5s %6s %7s  %s"
-          % ("arm", "wrapper", "rps", "regs", "vals", "alloca", "acc", "law"))
-    for n in names:
-        cell = results[n]["width_cells"].get(5)
-        if not cell:
-            continue
-        laws = " ".join("%s=%d" % (k.split("_")[0], v)
-                        for k, v in sorted(cell["predicted"].items()))
-        print("  %-22s %-26s %4d %5d %5d %6d %7s  %s"
-              % (n, cell["wrapper"].replace("qmv_fast_crossrow_affine4_g64", "..."),
-                 cell["rows_per_simd"], cell["peak_live_regs"],
-                 cell["peak_live_values"], cell["allocas"],
-                 ",".join(cell["acc_alloca_types"]) or "-", laws))
+    for width in detail:
+        print("\nM=%d CELL DETAIL" % width)
+        print("  %-22s %-28s %4s %5s %5s %6s %7s  %s"
+              % ("arm", "wrapper", "rps", "regs", "vals", "alloca", "acc", "law"))
+        for n in names:
+            cell = results[n]["width_cells"].get(width)
+            if not cell:
+                continue
+            laws = " ".join(
+                "%s=%d" % (k.replace("_r2", "").replace("_r4", ""), v)
+                for k, v in sorted(cell["predicted"].items()) if v)
+            print("  %-22s %-28s %4d %5d %5d %6d %7s  %s"
+                  % (n,
+                     cell["wrapper"].replace("qmv_fast_crossrow_affine4_g64", "..."),
+                     cell["rows_per_simd"], cell["peak_live_regs"],
+                     cell["peak_live_values"], cell["allocas"],
+                     ",".join(cell["acc_alloca_types"]) or "-", laws))
 
     print("\nUNTREATED WIDTHS vs `shipped`   (a route must not perturb them)")
     if "shipped" in results:
         base = results["shipped"]["width_cells"]
+        base_route = results["shipped"]["routing"]
         for n in names:
             if n == "shipped":
                 continue
+            route = results[n]["routing"]
+            treated = {m for m in route if route[m] != base_route.get(m)}
             moved = {m: (base[m]["peak_live_regs"], c["peak_live_regs"])
                      for m, c in results[n]["width_cells"].items()
-                     if m in base and m != 5
+                     if m in base and str(m) not in treated
                      and c["peak_live_regs"] != base[m]["peak_live_regs"]}
             print("  %-22s %s" % (n, moved or "all untreated widths unmoved"))
 

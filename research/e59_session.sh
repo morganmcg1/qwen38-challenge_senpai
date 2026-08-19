@@ -17,4 +17,13 @@ export LEG_ARMS_MODULE="${LEG_ARMS_MODULE:-research/e59_arms.py}"
 export LEG_MANIFEST_DIR="${LEG_MANIFEST_DIR:-.mlxfast-private/e59-legs}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-e59-m5-rowblock-r2}"
 
+# Ranked command-buffer geometry, required for every rung 3 and rung 4 leg.
+# Rung 3 times the kernel inside `swift test`, which never starts the MTP
+# worker, so `applyQwenMTPStartupMemoryProfile` never runs and these two names
+# reach MLX unmodified. The profile name is exported anyway so that every leg
+# of both rungs carries one identity tuple.
+export DARKBLOOM_STARTUP_MEMORY_PROFILE="${DARKBLOOM_STARTUP_MEMORY_PROFILE:-full}"
+export MLX_MAX_MB_PER_BUFFER="${MLX_MAX_MB_PER_BUFFER:-512}"
+export MLX_MAX_OPS_PER_BUFFER="${MLX_MAX_OPS_PER_BUFFER:-50}"
+
 exec research/e49_session.sh "$@"

@@ -211,6 +211,8 @@ def main() -> int:
             verdict["route_rule"] = (
                 "tie inside the bar -> carry rbx for its 90-register headroom"
                 if tie else "carried the more negative net cell win")
+            lo, hi = rule["report_only_band_pct"]
+            verdict["in_report_only_band"] = bool(lo <= nets[best] <= hi)
         else:
             verdict["state"] = "stop"
             verdict["reason"] = (
@@ -226,6 +228,10 @@ def main() -> int:
     if verdict["state"] == "pass":
         print("  route for rung 4: %s  (%s)"
               % (verdict["route_for_rung4"], verdict["route_rule"]))
+        if verdict["in_report_only_band"]:
+            print("  NOTE: inside the %.1f .. %.1f %% report-only band. The route "
+                  "still carries;\n        report the number and let the advisor "
+                  "price it." % tuple(rule["report_only_band_pct"]))
     else:
         print("  %s" % verdict.get("reason", ""))
 

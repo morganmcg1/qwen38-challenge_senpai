@@ -137,6 +137,11 @@ leg = {
     "gpu_gate": json.loads(pathlib.Path(manifest, tag + "-gpu-gate.json").read_text()),
     "arm_patch": json.loads(pathlib.Path(manifest, tag + "-arm.json").read_text()),
     "identity": pathlib.Path(out_dir, "identity.txt").read_text().splitlines(),
+    "command_buffer_geometry": {
+        name: os.environ.get(name)
+        for name in ("MLX_MAX_MB_PER_BUFFER", "MLX_MAX_OPS_PER_BUFFER",
+                     "DARKBLOOM_STARTUP_MEMORY_PROFILE")
+    },
 }
 pathlib.Path(manifest, tag + "-leg.json").write_text(
     json.dumps(leg, indent=2, sort_keys=True))

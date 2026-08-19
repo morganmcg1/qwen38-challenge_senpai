@@ -77,6 +77,43 @@ def rbx(M: int, IPG: int, N: int, groups: int = 2) -> Counter:
     return seen
 
 
+def rb2t(M: int, IPG: int, N: int, blocks: int = 2) -> Counter:
+    """`..._m_rb2t`: `rb2` with the tail group instantiated."""
+    seen: Counter = Counter()
+    for tx in range(M):
+        first_m = tx * IPG
+        if first_m >= M:
+            continue
+        na = IPG if (M % IPG == 0 or M - first_m >= IPG) else max(M % IPG, 2)
+        for ty in range(N // 8):
+            for sg in range(2):
+                for rb in range(blocks):
+                    out_row = ty * 8 + sg * 4 + rb * 2
+                    for r in range(2):
+                        for m in range(na):
+                            seen[(first_m + m, out_row + r)] += 1
+    return seen
+
+
+def rbx4(M: int, IPG: int, N: int, streams: int | None = None) -> Counter:
+    """`..._m_rbx4`: `rbx` with two x-groups per input stream and a tail."""
+    if streams is None:
+        streams = (M + IPG - 1) // IPG
+    seen: Counter = Counter()
+    for tx in range(M):
+        if tx >= streams * 2:
+            continue
+        first_m = (tx // 2) * IPG
+        na = IPG if (M % IPG == 0 or M - first_m >= IPG) else max(M % IPG, 2)
+        for ty in range(N // 8):
+            for sg in range(2):
+                out_row = ty * 8 + (tx % 2) * 4 + sg * 2
+                for r in range(2):
+                    for m in range(na):
+                        seen[(first_m + m, out_row + r)] += 1
+    return seen
+
+
 def verdict(seen: Counter, M: int, N: int) -> dict:
     want = {(m, n) for m in range(M) for n in range(N)}
     got = set(seen)
@@ -105,6 +142,12 @@ CASES = [
     ("CONTROL rbx one x-group", lambda N: rbx(5, 5, N, groups=1), 5, False),
     ("CONTROL rb2 three blocks", lambda N: rb2(5, 5, N, blocks=3), 5, False),
     ("CONTROL rbx three x-groups", lambda N: rbx(5, 5, N, groups=3), 5, False),
+    ("rb2t <T,9,5> r=2", lambda N: rb2t(9, 5, N), 9, True),
+    ("rbx4 <T,9,5> r=2", lambda N: rbx4(9, 5, N), 9, True),
+    ("rbx4 <T,5,5> r=2", lambda N: rbx4(5, 5, N), 5, True),
+    ("CONTROL rb2t one block", lambda N: rb2t(9, 5, N, blocks=1), 9, False),
+    ("CONTROL rbx4 one stream", lambda N: rbx4(9, 5, N, streams=1), 9, False),
+    ("CONTROL rbx4 three streams", lambda N: rbx4(9, 5, N, streams=3), 9, False),
 ]
 
 
@@ -122,10 +165,11 @@ def main() -> int:
         ok &= passed
         rows.append(dict(res, mapping=label, expect_exact_cover=expect_cover,
                          passed=passed))
-        print("  %-28s cover=%-5s expected=%-5s  missing=%-4d twice=%-4d  %s"
+        print("  %-28s cover=%-5s expected=%-5s  missing=%-4d twice=%-4d "
+              "out_of_range=%-4d  %s"
               % (label, res["exact_cover"], expect_cover,
                  res["never_written_count"], res["written_twice_count"],
-                 "ok" if passed else "FAILED"))
+                 res["out_of_range_count"], "ok" if passed else "FAILED"))
 
     out = pathlib.Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

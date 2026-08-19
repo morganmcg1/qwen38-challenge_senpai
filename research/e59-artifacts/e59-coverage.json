@@ -262,6 +262,150 @@
         ]
       ],
       "written_twice_count": 40
+    },
+    {
+      "exact_cover": true,
+      "expect_exact_cover": true,
+      "mapping": "rb2t <T,9,5> r=2",
+      "never_written": [],
+      "never_written_count": 0,
+      "out_of_range_count": 0,
+      "pairs_expected": 216,
+      "pairs_written": 216,
+      "passed": true,
+      "written_twice": [],
+      "written_twice_count": 0
+    },
+    {
+      "exact_cover": true,
+      "expect_exact_cover": true,
+      "mapping": "rbx4 <T,9,5> r=2",
+      "never_written": [],
+      "never_written_count": 0,
+      "out_of_range_count": 0,
+      "pairs_expected": 216,
+      "pairs_written": 216,
+      "passed": true,
+      "written_twice": [],
+      "written_twice_count": 0
+    },
+    {
+      "exact_cover": true,
+      "expect_exact_cover": true,
+      "mapping": "rbx4 <T,5,5> r=2",
+      "never_written": [],
+      "never_written_count": 0,
+      "out_of_range_count": 0,
+      "pairs_expected": 120,
+      "pairs_written": 120,
+      "passed": true,
+      "written_twice": [],
+      "written_twice_count": 0
+    },
+    {
+      "exact_cover": false,
+      "expect_exact_cover": false,
+      "mapping": "CONTROL rb2t one block",
+      "never_written": [
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          0,
+          10
+        ],
+        [
+          0,
+          11
+        ],
+        [
+          0,
+          14
+        ],
+        [
+          0,
+          15
+        ]
+      ],
+      "never_written_count": 108,
+      "out_of_range_count": 0,
+      "pairs_expected": 216,
+      "pairs_written": 108,
+      "passed": true,
+      "written_twice": [],
+      "written_twice_count": 0
+    },
+    {
+      "exact_cover": false,
+      "expect_exact_cover": false,
+      "mapping": "CONTROL rbx4 one stream",
+      "never_written": [
+        [
+          5,
+          0
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          5,
+          7
+        ]
+      ],
+      "never_written_count": 96,
+      "out_of_range_count": 0,
+      "pairs_expected": 216,
+      "pairs_written": 120,
+      "passed": true,
+      "written_twice": [],
+      "written_twice_count": 0
+    },
+    {
+      "exact_cover": false,
+      "expect_exact_cover": false,
+      "mapping": "CONTROL rbx4 three streams",
+      "never_written": [],
+      "never_written_count": 0,
+      "out_of_range_count": 96,
+      "pairs_expected": 216,
+      "pairs_written": 312,
+      "passed": true,
+      "written_twice": [],
+      "written_twice_count": 0
     }
   ],
   "out_vec_size": 24

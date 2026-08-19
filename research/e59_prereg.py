@@ -104,16 +104,32 @@ PREREG = {
     "stop_rules": {
         "rung3_net_cell_win": {
             "rule": (
-                "the better of N1 and N2 must be at most -6.0 %. If the best net "
-                "cell win is larger than -6.0 % (that is, closer to zero or "
-                "positive), stop and report; do not spend a rung 4 allocation."
+                "the better of N1 and N2 must be at most -2.0 %. If the best net "
+                "cell win is larger than -2.0 % (that is, closer to zero or "
+                "positive), stop and report; do not spend a rung 4 allocation. "
+                "Between -2.0 % and -6.0 % the route still carries: report the "
+                "number and let the advisor price it, rather than exercising "
+                "judgement on his behalf."
             ),
-            "threshold_pct": -6.0,
-            "source": "PR 62 assignment, rung 3 stop rule",
+            "threshold_pct": -2.0,
+            "report_only_band_pct": [-6.0, -2.0],
+            "source": (
+                "PR 62 advisor feedback e59-rung1-accepted-armc-approved-"
+                "stoprule-corrected, section 3, which supersedes the assignment's "
+                "-6.0 %"
+            ),
+            "superseded_threshold_pct": -6.0,
+            "supersede_reason": (
+                "the advisor priced the -6.0 % bar after setting it: at the tax "
+                "where it fires (14.25 %) the route is still worth +0.68 .. "
+                "+1.07 % of ranked score, 2.4x to 3.3x the MDE, and still closes "
+                "the 0.5367 % deficit on its own. The bar would have discarded a "
+                "promoting candidate."
+            ),
         },
         "route_choice": (
             "carry the mapping with the more negative net cell win into rung 4. If "
-            "both clear -6.0 % and their difference is inside the decision bar, "
+            "both clear -2.0 % and their difference is inside the decision bar, "
             "carry rbx, because its 90-register cell leaves the most headroom "
             "under the 108 floor for later composition."
         ),

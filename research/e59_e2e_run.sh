@@ -45,6 +45,29 @@ head_dir="${E59_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-dec
 # student timing on the same box. The shared parent restores it for both.
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 
+# Ranked command-buffer geometry.
+#
+# `MLX_MAX_*_PER_BUFFER` alone does NOT reach MLX on this host. The exports do
+# survive the worker's environment sanitizer, but
+# `applyQwenMTPStartupMemoryProfile` (QwenRuntimeMTPWorker.swift:479) runs
+# before the first MLX device access and force-sets both names with
+# `overwrite=1` whenever the resolved profile is the low-memory one. This host
+# has 48 GiB, below the 64 GiB full-profile minimum, so the low-memory profile
+# is selected by default and MLX would see 128 MiB / 64 ops no matter what the
+# parent exports.
+#
+# `DARKBLOOM_STARTUP_MEMORY_PROFILE=full` is the lever that works. It makes
+# `resolve` return the full profile, so the worker's `guard policy.isLowMemory
+# else { return }` returns before either force-set and the exported values
+# survive. That is also exactly what the ranked 128 GiB box does: there the
+# profile resolves to full for the same reason, and
+# `installQwenMTPFullProfileCommandBufferDefaults` supplies these same two
+# values. Setting all three names together reproduces the ranked worker's
+# resolved command-buffer state on a machine that cannot reach it by memory.
+export DARKBLOOM_STARTUP_MEMORY_PROFILE="${DARKBLOOM_STARTUP_MEMORY_PROFILE:-full}"
+export MLX_MAX_MB_PER_BUFFER="${MLX_MAX_MB_PER_BUFFER:-512}"
+export MLX_MAX_OPS_PER_BUFFER="${MLX_MAX_OPS_PER_BUFFER:-50}"
+
 pre_patch_sha="$(git rev-parse HEAD)"
 transient_sha=""
 
@@ -161,6 +184,10 @@ fi
   echo "worker_sha256=$(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | cut -d' ' -f1)"
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   echo "cool_gate_requested=$((1 - hot))"
+  echo "startup_memory_profile=${DARKBLOOM_STARTUP_MEMORY_PROFILE}"
+  echo "mlx_max_mb_per_buffer=${MLX_MAX_MB_PER_BUFFER}"
+  echo "mlx_max_ops_per_buffer=${MLX_MAX_OPS_PER_BUFFER}"
+  echo "physical_memory_gib=$(( $(sysctl -n hw.memsize) >> 30 ))"
   echo "gpu_temp_entry_c=$(gpu_temp)"
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "${out}/meta.txt"
@@ -190,6 +217,19 @@ echo "stale_metallib_warnings=${stale_metal}" >> "${out}/meta.txt"
 if ((stale_metal > 0)); then
   echo "e59_e2e_run: ${tag} saw ${stale_metal} stale-metallib warnings; discarding the leg" >&2
   rc=6
+fi
+
+# The worker announces the low-memory profile on stderr, and that branch is
+# exactly the branch that force-sets the command-buffer limits away from the
+# exported ranked values. Absence of the notice is therefore direct runtime
+# evidence that the exports survived into MLX. A leg that ran at the wrong
+# geometry is not comparable with the rest of the session, so discard it.
+low_mem="$(grep -c 'low-memory startup profile' "${out}/run.log")"
+echo "worker_low_memory_notices=${low_mem}" >> "${out}/meta.txt"
+echo "ranked_command_buffer_geometry=$((low_mem == 0 ? 1 : 0))" >> "${out}/meta.txt"
+if ((low_mem > 0 && rc == 0)); then
+  echo "e59_e2e_run: ${tag} ran at low-memory command-buffer geometry; discarding" >&2
+  rc=7
 fi
 
 echo "status=${rc}" >> "${out}/meta.txt"
