@@ -53,7 +53,7 @@ mkdir -p "${out}"
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
 export MLXFAST_SCORE_PATH="${PWD}/${out}/score.json"
-export MLXFAST_E57_SDPA_CHUNK_ARM="${chunk_arm}"
+export MLX_E57_SDPA_CHUNK_ARM="${chunk_arm}"
 
 trace_path="${PWD}/${out}/trace.txt"
 if ((row_trace || sdpa_trace)); then
@@ -68,8 +68,8 @@ if ((row_trace)); then
   export MLX_QWEN_MTP_TRACE_PATH="${trace_path}"
 fi
 if ((sdpa_trace)); then
-  export MLXFAST_E57_SDPA_TRACE=1
-  export MLXFAST_E57_SDPA_TRACE_PATH="${trace_path}"
+  export MLX_E57_SDPA_TRACE=1
+  export MLX_E57_SDPA_TRACE_PATH="${trace_path}"
 fi
 if ((hot)); then
   export MLXFAST_LOCAL_COOL_GATE=0

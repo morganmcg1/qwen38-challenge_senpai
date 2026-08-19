@@ -2,7 +2,7 @@
 """E57 rung 0: which SDPA routes does the scored decode actually reach?
 
 Consumes the `e57-sdpa:` lines that `attentionWithCacheUpdate` writes under
-MLXFAST_E57_SDPA_TRACE=1 and reports, per leg of one local run:
+MLX_E57_SDPA_TRACE=1 and reports, per leg of one local run:
 
   * the joint histogram of (qL, kL bucket) over the outer decode calls, where
     the buckets are the trusted dispatcher's own 2-pass boundary kL < 1024 and

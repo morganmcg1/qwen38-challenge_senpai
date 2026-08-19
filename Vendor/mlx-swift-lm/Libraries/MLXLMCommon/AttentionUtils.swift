@@ -167,13 +167,17 @@ public func attentionWithCacheUpdate(
 /// shipped predicate. One build therefore serves all three arms, so an arm
 /// comparison carries no build difference. Default is the shipped predicate:
 /// an unset or unknown environment value cannot change scored behaviour.
+///
+/// The name carries the `MLX_` prefix because
+/// `sanitizedRuntimeWorkerEnvironment` admits only a small allowlist into the
+/// runtime worker, and `MLXFAST_` is deliberately not part of it.
 enum SdpaWideChunkArm: String {
     case base
     case narrow
     case off
 
     static let current: SdpaWideChunkArm = {
-        let raw = ProcessInfo.processInfo.environment["MLXFAST_E57_SDPA_CHUNK_ARM"] ?? ""
+        let raw = ProcessInfo.processInfo.environment["MLX_E57_SDPA_CHUNK_ARM"] ?? ""
         return SdpaWideChunkArm(rawValue: raw) ?? .base
     }()
 
@@ -193,7 +197,7 @@ enum SdpaWideChunkArm: String {
 /// causality, the selected arm and whether the chunk fired. The route each
 /// call takes is derived offline from the quoted dispatcher conditions, so this
 /// instrument stays free of any device query. Off unless
-/// `MLXFAST_E57_SDPA_TRACE=1`.
+/// `MLX_E57_SDPA_TRACE=1`.
 ///
 /// The sink mirrors `Qwen36MTPBlockSession.traceSink`: the `mtp-timed` parent
 /// discards worker stderr, so a readable trace needs an `O_APPEND` file that
@@ -202,11 +206,11 @@ enum SdpaWideChunkArm: String {
 /// run.
 enum SdpaWideChunkTrace {
     static let enabled =
-        ProcessInfo.processInfo.environment["MLXFAST_E57_SDPA_TRACE"] == "1"
+        ProcessInfo.processInfo.environment["MLX_E57_SDPA_TRACE"] == "1"
 
     private static let sink: FileHandle = {
         guard let path = ProcessInfo.processInfo
-            .environment["MLXFAST_E57_SDPA_TRACE_PATH"], !path.isEmpty
+            .environment["MLX_E57_SDPA_TRACE_PATH"], !path.isEmpty
         else { return FileHandle.standardError }
         let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
         guard fd >= 0 else { return FileHandle.standardError }
