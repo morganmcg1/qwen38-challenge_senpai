@@ -113,11 +113,39 @@ SURFACE_PATHS=(
 #   WARM-PATH-ONLY        added code executes only in the warm-up path, outside
 #                         the timed window, so it cannot appear in a scored
 #                         measurement except by moving cost OUT of it.
+#   FRONTIER-PLUS-PINNED-DIFF:<sha256>
+#                         the file is the live frontier's copy PLUS exactly one
+#                         declared diff, whose content digest is pinned in the
+#                         status word. Use this, never FRONTIER-TAKEN, when a
+#                         candidate edits a file we otherwise only adopt.
+#
+#                         WHY THIS CLASS EXISTS. 2026-08-19, askeladd's E55.
+#                         FRONTIER-TAKEN asserts byte-identity, so the first
+#                         legitimate edit to an adopted file has no honest label
+#                         available: the choices were to weaken FRONTIER-TAKEN,
+#                         to demote the file to a prose-only status and lose the
+#                         one verified class, or to add this. The safety property
+#                         FRONTIER-TAKEN really protects is not identity, it is
+#                         "our whole-file overlay does not SILENTLY REVERT
+#                         organizer-accepted work". A pinned diff protects that
+#                         property exactly, because anything the overlay changes
+#                         beyond the declared hunks moves the digest and fails.
+#
+#                         The digest covers only the '+'/'-' CONTENT lines of
+#                         `git diff -U0` against the frontier, so it is stable
+#                         under line-number drift elsewhere in the file and it
+#                         cannot be satisfied by a diff that touches anything
+#                         else. Same principle as the twin-audit waiver: pin the
+#                         DIVERGENCE, never the BODY.
+#
+#                         An entry whose diff has become empty also fails: at
+#                         that point the file has returned to the frontier and
+#                         the honest label is FRONTIER-TAKEN again.
 ACK_UNSCORED=(
   "Sources/MLXFastModel/Qwen35RuntimeWeights.swift|FRONTIER-TAKEN|Buffer cap MLX_MAX_MB_PER_BUFFER raised 128 to 512. Adopted verbatim from the frontier so our whole-file overlay stops REVERTING an organizer-accepted promotion. Byte-identity is asserted by this gate, so no cost model is owed: the frontier is already the measured configuration."
   "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift|FRONTIER-TAKEN|Frontier memory policy taken verbatim: setenv overwrite flag 0 to 1 and the 320/128 MiB pair to 512/50. These were the crown's actual mechanism, not dead constants; a previous turn nearly deleted them as unused. Byte-identity to the frontier is asserted below."
-  "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp|FRONTIER-TAKEN|E27 per-width register widening REVERTED to the frontier. E27 cost 0.3321 percent of score: mean MTP leg plus 0.1995 percent, slower on every wide prompt (beagle 0.2353, essays 0.4803, republic 0.2375, botany 0.5225 against an MTP replicate sd of 0.0995 percent). See research/crown_leg_decomposition.py. JIT twin of the kernel header below."
-  "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h|FRONTIER-TAKEN|E27 reverted with its twin. Cells return to T,5,3 and T,9,3, dropping the kernel-wide register max from 129 to 108 and the production entry affine_qmv_fast bfloat16_t,64,4,false from 183 to 163. Because there is exactly one [[kernel]] and every helper is METAL_FUNC inline (alphonse E40), that allocation is shared by every width, which is why two local per-width wins lost the score."
+  "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp|FRONTIER-PLUS-PINNED-DIFF:08c42cf7891adc9104329bee5bc4c648d049887b57adbdc954d476cd7b7e69f6|E27 per-width register widening REVERTED to the frontier. E27 cost 0.3321 percent of score: mean MTP leg plus 0.1995 percent, slower on every wide prompt (beagle 0.2353, essays 0.4803, republic 0.2375, botany 0.5225 against an MTP replicate sd of 0.0995 percent). See research/crown_leg_decomposition.py. JIT twin of the kernel header below. DECLARED DIFF (E55): the same 4 content lines as the header twin, relaxing the wide-helper assert to NA in [2, 5] and moving case 9 from T,9,3 to T,9,5. It IS the E27 register mechanism minus case 5: research/e55_reg_census.py measures the candidate at the identical kernel-wide max of 129 and at 181 of E27's 183 entry registers, so the shared-allocation channel E27 was reverted for is open here too."
+  "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h|FRONTIER-PLUS-PINNED-DIFF:08c42cf7891adc9104329bee5bc4c648d049887b57adbdc954d476cd7b7e69f6|E27 reverted with its twin. Cells return to T,5,3 and T,9,3, dropping the kernel-wide register max from 129 to 108 and the production entry affine_qmv_fast bfloat16_t,64,4,false from 183 to 163. Because there is exactly one [[kernel]] and every helper is METAL_FUNC inline (alphonse E40), that allocation is shared by every width, which is why two local per-width wins lost the score. DECLARED DIFF (E55): 4 content lines, the assert relaxed to NA in [2, 5] and case 9 moved from T,9,3 to T,9,5, with case 5 and case 8 untouched. It IS that register mechanism minus case 5, and the census shows case 5 was never the cause: E27's case-5 cell measures 125, below the 129 max that T,9,5 sets on its own."
   "Sources/MLXFastModel/Qwen36MTPBlockSession.swift|WARM-PATH-ONLY|Two additions. (1) fkiene's verify-concat JIT warm, promoted at 1cb1f43a7246d57af8b96dad468583364779aa73 scoring 3.24417896624589 against base 3.24326223889754 (plus 0.0283 percent), deleted from the frontier by a later whole-file overlay whose author never opened the file; restored inside warmAllDepthShapes, i.e. OUTSIDE the timed window, so it can only move JIT cost out of the measured region. (2) E29 head-chain drain probe behind MLX_QWEN_MTP_TRACE_SYNC_HEAD: body is one eval() inside 'if Self.traceSyncHeadChain', so a timed run pays one static-let bool test per round."
   "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift|HOT-PATH-REFACTOR|E29(c) makes the decode asyncEval rung schedule overridable via MLX_QWEN_MTP_LADDER. Default rung set [0,1,9,19,29,39,49,57] is identical to the scored switch, but a Set<Int>.contains hash lookup replaced a jump table, 64x per forward pass. Modelled cost ~1 us/step: ~0.002 % of a 38 ms serial step and ~0.002 % of a 59 ms MTP round, and it appears on BOTH legs of raw_p so it largely cancels in the ratio. That is ~50x below sigma_score = 0.0978 %."
 )
@@ -286,7 +314,51 @@ elif [ "${have_frontier_ack}" -eq 1 ]; then
       note "    byte-identical to frontier   ${path}"
     else
       note "    NOT identical to frontier    ${path}"
-      bad "ACK_UNSCORED marks '${path}' FRONTIER-TAKEN, but it is NOT byte-identical to ${FRONTIER_REF}. Either the frontier moved under us or we edited a file we claimed only to adopt. Re-adjudicate with 'git diff ${FRONTIER_REF} ${REV} -- ${path}' and 'git blame' on the deleted lines before changing the label."
+      bad "ACK_UNSCORED marks '${path}' FRONTIER-TAKEN, but it is NOT byte-identical to ${FRONTIER_REF}. Either the frontier moved under us or we edited a file we claimed only to adopt. Re-adjudicate with 'git diff ${FRONTIER_REF} ${REV} -- ${path}' and 'git blame' on the deleted lines before changing the label. If the edit is a DELIBERATE candidate change, relabel to FRONTIER-PLUS-PINNED-DIFF:<sha256> instead of dropping the verified class."
+    fi
+  done
+  note ""
+fi
+
+# --- FRONTIER-PLUS-PINNED-DIFF entries must match their pinned divergence -----
+# The digest is taken over the '+'/'-' content lines of a -U0 diff with an
+# explicit algorithm, so it is reproducible and it ignores line-number drift
+# elsewhere in the file. Anything the overlay changes beyond the declared hunks
+# moves the digest, which is the whole point.
+pinned_diff_digest() {
+  git diff --no-color --no-ext-diff --diff-algorithm=myers -U0 \
+    "$1" "$2" -- "$3" \
+    | grep -E '^[+-]' \
+    | grep -Ev '^(\+\+\+|---)' \
+    | shasum -a 256 \
+    | awk '{ print $1 }'
+}
+
+have_pinned_ack=0
+for entry in "${ACK_UNSCORED[@]}"; do
+  rest="${entry#*|}"
+  case "${rest%%|*}" in FRONTIER-PLUS-PINNED-DIFF:*) have_pinned_ack=1 ;; esac
+done
+if [ "${have_pinned_ack}" -eq 1 ] && [ -z "${frontier_sha}" ]; then
+  bad "ACK_UNSCORED contains FRONTIER-PLUS-PINNED-DIFF entries but frontier ref '${FRONTIER_REF}' does not resolve, so their pinned divergence cannot be checked. Run 'git fetch upstream' or set SCORED_GATE_FRONTIER_REF."
+elif [ "${have_pinned_ack}" -eq 1 ]; then
+  note "  PINNED-DIFF VERIFICATION (against ${FRONTIER_REF} = ${frontier_sha:0:12}):"
+  for entry in "${ACK_UNSCORED[@]}"; do
+    path="${entry%%|*}"
+    rest="${entry#*|}"
+    status="${rest%%|*}"
+    case "${status}" in FRONTIER-PLUS-PINNED-DIFF:*) ;; *) continue ;; esac
+    pinned="${status#FRONTIER-PLUS-PINNED-DIFF:}"
+    if git diff --quiet "${frontier_sha}" "${rev_full}" -- "${path}" 2>/dev/null; then
+      bad "ACK_UNSCORED marks '${path}' FRONTIER-PLUS-PINNED-DIFF but it is now byte-identical to ${FRONTIER_REF}. The declared diff is gone, so this label is a lie about a change that no longer exists. Relabel to FRONTIER-TAKEN."
+      continue
+    fi
+    observed="$(pinned_diff_digest "${frontier_sha}" "${rev_full}" "${path}")"
+    if [ "${observed}" = "${pinned}" ]; then
+      note "    declared diff matches pin    ${path}  ${observed:0:12}"
+    else
+      note "    PINNED DIFF MOVED            ${path}"
+      bad "ACK_UNSCORED pins '${path}' to diff digest ${pinned} but the observed digest is ${observed}. Our overlay changes this frontier file somewhere the acknowledgement does not declare. Read 'git diff ${FRONTIER_REF} ${REV} -- ${path}', confirm every hunk is intended, then re-pin to the observed digest in the SAME commit that introduces the hunks."
     fi
   done
   note ""

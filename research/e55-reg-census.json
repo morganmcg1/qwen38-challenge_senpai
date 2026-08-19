@@ -1,5 +1,5 @@
 {
-  "all_ok": true,
+  "all_ok": false,
   "arms": [
     {
       "acc_alloca_types_by_width": {
@@ -594,20 +594,78 @@
           "peak_live_values": 45
         }
       }
+    },
+    {
+      "assert_bound": 5,
+      "edits": [
+        [
+          "static_assert(NA >= 2 && NA <= 4, \"wide multi-row QMV supports NA in [2, 4]\");",
+          "static_assert(NA >= 2 && NA <= 5, \"wide multi-row QMV supports NA in [2, 5]\");"
+        ],
+        [
+          "        case 9:\n          qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>(\n              w, scales, biases, x, y, in_vec_size, out_vec_size,\n              tid, simd_gid, simd_lid);\n          return;\n        default:",
+          "        case 9:\n          qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>(\n              w, scales, biases, x, y, in_vec_size, out_vec_size,\n              tid, simd_gid, simd_lid);\n          return;\n        case 10:\n          qmv_fast_crossrow_affine4_g64_m<T, 10, 5, true>(\n              w, scales, biases, x, y, in_vec_size, out_vec_size,\n              tid, simd_gid, simd_lid);\n          return;\n        default:"
+        ]
+      ],
+      "error": [
+        "  static_assert(M >= 3 && M <= 9, \"wide multi-row QMV dispatch covers M in [3, 9]\");",
+        "  ^                       ~~~~~~",
+        "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/tmp/e55-reg-census-ynxtdk6w/harm_only_case10/mlx/backend/metal/kernels/quantized.h:1977:11: note: in instantiation of function template specialization 'qmv_fast_crossrow_affine4_g64_m<bfloat, 10, 5, true>' requested here",
+        "          qmv_fast_crossrow_affine4_g64_m<T, 10, 5, true>(",
+        "          ^",
+        "1 warning and 1 error generated."
+      ],
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          3
+        ]
+      },
+      "name": "harm_only_case10",
+      "rev": "f2ec48a",
+      "role": "harm_only_design",
+      "status": "entry_compile_failed",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 3
+      }
     }
   ],
   "base_rev": "f2ec48a",
   "candidate_rev": "2267a84",
-  "candidate_vs_base": {
-    "candidate_rises_above_base": true,
-    "entry_batch0_delta": 18,
-    "kernel_wide_reg_max_delta": 21
-  },
-  "candidate_vs_e27": {
-    "candidate_carries_full_e27_allocation": true,
-    "entry_batch0_delta": -2,
-    "kernel_wide_reg_max_delta": 0
-  },
   "entry_batch0": {
     "base_na4_table": 163,
     "e27_both_cells": 183,
@@ -618,43 +676,14 @@
     "e27_both_cells": 31,
     "m9two_candidate": 31
   },
-  "head": "46a764a35561df8c2b3ad5c22ef3845bc1e71fe9",
+  "head": "3be9f1627bdf964953f9abf1f6ac9514e30bcdba",
   "kernel_wide_reg_max": {
     "base_na4_table": 108,
     "e27_both_cells": 129,
     "m9two_candidate": 129
   },
-  "per_width_reg": {
-    "base_na4_table": {
-      "3": 83,
-      "4": 104,
-      "5": 87,
-      "6": 83,
-      "7": 108,
-      "8": 104,
-      "9": 83
-    },
-    "e27_both_cells": {
-      "3": 83,
-      "4": 104,
-      "5": 125,
-      "6": 83,
-      "7": 108,
-      "8": 104,
-      "9": 129
-    },
-    "m9two_candidate": {
-      "3": 83,
-      "4": 104,
-      "5": 87,
-      "6": 83,
-      "7": 108,
-      "8": 104,
-      "9": 129
-    }
-  },
   "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>",
-  "positive_control_fired": true,
+  "positive_control_fired": null,
   "recorded_value_checks": {
     "base_na4_table": {
       "entry_batch0": [
@@ -680,13 +709,5 @@
         true
       ]
     }
-  },
-  "widths_unchanged_vs_base": [
-    3,
-    4,
-    5,
-    6,
-    7,
-    8
-  ]
+  }
 }

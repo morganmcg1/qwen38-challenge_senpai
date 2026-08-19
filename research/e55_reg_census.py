@@ -104,9 +104,14 @@ ARMS = [
     {"name": "e27_both_cells", "rev": BASE_REV,
      "edits": [(ASSERT_4, ASSERT_5), (M5_SHIPPED, M5_E27), (M9_SHIPPED, M9_NA5)],
      "role": "positive_control"},
+    # Recorded as an expected failure. A second assert, `M >= 3 && M <= 9` on the
+    # dispatch helper, rejects M=10, and no width the fixture leaves unused can
+    # host an NA=5 group: the switch covers M in [3, 9], NA cannot exceed M, and
+    # every width from 4 up is dispatched. So a harm-only arm is NOT cheaply
+    # buildable, and E49 Arm 2's dose ladder is the available substitute.
     {"name": "harm_only_case10", "rev": BASE_REV,
      "edits": [(ASSERT_4, ASSERT_5), (CASE9_TAIL, CASE9_TAIL_PLUS_10)],
-     "role": "harm_only_design"},
+     "role": "harm_only_design", "expect_fail": True},
 ]
 
 
@@ -182,6 +187,8 @@ def main() -> int:
 
     by = {a["name"]: a for a in arms}
     ok = [a for a in arms if a["status"] == "ok"]
+    required = [a for a in arms if not a.get("expect_fail")]
+    expected_fail = [a for a in arms if a.get("expect_fail")]
 
     checks = {}
     for name, want in RECORDED.items():
@@ -199,7 +206,7 @@ def main() -> int:
     control_fired = (
         by["e27_both_cells"].get("kernel_wide_reg_max")
         != by["base_na4_table"].get("kernel_wide_reg_max")
-        if len(ok) == len(ARMS) else None)
+        if by["e27_both_cells"]["status"] == "ok" else None)
 
     payload = {
         "head": subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
@@ -208,14 +215,18 @@ def main() -> int:
         "candidate_rev": CAND_REV,
         "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>",
         "arms": arms,
-        "all_ok": len(ok) == len(ARMS),
+        "all_ok": all(a["status"] == "ok" for a in required),
+        "expected_failures": {a["name"]: {
+            "status": a["status"],
+            "blocking_diagnostic": a.get("error"),
+        } for a in expected_fail},
         "kernel_wide_reg_max": {a["name"]: a["kernel_wide_reg_max"] for a in ok},
         "entry_batch0": {a["name"]: a["entry_batch0"] for a in ok},
         "entry_batch1": {a["name"]: a["entry_batch1"] for a in ok},
         "recorded_value_checks": checks,
         "positive_control_fired": control_fired,
     }
-    if len(ok) == len(ARMS):
+    if all(a["status"] == "ok" for a in required):
         b = by["base_na4_table"]
         c = by["m9two_candidate"]
         e = by["e27_both_cells"]
@@ -238,7 +249,7 @@ def main() -> int:
             if c["width_cells"][m]["peak_live_regs"]
             == b["width_cells"][m]["peak_live_regs"])
         h = by["harm_only_case10"]
-        payload["harm_only_vs_base"] = {
+        payload["harm_only_vs_base"] = {} if h["status"] != "ok" else {
             "entry_batch0_delta": h["entry_batch0"] - b["entry_batch0"],
             "kernel_wide_reg_max_delta":
                 h["kernel_wide_reg_max"] - b["kernel_wide_reg_max"],
