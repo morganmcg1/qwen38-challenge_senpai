@@ -25,6 +25,9 @@ while (($#)); do
 done
 
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
+# Session label, so W&B and research/out keep session 2 distinguishable from
+# this four-arm session.
+export E56_SESSION="${E56_SESSION:-s3}"
 
 echo "e56_session: ${tokens} decode tokens per leg"
 echo "e56_session: GPU observation before the first leg"
@@ -32,8 +35,8 @@ python3 research/e49_gpu_gate.py || true
 
 rc=0
 first=1
-for spec in base:baseA s45:s45B s89:s89C sfull:sfullD \
-            sfull:sfullD2 s89:s89C2 s45:s45B2 base:baseA2; do
+for spec in base:s3base1 s45:s3s45a s89:s3s89a sfull:s3sfulla \
+            sfull:s3sfullb s89:s3s89b s45:s3s45b base:s3base2; do
   arm="${spec%%:*}"
   tag="${spec##*:}"
   research/e56_run_leg.sh "${arm}" "${tag}" --tokens "${tokens}"
