@@ -1,0 +1,191 @@
+{
+  "askeladd_e48": {
+    "buckets": {
+      "f123": 0.04954492907775492,
+      "f456": 0.6402487455640492,
+      "f78": 0.09390986897786953,
+      "f9": 0.21629645638032646
+    },
+    "caveat_m3": "M=3 is exactly 0 because the 78-round local corpus observed no M=3 round and an exponential tilt cannot move a zero. It is a corpus artefact, not a claim that M=3 never dispatches.",
+    "identification": "PREDICTION. The hidden prompts expose one width statistic each, so this is an extrapolation from a local corpus, not a measured histogram.",
+    "mean_m": {
+      "beagle": 5.5327102803738315,
+      "medicine": 5.767676767676767
+    },
+    "model": "askeladd E48, max-entropy tilt of a measured local corpus",
+    "per_width": {
+      "2": 0.04954492907775492,
+      "3": 0.0,
+      "4": 0.131471303342638,
+      "5": 0.12174400241168307,
+      "6": 0.3870334398097281,
+      "7": 0.046306620029528955,
+      "8": 0.047603248948340574,
+      "9": 0.21629645638032646
+    },
+    "per_width_by_prompt": {
+      "beagle": {
+        "2": 0.05624391209874957,
+        "3": 0.0,
+        "4": 0.14081046874491587,
+        "5": 0.12646874008336798,
+        "6": 0.389576985868088,
+        "7": 0.045120603443051875,
+        "8": 0.04485742618007753,
+        "9": 0.19692186358174923
+      },
+      "medicine": {
+        "2": 0.043269090640029206,
+        "3": 0.0,
+        "4": 0.12272205095250563,
+        "5": 0.11731770513712629,
+        "6": 0.3846505580990038,
+        "7": 0.04741772129040182,
+        "8": 0.05017563046031654,
+        "9": 0.23444724342061674
+      }
+    },
+    "source": "research/e48_score_weighted_shares.py on this base",
+    "weights": {
+      "beagle": 0.483693625973383,
+      "medicine": 0.516306374026617
+    }
+  },
+  "cell_from_e49": 9,
+  "cells_measured_by_e54": [
+    5,
+    7,
+    8
+  ],
+  "edward_e53": {
+    "envelope": {
+      "buckets": {
+        "f123": {
+          "high": 0.036645491553272416,
+          "low": 0.029476333698424513
+        },
+        "f456": {
+          "high": 0.6886939342459233,
+          "low": 0.6502426618269678
+        },
+        "f78": {
+          "high": 0.25104074664911286,
+          "low": 0.21170912286416876
+        },
+        "f9": {
+          "high": 0.08920087226099524,
+          "low": 0.04622282547227288
+        }
+      },
+      "pairs": 48,
+      "per_width": {
+        "2": {
+          "high": 0.002679751802784044,
+          "low": 0.001336210001013292,
+          "mid": 0.002007980901898668
+        },
+        "3": {
+          "high": 0.03510448983020312,
+          "low": 0.027388872304199514,
+          "mid": 0.031246681067201316
+        },
+        "4": {
+          "high": 0.13941035486218956,
+          "low": 0.12023315892091607,
+          "mid": 0.12982175689155281
+        },
+        "5": {
+          "high": 0.24738752268653713,
+          "low": 0.19933910629210896,
+          "mid": 0.22336331448932306
+        },
+        "6": {
+          "high": 0.3387188139636889,
+          "low": 0.30673539100990416,
+          "mid": 0.32272710248679654
+        },
+        "7": {
+          "high": 0.15801778904960384,
+          "low": 0.12519693591493034,
+          "mid": 0.14160736248226707
+        },
+        "8": {
+          "high": 0.09603996224191444,
+          "low": 0.07185814978128709,
+          "mid": 0.08394905601160077
+        },
+        "9": {
+          "high": 0.08920087226099524,
+          "low": 0.04622282547227288,
+          "mid": 0.06771184886663406
+        }
+      }
+    },
+    "identification": "IDENTIFICATION INTERVAL over 48 feasible (beagle, medicine) burst solution pairs, not a standard error: 152 content-distinct trees reproduce the published board rows to 16 digits.",
+    "model": "edward E53, two-state burst process through the real greedy costModelDepth walk",
+    "selfcheck": {
+      "buckets": {
+        "f123": {
+          "high_delta": -6.938893903907228e-18,
+          "low_delta": 0.0,
+          "matches": true,
+          "published": {
+            "high": 0.03664549155327242,
+            "low": 0.029476333698424513
+          },
+          "recomputed": {
+            "high": 0.036645491553272416,
+            "low": 0.029476333698424513
+          }
+        },
+        "f456": {
+          "high_delta": 0.0,
+          "low_delta": -1.1102230246251565e-16,
+          "matches": true,
+          "published": {
+            "high": 0.6886939342459233,
+            "low": 0.6502426618269679
+          },
+          "recomputed": {
+            "high": 0.6886939342459233,
+            "low": 0.6502426618269678
+          }
+        },
+        "f78": {
+          "high_delta": 0.0,
+          "low_delta": 2.7755575615628914e-17,
+          "matches": true,
+          "published": {
+            "high": 0.25104074664911286,
+            "low": 0.21170912286416874
+          },
+          "recomputed": {
+            "high": 0.25104074664911286,
+            "low": 0.21170912286416876
+          }
+        },
+        "f9": {
+          "high_delta": 1.3877787807814457e-17,
+          "low_delta": 2.0816681711721685e-17,
+          "matches": true,
+          "published": {
+            "high": 0.08920087226099523,
+            "low": 0.04622282547227286
+          },
+          "recomputed": {
+            "high": 0.08920087226099524,
+            "low": 0.04622282547227288
+          }
+        }
+      },
+      "published_pairs": 48,
+      "recomputed_pairs": 48,
+      "reproduces_published_envelope": true
+    },
+    "source": "a2c3dbc:research/e53_width_mixture.py and research/e53-width-mixture.json",
+    "weights": {
+      "beagle": 0.483694,
+      "medicine": 0.516306
+    }
+  }
+}

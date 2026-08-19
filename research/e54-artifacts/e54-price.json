@@ -1,0 +1,178 @@
+{
+  "e27_composite": {
+    "e48": {
+      "board_observed_pct": -0.3321,
+      "leg_gain_pct": 3.4464,
+      "qmv_removed_pct": 5.1164,
+      "residual_pct": -2.5439,
+      "score_pct": 2.2118,
+      "share_pct_m5": 12.1744,
+      "share_pct_m9": 21.6296,
+      "sign_matches_board": false
+    },
+    "e53_high": {
+      "board_observed_pct": -0.3321,
+      "leg_gain_pct": 4.1113,
+      "qmv_removed_pct": 6.1035,
+      "residual_pct": -2.8655,
+      "score_pct": 2.5334,
+      "share_pct_m5": 24.7388,
+      "share_pct_m9": 8.9201,
+      "sign_matches_board": false
+    },
+    "e53_low": {
+      "board_observed_pct": -0.3321,
+      "leg_gain_pct": 3.101,
+      "qmv_removed_pct": 4.6037,
+      "residual_pct": -2.3768,
+      "score_pct": 2.0447,
+      "share_pct_m5": 19.9339,
+      "share_pct_m9": 4.6223,
+      "sign_matches_board": false
+    },
+    "e53_mid": {
+      "board_observed_pct": -0.3321,
+      "leg_gain_pct": 3.6062,
+      "qmv_removed_pct": 5.3536,
+      "residual_pct": -2.6211,
+      "score_pct": 2.289,
+      "share_pct_m5": 22.3363,
+      "share_pct_m9": 6.7712,
+      "sign_matches_board": false
+    }
+  },
+  "harness": "ranked",
+  "kink_pct": 1.0550943463804252,
+  "leverage_ref": "ccd1af6",
+  "marginal_weights": {
+    "beagle": 0.483693625973383,
+    "medicine": 0.516306374026617
+  },
+  "measured_win_pct_by_width": {
+    "5": 20.253,
+    "7": -0.994,
+    "8": -1.345,
+    "9": 12.255
+  },
+  "mixtures_are_not_adjudicated_here": true,
+  "per_width": {
+    "5": {
+      "prices": {
+        "e48": {
+          "leg_gain_pct": 1.6609,
+          "qmv_removed_pct": 2.4657,
+          "score_pct": 1.3481,
+          "share_pct": 12.1744
+        },
+        "e53_high": {
+          "leg_gain_pct": 3.375,
+          "qmv_removed_pct": 5.0103,
+          "score_pct": 2.1772,
+          "share_pct": 24.7388
+        },
+        "e53_low": {
+          "leg_gain_pct": 2.7195,
+          "qmv_removed_pct": 4.0372,
+          "score_pct": 1.8601,
+          "share_pct": 19.9339
+        },
+        "e53_mid": {
+          "leg_gain_pct": 3.0472,
+          "qmv_removed_pct": 4.5238,
+          "score_pct": 2.0187,
+          "share_pct": 22.3363
+        }
+      },
+      "win_pct": 20.253
+    },
+    "7": {
+      "prices": {
+        "e48": {
+          "leg_gain_pct": -0.031,
+          "qmv_removed_pct": -0.046,
+          "score_pct": -0.031,
+          "share_pct": 4.6307
+        },
+        "e53_high": {
+          "leg_gain_pct": -0.1058,
+          "qmv_removed_pct": -0.1571,
+          "score_pct": -0.1058,
+          "share_pct": 15.8018
+        },
+        "e53_low": {
+          "leg_gain_pct": -0.0838,
+          "qmv_removed_pct": -0.1244,
+          "score_pct": -0.0838,
+          "share_pct": 12.5197
+        },
+        "e53_mid": {
+          "leg_gain_pct": -0.0948,
+          "qmv_removed_pct": -0.1408,
+          "score_pct": -0.0948,
+          "share_pct": 14.1607
+        }
+      },
+      "win_pct": -0.994
+    },
+    "8": {
+      "prices": {
+        "e48": {
+          "leg_gain_pct": -0.0431,
+          "qmv_removed_pct": -0.064,
+          "score_pct": -0.0431,
+          "share_pct": 4.7603
+        },
+        "e53_high": {
+          "leg_gain_pct": -0.087,
+          "qmv_removed_pct": -0.1292,
+          "score_pct": -0.087,
+          "share_pct": 9.604
+        },
+        "e53_low": {
+          "leg_gain_pct": -0.0651,
+          "qmv_removed_pct": -0.0966,
+          "score_pct": -0.0651,
+          "share_pct": 7.1858
+        },
+        "e53_mid": {
+          "leg_gain_pct": -0.0761,
+          "qmv_removed_pct": -0.1129,
+          "score_pct": -0.0761,
+          "share_pct": 8.3949
+        }
+      },
+      "win_pct": -1.345
+    },
+    "9": {
+      "prices": {
+        "e48": {
+          "leg_gain_pct": 1.7855,
+          "qmv_removed_pct": 2.6507,
+          "score_pct": 1.4084,
+          "share_pct": 21.6296
+        },
+        "e53_high": {
+          "leg_gain_pct": 0.7364,
+          "qmv_removed_pct": 1.0932,
+          "score_pct": 0.7364,
+          "share_pct": 8.9201
+        },
+        "e53_low": {
+          "leg_gain_pct": 0.3816,
+          "qmv_removed_pct": 0.5665,
+          "score_pct": 0.3816,
+          "share_pct": 4.6223
+        },
+        "e53_mid": {
+          "leg_gain_pct": 0.559,
+          "qmv_removed_pct": 0.8298,
+          "score_pct": 0.559,
+          "share_pct": 6.7712
+        }
+      },
+      "win_pct": 12.255
+    }
+  },
+  "psi_mtp": 0.6736,
+  "saturation_cap_pct": 4.715610629070932
+}

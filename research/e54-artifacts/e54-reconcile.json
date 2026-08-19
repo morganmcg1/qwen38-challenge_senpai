@@ -1,0 +1,53 @@
+{
+  "bandwidth_reference": {
+    "breakeven_gbps_this_host": 120.21,
+    "bw_na5_measured_pr8_gbps": 95.5,
+    "bw_na_le4_measured_pr8_gbps": 165.6,
+    "note": "<T,5,5> moves half the traffic of <T,5,3>, so it breaks even when the lone NA=5 group sustains half the rate <T,5,3> achieves. E49's shipped-table legs measured that rate on this host, so the break-even is measured rather than modelled. An implied rate near PR #8's 95.5 GB/s means the board result and the only direct NA=5 bandwidth measurement agree."
+  },
+  "board_observed_pct": -0.3321,
+  "harness": "ranked",
+  "m9_win_pct_measured_e49": 12.255,
+  "prereg_discriminator": {
+    "if_p1_is_a_win_beyond_the_bar": "the two cells CANNOT explain E27 under any mixture, because both halves would then predict a GAIN while the board lost. The residual must come from a mechanism outside these two cells, and the shared [[kernel]] allocation tax is the leading candidate",
+    "if_p1_matches_solved_within_3pct": "the two cells explain E27; Law C gains strong support",
+    "note": "E49 bounded that tax at 0.213 % of QMV cost shipped-referenced, which is far too small to cover the board loss on its own, so a P1 win would leave E27 genuinely unexplained and worth its own experiment"
+  },
+  "psi_mtp": 0.6736,
+  "question": "what M=5 delta reproduces E27's board score, given the measured M=9 win?",
+  "sign_convention": "negative = <T,5,5> faster than <T,5,3>",
+  "solved": {
+    "e48": {
+      "implied_lone_group_gbps": 95.54,
+      "m5_delta_pct_required": 25.823,
+      "m9_half_alone_score_pct": 1.4084,
+      "reachable": true,
+      "share_pct_m5": 12.1744,
+      "share_pct_m9": 21.6296
+    },
+    "e53_high": {
+      "implied_lone_group_gbps": 112.97,
+      "m5_delta_pct_required": 6.412,
+      "m9_half_alone_score_pct": 0.7364,
+      "reachable": true,
+      "share_pct_m5": 24.7388,
+      "share_pct_m9": 8.9201
+    },
+    "e53_low": {
+      "implied_lone_group_gbps": 114.15,
+      "m5_delta_pct_required": 5.315,
+      "m9_half_alone_score_pct": 0.3816,
+      "reachable": true,
+      "share_pct_m5": 19.9339,
+      "share_pct_m9": 4.6223
+    },
+    "e53_mid": {
+      "implied_lone_group_gbps": 113.49,
+      "m5_delta_pct_required": 5.922,
+      "m9_half_alone_score_pct": 0.559,
+      "reachable": true,
+      "share_pct_m5": 22.3363,
+      "share_pct_m9": 6.7712
+    }
+  }
+}

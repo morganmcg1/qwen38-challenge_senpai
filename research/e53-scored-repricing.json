@@ -1,0 +1,85 @@
+{
+ "board_floor_pct": 0.7678,
+ "corpus_shares": {
+  "f78": 0.12343056619137117,
+  "f9": 0.5382510811669304
+ },
+ "kink_pct": 1.0550943463804252,
+ "marginal_weights": {
+  "beagle": 0.483693625973383,
+  "medicine": 0.516306374026617
+ },
+ "mechanisms": {
+  "e44_r2_narrow_78": {
+   "attn_out only": {
+    "clears_floor_at_worst": true,
+    "corpus_linear_pct": 1.2222174014072071,
+    "corpus_order_stat_pct": 1.1359307028500742,
+    "scored_high_pct": 1.48404814393297,
+    "scored_low_pct": 1.2659451364070984
+   },
+   "equal shape mix": {
+    "clears_floor_at_worst": true,
+    "corpus_linear_pct": 1.0288514042783756,
+    "corpus_order_stat_pct": 1.0288514042783747,
+    "scored_high_pct": 1.3008441668109993,
+    "scored_low_pct": 1.1250837877163633
+   },
+   "mlp_down only": {
+    "clears_floor_at_worst": true,
+    "corpus_linear_pct": 0.8354854071495439,
+    "corpus_order_stat_pct": 0.8354854071495499,
+    "scored_high_pct": 1.1176401896890065,
+    "scored_low_pct": 0.9737123045240104
+   }
+  },
+  "m9_two_stream": {
+   "clears_floor_at_best": true,
+   "clears_floor_at_worst": false,
+   "corpus_linear_pct": 5.521526569153085,
+   "corpus_order_stat_pct": 3.2154791433776753,
+   "pairs": 48,
+   "psi_interval": {
+    "high": {
+     "high": 0.9207245451498203,
+     "low": 0.4726492746355282
+    },
+    "low": {
+     "high": 0.917810532636687,
+     "low": 0.47115338109400273
+    }
+   },
+   "scored_high_pct": 0.9192675388932647,
+   "scored_low_pct": 0.47190132786476546,
+   "win_pct_at_m9": 14.79435566207052
+  }
+ },
+ "psi_mtp": {
+  "high": 0.69449,
+  "low": 0.692292,
+  "point": 0.693391
+ },
+ "saturation_cap_pct": 4.715610629070932,
+ "scored_shares": {
+  "beagle": {
+   "f78": {
+    "high": 0.21663100868977891,
+    "low": 0.1664464942340991
+   },
+   "f9": {
+    "high": 0.09269738653869883,
+    "low": 0.024682417356337822
+   }
+  },
+  "medicine": {
+   "f78": {
+    "high": 0.2839978346575566,
+    "low": 0.25389627291118844
+   },
+   "f9": {
+    "high": 0.0867221024831056,
+    "low": 0.0659749678851605
+   }
+  }
+ }
+}

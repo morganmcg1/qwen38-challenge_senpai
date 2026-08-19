@@ -208,6 +208,13 @@ def staircase_fit(shape):
     incr = {m: (cost[m] - cost[m - 1]) / cost[1] for m in range(2, VECTOR_LIMIT)}
     boundaries = [m for m in stream_boundaries(shape) if m in incr]
     interior = [m for m in incr if m not in boundaries]
+    # An isolated single-case probe build declares a stream change at almost
+    # every width, so no interior increment is left to compare a boundary
+    # against and this discriminator is undefined, not zero. E49's four isolated
+    # legs all exited 1 here AFTER a good measurement, which cost them their
+    # per-leg W&B run.
+    if not boundaries or not interior:
+        return None
     mean_boundary = sum(incr[m] for m in boundaries) / len(boundaries)
     mean_interior = sum(incr[m] for m in interior) / len(interior)
     step_excess = mean_boundary / mean_interior if mean_interior else None

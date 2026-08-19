@@ -27,6 +27,9 @@ readonly SCORED_FILES=(
 )
 
 readonly E49_BASE_SHA="${E49_BASE_SHA:-fb0a09d3912477d94ed631bdb90fd04172d7b4cf}"
+# Later experiments reuse this runner with their own arm definitions. The module
+# must expose the same CLI: `MODULE ARM --out JSON`, patching both scored files.
+readonly LEG_ARMS_MODULE="${LEG_ARMS_MODULE:-research/e49_arms.py}"
 
 pre_patch_sha="$(git rev-parse HEAD)"
 transient_sha=""
@@ -66,7 +69,7 @@ fi
 
 out_dir="${repo_root}/.mlxfast-private/qmv-curve/${tag}"
 mkdir -p "${out_dir}"
-manifest="${repo_root}/.mlxfast-private/e49-legs"
+manifest="${LEG_MANIFEST_DIR:-${repo_root}/.mlxfast-private/e49-legs}"
 mkdir -p "${manifest}"
 
 # --- who else is on this GPU --------------------------------------------------
@@ -84,7 +87,7 @@ case "${gate_rc}" in
 esac
 
 # --- patch --------------------------------------------------------------------
-python3 research/e49_arms.py "${arm}" --out "${manifest}/${tag}-arm.json"
+python3 "${LEG_ARMS_MODULE}" "${arm}" --out "${manifest}/${tag}-arm.json"
 git add -- "${SCORED_FILES[@]}"
 # --allow-empty: the `shipped` control arm is the tip unmodified, so it has no
 # diff to commit. Every leg still gets a commit, which keeps the unwind and the

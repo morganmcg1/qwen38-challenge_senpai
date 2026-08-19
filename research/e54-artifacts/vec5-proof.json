@@ -1,0 +1,426 @@
+{
+  "probe": "research/e54_vec5_probe.metal",
+  "question": "what does vec<float,5> compile to, and does the scored cell compile at IPG=5?",
+  "real_cells": {
+    "<T,5,3>": {
+      "acc_alloca_types": [],
+      "air_lines": 1112,
+      "allocas": 2,
+      "device_loads": 68,
+      "group_na_values": [
+        2,
+        3
+      ],
+      "peak_live_regs": 87,
+      "status": "ok",
+      "working_groups": 2
+    },
+    "<T,5,5>": {
+      "acc_alloca_types": [],
+      "air_lines": 777,
+      "allocas": 1,
+      "device_loads": 44,
+      "group_na_values": [
+        5
+      ],
+      "peak_live_regs": 125,
+      "status": "ok",
+      "working_groups": 1
+    },
+    "<T,7,4>": {
+      "acc_alloca_types": [],
+      "air_lines": 1284,
+      "allocas": 2,
+      "device_loads": 76,
+      "group_na_values": [
+        3,
+        4
+      ],
+      "peak_live_regs": 108,
+      "status": "ok",
+      "working_groups": 2
+    },
+    "<T,7,5>": {
+      "acc_alloca_types": [],
+      "air_lines": 1284,
+      "allocas": 2,
+      "device_loads": 76,
+      "group_na_values": [
+        2,
+        5
+      ],
+      "peak_live_regs": 129,
+      "status": "ok",
+      "working_groups": 2
+    },
+    "<T,8,4>": {
+      "acc_alloca_types": [],
+      "air_lines": 691,
+      "allocas": 1,
+      "device_loads": 40,
+      "group_na_values": [
+        4
+      ],
+      "peak_live_regs": 104,
+      "status": "ok",
+      "working_groups": 2
+    },
+    "<T,8,5>": {
+      "acc_alloca_types": [],
+      "air_lines": 1370,
+      "allocas": 2,
+      "device_loads": 80,
+      "group_na_values": [
+        3,
+        5
+      ],
+      "peak_live_regs": 129,
+      "status": "ok",
+      "working_groups": 2
+    },
+    "<T,9,3>": {
+      "acc_alloca_types": [],
+      "air_lines": 605,
+      "allocas": 1,
+      "device_loads": 36,
+      "group_na_values": [
+        3
+      ],
+      "peak_live_regs": 83,
+      "status": "ok",
+      "working_groups": 3
+    },
+    "<T,9,5>": {
+      "acc_alloca_types": [],
+      "air_lines": 1456,
+      "allocas": 2,
+      "device_loads": 84,
+      "group_na_values": [
+        4,
+        5
+      ],
+      "peak_live_regs": 129,
+      "status": "ok",
+      "working_groups": 2
+    }
+  },
+  "toolchain": [],
+  "vec_layout": {
+    "2": {
+      "acc_alloca": "[4 x <2 x float>]",
+      "acc_alloca_align": 8,
+      "alignof": {
+        "accepted": [
+          8
+        ],
+        "candidates": [
+          4,
+          8,
+          12,
+          16,
+          20,
+          32,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 8
+      },
+      "compiles": true,
+      "float_slots_occupied": 2,
+      "lanes": 2,
+      "padding_bytes": 0,
+      "payload_bytes": 8,
+      "sizeof": {
+        "accepted": [
+          8
+        ],
+        "candidates": [
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32,
+          40,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 8
+      }
+    },
+    "3": {
+      "acc_alloca": "[4 x <3 x float>]",
+      "acc_alloca_align": 16,
+      "alignof": {
+        "accepted": [
+          16
+        ],
+        "candidates": [
+          4,
+          8,
+          12,
+          16,
+          20,
+          32,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 16
+      },
+      "compiles": true,
+      "float_slots_occupied": 4,
+      "lanes": 3,
+      "padding_bytes": 4,
+      "payload_bytes": 12,
+      "sizeof": {
+        "accepted": [
+          16
+        ],
+        "candidates": [
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32,
+          40,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 16
+      }
+    },
+    "4": {
+      "acc_alloca": "[4 x <4 x float>]",
+      "acc_alloca_align": 16,
+      "alignof": {
+        "accepted": [
+          16
+        ],
+        "candidates": [
+          4,
+          8,
+          12,
+          16,
+          20,
+          32,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 16
+      },
+      "compiles": true,
+      "float_slots_occupied": 4,
+      "lanes": 4,
+      "padding_bytes": 0,
+      "payload_bytes": 16,
+      "sizeof": {
+        "accepted": [
+          16
+        ],
+        "candidates": [
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32,
+          40,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 16
+      }
+    },
+    "5": {
+      "acc_alloca": "[4 x <5 x float>]",
+      "acc_alloca_align": 32,
+      "alignof": {
+        "accepted": [
+          32
+        ],
+        "candidates": [
+          4,
+          8,
+          12,
+          16,
+          20,
+          32,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 32
+      },
+      "compiles": true,
+      "float_slots_occupied": 8,
+      "lanes": 5,
+      "padding_bytes": 12,
+      "payload_bytes": 20,
+      "sizeof": {
+        "accepted": [
+          32
+        ],
+        "candidates": [
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32,
+          40,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 32
+      }
+    },
+    "6": {
+      "acc_alloca": "[4 x <6 x float>]",
+      "acc_alloca_align": 32,
+      "alignof": {
+        "accepted": [
+          32
+        ],
+        "candidates": [
+          4,
+          8,
+          12,
+          16,
+          20,
+          32,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 32
+      },
+      "compiles": true,
+      "float_slots_occupied": 8,
+      "lanes": 6,
+      "padding_bytes": 8,
+      "payload_bytes": 24,
+      "sizeof": {
+        "accepted": [
+          32
+        ],
+        "candidates": [
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32,
+          40,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 32
+      }
+    },
+    "7": {
+      "acc_alloca": "[4 x <7 x float>]",
+      "acc_alloca_align": 32,
+      "alignof": {
+        "accepted": [
+          32
+        ],
+        "candidates": [
+          4,
+          8,
+          12,
+          16,
+          20,
+          32,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 32
+      },
+      "compiles": true,
+      "float_slots_occupied": 8,
+      "lanes": 7,
+      "padding_bytes": 4,
+      "payload_bytes": 28,
+      "sizeof": {
+        "accepted": [
+          32
+        ],
+        "candidates": [
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32,
+          40,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 32
+      }
+    },
+    "8": {
+      "acc_alloca": "[4 x <8 x float>]",
+      "acc_alloca_align": 32,
+      "alignof": {
+        "accepted": [
+          32
+        ],
+        "candidates": [
+          4,
+          8,
+          12,
+          16,
+          20,
+          32,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 32
+      },
+      "compiles": true,
+      "float_slots_occupied": 8,
+      "lanes": 8,
+      "padding_bytes": 0,
+      "payload_bytes": 32,
+      "sizeof": {
+        "accepted": [
+          32
+        ],
+        "candidates": [
+          8,
+          12,
+          16,
+          20,
+          24,
+          28,
+          32,
+          40,
+          64
+        ],
+        "rejected_example": "1 error generated.",
+        "unique": true,
+        "value": 32
+      }
+    }
+  },
+  "workdir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/tmp/e54-vec5-wcj22oiz"
+}

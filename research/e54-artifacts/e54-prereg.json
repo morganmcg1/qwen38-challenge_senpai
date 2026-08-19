@@ -1,0 +1,237 @@
+{
+  "experiment": "E54",
+  "assignment_id": "qwen38-r1-e54-lone-vs-sibling-na5-law",
+  "revision_id": "r1",
+  "pr": 58,
+  "base_sha": "a35bb006fd47785dc916241df63ec8780bda8e5c",
+  "orientation": "delta_pct = (candidate_NA5 - shipped_IPG) / shipped_IPG * 100 at the treated width; negative means the NA=5 build is faster",
+  "decision_bar_pct": 0.77,
+  "decision_bar_rule": "max(0.770, worst in-session control-width |delta|, treated-width replicate spread) - whichever is largest wins",
+  "theta_calibrated": 0.1385,
+  "e46_calibration_factor": 0.8278,
+  "cells": {
+    "P1": {
+      "pair": "P1",
+      "width": 5,
+      "shipped_template": "<T,5,3>",
+      "candidate_template": "<T,5,5>",
+      "shipped_split": [
+        3,
+        2
+      ],
+      "candidate_split": [
+        5
+      ],
+      "shipped_groups": 2,
+      "candidate_groups": 1,
+      "groups_change": -1,
+      "pred_pct": {
+        "working_group_law_raw": -22.955,
+        "working_group_law_calibrated": -19.001,
+        "bandwidth_serialized": -13.298,
+        "bandwidth_overlapped": -50.0,
+        "bandwidth_theta_calibrated": -18.383
+      },
+      "measured_pct": null
+    },
+    "P2": {
+      "pair": "P2",
+      "width": 7,
+      "shipped_template": "<T,7,4>",
+      "candidate_template": "<T,7,5>",
+      "shipped_split": [
+        4,
+        3
+      ],
+      "candidate_split": [
+        5,
+        2
+      ],
+      "shipped_groups": 2,
+      "candidate_groups": 2,
+      "groups_change": 0,
+      "pred_pct": {
+        "working_group_law_raw": 0.0,
+        "working_group_law_calibrated": 0.0,
+        "bandwidth_serialized": 36.702,
+        "bandwidth_overlapped": 0.0,
+        "bandwidth_theta_calibrated": 31.617
+      },
+      "measured_pct": null
+    },
+    "P3": {
+      "pair": "P3",
+      "width": 8,
+      "shipped_template": "<T,8,4>",
+      "candidate_template": "<T,8,5>",
+      "shipped_split": [
+        4,
+        4
+      ],
+      "candidate_split": [
+        5,
+        3
+      ],
+      "shipped_groups": 2,
+      "candidate_groups": 2,
+      "groups_change": 0,
+      "pred_pct": {
+        "working_group_law_raw": 0.0,
+        "working_group_law_calibrated": 0.0,
+        "bandwidth_serialized": 36.702,
+        "bandwidth_overlapped": 0.0,
+        "bandwidth_theta_calibrated": 31.617
+      },
+      "measured_pct": null
+    },
+    "M9": {
+      "pair": "M9",
+      "width": 9,
+      "shipped_template": "<T,9,3>",
+      "candidate_template": "<T,9,5>",
+      "shipped_split": [
+        3,
+        3,
+        3
+      ],
+      "candidate_split": [
+        5,
+        4
+      ],
+      "shipped_groups": 3,
+      "candidate_groups": 2,
+      "groups_change": -1,
+      "pred_pct": {
+        "working_group_law_raw": -14.805,
+        "working_group_law_calibrated": -12.255,
+        "bandwidth_serialized": -8.866,
+        "bandwidth_overlapped": -33.333,
+        "bandwidth_theta_calibrated": -12.255
+      },
+      "measured_pct": -12.255
+    }
+  },
+  "laws": {
+    "A_as_written_in_brief": {
+      "claim": "every NA=5 swap wins; M=5 wins most",
+      "predicts": {
+        "P1": "< -12 %",
+        "P2": "< 0 %",
+        "P3": "< 0 %"
+      },
+      "falsified_if": "P2 or P3 fails to win by more than the bar"
+    },
+    "A_prime_working_group_traffic": {
+      "claim": "weight traffic is proportional to working groups = ceil(M/IPG); only a swap that removes a group can win",
+      "predicts": {
+        "P1": "-23 % .. -13 % (group count 2 -> 1)",
+        "P2": "null within the bar (2 -> 2)",
+        "P3": "null within the bar (2 -> 2)"
+      },
+      "falsified_if": "P1 |delta| < bar, or P2 or P3 wins by more than 3 %"
+    },
+    "B_na5_always_loses": {
+      "claim": "NA=5 register pressure always costs more than it saves",
+      "predicts": {
+        "P1": "> +bar",
+        "P2": "> +bar",
+        "P3": "> +bar"
+      },
+      "status": "already falsified at M=9 by E49 (-12.255 %)",
+      "falsified_if": "any pair wins by more than the bar"
+    },
+    "C_sibling_overlap_advisor": {
+      "claim": "a lone NA=5 group has no NA<=4 sibling to hide its latency, so the lone cell regresses while mixed cells win",
+      "predicts": {
+        "P1": "> +bar (regression)",
+        "P2": "-12 % +/- 3",
+        "P3": "-12 % +/- 3"
+      },
+      "falsified_if": "P1 wins by more than the bar, or P2/P3 do not win by >= 3 %",
+      "requires_for_P1_regression": "the lone NA=5 group must sustain < 82.8 GB/s, which is 13 % below the 95.5 GB/s measured for NA=5 in PR #8"
+    },
+    "null": {
+      "claim": "IPG choice does not move isolated-build block latency",
+      "predicts": {
+        "P1": "|d| < bar",
+        "P2": "|d| < bar",
+        "P3": "|d| < bar"
+      }
+    }
+  },
+  "control_widths": {
+    "P1": [
+      1,
+      2,
+      3,
+      4,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "P2": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10
+    ],
+    "P3": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      9,
+      10
+    ]
+  },
+  "stop_rules": [
+    "Hard stop before any timing if the parity leg shows a bitwise delta at M<=9 for a timed arm.",
+    "Hard stop before any timing if the lane-perturbation positive control does not diverge at M=5.",
+    "Run P4 (e27_full on the real table) only if at least one treated-width |delta| >= 3 x bar and every control width is within the bar.",
+    "Add reps only when a decision-relevant treated-width |delta| lands in the ambiguous band [bar, 2 x bar].",
+    "Do not re-run M=9; E49 already measured it."
+  ],
+  "measurement_plan": {
+    "method": "E49 Arm 1 isolated single-case builds, ABBA-mirrored legs",
+    "widths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "reps": 21,
+    "inner": 10,
+    "leg_order": [
+      "A1",
+      "B1",
+      "B2",
+      "A2"
+    ],
+    "cool_gate": "real 40 C gate, not bypassed; entry/exit temps recorded",
+    "wandb_per_leg": true
+  },
+  "downstream_pricing": {
+    "note": "pricing is reported separately from the timing decision and under both live mixtures; E54 does not adjudicate between them",
+    "mixtures": [
+      "askeladd_E48_78_round_corpus",
+      "edward_E53_burst_envelope"
+    ],
+    "harness": "ranked"
+  }
+}
