@@ -137,10 +137,86 @@ RULE = re.compile(r"^/{40,}$")
 # every non-comment line matches.
 #
 # research/twin_waiver_negative_control.py asserts the exact shape of this
-# table -- including that it is empty and that the section it used to waive is
-# now genuinely non-divergent -- and independently re-derives that the waiver
-# machinery cannot mask a code change.
-KNOWN_COMMENT_DIVERGENCES = {}
+# table -- that it carries no DEAD row, that each live row still describes a
+# real divergence, and that the waiver machinery cannot mask a code change.
+#
+# AND IT IS BACK, FOR THE THIRD TIME, BY THE SAME MECHANISM. 2026-08-19.
+#
+# Organizer commit 474c750 (Accept submission
+# 942e5ab2-1c46-4c50-b7c3-eaf948878ed0) ships blobs 12e2f73d (header) and
+# 2429e888 (twin) that are once again mutually unfaithful, and advisor commit
+# e468efd ("rebase the shipped surface onto the live frontier; drop E27")
+# adopted both verbatim. Current upstream/main 0c90733d carries the same two
+# blobs, so this is the LIVE frontier state, not a stale corner.
+#
+# WHY THIS ROW EXISTS INSTEAD OF A FIX, WHICH REVERSES THE PREFERENCE STATED
+# ABOVE. The note above says canonical regeneration is "strictly preferable to
+# waiving, because it removes the fact instead of recording it". That was
+# written before these two paths acquired a second, stronger constraint, and it
+# is now the wrong call for this section:
+#
+#   The E27 revert deliberately restored BOTH files to frontier byte-identity,
+#   and that decision is worth 0.3321 % of score. research/scored-surface-gate.sh
+#   marks them FRONTIER-TAKEN and ASSERTS the byte-identity as part of the ack.
+#   Any edit -- including a comment-only one, in either file -- converts them
+#   from "our overlay writes back exactly what is already there" into "our
+#   overlay REPLACES the tip's copy of the hottest file in the competition",
+#   which is the precise mechanism by which a submission silently reverts
+#   organizer-accepted work. It also costs JIT bytes: mlx-generated/quantized.cpp
+#   is Metal source compiled at runtime, and JIT cost is inside the timed window
+#   on this benchmark, so comment lines here are not provably free.
+#
+#   So the cheapest correct action is to record the divergence, not remove it.
+#   Prefer regeneration again for any section where byte-identity to the
+#   frontier is NOT a live scored decision.
+#
+# ⚠️  THE DIVERGENCE IS NOT COSMETIC AND THE READABLE HEADER IS THE WRONG ONE.
+#
+#   quantized.h  case 8: 17 lines arguing for qmv_fast_crossrow_affine4_g64_m
+#                        <T, 8, 3, true> (3+3+2) on a register-cliff theory,
+#                        with an exactness argument, cross-row profiling
+#                        numbers, two submission receipts and a synergy claim.
+#   quantized.cpp case 8: 3 lines, correct, describing the 4+4 two-stream
+#                        dispatch that BOTH files actually contain.
+#
+#   The header's argument is FALSE. Making the code match it is measured at
+#   +18.72 % SLOWER (E46, thorfinn: 4-leg ABBA, pre-registered, 8/8 shapes,
+#   sign p=0.0078, range +14.83..+21.34 %), corroborated at +19.02 % by the E27
+#   probe 7b5183d on a different base -- agreement to 0.30 pp. The companion
+#   contrast isolates the mechanism: widening the GROUP while holding streams
+#   at 2 (<T,6,3> -> <T,6,4>) is null at +0.263 ms, under its own replicate
+#   floor, so the cost is STREAM COUNT and not group width. Registers cannot
+#   carry the story either: kernel-wide max is 108 in both arms, attained at
+#   M=7 regardless.
+#
+#   Because the code cannot be defended by a comment we are choosing not to
+#   write, it is defended by senpai/campaign-invariants.txt, which carries four
+#   entries -- `present` on <T, 8, 4, true> and `absent` on <T, 8, 3, true>, in
+#   both twins. Those were verified by CONSTRUCTION, not by reading: the exact
+#   hazardous edit was applied and asserted to have landed. The case that
+#   justifies them is the two-sided edit, which THIS audit cannot see, because
+#   this audit asks whether the twins agree and not whether they are right.
+KNOWN_COMMENT_DIVERGENCES = {
+    ("quantized", "mlx/backend/metal/kernels/quantized.h"): {
+        "checked_in_sha256": (
+            "d2dc1f7d4938524a500c355b51a9fb631cb3500efffc73e8ca87fd6e2b627992"
+        ),
+        "regenerated_sha256": (
+            "1995814a7f1b3f8859e0d14bfa61a694c8dcfb237465fb7598adf9bbb6abab49"
+        ),
+        "inherited_from": "474c750 (Accept submission 942e5ab2-1c46-4c50-b7c3-eaf948878ed0)",
+        "adopted_by": "e468efd (rebase the shipped surface onto the live frontier; drop E27)",
+        "note": (
+            "3087 checked-in vs 3097 regenerated lines, 3005 non-comment lines "
+            "identical on both sides. Header case 8 carries a 17-line argument "
+            "for 3+3+2 that is measured +18.72 % SLOWER (E46) and is NOT what "
+            "either file's code does; the twin's 3-line 4+4 comment is the "
+            "correct one. Waived rather than fixed because both paths are held "
+            "byte-identical to the frontier by the E27 revert. Code guarded by "
+            "senpai/campaign-invariants.txt."
+        ),
+    },
+}
 
 
 class AuditError(RuntimeError):

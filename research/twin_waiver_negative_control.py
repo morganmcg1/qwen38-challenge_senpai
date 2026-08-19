@@ -6,10 +6,10 @@ mechanism by which a real edit could be silently absorbed. This script is the
 falsification test for that risk, and it is written so that it keeps its teeth
 whether or not any waiver is currently allowlisted.
 
-PART A -- THE LIVE TABLE, WHICH IS NOW EMPTY.
-`KNOWN_COMMENT_DIVERGENCES` carries NO rows. It has been emptied twice, both
-times because a frontier sync moved one of the two pinned bodies and left the
-row waiving nothing:
+PART A -- THE LIVE TABLE, WHICH CARRIES ONE ROW AGAIN.
+`KNOWN_COMMENT_DIVERGENCES` has been emptied twice, both times because a
+frontier sync moved one of the two pinned bodies and left the row waiving
+nothing:
 
   * The key (`quantized` / `mlx/backend/metal/kernels/quantized.h`) was first
     waived for promoted frontier 79683c633b13c63aa23f112756a9c6b5173705b0. It
@@ -33,21 +33,33 @@ only have to reproduce two digests to be waived without a human revisiting the
 table. Deleting beats re-pinning; regenerating the twin canonically beats both,
 because it removes the fact instead of recording it.
 
-Part A therefore pins the EMPTY state and proves the closure is real rather than
-merely unrecorded:
+The row came back a THIRD time at organizer 474c750 / advisor e468efd, and this
+time it was re-pinned rather than fixed. The reasoning is recorded at the table
+itself in twin_audit.py; the short version is that both twin paths are held
+byte-identical to the frontier by the E27 revert, so editing either one to
+remove the divergence would cost more than recording it does.
 
-  A1. the table is empty -- no (stem, header) key is waivable at all,
-  A2. the section that used to be waived is still present in both the twin and
-      the regenerated source, so A3 is a real comparison and not a vacuous one,
-  A3. THE CLOSURE: that section is now byte-for-byte IDENTICAL between the
-      checked-in twin and the regenerated header. This is the positive evidence
-      that emptying the table was correct. If a future sync reintroduces a
-      divergence here, A3 reds and the operator must consciously choose between
-      regenerating the twin and adding a row,
-  A4. nothing waives that real pair -- neither a live row nor a stale key,
-  A5. THE TEETH AGAINST A STALE KEY: even a mutated code line in the real
-      section is not waived. With an empty table this is easy; it is asserted
-      anyway so the check keeps its meaning on the day a row returns.
+Part A therefore no longer pins EMPTINESS, which was never the real invariant.
+The real invariant is that THE TABLE AND THE TREE AGREE -- a row exists exactly
+when a divergence exists, and it pins the bodies actually present:
+
+  A1. THE COVERAGE GUARD: every row is one this control actually snapshots. A
+      row for some other (stem, header) makes this script stop covering the
+      table, so it reds rather than passing on partial coverage,
+  A2. the waived section is present in both the twin and the regenerated
+      source, so A3 is a real comparison and not a vacuous one,
+  A3. THE CLOSURE, BOTH WAYS. With a live row: the section really does diverge
+      (so the row is not DEAD), both pinned digests match the LIVE bodies, the
+      divergence is comment-only, and the row names its provenance. With no
+      row: the section is byte-for-byte identical, so there is nothing to
+      waive. Either way a future sync that changes the situation reds this,
+  A4. the real pair is waived EXACTLY when a live row covers it -- never by a
+      stale key, and never inertly (a row that fails to waive its own section
+      is a row nobody has revisited),
+  A5. THE TEETH: no single mutated CODE line in the real section becomes
+      waivable. Against an empty table this was trivially true; against the
+      live row it is now a real exercise of the code-lines guard, run over all
+      3005 non-comment lines.
 
 Part B below is what proves the machinery still has teeth, and it does so
 against the REAL checked-in section body rather than a fabricated one.
@@ -115,17 +127,21 @@ with tempfile.TemporaryDirectory(prefix="twin-negctl-") as scratch:
 checked_sections = dict(checked["sections"])
 regenerated_sections = dict(regenerated["sections"])
 
-print("PART A -- the live allowlist (expected EMPTY)")
+print("PART A -- the live allowlist (table and tree must AGREE)")
 
-# A1. The table is empty: no (stem, header) key is waivable at all. This is the
-# strongest state the audit can be in and it is what the two dead rows in this
-# file's history were replaced with.
+# A1. THE COVERAGE GUARD. This control can only speak about the one section it
+# snapshots. If a row ever appears for a different (stem, header) the control
+# silently stops covering the table, so refuse instead: the operator must extend
+# this script before that row is trusted.
 assert_true(
-    "KNOWN_COMMENT_DIVERGENCES is empty (no key is waivable)",
-    len(ta.KNOWN_COMMENT_DIVERGENCES) == 0,
+    "every allowlist row is one this control actually checks",
+    set(ta.KNOWN_COMMENT_DIVERGENCES) <= {(STEM, HEADER)},
 )
-if ta.KNOWN_COMMENT_DIVERGENCES:
-    print(f"      unexpected rows: {sorted(ta.KNOWN_COMMENT_DIVERGENCES)}")
+if not set(ta.KNOWN_COMMENT_DIVERGENCES) <= {(STEM, HEADER)}:
+    print(
+        "      uncovered rows: "
+        f"{sorted(set(ta.KNOWN_COMMENT_DIVERGENCES) - {(STEM, HEADER)})}"
+    )
 
 LIVE_ROW = dict(ta.KNOWN_COMMENT_DIVERGENCES.get((STEM, HEADER), {}))
 
@@ -139,30 +155,60 @@ assert_true(
 real_checked = list(checked_sections.get(HEADER, []))
 real_regenerated = list(regenerated_sections.get(HEADER, []))
 
-# A3. THE CLOSURE. The section the dead row used to waive is now byte-for-byte
-# identical between the checked-in JIT twin and the regenerated header. This is
-# the positive evidence that emptying the table was correct rather than merely
-# convenient: there is nothing left to waive. If a future frontier sync
-# reintroduces a divergence here this check reds, and the operator must choose
-# deliberately between regenerating the twin canonically (preferred) and adding
-# a fresh row derived with research/twin_waiver_digests.py.
-assert_true(
-    f"{HEADER} is byte-for-byte IDENTICAL, so there is nothing to waive",
-    real_checked == real_regenerated,
-)
-if real_checked != real_regenerated:
+# A3. THE CLOSURE, IN BOTH DIRECTIONS. The table and the tree must agree about
+# whether this section diverges. Two ways to be wrong, and both are hazards:
+#
+#   * a row with NO divergence is a DEAD ROW -- the silent hole this file's
+#     docstring is about. Its (stem, header) key stays waivable, so a later
+#     divergence needs only to reproduce two digests to pass unexamined.
+#   * a divergence with NO row is an unrecorded drift, which is what the audit
+#     exists to catch in the first place.
+#
+# When a row IS live, its two pinned digests must match the live bodies exactly
+# -- that is what makes the row describe THIS divergence and not a remembered
+# one -- and the divergence must be comment-only.
+divergent = real_checked != real_regenerated
+if LIVE_ROW:
+    assert_true(
+        f"{HEADER} really does diverge, so the live row is not a DEAD row",
+        divergent,
+    )
+    assert_true(
+        "the row's checked_in_sha256 pins the LIVE twin body",
+        ta.body_digest(real_checked) == LIVE_ROW["checked_in_sha256"],
+    )
+    assert_true(
+        "the row's regenerated_sha256 pins the LIVE regenerated body",
+        ta.body_digest(real_regenerated) == LIVE_ROW["regenerated_sha256"],
+    )
+    assert_true(
+        "the waived divergence is COMMENT-ONLY (every code line matches)",
+        ta.code_lines(real_checked) == ta.code_lines(real_regenerated),
+    )
+    assert_true(
+        "the row names where it came from and who adopted it",
+        bool(LIVE_ROW.get("inherited_from")) and bool(LIVE_ROW.get("adopted_by")),
+    )
+else:
+    assert_true(
+        f"{HEADER} is byte-for-byte IDENTICAL, so there is nothing to waive",
+        not divergent,
+    )
+if divergent:
     print(
         f"      {len(real_checked)} checked-in vs {len(real_regenerated)} "
         f"regenerated line(s); non-comment lines "
         f"{'match' if ta.code_lines(real_checked) == ta.code_lines(real_regenerated) else 'DIFFER'}"
     )
 
-# A4. Nothing waives the real pair -- not a live row, and not a stale key left
-# behind by a deleted one.
+# A4. The real pair is waived EXACTLY when a live row covers it. With no row,
+# nothing may waive it -- not even a stale key left behind by a deleted row.
+# With a row, it must actually be waived, or the row is inert and the audit is
+# red for a reason nobody recorded.
 check(
-    "real section pair is NOT waived (empty table, no stale key)",
-    ta.comment_only_waiver(STEM, HEADER, real_checked, real_regenerated),
-    False,
+    "real section pair is waived iff a live row covers it",
+    ta.comment_only_waiver(STEM, HEADER, real_checked, real_regenerated) is not None,
+    bool(LIVE_ROW),
 )
 
 # A5. THE TEETH AGAINST A STALE KEY. Mutating any single real CODE line must not
@@ -322,27 +368,39 @@ finally:
 # the `try` above; if it survived, every later audit run in this process would
 # be silently waiving a real section.
 assert_true(
-    "the synthetic row was removed and the live state (empty) was restored",
+    "the synthetic row was removed and the live state was restored exactly",
     ta.KNOWN_COMMENT_DIVERGENCES.get((STEM, HEADER)) == (LIVE_ROW or None),
 )
 assert_true(
-    "the live table is empty again after Part B",
-    len(ta.KNOWN_COMMENT_DIVERGENCES) == 0,
+    "the live table has its original row count after Part B",
+    len(ta.KNOWN_COMMENT_DIVERGENCES) == (1 if LIVE_ROW else 0),
 )
 assert_true(
-    "nothing waives the real pair after Part B",
-    ta.comment_only_waiver(STEM, HEADER, real_checked, real_regenerated) is None,
+    "the real pair's waiver status is unchanged by Part B",
+    (ta.comment_only_waiver(STEM, HEADER, real_checked, real_regenerated) is not None)
+    == bool(LIVE_ROW),
 )
 
 print()
 if failures:
     print(f"NEGATIVE CONTROL FAILED: {len(failures)} case(s): {failures}")
     sys.exit(1)
-print(
-    "NEGATIVE CONTROL PASSED: the allowlist is empty, the section its last row "
-    "used to waive is now byte-for-byte identical on both sides (so there is "
-    "nothing left to waive), nothing waives the real pair or any "
-    "single-code-line mutation of it, and the waiver machinery -- exercised on a "
-    "synthetic row and then removed without residue -- still cannot hide a code "
-    "or comment change."
-)
+if LIVE_ROW:
+    print(
+        "NEGATIVE CONTROL PASSED: the allowlist's single row is LIVE, not dead --"
+        " both pinned digests match the bodies actually in the tree, the"
+        " divergence they waive is comment-only across 3005 identical code"
+        " lines, and the row names its organizer and advisor provenance."
+        " Nothing waives any single-code-line mutation of that section, and the"
+        " machinery -- exercised on a synthetic row and then removed without"
+        " residue -- still cannot hide a code or comment change."
+    )
+else:
+    print(
+        "NEGATIVE CONTROL PASSED: the allowlist is empty, the section its last "
+        "row used to waive is byte-for-byte identical on both sides (so there is "
+        "nothing left to waive), nothing waives the real pair or any "
+        "single-code-line mutation of it, and the waiver machinery -- exercised "
+        "on a synthetic row and then removed without residue -- still cannot "
+        "hide a code or comment change."
+    )

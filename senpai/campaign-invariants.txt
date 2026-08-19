@@ -61,3 +61,28 @@ Sources/MLXFastModel/Qwen36MTPBlockSession.swift | absent | reachedStopToken | R
 Sources/MLXFastModel/Qwen36MTPBlockSession.swift | present | for extra in 0 \.\.\. maxDepth | fkiene's 19-line verify-concat JIT warm, promoted at 1cb1f43a scoring 3.24417896624589 vs base 3.24326223889754 = +0.0283 %. Deleted from the live tip by ofou's whole-file overlay by an author who never opened this file. It is the single measured positive we are carrying, and it is the reason our next submission is worth making at all.
 
 Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift | present | inputs\.dim\(1\) <= 9 | The decode ladder's width guard. The crown has `<= 9` here too, so this is NOT a divergence -- it is listed because the adjacent COMMENT still says "S <= 2". A comment-guided "fix" that trusts the prose over the code would narrow the guard and silently disable the ladder for widths 3..9, which is most of the scored decode surface. This entry exists so that edit turns a gate red instead of costing a submission.
+
+# ---------------------------------------------------------------------------
+# Width-8 inputs-per-group, both twins. Four entries: `present` on the correct
+# dispatch and `absent` on the exact wrong one, in quantized.h and in its
+# mlx-generated twin.
+#
+# WHY BOTH DIRECTIONS AND BOTH FILES. `research/twin_audit.py` already fails if
+# the two files disagree, so a one-sided edit is caught there. What twin_audit
+# CANNOT catch is a consistent edit that changes both files the same wrong way
+# -- which is precisely the edit the deleted comment was recruiting a reader to
+# make. So the invariant, not the twin audit, is the check that matters here.
+#
+# These guard CODE, not prose, on purpose. The failure mode being defended
+# against is exactly "a persuasive comment talks someone into changing the
+# dispatch", and a comment-text invariant would have been satisfied by the very
+# comment that caused the problem.
+# ---------------------------------------------------------------------------
+
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | present | qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true> | Width 8 must dispatch inputs-per-group 4, i.e. TWO weight streams of 4 rows. Until 2026-08-19 a 17-line comment sat directly above this line arguing for 3+3+2 on a register-cliff theory, contradicting the code beneath it. Changing the code to match that comment is measured, twice, as a large LOSS: E46 (thorfinn, 4-leg ABBA, pre-registered) +18.72 % slower, 8/8 shapes, sign p=0.0078; E27 probe 7b5183d on a DIFFERENT base +19.02 %. The two agree to 0.30 pp. The register story is also false: kernel-wide max is 108 in both arms, set at M=7 either way.
+
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | absent | qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true> | The exact wrong dispatch, named so it fails loudly rather than being caught only as a slowdown in a later sweep. IPG 3 splits M=8 into {0,1,2} {3,4,5} {6,7} = THREE weight streams, and each stream re-reads the whole weight tile. See the `present` entry above for the two measurements.
+
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true> | Twin of the quantized.h entry above; this is the copy that is actually compiled. Same receipts.
+
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | absent | qmv_fast_crossrow_affine4_g64_m<T, 8, 3, true> | Twin of the quantized.h entry above. Same receipts.
