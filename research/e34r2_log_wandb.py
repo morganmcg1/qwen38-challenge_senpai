@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-"""Log the E34 r2 autopsy to W&B. Analysis only: no GPU, no timed run."""
+"""Log the E34 r2 autopsy to W&B. Analysis only: no GPU, no timed run.
+
+Set WANDB_RESUME_ID to update an existing run in place instead of creating a
+new one.
+"""
 import json
+import os
 import pathlib
 import subprocess
 
@@ -13,10 +18,35 @@ rec, sh, rep = DOC["ranked_reconstruction"], DOC["ranked_vs_local_shape"], DOC["
 pm, el, geo, nz = DOC["primary_metric"], DOC["elimination"], DOC["geometry"], rec["near_zero_row"]
 
 head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
+resume_id = os.environ.get("WANDB_RESUME_ID") or None
+
+# Measured by research/archprobe.m: device enumeration only, no compute.
+ARCH = {
+    "local_device_name": "Apple M4 Pro",
+    "local_arch_string": "applegpu_g16s",
+    "local_arch_gen": 16,
+    "local_arch_size_char": "s",
+    "nax_gen_threshold_non_p": 17,
+    "nax_available_locally": False,
+    "arch_derived_default_max_ops_per_buffer": 50,
+    "arch_derived_default_max_mb_per_buffer": 50,
+    "local_policy_forced_max_ops_per_buffer": 64,
+    "local_policy_forced_max_mb_per_buffer": 128,
+    "ranked_policy_installed_max_ops_per_buffer": 50,
+    "ranked_policy_installed_max_mb_per_buffer": 512,
+    "ranked_policy_setenv_overwrite": 0,
+    "local_policy_setenv_overwrite": 1,
+    "buffer_budget_units": "mebi-elements",
+    "buffer_budget_dedupes_per_buffer_pointer": True,
+    "threadgroup_memory_bytes": 32768,
+    "recommended_working_set_bytes": 40200896512,
+}
 
 run = wandb.init(
     project="qwen38-mlx-challenge-senpai",
     entity="wandb-applied-ai-team",
+    id=resume_id,
+    resume="must" if resume_id else None,
     name="e34-r2-model-autopsy",
     group="e34-ranked-operating-point-depth-cap",
     job_type="analysis",
@@ -151,10 +181,16 @@ for r in sh["rows"]:
                    r["ranked_shape"], r["local_shape"], r["local_overstates_pct"])
 run.log({"ranked_vs_local_shape": shape})
 
+run.config.update({f"arch/{k}": v for k, v in ARCH.items()}, allow_val_change=True)
+run.summary["arch/nax_available_locally"] = ARCH["nax_available_locally"]
+run.summary["arch/local_arch_gen"] = ARCH["local_arch_gen"]
+run.summary["arch/nax_gen_threshold_non_p"] = ARCH["nax_gen_threshold_non_p"]
+
 art = wandb.Artifact("e34r2-model-autopsy", type="analysis")
 art.add_file(str(REPO / "research" / "e34r2-model-autopsy.json"))
 art.add_file(str(REPO / "research" / "e34r2-results.md"))
 art.add_file(str(REPO / "research" / "e34r2_model_autopsy.py"))
+art.add_file(str(REPO / "research" / "archprobe.m"))
 run.log_artifact(art)
 
 print("run_id", run.id)
