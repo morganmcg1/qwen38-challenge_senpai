@@ -118,6 +118,13 @@ def main() -> int:
                         help="A/A session directory; its cells have a true "
                              "effect of exactly zero and set the floor")
     parser.add_argument("--wandb-name", default=None)
+    parser.add_argument("--artifact", action="append", default=[],
+                        type=pathlib.Path,
+                        help="file to attach to the W&B run; repeatable")
+    parser.add_argument("--extra-summary", action="append", default=[],
+                        metavar="KEY=VALUE",
+                        help="extra scalar to record, e.g. a compile-only "
+                             "register readout; repeatable")
     args = parser.parse_args()
     touched_widths = {int(w) for w in args.touched.split(",") if w.strip()}
     touched_label = ", ".join(str(w) for w in sorted(touched_widths))
@@ -388,6 +395,10 @@ def main() -> int:
             summary["score/ceiling_term_per_1pct"] = uniform
             summary["score/width_term_at_f1_pct"] = gated * mean_touched
 
+    for pair in args.extra_summary:
+        key, _, value = pair.partition("=")
+        summary[key.strip()] = float(value)
+
     if args.wandb:
         import wandb
         run = wandb.init(
@@ -407,8 +418,9 @@ def main() -> int:
                 "reps": payload["reps"],
                 "inner": payload["inner"],
                 "prereg_mde_pct": PREREG_MDE_PCT,
+                "control_run_dir": str(args.control) if args.control else None,
                 "bar_pct": BAR_PCT,
-        "touched_widths": sorted(touched_widths),
+                "touched_widths": sorted(touched_widths),
                 # Preserved verbatim: this is a counterbalanced ungated local
                 # arm, which is directional causal evidence and never a score.
                 "cool_gate_passed_real_gate":
@@ -441,6 +453,15 @@ def main() -> int:
                 data=cost_model),
             **summary,
         })
+        if control_cells:
+            wandb.log({"aa_control": wandb.Table(
+                columns=["shape", "m", "effect_pct", "sd_pct", "ci95_lo_pct",
+                         "ci95_hi_pct", "n_pairs"],
+                data=[[c["shape"], c["m"], c["effect_pct"], c["sd_pct"],
+                       c["ci95_lo_pct"], c["ci95_hi_pct"], c["n_pairs"]]
+                      for c in control_cells])})
+        for path in args.artifact:
+            wandb.save(str(path), base_path=str(path.parent), policy="now")
         run.summary.update(summary)
         print(f"\nW&B run: {run.url}  id={run.id}")
         run.finish()
