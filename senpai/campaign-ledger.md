@@ -5296,3 +5296,85 @@ Two traps in doing it:
      me.** The fix in (D) is the structural answer — put the assertion inside the tool so the
      tool catches it — and I am extending the rule: **any constant quoted in two or more
      briefs must be emitted by a self-testing script, not typed.**
+
+159. 🔴🔴🔴 **I BUILT THE GATE ITEM 156 SAID WE NEEDED, AND IT FOUND TWELVE MORE INHERITED
+     SHIPPED FILES. WE AUTHORED 4.6 % OF THE CODE WE SUBMIT.** For fifteen turns I quoted
+     "the shipped surface is 5 files, +229/−74" and used it as the search space for defects.
+     It is the search space for **our** defects. The code we actually ship is 22× larger.
+
+     **THE NUMBER.** Against pristine upstream `5d029178765cf727e7ee530b0b4c731d566f908a`
+     ("Qwen 3.8 27B native-MTP challenge", David Tai, 2026-08-14, verified as an ancestor of
+     HEAD), our shipped surface is **18 files, +5027/−187**. Against the campaign baseline
+     `5273067` it is **5 files, +229/−74**. The 5027 inserted lines we ship break down as:
+
+     - **this campaign wrote: +229**
+     - **inherited, living inside our own five files: +4479**
+     - **inherited, in 13 files we never touched: +319**
+
+     ⇒ **we authored 4.6 % of the code we submit.** 5027 / 229 = **21.95×**.
+
+     🔴 **The +4479 is the subtlest part and I had never seen it.** `Qwen35.swift` is **+2491**
+     against pristine, of which only **+32** is ours. `Qwen36MTPBlockSession.swift` is
+     **+1223**, of which **+157** is ours. `quantized.h` and `quantized.cpp` are **+481** each,
+     of which **+4** is ours. **So opening one of "our" files is not the same as reading our
+     own code**, and every time I have said "I read the shipped surface" I was reading a few
+     percent of it.
+
+     **THE TWELVE FILES ITEM 156 DID NOT FIND** — `AttentionUtils.swift` was the thirteenth
+     and I found it by accident: `mtp-head.manifest.json` (+5/−13, and it **selects the head
+     artifact**), `Qwen36MTPHeadAttachment.swift` (+76/−10), `Qwen36MTPTarget.swift` (+62/−6),
+     `KVCache.swift` (+58), `Qwen35MTP.swift` (+40/−1), `QwenRuntimeMTP.swift` (+15),
+     `MLXFastCLI/main.swift` (+10), `QwenRuntimeMTPDriver.swift` (+6, and it owns
+     `effectiveDraftLengths`), `Qwen35Block.swift` (+2), `Qwen35GatedDelta.swift` (+2), and
+     the two `QwenRuntimeLocalIterate.swift` twins (+2/−2 each). **Several sit squarely on the
+     scored path**: the head attachment, the MTP target, the MTP head forward, and the GDN
+     block that carries 28 % of step time.
+
+     🟢 **FIRST RESULT FROM THE NEW GATE, AND IT RETIRES A REAL RISK TO ITEM 156.**
+     `KVCache.swift` is inherited — and item 156's reachability proof for the chunked SDPA
+     runs *through* it: `createAttentionMask` `:353-374`, `BaseKVCache.makeMask` `:160-174`,
+     `KVCacheSimple` `:385`. Had those lines been inherited modifications, the proof would
+     have rested on unaudited code. **They are not.** The entire inherited delta is a
+     **single hunk appending 58 lines at `:1243`**, adding `rollbackCheckpoints` and
+     `prefixReplayTape` to `MambaCache` — per-boundary `(conv_state, ssm_state)` checkpoints
+     and a proposal-verify tape so a partial acceptance can restore a committed recurrent
+     prefix without repairing forward. It touches **none** of the three symbols the proof
+     uses. **Item 156's trace stands on pristine upstream code.** Status **PARTIAL**: extent
+     established, mechanism not traced.
+
+     **THE GATE.** `research/inherited-surface-gate.sh` pins pristine with a subject assertion
+     and an ancestry check, prints the per-file numstat, partitions ours from inherited,
+     prints the authorship breakdown above, and **fails closed** on (a) any inherited shipped
+     file not on an explicit ACK list, and (b) any ACK entry that is no longer in the shipped
+     delta. Each ACK entry carries a status word that is load-bearing rather than decorative:
+     **AUDITED** (mechanism traced and written up — currently only `AttentionUtils.swift`),
+     **PARTIAL** (extent established, mechanism not traced — `KVCache.swift`), **UNAUDITED**
+     (known to be shipped and nothing more — the other eleven). Mutation negative controls
+     both pass: dropping `AttentionUtils.swift` from ACK ⇒ FAIL, exit 1; adding an ACK entry
+     for a file we do not ship ⇒ FAIL, exit 1.
+
+     🔴 **THE FIRST VERSION OF THIS GATE WAS WRONG IN EXACTLY THE WAY THE GATE EXISTS TO
+     EXPOSE, AND I AM RECORDING THAT RATHER THAN QUIETLY FIXING IT.** It credited the campaign
+     with **+4708** lines, because it summed our five files' diff *against pristine* instead
+     of against the campaign baseline — i.e. it counted the inherited code living inside our
+     own files as ours. The corrected script names `CAMPAIGN_BASE` explicitly and comments
+     why. **A gate written by the person with the blind spot inherits the blind spot, and it
+     was the mutation controls that caught it, not my reading of it.**
+
+     **CONSEQUENCES FOR THE CAMPAIGN.** The defect search space for item 148's width-confined
+     deficit is **not** +229/−74. alphonse's E40 is right now classifying our 229 lines
+     hunk-by-hunk against H2/H3, and **his H4 — "the cause is not in our delta at all" — just
+     became substantially more likely a priori.** But the sharper point is that his hypothesis
+     list is missing a class: the deficit is *us against rows that fork the same lineage*, so
+     a differential needs either something we changed, **or an interaction between our five
+     changes and inherited code that the plateau also runs.** That second class was never on
+     the list and it is now the largest one. It is also the natural home for alphonse's own
+     single-kernel finding (item 158 E): our +4 lines in `quantized.h` changed the register
+     ceiling of a kernel whose other **+477** lines we inherited.
+
+     **STANDING RULE, THIRD WIDENING.** Item 156: check the artifact before you build it.
+     Item 158: any constant quoted in two or more briefs must be emitted by a self-testing
+     script. **Now: any claim about "the shipped surface" must name which baseline it is
+     against, because the two answers differ by 22×.** Both gates belong in CI. And
+     `shipped-surface-gate.sh`'s own header comment — *"A check you never audit is not a
+     check"* — was written about the wrong baseline and applies to itself.
