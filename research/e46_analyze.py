@@ -459,46 +459,76 @@ def main() -> int:
         }
 
     print("\n[8] VERDICT")
-    verdict, mech = [], None
+    # Each hypothesis is scored against ALL THREE of its registered predictions.
+    # A cascade on contrast A alone would let H_groupwidth "win" on a positive A
+    # while contrast B pointed the opposite way from what it predicts.
+    scored = {
+        "H_streams": {
+            "step 2: argmax d1 at a stream boundary": step2_streams,
+            "contrast A: null at constant streams": bool(a_null),
+            "contrast B: positive, within the lenient band": bool(b_real
+                                                                 and b_lenient),
+        },
+        "H_groupwidth": {
+            "contrast A: positive when the widest group grows 3 -> 4": bool(
+                not a_null and dA > 0),
+            "contrast B: negative when the widest group shrinks 4 -> 3": bool(dB < 0),
+        },
+        "H_M6breakpoint": {
+            "step 2: argmax d1 = 5->6": step2_m6,
+            "contrast A: null at fixed M": bool(a_null),
+            "contrast B: null at fixed M": bool(not b_real),
+        },
+    }
+    for name, preds in scored.items():
+        ok = sum(preds.values())
+        print(f"  {name}: {ok}/{len(preds)} registered predictions hold")
+        for what, good in preds.items():
+            print(f"      [{'PASS' if good else 'FAIL'}] {what}")
+    survivors = [n for n, p in scored.items() if all(p.values())]
+    out["hypothesis_scorecard"] = scored
+    out["survivors"] = survivors
+
+    verdict = []
     if step2_m6:
         verdict.append("stop rule 1 FIRES: step 2's argmax d1 is 5->6")
-        mech = "H_M6breakpoint"
-    elif step2_streams:
-        verdict.append(f"step 2: argmax d1 = {argmax_d1}, a stream boundary on the "
-                       "shipped table -> H_streams")
+    if len(survivors) == 1:
+        surviving = survivors[0]
+        verdict.append(f"exactly one reading satisfies every registered "
+                       f"prediction: {surviving}")
+    elif not survivors:
+        surviving = "neither"
+        verdict.append("no registered reading satisfies all of its own "
+                       "predictions; the mechanism is not identified by this run")
     else:
-        verdict.append(f"step 2: argmax d1 = {argmax_d1}, neither a stream boundary "
-                       "nor 5->6 -> both readings incomplete")
-    if a_null and b_real and b_lenient:
-        verdict.append("step 3: A null at fixed streams, B a positive step of the "
-                       "registered size at a stream boundary -> H_streams")
-        mech = mech or "H_streams"
-    elif not a_null and dA > 0:
-        verdict.append("step 3: A moved with group width at constant streams -> "
-                       "H_groupwidth is at least partly right")
-        mech = mech or "H_groupwidth"
-    elif not b_real:
-        verdict.append("step 3: B did not move at a stream boundary -> H_streams "
-                       "does not survive at fixed M")
-        mech = mech or "neither"
-    else:
-        verdict.append("step 3: mixed; see the contrast rows above")
-        mech = mech or "mixed"
+        surviving = "mixed"
+        verdict.append(f"more than one reading survives ({survivors}); the "
+                       "contrasts did not separate them")
+    # |delta_A| against the worst untreated control is a second, floor-free way
+    # to read contrast A: an effect smaller than the noise on code that did not
+    # change is not an effect.
+    worst_ctl = max(abs(deltas[m]) for m in ctl)
+    verdict.append(f"contrast A |{dA:+.3f}| ms vs the worst untreated control "
+                   f"|{worst_ctl:.3f}| ms: A is "
+                   f"{'SMALLER than the noise on unchanged code' if abs(dA) < worst_ctl else 'larger than every control'}")
+    verdict.append(f"contrast B {dB:+.3f} ms is {abs(dB)/max(worst_ctl, 1e-9):.1f}x "
+                   f"the worst untreated control")
     for line in verdict:
         print("  " + line)
-    surviving = mech or "H_streams"
+
     names = {
         "H_streams": "weight-stream count ceil(M/IPG): the number of threadgroups "
                      "that each re-read the whole weight tile",
         "H_groupwidth": "widest group's row count / group balance",
         "H_M6breakpoint": "a property of the width M itself, not of the table",
-        "neither": "unidentified: neither registered reading survives",
-        "mixed": "partly identified: see the contrast rows",
+        "neither": "unidentified: no registered reading survives",
+        "mixed": "partly identified: the contrasts did not separate the readings",
     }
     print(f"\n  SURVIVING HYPOTHESIS: {surviving}")
     print(f"  the mechanism should now be called: {names[surviving]}")
     out["verdict"] = {"lines": verdict, "surviving": surviving,
-                      "mechanism_name": names[surviving]}
+                      "mechanism_name": names[surviving],
+                      "worst_control_abs_ms": worst_ctl}
 
     if args.json_out:
         pathlib.Path(args.json_out).parent.mkdir(parents=True, exist_ok=True)
