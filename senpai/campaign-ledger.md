@@ -9540,3 +9540,409 @@ warm.
   M=8 4+4 choice, which raises confidence in E46's +18.72 % figure.
 - The false `snapshotRecurrent` doc comment at `KVCache.swift:1310-1324` and
   `mtp-head/README.md`'s stale "pinned" claim remain outstanding from 180.
+
+---
+
+## 182. Four live students report at once: two gates unblocked, a fourth NA=5 law, and the frontier may have warmed the wrong pipeline (2026-08-19)
+
+All four PRs posted interim evidence in one window. Three student measurements
+change a campaign-level conclusion, and two campaign gates were silently
+blocking the work of any candidate that edits the hottest file pair in the
+competition.
+
+### 182(A) 🔴 Both promotion gates were mine, both were broken the same way, both are fixed
+
+askeladd's E55 could not pass promotion step 4 or the scored-surface gate for
+reasons unrelated to his edit. He diagnosed both correctly and refused to fix
+either himself, which was right: `twin_audit.py:241` names re-pinning "laundering"
+and the label semantics were above student scope. Fixed in advisor commit
+`0dd6d2861d8023b881d57624dff8e9774b77fed3`.
+
+**`research/twin_audit.py`.** `KNOWN_COMMENT_DIVERGENCES` pinned two **whole-body**
+sha256 digests. A whole-body digest covers the comments *and* the code, so any
+legitimate code edit inside a waived body de-pins the waiver. Two consequences:
+every candidate touching `quantized.h` / `quantized.cpp` — 128 rival submissions
+deep — failed for an unrelated reason, and one pinned pair cannot cover both arms
+of an A/B because base and candidate have different whole-body digests by
+construction.
+
+The pin now covers the **comment stream** of each side, with `code_lines`
+equality asserted independently. Code edit on both twins passes; code edit on one
+twin fails; changed comment divergence fails and prints the observed digests.
+New `--self-test` drives six cases (two must be waived, four must not) with a
+synthetic waiver row, no device, no generator: 6/6, exit 0. Full audit unchanged
+at 29 twins, 1 waiver, exit 0. Live digests are
+`checked_in_comment_sha256 = 1fdb8dce…a0ba`,
+`regenerated_comment_sha256 = f7baab91…a564f3`.
+
+Stated narrowing, recorded rather than hidden: a comment-stream digest does not
+pin where comments sit **among** the code lines, so pure relocation of an already
+waived comment is no longer detected. Invisible to the Metal compiler, which sees
+only `code_lines`, so no compiler-visible hole; the waiver simply no longer
+certifies comment placement.
+
+**`research/scored-surface-gate.sh`.** `FRONTIER-TAKEN` asserts byte-identity to
+the live frontier, so the first legitimate candidate edit to an adopted file had
+no honest label available. Added `FRONTIER-PLUS-PINNED-DIFF:<sha256>`, which pins
+the `+`/`-` content lines of a `-U0 --diff-algorithm=myers` diff against the
+frontier. The property `FRONTIER-TAKEN` really protects is not identity, it is
+that our whole-file overlay must not **silently revert organizer-accepted work**;
+a pinned diff protects exactly that. An entry whose diff has become empty also
+fails, because the honest label at that point is `FRONTIER-TAKEN` again. Verified
+with both controls on the live tree: the correct digest for
+`Qwen36MTPBlockSession.swift` (`bb466af6…`) passes and prints the pin; a
+`deadbeef…` digest prints `PINNED DIFF MOVED` and exits 1.
+
+**The generalisable lesson, and it is now stated twice in two files: pin the
+DIVERGENCE, never the BODY.** A pin that fails on unrelated edits is not a strict
+gate, it is a gate that will be weakened under pressure. Both fixes are strictly
+stronger on the fact being waived and strictly quieter on facts that were never
+the point.
+
+### 182(B) 🔴 LAW D — the shared-register-footprint law. A fourth hypothesis nobody had.
+
+askeladd built a standalone Metal probe and measured the constant the whole NA=5
+programme rests on:
+
+```
+sizeof(vec<float,5>)  = 32
+alignof(vec<float,5>) = 32
+```
+
+**It pads to 8 lanes, not 5.** So `acc[rows_per_simd]` at `rows_per_simd = 4` is
+**128 bytes of vector state at NA=5 against 64 bytes at NA=4** — 2× the vector
+bytes to carry 1.25× the rows. That, and not a missing type, is almost certainly
+why the `static_assert` bound was 4. His `vec<float,5>` gate itself PASSED: zero
+diagnostics, and lanes 0-2 / 3 / 4 bitwise identical (`max_ulp = 0`) against the
+shipped `NA=3 first_m=0`, `NA=4`, and `NA=2 first_m=3` instantiations, with three
+positive controls all firing.
+
+The padding constant creates a hypothesis that none of thorfinn's three laws can
+express, because all three live at the level of one dispatch and this one lives
+at the level of the kernel:
+
+> **Law D.** An NA=5 group carries the register footprint of NA=8 while doing the
+> work of NA=5. There is exactly one `[[kernel]]` and every helper is
+> `METAL_FUNC` inline (E40), so that allocation is **shared by every width**,
+> including widths the edited cell never executes. Predicted signature: **every
+> NA=5 cell wins in its own isolated timing, and end-to-end decode is slower.**
+
+That signature is not speculation, it is the recorded E27 result. E27 changed
+exactly M=5 and M=9, won locally per width, and cost **0.3321 %** of published
+score; the revert's own acknowledgement names kernel-wide register max
+**129 → 108** and `affine_qmv_fast bfloat16_t,64,4,false` **183 → 163**.
+
+Law C and Law D make the **same** P1 prediction, so E54's selection table as
+briefed cannot separate them. The discriminator is one cheap reading, requested
+from both askeladd and thorfinn: `research/e46_reg_census.py` on every arm,
+reporting kernel-wide max register count (currently 108) and
+`affine_qmv_fast bfloat16_t,64,4,false` (currently 163).
+
+| P1 `<T,5,5>` isolated | register max | law |
+|---|---|---|
+| wins ≈ traffic model | 108 | **A** — M=9 prize is a floor, not the whole prize |
+| regresses | 108 | **C** — bandwidth overlap is the mechanism |
+| wins | **> 108** | **D** — cell win real, kernel pays elsewhere; retires a family |
+| regresses | > 108 | C and D both active; report both, attribute neither |
+
+I am on record: I previously predicted Law C, and I have now split that. I still
+expect P1 to regress, but **D is more likely than C**, because the padding
+constant is measured while the sibling-overlap term is still inferred.
+
+Two supporting facts established this generation:
+
+- **`<T,5,5>` is structurally legal.** `TAIL = 5 % 5 = 0` and the tail branch
+  would instantiate `wide<T, max(TAIL,2)>`. Read on our tip: the wrapper guards it
+  with `if (TAIL == 0 || M - first_m >= IPG)`, which short-circuits TAIL=0 to the
+  full-width path, and `static_assert(M % IPG != 1)` is satisfied. P1 computes
+  rows 0..4 in one `wide<T,5>` group. Hazard removed.
+- **Open question flagged to thorfinn, not asserted.** The wrapper opens with
+  `first_m = tid.x * IPG; if (first_m >= M) return;`. If the grid's x extent is
+  `M` regardless of IPG, raising IPG converts working threadgroups into
+  **immediately-returning** ones rather than reducing the launch count, which is a
+  cost term neither Law A nor Law C prices and which **grows with IPG**. The
+  `qmm` split-k dispatcher at `quantized.cpp:323` does compute
+  `grid_dims = (M, N/bn, B)`, but that is a different function from the qmv path
+  and the `out_row = tid.y*8 + simd_gid*4` arithmetic does not obviously match
+  `bn = 64`. **Do not treat this as established.** thorfinn owns confirming the
+  grid computation for the exact dispatch his cells take, and counting the
+  `first_m >= M` early returns per cell.
+
+### 182(C) 🔴 NA=5 codegen is not bit-stable under source perturbation
+
+askeladd's third positive control zeroed lane 4 and **also moved lane 1 by 8 ulp**
+(relative 5.6e-7). Lane 1 is arithmetically independent of lane 4, so this is not
+a data path: the compiler re-schedules the fused arithmetic when the source
+changes.
+
+This does not weaken his gate — the unperturbed candidate is bitwise exact on all
+five lanes — but it has two campaign consequences:
+
+1. **Exactness cannot be argued by inspection for any NA=5 edit.** The 512-token
+   token-match check is load-bearing and must not be skipped.
+2. **An NA=5 edit can move widths it does not name.** Fingerprint all widths per
+   position, not only the edited cell. The `M <= 9` bitwise hard stop is a
+   whole-kernel stop.
+
+### 182(D) 🔴 The local host is `devc == 's'`, and the chunk is PURE SURCHARGE in every call a real decode makes
+
+alphonse read the architecture through Metal instead of inferring it
+(`research/archprobe.m`, `clang -fobjc-arc -framework Metal -framework Foundation`):
+
+| fact | value |
+|---|---|
+| device | Apple M4 Pro |
+| `architecture.name` | `applegpu_g16s` |
+| **`devc`** | **`s`** |
+| arch generation | 16 |
+| `_nax` variants available | **no** (needs generation >= 17) |
+| max threads per threadgroup | 1024 |
+| max threadgroup memory | 32768 B |
+
+`devc == 's'` confirms the route table: 2-pass is reachable at `kL >= 1024`, and
+its `group_dims(32, gqa_factor, qL)` with `gqa_factor = 6` asks for `192 * qL`
+threads — 1152 / 1344 / 1536 at `qL` 6 / 7 / 8, all illegal against 1024. So the
+throw the chunk exists to prevent **is** reachable at exactly the widths the chunk
+covers.
+
+Then the measurement that matters. Instrumented `attentionWithCacheUpdate`, one
+line per cached-KV call, 4424 calls across four worker legs, every count a
+multiple of 16 (= the 16 FA layers, a real instrument self-check):
+
+| `qL` | calls | rounds |
+|---|---|---|
+| 1 | 106 | single-token steps |
+| 2 | 48 | 3 |
+| 3 | 64 | 4 |
+| 4 | **32** | **2** |
+| 5 | 48 | 3 |
+| 6 | 64 | 4 |
+| 7 | 80 | 5 |
+| 8 | 80 | 5 |
+| 9 | 32 | 2 |
+| 512 | 80 | prefill |
+
+| quantity | pilot value |
+|---|---|
+| `kL` range over the whole run | **1 .. 577** |
+| calls with `qL >= 6` **and** `kL >= 1024` | **0** |
+| derived illegal threadgroup requests | **0** |
+| chunk reasons | `widthonly` 224, `width9` 32, `none` 378 |
+
+**Every chunked call in a real decode is `reason=widthonly`: `qL` in 6..8 with
+`kL < 1024`, where both halves and the unsplit call take the same 1-pass
+`sdpa_vector` kernel at a fixed `(1024,1,1)` threadgroup.** The chunk is
+therefore pure surcharge in every call this run made — 2 query copies, 1 extra
+SDPA dispatch and 1 `concatenated` per FA layer per wide round, across 16 of 28
+multi-token rounds and 16 layers.
+
+The `qL`-not-in-the-pipeline-hash correction (181(E)) **strengthens** the removal
+rather than weakening it: since `kname` carries only dtype and the two head
+dimensions, and `hash_name` adds only the mask mode and four boolean suffixes,
+removing the chunk cannot introduce a cold-pipeline JIT miss in the
+`kL < 1024` region. That hazard is now ruled out from source before any timed arm.
+
+Arm B (`base && (qL >= 9 || kL >= 1024)`) is therefore the correct ship and Arm C
+(chunk never) is the positive control whose failure mode is now **located**: it
+can only throw once `kL >= 1024`, i.e. in the last round or two of a 512-token
+window. With a 512-token seed plus a 512-token window `kL` reaches ~1032, so the
+boundary IS crossed on the ranked contract and Arm C is not shippable.
+
+### 182(E) 🔴 The promoted frontier may have warmed the WRONG pipeline
+
+This is the most consequential inference of the generation and it falls straight
+out of 182(D) combined with 181(D).
+
+The frontier's entire speed-relevant divergence from our tree is
+`warmTargetLaterWindowSDPA`, which host-extends K and V with
+`pad = max(0, 1024 - k.dim(2))` so it lands on **`kL == 1024` exactly**, then
+fires SDPA at `qL ∈ {1,5,4}` and discards the outputs.
+
+- At `kL == 1024` the dispatcher takes the 2-pass route.
+- `blocks` is function constant 26 **and** is appended to `hash_name`.
+- On `devc == 's'`, `blocks = 64` promoted to `128` when `N > 1024 && n_simds > 4`;
+  `n_simds = gqa_factor * qL = 6 * qL >= 6` always, so the condition reduces to
+  **`kL > 1024`, strictly**.
+
+So the frontier warms the 2-pass pipeline with **`blocks = 64`**, while the live
+window at `kL >= 1025` uses **`blocks = 128`** — a different `hash_name` and
+therefore a different pipeline object. Since `kL = 512 + tokensCommitted + M`
+advances by the accepted count each round, it lands on exactly 1024 with
+probability roughly `1/mean_step ≈ 1/5`, whereas any `kL >= 1025` is essentially
+certain.
+
+**Working conclusion, not yet measured: the board leader warmed a pipeline its
+timed window barely touches and left cold the one it does use.** If true, importing
+that warm verbatim is worth approximately nothing, and importing it **extended
+with a second dispatch pair above 1024** captures what the frontier missed.
+
+Cost to test: zero. alphonse's existing Arm A run over the full 512-token window
+already produces the counter. Requested: calls at `kL == 1024` exactly, calls at
+`kL >= 1025`, the `kL` of the first call at or above 1024, and the number of
+rounds from there to the end of the window — for every `qL`, not only `qL >= 6`.
+Arm C's throw `kL`, if it throws, is an independent corroboration.
+
+This reorders the warm-coverage assignment: **learn the split for free from #60
+before spending a slot on the import.**
+
+Also settled: warming `qL ∈ {1,4}` covers every suffix the chunked window can
+request, because `:746` `do_causal = do_causal_ && q.shape(2) > 1` forces `_nc` at
+`qL == 1` and `qL ∈ {2,3,4,5}` all share `_c`. The frontier's `{1,5,4}` is
+redundant by one dispatch. **The gap is `blocks`, not `qL`.**
+
+### 182(F) 🔴 edward's 4→5 boundary is exactly where the published score is decided
+
+edward priced the three boundaries separately against E1's measured round-cost
+curve, parsing every constant from live source rather than restating it:
+
+| depth step | verify width | streams | measured marginal | / 0.18 | boundary |
+|---|---|---|---|---|---|
+| 0→1 | 1→2 | 1→1 | 5.47 ms | 0.47× | — |
+| 1→2 | 2→3 | 1→1 | 5.04 ms | 0.43× | — |
+| 2→3 | 3→4 | 1→1 | 15.77 ms | 1.35× | — |
+| **3→4** | **4→5** | **1→2** | **24.40 ms** | **2.09×** | **QMV** |
+| 4→5 | 5→6 | 2→2 | 18.98 ms | 1.62× | chunk |
+| 5→6 | 6→7 | 2→2 | 19.50 ms | 1.67× | — |
+| 6→7 | 7→8 | 2→2 | 18.66 ms | 1.59× | — |
+| **7→8** | **8→9** | **2→3** | **25.41 ms** | **2.17×** | **QMV** |
+
+**The two QMV stream boundaries are the two largest measured marginals**, against
+a flat shipped price of `h = 0.18`. He priced **no** width-6 term because his two
+estimators disagreed in sign (−102 µs direct, resting on an N=2 row, versus
++1162 µs by a span estimator that avoids it), which is the correct call.
+
+His mechanism attribution: `boundary45_only` ≡ `stream_aware` ≡ `both_boundaries`
+at −3.88 % / −3.95 % shape-only, while `boundary89_only` is only −0.46 % / −0.76 %.
+**The entire predicted gain comes from the 4→5 boundary.**
+
+Independently, 181(B) established that two prompts set the published median —
+beagle 402/408 (98.5 %) and medicine 201/408 (49.3 %) — and their mean draft
+lengths are **4.533** and **4.768**. **They straddle the 4→5 boundary.** The six
+prompts that do not set the score are either far below it (plutarch 0.154,
+drama 2.298, travel 2.656, which never reach the step) or comfortably past it
+(republic 5.270, essays 5.425, botany 5.777).
+
+Two independent lines — a measured cost curve and the board's order statistics —
+converge on the same verify width. Of everything live in this campaign, E56 is the
+best aimed.
+
+**And a consequence that reverses the usual caveat.** For askeladd and alphonse the
+local fixture (mdl ~5.4, alongside essays and botany) makes the local gain an
+**upper bound** on ranked conversion. For edward it is the opposite: at mdl 5.4,
+19 of 28 multi-token rounds already sit at width >= 5 and only 2 sit at width 4,
+so the local fixture is mostly **past** the boundary he re-prices and will
+**understate** the effect on beagle and medicine.
+
+To keep that falsifiable rather than unfalsifiable, three pre-registered rules
+were required before his relaunch:
+
+1. **Primary falsifier, hard:** absolute candidate MTP-leg s/token against `base`
+   and `base2`. Slower than the drift-corrected base mean by more than the null
+   spread refutes the mechanism outright — a better cost model must not slow
+   anything at any depth on any fixture.
+2. **Engagement gate:** the verify-width histogram must move at the 4→5 step in
+   the predicted direction. If it does not, the mechanism did not engage and the
+   timing carries no information about it — an implementation null, not a
+   refutation, and a bug to find.
+3. **Moved histogram plus neutral timing = inconclusive locally, not a close.**
+   Exact, no local harm, histogram moved is enough to earn an official submission
+   under `program.md`'s rule that official evaluation is part of the research loop.
+
+His own falsification arm is the model of how to report an instrument. Replaying
+ranked receipt `fc62d1aa` (`h` 0.18 → 0.32) through the same simulator: the
+machine measured **+0.95 %** with mean drafts 4.35 → 3.36, while the simulator
+predicts **+18.9 % / +30.1 %** and collapses mean draft to 2.05 / 1.59. Sign and
+shape right, **magnitude over-predicted 8–30×**. Applying his own shrinkage to
+−3.73 % / −2.66 % gives an honest range of roughly **−0.12 % to −0.47 %**, which
+straddles the ranked MDE of +0.283 %. So one official submission may not resolve
+this mechanism even if it is real and positive, and the result must say so.
+
+### 182(G) Two operational facts that can silently null any experiment
+
+Both from alphonse, both relayed to all four students, both worth more than the
+sessions they cost him.
+
+1. 🔴 **`sanitizedRuntimeWorkerEnvironment`** in
+   `Sources/MLXFastTrustedHarness/QwenRuntimeWorker.swift` is a **strict
+   allowlist** — exact keys plus the prefixes `DARKBLOOM_`, `DYLD_`, `LC_`,
+   `METAL_`, `MLX_`, `MTL_` — and **`MLXFAST_` is deliberately dropped**, so any
+   `MLXFAST_*` switch is **invisible inside the worker that runs the model**. His
+   first instrumented run produced an empty trace for exactly this reason. Every
+   future instrument must use an `MLX_` prefix, which is what
+   `Qwen36MTPBlockSession` already does. This has very likely produced a silent
+   null for someone before, and nothing in the tree announces it.
+2. **`swift build --product mlxfast-swift` does not contain MLXLMCommon**, so an
+   instrument change in `AttentionUtils.swift` needs
+   `--scratch-path .build-worker --product mlxfast-runtime-worker`.
+
+### 182(H) Methodological standards adopted from student work this generation
+
+- **All arms in one binary, selected by environment value** (alphonse). An arm
+  comparison then carries no build difference and no metallib difference, and an
+  unset or unknown value still selects the shipped predicate. This is now the
+  preferred arm mechanism wherever the change is expressible as a runtime branch.
+- **Record the gate's own words, not the harness's claim** (edward). Each leg logs
+  `cool_gate_passes`, `cool_gate_skips` and `cool_gate_passed_real_gate` parsed
+  from the captured benchmark trace rather than from the leg script's own state.
+  He found the blind spot that would have written
+  `entry_gpu_temp_c=unavailable` for four gated legs: his script used
+  `command -v macmon`, while `benchmark.sh`'s `find_macmon` also searches
+  `$HOME/bin`, where `./setup.sh` installs macmon v0.7.2. Now the campaign
+  standard.
+- **Report a saturated instrument as a NULL, not as a pass** (askeladd). His
+  occupancy readout returned exactly one triple, `1024 32 0`, across all 540 QMV
+  entry points on **both** arms — pinned at the device ceiling. He reported it as
+  uninformative about register pressure rather than as "the ceiling did not move".
+  He also root-caused an earlier crash whose failure mode would have produced a
+  **false pass**: `affine_gather_qmm_rhs_bfloat16_t_gs_128_b_2_bm_16_bn_32_bk_32_wm_1_wn_2`
+  declares function constants and `makeComputePipelineState` raises an uncatchable
+  Metal validation assertion, leaving a captured file holding **only the column
+  header** — so a naive diff of two such files would have reported "identical".
+  Fixed with a name filter, a `functionConstantsDictionary.isEmpty` guard and
+  `exit 2` on empty selection.
+- **Prove both arms compiled their own source** (askeladd). Base log shows
+  `<T,9,3,true>` and `NA <= 4`; candidate log shows `<T,9,5,true>` and `NA <= 5`;
+  `base.air` 10,136,624 B vs `m9two.air` 10,141,856 B (+5,232 B); metallib
+  20,283,784 → 20,288,760 B (+4,976 B); distinct hashes. This rules out the
+  base-versus-base false comparison that no timing check can detect afterwards.
+- **Fix a unit bug before any data exists** (askeladd found and fixed a 100× error
+  in `f9_implied`'s inverse, with a boundary sweep that now round-trips every
+  pre-registered row). Order of operations matters: a unit bug discovered after
+  the data is indistinguishable from a result.
+- **Leave failure records in W&B** (edward left four zero-GPU failure runs in
+  place rather than deleting them).
+
+### 182(I) Prioritisation guidance issued from the order-statistic geometry
+
+181(B)'s geometry is now being used the only legitimate way — to break ties
+between mechanisms, never to specialise on a prompt, which `program.md` forbids.
+Concretely, issued this generation:
+
+- **thorfinn:** of his four cells, **M=5 carries the most score weight and M=9 the
+  least**, because beagle 4.53 and medicine 4.77 concentrate verify widths around
+  5, 6 and 7 while republic/essays/botany are worth ~zero. If the session runs
+  short, drop P3 before P2 and M=9 before M=7. Happily, P1 was already first
+  because it is the discriminating cell.
+- **askeladd:** under Law D, his end-to-end `<T,9,5>` arm may pay a kernel-wide
+  register cost to win the cell with the **least** score weight of the four. Both
+  he and thorfinn were asked for the same two register numbers, and whoever reads
+  them first must tell the other.
+- **alphonse:** the chunk fires only at `qL` 6..9, the wide-round tail, whose share
+  rises with mean draft length; both score-setting prompts draft shallower than
+  his fixture, so his local gain is an upper bound on ranked conversion.
+- **edward:** the opposite direction — see 182(F).
+
+### 182(J) State of the four slots after this generation
+
+| PR | student | experiment | live blocker | next evidence I asked for |
+|---|---|---|---|---|
+| #57 | askeladd | E55 `<T,9,5>` composed to a submittable candidate | none, both gates fixed | register census on both arms **before** more timed GPU; per-arm width histogram; relabel both quantized entries to `FRONTIER-PLUS-PINNED-DIFF` |
+| #58 | thorfinn | E54 lone-vs-sibling NA=5 law, now four laws | none | register census per arm; confirm the qmv grid x extent and count `first_m >= M` returns; P1 first |
+| #59 | edward | E56 stream-aware depth schedule | environment repaired, relaunching | three pre-registered rules from 182(F) posted **before** the first timed leg |
+| #60 | alphonse | E57 SDPA chunk predicate bisection | none | the `kL >= 1024` three-way split from the full Arm A window — this decides 182(E) for free |
+
+No slot is idle and no slot is duplicating another's mechanism. Three of the four
+now carry an explicit register or shape counter that did not exist at assignment
+time, and all four carry the ranked MDE of **+0.283 %** (worst case +0.527 %)
+alongside the local 0.0629 % null floor, so cell-level and promotion-level
+conclusions cannot be conflated.

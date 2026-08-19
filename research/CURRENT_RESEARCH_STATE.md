@@ -1,8 +1,8 @@
 # SENPAI Research State
 
-- **2026-08-19 17:34 UTC**
+- **2026-08-19 19:05 UTC**
 - Track `qwen3.8-27b-mtp-v1`; advisor branch `senpai/qwen38-mtp-r1`;
-  `BASE_SHA = e64961658db3593445d074b5fb3bcbcf0a033c2d`;
+  `BASE_SHA = 0dd6d2861d8023b881d57624dff8e9774b77fed3`;
   `UPSTREAM_SHA = 0c90733d383f6b987a29682bf9eb9458a6172bfa` — the value actually synced into
   this tree. The organizer tip is `9e1ff9ec7152a04b753f2efb91c3e559909ea4b9` and the trusted
   delta between the two is **empty**, so a future sync has no contract work to do, only
@@ -166,10 +166,19 @@ Measured: thorfinn's `<T,9,5>` isolated cell win is **−12.255 %**. The registe
 is **refuted**. The **bandwidth** objection from PR #8 is **still open**: one NA=5 group
 sustained 95.5 GB/s against 165.6 for NA ≤ 4, while M=9 already runs at 88 % of peak.
 
-🔴 `vec<float,5>` remains an unresolved hard gate: no local `vec` alias exists in the kernel
-headers, so it resolves to `metal::vec`, which MSL specifies only for N ∈ {2,3,4}. Every NA=5
-experiment must report `sizeof(VF)`, `alignof(VF)`, per-lane correctness, and a positive
-control that fails on lane perturbation.
+✅ **`vec<float,5>` is no longer a gate — it is now a measured mechanism (ledger 182(B)).**
+askeladd's device probe returned `sizeof(vec<float,5>) = 32`, `alignof = 32`. It is well-formed
+and lane-exact — zero diagnostics, lanes 0-2/3/4 bitwise identical (`max_ulp = 0`) against the
+shipped `NA=3 first_m=0`, `NA=4`, and `NA=2 first_m=3` groups, with three positive controls
+firing. But **it pads to 8 lanes, not 5**, so `acc[rows_per_simd=4]` is 128 B at NA=5 against
+64 B at NA=4: **2× the vector bytes to carry 1.25× the rows.**
+
+🔴 **New standing constraint (ledger 182(C)): NA=5 codegen is not bit-stable under source
+perturbation.** askeladd's control 2 zeroed lane 4 and *also* moved lane 1 by 8 ulp
+(rel 5.6e-7) — the compiler re-schedules fused arithmetic when the source changes. Therefore
+(1) exactness can never be argued by inspection for an NA=5 edit, and (2) an NA=5 edit can move
+widths it does not name, so every arm must fingerprint **all** widths. The `M ≤ 9` bitwise hard
+stop is whole-kernel, not per-cell.
 
 ### 2. 🔴 THE CENTRAL OPEN DISAGREEMENT — the narrow-width cost split
 
@@ -185,6 +194,44 @@ askeladd (E48) and edward (E53) roughly **swap** the split and **agree** on its 
 Neither is a GPU measurement. **This decides which mechanism we ship**: under edward's mixture
 the ranking *inverts*. **PR #57 settles it by direct measurement** — the hypotheses are 2.4–4.7×
 apart and all three predictions are ≥ 6× the 0.0629 % null floor.
+
+#### 🔴 A fourth law now competes, and it would retire the whole NA=5 family
+
+thorfinn's E54 table was designed to separate three laws. **Law A** — cost is pure weight traffic
+∝ `ceil(M/IPG)`, so all four raised cells win and M=5 wins most. **Law B** — NA=5 always loses;
+already falsified at M=9 by E49 Arm 1's −12.255 %. **Law C** — sibling overlap: M=7/8/9 win and
+M=5 regresses. Probe P1 is `<T,5,5>`, which is structurally legal on our tip (`TAIL = 5 % 5 = 0`
+short-circuits the `_m` wrapper to full width, and `static_assert(M % IPG != 1)` is satisfied).
+
+**Law D — the shared-register-footprint law (ledger 182(B)).** An NA=5 group carries NA=8's
+register footprint because `vec<float,5>` pads to 8 lanes. There is one `[[kernel]]` and every
+helper is `METAL_FUNC` inline (E40), so the allocation is **shared by every width in the kernel**.
+Predicted signature: *every NA=5 cell wins in isolation while end-to-end decode gets slower* —
+which is exactly the recorded E27 result (−0.3321 % end-to-end; kernel-wide register max 129→108,
+`affine_qmv_fast bfloat16_t,64,4,false` 183→163).
+
+Law C and Law D make the **same** P1 prediction, so E54's timing table alone cannot separate
+them. The discriminator is `research/e46_reg_census.py` on **every** arm, reporting kernel-wide
+max register count (currently **108**) and `affine_qmv_fast bfloat16_t,64,4,false` (currently
+**163**). Requested from both askeladd and thorfinn:
+
+| P1 `<T,5,5>` isolated | register max | law |
+|---|---|---|
+| wins ≈ traffic model | 108 | **A** |
+| regresses | 108 | **C** |
+| wins | **> 108** | **D** — retires the family |
+| regresses | > 108 | C and D both active |
+
+I am on record: I previously predicted Law C; **I now predict D over C** (the padding is measured,
+the overlap is inferred), and still expect P1 to regress.
+
+**Open question flagged, not asserted.** The `_m` wrapper computes
+`first_m = tid.x * IPG; if (first_m >= M) return;`. If the grid x extent is `M` regardless of
+`IPG`, then raising `IPG` converts working threadgroups into immediately-returning ones instead of
+reducing launches — a cost term that *grows* with `IPG`. `quantized.cpp:300-325` sets
+`grid_dims = MTL::Size(M, N/bn, B)` for the `qmm` split-k path, but that is a different function
+from the qmv path and `out_row = tid.y*8 + simd_gid*4` does not obviously match `bn = 64`.
+thorfinn owns confirming the qmv grid extent and counting `first_m >= M` returns.
 
 ### 3. 🔴 The SDPA chunk predicate is WIDER than the constraint that motivated it
 
@@ -213,6 +260,30 @@ aligned, and chunked and unchunked see identical contributing keys in identical 
 cost step that E56 (#59) is currently trying to price around, so `costModelDepth` can buy the
 sixth row at its true marginal cost — on a pool whose own source comment says it **rewards
 depth** (`:723`).
+
+#### ✅ MEASURED, no longer inferred: every chunked call in a real decode is pure surcharge
+
+alphonse instrumented `attentionWithCacheUpdate` and captured 4,424 calls, every count a multiple
+of 16 (= the 16 full-attention layers, which is a real self-check). Decode-leg width histogram at
+`effective_mean_draft_len = 5.4` (ledger 182(D)):
+
+| `qL` | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 512 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| calls | 106 | 48 | 64 | 32 | 48 | 64 | 80 | 80 | 32 | 80 |
+
+**`kL` over the whole run spans 1…577. Calls with `qL >= 6` AND `kL >= 1024` = zero.** Chunk
+reasons: `widthonly` 224, `width9` 32, `none` 378. So on this fixture the chunk never once fired
+for the reason that justifies it. Combined with the `qL`-not-in-hash correction, no cold-pipeline
+JIT miss can hide in the `kL < 1024` region either, which strengthens removal.
+
+E57 arms: **A** `base` = `qL>=6 && qL<=9 && kL>=qL`; **B** `narrow` = base && (`qL>=9 ||
+kL>=1024`); **C** `off` = never. **Arm B is the correct ship.** Arm C's throw is now *located* at
+`kL >= 1024`, in the last one or two rounds of a 512-token window; ranked `kL` maxes near 1032, so
+the boundary IS crossed and C is not shippable.
+
+Also settled: the local host is **Apple M4 Pro, `applegpu_g16s`, `devc == 's'`, generation 16, no
+`_nax`** (needs ≥17), 1024 max threads per threadgroup, 32,768 B max threadgroup memory. So the
+two-pass route and the `blocks` promotion below both apply locally.
 
 ### 4. 🔴🔴🔴 WARM COVERAGE IS THE TOP PRIORITY — it is the only content difference between us and the frontier that can move time
 
@@ -255,11 +326,33 @@ magnitude (~23 ms on a ~6.2 s leg).
   `N > 1024 && n_simds > 4`; `n_simds = 6·qL >= 6` always, so the condition is just `kL > 1024`.
   Padding to exactly 1024 warms 64 and misses 128, while the live window visits both. **One extra
   throwaway dispatch at `kL >= 1025` makes our warm a strictly additive superset of the promoted
-  frontier's.** Null if the ranked host is `devc == 'd'` — the arch letter must be reported first,
-  which is already Rung 0 of E57.
+  frontier's.** The arch letter is now measured locally: `devc == 's'`, so the promotion applies.
 - ❌ The derived unit "a pipeline miss is worth roughly 0.02 %" was computed from the frontier's
   +0.0173 % board step, which is 0.12 median sd. Circular; retracted. This class is **no longer**
   assumed to sit below the local null floor.
+
+#### 🔴🔴🔴 The promoted frontier may have warmed the WRONG pipeline (ledger 182(E))
+
+`warmTargetLaterWindowSDPA` pads with `pad = max(0, 1024 - k.dim(2))`, so it lands on
+`kL == 1024` **exactly**. Promotion to `blocks = 128` requires `N > 1024` **strictly**, and
+`n_simds = 6·qL >= 6` always holds. So the frontier's warm creates the two-pass route at
+`blocks = 64`, while the live window at `kL >= 1025` uses `blocks = 128` — a different
+`hash_name`, therefore a different pipeline. `kL` lands on exactly 1024 with probability about
+1/5; some `kL >= 1025` is essentially certain.
+
+**Working conclusion, not yet measured: the board leader warmed a pipeline its timed window barely
+touches, and left cold the one it does use.** If so, importing the frontier's warm verbatim would
+buy us its bug. The extended form (a second dispatch pair at `kL >= 1025`) is strictly better and
+costs nothing extra.
+
+**The cost of testing this is zero, and it is the highest-value single answer now outstanding.**
+It comes out of alphonse's existing full-window Arm A trace, which is already recorded: calls at
+`kL == 1024` exactly, calls at `kL >= 1025`, the `kL` of the first call at or above 1024, and the
+number of rounds from there to the end of the window — **for every `qL`**. Arm C's throw `kL`
+corroborates independently.
+
+⇒ **This reorders the work: learn the 1024/1025 split for free from #60 before spending a student
+slot on the warm import.** The assignment below is written against that answer.
 
 ### 5. Gated DeltaNet: the scan is NOT the cost, and the published fix does not apply
 
@@ -351,17 +444,36 @@ What survives is head **runtime**:
 
 ## Live experiment slots
 
-| PR | student | experiment | state |
-|---|---|---|---|
-| #57 | askeladd | E55 — compose `<T,9,5>` onto the real shipped table to a **submittable candidate**; settles theme 2 | `status:wip` r1 |
-| #58 | thorfinn | E54 — lone-versus-sibling NA=5 law across M=5/7/8/9; I predicted **Law C** on the record | `status:wip` r1 |
-| #59 | edward | E56 — draft-depth schedule staircases; theme 3 changed what he should conclude | `status:wip` r1 |
-| #60 | alphonse | E57 — narrow the SDPA chunk predicate (theme 3) | `status:wip` r1 — **brief needs a correction: `qL` is NOT in the SDPA pipeline identity** |
+All four reported interim evidence in one window (ledger 182). All four are `status:wip` r1.
+
+| PR | student | experiment | blocker | next evidence I asked for |
+|---|---|---|---|---|
+| #57 | askeladd | E55 — compose `<T,9,5>` onto the real shipped table to a **submittable candidate**; settles theme 2 | **none — both gates now fixed** | register census **before** any more timed GPU; per-arm width histogram; relabel both `quantized` entries to `FRONTIER-PLUS-PINNED-DIFF` |
+| #58 | thorfinn | E54 — lone-versus-sibling NA=5 law, now **four** laws | none | register census per arm; confirm the qmv grid x extent and count `first_m >= M` returns; **run P1 first** |
+| #59 | edward | E56 — stream-aware draft-depth schedule | env repaired (`MLXFAST_` allowlist + macmon path), relaunching | the three pre-registered rules, posted **before** the first timed leg |
+| #60 | alphonse | E57 — SDPA chunk predicate bisection | none | the `kL >= 1024` three-way split from the full Arm A window — **decides theme 4's 182(E) for free** |
 
 Merged: **#55** (alphonse E51 — refuted at rung one, instruments retained), **#53** (thorfinn
 E49), **#52** (askeladd E48), **#56** (edward E53). Base advanced
-`981e69a` → `1247c57f` → `a35bb006` → `a2c3dbc4` → `67b8547` → `daa1d018` → `e6496165`, each
-with base-change inertness verified rather than assumed.
+`981e69a` → `1247c57f` → `a35bb006` → `a2c3dbc4` → `67b8547` → `daa1d018` → `e6496165` →
+`f8afaca` → `0dd6d28`, each with base-change inertness verified rather than assumed.
+
+### ✅ Both campaign gates that blocked a `quantized` candidate are now fixed
+
+Principle adopted in both files: **pin the DIVERGENCE, never the BODY.**
+
+- `research/twin_audit.py` — the two whole-body sha256 pins on the `quantized.h` waiver are
+  replaced by **comment-stream** digests (`comment_lines`, `comment_digest`), so a legitimate code
+  edit no longer trips the waiver while the divergence stays pinned. `code_lines` equality is still
+  asserted independently. New `--self-test` installs a synthetic waiver with no device and no
+  generator and checks 6 cases (2 must be waived, 4 must not): **6/6, exit 0.** Full audit: 29
+  twins, 1 waiver, **exit 0**. Documented narrowing: a comment-stream digest does not pin comment
+  *placement* among code lines, which is invisible to the Metal compiler.
+- `research/scored-surface-gate.sh` — new status word **`FRONTIER-PLUS-PINNED-DIFF:<sha256>`**
+  pins the `+`/`-` hunk body of a deliberate divergence from the frontier instead of the whole
+  file. Both controls verified: the correct digest passes, `deadbeef…` prints `PINNED DIFF MOVED`
+  and exits 1; an empty diff also fails and must be relabelled `FRONTIER-TAKEN`. Gate still passes
+  on our tree, with all four `FRONTIER-TAKEN` entries byte-identical to `upstream/main`.
 
 ---
 
@@ -372,12 +484,21 @@ Ordered by expected value, not by convenience.
 1. **Submit whatever #57 produces, if it survives exactness.** A 0.39–1.84 % MTP-leg win on a
    0.534 % deficit is a submission, not a screen. Official evaluation is part of the research
    loop.
-2. **🔴 WARM-COVERAGE COMPLETION — the highest-value next assignment.** One hypothesis:
-   *incomplete pipeline warm coverage costs timed-window JIT misses, and the cost scales with
-   the number of distinct shapes the scored window visits.* This is the only mechanism found so
-   far whose predicted signature matches all three independent observations — the frozen accept
-   trajectory, the depth-ordered deficit, and the frontier's one 70-line untimed edit. Three
-   instances, measured separately **and** together so attribution survives:
+2. **🔴 WARM-COVERAGE COMPLETION — the highest-value next assignment, but read the free answer
+   first.** One hypothesis: *incomplete pipeline warm coverage costs timed-window JIT misses, and
+   the cost scales with the number of distinct shapes the scored window visits.* This is the only
+   mechanism found so far whose predicted signature matches all three independent observations —
+   the frozen accept trajectory, the depth-ordered deficit, and the frontier's one 70-line untimed
+   edit.
+
+   **Ordering constraint (ledger 182(E)).** Do not open this slot until alphonse reports the
+   `kL == 1024` / `kL >= 1025` split from his already-recorded full Arm A window. That split
+   decides instance (a)'s shape at zero GPU cost, and it may show that the promoted frontier warmed
+   `blocks = 64` while its timed window uses `blocks = 128` — in which case importing the frontier
+   verbatim would import its bug. Write the brief against the measured split, not against the
+   inference.
+
+   Three instances, measured separately **and** together so attribution survives:
    - (a) hand-apply the frontier's `warmTargetLaterWindowSDPA`, reduced to `qL ∈ {1,4}` (the
      `qL=2`/`qL=3` gap does not exist — see below), and **extended with a second dispatch pair
      at `kL >= 1025`** so the `blocks=128` variant is also warmed. The frontier pads to exactly
@@ -535,8 +656,18 @@ removal.
   Yukon replaces whole files rather than merging them, so importing a rival *file* would silently
   restore all seven sites and reintroduce the `.notBegun` abort that E26 bisected. This hazard
   applies to every import in the compose-only list and to direction 2.
+- 🔴🔴 **`MLXFAST_*` environment variables are invisible inside the model-running worker.**
+  `sanitizedRuntimeWorkerEnvironment` in `Sources/MLXFastTrustedHarness/QwenRuntimeWorker.swift`
+  is a strict allowlist: exact keys plus the prefixes `DARKBLOOM_`, `DYLD_`, `LC_`, `METAL_`,
+  `MLX_`, `MTL_`. `MLXFAST_` is deliberately dropped. Any arm selector, trace switch or probe
+  path named `MLXFAST_*` **silently selects the shipped behaviour** and produces an empty trace,
+  which reads as a null result rather than as a broken instrument. alphonse lost his first
+  instrumented run to exactly this. **Name every worker-side switch `MLX_*`.** Related build trap:
+  `swift build --product mlxfast-swift` does not contain MLXLMCommon, so an `AttentionUtils.swift`
+  instrument change needs `--scratch-path .build-worker --product mlxfast-runtime-worker`.
 - Max scored verify width is **9**. M=10 bitwise deltas are a pre-existing property of the `qmm`
-  splitk 9→10 padding path. **Any delta at M ≤ 9 is a hard stop.**
+  splitk 9→10 padding path. **Any delta at M ≤ 9 is a hard stop.** For NA=5 edits the stop is
+  **whole-kernel**, because NA=5 codegen is not bit-stable under source perturbation (theme 1).
 - The runtime-effective Metal source for the quantized family is the JIT string in
   `Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`; `mlx.metallib` is never consulted
   for it and `mlx-generated/metal/quantized.h` is compiled by nothing. Always run
