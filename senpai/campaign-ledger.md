@@ -3081,3 +3081,165 @@ one is mechanically checkable before sending, which is why it is now the rule.
 
 Cost this turn: 600 s of wall clock, one terminal reset, one env-var reload. The
 work itself was ten lines and took 20 s once written to `/tmp/plutarch_zero.py`.
+
+---
+
+## 128 — 🔴🔴 E34 corrected me three times and was right three times. Its headline number is then refuted by 15 ranked rows. And my "ranked kill" method has a confounder I had not been controlling.
+
+Edward returned E34 as a terminal result under zero-GPU. It is the strongest
+student result of the campaign on volume of corrected error, and it has one bad
+number. Both halves matter.
+
+### Three corrections I am adopting
+
+**(1) 🔴 The head-artifact "discrepancy" was mine, not his.** I told him the prime
+suspicion for his low local acceptance was that he was running the wrong head,
+because his run reported `d038fd41…` while the manifest declares `559b24eb…` at
+427,742,600 bytes. He resolved it: **`559b24eb` is the sha256 of the one-line tree
+manifest; `d038fd41` is the sha256 of the file.** Both describe the same
+single-file 427,742,600-byte tree. `head_verified: true`. We are on the declared
+artifact and always were.
+🔴 **The consequence propagates further than E34: alphonse's E30 absolutes were
+measured on head `7bbb40de` at 270,408,194 B, which is not the declared artifact.
+`F ≈ 14.79 ms` / `S ≈ 15.90 ms` is dropped from all sizing.** Use E34's
+`S = 23.911 ms`, which comes off the E27-causal ladder on the right tree.
+
+**(2) 🔴 My `R = (1 + αn)/(1 + h̄n)` identity is retracted as an inference tool.**
+It is one equation in two unknowns, so per-prompt it **replays to 4.44e-16 by
+construction and cannot fail**. The implied α wanders 0.3333 → 0.9019 rather than
+sitting at 0.99, and plutarch's implied `h̄ = −0.5354` is a negative cost per head
+step, which is unphysical. I had been using it as a validated cost model, quoting
+`h̄` values to three students as if they were measured constants, and — worst — I
+asked Edward to "validate" it by reproducing our beagle R from our beagle n and
+h̄, a check that could not have failed.
+**A fit that cannot fail is not evidence.** This is the same family as item 105
+(a broken grep whose zero-hit output I published as fact): in both cases I
+mistook a property of my instrument for a property of the world. Note that I very
+nearly compounded it — a draft of my E34 feedback asked him to base the whole
+counterfactual on that identity's `h̄`, and it survived only because the send
+failed on a status check.
+
+**(3) 🔴 The wall binds, against my prediction.** I argued that at ranked
+`p ≈ 0.965` full-accept streaks would be common (`0.965⁵ = 0.842`, two in a row
+≈ 0.71), so `sdpaWidthWallDepthCap` would rarely bind and be nearly inert. Wrong.
+Fraction of rounds at M ≥ 6 (policy sim / max-entropy): plutarch .000/.017,
+beagle **.538/.528**, medicine **.593/.561**, botany **.969/.770**; botany mean
+M = 6.776 from exact integers. And the structural point I had missed: because
+`widthCap = fullAcceptStreak >= 2 ? 8 : 5`, **the streak path is the thing that
+carries M above 5**, so the two constants are coupled and cannot be moved
+independently.
+
+He also settled the `mtp_depth` question by exact enumeration — `(8, 8)` on all
+408 scored rows including five zero-draft controls that realise n = 0, so both
+fields are configuration echoes — independently of and agreeing with my fixture
+read (item 119).
+
+### The one result I most wanted, and it survived falsification
+
+🟢 **(b) The per-width cost is a step function, not smooth.** Max residual in ms:
+linear+step 5.630, linear+smooth 13.329, quad+step 3.861 (R² .99610), quad+smooth
+12.645. **The step beats smooth by 3.4×**, with the causal receipt that E27 moved
+only M=5 (132.257 → 108.346 ms, −18.08 %) while every other depth held within
+±0.8 %. One weight pass `S = 23.911 ms`.
+**thorfinn's E33 is sized on that structural claim and it is now load-bearing
+rather than assumed.** Edward tried to break it and could not.
+
+🟢 And an excellent provenance finding: `12b1c699` (audreyt, accepted) raised the
+cap 4 → 5 inside a six-way composite **at a time when M=5 and M=6 both cost two
+passes**, so the change crossed no boundary. E27 later moved the single-pass top
+from M=4 to M=5, **leaving the constant one row past a cliff that did not exist
+when it was chosen.** No ranked row has ever run our post-E27 dispatch table.
+That is a real mechanistic argument for the cap cut and it needs none of the
+modelling.
+
+### The refutation: `predicted_ranked_central_pair_at_best_cap = 3.7786` is wrong
+
+He predicts the central pair rises 3.24929 → 3.7786 (**+16.3 %**) from moving one
+integer, honest interval [3.5498, 4.0073] — an interval that **excludes the status
+quo**, which is the tell. A +16 % lever from one constant, on a board whose top 20
+rows span 0.5 %, would not have survived 414 submissions unnoticed.
+
+🔴 **My first attempt to kill it failed, in his favour, and taught me something
+about my own method.** All eight `sdpaWidthWallDepthCap = 4` rows score 2.6825 to
+2.9252 — apparently damning. But every one of them ran head `cc209e30…`, and that
+head's **entire 107-row population ceilings at 2.9298**. Of the 34 distinct head
+artifacts among the 414 scored rows, only `559b24eb` (n = 94) has ever exceeded
+3.19853. The cap=4 evidence is completely confounded by head artifact, exactly as
+Edward said.
+**This is a standing correction to how I mine the corpus.** Item 120's ranked kill
+of `values_per_thread` worked because companygardener's rows shared our head. I
+had not been checking that. **Any score comparison across the corpus must first be
+restricted to `head_provenance_sha256== 559b24eb…`; mechanism claims transfer
+across heads, score claims do not.** The head changed around 2026-08-17, so
+essentially the whole pre-Aug-17 corpus is a different population for scoring
+purposes.
+
+So I ran the test *inside* the declared-head population
+(`research/declared_head_direction.py`). Of its 94 rows, 78 carry the default
+schedule (best 3.249294, median 3.196562) and 16 do not. **Fifteen rows ran beagle
+at an `n` other than 4.5327. All fifteen have a lower beagle `raw_p` than ours,
+with no exception, and the loss is monotone in distance from the default in both
+directions:**
+
+| beagle n | beagle raw_p | vs ours |
+|---:|---:|---:|
+| 0.041 / 1.000 / 3.535 | 1.210 / 2.001 / 2.667 | −61.2 / −35.9 / −14.5 % |
+| **4.279 / 4.339 / 4.384 / 4.396 / 4.454** | 3.110 / 3.077 / 3.060 / 3.012 / 3.077 | **−0.32 / −1.40 / −1.92 / −3.47 / −1.39 %** |
+| **4.5327 (ours, default)** | **3.12015** | **— maximum** |
+| 4.583 / 4.602 / 4.630 / 4.736 | 3.070 / 3.006 / 3.062 / 3.063 | −1.61 / −3.65 / −1.86 / −1.84 % |
+
+The five bolded shallower rows are the **direct measured test of E34's direction**
+and every one loses; E34 wants beagle at n ≈ 4.04, further shallow than any of
+them, where the trend is already negative at 4.279 and steep by 3.535.
+
+🟡 **Honest limit of this evidence.** Those rows changed acceptance by different
+mechanisms and their trees differ in other ways, so no single row isolates the
+acceptance effect — a shallower row with a slower kernel loses for the kernel
+reason. It is a strong pattern, not a controlled experiment. But 15/15 with
+monotone degradation on both sides is the signature of a local optimum at the
+default, and it beats a model whose interval excludes the status quo.
+
+**Disposition: revision requested (r2), bound to base `abf6d79f`.** (a), (b), (d),
+(e) and the provenance finding are accepted as they stand. The narrow ask is to
+re-issue or withdraw the primary metric and — the part I actually want — to say
+**what the cost model gets wrong**, by feeding those five shallower rows' beagle
+`n` back through `research/e34_cost_model.py`. My candidate for the missing term,
+his to confirm or destroy: the model prices a round as `T(M)` and credits `n+1`
+tokens, but by his own (d) the streak path is what produces the wide rounds, so a
+cap cut may not move rounds from M=6 to M=5 — it may move them from `{6,7,8,9}` to
+`{5}` while destroying the streaks that were generating cheap-per-token wide
+rounds. That second-order effect is invisible to a model linear in M and has the
+right sign.
+
+### 🔴 Effect on E37, sent to askeladd immediately
+
+E34's (d) gives beagle .538 and medicine **.593** at M ≥ 6 — medicine has *more*
+wide mass than beagle, so **item 124's H1 predicts the beagle/medicine inversion
+backwards**. H1's prior drops from 40 % to ~15 %.
+
+Worse, E34 shows the local fixture may be unable to reach the ranked regime at
+all: `research/e25r2-timed.json` has the candidate leg capping at
+`effective_max_draft_len = 3` on all eight prompts (M ≤ 4), mean widths 2.98–3.69
+against a ranked 1.15–6.78. If that still holds on the current tree, **no local
+trace can census the scored window** and E37's deliverable 1 is unreachable. I
+have restructured E37 to run a cheap reachability probe first and to treat "the
+fixture cannot see this wall" as a complete terminal result — because that fact,
+if true, means the campaign has *no* local instrument for any width-dependent
+behaviour, which is worth more than the census was.
+
+### 🟡 A correctness claim from the corpus, unresolved and worth an owner
+
+`55fa8d31` (mpjunior92, accepted, 2.3955 — note the head, `157f750e`, so the score
+is not comparable) reports that a previous cap-8 attempt **failed at rank** because
+*"verify widths 6-9 drift from the serial trajectory in top-2 values … drifted
+positions start exactly at the 6th row of a width-9 verify and recur
+content-dependently, while widths 2-5 are bit-exact"*, and concludes *"do not raise
+the cap without a bit-exact >width-5 GDN scan."* Their accepted submission stays at
+cap 4 and verifies zero drift at widths 3–5.
+This cuts **for** E34's direction on correctness grounds rather than cost, and it
+is a latent parity risk for us: our cap 5 plus the streak path routinely runs
+widths 6–9. Our `parity_all_ok` is true so we pass today. 🟡 It also **conflicts
+with our own measurement** — `CURRENT_RESEARCH_STATE.md` records 919/919
+non-terminal width-9 rows bit-exact with the only 15 mismatches at positions
+1022–1024, i.e. positional at the KV boundary rather than width-driven. Two
+solvers, two incompatible characterisations of the same region. Not resolved here.
