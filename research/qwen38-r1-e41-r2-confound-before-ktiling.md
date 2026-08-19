@@ -13,6 +13,13 @@ activation re-read. Shrinking the re-read distance does not refund the tax — i
 **adds** to it. A future NA=6 single-weight-pass scheme must budget the full
 ~+11 % at M=6 as unavoidable, because there is no locality left to recover.
 
+A secondary finding, derived from the same runs with no extra GPU time while
+reconciling the 07:51Z feedback: the width curve's apparent M=6 "step" is the
+**weight-stream count**, `streams(M) = ceil(M / IPG(M))`, at **20.291 ms** per
+marginal stream. That fixes the advisor's step-vs-quadratic question on the local
+tree, and it predicts the boundary has **moved to 4→5** on the current base — so a
+causal probe aimed at M=6 there will read null. See the 07:51Z reconciliation.
+
 ## Question
 
 E38 measured a **+10.54 % kernel cost** at M=6 for halving the row tile of the
@@ -289,6 +296,11 @@ from 1.1086 to 1.1065.
 
 ### Value — kernel-level only, and conditional
 
+**Withdrawn by the 07:51Z reconciliation below**: `φ(M = 6)` cannot be bounded
+away from zero, so the ψ·φ figure this section is built on is retired as a value
+claim rather than restated with a step-family name attached. The paragraph is
+kept as written for the record, and E41's verdict never depended on it.
+
 ψ·φ = 0.0459 is **back-solved from the crown, not measured**; every score figure
 inherits that and I do not claim it. On that basis the measured M=6 tax alone
 would be worth **−0.4889 %** of score if paid, and the same tax with this
@@ -390,6 +402,142 @@ concrete first target.
 "128-register wall" is retired throughout in favour of spill and of the
 kernel-wide max, per §4 of the feedback.
 
+## Reconciliation with advisor feedback of 2026-08-19T07:51Z
+
+This note arrived after the 07:41Z one and prices E41's lever from the ranked
+side via E43. It carries one green and two red instructions. All three are
+answered from data already collected plus source inspection — **no new GPU time
+was spent**, and the verdict is unchanged.
+
+### The step-vs-quadratic question is settled on the local tree, and the step has a name
+
+The third instruction was to re-measure the local +32.850 ms M=5→M=6 step "if it
+is load-bearing". It is **not** load-bearing for E41's verdict, which is a
+difference of two ratios from one arm build. But it needs no re-measurement: the
+A-B-A bracket already logged per-round ms per width on two independent base runs
+(`c_round_ms` in [`e41-metrics.json`](e41-artifacts/e41-metrics.json)).
+
+| M | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|
+| T base-r2 (ms) | 72.811 | 82.722 | 96.217 | 128.890 | 138.717 | 149.727 | 164.675 |
+| first difference | | 9.910 | 13.495 | **32.673** | 9.827 | 11.011 | 14.948 |
+
+The step replicates at **+32.673 ms** (base-r2) and **+32.641 ms** (base-r1) —
+two independent runs agreeing to 0.032 ms against a per-width run-to-run
+reproducibility of ≤0.08 ms at M≥3. It was not noise.
+
+That also **falsifies the quadratic family model-free**: a quadratic in M
+requires monotone non-decreasing first differences, and this curve's first
+difference *drops by 22.85 ms* from the 5→6 step to the 6→7 step, replicated to
+0.02 ms — about 285× the reproducibility floor. No quadratic at any coefficients
+produces a spike-and-return. Unlike a mixture fit this is per-width **causal**
+data, because the harness dispatches each width directly.
+
+The step is not a bare indicator either. Taking `IPG` from the width switch in
+`quantized.h` and defining `streams(M) = ceil(M / IPG(M))`:
+
+| M | IPG @`04ad6bf` | streams | IPG @`efff400` | streams | changed |
+|---|---|---|---|---|---|
+| 3 | 3 | 1 | 3 | 1 | no |
+| 4 | 4 | 1 | 4 | 1 | no |
+| 5 | **5** | **1** | **3** | **2** | **YES** |
+| 6 | 3 | 2 | 3 | 2 | no |
+| 7 | 4 | 2 | 4 | 2 | no |
+| 8 | 4 | 2 | 4 | 2 | no |
+| 9 | **5** | **2** | **3** | **3** | **YES** |
+
+On `04ad6bf` widths 1–5 are all single-weight-stream and 6–9 are two-stream, so
+the 1→2 boundary sits exactly at 5→6 — exactly where the jump is. Regressing on
+the source-derived stream count instead of a fitted breakpoint
+([`e41_stream_model.py`](e41_stream_model.py)):
+
+```text
+T(M) = 16.432 + 20.291 * streams(M) + 11.798 * M
+max |residual| = 1.674 ms   over 72.8-164.7 ms,  M = 3..9
+```
+
+No quadratic term and no free breakpoint, so this has one *fewer* degree of
+freedom than a step model with a fitted indicator. Both advisor families are
+shadows of one mechanism: the level shift is the marginal weight stream at
+**20.291 ms**, and the apparent convexity is the stream indicator masquerading
+as curvature in a pooled fit.
+
+Honest limits: three parameters on seven points, and the 1.674 ms residual is
+~20× the 0.08 ms floor, so real unmodelled structure remains and the model is
+not exact. `streams(M)` is source-derived, not runtime-instrumented. These are
+**local** per-round costs from the kernel-curve harness on an ungated host — the
+same quantity as the advisor's "local (pre-rebase tree) 32.850 ms", but *not* the
+ranked per-round leg cost, so this does not settle the family question on the
+ranked box.
+
+### The M=6 boundary does not exist on the new base, so a probe there will read null
+
+The revert took `case 5:` from `<T,5,IPG 5>` to `<T,5,IPG 3>`, moving M=5 from
+one stream to two. M=6 was already two. **Both sides of 5→6 are now two-stream.**
+Propagating the fitted coefficients through the new stream table:
+
+```text
+M=5   streams 1->2    T  95.7 -> 116.0    +20.3 ms
+M=9   streams 2->3    T 163.2 -> 183.5    +20.3 ms
+predicted d1 on efff400:
+  3->4 11.8 | 4->5 32.1 | 5->6 11.8 | 6->7 11.8 | 7->8 11.8 | 8->9 32.1
+```
+
+Falsifiable prediction: **the step moves from 5→6 down to 4→5, and a second one
+appears at 8→9.** A causal per-width probe at M=6 on the rebased tree should
+therefore read a null, and that null would be easy to misread as "no step, so
+quadratic" — the opposite of the truth. The informative widths on the current
+base are **4→5** and **8→9**, and the pair gives two independent estimates of the
+same stream coefficient, which is a stronger test than either family fit. This
+was posted to the PR as soon as it was derived, because a misplaced null is the
+most expensive kind of wrong answer.
+
+### "Do not stop" is accepted at campaign level and declined for deliverable (b)
+
+The note argues K-tiled activation staging "is a per-pass change rather than an
+M=6-boundary change, so it harvests curvature whichever family is true". The
+per-pass framing is right; the premise that this lever harvests anything is what
+E41 tested, and it failed — recovery −11.2 % against a ≥+50 % threshold, negative
+at 8/8 shapes, negative at KT=1 as well, and every K-tiled cell spills its
+accumulators to memory. A larger prize does not change the sign of a recovery.
+
+The mechanism above says what to do instead, and it composes with E41 rather
+than contradicting it: **the removable excess is the marginal weight stream
+(20.291 ms), and the only lever that removes it lets a width fit in fewer
+streams — raising `IPG`, i.e. wider NA.** K-tiling cannot change stream count by
+construction. That is the NA=5-at-r=2 follow-up, now with a mechanism and a
+magnitude rather than just headroom, and it must still beat the tension E41
+measured: wider NA is what sank E27, and the row-tile tax it pays (~+11 % at
+NA=3, ~+21 % at NA=4) has **no staging discount available**.
+
+### The value claim is withdrawn rather than qualified
+
+Per the second red instruction, no value claim here rests on `e_p = s·q_p`, and
+neither "+1.15 %" nor "16–47 % of the leg" appears anywhere in this result. The
+only score-level number written at any point is ψ·φ = 0.0459, always labelled
+back-solved. Since `φ(M = 6)` brackets to 0.0000–0.9701 and cannot be bounded
+away from zero, it is **withdrawn as a value claim** rather than restated with a
+family name attached. E41's verdict is a pure kernel ratio and never needed it.
+
+### Transfer, restated on source evidence
+
+The earlier 07:41Z reconciliation argued the verdict transfers because ILP-vs-MEM
+is a property of the `_wide` loop nest. The stream table makes that concrete and
+stronger: the four verdict-carrying widths **M=4, M=6, M=7 and M=8 have
+byte-identical dispatch** on `efff400`, and the only two changed cells, M=5 and
+M=9, are exactly the two untreated controls. The controls still do not transfer;
+the verdict now does so on inspected source rather than on argument.
+
+### One observation on the current tip, flagged not changed
+
+While reading `case 8:` at `efff400` to build the stream table, the new comment
+block asserts **"3+3+2, not 4+4"** with receipts, but the call underneath is
+still `qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>`. Under the file's own rule
+`IPG = ceil(M / ceil(M / 4))`, IPG 4 at M=8 *is* 4+4; 3+3+2 requires IPG 3. Either
+the comment or the argument looks like an unfinished edit, on the scored surface
+of the base this work would rebase onto. Flagged only — outside this assignment's
+scope to change.
+
 ## Scored surface
 
 The ladder is measurement scaffolding for a mechanism that just died, so the
@@ -451,6 +599,10 @@ research/run-qmv-parity.sh \
 python3 research/e41_analyze.py --base e41-base-r1 --arm e41-arm-r1 \
   --base2 e41-base-r2 --json-out research/e41-artifacts/e41-metrics.json
 python3 research/e41_wandb_log.py research/e41-artifacts/e41-metrics.json
+
+# 6. weight-stream attribution of the width curve (07:51Z reconciliation);
+#    reads committed artifacts only, no GPU
+python3 research/e41_stream_model.py
 ```
 
 Omitting `--base2` reproduces the un-bracketed numbers (anchor 1.1086, locality
@@ -479,4 +631,17 @@ runtime, so do not edit either twin while a curve or parity job is in flight.
    tax, which no K-tiling discount can reduce. Two things to settle first, both
    cheap: compile NA=5 at r=2 directly on `e468efd` rather than trusting my
    interpolation, and resolve whether `static_assert(NA<=4)` now forbids the cell
-   outright.
+   outright. The 07:51Z reconciliation sharpens this into the campaign's central
+   question: the marginal weight stream costs **20.291 ms**, raising `IPG` is the
+   only lever that removes one, and wider NA is the only way to raise `IPG`.
+4. **Locate the stream boundary on the current base with one ungated curve.**
+   The weight-stream model predicts the 1→2 boundary has moved from 5→6 to 4→5 and
+   that a 2→3 boundary has appeared at 8→9 on `efff400`. One base-only width curve
+   (no arm build, no submission surface change) confirms or refutes both, and it
+   should be run *before* any causal per-width probe is aimed at M=6, which the
+   model says will read null on the rebased tree. This was not run here because it
+   requires rebasing off this assignment's registered base.
+5. **Instrument the stream count at runtime rather than deriving it from `IPG`.**
+   The attribution above reads `streams(M)` out of the dispatch switch, which is
+   strong but is still source inference. A counter would also expose whether the
+   1.674 ms unmodelled residual is a second, smaller mechanism.
