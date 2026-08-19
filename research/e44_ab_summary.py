@@ -397,7 +397,20 @@ def main() -> int:
                   f"because the serial leg is more QMV-dominated than the "
                   f"candidate leg")
             worst_guard = max(abs(r["speedup_pct"]) for r in guard)
-            bound = floor_pct if floor_pct == floor_pct else worst_guard
+            # Two different floors, and the conservative one wins. The A/A
+            # control measures pure measurement noise between IDENTICAL
+            # binaries. The guard cells share their cell source but are compiled
+            # into a DIFFERENT binary, so they also carry register-allocation
+            # and code-layout scatter. Bounding a ceiling effect that is claimed
+            # to act through exactly that binary difference therefore requires
+            # the larger of the two, or the bound quietly assumes away the very
+            # variability it is meant to cover.
+            bound = max(worst_guard, floor_pct) if floor_pct == floor_pct \
+                else worst_guard
+            if floor_pct == floor_pct:
+                print(f"             floors: A/A control (identical binaries) "
+                      f"{floor_pct:.3f} %, untouched-width guard (different "
+                      f"binaries) {worst_guard:.3f} % -- using the larger")
             print(f"             measured mean effect {mean_guard:+.3f} %, "
                   f"below the {bound:.3f} % floor, so it is BOUNDED and not "
                   f"measured: |dScore| <= {abs(uniform) * bound:.4f} %")

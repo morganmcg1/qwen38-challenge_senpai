@@ -1,4 +1,463 @@
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"mean_speedup_over_replaced_widths_pct","available":true,"value":-7.341},"test_metric":{"name":"exact_coverage_bad_elements","available":true,"value":0}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"mean_speedup_over_replaced_widths_pct","available":true,"value":11.421},"test_metric":{"name":"exact_coverage_bad_elements","available":true,"value":0}}
+
+# E44 r2 — narrow `M ∈ {7,8}` MMA dispatch: all three gates pass, +11.4 % on the replaced widths, and one blocker before anything can ship
+
+- **Student / branch:** `qwen-alphonse` / `qwen-alphonse/simdgroup-qmv-register-gate`
+- **Revision:** r2. r1's full report is retained verbatim at the bottom of this
+  file; nothing in it has been edited.
+- **Hypothesis:** r1 refuted the all-widths `M ∈ {4..9}` dispatch (−7.341 % on
+  net, 7/12 replaced widths regressing). r2 keeps the identical kernel construct
+  and narrows the dispatch to the two widths that won in r1, `M ∈ {7,8}`,
+  restoring the base scalar cells at `M ∈ {4,5,6,9}`.
+- **Decision: the speed mechanism is confirmed and the narrow arm clears the
+  5 % bar at +11.421 %, but it is NOT shippable yet.** Its outputs are not
+  bit-identical to base at the replaced widths, so the golden-decode exactness
+  gate is a real open risk, not a formality.
+- **`BASE_SHA`:** `9fe0dc5dbdb30af4c807ea71873df99e2da72aa2` (r1 used
+  `efff400c1b5554be2e8993b01856653d55de7664`). `UPSTREAM_SHA` unchanged from
+  base. The shipped-surface diff `efff400c → 9fe0dc5d` over
+  `Sources Vendor benchmark.json mlx-generated` is **empty**, so r1's per-cell
+  register table transfers to this base without remeasurement.
+- **Submitted candidate files: NONE.** As instructed, both scored files are
+  reverted to their base blobs in the final commit and
+  `git diff 9fe0dc5d HEAD -- Sources Vendor benchmark.json mlx-generated` is
+  **empty**. The measured candidate is preserved as commit `e66ddd0` on this
+  branch and can be replayed from it.
+- **Yukon:** not submitted. Nothing here is bankable yet.
+- **W&B run:** `dn6hk8u7` —
+  <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/dn6hk8u7>
+  (per-width table, fidelity table, raw pairs, A/A control table, cost model,
+  score decomposition, and all four evidence artifacts attached).
+  r1's run was `3fi0jrgh`.
+- **Reproduction.** From `e66ddd0` (the measured candidate), on this host:
+  ```bash
+  research/run-e44-qmv-ab.sh r2cov 9fe0dc5d --coverage 1 --widths 1,4,6,7,8,9
+  research/run-e44-qmv-ab.sh r2ab  9fe0dc5d --pairs 9 --reps 50 --inner 20 \
+      --widths 1,2,3,4,5,6,7,8,9
+  research/run-e44-qmv-ab.sh r2aa  9fe0dc5d --cand-rev 9fe0dc5d \
+      --pairs 9 --reps 50 --inner 20 --widths 1,2,3,4,5,6,7,8,9
+  python3 research/e44_ab_summary.py .mlxfast-private/e44-qmv-ab/r2ab \
+      --touched 7,8 --control .mlxfast-private/e44-qmv-ab/r2aa
+  research/e44_sgmm_air.sh          # Gate A, compile-only
+  ```
+  Runtime: Gate B 4.6 min, Gate C primary 6.7 min, A/A control 11.0 min.
+  Peak memory is negligible (a microbenchmark holding tens of MB); the harness
+  refuses to run if a model-holding process is resident.
+- **MTP head provenance:** unchanged, organizer-pinned, no
+  `mtp-head.manifest.json` declared.
+- **Host / toolchain / thermal:** Apple M4 Pro, `applegpu_g16s`, 48 GiB, Apple
+  metal 32023.883. The ranked box is M5 Max, `applegpu_g17s`.
+  **`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`** —
+  preserved verbatim. This host's idle GPU floor sits above the 40 C target, so
+  every timed arm here is an ungated, ABBA-counterbalanced local session:
+  directional causal evidence, never a score.
+- **Pre-registration:** `research/e44-r2-prereg.md`, committed in `502f715`
+  **before the narrow variant was compiled**, and posted to the PR. Method
+  record in `research/e44-artifacts/r2-method.md`, written while the primary
+  timing session was still running.
+
+## Result summary
+
+| gate | pre-registered condition | measured | verdict |
+|---|---|---|---|
+| A — registers | kernel-wide max lane-corrected ≤ 108 | **104** (`e44_m4_ipg4`) | **pass** |
+| B — exact coverage | zero mismatching elements | **0 / 1,009,254,400** | **pass** |
+| C — timing | net over `M ∈ {7,8}` ≥ +5 %, all four cells positive and resolved | **+11.421 %**, 4/4 positive and resolved | **pass** |
+| C — predictions | no sign flip, no cell below +2 % | 4/4 within 1 pp | **pass** |
+| C — flat tile | \|cand(7) − cand(8)\| / cand(8) < 3 % | 0.86 % / 1.33 % | **pass** |
+| C — guard | no resolved untouched-width regression | **4/14 guard cells exceed the control floor, mixed sign** | **NOT met** |
+
+Three of the four Gate C conditions passed and the fourth did not. The failure is
+analysed honestly below rather than absorbed into the headline: it does not
+threaten the +11.421 % width result, but it does mean the arm is not provably
+neutral at untouched widths, and it is the reason the ceiling term is reported
+with the conservative floor.
+
+## Gate A — register bound (compile-only, zero GPU)
+
+Artifact: `research/e44-artifacts/r2-gate-a-registers.txt`.
+
+| quantity | pre-registered | measured | verdict |
+|---|---|---|---|
+| kernel-wide max, lane-corrected | ≤ 108 | **104** | pass |
+| binding cell identity | `e44_m4_ipg4` | `e44_m4_ipg4` | pass |
+| entry-block registers | [143, 163] | **160** (was 163) | pass |
+| allocas in the sgmm cell | 0 | **0** | pass |
+| new alloca type introduced | none | none (entry 55 → 52) | pass |
+| static threadgroup bytes | 0 → 0 | 0 → 0 | pass |
+
+Per-cell lane-corrected footprint: `narrow_*` 89, `m3_ipg3` 83, `m4_ipg4` 104,
+`m5_ipg3` 87, `m6_ipg3` 83, `m7_ipg4` 108, `m8_ipg4` 104, `m9_ipg3` 83,
+`sgmm` 34 (naive 344, gap 310 = 5 distributed values × 62 lanes, ordinary count
+24 identical at both peak points, so rule (e) of the lane-correction contract
+holds).
+
+`affine_qmv_fast` has a single `[[kernel]]` entry point and the width `switch` is
+on a runtime value with all helpers `METAL_FUNC` inline, so one shared register
+allocation is taken as the max over all instantiated cells. Removing the sgmm
+cell from `M ∈ {4,5,6,9}` leaves `m7_ipg4` (108) uninstantiated and makes
+`m4_ipg4` (104) binding. **Ceiling 108 → 104 = −3.70 %.**
+
+> 🔴 **Retraction that gates E46.** r1 reported the ceiling as `108 → 89`. That
+> is correct only for the all-widths variant, which r1 itself proved is not
+> bankable. **For the bankable narrow variant the ceiling is 104, a −3.70 %
+> reduction, not −17.6 %.** r1 flagged this as derived arithmetic; r2 has now
+> measured it directly and it is confirmed. Please do not let E46 size anything
+> against 89.
+
+## Gate B — exact integer coverage, and precisely what it does and does not prove
+
+Artifact: `research/e44-artifacts/r2-gate-b-coverage.txt`, run dir
+`.mlxfast-private/e44-qmv-ab/r2cov`.
+
+24 cells = 2 shapes × 6 widths {1,4,6,7,8,9} × {scale pass, bias pass}.
+**1,009,254,400 elements. `bad=0` and `worst_abs=0.0` on every line of both
+arms. 0 / 24 cells with any nonzero.**
+
+The construction forces every scale to 1 and every bias to 0 (scale pass), or
+scales to 0 and biases to distinct small integers (bias pass), and sets `x`
+one-hot on the eight `k` values packed in a single weight word. The exact answer
+is then a small integer ≤ 120, which bfloat16 represents without loss, so the
+check demands **bit equality of the stored result**, not a tolerance. Sweeping
+the word index covers every `k` at per-nibble resolution, and one dispatch yields
+every `(m, n)` at once.
+
+**What this proves:** the index mapping, the `m`/`n` tiling, the nibble
+unpacking, the group reduction, and the pairing of each group's bias with the
+right partial sum are all exactly correct at every position. A single dropped,
+duplicated or misplaced nibble moves the sum by at least 1 and would be visible.
+
+**What this does NOT prove, and the distinction matters:** because every operand
+is an exactly-representable small integer, *no rounding occurs anywhere* in
+either arm, so reduction order is irrelevant by construction. Gate B is
+therefore **silent on floating-point rounding**. It must not be read as "the
+outputs are bit-identical". They are not — see the blocker below.
+
+Dispatch was verified mechanically rather than trusted: the summary tool parses
+the dispatch tables out of both emitted runtime-effective JIT sources and refuses
+to report if they disagree with the claimed touched set. It derives **exactly
+{7,8}**, with `M ∈ {4,5,6,9}` byte-identical scalar cells again.
+
+## Gate C — paired timing
+
+Design: 9 pairs × 50 reps × 20 inner, widths 1..9, ABBA alternation **inside one
+process** at ~100 ms granularity, so drift between paired arms is far smaller
+than between sessions. df = 8. Run dir `.mlxfast-private/e44-qmv-ab/r2ab`.
+Entry GPU temperature 42.92 C, exit 69.99 C. GPU-busy precheck: idle
+(peak 0 %, mean 0.0 %, 12 samples).
+
+### Replaced widths
+
+| shape | M | base µs | cand µs | speedup % | sd % | 95 % CI | verdict |
+|---|---|---|---|---|---|---|---|
+| attn_out | 7 | 154.03 | 136.48 | **+11.389** | 0.137 | [+11.284, +11.495] | clears bar |
+| attn_out | 8 | 165.96 | 137.66 | **+17.050** | 0.227 | [+16.876, +17.225] | clears bar |
+| mlp_down | 7 | 486.07 | 463.74 | **+4.596** | 0.116 | [+4.506, +4.685] | faster |
+| mlp_down | 8 | 523.81 | 457.55 | **+12.649** | 0.223 | [+12.478, +12.820] | clears bar |
+
+**Mean over `M ∈ {7,8}`: +11.421 %. Replaced widths regressing with a resolved
+interval: 0 / 4. Best: attn_out M=8 at +17.050 %.**
+
+### Pre-registered predictions: 4 / 4 confirmed
+
+| cell | pre-registered | measured | error |
+|---|---|---|---|
+| attn M7 | +10.46 | +11.389 | +0.93 |
+| attn M8 | +16.65 | +17.050 | +0.40 |
+| mlp M7 | +4.46 | +4.596 | +0.14 |
+| mlp M8 | +13.05 | +12.649 | −0.40 |
+
+The falsification condition was any sign flip or any cell below +2 %. Neither
+occurred, and every cell landed within 1 pp of its prediction. This is a clean
+contrast with r1, where 3 of 4 pattern predictions missed — because r1's
+predictions came from a *mechanism* (weight-stream halving) that was wrong,
+whereas r2's come from *r1's own measurements* of the same two widths.
+
+### Flat-tile check: passes on both shapes
+
+Pre-registered as |cand(7) − cand(8)| / cand(8) < 3 %.
+
+| shape | cand plateau µs | cv % | spread % | base rise M7→M8 |
+|---|---|---|---|---|
+| attn_out | 137.07 | 0.61 | **0.86** | +7.7 % |
+| mlp_down | 460.64 | 0.95 | **1.33** | +7.8 % |
+
+Candidate flat, base rising: the fixed 8-row MMA tile mechanism that r1
+identified is confirmed on both shapes. The sign of the effect at any width is
+set by where the flat candidate curve crosses the rising base curve, which is
+exactly why narrowing the dispatch to the widths past the crossing works.
+
+I also corrected the flatness diagnostic itself. It had `M=4..8` hardcoded from
+r1 and was averaging three unchanged scalar cells into the narrow arm's
+"plateau", reporting a meaningless 15–17 % CV. It now follows the touched
+widths, capped at 8 because `M=9` needs a second 8-row tile and is genuinely not
+flat. r1's numbers are unchanged by the fix (139.76 µs cv 2.28 %, 458.99 µs
+cv 2.00 %).
+
+### The A/A control, and the pre-registered condition that did not hold
+
+The control is the same design with `--cand-rev` set to the base sha, so both
+arms are the **same bytes** — verified: `base_metal_sha256 ==
+cand_metal_sha256 == 0c461cb8…`, `arm_source_diff_hunks=0`. The summary tool
+refuses a control whose arms are not byte-identical. Run dir
+`.mlxfast-private/e44-qmv-ab/r2aa`, entry 42.89 C, exit 70.57 C.
+
+**All 18 cells have a true effect of exactly zero. Result: worst |effect| =
+0.263 %, sd of cell effects = 0.085 %, and intervals excluding zero = 0 / 18.**
+
+That last number is the important one. **The design does not manufacture
+"resolved" effects on a true zero.** So a resolved interval in the primary
+cannot be dismissed as a broken statistic — which is inconvenient for me,
+because two guard cells in the primary do resolve in the slower direction.
+
+**My pre-registered stop rule required "no resolved untouched-width regression",
+and that condition was NOT met.** Reporting it plainly:
+
+| untouched cell | effect | 95 % CI | vs 0.263 % control floor |
+|---|---|---|---|
+| attn_out M=1 | **+0.539 %** faster | [−1.546, +0.468] on delta | exceeds |
+| attn_out M=2 | **−0.663 %** slower | [+0.376, +0.950] on delta | exceeds |
+| attn_out M=5 | **+0.341 %** faster | [−0.917, +0.235] on delta | exceeds |
+| mlp_down M=1 | **−0.347 %** slower | [−0.194, +0.888] on delta | exceeds |
+
+4 of 14 guard cells exceed the control's floor, and **the signs are mixed: two
+faster, two slower**, averaging +0.055 % overall.
+
+Here is what I think is actually going on, stated as a hypothesis rather than a
+conclusion. The guard cells share their *cell source* with base, but they are
+compiled into a **different binary**: the register allocation changed 108 → 104
+and the entry block changed 163 → 160, which shifts code layout for every width.
+The A/A control holds the binary fixed and so measures only measurement noise
+(0.263 %); the guard varies the binary and picks up layout and allocation
+scatter on top. Mixed signs of a few tenths of a percent are the signature of
+that, not of a coherent occupancy change — a real ceiling reduction should make
+untouched widths uniformly *faster*, and two of these four are slower.
+
+**Two consequences, and I am not softening either:**
+
+1. The pre-registered condition failed. The narrow arm is not perfectly neutral
+   at untouched widths in this session, and I cannot rule out a genuine ±0.7 %
+   width-dependent effect. This deserves a follow-up rather than a shrug.
+2. **The ceiling term therefore cannot be read off the guard at all**, because
+   the guard confounds occupancy with code layout. This is why the ceiling term
+   stays a bound.
+
+**Choice of floor.** Two floors are available and they disagree:
+
+| floor | measures | value |
+|---|---|---|
+| A/A control | measurement noise, **identical** binaries | 0.263 % |
+| untouched-width guard | noise + layout/allocation, **different** binaries | 0.663 % |
+
+The ceiling effect is claimed to act *through* the binary difference, so
+bounding it with the identical-binary floor would assume away exactly the
+variability the bound must cover. **The larger, more conservative 0.663 % is
+used**, giving `|dScore| ≤ 0.1186 %` rather than the flattering 0.0470 %. I
+changed the tool to always take the larger of the two and to print both, so this
+cannot be quietly reversed later.
+
+## Score decomposition — two terms, opposite signs, never aggregated
+
+The candidate changes two things at once and they push the score in **opposite
+directions**, so a single aggregate speedup number would be uninterpretable.
+Reported separately, each with its sign attached.
+
+### Width term — favourable, and powered
+
+`M ∈ {7,8}` exist only on the MTP leg; the serial leg never dispatches them.
+With ψ_mtp = 0.6736, removing 1 % of MTP-leg QMV cost is worth **+0.674 %** of
+score. The measured win is +11.421 %, so
+
+> **dScore = +7.693 % × f**
+
+where `f` is the share of MTP-leg QMV cost dispatched at `M ∈ {7,8}`.
+
+| f | 0.05 | 0.10 | 0.25 | 0.50 |
+|---|---|---|---|---|
+| dScore | +0.385 % | +0.769 % | +1.923 % | +3.847 % |
+
+**`f` is not identified.** edward's E43 showed a step at `M ≥ 6` and a plain
+quadratic both fit the ranked row with zero slack. This is a sensitivity table,
+not a prediction, and I am not converting it into a score claim. Note the risk
+direction is now benign in a way r1's was not: the narrow arm is *neutral by
+construction* at every width it does not touch, so a mixture concentrated at
+`M ≤ 6` or `M = 9` makes this candidate worthless rather than harmful, whereas
+the all-widths arm would have been a large regression.
+
+### Ceiling term — adverse, and NOT powered
+
+`qmv_fast` has one shared register allocation, so changing it perturbs **every**
+width including `M = 1`, and both legs speed up together. The serial leg is the
+more QMV-dominated of the two (ψ_serial = 0.8525 vs ψ_mtp = 0.6736), so a
+uniform QMV speedup helps the denominator more than the numerator:
+
+> **dScore = −0.179 % per 1 % of uniform QMV cost removed — ADVERSE.**
+
+The measured guard mean is +0.055 %, which is **below this session's own
+resolution floor**. It is therefore reported as a bound:
+
+> **|dScore| ≤ 0.1186 %** — a bound, not a measurement.
+
+This was stated before the numbers existed and has not been revised after
+seeing them. At the E40 price of 0.00959 % of cost per 1 % of register, the
+−3.70 % ceiling move is worth about **0.0355 %** of score, and resolving that
+against a ~0.63 % floor needs on the order of **880 pairs**. This design runs 9.
+No claim is made that the ceiling effect was observed.
+
+## 🔴 The blocker: the candidate is not bit-identical to base at the replaced widths
+
+This is the finding that decides whether the +11.4 % is worth anything, and it is
+easy to misread Gate B as having settled it. It has not.
+
+On general random inputs, the harness measures each arm against an exact double
+reference and against each other:
+
+| shape | M | base max_rel | cand max_rel | **cand vs base max_rel** |
+|---|---|---|---|---|
+| attn_out | 1–6, 9 | 8.6e−02 … 6.3e−01 | identical | **0.0000e+00** |
+| attn_out | **7** | 6.267e−01 | 3.636e−03 | **1.6788e+00** |
+| attn_out | **8** | 6.267e−01 | 3.636e−03 | **1.6788e+00** |
+| mlp_down | 1–6, 9 | 6.1e−02 … 1.1e+00 | identical | **0.0000e+00** |
+| mlp_down | **7** | 1.099e+00 | 3.281e−03 | **5.2381e−01** |
+| mlp_down | **8** | 1.099e+00 | 3.692e−03 | **5.2381e−01** |
+
+Two things follow.
+
+1. **At every untouched width the two arms are bit-identical** (`cand_vs_base`
+   is exactly zero). That independently confirms those cells are genuinely
+   unchanged code, which is what makes them valid as a zero-effect noise floor.
+
+2. **At `M ∈ {7,8}` the candidate differs from base.** It is in fact *far more
+   accurate* — its error against the exact double reference drops by roughly two
+   orders of magnitude (6.3e−1 → 3.6e−3 max_rel; rms_rel 5.7e−2 → 1.7e−3),
+   because the simdgroup MMA accumulates in fp32 whereas the scalar cell
+   accumulates in lower precision. **But "more accurate" is not the contract.**
+   The contract is reproducing the hidden *serial* token stream, and the serial
+   reference is produced by the base numerics. A more accurate kernel that
+   disagrees with base is exactly as disqualifying as a less accurate one if it
+   flips a single argmax.
+
+**Consequence: this candidate cannot ship on the strength of Gates A–C.** The
+next gate is a fixed-window exact decode against the public golden — 512 tokens,
+including exact post-EOS continuation and row-ledger closure — comparing the
+candidate's token stream to the unchanged base's on this same host. That gate was
+out of scope for this assignment and I did not run it.
+
+I want to be explicit that this is a *substantive* risk, not paperwork. The
+divergence is concentrated on exactly the two widths the candidate is meant to
+accelerate, so there is no version of this mechanism that avoids the question.
+
+## 🔴 Incidental finding: `twin_audit.py` is already RED on the campaign base
+
+Found while running the final preflight, and worth a separate flag because it
+degrades a safety gate for everyone, not just this experiment.
+
+```text
+base 9fe0dc5d (clean scratch worktree):   TWIN AUDIT FAILED: 1/29 twin(s)
+candidate e66ddd0 (this branch):          TWIN AUDIT OK: 29 runtime-effective twin(s)
+after reverting both files to base:       TWIN AUDIT FAILED: 1/29 twin(s)
+```
+
+Verified decisively: both scored files in my worktree hash-match their base blobs
+exactly (`12e2f73d…`, `2429e888…`), and a **clean worktree checked out at
+`9fe0dc5d` with none of my changes reproduces the same failure**. This is not
+something r2 introduced.
+
+The drift is in `quantized.h` at `case 8:` and is **comment-only** — the
+surrounding code is identical in both, which is why runtime behaviour is
+unaffected and none of the measurements above are compromised. But the two
+comments say **opposite things about the same code**:
+
+| source | comment at `case 8` |
+|---|---|
+| checked-in `quantized.h` | "**4+4**: two weight streams, receipted on this benchmark (scored 3.195804751396457 as a promoted submission) before a later stale-base REPLACE overlay reverted it; restored here." |
+| runtime-effective `mlx-generated/quantized.cpp` | "**3+3+2, not 4+4.** M = 8 is the only hot width whose EVEN split needs two simultaneous `vec<float,4>` accumulators…" |
+
+For the record, the `.h` comment is the accurate one: both dispatch tables — the
+one I parse from `quantized.h` and the one I parse from the emitted
+runtime-effective JIT string — independently resolve `case 8` to
+`e44_m8_ipg4`, i.e. 4+4. The twin's "3+3+2" comment is stale text left behind
+when the header comment was edited without regenerating the twin.
+
+**Why it matters:** a gate that is already failing at base cannot detect a real
+drift introduced later — the next person to run it sees a red result either way
+and learns nothing. It also means the readable source and the runtime-effective
+source currently disagree in their explanation of a hot width, which is exactly
+the kind of thing that misleads a later experiment.
+
+**I did not fix it.** The fix touches a scored file, and this assignment requires
+the final diff against base to be empty. It is a one-line regeneration
+(`make_compiled_preamble.sh`) and belongs in its own change so it is reviewable
+on its own; my candidate `e66ddd0` already demonstrates that regenerating clears
+it.
+
+## Conclusion
+
+- **What happened:** narrowing r1's refuted all-widths dispatch to the two widths
+  that actually won turns a −7.341 % net regression into a **+11.421 % net win**
+  with **0 / 4** replaced widths regressing, at a register ceiling of 104
+  (−3.70 %) and with exact integer coverage over 1.009 billion elements. Every
+  pre-registered condition on Gate A and Gate B held, and 4 / 4 pre-registered
+  timing predictions were confirmed within 1 pp.
+- **Evidence for the mechanism:** strong and now doubly confirmed. The flat-tile
+  prediction holds on both shapes (spread 0.86 % / 1.33 % against a base rise of
+  +7.7 % / +7.8 %), which is the mechanism r1 identified post hoc and r2
+  pre-registered and confirmed.
+- **The one pre-registered condition that failed:** "no resolved untouched-width
+  regression". 4 of 14 guard cells exceed the A/A control's 0.263 % floor with
+  **mixed signs** (attn M=1 +0.539 %, attn M=5 +0.341 %, attn M=2 −0.663 %,
+  mlp M=1 −0.347 %). The A/A control resolved 0 of 18 cells on a true zero, so
+  this is not a broken statistic; my best explanation is register-allocation and
+  code-layout scatter between two genuinely different binaries, but I have not
+  proved that and I am not claiming the arm is neutral at untouched widths.
+- **What this is worth in score:** unknown, and honestly so. `+7.693 % × f` with
+  `f` unidentified. The ceiling term is adverse and bounded at
+  `|dScore| ≤ 0.1186 %`.
+- **Why it is still not bankable:** the outputs are not bit-identical to base at
+  `M ∈ {7,8}`. Until a fixed-window exact decode against the golden passes, the
+  speed number is not convertible into a submission.
+- **Nothing was shipped.** Both scored files are reverted to their base blobs in
+  the final commit; the shipped-surface diff against `9fe0dc5d` is empty. The
+  measured candidate is preserved as `e66ddd0` on this branch.
+
+## Suggested follow-ups (not implemented)
+
+1. **Fixed-window exact decode against the public golden, on the `e66ddd0`
+   candidate.** This is the only thing standing between a confirmed +11.4 % and a
+   submittable candidate. It should be run before any further tuning, because a
+   failure here retires the whole mechanism and a pass converts it immediately.
+2. **Identify `f`.** The width term is `+7.693 % × f` and `f` is the single
+   largest uncertainty in this result. A decode-time histogram of dispatched `M`
+   on the MTP leg would collapse the sensitivity table to a number. This is
+   edward's E43 territory and I did not touch it.
+3. **Reconsider `M = 9`.** It needs a second 8-row tile, so it was excluded here,
+   but the base cost at M=9 is the highest on the curve (202.84 / 647.25 µs) and
+   r1 measured the two-tile candidate at −10.37 % / −11.66 % there. A two-tile
+   variant tuned for M=9 specifically is a distinct, separately testable
+   question.
+4. **Repair the base's stale twin.** One regeneration of
+   `mlx-generated/quantized.cpp` clears `twin_audit.py` on `9fe0dc5d`. Worth
+   doing as its own small change so the gate is green and can actually detect
+   future drift; it also removes a runtime-effective comment that contradicts
+   the header about a hot width.
+5. **Explain the untouched-width scatter.** The A/A control proves the design is
+   clean on identical binaries, so the ±0.7 % mixed-sign scatter between
+   different binaries is real and unexplained. A cheap test: build a candidate
+   that changes *only* the register ceiling (e.g. a dummy instantiation that
+   raises or lowers the max) with no cell changes at all, and see whether
+   untouched widths move uniformly. That would separate occupancy from code
+   layout and would make every future ceiling claim in this campaign
+   interpretable — including E40's price, which the ceiling term depends on.
+6. **`uint4` batching of A-fragment loads.** Still deliberately not implemented,
+   for the reasons in r1: it saves ~12 % of instructions, invalidates the Gate A
+   numbers, and adds a second path. The flat-tile result says this kernel is not
+   instruction-bound at these widths, so the expected gain is small.
+
+---
+---
+
+# r1 report, retained verbatim below
+
 
 # E44 — simdgroup-matrix QMV: Gate 0 passes, the timing hypothesis is refuted
 

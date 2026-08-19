@@ -1185,135 +1185,6 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_m(
   }
 }
 
-// Cross-row affine4/g64 QMV through the simdgroup matrix unit.
-//
-// One simdgroup owns a whole 8(out) x 8(in) output tile, so the cost of this
-// cell is set by the TILE and is flat in M: measured plateau 139.76 us
-// (n=k=5120) and 458.99 us (n=5120, k=17408), cv 2.28 % / 2.00 % across
-// M = 4..8, while the scalar cells rise +71.3 % / +78.6 % over the same range.
-// The sign of the trade is therefore set by where the rising scalar cost crosses
-// the flat tile cost, which is bracketed in M in [6, 7] -- and that, not weight
-// traffic, is why the dispatch below claims only M = 7 and 8.
-//
-// It does stream the weight tile once for M <= 8 where the scalar cells stream
-// it ceil(M / NA) times with NA <= 4, but that mechanism was PRE-REGISTERED and
-// REFUTED: it predicts a win from M = 5 and a larger win on the k=17408 shape,
-// and the measurement shows neither (M = 4 was -41.7 % / -52.4 %, and both wins
-// are smaller on the deeper shape). Do not reason from it.
-//
-// Operands are transposed relative to the usual (M, K) x (K, N) reading:
-//
-//   A[n][k] = q[out_row][k]      D = A * B  ==>  D[n][m] = sum_k q[n][k] x[m][k]
-//   B[k][m] = x[m][k]
-//
-// The transpose is what makes the quantized operand cheap. BaseMMAFrag<T,8,8>
-// gives each lane two elements adjacent along the frag COLUMN, so a lane's two
-// A elements are two adjacent k of one weight row, i.e. two adjacent nibbles of
-// a single packed uint32 -- one load and two shifts, with no cross-lane packing
-// fixup. Frags are held as float2 and the simdgroup_matrix values exist only
-// across the accumulate call, exactly as mlx::steel::BlockMMA does.
-//
-// The two-term affine form is preserved per 64-wide group:
-//   y[m][n] = sum_g ( scale[n][g] * sum_{k in g} x[m][k] q[n][k]
-//                     + bias[n][g] * sum_{k in g} x[m][k] )
-// The MMA supplies the first inner sum; the second is a per-lane partial that
-// is completed across the eight lanes sharing a frag column. Those lanes differ
-// exactly in simd_lid bits 1, 2 and 4, so three shuffles close it.
-//
-// The frozen host launches M x-groups per 8-output tile with two simdgroups
-// each. A cross-row-complete worker needs only one x-group, so this cell claims
-// tid.x == 0 and hands the two simdgroups either two different output tiles
-// (M <= 8) or the two x-tiles of one output tile (M == 9). No threadgroup
-// memory and no barrier are needed in either case. m_rows is RUNTIME, so the
-// two-tile branch survives compilation even though the dispatch below never
-// reaches it; specialising the cell to one tile is an open follow-up.
-//
-// NOTE ON EXACTNESS: individual products are bit-identical to the scalar cells
-// (a masked-nibble product and a direct-nibble product are two roundings of the
-// same real value), but the matrix unit fixes its own summation order for each
-// 8-wide step, so this cell is NOT bit-equal to the M == 1 readout. Neither are
-// the scalar cross-row cells it sits beside, which is why exactness on the
-// scored path is settled by the golden run and not by an algebraic identity.
-// That run is the gate this cell has NOT yet passed.
-template <typename T>
-METAL_FUNC void qmv_fast_crossrow_affine4_g64_sgmm(
-    const device uint32_t* w,
-    const device T* scales,
-    const device T* biases,
-    const device T* x,
-    device T* y,
-    const int in_vec_size,
-    const int out_vec_size,
-    const int m_rows,
-    uint3 tid,
-    uint simd_gid,
-    uint simd_lid) {
-  using Frag = mlx::steel::BaseMMAFrag<float, 8, 8>;
-  constexpr int frag = 8;
-  constexpr int group_k = 64;
-  constexpr int nibbles_per_word = 8;
-
-  const int n_tiles = out_vec_size / frag;
-  const int m_tiles = (m_rows + frag - 1) / frag;
-  const int units = n_tiles * m_tiles;
-  const int lo_units = (units + 1) / 2;
-  if (tid.x != 0 || int(tid.y) >= lo_units) {
-    return;
-  }
-  const int unit = int(simd_gid) * lo_units + int(tid.y);
-  if (unit >= units) {
-    return;
-  }
-  const int tile_m = unit >= n_tiles ? 1 : 0;
-  const int tile_n = unit - tile_m * n_tiles;
-
-  const short2 coord = Frag::get_coord(ushort(simd_lid));
-  const int fcol = coord.x;
-  const int frow = coord.y;
-
-  const int out_row = tile_n * frag + frow;
-  const int words_per_row = in_vec_size / nibbles_per_word;
-  const int groups_per_row = in_vec_size / group_k;
-  const int m0 = tile_m * frag + fcol;
-  const int m1 = m0 + 1;
-
-  const device uint32_t* wrow = w + out_row * words_per_row;
-  const device T* xr0 = x + min(m0, m_rows - 1) * in_vec_size;
-  const device T* xr1 = x + min(m1, m_rows - 1) * in_vec_size;
-  const device T* srow = scales + out_row * groups_per_row;
-  const device T* brow = biases + out_row * groups_per_row;
-  const int shift0 = 4 * fcol;
-
-  float2 acc = 0.0f;
-  for (int g = 0; g < groups_per_row; g++) {
-    float2 qdot = 0.0f;
-    float2 xsum = 0.0f;
-    for (int s = 0; s < frag; s++) {
-      const uint32_t word = wrow[g * frag + s];
-      float2 wfrag = float2(
-          static_cast<float>((word >> shift0) & 0x0f),
-          static_cast<float>((word >> (shift0 + 4)) & 0x0f));
-      const int kx = g * group_k + s * frag + frow;
-      float2 xfrag =
-          float2(static_cast<float>(xr0[kx]), static_cast<float>(xr1[kx]));
-      xsum += xfrag;
-      Frag::mma(qdot, wfrag, xfrag, qdot);
-    }
-    xsum += simd_shuffle_xor(xsum, 2u);
-    xsum += simd_shuffle_xor(xsum, 4u);
-    xsum += simd_shuffle_xor(xsum, 16u);
-    acc += static_cast<float>(srow[g]) * qdot +
-        static_cast<float>(brow[g]) * xsum;
-  }
-
-  if (m0 < m_rows) {
-    y[m0 * out_vec_size + out_row] = static_cast<T>(acc.x);
-  }
-  if (m1 < m_rows) {
-    y[m1 * out_vec_size + out_row] = static_cast<T>(acc.y);
-  }
-}
-
 template <typename T, int group_size, int bits>
 METAL_FUNC void qmv_impl(
     const device uint32_t* w,
@@ -2075,16 +1946,27 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 7:
-        case 8:
-          // E44 r2: the simdgroup-matrix cell, dispatched ONLY where it wins.
-          // Its cost is flat in M because one simdgroup owns a whole 8-row
-          // output tile, while the scalar cells above rise with M; the crossover
-          // sits in M in [6, 7], so this claims 7 and 8 and nothing else. M = 9
-          // needs a second tile and profiles ~1.6x the plateau, which is why it
-          // stays on <T, 9, 3>.
-          qmv_fast_crossrow_affine4_g64_sgmm<T>(
+          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
-              int(ntg.x), tid, simd_gid, simd_lid);
+              tid, simd_gid, simd_lid);
+          return;
+        case 8:
+          // 3+3+2, not 4+4. M = 8 is the only hot width whose EVEN split needs
+          // two simultaneous vec<float,4> accumulators in every active worker;
+          // M = 9 uses three-lane vectors and profiles CHEAPER despite more work
+          // (319 / 437 / 216 us for M = 7 / 8 / 9 in the public cross-row study)
+          // — a register cliff, not work scaling.
+          // Exact: these lanes carry INDEPENDENT input rows and are never reduced
+          // across (simd_sum reduces along K WITHIN a row), so moving a row from
+          // lane 3 of a four-wide vector to lane 0 of a two-wide one cannot
+          // reorder its scalar chain. Template admits it: M in [3,9], 8 % 3 == 2
+          // (no one-row tail), IPG 3 inside the wide helper's [2,4].
+          // Receipts: 85d5bca3 2.91143, yzxoi 2.92675.
+          // SYNERGY with the streak gate above, which is why they ship together:
+          // gate 2 reaches the width-8 verify SOONER, so this kernel fires MORE.
+          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>(
+              w, scales, biases, x, y, in_vec_size, out_vec_size,
+              tid, simd_gid, simd_lid);
           return;
         case 9:
           qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>(
