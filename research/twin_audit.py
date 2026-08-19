@@ -196,13 +196,49 @@ RULE = re.compile(r"^/{40,}$")
 #   hazardous edit was applied and asserted to have landed. The case that
 #   justifies them is the two-sided edit, which THIS audit cannot see, because
 #   this audit asks whether the twins agree and not whether they are right.
+# ---------------------------------------------------------------------------
+# 2026-08-19: THE PIN MOVED FROM THE BODY TO THE COMMENT STREAM.
+#
+# askeladd's E55 found a real defect in this waiver, not a defect in his edit.
+# The waiver used to require `body_digest(checked_in)` and
+# `body_digest(regenerated)` to match two pinned whole-body digests. A whole-body
+# digest covers the comments AND the code, so ANY legitimate code edit inside a
+# body that carries a waived comment divergence de-pins the waiver and the audit
+# reports drift that is not there. Two consequences made this unusable:
+#
+#   1. Every candidate that touches quantized.h / quantized.cpp -- the hottest
+#      pair in this competition, 128 rival submissions deep -- fails promotion
+#      step 4 for a reason unrelated to its own change.
+#   2. One pinned pair cannot cover the two arms of an A/B, because `base` and
+#      the candidate have different whole-body digests by construction.
+#
+# Re-pinning the whole body against each new candidate is the laundering this
+# file already forbids. The correct fix is to pin THE DIVERGENCE rather than THE
+# BODY, because the divergence is the recorded fact and the body is not:
+#
+#   * the comment stream of each side is pinned, so a NEW or CHANGED comment
+#     divergence still fails and still needs a deliberate, reviewed re-pin;
+#   * `code_lines` equality is asserted independently, so a code edit applied to
+#     only one twin still fails, which is the property the audit exists for;
+#   * a code edit applied consistently to BOTH twins now passes, which is
+#     correct: the twins agree, and this audit asks whether they agree.
+#
+# KNOWN NARROWING, stated rather than hidden: the comment-stream digest does not
+# pin where comments sit AMONG the code lines, so a pure relocation of an already
+# waived comment is no longer detected. That is invisible to the Metal compiler,
+# which sees only `code_lines`, so it opens no compiler-visible hole. It does
+# mean this waiver no longer certifies comment PLACEMENT.
+#
+# Run `python3 research/twin_audit.py --self-test` to prove the waiver can still
+# fail. Six cases: two that must pass and four that must not.
+# ---------------------------------------------------------------------------
 KNOWN_COMMENT_DIVERGENCES = {
     ("quantized", "mlx/backend/metal/kernels/quantized.h"): {
-        "checked_in_sha256": (
-            "d2dc1f7d4938524a500c355b51a9fb631cb3500efffc73e8ca87fd6e2b627992"
+        "checked_in_comment_sha256": (
+            "1fdb8dcee8c7cfeb203e9afad1d991a746b7ba08d24638774878fbbd3404a0ba"
         ),
-        "regenerated_sha256": (
-            "1995814a7f1b3f8859e0d14bfa61a694c8dcfb237465fb7598adf9bbb6abab49"
+        "regenerated_comment_sha256": (
+            "f7baab91ee3afe85961d6f9b535e45f6cc362fdc05d9ee26caaaabeba9a564f3"
         ),
         "inherited_from": "474c750 (Accept submission 942e5ab2-1c46-4c50-b7c3-eaf948878ed0)",
         "adopted_by": "e468efd (rebase the shipped surface onto the live frontier; drop E27)",
@@ -269,20 +305,42 @@ def code_lines(body):
     return [line for line in body if not line.strip().startswith("//")]
 
 
+def comment_lines(body):
+    """Keep only whole-line comments -- exactly what the compiler ignores."""
+    return [line for line in body if line.strip().startswith("//")]
+
+
+def comment_digest(body):
+    """Digest the whole-line comment stream of a section body."""
+    stream = comment_lines(body)
+    return hashlib.sha256(("\n".join(stream) + "\n").encode("utf-8")).hexdigest()
+
+
 def comment_only_waiver(stem, header, current_body, expected_body):
     """Return a printable note when this exact divergence is an allowed waiver.
 
-    Fail-closed on three independent conditions: the pinned digest of the
-    checked-in body, the pinned digest of the regenerated body, and a structural
-    guard that every non-comment line still matches. If any of them fails the
-    waiver does not apply and the caller reports real drift.
+    Fail-closed on three independent conditions: the pinned comment stream of
+    the checked-in twin, the pinned comment stream of the regenerated body, and
+    a structural guard that every non-comment line still matches. If any of them
+    fails the waiver does not apply and the caller reports real drift.
     """
     entry = KNOWN_COMMENT_DIVERGENCES.get((stem, header))
     if entry is None:
         return None
-    if body_digest(current_body) != entry["checked_in_sha256"]:
-        return None
-    if body_digest(expected_body) != entry["regenerated_sha256"]:
+    checked_in = comment_digest(current_body)
+    regenerated = comment_digest(expected_body)
+    if (
+        checked_in != entry["checked_in_comment_sha256"]
+        or regenerated != entry["regenerated_comment_sha256"]
+    ):
+        # A human has to decide whether a CHANGED comment divergence deserves a
+        # re-pin, so print the observed digests instead of making them re-derive.
+        print(
+            f"WAIVER DE-PINNED {stem} {header}: observed "
+            f"checked_in_comment_sha256={checked_in} "
+            f"regenerated_comment_sha256={regenerated}",
+            file=sys.stderr,
+        )
         return None
     if code_lines(current_body) != code_lines(expected_body):
         return None
@@ -292,6 +350,105 @@ def comment_only_waiver(stem, header, current_body, expected_body):
         f"({len(current_body)} checked-in vs {len(expected_body)} regenerated "
         f"line(s), {len(code_lines(current_body))} non-comment line(s) identical)"
     )
+
+
+# ---------------------------------------------------------------------------
+# POSITIVE CONTROL
+#
+# An instrument that cannot fail is not an instrument. `--self-test` installs a
+# synthetic waiver row, then drives `comment_only_waiver` through six cases: the
+# two that must be waived and the four that must not. It queries no device and
+# does not run the MLX generator, so it is safe to run anywhere.
+# ---------------------------------------------------------------------------
+
+_SELF_TEST_KEY = ("selftest", "synthetic/section.h")
+
+_SELF_TEST_CHECKED_IN = [
+    "// long checked-in argument, line one",
+    "// long checked-in argument, line two",
+    "  case 9:",
+    "    dispatch<T, 9, 3, true>(a, b);",
+]
+
+_SELF_TEST_REGENERATED = [
+    "// short regenerated note",
+    "  case 9:",
+    "    dispatch<T, 9, 3, true>(a, b);",
+]
+
+
+def _self_test_cases():
+    def edited(body, old, new):
+        return [line.replace(old, new) for line in body]
+
+    both_sides_code_edit = (
+        edited(_SELF_TEST_CHECKED_IN, "9, 3, true", "9, 5, true"),
+        edited(_SELF_TEST_REGENERATED, "9, 3, true", "9, 5, true"),
+    )
+    return [
+        ("unperturbed divergence", _SELF_TEST_CHECKED_IN, _SELF_TEST_REGENERATED, True),
+        ("code edit applied to both twins", *both_sides_code_edit, True),
+        (
+            "code edit on the checked-in twin only",
+            edited(_SELF_TEST_CHECKED_IN, "9, 3, true", "9, 5, true"),
+            _SELF_TEST_REGENERATED,
+            False,
+        ),
+        (
+            "code edit on the regenerated body only",
+            _SELF_TEST_CHECKED_IN,
+            edited(_SELF_TEST_REGENERATED, "9, 3, true", "9, 5, true"),
+            False,
+        ),
+        (
+            "new comment on the checked-in twin",
+            _SELF_TEST_CHECKED_IN + ["// smuggled third line"],
+            _SELF_TEST_REGENERATED,
+            False,
+        ),
+        (
+            "code line commented out on the checked-in twin",
+            edited(_SELF_TEST_CHECKED_IN, "  case 9:", "  // case 9:"),
+            _SELF_TEST_REGENERATED,
+            False,
+        ),
+    ]
+
+
+def self_test():
+    KNOWN_COMMENT_DIVERGENCES[_SELF_TEST_KEY] = {
+        "checked_in_comment_sha256": comment_digest(_SELF_TEST_CHECKED_IN),
+        "regenerated_comment_sha256": comment_digest(_SELF_TEST_REGENERATED),
+        "inherited_from": "--self-test",
+        "adopted_by": "--self-test",
+        "note": "synthetic row installed by the positive control",
+    }
+    failures = []
+    try:
+        for name, checked_in, regenerated, expect_waived in _self_test_cases():
+            WAIVERS_EXERCISED.discard(_SELF_TEST_KEY)
+            waived = (
+                comment_only_waiver(*_SELF_TEST_KEY, checked_in, regenerated)
+                is not None
+            )
+            verdict = "waived" if waived else "reported as drift"
+            if waived != expect_waived:
+                failures.append(
+                    f"{name}: expected "
+                    f"{'waived' if expect_waived else 'reported as drift'}, got {verdict}"
+                )
+            else:
+                print(f"OK self-test: {name} -> {verdict}")
+    finally:
+        del KNOWN_COMMENT_DIVERGENCES[_SELF_TEST_KEY]
+        WAIVERS_EXERCISED.discard(_SELF_TEST_KEY)
+
+    if failures:
+        for failure in failures:
+            print(f"SELF-TEST FAILED {failure}", file=sys.stderr)
+        return 1
+    print("TWIN AUDIT SELF-TEST OK: 6 case(s), 2 waived, 4 reported as drift")
+    return 0
 
 
 def embedded_block(path):
@@ -444,6 +601,8 @@ def default_stems():
 
 
 def main():
+    if "--self-test" in sys.argv[1:]:
+        return self_test()
     stems = sys.argv[1:] or default_stems()
     failures = []
     waivers = []
@@ -504,7 +663,7 @@ def main():
     if waivers:
         summary += (
             f", {len(waivers)} allowlisted comment-only waiver(s) "
-            "(non-comment lines byte-identical, both bodies sha256-pinned)"
+            "(non-comment lines byte-identical, both comment streams sha256-pinned)"
         )
     print(summary)
     return 0
