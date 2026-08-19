@@ -119,9 +119,14 @@ public func attentionWithCacheUpdate(
         // are read-only views of that single committed candidate window.
         let qL = queries.dim(2)
         let kL = cachedKeys.dim(2)
-        if queries.dim(0) == 1, qL >= 6, qL <= 9, kL >= qL,
-           case .causal = mask
-        {
+        let isCausal: Bool
+        if case .causal = mask { isCausal = true } else { isCausal = false }
+        let arm = SdpaWideChunkArm.current
+        let wantsChunk = queries.dim(0) == 1 && isCausal && arm.wantsChunk(qL: qL, kL: kL)
+        SdpaWideChunkTrace.call(
+            qL: qL, kL: kL, batch: queries.dim(0), causal: isCausal,
+            arm: arm, chunked: wantsChunk)
+        if wantsChunk {
             let split = 5
             let kSplit = kL - (qL - split)
             let outA = MLXFast.scaledDotProductAttention(
@@ -147,6 +152,72 @@ public func attentionWithCacheUpdate(
             scale: scale,
             mask: mask
         )
+    }
+}
+
+/// E57 RESEARCH INSTRUMENT — arm selector for the wide-decode exactness chunk.
+///
+/// The shipped predicate chunks every causal decode call at `6 <= qL <= 9`. The
+/// trusted host dispatcher
+/// (`mlx/backend/metal/scaled_dot_product_attention.cpp:685, :746-753`) shows
+/// the `qL * gqa <= 32` threadgroup limit that motivated the chunk binds only
+/// the `sdpa_vector_2pass` route, which is selected for `qL <= 8` only when the
+/// architecture letter is `'d'` or `'s'` AND `kL >= 1024`. `narrow` tests that
+/// reading, `off` is the positive control that must fail, and `base` is the
+/// shipped predicate. One build therefore serves all three arms, so an arm
+/// comparison carries no build difference. Default is the shipped predicate:
+/// an unset or unknown environment value cannot change scored behaviour.
+enum SdpaWideChunkArm: String {
+    case base
+    case narrow
+    case off
+
+    static let current: SdpaWideChunkArm = {
+        let raw = ProcessInfo.processInfo.environment["MLXFAST_E57_SDPA_CHUNK_ARM"] ?? ""
+        return SdpaWideChunkArm(rawValue: raw) ?? .base
+    }()
+
+    func wantsChunk(qL: Int, kL: Int) -> Bool {
+        guard qL >= 6, qL <= 9, kL >= qL else { return false }
+        switch self {
+        case .base: return true
+        case .narrow: return qL >= 9 || kL >= 1024
+        case .off: return false
+        }
+    }
+}
+
+/// E57 RESEARCH INSTRUMENT — one line per cached-KV decode SDPA call.
+///
+/// Records only the facts the trusted dispatcher keys on: batch, `qL`, `kL`,
+/// causality, the selected arm and whether the chunk fired. The route each
+/// call takes is derived offline from the quoted dispatcher conditions, so this
+/// instrument stays free of any device query. Off unless
+/// `MLXFAST_E57_SDPA_TRACE=1`; the local research launcher captures worker
+/// stderr.
+enum SdpaWideChunkTrace {
+    static let enabled =
+        ProcessInfo.processInfo.environment["MLXFAST_E57_SDPA_TRACE"] == "1"
+
+    static func call(
+        qL: Int, kL: Int, batch: Int, causal: Bool,
+        arm: SdpaWideChunkArm, chunked: Bool
+    ) {
+        guard enabled else { return }
+        let reason: String
+        if !chunked {
+            reason = "none"
+        } else if qL >= 9 {
+            reason = "width9"
+        } else if kL >= 1024 {
+            reason = "kl1024"
+        } else {
+            reason = "widthonly"
+        }
+        let line = "e57-sdpa: qL=\(qL) kL=\(kL) b=\(batch) "
+            + "causal=\(causal ? 1 : 0) arm=\(arm.rawValue) "
+            + "chunk=\(chunked ? 1 : 0) reason=\(reason)\n"
+        FileHandle.standardError.write(Data(line.utf8))
     }
 }
 
