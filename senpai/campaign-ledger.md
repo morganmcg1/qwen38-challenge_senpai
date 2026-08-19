@@ -3648,3 +3648,229 @@ Two traps in doing it:
    the writeup, the tools and the pre-registration, then re-verify the shipped-surface
    gate before committing. The kernel remains discoverable on the student branch and
    in the closed PR.
+
+134. **E37 terminal (askeladd, PR #42, revision r2 requested). H1 falsified; three
+   results banked unconditionally; the headline structural claim rejected.** Primary
+   `row_share_at_M_ge_6_beagle` = 0.0000 against a 0.2167 baseline on the proxies.
+   - 🔴 **The telemetry bracket is the best single artifact of the week.**
+     `effective_mean_draft_len` is the mean of `draftTokens.count` over rounds and
+     `M = drafts + 1`, giving two equality constraints on a distribution over depths
+     {0..8}; vertices of that polytope have <= 2 support points, so the extrema are
+     exact by enumeration. I re-implemented it independently and reproduce him to
+     four decimals: ranked beagle `M>=6` round share in **[.1332, .9065]**, ROW share
+     **>= .2166**; medicine round **[.1919, .9535]**, ROW share **>= .2995**. Needs no
+     local run, no proxy, no simulation. It contains edward's simulated .538/.593
+     without endorsing them.
+   - **Warm coverage CLOSED (deliverable 3, negative).** `get_qmv_batch_limit = 10`
+     for every scored shape on `applegpu_g16s` and `grid_dims` makes `ntg.x == M`, so
+     kernel names never encode M on either side; and the proposal head is *itself*
+     fully 4-bit group-64 (`fc` 10240->5120, `draft_lm_head` 2560->98336), so head
+     widths F=1..9 also stay in `dispatch_qmv`. One PSO across the whole scored width
+     range ⇒ the warm holes (head fc/norm/embed F=3..9, KV append F-1=2..8, repair
+     widths 2..9) are **SHAPE gaps, not PIPELINE gaps**: no missed Metal compile, cost
+     bounded by one-time allocator work. Item 113's error class is now enumerated
+     rather than hand-sized.
+   - 🔴 **`sdpaWidthWallDepthCap = 5` is now DERIVED, not empirical.** `head_dim = 256`
+     permanently closes `sdpa_full`, and `supports_sdpa_vector` requires
+     `q_len * gqa <= 32` with `gqa = 6`, so max legal `q_len = 5` (5*6 = 30 ok,
+     6*6 = 36 fails) — the wall *bites* at 6. Carried as an empirical cliff since E17.
+   - Census (counts only): `natural_history` 258 rounds, max M=5, mean M 3.2016,
+     `M>=6` share exactly 0.0000; `medicine` 227 rounds, max M=6, mean M 3.6388,
+     round .0352 / row .0581 / token .0473. Both reproduce the E25 BASE arm
+     bit-for-bit on a byte-identical schedule.
+   - **The cost model binds, not the streak gate.** The depth-8 regime opened in
+     **39 of 489** drafting rounds (6.15 %) and `costModelDepth` chose depth > 5 in
+     **zero** of them.
+   - 🔴 **I verified the instrument cannot perturb its own counts, so he does not have
+     to.** `costModelDepth` (`Qwen36MTPBlockSession.swift:700-744`) reads only
+     `positionAcceptEMA`, the `pendingTop2` margins, the compile-time constant
+     `h = 0.18` and integer depth. The two `traceRounds` branches inside it append to
+     a string and call `snapshotScheduleSignal`; neither touches `p`, `reach` or
+     `threshold`. **The depth choice is provably timing-free**, which makes his
+     bit-for-bit BASE reproduction structural rather than lucky. My first instinct had
+     been that trace overhead propagated into the histogram through a measured cost;
+     reading the function killed that worry in four minutes.
+   - Also correct, and it lands on edward: his "the candidate caps at draft len 3"
+     described E25's **modified-policy arm**, not shipped BASE.
+
+135. 🔴🔴 **"There is no local instrument for width" is FALSE. The proxies were the
+   problem, not the harness — and the one working instrument is degenerate in a way
+   nobody had noticed.** E37's headline was that M=7,8,9 is never dispatched locally,
+   so a live scored path exists that no `--local-iterate` run can exercise. It is
+   falsified by a sibling's measurement on the same tree the same day.
+   - `QwenRuntimeMTPDriver.swift:295` (twin `MLXFastHarness/...:289`):
+     `effectiveDraftLengths: rounds.map { $0.draftTokens.count }` — **per round, one
+     element per round.** thorfinn's untraced E33 journal
+     `[4,5,5,6,6,6,7,7,7,1]` is therefore 10 rounds reaching **chosen depth 7, i.e.
+     M = 8 dispatched**, mean depth 5.4, read from `mtp-decode.json` on this box.
+   - **Proxy fidelity, the check the brief demanded and the writeup skipped:**
+     `natural_history` realises mean depth **2.2016** against ranked beagle
+     **4.5327 = 48.6 %**; `medicine` **2.6388** against **4.7677 = 55.3 %**. Both
+     proxies are ~half as predictable as the prompts they stand for.
+   - Mechanism, from `costModelDepth`: depth is driven by `positionAcceptEMA`, so the
+     width regime is a property of **text predictability**. A fixture that
+     under-drafts by 2x cannot reach M>=6. **Wrong prompt is not a missing
+     instrument.** askeladd's proposed follow-up — a `Sources/` forced-depth hook —
+     is unnecessary, and would have been an out-of-scope shipped-surface change for a
+     problem that does not exist.
+   - 🔴 **But thorfinn's window is degenerate.** His ten draft counts sum to 54 and
+     `accepted_draft_total = 54`: every offered draft accepted in every round, so
+     `fullAcceptStreak` never reset, `widthCap = fullAcceptStreak >= 2 ? 8 : 5` sat at
+     8 throughout, and the EMAs ran to saturation — which is *why* the walk reached
+     depth 7. His E33 caveat 2 ("my window is wider than beagle") is true in the mean
+     (5.4 vs 4.5327) but the mechanism makes it a **ceiling on width, not a matched
+     proxy**: ranked beagle has rejects and a non-zero `non_drafting_round_count`.
+     Any histogram quoted from it must carry the accept rate.
+   - **Standing consequence:** the benchmark's own fixture prompt, read through
+     `research/e33-diag.sh` (which keeps `${run_dir}/mtp-decode.json` alive past the
+     `benchmark-qwen-mtp.sh:447-468` `rm -rf` EXIT trap), is the campaign's only known
+     local instrument that reaches M >= 6. Pin the fixture across arms; a width
+     experiment whose arms use different prompts is not a paired experiment.
+   - 🔴 **Rule: a negative result about an instrument requires the instrument
+     validated first.** Fifth instance this week of one error class — see 139.
+
+136. **Headroom arithmetic settled, by two independent routes.** The binding neighbour
+   for **both** beagle and medicine is essays at `raw_p = 3.366118`: once a prompt
+   passes it the central pair changes and further gain is unscored.
+   - beagle **+7.883 %** of `raw_p`; medicine **+0.635 %**. Confirms the +7.88 / +0.64
+     I have been quoting.
+   - Score ceiling from beagle alone = 3.35549050 = **+3.8045 %** of score; from
+     medicine alone = 3.24313600 = **+0.3288 %**.
+   - 🔴 alphonse's E35 saturation model, built for a different purpose, independently
+     gives **medicine-only +0.318 % (3.4σ)**. Agreement to **0.011 pp**. That is what
+     let me reject askeladd's proposed "+1.06 %" within minutes instead of carrying it
+     for a week; his own stated ceiling 3.37300 yields +0.841 %, so his figure is
+     internally inconsistent as well as wrong.
+   - Score identity re-verified end to end: mean of the 4th and 5th order statistics
+     = **3.23250850** against our board row 3.23250848263467.
+   - **Practice: hold two independent routes to every load-bearing scalar.** It is the
+     cheapest referee available and it works on other people's arithmetic as well as
+     your own.
+
+137. 🔴🔴 **E38 is the first experiment of this campaign whose E2E leg is powered — so
+   a null there falsifies the cost attribution rather than the kernel.**
+   - **Payoff converged on ~20 %, and my 30 % is retracted.** thorfinn's by-product
+     `w(M=6) = 20.1 %` (share of QMV round cost, local fixture) and askeladd's
+     `row share >= .2166` (ranked beagle, rigorous floor) agree in magnitude. They are
+     **different statistics and not interchangeable**; quote both with provenance.
+   - Exact conversion: `score gain = 0.4827 * psi * phi * x`, where
+     `x = 1 - m6_per_row_cost_ratio`, `phi` = M=6 share of QMV cost, `psi` = QMV share
+     of candidate-leg wall time, and **0.4827 = raw_p[beagle] / (2 * score)** exactly.
+   - At the predicted ratio 0.840 (`x = 16 %`): `psi = 0.9` -> **+1.40 %** of score
+     (15σ); `psi = 0.6` -> **+0.93 %**; `psi = 0.4` -> **+0.62 %**. All exceed the
+     0.561 % gap. Contrast E33, whose prediction was **+0.088 %** against a ±0.3 %
+     instrument — 3.5x under-powered.
+   - 🔴 **`psi` is UNMEASURED and is now the most valuable unmeasured scalar in the
+     campaign.** Time attribution gives MLP 59 % / GDN 28 % / attn 8 % / LM head+top2
+     5 %, all of which contain quantized matvecs, but the QMV share of candidate-leg
+     *wall* time has never been measured. Every microbenchmark-to-score conversion we
+     have written silently assumes a value for it.
+   - Pre-registered for E38: predict E2E leg movement >= 1 %; if the microbenchmark
+     says 0.84 and the leg does not move, report the discrepancy with equal
+     prominence, because it prices `psi` and `phi` rather than the kernel.
+
+138. **Assignment state after this turn.** E33 closed unmerged (kernel regression,
+   evidence preserved). E35 merged. E37 -> r2 requested on base `0491f9e5`, which
+   carries the E33 tools it needs. E38 live (PR #43, thorfinn, main line). E34 r2
+   still open with edward, now carrying the named missing term. **E39 created for
+   alphonse (PR #44): audit all ~22 established negatives for under-powered nulls,
+   zero GPU**, motivated by 132 — the only ranked-positive family on the board
+   (residency+cmdbuf, +0.316 %, n=5, |t| 2.2) has **both halves on our own negatives
+   list**. Deliverables include a reusable `research/e39_mde.py` so every future brief
+   can quote power up front, and an explicit **strike list** of entries that must stop
+   being cited as closed.
+
+139. 🔴🔴 **The error of the week, five instances, one class: an under-powered null
+   read as a clean one.** Recorded together because the pattern is the finding.
+   1. **Item 126 (mine).** `corr(serial, mtp) ~ +0.04` over 414 rows read as "no
+      box-speed effect". Candidate variance is dominated by genuine code differences
+      across 414 distinct trees, so a real box component yields ~0 correlation anyway.
+   2. **Item 131 (mine).** My serial normalisation removed 0.2504 % from a top-10 span
+      whose entire noise budget was 0.1156 % — 2.2x the budget — and I quoted the
+      compressed 0.2587 % gap to all three students for days. True gap **0.561 %**.
+   3. **E33 (thorfinn).** E2E prediction +0.088 % against a ±0.3 % instrument, then
+      the −0.304 % result reported as the headline.
+   4. **E37 (askeladd).** "No local instrument for width", from two proxies realising
+      ~half the ranked draft depth — the instrument itself was never validated.
+   5. **E30 (alphonse).** `F ~ 14.79 ms` measured on the wrong head and quoted
+      campaign-wide until provenance was checked.
+   **The mechanical guard, now standing policy: every null must state the effect size
+   it could have detected, before it is called a null.** E39 exists to apply this
+   retroactively to everything we have already closed. Every future brief states the
+   MDE of its own instrument.
+
+140. 🔴🔴🔴 **MY SHIPPED-SURFACE GATE WAS MISLABELLED ALL CAMPAIGN, AND IT HID A
+   SHIPPED SUBSYSTEM. The local box has never run the ranked memory, command-buffer
+   or residency configuration.** Found while re-verifying the gate before a routine
+   publish. This is the most consequential item of the turn and it re-opens the only
+   ranked-positive family on the board.
+   - **The gate.** I have been quoting "the shipped surface is frozen at E27, 4 files,
+     +117/−87" in every assignment brief and every disposition. Against the true
+     campaign baseline `5273067` the shipped surface is **5 files, +229/−74**:
+     `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` +157/−47,
+     **`Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift` +32/−0 — a file I had
+     never counted or mentioned to anyone** — `Vendor/.../Qwen35.swift` +32/−19, and
+     the `quantized.{h,cpp}` twins +4/−4 each. I was diffing against the wrong
+     baseline and reporting the result as a freeze. **The E27-only figure never
+     included E29's ladder knob or the memory policy.**
+   - 🔴 **What the hidden file does.** `QwenRuntimeMTPWorker.swift:487` is
+     `guard policy.isLowMemory else { return }` before `policy.apply()`, so the two
+     boxes diverge on four axes at once:
+
+     ```
+                                 local (48 GiB)     ranked (128 GiB)
+     MLX_MAX_MB_PER_BUFFER       128  (FORCED)      512
+     MLX_MAX_OPS_PER_BUFFER       64  (FORCED)       50
+     Memory.cacheLimit           6 GiB              MLX default (apply skipped)
+     clear cache after warmup    true               false
+     wired residency             OFF                ON (100 % active + 64 MiB)
+     ```
+
+     Ranked: `resolve()` runs `installQwenMTPFullProfileCommandBufferDefaults`, which
+     passes its `>= 96 GiB` gate and sets 512/50; then `isLowMemory == false` so
+     **`apply()` never runs** and the full-profile struct's 320/128 constants are
+     **dead code**. `wireResidentWeightsIfEnabled` (`Qwen36MTPBlockSession.swift:222`)
+     passes its own `>= 96 GiB` gate ⇒ residency ON. Local 48 GiB fails the 96 GiB
+     gate twice ⇒ no 512/50, **no residency** — and `48 < 64` ⇒ `apply()` runs.
+     **The referenced-byte budget is 4x smaller locally and the two knobs move in
+     opposite directions** (MB down 4x, ops up 1.28x).
+   - 🔴🔴 **`apply()` uses `setenv(..., 1)` — forced overwrite.** Exporting
+     `MLX_MAX_MB_PER_BUFFER=512` on this box is silently stamped back to 128 by our
+     own startup code, with nothing in the log to say so. **Any local command-buffer
+     experiment run without `DARKBLOOM_STARTUP_MEMORY_PROFILE=full` returns a null by
+     construction.** That is a mechanical explanation for why "command-buffer
+     geometry" (E31) sits on our negatives list while E35 finds residency+cmdbuf is
+     the **only ranked-positive family on the entire board** (+0.316 %, n=5, |t| 2.2).
+     We closed the one thing that works, on an instrument that could not move the knob.
+   - 🔴 **We already SHIP the mechanism.** The file documents 512 MiB as *"the
+     independently promoted post-residency setting from the Laguna M5-Max track. It
+     admits a whole model layer per command buffer after the persistent weights have
+     been wired."* So the board's positive family is not something we lack; it is
+     something we have, tuned, ranked-box-only, and then closed twice. A third
+     hypothesis now outranks the other two: **the rivals' +0.316 % may be them
+     converging on our own setting, in which case that family has no headroom at all.**
+     Cheap to test and it would retire the family cleanly.
+   - **Residency is genuinely unmeasurable locally**: the `>= 96 GiB` gate has **no
+     environment override**. Contrast item 135 — this is an *earned* "no local
+     instrument" claim, and it is what one looks like.
+   - **Local recipe for ranked command-buffer geometry** (residency still off):
+     `DARKBLOOM_STARTUP_MEMORY_PROFILE=full MLX_MAX_MB_PER_BUFFER=512
+     MLX_MAX_OPS_PER_BUFFER=50`. With `profile=full` the guard returns early, `apply()`
+     is skipped, env values survive. ⚠️ Also removes the 6 GiB allocator cap and the
+     warmup clear that are OOM insurance on small machines.
+   - **Scope of the damage.** Every local timing artifact in the campaign — E27's
+     M-table, E33's per-width ladder and per-shape attribution, edward's
+     `S = 23.911 ms`, alphonse's E30 — was produced at a 4x-smaller command-buffer
+     budget with residency off. **Paired ratios within one geometry survive**; absolute
+     millisecond claims about the ranked box do not. The systematic doubt falls hardest
+     on mechanisms that interact with dispatch batching, which is exactly E33's finding
+     that **narrow-output, few-threadgroup, short-kernel shapes lose** — short kernels
+     being the most sensitive to command-buffer packing.
+   - **Standing requirement, effective now:** every timed artifact records
+     `MLX_MAX_MB_PER_BUFFER`, `MLX_MAX_OPS_PER_BUFFER`, `Memory.cacheLimit`, whether
+     the low-memory stderr notice fired, and whether the wired ticket was taken.
+   - **The meta-lesson, and it is the same as 139.** The gate ran, passed, and was
+     believed for the length of the campaign because nobody — me least of all — asked
+     *what it was comparing against*. A check you never audit is not a check. E39 now
+     carries this as an audit entry in its own right.
+
