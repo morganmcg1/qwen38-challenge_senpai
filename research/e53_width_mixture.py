@@ -450,9 +450,36 @@ VARIANTS = [
 
 BURST_GRID = [
     {"persistence": p, "q_easy": q}
-    for p in (0.0, 0.5, 0.8, 0.9, 0.95)
-    for q in (0.96, 0.99, 1.0)
+    for p in (0.0, 0.5, 0.9)
+    for q in (0.94, 0.95, 0.96, 0.97, 0.98)
 ]
+
+
+def boundary_sensitivity(solution: dict, windows: int, seed: int) -> list[dict]:
+    """How steeply does the M in {7,8} / M = 9 split move off the fit?
+
+    The depth-7 extension test sits close to equality at the fitted acceptance
+    level, so the published constraints pin the {7,8} + {9} block far better
+    than they pin the split inside it. This table quantifies that.
+    """
+    rows = []
+    for delta in (-0.02, -0.01, 0.0, 0.01, 0.02):
+        q_hard = solution["q_hard"] + delta
+        if not 0.0 < q_hard < 1.0:
+            continue
+        run = burst_aggregate(solution["share_easy"], solution["persistence"],
+                              solution["q_easy"], q_hard, windows, seed)
+        shares = cost_shares(run["mixture"])
+        rows.append({
+            "q_hard_delta": delta,
+            "mean_draft_len": run["mean_draft_len"],
+            "accept_ratio": run["accept_ratio"],
+            "f78": shares["f78"],
+            "f9": shares["f9"],
+            "f78_plus_f9": shares["f78"] + shares["f9"],
+            "f456": shares["f456"],
+        })
+    return rows
 
 
 def burst_section(report: dict, windows: int, seed: int) -> None:
@@ -522,6 +549,11 @@ def main() -> None:
             }
 
     burst_section(report, args.burst_windows, args.seed)
+    feasible_beagle = [s for s in report["burst"]["beagle"] if s["feasible"]]
+    if feasible_beagle:
+        report["boundary_sensitivity"] = boundary_sensitivity(
+            feasible_beagle[len(feasible_beagle) // 2], args.burst_windows,
+            args.seed)
 
     # Composites over the feasible burst set, at both weightings.
     report["burst_composite"] = {}
@@ -548,6 +580,24 @@ def main() -> None:
                 },
             })
         report["burst_composite"][label] = rows
+
+    # Identification envelope: the nuisance parameters need not be shared across
+    # prompts, so every cross-product of feasible per-prompt fits is admissible.
+    envelope = {}
+    beagle_feasible = [s for s in report["burst"]["beagle"] if s["feasible"]]
+    medicine_feasible = [s for s in report["burst"]["medicine"] if s["feasible"]]
+    for field in ("f456", "f78", "f9", "f123"):
+        values = []
+        for b in beagle_feasible:
+            for m in medicine_feasible:
+                per_prompt = {"beagle": b["shares"], "medicine": m["shares"]}
+                total = sum(WEIGHTS[p] * per_prompt[p]["mean_cost_ms"] for p in PROMPTS)
+                values.append(sum(
+                    WEIGHTS[p] * per_prompt[p][field] * per_prompt[p]["mean_cost_ms"]
+                    for p in PROMPTS) / total)
+        envelope[field] = {"low": min(values), "high": max(values)}
+    envelope["pairs"] = len(beagle_feasible) * len(medicine_feasible)
+    report["burst_identification_envelope"] = envelope
 
     # Score-weighted composites, plus the wrong 79/21 weights for comparison.
     for label, weights in (("marginal_483_517", WEIGHTS),
@@ -635,6 +685,24 @@ def main() -> None:
                   f"R={row['rounds']:.1f} nd={row['non_drafting']:.2f}")
             print(f"        f456={row['shares']['f456']:.4f} f78={row['shares']['f78']:.4f} "
                   f"f9={row['shares']['f9']:.4f} f123={row['shares']['f123']:.4f} | rho {mix}")
+    if "boundary_sensitivity" in report:
+        print("\n=== how steeply the {7,8} / {9} split moves off the fit (beagle)")
+        for row in report["boundary_sensitivity"]:
+            print(f"  d q_hard={row['q_hard_delta']:+.2f} n={row['mean_draft_len']:.4f} "
+                  f"A/D={row['accept_ratio']:.4f} f456={row['f456']:.4f} "
+                  f"f78={row['f78']:.4f} f9={row['f9']:.4f} "
+                  f"f78+f9={row['f78_plus_f9']:.4f}")
+    if "plutarch" in report:
+        plutarch = report["plutarch"]
+        mix = " ".join(f"{w}:{plutarch['mixture'][w]:.3f}"
+                       for w in sorted(plutarch["mixture"]))
+        print("\n=== plutarch, the absorbing-state control")
+        print(f"  published n={plutarch['published_mean_draft_len']:.6f} "
+              f"fitted q={plutarch['q']:.4f} predicted non-drafting rounds="
+              f"{plutarch['predicted_non_drafting']:.1f} "
+              f"predicted R={plutarch['predicted_rounds']:.1f}")
+        print(f"  rho {mix}")
+
     print("\n=== burst composite at marginal weights 0.483694 / 0.516306")
     for row in report["burst_composite"]["marginal_483_517"]:
         print(f"  persistence={row['persistence']:.2f} q_easy={row['q_easy']:.2f} "
