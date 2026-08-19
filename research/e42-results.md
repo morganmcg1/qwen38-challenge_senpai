@@ -41,16 +41,21 @@ tokens are unchanged by construction.
 | deliverable | status |
 |---|---|
 | p2 arm (M≥2 → ψ) at ≥2 magnitudes | **done**, L1 and L2 |
-| p6 arm (M≥6 → ψ·φ) at ≥2 magnitudes | **done**, L1 and L2 |
-| linearity across magnitudes | **done**, the scientific core |
-| m1 sign-flip control | **done**, raw_p moves the other way |
+| p6 arm (M≥6 → ψ·φ) at ≥2 magnitudes | L1 done, L2 running |
+| linearity across magnitudes | **done** for p2 (the scientific core) |
+| m1 sign-flip control | pending |
 | m6 single-width arm (priority B) | **done** |
-| bit-exactness, 192-cell parity rig | **done**, honest `covering_cells_by_bits` |
+| bit-exactness, end to end on the scored path | **done**, every arm |
+| bit-exactness, 192-cell parity rig | pending |
 | denominator measured per width, `--shapes-only` | **done**, no ranked-geometry replay |
 | ψ and φ reported separately, with intervals | **done** |
 | requirement #4: marginal vs occupancy | **done**, `asyncEval` ladder |
 | MDE for every null, unmodified `research/e39_mde.py` | **done** |
 | fixture pinned, `effectiveDraftLengths` element-wise equal | **done** |
+| revert proof: empty diff against base | pending, final commit |
+
+Status is as of this revision of the document; the sections below state exactly
+which arms are measured.
 
 ## 2. Provenance
 
