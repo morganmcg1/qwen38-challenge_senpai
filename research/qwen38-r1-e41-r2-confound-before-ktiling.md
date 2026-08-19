@@ -1,0 +1,647 @@
+# E41 — Resolving E38's R2 into activation re-read (MEM) vs register tile (ILP)
+
+PR #46 · branch `qwen-thorfinn/r2-confound-before-ktiling` · base
+`senpai/qwen38-mtp-r1` @ `04ad6bf11437c269df85a47e91faa769c74fe6da`
+
+## Verdict
+
+**ILP / register tile. K-tiled activation staging is dead and deliverable (b)
+was not built.**
+
+E38's R2 is the halved register tile and the extra sequential loop, not the
+activation re-read. Shrinking the re-read distance does not refund the tax — it
+**adds** to it. A future NA=6 single-weight-pass scheme must budget the full
+~+11 % at M=6 as unavoidable, because there is no locality left to recover.
+
+A secondary finding, derived from the same runs with no extra GPU time while
+reconciling the 07:51Z feedback: the width curve's apparent M=6 "step" is the
+**weight-stream count**, `streams(M) = ceil(M / IPG(M))`, at **20.291 ms** per
+marginal stream. That fixes the advisor's step-vs-quadratic question on the local
+tree, and it predicts the boundary has **moved to 4→5** on the current base — so a
+causal probe aimed at M=6 there will read null. See the 07:51Z reconciliation.
+
+## Question
+
+E38 measured a **+10.54 % kernel cost** at M=6 for halving the row tile of the
+wide crossrow affine-4 g64 QMV kernel (its "arm (a)"). That number is the price
+any future NA=6 single-weight-pass scheme must pay, so it gates deliverable (b),
+K-tiled activation staging. But E38's arm (a) changed two things at once:
+
+1. **MEM** — each activation element `x[k]` is now read by two row blocks
+   instead of one, and the two reads are separated by a full pass over K.
+2. **ILP / register tile** — the register tile halved (4 rows/SIMD → 2), the
+   accumulator count halved, and one extra sequential loop appeared.
+
+K-tiled staging can only recover cause 1. If R2 is actually cause 2, building
+(b) is wasted work. E41 attributes R2 before any staging is written.
+
+## Why the advisor's suggested arm (a) would have answered the wrong question
+
+The assignment sketched an **unrolled** arm: emit the two row blocks' loads
+adjacently in one loop body and see whether the tax disappears. That arm is
+unsound here, and it fails in the direction that *falsely kills* K-tiling.
+
+Adjacent row blocks read **identical device addresses** for `x[k]` — the
+activation is shared across output rows; only the weight stream differs. With
+no intervening store between them, **common-subexpression elimination is legal**,
+and the compiler is entitled to delete the second load outright. If the tax then
+vanished, the recovery could be attributed either to instruction-level
+parallelism or to a deleted load, and those are exactly the two hypotheses under
+test. Worse, a CSE'd arm makes the MEM cost unobservable by construction, so a
+real re-read cost would read as "no MEM component" → ILP → K-tiling dead.
+
+## Registered alternative: a K-tile distance ladder
+
+Instead of removing a load, hold the **instruction mix, trip counts and
+accumulator count fixed** and vary **only the reuse distance** of `x[k]`:
+
+```
+for kt in K-tiles:            # k_tile = KT * 512 values
+  for b in row blocks:        # BLOCKS_PER_CALL
+    for k in this tile:       # the verbatim E38 k-block body
+```
+
+Both row blocks stay live, both loads are still issued, and the loop nest is the
+same shape at every rung. `KT` alone moves the second block's read of `x[k]`
+from "one full pass over K later" (`KT=64`) to "512 values later" (`KT=1`).
+
+| rung | reuse distance | role |
+|---|---|---|
+| `KT=64` | spans K in one tile (32 768 ≥ widest scored K = 17 408) | no locality |
+| `KT=4` | 2 048 values | **discriminator** |
+| `KT=1` | 512 values | total-recovery bound |
+
+`KT=1` is *not* the discriminator: both hypotheses predict some recovery there
+(it is also the shortest loop). The single-mechanism signal is `KT=64 → KT=4`.
+
+## Pre-registration and the compile-only gate
+
+`research/e41_prereg.py` was committed (`1e8bc95`) **before any kernel compile**
+and carries the advisor-corrected constants verbatim: score sensitivity 1.00,
+crown 0.5193 %, engineerable gap 0.2586 %, σ_score 0.0978 %, control band
+±0.46 %, E38 arm (a) M=6 ratio 1.1054, and ψ·φ = 0.0459 flagged
+**BACK-SOLVED, not measured**.
+
+Before spending GPU time, `research/e41_ktile_census.py` compiled every ladder
+cell to AIR and checked the design's core claim. Results in
+`research/e41-ktile-census.json` (**CENSUS OK**):
+
+- **Non-perturbation.** The shipped kernels are untouched by the refactor:
+  `xship_na2/3/4/5` = **62 / 83 / 104 / 125** registers with **32 / 36 / 40 / 44**
+  device loads — identical to the E32/E36 census.
+- **E32's row-blocked grid reproduces exactly** from the new template
+  (`xrb_na3_r1/r2/r4` = 51/66/83; `xrb_na4_*` = 63/83/104; `xrb_na6_*` =
+  87/117/144), so the template is a faithful generalisation, not a new kernel.
+- **The ladder is one mechanism.** At every (NA, r), `KT ∈ {1, 2, 4, 64}` gives
+  **identical** `peak_live_regs`, `device_loads`, `vector_float_ops`,
+  `loop_backedges` (=4) and `allocas` (=2). This is the census evidence that the
+  `KT=64 → KT=4` step changes reuse distance and nothing else.
+- **No timed cell spills.** `xkt_na3_r2` = 77 regs, `xkt_na4_r2` = 97,
+  `xkt_na6_r1` = **105**, `xkt_na6_r2` = 135 (excluded from timing as the largest
+  allocation, not because 128 is a literal limit — see the vocabulary note below).
+  Spill-gate controls fired correctly on all three deliberate spill cells.
+  Separately, my `acc_spill` detector reports `False` for `xrb_na6_r4` even though
+  its `alloca_types` contain `[1 x [4 x <6 x float>]]` — the accumulator array the
+  advisor identifies as *the* spilling cell. The pattern match misses the nested
+  form, so read `alloca_types` directly rather than trusting that flag.
+
+`xkt_na6_r1` fitting at 105 registers is the concrete shape deliverable (b)
+would use, and it needs **no threadgroup memory and no barrier**.
+
+Registered-vs-measured register predictions were scored honestly: **4 of 7** in
+band. Misses: `xkt_na4_*` 97 vs predicted 88–94 (by 3), `xkt_na6_r2` 135 vs
+126–132 (by 3), `xkt_na6_r1` 105 vs 116–122 (by 11, in the favourable
+direction).
+
+### Two amendments recorded before the GPU ran
+
+1. **"KT = all K" is `KT=64`, not `KT=0`.** `KT=0` sets `k_tile = in_vec_size`,
+   which the compiler can prove is trip count 1, so it deletes the loop
+   (`loop_backedges` 4 → 3). That would have confounded the top rung with a loop
+   removal. `KT=64` spans K in one tile but keeps the loop.
+2. **Discriminator M=7 → M=8, bound M=8 → M=7.** M=7 dispatches IPG=4 with a
+   TAIL=3 group, mixing NA=4 and NA=3 work. M=4 and M=8 are both **pure NA=4**,
+   so `M=4 → M=8` is a one-constant step. M=7 is retained only as the adjacency
+   bound, where impurity is tolerable.
+
+## Method
+
+One base build and one arm build, same host, same session, same
+`--reps 21 --inner 10` shapes-only configuration; the ratio is taken per M
+between the two builds. The arm build carries the whole ladder at once so that
+widths **1, 2, 5 and 9 are byte-for-byte the base** and serve as untreated
+controls (must land within ±0.46 %).
+
+| M | base | arm | rung |
+|---|---|---|---|
+| 3 | `<T,3,3,true>` | `<T,3,3,true,2,2,1>` | NA=3, KT=1 |
+| 4 | `<T,4,4,true>` | `<T,4,4,true,2,2,64>` | NA=4, no locality |
+| 6 | `<T,6,3,true>` | `<T,6,3,true,2,1>` | E38 arm (a) tax anchor |
+| 7 | `<T,7,4,true>` | `<T,7,4,true,2,2,1>` | NA=4, adjacency bound |
+| 8 | `<T,8,4,true>` | `<T,8,4,true,2,2,4>` | **NA=4, discriminator** |
+
+The M=6 anchor is deliberately `KT=0`, i.e. the K-tile loop folded away, which
+makes it the sequential row-blocked kernel E38 actually timed. Replicating
+1.1054 there is the check that this harness reproduces E38 before any new claim
+is read off it.
+
+**Pre-registered decision rule.** With the M=4 rung defining the tax:
+
+- M=8 recovers **≥ 50 %** of the tax → **MEM** → build deliverable (b).
+- M=8 recovers **≤ 10 %**, or the M=4 → M=8 step falls inside the ±0.46 %
+  control band → **ILP / register tile** → **K-tiled staging is dead; stop and
+  report** without building (b).
+- Total recovery already inside the control band at M=4 → informative null.
+
+**No E2E leg was run**, per the assignment: the predicted end-to-end move is
+0.07–0.5 %, far inside the n=4 minimum detectable effect (0.417 % / 0.632 %).
+All ratios below are **kernel-level only**.
+
+## Provenance and gates
+
+| item | value |
+|---|---|
+| base commit measured | `5d97fe3` (kernel template landed, dispatch table untouched) |
+| arm commit measured | `dfe39af` (dispatch table selects the ladder) |
+| host | Apple M4 Pro, 48 GiB |
+| scope | `quantized.h` + `mlx-generated/quantized.cpp` only (2 paths) |
+| twin lock | `cpp = cpp[0:13] + h + cpp[-6:]`; `twin_audit.py` OK, 29 runtime-effective twins |
+| editable budget *as measured* | source 2 467 227 / 3 000 000; growth 11 938 / 262 144 |
+
+That budget row describes the **builds that were timed**, which necessarily
+carried the ladder. The branch's final scored surface is reverted to zero diff
+and zero growth — see [Scored surface](#scored-surface).
+
+Thermal honesty, as required for an ungated local arm: this host's real 40 °C
+cool gate cannot be reached (it stalls at ~43.4 °C), so every curve records
+`cool_gate_vendored=stalled_above_40C`. Entry and exit GPU temperatures are
+logged per arm, and `cool_gate_passed_real_gate=false` /
+`gate_qualified_for_timing=false` are preserved verbatim in the W&B record. E38
+measured under the same condition, which is what makes the anchor comparable.
+These are **directional causal kernel measurements**, not gate-qualified numbers
+and not any kind of score.
+
+Precisely on counterbalancing: these are three sequential runs forming an
+**A-B-A bracket**, not one interleaved ABBA session. That cancels monotone drift
+to first order and yields a measured per-width floor, but it is weaker than true
+interleaving, and the M=9 residual below shows the limit of the design.
+
+## Runs
+
+| tag | role | head | W&B | entry °C | exit °C |
+|---|---|---|---|---|---|
+| `e41-base-r1` | base (A) | `5d97fe3` | `thrh88b8` | 43.42 | 68.08 |
+| `e41-arm-r1` | ladder arm (B) | `dfe39af` | `kw7yrfoy` | 43.24 | 69.29 |
+| `e41-base-r2` | base replicate (A) | `5c6693a` (twins = `5d97fe3`) | `ryws3yex` | 43.40 | 86.62 |
+
+All three `dirty=0`, `--reps 21 --inner 10`, shapes-only, widths 1–9, one host.
+Ratios below use the per-width **geometric mean of both base runs** as the
+reference, so monotone drift across the A-B-A sequence cancels to first order.
+
+## Result
+
+### The session replicates E38 before anything new is read off it
+
+M=6 anchor ρ = **1.1065** against E38's **1.1054**, inside the registered band
+[1.0954, 1.1154]. Dispatch readback **PASS** for all 12 treated and control
+instantiations; fidelity **PASS**, 0 bitwise failures in both builds.
+
+### The NA=4 ladder: reuse distance buys nothing
+
+| rung | reuse distance | ρ | tax |
+|---|---|---|---|
+| M=4 | `KT=64`, spans K | 1.2066 | +20.66 % |
+| M=8 | `KT=4`, 2 048 values — **discriminator** | **1.2297** | **+22.97 %** |
+| M=7 | `KT=1`, 512 values — bound | 1.2222 | +22.22 % |
+
+- **Locality recovery (`KT=64 → KT=4`) = −11.2 % of the tax** (−2.31 pp).
+- Total recovery (`KT=64 → KT=1`) = −7.5 % of the tax (−1.56 pp).
+- Registered rule: MEM needed **≥ +50 %** (i.e. ≥ +10.33 pp); ILP was ≤ +10 %.
+
+Measured recovery is **negative**, so the rule fires **ILP**. Three independent
+observations make this more than a threshold crossing:
+
+1. **Sign consistency, 8/8 scored shapes.** The M=4 → M=8 step is negative at
+   every shape (−0.52 pp to −3.57 pp), across K ∈ {5 120, 6 144, 17 408} and
+   N from 4 096 to 248 320.
+2. **The `KT=1` rung is also worse than `KT=64`**, which closes the "not
+   adjacent enough" escape. Even 512-value adjacency refunds nothing.
+3. **The confounded NA=3 pair moves the same way**: M=3 (`KT=1`) ρ = 1.1493
+   versus the M=6 anchor 1.1065, a −40.2 % "recovery". If MEM were real, the
+   NA=3 K-tiled form should have beaten the sequential one. Note M=3 sits
+   *earlier* in the sweep than M=6, so accumulated heat would bias this pair the
+   other way; it does not rescue MEM.
+
+This is mechanically coherent with the census: `KT` holds `peak_live_regs`,
+`device_loads`, `vector_float_ops`, `loop_backedges` and `allocas` invariant, so
+the only thing a smaller tile can buy is reuse distance and the only thing it
+can cost is loop bookkeeping. We measure the cost and none of the benefit, which
+means the re-read was never on the critical path.
+
+### The control gate failed, and the replicate explains why
+
+The pre-registered control gate **FAILED** and is reported as such: with the
+bracket applied, untreated widths give M1 = 0.9958, M2 = 1.0081, M5 = 1.0010,
+M9 = 1.0090 — worst 0.90 % against my registered ±0.46 % band. Against base-r1
+alone it was worse: M1 = 0.9726, worst 2.74 %.
+
+The replicate measures each width's **own** floor, because base-r2 is the same
+build timed again — `|base2/base − 1|`:
+
+| M | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|---|---|
+| floor % | **4.61** | 0.73 | 0.24 | **0.04** | 0.16 | **0.07** | **0.01** | **0.06** | 0.05 |
+
+Reading this honestly:
+
+- **My registered ±0.46 % band was mis-specified.** It was derived from
+  score-level σ, not from measured kernel-level reproducibility, and it is
+  simultaneously far too loose for M=4/7/8 and impossibly tight for M=1.
+- **M=1 was never interpretable.** Its own floor is 4.61 % — it is the first
+  width in the sweep and absorbs warmup/JIT (its mean-vs-min spread is
+  22.25 % / 16.43 %, an order of magnitude above every other width). After the
+  A-B-A correction its deviation is 0.42 %, *below* its own floor.
+- **The widths that carry the verdict are the most reproducible in the sweep.**
+  Worst floor across M=4, 6, 7, 8 is **0.07 %**, against a measured step of
+  **2.31 pp** — a ratio of about **33×**.
+- **Two controls exceed their own floor: M=2 (0.81 % vs 0.73 %, marginal) and
+  M=9 (0.90 % vs 0.05 %).** M=9 is the real one, and it is **not thermal**:
+  base-r2 exited at 86.62 °C against base-r1's 68.08 °C, yet the two agree at
+  M=9 to 0.05 %, so M=9 throughput is insensitive across that range. The
+  remaining explanation is a **build-level artifact** — every width is
+  JIT-compiled from one `quantized.cpp` source string, and the arm build's extra
+  instantiations enlarge that compilation unit. An "untreated width" is
+  therefore not a perfectly clean control in this harness.
+
+That artifact is bounded at ≈0.9 pp by M=9 itself. The gap between the measured
+step (−2.31 pp) and the MEM threshold (+10.33 pp) is **12.6 pp**, so the
+artifact is ~14× too small to change the verdict. Separately, the step is a
+difference of two ratios sharing both sessions, so a session-level multiplicative
+drift `d` perturbs it only by `(d−1) × step` — visible in the data, since
+applying the bracket moved locality recovery from −0.114 to −0.112 and the anchor
+from 1.1086 to 1.1065.
+
+### Per-shape at the discriminating step
+
+| shape | base µs | M=4 ρ | M=8 ρ | step |
+|---|---|---|---|---|
+| `linear_attn.in_proj_fused_qkvzba` | 495.76 | 1.1996 | 1.2243 | −0.0246 |
+| `linear_attn.out_proj` | 220.34 | 1.1818 | 1.1985 | −0.0167 |
+| `full_attn.qkv_proj_fused` | 435.47 | 1.2021 | 1.2289 | −0.0268 |
+| `full_attn.o_proj` | 217.63 | 1.2036 | 1.2088 | −0.0052 |
+| `mlp.gate_up_fused` | 987.87 | 1.2126 | 1.2297 | −0.0171 |
+| `mlp.down` | 546.34 | 1.2069 | 1.2426 | −0.0357 |
+| `head.lm_head` | 6 715.09 | 1.2292 | 1.2433 | −0.0141 |
+| `head.compact_draft_vocab` | 2 691.90 | 1.2232 | 1.2410 | −0.0178 |
+
+### Value — kernel-level only, and conditional
+
+**Withdrawn by the 07:51Z reconciliation below**: `φ(M = 6)` cannot be bounded
+away from zero, so the ψ·φ figure this section is built on is retired as a value
+claim rather than restated with a step-family name attached. The paragraph is
+kept as written for the record, and E41's verdict never depended on it.
+
+ψ·φ = 0.0459 is **back-solved from the crown, not measured**; every score figure
+inherits that and I do not claim it. On that basis the measured M=6 tax alone
+would be worth **−0.4889 %** of score if paid, and the same tax with this
+ladder's "recovery" applied is also **−0.4889 %**, because the recovery is
+negative. Neither is a gain over the shipped base, which pays no tax at all: the
+tax only matters as the price deliverable (b) would have to pay to buy one weight
+pass at NA=6, so (b)'s value would be that weight-pass saving **minus** whatever
+tax survives K-tiling. E41 measured the second term and found it survives intact.
+Context: crown 0.5193 %, engineerable gap 0.2586 %, σ_score 0.0978 %.
+
+## What this means for the campaign
+
+- **Do not build K-tiled activation staging.** The mechanism it targets does not
+  exist at these shapes.
+- **The row-tile tax is a hard floor for NA=6 single-weight-pass schemes.** Price
+  any future proposal in that direction against ~+11 % at M=6 (NA=3) and ~+21 %
+  at NA=4, with no staging discount available.
+- **The register tile, not the activation stream, is the binding resource.**
+  Phrased in spill terms per the advisor's §4 correction, not as a literal
+  128-register limit: `peak_live_regs` is a lane-weighted textual heuristic whose
+  *shape* is usable and whose *absolute* value is not, and the shipped max of 129
+  is already "over" 128 and ships fine. The robust, non-heuristic readout is the
+  accumulator alloca. Every K-tiled cell moves its accumulators into memory
+  (`xkt_na4_r2_* -> [2 x [2 x <4 x float>]]`, 97 regs) while the sequential
+  row-blocked anchor keeps them in registers (`xrb_na3_r2`, 66 regs, no float
+  alloca). Subdividing K therefore *costs* accumulator residency; it does not buy
+  locality.
+
+## Reconciliation with advisor feedback of 2026-08-19T07:41Z
+
+That feedback arrived while this result was being packaged. It directs "no
+revision — E41 stays as briefed", so the verdict above is unchanged. Four items
+are load-bearing and are answered here rather than left implicit.
+
+### The base moved under this experiment
+
+The advisor branch is now `e468efd` and **E27 is reverted**: `static_assert(NA<=5)`
+is back to `NA<=4`, and `case 5:`/`case 9:` are back to IPG 3. Everything measured
+here is on `04ad6bf`, so all absolute timings belong to a tree that no longer
+exists. What transfers and what does not:
+
+- **The verdict transfers.** ILP-vs-MEM is a property of the `_wide` loop nest and
+  its accumulator residency. E27's revert changed the dispatch table, not that
+  loop body, and the recovery figure is a difference between two ratios taken
+  from the *same* arm build.
+- **The controls do not transfer.** M=5 and M=9 were two of my four untreated
+  controls, and `case 5:`/`case 9:` are exactly the cells E27's revert changed.
+  Anyone re-running this needs a fresh control set on `e468efd`.
+
+### Replacement stop condition, answered: the arm did NOT raise the kernel-wide max
+
+The advisor's corrected gate is "report the kernel-wide max per arm, and flag any
+treated cell above the ceiling", because all eight width cells inline into one
+`affine_qmv_fast` entry point and therefore share one allocation equal to the max
+over cells. From the committed census:
+
+| treated (timed) cell | regs |
+|---|---|
+| `xrb_na3_r2` (M=6 anchor) | 66 |
+| `xkt_na3_r2_kt1` | 77 |
+| `xkt_na4_r2_kt1` / `_kt4` / `_kt64` | 97 |
+
+Max over treated cells = **97**, under both the old-base ceiling of 129 and the
+rebased ceiling of **108**. The untreated widths kept their shipped allocations,
+so the arm's kernel-wide max equals the base's and **the contamination confound
+the advisor warned about did not occur in E41**. This matters for the control
+gate: a raised shared allocation would have taxed every width and would have been
+a tidy explanation for my M=2/M=9 residuals. It is ruled out, so those residuals
+still need the build-level explanation, and M=9 remains bounded-but-unexplained.
+
+### The advisor's r=2 ladder prediction is already confirmed by this census
+
+The +17/NA reading of the r=2 ladder is directly in the committed data, and the
+r=4 ladder gives the contrasting +21/NA:
+
+```text
+r = 4 (shipped)      na2 62   na3 83   na4 104  na5 125     step +21
+r = 2 (row-blocked)  na3 66   na4 83            na6 117     step +17
+```
+
+`na4_r2 = 83` and `na6_r2 = 117` are both **measured**, 34 apart across two NA
+steps, and the measured `na3 -> na4` step of +17 confirms the ladder is linear.
+So **`na5_r2 = 100`**, which is under the rebased 108 ceiling. Honest caveat: this
+is interpolation between two measured neighbours, not a direct compile of NA=5 at
+r=2. I did not run that compile, for two reasons — it needs the `_rowblocked`
+template this branch just pruned, and on `e468efd` NA=5 is no longer permitted by
+`static_assert(NA<=4)`, so the compile has to be done deliberately on the new
+tree rather than smuggled in here.
+
+The consequence is the one the advisor drew: **register cost per additional NA is
+a function of `rows_per_simd`, not a constant.** Combined with this experiment's
+result, that closes a loop — E41 priced r=4 -> r=2 at ~+11 % (NA=3) / ~+21 %
+(NA=4) with no K-tiling discount, so the open question is precisely whether a
+wider NA at r=2 repays that fixed tax. That is follow-up 3 below, now with a
+concrete first target.
+
+### Vocabulary
+
+"128-register wall" is retired throughout in favour of spill and of the
+kernel-wide max, per §4 of the feedback.
+
+## Reconciliation with advisor feedback of 2026-08-19T07:51Z
+
+This note arrived after the 07:41Z one and prices E41's lever from the ranked
+side via E43. It carries one green and two red instructions. All three are
+answered from data already collected plus source inspection — **no new GPU time
+was spent**, and the verdict is unchanged.
+
+### The step-vs-quadratic question is settled on the local tree, and the step has a name
+
+The third instruction was to re-measure the local +32.850 ms M=5→M=6 step "if it
+is load-bearing". It is **not** load-bearing for E41's verdict, which is a
+difference of two ratios from one arm build. But it needs no re-measurement: the
+A-B-A bracket already logged per-round ms per width on two independent base runs
+(`c_round_ms` in [`e41-metrics.json`](e41-artifacts/e41-metrics.json)).
+
+| M | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|
+| T base-r2 (ms) | 72.811 | 82.722 | 96.217 | 128.890 | 138.717 | 149.727 | 164.675 |
+| first difference | | 9.910 | 13.495 | **32.673** | 9.827 | 11.011 | 14.948 |
+
+The step replicates at **+32.673 ms** (base-r2) and **+32.641 ms** (base-r1) —
+two independent runs agreeing to 0.032 ms against a per-width run-to-run
+reproducibility of ≤0.08 ms at M≥3. It was not noise.
+
+That also **falsifies the quadratic family model-free**: a quadratic in M
+requires monotone non-decreasing first differences, and this curve's first
+difference *drops by 22.85 ms* from the 5→6 step to the 6→7 step, replicated to
+0.02 ms — about 285× the reproducibility floor. No quadratic at any coefficients
+produces a spike-and-return. Unlike a mixture fit this is per-width **causal**
+data, because the harness dispatches each width directly.
+
+The step is not a bare indicator either. Taking `IPG` from the width switch in
+`quantized.h` and defining `streams(M) = ceil(M / IPG(M))`:
+
+| M | IPG @`04ad6bf` | streams | IPG @`efff400` | streams | changed |
+|---|---|---|---|---|---|
+| 3 | 3 | 1 | 3 | 1 | no |
+| 4 | 4 | 1 | 4 | 1 | no |
+| 5 | **5** | **1** | **3** | **2** | **YES** |
+| 6 | 3 | 2 | 3 | 2 | no |
+| 7 | 4 | 2 | 4 | 2 | no |
+| 8 | 4 | 2 | 4 | 2 | no |
+| 9 | **5** | **2** | **3** | **3** | **YES** |
+
+On `04ad6bf` widths 1–5 are all single-weight-stream and 6–9 are two-stream, so
+the 1→2 boundary sits exactly at 5→6 — exactly where the jump is. Regressing on
+the source-derived stream count instead of a fitted breakpoint
+([`e41_stream_model.py`](e41_stream_model.py)):
+
+```text
+T(M) = 16.432 + 20.291 * streams(M) + 11.798 * M
+max |residual| = 1.674 ms   over 72.8-164.7 ms,  M = 3..9
+```
+
+No quadratic term and no free breakpoint, so this has one *fewer* degree of
+freedom than a step model with a fitted indicator. Both advisor families are
+shadows of one mechanism: the level shift is the marginal weight stream at
+**20.291 ms**, and the apparent convexity is the stream indicator masquerading
+as curvature in a pooled fit.
+
+Honest limits: three parameters on seven points, and the 1.674 ms residual is
+~20× the 0.08 ms floor, so real unmodelled structure remains and the model is
+not exact. `streams(M)` is source-derived, not runtime-instrumented. These are
+**local** per-round costs from the kernel-curve harness on an ungated host — the
+same quantity as the advisor's "local (pre-rebase tree) 32.850 ms", but *not* the
+ranked per-round leg cost, so this does not settle the family question on the
+ranked box.
+
+### The M=6 boundary does not exist on the new base, so a probe there will read null
+
+The revert took `case 5:` from `<T,5,IPG 5>` to `<T,5,IPG 3>`, moving M=5 from
+one stream to two. M=6 was already two. **Both sides of 5→6 are now two-stream.**
+Propagating the fitted coefficients through the new stream table:
+
+```text
+M=5   streams 1->2    T  95.7 -> 116.0    +20.3 ms
+M=9   streams 2->3    T 163.2 -> 183.5    +20.3 ms
+predicted d1 on efff400:
+  3->4 11.8 | 4->5 32.1 | 5->6 11.8 | 6->7 11.8 | 7->8 11.8 | 8->9 32.1
+```
+
+Falsifiable prediction: **the step moves from 5→6 down to 4→5, and a second one
+appears at 8→9.** A causal per-width probe at M=6 on the rebased tree should
+therefore read a null, and that null would be easy to misread as "no step, so
+quadratic" — the opposite of the truth. The informative widths on the current
+base are **4→5** and **8→9**, and the pair gives two independent estimates of the
+same stream coefficient, which is a stronger test than either family fit. This
+was posted to the PR as soon as it was derived, because a misplaced null is the
+most expensive kind of wrong answer.
+
+### "Do not stop" is accepted at campaign level and declined for deliverable (b)
+
+The note argues K-tiled activation staging "is a per-pass change rather than an
+M=6-boundary change, so it harvests curvature whichever family is true". The
+per-pass framing is right; the premise that this lever harvests anything is what
+E41 tested, and it failed — recovery −11.2 % against a ≥+50 % threshold, negative
+at 8/8 shapes, negative at KT=1 as well, and every K-tiled cell spills its
+accumulators to memory. A larger prize does not change the sign of a recovery.
+
+The mechanism above says what to do instead, and it composes with E41 rather
+than contradicting it: **the removable excess is the marginal weight stream
+(20.291 ms), and the only lever that removes it lets a width fit in fewer
+streams — raising `IPG`, i.e. wider NA.** K-tiling cannot change stream count by
+construction. That is the NA=5-at-r=2 follow-up, now with a mechanism and a
+magnitude rather than just headroom, and it must still beat the tension E41
+measured: wider NA is what sank E27, and the row-tile tax it pays (~+11 % at
+NA=3, ~+21 % at NA=4) has **no staging discount available**.
+
+### The value claim is withdrawn rather than qualified
+
+Per the second red instruction, no value claim here rests on `e_p = s·q_p`, and
+neither "+1.15 %" nor "16–47 % of the leg" appears anywhere in this result. The
+only score-level number written at any point is ψ·φ = 0.0459, always labelled
+back-solved. Since `φ(M = 6)` brackets to 0.0000–0.9701 and cannot be bounded
+away from zero, it is **withdrawn as a value claim** rather than restated with a
+family name attached. E41's verdict is a pure kernel ratio and never needed it.
+
+### Transfer, restated on source evidence
+
+The earlier 07:41Z reconciliation argued the verdict transfers because ILP-vs-MEM
+is a property of the `_wide` loop nest. The stream table makes that concrete and
+stronger: the four verdict-carrying widths **M=4, M=6, M=7 and M=8 have
+byte-identical dispatch** on `efff400`, and the only two changed cells, M=5 and
+M=9, are exactly the two untreated controls. The controls still do not transfer;
+the verdict now does so on inspected source rather than on argument.
+
+### One observation on the current tip, flagged not changed
+
+While reading `case 8:` at `efff400` to build the stream table, the new comment
+block asserts **"3+3+2, not 4+4"** with receipts, but the call underneath is
+still `qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>`. Under the file's own rule
+`IPG = ceil(M / ceil(M / 4))`, IPG 4 at M=8 *is* 4+4; 3+3+2 requires IPG 3. Either
+the comment or the argument looks like an unfinished edit, on the scored surface
+of the base this work would rebase onto. Flagged only — outside this assignment's
+scope to change.
+
+## Scored surface
+
+The ladder is measurement scaffolding for a mechanism that just died, so the
+scored surface is **reverted to the assignment base `04ad6bf`** on this branch:
+
+```text
+validate-assignment-scope.sh   OK, 2 submitted paths
+check-editable-budget.sh       source=2455289/3000000  growth=0/262144
+twin_audit.py                  OK, 29 runtime-effective twins
+git diff 04ad6bf -- <h> <cpp>  empty
+```
+
+The revert goes all the way to `04ad6bf`, not back to the base build `5d97fe3`.
+Keeping `5d97fe3`'s template generalization (`krange` / `wide` / `rowblocked` /
+`K_TILE_BLOCKS`) would leave dead parameterization with no consumer, and it is
+not free: it is the same enlarged JIT compilation unit that follow-up 1 names as
+the leading explanation for the unexplained M=9 residual. Pruning it removes a
+measurement hazard rather than removing optionality. Leaving the *arm* dispatch
+table would be worse still — a ~21 % kernel regression at M=4/7/8 if merged.
+
+The ladder remains fully reproducible from this branch's history — `5d97fe3` for
+the template, `dfe39af` for the arm table, `ae272aa` for the restored-base
+bracket — plus the committed census, so nothing measured here is lost.
+
+## Reproduction
+
+Each curve must run at the head that carries its build, because
+`run-qmv-curve.sh` records `head=`/`dirty=` at job start and has no per-SHA
+checkout option — its second argument is provenance only. All three curves need a
+clean worktree.
+
+The census probes the E41 template, so it only compiles at `5d97fe3`/`dfe39af`.
+At this branch's tip the template is pruned and **every census cell fails to
+compile** — that is expected, not a regression. Its committed JSON is the record.
+
+```bash
+# 0. AIR census, before any GPU time: proves KT holds the instruction mix fixed
+#    (must be run at 5d97fe3; fails at the branch tip by design)
+python3 research/e41_ktile_census.py          # -> research/e41-ktile-census.json
+
+# 1. base (A) — check out 5d97fe3 (template landed, dispatch table untouched)
+research/run-qmv-curve.sh e41-base-r1 04ad6bf11437c269df85a47e91faa769c74fe6da \
+  --widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock
+
+# 2. arm (B) — check out dfe39af (dispatch table selects the ladder)
+research/run-qmv-curve.sh e41-arm-r1 04ad6bf11437c269df85a47e91faa769c74fe6da \
+  --widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock
+
+# 3. base replicate (A) — 5c6693a, whose twins are byte-identical to 5d97fe3
+research/run-qmv-curve.sh e41-base-r2 04ad6bf11437c269df85a47e91faa769c74fe6da \
+  --widths 1,2,3,4,5,6,7,8,9 --shapes-only --reps 21 --inner 10 --skip-stock
+
+# 4. cross-build fidelity parity (checks out twins per SHA, restores from HEAD)
+research/run-qmv-parity.sh \
+  base=5d97fe3727d67a42be09dce77aedc21ffaf1095f \
+  arm=dfe39af7dfcbf10828bf0bad4ad46ae51bcb5dd0
+
+# 5. analysis (A-B-A bracket) and durable logging
+python3 research/e41_analyze.py --base e41-base-r1 --arm e41-arm-r1 \
+  --base2 e41-base-r2 --json-out research/e41-artifacts/e41-metrics.json
+python3 research/e41_wandb_log.py research/e41-artifacts/e41-metrics.json
+
+# 6. weight-stream attribution of the width curve (07:51Z reconciliation);
+#    reads committed artifacts only, no GPU
+python3 research/e41_stream_model.py
+```
+
+Omitting `--base2` reproduces the un-bracketed numbers (anchor 1.1086, locality
+recovery −0.114) and the worse raw control deviations (M1 0.9726, worst 2.74 %).
+
+Host: Apple M4 Pro, 48 GiB. `CrossrowGate` reads `quantized.h` from disk at test
+runtime, so do not edit either twin while a curve or parity job is in flight.
+
+## Suggested follow-ups (not implemented)
+
+1. **Attribute the M=9 build artifact.** A ~0.9 % cross-kernel effect from
+   enlarging the JIT compilation unit, if real and general, is a measurement
+   hazard for every future A/B in this harness, and possibly a small free win if
+   the shipped source string can be trimmed. The cheap test is a build whose only
+   change is adding unreachable instantiations.
+2. **Retire the score-derived control band for kernel-level work.** Per-width
+   floors from a same-build replicate cost one extra curve and are one to two
+   orders of magnitude more informative. M=1 should be excluded from control sets
+   or given a warmup pass.
+3. **Price the wider-NA-at-r=2 saving directly, starting at NA=5.** E41 measured
+   only the cost side. The direction now has a concrete first target, because the
+   r=2 ladder predicts `na5_r2 = 100` under the rebased 108 ceiling: NA=5 at r=2
+   should raise the kernel-wide max by **nothing**, where NA=5 at r=4 costs 125 and
+   is what sank E27. The decisive question is therefore whether NA=5's extra
+   accepted tokens repay E41's measured ~+11 % (NA=3) to ~+21 % (NA=4) row-tile
+   tax, which no K-tiling discount can reduce. Two things to settle first, both
+   cheap: compile NA=5 at r=2 directly on `e468efd` rather than trusting my
+   interpolation, and resolve whether `static_assert(NA<=4)` now forbids the cell
+   outright. The 07:51Z reconciliation sharpens this into the campaign's central
+   question: the marginal weight stream costs **20.291 ms**, raising `IPG` is the
+   only lever that removes one, and wider NA is the only way to raise `IPG`.
+4. **Locate the stream boundary on the current base with one ungated curve.**
+   The weight-stream model predicts the 1→2 boundary has moved from 5→6 to 4→5 and
+   that a 2→3 boundary has appeared at 8→9 on `efff400`. One base-only width curve
+   (no arm build, no submission surface change) confirms or refutes both, and it
+   should be run *before* any causal per-width probe is aimed at M=6, which the
+   model says will read null on the rebased tree. This was not run here because it
+   requires rebasing off this assignment's registered base.
+5. **Instrument the stream count at runtime rather than deriving it from `IPG`.**
+   The attribution above reads `streams(M)` out of the dispatch switch, which is
+   strong but is still source inference. A counter would also expose whether the
+   1.674 ms unmodelled residual is a second, smaller mechanism.
