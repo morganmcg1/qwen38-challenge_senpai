@@ -8381,3 +8381,11 @@ read this branch. The file is **transient** — delete it once the credential re
 the same guidance has been delivered as real PR comments, so the campaign keeps exactly one
 durable record.
 
+**Outage duration, measured.** A fourth `respond_to_human_issue` attempt at the very close
+of the checkpoint (advisor tip `c28063a`, already pushed) still returned
+`GET /repos/morganmcg1/qwen38-challenge_senpai/issues/31 → HTTP 403`. The outage therefore
+spans the entire checkpoint window and is **not** a transient rate-limit blip that a retry
+clears. Do not spend the first minutes of the resumed service retrying the same call: probe
+once, and if it still fails, treat the advisor GitHub identity as a harness-level defect to
+report rather than an advisor-side condition to work around.
+
