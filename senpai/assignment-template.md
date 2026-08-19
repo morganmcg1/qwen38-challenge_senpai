@@ -7,17 +7,25 @@ separate from research-only tests, scripts, notes, and instrumentation.
 - Full `BASE_SHA`:
 - Full `UPSTREAM_SHA`:
 - Yukon promoted submission / source ref:
-- Host, chip, memory profile, and toolchain:
-- MTP head provenance:
+- Host, instance, chip, memory profile, thermal mode, and toolchain:
+- Candidate build fingerprint:
+- Submitted-surface / generated-twin / metallib digests, if applicable:
+- MTP head provenance and digest:
+- Token window, fixture, and reference source:
+- Exact cell: shape, width/M, dispatch family, source form, and M5 variant:
+- Harness: `local` or `ranked`:
 - One causal hypothesis:
+- Official causal path and score equation:
 - Scored cost and expected direction:
+- Minimum useful effect and transfer/noise floor:
 - Scored call-path proof:
 - Submitted candidate paths:
 - Research-only support paths:
 - Draft-policy or head change, if any:
 - Runtime-effective JIT/AOT source and `_nax` variant, if relevant:
 - Numerical, recurrence, cache, or ledger risk:
-- Cheapest decisive test:
+- Cheapest real falsification gate and positive control:
+- Shortest end-to-end exact-token / row-ledger gate:
 - Stop rule:
 
 ## Required preflight
@@ -29,6 +37,7 @@ with every proposed submitted path:
 senpai/validate-assignment-scope.sh "$BASE_SHA" \
   Sources/MLXFastModel/Qwen36MTPBlockSession.swift
 senpai/check-editable-budget.sh "$BASE_SHA"
+senpai/verify-ranked-score-boundary.sh
 ```
 
 The scope check reads `benchmark.json` from `BASE_SHA`, never from the working
@@ -41,6 +50,12 @@ the scored shape. If a generated Metal family is involved, run:
 ```bash
 research/twin_audit.py "<generated-stem>"
 ```
+
+For numerical or state-sensitive work, run the named falsification gate before
+replicated timing. Integer-only coverage or a candidate-generated local
+reference cannot establish hidden exactness. Compare evidence only within the
+recorded identity tuple unless the assignment explicitly names the changed
+dimension and requires replay.
 
 ## Authority boundary
 

@@ -58,6 +58,33 @@ senpai/check-editable-budget.sh "$BASE_SHA"
 Run `./setup.sh && ./setup-qwen-mtp.sh` when the host, toolchain, checkpoint,
 head, trusted harness, or maintained base changes.
 
+## Freeze the experiment identity
+
+Before implementing or timing an arm, record:
+
+```text
+BASE_SHA and UPSTREAM_SHA
+candidate commit and built-worker fingerprint
+submitted-surface, generated-twin, and metallib digests when applicable
+proposal-head digest
+host, instance, chip, toolchain, memory profile, and thermal mode
+token window, fixture, and reference source
+exact cell: shape, width/M, dispatch family, source form, and M5 variant
+harness: local or ranked
+```
+
+Compare or aggregate runs only when this tuple matches except for the one
+predeclared changed dimension. Mark inferred, interpolated, and extrapolated
+values. Never reuse a fitted constant across a different tree, cell, host,
+window, or harness without replay. Run:
+
+```bash
+senpai/verify-ranked-score-boundary.sh
+```
+
+before pricing official value. A failure means the enforcing workflow changed;
+re-derive the model instead of editing the check to pass.
+
 ## Record a matched baseline and candidate
 
 Measure unchanged `BASE_SHA` on the assigned host:
@@ -74,6 +101,15 @@ power, fan, and thermal conditions:
 ./benchmark-qwen-mtp.sh --local-iterate
 cp score.json score.local-iterate.candidate.json
 ```
+
+Before the candidate timing command, run the cheapest check capable of
+falsifying the boundary you changed. A precision, reduction-order, packing,
+recurrence, cache, or replay edit requires actual floating-point values at the
+touched cells, a positive control that makes the comparison fail, and the
+shortest end-to-end exact-token and row-ledger run. Integer-only inputs, an
+argmax match, or candidate-generated local reference rows are not sufficient.
+Do not begin replicated timing until this risk gate passes. Use a minimal timing
+run first; replicate only when noise could change the stop-rule decision.
 
 Do not overlap model-holding commands. The real 40C gate is the default; let it
 finish. When using the permitted local-only ungated protocol from
@@ -120,6 +156,12 @@ The local ratio uses one public prompt and candidate-generated rows. It is not
 the official eight-prompt median. General target/kernel improvements may speed
 both local serial and MTP legs and cancel in the paired ratio, so inspect both
 the ratio and absolute MTP time against the same-host base.
+
+The ranked harness uses a separate pinned baseline binary for the serial
+numerator. Candidate code cannot causally move that numerator. Never subtract
+`psi_serial` or another local serial share from an official candidate-value
+estimate. Label the source equation `harness=local` or `harness=ranked` in every
+result.
 
 Score files are ignored evidence and must not be committed.
 
