@@ -69,17 +69,31 @@ Three consequences drive everything currently in flight.
 two sequential row blocks. It is bit-exact by construction (same 8 rows, same
 per-row dot products, same within-row accumulation order) and censuses at 91
 registers against a shipped kernel maximum of 104, so it does **not** raise the
-ceiling. Under the additive shape its ceiling tax is zero and the e53_mid
-h-ratio corner forecasts **+0.74..+0.76 %**, which closes the entire 0.5367 %
-deficit. Gated on measuring the real `r=2` tax at NA=5 (+10.54 % at NA=4, but
-the `x` volume is 25 % larger).
+ceiling. That maximum is a **legality floor** pinned by M=7, whose only legal
+accumulator counts are {4, 5, 7} (188/187(P)), so no retabling can lower it and
+this is the only route that can ever fit under it. Under the additive shape its
+ceiling tax is zero and the calibrated forecast is **+0.65..+0.76 %** under the
+e53_mid mixture, which closes the entire 0.5367 % deficit, against
+**+0.44..+0.51 %** under e48, which does not. Gated on measuring the real `r=2`
+tax at NA=5 (+10.54 % at NA=4, but the `x` volume is 25 % larger).
 
-**Tier 1 -- resolve the transfer inconsistency.** I hold two estimates for the
-same class of term differing by 3x: `/3.55` (mechanistic, from the 7.58x prefill
-GEMM against the 2.14x depth-0 round) and `x0.834..0.862` (calibrated depth
-transfer, mean-pinned at depth 4). Both are defensible; they cannot both be
-right. Every forecast is currently carried as a band. A direct measurement that
-separates them would sharpen every future score projection in the campaign.
+**🔴 The two live experiments are coupled** (188(E)). askeladd's #57 M=9 arm
+settles the E48-vs-E53 mixture dispute, and that mixture decides whether
+thorfinn's `r=2` route takes the frontier or merely clears the MDE. I had been
+treating them as independent probes of the same structure. They are not: one
+supplies a parameter the other's promotion decision depends on.
+
+**Tier 1 -- RESOLVED this round (188).** The `/3.55` divisor is **refuted** for
+QMV decode changes. The 7.58x prefill advantage is the `qmm_nax` *matmul*
+signature, and the scored decode path dispatches `qmv_fast` at every width
+M <= 9, switching to `qmm` only at M=10. The M5's arithmetic advantage is
+therefore unreachable from the decode QMV kernel by construction, so
+`tau_qmv ~= R` and the multiplier is near 1.0. Memory-traffic-bound is **not**
+the same transfer class as arithmetic-bound; 186(D) was wrong to group them.
+Price any local win as `delta_local x (R / tau)` with `R = 2.1383` and state
+`tau` explicitly. Also: `g in [0.7388, 0.7778]` and `h in [0.8343, 0.8617]`
+are different numbers -- `h` is `g` mean-pinned at depth 4 -- so report their
+union unless one form is justified.
 
 **Tier 1 -- the `kL = 1024` near-tie exposure** (185(D)). Arm A of E57 declared
 two distinct top-two tuples at positions 1022 and 1024, both inside round 76,

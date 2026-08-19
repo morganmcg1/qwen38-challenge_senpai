@@ -10949,3 +10949,154 @@ current work.
   legality floor pinned by M=7, whose only legal accumulator counts are
   {4, 5, 7}. There is no free occupancy win by retabling, and the `r=2`
   row-block route is the only route that can ever fit under it.
+
+---
+
+## 188. 187(J) resolved: the ÷3.55 transfer divisor is REFUTED for QMV decode changes, and the two live experiments turn out to be coupled
+
+187(J) recorded an inconsistency in my own published work and instructed the
+campaign to carry both branches as a band. That was right while the question
+was open. It is now closable on a mechanistic argument that needs no new
+measurement, and the answer changes a live decision.
+
+Instrument: `research/transfer_class_resolver.py`, self-test 10 checks,
+exits 0.
+
+### 188(A) One expression generates every branch of 186(D)
+
+Let `L` be leg time, `t` the time of one cost term, and `τ = t_local / t_rank`
+that term's own transfer ratio. The leg transfers at
+`R = L_local / L_rank = 65.009 / 30.402 = 2.1383`.
+
+A local relative saving becomes, at rank:
+
+```
+delta_rank = (dt_local / τ) / (L_local / R) = delta_local × (R / τ)
+```
+
+So the transfer multiplier is exactly `R / τ`, and 186(D)'s three regimes fall
+out of one formula:
+
+| τ | regime | multiplier `R/τ` | 186(D) label |
+|---|---|---|---|
+| 7.5798 | arithmetic-bound, `qmm_nax` | 0.2821 | **÷3.54**, the published ÷3.55 |
+| 2.1383 | transfers like the leg | **1.0000** | (not previously named) |
+| 1.0000 | latency or dispatch-bound | 2.1383 | "1:1 or better" |
+
+186(D) is therefore structurally correct, and the published divisor is
+reproduced to 0.02. The open question was never the framework. It was only:
+**what is `τ` for the QMV crossrow kernel at decode widths?**
+
+### 188(B) 🔴 `τ_qmv` cannot be the prefill value, by construction
+
+186(D) groups "compute-bound **or memory-traffic-bound**" into the ÷3.55
+class. That grouping is wrong, and the reason is mechanistic.
+
+The 7.58× prefill advantage is the `qmm_nax` signature (186(C):
+`quantized.cpp:473`, gated on `is_nax_available()` and GPU gen ≥ 17).
+**`qmm_nax` is a MATMUL path.** It accelerates arithmetic with matrix
+hardware; it does nothing for memory bandwidth.
+
+The scored decode path never reaches it:
+
+- `M <= 9` → `qmv_fast` (`quantized.cpp:250-295`)
+- `M == 10` → `qmm` split-k (`quantized.cpp:300-325`)
+
+and the maximum scored verify width is **9**. The campaign already records the
+M=10 bitwise deltas as pre-existing `qmm` split-k 9→10 padding, which is
+independent confirmation of exactly where that switch sits.
+
+**So the ranked M5's arithmetic advantage is unreachable from the decode QMV
+kernel by construction.** No amount of QMV width-table work can be priced
+through the prefill transfer ratio.
+
+### 188(C) What `τ_qmv` is instead
+
+A depth-0 round is 64 layers of quantized projections dispatched through this
+same `qmv_fast` family. The round is predominantly this kernel, so the kernel
+transfers at approximately the round ratio: `τ_qmv ≈ R`, multiplier ≈ **1.0**.
+
+E54's own bandwidth measurement agrees that the kernel is bandwidth-bound:
+150.9 GB/s achieved against a 148.4 GB/s sustained ceiling. No plausible M5
+memory system is 7.58× an M4 Pro's ~273 GB/s, which would require ~2069 GB/s.
+
+The calibrated bands sit just below the structural 1.0, exactly as they should
+because not all of a round is QMV.
+
+**Verdict: ÷3.55 is REFUTED for QMV decode-width changes.** It remains correct
+for prefill-GEMM-class terms, which is where it was derived and where it should
+stay. 187(J)'s band collapses to the calibrated branch.
+
+### 188(D) `g` and `h` are different numbers and must not be conflated
+
+While closing 187(J) I found a second, smaller conflation in my own work.
+
+- `g ∈ [0.7388, 0.7778]` is the joint depth transfer from ledger 184, applied
+  directly.
+- `h ∈ [0.8343, 0.8617]` is the same calibration **mean-pinned at depth 4**,
+  which is the form 187(I) actually used.
+
+Pinning rescales the band upward by 11–13 %. These are not interchangeable.
+The applicable calibrated range is the **union**, `0.7388..0.8617`, and
+187(J)'s own rule forbids silently picking either end.
+
+### 188(E) 🔴 Decision impact, and a coupling I had not seen
+
+Pricing the `r=2` row-block route (187(L)), whose ceiling tax is zero by
+construction, against a deficit of 0.5367 % and a ranked MDE of 0.283 %:
+
+| mixture | diluted | ÷3.55 (refuted) | × g | × h | calibrated union |
+|---|---|---|---|---|---|
+| e48 | 0.5900 | 0.1662 | 0.4359..0.4589 | 0.4922..0.5084 | **0.4359..0.5084** |
+| e53_mid | 0.8834 | 0.2488 | 0.6527..0.6871 | 0.7370..0.7612 | **0.6527..0.7612** |
+
+Two things follow.
+
+**First, the resolution is worth more than a factor of three.** Under the
+refuted ÷3.55 branch **both** mixtures fall below the ranked MDE of 0.283 %,
+so the route would not even have been *measurable* at rank and I would have had
+no reason to build it. Under the calibrated band it is comfortably measurable
+under both mixtures.
+
+**Second, and this is new: the two live experiments are coupled.** The route
+closes the deficit under **e53_mid** (0.65..0.76 %) and does **not** close it
+under **e48** (0.44..0.51 %) at any point in the calibrated band. askeladd's
+PR #57 M=9 arm is what settles the mixture dispute -- the two mixtures disagree
+3.2× on `f9` -- so **his measurement decides whether thorfinn's route can
+win.**
+
+I had been treating #57 and E59 as two independent probes of the same
+structure. They are not independent: one supplies a parameter the other's
+promotion decision depends on. Neither is redundant, and #57's repositioning
+from candidate build to physics measurement is further justified by this.
+
+Under e48 the route still clears the MDE by 1.5–1.8×, so it remains worth
+running either way. It simply stops being a frontier-taking result and becomes
+an incremental one.
+
+### 188(F) What this does NOT resolve
+
+Neither transfer factor is negative, so **neither branch explains E27's sign
+flip.** Only the additive shared-ceiling tax does. 187's
+additive-versus-multiplicative question is untouched by this item and still
+requires E59's `ceil_only` control to answer it.
+
+This item narrows the *magnitude* of a win once the *shape* question is
+settled. It does not settle the shape.
+
+### 188(G) Rules this item adds
+
+- **`τ` is a property of the term, not of the machine.** Price any local win as
+  `delta_local × (R / τ)` with `R = 2.1383`, and state `τ` explicitly. An
+  unstated `τ` is an invalid conversion, exactly as 186(D) says an unlabelled
+  conversion is.
+- **Do not price a decode QMV change through the prefill transfer ratio.** The
+  7.58× is a `qmm_nax` matmul feature and the decode path (M ≤ 9) dispatches
+  `qmv_fast`, which cannot reach it. Memory-traffic-bound is **not** the same
+  transfer class as arithmetic-bound, and 186(D) was wrong to group them.
+- **`g` and `h` are different numbers.** `g ∈ [0.7388, 0.7778]` applied
+  directly; `h ∈ [0.8343, 0.8617]` mean-pinned at depth 4. Report the union
+  unless one form is specifically justified.
+- **Check whether live experiments are coupled before calling them
+  independent.** #57 supplies the mixture parameter that E59's promotion
+  decision depends on.
