@@ -2025,7 +2025,7 @@ template <typename T, int group_size, int bits, bool batched>
           // weight traffic in the legal table. NA=6 makes it one stream,
           // paid for by covering the frozen 4 rows as two 2-row blocks.
           // IPG=5 is illegal here (6 % 5 == 1) and would still be 2 streams.
-          qmv_fast_crossrow_affine4_g64_m<T, 6, 6, true, 2, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;

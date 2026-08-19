@@ -29,14 +29,18 @@ def load(tag):
     if os.path.exists(ipath):
         for line in open(ipath):
             line = line.strip()
-            m = re.match(r"^(?:run-qmv-curve: )?([a-z0-9_]+)=(.*)$", line)
-            if m:
-                ident[m.group(1)] = m.group(2)
-            elif line.startswith("run-qmv-curve: "):
+            # "run-qmv-curve: head=<sha> dirty=0" packs several pairs per line,
+            # so split those before falling back to one-pair-per-line records
+            # such as "gpu_temp_c_before_vendored=43.1".
+            if line.startswith("run-qmv-curve: "):
                 for part in line[len("run-qmv-curve: "):].split():
                     if "=" in part:
                         k, v = part.split("=", 1)
                         ident[k] = v
+                continue
+            m = re.match(r"^([a-z0-9_]+)=(.*)$", line)
+            if m:
+                ident[m.group(1)] = m.group(2)
     return d, ident
 
 
@@ -278,6 +282,28 @@ def main():
                       env_overrides=[k for k in os.environ
                                      if k.startswith("MLX_MAX") or k.startswith("DARKBLOOM_")]),
         arms={key: dict(tag=arms[key]["tag"], identity=arms[key]["ident"]) for key in arms},
+        widths=widths, control_widths=control, treated=M,
+        controls=[dict(m=m,
+                       ratio_a=arms["a"]["c"][m] / arms["base"]["c"][m],
+                       ratio_b=arms["b"]["c"][m] / arms["base"]["c"][m])
+                  for m in control],
+        m1_null=(dict(ratio_a=arms["a"]["c"][1] / arms["base"]["c"][1],
+                      ratio_b=arms["b"]["c"][1] / arms["base"]["c"][1],
+                      path=dispatch_at(arms["b"]["d"], 1)[0])
+                 if 1 in widths else None),
+        shapes_m6=[dict(name=sh["name"], n=sh["n"], k=sh["k"],
+                        calls=sh["calls_per_verify"],
+                        base_s=arms["base"]["per_shape"][M][sh["name"]],
+                        a_s=arms["a"]["per_shape"][M][sh["name"]],
+                        b_s=arms["b"]["per_shape"][M][sh["name"]],
+                        e38_pred=r2.get(alias.get(sh["name"], sh["name"]), {}).get("e38_point"),
+                        e33=r2.get(alias.get(sh["name"], sh["name"]), {}).get("r33"))
+                   for sh in arms["base"]["d"]["shapes"]
+                   if arms["base"]["per_shape"][M].get(sh["name"])],
+        preflight=[dict(m=m, **{key: jit_spread(arms[key]["d"], m)
+                                for key in ("base", "a", "b")})
+                   for m in widths],
+        bitwise={key: (bitwise_ok(arms[key]["d"]) or "ok") for key in arms},
     )
     if args.json_out:
         parent = os.path.dirname(args.json_out)
