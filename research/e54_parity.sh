@@ -42,11 +42,14 @@ research/run-qmv-parity.sh "${specs[@]}"
 # Within-pair verdicts. Cross-pair rows differ by construction, because each
 # isolated arm keeps a different `case` in the wide tier, so only these
 # orderings carry a correctness claim.
-out="research/e54-artifacts/parity"
+#
+# Only the verdict text is written under research/. The per-arm digest files
+# stay in .mlxfast-private, which is gitignored: they are half a megabyte of
+# hashes, and the comparator can be re-run over them at any time with no GPU.
+out="research/e54-artifacts"
 mkdir -p "${out}"
-cp "${MLXFAST_QMV_PARITY_DIR}"/*.json "${out}/"
 
-verdicts="${out}/within-pair-verdicts.txt"
+verdicts="${out}/parity-verdicts.txt"
 : > "${verdicts}"
 compare() {
   local label="$1"; shift
