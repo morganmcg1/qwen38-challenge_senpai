@@ -684,17 +684,29 @@ public final class Qwen36MTPBlockSession {
         return (width + inputsPerGroup - 1) / inputsPerGroup
     }
 
-    /// Measured isolated head step over a measured depth-0 round: 2.590 ms /
-    /// 65.009 ms (E1, this host class, declared 4-bit head). This is the part
-    /// of one extra draft's cost that does NOT scale with verify width; the
-    /// remaining 78% of `headStepCostRatio` is the extra verify row.
-    static let referenceHeadStepRatio = 0.039819
+    /// Mean seconds per decode round at pinned verify widths 3, 4, 5 and 6,
+    /// measured on this host by the E56 width sweep: eight legs of the base
+    /// binary in palindrome order, every leg exact and thermally gated.
+    static let measuredRoundSeconds = [0.12912, 0.15878, 0.21549, 0.24170]
 
-    /// Extra verify cost of crossing a weight-stream boundary, over the cost
-    /// of one more row inside a tier: 27.532 / 9.624 from thorfinn's E46 QMV
-    /// refit. RATIO ONLY — that fit's levels are microbenchmark time and
-    /// exceed the measured whole-round cost, so they are never used as time.
-    static let verifyStreamSurchargeRatio = 27.532 / 9.624
+    /// Cost of crossing a weight-stream boundary over the cost of one more row
+    /// inside a tier, AT ROUND LEVEL: 56.7 ms against 29.7 ms and 26.2 ms, so
+    /// 2.030.
+    ///
+    /// thorfinn's E46 QMV refit prices the same boundary at 27.532 / 9.624 =
+    /// 2.861, but that is a per-OPERATION ratio. A round also runs attention,
+    /// the head step (E1: 2.590 ms of a 65.009 ms depth-0 round) and sampling,
+    /// and none of those widen with the verify row count, so the round-level
+    /// surcharge is smaller. The walk consumes a round-level marginal.
+    /// Charging it the operation ratio closes the 4 -> 5 step at EVERY
+    /// acceptance rate, because the required `reach` then exceeds 1;
+    /// `QwenMTPDepthCostModelTests` fails on any closed step this file does
+    /// not declare closed.
+    static let verifyStreamCostRatio: Double = {
+        let marginal = zip(measuredRoundSeconds.dropFirst(), measuredRoundSeconds)
+            .map { $0 - $1 }
+        return marginal[1] / ((marginal[0] + marginal[2]) / 2.0)
+    }()
 
     /// Cost of the `depth -> depth + 1` extension, as a fraction of a depth-0
     /// round. The shipped rule priced every extension at the single scalar
@@ -710,15 +722,17 @@ public final class Qwen36MTPBlockSession {
     /// and 0.32 all measured worse), so any change that also moved the average
     /// price would be an unmeasurable mixture of a retune and this mechanism.
     static let marginalCostRatio: [Double] = {
-        let raw = (0 ..< Qwen36MTPLimits.maxDepth).map { depth -> Double in
+        let crossesBoundary = (0 ..< Qwen36MTPLimits.maxDepth).map { depth in
             verifyWeightStreams(width: depth + 2)
                 > verifyWeightStreams(width: depth + 1)
-                ? 1.0 + verifyStreamSurchargeRatio
-                : 1.0
         }
-        let mean = raw.reduce(0.0, +) / Double(raw.count)
-        let scale = (headStepCostRatio - referenceHeadStepRatio) / mean
-        return raw.map { referenceHeadStepRatio + scale * $0 }
+        let boundaries = Double(crossesBoundary.filter { $0 }.count)
+        let rows = Double(Qwen36MTPLimits.maxDepth)
+        let withinTier = rows * headStepCostRatio
+            / (rows - boundaries + boundaries * verifyStreamCostRatio)
+        return crossesBoundary.map {
+            $0 ? withinTier * verifyStreamCostRatio : withinTier
+        }
     }()
 
     /// Cost of a round at each depth, as a fraction of a depth-0 round.

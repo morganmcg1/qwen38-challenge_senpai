@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Explain the measured width histogram from the two walks themselves.
+"""Read both depth rules directly instead of describing them.
 
-The E56 session collapsed the sched arm onto verify width 4 in 98.5% of rounds.
-That is a far larger behavioural change than the counterfactual predicted, so
-the walk has to be read directly rather than described. This re-implements both
-threshold rules from the live constants and reports where each one stops as a
-function of the acceptance probability the round sees.
+The first E56 session collapsed the sched arm onto verify width 4 in 98.5% of
+rounds. This probe showed why: the old price charged a per-OPERATION QMV ratio
+inside a whole-round walk, which made the 4 -> 5 and 8 -> 9 steps unreachable at
+EVERY acceptance rate, so that arm was an unconditional width cap and not a
+walk. The probe now rebuilds the repaired round-level table from the live
+constants and reports, for each rule, the payable steps and the stop depth as a
+function of the acceptance probability a round sees.
 """
 from __future__ import annotations
 
@@ -15,20 +17,41 @@ import re
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SESSION = ROOT / "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
 
-HEAD_STEP_COST_RATIO = 0.18
-REFERENCE_HEAD_STEP_RATIO = 0.039819
-STREAM_SURCHARGE_RATIO = 27.532 / 9.624
+SOURCE = SESSION.read_text(encoding="utf-8")
+
+
+def swift_scalar(name: str) -> float:
+    match = re.search(rf"let {name} = ([0-9.]+)", SOURCE)
+    if not match:
+        raise SystemExit(f"e56_walk_probe: {name} not found")
+    return float(match.group(1))
+
+
+HEAD_STEP_COST_RATIO = swift_scalar("headStepCostRatio")
 
 
 def inputs_per_group() -> dict[int, int]:
     """Read the shipped table out of the schedule, not out of this file."""
-    text = SESSION.read_text(encoding="utf-8")
     match = re.search(
-        r"verifyInputsPerGroup: \[Int: Int\] = \[(.*?)\]", text, re.S)
+        r"verifyInputsPerGroup: \[Int: Int\] = \[(.*?)\]", SOURCE, re.S)
     if not match:
         raise SystemExit("e56_walk_probe: verifyInputsPerGroup not found")
     return {int(k): int(v) for k, v in re.findall(r"(\d+)\s*:\s*(\d+)",
                                                   match.group(1))}
+
+
+def measured_round_seconds() -> list[float]:
+    match = re.search(r"measuredRoundSeconds = \[(.*?)\]", SOURCE, re.S)
+    if not match:
+        raise SystemExit("e56_walk_probe: measuredRoundSeconds not found")
+    return [float(value) for value in re.findall(r"[0-9.]+", match.group(1))]
+
+
+def stream_cost_ratio() -> float:
+    """Reproduce `verifyStreamCostRatio` from the measured round curve."""
+    seconds = measured_round_seconds()
+    marginal = [b - a for a, b in zip(seconds, seconds[1:])]
+    return marginal[1] / ((marginal[0] + marginal[2]) / 2.0)
 
 
 def streams(width: int, ipg: dict[int, int]) -> int:
@@ -37,12 +60,13 @@ def streams(width: int, ipg: dict[int, int]) -> int:
 
 
 def cost_table(ipg: dict[int, int]) -> tuple[list[float], list[float]]:
-    raw = [1.0 + (STREAM_SURCHARGE_RATIO
-                  if streams(d + 2, ipg) > streams(d + 1, ipg) else 0.0)
-           for d in range(8)]
-    scale = (HEAD_STEP_COST_RATIO - REFERENCE_HEAD_STEP_RATIO) / (
-        sum(raw) / len(raw))
-    marginal = [REFERENCE_HEAD_STEP_RATIO + scale * value for value in raw]
+    ratio = stream_cost_ratio()
+    crosses = [streams(d + 2, ipg) > streams(d + 1, ipg) for d in range(8)]
+    boundaries = sum(crosses)
+    rows = len(crosses)
+    within = rows * HEAD_STEP_COST_RATIO / (
+        rows - boundaries + boundaries * ratio)
+    marginal = [within * ratio if cross else within for cross in crosses]
     cumulative = [1.0]
     for step in marginal:
         cumulative.append(cumulative[-1] + step)
@@ -71,13 +95,24 @@ def main() -> None:
     marginal, cumulative = cost_table(ipg)
 
     print(f"inputsPerGroup read from source: {ipg}")
-    print(f"stream surcharge ratio {STREAM_SURCHARGE_RATIO:.6f}\n")
+    print(f"measuredRoundSeconds read from source: {measured_round_seconds()}")
+    print(f"verifyStreamCostRatio {stream_cost_ratio():.6f}"
+          f"  headStepCostRatio {HEAD_STEP_COST_RATIO}\n")
     print("depth  width step  crosses a stream boundary  marginal  cumulative")
     for depth in range(8):
         crosses = streams(depth + 2, ipg) > streams(depth + 1, ipg)
         print(f"  {depth}      {depth + 1}->{depth + 2}       "
               f"{str(crosses):<25} {marginal[depth]:.6f}  "
               f"{cumulative[depth]:.6f}")
+
+    print("\nPayability: a step is CLOSED at every acceptance rate when")
+    print("marginal[d] * (d + 1) / cumulative[d] >= 1, because the walk needs")
+    print("reach > that and reach <= 1 always.")
+    for depth in range(8):
+        required = marginal[depth] * (depth + 1) / cumulative[depth]
+        state = "CLOSED" if required >= 1.0 else "open"
+        print(f"  d={depth} (width {depth + 1}->{depth + 2})"
+              f"  required reach floor {required:.4f}  {state}")
 
     print("\nStop depth as a function of a constant acceptance probability.")
     print("Verify width = drafts + 1; cap 8 (streak-qualified).")

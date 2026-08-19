@@ -375,6 +375,39 @@ def price_two_stream_m9(time_share9: float, ipg: dict) -> dict:
 # 4. Part B -- the M4 Pro -> M5 transfer correction
 # =========================================================================
 
+# ---- E56 pinned-width sweep, this host, base binary -----------------------
+# Mean seconds per token at verify widths 3,4,5,6 and the rounds each leg ran,
+# from research/e56-width-sweep.json. The derived per-ROUND marginals give the
+# boundary surcharge at the level the walk actually consumes, which the E46
+# per-OPERATION ratio 27.532/9.624 = 2.861 over-states.
+SWEEP_ROUND_SECONDS = {3: 0.12912, 4: 0.15878, 5: 0.21549, 6: 0.24170}
+
+
+def measured_round_boundary_ratio() -> float:
+    marginal = {width: SWEEP_ROUND_SECONDS[width] - SWEEP_ROUND_SECONDS[width - 1]
+                for width in (4, 5, 6)}
+    within = statistics.fmean([marginal[4], marginal[6]])
+    return marginal[5] / within
+
+
+def measured_raw_surcharge(head_ratio: float, mean_target: float) -> float:
+    """Raw surcharge `r` whose mean-pinned table has the measured round ratio.
+
+    `stream_aware_price` builds `raw = 1 + r` at a boundary and pins the mean
+    of `head + scale*raw` to `mean_target`, so `r` is not the round-level
+    ratio. Solving the two constraints for the measured ratio `R`:
+
+        within   = head + scale
+        boundary = head + scale * (1 + r) = R * within
+        scale    = (mean_target - head) / (1 + 2r/8)
+    """
+    target = measured_round_boundary_ratio()
+    budget = mean_target - head_ratio
+    numerator = (target - 1.0) * mean_target
+    denominator = budget - (target - 1.0) * head_ratio / 4.0
+    return numerator / denominator
+
+
 def g_corrected_ladder(g: float) -> list[float]:
     """`round_M5(d) / c1 = 1 + g * (C_M4(d) - C_M4(0)) / C_M4(0)`.
 
@@ -428,7 +461,11 @@ def counterfactual_under_g(fits: dict, ipg: dict, constants: dict, g: float,
     h = constants["headStepCostRatio"]
     shipped = E56.shipped_price(h)
     ratio = E56.E46_PER_STREAM / E56.E46_PER_ROW
-    arms = {"stream_aware": E56.stream_aware_price(ipg, head, h)}
+    arms = {
+        "stream_aware": E56.stream_aware_price(ipg, head, h),
+        "stream_aware_measured": E56.stream_aware_price(
+            ipg, head, h, ratio=measured_raw_surcharge(head, h)),
+    }
     for tag, depths in (("boundary45_only", (3,)), ("boundary89_only", (7,))):
         shape = [1.0 + (ratio if d in depths else 0.0)
                  for d in range(E53.MAX_DEPTH)]
@@ -573,6 +610,27 @@ def main() -> None:
         "g_one": counterfactual_under_g(fits, ipg, constants, 1.0, 60,
                                         args.seed),
     }
+    head = E56.E1_HEAD_STEP_US / E56.E1_C_US[0]
+    h = constants["headStepCostRatio"]
+    raw_surcharge = measured_raw_surcharge(head, h)
+    priced = {
+        "shipped": E56.shipped_price(h),
+        "stream_aware_e46": E56.stream_aware_price(ipg, head, h),
+        "stream_aware_measured": E56.stream_aware_price(ipg, head, h,
+                                                        ratio=raw_surcharge),
+    }
+    report["measured_boundary"] = {
+        "sweep_round_seconds": SWEEP_ROUND_SECONDS,
+        "round_ratio": measured_round_boundary_ratio(),
+        "e46_operation_ratio": E56.E46_PER_STREAM / E56.E46_PER_ROW,
+        "raw_surcharge": raw_surcharge,
+        "within_tier": priced["stream_aware_measured"].marginal(0),
+        "boundary": priced["stream_aware_measured"].marginal(3),
+        "best_case_threshold": {
+            name: [price.marginal(d) * (d + 1) / price.cost(d)
+                   for d in range(E53.MAX_DEPTH)]
+            for name, price in priced.items()},
+    }
     report["h_sweep"] = {
         "g_lo": h_sweep_under_g(fits, constants, 0.7388, 60, args.seed),
         "g_hi": h_sweep_under_g(fits, constants, 0.7778, 60, args.seed),
@@ -681,6 +739,19 @@ def print_report(report: dict) -> None:
               f"{row['h_m4']:.4f} | {row['ratio_lo']:8.4f} | "
               f"{row['ratio_hi']:8.4f} | {row['pinned_delta_lo_pct']:+6.2f} / "
               f"{row['pinned_delta_hi_pct']:+6.2f} %")
+
+    print()
+    measured = report["measured_boundary"]
+    print(f"measured round-level boundary ratio {measured['round_ratio']:.4f} "
+          f"(E46 per-operation ratio {measured['e46_operation_ratio']:.4f}); "
+          f"raw surcharge {measured['raw_surcharge']:.4f} gives marginals "
+          f"{measured['within_tier']:.6f} within tier and "
+          f"{measured['boundary']:.6f} at a boundary")
+    print("best-case thresholds (a step is closed at any accept rate if >= 1):")
+    for name in ("shipped", "stream_aware_e46", "stream_aware_measured"):
+        row = ", ".join(f"d{d}:{value:.4f}" for d, value
+                        in enumerate(measured["best_case_threshold"][name]))
+        print(f"  {name:22s} {row}")
 
     print()
     print("counterfactual under the transferred truth ladder (decode %)")
