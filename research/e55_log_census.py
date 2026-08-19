@@ -210,6 +210,47 @@ def main() -> int:
             "ceiling/verdict_ok": t["verdict_ok"],
         })
 
+    stream_path = pathlib.Path("research/e55-stream-model.json")
+    if stream_path.exists():
+        s = json.loads(stream_path.read_text())
+        ident = s["identification"]
+        preds = s["predictions"]
+        be = {row["m"]: row for row in s["break_even"]["rows"]}
+        summary.update({
+            "stream/r_from_e49_m9_cell": ident["r_estimates"]["e49_arm1_m9_cell"],
+            "stream/r_from_e27_m5_cell": ident["r_estimates"]["e27_m5_cell"],
+            "stream/r_from_e27_m9_cell": ident["r_estimates"]["e27_m9_cell"],
+            "stream/r_primary_mean": ident["r_primary_mean"],
+            "stream/r_primary_spread_pct": ident["r_primary_spread_pct"],
+            "stream/independent_cells_agree_within_5pct":
+                ident["independent_cells_agree_within_5pct"],
+            "stream/collapse_is_real": ident["collapse_is_real"],
+            "stream/widths_where_na5_removes_a_stream":
+                json.dumps(s["stream_table"]["widths_where_na5_removes_a_stream"]),
+            "stream/widths_with_a_lone_na5_group":
+                json.dumps(s["stream_table"]["widths_with_a_lone_na5_group"]),
+            "stream/m7_m8_predicted_ratio_range":
+                json.dumps(preds["m7_m8_predicted_ratio_range"]),
+            "stream/pr8_range_consistent_with_model":
+                preds["pr8_range_consistent_with_model"],
+            "stream/break_even_r_m5": be[5]["break_even_r"],
+            "stream/break_even_r_m9": be[9]["break_even_r"],
+            "stream/break_even_r_m7": be[7]["break_even_r"],
+            "stream/m9_transfer_headroom_pct": be[9]["identified_r_headroom_pct"],
+            "stream/m7_unprofitable_for_every_r_above_1":
+                be[7]["unprofitable_for_every_r_above_1"],
+            # Risk 3 offered two answers; the model rejects both.
+            "stream/risk3_answer1_different_families":
+                s["risk3"]["assignment_answer_1_different_families"],
+            "stream/risk3_answer2_isolated_build_artefact":
+                s["risk3"]["assignment_answer_2_isolated_build_is_artefact"],
+            "stream/pr8_numbers_used_in_fit": s["pr8_numbers_used_in_fit"],
+            "stream/uses_only_dimensionless_ratios":
+                s["uses_only_dimensionless_ratios"],
+            "stream/negative_controls_all_fire": s["negative_controls"]["all_fire"],
+            "stream/verdict_ok": s["verdict_ok"],
+        })
+
     api = wandb.Api()
     run = api.run("%s/%s" % (PROJECT, args.run))
     run.summary.update(summary)

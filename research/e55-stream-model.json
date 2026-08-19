@@ -1,0 +1,318 @@
+{
+  "answers": "assignment Risk 3, stream-corrected, no GPU second",
+  "break_even": {
+    "identified_r_interval": [
+      1.598,
+      1.6323523880653155
+    ],
+    "reading": "M=5 and M=9 both break even at r = 2, so they stay profitable until an NA=5 group costs twice an NA<=4 group. The identified r of 1.598..1.632 leaves 22.5 % of headroom, which is the margin the local-to-ranked transfer has to eat before the M=9 cell stops paying. M=6, M=7 and M=8 break even at r = 1, so they are unprofitable for ANY r > 1: NA=5 cannot pay there at any hardware operating point, because the stream count does not fall.",
+    "rows": [
+      {
+        "break_even_r": Infinity,
+        "identified_r_headroom_pct": null,
+        "m": 3,
+        "profitable_while_r_below": null,
+        "unprofitable_for_every_r_above_1": false
+      },
+      {
+        "break_even_r": Infinity,
+        "identified_r_headroom_pct": null,
+        "m": 4,
+        "profitable_while_r_below": null,
+        "unprofitable_for_every_r_above_1": false
+      },
+      {
+        "break_even_r": 2.0,
+        "identified_r_headroom_pct": 22.522564038419738,
+        "m": 5,
+        "profitable_while_r_below": 2.0,
+        "unprofitable_for_every_r_above_1": false
+      },
+      {
+        "break_even_r": 1.0,
+        "identified_r_headroom_pct": null,
+        "m": 6,
+        "profitable_while_r_below": 1.0,
+        "unprofitable_for_every_r_above_1": true
+      },
+      {
+        "break_even_r": 1.0,
+        "identified_r_headroom_pct": null,
+        "m": 7,
+        "profitable_while_r_below": 1.0,
+        "unprofitable_for_every_r_above_1": true
+      },
+      {
+        "break_even_r": 1.0,
+        "identified_r_headroom_pct": null,
+        "m": 8,
+        "profitable_while_r_below": 1.0,
+        "unprofitable_for_every_r_above_1": true
+      },
+      {
+        "break_even_r": 2.0,
+        "identified_r_headroom_pct": 22.522564038419738,
+        "m": 9,
+        "profitable_while_r_below": 2.0,
+        "unprofitable_for_every_r_above_1": false
+      }
+    ]
+  },
+  "experiment": "E55",
+  "identification": {
+    "collapse_is_real": true,
+    "independent_cells_agree_within_5pct": true,
+    "observed_ratios": {
+      "e27_m5": 0.799,
+      "e27_m9": 0.8854,
+      "e49_arm1_m9": 0.8774507960217718
+    },
+    "r_estimates": {
+      "e27_m5_cell": 1.598,
+      "e27_m9_cell": 1.6562000000000001,
+      "e49_arm1_m9_cell": 1.6323523880653155
+    },
+    "r_primary_mean": 1.6151761940326579,
+    "r_primary_spread": 0.034352388065315376,
+    "r_primary_spread_pct": 2.126850816166796,
+    "reading": "One constant, identified twice. E49's M=9 cell gives r = 1.63235 and E27's M=5 cell gives r = 1.59800, agreeing to 2.13 %. These are different cells, different experiments, different stream counts and different sessions, so the agreement is an out-of-sample validation of the model rather than a fit. r > 1 means an NA=5 group really is slower per byte, so PR #8's collapse is REAL and present in the crossrow tier. The M=9 cell wins anyway, because it drops from three streams to two."
+  },
+  "negative_controls": {
+    "all_fire": true,
+    "controls": {
+      "agreement_claim_can_fail": true,
+      "group_decomposition_matches_shipped_table": true,
+      "m7_predicted_slower_for_every_r_above_1": true,
+      "m9_break_even_exists": true,
+      "r_equals_1_predicts_stream_count_ratio_only": true,
+      "solve_r_inverts_ratio": true
+    }
+  },
+  "pr8_numbers_used_in_fit": false,
+  "predictions": {
+    "m7_m8_predicted_ratio_range": [
+      1.299,
+      1.3161761940326577
+    ],
+    "pr8_quoted_boundary_slowdown_range": [
+      1.13,
+      1.54
+    ],
+    "pr8_range_consistent_with_model": true,
+    "reading": "The model predicts NA=5 at M=7 and M=8 is HARMFUL by 29.9 % to 31.6 %, because the stream count does not fall there: two groups before, two groups after, and one of them becomes slower. PR #8 measured its boundary widths at 1.13x to 1.54x slower, which brackets the prediction. That is a second out-of-sample check, and PR #8 contributed nothing to the fit.",
+    "rows": [
+      {
+        "m": 3,
+        "predicted_direction": "mixed",
+        "predicted_pct_hi": 0.0,
+        "predicted_pct_lo": 0.0,
+        "predicted_ratio_hi": 1.0,
+        "predicted_ratio_lo": 1.0
+      },
+      {
+        "m": 4,
+        "predicted_direction": "mixed",
+        "predicted_pct_hi": 0.0,
+        "predicted_pct_lo": 0.0,
+        "predicted_ratio_hi": 1.0,
+        "predicted_ratio_lo": 1.0
+      },
+      {
+        "m": 5,
+        "predicted_direction": "faster",
+        "predicted_pct_hi": -18.382380596734226,
+        "predicted_pct_lo": -20.099999999999994,
+        "predicted_ratio_hi": 0.8161761940326577,
+        "predicted_ratio_lo": 0.799
+      },
+      {
+        "m": 6,
+        "predicted_direction": "slower",
+        "predicted_pct_hi": 31.617619403265774,
+        "predicted_pct_lo": 29.89999999999999,
+        "predicted_ratio_hi": 1.3161761940326577,
+        "predicted_ratio_lo": 1.299
+      },
+      {
+        "m": 7,
+        "predicted_direction": "slower",
+        "predicted_pct_hi": 31.617619403265774,
+        "predicted_pct_lo": 29.89999999999999,
+        "predicted_ratio_hi": 1.3161761940326577,
+        "predicted_ratio_lo": 1.299
+      },
+      {
+        "m": 8,
+        "predicted_direction": "slower",
+        "predicted_pct_hi": 31.617619403265774,
+        "predicted_pct_lo": 29.89999999999999,
+        "predicted_ratio_hi": 1.3161761940326577,
+        "predicted_ratio_lo": 1.299
+      },
+      {
+        "m": 9,
+        "predicted_direction": "faster",
+        "predicted_pct_hi": -12.254920397822822,
+        "predicted_pct_lo": -13.4,
+        "predicted_ratio_hi": 0.8774507960217718,
+        "predicted_ratio_lo": 0.866
+      }
+    ]
+  },
+  "r_interval": [
+    1.598,
+    1.6323523880653155
+  ],
+  "risk3": {
+    "answer": "Neither. Same family, the collapse is real at r = 1.615, and NA=5 is profitable exactly when it removes a weight stream. The isolated single-body build is not an artefact: its ratio is reproduced by a model calibrated on a different cell from a different experiment.",
+    "assignment_answer_1_different_families": false,
+    "assignment_answer_2_isolated_build_is_artefact": false,
+    "honest_limits": [
+      "A1 assumes working groups are sequential and additive; a concurrent bandwidth-sharing execution model would change the algebra.",
+      "A3 lumps NA=2, 3 and 4 into one cost class. The two-cell agreement supports that, but one measurement cannot resolve an NA-dependent cost inside the NA<=4 class.",
+      "The model is a LOCAL per-cell cost model. It predicts cell ratios, not published score, and it does NOT explain E27's ranked loss: it says both E27 cells were locally faster, which E27 also measured.",
+      "r is identified on M4 Pro cells. The advisor's own transfer result says the M4 Pro ladder over-prices depth on ranked M5, so r need not carry to the ranked host unchanged."
+    ],
+    "stream_corrected_reading": "r is the stream-corrected quantity Risk 3 asked for, expressed as a ratio rather than as GB/s. An NA=5 group costs 1.615x an NA<=4 group per unit of weight traffic. PR #8's own quoted figures give 165.6 / 95.5 = 1.734, which agrees with r to 7.4 %. I report that agreement as a check and did not use it to fit anything."
+  },
+  "stream_table": {
+    "reading": "Across every scored width, NA=5 removes a weight stream at M=[5, 9] only. Those are exactly the two cells E27 changed. M=[5] is the only configuration in the whole table that produces a LONE NA=5 group with no NA<=4 sibling, which is the configuration PR #8 measured the collapse on.",
+    "rows": [
+      {
+        "in_shipped_switch": false,
+        "m": 2
+      },
+      {
+        "base_groups": [
+          3
+        ],
+        "base_ipg": 3,
+        "base_streams": 1,
+        "candidate_groups": [
+          3
+        ],
+        "candidate_streams": 1,
+        "in_shipped_switch": true,
+        "lone_na5_group": false,
+        "m": 3,
+        "removes_a_stream": false,
+        "stream_reduction": 0
+      },
+      {
+        "base_groups": [
+          4
+        ],
+        "base_ipg": 4,
+        "base_streams": 1,
+        "candidate_groups": [
+          4
+        ],
+        "candidate_streams": 1,
+        "in_shipped_switch": true,
+        "lone_na5_group": false,
+        "m": 4,
+        "removes_a_stream": false,
+        "stream_reduction": 0
+      },
+      {
+        "base_groups": [
+          3,
+          2
+        ],
+        "base_ipg": 3,
+        "base_streams": 2,
+        "candidate_groups": [
+          5
+        ],
+        "candidate_streams": 1,
+        "in_shipped_switch": true,
+        "lone_na5_group": true,
+        "m": 5,
+        "removes_a_stream": true,
+        "stream_reduction": 1
+      },
+      {
+        "base_groups": [
+          3,
+          3
+        ],
+        "base_ipg": 3,
+        "base_streams": 2,
+        "candidate_groups": [
+          5,
+          1
+        ],
+        "candidate_streams": 2,
+        "in_shipped_switch": true,
+        "lone_na5_group": false,
+        "m": 6,
+        "removes_a_stream": false,
+        "stream_reduction": 0
+      },
+      {
+        "base_groups": [
+          4,
+          3
+        ],
+        "base_ipg": 4,
+        "base_streams": 2,
+        "candidate_groups": [
+          5,
+          2
+        ],
+        "candidate_streams": 2,
+        "in_shipped_switch": true,
+        "lone_na5_group": false,
+        "m": 7,
+        "removes_a_stream": false,
+        "stream_reduction": 0
+      },
+      {
+        "base_groups": [
+          4,
+          4
+        ],
+        "base_ipg": 4,
+        "base_streams": 2,
+        "candidate_groups": [
+          5,
+          3
+        ],
+        "candidate_streams": 2,
+        "in_shipped_switch": true,
+        "lone_na5_group": false,
+        "m": 8,
+        "removes_a_stream": false,
+        "stream_reduction": 0
+      },
+      {
+        "base_groups": [
+          3,
+          3,
+          3
+        ],
+        "base_ipg": 3,
+        "base_streams": 3,
+        "candidate_groups": [
+          5,
+          4
+        ],
+        "candidate_streams": 2,
+        "in_shipped_switch": true,
+        "lone_na5_group": false,
+        "m": 9,
+        "removes_a_stream": true,
+        "stream_reduction": 1
+      }
+    ],
+    "widths_where_na5_removes_a_stream": [
+      5,
+      9
+    ],
+    "widths_with_a_lone_na5_group": [
+      5
+    ]
+  },
+  "uses_only_dimensionless_ratios": true,
+  "verdict_ok": true
+}
