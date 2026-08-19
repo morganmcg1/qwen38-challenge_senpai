@@ -75,6 +75,14 @@ private struct PhaseCounters {
     var dispatches = 0
     var barriers = 0
     var commits = 0
+    /// Wall nanoseconds spent inside the ORIGINAL Metal implementations, so the
+    /// ledger's own bookkeeping is excluded. `dispatchNs` is host encode cost;
+    /// `commitNs` is host submit cost. Neither includes the GPU wait, which MLX
+    /// performs elsewhere, so their sum is a direct lower bound on the round's
+    /// host-side dispatch price and cannot be inflated by GPU time.
+    var dispatchNs = 0
+    var commitNs = 0
+    var ledgerNs = 0
     var kernels: [String: Int] = [:]
     var shapes: [String: Int] = [:]
 
@@ -84,6 +92,9 @@ private struct PhaseCounters {
         if recordShape { shapes[shape, default: 0] += 1 }
     }
 }
+
+@inline(__always)
+private func nowNs() -> UInt64 { clock_gettime_nsec_np(CLOCK_UPTIME_RAW) }
 
 /// `@unchecked Sendable` because every mutable field is reached only under
 /// `lock`. The swizzled Metal selectors run on whichever thread MLX's stream
@@ -100,6 +111,7 @@ private final class DispatchLedger: @unchecked Sendable {
     private var width = 0
     private var depth = 0
     private var installed = false
+    private var segmentStartNs: UInt64 = 0
 
     private static let sink: FileHandle = {
         guard let path = ProcessInfo.processInfo
@@ -162,7 +174,10 @@ private final class DispatchLedger: @unchecked Sendable {
         lock.unlock()
     }
 
-    func dispatch(encoder: AnyObject, grid: MTLSize, threadgroup: MTLSize) {
+    func dispatch(
+        encoder: AnyObject, grid: MTLSize, threadgroup: MTLSize,
+        ledgerNs: Int, originalNs: Int
+    ) {
         lock.lock()
         let kernel = encoderBinding[ObjectIdentifier(encoder)] ?? "<unbound>"
         let shape = "\(kernel) grid=\(grid.width)x\(grid.height)x\(grid.depth)"
@@ -170,6 +185,8 @@ private final class DispatchLedger: @unchecked Sendable {
         phases[currentPhase, default: PhaseCounters()].add(
             kernel: kernel, shape: shape,
             recordShape: E58DispatchCensus.shapesEnabled)
+        phases[currentPhase, default: PhaseCounters()].dispatchNs += originalNs
+        phases[currentPhase, default: PhaseCounters()].ledgerNs += ledgerNs
         lock.unlock()
     }
 
@@ -179,9 +196,10 @@ private final class DispatchLedger: @unchecked Sendable {
         lock.unlock()
     }
 
-    func commit() {
+    func commit(originalNs: Int) {
         lock.lock()
         phases[currentPhase, default: PhaseCounters()].commits += 1
+        phases[currentPhase, default: PhaseCounters()].commitNs += originalNs
         lock.unlock()
     }
 
@@ -201,6 +219,7 @@ private final class DispatchLedger: @unchecked Sendable {
         self.width = width
         self.depth = depth
         currentPhase = "round_open"
+        segmentStartNs = nowNs()
         lock.unlock()
     }
 
@@ -212,11 +231,14 @@ private final class DispatchLedger: @unchecked Sendable {
     }
 
     private func flush(kind: String, accepted: Int = -1) {
+        let closed = nowNs()
         lock.lock()
         let taken = phases
         let takenRound = round
         let takenWidth = width
         let takenDepth = depth
+        let wallNs = segmentStartNs == 0 ? 0 : Int(closed - segmentStartNs)
+        segmentStartNs = closed
         phases = [:]
         lock.unlock()
         guard !taken.isEmpty else { return }
@@ -225,6 +247,7 @@ private final class DispatchLedger: @unchecked Sendable {
             "round": takenRound,
             "width": takenWidth,
             "depth": takenDepth,
+            "wall_ns": wallNs,
         ]
         if accepted >= 0 { payload["accepted"] = accepted }
         var phasePayload: [String: Any] = [:]
@@ -233,6 +256,9 @@ private final class DispatchLedger: @unchecked Sendable {
                 "dispatches": counters.dispatches,
                 "barriers": counters.barriers,
                 "commits": counters.commits,
+                "dispatch_ns": counters.dispatchNs,
+                "commit_ns": counters.commitNs,
+                "clock_bias_ns": counters.ledgerNs,
                 "kernels": counters.kernels,
             ]
             if !counters.shapes.isEmpty { entry["shapes"] = counters.shapes }
@@ -268,9 +294,16 @@ private func swizzleDispatch(_ cls: AnyClass, _ name: String) -> Bool {
     let original = unsafeBitCast(method_getImplementation(method), to: DispatchIMP.self)
     let replacement: @convention(block) (AnyObject, MTLSize, MTLSize) -> Void = {
         encoder, grid, threadgroup in
-        DispatchLedger.shared.dispatch(
-            encoder: encoder, grid: grid, threadgroup: threadgroup)
+        // Time the original call only, so neither the swizzle nor the ledger's
+        // lock is charged to Metal. The back-to-back clock reads price one clock
+        // read, which is the measurement's own bias on `originalNs`.
+        let entered = nowNs()
+        let started = nowNs()
         original(encoder, selector, grid, threadgroup)
+        let ended = nowNs()
+        DispatchLedger.shared.dispatch(
+            encoder: encoder, grid: grid, threadgroup: threadgroup,
+            ledgerNs: Int(started - entered), originalNs: Int(ended - started))
     }
     method_setImplementation(method, imp_implementationWithBlock(replacement))
     return true
@@ -305,8 +338,10 @@ private func swizzleCommit(_ cls: AnyClass) -> Bool {
     guard let method = class_getInstanceMethod(cls, selector) else { return false }
     let original = unsafeBitCast(method_getImplementation(method), to: CommitIMP.self)
     let replacement: @convention(block) (AnyObject) -> Void = { buffer in
-        DispatchLedger.shared.commit()
+        let started = nowNs()
         original(buffer, selector)
+        let ended = nowNs()
+        DispatchLedger.shared.commit(originalNs: Int(ended - started))
     }
     method_setImplementation(method, imp_implementationWithBlock(replacement))
     return true
