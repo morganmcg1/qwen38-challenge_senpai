@@ -4243,3 +4243,209 @@ Two traps in doing it:
      once. (2) Locally, set `MLX_MAX_MB_PER_BUFFER` **externally** in the environment,
      which does reach MLX regardless of our ≥96 GiB gate, and confirm the knob moves
      anything at all — this is E31's named cheapest test and it is now well motivated.
+
+148. 🔴🔴🔴 **THE DECISIVE MEASUREMENT OF THE CAMPAIGN, and it took me three passes at
+   the same arithmetic to get the noise model right. Our MTP-leg deficit against the
+   board plateau is REAL at 5.2σ on beagle, it is CONFINED TO WIDE PROMPTS, and only
+   two prompts of the eight can bank any of it.** Every number here is from the 94
+   head-matched rows (`head_provenance_sha256 == 559b24eb…`), zero GPU.
+
+   - **Setup.** Six rows form a plateau above us: `ef42e043` ofou 3.249294 (crown),
+     `1cb1f43a72` fkiene 3.244179, `e267db8c80` Lieisyourlie 3.243879, `0cbaf6a7f7`
+     companygardener 3.243262, `c0e34afd85` alfranli123 3.243001, `9cd3be9b99`
+     WillGasser 3.240778. All six landed 2026-08-18 between 16:59 and 23:52; our row
+     `2b0c36a078` (3.232508) landed 22:44, **inside that window**, so the comparison is
+     contemporaneous. All seven have `effective_mean_draft_len` identical to four
+     decimal places on every prompt (beagle 4.5327 for all of them). **Identical work,
+     different cost.**
+
+   - 🔴 **The plateau's own between-row scatter is tiny**, which is the fact I kept
+     getting wrong: per-prompt residual sd across the six is **essays 0.0149 %,
+     republic 0.0266 %, drama 0.0383 %, botany 0.0484 %, medicine 0.0609 %, travel
+     0.0662 %, beagle 0.0693 %**. Six independent submissions of what is effectively
+     one tree agree to better than 0.07 % per prompt.
+
+   - 🔴🔴 **Our deficit against the plateau median, and its significance:**
+     ```
+     prompt     draftlen   deficit      plateau sd    sigma
+     plutarch     0.154    +0.047 %     (latched)      --
+     drama        2.298    +0.012 %      0.0383      +0.31
+     travel       2.656    -0.045 %      0.0662      -0.68
+     beagle       4.533    +0.363 %      0.0693      +5.24
+     medicine     4.768    +0.088 %      0.0609      +1.45
+     botany       5.270    +0.435 %      0.0484      +8.99
+     essays       5.425    +0.509 %      0.0149     +34.16
+     republic     5.777    +0.234 %      0.0266      +8.81
+     ```
+     Grouped: **draftlen ≤ 2.7 ⇒ mean deficit +0.005 %, signs `+ + −`; draftlen ≥ 4.5
+     ⇒ mean deficit +0.326 %, signs `+ + + + +`.**
+
+   - 🔴🔴🔴 **The argument that needs no σ at all, and the reason I trust this after
+     being wrong twice.** Our deficit is ~zero on all three narrow prompts and ~0.33 %
+     on all five wide ones. **The narrow prompts are a control INSIDE OUR OWN ROW.**
+     Whatever session, thermal, box or scheduling luck we drew, it moved plutarch,
+     drama and travel by essentially nothing, so it cannot be what moves the other five
+     by a third of a percent. Common-mode noise, a slow box, a hot box, and an unlucky
+     draw are all ruled out **by our own data**, without any estimate of σ. This is a
+     **width-dependent code deficit**. It is the first mechanism-shaped target of the
+     campaign with this much evidence behind it.
+
+   - **Shape diagnostics.** corr(draftlen, deficit_pct) = **+0.71**;
+     corr(1/(1+draftlen), deficit_ms) = **−0.35**, so it is *not* a fixed per-round host
+     cost (that would be positive); deficit_ms is not constant (−0.008 to +0.057 ms), so
+     it is *not* a fixed per-token cost either. It scales with the width of the
+     draft/verify batch.
+
+   - 🔴🔴 **ONLY TWO PROMPTS CAN BANK IT. Score value of closing each per-prompt leg
+     deficit to the plateau median, one at a time:**
+     ```
+     beagle    +0.363 % leg  ->  score +0.1752 %      79 % of all value
+     medicine  +0.088 % leg  ->  score +0.0455 %      21 %
+     plutarch / drama / travel / essays / republic / botany  ->  +0.0000 % EACH
+     ALL EIGHT AT ONCE       ->  score +0.2208 %  (= sum of singles, exactly)
+     ```
+     **Essays is our worst leg deficit on the entire board (+0.509 %, 34σ) and is worth
+     exactly zero.** So is botany (+0.435 %, 9.0σ). So is republic (+0.234 %, 8.8σ).
+     A real, enormous, statistically overwhelming defect that is **unbankable on
+     six of eight prompts.** This is the order-statistic gate of item 146 in its most
+     expensive form: we could fix a 34σ defect and the score would not move.
+
+   - **The ladder (what a change has to deliver):**
+     ```
+     leg improvement    beagle only     beagle + medicine
+       -0.417 %          +0.2021 %         +0.4187 %
+       -0.520 %          +0.2521 %         +0.5197 %   <- passes the crown
+       -0.640 %          +0.3109 %         +0.6396 %
+       -1.000 %          +0.4875 %         +0.8163 %
+       -2.000 %          +0.9849 %         +1.3137 %
+     ```
+     To pass the crown's +0.5193 %: **beagle alone −1.07 %, or both legs −0.52 %.** E38's
+     predicted +0.93…+1.40 % of score requires beagle −1.9…−2.9 %, or both legs
+     −1.14…−1.71 %. That is the bar, and it is now a bar against a *confirmed* defect
+     rather than a speculative one.
+     🔴 **Self-correction, caught by writing the tool**: I first recorded "both legs
+     −0.640 %" as the crown-passing threshold and told thorfinn the same. It is
+     **−0.52 %**; −0.640 % over-states the requirement by 23 %. The error was
+     conservative rather than dangerous, but it is the third arithmetic slip of the turn
+     and every one of them was caught only by re-deriving in committed code rather than
+     in a scratch buffer. `research/board_plateau_deficit.py` is that code, and it
+     asserts the score identity (reproduces our official row to 1.8e-15) and the
+     item-149 sd identity (0 mismatches) on every run.
+
+   - **Per-round conversion** using askeladd's exactly-recovered ranked round counts
+     (`beagle R=107 D=485 A=405 α=.8351`; `medicine R=99 D=472 A=413 α=.8750`, from
+     `R + A = 512` plus the rational reduction of the published 12-decimal
+     `effective_mean_draft_len`): our beagle deficit is 512 × 0.0440 ms = 22.5 ms over
+     107 rounds = **0.21 ms/round**; medicine 512 × 0.0100 ms = 5.1 ms over 99 rounds =
+     **0.052 ms/round**. A 4× per-round gap between two prompts whose mean widths differ
+     by 0.24.
+
+   - 🔴 **The (beagle − medicine) inversion is real: 2.72σ.** Our contrast is +0.2750 %
+     against a plateau scatter of 0.1011 % on that same contrast (plateau contrasts
+     range −0.169 to +0.130, mean +0.0008). So askeladd's E37 question survives, and
+     medicine being the *wider* prompt with the *smaller* deficit is a genuine anomaly.
+
+   - 🔴 **E27's M=6 tax is the obvious mechanism and the board REFUTES the strong
+     version.** E27's M-table has M5 0.7990 / M6 1.0150, i.e. a 1.50 % tax at M=6, and
+     the plateau's `5068eb8`/`474c750` lineage does not carry E27. At beagle's ≥.2166
+     floor for M≥6 that predicts ~0.33 % — a good fit. But at medicine's ≥.2995 floor it
+     predicts ≥0.45 % and we measure **+0.088 %**, which bounds the *realised* tax at
+     ≤0.29 %, not 1.50 %. **No single (tax, share) pair fits both prompts at the stated
+     floors.** Caught before it entered a brief; askeladd has the joint arithmetic.
+
+149. 🔴🔴 **ITEM 124 WAS STATED ON EVIDENCE THAT WAS MATHEMATICALLY INCAPABLE OF
+   SUPPORTING IT — and I proved it to machine precision.** Item 124 called the
+   per-prompt deficit a *"tight, reproducible fingerprint across ten rivals."* For each
+   prompt, `sd(rival − us)` is **identically equal** to `sd(rival)`, because `−us` is a
+   *constant within a prompt*. Verified exactly on all 8 prompts. So the "tightness
+   across ten rivals" measured **the rivals agreeing with each other** — they are the
+   same tree, and their mutual sd is 0.015–0.078 % — and contained **exactly one**
+   measurement of our own side. Ten correlated comparisons reported as ten independent
+   observations.
+
+   The conclusion happened to survive (item 148's plateau-scatter test is the correct
+   test and it is decisive), which is the most dangerous possible outcome: a right
+   answer resting on void evidence, carried for a full day, and used to commission an
+   experiment. **New rule: when a claim is "consistent across N comparisons", check
+   whether the N comparisons share a term. If they do, N = 1.** Same error class as
+   alphonse's E39 thesis — a check that ran, passed, and was believed without anyone
+   asking what it compared against.
+
+   I also mis-set the noise scale twice in twenty minutes on the way to 148: first
+   using the 94-row *serial*-leg per-prompt σ (0.2054 %, right for distant sessions,
+   wrong for contemporaneous rows) which made the deficit look like 1.6σ; then using
+   residuals against the 94-row cohort median rather than the plateau median, which
+   mixed "we beat the median tree" into "we trail the plateau" and produced a
+   meaningless 1.08σ. 🔴 **The reference class and the noise estimate must both come
+   from the comparison you are actually making.** I sent thorfinn the 1.6σ version
+   before catching it and had to correct his prior an hour later.
+
+150. **E39 merged (alphonse, PR #44) — the strongest terminal result of the campaign,
+   and it overturned three of my premises.** 23 entries audited: **9 CLOSED, 7
+   UNDER-POWERED, 6 WRONG INSTRUMENT, 1 NO EVIDENCE EXISTS.**
+   - 🔴 **Entry 6 (wired limit with headroom) — the reopening premise was FALSE, not
+     under-powered.** SSHdotCodes' note on `3a995c2b` says the harmful arm was *"with
+     spare capacity"* and *"the successful mechanism was zero-headroom wiring"* — our
+     negative and the board positive are **opposite arms and they agree**, filed by the
+     same person. And entry 6 has **n = 0**: `git log --all -S 'WIRED_ZH'` finds only
+     organizer syncs; `grep -rl 'wired-zh'` returns 0 files against 10 for the
+     low-memory profile. Never run here; gated at ≥96 GiB with no enable override.
+   - **Entry 11 — WRONG INSTRUMENT, but not for the reason I gave.** E31 ran **zero
+     timed arms** (static audit) and got the environment *right*; its null is borrowed
+     from E29, which fails six ways: wrong lever (`MLX_QWEN_MTP_LADDER` adds forced
+     `asyncEval` boundaries and never touched the caps; `[1, floor]` is "formally
+     unswept"), mechanism mismatch (`gpu::finalize` bypasses `MAX_ACTIVE_TASKS=10`),
+     wrong regime (local element-bound 64/128 ≈31.3 commits/fwd vs ranked op-bound
+     50/512 ≈19.7), wrong head, **monotone not ABBA and ungated with a 21 °C
+     cold-start advantage for the control** (41.6 vs 62.9/62.5/62.7 °C — disqualifying
+     under `program.md`), and mebi-elements read as MB. MDE 87.1 µs/boundary normal,
+     **351.6 µs exact on 2 dof**, vs a 27.6 µs target: **the effect is smaller than one
+     standard error, 12.7× under-powered.** The "+0.418 % central" headline is a linear
+     extrapolation of a statistically-zero slope across a mechanism mismatch.
+   - 🔴🔴 **E35's only positive arm is DEAD, by two independent routes.** His: refreshed
+     629→646 rows gives **+0.220 % (|t| 1.54)**; serial-corrected **+0.149 % (|t|
+     1.04)**, below the 0.185 % bar; contrast identity collapses effective n **5→3**
+     (the three RESTORE rows re-apply ONE donor diff `86fb1f0` to ONE parent
+     `942e5ab2`), and that cleanest-identified contrast is **+0.058 %**; multiplicity
+     E[max of 9 families] = **+1.265 %**, above the observed effect; the reopening
+     instrument's own power at its own observed effect is **0.337**, needing n=25.
+     Mine (independent): the crown's `setenv(...,0)→(...,1)` row gains +0.1860 % over
+     the previous crown, of which **+0.0789 % is a slower serial leg and +0.1070 % is
+     the MTP leg = 1.1σ**, mixed signs across prompts; vs alfranli123 +0.0906 %. His
+     FORCE contrast (n=1, +0.156 %) is the same row, undecomposed. **Family retired.**
+   - **Two source corrections to me, both verified.** (1)
+     `DARKBLOOM_STARTUP_MEMORY_PROFILE=full` does **NOT** yield 512/50 — the installer
+     has its **own independent 96 GiB gate**. The working local recipe is `=full` plus
+     **explicit** `MLX_MAX_MB_PER_BUFFER=512 MLX_MAX_OPS_PER_BUFFER=50`, which survive
+     *because* the install uses `overwrite=0`; `=full` only suppresses the forced
+     low-memory `setenv` that would stomp them. ⚠️ It also removes the 6 GiB allocator
+     cap (→32 GiB) and flips `clearAllocatorCacheAfterWarmup` true→false, a real OOM
+     risk on 48 GiB — **and an OOM mid-session destroys the ABBA counterbalancing that
+     is the only thing making an ungated local measurement admissible.** (2) The MTP
+     worker **inlines** the policy and never calls `apply()`; `Qwen35RuntimeWeights.swift:45`
+     is dead on MTP but **live on the serial/local-iterate path** — a plausible
+     confounder in every local ratio we have taken.
+   - **Top re-test is neither 6 nor 11: entry 4 (qmm for M ≥ 4)** — a predicted **+61 %**
+     ceiling closed by one un-replicated microbenchmark of a *different* mechanism
+     (padding across `vector_limit`, not row-batching into `qmm`); no σ, no n; decisive
+     test costs zero GPU legs. 🔴 **Item 148 independently reinforces this**: entry 4 is
+     a width-path entry and the deficit is width-confined.
+   - **Tools merged:** `research/e39_mde.py` (stdlib noncentral-t, 13/13 self-test,
+     externally validated against Cohen n=64/arm d=0.5 → 0.80146 and G*Power paired n=2
+     → 11.5499) and `research/e39_residency_audit.py`. 🔴 **Exact/normal MDE blow-up at
+     n=2 is 5.83×, so most campaign nulls have understated their floor ~6×.** My "E33
+     was 3.5× under-powered" compared against a 1σ resolution rather than an MDE; the
+     true figures are **9.5× normal / 19.1× exact.**
+   - **Corrections owed to him:** entry 21 (warm coverage) **does exist and is CLOSED
+     with evidence** — E37 delivered it on PR #42 and I banked it; his base predates
+     the result, which is my process failure for letting a finding live only in a PR
+     comment. σ_score is 0.0978 % not 0.0923 % (agrees to 0.006 pp, so his self-test
+     stands). His re-test list is ordered by effect/cost, not by expected **score**
+     value; item 148's order-statistic split re-ranks it and I am carrying that myself.
+   - He self-corrected twice before I read it: entry 23's shipped surface (he wrote "5
+     files" and listed four, omitting `Qwen36MTPBlockSession.swift` +157/−47 — the
+     correct total is 5 files, +229/−74, matching my gate) and the E27 anchor
+     (`21d98b7` at 19:35:40, the −20.06 % M=5 move, not the opening probe `f0bb949`).
+     He also named his own failure mode: he reported an invalid-git-object lookup as a
+     blocker while the baseline he needed was in the assignment feedback.
+
