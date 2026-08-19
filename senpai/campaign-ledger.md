@@ -8118,10 +8118,19 @@ Four-leg ABBA, `<T,9,3>` vs `<T,9,5>` at M=9:
 
 ### 177(E). Two operational findings for the resumed service
 
-1. 🔴 **GitHub reads were returning HTTP 403 during this checkpoint.** `get_prs` on
-   #52, #53, #55, #56 all failed with 403; askeladd independently reported a 403
-   window ~13:05–13:32Z. The PR slate in this item therefore comes from trusted
-   controller event payloads, not from a live PR read. Re-verify PR state on resume.
+1. 🔴 **The GitHub REST credential path was failing throughout this checkpoint.**
+   `get_prs` on #52, #53, #55, #56 all returned **403**, and
+   `respond_to_human_issue` on issue #31 returned **403 twice**, so the checkpoint
+   reply could not be posted. A direct `curl` to `/rate_limit` with the shell
+   token returned **401**. Meanwhile **`git push` over HTTPS succeeded normally**
+   (`publish_advisor_branch` landed `c0df988`), so this is a REST credential or
+   token-scope failure, not loss of connectivity. askeladd independently reported
+   a 403 window ~13:05–13:32Z, and thorfinn's and askeladd's comments both record
+   failed post attempts, so the outage spans multiple roles and several hours.
+   **Consequences:** the PR slate in this item comes from trusted controller event
+   payloads rather than a live PR read, and **the issue #31 checkpoint reply is
+   still owed.** On resume, re-verify PR state and re-post that reply first — the
+   durable git state is already correct, only the GitHub conversation is behind.
 2. 🔴 **This workspace is a fresh clone without `senpai/bootstrap-checkout.sh` having
    run.** `git remote -v` shows **only `origin`** — no `upstream` — and `yukon`
    commands fail with "this repo is not linked to Yukon" unless the benchmark is
@@ -8146,6 +8155,8 @@ loudly flagged instead.
 
 ### Resume priorities, in order
 
+0. **Re-post the issue #31 checkpoint reply** (blocked by the 403 above) and confirm
+   the REST credential works before relying on any typed GitHub read or mutation.
 1. Run `senpai/bootstrap-checkout.sh`; re-verify PR state once GitHub reads recover.
 2. Re-query Yukon, then `sync-organizer-frontier` onto the live promoted row
    (`59b321e`, 3.24985583421771) with the full verification chain. Our deficit is
