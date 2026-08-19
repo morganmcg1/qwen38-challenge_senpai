@@ -58,9 +58,31 @@ case "${arm}" in
   *) echo "e56_run_leg: unknown arm ${arm}" >&2; exit 2 ;;
 esac
 
+# Same search order as benchmark.sh's find_macmon, so this leg records the
+# temperature from the same reader the cool gate itself used. setup.sh installs
+# macmon into ${HOME}/bin, which is not on PATH here.
+find_macmon() {
+  local candidate
+  if [[ -n "${MLXFAST_MACMON_BIN:-}" && -x "${MLXFAST_MACMON_BIN}" ]]; then
+    printf '%s\n' "${MLXFAST_MACMON_BIN}"
+    return 0
+  fi
+  if candidate="$(command -v macmon 2>/dev/null)"; then
+    printf '%s\n' "${candidate}"
+    return 0
+  fi
+  for candidate in /opt/homebrew/bin/macmon /usr/local/bin/macmon "${HOME}/bin/macmon"; do
+    if [[ -x "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
 gpu_temp() {
   local bin
-  bin="$(command -v macmon 2>/dev/null)" || return 0
+  bin="$(find_macmon)" || return 0
   "${bin}" pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty' 2>/dev/null
 }
 
@@ -73,6 +95,11 @@ research/run-arm.sh "${tag}" --trace --tokens "${tokens}"
 status=$?
 exit_temp="$(gpu_temp)"
 
+# benchmark.sh reports the cool gate on stderr, which run-arm.sh captures into
+# the trace, so the gate's own words are the disclosure -- not a claim of mine.
+gate_lines="$(grep -c 'GPU cool-down gate passed' "${out}/trace.txt" 2>/dev/null)" || gate_lines="${gate_lines:-0}"
+gate_skipped="$(grep -c 'skipping the GPU cool-down gate' "${out}/trace.txt" 2>/dev/null)" || gate_skipped="${gate_skipped:-0}"
+
 {
   echo "e56_arm=${arm}"
   echo "e56_tag=${tag}"
@@ -81,6 +108,9 @@ exit_temp="$(gpu_temp)"
   echo "schedule_file_sha=$(git hash-object "${SCHEDULE_FILE}")"
   echo "entry_gpu_temp_c=${entry_temp:-unavailable}"
   echo "exit_gpu_temp_c=${exit_temp:-unavailable}"
+  echo "cool_gate_passes=${gate_lines}"
+  echo "cool_gate_skips=${gate_skipped}"
+  echo "cool_gate_passed_real_gate=$([[ "${gate_lines}" -gt 0 && "${gate_skipped}" -eq 0 ]] && echo true || echo false)"
 } >> "${out}/meta.txt" 2>/dev/null
 
 # Log while the session is still running. A leg that logs only at session end
