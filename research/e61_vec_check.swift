@@ -163,10 +163,13 @@ var laneJSON: [String] = []
 for n in 5...8 {
     let got = runWide("wide_na\(n)_faithful", firstM: 0)
     var worst = 0
+    var perLane: [Int] = []
     for m in 0..<n {
         let (u, _) = maxUlp(got, refNA2, idxForInputRow(m))
+        perLane.append(u)
         worst = max(worst, u)
     }
+    print("NA=\(n) per-lane max_ulp against the shipped NA=2 helper: \(perLane)")
     var distinct = true
     for m in 0..<n {
         for p in (m + 1)..<n where idxForInputRow(m).map({ bits(got[$0]) }) == idxForInputRow(p).map({ bits(got[$0]) }) {
@@ -176,7 +179,7 @@ for n in 5...8 {
     let ok = (worst == 0) && distinct
     if !ok { laneGate = false }
     print("NA=\(n): max_ulp_over_\(n)_lanes=\(worst) all_lanes_distinct=\(distinct)  \(ok ? "EXACT" : "MISMATCH")")
-    laneJSON.append("\"\(n)\": {\"max_ulp\": \(worst), \"all_lanes_distinct\": \(distinct), \"exact\": \(ok)}")
+    laneJSON.append("\"\(n)\": {\"max_ulp\": \(worst), \"per_lane_max_ulp\": \(perLane), \"all_lanes_distinct\": \(distinct), \"exact\": \(ok)}")
 }
 
 // ---- Q3: positive controls. Every one MUST be caught. ----
