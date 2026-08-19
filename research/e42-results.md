@@ -231,6 +231,40 @@ all. Restricted to reproducing shapes the same calibration reads **+0.38 %,
 restructuring predicts. I report the interval over all three denominators rather
 than silently dropping the unstable shape.
 
+### 5.1 The m1 control, predicted before it was run
+
+Every arm so far slows the MTP leg and leaves the serial leg alone. That is a
+one-directional check: it shows the injection reaches the widths it targets, but
+not that it *misses* the widths it does not target. The `m1` arm inverts the
+test. It treats width 1 only, and the serial leg runs at depth 0, so **every one
+of its rounds is a single M=1 target row**. Predictions, recorded here before the
+arm was measured:
+
+1. **raw_p must go up, not down.** `raw_p = serial / MTP`, so slowing the
+   numerator raises it. p2, p6 and m6 all pushed raw_p down; m1 must push it up.
+   The analyzer now asserts this direction per family rather than leaving it to
+   prose (`raw_p_sign_expected` vs `raw_p_sign_observed`).
+2. **ψ(serial) should be high, near 0.87.** The base serial leg is 37.66 s for
+   512 tokens = 73.6 ms per round, and the curve puts Q(1) = 64.433 ms of QMV
+   work in a width-1 forward. That is 64.433 / 73.6 ≈ **0.875**, i.e. a depth-0
+   decode is almost entirely quantised matvec — which is what a memory-bound
+   4-bit single-token decode should look like.
+3. **So the serial leg should slow by roughly 0.875 × x(1) ≈ +79 % at L1**, an
+   effect ~180× the 0.4315 % MDE.
+4. **The MTP leg should move only a little**, and for a specific reason: width 1
+   never appears as a *target verify* width there (`nd = 0`), so the only
+   width-1 QMV work in the MTP leg is the draft head's autoregressive calls.
+   Whatever the MTP leg does move by is therefore a measurement of the
+   **draft-head width-1 share** — a quantity nothing else in E42 prices.
+5. **MTP-leg occupancy is not identified for m1**, because the round histogram
+   contains no width-1 rounds to weight. The analyzer says so explicitly
+   (`mtp_leg_has_treated_verify_width: false`) instead of emitting a number it
+   cannot support.
+
+Prediction 2 is the interesting one to be wrong about: if ψ(serial) came out
+well below 0.87, it would mean the curve's absolute calibration is off in a way
+the MTP-leg arms happen not to expose.
+
 ## 6. φ — but per width, not pooled
 
 Pooling over M≥6 hides the question. Ranked telemetry brackets φ(M≥6) to
