@@ -1958,7 +1958,7 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -1966,12 +1966,12 @@ template <typename T, int group_size, int bits, bool batched>
           // 4+4: two weight streams, receipted on this benchmark (scored
           // 3.195804751396457 as a promoted submission) before a later
           // stale-base REPLACE overlay reverted it; restored here.
-          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>(
+          qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
@@ -2006,17 +2006,17 @@ template <typename T, int group_size, int bits, bool batched>
               tid, simd_gid, simd_lid);
           return;
         case 7:
-          qmv_fast_crossrow_affine4_g64<T, 7>(
+          qmv_fast_crossrow_affine4_g64<T, 7, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 8:
-          qmv_fast_crossrow_affine4_g64<T, 8>(
+          qmv_fast_crossrow_affine4_g64<T, 8, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
         case 9:
-          qmv_fast_crossrow_affine4_g64<T, 9>(
+          qmv_fast_crossrow_affine4_g64<T, 9, 2, 2>(
               w, scales, biases, x, y, in_vec_size, out_vec_size,
               tid, simd_gid, simd_lid);
           return;
