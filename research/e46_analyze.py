@@ -323,6 +323,9 @@ def main() -> int:
     print(f"  {'M':>3} {'base(ms)':>10} {'arm(ms)':>10} {'delta':>9} {'MDE':>8} "
           f"{'|d|>MDE':>8}  role")
     tb_all = {m: st.fmean(runs[k]["t"][m] * 1e3 for k in base_keys) for m in widths}
+    out["T_base_all_widths_ms"] = tb_all
+    out["T_base_all_widths_per_run_ms"] = {
+        k: {m: runs[k]["t"][m] * 1e3 for m in widths} for k in base_keys}
     deltas = {}
     for m in widths:
         dl = tarm[m] - tb_all[m]

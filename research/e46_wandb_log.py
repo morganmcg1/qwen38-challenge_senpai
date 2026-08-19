@@ -125,8 +125,7 @@ def main() -> None:
         k = str(m)
         if k not in d.get("T_arm_ms", {}):
             continue
-        base_ms = sum(d["T_base_per_run_ms"][r][k]
-                      for r in d["T_base_per_run_ms"]) / len(d["T_base_per_run_ms"])
+        base_ms = d["T_base_all_widths_ms"][k]
         arm_ms = d["T_arm_ms"][k]
         dl = d["delta_ms"][k]
         mde = d["mde_ms"][k]
@@ -198,8 +197,9 @@ def main() -> None:
             occ = z.get("occupancy", {}).get("functions", {})
             mtt = next(iter(occ.values()), {}).get(
                 "max_total_threads_per_threadgroup")
+            edits = "; ".join(f"{a} -> {b}" for a, b in z["edits"]) or "none"
             reg.add_data(z["name"], z["contrast"], z["treated_m"],
-                         ", ".join(z["edits"]) or "none", z["kernel_wide_reg_max"],
+                         edits, z["kernel_wide_reg_max"],
                          z["entry_point_reg_max"], z["argmax_width"],
                          z["exceeds_ceiling"], mtt,
                          *[z["width_cells"][str(m)]["peak_live_regs"]
