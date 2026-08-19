@@ -46,7 +46,51 @@ from noise_floors import SCORE_BETWEEN_SUBMISSION  # noqa: E402
 # to 0.12 %. Bit-exactness 6/6 arms, 1152 cells, 0 differing.
 PSI_MTP = 0.6736        # QMV share of the CANDIDATE leg, dispatched widths 2..9
 PSI_MTP_FLOOR = 0.604   # his conservative floor
-PSI_SERIAL = 0.8525     # QMV share of the SERIAL leg, width 1 only
+
+# 🔴🔴🔴 PSI_SERIAL IS A LOCAL-HARNESS QUANTITY AND IT DOES NOT ENTER THE RANKED
+# SCORE. Ledger 176 / edward E50 (merged 26fd0ac). It is retained here ONLY so
+# the local two-leg ratio can still be predicted; every ranked pricing path must
+# ignore it. If you find yourself subtracting it to price a submission, stop.
+#
+# WHY. The ranked harness times TWO DIFFERENT BINARIES:
+#   .github/workflows/qwen-mtp-ranked-benchmark.yml, above the timed step --
+#     "baseline:  pinned baseline tree, serial K=1 target decode ...
+#      candidate: this workspace, native-MTP speculative decode"
+#   the invocation --  --candidate "${MLXFAST_JOB_WS}"
+#                      --baseline  "${MLXFAST_QWEN_MTP_BASELINE_RESOLVED}"
+#   the precondition -- test -d "${BASELINE_RESOLVED}/.build/release" || exit 1
+#   the scorer       -- .aggregate.baseline_serial_seconds_per_token_mean
+#                     / .aggregate.candidate_mtp_seconds_per_token_mean
+#   MLXFAST_QWEN_MTP_BASELINE_WS = /opt/bench-runner/baseline/qwen3.8-27b-mtp-v1/current
+#   and benchmark.json's editablePaths has NO .github entry.
+# So d ln(serial)/dx == 0 for every x we can edit, BY CONSTRUCTION.
+#
+# HOW IT GOT INTO THE MODEL. askeladd's E42 injection was run on the local
+# harness, where senpai/program.md:156 says: "Both local legs also use the same
+# candidate build. ... a general target or kernel improvement may speed both legs
+# and cancel in that ratio." The 0.8525 is that cancellation. The measurement was
+# correct; promoting it to a ranked score model was not. Item 103 verified the
+# IDENTITY raw_p = serial/mtp with 0 mismatches, and the identity was then
+# differentiated without checking which term is a function of x. An identity
+# between two measured quantities says nothing about which one your edits move.
+PSI_SERIAL = 0.8525     # LOCAL-ONLY. QMV share of the local serial leg, width 1.
+
+# The two harnesses price the SAME physical change differently, so every pricing
+# entry point takes this explicitly rather than defaulting silently to a model.
+HARNESS_RANKED = "ranked"   # scored submissions: serial leg is a pinned binary
+HARNESS_LOCAL = "local"     # --local-iterate: both legs from the candidate build
+_HARNESSES = (HARNESS_RANKED, HARNESS_LOCAL)
+
+
+def _leg_coupling(harness):
+    """d ln(serial)/d ln(qmv cost) for a change that DOES reach width 1.
+
+    Ranked: 0, because the serial leg is a separately built pinned tree.
+    Local:  PSI_SERIAL, because both legs are the same binary.
+    """
+    if harness not in _HARNESSES:
+        raise ValueError("harness must be one of %r, got %r" % (_HARNESSES, harness))
+    return 0.0 if harness == HARNESS_RANKED else PSI_SERIAL
 
 # thorfinn E46, merged 512359f4. Refit T = 16.757 + 27.532*ceil(M/IPG) +
 # 9.624*M, max|resid| 0.770 ms against 11.348 ms for an [M>=6] indicator whose
@@ -72,37 +116,55 @@ E27_REG_DELTA = 21
 E27_WIDTHS_CHANGED = (5, 9)
 
 
-def leverage(gated, psi_mtp_w1=0.0):
+def leverage(gated, psi_mtp_w1=0.0, harness=HARNESS_RANKED):
     """Score % per 1 % QMV cost reduction. `gated` = does it skip M=1?
 
-    🔴 `psi_mtp_w1` is the CANDIDATE leg's own width-1 QMV share, and it is
-    NOT MEASURED. PSI_MTP = 0.6736 was measured by injecting into widths 2..9
-    only, so the candidate leg's TOTAL QMV share is PSI_MTP + psi_mtp_w1.
+    🔴 RANKED (what a submission scores). The serial leg is a pinned separate
+    binary, so it cannot respond to anything we edit:
 
-    The point of carrying it explicitly is that the two leverages depend on it
-    completely differently:
+      GATED   (widths 2..9) = PSI_MTP
+      UNIFORM (all widths)  = PSI_MTP + psi_mtp_w1        <-- POSITIVE, always
 
-      GATED   (widths 2..9)  = PSI_MTP                     -- INVARIANT to it.
-              The serial leg decodes one token at a time, so it dispatches
-              width 1 and cannot be touched by a change confined to 2..9,
-              whatever the candidate leg does at width 1.
+    Both are positive and they differ only by the candidate leg's OWN width-1
+    share. Gating therefore buys **exactly zero** on ranked when psi_mtp_w1 = 0,
+    and is strictly WORSE than not gating when psi_mtp_w1 > 0. Item 173(B)'s
+    "free gate" was free because it was empty. Retired in ledger 176.
 
-      UNIFORM (all widths)   = PSI_MTP + psi_mtp_w1 - PSI_SERIAL
-              If psi_mtp_w1 >= 0.1789 the uniform SIGN FLIPS non-negative and
-              item 173(A)'s headline is wrong.
+    🔴 LOCAL (what --local-iterate's serial-to-MTP ratio shows). Both legs are
+    the same build, so a change reaching width 1 moves the numerator too:
 
-    Verified from source on this base (kernels/quantized.h): the 4-bit switch
-    at :1917 has cases 2..9 and NO case 1, so width-1 4-bit falls through to
-    qmv_fast_impl at :2026. But :1908 dispatches a width-1 2-bit coarse DRAFT
-    readout (out_vec_size == 98336) on the candidate leg, so "width 1 implies
-    serial leg" is not a theorem and psi_mtp_w1 cannot be assumed zero without
-    measurement. askeladd's E42 m1 control may already determine it: solve
-    raw_p ratio = (1 + PSI_SERIAL*x)/(1 + psi_mtp_w1*x) at his known dose.
-    E48 (PR 52) carries this.
+      GATED   (widths 2..9) = PSI_MTP                     -- same as ranked
+      UNIFORM (all widths)  = PSI_MTP + psi_mtp_w1 - PSI_SERIAL
+
+    GATED IS HARNESS-INVARIANT. That is why every gated price in this campaign
+    survived the E50 correction, including alphonse's merged E44 r2. Only the
+    uniform family was mispriced, and it was mispriced in both sign and size.
+
+    `psi_mtp_w1` is the CANDIDATE leg's own width-1 QMV share and is still NOT
+    MEASURED. PSI_MTP = 0.6736 was injected into widths 2..9 only, so the
+    candidate leg's TOTAL QMV share is PSI_MTP + psi_mtp_w1.
+
+    Verified from source (kernels/quantized.h): the 4-bit switch at :1917 has
+    cases 2..9 and NO case 1, so width-1 4-bit falls through to qmv_fast_impl at
+    :2026. But :1908 dispatches a width-1 2-bit coarse DRAFT readout
+    (out_vec_size == 98336) on the candidate leg, so "width 1 implies serial leg"
+    is not a theorem. What HAS since been pinned is askeladd's E42
+    non_drafting_round_count = 0 (research/e42_width_census.py:16,
+    research/e42-results.md:749): the candidate runs no verifier-side width-1
+    rounds at all, so psi_mtp_w1 is carried entirely by that 2-bit draft readout,
+    which fires mtp_depth = 8 times per round. Still needs measuring; E48 (PR 52)
+    carries it, no longer as a sign correction but as the entire score value of
+    the width-1 path.
     """
+    # Validate UNCONDITIONALLY, before the branch. A typo'd harness on the gated
+    # path must not sail through just because the coupling term happens to be
+    # unused there -- a checker that only fires on one branch is not a checker.
+    coupling = _leg_coupling(harness)
     if gated:
+        # A gated change cannot reach width 1 in EITHER harness, so the serial
+        # leg is untouched either way and the coupling term does not apply.
         return PSI_MTP
-    return PSI_MTP + psi_mtp_w1 - PSI_SERIAL
+    return PSI_MTP + psi_mtp_w1 - coupling
 
 
 def qmv_share(m):
@@ -128,24 +190,96 @@ def width_set_share(widths):
     return sum(qmv_share(m) for m in widths if m in T_BY_WIDTH)
 
 
-def mechanism_value(widths, win_pct, gated=True, psi=None):
+def _lev(gated, psi, harness, psi_mtp_w1=0.0):
+    """Shared %score-per-%QMV coefficient for the pricing entry points.
+
+    One definition so the ranked/local distinction cannot drift between them.
+    """
+    base = psi if psi is not None else PSI_MTP
+    coupling = _leg_coupling(harness)        # validates harness on BOTH branches
+    if gated:
+        return base
+    return base + psi_mtp_w1 - coupling
+
+
+def mechanism_value(widths, win_pct, gated=True, psi=None,
+                    harness=HARNESS_RANKED, psi_mtp_w1=0.0):
     """Score % from removing win_pct of QMV cost AT `widths` only.
 
-    Gated by construction whenever 1 not in widths: the serial leg dispatches
-    width 1 alone, so a change confined to wider cells cannot touch the
-    numerator. That is the free gate of item 173(B) -- and it is exactly why a
-    width-restricted mechanism is worth +psi_mtp per 1 % while a uniform one is
-    worth -0.1789 per 1 %.
+    Gated by construction whenever 1 not in widths, and gated pricing is
+    IDENTICAL in both harnesses: a change confined to widths 2..9 cannot reach
+    the serial leg whether that leg is our own build or the pinned baseline.
+
+    🔴 An UNGATED change is no longer automatically worse. On ranked it is worth
+    `psi + psi_mtp_w1` -- strictly MORE than gated. Only on the local harness does
+    it pay the PSI_SERIAL cancellation. Ledger 176; see `leverage.__doc__`.
     """
     if 1 in widths and gated:
-        raise ValueError("width 1 is the serial leg; such a change is NOT gated")
-    lev = (psi if psi is not None else PSI_MTP) - (0.0 if gated else PSI_SERIAL)
-    return lev * width_set_share(widths) * win_pct
+        raise ValueError("a change reaching width 1 is NOT gated; pass gated=False")
+    return _lev(gated, psi, harness, psi_mtp_w1) * width_set_share(widths) * win_pct
 
 
-def target_for(score_pct, gated=True, psi=None):
-    """QMV cost reduction needed to move the score by score_pct."""
-    lev = (psi if psi is not None else PSI_MTP) - (0.0 if gated else PSI_SERIAL)
+def mechanism_value_per_width(wins, gated=True, psi=None,
+                              harness=HARNESS_RANKED, psi_mtp_w1=0.0):
+    """Score % from a per-width map {M: win_pct}. WEIGHT FIRST, THEN SUM.
+
+    This is the CORRECT conversion and the only one this module will offer for a
+    non-uniform win. `mechanism_value(widths, pooled_win)` is a special case that
+    happens to be right only when the win is genuinely flat across `widths`.
+    """
+    if 1 in wins and gated:
+        raise ValueError("a change reaching width 1 is NOT gated; pass gated=False")
+    lev = _lev(gated, psi, harness, psi_mtp_w1)
+    return lev * sum(qmv_share(m) * w for m, w in wins.items() if m in T_BY_WIDTH)
+
+
+def pooling_bias(wins, gated=True, psi=None,
+                 harness=HARNESS_RANKED, psi_mtp_w1=0.0):
+    """POOL-THEN-WEIGHT minus WEIGHT-THEN-SUM. alphonse, E44 r2.
+
+    I asked him to report per width to preserve USEFULNESS after a census
+    landed. He showed it preserves CORRECTNESS: pooling first gives the wrong
+    answer, not a coarser one.
+
+        pool then weight:   psi * mean(win) * sum(share)
+        weight then sum:    psi * sum(share * win)
+        difference        =  -psi * n * Cov_n(share, win)
+
+    where Cov_n is the population covariance over the pooled widths. So the sign
+    of the bias is the sign of -Cov(share, win): if the widths that win MORE also
+    cost MORE, pooling UNDERSTATES. That is the normal case, because both the win
+    and the cost tend to grow with the work done per dispatch -- E44's M=8 wins
+    +14.85 % against M=7's +7.99 % while carrying 7.55 % of census cost against
+    4.71 %.
+
+    Returns (pooled, per_width, bias). `bias < 0` means pooling understates.
+
+    This is not an E44 fact. It applies to EVERY %cost -> %score conversion in
+    this campaign, and it is the reason `mechanism_value_per_width` exists.
+    """
+    widths = [m for m in wins if m in T_BY_WIDTH]
+    if not widths:
+        return 0.0, 0.0, 0.0
+    pooled_win = sum(wins[m] for m in widths) / len(widths)
+    pooled = mechanism_value(widths, pooled_win, gated=gated, psi=psi,
+                             harness=harness, psi_mtp_w1=psi_mtp_w1)
+    per_width = mechanism_value_per_width(
+        {m: wins[m] for m in widths}, gated=gated, psi=psi,
+        harness=harness, psi_mtp_w1=psi_mtp_w1
+    )
+    return pooled, per_width, pooled - per_width
+
+
+def target_for(score_pct, gated=True, psi=None,
+               harness=HARNESS_RANKED, psi_mtp_w1=0.0):
+    """QMV cost reduction needed to move the score by score_pct.
+
+    Returns None when the leverage is non-positive, i.e. when no amount of the
+    mechanism reaches the target. Under the LOCAL harness an ungated mechanism
+    with psi_mtp_w1 < PSI_SERIAL - PSI_MTP has negative leverage and this is None;
+    under RANKED that case does not arise, because leverage is always positive.
+    """
+    lev = _lev(gated, psi, harness, psi_mtp_w1)
     return None if lev <= 0 else score_pct / lev
 
 
@@ -159,19 +293,38 @@ def report():
     sd = SCORE_BETWEEN_SUBMISSION.pct
     print("QMV -> SCORE LEVERAGE     (raw_p = serial/mtp; serial is the NUMERATOR)")
     print("  psi_mtp    = %.4f  candidate leg, verify widths 2..9" % PSI_MTP)
-    print("  psi_serial = %.4f  serial leg, width 1 only" % PSI_SERIAL)
+    print("  psi_serial = %.4f  LOCAL ONLY -- not in the ranked score" % PSI_SERIAL)
     print()
-    print("  UNIFORM QMV speedup : %+.4f %% of score per 1 %%   <-- NEGATIVE"
-          % leverage(False))
-    print("  GATED off M=1       : %+.4f %% of score per 1 %%" % leverage(True))
+    print("  🔴 THE RANKED SERIAL LEG IS A PINNED SEPARATE BINARY (ledger 176).")
+    print("     .github/.../qwen-mtp-ranked-benchmark.yml times --baseline (a")
+    print("     prebuilt tree at /opt/bench-runner/baseline/...) against")
+    print("     --candidate (this workspace), and scores")
+    print("       baseline_serial_seconds_per_token_mean")
+    print("     / candidate_mtp_seconds_per_token_mean.")
+    print("     editablePaths has no .github entry. So d ln(serial)/dx == 0 for")
+    print("     everything we can edit, and psi_serial cannot appear in a price.")
     print()
-    print("  A uniform 10 %% QMV win COSTS %.3f %% of score = %.2f sd."
-          % (-10 * leverage(False), -10 * leverage(False) / sd))
+    print("                        RANKED (scored)    LOCAL (--local-iterate)")
+    print("  UNIFORM QMV speedup : %+.4f %%/%%         %+.4f %%/%%"
+          % (leverage(False), leverage(False, harness=HARNESS_LOCAL)))
+    print("  GATED off M=1       : %+.4f %%/%%         %+.4f %%/%%"
+          % (leverage(True), leverage(True, harness=HARNESS_LOCAL)))
     print()
-    print("  THE GATE IS FREE. Width 1 dispatches qmv_fast_impl; widths 2..9")
-    print("  dispatch the crossrow _m family. Different code paths -- so any")
-    print("  optimisation confined to _m is ALREADY gated and earns +%.4f %%/%%."
+    print("  A uniform 10 %% QMV win EARNS %.3f %% of score = %.2f sd on ranked,"
+          % (10 * leverage(False), 10 * leverage(False) / sd))
+    print("  while APPEARING to cost %.3f %% in the local ratio. If you optimise"
+          % (-10 * leverage(False, harness=HARNESS_LOCAL)))
+    print("  against the local ratio you will reject your best changes.")
+    print("  senpai/program.md:156 -- 'a general target or kernel improvement may")
+    print("  speed both legs and cancel in that ratio'. Compare ABSOLUTE candidate")
+    print("  seconds per token against a fresh unchanged BASE_SHA run instead.")
+    print()
+    print("  🔴 THE GATE IS FREE BUT IT IS ALSO EMPTY (item 173(B) retired).")
+    print("  Width 1 dispatches qmv_fast_impl; widths 2..9 dispatch the crossrow")
+    print("  _m family, so _m work is already gated and earns +%.4f %%/%%."
           % leverage(True))
+    print("  But gating buys NOTHING extra on ranked: the numerator is pinned")
+    print("  either way. Gate for risk containment if you like -- never for score.")
     print()
     print("GATED TARGETS (QMV cost reduction needed)")
     for label, tgt in (("crown gap", 0.5193), ("1 sd", sd), ("2 sd", 2 * sd)):
@@ -285,12 +438,44 @@ def selftest():
         if not cond:
             bad.append(name)
 
-    # THE headline sign. If this ever flips, the campaign's direction flips.
-    ck("uniform QMV leverage is NEGATIVE", leverage(False) < 0,
+    # 🔴 THE headline sign, CORRECTED in ledger 176 (edward E50, merged 26fd0ac).
+    # These three assertions previously read "uniform QMV leverage is NEGATIVE",
+    # "uniform sign flips once width-1 candidate QMV reaches 0.1789" and "ungated
+    # is worth less than gated". All three were consequences of pricing a ranked
+    # submission with PSI_SERIAL, which does not enter the ranked score at all.
+    # They are kept here INVERTED rather than deleted, so that anyone who
+    # reintroduces the old model gets a red gate instead of a plausible number.
+    ck("RANKED uniform QMV leverage is POSITIVE", leverage(False) > 0,
        "got %+.4f" % leverage(False))
+    ck("RANKED uniform equals psi_mtp when psi_mtp_w1 = 0",
+       leverage(False) == PSI_MTP, "got %+.4f" % leverage(False))
+    ck("LOCAL uniform QMV leverage is NEGATIVE",
+       leverage(False, harness=HARNESS_LOCAL) < 0,
+       "got %+.4f" % leverage(False, harness=HARNESS_LOCAL))
     ck("gated QMV leverage is POSITIVE", leverage(True) > 0)
     ck("gated leverage equals psi_mtp exactly", leverage(True) == PSI_MTP)
-    ck("serial leg is MORE QMV-bound than candidate", PSI_SERIAL > PSI_MTP)
+    # 🔴 THE VACUITY OF THE FREE GATE, encoded. On ranked, gating a change that
+    # would otherwise reach width 1 buys exactly nothing when psi_mtp_w1 = 0, and
+    # is strictly WORSE than not gating when it is positive. Item 173(B) retired.
+    ck("RANKED gating buys exactly zero at psi_mtp_w1 = 0",
+       leverage(True) == leverage(False))
+    ck("RANKED gating is a LOSS when the candidate has width-1 QMV",
+       leverage(False, psi_mtp_w1=0.30) > leverage(True))
+    # GATED IS HARNESS-INVARIANT. This is why every gated price in the campaign
+    # survived the correction, including alphonse's merged E44 r2.
+    ck("gated leverage is identical in both harnesses",
+       leverage(True, harness=HARNESS_RANKED)
+       == leverage(True, harness=HARNESS_LOCAL))
+    ck("serial leg is MORE QMV-bound than candidate LOCALLY", PSI_SERIAL > PSI_MTP)
+    # A typo'd harness must raise on BOTH branches, not just the one that reads
+    # the coupling term. A checker that fires on one branch is not a checker.
+    for _g in (True, False):
+        _raised = False
+        try:
+            leverage(_g, harness="rankd")
+        except ValueError:
+            _raised = True
+        ck("an unknown harness raises (gated=%s)" % _g, _raised)
 
     # 🔴 The unmeasured quantity. GATED must be invariant to it; UNIFORM must
     # not be. If someone ever "simplifies" leverage() so the gated branch reads
@@ -300,11 +485,18 @@ def selftest():
        leverage(True, 0.0) == leverage(True, 0.30) == PSI_MTP)
     ck("uniform leverage DOES depend on it",
        leverage(False, 0.30) > leverage(False, 0.0))
-    ck("uniform sign flips once width-1 candidate QMV reaches 0.1789",
-       leverage(False, 0.0) < 0 <= leverage(False, 0.1789),
-       "%.4f -> %.4f" % (leverage(False, 0.0), leverage(False, 0.1789)))
-    ck("the flip threshold is exactly the uniform gap",
+    # 🔴 The sign flip is now a LOCAL-harness phenomenon only. On ranked there is
+    # no sign to flip: uniform leverage is PSI_MTP + psi_mtp_w1, positive for every
+    # non-negative psi_mtp_w1, so no threshold exists.
+    ck("LOCAL uniform sign flips once width-1 candidate QMV reaches 0.1789",
+       leverage(False, 0.0, HARNESS_LOCAL) < 0
+       <= leverage(False, 0.1789, HARNESS_LOCAL),
+       "%.4f -> %.4f" % (leverage(False, 0.0, HARNESS_LOCAL),
+                         leverage(False, 0.1789, HARNESS_LOCAL)))
+    ck("the LOCAL flip threshold is exactly the uniform gap",
        abs((PSI_SERIAL - PSI_MTP) - 0.1789) < 1e-9)
+    ck("RANKED uniform leverage has NO sign flip to find",
+       all(leverage(False, w / 100.0) > 0 for w in range(0, 101)))
 
     # Targets, pinned so a silent edit to psi is caught.
     ck("1 sd target is 1.140 %", abs(target_for(SCORE_BETWEEN_SUBMISSION.pct) - 1.1398) < 2e-3,
@@ -325,6 +517,52 @@ def selftest():
     total = sum(qmv_share(m) for m in HIST if m in T_BY_WIDTH)
     ck("measured-width shares sum to 1", abs(total - 1.0) < 1e-9,
        "got %.6f" % total)
+
+    # ------------------------------------------------------------------
+    # POOLING BIAS -- alphonse, E44 r2. Pooling before weighting is BIASED,
+    # not merely coarse, and the sign is the sign of -Cov(share, win).
+    # ------------------------------------------------------------------
+    e44 = {7: 7.9925, 8: 14.8495}          # his per-M means over both shapes
+    pooled, per_width, bias = pooling_bias(e44)
+    ck("E44: pooling UNDERSTATES because the bigger win is the costlier width",
+       bias < 0, "bias %+.6f" % bias)
+    ck("E44: per-width value exceeds the pooled value",
+       per_width > pooled, "%.6f vs %.6f" % (per_width, pooled))
+    # M=8 wins more AND costs more => positive covariance => negative bias.
+    ck("E44: the win and the cost share are positively correlated",
+       (e44[8] - e44[7]) * (qmv_share(8) - qmv_share(7)) > 0)
+
+    # A FLAT win must have exactly zero bias. If pooling ever disagrees with
+    # weighting on a flat win, one of the two conversions is wrong.
+    flat = {7: 10.0, 8: 10.0}
+    _, _, flat_bias = pooling_bias(flat)
+    ck("a flat win has ZERO pooling bias", abs(flat_bias) < 1e-12,
+       "got %+.3e" % flat_bias)
+
+    # And the sign must INVERT when the cheap width is the big winner. This is
+    # the case that proves the bias is covariance and not an artefact of always
+    # rounding one way.
+    inverted = {7: 14.8495, 8: 7.9925}
+    _, _, inv_bias = pooling_bias(inverted)
+    ck("swapping the wins inverts the bias sign (it is a covariance)",
+       inv_bias > 0 > bias, "%+.6f vs %+.6f" % (inv_bias, bias))
+    ck("the two biases are equal and opposite", abs(inv_bias + bias) < 1e-12)
+
+    # The per-width conversion must inherit the width-1 guard. A per-width map
+    # that touches the serial leg is not a gated mechanism.
+    try:
+        mechanism_value_per_width({1: 10.0, 7: 10.0})
+        ck("per-width conversion refuses to price width 1 as gated", False,
+           "no ValueError raised")
+    except ValueError:
+        ck("per-width conversion refuses to price width 1 as gated", True)
+
+    # Cross-check against alphonse's independent script: equal shape mix over
+    # M in {7,8} at his census gives +1.009 %, pooled gives +0.942 %.
+    ck("E44 per-width lands near his published +1.009 %",
+       abs(per_width - 1.009) < 0.06, "got %+.4f" % per_width)
+    ck("E44 pooled lands near his published +0.942 %",
+       abs(pooled - 0.942) < 0.06, "got %+.4f" % pooled)
 
     # M=9 must dominate, or the prize framing is wrong.
     ck("M=9 is the largest single share",
@@ -361,9 +599,24 @@ def selftest():
     except ValueError:
         raised = True
     ck("pricing width 1 as gated raises", raised)
-    ck("ungated is worth less than gated",
-       mechanism_value((7, 8), 10.0, gated=False)
-       < mechanism_value((7, 8), 10.0, gated=True))
+    # 🔴 CORRECTED. Was "ungated is worth less than gated" unconditionally. That
+    # holds only on the LOCAL harness. On RANKED an ungated change is worth at
+    # least as much as a gated one, because the serial leg cannot respond.
+    ck("LOCAL ungated is worth less than gated",
+       mechanism_value((7, 8), 10.0, gated=False, harness=HARNESS_LOCAL)
+       < mechanism_value((7, 8), 10.0, gated=True, harness=HARNESS_LOCAL))
+    ck("RANKED ungated is worth NO LESS than gated",
+       mechanism_value((7, 8), 10.0, gated=False, psi_mtp_w1=0.30)
+       >= mechanism_value((7, 8), 10.0, gated=True))
+    # The two harnesses must actually DISAGREE on an ungated price, otherwise the
+    # harness argument is decorative and the correction never landed.
+    ck("the harnesses disagree on an ungated price",
+       mechanism_value((7, 8), 10.0, gated=False, harness=HARNESS_RANKED)
+       != mechanism_value((7, 8), 10.0, gated=False, harness=HARNESS_LOCAL))
+    # ...and must AGREE on a gated one, to the bit.
+    ck("the harnesses agree exactly on a gated price",
+       mechanism_value((7, 8), 10.0, gated=True, harness=HARNESS_RANKED)
+       == mechanism_value((7, 8), 10.0, gated=True, harness=HARNESS_LOCAL))
 
     # E44 r2 narrow variant. Pinned so a silent edit to HIST or psi is caught.
     f78, e44 = e44_narrow()
@@ -381,9 +634,11 @@ def selftest():
     if bad:
         print("SELFTEST FAILED: %d case(s): %s" % (len(bad), bad))
         return 1
-    print("SELFTEST PASSED: uniform sign negative, gated targets 1.140 % / "
-          "0.771 %, M=9 dominant, E27 residual large and negative, E44 narrow "
-          "above the board floor on every shape mix.")
+    print("SELFTEST PASSED: RANKED uniform sign POSITIVE (+psi_mtp) and LOCAL "
+          "uniform sign negative, gating vacuous on ranked, gated pricing "
+          "harness-invariant at 1.140 % / 0.771 % targets, M=9 dominant, E27 "
+          "residual large and negative, E44 narrow above the board floor on "
+          "every shape mix.")
     return 0
 
 

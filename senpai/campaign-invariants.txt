@@ -132,3 +132,49 @@ Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | sums\[m\] \
 Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | present | sum \+= x\[i\] \+ x\[i \+ 1\] \+ x\[i \+ 2\] \+ x\[i \+ 3\]; | The OTHER half of the same identity: `load_vector`'s BF16 four-term tree, which is what the wide cell is mirroring. Guarding only the wide cell would let someone "fix" the serial leg instead and break the pair from the far side. Six occurrences across the bits==2 and bits==4 branches of `load_vector` and `load_vector_safe`; this is an existence check, so it cannot tell you which one changed -- `research/twin_audit.py` and the diff do that.
 
 Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | sum \+= x\[i\] \+ x\[i \+ 1\] \+ x\[i \+ 2\] \+ x\[i \+ 3\]; | Twin of the quantized.h entry above. Same receipts.
+
+# ---------------------------------------------------------------------------
+# LEDGER 176 -- THE RANKED SERIAL LEG IS A PINNED SEPARATE BINARY.
+#
+# These three rows are a DIFFERENT KIND of invariant from every other row in
+# this file, and that is why they get their own block. Every other row guards
+# our own tree against us. These guard an EXTERNAL fact that our entire scoring
+# model is derived from, and which we do not control.
+#
+# The fact: the ranked harness times two different binaries and divides one by
+# the other -- `--baseline` is a prebuilt tree at
+# /opt/bench-runner/baseline/qwen3.8-27b-mtp-v1/current, `--candidate` is this
+# workspace, and the score is
+#   baseline_serial_seconds_per_token_mean / candidate_mtp_seconds_per_token_mean.
+# Therefore d ln(serial)/dx == 0 for every x we can edit, and a QMV win is worth
+# +psi_mtp per 1 % whether or not it is shape-gated off the M=1 path.
+#
+# WHY IT NEEDS A GATE AT ALL, given .github is not in editablePaths and we
+# cannot change it: precisely BECAUSE we cannot change it. It can still change
+# under us, on any sync or rebase from upstream. If the organizer ever moves the
+# denominator onto the candidate build, the sign of the uniform family flips
+# back to negative, `research/qmv_score_leverage.py`'s RANKED column becomes
+# wrong, and every price in the campaign derived from it silently inverts. That
+# failure would be invisible: the code would still run and still print numbers.
+#
+# So this is a tripwire on an assumption, not on an artifact. If one of these
+# rows goes red, do NOT edit the row. Re-read the workflow, re-derive the score
+# model, and fix `qmv_score_leverage.py`'s harness table first.
+#
+# HISTORY, recorded because it is the whole reason these rows exist: item 173(A)
+# priced a uniform QMV win at -0.1789 %/% for eight days, from askeladd's E42
+# psi_serial = 0.8525. That number is real, but it is a LOCAL-harness
+# cancellation -- senpai/program.md:156, "Both local legs also use the same
+# candidate build ... a general target or kernel improvement may speed both legs
+# and cancel in that ratio." The identity raw_p = serial/mtp was verified on
+# board data with 0 mismatches (item 103) and then DIFFERENTIATED without
+# checking which term is a function of x. An identity between two measured
+# quantities says nothing about which of them your edits can move. Found by
+# edward, E50, merged 26fd0ac.
+# ---------------------------------------------------------------------------
+
+.github/workflows/qwen-mtp-ranked-benchmark.yml | present | baseline_serial_seconds_per_token_mean | The ranked score's NUMERATOR is a field named `baseline`, read from the pinned baseline tree's run and not from ours. If this identifier disappears or is renamed, the scoring shape has changed and the campaign's leverage model must be re-derived from source before any further pricing.
+
+.github/workflows/qwen-mtp-ranked-benchmark.yml | present | candidate_mtp_seconds_per_token_mean | The ranked score's DENOMINATOR is a field named `candidate`, i.e. our workspace. Paired with the row above, these two identifiers ARE the score model: `baseline_serial / candidate_mtp`. Guarding both means a rename of either one goes red rather than quietly re-pointing the derivative.
+
+.github/workflows/qwen-mtp-ranked-benchmark.yml | present | MLXFAST_QWEN_MTP_BASELINE_WS: /opt/bench-runner/baseline/ | The baseline is resolved from an OPERATOR-OWNED path outside the repository, and the workflow hard-requires `${BASELINE_RESOLVED}/.build/release` to exist, so it is a separately compiled tree. This row is the load-bearing half: if the baseline ever became a path inside the workspace, both field names above could survive unchanged while the serial leg silently started responding to our edits.

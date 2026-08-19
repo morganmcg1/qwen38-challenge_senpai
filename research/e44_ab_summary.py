@@ -29,10 +29,32 @@ BAR_PCT = 5.0
 # Widths the candidate actually replaces; 1..3 are the untouched-width guard.
 TOUCHED = range(4, 10)
 
-# Score identity: raw_p = serial_leg / mtp_leg, so a speedup on the SERIAL leg
-# hurts. askeladd's E42 measured both QMV shares causally and bit-exactly.
+# Score identity: raw_p = serial_leg / mtp_leg. askeladd's E42 measured both QMV
+# shares causally and bit-exactly.
+#
+# 🔴🔴 CORRECTED, ledger 176 (edward E50, merged 26fd0ac). The canonical model now
+# lives in `research/qmv_score_leverage.py`; keep this file consistent with it.
+#
+# The RANKED harness times two different binaries -- `--baseline` is a prebuilt
+# tree at /opt/bench-runner/baseline/qwen3.8-27b-mtp-v1/current and `--candidate`
+# is this workspace -- and scores
+#   baseline_serial_seconds_per_token_mean / candidate_mtp_seconds_per_token_mean.
+# So d ln(serial)/dx == 0 for everything we can edit, and PSI_SERIAL does NOT
+# enter a ranked price. A UNIFORM change is worth +PSI_MTP per 1 %, not
+# PSI_MTP - PSI_SERIAL = -0.1789. It is POSITIVE, and 3.77x larger in magnitude.
+#
+# For THIS file the correction matters in one specific place, and it is adverse:
+# the ceiling term below is a genuinely uniform effect (one shared register
+# allocation, all widths including M=1). It was priced with the -0.1789
+# coefficient, which made a uniform SLOWDOWN look almost free -- and briefly even
+# beneficial. It is not. A uniform slowdown costs PSI_MTP per 1 %, so the E44
+# ceiling bound and anything gated on it (thorfinn's E46/E49 register trades) must
+# be re-derived with the larger coefficient.
 PSI_MTP = 0.6736
-PSI_SERIAL = 0.8525
+PSI_SERIAL = 0.8525     # LOCAL-ONLY. Retained for the local two-leg ratio only.
+# %score per 1 % of QMV cost removed, by harness. Gated is harness-invariant.
+LEV_UNIFORM_RANKED = PSI_MTP                # what a submission actually scores
+LEV_UNIFORM_LOCAL = PSI_MTP - PSI_SERIAL    # what --local-iterate's ratio shows
 
 # Student t by df: two-sided 95 % critical value and the one-sided 80 %-power
 # companion. Hardcoded so the summary has no scipy dependency. df=4 keeps the
@@ -369,15 +391,25 @@ def main() -> int:
         print(f"{shape:24s} cand plateau {mean_p:8.2f} us  cv {cv:5.2f} %  "
               f"spread {spread:5.2f} %   base rise over {span} {rise:+6.1f} %")
 
-    # The two halves of this mechanism have OPPOSITE score signs, so an
-    # aggregate speedup is not interpretable as score. Reported separately, each
-    # with its own sign, and never summed into one number.
+    # 🔴 Ledger 176: the two halves NO LONGER have opposite score signs. Under the
+    # retracted local model the width term was +0.6736 and the ceiling term
+    # -0.1789, so summing them was a sign error. On ranked BOTH are +0.6736,
+    # because the serial leg is a pinned separate binary in either case.
+    #
+    # They are still reported separately, and still never summed, for a different
+    # and now stronger reason: they carry different SHARES (`f` for the touched
+    # widths, the whole kernel for the shared register allocation) and different
+    # evidence quality. Same coefficient is not same quantity.
     if touched:
         gated = PSI_MTP
-        uniform = PSI_MTP - PSI_SERIAL
+        # 🔴 RANKED coefficient. Was PSI_MTP - PSI_SERIAL = -0.1789 until ledger
+        # 176; the serial leg is a pinned separate binary and cannot respond.
+        uniform = LEV_UNIFORM_RANKED
         mean_touched = statistics.fmean(r["speedup_pct"] for r in touched)
-        print("\n--- score decomposition (psi_mtp=%.4f, psi_serial=%.4f) ---"
-              % (PSI_MTP, PSI_SERIAL))
+        print("\n--- score decomposition (psi_mtp=%.4f; RANKED, ledger 176) ---"
+              % PSI_MTP)
+        print("    uniform coefficient %+.4f (was %+.4f under the retracted "
+              "local model)" % (LEV_UNIFORM_RANKED, LEV_UNIFORM_LOCAL))
         print(f"width term   M in {{{touched_label}}}: MTP leg only, the serial "
               f"leg never dispatches these widths")
         print(f"             dScore = {gated:+.3f} % per 1 % of MTP-leg QMV cost "
@@ -393,9 +425,18 @@ def main() -> int:
             mean_guard = statistics.fmean(r["speedup_pct"] for r in guard)
             print(f"ceiling term M in {{{guard_label}}}: uniform, it acts through "
                   f"one shared register allocation and so also speeds up M=1")
-            print(f"             dScore = {uniform:+.3f} % per 1 % -- ADVERSE, "
-                  f"because the serial leg is more QMV-dominated than the "
-                  f"candidate leg")
+            # 🔴 Ledger 176. The old rationale here was "ADVERSE, because the
+            # serial leg is more QMV-dominated than the candidate leg" -- that was
+            # the retracted local model and it is deleted. The coefficient is per
+            # 1 % of QMV cost REMOVED, so it is positive; this term is adverse
+            # because the ceiling change ADDS cost (registers rise, occupancy
+            # falls, every width slows), not because the coefficient is negative.
+            print(f"             dScore = {uniform:+.3f} % per 1 % of cost "
+                  f"REMOVED; this term ADDS cost, so its contribution is "
+                  f"negative")
+            print(f"             magnitude is {abs(LEV_UNIFORM_RANKED / LEV_UNIFORM_LOCAL):.2f}x "
+                  f"the retracted local model's -- a uniform slowdown is NOT "
+                  f"nearly free, which is how -0.1789 made it look")
             worst_guard = max(abs(r["speedup_pct"]) for r in guard)
             # Two different floors, and the conservative one wins. The A/A
             # control measures pure measurement noise between IDENTICAL

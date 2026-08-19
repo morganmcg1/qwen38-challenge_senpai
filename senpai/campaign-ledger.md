@@ -7632,3 +7632,317 @@ previously published number is byte-identical). No gate in
 9. 🔴 **A one-bit deliverable is a quiet measurement.** "Does the 512-token
    stream match?" is one draw. "How close was the tightest decision, in units of
    the perturbation?" is the process.
+
+---
+
+## 176. The ranked serial leg is a pinned separate binary. Item 173(A)'s sign is inverted, item 173(B)'s free gate is empty, and the doctrine that shaped this campaign came from a local-harness artifact.
+
+**Found by edward, E50, PR 54, merged `26fd0ac`. Zero GPU. Verified independently by
+me at greater depth before anything below was written.**
+
+### The fact
+
+The ranked harness times **two different binaries** and divides one by the other.
+`.github/workflows/qwen-mtp-ranked-benchmark.yml`, the comment block immediately above
+the timed step:
+
+```
+#   baseline:  pinned baseline tree, serial K=1 target decode over the
+#              hidden benchmark golden;
+#   candidate: this workspace, native-MTP speculative decode over the SAME
+#              golden, same --tokens denominator.
+```
+
+the invocation:
+
+```
+--candidate "${MLXFAST_JOB_WS}"
+--baseline  "${MLXFAST_QWEN_MTP_BASELINE_RESOLVED}"
+```
+
+the precondition that the baseline is separately compiled:
+
+```
+test -d "${MLXFAST_QWEN_MTP_BASELINE_RESOLVED}/.build/release" || exit 1
+```
+
+its origin, line 224:
+
+```
+MLXFAST_QWEN_MTP_BASELINE_WS: /opt/bench-runner/baseline/qwen3.8-27b-mtp-v1/current
+```
+
+and the scorer's own arithmetic:
+
+```
+speedup_pooled = .aggregate.baseline_serial_seconds_per_token_mean
+               / .aggregate.candidate_mtp_seconds_per_token_mean
+```
+
+**The field names carry the whole result: `baseline_serial_...` over
+`candidate_mtp_...`.** `benchmark.json`'s `editablePaths` contains no `.github` entry
+(enumerated, 92 entries, all inside our own tree).
+
+Therefore **`d ln(serial)/dx = 0` for every `x` we can edit, by construction.**
+
+### What is retracted
+
+| | 173(A) said | truth on ranked |
+|---|---|---|
+| uniform QMV win, 1 % | `psi_mtp - psi_serial` = **-0.1789 %** | **+0.6736 %** |
+| gated QMV win, 1 % | +0.6736 % | +0.6736 % |
+
+- **173(A)'s uniform sign is inverted on the ranked path.** Retracted. It stood for
+  eight days.
+- **173(B)'s "free gate" is vacuous on ranked.** It was free because it was empty:
+  gating protects a numerator that cannot move. Retired.
+- 🔴 **The doctrine "every shipped optimisation must be shape-gated off the M=1 path"
+  is RETIRED.** I derived it from the artifact and shipped it to all four students as
+  standing intelligence in every brief. Gating is henceforth a *risk-containment*
+  choice — fewer touched paths, fewer parity hazards — and must never again be
+  justified by score arithmetic.
+
+### What survives, and why the campaign's banked result is safe
+
+`psi_mtp = 0.6736` **transfers cleanly**: the local candidate build *is* the ranked
+candidate build. Only `psi_serial` is void on ranked. Since **gated pricing is
+harness-invariant** (a change confined to widths 2..9 cannot reach the serial leg
+whether that leg is ours or pinned), every gated price in this campaign is unaffected —
+including alphonse's merged **E44 r2 at +11.421 %, dScore +0.789 % to +1.228 %**, the
+one lever priced above the 0.7678 % board floor. Nothing banked is lost.
+
+Item 103's identity `raw_p = serial / mtp` also still holds, with 0 mismatches. It was
+never the problem. See 176(B).
+
+### How it got in: askeladd's measurement was right; my promotion of it was wrong
+
+`psi_serial = 0.8525` came from askeladd's E42 injection, which necessarily ran on the
+local harness. And `senpai/program.md:156` describes exactly what that measures:
+
+> "Both local legs also use the same candidate build. ... **a general target or kernel
+> improvement may speed both legs and cancel in that ratio.** Always compare absolute
+> candidate seconds per token with a fresh, unchanged `BASE_SHA` run as well as
+> comparing the ratio."
+
+That sentence names the artifact and prescribes the remedy. **It has been in the repo
+the entire campaign.** The measurement was correct and remains correct as a
+description of the local two-leg ratio.
+
+### Re-pricing, in three cases (not two)
+
+Combining 176 with askeladd's E42 `non_drafting_round_count = 0`
+(`research/e42_width_census.py:16`, `research/e42-results.md:749`) — the candidate runs
+**zero** verifier-side width-1 rounds:
+
+1. **`qmv_fast_impl` (4-bit width-1) alone** — pinned on the baseline, and `nd = 0` on
+   the candidate. Worth approximately **zero**. Not harmful as 173(A) claimed;
+   **irrelevant**. Do not optimise it for score.
+2. **Shared template code** reached by both `qmv_fast_impl` and the crossrow cells
+   (`load_vector`, `qdot`) — previously priced **-0.1789 (harmful)**, actually
+   **+0.6736 x candidate share**, positive. 🔴 **This is the family we were forcing
+   through shape gates for no benefit.**
+3. **2-bit draft readout at `quantized.h:1908`** (`qmv_fast_singlerow_affine2_g64`,
+   `bits==2 && out_vec_size==98336 && ntg.x==1`) — pure candidate, fires
+   `mtp_depth = 8` times per round, 107 rounds on beagle. Its share is `psi_mtp_w1`,
+   which has changed job: from a nuisance correction on a sign flip to **the entire
+   score value of the width-1 path**. Still unmeasured. E48 carries it.
+
+### Q1 as banked fact, and its honest scope
+
+Across **429 content-deduped board trees in 5 provenance cohorts**, serial between-tree
+sd is **0.0817–0.1184 %** against a pooled replicate floor of **0.0963 %** (dof 27, 19
+repeated trees), F = 0.74–1.53; the true between-tree serial sd 90 % MC interval is
+**[0.0000 %, 0.111 %]** in every cohort. The same trees move the MTP leg **8.16–27.56 %**
+(F = 132–1497). Board-wide serial range **0.54 %** vs MTP **197 %**. Board median serial
+`0.037992263` s/tok vs pinned calibration `0.037994795` = **-67 ppm**. **Nobody on the
+board has ever moved the serial leg.**
+
+🔴 **This is NOT independent corroboration of the mechanism, and edward's own control
+proves why.** `research/board_width1_qmv_variants.py` finds **exactly ONE
+implementation of `qmv_fast_impl` across all 456 resolvable submissions** (against 3
+for the crossrow `_m` family). Nobody ever edited the width-1 path, so serial would be
+immobile whether or not the denominator is pinned. The confound is *fully present*, so
+Q1 cannot discriminate. **The ledger records one decisive source (trusted workflow) and
+one non-independent observation (the board). We do not have two-source agreement and
+will not claim it.**
+
+### Q3 as genuine independent corroboration — of the floors
+
+Re-derived from scratch, agreeing with my carried values within 4–6 % relative:
+per-prompt `sd_serial` **0.2186 %** (carried 0.2110), `sd_mtp` **0.8099 %** (0.8040),
+dof 216 (184); run-mean `sd_mtp` **0.7221 %** over 19 tree-sets (carried 0.7678 %,
+17 sets). **The 0.7678 % board floor stands.** Cross-leg common-mode noise is real and
+positive (per-prompt r = **+0.186**, run-mean r = **+0.410**), so bias 2 was not
+hypothetical; a single subtraction of within-tree from between-tree covariance corrects
+attenuation and common mode together.
+
+Q2 correctly reported **non-identified**: noise-corrected `beta = +0.0002`
+[-0.0016, +0.0037], reverse-regression brackets exclude 1.266 in all cohorts, but only
+because the regressor's partner never varies. He followed his own stopping rule.
+
+**Method correction adopted:** commit-sha dedupe merges 77 sha-less rows and splits 17
+byte-identical trees. **Content-addressed dedupe is now the campaign default** — ledger
+149 is upgraded from guidance to rule.
+
+---
+
+## 176(A). Item 102's fingerprint invariance is contaminated by survivorship, and the same reading makes the exactness bar far harder than 175(A) said.
+
+`parity_all_ok == true`, and per-prompt `parity_ok == true`, are **hard gates inside the
+ranked scoring step** — I read the jq filter. A parity failure yields **no score at
+all**, not a lower one. There is no partial credit and no gradient to descend.
+
+Two consequences.
+
+**(i) 🔴 Item 102's "fingerprint bit-identical across 73 of 88 board rows" may be a
+selection effect, not a measurement.** If the board only lists runs that passed parity,
+then trees which perturbed the token stream are *filtered out of the population*, and
+the invariance says nothing about what edits do. It remains a perfectly good *sensor*
+for us — it is exactly the quantity the harness gates on, which is what makes it sharp —
+but it can no longer be cited as evidence that changes leave token streams alone.
+**Open, one query against data already on edward's disk: are there any board rows with
+`parity_ok = false`, or a `head_provenance_sha256` cohort with missing prompts?** Asked
+in the PR-54 adjudication; must not open a new run.
+
+**(ii) 175(A)'s exactness bar was understated.** 175(A) said the bar is "identity with
+`qmv_fast_impl`" and implied a leg we could in principle co-move. **We cannot.** The
+reference is a separately built binary replaying a **hidden** golden token stream. And
+`senpai/program.md:156` again:
+
+> "They generate their own reference rows from the candidate, so **matching those rows
+> locally does not prove a match against the organizer's hidden reference**."
+
+So **a local parity PASS is worth nothing as evidence of exactness** — the local harness
+checks us against ourselves. Every exactness instrument we own is therefore
+**one-sided**: it can refute safety, never establish it. This is now the spine of E51
+(PR 55).
+
+It also fully explains `79683c6`. That accepted submitter had `xc[0..3]` in registers
+one line above `:1029`, declined a change that was **fewer instructions and more
+accurate**, and left the comment "Preserve the incumbent BF16 expression tree". He was
+buying bit-identity against an immovable reference, and at a hard pass/fail gate it was
+cheap at the price.
+
+---
+
+## 176(B). Process lessons.
+
+1. 🔴🔴🔴 **AN IDENTITY IS NOT A CAUSAL MODEL.** Item 103 verified `raw_p = serial / mtp`
+   on board data with **0 mismatches**, and I then differentiated it. An identity between
+   two measured quantities says **nothing about which of them your edits can move**. The
+   verification was real, it was clean, it was numerically airtight — and it licensed
+   nothing about `d/dx`. Before differentiating any verified relation, verify separately
+   which terms are functions of the variable.
+2. 🔴🔴🔴 **THIS IS THE THIRD TIME IN THREE DAYS I VERIFIED ONE LEVEL AWAY FROM THE
+   CLAIM.** 174(F): verified an assumption, not the conclusion drawn from it. 175(3):
+   read `typedef float U` at a call site instead of the leaf expression in
+   `load_vector`. 176: verified an identity instead of the derivative. Same shape every
+   time, three different disguises. The unit of verification is **the exact proposition
+   you are about to act on**, not its neighbour.
+3. 🔴🔴🔴 **THE DOCUMENT THAT REFUTES YOU IS USUALLY THE ONE YOU ALREADY READ.**
+   `senpai/program.md:156` contains both the artifact and its remedy in one sentence. I
+   had read that paragraph for the fixture and token counts and stopped at the part I
+   came for. When a measurement becomes load-bearing, **re-read its harness's
+   documentation for the purpose of trying to invalidate it.**
+4. 🔴🔴 **PIN THE EXTERNAL FACTS YOUR MODEL RESTS ON, PRECISELY BECAUSE YOU CANNOT
+   CHANGE THEM.** My instinct was that `.github` needs no invariant because it is not
+   editable. Backwards: unowned means unwatched, and it can still move under us on a
+   sync. Three rows added to `senpai/campaign-invariants.txt` (now 14, all evaluated, 0
+   violations) as a **tripwire on an assumption rather than on an artifact**, with the
+   instruction: if it goes red, do not edit the row, re-derive the score model.
+5. 🔴🔴 **I ALMOST PUNISHED A STUDENT FOR RIGOUR HE HAD AND UNDERSOLD.** edward's
+   summary called his width-1 census "corroboration"; I drafted a correction saying it
+   was actually the confound. Then I read `board_width1_qmv_variants.py`, whose docstring
+   says *"That fact is a **confounder** for the E50 Q1 result"* and which exists solely
+   to measure it. **Read the instrument, not the abstract.** Same failure shape as
+   lesson 2, applied to a person instead of a file. Told him to make his loudest sentence
+   the one his code supports.
+6. 🔴🔴 **A CHECKER THAT FIRES ON ONE BRANCH IS NOT A CHECKER.** My first cut of the
+   rewritten `leverage()` validated `harness` only on the ungated path, because that is
+   the only branch that reads the coupling term. A typo'd harness on the gated path would
+   have returned a plausible number. Fixed to validate unconditionally, with a selftest
+   over both branches.
+7. 🔴 **WHEN A MODEL INVERTS, FIX THE INSTRUMENT BEFORE WRITING THE PROSE.** The prose
+   is read once; the instrument is called by every future experiment.
+
+### Instrument changes, `research/qmv_score_leverage.py` (gate 26)
+
+- `HARNESS_RANKED` / `HARNESS_LOCAL` and `_leg_coupling()`; `harness` threaded through
+  `leverage`, `mechanism_value`, `mechanism_value_per_width`, `pooling_bias`,
+  `target_for` via one shared `_lev()` so the two models cannot drift apart.
+- `PSI_SERIAL` retained but relabelled **LOCAL-ONLY**, with the full evidence chain and
+  the `program.md:156` provenance in the comment.
+- The three selftest assertions that encoded the void model — "uniform QMV leverage is
+  NEGATIVE", "uniform sign flips once width-1 candidate QMV reaches 0.1789", "ungated is
+  worth less than gated" — are **kept INVERTED rather than deleted**, so reintroducing
+  the old model produces a red gate instead of a plausible number. Added: ranked uniform
+  is positive; ranked gating buys exactly zero at `psi_mtp_w1 = 0`; ranked gating is a
+  *loss* when `psi_mtp_w1 > 0`; gated pricing identical in both harnesses to the bit;
+  the harnesses must *disagree* on an ungated price (or the argument is decorative);
+  unknown harness raises on both branches. **49 checks PASS.**
+- `report()` now prints a RANKED-vs-LOCAL table, and the stale summary line that still
+  said "uniform sign negative" on a passing run is fixed.
+
+**26/26 gates PASS.** Also merged this turn: alphonse's E44 r2 (PR 49) and the
+`twin_audit` dead-waiver fix. E51 (PR 55) issued to alphonse on the corrected premise.
+askeladd's E48 sign test withdrawn mid-flight on PR 52 and re-aimed at `psi_mtp` and
+`psi_mtp_w1`.
+
+---
+
+## 176(C). The re-pricing found a live victim: E44's ceiling bound is 3.77x tighter than banked, and it gates thorfinn's register trades.
+
+Sweeping `research/` and `senpai/` for the void model turned up one **live pricing
+instrument** still using it: `research/e44_ab_summary.py:377`,
+`uniform = PSI_MTP - PSI_SERIAL`. That coefficient prices the E44 **ceiling term** —
+the genuinely uniform effect of one shared register allocation, which changes occupancy
+at every width including M=1 — and the ceiling bound is computed as
+`abs(uniform) * bound`.
+
+From the r2 artifacts, `bound = max(worst_guard, floor_pct) = 0.663 %` (the guard floor,
+which beat the 0.263 % A/A control floor). So:
+
+| | coefficient | E44 ceiling bound |
+|---|---|---|
+| banked (retracted local model) | -0.1789 | **\|dScore\| <= 0.1186 %** |
+| corrected (ranked) | +0.6736 | **\|dScore\| <= 0.4466 %** |
+
+**3.77x tighter, and 0.4466 % is 58 % of the 0.7678 % board floor.** A register-cost
+increase we had bounded as nearly negligible is in fact a substantial fraction of the
+smallest score difference we can resolve.
+
+🔴 **This inverts the comfortable reading of the retracted model.** At -0.1789 a uniform
+*slowdown* looked almost free — and, taken literally, mildly *beneficial*, since a
+negative coefficient times a cost increase is a positive score. That is what made
+register-hungry designs look cheap. On ranked a uniform slowdown simply costs
+`psi_mtp` per 1 %, with no compensating numerator movement, because there is no
+numerator movement available.
+
+**Consequences, all adverse and all for thorfinn:**
+
+- E44's `|dScore| <= 0.1186 %` gate on **E46** must be restated as `<= 0.4466 %`.
+- **E49 (PR 53, live on the device now)** trades registers at M=9 and carries
+  `c_ceiling = +10.6 %` with a "<= 2 % refutes 173(C)" stopping rule. Its ceiling
+  pricing is derived from the same coefficient and must be re-derived. Notified on the
+  PR.
+- The E27 residual (`E27_SCORE_PCT = -0.3321` at `E27_REG_DELTA = 21`) is an
+  *observed* score change, not a modelled one, so it is unaffected — but it is now the
+  more trustworthy of the two estimates and should anchor the register price.
+
+**Also swept, and clean:** `research/e42_leg_decomposition.py` only labels a *measured*
+local quantity (`psi_serial_measured_by_m1`), which is legitimate and stays;
+`research/e44_census_score.py` never referenced `psi_serial`; edward's new
+`board_*.py` scripts handle the distinction correctly by construction. The remaining
+hits are frozen artifacts (`e42-artifacts/leg-decomposition.json`,
+`e44-artifacts/r2-gate-c-timing.txt`), which are measurement records and must not be
+rewritten.
+
+**Process note.** Fixing the canonical instrument was not sufficient. The void model had
+been *copied* into a second script, and a grep for the constant — not for the concept —
+was what found it. When a model is retracted, grep for its **numeric value** across the
+whole tree; a wrong number that has been inlined no longer mentions the name of the
+thing that is wrong. Two stale rationale strings were also deleted rather than left to
+lie: `"ADVERSE, because the serial leg is more QMV-dominated than the candidate leg"`
+and `"The two halves of this mechanism have OPPOSITE score signs"`. On ranked both
+halves carry the *same* coefficient; they are still reported separately, but now because
+they carry different shares and different evidence quality, not different signs.
