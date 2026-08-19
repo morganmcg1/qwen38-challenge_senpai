@@ -74,7 +74,13 @@ for spec in "$@"; do
     # A silently-skipped patch would compare a build against itself and report a
     # false bit-exact pass, so record the twin digests and require them to move.
     before="$(shasum -a 256 "${TWINS[@]}" | awk '{print $1}' | tr '\n' ' ')"
-    "${MLXFAST_PYTHON_BIN:-python3}" research/roofline_arm_patch.py "${patch}"
+    # `e54:NAME` selects an E54 arm; anything else stays with the original
+    # roofline patch names, so existing callers are unaffected.
+    if [[ "${patch}" == e54:* ]]; then
+      "${MLXFAST_PYTHON_BIN:-python3}" research/e54_arms.py "${patch#e54:}"
+    else
+      "${MLXFAST_PYTHON_BIN:-python3}" research/roofline_arm_patch.py "${patch}"
+    fi
     after="$(shasum -a 256 "${TWINS[@]}" | awk '{print $1}' | tr '\n' ' ')"
     if [[ "${before}" == "${after}" ]]; then
       echo "run-qmv-parity.sh: patch ${patch} left both twins unchanged" >&2
