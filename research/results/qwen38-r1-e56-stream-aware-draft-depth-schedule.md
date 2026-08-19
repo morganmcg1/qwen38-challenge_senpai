@@ -187,6 +187,29 @@ the whole session:
 The metallib is byte-identical across arms, so the treatment is confined to the
 schedule file. Every leg recorded `dirty=0`.
 
+## Build, tests and submission surface
+
+- `swift build -c release --force-resolved-versions`: OK.
+- `swift test --force-resolved-versions --filter QwenMTPDepthCostModelTests`:
+  4 of 4 pass.
+- `swift test --force-resolved-versions`: 689 tests, **40 issues in 9 tests
+  across 3 suites**. All 40 are **pre-existing on the campaign base**. I
+  verified this directly: with `Qwen36MTPBlockSession.swift` restored to
+  `BASE_SHA` and this branch's new test file moved aside, the same 9 tests fail
+  with the same 40 issues. They cover campaign-marked participant docs, the
+  seeded calibration provenance, the track release marker, the pinned-head
+  manifest declaration, the 4-bit config manifest digest, the even-median rule
+  and the ranked 128 GiB startup memory profile. None of them reads the depth
+  cost model.
+- `senpai/validate-assignment-scope.sh BASE_SHA Sources/MLXFastModel/Qwen36MTPBlockSession.swift`:
+  scope OK, 1 submitted path.
+- `senpai/check-editable-budget.sh BASE_SHA`: OK.
+  `source=2463259/3000000`, `growth=4310/262144`, `files=154`.
+- `git diff BASE_SHA HEAD -- Sources Vendor benchmark.json mlx-generated
+  mtp-head.manifest.json`: exactly one file, 81 insertions and 2 deletions, all
+  in `Qwen36MTPBlockSession.swift`. The candidate is self-contained: no Metal
+  source, no generated twin, no head declaration.
+
 ## Reproduction
 
 ```bash
