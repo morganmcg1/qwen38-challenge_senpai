@@ -3243,3 +3243,358 @@ with our own measurement** — `CURRENT_RESEARCH_STATE.md` records 919/919
 non-terminal width-9 rows bit-exact with the only 15 mismatches at positions
 1022–1024, i.e. positional at the KV boundary rather than width-driven. Two
 solvers, two incompatible characterisations of the same region. Not resolved here.
+
+## 129 — 🔴🔴 E33 is FALSIFIED. The mechanism engaged exactly as designed and the physics went the other way. This is the campaign's best negative result.
+
+`e33/m6_per_row_cost_ratio = 1.0150` (drift-adjusted 1.0147) against my registered
+**0.82** and thorfinn's **0.85**. Direction was *minimize*. M=6 is **1.5 % slower**,
+which is 9.4× the 0.16 % detection threshold in the wrong direction and 3.3× his
+±0.46 % control band. Rung 2 correctly not started.
+
+**The mechanism engaged perfectly — this was not an implementation failure.**
+`stream_boundaries [6] → [7]`, dispatch readback `_m<T,6,3,true>` → `_m<T,6,6,true,2>`,
+device weight loads per round 48 → 24, `peak_live_regs = 117` with one
+`[2 x [4 x i16]]` alloca and no accumulator spill — every number as pre-registered.
+It bought the weight pass and then paid more than it bought.
+
+### The complete absolute per-width cost table on the post-E27 tree (this is now our best cost instrument)
+
+| M | passes (cand) | base C_round (ms) | cand C (ms) | ratio | base C/M |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 1 | 58.676 | 58.996 | 1.0055 | 58.676 |
+| 2 | 1 | 63.212 | 63.379 | 1.0026 | 31.606 |
+| 3 | 1 | 72.507 | 72.427 | 0.9989 | 24.169 |
+| 4 | 1 | 82.774 | 82.493 | 0.9966 | 20.694 |
+| 5 | 1 | 96.163 | 96.058 | 0.9989 | 19.233 |
+| **6** | **1** (was 2) | **128.843** | **130.781** | **1.0150** | **21.474** |
+| 7 | 2 | 138.694 | 138.988 | 1.0021 | 19.813 |
+| 8 | 2 | 149.490 | 149.536 | 1.0003 | 18.686 |
+| 9 | 2 | 164.443 | 165.198 | 1.0046 | 18.271 |
+
+Decomposition, from base within-stream increments at constant weight-pass count
+(3→4, 4→5, 7→8, 8→9 = 10.27/13.39/10.80/14.95, median **12.09 ms** per extra
+activation lane):
+
+- base 5→6 step **+32.680 ms** ⇒ the second weight pass alone is **+20.59 ms**
+- candidate 5→6 **+34.723 ms** ⇒ row blocking alone costs **+22.63 ms**
+- **the row block costs 1.10× the weight pass it removes.**
+
+Corroboration from a width the model did not fit: the candidate's 6→7 increment is
+only **8.207 ms despite adding a weight pass**, because M=7 stays unblocked
+`<T,7,4>` and therefore *sheds* the blocking cost as it adds the pass.
+
+### 🔴🔴 The attribution is the real result: the sign flips at output width `n`
+
+Per-shape at M=6, `delta = calls_per_verify × Δ s_per_call` (column sums to net):
+
+| shape | n | k | calls | ratio | delta ms | % of net |
+|---|---:|---:|---:|---:|---:|---:|
+| **mlp.down** | 5120 | 17408 | 64 | **1.0592** | **+1.7997** | **+92.8** |
+| linear_attn.out_proj | 5120 | 6144 | 48 | 1.0492 | +0.4448 | +22.9 |
+| mlp.gate_up_fused | 34816 | 5120 | 64 | 0.9941 | −0.3173 | −16.4 |
+| full_attn.o_proj | 5120 | 6144 | 16 | 1.0414 | +0.1283 | +6.6 |
+| linear_attn.in_proj_fused | 16480 | 5120 | 48 | 0.9947 | −0.1092 | −5.6 |
+| head.lm_head | 248320 | 5120 | 1 | 0.9830 | −0.0970 | −5.0 |
+| full_attn.qkv_proj_fused | 14336 | 5120 | 16 | 1.0148 | +0.0891 | +4.6 |
+| head.compact_draft_vocab | 98336 | 5120 | **0** | 0.9868 | 0.0000 | 0.0 |
+
+Wins −0.52 ms, losses +2.46 ms, **net +1.94 ms; the losing side is 4.7× the winning
+side.** Every shape with `n ≥ 16480` improved; every shape with `n ≤ 14336` lost.
+Ratio monotone in `n`, and at fixed `n = 5120` monotone in `k`. **It is `n`, not
+weight bytes, that predicts the gain** — `mlp.down` carries 50.1 MB and loses worst
+while `full_attn.qkv_proj_fused` carries 41.3 MB and loses far less.
+
+Two secondary facts from that table worth keeping:
+- **`head.compact_draft_vocab` has `calls_per_verify = 0`.** The 2-bit coarse draft
+  readout is not in the verify round cost at all. He flagged it himself as the
+  easiest available way to make the result look better than it is, and did not use it.
+- `mlp.down` is **23.6 % of `C_round(6)`** and `mlp.gate_up_fused` is 41.9 %.
+  That per-shape split is a full cost decomposition of a verify round and it is
+  reusable by everyone.
+
+### Why this closes the mechanism, not just this arm
+
+The transformer pairs every wide projection with an equally-called narrow one:
+`mlp.gate_up (34816) / mlp.down (5120)` at 64 calls each,
+`linear_attn.in_proj (16480) / out_proj (5120)` at 48,
+`full_attn.qkv (14336) / o_proj (5120)` at 16.
+**The call mix is structurally balanced between the shapes this mechanism helps and
+the shapes it hurts, and the hurt side is heavier per call.** Rung 2 changes the
+constant, not the sign.
+
+And he closed the obvious repair himself. Oracle per-shape gating (apply `r=2` only
+where it wins) tops out at **0.9959 (−0.41 %)** against his own ±0.46 % control band
+— ≈0.019 % of decode at the measured `w(M=6) = 0.201`, below the 0.16 % threshold.
+**"It is closed, not deferred."**
+
+### Correctness: stronger than anything else in the campaign
+
+- `run-qmv-parity.sh`: **192/192 cells BIT-IDENTICAL** (8 scored shapes × widths
+  1..12 × bits {3,4}); 66,713,088 float32 values across the grid, **2,565,888 at
+  M=6**. `covering_cells_by_bits = {"4": 64}` in both arms so the gate has power;
+  the 96 bits=3 cells are an untouched-path control. **Exactly one cell of 192
+  changed its dispatched kernel string.**
+- Cross-arm golden: `effective_draft_lengths` element-wise identical,
+  `residual_divergence_count = 0`, `all_tokens_matched`.
+- Source-level reassociation proof: `block_size = values_per_thread(16) × 32 = 512`
+  invariant in both NA and ROWS_PER_SIMD; `vec<float,NA>` is component-wise with no
+  cross-`m` mixing; the `r` loops accumulate into separate registers and are never
+  reduced across `r`; `simd_sum` lane membership is frozen by `group_dims(32,2,1)`.
+- M=1 unreachability proved from the gate: both `switch (ntg.x)` tiers have cases
+  2..9 only, no `case 1:`; M=1 falls to `qmv_fast_impl` in both arms.
+- 17/17 pre-declared controls pass. Cross-session anchor: base M=6 **128.843 ms**
+  vs E27's 128.865 ms (0.017 %).
+
+### E2E was under-powered before it ran, and he said so
+
+MTP leg −0.304 %, serial null −0.076 %, ±0.3 % at n=2. Histogram-weighted prediction
+from the primary was only **+0.088 %** ⇒ the instrument was **3.5× under-powered**.
+He led with the primary (+1.50 %, a loss) rather than the friendly E2E number
+(−0.304 %, which looks like a win) and published the arithmetic that dissolves it.
+M=1 cost ratio 1.0055 ⇒ **no serial-leg speedup, so no score-negative risk.**
+
+He also corrected his own earlier gating sizing down ~6× and his own register slope
+law (the affine-in-`r` form does not hold).
+
+**Disposition: closed unmerged, artifacts preserved.** The kernel diff is
++124/−20 in the twin-locked pair, so merging the PR would have put a
+measured-1.5 %-slower cell on the branch that gets submitted. `research/` was
+cherry-picked onto the advisor branch instead. See item 133.
+
+---
+
+## 130 — 🔴🔴 `M − ceil(M/IPG)` of the launched threadgroups return immediately. The crossrow mechanism buys weight passes with *grid width*, our own source says so, and that reframes E33's failure and hands us the repair.
+
+Found while checking whether E33's "latency-bound at 640 threadgroups" inference was
+sound. It was sound but incomplete, and the missing half is actionable.
+
+**Source facts, all directly read:**
+
+- `backend/metal/quantized.cpp:251-254` — `MTL::Size grid_dims(M, (N+bn-1)/bn, B)`
+  with `bn = 8`, `group_dims(32,2,1)`, and **`compute_encoder.dispatch_threadgroups(grid_dims, group_dims)`**.
+  So `grid_dims` is in **threadgroups**, and `grid.x = M`.
+- `quantized.h:1171-1172` (and `:879-880` for the pair kernel) —
+  `const int first_m = int(tid.x) * IPG; if (first_m >= M) { return; }`.
+
+⇒ **Working x-blocks = `ceil(M/IPG)`; the other `M − ceil(M/IPG)` threadgroups exit
+before doing anything.** Working threadgroups for a shape = `ceil(M/IPG) · ceil(n/8)`.
+
+| cell | M | IPG | working x-blocks | idle | working TGs on `mlp.down` (n=5120) |
+|---|---:|---:|---:|---:|---:|
+| `<T,5,5>` (E27, our big win) | 5 | 5 | 1 | 4 | 640 |
+| `<T,6,3>` **shipped** | 6 | 3 | **2** | 4 | **1280** |
+| `<T,6,6,true,2>` **E33 candidate** | 6 | 6 | **1** | 5 | **640** |
+| `<T,7,4>` | 7 | 4 | 2 | 5 | 1280 |
+| `<T,9,5>` | 9 | 5 | 2 | 7 | 1280 |
+
+**E33 halved the working threadgroup count on exactly the shape that killed it**,
+while doubling each survivor's work (two sequential row blocks). Global traffic is
+unchanged between the two arms; only the parallelism changed.
+
+🔴 **Our own tree already documents the mechanism.** `quantized.h:1919-1921`, above
+the crossrow gate:
+
+> *"below 4096 outputs the reduced x-group count **thins the grid**, so the promoted
+> pair kernel is kept there byte-for-byte."*
+
+A previous contributor knew the crossrow trade is weight-passes-for-grid-width and
+gated the tier at `out_vec_size >= 4096` for that reason. **`mlp.down` at n = 5120
+is the smallest scored shape above that gate** — the tier boundary is one shape too
+low, and E33 measured the penalty precisely there (+5.92 %).
+
+### 🟢 The repair, and why it is free
+
+E33 covered the frozen 4 rows as `4/r` **sequential** blocks inside one threadgroup.
+Map those blocks onto the **idle x-blocks** instead:
+
+- NA=6 single weight pass is kept (−50 % weight traffic, the original prize);
+- each threadgroup reads the activation tile **once**, so the per-threadgroup
+  re-read disappears;
+- working threadgroups go 640 → 1280, i.e. back to the shipped `<T,6,3>` count;
+- **no cross-threadgroup reduction is needed** — row blocks write disjoint output
+  rows, so there is no atomic, no second pass, and no FP reassociation (which is a
+  ranked-measured rejection class on the verify path);
+- registers stay at the measured **117** for NA=6/r=2, below the shipped `<T,5,5>`
+  high-water mark of 125;
+- the host grid is untouched — `grid.x = M` blocks are already being launched, we
+  would just stop wasting them. M=6 needs 2 of 6; M=7 needs 2 of 7; M=9 needs 2 of 9.
+  Feasible across the whole table, tightest at M=2 (2 of 2).
+
+**Sizing.** If the loss is grid thinning rather than traffic, C(6) should land near
+`C(5) + 12.09 = 108.25 ms` ⇒ ratio **0.840**, essentially my original registered
+0.82. At `w(M=6) = 0.201` of QMV round mass that is ~3.2 % of QMV cost; E33's own
+E2E-vs-primary calibration implies a dilution of roughly 3–5× to end-to-end decode,
+so order **0.6–1.0 % of decode** — several times the 0.16 % threshold and larger
+than the whole gap to #1.
+
+**Why this is a clean discriminating experiment rather than a hopeful retry.**
+E38's arm has *identical global traffic* to E33's and differs only in parallelism.
+So: land near 0.84 ⇒ the loss was grid thinning; land near 1.015 ⇒ the loss was the
+activation re-read and the whole NA>5 direction is dead. Either outcome closes a
+question that E33 left genuinely open, and E33's `<T,6,3,true,2>` control (2 passes
+*and* row blocking, at unchanged grid width) isolates the re-read term directly.
+
+🟡 **Honest counter-evidence I must carry.** E27 took M=5 from 2 working x-blocks to
+**1** (`<T,5,3>` → `<T,5,5>`) on these same shapes and still won −20.1 % aggregate.
+So thinning to one x-block is survivable at M=5. Either the row-block loop is the
+dominant term after all, or E27's narrow shapes lost while its wide shapes carried
+the aggregate — we have no per-shape breakdown for E27 to tell. That ambiguity is
+exactly what the two arms above resolve.
+
+**Process note.** I nearly wrote this assignment on thorfinn's occupancy sentence
+without checking it. The check took four minutes, changed "640 threadgroups on 20
+cores" into `ceil(M/IPG)·ceil(n/8)` with a named source line, and turned a vague
+follow-up into a falsifiable design. Item 128-2's rule generalises: **before
+building on an inference, find the line of source that makes it arithmetic.**
+
+---
+
+## 131 — 🔴🔴 E35 refutes my serial normalisation. The engineerable gap is **0.561 %**, not 0.2587 %, and my "no box-speed effect" null was under-powered rather than clean.
+
+I have been quoting **0.2587 %** as the engineerable gap to all four students since
+item 126. It is wrong. alphonse's E35 compares three estimators of the per-prompt
+ratio:
+
+| estimator | definition | top-10 span |
+|---|---|---:|
+| `R` | `serial_p / cand_p` (the official ratio) | 0.5279 % |
+| `R*` | `global_bar[p] / cand_p` (**mine**, item 126) | **0.2775 %** |
+| `R'` | `mean_8(own serial) / cand_p` | 0.5643 % |
+
+The noise budget for a top-10 span is **0.1156 %**. `R*` removes **0.2504 %** of
+span, i.e. **2.2× the entire noise budget** ⇒ `R*` is deleting real signal, not
+noise. `R'` sits inside budget. **78 % of the top-10 span is real.**
+
+**Our `ca9251b8` gap to the crown is −0.561 % under `R'`, 4.3σ paired.** `R*` halves
+it to −0.258 %.
+
+**Why I was wrong, stated as the general error.** `R` is a *ratio of two legs
+measured in the same session on the same box*, so it already cancels box speed. By
+substituting a global per-prompt bar for the row's own serial leg I removed the
+row-level normalisation and re-exposed the candidate leg to box-speed variation.
+`R'` is the estimator I should have built: keep the row's own serial (so box speed
+still cancels) but average it over the 8 prompts to cut per-prompt serial noise by
+√8. It dominates both.
+
+🔴 **The deeper error is the one to remember.** Item 126 reported
+`corr(serial, mtp) ≈ +0.04` and I read it as "no box-speed effect", which licensed
+treating the whole serial leg as noise. But the candidate leg's variance is
+dominated by *genuine code differences* across 414 different trees, so a real shared
+box component is a small fraction of that variance and produces a near-zero
+correlation anyway. **I read an under-powered null as an established null** — the
+same family as item 128-2 ("a fit that cannot fail is not evidence") and item 122.
+The test I needed was the one alphonse ran: does the normalisation remove more span
+than the noise budget allows?
+
+**σ_score is also larger than I have been quoting, and he corrected it against his
+own interest.** The organizers' six gated identical-code sessions give score
+sd **0.0784 %** with a box offset of 0.1101 %, and an independent route (deflator
+0.722 from the three exact pair spreads) gives 0.0764 % — agreeing to 2 %. But on
+the crown's steep per-prompt profile the central pair pins to beagle+medicine, which
+kills the median's averaging, so the effective **σ_score = 0.0923 %**. Detection
+threshold ≈ **0.185 % (2σ)**, not 0.16 %.
+
+He also **withdrew his own** claim that `4f76de6e`/`11863aa9` was an empty-diff pair:
+of 33 reachable Validate-submission snapshots, none share a tree or submitted-surface
+fingerprint. That independently confirms item 126's finding that no one has ever
+resubmitted an identical tree, and it keeps the "submit one tree twice" experiment
+as the only clean route to σ_score of our own.
+
+Validation he ran before trusting his own scan: my corpus tag counts reproduce on
+5/8 tags (+1 on three), and the known positive `a1326b4b`/`b1e2591b` comes back at
+−1.165 % against the −1.164 % on record.
+
+**Correction owed and issued to edward (#39) and askeladd (#42), who both hold
+briefs quoting 0.2587 %.** Size against **0.561 %** from here.
+
+---
+
+## 132 — 🔴🔴 E35's primary is a clean negative: rival mechanism families explain **0.000** of per-prompt cost spread. One family is ranked-positive, and it is one of *our* established negatives.
+
+`e35/hbar_spread_explained_fraction = 0.000`. Leave-one-out R² of nine mechanism-family
+predictors is **−0.026**; measurement noise is 2.4 % of `sd(h)` and the ceiling is
+0.999, so this is a **real negative, not a noise limit**. Zero GPU, one tool
+(`research/within_head_cost.py`, 1529 lines, `--all` exits 0), population 73
+fingerprint-matched rows.
+
+**The join (R' vs the live frontier, serial offset beside each family):**
+
+| family | Δ vs frontier | n | notes |
+|---|---:|---:|---|
+| **residency + command-buffer** | **+0.316 %** | 5 | se 0.145, \|t\| 2.2, serial +0.071 |
+| top-k shortlist | −3.475 % | 18 | |
+| affine-2 singlerow | −1.793 % | 12 | |
+| warmup / JIT | −1.010 % | 10 | |
+| GDN fusion | −0.907 % | 8 | |
+
+🔴 **The only positive family on the entire board is one we have on our own
+established-negatives list** ("wired limit with headroom", "command-buffer
+geometry"). Our nulls were local, on a 48 GiB M4 Pro, mostly pre-E27. Five ranked
+rows disagree. That is weak evidence (n=5, |t| 2.2, and every anchor row is
+multi-mechanism) but it is the **best board-derived prior that exists**, and it
+raises a systematic question I have never asked: **how many entries on that
+negatives list are under-powered local nulls?**
+
+Other findings:
+
+- **The crown has the slowest serial leg of the 73** (+1.7σ), reproducing my +1.9σ
+  from a different route.
+- Anchors are all multi-mechanism and mostly do not reconcile; only the
+  single-constant row does (`72ce82dc` +0.569 % vs +1.84 % claimed).
+- **Depth: closed by re-pricing.** A depth constant re-prices 0 of 6 wins and its
+  losses run 28–59× σ_score. Structural depth work stays **open** — `de7981ae`
+  at 3.24078 is rank 5.
+- Correctness boundary confirmed from a third direction: `7782bb0f` (FP32
+  reassociation on the verify tree) rejected vs `11863aa9` accepted; 11 of 73 rows
+  respect the boundary explicitly.
+- **Winner's curse over the top 6 is only −0.029 %**; he withdrew his earlier
+  −0.147 %.
+- n-step: the join sees it. Deficit +0.305 % at n<3, +0.635 % at n>4.5, step
+  +0.329 % (mine: +0.399 %). A *constant* excess `Δh = +0.00240` fits with
+  χ² = 7.34/7 dof (p = 0.394) where a constant *rate* is rejected at p = 0.0053 —
+  a two-level step with no second parameter. Honest negative attached: on 69 other
+  rows the same form wins only 27/69 with ~0.65 % residuals.
+- Saturation caps with the 0.5 central-pair weight: medicine-only is worth
+  +0.318 % of score (3.4σ) and **cannot close 0.561 % alone**; beagle-only is worth
+  +3.942 %.
+
+**His conclusion, which I accept: "E35 rules the BOARD out, not E33/E34."** The
+board cannot rank mechanisms nobody has tried, so the next mechanism prior has to
+come from profiling our own call path. As it happens E33 delivered exactly that on
+the same day (item 129's per-shape table), and item 130 is the mechanism it points at.
+
+🟡 One caveat on his (a): `h = [(1+αn)/R − 1]/n` at fixed α = 0.99 is a monotone
+re-parameterisation of `R`, which is legitimate as a rescaling but inherits item
+128-2's warning — it cannot be treated as a measurement of a physical `h`. He used
+it only to rank rows, which is fine.
+
+🟡 Deviation from the evidence contract, noted not penalised: there is no
+`research/results/qwen38-r1-e35-*.md`. The narrative lives in the PR comment and the
+tables are regenerated by the tool. Accepted because the tool is self-contained and
+reproducible, but the durable writeup is the contract and I want it next time.
+
+---
+
+## 133 — 🔴 A review-ready PR can ship a falsified change. Run the shipped-surface gate on the PR head *before* dispositioning, not before submitting.
+
+My pre-submission gate — `git diff --stat 5068eb8d HEAD -- Sources Vendor mtp-head.manifest.json`
+must equal E27's 4 files / +117 / −87 — runs on the advisor branch at submission
+time. That is too late. PR #38 carried a **falsified** kernel arm as +124/−20 in the
+twin-locked pair, and merging a review-ready PR with an excellent writeup is the
+natural reflex. Had I merged it, the branch would have carried a measured
+1.5 %-slower M=6 cell into the next submission, and the gate would have fired only
+after the fact.
+
+New rule, applied this turn: **before any merge/close decision, diff the PR head
+against the PR's own recorded `base_sha` restricted to the shipped surface.**
+Two traps in doing it:
+
+1. Diff against the **PR's recorded base**, not the current advisor head. PR #40's
+   diff against the live base showed 14,154 deletions, which are entirely my own
+   later commits appearing as removals. Against its own base it is one new file.
+   A three-way merge would not have deleted anything, but the stat looked alarming.
+2. A falsified experiment whose evidence you want to keep is a **close**, not a
+   merge: `git checkout <pr-head> -- research/` onto the advisor branch preserves
+   the writeup, the tools and the pre-registration, then re-verify the shipped-surface
+   gate before committing. The kernel remains discoverable on the student branch and
+   in the closed PR.
