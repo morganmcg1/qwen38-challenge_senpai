@@ -100,7 +100,7 @@ private func loadShippedKernel(
         })
     else { throw SourceGateError.missing("closing \"\"\"", relativePath) }
 
-    let tail = lines[sourceClose ..< Swift.min(sourceClose + 12, lines.count)]
+    let tail = lines[sourceClose ..< Swift.min(sourceClose + 24, lines.count)]
     guard let nameLine = tail.first(where: { $0.contains("name:") }),
           let name = quotedStrings(in: nameLine).first
     else { throw SourceGateError.missing("name:", relativePath) }
