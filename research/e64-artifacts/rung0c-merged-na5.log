@@ -12,3 +12,9 @@ e64_rung0b cool_gate_passed_real_gate=true
 e64_rung0b entry_thermal gpu_temp=39.339866638183594C cpu_temp=39.690059661865234C gpu_power=0.006204546894878149W
 e64_cell_ab: arm plain    max_threads=1024 tg_mem=0
 e64_cell_ab: arm merged   max_threads=1024 tg_mem=0
+e64_cell_ab: session entry gpu_temp_c=39.34
+e64_cell_ab: merged parity vs plain: 0 differing of 174080
+e64_cell_ab: mlp.gate_up_fused inner=269 legs=36 entry=39.25C exit=46.21C
+e64_cell_ab: wrote research/e64-artifacts/rung0c-merged-na5.json
+e64_rung0b exit_thermal gpu_temp=43.27906799316406C cpu_temp=40.81431198120117C gpu_power=0.030770258978009224W
+e64_rung0b finished=2026-08-20T05:56:01Z status=0

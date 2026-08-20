@@ -1,0 +1,9 @@
+e64_rung0b head=be260a8ad9c256a9052ba5bf4ef00c39df80a9b4 dirty=3
+e64_rung0b host=ip-10-231-2-12 chip=Apple M4 Pro
+e64_rung0b na=6 reps=9 target_bytes=24e9
+e64_rung0b started=2026-08-20T05:56:01Z
+research/generated/e64_wide_arms.h is in sync with Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+/tmp/e64-build/arms_na6.metal 228017 bytes na=6 source_sha256=0237d5fd9328cb8c238460ed681fce6e4e3b1f2c931c970ad1349d763a9d798a arms_header_sha256=c65449093e084cc43dabd05b9e95e6a2545f0efbf8a2356a7deb8e801be57f0f
+1 warning generated.
+e64_rung0b cool_gate before=gpu_temp=42.589168548583984C cpu_temp=40.53721618652344C gpu_power=0.008687970228493214W
+benchmark.sh: waiting for GPU to cool down before timing (current 42.2C, target <=40C, waited 0s)...
