@@ -204,7 +204,7 @@ def main() -> None:
     # --- rung 2: the score arithmetic ---------------------------------------
     consequence_table = wandb.Table(columns=[
         "site", "delta_local_ms", "tau", "delta_ranked_ms",
-        "score_pct_direct", "score_pct_ledger_rule", "naive_score_pct",
+        "score_pct_median_pair", "score_pct_ledger_rule_R_refuted", "naive_score_pct",
         "overstatement_factor", "sd_of_published_score",
         "fraction_of_deficit", "steerable", "steerable_reason",
     ])
@@ -212,14 +212,40 @@ def main() -> None:
         a = site["arithmetic"]
         consequence_table.add_data(
             name, a["delta_local_ms"], a["tau"], a["delta_ranked_ms"],
-            a["route_a_direct_score_pct"],
+            a["route_a_median_pair_score_pct"],
             a.get("route_b_ledger_score_pct"),
             a["naive_no_tau_score_pct"], a["overstatement_factor"],
             a["sd_of_published_score"], a["fraction_of_deficit"],
             site["steerable"], site["steerable_reason"])
 
+    # --- the transfer-constant ruling ---------------------------------------
+    transfer = json.loads(
+        pathlib.Path("research/e70-transfer-constant.json").read_text())
+    constant_table = wandb.Table(columns=["quantity", "ledger", "corrected"])
+    corrected = transfer["corrected_transfer_constants"]
+    rounds = transfer["ranked_depth0_serial_round_ms"]
+    for quantity, ledger_value, corrected_value in [
+        ("ranked depth-0 serial round ms",
+         rounds["ledger_10453_claim"], rounds["from_beagle_receipt"]),
+        ("tau prefill", corrected["tau_prefill"], corrected["tau_prefill"]),
+        ("tau depth-0 round",
+         corrected["ledger_R"], corrected["tau_depth0_round"]),
+        ("serial-leg ratio R", corrected["ledger_R"],
+         corrected["R_leg_from_measured_local_legs"]),
+        ("prefill-to-round contrast", corrected["ledger_transfer_contrast"],
+         corrected["prefill_over_round_transfer_contrast"]),
+        ("arithmetic-bound divisor",
+         corrected["ledger_arithmetic_bound_divisor"],
+         corrected["arithmetic_bound_divisor"]),
+        ("latency-bound multiplier",
+         corrected["ledger_latency_bound_multiplier"],
+         corrected["latency_bound_multiplier"]),
+    ]:
+        constant_table.add_data(quantity, ledger_value, corrected_value)
+
     run.log({
         "rung0/site_table": site_table,
+        "transfer/constants": constant_table,
         "rung0/structural_checks": check_table,
         "rung0/mutation_controls": mutation_table,
         "rung1/kernel_capture": kernel_table,
@@ -257,19 +283,40 @@ def main() -> None:
             rung2["total_if_every_divergent_site_cost_went_to_zero_pct"],
         "rung2/head_prime_score_pct":
             rung2["sites"]["S4_decode_head_prime"]["arithmetic"][
-                "route_a_direct_score_pct"],
+                "route_a_median_pair_score_pct"],
         "rung2/prefill_sdpa_fallback_score_pct":
             rung2["sites"]["S9_prefill_sdpa_fallback"]["arithmetic"][
-                "route_a_direct_score_pct"],
+                "route_a_median_pair_score_pct"],
         "rung2/width_shares_apply_to_any_divergent_site": False,
+        "rung2/median_pair_prompts": rung2["median_pair_model"][
+            "median_pair_prompts"],
+        "rung2/median_pair_self_check_relative_error": rung2[
+            "median_pair_model"]["self_check_relative_error"],
+        "rung2/head_prime_score_pct_at_decode_tau": rung2["sites"][
+            "S4_decode_head_prime"]["tau_sensitivity"]["tau_decode_round_1.76"],
+        "transfer/ranked_depth0_round_ms_confirmed":
+            rounds["from_beagle_receipt"],
+        "transfer/ranked_depth0_round_ms_ledger_refuted":
+            rounds["ledger_10453_claim"],
+        "transfer/board_serial_leg_samples":
+            transfer["board_evidence"]["serial_spt_samples"],
+        "transfer/board_samples_compatible_with_ledger_value":
+            transfer["falsification_of_30_402"][
+                "board_serial_spt_samples_at_or_below_implied"],
+        "transfer/R_ledger": corrected["ledger_R"],
+        "transfer/R_serial_leg_corrected":
+            corrected["R_leg_from_measured_local_legs"],
+        "transfer/R_change_pct": corrected["R_change_pct_measured"],
     })
 
     artifact = wandb.Artifact("e70-dispatch-divergence-audit", type="audit")
     artifact.add_file(args.rung0)
     artifact.add_file(args.rung2)
-    diff_json = pathlib.Path("research/e70-rung1-diff.json")
-    if diff_json.exists():
-        artifact.add_file(str(diff_json))
+    for extra in ("research/e70-rung1-diff.json",
+                  "research/e70-transfer-constant.json"):
+        path = pathlib.Path(extra)
+        if path.exists():
+            artifact.add_file(str(path))
     for arm_dir in sorted(p for p in pathlib.Path(args.rung1).iterdir() if p.is_dir()):
         for path in sorted(arm_dir.glob("*.json")):
             artifact.add_file(str(path), name=f"rung1/{arm_dir.name}/{path.name}")

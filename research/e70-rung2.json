@@ -7,16 +7,35 @@
     "leg_sd_pct": 1.092,
     "local_leg_s": 17.349,
     "local_prefill_s": 3.9938,
-    "r_round": 2.1383132688638904,
+    "r_round_ledger_refuted": 2.1383132688638904,
     "score_sd_pct": 0.756,
+    "tau_decode_round": 1.7590408390223313,
     "tau_prefill": 7.579806414879483
   },
-  "reconstructed_ranked_leg": {
-    "ledger_round_share": 0.9125,
-    "ranked_leg_s": 6.7725704517836,
-    "ranked_prefill_s": 0.5269,
-    "ranked_round_share": 0.9222008831430852,
-    "ranked_rounds_s": 6.2456704517835995
+  "median_pair_model": {
+    "actual_published_score": 3.23250848,
+    "median_pair_legs_ms": [
+      6233,
+      5821
+    ],
+    "median_pair_prompts": [
+      "beagle",
+      "medicine"
+    ],
+    "raw_ratios": {
+      "beagle": 3.1200815216576006,
+      "botany": 3.425543909192,
+      "drama": 1.9166564961311998,
+      "essays": 3.3661785908336,
+      "medicine": 3.3448894925847994,
+      "plutarch": 1.2528424076256,
+      "republic": 3.3938842096335,
+      "travel": 2.179882122774
+    },
+    "reconstructed_published_score": 3.2324855071211998,
+    "score_sensitivity_pct_per_ranked_ms": 0.016631151969569845,
+    "self_check_relative_error": 7.106827079430818e-06,
+    "why": "The two middle raw ratios set the published median, so a fixed per-leg saving reaches the score only through those two prompts. Their measured ranked legs replace the leg ratio R, which e70_transfer_constant_provenance.py refutes."
   },
   "sdpa_fallback": {
     "e65_roofline_attention_tflop": 0.052,
@@ -30,31 +49,38 @@
       "arithmetic": {
         "delta_local_ms": 29.215,
         "delta_ranked_ms": 3.8543200711102212,
-        "fraction_of_deficit": 0.0932962977440756,
+        "fraction_of_deficit": 0.10508488990491367,
         "local_round_fraction_pct": 0.21875374386006946,
         "naive_no_tau_score_pct": 0.16839587296097758,
-        "overstatement_factor": 2.958947083731199,
-        "ranked_leg_s": 6.7725704517836,
-        "route_a_direct_score_pct": 0.05691074162388611,
+        "overstatement_factor": 2.627007635279845,
+        "route_a_median_pair_score_pct": 0.06410178284199734,
+        "route_b_error_pct_of_route_a": -12.152081453232514,
         "route_b_ledger_score_pct": 0.0563120819780636,
-        "sd_of_published_score": 0.07527875876175412,
+        "score_sensitivity_pct_per_ranked_ms": 0.016631151969569845,
+        "sd_of_published_score": 0.08479071804497003,
         "tau": 7.579806414879483
       },
       "site": "quantized.cpp:697 qmm nax gate, plus matmul.cpp:915 for the bf16 island patch on the same 511 rows",
       "steerable": false,
       "steerable_reason": "quantized.cpp and matmul.cpp are not in benchmark.json editablePaths. Only the row count is editable, in Qwen36MTPBlockSession, and that is the queued E65 follow-up (a).",
+      "tau_sensitivity": {
+        "tau_decode_round_1.76": 0.27621820597470204,
+        "tau_prefill_7.58": 0.06410178284199734,
+        "which_applies": "tau_prefill. This audit proves the 511-row prime runs affine_qmm_t_nax through quantized.cpp:697 and steel_gemm_fused_nax through matmul.cpp:915 at rank, which are exactly the families that give prefill its 7.58x. The prime is ~100 % GEMM at M = 511 against prefill's 84 % at M = 512, so if anything it transfers better than 7.58x.",
+        "why_it_matters": "At the decode-round rate the prime would be worth 0.28 % of score and E65 follow-up (a) would be a live target. The audit is what excludes that branch."
+      },
       "what_it_costs_locally": "the E65 round-1 d_submit2 excess"
     },
     "S9_prefill_sdpa_fallback": {
       "arithmetic": {
         "delta_local_ms": 16.49267441664,
         "delta_ranked_ms": 2.175870136243081,
-        "fraction_of_deficit": 0.05266833691497327,
+        "fraction_of_deficit": 0.059323322790012005,
         "naive_no_tau_score_pct": 0.09506412137091474,
-        "overstatement_factor": 2.9589470837311986,
-        "ranked_leg_s": 6.7725704517836,
-        "route_a_direct_score_pct": 0.03212768551813369,
-        "sd_of_published_score": 0.042496938516049854,
+        "overstatement_factor": 2.627007635279845,
+        "route_a_median_pair_score_pct": 0.03618722690190732,
+        "score_sensitivity_pct_per_ranked_ms": 0.016631151969569845,
+        "sd_of_published_score": 0.04786670225120016,
         "tau": 7.579806414879483
       },
       "site": "matmul.cpp:915 family selector, with matmul.cpp:176 vs :373 tile parameters",
@@ -63,7 +89,7 @@
       "what_it_costs_locally": "the 32 dense bf16 GEMMs MLX composes because head_dim 256 has no fused attention kernel"
     }
   },
-  "total_if_every_divergent_site_cost_went_to_zero_pct": 0.0890384271420198,
+  "total_if_every_divergent_site_cost_went_to_zero_pct": 0.10028900974390467,
   "width_shares": {
     "applies_to_any_divergent_site": false,
     "distance_to_the_cliff": "segmentedVerifyDepthCap 8 bounds M at 9. The widest scored width M = 9 carries 5.75 % of modelled ranked verify mass and sits one row below the cliff.",

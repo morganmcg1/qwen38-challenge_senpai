@@ -38,6 +38,14 @@ RECEIPT_BEAGLE_SERIAL_SPT = 0.0379848885  # ca9251b8 public receipt
 RECEIPT_BEAGLE_PREFILL_SPT = 0.001027553  # ca9251b8 public receipt
 
 # --- the uncontested measurements the constants are compared against -----
+# Measured local pinned serial legs at the same 512-token window, so the leg
+# ratio does not have to be reconstructed from a round time and a prefill time.
+LOCAL_SERIAL_SPT_RUNS = {
+    "score-runL-gate1-cap8-512": 0.07357754115946591,
+    "score-runK-gate2-cap8-512": 0.07361460360698402,
+    "score-runN-gate1-cap8-512-confirm": 0.07370585342869163,
+    "analysis-runP-512-confirm": 0.07359492778778076,
+}
 LOCAL_DEPTH0_ROUND_MS = 65.0094  # E1, ledger :14313, N=1530, sd 0.16 %
 LOCAL_PREFILL_S = 3.9938         # ledger 186(C) :10450
 RANKED_PREFILL_S = 0.5269        # ledger 186(C) :10450
@@ -98,6 +106,8 @@ def main() -> None:
     tau_round = LOCAL_DEPTH0_ROUND_MS / round_from_receipt
     local_leg_s = LOCAL_PREFILL_S + DECODE_TOKENS * LOCAL_DEPTH0_ROUND_MS / 1000.0
     r_leg = local_leg_s / ranked_leg_s
+    measured_local_leg_s = statistics.fmean(LOCAL_SERIAL_SPT_RUNS.values()) * DECODE_TOKENS
+    r_leg_measured = measured_local_leg_s / ranked_leg_s
 
     report = {
         "harness": "ranked",
@@ -145,8 +155,12 @@ def main() -> None:
             "tau_depth0_round": tau_round,
             "R_leg_local_over_ranked": r_leg,
             "local_serial_leg_s": local_leg_s,
+            "R_leg_from_measured_local_legs": r_leg_measured,
+            "measured_local_serial_leg_s": measured_local_leg_s,
+            "measured_local_serial_leg_runs": LOCAL_SERIAL_SPT_RUNS,
             "ledger_R": LEDGER_R,
             "R_change_pct": 100.0 * (r_leg - LEDGER_R) / LEDGER_R,
+            "R_change_pct_measured": 100.0 * (r_leg_measured - LEDGER_R) / LEDGER_R,
             "prefill_over_round_transfer_contrast": tau_prefill / tau_round,
             "ledger_transfer_contrast": 3.55,
             "arithmetic_bound_multiplier_R_over_tau": r_leg / tau_prefill,
@@ -161,6 +175,36 @@ def main() -> None:
             "round the two are not equal, because prefill transfers at 7.58x "
             "and decode at 1.76x. The leg ratio is computed here from the "
             "board mean and the local leg, and it is a third number again."),
+        "which_leg_score_arithmetic_needs": {
+            "argument": (
+                "score = ranked serial spt / ranked candidate spt, and a "
+                "candidate-side saving moves only the denominator, so "
+                "delta_score_pct = 100 * (delta_local / tau) / "
+                "ranked_CANDIDATE_leg. The normalizer is the candidate leg, "
+                "not the pinned serial leg. R as used in 188(A) is therefore "
+                "neither the serial-leg ratio computed above nor the depth-0 "
+                "round ratio."),
+            "ranked_candidate_legs_ms_186B": {
+                "plutarch": 15517, "drama": 10126, "travel": 8903,
+                "beagle": 6233, "medicine": 5821, "republic": 5726,
+                "essays": 5764, "botany": 5673,
+            },
+            "local_candidate_spt_runs": {
+                "score-runL-gate1-cap8-512": 0.034562689485028386,
+                "score-runK-gate2-cap8-512": 0.03502187505364418,
+                "score-runN-gate1-cap8-512-confirm": 0.03458425961434841,
+            },
+            "indicative_candidate_leg_ratio_beagle": (
+                512 * 0.034562689485028386 / 6.233),
+            "caveat": (
+                "indicative only: the local runs above and the ranked legs of "
+                "ca9251b8 are not proven to be the same candidate schedule, "
+                "so this ratio is not a constant to adopt"),
+            "recommendation": (
+                "retire R. delta_score_pct = 100 * (delta_local / tau) / "
+                "ranked_candidate_leg needs no leg ratio at all and cannot "
+                "pick up the wrong leg."),
+        },
     }
 
     OUT.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")

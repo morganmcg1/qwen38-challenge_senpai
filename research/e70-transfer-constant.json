@@ -24,6 +24,8 @@
   },
   "corrected_transfer_constants": {
     "R_change_pct": -10.383635762682982,
+    "R_change_pct_measured": -9.382429568692338,
+    "R_leg_from_measured_local_legs": 1.9376755085326518,
     "R_leg_local_over_ranked": 1.91626671648655,
     "arithmetic_bound_divisor": 3.9555070020612577,
     "arithmetic_bound_multiplier_R_over_tau": 0.25281209197174703,
@@ -33,6 +35,13 @@
     "ledger_latency_bound_multiplier": 2.1383,
     "ledger_transfer_contrast": 3.55,
     "local_serial_leg_s": 37.2786128,
+    "measured_local_serial_leg_runs": {
+      "analysis-runP-512-confirm": 0.07359492778778076,
+      "score-runK-gate2-cap8-512": 0.07361460360698402,
+      "score-runL-gate1-cap8-512": 0.07357754115946591,
+      "score-runN-gate1-cap8-512-confirm": 0.07370585342869163
+    },
+    "measured_local_serial_leg_s": 37.695094525814056,
     "prefill_over_round_transfer_contrast": 4.309060669683973,
     "tau_depth0_round": 1.7590391493456015,
     "tau_prefill": 7.579806414879483
@@ -58,5 +67,26 @@
     "from_board_and_ledger_K_low": 36.96400476119958,
     "ledger_10453_claim": 30.402
   },
-  "what": "provenance decision between the 30.402 ms ledger constant and the 36.957 ms receipt derivation for the ranked depth-0 serial decode round"
+  "what": "provenance decision between the 30.402 ms ledger constant and the 36.957 ms receipt derivation for the ranked depth-0 serial decode round",
+  "which_leg_score_arithmetic_needs": {
+    "argument": "score = ranked serial spt / ranked candidate spt, and a candidate-side saving moves only the denominator, so delta_score_pct = 100 * (delta_local / tau) / ranked_CANDIDATE_leg. The normalizer is the candidate leg, not the pinned serial leg. R as used in 188(A) is therefore neither the serial-leg ratio computed above nor the depth-0 round ratio.",
+    "caveat": "indicative only: the local runs above and the ranked legs of ca9251b8 are not proven to be the same candidate schedule, so this ratio is not a constant to adopt",
+    "indicative_candidate_leg_ratio_beagle": 2.839097868816707,
+    "local_candidate_spt_runs": {
+      "score-runK-gate2-cap8-512": 0.03502187505364418,
+      "score-runL-gate1-cap8-512": 0.034562689485028386,
+      "score-runN-gate1-cap8-512-confirm": 0.03458425961434841
+    },
+    "ranked_candidate_legs_ms_186B": {
+      "beagle": 6233,
+      "botany": 5673,
+      "drama": 10126,
+      "essays": 5764,
+      "medicine": 5821,
+      "plutarch": 15517,
+      "republic": 5726,
+      "travel": 8903
+    },
+    "recommendation": "retire R. delta_score_pct = 100 * (delta_local / tau) / ranked_candidate_leg needs no leg ratio at all and cannot pick up the wrong leg."
+  }
 }

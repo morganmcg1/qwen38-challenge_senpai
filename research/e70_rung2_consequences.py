@@ -6,13 +6,18 @@ measured campaign number with its source quoted beside it, and the two
 independent conversion routes are both printed so a disagreement between them
 is visible instead of hidden.
 
-Route A, direct: reconstruct the ranked leg from the two measured transfer
-rates and take `delta_ranked / ranked_leg`.
+Route A, the median pair: convert the local saving to rank with that term's own
+transfer rate `tau`, then move it through the two prompts that actually set the
+published median. Their legs are measured ranked values from 186(B), so this
+route needs no leg ratio `R` at all. The self-check reproduces the published
+3.23250848 of submission ca9251b8 from the same table.
 
 Route B, the ledger's standing rule (campaign-ledger.md:10519-10520): express
 the saving as a fraction of ROUND cost, multiply by `R / tau`, then multiply by
-the median-pair dilution 0.9125. The rule takes a round fraction, not a leg
-fraction; feeding it a leg fraction charges the dilution twice.
+the median-pair dilution 0.9125. 🔴 `R = 2.1383` rests on a ranked depth-0 round
+of 30.402 ms that `research/e70_transfer_constant_provenance.py` refutes against
+3768 ranked serial legs. Route B is kept only so the size of that error stays
+visible; it is not the number to quote.
 
 usage:
   python3 research/e70_rung2_consequences.py [--json PATH]
@@ -33,13 +38,37 @@ LOCAL_PREFILL_S = 3.9938      # ledger 186(C):10452, the `begin` segment
 # is the 511-row MTP head history flush.
 HEAD_PRIME_MS = (29.52 + 28.91) / 2
 
-# Ledger 186(C) (campaign-ledger.md:10452-10453). The two measured local->ranked
-# transfer rates.
-TAU_PREFILL = 3.9938 / 0.5269           # 7.58, compute-bound, nax-accelerated
-R_ROUND = 65.009 / 30.402               # 2.1383, the depth-0 decode round
+# Ledger 186(C) (campaign-ledger.md:10452-10453). The measured local->ranked
+# transfer rate of the prefill section, which is 84 % nax GEMM at rank.
+TAU_PREFILL = 3.9938 / 0.5269           # 7.5798, compute-bound, nax-accelerated
+
+# The alternative transfer rate a decode-resident term would take. It bounds
+# the head-prime price from above if that section did NOT reach the nax family.
+# 65.0094 ms is E1's local depth-0 round (:14313); 36.9573 ms is the ranked
+# depth-0 round confirmed in research/e70-transfer-constant.json.
+TAU_DECODE_ROUND = 65.0094 / 36.9573    # 1.7590
+
+# 🔴 refuted, kept only to price route B. See e70_transfer_constant_provenance.
+R_ROUND_LEDGER = 65.009 / 30.402        # 2.1383
 
 # Ledger 186(B/F) (campaign-ledger.md:10442, :10519-10520).
 DILUTION = 0.9125
+
+# Ledger 186(B) (campaign-ledger.md:10425-10434). The per-prompt ranked receipt
+# of submission ca9251b8: candidate leg and the three score factors. The
+# published score is the median of build x spec x dilution over these rows.
+RANKED_PROMPTS = {
+    #            leg_ms   build    spec     dilution
+    "plutarch": (15517, 1.2489, 1.0384, 0.96606),
+    "drama": (10126, 1.2468, 1.6216, 0.94799),
+    "travel": (8903, 1.2468, 1.8583, 0.94085),
+    "beagle": (6233, 1.2494, 2.7277, 0.91552),
+    "medicine": (5821, 1.2508, 2.9402, 0.90953),
+    "republic": (5726, 1.2485, 2.9937, 0.90803),
+    "essays": (5764, 1.2464, 2.9723, 0.90863),
+    "botany": (5673, 1.2484, 3.0245, 0.90724),
+}
+PUBLISHED_SCORE = 3.23250848  # submission ca9251b8
 
 # Assignment baseline block, PR #73.
 SCORE_SD_PCT = 0.756
@@ -77,38 +106,63 @@ def sdpa_fallback_flop() -> float:
     return (qk + pv) * FULL_ATTENTION_LAYERS
 
 
-def ranked_leg_s() -> float:
-    local_rounds = LOCAL_LEG_S - LOCAL_PREFILL_S
-    return local_rounds / R_ROUND + LOCAL_PREFILL_S / TAU_PREFILL
+def raw_ratios() -> dict[str, float]:
+    return {
+        name: build * spec * dilution
+        for name, (_, build, spec, dilution) in RANKED_PROMPTS.items()
+    }
+
+
+def median_pair() -> tuple[list[str], float]:
+    """The two prompts whose raw ratios the published median averages."""
+    ordered = sorted(raw_ratios().items(), key=lambda item: item[1])
+    pair = [ordered[3][0], ordered[4][0]]
+    return pair, (ordered[3][1] + ordered[4][1]) / 2.0
+
+
+def score_sensitivity_per_ms() -> float:
+    """Score change for one millisecond removed from every candidate leg.
+
+    `raw_p = ranked_serial_leg / candidate_leg_p`, so a saving of `d` on
+    candidate leg `p` lifts `raw_p` by `raw_p * d / leg_p`. The published value
+    is the mean of the two middle raw ratios, so only those two prompts carry
+    the saving into the score.
+    """
+    pair, _ = median_pair()
+    raws = raw_ratios()
+    return 0.5 * sum(raws[p] / RANKED_PROMPTS[p][0] for p in pair)
 
 
 def price(delta_local_ms: float, tau: float, in_rounds: bool) -> dict:
     """Both conversion routes for one saving."""
-    leg = ranked_leg_s()
     delta_ranked_ms = delta_local_ms / tau
-    direct_pct = delta_ranked_ms / (leg * 1000.0) * 100.0
+    _, published = median_pair()
+    pair_pct = 100.0 * delta_ranked_ms * score_sensitivity_per_ms() / published
 
     out = {
         "delta_local_ms": delta_local_ms,
         "tau": tau,
         "delta_ranked_ms": delta_ranked_ms,
-        "route_a_direct_score_pct": direct_pct,
-        "ranked_leg_s": leg,
+        "route_a_median_pair_score_pct": pair_pct,
+        "score_sensitivity_pct_per_ranked_ms":
+            100.0 * score_sensitivity_per_ms() / published,
     }
     if in_rounds:
         local_rounds_ms = (LOCAL_LEG_S - LOCAL_PREFILL_S) * 1000.0
         round_fraction_pct = delta_local_ms / local_rounds_ms * 100.0
         out["route_b_ledger_score_pct"] = (
-            round_fraction_pct * (R_ROUND / tau) * DILUTION)
+            round_fraction_pct * (R_ROUND_LEDGER / tau) * DILUTION)
         out["local_round_fraction_pct"] = round_fraction_pct
+        out["route_b_error_pct_of_route_a"] = (
+            100.0 * (out["route_b_ledger_score_pct"] - pair_pct) / pair_pct)
     # What the same saving looks like if you forget that the section is
     # nax-accelerated at rank and transfers at tau instead of 1.
     out["naive_no_tau_score_pct"] = (
         delta_local_ms / (LOCAL_LEG_S * 1000.0) * 100.0)
     out["overstatement_factor"] = (
-        out["naive_no_tau_score_pct"] / direct_pct if direct_pct else float("nan"))
-    out["sd_of_published_score"] = direct_pct / SCORE_SD_PCT
-    out["fraction_of_deficit"] = direct_pct / DEFICIT_PCT
+        out["naive_no_tau_score_pct"] / pair_pct if pair_pct else float("nan"))
+    out["sd_of_published_score"] = pair_pct / SCORE_SD_PCT
+    out["fraction_of_deficit"] = pair_pct / DEFICIT_PCT
     return out
 
 
@@ -117,9 +171,9 @@ def main() -> None:
     parser.add_argument("--json")
     args = parser.parse_args()
 
-    leg = ranked_leg_s()
     fallback_flop = sdpa_fallback_flop()
     fallback_ms = fallback_flop / (PREFILL_TFLOP_PER_S * 1e12) * 1000.0
+    pair, reconstructed_score = median_pair()
 
     report: dict = {
         "harness": "ranked",
@@ -128,19 +182,28 @@ def main() -> None:
             "local_prefill_s": LOCAL_PREFILL_S,
             "head_prime_ms": HEAD_PRIME_MS,
             "tau_prefill": TAU_PREFILL,
-            "r_round": R_ROUND,
+            "tau_decode_round": TAU_DECODE_ROUND,
+            "r_round_ledger_refuted": R_ROUND_LEDGER,
             "dilution": DILUTION,
             "score_sd_pct": SCORE_SD_PCT,
             "leg_sd_pct": LEG_SD_PCT,
             "deficit_pct": DEFICIT_PCT,
         },
-        "reconstructed_ranked_leg": {
-            "ranked_prefill_s": LOCAL_PREFILL_S / TAU_PREFILL,
-            "ranked_rounds_s": (LOCAL_LEG_S - LOCAL_PREFILL_S) / R_ROUND,
-            "ranked_leg_s": leg,
-            "ranked_round_share": (
-                (LOCAL_LEG_S - LOCAL_PREFILL_S) / R_ROUND / leg),
-            "ledger_round_share": DILUTION,
+        "median_pair_model": {
+            "raw_ratios": raw_ratios(),
+            "median_pair_prompts": pair,
+            "median_pair_legs_ms": [RANKED_PROMPTS[p][0] for p in pair],
+            "reconstructed_published_score": reconstructed_score,
+            "actual_published_score": PUBLISHED_SCORE,
+            "self_check_relative_error": abs(
+                reconstructed_score - PUBLISHED_SCORE) / PUBLISHED_SCORE,
+            "score_sensitivity_pct_per_ranked_ms":
+                100.0 * score_sensitivity_per_ms() / reconstructed_score,
+            "why": (
+                "The two middle raw ratios set the published median, so a "
+                "fixed per-leg saving reaches the score only through those two "
+                "prompts. Their measured ranked legs replace the leg ratio R, "
+                "which e70_transfer_constant_provenance.py refutes."),
         },
         "sdpa_fallback": {
             "gflop_per_seed": fallback_flop / 1e9,
@@ -166,6 +229,27 @@ def main() -> None:
             "editablePaths. Only the row count is editable, in "
             "Qwen36MTPBlockSession, and that is the queued E65 follow-up (a)."),
         "arithmetic": price(HEAD_PRIME_MS, TAU_PREFILL, in_rounds=True),
+        # The head prime's transfer rate is the whole question, so bound it
+        # from both ends instead of asserting one value.
+        "tau_sensitivity": {
+            "tau_prefill_7.58": price(
+                HEAD_PRIME_MS, TAU_PREFILL, in_rounds=False)[
+                    "route_a_median_pair_score_pct"],
+            "tau_decode_round_1.76": price(
+                HEAD_PRIME_MS, TAU_DECODE_ROUND, in_rounds=False)[
+                    "route_a_median_pair_score_pct"],
+            "which_applies": (
+                "tau_prefill. This audit proves the 511-row prime runs "
+                "affine_qmm_t_nax through quantized.cpp:697 and "
+                "steel_gemm_fused_nax through matmul.cpp:915 at rank, which "
+                "are exactly the families that give prefill its 7.58x. The "
+                "prime is ~100 % GEMM at M = 511 against prefill's 84 % at "
+                "M = 512, so if anything it transfers better than 7.58x."),
+            "why_it_matters": (
+                "At the decode-round rate the prime would be worth 0.28 % of "
+                "score and E65 follow-up (a) would be a live target. The audit "
+                "is what excludes that branch."),
+        },
     }
     report["sites"]["S9_prefill_sdpa_fallback"] = {
         "site": "matmul.cpp:915 family selector, with matmul.cpp:176 vs :373 "
@@ -202,12 +286,14 @@ def main() -> None:
 
     print("E70 rung 2 -- score consequences of the divergent sites   harness=ranked")
     print()
-    rl = report["reconstructed_ranked_leg"]
-    print(f"reconstructed ranked leg: prefill {rl['ranked_prefill_s']*1000:.1f} ms"
-          f" + rounds {rl['ranked_rounds_s']*1000:.1f} ms"
-          f" = {rl['ranked_leg_s']*1000:.1f} ms")
-    print(f"  ranked round share {rl['ranked_round_share']:.4f}"
-          f"  vs the ledger's measured {DILUTION}")
+    mp = report["median_pair_model"]
+    print(f"median pair: {mp['median_pair_prompts']} legs "
+          f"{mp['median_pair_legs_ms']} ms")
+    print(f"  self-check: reconstructed {mp['reconstructed_published_score']:.8f}"
+          f" vs published {PUBLISHED_SCORE:.8f}"
+          f"  (relative error {mp['self_check_relative_error']:.2e})")
+    print(f"  score sensitivity "
+          f"{mp['score_sensitivity_pct_per_ranked_ms']:.6f} % per ranked ms")
     print()
     fb = report["sdpa_fallback"]
     print(f"prefill SDPA fallback: {fb['gflop_per_seed']:.1f} GFLOP per seed"
@@ -220,9 +306,14 @@ def main() -> None:
         print(f"  local saving if removed entirely : {a['delta_local_ms']:.2f} ms")
         print(f"  transfer rate tau                : {a['tau']:.4f}")
         print(f"  ranked saving                    : {a['delta_ranked_ms']:.3f} ms")
-        print(f"  route A, direct                  : {a['route_a_direct_score_pct']:.4f} % of score")
+        print(f"  route A, median pair             : {a['route_a_median_pair_score_pct']:.4f} % of score")
         if "route_b_ledger_score_pct" in a:
-            print(f"  route B, ledger standing rule    : {a['route_b_ledger_score_pct']:.4f} % of score")
+            print(f"  route B, ledger rule (R refuted) : {a['route_b_ledger_score_pct']:.4f} % of score"
+                  f"  ({a['route_b_error_pct_of_route_a']:+.1f} % vs route A)")
+        if "tau_sensitivity" in site:
+            ts = site["tau_sensitivity"]
+            print(f"  tau band                         : {ts['tau_prefill_7.58']:.4f} % at tau 7.58"
+                  f"  to {ts['tau_decode_round_1.76']:.4f} % at tau 1.76")
         print(f"  naive, ignoring tau              : {a['naive_no_tau_score_pct']:.4f} %"
               f"  ({a['overstatement_factor']:.2f}x too high)")
         print(f"  vs published-score sd {SCORE_SD_PCT} %      : {a['sd_of_published_score']:.3f} sd")
@@ -230,7 +321,7 @@ def main() -> None:
         print(f"  steerable by editable code       : {site['steerable']}")
         print()
 
-    total = sum(s["arithmetic"]["route_a_direct_score_pct"]
+    total = sum(s["arithmetic"]["route_a_median_pair_score_pct"]
                 for s in report["sites"].values())
     report["total_if_every_divergent_site_cost_went_to_zero_pct"] = total
     print(f"UPPER BOUND: if BOTH divergent reachable sites cost zero at rank, "
