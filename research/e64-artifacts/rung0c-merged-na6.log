@@ -7,3 +7,15 @@ research/generated/e64_wide_arms.h is in sync with Vendor/mlx-swift/Source/Cmlx/
 1 warning generated.
 e64_rung0b cool_gate before=gpu_temp=42.589168548583984C cpu_temp=40.53721618652344C gpu_power=0.008687970228493214W
 benchmark.sh: waiting for GPU to cool down before timing (current 42.2C, target <=40C, waited 0s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.0C, target <=40C, waited 10s)...
+benchmark.sh: GPU cool-down gate passed (current 39.0C, target <=40C, waited 20s)
+e64_rung0b cool_gate_passed_real_gate=true
+e64_rung0b entry_thermal gpu_temp=38.83515548706055C cpu_temp=39.59202194213867C gpu_power=0.006101284176111221W
+e64_cell_ab: arm plain    max_threads=1024 tg_mem=0
+e64_cell_ab: arm merged   max_threads=1024 tg_mem=0
+e64_cell_ab: session entry gpu_temp_c=38.71
+e64_cell_ab: merged parity vs plain: 0 differing of 208896
+e64_cell_ab: mlp.gate_up_fused inner=269 legs=36 entry=38.58C exit=48.17C
+e64_cell_ab: wrote research/e64-artifacts/rung0c-merged-na6.json
+e64_rung0b exit_thermal gpu_temp=44.110355377197266C cpu_temp=40.88452911376953C gpu_power=0.006917835678905249W
+e64_rung0b finished=2026-08-20T05:56:56Z status=0

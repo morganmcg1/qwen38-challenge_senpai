@@ -59,6 +59,8 @@ def main() -> int:
                         default=["research/e64-artifacts/rung0b-na5.log"])
     parser.add_argument("--ladder", type=pathlib.Path,
                         default="research/e64-artifacts/rung0b-ladder-analysis.json")
+    parser.add_argument("--merged-ladder", type=pathlib.Path,
+                        default="research/e64-artifacts/rung0c-merged-analysis.json")
     parser.add_argument("--rung0c", type=pathlib.Path,
                         default="research/e64-artifacts/rung0c-diff.json")
     parser.add_argument("--name", default="e64-wide-qmv-accumulator-private-memory")
@@ -166,32 +168,42 @@ def main() -> int:
     tables = {"air_census": census, "legs": legs, "effects": effects}
     extra_summary: dict = {}
 
-    ladder_path = pathlib.Path(args.ladder)
-    if ladder_path.exists():
+    for prefix, path in (("ladder", args.ladder),
+                         ("merged_ladder", args.merged_ladder)):
+        ladder_path = pathlib.Path(path)
+        if not ladder_path.exists():
+            continue
         data = json.loads(ladder_path.read_text())["ladder"]
-        rungs = wandb.Table(columns=["na", "shape", "plain_ms", "plain_gb_per_s",
-                                     "reference_gb_per_s", "entry_gpu_temp_c",
-                                     "exit_gpu_temp_c"])
+        rungs = wandb.Table(columns=["na", "shape", "arm", "ms", "gb_per_s",
+                                     "reference_gb_per_s",
+                                     "widest_same_arm_spread_pct",
+                                     "entry_gpu_temp_c", "exit_gpu_temp_c"])
         for rung in data["rungs"]:
-            rungs.add_data(rung["na"], rung["shape"], rung["plain_ms"],
-                           rung["plain_gb_per_s"], rung["reference_gb_per_s"],
-                           rung["entry_gpu_temp_c"], rung["exit_gpu_temp_c"])
-        steps = wandb.Table(columns=["shape", "from_na", "to_na",
-                                     "seconds_step_pct",
+            for arm in sorted(rung["ms"]):
+                rungs.add_data(rung["na"], rung["shape"], arm, rung["ms"][arm],
+                               rung["gb_per_s"][arm], rung["reference_gb_per_s"],
+                               rung["widest_same_arm_spread"] * 100,
+                               rung["entry_gpu_temp_c"], rung["exit_gpu_temp_c"])
+        steps = wandb.Table(columns=["shape", "from_na", "to_na", "arm",
+                                     "seconds_step_pct", "null_bar_pct",
                                      "reference_seconds_step_pct"])
         for step in data["steps"]:
             reference = step.get("reference_seconds_step")
-            steps.add_data(step["shape"], step["from_na"], step["to_na"],
-                           step["seconds_step"] * 100,
-                           reference * 100 if reference is not None else None)
+            for arm, value in sorted(step["seconds_step_by_arm"].items()):
+                steps.add_data(step["shape"], step["from_na"], step["to_na"],
+                               arm, value * 100, step["null_bar"] * 100,
+                               reference * 100 if reference is not None else None)
+                if (step["from_na"], step["to_na"]) == (5, 6):
+                    extra_summary[f"{prefix}/step_na5_to_na6_pct/{arm}"] = \
+                        value * 100
             if (step["from_na"], step["to_na"]) == (5, 6):
-                extra_summary["ladder/step_na5_to_na6_pct"] = \
-                    step["seconds_step"] * 100
+                extra_summary[f"{prefix}/step_na5_to_na6_null_bar_pct"] = \
+                    step["null_bar"] * 100
                 if reference is not None:
-                    extra_summary["ladder/reference_step_na5_to_na6_pct"] = \
+                    extra_summary[f"{prefix}/reference_step_na5_to_na6_pct"] = \
                         reference * 100
-        tables["ladder_rungs"] = rungs
-        tables["ladder_steps"] = steps
+        tables[f"{prefix}_rungs"] = rungs
+        tables[f"{prefix}_steps"] = steps
 
     rung0c_path = pathlib.Path(args.rung0c)
     if rung0c_path.exists():
