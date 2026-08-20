@@ -33,7 +33,7 @@ RUN_ID_FILE = ARTIFACTS / "wandb-run-id.txt"
 # are this student's own E60 within-session same-arm spreads, kept only as the
 # prior expectation for how the floor grows with leg separation.
 NULL_FLOOR_BY_SEPARATION_PERCENT = {1: 0.0032, 3: 0.1147, 5: 0.1634}
-LIVE_PROMOTED_FRONTIER_SCORE = 3.25187972017987
+LIVE_PROMOTED_FRONTIER_SCORE = 3.25238228
 OUR_BEST_OFFICIAL_SCORE = 3.23250848263467
 RANKED_RUN_PUBLISHED_SCORE_SD_PERCENT = 0.756
 RANKED_CANDIDATE_LEG_SD_PERCENT = 1.165

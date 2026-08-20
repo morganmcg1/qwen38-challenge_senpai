@@ -1,0 +1,100 @@
+{
+  "verdict": "bounded_negative",
+  "question": "Find every kernel and shape the scored window touches for the first time inside the clock, and warm all of them.",
+  "answer": "No exploitable cold-kernel first touch exists in the scored window. The only large first-round cost is a 512-row MTP head prime, which is irreducible GPU work on real data, not a cold kernel.",
+
+  "ceiling_crossing_excess_pct_of_leg_max": 0.0023,
+  "ceiling_depth_first_touch_combined_pct_of_leg_max": 0.2616,
+  "ceiling_depth_first_touch_combined_pct_of_leg_typical": 0.15,
+  "ceiling_prefill_absolute_seconds": 0.67,
+  "ceiling_shorter_head_prime_pct_of_leg": 0.17,
+
+  "crossing_round": 76,
+  "crossing_rounds_total": 76,
+  "crossing_is_last_round": true,
+  "crossing_excess_ms_by_leg": {"r0-01": 0.25, "r0-02": 0.41, "r0-04": 0.0, "r1-01": 0.30, "r1-02": 0.32},
+  "crossing_within_width_clean_vs_repaired_offset_ms": 0.5,
+
+  "depth4_round1_excess_ms_by_leg": {"r0-01": 25.16, "r0-02": 29.29, "r0-04": 28.99, "r1-01": 23.62, "r1-02": 14.33},
+  "other_depth_max_excess_ms_by_leg": {"r0-01": 1.75, "r0-02": 1.18, "r0-04": 0.92, "r1-01": 0.14, "r1-02": 0.21},
+  "warm_all_depth_shapes_already_covers": [3, 5, 6, 7, 8],
+
+  "round1_d_submit2_excess_ms_leg1": 29.52,
+  "round1_d_submit2_excess_ms_leg2": 28.91,
+  "round1_graph_construction_phases_excess_ms": 0.13,
+  "d_submit2_share_of_draft_build_pct_min": 96.9,
+  "d_submit2_share_of_draft_build_pct_max": 97.8,
+  "round1_prime_rows": 512,
+  "steady_state_d_submit2_host_vs_gpu_separated": false,
+
+  "leg_budget_pct": {
+    "verify_build": 36.0,
+    "eval_wall": 32.6,
+    "begin_prefill_and_tail": 23.0,
+    "draft_build": 8.2,
+    "other": 0.3
+  },
+  "timed_leg_seconds": [17.344, 17.354],
+  "rounds_share_of_leg_pct": 77.0,
+
+  "prefill_matmul_params_billions": 24.35,
+  "prefill_total_params_billions": 26.89,
+  "prefill_tflop_512_tokens": 24.99,
+  "prefill_measured_tflops": 6.25,
+  "prefill_pct_of_sibling_host_bf16_peak": 83.2,
+  "prefill_begin_serial_vs_mtp_identical": true,
+  "prefill_begin_build_seconds_range": [2.945, 2.976],
+  "prefill_begin_eval_wall_seconds_range": [1.047, 1.049],
+
+  "rung1_falsified": true,
+  "rung1_reverted_commit": "3cd80e3",
+  "rung1_base_ms": [25.16, 29.29],
+  "rung1_warm_ms": [23.62, 14.33],
+  "rung1_within_arm_spread_ms": 9.29,
+
+  "stochastic_stall_observed_legs": 1,
+  "stochastic_stall_legs_total": 5,
+  "stochastic_stall_ms": 32.7,
+
+  "exactness_all_tokens_matched": true,
+  "exactness_residual_divergence_count": 0,
+  "exactness_legs": 8,
+  "scores": {
+    "r0-01": 2.1947, "r0-02": 2.1869, "r0-04": 2.1897,
+    "r1-01": 2.1992, "r1-02": 2.1930,
+    "r1b-01": 2.1913, "r1b-02": 2.1888,
+    "r4-01-local-submit": 2.1938
+  },
+  "instrumentation_cost_pct": 0.03,
+  "largest_same_arm_score_spread_pct": 0.36,
+  "entry_gpu_temp_c": [36.9, 57.9, 56.0],
+
+  "swift_test_total": 688,
+  "swift_test_failing_tests": 9,
+  "swift_test_issues": 40,
+  "swift_test_failures_related_to_diff": 0,
+  "swift_test_base_control_rerun_on_moved_base": false,
+
+  "submittable_diff_lines": 26,
+  "submittable_paths": ["Sources/MLXFastModel/Qwen36MTPBlockSession.swift"],
+  "scored_path_behavior_change": false,
+
+  "m5_arch_base": "applegpu_g17g",
+  "m5_arch_pro_max": "applegpu_g17s",
+  "m5_arch_gen": 17,
+  "m5_nax_gating_tier_independent": true,
+  "ranked_host_tier_known": false,
+  "ranked_runner_probed": false,
+  "mlx_metal_gpu_arch_override_source_verified": true,
+
+  "projected_ranked_delta_pct": 0.15,
+  "f_ranked_over_f_local": 1.0,
+  "our_deficit_pct": 0.5993,
+  "ranked_run_published_score_sd_pct": 0.756,
+  "projected_delta_below_single_run_sd": true,
+
+  "prereg_rule_missed_round1": true,
+  "prereg_rule_left_unchanged": true,
+  "prereg_rule_miss_cause": "the (M5, clean) cell has n=3 and cells with n<4 have no usable IQR",
+  "depth_test_added_beside_rule_not_retuned": true
+}
