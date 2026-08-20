@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the E59 rung 3 isolated-cell legs back to back inside one session.
+# Run E59 cell legs back to back inside one session.
 #
 #   research/e59_session.sh ARM:TAG [ARM:TAG ...] [--widths L --reps N --inner N]
 #
@@ -12,16 +12,19 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_root}"
 
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
-export E49_BASE_SHA="${E49_BASE_SHA:-989596895b7c8f889443dac0c87e024a428e6e9e}"
+# E55 landed on the campaign base after rung 3, and it changed both scored
+# files, so a pinned SHA here now fails the leg runner's "no stacked patches"
+# guard. Read the live base instead.
+export E49_BASE_SHA="${E49_BASE_SHA:-$(git rev-parse origin/senpai/qwen38-mtp-r1)}"
 export LEG_ARMS_MODULE="${LEG_ARMS_MODULE:-research/e59_arms.py}"
 export LEG_MANIFEST_DIR="${LEG_MANIFEST_DIR:-.mlxfast-private/e59-legs}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-e59-m5-rowblock-r2}"
 
-# Ranked command-buffer geometry, required for every rung 3 and rung 4 leg.
-# Rung 3 times the kernel inside `swift test`, which never starts the MTP
+# Ranked command-buffer geometry, required for every cell leg.
+# A cell leg times the kernel inside `swift test`, which never starts the MTP
 # worker, so `applyQwenMTPStartupMemoryProfile` never runs and these two names
 # reach MLX unmodified. The profile name is exported anyway so that every leg
-# of both rungs carries one identity tuple.
+# carries one identity tuple.
 export DARKBLOOM_STARTUP_MEMORY_PROFILE="${DARKBLOOM_STARTUP_MEMORY_PROFILE:-full}"
 export MLX_MAX_MB_PER_BUFFER="${MLX_MAX_MB_PER_BUFFER:-512}"
 export MLX_MAX_OPS_PER_BUFFER="${MLX_MAX_OPS_PER_BUFFER:-50}"
