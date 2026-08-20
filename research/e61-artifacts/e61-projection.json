@@ -1,0 +1,70 @@
+{
+  "caveat": "This is a projection from a microbenchmark cell, not a measurement. Rung 3 measures the whole leg directly and that measurement decides.",
+  "decision_bands": {
+    "local_null_floor_pct": 0.0629,
+    "promote_at_or_below_pct": -0.3,
+    "report_only_below_pct": 0.1
+  },
+  "inputs": {
+    "local_rounds": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    },
+    "measured_m6_cell_delta_pct": -4.198986886758382,
+    "psi_mtp": 0.693391,
+    "realisation_factor": 0.946,
+    "shipped_seconds_per_verify": {
+      "2": 0.0662173643,
+      "4": 0.0821751763,
+      "5": 0.11995656605,
+      "6": 0.12840456985,
+      "7": 0.138224612,
+      "8": 0.1487185918,
+      "9": 0.1638910192
+    }
+  },
+  "local": {
+    "f6": 0.2673234151361853,
+    "f6_prereg": 0.2671,
+    "leg_delta_pct": -0.7783227402916943,
+    "leg_delta_realised_pct": -0.7362933123159429,
+    "multiple_of_null_floor": 11.705776030460141,
+    "qmv_delta_pct": -1.1224875146803093
+  },
+  "local_time_weighted_shares": {
+    "2": 0.00599377691344307,
+    "4": 0.03719112650977669,
+    "5": 0.05429035901738532,
+    "6": 0.2673234151361853,
+    "7": 0.05004653972766028,
+    "8": 0.08076909175292595,
+    "9": 0.5043856909426234
+  },
+  "predicted_verdict_if_realised": "promote",
+  "prereg_comparison": {
+    "cell_realisation_ratio": 0.42200873233752584,
+    "measured_cell_delta_pct": -4.198986886758382,
+    "prereg_cell_delta_pct": -9.95,
+    "prereg_whole_leg_pct": -1.84,
+    "revised_whole_leg_pct": -0.7362933123159429
+  },
+  "ranked": {
+    "high": {
+      "f6": 0.347,
+      "leg_delta_pct": -1.0103042815895094,
+      "leg_delta_realised_pct": -0.9557478503836758,
+      "qmv_delta_pct": -1.4570484497051583
+    },
+    "low": {
+      "f6": 0.309,
+      "leg_delta_pct": -0.8996657723664508,
+      "leg_delta_realised_pct": -0.8510838206586625,
+      "qmv_delta_pct": -1.29748694800834
+    }
+  }
+}
