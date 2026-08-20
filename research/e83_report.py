@@ -47,11 +47,62 @@ def section(title: str) -> None:
     print(f"\n## {title}\n")
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        print(__doc__)
-        return 2
-    payload = json.load(open(sys.argv[1]))
+def head_report(payload: dict) -> None:
+    ident = payload["identity"]
+    steps = [b for b in payload["blocks"] if b.get("kind") == "pinned_head_step"]
+    total = ident["head_total_bytes"]
+    gemm = ident["head_gemm_bytes"]
+    declared = ident["declared_manifest_bytes"]
+
+    print(f"\n# E83 follow-on -- pinned proposal-head step "
+          f"({payload['experiment']})")
+    print(f"\nharness={payload['harness']}  "
+          f"gate_qualified_for_timing={payload['gate_qualified_for_timing']}  "
+          f"host={ident['host']}")
+    print(f"head={ident['head_path']}  total_bytes={total:,}  "
+          f"gemm_bytes={gemm:,}  kv_cache_length={ident['cache_length']}")
+
+    section("Measured step time and byte rate")
+    print("| rows | step ms | total bytes/ms | GEMM bytes/ms | GB/s (total) |")
+    print("|---:|---:|---:|---:|---:|")
+    for b in sorted(steps, key=lambda x: x["rows"]):
+        ms = 1e3 * b["seconds_median"]
+        print(f"| {b['rows']} | {ms:.3f} | {b['total_bytes_per_ms'] / 1e6:.1f} M | "
+              f"{b['gemm_bytes_per_ms'] / 1e6:.1f} M | "
+              f"{b['total_bytes'] / b['seconds_median'] / 1e9:.1f} |")
+    print("\nThe step runs both pre-fc norms, the `fc` join, the single decoder "
+          "layer's attention and MLP, and the output norm. It omits RoPE and "
+          "the cache append, so the step time is a LOWER bound on a real head "
+          "round and the byte rate is an UPPER bound.")
+
+    section("Byte budget for a replacement head")
+    m1 = next((b for b in steps if b["rows"] == 1), None)
+    if m1:
+        rate = m1["total_bytes_per_ms"]
+        print(f"measured rate at 1 row: {rate / 1e6:.1f} MB per millisecond")
+        print(f"pinned head  ({total:,} bytes): "
+              f"{1e3 * m1['seconds_median']:.3f} ms measured")
+        print(f"declared manifest head ({declared:,} bytes) at the same rate: "
+              f"{declared / rate:.3f} ms predicted")
+        print("\nThe declared head is not in this checkout, so its number is a "
+              "PREDICTION from the measured rate, not a measurement. A head "
+              "change is worth its cost only when the accepted tokens it adds "
+              "outweigh the milliseconds its bytes cost at this rate.")
+    widths = sorted(b["rows"] for b in steps)
+    if len(widths) >= 2:
+        lo = next(b for b in steps if b["rows"] == widths[0])
+        hi = next(b for b in steps if b["rows"] == widths[-1])
+        span = widths[-1] - widths[0]
+        marginal = 1e3 * (hi["seconds_median"] - lo["seconds_median"]) / span
+        print(f"\nmarginal cost of one extra row, {widths[0]} -> {widths[-1]}: "
+              f"{marginal:+.4f} ms/row against a "
+              f"{1e3 * lo['seconds_median']:.3f} ms fixed step. "
+              "A near-flat slope means the head step is weight-traffic bound, "
+              "so proposing more rows per step is close to free and shrinking "
+              "the head is the only lever that moves its cost.")
+
+
+def prefill_report(payload: dict) -> None:
     blocks = payload["blocks"]
     ident = payload["identity"]
 
@@ -135,10 +186,29 @@ def main() -> int:
     stalls = [b for b in begins if b.get("stall_phase")]
     if not stalls:
         print("NO POSITIVE CONTROL RAN -- attribution above is unverified.")
+    calib = next(
+        (b for b in blocks if b.get("kind") == "stall_calibration"), None)
+    if calib:
+        print(f"stall calibration: `usleep({calib['nominal_millis']} ms)` on this "
+              f"host delivers median {1e3 * calib['seconds_median']:.2f} ms "
+              f"(min {1e3 * calib['seconds_min']:.2f}, "
+              f"max {1e3 * calib['seconds_max']:.2f}, n={calib['samples']}).")
+        print("The control is scored against the DELIVERED stall. Scoring it "
+              "against the requested stall reports a false misattribution.")
+    else:
+        print("NO STALL CALIBRATION in this session: the target-phase delta is "
+              "scored against the REQUESTED stall, which `usleep` overshoots.")
     for target in sorted({b["stall_phase"] for b in stalls}):
         arm = [b for b in stalls if b["stall_phase"] == target]
-        injected = arm[0].get("stall_millis", 0)
-        print(f"\ninjected {injected} ms into `{target}`:")
+        requested = arm[0].get("stall_millis", 0)
+        delivered = [1e3 * b["stall_actual_seconds"] for b in arm
+                     if b.get("stall_actual_seconds") is not None]
+        injected = med(delivered) if delivered else (
+            1e3 * calib["seconds_median"] if calib else requested)
+        source = "delivered in-band" if delivered else (
+            "calibrated" if calib else "requested")
+        print(f"\ninjected {requested} ms into `{target}` "
+              f"({injected:.2f} ms {source}):")
         ok = True
         for name in PHASES:
             base = [b["phases"][name] for b in phased
@@ -348,6 +418,19 @@ def main() -> int:
               "seed leg. Even the worst row (NAX helps non-GEMM not at all) "
               "leaves the ranked non-GEMM share small, because the local "
               "non-GEMM bound is itself small.")
+
+
+def main() -> int:
+    if len(sys.argv) < 2:
+        print(__doc__)
+        return 2
+    for path in sys.argv[1:]:
+        payload = json.load(open(path))
+        kinds = {b.get("kind") for b in payload["blocks"]}
+        if "pinned_head_step" in kinds:
+            head_report(payload)
+        else:
+            prefill_report(payload)
     return 0
 
 

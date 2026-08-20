@@ -62,8 +62,22 @@ def begin_row(block: dict) -> dict:
         )
     if block.get("stall_phase"):
         row["control/stall_phase"] = block["stall_phase"]
-        row["control/stall_ms"] = block.get("stall_millis")
+        row["control/stall_nominal_ms"] = block.get("stall_millis")
+        if block.get("stall_actual_seconds") is not None:
+            row["control/stall_actual_ms"] = 1e3 * block["stall_actual_seconds"]
     return row
+
+
+def head_row(block: dict) -> dict:
+    rows = block.get("rows")
+    return {
+        "head/order": block.get("order"),
+        "head/rows": rows,
+        "head/step_ms": 1e3 * block["seconds_median"],
+        "head/total_bytes_per_ms": block.get("total_bytes_per_ms"),
+        "head/gemm_bytes_per_ms": block.get("gemm_bytes_per_ms"),
+        f"head/m{rows}/step_ms": 1e3 * block["seconds_median"],
+    }
 
 
 def ladder_row(block: dict) -> dict:
@@ -166,6 +180,15 @@ def main() -> int:
                     "swiglu/saving_prefill_ms":
                         1e3 * block["saving_modelled_prefill_seconds"],
                 }
+            elif kind == "pinned_head_step":
+                row = head_row(block)
+            elif kind == "stall_calibration":
+                row = {
+                    "control/calibration_nominal_ms": block["nominal_millis"],
+                    "control/calibration_median_ms": 1e3 * block["seconds_median"],
+                    "control/calibration_min_ms": 1e3 * block["seconds_min"],
+                    "control/calibration_max_ms": 1e3 * block["seconds_max"],
+                }
             elif kind in ("isolated_quantized_matmul", "isolated_sdpa"):
                 row = isolated_row(block)
             else:
@@ -173,7 +196,9 @@ def main() -> int:
             for key in ("gpu_temp_entry_c", "gpu_temp_exit_c"):
                 if block.get(key) is not None:
                     row[f"block/{key}"] = block[key]
-            run.log(row, step=block.get("order", len(blocks) - 1))
+            # Step is the stream position, not the block's `order`: a session
+            # may run several tests and each restarts its own ordering.
+            run.log(row, step=len(blocks) - 1)
     finally:
         begins = [b for b in blocks if b.get("kind") == "begin"]
         if begins:
@@ -276,6 +301,28 @@ def main() -> int:
                                 1e3 * b["modelled_prefill_seconds"],
                             ]
                             for b in isolated
+                        ],
+                    )
+                }
+            )
+        head = [b for b in blocks if b.get("kind") == "pinned_head_step"]
+        if head:
+            run.log(
+                {
+                    "pinned_head_steps": wandb.Table(
+                        columns=[
+                            "rows", "cache_length", "step_ms",
+                            "total_bytes", "total_bytes_per_ms",
+                            "gemm_bytes", "gemm_bytes_per_ms",
+                        ],
+                        data=[
+                            [
+                                b.get("rows"), b.get("cache_length"),
+                                1e3 * b["seconds_median"],
+                                b.get("total_bytes"), b.get("total_bytes_per_ms"),
+                                b.get("gemm_bytes"), b.get("gemm_bytes_per_ms"),
+                            ]
+                            for b in head
                         ],
                     )
                 }

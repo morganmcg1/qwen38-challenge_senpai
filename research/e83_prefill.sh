@@ -18,6 +18,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 tag="${1:?usage: e83_prefill.sh TAG [PROFILE]}"
 profile="${2:-full}"
 
+run_prefill=1
+run_head=0
 case "${profile}" in
   smoke)
     # Every arm installer and both probe kinds run once. This proves the module
@@ -28,9 +30,22 @@ case "${profile}" in
     : "${MLXFAST_E83_ARMS:=null,mlp_all,gdn_in_qkv,all_interceptable}"
     ;;
   full) : "${MLXFAST_E83_LADDER_REPS:=6}" ;;
+  followup)
+    # Re-scores the positive control against the stall the host actually
+    # delivers, and prices one pinned proposal-head step. The full session
+    # already measured the arms, the ladder and the roofline.
+    : "${MLXFAST_E83_REPS:=3}"
+    : "${MLXFAST_E83_WARMUP:=1}"
+    : "${MLXFAST_E83_LADDER_REPS:=0}"
+    : "${MLXFAST_E83_ARMS:=none}"
+    : "${MLXFAST_E83_ISOLATED:=0}"
+    run_head=1
+    ;;
+  head) run_prefill=0; run_head=1 ;;
   *) echo "e83_prefill.sh: unknown profile ${profile}" >&2; exit 2 ;;
 esac
 export MLXFAST_E83_REPS MLXFAST_E83_WARMUP MLXFAST_E83_ARMS MLXFAST_E83_LADDER_REPS
+export MLXFAST_E83_ISOLATED
 
 out="research/out/${tag}"
 rm -rf "${out}"
@@ -80,8 +95,10 @@ gpu_temp() {
   echo ""
 }
 
-export MLXFAST_RUN_E83_PREFILL=1
+export MLXFAST_RUN_E83_PREFILL="${run_prefill}"
+export MLXFAST_RUN_E83_HEAD="${run_head}"
 export MLXFAST_E83_OUT="${PWD}/${out}/decomposition.json"
+export MLXFAST_E83_HEAD_OUT="${PWD}/${out}/head_step.json"
 
 experiment="${MLXFAST_CENSUS_EXPERIMENT:-e83-prefill-decomposition}"
 group="${MLXFAST_CENSUS_GROUP:-e83-prefill-decomposition}"

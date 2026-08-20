@@ -68,15 +68,23 @@ struct E83PrefillDecompositionTests {
         let warmup = Int(env["MLXFAST_E83_WARMUP"] ?? "") ?? 2
         let stallMillis = Int(env["MLXFAST_E83_STALL_MS"] ?? "") ?? 20
         let ladderReps = Int(env["MLXFAST_E83_LADDER_REPS"] ?? "") ?? 6
-        let armNames =
-            (env["MLXFAST_E83_ARMS"]?.split(separator: ",").map {
-                $0.trimmingCharacters(in: .whitespaces)
-            }).flatMap { $0.isEmpty ? nil : $0 }
-            ?? [
+        let measureIsolated = env["MLXFAST_E83_ISOLATED"] != "0"
+        let armSetting = env["MLXFAST_E83_ARMS"]
+        let armNames: [String]
+        if armSetting == "none" {
+            armNames = []
+        } else if let parsed = armSetting?
+            .split(separator: ",")
+            .map({ $0.trimmingCharacters(in: .whitespaces) }), !parsed.isEmpty
+        {
+            armNames = parsed
+        } else {
+            armNames = [
                 "null", "mlp_all", "mlp_gate", "mlp_up", "mlp_down",
                 "fa_o_proj", "gdn_out_proj", "gdn_in_qkv", "gdn_in_z",
                 "gdn_in_ba", "all_interceptable",
             ]
+        }
 
         let tokens = try e83LoadPromptTokens(promptPath)
         #expect(tokens.count >= seedLength)
@@ -108,8 +116,10 @@ struct E83PrefillDecompositionTests {
             }
         }
 
-        // Rung 1 positive control. A deliberate 20 ms host stall in exactly one
-        // phase must appear in that phase and nowhere else.
+        // Rung 1 positive control. A deliberate host stall in exactly one phase
+        // must appear in that phase and nowhere else. The delivered stall is
+        // calibrated first, because `usleep` overshoots its argument here.
+        blocks.append(e83Emit(e83CalibrateStall(millis: stallMillis, samples: 24)))
         for phase in ["p1_cache_alloc", "p4_tail_norm_lmhead"] {
             for _ in 0..<2 {
                 var block = harness.begin(
@@ -160,18 +170,19 @@ struct E83PrefillDecompositionTests {
         }
 
         // Rung 2 -- isolated roofline at the exact prefill shapes.
-        let shapes = e83IsolatedShapes(seed: seedLength)
-        for cell in shapes {
-            var block = e83MeasureQuantizedShape(cell, reps: max(reps, 5))
-            block["order"] = blocks.count
-            blocks.append(e83Emit(block))
+        if measureIsolated {
+            for cell in e83IsolatedShapes(seed: seedLength) {
+                var block = e83MeasureQuantizedShape(cell, reps: max(reps, 5))
+                block["order"] = blocks.count
+                blocks.append(e83Emit(block))
+            }
+            var sdpaBlock = e83MeasureSdpa(seed: seedLength, reps: max(reps, 5))
+            sdpaBlock["order"] = blocks.count
+            blocks.append(e83Emit(sdpaBlock))
+            var swigluBlock = e83MeasureSwiGLU(seed: seedLength, reps: max(reps, 5))
+            swigluBlock["order"] = blocks.count
+            blocks.append(e83Emit(swigluBlock))
         }
-        var sdpaBlock = e83MeasureSdpa(seed: seedLength, reps: max(reps, 5))
-        sdpaBlock["order"] = blocks.count
-        blocks.append(e83Emit(sdpaBlock))
-        var swigluBlock = e83MeasureSwiGLU(seed: seedLength, reps: max(reps, 5))
-        swigluBlock["order"] = blocks.count
-        blocks.append(e83Emit(swigluBlock))
 
         let payload: [String: Any] = [
             "schema": 1,
@@ -203,6 +214,64 @@ struct E83PrefillDecompositionTests {
             withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
         try data.write(to: URL(fileURLWithPath: outPath))
         print("E83_OUT \(outPath)")
+    }
+
+    /// The follow-on question the brief asks once prefill closes: what does one
+    /// proposal-head step cost, and therefore how many head bytes can a round
+    /// afford? Runs the organizer-pinned head's real weights, so the answer is
+    /// a measured bytes-per-millisecond rate and not a datasheet number.
+    ///
+    /// Loads only the head. The 15 GB target is not resident, so this is cheap
+    /// and independent of the prefill session.
+    @Test(.enabled(if: E83PrefillDecompositionTests.headEnabled))
+    func measureThePinnedProposalHeadStep() throws {
+        let env = ProcessInfo.processInfo.environment
+        let outPath = try #require(
+            env["MLXFAST_E83_HEAD_OUT"], "MLXFAST_E83_HEAD_OUT must name the JSON destination")
+        let headPath =
+            env["MLXFAST_E83_HEAD"] ?? "reference_weights/Qwen3.6-27B-MTP-4bit"
+        let reps = Int(env["MLXFAST_E83_HEAD_REPS"] ?? "") ?? 15
+        let cacheLength = Int(env["MLXFAST_E83_HEAD_CACHE"] ?? "") ?? 512
+        let widths =
+            (env["MLXFAST_E83_HEAD_WIDTHS"]?.split(separator: ",").compactMap { Int($0) })
+            .flatMap { $0.isEmpty ? nil : $0 } ?? [1, 2, 3, 4, 6, 8]
+
+        let head = try E83PinnedHead(directory: headPath)
+        var blocks: [[String: Any]] = []
+        for width in widths {
+            var block = head.measureStep(rows: width, cacheLength: cacheLength, reps: reps)
+            block["order"] = blocks.count
+            blocks.append(e83Emit(block))
+        }
+
+        let payload: [String: Any] = [
+            "schema": 1,
+            "experiment": env["MLXFAST_CENSUS_EXPERIMENT"] ?? "e83-pinned-head-step",
+            "harness": "local",
+            "cool_gate_passed_real_gate": false,
+            "gate_qualified_for_timing": false,
+            "official_or_ranked_score": false,
+            "identity": [
+                "head_path": headPath,
+                "head_total_bytes": head.totalBytes,
+                "head_gemm_bytes": head.gemmBytes,
+                "declared_manifest_bytes": 427_742_600,
+                "cache_length": cacheLength,
+                "reps": reps,
+                "widths": widths,
+                "device": e83Device(),
+                "host": ProcessInfo.processInfo.hostName,
+            ],
+            "blocks": blocks,
+        ]
+        let data = try JSONSerialization.data(
+            withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: URL(fileURLWithPath: outPath))
+        print("E83_HEAD_OUT \(outPath)")
+    }
+
+    private static var headEnabled: Bool {
+        ProcessInfo.processInfo.environment["MLXFAST_RUN_E83_HEAD"] == "1"
     }
 }
 
@@ -256,9 +325,15 @@ private final class E83Harness {
             phases[name] = Double(now - mark) / 1e9
             mark = now
         }
+        // `usleep` on this host quantizes to the scheduler tick, so the stall
+        // actually delivered is not the stall requested. The control is an
+        // attribution test, so it must be scored against the delivered time.
+        var stallActual = 0.0
         func stall(_ name: String) {
             guard stallPhase == name, stallMillis > 0 else { return }
+            let start = DispatchTime.now().uptimeNanoseconds
             usleep(UInt32(stallMillis) * 1000)
+            stallActual += Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9
         }
 
         let total0 = mark
@@ -342,7 +417,10 @@ private final class E83Harness {
             record["phase_sum_seconds"] = phases.values.reduce(0, +)
         }
         if let stallPhase { record["stall_phase"] = stallPhase }
-        if stallMillis > 0, stallPhase != nil { record["stall_millis"] = stallMillis }
+        if stallMillis > 0, stallPhase != nil {
+            record["stall_millis"] = stallMillis
+            record["stall_actual_seconds"] = stallActual
+        }
         if let entryTemp { record["gpu_temp_entry_c"] = entryTemp }
         if let exitTemp { record["gpu_temp_exit_c"] = exitTemp }
 
@@ -821,6 +899,136 @@ private func e83MeasureSdpa(seed: Int, reps: Int) -> [String: Any] {
     ]
 }
 
+// MARK: - pinned proposal head
+
+/// The organizer-pinned MTP head, loaded tensor-for-tensor from its reference
+/// tree and stepped in isolation.
+///
+/// The step runs every weight the head reads on a round: both pre-fc norms, the
+/// `fc` join, the single decoder layer's attention and MLP, and the output norm.
+/// It does not run RoPE or a cache append, so the reported time is a LOWER
+/// BOUND on a real head round and an UPPER BOUND on the achievable
+/// bytes-per-millisecond rate. Both bounds point the same way, which is what
+/// makes the rate usable for sizing a replacement head.
+private final class E83PinnedHead {
+    private let weights: [String: MLXArray]
+    let totalBytes: Int
+    let gemmBytes: Int
+    private let qHeads = 24
+    private let kvHeads = 4
+    private let headDim = 256
+    private let eps: Float = 1e-6
+
+    init(directory: String) throws {
+        let url = URL(fileURLWithPath: directory).appendingPathComponent("model.safetensors")
+        weights = try loadArrays(url: url)
+        var total = 0
+        var gemm = 0
+        for (key, value) in weights {
+            total += value.nbytes
+            if key == "fc.weight" || key.hasSuffix("_proj.weight") { gemm += value.nbytes }
+        }
+        totalBytes = total
+        gemmBytes = gemm
+        eval(Array(weights.values))
+    }
+
+    private func at(_ key: String) -> MLXArray { weights[key]! }
+
+    private func project(_ x: MLXArray, _ key: String) -> MLXArray {
+        matmul(x, at(key).transposed())
+    }
+
+    private func norm(_ x: MLXArray, _ key: String) -> MLXArray {
+        MLXFast.rmsNorm(x, weight: at(key), eps: eps)
+    }
+
+    private func step(hidden: MLXArray, embedding: MLXArray, keys: MLXArray, values: MLXArray)
+        -> MLXArray
+    {
+        let rows = hidden.dim(0)
+        let joined = concatenated(
+            [norm(hidden, "pre_fc_norm_hidden.weight"),
+             norm(embedding, "pre_fc_norm_embedding.weight")], axis: -1)
+        var h = project(joined, "fc.weight")
+
+        let residual = h
+        let normed = norm(h, "layers.0.input_layernorm.weight")
+        let qGate = project(normed, "layers.0.self_attn.q_proj.weight")
+        // `attn_output_gate` doubles the q projection: the second half gates the
+        // attention output. Splitting either way costs the same.
+        let q = qGate[0..., 0 ..< (qHeads * headDim)]
+        let gate = qGate[0..., (qHeads * headDim)...]
+        let k = project(normed, "layers.0.self_attn.k_proj.weight")
+        let v = project(normed, "layers.0.self_attn.v_proj.weight")
+
+        let qh = norm(
+            q.reshaped([1, rows, qHeads, headDim]), "layers.0.self_attn.q_norm.weight"
+        ).transposed(0, 2, 1, 3)
+        let kh = norm(
+            k.reshaped([1, rows, kvHeads, headDim]), "layers.0.self_attn.k_norm.weight"
+        ).transposed(0, 2, 1, 3)
+        let vh = v.reshaped([1, rows, kvHeads, headDim]).transposed(0, 2, 1, 3)
+
+        let allKeys = concatenated([keys, kh], axis: 2)
+        let allValues = concatenated([values, vh], axis: 2)
+        let attn = MLXFast.scaledDotProductAttention(
+            queries: qh, keys: allKeys, values: allValues,
+            scale: 1.0 / Foundation.sqrt(Float(headDim)), mask: .none)
+        let merged = attn.transposed(0, 2, 1, 3).reshaped([rows, qHeads * headDim])
+        h = residual + project(merged * sigmoid(gate), "layers.0.self_attn.o_proj.weight")
+
+        let mlpResidual = h
+        let mlpIn = norm(h, "layers.0.post_attention_layernorm.weight")
+        let activated =
+            silu(project(mlpIn, "layers.0.mlp.gate_proj.weight"))
+            * project(mlpIn, "layers.0.mlp.up_proj.weight")
+        h = mlpResidual + project(activated, "layers.0.mlp.down_proj.weight")
+        return norm(h, "norm.weight")
+    }
+
+    func measureStep(rows: Int, cacheLength: Int, reps: Int) -> [String: Any] {
+        let entryTemp = e83GPUTemperature()
+        let hidden = e83Activations(m: rows, k: 5120)
+        let embedding = e83Activations(m: rows, k: 5120)
+        let keys = MLXArray.zeros([1, kvHeads, cacheLength, headDim], dtype: .bfloat16)
+        let values = MLXArray.zeros([1, kvHeads, cacheLength, headDim], dtype: .bfloat16)
+        eval(hidden, embedding, keys, values)
+
+        for _ in 0..<3 {
+            eval(step(hidden: hidden, embedding: embedding, keys: keys, values: values))
+        }
+        var samples: [Double] = []
+        for _ in 0..<reps {
+            let start = DispatchTime.now().uptimeNanoseconds
+            eval(step(hidden: hidden, embedding: embedding, keys: keys, values: values))
+            samples.append(Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9)
+        }
+        samples.sort()
+        let median = samples[samples.count / 2]
+        let exitTemp = e83GPUTemperature()
+        Memory.clearCache()
+
+        var record: [String: Any] = [
+            "kind": "pinned_head_step",
+            "rows": rows,
+            "cache_length": cacheLength,
+            "reps": reps,
+            "seconds": samples,
+            "seconds_median": median,
+            "seconds_min": samples.first ?? median,
+            "seconds_max": samples.last ?? median,
+            "total_bytes": totalBytes,
+            "gemm_bytes": gemmBytes,
+            "total_bytes_per_ms": Double(totalBytes) / (median * 1000.0),
+            "gemm_bytes_per_ms": Double(gemmBytes) / (median * 1000.0),
+        ]
+        if let entryTemp { record["gpu_temp_entry_c"] = entryTemp }
+        if let exitTemp { record["gpu_temp_exit_c"] = exitTemp }
+        return record
+    }
+}
+
 // MARK: - dispatch and command-buffer census
 
 private final class E83DispatchLedger: @unchecked Sendable {
@@ -979,6 +1187,28 @@ private func e83InstallSwizzles() -> Bool {
 }
 
 // MARK: - support
+
+/// What `usleep(millis)` actually costs on this host, measured the same way the
+/// positive control injects it. Without this the control scores its target
+/// phase against a number the host never delivers.
+private func e83CalibrateStall(millis: Int, samples: Int) -> [String: Any] {
+    var observed: [Double] = []
+    for _ in 0..<samples {
+        let start = DispatchTime.now().uptimeNanoseconds
+        usleep(UInt32(millis) * 1000)
+        observed.append(Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9)
+    }
+    observed.sort()
+    return [
+        "kind": "stall_calibration",
+        "nominal_millis": millis,
+        "samples": samples,
+        "seconds": observed,
+        "seconds_median": observed[observed.count / 2],
+        "seconds_min": observed.first ?? 0,
+        "seconds_max": observed.last ?? 0,
+    ]
+}
 
 private func e83LoadPromptTokens(_ path: String) throws -> [Int] {
     let data = try Data(contentsOf: URL(fileURLWithPath: path))
