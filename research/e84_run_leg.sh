@@ -193,9 +193,18 @@ export MLXFAST_CAPTURE_DIR="${out}/reports"
 # attributing draft cost, but its own doc comment records that it destroys the
 # head/verify overlap the round is built around. That would change round_us,
 # which is the quantity being compared here.
+#
+# MLXFAST_NO_SANDBOX=1 is REQUIRED, not optional. The runtime worker sandbox
+# denies every write except /dev/null, so without it the worker cannot open
+# the trace file, falls back to stderr, and the mtp-timed parent discards
+# that stderr. The leg then looks completely healthy and produces no trace.
+# The wrapper refuses this variable on an official run, so it stays local.
+# Timing from a traced leg is therefore NOT comparable with a sandboxed leg
+# in absolute terms; compare arms within one traced session only.
 if [[ "${E84_TRACE:-0}" == "1" ]]; then
   export MLX_QWEN_MTP_TRACE=1
   export MLX_QWEN_MTP_TRACE_PATH="${out}/round-trace.txt"
+  export MLXFAST_NO_SANDBOX=1
 fi
 
 ./benchmark-qwen-mtp.sh --local-iterate > "${out}/run.log" 2>&1

@@ -692,9 +692,17 @@ public final class Qwen36MTPBlockSession {
 
     /// Local phase-trace gate, read once. `MLX_` prefix on purpose: the
     /// trusted harness strips `MLXFAST_*` from the sandboxed worker's env
-    /// but allows the `MLX_` prefix through. The trace lands in a TMPDIR
-    /// file because the local worker spawn path does not forward worker
-    /// stderr to the wrapper's log.
+    /// but allows the `MLX_` prefix through.
+    ///
+    /// Requires `MLXFAST_NO_SANDBOX=1` on the wrapper. The runtime worker
+    /// sandbox in `writeRuntimeWorkerSandboxProfile` denies every write
+    /// except `/dev/null`, including TMPDIR, so `traceSink` cannot open its
+    /// file and silently degrades to the stderr fallback below. The
+    /// `mtp-timed` parent then discards that stderr, because it calls
+    /// `runtimeWorkerOptions` without `forwardsWorkerStderr`. Setting the
+    /// trace variables alone therefore yields a clean run and no trace at
+    /// all. `MLXFAST_NO_SANDBOX` is refused when
+    /// `MLXFAST_OFFICIAL_BENCHMARK_RUN=1`, so this stays local-only.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
     /// Attribution probe only. `verify_build_us` measures the window in which
