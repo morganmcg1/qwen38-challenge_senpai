@@ -21,17 +21,31 @@ selectable research arm.
 The candidate surface diff against the r3 base is:
 
 ```
- Sources/MLXFastModel/Qwen36MTPBlockSession.swift | 48 +++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 39 insertions(+), 9 deletions(-)
+$ git diff --stat 9ec6e087 HEAD -- Sources/ Vendor/ mtp-head/ mtp-head.manifest.json
+ Sources/MLXFastModel/Qwen36MTPBlockSession.swift | 52 ++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 44 insertions(+), 8 deletions(-)
 ```
 
-It is **not empty**, and it contains **only** the `measuredRawDepthPrice` vector
-literal, doc comments, and the arm enum line — which now reads `.ship`. Base
-`9ec6e087` already ships `.ship`, so that line matches the base byte for byte
-and appears as unchanged context inside the diff. The executed schedule on this
-branch is therefore identical to the base. No behaviour reaches the scored
-worker from this branch: `measuredRawDepthPrice` is read only by
-`makeMeasuredDepthPrice()`, which only the `pbfit` arm calls.
+It is **not empty**. Filtering the diff down to non-comment lines leaves exactly
+one change, the vector literal:
+
+```
+-    internal static let measuredRawDepthPrice: [Double] = []
++    internal static let measuredRawDepthPrice: [Double] = [
++        0.26300121724709807, 0.29195567495854047, 0.34642143034825884,
++        0.40231023217247086, 0.63287276451077956, 0.43601634825870655,
++        0.35457813598673293, 0.42510483416251998,
++    ]
+```
+
+Every other added or removed line is a doc comment. The arm enum line reads
+`.ship` and does not appear in the diff at all: base `9ec6e087` already ships
+`.ship`, so the line matches the base byte for byte and stays unchanged context.
+
+The executed schedule on this branch is therefore identical to the base. No
+behaviour reaches the scored worker from this branch, because
+`measuredRawDepthPrice` is read only by `makeMeasuredDepthPrice()`, which only
+the `pbfit` arm calls.
 
 ## Rung A — the shipped arm is `ship`
 
