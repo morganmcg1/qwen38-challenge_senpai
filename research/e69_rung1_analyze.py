@@ -92,10 +92,13 @@ def main() -> int:
                     default=pathlib.Path("research/e69-artifacts"))
     ap.add_argument("--out", type=pathlib.Path,
                     default=pathlib.Path("research/e69-artifacts/rung1-summary.json"))
+    # Default matches session 1 only. A replication writes rung1-na<N><tag>.json
+    # and must be reduced separately, never pooled with the session it checks.
+    ap.add_argument("--pattern", default="rung1-na[0-9].json")
     args = ap.parse_args()
 
     summaries = []
-    for path in sorted(args.dir.glob("rung1-na*.json")):
+    for path in sorted(args.dir.glob(args.pattern)):
         summaries.append(summarize(json.loads(path.read_text())))
     summaries.sort(key=lambda s: s["na"])
 

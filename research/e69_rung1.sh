@@ -27,6 +27,7 @@ log="${artifacts}/rung1.log"
 build="/tmp/e69-build"
 shape=""
 arms=""
+tag=""
 skip_gate=""
 skip_census=""
 skip_wandb=""
@@ -39,6 +40,9 @@ while [[ "$#" -gt 0 ]]; do
     --arms) arms="$2"; shift 2 ;;
     --target-bytes) target_bytes="$2"; shift 2 ;;
     --log) log="$2"; shift 2 ;;
+    # Suffix for the per-NA artifact and W&B run, so a replication session
+    # cannot overwrite the session it is meant to check.
+    --tag) tag="$2"; shift 2 ;;
     --skip-gate) skip_gate="1"; shift ;;
     --skip-census) skip_census="1"; shift ;;
     --skip-wandb) skip_wandb="1"; shift ;;
@@ -77,7 +81,7 @@ clang -fobjc-arc -O2 -framework Metal -framework Foundation \
 
 overall=0
 for na in ${na_list}; do
-  out="${artifacts}/rung1-na${na}.json"
+  out="${artifacts}/rung1-na${na}${tag}.json"
   src="${build}/arms_na${na}.metal"
   python3 research/e69_emit_arms.py --na "${na}" --out "${src}" \
     | tee -a "${log}" || exit 1
@@ -137,7 +141,7 @@ PY
       --target-bytes "${target_bytes}" \
       ${shape_args[@]+"${shape_args[@]}"} --out "${out}" \
       2> >(tee -a "${log}" >&2) \
-      | python3 research/e69_wandb_stream.py --name "e69-rung1-na${na}" \
+      | python3 research/e69_wandb_stream.py --name "e69-rung1-na${na}${tag}" \
           --config "${cfg}" 2> >(tee -a "${log}" >&2) \
       | tee -a "${log}" >/dev/null
     status="${PIPESTATUS[0]}"
