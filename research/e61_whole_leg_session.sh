@@ -109,8 +109,12 @@ only so the bytes the compiler saw are reachable while the arm runs."
   if [[ "${E61_WANDB:-1}" != "0" && ${rc} -eq 0 ]]; then
     discarded=()
     [[ "${tag}" == warm* ]] && discarded=(--discarded)
+    # bash 3.2 treats "${arr[@]}" on an EMPTY array as an unbound variable under
+    # `set -u`, so the ${arr[@]+...} form is required. Without it this line
+    # aborts the session after the first non-warm leg, which is every leg that
+    # matters.
     python3 research/e61_wandb_leg.py --tag "${tag}" --arm "${arm}" \
-      --group "${WANDB_RUN_GROUP}" "${discarded[@]}" \
+      --group "${WANDB_RUN_GROUP}" ${discarded[@]+"${discarded[@]}"} \
       || echo "e61_whole_leg_session: ${tag}: W&B logging failed" >&2
   fi
 
