@@ -15,19 +15,20 @@ import re
 import statistics
 import sys
 
-ROUND_RE = re.compile(
-    r"mtp-trace: round=(?P<round>\d+) d=(?P<d>\d+) acc=(?P<acc>\d+) "
-    r"draft_build_us=(?P<draft_build>\d+) verify_build_us=(?P<verify_build>\d+) "
-    r"eval_wall_us=(?P<eval_wall>\d+) readout_us=(?P<readout>\d+) "
-    r"commit_us=(?P<commit>\d+) upkeep_us=(?P<upkeep>\d+) "
-    r"round_us=(?P<round_us>\d+)"
-)
+ROUND_PREFIX = "mtp-trace: round="
+# Fields are read by name, not by position, so a trace that gains sub-segments
+# still parses and traces recorded before they existed still parse.
+KV_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)=(-?\d+)(?![\d.])")
 BEGIN_RE = re.compile(
     r"mtp-trace: begin seed=(?P<seed>\d+) build_us=(?P<build>\d+) "
     r"eval_wall_us=(?P<eval_wall>\d+)"
 )
 SEGMENTS = ("draft_build", "verify_build", "eval_wall", "readout", "commit",
             "upkeep")
+# Complete split of draft_build, emitted only by traces built after the E65
+# rung-1 instrument landed.
+SUB_SEGMENTS = ("d_pre", "d_flush", "d_head1", "d_submit1", "d_chain",
+                "d_submit2")
 
 # `sdpaWidthWallDepthCap` and `segmentedVerifyDepthCap` in
 # Qwen36MTPBlockSession.swift. A round wider than the wall is fed to the target
@@ -52,11 +53,23 @@ def parse(path):
                        "rounds": []}
             sessions.append(current)
             continue
-        m = ROUND_RE.match(line)
-        if m and current is not None:
-            r = {k: int(v) for k, v in m.groupdict().items()}
+        if line.startswith(ROUND_PREFIX) and current is not None:
+            r = {}
+            for key, value in KV_RE.findall(line):
+                if key == "round_us":
+                    r["round_us"] = int(value)
+                elif key.endswith("_us"):
+                    r[key[:-3]] = int(value)
+                else:
+                    r.setdefault(key, int(value))
             current["rounds"].append(r)
     return sessions
+
+
+def present_segments(rows):
+    """SEGMENTS plus whichever draft sub-segments this trace carries."""
+    return SEGMENTS + tuple(
+        s for s in SUB_SEGMENTS if all(s in r for r in rows))
 
 
 def annotate(session, seed_override=None):
@@ -97,7 +110,7 @@ def annotate(session, seed_override=None):
     return rows
 
 
-def cell_outliers(rows, k=3.0):
+def cell_outliers(rows, k=3.0, segments=SEGMENTS):
     """Round exceeding its own (M, repaired) median by more than k * IQR."""
     cells = {}
     for row in rows:
@@ -119,7 +132,7 @@ def cell_outliers(rows, k=3.0):
                        "min_us": vals[0], "max_us": vals[-1],
                        "segment_median_us": {
                            s: statistics.median([x[s] for x in members])
-                           for s in SEGMENTS}}
+                           for s in segments}}
     # Conservative pooled bar for cells too small to carry their own IQR: the
     # largest same-cell spread measured anywhere in this session.
     resolved = [s["iqr_us"] for s in stats.values() if s["n"] >= 4]
@@ -133,7 +146,7 @@ def cell_outliers(rows, k=3.0):
         out["cell_median_us"] = st["median_us"]
         out["excess_us"] = row["round_us"] - st["median_us"]
         out["segment_excess_us"] = {
-            s: row[s] - st["segment_median_us"][s] for s in SEGMENTS}
+            s: row[s] - st["segment_median_us"][s] for s in segments}
         # A cell with fewer than 4 members has no usable IQR of its own. The
         # preregistered rule stays exactly as written; such rounds are scored
         # on a separate, clearly labelled pooled bar so they are never silently
@@ -243,8 +256,10 @@ def main():
         rows = annotate(session, args.seed)
         if len(rows) < args.min_rounds:
             continue
+        segments = present_segments(rows)
         (stats, outliers, singular,
-         small_cell_outliers, pooled_iqr) = cell_outliers(rows, args.iqr_k)
+         small_cell_outliers, pooled_iqr) = cell_outliers(
+             rows, args.iqr_k, segments)
         leg_us = sum(r["round_us"] for r in rows)
         # The scored leg is seed processing plus decode, so the denominator for
         # a "% of the leg" claim includes `begin`, not the round series alone.
@@ -284,8 +299,9 @@ def main():
             "combined_excess_pct_of_leg": (
                 100.0 * (excess_us + small_excess_us) / timed_leg_us
                 if timed_leg_us else 0.0),
+            "segments": list(segments),
             "segment_totals_us": {
-                s: sum(r[s] for r in rows) for s in SEGMENTS},
+                s: sum(r[s] for r in rows) for s in segments},
             "round_table": rows,
         }
         report["sessions"].append(entry)
@@ -317,8 +333,8 @@ def main():
                   f"vbuild={o['verify_build'] / 1000:.2f}ms "
                   f"tags={','.join(tags) or '-'}")
             print("      segment excess ms: " + ", ".join(
-                f"{s}{o['segment_excess_us'][s] / 1000:+.2f}"
-                for s in SEGMENTS))
+                f"{s}{v / 1000:+.2f}"
+                for s, v in o["segment_excess_us"].items()))
         print(f"  outlier excess = {entry['outlier_excess_us'] / 1000:.2f} ms "
               f"= {entry['outlier_excess_pct_of_rounds']:.4f} % of the round "
               f"series = {entry['outlier_excess_pct_of_leg']:.4f} % of the "
@@ -327,8 +343,8 @@ def main():
               f"{entry['pooled_iqr_us'] / 1000:.2f}ms, "
               f"{len(entry['small_cell_outliers'])}):")
         for o in entry["small_cell_outliers"]:
-            seg = ", ".join(f"{s}{o['segment_excess_us'][s] / 1000:+.2f}"
-                            for s in SEGMENTS)
+            seg = ", ".join(f"{s}{v / 1000:+.2f}"
+                            for s, v in o["segment_excess_us"].items())
             print(f"    round={o['round']:4d} cell={o['cell']:12s} "
                   f"kL={o['kL_verify']:5d} "
                   f"t={o['round_us'] / 1000:8.2f}ms "

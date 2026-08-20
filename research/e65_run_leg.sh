@@ -57,7 +57,11 @@ cp "${bin_dir}/mlxfast-swift" .build/release/mlxfast-swift
 cp "${bin_dir}/mlxfast-runtime-worker" .build-worker/release/mlxfast-runtime-worker
 
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
-export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
+if [[ "${mode}" == --local-submit ]]; then
+  export MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS="${tokens}"
+else
+  export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
+fi
 export MLXFAST_SCORE_PATH="${PWD}/${out}/score.json"
 export MLXFAST_LOCAL_COOL_GATE=0
 
