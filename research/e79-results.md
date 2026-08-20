@@ -141,11 +141,12 @@ harness, because the harness is outside this assignment's scope.
 
 ### Legs, identity, and correctness
 
-Sixteen timed phases across ten legs. Every leg: exit 0, 78 rounds,
-`all_tokens_matched=true`, `residual_divergence_count=0`, and a worker and CLI
-digest identical before and after the run. Within a head, all legs are
-trajectory-identical: same width histogram, same accept histogram, same
-per-position counts. Only the timings move.
+Twelve legs, each timing a serial control and a native-MTP decode. Every leg:
+exit 0, `all_tokens_matched=true`, `residual_divergence_count=0`, and a worker
+and CLI digest identical before and after the run. Within a head, all legs are
+trajectory-identical: same round count (76 pinned, 78 declared), same width
+histogram, same accept histogram, same per-position counts. Only the timings
+move.
 
 | head | policy | legs | speedup | mtp s/token | serial s/token | M | accepted draft rate |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -447,7 +448,7 @@ a *perfect* head is +11.46%.
    `editablePaths`, as expected.
 2. Editable byte budget — `growth=0/262144`.
 3. Worker and CLI digests captured before and after every leg — identical.
-4. `all_tokens_matched=true` and `residual_divergence_count=0` on all 10 legs.
+4. `all_tokens_matched=true` and `residual_divergence_count=0` on all 12 legs.
 5. Trajectory identity within each head block — width, accept, and per-position
    histograms match exactly across legs.
 6. Serial-leg control across the head swap — −0.01%.
