@@ -167,7 +167,7 @@ def log_legs(session: pathlib.Path, meta: dict, legs: list[dict]) -> list[str]:
 
 def log_summary(session: pathlib.Path, meta: dict, legs: list[dict],
                 stats: dict | None, census: dict | None,
-                buffers: int) -> str:
+                buffers: int, pairs: dict | None = None) -> str:
     kind = session_kind(legs)
     run = wandb.init(
         entity=ENTITY, project=PROJECT, group=GROUP, reinit=True,
@@ -204,6 +204,8 @@ def log_summary(session: pathlib.Path, meta: dict, legs: list[dict],
 
     if stats:
         flatten("contrast", stats, payload)
+    if pairs:
+        flatten("paired", pairs, payload)
     if census:
         payload["census/answer"] = json.dumps(census)
 
@@ -220,6 +222,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("session")
     ap.add_argument("--stats", default=None)
+    ap.add_argument("--pairs", default=None,
+                    help="research/e85_round_pairs.py report for a traced session")
     ap.add_argument("--census", default=None)
     ap.add_argument("--buffers", type=int, default=6,
                     help="net materialised intermediates removed per draft token")
@@ -229,10 +233,12 @@ def main() -> None:
     meta = read_meta(session / "session.txt")
     legs = read_legs(session / "legs.tsv")
     stats = json.loads(pathlib.Path(args.stats).read_text()) if args.stats else None
+    pairs = json.loads(pathlib.Path(args.pairs).read_text()) if args.pairs else None
     census = json.loads(pathlib.Path(args.census).read_text()) if args.census else None
 
     urls = log_legs(session, meta, legs)
-    urls.append(log_summary(session, meta, legs, stats, census, args.buffers))
+    urls.append(
+        log_summary(session, meta, legs, stats, census, args.buffers, pairs))
 
     out = session / "wandb-runs.tsv"
     out.write_text("run_id\turl\n" + "\n".join(urls) + "\n")
