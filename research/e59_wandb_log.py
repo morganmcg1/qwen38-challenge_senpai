@@ -608,17 +608,22 @@ def log_geometry(run) -> None:
     dose = proof["dose_response"]
     summary["geometry/dose/ran"] = dose["ran"]
     summary["geometry/dose/passed"] = dose["passed"]
+    summary["geometry/dose/note"] = dose["note"]
     if dose["ran"]:
-        summary["geometry/dose/ops8_slower_than_ops50_pct"] = dose[
-            "ops8_slower_than_ops50_pct"]
-        summary["geometry/dose/min_effect_pct"] = dose["min_effect_pct"]
         dose_columns = ["tag", "requested_ops_per_buffer", "decode_tokens",
                         "mtp_seconds_per_token", "serial_seconds_per_token",
                         "all_tokens_matched", "gpu_temp_entry_c",
                         "gpu_temp_exit_c", "wired_residency_active"]
-        dose_table = wandb.Table(columns=dose_columns)
-        for leg in dose["legs"]:
-            dose_table.add_data(*[leg[name] for name in dose_columns])
+        dose_table = wandb.Table(columns=["pair"] + dose_columns)
+        for pair in dose["pairs"]:
+            label = pair["label"]
+            summary[f"geometry/dose/{label}/tight_slower_than_loose_pct"] = pair[
+                "tight_slower_than_loose_pct"]
+            summary[f"geometry/dose/{label}/min_effect_pct"] = pair[
+                "min_effect_pct"]
+            summary[f"geometry/dose/{label}/passed"] = pair["passed"]
+            for leg in pair["legs"]:
+                dose_table.add_data(label, *[leg[name] for name in dose_columns])
         run.log({"geometry/dose": dose_table})
     run.log({"geometry/profile_probes": table})
     run.summary.update(summary)
