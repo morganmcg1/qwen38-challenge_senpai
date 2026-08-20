@@ -31,6 +31,7 @@ from pathlib import Path
 FIELD = re.compile(r"(\w+)=(-?[\d.]+)")
 BOOTSTRAP = 20000
 SEED = 20260820
+T_CRIT_95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571}
 
 
 def parse_rounds(path: Path) -> list[list[dict]]:
@@ -83,9 +84,64 @@ def median_ci(values: list[float], reps: int = BOOTSTRAP) -> dict:
     }
 
 
+def median_ci_clustered(clusters: list[list[float]], reps: int = BOOTSTRAP) -> dict:
+    """Bootstrap whole ABBA blocks, not rounds.
+
+    Every round inside one block shares that block's machine state, so a
+    round-level resample measures only within-block scatter and reports an
+    interval that is far too narrow. Resampling blocks keeps the leg-level
+    offset in the interval, which is the term the design must average away.
+    """
+    clusters = [c for c in clusters if c]
+    if len(clusters) < 2:
+        return {"median": math.nan, "ci95_lo": math.nan, "ci95_hi": math.nan,
+                "clusters": len(clusters)}
+    rng = random.Random(SEED)
+    n = len(clusters)
+    boots = []
+    for _ in range(reps):
+        pooled: list[float] = []
+        for _ in range(n):
+            pooled += clusters[rng.randrange(n)]
+        boots.append(statistics.median(pooled))
+    boots.sort()
+    per_cluster = [statistics.median(c) for c in clusters]
+    mean = statistics.fmean(per_cluster)
+    sd = statistics.stdev(per_cluster) if n > 1 else math.nan
+    half = T_CRIT_95.get(n - 1, 1.96) * sd / math.sqrt(n) if n > 1 else math.nan
+    return {
+        "median": statistics.median([v for c in clusters for v in c]),
+        "ci95_lo": boots[int(0.025 * reps)],
+        "ci95_hi": boots[int(0.975 * reps) - 1],
+        "clusters": n,
+        "cluster_medians": per_cluster,
+        "cluster_median_mean": mean,
+        "cluster_median_sd": sd,
+        "t_ci95_lo": mean - half,
+        "t_ci95_hi": mean + half,
+    }
+
+
 def paired_deltas(a: list[dict], b: list[dict], field: str) -> list[float]:
     """b minus a, round by round, over the rounds both legs share."""
     return [b[i][field] - a[i][field] for i in range(min(len(a), len(b)))]
+
+
+def contrast(block: list[list[dict]], weights: tuple[float, ...],
+             field: str) -> list[float]:
+    """Apply per-leg weights to one `base ab ab base` block, round by round."""
+    width = min(len(leg) for leg in block)
+    return [sum(w * leg[i][field] for w, leg in zip(weights, block))
+            for i in range(width)]
+
+
+# Legs sit at positions 0..3 of the palindrome. The treatment contrast loads
+# the two inner `ab` legs and cancels linear drift. The cubic contrast carries
+# zero treatment loading and zero drift loading, so it is what this estimator
+# returns on unchanged code; dividing by sqrt(20) gives it the same variance as
+# the treatment contrast under independent per-leg noise.
+EFFECT_WEIGHTS = (-0.5, 0.5, 0.5, -0.5)
+NULL_WEIGHTS = tuple(w / math.sqrt(20.0) for w in (1.0, -3.0, 3.0, -1.0))
 
 
 def main() -> None:
@@ -149,29 +205,97 @@ def main() -> None:
     order = sorted(arm_of)
     effect: list[float] = []
     null: list[float] = []
+    ends: list[float] = []
+    effect_blocks: list[list[float]] = []
+    null_blocks: list[list[float]] = []
+    per_block: list[dict] = []
     for start in range(0, len(order) - 3, 4):
         block = order[start:start + 4]
         arms = [arm_of[leg] for leg in block]
         if arms[0] != arms[3] or arms[1] != arms[2] or arms[0] == arms[1]:
             continue
-        a1, b1, b2, a2 = block
-        effect += paired_deltas(rounds_by_leg[a1], rounds_by_leg[b1], "round_us")
-        effect += paired_deltas(rounds_by_leg[a2], rounds_by_leg[b2], "round_us")
-        null += paired_deltas(rounds_by_leg[a1], rounds_by_leg[a2], "round_us")
+        legs4 = [rounds_by_leg[leg] for leg in block]
+        block_effect = contrast(legs4, EFFECT_WEIGHTS, "round_us")
+        block_null = contrast(legs4, NULL_WEIGHTS, "round_us")
+        effect += block_effect
+        null += block_null
+        effect_blocks.append(block_effect)
+        null_blocks.append(block_null)
+        a1, _, _, a2 = block
+        ends += paired_deltas(rounds_by_leg[a1], rounds_by_leg[a2], "round_us")
+        per_block.append({
+            "legs": block,
+            "effect_median_us_per_round": statistics.median(block_effect),
+            "null_median_us_per_round": statistics.median(block_null),
+            "effect_iqr_us_per_round": (
+                statistics.quantiles(block_effect, n=4)[2]
+                - statistics.quantiles(block_effect, n=4)[0]),
+        })
 
     report["paired_effect_us_per_round"] = median_ci(effect)
     report["session_null_us_per_round"] = median_ci(null)
+    report["end_base_drift_us_per_round"] = median_ci(ends)
+    report["paired_effect_clustered"] = median_ci_clustered(effect_blocks)
+    report["session_null_clustered"] = median_ci_clustered(null_blocks)
+    report["per_block"] = per_block
 
-    base_arm = min(set(arm_of.values()))
+    # If rounds were independent replicates, the scatter of the block medians
+    # would match the standard error that within-block scatter predicts. A
+    # ratio far above one means a per-leg offset dominates, and the
+    # round-level interval is then far too narrow to use for a decision.
+    within = []
+    for block_effect in effect_blocks:
+        q1, _, q3 = statistics.quantiles(block_effect, n=4)
+        sd = (q3 - q1) / 1.349
+        within.append(1.253 * sd / math.sqrt(len(block_effect)))
+    between = report["paired_effect_clustered"]["cluster_median_sd"]
+    predicted = statistics.fmean(within)
+    report["cluster_variance_check"] = {
+        "between_block_sd_us_per_round": between,
+        "within_block_predicted_sem_us_per_round": predicted,
+        "ratio": between / predicted if predicted else math.nan,
+        "rounds_are_independent_replicates": bool(
+            predicted and between / predicted < 2.0),
+    }
+    report["contrast_weights"] = {
+        "effect": list(EFFECT_WEIGHTS),
+        "null": list(NULL_WEIGHTS),
+        "note": "effect and null both carry zero linear-drift loading; the "
+                "null carries zero treatment loading and equal variance",
+    }
+
+    # The unchanged arm is named `base`; alphabetical order would pick `ab`
+    # and silently flip the sign of every leg-total figure.
+    all_arms = set(arm_of.values())
+    base_arm = "base" if "base" in all_arms else min(all_arms)
     tokens_per_round = {
         arm: 1 + per_arm[arm]["accepted_per_round"] for arm in per_arm
     }
     tpr = statistics.fmean(tokens_per_round.values())
     report["tokens_per_round"] = tpr
-    for name in ("paired_effect", "session_null"):
-        block = report[f"{name}_us_per_round"]
-        for key in ("median", "ci95_lo", "ci95_hi"):
-            block[f"{key}_us_per_token"] = block[key] / tpr if tpr else math.nan
+    for name in ("paired_effect_us_per_round", "session_null_us_per_round",
+                 "end_base_drift_us_per_round", "paired_effect_clustered",
+                 "session_null_clustered"):
+        block = report[name]
+        for key in ("median", "ci95_lo", "ci95_hi", "cluster_median_mean",
+                    "cluster_median_sd", "t_ci95_lo", "t_ci95_hi"):
+            if key in block:
+                block[f"{key}_us_per_token"] = (
+                    block[key] / tpr if tpr else math.nan)
+
+    # The traced round total must track the harness leg total, or `round_us`
+    # is not measuring the window the primary metric measures.
+    leg_seconds = {int(r["leg"]): float(r["mtp_s_per_tok"]) for r in legs}
+    traced = [sum(r["round_us"] for r in rounds_by_leg[leg]) * 1e-6
+              for leg in sorted(leg_seconds)]
+    harness = [leg_seconds[leg] for leg in sorted(leg_seconds)]
+    report["trace_covers_leg"] = {
+        "traced_round_seconds_mean": statistics.fmean(traced),
+        "harness_leg_seconds_mean": statistics.fmean(
+            v * 512 for v in harness),
+        "pearson_r": statistics.correlation(traced, harness)
+        if len(traced) > 2 else math.nan,
+    }
 
     # Leg totals, the reading the paired median is meant to replace.
     def leg_total(arm: str) -> float:
@@ -191,11 +315,23 @@ def main() -> None:
             100.0 * median_tok / (leg_total(base_arm) * 1e6)
             if leg_total(base_arm) else math.nan)
 
-    lo = report["paired_effect_us_per_round"]["ci95_lo"]
-    hi = report["paired_effect_us_per_round"]["ci95_hi"]
-    nlo = report["session_null_us_per_round"]["ci95_lo"]
-    nhi = report["session_null_us_per_round"]["ci95_hi"]
-    report["effect_outside_null"] = bool(hi < nlo or lo > nhi)
+    def outside(effect_key: str, null_key: str) -> bool:
+        eff, nul = report[effect_key], report[null_key]
+        return bool(eff["ci95_hi"] < nul["ci95_lo"]
+                    or eff["ci95_lo"] > nul["ci95_hi"])
+
+    report["effect_outside_null_round_level"] = outside(
+        "paired_effect_us_per_round", "session_null_us_per_round")
+    report["effect_outside_null_clustered"] = outside(
+        "paired_effect_clustered", "session_null_clustered")
+    # The clustered reading is the decision statistic; the round-level one
+    # assumes rounds are independent replicates, which they are not.
+    report["effect_outside_null"] = report["effect_outside_null_clustered"]
+    if report.get("leg_total_baseline_s_per_token"):
+        base_us = report["leg_total_baseline_s_per_token"] * 1e6
+        report["paired_effect_clustered_pct_of_candidate"] = (
+            100.0 * report["paired_effect_clustered"]["median_us_per_token"]
+            / base_us)
 
     print(json.dumps(report, indent=2, default=str))
     if args.json:
