@@ -36,7 +36,11 @@ WRAPPERS = (
     "qmv_fast_crossrow_affine4_g64_m_rbx",
     "qmv_fast_crossrow_affine4_g64_m_rbx4",
 )
-IPG_RANGE = range(2, 6)
+# Widened to 9 for E68. The exclusivity half of the probe can only reject a
+# stray instantiation it enumerates, and the live table already routes NA=6
+# while E68's probe arms reach NA=9, so a range that stops at 5 is a guard that
+# cannot fail for exactly the widths under test.
+IPG_RANGE = range(2, 10)
 
 
 def token(wrapper: str, m: int, ipg: int) -> bytes:
