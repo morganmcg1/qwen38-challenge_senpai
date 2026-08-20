@@ -56,9 +56,16 @@ time, near 35 %, so that is the follow-up worth having.
 
 ## Preregistered prediction for the replication session
 
-Committed while job `61fffdb0` was still on NA=4 and no `rung1-na*-s2.json`
-existed. The mechanism is per-compile and per-width, not per-session, so the
-replication must reproduce the shape of the curve, not merely its noise level:
+Provenance, stated exactly. At the moment I committed this block,
+`rung1-na4-s2.json` had **already been written** by the replication job, so
+prediction 3 is not blind and does not count as evidence. I had not opened the
+file, but that is a claim about me, not a checkable fact, so I do not rely on
+it. `rung1-na5-s2.json` and `rung1-na6-s2.json` did **not** exist, which `ls`
+confirmed in the same commit, so predictions 1, 2 and 4 are blind and those are
+the ones that carry weight.
+
+The mechanism is per-compile and per-width, not per-session, so the replication
+must reproduce the shape of the curve, not merely its noise level:
 
 1. `xvec` at NA=5 reproduces between -2.0 % and -5.0 % on at least 5 of 7
    shapes.
