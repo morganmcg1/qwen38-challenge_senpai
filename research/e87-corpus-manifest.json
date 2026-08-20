@@ -1,0 +1,1086 @@
+{
+  "seed_tokens": 512,
+  "tokenizer_sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+  "seeds": [
+    {
+      "name": "mobydick-0",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-0.txt",
+      "chars": 2179,
+      "tokens": 512,
+      "sha256": "3c03f838422bb134fe9fa6766a984698cf85b84d97cc2c1e27354aa27873d87d"
+    },
+    {
+      "name": "mobydick-1",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-1.txt",
+      "chars": 2127,
+      "tokens": 512,
+      "sha256": "4e9f16593f8f0ef1d6554d2b84fb6f936b78425debd36655e1de67ef8c7b3dba"
+    },
+    {
+      "name": "mobydick-2",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-2.txt",
+      "chars": 1932,
+      "tokens": 512,
+      "sha256": "3f0e2e73ed40254f27a2bbd341e3ec419812305c1f78eef4816c509a9436ead5"
+    },
+    {
+      "name": "mobydick-3",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-3.txt",
+      "chars": 2246,
+      "tokens": 512,
+      "sha256": "6100318b2c4d3c8ce75ec89a79af11d4dea9c14bd9d41ae7eb380e20a5fcbd3e"
+    },
+    {
+      "name": "mobydick-4",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-4.txt",
+      "chars": 2040,
+      "tokens": 512,
+      "sha256": "1e98c9a674748aeeeec0f41d58fd3a14d401ba5104688613850d748263584d6c"
+    },
+    {
+      "name": "mobydick-5",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-5.txt",
+      "chars": 1893,
+      "tokens": 512,
+      "sha256": "32b62c8959ede3f690e73c5459473b26ed1cab8815596bea46ea9a028828cacb"
+    },
+    {
+      "name": "mobydick-6",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-6.txt",
+      "chars": 2349,
+      "tokens": 512,
+      "sha256": "f4a20fbb9de1061fa95d4b0b981499c455594100c28d7fa3fae03eaaed822bd4"
+    },
+    {
+      "name": "mobydick-7",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-7.txt",
+      "chars": 2028,
+      "tokens": 512,
+      "sha256": "dfaa5ab975c01bc7b8d9100344193cf98726dd7f8f2395cf9a15b6c62725aa0e"
+    },
+    {
+      "name": "mobydick-8",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-8.txt",
+      "chars": 2009,
+      "tokens": 512,
+      "sha256": "b616a4ac61f86e763b78eef2a50f4576c9700914bf43c8a79aa93245b03ed580"
+    },
+    {
+      "name": "mobydick-9",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-9.txt",
+      "chars": 2245,
+      "tokens": 512,
+      "sha256": "6cbfb4302f64fbb14cb6c9dee41507c08744d135f9012e514b00cc130f6d021c"
+    },
+    {
+      "name": "mobydick-10",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-10.txt",
+      "chars": 2168,
+      "tokens": 512,
+      "sha256": "bb776433fa5cf48dc71154aeb6be6381639c892a21b166ae92259353c509fe56"
+    },
+    {
+      "name": "mobydick-11",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-11.txt",
+      "chars": 2234,
+      "tokens": 512,
+      "sha256": "ab567b461ade8dca44d9dfb16f2892fac87c3e3918bb69878774715e963019aa"
+    },
+    {
+      "name": "mobydick-12",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-12.txt",
+      "chars": 2082,
+      "tokens": 512,
+      "sha256": "efb9c58358ab6765fb13eec8e33e16162bc43365a9def9d350e55c78d55f1b88"
+    },
+    {
+      "name": "mobydick-13",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-13.txt",
+      "chars": 2113,
+      "tokens": 512,
+      "sha256": "be66e454bc84c080ea322c04769ab7110054ea724469630e130c73516481b58b"
+    },
+    {
+      "name": "mobydick-14",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-14.txt",
+      "chars": 2338,
+      "tokens": 512,
+      "sha256": "d13abc9987451e650696728017345bade71065f9d4fa64bb84ce0fb478416b50"
+    },
+    {
+      "name": "mobydick-15",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-15.txt",
+      "chars": 2159,
+      "tokens": 512,
+      "sha256": "9c10c1909512e3e7358746069e93d954ca1c6ec0a24f02aa22b5b1e6da8bd2f6"
+    },
+    {
+      "name": "mobydick-16",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-16.txt",
+      "chars": 2205,
+      "tokens": 512,
+      "sha256": "ed27b406674f71c8d6d05beda769621484f3659dafcf72f0a7e98df5795704d6"
+    },
+    {
+      "name": "mobydick-17",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-17.txt",
+      "chars": 2426,
+      "tokens": 512,
+      "sha256": "3c32d834459b0a819d7eb2321567add6790f808a7d177eaf21a829908d5c2732"
+    },
+    {
+      "name": "mobydick-18",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-18.txt",
+      "chars": 2116,
+      "tokens": 512,
+      "sha256": "85d4e3ae3a30049ea13e8baa36bf47ff5321503a18ce761d6612de54811b9d6e"
+    },
+    {
+      "name": "mobydick-19",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-mobydick-19.txt",
+      "chars": 2152,
+      "tokens": 512,
+      "sha256": "92926f56ed479feca74ee4a8d5948c14977aedee2dc982feb1425fde6fb96894"
+    },
+    {
+      "name": "frankenstein-0",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-0.txt",
+      "chars": 2498,
+      "tokens": 512,
+      "sha256": "98c9bdcf6dbb92381e19f069ffde033b61c2e450ad95b6860de5388510e4b600"
+    },
+    {
+      "name": "frankenstein-1",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-1.txt",
+      "chars": 2442,
+      "tokens": 512,
+      "sha256": "37c0f6dbca5e529a27b233addae0e8443ce863b424d779c3ade4f8f1a0334a32"
+    },
+    {
+      "name": "frankenstein-2",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-2.txt",
+      "chars": 2304,
+      "tokens": 512,
+      "sha256": "7510f6b47e779aec14c186b2dd585a9b564d1864c969cb21bf3cd0214c6745dd"
+    },
+    {
+      "name": "frankenstein-3",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-3.txt",
+      "chars": 2435,
+      "tokens": 512,
+      "sha256": "6ae5e4414a1d37c49a2859a5d4093e45fe480b9aab0027f1c2520b548ec041b3"
+    },
+    {
+      "name": "frankenstein-4",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-4.txt",
+      "chars": 2319,
+      "tokens": 512,
+      "sha256": "b08664f470ab008e80a613cbc043e353f97e067099237ae7eb6343a6182592b3"
+    },
+    {
+      "name": "frankenstein-5",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-5.txt",
+      "chars": 2265,
+      "tokens": 512,
+      "sha256": "48715e08fce637201fc3e72b007cdf42820f1a994e834df834cd8f1fca35e425"
+    },
+    {
+      "name": "frankenstein-6",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-6.txt",
+      "chars": 2311,
+      "tokens": 512,
+      "sha256": "8f5da8a501b68cabf300e90026245a54942ff68db61988f5a4fc882673e41c30"
+    },
+    {
+      "name": "frankenstein-7",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-7.txt",
+      "chars": 2374,
+      "tokens": 512,
+      "sha256": "148dd26fc8f8d89dbecff4f0453189b2a9912899978027dda1d117e687301007"
+    },
+    {
+      "name": "frankenstein-8",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-8.txt",
+      "chars": 2420,
+      "tokens": 512,
+      "sha256": "d34e43892245ababd91002db15629ef092b91e986bfaafa84593779ca7c8391f"
+    },
+    {
+      "name": "frankenstein-9",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-9.txt",
+      "chars": 2391,
+      "tokens": 512,
+      "sha256": "df023565b6eca40073067abc619e83b251b6e9049ea574eda6e914a7cff7d0bb"
+    },
+    {
+      "name": "frankenstein-10",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-10.txt",
+      "chars": 2504,
+      "tokens": 512,
+      "sha256": "c0ccd061a5f6870578b1153adefaf8053f26b1651fd51ac490972e688185848f"
+    },
+    {
+      "name": "frankenstein-11",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-11.txt",
+      "chars": 2249,
+      "tokens": 512,
+      "sha256": "aff7f25a02a4fdedc4c301493108a21c5138b5f247eab9af64934fbc201979a2"
+    },
+    {
+      "name": "frankenstein-12",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-12.txt",
+      "chars": 2275,
+      "tokens": 512,
+      "sha256": "d422b04d5215aef9ea8375acbcf73700e8ea098c60c5e04c82ffa994ae3d37b7"
+    },
+    {
+      "name": "frankenstein-13",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-13.txt",
+      "chars": 2420,
+      "tokens": 512,
+      "sha256": "6b8e6cf7acee13ed93535a3b93ca31ed80c11819a4519eacc3d5180990c4c12f"
+    },
+    {
+      "name": "frankenstein-14",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-14.txt",
+      "chars": 2441,
+      "tokens": 512,
+      "sha256": "b6377a600795df9b257463a81ce84d617dcb9e3a6b1bbe9b25708e3ee03874d9"
+    },
+    {
+      "name": "frankenstein-15",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-15.txt",
+      "chars": 2195,
+      "tokens": 512,
+      "sha256": "96d8789dc264d7b602f2638cfb91dee9b4243dcaa9f75f0ccd47e9f8669bf86d"
+    },
+    {
+      "name": "frankenstein-16",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-16.txt",
+      "chars": 2392,
+      "tokens": 512,
+      "sha256": "37095482c0d6f45538251239573f380f440edbb727356904ac002b19b56f3389"
+    },
+    {
+      "name": "frankenstein-17",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-17.txt",
+      "chars": 2360,
+      "tokens": 512,
+      "sha256": "894e0565181f8f0c7bdaf870a2cefe794e8578f73bda3e3e0606612a7e01e04c"
+    },
+    {
+      "name": "frankenstein-18",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-18.txt",
+      "chars": 2366,
+      "tokens": 512,
+      "sha256": "dd1b42ebe0346e0f545cf4c51f19f61f238d029bef9f739d15c2f7ee0dc27d5c"
+    },
+    {
+      "name": "frankenstein-19",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-frankenstein-19.txt",
+      "chars": 2302,
+      "tokens": 512,
+      "sha256": "6e9c4f909d67caabc08a92a8f763b2c4725670b3cc3b3edb167725d12041dec9"
+    },
+    {
+      "name": "pride-0",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-0.txt",
+      "chars": 2186,
+      "tokens": 512,
+      "sha256": "bc6cb81ed06796edea0c747f2c647bdc2f1677bc56834be54b399d28e587056b"
+    },
+    {
+      "name": "pride-1",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-1.txt",
+      "chars": 2282,
+      "tokens": 512,
+      "sha256": "77c2bb7e4e4037afa9063339f1e16c4191b56d107f42606a06e27e7b405b3f89"
+    },
+    {
+      "name": "pride-2",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-2.txt",
+      "chars": 2357,
+      "tokens": 512,
+      "sha256": "7b3dbb24d3f60c73a24b2152dbbefad00ece147f69f94eebb44dfdcb884e0d28"
+    },
+    {
+      "name": "pride-3",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-3.txt",
+      "chars": 2210,
+      "tokens": 512,
+      "sha256": "7d1dd86007aa7591713651fd7aa896c78cef4e1ab91876b3913c3b4d1f9d2750"
+    },
+    {
+      "name": "pride-4",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-4.txt",
+      "chars": 2272,
+      "tokens": 512,
+      "sha256": "fae95fb2e1d133686ecccae1693911b472ace71004ced42fadb9ba9ac2e03c86"
+    },
+    {
+      "name": "pride-5",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-5.txt",
+      "chars": 2192,
+      "tokens": 512,
+      "sha256": "617857e9bae90b9c9f17532d0817ed48a5443be44fe6f4387f43fa36d03eea04"
+    },
+    {
+      "name": "pride-6",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-6.txt",
+      "chars": 2439,
+      "tokens": 512,
+      "sha256": "47d0de747f031e76e27058ce603fbd46ffd36b6b082ddb9bdab1e635fcb38bf1"
+    },
+    {
+      "name": "pride-7",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-7.txt",
+      "chars": 2194,
+      "tokens": 512,
+      "sha256": "bcd15d8007967e17ac396d5562b4853735fc978437fff5555540df0321405ecc"
+    },
+    {
+      "name": "pride-8",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-8.txt",
+      "chars": 2467,
+      "tokens": 512,
+      "sha256": "d187c74a7bcd78f51fce63571f3a45fa056f435ad2b2d2c940a4a1d005bd1e8e"
+    },
+    {
+      "name": "pride-9",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-9.txt",
+      "chars": 2367,
+      "tokens": 512,
+      "sha256": "d6d9efe122023190284796e3d542b0d1fa942eb194a18eefdc2ddcb62d5ff6a4"
+    },
+    {
+      "name": "pride-10",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-10.txt",
+      "chars": 2341,
+      "tokens": 512,
+      "sha256": "767e6e5407b2f8b445dad132c5b9575725a953216438ae0c2cfc9b470625f3d9"
+    },
+    {
+      "name": "pride-11",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-11.txt",
+      "chars": 2410,
+      "tokens": 512,
+      "sha256": "adc5a74e6b896ee2f4702dc11783a54167b9c527ffcbd0873e384a4c87714aa6"
+    },
+    {
+      "name": "pride-12",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-12.txt",
+      "chars": 2340,
+      "tokens": 512,
+      "sha256": "ab32c0210d1b3bb69445c05edb97ff178cc2fc1cfc17591607f1c203655e524a"
+    },
+    {
+      "name": "pride-13",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-13.txt",
+      "chars": 2313,
+      "tokens": 512,
+      "sha256": "22b9012fdd9cbc995149a54d58f6e992cc51acfff6d19da403140ee666ea1b56"
+    },
+    {
+      "name": "pride-14",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-14.txt",
+      "chars": 2349,
+      "tokens": 512,
+      "sha256": "8cf53f94f2eda8b94099eb3008c98800968e09121e4f48e8847dcd8d408c440d"
+    },
+    {
+      "name": "pride-15",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-15.txt",
+      "chars": 2572,
+      "tokens": 512,
+      "sha256": "c7b5410550b580bc2dcb360f8b5a40f202f2aad51d1f0d5d18838f628c1636a3"
+    },
+    {
+      "name": "pride-16",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-16.txt",
+      "chars": 2356,
+      "tokens": 512,
+      "sha256": "52e2bde3ad0713fceb1323d744a3aeaaad06963448f868a3ecdf6dc285436e36"
+    },
+    {
+      "name": "pride-17",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-17.txt",
+      "chars": 2369,
+      "tokens": 512,
+      "sha256": "3d8d99b5ea9ffe4bd324c51ebf473d721547bf8be1d40a1e5ebc389f75709de6"
+    },
+    {
+      "name": "pride-18",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-18.txt",
+      "chars": 2306,
+      "tokens": 512,
+      "sha256": "78c7acff5171fec069d559f75a0f982663c838049e6a924902e8a1d983207a68"
+    },
+    {
+      "name": "pride-19",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-pride-19.txt",
+      "chars": 2428,
+      "tokens": 512,
+      "sha256": "d7e15443f446db74277f29c2df999e9c1153d21ac4228d5d9056dc92b53050a2"
+    },
+    {
+      "name": "wealthofnations-0",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-0.txt",
+      "chars": 2565,
+      "tokens": 512,
+      "sha256": "a27ff411957b3efcbb85b21f2012d903e069b9f7f29fb7d4d3ea0e0c8896e51c"
+    },
+    {
+      "name": "wealthofnations-1",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-1.txt",
+      "chars": 2628,
+      "tokens": 512,
+      "sha256": "d82afac2f1fc336e98ab61aa19ef71cf838ede10664c9ee824ab89b766bf3f85"
+    },
+    {
+      "name": "wealthofnations-2",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-2.txt",
+      "chars": 2477,
+      "tokens": 512,
+      "sha256": "ab1adea5e4c0763d07f91b7cb931bfc6448240d58ec58d8a4556dde8f149f80a"
+    },
+    {
+      "name": "wealthofnations-3",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-3.txt",
+      "chars": 2255,
+      "tokens": 512,
+      "sha256": "0a1845aa25422aa7880c65074cd7b15427ecb8d4942067a8adbc3a40079761bd"
+    },
+    {
+      "name": "wealthofnations-4",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-4.txt",
+      "chars": 2532,
+      "tokens": 512,
+      "sha256": "07fd43e471c019556d6d50c6b986bac8e90112563de7d2aa2f2f270c52c1fc2b"
+    },
+    {
+      "name": "wealthofnations-5",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-5.txt",
+      "chars": 2512,
+      "tokens": 512,
+      "sha256": "2f52a1e437ffd626c39f9c2934aa88be9bcbe6a8df0900853daa6cc8265493bf"
+    },
+    {
+      "name": "wealthofnations-6",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-6.txt",
+      "chars": 2457,
+      "tokens": 512,
+      "sha256": "ffa47247226f9696380268a7c3ff6130c6318b1ce7a24d7477019e901efb8cb1"
+    },
+    {
+      "name": "wealthofnations-7",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-7.txt",
+      "chars": 2395,
+      "tokens": 512,
+      "sha256": "fecaa5ec4f05d997cd80203f49d51c60e3aafe8fe63845b967ebf2ba6d942b02"
+    },
+    {
+      "name": "wealthofnations-8",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-8.txt",
+      "chars": 2535,
+      "tokens": 512,
+      "sha256": "39d21b6fbdc302ec2cdedbb05b175f8f6006ac9829ec77ddee1d168723e67068"
+    },
+    {
+      "name": "wealthofnations-9",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-9.txt",
+      "chars": 2497,
+      "tokens": 512,
+      "sha256": "b91d80d3bfe59b1d79745c350c42be835a97cc16f2c20251c94ed0f67a35c1dc"
+    },
+    {
+      "name": "wealthofnations-10",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-10.txt",
+      "chars": 2353,
+      "tokens": 512,
+      "sha256": "be1dfcfabf056b2c5556c30c65e99c1d64fb26cad0daabb97ef73691c226b508"
+    },
+    {
+      "name": "wealthofnations-11",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-11.txt",
+      "chars": 2485,
+      "tokens": 512,
+      "sha256": "cf98c1493e1ad02cf0715b6d9eb5b909f803a8a6469ec60cadee2d9858d9d4d0"
+    },
+    {
+      "name": "wealthofnations-12",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-12.txt",
+      "chars": 2286,
+      "tokens": 512,
+      "sha256": "8f2e94fdde8ce7fc020a0c95d77799442b771c85c05194988408f6f5c7be6d3c"
+    },
+    {
+      "name": "wealthofnations-13",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-13.txt",
+      "chars": 2462,
+      "tokens": 512,
+      "sha256": "35247cccecc0b07fb99d187a27ee1a304419588f4a61b5c811944717cf3ecd53"
+    },
+    {
+      "name": "wealthofnations-14",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-14.txt",
+      "chars": 2548,
+      "tokens": 512,
+      "sha256": "be0851d35f6362c11179d34588c1df7eb10edb39d52647096f6c8ac146b4572d"
+    },
+    {
+      "name": "wealthofnations-15",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-15.txt",
+      "chars": 2465,
+      "tokens": 512,
+      "sha256": "cf0a94b04d4438a1d5693b367d2ec066a72698f13231eb0d52c56e74248793bb"
+    },
+    {
+      "name": "wealthofnations-16",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-16.txt",
+      "chars": 2567,
+      "tokens": 512,
+      "sha256": "588664c54506168105ff294986eaa609ae9d2c229c7b8e81147f3efe281c0915"
+    },
+    {
+      "name": "wealthofnations-17",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-17.txt",
+      "chars": 2538,
+      "tokens": 512,
+      "sha256": "e552873558af84dd0decaf78695d15ecaaf3c9734036b6ba7ee922d6d4e8fb71"
+    },
+    {
+      "name": "wealthofnations-18",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-18.txt",
+      "chars": 2535,
+      "tokens": 512,
+      "sha256": "e1e460d69ef65ae237817840dc5eaf2882938185380e1080c782666ddc6fc606"
+    },
+    {
+      "name": "wealthofnations-19",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-wealthofnations-19.txt",
+      "chars": 2517,
+      "tokens": 512,
+      "sha256": "fda96afb3bf9ca027a5a167c2f8219da80d5b58221a9499e80fd54b3388b18fb"
+    },
+    {
+      "name": "problemsofphilosophy-0",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-0.txt",
+      "chars": 2424,
+      "tokens": 512,
+      "sha256": "ac5aa0cd8f38a1b584b77efb476ff74d66ec2a6056d6f525d8026892719533d5"
+    },
+    {
+      "name": "problemsofphilosophy-1",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-1.txt",
+      "chars": 2510,
+      "tokens": 512,
+      "sha256": "130e4ccfd2deed60593fa0d5907efb12922d9825b1b500dc7fb6a0fa2235adbb"
+    },
+    {
+      "name": "problemsofphilosophy-2",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-2.txt",
+      "chars": 2456,
+      "tokens": 512,
+      "sha256": "e464eb36ea8ad9c73b286c546d219e59d129fdbf1559c9d1c5b5505c745b69b9"
+    },
+    {
+      "name": "problemsofphilosophy-3",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-3.txt",
+      "chars": 2386,
+      "tokens": 512,
+      "sha256": "b4ea712c78ac0ebb9d092808e166819920543183dbd1f2a129a8a60bc20da289"
+    },
+    {
+      "name": "problemsofphilosophy-4",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-4.txt",
+      "chars": 2504,
+      "tokens": 512,
+      "sha256": "84dc8b515af4b3c6860f34080cd24005d72ecbc00136648110c2c3450ef551ff"
+    },
+    {
+      "name": "problemsofphilosophy-5",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-5.txt",
+      "chars": 2412,
+      "tokens": 512,
+      "sha256": "a9c18c49fd47b80ccff6a21f57218dd44c126768ff3c4de8340e3db996afc1c0"
+    },
+    {
+      "name": "problemsofphilosophy-6",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-6.txt",
+      "chars": 2397,
+      "tokens": 512,
+      "sha256": "907d238352f862697cc4730df6d3b814ec822099ecd3c32fda396e75d65b927a"
+    },
+    {
+      "name": "problemsofphilosophy-7",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-7.txt",
+      "chars": 2629,
+      "tokens": 512,
+      "sha256": "e67f29e12eea3f0b84faa2509324cf7577d9a2affb4f411605fe5d60dec23589"
+    },
+    {
+      "name": "problemsofphilosophy-8",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-8.txt",
+      "chars": 2468,
+      "tokens": 512,
+      "sha256": "b987a1e3b83ee7407909b55aa1775a28e4b5b2f0a4cebe0d89f39a5014384993"
+    },
+    {
+      "name": "problemsofphilosophy-9",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-9.txt",
+      "chars": 2498,
+      "tokens": 512,
+      "sha256": "89cec55a9625c00de4f946ace4f292d0eb24525b7ca093d22abdb243eb7ca35c"
+    },
+    {
+      "name": "problemsofphilosophy-10",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-10.txt",
+      "chars": 2387,
+      "tokens": 512,
+      "sha256": "8e206f2b06a96f6540d6c92f95a633fcd50dee4a59e68e2f64697dd4c512297c"
+    },
+    {
+      "name": "problemsofphilosophy-11",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-11.txt",
+      "chars": 2443,
+      "tokens": 512,
+      "sha256": "f17427d4036b72ecfe17de297180cccf786cd8aafead05002741fb54a00b1465"
+    },
+    {
+      "name": "problemsofphilosophy-12",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-12.txt",
+      "chars": 2346,
+      "tokens": 512,
+      "sha256": "a673d36d3864e336de36d52d8b8c73cb7b1126f4412b2fec4b38d58fca574ba9"
+    },
+    {
+      "name": "problemsofphilosophy-13",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-13.txt",
+      "chars": 2455,
+      "tokens": 512,
+      "sha256": "f88a0893c2e186226071475fc1fe44ebcfc5bbc5645f99c810cfa7e96faee63e"
+    },
+    {
+      "name": "problemsofphilosophy-14",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-14.txt",
+      "chars": 2495,
+      "tokens": 512,
+      "sha256": "86712f4002a07a4b66bd159a37d30b55273538a705555f52f8b3643e8b1039e3"
+    },
+    {
+      "name": "problemsofphilosophy-15",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-15.txt",
+      "chars": 2533,
+      "tokens": 512,
+      "sha256": "a0a7fc9c03d22f6443d27c2cbc1072d6136372e4052d032862a5f14965f5be93"
+    },
+    {
+      "name": "problemsofphilosophy-16",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-16.txt",
+      "chars": 2476,
+      "tokens": 512,
+      "sha256": "7daa8e7b0c50c0e62ff7aefc33e6a64ad1f4d9f15f33a53e9546a60321bd90b2"
+    },
+    {
+      "name": "problemsofphilosophy-17",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-17.txt",
+      "chars": 2333,
+      "tokens": 512,
+      "sha256": "91af23a4e82aa9289e025f74eb1a1c02abaa6e2fce6811e46c443984cefee97e"
+    },
+    {
+      "name": "problemsofphilosophy-18",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-18.txt",
+      "chars": 2348,
+      "tokens": 512,
+      "sha256": "609c0b9fb095a0caf54952f07d3b5c9d81a1a008da4f90f82e27ba72da5c507e"
+    },
+    {
+      "name": "problemsofphilosophy-19",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-problemsofphilosophy-19.txt",
+      "chars": 2363,
+      "tokens": 512,
+      "sha256": "603bc134e3fd720f4160cafff673fb0b3ff7abf23233ca2206d2bc53094cff09"
+    },
+    {
+      "name": "candle-0",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-0.txt",
+      "chars": 2220,
+      "tokens": 512,
+      "sha256": "fe8c375d90139bb702c68c64f8e275f37dbbeb39a5d5f1011d54a1228ed62aab"
+    },
+    {
+      "name": "candle-1",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-1.txt",
+      "chars": 2328,
+      "tokens": 512,
+      "sha256": "b5daa6335555cd8fb1aa04f5ed5f701ac947eaa4dd5f58a21a4a5b931fb9cf3c"
+    },
+    {
+      "name": "candle-2",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-2.txt",
+      "chars": 2219,
+      "tokens": 512,
+      "sha256": "e460b0c1d337f848bf531b5f9200b5c0816f2fb753dfd42eef0d986d0fa9a63e"
+    },
+    {
+      "name": "candle-3",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-3.txt",
+      "chars": 2311,
+      "tokens": 512,
+      "sha256": "dd53f03e38e683534394bbdea9ce6bb0240ce5d0019965737e1c11bdd93e7999"
+    },
+    {
+      "name": "candle-4",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-4.txt",
+      "chars": 2326,
+      "tokens": 512,
+      "sha256": "cb5bbcd7b8e36717d8100ac9389739d9810549ad56345677752e26198a4dbd9c"
+    },
+    {
+      "name": "candle-5",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-5.txt",
+      "chars": 2313,
+      "tokens": 512,
+      "sha256": "9d2511df5c4f8556548c112da257e2057ae375ce101d158d386ddb5dfca333cc"
+    },
+    {
+      "name": "candle-6",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-6.txt",
+      "chars": 2298,
+      "tokens": 512,
+      "sha256": "8fbbcef75535740f9c5d6be2ac0e0ec34dcfd411ca774211ae245f85da3f2527"
+    },
+    {
+      "name": "candle-7",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-7.txt",
+      "chars": 2330,
+      "tokens": 512,
+      "sha256": "c3fce4693c1aacc27ed89a576bc0db27142617cf406a3e364992607316a233dc"
+    },
+    {
+      "name": "candle-8",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-8.txt",
+      "chars": 2249,
+      "tokens": 512,
+      "sha256": "71a8979f8cb54b4d9117c62e5bb5afb684fee44088206034a24142c203da0033"
+    },
+    {
+      "name": "candle-9",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-9.txt",
+      "chars": 2299,
+      "tokens": 512,
+      "sha256": "8bc08fb41da0e64b1e776d7186044cc51fe171f089a08d4c2a2416437f4d3285"
+    },
+    {
+      "name": "candle-10",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-10.txt",
+      "chars": 2305,
+      "tokens": 512,
+      "sha256": "255aa786fe64160ca92068323ada727ddd22f14c5852045af489c7c42baadc47"
+    },
+    {
+      "name": "candle-11",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-11.txt",
+      "chars": 2266,
+      "tokens": 512,
+      "sha256": "8f99d4d560fe795fb6eaa4bf688e9e80a2e02a3380ab17362b2ba120c7bd17c5"
+    },
+    {
+      "name": "candle-12",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-12.txt",
+      "chars": 2263,
+      "tokens": 512,
+      "sha256": "ce5c3263651895e321afee46f6a77a7b86049b46cf4646fed3ab9541af2f41b9"
+    },
+    {
+      "name": "candle-13",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-13.txt",
+      "chars": 2344,
+      "tokens": 512,
+      "sha256": "ab9dae7109ae91a69955d46d91b16b69431253601f725a2ada68c602913ed4d8"
+    },
+    {
+      "name": "candle-14",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-14.txt",
+      "chars": 2327,
+      "tokens": 512,
+      "sha256": "c2075c33a10bac37314db08fd87a5d2500711afb81a1784c84dca9fa1a0c83b1"
+    },
+    {
+      "name": "candle-15",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-15.txt",
+      "chars": 2279,
+      "tokens": 512,
+      "sha256": "b13dc88cb14e2dc0732c4653ad5519a695fef5d9e7cf197fb255b21a68172ea7"
+    },
+    {
+      "name": "candle-16",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-16.txt",
+      "chars": 2210,
+      "tokens": 512,
+      "sha256": "60e982811171a68e02d4151797d57be431e474f0b0c4f31beca71ff078226a03"
+    },
+    {
+      "name": "candle-17",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-17.txt",
+      "chars": 2363,
+      "tokens": 512,
+      "sha256": "9968c2f56371a8f645bffeb1b88baeac68814e2aa04b033afe32db5b9a650b6f"
+    },
+    {
+      "name": "candle-18",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-18.txt",
+      "chars": 2389,
+      "tokens": 512,
+      "sha256": "28c4d9af1a9b991ad4336103ae2d0b69eb794e8ac378aba654938deebe6a5d5f"
+    },
+    {
+      "name": "candle-19",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/corpus/seeds/e82-candle-19.txt",
+      "chars": 2438,
+      "tokens": 512,
+      "sha256": "d146019a394ab686b1c03b1016ad01dc5e257335db6b0b28990744107748dcea"
+    }
+  ]
+}
