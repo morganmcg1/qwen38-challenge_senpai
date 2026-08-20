@@ -12,9 +12,10 @@ total return 7.1 ms together, which is 0.18% of the local seed leg.**
 
 | field | value |
 |---|---|
-| assignment | `qwen38-r1-e83-decompose-the-untouched-prefill-leg` r1 |
+| assignment | `qwen38-r1-e83-decompose-the-untouched-prefill-leg` r2 |
 | branch | `qwen-thorfinn/e83-prefill-decomposition` |
-| base | `6acb0d152da090070b55b5120b338f0a33014e53` |
+| base | `f7f356b2834518ced918f3049ca1b88afb6003f3` |
+| measured on | `6acb0d152da090070b55b5120b338f0a33014e53`, the r1 base |
 | host | `ip-10-231-2-95.ec2.internal`, Apple M4 Pro, 20 GPU cores, 48 GiB |
 | device | `applegpu_g16s` |
 | os / swift | macOS 26.5.2 / 6.3.3 (`swiftlang-6.3.3.1.3`) |
@@ -139,15 +140,18 @@ The stop rule for rungs 0–2 was "GEMM share ≥ 90% ⇒ closed". 99.7% closes 
 
 ### Local → ranked transfer
 
-`g = 7.62` is the measured local-to-ranked ratio of the whole seed leg
-(local 4.0086 s vs ranked 0.526 s).
+`g = 7.69` is the local-to-ranked ratio of the whole seed leg: 4.0461 s
+measured here against 0.5264 s published by the frontier run. This session's
+`begin()` supersedes the campaign's inherited `P = 4.0086 s`, and the 6.15–6.18
+TFLOP/s measured below supersedes the inherited 6.415 TFLOP/s. Both inherited
+values were `harness=local` on a different tree and neither is cited here.
 
 | g | n (non-GEMM speedup) | ranked non-GEMM share |
 |---:|---:|---:|
-| 7.62 | 1.0 | 5.6% |
-| 7.62 | 1.5 | 3.8% |
-| 7.62 | 3.0 | 1.9% |
-| 7.62 | 7.62 | 0.8% |
+| 7.69 | 1.0 | 5.7% |
+| 7.69 | 1.5 | 3.9% |
+| 7.69 | 3.0 | 2.0% |
+| 7.69 | 7.69 | 0.8% |
 
 Even the worst row leaves the ranked non-GEMM share small, because the local
 non-GEMM bound is itself small.
@@ -177,6 +181,10 @@ memory.
 That claim is measured, not assumed: `qwen35FusedPackBuildCount` was 112 before
 the first timed arm and 112 after the last one. No arm paid a first-use
 allocation inside a timed region.
+
+The three counters and bounds that this section reads live on the candidate
+surface, so they are reverted; see "Scope and budget" for the commits that hold
+and remove them.
 
 ### Design
 
@@ -292,32 +300,67 @@ exact. **No part of E83 should be submitted.**
 
 ## Scope and budget
 
-Rung 3 changed one candidate file, `Qwen35.swift`: three
-`nonisolated(unsafe)` globals, three call sites reading them, and one counter
-increment in each of the three lazy pack-build branches. The defaults (9, 16)
-reproduce the shipped behaviour exactly.
+**The branch now changes no candidate byte.** Rung 3 needed one candidate file,
+`Qwen35.swift`: three `nonisolated(unsafe)` globals, two call sites reading
+them, and one counter increment in each of the three lazy pack-build branches.
+The gates are closed, so the instrument has no further use, and a research
+instrument does not belong in `Sources/` or `Vendor/`. It is reverted.
+
+| item | commit |
+|---|---|
+| instrument, as measured on the r1 base | `7ef3f15` |
+| instrument, replayed onto this base | `1b9b0af` |
+| revert | `ad19b2f` |
+
+`git diff f7f356b2 HEAD -- Sources/ Vendor/ mtp-head.manifest.json` prints
+nothing. `Qwen35.swift` is byte-identical to the base. Everything E83 still
+carries is research-only: `Tests/MLXFastTests/E83PrefillDecompositionTests.swift`,
+`research/e83_*`, `research/results/e83/`, and `senpai/known-test-failures.md`.
+
+Two consequences of the revert, both recorded so nobody looks for a missing
+instrument. The rung-3 arms in the test drove the reverted globals and cannot
+compile without them, so that section is removed and the comment points at the
+commits above. The `gates` profile in `research/e83_prefill.sh` now exits 2 with
+the replay instructions. `research/e83_report.py` is unchanged and still reads
+the recorded arms out of `research/results/e83/gates.json`.
+
+### Gates re-verified on the rebased tree
+
+Base `f7f356b2834518ced918f3049ca1b88afb6003f3`, which adopts organizer commit
+`8b54ff11c6d686628f6534d7127a261115782757`. The rebase was clean; the organizer
+concat block lands far from every E83 region.
 
 ```
-editable budget OK: source=2482073/3000000 headroom=517927
-                    growth=7319/262144 exempt=2410/2147483648 files=154
+senpai/rebuild-and-assert-worker.sh: PASS
+  worker_mtime  2026-08-20T20:19:11Z
+  worker_sha256 db0dcafe6d58d4df3323584ac099be9c64a1e65c50546b70bf00d7dcf0b46606
+  ok require-symbol qwen35DualRMSNormConcat  : 14
+  ok forbid-symbol  qwen35FusedInProjMaxRows : 0
+  ok forbid-symbol  qwen35FusedGateUpMaxRows : 0
+  ok forbid-symbol  qwen35FusedPackBuildCount: 0
+
+python3 research/twin_audit.py: exit 0
+  29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s)
+
+senpai/check-editable-budget.sh 770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf: exit 0
+  source=2484815/3000000 headroom=515185 growth=29980/262144
+  exempt=2410/2147483648 files=154
+
 senpai/verify-ranked-score-boundary.sh: PASS
 ```
 
+The four witnesses are two-sided, not one-sided, so none of them is a guard
+that cannot fail. The stale worker built at 19:25:49Z from the pre-rebase,
+pre-revert tree, `70693f8f1d175d86fc955dc98bb180dc0df0f9ec84ea8dd1ef64f3f6c69f8809`,
+reports the exact inverse: `qwen35DualRMSNormConcat` 0 and each instrument
+symbol 4. The rebuild flips all four.
+
+The reported `growth=29980` is measured against the contract base
+`770a3ff2`, so it prices the organizer commits this base adopted, not E83. E83
+contributes 0 bytes of candidate growth.
+
 `swift test` on the gates session: 2 tests, 1 suite, **0 expectation
 failures**, 247.5 s.
-
-Full `swift test --force-resolved-versions` on the branch head, job
-`66e2fab1`: **705 tests in 53 suites, 40 issues, 9 failing functions**. The
-nine names are exactly the nine recorded in `senpai/known-test-failures.md`,
-and 40 issues equals the recorded count, so the pass rule holds. The recorded
-baseline at `222f2332` was 703 tests in 52 suites; the extra 2 tests and 1
-suite are the E83 suite itself. **The `Qwen35.swift` instrumentation
-introduces no new test failure.**
-
-The gates are closed, so the instrument has no further use on the candidate
-surface. Reverting it is a single commit and `7ef3f15` holds the exact
-instrument for anyone who needs to replay rung 3. The branch is safe either
-way: the defaults are behaviour-identical and the full suite is unchanged.
 
 ## Suggested follow-ups (not implemented)
 
