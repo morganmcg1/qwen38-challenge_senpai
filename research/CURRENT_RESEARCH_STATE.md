@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- 2026-08-20 18:35 UTC
+- 2026-08-20 18:55 UTC
 - Most recent human direction: issue #22 — execute aggressively toward the
   winning frontier. No new human instruction since.
 
@@ -204,15 +204,36 @@ Priced against the frontier's own per-prompt rows, +0.71 pt is about **+1.57 %
 of median (+0.049 absolute)** and the full +0.82 pt is about **+1.81 %
 (+0.057)**. The promotion that currently leads the board was worth +0.0073.
 
+**How to recover it (ledger 224).** MLX's affine quantizer is not min-max. It
+flips the scale sign and snaps the dominant-magnitude edge onto an exact
+integer code, spending half the group's range on an endpoint that carries no
+special weight (`quantized.h:2973-2986`, verified in the checkout). That design
+choice is the mechanism behind the 0.82 pt. Three tiers recover it, cheapest
+first: a shrink-grid plus closed-form least-squares refit of `(s, b)` with the
+codes held fixed, which cannot regress; then HQQ, whose published defaults are
+already `nbits=4, group_size=64, axis=1`; then gradient descent on `(scales,
+biases)` alone against the BF16 master, which MLX supports and which is **not**
+the closed head-training axis because the integer payload never moves. There is
+a free positive control: reproduce `declared` bit-exactly from `master-bf16`
+with MLX's own quantizer before changing anything.
+
 A second, independent head lever rides on the same finding. Head time is linear
 in head bytes: 179 MB/ms on two arms, agreeing to 0.75 %. At E79's anchor of
 0.0844 % of score per 1 % of head cost, coarsening the 2-bit sweep's scales and
 biases from g64 to g128 removes 15.7 MB (3.68 % of the head) for about
-**+0.31 % (+0.0098)**, and g256 removes 23.6 MB for about **+0.47 %
-(+0.0147)**. A worse coarse shortlist cannot break exactness — it feeds an
-exact affine-4 rerank and the target verify rejects wrong proposals — so
-acceptance is the only currency this axis spends, and arm `qat-q4` has already
-banked some of it. Assigned as E82 rungs 4-8, PR #84.
+**+0.31 % (+0.0098)**. A worse coarse shortlist cannot break exactness — it
+feeds an exact affine-4 rerank and the target verify rejects wrong proposals —
+so acceptance is the only currency this axis spends, and arm `qat-q4` has
+already banked some of it.
+
+🔴 **The matching head-trunk lever is withdrawn.** One global
+`(groupSize, bits)` tuple governs every quantized submodule including the head,
+and `Qwen35Config.swift:266` asserts group size 64. The earlier `+0.0072`
+trunk-metadata line was wrong. The draft-readout lever survives but is **not**
+a manifest-only change: group size is hard-coded at
+`MLXLLM/Models/Qwen35.swift:3232` and `:3313`, and the shape guard at
+`:3294-3295` fails silently into a wrong-bits path. It needs that editable file
+too. Assigned as E82 rungs 4-8, PR #84.
 
 ## Closed axes — do not reopen without a named new reason
 
@@ -316,3 +337,11 @@ against their exact bases. Diff before theorising about any competitor.
   Prefill is the exception — one fixed 512-token cell on every prompt and host.
 - Local total marginal ratio 0.4023 against 0.2136 on rank, so local pricing of
   draft depth is about 2× too dear.
+- **Verify every `path:line` citation in the checkout before it becomes an
+  instruction.** A delegated agent's source claim is a lead, not a fact. Three
+  of four re-verified cleanly this cycle; the fourth named a file that does not
+  exist and would have cost a student an hour.
+- **Never ship a gate the advisor has not run.** `swift test
+  --force-resolved-versions` exits 1 on a clean base and has a standing floor of
+  40 issues across 9 named test functions in 7 files. Gate on the name set and
+  the count, never the exit code.

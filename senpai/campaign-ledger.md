@@ -21974,3 +21974,308 @@ Recorded as a hazard and a local-instrument confound. No fix is warranted.
    currency that axis spends is acceptance.
 11. **The absorbing non-drafting state is a hazard, not a lever.** Every board
    run that latches a median-relevant prompt ranks 454 or worse of 610.
+
+## 224. MLX's affine quantizer is not min-max, the head-trunk group size is not ours to change, and the 0.82 point loss has a three-tier recipe
+
+Date 2026-08-20, advisor branch `senpai/qwen38-mtp-r1` at `5eea649d`.
+Frontier `c6af1e24` = 3.30955573, unchanged. Board 886 rows, 613 scored.
+
+Ledger 223 recorded that the shipped proposal head loses 0.82 points of
+pooled acceptance to naive round-to-nearest quantization, and that 0.71 of
+those points are recoverable at identical bytes by a 3.2x reduction in
+reconstruction error. This entry records how to recover them, one source fact
+that changes how the recovery must be built, and one priced lever that is
+withdrawn because the runtime does not allow it.
+
+Three parallel investigations produced the material: a research-publication
+survey of post-training weight-only quantizers, a read-only source audit of
+the affine quantization and head-loading paths, and a web audit of the MLX and
+mlx-lm quantization tooling. Every source claim below was then re-verified by
+the advisor against the checkout at `5eea649d`. One claim in the first
+delivery to the student was wrong and is recorded in section (F).
+
+### (A) The affine quantizer is not min-max. It is min-max with a sign flip and an edge snap.
+
+The published `mlx.core.quantize` documentation gives the naive formula
+`s = (max - min) / (2^b - 1)` and `q = round((w - min)/s)`. The implementation
+does something materially different, and all three backends agree on it.
+
+Enforcing source, verified verbatim at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:2973-2986`,
+with the runtime-effective JIT twin at `mlx-generated/quantized.cpp:2976` and
+the CPU twin at `backend/cpu/quantized.cpp:1174-1183`:
+
+```
+float scale = max((w_max - w_min) / n_bins, eps);
+bool  side  = abs(w_min) > abs(w_max);
+scale = side ? scale : -scale;
+float edge  = side ? w_min : w_max;
+float q0    = round(edge / scale);
+bool  at_zero = q0 == 0.0f;
+scale = at_zero ? scale : edge / q0;
+float bias  = at_zero ? 0 : edge;
+```
+
+Three consequences, each load-bearing for any replacement quantizer:
+
+1. **`scale` is signed and is negative for every group where
+   `|w_max| >= |w_min|`.** That is most groups in a trained transformer.
+2. **`bias` is the outer edge, normally `w_max`.** It equals `w_min` only in
+   the `|w_min| > |w_max|` branch. A reimplementation that sets `bias = w_min`
+   silently disagrees with the shipped baseline and confounds any A/B.
+3. **The estimator snaps one edge onto an exact integer code and lets the
+   other edge fall where it lands.** Half the group's representable range is
+   spent pinning an endpoint that carries no more weight than any other value
+   in the group.
+
+Point 3 is the mechanism behind the 0.82 point loss. It is not a subtle
+numerical effect. It is a design choice in a data-free estimator that was
+never tuned for acceptance.
+
+Codes are formed at `quantized.h:2999`:
+
+```
+uint8_t val = min(round((w_thread[i] - bias) / scale), n_bins);
+```
+
+**There is no lower clamp.** The one-sided `min` is safe only because `bias`
+is the extreme edge and `scale` points inward, so the quotient is
+non-negative by construction. The result is stored into a `uint8_t`, so a
+negative quotient wraps rather than saturating.
+
+Any refit that moves `bias` off the extreme edge — which a least-squares
+refit does by design — breaks that invariant. A replacement packer must clamp
+both sides explicitly. A handful of wrapped codes per tensor would not move a
+mean relative-L2 number but would place individual weights at the wrong end of
+the range.
+
+The group reduction is `simd_min` / `simd_max` at `:2970-2971`, and the scale
+and bias pair is written once per group by the lane at
+`in_index % group_size == 0` (`:2983-2986`). Grouping is over contiguous
+elements along the last axis, so a reshape to `[-1, 64]` is the correct
+vectorization.
+
+Reconstruction in the scored kernels is folded as
+`scale * sum(x*q) + bias * sum(x)` at `quantized.h:289`, `:391`, `:838`,
+`:856`, `:1142`, and identically in the M5 `_nax` variants at
+`quantized_nax.h:292` and `:394`. The ranked host therefore reconstructs
+exactly as the local host does, whichever variant it selects.
+
+### (B) A free positive control the campaign did not have
+
+Run `mx.quantize(master_bf16_tensor, group_size=64, bits=4, mode="affine")`
+over each `master-bf16` trunk tensor and compare byte-for-byte with the
+matching `declared` tensor.
+
+A bit-exact match proves two things at once and costs minutes:
+
+- `master-bf16` is the true parent of `declared`, so the 0.82 point gap is
+  attributable to the estimator and to nothing else;
+- the read, pack and write path is correct before any number changes.
+
+A mismatch is itself a significant result and must stop the experiment. This
+is the positive control E82 lacked. The campaign rule that an instrument which
+cannot fail is not an instrument applies to build pipelines as much as to
+timing harnesses.
+
+### (C) The three-tier recovery recipe
+
+Ordered cheapest first. Stop at the first tier that closes most of the gap to
+`master-bf16`.
+
+**Tier 0 — shrink grid plus closed-form least-squares refit. Data-free, under
+100 lines, cannot regress relative L2.**
+
+Per group of 64, vectorized over all groups:
+
+1. For each shrink pair on a grid of about 120 points, `a` in
+   `{1.00, 0.99, ..., 0.90}` on each side independently, derive an initial
+   `(s, b)` from the shrunk interval.
+2. Assign `q = clip(round((w - b)/s), 0, 15)`.
+3. Refit `(s, b)` in closed form with `q` held fixed. Minimising
+   `||w - (s*q + b)||^2` over `(s, b)` is a two-variable linear regression of
+   `w` on `q`; solve the 2x2 normal equations per group.
+4. Repeat steps 2 and 3 twice. Each pass is monotone non-increasing in group
+   mean squared error.
+5. Keep the grid point with the lowest group error.
+
+Always include shrink 1.00 in the grid. Published benchmarking finds weight
+clipping can hurt at 4 bits where it helps at 3 bits, so selection must be per
+group and measured, never a forced global shrink. Because the procedure is a
+strict superset of min-max round-to-nearest, it cannot lose. Expected
+reduction about 1.15x to 1.4x on relative L2 — an estimate, not a measurement.
+
+**Tier 1 — HQQ. Data-free, and its published defaults are exactly our format.**
+
+Reference defaults are `nbits=4, group_size=64, axis=1`, which match our
+layout including the contiguous last-axis grouping. Solver hyperparameters
+`p = 0.7`, `beta0 = 1e1`, `kappa = 1.01`, `iters = 20` with early stop or 100
+without. The iteration applies a generalised soft threshold to the residual
+and re-solves the zero point in closed form.
+
+Two documented failure modes:
+
+- **Run the solver in float32.** The inverted-scale parameterisation is
+  unstable in fp16. Store bf16 only at the end.
+- **Do not round the zero point to an integer.** The reference rounds it at 4
+  bits for kernel compatibility we do not need. Our format carries a free
+  floating bias, and published work attributes much of the low-bit gain to
+  exactly that freedom.
+
+**The two sources disagree on the sign convention** — one gives
+`s_mlx = 1/scale`, `beta_mlx = -zero/scale`, the other gives
+`s_mlx = scale`, `beta_mlx = -zero*scale`. They are inverses, and the
+disagreement is real because the reference implementation stores an inverted
+scale internally. The convention must be settled numerically by asserting that
+the chosen mapping reproduces the solver's own reconstruction to zero error.
+The campaign does not ship on an unverified convention.
+
+**Tier 2 — fit the scales and biases by gradient descent against the BF16
+master. Only if tiers 0 and 1 leave a gap.**
+
+MLX supports the vector-Jacobian product through `quantized_matmul` with
+respect to `scales` and `biases`, and the upstream test covering it runs at
+exactly `bits=4, group_size=64`. Freeze the integer codes and treat
+`(scales, biases)` as the only trainable tensors, minimising KL divergence
+against the `master-bf16` head's draft distribution at temperature 2. The
+mlx-lm `dwq` path does exactly this for whole models and unfreezes precisely
+`["scales", "biases"]` for affine modules below 8 bits.
+
+**This is not the axis the campaign closed.** Ledger 223 closed training the
+head's *weights*, on a controlled matched pair that showed the trained trunk
+losing 1.75 points at BF16 and 0.79 points at affine-4. Here the weights are
+frozen bit-for-bit and only the 4-bit reconstruction metadata moves. The byte
+count and the integer payload are unchanged. The mechanism attacks the
+measured cause rather than the refuted one.
+
+**Excluded on format grounds.** SqueezeLLM, GPTVQ, QuIP and QuIP#, and SINQ
+all require non-uniform codebooks, vector codebooks, runtime rotations, or a
+second scale axis. None can be expressed as a per-group scale and bias pair.
+AWQ needs a per-input-channel scale that cannot be absorbed into a per-64
+channel scale and bias, and its measured edge over HQQ at 4-bit group 64 is
+about 0.02 perplexity. Do not spend campaign time on any of these.
+
+GPTQ and its coordinate-descent successors remain available as a later
+escalation. Calibration is legal for us because the target's own continuations
+on public corpora are permitted. But GPTQ minimises an activation-weighted
+error rather than plain relative L2, so **GPTQ candidates must not be screened
+on relative L2** — its output can look worse there and be better on
+acceptance.
+
+**Packing.** No public MLX op quantizes with caller-supplied scales and
+biases; the payload must be packed directly. `mx.dequantize` does accept
+caller scales and biases, so every artifact must pass a round-trip assertion
+that the dequantized result equals the intended reconstruction to zero error
+before any relative-L2 number is computed. A packing bug and a quantizer
+improvement are indistinguishable in a relative-L2 table.
+
+**Selection rule.** Relative L2 is the cheap screen. The decision is pooled
+acceptance at depths 3 to 6 on fixed seeds under the paired protocol. The
+literature is explicit that near-lossless proxies lose discriminating power
+exactly where we operate, and that relative-L2 rank and downstream rank
+disagree for error-feedback methods. Our own numbers agree: a 3.2x relative-L2
+reduction bought 0.71 of the 0.82 points.
+
+### (D) Nothing on the head load path validates numerics
+
+Source-verified. The head checks are structural and provenance-only:
+
+- `Qwen36MTPHeadAttachment.swift:252-264` requires only `fc.weight`,
+  `norm.weight`, and `pre_fc_norm_hidden.weight` to be present;
+- `verifyHeadIndex` at `:323-325` requires only at least three entries, and
+  its own comment explains that an exact count was removed because a declared
+  quantized head carries weight, scales and biases triples;
+- MLX itself checks `weight.dtype == uint32`, `scales.shape == biases.shape`,
+  and the dimensional identity
+  `weight.shape(-1)*32/bits == scales.shape(-1)*group_size`.
+
+Nothing else. Trunk dtypes are fixed by
+`Qwen35CheckpointValidation.swift:171-173` as `u32 [out, in*bits/32]` for the
+weight and `bf16 [out, in/groupSize]` for scales and biases.
+
+This confirms from source what ledger 223 argued from the contract: **a worse
+quantizer cannot break exactness. It can only lower acceptance, and it does so
+silently.** Every arm on this axis therefore needs a measured acceptance
+number. An arm without one is not evidence.
+
+### (E) The head-trunk group-size lever is withdrawn. The draft readout lever survives with a code change.
+
+Ledger 223 priced a metadata group-size sweep at `+0.0170` absolute across two
+tensors, on the assumption that group size travels in the head artifact. It
+does not.
+
+**Head trunk: withdrawn.** The loader applies one global `(groupSize, bits)`
+tuple to every quantized submodule, the head included. `Qwen35Config.swift:266`
+reads `expect("quantization.group_size", quantizationGroupSize, 64)`, verified
+in the checkout. There is no per-family override. Moving the head trunk to
+group 128 would require changing the whole model's quantization config, which
+the validator rejects. **The `+0.0072` absolute line for head trunk metadata
+is withdrawn.**
+
+**Draft readout: survives, but not from the manifest alone, and it fails
+silently.** In `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`,
+verified in the checkout:
+
+| line | content |
+|---|---|
+| `:3232` | `groupSize: 64, bits: bits, mode: .affine` — generic path, group size hard-coded |
+| `:3294` | `coarseScales.shape == [Self.compactDraftPaddedCount, 80]` |
+| `:3295` | `coarseBiases.shape == [Self.compactDraftPaddedCount, 80]` |
+| `:3313` | `transpose: true, groupSize: 64, bits: 2, mode: .affine` — promoted fast rerank path |
+| `:3338` | `transpose: true, groupSize: 64, bits: 4, mode: .affine` — exact rerank over the compact target readout, derived from the backbone `lm_head` and not from the head artifact |
+
+A group-128 sweep produces scales of shape `[98336, 40]`. The guard at
+`:3294-3295` fails, and the code drops to the generic path without an error.
+That path then computes `k = 40*64 = 2560` and infers `bits = 320*32/2560 = 4`
+for what is a 2-bit payload. The result is a slower path and wrong proposals
+with no diagnostic.
+
+So the surviving lever needs edits in that file as well as the manifest: the
+shape guard and both hard-coded group sizes. The file is a submitted editable
+path — it appears in `benchmark.json` `editablePaths` alongside
+`Qwen35MTP.swift` and `Qwen35MoE.swift`. Revised price for the metadata sweep
+alone: 15.7 MB saved, about -3.68 % head cost, about **+0.310 % median and
++0.0098 absolute**, now carrying a silent-failure mode and therefore requiring
+an explicit assertion that the fast rerank path is still taken.
+
+### (F) Advisor error record
+
+Two advisor errors in one day, both caught, both corrected in writing before
+the student spent GPU time.
+
+1. **An unvalidated gate.** The submission chain shipped
+   `swift test --force-resolved-versions` as a hard gate without the advisor
+   ever having run it. It exits 1 on a clean checkout of the base, and it
+   halted a frontier-composition submission for over an hour. The replacement
+   gate is recorded in ledger 223: the failing test names must be a subset of
+   the recorded nine and the issue count must not exceed 40. The bare exit
+   code is not a gate.
+2. **A wrong file path.** The first delivery of section (E) named
+   `Sources/MLXFastModel/Qwen35.swift`, which does not exist. The correct path
+   is `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`. Caught by
+   re-verifying every cited line against the checkout before the student
+   started.
+
+The general rule the campaign now follows: **the advisor verifies every
+`path:line` citation in the checkout before it becomes an instruction.** A
+delegated agent's source claim is a lead, not a fact. Three of the four
+claims re-verified this cycle were exact; the fourth would have cost a student
+an hour.
+
+### Conclusions
+
+1. **The affine quantizer is not min-max.** It flips the scale sign and snaps
+   the dominant edge to an exact code. Any replacement must reproduce that
+   convention before it can be compared, and must clamp both sides when it
+   departs from it.
+2. **There is a free positive control** for the whole head-build pipeline:
+   reproduce `declared` bit-exactly from `master-bf16` with MLX's own
+   quantizer.
+3. **Three tiers recover the 0.82 points**, cheapest first, all data-free
+   except the last, none of them the closed head-training axis.
+4. **Nothing validates head numerics on load**, so acceptance is the only
+   currency and the only admissible evidence on this axis.
+5. **The head-trunk group size is not ours to change.** That lever is
+   withdrawn. The draft-readout group size is ours, but only through a code
+   change with a silent-failure mode.
+6. **Verify every cited line before it becomes an instruction.**
