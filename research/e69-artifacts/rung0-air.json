@@ -1,0 +1,2202 @@
+{
+  "cells": {
+    "4": {
+      "fma": {
+        "alloca_types": [
+          "[4 x [4 x i16]]",
+          "[4 x <4 x float>]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "84",
+          "173",
+          "259",
+          ".preheader",
+          "297"
+        ],
+        "loop_fp": {
+          "fadd": 21,
+          "fma": 12,
+          "fmul": 5
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 5.25,
+          "fma": 3.0,
+          "fmul": 1.25
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 16
+          },
+          "per_block": {
+            ".preheader": {},
+            "173": {
+              "as1:bfloat": 16
+            },
+            "259": {},
+            "297": {},
+            "84": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 127,
+        "peak_live_cfg_max": 127,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 22.0,
+          "device_loads_total": 88,
+          "device_x_loads": 64,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 21,
+          "fma": 12,
+          "fmul": 5
+        }
+      },
+      "fmawxvec": {
+        "alloca_types": [
+          "[4 x [4 x i16]]",
+          "[4 x <4 x float>]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "84",
+          "153",
+          "235",
+          ".preheader",
+          "273"
+        ],
+        "loop_fp": {
+          "fadd": 21,
+          "fma": 12,
+          "fmul": 5
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 5.25,
+          "fma": 3.0,
+          "fmul": 1.25
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 4
+          },
+          "per_block": {
+            ".preheader": {},
+            "153": {
+              "as1:<4 x bfloat>": 4
+            },
+            "235": {},
+            "273": {},
+            "84": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 129,
+        "peak_live_cfg_max": 129,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 7.0,
+          "device_loads_total": 28,
+          "device_x_loads": 16,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 21,
+          "fma": 12,
+          "fmul": 5
+        }
+      },
+      "plain": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "78",
+          "167",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 6.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 16
+          },
+          "per_block": {
+            ".preheader": {},
+            "167": {
+              "as1:bfloat": 16
+            },
+            "78": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 114,
+        "peak_live_cfg_max": 114,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 22.0,
+          "device_loads_total": 88,
+          "device_x_loads": 64,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "rows8": {
+        "alloca_types": [
+          "[8 x <4 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "127",
+          "304",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 4.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 16
+          },
+          "per_block": {
+            ".preheader": {},
+            "127": {
+              "as1:bfloat": 16,
+              "as1:i16": 32
+            },
+            "304": {
+              "as1:bfloat": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 32
+          }
+        },
+        "peak_live_cfg_loop": 218,
+        "peak_live_cfg_max": 218,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 14.0,
+          "device_loads_total": 112,
+          "device_x_loads": 64,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 32
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "rows8idle": {
+        "alloca_types": [
+          "[8 x <4 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "125",
+          "302",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 4.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 16
+          },
+          "per_block": {
+            ".preheader": {},
+            "125": {
+              "as1:bfloat": 16,
+              "as1:i16": 32
+            },
+            "302": {
+              "as1:bfloat": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 32
+          }
+        },
+        "peak_live_cfg_loop": 218,
+        "peak_live_cfg_max": 218,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 14.0,
+          "device_loads_total": 112,
+          "device_x_loads": 64,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 32
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "rows8wxvec": {
+        "alloca_types": [
+          "[8 x <4 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "127",
+          "264",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 4.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 4
+          },
+          "per_block": {
+            ".preheader": {},
+            "127": {
+              "as1:<4 x i16>": 8,
+              "as1:bfloat": 16
+            },
+            "264": {
+              "as1:<4 x bfloat>": 4
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 8
+          }
+        },
+        "peak_live_cfg_loop": 229,
+        "peak_live_cfg_max": 229,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 5.0,
+          "device_loads_total": 40,
+          "device_x_loads": 16,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 8
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "tgx": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "84",
+          ".loopexit",
+          ".preheader.1",
+          ".loopexit.1",
+          ".preheader.2",
+          ".loopexit.2",
+          ".preheader.3",
+          ".loopexit.3",
+          ".preheader",
+          ".preheader9",
+          ".preheader8"
+        ],
+        "loop_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 6.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 4
+          },
+          "per_block": {
+            ".loopexit": {},
+            ".loopexit.1": {},
+            ".loopexit.2": {},
+            ".loopexit.3": {},
+            ".preheader": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.1": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.2": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.3": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader8": {},
+            ".preheader9": {
+              "as3:bfloat": 16
+            },
+            "84": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staging_stores": 4,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 118,
+        "peak_live_cfg_max": 118,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 8.0,
+          "device_loads_total": 32,
+          "device_x_loads": 8,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 64,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "wvec": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "78",
+          "147",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 6.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 16
+          },
+          "per_block": {
+            ".preheader": {},
+            "147": {
+              "as1:bfloat": 16
+            },
+            "78": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 114,
+        "peak_live_cfg_max": 114,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 19.0,
+          "device_loads_total": 76,
+          "device_x_loads": 64,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "wxvec": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "78",
+          "147",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 6.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 4
+          },
+          "per_block": {
+            ".preheader": {},
+            "147": {
+              "as1:<4 x bfloat>": 4
+            },
+            "78": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 125,
+        "peak_live_cfg_max": 125,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 7.0,
+          "device_loads_total": 28,
+          "device_x_loads": 16,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "xvec": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "78",
+          "167",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 6.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 16,
+            "loads": 4
+          },
+          "per_block": {
+            ".preheader": {},
+            "167": {
+              "as1:<4 x bfloat>": 4
+            },
+            "78": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 125,
+        "peak_live_cfg_max": 125,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 10.0,
+          "device_loads_total": 40,
+          "device_x_loads": 16,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 24,
+          "fma": 0,
+          "fmul": 8
+        }
+      }
+    },
+    "5": {
+      "fma": {
+        "alloca_types": [
+          "[4 x [4 x i16]]",
+          "[4 x <5 x float>]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "87",
+          "176",
+          "282",
+          ".preheader",
+          "320"
+        ],
+        "loop_fp": {
+          "fadd": 25,
+          "fma": 15,
+          "fmul": 5
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 6.25,
+          "fma": 3.75,
+          "fmul": 1.25
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 20
+          },
+          "per_block": {
+            ".preheader": {},
+            "176": {
+              "as1:bfloat": 20
+            },
+            "282": {},
+            "320": {},
+            "87": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 146,
+        "peak_live_cfg_max": 146,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 26.0,
+          "device_loads_total": 104,
+          "device_x_loads": 80,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 25,
+          "fma": 15,
+          "fmul": 5
+        }
+      },
+      "fmawxvec": {
+        "alloca_types": [
+          "[4 x [4 x i16]]",
+          "[4 x <5 x float>]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "87",
+          "156",
+          "257",
+          ".preheader",
+          "295"
+        ],
+        "loop_fp": {
+          "fadd": 25,
+          "fma": 15,
+          "fmul": 5
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 6.25,
+          "fma": 3.75,
+          "fmul": 1.25
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 5
+          },
+          "per_block": {
+            ".preheader": {},
+            "156": {
+              "as1:<4 x bfloat>": 5
+            },
+            "257": {},
+            "295": {},
+            "87": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 146,
+        "peak_live_cfg_max": 146,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 8.0,
+          "device_loads_total": 32,
+          "device_x_loads": 20,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 25,
+          "fma": 15,
+          "fmul": 5
+        }
+      },
+      "plain": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "81",
+          "170",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 7.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 20
+          },
+          "per_block": {
+            ".preheader": {},
+            "170": {
+              "as1:bfloat": 20
+            },
+            "81": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 130,
+        "peak_live_cfg_max": 130,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 26.0,
+          "device_loads_total": 104,
+          "device_x_loads": 80,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "rows8": {
+        "alloca_types": [
+          "[8 x <5 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "132",
+          "309",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 36,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 4.5,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 20
+          },
+          "per_block": {
+            ".preheader": {},
+            "132": {
+              "as1:bfloat": 16,
+              "as1:i16": 32
+            },
+            "309": {
+              "as1:bfloat": 20
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 32
+          }
+        },
+        "peak_live_cfg_loop": 252,
+        "peak_live_cfg_max": 252,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 16.0,
+          "device_loads_total": 128,
+          "device_x_loads": 80,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 32
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 36,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "rows8idle": {
+        "alloca_types": [
+          "[8 x <5 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "130",
+          "307",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 36,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 4.5,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 20
+          },
+          "per_block": {
+            ".preheader": {},
+            "130": {
+              "as1:bfloat": 16,
+              "as1:i16": 32
+            },
+            "307": {
+              "as1:bfloat": 20
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 32
+          }
+        },
+        "peak_live_cfg_loop": 252,
+        "peak_live_cfg_max": 252,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 16.0,
+          "device_loads_total": 128,
+          "device_x_loads": 80,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 32
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 36,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "rows8wxvec": {
+        "alloca_types": [
+          "[8 x <5 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "132",
+          "269",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 36,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 4.5,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 5
+          },
+          "per_block": {
+            ".preheader": {},
+            "132": {
+              "as1:<4 x i16>": 8,
+              "as1:bfloat": 16
+            },
+            "269": {
+              "as1:<4 x bfloat>": 5
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 8
+          }
+        },
+        "peak_live_cfg_loop": 262,
+        "peak_live_cfg_max": 262,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 5.5,
+          "device_loads_total": 44,
+          "device_x_loads": 20,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 8
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 36,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "tgx": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "88",
+          ".loopexit",
+          ".preheader.1",
+          ".loopexit.1",
+          ".preheader.2",
+          ".loopexit.2",
+          ".preheader.3",
+          ".loopexit.3",
+          ".preheader.4",
+          ".loopexit.4",
+          ".preheader",
+          ".preheader9",
+          ".preheader8"
+        ],
+        "loop_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 7.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 5
+          },
+          "per_block": {
+            ".loopexit": {},
+            ".loopexit.1": {},
+            ".loopexit.2": {},
+            ".loopexit.3": {},
+            ".loopexit.4": {},
+            ".preheader": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.1": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.2": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.3": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.4": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader8": {},
+            ".preheader9": {
+              "as3:bfloat": 20
+            },
+            "88": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 20,
+            "loads": 20
+          },
+          "staging_stores": 5,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 135,
+        "peak_live_cfg_max": 135,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 8.5,
+          "device_loads_total": 34,
+          "device_x_loads": 10,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 80,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "wvec": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "81",
+          "150",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 7.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 20
+          },
+          "per_block": {
+            ".preheader": {},
+            "150": {
+              "as1:bfloat": 20
+            },
+            "81": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 130,
+        "peak_live_cfg_max": 130,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 23.0,
+          "device_loads_total": 92,
+          "device_x_loads": 80,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "wxvec": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "81",
+          "150",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 7.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 5
+          },
+          "per_block": {
+            ".preheader": {},
+            "150": {
+              "as1:<4 x bfloat>": 5
+            },
+            "81": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 140,
+        "peak_live_cfg_max": 140,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 8.0,
+          "device_loads_total": 32,
+          "device_x_loads": 20,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "xvec": {
+        "alloca_types": [
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 1,
+        "loop_blocks": [
+          "81",
+          "170",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 7.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 20,
+            "loads": 5
+          },
+          "per_block": {
+            ".preheader": {},
+            "170": {
+              "as1:<4 x bfloat>": 5
+            },
+            "81": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 140,
+        "peak_live_cfg_max": 140,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 11.0,
+          "device_loads_total": 44,
+          "device_x_loads": 20,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 28,
+          "fma": 0,
+          "fmul": 8
+        }
+      }
+    },
+    "6": {
+      "fma": {
+        "alloca_types": [
+          "[4 x <6 x float>]",
+          "[4 x [4 x i16]]",
+          "[4 x <6 x float>]"
+        ],
+        "allocas": 3,
+        "loop_blocks": [
+          "109",
+          "202",
+          "328",
+          ".preheader",
+          "366"
+        ],
+        "loop_fp": {
+          "fadd": 29,
+          "fma": 18,
+          "fmul": 5
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 7.25,
+          "fma": 4.5,
+          "fmul": 1.25
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 24
+          },
+          "per_block": {
+            ".preheader": {},
+            "109": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            },
+            "202": {
+              "as1:bfloat": 24
+            },
+            "328": {},
+            "366": {}
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 201,
+        "peak_live_cfg_max": 201,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 30.0,
+          "device_loads_total": 120,
+          "device_x_loads": 96,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 29,
+          "fma": 18,
+          "fmul": 5
+        }
+      },
+      "fmawxvec": {
+        "alloca_types": [
+          "[4 x <6 x float>]",
+          "[4 x [4 x i16]]",
+          "[4 x <6 x float>]"
+        ],
+        "allocas": 3,
+        "loop_blocks": [
+          "109",
+          "182",
+          "302",
+          ".preheader",
+          "340"
+        ],
+        "loop_fp": {
+          "fadd": 29,
+          "fma": 18,
+          "fmul": 5
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 7.25,
+          "fma": 4.5,
+          "fmul": 1.25
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 6
+          },
+          "per_block": {
+            ".preheader": {},
+            "109": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            },
+            "182": {
+              "as1:<4 x bfloat>": 6
+            },
+            "302": {},
+            "340": {}
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 201,
+        "peak_live_cfg_max": 201,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 9.0,
+          "device_loads_total": 36,
+          "device_x_loads": 24,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 29,
+          "fma": 18,
+          "fmul": 5
+        }
+      },
+      "plain": {
+        "alloca_types": [
+          "[4 x <6 x float>]",
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "103",
+          "196",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 8.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 24
+          },
+          "per_block": {
+            ".preheader": {},
+            "103": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            },
+            "196": {
+              "as1:bfloat": 24
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 182,
+        "peak_live_cfg_max": 182,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 30.0,
+          "device_loads_total": 120,
+          "device_x_loads": 96,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "rows8": {
+        "alloca_types": [
+          "[8 x <6 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "137",
+          "314",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 40,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 5.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 24
+          },
+          "per_block": {
+            ".preheader": {},
+            "137": {
+              "as1:bfloat": 16,
+              "as1:i16": 32
+            },
+            "314": {
+              "as1:bfloat": 24
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 32
+          }
+        },
+        "peak_live_cfg_loop": 286,
+        "peak_live_cfg_max": 286,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 18.0,
+          "device_loads_total": 144,
+          "device_x_loads": 96,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 32
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 40,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "rows8idle": {
+        "alloca_types": [
+          "[8 x <6 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "135",
+          "312",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 40,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 5.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 24
+          },
+          "per_block": {
+            ".preheader": {},
+            "135": {
+              "as1:bfloat": 16,
+              "as1:i16": 32
+            },
+            "312": {
+              "as1:bfloat": 24
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 32
+          }
+        },
+        "peak_live_cfg_loop": 286,
+        "peak_live_cfg_max": 286,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 18.0,
+          "device_loads_total": 144,
+          "device_x_loads": 96,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 32
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 40,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "rows8wxvec": {
+        "alloca_types": [
+          "[8 x <6 x float>]",
+          "[8 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "137",
+          "274",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 40,
+          "fma": 0,
+          "fmul": 16
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 5.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 6
+          },
+          "per_block": {
+            ".preheader": {},
+            "137": {
+              "as1:<4 x i16>": 8,
+              "as1:bfloat": 16
+            },
+            "274": {
+              "as1:<4 x bfloat>": 6
+            }
+          },
+          "scale_bias": {
+            "elements": 16,
+            "loads": 16
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 32,
+            "loads": 8
+          }
+        },
+        "peak_live_cfg_loop": 295,
+        "peak_live_cfg_max": 295,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 6.0,
+          "device_loads_total": 48,
+          "device_x_loads": 24,
+          "scale_bias_loads": 16,
+          "staged_x_loads": 0,
+          "weight_loads": 8
+        },
+        "rows_per_simd": 8,
+        "total_fp": {
+          "fadd": 40,
+          "fma": 0,
+          "fmul": 16
+        }
+      },
+      "tgx": {
+        "alloca_types": [
+          "[4 x <6 x float>]",
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "111",
+          ".loopexit",
+          ".preheader.1",
+          ".loopexit.1",
+          ".preheader.2",
+          ".loopexit.2",
+          ".preheader.3",
+          ".loopexit.3",
+          ".preheader.4",
+          ".loopexit.4",
+          ".preheader.5",
+          ".loopexit.5",
+          ".preheader",
+          ".preheader9",
+          ".preheader8"
+        ],
+        "loop_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 8.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 6
+          },
+          "per_block": {
+            ".loopexit": {},
+            ".loopexit.1": {},
+            ".loopexit.2": {},
+            ".loopexit.3": {},
+            ".loopexit.4": {},
+            ".loopexit.5": {},
+            ".preheader": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.1": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.2": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.3": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.4": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader.5": {
+              "as1:<4 x bfloat>": 1
+            },
+            ".preheader8": {},
+            ".preheader9": {
+              "as3:bfloat": 24
+            },
+            "111": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 24,
+            "loads": 24
+          },
+          "staging_stores": 6,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 188,
+        "peak_live_cfg_max": 188,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 9.0,
+          "device_loads_total": 36,
+          "device_x_loads": 12,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 96,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "wvec": {
+        "alloca_types": [
+          "[4 x <6 x float>]",
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "103",
+          "176",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 8.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 24
+          },
+          "per_block": {
+            ".preheader": {},
+            "103": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            },
+            "176": {
+              "as1:bfloat": 24
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 182,
+        "peak_live_cfg_max": 182,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 27.0,
+          "device_loads_total": 108,
+          "device_x_loads": 96,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "wxvec": {
+        "alloca_types": [
+          "[4 x <6 x float>]",
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "103",
+          "176",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 8.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 6
+          },
+          "per_block": {
+            ".preheader": {},
+            "103": {
+              "as1:<4 x i16>": 4,
+              "as1:bfloat": 8
+            },
+            "176": {
+              "as1:<4 x bfloat>": 6
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 4
+          }
+        },
+        "peak_live_cfg_loop": 191,
+        "peak_live_cfg_max": 191,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 9.0,
+          "device_loads_total": 36,
+          "device_x_loads": 24,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 4
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        }
+      },
+      "xvec": {
+        "alloca_types": [
+          "[4 x <6 x float>]",
+          "[4 x [4 x i16]]"
+        ],
+        "allocas": 2,
+        "loop_blocks": [
+          "103",
+          "196",
+          ".preheader"
+        ],
+        "loop_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        },
+        "loop_fp_per_output_row": {
+          "fadd": 8.0,
+          "fma": 0.0,
+          "fmul": 2.0
+        },
+        "loop_loads_static": {
+          "device_x": {
+            "elements": 24,
+            "loads": 6
+          },
+          "per_block": {
+            ".preheader": {},
+            "103": {
+              "as1:bfloat": 8,
+              "as1:i16": 16
+            },
+            "196": {
+              "as1:<4 x bfloat>": 6
+            }
+          },
+          "scale_bias": {
+            "elements": 8,
+            "loads": 8
+          },
+          "staged_x": {
+            "elements": 0,
+            "loads": 0
+          },
+          "staging_stores": 0,
+          "weight": {
+            "elements": 16,
+            "loads": 16
+          }
+        },
+        "peak_live_cfg_loop": 191,
+        "peak_live_cfg_max": 191,
+        "per_lane_per_k_block": {
+          "device_loads_per_output_row": 12.0,
+          "device_loads_total": 48,
+          "device_x_loads": 24,
+          "scale_bias_loads": 8,
+          "staged_x_loads": 0,
+          "weight_loads": 16
+        },
+        "rows_per_simd": 4,
+        "total_fp": {
+          "fadd": 32,
+          "fma": 0,
+          "fmul": 8
+        }
+      }
+    }
+  },
+  "checks": {
+    "4": {
+      "fma_emits_fma": true,
+      "fmawxvec_emits_fma": true,
+      "fmawxvec_weight_loads_are_4_wide": true,
+      "fmawxvec_x_loads_are_4_wide": true,
+      "plain_emits_no_fma": true,
+      "plain_fp_unchanged_at_same_rows_per_simd": true,
+      "rows8_x_elements_per_output_row_halved": true,
+      "rows8idle_x_elements_per_output_row_halved": true,
+      "rows8wxvec_weight_loads_are_4_wide": true,
+      "rows8wxvec_x_elements_per_output_row_halved": true,
+      "rows8wxvec_x_loads_are_4_wide": true,
+      "tgx_fp_unchanged_at_same_rows_per_simd": true,
+      "tgx_x_reads_moved_to_threadgroup": true,
+      "wvec_fp_unchanged_at_same_rows_per_simd": true,
+      "wvec_weight_loads_are_4_wide": true,
+      "wxvec_fp_unchanged_at_same_rows_per_simd": true,
+      "wxvec_weight_loads_are_4_wide": true,
+      "wxvec_x_loads_are_4_wide": true,
+      "xvec_fp_unchanged_at_same_rows_per_simd": true,
+      "xvec_x_loads_are_4_wide": true
+    },
+    "5": {
+      "fma_emits_fma": true,
+      "fmawxvec_emits_fma": true,
+      "fmawxvec_weight_loads_are_4_wide": true,
+      "fmawxvec_x_loads_are_4_wide": true,
+      "plain_emits_no_fma": true,
+      "plain_fp_unchanged_at_same_rows_per_simd": true,
+      "rows8_x_elements_per_output_row_halved": true,
+      "rows8idle_x_elements_per_output_row_halved": true,
+      "rows8wxvec_weight_loads_are_4_wide": true,
+      "rows8wxvec_x_elements_per_output_row_halved": true,
+      "rows8wxvec_x_loads_are_4_wide": true,
+      "tgx_fp_unchanged_at_same_rows_per_simd": true,
+      "tgx_x_reads_moved_to_threadgroup": true,
+      "wvec_fp_unchanged_at_same_rows_per_simd": true,
+      "wvec_weight_loads_are_4_wide": true,
+      "wxvec_fp_unchanged_at_same_rows_per_simd": true,
+      "wxvec_weight_loads_are_4_wide": true,
+      "wxvec_x_loads_are_4_wide": true,
+      "xvec_fp_unchanged_at_same_rows_per_simd": true,
+      "xvec_x_loads_are_4_wide": true
+    },
+    "6": {
+      "fma_emits_fma": true,
+      "fmawxvec_emits_fma": true,
+      "fmawxvec_weight_loads_are_4_wide": true,
+      "fmawxvec_x_loads_are_4_wide": true,
+      "plain_emits_no_fma": true,
+      "plain_fp_unchanged_at_same_rows_per_simd": true,
+      "rows8_x_elements_per_output_row_halved": true,
+      "rows8idle_x_elements_per_output_row_halved": true,
+      "rows8wxvec_weight_loads_are_4_wide": true,
+      "rows8wxvec_x_elements_per_output_row_halved": true,
+      "rows8wxvec_x_loads_are_4_wide": true,
+      "tgx_fp_unchanged_at_same_rows_per_simd": true,
+      "tgx_x_reads_moved_to_threadgroup": true,
+      "wvec_fp_unchanged_at_same_rows_per_simd": true,
+      "wvec_weight_loads_are_4_wide": true,
+      "wxvec_fp_unchanged_at_same_rows_per_simd": true,
+      "wxvec_weight_loads_are_4_wide": true,
+      "wxvec_x_loads_are_4_wide": true,
+      "xvec_fp_unchanged_at_same_rows_per_simd": true,
+      "xvec_x_loads_are_4_wide": true
+    }
+  },
+  "dirty_paths": 0,
+  "flags": [
+    "-std=metal4.0",
+    "-O2",
+    "-fno-fast-math"
+  ],
+  "head": "1139a12ba9beea5bf24d97ea06026fcb14bd8553",
+  "probe": "research/e69_wide_probe.metal"
+}

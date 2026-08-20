@@ -1,0 +1,224 @@
+{
+  "what": "Read-only reproduction audit of the roofline accounting table asserted by the E69 assignment (PR #72), from committed artifacts only. No tracked file was modified.",
+  "repo_head_at_read_time": "3044ed93801a0a22ec06a89fe1e7f9004154d409",
+  "repo_head_note": "The branch advanced to 8210515 ('E69 rung 0: x-operand AIR census and rung-1 cell harness') while this audit ran. Every artifact cited here is unchanged by that commit; all sources are committed research records and ledger text, not build outputs.",
+  "inputs": {
+    "local_peak_bandwidth_bytes_per_second": {
+      "value": 226035064068.14008,
+      "source": "research/e63-artifacts/e63-cost-curve.json",
+      "locator": "line 1506, JSON key roofline.peak_bandwidth_bytes_per_second"
+    },
+    "local_peak_flops_per_second": {
+      "value": 7505967353490.1182,
+      "source": "research/e63-artifacts/e63-cost-curve.json",
+      "locator": "line 1507, JSON key roofline.peak_flops_per_second"
+    },
+    "bytes_streamed_per_round": {
+      "value": 14412349440,
+      "source": "senpai/campaign-ledger.md",
+      "locator": "line 14311, item 199(A) byte census row 'minus embed_tokens, which is gathered at decode and not streamed'"
+    },
+    "all_quantized_linears_bytes": {
+      "value": 15127511040,
+      "source": "senpai/campaign-ledger.md",
+      "locator": "line 14310, item 199(A) byte census row 'all quantized linears'"
+    },
+    "packed_4bit_weight_bytes": {
+      "value": 13446676480,
+      "source": "senpai/campaign-ledger.md",
+      "locator": "line 14308, item 199(A) byte census row 'packed 4-bit weights'"
+    },
+    "byte_census_provenance": {
+      "value": "Sources/MLXFastTransform/Qwen35CheckpointValidation.swift:57-76 (pinned geometry) and :176-263 (inventory builder)",
+      "source": "senpai/campaign-ledger.md",
+      "locator": "lines 14303-14304"
+    },
+    "parameter_count": {
+      "value": 26900000000,
+      "source": "research/ESTABLISHED_FACTS.md",
+      "locator": "line 68, '26.9B parameters at 0.5 + 4/64 = 0.5625 bytes/weight = 15.14 GB'"
+    },
+    "bytes_per_weight_4bit_g64": {
+      "value": 0.5625,
+      "source": "research/ESTABLISHED_FACTS.md",
+      "locator": "line 68"
+    },
+    "backbone_weight_gb_15_14_figure": {
+      "value": 15.14,
+      "source": "research/ESTABLISHED_FACTS.md",
+      "locator": "line 68; NOT the byte figure that reproduces the table - see notes"
+    },
+    "local_depth0_round_ms_C0": {
+      "value": 65.0094,
+      "source": "research/e56_g_correction.py",
+      "locator": "line 13, C0_M4 = 65.0094  # ms, depth-0 round on M4 Pro (E1, N=1530, sd 0.16 %); restated at senpai/campaign-ledger.md:14313"
+    },
+    "local_e1_cumulative_draft_ladder_ms": {
+      "value": "{0: 0.0, 1: 5.47, 2: 10.51, 3: 26.28, 4: 50.68, 5: 69.66, 6: 89.16, 7: 107.82, 8: 133.23}",
+      "source": "research/e56_g_correction.py",
+      "locator": "lines 16-18, CUM_M4 = 'E1 cumulative drafting cost above the depth-0 round, ms'"
+    },
+    "local_e1_raw_round_costs_report": {
+      "value": "C(0)=65469.3 us, C(3)=91828.3, C(4)=117499.6, C(5)=135911.8, C(8)=198683.0 (pooled, N=5100 for C(0))",
+      "source": "research/results/qwen38-r1-e1-depth-cost-curve.md",
+      "locator": "section 5 summary table, rows d=0..8; these differ from C0_M4/CUM_M4 by 0.7-2.6 % - see notes"
+    },
+    "local_host": {
+      "value": "Apple M4 Pro, applegpu_g16s, 51539607552 bytes memory (48 GiB)",
+      "source": "research/e63-artifacts/e63-cost-curve.json",
+      "locator": "JSON keys device.architecture, device.memory_size_bytes"
+    },
+    "ranked_pinned_serial_seconds_per_token": {
+      "value": 0.037994794617407023,
+      "source": "fixtures/qwen3_8_27b_mtp_track.json",
+      "locator": "line 261, serial_denominator_band_unchanged_note: 'serial_decode_seconds_per_token_mean 0.037994794617407023'; restated at docs/qwen-mtp-go-live-runbook.md:308 as qwenMTPOfficialBaselineDecodeSecondsPerToken"
+    },
+    "ranked_seed_prefill_charge_K_ms": {
+      "value": 526.6,
+      "source": "senpai/campaign-ledger.md",
+      "locator": "line 10513, item 186(E) 'the observed K = 526.6 ms'; item 186(B) line 10418 gives the per-prompt band '525.7-528.2 ms'"
+    },
+    "prefill_is_inside_timed_leg": {
+      "value": "K = 512 * prefill_seconds_per_token is observed per prompt in the receipt; QwenRuntimeMTP.swift:347-349 'deliberately NOT subtracted from decodeSeconds'",
+      "source": "senpai/campaign-ledger.md",
+      "locator": "lines 10395-10417 (item 186(A)) and 10416-10420 (item 186(B))"
+    },
+    "ranked_receipt_ca9251b8": {
+      "value": "ca9251b8-58cd-4d90-9a52-fa05f5657216, commit 2b0c36a078b7660c9215adee933336ff46da25af, score 3.23250848263467 (rejected, did not improve)",
+      "source": "research/e42-artifacts/width-census.json",
+      "locator": "lines 118-120, JSON keys submission_commit, submission_id, submission_score; status at research/CURRENT_RESEARCH_STATE.md:15"
+    },
+    "ca9251b8_beagle_mean_m": {
+      "value": 5.5327102803738315,
+      "source": "research/e42-artifacts/width-census.json",
+      "locator": "line 62, JSON key ranked_census.beagle.mean_m"
+    },
+    "ca9251b8_beagle_ranked_round_count": {
+      "value": 107,
+      "source": "research/e42-artifacts/width-census.json",
+      "locator": "line 68, JSON key ranked_census.beagle.ranked_round_count"
+    },
+    "ca9251b8_beagle_raw_ratio": {
+      "value": 3.12015,
+      "source": "research/e34r2-results.md",
+      "locator": "line 126, '| **beagle** | 5.5327 | 3.12015 | 107 | 485 | 405 | **83.51 %** | 58.253 |' (last column 58.253 ms is the un-prefill-corrected round)"
+    },
+    "ca9251b8_beagle_leg_ms": {
+      "value": 6233,
+      "source": "senpai/campaign-ledger.md",
+      "locator": "line 10433, item 186(B) table row beagle: leg 6233 ms, K/leg 8.44 %, dilution 0.91552, build 1.2494, spec 2.7277"
+    },
+    "ranked_score_identity": {
+      "value": "raw_p = build_factor * spec_factor * dilution_p; build = serial_spt / c1; spec = (512 / R_p) * c1 / round_ms_p; dilution = 1 - K / leg_p",
+      "source": "senpai/campaign-ledger.md",
+      "locator": "lines 10422-10426, item 186(B)"
+    },
+    "ranked_candidate_depth0_round_c1_ms": {
+      "value": 30.402,
+      "source": "research/e56_g_correction.py",
+      "locator": "line 14, C1_M5 = 30.402 # ms, prefill-corrected ranked depth-0 round (ledger 184); restated at senpai/campaign-ledger.md:10453"
+    },
+    "ranked_measured_prefill_tflops": {
+      "value": 52.5,
+      "source": "senpai/campaign-ledger.md",
+      "locator": "line 10455, item 186(C) 'In TFLOP/s on 2 * 27e9 * 512 = 2.765e13 FLOPs: ranked 52.5, ours 6.92'"
+    },
+    "ranked_verify_width_time_shares": {
+      "value": "M4 14.2 %, M5 24.1 %, M6 33.4 %, M7 12.2 %, M8 7.35 %, M9 5.75 %",
+      "source": "senpai/campaign-ledger.md",
+      "locator": "lines 16627-16628, item 200-series section (C); the M5/M6 pair is restated at line 14394 and research/CURRENT_RESEARCH_STATE.md:73"
+    },
+    "candidate_leg_0_01308_seconds_per_token": {
+      "value": 0.01308,
+      "source": "research/ESTABLISHED_FACTS.md",
+      "locator": "line 77, 'The candidate leg's 0.01308 s/token is 76.4 tok/s, ~1.9x a single-pass roofline'; corresponds to raw = 2.9048, i.e. the hypothetical raw >= 2.904 target set at line 63, NOT the ca9251b8 beagle leg (raw 3.12015, 0.012177 s/token)"
+    },
+    "ranked_achieved_bandwidth_repo_claim": {
+      "value": "410-420 GB/s on the serial decode step",
+      "source": "research/ESTABLISHED_FACTS.md",
+      "locator": "lines 69-71; restated at line 497"
+    },
+    "external_apple_m5_max_bandwidth_614": {
+      "value": 614,
+      "source": "NOT IN REPO",
+      "locator": "no occurrence of 614 GB/s anywhere under senpai/, research/, docs/, fixtures/ (git grep '614'); the assignment's ranked % of bandwidth peak column implies 390.0/0.635 = 614.2 and 233.7/0.381 = 613.4"
+    },
+    "external_ranked_compute_peak": {
+      "value": "~53.0-53.5 TFLOP/s implied by the ranked % of compute peak column",
+      "source": "NOT IN REPO as a peak",
+      "locator": "implied: 1.46/0.027 = 54.07 and 4.83/0.091 = 53.08; nearest repo value is the MEASURED ranked prefill throughput 52.5 TFLOP/s at senpai/campaign-ledger.md:10455, which is an achieved rate, not a peak"
+    }
+  },
+  "formulas": {
+    "bytes_per_round": "bytes(M) = W = 14,412,349,440 B, CONSTANT in M. This is 'all quantized linears' (15,127,511,040) minus embed_tokens (715,161,600), because embed_tokens is gathered at decode and not streamed. The assignment's bandwidth column is W / t_round(M): an effective 'one weight pass per round' bandwidth, not true DRAM traffic. Adding any M-dependent activation term, or using the 15.14 GB figure, breaks the reproduction - see notes.",
+    "flops_per_round": "flops(M) = 2 * P * M with P = 26.9e9. Reproduces every TFLOP/s cell in the table to better than 0.3 %, on both hosts.",
+    "local_round_time": "t_local(M) [ms] = C0_M4 + CUM_M4[M-1] = 65.0094 + cumulative E1 drafting cost at depth d = M-1, with linear interpolation in d for fractional M (M = 5.5327 -> d = 4.5327 -> cum = 50.68 + 0.5327*(69.66-50.68) = 60.7907 ms).",
+    "ranked_serial_round_time": "t_ranked_serial = pinned_serial_spt - K/512 = 0.037994794617407023 - 0.5266/512 = 36.9663 ms (the prefill charge removed from the 512-token leg).",
+    "ranked_beagle_round_time_ledger_consistent": "t_ranked_beagle = (leg_ms - K) / R = (6233 - 526.6) / 107 = 53.347 ms, equivalently (512/R)*c1/spec = (512/107)*30.402/2.7277 = 53.333 ms from the 186(B) identity."
+  },
+  "table": [
+    {
+      "round": "local depth-0 (serial, M=1)",
+      "claimed": {"gbps": 221.7, "pct_bw_peak": 98.1, "tflops": 0.83, "pct_compute_peak": 11.0},
+      "recomputed": {"round_ms": 65.0094, "gbps": 221.70, "pct_bw_peak": 98.08, "tflops": 0.828, "pct_compute_peak": 11.03},
+      "verdict": "REPRODUCED",
+      "note": "Exact: 14,412,349,440 / 0.0650094 = 221.70 GB/s, printed verbatim at senpai/campaign-ledger.md:14316. The assignment normalises by the E63 peak 226.035 GB/s (98.1 %); ledger 199(A) normalises the same 221.70 by askeladd's E61 rung-1 peak 227.90 GB/s and reports 97.3 %. Both are correct against their own stated peak."
+    },
+    {
+      "round": "local M=4",
+      "claimed": {"gbps": 157.9, "pct_bw_peak": 69.8, "tflops": 2.36, "pct_compute_peak": 31.4},
+      "recomputed": {"round_ms": 91.2894, "gbps": 157.88, "pct_bw_peak": 69.85, "tflops": 2.357, "pct_compute_peak": 31.41},
+      "verdict": "REPRODUCED",
+      "note": "pct_bw_peak 69.85 truncates to the claimed 69.8; half-up rounding would give 69.9. Relative error 0.07 pp."
+    },
+    {
+      "round": "local M=5",
+      "claimed": {"gbps": 124.6, "pct_bw_peak": 55.1, "tflops": 2.33, "pct_compute_peak": 31.0},
+      "recomputed": {"round_ms": 115.6894, "gbps": 124.58, "pct_bw_peak": 55.11, "tflops": 2.325, "pct_compute_peak": 30.98},
+      "verdict": "REPRODUCED"
+    },
+    {
+      "round": "local M=5.5327",
+      "claimed": {"gbps": 114.6, "pct_bw_peak": 50.7, "tflops": 2.37, "pct_compute_peak": 31.5},
+      "recomputed": {"round_ms": 125.8000, "gbps": 114.57, "pct_bw_peak": 50.68, "tflops": 2.366, "pct_compute_peak": 31.52},
+      "verdict": "REPRODUCED",
+      "note": "Requires linear interpolation of CUM_M4 between d=4 and d=5. Any other interpolation (log, staircase) moves the cell; the staircase in E1 finding F30 and ledger 199(B) says the true cost curve is NOT linear between these widths, so the interpolated cell is a modelling choice, not a measurement."
+    },
+    {
+      "round": "local M=6",
+      "claimed": {"gbps": 107.0, "pct_bw_peak": 47.3, "tflops": 2.40, "pct_compute_peak": 31.9},
+      "recomputed": {"round_ms": 134.6694, "gbps": 107.02, "pct_bw_peak": 47.35, "tflops": 2.397, "pct_compute_peak": 31.93},
+      "verdict": "REPRODUCED",
+      "note": "pct_bw_peak 47.35 truncates to the claimed 47.3."
+    },
+    {
+      "round": "ranked serial round",
+      "claimed": {"gbps": 390.0, "pct_bw_peak": 63.5, "tflops": 1.46, "pct_compute_peak": 2.7},
+      "recomputed": {"round_ms": 36.9663, "gbps": 389.88, "pct_bw_peak_at_614": 63.50, "tflops": 1.455, "pct_compute_peak_at_52_5": 2.77},
+      "verdict": "REPRODUCED for GB/s and TFLOP/s; pct_bw_peak CLOSE but rests on an unverifiable 614 GB/s; pct_compute_peak UNVERIFIABLE",
+      "note": "GB/s reproduces only if the prefill charge is removed: raw pinned s/token gives 379.32 GB/s (61.78 %), which is 2.7 % below the claim. pct_compute_peak 2.7 % needs a ~54.1 TFLOP/s denominator; the repo's nearest number, the MEASURED ranked prefill rate 52.5 TFLOP/s, gives 2.77 % -> 2.8 %."
+    },
+    {
+      "round": "ranked beagle round (M=5.5327)",
+      "claimed": {"gbps": 233.7, "pct_bw_peak": 38.1, "tflops": 4.83, "pct_compute_peak": 9.1},
+      "recomputed": {"round_ms": 53.347, "gbps": 270.16, "pct_bw_peak_at_614": 44.00, "tflops": 5.580, "pct_compute_peak_at_52_5": 10.63},
+      "verdict": "DIVERGENT",
+      "note": "The claim implies a round of 61.670 ms. The ledger's own committed decomposition for ca9251b8 beagle gives 53.347 ms ((6233 - 526.6)/107), i.e. 270.2 GB/s: the claim is 13.5 % LOW. Without the prefill correction the round is 58.269 ms -> 247.3 GB/s (claim 5.5 % low), and 58.253 ms is printed verbatim at research/e34r2-results.md:126. The nearest variant to the claim is 0.01308 s/token * 512 / 107 = 62.588 ms -> 230.3 GB/s (claim 1.5 % high), but that mixes the ESTABLISHED_FACTS 0.01308 s/token (raw 2.9048, a hypothetical target leg) with beagle's actual round count, which violates the experiment identity tuple. I could not find any committed round time equal to 61.670 ms. The TFLOP/s cell is internally consistent with the claimed GB/s (233.7 * 5.5327 * 2*26.9e9 / 14.412349e9 / 1000 = 4.827), so the whole error is in the round time, not in the FLOP formula."
+    }
+  ],
+  "ledger_quotes": {
+    "199A": "### 199(A) The master fact: a decode round is one weight pass at the roofline\n\nThe quantized byte census of the transformed checkpoint is exact, derived from the pinned geometry in `Sources/MLXFastTransform/Qwen35CheckpointValidation.swift:57-76` and the inventory builder at `:176-263`:\n\n| item | bytes |\n|---|---|\n| packed 4-bit weights | 13,446,676,480 |\n| scales + biases | 1,680,834,560 |\n| all quantized linears | 15,127,511,040 |\n| minus `embed_tokens`, which is gathered at decode and not streamed | **14,412,349,440** |\n\nE1 measured the depth-0 round at `C(0) = 65.0094 ms`, N=1530, sd 0.16 %.\n\n```\n14,412,349,440 B / 0.0650094 s = 221.70 GB/s\naskeladd E61 rung 1 measured peak = 227.90 GB/s\nutilisation = 97.3 %\n```\n\nA serial decode round is one streaming pass over the quantized weights running at 97.3 % of achievable DRAM bandwidth. Nothing inside the forward can be recovered by better arithmetic, better fusion, better evaluation boundaries, or better scheduling. **The only lever that exists on the target path is the number of weight streams per round.** That is exactly `ceil(M/IPG)`.\n\nThis retrospectively explains why every host-side, dispatch-side and evaluation-boundary direction in this campaign has returned a null or a sub-MDE result, and why the two QMV stream-count changes are the only large wins the campaign has produced.\n\nNote the scope. This is a statement about the target forward. It says nothing about the proposal head, the scheduler, or the ranked pinned serial leg, which the candidate cannot touch at all.",
+    "199A_source": "senpai/campaign-ledger.md:14300-14333",
+    "186D": "### 186(D) 🔴 The transfer law, stated so it can be falsified\n\n> The more a cost term is arithmetic-bound, the better it transfers to the ranked M5, and therefore the LESS a local reduction of it is worth at rank. A local win on a compute-bound or memory-traffic-bound term must be divided by up to **3.55**. A local win on a latency-bound or dispatch-bound term transfers at 1:1 or better, because the ranked leg is 2.9x shorter in wall time while host-side per-dispatch cost is roughly host-independent.\n\nThree independent measurements support it:\n\n1. Prefill (compute-bound) transfers at 7.58x; the depth-0 round transfers at 2.14x. Ratio **3.55x**.\n2. Fitting all eight prompts to the E1 ladder needs its slope scaled by `g` in **[0.7388, 0.7778]**: marginal drafting cost on M5, relative to its own depth-0 round, is **22-26 % cheaper** than on M4 Pro. Deeper drafting is more arithmetic per round, so it transfers better than the fixed part of the round - the same sign as (1). **The single-factor transfer is refuted calibration-independently: the joint `c1` band is empty by 10.12 %.**\n3. E27 cut QMV weight passes, a memory-traffic win: **-6.56 % locally**, then **-0.33 % of published score**, a 6.75-point sign flip. Under the law both halves point the same way, because the traffic saving is worth less on M5 while the register pressure it bought is occupancy-bound and worth more.\n\n**Immediate consequence.** E57 priced a dispatch at about **22 microseconds** (Arm B added 2226 SDPA dispatches for +0.27 % of local s/token). Arm A's 6163 SDPA dispatches are then about 136 ms: `0.74 %` of our 18.35 s local leg, which is why I dismissed it, but **`2.2 %` of the ranked `beagle` leg of 6.23 s**, or `2.0 %` of score after dilution - `7.1 sd`. And SDPA is one family of many. **Dispatch-count reduction is worth roughly 3x more at rank than locally, and the campaign has been pricing it locally.** Assigned as E58.",
+    "186D_source": "senpai/campaign-ledger.md:10468-10494",
+    "186D_partial_retraction": "senpai/campaign-ledger.md:11554-11562 records a self-audit finding an error inside 186(D)'s 'Immediate consequence' paragraph (ledger :10492-10496); senpai/campaign-ledger.md:11041-11068 (item 188(A)) shows the transfer multiplier is exactly R/tau and that 186(D) was wrong to group memory-traffic-bound with compute-bound in the /3.55 class. Do not cite the /3.55 divisor for QMV decode traffic without reading 188(A) and :13454."
+  },
+  "unverifiable": [
+    "Apple's published 614 GB/s memory bandwidth for the M5 Max 40-core 128 GB part. No occurrence of '614' as a bandwidth anywhere under senpai/, research/, docs/ or fixtures/. It is an external claim. The repo's own ranked-bandwidth record is research/ESTABLISHED_FACTS.md:69-71, 'achieves ~410-420 GB/s on the serial decode step', which is the same measurement expressed with the 15.14 GB byte count instead of the 14.412 GB streamed count: 15.13125e9 / 0.0369663 s = 409.3 GB/s. The two records agree once the byte basis is matched; only the peak denominator is external.",
+    "The ranked compute peak used for the ranked '% of compute peak' column. The two ranked cells imply 54.07 and 53.08 TFLOP/s. No peak-compute figure for the ranked host exists in the repo. The nearest recorded number is an ACHIEVED rate, 52.5 TFLOP/s for ranked 512-token prefill (senpai/campaign-ledger.md:10455), which would give 2.8 % and 9.2 % instead of the claimed 2.7 % and 9.1 %.",
+    "The exact ranked beagle round time of 61.670 ms that the 233.7 GB/s cell requires. No committed artifact contains it.",
+    "Whether the ranked serial leg's own prefill share was intended to be removed. The assignment's 390.0 GB/s only reproduces with K removed, but the assignment states no such correction; the raw pinned s/token gives 379.3 GB/s.",
+    "The 'activation bytes per row' term named in the task brief. No M-dependent byte term is used anywhere in the reproduction, and adding one makes the fit worse."
+  ],
+  "notes": "1) THE BYTES FIGURE IN THE BRIEF IS WRONG FOR THIS TABLE. The task brief names 'about 15.14 GB of 4-bit weights'. That figure does NOT reproduce any cell: 15.13125e9 / 0.0650094 s = 232.8 GB/s, which is 103 % of the measured 226.035 GB/s local peak, i.e. physically impossible. Every cell reproduces with W = 14,412,349,440 B, the ledger 199(A) census with embed_tokens removed. The 15.14 GB number is the parameter-count restatement at research/ESTABLISHED_FACTS.md:68 and is superseded for traffic accounting by the exact census.  2) BYTES ARE CONSTANT IN M, NOT LINEAR IN M. The brief proposes bytes ~= weight bytes + M * activation bytes. The reproduction needs a strictly constant W. Fitting an activation term to the published cells gives an incoherent, non-monotone result, so the assignment used a constant-byte 'one weight pass per round' model. That model is exactly what ledger 199(A) asserts and it is the reason the bandwidth column FALLS with M: the round gets longer while the modelled traffic is held fixed. The column is therefore an inverse-round-time index, not measured DRAM traffic. Under ledger 199(B) a real M=5 round streams TWO weight passes (shipped IPG {3,2}), so its true achieved bandwidth is roughly double the number in the table.  3) WHICH E1 ROUND TIMES. The table uses C0_M4 = 65.0094 ms (N=1530) plus the CUM_M4 ladder at research/e56_g_correction.py:13,16-18, NOT the C(d) values in research/results/qwen38-r1-e1-depth-cost-curve.md (C(0)=65.4693 ms pooled over N=5100; C(3)=91.8283, C(4)=117.4996, C(5)=135.9118). The two E1 variants differ by 0.7 % at d=0, 0.6 % at d=3, 2.6 % at d=4 and 0.9 % at d=5. Using the published E1 report values instead gives 220.1 / 157.0 / 122.7 / 106.0 GB/s, so the reproduction is sensitive to which E1 record is meant. The assignment should name research/e56_g_correction.py, not 'the E1 round times'.  4) THE RANKED SERIAL AND RANKED BEAGLE ROWS USE INCONSISTENT PREFILL TREATMENTS. The serial row removes the 526.6 ms seed-prefill charge (that is the only way to reach 390.0). The beagle row does not match either the prefill-removed round (53.347 ms, 270.2 GB/s) or the raw round (58.269 ms, 247.3 GB/s). Applying the same prefill-removed convention to both rows would move the beagle cell from 233.7 GB/s / 38.1 % / 4.83 TFLOP/s to 270.2 GB/s / 44.0 % / 5.58 TFLOP/s. That is a 15.6 % increase in the modelled beagle round throughput and it makes the ranked drafting round look CLOSER to the serial roofline, not further from it.  5) THE 233.7 CELL IS ALSO INCONSISTENT WITH THE LEDGER'S OWN TRANSFER BAND. Writing t_ranked(M) = t_ranked_serial * (1 + g * CUM_M4[M-1] / C0_M4), the claimed 61.670 ms needs g = 0.7147. The identified prefill-corrected band is g in [0.7388, 0.7778] (research/e56_g_correction.py:22, ledger 184 / 186(D) point 2). g = 0.7388 gives 62.503 ms -> 230.6 GB/s and g = 0.7778 gives 63.851 ms -> 225.7 GB/s. So no value inside the identified band produces 233.7 either.  6) IDENTITY-TUPLE HAZARD. research/ESTABLISHED_FACTS.md:77's 0.01308 s/token corresponds to raw = 0.0379948/0.01308 = 2.9048, which is the hypothetical 'raw >= 2.904' target set 14 lines earlier at :63. It is NOT the ca9251b8 beagle leg, whose raw is 3.12015 and whose s/token is 0.012177. Any cell built from 0.01308 combined with beagle's 107 rounds or 5.5327 mean width mixes two different legs.  7) WHAT IS SOLID. The local half of the table is fully reproducible and internally consistent to better than 0.3 % on every cell, from three committed sources: the E63 roofline peaks, the ledger 199(A) byte census, and the e56 E1 ladder. The FLOP model 2 * 26.9e9 * M reproduces all seven TFLOP/s cells on both hosts. The ranked serial GB/s reproduces to 0.03 %. Only the ranked beagle round time and the two external peak denominators fail."
+}
