@@ -447,7 +447,7 @@ private func loadPromptTokens(_ path: String) throws -> [Int] {
         let prompt = first["prompt_tokens"] as? [Int],
         let expected = first["expected_tokens"] as? [Int]
     else {
-        throw MLXFastError.invalidInput("E71: \(path) is not a correctness prompt fixture")
+        throw E71Failure("E71: \(path) is not a correctness prompt fixture")
     }
     return prompt + expected
 }
@@ -478,13 +478,17 @@ private func e71GPUTemperature() -> Double? {
     return nil
 }
 
+private struct E71Failure: Error, CustomStringConvertible {
+    let description: String
+    init(_ description: String) { self.description = description }
+}
+
 private func describeE71Device() -> [String: Any] {
-    var info: [String: Any] = [:]
-    let device = MLX.GPU.deviceInfo
-    for key in ["architecture", "device_name", "max_recommended_working_set_size"] {
-        if let value = device[key] {
-            info[key] = "\(value)"
-        }
-    }
-    return info
+    let device = MLX.GPU.deviceInfo()
+    return [
+        "architecture": device.architecture,
+        "max_buffer_size": device.maxBufferSize,
+        "max_recommended_working_set_size": Int(device.maxRecommendedWorkingSetSize),
+        "memory_size": device.memorySize,
+    ]
 }
