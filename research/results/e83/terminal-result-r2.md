@@ -1,7 +1,8 @@
 # E83 r2 terminal result — submission handoff
 
 The r2 revision is complete. The typed submission could not be published,
-because every typed GitHub operation returned `HTTP 403` from 20:35Z onward:
+because every typed GitHub operation returned `HTTP 403` from about 20:27Z
+onward, on four attempts:
 
 ```
 get_prs                  -> GitHub GET /repos/morganmcg1/qwen38-challenge_senpai/pulls/85 returned HTTP 403
