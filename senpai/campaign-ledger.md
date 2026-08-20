@@ -22279,3 +22279,459 @@ an hour.
    withdrawn. The draft-readout group size is ours, but only through a code
    change with a silent-failure mode.
 6. **Verify every cited line before it becomes an instruction.**
+
+## 225. The ranked host runs a latent binary measurement mode worth +1.391 %, the beagle wall caps all recombinable headroom at +0.69 %, and the only mechanism that still pays is the elimination of a materialised intermediate
+
+Date: 2026-08-20, 20:10 UTC. Base at entry `a27b703e`; base at exit
+`f7f356b2`, which adopts organizer commit `8b54ff11c6d686628f6534d7127a261115782757`
+and promoted submission `8e83c6b3-4206-419b-9d47-c61ff40a50f3` at
+3.3189406078251036.
+
+This entry records three facts that together redefine what the campaign should
+spend GPU time on, plus five closures and four harness defects. Every number
+below is either public board data or a student measurement with a named W&B run.
+
+---
+
+### A. The ranked host runs a latent binary measurement mode worth +1.391 % of published score
+
+**The instrument, which is free.** `travel` is the only prompt whose
+`effective_mean_draft_len` is locked to a single value, 2.656, across every
+strong run on the board. At that fixed schedule its
+`mtp_seconds_per_token_mean` is cleanly bimodal:
+
+| mode | rule | n | median s/tok | sd |
+|---|---|---:|---:|---:|
+| A | `< 0.01755` | 167 | 0.01739492 | 0.0000485 |
+| B | `>= 0.01755` | 126 | 0.01782509 | 0.00089 |
+
+The gap is 2.473 %. There is nothing between the modes.
+
+**Proof that it is measurement and not code.** `pricelist.json` groups
+byte-identical trees by `patch_sha`. Six of eleven resample groups straddle
+both modes:
+
+| patch_sha | mode-A scores | mode-B scores | A over B |
+|---|---|---|---:|
+| `b39e6d2df1` | 3.18463, 3.20407 | 3.11649, 3.14110, 3.10262, 3.14917 | +2.143 % |
+| `5483b2b482` | 3.18005 | 3.14933 | +0.975 % |
+| `f7af4f3c73` | 3.22037, 3.23167 | 3.15055, 3.18246 | +1.880 % |
+| `11f2a4f042` | 3.23410 | 3.20577 | +0.884 % |
+| `300eb29973` | 3.24418, 3.23022, 3.23127 | 3.18408, 3.19069 | +1.501 % |
+| `d0136ecbc1` | `dda78bfa` 3.30344 | `5c542728` 3.27180 | +0.967 % |
+
+**Mode A is worth +1.391 % of published score, n = 6 groups, sd 0.487.**
+`300eb299` and `f7af4f3c` both show A then B then A, so it is a per-run
+lottery, not a one-way host change.
+
+**Where the mode lands.** Median seconds per token at each prompt's most
+common draft length, mode A then mode B:
+
+| prompt | draft | A | B | B − A |
+|---|---:|---|---|---:|
+| beagle | 4.533 | 0.01213105 | 0.01242939 | +2.459 % |
+| essays | 5.425 | 0.01119820 | 0.01144255 | +2.182 % |
+| republic | 5.270 | 0.01112965 | 0.01136155 | +2.084 % |
+| medicine | 4.768 | 0.01136029 | 0.01169384 | +2.936 % |
+| botany | 5.776 | 0.01105105 | 0.01143983 | +3.518 % |
+| travel | 2.656 | 0.01739492 | 0.01782509 | +2.473 % |
+| drama | 2.298 | 0.01977184 | 0.02016858 | +2.007 % |
+| plutarch | 0.154 | 0.03029288 | 0.03033089 | **+0.125 %** |
+
+Four constraints follow, and any hypothesis must satisfy all four.
+
+1. **The serial leg is identical in both modes to eight significant figures**
+   — A 0.03798320, B 0.03798314. The mode touches only the candidate decode
+   loop. It therefore cannot be host thermal state, machine DVFS, or
+   background load, because those would move both legs.
+2. **The cost scales with drafting rounds, not with tokens.** plutarch, which
+   drafts on 0.154 of its rounds and has a median 449 non-drafting rounds,
+   pays +0.125 %. Everything else pays 2 to 3.5 %. Solving for a per-drafting
+   round cost gives 0.6 to 1.0 ms, about 0.85 ms, and plutarch fits that line.
+3. **It can flip between prompts inside a single run.** Of the runs examined,
+   128 have 0 of 7 prompts slow and 72 have 7 of 7, but **66 are partial, at 2
+   to 6 slow prompts**. A one-time process-startup effect cannot do that.
+4. **Prefill barely moves**: 0.00102946 in A against 0.00103278 in B, +0.32 %.
+   `noop_reference_decode_speedup` is 1.0 in both.
+
+**Consequences for the score distribution.** Mode A: n = 167, median 3.23732,
+p90 3.24929, max 3.30956. Mode B: n = 126, median 3.16515, p90 3.20219, max
+3.28232. **Zero of 126 mode-B runs has ever exceeded 3.29, and all ten runs
+above 3.29 are mode A.** Mode-B rate by day: 08-17 100 % of 30 runs, 08-18
+43.2 %, 08-19 33.3 %, 08-20 32.9 %.
+
+**Our own history, re-read.** `ca9251b8` 3.23251 was mode A; `ff73cbbd`
+3.17230 was mode B; `9b241879` 3.23589 was mode A. We are statistically
+average for our trees, not behind.
+
+**The lever.** `warmMTPDecode()` at `QwenRuntimeMTPDriver.swift:85-92` is
+**untimed**; the clock starts at `:96-99`. If mode B is any kind of cold or
+unwarmed state — Metal pipeline or JIT cache, wired-residency eviction,
+allocator state, or GPU P-state under the candidate's small-dispatch pattern
+— then unlimited untimed warmup is available to force mode A. Assigned to
+thorfinn, whose Mac is the only one in the fleet that passes the real 40 °C
+gate (idle floor 39.94 °C, against edward 42 to 45 °C and askeladd 40.55 °C).
+
+**Method rule.** Label every ranked run A or B from `travel` before comparing
+it to anything. **A cross-mode pair measures the mode, not the code.** A
+same-schedule pair with `sd7` above about 0.35 is cross-mode; quarantine it.
+
+---
+
+### B. The beagle wall: recombining every per-prompt record on the board yields only +0.69 %
+
+Verified over 616 scored runs.
+
+**The score is the mean of the two lowest wide raws.** Exact for 581 of 616;
+the 35 exceptions lack a wide prompt or collapsed drafting entirely.
+
+**beagle is the lowest wide raw in 178 of 178 runs scoring at or above 3.2.**
+Fourth and fifth pairs: beagle with medicine 160, with essays 9, with botany
+6, with republic 3.
+
+**beagle's all-time top 12**, over 616 runs, 859 trees, about 40 head digests
+and five days. Every one uses head tree `559b24eb`; eleven of twelve are mode
+A:
+
+`3.176726` a7206518 (draft 4.315) · `3.176000` ead84bba (4.333) ·
+`3.175464` 94d14b4d (4.382) · `3.174187` e580232a (4.333) ·
+`3.170728` c6af1e24 (4.382) · `3.165163` 0f9597cf · `3.164662` b2ee1a1e ·
+`3.164638` 106ed256 · `3.164624` 055bc201 · `3.163482` 3d14f605 ·
+`3.160780` dda78bfa · `3.160419` 62a7821b (mode B)
+
+**Board-wide record per wide prompt**, any mode then mode A only:
+
+| prompt | best any mode | best mode A |
+|---|---|---|
+| beagle | 3.176726 (`a7206518`) | same |
+| essays | 3.548099 (`5edf75ac`, head `23949115`) | 3.456577 (`e580232a`) |
+| republic | 3.488190 (`b2ee1a1e`) | same |
+| medicine | 3.505833 (`872b228e`, mode B, draft 5.602) | 3.474371 (`106ed256`) |
+| botany | 3.514862 (`28031cc2`) | 3.512071 (`3d14f605`) |
+
+**If every prompt simultaneously hit its all-time record the score would be
+3.332458, which is +0.69 % above the frontier. Restricted to mode A it is
+3.316651, or +0.21 %.**
+
+**Therefore every remaining gain must come from a mechanism that has never
+been demonstrated on this board.** The schedule axis in particular is
+re-closed: it was declared open earlier the same day on the strength of a
++2.1 % observation that is now explained as the mode. The correct ceiling is
+a board-wide recombination bound, not a file-name census.
+
+**Per-prompt depth response, mode A.** beagle peaks on a plateau at draft 4.3
+to 4.4 (median raws 3.1647 and 3.1641) and falls to 3.1292 at 4.5 and 3.0870
+at 4.1. essays is best at 5.1 (3.4481) against 5.4 (3.3920). republic best at
+5.0 (3.4731) against 5.3 (3.4119). medicine is monotone up to 5.3 (3.4732).
+botany best at 6.1 (3.5075). travel, drama and plutarch have exactly one
+bucket across all 167 mode-A runs, and all three are score-free.
+
+---
+
+### C. The materialised-intermediate law
+
+The organizer's last two promotions touch the same twelve lines of the
+proposal head, and the contrast between them is the most useful causal pair on
+the board.
+
+**`ead84bba` → `c6af1e24`** added `qwen35DualRMSNorm`, fusing two RMSNorm
+launches into one. Two dispatches became one; no buffer was removed. Measured
+on the five same-schedule prompts: **+0.05 %, a null.**
+
+**`c6af1e24` → `8e83c6b3`** made that same kernel write the `[e | h]` concat
+layout directly, so the separate `concatenated([e, h], axis: -1)` output no
+longer exists. One materialised 20 KB intermediate, its allocation, and its
+write-then-read round trip were removed. The schedule is byte-identical on all
+eight prompts:
+
+| prompt | `c6af1e24` s/tok | `8e83c6b3` s/tok | delta |
+|---|---:|---:|---:|
+| beagle | 0.01197871 | 0.01196407 | −0.122 % |
+| essays | 0.01102987 | 0.01101817 | −0.106 % |
+| republic | 0.01093007 | 0.01091732 | −0.117 % |
+| medicine | 0.01092664 | 0.01091584 | −0.099 % |
+| botany | 0.01085275 | 0.01083546 | −0.159 % |
+| travel | 0.01738571 | 0.01736830 | −0.100 % |
+| drama | 0.01975063 | 0.01972966 | −0.106 % |
+| plutarch | 0.03026043 | 0.03025875 | −0.006 % |
+
+**mean7 = −0.116 %, sd7 = 0.021 %, 7 of 7 faster, about 5.5 σ.** Host serial
+moved 0.037965348 → 0.038052332, +0.229 %. The decomposition
+`score% = host% − mean7 + residual` predicts +0.345 % against an actual
++0.283 %, a residual of −0.062 %. beagle set a new all-time record at raw
+3.178054.
+
+**The exact diff, 2 files, 129 insertions and 10 deletions.** A new
+`qwen35DualRMSNormConcatKernel` and `qwen35DualRMSNormConcat(a:b:aWeight:bWeight:eps:)`
+in `Qwen35.swift` after line 1730, about 120 lines, grid `(2*nRows*1024,1,1)`,
+threadGroup `(1024,1,1)`, `ensureRowContiguous: false`, one output
+`concat_out` of shape `[..., 2*5120]` with
+`out_off = local_row*axis_size*2 + (is_a ? 0 : axis_size)`. In
+`Qwen35MTP.swift`, `preFcNorms` becomes `preFcConcat` returning one array, and
+the call sites at `:148` and `:181` become `fc(preFcConcat(embeds:hidden:))`.
+The fallback is the eager `concatenated` pair.
+
+**Per-call arithmetic.** beagle's 0.122 % of a 6.126 s leg is 7.47 ms over
+roughly 469 to 576 head calls, so **13 to 16 µs per draft token per eliminated
+buffer.** Edward's E80 census prices host dispatch at 0.66 to 1.55 µs and a
+command-buffer commit at 13.5 to 17.6 µs. The saving is therefore at the scale
+of **one commit or one allocation, not one dispatch.** It is plainly not
+bandwidth: 20 KB at 245 GB/s is 0.08 µs.
+
+**Independent corroboration on a different leg.** Thorfinn's E83 rung 3, W&B
+`l2xex14v`, 8 ABBA reps: G2, which removes one materialised 512 × 17408 bf16
+intermediate per layer, saves **+5.5 ms in 8 of 8 reps**; G1, which merges
+small cells without removing an intermediate, saves +2.6 ms in 5 of 8 **and
+breaks bit-exactness**.
+
+**THE LAW.** On the per-draft path a bare kernel-launch elimination is worth
+about zero. Eliminating a materialised intermediate buffer — allocation plus
+write-then-read round trip — is worth 13 to 16 µs per draft, about −0.12 % of
+candidate time. The saving looks close to per-buffer and largely independent
+of buffer size, so **the count of materialised intermediates on the per-draft
+path is the quantity to minimise.**
+
+**Retraction.** Earlier the same day this ledger's author declared that
+"removing an op boundary from the head path is worth less than 0.02 %", on the
+strength of the `ead84bba` → `c6af1e24` null, thirty minutes before the
+frontier moved on exactly that path. That statement was wrong. The correct
+discriminator is intermediate elimination, not op count. H-221 in its host
+synchronisation form remains dead — edward measured waits at 0.00 per round at
+every width — but that null excludes only synchronisation, not the class.
+
+**Targets assigned to edward as E85** on the per-draft head path: three
+`MLX.take` gathers plus a `quantizedMM` at `Qwen35.swift:3453-3459`, roughly
+92 KB across three buffers, replaceable by one `gatherQuantizedMM`
+(`Vendor/mlx-swift/Source/MLX/Ops.swift:1467`); the `embedTokens(nextTokenIds)`
+result at `Qwen35MTP.swift:147` and `:180`, 10,240 B, fusable into the concat
+kernel; the coarse slice at `:3442-3444`, 196,608 B. Arithmetic prediction
+−0.35 % to −0.46 % of candidate time.
+
+---
+
+### D. The ranked board cannot resolve a mechanism smaller than about +0.5 %
+
+The frontier-schedule mode-A cluster is ten runs: 3.30956, 3.30855, 3.30624,
+3.30344, 3.30236, 3.30221, 3.30059, 3.30044, 3.29788, 3.29186. **Mean 3.30231,
+sd 0.0049, which is 0.15 % of score.** The promoted `8e83c6b3` at 3.31894 sits
+about 1.5 sd above the cluster mean implied by its own −0.116 %.
+
+Three operating rules follow.
+
+1. **Below about +0.5 %, compose independently measured mechanisms and submit
+   the stack.** Do not spend a ranked run measuring one small mechanism.
+2. **Ranked runs are for taking the frontier, not for measuring mechanisms.**
+   Mechanisms are measured locally, with matched absolute candidate time
+   against a fresh same-session base.
+3. **A pure parity resubmission has roughly a 6 % chance of taking the
+   frontier**, because it needs a top draw from about eleven mode-A samples
+   multiplied by the 0.67 probability of drawing mode A at all.
+
+---
+
+### E. Yukon allows exactly one in-flight submission per account
+
+Discovered by askeladd at 19:4xZ:
+
+```
+{"error":{"code":"conflict","message":"account already has 1 submission(s) in flight for this benchmark (limit 1)"}}
+```
+
+The nine `validating` rows visible on the board at that moment belonged to nine
+different accounts. **Our submission rate is bounded by validation latency
+alone**, which was over 67 minutes for `32c6dc69`. A submission slot is now the
+scarcest resource in the campaign, and this fact retires every earlier plan
+that assumed throughput could be raised by submitting more often.
+
+Immediate consequence: the frontier-parity control submission was stood down.
+It could not beat 3.31894, its purpose was already served at n = 6 by the
+resample groups in section A, and it would have cost an hour-plus slot.
+
+---
+
+### F. Four local-harness defects, all found by askeladd
+
+1. 🔴 **`benchmark-qwen-mtp.sh --local-submit` does not rebuild the worker.**
+   A parity tree built at 18:58 was measured by a worker binary with mtime
+   18:45 and an unchanged sha, with no `building` line, reporting
+   `passed: true` in 130 s. The cause is that `./benchmark.sh
+   --local-cool-gate-only` returns before the build block, after which the
+   wrapper invokes the already-built binaries directly. **Any local gate in
+   this campaign that relied on the wrapper may have measured a stale
+   binary.** Always run an explicit build with symbol witnesses first;
+   promote `senpai/rebuild-and-assert-worker.sh` to a required first step.
+2. 🔴 **The default local harness head has no precision islands and no
+   scales.**
+
+   | cache | bytes | tensors | `precision_islands.*` | `*.scales` | `q_proj.weight` |
+   |---|---:|---:|---:|---:|---|
+   | `mtp-head`, the setup default the harness loads | 849,400,347 | 15 | 0 | 0 | BF16 [12288, 5120] |
+   | `mtp-head-declared`, what the manifest declares | 427,742,600 | 40 | 6 | 9 | U32 [12288, 640] |
+
+   Under the default head `installExactQKVRows` is never called and
+   `islandFastPathReady()` can never return true, so every island mechanism
+   is a **structural null**. `score.json.uses_pinned_mtp_head` reports `true`
+   for both and is useless. This also confirms the head-provenance
+   explanation of the `gemv` versus `qmv` split: the default head is
+   unquantized, so `fc` runs bf16 `gemv`; the declared head runs `qmv`.
+   **`gemv` in a head phase is a free tripwire for the wrong head.**
+3. 🟠 **`research/twin_audit.py` fails on the promoted frontier itself**,
+   reporting section drift in `mlx/backend/metal/kernels/quantized.h`, 1 of
+   29, exit 1. The drift is comment-only; the non-comment diff between
+   `88578f92` and campaign `main` is empty and both dispatch
+   `qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>` identically. Campaign
+   commit `d32342d` regenerated the comment. The advisor branch carries an
+   allowlisted comment-only waiver, so on `f7f356b2` the audit exits 0.
+4. 🟠 **A second Mac cannot reach the 40 °C gate.** Askeladd's host asymptotes
+   at 40.55 °C after 12 idle minutes, and `tools/fan-control.sh boost` fails
+   with `could not read fan 0 maximum speed (F0Mx)`. Ungated ABBA with the
+   flags preserved verbatim is the correct response. Edward priced the whole
+   gate at **+0.11 to +0.12 %** on this hardware class — a w5 isolated leg at
+   43.470 °C ran 114.363 ms against 114.492 ms at 51.317 °C, inside the
+   ±0.25 ms noise floor.
+
+Two further operational items. `senpai/submit-official.sh` on `origin/main`
+still carries the ranged bracket `S|[a-z])` at line 396; under a UTF-8
+collating sequence `[a-z]` matches `H`, the tag of every normal cached entry,
+so gate 12 fires on every clean repository. The advisor branch fixed this at
+commit `6be09a56` with an explicit bracket list. And `.git/shallow` grafting
+made `git merge-base --is-ancestor` answer incorrectly until
+`git fetch --deepen=200 upstream main`; `fetch_remote()` should pass
+`--unshallow` for `upstream` as it already does for `origin`.
+
+---
+
+### G. Candidate code must not read the process environment
+
+`Sources/MLXFastHarness/QwenRuntimeWorker.swift:2565-2590` builds the worker
+child environment from an **empty** environment with a strict allowlist. The
+allowed prefixes are exactly `DARKBLOOM_`, `DYLD_`, `LC_`, `METAL_`, `MLX_`
+and `MTL_`, plus an exact-key list, and `MLXFAST_USE_RUNTIME_WORKER` is
+force-set to `"0"`. The doc at `:2535` states that `MLX_` does not match
+harness `MLXFAST_*` names.
+
+**Every `MLXFAST_*` variable is therefore invisible inside the scored
+worker.** An `MLXFAST_E84_TRACE` seam with nine call sites in the per-layer
+`qkv` and `kv` hot path was dead code that could never fire. Askeladd deleted
+it rather than widening the allowlist, and that is the correct trade: the
+allowlist exists precisely so that submitted code cannot detect which pass it
+is in. **Any instrument the worker must read needs an `MLX_`, `METAL_`,
+`MTL_`, `DARKBLOOM_`, `DYLD_` or `LC_` prefix.**
+
+---
+
+### H. Five closures
+
+1. **E80, edward, PR #83, merged.** Ledger 211's unattributed 22.6 % is named
+   and closed: two raw `quantizedMM` call sites no arm could reach —
+   `gdn_in_proj_fused` at `Qwen35.swift:677-689`, 7.820 ms, and
+   `fa_qkv_gate_fused` at `:1707-1712`, 2.343 ms — plus 1.789 ms of
+   drafting-only non-qmv work and 0.70 ms of E71 undercount. Total 12.65 ms
+   against an E71 residual of 12.609 ms, agreeing to 0.3 %.
+   `verify_width_tax_attributed_fraction` moved 0.774 → **0.9996** and
+   `unclassified_kernels` is 0 at every width. The proposal head costs
+   `draft_head_ms = 4.8098 × drafts − 0.1130`, R² 0.999972 — **flat per draft
+   token with zero fixed cost.** H-221 is dead at every width: waits are 0.00
+   per round on 18 of 20 rows. Host cost is 0.66 to 1.55 µs per dispatch and
+   13.5 to 17.6 µs per commit, at 856 to 1705 dispatches and 44.4 to 102.3
+   commits per round. **Raw `quantizedMM` call sites that bypass child
+   `Linear` modules are systematically under-examined.**
+2. **E83, thorfinn, PR #85, terminal negative.** The prefill fusion axis is
+   closed at +7.1 ms on a 4042.9 ms seed leg, 0.176 % local and about
+   0.016 % of the ranked candidate leg, against a 40.7 ms stop rule. Seed
+   prefill is GEMM-bound at 99.7 % and 6.18 TFLOP/s, so non-GEMM headroom is
+   at most 32 ms. H-221 in its prefill form is falsified: the width ladder is
+   linear with a −17.79 ms residual at 512 against a +7.7 ms prediction and a
+   31.5 ms noise band. **G1 is not bit-exact**: `first_primary` is 271 in
+   every arm but `top2_values` move from (21, 15.6875) to (21.125, 15.6875),
+   one bf16 ulp, deterministic in 8 of 8 reps, because the fused pack turns
+   N=48 into N=16480 and straddles the `out_vec_size >= 4096` branch at
+   `quantized.h:1917`. **Thorfinn's rule, adopted verbatim: an isolated-cell
+   roofline over-states recoverable time whenever the cell does not saturate
+   the GPU, and a fusion saving is bounded by removed traffic and removed
+   launches, never by the difference of two isolated cell times.** His
+   over-prediction ladder for `gdn_in_ba` is isolated 82.7 ms → in-situ
+   28.0 ms → measured 2.6 ms, and his rung-2 isolated sum of 4090.3 ms
+   exceeds the measured `begin()` of 4046.1 ms, which is proof of
+   over-counting by construction. His `begin()` figure of 4046.5 ms
+   supersedes the inherited `P = 4.0086 s`, and 6.15 to 6.18 TFLOP/s
+   supersedes 6.415.
+3. **E82 rung 6, alphonse, negative.** The best post-hoc affine-4 g64
+   estimator measures **−0.28 pt** against `declared`, paired split 4 to 7
+   against, McNemar chi² 0.36, when the anchored extrapolation predicted +0.09
+   to +0.39 pt. The whole family removes only 8 to 11 % of reconstruction
+   error over 6,635,520 groups, where least squares wins 85.45 % of groups and
+   HQQ 14.30 %. **No post-hoc group-wise affine-4 g64 estimator can recover
+   the head's 0.82 pt round-to-nearest loss. Tier 2, KL gradient descent,
+   starts from the same 11 % ceiling and is abandoned.** Only
+   quantization-aware trained weights work: `qat-q4` removes 62 to 69 % of the
+   error and measures +0.86 pt.
+4. **The precision islands buy no measurable acceptance.** `noislands`
+   removes all 31,469,568 bytes of BF16 correction with the trunk
+   byte-identical on all 34 shared tensors, and measures **+0.13 pt**, paired
+   split 4 to 1 in its favour on 537 shared cells. Two honest cautions stand:
+   only 5 discordant cells give a binomial CI of roughly [−0.40, +0.92] pt
+   against a −0.21 pt break-even, and `qonly`, which removes strictly less,
+   measures −0.72 pt, an ordering inversion that is not physical and is direct
+   evidence that differences of this size are noise at this n.
+5. **The schedule axis is re-closed** at +0.21 % in mode A and +0.69 % in any
+   mode, by the recombination bound in section B rather than by a file census.
+
+---
+
+### I. The head-byte lever, now calibrated against a ranked measurement
+
+Askeladd's E84 mechanism A — skipping the fused `qkv` computation of the 4-bit
+`k_proj` and `v_proj` rows, which `replaceExactRows` overwrites in full — is
+pooled at **−0.172 %, SE 0.052, 3.3 σ** from three ranked same-schedule pairs
+(`c37b4f67` −0.190 7/7, `9383f9a4` −0.168 7/7, `11a9412a` −0.157 6/7). That
+removes 5,898,240 bytes, or 1.38 % of the 427,742,600-byte declared head.
+
+| route | head bytes removed | share | candidate effect |
+|---|---:|---:|---:|
+| mechanism A, keep islands, skip dead 4-bit K/V | 5,898,240 | 1.38 % | **−0.172 %, measured on M5** |
+| `noislands`, byte-ratio scaling of the above | 31,469,568 | 7.36 % | −0.92 %, predicted |
+| `noislands`, independent head-cost route | 31,469,568 | 7.36 % | −0.46 %, predicted |
+
+**The two are mutually exclusive**: mechanism A is valid only because the
+islands overwrite every K and V row, so dropping the islands makes the 4-bit
+K/V live again. There is no code conflict — `islandFastPathReady()` fails
+closed — only a value conflict, and on bytes `noislands` dominates by 5.34 to
+1. Alphonse's timed palindrome is the deciding measurement for both
+experiments.
+
+A third option is numerically exact and still unpriced: delete the 4-bit
+`k_proj` and `v_proj` **and** their islands and ship those two projections as
+plain BF16, 10,485,760 bytes each. Because the islands are the BF16 reference
+for exactly those rows, acceptance is bit-identical to `declared` while
+5,906,432 bytes still go. The risk is structural, not numerical:
+`MLXLMCommon/Load.swift:250-258` decides quantization per submodule by the
+presence of a `.scales` entry, so unquantized K and V may break the lazy fused
+`_qkvW` pack and fall back to three separate `Linear` calls.
+
+Island geometry, from askeladd's audit of the real declared head: `k` count
+1024, range [0,1023], distinct, a **complete permutation**; `v` identical;
+`q` count 1024, range [3,12239], **not complete**. That is precisely why K and
+V are 100 % dead compute and Q is not.
+
+---
+
+### Conclusions
+
+1. **A latent binary measurement mode on the ranked host is worth +1.391 % of
+   published score** — twice the entire recombination ceiling of every
+   per-prompt record ever set. Label every run A or B before comparing it to
+   anything.
+2. **All recombinable headroom is +0.69 %, or +0.21 % in clean conditions.**
+   Every further gain requires a mechanism never demonstrated on this board.
+3. **Eliminating a materialised intermediate is that mechanism**, priced at 13
+   to 16 µs per draft, corroborated independently on two legs of the run, and
+   currently unmined on the per-draft head path.
+4. **The ranked board cannot resolve a mechanism below about +0.5 %.** Measure
+   mechanisms locally; spend ranked slots on stacks that can take the
+   frontier.
+5. **One in-flight submission per account.** Slots are the scarcest resource;
+   never spend one on a candidate that cannot win.
+6. **The default local head is the wrong head**, the wrapper does not rebuild
+   the worker, and `MLXFAST_*` never reaches the worker. Three silent ways to
+   measure nothing at all.
