@@ -1,8 +1,11 @@
-# E83 r2 terminal result — submission handoff
+# E83 r2 terminal result — submission payload
 
-The r2 revision is complete. The typed submission could not be published,
-because every typed GitHub operation returned `HTTP 403` from about 20:27Z
-onward, on four attempts:
+This file records the exact payload the r2 submission carries.
+
+## The GitHub 403 window, for the record
+
+Every typed GitHub operation returned `HTTP 403` from about 20:27Z, on seven
+attempts across a controller-turn boundary:
 
 ```
 get_prs                  -> GitHub GET /repos/morganmcg1/qwen38-challenge_senpai/pulls/85 returned HTTP 403
@@ -12,11 +15,11 @@ curl with $GITHUB_TOKEN  -> HTTP 401 Bad credentials
 git ls-remote origin     -> works
 ```
 
-`get_prs` succeeded at 20:13Z at the start of this same session, so the
-credential expired mid-session. This is the same failure qwen-edward recorded
-for PR #83 in `research/e80-artifacts/terminal-result.md`.
-
-This file records the exact payload so a retry needs no re-derivation.
+`get_prs` succeeded at 20:13Z at the start of that session, so the credential
+expired mid-session and recovered later without any action here. This is the
+same failure qwen-edward recorded for PR #83 in
+`research/e80-artifacts/terminal-result.md`. No shell push and no shell GitHub
+mutation was attempted during the window.
 
 ## Submission identity
 
@@ -30,12 +33,12 @@ This file records the exact payload so a retry needs no re-derivation.
 | `assignment.revision_id` | `r2` |
 | `assignment.student` | `qwen-thorfinn` |
 | `status` | `succeeded` |
-| base | `f7f356b2834518ced918f3049ca1b88afb6003f3` |
+| base | `07c75a708c2347021d3148d7bc87b246ba2aec73` |
 
-`expected_head_sha` and `commit_sha` must both equal the commit that adds this
-file. Resolve it with `git rev-parse HEAD` and re-read
+`expected_head_sha` and `commit_sha` both equal the final commit of this
+branch. Resolve it with `git rev-parse HEAD` and re-read
 `git ls-remote origin refs/heads/qwen-thorfinn/e83-prefill-decomposition`
-before the retry, because the remote head may have moved.
+before any retry, because the remote head may move.
 
 ## Primary metric
 
@@ -62,11 +65,11 @@ isolated-cell roofline can locate; specifically the two GDN/MLP fusion bounds
 (G1 in_proj 9->512, G2 gate_up 16->512) should recover about 115 ms of the
 ~4043 ms seed leg.
 
-## Summary (verbatim, 3.9 kB, fits the 4000-character field)
+## Summary (verbatim, 3626 characters, fits the 4000-character field)
 
 NEGATIVE / CLOSED. The two assigned prefill fusion gates recover +7.1 ms of a 4042.9 ms seed leg (0.176% local, ~0.016% of the ranked candidate leg) against a stop rule of 40.7 ms. The isolated-cell roofline predicted 115 ms, so it over-predicted by 16x. Nothing in E83 should be submitted. Detail: PR comment 5360553157 and research/results/qwen38-r1-e83-prefill-decomposition.md.
 
-R2 REVISION, no GPU work; every measurement below is unchanged. Revert ad19b2f takes the rung-3 instrument out of Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift, and the branch is rebased onto f7f356b2834518ced918f3049ca1b88afb6003f3, so `git diff f7f356b2 HEAD -- Sources/ Vendor/ mtp-head.manifest.json` prints nothing. The branch changes no candidate byte. Gates on the rebased tree: rebuild-and-assert-worker.sh PASS (worker db0dcafe; require qwen35DualRMSNormConcat=14, forbid the 3 instrument symbols=0, two-sided against stale worker 70693f8f which reports the exact inverse); swift test 705 tests / 53 suites / 40 issues / the same 9 known names; twin_audit.py exit 0, 29 twins, 1 waiver; check-editable-budget.sh 770a3ff2 exit 0, growth 29980/262144 all organizer and 0 from E83; verify-ranked-score-boundary.sh PASS. Instrument preserved at 7ef3f15 and 1b9b0af.
+R2 REVISION, no GPU work; every measurement below is unchanged. Revert 313fd74 takes the rung-3 instrument out of Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift, and the branch is rebased onto advisor head 07c75a708c2347021d3148d7bc87b246ba2aec73, so `git diff 07c75a70 HEAD -- Sources/ Vendor/ mtp-head.manifest.json mtp-head/` prints nothing. The branch changes no candidate byte. Gates on the rebased tree: rebuild-and-assert-worker.sh PASS (worker db0dcafe; require qwen35DualRMSNormConcat=14, forbid the 3 instrument symbols=0, two-sided against stale worker 70693f8f which reports the exact inverse); swift test 705 tests / 53 suites / 40 issues / the same 9 known names; twin_audit.py exit 0, 29 twins, 1 waiver; check-editable-budget.sh 770a3ff2 exit 0, growth 29980/262144 all organizer and 0 from E83; verify-ranked-score-boundary.sh PASS. Sources/, Vendor/ and Package.swift are byte-identical at f7f356b2, at 07c75a70 and at this head, so the worker and swift test gates carry to the final head. Instrument preserved at 7ef3f15 and e277761.
 
 RUNG 3 (W&B l2xex14v, 8 ABBA reps x 4 arms, 0 expectation failures). Arm medians ms: baseline 4042.9, g1 4041.7, g2 4037.0, g1g2 4036.5. Paired saving: g1 +2.6 ms (5/8 reps faster), g2 +5.5 ms (8/8), g1g2 +7.1 ms (7/8).
 
@@ -84,10 +87,11 @@ Follow-ups: (a) attack the 6.18 TFLOP/s quantized GEMM path at M=512, not the fu
 
 ### (a) The candidate-surface instrument is out
 
-Revert commit `ad19b2f` removes the three `nonisolated(unsafe)` globals, the two
+Revert commit `313fd74` removes the three `nonisolated(unsafe)` globals, the two
 comparisons that read them at `Qwen35.swift:1031` and `:1322`, and the three
 `qwen35FusedPackBuildCount` increments. `Qwen35.swift` is byte-identical to the
-base, and `git diff f7f356b2 HEAD -- Sources/ Vendor/ mtp-head.manifest.json`
+base, and
+`git diff 07c75a70 HEAD -- Sources/ Vendor/ mtp-head.manifest.json mtp-head/`
 prints nothing.
 
 Two consequences, both recorded in the write-up:
@@ -101,14 +105,18 @@ Two consequences, both recorded in the write-up:
    +2.6 / +5.5 / +7.1 ms paired medians, same one-ulp G1 verdict.
 
 Replay commits: `7ef3f15` is the instrument as measured on the r1 base;
-`1b9b0af` is the same instrument replayed onto this base by the rebase.
+`e277761` is the same instrument replayed onto this base by the rebase.
 
 ### (b) Rebase
 
+Two steps, both clean and without conflict. Step one is
 `--onto f7f356b2834518ced918f3049ca1b88afb6003f3` from the old merge base
-`117e5bb5`. Clean, no conflict. The organizer concat block lands near line 1736,
-far from every E83 region. The assignment-marker merge commit is flattened, so
-the history is linear.
+`117e5bb5`. It flattens the assignment-marker merge commit, so the history is
+linear. Step two is `--onto 07c75a708c2347021d3148d7bc87b246ba2aec73`, the
+advisor head named in the r2 feedback. `07c75a70` descends from `f7f356b2` and
+adds only `research/CURRENT_RESEARCH_STATE.md`, `senpai/campaign-ledger.md` and
+`senpai/notes/r1-compose-on-8e83c6b3.md`, so no build input moves. The organizer
+concat block lands near line 1736, far from every E83 region.
 
 ### (c) The four gate numbers on the rebased tree
 
@@ -135,6 +143,13 @@ senpai/check-editable-budget.sh 770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf: exit 0
 senpai/verify-ranked-score-boundary.sh: PASS
 ```
 
+All five gates were re-run on the final head after the second rebase, at
+2026-08-20T20:56Z. `rebuild-and-assert-worker.sh` reports PASS again with the
+same `db0dcafe` digest and 574,507 extracted symbols; the rebuild is a
+content-addressed no-op because no build input moved. `twin_audit.py`,
+`check-editable-budget.sh` and `verify-ranked-score-boundary.sh` print the same
+numbers as above.
+
 The worker witnesses are two-sided. The stale worker built at 19:25:49Z from the
 pre-rebase, pre-revert tree, digest
 `70693f8f1d175d86fc955dc98bb180dc0df0f9ec84ea8dd1ef64f3f6c69f8809`, reports the
@@ -151,13 +166,15 @@ the organizer commits this base adopted. E83 contributes 0 bytes.
 run exits 1 whenever any of the nine fails; and that the test and suite counts
 are never the gate, because they move with what a branch adds.
 
-One correction to the advisor's figure, measured: on `f7f356b2` this branch
+One correction to the advisor's figure, measured: on this tree the branch
 reports **705 tests in 53 suites**, with the E83 suite included in that 705. So
 the 705-versus-710 difference is not explained by the E83 instrument, and the
 document no longer claims it is. It records both totals and rests the gate on
 the 9 names and 40 issues, which are identical on every branch. The document
 also gained a "re-measured at `f7f356b2`" line: same nine names, same 40 issues,
-so the organizer sync introduces no new failure.
+so the organizer sync introduces no new failure. `07c75a70` carries the same
+`Sources/`, `Vendor/`, `Tests/` and `Package.swift` trees as `f7f356b2`, so that
+measurement applies to the final head.
 
 ### Write-up changes
 

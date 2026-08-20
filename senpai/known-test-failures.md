@@ -53,6 +53,11 @@ organizer commit `8b54ff11`, on the same host at 2026-08-20T20:26Z: 705 tests
 across 53 suites, the **same 9 names** and the **same 40 issues**. The organizer
 sync introduced no new failure.
 
+That measurement also covers advisor head
+`07c75a708c2347021d3148d7bc87b246ba2aec73`. `07c75a70` adds only record-only
+Markdown over `f7f356b2`, so the `Sources/`, `Vendor/`, `Tests/` and
+`Package.swift` trees are byte-identical at both commits.
+
 ## The nine failing tests
 
 | test function | issues | failing input | cause |

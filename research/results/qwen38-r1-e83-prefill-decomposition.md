@@ -14,7 +14,7 @@ total return 7.1 ms together, which is 0.18% of the local seed leg.**
 |---|---|
 | assignment | `qwen38-r1-e83-decompose-the-untouched-prefill-leg` r2 |
 | branch | `qwen-thorfinn/e83-prefill-decomposition` |
-| base | `f7f356b2834518ced918f3049ca1b88afb6003f3` |
+| base | `07c75a708c2347021d3148d7bc87b246ba2aec73` |
 | measured on | `6acb0d152da090070b55b5120b338f0a33014e53`, the r1 base |
 | host | `ip-10-231-2-95.ec2.internal`, Apple M4 Pro, 20 GPU cores, 48 GiB |
 | device | `applegpu_g16s` |
@@ -309,11 +309,11 @@ instrument does not belong in `Sources/` or `Vendor/`. It is reverted.
 | item | commit |
 |---|---|
 | instrument, as measured on the r1 base | `7ef3f15` |
-| instrument, replayed onto this base | `1b9b0af` |
-| revert | `ad19b2f` |
+| instrument, replayed onto this base | `e277761` |
+| revert | `313fd74` |
 
-`git diff f7f356b2 HEAD -- Sources/ Vendor/ mtp-head.manifest.json` prints
-nothing. `Qwen35.swift` is byte-identical to the base. Everything E83 still
+`git diff 07c75a70 HEAD -- Sources/ Vendor/ mtp-head.manifest.json mtp-head/`
+prints nothing. `Qwen35.swift` is byte-identical to the base. Everything E83 still
 carries is research-only: `Tests/MLXFastTests/E83PrefillDecompositionTests.swift`,
 `research/e83_*`, `research/results/e83/`, and `senpai/known-test-failures.md`.
 
@@ -326,9 +326,17 @@ the recorded arms out of `research/results/e83/gates.json`.
 
 ### Gates re-verified on the rebased tree
 
-Base `f7f356b2834518ced918f3049ca1b88afb6003f3`, which adopts organizer commit
-`8b54ff11c6d686628f6534d7127a261115782757`. The rebase was clean; the organizer
-concat block lands far from every E83 region.
+Base `07c75a708c2347021d3148d7bc87b246ba2aec73`, the advisor head named in the
+r2 feedback. It descends from `f7f356b2834518ced918f3049ca1b88afb6003f3`, which
+adopts organizer commit `8b54ff11c6d686628f6534d7127a261115782757`, and adds two
+record-only commits that touch `research/CURRENT_RESEARCH_STATE.md`,
+`senpai/campaign-ledger.md` and `senpai/notes/r1-compose-on-8e83c6b3.md`. Both
+rebases were clean; the organizer concat block lands far from every E83 region.
+
+`Sources/`, `Vendor/` and `Package.swift` are byte-identical at `f7f356b2`, at
+`07c75a70` and at this head — tree `c1280bcf` / `5d60a961` / `2896ef24` in all
+three — so the worker gate and the `swift test` gate below apply unchanged to
+the final head.
 
 ```
 senpai/rebuild-and-assert-worker.sh: PASS
@@ -348,6 +356,11 @@ senpai/check-editable-budget.sh 770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf: exit 0
 
 senpai/verify-ranked-score-boundary.sh: PASS
 ```
+
+Every gate was re-run on the final head at 2026-08-20T20:56Z after the rebase
+onto `07c75a70`. The worker gate reports PASS with the same `db0dcafe` digest
+and 574,507 extracted symbols; the rebuild is a content-addressed no-op because
+no build input moved.
 
 The four witnesses are two-sided, not one-sided, so none of them is a guard
 that cannot fail. The stale worker built at 19:25:49Z from the pre-rebase,
