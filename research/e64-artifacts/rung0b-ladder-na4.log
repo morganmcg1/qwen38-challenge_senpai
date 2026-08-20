@@ -16,3 +16,6 @@ e64_cell_ab: session entry gpu_temp_c=39.56
 e64_cell_ab: forced parity vs plain: 0 differing of 139264
 e64_cell_ab: ballast parity vs plain: 0 differing of 139264
 e64_cell_ab: mlp.gate_up_fused inner=269 legs=42 entry=39.35C exit=47.62C
+e64_cell_ab: wrote research/e64-artifacts/rung0b-ladder-na4.json
+e64_rung0b exit_thermal gpu_temp=43.770816802978516C cpu_temp=40.83948516845703C gpu_power=0.008556276559829712W
+e64_rung0b finished=2026-08-20T05:37:12Z status=0
