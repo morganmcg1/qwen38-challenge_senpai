@@ -34,15 +34,18 @@ steps=512
 depth=8
 only=""
 limit=0
+rebuild=0
 while (($#)); do
   case "$1" in
     --steps) steps="$2"; shift 2 ;;
     --depth) depth="$2"; shift 2 ;;
     --only)  only="$2"; shift 2 ;;
     --limit) limit="$2"; shift 2 ;;
+    --rebuild) rebuild=1; shift ;;
     *) echo "e87-capture: unknown flag '$1'" >&2; exit 2 ;;
   esac
 done
+((rebuild)) && { research/e87_rebuild.sh || exit $?; }
 ref_dir="${out}/reference"
 dump_dir="${out}/hidden"
 
