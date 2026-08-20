@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- 2026-08-20 13:20 UTC
+- 2026-08-20 14:20 UTC
 - Most recent research direction from the human researcher team: Issue #22 —
   execute aggressively toward the winning frontier. No new human direction since.
 
@@ -12,25 +12,96 @@ Crown: **3.25238228**, submission `9ad17378`, solver Lieisyourlie, source
 Our best official score: **3.23588901**, submission `9b241879` (arm 2). Deficit to
 the crown: **0.508 %**.
 
-**Arm 3 is in flight.** Submission `2da69933-5202-4e0d-b336-c75945a45b9e`, created
-2026-08-20T12:00:44Z, status `validating`, candidate commit `389676fb`, scored
-surface byte-identical to thorfinn's validated `4d467ca`. One variable: the measured
-depth-price vector. Projected median 3.2824 to 3.2875.
+Campaign base: `d79924a357f25a130bafe3fc5c07b7d4c427f092`.
 
-Campaign base: `8d938c911df52b6a324f259a55dbaa75e508c822`.
+**Arm 3 returned and it is the most informative receipt of the campaign.**
+Submission `2da69933-5202-4e0d-b336-c75945a45b9e`, candidate commit `389676fb`,
+`rejected`, official score **3.21125713**. It carried E68's measured depth-price
+vector, byte-identical to thorfinn's validated `4d467ca`. It cut pooled candidate
+MTP seconds per token by **11.26 %**, raised the pooled ratio of means by
+**12.99 %**, raised the worst prompt by **56.33 %** — and moved the published score
+by **−0.66 %**, which is 0.61 sigma and not a significant loss. It is not the loss
+that matters. It is that an 11 % throughput win collected nothing.
 
-**The board is a noise band, not a ranking, and the organizer's own history proves
-it.** 587 scored submissions of 854 total: 58 sit at or above 3.24, 78 at or above
-our arm 2, the top 20 span 0.235 % and the top 10 span 0.164 %. A single ranked run
-has a standard deviation of 0.756 %. Promotion `5068eb8` has a **tree hash identical
-to its parent** and was promoted for scoring 0.008 % higher; promotion `80021bc`
-changed one note string inside `mtp-head.manifest.json` and was promoted for
-0.062 %. Two of the last six promotions therefore changed nothing functional. Our
-rank of 79th is two thirds of one run's noise, not a capability gap.
+**No submission is in flight. The ranked slot is free.**
 
-**The bar for spending the ranked slot is about +1.5 % of true ranked gain.** Below
-+0.5 % a submission cannot be distinguished from a lucky run. One in-flight
-submission is allowed, at about 2.5 hours each.
+## The three rules arm 3 established
+
+### 1. The score is a median of eight prompts, and only two of them are scored
+
+The published score is `median(raw_1 .. raw_8)` = `mean(4th, 5th)` after sorting.
+The eight shipped-schedule raw ratios split into two clusters separated by a gap of
+0.94:
+
+- low: plutarch 1.2528, drama 1.9163, travel 2.1795
+- high: beagle 3.1201, medicine 3.3446, essays 3.3666, republic 3.3930, botany 3.4253
+
+The 4th and 5th sorted values are **beagle and medicine**, the bottom two of the high
+cluster. Three consequences, all now campaign rules:
+
+- **Work that improves plutarch, drama or travel is worth exactly zero.** Arm 3
+  proves it: it lifted plutarch by 56 % and the low cluster still did not reach the
+  middle.
+- **Improving beagle alone saturates at median 3.3556, which is +3.80 %.** Once
+  beagle passes essays, the median becomes `mean(medicine, essays)` and further
+  beagle gain is discarded. This independently reproduces the beagle ceiling
+  `3.35549050` recorded earlier from the acceptance work.
+- **A uniform improvement across the wide prompts is the only lever that moves the
+  median by its own full size.** Kernel and runtime work is uniform. Schedule work
+  redistributes, and redistribution is how arm 3 lost.
+
+Had arm 3's 11.26 % landed uniformly, the median would have been about **3.64**.
+
+Yukon field semantics, established and reusable: `officialMetrics
+.mtp_decode_speedup_median` is the **4th** sorted raw ratio, and
+`mtp_decode_speedup_raw_median` is the **published score**. Therefore the 5th sorted
+ratio is `2 * raw_median - median`. Verified twice against receipts whose per-prompt
+rows were still populated. The per-prompt block now returns nulls on both endpoints,
+so this inversion is the only route to the two scoring prompts.
+
+### 2. The mechanism, in full, and the local artifact that caused it
+
+`costModelDepth` extends the draft while
+`reach > marginal[depth] * (1 + expected) / cumulative[depth]`. The fitted price
+vector `pbfit` differs from the shipped uniform 0.18 in two places that matter:
+
+- index 0 is **33 % cheaper**, so the depth-0 threshold falls and low-acceptance
+  prompts draft deeper. Plutarch went 1.2528 → 1.9585.
+- index 4 is **61 % dearer**, so the depth-4 threshold rises from about 0.43 to
+  about 0.74, above the reach a high-acceptance prompt carries there. The walk stops
+  at depth 4, which is width 5. That is exactly beagle at 5.533 and medicine at
+  5.768 — the two prompts the score is made of.
+
+One vector produced both observations: on the local fixture it moved mass from
+width 6 to width 5, and on the ranked host it moved the low cluster up.
+
+**The index-4 spike is a local kernel-table artifact.** It comes from E68 rung 1's
+local step into width 6, 27.308 ms against width 5's 13.405 ms, which is the
+`<T,6,6>` cell. That cell carries a 16-byte spill frame on the local g16s register
+file and does not spill on the ranked g17s host, and the ranked width curve is
+1.126× flatter than the local one. We fitted a price to a local defect and paid for
+it on ranked.
+
+Disclosed confound: arm 3's base already carried the `DepthPrice` scaffolding on the
+scored surface with `depthPriceArm = .ship` and a documented one-ulp difference in
+`1.0 + 3.0*0.18`. Too small to explain an 11 % throughput move, but not provably
+inert.
+
+### 3. The local fixture is at the wrong operating point
+
+| | local ship | local pbfit | ranked pooled | beagle | medicine |
+|---|---:|---:|---:|---:|---:|
+| mean verify width | **7.27** | 6.47 | **5.82** | 5.53 | 5.77 |
+| share at M=5 | 6.41 % | 49.4 % | 24.1 % | | |
+| share at M=6 | 29.49 % | 5.9 % | 33.4 % | | |
+| share at M=9 | **43.59 %** | 30.6 % | **5.75 %** | | |
+
+**The single local prompt over-weights M=9 by 7.58× and under-weights M=5 by
+3.76×.** That is plausibly why our dispatch table ever chose `<T,9,5>`. It
+invalidates local **whole-leg** numbers as arm rankings. Per-width and per-cell
+numbers remain valid and can be reweighted onto the ranked histogram, so every
+running experiment has been re-scoped to report per-width cells as the headline and
+whole-leg time only as an additivity cross-check.
 
 ## What the competitor history gives us
 
@@ -63,34 +134,44 @@ runtime +21.7 %, kernel +16.1 %. One manifest-only head swap (`deb63ad`) was wor
 organizer's pinned bf16 weights. **Nobody has re-derived the weights.** Re-trained
 and distilled heads are explicitly legal under the static review.
 
+**The board is a noise band, not a ranking, and the organizer's own history proves
+it.** 590 scored submissions of 855 total: 58 sit at or above 3.24, 78 at or above
+our arm 2, the top 20 span 0.235 % and the top 10 span 0.164 %. A single ranked run
+has a standard deviation of 0.756 %, and a difference of two runs 1.069 %. Promotion
+`5068eb8` has a **tree hash identical to its parent** and was promoted for scoring
+0.008 % higher; promotion `80021bc` changed one note string inside
+`mtp-head.manifest.json` and was promoted for 0.062 %. Our rank of 79th is two
+thirds of one run's noise, not a capability gap.
+
+**The bar for spending the ranked slot is about +1.5 % of true ranked gain**, which
+buys a 0.903 probability of beating the printed crown in one run. Below +0.5 % a
+submission cannot be distinguished from a lucky run. One in-flight submission is
+allowed, at about 2.5 hours each. The advisor has no GPU, so every arm must come
+from a student-validated `--local-submit` snapshot.
+
 ## The current research focus
 
-### 1. Ship the depth-price vector, and take the crown
+### 1. Find a uniform wide-prompt gain worth +1.5 %
 
-E68 measured the true marginal cost of each verify width and refitted the drafting
-scheduler to it. Result: **−3.500 % candidate MTP seconds per token** against a
-0.143 % null, over a nine-leg gated palindrome at 512 tokens, byte-identical output
-on every leg. It is the largest single-mechanism gain of the campaign. E75 rung A
-banked it at `4d467ca` with a gated 512-token exactness leg that matched all tokens,
-closed the row ledger at 550 rows, passed parity, and emitted a digest byte-identical
-to all fifteen E68 legs. Arm 3 carries it and is validating now.
+This is the direct consequence of rule 1. Kernel and runtime work is uniform across
+prompts; schedule work is not. Arm 2 is the existence proof: reverting our dispatch
+table to the crown's was faster on **8 of 8** prompts, mean −0.383 %, sign test
+p = 0.0039 — a small effect, but collected in full. The three live experiments are
+all pointed at uniform mechanisms.
 
-Two things rung A found that were not asked for and that changed the record.
+**Per-shape inner-group count (askeladd, PR #81) is the leading near-term ranked
+candidate.** The defect is that the dispatch table applies one group count to every
+shape while the optimum differs by shape. Four arms: ship, crown, hybrid at
+n = 24928, hybrid at n = 8192. If a hybrid beats both uniform tables at M=5 and M=6,
+which carry 57.5 % of the ranked round pool, that is a uniform gain and it is a
+submission.
 
-**The vector published in our own experiment report was never executed by anything.**
-Swift rescales as `raw * (total / sum)`; the Python behind the report computed
-`raw * total / sum`. Those differ by one ulp at three of eight positions. A committed
-test now pins all eight doubles bit for bit. General rule: any constant crossing from
-an analysis script into a scored Swift file must be pinned by a committed test
-against the value the timed build evaluated.
+**The proposal head (alphonse, PR #82) is the field's biggest untouched lever.**
+Head cost is paid on every round of every prompt, so a head win is uniform by
+construction.
 
-**My interaction estimate for `crown table + pbfit` was wrong and the student's is
-better founded.** I priced the rounds the schedule *moves*; he priced where the round
-mass *sits*, which is correct when the cost table underneath changes. `pbfit` parks
-42 of its 85 rounds at width 5, the one cell the crown's table charges +26.746 ms
-more for. His prediction is a sign flip, +0.77 % rather than my −2.4 %. The two
-mechanisms look close to mutually exclusive, so declining the crown's 0.298 % this
-round costs nothing.
+**The unattributed 22.6 % of the width tax (edward, PR #83) is the largest unnamed
+quantity we have.**
 
 ### 2. RETRACTED: the register-occupancy model. The lever is grid width.
 
@@ -114,13 +195,19 @@ in the 19-cell table is 0.52 %**. The M=6 inequality the receipt demands needs
 says the crown is 0.298 % faster. **Occupancy is excluded as the explanation of the
 arm-2 receipt at every width.**
 
+**The register axis is closed with a bound.** E76 swept it directly: the whole span
+from 122 ranked registers down to 50 is worth −1.209 %, against a submission bar of
+about +1.5 %. Reachability was never the constraint — `rps1lazy` reaches 75 ranked
+registers with zero differing elements over 112 arm-width pairs — and every arm that
+clears 91 registers is slower, the smallest single-shape penalty being +15.53 %.
+
 **The register law itself survives.** Register count is a pure function of the
 largest group in the partition, independent of M and of group count, 19 of 19 cells,
 zero exceptions: largest group 2/3/4/5/6 gives 70/93/94/95/96 on g16s and
-83/90/91/98/111 on g17s. Local hosts have a 96-register ceiling, so `[6]` spills
-16 bytes locally and does not spill on the ranked host. **Any local arm above 96
-registers measures spill, not occupancy**, and spill is about 0.015 % per frame byte,
-three times steeper than the spill-free ladder.
+83/90/91/98/111 on g17s. The g17s ceiling is **126**, not 124. Local hosts have a 96
+register ceiling, so `[6]` spills 16 bytes locally and does not spill on the ranked
+host. **Any local arm above 96 registers measures spill, not occupancy**, and spill
+is about 0.015 % per frame byte.
 
 **The replacement mechanism is per-shape grid starvation.** E74 located the
 working-threadgroup knee in situ at **1558 working threadgroups = 77.9 per core**,
@@ -143,15 +230,11 @@ gives the whole picture:
 **The sign flips between 1792 and 2060 working threadgroups.** Wide shapes want fewer
 groups; narrow shapes want more. **The optimal inner-group count is not the same for
 every shape, and the dispatch table applies one group count to all of them.** That is
-the defect, and it explains the receipt without any occupancy term: the crown's
-higher group count helps the three n=5120 families and hurts the wide ones, and on
-the ranked host the balance falls the other way from ours.
+the defect, and it explains the receipt without any occupancy term.
 
 Core count does not change the log-ratio gain for a shape deep below the knee. What
 it changes is **which shapes are starved**: the boundary moves from n = 12464 at 20
-cores to n = 24928 at 40 cores, pulling n = 14336 and n = 16480 across. The
-dispatcher's own `out_vec_size >= 4096` gate is therefore three times too low
-locally and six times too low on the ranked host, and no scored shape sits below it.
+cores to n = 24928 at 40 cores, pulling n = 14336 and n = 16480 across.
 
 **The grid cannot be widened any other way.** The host grid
 `grid_dims(M, ceil(N/8), B)` lives in `backend/metal/quantized.cpp:249-254`, which is
@@ -162,9 +245,7 @@ have.
 rung-3 lever at +1.17 % of the verify-width tax, which is +0.232 % of the ranked
 candidate leg. The arm-2 receipt measured −0.298 %. Same sign, within 25 %, from a
 student whose base predates the receipt and who had never seen it. His recommended
-cells at M=5 and M=6 are the crown's cells. That is the first time a local cost model
-predicted an unseen ranked receipt, and it is why per-shape IPG is now the lead
-kernel hypothesis.
+cells at M=5 and M=6 are the crown's cells.
 
 ### 3. The prize behind everything: a 19.8 % latency tax
 
@@ -176,70 +257,122 @@ the compute roof binds at the floor, so the tax is latency and grid occupancy, w
 means it is addressable. The MLP families carry 65.9 % of it and five linear families
 carry 77.4 %.
 
+The same reconstruction prices depth honestly. The marginal ranked round cost per
+width unit rises from about 3.41 ms shallow to about 5.80 ms deep. Normalised by the
+30.781 ms depth-0 round that is `h` rising from 0.111 to 0.188, so **the true ranked
+price shape is increasing** — which is `pbfit`'s shape, minus its spurious index-4
+spike. The shape was right. The spike and the fixture were wrong.
+
+## The price level is already bracketed on ranked. Do not reopen it.
+
+`Qwen36MTPBlockSession.swift:920-935` carries an inherited comment recording official
+ranked runs at four price levels:
+
+| `headStepCostRatio` | official score |
+|---:|---:|
+| 0.14 | 2.766 |
+| 0.15 | 2.667 |
+| 0.18 (shipped) | ~2.93 era baseline |
+| 0.32 | 2.84585 |
+
+The shipped 0.18 is the best of four measured levels, and the 0.14 > 0.15
+non-monotonicity is unexplained and flagged. The streak gate is bracketed the same
+way: gate 1 scores −7.1 %, gate 0 ties, gate 2 ships. **The way to buy depth is not
+the price. It is the cap.** I drafted an arm that lowered `headStepCostRatio` to push
+beagle and medicine deeper and did not send it. It is dead on arrival.
+
+The related open defect: `widthCap = fullAcceptStreak >= 2 ? 8 : 5` cannot express 6,
+which is the width the ranked histogram spends the most time at.
+
 ## Live experiments
 
 | PR | student | question |
 |---|---|---|
-| #78 | thorfinn | Calibrate the local-to-ranked transfer function on the one eight-line diff that has both harnesses |
-| #79 | edward | Compile-only close-out of the register question, and remove the 16-byte local `<T,6,6>` spill that biases every local M=6 measurement |
+| #78 | thorfinn | Calibrate the local-to-ranked transfer function on the one eight-line diff that has both harnesses. Per-width cells are now the headline; whole-leg time is a cross-check |
 | #81 | askeladd | Does a width-dependent inner-group count beat both uniform tables? Four arms: ship, crown, hybrid at n = 24928, hybrid at n = 8192 |
 | #82 | alphonse | Price the proposal head: per-position acceptance census, head-step decomposition, and a go/no-go on re-deriving the weights |
+| #83 | edward | Build the per-kernel GPU-time census and name the unattributed 22.6 % of the verify-width tax |
+
+E76 on PR #79 is merged. It closed the register axis with a bound and found the
+campaign's second silent Metal miscompilation: `mc*` chunk arms compile with no
+diagnostic and produce wrong device output on every scored shape. **A clean compile
+and a register census are cost instruments, never correctness gates.** We can only
+run device parity on g16s and the ranked host is g17s, so prefer dispatch-table
+changes, which E66 proved bit-identical, over kernel-body changes.
+
+## The lead unowned target
+
+**E71 attributed 77.4 % of the M=6 verify-width tax to five linear families and left
+22.6 % unattributed.** The tax is 19.8 % of the ranked candidate leg, so the
+unattributed remainder is roughly **4 to 4.5 % of the ranked leg, width-dependent,
+and unnamed**. That is above the submission bar on its own, and no instrument we own
+can see it. E80 builds that instrument.
+
+**Dispatch count is not time.** The copy family is 17.0 % of dispatches and about
+0.02 % of GPU time — an overstatement of roughly a thousand times. Every remaining
+non-QMV priority currently rests on that discredited proxy, which is why E80 is
+scoped as measurement only.
 
 ## Potential next research directions
 
 **Re-derive the proposal-head weights.** The single largest historical lever on the
-board, +38.1 % cumulative, and the one area our campaign has never touched. The
-delivery contract is now fully mapped: one `model.safetensors` under 2 GiB at an
-immutable Hugging Face revision, bare tensor names, a tree digest over sorted file
-hashes, and a broken declaration refuses rather than falls back. Teacher compute, not
-memory, is the binding constraint on a student Mac, so the correct architecture is to
-cache `(hidden state, target argmax)` pairs from one teacher pass and then train the
-head with the 27B unloaded. E79 rung 3 decides go or no-go. The literature's best fit
-for our regime — greedy, batch 1, linear chain, exact top-1 — is a FastMTP-style
-recursive fine-tune with decayed position weights, and the cheap go/no-go is that
-4,000 samples already moved acceptance by +25 % in a published ablation.
+board, +38.1 % cumulative, and the one area our campaign has never touched. Head cost
+is paid on every round of every prompt, so it is a uniform lever and collects its
+full size at the median. The delivery contract is now fully mapped: one
+`model.safetensors` under 2 GiB at an immutable Hugging Face revision, bare tensor
+names, a tree digest over sorted file hashes, and a broken declaration refuses rather
+than falls back. Teacher compute, not memory, is the binding constraint on a student
+Mac, so the correct architecture is to cache `(hidden state, target argmax)` pairs
+from one teacher pass and then train the head with the 27B unloaded. E79 rung 3
+decides go or no-go. The literature's best fit for our regime — greedy, batch 1,
+linear chain, exact top-1 — is a FastMTP-style recursive fine-tune with decayed
+position weights, and the cheap go/no-go is that 4,000 samples already moved
+acceptance by +25 % in a published ablation.
 
-**The exactness-chunk concat.** Correcting the `copy`-family analysis moved the
-target. KV growth is **not** per-round: `KVCache.swift:388` already sets `step = 256`,
-so growth fires three times per candidate leg, 288 of 10,235 copies, worth about
-0.02 % of a leg — roughly 40 times below our measurement floor. Do not spend a
-student slot on it; fold it in as a one-line free rider at 1536 or 2048. The real
-target is the exactness-chunk `concatenated` at `AttentionUtils.swift:141`: **2,048
-dispatches per leg, ten times the KV-growth prize, editable, and never touched by any
-promotion or any campaign experiment.** It exists to preserve exactness above
-width 5, which is exactly where our round mass sits. Caveat that still holds:
-dispatch count is not time, and no per-family GPU-time census exists.
+**Low-rank factorisation of the draft readout.** FR-Spec and VocabTrim cut the output
+projection by shrinking the vocabulary. Under our exact top-1 rule a token we cannot
+propose is a token we can never accept, so truncation is a hard ceiling and the
+durable version is **low-rank factorisation**, not truncation. The readout is about
+40 % of head traffic, so this is worth roughly 1.6 % of an M=6 round, uniformly.
 
-**A truncated draft vocabulary is a hard ceiling under exact top-1 verification.**
-FR-Spec and VocabTrim cut the output projection by shrinking the vocabulary, and
-FastMTP measured 152K→32K costing only 0.068 tokens of accepted length. Under our
-exact top-1 rule a token we cannot propose is a token we can never accept, so the
-durable version is **low-rank factorisation of the readout**, not truncation. The
-readout is about 40 % of head traffic, so this is worth roughly 1.6 % of an M=6
-round.
-
-**The depth price, second order.** E68's own follow-ups: fit the vector to the
-in-situ curve rather than the isolated one, which differ by a real 14 % in shape;
-bisect between `pbfit` and `ship`, because the optimum is between them; raise the
-level now that the shape is right. Each is a five-leg experiment.
-
-**Other never-examined dispatch mass.** `unary/binary/ternary_ops` 14.8 %,
-`rms_norm.metal` 8.1 % (AOT-only, needs `tools/build-mlx-metallib.sh`),
-`sdpa_vector.h` 3.45 % (AOT-only, two-pass boundary at key_len 1024 inside the scored
-window), `gemv.metal` 3.0 %. `gemv.metal` is 100 % draft-head traffic and 0 % serial
-leg, so a change there cannot break token exactness — the cheapest risk-adjusted
-surface we have.
-
-**The untimed warmup.** `warmMTPDecode()` runs before the clock starts. The round-1
-head prime costs 29.5 ms and is hoistable. Anything moved before the clock is free.
+**The depth price, third order.** The shape is right and the level is bracketed, so
+what remains is the fixture. Refit the vector against the **ranked** width histogram
+rather than the local one, and against the in-situ curve rather than the isolated
+one, which differ by a real 14 % in shape. Any refit must be scored against the
+median of the eight prompts, not against pooled candidate time. The index-4 spike
+must be removed on the evidence that it is a local spill artifact.
 
 **Entropy-gated early stopping.** AdaEDL, arXiv:2410.18351, is training-free,
 host-independent, and reports 10 to 57 % gains. It is a policy change in the
-scheduler, the same surface that produced our largest win.
+scheduler. Caution after arm 3: any policy change redistributes width across prompts
+and must be priced at the median.
 
-**A defect worth fixing.** `widthCap = fullAcceptStreak >= 2 ? 8 : 5` cannot express
-6, which is exactly the width the measured price says the scheduler should choose
-most often.
+**CLOSED: the whole `copy` family.** The file is
+`Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift`, not
+`Sources/MLXFastModel/`. The 2,048 `g2_copybfloat16` dispatches are **not** the
+concat: `concatenate_gpu` issues `CopyType::GeneralGeneral`, which `copy.cpp:79-80`
+names `gg`, so the concat can only emit `gg*`; the `g2_` copies are the SDPA
+dispatcher's query contiguity copy at `scaled_dot_product_attention.cpp:717-718`.
+`split = 5` is **derived, not tuned** — `use_fallback` needs
+`qL * gqa_factor <= 32` with `gqa_factor = 6`, and head dimension 256 makes the full
+path unavailable at every width, so `split = floor(32/6) = 5` with no headroom, in a
+dispatcher that is not editable. And the chunk is a **discount, not a cost**: E57
+arm C with the chunk off failed `rejected_tail_diverged` at 12.5× `referenceMargin`.
+The traffic ceiling settles the rest: the split path moves about 203 MB per leg, so
+concat plus query copies are about **0.016 % of a leg, four times below the null
+floor.** Not a student slot. KV growth is smaller still, about 0.02 %, and is a
+one-line free rider at `step = 1536` or `2048`.
+
+**Other dispatch mass, under suspicion rather than under consideration.**
+`unary/binary/ternary_ops` 14.8 %, `rms_norm.metal` 8.1 % (AOT-only, needs
+`tools/build-mlx-metallib.sh`), `sdpa_vector.h` 3.45 % (AOT-only, two-pass boundary
+at key_len 1024 inside the scored window), `gemv.metal` 3.0 %. Every one of these
+shares is a **dispatch count**. Do not assign from this list until E80 replaces it
+with GPU time. `gemv.metal` retains one independent virtue: it is 100 % draft-head
+traffic and 0 % serial leg, so a change there cannot break token exactness.
+
+**The untimed warmup.** `warmMTPDecode()` runs before the clock starts. The round-1
+head prime costs 29.5 ms and is hoistable. Anything moved before the clock is free.
 
 **An open question nobody has closed.** Does the ranked g17s host dispatch a `_nax`
 variant of the cross-row QMV? The gate is at `backend/metal/quantized.cpp:697`. E71

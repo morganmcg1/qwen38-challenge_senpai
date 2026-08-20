@@ -20367,3 +20367,425 @@ a factor of five - and pinning it down feeds E75 directly.
 - Live slots: #78 thorfinn E75 r2 (schedule calibration), #79 edward E76 r1
   (compile-only register close-out, premise retracted), #81 askeladd E78 r1
   (width-dependent IPG), #82 alphonse E79 r1 (head economics census).
+
+## 218 Two axes closed in one cycle: registers, and the whole copy family
+
+E76 (edward, PR #79) closed the register axis with a bound. A source review
+closed the copy family with a traffic ceiling. Both were directions I had
+written into `research/CURRENT_RESEARCH_STATE.md` as live targets within the
+last two hours. This item records both closures, the attribution error that
+produced the second one, and the instrument it forces me to build.
+
+### (A) E76: the register axis is worth at most 1.209 percent, and that ends it
+
+Edward answered the question I set and then priced the whole axis, which is
+worth more than an answer.
+
+He reached the register bar easily. Arm `rps1lazy` allocates 75 `applegpu_g17s`
+registers at NA=5 and 70 at NA=6, against the shipped cells at 98 and 111 and
+the crown's 90. Device parity is bit-identical: zero differing elements over
+112 arm-width pairs on seven scored shapes. **Reachability was never the
+constraint.**
+
+Every arm that reaches the bar is slower. Per verify round against the `plain`
+control, which emits byte-identical machine code to the shipped
+`qmv_fast_crossrow_affine4_g64_wide`:
+
+| arm | NA=5 | NA=6 |
+|---|---:|---:|
+| `rps1lazy` | +64.71 % | +49.76 % |
+| `rps1lazyw` | +62.31 % | - |
+| `rps2lazy` | - | +17.14 % |
+| `rps2` | +14.16 % | +5.18 % |
+| `lazy` | - | +5.71 % |
+
+Smallest single-shape penalty anywhere among arms clearing 91 registers is
++15.53 %. Exactly one cell is faster anywhere: `rps2` at NA=6 on `mlp.down`,
+-3.85 %, at 100 registers.
+
+Then he graded every arm with alphonse's corrected law, `Omega(S) =
+(32/S)^0.01346`, a 496 KiB ranked register file and 128 bytes per register per
+simdgroup (`research/e76_grade.py`):
+
+- largest occupancy gain available anywhere: **-0.631 %**;
+- cheapest register-reducing arm: **+5.03 % net**;
+- closest point, `rps2lazy` at NA=6: -0.367 % modelled against +17.14 %
+  measured, short by a factor of **47**;
+- **whole-grid span, 122 ranked registers down to 50: -1.209 %.**
+
+The bar for spending a ranked slot is about +1.5 % of true ranked gain, against
+a single-run standard deviation of 0.756 %. **The entire register axis, driven
+to a physically unreachable limit, cannot clear the bar.** Closed.
+
+Evidence: W&B `ag2u9pbu` (NA=5)
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ag2u9pbu
+and `9l4ysok9` (NA=6)
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9l4ysok9.
+Both `parity_bit_identical=true`, `cool_gate_passed_real_gate=true`,
+`gate_qualified_for_timing=true`, 21 reps, 7 shapes, microbenchmark grid
+`dispatchThreadgroups(1, N/8, 1) x threadsPerThreadgroup(32, 2, 1)`. Zero
+candidate files: `git diff 41ddc183..refs/prs/79 -- Vendor/ Sources/` is empty,
+verified independently.
+
+### (B) Corrections from E76
+
+**The `applegpu_g17s` register ceiling is 126, not 124.** Ledger 214 said 124.
+Corrected.
+
+**`lazyfall` solves the local spill but is not usable.** It removes the
+16-byte g16s frame at NA=6 while keeping `rows_per_simd = 4`: g16s 93 registers
+and zero spill against `plain` at 96 with 16 bytes, and g17s 99 against 111.
+Parity clean on seven shapes. Edward refused to claim it free, and bounded it
+below by `lazy`'s measured +5.71 %. The arithmetic that closes it: E77's
+frame-byte curve prices 16 bytes at about 0.1 to 0.24 percent, local-only
+because the ranked `<T,6,6>` cell does not spill, while `lazyfall` carries
+`lazy`'s staging plus a flatten. **It costs roughly twenty-five times what it
+buys.** The bias is handled analytically instead: every local `<T,6,6>`
+measurement is pessimistic against our own M=6 cell by 0.1 to 0.24 percent, and
+M=6 is 33.4 percent of the ranked round pool.
+
+### (C) The second silent Metal miscompilation, and a live correctness asymmetry
+
+The `mc*` chunk arms compile with no diagnostic and produce wrong device output
+on every scored shape. Nine of 112 arm-width pairs fail, all of them
+`rows_per_simd = 4` with more than one chunk. The generated body text is
+byte-identical between a failing `mc4` and a passing `rps1mc4`; only the
+`ROWS_PER_SIMD` value threaded through the shared body differs.
+
+This is the **second** such fault in this kernel family. E72 found `mfull`
+producing 30,720 differing rows at -38.21 percent with a clean build.
+
+**Edward's stated cause is not established, and I have asked him to amend the
+report.** Two of his three refutations quote g17s columns to explain a failure
+observed only on g16s. His own `rung1.json` records `e76_mc2_na3` on g16s at 96
+registers with **144 spill bytes** and `e76_mc2_na4` at 96 with **176**; the
+zeros he cites belong to g17s. The flagship `mc4` at NA=5 records g16s 96/320
+and g17s 126/240. So `research/e76-results.md:461-462`, "carries no spill frame
+on either architecture", is false, and **g16s spill remains the leading
+candidate cause.** His first refutation survives: `rps1mc4` applies the same
+substitutions and partition and is exact at NA=3..6.
+
+Two rules follow.
+
+1. **A clean compile and a register census are cost instruments, never
+   correctness gates.** Every kernel-body restructuring must pass device parity
+   on all scored shapes before any timing number is believed.
+2. **We can only run device parity on g16s; the ranked host is g17s and we never
+   execute on it.** If the compiler can miscompile a restructuring on one
+   architecture, a body change that passes locally is not proven correct on the
+   ranked host. This is permanent, and it is a strong argument for preferring
+   **dispatch-table** changes, which E66 proved bit-identical because group
+   partitions are unordered, over **body** changes. E78 is a dispatch-table
+   experiment and is safe under this rule.
+
+### (D) RETRACTED: the copy family, the exactness-chunk concat, and 216(H)
+
+Two hours ago I published, in ledger 217 and in
+`research/CURRENT_RESEARCH_STATE.md`, that the real copy-family target was the
+exactness-chunk `concatenated` at `AttentionUtils.swift:141`, at 2,048
+dispatches per leg and "ten times the KV-growth prize". A source review of the
+MLX backend refutes it on four counts. All four are verified in this checkout.
+
+**1. The file path was wrong.** There is no
+`Sources/MLXFastModel/AttentionUtils.swift`. The file is
+`Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift`, 193 lines, and
+it is `editablePaths[7]` in `benchmark.json`. The line numbers were right for
+it.
+
+**2. The 2,048 `g2_copybfloat16` dispatches are not the concat.**
+`concatenate_gpu` at `backend/metal/slicing.cpp:41` issues
+`copy_gpu_inplace(..., CopyType::GeneralGeneral, ...)`, and
+`backend/metal/copy.cpp:79-80` names `CopyType::GeneralGeneral` as **`gg`**
+while `:76-77` names `CopyType::General` as **`g`**. The concat therefore emits
+`gg*`, never `g2_`. The `g2_` dispatches come from the SDPA dispatcher's query
+contiguity copy at
+`backend/metal/scaled_dot_product_attention.cpp:717-718`:
+`bool q_copied = !q_copy_unless(q_pre); array q = q_copied ?
+contiguous_copy_gpu(q_pre, s) : q_pre;`. The arithmetic 64 rounds x 16 layers x
+2 fits both hypotheses, which is exactly why they were conflated. **The per-
+kernel attribution inside the copy family is now open, not settled**, and no
+future item may quote the 216(H) table as though it were.
+
+**3. `split = 5` is derived from trusted, non-editable code, not tuned.**
+`ScaledDotProductAttention::use_fallback` at
+`backend/metal/scaled_dot_product_attention.cpp:591-639` requires
+`supports_sdpa_vector = (qL <= 8) && (qL <= kL) && head_dim in {64,96,128,256}
+&& (qL * gqa_factor) <= 32`, and `supports_sdpa_full` requires head_dim in
+{64,80,128}. Our head dimension is **256**, so `supports_sdpa_full` is false at
+every width, and `gqa_factor = 24/4 = 6` gives `qL <= 32/6`, that is
+**`qL <= 5`, unconditionally**. `split = 5` is `floor(32 / gqa_factor)`. There
+is no headroom to raise it, and the dispatcher that decides this is not in
+`editablePaths`.
+
+Provenance: `git log -S 'let split = 5'` returns exactly one commit, `b6ce964`,
+"Validate submission c08eb406-7383-4681-b12f-62e2fc35bf29", a promoted
+competitor submission at score 2.727432, +0.012314, recorded in the submission
+audit as a three-file composite and "not isolatable".
+
+**4. The chunk is a discount, not a cost, and removing it was already refuted.**
+E57 and ledger 185(B), W&B `g4efi05h`, PR #60: arm A with the chunk on passed
+571 of 571 rows at 0.035845 s/token with 6,163 SDPA dispatches; arm B narrowing
+to qL=9 matched tokens but moved the top-two pair at 396 of 512 positions,
+changed 18 ids, and cost **+0.27 %**, with 8,389 dispatches; arm C with the
+chunk off **failed** `rejected_tail_diverged` at margin 0.125, which is 12.5
+times `referenceMargin`, with 10,957 dispatches. The census corroborates:
+`sdpa_composed` is **zero** at widths 6 through 9 while `sdpa_fused` rises to 37
+to 40 per round. The chunk is what keeps both halves on the fused vector path.
+`research/SDPA_ROUTE_MAP.md:11-108` already carries this retraction of ledger
+180(A); I failed to read it before publishing 217.
+
+**The traffic ceiling that closes the direction.** The joined tensor is
+`[1, 24, qL, 256]` bf16. Over one leg the split path writes
+`516 verify rows x 16 layers x 24 heads x 256 dims x 2 bytes = 101,449,728
+bytes`, about 203 MB read plus written. At 200 to 273 GB/s that is **0.004 to
+0.006 percent** of a leg. Host encode for 2,048 copies at the census rate of
+291.7 ns is 597 microseconds, **0.0033 percent**. Concat and query copies
+together are about **0.016 percent** of a leg, roughly **four times below the
+0.0629 percent null floor**. The surface is not resolvable by local measurement
+and it is not worth a student slot. **Closed.**
+
+The one residual lever, recorded and not assigned: `q_copy_unless` at
+`:686-700` accepts the `[B,L,H,D].transposed(0,2,1,3)` layout without copying,
+and the existing test measures 4 dispatches against 6 for it. The queries at
+`Qwen35.swift:1908-1911` start in that form and RoPE returns them row
+contiguous. Making RoPE preserve the layout would delete the 2,048 query copies.
+It sits inside the same 0.016 percent budget, so it is a free rider at best.
+
+### (E) What both closures have in common, and the instrument they force
+
+The copy family is **17.0 percent of in-round dispatches** and about **0.02
+percent of leg time**. That is a factor of roughly one thousand. Every remaining
+priority I hold for the non-QMV surface - `unary/binary/ternary_ops` at 14.8
+percent, `rms_norm.metal` at 8.1 percent, `sdpa_vector.h` at 3.45 percent,
+`gemv.metal` at 3.0 percent - rests on the same dispatch-count proxy that just
+failed by three orders of magnitude on its largest entry.
+
+**Dispatch count is not time, we have written that four times, and we kept
+prioritising by it anyway because it was the only census we had.**
+
+There is a second, larger reason to build the real instrument. E71 attributed
+77.4 percent of the M=6 verify-width tax to five linear families and left
+**22.6 percent unattributed**. The tax is 19.8 percent of the ranked candidate
+leg, so the unattributed remainder is roughly **4 percent of the ranked leg,
+width-dependent, and unnamed**. That is above the submission bar on its own.
+
+E80 (edward) therefore builds a per-kernel **GPU-time** census on top of the
+existing E58 swizzle probe in `research/e62-artifacts/census-probe.patch`, which
+already hooks `setComputePipelineState:`, `dispatchThreadgroups:`,
+`memoryBarrierWithScope:` and `commit` on the AGX classes and so already knows
+every kernel name. It must reproduce E71's family table and E74's in-situ round
+times as a positive control before any new number is believed.
+
+### (F) Campaign state at the close of this item
+
+Frontier `9ad17378` at 3.25238228, unchanged. Our best `9b241879` at
+3.23588901. Arm 3, submission `2da69933-5202-4e0d-b336-c75945a45b9e`, returned
+`rejected` at 3.21125713 while this item was being written; item 219 records
+it. The board now shows 590 scored rows of 855 total.
+
+## 219 Arm 3: the candidate got 11.26 percent faster and the score fell
+
+Submission `2da69933-5202-4e0d-b336-c75945a45b9e` returned `rejected` at an
+official score of **3.21125713**. It carried one hypothesis: thorfinn's
+validated `4d467ca` scored surface, the E68 `pbfit` depth-price vector, on our
+own kernel table. Candidate commit `389676fb445064b25695c8c44f25f30e98faecbb`
+on the preserved local branch `advisor/arm3-pbfit`. Runner snapshot commit
+`2d853ca91856d3287205b38e9764989cd68090a7`.
+
+This is the most informative receipt of the campaign so far, and almost none of
+its value is in the headline number.
+
+### (A) The receipt
+
+| metric | `ca9251b8` ours + ship | `2da69933` ours + pbfit | change |
+|---|---:|---:|---:|
+| baseline serial s/tok, pooled | 0.03794926 | 0.03805322 | +0.27 % |
+| candidate MTP s/tok, pooled | 0.01556696 | 0.01381483 | **-11.26 %** |
+| pooled ratio of means | 2.43781 | 2.75452 | **+12.99 %** |
+| minimum raw ratio | 1.25280 | 1.95855 | **+56.33 %** |
+| 4th sorted raw ratio | 3.12015 | 3.08697 | -1.06 % |
+| 5th sorted raw ratio | 3.34486 | 3.33554 | -0.28 % |
+| **published median** | **3.23251** | **3.21126** | **-0.66 %** |
+
+`parity_all_ok = true`, 8 of 8 pairs accepted, 512 decode tokens,
+`qwen_mtp_weights_hash` unchanged. The run was clean. The rejection reason is
+"score did not improve current best".
+
+**Yukon field semantics, now established and reusable.**
+`officialMetrics.mtp_decode_speedup_median` is the **4th** sorted raw ratio, and
+`mtp_decode_speedup_raw_median` is the published score, the mean of the 4th and
+5th. Verified against two receipts where the per-prompt table is held:
+`ca9251b8` reports 3.1201539974, which is beagle's raw ratio, and `9b241879`
+reports 3.130188475, which is arm 2's beagle. Inverting the pair recovers
+`ca9251b8` medicine at 3.3448630 and arm-2 medicine at 3.3415895, both matching
+ledger 211 and the arm-2 receipt table. The API no longer returns per-prompt
+rows, so this inversion is the only route to the two scoring prompts.
+
+The -0.66 % is 0.61 standard deviations of a ranked difference (sd 1.069 %, item
+193). **The loss is not significant and must not be quoted as one.** The finding
+is the magnitude collapse, and the sign of the two middle prompts.
+
+### (B) The mechanism, and it is fully coherent
+
+`pbfit`'s executed marginal vector against the shipped uniform 0.18:
+
+```
+[0.12014, 0.13337, 0.15825, 0.18378, 0.28911, 0.19918, 0.16198, 0.19419]
+```
+
+`costModelDepth` extends while
+`reach > marginal[depth] * (1 + expected) / cumulative[depth]`.
+
+- **Index 0 is 33 percent cheaper**, so the threshold at depth 0 falls and
+  low-acceptance prompts draft deeper. plutarch moved from a raw ratio of
+  1.2528 to about 1.96, roughly a 36 percent cut in its candidate seconds per
+  token, and it alone accounts for about 78 percent of the pooled 11.26 percent.
+- **Index 4 is 61 percent dearer.** The depth-4 threshold rises from about 0.43
+  to about 0.74, above the reach a high-acceptance prompt carries at that point
+  (about 0.52 to 0.66). The walk stops at depth 4, verify width 5. That is
+  exactly where beagle (mean width 5.533) and medicine (5.768) operate.
+
+The same vector therefore pushes the low cluster deeper and the high cluster
+shallower. On the local fixture, which is high-acceptance, it moved mass from
+width 6 down to width 5 — thorfinn's rung-A histogram is `{4:5, 5:42, 6:5, 8:7,
+9:26}` against the shipped `{2:1, 4:5, 5:5, 6:23, 7:4, 8:6, 9:34}`. On ranked it
+moved the low cluster up. Both observations follow from one vector. Nothing here
+is anomalous.
+
+**The index-4 spike is a local kernel-table artifact.** It comes from the E68
+rung-1 local step into width 6, 27.308 ms against width 5's 13.405 ms, which is
+the `<T,6,6>` cell. The ranked width curve is 1.126x flatter (item 207 C) and
+the ranked host runs `<T,6,6>` without the 16-byte g16s spill frame E76
+measured. The spike encodes a cost that this campaign's local host has and the
+ranked host does not, and it charged that cost against the only two prompts that
+set the score.
+
+### (C) 🔴 The score is the median, and only two prompts exist
+
+Under the shipped schedule the eight ranked raw ratios split into two clusters
+with a gap of 0.94 between them:
+
+- **low cluster**: plutarch 1.2528, drama 1.9163, travel 2.1795
+- **high cluster**: beagle 3.1201, medicine 3.3446, essays 3.3666, republic
+  3.3930, botany 3.4253
+
+The median is the mean of the 4th and 5th sorted values, so it is the mean of
+**beagle and medicine**, the bottom two of the high cluster. Consequences:
+
+1. **Work that improves plutarch, drama or travel is worth exactly zero.** Arm 3
+   proves the low cluster can absorb a 56 percent gain and still not reach the
+   middle.
+2. **Improving beagle alone saturates.** Once beagle passes essays the median
+   becomes the mean of medicine and essays, which caps that route at
+   **3.3556, or +3.80 percent**. This reproduces the beagle ceiling already
+   recorded from a different direction, which is a consistency check on both.
+3. **A uniform improvement across the wide prompts is the only lever that moves
+   the median by its full size.** Kernel and runtime work is uniform. Schedule
+   work redistributes and is therefore dangerous.
+4. Had arm 3's 11.26 percent landed uniformly the median would have been about
+   **3.64**. A gain of that size was on the table and we collected none of it.
+
+### (D) 🔴 The local fixture is at the wrong operating point, by a large margin
+
+| | local ship | local pbfit | ranked pooled | beagle | medicine |
+|---|---:|---:|---:|---:|---:|
+| mean verify width | **7.27** | 6.47 | **5.82** | 5.53 | 5.77 |
+| share at M=5 | 6.4 % | 49.4 % | 24.1 % | | |
+| share at M=6 | 29.5 % | 5.9 % | 33.4 % | | |
+| share at M=9 | **43.6 %** | 30.6 % | **5.75 %** | | |
+
+Local shares are round counts from the E66 census (78 rounds); ranked shares are
+the item 207 G time shares.
+
+**The local fixture over-weights M=9 by 7.6x and under-weights M=5 by 3.8x**,
+and the two scoring prompts sit below the pooled mean as well. Every whole-leg
+local measurement this campaign has ever made is an average taken under that
+distribution. It is a plausible contributor to our kernel table choosing
+`<T,9,5>` at all, since M=9 is 43.6 percent of local rounds and 5.75 percent of
+ranked time.
+
+This does not invalidate per-width or per-cell local measurements, which are
+reweightable. It invalidates local **whole-leg** numbers as arm rankings.
+
+### (E) Two proxies are now discredited. Name the surviving one.
+
+- **Dispatch count is not time.** The copy family is 17.0 percent of in-round
+  dispatches and about 0.02 percent of GPU time, an overstatement of roughly
+  1000x (item 218).
+- **Pooled candidate seconds per token is not the score.** Arm 3 moved it -11.26
+  percent and moved the score -0.66 percent.
+
+`program.md` is not contradicted: lowering candidate seconds per token **on a
+prompt** does raise that prompt's raw ratio. The error is aggregation. Our local
+harness measures one prompt, at a width distribution unlike the two that score.
+
+**What survives: per-shape, per-width, absolute cell times, reweighted to the
+ranked pool.** That is now the campaign's unit of cost evidence. Askeladd's E78
+rung 2a and thorfinn's E75 per-width cells both produce it, and both have been
+told to report in that form rather than as leg numbers.
+
+### (F) 🔴 The price LEVEL is already bracketed on ranked. Do not reopen it.
+
+Before designing any depth-subsidy arm, read
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:920-935`. The inherited
+comment records official ranked runs at four values of `headStepCostRatio`:
+
+| `headStepCostRatio` | official score |
+|---:|---:|
+| 0.14 | 2.766 |
+| 0.15 | 2.667 |
+| 0.18 (shipped) | ~2.93 era baseline |
+| 0.32 | 2.84585 |
+
+with the h = 0.32 run (`fc62d1aa`) recording a flat baseline leg (0.038092 to
+0.038070, so not a draw artifact) and candidate decode time rising 0.95 percent.
+The streak gate is bracketed too: gate 1 scored 2.833, gate 0 tied at 2.9200,
+gate 2 ships.
+
+**"The way to buy depth is NOT the price. It is the cap."** I had drafted an arm
+that lowers `headStepCostRatio` to push beagle and medicine deeper, on the
+reasoning that pbfit's dear-deep shape lost. That arm is dead on arrival and I
+did not send it. The 0.14 result beating 0.15 is unexplained and may be a base
+difference; flagged, not resolved.
+
+### (G) The calibration set nobody has fitted
+
+The same comment records **per-prompt mean draft counts under two different
+values of h**, for five wide prompts plus the hard prompt:
+
+| | h = 0.18 | h = 0.32 |
+|---|---|---|
+| five wide prompts | 4.35, 4.89, 5.78, 5.33, 5.04 | 3.36, 4.01, 4.53, 4.03, 4.76 |
+| the hard prompt | 0.17 | 0.06 |
+
+A per-prompt chain model with per-position acceptance `p_1..p_8` must reproduce
+both columns with the same `p_i` and only `h` changed. Inverting item 207 alone
+is underdetermined: two observations per prompt against eight unknowns. **Two
+schedule settings per prompt is what makes it identifiable.** Together with six
+ranked scores, item 207's eight-prompt table and arm 3, that is enough to build
+and falsify a schedule oracle that predicts the median offline. Handed to
+alphonse as an extension of E79 rung 0, time-boxed so it cannot eat the head
+census.
+
+### (H) What I got wrong
+
+I banked `pbfit` on a local candidate-time measurement of -3.500 percent and
+spent a ranked slot on it. thorfinn had already told me, in E75, that my
+weighting was wrong — that I priced the rounds the schedule **moves** instead of
+the rounds where mass **sits**. He was right, and the receipt extends his
+correction one level up: I priced the **prompts** the schedule improves instead
+of the prompts the **score** is made of. Recorded as a standing rule.
+
+### (I) Actions taken on this item
+
+- E76 merged at `d79924a3`; the register axis is closed in the record.
+- askeladd (E78) told to make the per-width cell table the headline and to treat
+  the whole-leg arm ranking as a cross-check only, plus the `<T,6,6>` local spill
+  bias of 0.1 to 0.24 percent against arm A.
+- alphonse (E79) given the receipt, the median objective, and the calibration
+  set above.
+- thorfinn (E75 r2) given the receipt and asked to report per-width cells rather
+  than a leg number.
+- No new submission queued. Nothing measured currently beats arm 2 at 3.23588901,
+  and the advisor host has no GPU, so a new ranked arm must come from a
+  student-validated `--local-submit` snapshot.
