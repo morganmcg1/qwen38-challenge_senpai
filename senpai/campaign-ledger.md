@@ -15114,3 +15114,507 @@ run.
   moves.
 - **Unchanged in the queue:** the draft shortlist K=32 → K=64 acceptance A/B, the
   per-family width attribution via `QwenQMVCostCurveTests`, and the bundled GDN slot.
+
+## 201. The ranked board is itself an experiment corpus: it already contains the weight-stream experiment, it prices one stream removal at −0.639 % of the ranked candidate leg roughly flat in width, it retracts 200(A)'s pricing by 1.6–2×, and it shows the official submission was never structurally blocked
+
+Item 199 built a weight-stream cost model from local bandwidth. Item 200 corrected
+how that model converts into ranked score. This item does something different: it
+stops extrapolating and reads the answer off the official board, where the same
+mechanism has already been run many times by many solvers on the ranked M5 runner.
+
+The consequences are large and mostly deflationary. One of them is not: the
+official submission this campaign has treated as blocked for several generations is
+not blocked, and the candidate that would be submitted has been fully validated the
+whole time.
+
+Sources: the Yukon submissions API (773 submissions, 767 with records); the
+organizer submission refs under `refs/remotes/upstream/submissions/*`; edward E56 r2
+(PR #59, `#issuecomment-5350501617`, W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9jdz48re`,
+run `9jdz48re`, plus `xbgr93bj`, `5wzwasmj`, `6w0u9bls`, `1a9dacfm`, `l07p4fzw`,
+`7ugpekz4`, `j6pweice`, `fx5tt1bv`, `bjnlxbal`); askeladd E61 rung 2a (PR #64,
+`#issuecomment-5350538684`, jobs `a0b1c748` and `cc3d675a`); alphonse E62 rung 0
+(PR #65, `#issuecomment-5350118832`); E55 (W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wxezisvs`,
+run `wxezisvs`); alphonse E60 (W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/5f9620v9`,
+run `5f9620v9`). New instruments: `research/ranked_stream_ab.py`,
+`research/ranked_stream_ab_board.json`. Scratch: `_advisor_scratch/deficit_check.py`,
+`_advisor_scratch/unblock_check.py`, `_advisor_scratch/census_negctl.py`.
+
+### 201(A) Our own best official row already contains `t55`
+
+`senpai/run-all-gates.sh` reported `census-selftest` FAIL: "HEAD dispatch table M9=5
+differs from the crown M9=3". Chasing that failure led to the pin comment for
+`ca9251b8` in `research/stream_dispatch_census.py`, which claimed E27 raised only
+`case 5`. Reading the tree refutes it:
+
+```
+git show refs/remotes/upstream/submissions/ca9251b8-58cd-4d90-9a52-fa05f5657216:
+  Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+:980   static_assert(NA >= 2 && NA <= 5, ...)
+:1939  qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>      <- this is t55
+:1962  qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>      <- this is E55
+```
+
+**Our own submission `ca9251b8` already ships both `t55` and E55.** The campaign has
+been treating `t55` as an untried mechanism with a large local model prediction. It
+has an official measurement.
+
+The diff from its base `11863aa9` (3.24326223889754) to `ca9251b8`
+(3.23250848263467) is three files:
+
+| file | lines | content |
+| --- | --- | --- |
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | 109 | removes the EOS early stop (`reachedStopToken`), adds `traceSink` / `scheduleTrace` / `snapshotScheduleSignal` instrumentation |
+| `Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp` | 8 | `NA<=4` → `NA<=5`; `case 5` IPG 3 → 5; `case 9` IPG 3 → 5; a COMMENT-only fix at `case 8` |
+| `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h` | 24 | the same kernel deltas |
+
+The session diff is not a policy change. The kernel delta is exactly `t55` plus
+E55. The score moved 3.24326223889754 → 3.23250848263467 = **−0.3315 %**, against a
+local model that predicted about +1.5 %.
+
+The old pin comment blamed the loss on registers: IPG 5 costing 125 registers and
+pushing the shared allocation to 129. That causal claim is **refuted** — see 200(C)
+for askeladd's direct dose and 201(G) below for the source construction. The pin is
+rewritten with the measurement inline.
+
+### 201(B) The board contains a large, matched, free experiment corpus
+
+`python3 research/stream_dispatch_census.py ab` finds submission trees that are
+byte-identical on every file **except** the two QMV kernel files, grouped by
+`non_kernel_fingerprint`. Over 761 scanned trees, 584 carry a readable dispatch
+table, there are 453 distinct non-kernel fingerprints, and **11 fingerprints hold
+more than one distinct dispatch table**. Each such fingerprint is a controlled A/B
+that the organizer's own M5 runner has already executed.
+
+The readout is **not** the published score. It is
+`officialMetrics.per_prompt[].mtp_seconds_per_token_mean`, joined across trees by
+`prompt_sha256`. That field is the ranked **candidate leg**: exactly the quantity a
+candidate edit can move.
+
+Two fields in the same record make the comparison falsifiable rather than assumed:
+
+1. `serial_seconds_per_token_mean` comes from the runner-owned prebuilt baseline
+   workspace. No candidate edit can move it. It is the null channel.
+2. `effective_mean_draft_len` must be identical between the two arms, because
+   exactness forces the same accepted token stream. It is the arm-identity channel.
+
+`research/ranked_stream_ab.py` implements this with five selftest checks, including
+a positive control that injects `log(1.05)` into the low arm and requires recovery
+to 1e-6. The serial-leg gate **fired for real** on the first draft of the script,
+which used `mean(|serial delta|)` where a zero-mean null with sd 0.163 % gives about
+0.130 % by construction. It is now a signed mean. The instrument can fail.
+
+### 201(C) The ranked candidate leg is heavy-tailed and about 7× noisier than the serial leg
+
+Over pairs of ranked runs whose submitted surface is byte-identical:
+
+```
+pairs 261      median +0.0242 %      IQR [−1.068, +1.169] %
+candidate leg pair sd:  raw 2.554 %   MAD-scaled 1.648 %   5 %-trimmed 1.110 %
+serial leg    pair sd:  raw 0.163 %   mean +0.0129 %
+=> sd of ONE ranked candidate leg = 1.165 %
+beyond 3 %: 15 of 261 (5.7 %)      worst 14.73 %
+```
+
+The six worst pairs all sit in fingerprint `407c6b1903` and all involve one
+anomalous `ofou` run, at identical draft length, identical depth, identical head,
+with a clean serial leg. **A single ranked candidate-leg comparison is not
+evidence.** This also puts item 193's rejection of a "bimodal slow state" back in
+question: 193 rejected it at the score level, where the median over eight prompts
+suppresses a per-prompt tail. It should be re-examined at the leg level.
+
+Item 193 remains the authority for the published **score**
+(one-run sd 0.756 %, difference sd 1.069 %). `research/ranked_stream_ab.py` is now
+the authority for the ranked **candidate leg**.
+
+### 201(D) One weight-stream removal is worth −0.639 % ± 0.313 % of the ranked candidate leg, roughly FLAT in width
+
+Restricting to fingerprint groups whose two dispatch tables differ at exactly one
+verify width, and signing as LO (fewer streams) minus HI:
+
+| fingerprint | M | IPG | streams | nA | nB | cand % | se % | t | serial % |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `724ee0ca22af` | 4 | 4>2 | 1>2 | 1 | 1 | −0.704 | 1.648 | −0.43 | −0.026 |
+| `9a5ecf786cb0` | 4 | 4>2 | 1>2 | 15 | 4 | −0.742 | 0.656 | −1.13 | −0.129 |
+| `8bb4dfd03ecb` | 6 | 3>2 | 2>3 | 1 | 1 | −0.334 | 1.648 | −0.20 | +0.056 |
+| `774949454dfa` | 8 | 4>3 | 2>3 | 3 | 1 | +0.053 | 1.346 | 0.04 | −0.181 |
+| `7d29a6339532` | 8 | 4>3 | 2>3 | 2 | 3 | −0.338 | 1.064 | −0.32 | −0.102 |
+| `850d910774ab` | 8 | 4>3 | 2>3 | 1 | 1 | −0.190 | 1.648 | −0.12 | +0.095 |
+| `8bb4dfd03ecb` | 8 | 4>3 | 2>3 | 1 | 1 | −1.031 | 1.648 | −0.63 | −0.042 |
+| `9a5ecf786cb0` | 8 | 4>3 | 2>3 | 1 | 15 | −1.496 | 1.203 | −1.24 | +0.139 |
+| `c20dd11ef7bb` | 8 | 4>3 | 2>3 | 2 | 1 | +0.012 | 1.427 | 0.01 | +0.246 |
+| `cb6151db87fc` | 8 | 4>3 | 2>3 | 6 | 2 | −1.016 | 0.951 | −1.07 | +0.013 |
+| `e95589cbfdc3` | 8 | 4>3 | 2>3 | 3 | 6 | −0.433 | 0.824 | −0.53 | +0.069 |
+| `e95589cbfdc3` | 8 | 4>2 | 2>4 | 3 | 1 | −0.984 | 1.346 | −0.73 | −0.156 |
+| `e95589cbfdc3` | 8 | 3>2 | 3>4 | 6 | 1 | −0.550 | 1.259 | −0.44 | −0.226 |
+
+Pooled by width, against the local weight-stream model of 199(B):
+
+| M | groups | runs | effect % | se % | t | local model % | ratio |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 4 | 2 | 21 | −0.737 | 0.609 | −1.21 | −4.240 | 0.174 |
+| 6 | 1 | 2 | −0.334 | 1.648 | −0.20 | −6.977 | 0.048 |
+| 8 | 10 | 60 | −0.618 | 0.375 | −1.65 | −1.287 | 0.480 |
+| **all** | **13** | **83** | **−0.639** | **0.313** | **−2.04** | — | — |
+
+Two models over the three measured widths:
+
+- **constant per removal: −0.639 %, χ² = 0.063 on 2 dof**
+- proportional to the local model: ρ = 0.191, χ² = 1.367 on 2 dof
+
+A flat effect fits about **20× better**. The decisive detail is that the local
+model's LARGEST prediction (M = 6, −6.977 %) carries the SMALLEST measured effect
+(−0.334 %). A proportional law cannot produce that ordering; a flat law predicts it
+exactly.
+
+The serial-leg column is the null and behaves: thirteen values spanning −0.226 % to
++0.246 % with no relation to the arm.
+
+### 201(E) `t55` and `t6` are worth about a third of what 200(A) said. 200(A) is retracted
+
+Applying the three laws to the two queued arms:
+
+| arm | local model | flat | proportional |
+| --- | --- | --- | --- |
+| `t55` | −5.990 % | −0.639 % | −1.145 % |
+| `t6` | −4.205 % | −0.639 % | −0.804 % |
+
+| combination | candidate leg | raw ratio | **published** |
+| --- | --- | --- | --- |
+| `t55` + `t6`, local model | −10.195 % | +11.352 % | +6.036 % |
+| **`t55` + `t6`, flat** | **−1.278 %** | **+1.295 %** | **+1.171 %** |
+| **`t55` + `t6`, proportional** | **−1.948 %** | **+1.987 %** | **+1.506 %** |
+
+**Item 200(A)'s published prices are retracted.** They read +1.942 % for `t55`+`t6`
+and +2.431 % for `rbx`+`t6`+`t55`. The honest ranked-anchored range for `t55`+`t6`
+is **+1.0 % to +1.6 % published**, a factor of 1.6–2.0 lower.
+
+The queue does not change. `t55` and `t6` remain the two best-supported runnable
+mechanisms, both are far above the ranked score noise floor once composed, and both
+now have a ranked anchor instead of only a local extrapolation. Only the expected
+size changes, and students running those arms were told so directly.
+
+A useful cross-check comes from the rival width mixture. Board trees run
+`effective_mean_draft_len` ≈ 3.86, so M ≈ 4.86, against our beagle 5.53. Under a
+mixture shifted down about 0.67 widths, M = 8 holds roughly 4 % of ranked QMV, so
+the local model predicts −0.70 % against the measured −0.618 %: **ρ ≈ 0.88, the
+model works at M = 8**. At M = 4 the same mixture gives roughly 20 %, so the model
+predicts −5.97 % against a measured −0.737 %: **the model fails by 8× at M = 4.**
+The local model is not uniformly wrong. It is wrong at narrow widths.
+
+### 201(F) The proposed mechanism reaches E63's hypothesis from the ranked side
+
+`first_m = tid.x * IPG`, with an early return at `first_m >= M`
+(`quantized.h:1156-1186`), means the grid always launches M threadgroups in x and
+every one past the last group exits immediately. At M = 4 with IPG 4, **one
+x-threadgroup in four** does work; with IPG 2, two do. Removing a weight stream also
+**empties the machine**, and a pure bytes-over-bandwidth model has no term for that.
+The narrower the width, the larger the fraction of the grid the change idles, which
+is exactly the direction of the observed failure.
+
+This is the same quantity edward's E63 (PR #66) was assigned to measure from the
+local side. Two independent routes now point at grid occupancy in the *dispatch*
+sense — how many x-threadgroups do work — rather than register-limited occupancy in
+the *residency* sense, which 201(G) rules out.
+
+### 201(G) Occupancy cannot explain the width cliff, by source construction
+
+Verified directly in
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h`:
+
+- `affine_qmv_fast` is a **single `[[kernel]]` entry point** at `:1869`.
+- Every verify-width cell is a `case` inside a **runtime** `switch (ntg.x)` at
+  `:1922`. A second switch at `:1980` serves the 1024–4096 out-vec range.
+- `qmv_fast_crossrow_affine4_g64_m` at `:1157` is a `METAL_FUNC`, **not** a
+  `[[kernel]]`. Every branch inlines into one function.
+
+Therefore the compiled register allocation, the pipeline state object, and the
+resident simdgroup count are **identical for M = 2 and M = 9**. Only the runtime
+branch differs. Occupancy is constant across the entire ladder.
+
+Three corollaries:
+
+1. askeladd's ballast dose is **valid**: a dead `case 12` genuinely raises the
+   shared entry point's register count, because allocation is the maximum over all
+   inlined branches.
+2. The per-cell register counts from `research/e46_reg_census.py` — 83 / 104 / 125 /
+   144 / 157 / 177 — are **isolated-cell compiles**. The scored kernel runs at
+   `entry_batch0` ≈ 178 under scored math flags, and 181 under legacy flags, for
+   **every** width.
+3. Thorfinn's E59 title, "the 108-register legality floor", describes an
+   isolated-cell quantity, not a property of the scored kernel. The E59 measurements
+   stand; the framing needs the qualifier.
+
+### 201(H) The crown deficit is 0.0173 %, not 0.5367 %
+
+The recorded deficit came from our best official row `ca9251b8` = 3.23250848263467
+against the crown 3.24985583421771. But `ca9251b8` is the E27 tree from an earlier
+campaign generation. It is not what we ship.
+
+Measured directly over the 154 files under the 89 `editablePaths` entries
+(`_advisor_scratch/deficit_check.py`):
+
+| tree | scored-surface signature |
+| --- | --- |
+| crown `9e1ff9ec` (3.24985583421771) | `06973a08f4f20e01` |
+| organizer promoted snapshot `0c90733d` (3.24929398547457) | `8939a3a48d90709a` |
+| `origin/main` `770a3ff2` | `3d0170a2bdb6b33e` |
+| our base HEAD `d67d8d19` | `245a35ea011f478c` |
+| our old submitted tree `ca9251b8` (3.23250848263467) | `32b4178552823f5c` |
+
+- `0c90733d` versus `origin/main` differ in exactly one file,
+  `mlx-generated/quantized.cpp`, and the diff is a **comment block only** at
+  `case 8`. The live template argument is `<T, 8, 4, true>` on both sides. The
+  organizer's main and the promoted snapshot are behaviourally identical on the
+  scored surface.
+- `origin/main` versus our base differ in four files:
+  `Qwen36MTPBlockSession.swift` (+112 / −47), `Qwen35.swift` (+32 / −19),
+  `mlx-generated/quantized.cpp` (+5 / −15), `kernels/quantized.h` (+2 / −2). The two
+  kernel diffs are exactly E55 (`NA<=4` → `NA<=5`, `case 9` IPG 3 → 5) plus the
+  reverse of that same `case 8` comment block. **No merged delta regresses the
+  inherited surface.**
+
+So our base is the organizer's promoted snapshot plus E55 plus our merged session
+work. The correct reference for "how far behind is the surface we inherited" is the
+organizer main row `0cd0a6b4` = 3.24929398547457, giving
+`3.24985583421771 / 3.24929398547457 − 1` = **0.0173 %**, thirty-one times smaller
+than the recorded figure.
+
+Caveat, recorded honestly: this is the deficit of the **inherited** surface. Our own
+merged deltas on top — E55 and the session work — have never been officially
+measured. Their true ranked value is unknown. Under the flat law of 201(D), E55
+alone removes one weight stream at M = 9 and should be worth about +0.64 %
+published, which is **37× the gap**.
+
+### 201(I) The official submission was never structurally blocked
+
+Items 194 and later recorded the submission as blocked by two gates in
+`senpai/submit-official.sh` that "require a write to `origin/main`". That conclusion
+was wrong, and it was wrong because the campaign kept passing an old
+`BASE_SHA` (`d2139c92`) that predated the organizer's advance.
+
+The three base gates are:
+
+```
+:187  git merge-base --is-ancestor "${base_sha}" HEAD
+:190  git merge-base --is-ancestor "${base_sha}" "${main_sha}"
+:383  git diff --quiet "${main_sha}" "${base_sha}" -- benchmark.json "${editable_paths[@]}"
+```
+
+Set `BASE_SHA` to `origin/main`'s own tip and `:190` becomes a self-ancestor test
+and `:383` becomes a self-diff. Both pass unconditionally. `:388`, which requires
+`benchmark.json` at HEAD to equal `benchmark.json` at main, already passes: the blob
+is `a432474e5785c7cb20e7417c346ab14cabffc82a` at HEAD, at main, and in the merged
+tree. Only `:187` fails, and `:187` is satisfied by merging `origin/main` **into**
+the advisor branch.
+
+That is precisely what the guard's own error message asks for: *"replay and
+remeasure the candidate on the maintained frontier"*. The guard never required our
+campaign deltas to be merged into `main`. It required the declared base to be an
+upstream-clean commit that our HEAD contains.
+
+`git merge-tree --write-tree HEAD refs/remotes/origin/main` produces tree
+`f907b9835e6d03f2eedcb1c4081f7f6ca84145ca` with exactly two conflicts,
+`senpai/campaign-ledger.md` and `senpai/frontier-state.json`. Both are campaign
+bookkeeping and **neither is in `editablePaths`**. Every scored-surface file
+auto-merges. The merged tree changes exactly one scored-surface file relative to
+HEAD, and that change is the `case 8` comment block again — resolvable to our side,
+leaving the scored surface byte-identical.
+
+### 201(J) The candidate has been validated the whole time
+
+```
+git diff --stat d2139c92..HEAD -- <89 editablePaths entries>
+  (empty)
+```
+
+**The scored surface has not moved since `d2139c92`.** Every commit since has
+touched only `research/`, `senpai/`, and other campaign-owned paths. And `d2139c92`
+is the exact tree on which item 194 recorded the full pre-submit chain passing:
+`research/twin_audit.py` clean over 29 twins;
+`senpai/verify-ranked-score-boundary.sh` PASS; `senpai/check-editable-budget.sh` OK
+at 2,458,949 / 3,000,000 source bytes and 4,891 / 262,144 growth;
+`senpai/validate-assignment-scope.sh` OK over 4 paths; a 512-token PATH C exactness
+run including post-EOS continuation and row-ledger closure; and a gate-qualified
+`--local-submit` passing three times.
+
+A fully validated candidate carrying an unmeasured mechanism worth an estimated
++0.64 % published, sitting 0.0173 % behind the crown, has been parked for several
+campaign generations behind a misread precondition. `program.md` is explicit that
+this is the failure mode to avoid: *"Do not leave a credible candidate parked on a
+review branch while working on campaign plumbing."* The submission proceeds now.
+
+### 201(K) Edward's E56 closes: the schedule arm is real, and the public fixture cannot measure it
+
+PR #59 is closed unmerged with a high-value negative. The head ships
+`pricedBoundaryWidths: Set<Int> = [5]` as the default, and edward's own
+counterfactual prices that default at **−1.5631 % and −0.9644 %** on the two
+score-setting ranked prompts. The mechanism is sound; the shipped default is wrong.
+
+Measurements, all 512 tokens, 18 legs across 2 ABBA sessions, the real 40 °C gate
+passed on every leg, all exact with zero residual divergence:
+
+| arm | s/token | vs base |
+| --- | --- | --- |
+| base (post-E55 `7040406`) | 0.03405768 | — |
+| **s45** | **0.03271992** | **−3.9279 %** |
+| s89 | 0.03484947 | +2.3248 % |
+| h224 | 0.03461337 | +1.6316 % |
+| s45h224 | 0.03306136 | −2.9254 % |
+
+`s45` replicates at −3.9259 % pre-E55 and −3.9279 % post-E55: **0.002 pp apart**
+across a base that moved 4.73 %.
+
+**The decision-boundary rule.** With `pricedBoundaryWidths = [5]`,
+`withinTier = 8 × 0.18 / (8 − 1 + 2.0301) = 0.159467`, the depth-3 marginal is
+`0.323734`, and `cumulative[3] = 1.478401`. The walk extends past verify width 4
+if and only if `p⁴ > 0.218976 · (1 + p + p² + p³)`:
+
+| prompt | p | left | right | extends |
+| --- | --- | --- | --- | --- |
+| the crossing | 0.9491 | 0.81145 | 0.81131 | boundary |
+| ranked beagle | 0.8351 | 0.48637 | 0.68207 | no |
+| ranked medicine | 0.8750 | 0.58618 | 0.72494 | no |
+| **public local fixture** | **0.9625** | — | — | **yes** |
+
+**The public local fixture sits on the opposite side of this price's own decision
+boundary from both score-setting ranked prompts.** A schedule-policy arm measured
+locally is measuring a different policy regime. This applies to every scheduler
+experiment. It does **not** apply to kernel work, whose per-width cost does not
+depend on the acceptance rate.
+
+Reproduced independently by the advisor to four decimal places.
+
+Six further results from the same PR:
+
+1. **The repair-aware walk is closed with zero GPU.** Width-matched median repair
+   cost is **0.482 ms/round** on the post-E55 base and **0.472 ms** pre-E55, which is
+   0.29 % and 0.26 % of a clean round. Repair fires on 19.3 % of rounds, so a
+   perfect repair-aware walk saves at most **0.06 %**. Item 198(H) estimated about
+   +2.5 % from dispatch counts. **That estimate is retracted; it was 8× too large.**
+   **Dispatch count is not time.** Instrument: `research/e56_repair_census.py`.
+2. **`s89` is a fourth independent validation of the weight-stream model.** E55
+   changed exactly one cell. Clean-round marginals:
+
+   | step | pre-E55 | post-E55 | change |
+   | --- | --- | --- | --- |
+   | m(4→5), a boundary on both | 42.495 ms | 41.821 ms | −1.6 % |
+   | **m(8→9), a boundary only pre-E55** | **41.205 ms** | **19.834 ms** | **−51.9 %** |
+   | m(5→6), m(6→7), m(7→8) | 13.3–16.6 ms | 13.9–15.9 ms | flat |
+
+   Subtracting edward's fitted per-row term of 9.573 ms leaves stream deltas of
+   31.63 and 10.26 ms, a ratio of **0.324**. The stream model with the E1-calibrated
+   0.80 extra-group discount predicts 39.61 and 13.24, a ratio of **0.334**. Three
+   per cent apart.
+3. **Kernel and schedule arms are substitutes.** Pre-E55 `sfull` is −8.3334 %; E55
+   alone is −4.7264 %; the joint result is −8.4687 % against an independent
+   prediction of −12.6659 %. The interaction is **+4.1972 pp, so 33.1 % of the joint
+   gain is shared**. The best candidate on the new base is only 0.1476 % faster than
+   the best on the old base, though E55 moved the base 4.73 %. **Price kernel and
+   schedule arms jointly, never additively.** This does not discount `t55` or `t6`:
+   the shipped scheduler is width-blind at a flat h = 0.18.
+4. **`headStepCostRatio = 0.18` is confirmed and the retune question is retired.**
+   `h224` loses at +1.6316 %, and `s45 × h224` is −0.629 pp super-additive.
+5. **The width cap cannot express the post-`t55`+`t6` optimum.** The marginal walk
+   stops at width 4 today and at **6** after `t55` and `t6`, for every acceptance
+   rate in 0.80–0.99. The shipped
+   `widthCap = fullAcceptStreak >= 2 ? 8 : 5` expresses 5 or 8, never 6.
+6. **The local null floor is non-monotone in leg separation on a second host.**
+   Same-arm spreads at separations 1/3/5/7/9 are 0.2108 / 0.0093 / 0.9729 / 0.0539 /
+   0.2185 %. The separation model of 198(G) is refuted on edward's Mac as well as
+   alphonse's. Take the largest same-arm spread; `s45` clears it 4.0×.
+
+Queued follow-up: after `t55` and `t6` land, set `pricedBoundaryWidths = [7]` and
+re-import with
+`git checkout e2bd7e61 -- Sources/MLXFastModel/Qwen36MTPBlockSession.swift Tests/MLXFastTests/QwenMTPDepthCostModelTests.swift`.
+At p = 0.8351 that walk extends to depth 5 and stops, giving verify width 6 —
+exactly the 199(H) optimum. Branch
+`qwen-edward/stream-aware-draft-depth-schedule` at `e2bd7e61` must not be deleted.
+
+### 201(L) askeladd's rung 2a: parity passes, and two instrument corrections
+
+QMV bitwise parity (job `a0b1c748`, exit 0, artifact
+`research/e61-artifacts/e61-qmv-parity.json`), 192 cells per arm over 8 scored shapes
+× M = 1..12 × bits {4, 3}:
+
+| arm | verdict | differing cells |
+| --- | --- | --- |
+| `t6` | **bit-identical** | 0 / 192 |
+| `shipped_rbx` | **bit-identical** | 0 / 192 |
+| `t6_lane_perturb` | diverges | 8 / 192, all at bits = 4, M = 6 |
+
+Recomputed independently by `research/e61_parity_report.py`, which exits 7 unless
+the negative control fires.
+
+**The honest covering-cell count is 64, not 192.** The guard is
+`!batched && group_size == 64 && bits == 4 && out_vec_size >= 1024`, with the
+multi-row `ntg.x` switch nested inside `out_vec_size >= 4096`. All 96 bits = 3 cells
+route to `qmv_fast_impl`. The parity result is still sufficient — it covers every
+cell the change can reach — but the coverage claim must be stated at 64.
+
+**Retraction: every earlier `geometry_lever_verified=true` in E61 was a false
+green.** The probe grepped worker stderr for a notice that can never appear on a
+Qwen MTP leg, as 198(F) established. Arm C of the corrected probe passed properly:
+`DARKBLOOM_STARTUP_MEMORY_PROFILE=bogus` produces worker `exit_status=5`. Arm B did
+not: it probed `MLX_MAX_OPS_PER_BUFFER` and measured ops = 50 at 0.08764227 against
+ops = 8 at 0.08722072 s/token, which is **0.48 % faster, the wrong sign**.
+
+**That wrong-sign result is a cross-host replication, not a defect.** askeladd's
+ops = 8 leg accidentally ran about 21,000 commits against 3,900, a 5.4× dose, and
+came out faster. It independently replicates alphonse's E62 ladder on a second Mac.
+Right lever, wrong instrument.
+
+**And askeladd's mechanism claim is corrected.** He argued the ops arm has no power
+because `buffer_sizes_` reaches 512 MB first, since `device.cpp:486` is an `||`.
+alphonse's census falsifies it: `(512, 50)` gives 30.95 dispatches per commit and
+`(4096, 50)` gives 30.72, which is 0.75 % apart. **`MLX_MAX_OPS_PER_BUFFER` binds at
+every setting either student has run, and `MLX_MAX_MB_PER_BUFFER = 512` never binds
+on this workload.**
+
+### 201(M) Instrument and gate changes
+
+- `research/stream_dispatch_census.py` gains `DECLARED_HEAD_CROWN_DIVERGENCE`. The
+  HEAD-versus-crown check no longer tests raw table equality, which failed on the
+  intentional E55 divergence at M = 9. A declared divergence passes with its
+  measurement recorded; an **undeclared** divergence still fails, in either
+  direction, so a silent revert of a merged kernel win is caught by the same check
+  that permits the intended one. Four negative controls confirm it fires: removing
+  the declaration, moving it to the wrong width, wrong declared HEAD value, wrong
+  declared crown value.
+- `research/stream_optimality.py` selftest is repaired and passes. Section 4's
+  negative control now reads the live NA ceiling; section 5 reads
+  `SHIPPED_BOUNDARIES`; the M = 9 break-even tax is corrected from 12.43 % to
+  **14.20 %**, because `streams(9) = ceil(9/5) = 2` gives `100 × 20.291 / 142.905`.
+  M = 5 stays at 21.20 %.
+- `research/ranked_stream_ab.py` and `research/ranked_stream_ab_board.json` are new.
+  The board export holds 428 trees in 343,257 bytes with prompt keys shortened to
+  8-character prefixes. `research/` is outside `editablePaths`, so neither touches
+  the submission budget. The raw 10 MB Yukon dump stays in scratch and must never be
+  committed.
+- `senpai/run-all-gates.sh` now reports `stream-optimality-selftest` PASS and
+  `census-selftest` PASS. The nine remaining failures are the previously proven
+  pre-existing and crown-drift set.
+
+### 201(N) Queue changes
+
+- **Now first: submit.** Merge `origin/main` into the advisor branch, resolve the two
+  bookkeeping conflicts and the `case 8` comment to our side, and submit with
+  `BASE_SHA = 770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`. The candidate is already
+  validated; the surface has not moved since `d2139c92`.
+- **Unchanged in tier 1, with corrected prices:** confirm `t6` end to end (askeladd
+  rung 3), then `t55` (thorfinn rung 4 leg session), then the `rbx` width ladder.
+  Expected published value of `t55` + `t6` is now +1.0 % to +1.6 %, not +1.9 % to
+  +2.4 %.
+- **Promoted in tier 1:** the width cliff (edward E63, PR #66) is now independently
+  motivated from the ranked side by 201(F). The dispatch-grid explanation is
+  testable and cheap.
+- **New:** extend `research/ranked_stream_ab.py` beyond the QMV dispatch table. The
+  same fingerprint machinery prices **any** single-file kernel mechanism that
+  appears more than once on the board, at rank, for free, with a serial-leg null and
+  an exact draft-length match. Use it before extrapolating any local model to rank.
+- **Retired:** the E27 register story; `t55` as an unmeasured mechanism; item
+  200(A)'s published prices; the repair-aware walk; the `headStepCostRatio` retune;
+  the standalone GDN gate slot; askeladd's MB-binds-first claim; and the belief that
+  the official submission needs a write to `origin/main`.

@@ -194,12 +194,33 @@ PINS = [
      "width"),
     ("ca9251b8",
      {3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 2}, [6],
-     "our own E27 tree, which scored 3.23250848263467 (-0.3321 % vs base). "
-     "It is the ONLY tree on the board whose boundary sits at 5->6, because "
-     "E27 raised case 5 to IPG 5. E27 was, mechanically, the 'make M=5 a "
-     "single weight stream' experiment -- and it lost score, because IPG 5 "
-     "cost 125 registers and pushed the SHARED allocation to 129"),
+     "our own E27 tree, which scored 3.23250848263467 (-0.3315 % vs its base "
+     "11863aa9 = 3.24326223889754). It is the ONLY tree on the board whose "
+     "boundary sits at 5->6, because E27 raised BOTH case 5 and case 9 to "
+     "IPG 5. E27 therefore already contains t55 AND E55: the campaign's "
+     "'make M=5 a single weight stream' arm has an official measurement. "
+     "The old note here blamed the loss on registers -- IPG 5 costing 125 "
+     "registers and pushing the shared allocation to 129. That causal claim "
+     "is REFUTED. E61 rung 1b dosed +15 registers at fixed routing and "
+     "measured +0.3804 % (1.98x the same-arm null) against a NA=5->6 step of "
+     "-22 %, and quantized.h:1869 shows affine_qmv_fast is a SINGLE [[kernel]] "
+     "entry point whose per-width cases are runtime switch branches at :1922, "
+     "so occupancy is identical at every verify width. The -0.3315 % is "
+     "inside the ranked candidate-leg null: see research/ranked_stream_ab.py, "
+     "which measures that null at 1.165 % per run from 261 byte-identical "
+     "pairs, and prices one stream removal at -0.639 % +/- 0.313 %"),
 ]
+
+# HEAD is allowed to differ from the crown only where the campaign says so.
+# Each entry is width -> (crown IPG, HEAD IPG, why). A divergence that is NOT
+# listed here still fails, in either direction, so a silent revert of a merged
+# kernel win is caught by the same check that permits the intended one.
+DECLARED_HEAD_CROWN_DIVERGENCE = {
+    9: (3, 5,
+        "E55, merged as 7040406: case 9 IPG 3 -> 5 turns M=9 from 3 weight "
+        "streams into 2. Measured -4.2952 % on the local MTP leg against a "
+        "+0.0497 % null, bitwise exact over 512 tokens including post-EOS"),
+}
 
 
 def selftest():
@@ -246,16 +267,38 @@ def selftest():
             failures.append("%s: boundaries at %s != expected %s (%s)"
                             % (rev[:10], got, exp_bounds, why))
 
-    # 3. HEAD must agree with the crown on the scored surface's dispatch table.
+    # 3. HEAD must agree with the crown on the scored surface's dispatch table,
+    #    EXCEPT where the campaign has declared a divergence and said why. The
+    #    check is two-sided: an undeclared width, a declared width that stopped
+    #    diverging, and a declared width that moved to a third value all fail.
     head = dispatch_table("HEAD")
     crown = dispatch_table("0c90733d383f6b987a29682bf9eb9458a6172bfa")
     if head is None or crown is None:
         failures.append("HEAD or crown dispatch table unreadable")
-    elif head != crown:
-        failures.append("HEAD dispatch table %s differs from the crown %s -- if "
-                        "this is intentional say so, but every stream boundary "
-                        "quoted in a brief is now wrong"
-                        % (fmt(head), fmt(crown)))
+    else:
+        for m in sorted(set(head) | set(crown)):
+            h, c = head.get(m), crown.get(m)
+            declared = DECLARED_HEAD_CROWN_DIVERGENCE.get(m)
+            if declared is None:
+                if h != c:
+                    failures.append(
+                        "UNDECLARED divergence at M=%d: HEAD IPG %s, crown IPG "
+                        "%s. Full tables HEAD %s vs crown %s. Declare it in "
+                        "DECLARED_HEAD_CROWN_DIVERGENCE with the measurement, "
+                        "or every stream boundary quoted in a brief is wrong"
+                        % (m, h, c, fmt(head), fmt(crown)))
+                continue
+            want_c, want_h, why = declared
+            if c != want_c:
+                failures.append(
+                    "declared divergence at M=%d expects crown IPG %s, got %s "
+                    "-- the crown moved, so re-derive the declaration (%s)"
+                    % (m, want_c, c, why))
+            if h != want_h:
+                failures.append(
+                    "declared divergence at M=%d expects HEAD IPG %s, got %s "
+                    "-- a merged kernel win was reverted or re-tuned (%s)"
+                    % (m, want_h, h, why))
 
     # 4. The fingerprint must actually IGNORE the kernel files and nothing else.
     #    Fail closed if the paths it excludes are not present in HEAD, which
@@ -294,9 +337,13 @@ def selftest():
         for f in failures:
             print("  - %s" % f)
         return 1
-    print("SELFTEST PASS: %d arithmetic checks, %d pinned trees, HEAD==crown "
-          "dispatch table, fingerprint exclusions present, %d ab_verdict "
-          "fail-closed cases." % (12, len(PINS), len(ab_cases)))
+    print("SELFTEST PASS: %d arithmetic checks, %d pinned trees, HEAD vs crown "
+          "dispatch table agrees except at %s (declared), fingerprint "
+          "exclusions present, %d ab_verdict fail-closed cases."
+          % (12, len(PINS),
+             ",".join("M=%d" % m for m in sorted(DECLARED_HEAD_CROWN_DIVERGENCE))
+             or "no width",
+             len(ab_cases)))
     return 0
 
 

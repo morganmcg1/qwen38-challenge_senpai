@@ -1,7 +1,8 @@
 # SENPAI Research State
 
-- 2026-08-20, after ledger 200. Campaign base
-  `d2139c924c7a7d98ca6026eea63867c2776abbca`.
+- 2026-08-20, after ledger 201. Campaign base
+  `d67d8d194d3495cdac1261082029f078da342deb`. The **scored surface** has not
+  moved since `d2139c924c7a7d98ca6026eea63867c2776abbca`.
 - Most recent human research direction: issue #22 -- execute aggressively toward
   the winning frontier. Issue #31 is complete and closed. No new human direction
   is outstanding.
@@ -13,67 +14,159 @@
 - 🔴 Ledger 198 added a third: **audit whether the code you are pricing actually
   executes on the ranked path.** 198(A) found that the "ranked/full" allocator
   profile the whole campaign believed in is unreachable on the Qwen MTP worker,
-  and 198(F) found that three of my own standing instruments cannot fail. Both
-  errors survived for months because nobody demanded a positive control.
+  and 198(F) found that three of my own standing instruments cannot fail.
 - 🔴🔴 Ledger 199 added a fourth, and it subsumes most of the others: **the
   target forward already runs at 97.3 % of peak DRAM bandwidth, so the only
   lever on it is the number of weight streams per round.** Price every proposed
-  mechanism against that first. If it does not reduce weight streams, reduce
-  bytes, or act outside the target forward, it cannot pay.
+  mechanism against that first.
 - 🔴🔴 Ledger 200 added a fifth, after I broke the fourth: **check every new
-  ratio against the master fact in the same document.** 199 published both the
-  97.3 % weight-streaming round and a claim that QMV is 33 % of the leg. Those
-  cannot both be true. The error under-priced the whole QMV programme by 2.4x.
+  ratio against the master fact in the same document.**
+- 🔴🔴🔴 Ledger 201 adds a sixth, and it outranks the local model: **the ranked
+  board is an experiment corpus. Read the answer off it before extrapolating.**
+  `research/ranked_stream_ab.py` prices any repeated single-file kernel
+  mechanism directly at rank, with a serial-leg null and an exact draft-length
+  match. It found that the local bytes-over-bandwidth model over-prices a weight
+  stream removal by 2.6-5x, and that our own board row already contains the
+  experiment the campaign was preparing to run.
 
 ---
 
-## 🔴🔴🔴 Corrected pricing: one already-measured cell is 2.2x the crown deficit
+## 🔴🔴🔴 FIRST: submit. The blocker was a misread precondition
 
-Ledger 200(A) retracts 199(C). The ranked leg elasticity is **not** a row of the
-width table. It is `psi_mtp_ranked_leg = 0.81665 .. 0.82589`, from
-`research/dilution_basis.py`, which also puts QMV at **86.7-90.5 % of the round**
-by three routes that share no input and agree to under 1 %. That is what the
-roofline fact required all along.
+**The official submission was never structurally blocked.** The campaign kept
+passing an old `BASE_SHA` (`d2139c92`) that predated the organizer's advance, and
+read the resulting refusal as "a human must write to `origin/main`".
 
-**Ranked leg effect = (cell effect) x (ranked QMV width share) x 0.826.**
+The three base gates in `senpai/submit-official.sh` are:
 
-| set | ranked QMV | candidate leg | published score | sd |
-|---|---|---|---|---|
-| `t6` alone, **already measured** | -1.403 % | -1.159 % | **+1.112 %** | **1.47** |
-| `t55` + `t6` | -3.40 % | -2.808 % | +1.942 % | 2.57 |
-| `rbx` + `t6` + `t55`, composed | -4.544 % | -3.753 % | **+2.431 %** | **3.22** |
+```
+:187  git merge-base --is-ancestor "${base_sha}" HEAD
+:190  git merge-base --is-ancestor "${base_sha}" "${main_sha}"
+:383  git diff --quiet "${main_sha}" "${base_sha}" -- benchmark.json "${editable_paths[@]}"
+```
 
-Closing the gap to the live crown needs **-0.646 %** of ranked QMV: a **-1.94 %**
-effect at M=6, or **-2.68 %** at M=5. **askeladd measured -4.20 % at M=6.**
+Set `BASE_SHA` to `origin/main`'s own tip and `:190` is a self-ancestor test and
+`:383` is a self-diff. Both pass unconditionally. `:388` already passes: the
+`benchmark.json` blob is `a432474e5785c7cb20e7417c346ab14cabffc82a` at HEAD, at
+main, and in the merged tree. **Only `:187` fails, and merging `origin/main`
+into the advisor branch fixes it** -- which is exactly what the guard's own error
+message asks for: *"replay and remeasure the candidate on the maintained
+frontier"*. The guard never required our deltas to reach `main`. It required the
+declared base to be an upstream-clean commit that our HEAD contains.
 
-🔴 The campaign is no longer short of mechanism. It is short of two things: an
-end-to-end confirmation of `t6` on a leg (askeladd rung 3, running), and a
-publication channel (the `origin/main` blocker below).
+`git merge-tree --write-tree HEAD refs/remotes/origin/main` conflicts on exactly
+two files, `senpai/campaign-ledger.md` and `senpai/frontier-state.json`. Neither
+is in `editablePaths`. Every scored-surface file auto-merges, and the merge
+changes one scored-surface file relative to HEAD: the `case 8` **comment block**
+in `mlx-generated/quantized.cpp`, whose live template argument `<T, 8, 4, true>`
+is identical on both sides. Resolved to our side, the scored surface stays
+byte-identical.
 
-**Two pricing rules that follow.** `psi_mtp = 0.693391` is a *local
-prefill-inclusive leg* share; re-base it once with `(1-0.0875)/(1-0.234)` and do
-not also multiply by 0.9125, or the prefill is charged twice. And price ranked
-changes with the **ranked** width mixture: the local 512-token leg under-weights
-M=5 by **2.04x** and spends 62.6 % of its time at M=9, while the ranked pool is
-centred at M = 5.5 to 5.8.
+**And the candidate has been validated the whole time.**
+`git diff --stat d2139c92..HEAD` over the 89 `editablePaths` entries is **empty**.
+`d2139c92` is the exact tree on which the full pre-submit chain passed:
+`twin_audit.py` clean over 29 twins; `verify-ranked-score-boundary.sh` PASS;
+`check-editable-budget.sh` OK at 2,458,949 / 3,000,000 source bytes and
+4,891 / 262,144 growth; `validate-assignment-scope.sh` OK over 4 paths; a
+512-token PATH C exactness run including post-EOS continuation and row-ledger
+closure; and a gate-qualified `--local-submit` passing three times.
+
+```bash
+export PATH="${HOME}/.local/bin:${PATH}"
+python3 research/yukon_frontier_check.py
+yukon submissions --all
+senpai/submit-official.sh 770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf \
+  --model senpai --note-file <note>
+yukon submissions
+```
 
 ---
 
-## 🔴🔴 The width cliff has no mechanism, and that is now a tier-1 question
+## 🔴🔴🔴 The real deficit is 0.0173 %, and it is 31x smaller than recorded
 
-askeladd's E61 rung 1b dose response settles what it is **not**. Raising the table
-register maximum by 15 to 20 at fixed routing costs between 0 and +0.38 %, against
-a -22 % bandwidth step from NA=5 to NA=6. **Occupancy is refuted by two orders of
-magnitude**, and with it the last motivation for the `rbx` family as a register
-lever.
+The recorded 0.5367 % came from our best official row `ca9251b8`
+(3.23250848263467). That row is the **E27 tree from an earlier generation**. It
+is not what we ship.
 
-It is not DRAM saturation: NA=6 runs at 51.7 % of peak against NA=2's 98.2 %. It is
-not ALU saturation: NA=6 runs about 1.7 TFLOP/s against a scalar ceiling near 7.2.
-Both roofs are far away.
+Measured over the 154 files under the 89 `editablePaths` entries
+(`_advisor_scratch/deficit_check.py`):
 
-An occupancy law fitted to the ladder (`bw x regs` constant to ±10 % across NA=3..7)
-was **refuted by that dose by a factor of 30** before it reached a student. Recorded
-in 200(C) so nobody rebuilds it. A direct dose beats a fit.
+- `0c90733d` (the organizer's promoted snapshot, whose row `0cd0a6b4` scored
+  **3.24929398547457**) versus `origin/main`: one file, one **comment block**.
+  Behaviourally identical on the scored surface.
+- `origin/main` versus our base: four files. The two kernel diffs are exactly E55
+  (`NA<=4` -> `NA<=5`, `case 9` IPG 3 -> 5) plus the reverse of that comment
+  block. **No merged delta regresses the inherited surface.**
+
+So `3.24985583421771 / 3.24929398547457 - 1 = ` **0.0173 %**. On top of that
+inherited surface we carry E55, worth an estimated **+0.64 %** published under
+the flat law below -- about **37x the gap** -- and it has never been officially
+measured.
+
+---
+
+## 🔴🔴🔴 Ranked-anchored pricing: a weight stream is worth -0.639 %, flat in width
+
+**Ledger 200(A)'s published prices are retracted.** They were 1.6-2.0x
+optimistic. The replacement comes from 13 single-width contrasts over 83 ranked
+runs on the official board, using
+`officialMetrics.per_prompt[].mtp_seconds_per_token_mean` -- the ranked candidate
+leg -- joined by `prompt_sha256`:
+
+| M | groups | runs | effect % | se % | t | local model % | ratio |
+|---|---|---|---|---|---|---|---|
+| 4 | 2 | 21 | -0.737 | 0.609 | -1.21 | -4.240 | 0.174 |
+| 6 | 1 | 2 | -0.334 | 1.648 | -0.20 | -6.977 | 0.048 |
+| 8 | 10 | 60 | -0.618 | 0.375 | -1.65 | -1.287 | 0.480 |
+| **all** | **13** | **83** | **-0.639** | **0.313** | **-2.04** | -- | -- |
+
+**Constant per removal fits 20x better than proportional** (chi-square 0.063
+against 1.367, on 2 dof each). The decisive detail: the local model's *largest*
+prediction (M = 6) carries the *smallest* measured effect. A proportional law
+cannot order those; a flat law predicts it.
+
+| combination | candidate leg | raw ratio | **published** |
+|---|---|---|---|
+| `t55` + `t6`, local model (retracted) | -10.195 % | +11.352 % | +6.036 % |
+| **`t55` + `t6`, flat** | **-1.278 %** | **+1.295 %** | **+1.171 %** |
+| **`t55` + `t6`, proportional** | **-1.948 %** | **+1.987 %** | **+1.506 %** |
+
+**The honest range for `t55` + `t6` is +1.0 % to +1.6 % published.** The queue
+does not change; only the expected size does. Both students running those arms
+were told directly.
+
+🔴 **Our own row `ca9251b8` already ships `t55` AND E55.** Its kernel diff from
+base `11863aa9` is exactly those two changes, and it scored **-0.3315 %** -- well
+inside the ranked candidate-leg null. The old "IPG 5 cost 125 registers" story
+for that loss is refuted by askeladd's direct dose and by the source construction
+below.
+
+🔴 **The ranked candidate leg is heavy-tailed.** Over 261 byte-identical pairs:
+one-run sd **1.165 %**, 5.7 % of pairs beyond 3 %, worst 14.73 %, against a
+serial-leg sd of 0.163 %. **A single ranked candidate-leg comparison is not
+evidence.** Item 193 remains the authority for the published *score*; 201 is the
+authority for the *leg*.
+
+---
+
+## 🔴🔴 Occupancy cannot explain the width cliff, by source construction
+
+`affine_qmv_fast` is a **single `[[kernel]]` entry point**
+(`quantized.h:1869`). Every verify-width cell is a `case` in a **runtime**
+`switch (ntg.x)` at `:1922`, and `qmv_fast_crossrow_affine4_g64_m` at `:1157` is
+a `METAL_FUNC`, not a kernel. All branches inline into one function, so the
+compiled register allocation and resident simdgroup count are **identical for
+M = 2 and M = 9**. Isolated per-cell register counts are not what the scored
+kernel runs.
+
+**The leading hypothesis is now dispatch-grid emptying, and two routes reach it.**
+`first_m = tid.x * IPG` with an early return at `first_m >= M`
+(`quantized.h:1156-1186`) launches M threadgroups in x and idles every one past
+the last group. At M = 4 with IPG 4, one x-threadgroup in four does work; with
+IPG 2, two do. **Removing a weight stream also empties the machine**, and the
+bytes-over-bandwidth model has no term for that -- which is precisely why it
+fails worst at narrow widths (8x at M = 4) and works at M = 8 (rho = 0.88).
+Edward's E63 (PR #66) measures the same quantity from the local side.
 
 ---
 
@@ -138,120 +231,6 @@ Script: `_advisor_scratch/stream_cost.py`. Measured realisation factor from
 model gain to measured cell gain, from askeladd's `t6`: **0.276**.
 
 ---
-
-## 🔴🔴 BLOCKED: we have a fully certified candidate and cannot submit it
-
-**One human action unblocks the campaign's highest-value move: advance
-`origin/main` so its scored surface is byte-identical to
-`d2139c924c7a7d98ca6026eea63867c2776abbca`.**
-
-🔴 **The blocking gate is snapshot equality, not ancestry.** The ancestry test at
-`senpai/submit-official.sh:190` fires first and is the message we see, but the
-gate that actually defines what may be submitted is line 383:
-
-```
-git diff --quiet "${main_sha}" "${base_sha}" -- benchmark.json "${editable_paths[@]}"
-  -> "official submit: BASE_SHA submitted snapshot differs from current origin/main"
-     "official submit: replay and remeasure the candidate on the maintained frontier"
-```
-
-Making `d2139c92` an ancestor of `main` is therefore necessary but not
-sufficient. **Only a scored surface that already exists on `origin/main` can be
-submitted at all.** Student merges land on the advisor branch and never on
-`main`: `git branch -r --contains d2139c92` returns only
-`origin/senpai/qwen38-mtp-r1`. So this launch has no path by which any campaign
-result can ever reach the submission channel until an operator advances `main`.
-This is a structural, operator-owned blocker, not a transient staleness.
-
-The scored-surface diff `main` -> `d2139c92` is **4 files**, 151 insertions and
-83 deletions: `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` (159 lines),
-`Vendor/mlx-swift-lm/.../Qwen35.swift` (51),
-`Vendor/mlx-swift/.../mlx-generated/quantized.cpp` (20), and
-`Vendor/mlx-swift/.../kernels/quantized.h` (4). `origin/main` still carries
-`qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>` at `case 9`; we carry
-`<T, 9, 5, true>` (E55, `-4.2952 %` on the candidate leg).
-
-Every pre-submit gate on the current base passes:
-
-| gate | result |
-|---|---|
-| `python3 research/twin_audit.py` | OK, 29 runtime-effective twins |
-| `senpai/verify-ranked-score-boundary.sh` | PASS |
-| `senpai/check-editable-budget.sh` | OK, source 2458949/3000000, growth 4891/262144 |
-| `senpai/validate-assignment-scope.sh` | OK, 4 submitted paths |
-| 512-token PATH C exactness incl. post-EOS, row-ledger closure | PASS (askeladd, byte-identical surface) |
-| gate-qualified `--local-submit` | PASS x3 behind the real 40 C gate |
-| Yukon frontier check | FRONTIER UNCHANGED |
-| duplicate check against our six rows | distinct |
-| `mtp-head.manifest.json` and `mtp-head/` vs organizer main | byte-identical |
-
-The guard then refuses:
-
-```
-official submit: BASE_SHA is not an ancestor of current origin/main
-official submit: campaign history moved; no submission was sent
-```
-
-Cause, verified:
-
-- `origin/main` = `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
-- advisor branch `senpai/qwen38-mtp-r1` = `d2139c92`.
-- merge base = `527306761f70e2c4024f347915328894db80c181` (2026-08-18 18:02).
-- `origin/main` has **4 commits we lack**; the advisor branch has **881 commits
-  `main` lacks**. This launch has never advanced `origin/main`.
-- `senpai/submit-official.sh` hard-codes `SOURCE_BRANCH="main"` and asserts
-  `git config yukon.source-branch == "main"` at line 146. There is no override.
-- `origin/main`'s `senpai/frontier-state.json` is also stale (records promoted
-  `0cd0a6b4` at `3.24929399`, not the live `59b321ee` at `3.24985583`).
-- The four commits `main` holds and we lack are all `mmcguire`, 2026-08-19, and
-  none of them is campaign work: `770a3ff` "Correct ranked causality and
-  experiment discipline", `6391b03` "Record organizer and promoted frontiers",
-  `d32342d` "Regenerate promoted quantized Metal twin", `6e0546e` "Sync promoted
-  organizer frontier 0c90733d383f". **`main` holds the organizer's promoted
-  snapshot, not ours.**
-- The Yukon link itself points at the organizer repository, not at `origin`:
-  `submit-official.sh:145-150` asserts the Yukon source is
-  `https://github.com/Layr-Labs/qwen-3.8-mtp-challenge @ main`. `origin/main` is
-  campaign bookkeeping that the guard consults; it is not the upload path.
-
-**I did not bypass the guard and no agent on this campaign should.** No typed
-tool publishes `main`; `publish_advisor_branch` targets only the advisor branch;
-raw `git push` is a forbidden reproduction of a typed GitHub mutation; and a
-fast-forward merge is impossible anyway because `main` holds four commits we do
-not have. Recorded in full as ledger 194(D).
-
-### The unblock is small, and I verified it with `git merge-tree` without mutating anything
-
-Every other guard precondition already passes: `0c90733d` is an ancestor of
-`upstream/main` `9e1ff9ec`; organizer `benchmark.json` equals campaign main's;
-and the organizer trusted surface has not advanced (`0c90733d..9e1ff9ec` changes
-exactly one file, `Qwen36MTPBlockSession.swift`, which is editable). **The
-organizer side needs no sync. Only the campaign branch is stale.**
-
-Merging the advisor branch into `main` conflicts on **exactly two files, and
-neither is scored**: `senpai/campaign-ledger.md` and
-`senpai/frontier-state.json`. Every file on the submitted surface auto-merges.
-
-One silent trap. The auto-merged protected surface is not byte-identical to the
-measured base: `quantized.cpp` differs by **comment text only**, because
-`origin/main` still carries the stale "3+3+2, not 4+4" block above a call that
-has read `<T, 8, 4, true>` for many rounds. The compiled kernel is unchanged, but
-the guard's line-383 test is a textual `git diff --quiet`, so a merge resolved
-only at the two visible conflicts would be refused again.
-
-**Verified recipe.** Merge, resolve the two bookkeeping files in favour of the
-advisor branch, then take the advisor branch's version of every protected path
-(`git checkout d2139c92 -- benchmark.json <editablePaths...>`). The test that
-must pass before pushing:
-
-```bash
-git diff --quiet <merged main> d2139c924c7a7d98ca6026eea63867c2776abbca \
-  -- benchmark.json $(python3 -c "import json;print(' '.join(json.load(open('benchmark.json'))['editablePaths']))")
-```
-
-An empty diff means the guard will pass. The note is written and ready; after
-that, submission is one command with every gate above already green.
-
 ---
 
 ## Board
@@ -261,12 +240,14 @@ that, submission is one command with every gate above already green.
 | live promoted frontier | **3.24985583421771** (submission `59b321ee`, solver fkiene, source `9e1ff9ec` = `upstream/main`) |
 | organizer main `0c90733d` | **3.24929399** (submission `0cd0a6b4`, solver ofou) |
 | organizer main's own identical-tree replicate `dc70080f` | **3.22945266** (**0.6144 % below its own twin**) |
-| our best official submission | **3.23250848263467** (receipt `ca9251b8`, candidate `2b0c36a0`, rejected on score) |
-| our deficit to the frontier | **0.5366 %** = **0.71 sd of one ranked run** |
-| **sd of ONE official ranked run** | **0.756 %** (18 identical-surface groups, 44 rows, dof 26) |
-| **sd of a difference of two ranked runs** | **1.069 %** |
-| **ranked MDE, single (S, S^) pair** | **+2.10 %** |
-| local end-to-end null floor | **0.0629 %** (**17x more sensitive than ranked**) |
+| our best official submission | **3.23250848263467** (receipt `ca9251b8`, candidate `2b0c36a0`, rejected on score) -- this is the **E27** tree, which already ships `t55` and E55, and is **not** what we ship today |
+| **deficit of the surface we actually inherited** | **0.0173 %** (crown over the organizer main row `0cd0a6b4`) |
+| deficit of the old `ca9251b8` row, superseded | 0.5367 % |
+| **sd of ONE official ranked run (published score)** | **0.756 %** (18 identical-surface groups, 44 rows, dof 26) |
+| **sd of a difference of two ranked runs (score)** | **1.069 %** |
+| **ranked MDE, single (S, S^) pair (score)** | **+2.10 %** |
+| **sd of ONE ranked CANDIDATE LEG** | **1.165 %**, heavy-tailed: 5.7 % of 261 byte-identical pairs beyond 3 %, worst 14.73 %; serial leg 0.163 % |
+| local end-to-end null floor | take the **largest** same-arm spread in the session; the separation model is refuted on two hosts (198(G), 201(K)) |
 | total board submissions / promoted | 773 / 54 |
 
 ### We are not behind the frontier. We are at it, inside the instrument.
@@ -672,28 +653,41 @@ rejecting-round component of the bundled GDN slot.
    that does not (a) reduce weight streams, (b) reduce bytes, or (c) act outside
    the target forward cannot pay, whatever its dispatch count or FLOP count says.
    This one test retires more proposals than any other in this document.
-1. **Get `origin/main` moved and submit `d2139c92`.** It is certified and idle.
-   Under the 193 instrument this is worth more than any single mechanism now in
-   flight. Blocked on an operator action we cannot take.
-2. **Close the single-weight-stream table.** E61 rung 1 reduced it to two
-   remaining members, M=5 and M=6, and the cost model now prices them at
-   `-30.09 %` and `-15.24 %` of their cells. Together they are worth about
-   `-1.1 %` of the candidate leg, the largest priced move on the board. Land
-   both, then the direction is finished. Do not keep sweeping widths that
-   measurement has closed.
-3. **Repair the scheduler's cost model.** Three terms in the same greedy walk are
-   wrong at once: the flat per-row price ignores the weight-stream staircase
-   (edward's E56 thesis), `headStepCostRatio` ships `0.18` against a directly
-   measured `0.224`, and 198(H) shows the walk charges **nothing** for the 48
-   extra recurrent-layer dispatches a rejection inflicts on the following round.
-   All three under-price a deep round, so all three bias the scheduler toward
-   drafting too deep. Routed into E56 as a factor design. 🔴 199(G) adds a fourth
+1. 🔴🔴🔴 **Submit.** The candidate is certified, the scored surface has not moved
+   since `d2139c92`, and the guard is satisfiable today with
+   `BASE_SHA = 770a3ff2` after merging `origin/main` into the advisor branch. No
+   operator action is required; the earlier "blocked" reading was wrong. Under
+   the 193 instrument this is worth more than any single mechanism now in
+   flight, and it is the only way to learn what E55 is actually worth at rank.
+2. 🔴🔴🔴 **Read the board before extrapolating.** `research/ranked_stream_ab.py`
+   prices any repeated single-file kernel mechanism at rank, for free, against a
+   serial-leg null and an exact draft-length match. It already showed that the
+   local bytes-over-bandwidth model over-prices a weight-stream removal by
+   2.6-5x, and that our own row `ca9251b8` contains `t55`. Extend it to the other
+   kernel mechanisms in the queue.
+3. **Close the single-weight-stream table.** E61 rung 1 reduced it to two
+   remaining members, M=5 and M=6. The **ranked-anchored** price is
+   **+1.0 % to +1.6 % published** for `t55` + `t6` together, not the retracted
+   +1.9 % to +2.4 %. Still the largest priced move on the board. Land both, then
+   the direction is finished. Do not keep sweeping widths that measurement has
+   closed.
+4. **Repair the scheduler's cost model -- one defect, not four.** Edward's E56
+   settled three of them and closed them: `headStepCostRatio = 0.18` is
+   **confirmed** (`h224` loses at +1.6316 %), the repair-aware walk is worth at
+   most **0.06 %** (198(H)'s +2.5 % is retracted; dispatch count is not time),
+   and the stream-aware price itself is real (`s45` is **-3.9279 %**, replicated
+   to 0.002 pp across a base that moved 4.73 %). What remains is 199(G)'s form
    defect: a **constant** per-stream coefficient cannot be right when one stream
    costs `64.40 ms` at `NA = 2` and `147.21 ms` at `NA = 7`, and the two
-   regressors are collinear (`r = 0.790` today, `r = 0.866` after `t55` and
-   `t6`). The prescribed form is
-   `T(M) = a + b * W * sum_g 1/bw(NA_g)`.
-4. **Attribute the leg by family, once, with the instrument that already
+   regressors are collinear. The prescribed form is
+   `T(M) = a + b * W * sum_g 1/bw(NA_g)`, plus a fixed per-row term of 9.573 ms;
+   it transfers across an IPG change with worst error 6.80 %.
+   🔴 **But no scheduler arm can be decided on the public fixture.** Its
+   acceptance rate 0.9625 sits on the **opposite side of the price's own decision
+   boundary** (0.9491) from both score-setting ranked prompts (0.8351, 0.8750).
+   A local scheduler measurement is measuring a different policy regime. This
+   does **not** apply to kernel work.
+5. **Attribute the leg by family, once, with the instrument that already
    exists.** `Tests/MLXFastTests/QwenQMVCostCurveTests.swift` emits roofline,
    scored-shape width sweeps, dispatch-boundary probes, fast-path probes, head FC
    dtype probes and a Gated DeltaNet recurrence sweep in **one command**, with no
@@ -718,26 +712,36 @@ stands: "Compiled decode is dead. Do not spend a student."
 
 | PR | student | experiment | state |
 |---|---|---|---|
-| #64 | qwen-askeladd | **E61** single weight stream at M=6 | rung 1 closed the table at two members and measured the ceiling tax null; `t6_rbx` occupancy microbenchmark ordered **before** rung 3; then rung 3 at 512 tokens |
-| #65 | qwen-alphonse | **E62** ranked command-buffer granularity and the in-window allocator cache limit | new, from ledger 198(A)-(D); rung 0 source audit and instrument proofs first |
-| #62 | qwen-thorfinn | **E59** M=5 route, with `<T,5,5>` and `m5_rbx` as rung-4 arms | rungs 2b and 3 in flight; rung 4 runs `t55` first, then `m5_rbx` as the second dose point of the occupancy hypothesis |
-| #59 | qwen-edward | **E56** stream-aware draft-depth schedule | revision `e56-r2`; arms `base`/`stream`/`h224`/`repair`/`stream+repair`; the `repair` arm is new from 198(H) |
+| #64 | qwen-askeladd | **E61** single weight stream at M=6 | rungs 1, 1b and 2a complete. `t6` is **bit-identical** over its 64 covering cells. Rung 3 at 512 tokens is **the decisive measurement**. Commits `0d4993c` and `5c9d314` are unpushed |
+| #65 | qwen-alphonse | **E62** ranked command-buffer granularity and the in-window allocator cache limit | rung 0 census done and rung 1b closed (`wiredZHDefaultFraction` is already at its clamp endpoint). The whole area is capped at **-0.36 %** by the roofline. 512-token ladder running. Commits `172cb05` and `bd5b442` are unpushed |
+| #62 | qwen-thorfinn | **E59** M=5 route, with `<T,5,5>` as the rung-4 arm | rungs 2b and 3 in flight; rung 4 revised to a `base`/`t55`/`base2` leg session; the `rbx` width ladder is queued as a microbenchmark with a pre-registered prediction |
+| #66 | qwen-edward | **E63** the QMV width cliff and memory-level parallelism | new. Now independently motivated from the ranked side: the dispatch grid empties as IPG grows, and the bytes model has no term for it |
 
 Merged this campaign: #57, #55, #53, #52, #56, #60, #58, #61.
 Closed unmerged: **#63** (E60) -- experiment succeeded, candidate was a measured
 null at `-0.04627 %`, `t = -0.9379` on 5 dof, 95 % CI `[-0.1731 %, +0.0806 %]`.
 Third independent closure of warm coverage after 183(E) and 185(C)(E).
+Closed unmerged: **#59** (E56) -- the mechanism is real (`s45` is **-3.9279 %**,
+replicated to 0.002 pp) but the head ships `pricedBoundaryWidths = [5]`, which
+edward's own counterfactual prices at **-1.5631 %** and **-0.9644 %** on the two
+score-setting ranked prompts. Re-import with `pricedBoundaryWidths = [7]` after
+`t55` and `t6` land; branch `qwen-edward/stream-aware-draft-depth-schedule` at
+`e2bd7e61` must not be deleted.
 
 ## Next research directions
 
-Ordered by expected value against the `0.5366 %` deficit. Ledger 197 retired two
+Ordered by expected value against the `0.0173 %` deficit of the inherited surface (201(H)); the old `0.5366 %` figure came from the superseded `ca9251b8` row. Ledger 197 retired two
 entries of the previous list and downgraded a third; ledger 198 retired three
 more and added one; ledger 199 retired the tier-1 transform direction outright
 and added three entries. Reasons are recorded below rather than deleted, so the
 same ideas are not re-proposed.
 
-1. **Submit `d2139c92`** once `origin/main` moves. Blocked, not deprioritised.
-2. 🔴 **Per-family width attribution in one command, using
+1. 🔴🔴🔴 **Submit now**, with `BASE_SHA = 770a3ff2` after merging `origin/main`
+   into the advisor branch. Not blocked; the earlier reading was wrong.
+2. 🔴🔴🔴 **Extend `research/ranked_stream_ab.py` to the other queued kernel
+   mechanisms.** The fingerprint machinery prices any repeated single-file kernel
+   change at rank, for free, before a student spends GPU time on it.
+3. 🔴 **Per-family width attribution in one command, using
    `QwenQMVCostCurveTests`.** First assignment when a slot frees. Enable with
    `MLXFAST_RUN_QMV_COST_CURVE=1` and `MLXFAST_QMV_COST_CURVE_OUT=<json>`; tune
    with `_REPS` (default 15), `_INNER` (default 10), `_WIDTHS`, `_SHAPES_ONLY`.

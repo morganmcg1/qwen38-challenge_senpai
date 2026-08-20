@@ -14,27 +14,64 @@ THE RESULT
 ----------
 An IPG is legal at width M iff `2 <= IPG <= NA_max` (the `_wide` helper's
 static_assert) and `M % IPG != 1` (the `_m` helper's no-one-row-tail assert).
-Weight streams are `ceil(M / IPG)`. Enumerating every legal IPG at every width:
+Weight streams are `ceil(M / IPG)`. Enumerating every legal IPG at every width,
+under the ceiling this file READS from the tree rather than assumes:
 
     NA<=4   M=3 [3,4]  M=4 [4,2]  M=5 [3]  M=6 [3,4,2]  M=7 [4]  M=8 [4,3,2]
-            M=9 [3]
-            => THE SHIPPED TABLE IS STREAM-MINIMAL AT ALL SEVEN WIDTHS
-    NA<=5   only M=5 and M=9 become improvable -- exactly E27's two cells
+            M=9 [3]                       -- pre-E55 world, historical only
+    NA<=5   only M=5 remains improvable   -- E55 took M=9
 
-So under the live bound there is **no weight-stream win available anywhere in
-the kernel**. The only stream lever is raising the bound to NA=5 at M=5 and
-M=9, which is what E27 did: correct per-width table, 125 regs, a 129 shared
-allocation, and it **lost 0.3321 % of score**. Independently, of 476 rival
-trees exactly one has a 5->6 boundary -- ours, `ca9251b8`, rejected.
+E55 raised the `_wide` static_assert to `NA <= 5` and moved `case 9` to
+`<T,9,5,true>`, dropping width 9 from three weight streams to two. It measured
+**-4.2952 %** on the candidate MTP leg against a +0.0497 % null, bitwise exact
+over 512 tokens including post-EOS continuation. The shipped boundary set fell
+from `[(4,5), (8,9)]` to `[(4,5)]`.
 
-Therefore the remaining kernel axis is gated on the 108-register ceiling, which
-is what makes alphonse's E44 register gate decisive rather than optional.
+READ THIS BEFORE QUOTING THE FILE
+---------------------------------
+An earlier version of this docstring concluded that there is "no weight-stream
+win available anywhere in the kernel" and that the only lever was gated on a
+108-register ceiling, citing an E27 receipt of -0.3321 %. **All three claims
+are now retracted.**
 
-A sharper way to say it, which `report` makes visible: E27's table is ALSO
-stream-minimal under ITS OWN ceiling of 5. Both tables are optimal for their
-bound. So E27's 0.3321 % loss cannot be attributed to a wrong table at all --
-it is the price of the bound itself, i.e. of registers and occupancy. That
-removes the last reading in which E27 failed by mis-tuning.
+ 1. E55 took exactly one of the cells this file called unreachable and won
+    -4.2952 % with it.
+ 2. Ledger 193 retracted the E27 -0.3321 % receipt. One ranked run has a
+    standard deviation of 0.756 % and a difference has 1.069 %, so a single
+    -0.33 % row was never evidence of a regression.
+ 3. Legality is no longer the governing constraint; measured bandwidth is.
+    E61 rung 1 measured the weight-stream bandwidth ladder directly on the
+    scored kernel, peak 227.9 GB/s, all controls passed:
+
+        NA   2       3       4       5       6      7
+        GB/s 223.784 199.693 175.238 150.946 117.8  97.9
+
+    So a stream removal pays only when the wider group's bandwidth clears the
+    break-even the ladder sets, and that is an empirical question this file
+    cannot answer. Ledger 199(D) records M=7 as a direct refutation: the model
+    predicts -4.66 % and the measurement is +7.13 % SLOWER.
+ 4. The register ceiling cannot explain that ladder, by source construction.
+    `affine_qmv_fast` is ONE `[[kernel]]` entry point (quantized.h:1869) and
+    every width is a `case` of a RUNTIME `switch (ntg.x)` (:1922) that
+    calls the `METAL_FUNC` helper at :1157. All widths inline into the same
+    function, so the compiled register allocation, pipeline state object and
+    resident simdgroup count are IDENTICAL at M=2 and M=9. Per-cell register
+    counts from an isolated compile are NOT what the scored kernel runs.
+    E61 rung 1b dosed +15 registers into the shared entry point at fixed
+    routing and measured +0.3804 %, against a NA=5->6 step of -22 %.
+
+WHAT THIS FILE IS FOR NOW
+-------------------------
+Two things, and nothing else.
+
+ A. It enumerates which cells are stream-reducible under the live ceiling, as
+    a CANDIDATE LIST for measurement. It does not price them.
+ B. It is a DRIFT GUARD. The selftest pins the shipped IPG table, the NA
+    ceiling and the boundary set to what the campaign currently believes. Any
+    kernel change that moves them fails this gate on purpose, so that whoever
+    merges it must revisit the stream claims and update this file in the same
+    commit. `t55` (`case 5` -> `<T,5,5>`) and `t6` (`case 6` -> `<T,6,6>`) are
+    both in flight and both will fire it.
 
 THE SINGLE-FACTOR CONTRASTS
 ---------------------------
@@ -64,6 +101,21 @@ WIDTHS = range(3, 10)
 # NA-ceiling reader fails closed rather than defaulting to 4, but the lesson is
 # to import the constant instead of retyping it.
 QH = census.QH
+
+# --- DRIFT-GUARD CONSTANTS -------------------------------------------------
+# What the campaign currently believes about the shipped kernel, as of the
+# merge of E55. Every one of these is READ back from the tree by `selftest`
+# and compared, so a kernel change cannot silently invalidate a stream claim.
+# When `t55` or `t6` lands, update these four together with the docstring.
+NA_CEILING = 5
+CANONICAL_TABLE = {3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 5}
+SHIPPED_BOUNDARIES = [(4, 5)]
+# Reducible under the live ceiling.
+IMPROVABLE_AT_CEILING = [5]
+# Reducible if the `_wide` static_assert were raised by one. These are exactly
+# the `t55` and `t6` candidates. A candidate list, NOT a prediction: M=7 was on
+# the equivalent list one ceiling ago and measured +7.13 % SLOWER.
+IMPROVABLE_AT_CEILING_PLUS_1 = [5, 6]
 
 # thorfinn's E41 fit. SCOPED TO `04ad6bf1`, which is the entire point of the
 # scope note in the census module: these are not universal constants.
@@ -225,8 +277,9 @@ def selftest():
     if legal(4, 3, 4):
         fails.append("4 %% 3 == 1 must be illegal")
 
-    # --- 2. The headline: shipped table minimal at all widths under NA<=4,
-    #        and exactly M=5 and M=9 improvable once the bound is 5.
+    # --- 2. DRIFT GUARD. These four expectations describe the post-E55 world.
+    #        `t55` and `t6` will each fire this block on purpose; update the
+    #        constants and the docstring in the SAME commit that lands them.
     ship = census.dispatch_table("HEAD")
     na = na_ceiling("HEAD")
     if ship is None:
@@ -234,20 +287,32 @@ def selftest():
     elif na is None:
         fails.append("HEAD NA ceiling unreadable from static_assert")
     else:
-        if na != 4:
-            fails.append("HEAD NA ceiling is %d, expected 4 -- if this changed "
-                         "deliberately every stream claim needs revisiting"
-                         % na)
-        improv = [M for M, _, _, _, _, v in optimality(ship, 4)
+        if na != NA_CEILING:
+            fails.append("HEAD NA ceiling is %d, expected %d -- if this "
+                         "changed deliberately every stream claim needs "
+                         "revisiting" % (na, NA_CEILING))
+        if ship != CANONICAL_TABLE:
+            fails.append("shipped IPG table is %s, expected %s -- a kernel "
+                         "change moved it; re-measure the bandwidth ladder "
+                         "before quoting any stream claim"
+                         % (dict(sorted(ship.items())),
+                            dict(sorted(CANONICAL_TABLE.items()))))
+        # Minimal under the ceiling the tree actually declares. Judging the
+        # live table against a stale literal ceiling is what made this gate
+        # fail six ways after E55.
+        improv = [M for M, _, _, _, _, v in optimality(ship, na)
                   if v != "OPTIMAL"]
-        if improv:
-            fails.append("shipped table NOT stream-minimal under NA<=4 at %s "
-                         "-- the 'no stream win exists' claim is FALSE" % improv)
-        improv5 = [M for M, _, _, _, _, v in optimality(ship, 5)
-                   if v != "OPTIMAL"]
-        if improv5 != [5, 9]:
-            fails.append("under NA<=5 expected exactly [5, 9] improvable, "
-                         "got %s" % improv5)
+        if improv != IMPROVABLE_AT_CEILING:
+            fails.append("under NA<=%d expected exactly %s improvable, got %s"
+                         % (na, IMPROVABLE_AT_CEILING, improv))
+        # Raising the ceiling by one opens the next candidate list. This is a
+        # candidate list for MEASUREMENT, never a prediction of a win: M=7 was
+        # on it and measured +7.13 % slower.
+        improv_next = [M for M, _, _, _, _, v in optimality(ship, na + 1)
+                       if v != "OPTIMAL"]
+        if improv_next != IMPROVABLE_AT_CEILING_PLUS_1:
+            fails.append("under NA<=%d expected exactly %s improvable, got %s"
+                         % (na + 1, IMPROVABLE_AT_CEILING_PLUS_1, improv_next))
 
         # --- 3. Both contrasts need no new NA cell => allocation cannot move.
         used = instantiated_cells(ship)
@@ -267,14 +332,16 @@ def selftest():
     # --- 4. NEGATIVE CONTROL: a fabricated non-minimal table must be caught.
     #        Without this, optimality() returning "OPTIMAL" unconditionally
     #        would pass every check above.
-    if ship is not None:
+    if ship is not None and na is not None:
         bad_table = dict(ship)
         bad_table[8] = 2          # 4 streams where 2 are legal
-        v = [M for M, _, _, _, _, verdict in optimality(bad_table, 4)
+        want_bad = sorted(set(IMPROVABLE_AT_CEILING) | {8})
+        v = [M for M, _, _, _, _, verdict in optimality(bad_table, na)
              if verdict != "OPTIMAL"]
-        if v != [8]:
+        if v != want_bad:
             fails.append("negative control failed: a deliberately non-minimal "
-                         "M=8 cell was not flagged (got %s)" % v)
+                         "M=8 cell was not flagged (wanted %s, got %s)"
+                         % (want_bad, v))
 
     # --- 5. The E41 fit must reproduce his residuals ON HIS BASE, and only
     #        there. This is what makes the scoping claim checkable.
@@ -295,15 +362,15 @@ def selftest():
         if ship is not None:
             sb = [(a, b) for a, b, _, _ in census.boundaries(
                 census.streams(ship))]
-            if sb != [(4, 5), (8, 9)]:
-                fails.append("shipped boundaries are %s, expected "
-                             "[(4, 5), (8, 9)]" % sb)
+            if sb != SHIPPED_BOUNDARIES:
+                fails.append("shipped boundaries are %s, expected %s"
+                             % (sb, SHIPPED_BOUNDARIES))
             if sb == [(a, b) for a, b, _, _ in bnd]:
                 fails.append("shipped and E41-base boundaries are identical; "
                              "the whole scope distinction would be vacuous")
 
     # --- 6. Break-even arithmetic quoted to students.
-    for M, want in ((5, 21.20), (9, 12.43)):
+    for M, want in ((5, 21.20), (9, 14.20)):
         if ship is None:
             break
         s = math.ceil(M / ship[M])
@@ -319,10 +386,13 @@ def selftest():
         for f in fails:
             print("  - %s" % f)
         return 1
-    print("SELFTEST PASS: legality rules, shipped table minimal at all 7 "
-          "widths under NA<=4 (read from source), exactly [5, 9] improvable "
-          "under NA<=5, both contrasts allocation-neutral, E41 residuals "
-          "reproduce on 04ad6bf1 only, break-even taxes 21.20/12.43%.")
+    print("SELFTEST PASS: legality rules; NA ceiling %d and the shipped IPG "
+          "table both read from source and unchanged; exactly %s improvable "
+          "at the live ceiling and %s one above it; shipped boundaries %s; "
+          "both contrasts allocation-neutral; E41 residuals reproduce on "
+          "04ad6bf1 only; break-even taxes 21.20/14.20%%."
+          % (NA_CEILING, IMPROVABLE_AT_CEILING, IMPROVABLE_AT_CEILING_PLUS_1,
+             SHIPPED_BOUNDARIES))
     return 0
 
 
