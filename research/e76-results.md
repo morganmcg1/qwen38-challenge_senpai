@@ -453,15 +453,65 @@ last chunk is exact, independent of chunk width and of width `NA`.
 
 Three hypotheses were tested and all three are refuted.
 
+> **AMENDED 2026-08-24 by E80 rung 0a.** Refutation 2 below is withdrawn. It
+> compared spill on the wrong architecture. Large `applegpu_g16s` spill is
+> perfectly confounded with the `mc*` rewrite and is now the leading candidate
+> cause. Refutation 1 stands. Refutation 3 keeps its evidence but inherits the
+> same confound. The shipped `<T,6,6>` instantiation is unaffected: it carries
+> 16 B of g16s spill, nine times below the observed hazard threshold. Details
+> are in the block after refutation 2.
+
 **It is not the rewrite.** `rps1mc4` carries the identical three substitutions on
 the smallest row block. At NA = 5 it emits exactly the same `[4,1]` partition as
 `mc4`. `mc4` fails on all seven shapes; `rps1mc4` returns **zero differing
 elements on all seven shapes at NA = 3, 4, 5 and 6**.
 
-**It is not spill.** `mc2` at NA = 3 and NA = 4 carries no spill frame on either
-architecture and fails anyway, at exactly the predicted fraction. `mc4` at
-NA = 3 and NA = 4 is a single chunk and passes trivially, and it emits
+~~**It is not spill.**~~ ~~`mc2` at NA = 3 and NA = 4 carries no spill frame on
+either architecture and fails anyway, at exactly the predicted fraction.~~
+`mc4` at NA = 3 and NA = 4 is a single chunk and passes trivially, and it emits
 byte-identical machine code to the shipped instantiation.
+
+> **WITHDRAWN 2026-08-24 by E80 rung 0a.** The struck sentence is false. It read
+> the spill column for `applegpu_g17s` only. The parity run executed on
+> `applegpu_g16s`, and in that column `mc2` carries **144 B** at NA = 3 and
+> **176 B** at NA = 4. Rebuild the table with
+> `python3 research/e80_spill_confound.py`; the machine-readable cross is
+> `research/e80-artifacts/rung0a-spill-parity-cross.json`.
+>
+> On the architecture that ran the test, g16s spill separates the two classes
+> perfectly across all 112 parity-tested arm-width pairs:
+>
+> | class | pairs | g16s spill range |
+> |---|---:|---|
+> | FAIL | 9 | 144 B ... 352 B |
+> | pass | 103 | 0 B ... 48 B |
+>
+> There is no overlap. The highest-spill passing pair is `fall` at NA = 6 with
+> 48 B, three times below the lowest failing pair. The same cross on the g17s
+> column does overlap -- `mc2` NA = 3 and NA = 4 fail at 0 B while `fall` NA = 6
+> passes at 48 B -- which is exactly the reading that produced the withdrawn
+> sentence.
+>
+> **Corrected statement: the cause of the `mc*` fault is not established.** Large
+> g16s spill is perfectly confounded with the `mc*` rewrite over this arm set,
+> and it is the leading remaining candidate. Refutation 1 is unaffected.
+> Refutation 3 keeps its cross-tabulated evidence but inherits the same
+> confound, because every `rows_per_simd = 4` multi-chunk cell in that table is
+> also a high-spill cell; `rows_per_simd` and g16s spill cannot be separated by
+> the `mc*` arms alone.
+>
+> **This does not put the shipped candidate at risk.** The shipped `<T,6,6>`
+> instantiation carries **16 B** of g16s spill and 0 B on g17s -- nine times
+> below the lowest spill at which any fault was observed, and inside the passing
+> band by a wide margin.
+>
+> To break the confound, E80 rung 0a added a `ballast<N>` ladder to
+> `research/e76_wide_gen.py`. `ballast16` at NA = 5 reaches **224 B** of g16s
+> spill -- the identical spill frame to `mc3` NA = 4, a confirmed failure --
+> while keeping the shipped row block, staging, layout, expression trees and
+> reduction. It carries no `mc*` substitution, so a device parity run on it
+> separates spill from the rewrite. See
+> `research/e80-artifacts/rung0a-ladder-note.md`.
 
 **It is not register pressure, and it is not the number of chunks.** Crossing the
 chunk lever with every row block separates the two candidate causes completely.
