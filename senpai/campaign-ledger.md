@@ -22735,3 +22735,396 @@ V are 100 % dead compute and Q is not.
 6. **The default local head is the wrong head**, the wrapper does not rebuild
    the worker, and `MLXFAST_*` never reaches the worker. Three silent ways to
    measure nothing at all.
+
+---
+
+## 226. Our best official run lands 1.41 % above every earlier Senpai submission, the frontier it chases is a +2.5 sigma lucky draw, and three cost laws are corrected by student measurement
+
+Date: 2026-08-20, 21:40 UTC. Base at entry `f7f356b2`; base at exit
+`c4bdac3e`, which merges PR #84 (E82, alphonse) and PR #85 (E83, thorfinn).
+Promoted frontier unchanged at `8e83c6b3-4206-419b-9d47-c61ff40a50f3`,
+3.3189406078251036, organizer commit
+`8b54ff11c6d686628f6534d7127a261115782757`.
+
+This entry records one official result, one corrected price for the
+measurement cluster, one probability model that governs every future
+submission, and four cost laws that student measurement corrected or created.
+
+---
+
+### A. `32c6dc69` scored 3.28157961, the best Senpai result of the campaign
+
+Submission `32c6dc69`, candidate commit
+`222f23325d0645375dc731eae4ecf1119fbef0fe`, base
+`770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`, model `senpai`, created
+2026-08-20T18:48:46, status `rejected`, official metrics commit
+`c4ef2ac05fc9d72f82d3f543df0abf686da7dc2c`.
+
+```
+base_serial = 0.037965693569   cand_mtp = 0.015558447514
+median (4th) = 3.1365353719    min = 1.2588607293
+pooled       = 2.440198068260852
+```
+
+| prompt | raw | draft | mtp s/tok | prefill |
+|---|---:|---:|---:|---:|
+| beagle | 3.136535 | 4.3818 | 0.01208338 | 0.00102921 |
+| essays | 3.426624 | 5.0870 | 0.01109826 | 0.00102953 |
+| republic | 3.444560 | 4.9892 | 0.01102663 | 0.00103038 |
+| medicine | 3.445887 | 5.2556 | 0.01103074 | 0.00102912 |
+| botany | 3.448892 | 6.1481 | 0.01099145 | 0.00102740 |
+| travel | 2.130432 | 2.6557 | 0.01780497 | 0.00102806 |
+| drama | 1.877073 | 2.2976 | 0.02018051 | 0.00102810 |
+| plutarch | 1.258861 | 0.1540 | 0.03025164 | 0.00102960 |
+
+`parity_ok` on all eight prompts, row accounting closed, head
+`559b24eb` on every leg. The previous best Senpai score was `9b241879`
+at 3.23588901, so this is **+1.41 %**.
+
+**It drew the slow measurement cluster.** `travel` at 0.01780497 is above
+the 0.01755 split. Dividing beagle by the measured cluster factor gives
+`0.01208338 / 1.00895 = 0.011973`, inside the fast-cluster beagle band
+0.011961 to 0.011979. `32c6dc69` is a clean `c6af1e24`-class tree that lost
+the lottery.
+
+### B. The cluster is worth +0.82 %, not +1.391 %, on the current schedule
+
+Entry 225 priced the cluster at +1.391 % from six byte-identical resample
+groups. Those groups span older, slower schedules. Restricting to the modern
+frontier-schedule cohort (beagle draft 4.3818, head `559b24eb`, beagle
+seconds per token below 0.0121):
+
+| cluster | runs | score mean | sd |
+|---|---|---:|---:|
+| fast | `c6af1e24` `94d14b4d` `106ed256` `f377cf34` `3d14f605` | 3.30559 | 0.00378 |
+| slow | `6a651dd1` `32c6dc69` `5c542728` | 3.27857 | 0.00587 |
+
+**The cluster is worth +0.824 % of score on the current schedule.** Use that
+number for every decision from now on; +1.391 % remains correct only as a
+historical average over the older schedules that produced it.
+
+Per prompt at matched draft length, slow over fast: beagle +0.895 %, essays
++0.866 %, travel +2.570 %, drama +2.073 %, medicine +1.311 %, botany
++1.293 %, republic +1.111 %, plutarch +0.156 %.
+
+Mode-B rate by day: 08-17 100 %, 08-18 43.2 %, 08-19 33.3 %, 08-20 32.9 %.
+**P(fast) is about 0.67 and it caps every bet we can place.**
+
+Attempts to explain the split from board data alone have now hit diminishing
+returns. There is no clean per-round or per-rejected-draft law: derived
+per-round costs are beagle 0.512 ms, essays 0.562, republic 0.698, medicine
+0.740, drama 0.831, botany 0.844, travel 1.08, plutarch 0.050, and derived
+per-token costs are beagle 107 us, essays 95, republic 121, medicine 143,
+botany 140, travel 446, drama 409, plutarch 47. Neither set is constant.
+The serial leg is identical across the split, and 66 public runs carry two to
+six slow legs out of eight, so the cluster flips **between prompts inside one
+run**. It is not host thermal state, not DVFS, and not process startup.
+
+### C. The frontier is a +2.51 sigma lucky draw, so parity is worth 0.4 %
+
+```
+pre-concat fast-cluster cohort mean            = 3.30559  (n = 5, sd 0.00378)
++ 8e83c6b3 concat kernel (-0.116 % candidate)  = 3.30943
+8e83c6b3 actually scored                       = 3.31894   (+2.51 sd)
+```
+
+An `8e83c6b3`-class tree is expected to score 3.30943. The promoted run beat
+its own expectation by 2.51 standard deviations. That gives the decision
+table every future submission must be priced against, at P(fast) = 0.67:
+
+| extra candidate gain over `8e83c6b3` | expected score | P(beat) if fast | unconditional |
+|---:|---:|---:|---:|
+| 0.00 % (parity) | 3.30943 | 0.6 % | **0.4 %** |
+| 0.17 % | 3.31506 | 15.2 % | 10.2 % |
+| 0.27 % | 3.31836 | 44.0 % | 29.4 % |
+| 0.35 % | 3.32101 | 70.8 % | 47.4 % |
+| 0.46 % | 3.32465 | 93.4 % | 62.6 % |
+| 0.62 % | 3.32995 | 99.8 % | 66.9 % |
+| 0.73 % or more | 3.33359 | 100 % | **67.0 %** |
+
+**Conclusions.** Never submit parity. No single mechanism measured this round
+can take the frontier alone. Compose stacks worth at least 0.35 % of
+candidate time. The 67 % ceiling is the cluster lottery and no amount of code
+quality removes it. The generator is
+`_advisor_scratch/frontprob.py`.
+
+### D. Bytes are not the currency; bit-exactness is
+
+Alphonse's E82 (PR #84, W&B `o0rawiol`, `yerghmxz`) refuted all three of its
+routes and, in doing so, established the governing law for every head-byte
+proposal:
+
+| route | bytes removed | share of head | byte-scaling prediction | measured |
+|---|---:|---:|---:|---|
+| askeladd mechanism A, bit-exact | 5,898,240 | 1.38 % | -0.112 % | **-0.172 % +/- 0.052 ranked** |
+| alphonse `noislands`, changes numerics | 31,469,568 | 7.36 % | -0.60 % | **+0.367 %, slower** |
+
+**A head-byte reduction converts at 0.0815 % of candidate time per 1 % of
+head bytes only if the change is bit-exact.** A change to head numerics must
+first repay a schedule perturbation that measured at roughly four times the
+whole byte saving.
+
+Route (c), six legs, 512 tokens, `--sync-head`, declared head, ungated
+palindrome: `declared` 0.031432, `noislands` 0.031547 (+0.367 %), `qonly`
+0.031998 (+1.799 %). Clean separation, `max(declared) < min(noislands)`.
+Round counts are exactly reproducible: 78, 79 and 80 for the three arms.
+`draft_build` is 10.06 % of round time and `verify_build` is 43.66 %.
+
+Island removal is also **super-linear in bytes** while island reduction is
+sub-linear, because removing all islands sets `_exactQKVWeight` to nil and
+deletes the `replaceExactRows` matmul and `putAlong` dispatch entirely:
+`noislands` -6.67 % of `d_submit2` for -7.357 % of bytes (0.906), `qonly`
+-1.91 % for -4.900 % (0.39).
+
+Alphonse also refuted the advisor's proposed arm (a), shipping k and v as
+plain bf16, with two concrete blockers: `qkv()` at `Qwen35.swift:1962` falls
+through to a path that never calls `replaceExactRows`, silently dropping the
+q precision island; and `sanitize` accepts all six island tensors or none, so
+a partial set is a `fatalError`. Its only marginal saving over askeladd's
+mechanism A is 8,192 bytes. **Closed.**
+
+### E. The materialised-intermediate unit is 1.6 to 2.7 us, not 13 to 16 us
+
+Entry 225 priced the elimination of a materialised intermediate on the
+per-draft head path at 13 to 16 us. Edward's E85 census (PR #87, interim 1)
+corrects the unit.
+
+The census hook swizzles `newBufferWithLength:options:` and
+`newBufferWithBytes:length:options:` on `AGXG16SDevice` behind
+`MLX_E85_ALLOC_CENSUS=1`. It is proven live: 18,133 allocations and 64.2 GB
+during load and warm, 27 buffers of 3,145,728 bytes in round 1
+`target_verify`, 2 of 1,572,864 in round 2 `draft_head`.
+
+Per-draft head-phase slopes, d = 1 against d = 5, forced with
+`MLX_E80_FORCE_DRAFTS`:
+
+| counter | d=1 | d=5 | slope per draft |
+|---|---:|---:|---:|
+| dispatches | 41.0 | 168.8 | +34.07 |
+| commits | 3.00 | 11.44 | +2.25 |
+| barriers | 25.0 | 120.8 | +25.55 |
+| allocations | 0 | 0 | **+0.00** |
+
+**There are zero device buffer allocations per draft in steady state.** MLX's
+buffer cache serves every head-phase intermediate. The allocation half of the
+law does not exist on this path.
+
+Marginal commits per marginal dispatch is 2.25 / 34.07 = 0.066, one command
+buffer boundary per 15.1 dispatches. With E80's host constants of 0.66 to
+1.55 us per dispatch and 13.5 to 17.6 us per commit:
+
+**per eliminated intermediate = 0.66 to 1.55 us + 0.066 x (13.5 to 17.6) us
+= 1.55 to 2.71 us.**
+
+The aggregate observable still holds. `8e83c6b3` removed several buffers, not
+one. Edward's two arms remove 7 buffers, 105,280 bytes, 7 dispatches, 0.46
+commit boundaries and 0 allocations per draft token, which prices at 10.9 to
+19.0 us per draft, 0.23 to 0.40 % of head cost, about 0.07 to 0.12 % of
+decode time. **The 13 to 16 us figure is an aggregate over several buffers,
+never a per-buffer price.**
+
+Two independent corroborations of the sign. `ead84bba` to `c6af1e24` added
+`qwen35DualRMSNorm`, removed one dispatch and no buffer: null, +0.05 %.
+`c6af1e24` to `8e83c6b3` made the kernel write the concat layout, removing
+two dispatches and two buffers: -0.116 %, faster on 7 of 7 prompts. Thorfinn's
+E83 rung 3 shows the same asymmetry inside the prefill: G2, which removes one
+materialised 512x17408 bf16 intermediate per layer, saved 5.5 ms on 8 of 8
+repeats, while G1, which merges cells without removing an intermediate, saved
+2.6 ms on 5 of 8 and broke exactness.
+
+A related source correction: `embed_tokens` is quantized (affine, 4-bit,
+group 64, `tie_word_embeddings=false`), so `QuantizedEmbedding` is three
+gathers plus one dequantize. Edward's arm (a) therefore removes four buffers,
+not one.
+
+### F. `verify_build_us` is not pure host time
+
+From `research/e82-headcost-islands.json` and
+`research/e82-head-cost-session.json`, median microseconds per round over 14
+legs, all `--sync-head`, 512 tokens, M4 Pro:
+
+| leg | d_submit2 | verify_build | eval_wall | round ms | verify/eval |
+|---|---:|---:|---:|---:|---:|
+| declared-1 | 14,494 | 67,473 | 71,245 | 154.69 | 0.947 |
+| noislands-1 | 13,526 | 67,721 | 70,624 | 153.66 | 0.959 |
+| qonly-1 | 13,989 | 66,755 | 70,975 | 155.58 | 0.941 |
+| pinned-1 | 37,466 | 79,174 | 84,631 | 202.15 | 0.936 |
+| master-bf16-1 | 35,740 | 79,273 | 84,270 | 200.97 | 0.941 |
+| qat-q4-1 | 17,622 | 79,478 | 83,368 | 183.48 | 0.953 |
+| declared-A | 15,838 | 71,761 | 76,382 | 165.41 | 0.939 |
+
+**`verify_build / eval_wall = 0.945 +/- 0.010` across all 14 legs**, through
+head changes that move the round from 154 to 202 ms. Pure host op encoding of
+a 64-layer forward cannot depend on which head is attached, so a constant
+absolute cost is the only signature it could have. It does not have one; the
+ratio tracks GPU time instead.
+
+The docstring at `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:700-706`
+claims that draining the head chain "leaves `verify_build_us` as pure host
+graph construction". **That claim is almost certainly false.** The window
+between `tDraftBuilt` (`:1367`) and `tVerifyBuilt` (`:1398`) contains
+`snapshotRecurrent`, the verify-token concat, and
+`model.callWithHiddenAndNormed`, and the decode `asyncEval` ladder inside
+`Qwen35TextModelInner.callAsFunction` fires GPU work inside it.
+
+A cross-check constrains any replacement theory: on the ranked host, beagle's
+53.3 ms round is nearly fully explained by head plus target plus width tax, so
+host graph construction there must be at most about 15 ms per round.
+
+### G. The decode `asyncEval` ladder was inherited from a 40-layer model and never tuned
+
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2371-2385`:
+
+```swift
+let qwen35DecodeLadderRungs: Set<Int> = {
+    let shipped: Set<Int> = [0, 1, 9, 19, 29, 39, 49, 57]
+    ...
+}()
+```
+
+The source comment at `:2441-2450` states the set was "schedule scaled from
+40 to 64 layers, front rungs kept" from a Laguna receipt. The loop is at
+`:2425-2503`, with rung fire sites at `:2470-2478` and `:2496-2500`. Prefill
+uses a stride of 3; **decode uses a stride of 10.**
+
+The set is bit-exact by construction, because it changes only enqueue timing,
+and it is env-sweepable with no rebuild through `MLX_QWEN_MTP_LADDER`, which
+survives the worker sanitizer at
+`Sources/MLXFastHarness/QwenRuntimeWorker.swift:2565-2590`.
+
+The only comparable published sweep is competitor `1c1fe300`, which swept the
+**prefill** ladder stride in source: every 16 gave -0.40 %, every 8 gave
+-1.26 %, every 4 gave **-2.30 %**, every 2 gave -2.23 %, every 1 gave
+-2.10 %. Turning our decode ladder off at S = 3..9 cost +0.493 % on 0 of 7
+prompts. **Nobody has tried making it denser.** E86 (PR #88, alphonse) tests
+this.
+
+### H. The head is 8.3 % of the ranked round, not 39.5 %
+
+E80's headline fit, `draft_head_ms = 4.8098 x drafts - 0.1130` at
+R^2 = 0.999972, was measured with the **pinned** head. E80 predates the
+head-provenance discovery. The declared head costs **2.381 ms per draft**
+locally against the pinned head's 4.764. The ranked host is roughly 2.5 times
+faster, so the ranked head costs about 0.95 ms per draft, about 4.2 ms of a
+53.3 ms beagle round, about **7.8 %**. That matches E79 rung 6 independently:
+scaling head cost by 0.00 cost +9.00 % of median, implying a head fraction of
+8.26 %.
+
+This validates the head-byte to score conversion of **0.0844 % of score per
+1 % of head cost** and retires every earlier statement that put the head near
+40 % of the round.
+
+**Rule: always record which head a head-cost measurement used.**
+
+### I. E83 closes the prefill fusion-gate axis
+
+Thorfinn's E83 (PR #85, W&B `l2xex14v`, `hl39g0tm`, smoke `vml5xzkj`), 8
+ABBA repeats, entry temperatures 52.03 to 58.53 C:
+
+| arm | in-proj bound | gate-up bound | median saving | repeats faster |
+|---|---:|---:|---:|---:|
+| `gate_g1` | 512 | 16 | +2.6 ms | 5/8 |
+| `gate_g2` | 9 | 512 | +5.5 ms | 8/8 |
+| `gate_g1g2` | 512 | 512 | +7.1 ms | 7/8 |
+
+The stop rule required 40.7 ms. **Closed at a ranked consequence of about
+0.016 %.** G1 is also not bit-exact: `top2_values` moves from (21, 15.6875)
+to (21.125, 15.6875), one bf16 ulp, deterministic on 8 of 8, because the
+fused pack turns N = 48 into N = 16480 and straddles the `out_vec_size >=
+4096` gate at `quantized.h:1917`.
+
+Rungs 0 to 2 decompose `begin()` at 4046.1 ms median over 32 samples:
+target_forward_build 75.0 %, target_forward_eval 24.5 %, tail norm and
+lm_head 0.5 %. GEMM share is 99.7 % at 6.15 to 6.18 TFLOP/s, so non-GEMM
+headroom is at most 32 ms. **The H-221 512-width cliff is falsified.** The
+measured 4046.1 ms seed leg supersedes the inherited P = 4.0086 s, and 6.15
+to 6.18 TFLOP/s supersedes 6.415.
+
+**New rule, from the same data.** Isolated cells summed to 4090.3 ms, which
+is 44 ms *more* than the measured `begin()`, and the ladder went 82.7 ms
+isolated to 28.0 in situ to 2.6 recovered. **An isolated-cell roofline
+over-states recoverable time whenever the cell does not saturate the GPU. A
+fusion saving is bounded by removed traffic and removed launches, never by
+the difference of two isolated cell times.**
+
+### J. MLX group sizes are 32, 64 and 128 only, and the coarse draft scorer has a g64-specialised kernel
+
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/ops.cpp:4810` throws unless
+`group_size` is 32, 64 or 128, and the minimum bit width is 2. Group size 256
+and 1-bit packing are both impossible. Group size is a JIT template argument
+threaded through
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp`, with no
+fixed instantiation table blocking 128.
+
+The coarse draft-shortlist call is served by a hand-written promoted kernel
+selected by an explicit gate at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1909`
+(twin `mlx-generated/quantized.cpp:1921`):
+
+```c
+if (!batched && group_size == 64 && bits == 2 && out_vec_size == 98336 && ntg.x == 1)
+    qmv_fast_singlerow_affine2_g64<T>(...);
+```
+
+The function is at `quantized.h:1084`. Its only dependence on 64 is two
+divisors, at `:1101` and `:1121-1122`. Each lane loads one `ulong` of 32
+packed 2-bit values, which stays inside a single group for any group size
+that is a multiple of 32, so a g128 sibling is a template generalisation, not
+a rewrite. Host selection does not block it either: `quantized.cpp:259`
+computes `fast = N % 8 == 0 && K % 512 == 0`, and 98,336 and 5,120 both
+qualify.
+
+`makeCompactDraftHead()` at `Qwen35.swift:3494` proves the exact reranker is
+a slice of the target's own `lm_head`, so the coarse stage is only a
+retrieval index over rows we already hold. Combined with E79's coarse
+recall@32 of exactly 1.0000, the shipped proposal is exactly the exact-argmax
+over the compact vocabulary. That opens E87.
+
+### K. The standing witness list had two dead symbols
+
+Askeladd diagnosed both while composing E84. On the current base,
+`senpai/rebuild-and-assert-worker.sh --require qwen35_dual_rms_norm_bf16_v1`
+fails with 0 hits, because the organizer rewrote its only caller at
+`Qwen35MTP.swift:130` to `qwen35DualRMSNormConcat` and the release optimizer
+drops the now unreferenced `private let` kernel global.
+`--require-symbol makeMeasuredDepthPrice` also fails with 0 hits, because its
+only caller is `case .pbfit:` in a selector pinned to `.ship`, so it is dead
+stripped. **Both are properties of the base, not of any candidate diff.**
+
+Corrected standing list:
+
+```
+--require qwen35_dual_rms_norm_concat_bf16_v1
+--require-symbol snapshotScheduleSignal
+--forbid  qwen35_dual_rms_norm_bf16_v1
+```
+
+Add `--require qwen35_gated_delta_replay_state` and
+`--require-symbol islandFastPathReady` for E84 trees only.
+
+This is the same class of advisor error as shipping an unrun gate. **Never
+ship a witness list the advisor has not reconciled against the current base.**
+
+### Conclusions
+
+1. **`32c6dc69` at 3.28157961 is the campaign's best official result**, and it
+   drew the slow cluster. A fast draw of the same tree would have scored
+   about 3.3086.
+2. **The cluster is worth +0.82 % on the current schedule and P(fast) is
+   0.67.** That is the hard ceiling on the probability that any submission
+   takes the frontier.
+3. **The frontier beat its own class expectation by 2.51 sigma.** Parity with
+   it wins 0.4 % of the time. Compose stacks of at least 0.35 %.
+4. **Bytes are not the currency; bit-exactness is.**
+5. **One eliminated intermediate is worth 1.6 to 2.7 us, and there are zero
+   device allocations on the per-draft head path.** The 13 to 16 us figure was
+   an aggregate.
+6. **`verify_build_us` tracks GPU time at a ratio of 0.945.** The source
+   docstring that calls it pure host time is wrong.
+7. **The decode `asyncEval` ladder was scaled from a 40-layer model and never
+   tuned.** It is bit-exact and env-sweepable.
+8. **The head is 8.3 % of the ranked round.** Always record which head a
+   head-cost measurement used.
+9. **The prefill fusion-gate axis is closed at 0.016 %.**
+10. **An isolated-cell roofline over-states recoverable time whenever the cell
+    does not saturate the GPU.**
