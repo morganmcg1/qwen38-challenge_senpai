@@ -305,6 +305,19 @@ RFULL = [pair for index, pair in enumerate(_INNER) if index != 4] + TAILFULL
 ALLFULL = _INNER + TAILFULL
 XVEC = [(X_SCALAR_READ, X_VECTOR_READ)]
 
+# The only two divides in the body that do NOT fold. `in_vec_size` arrives as a
+# signed `int`, so the compiler cannot prove it is non-negative and must emit a
+# real `sdiv` for each. The in-loop `k / 2`, `k / 64` and `simd_lid / 4` all
+# fold already, because those operands are provably non-negative. A tensor
+# extent is never negative, so the unsigned form returns the same value for
+# every input the scored path can supply.
+SIGNED_DIVIDES = [(
+    """  const int in_vec_size_w = in_vec_size / 2;
+  const int in_vec_size_g = in_vec_size / 64;""",
+    """  const int in_vec_size_w = int(uint(in_vec_size) / 2);
+  const int in_vec_size_g = int(uint(in_vec_size) / 64);""",
+)]
+
 BASE_SYMBOL = "qmv_fast_crossrow_affine4_g64_wide"
 
 ARMS = {
@@ -314,6 +327,7 @@ ARMS = {
     "e72rfull": RFULL,
     "e72allfull": ALLFULL,
     "e72split": SPLIT,
+    "e72shift": SIGNED_DIVIDES,
     "e72xvec": XVEC,
     "e72tailfullxvec": TAILFULL + XVEC,
 }
@@ -383,7 +397,16 @@ def render(text: str) -> str:
         )
         parts.append(arm(body, full_name, pairs))
         parts.append("\n")
+    parts.append(for_each_arm())
     return "".join(parts)
+
+
+def for_each_arm() -> str:
+    """X-macro so every consumer enumerates exactly the arms that were emitted."""
+    rows = "".join(
+        f"  X({name.removeprefix('e72')}, {BASE_SYMBOL}_{name}) \\\n"
+        for name in ARMS)
+    return f"\n#define E72_FOR_EACH_ARM(X) \\\n{rows}  /* end */\n"
 
 
 def main() -> int:

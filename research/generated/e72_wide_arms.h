@@ -888,3 +888,14 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e72tailfullxvec(
   }
 }
 
+
+#define E72_FOR_EACH_ARM(X) \
+  X(plain, qmv_fast_crossrow_affine4_g64_wide_e72plain) \
+  X(tailfull, qmv_fast_crossrow_affine4_g64_wide_e72tailfull) \
+  X(mfull, qmv_fast_crossrow_affine4_g64_wide_e72mfull) \
+  X(rfull, qmv_fast_crossrow_affine4_g64_wide_e72rfull) \
+  X(allfull, qmv_fast_crossrow_affine4_g64_wide_e72allfull) \
+  X(split, qmv_fast_crossrow_affine4_g64_wide_e72split) \
+  X(xvec, qmv_fast_crossrow_affine4_g64_wide_e72xvec) \
+  X(tailfullxvec, qmv_fast_crossrow_affine4_g64_wide_e72tailfullxvec) \
+  /* end */

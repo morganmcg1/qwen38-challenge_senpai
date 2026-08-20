@@ -34,8 +34,8 @@
     uint simd_gid [[simdgroup_index_in_threadgroup]],                      \
     uint simd_lid [[thread_index_in_simdgroup]]
 
-#define E72_CELL(name, arm)                                                \
-  [[kernel]] void name(E72_PROBE_ARGS) {                                   \
+#define E72_CELL(tag, arm)                                                 \
+  [[kernel]] void e72_cell_##tag(E72_PROBE_ARGS) {                         \
     const int first_m = int(tid.x) * E72_NA;                               \
     const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;                \
     arm<bfloat16_t, E72_NA, true>(                                         \
@@ -43,11 +43,4 @@
         first_m, out_row, simd_lid);                                       \
   }
 
-E72_CELL(e72_cell_plain, qmv_fast_crossrow_affine4_g64_wide_e72plain)
-E72_CELL(e72_cell_tailfull, qmv_fast_crossrow_affine4_g64_wide_e72tailfull)
-E72_CELL(e72_cell_allfull, qmv_fast_crossrow_affine4_g64_wide_e72allfull)
-E72_CELL(e72_cell_xvec, qmv_fast_crossrow_affine4_g64_wide_e72xvec)
-E72_CELL(e72_cell_tailfullxvec,
-         qmv_fast_crossrow_affine4_g64_wide_e72tailfullxvec)
-E72_CELL(e72_cell_allfullxvec,
-         qmv_fast_crossrow_affine4_g64_wide_e72allfullxvec)
+E72_FOR_EACH_ARM(E72_CELL)

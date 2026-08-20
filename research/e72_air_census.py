@@ -39,21 +39,31 @@ from e64_air_census import (  # noqa: E402
     split_blocks,
 )
 from e69_air_census import load_census  # noqa: E402
+from e72_wide_gen import ARMS as GEN_ARMS, PRAGMA_ONLY as GEN_PRAGMA_ONLY  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 INCLUDE = REPO / "Vendor/mlx-swift/Source/Cmlx/mlx"
 PROBE = REPO / "research/e72_wide_probe.metal"
 
-ARMS = {
-    "plain": "e72_cell_plain",
-    "tailfull": "e72_cell_tailfull",
-    "allfull": "e72_cell_allfull",
-    "xvec": "e72_cell_xvec",
-    "tailfullxvec": "e72_cell_tailfullxvec",
-    "allfullxvec": "e72_cell_allfullxvec",
-}
-VECTORIZES_X = {"xvec", "tailfullxvec", "allfullxvec"}
+ARMS = {tag.removeprefix("e72"): f"e72_cell_{tag.removeprefix('e72')}"
+        for tag in GEN_ARMS}
+VECTORIZES_X = {"xvec", "tailfullxvec"}
+# Arms that differ from `plain` by unroll pragmas alone. The generator proves
+# that reduction textually; the census only has to confirm what it bought.
+UNROLLED = {tag.removeprefix("e72") for tag in GEN_PRAGMA_ONLY}
+# Arms that must clear the NA = 6 accumulator spill. `plain` and `xvec` keep
+# the rolled tail and are the controls that still carry it. `mfull` opens only
+# the inner `i`/`m` loop and is a bisect probe, not a proposed fix. `shift`
+# touches address setup only and is expected to spill exactly like `plain`.
+FIX_ARMS = {"tailfull", "rfull", "allfull", "split", "tailfullxvec"}
+# Each arm's own control for register pressure: an `xvec` arm must be compared
+# against `xvec`, because widening the x load costs registers on its own.
+CONTROL = {arm: ("xvec" if arm in VECTORIZES_X else "plain") for arm in ARMS}
 FLOAT_ALLOCA = re.compile(r"^\[\s*\d+\s+x\s+<\s*\d+\s+x\s+float\s*>\s*\]$")
+# A `<6 x float>` value is legal AIR but has no native register class, so it is
+# the shape most likely to be demoted to memory. `split` exists to remove it.
+NON_NATIVE_VECTOR = re.compile(r"<\s*(?:[35]|[67]|\d\d+)\s+x\s+float\s*>")
+INT_DIVIDE = re.compile(r"=\s*(?:s|u)(?:div|rem)\b")
 
 
 def arm_stats(body: list[str], arm: str, na: int) -> dict:
@@ -90,6 +100,8 @@ def arm_stats(body: list[str], arm: str, na: int) -> dict:
         "allocas": len(alloca_types),
         "alloca_types": sorted(alloca_types),
         "float_allocas": sorted(t for t in alloca_types if FLOAT_ALLOCA.match(t)),
+        "non_native_vectors": len(NON_NATIVE_VECTOR.findall(text)),
+        "integer_divides": len(INT_DIVIDE.findall(text)),
     }
 
 
@@ -132,16 +144,23 @@ def checks(cell: dict, na: int) -> dict:
                 out[f"{arm}_x_loads_are_4_wide"] = (
                     stats["loop_loads_static"]["device_x"]["elements"]
                     == 4 * stats["loop_loads_static"]["device_x"]["loads"])
-        if arm.startswith(("tailfull", "allfull")):
+        # Every fix arm exists to remove the spilled accumulator, so each one
+        # must clear it and none may raise register pressure to do so. `plain`
+        # and `xvec` are the controls that still carry the alloca at NA = 6.
+        if arm in FIX_ARMS:
             out[f"{arm}_has_no_float_alloca"] = not stats["float_allocas"]
+            out[f"{arm}_peak_live_not_above_plain"] = (
+                stats["peak_live_cfg_max"] <= plain["peak_live_cfg_max"])
         if arm.startswith("allfull"):
             out[f"{arm}_has_no_alloca_at_all"] = stats["allocas"] == 0
             out[f"{arm}_k_loop_is_one_block"] = len(stats["loop_blocks"]) == 1
-    out["allfull_fp_matches_allfullxvec"] = (
-        cell["allfull"]["loop_fp"] == cell["allfullxvec"]["loop_fp"])
-    out["unrolling_does_not_raise_peak_live"] = (
-        cell["tailfull"]["peak_live_cfg_max"] <= plain["peak_live_cfg_max"]
-        and cell["allfull"]["peak_live_cfg_max"] <= plain["peak_live_cfg_max"])
+        # Every index arithmetic in the wide body divides by a compile-time
+        # power of two, so nothing may survive as a runtime divide.
+        out[f"{arm}_has_no_integer_divide"] = stats["integer_divides"] == 0
+    # `split` is the only arm that reaches native lanes by changing the type,
+    # so it is the only one required to leave no odd-width float vector at all.
+    out["split_has_only_native_float_vectors"] = (
+        cell["split"]["non_native_vectors"] == 0)
     return out
 
 
