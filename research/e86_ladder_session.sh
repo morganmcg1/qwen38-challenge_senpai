@@ -6,8 +6,18 @@
 # ARM is `name=ladder`, where `ladder` is the literal value of
 # MLX_QWEN_MTP_LADDER for that leg (`default`, `off`, `front`, `dense`, or a
 # comma separated rung list). `name` becomes the arm label in the tag, so it
-# must not contain `=`. Use `default=default` first so the mirrored order puts
-# the session null at both ends of the palindrome.
+# must not contain `=`. A repeated `name` gets the next repeat index, so one
+# arm may occupy several positions in the half.
+#
+# POSITION IS A CONFOUND. E86 rung 0 and rung 1 both put the reference arm
+# first, so the mirror also put it last. Host phases OUTSIDE the verify window
+# cost about 760-820 us/round in every interior leg, but 1372-3607 us/round in
+# the four legs that held position 0 or the last position. That inflated every
+# arm-versus-reference difference by several hundred us/round.
+#
+# Give position 0 and the last position to a throwaway `warm` arm, and repeat
+# each compared arm so its MEAN position equals the mean position of the
+# reference. A palindrome alone does not do this.
 #
 # The ladder is a pure enqueue-timing control at
 # Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2371-2385. It adds no
@@ -46,15 +56,11 @@ fi
 
 declare -a half=("$@")
 declare -a order=("${half[@]}")
-declare -a rep=()
-for _ in "${half[@]}"; do rep+=(1); done
-for ((i = ${#half[@]} - 1; i >= 0; i--)); do
-  order+=("${half[$i]}")
-  rep+=(2)
-done
+for ((i = ${#half[@]} - 1; i >= 0; i--)); do order+=("${half[$i]}"); done
 
 export MLXFAST_QWEN_MTP_HEAD_DIR="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run"
 
+declare -A seen=()
 for i in "${!order[@]}"; do
   spec="${order[$i]}"
   name="${spec%%=*}"
@@ -63,9 +69,11 @@ for i in "${!order[@]}"; do
     echo "e86_ladder_session.sh: arm '${spec}' is not name=ladder" >&2
     exit 2
   }
+  seen["${name}"]=$(( ${seen["${name}"]:-0} + 1 ))
+  tag="${prefix}-${name}-${seen["${name}"]}"
   MLX_QWEN_MTP_LADDER="${ladder}" \
-    research/e79_trace_leg.sh "${prefix}-${name}-${rep[$i]}" 512 ${sync_head}
+    research/e79_trace_leg.sh "${tag}" 512 ${sync_head}
   status=$?
-  echo "leg ${prefix}-${name}-${rep[$i]} ladder=${ladder} exit=${status}"
+  echo "leg ${tag} pos=${i} ladder=${ladder} exit=${status}"
   ((status == 0)) || exit "${status}"
 done

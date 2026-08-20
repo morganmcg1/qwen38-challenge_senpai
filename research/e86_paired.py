@@ -95,13 +95,21 @@ def main() -> None:
         print(f"{arm:<28}{st.median(dr):>+15.0f}  [{lo:>+8.0f},{hi:>+8.0f}]"
               f"{st.mean(dr):>+14.0f}{st.median(dv):>+16.0f}{len(dr):>7}")
 
-    # Within-arm null: pair the two repeat legs of the reference against each
-    # other. Any arm effect smaller than this is not a result.
+    # Within-arm null: split the reference legs into two groups with the same
+    # MEAN session position and pair them. With four reference legs the split
+    # is outer {first, last} against inner, which is the same position
+    # structure every compared arm has. Any arm effect smaller than this null
+    # is not a result.
     if len(legs[ref]) >= 2:
-        null = [a["round_us"] - b["round_us"] for a, b in zip(legs[ref][0], legs[ref][1])]
+        n = len(legs[ref])
+        ga, gb = ([legs[ref][0], legs[ref][-1]], legs[ref][1:-1]) if n >= 4 \
+            else ([legs[ref][0]], [legs[ref][1]])
+        null = [a["round_us"] - b["round_us"]
+                for la in ga for lb in gb for a, b in zip(la, lb)]
         lo, hi = bootstrap_ci(null, st.median)
         print(f"\n{'NULL (' + ref + ' vs itself)':<28}{st.median(null):>+15.0f}"
-              f"  [{lo:>+8.0f},{hi:>+8.0f}]{st.mean(null):>+14.0f}")
+              f"  [{lo:>+8.0f},{hi:>+8.0f}]{st.mean(null):>+14.0f}"
+              f"{'':>16}{len(null):>7}")
 
     base = st.median([r["round_us"] for leg in legs[ref] for r in leg])
     print(f"\nreference median round = {base:.0f} us")
