@@ -54,6 +54,23 @@ def report(path):
               f"d_submit1={r['d_submit1'] / 1000:7.3f}ms "
               f"d_chain={r['d_chain'] / 1000:7.3f}ms")
 
+    leg = session["timed_leg_us"]
+    rounds_us = sum(r["round_us"] for r in rows)
+    totals = dict(session["segment_totals_us"])
+    # begin() prefill and the tail are inside the timed leg but outside every
+    # round, so they only appear as the residual.
+    totals["begin+tail"] = leg - rounds_us
+    print(f"    leg budget (timed leg {leg / 1e6:.3f}s, rounds "
+          f"{100 * rounds_us / leg:.1f}% of it):")
+    for key, value in sorted(totals.items(), key=lambda kv: -kv[1]):
+        if 100 * value / leg < 0.05:
+            continue
+        share = f"{100 * value / leg:6.2f}% of leg"
+        if key == "d_submit2":
+            share += (f"  = {100 * value / totals['draft_build']:.1f}% of "
+                      f"draft_build")
+        print(f"      {key:<14}{value / 1e6:8.3f}s  {share}")
+
 
 def main():
     ap = argparse.ArgumentParser()
