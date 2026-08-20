@@ -171,6 +171,46 @@ def natural_contrast(rows, null):
     return out
 
 
+def cross_session(rows, cells):
+    """Replicate the E77 probe arms against the independent E73 session.
+
+    Every natural arm has an E73 cell on all four sweep shapes. The probe adds
+    only a dead branch to the shipped body, so the absolute times must agree
+    across sessions, and the natural ratios must reproduce.
+    """
+    e73 = {(c["shape"], c["m"], c["ipg"]): c["t"] for c in cells}
+    abs_rows = []
+    for r in rows:
+        if r["kind"] != "p" or r["pressure"] != 0:
+            continue
+        ref = e73.get((r["shape"], r["m"], r["ipg"]))
+        if ref is None:
+            continue
+        abs_rows.append(dict(shape=r["shape"], arm=r["arm"], m=r["m"],
+                             ipg=r["ipg"], regs=r["regs"], sg=r["sg"],
+                             e77=r["t"], e73=ref, rel=(r["t"] - ref) / ref))
+    ratio_rows = []
+    for m, ipgs in NATURAL_FAMILIES.items():
+        for ipg in ipgs[1:]:
+            for shape in sorted({r["shape"] for r in rows}):
+                a = next((x for x in abs_rows if x["shape"] == shape
+                          and x["m"] == m and x["ipg"] == ipg), None)
+                b = next((x for x in abs_rows if x["shape"] == shape
+                          and x["m"] == m and x["ipg"] == ipgs[0]), None)
+                if a and b:
+                    ratio_rows.append(dict(
+                        shape=shape, m=m, ipg=ipg, ref_ipg=ipgs[0],
+                        e77=a["e77"] / b["e77"], e73=a["e73"] / b["e73"]))
+    ad = sorted(abs(r["rel"]) for r in abs_rows)
+    rd = sorted(abs(r["e77"] / r["e73"] - 1.0) for r in ratio_rows)
+    return dict(
+        abs_rows=abs_rows, ratio_rows=ratio_rows,
+        abs_n=len(ad), abs_median=statistics.median(ad) if ad else None,
+        abs_max=ad[-1] if ad else None,
+        ratio_n=len(rd), ratio_median=statistics.median(rd) if rd else None,
+        ratio_max=rd[-1] if rd else None)
+
+
 # -------------------------------------------------- rung 1: synthetic ladder
 
 
@@ -316,6 +356,38 @@ def argmin_table(tfun, cores):
     return out
 
 
+def gamma_required(fit, cores, omega_local, omega_ranked, sg_local, sg_ranked):
+    """Smallest occupancy exponent that makes the crown cell win at each M.
+
+    `Omega_L(IPG)` is a per-IPG constant, so the rung-2 refit absorbs it exactly
+    into `c(IPG)`; dividing it back out recovers the occupancy-free ranked cost.
+    The ranked cost at any exponent is then that cost times
+    `(S_L/S_R)**gamma`, which inverts in closed form.
+    """
+    out = {}
+    for m in range(3, 10):
+        o, c = SHIPPED_LOCAL[m], CROWN[m]
+        if o == c:
+            out[m] = dict(ours=o, crown=c, required=None, note="same cell")
+            continue
+        neutral = {}
+        for i in (o, c):
+            neutral[i] = (round_cost(fit["t_ranked"], m, i, cores)
+                          * omega_local[i] / omega_ranked[i])
+        a_o = sg_local[o] / sg_ranked[o]
+        a_c = sg_local[c] / sg_ranked[c]
+        if a_c >= a_o:
+            out[m] = dict(ours=o, crown=c, required=None,
+                          note="occupancy cannot flip this pair in this "
+                               "direction at any exponent")
+            continue
+        out[m] = dict(ours=o, crown=c, a_ours=a_o, a_crown=a_c,
+                      deficit=neutral[c] / neutral[o],
+                      required=math.log(neutral[c] / neutral[o])
+                      / math.log(a_o / a_c))
+    return out
+
+
 def table_delta(tfun, cores, table_a, table_b):
     per_m, weighted = {}, 0.0
     for m in range(3, 10):
@@ -352,6 +424,7 @@ def main():
                  for i in range(2, 7)}
 
     d, rows = load_sweep(args.sweep, args.regs)
+    _, cells = load_e73(args.session)
     null = sweep_null(rows)
     print(f"sweep: {d['device']}  arms {len(d['arms'])}  reps {d['reps']}  "
           f"entry {d['session_entry_gpu_temp_c']:.1f}C "
@@ -377,6 +450,20 @@ def main():
                   f"95% CI [{p['lo']:.5f}, {p['hi']:.5f}]  "
                   f"{'null' if p['flat'] else 'MOVES'}")
         print(f"     pooled over shapes {row['pooled']:.5f}")
+
+    xs = cross_session(rows, cells)
+    print("\n== rung 1a control: replicate the probe arms against E73 ==")
+    print("   the p0 probe adds only a dead branch, so both sessions must agree")
+    print("     arm            R    S   shape                        E77/E73-1")
+    for r in sorted(xs["abs_rows"], key=lambda r: (r["m"], r["ipg"],
+                                                   r["shape"])):
+        print(f"     {r['arm']:14s} {r['regs']:3d} {r['sg']:3d}  "
+              f"{r['shape'][:28]:28s} {100*r['rel']:+7.3f}%")
+    print(f"   absolute agreement: median {100*xs['abs_median']:.3f}%  "
+          f"max {100*xs['abs_max']:.3f}%  (n={xs['abs_n']})")
+    print(f"   natural ratios reproduce: median "
+          f"{100*xs['ratio_median']:.3f}%  max {100*xs['ratio_max']:.3f}%  "
+          f"(n={xs['ratio_n']})")
 
     print("\n== rung 1b: SYNTHETIC ladder, fixed cell, only registers move ==")
     lad = ladders(rows)
@@ -441,7 +528,6 @@ def main():
               f"{omega_local[i]:8.5f}   {cell_regs[RANKED_ARCH][i]:3d}/"
               f"{sg_ranked[i]:<3d} {omega_ranked[i]:8.5f}  {ex}")
 
-    _, cells = load_e73(args.session)
     e73null = e73_session_null(cells)
     fit = fit_surface(cells, args.cores, omega_local, omega_ranked)
     ar = [abs(x) for x in fit["res"]]
@@ -489,6 +575,22 @@ def main():
     print(f"  M5/M6 only -> candidate leg {scoring:+.4f}%   vs measured "
           f"{MEASURED_SCORING_DELTA_PCT:+.3f}%")
 
+    print("\n== validation 2 in exponent units: what gamma would each M need? ==")
+    req = gamma_required(fit, args.ranked_cores, omega_local, omega_ranked,
+                         sg_local, sg_ranked)
+    print(f"  measured gamma {gamma:+.5f} +- {gamma_se:.5f}")
+    print("  M  ours crown  crown deficit  gamma required  sigma away")
+    for m in range(3, 10):
+        r = req[m]
+        if r["required"] is None:
+            print(f"  {m}    {r['ours']}     {r['crown']}         -"
+                  f"              -            {r['note']}")
+            continue
+        sig = (r["required"] - gamma) / gamma_se if gamma_se else float("inf")
+        print(f"  {m}    {r['ours']}     {r['crown']}      "
+              f"{r['deficit']:8.5f}      {r['required']:+9.4f}     "
+              f"{sig:+9.1f}")
+
     print("\n== validation 2b: the advisor's M=6 inequality ==")
     print("  occupancy_penalty(111) - occupancy_penalty(90) must exceed the")
     print("  extra weight stream that <T,6,3> pays over <T,6,6>.")
@@ -535,7 +637,7 @@ def main():
         ranked_file_bytes_extrapolated=RANKED_FILE_BYTES,
         cores=args.cores, ranked_cores_extrapolated=args.ranked_cores,
         gamma=gamma, gamma_se=gamma_se, gamma_fits=fits,
-        staircase=stairs, natural_contrast=nat,
+        staircase=stairs, natural_contrast=nat, cross_session=xs,
         measured_sg_range=[measured_sg[0], measured_sg[-1]],
         cell_registers=cell_regs, sg_local=sg_local, sg_ranked=sg_ranked,
         omega_local=omega_local, omega_ranked=omega_ranked,
@@ -552,6 +654,7 @@ def main():
         crown_minus_ours_leg_pct_m5m6=scoring,
         measured_scoring_delta_pct=MEASURED_SCORING_DELTA_PCT,
         validation2_m5=v2_m5, validation2_m6=v2_m6, validation2_m9=v2_m9,
+        gamma_required=req,
         validation2b_inequality=v2b,
         m6_ratio_with_omega=c3 / c6, m6_ratio_without_omega=c3f / c6f,
         e33_pred_span=e33span, e33_rows=e33rows, e33_stat=e33stat,
