@@ -706,3 +706,1259 @@ SHAPE na=6 shape=head.lm_head inner=1 legs=6 entry_gpu_temp_c=37.14 exit_gpu_tem
 e69_cell_ab: head.lm_head inner=1 legs=6 entry=37.14C exit=38.08C
 e69_cell_ab: wrote research/e76-artifacts/parity-na6-b1.json
 e76_session finished=2026-08-20T11:31:51Z status=0
+e76_session mode=parity head=3b467545241d9441e7cc18f8baac54612390712f dirty=0
+e76_session host=ip-10-231-2-12 chip=Apple M4 Pro
+e76_session na_list=5 6 reps=21 target_bytes=24e9
+e76_session started=2026-08-20T11:58:40Z
+OK: research/generated/e76_wide_arms.h matches Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h lines 968-1066, 25 arms
+wrote /tmp/e76-build/arms_na5.metal na=5 bytes=348459 sha256=29cf20ad4ddfb263 arms=25
+e76_session na=5 parity batch=0 arms=plain,lazysb,lazyw,lazy,rps2,rps2lazysb,rps2lazyw,rps2lazy,rps1,rps1lazysb,rps1lazyw,rps1lazy
+ARM na=5 arm=plain max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=lazysb max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=lazyw max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=lazy max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps2 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps2lazysb max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps2lazyw max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps2lazy max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1lazysb max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1lazyw max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1lazy max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e69_cell_ab: session entry gpu_temp_c=45.42
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=lazysb differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=lazyw differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=lazy differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps2 differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps2lazysb differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps2lazyw differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps2lazy differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1 differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazysb differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazyw differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazy differing=0 elements=82400
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002693625 wall_seconds=0.008169042 seconds_per_dispatch=0.001346812467 gbps=31.324925
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=1 arm=lazysb inner=2 gpu_seconds=0.002542792 wall_seconds=0.002934250 seconds_per_dispatch=0.001271395828 gbps=33.183057
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=2 arm=lazyw inner=2 gpu_seconds=0.002918333 wall_seconds=0.003857625 seconds_per_dispatch=0.001459166640 gbps=28.912942
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=3 arm=lazy inner=2 gpu_seconds=0.002917500 wall_seconds=0.003736167 seconds_per_dispatch=0.001458749990 gbps=28.921200
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=4 arm=rps2 inner=2 gpu_seconds=0.002961625 wall_seconds=0.003576458 seconds_per_dispatch=0.001480812440 gbps=28.490306
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=5 arm=rps2lazysb inner=2 gpu_seconds=0.002934500 wall_seconds=0.003227833 seconds_per_dispatch=0.001467249938 gbps=28.753656
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=6 arm=rps2lazyw inner=2 gpu_seconds=0.003280250 wall_seconds=0.003600500 seconds_per_dispatch=0.001640124945 gbps=25.722918
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=7 arm=rps2lazy inner=2 gpu_seconds=0.003261250 wall_seconds=0.003917125 seconds_per_dispatch=0.001630624989 gbps=25.872779
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=8 arm=rps1 inner=2 gpu_seconds=0.003783875 wall_seconds=0.004445542 seconds_per_dispatch=0.001891937573 gbps=22.299256
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=9 arm=rps1lazysb inner=2 gpu_seconds=0.002346500 wall_seconds=0.002938333 seconds_per_dispatch=0.001173250028 gbps=35.958917
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=10 arm=rps1lazyw inner=2 gpu_seconds=0.001521708 wall_seconds=0.001804333 seconds_per_dispatch=0.000760854222 gbps=55.449255
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=11 arm=rps1lazy inner=2 gpu_seconds=0.001545167 wall_seconds=0.001817792 seconds_per_dispatch=0.000772583415 gbps=54.607437
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=12 arm=rps1lazy inner=2 gpu_seconds=0.001661042 wall_seconds=0.002159083 seconds_per_dispatch=0.000830520759 gbps=50.798008
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=13 arm=rps1lazyw inner=2 gpu_seconds=0.001558250 wall_seconds=0.002024042 seconds_per_dispatch=0.000779125025 gbps=54.148947
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=14 arm=rps1lazysb inner=2 gpu_seconds=0.001325625 wall_seconds=0.001824417 seconds_per_dispatch=0.000662812497 gbps=63.651184
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=15 arm=rps1 inner=2 gpu_seconds=0.001414125 wall_seconds=0.001888208 seconds_per_dispatch=0.000707062543 gbps=59.667706
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=16 arm=rps2lazy inner=2 gpu_seconds=0.001257125 wall_seconds=0.001779708 seconds_per_dispatch=0.000628562528 gbps=67.119496
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=17 arm=rps2lazyw inner=2 gpu_seconds=0.001289833 wall_seconds=0.001779958 seconds_per_dispatch=0.000644916669 gbps=65.417444
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=18 arm=rps2lazysb inner=2 gpu_seconds=0.001045750 wall_seconds=0.001509708 seconds_per_dispatch=0.000522874994 gbps=80.686207
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=19 arm=rps2 inner=2 gpu_seconds=0.001080083 wall_seconds=0.001334333 seconds_per_dispatch=0.000540041714 gbps=78.121373
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=20 arm=lazy inner=2 gpu_seconds=0.001067125 wall_seconds=0.001339458 seconds_per_dispatch=0.000533562503 gbps=79.070024
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=21 arm=lazyw inner=2 gpu_seconds=0.001135458 wall_seconds=0.001618958 seconds_per_dispatch=0.000567729236 gbps=74.311480
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=22 arm=lazysb inner=2 gpu_seconds=0.000945917 wall_seconds=0.001392542 seconds_per_dispatch=0.000472958316 gbps=89.201941
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=23 arm=plain inner=2 gpu_seconds=0.000955500 wall_seconds=0.001413250 seconds_per_dispatch=0.000477749971 gbps=88.307279
+SHAPE na=5 shape=linear_attn.in_proj_fused_qkvzba inner=2 legs=24 entry_gpu_temp_c=45.33 exit_gpu_temp_c=45.03
+e69_cell_ab: linear_attn.in_proj_fused_qkvzba inner=2 legs=24 entry=45.33C exit=45.03C
+PARITY na=5 shape=linear_attn.out_proj arm=lazysb differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=lazyw differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=lazy differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps2 differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps2lazysb differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps2lazyw differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps2lazy differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1 differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1lazysb differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1lazyw differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1lazy differing=0 elements=25600
+LEG na=5 shape=linear_attn.out_proj rep=0 position=0 arm=plain inner=6 gpu_seconds=0.003046875 wall_seconds=0.008226583 seconds_per_dispatch=0.000507812481 gbps=30.973323
+LEG na=5 shape=linear_attn.out_proj rep=0 position=1 arm=lazysb inner=6 gpu_seconds=0.002923167 wall_seconds=0.003711333 seconds_per_dispatch=0.000487194474 gbps=32.284110
+LEG na=5 shape=linear_attn.out_proj rep=0 position=2 arm=lazyw inner=6 gpu_seconds=0.003343875 wall_seconds=0.003655333 seconds_per_dispatch=0.000557312509 gbps=28.222299
+LEG na=5 shape=linear_attn.out_proj rep=0 position=3 arm=lazy inner=6 gpu_seconds=0.003348250 wall_seconds=0.004000208 seconds_per_dispatch=0.000558041657 gbps=28.185423
+LEG na=5 shape=linear_attn.out_proj rep=0 position=4 arm=rps2 inner=6 gpu_seconds=0.003402000 wall_seconds=0.004101167 seconds_per_dispatch=0.000567000010 gbps=27.740105
+LEG na=5 shape=linear_attn.out_proj rep=0 position=5 arm=rps2lazysb inner=6 gpu_seconds=0.003398250 wall_seconds=0.003973542 seconds_per_dispatch=0.000566375015 gbps=27.770717
+LEG na=5 shape=linear_attn.out_proj rep=0 position=6 arm=rps2lazyw inner=6 gpu_seconds=0.003776250 wall_seconds=0.004396667 seconds_per_dispatch=0.000629375029 gbps=24.990887
+LEG na=5 shape=linear_attn.out_proj rep=0 position=7 arm=rps2lazy inner=6 gpu_seconds=0.003756375 wall_seconds=0.004365083 seconds_per_dispatch=0.000626062509 gbps=25.123114
+LEG na=5 shape=linear_attn.out_proj rep=0 position=8 arm=rps1 inner=6 gpu_seconds=0.004351750 wall_seconds=0.004986292 seconds_per_dispatch=0.000725291631 gbps=21.685953
+LEG na=5 shape=linear_attn.out_proj rep=0 position=9 arm=rps1lazysb inner=6 gpu_seconds=0.003527375 wall_seconds=0.004185417 seconds_per_dispatch=0.000587895862 gbps=26.754126
+LEG na=5 shape=linear_attn.out_proj rep=0 position=10 arm=rps1lazyw inner=6 gpu_seconds=0.001781875 wall_seconds=0.002055125 seconds_per_dispatch=0.000296979172 gbps=52.962098
+LEG na=5 shape=linear_attn.out_proj rep=0 position=11 arm=rps1lazy inner=6 gpu_seconds=0.001812583 wall_seconds=0.002070750 seconds_per_dispatch=0.000302097217 gbps=52.064829
+LEG na=5 shape=linear_attn.out_proj rep=0 position=12 arm=rps1lazy inner=6 gpu_seconds=0.001908083 wall_seconds=0.002410000 seconds_per_dispatch=0.000318013869 gbps=49.458975
+LEG na=5 shape=linear_attn.out_proj rep=0 position=13 arm=rps1lazyw inner=6 gpu_seconds=0.001721917 wall_seconds=0.002371625 seconds_per_dispatch=0.000286986120 gbps=54.806274
+LEG na=5 shape=linear_attn.out_proj rep=0 position=14 arm=rps1lazysb inner=6 gpu_seconds=0.001546458 wall_seconds=0.002051042 seconds_per_dispatch=0.000257743057 gbps=61.024495
+LEG na=5 shape=linear_attn.out_proj rep=0 position=15 arm=rps1 inner=6 gpu_seconds=0.001536042 wall_seconds=0.002037042 seconds_per_dispatch=0.000256006955 gbps=61.438331
+LEG na=5 shape=linear_attn.out_proj rep=0 position=16 arm=rps2lazy inner=6 gpu_seconds=0.001371458 wall_seconds=0.001853750 seconds_per_dispatch=0.000228576401 gbps=68.811303
+LEG na=5 shape=linear_attn.out_proj rep=0 position=17 arm=rps2lazyw inner=6 gpu_seconds=0.001267250 wall_seconds=0.001484875 seconds_per_dispatch=0.000211208321 gbps=74.469793
+LEG na=5 shape=linear_attn.out_proj rep=0 position=18 arm=rps2lazysb inner=6 gpu_seconds=0.001247958 wall_seconds=0.001473917 seconds_per_dispatch=0.000207993047 gbps=75.620990
+LEG na=5 shape=linear_attn.out_proj rep=0 position=19 arm=rps2 inner=6 gpu_seconds=0.001246542 wall_seconds=0.001480750 seconds_per_dispatch=0.000207756956 gbps=75.706923
+LEG na=5 shape=linear_attn.out_proj rep=0 position=20 arm=lazy inner=6 gpu_seconds=0.001241292 wall_seconds=0.001465083 seconds_per_dispatch=0.000206881940 gbps=76.027129
+LEG na=5 shape=linear_attn.out_proj rep=0 position=21 arm=lazyw inner=6 gpu_seconds=0.001375458 wall_seconds=0.001890708 seconds_per_dispatch=0.000229243034 gbps=68.611202
+LEG na=5 shape=linear_attn.out_proj rep=0 position=22 arm=lazysb inner=6 gpu_seconds=0.001298583 wall_seconds=0.001749250 seconds_per_dispatch=0.000216430558 gbps=72.672917
+LEG na=5 shape=linear_attn.out_proj rep=0 position=23 arm=plain inner=6 gpu_seconds=0.001243667 wall_seconds=0.001771417 seconds_per_dispatch=0.000207277791 gbps=75.881936
+SHAPE na=5 shape=linear_attn.out_proj inner=6 legs=24 entry_gpu_temp_c=44.67 exit_gpu_temp_c=44.42
+e69_cell_ab: linear_attn.out_proj inner=6 legs=24 entry=44.67C exit=44.42C
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=lazysb differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=lazyw differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=lazy differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps2 differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps2lazysb differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps2lazyw differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps2lazy differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1 differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1lazysb differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1lazyw differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1lazy differing=0 elements=71680
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002341292 wall_seconds=0.008021333 seconds_per_dispatch=0.001170645934 gbps=31.350350
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=1 arm=lazysb inner=2 gpu_seconds=0.002226333 wall_seconds=0.002560500 seconds_per_dispatch=0.001113166567 gbps=32.969154
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=2 arm=lazyw inner=2 gpu_seconds=0.002548375 wall_seconds=0.002893458 seconds_per_dispatch=0.001274187467 gbps=28.802795
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=3 arm=lazy inner=2 gpu_seconds=0.002526125 wall_seconds=0.002820417 seconds_per_dispatch=0.001263062586 gbps=29.056486
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=4 arm=rps2 inner=2 gpu_seconds=0.002566708 wall_seconds=0.002939875 seconds_per_dispatch=0.001283354126 gbps=28.597064
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=5 arm=rps2lazysb inner=2 gpu_seconds=0.002559125 wall_seconds=0.002860583 seconds_per_dispatch=0.001279562479 gbps=28.681804
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=6 arm=rps2lazyw inner=2 gpu_seconds=0.002866833 wall_seconds=0.003182625 seconds_per_dispatch=0.001433416619 gbps=25.603275
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=7 arm=rps2lazy inner=2 gpu_seconds=0.002834375 wall_seconds=0.003180500 seconds_per_dispatch=0.001417187508 gbps=25.896474
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=8 arm=rps1 inner=2 gpu_seconds=0.003319042 wall_seconds=0.003659333 seconds_per_dispatch=0.001659520785 gbps=22.114914
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=9 arm=rps1lazysb inner=2 gpu_seconds=0.003318666 wall_seconds=0.003720958 seconds_per_dispatch=0.001659333240 gbps=22.117414
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=10 arm=rps1lazyw inner=2 gpu_seconds=0.002294375 wall_seconds=0.002627042 seconds_per_dispatch=0.001147187431 gbps=31.991424
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=11 arm=rps1lazy inner=2 gpu_seconds=0.001346375 wall_seconds=0.001628500 seconds_per_dispatch=0.000673187547 gbps=54.516992
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=12 arm=rps1lazy inner=2 gpu_seconds=0.001346000 wall_seconds=0.001580708 seconds_per_dispatch=0.000673000002 gbps=54.532184
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=13 arm=rps1lazyw inner=2 gpu_seconds=0.001325792 wall_seconds=0.001572500 seconds_per_dispatch=0.000662895851 gbps=55.363388
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=14 arm=rps1lazysb inner=2 gpu_seconds=0.001229583 wall_seconds=0.001467167 seconds_per_dispatch=0.000614791643 gbps=59.695281
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=15 arm=rps1 inner=2 gpu_seconds=0.001182708 wall_seconds=0.001429750 seconds_per_dispatch=0.000591354212 gbps=62.061214
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=16 arm=rps2lazy inner=2 gpu_seconds=0.000911708 wall_seconds=0.001144208 seconds_per_dispatch=0.000455854228 gbps=80.508544
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=17 arm=rps2lazyw inner=2 gpu_seconds=0.000919375 wall_seconds=0.001119875 seconds_per_dispatch=0.000459687435 gbps=79.837205
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=18 arm=rps2lazysb inner=2 gpu_seconds=0.000823875 wall_seconds=0.001041750 seconds_per_dispatch=0.000411937479 gbps=89.091578
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=19 arm=rps2 inner=2 gpu_seconds=0.000822875 wall_seconds=0.001036542 seconds_per_dispatch=0.000411437592 gbps=89.199822
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=20 arm=lazy inner=2 gpu_seconds=0.000816708 wall_seconds=0.001035750 seconds_per_dispatch=0.000408354099 gbps=89.873372
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=21 arm=lazyw inner=2 gpu_seconds=0.000822375 wall_seconds=0.001024333 seconds_per_dispatch=0.000411187531 gbps=89.254068
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=22 arm=lazysb inner=2 gpu_seconds=0.000715500 wall_seconds=0.000924583 seconds_per_dispatch=0.000357749988 gbps=102.586055
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=23 arm=plain inner=2 gpu_seconds=0.000773625 wall_seconds=0.001012333 seconds_per_dispatch=0.000386812491 gbps=94.878425
+SHAPE na=5 shape=full_attn.qkv_proj_fused inner=2 legs=24 entry_gpu_temp_c=44.19 exit_gpu_temp_c=43.91
+e69_cell_ab: full_attn.qkv_proj_fused inner=2 legs=24 entry=44.19C exit=43.91C
+PARITY na=5 shape=mlp.gate_up_fused arm=lazysb differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=lazyw differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=lazy differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps2 differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps2lazysb differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps2lazyw differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps2lazy differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1 differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1lazysb differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1lazyw differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1lazy differing=0 elements=174080
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=0 arm=plain inner=1 gpu_seconds=0.002865250 wall_seconds=0.009629125 seconds_per_dispatch=0.002865249990 gbps=31.106870
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=1 arm=lazysb inner=1 gpu_seconds=0.002646500 wall_seconds=0.003367042 seconds_per_dispatch=0.002646500012 gbps=33.678050
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=2 arm=lazyw inner=1 gpu_seconds=0.003037500 wall_seconds=0.003648125 seconds_per_dispatch=0.003037499962 gbps=29.342868
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=3 arm=lazy inner=1 gpu_seconds=0.003016500 wall_seconds=0.003596208 seconds_per_dispatch=0.003016500035 gbps=29.547144
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=4 arm=rps2 inner=1 gpu_seconds=0.003055625 wall_seconds=0.003660833 seconds_per_dispatch=0.003055625129 gbps=29.168814
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=5 arm=rps2lazysb inner=1 gpu_seconds=0.003055500 wall_seconds=0.003390542 seconds_per_dispatch=0.003055500099 gbps=29.170007
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=6 arm=rps2lazyw inner=1 gpu_seconds=0.003411458 wall_seconds=0.004126583 seconds_per_dispatch=0.003411458340 gbps=26.126352
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=7 arm=rps2lazy inner=1 gpu_seconds=0.003383500 wall_seconds=0.004111083 seconds_per_dispatch=0.003383500036 gbps=26.342237
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=8 arm=rps1 inner=1 gpu_seconds=0.003904250 wall_seconds=0.004584792 seconds_per_dispatch=0.003904249985 gbps=22.828702
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=9 arm=rps1lazysb inner=1 gpu_seconds=0.003919375 wall_seconds=0.004259458 seconds_per_dispatch=0.003919374896 gbps=22.740606
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=10 arm=rps1lazyw inner=1 gpu_seconds=0.004297917 wall_seconds=0.004991292 seconds_per_dispatch=0.004297916777 gbps=20.737712
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=11 arm=rps1lazy inner=1 gpu_seconds=0.004369708 wall_seconds=0.005062958 seconds_per_dispatch=0.004369708244 gbps=20.397005
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=12 arm=rps1lazy inner=1 gpu_seconds=0.002472208 wall_seconds=0.003150375 seconds_per_dispatch=0.002472208347 gbps=36.052366
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=13 arm=rps1lazyw inner=1 gpu_seconds=0.001576250 wall_seconds=0.001893000 seconds_per_dispatch=0.001576249953 gbps=56.544941
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=14 arm=rps1lazysb inner=1 gpu_seconds=0.001566125 wall_seconds=0.002171000 seconds_per_dispatch=0.001566125080 gbps=56.910499
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=15 arm=rps1 inner=1 gpu_seconds=0.001549250 wall_seconds=0.002067125 seconds_per_dispatch=0.001549250213 gbps=57.530384
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=16 arm=rps2lazy inner=1 gpu_seconds=0.001291375 wall_seconds=0.001751583 seconds_per_dispatch=0.001291374909 gbps=69.018656
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=17 arm=rps2lazyw inner=1 gpu_seconds=0.001269417 wall_seconds=0.001755458 seconds_per_dispatch=0.001269416651 gbps=70.212534
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=18 arm=rps2lazysb inner=1 gpu_seconds=0.001184375 wall_seconds=0.001693958 seconds_per_dispatch=0.001184374793 gbps=75.254016
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=19 arm=rps2 inner=1 gpu_seconds=0.001061250 wall_seconds=0.001563917 seconds_per_dispatch=0.001061249990 gbps=83.984887
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=20 arm=lazy inner=1 gpu_seconds=0.001069750 wall_seconds=0.001558083 seconds_per_dispatch=0.001069750171 gbps=83.317547
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=21 arm=lazyw inner=1 gpu_seconds=0.001031875 wall_seconds=0.001255500 seconds_per_dispatch=0.001031874912 gbps=86.375741
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=22 arm=lazysb inner=1 gpu_seconds=0.000964208 wall_seconds=0.001196250 seconds_per_dispatch=0.000964208273 gbps=92.437456
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=23 arm=plain inner=1 gpu_seconds=0.000971500 wall_seconds=0.001204250 seconds_per_dispatch=0.000971499830 gbps=91.743670
+SHAPE na=5 shape=mlp.gate_up_fused inner=1 legs=24 entry_gpu_temp_c=44.03 exit_gpu_temp_c=43.64
+e69_cell_ab: mlp.gate_up_fused inner=1 legs=24 entry=44.03C exit=43.64C
+PARITY na=5 shape=mlp.down arm=lazysb differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=lazyw differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=lazy differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps2 differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps2lazysb differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps2lazyw differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps2lazy differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1 differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1lazysb differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1lazyw differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1lazy differing=0 elements=25600
+LEG na=5 shape=mlp.down rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002916333 wall_seconds=0.009159208 seconds_per_dispatch=0.001458166633 gbps=30.561994
+LEG na=5 shape=mlp.down rep=0 position=1 arm=lazysb inner=2 gpu_seconds=0.002728750 wall_seconds=0.003398042 seconds_per_dispatch=0.001364374999 gbps=32.662926
+LEG na=5 shape=mlp.down rep=0 position=2 arm=lazyw inner=2 gpu_seconds=0.003337125 wall_seconds=0.003894042 seconds_per_dispatch=0.001668562531 gbps=26.708307
+LEG na=5 shape=mlp.down rep=0 position=3 arm=lazy inner=2 gpu_seconds=0.003244375 wall_seconds=0.003863167 seconds_per_dispatch=0.001622187439 gbps=27.471844
+LEG na=5 shape=mlp.down rep=0 position=4 arm=rps2 inner=2 gpu_seconds=0.003167667 wall_seconds=0.003759875 seconds_per_dispatch=0.001583833364 gbps=28.137101
+LEG na=5 shape=mlp.down rep=0 position=5 arm=rps2lazysb inner=2 gpu_seconds=0.003161167 wall_seconds=0.003442042 seconds_per_dispatch=0.001580583281 gbps=28.194958
+LEG na=5 shape=mlp.down rep=0 position=6 arm=rps2lazyw inner=2 gpu_seconds=0.003556500 wall_seconds=0.004216333 seconds_per_dispatch=0.001778249978 gbps=25.060864
+LEG na=5 shape=mlp.down rep=0 position=7 arm=rps2lazy inner=2 gpu_seconds=0.003522292 wall_seconds=0.004076125 seconds_per_dispatch=0.001761145773 gbps=25.304254
+LEG na=5 shape=mlp.down rep=0 position=8 arm=rps1 inner=2 gpu_seconds=0.002955750 wall_seconds=0.003512417 seconds_per_dispatch=0.001477875048 gbps=30.154430
+LEG na=5 shape=mlp.down rep=0 position=9 arm=rps1lazysb inner=2 gpu_seconds=0.001522000 wall_seconds=0.001837500 seconds_per_dispatch=0.000761000090 gbps=58.560414
+LEG na=5 shape=mlp.down rep=0 position=10 arm=rps1lazyw inner=2 gpu_seconds=0.001772708 wall_seconds=0.002292917 seconds_per_dispatch=0.000886354130 gbps=50.278414
+LEG na=5 shape=mlp.down rep=0 position=11 arm=rps1lazy inner=2 gpu_seconds=0.001835083 wall_seconds=0.002341375 seconds_per_dispatch=0.000917541678 gbps=48.569434
+LEG na=5 shape=mlp.down rep=0 position=12 arm=rps1lazy inner=2 gpu_seconds=0.001664125 wall_seconds=0.002177875 seconds_per_dispatch=0.000832062447 gbps=53.559057
+LEG na=5 shape=mlp.down rep=0 position=13 arm=rps1lazyw inner=2 gpu_seconds=0.001615000 wall_seconds=0.002137208 seconds_per_dispatch=0.000807499979 gbps=55.188212
+LEG na=5 shape=mlp.down rep=0 position=14 arm=rps1lazysb inner=2 gpu_seconds=0.001446208 wall_seconds=0.001978375 seconds_per_dispatch=0.000723104225 gbps=61.629401
+LEG na=5 shape=mlp.down rep=0 position=15 arm=rps1 inner=2 gpu_seconds=0.001483583 wall_seconds=0.002009792 seconds_per_dispatch=0.000741791679 gbps=60.076813
+LEG na=5 shape=mlp.down rep=0 position=16 arm=rps2lazy inner=2 gpu_seconds=0.001194083 wall_seconds=0.001410417 seconds_per_dispatch=0.000597041682 gbps=74.642159
+LEG na=5 shape=mlp.down rep=0 position=17 arm=rps2lazyw inner=2 gpu_seconds=0.001302083 wall_seconds=0.001583083 seconds_per_dispatch=0.000651041744 gbps=68.451033
+LEG na=5 shape=mlp.down rep=0 position=18 arm=rps2lazysb inner=2 gpu_seconds=0.001162458 wall_seconds=0.001408292 seconds_per_dispatch=0.000581229222 gbps=76.672814
+LEG na=5 shape=mlp.down rep=0 position=19 arm=rps2 inner=2 gpu_seconds=0.001281083 wall_seconds=0.001789417 seconds_per_dispatch=0.000640541664 gbps=69.573117
+LEG na=5 shape=mlp.down rep=0 position=20 arm=lazy inner=2 gpu_seconds=0.001295375 wall_seconds=0.001801000 seconds_per_dispatch=0.000647687470 gbps=68.805531
+LEG na=5 shape=mlp.down rep=0 position=21 arm=lazyw inner=2 gpu_seconds=0.001251292 wall_seconds=0.001753583 seconds_per_dispatch=0.000625645858 gbps=71.229561
+LEG na=5 shape=mlp.down rep=0 position=22 arm=lazysb inner=2 gpu_seconds=0.001150792 wall_seconds=0.001687000 seconds_per_dispatch=0.000575395767 gbps=77.450135
+LEG na=5 shape=mlp.down rep=0 position=23 arm=plain inner=2 gpu_seconds=0.001047667 wall_seconds=0.001568667 seconds_per_dispatch=0.000523833325 gbps=85.073778
+SHAPE na=5 shape=mlp.down inner=2 legs=24 entry_gpu_temp_c=43.63 exit_gpu_temp_c=43.12
+e69_cell_ab: mlp.down inner=2 legs=24 entry=43.63C exit=43.12C
+PARITY na=5 shape=head.compact_draft_vocab arm=lazysb differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=lazyw differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=lazy differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps2 differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps2lazysb differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps2lazyw differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps2lazy differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1 differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1lazysb differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1lazyw differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1lazy differing=0 elements=491680
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=0 arm=plain inner=1 gpu_seconds=0.007463375 wall_seconds=0.018152083 seconds_per_dispatch=0.007463374874 gbps=33.730070
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=1 arm=lazysb inner=1 gpu_seconds=0.007334917 wall_seconds=0.007794625 seconds_per_dispatch=0.007334916620 gbps=34.320794
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=2 arm=lazyw inner=1 gpu_seconds=0.006291208 wall_seconds=0.007014708 seconds_per_dispatch=0.006291208323 gbps=40.014596
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=3 arm=lazy inner=1 gpu_seconds=0.003100667 wall_seconds=0.003341667 seconds_per_dispatch=0.003100666683 gbps=81.189043
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=4 arm=rps2 inner=1 gpu_seconds=0.003129750 wall_seconds=0.003384000 seconds_per_dispatch=0.003129750025 gbps=80.434590
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=5 arm=rps2lazysb inner=1 gpu_seconds=0.002742458 wall_seconds=0.002994833 seconds_per_dispatch=0.002742458368 gbps=91.793612
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=6 arm=rps2lazyw inner=1 gpu_seconds=0.003067250 wall_seconds=0.003299375 seconds_per_dispatch=0.003067250131 gbps=82.073567
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=7 arm=rps2lazy inner=1 gpu_seconds=0.002655125 wall_seconds=0.002917833 seconds_per_dispatch=0.002655124990 gbps=94.812923
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=8 arm=rps1 inner=1 gpu_seconds=0.002378208 wall_seconds=0.002636500 seconds_per_dispatch=0.002378208330 gbps=105.852863
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=9 arm=rps1lazysb inner=1 gpu_seconds=0.002375000 wall_seconds=0.002623292 seconds_per_dispatch=0.002375000156 gbps=105.995850
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=10 arm=rps1lazyw inner=1 gpu_seconds=0.002582542 wall_seconds=0.002809917 seconds_per_dispatch=0.002582541667 gbps=97.477676
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=11 arm=rps1lazy inner=1 gpu_seconds=0.002617375 wall_seconds=0.002870542 seconds_per_dispatch=0.002617374994 gbps=96.180395
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=12 arm=rps1lazy inner=1 gpu_seconds=0.002617333 wall_seconds=0.002866375 seconds_per_dispatch=0.002617333317 gbps=96.181926
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=13 arm=rps1lazyw inner=1 gpu_seconds=0.002579625 wall_seconds=0.003092708 seconds_per_dispatch=0.002579624997 gbps=97.587890
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=14 arm=rps1lazysb inner=1 gpu_seconds=0.002374875 wall_seconds=0.002628542 seconds_per_dispatch=0.002374874894 gbps=106.001441
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=15 arm=rps1 inner=1 gpu_seconds=0.002373958 wall_seconds=0.002621000 seconds_per_dispatch=0.002373958239 gbps=106.042371
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=16 arm=rps2lazy inner=1 gpu_seconds=0.002041375 wall_seconds=0.002282625 seconds_per_dispatch=0.002041375032 gbps=123.318918
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=17 arm=rps2lazyw inner=1 gpu_seconds=0.002059875 wall_seconds=0.002283000 seconds_per_dispatch=0.002059875056 gbps=122.211374
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=18 arm=rps2lazysb inner=1 gpu_seconds=0.001840000 wall_seconds=0.002069500 seconds_per_dispatch=0.001840000041 gbps=136.815301
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=19 arm=rps2 inner=1 gpu_seconds=0.001842375 wall_seconds=0.002085792 seconds_per_dispatch=0.001842375146 gbps=136.638925
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=20 arm=lazy inner=1 gpu_seconds=0.001831750 wall_seconds=0.002105083 seconds_per_dispatch=0.001831750153 gbps=137.431494
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=21 arm=lazyw inner=1 gpu_seconds=0.001839750 wall_seconds=0.002054792 seconds_per_dispatch=0.001839750214 gbps=136.833880
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=22 arm=lazysb inner=1 gpu_seconds=0.001585333 wall_seconds=0.001796875 seconds_per_dispatch=0.001585333142 gbps=158.793223
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=23 arm=plain inner=1 gpu_seconds=0.001597875 wall_seconds=0.001832375 seconds_per_dispatch=0.001597875031 gbps=157.546839
+SHAPE na=5 shape=head.compact_draft_vocab inner=1 legs=24 entry_gpu_temp_c=43.06 exit_gpu_temp_c=43.01
+e69_cell_ab: head.compact_draft_vocab inner=1 legs=24 entry=43.06C exit=43.01C
+PARITY na=5 shape=head.lm_head arm=lazysb differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=lazyw differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=lazy differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps2 differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps2lazysb differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps2lazyw differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps2lazy differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1 differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1lazysb differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1lazyw differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1lazy differing=0 elements=1241600
+LEG na=5 shape=head.lm_head rep=0 position=0 arm=plain inner=1 gpu_seconds=0.018609750 wall_seconds=0.039046375 seconds_per_dispatch=0.018609749852 gbps=34.159470
+LEG na=5 shape=head.lm_head rep=0 position=1 arm=lazysb inner=1 gpu_seconds=0.012187042 wall_seconds=0.012554625 seconds_per_dispatch=0.012187041575 gbps=52.161896
+LEG na=5 shape=head.lm_head rep=0 position=2 arm=lazyw inner=1 gpu_seconds=0.007374500 wall_seconds=0.007583667 seconds_per_dispatch=0.007374499924 gbps=86.202347
+LEG na=5 shape=head.lm_head rep=0 position=3 arm=lazy inner=1 gpu_seconds=0.006272000 wall_seconds=0.006469375 seconds_per_dispatch=0.006272000028 gbps=101.355102
+LEG na=5 shape=head.lm_head rep=0 position=4 arm=rps2 inner=1 gpu_seconds=0.004630708 wall_seconds=0.004814375 seconds_per_dispatch=0.004630708368 gbps=137.279040
+LEG na=5 shape=head.lm_head rep=0 position=5 arm=rps2lazysb inner=1 gpu_seconds=0.004625667 wall_seconds=0.004865417 seconds_per_dispatch=0.004625666654 gbps=137.428667
+LEG na=5 shape=head.lm_head rep=0 position=6 arm=rps2lazyw inner=1 gpu_seconds=0.005179875 wall_seconds=0.005430167 seconds_per_dispatch=0.005179875065 gbps=122.724813
+LEG na=5 shape=head.lm_head rep=0 position=7 arm=rps2lazy inner=1 gpu_seconds=0.005135208 wall_seconds=0.005344542 seconds_per_dispatch=0.005135208368 gbps=123.792289
+LEG na=5 shape=head.lm_head rep=0 position=8 arm=rps1 inner=1 gpu_seconds=0.005957792 wall_seconds=0.006157750 seconds_per_dispatch=0.005957791815 gbps=106.700472
+LEG na=5 shape=head.lm_head rep=0 position=9 arm=rps1lazysb inner=1 gpu_seconds=0.005962500 wall_seconds=0.006159917 seconds_per_dispatch=0.005962500116 gbps=106.616216
+LEG na=5 shape=head.lm_head rep=0 position=10 arm=rps1lazyw inner=1 gpu_seconds=0.006484542 wall_seconds=0.006677542 seconds_per_dispatch=0.006484541576 gbps=98.033021
+LEG na=5 shape=head.lm_head rep=0 position=11 arm=rps1lazy inner=1 gpu_seconds=0.006577166 wall_seconds=0.006770625 seconds_per_dispatch=0.006577166496 gbps=96.652442
+LEG na=5 shape=head.lm_head rep=0 position=12 arm=rps1lazy inner=1 gpu_seconds=0.006577792 wall_seconds=0.006776875 seconds_per_dispatch=0.006577791646 gbps=96.643256
+LEG na=5 shape=head.lm_head rep=0 position=13 arm=rps1lazyw inner=1 gpu_seconds=0.006487000 wall_seconds=0.006678125 seconds_per_dispatch=0.006487000035 gbps=97.995868
+LEG na=5 shape=head.lm_head rep=0 position=14 arm=rps1lazysb inner=1 gpu_seconds=0.005961167 wall_seconds=0.006151792 seconds_per_dispatch=0.005961166695 gbps=106.640064
+LEG na=5 shape=head.lm_head rep=0 position=15 arm=rps1 inner=1 gpu_seconds=0.005959250 wall_seconds=0.006177417 seconds_per_dispatch=0.005959250033 gbps=106.674363
+LEG na=5 shape=head.lm_head rep=0 position=16 arm=rps2lazy inner=1 gpu_seconds=0.005135292 wall_seconds=0.005335625 seconds_per_dispatch=0.005135291722 gbps=123.790280
+LEG na=5 shape=head.lm_head rep=0 position=17 arm=rps2lazyw inner=1 gpu_seconds=0.005181875 wall_seconds=0.005399667 seconds_per_dispatch=0.005181874847 gbps=122.677451
+LEG na=5 shape=head.lm_head rep=0 position=18 arm=rps2lazysb inner=1 gpu_seconds=0.004627750 wall_seconds=0.004839125 seconds_per_dispatch=0.004627750022 gbps=137.366797
+LEG na=5 shape=head.lm_head rep=0 position=19 arm=rps2 inner=1 gpu_seconds=0.004629625 wall_seconds=0.004807833 seconds_per_dispatch=0.004629625008 gbps=137.311164
+LEG na=5 shape=head.lm_head rep=0 position=20 arm=lazy inner=1 gpu_seconds=0.004601458 wall_seconds=0.004786208 seconds_per_dispatch=0.004601458320 gbps=138.151681
+LEG na=5 shape=head.lm_head rep=0 position=21 arm=lazyw inner=1 gpu_seconds=0.004618875 wall_seconds=0.004797583 seconds_per_dispatch=0.004618874984 gbps=137.630744
+LEG na=5 shape=head.lm_head rep=0 position=22 arm=lazysb inner=1 gpu_seconds=0.003975458 wall_seconds=0.004165917 seconds_per_dispatch=0.003975458443 gbps=159.905885
+LEG na=5 shape=head.lm_head rep=0 position=23 arm=plain inner=1 gpu_seconds=0.004009125 wall_seconds=0.004248167 seconds_per_dispatch=0.004009125056 gbps=158.563076
+SHAPE na=5 shape=head.lm_head inner=1 legs=24 entry_gpu_temp_c=43.15 exit_gpu_temp_c=42.88
+e69_cell_ab: head.lm_head inner=1 legs=24 entry=43.15C exit=42.88C
+e69_cell_ab: wrote research/e76-artifacts/parity-na5-b0.json
+e76_session na=5 parity batch=1 arms=plain,rps2nu,rps1nu,facc,lazyfacc,rps1facc,rps1lazyfacc,fall,lazyfall,rps1fall,rps1lazyfall,mc4
+ARM na=5 arm=plain max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps2nu max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1nu max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=facc max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=lazyfacc max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1facc max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1lazyfacc max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=fall max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=lazyfall max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1fall max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=rps1lazyfall max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=mc4 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e69_cell_ab: session entry gpu_temp_c=42.39
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps2nu differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1nu differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=facc differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=lazyfacc differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1facc differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazyfacc differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=fall differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=lazyfall differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1fall differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazyfall differing=0 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=mc4 differing=65920 elements=82400
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002622250 wall_seconds=0.009168375 seconds_per_dispatch=0.001311125001 gbps=32.177557
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=1 arm=rps2nu inner=2 gpu_seconds=0.002943583 wall_seconds=0.003159000 seconds_per_dispatch=0.001471791649 gbps=28.664927
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=2 arm=rps1nu inner=2 gpu_seconds=0.003809500 wall_seconds=0.004010417 seconds_per_dispatch=0.001904750010 gbps=22.149258
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=3 arm=facc inner=2 gpu_seconds=0.002544000 wall_seconds=0.002747375 seconds_per_dispatch=0.001271999907 gbps=33.167298
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=4 arm=lazyfacc inner=2 gpu_seconds=0.002891125 wall_seconds=0.003075667 seconds_per_dispatch=0.001445562579 gbps=29.185039
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=5 arm=rps1facc inner=2 gpu_seconds=0.003836875 wall_seconds=0.004077500 seconds_per_dispatch=0.001918437541 gbps=21.991229
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=6 arm=rps1lazyfacc inner=2 gpu_seconds=0.004214458 wall_seconds=0.004437250 seconds_per_dispatch=0.002107229200 gbps=20.020983
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=7 arm=fall inner=2 gpu_seconds=0.002872000 wall_seconds=0.003113708 seconds_per_dispatch=0.001435999991 gbps=29.379387
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=8 arm=lazyfall inner=2 gpu_seconds=0.002935750 wall_seconds=0.003162292 seconds_per_dispatch=0.001467874972 gbps=28.741412
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=9 arm=rps1fall inner=2 gpu_seconds=0.001437833 wall_seconds=0.001649458 seconds_per_dispatch=0.000718916650 gbps=58.683854
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=10 arm=rps1lazyfall inner=2 gpu_seconds=0.001545250 wall_seconds=0.001774750 seconds_per_dispatch=0.000772625091 gbps=54.604491
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=11 arm=mc4 inner=2 gpu_seconds=0.002060958 wall_seconds=0.003101667 seconds_per_dispatch=0.001030479209 gbps=40.940952
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=12 arm=mc4 inner=2 gpu_seconds=0.001935584 wall_seconds=0.002142667 seconds_per_dispatch=0.000967791770 gbps=43.592849
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=13 arm=rps1lazyfall inner=2 gpu_seconds=0.001354375 wall_seconds=0.001557125 seconds_per_dispatch=0.000677187578 gbps=62.300021
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=14 arm=rps1fall inner=2 gpu_seconds=0.001234958 wall_seconds=0.001413958 seconds_per_dispatch=0.000617479207 gbps=68.324244
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=15 arm=lazyfall inner=2 gpu_seconds=0.000948875 wall_seconds=0.001150667 seconds_per_dispatch=0.000474437489 gbps=88.923833
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=16 arm=fall inner=2 gpu_seconds=0.000925208 wall_seconds=0.001110708 seconds_per_dispatch=0.000462604105 gbps=91.198499
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=17 arm=rps1lazyfacc inner=2 gpu_seconds=0.001351875 wall_seconds=0.001533208 seconds_per_dispatch=0.000675937510 gbps=62.415237
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=18 arm=rps1facc inner=2 gpu_seconds=0.001295125 wall_seconds=0.001486292 seconds_per_dispatch=0.000647562556 gbps=65.150154
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=19 arm=lazyfacc inner=2 gpu_seconds=0.001068125 wall_seconds=0.001258750 seconds_per_dispatch=0.000534062507 gbps=78.995997
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=20 arm=facc inner=2 gpu_seconds=0.000938625 wall_seconds=0.001123667 seconds_per_dispatch=0.000469312537 gbps=89.894892
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=21 arm=rps1nu inner=2 gpu_seconds=0.001409375 wall_seconds=0.001597375 seconds_per_dispatch=0.000704687438 gbps=59.868812
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=22 arm=rps2nu inner=2 gpu_seconds=0.001111583 wall_seconds=0.001295958 seconds_per_dispatch=0.000555791659 gbps=75.907580
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=23 arm=plain inner=2 gpu_seconds=0.000939125 wall_seconds=0.001124417 seconds_per_dispatch=0.000469562481 gbps=89.847042
+SHAPE na=5 shape=linear_attn.in_proj_fused_qkvzba inner=2 legs=24 entry_gpu_temp_c=42.29 exit_gpu_temp_c=42.02
+e69_cell_ab: linear_attn.in_proj_fused_qkvzba inner=2 legs=24 entry=42.29C exit=42.02C
+PARITY na=5 shape=linear_attn.out_proj arm=rps2nu differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1nu differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=facc differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=lazyfacc differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1facc differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1lazyfacc differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=fall differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=lazyfall differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1fall differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=rps1lazyfall differing=0 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=mc4 differing=20478 elements=25600
+LEG na=5 shape=linear_attn.out_proj rep=0 position=0 arm=plain inner=6 gpu_seconds=0.003059958 wall_seconds=0.004889958 seconds_per_dispatch=0.000509993057 gbps=30.840890
+LEG na=5 shape=linear_attn.out_proj rep=0 position=1 arm=rps2nu inner=6 gpu_seconds=0.003424000 wall_seconds=0.003901708 seconds_per_dispatch=0.000570666666 gbps=27.561869
+LEG na=5 shape=linear_attn.out_proj rep=0 position=2 arm=rps1nu inner=6 gpu_seconds=0.004355208 wall_seconds=0.004723083 seconds_per_dispatch=0.000725868042 gbps=21.668732
+LEG na=5 shape=linear_attn.out_proj rep=0 position=3 arm=facc inner=6 gpu_seconds=0.002947875 wall_seconds=0.003328000 seconds_per_dispatch=0.000491312511 gbps=32.013514
+LEG na=5 shape=linear_attn.out_proj rep=0 position=4 arm=lazyfacc inner=6 gpu_seconds=0.002032917 wall_seconds=0.002419667 seconds_per_dispatch=0.000338819460 gbps=46.421891
+LEG na=5 shape=linear_attn.out_proj rep=0 position=5 arm=rps1facc inner=6 gpu_seconds=0.001631500 wall_seconds=0.001798500 seconds_per_dispatch=0.000271916661 gbps=57.843605
+LEG na=5 shape=linear_attn.out_proj rep=0 position=6 arm=rps1lazyfacc inner=6 gpu_seconds=0.001885416 wall_seconds=0.002366292 seconds_per_dispatch=0.000314236075 gbps=50.053578
+LEG na=5 shape=linear_attn.out_proj rep=0 position=7 arm=fall inner=6 gpu_seconds=0.001391833 wall_seconds=0.001865625 seconds_per_dispatch=0.000231972197 gbps=67.803988
+LEG na=5 shape=linear_attn.out_proj rep=0 position=8 arm=lazyfall inner=6 gpu_seconds=0.001370250 wall_seconds=0.001846000 seconds_per_dispatch=0.000228375002 gbps=68.871986
+LEG na=5 shape=linear_attn.out_proj rep=0 position=9 arm=rps1fall inner=6 gpu_seconds=0.001534583 wall_seconds=0.002026917 seconds_per_dispatch=0.000255763880 gbps=61.496721
+LEG na=5 shape=linear_attn.out_proj rep=0 position=10 arm=rps1lazyfall inner=6 gpu_seconds=0.001684458 wall_seconds=0.002180167 seconds_per_dispatch=0.000280743038 gbps=56.025040
+LEG na=5 shape=linear_attn.out_proj rep=0 position=11 arm=mc4 inner=6 gpu_seconds=0.001922250 wall_seconds=0.002429625 seconds_per_dispatch=0.000320375004 gbps=49.094467
+LEG na=5 shape=linear_attn.out_proj rep=0 position=12 arm=mc4 inner=6 gpu_seconds=0.001946750 wall_seconds=0.002130500 seconds_per_dispatch=0.000324458311 gbps=48.476613
+LEG na=5 shape=linear_attn.out_proj rep=0 position=13 arm=rps1lazyfall inner=6 gpu_seconds=0.001814750 wall_seconds=0.001975875 seconds_per_dispatch=0.000302458337 gbps=52.002666
+LEG na=5 shape=linear_attn.out_proj rep=0 position=14 arm=rps1fall inner=6 gpu_seconds=0.001651875 wall_seconds=0.001829875 seconds_per_dispatch=0.000275312496 gbps=57.130135
+LEG na=5 shape=linear_attn.out_proj rep=0 position=15 arm=lazyfall inner=6 gpu_seconds=0.001393458 wall_seconds=0.001926917 seconds_per_dispatch=0.000232243057 gbps=67.724910
+LEG na=5 shape=linear_attn.out_proj rep=0 position=16 arm=fall inner=6 gpu_seconds=0.001316917 wall_seconds=0.001827875 seconds_per_dispatch=0.000219486111 gbps=71.661209
+LEG na=5 shape=linear_attn.out_proj rep=0 position=17 arm=rps1lazyfacc inner=6 gpu_seconds=0.001655417 wall_seconds=0.002180458 seconds_per_dispatch=0.000275902761 gbps=57.007911
+LEG na=5 shape=linear_attn.out_proj rep=0 position=18 arm=rps1facc inner=6 gpu_seconds=0.001539458 wall_seconds=0.002067292 seconds_per_dispatch=0.000256576381 gbps=61.301979
+LEG na=5 shape=linear_attn.out_proj rep=0 position=19 arm=lazyfacc inner=6 gpu_seconds=0.001241833 wall_seconds=0.001770667 seconds_per_dispatch=0.000206972201 gbps=75.993974
+LEG na=5 shape=linear_attn.out_proj rep=0 position=20 arm=facc inner=6 gpu_seconds=0.000966375 wall_seconds=0.001129875 seconds_per_dispatch=0.000161062499 gbps=97.655507
+LEG na=5 shape=linear_attn.out_proj rep=0 position=21 arm=rps1nu inner=6 gpu_seconds=0.001507292 wall_seconds=0.001666958 seconds_per_dispatch=0.000251215262 gbps=62.610209
+LEG na=5 shape=linear_attn.out_proj rep=0 position=22 arm=rps2nu inner=6 gpu_seconds=0.001265750 wall_seconds=0.001431417 seconds_per_dispatch=0.000210958339 gbps=74.558039
+LEG na=5 shape=linear_attn.out_proj rep=0 position=23 arm=plain inner=6 gpu_seconds=0.001119708 wall_seconds=0.001325125 seconds_per_dispatch=0.000186618068 gbps=84.282514
+SHAPE na=5 shape=linear_attn.out_proj inner=6 legs=24 entry_gpu_temp_c=41.87 exit_gpu_temp_c=42.18
+e69_cell_ab: linear_attn.out_proj inner=6 legs=24 entry=41.87C exit=42.18C
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps2nu differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1nu differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=facc differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=lazyfacc differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1facc differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1lazyfacc differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=fall differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=lazyfall differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1fall differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=rps1lazyfall differing=0 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=mc4 differing=57260 elements=71680
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002318875 wall_seconds=0.008105083 seconds_per_dispatch=0.001159437466 gbps=31.653419
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=1 arm=rps2nu inner=2 gpu_seconds=0.002568000 wall_seconds=0.003291083 seconds_per_dispatch=0.001283999998 gbps=28.582679
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=2 arm=rps1nu inner=2 gpu_seconds=0.003275750 wall_seconds=0.003917417 seconds_per_dispatch=0.001637874986 gbps=22.407180
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=3 arm=facc inner=2 gpu_seconds=0.002235875 wall_seconds=0.002594125 seconds_per_dispatch=0.001117937500 gbps=32.828454
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=4 arm=lazyfacc inner=2 gpu_seconds=0.002530667 wall_seconds=0.003161000 seconds_per_dispatch=0.001265333267 gbps=29.004343
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=5 arm=rps1facc inner=2 gpu_seconds=0.003286833 wall_seconds=0.003946208 seconds_per_dispatch=0.001643416705 gbps=22.331622
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=6 arm=rps1lazyfacc inner=2 gpu_seconds=0.003663333 wall_seconds=0.004314708 seconds_per_dispatch=0.001831666566 gbps=20.036485
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=7 arm=fall inner=2 gpu_seconds=0.002504542 wall_seconds=0.003225250 seconds_per_dispatch=0.001252270886 gbps=29.306886
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=8 arm=lazyfall inner=2 gpu_seconds=0.002550125 wall_seconds=0.002955958 seconds_per_dispatch=0.001275062445 gbps=28.783030
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=9 arm=rps1fall inner=2 gpu_seconds=0.003287000 wall_seconds=0.003947292 seconds_per_dispatch=0.001643500058 gbps=22.330489
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=10 arm=rps1lazyfall inner=2 gpu_seconds=0.003638250 wall_seconds=0.004277958 seconds_per_dispatch=0.001819125027 gbps=20.174622
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=11 arm=mc4 inner=2 gpu_seconds=0.004674083 wall_seconds=0.006515958 seconds_per_dispatch=0.002337041660 gbps=15.703682
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=12 arm=mc4 inner=2 gpu_seconds=0.004627958 wall_seconds=0.005035667 seconds_per_dispatch=0.002313979086 gbps=15.860195
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=13 arm=rps1lazyfall inner=2 gpu_seconds=0.003645875 wall_seconds=0.004431500 seconds_per_dispatch=0.001822937513 gbps=20.132429
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=14 arm=rps1fall inner=2 gpu_seconds=0.003282875 wall_seconds=0.003864125 seconds_per_dispatch=0.001641437528 gbps=22.358548
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=15 arm=lazyfall inner=2 gpu_seconds=0.001603958 wall_seconds=0.001894208 seconds_per_dispatch=0.000801979215 gbps=45.761984
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=16 arm=fall inner=2 gpu_seconds=0.000919458 wall_seconds=0.001203708 seconds_per_dispatch=0.000459729112 gbps=79.829967
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=17 arm=rps1lazyfacc inner=2 gpu_seconds=0.001341375 wall_seconds=0.001596625 seconds_per_dispatch=0.000670687528 gbps=54.720206
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=18 arm=rps1facc inner=2 gpu_seconds=0.001340750 wall_seconds=0.001908125 seconds_per_dispatch=0.000670374953 gbps=54.745721
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=19 arm=lazyfacc inner=2 gpu_seconds=0.001098750 wall_seconds=0.001603708 seconds_per_dispatch=0.000549374963 gbps=66.803481
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=20 arm=facc inner=2 gpu_seconds=0.000977750 wall_seconds=0.001482792 seconds_per_dispatch=0.000488875085 gbps=75.070629
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=21 arm=rps1nu inner=2 gpu_seconds=0.001217333 wall_seconds=0.001726833 seconds_per_dispatch=0.000608666684 gbps=60.295990
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=22 arm=rps2nu inner=2 gpu_seconds=0.001081125 wall_seconds=0.001573875 seconds_per_dispatch=0.000540562556 gbps=67.892531
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=23 arm=plain inner=2 gpu_seconds=0.001029500 wall_seconds=0.001539792 seconds_per_dispatch=0.000514750020 gbps=71.297054
+SHAPE na=5 shape=full_attn.qkv_proj_fused inner=2 legs=24 entry_gpu_temp_c=41.75 exit_gpu_temp_c=41.55
+e69_cell_ab: full_attn.qkv_proj_fused inner=2 legs=24 entry=41.75C exit=41.55C
+PARITY na=5 shape=mlp.gate_up_fused arm=rps2nu differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1nu differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=facc differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=lazyfacc differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1facc differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1lazyfacc differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=fall differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=lazyfall differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1fall differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=rps1lazyfall differing=0 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=mc4 differing=139262 elements=174080
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=0 arm=plain inner=1 gpu_seconds=0.002804125 wall_seconds=0.009102625 seconds_per_dispatch=0.002804124961 gbps=31.784946
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=1 arm=rps2nu inner=1 gpu_seconds=0.003059875 wall_seconds=0.003514542 seconds_per_dispatch=0.003059874987 gbps=29.128301
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=2 arm=rps1nu inner=1 gpu_seconds=0.003901000 wall_seconds=0.004275125 seconds_per_dispatch=0.003900999902 gbps=22.847722
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=3 arm=facc inner=1 gpu_seconds=0.002662500 wall_seconds=0.003043333 seconds_per_dispatch=0.002662499901 gbps=33.475667
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=4 arm=lazyfacc inner=1 gpu_seconds=0.003010125 wall_seconds=0.003264875 seconds_per_dispatch=0.003010124899 gbps=29.609722
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=5 arm=rps1facc inner=1 gpu_seconds=0.002051917 wall_seconds=0.002387083 seconds_per_dispatch=0.002051916672 gbps=43.436930
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=6 arm=rps1lazyfacc inner=1 gpu_seconds=0.001597125 wall_seconds=0.001862792 seconds_per_dispatch=0.001597125083 gbps=55.805873
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=7 arm=fall inner=1 gpu_seconds=0.001116375 wall_seconds=0.001364833 seconds_per_dispatch=0.001116374973 gbps=79.837834
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=8 arm=lazyfall inner=1 gpu_seconds=0.001118958 wall_seconds=0.001346875 seconds_per_dispatch=0.001118958462 gbps=79.653502
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=9 arm=rps1fall inner=1 gpu_seconds=0.001439958 wall_seconds=0.001662417 seconds_per_dispatch=0.001439958345 gbps=61.896902
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=10 arm=rps1lazyfall inner=1 gpu_seconds=0.001451000 wall_seconds=0.001692625 seconds_per_dispatch=0.001451000106 gbps=61.425881
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=11 arm=mc4 inner=1 gpu_seconds=0.001808083 wall_seconds=0.002614500 seconds_per_dispatch=0.001808083383 gbps=49.294718
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=12 arm=mc4 inner=1 gpu_seconds=0.001775208 wall_seconds=0.002007750 seconds_per_dispatch=0.001775208395 gbps=50.207604
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=13 arm=rps1lazyfall inner=1 gpu_seconds=0.001390833 wall_seconds=0.001639375 seconds_per_dispatch=0.001390833175 gbps=64.083142
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=14 arm=rps1fall inner=1 gpu_seconds=0.001318958 wall_seconds=0.001537625 seconds_per_dispatch=0.001318958122 gbps=67.575277
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=15 arm=lazyfall inner=1 gpu_seconds=0.001116875 wall_seconds=0.001334667 seconds_per_dispatch=0.001116874861 gbps=79.802101
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=16 arm=fall inner=1 gpu_seconds=0.001090958 wall_seconds=0.001301292 seconds_per_dispatch=0.001090958249 gbps=81.697865
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=17 arm=rps1lazyfacc inner=1 gpu_seconds=0.001605875 wall_seconds=0.001834833 seconds_per_dispatch=0.001605874859 gbps=55.501809
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=18 arm=rps1facc inner=1 gpu_seconds=0.001445208 wall_seconds=0.001711708 seconds_per_dispatch=0.001445208443 gbps=61.672045
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=19 arm=lazyfacc inner=1 gpu_seconds=0.001121375 wall_seconds=0.001349250 seconds_per_dispatch=0.001121375011 gbps=79.481850
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=20 arm=facc inner=1 gpu_seconds=0.000852583 wall_seconds=0.001111333 seconds_per_dispatch=0.000852583442 gbps=104.539867
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=21 arm=rps1nu inner=1 gpu_seconds=0.001261042 wall_seconds=0.001477583 seconds_per_dispatch=0.001261041733 gbps=70.678835
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=22 arm=rps2nu inner=1 gpu_seconds=0.000980417 wall_seconds=0.001187083 seconds_per_dispatch=0.000980416546 gbps=90.909278
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=23 arm=plain inner=1 gpu_seconds=0.000856375 wall_seconds=0.001069167 seconds_per_dispatch=0.000856375089 gbps=104.077012
+SHAPE na=5 shape=mlp.gate_up_fused inner=1 legs=24 entry_gpu_temp_c=41.74 exit_gpu_temp_c=41.34
+e69_cell_ab: mlp.gate_up_fused inner=1 legs=24 entry=41.74C exit=41.34C
+PARITY na=5 shape=mlp.down arm=rps2nu differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1nu differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=facc differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=lazyfacc differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1facc differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1lazyfacc differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=fall differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=lazyfall differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1fall differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=rps1lazyfall differing=0 elements=25600
+PARITY na=5 shape=mlp.down arm=mc4 differing=20469 elements=25600
+LEG na=5 shape=mlp.down rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002704750 wall_seconds=0.006696125 seconds_per_dispatch=0.001352374908 gbps=32.952756
+LEG na=5 shape=mlp.down rep=0 position=1 arm=rps2nu inner=2 gpu_seconds=0.003149875 wall_seconds=0.003638042 seconds_per_dispatch=0.001574937487 gbps=28.296031
+LEG na=5 shape=mlp.down rep=0 position=2 arm=rps1nu inner=2 gpu_seconds=0.004049667 wall_seconds=0.004422625 seconds_per_dispatch=0.002024833346 gbps=22.008962
+LEG na=5 shape=mlp.down rep=0 position=3 arm=facc inner=2 gpu_seconds=0.002718792 wall_seconds=0.003059917 seconds_per_dispatch=0.001359395916 gbps=32.782561
+LEG na=5 shape=mlp.down rep=0 position=4 arm=lazyfacc inner=2 gpu_seconds=0.003129625 wall_seconds=0.003496583 seconds_per_dispatch=0.001564812497 gbps=28.479118
+LEG na=5 shape=mlp.down rep=0 position=5 arm=rps1facc inner=2 gpu_seconds=0.004075625 wall_seconds=0.004298833 seconds_per_dispatch=0.002037812490 gbps=21.868783
+LEG na=5 shape=mlp.down rep=0 position=6 arm=rps1lazyfacc inner=2 gpu_seconds=0.004548333 wall_seconds=0.005019375 seconds_per_dispatch=0.002274166676 gbps=19.595960
+LEG na=5 shape=mlp.down rep=0 position=7 arm=fall inner=2 gpu_seconds=0.003069250 wall_seconds=0.003584375 seconds_per_dispatch=0.001534625073 gbps=29.039327
+LEG na=5 shape=mlp.down rep=0 position=8 arm=lazyfall inner=2 gpu_seconds=0.002007375 wall_seconds=0.002437458 seconds_per_dispatch=0.001003687503 gbps=44.400752
+LEG na=5 shape=mlp.down rep=0 position=9 arm=rps1fall inner=2 gpu_seconds=0.001496792 wall_seconds=0.001732958 seconds_per_dispatch=0.000748395920 gbps=59.546663
+LEG na=5 shape=mlp.down rep=0 position=10 arm=rps1lazyfall inner=2 gpu_seconds=0.001682500 wall_seconds=0.002126083 seconds_per_dispatch=0.000841249945 gbps=52.974125
+LEG na=5 shape=mlp.down rep=0 position=11 arm=mc4 inner=2 gpu_seconds=0.002048083 wall_seconds=0.003070083 seconds_per_dispatch=0.001024041674 gbps=43.518229
+LEG na=5 shape=mlp.down rep=0 position=12 arm=mc4 inner=2 gpu_seconds=0.001769875 wall_seconds=0.002213208 seconds_per_dispatch=0.000884937472 gbps=50.358903
+LEG na=5 shape=mlp.down rep=0 position=13 arm=rps1lazyfall inner=2 gpu_seconds=0.001472625 wall_seconds=0.001903500 seconds_per_dispatch=0.000736312475 gbps=60.523869
+LEG na=5 shape=mlp.down rep=0 position=14 arm=rps1fall inner=2 gpu_seconds=0.001314875 wall_seconds=0.001802458 seconds_per_dispatch=0.000657437486 gbps=67.785122
+LEG na=5 shape=mlp.down rep=0 position=15 arm=lazyfall inner=2 gpu_seconds=0.001026000 wall_seconds=0.001472667 seconds_per_dispatch=0.000512999948 gbps=86.870340
+LEG na=5 shape=mlp.down rep=0 position=16 arm=fall inner=2 gpu_seconds=0.000994917 wall_seconds=0.001188750 seconds_per_dispatch=0.000497458386 gbps=89.584338
+LEG na=5 shape=mlp.down rep=0 position=17 arm=rps1lazyfacc inner=2 gpu_seconds=0.001678000 wall_seconds=0.001952125 seconds_per_dispatch=0.000838999986 gbps=53.116187
+LEG na=5 shape=mlp.down rep=0 position=18 arm=rps1facc inner=2 gpu_seconds=0.001502500 wall_seconds=0.001712125 seconds_per_dispatch=0.000751249958 gbps=59.320443
+LEG na=5 shape=mlp.down rep=0 position=19 arm=lazyfacc inner=2 gpu_seconds=0.001163542 wall_seconds=0.001682250 seconds_per_dispatch=0.000581770902 gbps=76.601425
+LEG na=5 shape=mlp.down rep=0 position=20 arm=facc inner=2 gpu_seconds=0.001006250 wall_seconds=0.001466375 seconds_per_dispatch=0.000503125018 gbps=88.575361
+LEG na=5 shape=mlp.down rep=0 position=21 arm=rps1nu inner=2 gpu_seconds=0.001459000 wall_seconds=0.001906542 seconds_per_dispatch=0.000729499967 gbps=61.089077
+LEG na=5 shape=mlp.down rep=0 position=22 arm=rps2nu inner=2 gpu_seconds=0.001017000 wall_seconds=0.001488792 seconds_per_dispatch=0.000508500030 gbps=87.639090
+LEG na=5 shape=mlp.down rep=0 position=23 arm=plain inner=2 gpu_seconds=0.000881875 wall_seconds=0.001340292 seconds_per_dispatch=0.000440937467 gbps=101.067574
+SHAPE na=5 shape=mlp.down inner=2 legs=24 entry_gpu_temp_c=41.33 exit_gpu_temp_c=41.52
+e69_cell_ab: mlp.down inner=2 legs=24 entry=41.33C exit=41.52C
+PARITY na=5 shape=head.compact_draft_vocab arm=rps2nu differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1nu differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=facc differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=lazyfacc differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1facc differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1lazyfacc differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=fall differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=lazyfall differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1fall differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=rps1lazyfall differing=0 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=mc4 differing=393219 elements=491680
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=0 arm=plain inner=1 gpu_seconds=0.007461500 wall_seconds=0.017894125 seconds_per_dispatch=0.007461499888 gbps=33.738546
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=1 arm=rps2nu inner=1 gpu_seconds=0.008542208 wall_seconds=0.009325250 seconds_per_dispatch=0.008542208234 gbps=29.470150
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=2 arm=rps1nu inner=1 gpu_seconds=0.011117375 wall_seconds=0.011988333 seconds_per_dispatch=0.011117374990 gbps=22.643849
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=3 arm=facc inner=1 gpu_seconds=0.002833667 wall_seconds=0.003242208 seconds_per_dispatch=0.002833666746 gbps=88.839014
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=4 arm=lazyfacc inner=1 gpu_seconds=0.003097458 wall_seconds=0.003341167 seconds_per_dispatch=0.003097458277 gbps=81.273140
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=5 arm=rps1facc inner=1 gpu_seconds=0.003823833 wall_seconds=0.004327833 seconds_per_dispatch=0.003823833307 gbps=65.834502
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=6 arm=rps1lazyfacc inner=1 gpu_seconds=0.004043584 wall_seconds=0.004559500 seconds_per_dispatch=0.004043583525 gbps=62.256698
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=7 arm=fall inner=1 gpu_seconds=0.002069375 wall_seconds=0.002339792 seconds_per_dispatch=0.002069375012 gbps=121.650333
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=8 arm=lazyfall inner=1 gpu_seconds=0.001848375 wall_seconds=0.002265292 seconds_per_dispatch=0.001848374959 gbps=136.195396
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=9 arm=rps1fall inner=1 gpu_seconds=0.002498875 wall_seconds=0.003108792 seconds_per_dispatch=0.002498874906 gbps=100.741401
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=10 arm=rps1lazyfall inner=1 gpu_seconds=0.002821458 wall_seconds=0.003421667 seconds_per_dispatch=0.002821458271 gbps=89.223421
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=11 arm=mc4 inner=1 gpu_seconds=0.003644750 wall_seconds=0.004591750 seconds_per_dispatch=0.003644749988 gbps=69.069253
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=12 arm=mc4 inner=1 gpu_seconds=0.003751375 wall_seconds=0.004323083 seconds_per_dispatch=0.003751375014 gbps=67.106104
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=13 arm=rps1lazyfall inner=1 gpu_seconds=0.002609250 wall_seconds=0.002847833 seconds_per_dispatch=0.002609250136 gbps=96.479888
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=14 arm=rps1fall inner=1 gpu_seconds=0.002611250 wall_seconds=0.003228000 seconds_per_dispatch=0.002611250151 gbps=96.405992
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=15 arm=lazyfall inner=1 gpu_seconds=0.002018292 wall_seconds=0.002587375 seconds_per_dispatch=0.002018291503 gbps=124.729336
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=16 arm=fall inner=1 gpu_seconds=0.002004666 wall_seconds=0.002596083 seconds_per_dispatch=0.002004666487 gbps=125.577078
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=17 arm=rps1lazyfacc inner=1 gpu_seconds=0.002747542 wall_seconds=0.003363417 seconds_per_dispatch=0.002747541759 gbps=91.623779
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=18 arm=rps1facc inner=1 gpu_seconds=0.002523750 wall_seconds=0.002752000 seconds_per_dispatch=0.002523749834 gbps=99.748460
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=19 arm=lazyfacc inner=1 gpu_seconds=0.001828042 wall_seconds=0.002048125 seconds_per_dispatch=0.001828041626 gbps=137.710300
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=20 arm=facc inner=1 gpu_seconds=0.001775833 wall_seconds=0.002367500 seconds_per_dispatch=0.001775833312 gbps=141.758890
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=21 arm=rps1nu inner=1 gpu_seconds=0.002517542 wall_seconds=0.003098958 seconds_per_dispatch=0.002517541638 gbps=99.994438
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=22 arm=rps2nu inner=1 gpu_seconds=0.001841500 wall_seconds=0.002058500 seconds_per_dispatch=0.001841499936 gbps=136.703866
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=23 arm=plain inner=1 gpu_seconds=0.001925333 wall_seconds=0.002541000 seconds_per_dispatch=0.001925333403 gbps=130.751463
+SHAPE na=5 shape=head.compact_draft_vocab inner=1 legs=24 entry_gpu_temp_c=41.30 exit_gpu_temp_c=41.90
+e69_cell_ab: head.compact_draft_vocab inner=1 legs=24 entry=41.30C exit=41.90C
+PARITY na=5 shape=head.lm_head arm=rps2nu differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1nu differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=facc differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=lazyfacc differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1facc differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1lazyfacc differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=fall differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=lazyfall differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1fall differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=rps1lazyfall differing=0 elements=1241600
+PARITY na=5 shape=head.lm_head arm=mc4 differing=993228 elements=1241600
+LEG na=5 shape=head.lm_head rep=0 position=0 arm=plain inner=1 gpu_seconds=0.018514625 wall_seconds=0.037979167 seconds_per_dispatch=0.018514625030 gbps=34.334976
+LEG na=5 shape=head.lm_head rep=0 position=1 arm=rps2nu inner=1 gpu_seconds=0.011800500 wall_seconds=0.012521875 seconds_per_dispatch=0.011800500099 gbps=53.870530
+LEG na=5 shape=head.lm_head rep=0 position=2 arm=rps1nu inner=1 gpu_seconds=0.009210417 wall_seconds=0.009433208 seconds_per_dispatch=0.009210416814 gbps=69.019591
+LEG na=5 shape=head.lm_head rep=0 position=3 arm=facc inner=1 gpu_seconds=0.004384792 wall_seconds=0.004600417 seconds_per_dispatch=0.004384791711 gbps=144.978198
+LEG na=5 shape=head.lm_head rep=0 position=4 arm=lazyfacc inner=1 gpu_seconds=0.004599000 wall_seconds=0.004816083 seconds_per_dispatch=0.004599000094 gbps=138.225524
+LEG na=5 shape=head.lm_head rep=0 position=5 arm=rps1facc inner=1 gpu_seconds=0.005977917 wall_seconds=0.006181375 seconds_per_dispatch=0.005977916764 gbps=106.341260
+LEG na=5 shape=head.lm_head rep=0 position=6 arm=rps1lazyfacc inner=1 gpu_seconds=0.006573500 wall_seconds=0.006784375 seconds_per_dispatch=0.006573499879 gbps=96.706353
+LEG na=5 shape=head.lm_head rep=0 position=7 arm=fall inner=1 gpu_seconds=0.004523958 wall_seconds=0.004724083 seconds_per_dispatch=0.004523958312 gbps=140.518359
+LEG na=5 shape=head.lm_head rep=0 position=8 arm=lazyfall inner=1 gpu_seconds=0.004648375 wall_seconds=0.004842000 seconds_per_dispatch=0.004648375092 gbps=136.757294
+LEG na=5 shape=head.lm_head rep=0 position=9 arm=rps1fall inner=1 gpu_seconds=0.005972375 wall_seconds=0.006179208 seconds_per_dispatch=0.005972374929 gbps=106.439935
+LEG na=5 shape=head.lm_head rep=0 position=10 arm=rps1lazyfall inner=1 gpu_seconds=0.006540500 wall_seconds=0.006744792 seconds_per_dispatch=0.006540500093 gbps=97.194280
+LEG na=5 shape=head.lm_head rep=0 position=11 arm=mc4 inner=1 gpu_seconds=0.009067250 wall_seconds=0.010123708 seconds_per_dispatch=0.009067249950 gbps=70.109372
+LEG na=5 shape=head.lm_head rep=0 position=12 arm=mc4 inner=1 gpu_seconds=0.008956000 wall_seconds=0.009182708 seconds_per_dispatch=0.008955999976 gbps=70.980259
+LEG na=5 shape=head.lm_head rep=0 position=13 arm=rps1lazyfall inner=1 gpu_seconds=0.006543750 wall_seconds=0.006760125 seconds_per_dispatch=0.006543749943 gbps=97.146010
+LEG na=5 shape=head.lm_head rep=0 position=14 arm=rps1fall inner=1 gpu_seconds=0.005972292 wall_seconds=0.006259458 seconds_per_dispatch=0.005972291576 gbps=106.441421
+LEG na=5 shape=head.lm_head rep=0 position=15 arm=lazyfall inner=1 gpu_seconds=0.004650083 wall_seconds=0.004875208 seconds_per_dispatch=0.004650083371 gbps=136.707054
+LEG na=5 shape=head.lm_head rep=0 position=16 arm=fall inner=1 gpu_seconds=0.004528250 wall_seconds=0.004735708 seconds_per_dispatch=0.004528250080 gbps=140.385179
+LEG na=5 shape=head.lm_head rep=0 position=17 arm=rps1lazyfacc inner=1 gpu_seconds=0.006573250 wall_seconds=0.006775000 seconds_per_dispatch=0.006573250052 gbps=96.710029
+LEG na=5 shape=head.lm_head rep=0 position=18 arm=rps1facc inner=1 gpu_seconds=0.005982125 wall_seconds=0.006179750 seconds_per_dispatch=0.005982124945 gbps=106.266453
+LEG na=5 shape=head.lm_head rep=0 position=19 arm=lazyfacc inner=1 gpu_seconds=0.004599875 wall_seconds=0.004796750 seconds_per_dispatch=0.004599875072 gbps=138.199232
+LEG na=5 shape=head.lm_head rep=0 position=20 arm=facc inner=1 gpu_seconds=0.004008750 wall_seconds=0.004198083 seconds_per_dispatch=0.004008749966 gbps=158.577912
+LEG na=5 shape=head.lm_head rep=0 position=21 arm=rps1nu inner=1 gpu_seconds=0.005964125 wall_seconds=0.006139000 seconds_per_dispatch=0.005964124808 gbps=106.587173
+LEG na=5 shape=head.lm_head rep=0 position=22 arm=rps2nu inner=1 gpu_seconds=0.004683917 wall_seconds=0.004905542 seconds_per_dispatch=0.004683916690 gbps=135.719579
+LEG na=5 shape=head.lm_head rep=0 position=23 arm=plain inner=1 gpu_seconds=0.004009042 wall_seconds=0.004314417 seconds_per_dispatch=0.004009041702 gbps=158.566373
+SHAPE na=5 shape=head.lm_head inner=1 legs=24 entry_gpu_temp_c=42.03 exit_gpu_temp_c=42.03
+e69_cell_ab: head.lm_head inner=1 legs=24 entry=42.03C exit=42.03C
+e69_cell_ab: wrote research/e76-artifacts/parity-na5-b1.json
+e76_session na=5 parity batch=2 arms=plain,mc3,mc2
+ARM na=5 arm=plain max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=mc3 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=5 arm=mc2 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e69_cell_ab: session entry gpu_temp_c=41.20
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=mc3 differing=49440 elements=82400
+PARITY na=5 shape=linear_attn.in_proj_fused_qkvzba arm=mc2 differing=65915 elements=82400
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002601125 wall_seconds=0.008476583 seconds_per_dispatch=0.001300562522 gbps=32.438886
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=1 arm=mc3 inner=2 gpu_seconds=0.005360375 wall_seconds=0.006551792 seconds_per_dispatch=0.002680187463 gbps=15.740988
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=2 arm=mc2 inner=2 gpu_seconds=0.005451042 wall_seconds=0.005942083 seconds_per_dispatch=0.002725520753 gbps=15.479170
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=3 arm=mc2 inner=2 gpu_seconds=0.003375583 wall_seconds=0.003771500 seconds_per_dispatch=0.001687791664 gbps=24.996450
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=4 arm=mc3 inner=2 gpu_seconds=0.001985000 wall_seconds=0.002269417 seconds_per_dispatch=0.000992499990 gbps=42.507607
+LEG na=5 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=5 arm=plain inner=2 gpu_seconds=0.001048500 wall_seconds=0.001311708 seconds_per_dispatch=0.000524249976 gbps=80.474586
+SHAPE na=5 shape=linear_attn.in_proj_fused_qkvzba inner=2 legs=6 entry_gpu_temp_c=41.06 exit_gpu_temp_c=40.96
+e69_cell_ab: linear_attn.in_proj_fused_qkvzba inner=2 legs=6 entry=41.06C exit=40.96C
+PARITY na=5 shape=linear_attn.out_proj arm=mc3 differing=15358 elements=25600
+PARITY na=5 shape=linear_attn.out_proj arm=mc2 differing=20470 elements=25600
+LEG na=5 shape=linear_attn.out_proj rep=0 position=0 arm=plain inner=6 gpu_seconds=0.003082417 wall_seconds=0.007570958 seconds_per_dispatch=0.000513736120 gbps=30.616185
+LEG na=5 shape=linear_attn.out_proj rep=0 position=1 arm=mc3 inner=6 gpu_seconds=0.005942250 wall_seconds=0.007615042 seconds_per_dispatch=0.000990374984 gbps=15.881500
+LEG na=5 shape=linear_attn.out_proj rep=0 position=2 arm=mc2 inner=6 gpu_seconds=0.004495083 wall_seconds=0.005370000 seconds_per_dispatch=0.000749180559 gbps=20.994458
+LEG na=5 shape=linear_attn.out_proj rep=0 position=3 arm=mc2 inner=6 gpu_seconds=0.002293500 wall_seconds=0.002618542 seconds_per_dispatch=0.000382250020 gbps=41.147519
+LEG na=5 shape=linear_attn.out_proj rep=0 position=4 arm=mc3 inner=6 gpu_seconds=0.002295250 wall_seconds=0.003038583 seconds_per_dispatch=0.000382541679 gbps=41.116147
+LEG na=5 shape=linear_attn.out_proj rep=0 position=5 arm=plain inner=6 gpu_seconds=0.001277500 wall_seconds=0.001841833 seconds_per_dispatch=0.000212916639 gbps=73.872292
+SHAPE na=5 shape=linear_attn.out_proj inner=6 legs=6 entry_gpu_temp_c=41.08 exit_gpu_temp_c=40.86
+e69_cell_ab: linear_attn.out_proj inner=6 legs=6 entry=41.08C exit=40.86C
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=mc3 differing=43008 elements=71680
+PARITY na=5 shape=full_attn.qkv_proj_fused arm=mc2 differing=57330 elements=71680
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002347083 wall_seconds=0.007858542 seconds_per_dispatch=0.001173541648 gbps=31.272993
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=1 arm=mc3 inner=2 gpu_seconds=0.004700667 wall_seconds=0.006328458 seconds_per_dispatch=0.002350333380 gbps=15.614874
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=2 arm=mc2 inner=2 gpu_seconds=0.004760375 wall_seconds=0.005506333 seconds_per_dispatch=0.002380187390 gbps=15.419021
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=3 arm=mc2 inner=2 gpu_seconds=0.004804792 wall_seconds=0.005639125 seconds_per_dispatch=0.002402395825 gbps=15.276483
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=4 arm=mc3 inner=2 gpu_seconds=0.004614000 wall_seconds=0.005399542 seconds_per_dispatch=0.002306999988 gbps=15.908175
+LEG na=5 shape=full_attn.qkv_proj_fused rep=0 position=5 arm=plain inner=2 gpu_seconds=0.001246292 wall_seconds=0.001957292 seconds_per_dispatch=0.000623145839 gbps=58.894977
+SHAPE na=5 shape=full_attn.qkv_proj_fused inner=2 legs=6 entry_gpu_temp_c=40.66 exit_gpu_temp_c=40.64
+e69_cell_ab: full_attn.qkv_proj_fused inner=2 legs=6 entry=40.66C exit=40.64C
+PARITY na=5 shape=mlp.gate_up_fused arm=mc3 differing=104448 elements=174080
+PARITY na=5 shape=mlp.gate_up_fused arm=mc2 differing=139163 elements=174080
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=0 arm=plain inner=1 gpu_seconds=0.002768500 wall_seconds=0.009516375 seconds_per_dispatch=0.002768500010 gbps=32.193953
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=1 arm=mc3 inner=1 gpu_seconds=0.005596375 wall_seconds=0.007226417 seconds_per_dispatch=0.005596375093 gbps=15.926195
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=2 arm=mc2 inner=1 gpu_seconds=0.005702875 wall_seconds=0.006468500 seconds_per_dispatch=0.005702874856 gbps=15.628777
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=3 arm=mc2 inner=1 gpu_seconds=0.005091500 wall_seconds=0.005843750 seconds_per_dispatch=0.005091500003 gbps=17.505442
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=4 arm=mc3 inner=1 gpu_seconds=0.002059875 wall_seconds=0.002302333 seconds_per_dispatch=0.002059875056 gbps=43.269110
+LEG na=5 shape=mlp.gate_up_fused rep=0 position=5 arm=plain inner=1 gpu_seconds=0.001081042 wall_seconds=0.001286583 seconds_per_dispatch=0.001081041759 gbps=82.447287
+SHAPE na=5 shape=mlp.gate_up_fused inner=1 legs=6 entry_gpu_temp_c=40.52 exit_gpu_temp_c=40.50
+e69_cell_ab: mlp.gate_up_fused inner=1 legs=6 entry=40.52C exit=40.50C
+PARITY na=5 shape=mlp.down arm=mc3 differing=15353 elements=25600
+PARITY na=5 shape=mlp.down arm=mc2 differing=20479 elements=25600
+LEG na=5 shape=mlp.down rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002713625 wall_seconds=0.006328792 seconds_per_dispatch=0.001356812543 gbps=32.844979
+LEG na=5 shape=mlp.down rep=0 position=1 arm=mc3 inner=2 gpu_seconds=0.005433458 wall_seconds=0.006194458 seconds_per_dispatch=0.002716729185 gbps=16.403726
+LEG na=5 shape=mlp.down rep=0 position=2 arm=mc2 inner=2 gpu_seconds=0.005306667 wall_seconds=0.005784625 seconds_per_dispatch=0.002653333358 gbps=16.795658
+LEG na=5 shape=mlp.down rep=0 position=3 arm=mc2 inner=2 gpu_seconds=0.004228917 wall_seconds=0.004436000 seconds_per_dispatch=0.002114458359 gbps=21.076074
+LEG na=5 shape=mlp.down rep=0 position=4 arm=mc3 inner=2 gpu_seconds=0.001996583 wall_seconds=0.002213167 seconds_per_dispatch=0.000998291653 gbps=44.640742
+LEG na=5 shape=mlp.down rep=0 position=5 arm=plain inner=2 gpu_seconds=0.001002875 wall_seconds=0.001222417 seconds_per_dispatch=0.000501437462 gbps=88.873456
+SHAPE na=5 shape=mlp.down inner=2 legs=6 entry_gpu_temp_c=40.43 exit_gpu_temp_c=40.40
+e69_cell_ab: mlp.down inner=2 legs=6 entry=40.43C exit=40.40C
+PARITY na=5 shape=head.compact_draft_vocab arm=mc3 differing=294882 elements=491680
+PARITY na=5 shape=head.compact_draft_vocab arm=mc2 differing=393155 elements=491680
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=0 arm=plain inner=1 gpu_seconds=0.007347167 wall_seconds=0.014380958 seconds_per_dispatch=0.007347166538 gbps=34.263571
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=1 arm=mc3 inner=1 gpu_seconds=0.015448583 wall_seconds=0.016406750 seconds_per_dispatch=0.015448583290 gbps=16.295356
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=2 arm=mc2 inner=1 gpu_seconds=0.009638625 wall_seconds=0.010119375 seconds_per_dispatch=0.009638624964 gbps=26.117850
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=3 arm=mc2 inner=1 gpu_seconds=0.005572792 wall_seconds=0.006036125 seconds_per_dispatch=0.005572791677 gbps=45.173079
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=4 arm=mc3 inner=1 gpu_seconds=0.004903583 wall_seconds=0.005373375 seconds_per_dispatch=0.004903583322 gbps=51.338000
+LEG na=5 shape=head.compact_draft_vocab rep=0 position=5 arm=plain inner=1 gpu_seconds=0.002048750 wall_seconds=0.002275875 seconds_per_dispatch=0.002048749942 gbps=122.875005
+SHAPE na=5 shape=head.compact_draft_vocab inner=1 legs=6 entry_gpu_temp_c=40.38 exit_gpu_temp_c=40.40
+e69_cell_ab: head.compact_draft_vocab inner=1 legs=6 entry=40.38C exit=40.40C
+PARITY na=5 shape=head.lm_head arm=mc3 differing=744907 elements=1241600
+PARITY na=5 shape=head.lm_head arm=mc2 differing=993228 elements=1241600
+LEG na=5 shape=head.lm_head rep=0 position=0 arm=plain inner=1 gpu_seconds=0.016292875 wall_seconds=0.032399708 seconds_per_dispatch=0.016292874934 gbps=39.017006
+LEG na=5 shape=head.lm_head rep=0 position=1 arm=mc3 inner=1 gpu_seconds=0.013327625 wall_seconds=0.014060875 seconds_per_dispatch=0.013327624882 gbps=47.697861
+LEG na=5 shape=head.lm_head rep=0 position=2 arm=mc2 inner=1 gpu_seconds=0.009234167 wall_seconds=0.009465958 seconds_per_dispatch=0.009234166704 gbps=68.842075
+LEG na=5 shape=head.lm_head rep=0 position=3 arm=mc2 inner=1 gpu_seconds=0.008968000 wall_seconds=0.009199708 seconds_per_dispatch=0.008968000067 gbps=70.885280
+LEG na=5 shape=head.lm_head rep=0 position=4 arm=mc3 inner=1 gpu_seconds=0.008873458 wall_seconds=0.009109125 seconds_per_dispatch=0.008873458486 gbps=71.640522
+LEG na=5 shape=head.lm_head rep=0 position=5 arm=plain inner=1 gpu_seconds=0.004008250 wall_seconds=0.004199375 seconds_per_dispatch=0.004008249845 gbps=158.597698
+SHAPE na=5 shape=head.lm_head inner=1 legs=6 entry_gpu_temp_c=40.39 exit_gpu_temp_c=40.65
+e69_cell_ab: head.lm_head inner=1 legs=6 entry=40.39C exit=40.65C
+e69_cell_ab: wrote research/e76-artifacts/parity-na5-b2.json
+wrote /tmp/e76-build/arms_na6.metal na=6 bytes=348459 sha256=ca303c940edf6399 arms=25
+e76_session na=6 parity batch=0 arms=plain,lazysb,lazyw,lazy,rps2,rps2lazysb,rps2lazyw,rps2lazy,rps1,rps1lazysb,rps1lazyw,rps1lazy
+ARM na=6 arm=plain max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=lazysb max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=lazyw max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=lazy max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps2 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps2lazysb max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps2lazyw max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps2lazy max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1lazysb max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1lazyw max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1lazy max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e69_cell_ab: session entry gpu_temp_c=40.02
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=lazysb differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=lazyw differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=lazy differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps2 differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps2lazysb differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps2lazyw differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps2lazy differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1 differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazysb differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazyw differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazy differing=0 elements=98880
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=0 arm=plain inner=2 gpu_seconds=0.003345375 wall_seconds=0.009303917 seconds_per_dispatch=0.001672687475 gbps=25.222165
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=1 arm=lazysb inner=2 gpu_seconds=0.003326125 wall_seconds=0.003948625 seconds_per_dispatch=0.001663062605 gbps=25.368137
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=2 arm=lazyw inner=2 gpu_seconds=0.002421750 wall_seconds=0.002825750 seconds_per_dispatch=0.001210874994 gbps=34.841582
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=3 arm=lazy inner=2 gpu_seconds=0.001264750 wall_seconds=0.001465667 seconds_per_dispatch=0.000632375013 gbps=66.714843
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=4 arm=rps2 inner=2 gpu_seconds=0.001312583 wall_seconds=0.001501833 seconds_per_dispatch=0.000656291726 gbps=64.283608
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=5 arm=rps2lazysb inner=2 gpu_seconds=0.001476417 wall_seconds=0.001959042 seconds_per_dispatch=0.000738208415 gbps=57.150256
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=6 arm=rps2lazyw inner=2 gpu_seconds=0.001504083 wall_seconds=0.001980458 seconds_per_dispatch=0.000752041582 gbps=56.099026
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=7 arm=rps2lazy inner=2 gpu_seconds=0.001354125 wall_seconds=0.001894833 seconds_per_dispatch=0.000677062548 gbps=62.311525
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=8 arm=rps1 inner=2 gpu_seconds=0.001591000 wall_seconds=0.002125417 seconds_per_dispatch=0.000795500004 gbps=53.034318
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=9 arm=rps1lazysb inner=2 gpu_seconds=0.001567083 wall_seconds=0.002080833 seconds_per_dispatch=0.000783541589 gbps=53.843728
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=10 arm=rps1lazyw inner=2 gpu_seconds=0.001698625 wall_seconds=0.002219000 seconds_per_dispatch=0.000849312521 gbps=49.674059
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=11 arm=rps1lazy inner=2 gpu_seconds=0.001790583 wall_seconds=0.001965375 seconds_per_dispatch=0.000895291683 gbps=47.122967
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=12 arm=rps1lazy inner=2 gpu_seconds=0.001869667 wall_seconds=0.002062375 seconds_per_dispatch=0.000934833311 gbps=45.129757
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=13 arm=rps1lazyw inner=2 gpu_seconds=0.001933500 wall_seconds=0.002442583 seconds_per_dispatch=0.000966749969 gbps=43.639826
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=14 arm=rps1lazysb inner=2 gpu_seconds=0.001753167 wall_seconds=0.002249417 seconds_per_dispatch=0.000876583392 gbps=48.128678
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=15 arm=rps1 inner=2 gpu_seconds=0.001588917 wall_seconds=0.002120292 seconds_per_dispatch=0.000794458319 gbps=53.103856
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=16 arm=rps2lazy inner=2 gpu_seconds=0.001374625 wall_seconds=0.001894625 seconds_per_dispatch=0.000687312451 gbps=61.382272
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=17 arm=rps2lazyw inner=2 gpu_seconds=0.001428250 wall_seconds=0.001926667 seconds_per_dispatch=0.000714124995 gbps=59.077613
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=18 arm=rps2lazysb inner=2 gpu_seconds=0.001290875 wall_seconds=0.001794875 seconds_per_dispatch=0.000645437511 gbps=65.364655
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=19 arm=rps2 inner=2 gpu_seconds=0.001245167 wall_seconds=0.001426667 seconds_per_dispatch=0.000622583320 gbps=67.764103
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=20 arm=lazy inner=2 gpu_seconds=0.001228208 wall_seconds=0.001417542 seconds_per_dispatch=0.000614104210 gbps=68.699741
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=21 arm=lazyw inner=2 gpu_seconds=0.001243708 wall_seconds=0.001428542 seconds_per_dispatch=0.000621854095 gbps=67.843567
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=22 arm=lazysb inner=2 gpu_seconds=0.001346125 wall_seconds=0.001884583 seconds_per_dispatch=0.000673062517 gbps=62.681844
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=23 arm=plain inner=2 gpu_seconds=0.001306917 wall_seconds=0.001809833 seconds_per_dispatch=0.000653458294 gbps=64.562345
+SHAPE na=6 shape=linear_attn.in_proj_fused_qkvzba inner=2 legs=24 entry_gpu_temp_c=40.16 exit_gpu_temp_c=40.01
+e69_cell_ab: linear_attn.in_proj_fused_qkvzba inner=2 legs=24 entry=40.16C exit=40.01C
+PARITY na=6 shape=linear_attn.out_proj arm=lazysb differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=lazyw differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=lazy differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps2 differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps2lazysb differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps2lazyw differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps2lazy differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1 differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1lazysb differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1lazyw differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1lazy differing=0 elements=30720
+LEG na=6 shape=linear_attn.out_proj rep=0 position=0 arm=plain inner=6 gpu_seconds=0.003916250 wall_seconds=0.008456458 seconds_per_dispatch=0.000652708307 gbps=24.097502
+LEG na=6 shape=linear_attn.out_proj rep=0 position=1 arm=lazysb inner=6 gpu_seconds=0.003879250 wall_seconds=0.004581958 seconds_per_dispatch=0.000646541671 gbps=24.327341
+LEG na=6 shape=linear_attn.out_proj rep=0 position=2 arm=lazyw inner=6 gpu_seconds=0.003946875 wall_seconds=0.004639917 seconds_per_dispatch=0.000657812498 gbps=23.910522
+LEG na=6 shape=linear_attn.out_proj rep=0 position=3 arm=lazy inner=6 gpu_seconds=0.003897125 wall_seconds=0.004549250 seconds_per_dispatch=0.000649520817 gbps=24.215760
+LEG na=6 shape=linear_attn.out_proj rep=0 position=4 arm=rps2 inner=6 gpu_seconds=0.004129875 wall_seconds=0.004364125 seconds_per_dispatch=0.000688312498 gbps=22.851016
+LEG na=6 shape=linear_attn.out_proj rep=0 position=5 arm=rps2lazysb inner=6 gpu_seconds=0.004200583 wall_seconds=0.004870500 seconds_per_dispatch=0.000700097221 gbps=22.466365
+LEG na=6 shape=linear_attn.out_proj rep=0 position=6 arm=rps2lazyw inner=6 gpu_seconds=0.003121875 wall_seconds=0.003766917 seconds_per_dispatch=0.000520312499 gbps=30.229218
+LEG na=6 shape=linear_attn.out_proj rep=0 position=7 arm=rps2lazy inner=6 gpu_seconds=0.001649250 wall_seconds=0.002001583 seconds_per_dispatch=0.000274875007 gbps=57.221063
+LEG na=6 shape=linear_attn.out_proj rep=0 position=8 arm=rps1 inner=6 gpu_seconds=0.001954792 wall_seconds=0.002338500 seconds_per_dispatch=0.000325798600 gbps=48.277187
+LEG na=6 shape=linear_attn.out_proj rep=0 position=9 arm=rps1lazysb inner=6 gpu_seconds=0.001918417 wall_seconds=0.002140667 seconds_per_dispatch=0.000319736117 gbps=49.192566
+LEG na=6 shape=linear_attn.out_proj rep=0 position=10 arm=rps1lazyw inner=6 gpu_seconds=0.001983375 wall_seconds=0.002522208 seconds_per_dispatch=0.000330562509 gbps=47.581439
+LEG na=6 shape=linear_attn.out_proj rep=0 position=11 arm=rps1lazy inner=6 gpu_seconds=0.001944000 wall_seconds=0.002420083 seconds_per_dispatch=0.000324000022 gbps=48.545182
+LEG na=6 shape=linear_attn.out_proj rep=0 position=12 arm=rps1lazy inner=6 gpu_seconds=0.001942125 wall_seconds=0.002446625 seconds_per_dispatch=0.000323687486 gbps=48.592055
+LEG na=6 shape=linear_attn.out_proj rep=0 position=13 arm=rps1lazyw inner=6 gpu_seconds=0.002071375 wall_seconds=0.002610375 seconds_per_dispatch=0.000345229171 gbps=45.559997
+LEG na=6 shape=linear_attn.out_proj rep=0 position=14 arm=rps1lazysb inner=6 gpu_seconds=0.001916417 wall_seconds=0.002210375 seconds_per_dispatch=0.000319402781 gbps=49.243904
+LEG na=6 shape=linear_attn.out_proj rep=0 position=15 arm=rps1 inner=6 gpu_seconds=0.001923875 wall_seconds=0.002222792 seconds_per_dispatch=0.000320645825 gbps=49.053001
+LEG na=6 shape=linear_attn.out_proj rep=0 position=16 arm=rps2lazy inner=6 gpu_seconds=0.001645625 wall_seconds=0.001913750 seconds_per_dispatch=0.000274270812 gbps=57.347116
+LEG na=6 shape=linear_attn.out_proj rep=0 position=17 arm=rps2lazyw inner=6 gpu_seconds=0.001590250 wall_seconds=0.002068625 seconds_per_dispatch=0.000265041638 gbps=59.344034
+LEG na=6 shape=linear_attn.out_proj rep=0 position=18 arm=rps2lazysb inner=6 gpu_seconds=0.001504125 wall_seconds=0.002044958 seconds_per_dispatch=0.000250687512 gbps=62.742016
+LEG na=6 shape=linear_attn.out_proj rep=0 position=19 arm=rps2 inner=6 gpu_seconds=0.001484125 wall_seconds=0.001945375 seconds_per_dispatch=0.000247354154 gbps=63.587531
+LEG na=6 shape=linear_attn.out_proj rep=0 position=20 arm=lazy inner=6 gpu_seconds=0.001424875 wall_seconds=0.001917000 seconds_per_dispatch=0.000237479146 gbps=66.231668
+LEG na=6 shape=linear_attn.out_proj rep=0 position=21 arm=lazyw inner=6 gpu_seconds=0.001495625 wall_seconds=0.002012083 seconds_per_dispatch=0.000249270854 gbps=63.098592
+LEG na=6 shape=linear_attn.out_proj rep=0 position=22 arm=lazysb inner=6 gpu_seconds=0.001444125 wall_seconds=0.001684167 seconds_per_dispatch=0.000240687475 gbps=65.348810
+LEG na=6 shape=linear_attn.out_proj rep=0 position=23 arm=plain inner=6 gpu_seconds=0.001492625 wall_seconds=0.001804125 seconds_per_dispatch=0.000248770850 gbps=63.225414
+SHAPE na=6 shape=linear_attn.out_proj inner=6 legs=24 entry_gpu_temp_c=40.00 exit_gpu_temp_c=39.94
+e69_cell_ab: linear_attn.out_proj inner=6 legs=24 entry=40.00C exit=39.94C
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=lazysb differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=lazyw differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=lazy differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps2 differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps2lazysb differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps2lazyw differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps2lazy differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1 differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1lazysb differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1lazyw differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1lazy differing=0 elements=86016
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002957292 wall_seconds=0.008751667 seconds_per_dispatch=0.001478645834 gbps=24.820115
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=1 arm=lazysb inner=2 gpu_seconds=0.002901125 wall_seconds=0.003650875 seconds_per_dispatch=0.001450562500 gbps=25.300640
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=2 arm=lazyw inner=2 gpu_seconds=0.002944208 wall_seconds=0.003597750 seconds_per_dispatch=0.001472104108 gbps=24.930411
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=3 arm=lazy inner=2 gpu_seconds=0.002923792 wall_seconds=0.003587500 seconds_per_dispatch=0.001461895881 gbps=25.104496
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=4 arm=rps2 inner=2 gpu_seconds=0.003125458 wall_seconds=0.003384583 seconds_per_dispatch=0.001562729129 gbps=23.484659
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=5 arm=rps2lazysb inner=2 gpu_seconds=0.003141625 wall_seconds=0.003775958 seconds_per_dispatch=0.001570812543 gbps=23.363806
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=6 arm=rps2lazyw inner=2 gpu_seconds=0.003345042 wall_seconds=0.003874167 seconds_per_dispatch=0.001672520884 gbps=21.943020
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=7 arm=rps2lazy inner=2 gpu_seconds=0.003355500 wall_seconds=0.003897208 seconds_per_dispatch=0.001677750028 gbps=21.874629
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=8 arm=rps1 inner=2 gpu_seconds=0.001976750 wall_seconds=0.002282250 seconds_per_dispatch=0.000988374930 gbps=37.131820
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=9 arm=rps1lazysb inner=2 gpu_seconds=0.001456833 wall_seconds=0.001832375 seconds_per_dispatch=0.000728416606 gbps=50.383475
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=10 arm=rps1lazyw inner=2 gpu_seconds=0.001618500 wall_seconds=0.001882708 seconds_per_dispatch=0.000809249934 gbps=45.350835
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=11 arm=rps1lazy inner=2 gpu_seconds=0.001686333 wall_seconds=0.002173500 seconds_per_dispatch=0.000843166607 gbps=43.526581
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=12 arm=rps1lazy inner=2 gpu_seconds=0.001562083 wall_seconds=0.002049208 seconds_per_dispatch=0.000781041686 gbps=46.988734
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=13 arm=rps1lazyw inner=2 gpu_seconds=0.001504542 wall_seconds=0.002000333 seconds_per_dispatch=0.000752270920 gbps=48.785828
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=14 arm=rps1lazysb inner=2 gpu_seconds=0.001381417 wall_seconds=0.001871667 seconds_per_dispatch=0.000690708403 gbps=53.134086
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=15 arm=rps1 inner=2 gpu_seconds=0.001428125 wall_seconds=0.001931042 seconds_per_dispatch=0.000714062480 gbps=51.396287
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=16 arm=rps2lazy inner=2 gpu_seconds=0.001251250 wall_seconds=0.001761333 seconds_per_dispatch=0.000625625020 gbps=58.661593
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=17 arm=rps2lazyw inner=2 gpu_seconds=0.001295375 wall_seconds=0.001547792 seconds_per_dispatch=0.000647687470 gbps=56.663378
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=18 arm=rps2lazysb inner=2 gpu_seconds=0.001195750 wall_seconds=0.001448083 seconds_per_dispatch=0.000597875100 gbps=61.384326
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=19 arm=rps2 inner=2 gpu_seconds=0.001146917 wall_seconds=0.001395708 seconds_per_dispatch=0.000573458383 gbps=63.997948
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=20 arm=lazy inner=2 gpu_seconds=0.001196458 wall_seconds=0.001660625 seconds_per_dispatch=0.000598229235 gbps=61.347988
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=21 arm=lazyw inner=2 gpu_seconds=0.001241708 wall_seconds=0.001738167 seconds_per_dispatch=0.000620854204 gbps=59.112365
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=22 arm=lazysb inner=2 gpu_seconds=0.001132125 wall_seconds=0.001672375 seconds_per_dispatch=0.000566062517 gbps=64.834111
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=23 arm=plain inner=2 gpu_seconds=0.001114000 wall_seconds=0.001622250 seconds_per_dispatch=0.000557000050 gbps=65.888971
+SHAPE na=6 shape=full_attn.qkv_proj_fused inner=2 legs=24 entry_gpu_temp_c=39.79 exit_gpu_temp_c=39.80
+e69_cell_ab: full_attn.qkv_proj_fused inner=2 legs=24 entry=39.79C exit=39.80C
+PARITY na=6 shape=mlp.gate_up_fused arm=lazysb differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=lazyw differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=lazy differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps2 differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps2lazysb differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps2lazyw differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps2lazy differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1 differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1lazysb differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1lazyw differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1lazy differing=0 elements=208896
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=0 arm=plain inner=1 gpu_seconds=0.003520792 wall_seconds=0.010621792 seconds_per_dispatch=0.003520791885 gbps=25.315032
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=1 arm=lazysb inner=1 gpu_seconds=0.003454250 wall_seconds=0.003808708 seconds_per_dispatch=0.003454250051 gbps=25.802695
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=2 arm=lazyw inner=1 gpu_seconds=0.003496625 wall_seconds=0.003789000 seconds_per_dispatch=0.003496624995 gbps=25.489997
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=3 arm=lazy inner=1 gpu_seconds=0.003492000 wall_seconds=0.003883042 seconds_per_dispatch=0.003492000047 gbps=25.523757
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=4 arm=rps2 inner=1 gpu_seconds=0.003704792 wall_seconds=0.003966333 seconds_per_dispatch=0.003704791889 gbps=24.057751
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=5 arm=rps2lazysb inner=1 gpu_seconds=0.003747125 wall_seconds=0.004027250 seconds_per_dispatch=0.003747124923 gbps=23.785959
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=6 arm=rps2lazyw inner=1 gpu_seconds=0.002369833 wall_seconds=0.002620250 seconds_per_dispatch=0.002369833412 gbps=37.609800
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=7 arm=rps2lazy inner=1 gpu_seconds=0.001472041 wall_seconds=0.001734250 seconds_per_dispatch=0.001472041477 gbps=60.547859
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=8 arm=rps1 inner=1 gpu_seconds=0.001736583 wall_seconds=0.001994958 seconds_per_dispatch=0.001736583421 gbps=51.324318
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=9 arm=rps1lazysb inner=1 gpu_seconds=0.001738833 wall_seconds=0.002011042 seconds_per_dispatch=0.001738833496 gbps=51.257904
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=10 arm=rps1lazyw inner=1 gpu_seconds=0.001864125 wall_seconds=0.002105917 seconds_per_dispatch=0.001864124788 gbps=47.812765
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=11 arm=rps1lazy inner=1 gpu_seconds=0.001675875 wall_seconds=0.001893583 seconds_per_dispatch=0.001675875159 gbps=53.183532
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=12 arm=rps1lazy inner=1 gpu_seconds=0.001676250 wall_seconds=0.001888833 seconds_per_dispatch=0.001676250016 gbps=53.171639
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=13 arm=rps1lazyw inner=1 gpu_seconds=0.001682750 wall_seconds=0.001905333 seconds_per_dispatch=0.001682749949 gbps=52.966253
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=14 arm=rps1lazysb inner=1 gpu_seconds=0.001522375 wall_seconds=0.001744125 seconds_per_dispatch=0.001522374805 gbps=58.546003
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=15 arm=rps1 inner=1 gpu_seconds=0.001043375 wall_seconds=0.001390417 seconds_per_dispatch=0.001043375116 gbps=85.423697
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=16 arm=rps2lazy inner=1 gpu_seconds=0.000864000 wall_seconds=0.001092500 seconds_per_dispatch=0.000863999827 gbps=103.158539
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=17 arm=rps2lazyw inner=1 gpu_seconds=0.000862125 wall_seconds=0.001066292 seconds_per_dispatch=0.000862125074 gbps=103.382865
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=18 arm=rps2lazysb inner=1 gpu_seconds=0.000813167 wall_seconds=0.001013500 seconds_per_dispatch=0.000813166844 gbps=109.607224
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=19 arm=rps2 inner=1 gpu_seconds=0.000805583 wall_seconds=0.001010000 seconds_per_dispatch=0.000805583317 gbps=110.639034
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=20 arm=lazy inner=1 gpu_seconds=0.000761250 wall_seconds=0.000973625 seconds_per_dispatch=0.000761250034 gbps=117.082372
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=21 arm=lazyw inner=1 gpu_seconds=0.000768625 wall_seconds=0.000979417 seconds_per_dispatch=0.000768624945 gbps=115.958974
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=22 arm=lazysb inner=1 gpu_seconds=0.000749208 wall_seconds=0.000975750 seconds_per_dispatch=0.000749208499 gbps=118.964160
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=23 arm=plain inner=1 gpu_seconds=0.000740917 wall_seconds=0.000970167 seconds_per_dispatch=0.000740916701 gbps=120.295520
+SHAPE na=6 shape=mlp.gate_up_fused inner=1 legs=24 entry_gpu_temp_c=39.87 exit_gpu_temp_c=39.83
+e69_cell_ab: mlp.gate_up_fused inner=1 legs=24 entry=39.87C exit=39.83C
+PARITY na=6 shape=mlp.down arm=lazysb differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=lazyw differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=lazy differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps2 differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps2lazysb differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps2lazyw differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps2lazy differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1 differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1lazysb differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1lazyw differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1lazy differing=0 elements=30720
+LEG na=6 shape=mlp.down rep=0 position=0 arm=plain inner=2 gpu_seconds=0.004034000 wall_seconds=0.009160083 seconds_per_dispatch=0.002016999992 gbps=22.094437
+LEG na=6 shape=mlp.down rep=0 position=1 arm=lazysb inner=2 gpu_seconds=0.003920750 wall_seconds=0.004702375 seconds_per_dispatch=0.001960374997 gbps=22.732630
+LEG na=6 shape=mlp.down rep=0 position=2 arm=lazyw inner=2 gpu_seconds=0.004472542 wall_seconds=0.005231958 seconds_per_dispatch=0.002236270928 gbps=19.928033
+LEG na=6 shape=mlp.down rep=0 position=3 arm=lazy inner=2 gpu_seconds=0.002959000 wall_seconds=0.003639625 seconds_per_dispatch=0.001479499973 gbps=30.121312
+LEG na=6 shape=mlp.down rep=0 position=4 arm=rps2 inner=2 gpu_seconds=0.001430542 wall_seconds=0.001607667 seconds_per_dispatch=0.000715270755 gbps=62.304351
+LEG na=6 shape=mlp.down rep=0 position=5 arm=rps2lazysb inner=2 gpu_seconds=0.001597583 wall_seconds=0.002140917 seconds_per_dispatch=0.000798791647 gbps=55.789867
+LEG na=6 shape=mlp.down rep=0 position=6 arm=rps2lazyw inner=2 gpu_seconds=0.001764500 wall_seconds=0.002282667 seconds_per_dispatch=0.000882250024 gbps=50.512302
+LEG na=6 shape=mlp.down rep=0 position=7 arm=rps2lazy inner=2 gpu_seconds=0.001680250 wall_seconds=0.002162208 seconds_per_dispatch=0.000840125023 gbps=53.045057
+LEG na=6 shape=mlp.down rep=0 position=8 arm=rps1 inner=2 gpu_seconds=0.001717375 wall_seconds=0.002219542 seconds_per_dispatch=0.000858687563 gbps=51.898364
+LEG na=6 shape=mlp.down rep=0 position=9 arm=rps1lazysb inner=2 gpu_seconds=0.001716875 wall_seconds=0.002222083 seconds_per_dispatch=0.000858437503 gbps=51.913482
+LEG na=6 shape=mlp.down rep=0 position=10 arm=rps1lazyw inner=2 gpu_seconds=0.002021750 wall_seconds=0.002536708 seconds_per_dispatch=0.001010874985 gbps=44.085056
+LEG na=6 shape=mlp.down rep=0 position=11 arm=rps1lazy inner=2 gpu_seconds=0.002042708 wall_seconds=0.002242250 seconds_per_dispatch=0.001021354226 gbps=43.632737
+LEG na=6 shape=mlp.down rep=0 position=12 arm=rps1lazy inner=2 gpu_seconds=0.002139500 wall_seconds=0.002388833 seconds_per_dispatch=0.001069749938 gbps=41.658782
+LEG na=6 shape=mlp.down rep=0 position=13 arm=rps1lazyw inner=2 gpu_seconds=0.002307375 wall_seconds=0.002800958 seconds_per_dispatch=0.001153687481 gbps=38.627861
+LEG na=6 shape=mlp.down rep=0 position=14 arm=rps1lazysb inner=2 gpu_seconds=0.001768250 wall_seconds=0.002230375 seconds_per_dispatch=0.000884125009 gbps=50.405180
+LEG na=6 shape=mlp.down rep=0 position=15 arm=rps1 inner=2 gpu_seconds=0.001670375 wall_seconds=0.002168417 seconds_per_dispatch=0.000835187500 gbps=53.358653
+LEG na=6 shape=mlp.down rep=0 position=16 arm=rps2lazy inner=2 gpu_seconds=0.001609292 wall_seconds=0.002116083 seconds_per_dispatch=0.000804645824 gbps=55.383970
+LEG na=6 shape=mlp.down rep=0 position=17 arm=rps2lazyw inner=2 gpu_seconds=0.001550958 wall_seconds=0.002041625 seconds_per_dispatch=0.000775479246 gbps=57.467018
+LEG na=6 shape=mlp.down rep=0 position=18 arm=rps2lazysb inner=2 gpu_seconds=0.001320750 wall_seconds=0.001523458 seconds_per_dispatch=0.000660375110 gbps=67.483585
+LEG na=6 shape=mlp.down rep=0 position=19 arm=rps2 inner=2 gpu_seconds=0.001419250 wall_seconds=0.001628792 seconds_per_dispatch=0.000709625077 gbps=62.800035
+LEG na=6 shape=mlp.down rep=0 position=20 arm=lazy inner=2 gpu_seconds=0.001585708 wall_seconds=0.001795625 seconds_per_dispatch=0.000792854116 gbps=56.207667
+LEG na=6 shape=mlp.down rep=0 position=21 arm=lazyw inner=2 gpu_seconds=0.001655833 wall_seconds=0.002145292 seconds_per_dispatch=0.000827916665 gbps=53.827253
+LEG na=6 shape=mlp.down rep=0 position=22 arm=lazysb inner=2 gpu_seconds=0.001571667 wall_seconds=0.002043542 seconds_per_dispatch=0.000785833341 gbps=56.709836
+LEG na=6 shape=mlp.down rep=0 position=23 arm=plain inner=2 gpu_seconds=0.001383125 wall_seconds=0.001913625 seconds_per_dispatch=0.000691562425 gbps=64.440285
+SHAPE na=6 shape=mlp.down inner=2 legs=24 entry_gpu_temp_c=39.59 exit_gpu_temp_c=39.48
+e69_cell_ab: mlp.down inner=2 legs=24 entry=39.59C exit=39.48C
+PARITY na=6 shape=head.compact_draft_vocab arm=lazysb differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=lazyw differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=lazy differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps2 differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps2lazysb differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps2lazyw differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps2lazy differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1 differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1lazysb differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1lazyw differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1lazy differing=0 elements=590016
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=0 arm=plain inner=1 gpu_seconds=0.009640125 wall_seconds=0.020481833 seconds_per_dispatch=0.009640124859 gbps=26.113786
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=1 arm=lazysb inner=1 gpu_seconds=0.004662625 wall_seconds=0.005473333 seconds_per_dispatch=0.004662624793 gbps=53.991083
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=2 arm=lazyw inner=1 gpu_seconds=0.003810708 wall_seconds=0.004464333 seconds_per_dispatch=0.003810708178 gbps=66.061254
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=3 arm=lazy inner=1 gpu_seconds=0.003355708 wall_seconds=0.003854875 seconds_per_dispatch=0.003355708206 gbps=75.018489
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=4 arm=rps2 inner=1 gpu_seconds=0.003528500 wall_seconds=0.003993792 seconds_per_dispatch=0.003528499976 gbps=71.344810
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=5 arm=rps2lazysb inner=1 gpu_seconds=0.002664417 wall_seconds=0.003170917 seconds_per_dispatch=0.002664416563 gbps=94.482283
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=6 arm=rps2lazyw inner=1 gpu_seconds=0.002410500 wall_seconds=0.002644750 seconds_per_dispatch=0.002410499845 gbps=104.434838
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=7 arm=rps2lazy inner=1 gpu_seconds=0.002670542 wall_seconds=0.003274000 seconds_per_dispatch=0.002670541871 gbps=94.265573
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=8 arm=rps1 inner=1 gpu_seconds=0.002909375 wall_seconds=0.003542917 seconds_per_dispatch=0.002909374889 gbps=86.527233
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=9 arm=rps1lazysb inner=1 gpu_seconds=0.003046792 wall_seconds=0.003671917 seconds_per_dispatch=0.003046791768 gbps=82.624669
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=10 arm=rps1lazyw inner=1 gpu_seconds=0.003331417 wall_seconds=0.003925917 seconds_per_dispatch=0.003331416752 gbps=75.565496
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=11 arm=rps1lazy inner=1 gpu_seconds=0.003368458 wall_seconds=0.004026292 seconds_per_dispatch=0.003368458478 gbps=74.734530
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=12 arm=rps1lazy inner=1 gpu_seconds=0.003291292 wall_seconds=0.003900292 seconds_per_dispatch=0.003291291650 gbps=76.486737
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=13 arm=rps1lazyw inner=1 gpu_seconds=0.003302417 wall_seconds=0.003883708 seconds_per_dispatch=0.003302416764 gbps=76.229070
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=14 arm=rps1lazysb inner=1 gpu_seconds=0.003196250 wall_seconds=0.003800417 seconds_per_dispatch=0.003196249949 gbps=78.761099
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=15 arm=rps1 inner=1 gpu_seconds=0.002863625 wall_seconds=0.003085667 seconds_per_dispatch=0.002863624832 gbps=87.909616
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=16 arm=rps2lazy inner=1 gpu_seconds=0.002622625 wall_seconds=0.003244625 seconds_per_dispatch=0.002622624859 gbps=95.987865
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=17 arm=rps2lazyw inner=1 gpu_seconds=0.002508250 wall_seconds=0.003110583 seconds_per_dispatch=0.002508249832 gbps=100.364867
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=18 arm=rps2lazysb inner=1 gpu_seconds=0.002367375 wall_seconds=0.003006292 seconds_per_dispatch=0.002367375186 gbps=106.337247
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=19 arm=rps2 inner=1 gpu_seconds=0.002365292 wall_seconds=0.002918667 seconds_per_dispatch=0.002365291817 gbps=106.430910
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=20 arm=lazy inner=1 gpu_seconds=0.002219625 wall_seconds=0.002445750 seconds_per_dispatch=0.002219625050 gbps=113.415624
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=21 arm=lazyw inner=1 gpu_seconds=0.002142625 wall_seconds=0.002358625 seconds_per_dispatch=0.002142625162 gbps=117.491461
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=22 arm=lazysb inner=1 gpu_seconds=0.002195292 wall_seconds=0.002754750 seconds_per_dispatch=0.002195291687 gbps=114.672761
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=23 arm=plain inner=1 gpu_seconds=0.002333083 wall_seconds=0.002946417 seconds_per_dispatch=0.002333083190 gbps=107.900207
+SHAPE na=6 shape=head.compact_draft_vocab inner=1 legs=24 entry_gpu_temp_c=39.76 exit_gpu_temp_c=39.63
+e69_cell_ab: head.compact_draft_vocab inner=1 legs=24 entry=39.76C exit=39.63C
+PARITY na=6 shape=head.lm_head arm=lazysb differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=lazyw differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=lazy differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps2 differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps2lazysb differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps2lazyw differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps2lazy differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1 differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1lazysb differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1lazyw differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1lazy differing=0 elements=1489920
+LEG na=6 shape=head.lm_head rep=0 position=0 arm=plain inner=1 gpu_seconds=0.024153625 wall_seconds=0.042295917 seconds_per_dispatch=0.024153624894 gbps=26.318998
+LEG na=6 shape=head.lm_head rep=0 position=1 arm=lazysb inner=1 gpu_seconds=0.009959167 wall_seconds=0.010672000 seconds_per_dispatch=0.009959166637 gbps=63.830562
+LEG na=6 shape=head.lm_head rep=0 position=2 arm=lazyw inner=1 gpu_seconds=0.008020458 wall_seconds=0.008585042 seconds_per_dispatch=0.008020458277 gbps=79.259710
+LEG na=6 shape=head.lm_head rep=0 position=3 arm=lazy inner=1 gpu_seconds=0.005369833 wall_seconds=0.005580333 seconds_per_dispatch=0.005369833438 gbps=118.383411
+LEG na=6 shape=head.lm_head rep=0 position=4 arm=rps2 inner=1 gpu_seconds=0.005648750 wall_seconds=0.005846458 seconds_per_dispatch=0.005648750113 gbps=112.538028
+LEG na=6 shape=head.lm_head rep=0 position=5 arm=rps2lazysb inner=1 gpu_seconds=0.005789625 wall_seconds=0.006419125 seconds_per_dispatch=0.005789624993 gbps=109.799719
+LEG na=6 shape=head.lm_head rep=0 position=6 arm=rps2lazyw inner=1 gpu_seconds=0.006067083 wall_seconds=0.006283250 seconds_per_dispatch=0.006067083217 gbps=104.778388
+LEG na=6 shape=head.lm_head rep=0 position=7 arm=rps2lazy inner=1 gpu_seconds=0.006073833 wall_seconds=0.006298083 seconds_per_dispatch=0.006073833210 gbps=104.661945
+LEG na=6 shape=head.lm_head rep=0 position=8 arm=rps1 inner=1 gpu_seconds=0.007168750 wall_seconds=0.007387917 seconds_per_dispatch=0.007168749813 gbps=88.676438
+LEG na=6 shape=head.lm_head rep=0 position=9 arm=rps1lazysb inner=1 gpu_seconds=0.007172125 wall_seconds=0.007393167 seconds_per_dispatch=0.007172124926 gbps=88.634708
+LEG na=6 shape=head.lm_head rep=0 position=10 arm=rps1lazyw inner=1 gpu_seconds=0.007930333 wall_seconds=0.008150250 seconds_per_dispatch=0.007930333260 gbps=80.160465
+LEG na=6 shape=head.lm_head rep=0 position=11 arm=rps1lazy inner=1 gpu_seconds=0.007893458 wall_seconds=0.008126958 seconds_per_dispatch=0.007893458242 gbps=80.534942
+LEG na=6 shape=head.lm_head rep=0 position=12 arm=rps1lazy inner=1 gpu_seconds=0.007895500 wall_seconds=0.008129542 seconds_per_dispatch=0.007895499934 gbps=80.514116
+LEG na=6 shape=head.lm_head rep=0 position=13 arm=rps1lazyw inner=1 gpu_seconds=0.007933375 wall_seconds=0.008162042 seconds_per_dispatch=0.007933374960 gbps=80.129731
+LEG na=6 shape=head.lm_head rep=0 position=14 arm=rps1lazysb inner=1 gpu_seconds=0.007191042 wall_seconds=0.007423958 seconds_per_dispatch=0.007191041717 gbps=88.401545
+LEG na=6 shape=head.lm_head rep=0 position=15 arm=rps1 inner=1 gpu_seconds=0.007170417 wall_seconds=0.007389667 seconds_per_dispatch=0.007170416648 gbps=88.655825
+LEG na=6 shape=head.lm_head rep=0 position=16 arm=rps2lazy inner=1 gpu_seconds=0.006072375 wall_seconds=0.006314667 seconds_per_dispatch=0.006072374992 gbps=104.687079
+LEG na=6 shape=head.lm_head rep=0 position=17 arm=rps2lazyw inner=1 gpu_seconds=0.006066708 wall_seconds=0.006297583 seconds_per_dispatch=0.006066708127 gbps=104.784866
+LEG na=6 shape=head.lm_head rep=0 position=18 arm=rps2lazysb inner=1 gpu_seconds=0.005704625 wall_seconds=0.005938917 seconds_per_dispatch=0.005704625044 gbps=111.435755
+LEG na=6 shape=head.lm_head rep=0 position=19 arm=rps2 inner=1 gpu_seconds=0.005650583 wall_seconds=0.005914708 seconds_per_dispatch=0.005650583189 gbps=112.501520
+LEG na=6 shape=head.lm_head rep=0 position=20 arm=lazy inner=1 gpu_seconds=0.005360375 wall_seconds=0.005579000 seconds_per_dispatch=0.005360375158 gbps=118.592296
+LEG na=6 shape=head.lm_head rep=0 position=21 arm=lazyw inner=1 gpu_seconds=0.005380375 wall_seconds=0.005613208 seconds_per_dispatch=0.005380375078 gbps=118.151465
+LEG na=6 shape=head.lm_head rep=0 position=22 arm=lazysb inner=1 gpu_seconds=0.005237875 wall_seconds=0.005555917 seconds_per_dispatch=0.005237875041 gbps=121.365858
+LEG na=6 shape=head.lm_head rep=0 position=23 arm=plain inner=1 gpu_seconds=0.005195875 wall_seconds=0.005424917 seconds_per_dispatch=0.005195874954 gbps=122.346901
+SHAPE na=6 shape=head.lm_head inner=1 legs=24 entry_gpu_temp_c=39.69 exit_gpu_temp_c=39.82
+e69_cell_ab: head.lm_head inner=1 legs=24 entry=39.69C exit=39.82C
+e69_cell_ab: wrote research/e76-artifacts/parity-na6-b0.json
+e76_session na=6 parity batch=1 arms=plain,rps2nu,rps1nu,facc,lazyfacc,rps1facc,rps1lazyfacc,fall,lazyfall,rps1fall,rps1lazyfall,mc4
+ARM na=6 arm=plain max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps2nu max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1nu max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=facc max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=lazyfacc max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1facc max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1lazyfacc max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=fall max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=lazyfall max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1fall max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rps1lazyfall max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=mc4 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e69_cell_ab: session entry gpu_temp_c=39.61
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps2nu differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1nu differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=facc differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=lazyfacc differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1facc differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazyfacc differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=fall differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=lazyfall differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1fall differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=rps1lazyfall differing=0 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=mc4 differing=65920 elements=98880
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=0 arm=plain inner=2 gpu_seconds=0.003346333 wall_seconds=0.007669917 seconds_per_dispatch=0.001673166640 gbps=25.214942
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=1 arm=rps2nu inner=2 gpu_seconds=0.003568750 wall_seconds=0.004238958 seconds_per_dispatch=0.001784375054 gbps=23.643460
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=2 arm=rps1nu inner=2 gpu_seconds=0.004531000 wall_seconds=0.005159833 seconds_per_dispatch=0.002265500021 gbps=18.622291
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=3 arm=facc inner=2 gpu_seconds=0.003268083 wall_seconds=0.003580417 seconds_per_dispatch=0.001634041662 gbps=25.818681
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=4 arm=lazyfacc inner=2 gpu_seconds=0.003340708 wall_seconds=0.003607292 seconds_per_dispatch=0.001670354162 gbps=25.257398
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=5 arm=rps1facc inner=2 gpu_seconds=0.004518792 wall_seconds=0.005111583 seconds_per_dispatch=0.002259395900 gbps=18.672602
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=6 arm=rps1lazyfacc inner=2 gpu_seconds=0.004340792 wall_seconds=0.005009292 seconds_per_dispatch=0.002170395921 gbps=19.438297
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=7 arm=fall inner=2 gpu_seconds=0.001774958 wall_seconds=0.002070208 seconds_per_dispatch=0.000887479167 gbps=47.537792
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=8 arm=lazyfall inner=2 gpu_seconds=0.001885458 wall_seconds=0.002595542 seconds_per_dispatch=0.000942729181 gbps=44.751771
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=9 arm=rps1fall inner=2 gpu_seconds=0.001756083 wall_seconds=0.002302458 seconds_per_dispatch=0.000878041727 gbps=48.048742
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=10 arm=rps1lazyfall inner=2 gpu_seconds=0.001755000 wall_seconds=0.002216542 seconds_per_dispatch=0.000877499930 gbps=48.078408
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=11 arm=mc4 inner=2 gpu_seconds=0.002097750 wall_seconds=0.003034375 seconds_per_dispatch=0.001048875041 gbps=40.222904
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=12 arm=mc4 inner=2 gpu_seconds=0.002130125 wall_seconds=0.002630708 seconds_per_dispatch=0.001065062475 gbps=39.611573
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=13 arm=rps1lazyfall inner=2 gpu_seconds=0.001886667 wall_seconds=0.002411125 seconds_per_dispatch=0.000943333376 gbps=44.723108
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=14 arm=rps1fall inner=2 gpu_seconds=0.001675917 wall_seconds=0.001966625 seconds_per_dispatch=0.000837958418 gbps=50.347128
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=15 arm=lazyfall inner=2 gpu_seconds=0.001806875 wall_seconds=0.002065875 seconds_per_dispatch=0.000903437496 gbps=46.698084
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=16 arm=fall inner=2 gpu_seconds=0.001834500 wall_seconds=0.002325125 seconds_per_dispatch=0.000917250058 gbps=45.994873
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=17 arm=rps1lazyfacc inner=2 gpu_seconds=0.001745917 wall_seconds=0.002212125 seconds_per_dispatch=0.000872958335 gbps=48.328538
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=18 arm=rps1facc inner=2 gpu_seconds=0.001585250 wall_seconds=0.002078583 seconds_per_dispatch=0.000792625011 gbps=53.226683
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=19 arm=lazyfacc inner=2 gpu_seconds=0.001274000 wall_seconds=0.001771375 seconds_per_dispatch=0.000637000077 gbps=66.230447
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=20 arm=facc inner=2 gpu_seconds=0.001269667 wall_seconds=0.001769750 seconds_per_dispatch=0.000634833355 gbps=66.456495
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=21 arm=rps1nu inner=2 gpu_seconds=0.001536917 wall_seconds=0.001745750 seconds_per_dispatch=0.000768458354 gbps=54.900568
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=22 arm=rps2nu inner=2 gpu_seconds=0.001310875 wall_seconds=0.001535667 seconds_per_dispatch=0.000655437587 gbps=64.367380
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=23 arm=plain inner=2 gpu_seconds=0.001199875 wall_seconds=0.001416125 seconds_per_dispatch=0.000599937513 gbps=70.321990
+SHAPE na=6 shape=linear_attn.in_proj_fused_qkvzba inner=2 legs=24 entry_gpu_temp_c=39.58 exit_gpu_temp_c=39.43
+e69_cell_ab: linear_attn.in_proj_fused_qkvzba inner=2 legs=24 entry=39.58C exit=39.43C
+PARITY na=6 shape=linear_attn.out_proj arm=rps2nu differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1nu differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=facc differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=lazyfacc differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1facc differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1lazyfacc differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=fall differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=lazyfall differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1fall differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rps1lazyfall differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=mc4 differing=20478 elements=30720
+LEG na=6 shape=linear_attn.out_proj rep=0 position=0 arm=plain inner=6 gpu_seconds=0.003890750 wall_seconds=0.008632625 seconds_per_dispatch=0.000648458333 gbps=24.255437
+LEG na=6 shape=linear_attn.out_proj rep=0 position=1 arm=rps2nu inner=6 gpu_seconds=0.004149875 wall_seconds=0.004992125 seconds_per_dispatch=0.000691645818 gbps=22.740888
+LEG na=6 shape=linear_attn.out_proj rep=0 position=2 arm=rps1nu inner=6 gpu_seconds=0.005186625 wall_seconds=0.005977792 seconds_per_dispatch=0.000864437510 gbps=18.195231
+LEG na=6 shape=linear_attn.out_proj rep=0 position=3 arm=facc inner=6 gpu_seconds=0.003774958 wall_seconds=0.004521292 seconds_per_dispatch=0.000629159738 gbps=24.999438
+LEG na=6 shape=linear_attn.out_proj rep=0 position=4 arm=lazyfacc inner=6 gpu_seconds=0.003848792 wall_seconds=0.004446583 seconds_per_dispatch=0.000641465265 gbps=24.519862
+LEG na=6 shape=linear_attn.out_proj rep=0 position=5 arm=rps1facc inner=6 gpu_seconds=0.004080375 wall_seconds=0.004688542 seconds_per_dispatch=0.000680062493 gbps=23.128227
+LEG na=6 shape=linear_attn.out_proj rep=0 position=6 arm=rps1lazyfacc inner=6 gpu_seconds=0.002156750 wall_seconds=0.002427125 seconds_per_dispatch=0.000359458344 gbps=43.756503
+LEG na=6 shape=linear_attn.out_proj rep=0 position=7 arm=fall inner=6 gpu_seconds=0.002152417 wall_seconds=0.002693750 seconds_per_dispatch=0.000358736104 gbps=43.844597
+LEG na=6 shape=linear_attn.out_proj rep=0 position=8 arm=lazyfall inner=6 gpu_seconds=0.002101250 wall_seconds=0.002769000 seconds_per_dispatch=0.000350208332 gbps=44.912238
+LEG na=6 shape=linear_attn.out_proj rep=0 position=9 arm=rps1fall inner=6 gpu_seconds=0.001764625 wall_seconds=0.002244083 seconds_per_dispatch=0.000294104180 gbps=53.479825
+LEG na=6 shape=linear_attn.out_proj rep=0 position=10 arm=rps1lazyfall inner=6 gpu_seconds=0.001980625 wall_seconds=0.002497333 seconds_per_dispatch=0.000330104143 gbps=47.647509
+LEG na=6 shape=linear_attn.out_proj rep=0 position=11 arm=mc4 inner=6 gpu_seconds=0.002202375 wall_seconds=0.003187125 seconds_per_dispatch=0.000367062477 gbps=42.850035
+LEG na=6 shape=linear_attn.out_proj rep=0 position=12 arm=mc4 inner=6 gpu_seconds=0.002419417 wall_seconds=0.002657167 seconds_per_dispatch=0.000403236093 gbps=39.006032
+LEG na=6 shape=linear_attn.out_proj rep=0 position=13 arm=rps1lazyfall inner=6 gpu_seconds=0.002191875 wall_seconds=0.002463750 seconds_per_dispatch=0.000365312483 gbps=43.055304
+LEG na=6 shape=linear_attn.out_proj rep=0 position=14 arm=rps1fall inner=6 gpu_seconds=0.001961250 wall_seconds=0.002463708 seconds_per_dispatch=0.000326875015 gbps=48.118208
+LEG na=6 shape=linear_attn.out_proj rep=0 position=15 arm=lazyfall inner=6 gpu_seconds=0.001888500 wall_seconds=0.002355708 seconds_per_dispatch=0.000314749971 gbps=49.971855
+LEG na=6 shape=linear_attn.out_proj rep=0 position=16 arm=fall inner=6 gpu_seconds=0.001901500 wall_seconds=0.002401458 seconds_per_dispatch=0.000316916693 gbps=49.630204
+LEG na=6 shape=linear_attn.out_proj rep=0 position=17 arm=rps1lazyfacc inner=6 gpu_seconds=0.001942250 wall_seconds=0.002461667 seconds_per_dispatch=0.000323708363 gbps=48.588921
+LEG na=6 shape=linear_attn.out_proj rep=0 position=18 arm=rps1facc inner=6 gpu_seconds=0.001859875 wall_seconds=0.002356500 seconds_per_dispatch=0.000309979155 gbps=50.740960
+LEG na=6 shape=linear_attn.out_proj rep=0 position=19 arm=lazyfacc inner=6 gpu_seconds=0.001449958 wall_seconds=0.001685458 seconds_per_dispatch=0.000241659698 gbps=65.085904
+LEG na=6 shape=linear_attn.out_proj rep=0 position=20 arm=facc inner=6 gpu_seconds=0.001435333 wall_seconds=0.001689458 seconds_per_dispatch=0.000239222233 gbps=65.749073
+LEG na=6 shape=linear_attn.out_proj rep=0 position=21 arm=rps1nu inner=6 gpu_seconds=0.001941792 wall_seconds=0.002423583 seconds_per_dispatch=0.000323631956 gbps=48.600392
+LEG na=6 shape=linear_attn.out_proj rep=0 position=22 arm=rps2nu inner=6 gpu_seconds=0.001585542 wall_seconds=0.002069500 seconds_per_dispatch=0.000264256960 gbps=59.520249
+LEG na=6 shape=linear_attn.out_proj rep=0 position=23 arm=plain inner=6 gpu_seconds=0.001342625 wall_seconds=0.001847292 seconds_per_dispatch=0.000223770815 gbps=70.289059
+SHAPE na=6 shape=linear_attn.out_proj inner=6 legs=24 entry_gpu_temp_c=39.58 exit_gpu_temp_c=39.38
+e69_cell_ab: linear_attn.out_proj inner=6 legs=24 entry=39.58C exit=39.38C
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps2nu differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1nu differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=facc differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=lazyfacc differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1facc differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1lazyfacc differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=fall differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=lazyfall differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1fall differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=rps1lazyfall differing=0 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=mc4 differing=57338 elements=86016
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002965917 wall_seconds=0.008337458 seconds_per_dispatch=0.001482958323 gbps=24.747938
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=1 arm=rps2nu inner=2 gpu_seconds=0.003113375 wall_seconds=0.003525875 seconds_per_dispatch=0.001556687406 gbps=23.575806
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=2 arm=rps1nu inner=2 gpu_seconds=0.003937167 wall_seconds=0.004218917 seconds_per_dispatch=0.001968583325 gbps=18.642929
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=3 arm=facc inner=2 gpu_seconds=0.002854458 wall_seconds=0.003460500 seconds_per_dispatch=0.001427229145 gbps=25.714273
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=4 arm=lazyfacc inner=2 gpu_seconds=0.002910917 wall_seconds=0.003187125 seconds_per_dispatch=0.001455458347 gbps=25.215534
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=5 arm=rps1facc inner=2 gpu_seconds=0.002582417 wall_seconds=0.003213000 seconds_per_dispatch=0.001291208318 gbps=28.423113
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=6 arm=rps1lazyfacc inner=2 gpu_seconds=0.001607250 wall_seconds=0.001859625 seconds_per_dispatch=0.000803624978 gbps=45.668267
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=7 arm=fall inner=2 gpu_seconds=0.001544000 wall_seconds=0.001789833 seconds_per_dispatch=0.000772000058 gbps=47.539064
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=8 arm=lazyfall inner=2 gpu_seconds=0.001632542 wall_seconds=0.002109458 seconds_per_dispatch=0.000816270825 gbps=44.960764
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=9 arm=rps1fall inner=2 gpu_seconds=0.001439958 wall_seconds=0.001689667 seconds_per_dispatch=0.000719979173 gbps=50.973919
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=10 arm=rps1lazyfall inner=2 gpu_seconds=0.001473917 wall_seconds=0.001723833 seconds_per_dispatch=0.000736958347 gbps=49.799504
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=11 arm=mc4 inner=2 gpu_seconds=0.001758208 wall_seconds=0.002497375 seconds_per_dispatch=0.000879104133 gbps=41.747227
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=12 arm=mc4 inner=2 gpu_seconds=0.001757458 wall_seconds=0.001977208 seconds_per_dispatch=0.000878729159 gbps=41.765042
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=13 arm=rps1lazyfall inner=2 gpu_seconds=0.001432000 wall_seconds=0.001640875 seconds_per_dispatch=0.000715999980 gbps=51.257208
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=14 arm=rps1fall inner=2 gpu_seconds=0.001435042 wall_seconds=0.001677458 seconds_per_dispatch=0.000717520830 gbps=51.148564
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=15 arm=lazyfall inner=2 gpu_seconds=0.001577083 wall_seconds=0.001791125 seconds_per_dispatch=0.000788541744 gbps=46.541810
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=16 arm=fall inner=2 gpu_seconds=0.001543750 wall_seconds=0.001789458 seconds_per_dispatch=0.000771875028 gbps=47.546764
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=17 arm=rps1lazyfacc inner=2 gpu_seconds=0.001667750 wall_seconds=0.002170500 seconds_per_dispatch=0.000833875034 gbps=44.011583
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=18 arm=rps1facc inner=2 gpu_seconds=0.001391083 wall_seconds=0.001618333 seconds_per_dispatch=0.000695541617 gbps=52.764866
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=19 arm=lazyfacc inner=2 gpu_seconds=0.000942375 wall_seconds=0.001160958 seconds_per_dispatch=0.000471187523 gbps=77.888650
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=20 arm=facc inner=2 gpu_seconds=0.000917625 wall_seconds=0.001111208 seconds_per_dispatch=0.000458812574 gbps=79.989438
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=21 arm=rps1nu inner=2 gpu_seconds=0.001267125 wall_seconds=0.001481958 seconds_per_dispatch=0.000633562449 gbps=57.926665
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=22 arm=rps2nu inner=2 gpu_seconds=0.001000750 wall_seconds=0.001212708 seconds_per_dispatch=0.000500375056 gbps=73.345303
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=23 arm=plain inner=2 gpu_seconds=0.000921625 wall_seconds=0.001138958 seconds_per_dispatch=0.000460812473 gbps=79.642289
+SHAPE na=6 shape=full_attn.qkv_proj_fused inner=2 legs=24 entry_gpu_temp_c=39.45 exit_gpu_temp_c=39.40
+e69_cell_ab: full_attn.qkv_proj_fused inner=2 legs=24 entry=39.45C exit=39.40C
+PARITY na=6 shape=mlp.gate_up_fused arm=rps2nu differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1nu differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=facc differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=lazyfacc differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1facc differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1lazyfacc differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=fall differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=lazyfall differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1fall differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=rps1lazyfall differing=0 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=mc4 differing=139262 elements=208896
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=0 arm=plain inner=1 gpu_seconds=0.003470750 wall_seconds=0.010690333 seconds_per_dispatch=0.003470750060 gbps=25.680028
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=1 arm=rps2nu inner=1 gpu_seconds=0.003714500 wall_seconds=0.004398042 seconds_per_dispatch=0.003714499995 gbps=23.994874
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=2 arm=rps1nu inner=1 gpu_seconds=0.004714917 wall_seconds=0.005490708 seconds_per_dispatch=0.004714916693 gbps=18.903613
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=3 arm=facc inner=1 gpu_seconds=0.003399542 wall_seconds=0.003797917 seconds_per_dispatch=0.003399541602 gbps=26.217935
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=4 arm=lazyfacc inner=1 gpu_seconds=0.003495333 wall_seconds=0.004226958 seconds_per_dispatch=0.003495333251 gbps=25.499417
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=5 arm=rps1facc inner=1 gpu_seconds=0.004713000 wall_seconds=0.005465542 seconds_per_dispatch=0.004713000031 gbps=18.911301
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=6 arm=rps1lazyfacc inner=1 gpu_seconds=0.005231750 wall_seconds=0.005909708 seconds_per_dispatch=0.005231749965 gbps=17.036166
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=7 arm=fall inner=1 gpu_seconds=0.004977958 wall_seconds=0.005739625 seconds_per_dispatch=0.004977958277 gbps=17.904722
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=8 arm=lazyfall inner=1 gpu_seconds=0.005119125 wall_seconds=0.005847417 seconds_per_dispatch=0.005119124893 gbps=17.410976
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=9 arm=rps1fall inner=1 gpu_seconds=0.002431250 wall_seconds=0.003116000 seconds_per_dispatch=0.002431249944 gbps=36.659727
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=10 arm=rps1lazyfall inner=1 gpu_seconds=0.001946708 wall_seconds=0.002353708 seconds_per_dispatch=0.001946708420 gbps=45.784443
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=11 arm=mc4 inner=1 gpu_seconds=0.002539500 wall_seconds=0.003949917 seconds_per_dispatch=0.002539500128 gbps=35.097049
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=12 arm=mc4 inner=1 gpu_seconds=0.002285417 wall_seconds=0.002962375 seconds_per_dispatch=0.002285416704 gbps=38.998997
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=13 arm=rps1lazyfall inner=1 gpu_seconds=0.001835458 wall_seconds=0.002367083 seconds_per_dispatch=0.001835458213 gbps=48.559515
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=14 arm=rps1fall inner=1 gpu_seconds=0.001630625 wall_seconds=0.002143083 seconds_per_dispatch=0.001630624989 gbps=54.659386
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=15 arm=lazyfall inner=1 gpu_seconds=0.001916000 wall_seconds=0.002446083 seconds_per_dispatch=0.001915999921 gbps=46.518248
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=16 arm=fall inner=1 gpu_seconds=0.001828417 wall_seconds=0.002099708 seconds_per_dispatch=0.001828416716 gbps=48.746524
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=17 arm=rps1lazyfacc inner=1 gpu_seconds=0.001985250 wall_seconds=0.002506167 seconds_per_dispatch=0.001985250041 gbps=44.895584
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=18 arm=rps1facc inner=1 gpu_seconds=0.001822833 wall_seconds=0.002511792 seconds_per_dispatch=0.001822833437 gbps=48.895833
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=19 arm=lazyfacc inner=1 gpu_seconds=0.001308250 wall_seconds=0.001802417 seconds_per_dispatch=0.001308250008 gbps=68.128385
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=20 arm=facc inner=1 gpu_seconds=0.001264083 wall_seconds=0.001784667 seconds_per_dispatch=0.001264083432 gbps=70.508764
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=21 arm=rps1nu inner=1 gpu_seconds=0.001613875 wall_seconds=0.002141292 seconds_per_dispatch=0.001613874920 gbps=55.226684
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=22 arm=rps2nu inner=1 gpu_seconds=0.001284500 wall_seconds=0.001785375 seconds_per_dispatch=0.001284499886 gbps=69.388064
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=23 arm=plain inner=1 gpu_seconds=0.001179000 wall_seconds=0.001412792 seconds_per_dispatch=0.001179000130 gbps=75.597074
+SHAPE na=6 shape=mlp.gate_up_fused inner=1 legs=24 entry_gpu_temp_c=39.39 exit_gpu_temp_c=39.36
+e69_cell_ab: mlp.gate_up_fused inner=1 legs=24 entry=39.39C exit=39.36C
+PARITY na=6 shape=mlp.down arm=rps2nu differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1nu differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=facc differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=lazyfacc differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1facc differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1lazyfacc differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=fall differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=lazyfall differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1fall differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=rps1lazyfall differing=0 elements=30720
+PARITY na=6 shape=mlp.down arm=mc4 differing=20476 elements=30720
+LEG na=6 shape=mlp.down rep=0 position=0 arm=plain inner=2 gpu_seconds=0.004024125 wall_seconds=0.009912542 seconds_per_dispatch=0.002012062585 gbps=22.148655
+LEG na=6 shape=mlp.down rep=0 position=1 arm=rps2nu inner=2 gpu_seconds=0.003870750 wall_seconds=0.004649417 seconds_per_dispatch=0.001935374923 gbps=23.026277
+LEG na=6 shape=mlp.down rep=0 position=2 arm=rps1nu inner=2 gpu_seconds=0.004921000 wall_seconds=0.005640875 seconds_per_dispatch=0.002460500109 gbps=18.111960
+LEG na=6 shape=mlp.down rep=0 position=3 arm=facc inner=2 gpu_seconds=0.003881375 wall_seconds=0.004309250 seconds_per_dispatch=0.001940687536 gbps=22.963243
+LEG na=6 shape=mlp.down rep=0 position=4 arm=lazyfacc inner=2 gpu_seconds=0.004449083 wall_seconds=0.005153750 seconds_per_dispatch=0.002224541618 gbps=20.033107
+LEG na=6 shape=mlp.down rep=0 position=5 arm=rps1facc inner=2 gpu_seconds=0.003653875 wall_seconds=0.004420792 seconds_per_dispatch=0.001826937543 gbps=24.392996
+LEG na=6 shape=mlp.down rep=0 position=6 arm=rps1lazyfacc inner=2 gpu_seconds=0.002185000 wall_seconds=0.002908875 seconds_per_dispatch=0.001092499937 gbps=40.791288
+LEG na=6 shape=mlp.down rep=0 position=7 arm=fall inner=2 gpu_seconds=0.001941000 wall_seconds=0.002276167 seconds_per_dispatch=0.000970499939 gbps=45.919096
+LEG na=6 shape=mlp.down rep=0 position=8 arm=lazyfall inner=2 gpu_seconds=0.002022750 wall_seconds=0.002304125 seconds_per_dispatch=0.001011374989 gbps=44.063261
+LEG na=6 shape=mlp.down rep=0 position=9 arm=rps1fall inner=2 gpu_seconds=0.001752167 wall_seconds=0.002260417 seconds_per_dispatch=0.000876083272 gbps=50.867859
+LEG na=6 shape=mlp.down rep=0 position=10 arm=rps1lazyfall inner=2 gpu_seconds=0.002133333 wall_seconds=0.002615750 seconds_per_dispatch=0.001066666679 gbps=41.779200
+LEG na=6 shape=mlp.down rep=0 position=11 arm=mc4 inner=2 gpu_seconds=0.002141166 wall_seconds=0.003161292 seconds_per_dispatch=0.001070583239 gbps=41.626357
+LEG na=6 shape=mlp.down rep=0 position=12 arm=mc4 inner=2 gpu_seconds=0.002531583 wall_seconds=0.003203750 seconds_per_dispatch=0.001265791594 gbps=35.206807
+LEG na=6 shape=mlp.down rep=0 position=13 arm=rps1lazyfall inner=2 gpu_seconds=0.002341958 wall_seconds=0.002618333 seconds_per_dispatch=0.001170979114 gbps=38.057451
+LEG na=6 shape=mlp.down rep=0 position=14 arm=rps1fall inner=2 gpu_seconds=0.001816375 wall_seconds=0.002059583 seconds_per_dispatch=0.000908187474 gbps=49.069692
+LEG na=6 shape=mlp.down rep=0 position=15 arm=lazyfall inner=2 gpu_seconds=0.001886042 wall_seconds=0.002415792 seconds_per_dispatch=0.000943020801 gbps=47.257155
+LEG na=6 shape=mlp.down rep=0 position=16 arm=fall inner=2 gpu_seconds=0.001774042 wall_seconds=0.002243750 seconds_per_dispatch=0.000887020840 gbps=50.240623
+LEG na=6 shape=mlp.down rep=0 position=17 arm=rps1lazyfacc inner=2 gpu_seconds=0.001959708 wall_seconds=0.002441375 seconds_per_dispatch=0.000979854143 gbps=45.480728
+LEG na=6 shape=mlp.down rep=0 position=18 arm=rps1facc inner=2 gpu_seconds=0.001767250 wall_seconds=0.002280167 seconds_per_dispatch=0.000883625005 gbps=50.433702
+LEG na=6 shape=mlp.down rep=0 position=19 arm=lazyfacc inner=2 gpu_seconds=0.001652000 wall_seconds=0.002145625 seconds_per_dispatch=0.000825999887 gbps=53.952162
+LEG na=6 shape=mlp.down rep=0 position=20 arm=facc inner=2 gpu_seconds=0.001425208 wall_seconds=0.001647083 seconds_per_dispatch=0.000712604146 gbps=62.537498
+LEG na=6 shape=mlp.down rep=0 position=21 arm=rps1nu inner=2 gpu_seconds=0.001833042 wall_seconds=0.002059125 seconds_per_dispatch=0.000916520832 gbps=48.623532
+LEG na=6 shape=mlp.down rep=0 position=22 arm=rps2nu inner=2 gpu_seconds=0.001531917 wall_seconds=0.002076125 seconds_per_dispatch=0.000765958335 gbps=58.181337
+LEG na=6 shape=mlp.down rep=0 position=23 arm=plain inner=2 gpu_seconds=0.001229792 wall_seconds=0.001426958 seconds_per_dispatch=0.000614895835 gbps=72.474845
+SHAPE na=6 shape=mlp.down inner=2 legs=24 entry_gpu_temp_c=39.58 exit_gpu_temp_c=39.30
+e69_cell_ab: mlp.down inner=2 legs=24 entry=39.58C exit=39.30C
+PARITY na=6 shape=head.compact_draft_vocab arm=rps2nu differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1nu differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=facc differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=lazyfacc differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1facc differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1lazyfacc differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=fall differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=lazyfall differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1fall differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=rps1lazyfall differing=0 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=mc4 differing=393218 elements=590016
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=0 arm=plain inner=1 gpu_seconds=0.009609625 wall_seconds=0.020007208 seconds_per_dispatch=0.009609624976 gbps=26.196669
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=1 arm=rps2nu inner=1 gpu_seconds=0.007736375 wall_seconds=0.008553083 seconds_per_dispatch=0.007736375090 gbps=32.539808
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=2 arm=rps1nu inner=1 gpu_seconds=0.004853500 wall_seconds=0.005152792 seconds_per_dispatch=0.004853500053 gbps=51.867757
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=3 arm=facc inner=1 gpu_seconds=0.003276875 wall_seconds=0.003787542 seconds_per_dispatch=0.003276875010 gbps=76.823241
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=4 arm=lazyfacc inner=1 gpu_seconds=0.003338375 wall_seconds=0.003836083 seconds_per_dispatch=0.003338374896 gbps=75.407996
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=5 arm=rps1facc inner=1 gpu_seconds=0.003435458 wall_seconds=0.003694500 seconds_per_dispatch=0.003435458289 gbps=73.277024
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=6 arm=rps1lazyfacc inner=1 gpu_seconds=0.003131000 wall_seconds=0.003357458 seconds_per_dispatch=0.003130999859 gbps=80.402482
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=7 arm=fall inner=1 gpu_seconds=0.003200250 wall_seconds=0.003820875 seconds_per_dispatch=0.003200249979 gbps=78.662655
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=8 arm=lazyfall inner=1 gpu_seconds=0.003278250 wall_seconds=0.003878750 seconds_per_dispatch=0.003278249875 gbps=76.791023
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=9 arm=rps1fall inner=1 gpu_seconds=0.003065625 wall_seconds=0.003712833 seconds_per_dispatch=0.003065624973 gbps=82.117076
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=10 arm=rps1lazyfall inner=1 gpu_seconds=0.003185375 wall_seconds=0.003438625 seconds_per_dispatch=0.003185374895 gbps=79.029994
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=11 arm=mc4 inner=1 gpu_seconds=0.004300000 wall_seconds=0.005444583 seconds_per_dispatch=0.004300000146 gbps=58.544221
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=12 arm=mc4 inner=1 gpu_seconds=0.004461917 wall_seconds=0.005062000 seconds_per_dispatch=0.004461916862 gbps=56.419733
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=13 arm=rps1lazyfall inner=1 gpu_seconds=0.003404375 wall_seconds=0.004025667 seconds_per_dispatch=0.003404374933 gbps=73.946074
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=14 arm=rps1fall inner=1 gpu_seconds=0.002849542 wall_seconds=0.003132458 seconds_per_dispatch=0.002849541837 gbps=88.344083
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=15 arm=lazyfall inner=1 gpu_seconds=0.003322000 wall_seconds=0.003956000 seconds_per_dispatch=0.003321999917 gbps=75.779701
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=16 arm=fall inner=1 gpu_seconds=0.003129625 wall_seconds=0.003784917 seconds_per_dispatch=0.003129624994 gbps=80.437803
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=17 arm=rps1lazyfacc inner=1 gpu_seconds=0.003316208 wall_seconds=0.003935125 seconds_per_dispatch=0.003316208487 gbps=75.912043
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=18 arm=rps1facc inner=1 gpu_seconds=0.002969333 wall_seconds=0.003306958 seconds_per_dispatch=0.002969333436 gbps=84.780024
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=19 arm=lazyfacc inner=1 gpu_seconds=0.002358917 wall_seconds=0.002990292 seconds_per_dispatch=0.002358916681 gbps=106.718547
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=20 arm=facc inner=1 gpu_seconds=0.002226000 wall_seconds=0.002895417 seconds_per_dispatch=0.002225999953 gbps=113.090820
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=21 arm=rps1nu inner=1 gpu_seconds=0.002924917 wall_seconds=0.003547500 seconds_per_dispatch=0.002924916567 gbps=86.067467
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=22 arm=rps2nu inner=1 gpu_seconds=0.002505208 wall_seconds=0.003099542 seconds_per_dispatch=0.002505208366 gbps=100.486715
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=23 arm=plain inner=1 gpu_seconds=0.002158083 wall_seconds=0.002420708 seconds_per_dispatch=0.002158083254 gbps=116.649883
+SHAPE na=6 shape=head.compact_draft_vocab inner=1 legs=24 entry_gpu_temp_c=39.26 exit_gpu_temp_c=39.35
+e69_cell_ab: head.compact_draft_vocab inner=1 legs=24 entry=39.26C exit=39.35C
+PARITY na=6 shape=head.lm_head arm=rps2nu differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1nu differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=facc differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=lazyfacc differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1facc differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1lazyfacc differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=fall differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=lazyfall differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1fall differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=rps1lazyfall differing=0 elements=1489920
+PARITY na=6 shape=head.lm_head arm=mc4 differing=993227 elements=1489920
+LEG na=6 shape=head.lm_head rep=0 position=0 arm=plain inner=1 gpu_seconds=0.023859250 wall_seconds=0.042940875 seconds_per_dispatch=0.023859249894 gbps=26.643721
+LEG na=6 shape=head.lm_head rep=0 position=1 arm=rps2nu inner=1 gpu_seconds=0.009339250 wall_seconds=0.009688167 seconds_per_dispatch=0.009339250159 gbps=68.067477
+LEG na=6 shape=head.lm_head rep=0 position=2 arm=rps1nu inner=1 gpu_seconds=0.009229458 wall_seconds=0.009488875 seconds_per_dispatch=0.009229458403 gbps=68.877194
+LEG na=6 shape=head.lm_head rep=0 position=3 arm=facc inner=1 gpu_seconds=0.005179833 wall_seconds=0.005444167 seconds_per_dispatch=0.005179833388 gbps=122.725801
+LEG na=6 shape=head.lm_head rep=0 position=4 arm=lazyfacc inner=1 gpu_seconds=0.005360083 wall_seconds=0.005600458 seconds_per_dispatch=0.005360083189 gbps=118.598756
+LEG na=6 shape=head.lm_head rep=0 position=5 arm=rps1facc inner=1 gpu_seconds=0.007202208 wall_seconds=0.007454958 seconds_per_dispatch=0.007202208275 gbps=88.264484
+LEG na=6 shape=head.lm_head rep=0 position=6 arm=rps1lazyfacc inner=1 gpu_seconds=0.007874000 wall_seconds=0.008136542 seconds_per_dispatch=0.007873999886 gbps=80.733961
+LEG na=6 shape=head.lm_head rep=0 position=7 arm=fall inner=1 gpu_seconds=0.007485333 wall_seconds=0.007728208 seconds_per_dispatch=0.007485333364 gbps=84.925970
+LEG na=6 shape=head.lm_head rep=0 position=8 arm=lazyfall inner=1 gpu_seconds=0.007807708 wall_seconds=0.008030792 seconds_per_dispatch=0.007807708345 gbps=81.419435
+LEG na=6 shape=head.lm_head rep=0 position=9 arm=rps1fall inner=1 gpu_seconds=0.007202375 wall_seconds=0.007415083 seconds_per_dispatch=0.007202374982 gbps=88.262441
+LEG na=6 shape=head.lm_head rep=0 position=10 arm=rps1lazyfall inner=1 gpu_seconds=0.008011000 wall_seconds=0.008246083 seconds_per_dispatch=0.008010999998 gbps=79.353289
+LEG na=6 shape=head.lm_head rep=0 position=11 arm=mc4 inner=1 gpu_seconds=0.010939375 wall_seconds=0.011707667 seconds_per_dispatch=0.010939375032 gbps=58.111108
+LEG na=6 shape=head.lm_head rep=0 position=12 arm=mc4 inner=1 gpu_seconds=0.010822750 wall_seconds=0.011083250 seconds_per_dispatch=0.010822749930 gbps=58.737308
+LEG na=6 shape=head.lm_head rep=0 position=13 arm=rps1lazyfall inner=1 gpu_seconds=0.008010375 wall_seconds=0.008284000 seconds_per_dispatch=0.008010375081 gbps=79.359480
+LEG na=6 shape=head.lm_head rep=0 position=14 arm=rps1fall inner=1 gpu_seconds=0.007166167 wall_seconds=0.007452583 seconds_per_dispatch=0.007166166790 gbps=88.708401
+LEG na=6 shape=head.lm_head rep=0 position=15 arm=lazyfall inner=1 gpu_seconds=0.007810125 wall_seconds=0.008049333 seconds_per_dispatch=0.007810125127 gbps=81.394240
+LEG na=6 shape=head.lm_head rep=0 position=16 arm=fall inner=1 gpu_seconds=0.007432000 wall_seconds=0.007689417 seconds_per_dispatch=0.007432000013 gbps=85.535414
+LEG na=6 shape=head.lm_head rep=0 position=17 arm=rps1lazyfacc inner=1 gpu_seconds=0.007876125 wall_seconds=0.008123583 seconds_per_dispatch=0.007876124931 gbps=80.712178
+LEG na=6 shape=head.lm_head rep=0 position=18 arm=rps1facc inner=1 gpu_seconds=0.007151375 wall_seconds=0.007397333 seconds_per_dispatch=0.007151375059 gbps=88.891884
+LEG na=6 shape=head.lm_head rep=0 position=19 arm=lazyfacc inner=1 gpu_seconds=0.005359792 wall_seconds=0.005619792 seconds_per_dispatch=0.005359791685 gbps=118.605207
+LEG na=6 shape=head.lm_head rep=0 position=20 arm=facc inner=1 gpu_seconds=0.005178417 wall_seconds=0.005414792 seconds_per_dispatch=0.005178416613 gbps=122.759378
+LEG na=6 shape=head.lm_head rep=0 position=21 arm=rps1nu inner=1 gpu_seconds=0.007169625 wall_seconds=0.007421250 seconds_per_dispatch=0.007169625023 gbps=88.665613
+LEG na=6 shape=head.lm_head rep=0 position=22 arm=rps2nu inner=1 gpu_seconds=0.005649958 wall_seconds=0.005889708 seconds_per_dispatch=0.005649958272 gbps=112.513964
+LEG na=6 shape=head.lm_head rep=0 position=23 arm=plain inner=1 gpu_seconds=0.005194458 wall_seconds=0.005468792 seconds_per_dispatch=0.005194458412 gbps=122.380266
+SHAPE na=6 shape=head.lm_head inner=1 legs=24 entry_gpu_temp_c=39.44 exit_gpu_temp_c=39.51
+e69_cell_ab: head.lm_head inner=1 legs=24 entry=39.44C exit=39.51C
+e69_cell_ab: wrote research/e76-artifacts/parity-na6-b1.json
+e76_session na=6 parity batch=2 arms=plain,mc3,mc2
+ARM na=6 arm=plain max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=mc3 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=mc2 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e69_cell_ab: session entry gpu_temp_c=39.29
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=mc3 differing=49440 elements=98880
+PARITY na=6 shape=linear_attn.in_proj_fused_qkvzba arm=mc2 differing=65917 elements=98880
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=0 arm=plain inner=2 gpu_seconds=0.003382750 wall_seconds=0.008943208 seconds_per_dispatch=0.001691375044 gbps=24.943492
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=1 arm=mc3 inner=2 gpu_seconds=0.006406375 wall_seconds=0.008162792 seconds_per_dispatch=0.003203187487 gbps=13.170881
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=2 arm=mc2 inner=2 gpu_seconds=0.006242917 wall_seconds=0.007088042 seconds_per_dispatch=0.003121458343 gbps=13.515734
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=3 arm=mc2 inner=2 gpu_seconds=0.006312750 wall_seconds=0.007192333 seconds_per_dispatch=0.003156375024 gbps=13.366219
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=4 arm=mc3 inner=2 gpu_seconds=0.005517375 wall_seconds=0.006342583 seconds_per_dispatch=0.002758687478 gbps=15.293070
+LEG na=6 shape=linear_attn.in_proj_fused_qkvzba rep=0 position=5 arm=plain inner=2 gpu_seconds=0.001274917 wall_seconds=0.001585750 seconds_per_dispatch=0.000637458288 gbps=66.182840
+SHAPE na=6 shape=linear_attn.in_proj_fused_qkvzba inner=2 legs=6 entry_gpu_temp_c=39.17 exit_gpu_temp_c=39.15
+e69_cell_ab: linear_attn.in_proj_fused_qkvzba inner=2 legs=6 entry=39.17C exit=39.15C
+PARITY na=6 shape=linear_attn.out_proj arm=mc3 differing=15358 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=mc2 differing=20470 elements=30720
+LEG na=6 shape=linear_attn.out_proj rep=0 position=0 arm=plain inner=6 gpu_seconds=0.003896500 wall_seconds=0.009138458 seconds_per_dispatch=0.000649416664 gbps=24.219643
+LEG na=6 shape=linear_attn.out_proj rep=0 position=1 arm=mc3 inner=6 gpu_seconds=0.006496167 wall_seconds=0.007666875 seconds_per_dispatch=0.001082694468 gbps=14.527312
+LEG na=6 shape=linear_attn.out_proj rep=0 position=2 arm=mc2 inner=6 gpu_seconds=0.006811333 wall_seconds=0.007519542 seconds_per_dispatch=0.001135222226 gbps=13.855120
+LEG na=6 shape=linear_attn.out_proj rep=0 position=3 arm=mc2 inner=6 gpu_seconds=0.004667542 wall_seconds=0.005263708 seconds_per_dispatch=0.000777923618 gbps=20.218746
+LEG na=6 shape=linear_attn.out_proj rep=0 position=4 arm=mc3 inner=6 gpu_seconds=0.002447875 wall_seconds=0.002699250 seconds_per_dispatch=0.000407979164 gbps=38.552557
+LEG na=6 shape=linear_attn.out_proj rep=0 position=5 arm=plain inner=6 gpu_seconds=0.001536083 wall_seconds=0.002046667 seconds_per_dispatch=0.000256013862 gbps=61.436673
+SHAPE na=6 shape=linear_attn.out_proj inner=6 legs=6 entry_gpu_temp_c=39.13 exit_gpu_temp_c=39.02
+e69_cell_ab: linear_attn.out_proj inner=6 legs=6 entry=39.13C exit=39.02C
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=mc3 differing=43008 elements=86016
+PARITY na=6 shape=full_attn.qkv_proj_fused arm=mc2 differing=57324 elements=86016
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=0 arm=plain inner=2 gpu_seconds=0.002922083 wall_seconds=0.007883375 seconds_per_dispatch=0.001461041626 gbps=25.119175
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=1 arm=mc3 inner=2 gpu_seconds=0.005535792 wall_seconds=0.007256792 seconds_per_dispatch=0.002767895814 gbps=13.259227
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=2 arm=mc2 inner=2 gpu_seconds=0.005529959 wall_seconds=0.006236417 seconds_per_dispatch=0.002764979261 gbps=13.273213
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=3 arm=mc2 inner=2 gpu_seconds=0.005547417 wall_seconds=0.006276917 seconds_per_dispatch=0.002773708315 gbps=13.231442
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=4 arm=mc3 inner=2 gpu_seconds=0.004137125 wall_seconds=0.004862000 seconds_per_dispatch=0.002068562550 gbps=17.741866
+LEG na=6 shape=full_attn.qkv_proj_fused rep=0 position=5 arm=plain inner=2 gpu_seconds=0.001119708 wall_seconds=0.001397875 seconds_per_dispatch=0.000559854205 gbps=65.553067
+SHAPE na=6 shape=full_attn.qkv_proj_fused inner=2 legs=6 entry_gpu_temp_c=39.26 exit_gpu_temp_c=39.12
+e69_cell_ab: full_attn.qkv_proj_fused inner=2 legs=6 entry=39.26C exit=39.12C
+PARITY na=6 shape=mlp.gate_up_fused arm=mc3 differing=104448 elements=208896
+PARITY na=6 shape=mlp.gate_up_fused arm=mc2 differing=139262 elements=208896
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=0 arm=plain inner=1 gpu_seconds=0.003487125 wall_seconds=0.009994208 seconds_per_dispatch=0.003487125039 gbps=25.559439
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=1 arm=mc3 inner=1 gpu_seconds=0.006699625 wall_seconds=0.008039750 seconds_per_dispatch=0.006699624937 gbps=13.303575
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=2 arm=mc2 inner=1 gpu_seconds=0.006541167 wall_seconds=0.007051625 seconds_per_dispatch=0.006541166687 gbps=13.625851
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=3 arm=mc2 inner=1 gpu_seconds=0.006523333 wall_seconds=0.006992542 seconds_per_dispatch=0.006523333490 gbps=13.663100
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=4 arm=mc3 inner=1 gpu_seconds=0.002879417 wall_seconds=0.003289708 seconds_per_dispatch=0.002879416803 gbps=30.953824
+LEG na=6 shape=mlp.gate_up_fused rep=0 position=5 arm=plain inner=1 gpu_seconds=0.001306875 wall_seconds=0.001554792 seconds_per_dispatch=0.001306874910 gbps=68.200070
+SHAPE na=6 shape=mlp.gate_up_fused inner=1 legs=6 entry_gpu_temp_c=39.02 exit_gpu_temp_c=39.07
+e69_cell_ab: mlp.gate_up_fused inner=1 legs=6 entry=39.02C exit=39.07C
+PARITY na=6 shape=mlp.down arm=mc3 differing=15357 elements=30720
+PARITY na=6 shape=mlp.down arm=mc2 differing=20478 elements=30720
+LEG na=6 shape=mlp.down rep=0 position=0 arm=plain inner=2 gpu_seconds=0.004057583 wall_seconds=0.009037542 seconds_per_dispatch=0.002028791700 gbps=21.966020
+LEG na=6 shape=mlp.down rep=0 position=1 arm=mc3 inner=2 gpu_seconds=0.006457500 wall_seconds=0.008218250 seconds_per_dispatch=0.003228749963 gbps=13.802394
+LEG na=6 shape=mlp.down rep=0 position=2 arm=mc2 inner=2 gpu_seconds=0.006208958 wall_seconds=0.007038667 seconds_per_dispatch=0.003104479169 gbps=14.354897
+LEG na=6 shape=mlp.down rep=0 position=3 arm=mc2 inner=2 gpu_seconds=0.006229583 wall_seconds=0.006742792 seconds_per_dispatch=0.003114791703 gbps=14.307371
+LEG na=6 shape=mlp.down rep=0 position=4 arm=mc3 inner=2 gpu_seconds=0.006380208 wall_seconds=0.007253542 seconds_per_dispatch=0.003190104151 gbps=13.969600
+LEG na=6 shape=mlp.down rep=0 position=5 arm=plain inner=2 gpu_seconds=0.001780292 wall_seconds=0.002190917 seconds_per_dispatch=0.000890145893 gbps=50.064243
+SHAPE na=6 shape=mlp.down inner=2 legs=6 entry_gpu_temp_c=38.99 exit_gpu_temp_c=38.88
+e69_cell_ab: mlp.down inner=2 legs=6 entry=38.99C exit=38.88C
+PARITY na=6 shape=head.compact_draft_vocab arm=mc3 differing=294882 elements=590016
+PARITY na=6 shape=head.compact_draft_vocab arm=mc2 differing=393219 elements=590016
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=0 arm=plain inner=1 gpu_seconds=0.009618250 wall_seconds=0.022633167 seconds_per_dispatch=0.009618249955 gbps=26.173177
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=1 arm=mc3 inner=1 gpu_seconds=0.018897166 wall_seconds=0.020258917 seconds_per_dispatch=0.018897166476 gbps=13.321582
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=2 arm=mc2 inner=1 gpu_seconds=0.006774875 wall_seconds=0.007172083 seconds_per_dispatch=0.006774875103 gbps=37.157904
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=3 arm=mc2 inner=1 gpu_seconds=0.005940375 wall_seconds=0.006254000 seconds_per_dispatch=0.005940375151 gbps=42.377822
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=4 arm=mc3 inner=1 gpu_seconds=0.005058375 wall_seconds=0.005340917 seconds_per_dispatch=0.005058374954 gbps=49.767003
+LEG na=6 shape=head.compact_draft_vocab rep=0 position=5 arm=plain inner=1 gpu_seconds=0.002064167 wall_seconds=0.002313250 seconds_per_dispatch=0.002064166591 gbps=121.957288
+SHAPE na=6 shape=head.compact_draft_vocab inner=1 legs=6 entry_gpu_temp_c=39.01 exit_gpu_temp_c=39.13
+e69_cell_ab: head.compact_draft_vocab inner=1 legs=6 entry=39.01C exit=39.13C
+PARITY na=6 shape=head.lm_head arm=mc3 differing=744907 elements=1489920
+PARITY na=6 shape=head.lm_head arm=mc2 differing=993228 elements=1489920
+LEG na=6 shape=head.lm_head rep=0 position=0 arm=plain inner=1 gpu_seconds=0.020012666 wall_seconds=0.038743917 seconds_per_dispatch=0.020012666471 gbps=31.764843
+LEG na=6 shape=head.lm_head rep=0 position=1 arm=mc3 inner=1 gpu_seconds=0.014918542 wall_seconds=0.015687042 seconds_per_dispatch=0.014918541769 gbps=42.611350
+LEG na=6 shape=head.lm_head rep=0 position=2 arm=mc2 inner=1 gpu_seconds=0.010254708 wall_seconds=0.010481042 seconds_per_dispatch=0.010254708352 gbps=61.990959
+LEG na=6 shape=head.lm_head rep=0 position=3 arm=mc2 inner=1 gpu_seconds=0.010555958 wall_seconds=0.011162375 seconds_per_dispatch=0.010555958375 gbps=60.221837
+LEG na=6 shape=head.lm_head rep=0 position=4 arm=mc3 inner=1 gpu_seconds=0.010680875 wall_seconds=0.010965542 seconds_per_dispatch=0.010680875042 gbps=59.517521
+LEG na=6 shape=head.lm_head rep=0 position=5 arm=plain inner=1 gpu_seconds=0.005195875 wall_seconds=0.005435875 seconds_per_dispatch=0.005195874954 gbps=122.346901
+SHAPE na=6 shape=head.lm_head inner=1 legs=6 entry_gpu_temp_c=39.14 exit_gpu_temp_c=38.94
+e69_cell_ab: head.lm_head inner=1 legs=6 entry=39.14C exit=38.94C
+e69_cell_ab: wrote research/e76-artifacts/parity-na6-b2.json
+e76_session finished=2026-08-20T12:03:01Z status=0
