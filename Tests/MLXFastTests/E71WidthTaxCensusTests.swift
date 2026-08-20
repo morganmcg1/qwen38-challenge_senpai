@@ -176,7 +176,7 @@ private final class E71Harness {
         eval(caches.flatMap { $0.state } + [seedLogits])
 
         var cursor = seedLength
-        let klStart = caches.first?.offset ?? seedLength
+        let klStart = caches.map(\.offset).max() ?? seedLength
 
         for _ in 0..<warmup {
             _ = round(width: width, cursor: &cursor, caches: caches)
@@ -189,7 +189,7 @@ private final class E71Harness {
             _ = round(width: width, cursor: &cursor, caches: caches)
             samples.append(Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9)
         }
-        let klEnd = caches.first?.offset ?? cursor
+        let klEnd = caches.map(\.offset).max() ?? cursor
 
         // The caches hold one full-attention KV window plus 48 fp32 recurrent
         // states. Drop them before the next block so peak residency is one
@@ -199,7 +199,7 @@ private final class E71Harness {
 
         let sorted = samples.sorted()
         let exitTemp = e71GPUTemperature()
-        let record: [String: Any] = [
+        var record: [String: Any] = [
             "arm": arm.name,
             "width": width,
             "order": order,
@@ -213,9 +213,11 @@ private final class E71Harness {
             "seconds_mean": sorted.reduce(0, +) / Double(sorted.count),
             "kl_start": klStart,
             "kl_end": klEnd,
-            "gpu_temp_entry_c": entryTemp ?? Double.nan,
-            "gpu_temp_exit_c": exitTemp ?? Double.nan,
         ]
+        // JSONSerialization rejects NaN, so a missing macmon must drop the key
+        // rather than poison the whole block record.
+        if let entryTemp { record["gpu_temp_entry_c"] = entryTemp }
+        if let exitTemp { record["gpu_temp_exit_c"] = exitTemp }
         print(
             "E71_BLOCK "
                 + (String(
