@@ -35,18 +35,33 @@ Gate status is **not** uniform and the sets are never pooled:
    ms/round are 17.75 % of the tax on their own; with the drafting-only non-qmv
    work and an under-count inside the pooled `qmv Mx640x1` the total is 12.65 ms
    = 22.10 %, against E71's 12.609 ms residual. Both are candidate reachable.
-3. **The proposal head is 16.4 % of whole-round GPU time at width 6** and is
-   purely bandwidth-bound, streaming 849 MB of bf16 weights per draft token at
-   245 GB/s. The `gemv < 2 %` rider **fails at 11.48 %**.
+3. **The proposal head costs a flat 4.810 ms per draft token** and carries no
+   fixed cost: `draft_head_ms = 4.8098 × drafts − 0.113`, R² = 0.999972 over
+   widths 4, 5 and 9. It is 15.1 % of the whole round at width 4 and 18.8 % at
+   width 9. It is purely bandwidth-bound, streaming 849 MB of bf16 weights per
+   draft token at 245 GB/s. The `gemv < 2 %` rider **fails at every width**, and
+   fails harder as width grows: 10.30 % at width 4, 13.39 % at width 9.
 4. **The local harness cannot run the declared head.** Every local measurement
-   in this campaign uses the organizer-pinned bf16 head, not the 427 MB 4-bit
-   head that `mtp-head.manifest.json` declares for the ranked candidate leg.
+   in this campaign uses the organizer-pinned bf16 head at 849,398,784 bytes,
+   not the 427,742,600-byte artifact that `mtp-head.manifest.json` declares for
+   the ranked candidate leg. A bandwidth model puts local pessimism at 5.1 % to
+   6.7 % of whole-round GPU time.
 5. **H-221 is closed in every form.** The closure gap decomposes into measured
    host dispatch and commit time. The decode path takes **no host
-   synchronisation points at all**, and the measured per-dispatch host cost is
-   0.66–1.55 µs, 220 to 530 times below 0.35 ms.
+   synchronisation points at all** at any width from 1 to 9, and the measured
+   per-dispatch host cost is 0.66–1.55 µs, 220 to 530 times below 0.35 ms.
 6. **The rung 1 gate as written is unpassable by any instrument**, including a
    dormant one. A re-spec is recommended.
+7. **Disabling the cool gate costs +0.12 % on this host**, measured two
+   independent ways: the per-leg `F(1)` thermometer across both packings, and a
+   direct gated-versus-ungated replicate at width 5 isolated that differs by
+   +0.11 % on the whole round for +7.8 °C of entry temperature.
+8. **Deeper drafting has an almost flat ceiling and a steeply rising
+   break-even.** The speedup at perfect acceptance spans only 2.683 to 2.850
+   across widths 4 to 9, while the acceptance rate needed merely to break even
+   climbs from 15.9 % to 27.0 %. This needs no acceptance model: the round cost
+   is fixed once the width is chosen, and each leg supplies its own serial
+   reference.
 
 ## Rung 0a — the E76 spill/parity confound is closed
 
@@ -609,6 +624,336 @@ applied to the same 257 projections.
 | `quant_dequant` | 1 | 1 |
 | **unclassified** | **0** | **0** |
 
+## Rung 2b — the ungated ABBA widths 4, 5 and 9
+
+Five of the ten gated legs in sweep 1 produced no drafting rounds, because the
+host temperature floor sat above the 40.0 °C gate. The advisor authorised an
+ungated counterbalanced session for the missing widths under the three standing
+conditions in `program.md`. Sweep 2 ran six legs from one clean commit
+`cdf33bb6` between 18:36:31Z and 19:01:10Z, all exit 0.
+
+**These legs carry `cool_gate_passed_real_gate=false` and
+`gate_qualified_for_timing=false`.** They are directional causal evidence inside
+their own counterbalanced session. They are never pooled with the gated set, and
+no number in this section is an official or ranked score.
+
+### Session record
+
+| order | leg | mode | rounds | start | end | entry °C | exit °C | `dirty` |
+|---:|---|---|---:|---|---|---:|---:|---:|
+| 1 | `e80-hot-w4-default` | D | 132 | 18:37:19Z | 18:40:55Z | 43.179 | 61.846 | 0 |
+| 2 | `e80-hot-w4-isolated` | I | 132 | 18:41:24Z | 18:44:53Z | 51.096 | 65.278 | 0 |
+| 3 | `e80-hot-w9-isolated` | I | 66 | 18:45:17Z | 18:48:51Z | 53.568 | 64.316 | 0 |
+| 4 | `e80-hot-w9-default` | D | 66 | 18:49:19Z | 18:53:00Z | 52.214 | 63.088 | 0 |
+| 5 | `e80-hot-w5-default` | D | 109 | 18:53:28Z | 18:57:08Z | 51.275 | 62.690 | 1 |
+| 6 | `e80-hot-w5-isolated` | I | 109 | 18:57:37Z | 19:01:10Z | 51.316 | 64.525 | 6 |
+
+Counterbalancing: mode order is D I I D D I. The default legs sit at positions
+1, 4 and 5 with mean position 3.33; the isolated legs sit at 2, 3 and 6 with
+mean position 3.67. Monotone thermal drift therefore cancels to first order
+between the two packings.
+
+**Entry-temperature spread: 10.4 °C** (43.179 to 53.568). The gated sweep's
+spread was 6.9 °C. The next subsection measures what that spread is worth.
+
+### The two `dirty` legs, disclosed
+
+Legs 5 and 6 recorded `dirty=1` and `dirty=6`. `dirty` is
+`git status --porcelain | wc -l`, and I was writing research Python in the
+worktree while the sweep ran. The six files are exactly the six files in commit
+`6c00521`, all under `research/`.
+
+The timed build is unaffected, and the evidence is checkable rather than
+asserted:
+
+- all six legs record the same `candidate_sha=cdf33bb628d8672908e092ced6863047289e8af6`;
+- `.build-worker/release/mlxfast-runtime-worker` has mtime 18:37:10Z, before the
+  first leg started at 18:37:19Z, and it never changed again, so all six legs
+  ran one byte-identical binary;
+- no dirty path lies under `Sources/`, `Vendor/`, `Tests/` or `mtp-head/`.
+
+### What the cool gate is worth on this host
+
+Every leg runs a 512-round serial pass before it drafts, so each leg carries its
+own `F(1)` thermometer measured under its own thermal conditions.
+
+| packing | gated `F(1)` ms | ungated `F(1)` ms | gated mean | ungated mean | delta |
+|---|---|---|---:|---:|---:|
+| default | 64.522, 64.527 | 64.661, 64.542, 64.595 | 64.525 | 64.599 | **+0.12 %** |
+| isolated | 64.464, 64.460 | 64.575, 64.495, 64.556 | 64.462 | 64.542 | **+0.12 %** |
+
+The gated `e80-census-w6-isolated` leg read 65.819 and is excluded from the
+isolated mean as an outlier at +2.1 %; including it would move the isolated
+delta to −0.57 % and change the sign, which is why it is named rather than
+quietly averaged in.
+
+There is also a direct replicate at one width and one packing:
+
+| leg | gate | entry °C | `draft_head` | `target_verify` | whole round |
+|---|---|---:|---:|---:|---:|
+| `e80-census-w5-isolated` | gated | 43.470 | 18.970 | 95.393 | 114.363 |
+| `e80-hot-w5-isolated` | ungated | 51.316 | 19.052 | 95.440 | **114.492** |
+
+**+0.11 % on the whole round for +7.8 °C of entry temperature.** Both readings
+agree that the cool gate is worth about +0.12 % on this host. That is below the
+±0.25 ms noise floor established in rung 1 and far below the 0.2 ms/round
+threshold the advisor set for a result worth building on. The ungated widths are
+usable directional evidence. They remain separately labelled.
+
+### Width tax at 4 and 9
+
+`F(1)` for the ungated set is 64.542 ms/round pooled over 1536 serial rounds
+inside the three isolated legs.
+
+| width | `F(M)` verify ms | tax ms | named rows | closure |
+|---:|---:|---:|---:|---:|
+| 4 | 81.011 | 16.469 | 16.408 | 99.63 % |
+| 5 | 95.440 | 30.898 | 30.838 | 99.81 % |
+| 9 | 165.477 | 100.936 | 100.916 | 99.98 % |
+
+The same five `qmv` grids carry the tax at every width, and their shares are
+stable:
+
+| owning dispatch | unit | w4 share | w5 share | w6 share (gated) | w9 share |
+|---|---|---:|---:|---:|---:|
+| `qmv Mx640x1` | `mlp_down` + `gdn_out_proj` + `fa_o_proj` | 46.64 % | 39.96 % | 39.53 % | 31.91 % |
+| `qmv Mx4352x1` | `mlp_gate_up` | 31.02 % | 35.31 % | 35.75 % | 40.77 % |
+| `qmv Mx2060x1` | `gdn_in_proj_fused` | 14.11 % | 14.43 % | 13.66 % | 15.04 % |
+| `qmv Mx1792x1` | `fa_qkv_gate_fused` | 4.57 % | 4.48 % | 4.09 % | 4.40 % |
+| `qmv Mx31040x1` | `lm_head` | 3.02 % | 3.66 % | 3.85 % | 4.54 % |
+
+`gdn_in_proj_fused` and `fa_qkv_gate_fused` together hold **18.7 % of the tax at
+width 4, 18.9 % at width 5, 17.8 % at width 6 and 19.4 % at width 9.** The
+naming of the unattributed 22.6 % therefore does not depend on width 6; it holds
+across the whole ranked histogram.
+
+Two secondary rows only exist while drafting and are worth naming, because they
+grow faster than the `qmv` rows at small width:
+
+| owning dispatch | w4 ms | w9 ms |
+|---|---:|---:|
+| `sdpa_c 24x{4,5}x1` | 1.419 | 3.005 |
+| `gdn_prework 32xMx80` | 1.220 | 2.122 |
+
+At width 4 those two are 16.0 % of the tax; at width 9 they are 5.1 %. They are
+a fixed drafting overhead that amortises with depth, which is the opposite
+behaviour to the `qmv` rows.
+
+### Riders at every ungated width
+
+| family | rider | w4 | w5 | w9 | verdict |
+|---|---|---:|---:|---:|---|
+| `copy` | ≤ 1 %, ~0.02 % expected | 0.19 % | 0.25 % | 0.39 % | PASS |
+| `elementwise` | `unary/binary/ternary_ops` < 3 % | 0.00 % | 0.00 % | 0.00 % | PASS |
+| `norm` | `rms_norm` < 3 % | 0.12 % | 0.13 % | 0.13 % | PASS |
+| `sdpa` | `sdpa_vector` < 3 % | 1.62 % | 1.61 % | 1.64 % | PASS |
+| `gemv` | `gemv` < 2 % | **10.30 %** | **11.56 %** | **13.39 %** | **FAIL** |
+| `qmv` | five linear families dominate | 84.83 % | 83.78 % | 82.38 % | PASS |
+| remainder | not a sixth linear family | 15.17 % | 16.22 % | 17.62 % | PASS |
+
+`unclassified_kernels` is 0 at every width in both sets.
+
+The `copy` rider is the one to watch. It passes everywhere, but it rises
+monotonically with width — 0.19 %, 0.25 %, 0.42 % (w6 gated), 0.39 % — and is
+already 20 times the ~0.02 % that ledger 218 expected. It is not near the 1 %
+reopening threshold at any measured width, so ledger 218 stays closed, but the
+trend is real and worth a line in the ledger.
+
+### Concurrency discount, all three ungated widths
+
+| width | default ms/round | isolated ms/round | phase-level discount |
+|---:|---:|---:|---:|
+| 4 | 79.440 | 81.011 | 0.981 |
+| 5 | 93.327 | 95.440 | 0.978 |
+| 9 | 163.399 | 165.477 | 0.987 |
+
+Every width agrees with the gated widths 5 and 6 at 0.987 and 0.986. **Default
+packing buys 1.3 % to 2.2 % of overlap and no more.** The verify phase is
+essentially serialised already, which is itself a result: there is no large
+pool of hidden concurrency to recover by re-packing command buffers.
+
+Per-family discounts remain unidentifiable, for the reason given in rung 2. In
+default packing MLX assigns 163.309 of 163.399 ms at width 9 to the `qmv` owner,
+because `qmv` dominates almost every mixed buffer, so every other family reads a
+discount of exactly 0.000. Those numbers are an artifact of the attribution
+under coarse packing, not a measurement, and are not published as one.
+
+### Ranked-weighted cost over the fuller width coverage
+
+The two sets are weighted separately. Widths 4, 5 and 9 carry 44.05 % of the
+ranked histogram; widths 5 and 6 carry 57.50 %.
+
+| set | widths | covered mass | weighted verify ms/round | weighted whole round ms/round |
+|---|---|---:|---:|---:|
+| ungated | 4, 5, 9 | 44.05 % | 99.931 | 119.998 |
+| gate-qualified | 5, 6 | 57.50 % | 111.467 | 133.442 |
+
+Taking widths 4, 5, 6 and 9 together spans 77.45 % of the histogram, but doing
+so would pool the two gate sets, so the combined figure is deliberately not
+computed.
+
+## Proposal-head cost per draft token
+
+This is the largest single actionable finding in the census, and it is the one
+that needed widths 4 and 9 to establish.
+
+### The head is a straight line in draft depth with no fixed cost
+
+| width | set | draft tokens | rounds | `draft_head` ms/round | ms per draft token | whole round | head share |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 4 | ungated | 3 | 132 | 14.375 | 4.792 | 95.386 | 15.07 % |
+| 5 | ungated | 4 | 109 | 19.052 | 4.763 | 114.492 | 16.64 % |
+| 9 | ungated | 8 | 66 | 38.380 | 4.797 | 203.857 | 18.83 % |
+| 5 | gated | 4 | 110 | 18.970 | 4.743 | 114.363 | 16.59 % |
+| 6 | gated | 5 | 95 | 24.146 | 4.829 | 147.217 | 16.40 % |
+
+Least squares over the three ungated widths:
+
+```text
+draft_head_ms = 4.8098 * drafts - 0.1130      R^2 = 0.999972
+```
+
+The intercept is 2.3 % of one draft token, so the phase carries **no measurable
+fixed cost**. Every millisecond of head time is bought one draft token at a
+time. The gated widths are not pooled into that fit, and they land on it anyway:
+
+| width | measured ms | ungated-fit prediction | delta |
+|---:|---:|---:|---:|
+| 5 | 18.970 | 19.126 | −0.81 % |
+| 6 | 24.146 | 23.936 | +0.88 % |
+
+At 4.810 ms per draft token the head moves its whole 849.4 MB of weights once
+per draft token, an effective 177 GB/s across the entire phase and 245 GB/s
+inside its five `gemv` rows.
+
+### Cost per draft token by family
+
+| width | set | `gemv` | `qmv` | `steel_gemm` | other |
+|---:|---|---:|---:|---:|---:|
+| 5 | gated | 3.303 | 1.137 | 0.184 | 0.118 |
+| 6 | gated | 3.381 | 1.153 | 0.166 | 0.130 |
+| 4 | ungated | 3.276 | 1.140 | 0.242 | 0.134 |
+| 5 | ungated | 3.308 | 1.141 | 0.184 | 0.131 |
+| 9 | ungated | 3.412 | 1.156 | 0.105 | 0.125 |
+
+`gemv` holds within ±2 % and `qmv` within ±0.8 % across a 2.7× change in draft
+depth and across both gate sets. The head does exactly the same work per draft
+token no matter how deep the schedule goes.
+
+The width-9 leg reproduces the width-6 byte table independently. Its
+`gemv_bm8 160x1x1` row shows four distinct partner intervals — 734,064,
+435,798, 261,662 and 259,076 ns — against the width-6 leg's 729,837 (`down_proj`),
+436,837 (`fc`) and 261,060 ns (`o_proj`). Three matrices share one output width
+and differ only in `K`, and both legs price them the same to within 0.6 %. That
+is the partner-spread check doing the job it was built for, across two
+independent sessions and two gate sets.
+
+### What the declared head would cost instead
+
+The resident artifact holds 849,398,784 bytes. `mtp-head.manifest.json` declares
+427,742,600 bytes, **50.36 %** of it. The head phase is bandwidth-bound, so bytes
+price it. Two models bracket the answer:
+
+- the **narrow** model scales only `gemv`, which the byte table shows is exactly
+  the head weight tensors;
+- the **wide** model also scales the phase's `qmv` row, which reads about 281 MB
+  of already-quantized weights that the head artifact does not contain.
+
+| width | set | measured head | narrow model | narrow saving | wide saving | narrow share of round | wide share of round |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 4 | ungated | 14.375 | 9.497 | 4.879 | 6.937 | 5.11 % | 7.27 % |
+| 5 | ungated | 19.052 | 12.484 | 6.568 | 9.198 | 5.74 % | 8.03 % |
+| 5 | gated | 18.970 | 12.411 | 6.559 | 9.182 | 5.74 % | 8.03 % |
+| 6 | gated | 24.146 | 15.755 | 8.391 | 11.664 | 5.70 % | 7.92 % |
+| 9 | ungated | 38.380 | 24.829 | 13.551 | 18.556 | 6.65 % | 9.10 % |
+
+**Every local drafting measurement on this host is pessimistic by roughly 5 % to
+7 % of whole-round GPU time, and the direction is fixed.** The head cost lands
+only on the MTP leg, because the serial leg does not draft, so this bias does
+not cancel in the local serial-to-MTP ratio.
+
+Both rows are models, not measurements. Each assumes the declared artifact
+reaches the same GB/s. One number argues against reading them too literally:
+50.36 % of a bf16 artifact is not a 4-bit artifact, since affine-4 group-64
+would be about 28 %. The declared head is therefore either wider at lower
+precision or a different architecture, and its acceptance behaviour may differ
+as well. I cannot resolve its shapes without downloading it, and I did not.
+
+What the census does offer is a free, falsifiable discriminator for any future
+ranked-side trace: **the ranked candidate leg's head phase should dispatch
+`qmv`, not `gemv`.** MLX chooses `QuantizedLinear` over `Linear` at load time on
+the presence of a `.scales` tensor (`Load.swift:250-258`), so the kernel name
+alone identifies which artifact is resident, at zero extra GPU time.
+
+## The economics of draft depth
+
+Having whole-round cost at widths 4, 5, 6 and 9 makes one campaign-level
+question answerable without any acceptance model at all.
+
+A drafting round at width `M` costs a fixed amount of GPU time whatever the
+target accepts, because the target verifies all `M` rows before acceptance is
+known. The census measures that cost. Each leg also measures its own serial cost
+per token in the same session, on the same host, at the same temperature. Two
+numbers follow directly:
+
+- the **ceiling**, `M × F(1) / round`, the speedup if every draft is accepted;
+- the **break-even**, the accepted-token count per round at which speedup
+  reaches exactly 1.0.
+
+Each row uses its own leg's `F(1)`, so no cross-leg or cross-gate-set comparison
+is involved.
+
+| width | set | leg | rounds | own `F(1)` ms | round ms | ceiling | break-even accepted tokens | break-even rate |
+|---:|---|---|---:|---:|---:|---:|---:|---:|
+| 4 | ungated | `e80-hot-w4-isolated` | 132 | 64.575 | 95.386 | 2.708 | 0.477 of 3 | 15.9 % |
+| 5 | ungated | `e80-hot-w5-isolated` | 109 | 64.495 | 114.492 | 2.817 | 0.775 of 4 | 19.4 % |
+| 5 | gated | `e80-census-w5-isolated` | 109 | 64.464 | 114.352 | 2.819 | 0.774 of 4 | 19.3 % |
+| 6 | gated | `e80-census-w6-isolated` | 95 | 65.819 | 147.217 | 2.683 | 1.237 of 5 | 24.7 % |
+| 9 | ungated | `e80-hot-w9-isolated` | 66 | 64.556 | 203.857 | 2.850 | 2.158 of 8 | 27.0 % |
+
+**The ceiling is flat. It spans 2.683 to 2.850 across widths 4 to 9, a range of
+6.2 %, while the break-even acceptance rate climbs from 15.9 % to 27.0 %.**
+
+That asymmetry is the result. Going deeper buys almost nothing at the top and
+costs a great deal at the bottom. Width 9 raises the perfect-acceptance ceiling
+over width 4 by 5.2 %, and raises the acceptance rate the schedule must sustain
+merely to break even by 11.1 points. The reason is visible in the census: the
+`qmv` verify rows grow superlinearly in `M` — the marginal cost of one more
+draft token is 10.3 ms between widths 1 and 4, 19.1 ms between 4 and 5, and
+22.3 ms between 5 and 9 — while the head adds a further flat 4.810 ms each.
+
+Width 6 reads slightly low. Its leg is the one whose `F(1)` thermometer sat at
+65.819 ms, 2.1 % above every other leg. Substituting the typical 64.5 ms would
+move its ceiling to 2.628, which would make width 6 the *worst* of the four
+measured widths rather than merely unremarkable. I flag this rather than pick a
+number: my base's QMV template table specializes width 6 as `<T,6,6>`, whereas
+the advisor base at `6acb0d15` specializes it as `<T,6,3>`, so width 6 is
+exactly one of the widths where the two bases differ.
+
+Under the narrow declared-head model the whole curve shifts up and keeps its
+shape:
+
+| width | set | modelled round ms | ceiling | break-even accepted tokens | break-even rate |
+|---:|---|---:|---:|---:|---:|
+| 4 | ungated | 90.508 | 2.854 | 0.402 of 3 | 13.4 % |
+| 5 | ungated | 107.924 | 2.988 | 0.673 of 4 | 16.8 % |
+| 5 | gated | 107.793 | 2.990 | 0.672 of 4 | 16.8 % |
+| 6 | gated | 138.826 | 2.845 | 1.109 of 5 | 22.2 % |
+| 9 | ungated | 190.307 | 3.053 | 1.948 of 8 | 24.3 % |
+
+The modelled ceiling spans 2.845 to 3.053, still a 7.3 % range. Replacing the
+head lowers every break-even by 2.5 to 2.7 points and raises every ceiling by
+about 0.14 to 0.20, which is a larger and far more certain gain than anything
+available from changing draft depth.
+
+Three caveats bound this section. These are GPU-time ratios on the decode
+window only; the ranked leg also times the 512-token seed inside the same
+measurement, and the census puts that seed at about 8.0 s in default packing.
+The census legs force their draft count, so the acceptance rates above are the
+requirement, not an observation. And the ranked host is M5, where the `qmv`
+width curve may differ.
+
+
 ## Falsification riders
 
 Every rider is evaluated on the **whole drafting round**, `draft_head` plus
@@ -714,19 +1059,18 @@ the existing `commits`/`commit_ns` and `dispatches`/`dispatch_ns` counters, so
 the closure gap can be decomposed into named host costs instead of being left
 as a residual.
 
-**There are no host synchronisation points to price.** Measured
-`waits_per_round`:
+**There are no host synchronisation points to price.** Measured across all
+eleven timed legs, both packings, both gate sets and every width from 1 to 9:
 
-| leg | width | waits/round | blocked ms/round |
-|---|---:|---:|---:|
-| w1 default (gated) | 1 | 0.00 | 0.000 |
-| w6 default (gated) | 1 | 0.00 | 0.000 |
-| w6 default (gated) | 6 | 0.00 | 0.000 |
-| w4 default (ungated) | 1 | 0.00 | 0.000 |
-| w4 default (ungated) | 4 | 0.01 | 0.000 |
+| `waits` per round | legs and widths |
+|---:|---|
+| 0.00 | 18 of the 20 leg-and-width rows |
+| 0.01 | `e80-hot-w4-default` at width 4; `e80-hot-w5-isolated` at width 5 |
 
-The hook is attached and working — it fires once in 132 rounds on the width 4
-leg — so this is a measurement of near-zero, not a dead counter. MLX runs the
+Total blocked time is 0.000 ms per round everywhere, to three decimal places.
+
+The hook is attached and working — it fires on two rows, roughly once per 100
+rounds — so this is a measurement of near-zero, not a dead counter. MLX runs the
 decode path asynchronously and essentially never blocks the host thread inside
 a command buffer.
 
@@ -736,25 +1080,41 @@ With `wait_ns` measured at zero, the closure gap resolves into the host time
 spent encoding dispatches and committing buffers, both of which the census
 records directly:
 
-| leg | width | wall ms | GPU ms | gap ms | dispatch ms | commit ms | wait ms | host sum | unexplained |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| w1 default (gated) | 1 | 66.970 | 64.527 | 2.443 | 1.203 | 0.608 | 0.000 | 1.811 | 0.632 |
-| w6 default (gated) | 1 | 66.776 | 64.522 | 2.254 | 1.127 | 0.603 | 0.000 | 1.730 | 0.524 |
-| w6 default (gated) | 6 | 148.560 | 145.383 | 3.177 | 1.575 | 1.227 | 0.000 | 2.802 | 0.375 |
-| w4 default (ungated) | 1 | 67.129 | 64.661 | 2.467 | 1.253 | 0.663 | 0.000 | 1.915 | 0.552 |
-| w4 default (ungated) | 4 | 96.914 | 94.185 | 2.730 | 1.319 | 1.512 | 0.000 | 2.831 | −0.101 |
+Default packing is what the candidate ships, so it carries the verdict. Every
+drafting width from 1 to 9 is covered.
 
-Named host cost accounts for 74–104 % of the gap. The residual is at most
-0.632 ms per round and its sign is not consistent, which is what a small clock
+| leg | gate | width | wall ms | GPU ms | gap ms | dispatch ms | commit ms | wait ms | host sum | unexplained | disp/rd | commits/rd |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `e80-census-w1-default` | gated | 1 | 66.970 | 64.527 | 2.443 | 1.203 | 0.608 | 0.000 | 1.811 | 0.632 | 1705.4 | 44.4 |
+| `e80-census-w6-default` | gated | 1 | 66.776 | 64.522 | 2.254 | 1.127 | 0.603 | 0.000 | 1.730 | 0.524 | 1705.4 | 44.6 |
+| `e80-census-w6-default` | gated | 6 | 148.560 | 145.383 | 3.177 | 1.575 | 1.227 | 0.000 | 2.802 | 0.375 | 1013.5 | 81.0 |
+| `e80-hot-w4-default` | ungated | 1 | 67.129 | 64.661 | 2.467 | 1.253 | 0.663 | 0.000 | 1.915 | 0.552 | 1705.4 | 44.3 |
+| `e80-hot-w4-default` | ungated | 4 | 96.914 | 94.185 | 2.730 | 1.319 | 1.512 | 0.000 | 2.831 | −0.101 | 856.0 | 67.1 |
+| `e80-hot-w5-default` | ungated | 5 | 115.526 | 112.729 | 2.796 | 1.295 | 1.583 | 0.000 | 2.878 | −0.082 | 892.3 | 75.1 |
+| `e80-hot-w9-default` | ungated | 9 | 204.851 | 201.893 | 2.958 | 1.573 | 1.802 | 0.000 | 3.375 | −0.417 | 1112.3 | 102.3 |
+
+The whole gap is 2.25–3.18 ms per round across a 3.1× change in round cost.
+Named host cost accounts for 74–114 % of it. The residual never exceeds
+±0.632 ms per round and its sign is not consistent, which is what a small clock
 bias between the host and GPU timebases looks like.
 
 The per-unit costs follow directly:
 
-| unit | width 1 | width 6 |
-|---|---:|---:|
-| host µs per dispatch | 1.127 ms / 1705.4 = **0.66** | 1.575 ms / 1013.5 = **1.55** |
-| host µs per commit | 0.603 ms / 44.6 = **13.5** | 1.227 ms / 81.0 = **15.1** |
-| host µs per synchronisation point | **no synchronisation points** | **no synchronisation points** |
+| unit | width 1 | width 6 | width 9 |
+|---|---:|---:|---:|
+| host µs per dispatch | 1.127 / 1705.4 = **0.66** | 1.575 / 1013.5 = **1.55** | 1.573 / 1112.3 = **1.41** |
+| host µs per commit | 0.603 / 44.6 = **13.5** | 1.227 / 81.0 = **15.1** | 1.802 / 102.3 = **17.6** |
+| host µs per synchronisation point | **none exist** | **none exist** | **none exist** |
+
+One instrument caveat belongs here, because the isolated legs look different and
+the difference is not physical. In isolated packing `commit_ns` reaches 7.806 ms
+per round at width 6 and 9.884 ms at width 9, and `unexplained` goes to −6.014
+and −8.820 ms. Forcing one MLX op per command buffer raises commits from about
+81 per round to about 700–1080, and the host `commit` call then runs
+concurrently with GPU execution rather than adding to the round. `commit_ns`
+double-counts that overlap. This is an artifact of the measuring mode. The
+H-221 verdict rests on the default rows above, where commits are two orders of
+magnitude rarer and the accounting closes.
 
 **H-221 is closed in every form the evidence can address.** A per-dispatch host
 cost of 0.35 ms is 220 to 530 times above the measured value. A
@@ -803,35 +1163,112 @@ cause. **I do not have a measurement that settles it and I am not claiming
 one.** Resolving it needs a hook on `setBuffer:offset:atIndex:` to identify the
 weight tensor behind each dispatch directly.
 
+## W&B evidence
+
+One run per timed leg, all in
+`wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
+`e80-per-kernel-gpu-time-census`. Every run carries
+`cool_gate_passed_real_gate`, `gate_qualified_for_timing` and
+`official_or_ranked_score` in its config, so the two gate sets cannot be pooled
+by accident in the W&B UI either.
+
+| leg | gate | widths | run id | URL |
+|---|---|---|---|---|
+| `e80-census-w6-default` | gated | 1, 6 | `azgwyge5` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/azgwyge5 |
+| `e80-census-w6-isolated` | gated | 1, 6 | `y0gdzebh` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/y0gdzebh |
+| `e80-census-w5-isolated` | gated | 1, 5 | `xe118mah` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/xe118mah |
+| `e80-census-w1-default` | gated | 1 | `gcdjmemd` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/gcdjmemd |
+| `e80-census-w1-isolated` | gated | 1 | `cowjscbn` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cowjscbn |
+| `e80-hot-w4-default` | ungated | 1, 4 | `jok8s3qh` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jok8s3qh |
+| `e80-hot-w4-isolated` | ungated | 1, 4 | `nr4q5wpn` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/nr4q5wpn |
+| `e80-hot-w5-default` | ungated | 1, 5 | `d0kmcp1q` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/d0kmcp1q |
+| `e80-hot-w5-isolated` | ungated | 1, 5 | `kbgk2bs9` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/kbgk2bs9 |
+| `e80-hot-w9-default` | ungated | 1, 9 | `ul97w9b4` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ul97w9b4 |
+| `e80-hot-w9-isolated` | ungated | 1, 9 | `xav95tv4` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/xav95tv4 |
+
+Each run logs per-family GPU ms per round and family share, per-width verify,
+draft-head and whole-round cost, phase totals, the host closure gap, the
+instrument health counters, a `census` table of every owning dispatch, and an
+artifact holding the full derived `census.json` plus the leg's verbatim
+`meta.txt`.
+
+The rung 1 gate sessions are separate and were reported earlier: `ws1e4j5m`
+(`e80-rung1-gate`) and `blld7vtb` (`e80-rung1-control`).
+
+### Reproduction
+
+```bash
+# sweep 1, gated, from commit 773dff4
+research/e80_census_session.sh e80-census 6,5,1,4,9 512
+
+# sweep 2, ungated ABBA, from commit cdf33bb
+research/e80_census_session.sh e80-hot \
+  4:default,4:isolated,9:isolated,9:default,5:default,5:isolated 512 1
+
+# analysis, one command per gate set, never pooled
+research/e80_blocks.py \
+  --isolated research/out/e80-census-w{6,5,1}-isolated/census.jsonl \
+  --default  research/out/e80-census-w{6,1}-default/census.jsonl \
+  --json research/e80-artifacts/gputime-census-gated.json
+research/e80_blocks.py \
+  --isolated research/out/e80-hot-w{4,5,9}-isolated/census.jsonl \
+  --default  research/out/e80-hot-w{4,5,9}-default/census.jsonl \
+  --json research/e80-artifacts/gputime-census-ungated.json
+
+research/e80_head_scaling.py \
+  --gated   research/out/e80-census-w{6,5}-isolated \
+  --ungated research/out/e80-hot-w{4,5,9}-isolated
+research/e80_schedule_economics.py \
+  --gated   research/out/e80-census-w{5,6}-isolated \
+  --ungated research/out/e80-hot-w{4,5,9}-isolated
+research/e80_host_gap.py research/out/e80-{census,hot}-w*
+research/e80_wandb_log.py research/out/e80-{census,hot}-w*
+```
+
+The instrument itself is `research/e80-artifacts/gputime-census.patch`. Apply it
+with `git apply` on top of the base to reproduce a census leg; it is not
+committed into `Sources/`.
+
+
 ## Suggested follow-ups
 
 These are proposals. None is implemented here.
 
 ### 1. Quantize or shrink the proposal head — largest measured headroom
 
-The proposal head is 16.4 % of whole-round GPU time at width 6 and is purely
-bandwidth-bound, streaming 849 MB of bf16 weights per draft token at 245 GB/s.
-The declared head is 427,742,600 bytes, so on the ranked runner the same work
-should cost about half. Two distinct questions follow, and they are worth
-separating:
+The head costs a flat **4.810 ms per draft token** with no fixed component, and
+it is 15.1 % to 18.8 % of whole-round GPU time across widths 4 to 9. It is
+purely bandwidth-bound, streaming 849 MB of bf16 weights per draft token at
+245 GB/s. Two distinct questions follow, and they are worth separating:
 
-- **Confirm the ranked head is actually resident on the ranked leg.** The
-  census gives a free provenance check: `gemv` present means a head with no
-  `.scales` is resident. Any future trace answers this without extra GPU time.
+- **Confirm which head the ranked candidate leg actually loads.** The census
+  gives a free provenance check. MLX picks `Linear` or `QuantizedLinear` at load
+  time on the presence of a `.scales` tensor (`Load.swift:250-258`), and the two
+  dispatch different kernels. `gemv` in the head phase means the bf16 pinned
+  head is resident; `qmv` means a quantized head is. Any future ranked-side
+  trace answers this at zero extra GPU time.
 - **Measure the declared head locally.** `setup-qwen-mtp.sh:66` honours
   `MLXFAST_QWEN_MTP_HEAD_REPO`, so provisioning the declared head needs a byte
   manifest and nothing else. Until that is done, every local `--local-iterate`
-  and `--local-submit` ratio carries a systematic bias: the head cost lands
-  entirely on the MTP leg because the serial leg does not draft, so local
-  measurement is **pessimistic** by roughly 8.5 ms on a 145 ms drafting round at
-  width 6, about 6 %.
+  and `--local-submit` ratio carries a systematic bias in one fixed direction:
+  the head cost lands entirely on the MTP leg because the serial leg does not
+  draft, so it cannot cancel in the ratio. The bias is **5.1 % to 6.7 % of
+  whole-round GPU time** under the narrow bandwidth model, and local is always
+  the pessimistic side.
 
 Beyond swapping artifacts, the head is a genuine optimization target in its own
 right. It is one full-width transformer layer with the target's own dimensions,
-run once per draft token, purely to propose. Anything that shrinks its weight
-traffic — lower precision, a narrower intermediate, fewer heads, or reusing
-target state instead of recomputing — converts directly into score at the
-measured 245 GB/s.
+run once per draft token, purely to propose. The measured linearity is what
+makes this tractable: because the phase has no fixed cost, any byte removed
+from the head weights is repaid on **every** draft token at every schedule
+depth. Lower precision, a narrower intermediate, fewer heads, or reusing target
+state instead of recomputing all convert directly into score at the measured
+245 GB/s.
+
+The same linearity carries a warning for schedule design. Deeper drafting buys
+accepted tokens but pays 4.810 ms of head time per extra draft token
+unconditionally, before the target verifies anything. At width 9 the head alone
+is 38.4 ms of a 203.9 ms round.
 
 ### 2. Attack `gdn_in_proj_fused` and `fa_qkv_gate_fused`
 
