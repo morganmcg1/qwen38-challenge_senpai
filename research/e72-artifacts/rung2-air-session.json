@@ -1,0 +1,1176 @@
+{
+ "cells": {
+  "5": {
+   "allfull": {
+    "alloca_types": [],
+    "allocas": 0,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 100,
+     "fma": 0,
+     "fmul": 20
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "per_block": {
+      ".preheader": {
+       "as1:bfloat": 88,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 88,
+      "loads": 88
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 577,
+    "peak_live_cfg_loop": 117,
+    "peak_live_cfg_max": 117,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 26.0,
+     "device_loads_total": 104,
+     "device_x_loads": 80,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 100,
+     "fma": 0,
+     "fmul": 20
+    }
+   },
+   "mfull": {
+    "alloca_types": [],
+    "allocas": 0,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 100,
+     "fma": 0,
+     "fmul": 20
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "per_block": {
+      ".preheader": {
+       "as1:bfloat": 88,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 88,
+      "loads": 88
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 577,
+    "peak_live_cfg_loop": 117,
+    "peak_live_cfg_max": 117,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 26.0,
+     "device_loads_total": 104,
+     "device_x_loads": 80,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 100,
+     "fma": 0,
+     "fmul": 20
+    }
+   },
+   "plain": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "81",
+     "170",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 20,
+      "loads": 20
+     },
+     "per_block": {
+      ".preheader": {},
+      "170": {
+       "as1:bfloat": 20
+      },
+      "81": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 215,
+    "peak_live_cfg_loop": 130,
+    "peak_live_cfg_max": 130,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 26.0,
+     "device_loads_total": 104,
+     "device_x_loads": 80,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "rfull": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "81",
+     "170",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 20,
+      "loads": 20
+     },
+     "per_block": {
+      ".preheader": {},
+      "170": {
+       "as1:bfloat": 20
+      },
+      "81": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 215,
+    "peak_live_cfg_loop": 130,
+    "peak_live_cfg_max": 130,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 26.0,
+     "device_loads_total": 104,
+     "device_x_loads": 80,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "shift": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 0,
+    "loop_blocks": [
+     "81",
+     "170",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 20,
+      "loads": 20
+     },
+     "per_block": {
+      ".preheader": {},
+      "170": {
+       "as1:bfloat": 20
+      },
+      "81": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 215,
+    "peak_live_cfg_loop": 130,
+    "peak_live_cfg_max": 130,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 26.0,
+     "device_loads_total": 104,
+     "device_x_loads": 80,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "split": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "81",
+     "170",
+     ".preheader.preheader"
+    ],
+    "loop_fp": {
+     "fadd": 36,
+     "fma": 0,
+     "fmul": 16
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 20,
+      "loads": 20
+     },
+     "per_block": {
+      ".preheader.preheader": {},
+      "170": {
+       "as1:bfloat": 20
+      },
+      "81": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 0,
+    "peak_live_cfg_loop": 174,
+    "peak_live_cfg_max": 174,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 26.0,
+     "device_loads_total": 104,
+     "device_x_loads": 80,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 36,
+     "fma": 0,
+     "fmul": 16
+    }
+   },
+   "tailfull": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "81",
+     "170",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 20,
+      "loads": 20
+     },
+     "per_block": {
+      ".preheader": {},
+      "170": {
+       "as1:bfloat": 20
+      },
+      "81": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 215,
+    "peak_live_cfg_loop": 130,
+    "peak_live_cfg_max": 130,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 26.0,
+     "device_loads_total": 104,
+     "device_x_loads": 80,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "tailfullxvec": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "81",
+     "170",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 20,
+      "loads": 5
+     },
+     "per_block": {
+      ".preheader": {},
+      "170": {
+       "as1:<4 x bfloat>": 5
+      },
+      "81": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 215,
+    "peak_live_cfg_loop": 140,
+    "peak_live_cfg_max": 140,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 11.0,
+     "device_loads_total": 44,
+     "device_x_loads": 20,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "xvec": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "81",
+     "170",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 20,
+      "loads": 5
+     },
+     "per_block": {
+      ".preheader": {},
+      "170": {
+       "as1:<4 x bfloat>": 5
+      },
+      "81": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 215,
+    "peak_live_cfg_loop": 140,
+    "peak_live_cfg_max": 140,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 11.0,
+     "device_loads_total": 44,
+     "device_x_loads": 20,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    }
+   }
+  },
+  "6": {
+   "allfull": {
+    "alloca_types": [],
+    "allocas": 0,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 116,
+     "fma": 0,
+     "fmul": 20
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "per_block": {
+      ".preheader": {
+       "as1:bfloat": 104,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 104,
+      "loads": 104
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 598,
+    "peak_live_cfg_loop": 133,
+    "peak_live_cfg_max": 133,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 30.0,
+     "device_loads_total": 120,
+     "device_x_loads": 96,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 116,
+     "fma": 0,
+     "fmul": 20
+    }
+   },
+   "mfull": {
+    "alloca_types": [
+     "[4 x <6 x float>]"
+    ],
+    "allocas": 1,
+    "float_allocas": [
+     "[4 x <6 x float>]"
+    ],
+    "integer_divides": 2,
+    "loop_blocks": [
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 116,
+     "fma": 0,
+     "fmul": 20
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "per_block": {
+      ".preheader": {
+       "as1:bfloat": 104,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 104,
+      "loads": 104
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 644,
+    "peak_live_cfg_loop": 169,
+    "peak_live_cfg_max": 169,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 30.0,
+     "device_loads_total": 120,
+     "device_x_loads": 96,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 116,
+     "fma": 0,
+     "fmul": 20
+    }
+   },
+   "plain": {
+    "alloca_types": [
+     "[4 x <6 x float>]",
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 2,
+    "float_allocas": [
+     "[4 x <6 x float>]"
+    ],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "103",
+     "196",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 24,
+      "loads": 24
+     },
+     "per_block": {
+      ".preheader": {},
+      "103": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      },
+      "196": {
+       "as1:bfloat": 24
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 271,
+    "peak_live_cfg_loop": 182,
+    "peak_live_cfg_max": 182,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 30.0,
+     "device_loads_total": 120,
+     "device_x_loads": 96,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "rfull": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "84",
+     "173",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 24,
+      "loads": 24
+     },
+     "per_block": {
+      ".preheader": {},
+      "173": {
+       "as1:bfloat": 24
+      },
+      "84": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 225,
+    "peak_live_cfg_loop": 146,
+    "peak_live_cfg_max": 146,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 30.0,
+     "device_loads_total": 120,
+     "device_x_loads": 96,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "shift": {
+    "alloca_types": [
+     "[4 x <6 x float>]",
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 2,
+    "float_allocas": [
+     "[4 x <6 x float>]"
+    ],
+    "integer_divides": 0,
+    "loop_blocks": [
+     "103",
+     "196",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 24,
+      "loads": 24
+     },
+     "per_block": {
+      ".preheader": {},
+      "103": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      },
+      "196": {
+       "as1:bfloat": 24
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 271,
+    "peak_live_cfg_loop": 182,
+    "peak_live_cfg_max": 182,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 30.0,
+     "device_loads_total": 120,
+     "device_x_loads": 96,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "split": {
+    "alloca_types": [
+     "[4 x [2 x <4 x float>]]",
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 2,
+    "float_allocas": [
+     "[4 x [2 x <4 x float>]]"
+    ],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "107",
+     "204",
+     ".preheader.preheader"
+    ],
+    "loop_fp": {
+     "fadd": 40,
+     "fma": 0,
+     "fmul": 16
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 24,
+      "loads": 24
+     },
+     "per_block": {
+      ".preheader.preheader": {},
+      "107": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      },
+      "204": {
+       "as1:bfloat": 24
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 0,
+    "peak_live_cfg_loop": 215,
+    "peak_live_cfg_max": 215,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 30.0,
+     "device_loads_total": 120,
+     "device_x_loads": 96,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 40,
+     "fma": 0,
+     "fmul": 16
+    }
+   },
+   "tailfull": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "84",
+     "173",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 24,
+      "loads": 24
+     },
+     "per_block": {
+      ".preheader": {},
+      "173": {
+       "as1:bfloat": 24
+      },
+      "84": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 225,
+    "peak_live_cfg_loop": 146,
+    "peak_live_cfg_max": 146,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 30.0,
+     "device_loads_total": 120,
+     "device_x_loads": 96,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "tailfullxvec": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "84",
+     "173",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 24,
+      "loads": 6
+     },
+     "per_block": {
+      ".preheader": {},
+      "173": {
+       "as1:<4 x bfloat>": 6
+      },
+      "84": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 225,
+    "peak_live_cfg_loop": 155,
+    "peak_live_cfg_max": 155,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 12.0,
+     "device_loads_total": 48,
+     "device_x_loads": 24,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "xvec": {
+    "alloca_types": [
+     "[4 x <6 x float>]",
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 2,
+    "float_allocas": [
+     "[4 x <6 x float>]"
+    ],
+    "integer_divides": 2,
+    "loop_blocks": [
+     "103",
+     "196",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 24,
+      "loads": 6
+     },
+     "per_block": {
+      ".preheader": {},
+      "103": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      },
+      "196": {
+       "as1:<4 x bfloat>": 6
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 271,
+    "peak_live_cfg_loop": 191,
+    "peak_live_cfg_max": 191,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 12.0,
+     "device_loads_total": 48,
+     "device_x_loads": 24,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    }
+   }
+  }
+ },
+ "checks": {
+  "5": {
+   "allfull_has_no_alloca_at_all": true,
+   "allfull_has_no_float_alloca": true,
+   "allfull_k_loop_is_one_block": true,
+   "allfull_peak_live_not_above_control": true,
+   "mfull_alone_does_not_clear_the_spill": true,
+   "native_lane_width_alone_does_not_remove_the_spill": true,
+   "plain_float_alloca_only_at_na6": true,
+   "plain_fp_matches_plain": true,
+   "rfull_has_no_float_alloca": true,
+   "rfull_peak_live_not_above_control": true,
+   "shift_arm_removes_both_signed_divides": true,
+   "shipped_body_keeps_two_signed_divides": true,
+   "split_has_only_native_float_vectors": true,
+   "tailfull_fp_matches_plain": true,
+   "tailfull_has_no_float_alloca": true,
+   "tailfull_peak_live_not_above_control": true,
+   "tailfullxvec_fp_matches_plain": true,
+   "tailfullxvec_has_no_float_alloca": true,
+   "tailfullxvec_peak_live_not_above_control": true,
+   "tailfullxvec_x_loads_are_4_wide": true,
+   "xvec_fp_matches_plain": true,
+   "xvec_x_loads_are_4_wide": true
+  },
+  "6": {
+   "allfull_has_no_alloca_at_all": true,
+   "allfull_has_no_float_alloca": true,
+   "allfull_k_loop_is_one_block": true,
+   "allfull_peak_live_not_above_control": true,
+   "mfull_alone_does_not_clear_the_spill": true,
+   "native_lane_width_alone_does_not_remove_the_spill": true,
+   "plain_float_alloca_only_at_na6": true,
+   "plain_fp_matches_plain": true,
+   "rfull_has_no_float_alloca": true,
+   "rfull_peak_live_not_above_control": true,
+   "shift_arm_removes_both_signed_divides": true,
+   "shipped_body_keeps_two_signed_divides": true,
+   "split_has_only_native_float_vectors": true,
+   "tailfull_fp_matches_plain": true,
+   "tailfull_has_no_float_alloca": true,
+   "tailfull_peak_live_not_above_control": true,
+   "tailfullxvec_fp_matches_plain": true,
+   "tailfullxvec_has_no_float_alloca": true,
+   "tailfullxvec_peak_live_not_above_control": true,
+   "tailfullxvec_x_loads_are_4_wide": true,
+   "xvec_fp_matches_plain": true,
+   "xvec_x_loads_are_4_wide": true
+  }
+ }
+}
