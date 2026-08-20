@@ -737,6 +737,102 @@ public final class Qwen36MTPBlockSession {
     /// inside the marginal the rule prices.
     private static let headStepCostRatio = 0.18
 
+    /// E68: the depth price as a per-position vector.
+    ///
+    /// `headStepCostRatio` prices every extra draft the same, so the shipped
+    /// cost model is `T(d) = V + d * h * V` with the verify forward `V` flat
+    /// in width. The measured verify curve is not flat in width: the QMV
+    /// dispatch table changes group shape at several widths, so the step into
+    /// one width can cost a multiple of the step into its neighbour.
+    ///
+    /// Every arm holds the total at `maxDepth * headStepCostRatio`, so an arm
+    /// changes the SHAPE of the price and never its level. The level is
+    /// already measured: `h = 0.32` scored 2.84585, a clean -3%, because it
+    /// shortened every draft. This pool rewards depth, so E68 asks only
+    /// whether the price is distributed correctly across positions.
+    internal struct DepthPrice {
+        /// `marginal[d]` prices the step into verify width `d + 2`.
+        let marginal: [Double]
+        /// `cumulative[d]` is the running cost BEFORE step `d` is taken, so
+        /// `cumulative[0]` is 1.0: the verify forward on its own.
+        let cumulative: [Double]
+    }
+
+    /// The one-boundary tier factor E56 fitted, retained so `pb5` and `pb7`
+    /// reproduce that experiment's published arithmetic exactly.
+    internal static let boundaryTierFactor = 2.0301
+
+    /// The shipped flat price. `cumulative` repeats the tip's closed form
+    /// instead of accumulating: `1.0 + 0.18 + 0.18 + 0.18` and
+    /// `1.0 + 3.0 * 0.18` differ by one ulp, and a control arm that is not
+    /// bit-identical to the tip is not a control.
+    internal static func makeUniformDepthPrice() -> DepthPrice {
+        DepthPrice(
+            marginal: [Double](repeating: headStepCostRatio,
+                               count: Qwen36MTPLimits.maxDepth),
+            cumulative: (0 ... Qwen36MTPLimits.maxDepth).map {
+                1.0 + Double($0) * headStepCostRatio
+            })
+    }
+
+    /// One priced boundary, holding the total. `width` is the verify width
+    /// the priced step ENTERS, so it selects index `width - 2`.
+    internal static func makeBoundaryDepthPrice(
+        enteringVerifyWidth width: Int
+    ) -> DepthPrice {
+        let count = Qwen36MTPLimits.maxDepth
+        let within = Double(count) * headStepCostRatio
+            / (Double(count - 1) + boundaryTierFactor)
+        var marginal = [Double](repeating: within, count: count)
+        marginal[width - 2] = within * boundaryTierFactor
+        return DepthPrice(marginal: marginal,
+                          cumulative: prefixCosts(marginal))
+    }
+
+    /// `headStepCostRatio + (C(d + 2) - C(d + 1)) / V` from the E68 rung-1
+    /// session, before rescaling. Empty until that session fills it, and
+    /// `makeMeasuredDepthPrice` traps rather than silently running as `ship`.
+    internal static let measuredRawDepthPrice: [Double] = []
+
+    internal static func makeMeasuredDepthPrice() -> DepthPrice {
+        precondition(
+            measuredRawDepthPrice.count == Qwen36MTPLimits.maxDepth,
+            "E68 pbfit: measuredRawDepthPrice is not filled from rung 1")
+        let total = Double(Qwen36MTPLimits.maxDepth) * headStepCostRatio
+        let scale = total / measuredRawDepthPrice.reduce(0.0, +)
+        let marginal = measuredRawDepthPrice.map { $0 * scale }
+        return DepthPrice(marginal: marginal,
+                          cumulative: prefixCosts(marginal))
+    }
+
+    internal static func prefixCosts(_ marginal: [Double]) -> [Double] {
+        var out = [1.0]
+        var running = 1.0
+        for value in marginal {
+            running += value
+            out.append(running)
+        }
+        return out
+    }
+
+    internal enum DepthPriceArm: String {
+        case ship, pb5, pb7, pbfit
+    }
+
+    /// THE ONE LINE THE E68 LEG RUNNER PATCHES.
+    internal static let depthPriceArm: DepthPriceArm = .ship
+
+    /// Built once. A computed property here would allocate two arrays on
+    /// every round, inside the timed path.
+    internal static let depthPrice: DepthPrice = {
+        switch depthPriceArm {
+        case .ship: return makeUniformDepthPrice()
+        case .pb5: return makeBoundaryDepthPrice(enteringVerifyWidth: 5)
+        case .pb7: return makeBoundaryDepthPrice(enteringVerifyWidth: 7)
+        case .pbfit: return makeMeasuredDepthPrice()
+        }
+    }()
+
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
     /// stack, by bitwise measurement (hexfloat row gate, two attempts):
     /// verify widths 6-9 drift from the serial trajectory in top-2 VALUES
@@ -823,7 +919,7 @@ public final class Qwen36MTPBlockSession {
         // there would describe the next round's inputs, not this one's.
         if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
         guard cap > 0 else { return 0 }
-        let h = Self.headStepCostRatio
+        let price = Self.depthPrice
         var reach = 1.0
         var expected = 0.0
         var depth = 0
@@ -839,7 +935,8 @@ public final class Qwen36MTPBlockSession {
                 p = Swift.min(p, conf2)
             }
             reach *= p
-            let threshold = h * (1.0 + expected) / (1.0 + Double(depth) * h)
+            let threshold = price.marginal[depth] * (1.0 + expected) /
+                price.cumulative[depth]
             if Self.traceRounds {
                 scheduleTrace += String(
                     format: "%d:%.6f/%.6f/%.6f;", depth, p, reach, threshold)
@@ -870,7 +967,7 @@ public final class Qwen36MTPBlockSession {
         }
         let emas = positionAcceptEMA
             .map { String(format: "%.6f", $0) }.joined(separator: ",")
-        scheduleTrace = String(
+        scheduleTrace = "arm=" + Self.depthPriceArm.rawValue + " " + String(
             format: "m=%.6f streak=%d cap=%d ema=",
             margin, fullAcceptStreak, widthCap) + emas + " sched="
     }
