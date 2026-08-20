@@ -39,9 +39,24 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 prefix="${1:?usage: e82_headcost_session.sh PREFIX}"
 cache="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1"
 
-declare -a order=(pinned master-bf16 qat-q4 declared
-                  declared qat-q4 master-bf16 pinned)
-declare -a rep=(1 1 1 1 2 2 2 2)
+# An optional arm list after PREFIX replaces the default census. The script
+# mirrors whatever it is given, so the leg order stays a palindrome and
+# monotone thermal drift still cancels to first order.
+shift || true
+if (($#)); then
+  declare -a half=("$@")
+  declare -a order=("${half[@]}")
+  declare -a rep=()
+  for _ in "${half[@]}"; do rep+=(1); done
+  for ((i = ${#half[@]} - 1; i >= 0; i--)); do
+    order+=("${half[$i]}")
+    rep+=(2)
+  done
+else
+  declare -a order=(pinned master-bf16 qat-q4 declared
+                    declared qat-q4 master-bf16 pinned)
+  declare -a rep=(1 1 1 1 2 2 2 2)
+fi
 
 dir_for() {
   case "$1" in
@@ -49,6 +64,8 @@ dir_for() {
     declared) echo "${cache}/mtp-head-declared-run" ;;
     qat-q4) echo "${cache}/e82/built/e82-qat-q4-run" ;;
     master-bf16) echo "${cache}/e82/built/e82-master-bf16-run" ;;
+    noislands) echo "${cache}/e82/built/e82-raw-noislands-run" ;;
+    qonly) echo "${cache}/e82/built/e82-raw-qonly-run" ;;
     *) echo "e82_headcost_session.sh: unknown head $1" >&2; exit 2 ;;
   esac
 }
