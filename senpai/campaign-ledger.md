@@ -18670,3 +18670,318 @@ bypass review at step 12 passed. The timed step is 56.
 Slots: PR #71 thorfinn E68 rung 3 relaunch in flight; PR #75 edward E72; PR #76
 alphonse E73 with the corrected model; PR #77 askeladd E74, assigned today from this
 item. PR #74 merged.
+
+## 212 The receipt inverted our kernel table, and the mechanism is registers on the ranked host
+
+Item 210 proposed that the group partition is an occupancy trade whose sign can
+invert between hosts. Item 211 located the knee and sized the prize. Item 212 closes
+the loop: a ranked receipt priced the inversion, and two students independently
+supplied the mechanism constant that explains it. It also records a winner that was
+merged without being shipped, and three retractions of our own.
+
+### (A) 🔴🔴🔴 THE ARM-2 RECEIPT — THE CROWN KERNEL TABLE IS FASTER AT RANK
+
+Submission **`9b241879-1fcf-4cb4-bac5-ca2bca58d4c5`**, candidate commit
+`c1207a0dafe0201fdc90b4e40c38b002eb17b0f5`, created 09:30:36Z. Workflow run
+`32357580843`, timed step 56 ran 10:34:13Z to 10:51:37Z, job completed success.
+Official score **3.23588901**, status rejected.
+
+One variable: our cross-row QMV dispatch table reverted to the promoted frontier's
+table. Exactly 8 lines in 2 files. `NA<=6` to `NA<=4`; `<T,5,5>` to `<T,5,3>`;
+`<T,6,6>` to `<T,6,3>`; `<T,9,5>` to `<T,9,3>`.
+
+Per-prompt candidate MTP seconds per token, arm 2 against our own `ca9251b8`:
+
+| prompt | M | mtp `ca9251b8` | mtp arm 2 | delta |
+|---|---:|---:|---:|---:|
+| plutarch | 1.1540 | 0.030306279 | 0.030272699 | −0.111 % |
+| travel | 3.6557 | 0.017388664 | 0.017376738 | −0.069 % |
+| drama | 3.2976 | 0.019776719 | 0.019748904 | −0.141 % |
+| beagle | 5.5327 | 0.012174043 | 0.012110404 | −0.523 % |
+| medicine | 5.7677 | 0.011368619 | 0.011334990 | −0.296 % |
+| republic | 6.2697 | 0.011183768 | 0.011099912 | −0.750 % |
+| essays | 6.4253 | 0.011257147 | 0.011174393 | −0.735 % |
+| botany | 6.7765 | 0.011080481 | 0.011031973 | −0.438 % |
+
+**8 of 8 faster. Mean −0.383 %, sd 0.273 %, sign test p = 0.0039.** Narrow three
+average −0.107 %; wide five average −0.548 %.
+
+**plutarch is the control.** The two tables differ only at M = 5, 6 and 9, and
+plutarch never leaves M = 1.154. Its −0.111 % is therefore the run-level offset, not
+a table effect. Correcting every prompt by it: beagle −0.412 %, medicine −0.185 %,
+**scoring-prompt mean −0.298 %**.
+
+🔴 **Our kernel table is about 1.6 % faster locally and 0.298 % slower at rank.** The
+inversion predicted in 210 is confirmed by receipt. Three merged kernel experiments
+that each won cleanly on development hardware are a net ranked loss.
+
+### (B) The `ff73cbbd` regression was a run-level artifact
+
+Arm 2 against `ff73cbbd`: mean −1.852 %, sd 1.213 %. Against `ca9251b8`: mean
+−0.383 %, sd 0.273 %. The `ff73cbbd` legs are slower than both neighbours on prompts
+where the source is bit-identical to `ca9251b8`. Item 208 recorded its schedule as
+bit-identical on all 8 prompts and could not explain the 1.86 % loss. It is now
+explained: **`ff73cbbd`'s 3.17230 was a slow run, not a source property.** Any
+mechanism conclusion drawn from that single receipt is withdrawn.
+
+Order statistics for the two median prompts: `ca9251b8` (3.1202, 3.3449); `ff73cbbd`
+(3.1091, 3.2355); arm 2 (3.1302, 3.3416); crown (3.1361, 3.3687).
+
+### (C) 🔴🔴🔴 THE MECHANISM: A RANKED-HOST COMPILE ORACLE, AND THE REGISTER TIERS
+
+Edward (E72, merged in #75) found that the ranked architecture's real backend can be
+run on our development hosts:
+
+```
+xcrun metal-tt -arch applegpu_g17s lib.metallib pipelines.mtlp-json -o out.mtlp
+```
+
+The pipeline script is `{"pipelines":{"compute_pipelines":[{"compute_function":"k"}]}}`.
+The output is a Mach-O whose `__GPU_METADATA,__compute` FlatBuffer carries, per
+kernel, field `f00` = allocated register count and `f14`/`f41` = spill frame bytes,
+which equal `4*N + 16` exactly. `g13g`, `g16s`, `g17p` and `g17s` are all supported;
+`g18p` is not. There is no occupancy field; registers are the observable.
+`research/agx_crossarch.py selftest` recalibrates the field indices every run. Twelve
+other mechanisms were tried and failed; the negative table is in PR #75.
+
+**This is the first ranked-hardware fact we have obtained without spending a
+submission slot.**
+
+Register ceilings: **g16s 96, g17s 124.** Counts agree on both generations up to 68
+live floats, then diverge.
+
+| cell | ships in | g16s regs / spill | g17s regs / spill |
+|---|---|---:|---:|
+| `<T,5,5>` | ours | 95 / 0 | **98 / 0** |
+| `<T,5,3>` | crown | 93 / 0 | **90 / 0** |
+| `<T,6,6>` | ours | **96 / 16** | **111 / 0** |
+| `<T,6,3>` | crown | 93 / 0 | **90 / 0** |
+| `<T,9,5>` | ours | 95 / 0 | **98 / 0** |
+| `<T,9,3>` | crown | 93 / 0 | **90 / 0** |
+
+🔴 **Our development hosts squeeze all six cells into 93 to 96 registers. The ranked
+host spreads them across 90, 98 and 111.** The effect that decides the ranked score is
+structurally invisible on the hardware we develop on.
+
+Edward pre-registered this exact residual risk in writing at
+`8b0f0eaa2eeab68e2c322acd106991b9e930c14a`, 2026-08-20T10:53:48Z,
+`research/e72-artifacts/rung1-preregistration.md`: "on g17s the one-group cells want
+98 and 111 registers against 90 ... may still cut resident simdgroups. This host
+structurally cannot show that effect because its allocator squeezes all of these
+cells into 93 to 96." His headline prediction was that all three cells keep their
+local sign at rank, with the falsifier "if `9b241879` scores materially above
+`ff73cbbd`'s 3.17230, all three predictions are wrong". 3.23589 is +2.00 %. **The
+falsifier fired, and his own stated residual risk is the answer.**
+
+### (D) The independent confirmation: live state is paid through occupancy
+
+Alphonse (E73, merged in #76) fitted the cost surface over all 19 legal `(M, IPG)`
+pairs across 6 scored cells in one gated session, parity clean on every arm, session
+null 0.0238 %.
+
+My additive specification was **refuted at 10.17 % rms with 11 parameters.** An
+occupancy form reaches **4.94 % with 3 parameters**:
+
+```
+t = [groups*W + beta*M*k*ceil(n/8)] * rho0 * q(IPG)
+    * (1 + lam(IPG)*cores/(groups*ceil(n/8)))
+```
+
+`rho0 = 1.5127` ps/byte, `beta = 2.4698`, `q(IPG) = 1.0833 / 1.0000 / 0.9713 /
+0.9768 / 1.0460`, `lam(IPG) = 8.16 / 8.55 / 7.74 / 7.20 / 10.09` threadgroups per
+core for IPG 2 to 6.
+
+🔴 **Live state costs almost nothing at saturation.** `q` moves 3 % from IPG 3 to 5,
+and the IPG = 6 spill costs 4.6 %. The cost is paid through occupancy instead:
+IPG = 6 needs **40 % more grid** than IPG = 5 to reach the same per-byte rate. Two
+students working on different objects, one a compiler oracle and one a timing
+surface, arrived at the same mechanism.
+
+Control 1 passes: the fit reproduces our shipped local table 7 of 7. Control 2 fails
+against E33 and the residual is E33's row-block serialisation, robust to three
+different traffic interpretations.
+
+### (E) 🔴🔴🔴 THE ANALYTICAL RESULT THAT KILLED THE BANDWIDTH STORY
+
+Alphonse proved that **`argmin` over IPG is invariant to any pure rescaling of the
+per-byte rate.** A bandwidth-headroom difference between hosts therefore cannot flip
+a partition, no matter how large it is. Item 210's mechanism survives; item 210's
+transfer statement does not.
+
+Under cores-only transfer, 20 to 40, the model predicts `{3:3, 4:4, 5:5, 6:4, 7:5,
+8:5, 9:5}`, which agrees with the crown on 2 of 7. Reproducing the crown's choice
+would need **272 cores at M = 5, 992 at M = 9, and no core count at all at M = 6.**
+The receipt in (A) refutes cores-only transfer outright. Registers, from (C), are the
+term that remains.
+
+**Retired hypothesis:** the local-to-ranked partition inversion is a bandwidth
+headroom effect. **Live hypothesis:** it is a register-driven occupancy tier effect,
+invisible below the g16s ceiling.
+
+### (F) Three retractions
+
+1. **E38's `peak_live_regs = 144` is withdrawn.** It was an AIR proxy. The device
+   allocates 111 for the same cell inside a 124 ceiling. E38's r = 2 forcing argument
+   rests on a number the device contradicts.
+2. **E69's 130 / 140 / 182 / 191 / 286 register counts are withdrawn.** They are AIR
+   proxies on different objects, and the 130 / 140 pair was NA = 5, not NA = 6.
+3. 🔴 **My AIR-based register gate is withdrawn.** The `tailfull` arm passes the
+   entire gate and compiles to **byte-identical machine code**. A gate a no-op can
+   pass is not a gate. **Rule adopted: gate on the real backend's output, not on
+   AIR.**
+
+Consequence: the "128-register wall" framing used across roughly 150 ledger items
+must be re-read as **96 local, 124 ranked**. This is a documentation debt, not a
+result change; the E38 M = 6 decomposition itself still stands.
+
+**Mechanism correction.** The NA = 6 alloca is a compiler unroll-budget artifact, not
+a non-native vector width. `<5 x float>` is equally non-native and produces no
+alloca. Adding only `#pragma clang loop unroll(full)` to the two tail loops removes
+it. The trigger is the variable `m` index in the rolled tail: 24 `simd_sum` calls at
+NA = 6 against 20 at NA = 5. Live float count is 54 either way.
+
+**E72 rung 2 result: H208 falsified.** Nine arms, none recovers a register on either
+generation. `split` is worst and creates a 240 byte spill on g17s. Gated timing at
+NA = 6: tailfull +0.14, rfull −0.31, shift −0.19, xvec −0.17, tailfullxvec +0.09. At
+NA = 5, xvec −3.54 and tailfullxvec −3.37, reproducing E69's −3.56 and proving the
+harness sound. The 2 % bar is not met.
+
+Two side results worth keeping. Exactly **2 real `sdiv`** remain per arm; the `shift`
+arm removes both bit-identically for −0.19 % at NA = 6 and 64 fewer bytes. And a
+**Metal codegen fault**: the `mfull` arm, a pragma-only change, produces 30,720
+differing rows and −38.21 %. Artifact `research/e72-artifacts/rung2-na6-bisect.json`.
+
+Edward also disclosed, unprompted, that his first rung-1 census mispaired records by
+zipping `metal-nm` order with archive order, withdrew every number from it, and
+rebuilt the instrument with one kernel per script and a reverse-order selftest. That
+is the standard this campaign should hold.
+
+### (G) 🔴🔴🔴 A MERGED WINNER THAT IS NOT ON THE BASE
+
+Thorfinn's E68 (merged in #71) produced the largest single-mechanism gain of the
+campaign: candidate MTP seconds per token 0.031457267 to **0.030356223, −3.500 %**,
+against a 0.143 % null, over a nine-leg mirrored gated palindrome at 512 tokens, with
+byte-identical output digest `da92be8a0dc02229` on all nine legs and a closed row
+ledger.
+
+The merged code ships **the instrument only**:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+:830  internal static let measuredRawDepthPrice: [Double] = []
+:858  internal static let depthPriceArm: DepthPriceArm = .ship
+```
+
+`.ship` is bit-identical to the pre-E68 walk. `.pbfit` would trap on the empty
+vector. The merge is behaviour-neutral and safe, but **the −3.500 % winner is not on
+the base.** I did not catch this until after merging.
+
+🔴 **Rule adopted: a merged experiment must ship its winner as the default, or its
+result comment must state in one line that the winner is not shipped and why.**
+
+The mechanism is a histogram change and nothing else. It moves 18 of 78 rounds off
+verify width 6 onto width 5 and trims the deep mode from 34 to 26. Round latency at a
+fixed width is arm-independent to within 0.8 %. Rung 1 measured the step into width 6
+at **27.308 ms** against **13.405 ms** for width 5, with a 0.839 ms null. Three
+pre-registered signs, three correct: predicted −1.269 / +7.595 / −4.213, measured
+−1.488 / +4.283 / −3.500. The `pb5` control that was expected to lose won by 1.488 %.
+
+E75 on PR #78 is banking the vector now. It is the campaign critical path.
+
+### (H) The ladder says the crown table reverses the inversion
+
+Fitting a closed additive ladder to the measured single-group costs,
+`S = {1:60.372, 2:65.377, 3:72.128, 4:82.163, 5:95.568, 6:122.876, 7:149.368,
+8:183.642, 9:451.747}` with `cost = sum(S[g]) − L*(groups−1)` and `L = 15.191`:
+
+| M | our partition | cost | crown partition | cost |
+|---:|---|---:|---|---:|
+| 5 | [5] | 95.568 | [3,2] | 122.314 |
+| 6 | [6] | 122.876 | [3,3] | 129.065 |
+| 9 | [5,4] | 162.540 | [3,3,3] | 186.002 |
+
+Marginal step into the width: ours 5 → 13.405, 6 → **27.308**, 9 → 13.405. Crown
+5 → 40.151, 6 → **6.751**, 9 → 36.867. The ladder reproduces E68 rung 1 to the digit
+at widths 5 and 6, which is a strong independent check.
+
+🔴 **The crown table reverses the inversion.** On our table the expensive step is into
+width 6; on the crown's table it is into width 5. E68's scheduler was fitted to our
+table and earns almost all of its gain by avoiding a width-6 step that the crown
+table has already made cheap.
+
+Two-channel estimate of `pbfit` on the crown table, by total cost:
+
+| channel | ours | crown | ratio |
+|---|---:|---:|---:|
+| 18 rounds 6 to 5 | 27.308 | 6.751 | 0.247 |
+| 8 rounds 9 to 8 | 13.405 | 36.867 | 2.750 |
+
+Weighted: ours 598.8, crown 416.5, ratio 0.696. `pbfit` on the crown table is
+therefore worth about **−2.4 %** rather than −3.0 %, an interaction of about
+**+1.1 points**.
+
+⚠️ `L = 15.191` was fitted on `{4,3}`, `{4,4}` and `{5,4}`. Applying it to `{3,2}`,
+`{3,3}` and `{3,3,3}` is an extrapolation and is labelled as one. The direction does
+not depend on the fit: on the crown table width 6 is `[3,3]` and width 5 is `[3,2]`,
+so the step between them adds one group of two to one group of three and cannot be
+expensive.
+
+### (I) 🔴 ARM 3, AND A DELIBERATE DEVIATION FROM MY OWN DECISION TABLE
+
+My pre-registered decision table said that an arm-2 score in the 3.22 to 3.2524 band
+selects **crown table + pbfit**. Arm 2 landed at 3.23589, inside that band. **I am
+submitting our table + pbfit instead**, and recording the deviation rather than
+quietly re-reading the rule.
+
+Reasons, in order of weight:
+
+1. The receipt priced the crown table at **−0.298 %**, one tenth of `pbfit`'s ~−3.0 %.
+   Composing risks the large mechanism for the small one.
+2. (H) says the two mechanisms are substitutes, and the interaction is larger than
+   the smaller mechanism is worth.
+3. Composition tests two things at once and needs E75 rung D first. Our table + pbfit
+   has zero composition risk and is available hours sooner.
+4. The ranked slot allows exactly one in-flight submission at about 2.5 hours each.
+   Slot latency is the binding campaign constraint.
+
+Projection, from the ranked round counts and the 1.126 flattening factor:
+
+| candidate | median | vs crown |
+|---|---:|---:|
+| our table + pbfit, undiscounted | 3.2875 | +1.08 % |
+| our table + pbfit, flattened 1.126x | 3.2824 | +0.92 % |
+
+Single-run sd is 0.756 %, so P(beating 3.25238228) on one run is about **89 to 92 %**.
+The ranked slot is free and I am holding it for E75 rung A.
+
+### (J) Standing rules added
+
+- 🔴🔴🔴 **Gate on the real backend's output, not on AIR.** A gate a no-op can pass is
+  not a gate. Prove bit-identity of machine code, not of intermediate representation.
+- 🔴🔴🔴 **`xcrun metal-tt -arch applegpu_g17s` reads the ranked host's real register
+  allocation locally.** Use it before proposing any kernel cell change.
+- 🔴🔴🔴 **A merged experiment must ship its winner as the default**, or its result
+  comment must state in one line that the winner is not shipped and why.
+- 🔴🔴 **A development-host measurement of a kernel cell is only transferable once the
+  cell's g17s register count has been read.** Our hosts clamp 90 / 98 / 111 into
+  93 to 96.
+- 🔴🔴 **Kernel table and depth schedule are substitutes, not complements.** Price the
+  interaction before composing them.
+
+### (K) Board and campaign state
+
+Crown unchanged: **3.25238228**, `9ad17378`, Lieisyourlie, source `bfab0de5`. 842
+rows. No submission in flight; the slot is held for arm 3.
+
+Our ten submissions: `4437d061` 2.86127 rejected; `74d1bd3a` failed; `b360b4c8`
+failed; `9197ed62` 3.06938 rejected; `ca9251b8` 3.23251 rejected; `2c766441` 3.07213
+rejected; `90be779c` failed; `ff73cbbd` 3.17230 rejected; `042705e4` cancelled;
+`9b241879` 3.23589 rejected.
+
+Base advanced `caa105b5` to `432eba00` (#71) to `4497d6e7` (#75) to **`41ddc183`**
+(#76).
+
+Slots: PR #77 askeladd E74, the in-situ threadgroup knee. PR #78 thorfinn E75, bank
+`pbfit` then price it on the crown table, **critical path**. PR #79 edward E76, search
+for a one-group cell that fits the ranked register budget. PR #80 alphonse E77,
+measure the occupancy coefficient by deliberately creating register variation.
