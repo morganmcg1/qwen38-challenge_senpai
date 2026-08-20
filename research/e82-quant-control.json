@@ -1,0 +1,261 @@
+{
+  "master_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head",
+  "declared_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+  "group_size": 64,
+  "bits": 4,
+  "mode": "affine",
+  "mlx_version": "0.32.0",
+  "tensors_compared": 8,
+  "tensors_identical": 8,
+  "verdict_declared_is_mlx_quantize_of_master": true,
+  "records": [
+    {
+      "tensor": "fc",
+      "shape": [
+        5120,
+        10240
+      ],
+      "parts": {
+        "weight": {
+          "bytes_ours": 26214400,
+          "bytes_shipped": 26214400,
+          "sha256_ours": "9c798ee7b2f01fdc1fd6818757bcfe047ccf7283747b0c2e1078079d2a5d5228",
+          "sha256_shipped": "9c798ee7b2f01fdc1fd6818757bcfe047ccf7283747b0c2e1078079d2a5d5228",
+          "identical": true
+        },
+        "scales": {
+          "bytes_ours": 1638400,
+          "bytes_shipped": 1638400,
+          "sha256_ours": "ab35fc09966e5410a5d1a739a076a2f27ca8d1d4e22317e199e3fbe7b076b562",
+          "sha256_shipped": "ab35fc09966e5410a5d1a739a076a2f27ca8d1d4e22317e199e3fbe7b076b562",
+          "identical": true
+        },
+        "biases": {
+          "bytes_ours": 1638400,
+          "bytes_shipped": 1638400,
+          "sha256_ours": "792c1b7dd23d01fe2f6399bc7aefb979125af893452a953dd5e13eaa1326f8dd",
+          "sha256_shipped": "792c1b7dd23d01fe2f6399bc7aefb979125af893452a953dd5e13eaa1326f8dd",
+          "identical": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "tensor": "layers.0.mlp.down_proj",
+      "shape": [
+        5120,
+        17408
+      ],
+      "parts": {
+        "weight": {
+          "bytes_ours": 44564480,
+          "bytes_shipped": 44564480,
+          "sha256_ours": "3a8635755074f32a1f85e2819ac9f0960b9e57edb0fcdd964182ebadba0d3830",
+          "sha256_shipped": "3a8635755074f32a1f85e2819ac9f0960b9e57edb0fcdd964182ebadba0d3830",
+          "identical": true
+        },
+        "scales": {
+          "bytes_ours": 2785280,
+          "bytes_shipped": 2785280,
+          "sha256_ours": "adbb81f03dd5eb13aa97631fae83415e3e0c33e1d5e5dbe1a610dc536bfc81cc",
+          "sha256_shipped": "adbb81f03dd5eb13aa97631fae83415e3e0c33e1d5e5dbe1a610dc536bfc81cc",
+          "identical": true
+        },
+        "biases": {
+          "bytes_ours": 2785280,
+          "bytes_shipped": 2785280,
+          "sha256_ours": "f274aa17db23e281995b2062d758378ea4f2455b869e3e607aed1183cd95024d",
+          "sha256_shipped": "f274aa17db23e281995b2062d758378ea4f2455b869e3e607aed1183cd95024d",
+          "identical": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "tensor": "layers.0.mlp.gate_proj",
+      "shape": [
+        17408,
+        5120
+      ],
+      "parts": {
+        "weight": {
+          "bytes_ours": 44564480,
+          "bytes_shipped": 44564480,
+          "sha256_ours": "d1592d7658fe6fae58e2218531f50b86809394ae215fdb1a1b16cb2b2b36806c",
+          "sha256_shipped": "d1592d7658fe6fae58e2218531f50b86809394ae215fdb1a1b16cb2b2b36806c",
+          "identical": true
+        },
+        "scales": {
+          "bytes_ours": 2785280,
+          "bytes_shipped": 2785280,
+          "sha256_ours": "576a6881f2f1c30e5581196de4e29b9162a09104246b017a9119bd9562a22ab8",
+          "sha256_shipped": "576a6881f2f1c30e5581196de4e29b9162a09104246b017a9119bd9562a22ab8",
+          "identical": true
+        },
+        "biases": {
+          "bytes_ours": 2785280,
+          "bytes_shipped": 2785280,
+          "sha256_ours": "f6a71ef415d3b6e8bc5f1e8519036cf436803a1ab291b534fba321736aad2199",
+          "sha256_shipped": "f6a71ef415d3b6e8bc5f1e8519036cf436803a1ab291b534fba321736aad2199",
+          "identical": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "tensor": "layers.0.mlp.up_proj",
+      "shape": [
+        17408,
+        5120
+      ],
+      "parts": {
+        "weight": {
+          "bytes_ours": 44564480,
+          "bytes_shipped": 44564480,
+          "sha256_ours": "7e0bbb33f1a5efb777d68fcc66f396c76f1f85027447ecd8681d2dc699ed79b0",
+          "sha256_shipped": "7e0bbb33f1a5efb777d68fcc66f396c76f1f85027447ecd8681d2dc699ed79b0",
+          "identical": true
+        },
+        "scales": {
+          "bytes_ours": 2785280,
+          "bytes_shipped": 2785280,
+          "sha256_ours": "2d55c48ab290b8d31a02f2542587e677b3ba6c0020b4df208b94ab1519e87891",
+          "sha256_shipped": "2d55c48ab290b8d31a02f2542587e677b3ba6c0020b4df208b94ab1519e87891",
+          "identical": true
+        },
+        "biases": {
+          "bytes_ours": 2785280,
+          "bytes_shipped": 2785280,
+          "sha256_ours": "e7dca05d6e05795523fc883a1511815708648217bc1508d87764d2d20f9d1a72",
+          "sha256_shipped": "e7dca05d6e05795523fc883a1511815708648217bc1508d87764d2d20f9d1a72",
+          "identical": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "tensor": "layers.0.self_attn.k_proj",
+      "shape": [
+        1024,
+        5120
+      ],
+      "parts": {
+        "weight": {
+          "bytes_ours": 2621440,
+          "bytes_shipped": 2621440,
+          "sha256_ours": "f349709d686afcec39950c74e24b6a69445bff202a1aaa81ae00ce415680a259",
+          "sha256_shipped": "f349709d686afcec39950c74e24b6a69445bff202a1aaa81ae00ce415680a259",
+          "identical": true
+        },
+        "scales": {
+          "bytes_ours": 163840,
+          "bytes_shipped": 163840,
+          "sha256_ours": "0a585a1bc9242bdee79398c6313e18e8f18db236594eaee3b2a69ebe76598949",
+          "sha256_shipped": "0a585a1bc9242bdee79398c6313e18e8f18db236594eaee3b2a69ebe76598949",
+          "identical": true
+        },
+        "biases": {
+          "bytes_ours": 163840,
+          "bytes_shipped": 163840,
+          "sha256_ours": "20482926ebcf61a775ebc98e661cd2e5d0d23740d79cf5547ea6dfb54ab29d9b",
+          "sha256_shipped": "20482926ebcf61a775ebc98e661cd2e5d0d23740d79cf5547ea6dfb54ab29d9b",
+          "identical": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "tensor": "layers.0.self_attn.o_proj",
+      "shape": [
+        5120,
+        6144
+      ],
+      "parts": {
+        "weight": {
+          "bytes_ours": 15728640,
+          "bytes_shipped": 15728640,
+          "sha256_ours": "f861a61654ad55480e2d9da85ec1b34abaa215b3fa3e9da774055350058087e4",
+          "sha256_shipped": "f861a61654ad55480e2d9da85ec1b34abaa215b3fa3e9da774055350058087e4",
+          "identical": true
+        },
+        "scales": {
+          "bytes_ours": 983040,
+          "bytes_shipped": 983040,
+          "sha256_ours": "dc523d0da4b10f40dcb35f3e6c42c2974c4cc2e9a5927e07c97a0726d05a91b3",
+          "sha256_shipped": "dc523d0da4b10f40dcb35f3e6c42c2974c4cc2e9a5927e07c97a0726d05a91b3",
+          "identical": true
+        },
+        "biases": {
+          "bytes_ours": 983040,
+          "bytes_shipped": 983040,
+          "sha256_ours": "c26b06335d8442cc3c856778bf8fb66cafc04dce9c95abe4fb3ea036572d3844",
+          "sha256_shipped": "c26b06335d8442cc3c856778bf8fb66cafc04dce9c95abe4fb3ea036572d3844",
+          "identical": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "tensor": "layers.0.self_attn.q_proj",
+      "shape": [
+        12288,
+        5120
+      ],
+      "parts": {
+        "weight": {
+          "bytes_ours": 31457280,
+          "bytes_shipped": 31457280,
+          "sha256_ours": "9a9258a0cf12e0620e2d755529d6a46408796979e8ea284c1b7e55eac3cc3750",
+          "sha256_shipped": "9a9258a0cf12e0620e2d755529d6a46408796979e8ea284c1b7e55eac3cc3750",
+          "identical": true
+        },
+        "scales": {
+          "bytes_ours": 1966080,
+          "bytes_shipped": 1966080,
+          "sha256_ours": "cbf6d4bb38ec7367756aafe59927aa40f45a3337ef4eb69d7f2e277fb7b80099",
+          "sha256_shipped": "cbf6d4bb38ec7367756aafe59927aa40f45a3337ef4eb69d7f2e277fb7b80099",
+          "identical": true
+        },
+        "biases": {
+          "bytes_ours": 1966080,
+          "bytes_shipped": 1966080,
+          "sha256_ours": "ff0f098e012f3a47ed256e2d754e5e25e7e16a9a8f9a93f9c0b4f48ef9c13388",
+          "sha256_shipped": "ff0f098e012f3a47ed256e2d754e5e25e7e16a9a8f9a93f9c0b4f48ef9c13388",
+          "identical": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "tensor": "layers.0.self_attn.v_proj",
+      "shape": [
+        1024,
+        5120
+      ],
+      "parts": {
+        "weight": {
+          "bytes_ours": 2621440,
+          "bytes_shipped": 2621440,
+          "sha256_ours": "6d4686ec7c0afa65f034b3cef500c5d993c0fcd2ac9f1fd924c5e42959179b94",
+          "sha256_shipped": "6d4686ec7c0afa65f034b3cef500c5d993c0fcd2ac9f1fd924c5e42959179b94",
+          "identical": true
+        },
+        "scales": {
+          "bytes_ours": 163840,
+          "bytes_shipped": 163840,
+          "sha256_ours": "157ec9adb50c2a1b61f138cc55de197b862cf581d07b7a9b1cf29f62708f9bcf",
+          "sha256_shipped": "157ec9adb50c2a1b61f138cc55de197b862cf581d07b7a9b1cf29f62708f9bcf",
+          "identical": true
+        },
+        "biases": {
+          "bytes_ours": 163840,
+          "bytes_shipped": 163840,
+          "sha256_ours": "2a160d9f8a3418c938b694ba2b63cfd9c8558674190aa2cc766ff5c92dffa57e",
+          "sha256_shipped": "2a160d9f8a3418c938b694ba2b63cfd9c8558674190aa2cc766ff5c92dffa57e",
+          "identical": true
+        }
+      },
+      "identical": true
+    }
+  ]
+}
