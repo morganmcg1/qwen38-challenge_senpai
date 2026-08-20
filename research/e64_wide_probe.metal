@@ -51,3 +51,19 @@
 E64_CELL(e64_cell_plain, qmv_fast_crossrow_affine4_g64_wide_e64plain)
 E64_CELL(e64_cell_forced, qmv_fast_crossrow_affine4_g64_wide_e64forced)
 E64_CELL(e64_cell_ballast, qmv_fast_crossrow_affine4_g64_wide_e64ballast)
+
+#ifdef E64_ROWS2_CELL
+// Compile-only screen of candidate 3. It carries thorfinn's x-group row route,
+// so `tid.x` selects the row half and the host grid is unchanged. It is kept
+// behind a macro so the source the timed rung-0b arms were compiled from stays
+// byte-reproducible.
+[[kernel]] void e64_cell_rows2(E64_PROBE_ARGS) {
+  if (int(tid.x) >= 2) {
+    return;
+  }
+  const int out_row = int(tid.y) * 8 + int(tid.x) * 4 + int(simd_gid) * 2;
+  qmv_fast_crossrow_affine4_g64_wide_e64rows2<
+      bfloat16_t, E64_NA, E64_DIRECT_NIBBLES>(
+      w, scales, biases, x, y, in_vec_size, out_vec_size, 0, out_row, simd_lid);
+}
+#endif

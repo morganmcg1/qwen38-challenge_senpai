@@ -41,7 +41,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 INCLUDE = REPO / "Vendor/mlx-swift/Source/Cmlx/mlx"
 PROBE = REPO / "research/e64_wide_probe.metal"
 ARMS = {"plain": "e64_cell_plain", "forced": "e64_cell_forced",
-        "ballast": "e64_cell_ballast"}
+        "ballast": "e64_cell_ballast", "rows2": "e64_cell_rows2"}
 # Ledger 196(A): -fno-fast-math is the whole register difference. Same flags E63
 # used, so the two censuses are comparable.
 SCORED_FLAGS = ["-std=metal4.0", "-O2", "-fno-fast-math"]
@@ -166,11 +166,16 @@ def live_ranges(body: list[str]) -> dict:
 
 
 def loop_blocks(body: list[str]) -> list[str]:
-    """Blocks of the largest natural loop, by back-edge and predecessor walk.
+    """Blocks of the heaviest natural loop, by back-edge and predecessor walk.
 
     A text-order span cannot be used. The compiler lays the ballast arm's cold
     consumer block out between the loop header and the loop body, so a span
     would count that block's stores as k-loop work.
+
+    "Heaviest" is measured in instructions, not blocks. At NA >= 7 the epilogue
+    loop over rows and outputs holds more blocks than the k loop, so a
+    block-count rank selects the epilogue and reports a k loop with no weight
+    loads in it.
     """
     blocks = split_blocks(body)
     order = [name for name, _ in blocks]
@@ -187,7 +192,9 @@ def loop_blocks(body: list[str]) -> list[str]:
             if successor in preds:
                 preds[successor].append(name)
 
+    weight = {name: len(lines) for name, lines in blocks}
     best: list[str] = []
+    best_weight = -1
     for tail in order:
         for head in succs[tail]:
             if index.get(head, len(order)) > index[tail]:
@@ -206,7 +213,9 @@ def loop_blocks(body: list[str]) -> list[str]:
                 # The entry block cannot be inside a loop, so this candidate
                 # came from a back edge whose head does not dominate its tail.
                 continue
-            if len(body_blocks) > len(best):
+            total = sum(weight[name] for name in body_blocks)
+            if total > best_weight:
+                best_weight = total
                 best = sorted(body_blocks, key=lambda name: index[name])
     return best
 
@@ -260,6 +269,7 @@ def compile_probe(workdir: pathlib.Path, na: int) -> pathlib.Path:
     optimized = workdir / f"na{na}.o3.ll"
     emit = subprocess.run(
         ["xcrun", "-sdk", "macosx", "metal", *SCORED_FLAGS, f"-DE64_NA={na}",
+         "-DE64_ROWS2_CELL=1",
          "-I", str(INCLUDE), "-S", str(PROBE), "-o", str(raw)],
         capture_output=True, text=True)
     if emit.returncode != 0:

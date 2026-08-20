@@ -39,9 +39,17 @@ GENERATED = pathlib.Path("research/generated/e64_wide_arms.h")
 TEMPLATE_LINE = "template <typename T, int NA, bool DIRECT_NIBBLES = false>"
 SIGNATURE = "METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide("
 NA_ASSERT = (
-    '  static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");'
+    '  static_assert(NA >= 2 && NA <= 6, "wide multi-row QMV supports NA in [2, 6]");'
 )
 PROBE_ASSERT = '  static_assert(NA >= 2 && NA <= 9, "probe-only NA bound");'
+
+ROWS_DECL = "  constexpr int rows_per_simd = 4;"
+ROWS2_DECL = """  // E64 candidate 3, after thorfinn's x-group row route: halve the rows each
+  // simdgroup owns. `acc`, `partial`, `packed`, `scale_local` and `bias_local`
+  // all halve, which is the largest register saving of the three candidates,
+  // and x traffic per output row is unchanged. Compile-only arm: it changes the
+  // output row mapping, so it needs the host row route before it can be timed.
+  constexpr int rows_per_simd = 2;"""
 
 ACC_DECL = "  VF acc[rows_per_simd];"
 FORCED_ACC_DECL = """  // E64 forced arm: storage only. `volatile` denies the promotion of this
@@ -138,6 +146,8 @@ def arms() -> dict[str, list[tuple[str, str, str]]]:
             ("consume the ballast in a cold block",
              EPILOGUE_ANCHOR, BALLAST_SINK + EPILOGUE_ANCHOR),
         ],
+        "e64rows2": common("e64rows2")
+        + [("halve rows_per_simd", ROWS_DECL, ROWS2_DECL)],
     }
 
 
