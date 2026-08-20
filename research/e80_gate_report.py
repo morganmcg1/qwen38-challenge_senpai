@@ -218,6 +218,115 @@ def render_power(blocks, width=6):
     return out
 
 
+def render_self_consistency(blocks, wall, gpu, width=6):
+    """G1' -- the only comparison in this report that isolates the instrument.
+
+    G0, G1 and G2 all compare a number measured today against a number published
+    by a different session on a different build. Each therefore tests the
+    instrument AND session reproducibility at the same time, and cannot
+    attribute a failure between them.
+
+    G1' compares the GPU-time tax against the WALL-clock tax measured in the
+    SAME blocks of the SAME session. Session drift cancels exactly, because both
+    quantities come from the same timed reps. What remains is the instrument.
+
+    A level must satisfy GPU <= wall: the GPU cannot be busy for longer than the
+    round it runs inside. A tax is a difference of levels, so it carries no such
+    sign constraint.
+    """
+    print("\n### G1' -- instrument self-consistency, GPU vs WALL in the SAME session\n")
+    print("| row | GPU ms | wall ms | GPU-wall | relative |")
+    print("|---|---:|---:|---:|---:|")
+    out = {}
+    rows = []
+    for fam in E71_FAMILY_TAX_MS:
+        if fam == "mlp_gate_up":
+            pair = []
+            for value_of in (gpu, wall):
+                a = abba_tax(blocks, "mlp_all", width, value_of)
+                d = abba_tax(blocks, "mlp_down", width, value_of)
+                pair.append(None if a is None or d is None else a - d)
+            rows.append((f"{fam} tax", pair[0], pair[1]))
+        else:
+            rows.append((f"{fam} tax", abba_tax(blocks, fam, width, gpu),
+                         abba_tax(blocks, fam, width, wall)))
+    for w in sorted({b["width"] for b in blocks if b["arm"] == "baseline"}):
+        rows.append((f"F({w}) level", curve_level(blocks, w, gpu),
+                     curve_level(blocks, w, wall)))
+    for name, g, w in rows:
+        if g is None or w is None:
+            continue
+        rel = (g - w) / w
+        print(f"| {name} | {g:.3f} | {w:.3f} | {g - w:+.3f} | {rel * 100:+.1f} % |")
+        out[name] = {"gpu_ms": g, "wall_ms": w, "relative": rel}
+    worst = max((abs(v["relative"]) for v in out.values()), default=0.0)
+    print(f"\nworst |GPU - wall| across every row = {worst * 100:.1f} %")
+    return out, worst
+
+
+def render_overhead(blocks, control_blocks, wall, width=6):
+    """G0' -- what does installing the instrument cost the harness?
+
+    Both sessions run the same build, host, widths, reps and ABBA order. One has
+    the census swizzles installed, the other has them completely dormant. The
+    difference between their WALL-clock numbers is instrument overhead and
+    nothing else, so it is what decides whether a G0 miss is caused by the
+    instrument or by the host no longer reproducing the published E71 session.
+    """
+    print("\n### G0' -- instrument overhead, instrumented WALL vs dormant WALL\n")
+    print("| row | instrumented ms | control ms | delta | relative |")
+    print("|---|---:|---:|---:|---:|")
+    out = {}
+    rows = []
+    for fam in E71_FAMILY_TAX_MS:
+        if fam == "mlp_gate_up":
+            pair = []
+            for bs in (blocks, control_blocks):
+                a = abba_tax(bs, "mlp_all", width, wall)
+                d = abba_tax(bs, "mlp_down", width, wall)
+                pair.append(None if a is None or d is None else a - d)
+            rows.append((f"{fam} tax", pair[0], pair[1]))
+        else:
+            rows.append((f"{fam} tax", abba_tax(blocks, fam, width, wall),
+                         abba_tax(control_blocks, fam, width, wall)))
+    for w in sorted({b["width"] for b in blocks if b["arm"] == "baseline"}):
+        rows.append((f"F({w}) level", curve_level(blocks, w, wall),
+                     curve_level(control_blocks, w, wall)))
+    for name, inst, ctrl in rows:
+        if inst is None or ctrl is None:
+            continue
+        rel = (inst - ctrl) / ctrl if ctrl else float("nan")
+        print(f"| {name} | {inst:.3f} | {ctrl:.3f} | {inst - ctrl:+.3f} "
+              f"| {rel * 100:+.1f} % |")
+        out[name] = {"instrumented_ms": inst, "control_ms": ctrl, "relative": rel}
+    return out
+
+
+def render_control_vs_e71(control_blocks, wall, width=6):
+    """Does the UNINSTRUMENTED harness still reproduce the published E71 table?
+
+    This carries no E80 code at all. A miss here is the published reference
+    failing to replay on this host and build, which no instrument can fix.
+    """
+    rows = {
+        "F(1) wall ms": verdict(curve_level(control_blocks, 1, wall), E71_F1_MS, G0_TOLERANCE),
+        "F(6) wall ms": verdict(curve_level(control_blocks, 6, wall), E71_F6_MS, G0_TOLERANCE),
+    }
+    f1, f6 = curve_level(control_blocks, 1, wall), curve_level(control_blocks, 6, wall)
+    if f1 is not None and f6 is not None:
+        rows["F(6)-F(1) wall ms"] = verdict(f6 - f1, E71_M6_WIDTH_TAX_MS, G0_TOLERANCE)
+    for fam, ref in E71_FAMILY_TAX_MS.items():
+        if fam == "mlp_gate_up":
+            a = abba_tax(control_blocks, "mlp_all", width, wall)
+            d = abba_tax(control_blocks, "mlp_down", width, wall)
+            obs = None if a is None or d is None else a - d
+        else:
+            obs = abba_tax(control_blocks, fam, width, wall)
+        rows[f"{fam} wall tax ms"] = verdict(obs, ref, G1_TOLERANCE)
+    render("G0c -- DORMANT instrument, wall clock, vs published E71", rows, G0_TOLERANCE)
+    return rows
+
+
 def verdict(observed, reference, tolerance):
     if observed is None:
         return {"observed": None, "reference": reference, "relative": None,
@@ -244,6 +353,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--census", required=True, type=pathlib.Path)
     ap.add_argument("--e71", required=True, type=pathlib.Path)
+    ap.add_argument("--control", type=pathlib.Path,
+                    help="census.json of the same session with the instrument dormant")
     ap.add_argument("--json", type=pathlib.Path)
     args = ap.parse_args()
 
@@ -336,6 +447,13 @@ def main() -> int:
     render("G1 -- family attribution, GPU time", g1, G1_TOLERANCE)
 
     power = render_power(blocks, 6)
+    self_consistency, worst_self = render_self_consistency(blocks, wall, gpu, 6)
+
+    overhead, control_rows = {}, {}
+    if args.control:
+        control_blocks = json.loads(args.control.read_text())["blocks"]
+        overhead = render_overhead(blocks, control_blocks, wall, 6)
+        control_rows = render_control_vs_e71(control_blocks, wall, 6)
 
     attributed = [g1[f"{f} GPU tax ms"]["observed"] for f in E71_DISJOINT]
     if all(v is not None for v in attributed):
@@ -399,6 +517,10 @@ def main() -> int:
             "gates": all_rows,
             "gate_pass": overall,
             "gate_power": power,
+            "instrument_self_consistency": self_consistency,
+            "instrument_self_consistency_worst_relative": worst_self,
+            "instrument_overhead": overhead,
+            "dormant_control_vs_e71": control_rows,
         }, indent=2, default=float) + "\n")
         print(f"\nwrote {args.json}")
 

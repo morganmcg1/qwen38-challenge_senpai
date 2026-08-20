@@ -121,7 +121,14 @@ def read_records(path: pathlib.Path):
 
 
 def default_dispatches(path: pathlib.Path):
-    """{width: {kernel: dispatches per round}} and {width: rounds} from `round`."""
+    """{width: {shape: dispatches per round}} and {width: rounds} from `round`.
+
+    Keyed by SHAPE, not kernel name. One Metal function name can carry several
+    unrelated costs: every projection in the model dispatches the same
+    `affine_qmv_fast` function and is told apart only by its grid. Keying on the
+    name alone collapses `lm_head` (5120 -> 248320) onto `mlp_down`
+    (17408 -> 5120) and makes per-kernel GPU time meaningless.
+    """
     counts = collections.defaultdict(collections.Counter)
     rounds = collections.Counter()
     for rec in read_records(path):
@@ -132,8 +139,8 @@ def default_dispatches(path: pathlib.Path):
             continue
         width = rec["width"]
         rounds[width] += 1
-        for kernel, n in (verify.get("kernels") or {}).items():
-            counts[width][kernel] += n
+        for shape, n in (verify.get("shapes") or {}).items():
+            counts[width][shape] += n
     per_round = {
         w: {k: v / rounds[w] for k, v in c.items()} for w, c in counts.items()
     }
@@ -155,7 +162,12 @@ def default_phase_gpu(path: pathlib.Path):
 
 
 def isolated_kernel_gpu(path: pathlib.Path):
-    """{width: {kernel: {gpu_ns, buffers}}} from single-dispatch buffers."""
+    """{width: {shape: {gpu_ns, buffers}}} from single-dispatch buffers.
+
+    In isolated mode every command buffer holds one dispatch, so the buffer's
+    GPU interval IS that dispatch's GPU time. The instrument keys these by
+    `w<W>|<phase>|<shape>` for the reason given on `default_dispatches`.
+    """
     acc = collections.defaultdict(lambda: collections.defaultdict(
         lambda: {"gpu_ns": 0, "buffers": 0}))
     for rec in read_records(path):
@@ -163,29 +175,36 @@ def isolated_kernel_gpu(path: pathlib.Path):
             continue
         for key, bucket in rec.get("exclusive_kernels", {}).items():
             w, _, rest = key.partition("|")
-            phase, _, kernel = rest.partition("|")
+            phase, _, shape = rest.partition("|")
             if phase != "verify_block":
                 continue
-            slot = acc[int(w[1:])][kernel]
+            slot = acc[int(w[1:])][shape]
             slot["gpu_ns"] += bucket["gpu_ns"]
             slot["buffers"] += bucket["buffers"]
     return {w: dict(k) for w, k in acc.items()}
 
 
 def build_width_table(width, dispatches, iso_kernels, insitu_ns, rounds):
-    """Per-kernel rows for one width, with the isolated-to-in-situ reconciliation."""
+    """Per-shape rows for one width, with the isolated-to-in-situ reconciliation."""
     rows = []
     iso = iso_kernels.get(width, {})
-    for kernel, per_round in sorted(dispatches.get(width, {}).items()):
-        entry = iso.get(kernel)
+    for shape, per_round in sorted(dispatches.get(width, {}).items()):
+        entry = iso.get(shape)
         if entry and entry["buffers"]:
             mean_ns = entry["gpu_ns"] / entry["buffers"]
             iso_ms = mean_ns * per_round / 1e6
         else:
             mean_ns, iso_ms = None, None
+        parsed = parse_shape(shape)
+        kernel = parsed["kernel"] if parsed else shape
+        group = qmv_group(shape)
         rows.append({
+            "shape": shape,
             "kernel": kernel,
+            "grid": parsed["grid"] if parsed else None,
             "family": family(kernel),
+            "unit": group[0] if group else None,
+            "e71_interceptable": group[2] if group else None,
             "dispatches_per_round": per_round,
             "isolated_mean_ns": mean_ns,
             "isolated_ms_per_round": iso_ms,
@@ -227,6 +246,30 @@ def family_totals(table):
     return dict(fam)
 
 
+def qmv_unit_totals(table):
+    """Split the one `affine_qmv_fast` name into the five projections it serves.
+
+    This is the rung-3 table. `gdn_in_proj_fused` and `fa_qkv_gate_fused` are
+    dispatched by raw `quantizedMM` calls inside `Qwen35GatedDeltaNet` and
+    `Qwen35Attention`, never through a child `Linear`, so no E71 arm could
+    intercept them. If they carry real GPU time, they are the unattributed mass.
+    """
+    units = collections.defaultdict(
+        lambda: {"ms": 0.0, "dispatches": 0.0, "interceptable": None, "shapes": 0})
+    for r in table["rows"]:
+        if r["unit"] is None:
+            continue
+        slot = units[r["unit"]]
+        slot["ms"] += r["isolated_ms_per_round"] or 0.0
+        slot["dispatches"] += r["dispatches_per_round"]
+        slot["interceptable"] = r["e71_interceptable"]
+        slot["shapes"] += 1
+    total = table["isolated_total_ms_per_round"]
+    for slot in units.values():
+        slot["share"] = slot["ms"] / total if total else None
+    return dict(units)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--default", required=True, type=pathlib.Path)
@@ -263,15 +306,32 @@ def main() -> int:
 
         rows = sorted(table["rows"],
                       key=lambda r: -(r["isolated_ms_per_round"] or 0.0))
-        print(f"\n| kernel | family | dispatches/round | isolated ms/round "
-              f"| share | in-situ est ms |")
-        print("|---|---|---:|---:|---:|---:|")
+        print(f"\n| kernel | grid | unit | family | dispatches/round "
+              f"| isolated ms/round | share | in-situ est ms |")
+        print("|---|---|---|---|---:|---:|---:|---:|")
         for r in rows[:args.top]:
             ms = "--" if r["isolated_ms_per_round"] is None else f"{r['isolated_ms_per_round']:.4f}"
             sh = "--" if r["share_of_isolated"] is None else f"{r['share_of_isolated'] * 100:.2f} %"
             est = "--" if r["insitu_estimate_ms"] is None else f"{r['insitu_estimate_ms']:.4f}"
-            print(f"| `{short(r['kernel'])}` | {r['family']} "
-                  f"| {r['dispatches_per_round']:.1f} | {ms} | {sh} | {est} |")
+            grid = "x".join(str(v) for v in r["grid"]) if r["grid"] else "--"
+            print(f"| `{short(r['kernel'], 56)}` | {grid} | {r['unit'] or '--'} "
+                  f"| {r['family']} | {r['dispatches_per_round']:.1f} | {ms} | {sh} | {est} |")
+
+        units = qmv_unit_totals(table)
+        if units:
+            print("\n**`affine_qmv_fast` split by projection.** `E71 arm?` = no means "
+                  "no E71 arm could ever intercept it.\n")
+            print("| projection | E71 arm? | dispatches/round | isolated ms/round | share |")
+            print("|---|---|---:|---:|---:|")
+            for name, slot in sorted(units.items(), key=lambda kv: -kv[1]["ms"]):
+                sh = "--" if slot["share"] is None else f"{slot['share'] * 100:.2f} %"
+                print(f"| {name} | {'yes' if slot['interceptable'] else '**no**'} "
+                      f"| {slot['dispatches']:.1f} | {slot['ms']:.4f} | {sh} |")
+            blind = sum(s["ms"] for s in units.values() if not s["interceptable"])
+            blind_d = sum(s["dispatches"] for s in units.values() if not s["interceptable"])
+            tot = table["isolated_total_ms_per_round"]
+            print(f"\nE71-blind projections: {blind:.4f} ms/round over {blind_d:.0f} "
+                  f"dispatches" + (f", {blind / tot * 100:.2f} % of the round" if tot else ""))
 
         fam = family_totals(table)
         print(f"\n| family | kernels | dispatches/round | isolated ms/round | share |")
@@ -333,6 +393,7 @@ def main() -> int:
             "rounds_per_width": rounds,
             "widths": {str(w): t for w, t in tables.items()},
             "families_per_width": {str(w): family_totals(t) for w, t in tables.items()},
+            "qmv_units_per_width": {str(w): qmv_unit_totals(t) for w, t in tables.items()},
             "riders": verdicts,
             "ranked_weighted_family_share": dict(weighted),
         }, indent=2, default=float) + "\n")

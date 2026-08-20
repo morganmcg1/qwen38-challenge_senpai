@@ -242,5 +242,43 @@
       ],
       "resolvable_at_tolerance": true
     }
-  }
+  },
+  "instrument_self_consistency": {
+    "mlp_gate_up tax": {
+      "gpu_ms": 21.49733487499998,
+      "wall_ms": 20.029708499999998,
+      "relative": 0.07327247797939648
+    },
+    "mlp_down tax": {
+      "gpu_ms": 16.77351554166667,
+      "wall_ms": 16.745500000000007,
+      "relative": 0.0016730191195641598
+    },
+    "gdn_out_proj tax": {
+      "gpu_ms": 2.989847041666664,
+      "wall_ms": 2.982916500000016,
+      "relative": 0.002323411220745886
+    },
+    "fa_o_proj tax": {
+      "gpu_ms": 1.1010176666666638,
+      "wall_ms": 1.1236455000000092,
+      "relative": -0.020137875631900993
+    },
+    "lm_head tax": {
+      "gpu_ms": 2.4333694999999977,
+      "wall_ms": 2.5696664999999967,
+      "relative": -0.05304073505258335
+    },
+    "F(1) level": {
+      "gpu_ms": 64.12636624999999,
+      "wall_ms": 65.9243335,
+      "relative": -0.027273195716116166
+    },
+    "F(6) level": {
+      "gpu_ms": 121.639388125,
+      "wall_ms": 122.0615755,
+      "relative": -0.0034588065349034193
+    }
+  },
+  "instrument_self_consistency_worst_relative": 0.07327247797939648
 }
