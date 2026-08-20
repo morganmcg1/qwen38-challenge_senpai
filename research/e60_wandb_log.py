@@ -181,6 +181,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--leg")
     parser.add_argument("--summary")
+    parser.add_argument(
+        "--summary-key",
+        default="",
+        help="namespace for the summary keys, so two sessions do not collide",
+    )
     args = parser.parse_args()
 
     run = resume_run()
@@ -199,6 +204,8 @@ def main() -> int:
         print(json.dumps(record, indent=2, default=str))
     if args.summary:
         summary = json.loads(pathlib.Path(args.summary).read_text())
+        if args.summary_key:
+            summary = {f"{args.summary_key}/{k}": v for k, v in summary.items()}
         run.summary.update(summary)
         print(json.dumps(summary, indent=2, default=str)[:4000])
     run.finish()

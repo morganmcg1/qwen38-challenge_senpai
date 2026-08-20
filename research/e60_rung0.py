@@ -193,6 +193,81 @@ def blocks(legs: dict, left: str, right: str, size: int = 4) -> dict:
     }
 
 
+def regression_null(legs: dict, left: str, right: str) -> dict:
+    """Fit seconds/token on leg position and arm, then read the residual scatter.
+
+    The two-block disagreement carries one degree of freedom, so it is a badly
+    over-confident null. Fitting all legs at once spends two degrees of freedom
+    on the mean and the drift slope and leaves the rest for the noise estimate.
+
+    This is only valid because the arm order is balanced on position: the C legs
+    and the B legs have equal position sums, so drift is orthogonal to the arm
+    contrast and the simple difference of arm means is already drift-adjusted.
+    The function checks that balance rather than assuming it.
+    """
+    good = sorted(
+        (leg for leg in legs.values() if leg.get("ok")), key=lambda leg: leg["order"]
+    )
+    chosen = [leg for leg in good if leg["arm"] in (left, right)]
+    if len(chosen) < 4:
+        return {"resolved": False, "reason": "fewer than four usable legs"}
+
+    positions = [leg["order"] for leg in chosen]
+    values = [leg["mtp_seconds_per_token"] for leg in chosen]
+    left_positions = [leg["order"] for leg in chosen if leg["arm"] == left]
+    right_positions = [leg["order"] for leg in chosen if leg["arm"] == right]
+    balanced = (
+        len(left_positions) == len(right_positions)
+        and sum(left_positions) == sum(right_positions)
+    )
+
+    mean_position = statistics.fmean(positions)
+    mean_value = statistics.fmean(values)
+    sxx = sum((p - mean_position) ** 2 for p in positions)
+    sxy = sum(
+        (p - mean_position) * (v - mean_value) for p, v in zip(positions, values)
+    )
+    slope = sxy / sxx
+    left_mean = statistics.fmean(
+        leg["mtp_seconds_per_token"] for leg in chosen if leg["arm"] == left
+    )
+    right_mean = statistics.fmean(
+        leg["mtp_seconds_per_token"] for leg in chosen if leg["arm"] == right
+    )
+    effect = left_mean - right_mean
+
+    residuals = []
+    for leg, position, value in zip(chosen, positions, values):
+        indicator = 0.5 if leg["arm"] == left else -0.5
+        fitted = mean_value + slope * (position - mean_position) + effect * indicator
+        residuals.append(value - fitted)
+    dof = len(chosen) - 3
+    residual_sd = (sum(r * r for r in residuals) / dof) ** 0.5
+    standard_error = residual_sd * (1.0 / len(left_positions) + 1.0 / len(right_positions)) ** 0.5
+    # Student t 97.5th percentile for the small dof this design can reach.
+    critical = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447}.get(dof, 2.0)
+    return {
+        "resolved": True,
+        "position_balanced": balanced,
+        "left_position_sum": sum(left_positions),
+        "right_position_sum": sum(right_positions),
+        "drift_slope_seconds_per_token_per_leg": slope,
+        "drift_slope_percent_per_leg": slope / mean_value * 100.0,
+        "effect_seconds_per_token": effect,
+        "effect_percent": effect / right_mean * 100.0,
+        "residual_sd_seconds_per_token": residual_sd,
+        "residual_sd_percent": residual_sd / mean_value * 100.0,
+        "standard_error_percent": standard_error / right_mean * 100.0,
+        "t_statistic": effect / standard_error,
+        "degrees_of_freedom": dof,
+        "significant_at_95_percent": abs(effect / standard_error) > critical,
+        "confidence_interval_95_percent": [
+            (effect - critical * standard_error) / right_mean * 100.0,
+            (effect + critical * standard_error) / right_mean * 100.0,
+        ],
+    }
+
+
 def contrasts(arms: dict) -> dict:
     out = {}
     for left, right in (("B", "A"), ("C", "A"), ("C", "B")):
@@ -249,6 +324,7 @@ def main() -> int:
         "arms": arms,
         "contrasts": contrasts(arms),
         "counterbalanced_blocks": blocks(legs, "C", "B"),
+        "regression_null": regression_null(legs, "C", "B"),
     }
     text = json.dumps(report, indent=2, default=str)
     if args.json_out:
