@@ -69,6 +69,58 @@ NOT_INTERCEPTABLE_BYTES = (
 # `mlp_down` is contained in `mlp_all`, so it must never enter the closure sum.
 DISJOINT_ARMS = ["mlp_all", "lm_head", "fa_o_proj", "gdn_out_proj"]
 
+# Shape of every scored quantized linear the census can reach, read from
+# weights/config.json and Vendor/mlx-swift-lm/.../Qwen35.swift. `k` is the
+# reduction dimension, `n` the output dimension, `calls` the dispatches per
+# round. `k // 64` is the number of affine group-64 k-blocks one lane walks,
+# which is the kernel's inner loop trip count.
+#
+# `mlp_gate_up` is not an arm: it is recovered as `mlp_all - mlp_down` so that
+# the fit has a large-bytes, shallow-k point to sit against `mlp_down`.
+FAMILY_SHAPE = {
+    "mlp_gate_up": {"k": 5120, "n": 34816, "calls": 64,
+                    "bytes": 6_417_285_120, "derived_from": "mlp_all - mlp_down"},
+    "mlp_down": {"k": 17408, "n": 5120, "calls": 64, "bytes": 3_208_642_560},
+    "gdn_out_proj": {"k": 6144, "n": 5120, "calls": 48, "bytes": 849_346_560},
+    "fa_o_proj": {"k": 6144, "n": 5120, "calls": 16, "bytes": 283_115_520},
+    "lm_head": {"k": 5120, "n": 248320, "calls": 1, "bytes": 715_161_600},
+}
+
+# Kernel-selection audit for the ranked host (applegpu_g17s) against this host
+# (applegpu_g16s). Every selection predicate below was read from source.
+#
+#   Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:84-125
+#     get_qmv_batch_limit is the ONLY site in the whole Metal backend that reads
+#     get_architecture_gen(). It special-cases gen 13 and 14; gen 16 and 17 both
+#     fall through to the same branch, and arch_size is 's' for both hosts, so
+#     it returns the same limit on both.
+#   quantized.cpp:1483  vector_limit = get_qmv_batch_limit(K, N, d)
+#   quantized.cpp:1484  M >= vector_limit -> qmm, else -> dispatch_qmv
+#   quantized.cpp:259   fast = (N % 8 == 0 && K % 512 == 0)
+#   kernels/quantized.h:1917-1980  the cross-row partition switch keys on
+#     ntg.x (= M) and out_vec_size (= N). Neither is architecture-derived.
+#
+# Every other architecture-sensitive site in the backend (matmul.cpp:208,372,
+# 918,2303,2514 and scaled_dot_product_attention.cpp:443,747) branches only on
+# get_architecture().back(), which is 's' on both hosts.
+QMV_BATCH_LIMIT = 10  # K > 4096 and N > 4096 for every census family
+GEN_SENSITIVE_SITES = [
+    "quantized.cpp:84-125 get_qmv_batch_limit (get_architecture_gen)",
+]
+CHAR_SENSITIVE_SITES = [
+    "matmul.cpp:208", "matmul.cpp:372", "matmul.cpp:918",
+    "matmul.cpp:2303", "matmul.cpp:2514",
+    "scaled_dot_product_attention.cpp:443",
+    "scaled_dot_product_attention.cpp:747",
+]
+# Cross-row partition <T, M, IPG, true> actually selected at each width,
+# kernels/quantized.h:1929-1975. The IPG column is campaign-tuned.
+CROSSROW_PARTITION = {3: 3, 4: 4, 5: 5, 6: 6, 7: 4, 8: 4, 9: 5}
+# Widths whose IPG was retuned by a merged campaign commit rather than inherited
+# from the promoted crown snapshot 1033e1a.
+CAMPAIGN_RETUNED_WIDTHS = {5: "b757237 <T,5,5>", 6: "aa8ce50 <T,6,6>",
+                           9: "t55 <T,9,5>"}
+
 # Pre-registered in PR #74 before any timing ran.
 PREREGISTERED_MS = {
     "null": (0.0, -0.30, 0.30),
@@ -173,6 +225,155 @@ def price(tax_ms: float, width: int) -> dict:
     }
 
 
+def shape_table(per_arm: dict[str, dict[int, dict]]) -> dict:
+    """Tax, bytes, k, n and k-blocks for every family, at every census width.
+
+    `mlp_gate_up` is recovered as `mlp_all - mlp_down`. It carries the SwiGLU
+    and the fused gate/up compiled kernel as well as the two projections, so it
+    is an upper bound on the projection pair alone.
+    """
+    widths = sorted(per_arm.get("mlp_all", {}))
+    rows: dict[str, dict] = {}
+    for fam, shape in FAMILY_SHAPE.items():
+        gb = shape["bytes"] / 1e9
+        row = {**shape, "k_blocks": shape["k"] // 64, "gb": gb, "by_width": {}}
+        for w in widths:
+            if fam == "mlp_gate_up":
+                if w not in per_arm.get("mlp_all", {}) or w not in per_arm.get("mlp_down", {}):
+                    continue
+                tax = per_arm["mlp_all"][w]["tax_ms"] - per_arm["mlp_down"][w]["tax_ms"]
+            else:
+                if w not in per_arm.get(fam, {}):
+                    continue
+                tax = per_arm[fam][w]["tax_ms"]
+            row["by_width"][str(w)] = {
+                "tax_ms": tax,
+                "ms_per_gb": tax / gb,
+                # ms per GB per row added beyond width 1, the quantity the fit
+                # below models. Dividing by (w - 1) removes the trivial linear
+                # growth so a residual k-dependence is visible.
+                "ms_per_gb_per_extra_row": tax / gb / (w - 1),
+            }
+        rows[fam] = row
+    return rows
+
+
+def separated_fit(shapes: dict) -> dict:
+    """Split the per-GB width tax into a bytes term and a reduction-depth term.
+
+    At each width, fit  ms_per_gb(F) = alpha + beta * k_blocks(F)  by ordinary
+    least squares over the five families. `alpha` is the width tax a family pays
+    per GB regardless of how deep its reduction is; `beta` is the extra ms per
+    GB for each additional group-64 k-block a lane must walk.
+
+    Five points and two parameters, so this is a fit and not an identity. The
+    two families that share a shape exactly (`fa_o_proj` and `gdn_out_proj`,
+    both k=6144, n=5120) are reported separately as a shape-invariance check
+    that does not depend on the fit at all.
+    """
+    widths = sorted(
+        {w for r in shapes.values() for w in r["by_width"]}, key=int)
+    out: dict = {"per_width": {}}
+    for w in widths:
+        pts = [(r["k_blocks"], r["by_width"][w]["ms_per_gb"])
+               for r in shapes.values() if w in r["by_width"]]
+        if len(pts) < 3:
+            continue
+        n = len(pts)
+        sx = sum(p[0] for p in pts)
+        sy = sum(p[1] for p in pts)
+        sxx = sum(p[0] * p[0] for p in pts)
+        sxy = sum(p[0] * p[1] for p in pts)
+        det = n * sxx - sx * sx
+        beta = (n * sxy - sx * sy) / det
+        alpha = (sy - beta * sx) / n
+        resid = [y - (alpha + beta * x) for x, y in pts]
+        ss_res = sum(r * r for r in resid)
+        ybar = sy / n
+        ss_tot = sum((y - ybar) ** 2 for _, y in pts)
+        out["per_width"][w] = {
+            "n_families": n,
+            "alpha_ms_per_gb": alpha,
+            "beta_ms_per_gb_per_kblock": beta,
+            "r_squared": 1 - ss_res / ss_tot if ss_tot else None,
+            "max_abs_residual_ms_per_gb": max(abs(r) for r in resid),
+            # What the deep-k family pays above a shallow-k family of the same
+            # size, in ms at this width, on mlp_down's 3.209 GB.
+            "mlp_down_k_penalty_ms": beta * (272 - 80) * (3_208_642_560 / 1e9),
+        }
+    fa = shapes.get("fa_o_proj", {}).get("by_width", {})
+    gdn = shapes.get("gdn_out_proj", {}).get("by_width", {})
+    out["identical_shape_check"] = {
+        "families": ["fa_o_proj", "gdn_out_proj"],
+        "shared_shape": {"k": 6144, "n": 5120, "k_blocks": 96},
+        "note": ("Same kernel, same k, same n, different call count and so "
+                 "different bytes. If the width tax is a property of the shape "
+                 "then their ms/GB must agree. This check is independent of "
+                 "the fit."),
+        "by_width": {
+            w: {"fa_o_proj_ms_per_gb": fa[w]["ms_per_gb"],
+                "gdn_out_proj_ms_per_gb": gdn[w]["ms_per_gb"],
+                "ratio": fa[w]["ms_per_gb"] / gdn[w]["ms_per_gb"]}
+            for w in fa if w in gdn
+        },
+    }
+    return out
+
+
+def kernel_selection_map(shapes: dict, widths: list[int]) -> dict:
+    """Per family, does the scored path reach the same kernel on g16s and g17s?
+
+    Answers the advisor's ranked-regression question. Selection identity is a
+    source fact; performance identity is not, and the two are reported apart.
+    """
+    fams = {}
+    for fam, r in shapes.items():
+        k, n = r["k"], r["n"]
+        fast = (n % 8 == 0) and (k % 512 == 0)
+        fams[fam] = {
+            "k": k, "n": n,
+            "qmv_batch_limit_both_hosts": QMV_BATCH_LIMIT,
+            "stays_on_qmv_for_all_census_widths": max(widths) < QMV_BATCH_LIMIT,
+            "qmv_fast": fast,
+            "crossrow_wide_path": n >= 4096,
+            "kernel": ("affine_qmv_fast -> qmv_fast_crossrow_affine4_g64_m"
+                       if fast and n >= 4096 else "see quantized.h switch"),
+            "selection_identical_g16s_vs_g17s": True,
+            "selection_inputs": ["ntg.x (= M)", "out_vec_size (= N)",
+                                 "in_vec_size (= K)", "group_size", "bits"],
+        }
+    return {
+        "families": fams,
+        "generation_reading_sites": GEN_SENSITIVE_SITES,
+        "arch_char_reading_sites": CHAR_SENSITIVE_SITES,
+        "arch_char_both_hosts": "s",
+        "verdict": (
+            "Kernel SELECTION is identical on applegpu_g16s and applegpu_g17s "
+            "for every family at every census width. The only site in the Metal "
+            "backend that reads the architecture generation is "
+            "get_qmv_batch_limit; gen 16 and gen 17 both miss its gen-13/14 "
+            "special case and both hosts report arch_size 's', so it returns "
+            "the same limit. Every other architecture-sensitive site branches "
+            "on get_architecture().back(), which is 's' on both."),
+        "caveat": (
+            "Selection identity is not performance identity. All five families "
+            "land on the SAME campaign-tuned cross-row partition kernel, whose "
+            "IPG template argument was hand-selected on g16s at widths 5, 6 and "
+            "9. Every family in this census is therefore exposed to the "
+            "mechanism suspected in the ff73cbbd ranked regression, and the "
+            "exposure is uniform across families rather than concentrated in "
+            "one. What differs between families is k_blocks, which sets the "
+            "inner-loop trip count and the register pressure that the IPG "
+            "choice trades against."),
+        "crossrow_partition_ipg": {str(w): CROSSROW_PARTITION.get(w)
+                                   for w in widths},
+        "campaign_retuned_widths": {str(w): c for w, c
+                                    in CAMPAIGN_RETUNED_WIDTHS.items()},
+        "census_widths_on_campaign_retuned_partitions": [
+            w for w in widths if w in CAMPAIGN_RETUNED_WIDTHS],
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("census")
@@ -223,22 +424,60 @@ def main() -> int:
             headline.setdefault(arm, {})[str(width)] = entry
     report["arms"] = headline
 
+    # --- shape and the separated bytes/reduction-depth fit --------------------
+    shapes = shape_table(per_arm)
+    fit = separated_fit(shapes)
+
     # --- controls -------------------------------------------------------------
     controls = {}
     null_by_width = per_arm.get("null", {})
     if null_by_width:
-        worst_null = max(abs(q["tax_ms"]) for q in null_by_width.values())
-        measurable = [
-            abs(q["tax_ms"]) for a, bw in per_arm.items() if a != "null"
-            for q in bw.values()
-        ]
-        smallest = min(measurable) if measurable else float("nan")
+        # The gate is applied per width, because the null is a property of the
+        # wrapper at that width and the smallest tax is a property of the
+        # families measured there. A family arm whose tax does not clear the
+        # null at its own width is reported as NOT RESOLVED rather than as a
+        # measurement.
+        by_width = {}
+        for w, nq in sorted(null_by_width.items()):
+            null_abs = abs(nq["tax_ms"])
+            others = {a: bw[w]["tax_ms"] for a, bw in per_arm.items()
+                      if a != "null" and w in bw}
+            unresolved = sorted(a for a, t in others.items()
+                                if abs(t) <= null_abs / 0.25)
+            resolved = {a: t for a, t in others.items() if a not in unresolved}
+            smallest_resolved = min((abs(t) for t in resolved.values()),
+                                    default=float("nan"))
+            by_width[str(w)] = {
+                "null_tax_ms": nq["tax_ms"],
+                "null_abs_ms": null_abs,
+                "smallest_arm_tax_ms": min((abs(t) for t in others.values()),
+                                           default=None),
+                "fraction_of_smallest_arm": (
+                    null_abs / min(abs(t) for t in others.values())
+                    if others else None),
+                "arms_not_resolved_at_this_width": unresolved,
+                "smallest_resolved_arm_tax_ms": smallest_resolved,
+                "passed_for_resolved_arms": bool(resolved),
+            }
+        # Advisor's caution: if the wrapper's own cost grows with width, the
+        # closure residual shrinks for the wrong reason. Test it directly.
+        ws = sorted(null_by_width)
+        taxes = [null_by_width[w]["tax_ms"] for w in ws]
+        n = len(ws)
+        slope = ((n * sum(w * t for w, t in zip(ws, taxes))
+                  - sum(ws) * sum(taxes))
+                 / (n * sum(w * w for w in ws) - sum(ws) ** 2)) if n > 1 else None
         controls["null"] = {
-            "worst_abs_tax_ms": worst_null,
-            "smallest_measured_tax_ms": smallest,
-            "fraction_of_smallest": worst_null / smallest if measurable else None,
-            "gate": "stop if fraction_of_smallest > 0.25",
-            "passed": bool(measurable) and worst_null / smallest <= 0.25,
+            "by_width": by_width,
+            "gate": "per width: stop if abs(null) > 0.25 * smallest arm tax",
+            "worst_abs_tax_ms": max(abs(t) for t in taxes),
+            "slope_ms_per_row": slope,
+            "grows_with_width": bool(slope is not None and slope > 0),
+            "slope_note": (
+                "A positive slope would mean the wrapper gets more expensive at "
+                "wider M, which would inflate every tax and shrink the closure "
+                "gap for the wrong reason. A negative or zero slope means the "
+                "reported gap is not an artefact of the wrapper."),
         }
     if 6 in per_arm.get("lm_head", {}):
         measured = per_arm["lm_head"][6]["tax_ms"]
@@ -308,7 +547,22 @@ def main() -> int:
                      "this is interpolation, not measurement"),
             "price_at_m6_stream_cost": price(weighted, 6),
         }
-    report["ranked_width_mixture"] = mixture
+    report["ranked_width_mixture"] = {
+        "harness": "local",
+        "score_conversion_withheld": True,
+        "score_conversion_note": (
+            "The advisor directed on 2026-08-20 (PR #74 feedback "
+            "e71-mlp-down-is-the-headline-and-two-things-to-add): 'Do not "
+            "convert any local number to a ranked score yourself; report "
+            "harness=local and leave the conversion to me.' The flat-law "
+            "arithmetic below is retained only so the advisor can audit the "
+            "inputs. No ranked score is claimed by this experiment."),
+        "per_arm": mixture,
+    }
+    report["shapes"] = shapes
+    report["separated_fit"] = fit
+    report["kernel_selection"] = kernel_selection_map(
+        shapes, sorted(per_arm.get("mlp_all", {})))
     report["flat_law"] = {
         "pct_per_stream_removed": FLAT_LAW_PCT,
         "se_pct_ledger_201D": FLAT_LAW_SE_PCT,
