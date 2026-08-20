@@ -1,0 +1,528 @@
+e63_rung1 head=84858d5f81f161e915d2ad1eeadc9dfc89cc74b9 dirty=1
+e63_rung1 host=ip-10-231-2-12 chip=Apple M4 Pro
+e63_rung1 entry_thermal gpu_temp=37.56368637084961C cpu_temp=39.27027893066406C gpu_power=0.0063126180320978165W all_power=0.020309505984187126W
+e63_rung1 started=2026-08-20T03:12:53Z
+[0/3] Write swift-version--58304C5D6DBC2206.txt
+[0/1] Planning build
+[1/1] Compiling plugin CudaBuild
+[2/2] Compiling plugin GenerateManual
+[3/3] Compiling plugin GenerateDoccReference
+Building for debugging...
+[3/13] Write sources
+[5/13] Write swift-version--58304C5D6DBC2206.txt
+[7/12] Compiling MLXFastModel Qwen36MTPBlockSession.swift
+[8/12] Emitting module MLXFastModel
+[9/13] Compiling MLXFastModel Qwen36MTPReferenceSession.swift
+[10/16] Compiling MLXFastRuntimeWorkerSupport QwenRuntimeMTPWorker.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift:526:5: warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'QwenMTPAsyncResultBox<T>', consider removing it
+524 |     let box = QwenMTPAsyncResultBox<T>()
+525 |     nonisolated(unsafe) let unsafeOperation = operation
+526 |     nonisolated(unsafe) let unsafeBox = box
+    |     `- warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'QwenMTPAsyncResultBox<T>', consider removing it
+527 |     Task {
+528 |         do {
+
+macro expansion #adaptHuggingFaceTokenizer:8:9: warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'any Tokenizer', consider removing it
+`- /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift:158:57: note: expanded code originates here
+156 |                 try await LLMModelFactory.shared.load(
+157 |                     from: targetURL,
+158 |                     using: #huggingFaceTokenizerLoader()
+    |                            `- note: in expansion of macro 'huggingFaceTokenizerLoader' here
+    +--- macro expansion #huggingFaceTokenizerLoader -------------------
+    |10 |             //
+    |11 |             let upstream = try await Tokenizers.AutoTokenizer.from(modelFolder: directory)
+    |12 |             return #adaptHuggingFaceTokenizer(upstream)
+    |   |                    `- note: in expansion of macro 'adaptHuggingFaceTokenizer' here
+    |   +--- macro expansion #adaptHuggingFaceTokenizer ----------------
+    |   | 6 |     struct TokenizerBridge: MLXLMCommon.Tokenizer {
+    |   | 7 |         // nonisolated(unsafe): the upstream tokenizer is immutable after init.
+    |   | 8 |         nonisolated(unsafe) private let upstream: any Tokenizers.Tokenizer
+    |   |   |         `- warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'any Tokenizer', consider removing it
+    |   | 9 | 
+    |   |10 |         init(_ upstream: any Tokenizers.Tokenizer) {
+    |   +---------------------------------------------------------------
+    |13 |         }
+    |14 |     }
+    +-------------------------------------------------------------------
+159 |                 )
+160 |             }
+[11/16] Emitting module MLXFastRuntimeWorkerSupport
+[11/16] Write Objects.LinkFileList
+[13/73] Compiling MLXFastTests LagunaConfigTests.swift
+[14/73] Compiling MLXFastTests LagunaNVFP4KernelTests.swift
+[15/73] Compiling MLXFastTests MLXTensorBridgeTests.swift
+[16/73] Compiling MLXFastTests NAXSplitKGEMMTests.swift
+[17/77] Compiling MLXFastTests CheckpointIndexTests.swift
+[18/77] Compiling MLXFastTests DenseTensorStoreTests.swift
+[19/77] Compiling MLXFastTests LagunaArtifactContractTests.swift
+[20/77] Compiling MLXFastTests LagunaArtifactFixtureSupport.swift
+[20/77] Linking mlxfast-runtime-worker
+[21/77] Applying mlxfast-runtime-worker
+[23/77] Compiling MLXFastTests NVFP4QuantizedMMTests.swift
+[24/77] Compiling MLXFastTests Qwen35ArtifactContractTests.swift
+[25/77] Compiling MLXFastTests Qwen35ArtifactFixtureSupport.swift
+[26/77] Compiling MLXFastTests Qwen35ReferenceParityTests.swift
+[27/77] Compiling MLXFastTests QwenMTPTrustedContextGuardTests.swift
+[28/77] Compiling MLXFastTests QwenMTPVerbTests.swift
+[29/77] Compiling MLXFastTests QwenQMVCostCurveTests.swift
+[30/77] Compiling MLXFastTests R2RequestExecutionTests.swift
+[31/77] Compiling MLXFastTests DFlashDryRunReachesItsGateTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/DFlashEnablementInterlockTests.swift:333:38: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+331 |         for line in lines {
+332 |             let blank = line.trimmingCharacters(in: .whitespaces).isEmpty
+333 |             if !blank && line.prefix { $0 == " " }.count < indent { break }
+    |                                      `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+334 |             body.append(line.count >= indent ? String(line.dropFirst(indent)) : String(line))
+335 |         }
+[32/77] Compiling MLXFastTests DFlashEnablementInterlockTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/DFlashEnablementInterlockTests.swift:333:38: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+331 |         for line in lines {
+332 |             let blank = line.trimmingCharacters(in: .whitespaces).isEmpty
+333 |             if !blank && line.prefix { $0 == " " }.count < indent { break }
+    |                                      `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+334 |             body.append(line.count >= indent ? String(line.dropFirst(indent)) : String(line))
+335 |         }
+[33/77] Compiling MLXFastTests DFlashGateTextSupport.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/DFlashEnablementInterlockTests.swift:333:38: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+331 |         for line in lines {
+332 |             let blank = line.trimmingCharacters(in: .whitespaces).isEmpty
+333 |             if !blank && line.prefix { $0 == " " }.count < indent { break }
+    |                                      `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+334 |             body.append(line.count >= indent ? String(line.dropFirst(indent)) : String(line))
+335 |         }
+[34/77] Compiling MLXFastTests DFlashGatesOnlyArtifactLeakTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/DFlashEnablementInterlockTests.swift:333:38: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+331 |         for line in lines {
+332 |             let blank = line.trimmingCharacters(in: .whitespaces).isEmpty
+333 |             if !blank && line.prefix { $0 == " " }.count < indent { break }
+    |                                      `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+334 |             body.append(line.count >= indent ? String(line.dropFirst(indent)) : String(line))
+335 |         }
+[35/77] Compiling MLXFastTests DFlashGoldenKeyTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/DFlashEnablementInterlockTests.swift:333:38: warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+331 |         for line in lines {
+332 |             let blank = line.trimmingCharacters(in: .whitespaces).isEmpty
+333 |             if !blank && line.prefix { $0 == " " }.count < indent { break }
+    |                                      `- warning: trailing closure in this context is confusable with the body of the statement; pass as a parenthesized argument to silence this warning
+334 |             body.append(line.count >= indent ? String(line.dropFirst(indent)) : String(line))
+335 |         }
+[36/77] Compiling MLXFastTests DFlashStartupMemoryPolicyTests.swift
+[37/77] Compiling MLXFastTests DFlashWorkflowStepHarness.swift
+[38/77] Compiling MLXFastTests E57SdpaChunkDispatchCountTests.swift
+[39/77] Compiling MLXFastTests E58DispatchStormTests.swift
+[40/77] Compiling MLXFastTests GoldenTests.swift
+[41/77] Compiling MLXFastTests QwenDraftReadoutExactnessTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:138:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+136 |     func rows(_ range: Range<Int>) -> QuantizedRows {
+137 |         QuantizedRows(
+138 |             weight: weight[range, axis: 0],
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+139 |             scales: scales[range, axis: 0],
+140 |             biases: biases[range, axis: 0])
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:139:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+137 |         QuantizedRows(
+138 |             weight: weight[range, axis: 0],
+139 |             scales: scales[range, axis: 0],
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+140 |             biases: biases[range, axis: 0])
+141 |     }
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:140:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+138 |             weight: weight[range, axis: 0],
+139 |             scales: scales[range, axis: 0],
+140 |             biases: biases[range, axis: 0])
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+141 |     }
+142 | 
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:344:20: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+342 |     /// natural input distribution actually gets to the membership boundary.
+343 |     private static func shortlist(_ scores: MLXArray) -> (ids: [Int32], gap: Float) {
+344 |         let real = scores[0 ..< realCount, axis: 0]
+    |                    `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+345 |         let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+346 |         let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:346:19: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+344 |         let real = scores[0 ..< realCount, axis: 0]
+345 |         let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+346 |         let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+    |                   `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+347 |         let f32 = real.asType(.float32)
+348 |         let included = MLX.take(f32, MLXArray(ids), axis: 0).min().item(Float.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:365:17: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+363 |         let compact = concatenated(
+364 |             [
+365 |                 logits[0 ..< prefixCount, axis: 0],
+    |                 `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+366 |                 logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+367 |             ], axis: 0)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:366:17: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+364 |             [
+365 |                 logits[0 ..< prefixCount, axis: 0],
+366 |                 logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+    |                 `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+367 |             ], axis: 0)
+368 |         return compact.argMax().item(Int32.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:434:26: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+432 |         let ranked = shortlist(scores).ids
+433 |         let member = Set(ranked)
+434 |         let realScores = scores[0 ..< realCount, axis: 0].asType(.float32).asArray(Float.self)
+    |                          `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+435 |         // Weakest included candidate, and the strongest excluded one: the pair
+436 |         // that decides membership.
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:518:23: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+516 |         out.minRank32Gap = Swift.min(fastShortlist.gap, genericShortlist.gap)
+517 | 
+518 |         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+    |                       `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+519 |         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+520 |         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:519:26: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+517 | 
+518 |         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+519 |         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+    |                          `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+520 |         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
+521 | 
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[42/77] Compiling MLXFastTests QwenFusedResidualRMSNormExactnessTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:138:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+136 |     func rows(_ range: Range<Int>) -> QuantizedRows {
+137 |         QuantizedRows(
+138 |             weight: weight[range, axis: 0],
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+139 |             scales: scales[range, axis: 0],
+140 |             biases: biases[range, axis: 0])
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:139:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+137 |         QuantizedRows(
+138 |             weight: weight[range, axis: 0],
+139 |             scales: scales[range, axis: 0],
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+140 |             biases: biases[range, axis: 0])
+141 |     }
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:140:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+138 |             weight: weight[range, axis: 0],
+139 |             scales: scales[range, axis: 0],
+140 |             biases: biases[range, axis: 0])
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+141 |     }
+142 | 
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:344:20: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+342 |     /// natural input distribution actually gets to the membership boundary.
+343 |     private static func shortlist(_ scores: MLXArray) -> (ids: [Int32], gap: Float) {
+344 |         let real = scores[0 ..< realCount, axis: 0]
+    |                    `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+345 |         let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+346 |         let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:346:19: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+344 |         let real = scores[0 ..< realCount, axis: 0]
+345 |         let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+346 |         let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+    |                   `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+347 |         let f32 = real.asType(.float32)
+348 |         let included = MLX.take(f32, MLXArray(ids), axis: 0).min().item(Float.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:365:17: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+363 |         let compact = concatenated(
+364 |             [
+365 |                 logits[0 ..< prefixCount, axis: 0],
+    |                 `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+366 |                 logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+367 |             ], axis: 0)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:366:17: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+364 |             [
+365 |                 logits[0 ..< prefixCount, axis: 0],
+366 |                 logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+    |                 `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+367 |             ], axis: 0)
+368 |         return compact.argMax().item(Int32.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:434:26: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+432 |         let ranked = shortlist(scores).ids
+433 |         let member = Set(ranked)
+434 |         let realScores = scores[0 ..< realCount, axis: 0].asType(.float32).asArray(Float.self)
+    |                          `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+435 |         // Weakest included candidate, and the strongest excluded one: the pair
+436 |         // that decides membership.
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:518:23: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+516 |         out.minRank32Gap = Swift.min(fastShortlist.gap, genericShortlist.gap)
+517 | 
+518 |         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+    |                       `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+519 |         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+520 |         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:519:26: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+517 | 
+518 |         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+519 |         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+    |                          `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+520 |         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
+521 | 
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[43/77] Compiling MLXFastTests QwenMTPBackboneLayoutTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:138:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+136 |     func rows(_ range: Range<Int>) -> QuantizedRows {
+137 |         QuantizedRows(
+138 |             weight: weight[range, axis: 0],
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+139 |             scales: scales[range, axis: 0],
+140 |             biases: biases[range, axis: 0])
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:139:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+137 |         QuantizedRows(
+138 |             weight: weight[range, axis: 0],
+139 |             scales: scales[range, axis: 0],
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+140 |             biases: biases[range, axis: 0])
+141 |     }
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:140:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+138 |             weight: weight[range, axis: 0],
+139 |             scales: scales[range, axis: 0],
+140 |             biases: biases[range, axis: 0])
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+141 |     }
+142 | 
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:344:20: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+342 |     /// natural input distribution actually gets to the membership boundary.
+343 |     private static func shortlist(_ scores: MLXArray) -> (ids: [Int32], gap: Float) {
+344 |         let real = scores[0 ..< realCount, axis: 0]
+    |                    `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+345 |         let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+346 |         let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:346:19: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+344 |         let real = scores[0 ..< realCount, axis: 0]
+345 |         let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+346 |         let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+    |                   `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+347 |         let f32 = real.asType(.float32)
+348 |         let included = MLX.take(f32, MLXArray(ids), axis: 0).min().item(Float.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:365:17: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+363 |         let compact = concatenated(
+364 |             [
+365 |                 logits[0 ..< prefixCount, axis: 0],
+    |                 `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+366 |                 logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+367 |             ], axis: 0)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:366:17: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+364 |             [
+365 |                 logits[0 ..< prefixCount, axis: 0],
+366 |                 logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+    |                 `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+367 |             ], axis: 0)
+368 |         return compact.argMax().item(Int32.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:434:26: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+432 |         let ranked = shortlist(scores).ids
+433 |         let member = Set(ranked)
+434 |         let realScores = scores[0 ..< realCount, axis: 0].asType(.float32).asArray(Float.self)
+    |                          `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+435 |         // Weakest included candidate, and the strongest excluded one: the pair
+436 |         // that decides membership.
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:518:23: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+516 |         out.minRank32Gap = Swift.min(fastShortlist.gap, genericShortlist.gap)
+517 | 
+518 |         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+    |                       `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+519 |         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+520 |         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:519:26: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+517 | 
+518 |         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+519 |         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+    |                          `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+520 |         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
+521 | 
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[44/77] Compiling MLXFastTests QwenMTPFixedWindowTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:138:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+136 |     func rows(_ range: Range<Int>) -> QuantizedRows {
+137 |         QuantizedRows(
+138 |             weight: weight[range, axis: 0],
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+139 |             scales: scales[range, axis: 0],
+140 |             biases: biases[range, axis: 0])
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:139:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+137 |         QuantizedRows(
+138 |             weight: weight[range, axis: 0],
+139 |             scales: scales[range, axis: 0],
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+140 |             biases: biases[range, axis: 0])
+141 |     }
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:140:21: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+138 |             weight: weight[range, axis: 0],
+139 |             scales: scales[range, axis: 0],
+140 |             biases: biases[range, axis: 0])
+    |                     `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+141 |     }
+142 | 
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:344:20: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+342 |     /// natural input distribution actually gets to the membership boundary.
+343 |     private static func shortlist(_ scores: MLXArray) -> (ids: [Int32], gap: Float) {
+344 |         let real = scores[0 ..< realCount, axis: 0]
+    |                    `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+345 |         let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+346 |         let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:346:19: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+344 |         let real = scores[0 ..< realCount, axis: 0]
+345 |         let order = MLX.argPartition(real, kth: realCount - candidateCount - 1, axis: -1)
+346 |         let ids = order[(realCount - candidateCount) ..< realCount, axis: 0].asArray(Int32.self)
+    |                   `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+347 |         let f32 = real.asType(.float32)
+348 |         let included = MLX.take(f32, MLXArray(ids), axis: 0).min().item(Float.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:365:17: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+363 |         let compact = concatenated(
+364 |             [
+365 |                 logits[0 ..< prefixCount, axis: 0],
+    |                 `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+366 |                 logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+367 |             ], axis: 0)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:366:17: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+364 |             [
+365 |                 logits[0 ..< prefixCount, axis: 0],
+366 |                 logits[controlStart ..< (controlStart + realCount - prefixCount), axis: 0],
+    |                 `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+367 |             ], axis: 0)
+368 |         return compact.argMax().item(Int32.self)
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:434:26: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+432 |         let ranked = shortlist(scores).ids
+433 |         let member = Set(ranked)
+434 |         let realScores = scores[0 ..< realCount, axis: 0].asType(.float32).asArray(Float.self)
+    |                          `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+435 |         // Weakest included candidate, and the strongest excluded one: the pair
+436 |         // that decides membership.
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:518:23: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+516 |         out.minRank32Gap = Swift.min(fastShortlist.gap, genericShortlist.gap)
+517 | 
+518 |         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+    |                       `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+519 |         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+520 |         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/QwenDraftReadoutExactnessTests.swift:519:26: warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+517 | 
+518 |         let fastArg = fast[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+519 |         let genericArg = generic2[0 ..< realCount, axis: 0].argMax().item(Int32.self)
+    |                          `- warning: 'subscript(_:axis:stream:)' is deprecated: please use subscript(.ellipsis, 0 ..< 3) or equivalent [#DeprecatedDeclaration]
+520 |         out.coarseArgmaxChanges = fastArg == genericArg ? 0 : 1
+521 | 
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[45/77] Compiling MLXFastTests R2SignatureTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/RuntimeWorkerSupportTests.swift:62:9: warning: variable 'caches' was never mutated; consider changing to 'let' constant
+ 60 | @Test
+ 61 | func qwenHybridCachePositionRejectsDivergentFullAttentionOffsets() {
+ 62 |     var caches = syntheticQwenHybridCaches(attentionOffset: 512)
+    |         `- warning: variable 'caches' was never mutated; consider changing to 'let' constant
+ 63 |     // Layer 7 is full attention; make it lag the rest of the KV stack.
+ 64 |     caches[7].offset = 511
+[46/77] Compiling MLXFastTests RankedWorkflowIsolationTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/RuntimeWorkerSupportTests.swift:62:9: warning: variable 'caches' was never mutated; consider changing to 'let' constant
+ 60 | @Test
+ 61 | func qwenHybridCachePositionRejectsDivergentFullAttentionOffsets() {
+ 62 |     var caches = syntheticQwenHybridCaches(attentionOffset: 512)
+    |         `- warning: variable 'caches' was never mutated; consider changing to 'let' constant
+ 63 |     // Layer 7 is full attention; make it lag the rest of the KV stack.
+ 64 |     caches[7].offset = 511
+[47/77] Compiling MLXFastTests RuntimeWorkerSupportTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/RuntimeWorkerSupportTests.swift:62:9: warning: variable 'caches' was never mutated; consider changing to 'let' constant
+ 60 | @Test
+ 61 | func qwenHybridCachePositionRejectsDivergentFullAttentionOffsets() {
+ 62 |     var caches = syntheticQwenHybridCaches(attentionOffset: 512)
+    |         `- warning: variable 'caches' was never mutated; consider changing to 'let' constant
+ 63 |     // Layer 7 is full attention; make it lag the rest of the KV stack.
+ 64 |     caches[7].offset = 511
+[48/77] Compiling MLXFastTests ScoreTests.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Tests/MLXFastTests/RuntimeWorkerSupportTests.swift:62:9: warning: variable 'caches' was never mutated; consider changing to 'let' constant
+ 60 | @Test
+ 61 | func qwenHybridCachePositionRejectsDivergentFullAttentionOffsets() {
+ 62 |     var caches = syntheticQwenHybridCaches(attentionOffset: 512)
+    |         `- warning: variable 'caches' was never mutated; consider changing to 'let' constant
+ 63 |     // Layer 7 is full attention; make it lag the rest of the KV stack.
+ 64 |     caches[7].offset = 511
+[49/77] Compiling MLXFastTests DFlashGoldenProvisioningTests.swift
+[50/77] Compiling MLXFastTests DFlashLocalRunLockTests.swift
+[51/77] Compiling MLXFastTests DFlashPrivateMaterialBindingTests.swift
+[52/77] Compiling MLXFastTests DFlashProbeWorkflowTests.swift
+[53/77] Compiling MLXFastTests DFlashRedactorKindCoverageTests.swift
+[54/77] Compiling MLXFastTests RuntimeStartupMemoryPolicyTests.swift
+[55/77] Compiling MLXFastTests SafetensorsTests.swift
+[56/77] Compiling MLXFastTests TensorDataTests.swift
+[57/77] Compiling MLXFastTests TransformTests.swift
+[58/77] Emitting module MLXFastTests
+[59/77] Compiling MLXFastTests QwenMTPOpenSurfaceTests.swift
+[60/77] Compiling MLXFastTests QwenMTPRollbackContractTests.swift
+[61/77] Compiling MLXFastTests QwenMTPSyncContentGateTests.swift
+[62/77] Compiling MLXFastTests QwenMTPTrackNamingTests.swift
+[63/77] Compiling MLXFastTests SetupScriptTests.swift
+[64/77] Compiling MLXFastTests ShellGapRegressionTests.swift
+[65/77] Compiling MLXFastTests TimedDecodePromptTests.swift
+[66/77] Compiling MLXFastTests TrustedWorkerProtocolTests.swift
+[67/77] Compiling MLXFastTests NGramSelfSimilarityTests.swift
+[68/77] Compiling MLXFastTests ParentToolSandboxTests.swift
+[69/77] Compiling MLXFastTests QwenChatTemplateTests.swift
+[70/77] Compiling MLXFastTests QwenCorrectnessTests.swift
+[71/77] Compiling MLXFastTests AcceptanceBandTests.swift
+[72/77] Compiling MLXFastTests BenchmarkSafetyTests.swift
+[73/77] Compiling MLXFastTests BenchmarkScriptTests.swift
+[74/77] Compiling MLXFastTests BenchmarkSupportTests.swift
+[75/77] Compiling MLXFastTests BenchmarkWindowFreezeTests.swift
+[75/77] Write Objects.LinkFileList
+[76/77] Linking mlxfast-challenge-devPackageTests
+Build complete! (28.78s)
+Test Suite 'Selected tests' started at 2026-08-20 03:13:24.664.
+Test Suite 'mlxfast-challenge-devPackageTests.xctest' started at 2026-08-20 03:13:24.665.
+Test Suite 'mlxfast-challenge-devPackageTests.xctest' passed at 2026-08-20 03:13:24.665.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-08-20 03:13:24.665.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite QwenQMVCostCurveTests started.
+◇ Suite QwenQMVParityTests started.
+➜ Test sweepCompactDraftReadoutOverBits() skipped.
+◇ Test nOnlyDimsAreNotSafeAsReductionDims() started.
+◇ Test sweepQuantizedMatmulOverVerifyWidth() started.
+➜ Test digestQuantizedMatmulOverVerifyWidth() skipped.
+◇ Test scoredShapesStayOnTheQMVFastPath() started.
+✔ Suite QwenQMVParityTests passed after 0.001 seconds.
+✔ Test nOnlyDimsAreNotSafeAsReductionDims() passed after 0.001 seconds.
+✔ Test scoredShapesStayOnTheQMVFastPath() passed after 0.001 seconds.
+QMV_COST_CURVE_OUT research/e63-artifacts/e63-cost-curve.json
+✔ Test sweepQuantizedMatmulOverVerifyWidth() passed after 90.969 seconds.
+✔ Suite QwenQMVCostCurveTests passed after 90.969 seconds.
+✔ Test run with 5 tests in 2 suites passed after 90.969 seconds.
+e63_rung1 exit_thermal gpu_temp=61.054012298583984C cpu_temp=45.14207458496094C gpu_power=0.013067157939076424W all_power=0.0252295583486557W
+e63_rung1 finished=2026-08-20T03:14:58Z status=0
