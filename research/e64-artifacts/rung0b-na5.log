@@ -1,0 +1,115 @@
+e64_rung0b head=3c2999de0bca3c9a79e2481c29322b86f3c303bc dirty=1
+e64_rung0b host=ip-10-231-2-12 chip=Apple M4 Pro
+e64_rung0b na=5 reps=21 target_bytes=24e9
+e64_rung0b started=2026-08-20T05:28:57Z
+research/generated/e64_wide_arms.h is in sync with Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+NA=5
+  plain    alloca=1 ['[4 x [4 x i16]]']
+           phi<5 x float>= 13  peak_live cfg_loop= 130 cfg_max= 130 text= 122
+           loop  {'fadd': 28, 'fmul': 8, 'fma': 0, 'device_loads': 44, 'private_loads': 4, 'private_stores': 16, 'device_stores': 0, 'simd_sum': 0}
+  forced   alloca=5 ['<5 x float>', '<5 x float>', '<5 x float>', '<5 x float>', '[4 x [4 x i16]]']
+           phi<5 x float>=  5  peak_live cfg_loop= 150 cfg_max= 150 text= 122
+           loop  {'fadd': 28, 'fmul': 8, 'fma': 0, 'device_loads': 44, 'private_loads': 8, 'private_stores': 20, 'device_stores': 0, 'simd_sum': 0}
+  ballast  alloca=1 ['[4 x [4 x i16]]']
+           phi<5 x float>= 12  peak_live cfg_loop= 154 cfg_max= 154 text= 124
+           loop  {'fadd': 28, 'fmul': 8, 'fma': 0, 'device_loads': 44, 'private_loads': 4, 'private_stores': 16, 'device_stores': 0, 'simd_sum': 0}
+  PASS  forced_has_acc_alloca
+  PASS  forced_acc_phi_removed
+  PASS  forced_loop_fp_unchanged
+  PASS  forced_total_fp_unchanged
+  PASS  forced_private_traffic_up
+  PASS  ballast_no_acc_alloca
+  PASS  ballast_loop_fp_unchanged
+  PASS  ballast_raises_live_registers
+NA=6
+  plain    alloca=2 ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+           phi<6 x float>=  9  peak_live cfg_loop= 182 cfg_max= 182 text= 140
+           loop  {'fadd': 32, 'fmul': 8, 'fma': 0, 'device_loads': 48, 'private_loads': 4, 'private_stores': 16, 'device_stores': 0, 'simd_sum': 0}
+  forced   alloca=2 ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+           phi<6 x float>=  5  peak_live cfg_loop= 158 cfg_max= 158 text= 140
+           loop  {'fadd': 32, 'fmul': 8, 'fma': 0, 'device_loads': 48, 'private_loads': 8, 'private_stores': 20, 'device_stores': 0, 'simd_sum': 0}
+  ballast  alloca=2 ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+           phi<6 x float>=  9  peak_live cfg_loop= 211 cfg_max= 211 text= 133
+           loop  {'fadd': 32, 'fmul': 8, 'fma': 0, 'device_loads': 48, 'private_loads': 4, 'private_stores': 16, 'device_stores': 0, 'simd_sum': 0}
+  PASS  forced_has_acc_alloca
+  PASS  forced_acc_phi_removed
+  PASS  forced_loop_fp_unchanged
+  PASS  forced_total_fp_unchanged
+  PASS  forced_private_traffic_up
+  FAIL  ballast_no_acc_alloca
+  PASS  ballast_loop_fp_unchanged
+  PASS  ballast_raises_live_registers
+wrote research/e64-artifacts/rung0b-air.json
+/tmp/e64-build/arms_na5.metal 222216 bytes na=5 source_sha256=59cbc942db7d29ae94de4c4af042c7ce5e602d9a107ad681c515665bd182ef4d arms_header_sha256=47118b5c8b67602eb46074d2269b6095b7f9f37938a3f986984cf9674c05f679
+e64_rung0b cool_gate before=gpu_temp=37.19490432739258C cpu_temp=39.55889129638672C gpu_power=0.04021550714969635W
+benchmark.sh: GPU cool-down gate passed (current 37.1C, target <=40C, waited 0s)
+e64_rung0b cool_gate_passed_real_gate=true
+e64_rung0b entry_thermal gpu_temp=37.231266021728516C cpu_temp=39.281349182128906C gpu_power=0.005876075942069292W
+e64_rung0b exit_thermal gpu_temp=37.22685241699219C cpu_temp=39.5154914855957C gpu_power=0.0064957938157022W
+e64_rung0b finished=2026-08-20T05:29:09Z status=1
+e64_rung0b head=4fc152948b7a5a9abdb3a82284598e1401d47628 dirty=0
+e64_rung0b host=ip-10-231-2-12 chip=Apple M4 Pro
+e64_rung0b na=5 reps=21 target_bytes=24e9
+e64_rung0b started=2026-08-20T05:29:57Z
+research/generated/e64_wide_arms.h is in sync with Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+NA=5
+  plain    alloca=1 ['[4 x [4 x i16]]']
+           phi<5 x float>= 13  peak_live cfg_loop= 130 cfg_max= 130 text= 122
+           loop  {'fadd': 28, 'fmul': 8, 'fma': 0, 'device_loads': 44, 'private_loads': 4, 'private_stores': 16, 'device_stores': 0, 'simd_sum': 0}
+  forced   alloca=5 ['<5 x float>', '<5 x float>', '<5 x float>', '<5 x float>', '[4 x [4 x i16]]']
+           phi<5 x float>=  5  peak_live cfg_loop= 150 cfg_max= 150 text= 122
+           loop  {'fadd': 28, 'fmul': 8, 'fma': 0, 'device_loads': 44, 'private_loads': 8, 'private_stores': 20, 'device_stores': 0, 'simd_sum': 0}
+  ballast  alloca=1 ['[4 x [4 x i16]]']
+           phi<5 x float>= 12  peak_live cfg_loop= 154 cfg_max= 154 text= 124
+           loop  {'fadd': 28, 'fmul': 8, 'fma': 0, 'device_loads': 44, 'private_loads': 4, 'private_stores': 16, 'device_stores': 0, 'simd_sum': 0}
+  PASS  forced_has_acc_alloca
+  PASS  forced_acc_phi_removed
+  PASS  forced_loop_fp_unchanged
+  PASS  forced_total_fp_unchanged
+  PASS  forced_private_traffic_up
+  PASS  ballast_no_acc_alloca
+  PASS  ballast_loop_fp_unchanged
+  PASS  ballast_raises_live_registers
+NA=6
+  plain    alloca=2 ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+           phi<6 x float>=  9  peak_live cfg_loop= 182 cfg_max= 182 text= 140
+           loop  {'fadd': 32, 'fmul': 8, 'fma': 0, 'device_loads': 48, 'private_loads': 4, 'private_stores': 16, 'device_stores': 0, 'simd_sum': 0}
+  forced   alloca=2 ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+           phi<6 x float>=  5  peak_live cfg_loop= 158 cfg_max= 158 text= 140
+           loop  {'fadd': 32, 'fmul': 8, 'fma': 0, 'device_loads': 48, 'private_loads': 8, 'private_stores': 20, 'device_stores': 0, 'simd_sum': 0}
+  ballast  alloca=2 ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+           phi<6 x float>=  9  peak_live cfg_loop= 211 cfg_max= 211 text= 133
+           loop  {'fadd': 32, 'fmul': 8, 'fma': 0, 'device_loads': 48, 'private_loads': 4, 'private_stores': 16, 'device_stores': 0, 'simd_sum': 0}
+  PASS  forced_has_acc_alloca
+  PASS  forced_acc_phi_removed
+  PASS  forced_loop_fp_unchanged
+  PASS  forced_total_fp_unchanged
+  PASS  forced_private_traffic_up
+  FAIL  ballast_no_acc_alloca
+  PASS  ballast_loop_fp_unchanged
+  PASS  ballast_raises_live_registers
+wrote research/e64-artifacts/rung0b-air.json
+/tmp/e64-build/arms_na5.metal 222216 bytes na=5 source_sha256=59cbc942db7d29ae94de4c4af042c7ce5e602d9a107ad681c515665bd182ef4d arms_header_sha256=47118b5c8b67602eb46074d2269b6095b7f9f37938a3f986984cf9674c05f679
+e64_rung0b cool_gate before=gpu_temp=37.07229232788086C cpu_temp=39.2424201965332C gpu_power=0.018477655947208405W
+benchmark.sh: GPU cool-down gate passed (current 37.1C, target <=40C, waited 0s)
+e64_rung0b cool_gate_passed_real_gate=true
+e64_rung0b entry_thermal gpu_temp=37.03515625C cpu_temp=39.15341567993164C gpu_power=0.006351981312036514W
+e64_cell_ab: arm plain    max_threads=1024 tg_mem=0
+e64_cell_ab: arm forced   max_threads=1024 tg_mem=0
+e64_cell_ab: arm ballast  max_threads=1024 tg_mem=0
+e64_cell_ab: session entry gpu_temp_c=37.05
+e64_cell_ab: forced parity vs plain: 0 differing of 174080
+e64_cell_ab: ballast parity vs plain: 0 differing of 174080
+e64_cell_ab: mlp.gate_up_fused inner=269 legs=126 entry=37.07C exit=54.13C
+e64_cell_ab: forced parity vs plain: 0 differing of 25600
+e64_cell_ab: ballast parity vs plain: 0 differing of 25600
+e64_cell_ab: mlp.down inner=538 legs=126 entry=51.94C exit=61.88C
+e64_cell_ab: forced parity vs plain: 0 differing of 71680
+e64_cell_ab: ballast parity vs plain: 0 differing of 71680
+e64_cell_ab: full_attn.qkv_proj_fused inner=653 legs=126 entry=57.53C exit=62.93C
+e64_cell_ab: forced parity vs plain: 0 differing of 82400
+e64_cell_ab: ballast parity vs plain: 0 differing of 82400
+e64_cell_ab: linear_attn.in_proj_fused_qkvzba inner=568 legs=126 entry=59.18C exit=65.84C
+e64_cell_ab: wrote research/e64-artifacts/rung0b-timing-na5.json
+e64_rung0b exit_thermal gpu_temp=58.21491622924805C cpu_temp=40.60676193237305C gpu_power=0.03688780218362808W
+e64_rung0b finished=2026-08-20T05:32:00Z status=0

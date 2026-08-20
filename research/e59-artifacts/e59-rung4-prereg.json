@@ -1,0 +1,62 @@
+{
+  "experiment": "E59",
+  "stage": "rung4-prereg",
+  "recorded_at_utc": "2026-08-19T23:21:32.438222Z",
+  "recorded_before": "rung 3 session 44d6077c completion; no rung 3 data visible",
+  "new_base": "d2139c924c7a7d98ca6026eea63867c2776abbca",
+  "census": {
+    "base": {
+      "m5_cell": 87,
+      "table_max": 129,
+      "entry": "183 band 181-185"
+    },
+    "t55": {
+      "m5_cell": 125,
+      "table_max": 129,
+      "entry": "within +-3 of base"
+    },
+    "m5_rbx": {
+      "m5_cell": 90,
+      "table_max": 129,
+      "entry": "within +-3 of base"
+    },
+    "m5_rb2": {
+      "m5_cell": 100,
+      "table_max": 129,
+      "entry": "within +-3 of base"
+    }
+  },
+  "m5_cell_count_changes_when_table_max_moves": false,
+  "width_share_m5_pct": {
+    "old_base": 5.07,
+    "new_base": 5.413
+  },
+  "m9_cell_change_pct_e55": -11.87,
+  "t55_vs_base": {
+    "cell_pct": -20.15,
+    "leg_pct": -0.7564,
+    "round_pct": -0.9875
+  },
+  "rbx_vs_base": {
+    "cell_pct": -11.74,
+    "leg_pct": -0.4406,
+    "tax_source": "E44 10.54% at NA=4, inherited, multiplicative"
+  },
+  "t55_vs_rbx": {
+    "predicted_leg_pct": -0.3159,
+    "tie_tolerance_pct": 0.126,
+    "predict_tie": false
+  },
+  "null_floor_pct": 0.0629,
+  "stop_rule_pct": -2.0,
+  "report_only_band_pct": [
+    -6.0,
+    -2.0
+  ],
+  "hard_gate_before_timing_t55": "bitwise parity M=2..9 vs new base, controls fire, max_abs_ulp_top2_logits=0",
+  "note_t55_exactness": "t55 changes NA {3,2}->{5}; exactness is empirical, not structural. rb2/rbx preserve NA and are exact by construction.",
+  "rung3_tests": {
+    "R1": "iso_m5_ipg3->iso_m5_ipg5_r4 == t55 cell in isolation, pred -20.15%",
+    "T2": "iso_m5_ipg5_r4->iso_m5_ipg5_rbx == t55 vs rbx, measures NA=5 x re-read tax"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "arm": "base",
+  "assert_before": {
+    "exit_code": 0,
+    "mtime": "2026-08-20T06:09:16Z",
+    "sha256": "4f5758f2f085a1cb8b2a38d7f8d592e27c86686fd7118e0de6956a5379936de4"
+  },
+  "metallib_exit_code": 0,
+  "swift_test": {
+    "exit_code": 1,
+    "failing_count": 9,
+    "failing_tests": [
+      "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+      "participantDocsExposeDefaultCLIInstallDirectory",
+      "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+      "startupMemoryPolicyKeepsRanked128GiBProfile",
+      "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+      "theCheckedInDeclarationSelectsThePinnedHead",
+      "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+      "theQwenMTPTrackIsArmedOnQwen38",
+      "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
+    ],
+    "summary": "\u2718 Test run with 688 tests in 49 suites failed after 20.607 seconds with 40 issues."
+  },
+  "twin_sha256": [
+    "0c3df8cde4ecaf8d73808004abc20b3524a0585a0993e089b49acca91a25b6c7",
+    "6fb7af32a46625be3c1b1c902bd880bbc0a40fb692d2397b8cadcc2f76002c30"
+  ]
+}

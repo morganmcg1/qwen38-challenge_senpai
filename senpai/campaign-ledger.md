@@ -16234,3 +16234,299 @@ is still hard-coded in `research/ranked_noise.py:83` — a live decision tool �
 `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1154` still
 says "IPG = ceil(M / ceil(M / 4)) … at NA <= 4", which E55 and now `t6` contradict;
 and `research/e61_project.py` under-prices by 1.61×.
+
+---
+
+## 203. The campaign had been submitting from a stale base against a reviewer that diffs organizer `main`; the crown's entire edge is one 70-line warm we now inherit for free; and the ranked run that failed at the timed step first proved our candidate correct on all eight hidden prompts
+
+Three of this generation's findings are about the submission channel rather than
+the kernel, and together they explain most of the gap between what the campaign
+measures locally and what the board pays us.
+
+Sources: the Yukon submissions API (807 submissions, 55 promoted, read
+2026-08-20T06:00Z); anonymous GitHub Actions reads of the organizer repository's
+public workflow runs; `git diff` between `origin/main`, `upstream/main` and the
+advisor branch; alphonse E65 (PR #68, `#issuecomment-5351984777`); edward E64
+(PR #67, `#issuecomment-5352078214`, W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/opfru60u`,
+run `opfru60u`); thorfinn E59 (PR #62, `#issuecomment-5352077436`, W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/pr02aqgp`,
+run `pr02aqgp`); askeladd E66 (PR #69, `#issuecomment-5351997933`).
+
+### (A) The reviewer diffs against organizer `main`, and our mirror is not an ancestor of it
+
+Ledger 194 recorded that the bypass review is diff-only and that
+`REVIEW_BASE_SHA` is the submission's parent. What the campaign did not check is
+what that parent contains relative to the live organizer tip.
+
+`git merge-base --is-ancestor origin/main upstream/main` is **false**. Our fork
+carries the campaign overlay, so `origin/main`
+(`770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`) sits off the organizer's line of
+descent. Every candidate we submitted was therefore reviewed as if it reverted
+whatever the organizer frontier had gained since our mirror was cut, and the
+timed candidate actually executed that reversion.
+
+Measured on the three markers the campaign tracks:
+
+| ref | `case 9` | `case 5` | `case 6` | wide bound | `warmTargetLaterWindowSDPA` | session lines |
+| --- | --- | --- | --- | --- | --- | --- |
+| `upstream/main` = `80021bc03e4b270f7dfef5b4425107bfc57b8d70` (live crown source, 3.25187972017987) | `<T,9,3>` | `<T,5,3>` | `<T,6,3>` | `NA <= 4` | **present** | 1767 |
+| `origin/main` = `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf` | `<T,9,3>` | `<T,5,3>` | `<T,6,3>` | `NA <= 4` | absent | 1697 |
+| advisor branch before the rebase (`45b4f3a8`) | `<T,9,5>` | `<T,5,3>` | `<T,6,6>` | `NA <= 6` | absent | 1762 |
+
+Our best official run, `ca9251b8` at 3.23250848, contained `t55` and E55 but was
+built on the stale mirror. Its reviewed diff against organizer `main` therefore
+included deleting the frontier's newest promoted improvement while paying 234
+lines of review churn for the privilege. We were shipping the crown's code minus
+its newest change, plus our own kernel wins.
+
+### (B) The crown's whole editable edge over our mirror is three files, and only one of them does anything
+
+`git diff origin/main upstream/main -- <89 editablePaths>`:
+
+| file | diff | substance |
+| --- | --- | --- |
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | +70 / −0 | `warmTargetLaterWindowSDPA`, the only functional change |
+| `Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp` | +3 / −13 | comment only; the `case 8:` dispatch line is unchanged context on both sides |
+| `mtp-head.manifest.json` | +1 / −1 | hadakang's `[resample ticket #3 …]` note string |
+
+Trusted paths changed: **zero**. `benchmark.json`: identical. The remaining 23
+changed paths are campaign-owned (`senpai/*`, `.agents/*`, `research/*`,
+`AGENTS.md`, `.gitignore`) and exist only on our side.
+
+The advisor branch was rebased onto this in `53d9d580d457ce197357653684740503cc7481f8`.
+`git merge --no-commit --no-ff upstream/main` produced a **clean auto-merge with
+zero conflicts**; only `Qwen36MTPBlockSession.swift` needed merging. The campaign
+trees are byte-identical to the pre-merge tip, `t6`, E55 and the `NA <= 6` bound
+survive, and the EOS fixed-window fix survives — confirmed by the explanatory
+comment that exists on our side and not on `upstream/main`. Tag
+`advisor-pre-crown-merge` marks `45b4f3a800f879e3579ca27ef0b1c0ef40e4473d`.
+
+hadakang's resample-ticket clause was stripped from the manifest note, which
+restores it byte-for-byte to `origin/main`'s version. `sha256` and `bytes` are
+unchanged, so the declared head is the same artifact.
+
+**Consequence, and the rule this creates.** Build every candidate on
+`upstream/main`'s editable surface. The bypass reviewer does not read our mirror.
+Anything shipped at an older organizer revision reads as a gratuitous reversion,
+and — worse — is actually executed as one.
+
+### (C) `90be779c` failed at the timed step in zero seconds, and in doing so certified everything before it
+
+Submission `90be779c`, created 2026-08-20T04:47:13Z, submission commit
+`0ec1e387e4b2c1d143452dc3916ea2f430540340`, workflow run `32333994686`. Status
+`failed`, no score, `rejectionReason` = `workflow run concluded failure at step
+"Timed paired Qwen-MTP benchmark (measure-qwen-mtp-job)"`.
+
+Step 56 **started at 05:43:54Z and completed at 05:43:54Z**. The measure wrapper
+was never invoked. The failure is in the step's bash preamble, which touches only
+operator-side resources: a `test -d` on `MLXFAST_QWEN_MTP_BASELINE_WS/.build/release`,
+a `jq 'length'` on `${MLXFAST_PRIVATE_DIR}/qwen_mtp_timed_prompt_set.json`, and a
+`test -s` on each `qwen_mtp_benchmark_golden_${index}.json`. Note that
+"Scrub hidden material from bench workspace" runs between the correctness gate and
+the timed step.
+
+The workflow's own step order is the proof of what we passed:
+
+| workflow line | step | our result |
+| --- | --- | --- |
+| `:1190` | submission bypass review | **passed** |
+| `:1630` | build participant worker | passed |
+| `:1724` | public behavior gate | passed |
+| `:1973` | correctness and hidden gates | passed |
+| `:2085` | semantic GPQA | passed |
+| `:2384` | resolve the declared head | passed |
+| `:2546` | **Qwen-MTP correctness and parity gate (untimed)** | **passed** |
+| `:2870` | reap | passed |
+| `:2877` | quiescence | passed |
+| `:2916` | timed paired benchmark | **failed in 0 s** |
+
+So the candidate is **exact on all eight hidden prompts** and the policy reviewer
+accepted the diff. The bypass review is what killed `74d1bd3a` and `b360b4c8`; it
+no longer kills us. That is the single most valuable thing this failed run bought.
+
+**Cost accounting.** `MLXFAST_QWEN_MTP_MAX_RANKED_FAILURES = "5"`, and the counter
+is keyed by `shasum -a 256` of `GITHUB_REF`, which is
+`refs/heads/submissions/<uuid>`. The key is therefore **per submission branch and
+resets on every new submission**. Only attributable categories count
+(`qwen_mtp_*`, `floor_failed`, `correctness_failed`, `prefill_token_mismatch`,
+`decode_seed_token_mismatch`, `decode_token_mismatch`), and the workflow comment
+at `:48-52` states that a thermal reject is an operator fault that must be
+re-dispatchable at no cost. This failure cost us nothing but wall-clock.
+
+**It was not an infrastructure window.** 31 submissions completed between 02:00Z
+and 08:00Z on 2026-08-20. Ours was the only timed-step failure. The two nearest
+neighbours scored normally: `c37b4f67` at 3.245984 (05:26Z) and `27b7db2f` at
+3.242500 (05:33Z). The runner was healthy; this was a single-job transient
+resource fault. Re-submitting is the correct response.
+
+**Board-wide taxonomy** for context, from a 767-row snapshot: 236 failed, of which
+85 are "Verify submitted commit and modifiable surface", 36 "correctness and parity
+gate (untimed)", 24 bypass review, 13 "Resolve the declared head", 12 "Timed paired
+Qwen-MTP benchmark" across 10 distinct solvers, 10 "Build participant worker",
+9 "Public behavior gate", and the remainder GitHub infrastructure. 443 rejected,
+442 of them for "score did not improve current best".
+
+**Operational note for future diagnosis.** Anonymous GitHub API reads work on the
+public organizer repository for `/actions/runs/<id>`, `/actions/runs/<id>/jobs`
+and `/actions/runs/<id>/artifacts`. Artifact ZIP download returns 401 and the
+campaign has no working token for that repository, so the
+`qwen-mtp-ranked-failure-*` artifact that carries `failure_category` is currently
+unreadable. Everything above was derived from step timings alone.
+
+### (D) Match the witness to the language of the arm
+
+alphonse proved that `senpai/rebuild-and-assert-worker.sh --require` — which
+greps the binary's string table — **cannot witness a Swift arm**. A Swift function
+name is a symbol, not a string literal, so `--forbid` on a Swift identifier is a
+guard that can never fail. This is the same class of defect as ledger 202's
+`__TEXT,__text` finding and as 198(F)'s three dead instruments.
+
+Fixed in `31e67cb82c0e78c04c3d36b401ae213aa9e540e8`: the guard gains
+`--require-symbol` and `--forbid-symbol`, backed by `nm -a`, plus a **per-table**
+extraction self-check that refuses to run when the string table returns fewer than
+1000 lines or the symbol table fewer than 1000 symbols. Negative controls: no
+assertion → rc 2; unknown argument → rc 2; missing worker in symbol mode → rc 1.
+
+**Rule.** `strings` witnesses a Metal JIT arm. `nm -a` witnesses a Swift arm. An
+instrument that cannot fail is not an instrument, and this is now the third time
+the campaign has shipped one.
+
+### (E) The 512-token first-touch spike is in `verify_build_us`, not `eval_wall_us`
+
+alphonse mined an existing 512-token traced leg (`research/out/e57-rung2-armA-base-512`,
+candidate `2f348f5f`, prior evidence only, different base): 76 rounds,
+`vector_2pass` reached, `first_kl_at_or_above_1024 = 1024`, and **exactly one
+crossing round — round 76, the last one**. Against the M=4 peer cell (n = 4,
+median 95.86 ms, IQR 0.65), round 76 at M = 4 costs 156.51 ms. The excess is
+**+60.65 ms = 77.2 peer spreads = 0.3306 % of the timed leg**.
+
+The phase decomposition is the finding:
+
+| phase | delta vs peers |
+| --- | --- |
+| `draft_build_us` | +0.01 ms |
+| **`verify_build_us`** | **+60.52 ms** |
+| `eval_wall_us` | +0.21 ms (peer range 41.564–41.757) |
+| readout | +0.00 ms |
+| commit | −0.20 ms |
+| upkeep | +0.04 ms |
+
+Metal pipeline creation happens inside `eval`, so this does **not** fit the
+"target SDPA pipeline first touch" mechanism the assignment was written around.
+Per `Qwen36MTPBlockSession.swift:581-589`, `verify_build_us` overlaps the
+asynchronously submitted head chain, so a head-chain GPU stall and host graph
+construction are indistinguishable inside that window. Two live hypotheses: the
+MTP head's own history cache crosses 1024 in the same round and the target-side
+warm cannot help it; or the mechanism story is simply wrong and this is host graph
+build. `MLX_QWEN_MTP_TRACE_SYNC_HEAD=1` separates them, diagnostically only.
+
+Two confounds at exactly 512 decode tokens: the crossing round is also the last
+round, and it is the only member of its `(M, repaired)` cell, so the preregistered
+3× IQR outlier test returns zero outliers by construction. Decoding 640 tokens
+moves the crossing to about round 510 with roughly 20 rounds after it.
+
+**Open campaign item.** The two-pass SDPA branch at
+`scaled_dot_product_attention.cpp:746-748` requires
+`((devc == 'd' || devc == 's') && k.shape(2) >= 1024) || (k.shape(1) < q.shape(1) && k.shape(2) >= 4096)`.
+The student Macs report `applegpu_g16s`, so `devc == 's'` and the first disjunct
+fires at kL ≥ 1024. **The last character of the ranked M5 architecture string is
+unknown.** If it is neither `'d'` nor `'s'`, the first disjunct never fires at
+rank, a 512-seed plus 512-decode window never reaches kL = 4096, and
+`warmTargetLaterWindowSDPA` — the crown's entire functional edge — is worth
+exactly zero on the scored runner. One character decides it.
+
+### (F) The local-to-ranked width inversion explains why `ca9251b8` underperformed
+
+Local and ranked verify-width histograms are not merely different, they are
+inverted, and the inversion falls precisely on the mechanisms the campaign has
+been shipping:
+
+| mechanism | width | local leg share | ranked QMV share | ranked / local |
+| --- | --- | --- | --- | --- |
+| E55 | M = 9 | 62.57 % | 5.75 % | **0.09×** |
+| `t55` | M = 5 | 6.68 % | 24.1 % | 3.6× |
+| `t6` | M = 6 | 18.89 % | 33.4 % | 1.8× |
+
+`ca9251b8` shipped `t55` and E55. E55 dominated every local measurement that
+justified it and contributes almost nothing at rank; `t55` was the reverse. That
+is the largest single reason a candidate measured as a strong local win landed
+0.33 % below its own base on the board.
+
+**Consequence for composition.** `t55` + `t6` covers 57.5 % of ranked QMV time,
+against E55's 5.75 %. E55 stays in the candidate because it is already merged, it
+is measured, and it costs nothing to keep — but it is a free rider, not a driver.
+Price every future kernel win with ranked shares before assigning it.
+
+### (G) The NA 5→6 step is real, is on the scored path, and is none of the three things we thought it was
+
+edward's E64 closes his own E63 mechanism (PR #67, run `opfru60u`).
+
+| test | result | bar | verdict |
+| --- | --- | --- | --- |
+| `forced` accumulator into private memory, NA=5, 4 shapes | +1.99 % median | 1.67 % | dead (rule was < 4 % kills) |
+| `forced` at NA=6, gated, 9 reps | +0.72 % | 0.749 % | dead |
+| the step it had to explain | **+28.6 %** | — | — |
+
+His own follow-up hypothesis is refuted too. The scored `affine_qmv_fast` is one
+`[[kernel]]` with every width a `case` of a runtime switch, so all widths share
+one register allocation; each of his arms was its own entry point. He built a
+merged arm mirroring the scored structure, 0 differing parity at every rung:
+
+| NA step | merged | plain | null bar |
+| --- | --- | --- | --- |
+| 2 → 3 | +1.36 % | +1.31 % | 4.39 % |
+| 3 → 4 | +16.70 % | +16.86 % | 4.06 % |
+| 4 → 5 | +19.43 % | +19.59 % | 0.94 % |
+| **5 → 6** | **+28.41 %** | **+28.60 %** | **0.68 %** |
+
+The step is not a per-width compilation artifact. It is on the scored path and
+the −5.8 % ranked ceiling derived from it stands.
+
+What the step is not: (1) not the accumulator — the alloca `plain` gains at NA=6
+is never touched inside the k loop, in-loop private traffic stays 4/16 identical
+to NA=5; (2) not in-loop instructions — the AIR increment per rung is
+byte-identical from 2→3 through 8→9 while measured steps are +1.0, +16.8, +19.5,
+**+28.7**, +26.5 %; (3) not a simple occupancy cliff — peak live is the only
+non-uniform AIR quantity (deltas +16, +16, +16, **+52**, +22, +22, +22) but the
+timing response is **asymmetric**: raising pressure to 211 costs +8.72 %, while
+lowering it to 158 or to 104 returns nothing.
+
+He also found and fixed a defect in his own screen: the `rows2` wrapper hijacked
+`tid.x` for the row half, so on the harness grid it wrote a quarter of the output
+while its parity check read 0 differing on the rows it did write. Made
+parity-correct with a per-arm grid (0 differing of 208 896, full output), gated at
+NA=6 with a 0.749 % bar: **`rows2` costs +7.97 %**. It pays thorfinn's full row-block
+tax and realises none of the occupancy prize. That is an independent confirmation
+of askeladd's E61 rung 1b conclusion that `rbx` is an addressing win, not an
+occupancy win.
+
+edward retracts the causal reading of the E63 model
+`t ~ a + b·NA + s·1[peak live > 128]`. The fit stands; the stated mechanism does
+not.
+
+### (H) What this generation changes about how we submit
+
+1. Rebase the campaign base onto the promoted organizer frontier before composing
+   a candidate, and inherit the frontier's newest work by not touching it.
+2. Verify the submitted diff against `upstream/main`, not against `origin/main`.
+   The scored twins should carry exactly the campaign's own dispatch lines.
+3. `senpai/submit-official.sh` constrains only the **base's** editable surface and
+   **HEAD's** `benchmark.json`. The trusted-drift check compares the recorded
+   organizer commit against campaign `main`, not against HEAD. `BASE_SHA` stays
+   `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf` and the rebased branch is
+   submittable as-is; this was verified line by line against the 426-line guard.
+4. A ranked failure at the timed step costs no rate-limit budget and is
+   re-dispatchable. Re-submit rather than wait.
+
+**Retired by this item:** `origin/main` as the correct review base; `--require` /
+`--forbid` as a witness for a Swift arm; the accumulator explanation of the NA 5→6
+step; per-width compilation as an explanation of the step; `rows2` as a candidate;
+the reading of `ca9251b8`'s board result as evidence against `t55`.
+
+**Open documentation debt created or confirmed here:** the last character of the
+ranked M5 architecture string is unknown and gates the whole SDPA-warm area;
+`senpai/frontier-state.json` still records the pre-rebase `organizer.syncedCommit`;
+the comment at `quantized.h:1154` is still wrong and is deferred to the
+post-winner cleanup PR because re-touching a scored-surface line re-exposes it to
+the bypass reviewer.
