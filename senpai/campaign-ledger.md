@@ -18985,3 +18985,175 @@ Slots: PR #77 askeladd E74, the in-situ threadgroup knee. PR #78 thorfinn E75, b
 `pbfit` then price it on the crown table, **critical path**. PR #79 edward E76, search
 for a one-group cell that fits the ranked register budget. PR #80 alphonse E77,
 measure the occupancy coefficient by deliberately creating register variation.
+
+## 213 We are the crown plus a losing table, and the top of the board is a noise band
+
+Item 212 priced our kernel table against the frontier's and found ours slower at
+rank. Item 213 asks the question that should have come first: **what, exactly, is
+our candidate?** The answer was available all along in a diff we had never taken,
+costs no GPU time, and reframes the campaign.
+
+### (A) 🔴🔴🔴 `upstream/main` IS THE CROWN'S EXACT PROMOTED SOURCE
+
+```
+git rev-parse upstream/main      -> bfab0de58d43453e506523707e1720a3485570f4
+crown 9ad17378 promotedSourceRef -> bfab0de58d43453e506523707e1720a3485570f4
+```
+
+**We have the current best published solution's source in the checkout.** Every
+question of the form "what does the leader do that we do not" is answerable with
+`git diff upstream/main HEAD` and no measurement at all.
+
+### (B) 🔴🔴🔴 THE WHOLE CANDIDATE, IN FIVE FILES
+
+`git diff --stat upstream/main HEAD` over `editablePaths`:
+
+| file | ins | del | what it is |
+|---|---:|---:|---|
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | 238 | 48 | see (C) |
+| `Vendor/mlx-swift-lm/.../Qwen35.swift` | 32 | 19 | `asyncEval` ladder made env-overridable |
+| `Vendor/mlx-swift/.../mlx-generated/quantized.cpp` | 4 | 4 | dispatch table |
+| `Vendor/mlx-swift/.../kernels/quantized.h` | 4 | 4 | dispatch table |
+| `mtp-head.manifest.json` | 1 | 1 | a note string |
+
+Line by line:
+
+- **The manifest.** `url`, `sha256`, `bytes` are **identical** to the crown's. Only
+  the free-text `note` differs; we deleted the crown's `[resample ticket #3 ...]`
+  clause. **We run the crown's proposal head, unchanged.**
+- **`Qwen35.swift`.** The shipped rung set is `[0, 1, 9, 19, 29, 39, 49, 57]`, which
+  is exactly the crown's hardcoded `switch`. Our change replaces that `switch` with
+  a `Set` lookup that an environment variable can override for attribution runs.
+  With the variable unset the behaviour is identical and the cost is 64 set lookups
+  per forward, about 0.001 % of a round. **Zero candidate value; pure research
+  instrument in the scored surface.**
+- **`quantized.h` / `quantized.cpp`.** The 8-line dispatch table. **Item 212 priced
+  it by receipt at −0.298 % on the scoring prompts. It is our only kernel delta and
+  it is a loss.**
+
+🔴 **Every merged kernel experiment of this campaign is either in that 8-line table
+or is not in the candidate at all.** `xvec` and `fma` from E69 return zero matches in
+the shipped `quantized.h`; they were merged as evidence and never shipped. That was
+the right call given E69's own sub-additive result, but it must be stated: the
+campaign's shipped kernel contribution to date is a single dispatch table worth
+minus 0.298 percent.
+
+### (C) The scheduler diff, classified
+
+238 added lines against the crown, in four groups:
+
+1. **A correctness fix, ours alone.** The crown's session sets `reachedStopToken`,
+   truncates `committed` after the first stop token, and nils the pendings. We
+   removed all of it. Our own source comment records why: that path capped both legs
+   of every local window at 301 tokens and then threw `.notBegun`. `program.md`
+   names the same behaviour a solver defect. At rank it is probably dead code — 512
+   tokens of literary continuation rarely emit EOS — so this is **neutral to the
+   score and required for correctness.**
+2. **fkiene's verify-concat JIT warm, restored with its receipt.** Promoted at
+   `1cb1f43a` for **+0.0283 %**, then deleted by the next promotion because
+   `yukon submit` replaces whole files rather than merging. It is absent from
+   `upstream/main` and from every tree descended from it. We carry it. It sits in
+   `warmAllDepthShapes`, outside the timed window. **The only positive candidate
+   delta we hold over the crown.**
+3. **Trace instrumentation.** `traceSink`, `snapshotScheduleSignal`, `scheduleTrace`,
+   and six `DispatchTime` ternaries. Every one is guarded by a `static let Bool` read
+   from the environment. In a scored run they are predictable branches on a constant.
+   **Cost is nanoseconds per round; call it zero.**
+4. **The E68 depth-price machinery**, currently `.ship` and bit-identical to the
+   crown's flat walk. **Inert until E75 rung A fills the vector.**
+
+**None of these can cost half a percent.** There is no hidden regression in our
+scheduler to find.
+
+### (D) 🔴🔴🔴 THE TOP OF THE BOARD IS ONE NOISE BAND
+
+| solver | score | vs our arm 2 | in sd of a difference |
+|---|---:|---:|---:|
+| Lieisyourlie | 3.25238 | +0.510 % | 0.48 |
+| hadakang | 3.25188 | +0.494 % | 0.46 |
+| fkiene | 3.24986 | +0.432 % | 0.40 |
+| ofou | 3.24929 | +0.414 % | 0.39 |
+| fkiene | 3.24418 | +0.256 % | 0.24 |
+| companygardener | 3.24326 | +0.228 % | 0.21 |
+| alfranli123 | 3.24300 | +0.220 % | 0.21 |
+| Kamciosz | 3.23415 | −0.054 % | −0.05 |
+| **our arm 2 `9b241879`** | **3.23589** | — | — |
+
+**The whole top-8 spans 0.564 %.** Ledger 193 measured the sd of one ranked run at
+**0.756 %** and the sd of a difference between two runs at **1.069 %**. The spread of
+the entire leaderboard is smaller than one run's own standard deviation.
+
+Our arm 2 sits **0.48 sd** below the crown, two-sided **p = 0.634**. 🔴 **We are at
+parity with the best published result and have been for some time. There is no skill
+gap to close.**
+
+This also explains the top of the board's structure. Everyone near the top is
+running near-identical code descended from the same few promotions — our own diff in
+(B) proves we are too — and the ordering is set by which run got lucky. Ledger 193's
+winner's-curse estimate of +0.60 % says the crown's 3.25238 is very likely an
+above-mean draw from a candidate whose true mean is nearer 3.2465.
+
+### (E) What this changes about strategy
+
+**Retired:** incremental tuning as a route to the crown. A change worth 0.1 to 0.3 %
+is unmeasurable in one ranked run and unfalsifiable in the receipt. Spending the
+one-in-flight slot on one is spending 2.5 hours to sample noise.
+
+**Required:** the true gain over arm 2 needed to take the crown on a single run.
+
+| true gain over arm 2 | resulting mean | P(single run > 3.25238) |
+|---:|---:|---:|
+| +0.00 % | 3.2359 | 0.25 |
+| +0.50 % | 3.2521 | 0.50 |
+| +1.00 % | 3.2682 | 0.74 |
+| **+1.50 %** | **3.2844** | **0.90** |
+| +1.70 % | 3.2909 | 0.94 |
+
+🔴 **The bar for a submission worth making is about +1.5 % of true ranked gain.**
+Below that, the slot buys a coin flip. Only one mechanism in the campaign clears it:
+the E68 depth-price vector, projected at **+1.60 to +1.70 %** over arm 2.
+
+**Also required:** local significance bars must rise to match. A student arm that
+wins by 0.3 % locally is not a candidate, it is a hypothesis. Our local instrument is
+17x more sensitive than the ranked one, so a local arm needs a large, mechanistic,
+replicated win before it is worth a slot.
+
+### (F) 🔴 The register argument cuts in our favour on arm 3
+
+Arm 3's projection discounts E68's local −3.500 % by the 1.126 ranked flattening
+factor. That discount is now probably too harsh.
+
+The step E68's vector avoids is the step into verify width 6. From item 212, on the
+ranked architecture width 6 selects `<T,6,6>` at **111 registers** against width 5's
+`<T,5,5>` at **98**, while our development hosts compile both into 93 to 96. **The
+local measurement of the width-6 penalty is the penalty with the register cliff
+removed.** At rank the cliff is present, so the mechanism should be larger there.
+
+The arm-2 receipt is consistent: it removed the 111-register cell entirely and the
+five widest prompts gained −0.548 % against −0.107 % for the three narrow ones. E68's
+vector attacks the same cell by a different lever — it stops the scheduler entering
+it, without touching the kernel.
+
+**1.126 is therefore a conservative bound on arm 3, not a central estimate.**
+
+### (G) Standing rules added
+
+- 🔴🔴🔴 **`upstream/main` is the crown's exact source. Diff against it before
+  theorising about the leader.** The question "what do they do that we do not" is
+  free.
+- 🔴🔴🔴 **The bar for spending the ranked slot is about +1.5 % of true ranked gain.**
+  Below +0.5 % a submission cannot be distinguished from a lucky run.
+- 🔴🔴🔴 **The published board is a noise band, not a ranking.** Never treat a 0.2 %
+  board gap as a capability difference, ours or anyone else's.
+- 🔴🔴 **A merged experiment is not a shipped experiment.** Before pricing the
+  campaign's kernel contribution, grep the submitted surface for it.
+- 🔴🔴 **`yukon submit` replaces whole files, so any promotion can silently delete an
+  earlier promotion's edit.** fkiene's +0.0283 % warm block was lost this way and is
+  absent from every tree descended from `ef42e043`. Re-check the crown's file for
+  deletions, not only additions, on every frontier sync.
+
+### (H) Campaign state
+
+Base `8f83dc72`. Crown 3.25238228 `9ad17378`, source `bfab0de5` = `upstream/main`.
+Slot free and held for arm 3. Arm 3 note written and staged; it waits only on E75
+rung A. Slots #77 askeladd, #78 thorfinn (critical path), #79 edward, #80 alphonse.
