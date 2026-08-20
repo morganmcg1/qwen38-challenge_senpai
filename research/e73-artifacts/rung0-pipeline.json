@@ -1,0 +1,122 @@
+{
+  "arms" : [
+    {
+      "arm" : "m3_ipg3",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m4_ipg2",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m4_ipg4",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m5_ipg3",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m5_ipg5",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m6_ipg2",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m6_ipg3",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m6_ipg4",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m6_ipg6",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m7_ipg4",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m7_ipg5",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m8_ipg2",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m8_ipg3",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m8_ipg4",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m8_ipg5",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m8_ipg6",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m9_ipg3",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m9_ipg5",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    },
+    {
+      "arm" : "m9_ipg6",
+      "max_total_threads_per_threadgroup" : 1024,
+      "static_threadgroup_memory_bytes" : 0,
+      "thread_execution_width" : 32
+    }
+  ],
+  "device" : "Apple M4 Pro",
+  "experiment" : "e73",
+  "harness" : "compile-probe",
+  "rung" : 0
+}

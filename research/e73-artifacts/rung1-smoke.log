@@ -1,0 +1,26 @@
+e73_rung1 head=d3eb5caa134030975c0f9de96f8f524beaf654af dirty=1
+e73_rung1 host=ip-10-231-2-22 chip=Apple M4 Pro
+e73_rung1 arms=m6_ipg3,m6_ipg6,m9_ipg5
+e73_rung1 reps=1 target_bytes=2e9 shape=linear_attn.out_proj
+e73_rung1 started=2026-08-20T10:26:20Z
+/tmp/e73-build/arms-smoke.metal 219050 bytes arms=19 source_sha256=8a03ace3735f57d167c630705d45d53d8e58d2778b4845a2fe8bb4e5a56f2472
+e73_rung1 cool_gate=skipped_by_request cool_gate_passed_real_gate=false gate_qualified_for_timing=false
+e73_rung1 entry_thermal gpu_temp=35.7306022644043C cpu_temp=38.88816452026367C gpu_power=0.00856148824095726W
+ARM arm=m6_ipg3 m=6 ipg=3 groups=2 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg6 m=6 ipg=6 groups=1 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m9_ipg5 m=9 ipg=5 groups=2 max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e73_cell_ab: session entry gpu_temp_c=35.74
+PARITY shape=linear_attn.out_proj arm=m6_ipg3 m=6 ipg=3 differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg6 m=6 ipg=6 differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m9_ipg5 m=9 ipg=5 differing=0 zero_rows=0 compared_rows=9
+LEG shape=linear_attn.out_proj rep=0 position=0 arm=m6_ipg3 m=6 ipg=3 groups=2 inner=113 gpu_seconds=0.017670375 wall_seconds=0.017938333 seconds_per_dispatch=0.000156374998 gbps=226.311369
+LEG shape=linear_attn.out_proj rep=0 position=1 arm=m6_ipg6 m=6 ipg=6 groups=1 inner=113 gpu_seconds=0.017032875 wall_seconds=0.017364167 seconds_per_dispatch=0.000150733407 gbps=117.390832
+LEG shape=linear_attn.out_proj rep=0 position=2 arm=m9_ipg5 m=9 ipg=5 groups=2 inner=113 gpu_seconds=0.022802208 wall_seconds=0.023135875 seconds_per_dispatch=0.000201789454 gbps=175.378045
+LEG shape=linear_attn.out_proj rep=0 position=3 arm=m9_ipg5 m=9 ipg=5 groups=2 inner=113 gpu_seconds=0.022811417 wall_seconds=0.023048500 seconds_per_dispatch=0.000201870943 gbps=175.307251
+LEG shape=linear_attn.out_proj rep=0 position=4 arm=m6_ipg6 m=6 ipg=6 groups=1 inner=113 gpu_seconds=0.017373292 wall_seconds=0.017580292 seconds_per_dispatch=0.000153745943 gbps=115.090647
+LEG shape=linear_attn.out_proj rep=0 position=5 arm=m6_ipg3 m=6 ipg=3 groups=2 inner=113 gpu_seconds=0.017923208 wall_seconds=0.018122542 seconds_per_dispatch=0.000158612464 gbps=223.118910
+SHAPE shape=linear_attn.out_proj k=6144 n=5120 inner=113 legs=6 bytes_per_stream=17694720 entry_gpu_temp_c=35.71 exit_gpu_temp_c=36.07
+e73_cell_ab: linear_attn.out_proj inner=113 legs=6 entry=35.71C exit=36.07C
+e73_cell_ab: wrote research/e73-artifacts/rung1-smoke.json exit gpu_temp_c=35.98
+e73_rung1 exit_thermal gpu_temp=36.13454818725586C cpu_temp=39.01433181762695C gpu_power=0.007097834255546331W status=0
+e73_rung1 finished=2026-08-20T10:26:37Z

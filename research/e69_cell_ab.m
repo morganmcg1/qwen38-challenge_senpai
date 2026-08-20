@@ -217,12 +217,17 @@ int main(int argc, const char *argv[]) {
     const char *out_path = NULL;
     const char *macmon = getenv("MLXFAST_MACMON_BIN");
     const char *shape_filter = NULL;
+    // Entry-point prefix, so a later experiment can reuse this session harness
+    // for its own arm set without forking 400 lines of thermal and palindrome
+    // logic. E72 rung 2 passes `e72_cell_`.
+    const char *entry_prefix = "e69_cell_";
     char *arm_list = NULL;
     int na = 5, reps = 21, warmup_reps = 1;
     double target_bytes = 24e9;
 
     for (int i = 1; i < argc; i++) {
-      if (!strcmp(argv[i], "--source") && i + 1 < argc) source_path = argv[++i];
+      if (!strcmp(argv[i], "--prefix") && i + 1 < argc) entry_prefix = argv[++i];
+      else if (!strcmp(argv[i], "--source") && i + 1 < argc) source_path = argv[++i];
       else if (!strcmp(argv[i], "--out") && i + 1 < argc) out_path = argv[++i];
       else if (!strcmp(argv[i], "--shape") && i + 1 < argc) shape_filter = argv[++i];
       else if (!strcmp(argv[i], "--na") && i + 1 < argc) na = atoi(argv[++i]);
@@ -293,7 +298,8 @@ int main(int argc, const char *argv[]) {
 
     id<MTLComputePipelineState> pso[kMaxArms];
     for (int a = 0; a < kArmCount; a++) {
-      NSString *name = [NSString stringWithFormat:@"e69_cell_%s", kArms[a]];
+      NSString *name =
+          [NSString stringWithFormat:@"%s%s", entry_prefix, kArms[a]];
       id<MTLFunction> fn = [lib newFunctionWithName:name];
       if (!fn) {
         fprintf(stderr, "e69_cell_ab: missing function %s\n", [name UTF8String]);
