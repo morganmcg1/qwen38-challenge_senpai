@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- 2026-08-20, after ledger 198. Campaign base
+- 2026-08-20, after ledger 199. Campaign base
   `d2139c924c7a7d98ca6026eea63867c2776abbca`.
 - Most recent human research direction: issue #22 -- execute aggressively toward
   the winning frontier. Issue #31 is complete and closed. No new human direction
@@ -15,13 +15,107 @@
   profile the whole campaign believed in is unreachable on the Qwen MTP worker,
   and 198(F) found that three of my own standing instruments cannot fail. Both
   errors survived for months because nobody demanded a positive control.
+- 🔴🔴 Ledger 199 added a fourth, and it subsumes most of the others: **the
+  target forward already runs at 97.3 % of peak DRAM bandwidth, so the only
+  lever on it is the number of weight streams per round.** Price every proposed
+  mechanism against that first. If it does not reduce weight streams, reduce
+  bytes, or act outside the target forward, it cannot pay.
+
+---
+
+## 🔴🔴🔴 The master fact: decode is one weight pass at the roofline
+
+This is the organising principle of the campaign. Ledger 199(A).
+
+The quantized byte census of the transformed checkpoint is exact
+(`Sources/MLXFastTransform/Qwen35CheckpointValidation.swift:57-76`, inventory
+builder `:176-263`):
+
+| item | bytes |
+|---|---|
+| packed 4-bit weights | 13,446,676,480 |
+| scales + biases | 1,680,834,560 |
+| all quantized linears | 15,127,511,040 |
+| minus `embed_tokens`, gathered not streamed | **14,412,349,440** |
+
+E1 measured the depth-0 round at `C(0) = 65.0094 ms`, N=1530, sd 0.16 %.
+
+```
+14,412,349,440 B / 0.0650094 s = 221.70 GB/s
+askeladd E61 rung 1 measured peak = 227.90 GB/s
+utilisation = 97.3 %
+```
+
+Consequences, all of them load-bearing:
+
+1. **Nothing inside the serial target forward can be recovered** by better
+   arithmetic, fusion, evaluation boundaries, or scheduling. This retrospectively
+   explains why every host-side and dispatch-side direction in this campaign
+   returned a null or a sub-MDE result.
+2. **The only target-path lever is `ceil(M/IPG)`,** the weight stream count. That
+   is why the two QMV stream-count changes are the only large wins we have.
+3. The proposal head, the scheduler, and the draft shortlist sit **outside** this
+   statement and keep their own value.
+
+### The unified weight-stream cost model
+
+```
+cost(M, IPG) = sum over g of  W / bw(NA_g)
+NA_g   = min(IPG, M - g*IPG), floored at 2   (tail runs wide<max(TAIL,2)>)
+groups = ceil(M / IPG)                        (first_m = tid.x*IPG, early return)
+legal  = M % IPG != 1                         (static_assert in quantized.h)
+W      = 14.412 GB
+```
+
+Bandwidths measured: NA=2..5 from E54 (run
+[`9qt2x4cp`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9qt2x4cp)),
+NA=6,7 from E61 rung 1.
+
+| NA | bw (GB/s) | one stream over 14.412 GB |
+|---|---|---|
+| 2 | 223.784 | 64.40 ms |
+| 3 | 199.693 | 72.17 ms |
+| 4 | 175.238 | 82.24 ms |
+| 5 | 150.946 | 95.48 ms |
+| 6 | 117.8 | 122.34 ms |
+| 7 | 97.9 | 147.21 ms |
+
+Script: `_advisor_scratch/stream_cost.py`. Measured realisation factor from
+model gain to measured cell gain, from askeladd's `t6`: **0.276**.
 
 ---
 
 ## 🔴🔴 BLOCKED: we have a fully certified candidate and cannot submit it
 
 **One human action unblocks the campaign's highest-value move: advance
-`origin/main` so it contains `d2139c924c7a7d98ca6026eea63867c2776abbca`.**
+`origin/main` so its scored surface is byte-identical to
+`d2139c924c7a7d98ca6026eea63867c2776abbca`.**
+
+🔴 **The blocking gate is snapshot equality, not ancestry.** The ancestry test at
+`senpai/submit-official.sh:190` fires first and is the message we see, but the
+gate that actually defines what may be submitted is line 383:
+
+```
+git diff --quiet "${main_sha}" "${base_sha}" -- benchmark.json "${editable_paths[@]}"
+  -> "official submit: BASE_SHA submitted snapshot differs from current origin/main"
+     "official submit: replay and remeasure the candidate on the maintained frontier"
+```
+
+Making `d2139c92` an ancestor of `main` is therefore necessary but not
+sufficient. **Only a scored surface that already exists on `origin/main` can be
+submitted at all.** Student merges land on the advisor branch and never on
+`main`: `git branch -r --contains d2139c92` returns only
+`origin/senpai/qwen38-mtp-r1`. So this launch has no path by which any campaign
+result can ever reach the submission channel until an operator advances `main`.
+This is a structural, operator-owned blocker, not a transient staleness.
+
+The scored-surface diff `main` -> `d2139c92` is **4 files**, 151 insertions and
+83 deletions: `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` (159 lines),
+`Vendor/mlx-swift-lm/.../Qwen35.swift` (51),
+`Vendor/mlx-swift/.../mlx-generated/quantized.cpp` (20), and
+`Vendor/mlx-swift/.../kernels/quantized.h` (4). `origin/main` still carries
+`qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>` at `case 9`; we carry
+`<T, 9, 5, true>` (E55, `-4.2952 %` on the candidate leg).
 
 Every pre-submit gate on the current base passes:
 
@@ -55,6 +149,16 @@ Cause, verified:
   `git config yukon.source-branch == "main"` at line 146. There is no override.
 - `origin/main`'s `senpai/frontier-state.json` is also stale (records promoted
   `0cd0a6b4` at `3.24929399`, not the live `59b321ee` at `3.24985583`).
+- The four commits `main` holds and we lack are all `mmcguire`, 2026-08-19, and
+  none of them is campaign work: `770a3ff` "Correct ranked causality and
+  experiment discipline", `6391b03` "Record organizer and promoted frontiers",
+  `d32342d` "Regenerate promoted quantized Metal twin", `6e0546e` "Sync promoted
+  organizer frontier 0c90733d383f". **`main` holds the organizer's promoted
+  snapshot, not ours.**
+- The Yukon link itself points at the organizer repository, not at `origin`:
+  `submit-official.sh:145-150` asserts the Yukon source is
+  `https://github.com/Layr-Labs/qwen-3.8-mtp-challenge @ main`. `origin/main` is
+  campaign bookkeeping that the guard consults; it is not the upload path.
 
 **I did not bypass the guard and no agent on this campaign should.** No typed
 tool publishes `main`; `publish_advisor_branch` targets only the advisor branch;
@@ -192,6 +296,56 @@ the two groups differ in size.
 | 8 | `<T,8,4>` | 2 | {4,4} | 104 | `<T,8,8>` | **177 measured** | **CLOSED** |
 | 9 | `<T,9,5>` | **2** | {5,4} | 129 | `<T,9,9>` | blocked by `NA <= 5` | **CLOSED**; E55 took 3 groups to 2, measured -4.30 % leg |
 
+### 🔴🔴 Every cell in the table is now priced against measured bandwidth
+
+With `bw(NA)` measured by askeladd's E61 rung 1 ladder, the cost model above
+prices every shipped cell against every legal alternative IPG. Script:
+`_advisor_scratch/stream_cost.py`. Cost is milliseconds per gigabyte of weights
+streamed, so the column is directly comparable across rows.
+
+| M | shipped IPG | groups | cost | best IPG | groups | cost | model gain |
+|---|---|---|---|---|---|---|---|
+| 3 | 3 | `[3]` | 5.0077 | 3 | `[3]` | 5.0077 | 0.00 % |
+| 4 | 4 | `[4]` | 5.7065 | 4 | `[4]` | 5.7065 | 0.00 % |
+| **5** | **3** | **`[3,2]`** | **9.4763** | **5** | **`[5]`** | **6.6249** | **-30.09 %** |
+| **6** | **3** | **`[3,3]`** | **10.0154** | **6** | **`[6]`** | **8.4890** | **-15.24 %** |
+| 7 | 4 | `[4,3]` | 10.7142 | 7 | `[7]` | 10.2145 | -4.66 %, **refuted** |
+| 8 | 4 | `[4,4]` | 11.4130 | 4 | `[4,4]` | 11.4130 | 0.00 % |
+| 9 | 5 | `[5,4]` | 12.3314 | 5 | `[5,4]` | 12.3314 | 0.00 % |
+
+Three results follow immediately.
+
+1. 🔴 **`M=8` and `M=9` are already optimal.** No IPG choice beats what ships.
+   Those closures were correct for a reason the campaign had not yet written
+   down.
+2. 🔴 **`t55` is the largest single-cell win left in the table, by a factor of
+   two over `t6`.** `M=5` pays two full weight streams to serve five rows, and
+   the tail group runs `wide<2>` for one useful row. `<T,5,5>` collapses it to
+   one stream at the measured `bw(5) = 150.9`.
+3. The model retrodicts E55 correctly. `M=9` at `IPG 3 -> 5` moves
+   `[3,3,3] = 15.0231` to `[5,4] = 12.3314`, a `-17.92 %` cell gain against a
+   measured `-4.2952 %` leg.
+
+**The realisation factor is measured, not assumed.** Askeladd's `t6` gives a
+model cell gain of `-15.24 %` against a measured cell gain of `-4.20 %`, so
+model gains realise at **`0.276`**. Applying that factor and the ranked QMV
+width shares from beagle:
+
+| arm | cell gain | ranked QMV share | QMV effect |
+|---|---|---|---|
+| `t55` | `-8.3 %` projected | 24.1 % | `-2.00 %` |
+| `t6` | `-4.20 %` measured | 33.4 % | `-1.40 %` |
+| **both** | | | **`-3.40 %` of ranked QMV** |
+
+QMV is 32.1 % to 34.7 % of the MTP leg at `M=6`, so the pair is worth about
+**`-1.1 %` of the candidate leg**, which is **1.4 sd of one ranked run**. That
+moves `P(crown)` from 52 % to roughly 90 %. **This pair is the campaign's best
+priced move, and both halves are already assigned.**
+
+`t55` is a **one-character diff per twin**: `case 5:` changes
+`<T, 5, 3, true>` to `<T, 5, 5, true>` in `kernels/quantized.h` and in
+`mlx-generated/quantized.cpp`, then `python3 research/twin_audit.py`.
+
 ### 🔴 The staircase is moving, and it collapses to one step
 
 `ceil(M / IPG)` before and after the two queued arms land:
@@ -246,6 +400,15 @@ Linearity is **refuted at M=6** and holds at M=7. Measured ladder steps run
 2. **M=7, M=8 and M=9 are closed for the single-stream form.** No `<T,7,7>` or
    wider arm will be built. Reopen only if a different construction changes the
    bandwidth, not the schedule.
+   🔴 **M=7 is a model refutation, not just a dead cell.** The stream cost model
+   says `t7` should win: shipped `[4,3]` costs `10.7142`, so break-even needs
+   `bw(7) > 93.33`, and the measured `97.9` clears it. The model predicts
+   `-4.66 %`; askeladd measured **`+7.13 %`, slower**. That is a *signed*
+   disagreement of about 12 points from a model whose residual is zero at every
+   other cell, so it is the strongest evidence in the campaign that a second
+   term exists at wide `NA`. It joins the register-law break at `NA = 6`, the
+   `-33.1` ladder outlier at `5 -> 6`, and the 64-thread threadgroup geometry.
+   Occupancy is the leading candidate and `t6_rbx` is the dose point.
 3. **`<T,5,5>` is a one-character diff per twin and is already paid for.** It
    needs no helper change, costs 125 registers below the 129 the table now pays,
    and lands on a cell carrying **19.4 % to 26.4 %** of ranked QMV time on the
@@ -450,27 +613,44 @@ rejecting-round component of the bundled GDN slot.
 
 ## Current research focus
 
+0. 🔴🔴🔴 **Price every candidate mechanism against the roofline first.** The
+   target forward runs at **97.3 %** of measured peak DRAM bandwidth. A mechanism
+   that does not (a) reduce weight streams, (b) reduce bytes, or (c) act outside
+   the target forward cannot pay, whatever its dispatch count or FLOP count says.
+   This one test retires more proposals than any other in this document.
 1. **Get `origin/main` moved and submit `d2139c92`.** It is certified and idle.
    Under the 193 instrument this is worth more than any single mechanism now in
-   flight.
+   flight. Blocked on an operator action we cannot take.
 2. **Close the single-weight-stream table.** E61 rung 1 reduced it to two
-   remaining members, M=5 and M=6. Land both, then the direction is finished and
-   the students move on. Do not keep sweeping widths that measurement has closed.
+   remaining members, M=5 and M=6, and the cost model now prices them at
+   `-30.09 %` and `-15.24 %` of their cells. Together they are worth about
+   `-1.1 %` of the candidate leg, the largest priced move on the board. Land
+   both, then the direction is finished. Do not keep sweeping widths that
+   measurement has closed.
 3. **Repair the scheduler's cost model.** Three terms in the same greedy walk are
    wrong at once: the flat per-row price ignores the weight-stream staircase
    (edward's E56 thesis), `headStepCostRatio` ships `0.18` against a directly
    measured `0.224`, and 198(H) shows the walk charges **nothing** for the 48
    extra recurrent-layer dispatches a rejection inflicts on the following round.
    All three under-price a deep round, so all three bias the scheduler toward
-   drafting too deep. Routed into E56 as a factor design.
-4. **Open the transform-side surface.** 197(C) removed the only reason this
-   campaign never worked there. It is the one editable area with zero field
-   coverage, and a layout change attacks every QMV cell at once instead of one
-   width at a time.
+   drafting too deep. Routed into E56 as a factor design. 🔴 199(G) adds a fourth
+   defect: a **constant** per-stream coefficient cannot be right when one stream
+   costs `64.40 ms` at `NA = 2` and `147.21 ms` at `NA = 7`, and the two
+   regressors are collinear (`r = 0.790` today, `r = 0.866` after `t55` and
+   `t6`). The prescribed form is
+   `T(M) = a + b * W * sum_g 1/bw(NA_g)`.
+4. **Attribute the leg by family, once, with the instrument that already
+   exists.** `Tests/MLXFastTests/QwenQMVCostCurveTests.swift` emits roofline,
+   scored-shape width sweeps, dispatch-boundary probes, fast-path probes, head FC
+   dtype probes and a Gated DeltaNet recurrence sweep in **one command**, with no
+   model resident, in minutes. It has never been run. Several open questions in
+   this document disagree with each other by an order of magnitude and this run
+   settles them.
 5. **Buy acceptance on the proposal side.** The draft shortlist is `K = 32`.
    Proposal quality has no exactness exposure by construction, because the target
-   argmax decides acceptance alone. This is the cheapest place on the whole
-   surface to convert engineering into score.
+   argmax decides acceptance alone. It is also **outside** the roofline
+   statement, which is now the main reason to prefer it: it changes how many
+   tokens one weight pass buys, rather than trying to make the pass cheaper.
 
 🔴 **Decode-side host cost is CLOSED, not open.** Ledger 195 records that I
 priced it from this document instead of from the measurement, and every clause
@@ -498,20 +678,25 @@ Third independent closure of warm coverage after 183(E) and 185(C)(E).
 
 Ordered by expected value against the `0.5366 %` deficit. Ledger 197 retired two
 entries of the previous list and downgraded a third; ledger 198 retired three
-more and added one. Reasons are recorded below rather than deleted, so the same
-ideas are not re-proposed.
+more and added one; ledger 199 retired the tier-1 transform direction outright
+and added three entries. Reasons are recorded below rather than deleted, so the
+same ideas are not re-proposed.
 
 1. **Submit `d2139c92`** once `origin/main` moves. Blocked, not deprioritised.
-2. 🔴 **Transform-side weight relayout and co-tiling.** Explicitly permitted by
-   the same clause that killed our two failed submissions: "pure memory relayout
-   or co-tiling that preserves quantized values ... remain allowed"
-   (`run-submission-static-review.sh:453`). `Sources/MLXFastTransform/` is fully
-   editable, the reviewer prompt names it as expected participant work, the
-   fixture pins the raw checkpoint and generates the transformed tree on-box, and
-   **no tree in the 712-tree field census has ever touched it.** Unlike every
-   entry in the QMV width table, a layout change attacks every cell at once. The
-   invariant is strict and easy to state: the dequantized values must be
-   bit-identical, so only the byte order in which they are streamed may change.
+2. 🔴 **Per-family width attribution in one command, using
+   `QwenQMVCostCurveTests`.** First assignment when a slot frees. Enable with
+   `MLXFAST_RUN_QMV_COST_CURVE=1` and `MLXFAST_QMV_COST_CURVE_OUT=<json>`; tune
+   with `_REPS` (default 15), `_INNER` (default 10), `_WIDTHS`, `_SHAPES_ONLY`.
+   The single test `sweepQuantizedMatmulOverVerifyWidth` (`:26`) emits `device`,
+   `crossrow_gate`, `roofline` (`:1029`), `shapes` swept over widths (`:706`),
+   `dispatch_boundary_probes`, `fast_path_probes`, `head_fc_dtype_probe`
+   (`:842`), and **`gdn_recurrence`** (`sweepGatedDelta`, widths 1 to 12,
+   `:911-965`). No resident model, minutes of wall clock, and **it has never been
+   run**. It simultaneously supplies the Gated DeltaNet gate below, the
+   realisation-factor cross-check for the stream cost model, and the missing
+   per-family denominator that two of our accountings disagree about by an order
+   of magnitude. The sibling `scoredShapesStayOnTheQMVFastPath` (`:87`) records
+   that falling off `qmv_fast` is silent and costs `1.64x` to `1.80x` at `M = 9`.
 3. 🔴 **Draft shortlist `K = 32` to `K = 64` acceptance A/B.**
    `research/e28-draft-readout-exactness-n24000.json` already measures
    containment at **92.371 %** on 24,000 synthetic trials, so about **7.6 %** of
@@ -559,7 +744,11 @@ ideas are not re-proposed.
    absorbing state and `recordAcceptOutcome` is unreachable at depth 0, so a
    prompt that latches never recovers. About `+0.5 %` expected score per
    submission as tail insurance at zero exactness risk.
-7. **Composition vehicle for the exact sub-MDE wins**, `+0.2 %` to `+0.5 %`,
+7. **Composition vehicle for the exact sub-MDE wins.** 🔴 **Deprioritised by
+   199(J) while the submission channel is closed**, because its entire case was
+   cadence: many small certain wins, claimed often. With no claim available,
+   prefer a mechanism that clears the `0.756 %` single-run noise alone.
+   Reinstate when `origin/main` moves. Contents unchanged, `+0.2 %` to `+0.5 %`,
    near zero risk: `pendingPrimaryDevice`, dead-KV-GEMM elision, fused
    last-merge plus final RMSNorm, top-32 finalize k-way merge, plus the
    `eval(bundle)` rider and its two repeated sibling sites
@@ -583,6 +772,72 @@ ideas are not re-proposed.
 12. **(bold) Tree-shaped MTP proposals.** Rung 0a is free and decides the rest:
     read the trusted parent's row-verification contract and find out whether it
     hard-codes a single chain.
+13. 🔴 **Scale-and-bias pair cardinality census.** Zero GPU, pure numpy on the
+    transformed checkpoint. This is the only surviving fragment of the
+    metadata-layout direction. Quantization metadata is exactly **11.11 %** of
+    quantized bytes at group 64, so halving it is worth at most `5.5 %` of the
+    weight stream, and the roofline says that converts almost one for one. Every
+    lossy route fails exactness, so the question is whether a **lossless**
+    recoding exists: do the distinct `(scale, bias)` pairs per projection fit in
+    16 bits with a lookup table smaller than the plane it replaces? A proven
+    mechanism already exists in-tree and is wired only to a family with no
+    runtime consumer: `Sources/MLXFastTransform/AffineMetadataCoding.swift`
+    writes `mlxfast-projection-metadata.safetensors` with `metadata_indices`
+    (u16) and `metadata_lut` (u32), fusing each pair as
+    `UInt32(scale) | (UInt32(bias) << 16)` at `:277`, capped at 65,536 entries
+    at `:279-286`. Kill the direction unless the census fits. 🔴 An extra
+    checkpoint tensor is **rejected, not ignored**: `Load.swift:267` verifies
+    with `.all`, which includes `.noUnusedKeys` and throws
+    `UpdateError.unhandledKeys`. The supported channel is a `removeValue` stanza
+    in the editable `sanitize` at `Qwen35.swift:2821`, exactly as done for
+    `mtp.draft_lm_head.*` at `:2845-2851`.
+14. 🔴 **Runtime dispatch audit for `qmv_fast` fall-off.** New question. The
+    `qvm` path indexes `scales += out_col / group_size + simd_lid * out_vec_size_g`,
+    which is strided across lanes and genuinely uncoalesced, unlike `qmv_fast`
+    where four lanes broadcast one address. The repository's own guard test
+    checks a **hardcoded** shape list, not the live dispatch. Thorfinn's
+    `research/e59_binary_probe.py` already reads JIT dispatch calls out of the
+    image about to be timed, so the audit is cheap: confirm that no scored
+    projection at any live width falls onto `qvm`. Under the roofline this is
+    the one remaining way a scored path could be paying a bandwidth penalty we
+    have never looked for.
+
+**Retired by ledger 199, with reasons, so they are not re-proposed.**
+
+- 🔴 **Transform-side weight relayout and co-tiling.** This was tier-1 position
+  two. Closed for zero GPU time on source and literature evidence, ledger
+  199(E). Four independent reasons, any one of which is sufficient.
+  1. **There is nothing to recover.** Per SIMD-group iteration the kernel reads
+     256 contiguous bytes of weights per row plus one contiguous 16-byte run of
+     scales and one of biases, and consumes all of them.
+     `group_index = row * in_vec_size_g + k/64 + simd_lid/4`
+     (`quantized.h:1006`) means four lanes share each metadata address, so it is
+     a four-way broadcast, not a gather. Overfetch is about zero.
+  2. Scales and biases already use the **identical index** (`:1007-1008`) and
+     differ only in base pointer. The layout is already structure-of-arrays with
+     perfect locality.
+  3. **There is no delivery vehicle.** `mlx/backend/metal/quantized.cpp` binds
+     three separate buffers at five call sites, and `mlx/ops.cpp:97-125`
+     enforces `scales.shape() == biases.shape()` and
+     `w.shape(-1)*32/bits == scales.shape(-1)*group_size`. **Neither file is in
+     `editablePaths`**, so a co-tiled checkpoint cannot be bound.
+  4. **The literature runs the other way.** llama.cpp SYCL **de-interleaved**
+     metadata and gained 39 % to 95 % on batch-1 decode
+     (`https://github.com/ggml-org/llama.cpp/pull/12858`), and 3.1x on Q8_0 with
+     bandwidth utilisation 21 % to 66 %
+     (`https://github.com/ggml-org/llama.cpp/pull/21527`). Marlin, Machete, AWQ,
+     ExLlamaV2 and NVIDIA MX/NVFP4 all keep scales in a separate plane. The
+     alignment arithmetic explains why: 32 bytes of weights plus 4 bytes of
+     metadata is 36 bytes, which preserves 4-byte alignment and destroys 8- and
+     16-byte alignment.
+  The only surviving fragment is entry 13 above, and it is a byte-count
+  argument, not a layout argument.
+- 🔴 **A constant per-stream coefficient in any width cost model.** 199(G).
+- 🔴 **Any hope of recovering time inside the serial target forward by better
+  arithmetic, fusion, evaluation boundaries or scheduling.** The forward is at
+  `97.3 %` of peak bandwidth. This retrospectively explains every null and
+  sub-MDE host-side and dispatch-side result in the campaign, and it is the
+  reason entry 0 of the focus list exists.
 
 **Retired by ledger 197, with reasons, so they are not re-proposed.**
 
@@ -648,6 +903,23 @@ redirect at `:213`.
 
 ## Standing method rules
 
+- 🔴🔴🔴 **ROOFLINE GATE BEFORE EVERYTHING.** The target forward streams
+  `14,412,349,440` bytes in `65.0094 ms`, which is `221.70 GB/s` against a
+  measured peak of `227.90 GB/s`, or **97.3 % of the roofline**. Before pricing
+  any mechanism, state which of the three legal levers it pulls: fewer weight
+  streams, fewer bytes per stream, or work outside the target forward. A
+  mechanism that pulls none of them cannot pay, and the campaign has already
+  spent student slots proving that one at a time.
+- 🔴🔴 **BANK MECHANISM SIZE, NOT CADENCE, WHILE THE SUBMISSION CHANNEL IS
+  CLOSED.** The older rule, "decide locally and submit to claim, because cadence
+  beats mechanism size", assumed a working channel and a cheap claim. Neither
+  holds now. Our submittable base beats the live frontier by `-0.0466 %` on a
+  matched 300-token run, which against the 193 instrument is `P(crown) = 52 %`,
+  a coin flip; and the channel is shut for reasons we cannot clear. So prefer
+  mechanisms large enough to survive the `0.756 %` single-run standard deviation
+  **on their own**, and deprioritise sub-MDE composition work justified purely
+  by cadence until `origin/main` moves. Reinstate the old rule the moment it
+  does.
 - 🔴🔴 **POLICY GATE BEFORE PRICING.** Before a mechanism is priced, queued or
   published, read `research/e53_policy_wall.md` and the `fail_on` list in
   `.github/scripts/run-submission-static-review.sh`. Ledger 197(A) is advisor

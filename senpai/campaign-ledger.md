@@ -14277,3 +14277,367 @@ Added:
 Unchanged and still first in the queue: submitting `d2139c92` the moment
 `origin/main` moves, transform-side weight relayout and co-tiling, and the draft
 shortlist K=32 → K=64 acceptance A/B.
+
+## 199. Decode is a weight-streaming pass at 97.3 % of peak DRAM bandwidth; that single fact prices the whole QMV table, makes `t55` the largest cell win left, turns the M=7 result into a model refutation, and closes transform-side co-tiling for zero GPU time
+
+Item 198 closed on the dead ranked allocator profile and the rollback-repair term.
+This item is an advisor-side synthesis round with no new GPU time. It builds one
+cost model from evidence already in hand, uses it to price every remaining QMV
+cell, kills a tier-1 direction on source and literature evidence alone, and
+records a sharper reading of the submission blocker.
+
+Sources: the transform byte census (`Sources/MLXFastTransform`,
+`Sources/MLXFastModel/Qwen35CheckpointValidation.swift` pinned geometry); askeladd
+E61 rung 1 (PR #64, job `9c2b761b`); E54 bandwidth ladder (W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9qt2x4cp`,
+run `9qt2x4cp`); E55 (W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wxezisvs`,
+run `wxezisvs`); E1 depth ladder; alphonse E60 (W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/5f9620v9`,
+run `5f9620v9`); four delegated read-only source and literature reconnaissances.
+Model script: `_advisor_scratch/stream_cost.py`.
+
+### 199(A) The master fact: a decode round is one weight pass at the roofline
+
+The quantized byte census of the transformed checkpoint is exact, derived from the
+pinned geometry in `Sources/MLXFastTransform/Qwen35CheckpointValidation.swift:57-76`
+and the inventory builder at `:176-263`:
+
+| item | bytes |
+|---|---|
+| packed 4-bit weights | 13,446,676,480 |
+| scales + biases | 1,680,834,560 |
+| all quantized linears | 15,127,511,040 |
+| minus `embed_tokens`, which is gathered at decode and not streamed | **14,412,349,440** |
+
+E1 measured the depth-0 round at `C(0) = 65.0094 ms`, N=1530, sd 0.16 %.
+
+```
+14,412,349,440 B / 0.0650094 s = 221.70 GB/s
+askeladd E61 rung 1 measured peak = 227.90 GB/s
+utilisation = 97.3 %
+```
+
+A serial decode round is one streaming pass over the quantized weights running at
+97.3 % of achievable DRAM bandwidth. Nothing inside the forward can be recovered by
+better arithmetic, better fusion, better evaluation boundaries, or better
+scheduling. **The only lever that exists on the target path is the number of weight
+streams per round.** That is exactly `ceil(M/IPG)`.
+
+This retrospectively explains why every host-side, dispatch-side and
+evaluation-boundary direction in this campaign has returned a null or a sub-MDE
+result, and why the two QMV stream-count changes are the only large wins the
+campaign has produced.
+
+Note the scope. This is a statement about the target forward. It says nothing about
+the proposal head, the scheduler, or the ranked pinned serial leg, which the
+candidate cannot touch at all.
+
+### 199(B) The unified weight-stream cost model
+
+Cell cost is the sum over active threadgroups of one weight pass at that group's
+row count. The tail group runs `wide<max(TAIL,2)>`:
+
+```
+cost(M, IPG) = sum over g of  W / bw(NA_g)
+NA_g   = min(IPG, M - g*IPG), floored at 2
+groups = ceil(M / IPG)          from first_m = tid.x * IPG, early return first_m >= M
+legal  = M % IPG != 1           static_assert in quantized.h
+W      = 14.412 GB
+```
+
+Measured bandwidths: NA=2..5 from E54, NA=6,7 from E61 rung 1.
+
+| NA | bw (GB/s) | one stream over 14.412 GB |
+|---|---|---|
+| 2 | 223.784 | 64.40 ms |
+| 3 | 199.693 | 72.17 ms |
+| 4 | 175.238 | 82.24 ms |
+| 5 | 150.946 | 95.48 ms |
+| 6 | 117.8 | 122.34 ms |
+| 7 | 97.9 | 147.21 ms |
+
+The model reproduces the shipped table and prices every alternative:
+
+| M | shipped IPG | groups | cost (ms/GB) | best IPG | groups | cost | model gain |
+|---|---|---|---|---|---|---|---|
+| 3 | 3 | [3] | 5.0077 | 3 | [3] | 5.0077 | 0.00 % |
+| 4 | 4 | [4] | 5.7065 | 4 | [4] | 5.7065 | 0.00 % |
+| **5** | **3** | **[3,2]** | **9.4763** | **5** | **[5]** | **6.6249** | **30.09 %** |
+| **6** | **3** | **[3,3]** | **10.0154** | **6** | **[6]** | **8.4890** | **15.24 %** |
+| 7 | 4 | [4,3] | 10.7142 | 7 | [7] | 10.2145 | 4.66 % |
+| 8 | 4 | [4,4] | 11.4130 | 4 | [4,4] | 11.4130 | 0.00 % |
+| 9 | 5 | [5,4] | 12.3314 | 5 | [5,4] | 12.3314 | 0.00 % |
+
+Retrodiction of E55: M=9 IPG 3 → 5 moves `[3,3,3]` 15.0231 to `[5,4]` 12.3314, a
+model gain of **17.92 %**, against a measured MTP leg of **−4.2952 %**.
+
+Two independent confirmations that the shipped table is not arbitrary: **M=8 and
+M=9 are already optimal** under measured bandwidth. Those closures were correct,
+and are now correct for a stated reason rather than by exhaustion.
+
+### 199(C) `t55` is the largest single-cell win left, and it is a one-character diff
+
+M=5 is the worst cell in the shipped table. It pays two full weight streams to serve
+five rows, and its tail group runs `wide<2>` for a single useful row. Single-stream
+`<T,5,5>` is priced at **−30.09 %** on the cell, twice `t6`'s −15.24 %.
+
+The realisation factor is now measured, not assumed. The model predicted −15.24 %
+for `t6`; askeladd measured **−4.20 %** on the cell. That gives
+
+```
+realisation = 4.20 / 15.24 = 0.276
+```
+
+Carry it across and `t55` lands near **−8.3 %** on the measured M=5 cell.
+
+Ranked value, using the beagle QMV share by width (M5 24.1 %, M6 33.4 %):
+
+| arm | measured or projected cell gain | ranked QMV share | QMV effect |
+|---|---|---|---|
+| `t55` | −8.3 % (projected at 0.276) | 24.1 % | −2.00 % |
+| `t6` | −4.20 % (measured) | 33.4 % | −1.40 % |
+| both | | | **−3.40 % of ranked QMV** |
+
+QMV is 32.1–34.7 % of the MTP leg at M=6, so the pair is worth roughly **−1.1 % of
+the candidate leg**. Against the ranked instrument of 193 that is about 1.4 sd of a
+single run, and it moves P(crown) on one run from roughly 52 % to roughly 90 %.
+
+Both arms are already assigned: `t55` to thorfinn as rung-4 arm one, `t6` to
+askeladd. `t55` is a one-character change per twin, `case 5:` `<T,5,3,true>` →
+`<T,5,5,true>`, in `quantized.h` and the generated twin, then `twin_audit.py`.
+
+### 199(D) 🔴 M=7 is a model refutation, and it is the strongest evidence yet for the occupancy cliff
+
+The model says `t7` should **win**. Shipped `[4,3]` costs 10.7142, so single-stream
+M=7 needs only `bw(7) > 93.33 GB/s`. E61 measured **97.9 GB/s**, above break-even.
+Model prediction: **−4.66 %**. Measurement: **+7.13 %, slower**.
+
+That is a signed disagreement of nearly twelve points from a model that is accurate
+at every other cell. A pure bandwidth account of the wide helper is therefore wrong
+at NA ≥ 6, and the non-bandwidth term at NA=7 exceeds the entire stream saving.
+
+This joins three earlier observations that all point at the same width:
+
+- the register law `20 + 21·NA` is exact at NA=3,4,5 and first breaks at NA=6 (144
+  measured against 146 predicted);
+- the only ladder step outside the −19 to −24 band is 5→6 at **−33.1**;
+- the threadgroup is 64 threads, and 125 → 144 registers per thread is the right
+  size to lose a resident threadgroup.
+
+`t6_rbx` is the dose point. If `rbx` lifts `bw(6)`, the `t6` prize scales with it:
+
+| `bw(6)` | model gain for `t6` |
+|---|---|
+| 117.80 measured today | 15.24 % |
+| 126.65 E54 extrapolation | 21.16 % |
+| 135.00 | 26.04 % |
+| 145.00 | 31.14 % |
+| 155.00 | 35.58 % |
+
+### 199(E) Transform-side weight relayout and scale/bias co-tiling: CLOSED, zero GPU time
+
+This sat at position 2 in the tier-1 queue on the strength of the explicit
+permission at `run-submission-static-review.sh:453` and the fact that no field tree
+had ever touched `Sources/MLXFastTransform`. It is closed on source and literature
+evidence. The reasons, so nobody reopens it without new evidence:
+
+1. **There is nothing to recover.** Per SIMD-group iteration the kernel reads 256 B
+   of contiguous weights per row plus one contiguous 16-byte run of scales and one
+   of biases, both fully consumed. `group_index = row * in_vec_size_g + k/64 +
+   simd_lid/4` (`quantized.h:1006`) makes four lanes share each address, so the
+   metadata loads are a 4-way broadcast over a dense contiguous run, not a gather.
+   Overfetch is approximately zero, so co-tiling saves approximately zero bytes.
+2. **Scales and biases share the identical index** (`quantized.h:1007-1008`); only
+   the base pointer differs. The layout is already struct-of-arrays with perfect
+   locality.
+3. **The delivery vehicle does not exist.** `mlx/backend/metal/quantized.cpp` binds
+   the three buffers at `:221-226`, `:284-289`, `:384-389`, `:459-464`, `:561-566`,
+   and `mlx/ops.cpp:97-125` enforces `scales.shape() == biases.shape()` and
+   `w.shape(-1)*32/bits == scales.shape(-1)*group_size`. Neither file is in
+   `editablePaths`. The three-buffer signature cannot be changed at all.
+4. **The literature runs the other way.** No mainstream GPU 4-bit kernel co-tiles
+   metadata into the weight buffer. llama.cpp's SYCL backend **de-interleaved**
+   metadata out of its blocks and gained 39–95 % on batch-1 decode
+   (`https://github.com/ggml-org/llama.cpp/pull/12858`, merged, clean same-build A/B
+   via `GGML_SYCL_DISABLE_OPT`), and 3.1× on a later Q8_0 change
+   (`https://github.com/ggml-org/llama.cpp/pull/21527`). Marlin, Machete, AWQ,
+   ExLlamaV2 and NVIDIA's MX/NVFP4 path all keep scales separate. MLX already ships
+   the layout those changes moved toward. The one measurement that isolates scale
+   layout as a variable, Triton's Blackwell block-scaled tutorial, gains ~20× by
+   making the **separate** scale plane tile-contiguous, not by co-tiling.
+5. **Alignment.** A group of 64 4-bit weights is 32 B; adding a bf16 scale and bias
+   makes 36 B, which preserves 4-byte alignment but destroys 8- and 16-byte
+   alignment, recovering 16 B alignment only every fourth group.
+
+Same-direction consequence: metadata is 11.11 % of quantized bytes at group 64
+(1,680,834,560 of 15,127,511,040). Halving it would be worth at most ~5.5 % of the
+weight stream, which is larger than any relayout. But every route to halving it
+changes dequantized values and therefore fails the exact-token gate. Only a
+**lossless** recoding would qualify, and that requires the checkpoint's (scale,
+bias) pairs to have low cardinality. That is a zero-GPU numpy question and is the
+only surviving fragment of this direction.
+
+### 199(F) What the transform reconnaissance found that is worth keeping
+
+The direction is closed but three facts are durable and were not previously
+recorded:
+
+- **For Qwen the transform is a selecting pass-through, not a re-quantizer.** It
+  copies `language_model.*` byte-for-byte, writes a stripped index and a flattened
+  `config.json`, and emits no sidecars (`Transform.swift:282-300`).
+- **A sidecar mechanism already exists and is proven.** `AffineMetadataCoding`
+  writes `mlxfast-projection-metadata.safetensors` with per-projection
+  `metadata_indices` (u16) and `metadata_lut` (u32), registered into the index via
+  `CheckpointIndex.writeStripped(additionalWeightMap:)`. `makeOrderedLUT`
+  (`:252-294`) already fuses each pair as `UInt32(scale) | (UInt32(bias) << 16)` at
+  `:277`. It is wired only to the `.gemma4` family, which `Transform.swift:47`
+  records as having no runtime consumer. It is unused prior art, available if a
+  lossless metadata recoding ever qualifies.
+- **Byte headroom.** The transformed tree is 14.09 GiB against a trusted 25 GiB cap
+  (`Sources/MLXFastCore/Constants.swift:251`, enforced at
+  `QwenRuntimePreflight.swift:158`). A second full copy of the packed weights would
+  breach it; a metadata-sized second plane at 1.57 GiB fits easily.
+- **An extra checkpoint tensor is rejected, not ignored.** `Load.swift:267` applies
+  `update(parameters:verify: [.all])`, and `.all` includes `.noUnusedKeys`, which
+  throws `UpdateError.unhandledKeys`. The supported channel is a `removeValue`
+  stanza in the editable `sanitize` at `Qwen35.swift:2821`, exactly as the campaign
+  already does for `mtp.draft_lm_head.*` at `:2845-2851` and the
+  `mtp.precision_islands.` prefix set at `:2864-2872`.
+- **A load-time repack needs no checkpoint change at all.** `Qwen35.swift` already
+  builds fused contiguous caches from the loaded triples at `:703-707`,
+  `:1263-1270`, `:1725-1734` and `:1771-1779`, and calls `quantizedMM` directly at
+  `:678-680`, `:1256-1258`, `:1711-1713`, `:1761-1763`, `:3097-3099`. Those call
+  sites are editable and are the correct hook for any future layout work.
+
+### 199(G) E56's cost model is not identified, and the right functional form is now available
+
+Edward's `T(M) = 16.757 + 27.532·ceil(M/IPG) + 9.624·M` has two defects.
+
+**A constant per-stream coefficient cannot be right.** One stream costs between
+64.40 ms at NA=2 and 147.21 ms at NA=7. A single 27.532 cannot span that.
+
+**The two regressors are collinear.** Over M = 3..9 the shipped group vector is
+`[1,1,2,2,2,2,2]` against `M = [3..9]`, correlation **r = 0.790**. The fit is
+splitting one staircase between a step term and a linear term arbitrarily. It gets
+worse if `t55` and `t6` land: the group vector becomes `[1,1,1,1,2,2,2]` and the
+correlation rises to **r = 0.866**. A model fitted today does not transfer to that
+table.
+
+Prescribed form, with the dominant term fixed by independent measurement:
+
+```
+T(M) = a + b · W · sum over g of 1/bw(NA_g)
+```
+
+`W` and `bw(NA)` are measured. Two free parameters instead of three, and the model
+transfers across changes to the IPG table because the table enters through
+`bw(NA_g)`.
+
+### 199(H) The end state of the table has one boundary, and the shipped policy cannot express its cap
+
+With `t55` and `t6` merged, `ceil(M/IPG)` for M=3..9 becomes `1 1 1 1 2 2 2`. The
+whole table then has exactly **one** weight-stream boundary, between M=6 and M=7,
+and the optimal draft policy is close to "draft to 6, stop". The shipped
+`widthCap = fullAcceptStreak >= 2 ? 8 : 5` (`Qwen36MTPBlockSession.swift:735`,
+`:700`, `:707`) cannot express a cap of 6. This is preregistered as a predicted
+outcome of edward's `stream` arm.
+
+### 199(I) The submission blocker is snapshot equality, not ancestry, and only the operator can clear it
+
+Re-read of `senpai/submit-official.sh` sharpens 194(G). The blocking gate is not the
+ancestry test at line 190. It is line 383:
+
+```
+git diff --quiet "${main_sha}" "${base_sha}" -- benchmark.json "${editable_paths[@]}"
+  -> "BASE_SHA submitted snapshot differs from current origin/main"
+     "replay and remeasure the candidate on the maintained frontier"
+```
+
+**The scored surface of `BASE_SHA` must be byte-identical to the scored surface of
+`origin/main`.** The guard is designed so that only code already on the maintained
+frontier branch can be submitted. Confirmed structurally:
+
+- `d2139c92` is contained by `origin/senpai/qwen38-mtp-r1` and by no other remote
+  branch. Student merges land on the advisor branch, never on `main`.
+- `origin/main` at `770a3ff2` carries `qmv_fast_crossrow_affine4_g64_m<T, 9, 3, true>`
+  at `case 9`; our tree carries `<T, 9, 5, true>`. The scored surface differs across
+  four files: `Qwen36MTPBlockSession.swift`, `Qwen35.swift`, the generated
+  `quantized.cpp`, and `quantized.h`.
+- The four commits `origin/main` has and we lack are all authored by `mmcguire` on
+  2026-08-19 and are organizer-sync and frontier-recording commits. `main` currently
+  holds the organizer's promoted snapshot `0c90733d383f`, not campaign work.
+- The Yukon link's source is the **organizer** repository at `main`, checked at
+  lines 145-150. `origin/main` is therefore campaign bookkeeping, not the submission
+  mechanism.
+
+The advisor has no typed tool that writes to `main`, and raw pushes are denied. The
+blocker is external and operator-owned. Recorded; the campaign continues without
+waiting.
+
+### 199(J) Strategic consequence: bank mechanism size, not cadence
+
+Two facts combine.
+
+**We hold no real margin.** Alphonse's 300-token matched run (job `593e83ff`, arms
+`A B C C B A`) put our submittable base at candidate MTP 0.038372665 s/token against
+the frontier surface `9e1ff9ec` at 0.038390555, a difference of **−0.0466 %**.
+Against the ranked instrument of 193, where one run has sd 0.756 %, that is
+P(crown) on one run of roughly 52 %. `d2139c92` is a coin flip, not a winner.
+
+**The submission channel is closed** for reasons we cannot clear ourselves, per
+199(I).
+
+The standing rule "decide locally, submit to claim; cadence beats mechanism size"
+assumed a working submission channel and a cheap claim. Both assumptions are false
+right now. **Invert it: while the channel is closed, prefer mechanisms large enough
+to survive the 0.756 % single-run sd on their own.** Sub-MDE composition work that
+was justified purely by cadence is deprioritised until `origin/main` moves.
+
+The four in-flight assignments already satisfy the inverted rule: E56 measured
+−2.3529 % on the candidate leg in session 2, `t55` and `t6` together are priced at
+roughly −1.1 %, and E62 is a two-constant delivery diff with a null control.
+
+### 199(K) What this changes about the plan
+
+Retired:
+
+- **Transform-side weight relayout and co-tiling** — closed by 199(E) on source,
+  editability and literature evidence, for zero GPU time. Position 2 of the tier-1
+  queue is now empty.
+- **A constant per-stream coefficient in any width cost model** — refuted by the
+  64.40 to 147.21 ms range in 199(B).
+- **Any remaining hope of recovering time inside the serial target forward** — it
+  runs at 97.3 % of peak DRAM bandwidth.
+
+Promoted:
+
+- **`t55` to the single highest-value queued arm.** Largest priced cell win in the
+  table, one-character diff, ranked-dominant width, already assigned.
+- **The physical cost model** as the campaign's standard form for width pricing.
+- **A lossless (scale, bias) cardinality census** as the only surviving fragment of
+  the metadata direction. Zero GPU, pure numpy on the transformed checkpoint. Kill
+  immediately unless distinct pairs per projection fit in 16 bits with a LUT smaller
+  than the plane it replaces.
+
+New instrument available and never run:
+
+- `Tests/MLXFastTests/QwenQMVCostCurveTests.swift` already emits a complete per-family
+  width attribution in one command under `MLXFAST_RUN_QMV_COST_CURVE=1`: `roofline`,
+  `shapes` swept over widths, `dispatch_boundary_probes`, `fast_path_probes`,
+  `head_fc_dtype_probe`, and `gdn_recurrence` from `sweepGatedDelta(widths: 1...12)`
+  at `:911-965`. It needs no resident model and costs minutes. The `gdn_recurrence`
+  section has never been run. This is the first assignment to issue when a slot frees.
+
+Open and now sharper:
+
+- **Does any scored projection fall off `qmv_fast` onto `qvm`?** The `qvm` path
+  indexes `scales += out_col / group_size + simd_lid * out_vec_size_g`, which is
+  strided across lanes and genuinely uncoalesced, unlike `qmv_fast`. The repo's own
+  test `scoredShapesStayOnTheQMVFastPath` guards a **hardcoded** shape list and
+  records that falling off costs 1.64–1.80× at M=9. A runtime dispatch audit against
+  the live image, which thorfinn's `research/e59_binary_probe.py` can already do,
+  would close this properly.
+
+Unchanged and still first in the queue: submitting `d2139c92` the moment
+`origin/main` moves, and the draft shortlist K=32 → K=64 acceptance A/B.
