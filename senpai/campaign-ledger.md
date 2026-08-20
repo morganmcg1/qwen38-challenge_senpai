@@ -18121,3 +18121,286 @@ the strongest next ranked arm, and it is already in flight as E68.
 is not. It already carries crown `9ad17378`, source `bfab0de5`, score
 3.25238228, observed 06:45Z. Only the observation timestamp lags. The note was
 wrong; the file is right.
+
+## 210 H210: the group partition is an occupancy trade, and three instruments agree
+
+Advisor, 2026-08-20, no GPU. This entry closes the mechanism question behind
+the `ff73cbbd` regression. Three student experiments and one source read now
+give a single coherent explanation, replacing the vague H208 statement that
+"the transfer inverts in sign" with a named resource and a testable model. It
+also clears five recorded documentation debts and records two rejected
+directions so nobody re-spends a slot on them.
+
+### 210(A) The three convergent instruments
+
+**E70, alphonse, PR #73, merged. Kernel SELECTION cannot explain the
+regression.** W&B [`k3iv3ylg`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/k3iv3ylg).
+15 architecture-conditional sites exist in the scored MLX build, not the 14 the
+brief named. Five diverge between `applegpu_g16s` and `applegpu_g17s`; six are
+unreachable on scored shapes. **The upper bound over all divergent reachable
+sites is 0.1003 % of published score**, which is 0.133 score sd and 16.4 % of
+our deficit to the crown. The measured regression is 2.46 %. Selection is
+therefore excluded by a factor of 25.
+
+Supporting detail worth keeping: 35/35 structural checks pass with 24/24
+mutation controls flipping; `S13 sdpa.cpp:177` is unreachable at every width
+because head_dim is 256; `S2 device.cpp:595-596` reads the memory profile and
+is not architecture at all, which refutes ledger 115 consequence 2 and confirms
+item 94; `vector_limit = 10` on all three arms for all seven scored linears; 13
+of 34 probe cells change kernel under a moved arch string, but every one of them
+is at M=10 or M=12 or in prefill, and **all M=9 quantized cells are identical on
+both arms**. Alphonse also retracted his own earlier claim that the 30.402 ms
+constant was refuted; both constants are correct and measure different builds,
+with a build factor of 1.2158.
+
+**E69, edward, PR #72, merged. The kernel is neither load-issue bound nor
+traffic bound.** Removing 60 % of the kernel's load instructions changed
+runtime by less than the same-arm null at 4 of 5 scored widths. Staging the x
+operand in threadgroup memory *lost* 4 to 16 %. Reducing concurrency (`rows8`)
+lost 24 to 78 %. But the AIR alloca census found **1 alloca at NA=4 and NA=5
+and 2 at NA=6, where the type `[4 x <6 x float>]` appears**.
+
+**E71, askeladd, PR #74, in flight. The per-GB width tax orders by grid size
+and reduction depth.** W&B [`clfgswy8`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/clfgswy8).
+
+### 210(B) The mechanism, read from source
+
+In `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h`:
+
+- `:981` `typedef vec<float, NA> VF`, then `VF acc[4]`, `VF partial[4]`, `VF
+  sums`. **Live accumulator state is 9 x NA floats per simdgroup.**
+- `:1157-1173` the wrapper computes `first_m = tid.x * IPG` and returns when
+  `first_m >= M`, so `ceil(M / IPG)` x-slots do work out of the M launched.
+- Host `backend/metal/quantized.cpp:252-254` launches `grid_dims(M,
+  ceil(N/8), B)` with `group_dims(32, 2, 1)`: 2 simdgroups per threadgroup,
+  4 output rows per simdgroup. That file is **not** editable.
+
+Metal has native `float2`, `float3` and `float4`. `vec<float, 6>` is not a
+native width, so at NA=6 the 54 live floats stop fitting the register form and
+become memory-backed. Every `partial[r] +=` and the `acc[r] +=` at `:1053` then
+carries a store-to-load dependency into the next iteration and the next
+k-block.
+
+So IPG buys and sells at the same time. Raising it reduces weight streams and
+multiplies per-simdgroup live state.
+
+### 210(C) The table that indicts our own three merged changes
+
+Legal IPG follows from `static_assert(NA >= 2 && NA <= 6)` and
+`static_assert(M % IPG != 1)`.
+
+| M | legal IPG | ours | our groups | crown | crown groups | crown/ours | ranked width share |
+|---|---|---|---|---|---|---|---|
+| 3 | 3 | 3 | 1 | 3 | 1 | 1.00 | - |
+| 4 | 2, 4 | 4 | 1 | 4 | 1 | 1.00 | 14.2 % |
+| **5** | 3, 5 | **5** | **1** | **3** | **2** | **2.00** | **24.1 %** |
+| **6** | 2, 3, 4, 6 | **6** | **1** | **3** | **2** | **2.00** | **33.4 %** |
+| 7 | 4, 5 | 4 | 2 | 4 | 2 | 1.00 | 12.2 % |
+| 8 | 2, 3, 4, 5, 6 | 4 | 2 | 4 | 2 | 1.00 | 7.35 % |
+| **9** | 3, 5, 6 | **5** | **2** | **3** | **3** | **1.50** | 5.75 % |
+
+`t55`, `t6` and `E55` are exactly the three rows where we cut concurrent
+threadgroups relative to the crown, and those widths carry **63.25 %** of
+ranked verify-width time. We did not merely pick different constants from the
+crown. We systematically moved every retuned width in the same direction, and
+that direction is the one that trades concurrency for stream savings.
+
+### 210(D) H210, stated so it can be killed
+
+**The cross-row QMV group partition trades weight-stream bandwidth against
+per-simdgroup live state. Our host runs the depth-0 round at 98.1 % of its
+bandwidth roof, so saving a stream wins locally. The ranked host runs the
+scored round at 44.0 % of its roof, so bandwidth is not binding there and
+occupancy is. The same edit therefore inverts sign between hosts.**
+
+If H210 holds, the crown's IPG table is not a weaker version of ours. It is a
+revealed ranked optimum from a solver that tuned on the scoring host.
+
+H210 supersedes H208. H208 said the optimum is host specific and the transfer
+inverts. H210 says which resource does the inverting, predicts the direction
+from the bandwidth-roof fraction, and explains E69's four null or negative arms
+without any extra assumption.
+
+### 210(E) What H210 predicts, and what would kill it
+
+Predictions:
+
+1. Arm 2 (`9b241879`, crown partitions restored) lands at or above 3.2524.
+2. A model fitted to the local exchange rate, re-evaluated at the ranked
+   operating point, reproduces the crown's shipped IPG table.
+3. Reducing live state per simdgroup at fixed IPG helps on both hosts, and
+   helps more at rank.
+4. `xvec` comes alive at NA=6 once the spill is removed.
+
+Falsifiers:
+
+1. Arm 2 lands at or below 3.19. Then the partitions are exonerated, H210's
+   ranked leg dies, and the residual four differences must be examined.
+2. The fitted model cannot reproduce our own measured LOCAL optimum at the
+   local operating point. Then the two-term form is wrong.
+3. Two layout attempts fail to remove the NA=6 spill. Then the limit is the
+   register file rather than the type.
+
+### 210(F) Assignments issued under H210
+
+- **PR #75, edward, E72.** Owns the body of
+  `qmv_fast_crossrow_affine4_g64_wide` at `:975-1065`. Remove the NA=6 spill by
+  moving accumulators to native vector widths at unchanged element-wise
+  floating-point order, so bit-identity holds by construction. Gate with the
+  AIR census before any GPU: 1 alloca, no non-native vector type, unchanged
+  fadd/fmul counts, 0 parity diffs. Predicted value: NA=6 recovers from 117.8
+  to roughly 127-137 GB/s, which is -8 to -15 % on the M=6 cell.
+- **PR #76, alphonse, E73.** Owns the wrapper at `:1157-1186` and the two
+  runtime switch blocks at `:1922` and `:1980`. Measure the exchange rate
+  between weight streams and per-simdgroup state across every legal `(M, IPG)`
+  pair, fit `t = a * groups * W + b(IPG) + c(shape)`, validate against our own
+  local optimum as a positive control, then predict the ranked optimum and
+  compare it with the crown's table.
+
+The two students share a file and are separated by function. Recorded here so a
+later reader understands why the split exists.
+
+### 210(G) E71 interim, recorded because it stands on its own
+
+Askeladd's in-situ census (`harness=local`, ungated, ABBA, entry temperatures
+39.57 to 59.35 C, session null 0.358 to 0.579 ms):
+
+- **The MLP owns about two thirds of the width tax at every width**: 61.8 % at
+  M=4, 64.0 % at M=5, 65.9 % at M=6, 64.3 % at M=9. Eleven kernel experiments
+  have all been on the generic cross-row QMV kernel, chosen because it was
+  measurable. None was chosen because it was shown to dominate.
+- **The reachable families are additive.** Pinning all five at once costs the
+  same as the sum of pinning them one at a time, residual within +/-0.72 ms at
+  all four widths. So the 22.6 % closure gap belongs to families the harness
+  cannot reach, not to a broken per-family map.
+- **ms/GB orders by grid size then K**: `mlp_gate_up` 3.26 and `lm_head` 3.40
+  (K=5120, large grids) < `fa_o_proj` 3.85 and `gdn_out_proj` 3.92 (K=6144,
+  640-threadgroup grids) < `mlp_down` 5.26 (K=17408, 640-threadgroup grid).
+- **A shape-invariance control that costs nothing**: `fa_o_proj` and
+  `gdn_out_proj` have identical shapes and differ 3x in bytes, and their ms/GB
+  agree to 5 % at M=4, 6 and 9.
+- The wrapper null gets **cheaper** with width, slope -0.115 ms per row, so the
+  attributed fraction is not inflated by wrapper drift. He marked five
+  small-arm cells at M=4 and M=5 **not resolved** rather than reporting them,
+  which is the right call.
+- He independently confirmed that `get_qmv_batch_limit` is the only site in the
+  backend reading `get_architecture_gen()`, and that every census family
+  reaches the identical kernel on both generations.
+
+### 210(H) Two directions rejected with arithmetic, so nobody re-spends a slot
+
+**Dequantized weight caches are rejected at every scored width.** The policy
+wall grants this permission explicitly and we have never used it. Now it is
+priced. 4-bit group-64 traffic is 1.125P against 4P for a bf16 dequantized
+cache, an inflation of 3.556x. Dequantization therefore pays only where the
+quantized path runs below 1 / 3.556 = 28 % of the bandwidth roof, and below
+about 22 % once the dense GEMM is granted a realistic 80 % efficiency. Our
+depth-0 round runs at 77 % of the ranked roof and the scored verify width runs
+at 44 %. Break-even at width 5 to 6 would need 960 GB/s, which is 156 % of the
+roof. The exactness objection is independent and also fatal: `s * (q - b)` is
+generally not exactly representable in 16 bits, and a bf16 GEMM accumulates
+differently from the inline-dequant path.
+
+**Eliminating the GDN recurrent snapshot is rejected: it is already free.**
+`Qwen36MTPBlockSession.swift:1450-1457` `snapshotRecurrent` captures
+`arrays[0]?[.ellipsis]`, a lazy slice view. Its own doc comment states that no
+GPU work happens there. Published designs that replace snapshot-and-rollback
+with commit-deferred verification are solving a cost this stack does not pay.
+The 151 MB per forward figure describes the state itself, not a copy.
+
+### 210(I) The unexplored-surface census
+
+A delegated audit priced every editable area against the measured candidate-leg
+dispatch census in `research/e58-artifacts/e58-census-512-nosync-census.json`
+(76 rounds, 79,695 in-round dispatches). **45.5 % of candidate-leg dispatches
+land in editable kernel files that no experiment has ever opened**: `copy.metal`
+17.0 %, the compiled-fusion op headers 13.4 %, `rms_norm.metal` 8.1 %,
+`gemv.metal` 3.0 %, `gather_front.h` 2.1 %, `binary.metal`/`unary.metal` 1.3 %,
+`steel_gemm_splitk` 0.35 %, `rope.metal` 0.09 %.
+
+Two entries deserve attention when a slot frees:
+
+- **`gemv.metal` is 100 % draft-head and 0 % serial leg.** Because it runs only
+  in proposal generation, a change there cannot break token exactness; it can
+  only change which drafts are offered, and the target re-verifies every row.
+  That is the cheapest exactness posture available on this campaign.
+- **`copy.metal` with `KVCache.swift`** owns 13,554 dispatches per leg, 10,235
+  of them in `target_verify`. `KVCacheSimple.update` grows by `zeros()` plus
+  `concatenated()`.
+
+Areas confirmed **unreachable** and not worth a slot: `softmax`, `sort`,
+`arg_reduce`, `reduce*` (zero dispatches on either leg); `steel_attention*`
+(head_dim 256); `fp_quantized*`, `quantized_nax*`, `gemm_nax`; `Qwen35MoE.swift`
+and `SwitchLayers.swift` (dense model); `BatchKVCache`, `CompilableKVCache`,
+`CompilableRotatingKVCache`, `DynamicSlice`, `CompiledDecode`;
+`RoPEApplication`/`RoPEUtils` (Laguna only). Caveat: the census is local, and
+dispatch count is not time.
+
+### 210(J) Literature, five questions, only the parts that change a decision
+
+- The verify-width pathology is documented on Apple Silicon with a 4-bit
+  target, including a measured case where the cost *drops* past a kernel-path
+  switch. Our own `vector_limit = 10` bars that switch at every scored width,
+  so the finding explains our curve but offers no lever.
+- Threadgroup staging is a known *anti*-pattern on Apple GPUs: barriers are
+  cheap but scattered threadgroup access is expensive. Edward's `tgx` loss was
+  the predicted result, not an implementation fault.
+- A runtime integer divide or modulo on AGX is a software path costing hundreds
+  of cycles; promoting divisors to Metal function constants bought 3.15 to
+  5.37 % in a comparable quantized matvec on an M4 Pro. Our k-loop divides only
+  by compile-time constants, so we look clean, but edward is confirming it in
+  the AIR.
+- Cross-generation config transfer is quantitatively bad in the published
+  record: 7 % of optimal in one same-vendor transplant, 58.5 % in a
+  same-vendor cross-generation case. **No published method predicts the
+  transfer without measuring the target.** The accepted practice is a portfolio
+  of variants plus on-device selection. That is a direct argument for E73's
+  model and, eventually, for choosing the partition on the scoring host during
+  untimed warmup.
+- M5 adds a Neural Accelerator per shader core, with vendor-reported
+  compute-bound gains of 3.33 to 4.06x against only 1.19 to 1.27x for
+  bandwidth-bound token generation. That asymmetry is consistent with our
+  measured ranked width curve being 1.10 to 1.16x flatter than local, and it is
+  the physical reason to expect an occupancy-limited regime at rank.
+- Draft-depth goodput optima are empirically **flat** near the peak, so a
+  10 to 16 % cost-curve error is a small loss. The shape class matters far more
+  than the slope.
+- Efficient single-pass tree verification for delta-rule targets is stated as an
+  open problem in the 2026 literature. Our linear 0-to-8 chain is the right
+  structure; do not chase tree verification.
+
+### 210(K) Documentation debts cleared here
+
+1. **E69 refuted the issue-slot half of the x-operand model** (199, 203). The
+   byte-reduction over-pricing half survives; the under-pricing half does not.
+2. **`rows_per_simd` is host-set at `backend/metal/quantized.cpp:253-254` and
+   is NOT editable.** E69's arm C was unbuildable as assigned. My scope error.
+3. **The NA=6 spill mechanism** is recorded at 210(B).
+4. **The `ff73cbbd` trace and ladder differences are exonerated by source
+   inspection.** All gated trace sites are `Self.traceRounds ? ... : 0`
+   ternaries or `if Self.traceRounds` blocks; `traceSink` is reachable only
+   under the gate; both `traceRow` call sites pass already-computed arrays.
+   Cost is about 20 static accessor reads per round, near 0.0002 % of a leg.
+   The ladder refactor from an inline switch to a lazy global `Set<Int>` ships
+   an unchanged rung set at about 0.004 % of a leg. The EOS fixed-window fix is
+   a genuine no-op at rank: all eight receipts close `R + accepted = 512`
+   exactly. The manifest change is free text. **If arm 2 returns near 3.17, no
+   file in our delta explains it, and the next arm must be a pure crown-replica
+   control.**
+5. **`senpai/frontier-state.json` was never stale.** Already corrected at
+   209(H); repeated here because the wrong note was quoted twice.
+
+### 210(L) Consequences adopted
+
+- **Name the binding resource before pricing a kernel edit.** "Faster locally"
+  is not a mechanism. State whether the edit changes bytes, issue slots, live
+  state, or concurrency, and state which of those is binding at the operating
+  point being predicted.
+- **Report the bandwidth-roof fraction with every kernel measurement.** It is
+  the coordinate that decides which resource binds, and it is the one number
+  that differs most between our host and the ranked host: 98.1 % against 77.2 %
+  at depth 0, and 50.7 % against 44.0 % at the scored width.
+- **A local optimum found by raising IPG is suspect by default.** It buys
+  bandwidth with concurrency, and the ranked host has bandwidth to spare.
+- The dequantized-cache permission and the GDN snapshot direction are closed
+  with arithmetic. Reopen only on a new measured cost, not on a new idea.
