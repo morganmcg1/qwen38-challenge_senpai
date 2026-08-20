@@ -1,0 +1,101 @@
+{
+  "committed_before": "any rung D leg was timed",
+  "design": "2x2 within one thermal session, mirrored palindrome O-ship, O-pbfit, C-ship, C-pbfit, C-pbfit, C-ship, O-pbfit, O-ship",
+  "e68_reference": {
+    "pbfit_effect_pct": -3.5,
+    "pbfit_seconds_per_token": 0.030356223,
+    "session_null_pct": 0.143,
+    "ship_seconds_per_token": 0.031457267
+  },
+  "experiment": "E75 rung D",
+  "falsification": {
+    "positive_control": "O-pbfit - O-ship must land within about 1 pp of -3.500 %. Outside that, the session is not comparable to E68 and the C-ship vs O-ship calibration may not be quoted.",
+    "predictor_validity": "Round latency at a fixed verify width must be arm-independent to within about 1 % on the crown table. If C-ship and C-pbfit disagree by more than that at a fixed width, the histogram is not the only channel and this prediction is void, not wrong.",
+    "single_mechanism_calibration": "If C-ship and O-ship share a round histogram, the whole local table effect is per-cell cost with no schedule reaction, and the pair is a clean single-mechanism calibration of the harness transfer function."
+  },
+  "harness": "local",
+  "ladder_prediction_superseded": {
+    "C-pbfit": 17.274,
+    "C-ship": 17.143,
+    "O-pbfit": 15.538,
+    "O-ship": 16.106
+  },
+  "model": {
+    "a_ms_per_round": 4.942,
+    "b_ms_per_row": 8.697,
+    "changed_cells": [
+      5,
+      6,
+      9
+    ],
+    "form": "decode_ms = sum_w n(w) * C(w) + a * rounds + b * rows",
+    "out_of_sample_error_pct": -0.32,
+    "round_histograms": {
+      "pbfit": {
+        "4": 5,
+        "5": 42,
+        "6": 5,
+        "8": 7,
+        "9": 26
+      },
+      "ship": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      }
+    },
+    "rows": {
+      "pbfit": 550,
+      "ship": 567
+    },
+    "source_of_crown_curve": "E75 rung B, 8 legs, measured",
+    "verify_cost_ms": {
+      "crown": {
+        "1": 60.5592,
+        "2": 65.2734,
+        "3": 72.0591,
+        "4": 82.1008,
+        "5": 119.8362,
+        "6": 128.328,
+        "7": 138.3534,
+        "8": 148.7842,
+        "9": 185.5634
+      },
+      "ours": {
+        "1": 60.6992,
+        "2": 65.3183,
+        "3": 72.266,
+        "4": 82.1327,
+        "5": 95.5389,
+        "6": 122.8679,
+        "7": 138.3544,
+        "8": 148.8519,
+        "9": 163.6633
+      }
+    }
+  },
+  "predicted_candidate_mtp_seconds_per_token": {
+    "C-pbfit": 0.033505513,
+    "C-ship": 0.033395414,
+    "O-pbfit": 0.030348178,
+    "O-ship": 0.031459758
+  },
+  "predicted_decode_seconds": {
+    "C-pbfit": 17.1548,
+    "C-ship": 17.0985,
+    "O-pbfit": 15.5383,
+    "O-ship": 16.1074
+  },
+  "predicted_effects_pct": {
+    "interaction_pp": 3.863,
+    "pbfit_on_crown": 0.33,
+    "pbfit_on_ours": -3.533,
+    "table_at_pbfit": 10.404,
+    "table_at_ship": 6.153
+  },
+  "ranked_table_effect_pct_do_not_convert": -0.298
+}
