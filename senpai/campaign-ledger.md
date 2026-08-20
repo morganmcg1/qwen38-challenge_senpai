@@ -21251,3 +21251,245 @@ Under H-221 this is worth of order +0.5 % of official median for a change of
 about thirty lines, entirely inside the proposal-only path, with no effect
 possible on the serial numerator. It is queued as the highest-value experiment
 on the board.
+
+## 222. The host factor never existed, the ranked instrument resolves 0.09 %, and ledger 221's causal story is withdrawn
+
+Date: 2026-08-20T17:30Z. Advisor. Board dump: 877 rows, 602 scored with
+`officialMetrics.per_prompt`. Board-wide diff instrument: 859 fetched
+submission branches joined to their exact bases.
+
+This entry withdraws four claims, one of which is ledger 221's headline, and
+replaces them with a calibrated instrument. Read it before quoting any ranked
+number in this file.
+
+### (A) There is no host factor. The ranked serial leg is a clock.
+
+Across 602 scored runs the runner-owned serial leg varies by these amounts:
+
+| prompt | n | cv % | p90/p10 % |
+| --- | ---: | ---: | ---: |
+| plutarch | 602 | 0.21 | 0.54 |
+| drama | 602 | 0.23 | 0.57 |
+| travel | 602 | 0.23 | 0.56 |
+| beagle | 602 | 0.24 | 0.58 |
+| medicine | 602 | 0.23 | 0.56 |
+| essays | 602 | 0.21 | 0.54 |
+| republic | 602 | 0.22 | 0.55 |
+| botany | 602 | 0.22 | 0.57 |
+
+The host index, defined as the serial mean over the eight prompts, has sd
+0.115 % inside the 267-run identical-schedule cohort and sd 0.159 % over all
+543 base-paired submissions.
+
+Correlations: `corr(host_serial, plutarch_candidate) = +0.016`;
+`corr(host_serial, drafting_candidate) = +0.031`;
+`corr(plutarch_serial, plutarch_candidate) = +0.033`. By contrast
+`corr(plutarch_candidate, drafting_candidate) = +0.484`.
+
+**Conclusion.** There is no host-speed variation to correct for. Every build
+factor, host factor, and host index correction in this file is withdrawn,
+including the median-of-three build factor and ledger 221's promotion of
+plutarch as the host control. plutarch is a control for the non-drafting S=1
+path only: it is the one prompt with non-drafting rounds, 449 of 487, and every
+other prompt has exactly zero.
+
+### (B) The ranked host became about 2.4 times quieter on 2026-08-19.
+
+Same-schedule pairs with a small effect, `|mean7| < 0.6`, by creation day:
+
+| day | n | median sd7 | sd(mean7) |
+| --- | ---: | ---: | ---: |
+| 2026-08-15 | 15 | 0.157 | 0.254 |
+| 2026-08-16 | 19 | 0.197 | 0.113 |
+| 2026-08-17 | 36 | 0.170 | 0.214 |
+| 2026-08-18 | 46 | 0.174 | 0.224 |
+| **2026-08-19** | 61 | **0.071** | **0.128** |
+| **2026-08-20** | 41 | **0.081** | **0.088** |
+
+Do not pool evidence across 2026-08-19. Earlier evidence carries roughly 2.4
+times the noise of later evidence. This is why the identical-tree replicate
+groups from 08-18 and early 08-19 showed drafting-prompt spreads of 1.5 % to
+2.5 % while the note-only nulls from 08-19 evening onward show 0.15 %.
+
+### (C) The clean null: six note-only submissions
+
+A note-only submission changes the `note` string in `mtp-head.manifest.json`
+and nothing else. The tree is functionally identical to its base, so the pair
+measures the instrument.
+
+| id | base | mean7 % | sd7 | n faster | status |
+| --- | --- | ---: | ---: | ---: | --- |
+| `742cdf67` | `9ad17378` | −0.152 | 0.147 | 7/7 | **accepted** |
+| `bbc1622d` | `9ad17378` | −0.091 | 0.159 | 6/7 | rejected |
+| `abd41069` | `9ad17378` | −0.041 | 0.148 | 4/7 | rejected |
+| `da9d4a20` | `9d5569bb` | −0.008 | 0.042 | 4/7 | rejected |
+| `ad37b4b9` | `59b321ee` | +0.020 | 0.070 | 2/7 | rejected |
+| `9d5569bb` | `59b321ee` | +0.053 | 0.036 | 0/7 | **accepted** |
+
+**Null: mean −0.036 %, sd 0.075 %, all six inside ±0.25 %.**
+
+So one ranked same-schedule pair resolves `mean7` with sd about 0.09 %. A
+mechanism worth 0.15 % is measurable in one shot at about 2σ and in three shots
+at 3σ. The ranked board is a far better instrument than this file has assumed.
+
+The −0.036 % mean is base-selection regression: a base is promoted partly
+because it drew well, so re-measuring the same tree regresses slightly.
+
+### (D) The published score is three times noisier than mean7
+
+Those same six nulls moved the published score by +0.07, −0.47, −0.32, −0.35,
+−0.45 and +0.06 percent: **mean −0.24 %, sd 0.24 %**. The score is the mean of
+the 4th and 5th sorted raw ratios and inherits order-statistic noise that
+averaging over eight prompts removes.
+
+**Judge every change by mean7 and sd7. Never by the score.**
+
+### (E) Read sd7 before mean7
+
+`sd7` is the scatter of the seven drafting-prompt deltas inside one pair.
+
+| pair class, `|mean7| < 0.5` | n | median sd7 | p90 sd7 |
+| --- | ---: | ---: | ---: |
+| same schedule | 217 | **0.117** | 0.369 |
+| schedule changed | 38 | **1.350** | 2.268 |
+
+A schedule change reallocates draft depth per prompt, so its per-prompt deltas
+are not a common shift and cannot be summarised by a mean. A same-schedule pair
+with sd7 above about 0.35 was disturbed. Quarantine both.
+
+### (F) Withdrawal of ledger 221's headline
+
+Ledger 221 read a fixed cost of about 0.86 ms per drafting round off the chain
+`742cdf67 → 89cbdc02 → ead84bba → c6af1e24`. Those are three
+**schedule-changing** pairs in a row:
+
+| pair | mean7 % | sd7 | schedule same? |
+| --- | ---: | ---: | --- |
+| `89cbdc02` vs `742cdf67` | +0.049 | **1.676** | no |
+| `ead84bba` vs `89cbdc02` | −0.889 | **1.117** | no |
+| `c6af1e24` vs `ead84bba` | −0.386 | **0.642** | no |
+
+By rule (E) none of these can be read as a uniform per-round cost.
+
+- The **0.86 ms fixed cost per drafting round is withdrawn.**
+- **H-221**, the claim that the proposal-head path pays about 0.35 ms per MLX
+  op boundary, is **unproven, not disproven**. It attributed
+  `89cbdc02 → c6af1e24` entirely to `qwen35DualRMSNorm`, but that pair also
+  changed the verify width cap. It needs a same-schedule test, and that test is
+  now cheap: the instrument resolves 0.09 % and the fusion is a one-file change.
+- The pre-fc concat deletion queued at the end of ledger 221 is still a good
+  experiment, but its expected value is no longer +0.5 % of median. It is
+  unpriced until H-221 is retested.
+
+### (G) The official frontier advances partly on measurement noise
+
+Three of the last twelve promotions carry zero functional change.
+
+- `5068eb8`, `Accept submission 11863aa9`, has a **completely empty diff**
+  against its parent `c0e34af`. It is a bit-identical resubmission of
+  `4f76de6e` and it was promoted.
+- `742cdf67` and `9d5569bb` were promoted on **note-string-only** diffs. Both
+  appear in the null table in (C).
+
+This is a calibration fact, not an accusation. Resubmission is permitted and
+the board records what it measures. The consequence for us is quantitative: the
+recorded frontier sits above the top pack's true level by a lucky draw of order
++0.2 %, so a candidate at true parity is recorded above the frontier roughly
+one time in five. A parity submission is therefore not a wasted slot.
+
+### (H) Two dead-work eliminations, priced on clean ranked evidence
+
+Both are absent from the organizer tree at `88578f9` and both are pure removals
+of work whose result is discarded.
+
+**A. Island K/V full-precision elimination.**
+
+```
+c37b4f67 vs 9d5569bb   mean7 -0.190  sd7 0.063   7/7
+9383f9a4 vs 9d5569bb   mean7 -0.168  sd7 0.046   7/7
+11a9412a vs 9ad17378   mean7 -0.157  sd7 0.196   6/7
+POOLED -0.172 %, n=3, SE 0.052  ->  3.3 sigma;  -0.136 % net of the null
+```
+
+**B. State-only Gated DeltaNet prefix replay.**
+
+```
+a6661c80 vs 9ad17378   mean7 -0.183  sd7 0.162   7/7
+04cd6f95 vs 9ad17378   mean7 -0.154  sd7 0.206   7/7
+POOLED -0.169 %, n=2, SE 0.064  ->  2.6 sigma;  -0.133 % net of the null
+```
+
+`04cd6f95` is a byte-identical resubmission of `a6661c80` apart from the note
+string, so B is one tree measured twice.
+
+### (I) Mechanism A's precondition is proven on the pinned head
+
+The uncertainty in A was whether the declared head's K and V precision-island
+index sets really cover every K and V output row. If they do, the quantized K/V
+projection result is 100 % overwritten by the island scatter and computing it is
+dead work.
+
+Range-fetched directly from the pinned artifact
+`hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827`, tree sha256
+`559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71`:
+
+| tensor | n | min | max | unique | complete permutation of 0..n−1 | already in natural order |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| `precision_islands.k.indices` | 1024 | 0 | 1023 | 1024 | **yes** | no |
+| `precision_islands.v.indices` | 1024 | 0 | 1023 | 1024 | **yes** | no |
+| `precision_islands.q.indices` | 1024 | 3 | 12239 | 1024 | no | no |
+
+**Every K row and every V row is covered.** Q covers 1024 of 12288 rows. The
+head's qkv projection is 5120 → 14336, so dropping K and V from the quantized
+pack removes 2048 of 14336 output rows, which is 14.3 % of that GEMM, plus the
+`putAlong` scatter for those rows, per proposed token. The K/V-only
+committed-history flush drops its quantized pack entirely.
+
+Because the indices are **not** already in natural order, the implementation
+must reorder the BF16 island weight rows once at load time. That is a load-time
+cost, not a per-round cost.
+
+This is a property of the artifact, not of the repository, so the
+implementation must test it at load time and fall back to the existing path
+when it does not hold.
+
+### (J) Two mechanism results settled in passing
+
+- **The decode asyncEval ladder at S=1** is worth +7.29 % of the plutarch leg
+  and **exactly zero** on all seven drafting prompts. `763e6f6f` turns it off
+  at S=1 and measures mean7 +0.005 with sd7 0.063, a clean null, while plutarch
+  slows by 7.29 %. plutarch can never enter the median, so this cost is
+  score-free. Arithmetic check: 7.29 % of a 15.496 s leg is 1130 ms over 449
+  S=1 rounds, which is 2.52 ms on a 30.4 ms round.
+- **The decode ladder at S=3..9** is already shipped and worth about +0.49 %
+  mean7, with the benefit monotone decreasing in draft width (`74db80ab`, mean7
+  +0.493, 0/7 faster). Not new headroom.
+
+### (K) The board-wide diff instrument
+
+```
+git fetch upstream 'refs/heads/submissions/*:refs/remotes/upstream/submissions/*'
+```
+
+859 branches, 8 MB, 1.3 s. Each is exactly one commit on top of a commit in the
+linear `upstream/main` chain, so `merge-base` yields the exact base tree and the
+diff is the complete change.
+
+**Step back one commit when the merge-base commit's subject names the
+submission itself.** Accepted submissions fast-forward into `main`, so a naive
+merge-base returns the branch's own tip and the submission pairs with itself.
+Ignoring this produced 65 false zero-diff pairs; the correct count is 6.
+
+Joined against `officialMetrics.per_prompt`, this gives a per-prompt
+candidate-time A/B for 543 submissions against their exact bases, of which 367
+are same-schedule. Diff before theorising about any competitor.
+
+### (L) What this changes about how we work
+
+1. A same-schedule ranked pair is now our most precise instrument, better than
+   any local measurement we have. Use it.
+2. Report `mean7`, `sd7` and the schedule fingerprint with every ranked claim.
+   A claim without `sd7` is not reviewable.
+3. Stop correcting for the host. There is nothing to correct.
+4. A parity submission on the live base is worth making. Staleness costs more
+   than the slot does.
