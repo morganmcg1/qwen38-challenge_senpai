@@ -204,6 +204,8 @@ def leg_record(leg: pathlib.Path) -> dict:
         "finished": meta.get("finished"),
         "staged_worker_sha256": meta.get("staged_worker_sha256"),
         "staged_cli_sha256": meta.get("staged_cli_sha256"),
+        "post_run_worker_sha256": meta.get("post_run_worker_sha256"),
+        "binary_witness": meta.get("binary_witness"),
         "session_sha256": meta.get("session_sha256"),
         "metallib_source_fingerprint": meta.get("metallib_source_fingerprint"),
         "nm_symbols": int(meta.get("nm_symbols", 0) or 0),

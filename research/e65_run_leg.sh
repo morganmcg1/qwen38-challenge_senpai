@@ -107,9 +107,30 @@ gpu_temp() {
 ./benchmark-qwen-mtp.sh "${mode}" > "${out}/wrapper.out" 2> "${out}/wrapper.err"
 status=$?
 
+# The wrapper's metallib guard can rebuild between staging and timing, and
+# `--local-submit` extracts only metallib_rebuild_required, never
+# swift_build_required. Assert the binary that actually ran is byte-identical
+# to the certified arm; a leg that timed some other build is not evidence.
+after_worker=$(
+  shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')
+after_cli=$(shasum -a 256 .build/release/mlxfast-swift | awk '{print $1}')
+want_worker=$(sed -n 's/^worker_sha256=//p' "${bin_dir}/provenance.txt")
+want_cli=$(sed -n 's/^cli_sha256=//p' "${bin_dir}/provenance.txt")
+binary_witness=ok
+[[ "${after_worker}" == "${want_worker}" ]] || binary_witness=worker-changed
+[[ "${after_cli}" == "${want_cli}" ]] || binary_witness=cli-changed
+
 {
   echo "gpu_temp_exit_c=$(gpu_temp)"
+  echo "post_run_worker_sha256=${after_worker}"
+  echo "post_run_cli_sha256=${after_cli}"
+  echo "binary_witness=${binary_witness}"
   echo "exit=${status}"
   echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } >> "${out}/meta.txt"
+
+if [[ "${binary_witness}" != ok ]]; then
+  echo "e65_run_leg.sh: ${tag}: ${binary_witness}; the timed binary is not the certified arm" >&2
+  exit 90
+fi
 exit "${status}"

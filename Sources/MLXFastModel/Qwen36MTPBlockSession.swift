@@ -331,9 +331,24 @@ public final class Qwen36MTPBlockSession {
         // path and final full row for the full seed and a 2-row accept fold.
         let hDim = row.dim(-1)
         let historyWarmCache = model.makeMTPCache()
-        let primeHidden = MLXArray.zeros([1, 512, hDim], dtype: row.dtype)
+        // Build the priming block through the SAME expression the first
+        // drafting round dispatches, not through an equivalent-shaped literal.
+        // The live flush is applyFinalNorm over a [1, L-1, h] STRIDED SLICE of
+        // the retained pre-norm seed hidden, concatenated with the round's own
+        // [1, 1, h] row. Feeding a contiguous zeros block here left both the
+        // norm-over-slice and the float concat to materialise inside scored
+        // round 1: measured +25.1/+29.3/+28.9 ms of host graph build there
+        // across three traced base legs (E65 rung 0), all of it in
+        // draft_build and present with the head chain drained, so it is host
+        // build and not head GPU time. Values stay irrelevant; only the
+        // expression, shapes, dtypes and strides select the kernels.
+        let primeRows = hidden.dim(1) - 1
+        let primeHidden = concatenated(
+            [model.applyFinalNorm(hidden[0..., 0 ..< primeRows, 0...]),
+             MLXArray.zeros([1, 1, hDim], dtype: row.dtype)], axis: 1)
         let primeTokens = MLXArray(
-            Array(repeating: Int32(0), count: 512)).reshaped([1, 512])
+            Array(repeating: Int32(0), count: primeRows + 1))
+            .reshaped([1, primeRows + 1])
         let primed = model.mtpHeadLastHiddenWithKVOnlyHistory(
             hidden: primeHidden, nextTokenIds: primeTokens,
             cache: historyWarmCache)
