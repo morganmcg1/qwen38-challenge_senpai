@@ -125,6 +125,37 @@ lands it with one conflict at the `draft_head` phase marker, because the base
 gained the `tDraft0` trace timestamp on the same line. Both are kept. The other
 seven hunks and both other files apply unchanged.
 
+The instrument this experiment built ships the same way. Every timed leg above
+ran with these four files present:
+
+| file | change |
+|---|---|
+| `Sources/MLXFastModel/E58DispatchCensus.swift` | new, 1015 lines |
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | +22 / −1 |
+| `Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift` | +4 |
+| `Tests/MLXFastTests/E71WidthTaxCensusTests.swift` | +13 / −1 |
+
+The final commit removes all four and keeps them only as
+`research/e80-artifacts/gputime-census.patch`. After the revert:
+
+```text
+$ git diff --stat 2eec73d352af2e689c91236e8eac89413797a19d \
+    -- Sources/ Vendor/ mtp-head/ mtp-head.manifest.json
+(no output)
+
+$ senpai/check-editable-budget.sh 2eec73d352af2e689c91236e8eac89413797a19d
+editable budget OK: source=2469371/3000000 bytes headroom=530629
+  growth=0/262144 exempt=2410/2147483648 files=154
+
+$ senpai/validate-assignment-scope.sh 2eec73d352af2e689c91236e8eac89413797a19d \
+    Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+assignment scope OK: 1 submitted path(s) against
+  BASE_SHA=2eec73d352af2e689c91236e8eac89413797a19d
+```
+
+**Candidate growth is 0 bytes.** The instrument never entered the submitted
+surface.
+
 ## Rung 0c — mechanism (B), chosen on device evidence
 
 `research/e80_counter_probe.m`, saved to
@@ -988,13 +1019,19 @@ dispatch count rather than a GPU-time share, understated the cost by almost
 four times. `gemv` is 11.48 % of whole-round GPU time and 70.01 % of the
 proposal head. **It stays on the live surface.**
 
+The failure holds at every measured width and grows with depth: 10.30 % at
+width 4, 11.48 % at width 6 and 13.39 % at width 9. The per-width rider table
+is in rung 2b; every other rider passes at every width.
+
 The failure carries a provenance label. `gemv` is dispatched because the
 resident head has no `.scales` tensors, so every head projection loads as a
-plain `Linear`. That is true of the organizer-pinned bf16 head and false of the
-declared 4-bit head. So the correct reading is: **`gemv` is live with certainty
-on the local surface, and live on the ranked surface only if the ranked
-candidate leg also resolves to a head with bf16 tensors.** The checked-in
-manifest says it does not.
+plain `Linear` (`Load.swift:250-258`). That is true of the organizer-pinned
+bf16 head. It is false of any declared head that carries `.scales`. So the
+correct reading is: **`gemv` is live with certainty on the local surface, and
+live on the ranked surface only if the ranked candidate leg also resolves to a
+head whose tensors are unquantized.** The checked-in manifest declares a
+different and much smaller artifact, so the ranked surface probably dispatches
+`qmv` here instead. I have not observed the ranked surface and do not claim to.
 
 **The remainder is not a sixth linear family.** Outside `qmv`, the 23.578 ms
 breaks down as `gemv` 16.903, `sdpa` 2.483, `gdn_recurrence` 2.021,
