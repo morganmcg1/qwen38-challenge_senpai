@@ -41,11 +41,29 @@ case "${profile}" in
     : "${MLXFAST_E83_ISOLATED:=0}"
     run_head=1
     ;;
+  gates)
+    # Rung 3 only: the two prefill-width fusion gates, counterbalanced. Rung 1,
+    # the family-tax arms, the ladder and the roofline are all off, because the
+    # full session already measured them and they would only add thermal load
+    # ahead of the arms under test.
+    : "${MLXFAST_E83_REPS:=0}"
+    : "${MLXFAST_E83_WARMUP:=2}"
+    : "${MLXFAST_E83_LADDER_REPS:=0}"
+    : "${MLXFAST_E83_ARMS:=none}"
+    : "${MLXFAST_E83_ISOLATED:=0}"
+    : "${MLXFAST_E83_GATES:=gate_baseline,gate_g1,gate_g2,gate_g1g2}"
+    : "${MLXFAST_E83_GATE_REPS:=8}"
+    ;;
   head) run_prefill=0; run_head=1 ;;
   *) echo "e83_prefill.sh: unknown profile ${profile}" >&2; exit 2 ;;
 esac
+# Every profile other than `gates` predates the gate arms and must keep its
+# recorded shape, so the gates default to off rather than to the test's own
+# all-arms default.
+: "${MLXFAST_E83_GATES:=none}"
+: "${MLXFAST_E83_GATE_REPS:=8}"
 export MLXFAST_E83_REPS MLXFAST_E83_WARMUP MLXFAST_E83_ARMS MLXFAST_E83_LADDER_REPS
-export MLXFAST_E83_ISOLATED
+export MLXFAST_E83_ISOLATED MLXFAST_E83_GATES MLXFAST_E83_GATE_REPS
 
 out="research/out/${tag}"
 rm -rf "${out}"
@@ -125,6 +143,8 @@ group="${MLXFAST_CENSUS_GROUP:-e83-prefill-decomposition}"
   echo "reps=${MLXFAST_E83_REPS:-5}"
   echo "warmup=${MLXFAST_E83_WARMUP:-2}"
   echo "arms=${MLXFAST_E83_ARMS:-<test-default>}"
+  echo "gates=${MLXFAST_E83_GATES:-<test-default>}"
+  echo "gate_reps=${MLXFAST_E83_GATE_REPS:-8}"
   echo "profile=${profile}"
   echo "gpu_temp_entry_c=$(gpu_temp)"
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
