@@ -112,6 +112,13 @@ for ((r = 0; r < repeats; ++r)); do
       export MLXFAST_LOCAL_COOL_GATE=0
       export MLX_E85_FUSED_EMBED="${fused}"
       export MLX_E85_GATHER_QMM="${gather}"
+      # Per-round records. The advisor requires a median over paired per-round
+      # deltas, because leg totals sum the rare multi-millisecond OS scheduling
+      # spikes that a median rejects. `snapshotScheduleSignal` only formats
+      # host values that the round already materialised, so the trace adds no
+      # GPU synchronisation, and it is enabled identically for both arms.
+      export MLX_QWEN_MTP_TRACE=1
+      export MLX_QWEN_MTP_TRACE_PATH="${PWD}/${out}/rounds.txt"
       ./benchmark-qwen-mtp.sh --local-iterate \
         > "${out}/wrapper.out" 2> "${out}/wrapper.err"
     )

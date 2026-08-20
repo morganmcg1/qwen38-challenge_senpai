@@ -27,28 +27,6 @@ public nonisolated(unsafe) var _qwen35MTPEnabled: Bool = false
 let qwen35FusedEmbedConcatEnabled: Bool =
     ProcessInfo.processInfo.environment["MLX_E85_FUSED_EMBED"] != "0"
 
-/// E85 measurement instrument. `MLX_E85_BUFFER_TAX=K` chains K dependent adds
-/// of an exact zero onto the per-draft proposal path. Each add materialises one
-/// `[1, 1, 5120]` bf16 intermediate and costs one dispatch, so the slope of
-/// decode time against K prices one materialised intermediate directly.
-///
-/// Removing the six intermediates this experiment targets moves decode time by
-/// far less than one leg of host noise. Adding a hundred of them does not. The
-/// tax measures the same per-buffer coefficient with the sign reversed and the
-/// signal multiplied, which is the only way to resolve it on this host.
-///
-/// Adding zero is exact in bf16, so a taxed run emits the same tokens and the
-/// same drafts as an untaxed one. This is research scaffolding and is removed
-/// before any candidate measurement.
-let qwen35BufferTaxPerDraft: Int =
-    ProcessInfo.processInfo.environment["MLX_E85_BUFFER_TAX"]
-        .flatMap(Int.init) ?? 0
-
-/// Addend for the tax above. A Swift global is initialised once, on first use,
-/// so an untaxed run never builds it.
-nonisolated(unsafe) let qwen35BufferTaxZero: MLXArray =
-    MLXArray(Float(0)).asType(.bfloat16)
-
 // MARK: - MTPDecoderLayer
 
 /// Full-attention transformer layer used inside the Qwen3.5/3.6 MTP head.
@@ -159,13 +137,8 @@ final class Qwen35MTPModule: Module {
     /// carry one row into a kernel that reads it twice, so the fused variant
     /// reads the packed row in place and the eager embed never runs.
     private func preFcConcat(
-        nextTokenIds: MLXArray, embedTokens: Embedding, hidden hiddenIn: MLXArray
+        nextTokenIds: MLXArray, embedTokens: Embedding, hidden: MLXArray
     ) -> MLXArray {
-        var hidden = hiddenIn
-        for _ in 0 ..< qwen35BufferTaxPerDraft {
-            hidden = hidden + qwen35BufferTaxZero
-        }
-
         if qwen35FusedEmbedConcatEnabled,
            let quantized = embedTokens as? QuantizedEmbedding,
            quantized.mode == .affine, quantized.bits == 4,
