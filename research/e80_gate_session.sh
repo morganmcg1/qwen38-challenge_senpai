@@ -27,9 +27,15 @@ profile="${2:-full}"
 # the only configuration that resolves per-kernel cost. It also removes all
 # intra-buffer concurrency, so the per-family difference between the two
 # profiles IS the concurrency discount that rung 0c asks for.
+#
+# `gate-control` repeats the same session with the instrument completely
+# dormant: no swizzle, no census, no completion handlers. Its wall clock is the
+# only measurement in this experiment that carries zero instrument overhead, so
+# it is what separates "the instrument perturbs the harness" from "this host no
+# longer reproduces the published E71 session".
 e71_profile="${profile}"
 case "${profile}" in
-  gate|gate-isolated)
+  gate|gate-isolated|gate-control)
     export MLXFAST_E71_CURVE_WIDTHS="${MLXFAST_E71_CURVE_WIDTHS:-1,6}"
     export MLXFAST_E71_ARM_WIDTHS="${MLXFAST_E71_ARM_WIDTHS:-6}"
     export MLXFAST_E71_REPS="${MLXFAST_E71_REPS:-12}"
@@ -41,21 +47,23 @@ if [[ "${profile}" == "gate-isolated" ]]; then
   E80_OPS_PER_BUFFER="${E80_OPS_PER_BUFFER:-1}"
 fi
 
-gpu_out="research/out/${tag}-gpu"
-rm -rf "${gpu_out}"
-mkdir -p "${gpu_out}"
+if [[ "${profile}" != "gate-control" ]]; then
+  gpu_out="research/out/${tag}-gpu"
+  rm -rf "${gpu_out}"
+  mkdir -p "${gpu_out}"
 
-export MLX_E80_GPU_TIME=1
-export MLX_E80_SNAPSHOT_ROUNDS=1000000
-export MLX_E58_DISPATCH_CENSUS=1
-export MLX_E58_DISPATCH_CENSUS_SHAPES=1
-export MLX_E58_DISPATCH_CENSUS_PATH="${PWD}/${gpu_out}/census.jsonl"
-: > "${MLX_E58_DISPATCH_CENSUS_PATH}"
+  export MLX_E80_GPU_TIME=1
+  export MLX_E80_SNAPSHOT_ROUNDS=1000000
+  export MLX_E58_DISPATCH_CENSUS=1
+  export MLX_E58_DISPATCH_CENSUS_SHAPES=1
+  export MLX_E58_DISPATCH_CENSUS_PATH="${PWD}/${gpu_out}/census.jsonl"
+  : > "${MLX_E58_DISPATCH_CENSUS_PATH}"
 
-# Isolated mode forces one MLX op per command buffer, so a command-buffer GPU
-# interval is one kernel's GPU time. Leave unset for the in-situ arm.
-if [[ -n "${E80_OPS_PER_BUFFER:-}" ]]; then
-  export MLX_E58_BUFFER_LIMIT_OPS="${E80_OPS_PER_BUFFER}"
+  # Isolated mode forces one MLX op per command buffer, so a command-buffer GPU
+  # interval is one kernel's GPU time. Leave unset for the in-situ arm.
+  if [[ -n "${E80_OPS_PER_BUFFER:-}" ]]; then
+    export MLX_E58_BUFFER_LIMIT_OPS="${E80_OPS_PER_BUFFER}"
+  fi
 fi
 
 # --- publish mlx.metallib into the release xctest bundle ---------------------

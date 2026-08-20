@@ -270,7 +270,7 @@ private final class DispatchLedger: @unchecked Sendable {
         lock.unlock()
         if E58DispatchCensus.gpuTimeEnabled {
             GPUTimeLedger.shared.noteDispatch(
-                encoder: encoder, kernel: kernel, phase: phase,
+                encoder: encoder, kernel: kernel, shape: shape, phase: phase,
                 width: observedWidth, round: observedRound, encodeNs: originalNs)
         }
     }
@@ -486,6 +486,12 @@ private func swizzleNewPipeline(_ cls: AnyClass) -> Bool {
 /// One dispatch, as the encoder saw it.
 private struct DispatchNote {
     let kernel: String
+    /// `kernel` plus the dispatch grid and threadgroup. One Metal function name
+    /// covers wildly different work here: all 257 `affine_qmv_fast` dispatches in
+    /// a verify round share a name while their output width runs from 5,120 to
+    /// 248,320, so a per-NAME GPU time would average the projections with the
+    /// vocabulary readout and mean nothing. Per-SHAPE is the resolvable unit.
+    let shape: String
     let phase: String
     let width: Int
     let round: Int
@@ -603,12 +609,12 @@ private final class GPUTimeLedger: @unchecked Sendable {
     }
 
     func noteDispatch(
-        encoder: AnyObject, kernel: String, phase: String, width: Int,
-        round: Int, encodeNs: Int
+        encoder: AnyObject, kernel: String, shape: String, phase: String,
+        width: Int, round: Int, encodeNs: Int
     ) {
         let note = DispatchNote(
-            kernel: kernel, phase: phase, width: width, round: round,
-            encodeNs: encodeNs)
+            kernel: kernel, shape: shape, phase: phase, width: width,
+            round: round, encodeNs: encodeNs)
         let encoderID = ObjectIdentifier(encoder)
         lock.lock()
         if let bufferID = encoderToBuffer[encoderID] {
@@ -680,7 +686,7 @@ private final class GPUTimeLedger: @unchecked Sendable {
                 encodeNs: Int(Double(encodeNs) * share), dispatches: count)
         }
         if notes.count == 1 {
-            exclusiveKernels["w\(width)|\(notes[0].phase)|\(notes[0].kernel)",
+            exclusiveKernels["w\(width)|\(notes[0].phase)|\(notes[0].shape)",
                 default: KernelBucket()].add(gpuNs)
         }
         signatures["w\(width)|\(notes[0].phase)|\(signature)",

@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import random
 import statistics
 import sys
 from collections import defaultdict
@@ -145,6 +146,76 @@ def curve_level(blocks, width, value_of):
     vals = [value_of(b) for b in blocks
             if b["arm"] == "baseline" and b["width"] == width]
     return statistics.mean(vals) if vals else None
+
+
+def abba_quartet_blocks(blocks, arm_name, width):
+    """The four blocks of the `baseline, arm, arm, baseline` quartet, in order."""
+    ordered = sorted(blocks, key=lambda b: b["order"])
+    for i in range(len(ordered) - 3):
+        window = ordered[i:i + 4]
+        if {b["width"] for b in window} != {width}:
+            continue
+        if [b["arm"] for b in window] == ["baseline", arm_name, arm_name, "baseline"]:
+            return window
+    return None
+
+
+def bootstrap_tax_ci(blocks, arm_name, width, draws=20000, seed=20800):
+    """95 % CI on one family tax, resampling reps inside each block.
+
+    The tax is a difference of block medians, so its uncertainty is dominated by
+    how well 12 reps pin a median. Resampling reps with replacement inside each
+    of the four quartet blocks and recomputing the same ABBA contrast gives the
+    within-block component of that uncertainty. It is a LOWER bound: it cannot
+    see block-to-block thermal drift, which ABBA cancels only to first order.
+    """
+    window = abba_quartet_blocks(blocks, arm_name, width)
+    if window is None:
+        return None
+    rng = random.Random(seed)
+    samples = [[s * 1e3 for s in b["seconds"]] for b in window]
+    taxes = []
+    for _ in range(draws):
+        med = [statistics.median(rng.choices(s, k=len(s))) for s in samples]
+        taxes.append((med[0] + med[3]) / 2 - (med[1] + med[2]) / 2)
+    taxes.sort()
+    lo = taxes[int(0.025 * draws)]
+    hi = taxes[int(0.975 * draws)]
+    return {"lo": lo, "hi": hi, "half_width": (hi - lo) / 2,
+            "block_medians": [statistics.median(s) for s in samples]}
+
+
+def render_power(blocks, width=6):
+    """Is each gate row resolvable at all? Compare the CI with the tolerance band.
+
+    A tolerance is only a test if the measurement can distinguish inside from
+    outside it. When the 95 % CI half-width exceeds the +-10 % band, the row
+    cannot fail for a reason that has anything to do with the instrument.
+    """
+    print("\n### Gate power -- is each row resolvable at the stated tolerance?\n")
+    print("| arm | reference ms | +-10 % band ms | tax ms | 95 % CI (reps) "
+          "| CI half-width ms | resolvable |")
+    print("|---|---:|---:|---:|---|---:|---|")
+    out = {}
+    for fam, ref in E71_FAMILY_TAX_MS.items():
+        arm = "mlp_all" if fam == "mlp_gate_up" else fam
+        ci = bootstrap_tax_ci(blocks, arm, width)
+        if ci is None:
+            continue
+        band = ref * G1_TOLERANCE
+        tax = (ci["lo"] + ci["hi"]) / 2
+        ok = ci["half_width"] <= band
+        note = "yes" if ok else "**NO**"
+        if fam == "mlp_gate_up":
+            note += " (via `mlp_all`)"
+        print(f"| {fam} | {ref:.3f} | +-{band:.3f} | {tax:.3f} "
+              f"| [{ci['lo']:.3f}, {ci['hi']:.3f}] | {ci['half_width']:.3f} | {note} |")
+        out[fam] = {"reference_ms": ref, "tolerance_band_ms": band,
+                    "ci_lo_ms": ci["lo"], "ci_hi_ms": ci["hi"],
+                    "ci_half_width_ms": ci["half_width"],
+                    "block_medians_ms": ci["block_medians"],
+                    "resolvable_at_tolerance": ok}
+    return out
 
 
 def verdict(observed, reference, tolerance):
@@ -264,6 +335,8 @@ def main() -> int:
         g1[f"{fam} GPU tax ms"] = verdict(obs, ref, G1_TOLERANCE)
     render("G1 -- family attribution, GPU time", g1, G1_TOLERANCE)
 
+    power = render_power(blocks, 6)
+
     attributed = [g1[f"{f} GPU tax ms"]["observed"] for f in E71_DISJOINT]
     if all(v is not None for v in attributed):
         f1g, f6g = curve_level(blocks, 1, gpu), curve_level(blocks, 6, gpu)
@@ -325,6 +398,7 @@ def main() -> int:
             },
             "gates": all_rows,
             "gate_pass": overall,
+            "gate_power": power,
         }, indent=2, default=float) + "\n")
         print(f"\nwrote {args.json}")
 
