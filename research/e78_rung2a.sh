@@ -57,7 +57,10 @@ research/e73_rung1.sh \
 status=$?
 ((status == 0)) || { echo "e78_rung2a: cell harness exited ${status}" >&2; exit "${status}"; }
 
-cp research/e73-artifacts/rung1-e78-rung2a.json "${artifacts}/rung2a-cells-raw.json"
+mv research/e73-artifacts/rung1-e78-rung2a.json "${artifacts}/rung2a-cells-raw.json"
+# The driver appends to rung2a.log while it runs, so that path is ignored. The
+# durable copy is taken once, here, after the session ends.
+cp "${artifacts}/rung2a.log" "${artifacts}/rung2a-session.log"
 python3 research/e78_cell_table.py \
   --cells "${artifacts}/rung2a-cells-raw.json" \
   --config /tmp/e73-build/config-e78-rung2a.json \
