@@ -161,6 +161,41 @@ def default_phase_gpu(path: pathlib.Path):
     return dict(total)
 
 
+def isolation_coverage(path: pathlib.Path):
+    """{width: {dispatches, exclusive, coverage, unmapped, zero_time, undrained}}.
+
+    Per-kernel GPU time is only exact for dispatches that had a command buffer
+    to themselves. `MLX_MAX_OPS_PER_BUFFER=1` is a request, not a guarantee: MLX
+    still emits multi-dispatch buffers for a fused graph. Coverage is the share
+    of verify dispatches this instrument can actually price, and a census that
+    does not state it is quoting an unknown fraction of the round.
+    """
+    acc = collections.defaultdict(lambda: {"dispatches": 0, "exclusive": 0})
+    totals = collections.Counter()
+    for rec in read_records(path):
+        if rec.get("event") != "gputime":
+            continue
+        for key, bucket in rec.get("by_width_phase", {}).items():
+            w, _, phase = key.partition("|")
+            if phase == "verify_block":
+                acc[int(w[1:])]["dispatches"] += bucket["dispatches"]
+        for key, bucket in rec.get("exclusive_kernels", {}).items():
+            w, _, rest = key.partition("|")
+            if rest.startswith("verify_block|"):
+                acc[int(w[1:])]["exclusive"] += bucket["buffers"]
+        totals["unmapped"] += rec.get("unmapped_encoder_dispatches", 0)
+        totals["zero_time"] += rec.get("zero_time_buffers", 0)
+        totals["undrained"] += rec.get("committed_total", 0) - rec.get("completed_total", 0)
+    out = {
+        w: {"verify_dispatches": slot["dispatches"],
+            "priced_dispatches": slot["exclusive"],
+            "coverage": (slot["exclusive"] / slot["dispatches"]
+                         if slot["dispatches"] else None)}
+        for w, slot in acc.items()
+    }
+    return out, dict(totals)
+
+
 def isolated_kernel_gpu(path: pathlib.Path):
     """{width: {shape: {gpu_ns, buffers}}} from single-dispatch buffers.
 
@@ -286,8 +321,19 @@ def main() -> int:
     widths = args.width or sorted(dispatches)
     print(f"widths seen = {sorted(dispatches)}  rounds per width = "
           f"{ {w: rounds[w] for w in sorted(rounds)} }")
+    coverage = {}
     if args.isolated:
         print(f"isolated widths = {sorted(iso_kernels)}")
+        coverage, health = isolation_coverage(args.isolated)
+        print(f"isolated instrument health: unmapped={health.get('unmapped', 0)} "
+              f"zero_time={health.get('zero_time', 0)} "
+              f"undrained={health.get('undrained', 0)}")
+        print("\n| width | verify dispatches | priced by a lone buffer | coverage |")
+        print("|---:|---:|---:|---:|")
+        for w in sorted(coverage):
+            c = coverage[w]
+            pct = "--" if c["coverage"] is None else f"{c['coverage'] * 100:.1f} %"
+            print(f"| {w} | {c['verify_dispatches']} | {c['priced_dispatches']} | {pct} |")
     else:
         print("no isolated run supplied: dispatch counts only, no per-kernel GPU time")
 
@@ -391,6 +437,7 @@ def main() -> int:
             "isolated_census": str(args.isolated) if args.isolated else None,
             "ranked_width_weights": RANKED_WIDTH_WEIGHTS,
             "rounds_per_width": rounds,
+            "isolation_coverage": coverage,
             "widths": {str(w): t for w, t in tables.items()},
             "families_per_width": {str(w): family_totals(t) for w, t in tables.items()},
             "qmv_units_per_width": {str(w): qmv_unit_totals(t) for w, t in tables.items()},
