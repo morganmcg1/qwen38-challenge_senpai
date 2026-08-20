@@ -134,6 +134,9 @@ capture)
       echo "=== skip capture ${name} ==="; continue
     fi
     echo "=== capture ${name} (depth ${depth}, ${steps} tokens) ==="
+    # Shards are named by PID, so a retry after a partial run would otherwise
+    # leave orphan shards from the old PIDs and inflate the sample count.
+    rm -f "${dump_dir}/${name}".pid*
     start=$(date +%s)
     log="${out}/verify/${name}.leg.log"
     if MLX_E87_HIDDEN_DUMP="${dump_dir}/${name}" ${cli} mtp-verify \
