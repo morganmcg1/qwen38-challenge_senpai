@@ -340,13 +340,26 @@ def write_head(args, src, decl, tensors, damage, islands, out_dir: Path, src_pat
         if q4
         else "Kamciosz/qwen3.8-27b-mtp-head-retrained-graft",
         "tensor_count": len(built.entries),
+        # An island plan changes island row counts on purpose, so those tensors
+        # are held to dtype only. Everything else must still match the
+        # reference exactly.
         "shapes_match_reference": {
             n: (
                 built.entries[n].shape == reference.entries[n].shape
                 and built.entries[n].dtype == reference.entries[n].dtype
             )
             for n in reference.names()
-            if n in built
+            if n in built and not n.startswith("precision_islands.")
+        },
+        "island_dtypes_match_reference": {
+            n: built.entries[n].dtype == reference.entries[n].dtype
+            for n in reference.names()
+            if n in built and n.startswith("precision_islands.")
+        },
+        "island_rows": {
+            n: [built.entries[n].shape[0], reference.entries[n].shape[0]]
+            for n in reference.names()
+            if n in built and n.startswith("precision_islands.")
         },
     }
     checks["bytes_delta_pct"] = 100.0 * (nbytes - checks["reference_bytes"]) / checks["reference_bytes"]
@@ -371,6 +384,7 @@ def write_head(args, src, decl, tensors, damage, islands, out_dir: Path, src_pat
         all(checks["draft_lm_head_byte_identical"].values())
         and all(checks["norms_byte_identical_to_source"].values())
         and all(checks["shapes_match_reference"].values())
+        and all(checks["island_dtypes_match_reference"].values())
         and checks["bytes_delta_pct"] <= 2.0
     )
     if not q4:
