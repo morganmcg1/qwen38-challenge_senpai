@@ -1,0 +1,1440 @@
+{
+  "all_ok": true,
+  "arms": [
+    {
+      "acc_alloca_types_by_width": {
+        "3": [],
+        "4": [],
+        "5": [],
+        "6": [],
+        "7": [],
+        "8": [],
+        "9": []
+      },
+      "argmax_width": 9,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 181,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_batch0": 181,
+      "entry_batch1": 31,
+      "family": "timed_arm",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 5
+      },
+      "kernel_wide_reg_max": 129,
+      "law_residual_by_width": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          4,
+          5
+        ]
+      },
+      "name": "shipped",
+      "never_time": false,
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          },
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "role": "reference",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 2
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "law_prediction": 87,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "law_prediction": 108,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1456,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "law_prediction": 129,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45
+        }
+      }
+    },
+    {
+      "acc_alloca_types_by_width": {
+        "3": [],
+        "4": [],
+        "5": [],
+        "6": [
+          "[4 x <6 x float>]"
+        ],
+        "7": [],
+        "8": [],
+        "9": []
+      },
+      "argmax_width": 6,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 202,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_batch0": 202,
+      "entry_batch1": 31,
+      "family": "timed_arm",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 5
+      },
+      "kernel_wide_reg_max": 144,
+      "law_residual_by_width": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": -2,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          6
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          4,
+          5
+        ]
+      },
+      "name": "t6",
+      "never_time": false,
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          },
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "role": "measurement",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 1,
+        "7": 2,
+        "8": 2,
+        "9": 2
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "law_prediction": 87,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [
+            "[4 x <6 x float>]"
+          ],
+          "air_lines": 860,
+          "alloca_types": [
+            "[4 x <6 x float>]",
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 48,
+          "ipg": 6,
+          "law_prediction": 146,
+          "na_cells": [
+            6
+          ],
+          "peak_live_regs": 144,
+          "peak_live_values": 44
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "law_prediction": 108,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1456,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "law_prediction": 129,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45
+        }
+      }
+    },
+    {
+      "acc_alloca_types_by_width": {
+        "3": [],
+        "4": [],
+        "5": [],
+        "6": [],
+        "7": [],
+        "8": [],
+        "9": []
+      },
+      "argmax_width": 6,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 203,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_batch0": 203,
+      "entry_batch1": 31,
+      "family": "timed_arm",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 5
+      },
+      "kernel_wide_reg_max": 145,
+      "law_residual_by_width": {
+        "3": -1,
+        "4": -1,
+        "5": -4,
+        "6": -1,
+        "7": -4,
+        "8": 0,
+        "9": -4
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          6
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          4,
+          5
+        ]
+      },
+      "name": "t6_rbx",
+      "never_time": false,
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          },
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "role": "measurement",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 1,
+        "7": 2,
+        "8": 2,
+        "9": 2
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 578,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 82,
+          "peak_live_values": 40
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 659,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 103,
+          "peak_live_values": 40
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1083,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "law_prediction": 87,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 821,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 48,
+          "ipg": 6,
+          "law_prediction": 146,
+          "na_cells": [
+            6
+          ],
+          "peak_live_regs": 145,
+          "peak_live_values": 40
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1245,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "law_prediction": 108,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 1326,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 80,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1407,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "law_prediction": 129,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 125,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "acc_alloca_types_by_width": {
+        "3": [],
+        "4": [],
+        "5": [],
+        "6": [],
+        "7": [],
+        "8": [],
+        "9": []
+      },
+      "argmax_width": 9,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 177,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_batch0": 177,
+      "entry_batch1": 31,
+      "family": "timed_arm",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 5
+      },
+      "kernel_wide_reg_max": 125,
+      "law_residual_by_width": {
+        "3": -1,
+        "4": -1,
+        "5": -4,
+        "6": 0,
+        "7": -4,
+        "8": 0,
+        "9": -4
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          4,
+          5
+        ]
+      },
+      "name": "shipped_rbx",
+      "never_time": false,
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          },
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "role": "measurement",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 2
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 578,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 82,
+          "peak_live_values": 40
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 659,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 103,
+          "peak_live_values": 40
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1083,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "law_prediction": 87,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 1164,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 72,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1245,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "law_prediction": 108,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 1326,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 80,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1407,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "law_prediction": 129,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 125,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "acc_alloca_types_by_width": {
+        "6": []
+      },
+      "argmax_width": 6,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 135,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_batch0": 135,
+      "entry_batch1": 31,
+      "family": "census_probe",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 3,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "kernel_wide_reg_max": 83,
+      "law_residual_by_width": {
+        "6": 0
+      },
+      "na_cells": {
+        "6": [
+          3
+        ]
+      },
+      "name": "iso_m6_ipg3",
+      "never_time": true,
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          },
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "role": "census_probe",
+      "status": "ok",
+      "streams": {
+        "6": 2
+      },
+      "width_cells": {
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        }
+      }
+    },
+    {
+      "acc_alloca_types_by_width": {
+        "6": [
+          "[4 x <6 x float>]"
+        ]
+      },
+      "argmax_width": 6,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 197,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_batch0": 197,
+      "entry_batch1": 31,
+      "family": "census_probe",
+      "ipg_table": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 6,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "kernel_wide_reg_max": 144,
+      "law_residual_by_width": {
+        "6": -2
+      },
+      "na_cells": {
+        "6": [
+          6
+        ]
+      },
+      "name": "iso_m6_ipg6",
+      "never_time": true,
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          },
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "role": "census_probe",
+      "status": "ok",
+      "streams": {
+        "6": 1
+      },
+      "width_cells": {
+        "6": {
+          "acc_alloca_types": [
+            "[4 x <6 x float>]"
+          ],
+          "air_lines": 860,
+          "alloca_types": [
+            "[4 x <6 x float>]",
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 48,
+          "ipg": 6,
+          "law_prediction": 146,
+          "na_cells": [
+            6
+          ],
+          "peak_live_regs": 144,
+          "peak_live_values": 44
+        }
+      }
+    },
+    {
+      "acc_alloca_types_by_width": {
+        "3": [],
+        "4": [],
+        "5": [],
+        "6": [],
+        "7": [],
+        "8": [],
+        "9": [],
+        "12": [
+          "[4 x <6 x float>]"
+        ]
+      },
+      "argmax_width": 12,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": 197,
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": 31
+      },
+      "entry_batch0": 197,
+      "entry_batch1": 31,
+      "family": "census_probe",
+      "ipg_table": {
+        "3": 3,
+        "4": 4,
+        "5": 3,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 5
+      },
+      "kernel_wide_reg_max": 144,
+      "law_residual_by_width": {
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "12": -2
+      },
+      "na_cells": {
+        "3": [
+          3
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          2,
+          3
+        ],
+        "6": [
+          3
+        ],
+        "7": [
+          3,
+          4
+        ],
+        "8": [
+          4
+        ],
+        "9": [
+          4,
+          5
+        ],
+        "12": [
+          6
+        ]
+      },
+      "name": "ballast",
+      "never_time": true,
+      "occupancy": {
+        "device": "Apple M4 Pro",
+        "functions": {
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          },
+          "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+            "max_total_threads_per_threadgroup": 1024,
+            "static_threadgroup_memory_bytes": 0,
+            "thread_execution_width": 32
+          }
+        },
+        "status": "ok"
+      },
+      "role": "census_probe",
+      "status": "ok",
+      "streams": {
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 2,
+        "12": 2
+      },
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "law_prediction": 87,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "law_prediction": 83,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "law_prediction": 108,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "law_prediction": 104,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1456,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "law_prediction": 129,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45
+        },
+        "12": {
+          "acc_alloca_types": [
+            "[4 x <6 x float>]"
+          ],
+          "air_lines": 860,
+          "alloca_types": [
+            "[4 x <6 x float>]",
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 48,
+          "ipg": 6,
+          "law_prediction": 146,
+          "na_cells": [
+            6
+          ],
+          "peak_live_regs": 144,
+          "peak_live_values": 44
+        }
+      }
+    }
+  ],
+  "ballast_matches_t6_ceiling": true,
+  "base_rev": "d2139c924c7a7d98ca6026eea63867c2776abbca",
+  "cell_prediction_checks": {
+    "iso_m6_ipg3 M=6": {
+      "hit": true,
+      "measured": 83,
+      "predicted": 83
+    },
+    "iso_m6_ipg6 M=6": {
+      "hit": false,
+      "measured": 144,
+      "predicted": 146
+    },
+    "shipped M=9": {
+      "hit": true,
+      "measured": 129,
+      "predicted": 129
+    },
+    "t6 M=6": {
+      "hit": false,
+      "measured": 144,
+      "predicted": 146
+    }
+  },
+  "entry_batch0": {
+    "ballast": 197,
+    "iso_m6_ipg3": 135,
+    "iso_m6_ipg6": 197,
+    "shipped": 181,
+    "shipped_rbx": 177,
+    "t6": 202,
+    "t6_rbx": 203
+  },
+  "entry_batch1": {
+    "ballast": 31,
+    "iso_m6_ipg3": 31,
+    "iso_m6_ipg6": 31,
+    "shipped": 31,
+    "shipped_rbx": 31,
+    "t6": 31,
+    "t6_rbx": 31
+  },
+  "entry_prediction_checks": {
+    "shipped": {
+      "hit": true,
+      "interval": [
+        178,
+        184
+      ],
+      "measured": 181
+    },
+    "t6": {
+      "hit": true,
+      "interval": [
+        196,
+        205
+      ],
+      "measured": 202
+    }
+  },
+  "extra_cells_census_only": {
+    "<T,7,7>": {
+      "acc_alloca_types": [
+        "[4 x <7 x float>]"
+      ],
+      "air_lines": 669,
+      "alloca_types": [
+        "[4 x <7 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "allocas": 2,
+      "device_loads": 52,
+      "family": "census_probe",
+      "hit": false,
+      "law_prediction": 167,
+      "na_cells": [
+        7
+      ],
+      "never_time": true,
+      "peak_live_regs": 157,
+      "peak_live_values": 43,
+      "predicted": 167,
+      "status": "ok"
+    },
+    "<T,8,8>": {
+      "acc_alloca_types": [
+        "[4 x <8 x float>]"
+      ],
+      "air_lines": 710,
+      "alloca_types": [
+        "[4 x <8 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "allocas": 2,
+      "device_loads": 56,
+      "family": "census_probe",
+      "hit": false,
+      "law_prediction": 188,
+      "na_cells": [
+        8
+      ],
+      "never_time": true,
+      "peak_live_regs": 177,
+      "peak_live_values": 44,
+      "predicted": 188,
+      "status": "ok"
+    }
+  },
+  "head": "ea53de3722747140ca7d0fc786ee9e9c5da422e5",
+  "kernel_wide_reg_max": {
+    "ballast": 144,
+    "iso_m6_ipg3": 83,
+    "iso_m6_ipg6": 144,
+    "shipped": 129,
+    "shipped_rbx": 125,
+    "t6": 144,
+    "t6_rbx": 145
+  },
+  "law": "reg = 20 + 21*max(NA) + 4*[two distinct NA group sizes]",
+  "law_note": "the +4 term reproduces this instrument's documented constant over-count on mixed-group cells (E54), so the hardware ceiling of a mixed cell is very likely 4 lower than reported here; single-group cells carry no over-count",
+  "law_residual_by_arm": {
+    "ballast": {
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "12": -2
+    },
+    "iso_m6_ipg3": {
+      "6": 0
+    },
+    "iso_m6_ipg6": {
+      "6": -2
+    },
+    "shipped": {
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0
+    },
+    "shipped_rbx": {
+      "3": -1,
+      "4": -1,
+      "5": -4,
+      "6": 0,
+      "7": -4,
+      "8": 0,
+      "9": -4
+    },
+    "t6": {
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": -2,
+      "7": 0,
+      "8": 0,
+      "9": 0
+    },
+    "t6_rbx": {
+      "3": -1,
+      "4": -1,
+      "5": -4,
+      "6": -1,
+      "7": -4,
+      "8": 0,
+      "9": -4
+    }
+  },
+  "law_survives": false,
+  "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>",
+  "t6_vs_shipped": {
+    "entry_batch0_delta": 21,
+    "kernel_wide_reg_max_delta": 15,
+    "shipped_argmax_width": 9,
+    "t6_argmax_width": 6
+  },
+  "table_max_prediction_checks": {
+    "iso_m6_ipg3": {
+      "hit": true,
+      "measured": 83,
+      "predicted": 83
+    },
+    "iso_m6_ipg6": {
+      "hit": false,
+      "measured": 144,
+      "predicted": 146
+    },
+    "shipped": {
+      "hit": true,
+      "measured": 129,
+      "predicted": 129
+    },
+    "t6": {
+      "hit": false,
+      "measured": 144,
+      "predicted": 146
+    }
+  }
+}

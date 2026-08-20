@@ -1,0 +1,340 @@
+{
+ "harness": "local",
+ "instrument": "E58 in-process dispatch census, restored from d0b337d^",
+ "timed": false,
+ "model_e60": {
+  "ops_per_dispatch": 1.8369,
+  "mb_per_dispatch": 10.58
+ },
+ "session_refit_ops_per_dispatch": 1.4910681079465165,
+ "legs": [
+  {
+   "tag": "e62-census-mb4096-ops100",
+   "mb": 4096,
+   "ops": 100,
+   "worker_env_proof": [
+    "MLX_MAX_MB_PER_BUFFER=4096",
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+    "MLX_MAX_OPS_PER_BUFFER=100"
+   ],
+   "rounds": 74,
+   "dispatches": 119669,
+   "commits": 1604,
+   "barriers": 78453,
+   "dispatches_per_round": 1617.1486486486488,
+   "commits_per_round": 21.675675675675677,
+   "dispatches_per_commit": 74.606608478803,
+   "gap_dispatches": 69570,
+   "gap_commits": 1395,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1627,
+     "commits": 27,
+     "dispatches_per_commit": 60.25925925925926
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 1424,
+     "dispatches_per_commit": 76.69662921348315
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 153,
+     "dispatches_per_commit": 57.68627450980392
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 54.43954488540476,
+   "model_e60_error_percent": 37.044879114713225,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 67.06601761989194,
+   "model_refit_error_percent": 11.24353454479531
+  },
+  {
+   "tag": "e62-census-mb4096-ops12",
+   "mb": 4096,
+   "ops": 12,
+   "worker_env_proof": [
+    "MLX_MAX_OPS_PER_BUFFER=12",
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+    "MLX_MAX_MB_PER_BUFFER=4096"
+   ],
+   "rounds": 74,
+   "dispatches": 119669,
+   "commits": 13120,
+   "barriers": 73922,
+   "dispatches_per_round": 1617.1486486486488,
+   "commits_per_round": 177.2972972972973,
+   "dispatches_per_commit": 9.121112804878049,
+   "gap_dispatches": 69570,
+   "gap_commits": 9170,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1627,
+     "commits": 149,
+     "dispatches_per_commit": 10.919463087248323
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 11727,
+     "dispatches_per_commit": 9.313208834313976
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 1244,
+     "dispatches_per_commit": 7.094855305466238
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 6.532745386248571,
+   "model_e60_error_percent": 39.621434260670725,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 8.047922114387031,
+   "model_refit_error_percent": 13.335003436135477
+  },
+  {
+   "tag": "e62-census-mb4096-ops200",
+   "mb": 4096,
+   "ops": 200,
+   "worker_env_proof": [
+    "MLX_MAX_MB_PER_BUFFER=4096",
+    "MLX_MAX_OPS_PER_BUFFER=200",
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full"
+   ],
+   "rounds": 74,
+   "dispatches": 119669,
+   "commits": 1071,
+   "barriers": 79223,
+   "dispatches_per_round": 1617.1486486486488,
+   "commits_per_round": 14.472972972972974,
+   "dispatches_per_commit": 111.73576097105509,
+   "gap_dispatches": 69572,
+   "gap_commits": 792,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1627,
+     "commits": 19,
+     "dispatches_per_commit": 85.63157894736842
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 960,
+     "dispatches_per_commit": 113.76666666666667
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 92,
+     "dispatches_per_commit": 95.93478260869566
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 108.87908977080951,
+   "model_e60_error_percent": 2.6237096638655455,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 134.13203523978387,
+   "model_refit_error_percent": -16.697185149462342
+  },
+  {
+   "tag": "e62-census-mb4096-ops25",
+   "mb": 4096,
+   "ops": 25,
+   "worker_env_proof": [
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+    "MLX_MAX_OPS_PER_BUFFER=25",
+    "MLX_MAX_MB_PER_BUFFER=4096"
+   ],
+   "rounds": 74,
+   "dispatches": 119669,
+   "commits": 7341,
+   "barriers": 76265,
+   "dispatches_per_round": 1617.1486486486488,
+   "commits_per_round": 99.20270270270271,
+   "dispatches_per_commit": 16.301457567088953,
+   "gap_dispatches": 69570,
+   "gap_commits": 4511,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1627,
+     "commits": 73,
+     "dispatches_per_commit": 22.28767123287671
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 6667,
+     "dispatches_per_commit": 16.38158092095395
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 601,
+     "dispatches_per_commit": 14.685524126455906
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 13.60988622135119,
+   "model_e60_error_percent": 19.776589619942794,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 16.766504404972984,
+   "model_refit_error_percent": -2.773666034681013
+  },
+  {
+   "tag": "e62-census-mb4096-ops50",
+   "mb": 4096,
+   "ops": 50,
+   "worker_env_proof": [
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+    "MLX_MAX_OPS_PER_BUFFER=50",
+    "MLX_MAX_MB_PER_BUFFER=4096"
+   ],
+   "rounds": 74,
+   "dispatches": 119669,
+   "commits": 3895,
+   "barriers": 77738,
+   "dispatches_per_round": 1617.1486486486488,
+   "commits_per_round": 52.63513513513514,
+   "dispatches_per_commit": 30.723748395378692,
+   "gap_dispatches": 69570,
+   "gap_commits": 2392,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1627,
+     "commits": 39,
+     "dispatches_per_commit": 41.717948717948715
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 3568,
+     "dispatches_per_commit": 30.609865470852018
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 288,
+     "dispatches_per_commit": 30.645833333333332
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 27.21977244270238,
+   "model_e60_error_percent": 12.87290685494224,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 33.53300880994597,
+   "model_refit_error_percent": -8.377597222155751
+  },
+  {
+   "tag": "e62-census-mb4096-ops6",
+   "mb": 4096,
+   "ops": 6,
+   "worker_env_proof": [
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+    "MLX_MAX_OPS_PER_BUFFER=6",
+    "MLX_MAX_MB_PER_BUFFER=4096"
+   ],
+   "rounds": 74,
+   "dispatches": 119657,
+   "commits": 25917,
+   "barriers": 64751,
+   "dispatches_per_round": 1616.9864864864865,
+   "commits_per_round": 350.22972972972974,
+   "dispatches_per_commit": 4.616930971948914,
+   "gap_dispatches": 69570,
+   "gap_commits": 16728,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1615,
+     "commits": 327,
+     "dispatches_per_commit": 4.938837920489297
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 23381,
+     "dispatches_per_commit": 4.671143235960823
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 2209,
+     "dispatches_per_commit": 3.995473064735174
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 3.2663726931242856,
+   "model_e60_error_percent": 41.34734170621601,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 4.023961057193516,
+   "model_refit_error_percent": 14.735975481058992
+  },
+  {
+   "tag": "e62-census-mb4096-ops8",
+   "mb": 4096,
+   "ops": 8,
+   "worker_env_proof": [
+    "MLX_MAX_OPS_PER_BUFFER=8",
+    "MLX_MAX_MB_PER_BUFFER=4096",
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full"
+   ],
+   "rounds": 74,
+   "dispatches": 119663,
+   "commits": 21042,
+   "barriers": 68208,
+   "dispatches_per_round": 1617.0675675675675,
+   "commits_per_round": 284.35135135135135,
+   "dispatches_per_commit": 5.686864366505085,
+   "gap_dispatches": 69570,
+   "gap_commits": 13385,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1621,
+     "commits": 242,
+     "dispatches_per_commit": 6.698347107438017
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 19019,
+     "dispatches_per_commit": 5.742468058257532
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 1781,
+     "dispatches_per_commit": 4.955642897248737
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 4.3551635908323805,
+   "model_e60_error_percent": 30.57751443541488,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 5.365281409591355,
+   "model_refit_error_percent": 5.993776138915016
+  },
+  {
+   "tag": "e62-census-mb512-ops50",
+   "mb": 512,
+   "ops": 50,
+   "worker_env_proof": [
+    "MLX_MAX_MB_PER_BUFFER=512",
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+    "MLX_MAX_OPS_PER_BUFFER=50"
+   ],
+   "rounds": 74,
+   "dispatches": 119669,
+   "commits": 3866,
+   "barriers": 77701,
+   "dispatches_per_round": 1617.1486486486488,
+   "commits_per_round": 52.24324324324324,
+   "dispatches_per_commit": 30.95421624418003,
+   "gap_dispatches": 69570,
+   "gap_commits": 2419,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1627,
+     "commits": 73,
+     "dispatches_per_commit": 22.28767123287671
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 3474,
+     "dispatches_per_commit": 31.43811168681635
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 319,
+     "dispatches_per_commit": 27.66771159874608
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 27.21977244270238,
+   "model_e60_error_percent": 13.719599637868601,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 33.53300880994597,
+   "model_refit_error_percent": -7.6903107036463165
+  }
+ ]
+}

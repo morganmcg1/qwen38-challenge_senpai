@@ -78,11 +78,23 @@ EMPTY_DIFF_NULL_DELTAS_PCT = (+0.0081, +0.1556, -0.6106, -0.6786, -1.2737)
 """Five (S, S^) pairs whose `git diff S^..S` is empty. True effect is exactly
 zero, so this is the instrument measuring a known null."""
 
-# --- local instrument, unchanged and still valid -----------------------------
+# --- local instrument --------------------------------------------------------
 
 LOCAL_NULL_FLOOR_PCT = 0.0629
-"""Local end-to-end null floor, matched identity tuple, ABBA. Measured on this
-fleet. Ledger 193 does NOT touch this number."""
+"""RETRACTED by ledger 198(G) and confirmed retracted by 202. This was one
+adjacent-leg same-arm spread, not a null floor. The local null does NOT scale
+monotonically with leg separation, and it is host- and session-specific.
+
+Measured same-arm spreads, per cent of the candidate leg:
+
+    alphonse E60   adjacent 0.0032, 3 apart 0.1147, 5 apart 0.1634
+    askeladd E61   up to 0.2835 at separation 5, 0.2423 at separation 6
+    thorfinn E59   session bar 0.2423 at separation 6
+
+Do not import this constant for a NEW decision. Take the LARGEST same-arm spread
+measured inside the session you are pricing, at the separation your arms actually
+sit at. The value is kept so the published arithmetic of the modules that already
+used it stays reproducible."""
 
 # --- retracted ---------------------------------------------------------------
 

@@ -56,7 +56,10 @@ WIDE_TIER_ANCHOR = "if (out_vec_size >= 4096) {"
 SWITCH_OPEN = "switch (ntg.x) {"
 WIDE_TIER_DEFAULT = "        default:\n          break;\n      }\n    } else {"
 
-SHIPPED_IPG = {3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 3}
+# Live shipped dispatch table. Updated by E55 (M=9 IPG 3 -> 5) and by E61 `t6`
+# (M=6 IPG 3 -> 6). A stale entry here makes every derived arm fail loudly at the
+# source-substitution step, which is the intended behaviour.
+SHIPPED_IPG = {3: 3, 4: 4, 5: 3, 6: 6, 7: 4, 8: 4, 9: 5}
 
 # The four lines that map input row m onto accumulator lane m. The positive
 # control is a permutation of that map and nothing else.

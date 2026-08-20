@@ -1,0 +1,1060 @@
+{
+  "cell_deltas": {
+    "t6": {
+      "cells": {
+        "2": {
+          "control_group_na": [
+            [
+              2
+            ]
+          ],
+          "control_seconds_per_verify": 0.0662173643,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": -0.4765120951816552,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              2
+            ]
+          ],
+          "treated_seconds_per_verify": 0.06590183055,
+          "treated_width": false
+        },
+        "3": {
+          "control_group_na": [
+            [
+              3
+            ]
+          ],
+          "control_seconds_per_verify": 0.07249342045,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": -0.20259390312711034,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              3
+            ]
+          ],
+          "treated_seconds_per_verify": 0.0723465532,
+          "treated_width": false
+        },
+        "4": {
+          "control_group_na": [
+            [
+              4
+            ]
+          ],
+          "control_seconds_per_verify": 0.0821751763,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": 0.06776559845360378,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              4
+            ]
+          ],
+          "treated_seconds_per_verify": 0.0822308628,
+          "treated_width": false
+        },
+        "5": {
+          "control_group_na": [
+            [
+              3,
+              2
+            ]
+          ],
+          "control_seconds_per_verify": 0.11995656605,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": -0.12800133002807343,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              3,
+              2
+            ]
+          ],
+          "treated_seconds_per_verify": 0.11980302005,
+          "treated_width": false
+        },
+        "6": {
+          "control_group_na": [
+            [
+              3,
+              3
+            ]
+          ],
+          "control_seconds_per_verify": 0.12840456985,
+          "predicted_delta_pct": -9.95,
+          "seconds_delta_pct": -4.198986886758382,
+          "traffic_ratio_treated_over_control": 0.501312112765165,
+          "treated_group_na": [
+            [
+              6
+            ]
+          ],
+          "treated_seconds_per_verify": 0.1230128788,
+          "treated_width": true
+        },
+        "7": {
+          "control_group_na": [
+            [
+              4,
+              3
+            ]
+          ],
+          "control_seconds_per_verify": 0.138224612,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": -0.10943579280945949,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              4,
+              3
+            ]
+          ],
+          "treated_seconds_per_verify": 0.1380733448,
+          "treated_width": false
+        },
+        "8": {
+          "control_group_na": [
+            [
+              4,
+              4
+            ]
+          ],
+          "control_seconds_per_verify": 0.1487185918,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": 0.1506114651093689,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              4,
+              4
+            ]
+          ],
+          "treated_seconds_per_verify": 0.14894257905,
+          "treated_width": false
+        },
+        "9": {
+          "control_group_na": [
+            [
+              5,
+              4
+            ]
+          ],
+          "control_seconds_per_verify": 0.1638910192,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": 0.5335886946513185,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              5,
+              4
+            ]
+          ],
+          "treated_seconds_per_verify": 0.16476552315,
+          "treated_width": false
+        }
+      },
+      "untreated_max_abs_delta_pct": 0.5335886946513185,
+      "untreated_mean_delta_pct": -0.023511051847429607,
+      "untreated_widths": [
+        2,
+        3,
+        4,
+        5,
+        7,
+        8,
+        9
+      ],
+      "untreated_within_band": true
+    },
+    "t7": {
+      "cells": {
+        "2": {
+          "control_group_na": [
+            [
+              2
+            ]
+          ],
+          "control_seconds_per_verify": 0.0662173643,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": -0.4198931850266878,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              2
+            ]
+          ],
+          "treated_seconds_per_verify": 0.0659393221,
+          "treated_width": false
+        },
+        "3": {
+          "control_group_na": [
+            [
+              3
+            ]
+          ],
+          "control_seconds_per_verify": 0.07249342045,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": -0.12741080421732695,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              3
+            ]
+          ],
+          "treated_seconds_per_verify": 0.072401056,
+          "treated_width": false
+        },
+        "4": {
+          "control_group_na": [
+            [
+              4
+            ]
+          ],
+          "control_seconds_per_verify": 0.0821751763,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": 0.050876191427165755,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              4
+            ]
+          ],
+          "treated_seconds_per_verify": 0.0822169839,
+          "treated_width": false
+        },
+        "5": {
+          "control_group_na": [
+            [
+              3,
+              2
+            ]
+          ],
+          "control_seconds_per_verify": 0.11995656605,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": -0.12761193908818633,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              3,
+              2
+            ]
+          ],
+          "treated_seconds_per_verify": 0.11980348715,
+          "treated_width": false
+        },
+        "6": {
+          "control_group_na": [
+            [
+              3,
+              3
+            ]
+          ],
+          "control_seconds_per_verify": 0.12840456985,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": -0.04544553988085562,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              3,
+              3
+            ]
+          ],
+          "treated_seconds_per_verify": 0.1283462157,
+          "treated_width": false
+        },
+        "7": {
+          "control_group_na": [
+            [
+              4,
+              3
+            ]
+          ],
+          "control_seconds_per_verify": 0.138224612,
+          "predicted_delta_pct": 4.16,
+          "seconds_delta_pct": 7.132399040483471,
+          "traffic_ratio_treated_over_control": 0.5015301289920981,
+          "treated_group_na": [
+            [
+              7
+            ]
+          ],
+          "treated_seconds_per_verify": 0.1480833429,
+          "treated_width": true
+        },
+        "8": {
+          "control_group_na": [
+            [
+              4,
+              4
+            ]
+          ],
+          "control_seconds_per_verify": 0.1487185918,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": 0.22886442500594303,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              4,
+              4
+            ]
+          ],
+          "treated_seconds_per_verify": 0.14905895575,
+          "treated_width": false
+        },
+        "9": {
+          "control_group_na": [
+            [
+              5,
+              4
+            ]
+          ],
+          "control_seconds_per_verify": 0.1638910192,
+          "predicted_delta_pct": null,
+          "seconds_delta_pct": 0.010909048029168669,
+          "traffic_ratio_treated_over_control": 1.0,
+          "treated_group_na": [
+            [
+              5,
+              4
+            ]
+          ],
+          "treated_seconds_per_verify": 0.16390889815,
+          "treated_width": false
+        }
+      },
+      "untreated_max_abs_delta_pct": 0.4198931850266878,
+      "untreated_mean_delta_pct": -0.06138740053582561,
+      "untreated_widths": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        8,
+        9
+      ],
+      "untreated_within_band": true
+    }
+  },
+  "gate": {
+    "clause_a_bandwidth": {
+      "fired": true,
+      "measured_bw6_gbps": 117.77783852661125,
+      "threshold_gbps": 114.0
+    },
+    "clause_b_measured_cell": {
+      "fired": true,
+      "m6_delta_pct": -4.198986886758382,
+      "threshold_pct": -2.0,
+      "untreated_within_band": true
+    },
+    "note": "The ladder is void if any positive control misses; the gate then reports the control failure instead of a verdict.",
+    "positive_controls": {
+      "2": true,
+      "3": true,
+      "4": true
+    },
+    "positive_controls_passed": true,
+    "proceed_to_rung2_and_rung3": true
+  },
+  "legs_per_arm": {
+    "shipped": [
+      "e61-a1",
+      "e61-a2"
+    ],
+    "t6": [
+      "e61-b1",
+      "e61-b2"
+    ],
+    "t7": [
+      "e61-c1",
+      "e61-c2"
+    ]
+  },
+  "lone_group_ladder": {
+    "e54_measured_steps_gbps": {
+      "2->3": -24.091,
+      "3->4": -24.455,
+      "4->5": -24.292
+    },
+    "measured_steps_gbps": {
+      "2->3": -19.13651904759533,
+      "3->4": -23.62040629166563,
+      "6->7": -19.854392526392687
+    },
+    "method": "one working group per dispatch; weighted by calls per verify",
+    "rungs": {
+      "2": {
+        "anchor_delta_gbps": -5.0956694693004465,
+        "anchor_delta_pct": -2.277048166669845,
+        "arm_spread_pct": 0.4773607945352766,
+        "e54_anchor_gbps": 223.784,
+        "measured_gbps": 218.68833053069955,
+        "per_arm_gbps": {
+          "shipped": 218.0338964654321,
+          "t6": 219.07782881760937,
+          "t7": 218.9532663090572
+        },
+        "positive_control_passed": true,
+        "predicted_gbps": null
+      },
+      "3": {
+        "anchor_delta_gbps": -0.14118851689579515,
+        "anchor_delta_pct": -0.07070278722628992,
+        "arm_spread_pct": 0.20278172829404795,
+        "e54_anchor_gbps": 199.693,
+        "measured_gbps": 199.55181148310422,
+        "per_arm_gbps": {
+          "shipped": 199.33216170930447,
+          "t6": 199.736816321472,
+          "t7": 199.5864564185362
+        },
+        "positive_control_passed": true,
+        "predicted_gbps": null
+      },
+      "4": {
+        "anchor_delta_gbps": 0.6934051914385861,
+        "anchor_delta_pct": 0.39569339494777744,
+        "arm_spread_pct": 0.06774648346326878,
+        "e54_anchor_gbps": 175.238,
+        "measured_gbps": 175.93140519143859,
+        "per_arm_gbps": {
+          "shipped": 176.00096665688565,
+          "t6": 175.88177931656094,
+          "t7": 175.91146960086917
+        },
+        "positive_control_passed": true,
+        "predicted_gbps": null
+      },
+      "6": {
+        "arm_spread_pct": 0.0,
+        "breakeven_gbps": 114.0,
+        "clears_breakeven": true,
+        "e54_anchor_gbps": null,
+        "headroom_gbps": 3.777838526611248,
+        "linearity_refuted": true,
+        "measured_gbps": 117.77783852661125,
+        "per_arm_gbps": {
+          "t6": 117.77783852661125
+        },
+        "predicted_gbps": 126.65,
+        "prediction_miss_gbps": -8.872161473388758
+      },
+      "7": {
+        "arm_spread_pct": 0.0,
+        "breakeven_gbps": 106.55,
+        "clears_breakeven": false,
+        "e54_anchor_gbps": null,
+        "headroom_gbps": -8.626553999781436,
+        "linearity_refuted": false,
+        "measured_gbps": 97.92344600021856,
+        "per_arm_gbps": {
+          "t7": 97.92344600021856
+        },
+        "predicted_gbps": 102.35,
+        "prediction_miss_gbps": -4.426553999781433
+      }
+    }
+  },
+  "measured_peak_bandwidth_bytes_per_second": 227896052714.80124,
+  "per_arm_per_width": {
+    "shipped": {
+      "2": {
+        "group_na": [
+          [
+            2
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64<T, 2>"
+        ],
+        "legs": [
+          "e61-a1",
+          "e61-a2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 215.39710897586482,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14437629952.0,
+        "weighted_frac_of_measured_peak": 0.9567251993534479,
+        "weighted_gbps": 218.0338964654321,
+        "weighted_seconds_per_verify": 0.0662173643,
+        "working_groups": [
+          1
+        ]
+      },
+      "3": {
+        "group_na": [
+          [
+            3
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>"
+        ],
+        "legs": [
+          "e61-a1",
+          "e61-a2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 196.053473488461,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14450270208.0,
+        "weighted_frac_of_measured_peak": 0.8746626338401621,
+        "weighted_gbps": 199.33216170930447,
+        "weighted_seconds_per_verify": 0.07249342045,
+        "working_groups": [
+          1
+        ]
+      },
+      "4": {
+        "group_na": [
+          [
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>"
+        ],
+        "legs": [
+          "e61-a1",
+          "e61-a2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 172.96378200851365,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14462910464.0,
+        "weighted_frac_of_measured_peak": 0.77228615660641,
+        "weighted_gbps": 176.00096665688565,
+        "weighted_seconds_per_verify": 0.0821751763,
+        "working_groups": [
+          1
+        ]
+      },
+      "5": {
+        "group_na": [
+          [
+            3,
+            2
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>"
+        ],
+        "legs": [
+          "e61-a1",
+          "e61-a2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28887900160.0,
+        "weighted_frac_of_measured_peak": 1.0567083678822653,
+        "weighted_gbps": 240.81966591106828,
+        "weighted_seconds_per_verify": 0.11995656605,
+        "working_groups": [
+          2
+        ]
+      },
+      "6": {
+        "group_na": [
+          [
+            3,
+            3
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>"
+        ],
+        "legs": [
+          "e61-a1",
+          "e61-a2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28900540416.0,
+        "weighted_frac_of_measured_peak": 0.9876172809262249,
+        "weighted_gbps": 225.07407991601164,
+        "weighted_seconds_per_verify": 0.12840456985,
+        "working_groups": [
+          2
+        ]
+      },
+      "7": {
+        "group_na": [
+          [
+            4,
+            3
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>"
+        ],
+        "legs": [
+          "e61-a1",
+          "e61-a2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28913180672.0,
+        "weighted_frac_of_measured_peak": 0.9178541744798707,
+        "weighted_gbps": 209.175343331765,
+        "weighted_seconds_per_verify": 0.138224612,
+        "working_groups": [
+          2
+        ]
+      },
+      "8": {
+        "group_na": [
+          [
+            4,
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>"
+        ],
+        "legs": [
+          "e61-a1",
+          "e61-a2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28925820928.0,
+        "weighted_frac_of_measured_peak": 0.8534608928859041,
+        "weighted_gbps": 194.50036863514734,
+        "weighted_seconds_per_verify": 0.1487185918,
+        "working_groups": [
+          2
+        ]
+      },
+      "9": {
+        "group_na": [
+          [
+            5,
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>"
+        ],
+        "legs": [
+          "e61-a1",
+          "e61-a2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28938461184.0,
+        "weighted_frac_of_measured_peak": 0.7747890505074373,
+        "weighted_gbps": 176.57136629729374,
+        "weighted_seconds_per_verify": 0.1638910192,
+        "working_groups": [
+          2
+        ]
+      }
+    },
+    "t6": {
+      "2": {
+        "group_na": [
+          [
+            2
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64<T, 2>"
+        ],
+        "legs": [
+          "e61-b1",
+          "e61-b2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 216.60321492419473,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14437629952.0,
+        "weighted_frac_of_measured_peak": 0.9613059384217271,
+        "weighted_gbps": 219.07782881760937,
+        "weighted_seconds_per_verify": 0.06590183055,
+        "working_groups": [
+          1
+        ]
+      },
+      "3": {
+        "group_na": [
+          [
+            3
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>"
+        ],
+        "legs": [
+          "e61-b1",
+          "e61-b2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 196.15843443764626,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14450270208.0,
+        "weighted_frac_of_measured_peak": 0.8764382442877634,
+        "weighted_gbps": 199.736816321472,
+        "weighted_seconds_per_verify": 0.0723465532,
+        "working_groups": [
+          1
+        ]
+      },
+      "4": {
+        "group_na": [
+          [
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>"
+        ],
+        "legs": [
+          "e61-b1",
+          "e61-b2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 172.84371276282567,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14462910464.0,
+        "weighted_frac_of_measured_peak": 0.7717631666778663,
+        "weighted_gbps": 175.88177931656094,
+        "weighted_seconds_per_verify": 0.0822308628,
+        "working_groups": [
+          1
+        ]
+      },
+      "5": {
+        "group_na": [
+          [
+            3,
+            2
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>"
+        ],
+        "legs": [
+          "e61-b1",
+          "e61-b2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28887900160.0,
+        "weighted_frac_of_measured_peak": 1.0580627022136297,
+        "weighted_gbps": 241.1283133592424,
+        "weighted_seconds_per_verify": 0.11980302005,
+        "working_groups": [
+          2
+        ]
+      },
+      "6": {
+        "group_na": [
+          [
+            6
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 6, true>"
+        ],
+        "legs": [
+          "e61-b1",
+          "e61-b2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 117.88383894336961,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14488190976.0,
+        "weighted_frac_of_measured_peak": 0.5168050833859918,
+        "weighted_gbps": 117.77783852661125,
+        "weighted_seconds_per_verify": 0.1230128788,
+        "working_groups": [
+          1
+        ]
+      },
+      "7": {
+        "group_na": [
+          [
+            4,
+            3
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 7, 4, true>"
+        ],
+        "legs": [
+          "e61-b1",
+          "e61-b2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28913180672.0,
+        "weighted_frac_of_measured_peak": 0.9188597359166779,
+        "weighted_gbps": 209.4045068139756,
+        "weighted_seconds_per_verify": 0.1380733448,
+        "working_groups": [
+          2
+        ]
+      },
+      "8": {
+        "group_na": [
+          [
+            4,
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>"
+        ],
+        "legs": [
+          "e61-b1",
+          "e61-b2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28925820928.0,
+        "weighted_frac_of_measured_peak": 0.8521774159943438,
+        "weighted_gbps": 194.2078693178101,
+        "weighted_seconds_per_verify": 0.14894257905,
+        "working_groups": [
+          2
+        ]
+      },
+      "9": {
+        "group_na": [
+          [
+            5,
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>"
+        ],
+        "legs": [
+          "e61-b1",
+          "e61-b2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28938461184.0,
+        "weighted_frac_of_measured_peak": 0.770676806197269,
+        "weighted_gbps": 175.63420205120747,
+        "weighted_seconds_per_verify": 0.16476552315,
+        "working_groups": [
+          2
+        ]
+      }
+    },
+    "t7": {
+      "2": {
+        "group_na": [
+          [
+            2
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64<T, 2>"
+        ],
+        "legs": [
+          "e61-c1",
+          "e61-c2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 216.6692187077798,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14437629952.0,
+        "weighted_frac_of_measured_peak": 0.960759362440843,
+        "weighted_gbps": 218.9532663090572,
+        "weighted_seconds_per_verify": 0.0659393221,
+        "working_groups": [
+          1
+        ]
+      },
+      "3": {
+        "group_na": [
+          [
+            3
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 3, 3, true>"
+        ],
+        "legs": [
+          "e61-c1",
+          "e61-c2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 196.17601375859329,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14450270208.0,
+        "weighted_frac_of_measured_peak": 0.8757784702322472,
+        "weighted_gbps": 199.5864564185362,
+        "weighted_seconds_per_verify": 0.072401056,
+        "working_groups": [
+          1
+        ]
+      },
+      "4": {
+        "group_na": [
+          [
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>"
+        ],
+        "legs": [
+          "e61-c1",
+          "e61-c2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 172.91791914727267,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14462910464.0,
+        "weighted_frac_of_measured_peak": 0.7718934466188944,
+        "weighted_gbps": 175.91146960086917,
+        "weighted_seconds_per_verify": 0.0822169839,
+        "working_groups": [
+          1
+        ]
+      },
+      "5": {
+        "group_na": [
+          [
+            3,
+            2
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>"
+        ],
+        "legs": [
+          "e61-c1",
+          "e61-c2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28887900160.0,
+        "weighted_frac_of_measured_peak": 1.0580585769489987,
+        "weighted_gbps": 241.12737322771662,
+        "weighted_seconds_per_verify": 0.11980348715,
+        "working_groups": [
+          2
+        ]
+      },
+      "6": {
+        "group_na": [
+          [
+            3,
+            3
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>"
+        ],
+        "legs": [
+          "e61-c1",
+          "e61-c2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28900540416.0,
+        "weighted_frac_of_measured_peak": 0.9880663129965471,
+        "weighted_gbps": 225.1764125523804,
+        "weighted_seconds_per_verify": 0.1283462157,
+        "working_groups": [
+          2
+        ]
+      },
+      "7": {
+        "group_na": [
+          [
+            7
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 7, 7, true>"
+        ],
+        "legs": [
+          "e61-c1",
+          "e61-c2"
+        ],
+        "lone_group": true,
+        "lone_group_gbps_mean": 100.9310620283585,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14500831232.0,
+        "weighted_frac_of_measured_peak": 0.4296846954289468,
+        "weighted_gbps": 97.92344600021856,
+        "weighted_seconds_per_verify": 0.1480833429,
+        "working_groups": [
+          1
+        ]
+      },
+      "8": {
+        "group_na": [
+          [
+            4,
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>"
+        ],
+        "legs": [
+          "e61-c1",
+          "e61-c2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28925820928.0,
+        "weighted_frac_of_measured_peak": 0.8515120846495149,
+        "weighted_gbps": 194.05624293057613,
+        "weighted_seconds_per_verify": 0.14905895575,
+        "working_groups": [
+          2
+        ]
+      },
+      "9": {
+        "group_na": [
+          [
+            5,
+            4
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>"
+        ],
+        "legs": [
+          "e61-c1",
+          "e61-c2"
+        ],
+        "lone_group": false,
+        "lone_group_gbps_mean": null,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28938461184.0,
+        "weighted_frac_of_measured_peak": 0.7747045376173445,
+        "weighted_gbps": 176.55210614323806,
+        "weighted_seconds_per_verify": 0.16390889815,
+        "working_groups": [
+          2
+        ]
+      }
+    }
+  }
+}
