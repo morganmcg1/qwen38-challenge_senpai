@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import subprocess
 
 import wandb
@@ -92,6 +93,27 @@ def signal_kernels(names: list[str]) -> list[str]:
     """The audited families, with the RNG and elementwise noise dropped."""
     keep = ("affine_", "steel_", "sdpa_", "gemv", "block_softmax")
     return [n for n in names if n.startswith(keep)]
+
+
+FAILED_TEST = re.compile(r"^✘ Test (\S+\(\)) failed after", re.M)
+TEST_RUN_TOTAL = re.compile(
+    r"Test run with (\d+) tests in (\d+) suites failed .* with (\d+) issues")
+
+
+def swift_test_arm(path: pathlib.Path) -> dict | None:
+    """Summarise one `swift test` log so the two arms can be compared."""
+    if not path.exists():
+        return None
+    text = path.read_text(errors="replace")
+    failed = sorted({m.group(1) for m in FAILED_TEST.finditer(text)})
+    total = TEST_RUN_TOTAL.search(text)
+    return {
+        "failing_tests": failed,
+        "failing_test_count": len(failed),
+        "tests": int(total.group(1)) if total else None,
+        "suites": int(total.group(2)) if total else None,
+        "issues": int(total.group(3)) if total else None,
+    }
 
 
 def main() -> None:
@@ -309,11 +331,31 @@ def main() -> None:
         "transfer/R_change_pct": corrected["R_change_pct_measured"],
     })
 
+    tests_root = pathlib.Path("research/out/e70-tests")
+    head_arm = swift_test_arm(tests_root / "head.log")
+    base_arm = swift_test_arm(tests_root / "base.log")
+    if head_arm and base_arm:
+        run.summary.update({
+            "tests/head_failing": head_arm["failing_tests"],
+            "tests/head_failing_count": head_arm["failing_test_count"],
+            "tests/head_tests": head_arm["tests"],
+            "tests/head_issues": head_arm["issues"],
+            "tests/base_failing": base_arm["failing_tests"],
+            "tests/base_failing_count": base_arm["failing_test_count"],
+            "tests/base_tests": base_arm["tests"],
+            "tests/base_issues": base_arm["issues"],
+            "tests/failing_set_identical_to_base":
+                head_arm["failing_tests"] == base_arm["failing_tests"],
+            "tests/new_failures_introduced_by_branch": sorted(
+                set(head_arm["failing_tests"]) - set(base_arm["failing_tests"])),
+        })
+
     artifact = wandb.Artifact("e70-dispatch-divergence-audit", type="audit")
     artifact.add_file(args.rung0)
     artifact.add_file(args.rung2)
     for extra in ("research/e70-rung1-diff.json",
-                  "research/e70-transfer-constant.json"):
+                  "research/e70-transfer-constant.json",
+                  "research/e70-results.md"):
         path = pathlib.Path(extra)
         if path.exists():
             artifact.add_file(str(path))

@@ -4,7 +4,15 @@
     "qmm_m511",
     "qmm_m512",
     "sdpa_prefill_512",
-    "dense_matmul_m511"
+    "dense_matmul_m511",
+    "route_k5120_n14336_m10",
+    "route_k5120_n14336_m12",
+    "route_k5120_n16480_m10",
+    "route_k5120_n16480_m12",
+    "route_k5120_n34816_m10",
+    "route_k5120_n34816_m12",
+    "route_k5120_n248320_m10",
+    "route_k5120_n248320_m12"
   ],
   "cells_not_captured": [],
   "forced_arch": "applegpu_g17s",
@@ -201,6 +209,300 @@
       "real_exit": 0,
       "shape": "matmul M=511 K=5120 N=2048 bfloat16 (the MTP head prime island patch)",
       "site": "S9 matmul.cpp:915 with S7 vs S8 tile parameters"
+    },
+    {
+      "cell": "route_k6144_n5120_m9",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=9 K=6144 N=5120 affine g64 b4 transposed -- gdn.out_proj and fa.o_proj share this shape",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k6144_n5120_m10",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=10 K=6144 N=5120 affine g64 b4 transposed -- gdn.out_proj and fa.o_proj share this shape",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k6144_n5120_m12",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=12 K=6144 N=5120 affine g64 b4 transposed -- gdn.out_proj and fa.o_proj share this shape",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k17408_n5120_m9",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=9 K=17408 N=5120 affine g64 b4 transposed -- mlp.down",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k17408_n5120_m10",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=10 K=17408 N=5120 affine g64 b4 transposed -- mlp.down",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k17408_n5120_m12",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=12 K=17408 N=5120 affine g64 b4 transposed -- mlp.down",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n5120_m9",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=9 K=5120 N=5120 affine g64 b4 transposed -- square control",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n5120_m10",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=10 K=5120 N=5120 affine g64 b4 transposed -- square control",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n5120_m12",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=12 K=5120 N=5120 affine g64 b4 transposed -- square control",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n14336_m9",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=9 K=5120 N=14336 affine g64 b4 transposed -- fa.qkv packed",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n14336_m10",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=10 K=5120 N=14336 affine g64 b4 transposed -- fa.qkv packed",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n14336_m12",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=12 K=5120 N=14336 affine g64 b4 transposed -- fa.qkv packed",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n16480_m9",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=9 K=5120 N=16480 affine g64 b4 transposed -- gdn.in_proj fused",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n16480_m10",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_false_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=10 K=5120 N=16480 affine g64 b4 transposed -- gdn.in_proj fused",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n16480_m12",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_false_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=12 K=5120 N=16480 affine g64 b4 transposed -- gdn.in_proj fused",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n34816_m9",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=9 K=5120 N=34816 affine g64 b4 transposed -- mlp.gate_up fused",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n34816_m10",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=10 K=5120 N=34816 affine g64 b4 transposed -- mlp.gate_up fused",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n34816_m12",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=12 K=5120 N=34816 affine g64 b4 transposed -- mlp.gate_up fused",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n248320_m9",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=9 K=5120 N=248320 affine g64 b4 transposed -- lm_head",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n248320_m10",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=10 K=5120 N=248320 affine g64 b4 transposed -- lm_head",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
+    },
+    {
+      "cell": "route_k5120_n248320_m12",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=12 K=5120 N=248320 affine g64 b4 transposed -- lm_head",
+      "site": "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810"
     }
   ]
 }
