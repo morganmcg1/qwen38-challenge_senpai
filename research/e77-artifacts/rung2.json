@@ -535,22 +535,22 @@
       {
         "shape": "mlp.gate_up_fused",
         "m": 6,
-        "ipg": 2,
-        "regs_from": 93,
-        "regs_to": 94,
-        "sg_from": 33,
-        "sg_to": 32,
-        "step": 0.001503729227269619
-      },
-      {
-        "shape": "mlp.gate_up_fused",
-        "m": 6,
         "ipg": 3,
         "regs_from": 93,
         "regs_to": 95,
         "sg_from": 33,
         "sg_to": 32,
         "step": -0.00041953597861099645
+      },
+      {
+        "shape": "mlp.gate_up_fused",
+        "m": 6,
+        "ipg": 2,
+        "regs_from": 93,
+        "regs_to": 94,
+        "sg_from": 33,
+        "sg_to": 32,
+        "step": 0.001503729227269619
       }
     ]
   },

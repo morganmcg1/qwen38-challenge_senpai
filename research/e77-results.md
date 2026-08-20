@@ -24,8 +24,11 @@ hold, and the ranked extrapolation is falsified independently of the crown.
 | Arms, shapes, reps | 52, 4, 15, palindrome leg order, 6240 timed legs |
 | Probe source digest | `fae1c6b75f04878364a25edecaecc05caf376f5c61435d198046e6e469fc7bf3`, `census_matches_source=true` |
 | Session null | median 0.0193 %, p90 0.0742 %, max 0.2396 %, n = 208 |
-| W&B rung 1 | `3ugpmkvo` |
-| W&B rung 2 | `g866nued` |
+| W&B rung 1, timed session | `3ugpmkvo` |
+| W&B rung 2, analysis | `jdlqnbwd` |
+
+Full analysis output is committed at `research/e77-artifacts/rung2.txt`, and the
+structured result at `research/e77-artifacts/rung2.json`.
 
 Candidate files changed: **zero**. Every change is under `research/`, plus one
 `.gitignore` line, and `.gitignore` is not in `editablePaths`.

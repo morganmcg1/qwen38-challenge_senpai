@@ -733,7 +733,8 @@ def main():
         print("\n== rung 3 not started: the ranked-ordering validation did not "
               "reproduce the correct sign at both M=5 and M=6 ==")
 
-    pathlib.Path(args.out).write_text(json.dumps(result, indent=2, default=str))
+    payload = json.dumps(result, indent=2, default=str)
+    pathlib.Path(args.out).write_text(payload)
     print(f"\nwrote {args.out}")
 
     if args.wandb_name:
@@ -746,7 +747,8 @@ def main():
                          config=dict(cores=args.cores,
                                      ranked_cores=args.ranked_cores,
                                      sweep=args.sweep, session=args.session))
-        run.summary.update(result)
+        # W&B rejects integer dict keys, so send the JSON round trip.
+        run.summary.update(json.loads(payload))
         print(f"e77_fit: run_id={run.id} url={run.url}")
         run.finish()
     return 0
