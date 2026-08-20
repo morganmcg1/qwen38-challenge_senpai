@@ -20964,3 +20964,290 @@ but it is direct ranked evidence for the closed-loop diagnosis.
 - The median pair is not fixed at (beagle, medicine). The 4th is beagle; the 5th
   is whichever wide prompt is currently slowest, and at the crown tree it is
   essays.
+
+## 221. The variance between top trees is a fixed cost per DRAFTING ROUND, and one fused dispatch pair on the proposal head bought +1.647 % of official median
+
+Date: 2026-08-20T16:30Z. Advisor. Board dump: 870 rows, 601 scored with
+`officialMetrics.per_prompt`.
+
+This entry replaces the whole of ledger 220's interpretation. The measurement in
+220 was right; the causal story attached to it was wrong, and the correction
+opens the largest addressable axis found in this campaign.
+
+### (A) The frontier moved twice in four hours
+
+| id | score | status | created | net code delta vs the tree before it |
+| --- | ---: | --- | --- | --- |
+| `89cbdc02` | 3.25592233 | accepted | 12:23 | flat cap 7, floor removed |
+| `ead84bba` | 3.30221310 | accepted | 14:11 | floor 6 restored under ceiling 7 |
+| `c6af1e24` | **3.30955573** | accepted | 14:40 | flat cap 7 again, **plus one fused RMSNorm pair** |
+
+Organizer refs: `96f20f8` → `3e2530a` → `88578f9`. The chain is linear and each
+`Accept submission` commit carries the exact promoted diff.
+
+### (B) Four submissions ran the bit-identical eight-prompt schedule. plutarch did not move. Everything that drafts did.
+
+Fingerprint (effective mean draft length, all eight prompts):
+`(0.154, 2.298, 2.656, 4.382, 5.256, 5.087, 4.989, 6.148)`.
+
+Candidate seconds per token, as a percentage slower than `c6af1e24`:
+
+| run | score | plutarch | drama | travel | beagle | medicine | essays | republic | botany |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `c6af1e24` | 3.309556 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| `5c542728` | 3.271801 | −0.00 | +1.97 | +1.92 | +0.80 | +0.96 | +1.21 | +0.42 | +1.26 |
+| `89cbdc02` | 3.255922 | +0.22 | +1.66 | +2.26 | +1.77 | +0.44 | +1.29 | +0.90 | +0.76 |
+| `e1ab0a67` | 3.232657 | +0.11 | +2.82 | +3.24 | +2.38 | +2.27 | +2.18 | +2.55 | +2.39 |
+| mean | | **+0.11** | +2.15 | +2.48 | +1.65 | +1.22 | +1.56 | +1.29 | +1.47 |
+| draft length | | 0.15 | 2.30 | 2.66 | 4.38 | 5.26 | 5.09 | 4.99 | 6.15 |
+
+plutarch runs 449 non-drafting rounds out of 487. It is flat to ±0.1 % across
+all four. Every prompt that drafts on every round is 1.2 % to 2.5 % slower.
+
+A slow host slows plutarch exactly as much as it slows botany. plutarch does not
+move. **The variance between these trees is therefore not the host and not the
+build. It is code on the drafting path.**
+
+Expressed per drafting round, the spread is a near-constant
+**0.69 to 1.04 ms per drafting round, mean ≈ 0.86 ms**, across prompts whose
+draft lengths differ by 2.7×. It is a per-round fixed cost, not a per-row or
+per-draft-token cost.
+
+### (C) What that fixed cost is worth
+
+At the `c6af1e24` frontier the 4th slot is beagle (107 drafting rounds, 6133 ms
+candidate leg) and the 5th is essays (87 rounds, 5647 ms). Removing δ ms from
+every drafting round:
+
+| δ (ms/round) | beagle raw | essays raw | median | delta |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.00 | 3.170728 | 3.448384 | 3.309556 | — |
+| 0.25 | 3.184 | 3.462 | 3.323 | +0.41 % |
+| 0.50 | 3.198 | 3.477 | 3.337 | +0.83 % |
+| 0.86 | 3.219 | 3.495 | 3.357 | **+1.43 %** |
+
+For comparison, the entire remaining schedule axis — every prompt moved to its
+best board value at once — is worth **+0.46 %** from this frontier. The
+per-drafting-round fixed cost is worth three times the whole schedule axis, and
+unlike the schedule axis it is demonstrably variable between trees, so it is not
+a physical floor.
+
+### (D) The mechanism, isolated: one fused RMSNorm pair, +1.647 %
+
+`89cbdc02` and `c6af1e24` differ by exactly one thing. `git diff 96f20f8 88578f9`
+is 153 lines in two files and contains no schedule change at all — both trees run
+the flat cap 7 and produce bit-identical draft lengths on all eight prompts.
+
+The change adds `qwen35DualRMSNorm`, a two-output Metal kernel that performs the
+proposal head's two independent pre-fc RMSNorms
+(`pre_fc_norm_embedding` and `pre_fc_norm_hidden`) in ONE dispatch instead of
+two, and calls it from both `Qwen35MTPModule.callAsFunction` and
+`lastHiddenWithKVOnlyHistory`. The kernel is the same looped reduction as
+`qwen35_fused_residual_rms_norm` with the residual add removed. It is
+proposal-only: the target never calls it.
+
+Result, candidate seconds per token, `89cbdc02` → `c6af1e24`:
+
+| prompt | delta |
+| --- | ---: |
+| plutarch | −0.219 % |
+| drama | −1.630 % |
+| travel | −2.211 % |
+| beagle | −1.738 % |
+| medicine | −0.439 % |
+| essays | −1.274 % |
+| republic | −0.894 % |
+| botany | −0.756 % |
+
+**Eight of eight prompts faster. Sign test p = 0.0039. Mean −1.145 %.** Official
+median 3.25592233 → 3.30955573, **+1.647 %**.
+
+This is the cleanest uniform candidate-side speedup in the campaign record and
+it confirms ledger 220(D): a uniform candidate speedup maps into the median
+roughly 1:1, and slightly better than 1:1 when the gain is largest on beagle.
+
+### (E) The size of the saving rules out bandwidth and rules in the op boundary
+
+The two norms move rows of 5120 bf16. A once-per-round history flush of five
+rows is about 50 KB per norm — under a microsecond of traffic at 200 GB/s. The
+measured saving is 0.25 to 1.02 ms per drafting round, mean **0.71 ms**, which
+fits per-round far better (cv 37 %) than per-draft-token (cv 64 %).
+
+Roughly 0.35 ms per removed dispatch is one to two orders of magnitude above a
+Metal launch. The remaining explanation is an **MLX graph / evaluation boundary**
+on the proposal-head path: the session synchronises the head chain, so two eager
+ops cost a host round trip that one fused op does not.
+
+Stated as a hypothesis for measurement, not as a fact:
+
+> **H-221:** the proposal-head path pays of order 0.35 ms per MLX op boundary,
+> not per kernel launch. Any fusion that removes one op from the once-per-round
+> head flush is worth of order +0.5 % of official median.
+
+The immediate falsifiable consequence is named in (H) below.
+
+### (F) RETRACTION — "the crown `89cbdc02` was a slow ranked DRAW"
+
+Ledger 220 recorded that `89cbdc02` was a slow *draw* — an unlucky host sample —
+and priced it with a build factor of +1.52 % taken from the median of plutarch,
+drama and travel. **That is retracted.**
+
+- The build factor is calibrated on drama and travel, which are the two prompts
+  MOST sensitive to per-drafting-round cost. It therefore reports drafting-path
+  overhead as though it were host speed, and over-corrects.
+- plutarch, the only near-serial control on the board, says the crown's host was
+  normal (+0.22 %).
+- The crown's tree was slow because it lacked one fused dispatch, which the very
+  next promotion supplied for +1.647 %.
+
+The corrected statement: **the crown's schedule was the better schedule all
+along, and the crown's CODE carried about 1.5 % of avoidable drafting-path
+cost.** `ead84bba`'s floor-6 argument reasoned from the crown's beagle time as
+though it were a depth error; the flat cap re-measured on a fast tree beats the
+floor by +0.22 %.
+
+The distinction matters operationally. A draw is noise to be ignored. A tree
+difference is code that can be found, read and copied.
+
+### (G) The build factor is DEMOTED, not deleted
+
+The instrument still separates trees from schedules, but it must be quoted with
+its bias:
+
+- **plutarch alone** is the correct host/serial-speed reference. It is 92 %
+  non-drafting and moved ±0.1 % across a cluster whose drafting prompts spread
+  2.5 %.
+- **drama and travel** measure host speed PLUS per-drafting-round cost, at the
+  highest round counts on the board (252 and 212). They are the right instrument
+  for *drafting-path* cost and the wrong one for host speed.
+- The median-of-three build factor is a blend of the two and should no longer be
+  quoted as a host correction. Where ledger 220 used it to correct a score, the
+  correction is invalid.
+
+The one place ledger 220's build factor still succeeded — predicting
+`c6af1e24` from `89cbdc02` to within 0.04 % — succeeded for the wrong reason: it
+happened to measure the drafting-path deficit that the next promotion removed.
+
+### (H) NULL — the narrow-N M=1 crossrow branch
+
+`5c542728` is `89cbdc02` plus 18 lines: it relaxes
+`qmv_fast_crossrow_affine4_g64`'s `static_assert` to `M >= 1` and adds a
+`case 1:` to the SECOND dispatch switch at `quantized.h:1980`, the
+`out_vec_size < 4096` branch that serves the proposal head's narrow matmuls
+(head qkv 3×1024 = 3072, the per-committed-token K/V pack at 2048).
+
+Its score is 3.271801 against the crown's 3.255922, apparently +0.49 %.
+**It is a null.** Candidate seconds per token, crown → `5c542728`: plutarch
+−0.22, drama +0.30, travel −0.33, beagle −0.95, medicine +0.52, essays −0.08,
+republic −0.48, botany +0.50. Four faster, four slower, mean **−0.09 %**.
+
+The entire apparent gain is the order statistic: beagle is the 4th slot in every
+strong tree, beagle drew −0.95 % of ordinary run-to-run variation, and the
+median moved. This is the exact failure mode the campaign warns students about,
+and it is now on the record with a receipt.
+
+Two things survive from it and both are useful:
+
+1. **There are TWO dispatch switches in `quantized.h`** — the wide one at
+   `:1922` behind the `out_vec_size >= 4096` gate, and the narrow one at
+   `:1980`. Every promoted kernel change in this campaign, ours and the board's,
+   has been on the wide switch. The narrow switch serves proposal-head shapes
+   only and is MTP-only by construction, so it cannot touch the serial
+   numerator.
+2. Routing M=1 through the crossrow kernel there is exact (`parity_all_ok` true,
+   8 accepted pairs) and free. It is simply not worth anything by itself.
+
+### (I) NEGATIVE — `e1ab0a67`
+
+`89cbdc02` plus 240 lines in `Qwen35.swift`; official 3.232657, −0.71 % against
+the crown and slowest of the four on every drafting prompt (+2.2 to +3.2 %).
+Rejected. Recorded so the tree is not revisited without a new reason.
+
+### (J) The schedule axis, re-priced from the new frontier
+
+Per-prompt board floors, and what lifting each is worth from 3.309556:
+
+| prompt | frontier raw | lift alone | note |
+| --- | ---: | ---: | --- |
+| beagle (4th) | 3.170728 | +0.09 % | floor 3.176726, `a7206518`, pinned head |
+| essays (5th) | 3.448384 | +0.33 % | floor 3.548099, `5edf75ac`, head `23949115` |
+| republic | 3.470023 | 0.00 % | not binding |
+| medicine | 3.473462 | 0.00 % | not binding |
+| botany | 3.500497 | 0.00 % | not binding |
+| **all at once** | | **+0.46 %** | |
+
+**The schedule axis is closed.** It was priced at +0.685 % in ledger 220 and the
+new frontier has consumed a third of what remained. Two of the four relevant
+floors were set by custom heads, so even +0.46 % is not reachable by scheduling
+alone.
+
+### (K) The board-wide depth curve, and why it must be read with care
+
+`_advisor_scratch/depthcurve.py` buckets all 601 scored runs by prompt and
+rounded draft length and reports the best build-corrected candidate time in each
+bucket. Read as a depth curve it appears to show large headroom — essays best at
+5.7–5.9, republic at 5.3, botany at 6.5, all above their frontier values.
+
+That reading is **not safe**, for two compounding reasons:
+
+1. The correction is the demoted build factor of (G), which over-corrects any
+   tree that is slow on the drafting path.
+2. A bucket's minimum over n samples finds the best TREE that happened to run at
+   that depth, not the best depth. Bucket sizes range from 2 to 288.
+
+The curve is kept as a map of what has been tried, not as a pricing instrument.
+The one depth conclusion that does survive is the within-tree comparison
+`ead84bba` → `c6af1e24`, where medicine 5.097 → 5.256 gave −1.23 % and botany
+5.744 → 6.148 gave −1.54 %, against two unchanged-depth controls at ±0.15 %:
+**deeper is better on the high-acceptance prompts, and neither is in the median
+pair.**
+
+### (L) Frontier tracked
+
+Advisor branch composed onto `c6af1e24`:
+
+- `Qwen35MTP.swift` taken verbatim from `upstream/main` (now byte-identical).
+- `qwen35DualRMSNorm` and its kernel inserted into `Qwen35.swift` verbatim; our
+  only remaining delta in that file is the 51-line `MLX_QWEN_MTP_LADDER`
+  research override.
+- `sdpaWidthWallDepthCap` returned to 5 and the widthCap ternary replaced by the
+  flat `Self.segmentedVerifyDepthCap`.
+- `senpai/frontier-state.json` → `c6af1e24`, organizer `88578f9295523af1`.
+
+Gates on the composed tree: `swiftc -parse` clean on all three files;
+`twin_audit.py` 29 runtime-effective twins with 1 allowlisted comment-only
+waiver; `check-editable-budget.sh` source 2480426/3000000, growth
+25591/262144, 154 files; `verify-ranked-score-boundary.sh` PASS.
+
+The submitted surface still differs from `upstream/main` in exactly three files
+and four items: the VERIFY-CONCAT int32 JIT warm, the inert trace
+instrumentation, the inert DepthPrice machinery pinned at `.ship`, and the
+stopTokens fixed-window continuation fix.
+
+**We would land at approximately the frontier, so there is still nothing to
+submit.** The ranked slot stays free until a candidate-side speed win exists.
+
+### (M) What this entry makes the next experiment
+
+The head's pre-fc chain is three ops:
+
+```swift
+let embeds = embedTokens(nextTokenIds)          // gather
+let (e, h) = preFcNorms(embeds:hidden:)         // now ONE op, was two
+var fused = fc(concatenated([e, h], axis: -1))  // concat, then Linear
+```
+
+The promotion removed one boundary from that chain and took +1.647 %. The
+`concatenated` call is the next boundary in the same chain, and it is not just a
+boundary — it is a real copy of `rows × 10240` bf16.
+
+`qwen35DualRMSNorm` already computes both halves in one kernel and writes them
+to two output buffers. Writing them instead into ONE buffer of width 10240, at
+column offsets 0 and 5120, deletes the concat entirely. The arithmetic is
+unchanged, so the result is bit-identical by construction, and `fc` consumes the
+fused buffer directly.
+
+Under H-221 this is worth of order +0.5 % of official median for a change of
+about thirty lines, entirely inside the proposal-only path, with no effect
+possible on the serial numerator. It is queued as the highest-value experiment
+on the board.

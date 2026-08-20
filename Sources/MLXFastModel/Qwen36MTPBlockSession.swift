@@ -948,7 +948,7 @@ public final class Qwen36MTPBlockSession {
     /// serial trajectory. Segmenting the whole FORWARD instead (two model
     /// calls, 5+k) was measured bit-exact too but pays a second full weight
     /// pass (~25 ms) and loses on net; the chunk lives at the sdpa only.
-    private static let sdpaWidthWallDepthCap = 6
+    private static let sdpaWidthWallDepthCap = 5
 
     /// Depth cap for streak-qualified deep rounds. 8 is the trusted
     /// per-round maximum; rows_per_round = depth + 1 stays ledger-legal.
@@ -1010,20 +1010,18 @@ public final class Qwen36MTPBlockSession {
         // itself. Widths 6..8 are bit-exact per position against the serial
         // trajectory through the sdpa exactness chunk, so 7 is policy.
         //
-        // SUPERSEDED by a floor of 6 under the same ceiling of 7. Taking the
-        // floor away entirely overshot on the x4 slot: `919318e1` came back at
-        // draft length 4.38 / 0.012191 s/tok against its own board minimum
-        // 0.011967 at 4.32, and x4 wants to be shallow. The floor was not
-        // damage, it was too BLUNT — one reject dropped the cap the whole way
-        // from 7 to 5. At 6 a rejecting round is restrained by one rung instead
-        // of two: x4 keeps the restraint that holds it near 4.3, while the
-        // high-acceptance prompts keep the depth they earned.
+        // A floor of 6 under the ceiling of 7 was tried and REVERTED. The
+        // argument for it read the x4 slot's 4.38 / 0.012191 s/tok off
+        // `89cbdc02` as a depth error, but `89cbdc02` was a slow TREE: on the
+        // four submissions that ran this exact eight-prompt schedule, plutarch
+        // (92% non-drafting) is flat to +-0.1% while every drafting prompt
+        // spreads 1.2-2.5%. The x4 cost was drafting-path cost, not depth.
+        // Re-measured on a fast tree, this flat cap took x4 to 0.011979 and
+        // the median to 3.30955573 against 3.30221310 for the floor.
         //
-        // Imported from promoted submission ead84bba (organizer 3e2530ae,
-        // official 3.30221310); it supersedes 89cbdc02 (official 3.25592233).
-        let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
-            ? Self.segmentedVerifyDepthCap
-            : Self.sdpaWidthWallDepthCap
+        // Imported from promoted submission c6af1e24 (organizer 88578f92,
+        // official 3.30955573); it supersedes ead84bba (official 3.30221310).
+        let widthCap = Self.segmentedVerifyDepthCap
         let cap = Swift.min(
             Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
             widthCap)
