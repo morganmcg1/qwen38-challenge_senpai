@@ -35,6 +35,8 @@ fi
 
 restore_base() {
   git restore --source=HEAD --staged --worktree -- Sources Vendor Package.swift
+  # The census patch ADDS a file, which `git restore` cannot remove.
+  git clean -fdq -- Sources Vendor
 }
 
 build_arm() {

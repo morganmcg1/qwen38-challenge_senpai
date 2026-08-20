@@ -1,0 +1,13 @@
+{
+ "proof": "startup memory profile reaches resolve() in the worker",
+ "binary": "stock",
+ "bogus_exit": 133,
+ "bogus_precondition_lines": 0,
+ "full_exit": 1,
+ "full_low_memory_notice_lines": 0,
+ "auto_exit": 1,
+ "auto_low_memory_notice_lines": 1,
+ "host_physical_memory_gib": 48,
+ "bogus_expected_exit_sigtrap": 133,
+ "passed": true
+}
