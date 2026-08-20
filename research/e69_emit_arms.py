@@ -117,6 +117,8 @@ ARMS = {
     "rows8": ("qmv_fast_crossrow_affine4_g64_wide_e69rows8", ENTRY_R8),
     "rows8wxvec": ("qmv_fast_crossrow_affine4_g64_wide_e69rows8wxvec", ENTRY_R8),
     "rows8idle": ("qmv_fast_crossrow_affine4_g64_wide_e69rows8", ENTRY_R8_IDLE),
+    "fma": ("qmv_fast_crossrow_affine4_g64_wide_e69fma", ENTRY_R4),
+    "fmawxvec": ("qmv_fast_crossrow_affine4_g64_wide_e69fmawxvec", ENTRY_R4),
 }
 
 

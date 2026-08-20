@@ -99,3 +99,5 @@ E69_CELL_R8(e69_cell_rows8wxvec,
             qmv_fast_crossrow_affine4_g64_wide_e69rows8wxvec)
 E69_CELL_R8_IDLE(e69_cell_rows8idle,
                  qmv_fast_crossrow_affine4_g64_wide_e69rows8)
+E69_CELL(e69_cell_fma, qmv_fast_crossrow_affine4_g64_wide_e69fma)
+E69_CELL(e69_cell_fmawxvec, qmv_fast_crossrow_affine4_g64_wide_e69fmawxvec)

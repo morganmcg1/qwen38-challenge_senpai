@@ -53,14 +53,18 @@ ARMS = {
     "rows8": "e69_cell_rows8",
     "rows8wxvec": "e69_cell_rows8wxvec",
     "rows8idle": "e69_cell_rows8idle",
+    "fma": "e69_cell_fma",
+    "fmawxvec": "e69_cell_fmawxvec",
 }
 ROWS_PER_SIMD = {
     "plain": 4, "wvec": 4, "xvec": 4, "wxvec": 4, "tgx": 4,
     "rows8": 8, "rows8wxvec": 8, "rows8idle": 8,
+    "fma": 4, "fmawxvec": 4,
 }
 STAGES_X = {"tgx"}
-VECTORIZES_W = {"wvec", "wxvec", "rows8wxvec"}
-VECTORIZES_X = {"xvec", "wxvec", "rows8wxvec"}
+VECTORIZES_W = {"wvec", "wxvec", "rows8wxvec", "fmawxvec"}
+VECTORIZES_X = {"xvec", "wxvec", "rows8wxvec", "fmawxvec"}
+CONTRACTS_FMA = {"fma", "fmawxvec"}
 
 LOAD = re.compile(r"=\s*load\s+(?:volatile\s+)?([^,]+?),\s*(?:ptr|[^%]*\*)\s")
 ADDRSPACE = re.compile(r"addrspace\((\d+)\)")
@@ -209,9 +213,22 @@ def verdict(cell: dict) -> dict:
     for arm, stats in cell.items():
         if stats["rows_per_simd"] != plain["rows_per_simd"]:
             continue
+        if arm in CONTRACTS_FMA:
+            continue  # contracting the arithmetic is this arm's mechanism
         checks[f"{arm}_fp_unchanged_at_same_rows_per_simd"] = all(
             stats["loop_fp"][key] == plain["loop_fp"][key]
             for key in ("fadd", "fmul", "fma"))
+    checks["plain_emits_no_fma"] = plain["loop_fp"]["fma"] == 0
+    for arm in CONTRACTS_FMA:
+        if arm not in cell:
+            continue
+        stats = cell[arm]
+        # Only that the contraction happened. The static per-block fp counts of
+        # a contracted arm are NOT comparable with `plain`: the componentwise
+        # loop over m changes the loop structure, so the same static count can
+        # carry a different trip count. The GPU leg decides the instruction
+        # cost, not this census.
+        checks[f"{arm}_emits_fma"] = stats["loop_fp"]["fma"] > 0
     for arm in VECTORIZES_W:
         if arm in cell:
             checks[f"{arm}_weight_loads_are_4_wide"] = (

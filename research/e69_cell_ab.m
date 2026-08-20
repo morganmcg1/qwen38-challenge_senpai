@@ -25,20 +25,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define kMaxArms 8
+#define kMaxArms 12
 // Palindrome over the selected arms: every arm has the same mean leg position,
 // so a monotone drift across one rep cancels in the arm contrast, and the two
 // legs of one arm are a same-arm null at maximum separation.
-static const char *kArms[kMaxArms] = {"plain",  "wvec",  "xvec",       "wxvec",
-                                      "tgx",    "rows8", "rows8wxvec"};
-static int kArmCount = 7;
+static const char *kArms[kMaxArms] = {"plain", "wvec",  "xvec",
+                                      "wxvec", "tgx",   "rows8",
+                                      "rows8wxvec", "fma", "fmawxvec"};
+static int kArmCount = 9;
 static int kOrder[2 * kMaxArms];
-static int kLegs = 6;
+static int kLegs = 18;
 
 // Output rows one threadgroup covers, on the frozen host grid. Every E69 arm
 // keeps it at 8: the rows_per_simd = 8 arms cover 16 rows in the threadgroups
 // they keep and return in the ones they drop, so the grid never changes.
-static int kArmRowsPerTG[kMaxArms] = {8, 8, 8, 8, 8, 8, 8, 8};
+static int kArmRowsPerTG[kMaxArms] = {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
 
 static int rowsPerThreadgroup(const char *arm) {
   (void)arm;

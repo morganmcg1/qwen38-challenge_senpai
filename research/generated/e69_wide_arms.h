@@ -831,3 +831,267 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e69rows8wxvec(
   }
 }
 
+// --- arm e69fma ----------------------------------------------------
+//
+//   rename so the arm cannot shadow the shipped symbol
+//   relax the NA bound inside the probe only
+//   contract the four exact nibble products into fused multiply-adds
+
+template <typename T, int NA, bool DIRECT_NIBBLES = false>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e69fma(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  static_assert(NA >= 2 && NA <= 9, "probe-only NA bound");
+  typedef vec<float, NA> VF;
+  constexpr int rows_per_simd = 4;
+  constexpr int values_per_thread = 16;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = in_vec_size / 2;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  VF acc[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc[r] = VF(0.0f);
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    thread uint16_t packed[rows_per_simd][4];
+    thread float scale_local[rows_per_simd];
+    thread float bias_local[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      const int row = out_row + r;
+      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
+          reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
+          k / 2 + simd_lid * bytes_per_lane);
+      for (int i = 0; i < 4; i++) {
+        packed[r][i] = ws[i];
+      }
+      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = biases[group_index];
+    }
+
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        thread float xc[4];
+        if (DIRECT_NIBBLES) {
+          xc[0] = static_cast<float>(xm[0]);
+          xc[1] = static_cast<float>(xm[1]);
+          xc[2] = static_cast<float>(xm[2]);
+          xc[3] = static_cast<float>(xm[3]);
+          // Preserve the incumbent BF16 expression tree used for the affine
+          // bias correction; only the qdot nibble extraction changes.
+          sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+        } else {
+          sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+        }
+        a0[m] = xc[0];
+        a1[m] = xc[1];
+        a2[m] = xc[2];
+        a3[m] = xc[3];
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        if (DIRECT_NIBBLES) {
+          // E69 arm F: contract the four products into fused multiply-adds.
+          // Every product is EXACT in binary32, so the contraction cannot
+          // change a bit: a_i holds a BF16 value, which carries at most 8
+          // significant bits, and the nibble is an integer in [0, 15], which
+          // carries at most 4, so the product needs at most 12 of the 24 bits
+          // binary32 keeps and never rounds. fma(a, n, t) therefore returns
+          // round(a * n + t) = round(fl(a * n) + t), which is exactly what the
+          // separate multiply and add return. The left-to-right association of
+          // the original expression is preserved, and `partial[r] +=` stays a
+          // plain add, so the rounded intermediates are unchanged.
+          // The saving is issue slots: 4 fmul + 4 fadd become 1 fmul + 3 fma
+          // + 1 fadd per (r, i), a 37.5 % cut in the dominant arithmetic term.
+          // The loop over m is componentwise because `fma` has no overload for
+          // the non-native vector widths NA = 5 and NA = 6.
+          VF qdot = a0 * (packed[r][i] & 0x000f);
+          const float n1 = float((packed[r][i] >> 4) & 0x000f);
+          const float n2 = float((packed[r][i] >> 8) & 0x000f);
+          const float n3 = float((packed[r][i] >> 12) & 0x000f);
+          for (int m = 0; m < NA; m++) {
+            qdot[m] = fma(a3[m], n3, fma(a2[m], n2, fma(a1[m], n1, qdot[m])));
+          }
+          partial[r] += qdot;
+        } else {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * (packed[r][i] & 0x00f0) +
+                         a2 * (packed[r][i] & 0x0f00) +
+                         a3 * (packed[r][i] & 0xf000));
+        }
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      const float reduced = simd_sum(acc[r][m]);
+      if (simd_lid == 0) {
+        y[(first_m + m) * out_vec_size + out_row + r] =
+            static_cast<T>(reduced);
+      }
+    }
+  }
+}
+
+// --- arm e69fmawxvec -----------------------------------------------
+//
+//   rename so the arm cannot shadow the shipped symbol
+//   relax the NA bound inside the probe only
+//   contract the four exact nibble products into fused multiply-adds
+//   load the four packed weight halves as one 8-byte vector
+//   load the four x values as one 8-byte vector
+
+template <typename T, int NA, bool DIRECT_NIBBLES = false>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e69fmawxvec(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  static_assert(NA >= 2 && NA <= 9, "probe-only NA bound");
+  typedef vec<float, NA> VF;
+  constexpr int rows_per_simd = 4;
+  constexpr int values_per_thread = 16;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = in_vec_size / 2;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  VF acc[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc[r] = VF(0.0f);
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    thread uint16_t packed[rows_per_simd][4];
+    thread float scale_local[rows_per_simd];
+    thread float bias_local[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      const int row = out_row + r;
+      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
+          reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
+          k / 2 + simd_lid * bytes_per_lane);
+      // E69 arm A: one 8-byte load in place of four 2-byte loads. `ws` is
+      // 8-byte aligned because in_vec_size_w, k/2 and simd_lid*bytes_per_lane
+      // are each multiples of 8, and the same bytes land in the same slots in
+      // the same order, so the arm is bit-identical by construction.
+      const ushort4 wv = *reinterpret_cast<const device ushort4*>(ws);
+      packed[r][0] = wv.x;
+      packed[r][1] = wv.y;
+      packed[r][2] = wv.z;
+      packed[r][3] = wv.w;
+      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = biases[group_index];
+    }
+
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        thread float xc[4];
+        if (DIRECT_NIBBLES) {
+          // E69 arm X: one 8-byte load in place of four 2-byte loads. The
+          // compiler cannot widen these itself because `in_vec_size` is a
+          // runtime value, so it can only assume 2-byte alignment. The host
+          // gates this kernel on `K % 512 == 0`, and every other term of this
+          // address is a multiple of 4 elements, so the 8-byte alignment does
+          // hold. The same T values reach the same expressions in the same
+          // order, so the arm is bit-identical by construction.
+          const vec<T, 4> xv = *reinterpret_cast<const device vec<T, 4>*>(xm);
+          xc[0] = static_cast<float>(xv[0]);
+          xc[1] = static_cast<float>(xv[1]);
+          xc[2] = static_cast<float>(xv[2]);
+          xc[3] = static_cast<float>(xv[3]);
+          // Preserve the incumbent BF16 expression tree used for the affine
+          // bias correction; only the qdot nibble extraction changes.
+          sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
+        } else {
+          sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+        }
+        a0[m] = xc[0];
+        a1[m] = xc[1];
+        a2[m] = xc[2];
+        a3[m] = xc[3];
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        if (DIRECT_NIBBLES) {
+          // E69 arm F: contract the four products into fused multiply-adds.
+          // Every product is EXACT in binary32, so the contraction cannot
+          // change a bit: a_i holds a BF16 value, which carries at most 8
+          // significant bits, and the nibble is an integer in [0, 15], which
+          // carries at most 4, so the product needs at most 12 of the 24 bits
+          // binary32 keeps and never rounds. fma(a, n, t) therefore returns
+          // round(a * n + t) = round(fl(a * n) + t), which is exactly what the
+          // separate multiply and add return. The left-to-right association of
+          // the original expression is preserved, and `partial[r] +=` stays a
+          // plain add, so the rounded intermediates are unchanged.
+          // The saving is issue slots: 4 fmul + 4 fadd become 1 fmul + 3 fma
+          // + 1 fadd per (r, i), a 37.5 % cut in the dominant arithmetic term.
+          // The loop over m is componentwise because `fma` has no overload for
+          // the non-native vector widths NA = 5 and NA = 6.
+          VF qdot = a0 * (packed[r][i] & 0x000f);
+          const float n1 = float((packed[r][i] >> 4) & 0x000f);
+          const float n2 = float((packed[r][i] >> 8) & 0x000f);
+          const float n3 = float((packed[r][i] >> 12) & 0x000f);
+          for (int m = 0; m < NA; m++) {
+            qdot[m] = fma(a3[m], n3, fma(a2[m], n2, fma(a1[m], n1, qdot[m])));
+          }
+          partial[r] += qdot;
+        } else {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * (packed[r][i] & 0x00f0) +
+                         a2 * (packed[r][i] & 0x0f00) +
+                         a3 * (packed[r][i] & 0xf000));
+        }
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      const float reduced = simd_sum(acc[r][m]);
+      if (simd_lid == 0) {
+        y[(first_m + m) * out_vec_size + out_row + r] =
+            static_cast<T>(reduced);
+      }
+    }
+  }
+}
+
