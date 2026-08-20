@@ -177,9 +177,10 @@ def log_summary(session: pathlib.Path, meta: dict, legs: list[dict],
             "arms": sorted({leg_arm(row) for row in legs}),
             "legs": len(legs),
             "buffers_removed_per_draft": buffers,
-            "stop_rule": "<5 us/buffer terminal negative; 5-10 report and stop; "
-                         ">=10 law holds",
-            "claimed_law_us_per_buffer": [13, 16],
+            "stop_rule": "paired per-round median outside the session null and "
+                         ">=0.05% of candidate s/tok; otherwise terminal negative",
+            "advisor_prior_pct_of_candidate": [0.03, 0.12],
+            "withdrawn_claim_us_per_buffer": [13, 16],
         },
     )
 
