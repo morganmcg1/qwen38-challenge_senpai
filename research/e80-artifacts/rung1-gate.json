@@ -1,0 +1,444 @@
+{
+  "census": "research/out/e80-rung1-gate-gpu/census.jsonl",
+  "e71": "research/out/e80-rung1-gate/census.json",
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "identity": {
+    "arm_widths": [
+      6
+    ],
+    "arms": [
+      "null",
+      "lm_head",
+      "mlp_all",
+      "mlp_down",
+      "fa_o_proj",
+      "gdn_out_proj",
+      "all_interceptable"
+    ],
+    "curve_widths": [
+      1,
+      6
+    ],
+    "device": {
+      "architecture": "applegpu_g16s",
+      "max_buffer_size": 30150672384,
+      "max_recommended_working_set_size": 40200896512,
+      "memory_size": 51539607552
+    },
+    "hidden_size": 5120,
+    "host": "mac-mini.local",
+    "model_load_seconds": 16.174213125,
+    "num_hidden_layers": 64,
+    "prompt_path": "correctness_prompts/public_longcopy_gate_english_512_1024.json",
+    "reps_per_block": 12,
+    "seed_length": 768,
+    "vocab_size": 248320,
+    "warmup_per_block": 3,
+    "weights_path": "weights"
+  },
+  "blocks_total": 32,
+  "blocks_joined": 32,
+  "instrument_health": {
+    "unmapped_encoder_dispatches": 0,
+    "untracked_buffers": 1749,
+    "zero_time_buffers": 0,
+    "undrained_buffers": 0
+  },
+  "gates": {
+    "G0": {
+      "F(1) wall ms": {
+        "observed": 65.9243335,
+        "reference": 64.706,
+        "relative": 0.018828756220443235,
+        "pass": true,
+        "note": ""
+      },
+      "F(6) wall ms": {
+        "observed": 122.0615755,
+        "reference": 122.11,
+        "relative": -0.0003965645729260165,
+        "pass": true,
+        "note": ""
+      },
+      "F(6)-F(1) wall ms": {
+        "observed": 56.137242,
+        "reference": 57.404,
+        "relative": -0.022067416904745365,
+        "pass": true,
+        "note": ""
+      },
+      "mlp_gate_up wall tax ms": {
+        "observed": 20.029708499999998,
+        "reference": 20.913,
+        "relative": -0.0422364797016211,
+        "pass": true,
+        "note": ""
+      },
+      "mlp_down wall tax ms": {
+        "observed": 16.745500000000007,
+        "reference": 16.887,
+        "relative": -0.008379226624029935,
+        "pass": true,
+        "note": ""
+      },
+      "gdn_out_proj wall tax ms": {
+        "observed": 2.982916500000016,
+        "reference": 3.313,
+        "relative": -0.09963281014186061,
+        "pass": true,
+        "note": ""
+      },
+      "fa_o_proj wall tax ms": {
+        "observed": 1.1236455000000092,
+        "reference": 1.161,
+        "relative": -0.03217441860464328,
+        "pass": true,
+        "note": ""
+      },
+      "lm_head wall tax ms": {
+        "observed": 2.5696664999999967,
+        "reference": 2.142,
+        "relative": 0.19965756302520862,
+        "pass": false,
+        "note": ""
+      }
+    },
+    "G1": {
+      "mlp_gate_up GPU tax ms": {
+        "observed": 21.49733487499998,
+        "reference": 20.913,
+        "relative": 0.027941226748911127,
+        "pass": true,
+        "note": ""
+      },
+      "mlp_down GPU tax ms": {
+        "observed": 16.77351554166667,
+        "reference": 16.887,
+        "relative": -0.006720226110814939,
+        "pass": true,
+        "note": ""
+      },
+      "gdn_out_proj GPU tax ms": {
+        "observed": 2.989847041666664,
+        "reference": 3.313,
+        "relative": -0.09754088691015277,
+        "pass": true,
+        "note": ""
+      },
+      "fa_o_proj GPU tax ms": {
+        "observed": 1.1010176666666638,
+        "reference": 1.161,
+        "relative": -0.05166436979615525,
+        "pass": true,
+        "note": ""
+      },
+      "lm_head GPU tax ms": {
+        "observed": 2.4333694999999977,
+        "reference": 2.142,
+        "relative": 0.13602684407096072,
+        "pass": false,
+        "note": ""
+      }
+    },
+    "G2": {
+      "F(1) GPU ms": {
+        "observed": 64.12636624999999,
+        "reference": 64.706,
+        "relative": -0.008957959849164119,
+        "pass": true,
+        "note": ""
+      },
+      "F(6) GPU ms": {
+        "observed": 121.639388125,
+        "reference": 122.11,
+        "relative": -0.003853999467693088,
+        "pass": true,
+        "note": ""
+      },
+      "F(6)-F(1) GPU ms": {
+        "observed": 57.51302187500001,
+        "reference": 57.404,
+        "relative": 0.0018992034527211235,
+        "pass": true,
+        "note": ""
+      }
+    }
+  },
+  "gate_pass": {
+    "G0": false,
+    "G1": false,
+    "G2": true
+  },
+  "gate_power": {
+    "mlp_gate_up": {
+      "reference_ms": 20.913,
+      "tolerance_band_ms": 2.0913,
+      "ci_lo_ms": 36.53422925000001,
+      "ci_hi_ms": 37.50578100000001,
+      "ci_half_width_ms": 0.48577587500000163,
+      "block_medians_ms": [
+        122.351,
+        84.828729,
+        85.8157915,
+        121.90675
+      ],
+      "resolvable_at_tolerance": true
+    },
+    "mlp_down": {
+      "reference_ms": 16.887,
+      "tolerance_band_ms": 1.6887,
+      "ci_lo_ms": 16.597968499999993,
+      "ci_hi_ms": 16.858426749999992,
+      "ci_half_width_ms": 0.1302291249999996,
+      "block_medians_ms": [
+        122.011875,
+        105.4299585,
+        105.1666875,
+        122.1060415
+      ],
+      "resolvable_at_tolerance": true
+    },
+    "gdn_out_proj": {
+      "reference_ms": 3.313,
+      "tolerance_band_ms": 0.33130000000000004,
+      "ci_lo_ms": 2.8765722500000095,
+      "ci_hi_ms": 3.0871555000000086,
+      "ci_half_width_ms": 0.10529162499999956,
+      "block_medians_ms": [
+        121.96810400000001,
+        119.2652915,
+        118.7803335,
+        122.0374165
+      ],
+      "resolvable_at_tolerance": true
+    },
+    "fa_o_proj": {
+      "reference_ms": 1.161,
+      "tolerance_band_ms": 0.11610000000000001,
+      "ci_lo_ms": 0.9926042499999994,
+      "ci_hi_ms": 1.259541750000011,
+      "ci_half_width_ms": 0.1334687500000058,
+      "block_medians_ms": [
+        122.228542,
+        121.152604,
+        120.866292,
+        122.0761875
+      ],
+      "resolvable_at_tolerance": false
+    },
+    "lm_head": {
+      "reference_ms": 2.142,
+      "tolerance_band_ms": 0.2142,
+      "ci_lo_ms": 2.363551749999999,
+      "ci_hi_ms": 2.7341037500000027,
+      "ci_half_width_ms": 0.18527600000000177,
+      "block_medians_ms": [
+        122.8854585,
+        119.9457295,
+        119.83547949999999,
+        121.9937085
+      ],
+      "resolvable_at_tolerance": true
+    }
+  },
+  "instrument_self_consistency": {
+    "mlp_gate_up tax": {
+      "gpu_ms": 21.49733487499998,
+      "wall_ms": 20.029708499999998,
+      "relative": 0.07327247797939648
+    },
+    "mlp_down tax": {
+      "gpu_ms": 16.77351554166667,
+      "wall_ms": 16.745500000000007,
+      "relative": 0.0016730191195641598
+    },
+    "gdn_out_proj tax": {
+      "gpu_ms": 2.989847041666664,
+      "wall_ms": 2.982916500000016,
+      "relative": 0.002323411220745886
+    },
+    "fa_o_proj tax": {
+      "gpu_ms": 1.1010176666666638,
+      "wall_ms": 1.1236455000000092,
+      "relative": -0.020137875631900993
+    },
+    "lm_head tax": {
+      "gpu_ms": 2.4333694999999977,
+      "wall_ms": 2.5696664999999967,
+      "relative": -0.05304073505258335
+    },
+    "F(1) level": {
+      "gpu_ms": 64.12636624999999,
+      "wall_ms": 65.9243335,
+      "relative": -0.027273195716116166
+    },
+    "F(6) level": {
+      "gpu_ms": 121.639388125,
+      "wall_ms": 122.0615755,
+      "relative": -0.0034588065349034193
+    }
+  },
+  "instrument_self_consistency_worst_relative": 0.07327247797939648,
+  "instrument_overhead": {
+    "mlp_gate_up tax": {
+      "instrumented_ms": 20.029708499999998,
+      "control_ms": 19.299812000000003,
+      "relative": 0.03781883989336244
+    },
+    "mlp_down tax": {
+      "instrumented_ms": 16.745500000000007,
+      "control_ms": 17.214292,
+      "relative": -0.027232720346558163
+    },
+    "gdn_out_proj tax": {
+      "instrumented_ms": 2.982916500000016,
+      "control_ms": 3.589936999999992,
+      "relative": -0.16908945755871965
+    },
+    "fa_o_proj tax": {
+      "instrumented_ms": 1.1236455000000092,
+      "control_ms": 1.5525829999999985,
+      "relative": -0.27627347459040175
+    },
+    "lm_head tax": {
+      "instrumented_ms": 2.5696664999999967,
+      "control_ms": 2.1941249999999997,
+      "relative": 0.17115775081182574
+    },
+    "F(1) level": {
+      "instrumented_ms": 65.9243335,
+      "control_ms": 65.7808545,
+      "relative": 0.0021811665581206344
+    },
+    "F(6) level": {
+      "instrumented_ms": 122.0615755,
+      "control_ms": 122.2332708125,
+      "relative": -0.0014046528523593566
+    }
+  },
+  "dormant_control_vs_e71": {
+    "F(1) wall ms": {
+      "observed": 65.7808545,
+      "reference": 64.706,
+      "relative": 0.01661135752480451,
+      "pass": true,
+      "note": ""
+    },
+    "F(6) wall ms": {
+      "observed": 122.2332708125,
+      "reference": 122.11,
+      "relative": 0.0010095062853164847,
+      "pass": true,
+      "note": ""
+    },
+    "F(6)-F(1) wall ms": {
+      "observed": 56.45241631249999,
+      "reference": 57.404,
+      "relative": -0.01657695783394906,
+      "pass": true,
+      "note": ""
+    },
+    "mlp_gate_up wall tax ms": {
+      "observed": 19.299812000000003,
+      "reference": 20.913,
+      "relative": -0.07713804810404999,
+      "pass": true,
+      "note": ""
+    },
+    "mlp_down wall tax ms": {
+      "observed": 17.214292,
+      "reference": 16.887,
+      "relative": 0.019381299224255338,
+      "pass": true,
+      "note": ""
+    },
+    "gdn_out_proj wall tax ms": {
+      "observed": 3.589936999999992,
+      "reference": 3.313,
+      "relative": 0.08359100513129845,
+      "pass": true,
+      "note": ""
+    },
+    "fa_o_proj wall tax ms": {
+      "observed": 1.5525829999999985,
+      "reference": 1.161,
+      "relative": 0.337280792420326,
+      "pass": false,
+      "note": ""
+    },
+    "lm_head wall tax ms": {
+      "observed": 2.1941249999999997,
+      "reference": 2.142,
+      "relative": 0.02433473389355731,
+      "pass": true,
+      "note": ""
+    }
+  },
+  "three_session_reproducibility": {
+    "mlp_gate_up": {
+      "e71": 20.913,
+      "control_wall": 19.299812000000003,
+      "instrumented_wall": 20.029708499999998,
+      "instrumented_gpu": 21.49733487499998,
+      "spread_ms": 2.197522874999976,
+      "band_ms": 4.1826,
+      "reproducible": true
+    },
+    "mlp_down": {
+      "e71": 16.887,
+      "control_wall": 17.214292,
+      "instrumented_wall": 16.745500000000007,
+      "instrumented_gpu": 16.77351554166667,
+      "spread_ms": 0.46879199999999344,
+      "band_ms": 3.3774,
+      "reproducible": true
+    },
+    "gdn_out_proj": {
+      "e71": 3.313,
+      "control_wall": 3.589936999999992,
+      "instrumented_wall": 2.982916500000016,
+      "instrumented_gpu": 2.989847041666664,
+      "spread_ms": 0.607020499999976,
+      "band_ms": 0.6626000000000001,
+      "reproducible": true
+    },
+    "fa_o_proj": {
+      "e71": 1.161,
+      "control_wall": 1.5525829999999985,
+      "instrumented_wall": 1.1236455000000092,
+      "instrumented_gpu": 1.1010176666666638,
+      "spread_ms": 0.4515653333333347,
+      "band_ms": 0.23220000000000002,
+      "reproducible": false
+    },
+    "lm_head": {
+      "e71": 2.142,
+      "control_wall": 2.1941249999999997,
+      "instrumented_wall": 2.5696664999999967,
+      "instrumented_gpu": 2.4333694999999977,
+      "spread_ms": 0.42766649999999684,
+      "band_ms": 0.4284,
+      "reproducible": true
+    },
+    "F(1)": {
+      "e71": 64.706,
+      "control_wall": 65.7808545,
+      "instrumented_wall": 65.9243335,
+      "instrumented_gpu": 64.12636624999999,
+      "spread_ms": 1.7979672500000135,
+      "band_ms": 6.470600000000001,
+      "reproducible": true
+    },
+    "F(6)": {
+      "e71": 122.11,
+      "control_wall": 122.2332708125,
+      "instrumented_wall": 122.0615755,
+      "instrumented_gpu": 121.639388125,
+      "spread_ms": 0.593882687499999,
+      "band_ms": 12.211,
+      "reproducible": true
+    }
+  }
+}
