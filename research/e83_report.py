@@ -102,6 +102,118 @@ def head_report(payload: dict) -> None:
               "the head is the only lever that moves its cost.")
 
 
+def gate_report(payload: dict) -> None:
+    """Rung 3 -- the two prefill-width fusion gates.
+
+    Reports both an unpaired arm median and a per-rep paired delta against
+    `gate_baseline`. The paired form is the one to trust: each rep contains
+    every arm, so a monotone thermal trend cancels inside the rep and only the
+    arm difference survives.
+    """
+    blocks = [b for b in payload["blocks"] if b.get("kind") == "gate_arm"]
+    ident = payload["identity"]
+
+    print(f"# E83 rung 3 -- prefill-width fusion gates -- {payload['experiment']}")
+    print(f"\nharness={payload['harness']}  "
+          f"gate_qualified_for_timing={payload['gate_qualified_for_timing']}  "
+          f"device={ident.get('device')}  host={ident.get('host')}")
+    print(f"seed_length={ident['seed_length']}  gate_reps={ident.get('gate_reps')}  "
+          f"arms={ident.get('gate_arms')}")
+
+    order = ["gate_baseline", "gate_g1", "gate_g2", "gate_g1g2"]
+    names = [n for n in order if any(b["gate_arm"] == n for b in blocks)]
+    by_arm = {n: [b for b in blocks if b["gate_arm"] == n] for n in names}
+
+    section("Arm medians (unpaired)")
+    print("| arm | in_proj bound | gate_up bound | n | median begin ms | "
+          "range ms | saving vs baseline ms |")
+    print("|---|---:|---:|---:|---:|---|---:|")
+    base_med = med([b["begin_seconds"] for b in by_arm.get("gate_baseline", [])])
+    for n in names:
+        xs = [b["begin_seconds"] for b in by_arm[n]]
+        m = med(xs)
+        saving = "" if n == "gate_baseline" else f"{1e3 * (base_med - m):+.1f}"
+        b0 = by_arm[n][0]
+        print(f"| {n} | {b0['fused_in_proj_max_rows']} | "
+              f"{b0['fused_gate_up_max_rows']} | {len(xs)} | {1e3 * m:.1f} | "
+              f"{spread(xs)} | {saving} |")
+
+    section("Paired per-rep delta vs gate_baseline (positive = arm is faster)")
+    print("| arm | n pairs | median delta ms | min ms | max ms | "
+          "reps arm faster |")
+    print("|---|---:|---:|---:|---:|---:|")
+    base_by_rep = {b["rep"]: b["begin_seconds"]
+                   for b in by_arm.get("gate_baseline", [])}
+    paired: dict[str, list[float]] = {}
+    for n in names:
+        if n == "gate_baseline":
+            continue
+        deltas = [1e3 * (base_by_rep[b["rep"]] - b["begin_seconds"])
+                  for b in by_arm[n] if b["rep"] in base_by_rep]
+        paired[n] = deltas
+        if not deltas:
+            continue
+        wins = sum(1 for d in deltas if d > 0)
+        print(f"| {n} | {len(deltas)} | {med(deltas):+.1f} | {min(deltas):+.1f} | "
+              f"{max(deltas):+.1f} | {wins}/{len(deltas)} |")
+
+    section("Exactness screen -- seed-boundary top-two evidence")
+    primaries = {b["gate_arm"]: {b2["first_primary"] for b2 in by_arm[b["gate_arm"]]}
+                 for b in blocks}
+    all_primary = set()
+    for s in primaries.values():
+        all_primary |= s
+    print(f"first_primary across every arm and rep: {sorted(all_primary)}")
+    print("VERDICT: " + ("identical" if len(all_primary) == 1
+                         else "DIVERGENT -- the fusion changed the argmax"))
+    tops: dict[str, set] = {}
+    for n in names:
+        tops[n] = {tuple(b.get("top2_values") or []) for b in by_arm[n]}
+    base_top = tops.get("gate_baseline", set())
+    for n in names:
+        same = tops[n] == base_top and len(tops[n]) == 1
+        print(f"  {n}: distinct top2 tuples={len(tops[n])} "
+              f"bit-identical-to-baseline={same}")
+        if len(tops[n]) == 1 and n == "gate_baseline":
+            print(f"    baseline top2 = {next(iter(tops[n]))}")
+        elif tops[n] != base_top:
+            print(f"    arm top2 = {sorted(tops[n])[:2]}")
+
+    section("De-risk assertion -- no fused pack built inside a timed arm")
+    befores = {b["pack_builds_before"] for b in blocks}
+    afters = {b["pack_builds_after"] for b in blocks}
+    print(f"pack_builds_before={sorted(befores)}  pack_builds_after={sorted(afters)}")
+    ok = len(befores) == 1 and befores == afters and next(iter(befores)) > 0
+    print("VERDICT: " + ("PASS -- packs resident from warm, none built while timed"
+                         if ok else "FAIL -- a pack was built inside a timed arm"))
+
+    section("Thermal record")
+    for n in names:
+        ent = [b["gpu_temp_entry_c"] for b in by_arm[n] if "gpu_temp_entry_c" in b]
+        ext = [b["gpu_temp_exit_c"] for b in by_arm[n] if "gpu_temp_exit_c" in b]
+        if ent:
+            print(f"  {n}: entry median {med(ent):.2f} C "
+                  f"({min(ent):.2f}-{max(ent):.2f})  "
+                  f"exit median {med(ext):.2f} C" if ext else "")
+    print(f"\ncool_gate_passed_real_gate={payload['cool_gate_passed_real_gate']}  "
+          f"official_or_ranked_score={payload['official_or_ranked_score']}")
+
+    section("Stop rule")
+    combined = paired.get("gate_g1g2", [])
+    if combined:
+        c = med(combined)
+        print(f"combined gate_g1g2 paired median saving = {c:+.1f} ms")
+        if c < 40.7:
+            print("VERDICT: NOT USEFUL -- below the 40.7 ms noise band. "
+                  "Report the bound and close.")
+        elif c < 60.0:
+            print("VERDICT: INCONCLUSIVE -- between 40.7 and 60 ms. "
+                  "Report for the advisor to decide.")
+        else:
+            print("VERDICT: LOCAL WINNER -- at or above 60 ms. Run the full "
+                  "exactness and pre-submit chain.")
+
+
 def prefill_report(payload: dict) -> None:
     blocks = payload["blocks"]
     ident = payload["identity"]
@@ -429,6 +541,8 @@ def main() -> int:
         kinds = {b.get("kind") for b in payload["blocks"]}
         if "pinned_head_step" in kinds:
             head_report(payload)
+        elif "gate_arm" in kinds:
+            gate_report(payload)
         else:
             prefill_report(payload)
     return 0
