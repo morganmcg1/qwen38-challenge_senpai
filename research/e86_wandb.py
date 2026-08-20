@@ -24,20 +24,33 @@ PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
 EXPERIMENT = "qwen38-r1-e86-decode-asynceval-ladder-and-host-gpu-split"
 
-LEG_COLS = ["tag", "arm", "ladder", "rep", "started", "sync_head",
+LEG_COLS = ["tag", "position", "arm", "ladder", "rep", "started", "sync_head",
             "candidate_mtp_seconds_per_token", "serial_seconds_per_token",
             "local_ratio", "rounds", "rows_per_token", "mean_d", "mean_acc",
             "d_submit2_us_med", "verify_build_us_med", "eval_wall_us_med",
-            "round_us_med", "round_us_total", "readout_us_med", "commit_us_med",
+            "round_us_med", "round_us_total", "host_phase_sum_us_med",
+            "readout_us_med", "commit_us_med",
             "upkeep_us_med", "all_tokens_matched", "residual_divergence_count",
             "accepted_draft_rate", "effective_mean_draft_len",
             "head_provenance_sha256", "head_loaded_bytes", "head_loaded_files",
             "gpu_temp_entry_c", "gpu_temp_exit_c", "cool_gate_passed_real_gate",
             "gate_qualified_for_timing", "base_sha", "worker_sha256"]
 
+PAIRED_COLS = ["arm", "median_round_us", "ci_lo_us", "ci_hi_us", "mean_round_us",
+               "median_vpipe_us", "pairs", "pct_of_round", "pct_ci_lo", "pct_ci_hi"]
+
 
 def cell(value):
     return json.dumps(value) if isinstance(value, (dict, list)) else value
+
+
+def arm_mean_position(doc: dict) -> dict:
+    """Mean session position per arm. Equal means say the design is balanced."""
+    pos: dict[str, list[int]] = {}
+    for r in doc["legs"]:
+        if "position" in r:
+            pos.setdefault(r["arm"], []).append(r["position"])
+    return {a: sum(p) / len(p) for a, p in pos.items()}
 
 
 def table(columns, rows):
@@ -62,6 +75,23 @@ def log_session(run, doc: dict, prefix: str) -> None:
         f"{prefix}/session_null_pct": doc["session_null_pct"],
         f"{prefix}/bit_exact_work": doc["bit_exact_work"],
     })
+
+    # The paired per-round comparison is the decision instrument. The leg-total
+    # deltas in `by_arm` are kept only so the contamination stays visible.
+    p = doc.get("paired")
+    if p:
+        rows = [{"arm": a, **v} for a, v in p["arms"].items()]
+        if p.get("null"):
+            rows.append({"arm": f"NULL ({p['reference_arm']} vs itself)", **p["null"]})
+        run.log({f"{prefix}/paired": table(PAIRED_COLS, rows)})
+        for a, v in p["arms"].items():
+            run.log({f"{prefix}/paired/{a}/median_round_us": v["median_round_us"],
+                     f"{prefix}/paired/{a}/pct_of_round": v["pct_of_round"],
+                     f"{prefix}/paired/{a}/median_vpipe_us": v["median_vpipe_us"]})
+        if p.get("null"):
+            run.log({f"{prefix}/paired/null_pct_of_round": p["null"]["pct_of_round"],
+                     f"{prefix}/paired/null_position_balanced":
+                         p["null"]["position_balanced"]})
 
     d = doc.get("decomposition")
     if not d:
@@ -104,9 +134,12 @@ def main() -> None:
             "sessions": {k: {"prefix": v["prefix"],
                              "arms": sorted(v["summary"]),
                              "n_legs": len(v["legs"]),
-                             "reference_arm": v["reference_arm"]}
+                             "reference_arm": v["reference_arm"],
+                             "leg_order": v.get("leg_order"),
+                             "arm_mean_position": arm_mean_position(v)}
                          for k, v in sessions.items()},
-            "leg_order": "palindrome (ABBA-counterbalanced)",
+            "leg_order": "palindrome (ABBA-counterbalanced); see "
+                         "sessions.*.arm_mean_position for the position balance",
             "cool_gate": 0,
             "cool_gate_passed_real_gate": False,
             "gate_qualified_for_timing": False,

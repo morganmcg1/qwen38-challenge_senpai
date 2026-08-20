@@ -10,6 +10,97 @@
   "session_null_pct": 0.9819342369646277,
   "bit_exact_work": true,
   "decomposition": null,
+  "paired": {
+    "prefix": "e86r1",
+    "reference_arm": "default",
+    "n_legs": 12,
+    "distinct_work_sequences": 1,
+    "bit_exact_work": true,
+    "pairing_key": "round index",
+    "statistic": "median of paired per-round differences",
+    "ci": "2.5/97.5 percentile of 4000 bootstrap resamples of the median",
+    "arms": {
+      "blk2": {
+        "median_round_us": -1503.0,
+        "ci_lo_us": -1625.0,
+        "ci_hi_us": -1309.5,
+        "mean_round_us": -1445.7115384615386,
+        "median_vpipe_us": 133.5,
+        "pairs": 312,
+        "pct_of_round": -0.8984478909189813,
+        "pct_ci_lo": -0.9713757969017596,
+        "pct_ci_hi": -0.7827794498725257
+      },
+      "blocks": {
+        "median_round_us": -1657.5,
+        "ci_lo_us": -1754.5,
+        "ci_hi_us": -1529.0,
+        "mean_round_us": -1622.6858974358975,
+        "median_vpipe_us": 32.5,
+        "pairs": 312,
+        "pct_of_round": -0.9908033128397947,
+        "pct_ci_lo": -1.048786975793315,
+        "pct_ci_hi": -0.9139899036694094
+      },
+      "dense": {
+        "median_round_us": -1629.0,
+        "ci_lo_us": -1749.5,
+        "ci_hi_us": -1526.0,
+        "mean_round_us": -1652.0961538461538,
+        "median_vpipe_us": -10.5,
+        "pairs": 312,
+        "pct_of_round": -0.9737668757864408,
+        "pct_ci_lo": -1.0457981271874635,
+        "pct_ci_hi": -0.9121965945058985
+      },
+      "frontw": {
+        "median_round_us": -1533.5,
+        "ci_lo_us": -1633.0,
+        "ci_hi_us": -1392.5,
+        "mean_round_us": -1425.3653846153845,
+        "median_vpipe_us": 68.0,
+        "pairs": 312,
+        "pct_of_round": -0.9166798674146758,
+        "pct_ci_lo": -0.9761579546711221,
+        "pct_ci_hi": -0.8323943367296617
+      },
+      "stride2": {
+        "median_round_us": -1588.5,
+        "ci_lo_us": -1694.0,
+        "ci_hi_us": -1510.0,
+        "mean_round_us": -1652.2564102564102,
+        "median_vpipe_us": 63.5,
+        "pairs": 312,
+        "pct_of_round": -0.949557202079043,
+        "pct_ci_lo": -1.0126219076625111,
+        "pct_ci_hi": -0.9026322789671735
+      }
+    },
+    "null": {
+      "median_round_us": -1443.5,
+      "ci_lo_us": -1738.0,
+      "ci_hi_us": -1214.5,
+      "mean_round_us": -1599.6538461538462,
+      "pairs": 78,
+      "position_balanced": false,
+      "pct_of_round": -0.8628805925093476
+    },
+    "reference_median_round_us": 167288.5
+  },
+  "leg_order": [
+    "e86r1-default-1",
+    "e86r1-dense-1",
+    "e86r1-blocks-1",
+    "e86r1-blk2-1",
+    "e86r1-stride2-1",
+    "e86r1-frontw-1",
+    "e86r1-frontw-2",
+    "e86r1-stride2-2",
+    "e86r1-blk2-2",
+    "e86r1-blocks-2",
+    "e86r1-dense-2",
+    "e86r1-default-2"
+  ],
   "legs": [
     {
       "tag": "e86r1-default-1",
@@ -69,7 +160,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12291246.0
+      "round_us_total": 12291246.0,
+      "position": 0,
+      "host_phase_sum_us_med": 1146.0
     },
     {
       "tag": "e86r1-dense-1",
@@ -129,7 +222,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12221930.0
+      "round_us_total": 12221930.0,
+      "position": 1,
+      "host_phase_sum_us_med": 655.5
     },
     {
       "tag": "e86r1-blocks-1",
@@ -189,7 +284,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12226034.0
+      "round_us_total": 12226034.0,
+      "position": 2,
+      "host_phase_sum_us_med": 640.0
     },
     {
       "tag": "e86r1-blk2-1",
@@ -249,7 +346,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12242346.0
+      "round_us_total": 12242346.0,
+      "position": 3,
+      "host_phase_sum_us_med": 637.0
     },
     {
       "tag": "e86r1-stride2-1",
@@ -309,7 +408,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12227537.0
+      "round_us_total": 12227537.0,
+      "position": 4,
+      "host_phase_sum_us_med": 649.0
     },
     {
       "tag": "e86r1-frontw-1",
@@ -369,7 +470,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12252633.0
+      "round_us_total": 12252633.0,
+      "position": 5,
+      "host_phase_sum_us_med": 689.5
     },
     {
       "tag": "e86r1-frontw-2",
@@ -429,7 +532,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12232275.0
+      "round_us_total": 12232275.0,
+      "position": 6,
+      "host_phase_sum_us_med": 655.0
     },
     {
       "tag": "e86r1-stride2-2",
@@ -489,7 +594,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12221976.0
+      "round_us_total": 12221976.0,
+      "position": 7,
+      "host_phase_sum_us_med": 647.5
     },
     {
       "tag": "e86r1-blk2-2",
@@ -549,7 +656,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12239388.0
+      "round_us_total": 12239388.0,
+      "position": 8,
+      "host_phase_sum_us_med": 635.0
     },
     {
       "tag": "e86r1-blocks-2",
@@ -609,7 +718,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12228092.0
+      "round_us_total": 12228092.0,
+      "position": 9,
+      "host_phase_sum_us_med": 661.0
     },
     {
       "tag": "e86r1-dense-2",
@@ -669,7 +780,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12227608.0
+      "round_us_total": 12227608.0,
+      "position": 10,
+      "host_phase_sum_us_med": 648.0
     },
     {
       "tag": "e86r1-default-2",
@@ -729,7 +842,9 @@
       "rows_per_token": 1.1189083820662769,
       "mean_d": 6.358974358974359,
       "mean_acc": 5.576923076923077,
-      "round_us_total": 12416019.0
+      "round_us_total": 12416019.0,
+      "position": 11,
+      "host_phase_sum_us_med": 3228.0
     }
   ],
   "summary": {

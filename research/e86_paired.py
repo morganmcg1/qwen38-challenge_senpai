@@ -54,32 +54,58 @@ def bootstrap_ci(values: list[float], stat, n: int = 4000, seed: int = 0):
     return draws[int(0.025 * n)], draws[int(0.975 * n)]
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("prefix")
-    ap.add_argument("--ref", default="default")
-    args = ap.parse_args()
+def load_legs(prefix: str) -> dict[str, list[list[dict]]]:
+    """Arm name -> list of legs, each a list of round records, chronological.
 
+    A leg tag carries its repeat index, and the session script hands out those
+    indices in run order, so tag order inside one arm is also session order.
+    """
     tags = sorted(p.name for p in OUT.iterdir()
-                  if p.name.startswith(args.prefix + "-") and (p / "trace.txt").exists())
-    legs = {}
+                  if p.name.startswith(prefix + "-") and (p / "trace.txt").exists())
+    legs: dict[str, list[list[dict]]] = {}
     for t in tags:
-        arm = t[len(args.prefix) + 1:].rpartition("-")[0]
-        legs.setdefault(arm, []).append(rounds(t))
+        legs.setdefault(t[len(prefix) + 1:].rpartition("-")[0], []).append(rounds(t))
+    return legs
 
+
+def paired_summary(prefix: str, ref: str = "default") -> dict:
+    """Paired per-round comparison of every arm against `ref`.
+
+    Pairing key: the round index. Valid only because the change is bit-exact,
+    so round i carries the same draft width and the same accepted count in
+    every leg. `bit_exact_work` records that check and the caller must stop
+    when it is false.
+
+    Statistic: the median of the paired differences, over the full cross
+    product of arm legs and reference legs. Confidence interval: the 2.5th and
+    97.5th percentile of 4000 bootstrap resamples of that median. The mean is
+    reported next to it because the score integrates total time; a large
+    median-mean gap means host jitter, not a ladder effect.
+
+    Null: the reference arm against itself, split into two groups with equal
+    MEAN session position. Position is a real confound, so a null built from
+    two reference legs at the two ends of a palindrome measures drift and
+    rejects true effects.
+    """
+    legs = load_legs(prefix)
     seqs = {tuple((r["d"], r["acc"]) for r in leg) for arm in legs.values() for leg in arm}
-    print(f"distinct (d, acc) round sequences over {sum(len(v) for v in legs.values())} legs: "
-          f"{len(seqs)}")
-    print(f"every arm replayed the identical work sequence: {len(seqs) == 1}\n")
-    if len(seqs) != 1:
-        print("STOP: the ladder moved real work. It is not enqueue-timing only.")
-        return
+    out = {
+        "prefix": prefix,
+        "reference_arm": ref,
+        "n_legs": sum(len(v) for v in legs.values()),
+        "distinct_work_sequences": len(seqs),
+        "bit_exact_work": len(seqs) == 1,
+        "pairing_key": "round index",
+        "statistic": "median of paired per-round differences",
+        "ci": "2.5/97.5 percentile of 4000 bootstrap resamples of the median",
+        "arms": {},
+        "null": None,
+    }
+    if not out["bit_exact_work"] or ref not in legs:
+        return out
 
-    ref = args.ref
-    print(f"paired per-round deltas vs `{ref}` (us/round; negative is faster)")
-    print(f"{'arm':<28}{'median Δ round':>15}{'95% CI':>22}{'mean Δ round':>14}"
-          f"{'median Δ vpipe':>16}{'pairs':>7}")
-    results = {}
+    base = st.median([r["round_us"] for leg in legs[ref] for r in leg])
+    out["reference_median_round_us"] = base
     for arm in sorted(legs):
         if arm == ref:
             continue
@@ -90,16 +116,13 @@ def main() -> None:
                 dv += [(a["verify_build_us"] + a["eval_wall_us"])
                        - (b["verify_build_us"] + b["eval_wall_us"]) for a, b in zip(la, lr)]
         lo, hi = bootstrap_ci(dr, st.median)
-        results[arm] = {"median_round": st.median(dr), "ci": (lo, hi),
-                        "mean_round": st.mean(dr), "median_vpipe": st.median(dv)}
-        print(f"{arm:<28}{st.median(dr):>+15.0f}  [{lo:>+8.0f},{hi:>+8.0f}]"
-              f"{st.mean(dr):>+14.0f}{st.median(dv):>+16.0f}{len(dr):>7}")
+        out["arms"][arm] = {
+            "median_round_us": st.median(dr), "ci_lo_us": lo, "ci_hi_us": hi,
+            "mean_round_us": st.mean(dr), "median_vpipe_us": st.median(dv),
+            "pairs": len(dr), "pct_of_round": st.median(dr) / base * 100.0,
+            "pct_ci_lo": lo / base * 100.0, "pct_ci_hi": hi / base * 100.0,
+        }
 
-    # Within-arm null: split the reference legs into two groups with the same
-    # MEAN session position and pair them. With four reference legs the split
-    # is outer {first, last} against inner, which is the same position
-    # structure every compared arm has. Any arm effect smaller than this null
-    # is not a result.
     if len(legs[ref]) >= 2:
         n = len(legs[ref])
         ga, gb = ([legs[ref][0], legs[ref][-1]], legs[ref][1:-1]) if n >= 4 \
@@ -107,15 +130,52 @@ def main() -> None:
         null = [a["round_us"] - b["round_us"]
                 for la in ga for lb in gb for a, b in zip(la, lb)]
         lo, hi = bootstrap_ci(null, st.median)
-        print(f"\n{'NULL (' + ref + ' vs itself)':<28}{st.median(null):>+15.0f}"
-              f"  [{lo:>+8.0f},{hi:>+8.0f}]{st.mean(null):>+14.0f}"
-              f"{'':>16}{len(null):>7}")
+        out["null"] = {
+            "median_round_us": st.median(null), "ci_lo_us": lo, "ci_hi_us": hi,
+            "mean_round_us": st.mean(null), "pairs": len(null),
+            "position_balanced": n >= 4,
+            "pct_of_round": st.median(null) / base * 100.0,
+        }
+    return out
 
-    base = st.median([r["round_us"] for leg in legs[ref] for r in leg])
-    print(f"\nreference median round = {base:.0f} us")
-    for arm, r in sorted(results.items(), key=lambda kv: kv[1]["median_round"]):
-        print(f"  {arm:<28} {r['median_round'] / base * 100:>+7.3f} % of round "
-              f"(CI {r['ci'][0] / base * 100:+.3f} .. {r['ci'][1] / base * 100:+.3f})")
+
+def render(res: dict) -> None:
+    print(f"distinct (d, acc) round sequences over {res['n_legs']} legs: "
+          f"{res['distinct_work_sequences']}")
+    print(f"every arm replayed the identical work sequence: {res['bit_exact_work']}\n")
+    if not res["bit_exact_work"]:
+        print("STOP: the ladder moved real work. It is not enqueue-timing only.")
+        return
+
+    ref = res["reference_arm"]
+    print(f"paired per-round deltas vs `{ref}` (us/round; negative is faster)")
+    print(f"{'arm':<28}{'median Δ round':>15}{'95% CI':>22}{'mean Δ round':>14}"
+          f"{'median Δ vpipe':>16}{'pairs':>7}")
+    for arm, r in res["arms"].items():
+        print(f"{arm:<28}{r['median_round_us']:>+15.0f}"
+              f"  [{r['ci_lo_us']:>+8.0f},{r['ci_hi_us']:>+8.0f}]"
+              f"{r['mean_round_us']:>+14.0f}{r['median_vpipe_us']:>+16.0f}{r['pairs']:>7}")
+
+    if res["null"]:
+        n = res["null"]
+        tag = "NULL (" + ref + " vs itself)"
+        print(f"\n{tag:<28}{n['median_round_us']:>+15.0f}"
+              f"  [{n['ci_lo_us']:>+8.0f},{n['ci_hi_us']:>+8.0f}]"
+              f"{n['mean_round_us']:>+14.0f}{'':>16}{n['pairs']:>7}"
+              f"   position_balanced={n['position_balanced']}")
+
+    print(f"\nreference median round = {res['reference_median_round_us']:.0f} us")
+    for arm, r in sorted(res["arms"].items(), key=lambda kv: kv[1]["median_round_us"]):
+        print(f"  {arm:<28} {r['pct_of_round']:>+7.3f} % of round "
+              f"(CI {r['pct_ci_lo']:+.3f} .. {r['pct_ci_hi']:+.3f})")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("prefix")
+    ap.add_argument("--ref", default="default")
+    args = ap.parse_args()
+    render(paired_summary(args.prefix, args.ref))
 
 
 if __name__ == "__main__":

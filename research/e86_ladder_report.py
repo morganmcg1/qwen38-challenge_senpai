@@ -26,6 +26,11 @@ import re
 import statistics as st
 from pathlib import Path
 
+from e86_paired import paired_summary, render as render_paired, rounds as trace_rounds
+
+HOST_PHASES = ("d_pre_us", "d_flush_us", "d_head1_us", "d_submit1_us",
+               "d_chain_us", "readout_us", "commit_us", "upkeep_us")
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "research" / "out"
 
@@ -129,6 +134,13 @@ def main() -> None:
                   if p.name.startswith(args.prefix + "-") and (p / "score.json").exists())
     legs = [leg(args.prefix, t) for t in tags]
     legs.sort(key=lambda r: r["started"])
+    # Median of the per-round host sum, not the sum of per-phase medians: a
+    # contaminated leg spikes different phases in different rounds, and the
+    # sum of medians hides that.
+    for i, r in enumerate(legs):
+        r["position"] = i
+        r["host_phase_sum_us_med"] = st.median(
+            [sum(x[k] for k in HOST_PHASES) for x in trace_rounds(r["tag"])])
 
     arms: dict[str, list[dict]] = {}
     for r in legs:
@@ -222,11 +234,20 @@ def main() -> None:
 
     print("\nper-leg detail (chronological):")
     for r in legs:
-        print(f"  {r['tag']:<40} spt={r['candidate_mtp_seconds_per_token']:.6f} "
+        print(f"  pos={r['position']:<2} {r['tag']:<34} "
+              f"spt={r['candidate_mtp_seconds_per_token']:.6f} "
               f"rounds={r['rounds']} rows/tok={r['rows_per_token']:.4f} "
               f"vbuild={r['verify_build_us_med']:.0f} eval={r['eval_wall_us_med']:.0f} "
+              f"host={r['host_phase_sum_us_med']:.0f} "
               f"T={r['gpu_temp_entry_c']:.1f}->{r['gpu_temp_exit_c']:.1f}C "
               f"matched={r['all_tokens_matched']}")
+
+    # Leg-total deltas above are contaminated by host jitter and by leg
+    # position. The paired per-round comparison below is the decision
+    # instrument; see e86_paired.paired_summary for the method.
+    paired = paired_summary(args.prefix, ref)
+    print("\npaired per-round comparison (decision instrument):")
+    render_paired(paired)
 
     doc = {
         "prefix": args.prefix,
@@ -240,6 +261,8 @@ def main() -> None:
         "session_null_pct": null_pct,
         "bit_exact_work": bit_exact_work,
         "decomposition": decomp,
+        "paired": paired,
+        "leg_order": [r["tag"] for r in legs],
         "legs": legs,
         "summary": summary,
     }
