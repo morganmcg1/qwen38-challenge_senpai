@@ -226,9 +226,13 @@ def quantize(w: mx.array, methods: tuple[str, ...] = ("mlx",)) -> dict:
     # 🔴 The round-trip gate. A packing bug and a quantizer improvement look
     # identical in a rel-L2 table, so no error number is computed until MLX
     # itself agrees that the artifact reconstructs to the intended values.
+    # `mx.dequantize` returns BF16, so the comparison is made there. The scored
+    # kernels never materialise this tensor: they fold `scale*sum(x*q) +
+    # bias*sum(x)` into a float32 accumulator, which is why the solver's
+    # objective stays in float32 while this gate does not.
     check = mx.dequantize(packed, scales_bf, biases_bf,
-                          group_size=GROUP, bits=BITS).astype(mx.float32)
-    gap = float(mx.abs(check - deq).max().item())
+                          group_size=GROUP, bits=BITS)
+    gap = float(mx.abs(check - deq.astype(mx.bfloat16)).max().item())
     mx.eval(packed, scales_bf, biases_bf, deq)
     assert gap == 0.0, f"round trip mismatch: max |diff| = {gap}"
 
@@ -250,7 +254,7 @@ def selftest() -> None:
     ref_deq = mx.dequantize(ref_q, ref_s, ref_b, group_size=GROUP, bits=BITS)
     mine = (ref_s.astype(mx.float32).reshape(-1, 1) * codes.reshape(-1, GROUP)
             + ref_b.astype(mx.float32).reshape(-1, 1)).reshape(w.shape)
-    assert float(mx.abs(ref_deq.astype(mx.float32) - mine).max().item()) == 0.0, \
+    assert mx.array_equal(ref_deq, mine.astype(mx.bfloat16)), \
         "bit order disagrees with mx.dequantize"
     print("pack/unpack matches mx.quantize bit order and mx.dequantize")
 
