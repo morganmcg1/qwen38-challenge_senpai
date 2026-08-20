@@ -1,0 +1,63 @@
+{
+  "arm": "candidate",
+  "assert_after": {
+    "exit_code": 0,
+    "mtime": "2026-08-20T06:11:51Z",
+    "sha256": "410e863c4091e7d3fdd82988f255dc1648d5e6cba7b8606995211f2e4cc22fa0"
+  },
+  "assert_before": {
+    "exit_code": 0,
+    "mtime": "2026-08-20T06:11:51Z",
+    "sha256": "410e863c4091e7d3fdd82988f255dc1648d5e6cba7b8606995211f2e4cc22fa0"
+  },
+  "local_submit": {
+    "exit_code": 0,
+    "score": {
+      "metrics": {
+        "accepted_draft_rate": 0.956140350877193,
+        "all_tokens_matched": true,
+        "decode_tokens": 128,
+        "effective_mean_draft_len": 5.7,
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "mode": "qwen-mtp-local-submit",
+        "mtp_decode_speedup": 1.7773240334752587,
+        "mtp_depth": 8,
+        "mtp_seconds_per_token": 0.0549498051404953,
+        "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+        "official_score": false,
+        "oracle": "candidate-local-mtp-golden-rows",
+        "public_drift_tripwire_passed": true,
+        "rankable": false,
+        "ranked_decode_speedup_floor": 0.9,
+        "residual_divergence_count": 0,
+        "serial_seconds_per_token": 0.09766360931098461,
+        "uses_pinned_mtp_head": true
+      },
+      "passed": true,
+      "score": 1.7773240334752587,
+      "track_id": "qwen3.8-27b-mtp-v1"
+    }
+  },
+  "metallib_exit_code": 0,
+  "swift_test": {
+    "exit_code": 1,
+    "failing_count": 9,
+    "failing_tests": [
+      "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+      "participantDocsExposeDefaultCLIInstallDirectory",
+      "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+      "startupMemoryPolicyKeepsRanked128GiBProfile",
+      "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+      "theCheckedInDeclarationSelectsThePinnedHead",
+      "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+      "theQwenMTPTrackIsArmedOnQwen38",
+      "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
+    ],
+    "summary": "\u2718 Test run with 688 tests in 49 suites failed after 19.246 seconds with 40 issues."
+  },
+  "twin_sha256": [
+    "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5",
+    "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276"
+  ],
+  "worker_unchanged_across_timing": true
+}

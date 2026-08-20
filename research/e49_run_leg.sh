@@ -106,7 +106,8 @@ transient_sha="$(git rev-parse HEAD)"
 # a counterbalanced session. Gate on the measurement artifact instead of on the
 # driver's exit code, and carry the code through to the leg record.
 set +e
-research/run-qmv-curve.sh "${tag}" "${pre_patch_sha}" --skip-stock "$@"
+LEG_ARM_JSON="${manifest}/${tag}-arm.json" \
+  research/run-qmv-curve.sh "${tag}" "${pre_patch_sha}" --skip-stock "$@"
 curve_rc=$?
 set -e
 if ! python3 -c 'import json,sys; json.load(open(sys.argv[1]))["shapes"]' \
@@ -137,6 +138,15 @@ leg = {
     "gpu_gate": json.loads(pathlib.Path(manifest, tag + "-gpu-gate.json").read_text()),
     "arm_patch": json.loads(pathlib.Path(manifest, tag + "-arm.json").read_text()),
     "identity": pathlib.Path(out_dir, "identity.txt").read_text().splitlines(),
+    "binary_probe": next(
+        (p.read_text().strip()
+         for p in [pathlib.Path(out_dir, "binary-probe.log")] if p.exists()),
+        None),
+    "command_buffer_geometry": {
+        name: os.environ.get(name)
+        for name in ("MLX_MAX_MB_PER_BUFFER", "MLX_MAX_OPS_PER_BUFFER",
+                     "DARKBLOOM_STARTUP_MEMORY_PROFILE")
+    },
 }
 pathlib.Path(manifest, tag + "-leg.json").write_text(
     json.dumps(leg, indent=2, sort_keys=True))

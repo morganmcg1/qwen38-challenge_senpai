@@ -105,11 +105,14 @@ for spec in "$@"; do
     # A silently-skipped patch would compare a build against itself and report a
     # false bit-exact pass, so record the twin digests and require them to move.
     before="$(shasum -a 256 "${TWINS[@]}" | awk '{print $1}' | tr '\n' ' ')"
-    # `e54:NAME` and `e61:NAME` select an arm from that experiment's arm table;
+    # `e54:NAME`, `e59:NAME` and `e61:NAME` select an arm from that
+    # experiment's arm table;
     # anything else stays with the original roofline patch names, so existing
     # callers are unaffected.
     if [[ "${patch}" == e54:* ]]; then
       "${MLXFAST_PYTHON_BIN:-python3}" research/e54_arms.py "${patch#e54:}"
+    elif [[ "${patch}" == e59:* ]]; then
+      "${MLXFAST_PYTHON_BIN:-python3}" research/e59_arms.py "${patch#e59:}"
     elif [[ "${patch}" == e61:* ]]; then
       "${MLXFAST_PYTHON_BIN:-python3}" research/e61_arms.py "${patch#e61:}"
     else

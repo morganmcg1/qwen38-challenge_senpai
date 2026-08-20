@@ -105,7 +105,11 @@ EXPECT_SERIAL_NULL_ABS = 0.10       # %, mean |serial leg| across contrasts
 EXPECT_DL_MAX = 1e-9                # draft length must match exactly
 EXPECT_POOLED = -0.639              # %, candidate leg, one stream removal
 EXPECT_POOLED_SE = 0.314            # %
-EXPECT_RUN_SD = 1.165               # %, one ranked candidate leg, MAD-scaled
+EXPECT_RUN_SD = 1.092               # %, one ranked candidate leg, MAD-scaled
+                                    # re-pinned 2026-08-20 with the 471-tree
+                                    # corpus (275 null pairs, was 428 trees).
+                                    # The pooled effect held at -0.639 % and its
+                                    # se tightened 0.314 -> 0.294.
 
 YUKON_ENV = "SENPAI_YUKON_ALL_JSON"
 # Distilled board export, committed so this gate has real power in any

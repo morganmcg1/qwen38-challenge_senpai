@@ -129,6 +129,22 @@ swift build -c release --build-tests --force-resolved-versions -Xswiftc -enable-
 # this the first MLXArray fails to load the default metallib.
 tools/build-mlx-metallib.sh --all-build-roots
 
+# Read the arm back out of the bundle that is about to be timed. llbuild signs
+# C and C++ inputs by content, so a rewrite with identical bytes relinks
+# nothing, and a bundle left over from an earlier arm is otherwise
+# indistinguishable from a correct one. A bundle carrying an `m5_rbx` routing
+# was found on disk while the checkout held base bytes, so this is a real
+# failure mode and not a hypothetical one. `set -e` makes it fail closed, ahead
+# of the timing rather than after it.
+if [[ -n "${LEG_ARM_JSON:-}" ]]; then
+  xctest_bin="$(ls -1 .build/*/release/*PackageTests.xctest/Contents/MacOS/*PackageTests \
+    2>/dev/null | head -1)"
+  [[ -n "${xctest_bin}" ]] || {
+    echo "run-qmv-curve: cannot find the built test bundle to probe" >&2; exit 2; }
+  python3 research/e59_binary_probe.py "${LEG_ARM_JSON}" "${xctest_bin}" \
+    | tee "${out_dir}/binary-probe.log"
+fi
+
 eval "$(
   awk '/^find_macmon\(\) \{/,/^\}/' benchmark.sh
   awk '/^local_gpu_temp\(\) \{/,/^\}/' benchmark.sh

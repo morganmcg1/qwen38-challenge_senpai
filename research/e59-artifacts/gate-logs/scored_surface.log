@@ -1,0 +1,52 @@
+scored-surface gate
+  question: which shipped lines have ever been measured by the board?
+  repo root     : /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/workspace/target
+
+  scored commit : 2b0c36a078b7660c9215adee933336ff46da25af
+  official score: 3.23250848263467   (created 2026-08-18T22:44:18.032Z)
+  built by      : yukon-autoresearch[bot] on organizer lineage 5068eb8d0bae
+  subject rev   : 5cbc2ee3526618cb308e0ed21a069f74de8d9022  (HEAD)
+  lineage       : the scored commit is NOT an ancestor of HEAD -- divergent
+                  histories, so only the TREE comparison below is meaningful.
+
+  THE OVERLAY THE ORGANIZER APPLIED (lineage tip -> scored tree):
+       +62    -47  Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+        +4     -4  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+        +7    -17  Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+    Note the deletions: our REPLACE overlay removes lineage lines as well as
+    adding ours. A submission can silently revert organizer-accepted work.
+
+  UNSCORED SHIPPED DELTA (scored tree -> HEAD):
+        +3     -1  Sources/MLXFastModel/Qwen35RuntimeWeights.swift                  FRONTIER-TAKEN
+      +120     -0  Sources/MLXFastModel/Qwen36MTPBlockSession.swift                 WARM-PATH-ONLY
+        +8     -4  Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift            FRONTIER-TAKEN
+       +32    -19  Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift         HOT-PATH-REFACTOR
+        +3     -3  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp         FRONTIER-PLUS-PINNED-DIFF:d1c64484de7b18210117cda71340c157375fc6255d155ef1550c7b9d5a4fd86e
+       +16     -6  Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h FRONTIER-PLUS-PINNED-DIFF:d1c64484de7b18210117cda71340c157375fc6255d155ef1550c7b9d5a4fd86e
+
+    182 inserted and 33 deleted lines in the surface we would
+    submit next have never been measured by the board.
+
+  FRONTIER-TAKEN VERIFICATION (against refs/e59/frontier-main = 80021bc03e4b):
+    byte-identical to frontier   Sources/MLXFastModel/Qwen35RuntimeWeights.swift
+    byte-identical to frontier   Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift
+
+  PINNED-DIFF VERIFICATION (against refs/e59/frontier-main = 80021bc03e4b):
+    declared diff matches pin    Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp  d1c64484de7b
+    declared diff matches pin    Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h  d1c64484de7b
+
+  WHY EACH UNSCORED DELTA IS CARRIED:
+    Sources/MLXFastModel/Qwen35RuntimeWeights.swift
+      [FRONTIER-TAKEN] Buffer cap MLX_MAX_MB_PER_BUFFER raised 128 to 512. Adopted verbatim from the frontier so our whole-file overlay stops REVERTING an organizer-accepted promotion. Byte-identity is asserted by this gate, so no cost model is owed: the frontier is already the measured configuration.
+    Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift
+      [FRONTIER-TAKEN] Frontier memory policy taken verbatim: setenv overwrite flag 0 to 1 and the 320/128 MiB pair to 512/50. These were the crown's actual mechanism, not dead constants; a previous turn nearly deleted them as unused. Byte-identity to the frontier is asserted below.
+    Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+      [FRONTIER-PLUS-PINNED-DIFF:d1c64484de7b18210117cda71340c157375fc6255d155ef1550c7b9d5a4fd86e] JIT twin of the kernel header below, carrying the same three content-line pairs, so its pinned digest is identical by construction and research/twin_audit.py asserts that identity. Read the header entry for the measurements, the register census and the stale-pin note.
+    Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+      [FRONTIER-PLUS-PINNED-DIFF:d1c64484de7b18210117cda71340c157375fc6255d155ef1550c7b9d5a4fd86e] E27 per-width register widening was reverted to the frontier crown, which ships T,5,3 T,6,3 and T,9,3 with the wide helper asserted at NA in [2, 4]. Three content-line pairs now diverge from it and each was measured on its own. (1) E55 moved case 9 to T,9,5. (2) E64 t6 moved case 6 to T,6,6 and widened the assert to NA in [2, 6]; it measured -0.5251 percent of the local candidate leg at t = -14.19 and merged at 0040ff45. (3) E59 moves case 5 to T,5,5; it measured -0.7689 percent of the local MTP leg at t = -10.68 and -20.2088 percent on the isolated M=5 table cell at t = -122.18, over an ABBA palindrome with residual sd 0.1654 percent. Register census research/e59-artifacts/e59-reg-census-newbase.json: case 5 measures 125 registers, below the kernel-wide max of 129 that case 9 sets on its own, so case 5 adds no new shared-allocation pressure at the table level. It does raise the production entry affine_qmv_fast bfloat16_t,64,4,false from 181 to 183, which is the E27 entry count, and the matched serial control measured -0.0196 percent against a 0.0676 percent bar, so that entry cost is below detection. STALE-PIN NOTE: pin 08c42cf7 was already wrong at base 45b4f3a8, where the observed digest is 76659e5e5db34baaae51ba928581a91c989a279b5e6beef6fa5e7f6948f7eaa2, because t6 merged without re-pinning. E59 therefore re-declares the t6 hunks here as well as its own.
+    Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+      [WARM-PATH-ONLY] Two additions. (1) fkiene's verify-concat JIT warm, promoted at 1cb1f43a7246d57af8b96dad468583364779aa73 scoring 3.24417896624589 against base 3.24326223889754 (plus 0.0283 percent), deleted from the frontier by a later whole-file overlay whose author never opened the file; restored inside warmAllDepthShapes, i.e. OUTSIDE the timed window, so it can only move JIT cost out of the measured region. (2) E29 head-chain drain probe behind MLX_QWEN_MTP_TRACE_SYNC_HEAD: body is one eval() inside 'if Self.traceSyncHeadChain', so a timed run pays one static-let bool test per round.
+    Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+      [HOT-PATH-REFACTOR] E29(c) makes the decode asyncEval rung schedule overridable via MLX_QWEN_MTP_LADDER. Default rung set [0,1,9,19,29,39,49,57] is identical to the scored switch, but a Set<Int>.contains hash lookup replaced a jump table, 64x per forward pass. Modelled cost ~1 us/step: ~0.002 % of a 38 ms serial step and ~0.002 % of a 59 ms MTP round, and it appears on BOTH legs of raw_p so it largely cancels in the ratio. That is ~50x below sigma_score = 0.0978 %.
+
+scored-surface gate: PASS (every unscored shipped delta is acknowledged)

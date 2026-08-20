@@ -1,0 +1,78 @@
+{
+  "experiment": "E59",
+  "stage": "rung4-prereg-amendment-1",
+  "recorded_at_utc": "2026-08-20T01:40:00Z",
+  "recorded_before": "the first rung 4 timed leg",
+  "amends": {
+    "path": "research/e59-artifacts/e59-rung4-prereg.json",
+    "frozen_sha256": "22a3e9a717f1971bd0aff93d2548273081abb45778cf5fc95e9e2f5d059c11c7",
+    "rule": "the frozen file is not edited; this file records only what changed and why"
+  },
+  "trigger": {
+    "source": "advisor comment 5349939578, 2026-08-20T01:09:57Z",
+    "content": "askeladd E61 rung 1 closed M=7/8/9 for the single-stream form, priced the ceiling tax at -0.02 % to -0.06 % on untreated widths, and reframed m5_rbx as the M=5 dose point of an occupancy hypothesis",
+    "advisor_prediction": "t55 (125 registers) and m5_rbx (90 registers) must time the SAME at M=5, because the register law is exact at NA=5 and there is no cliff to relieve"
+  },
+  "retractions": [
+    {
+      "item": "null_floor_pct = 0.0629",
+      "reason": "measured on adjacent legs only; ledger 198 shows the same-binary null grows with leg separation (0.0032 % adjacent, 0.1147 % three apart, 0.1634 % five apart)",
+      "replacement": "this session's own same-arm spread, taken at the widest separation the palindrome measures"
+    },
+    {
+      "item": "ceiling-tax motivation for m5_rbx",
+      "reason": "E61 rung 1 measured the +15-register table-maximum rise at -0.02 % / -0.06 % on untreated widths; the ceiling argument is dead",
+      "replacement": "m5_rbx is retained purely as the M=5 dose point of the occupancy hypothesis"
+    },
+    {
+      "item": "worker_low_memory_notices = 0 as evidence in rungs 2b and 3",
+      "reason": "mtp-timed never forwards worker stderr, so the count could not be anything but zero",
+      "replacement": "research/e59_geometry_proof.sh, run before rung 4"
+    }
+  ],
+  "design": {
+    "sequence": [
+      "warmup shipped (declared, discarded)",
+      "shipped",
+      "t55",
+      "m5_rbx",
+      "m5_rbx",
+      "t55",
+      "shipped"
+    ],
+    "palindrome": true,
+    "why_palindrome": "every arm gets the same mean leg position, so linear thermal drift cancels to first order for every pairwise contrast, and the session measures its own same-arm null at separations 1, 3 and 5 for free",
+    "warmup_leg": "leg 1 is discarded and excluded from the analysis; alphonse measured that a warm-up cuts the timed-leg entry-temperature spread from 13.53 C to 4.30 C",
+    "arm_order_constraint": "t55 is measured before m5_rbx, so a session cut short still returns the shippable arm",
+    "tokens": 512,
+    "cool_gate": "real 40 C gate on every timed leg",
+    "estimator": "time ~ arm + leg_position, ordinary least squares, base arm as reference"
+  },
+  "predictions": {
+    "t55_vs_base_leg_pct": -0.751,
+    "m5_rbx_vs_base_leg_pct": -0.501,
+    "t55_minus_rbx_leg_pct": -0.250,
+    "direction": "t55 is FASTER than m5_rbx",
+    "predict_tie": false,
+    "disagrees_with_advisor": true,
+    "basis": "rung 3 pair T2 measured the identical 125-vs-90 register contrast at the isolated M=5 cell: iso_m5_ipg5_r4 -> iso_m5_ipg5_rbx = +8.318 % +/- 1.007 %, so the 90-register form is SLOWER, not equal. Rung 3 R1 (-20.010 %) and N2 (-13.356 %) give the two cell wins whose 6.654 pp gap converts to -0.250 % at the leg through the 5.413 % M=5 QMV share.",
+    "third_outcome_the_advisor_did_not_enumerate": "a LOSS at M=5. If m5_rbx is slower at M=5 while t6_rbx is faster at M=6, the occupancy relief at M=6 is real but it is paid for out of an intrinsic row-block cost that M=5 measures directly. That makes rung 3 T2 the calibration constant for askeladd's arm rather than a contradiction of it."
+  },
+  "decision_rule": {
+    "tie_tolerance_raw_pct": "this session's largest same-arm absolute leg spread at the widest separation the palindrome measures; conservative because it still carries the session drift",
+    "tie_tolerance_regression": "|t| < 2.0 on the arm[t55] - arm[m5_rbx] contrast from time ~ arm + leg_position, which is the powered read",
+    "tie": "advisor's occupancy hypothesis is supported at M=5",
+    "t55_faster": "this prereg is supported; m5_rbx buys nothing at M=5 and rung 3 T2 generalises to the whole table",
+    "rbx_faster": "both this prereg and rung 3 T2 are wrong at the leg level; the register story needs rebuilding",
+    "power_caveat": "rung 3 resolved this same register contrast at the isolated cell with an 8x margin. The leg-level test dilutes it by the 5.413 % M=5 QMV share. If the measured contrast standard error exceeds half the predicted 0.250 % gap, a leg-level tie is UNDERPOWERED and must not be reported as support for the occupancy hypothesis. The verdict `t55_vs_rbx_test_is_powered` records this explicitly."
+  },
+  "stop_rule_pct": -2.0,
+  "report_only_band_pct": [-6.0, -2.0],
+  "identity_recorded_per_leg": [
+    "wired_residency_active (false on this 48 GiB host; Qwen36MTPBlockSession.swift:226 gates wiring at 96 GiB)",
+    "metallib_source_fingerprint (rebuilt per leg after the E55 merge touched quantized.h)",
+    "startup_memory_profile, mlx_max_ops_per_buffer, mlx_max_mb_per_buffer",
+    "gpu_temp_entry_c, gpu_temp_exit_c, cool_gate_requested",
+    "warmup_discarded"
+  ]
+}

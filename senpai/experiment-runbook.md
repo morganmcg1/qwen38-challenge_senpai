@@ -110,6 +110,33 @@ senpai/rebuild-and-assert-worker.sh \
 Run it **before and after** the leg and compare the reported `worker_mtime` and
 `worker_sha256`. A change between the two reads invalidates the leg.
 
+### Match the witness to the language of your arm
+
+`--require` and `--forbid` read the **string** table. Use them only for a Metal
+JIT arm, where the runtime-effective source is a real string literal inside the
+worker.
+
+`--require-symbol` and `--forbid-symbol` read the **symbol** table through
+`nm -a`. Use them for a **Swift** arm. A Swift function name reaches the binary
+mangled in the symbol table and never appears in the string table, so `strings`
+reports zero for a function that is certainly compiled in (qwen-alphonse,
+PR #68):
+
+```
+warmAllDepthShapes        strings=0   nm -a=22
+snapshotScheduleSignal    strings=0
+linearTopTwoRows          strings=0
+```
+
+```bash
+senpai/rebuild-and-assert-worker.sh --require-symbol warmTargetLaterWindowSDPA
+```
+
+Applying `--require` to a Swift identifier fails a correct build. Applying
+`--forbid` to one passes **every** build unconditionally, which is the worse
+error: it is a guard that cannot fail. The script self-checks whichever table an
+invocation actually used and refuses an implausibly small extraction.
+
 Do not use a bare `__TEXT,__text` section digest as an arm certificate (ledger
 202(I)). That digest tracks link-time layout, not kernel source content: two
 builds of the same tree produced different digests, and two builds of different

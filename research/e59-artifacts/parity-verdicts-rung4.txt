@@ -1,0 +1,62 @@
+### CANDIDATE base vs t55  (expected: BIT-IDENTICAL at every width)
+reference arm: shipped (192 cells, bits=[3, 4])
+
+=== t55 vs shipped ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 0 differing
+cells differing: 0
+cells differing by (bits, M): []
+verdict: BIT-IDENTICAL
+
+### CANDIDATE base vs m5_rbx  (expected: BIT-IDENTICAL at every width)
+reference arm: shipped (192 cells, bits=[3, 4])
+
+=== m5_rbx vs shipped ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 0 differing
+cells differing: 0
+cells differing by (bits, M): []
+verdict: BIT-IDENTICAL
+
+### POSITIVE CONTROL t55 vs lanes 3<->4  (expected: DIVERGES at M=5 and M=9)
+reference arm: t55 (192 cells, bits=[3, 4])
+
+=== t55_lane_perturb vs t55 ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 16 differing
+cells differing: 16
+cells differing by (bits, M): [(4, 5), (4, 9)]
+verdict: DIVERGES
+ bits    M    NA set  shapes differing
+    4    5     {3,2}                 8
+    4    9       {3}                 8
+
+### POSITIVE CONTROL t55 vs four written rows  (expected: DIVERGES at M=5 only)
+reference arm: t55 (192 cells, bits=[3, 4])
+
+=== t55_row_drop vs t55 ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 8 differing
+cells differing: 8
+cells differing by (bits, M): [(4, 5)]
+verdict: DIVERGES
+ bits    M    NA set  shapes differing
+    4    5     {3,2}                 8
+
+### POSITIVE CONTROL m5_rbx vs one x-group  (expected: DIVERGES at M=5 only)
+reference arm: m5_rbx (192 cells, bits=[3, 4])
+
+=== m5_rbx_coverage_drop vs m5_rbx ===
+cells compared : 192
+  bits=3: 96 compared, 0 differing
+  bits=4: 96 compared, 8 differing
+cells differing: 8
+cells differing by (bits, M): [(4, 5)]
+verdict: DIVERGES
+ bits    M    NA set  shapes differing
+    4    5     {3,2}                 8
+

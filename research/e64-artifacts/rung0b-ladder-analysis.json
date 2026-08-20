@@ -1,0 +1,627 @@
+{
+  "ladder": {
+    "rungs": [
+      {
+        "entry_gpu_temp_c": 37.767662048339844,
+        "exit_gpu_temp_c": 42.01961898803711,
+        "gb_per_s": {
+          "ballast": 219.01262022612858,
+          "forced": 218.64221366077535,
+          "plain": 218.72311990226842
+        },
+        "ms": {
+          "ballast": 0.4069581008983644,
+          "forced": 0.4076475375349249,
+          "plain": 0.4074967476681262
+        },
+        "na": 2,
+        "plain_gb_per_s": 218.72311990226842,
+        "plain_ms": 0.4074967476681262,
+        "reference_gb_per_s": 223.784,
+        "shape": "mlp.gate_up_fused",
+        "widest_same_arm_spread": 0.0392025383527122
+      },
+      {
+        "entry_gpu_temp_c": 38.88896560668945,
+        "exit_gpu_temp_c": 43.720130920410156,
+        "gb_per_s": {
+          "ballast": 217.06640786096088,
+          "forced": 216.52299296505615,
+          "plain": 216.58603208985392
+        },
+        "ms": {
+          "ballast": 0.41060687776751903,
+          "forced": 0.41163739138957955,
+          "plain": 0.41151758098150826
+        },
+        "na": 3,
+        "plain_gb_per_s": 216.58603208985392,
+        "plain_ms": 0.41151758098150826,
+        "reference_gb_per_s": 199.693,
+        "shape": "mlp.gate_up_fused",
+        "widest_same_arm_spread": 0.009832435446162935
+      },
+      {
+        "entry_gpu_temp_c": 39.56328201293945,
+        "exit_gpu_temp_c": 45.02568054199219,
+        "gb_per_s": {
+          "ballast": 187.7906822176582,
+          "forced": 185.8251423627221,
+          "plain": 185.37026931087584
+        },
+        "ms": {
+          "ballast": 0.474618649591439,
+          "forced": 0.47963886300178044,
+          "plain": 0.48081583056086497
+        },
+        "na": 4,
+        "plain_gb_per_s": 185.37026931087584,
+        "plain_ms": 0.48081583056086497,
+        "reference_gb_per_s": 175.238,
+        "shape": "mlp.gate_up_fused",
+        "widest_same_arm_spread": 0.012988979123534845
+      },
+      {
+        "entry_gpu_temp_c": 39.11404800415039,
+        "exit_gpu_temp_c": 45.49498748779297,
+        "gb_per_s": {
+          "ballast": 155.7428287426068,
+          "forced": 152.19970800262942,
+          "plain": 155.07343283025676
+        },
+        "ms": {
+          "ballast": 0.5722829148512625,
+          "forced": 0.5856053284836802,
+          "plain": 0.5747532531736785
+        },
+        "na": 5,
+        "plain_gb_per_s": 155.07343283025676,
+        "plain_ms": 0.5747532531736785,
+        "reference_gb_per_s": 150.946,
+        "shape": "mlp.gate_up_fused",
+        "widest_same_arm_spread": 0.006391389228543349
+      },
+      {
+        "entry_gpu_temp_c": 39.15376281738281,
+        "exit_gpu_temp_c": 47.317081451416016,
+        "gb_per_s": {
+          "ballast": 110.82255176993822,
+          "forced": 119.60003234570127,
+          "plain": 120.45117146255464
+        },
+        "ms": {
+          "ballast": 0.8042493028406982,
+          "forced": 0.7452252165147807,
+          "plain": 0.7399592624776425
+        },
+        "na": 6,
+        "plain_gb_per_s": 120.45117146255464,
+        "plain_ms": 0.7399592624776425,
+        "reference_gb_per_s": 117.8,
+        "shape": "mlp.gate_up_fused",
+        "widest_same_arm_spread": 0.012036769761705993
+      },
+      {
+        "entry_gpu_temp_c": 39.7142448425293,
+        "exit_gpu_temp_c": 48.97103500366211,
+        "gb_per_s": {
+          "ballast": 85.77763344880438,
+          "forced": 100.38951999910532,
+          "plain": 95.24818371240059
+        },
+        "ms": {
+          "ballast": 1.0390699348589025,
+          "forced": 0.8878313194524122,
+          "plain": 0.9357549564317423
+        },
+        "na": 7,
+        "plain_gb_per_s": 95.24818371240059,
+        "plain_ms": 0.9357549564317423,
+        "reference_gb_per_s": 97.9,
+        "shape": "mlp.gate_up_fused",
+        "widest_same_arm_spread": 0.011012870571546356
+      }
+    ],
+    "steps": [
+      {
+        "from_na": 2,
+        "null_bar": 0.04942043022655396,
+        "reference_seconds_step": 0.12064018268041443,
+        "seconds_step": 0.009867154367221298,
+        "seconds_step_by_arm": {
+          "ballast": 0.008965976745763049,
+          "forced": 0.009787508784627086,
+          "plain": 0.009867154367221298
+        },
+        "shape": "mlp.gate_up_fused",
+        "to_na": 3
+      },
+      {
+        "from_na": 3,
+        "null_bar": 0.0229491278684415,
+        "reference_seconds_step": 0.13955306497449183,
+        "seconds_step": 0.16839681409011464,
+        "seconds_step_by_arm": {
+          "ballast": 0.155895517805142,
+          "forced": 0.1651975088624622,
+          "plain": 0.16839681409011464
+        },
+        "shape": "mlp.gate_up_fused",
+        "to_na": 4
+      },
+      {
+        "from_na": 4,
+        "null_bar": 0.019463385973338188,
+        "reference_seconds_step": 0.16093172392776234,
+        "seconds_step": 0.19537090220851683,
+        "seconds_step_by_arm": {
+          "ballast": 0.20577418385032864,
+          "forced": 0.2209296903481035,
+          "plain": 0.19537090220851683
+        },
+        "shape": "mlp.gate_up_fused",
+        "to_na": 5
+      },
+      {
+        "from_na": 5,
+        "null_bar": 0.018505090670851043,
+        "reference_seconds_step": 0.28137521222410866,
+        "seconds_step": 0.2874381456594246,
+        "seconds_step_by_arm": {
+          "ballast": 0.40533516197967256,
+          "forced": 0.27257246522057366,
+          "plain": 0.2874381456594246
+        },
+        "shape": "mlp.gate_up_fused",
+        "to_na": 6
+      },
+      {
+        "from_na": 6,
+        "null_bar": 0.02318219972073776,
+        "reference_seconds_step": 0.20326864147088863,
+        "seconds_step": 0.2646033422144176,
+        "seconds_step_by_arm": {
+          "ballast": 0.291974927660853,
+          "forced": 0.191359739012271,
+          "plain": 0.2646033422144176
+        },
+        "shape": "mlp.gate_up_fused",
+        "to_na": 7
+      }
+    ]
+  },
+  "sessions": [
+    {
+      "ballast_effect_median_over_shapes": -0.0022124467096168443,
+      "decision_forced": "dead",
+      "device": "Apple M4 Pro",
+      "entry_gpu_temp_c": 37.767662048339844,
+      "exit_gpu_temp_c": 42.01961898803711,
+      "forced_effect_median_over_shapes": 0.00019201419704595324,
+      "na": 2,
+      "order": [
+        "plain",
+        "forced",
+        "ballast",
+        "ballast",
+        "forced",
+        "plain"
+      ],
+      "path": "research/e64-artifacts/rung0b-ladder-na2.json",
+      "reps": 7,
+      "shapes": [
+        {
+          "effects": {
+            "ballast": {
+              "max": -0.0011006700484648135,
+              "mean": -0.004160518520781554,
+              "median": -0.0022124467096168443,
+              "min": -0.01190959265360192,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            },
+            "forced": {
+              "max": 0.0006510087731801395,
+              "mean": -0.0006134555070880708,
+              "median": 0.00019201419704595324,
+              "min": -0.006337431660319859,
+              "reps": 7,
+              "sign_stable_fraction": 0.8571428571428571,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            }
+          },
+          "entry_gpu_temp_c": 37.64914321899414,
+          "exit_gpu_temp_c": 43.09123229980469,
+          "gb_per_s": {
+            "ballast": 219.01262022612858,
+            "forced": 218.64221366077535,
+            "plain": 218.72311990226842
+          },
+          "inner": 269,
+          "k": 5120,
+          "median_seconds_per_dispatch": {
+            "ballast": 0.00040695810089836444,
+            "forced": 0.0004076475375349249,
+            "plain": 0.0004074967476681262
+          },
+          "n": 34816,
+          "null_position_split_max": 0.03790163920071499,
+          "null_position_split_median": 0.0004354781984388101,
+          "parity_differing_vs_plain": {
+            "ballast": 0,
+            "forced": 0
+          },
+          "reps": 7,
+          "shape": "mlp.gate_up_fused",
+          "widest_mirrored_leg_spread": 0.03863378101521408,
+          "widest_same_arm_spread": 0.0392025383527122
+        }
+      ],
+      "warmup_reps_discarded": 1,
+      "widest_same_arm_spread_over_shapes": 0.0392025383527122
+    },
+    {
+      "ballast_effect_median_over_shapes": -0.0029558968596502533,
+      "decision_forced": "dead",
+      "device": "Apple M4 Pro",
+      "entry_gpu_temp_c": 38.88896560668945,
+      "exit_gpu_temp_c": 43.720130920410156,
+      "forced_effect_median_over_shapes": 0.0005921213880113463,
+      "na": 3,
+      "order": [
+        "plain",
+        "forced",
+        "ballast",
+        "ballast",
+        "forced",
+        "plain"
+      ],
+      "path": "research/e64-artifacts/rung0b-ladder-na3.json",
+      "reps": 7,
+      "shapes": [
+        {
+          "effects": {
+            "ballast": {
+              "max": -0.0016963873533515361,
+              "mean": -0.0029632549027586324,
+              "median": -0.0029558968596502533,
+              "min": -0.004102223139387906,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            },
+            "forced": {
+              "max": 0.0014020636048588386,
+              "mean": 5.3226277133349474e-05,
+              "median": 0.0005921213880113463,
+              "min": -0.0032353751321375634,
+              "reps": 7,
+              "sign_stable_fraction": 0.7142857142857143,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            }
+          },
+          "entry_gpu_temp_c": 38.768062591552734,
+          "exit_gpu_temp_c": 44.95718765258789,
+          "gb_per_s": {
+            "ballast": 217.06640786096088,
+            "forced": 216.52299296505615,
+            "plain": 216.58603208985392
+          },
+          "inner": 269,
+          "k": 5120,
+          "median_seconds_per_dispatch": {
+            "ballast": 0.00041060687776751903,
+            "forced": 0.00041163739138957956,
+            "plain": 0.00041151758098150826
+          },
+          "n": 34816,
+          "null_position_split_max": 0.008229289842278442,
+          "null_position_split_median": 0.0013782507756765483,
+          "parity_differing_vs_plain": {
+            "ballast": 0,
+            "forced": 0
+          },
+          "reps": 7,
+          "shape": "mlp.gate_up_fused",
+          "widest_mirrored_leg_spread": 0.008195567990072289,
+          "widest_same_arm_spread": 0.009832435446162935
+        }
+      ],
+      "warmup_reps_discarded": 1,
+      "widest_same_arm_spread_over_shapes": 0.009832435446162935
+    },
+    {
+      "ballast_effect_median_over_shapes": -0.012591017582623265,
+      "decision_forced": "dead",
+      "device": "Apple M4 Pro",
+      "entry_gpu_temp_c": 39.56328201293945,
+      "exit_gpu_temp_c": 45.02568054199219,
+      "forced_effect_median_over_shapes": -0.002320421338703249,
+      "na": 4,
+      "order": [
+        "plain",
+        "forced",
+        "ballast",
+        "ballast",
+        "forced",
+        "plain"
+      ],
+      "path": "research/e64-artifacts/rung0b-ladder-na4.json",
+      "reps": 7,
+      "shapes": [
+        {
+          "effects": {
+            "ballast": {
+              "max": -0.008242039480840235,
+              "mean": -0.011997714908722304,
+              "median": -0.012591017582623265,
+              "min": -0.014040701969055158,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            },
+            "forced": {
+              "max": 0.00019586640385993448,
+              "mean": -0.002394820637803528,
+              "median": -0.002320421338703249,
+              "min": -0.0036415287706275112,
+              "reps": 7,
+              "sign_stable_fraction": 0.8571428571428571,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            }
+          },
+          "entry_gpu_temp_c": 39.347599029541016,
+          "exit_gpu_temp_c": 47.62032699584961,
+          "gb_per_s": {
+            "ballast": 187.7906822176582,
+            "forced": 185.8251423627221,
+            "plain": 185.37026931087584
+          },
+          "inner": 269,
+          "k": 5120,
+          "median_seconds_per_dispatch": {
+            "ballast": 0.000474618649591439,
+            "forced": 0.00047963886300178045,
+            "plain": 0.000480815830560865
+          },
+          "n": 34816,
+          "null_position_split_max": 0.011330043887110008,
+          "null_position_split_median": 0.00035817957983508286,
+          "parity_differing_vs_plain": {
+            "ballast": 0,
+            "forced": 0
+          },
+          "reps": 7,
+          "shape": "mlp.gate_up_fused",
+          "widest_mirrored_leg_spread": 0.011266220500752284,
+          "widest_same_arm_spread": 0.012988979123534845
+        }
+      ],
+      "warmup_reps_discarded": 1,
+      "widest_same_arm_spread_over_shapes": 0.012988979123534845
+    },
+    {
+      "ballast_effect_median_over_shapes": -0.004383863592770321,
+      "decision_forced": "dead",
+      "device": "Apple M4 Pro",
+      "entry_gpu_temp_c": 39.11404800415039,
+      "exit_gpu_temp_c": 45.49498748779297,
+      "forced_effect_median_over_shapes": 0.01902260450663662,
+      "na": 5,
+      "order": [
+        "plain",
+        "forced",
+        "ballast",
+        "ballast",
+        "forced",
+        "plain"
+      ],
+      "path": "research/e64-artifacts/rung0b-ladder-na5.json",
+      "reps": 7,
+      "shapes": [
+        {
+          "effects": {
+            "ballast": {
+              "max": -0.004075353423911854,
+              "mean": -0.004886047122863018,
+              "median": -0.004383863592770321,
+              "min": -0.007713923564402925,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            },
+            "forced": {
+              "max": 0.0203484717657596,
+              "mean": 0.018894926272668627,
+              "median": 0.01902260450663662,
+              "min": 0.017441710073391903,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            }
+          },
+          "entry_gpu_temp_c": 39.28562927246094,
+          "exit_gpu_temp_c": 47.9711799621582,
+          "gb_per_s": {
+            "ballast": 155.7428287426068,
+            "forced": 152.19970800262942,
+            "plain": 155.07343283025676
+          },
+          "inner": 269,
+          "k": 5120,
+          "median_seconds_per_dispatch": {
+            "ballast": 0.0005722829148512625,
+            "forced": 0.0005856053284836801,
+            "plain": 0.0005747532531736785
+          },
+          "n": 34816,
+          "null_position_split_max": 0.005472386379625549,
+          "null_position_split_median": 0.00018216441638463365,
+          "parity_differing_vs_plain": {
+            "ballast": 0,
+            "forced": 0
+          },
+          "reps": 7,
+          "shape": "mlp.gate_up_fused",
+          "widest_mirrored_leg_spread": 0.005457453731890668,
+          "widest_same_arm_spread": 0.006391389228543349
+        }
+      ],
+      "warmup_reps_discarded": 1,
+      "widest_same_arm_spread_over_shapes": 0.006391389228543349
+    },
+    {
+      "ballast_effect_median_over_shapes": 0.08716374473583777,
+      "decision_forced": "dead",
+      "device": "Apple M4 Pro",
+      "entry_gpu_temp_c": 39.15376281738281,
+      "exit_gpu_temp_c": 47.317081451416016,
+      "forced_effect_median_over_shapes": 0.007714783039300066,
+      "na": 6,
+      "order": [
+        "plain",
+        "forced",
+        "ballast",
+        "ballast",
+        "forced",
+        "plain"
+      ],
+      "path": "research/e64-artifacts/rung0b-ladder-na6.json",
+      "reps": 7,
+      "shapes": [
+        {
+          "effects": {
+            "ballast": {
+              "max": 0.08993409934348717,
+              "mean": 0.08775066901914005,
+              "median": 0.08716374473583777,
+              "min": 0.08573499462429002,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "partial",
+              "verdict_vs_spread_bar": "partial"
+            },
+            "forced": {
+              "max": 0.010000153780141519,
+              "mean": 0.0080697357224045,
+              "median": 0.007714783039300066,
+              "min": 0.006568268509912656,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            }
+          },
+          "entry_gpu_temp_c": 38.984317779541016,
+          "exit_gpu_temp_c": 48.814414978027344,
+          "gb_per_s": {
+            "ballast": 110.82255176993822,
+            "forced": 119.60003234570127,
+            "plain": 120.45117146255464
+          },
+          "inner": 269,
+          "k": 5120,
+          "median_seconds_per_dispatch": {
+            "ballast": 0.0008042493028406982,
+            "forced": 0.0007452252165147807,
+            "plain": 0.0007399592624776426
+          },
+          "n": 34816,
+          "null_position_split_max": 0.005751204615495831,
+          "null_position_split_median": 2.8050158371373257e-05,
+          "parity_differing_vs_plain": {
+            "ballast": 0,
+            "forced": 0
+          },
+          "reps": 7,
+          "shape": "mlp.gate_up_fused",
+          "widest_mirrored_leg_spread": 0.005767790487131217,
+          "widest_same_arm_spread": 0.012036769761705993
+        }
+      ],
+      "warmup_reps_discarded": 1,
+      "widest_same_arm_spread_over_shapes": 0.012036769761705993
+    },
+    {
+      "ballast_effect_median_over_shapes": 0.11025218928542624,
+      "decision_forced": "partial",
+      "device": "Apple M4 Pro",
+      "entry_gpu_temp_c": 39.7142448425293,
+      "exit_gpu_temp_c": 48.97103500366211,
+      "forced_effect_median_over_shapes": -0.05162985039849932,
+      "na": 7,
+      "order": [
+        "plain",
+        "forced",
+        "ballast",
+        "ballast",
+        "forced",
+        "plain"
+      ],
+      "path": "research/e64-artifacts/rung0b-ladder-na7.json",
+      "reps": 7,
+      "shapes": [
+        {
+          "effects": {
+            "ballast": {
+              "max": 0.11207028005224395,
+              "mean": 0.11051126115170369,
+              "median": 0.11025218928542624,
+              "min": 0.10927397440652964,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "confirmed",
+              "verdict_vs_spread_bar": "confirmed"
+            },
+            "forced": {
+              "max": -0.047608026884962906,
+              "mean": -0.050668405336899154,
+              "median": -0.05162985039849932,
+              "min": -0.05183343222283565,
+              "reps": 7,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "partial",
+              "verdict_vs_spread_bar": "partial"
+            }
+          },
+          "entry_gpu_temp_c": 39.62342071533203,
+          "exit_gpu_temp_c": 52.431602478027344,
+          "gb_per_s": {
+            "ballast": 85.77763344880438,
+            "forced": 100.38951999910532,
+            "plain": 95.24818371240059
+          },
+          "inner": 269,
+          "k": 5120,
+          "median_seconds_per_dispatch": {
+            "ballast": 0.0010390699348589026,
+            "forced": 0.0008878313194524123,
+            "plain": 0.0009357549564317423
+          },
+          "n": 34816,
+          "null_position_split_max": 0.009084848981838256,
+          "null_position_split_median": 0.00012858031633777856,
+          "parity_differing_vs_plain": {
+            "ballast": 0,
+            "forced": 0
+          },
+          "reps": 7,
+          "shape": "mlp.gate_up_fused",
+          "widest_mirrored_leg_spread": 0.009043768347008601,
+          "widest_same_arm_spread": 0.011012870571546356
+        }
+      ],
+      "warmup_reps_discarded": 1,
+      "widest_same_arm_spread_over_shapes": 0.011012870571546356
+    }
+  ]
+}

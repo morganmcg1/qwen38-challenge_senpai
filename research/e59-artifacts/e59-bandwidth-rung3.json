@@ -1,0 +1,80 @@
+{
+  "lone_group_curve": null,
+  "measured_peak_bandwidth_bytes_per_second": 227769152853.5158,
+  "note": "per-row detail dropped to keep the artifact small; regenerate with research/e54_bandwidth.py --legs .mlxfast-private/e59-legs",
+  "pairs": {},
+  "per_arm_per_width": {
+    "iso_m5_ipg3": {
+      "5": {
+        "group_na": [
+          [
+            3,
+            2
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>"
+        ],
+        "lone_group_gbps_mean": null,
+        "na5_group_gbps_mean": null,
+        "per_shape_gbps": {
+          "full_attn.o_proj": 194.6030686283699,
+          "full_attn.qkv_proj_fused": 236.29982156876738,
+          "head.compact_draft_vocab": 266.89239054388537,
+          "head.lm_head": 270.6417726036388,
+          "linear_attn.in_proj_fused_qkvzba": 240.4290994092934,
+          "linear_attn.out_proj": 198.7103057440705,
+          "mlp.down": 227.59034111818826,
+          "mlp.gate_up_fused": 256.69602781940586
+        },
+        "per_shape_gbps_max": 270.6417726036388,
+        "per_shape_gbps_min": 194.6030686283699,
+        "samples": 16,
+        "weighted_bytes_per_verify": 28887900160.0,
+        "weighted_frac_of_measured_peak": 1.0589998561507352,
+        "weighted_gbps": 241.20750010744806,
+        "weighted_seconds_per_verify": 0.11976368955,
+        "working_groups": [
+          2
+        ]
+      }
+    },
+    "iso_m5_ipg5_r4": {
+      "5": {
+        "group_na": [
+          [
+            5
+          ]
+        ],
+        "kernels": [
+          "qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>"
+        ],
+        "lone_group_gbps_mean": 148.620920245917,
+        "na5_group_gbps_mean": 148.620920245917,
+        "per_shape_gbps": {
+          "full_attn.o_proj": 118.56097174488235,
+          "full_attn.qkv_proj_fused": 147.83185711404178,
+          "head.compact_draft_vocab": 174.63843940919045,
+          "head.lm_head": 178.01986828887152,
+          "linear_attn.in_proj_fused_qkvzba": 150.78958454304288,
+          "linear_attn.out_proj": 118.86764618515794,
+          "mlp.down": 137.70154719119068,
+          "mlp.gate_up_fused": 165.31757013514175
+        },
+        "per_shape_gbps_max": 178.01986828887152,
+        "per_shape_gbps_min": 118.56097174488235,
+        "samples": 16,
+        "weighted_bytes_per_verify": 14475550720.0,
+        "weighted_frac_of_measured_peak": 0.6634041068725623,
+        "weighted_gbps": 151.1029914219068,
+        "weighted_seconds_per_verify": 0.09579923325,
+        "working_groups": [
+          1
+        ]
+      }
+    },
+    "iso_m5_ipg5_rb2": {},
+    "iso_m5_ipg5_rbx": {}
+  },
+  "t_bytes": 2
+}
