@@ -185,13 +185,36 @@ def validate_pairing(cells: dict, margins: dict, steps: int) -> dict:
     return {"cells_checked": checked, "mismatched": mismatched, "examples": examples}
 
 
+def is_tie(fact: dict) -> bool:
+    """The golden's own argmax is arbitrary when its top two logits are equal.
+
+    A head that proposes the other tied token is then marked wrong by a coin
+    flip, so such a cell is neither an accept nor a reject and is dropped from
+    every rate. Its reach is still reported, so the exclusion stays visible.
+    """
+    return fact["reference_margin"] <= 0.0
+
+
 def profile(cells: dict, keep: set) -> dict:
-    per_depth = {}
+    per_depth, ties = {}, {}
     for depth in DEPTHS:
-        chosen = [v["accepted"] for k, v in cells.items() if k[2] == depth and k in keep]
-        per_depth[depth] = wilson(sum(chosen), len(chosen))
-    pooled = [v["accepted"] for k, v in cells.items() if k[2] in RULE_DEPTHS and k in keep]
-    return {"per_depth": per_depth, "pooled_3_6": wilson(sum(pooled), len(pooled))}
+        at = [v for k, v in cells.items() if k[2] == depth and k in keep]
+        scored = [v["accepted"] for v in at if not is_tie(v)]
+        per_depth[depth] = wilson(sum(scored), len(scored))
+        ties[depth] = sum(1 for v in at if is_tie(v))
+    at = [v for k, v in cells.items() if k[2] in RULE_DEPTHS and k in keep]
+    scored = [v["accepted"] for v in at if not is_tie(v)]
+    tied = [v for v in at if is_tie(v)]
+    return {
+        "per_depth": per_depth,
+        "pooled_3_6": wilson(sum(scored), len(scored)),
+        "ties_by_depth": ties,
+        "ties_3_6": len(tied),
+        "tie_fraction_3_6": len(tied) / len(at) if at else 0.0,
+        # Reported because a tie the candidate happens to match is scored as an
+        # accept by the harness even though the reference token was arbitrary.
+        "tied_cells_the_arm_matched_3_6": sum(1 for v in tied if v["accepted"]),
+    }
 
 
 def work(payload: dict, rounds: dict, seeds: list[str], steps: int) -> dict:
@@ -218,7 +241,7 @@ def mcnemar(ref: dict, cand: dict, keep: set) -> dict:
     b01 = b10 = both = neither = 0
     for key in keep:
         rx, ry = ref.get(key), cand.get(key)
-        if rx is None or ry is None:
+        if rx is None or ry is None or is_tie(rx):
             continue
         x, y = rx["accepted"], ry["accepted"]
         if x and y:
@@ -281,6 +304,8 @@ def main() -> None:
     ap.add_argument("--candidates", default="soup-q4,qat-q4,master-bf16,kamciosz,pinned")
     ap.add_argument("--steps", type=int, default=512)
     ap.add_argument("--report", default="research/e82-accept.json")
+    ap.add_argument("--exclude-latched", action="store_true")
+    ap.add_argument("--latch-threshold", type=float, default=0.05)
     args = ap.parse_args()
     if args.selftest:
         selftest()
@@ -304,6 +329,28 @@ def main() -> None:
     seeds = sorted(set.intersection(*(set(v) for v in payloads.values())))
     if not seeds:
         raise SystemExit("no seed has a payload for every arm")
+
+    # `costModelDepth` returns 0 whenever `positionAcceptEMA[0]` falls under the
+    # marginal price, and a round that drafts nothing produces no acceptance
+    # observation to raise that EMA again. The schedule therefore has a
+    # near-absorbing non-drafting state that a run enters on early bad luck.
+    # It is bimodal in practice -- a seed is at 0.000 or above 0.5 -- and it is
+    # head-independent, so it is a confound and not an arm effect. Cells are
+    # already conditioned on a round having drafted, but a latched arm drafts
+    # only where it stayed confident, which biases its conditional acceptance
+    # upward. Report the latch and offer the unlatched subset as the clean read.
+    latch = {
+        arm: {s: payloads[arm][s]["non_drafting_round_count"] / payloads[arm][s]["round_count"]
+              for s in seeds}
+        for arm in payloads
+    }
+    latched_seeds = sorted(
+        s for s in seeds if max(latch[a][s] for a in payloads) > args.latch_threshold
+    )
+    if args.exclude_latched:
+        seeds = [s for s in seeds if s not in latched_seeds]
+        if not seeds:
+            raise SystemExit("every seed latched on some arm")
 
     margins = {s: difficulty(s, args.steps) for s in seeds}
     cells, rounds = {}, {}
@@ -359,8 +406,17 @@ def main() -> None:
             "per_seed_median_margin": {
                 s: statistics.median(list(margins[s].values())) for s in seeds
             },
+            "tied_positions": sum(1 for m in pool if m <= 0.0),
+            "tied_position_fraction": sum(1 for m in pool if m <= 0.0) / len(pool),
+            "near_tie_fraction_under_0p5": sum(1 for m in pool if m < 0.5) / len(pool),
         },
         "pairing_validation": pairing,
+        "schedule_latch": {
+            "non_drafting_round_fraction": latch,
+            "threshold": args.latch_threshold,
+            "latched_seeds": latched_seeds,
+            "excluded": bool(args.exclude_latched),
+        },
         "arms": {},
     }
 
@@ -419,10 +475,30 @@ def render(report: dict) -> None:
     ref = report["reference_arm"]
     cuts = report["difficulty"]["tercile_cuts"]
     print(f"seeds: {len(report['seeds'])}  reference arm: {ref}  window: {report['steps']} tokens")
+    diff = report["difficulty"]
     print(
-        f"difficulty over {report['difficulty']['positions']} predicted positions:"
+        f"difficulty over {diff['positions']} predicted positions:"
         f" hardest margin <= {cuts['hardest_max']:.4f}, easiest >= {cuts['easiest_min']:.4f}"
     )
+    print(
+        f"exact ties (margin 0, reference argmax arbitrary): {diff['tied_positions']}"
+        f" = {100 * diff['tied_position_fraction']:.2f} % of positions;"
+        f" margin < 0.5: {100 * diff['near_tie_fraction_under_0p5']:.2f} %"
+    )
+
+    latch = report["schedule_latch"]
+    frac = latch["non_drafting_round_fraction"]
+    arms = list(report["arms"])
+    print(
+        f"\n=== schedule latch: non-drafting round fraction"
+        f" (latched > {latch['threshold']:.2f},"
+        f" {'excluded' if latch['excluded'] else 'kept'}) ==="
+    )
+    print("seed".ljust(26) + "".join(a.rjust(14) for a in arms))
+    for seed in sorted(frac[arms[0]]):
+        row = "".join(f"{frac[a][seed]:14.3f}" for a in arms)
+        print(seed.ljust(26) + row)
+    print(f"latched seeds: {latch['latched_seeds'] or 'none'}")
 
     print("\n=== work per 512 emitted tokens (paired, no reach conditioning) ===")
     print("arm            rounds/512  vs ref   acc/round  drafted/round  rows/token  parity  head sha256")
@@ -445,13 +521,16 @@ def render(report: dict) -> None:
                 c = entry["splits"][split]["per_depth"][d]
                 cells.append(f" {100*c['p']:5.1f} [{c['reached']:5d}]" if c["reached"] else "      -      ")
             print(arm.ljust(13) + "".join(cells))
-        print("  pooled d3-d6:")
+        print("  pooled d3-d6 (ties excluded):")
         for arm, entry in report["arms"].items():
-            c = entry["splits"][split]["pooled_3_6"]
+            s = entry["splits"][split]
+            c = s["pooled_3_6"]
             if c["reached"]:
                 print(
                     f"    {arm.ljust(13)} {100*c['p']:6.2f} % "
                     f"[{100*c['lo']:.2f}, {100*c['hi']:.2f}] n={c['reached']}"
+                    f"  ties dropped {s['ties_3_6']}"
+                    f" ({100*s['tie_fraction_3_6']:.2f} %)"
                 )
 
     print(f"\n=== stop rule vs {ref}: pooled >= +1.0 pt AND no hardest-tercile loss at d3-d6 ===")
