@@ -148,6 +148,11 @@ private struct PhaseCounters {
     /// host-side dispatch price and cannot be inflated by GPU time.
     var dispatchNs = 0
     var commitNs = 0
+    /// Host nanoseconds blocked inside `waitUntilCompleted`. MLX calls it from
+    /// `CommandEncoder::synchronize()`, so this is the only place in a round
+    /// where the host stops and waits for the GPU.
+    var waits = 0
+    var waitNs = 0
     var ledgerNs = 0
     var kernels: [String: Int] = [:]
     var shapes: [String: Int] = [:]
@@ -220,6 +225,7 @@ private final class DispatchLedger: @unchecked Sendable {
                 bufferClass, "computeCommandEncoderWithDescriptor:")
         }
         results["commit"] = swizzleCommit(bufferClass)
+        results["wait"] = swizzleWait(bufferClass)
         write([
             "event": "census_installed",
             "encoder_class": String(describing: encoderClass),
@@ -288,6 +294,13 @@ private final class DispatchLedger: @unchecked Sendable {
         lock.unlock()
     }
 
+    func wait(originalNs: Int) {
+        lock.lock()
+        phases[currentPhase, default: PhaseCounters()].waits += 1
+        phases[currentPhase, default: PhaseCounters()].waitNs += originalNs
+        lock.unlock()
+    }
+
     func setPhase(_ name: String) {
         lock.lock()
         currentPhase = name
@@ -347,6 +360,8 @@ private final class DispatchLedger: @unchecked Sendable {
                 "commits": counters.commits,
                 "dispatch_ns": counters.dispatchNs,
                 "commit_ns": counters.commitNs,
+                "waits": counters.waits,
+                "wait_ns": counters.waitNs,
                 "clock_bias_ns": counters.ledgerNs,
                 "kernels": counters.kernels,
             ]
@@ -456,6 +471,20 @@ private func swizzleCommit(_ cls: AnyClass) -> Bool {
         original(buffer, selector)
         let ended = nowNs()
         DispatchLedger.shared.commit(originalNs: Int(ended - started))
+    }
+    method_setImplementation(method, imp_implementationWithBlock(replacement))
+    return true
+}
+
+private func swizzleWait(_ cls: AnyClass) -> Bool {
+    let selector = NSSelectorFromString("waitUntilCompleted")
+    guard let method = class_getInstanceMethod(cls, selector) else { return false }
+    let original = unsafeBitCast(method_getImplementation(method), to: CommitIMP.self)
+    let replacement: @convention(block) (AnyObject) -> Void = { buffer in
+        let started = nowNs()
+        original(buffer, selector)
+        let ended = nowNs()
+        DispatchLedger.shared.wait(originalNs: Int(ended - started))
     }
     method_setImplementation(method, imp_implementationWithBlock(replacement))
     return true

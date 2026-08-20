@@ -30,9 +30,15 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-tag="${1:?usage: e80_census_session.sh TAG [WIDTHS] [TOKENS]}"
+tag="${1:?usage: e80_census_session.sh TAG [WIDTHS] [TOKENS] [HOT]}"
 widths="${2:-6,5,1,4,9}"
 tokens="${3:-512}"
+# HOT=1 sets MLXFAST_LOCAL_COOL_GATE=0 for every leg. Permitted only when the
+# session is ABBA-counterbalanced over modes, entry and exit GPU temperature is
+# recorded per leg, and the result carries cool_gate_passed_real_gate=false and
+# gate_qualified_for_timing=false verbatim. An entry of the form WIDTH:MODE
+# runs exactly that one mode, which is how the ABBA order is expressed.
+hot="${4:-0}"
 
 # The shipped draftPolicy is an operator k-test pinned to k = 1, so an unforced
 # leg only ever measures width 1. Every other width needs both a forced draft
@@ -44,12 +50,18 @@ mkdir -p "$(dirname "${summary}")"
 : > "${summary}"
 
 started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-echo "session=${tag} started=${started} widths=${widths} tokens=${tokens}" \
+echo "session=${tag} started=${started} widths=${widths} tokens=${tokens} hot=${hot}" \
   | tee -a "${summary}"
 
 status=0
 IFS=',' read -r -a width_list <<< "${widths}"
-for width in "${width_list[@]}"; do
+for entry in "${width_list[@]}"; do
+  width="${entry%%:*}"
+  if [[ "${entry}" == *:* ]]; then
+    modes=("${entry#*:}")
+  else
+    modes=(default isolated)
+  fi
   drafts=$((width - 1))
   if ((drafts < 0 || drafts > depth)); then
     echo "e80_census_session.sh: width ${width} needs ${drafts} drafts, outside 0..${depth}" \
@@ -57,11 +69,12 @@ for width in "${width_list[@]}"; do
     status=2
     continue
   fi
-  for mode in default isolated; do
+  for mode in "${modes[@]}"; do
     leg="${tag}-w${width}-${mode}"
     args=("${leg}" --gpu-time --force-drafts "${drafts}" --depth "${depth}"
           --tokens "${tokens}")
     [[ "${mode}" == "isolated" ]] && args+=(--buffer-ops 1)
+    ((hot)) && args+=(--hot)
 
     echo "--- leg=${leg} width=${width} drafts=${drafts} mode=${mode} start=$(date -u +%H:%M:%S)" \
       | tee -a "${summary}"
