@@ -117,6 +117,12 @@ reference)
   ;;
 capture)
   mkdir -p "${dump_dir}" "${out}/verify"
+  # `--golden` makes the CLI hand the worker a seatbelt profile that denies the
+  # golden file AND carries a blanket `(deny file-write*)`, so the instrument's
+  # FileHandle open fails and the dump is silently empty. The capture stage is
+  # untimed research, and research/e79_trace_leg.sh already uses this same knob
+  # for local legs, so drop the profile here and check the dump instead.
+  export MLXFAST_NO_SANDBOX=1
   for name in $(seed_names); do
     golden="${ref_dir}/${name}_${steps}.json"
     [[ -s "${golden}" ]] || { echo "e87-capture: missing golden ${name}"; continue; }
@@ -139,7 +145,16 @@ capture)
              + " rounds=\(.round_count) accept=\(.accepted_draft_rate)"
              + " meandraft=\(.effective_mean_draft_len)"
              + " head=\(.head_provenance.sha256[0:12])"' "${dest}"
-      echo "e87-capture: ${name} dumped $(( $(stat -f%z "${dump_dir}/${name}.tok.i32") / 4 )) samples in $(( $(date +%s) - start ))s"
+      # A silently empty dump is the failure mode this stage exists to avoid,
+      # so treat it exactly like a failed leg rather than reporting success.
+      tok_bytes=$(stat -f%z "${dump_dir}/${name}.tok.i32" 2>/dev/null || echo 0)
+      x_bytes=$(stat -f%z "${dump_dir}/${name}.x.f32" 2>/dev/null || echo 0)
+      if ((tok_bytes == 0)) || ((x_bytes != tok_bytes / 4 * 5120 * 4)); then
+        echo "e87-capture: ${name} DUMP UNUSABLE (tok=${tok_bytes} x=${x_bytes})" >&2
+        rm -f "${dest}" "${dump_dir}/${name}.x.f32" "${dump_dir}/${name}.tok.i32"
+        continue
+      fi
+      echo "e87-capture: ${name} dumped $((tok_bytes / 4)) samples in $(( $(date +%s) - start ))s"
     else
       mv "${log}" "${out}/verify/${name}.failed.log"
       rm -f "${dest}" "${dump_dir}/${name}.x.f32" "${dump_dir}/${name}.tok.i32"
