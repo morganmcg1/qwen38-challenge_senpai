@@ -19157,3 +19157,425 @@ it, without touching the kernel.
 Base `8f83dc72`. Crown 3.25238228 `9ad17378`, source `bfab0de5` = `upstream/main`.
 Slot free and held for arm 3. Arm 3 note written and staged; it waits only on E75
 rung A. Slots #77 askeladd, #78 thorfinn (critical path), #79 edward, #80 alphonse.
+
+## 214 Registers on the ranked host are a function of one number, and that number alone cannot explain the receipt
+
+Ledger 212 established that the arm-2 receipt inverted our kernel dispatch
+table and named register pressure on `applegpu_g17s` as the mechanism. This
+item completes that census, states the law exactly, and then shows that the
+law by itself is not sufficient. A term is missing, and naming the missing
+term is now the most valuable open kernel question in the campaign.
+
+All register counts here come from the E72 compile oracle
+(`xcrun metal-tt -arch applegpu_g17s`, merged in PR #75). That oracle is a
+compile-time tool. It needs no GPU and it runs on the advisor host. Every
+number below was produced locally by `_advisor_scratch/cellcensus.py`, which
+imports `research/e72_rung1_census.py`, `research/agx_crossarch.py` and
+`research/jit_string_compile.py`, and which emits one kernel per pipeline
+script so that records cannot mispair. That last precaution is the fix E72
+itself disclosed after its first rung-1 census zipped `metal-nm` order against
+archive order and had to be withdrawn.
+
+### (A) The law
+
+The legal cells of the cross-row wrapper are `m in 3...9`, `ipg in 2...min(m,6)`,
+`m % ipg != 1`. That is 19 cells. The census covers all 19 on both
+architectures. There is no spill on `g17s` anywhere in the grid.
+
+**The device register count is a pure function of the largest group in the
+partition. It does not depend on M, and it does not depend on how many groups
+there are.** 19 of 19 cells, zero exceptions.
+
+| largest group | `g16s` registers | `g17s` registers | step on `g17s` |
+|---:|---:|---:|---:|
+| 2 | 70 | 83 | — |
+| 3 | 93 | 90 | +7 |
+| 4 | 94 | 91 | **+1** |
+| 5 | 95 | 98 | +7 |
+| 6 | 96, plus 16 B spill | 111 | +13 |
+
+This exactly reproduces E72's independent census of the bare `_wide` kernel
+without the M and IPG wrapper. The wrapper therefore adds zero registers, which
+is worth stating because it means the whole dispatch table can be reasoned
+about from a five-row table rather than a nineteen-cell grid.
+
+The full grid, as cell, partition, group count, `g16s`, `g17s`:
+
+```
+m3i3 [3]       1g  93/90     m6i6 [6]       1g  96/111    m8i5 [5,3]     2g  95/98
+m4i2 [2,2]     2g  70/83     m7i4 [4,3]     2g  94/91     m8i6 [6,2]     2g  96/111
+m4i4 [4]       1g  94/91     m7i5 [5,2]     2g  95/98     m9i3 [3,3,3]   3g  93/90
+m5i3 [3,2]     2g  93/90     m8i2 [2,2,2,2] 4g  70/83     m9i5 [5,4]     2g  95/98
+m5i5 [5]       1g  95/98     m8i3 [3,3,2]   3g  93/90     m9i6 [6,3]     2g  96/111
+m6i2 [2,2,2]   3g  70/83     m8i4 [4,4]     2g  94/91
+m6i3 [3,3]     2g  93/90
+```
+
+### (B) The cliff is between 4 and 5, not between 3 and 4
+
+This corrects the working assumption carried in ledger 212. Going from a
+largest group of 3 to a largest group of 4 costs **one** register on the ranked
+host. Going from 4 to 5 costs seven, and 5 to 6 costs thirteen.
+
+Under the standard occupancy floor `floor(F / (128 * regs))` with a 208 KiB
+file, the tiers are 83 to 20, 90 to 18, 91 to 18, 98 to 16, 111 to 14.
+**90 and 91 sit in the same tier.** That single fact is what makes E76
+tractable, and it is why edward's target was corrected from 90 to 91.
+
+Dominance, where a cell strictly dominates another if it has no more groups and
+no more registers:
+
+- M=7: `[4,3]` dominates `[5,2]`. M=8: `[4,4]` dominates `[5,3]` and `[6,2]`.
+  M=9: `[5,4]` dominates `[6,3]`. M=6: `[3,3]` dominates `[4,2]`, so
+  `<T,6,4>` can never be optimal on either architecture.
+- **M=7 and M=8 are already at their unique undominated two-group choice, and
+  both we and the promoted frontier ship it. There is nothing to win there.**
+- The only open partition decisions in the whole table are M=4, 5, 6 and 9.
+
+Our three disagreements with the frontier are all the same trade, made three
+times: buy one fewer weight stream, pay the largest-group cliff.
+
+| M | frontier | groups | `g17s` | ours | groups | `g17s` |
+|---:|---|---:|---:|---|---:|---:|
+| 5 | [3,2] | 2 | 90 | [5] | 1 | 98 |
+| 6 | [3,3] | 2 | 90 | [6] | 1 | **111** |
+| 9 | [3,3,3] | 3 | 90 | [5,4] | 2 | 98 |
+
+### (C) The law alone cannot explain the receipt, and this is a proof, not a doubt
+
+Take M=6, where our disagreement is largest. The frontier runs `[3,3]`: two
+weight streams, 90 registers. We run `[6]`: one weight stream, 111 registers.
+The receipt says the frontier is faster.
+
+Model the cell as `time proportional to streams / occupancy`, with
+`occupancy = floor(R / regs)` for any register budget R. The frontier wins only
+if `occ(90) > 2 * occ(111)`.
+
+Maximising `occ(90) / occ(111)` over **all** R gives exactly **2.0000**,
+attained at R = 180. The unquantised bound is `111 / 90 = 1.2333`.
+
+**Doubling the number of weight streams can at best be exactly cancelled by the
+occupancy difference. It can never be beaten.** So under this model the
+frontier's M=6 cell can tie ours at one specific register budget and loses
+everywhere else. The receipt says it wins. **A term is missing.**
+
+This is the first hard constraint the campaign has on the ranked cost model
+that is derived rather than fitted, and it should be applied to any future
+model before that model is used to price a table.
+
+### (D) The leading candidate for the missing term: group count is nearly free because the groups share a cache line
+
+Two co-scheduled threadgroups in a two-group partition read the **same**
+output-row weight tile. At K = 5120, 8 rows, affine 4-bit group 64, that tile
+is 20.0 KiB of packed weights plus 2.5 KiB of scales and biases, so 22.5 KiB.
+The second reader hits L2 or SLC, not DRAM.
+
+If that is right, then "two groups means twice the weight traffic" is simply
+false whenever the groups are co-resident, and the receipt follows cleanly:
+group count is cheap, registers are not, and the frontier's table is the
+correct one on the ranked host. The local host disagrees because every one of
+its cells sits between 93 and 96 registers, which is a single occupancy tier,
+leaving only the small cache-mitigated traffic term, which mildly favours the
+one-group cell.
+
+**Sharp falsifiable prediction if the hypothesis holds: the ranked-optimal
+table is simply "minimise the largest group".** That is `<T,M,2>` at M=4, 6, 8
+for 83 registers, `<T,M,3>` at M=3, 5, 9 for 90, and M=7 forced to `[4,3]` at
+91. Note that this is a *different* table from the frontier's, and a stronger
+claim than "the frontier is right".
+
+Counter-evidence that must be weighed and not skipped: E73's best local fit
+used a **linear** `groups * W` traffic term and reached 4.94 percent rms with
+three parameters. Locally, traffic does scale close to linearly with group
+count, which is what the cache-reuse hypothesis denies. The M5's larger SLC
+and its 2.69 times bandwidth may change this, or the hypothesis may be wrong.
+This is now an owned question, not a note.
+
+### (E) The M=8 family is a natural controlled experiment for exactly this
+
+**At M=8, IPG in {4, 5, 6} all produce exactly two groups.** Same M, same group
+count, same weight traffic, same number of working threadgroups, same grid.
+Only the register count changes: `g16s` 94, 95, 96 and `g17s` 91, 98, 111.
+
+No artificial register pressure is required, and every arm is bit-identical
+output by E66's 12-of-12 result, because group partitions are unordered.
+Replicates exist at M=6 with IPG in {3,4}, M=7 with {4,5}, and M=9 with {5,6}.
+
+The expected local outcome is a null, and **that null is the result**: it would
+show directly that the local instrument is blind to the effect the ranked host
+is measuring. This has been handed to alphonse as the corrected rung 1 of E77.
+
+### (F) A flaw in my own E77 brief, corrected
+
+I asked alphonse to sweep register pressure from about 88 up to about 120. The
+local register ceiling is 96. **Every local arm above 96 registers measures
+spill, and the ranked cells at 98 and 111 spill zero bytes** because the ranked
+ceiling is 124. Spill cost and occupancy cost are different mechanisms and the
+fit would have silently mixed them.
+
+Corrected instruction, already delivered: fit the occupancy coefficient only on
+arms at or below 96 registers with zero spill, and report anything above 96 as
+a separate, labelled spill curve that is kept out of the fit.
+
+This is the second time a brief of mine has handed a student a model that could
+not represent the effect being studied. The first was ledger 211(G), the
+additive form in the E73 brief that could not express a sign flip. The rule
+adopted there is now extended: **before a cost model goes into a brief, check
+both that it can represent the effect including its sign, and that every arm
+used to fit it is in the same physical regime.**
+
+### (G) A hard inequality any future model must satisfy
+
+At M=6 our cell halves the weight traffic and still loses by about 0.44 percent
+on the wide prompts after the plutarch correction. Therefore:
+
+```
+occupancy_penalty(111) - occupancy_penalty(90) > cost of one extra weight stream at M=6
+```
+
+At these widths, on the ranked host, occupancy dominates traffic. This is a
+pass or fail check on E77's fitted model, and it has been given to alphonse as
+one, alongside his two existing controls.
+
+### (H) What this does to E76
+
+Because registers depend only on the largest group, edward is not searching
+nineteen cells. He is searching for **one** `_wide<T,5>` body and **one**
+`_wide<T,6>` body. Fixing the 5 case fixes M=5, 7, 8 and 9 at IPG 5; fixing
+the 6 case fixes M=6, 8 and 9 at IPG 6.
+
+His target is **91, not 90**. At 91 registers, `<T,5,5>` and `<T,6,6>` become
+one-group cells at one register more than the frontier's two-group cells at 90,
+in the same occupancy tier. That is half the weight traffic for one register:
+strict dominance. M=5 and M=6 together carry 57.5 percent of ranked width time.
+
+The sharpest sub-question is why the step from largest group 3 to 4 costs one
+register while 4 to 5 costs seven. The accumulator `VF acc[rows_per_simd]` is
+`4 * NA` floats, which is 12, 16, 20, 24 and rises by exactly four each step,
+while registers rise 7, 1, 7, 13. The allocator is plainly not tracking live
+floats, so something structural changes at NA=5. The prime suspect is that
+`vec<float,4>` is a native `float4` while `vec<float,5>` and `vec<float,6>` are
+not. First arm: replace `VF acc[rows_per_simd]` with a flat
+`float acc[rows_per_simd * NA]` at identical arithmetic order. If the register
+count does not move, the seven is real live state, the cell cannot be rescued,
+and that is a complete answer worth reporting.
+
+If neither body reaches 91, then the ranked-optimal table is the frontier's at
+M=5, 6 and 9 and ours nowhere, and we take the 0.298 percent as a clean
+composable arm.
+
+## 215 The winner is banked, the vector we published was never executed, and one diff now has both harnesses
+
+E75 rung A closed at 2026-08-20T11:38Z. This item records what it produced,
+one defect it found in our own published record, one analytical error of mine
+that a student corrected, and a calibration opportunity that neither of us
+planned and that is now the most valuable by-product on the board.
+
+### (A) `pbfit` is banked
+
+Commit `4d467ca` on `qwen-thorfinn/e75-bank-pbfit-and-price-it-on-the-crown-table`,
+base `432eba00`. `measuredRawDepthPrice` is filled with the raw eight-element
+vector and `depthPriceArm` is `.pbfit`. Six new tests, all passing; full suite
+703 tests against the base's 698, with the identical set of nine known
+failures under `diff` on sorted test names, so the five-test delta is new
+passing tests only.
+
+The gated exactness leg, W&B `wu8zb8k1`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wu8zb8k1),
+job `de750de5-2865-401d-a11a-9e7847cf76f5`, exit 0, 495 s:
+
+| field | value |
+|---|---|
+| `cool_gate_passed_real_gate` | `true`, entry 40.81 C, exit 60.80 C |
+| `gate_qualified_for_timing` | `true` |
+| `decode_tokens` | 512 |
+| `all_tokens_matched` | `true` |
+| `residual_divergence_count` | 0 |
+| `parity_all_ok` | `true` |
+| row ledger | 550 declared = 550 reference-checked, closed |
+| 513-token digest | `87ce831f40d821442cb56895867f5b2b1a9998ed03faf5366d08a7cae8c04d80` |
+| `worker_text_sha256` | `f0f2674fe36d53b9315af84d660f836567bb627fedf2f4e645e71e21a8252a22` |
+| round histogram | `{4:5, 5:42, 6:5, 8:7, 9:26}`, 85 rounds |
+
+The digest and the histogram are both bit-for-bit identical to the E68
+rung-3 legs. **That is the reachability evidence that matters:** the banked
+constant selects exactly the schedule that was timed, so the −3.500 percent
+result attaches to the submitted file and not only to a development build.
+Timing on this leg was 0.19 percent above the E68 median, which is
+between-session drift on one leg and is reported as a sanity check, not as a
+re-measurement.
+
+### (B) The vector in our own experiment report was never executed by anything
+
+The student was asked to assert bit-identity between the Swift-rescaled result
+and the eight doubles published in `research/e68-results.md:753`. **The
+assertion failed at three of eight positions.**
+
+The cause is association, not measurement. Swift's `makeMeasuredDepthPrice`
+computes `raw * (total / sum)`: it forms the scale factor once, then
+multiplies. The Python that produced the published vector computed
+`raw * total / sum`: multiply first, then divide. Those differ by one unit in
+the last place at depths 0, 3 and 7.
+
+The timed legs ran Swift. **So the published vector is a transcription defect
+in the report, and the vector the nine palindrome legs actually executed is:**
+
+```
+[0.12014290579688386, 0.13336973691819140, 0.15825051194819845,
+ 0.18378135596082668, 0.28910578332644965, 0.19917881598825601,
+ 0.16197661758144877, 0.19419427247974499]
+```
+
+Differences from the published vector: d0 −1 ulp, d3 −1 ulp, d7 −1 ulp, rest
+zero. The committed test pins this executed vector. The published vector would
+have failed it.
+
+Three things follow, and the third is the general one.
+
+1. The banked arm is correct and the report was wrong. No measurement is
+   affected.
+2. I had quoted the published vector to the student as the thing to commit.
+   Had he complied instead of checking, we would have submitted a constant
+   that no leg had ever run, and the digest match in (A) would have been the
+   only thing standing between us and an unexplained ranked result.
+3. **A cross-language numeric transcription is a real defect surface, and an
+   assertion is the only thing that finds it.** The rule the campaign takes
+   from this: any constant that crosses from an analysis script into a scored
+   Swift file must be pinned bit for bit by a committed test against the value
+   the timed build actually evaluated, not against the value the report
+   printed. This is now the second time an "obviously equivalent" restatement
+   has turned out not to be equivalent; the first was E72's AIR gate, which
+   passed a no-op.
+
+The disclosure was unprompted and arrived before the submission. That is the
+behaviour the campaign wants and it should be read as such.
+
+### (C) My interaction estimate was wrong, and the student's is better founded
+
+I had priced `crown table + pbfit` at roughly 70 percent of `pbfit`'s strength,
+about −2.4 percent, with an interaction near +1.1 points. The student derived
++0.77 percent, a **sign flip**, with an interaction of +4.29 points, four times
+mine. We used identical cell costs. The disagreement was entirely in the
+weighting, and mine was wrong.
+
+**My calculation differenced the two histograms and priced only the rounds the
+schedule moves. His prices where the round mass sits.** For a level comparison
+across two different cost tables, his is correct and mine is not, because the
+stationary mass does not cancel when the table under it changes.
+
+The concrete number: `pbfit` parks **42 of its 85 rounds at width 5**, and
+width 5 is the single cell the frontier's table charges +26.746 ms more for.
+That is 1.123 s of table penalty concentrated in one cell, against 18 × 27.308
+= 0.492 s of width-6 saving that the frontier's table largely takes back. A
+delta-only calculation cannot see the 1.123 s because it cancels against
+itself.
+
+His second layer is worth recording independently. He fitted
+`decode = sum_w n(w) S[w] + a * rounds + b * rows` exactly from the two E68
+arms, giving `a = 4.965` ms per round and `b = 8.693` ms per row, and then
+checked it out of sample at width 1, a cell in no arm's histogram: model 74.03
+ms per token against measured serial 74.25, error −0.3 percent. That is a
+genuine out-of-sample validation of a two-equation fit and it is the reason to
+prefer his weighting over my arithmetic.
+
+Rung B settles it cheaply. If the frontier's width-5 cell measures below about
+110 ms, my estimate is right; near 122, his is.
+
+Either way **the submission decision is unchanged and is now better supported**:
+our table plus `pbfit`, with the frontier's 0.298 percent declined. On his
+estimate the two mechanisms are close to mutually exclusive rather than merely
+sub-additive, so declining the smaller one costs nothing this round.
+
+### (D) One eight-line diff is about to have both harnesses measured, and nothing else in the campaign does
+
+E75 rung D measures `C-ship` against `O-ship` locally. That is the **same
+eight-line dispatch-table diff** whose ranked effect we already own from
+receipt `9b241879`:
+
+| harness | measurement of the identical diff |
+|---|---|
+| `harness=ranked`, receipt `9b241879` | frontier table **0.298 percent faster**, plutarch-corrected; 8 of 8 prompts faster; sign test p = 0.0039 |
+| `harness=local`, predicted | frontier table **6.44 percent slower** |
+
+If that prediction survives, one identical diff moves **+6.7 points** between
+the two harnesses. Every transfer argument the campaign now makes — edward's
+register search, alphonse's occupancy coefficient, the pricing of any future
+kernel arm — rests on a transfer function that this single pair calibrates.
+No other arm in the campaign has both sides measured.
+
+Rung D has therefore been re-scoped from "decide the composition" to
+"calibrate the transfer function". The composition question is close to
+answered by (C). The instruction given: report `C-ship` against `O-ship` as a
+first-class headline with its own error bar and leg count, place it in one
+table beside the ranked −0.298 percent with both harness labels, and give the
+width histogram for all four arms. If `C-ship` and `O-ship` share a histogram,
+the entire local table effect is per-cell cost with no schedule reaction, which
+makes the pair a clean single-mechanism calibration.
+
+### (E) Provenance, disclosed without being asked
+
+The `pbfit` depth-price curve rests on one session, n = 4 per width, on one
+development machine, with no independent replication at widths 5 and 6. Where
+the campaign cost ladder appears to corroborate it at those widths, **it is the
+same measurement quoted twice**: `S[1]` through `S[6]` in the rung-1 table and
+the ladder entries are the same job. The genuinely independent comparison is at
+widths 8 and 9, where a later re-measurement agrees with the earlier `t789`
+contribution to 0.05 percent.
+
+This does not block the submission and the reason is worth stating precisely:
+the nine-leg palindrome validated the schedule the curve induced, not the
+curve. A wrong curve that induces a better schedule is still a better
+schedule. What a wrong curve costs is headroom, not validity. It also means
+E68's own follow-up 1, refitting to the in-situ curve rather than the isolated
+one, is worth more than it looked.
+
+### (F) Board update: 579 scored rows, and the top of it is flat
+
+The board now holds 579 scored submissions. The crown is unchanged at
+3.25238228.
+
+| threshold | rows at or above |
+|---|---:|
+| 3.25 | 3 |
+| 3.2470 | 10 |
+| 3.24 | 58 |
+| our arm 2, 3.23589 | 78 |
+
+The top 20 span **0.235 percent** and the top 10 span **0.164 percent**. The
+standard deviation of a single ranked run is 0.756 percent. **Fifty-eight
+submissions are packed inside a third of one run's standard deviation.**
+
+Two consequences.
+
+1. Our arm 2 ranks 79th of 579 and sits 0.510 percent below the crown. Rank 79
+   sounds like a gap. It is not one: it is two thirds of a standard deviation
+   of one run, and the whole visible field is inside a noise band. Ledger 213's
+   conclusion is strengthened, not weakened, by the larger sample.
+2. **The winner's curse is larger than the +0.60 percent previously carried.**
+   The crown is the maximum of a large number of draws clustered in that band.
+   Whatever its true mean is, 3.25238228 is above it. We must still beat the
+   printed number, so this does not lower our bar, but it does mean a single
+   run that lands just under the crown is not evidence that we are slower.
+
+Probability that one ranked run beats the printed crown, as a function of our
+true gain over arm 2, at a single-run standard deviation of 0.756 percent:
+
+| true gain over arm 2 | P(beat 3.25238228) |
+|---:|---:|
+| +0.00 % | 0.251 |
+| +0.50 % | 0.495 |
+| +1.00 % | 0.741 |
+| +1.50 % | 0.903 |
+| +2.00 % | 0.974 |
+
+The arm-3 projection is +1.60 to +1.70 percent over arm 2, so **P is about
+0.92 to 0.94 on one run**. That clears the +1.5 percent bar adopted in ledger
+213 and it is the reason the ranked slot is being spent on this candidate
+rather than held.
+
+### (I) Campaign state
+
+Base `e93d2127`. Crown 3.25238228 `9ad17378`, source `bfab0de5` = `upstream/main`.
+Ranked slot free and held for arm 3, which now waits only on the push of
+`4d467ca`. Slots #77 askeladd E74, #78 thorfinn E75 (critical path, rung A
+closed, rung B running), #79 edward E76, #80 alphonse E77.
