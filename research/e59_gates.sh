@@ -39,15 +39,30 @@ run_gate twin_audit python3 research/twin_audit.py
 run_gate scored_surface research/scored-surface-gate.sh
 run_gate ranked_score_boundary senpai/verify-ranked-score-boundary.sh
 
-NAMES="${names[*]}" CODES="${codes[*]}" python3 - "${out_dir}" "${commands[@]}" <<'PY'
+NAMES="${names[*]}" CODES="${codes[*]}" python3 - "${out_dir}" "${log_dir}" "${commands[@]}" <<'PY'
 import json, os, pathlib, sys
 
 out_dir = pathlib.Path(sys.argv[1])
-commands = sys.argv[2:]
+log_dir = pathlib.Path(sys.argv[2])
+commands = sys.argv[3:]
 names = os.environ["NAMES"].split()
 codes = [int(c) for c in os.environ["CODES"].split()]
+
+
+def failure_note(name):
+    log = log_dir / f"{name}.log"
+    if not log.exists():
+        return ""
+    lines = [l.strip() for l in log.read_text(errors="replace").splitlines() if l.strip()]
+    for line in lines:
+        if line.startswith("FAIL"):
+            return line
+    return lines[-1] if lines else ""
+
+
 gates = [
-    {"gate": n, "command": c, "exit_code": rc, "passed": rc == 0}
+    {"gate": n, "command": c, "exit_code": rc, "passed": rc == 0,
+     "note": "" if rc == 0 else failure_note(n)}
     for n, c, rc in zip(names, commands, codes)
 ]
 payload = {"gates": gates, "all_passed": all(g["passed"] for g in gates)}

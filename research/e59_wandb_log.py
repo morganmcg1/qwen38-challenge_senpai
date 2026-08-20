@@ -726,12 +726,36 @@ def log_gates(run) -> None:
     run.summary.update(summary)
 
 
+# --- presubmit -----------------------------------------------------------------
+
+def log_presubmit(run) -> None:
+    path = ARTIFACTS / "e59-local-submit.json"
+    if not path.exists():
+        print("e59_wandb_log: no --local-submit record yet at %s" % path)
+        return
+    payload = json.loads(path.read_text())
+    metrics = payload["metrics"]
+    summary = {"presubmit/score": payload["score"], "presubmit/passed": payload["passed"]}
+    for key, value in metrics.items():
+        summary[f"presubmit/{key}"] = value
+    table = wandb.Table(columns=["field", "value"])
+    table.add_data("score", str(payload["score"]))
+    table.add_data("passed", str(payload["passed"]))
+    for key, value in metrics.items():
+        table.add_data(key, str(value))
+    run.log({"presubmit/local_submit": table})
+    run.summary.update(summary)
+    print("logged --local-submit passed=%s all_tokens_matched=%s speedup=%s"
+          % (payload["passed"], metrics["all_tokens_matched"],
+             metrics["mtp_decode_speedup"]))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True,
                     choices=["rung1", "rung2", "rung2-e2e", "rung2b-leg",
                              "rung3", "rung4-parity", "rung4-cells", "geometry",
-                             "rung4-leg", "rung4", "gates"])
+                             "rung4-leg", "rung4", "gates", "presubmit"])
     ap.add_argument("--leg", type=pathlib.Path,
                     help="one run directory for --stage rung4-leg or rung2b-leg")
     ap.add_argument("--legs", type=pathlib.Path, nargs="*", default=[],
@@ -762,6 +786,8 @@ def main() -> int:
                           ns="rung4" if args.stage == "rung4-leg" else "rung2b")
         elif args.stage == "rung4":
             log_rung4(run)
+        elif args.stage == "presubmit":
+            log_presubmit(run)
         else:
             log_gates(run)
     finally:

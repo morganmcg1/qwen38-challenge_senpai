@@ -1,0 +1,40 @@
+{
+  "all_passed": false,
+  "gates": [
+    {
+      "command": "senpai/validate-assignment-scope.sh 44bb38d5d9c1cbbd0386a16aeea5d7ada15b9301 Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+      "exit_code": 0,
+      "gate": "assignment_scope",
+      "note": "",
+      "passed": true
+    },
+    {
+      "command": "senpai/check-editable-budget.sh 44bb38d5d9c1cbbd0386a16aeea5d7ada15b9301",
+      "exit_code": 0,
+      "gate": "editable_budget",
+      "note": "",
+      "passed": true
+    },
+    {
+      "command": "python3 research/twin_audit.py",
+      "exit_code": 0,
+      "gate": "twin_audit",
+      "note": "",
+      "passed": true
+    },
+    {
+      "command": "research/scored-surface-gate.sh",
+      "exit_code": 1,
+      "gate": "scored_surface",
+      "note": "FAIL: the scored submission commit 2b0c36a078b7660c9215adee933336ff46da25af is not in the local object store.",
+      "passed": false
+    },
+    {
+      "command": "senpai/verify-ranked-score-boundary.sh",
+      "exit_code": 0,
+      "gate": "ranked_score_boundary",
+      "note": "",
+      "passed": true
+    }
+  ]
+}

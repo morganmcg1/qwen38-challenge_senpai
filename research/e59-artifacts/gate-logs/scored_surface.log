@@ -1,0 +1,12 @@
+scored-surface gate
+  question: which shipped lines have ever been measured by the board?
+  repo root     : /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/workspace/target
+
+FAIL: the scored submission commit 2b0c36a078b7660c9215adee933336ff46da25af is not in the local object store.
+      It IS fetchable. Run:
+
+        git fetch origin 2b0c36a078b7660c9215adee933336ff46da25af
+
+      Refusing to report an unscored delta I cannot compute. Without this
+      commit the only honest statement is that we do not know which of the
+      lines we ship have been measured.
