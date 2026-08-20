@@ -15,7 +15,26 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-tag="${1:?usage: e71_census.sh TAG}"
+tag="${1:?usage: e71_census.sh TAG [PROFILE]}"
+profile="${2:-full}"
+
+# Profiles set defaults only; an explicit environment variable always wins, so
+# the same driver serves the cheap plumbing check and the real census.
+case "${profile}" in
+  smoke)
+    # Every arm installer runs once at the headline width. This proves the
+    # module surgery on the real checkpoint without spending a census.
+    : "${MLXFAST_E71_CURVE_WIDTHS:=1,6}"
+    : "${MLXFAST_E71_ARM_WIDTHS:=6}"
+    : "${MLXFAST_E71_REPS:=2}"
+    : "${MLXFAST_E71_WARMUP:=1}"
+    ;;
+  full) ;;
+  *) echo "e71_census.sh: unknown profile ${profile}" >&2; exit 2 ;;
+esac
+export MLXFAST_E71_CURVE_WIDTHS MLXFAST_E71_ARM_WIDTHS \
+       MLXFAST_E71_REPS MLXFAST_E71_WARMUP
+
 out="research/out/${tag}"
 rm -rf "${out}"
 mkdir -p "${out}"

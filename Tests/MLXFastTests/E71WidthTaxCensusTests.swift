@@ -224,6 +224,10 @@ private final class E71Harness {
                     data: (try? JSONSerialization.data(
                         withJSONObject: record, options: [.sortedKeys])) ?? Data(),
                     encoding: .utf8) ?? "{}"))
+        // stdout is block-buffered behind the W&B streamer's pipe. Without this
+        // flush the blocks would only reach W&B in 4 KB batches, which is
+        // logging at session end wearing a live-logging costume.
+        fflush(stdout)
         return record
     }
 
