@@ -248,9 +248,28 @@ def fit_knee(rows: list[dict], knee_grid=None) -> dict:
     # the minimum is not separable from the optimum at 68 %.
     thresh = best["sse"] * (1.0 + 1.0 / dof)
     inside = [p["knee"] for p in profile if p["sse"] <= thresh]
+    # Residuals in milliseconds of tax, so they can be compared with the session
+    # null directly. A log residual is dimensionless; multiplying the implied
+    # ms/GB error by the cell's own traffic puts it back on the null's scale.
+    per_cell = []
+    for r, row_resid, yi in zip(rows, resid, y):
+        pred_ms_per_gb = math.exp(yi - row_resid)
+        per_cell.append({
+            "width": r["width"],
+            "family": r["family"],
+            "observed_ms_per_gb": r["ms_per_gb"],
+            "predicted_ms_per_gb": pred_ms_per_gb,
+            "residual_log": row_resid,
+            "residual_ms": (r["ms_per_gb"] - pred_ms_per_gb) * r["gb"],
+        })
+    per_cell.sort(key=lambda c: -abs(c["residual_ms"]))
     return {
         "resolved": True,
         "widths": widths,
+        "residuals_ms": per_cell,
+        "residual_rms_ms": math.sqrt(
+            sum(c["residual_ms"] ** 2 for c in per_cell) / len(per_cell)),
+        "residual_max_abs_ms": max(abs(c["residual_ms"]) for c in per_cell),
         "width_intercepts": {str(w): beta[i] for i, w in enumerate(widths)},
         "A_per_log_deficit": beta[len(widths)],
         "B_depth_per_k_block": beta[len(widths) + 1],

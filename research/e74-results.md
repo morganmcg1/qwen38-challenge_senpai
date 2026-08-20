@@ -86,6 +86,17 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 - W&B runs:
   - main session `0orl4f8u` — <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0orl4f8u>, state finished
   - smoke `g29ofoa9` — <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/g29ofoa9>, state finished
+  - E71 census `clfgswy8` — <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/clfgswy8>,
+    state finished. This is the source of every M = 4 and M = 5 cell used here
+    and of the E71 side of the cross-session bridge at M = 6 and M = 9.
+  - E71 plumbing smoke `3wu6kmdk` — <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/3wu6kmdk>,
+    state finished.
+  - E33 and E38 are other students' experiments and I have no W&B run for
+    either. Their provenance here is the ledger only: item 130 at
+    `senpai/campaign-ledger.md:3457` for the eight-shape ratio table, item 157
+    at `:5010` (E38, thorfinn, PR #43) for the imported group term `G` and the
+    independent knee bracket. Every number I take from them is quoted, never
+    re-derived.
 
 - Runtime and resources: main session 1300 s wall, model load 15.2 s, one
   model-holding process. Peak memory is the ordinary resident model; this census
@@ -236,6 +247,27 @@ family together. Its p84 runs away to 24346 because some resamples drop the
 families that carry the identifying variation. Read the profile interval, not
 the bootstrap tail.
 
+**Residual against the session null**, which the rung asks for explicitly. The
+log residual above converts to milliseconds of tax by multiplying by each cell's
+own traffic, so it can be compared with the 0.464 ms session null directly:
+
+| quantity | value |
+| --- | --- |
+| session null | 0.464 ms |
+| RMS residual over the 20 cells | 0.478 ms, **1.03× the null** |
+| cells with abs residual below the null | **17 of 20** |
+| the three that exceed it | `mlp_gate_up` at M = 8 (+1.483 ms), M = 9 (+1.066 ms), M = 6 (+0.755 ms) |
+| largest residual in any other family | `gdn_out_proj` at M = 9, −0.413 ms |
+
+So the fit is at the noise floor everywhere except one family. All three misses
+are the same family, all have the same sign, and it is the largest-traffic cell
+in the census at 6.417 GB, where a 4 % per-byte error is already 1.5 ms. A
+one-family systematic of one sign is a model gap, not noise: `mlp_gate_up` is
+the only census family whose `n` sits between the small three and `lm_head`, so
+it is the only cell that carries information about the shape of the knee's
+shoulder, and the hard-knee form has no shoulder. That is the same stiffness
+that shows up as the failed E33 control below, seen from the other side.
+
 **Independent corroboration.** Ledger item 157 R3 measured grid thinning at
 identical `n` and identical traffic: "+7.4 pp at 1280 TGs decaying to ~0 at
 >=4120 TGs". Under a hard knee that requires knee <= 2060 and knee >= 1280 and
@@ -322,6 +354,47 @@ there, `full_attn.qkv_proj` at n=14336 and `linear_attn.in_proj` at n=16480. At
 40 cores those two shapes fall below the knee at M=6, but this census cannot
 weight them.
 
+**Which of the eight scored shapes fall below the ranked knee**, at every M in
+the shipped table and under each core assumption. Working threadgroups take only
+two values per shape across the shipped table, because the group count is 1 at
+M = 3 to 6 and 2 at M = 7 to 9, so the whole table collapses to two columns of
+counts. Every column here is an **extrapolation**, not a measurement: it applies
+the locally fitted 77.9 threadgroups per core to an assumed ranked core count.
+
+| shape | n | TGs at M 3-6 | TGs at M 7-9 | below knee, 20 cores | below knee, 24 cores | below knee, 40 cores |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| `head.lm_head` | 248320 | 31040 | 62080 | none | none | none |
+| `head.compact_draft_vocab` | 98336 | 12292 | 24584 | none | none | none |
+| `mlp.gate_up_fused` | 34816 | 4352 | 8704 | none | none | none |
+| `linear_attn.in_proj` | 16480 | 2060 | 4120 | none | none | M 3,4,5,6 |
+| `full_attn.qkv_proj` | 14336 | 1792 | 3584 | none | M 3,4,5,6 | M 3,4,5,6 |
+| `full_attn.o_proj` | 5120 | 640 | 1280 | all M | all M | all M |
+| `linear_attn.out_proj` | 5120 | 640 | 1280 | all M | all M | all M |
+| `mlp.down` | 5120 | 640 | 1280 | all M | all M | all M |
+
+**Is the shipped `out_vec_size >= 4096` threshold in the right place?** Read at
+M = 6 and one group, the fitted knee is an `n` threshold: everything below
+**n = 12464** is grid-starved at 20 cores, below **n = 14957** at 24 and below
+**n = 24928** at 40. The source gate is 4096. The gate's *direction* is right —
+below it the grid is thin and the pair kernel is kept — but on these numbers it
+is **3× too low locally and 6× too low at 40 cores**, and the practical
+consequence is sharp: **no scored shape is below 4096 at all.** The smallest,
+`mlp.down`, `full_attn.o_proj` and `linear_attn.out_proj` at n = 5120, sit just
+above the gate and take the wide path while sitting at 32 threadgroups per core,
+the most starved cells in the whole census. That is ledger item 130's "the tier
+boundary is one shape too low", now measured in situ rather than inferred from a
+microbenchmark ratio.
+
+I still do not recommend moving the gate on this evidence, for a reason specific
+to this census rather than a general caution: the gate selects between two
+kernels that differ in **both** grid width and weight passes, and this design
+cannot identify the weight-pass term `G` at all — it is imported from ledger
+item 157, as the cost model above says. A threshold move is a
+trade of one against the other, so it needs the term this experiment could not
+measure. What the census can say is that the three shapes at n = 5120 are on the
+wrong side of the knee under every core assumption, and that the shape most
+likely to be misclassified by the gate as cores grow is `full_attn.qkv_proj`.
+
 Extrapolation flags on every ranked column: the knee is assumed to be a per-core
 capacity boundary; generation 17 is assumed to keep the same resident
 threadgroups per core; and the ranked core count is itself an inference. Ledger
@@ -337,6 +410,14 @@ three is measured.
   threadgroups per core, and the grid contrast collapses by a factor of about
   four to ten. A pre-registered falsification band for the null was fixed before
   any GPU work and the null is falsified.
+
+- **Is the shipped `out_vec_size >= 4096` threshold in the right place?** The
+  direction is right and the location is too low. The fitted knee puts the
+  starvation boundary at n = 12464 at 20 cores and n = 24928 at 40, so **no
+  scored shape is below the gate**: the three shapes at n = 5120 clear it by one
+  step and then run at 32 threadgroups per core, the most starved cells measured.
+  I am not recommending a move, because the gate trades grid width against weight
+  passes and this design cannot identify the weight-pass term.
 
 - **Evidence for the mechanism.** Four independent readings agree. The
   pre-registered `D/level` bands select H_knee. The pre-registered point-prediction
