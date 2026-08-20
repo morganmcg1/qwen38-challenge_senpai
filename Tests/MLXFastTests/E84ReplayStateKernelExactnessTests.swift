@@ -315,21 +315,16 @@ struct E84ReplayStateKernelExactnessTests {
     func boundaryStateIsBitIdenticalAtEveryReplayWidth() throws {
         let vendoredSource = try loadVendoredGatedDeltaKernel()
         let cloneSource = try loadReplayStateKernel()
-        guard
-            let vendored = MLXFast.metalKernel(
-                name: vendoredSource.name,
-                inputNames: vendoredSource.inputNames,
-                outputNames: vendoredSource.outputNames,
-                source: vendoredSource.source),
-            let clone = MLXFast.metalKernel(
-                name: cloneSource.name,
-                inputNames: cloneSource.inputNames,
-                outputNames: cloneSource.outputNames,
-                source: cloneSource.source)
-        else {
-            Issue.record("both kernels must JIT-compile")
-            return
-        }
+        let vendored = MLXFast.metalKernel(
+            name: vendoredSource.name,
+            inputNames: vendoredSource.inputNames,
+            outputNames: vendoredSource.outputNames,
+            source: vendoredSource.source)
+        let clone = MLXFast.metalKernel(
+            name: cloneSource.name,
+            inputNames: cloneSource.inputNames,
+            outputNames: cloneSource.outputNames,
+            source: cloneSource.source)
 
         var totalCells = 0
         for T in 1 ... 8 {
