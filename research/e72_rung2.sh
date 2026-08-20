@@ -72,8 +72,11 @@ head_sha="$(git rev-parse HEAD)"
 
 python3 research/e72_wide_gen.py --check | tee -a "${log}" || exit 1
 if [[ -z "${skip_census}" ]]; then
+  # Tagged per session: the canonical NA=2..6 census at rung2-air.json is
+  # written by an explicit full run, so a narrow session cannot silently
+  # replace it with its own subset.
   python3 research/e72_air_census.py --na ${na_list} \
-    --out "${artifacts}/rung2-air.json" | tee -a "${log}" || exit 1
+    --out "${artifacts}/rung2-air-session${tag}.json" | tee -a "${log}" || exit 1
 fi
 clang -fobjc-arc -O2 -framework Metal -framework Foundation \
   -o "${build}/e72_cell_ab" research/e69_cell_ab.m 2>&1 \
