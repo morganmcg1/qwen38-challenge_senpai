@@ -292,7 +292,47 @@ at M=512, so if anything it is *more* compute-bound than prefill. The
 score moves 0.1003 %.** That is 0.133 sd of one published score and 16.4 % of
 our 0.61 % deficit to the crown.
 
-### 5.5 What the width shares do not do
+### 5.5 Rung-2 question 1 — what each divergent site invalidates or weakens
+
+The assignment asks this per site, and asks for bluntness.
+
+**S1 `device.cpp:913`, the master nax switch.** Invalidates nothing on its own.
+It is the switch every other site reads, not a dispatch site.
+
+**S4 `quantized.cpp:697`, the qmm nax gate.** Weakens exactly two things, and
+invalidates neither.
+(i) E65's head-prime pricing, by 2.63×, as section 6.2 sets out.
+(ii) E68 rung 1's `C(10) = 271.147 ms` against `C(9) = 163.621 ms`, the +107.526 ms
+step that produced the standing rule "never widen the verify past 9". Rung 1
+proves four of the seven scored families take `affine_qmm_t_nax` at M=10 on the
+ranked host, so **that step is a local-only measurement of kernels the ranked
+host does not run.** The rule itself survives, but for a different reason than
+the one recorded: `program.md` caps drafts at eight, so M ≤ 9 by contract and the
+cliff is unreachable by any legal schedule. The rule should be re-recorded as a
+contract fact, not as a measured cost. **It invalidates no promoted result**,
+because no promoted candidate ever runs M ≥ 10.
+Everything else in the QMV programme is untouched: `t55`, `t6`, E55, E61, E63,
+E64 and E69 all live at M ≤ 9, where rung 1 shows `affine_qmv_fast` on both arms.
+
+**S7 `matmul.cpp:176` and S8 `matmul.cpp:373`, the tile parameters.** These are
+the two halves of one fork; S7 is ranked-only and S8 is local-only. They weaken
+any local claim about dense-GEMM tile behaviour, of which this campaign has
+none. **None.**
+
+**S9 `matmul.cpp:915`, the dense family selector.** Weakens E57's eight-dispatch
+prefill enumeration (`:10299-10324`) as a *ranked* description: the dispatches
+are correctly counted, but two of the families are `steel_gemm_fused_*` locally
+and `steel_gemm_fused_nax_*` at rank with different tiles. E57's conclusion —
+that prefill attention is composed rather than fused — is unaffected and is in
+fact reinforced. It also corrects E65's prefill roofline by 2× (section 6.4).
+**No timed result is invalidated**, because 186(C) already treats ranked prefill
+as an unmeasurable section and prices it with `tau` rather than with local time.
+
+**S2, S14, S15.** Identical on M5 Pro and M5 Max, divergent against a base M5.
+Since the ranked tier is still unconfirmed, these remain **live tier risk on
+three sites** rather than a resolved divergence. They invalidate nothing today.
+
+### 5.6 What the width shares do not do
 
 The modelled width shares (M4 14.2, M5 24.1, M6 33.4, M7 12.2, M8 7.35, M9 5.75)
 apply to **no** divergent site. Every modelled width is ≤ 9, and the nax cliff
@@ -324,12 +364,25 @@ E65. The transfer-risk caveat attached to those results can be dropped.
 Stated plainly, as instructed: **result (c) prices E65 follow-up (a) — the
 head-prime row-count sweep — DOWN, and the correct action is to not run it.**
 
-The sweep was attractive while S4's price could have been 0.2762 %. Rung 1
-excludes that branch. The real ceiling is 0.0641 %, which is 0.085 sd of one
-published score. A sweep cannot recover more than the whole term, the whole term
-is a tenth of a standard deviation, and the term is not steerable by editable
-code in any case. **E65 follow-up (a) is closed by this audit.** The audit
-removed a candidate from the queue; it did not add one.
+The arithmetic lands exactly where the advisor predicted. E65 priced that
+follow-up with a ceiling of about **+0.17 % of a leg**, computed from local time
+with no transfer rate applied. Rung 2 reproduces that figure as the *naive* row:
+**0.1684 %**. Applying the measured `tau = 7.5798` gives **0.0641 %**, so the
+published ceiling was **2.63× too high**.
+
+The sweep was also attractive while S4's price could still have been 0.2762 %.
+Rung 1 excludes that branch, because M=511 provably takes `affine_qmm_t_nax` and
+`steel_gemm_fused_nax` under the ranked architecture. The real ceiling is
+0.0641 %, which is 0.085 sd of one published score. A sweep cannot recover more
+than the whole term, the whole term is under a tenth of a standard deviation,
+and the term is not steerable by editable code in any case.
+
+**E65 follow-up (a) is closed by this audit.** The audit removed a candidate
+from the queue; it did not add one.
+
+(The 29.215 ms local saving used above is the mean of E65's two prime
+measurements, 29.52 ms and 28.91 ms. Using the advisor's single 29.52 ms figure
+moves the result to 0.0648 %, which changes nothing.)
 
 ### 6.3 The prefill dense bf16 GEMM fallback is real
 
