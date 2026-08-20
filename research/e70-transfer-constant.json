@@ -1,0 +1,227 @@
+{
+  "R_of_M": {
+    "caveat_direction": "the mixture caveat cuts against the step, so the step is more likely real than not",
+    "caveats": [
+      "ranked rounds are means over a width MIXTURE while local E1 is a fixed width, which biases R(M) downward for prompts with high width spread",
+      "the public receipt gives no ranked round census, so the mixture cannot be deconvolved"
+    ],
+    "definition": "R(M) = local M4 Pro round cost at verify width M / ranked round cost at the same M. Local cost is E1's depth-0 round plus its marginal ladder, interpolated at fractional depth. Ranked cost is the reconstruction's observed round.",
+    "high_width_group_mean": 2.4077941396797145,
+    "high_width_group_spread": 0.11541390747008373,
+    "low_width_group_mean": 2.1393892135212234,
+    "low_width_group_spread": 0.06723919317550298,
+    "rounds_definition": "tokens_per_round = 1 + accepted / rounds",
+    "shelf_boundary": "flat at 2.11-2.17 for M <= 3.66, flat at 2.36-2.47 for M >= 5.53. The step sits where the local E1 ladder jumps from E1(4) = 91.29 ms to E1(5) = 115.69 ms, +26.7 %.",
+    "step_pct_group_means": 12.545867038224573,
+    "step_pct_shelf_edges": 8.550041920819451,
+    "table": [
+      {
+        "R_of_M": 2.1383097644737026,
+        "accepted_drafts": 0,
+        "local_round_ms": 65.009,
+        "prompt": "(depth-0 control)",
+        "ranked_candidate_leg_ms": null,
+        "ranked_round_ms": 30.40204982461955,
+        "rounds_at_M": 512,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 1.0,
+        "verify_width_M": 1.0
+      },
+      {
+        "R_of_M": 2.1393711235037527,
+        "accepted_drafts": 25,
+        "local_round_ms": 65.85140246406571,
+        "prompt": "plutarch",
+        "ranked_candidate_leg_ms": 15516.814950400001,
+        "ranked_round_ms": 30.780728850924028,
+        "rounds_at_M": 487,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 1.051334702258727,
+        "verify_width_M": 1.1540041067761808
+      },
+      {
+        "R_of_M": 2.105778661942207,
+        "accepted_drafts": 260,
+        "local_round_ms": 80.21245238095239,
+        "prompt": "drama",
+        "ranked_candidate_leg_ms": 10125.6800768,
+        "ranked_round_ms": 38.0915876063492,
+        "rounds_at_M": 252,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 2.0317460317460316,
+        "verify_width_M": 3.2976190476190474
+      },
+      {
+        "R_of_M": 2.17301785511771,
+        "accepted_drafts": 300,
+        "local_round_ms": 85.85876415094339,
+        "prompt": "travel",
+        "ranked_candidate_leg_ms": 8902.995968000001,
+        "ranked_round_ms": 39.51130173584906,
+        "rounds_at_M": 212,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 2.4150943396226414,
+        "verify_width_M": 3.6556603773584904
+      },
+      {
+        "R_of_M": 2.358811792677166,
+        "accepted_drafts": 405,
+        "local_round_ms": 125.79984112149532,
+        "prompt": "beagle",
+        "ranked_candidate_leg_ms": 6233.1099648,
+        "ranked_round_ms": 53.33186882990654,
+        "rounds_at_M": 107,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 4.785046728971963,
+        "verify_width_M": 5.5327102803738315
+      },
+      {
+        "R_of_M": 2.4358457136193765,
+        "accepted_drafts": 413,
+        "local_round_ms": 130.25950505050503,
+        "prompt": "medicine",
+        "ranked_candidate_leg_ms": 5820.732928,
+        "ranked_round_ms": 53.47609018181818,
+        "rounds_at_M": 99,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 5.171717171717172,
+        "verify_width_M": 5.767676767676767
+      },
+      {
+        "R_of_M": 2.395147094873045,
+        "accepted_drafts": 423,
+        "local_round_ms": 139.92742696629213,
+        "prompt": "republic",
+        "ranked_candidate_leg_ms": 5726.0890112,
+        "ranked_round_ms": 58.421224844943815,
+        "rounds_at_M": 89,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 5.752808988764045,
+        "verify_width_M": 6.269662921348314
+      },
+      {
+        "R_of_M": 2.3749403970817355,
+        "accepted_drafts": 425,
+        "local_round_ms": 142.96210344827585,
+        "prompt": "essays",
+        "ranked_candidate_leg_ms": 5763.6590080000005,
+        "ranked_round_ms": 60.19608055172414,
+        "rounds_at_M": 87,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 5.885057471264368,
+        "verify_width_M": 6.425287356321839
+      },
+      {
+        "R_of_M": 2.4742257001472496,
+        "accepted_drafts": 427,
+        "local_round_ms": 149.81017647058823,
+        "prompt": "botany",
+        "ranked_candidate_leg_ms": 5673.2060672,
+        "ranked_round_ms": 60.548306672941166,
+        "rounds_at_M": 85,
+        "rounds_plus_accepted": 512,
+        "tokens_per_round": 6.023529411764706,
+        "verify_width_M": 6.776470588235294
+      }
+    ],
+    "width_definition": "M = 1 + proposed_drafts / rounds",
+    "within_group_scatter_pct": {
+      "high": 4.793346140689425,
+      "low": 3.1429154055065047
+    }
+  },
+  "board_evidence": {
+    "prompt_keys": [
+      "00142a44",
+      "192fb621",
+      "3b10cb4d",
+      "4b9e88cd",
+      "919318e1",
+      "a2ea8b60",
+      "c1ec5866",
+      "ea82dcb5"
+    ],
+    "ranked_serial_leg_s": 19.453770437734185,
+    "serial_spt_max_s": 0.0385442637,
+    "serial_spt_mean_s": 0.03799564538619958,
+    "serial_spt_min_s": 0.0377260451,
+    "serial_spt_samples": 3768,
+    "serial_spt_sd_pct": 0.22253559296568023,
+    "serial_spt_sd_s": 8.455383476131636e-05,
+    "source": "ranked_stream_ab_board.json",
+    "submissions": 471
+  },
+  "harness": "ranked",
+  "leg_ratio_is_not_R": {
+    "argument": "a candidate-side saving moves only the score denominator, so delta_score_pct = 100 * delta_ranked_ms * rounds_at_M / ranked_CANDIDATE_leg. The normalizer is the candidate leg.",
+    "indicative_candidate_leg_ratio_beagle": 2.839097868816707,
+    "local_candidate_spt_runs": {
+      "score-runK-gate2-cap8-512": 0.03502187505364418,
+      "score-runL-gate1-cap8-512": 0.034562689485028386,
+      "score-runN-gate1-cap8-512-confirm": 0.03458425961434841
+    },
+    "recommendation": "retire the single R. Use R(M) for the conversion and the direct form for the score, which needs no leg ratio.",
+    "why_not_adopted": "a leg ratio compares two different width MIXTURES, so it is not comparable with R(M) and must not be promoted to a pricing constant"
+  },
+  "measured_source": {
+    "anchor_non_drafting_share": 0.9219712525667351,
+    "anchor_prompt": "plutarch",
+    "anchor_rounds": 487,
+    "function": "calibrate_depth0_ms",
+    "host_scale_vs_m4pro": 0.4676590906585173,
+    "ledger_10453_value": 30.402,
+    "lines": "111-156",
+    "reads": "row['mtp_spt'] at :134",
+    "recomputed_depth0_round_ms": 30.40204982461955,
+    "recomputed_vs_ledger_pct": 0.00016388599285701165,
+    "reproduce": "python3 research/prompt_round_reconstruction.py --facts research/e53-board-facts.json --submission ca9251b8 --prefill-ms 526.6",
+    "script": "research/prompt_round_reconstruction.py"
+  },
+  "model_free_ceiling": {
+    "anchor_mean_round_ms": 30.780728850924028,
+    "anchor_non_drafting_rounds": 449,
+    "anchor_prompt": "plutarch",
+    "anchor_rounds": 487,
+    "argument": "a drafting round cannot be cheaper than a depth-0 round, so the anchor's MEAN round is a hard upper bound on the candidate depth-0 round. No host transfer model is used.",
+    "candidate_c1_ms": 30.40204982461955,
+    "candidate_margin_under_ceiling_pct": 1.2302471073329075,
+    "ceiling_ms": 30.780728850924028,
+    "pinned_serial_excess_over_ceiling_pct": 20.086205421968398,
+    "pinned_serial_round_ms": 36.96340927829972,
+    "verdict": "the candidate constant fits under the ceiling and the pinned serial constant cannot. R(depth-0) = 65.009 / 30.402 = 2.1383 stands."
+  },
+  "pricing_rule": {
+    "delta_ranked_ms": "delta_local_ms / R(M)",
+    "delta_score_pct": "100 * delta_ranked_ms * rounds_at_M / ranked_candidate_leg_ms",
+    "reporting_requirement": "report R(M) and M beside every converted number. An unlabelled conversion is invalid.",
+    "tau_prefill": 7.579806414879483,
+    "tau_prefill_note": "prefill transfers at its own constant and is unaffected by this retraction"
+  },
+  "retraction": {
+    "earlier_claim": "30.402 ms is refuted because it implies a 16.09 s pinned serial leg that no board sample reaches",
+    "implied_leg_is_real": "the implied leg is the leg our candidate would run on plutarch if every round were depth-0. The measured plutarch candidate leg is 15.517 s, below it by exactly the cost its 38 drafting rounds add.",
+    "implied_leg_s": 16.091524,
+    "implied_vs_measured_pct": -3.571501677529109,
+    "measured_anchor_candidate_leg_s": 15.5168149504,
+    "status": "RETRACTED",
+    "why_it_fails": "right arithmetic, wrong population. 30.402 ms is the CANDIDATE build's depth-0 round, calibrated from row['mtp_spt'] in prompt_round_reconstruction.py:134. It was compared against the PINNED SERIAL leg population."
+  },
+  "surviving_defect": {
+    "defect": "R is defined on legs ('Let L be leg time') and then computed from two ROUND times. The defect is independent of which round constant is used.",
+    "item": "188(A)",
+    "status": "confirmed, advisor is correcting the ledger text"
+  },
+  "two_builds": {
+    "candidate_depth0_round_ms": 30.40204982461955,
+    "pinned_serial_depth0_round_ms": 36.96340927829972,
+    "pinned_serial_routes": {
+      "beagle_receipt_spt_minus_prefill_spt": 36.9573355,
+      "board_mean_minus_K_high": 36.96400476119958,
+      "board_mean_minus_K_low": 36.96888757369958,
+      "route_spread_pct": 0.031252727833104024
+    },
+    "reading": "both constants are correct. The pinned serial build runs a 36.963 ms depth-0 round; our candidate build runs a 30.402 ms depth-0 round. The build factor 1.2158 is the uniform speedup the reconstruction's exact score decomposition also reports.",
+    "serial_over_candidate": 1.2158196401733015
+  },
+  "what": "retraction of the 30.402 ms refutation, and the resolution that the two contested constants measure two different builds"
+}

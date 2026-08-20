@@ -1,0 +1,459 @@
+{
+  "checks": [
+    {
+      "name": "A1 nax master switch is gen >= (p ? 18 : 17)",
+      "pass": true
+    },
+    {
+      "name": "A2 nax ALSO requires macOS 26.2 at runtime",
+      "pass": true
+    },
+    {
+      "name": "A3 arch string comes from MLX_METAL_GPU_ARCH before the real device",
+      "pass": true
+    },
+    {
+      "name": "A4 arch_gen_ is parsed from the OVERRIDABLE arch_, not the device",
+      "pass": true
+    },
+    {
+      "name": "A5 env var is MLX_METAL_GPU_ARCH",
+      "pass": true
+    },
+    {
+      "name": "A6 the tier command-buffer defaults are overridden by env AFTER the switch",
+      "pass": true
+    },
+    {
+      "name": "A7 the scored worker force-sets both budgets before the first device touch",
+      "pass": true
+    },
+    {
+      "name": "B1 get_qmv_batch_limit branches on gen 13||14 then on arch_size",
+      "pass": true
+    },
+    {
+      "name": "B2 QuantizedMatmul::eval_gpu gates qmv on M >= get_qmv_batch_limit(K, N, d)",
+      "pass": true
+    },
+    {
+      "name": "B3 qmm() takes the nax early return when available",
+      "pass": true
+    },
+    {
+      "name": "B4 qmm_splitk falls back to qmm() when split_k <= 1",
+      "pass": true
+    },
+    {
+      "name": "B5 gather_qmm has its own nax gate",
+      "pass": true
+    },
+    {
+      "name": "B6 gather_qmm_rhs has its own nax gate",
+      "pass": true
+    },
+    {
+      "name": "C1 matmul.cpp devc read at :208 is inside steel_matmul_regular_axpby_NAX",
+      "pass": true
+    },
+    {
+      "name": "C2 the nax regular kernel is steel_gemm_fused_nax_*",
+      "pass": true
+    },
+    {
+      "name": "C3 the non-nax regular kernel is steel_gemm_fused_*",
+      "pass": true
+    },
+    {
+      "name": "C4 GEMM_TPARAM_MACRO keys on devc 'g'|'p' vs 'd' vs default",
+      "pass": true
+    },
+    {
+      "name": "C5 steel_matmul_axpby computes use_nax with NO shape gate",
+      "pass": true
+    },
+    {
+      "name": "C6 min_tmn_threshold is 2048 for 's'|'d' and 1024 otherwise",
+      "pass": true
+    },
+    {
+      "name": "C7 Matmul::eval_gpu routes min(M, N) == 1 to gemv before any arch read",
+      "pass": true
+    },
+    {
+      "name": "C8 gather_mm and GatherMM read the arch (blast radius of a MoE model)",
+      "pass": true
+    },
+    {
+      "name": "C9 segmented_mm reads devc and is_nax_available",
+      "pass": true
+    },
+    {
+      "name": "D1 the sdpa nax gate lives inside sdpa_full_self_attention_metal only",
+      "pass": true
+    },
+    {
+      "name": "D2 sdpa_full supports head_dim 64|80|128 only -- 256 EXCLUDED",
+      "pass": true
+    },
+    {
+      "name": "D3 sdpa_vector supports head_dim 256 but caps at qL*gqa <= 32",
+      "pass": true
+    },
+    {
+      "name": "D4 use_fallback returns !(full || vector)",
+      "pass": true
+    },
+    {
+      "name": "D5 sdpa_vector_2pass block count keys on devc",
+      "pass": true
+    },
+    {
+      "name": "D6 the 2pass route predicate keys on devc and k.shape(2) >= 1024",
+      "pass": true
+    },
+    {
+      "name": "E1 the SDPA fallback is two dense matmul calls",
+      "pass": true
+    },
+    {
+      "name": "E2 the primitive is built only when use_fallback is false",
+      "pass": true
+    },
+    {
+      "name": "F1 the wide-decode chunk keeps every scored decode SDPA at qL <= 5",
+      "pass": true
+    },
+    {
+      "name": "F2 the MoE block is built only when numExperts > 0",
+      "pass": true
+    },
+    {
+      "name": "F3 the bf16 precision-island patch is a dense matmul on the MTP layer",
+      "pass": true
+    },
+    {
+      "name": "G1 the host dispatchers are NOT in editablePaths",
+      "pass": true
+    },
+    {
+      "name": "G2 the callers that CHOOSE the shapes ARE editable",
+      "pass": true
+    }
+  ],
+  "mutations": [
+    {
+      "label": "A1 nax master switch is gen >= (p ? 18 : 17)  <-  mutate \"gen >= (arch == 'p' ? 18 : 17)\"",
+      "verdict": "flipped"
+    },
+    {
+      "label": "A2 nax ALSO requires macOS 26.2 at runtime  <-  mutate 'macOS 26.2, iOS 26.2'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "A3 arch string comes from MLX_METAL_GPU_ARCH before the real device  <-  mutate 'arch_ = env::metal_gpu_arch();'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "A4 arch_gen_ is parsed from the OVERRIDABLE arch_, not the device  <-  mutate 'arch_gen_ = ag_tens * 10 + ag_ones;'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "A5 env var is MLX_METAL_GPU_ARCH  <-  mutate '\"MLX_METAL_GPU_ARCH\"'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "A6 the tier command-buffer defaults are overridden by env AFTER the switch  <-  mutate 'max_ops_per_buffer_ = env::max_ops_per_b'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "A7 the scored worker force-sets both budgets before the first device touch  <-  mutate 'setenv(\"MLX_MAX_OPS_PER_BUFFER\", \"50\", 1'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "B1 get_qmv_batch_limit branches on gen 13||14 then on arch_size  <-  mutate 'if (arch_gen == 13 || arch_gen == 14) {'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "B2 QuantizedMatmul::eval_gpu gates qmv on M >= get_qmv_batch_limit(K, N, d)  <-  mutate 'int vector_limit = transpose_ ? get_qmv_'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "B4 qmm_splitk falls back to qmm() when split_k <= 1  <-  mutate 'if (split_k <= 1) {\\n    return qmm('",
+      "verdict": "flipped"
+    },
+    {
+      "label": "C2 the nax regular kernel is steel_gemm_fused_nax_*  <-  mutate 'kname << \"steel_gemm_fused_nax_\"'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "C5 steel_matmul_axpby computes use_nax with NO shape gate  <-  mutate 'bool use_nax = metal::is_nax_available()'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "C6 min_tmn_threshold is 2048 for 's'|'d' and 1024 otherwise  <-  mutate \"int min_tmn_threshold = (devc == 's' || \"",
+      "verdict": "flipped"
+    },
+    {
+      "label": "C7 Matmul::eval_gpu routes min(M, N) == 1 to gemv before any arch read  <-  mutate '  if (std::min(M, N) == 1) {\\n    return '",
+      "verdict": "flipped"
+    },
+    {
+      "label": "D2 sdpa_full supports head_dim 64|80|128 only -- 256 EXCLUDED  <-  mutate 'query_head_dim == 64 || query_head_dim ='",
+      "verdict": "flipped"
+    },
+    {
+      "label": "D3 sdpa_vector supports head_dim 256 but caps at qL*gqa <= 32  <-  mutate '(query_sequence_length * gqa_factor) <= '",
+      "verdict": "flipped"
+    },
+    {
+      "label": "D5 sdpa_vector_2pass block count keys on devc  <-  mutate \"  if (devc == 's') {\\n    blocks = 64;\"",
+      "verdict": "flipped"
+    },
+    {
+      "label": "D6 the 2pass route predicate keys on devc and k.shape(2) >= 1024  <-  mutate \"if (((devc == 'd' || devc == 's') && k.s\"",
+      "verdict": "flipped"
+    },
+    {
+      "label": "E1 the SDPA fallback is two dense matmul calls  <-  mutate 'auto out = matmul(scores, v, s);'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "F1 the wide-decode chunk keeps every scored decode SDPA at qL <= 5  <-  mutate 'let split = 5'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "F2 the MoE block is built only when numExperts > 0  <-  mutate 'args.numExperts > 0'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "F3 the bf16 precision-island patch is a dense matmul on the MTP layer  <-  mutate 'let exact = matmul(input, weight.transpo'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "G1 the host dispatchers are NOT in editablePaths  <-  mutate '\"Vendor/mlx-swift/Source/Cmlx/mlx-genera'",
+      "verdict": "flipped"
+    },
+    {
+      "label": "G2 the callers that CHOOSE the shapes ARE editable  <-  mutate '\"Vendor/mlx-swift-lm/Libraries/MLXLMComm'",
+      "verdict": "flipped"
+    }
+  ],
+  "arms": {
+    "local": {
+      "gen": 16,
+      "devc": "s",
+      "arch": "applegpu_g16s",
+      "nax": false
+    },
+    "ranked_pro_max": {
+      "gen": 17,
+      "devc": "s",
+      "arch": "applegpu_g17s",
+      "nax": true
+    },
+    "ranked_base": {
+      "gen": 17,
+      "devc": "g",
+      "arch": "applegpu_g17g",
+      "nax": true
+    }
+  },
+  "sites": [
+    {
+      "id": "S1",
+      "file": "device.cpp",
+      "line": 913,
+      "predicate": "can_use_nax &= gen >= (arch == 'p' ? 18 : 17);  // AND __builtin_available(macOS 26.2)",
+      "decode": "YES - the value is read by every nax gate below; first read on the first quantized matmul of round 1.",
+      "prefill": "YES - same switch.",
+      "local": "applegpu_g16s, gen 16, devc 's' -> is_nax_available() == false",
+      "ranked": "applegpu_g17s, gen 17, devc 's' -> true (if the runner's macOS >= 26.2)",
+      "base_m5": "applegpu_g17g, gen 17, devc 'g' -> true (threshold is 17 for every devc except 'p')",
+      "verdict": "DIVERGES",
+      "kernels": "master switch; selects the _nax family wherever a gate below reads it"
+    },
+    {
+      "id": "S2",
+      "file": "device.cpp",
+      "line": 572,
+      "predicate": "arch_ = env::metal_gpu_arch(); ... arch_gen_ = ag_tens * 10 + ag_ones; auto arch = arch_.back();",
+      "decode": "NO EFFECT - the tier value is computed and then discarded. device.cpp:595-596 reapplies env::max_ops_per_buffer / env::max_mb_per_buffer AFTER the switch, and RuntimeStartupMemoryPolicy force-sets both variables before the first MLX device touch: 512 MiB / 50 ops on any host with >= 96 GiB (the ranked 128 GiB machine), 128 MiB / 64 ops on a low-memory host.",
+      "prefill": "NO EFFECT - same override.",
+      "local": "tier 's' would give 50 / 50, but the worker installs 128 / 64 on this 48 GiB host",
+      "ranked": "tier 's' would give 50 / 50; the worker installs 512 / 50",
+      "base_m5": "tier 'g' would give 40 / 40; the worker installs the same 512 / 50",
+      "verdict": "IDENTICAL (overridden on every host, including a base M5)",
+      "kernels": "no kernel; buffer geometry only, and editable Swift already pins it"
+    },
+    {
+      "id": "S3",
+      "file": "quantized.cpp",
+      "line": 84,
+      "predicate": "if (arch_gen == 13 || arch_gen == 14) {...} else { switch (arch_size) { case 'd': ...; default: ... } }",
+      "decode": "YES - every affine-4 linear, M = 1..9.",
+      "prefill": "YES - every affine-4 linear, M = 512.",
+      "local": "gen 16 -> else branch, devc 's' -> default arm, D = 5120 > 4096 -> vector_limit 10",
+      "ranked": "gen 17 -> else branch, devc 's' -> default arm -> vector_limit 10",
+      "base_m5": "gen 17, devc 'g' -> default arm -> vector_limit 10",
+      "verdict": "IDENTICAL",
+      "kernels": "M <= 9 -> dispatch_qmv on both hosts; the cliff is at M = 10"
+    },
+    {
+      "id": "S4",
+      "file": "quantized.cpp",
+      "line": 697,
+      "predicate": "if (metal::is_nax_available() && transpose && (K % 64 == 0) && (env::enable_tf32() || x.dtype() != float32)) return qmm_nax(...)",
+      "decode": "YES, once per leg - the MTP head history flush on the first drafting round runs M = 511 rows through the head K/V pack, and 511 >= vector_limit 10 -> qmm_splitk -> split_k == 1 -> qmm(). Every other decode matmul has M <= 9 and never reaches qmm().",
+      "prefill": "YES - all 7 linear families at M = 512.",
+      "local": "affine_qmm_t_bfloat16_gs_64_b_4_alN_true_batch_0 (bm32 bn32 wm2 wn2)",
+      "ranked": "affine_qmm_t_nax_bfloat16_gs_64_b_4_bm64_bn64_bk64_wm2_wn2",
+      "base_m5": "same as ranked - this gate reads no devc",
+      "verdict": "DIVERGES",
+      "kernels": "qmm_t vs qmm_t_nax"
+    },
+    {
+      "id": "S5",
+      "file": "quantized.cpp",
+      "line": 875,
+      "predicate": "if (metal::is_nax_available() && transpose && (K % 64 == 0) && ...) return gather_qmm_nax(...)",
+      "decode": "NO - GatherQMM enters the graph only through SwitchGLU -> Qwen35SparseMoeBlock, built only under `args.numExperts > 0`. weights/config.json has no num_experts key and the decoder default is 0.",
+      "prefill": "NO - same.",
+      "local": "unreached",
+      "ranked": "unreached",
+      "base_m5": "unreached",
+      "verdict": "IDENTICAL (unreachable)",
+      "kernels": "none"
+    },
+    {
+      "id": "S6",
+      "file": "quantized.cpp",
+      "line": 1221,
+      "predicate": "if (metal::is_nax_available() && transpose && ...) return gather_qmm_rhs_nax(...)",
+      "decode": "NO - same MoE chain as S5.",
+      "prefill": "NO - same.",
+      "local": "unreached",
+      "ranked": "unreached",
+      "base_m5": "unreached",
+      "verdict": "IDENTICAL (unreachable)",
+      "kernels": "none"
+    },
+    {
+      "id": "S7",
+      "file": "matmul.cpp",
+      "line": 176,
+      "predicate": "char devc = d.get_architecture().back(); if (devc == 's' || 'c' || 'd') { bk = (K >= 8192 && K > (M + N)) ? 64 : 256; bm = 64; wm = 2; }",
+      "decode": "Ranked only, once per leg: the same M = 511 head flush also runs the bf16 precision-island patch `matmul(input, weight.T)` (Qwen35.swift), and min(M, N) > 1 -> steel_matmul. Locally this function is unreachable (use_nax false).",
+      "prefill": "Ranked only: the 16 full-attention layers run the SDPA fallback as two dense bf16 GEMMs (fast.cpp), batch 24.",
+      "local": "UNREACHABLE - guarded by use_nax",
+      "ranked": "devc 's' -> bm 64, bn 128, bk 256, wm 2, wn 4 -> steel_gemm_fused_nax_*",
+      "base_m5": "devc 'g' -> keeps bm 128, bn 128, bk 512, wm 4, wn 4 -> a DIFFERENT nax kernel",
+      "verdict": "DIVERGES (ranked-only site)",
+      "kernels": "steel_gemm_fused_nax_{nt,nn}_bfloat16_bfloat16_bm..._bn..._bk..._wm..._wn..."
+    },
+    {
+      "id": "S8",
+      "file": "matmul.cpp",
+      "line": 373,
+      "predicate": "char devc = d.get_architecture().back(); GEMM_TPARAM_MACRO(devc)",
+      "decode": "Local only, once per leg (the M = 511 island patch). On the ranked host S7 runs instead.",
+      "prefill": "Local only: the 32 SDPA-fallback GEMMs. On the ranked host S7 runs instead.",
+      "local": "devc 's' -> macro leaves bm 64, bn 64, bk 16, wm 2, wn 2 -> steel_gemm_fused_*",
+      "ranked": "not reached (use_nax true routes to S7)",
+      "base_m5": "not reached (use_nax true routes to S7)",
+      "verdict": "DIVERGES (local-only site)",
+      "kernels": "steel_gemm_fused_{nt,nn}_bfloat16_bfloat16_bm64_bn64_bk16_wm2_wn2"
+    },
+    {
+      "id": "S9",
+      "file": "matmul.cpp",
+      "line": 915,
+      "predicate": "bool use_nax = is_nax_available() && !complex && (tf32 || dtype != f32); char devc = ...; int min_tmn_threshold = (devc == 's' || devc == 'd') ? 2048 : 1024; if (!use_nax && batch_size_out == 1 && ...) splitk",
+      "decode": "YES, once per leg - the M = 511 island patch reaches steel_matmul_axpby. Every M = 1 dense head matmul stops earlier at the gemv route (min(M, N) == 1) and never reads the arch.",
+      "prefill": "YES - the 32 SDPA-fallback GEMMs (batch_size_out 24, so both split-K arms are skipped).",
+      "local": "use_nax false -> steel_matmul_regular_axpby (S8)",
+      "ranked": "use_nax true -> steel_matmul_regular_axpby_nax (S7); the !use_nax split-K arm is also disabled",
+      "base_m5": "use_nax true; min_tmn_threshold 1024 instead of 2048 (dead while use_nax is true)",
+      "verdict": "DIVERGES",
+      "kernels": "the dense-GEMM family selector: steel_gemm_fused_* vs steel_gemm_fused_nax_*"
+    },
+    {
+      "id": "S10",
+      "file": "matmul.cpp",
+      "line": 2303,
+      "predicate": "char devc = d.get_architecture().back(); GEMM_TPARAM_MACRO(devc)",
+      "decode": "NO - GatherMM enters the graph only through SwitchGLU (MoE). Same chain as S5.",
+      "prefill": "NO.",
+      "local": "unreached",
+      "ranked": "unreached",
+      "base_m5": "unreached",
+      "verdict": "IDENTICAL (unreachable)",
+      "kernels": "none"
+    },
+    {
+      "id": "S11",
+      "file": "matmul.cpp",
+      "line": 2443,
+      "predicate": "if (metal::is_nax_available() && (env::enable_tf32() || a.dtype() != float32)) return gather_mm_rhs_nax(...)",
+      "decode": "NO - same MoE chain.",
+      "prefill": "NO.",
+      "local": "unreached",
+      "ranked": "unreached",
+      "base_m5": "unreached",
+      "verdict": "IDENTICAL (unreachable)",
+      "kernels": "none"
+    },
+    {
+      "id": "S12",
+      "file": "matmul.cpp",
+      "line": 2514,
+      "predicate": "char devc = ...; GEMM_TPARAM_MACRO(devc); bool use_nax = is_nax_available() && (tf32 || out.dtype() != f32)",
+      "decode": "NO - the SegmentedMM primitive has no caller in the scored graph (no segmented_mm op is built by the Qwen path).",
+      "prefill": "NO.",
+      "local": "unreached",
+      "ranked": "unreached",
+      "base_m5": "unreached",
+      "verdict": "IDENTICAL (unreachable)",
+      "kernels": "none"
+    },
+    {
+      "id": "S13",
+      "file": "scaled_dot_product_attention.cpp",
+      "line": 177,
+      "predicate": "if (metal::is_nax_available() && q.shape(3) != 80 && (tf32 || q.dtype() != f32)) return sdpa_full_self_attention_nax(...)",
+      "decode": "NO. The gate is inside sdpa_full_self_attention_metal, reached only from the full-attention branch of eval_gpu, which requires the fused primitive to exist. use_fallback keeps sdpa_full_supported_head_dim in {64, 80, 128} and this model is head_dim 256, so supports_sdpa_full is false at EVERY width. The primitive is built only via supports_sdpa_vector, which needs qL <= 8, hence the vector branch always.",
+      "prefill": "NO - at qL = 512 both supports_* are false, so no primitive is built at all and MLX runs the composed matmul fallback instead (S9).",
+      "local": "unreached",
+      "ranked": "unreached",
+      "base_m5": "unreached",
+      "verdict": "IDENTICAL (unreachable)",
+      "kernels": "none - the 16 full-attention layers never touch the steel attention family on either host"
+    },
+    {
+      "id": "S14",
+      "file": "scaled_dot_product_attention.cpp",
+      "line": 443,
+      "predicate": "char devc = ...; if (devc == 's') { blocks = 64; if (N > 1024 && n_simds > 4) {...} } else if (devc == 'd') {...} else { blocks = n_simds >= 4 ? 64 : 32; }",
+      "decode": "YES, in the last rounds only - 2pass is selected once kL >= 1024, and the 512-seed + 512-decode window reaches kL = 1024 exactly at the end.",
+      "prefill": "NO - prefill takes no fused SDPA route at all (S13).",
+      "local": "devc 's', N = 1024 so `N > 1024` is false -> blocks = 64",
+      "ranked": "devc 's' -> blocks = 64",
+      "base_m5": "devc 'g' -> else arm; and S15 would not route to 2pass at all",
+      "verdict": "IDENTICAL (M5 Pro/Max); DIVERGES vs a base M5",
+      "kernels": "sdpa_vector_2pass_1_bfloat16_256_256 / _2_"
+    },
+    {
+      "id": "S15",
+      "file": "scaled_dot_product_attention.cpp",
+      "line": 748,
+      "predicate": "if (((devc == 'd' || devc == 's') && k.shape(2) >= 1024) || (k.shape(1) < q.shape(1) && k.shape(2) >= 4096)) sdpa_vector_2pass else sdpa_vector",
+      "decode": "YES - all 16 full-attention layers, every round, at qL <= 5 after the exactness chunk.",
+      "prefill": "NO (S13).",
+      "local": "devc 's' -> 2pass once kL >= 1024",
+      "ranked": "devc 's' -> 2pass once kL >= 1024",
+      "base_m5": "devc 'g' -> the first arm fails; the gqa arm needs kL >= 4096, never reached -> sdpa_vector for the whole leg",
+      "verdict": "IDENTICAL (M5 Pro/Max); DIVERGES vs a base M5",
+      "kernels": "sdpa_vector_bfloat16_256_256 vs sdpa_vector_2pass_*"
+    }
+  ]
+}
