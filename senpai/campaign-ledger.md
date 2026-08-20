@@ -18404,3 +18404,269 @@ dispatch count is not time.
   bandwidth with concurrency, and the ranked host has bandwidth to spare.
 - The dequantized-cache permission and the GDN snapshot direction are closed
   with arithmetic. Reopen only on a new measured cost, not on a new idea.
+
+## 211 The knee: cost is ordered by working threadgroups, and the prize is 19.8 % of ranked decode
+
+Item 210 said the group partition trades bandwidth against occupancy and that the
+trade inverts sign between hosts. It named no mechanism constant and no target.
+Item 211 supplies both. The mechanism was measured 150 items ago, forgotten, and
+independently rediscovered this morning by a student who had never read it.
+
+### (A) The prize, sized against an empirical floor with no roofline assumption
+
+The ranked candidate already runs a **30.402 ms depth-0 round** while streaming the
+identical 14,412,349,440 B of quantized weights (199(A)). A wider round streams the
+same bytes. So a floor for a round at proposed width `M`, demonstrated by the same
+host on the same build, is
+
+```
+floor(M) = 30.402 + (M - 1) * 8.42/8   ms
+```
+
+the depth-0 round plus the ranked head chain that must be paid to propose `M-1`
+drafts (E65: eight steps, 8.42 ms ranked). No roof is invoked. `_advisor_scratch/prize.py`:
+
+| prompt | M | R | round ms | floor ms | tax ms | tax % of round | raw now | raw at floor |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| plutarch | 1.154 | 487 | 30.781 | 30.564 | 0.217 | 0.7 % | 1.2528 | 1.2614 |
+| drama | 3.298 | 252 | 38.094 | 32.820 | 5.274 | 13.8 % | 1.9163 | 2.2058 |
+| travel | 3.656 | 212 | 39.511 | 33.197 | 6.314 | 16.0 % | 2.1795 | 2.5651 |
+| beagle | 5.533 | 107 | 53.338 | 35.173 | 18.165 | 34.1 % | 3.1201 | 4.5340 |
+| medicine | 5.768 | 99 | 53.476 | 35.420 | 18.056 | 33.8 % | 3.3446 | 4.8268 |
+| republic | 6.270 | 89 | 58.421 | 35.948 | 22.473 | 38.5 % | 3.3930 | 5.2136 |
+| essays | 6.425 | 87 | 60.196 | 36.112 | 24.084 | 40.0 % | 3.3666 | 5.2901 |
+| botany | 6.777 | 85 | 60.548 | 36.482 | 24.066 | 39.7 % | 3.4253 | 5.3569 |
+
+**Total verify-width tax across the eight legs: 12,645 ms of 63,766 ms of ranked
+candidate decode time, 19.8 %.**
+
+The reconstructed published median at 0 % recovery is **3.23238** against the
+measured `ca9251b8` score of **3.23250848**, an error of 0.004 %. The instrument is
+faithful, so the recovery table below is quotable:
+
+| tax recovered | published median | vs crown 3.25238 |
+|---:|---:|---:|
+| 0 % | 3.2324 | -0.6 % |
+| 5 % | 3.2832 | +0.9 % |
+| 10 % | 3.3356 | +2.6 % |
+| 15 % | 3.3897 | +4.2 % |
+| 20 % | 3.4456 | +5.9 % |
+| 25 % | 3.5033 | +7.7 % |
+| 33 % | 3.5999 | +10.7 % |
+| 50 % | 3.8239 | +17.6 % |
+| 100 % | 4.6804 | +43.9 % |
+
+🔴 **Five percent of the width tax beats the crown.** Ten percent clears it by 2.6 %,
+which is 2.4 sd of a single ranked difference (193). This replaces "shave one
+percent somewhere" with a denominator and a target.
+
+The floor is not compute-infeasible. A width-5.53 round at the floor would run about
+9.8 TFLOP/s, 18 % of the ranked compute roof; the measured beagle round runs 10.5 %.
+Neither roof binds at the floor. The tax is latency, not physics.
+
+### (B) 🔴🔴🔴 THE PUBLISHED SCORE IS SET BY BEAGLE AND MEDICINE, AND BY NOTHING ELSE
+
+Eight `raw_p` sorted: 1.2528, 1.9163, 2.1795, **3.1201**, **3.3446**, 3.3666,
+3.3930, 3.4253. The median of eight is the mean of the fourth and fifth. Those are
+**beagle at M = 5.5327 and medicine at M = 5.7677**.
+
+Every ranked decision reduces to one question: how fast is an M ~ 5.5 to 5.8 round?
+Work that does not move that round does not move the score. M = 5 and M = 6 already
+carried 57.5 % of ranked verify-width time (207(G)); this sharpens it from a weight
+to an identity.
+
+### (C) 🔴🔴🔴 THE KNEE: COST IS RANK-ORDERED BY WORKING THREADGROUPS, tau = -1.0, TWICE
+
+Working threadgroups for a cell are `ceil(M/IPG) * ceil(n/8)`, from
+`quantized.h:1157-1173` (`first_m = tid.x*IPG; if (first_m >= M) return;`) and the
+non-editable host grid `grid_dims(M, ceil(N/8), B)` at `quantized.cpp:249-254`.
+
+**Instrument 1, E33 (item 137, table at `:3461`).** An M = 6 arm halving the working
+threadgroup count, measured per shape:
+
+| shape | n | k | shipped TGs | arm TGs | observed ratio |
+|---|---:|---:|---:|---:|---:|
+| `head.lm_head` | 248320 | 5120 | 62080 | 31040 | 0.9830 |
+| `head.compact_draft_vocab` | 98336 | 5120 | 24584 | 12292 | 0.9868 |
+| `mlp.gate_up_fused` | 34816 | 5120 | 8704 | 4352 | 0.9941 |
+| `linear_attn.in_proj` | 16480 | 5120 | 4120 | 2060 | 0.9947 |
+| `full_attn.qkv_proj` | 14336 | 5120 | 3584 | 1792 | 1.0148 |
+| `full_attn.o_proj` | 5120 | 6144 | 1280 | 640 | 1.0414 |
+| `linear_attn.out_proj` | 5120 | 6144 | 1280 | 640 | 1.0492 |
+| `mlp.down` | 5120 | 17408 | 1280 | 640 | 1.0592 |
+
+Kendall tau = -1.0 against working threadgroups, 25 concordant, 0 discordant. The
+traffic ratio is exactly 1.3571 for all eight shapes, so **a traffic model is blind
+to this by construction**. The sign flips between 1792 and 2060: a knee near
+**1900 working threadgroups, about 95 per core on 20 cores**.
+
+**Instrument 2, E71 (askeladd, merged today as `d19d6f5c`).** In-situ per-byte rate
+at real occupancy with real weights, M = 6, where the shipped `<T,6,6>` gives one
+working group so the count is just `ceil(n/8)`:
+
+| family | n | k | working TGs | ms/GB |
+|---|---:|---:|---:|---:|
+| `lm_head` | 248320 | 5120 | 31040 | 2.995 |
+| `mlp_gate_up` | 34816 | 5120 | 4352 | 3.259 |
+| `gdn_out_proj` | 5120 | 6144 | 640 | 3.901 |
+| `fa_o_proj` | 5120 | 6144 | 640 | 4.099 |
+| `mlp_down` | 5120 | 17408 | 640 | 5.263 |
+
+Exact reverse ordering by working threadgroups, tau = -1.0, with the 640-way tie
+broken by k. **Two instruments, 150 ledger items apart, two students, two methods,
+one ordering.** That is the strongest evidence standard this campaign has.
+
+askeladd's own shape-invariance control carries it: `fa_o_proj` and `gdn_out_proj`
+have identical shapes and 3x different byte counts and agree on ms/GB to 5 % at
+M = 4, 6 and 9. **The per-byte rate is a property of the shape and the grid, not of
+the byte count.**
+
+A third signature sits inside his data and neither of us saw it at first. The
+shipped table runs one working group at M = 3..6 and two at M = 7..9. Per-family
+ms/GB dispersion:
+
+| M | groups | spread | absolute spread |
+|---|---:|---:|---:|
+| 4 | 1 | 2.79x | 0.819 |
+| 5 | 1 | 1.82x | 1.271 |
+| 6 | 1 | 1.76x | 2.268 |
+| 9 | 2 | 1.11x | 0.707 |
+
+Absolute dispersion grows monotonically while the group count is 1 and **collapses
+by 3.2x** when it becomes 2, while total cost rises 1.4x. Not a compression
+artefact. E74 closes M = 7 and M = 8 to put the step inside the measured range.
+
+The vendored source already states the mechanism, at `quantized.h:1917-1921`:
+
+> *Wide row sharing needs enough output tiles to keep the machine fed; below 4096
+> outputs the reduced x-group count thins the grid, so the promoted pair kernel is
+> kept there byte-for-byte.*
+
+A previous contributor knew, wrote it down, and put one threshold in the source.
+**`mlp.down` at n = 5120 is the smallest scored shape above that gate.** The
+threshold is one shape too low, and E33 measured the penalty precisely there.
+
+### (D) H210 now has a mechanism and two host constants
+
+The trade is per shape, not per kernel: more groups multiply weight traffic but also
+raise occupancy, and occupancy lowers the achieved per-byte rate. The crossover is
+the knee. Both host terms move the same way from our host to the ranked host:
+
+1. **Bandwidth ratio 614 / 227.90 = 2.69x.** The weight-stream saving is worth about
+   1/2.69 as much at rank.
+2. **Core ratio, inferred, about 40 / 20 = 2x.** The same grid delivers half the
+   threadgroups per core at rank, so the occupancy loss costs about 2x more.
+
+Product: the exchange rate moves by roughly 5.4x between the two hosts. A local
+`t6` win of -4.199 % isolated and -0.6163 % at leg level (E66 rung 3, t = -14.81)
+therefore inverting to a ranked loss is quantitatively unsurprising. Measured ranked
+outcome for the composed candidate was -2.46 % against the crown (208).
+
+🔴 **The core count is an inference, not a measurement.** Every use of it must be
+labelled. E74 rung 2 reports the ranked knee for two or three plausible core counts
+rather than one.
+
+Applying the local knee shape at the ranked core count moves two shapes across it:
+`gdn.in_proj` at 2,060 working threadgroups and `fa.qkv` at 1,792 are a local win
+and a marginal local loss, and both fall clearly below a ranked knee at any core
+count above 20. `gdn.in_proj` is the second largest weight tensor at 2.28 GB. That
+is a concrete prediction of the direction and part of the size of the ranked
+regression, from a constant measured on our own host.
+
+### (E) 🔴🔴 PER-SHAPE IPG IS AVAILABLE, UNTRIED, AND BIT-IDENTICAL
+
+`out_vec_size` is a live kernel parameter and already gates the wide tier at 4096.
+Nothing prevents the IPG choice from being a function of both `ntg.x` and
+`out_vec_size`. The correct deliverable is a two-dimensional table, not a table over
+M alone.
+
+Exactness is inherited, not argued: E66 proved 12 of 12 exact that changing the group
+partition is bit-identical, `max_abs_ulp_top2_logits = 0`, because partitions are
+unordered and the per-element accumulation order is untouched. Selecting the
+partition on `out_vec_size` only chooses which bit-identical partition runs.
+
+This is the best new candidate mechanism on the campaign: small diff, bit-width
+neutral, no manifest touch, no FP reassociation, and it captures the win above the
+knee while avoiding the loss below it **on both hosts at once**, which is the
+property every previous kernel arm lacked.
+
+### (F) The 128-register wall, and the one thing that reopens the M = 6 axis
+
+E38 (item 157) read AIR `peak_live_regs` for the shipped `crossrow` kernel at
+`rows_per_simd = 4`: na2 62, na3 83, na4 104, na5 125, **na6 144**. Steps +21, +21,
++21, +19. The break is the tell: na6 is the only cell with `allocas = 2` of type
+`[4 x <6 x float>]`, so **144 is already post-spill and true demand is at least 146**.
+NA = 6 at r = 4 does not fit in 128 registers.
+
+E38 decomposed the M = 6 trade: the second weight pass costs **+11.96 %**, the r = 2
+door to removing it costs **+10.54 %**, net **-1.42 %** drift-adjusted against a
+registered 0.84. The axis was closed as structural.
+
+🔴 **edward's E72 rung 2 is the first thing that can reopen it.** If removing the
+non-native `vec<float,6>` brings the shipped NA = 6 instantiation under 128 registers
+at r = 4, the +10.54 % door cost disappears and the -11.96 % prize is collected
+whole. Target: recover 16 to 18 registers with element-wise FP order unchanged. Note
+what does not change: 54 live accumulator floats at NA = 6 regardless of storage.
+The fix is allocatability, not demand.
+
+Open discrepancy: E38 reports 144 for the shipped na6 at r = 4; edward's E69 census
+reported 130 plain, 140 `xvec`, 286 at NA = 6. Those cannot describe the same object.
+Most likely his census measured `research/e69_wide_probe.metal` rather than the
+shipped instantiation. He must state which object each number describes and gate
+rung 2 on the shipped one.
+
+### (G) 🔴 MY OWN ERROR, CAUGHT BEFORE IT COST GPU TIME
+
+The E73 brief specified the fit as
+
+```
+t(M, IPG, shape) = a * groups(M,IPG) * W(shape) + b(IPG) + c(shape)
+```
+
+That form is additively separable and **contains no IPG-by-shape interaction, so it
+cannot express a cost effect whose sign depends on the shape** — which is the entire
+effect. It would have pushed the signal into the residual and produced a report of a
+poor fit rather than a mechanism. Corrected to a physical form in which the achieved
+per-byte rate depends on occupancy:
+
+```
+t = W(shape) * groups(M,IPG) * r(tgs_per_core) + overhead(M, IPG)
+tgs_per_core = ceil(M/IPG) * ceil(n/8) / cores
+```
+
+`r` is directly measurable and askeladd already measured it, so his ms/GB surface is
+alphonse's validation set rather than an input to his fit. `cores` is the only host
+term, which makes the local-to-ranked transfer a single named substitution.
+
+**Rule adopted.** A cost model handed to a student must be checked for whether it can
+represent the effect being measured, including its sign, before it is written into a
+brief. Stress test at zero and with both signs, as the workflow already requires for
+score equations, and apply the same test to fit specifications.
+
+### (H) Standing rules added
+
+- 🔴🔴🔴 **Cost is ordered by working threadgroups, `ceil(M/IPG) * ceil(n/8)`.**
+  The local knee is near 1900 working threadgroups, about 95 per core on 20 cores.
+  Above the knee, saving a weight stream wins; below it, concurrency wins. Name which
+  side of the knee a shape sits on before pricing any partition change.
+- 🔴🔴🔴 **The published score is the mean of beagle and medicine.** It is set by the
+  speed of an M ~ 5.5 to 5.8 round. Price every mechanism through that round.
+- 🔴🔴 **The verify-width tax is 19.8 % of ranked candidate decode time.** Express
+  kernel value as a share of the tax and convert with the 211(A) table.
+- 🔴🔴 **The partition trade is per shape, not per kernel.** A single IPG per width
+  is a constraint we imposed on ourselves, not one the kernel imposes.
+- 🔴 **A traffic model cannot explain a sign flip that a constant traffic ratio is
+  blind to.** When all arms share a traffic ratio, the mechanism is elsewhere.
+
+### (I) Board and campaign state
+
+Crown unchanged: **3.25238228**, `9ad17378`, Lieisyourlie, source `bfab0de5`.
+834 rows: 503 rejected, 245 failed, 72 accepted, 9 cancelled, 5 validating.
+
+Arm 2, submission **`9b241879-1fcf-4cb4-bac5-ca2bca58d4c5`**, entered the ranked
+runner at 10:19:13Z as workflow run `32357580843` and is at step 31 of 67. The
+bypass review at step 12 passed. The timed step is 56.
+
+Slots: PR #71 thorfinn E68 rung 3 relaunch in flight; PR #75 edward E72; PR #76
+alphonse E73 with the corrected model; PR #77 askeladd E74, assigned today from this
+item. PR #74 merged.
