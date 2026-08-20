@@ -99,7 +99,7 @@ struct E71WidthTaxCensusTests {
         // each (arm, width) pair: baseline, arm, arm, baseline.
         for width in armWidths {
             for name in armNames {
-                guard let arm = e71Arms[name] else {
+                guard let arm = e71Arm(name) else {
                     Issue.record("unknown E71 arm \(name)")
                     continue
                 }
@@ -161,7 +161,7 @@ private final class E71Harness {
     }
 
     func run(arm: String, width: Int, order: Int) -> [String: Any] {
-        run(arm: e71Arms[arm] ?? E71Arm.baseline, width: width, order: order)
+        run(arm: e71Arm(arm) ?? E71Arm.baseline(), width: width, order: order)
     }
 
     func run(arm: E71Arm, width: Int, order: Int) -> [String: Any] {
@@ -259,47 +259,61 @@ private struct E71Arm {
         wrap(model, pin ?? width)
     }
 
-    static let baseline = E71Arm(name: "baseline", pin: nil) { _, _ in {} }
+    static func baseline() -> E71Arm {
+        E71Arm(name: "baseline", pin: nil) { _, _ in {} }
+    }
 }
 
-private let e71Arms: [String: E71Arm] = [
-    "baseline": .baseline,
+private func e71Arm(_ name: String) -> E71Arm? {
+    switch name {
+    case "baseline":
+        return .baseline()
 
     // Rung 2 control. The wrapper runs around `mlp` with the family at FULL
     // width, so anything it measures is harness overhead and nothing else.
-    "null": E71Arm(name: "null", pin: nil) { model, pin in
-        e71WrapUnary(model, childPath: ["mlp"], pinRows: pin)
-    },
+    case "null":
+        return E71Arm(name: "null", pin: nil) { model, pin in
+            e71WrapUnary(model, childPath: ["mlp"], pinRows: pin)
+        }
 
     // Rung 2 positive control. E63 measured this shape standalone at 92.1 % of
     // peak bandwidth at NA=4 -- the highest fraction of any scored shape -- so
     // its tax is predictable from independent data.
-    "lm_head": E71Arm(name: "lm_head", pin: 1) { model, pin in
-        e71WrapLMHead(model, pinRows: pin)
-    },
+    case "lm_head":
+        return E71Arm(name: "lm_head", pin: 1) { model, pin in
+            e71WrapLMHead(model, pinRows: pin)
+        }
 
     // Rung 3. 64 layers, 9.626 GB of the 14.412 GB weight stream: the fused
     // gate/up QMV, the compiled SwiGLU and `down_proj` together.
-    "mlp_all": E71Arm(name: "mlp_all", pin: 1) { model, pin in
-        e71WrapUnary(model, childPath: ["mlp"], pinRows: pin)
-    },
+    case "mlp_all":
+        return E71Arm(name: "mlp_all", pin: 1) { model, pin in
+            e71WrapUnary(model, childPath: ["mlp"], pinRows: pin)
+        }
 
     // 64 layers, 3.209 GB. `mlp_all` minus this isolates fused gate/up + SwiGLU.
-    "mlp_down": E71Arm(name: "mlp_down", pin: 1) { model, pin in
-        e71WrapQuantizedLinear(model, childPath: ["mlp", "down_proj"], pinRows: pin)
-    },
+    case "mlp_down":
+        return E71Arm(name: "mlp_down", pin: 1) { model, pin in
+            e71WrapQuantizedLinear(model, childPath: ["mlp", "down_proj"], pinRows: pin)
+        }
 
     // 16 full-attention layers, 0.283 GB. The only attention projection that
     // still dispatches through its child module.
-    "fa_o_proj": E71Arm(name: "fa_o_proj", pin: 1) { model, pin in
-        e71WrapQuantizedLinear(model, childPath: ["self_attn", "o_proj"], pinRows: pin)
-    },
+    case "fa_o_proj":
+        return E71Arm(name: "fa_o_proj", pin: 1) { model, pin in
+            e71WrapQuantizedLinear(model, childPath: ["self_attn", "o_proj"], pinRows: pin)
+        }
 
     // 48 GDN layers, 0.849 GB. Same seam on the recurrent side.
-    "gdn_out_proj": E71Arm(name: "gdn_out_proj", pin: 1) { model, pin in
-        e71WrapQuantizedLinear(model, childPath: ["linear_attn", "out_proj"], pinRows: pin)
-    },
-]
+    case "gdn_out_proj":
+        return E71Arm(name: "gdn_out_proj", pin: 1) { model, pin in
+            e71WrapQuantizedLinear(model, childPath: ["linear_attn", "out_proj"], pinRows: pin)
+        }
+
+    default:
+        return nil
+    }
+}
 
 // MARK: - module surgery
 
