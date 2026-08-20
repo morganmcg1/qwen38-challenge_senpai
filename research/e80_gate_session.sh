@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# E80 rung 1 -- run the E71 width-tax census with the GPU-time instrument on.
+#
+#   usage: research/e80_gate_session.sh TAG [smoke|full]
+#
+# The E71 driver owns the local run lock, the ABBA order and the per-block
+# thermal record. This wrapper only adds the E80 environment, because run_job
+# takes an argv list with no environment field.
+#
+# The GPU ledger writes JSONL next to the E71 census JSON. Snapshots are
+# emitted per BLOCK (`endWindow`), so `MLX_E80_SNAPSHOT_ROUNDS` is set far above
+# the per-block rep count on purpose: a rep-triggered snapshot would split one
+# block across two records.
+set -uo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+tag="${1:?usage: e80_gate_session.sh TAG [smoke|gate|gate-isolated|full]}"
+profile="${2:-full}"
+
+# The rung-1 gate needs exactly two curve widths and one arm width, because
+# every published E71 family tax it must reproduce is quoted at M = 6. Running
+# the default 1..9 curve and the 4,5,6,9 arm grid would spend 130 blocks to
+# decide a gate that 32 blocks decide, at the same reps and the same precision.
+#
+# `gate-isolated` repeats the same session with one MLX op per command buffer.
+# That makes each command-buffer GPU interval one kernel's GPU time, which is
+# the only configuration that resolves per-kernel cost. It also removes all
+# intra-buffer concurrency, so the per-family difference between the two
+# profiles IS the concurrency discount that rung 0c asks for.
+#
+# `gate-control` repeats the same session with the instrument completely
+# dormant: no swizzle, no census, no completion handlers. Its wall clock is the
+# only measurement in this experiment that carries zero instrument overhead, so
+# it is what separates "the instrument perturbs the harness" from "this host no
+# longer reproduces the published E71 session".
+e71_profile="${profile}"
+case "${profile}" in
+  gate|gate-isolated|gate-control)
+    export MLXFAST_E71_CURVE_WIDTHS="${MLXFAST_E71_CURVE_WIDTHS:-1,6}"
+    export MLXFAST_E71_ARM_WIDTHS="${MLXFAST_E71_ARM_WIDTHS:-6}"
+    export MLXFAST_E71_REPS="${MLXFAST_E71_REPS:-12}"
+    export MLXFAST_E71_WARMUP="${MLXFAST_E71_WARMUP:-3}"
+    e71_profile=full
+    ;;
+esac
+if [[ "${profile}" == "gate-isolated" ]]; then
+  E80_OPS_PER_BUFFER="${E80_OPS_PER_BUFFER:-1}"
+fi
+
+if [[ "${profile}" != "gate-control" ]]; then
+  gpu_out="research/out/${tag}-gpu"
+  rm -rf "${gpu_out}"
+  mkdir -p "${gpu_out}"
+
+  export MLX_E80_GPU_TIME=1
+  export MLX_E80_SNAPSHOT_ROUNDS=1000000
+  export MLX_E58_DISPATCH_CENSUS=1
+  export MLX_E58_DISPATCH_CENSUS_SHAPES=1
+  export MLX_E58_DISPATCH_CENSUS_PATH="${PWD}/${gpu_out}/census.jsonl"
+  : > "${MLX_E58_DISPATCH_CENSUS_PATH}"
+
+  # Isolated mode forces one MLX op per command buffer, so a command-buffer GPU
+  # interval is one kernel's GPU time. Leave unset for the in-situ arm.
+  if [[ -n "${E80_OPS_PER_BUFFER:-}" ]]; then
+    export MLX_E58_BUFFER_LIMIT_OPS="${E80_OPS_PER_BUFFER}"
+  fi
+fi
+
+# --- publish mlx.metallib into the release xctest bundle ---------------------
+# Cmlx searches next to the RUNNING executable. `swift test -c release` recreates
+# the bundle whenever the test target relinks, and that wipes the metallib the
+# previous `tools/build-mlx-metallib.sh --all-build-roots` published there. The
+# first MLXArray then dies with "Failed to load the default metallib", which is
+# the exact gap that flag's comment describes. e71_census.sh does not publish, so
+# this wrapper does it.
+#
+# The metallib is compiled AOT from vendored Metal sources and takes minutes. A
+# rebuild is pure waste when those sources have not moved, so publish the
+# existing artifact and let the fingerprint sidecar prove it is current. A
+# mismatch is fatal: a stale metallib would silently measure the wrong kernels.
+publish_metallib() {
+  local want source bundle_dir
+  want="$(tools/build-mlx-metallib.sh --print-fingerprint)" || return 1
+
+  source=""
+  local candidate
+  for candidate in .build-worker/release/mlx.metallib \
+                   .build/arm64-apple-macosx/release/mlx.metallib; do
+    [[ -f "${candidate}" && -f "${candidate}.fingerprint" ]] || continue
+    if grep -qF "${want}" "${candidate}.fingerprint"; then source="${candidate}"; break; fi
+  done
+  if [[ -z "${source}" ]]; then
+    echo "e80_gate_session.sh: no mlx.metallib matches fingerprint ${want}." >&2
+    echo "e80_gate_session.sh: run tools/build-mlx-metallib.sh --all-build-roots" >&2
+    return 1
+  fi
+
+  while IFS= read -r bundle_dir; do
+    if [[ -f "${bundle_dir}/mlx.metallib.fingerprint" ]] \
+       && grep -qF "${want}" "${bundle_dir}/mlx.metallib.fingerprint"; then
+      continue
+    fi
+    cp "${source}" "${bundle_dir}/mlx.metallib"
+    cp "${source}.fingerprint" "${bundle_dir}/mlx.metallib.fingerprint"
+    echo "e80_gate_session.sh: published mlx.metallib into ${bundle_dir}"
+  done < <(find .build .build-worker -path "*.xctest/Contents/MacOS" -type d 2>/dev/null)
+}
+
+# Relink the test bundle first, so the publish lands in the bundle the session
+# will actually load. Publishing before the relink would be undone by it.
+swift build -c release --force-resolved-versions -Xswiftc -enable-testing \
+  --build-tests || exit 1
+publish_metallib || exit 1
+
+exec research/e71_census.sh "${tag}" "${e71_profile}"

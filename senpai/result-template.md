@@ -34,6 +34,10 @@ real measured value, not a missing-value sentinel.
 ## Evidence
 
 - Host, instance, chip, memory profile, toolchain, and thermal policy:
+- `head_provenance_sha256` for every leg, baseline and candidate:
+  (mandatory. `score.json.uses_pinned_mtp_head` reads `true` for both
+  artifacts and must not be used. See the runbook section "Prove which
+  proposal head you measured".)
 - Exact baseline and candidate commands:
 - Cheapest real falsification gate and positive-control verdict:
 - Tests and risk-based checks, in execution order:
