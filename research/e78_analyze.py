@@ -10,8 +10,8 @@ The stop rule was written before the session ran:
   * session null    = the within-arm difference between the early and the late
                       position group, which sees the same drift and the same
                       rebuilds as a real arm contrast but no dispatch change;
-  * useful effect   = a hybrid beats `a_ship` by more than twice the largest
-                      session null, in the predicted direction.
+  * useful effect   = a non-baseline arm beats `a_ship` by more than twice the
+                      largest session null, in the predicted direction.
 
 Anything smaller is reported as `not useful`. The threshold is not retuned
 after the fact.
@@ -53,8 +53,10 @@ LADDER = (
      "n=5120: mlp.down, linear_attn.out_proj, full_attn.o_proj"),
     ("c_hybrid24928 - d_hybrid8192", "c_hybrid24928", "d_hybrid8192",
      "n=14336 qkv_proj and n=16480 linear_attn.in_proj"),
+    # n=98336 head.compact_draft_vocab is NOT in this step. It runs at bits=2
+    # and M=1, so it never reaches the bits==4 gate this table lives behind.
     ("b_crown - c_hybrid24928", "b_crown", "c_hybrid24928",
-     "n=34816 mlp.gate_up, n=98336 compact_draft_vocab, n=248320 lm_head"),
+     "n=34816 mlp.gate_up, n=248320 lm_head"),
 )
 
 
@@ -202,7 +204,8 @@ def main() -> None:
         })
 
     candidates = {arm: arms[arm]["delta_vs_baseline"]
-                  for arm in ("c_hybrid24928", "d_hybrid8192") if arm in arms}
+                  for arm in ("b_crown", "c_hybrid24928", "d_hybrid8192")
+                  if arm in arms}
     threshold = None if session_null is None else 2.0 * session_null
     winners = [] if threshold is None else [
         arm for arm, delta in candidates.items()
