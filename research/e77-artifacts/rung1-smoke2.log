@@ -1,0 +1,223 @@
+e77_rung1 head=b59f27d629c26bc9edd319ccb50ee6ef2f47ddee dirty=1
+e77_rung1 host=ip-10-231-2-22 chip=Apple M4 Pro
+e77_rung1 reps=1 target_bytes=1e9 shape=linear_attn.out_proj
+e77_rung1 started=2026-08-20T11:44:14Z
+/tmp/e77-build/sweep-smoke2.metal 269456 bytes arms=52 source_sha256=fae1c6b75f04878364a25edecaecc05caf376f5c61435d198046e6e469fc7bf3
+e77_rung1 arms=m8_ipg4_p0,m8_ipg5_p0,m8_ipg6_p0,m6_ipg3_p0,m6_ipg4_p0,m7_ipg4_p0,m7_ipg5_p0,m9_ipg5_p0,m9_ipg6_p0,m4_ipg2_p0,m6_ipg2_p0,m6_ipg2_p1,m6_ipg2_p2,m6_ipg2_p3,m6_ipg2_p4,m6_ipg2_p5,m6_ipg2_p6,m6_ipg2_p7,m6_ipg2_p8,m6_ipg2_p9,m6_ipg2_p10,m6_ipg2_p11,m6_ipg2_p12,m6_ipg2_p13,m6_ipg2_p14,m6_ipg2_p15,m6_ipg2_p16,m6_ipg2_p17,m6_ipg2_p18,m6_ipg2_p19,m6_ipg2_p20,m6_ipg2_p21,m6_ipg2_p22,m6_ipg2_p23,m6_ipg2_p24,m6_ipg2_p25,m6_ipg2_p26,m6_ipg2_p27,m6_ipg2_p28,m6_ipg2_p32,m6_ipg2_q8,m6_ipg2_q16,m6_ipg2_q24,m6_ipg3_p1,m6_ipg3_p2,m6_ipg3_p4,m6_ipg3_p8,m6_ipg3_p16,m6_ipg3_p32,m6_ipg3_q2,m6_ipg3_q8,m6_ipg3_q32
+e77_rung1 source_sha256=fae1c6b75f04878364a25edecaecc05caf376f5c61435d198046e6e469fc7bf3 rung0_source_sha256=fae1c6b75f04878364a25edecaecc05caf376f5c61435d198046e6e469fc7bf3 census_matches_source=true
+e77_rung1 cool_gate=skipped_by_request cool_gate_passed_real_gate=false gate_qualified_for_timing=false
+e77_rung1 entry_thermal gpu_temp=39.93013000488281C cpu_temp=39.989891052246094C gpu_power=0.007285808678716421W
+ARM arm=m8_ipg4_p0 m=8 ipg=4 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m8_ipg5_p0 m=8 ipg=5 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m8_ipg6_p0 m=8 ipg=6 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_p0 m=6 ipg=3 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg4_p0 m=6 ipg=4 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m7_ipg4_p0 m=7 ipg=4 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m7_ipg5_p0 m=7 ipg=5 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m9_ipg5_p0 m=9 ipg=5 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m9_ipg6_p0 m=9 ipg=6 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m4_ipg2_p0 m=4 ipg=2 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p0 m=6 ipg=2 groups=3 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p1 m=6 ipg=2 groups=3 pressure=1 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p2 m=6 ipg=2 groups=3 pressure=2 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p3 m=6 ipg=2 groups=3 pressure=3 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p4 m=6 ipg=2 groups=3 pressure=4 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p5 m=6 ipg=2 groups=3 pressure=5 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p6 m=6 ipg=2 groups=3 pressure=6 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p7 m=6 ipg=2 groups=3 pressure=7 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p8 m=6 ipg=2 groups=3 pressure=8 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p9 m=6 ipg=2 groups=3 pressure=9 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p10 m=6 ipg=2 groups=3 pressure=10 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p11 m=6 ipg=2 groups=3 pressure=11 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p12 m=6 ipg=2 groups=3 pressure=12 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p13 m=6 ipg=2 groups=3 pressure=13 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p14 m=6 ipg=2 groups=3 pressure=14 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p15 m=6 ipg=2 groups=3 pressure=15 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p16 m=6 ipg=2 groups=3 pressure=16 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p17 m=6 ipg=2 groups=3 pressure=17 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p18 m=6 ipg=2 groups=3 pressure=18 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p19 m=6 ipg=2 groups=3 pressure=19 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p20 m=6 ipg=2 groups=3 pressure=20 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p21 m=6 ipg=2 groups=3 pressure=21 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p22 m=6 ipg=2 groups=3 pressure=22 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p23 m=6 ipg=2 groups=3 pressure=23 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p24 m=6 ipg=2 groups=3 pressure=24 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p25 m=6 ipg=2 groups=3 pressure=25 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p26 m=6 ipg=2 groups=3 pressure=26 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p27 m=6 ipg=2 groups=3 pressure=27 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p28 m=6 ipg=2 groups=3 pressure=28 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p32 m=6 ipg=2 groups=3 pressure=32 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_q8 m=6 ipg=2 groups=3 pressure=8 kind=q max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_q16 m=6 ipg=2 groups=3 pressure=16 kind=q max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_q24 m=6 ipg=2 groups=3 pressure=24 kind=q max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_p1 m=6 ipg=3 groups=2 pressure=1 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_p2 m=6 ipg=3 groups=2 pressure=2 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_p4 m=6 ipg=3 groups=2 pressure=4 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_p8 m=6 ipg=3 groups=2 pressure=8 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_p16 m=6 ipg=3 groups=2 pressure=16 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_p32 m=6 ipg=3 groups=2 pressure=32 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_q2 m=6 ipg=3 groups=2 pressure=2 kind=q max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_q8 m=6 ipg=3 groups=2 pressure=8 kind=q max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_q32 m=6 ipg=3 groups=2 pressure=32 kind=q max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e77_sweep: session entry gpu_temp_c=39.85
+PARITY shape=linear_attn.out_proj arm=m8_ipg4_p0 m=8 ipg=4 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=8
+PARITY shape=linear_attn.out_proj arm=m8_ipg5_p0 m=8 ipg=5 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=8
+PARITY shape=linear_attn.out_proj arm=m8_ipg6_p0 m=8 ipg=6 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=8
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_p0 m=6 ipg=3 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg4_p0 m=6 ipg=4 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m7_ipg4_p0 m=7 ipg=4 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=7
+PARITY shape=linear_attn.out_proj arm=m7_ipg5_p0 m=7 ipg=5 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=7
+PARITY shape=linear_attn.out_proj arm=m9_ipg5_p0 m=9 ipg=5 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=9
+PARITY shape=linear_attn.out_proj arm=m9_ipg6_p0 m=9 ipg=6 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=9
+PARITY shape=linear_attn.out_proj arm=m4_ipg2_p0 m=4 ipg=2 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=4
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p0 m=6 ipg=2 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p1 m=6 ipg=2 pressure=1 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p2 m=6 ipg=2 pressure=2 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p3 m=6 ipg=2 pressure=3 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p4 m=6 ipg=2 pressure=4 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p5 m=6 ipg=2 pressure=5 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p6 m=6 ipg=2 pressure=6 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p7 m=6 ipg=2 pressure=7 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p8 m=6 ipg=2 pressure=8 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p9 m=6 ipg=2 pressure=9 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p10 m=6 ipg=2 pressure=10 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p11 m=6 ipg=2 pressure=11 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p12 m=6 ipg=2 pressure=12 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p13 m=6 ipg=2 pressure=13 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p14 m=6 ipg=2 pressure=14 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p15 m=6 ipg=2 pressure=15 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p16 m=6 ipg=2 pressure=16 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p17 m=6 ipg=2 pressure=17 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p18 m=6 ipg=2 pressure=18 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p19 m=6 ipg=2 pressure=19 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p20 m=6 ipg=2 pressure=20 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p21 m=6 ipg=2 pressure=21 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p22 m=6 ipg=2 pressure=22 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p23 m=6 ipg=2 pressure=23 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p24 m=6 ipg=2 pressure=24 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p25 m=6 ipg=2 pressure=25 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p26 m=6 ipg=2 pressure=26 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p27 m=6 ipg=2 pressure=27 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p28 m=6 ipg=2 pressure=28 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p32 m=6 ipg=2 pressure=32 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_q8 m=6 ipg=2 pressure=8 kind=q differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_q16 m=6 ipg=2 pressure=16 kind=q differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_q24 m=6 ipg=2 pressure=24 kind=q differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_p1 m=6 ipg=3 pressure=1 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_p2 m=6 ipg=3 pressure=2 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_p4 m=6 ipg=3 pressure=4 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_p8 m=6 ipg=3 pressure=8 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_p16 m=6 ipg=3 pressure=16 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_p32 m=6 ipg=3 pressure=32 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_q2 m=6 ipg=3 pressure=2 kind=q differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_q8 m=6 ipg=3 pressure=8 kind=q differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_q32 m=6 ipg=3 pressure=32 kind=q differing=0 zero_rows=0 compared_rows=6
+LEG shape=linear_attn.out_proj rep=0 position=0 arm=m8_ipg4_p0 m=8 ipg=4 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.010326125 wall_seconds=0.010507708 seconds_per_dispatch=0.000184395093 gbps=191.921810
+LEG shape=linear_attn.out_proj rep=0 position=1 arm=m8_ipg5_p0 m=8 ipg=5 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.010440417 wall_seconds=0.010592458 seconds_per_dispatch=0.000186436011 gbps=189.820839
+LEG shape=linear_attn.out_proj rep=0 position=2 arm=m8_ipg6_p0 m=8 ipg=6 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.011455625 wall_seconds=0.011629167 seconds_per_dispatch=0.000204564733 gbps=172.998735
+LEG shape=linear_attn.out_proj rep=0 position=3 arm=m6_ipg3_p0 m=6 ipg=3 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.008892833 wall_seconds=0.009073333 seconds_per_dispatch=0.000158800598 gbps=222.854576
+LEG shape=linear_attn.out_proj rep=0 position=4 arm=m6_ipg4_p0 m=6 ipg=4 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.008908500 wall_seconds=0.009090708 seconds_per_dispatch=0.000159080361 gbps=222.462659
+LEG shape=linear_attn.out_proj rep=0 position=5 arm=m7_ipg4_p0 m=7 ipg=4 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.009630500 wall_seconds=0.009808500 seconds_per_dispatch=0.000171973216 gbps=205.784603
+LEG shape=linear_attn.out_proj rep=0 position=6 arm=m7_ipg5_p0 m=7 ipg=5 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.009702750 wall_seconds=0.009891375 seconds_per_dispatch=0.000173263393 gbps=204.252262
+LEG shape=linear_attn.out_proj rep=0 position=7 arm=m9_ipg5_p0 m=9 ipg=5 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.011313875 wall_seconds=0.011488000 seconds_per_dispatch=0.000202033482 gbps=175.166214
+LEG shape=linear_attn.out_proj rep=0 position=8 arm=m9_ipg6_p0 m=9 ipg=6 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.012333875 wall_seconds=0.012505875 seconds_per_dispatch=0.000220247769 gbps=160.680129
+LEG shape=linear_attn.out_proj rep=0 position=9 arm=m4_ipg2_p0 m=4 ipg=2 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.007795292 wall_seconds=0.007985000 seconds_per_dispatch=0.000139201638 gbps=254.231491
+LEG shape=linear_attn.out_proj rep=0 position=10 arm=m6_ipg2_p0 m=6 ipg=2 groups=3 pressure=0 kind=p inner=56 gpu_seconds=0.011170958 wall_seconds=0.011339333 seconds_per_dispatch=0.000199481400 gbps=266.110825
+LEG shape=linear_attn.out_proj rep=0 position=11 arm=m6_ipg2_p1 m=6 ipg=2 groups=3 pressure=1 kind=p inner=56 gpu_seconds=0.011185167 wall_seconds=0.011342417 seconds_per_dispatch=0.000199735119 gbps=265.772791
+LEG shape=linear_attn.out_proj rep=0 position=12 arm=m6_ipg2_p2 m=6 ipg=2 groups=3 pressure=2 kind=p inner=56 gpu_seconds=0.011160125 wall_seconds=0.011360625 seconds_per_dispatch=0.000199287947 gbps=266.369145
+LEG shape=linear_attn.out_proj rep=0 position=13 arm=m6_ipg2_p3 m=6 ipg=2 groups=3 pressure=3 kind=p inner=56 gpu_seconds=0.011176708 wall_seconds=0.011347292 seconds_per_dispatch=0.000199584074 gbps=265.973927
+LEG shape=linear_attn.out_proj rep=0 position=14 arm=m6_ipg2_p4 m=6 ipg=2 groups=3 pressure=4 kind=p inner=56 gpu_seconds=0.011174667 wall_seconds=0.011356667 seconds_per_dispatch=0.000199547620 gbps=266.022517
+LEG shape=linear_attn.out_proj rep=0 position=15 arm=m6_ipg2_p5 m=6 ipg=2 groups=3 pressure=5 kind=p inner=56 gpu_seconds=0.011190167 wall_seconds=0.011379542 seconds_per_dispatch=0.000199824405 gbps=265.654037
+LEG shape=linear_attn.out_proj rep=0 position=16 arm=m6_ipg2_p6 m=6 ipg=2 groups=3 pressure=6 kind=p inner=56 gpu_seconds=0.011185625 wall_seconds=0.011365833 seconds_per_dispatch=0.000199743301 gbps=265.761904
+LEG shape=linear_attn.out_proj rep=0 position=17 arm=m6_ipg2_p7 m=6 ipg=2 groups=3 pressure=7 kind=p inner=56 gpu_seconds=0.011208125 wall_seconds=0.011382500 seconds_per_dispatch=0.000200145092 gbps=265.228387
+LEG shape=linear_attn.out_proj rep=0 position=18 arm=m6_ipg2_p8 m=6 ipg=2 groups=3 pressure=8 kind=p inner=56 gpu_seconds=0.011167542 wall_seconds=0.011354333 seconds_per_dispatch=0.000199420386 gbps=266.192244
+LEG shape=linear_attn.out_proj rep=0 position=19 arm=m6_ipg2_p9 m=6 ipg=2 groups=3 pressure=9 kind=p inner=56 gpu_seconds=0.011167458 wall_seconds=0.011344125 seconds_per_dispatch=0.000199418897 gbps=266.194231
+LEG shape=linear_attn.out_proj rep=0 position=20 arm=m6_ipg2_p10 m=6 ipg=2 groups=3 pressure=10 kind=p inner=56 gpu_seconds=0.011200375 wall_seconds=0.011377417 seconds_per_dispatch=0.000200006695 gbps=265.411915
+LEG shape=linear_attn.out_proj rep=0 position=21 arm=m6_ipg2_p11 m=6 ipg=2 groups=3 pressure=11 kind=p inner=56 gpu_seconds=0.011193875 wall_seconds=0.011366292 seconds_per_dispatch=0.000199890625 gbps=265.566032
+LEG shape=linear_attn.out_proj rep=0 position=22 arm=m6_ipg2_p12 m=6 ipg=2 groups=3 pressure=12 kind=p inner=56 gpu_seconds=0.011188083 wall_seconds=0.011365583 seconds_per_dispatch=0.000199787202 gbps=265.703505
+LEG shape=linear_attn.out_proj rep=0 position=23 arm=m6_ipg2_p13 m=6 ipg=2 groups=3 pressure=13 kind=p inner=56 gpu_seconds=0.011216500 wall_seconds=0.011375667 seconds_per_dispatch=0.000200294644 gbps=265.030352
+LEG shape=linear_attn.out_proj rep=0 position=24 arm=m6_ipg2_p14 m=6 ipg=2 groups=3 pressure=14 kind=p inner=56 gpu_seconds=0.011204000 wall_seconds=0.011355000 seconds_per_dispatch=0.000200071430 gbps=265.326038
+LEG shape=linear_attn.out_proj rep=0 position=25 arm=m6_ipg2_p15 m=6 ipg=2 groups=3 pressure=15 kind=p inner=56 gpu_seconds=0.011267250 wall_seconds=0.011449792 seconds_per_dispatch=0.000201200892 gbps=263.836604
+LEG shape=linear_attn.out_proj rep=0 position=26 arm=m6_ipg2_p16 m=6 ipg=2 groups=3 pressure=16 kind=p inner=56 gpu_seconds=0.011260583 wall_seconds=0.011440458 seconds_per_dispatch=0.000201081845 gbps=263.992804
+LEG shape=linear_attn.out_proj rep=0 position=27 arm=m6_ipg2_p17 m=6 ipg=2 groups=3 pressure=17 kind=p inner=56 gpu_seconds=0.011252542 wall_seconds=0.011427208 seconds_per_dispatch=0.000200938242 gbps=264.181469
+LEG shape=linear_attn.out_proj rep=0 position=28 arm=m6_ipg2_p18 m=6 ipg=2 groups=3 pressure=18 kind=p inner=56 gpu_seconds=0.011204167 wall_seconds=0.011390708 seconds_per_dispatch=0.000200074407 gbps=265.322091
+LEG shape=linear_attn.out_proj rep=0 position=29 arm=m6_ipg2_p19 m=6 ipg=2 groups=3 pressure=19 kind=p inner=56 gpu_seconds=0.011228584 wall_seconds=0.011411292 seconds_per_dispatch=0.000200510420 gbps=264.745144
+LEG shape=linear_attn.out_proj rep=0 position=30 arm=m6_ipg2_p20 m=6 ipg=2 groups=3 pressure=20 kind=p inner=56 gpu_seconds=0.011212167 wall_seconds=0.011404250 seconds_per_dispatch=0.000200217261 gbps=265.132785
+LEG shape=linear_attn.out_proj rep=0 position=31 arm=m6_ipg2_p21 m=6 ipg=2 groups=3 pressure=21 kind=p inner=56 gpu_seconds=0.011235292 wall_seconds=0.011421167 seconds_per_dispatch=0.000200630207 gbps=264.587077
+LEG shape=linear_attn.out_proj rep=0 position=32 arm=m6_ipg2_p22 m=6 ipg=2 groups=3 pressure=22 kind=p inner=56 gpu_seconds=0.011218000 wall_seconds=0.011396708 seconds_per_dispatch=0.000200321428 gbps=264.994916
+LEG shape=linear_attn.out_proj rep=0 position=33 arm=m6_ipg2_p23 m=6 ipg=2 groups=3 pressure=23 kind=p inner=56 gpu_seconds=0.011222125 wall_seconds=0.011400875 seconds_per_dispatch=0.000200395090 gbps=264.897508
+LEG shape=linear_attn.out_proj rep=0 position=34 arm=m6_ipg2_p24 m=6 ipg=2 groups=3 pressure=24 kind=p inner=56 gpu_seconds=0.011215042 wall_seconds=0.011397583 seconds_per_dispatch=0.000200268600 gbps=265.064817
+LEG shape=linear_attn.out_proj rep=0 position=35 arm=m6_ipg2_p25 m=6 ipg=2 groups=3 pressure=25 kind=p inner=56 gpu_seconds=0.011264792 wall_seconds=0.011434667 seconds_per_dispatch=0.000201156995 gbps=263.894179
+LEG shape=linear_attn.out_proj rep=0 position=36 arm=m6_ipg2_p26 m=6 ipg=2 groups=3 pressure=26 kind=p inner=56 gpu_seconds=0.011239875 wall_seconds=0.011420833 seconds_per_dispatch=0.000200712056 gbps=264.479181
+LEG shape=linear_attn.out_proj rep=0 position=37 arm=m6_ipg2_p27 m=6 ipg=2 groups=3 pressure=27 kind=p inner=56 gpu_seconds=0.011266750 wall_seconds=0.011448042 seconds_per_dispatch=0.000201191965 gbps=263.848310
+LEG shape=linear_attn.out_proj rep=0 position=38 arm=m6_ipg2_p28 m=6 ipg=2 groups=3 pressure=28 kind=p inner=56 gpu_seconds=0.011283834 wall_seconds=0.011466125 seconds_per_dispatch=0.000201497027 gbps=263.448849
+LEG shape=linear_attn.out_proj rep=0 position=39 arm=m6_ipg2_p32 m=6 ipg=2 groups=3 pressure=32 kind=p inner=56 gpu_seconds=0.011295792 wall_seconds=0.011471458 seconds_per_dispatch=0.000201710566 gbps=263.169952
+LEG shape=linear_attn.out_proj rep=0 position=40 arm=m6_ipg2_q8 m=6 ipg=2 groups=3 pressure=8 kind=q inner=56 gpu_seconds=0.011157125 wall_seconds=0.011335667 seconds_per_dispatch=0.000199234375 gbps=266.440769
+LEG shape=linear_attn.out_proj rep=0 position=41 arm=m6_ipg2_q16 m=6 ipg=2 groups=3 pressure=16 kind=q inner=56 gpu_seconds=0.011189625 wall_seconds=0.011370667 seconds_per_dispatch=0.000199814735 gbps=265.666895
+LEG shape=linear_attn.out_proj rep=0 position=42 arm=m6_ipg2_q24 m=6 ipg=2 groups=3 pressure=24 kind=q inner=56 gpu_seconds=0.011205250 wall_seconds=0.011382958 seconds_per_dispatch=0.000200093749 gbps=265.296444
+LEG shape=linear_attn.out_proj rep=0 position=43 arm=m6_ipg3_p1 m=6 ipg=3 groups=2 pressure=1 kind=p inner=56 gpu_seconds=0.008892375 wall_seconds=0.009071583 seconds_per_dispatch=0.000158792407 gbps=222.866071
+LEG shape=linear_attn.out_proj rep=0 position=44 arm=m6_ipg3_p2 m=6 ipg=3 groups=2 pressure=2 kind=p inner=56 gpu_seconds=0.008904750 wall_seconds=0.009086375 seconds_per_dispatch=0.000159013393 gbps=222.556348
+LEG shape=linear_attn.out_proj rep=0 position=45 arm=m6_ipg3_p4 m=6 ipg=3 groups=2 pressure=4 kind=p inner=56 gpu_seconds=0.008948583 wall_seconds=0.009126208 seconds_per_dispatch=0.000159796132 gbps=221.466187
+LEG shape=linear_attn.out_proj rep=0 position=46 arm=m6_ipg3_p8 m=6 ipg=3 groups=2 pressure=8 kind=p inner=56 gpu_seconds=0.008992375 wall_seconds=0.009175625 seconds_per_dispatch=0.000160578127 gbps=220.387675
+LEG shape=linear_attn.out_proj rep=0 position=47 arm=m6_ipg3_p16 m=6 ipg=3 groups=2 pressure=16 kind=p inner=56 gpu_seconds=0.008991500 wall_seconds=0.009178208 seconds_per_dispatch=0.000160562502 gbps=220.409121
+LEG shape=linear_attn.out_proj rep=0 position=48 arm=m6_ipg3_p32 m=6 ipg=3 groups=2 pressure=32 kind=p inner=56 gpu_seconds=0.008988500 wall_seconds=0.009166667 seconds_per_dispatch=0.000160508926 gbps=220.482691
+LEG shape=linear_attn.out_proj rep=0 position=49 arm=m6_ipg3_q2 m=6 ipg=3 groups=2 pressure=2 kind=q inner=56 gpu_seconds=0.008952125 wall_seconds=0.009138083 seconds_per_dispatch=0.000159859375 gbps=221.378572
+LEG shape=linear_attn.out_proj rep=0 position=50 arm=m6_ipg3_q8 m=6 ipg=3 groups=2 pressure=8 kind=q inner=56 gpu_seconds=0.008932500 wall_seconds=0.009120917 seconds_per_dispatch=0.000159508931 gbps=221.864943
+LEG shape=linear_attn.out_proj rep=0 position=51 arm=m6_ipg3_q32 m=6 ipg=3 groups=2 pressure=32 kind=q inner=56 gpu_seconds=0.008917125 wall_seconds=0.009099250 seconds_per_dispatch=0.000159234374 gbps=222.247490
+LEG shape=linear_attn.out_proj rep=0 position=52 arm=m6_ipg3_q32 m=6 ipg=3 groups=2 pressure=32 kind=q inner=56 gpu_seconds=0.008875375 wall_seconds=0.009061208 seconds_per_dispatch=0.000158488838 gbps=223.292949
+LEG shape=linear_attn.out_proj rep=0 position=53 arm=m6_ipg3_q8 m=6 ipg=3 groups=2 pressure=8 kind=q inner=56 gpu_seconds=0.008951750 wall_seconds=0.009139458 seconds_per_dispatch=0.000159852681 gbps=221.387842
+LEG shape=linear_attn.out_proj rep=0 position=54 arm=m6_ipg3_q2 m=6 ipg=3 groups=2 pressure=2 kind=q inner=56 gpu_seconds=0.008916250 wall_seconds=0.009104250 seconds_per_dispatch=0.000159218749 gbps=222.269300
+LEG shape=linear_attn.out_proj rep=0 position=55 arm=m6_ipg3_p32 m=6 ipg=3 groups=2 pressure=32 kind=p inner=56 gpu_seconds=0.009047958 wall_seconds=0.009231167 seconds_per_dispatch=0.000161570684 gbps=219.033795
+LEG shape=linear_attn.out_proj rep=0 position=56 arm=m6_ipg3_p16 m=6 ipg=3 groups=2 pressure=16 kind=p inner=56 gpu_seconds=0.008985000 wall_seconds=0.009162167 seconds_per_dispatch=0.000160446428 gbps=220.568575
+LEG shape=linear_attn.out_proj rep=0 position=57 arm=m6_ipg3_p8 m=6 ipg=3 groups=2 pressure=8 kind=p inner=56 gpu_seconds=0.008943667 wall_seconds=0.009126625 seconds_per_dispatch=0.000159708334 gbps=221.587935
+LEG shape=linear_attn.out_proj rep=0 position=58 arm=m6_ipg3_p4 m=6 ipg=3 groups=2 pressure=4 kind=p inner=56 gpu_seconds=0.008928750 wall_seconds=0.009115167 seconds_per_dispatch=0.000159441967 gbps=221.958124
+LEG shape=linear_attn.out_proj rep=0 position=59 arm=m6_ipg3_p2 m=6 ipg=3 groups=2 pressure=2 kind=p inner=56 gpu_seconds=0.008928875 wall_seconds=0.009114750 seconds_per_dispatch=0.000159444196 gbps=221.955022
+LEG shape=linear_attn.out_proj rep=0 position=60 arm=m6_ipg3_p1 m=6 ipg=3 groups=2 pressure=1 kind=p inner=56 gpu_seconds=0.008880083 wall_seconds=0.009074375 seconds_per_dispatch=0.000158572915 gbps=223.174557
+LEG shape=linear_attn.out_proj rep=0 position=61 arm=m6_ipg2_q24 m=6 ipg=2 groups=3 pressure=24 kind=q inner=56 gpu_seconds=0.011224833 wall_seconds=0.011409333 seconds_per_dispatch=0.000200443452 gbps=264.833595
+LEG shape=linear_attn.out_proj rep=0 position=62 arm=m6_ipg2_q16 m=6 ipg=2 groups=3 pressure=16 kind=q inner=56 gpu_seconds=0.011286458 wall_seconds=0.011469375 seconds_per_dispatch=0.000201543897 gbps=263.387583
+LEG shape=linear_attn.out_proj rep=0 position=63 arm=m6_ipg2_q8 m=6 ipg=2 groups=3 pressure=8 kind=q inner=56 gpu_seconds=0.011198667 wall_seconds=0.011383750 seconds_per_dispatch=0.000199976190 gbps=265.452402
+LEG shape=linear_attn.out_proj rep=0 position=64 arm=m6_ipg2_p32 m=6 ipg=2 groups=3 pressure=32 kind=p inner=56 gpu_seconds=0.011273833 wall_seconds=0.011460708 seconds_per_dispatch=0.000201318455 gbps=263.682533
+LEG shape=linear_attn.out_proj rep=0 position=65 arm=m6_ipg2_p28 m=6 ipg=2 groups=3 pressure=28 kind=p inner=56 gpu_seconds=0.011229875 wall_seconds=0.011415167 seconds_per_dispatch=0.000200533483 gbps=264.714696
+LEG shape=linear_attn.out_proj rep=0 position=66 arm=m6_ipg2_p27 m=6 ipg=2 groups=3 pressure=27 kind=p inner=56 gpu_seconds=0.011253958 wall_seconds=0.011449542 seconds_per_dispatch=0.000200963542 gbps=264.148211
+LEG shape=linear_attn.out_proj rep=0 position=67 arm=m6_ipg2_p26 m=6 ipg=2 groups=3 pressure=26 kind=p inner=56 gpu_seconds=0.011245500 wall_seconds=0.011427708 seconds_per_dispatch=0.000200812501 gbps=264.346889
+LEG shape=linear_attn.out_proj rep=0 position=68 arm=m6_ipg2_p25 m=6 ipg=2 groups=3 pressure=25 kind=p inner=56 gpu_seconds=0.011284417 wall_seconds=0.011476375 seconds_per_dispatch=0.000201507438 gbps=263.435238
+LEG shape=linear_attn.out_proj rep=0 position=69 arm=m6_ipg2_p24 m=6 ipg=2 groups=3 pressure=24 kind=p inner=56 gpu_seconds=0.011253542 wall_seconds=0.011438250 seconds_per_dispatch=0.000200956099 gbps=264.157993
+LEG shape=linear_attn.out_proj rep=0 position=70 arm=m6_ipg2_p23 m=6 ipg=2 groups=3 pressure=23 kind=p inner=56 gpu_seconds=0.011228542 wall_seconds=0.011410625 seconds_per_dispatch=0.000200509672 gbps=264.746132
+LEG shape=linear_attn.out_proj rep=0 position=71 arm=m6_ipg2_p22 m=6 ipg=2 groups=3 pressure=22 kind=p inner=56 gpu_seconds=0.011262375 wall_seconds=0.011452458 seconds_per_dispatch=0.000201113838 gbps=263.950808
+LEG shape=linear_attn.out_proj rep=0 position=72 arm=m6_ipg2_p21 m=6 ipg=2 groups=3 pressure=21 kind=p inner=56 gpu_seconds=0.011255083 wall_seconds=0.011424750 seconds_per_dispatch=0.000200983632 gbps=264.121807
+LEG shape=linear_attn.out_proj rep=0 position=73 arm=m6_ipg2_p20 m=6 ipg=2 groups=3 pressure=20 kind=p inner=56 gpu_seconds=0.011235250 wall_seconds=0.011409083 seconds_per_dispatch=0.000200629463 gbps=264.588058
+LEG shape=linear_attn.out_proj rep=0 position=74 arm=m6_ipg2_p19 m=6 ipg=2 groups=3 pressure=19 kind=p inner=56 gpu_seconds=0.011222125 wall_seconds=0.011405792 seconds_per_dispatch=0.000200395090 gbps=264.897508
+LEG shape=linear_attn.out_proj rep=0 position=75 arm=m6_ipg2_p18 m=6 ipg=2 groups=3 pressure=18 kind=p inner=56 gpu_seconds=0.011236625 wall_seconds=0.011420542 seconds_per_dispatch=0.000200654018 gbps=264.555679
+LEG shape=linear_attn.out_proj rep=0 position=76 arm=m6_ipg2_p17 m=6 ipg=2 groups=3 pressure=17 kind=p inner=56 gpu_seconds=0.011259584 wall_seconds=0.011443375 seconds_per_dispatch=0.000201063991 gbps=264.016245
+LEG shape=linear_attn.out_proj rep=0 position=77 arm=m6_ipg2_p16 m=6 ipg=2 groups=3 pressure=16 kind=p inner=56 gpu_seconds=0.011221375 wall_seconds=0.011404583 seconds_per_dispatch=0.000200381694 gbps=264.915218
+LEG shape=linear_attn.out_proj rep=0 position=78 arm=m6_ipg2_p15 m=6 ipg=2 groups=3 pressure=15 kind=p inner=56 gpu_seconds=0.011193417 wall_seconds=0.011379458 seconds_per_dispatch=0.000199882442 gbps=265.576903
+LEG shape=linear_attn.out_proj rep=0 position=79 arm=m6_ipg2_p14 m=6 ipg=2 groups=3 pressure=14 kind=p inner=56 gpu_seconds=0.011215625 wall_seconds=0.011397583 seconds_per_dispatch=0.000200279015 gbps=265.051033
+LEG shape=linear_attn.out_proj rep=0 position=80 arm=m6_ipg2_p13 m=6 ipg=2 groups=3 pressure=13 kind=p inner=56 gpu_seconds=0.011285500 wall_seconds=0.011474167 seconds_per_dispatch=0.000201526784 gbps=263.409950
+LEG shape=linear_attn.out_proj rep=0 position=81 arm=m6_ipg2_p12 m=6 ipg=2 groups=3 pressure=12 kind=p inner=56 gpu_seconds=0.011156583 wall_seconds=0.011354917 seconds_per_dispatch=0.000199224704 gbps=266.453702
+LEG shape=linear_attn.out_proj rep=0 position=82 arm=m6_ipg2_p11 m=6 ipg=2 groups=3 pressure=11 kind=p inner=56 gpu_seconds=0.011203125 wall_seconds=0.011372917 seconds_per_dispatch=0.000200055802 gbps=265.346766
+LEG shape=linear_attn.out_proj rep=0 position=83 arm=m6_ipg2_p10 m=6 ipg=2 groups=3 pressure=10 kind=p inner=56 gpu_seconds=0.011190875 wall_seconds=0.011373458 seconds_per_dispatch=0.000199837053 gbps=265.637224
+LEG shape=linear_attn.out_proj rep=0 position=84 arm=m6_ipg2_p9 m=6 ipg=2 groups=3 pressure=9 kind=p inner=56 gpu_seconds=0.011214958 wall_seconds=0.011400125 seconds_per_dispatch=0.000200267112 gbps=265.066787
+LEG shape=linear_attn.out_proj rep=0 position=85 arm=m6_ipg2_p8 m=6 ipg=2 groups=3 pressure=8 kind=p inner=56 gpu_seconds=0.011227250 wall_seconds=0.011406042 seconds_per_dispatch=0.000200486609 gbps=264.776587
+LEG shape=linear_attn.out_proj rep=0 position=86 arm=m6_ipg2_p7 m=6 ipg=2 groups=3 pressure=7 kind=p inner=56 gpu_seconds=0.011232375 wall_seconds=0.011497958 seconds_per_dispatch=0.000200578124 gbps=264.655781
+LEG shape=linear_attn.out_proj rep=0 position=87 arm=m6_ipg2_p6 m=6 ipg=2 groups=3 pressure=6 kind=p inner=56 gpu_seconds=0.011235583 wall_seconds=0.011423792 seconds_per_dispatch=0.000200635417 gbps=264.580206
+LEG shape=linear_attn.out_proj rep=0 position=88 arm=m6_ipg2_p5 m=6 ipg=2 groups=3 pressure=5 kind=p inner=56 gpu_seconds=0.011231375 wall_seconds=0.011415417 seconds_per_dispatch=0.000200560271 gbps=264.679340
+LEG shape=linear_attn.out_proj rep=0 position=89 arm=m6_ipg2_p4 m=6 ipg=2 groups=3 pressure=4 kind=p inner=56 gpu_seconds=0.011162375 wall_seconds=0.011339000 seconds_per_dispatch=0.000199328127 gbps=266.315451
+LEG shape=linear_attn.out_proj rep=0 position=90 arm=m6_ipg2_p3 m=6 ipg=2 groups=3 pressure=3 kind=p inner=56 gpu_seconds=0.011203583 wall_seconds=0.011388708 seconds_per_dispatch=0.000200063988 gbps=265.335908
+LEG shape=linear_attn.out_proj rep=0 position=91 arm=m6_ipg2_p2 m=6 ipg=2 groups=3 pressure=2 kind=p inner=56 gpu_seconds=0.011193792 wall_seconds=0.011369000 seconds_per_dispatch=0.000199889136 gbps=265.568009
+LEG shape=linear_attn.out_proj rep=0 position=92 arm=m6_ipg2_p1 m=6 ipg=2 groups=3 pressure=1 kind=p inner=56 gpu_seconds=0.011181792 wall_seconds=0.011359917 seconds_per_dispatch=0.000199674849 gbps=265.853012
+LEG shape=linear_attn.out_proj rep=0 position=93 arm=m6_ipg2_p0 m=6 ipg=2 groups=3 pressure=0 kind=p inner=56 gpu_seconds=0.011144333 wall_seconds=0.011328042 seconds_per_dispatch=0.000199005952 gbps=266.746595
+LEG shape=linear_attn.out_proj rep=0 position=94 arm=m4_ipg2_p0 m=4 ipg=2 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.007724083 wall_seconds=0.007898875 seconds_per_dispatch=0.000137930058 gbps=256.575256
+LEG shape=linear_attn.out_proj rep=0 position=95 arm=m9_ipg6_p0 m=9 ipg=6 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.012304375 wall_seconds=0.012484375 seconds_per_dispatch=0.000219720985 gbps=161.065362
+LEG shape=linear_attn.out_proj rep=0 position=96 arm=m9_ipg5_p0 m=9 ipg=5 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.011284375 wall_seconds=0.011469542 seconds_per_dispatch=0.000201506698 gbps=175.624137
+LEG shape=linear_attn.out_proj rep=0 position=97 arm=m7_ipg5_p0 m=7 ipg=5 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.009705167 wall_seconds=0.009881417 seconds_per_dispatch=0.000173306546 gbps=204.201404
+LEG shape=linear_attn.out_proj rep=0 position=98 arm=m7_ipg4_p0 m=7 ipg=4 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.009606917 wall_seconds=0.009786208 seconds_per_dispatch=0.000171552084 gbps=206.289771
+LEG shape=linear_attn.out_proj rep=0 position=99 arm=m6_ipg4_p0 m=6 ipg=4 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.008894417 wall_seconds=0.009063500 seconds_per_dispatch=0.000158828866 gbps=222.814913
+LEG shape=linear_attn.out_proj rep=0 position=100 arm=m6_ipg3_p0 m=6 ipg=3 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.008865333 wall_seconds=0.009042500 seconds_per_dispatch=0.000158309525 gbps=223.545867
+LEG shape=linear_attn.out_proj rep=0 position=101 arm=m8_ipg6_p0 m=8 ipg=6 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.011407583 wall_seconds=0.011588292 seconds_per_dispatch=0.000203706848 gbps=173.727297
+LEG shape=linear_attn.out_proj rep=0 position=102 arm=m8_ipg5_p0 m=8 ipg=5 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.010493875 wall_seconds=0.010675875 seconds_per_dispatch=0.000187390625 gbps=188.853844
+LEG shape=linear_attn.out_proj rep=0 position=103 arm=m8_ipg4_p0 m=8 ipg=4 groups=2 pressure=0 kind=p inner=56 gpu_seconds=0.010362125 wall_seconds=0.010550000 seconds_per_dispatch=0.000185037946 gbps=191.255041
+SHAPE shape=linear_attn.out_proj k=6144 n=5120 inner=56 legs=104 bytes_per_stream=17694720 entry_gpu_temp_c=39.78 exit_gpu_temp_c=42.54
+e77_sweep: linear_attn.out_proj inner=56 legs=104 entry=39.78C exit=42.54C
+e77_sweep: wrote research/e77-artifacts/rung1-smoke2.json exit gpu_temp_c=41.17
+e77_rung1 exit_thermal gpu_temp=40.78703308105469C cpu_temp=23.472808837890625C gpu_power=0.007894841954112053W status=0
+e77_rung1 finished=2026-08-20T11:44:33Z

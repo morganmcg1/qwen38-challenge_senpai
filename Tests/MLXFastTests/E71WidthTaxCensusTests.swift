@@ -120,7 +120,8 @@ struct E71WidthTaxCensusTests {
 
         let payload: [String: Any] = [
             "schema": 1,
-            "experiment": "e71-in-situ-width-tax-census",
+            "experiment": ProcessInfo.processInfo.environment["MLXFAST_CENSUS_EXPERIMENT"]
+                ?? "e71-in-situ-width-tax-census",
             "harness": "local",
             "cool_gate_passed_real_gate": false,
             "gate_qualified_for_timing": false,

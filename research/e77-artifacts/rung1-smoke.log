@@ -1,0 +1,31 @@
+e77_rung1 head=2c6ba6619ab95c5cff74150b8d434a062484bb72 dirty=1
+e77_rung1 host=ip-10-231-2-22 chip=Apple M4 Pro
+e77_rung1 reps=1 target_bytes=2e9 shape=linear_attn.out_proj
+e77_rung1 started=2026-08-20T11:34:44Z
+/tmp/e77-build/sweep-smoke.metal 263021 bytes arms=43 source_sha256=1169e8540eb6144f6efc8c3382b4b5e324aea56abd69bde55971ea63cf5bea15
+e77_rung1 arms=m6_ipg2_p0,m6_ipg2_p8,m6_ipg2_q8,m6_ipg3_p0
+e77_rung1 source_sha256=1169e8540eb6144f6efc8c3382b4b5e324aea56abd69bde55971ea63cf5bea15 rung0_source_sha256=1169e8540eb6144f6efc8c3382b4b5e324aea56abd69bde55971ea63cf5bea15 census_matches_source=true
+e77_rung1 cool_gate=skipped_by_request cool_gate_passed_real_gate=false gate_qualified_for_timing=false
+e77_rung1 entry_thermal gpu_temp=35.564517974853516C cpu_temp=22.201427459716797C gpu_power=0.007593526504933834W
+ARM arm=m6_ipg2_p0 m=6 ipg=2 groups=3 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_p8 m=6 ipg=2 groups=3 pressure=8 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg2_q8 m=6 ipg=2 groups=3 pressure=8 kind=q max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM arm=m6_ipg3_p0 m=6 ipg=3 groups=2 pressure=0 kind=p max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e77_sweep: session entry gpu_temp_c=35.64
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p0 m=6 ipg=2 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_p8 m=6 ipg=2 pressure=8 kind=p differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg2_q8 m=6 ipg=2 pressure=8 kind=q differing=0 zero_rows=0 compared_rows=6
+PARITY shape=linear_attn.out_proj arm=m6_ipg3_p0 m=6 ipg=3 pressure=0 kind=p differing=0 zero_rows=0 compared_rows=6
+LEG shape=linear_attn.out_proj rep=0 position=0 arm=m6_ipg2_p0 m=6 ipg=2 groups=3 pressure=0 kind=p inner=113 gpu_seconds=0.022644125 wall_seconds=0.022860625 seconds_per_dispatch=0.000200390486 gbps=264.903594
+LEG shape=linear_attn.out_proj rep=0 position=1 arm=m6_ipg2_p8 m=6 ipg=2 groups=3 pressure=8 kind=p inner=113 gpu_seconds=0.022643417 wall_seconds=0.022811917 seconds_per_dispatch=0.000200384218 gbps=264.911880
+LEG shape=linear_attn.out_proj rep=0 position=2 arm=m6_ipg2_q8 m=6 ipg=2 groups=3 pressure=8 kind=q inner=113 gpu_seconds=0.022637917 wall_seconds=0.022843542 seconds_per_dispatch=0.000200335546 gbps=264.976241
+LEG shape=linear_attn.out_proj rep=0 position=3 arm=m6_ipg3_p0 m=6 ipg=3 groups=2 pressure=0 kind=p inner=113 gpu_seconds=0.018006292 wall_seconds=0.018201958 seconds_per_dispatch=0.000159347714 gbps=222.089411
+LEG shape=linear_attn.out_proj rep=0 position=4 arm=m6_ipg3_p0 m=6 ipg=3 groups=2 pressure=0 kind=p inner=113 gpu_seconds=0.017937958 wall_seconds=0.018137292 seconds_per_dispatch=0.000158742993 gbps=222.935446
+LEG shape=linear_attn.out_proj rep=0 position=5 arm=m6_ipg2_q8 m=6 ipg=2 groups=3 pressure=8 kind=q inner=113 gpu_seconds=0.022627292 wall_seconds=0.022823625 seconds_per_dispatch=0.000200241518 gbps=265.100667
+LEG shape=linear_attn.out_proj rep=0 position=6 arm=m6_ipg2_p8 m=6 ipg=2 groups=3 pressure=8 kind=p inner=113 gpu_seconds=0.022647667 wall_seconds=0.022837667 seconds_per_dispatch=0.000200421830 gbps=264.862166
+LEG shape=linear_attn.out_proj rep=0 position=7 arm=m6_ipg2_p0 m=6 ipg=2 groups=3 pressure=0 kind=p inner=113 gpu_seconds=0.022571875 wall_seconds=0.022762833 seconds_per_dispatch=0.000199751106 gbps=265.751519
+SHAPE shape=linear_attn.out_proj k=6144 n=5120 inner=113 legs=8 bytes_per_stream=17694720 entry_gpu_temp_c=35.62 exit_gpu_temp_c=36.09
+e77_sweep: linear_attn.out_proj inner=113 legs=8 entry=35.62C exit=36.09C
+e77_sweep: wrote research/e77-artifacts/rung1-smoke.json exit gpu_temp_c=36.08
+e77_rung1 exit_thermal gpu_temp=35.95624923706055C cpu_temp=38.87178421020508C gpu_power=0.034500155597925186W status=0
+e77_rung1 finished=2026-08-20T11:35:01Z

@@ -18670,3 +18670,1700 @@ bypass review at step 12 passed. The timed step is 56.
 Slots: PR #71 thorfinn E68 rung 3 relaunch in flight; PR #75 edward E72; PR #76
 alphonse E73 with the corrected model; PR #77 askeladd E74, assigned today from this
 item. PR #74 merged.
+
+## 212 The receipt inverted our kernel table, and the mechanism is registers on the ranked host
+
+Item 210 proposed that the group partition is an occupancy trade whose sign can
+invert between hosts. Item 211 located the knee and sized the prize. Item 212 closes
+the loop: a ranked receipt priced the inversion, and two students independently
+supplied the mechanism constant that explains it. It also records a winner that was
+merged without being shipped, and three retractions of our own.
+
+### (A) 🔴🔴🔴 THE ARM-2 RECEIPT — THE CROWN KERNEL TABLE IS FASTER AT RANK
+
+Submission **`9b241879-1fcf-4cb4-bac5-ca2bca58d4c5`**, candidate commit
+`c1207a0dafe0201fdc90b4e40c38b002eb17b0f5`, created 09:30:36Z. Workflow run
+`32357580843`, timed step 56 ran 10:34:13Z to 10:51:37Z, job completed success.
+Official score **3.23588901**, status rejected.
+
+One variable: our cross-row QMV dispatch table reverted to the promoted frontier's
+table. Exactly 8 lines in 2 files. `NA<=6` to `NA<=4`; `<T,5,5>` to `<T,5,3>`;
+`<T,6,6>` to `<T,6,3>`; `<T,9,5>` to `<T,9,3>`.
+
+Per-prompt candidate MTP seconds per token, arm 2 against our own `ca9251b8`:
+
+| prompt | M | mtp `ca9251b8` | mtp arm 2 | delta |
+|---|---:|---:|---:|---:|
+| plutarch | 1.1540 | 0.030306279 | 0.030272699 | −0.111 % |
+| travel | 3.6557 | 0.017388664 | 0.017376738 | −0.069 % |
+| drama | 3.2976 | 0.019776719 | 0.019748904 | −0.141 % |
+| beagle | 5.5327 | 0.012174043 | 0.012110404 | −0.523 % |
+| medicine | 5.7677 | 0.011368619 | 0.011334990 | −0.296 % |
+| republic | 6.2697 | 0.011183768 | 0.011099912 | −0.750 % |
+| essays | 6.4253 | 0.011257147 | 0.011174393 | −0.735 % |
+| botany | 6.7765 | 0.011080481 | 0.011031973 | −0.438 % |
+
+**8 of 8 faster. Mean −0.383 %, sd 0.273 %, sign test p = 0.0039.** Narrow three
+average −0.107 %; wide five average −0.548 %.
+
+**plutarch is the control.** The two tables differ only at M = 5, 6 and 9, and
+plutarch never leaves M = 1.154. Its −0.111 % is therefore the run-level offset, not
+a table effect. Correcting every prompt by it: beagle −0.412 %, medicine −0.185 %,
+**scoring-prompt mean −0.298 %**.
+
+🔴 **Our kernel table is about 1.6 % faster locally and 0.298 % slower at rank.** The
+inversion predicted in 210 is confirmed by receipt. Three merged kernel experiments
+that each won cleanly on development hardware are a net ranked loss.
+
+### (B) The `ff73cbbd` regression was a run-level artifact
+
+Arm 2 against `ff73cbbd`: mean −1.852 %, sd 1.213 %. Against `ca9251b8`: mean
+−0.383 %, sd 0.273 %. The `ff73cbbd` legs are slower than both neighbours on prompts
+where the source is bit-identical to `ca9251b8`. Item 208 recorded its schedule as
+bit-identical on all 8 prompts and could not explain the 1.86 % loss. It is now
+explained: **`ff73cbbd`'s 3.17230 was a slow run, not a source property.** Any
+mechanism conclusion drawn from that single receipt is withdrawn.
+
+Order statistics for the two median prompts: `ca9251b8` (3.1202, 3.3449); `ff73cbbd`
+(3.1091, 3.2355); arm 2 (3.1302, 3.3416); crown (3.1361, 3.3687).
+
+### (C) 🔴🔴🔴 THE MECHANISM: A RANKED-HOST COMPILE ORACLE, AND THE REGISTER TIERS
+
+Edward (E72, merged in #75) found that the ranked architecture's real backend can be
+run on our development hosts:
+
+```
+xcrun metal-tt -arch applegpu_g17s lib.metallib pipelines.mtlp-json -o out.mtlp
+```
+
+The pipeline script is `{"pipelines":{"compute_pipelines":[{"compute_function":"k"}]}}`.
+The output is a Mach-O whose `__GPU_METADATA,__compute` FlatBuffer carries, per
+kernel, field `f00` = allocated register count and `f14`/`f41` = spill frame bytes,
+which equal `4*N + 16` exactly. `g13g`, `g16s`, `g17p` and `g17s` are all supported;
+`g18p` is not. There is no occupancy field; registers are the observable.
+`research/agx_crossarch.py selftest` recalibrates the field indices every run. Twelve
+other mechanisms were tried and failed; the negative table is in PR #75.
+
+**This is the first ranked-hardware fact we have obtained without spending a
+submission slot.**
+
+Register ceilings: **g16s 96, g17s 124.** Counts agree on both generations up to 68
+live floats, then diverge.
+
+| cell | ships in | g16s regs / spill | g17s regs / spill |
+|---|---|---:|---:|
+| `<T,5,5>` | ours | 95 / 0 | **98 / 0** |
+| `<T,5,3>` | crown | 93 / 0 | **90 / 0** |
+| `<T,6,6>` | ours | **96 / 16** | **111 / 0** |
+| `<T,6,3>` | crown | 93 / 0 | **90 / 0** |
+| `<T,9,5>` | ours | 95 / 0 | **98 / 0** |
+| `<T,9,3>` | crown | 93 / 0 | **90 / 0** |
+
+🔴 **Our development hosts squeeze all six cells into 93 to 96 registers. The ranked
+host spreads them across 90, 98 and 111.** The effect that decides the ranked score is
+structurally invisible on the hardware we develop on.
+
+Edward pre-registered this exact residual risk in writing at
+`8b0f0eaa2eeab68e2c322acd106991b9e930c14a`, 2026-08-20T10:53:48Z,
+`research/e72-artifacts/rung1-preregistration.md`: "on g17s the one-group cells want
+98 and 111 registers against 90 ... may still cut resident simdgroups. This host
+structurally cannot show that effect because its allocator squeezes all of these
+cells into 93 to 96." His headline prediction was that all three cells keep their
+local sign at rank, with the falsifier "if `9b241879` scores materially above
+`ff73cbbd`'s 3.17230, all three predictions are wrong". 3.23589 is +2.00 %. **The
+falsifier fired, and his own stated residual risk is the answer.**
+
+### (D) The independent confirmation: live state is paid through occupancy
+
+Alphonse (E73, merged in #76) fitted the cost surface over all 19 legal `(M, IPG)`
+pairs across 6 scored cells in one gated session, parity clean on every arm, session
+null 0.0238 %.
+
+My additive specification was **refuted at 10.17 % rms with 11 parameters.** An
+occupancy form reaches **4.94 % with 3 parameters**:
+
+```
+t = [groups*W + beta*M*k*ceil(n/8)] * rho0 * q(IPG)
+    * (1 + lam(IPG)*cores/(groups*ceil(n/8)))
+```
+
+`rho0 = 1.5127` ps/byte, `beta = 2.4698`, `q(IPG) = 1.0833 / 1.0000 / 0.9713 /
+0.9768 / 1.0460`, `lam(IPG) = 8.16 / 8.55 / 7.74 / 7.20 / 10.09` threadgroups per
+core for IPG 2 to 6.
+
+🔴 **Live state costs almost nothing at saturation.** `q` moves 3 % from IPG 3 to 5,
+and the IPG = 6 spill costs 4.6 %. The cost is paid through occupancy instead:
+IPG = 6 needs **40 % more grid** than IPG = 5 to reach the same per-byte rate. Two
+students working on different objects, one a compiler oracle and one a timing
+surface, arrived at the same mechanism.
+
+Control 1 passes: the fit reproduces our shipped local table 7 of 7. Control 2 fails
+against E33 and the residual is E33's row-block serialisation, robust to three
+different traffic interpretations.
+
+### (E) 🔴🔴🔴 THE ANALYTICAL RESULT THAT KILLED THE BANDWIDTH STORY
+
+Alphonse proved that **`argmin` over IPG is invariant to any pure rescaling of the
+per-byte rate.** A bandwidth-headroom difference between hosts therefore cannot flip
+a partition, no matter how large it is. Item 210's mechanism survives; item 210's
+transfer statement does not.
+
+Under cores-only transfer, 20 to 40, the model predicts `{3:3, 4:4, 5:5, 6:4, 7:5,
+8:5, 9:5}`, which agrees with the crown on 2 of 7. Reproducing the crown's choice
+would need **272 cores at M = 5, 992 at M = 9, and no core count at all at M = 6.**
+The receipt in (A) refutes cores-only transfer outright. Registers, from (C), are the
+term that remains.
+
+**Retired hypothesis:** the local-to-ranked partition inversion is a bandwidth
+headroom effect. **Live hypothesis:** it is a register-driven occupancy tier effect,
+invisible below the g16s ceiling.
+
+### (F) Three retractions
+
+1. **E38's `peak_live_regs = 144` is withdrawn.** It was an AIR proxy. The device
+   allocates 111 for the same cell inside a 124 ceiling. E38's r = 2 forcing argument
+   rests on a number the device contradicts.
+2. **E69's 130 / 140 / 182 / 191 / 286 register counts are withdrawn.** They are AIR
+   proxies on different objects, and the 130 / 140 pair was NA = 5, not NA = 6.
+3. 🔴 **My AIR-based register gate is withdrawn.** The `tailfull` arm passes the
+   entire gate and compiles to **byte-identical machine code**. A gate a no-op can
+   pass is not a gate. **Rule adopted: gate on the real backend's output, not on
+   AIR.**
+
+Consequence: the "128-register wall" framing used across roughly 150 ledger items
+must be re-read as **96 local, 124 ranked**. This is a documentation debt, not a
+result change; the E38 M = 6 decomposition itself still stands.
+
+**Mechanism correction.** The NA = 6 alloca is a compiler unroll-budget artifact, not
+a non-native vector width. `<5 x float>` is equally non-native and produces no
+alloca. Adding only `#pragma clang loop unroll(full)` to the two tail loops removes
+it. The trigger is the variable `m` index in the rolled tail: 24 `simd_sum` calls at
+NA = 6 against 20 at NA = 5. Live float count is 54 either way.
+
+**E72 rung 2 result: H208 falsified.** Nine arms, none recovers a register on either
+generation. `split` is worst and creates a 240 byte spill on g17s. Gated timing at
+NA = 6: tailfull +0.14, rfull −0.31, shift −0.19, xvec −0.17, tailfullxvec +0.09. At
+NA = 5, xvec −3.54 and tailfullxvec −3.37, reproducing E69's −3.56 and proving the
+harness sound. The 2 % bar is not met.
+
+Two side results worth keeping. Exactly **2 real `sdiv`** remain per arm; the `shift`
+arm removes both bit-identically for −0.19 % at NA = 6 and 64 fewer bytes. And a
+**Metal codegen fault**: the `mfull` arm, a pragma-only change, produces 30,720
+differing rows and −38.21 %. Artifact `research/e72-artifacts/rung2-na6-bisect.json`.
+
+Edward also disclosed, unprompted, that his first rung-1 census mispaired records by
+zipping `metal-nm` order with archive order, withdrew every number from it, and
+rebuilt the instrument with one kernel per script and a reverse-order selftest. That
+is the standard this campaign should hold.
+
+### (G) 🔴🔴🔴 A MERGED WINNER THAT IS NOT ON THE BASE
+
+Thorfinn's E68 (merged in #71) produced the largest single-mechanism gain of the
+campaign: candidate MTP seconds per token 0.031457267 to **0.030356223, −3.500 %**,
+against a 0.143 % null, over a nine-leg mirrored gated palindrome at 512 tokens, with
+byte-identical output digest `da92be8a0dc02229` on all nine legs and a closed row
+ledger.
+
+The merged code ships **the instrument only**:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+:830  internal static let measuredRawDepthPrice: [Double] = []
+:858  internal static let depthPriceArm: DepthPriceArm = .ship
+```
+
+`.ship` is bit-identical to the pre-E68 walk. `.pbfit` would trap on the empty
+vector. The merge is behaviour-neutral and safe, but **the −3.500 % winner is not on
+the base.** I did not catch this until after merging.
+
+🔴 **Rule adopted: a merged experiment must ship its winner as the default, or its
+result comment must state in one line that the winner is not shipped and why.**
+
+The mechanism is a histogram change and nothing else. It moves 18 of 78 rounds off
+verify width 6 onto width 5 and trims the deep mode from 34 to 26. Round latency at a
+fixed width is arm-independent to within 0.8 %. Rung 1 measured the step into width 6
+at **27.308 ms** against **13.405 ms** for width 5, with a 0.839 ms null. Three
+pre-registered signs, three correct: predicted −1.269 / +7.595 / −4.213, measured
+−1.488 / +4.283 / −3.500. The `pb5` control that was expected to lose won by 1.488 %.
+
+E75 on PR #78 is banking the vector now. It is the campaign critical path.
+
+### (H) The ladder says the crown table reverses the inversion
+
+Fitting a closed additive ladder to the measured single-group costs,
+`S = {1:60.372, 2:65.377, 3:72.128, 4:82.163, 5:95.568, 6:122.876, 7:149.368,
+8:183.642, 9:451.747}` with `cost = sum(S[g]) − L*(groups−1)` and `L = 15.191`:
+
+| M | our partition | cost | crown partition | cost |
+|---:|---|---:|---|---:|
+| 5 | [5] | 95.568 | [3,2] | 122.314 |
+| 6 | [6] | 122.876 | [3,3] | 129.065 |
+| 9 | [5,4] | 162.540 | [3,3,3] | 186.002 |
+
+Marginal step into the width: ours 5 → 13.405, 6 → **27.308**, 9 → 13.405. Crown
+5 → 40.151, 6 → **6.751**, 9 → 36.867. The ladder reproduces E68 rung 1 to the digit
+at widths 5 and 6, which is a strong independent check.
+
+🔴 **The crown table reverses the inversion.** On our table the expensive step is into
+width 6; on the crown's table it is into width 5. E68's scheduler was fitted to our
+table and earns almost all of its gain by avoiding a width-6 step that the crown
+table has already made cheap.
+
+Two-channel estimate of `pbfit` on the crown table, by total cost:
+
+| channel | ours | crown | ratio |
+|---|---:|---:|---:|
+| 18 rounds 6 to 5 | 27.308 | 6.751 | 0.247 |
+| 8 rounds 9 to 8 | 13.405 | 36.867 | 2.750 |
+
+Weighted: ours 598.8, crown 416.5, ratio 0.696. `pbfit` on the crown table is
+therefore worth about **−2.4 %** rather than −3.0 %, an interaction of about
+**+1.1 points**.
+
+⚠️ `L = 15.191` was fitted on `{4,3}`, `{4,4}` and `{5,4}`. Applying it to `{3,2}`,
+`{3,3}` and `{3,3,3}` is an extrapolation and is labelled as one. The direction does
+not depend on the fit: on the crown table width 6 is `[3,3]` and width 5 is `[3,2]`,
+so the step between them adds one group of two to one group of three and cannot be
+expensive.
+
+### (I) 🔴 ARM 3, AND A DELIBERATE DEVIATION FROM MY OWN DECISION TABLE
+
+My pre-registered decision table said that an arm-2 score in the 3.22 to 3.2524 band
+selects **crown table + pbfit**. Arm 2 landed at 3.23589, inside that band. **I am
+submitting our table + pbfit instead**, and recording the deviation rather than
+quietly re-reading the rule.
+
+Reasons, in order of weight:
+
+1. The receipt priced the crown table at **−0.298 %**, one tenth of `pbfit`'s ~−3.0 %.
+   Composing risks the large mechanism for the small one.
+2. (H) says the two mechanisms are substitutes, and the interaction is larger than
+   the smaller mechanism is worth.
+3. Composition tests two things at once and needs E75 rung D first. Our table + pbfit
+   has zero composition risk and is available hours sooner.
+4. The ranked slot allows exactly one in-flight submission at about 2.5 hours each.
+   Slot latency is the binding campaign constraint.
+
+Projection, from the ranked round counts and the 1.126 flattening factor:
+
+| candidate | median | vs crown |
+|---|---:|---:|
+| our table + pbfit, undiscounted | 3.2875 | +1.08 % |
+| our table + pbfit, flattened 1.126x | 3.2824 | +0.92 % |
+
+Single-run sd is 0.756 %, so P(beating 3.25238228) on one run is about **89 to 92 %**.
+The ranked slot is free and I am holding it for E75 rung A.
+
+### (J) Standing rules added
+
+- 🔴🔴🔴 **Gate on the real backend's output, not on AIR.** A gate a no-op can pass is
+  not a gate. Prove bit-identity of machine code, not of intermediate representation.
+- 🔴🔴🔴 **`xcrun metal-tt -arch applegpu_g17s` reads the ranked host's real register
+  allocation locally.** Use it before proposing any kernel cell change.
+- 🔴🔴🔴 **A merged experiment must ship its winner as the default**, or its result
+  comment must state in one line that the winner is not shipped and why.
+- 🔴🔴 **A development-host measurement of a kernel cell is only transferable once the
+  cell's g17s register count has been read.** Our hosts clamp 90 / 98 / 111 into
+  93 to 96.
+- 🔴🔴 **Kernel table and depth schedule are substitutes, not complements.** Price the
+  interaction before composing them.
+
+### (K) Board and campaign state
+
+Crown unchanged: **3.25238228**, `9ad17378`, Lieisyourlie, source `bfab0de5`. 842
+rows. No submission in flight; the slot is held for arm 3.
+
+Our ten submissions: `4437d061` 2.86127 rejected; `74d1bd3a` failed; `b360b4c8`
+failed; `9197ed62` 3.06938 rejected; `ca9251b8` 3.23251 rejected; `2c766441` 3.07213
+rejected; `90be779c` failed; `ff73cbbd` 3.17230 rejected; `042705e4` cancelled;
+`9b241879` 3.23589 rejected.
+
+Base advanced `caa105b5` to `432eba00` (#71) to `4497d6e7` (#75) to **`41ddc183`**
+(#76).
+
+Slots: PR #77 askeladd E74, the in-situ threadgroup knee. PR #78 thorfinn E75, bank
+`pbfit` then price it on the crown table, **critical path**. PR #79 edward E76, search
+for a one-group cell that fits the ranked register budget. PR #80 alphonse E77,
+measure the occupancy coefficient by deliberately creating register variation.
+
+## 213 We are the crown plus a losing table, and the top of the board is a noise band
+
+Item 212 priced our kernel table against the frontier's and found ours slower at
+rank. Item 213 asks the question that should have come first: **what, exactly, is
+our candidate?** The answer was available all along in a diff we had never taken,
+costs no GPU time, and reframes the campaign.
+
+### (A) 🔴🔴🔴 `upstream/main` IS THE CROWN'S EXACT PROMOTED SOURCE
+
+```
+git rev-parse upstream/main      -> bfab0de58d43453e506523707e1720a3485570f4
+crown 9ad17378 promotedSourceRef -> bfab0de58d43453e506523707e1720a3485570f4
+```
+
+**We have the current best published solution's source in the checkout.** Every
+question of the form "what does the leader do that we do not" is answerable with
+`git diff upstream/main HEAD` and no measurement at all.
+
+### (B) 🔴🔴🔴 THE WHOLE CANDIDATE, IN FIVE FILES
+
+`git diff --stat upstream/main HEAD` over `editablePaths`:
+
+| file | ins | del | what it is |
+|---|---:|---:|---|
+| `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` | 238 | 48 | see (C) |
+| `Vendor/mlx-swift-lm/.../Qwen35.swift` | 32 | 19 | `asyncEval` ladder made env-overridable |
+| `Vendor/mlx-swift/.../mlx-generated/quantized.cpp` | 4 | 4 | dispatch table |
+| `Vendor/mlx-swift/.../kernels/quantized.h` | 4 | 4 | dispatch table |
+| `mtp-head.manifest.json` | 1 | 1 | a note string |
+
+Line by line:
+
+- **The manifest.** `url`, `sha256`, `bytes` are **identical** to the crown's. Only
+  the free-text `note` differs; we deleted the crown's `[resample ticket #3 ...]`
+  clause. **We run the crown's proposal head, unchanged.**
+- **`Qwen35.swift`.** The shipped rung set is `[0, 1, 9, 19, 29, 39, 49, 57]`, which
+  is exactly the crown's hardcoded `switch`. Our change replaces that `switch` with
+  a `Set` lookup that an environment variable can override for attribution runs.
+  With the variable unset the behaviour is identical and the cost is 64 set lookups
+  per forward, about 0.001 % of a round. **Zero candidate value; pure research
+  instrument in the scored surface.**
+- **`quantized.h` / `quantized.cpp`.** The 8-line dispatch table. **Item 212 priced
+  it by receipt at −0.298 % on the scoring prompts. It is our only kernel delta and
+  it is a loss.**
+
+🔴 **Every merged kernel experiment of this campaign is either in that 8-line table
+or is not in the candidate at all.** `xvec` and `fma` from E69 return zero matches in
+the shipped `quantized.h`; they were merged as evidence and never shipped. That was
+the right call given E69's own sub-additive result, but it must be stated: the
+campaign's shipped kernel contribution to date is a single dispatch table worth
+minus 0.298 percent.
+
+### (C) The scheduler diff, classified
+
+238 added lines against the crown, in four groups:
+
+1. **A correctness fix, ours alone.** The crown's session sets `reachedStopToken`,
+   truncates `committed` after the first stop token, and nils the pendings. We
+   removed all of it. Our own source comment records why: that path capped both legs
+   of every local window at 301 tokens and then threw `.notBegun`. `program.md`
+   names the same behaviour a solver defect. At rank it is probably dead code — 512
+   tokens of literary continuation rarely emit EOS — so this is **neutral to the
+   score and required for correctness.**
+2. **fkiene's verify-concat JIT warm, restored with its receipt.** Promoted at
+   `1cb1f43a` for **+0.0283 %**, then deleted by the next promotion because
+   `yukon submit` replaces whole files rather than merging. It is absent from
+   `upstream/main` and from every tree descended from it. We carry it. It sits in
+   `warmAllDepthShapes`, outside the timed window. **The only positive candidate
+   delta we hold over the crown.**
+3. **Trace instrumentation.** `traceSink`, `snapshotScheduleSignal`, `scheduleTrace`,
+   and six `DispatchTime` ternaries. Every one is guarded by a `static let Bool` read
+   from the environment. In a scored run they are predictable branches on a constant.
+   **Cost is nanoseconds per round; call it zero.**
+4. **The E68 depth-price machinery**, currently `.ship` and bit-identical to the
+   crown's flat walk. **Inert until E75 rung A fills the vector.**
+
+**None of these can cost half a percent.** There is no hidden regression in our
+scheduler to find.
+
+### (D) 🔴🔴🔴 THE TOP OF THE BOARD IS ONE NOISE BAND
+
+| solver | score | vs our arm 2 | in sd of a difference |
+|---|---:|---:|---:|
+| Lieisyourlie | 3.25238 | +0.510 % | 0.48 |
+| hadakang | 3.25188 | +0.494 % | 0.46 |
+| fkiene | 3.24986 | +0.432 % | 0.40 |
+| ofou | 3.24929 | +0.414 % | 0.39 |
+| fkiene | 3.24418 | +0.256 % | 0.24 |
+| companygardener | 3.24326 | +0.228 % | 0.21 |
+| alfranli123 | 3.24300 | +0.220 % | 0.21 |
+| Kamciosz | 3.23415 | −0.054 % | −0.05 |
+| **our arm 2 `9b241879`** | **3.23589** | — | — |
+
+**The whole top-8 spans 0.564 %.** Ledger 193 measured the sd of one ranked run at
+**0.756 %** and the sd of a difference between two runs at **1.069 %**. The spread of
+the entire leaderboard is smaller than one run's own standard deviation.
+
+Our arm 2 sits **0.48 sd** below the crown, two-sided **p = 0.634**. 🔴 **We are at
+parity with the best published result and have been for some time. There is no skill
+gap to close.**
+
+This also explains the top of the board's structure. Everyone near the top is
+running near-identical code descended from the same few promotions — our own diff in
+(B) proves we are too — and the ordering is set by which run got lucky. Ledger 193's
+winner's-curse estimate of +0.60 % says the crown's 3.25238 is very likely an
+above-mean draw from a candidate whose true mean is nearer 3.2465.
+
+### (E) What this changes about strategy
+
+**Retired:** incremental tuning as a route to the crown. A change worth 0.1 to 0.3 %
+is unmeasurable in one ranked run and unfalsifiable in the receipt. Spending the
+one-in-flight slot on one is spending 2.5 hours to sample noise.
+
+**Required:** the true gain over arm 2 needed to take the crown on a single run.
+
+| true gain over arm 2 | resulting mean | P(single run > 3.25238) |
+|---:|---:|---:|
+| +0.00 % | 3.2359 | 0.25 |
+| +0.50 % | 3.2521 | 0.50 |
+| +1.00 % | 3.2682 | 0.74 |
+| **+1.50 %** | **3.2844** | **0.90** |
+| +1.70 % | 3.2909 | 0.94 |
+
+🔴 **The bar for a submission worth making is about +1.5 % of true ranked gain.**
+Below that, the slot buys a coin flip. Only one mechanism in the campaign clears it:
+the E68 depth-price vector, projected at **+1.60 to +1.70 %** over arm 2.
+
+**Also required:** local significance bars must rise to match. A student arm that
+wins by 0.3 % locally is not a candidate, it is a hypothesis. Our local instrument is
+17x more sensitive than the ranked one, so a local arm needs a large, mechanistic,
+replicated win before it is worth a slot.
+
+### (F) 🔴 The register argument cuts in our favour on arm 3
+
+Arm 3's projection discounts E68's local −3.500 % by the 1.126 ranked flattening
+factor. That discount is now probably too harsh.
+
+The step E68's vector avoids is the step into verify width 6. From item 212, on the
+ranked architecture width 6 selects `<T,6,6>` at **111 registers** against width 5's
+`<T,5,5>` at **98**, while our development hosts compile both into 93 to 96. **The
+local measurement of the width-6 penalty is the penalty with the register cliff
+removed.** At rank the cliff is present, so the mechanism should be larger there.
+
+The arm-2 receipt is consistent: it removed the 111-register cell entirely and the
+five widest prompts gained −0.548 % against −0.107 % for the three narrow ones. E68's
+vector attacks the same cell by a different lever — it stops the scheduler entering
+it, without touching the kernel.
+
+**1.126 is therefore a conservative bound on arm 3, not a central estimate.**
+
+### (G) Standing rules added
+
+- 🔴🔴🔴 **`upstream/main` is the crown's exact source. Diff against it before
+  theorising about the leader.** The question "what do they do that we do not" is
+  free.
+- 🔴🔴🔴 **The bar for spending the ranked slot is about +1.5 % of true ranked gain.**
+  Below +0.5 % a submission cannot be distinguished from a lucky run.
+- 🔴🔴🔴 **The published board is a noise band, not a ranking.** Never treat a 0.2 %
+  board gap as a capability difference, ours or anyone else's.
+- 🔴🔴 **A merged experiment is not a shipped experiment.** Before pricing the
+  campaign's kernel contribution, grep the submitted surface for it.
+- 🔴🔴 **`yukon submit` replaces whole files, so any promotion can silently delete an
+  earlier promotion's edit.** fkiene's +0.0283 % warm block was lost this way and is
+  absent from every tree descended from `ef42e043`. Re-check the crown's file for
+  deletions, not only additions, on every frontier sync.
+
+### (H) Campaign state
+
+Base `8f83dc72`. Crown 3.25238228 `9ad17378`, source `bfab0de5` = `upstream/main`.
+Slot free and held for arm 3. Arm 3 note written and staged; it waits only on E75
+rung A. Slots #77 askeladd, #78 thorfinn (critical path), #79 edward, #80 alphonse.
+
+## 214 Registers on the ranked host are a function of one number, and that number alone cannot explain the receipt
+
+Ledger 212 established that the arm-2 receipt inverted our kernel dispatch
+table and named register pressure on `applegpu_g17s` as the mechanism. This
+item completes that census, states the law exactly, and then shows that the
+law by itself is not sufficient. A term is missing, and naming the missing
+term is now the most valuable open kernel question in the campaign.
+
+All register counts here come from the E72 compile oracle
+(`xcrun metal-tt -arch applegpu_g17s`, merged in PR #75). That oracle is a
+compile-time tool. It needs no GPU and it runs on the advisor host. Every
+number below was produced locally by `_advisor_scratch/cellcensus.py`, which
+imports `research/e72_rung1_census.py`, `research/agx_crossarch.py` and
+`research/jit_string_compile.py`, and which emits one kernel per pipeline
+script so that records cannot mispair. That last precaution is the fix E72
+itself disclosed after its first rung-1 census zipped `metal-nm` order against
+archive order and had to be withdrawn.
+
+### (A) The law
+
+The legal cells of the cross-row wrapper are `m in 3...9`, `ipg in 2...min(m,6)`,
+`m % ipg != 1`. That is 19 cells. The census covers all 19 on both
+architectures. There is no spill on `g17s` anywhere in the grid.
+
+**The device register count is a pure function of the largest group in the
+partition. It does not depend on M, and it does not depend on how many groups
+there are.** 19 of 19 cells, zero exceptions.
+
+| largest group | `g16s` registers | `g17s` registers | step on `g17s` |
+|---:|---:|---:|---:|
+| 2 | 70 | 83 | — |
+| 3 | 93 | 90 | +7 |
+| 4 | 94 | 91 | **+1** |
+| 5 | 95 | 98 | +7 |
+| 6 | 96, plus 16 B spill | 111 | +13 |
+
+This exactly reproduces E72's independent census of the bare `_wide` kernel
+without the M and IPG wrapper. The wrapper therefore adds zero registers, which
+is worth stating because it means the whole dispatch table can be reasoned
+about from a five-row table rather than a nineteen-cell grid.
+
+The full grid, as cell, partition, group count, `g16s`, `g17s`:
+
+```
+m3i3 [3]       1g  93/90     m6i6 [6]       1g  96/111    m8i5 [5,3]     2g  95/98
+m4i2 [2,2]     2g  70/83     m7i4 [4,3]     2g  94/91     m8i6 [6,2]     2g  96/111
+m4i4 [4]       1g  94/91     m7i5 [5,2]     2g  95/98     m9i3 [3,3,3]   3g  93/90
+m5i3 [3,2]     2g  93/90     m8i2 [2,2,2,2] 4g  70/83     m9i5 [5,4]     2g  95/98
+m5i5 [5]       1g  95/98     m8i3 [3,3,2]   3g  93/90     m9i6 [6,3]     2g  96/111
+m6i2 [2,2,2]   3g  70/83     m8i4 [4,4]     2g  94/91
+m6i3 [3,3]     2g  93/90
+```
+
+### (B) The cliff is between 4 and 5, not between 3 and 4
+
+This corrects the working assumption carried in ledger 212. Going from a
+largest group of 3 to a largest group of 4 costs **one** register on the ranked
+host. Going from 4 to 5 costs seven, and 5 to 6 costs thirteen.
+
+Under the standard occupancy floor `floor(F / (128 * regs))` with a 208 KiB
+file, the tiers are 83 to 20, 90 to 18, 91 to 18, 98 to 16, 111 to 14.
+**90 and 91 sit in the same tier.** That single fact is what makes E76
+tractable, and it is why edward's target was corrected from 90 to 91.
+
+> 🔴 **RETRACTED by ledger 217.** E77 measured the local register file at
+> **384 KiB**, not 208 KiB, and the ranked file extrapolates to about 496 KiB.
+> The tier map in this paragraph is void. E77 also refuted the tier-staircase
+> form itself: within-tier spreads are 4x the tier-boundary steps, so time
+> rises smoothly in R with exponent `gamma = 0.01346` and a total spread of
+> 0.52 percent across the whole table. The measured register law from 214 --
+> register count is a pure function of the largest group in the partition --
+> still holds. Only the occupancy reading of it is retracted.
+
+Dominance, where a cell strictly dominates another if it has no more groups and
+no more registers:
+
+- M=7: `[4,3]` dominates `[5,2]`. M=8: `[4,4]` dominates `[5,3]` and `[6,2]`.
+  M=9: `[5,4]` dominates `[6,3]`. M=6: `[3,3]` dominates `[4,2]`, so
+  `<T,6,4>` can never be optimal on either architecture.
+- **M=7 and M=8 are already at their unique undominated two-group choice, and
+  both we and the promoted frontier ship it. There is nothing to win there.**
+- The only open partition decisions in the whole table are M=4, 5, 6 and 9.
+
+Our three disagreements with the frontier are all the same trade, made three
+times: buy one fewer weight stream, pay the largest-group cliff.
+
+| M | frontier | groups | `g17s` | ours | groups | `g17s` |
+|---:|---|---:|---:|---|---:|---:|
+| 5 | [3,2] | 2 | 90 | [5] | 1 | 98 |
+| 6 | [3,3] | 2 | 90 | [6] | 1 | **111** |
+| 9 | [3,3,3] | 3 | 90 | [5,4] | 2 | 98 |
+
+### (C) The law alone cannot explain the receipt, and this is a proof, not a doubt
+
+Take M=6, where our disagreement is largest. The frontier runs `[3,3]`: two
+weight streams, 90 registers. We run `[6]`: one weight stream, 111 registers.
+The receipt says the frontier is faster.
+
+Model the cell as `time proportional to streams / occupancy`, with
+`occupancy = floor(R / regs)` for any register budget R. The frontier wins only
+if `occ(90) > 2 * occ(111)`.
+
+Maximising `occ(90) / occ(111)` over **all** R gives exactly **2.0000**,
+attained at R = 180. The unquantised bound is `111 / 90 = 1.2333`.
+
+**Doubling the number of weight streams can at best be exactly cancelled by the
+occupancy difference. It can never be beaten.** So under this model the
+frontier's M=6 cell can tie ours at one specific register budget and loses
+everywhere else. The receipt says it wins. **A term is missing.**
+
+This is the first hard constraint the campaign has on the ranked cost model
+that is derived rather than fitted, and it should be applied to any future
+model before that model is used to price a table.
+
+### (D) The leading candidate for the missing term: group count is nearly free because the groups share a cache line
+
+Two co-scheduled threadgroups in a two-group partition read the **same**
+output-row weight tile. At K = 5120, 8 rows, affine 4-bit group 64, that tile
+is 20.0 KiB of packed weights plus 2.5 KiB of scales and biases, so 22.5 KiB.
+The second reader hits L2 or SLC, not DRAM.
+
+If that is right, then "two groups means twice the weight traffic" is simply
+false whenever the groups are co-resident, and the receipt follows cleanly:
+group count is cheap, registers are not, and the frontier's table is the
+correct one on the ranked host. The local host disagrees because every one of
+its cells sits between 93 and 96 registers, which is a single occupancy tier,
+leaving only the small cache-mitigated traffic term, which mildly favours the
+one-group cell.
+
+**Sharp falsifiable prediction if the hypothesis holds: the ranked-optimal
+table is simply "minimise the largest group".** That is `<T,M,2>` at M=4, 6, 8
+for 83 registers, `<T,M,3>` at M=3, 5, 9 for 90, and M=7 forced to `[4,3]` at
+91. Note that this is a *different* table from the frontier's, and a stronger
+claim than "the frontier is right".
+
+Counter-evidence that must be weighed and not skipped: E73's best local fit
+used a **linear** `groups * W` traffic term and reached 4.94 percent rms with
+three parameters. Locally, traffic does scale close to linearly with group
+count, which is what the cache-reuse hypothesis denies. The M5's larger SLC
+and its 2.69 times bandwidth may change this, or the hypothesis may be wrong.
+This is now an owned question, not a note.
+
+### (E) The M=8 family is a natural controlled experiment for exactly this
+
+**At M=8, IPG in {4, 5, 6} all produce exactly two groups.** Same M, same group
+count, same weight traffic, same number of working threadgroups, same grid.
+Only the register count changes: `g16s` 94, 95, 96 and `g17s` 91, 98, 111.
+
+No artificial register pressure is required, and every arm is bit-identical
+output by E66's 12-of-12 result, because group partitions are unordered.
+Replicates exist at M=6 with IPG in {3,4}, M=7 with {4,5}, and M=9 with {5,6}.
+
+The expected local outcome is a null, and **that null is the result**: it would
+show directly that the local instrument is blind to the effect the ranked host
+is measuring. This has been handed to alphonse as the corrected rung 1 of E77.
+
+### (F) A flaw in my own E77 brief, corrected
+
+I asked alphonse to sweep register pressure from about 88 up to about 120. The
+local register ceiling is 96. **Every local arm above 96 registers measures
+spill, and the ranked cells at 98 and 111 spill zero bytes** because the ranked
+ceiling is 124. Spill cost and occupancy cost are different mechanisms and the
+fit would have silently mixed them.
+
+Corrected instruction, already delivered: fit the occupancy coefficient only on
+arms at or below 96 registers with zero spill, and report anything above 96 as
+a separate, labelled spill curve that is kept out of the fit.
+
+This is the second time a brief of mine has handed a student a model that could
+not represent the effect being studied. The first was ledger 211(G), the
+additive form in the E73 brief that could not express a sign flip. The rule
+adopted there is now extended: **before a cost model goes into a brief, check
+both that it can represent the effect including its sign, and that every arm
+used to fit it is in the same physical regime.**
+
+### (G) A hard inequality any future model must satisfy
+
+At M=6 our cell halves the weight traffic and still loses by about 0.44 percent
+on the wide prompts after the plutarch correction. Therefore:
+
+```
+occupancy_penalty(111) - occupancy_penalty(90) > cost of one extra weight stream at M=6
+```
+
+At these widths, on the ranked host, occupancy dominates traffic. This is a
+pass or fail check on E77's fitted model, and it has been given to alphonse as
+one, alongside his two existing controls.
+
+### (H) What this does to E76
+
+Because registers depend only on the largest group, edward is not searching
+nineteen cells. He is searching for **one** `_wide<T,5>` body and **one**
+`_wide<T,6>` body. Fixing the 5 case fixes M=5, 7, 8 and 9 at IPG 5; fixing
+the 6 case fixes M=6, 8 and 9 at IPG 6.
+
+His target is **91, not 90**. At 91 registers, `<T,5,5>` and `<T,6,6>` become
+one-group cells at one register more than the frontier's two-group cells at 90,
+in the same occupancy tier. That is half the weight traffic for one register:
+strict dominance. M=5 and M=6 together carry 57.5 percent of ranked width time.
+
+The sharpest sub-question is why the step from largest group 3 to 4 costs one
+register while 4 to 5 costs seven. The accumulator `VF acc[rows_per_simd]` is
+`4 * NA` floats, which is 12, 16, 20, 24 and rises by exactly four each step,
+while registers rise 7, 1, 7, 13. The allocator is plainly not tracking live
+floats, so something structural changes at NA=5. The prime suspect is that
+`vec<float,4>` is a native `float4` while `vec<float,5>` and `vec<float,6>` are
+not. First arm: replace `VF acc[rows_per_simd]` with a flat
+`float acc[rows_per_simd * NA]` at identical arithmetic order. If the register
+count does not move, the seven is real live state, the cell cannot be rescued,
+and that is a complete answer worth reporting.
+
+If neither body reaches 91, then the ranked-optimal table is the frontier's at
+M=5, 6 and 9 and ours nowhere, and we take the 0.298 percent as a clean
+composable arm.
+
+## 215 The winner is banked, the vector we published was never executed, and one diff now has both harnesses
+
+E75 rung A closed at 2026-08-20T11:38Z. This item records what it produced,
+one defect it found in our own published record, one analytical error of mine
+that a student corrected, and a calibration opportunity that neither of us
+planned and that is now the most valuable by-product on the board.
+
+### (A) `pbfit` is banked
+
+Commit `4d467ca` on `qwen-thorfinn/e75-bank-pbfit-and-price-it-on-the-crown-table`,
+base `432eba00`. `measuredRawDepthPrice` is filled with the raw eight-element
+vector and `depthPriceArm` is `.pbfit`. Six new tests, all passing; full suite
+703 tests against the base's 698, with the identical set of nine known
+failures under `diff` on sorted test names, so the five-test delta is new
+passing tests only.
+
+The gated exactness leg, W&B `wu8zb8k1`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wu8zb8k1),
+job `de750de5-2865-401d-a11a-9e7847cf76f5`, exit 0, 495 s:
+
+| field | value |
+|---|---|
+| `cool_gate_passed_real_gate` | `true`, entry 40.81 C, exit 60.80 C |
+| `gate_qualified_for_timing` | `true` |
+| `decode_tokens` | 512 |
+| `all_tokens_matched` | `true` |
+| `residual_divergence_count` | 0 |
+| `parity_all_ok` | `true` |
+| row ledger | 550 declared = 550 reference-checked, closed |
+| 513-token digest | `87ce831f40d821442cb56895867f5b2b1a9998ed03faf5366d08a7cae8c04d80` |
+| `worker_text_sha256` | `f0f2674fe36d53b9315af84d660f836567bb627fedf2f4e645e71e21a8252a22` |
+| round histogram | `{4:5, 5:42, 6:5, 8:7, 9:26}`, 85 rounds |
+
+The digest and the histogram are both bit-for-bit identical to the E68
+rung-3 legs. **That is the reachability evidence that matters:** the banked
+constant selects exactly the schedule that was timed, so the −3.500 percent
+result attaches to the submitted file and not only to a development build.
+Timing on this leg was 0.19 percent above the E68 median, which is
+between-session drift on one leg and is reported as a sanity check, not as a
+re-measurement.
+
+### (B) The vector in our own experiment report was never executed by anything
+
+The student was asked to assert bit-identity between the Swift-rescaled result
+and the eight doubles published in `research/e68-results.md:753`. **The
+assertion failed at three of eight positions.**
+
+The cause is association, not measurement. Swift's `makeMeasuredDepthPrice`
+computes `raw * (total / sum)`: it forms the scale factor once, then
+multiplies. The Python that produced the published vector computed
+`raw * total / sum`: multiply first, then divide. Those differ by one unit in
+the last place at depths 0, 3 and 7.
+
+The timed legs ran Swift. **So the published vector is a transcription defect
+in the report, and the vector the nine palindrome legs actually executed is:**
+
+```
+[0.12014290579688386, 0.13336973691819140, 0.15825051194819845,
+ 0.18378135596082668, 0.28910578332644965, 0.19917881598825601,
+ 0.16197661758144877, 0.19419427247974499]
+```
+
+Differences from the published vector: d0 −1 ulp, d3 −1 ulp, d7 −1 ulp, rest
+zero. The committed test pins this executed vector. The published vector would
+have failed it.
+
+Three things follow, and the third is the general one.
+
+1. The banked arm is correct and the report was wrong. No measurement is
+   affected.
+2. I had quoted the published vector to the student as the thing to commit.
+   Had he complied instead of checking, we would have submitted a constant
+   that no leg had ever run, and the digest match in (A) would have been the
+   only thing standing between us and an unexplained ranked result.
+3. **A cross-language numeric transcription is a real defect surface, and an
+   assertion is the only thing that finds it.** The rule the campaign takes
+   from this: any constant that crosses from an analysis script into a scored
+   Swift file must be pinned bit for bit by a committed test against the value
+   the timed build actually evaluated, not against the value the report
+   printed. This is now the second time an "obviously equivalent" restatement
+   has turned out not to be equivalent; the first was E72's AIR gate, which
+   passed a no-op.
+
+The disclosure was unprompted and arrived before the submission. That is the
+behaviour the campaign wants and it should be read as such.
+
+### (C) My interaction estimate was wrong, and the student's is better founded
+
+I had priced `crown table + pbfit` at roughly 70 percent of `pbfit`'s strength,
+about −2.4 percent, with an interaction near +1.1 points. The student derived
++0.77 percent, a **sign flip**, with an interaction of +4.29 points, four times
+mine. We used identical cell costs. The disagreement was entirely in the
+weighting, and mine was wrong.
+
+**My calculation differenced the two histograms and priced only the rounds the
+schedule moves. His prices where the round mass sits.** For a level comparison
+across two different cost tables, his is correct and mine is not, because the
+stationary mass does not cancel when the table under it changes.
+
+The concrete number: `pbfit` parks **42 of its 85 rounds at width 5**, and
+width 5 is the single cell the frontier's table charges +26.746 ms more for.
+That is 1.123 s of table penalty concentrated in one cell, against 18 × 27.308
+= 0.492 s of width-6 saving that the frontier's table largely takes back. A
+delta-only calculation cannot see the 1.123 s because it cancels against
+itself.
+
+His second layer is worth recording independently. He fitted
+`decode = sum_w n(w) S[w] + a * rounds + b * rows` exactly from the two E68
+arms, giving `a = 4.965` ms per round and `b = 8.693` ms per row, and then
+checked it out of sample at width 1, a cell in no arm's histogram: model 74.03
+ms per token against measured serial 74.25, error −0.3 percent. That is a
+genuine out-of-sample validation of a two-equation fit and it is the reason to
+prefer his weighting over my arithmetic.
+
+Rung B settles it cheaply. If the frontier's width-5 cell measures below about
+110 ms, my estimate is right; near 122, his is.
+
+Either way **the submission decision is unchanged and is now better supported**:
+our table plus `pbfit`, with the frontier's 0.298 percent declined. On his
+estimate the two mechanisms are close to mutually exclusive rather than merely
+sub-additive, so declining the smaller one costs nothing this round.
+
+### (D) One eight-line diff is about to have both harnesses measured, and nothing else in the campaign does
+
+E75 rung D measures `C-ship` against `O-ship` locally. That is the **same
+eight-line dispatch-table diff** whose ranked effect we already own from
+receipt `9b241879`:
+
+| harness | measurement of the identical diff |
+|---|---|
+| `harness=ranked`, receipt `9b241879` | frontier table **0.298 percent faster**, plutarch-corrected; 8 of 8 prompts faster; sign test p = 0.0039 |
+| `harness=local`, predicted | frontier table **6.44 percent slower** |
+
+If that prediction survives, one identical diff moves **+6.7 points** between
+the two harnesses. Every transfer argument the campaign now makes — edward's
+register search, alphonse's occupancy coefficient, the pricing of any future
+kernel arm — rests on a transfer function that this single pair calibrates.
+No other arm in the campaign has both sides measured.
+
+Rung D has therefore been re-scoped from "decide the composition" to
+"calibrate the transfer function". The composition question is close to
+answered by (C). The instruction given: report `C-ship` against `O-ship` as a
+first-class headline with its own error bar and leg count, place it in one
+table beside the ranked −0.298 percent with both harness labels, and give the
+width histogram for all four arms. If `C-ship` and `O-ship` share a histogram,
+the entire local table effect is per-cell cost with no schedule reaction, which
+makes the pair a clean single-mechanism calibration.
+
+### (E) Provenance, disclosed without being asked
+
+The `pbfit` depth-price curve rests on one session, n = 4 per width, on one
+development machine, with no independent replication at widths 5 and 6. Where
+the campaign cost ladder appears to corroborate it at those widths, **it is the
+same measurement quoted twice**: `S[1]` through `S[6]` in the rung-1 table and
+the ladder entries are the same job. The genuinely independent comparison is at
+widths 8 and 9, where a later re-measurement agrees with the earlier `t789`
+contribution to 0.05 percent.
+
+This does not block the submission and the reason is worth stating precisely:
+the nine-leg palindrome validated the schedule the curve induced, not the
+curve. A wrong curve that induces a better schedule is still a better
+schedule. What a wrong curve costs is headroom, not validity. It also means
+E68's own follow-up 1, refitting to the in-situ curve rather than the isolated
+one, is worth more than it looked.
+
+### (F) Board update: 579 scored rows, and the top of it is flat
+
+The board now holds 579 scored submissions. The crown is unchanged at
+3.25238228.
+
+| threshold | rows at or above |
+|---|---:|
+| 3.25 | 3 |
+| 3.2470 | 10 |
+| 3.24 | 58 |
+| our arm 2, 3.23589 | 78 |
+
+The top 20 span **0.235 percent** and the top 10 span **0.164 percent**. The
+standard deviation of a single ranked run is 0.756 percent. **Fifty-eight
+submissions are packed inside a third of one run's standard deviation.**
+
+Two consequences.
+
+1. Our arm 2 ranks 79th of 579 and sits 0.510 percent below the crown. Rank 79
+   sounds like a gap. It is not one: it is two thirds of a standard deviation
+   of one run, and the whole visible field is inside a noise band. Ledger 213's
+   conclusion is strengthened, not weakened, by the larger sample.
+2. **The winner's curse is larger than the +0.60 percent previously carried.**
+   The crown is the maximum of a large number of draws clustered in that band.
+   Whatever its true mean is, 3.25238228 is above it. We must still beat the
+   printed number, so this does not lower our bar, but it does mean a single
+   run that lands just under the crown is not evidence that we are slower.
+
+Probability that one ranked run beats the printed crown, as a function of our
+true gain over arm 2, at a single-run standard deviation of 0.756 percent:
+
+| true gain over arm 2 | P(beat 3.25238228) |
+|---:|---:|
+| +0.00 % | 0.251 |
+| +0.50 % | 0.495 |
+| +1.00 % | 0.741 |
+| +1.50 % | 0.903 |
+| +2.00 % | 0.974 |
+
+The arm-3 projection is +1.60 to +1.70 percent over arm 2, so **P is about
+0.92 to 0.94 on one run**. That clears the +1.5 percent bar adopted in ledger
+213 and it is the reason the ranked slot is being spent on this candidate
+rather than held.
+
+### (I) Campaign state
+
+Base `e93d2127`. Crown 3.25238228 `9ad17378`, source `bfab0de5` = `upstream/main`.
+Ranked slot free and held for arm 3, which now waits only on the push of
+`4d467ca`. Slots #77 askeladd E74, #78 thorfinn E75 (critical path, rung A
+closed, rung B running), #79 edward E76, #80 alphonse E77.
+
+## 216 The whole field's history is a local `git show`, and it says four things
+
+I had been reasoning about competitors from the Yukon score list, which is a
+list of numbers. That was a mistake I made for many rounds. `upstream/main` is
+a linear chain of 76 commits, and every `Accept submission <uuid>` and
+`Validate submission <uuid>` commit is one promoted competition submission
+carrying its exact diff. The complete history of every rival, at diff
+granularity, has been readable in this checkout the whole time.
+
+I joined `git log upstream/main` to the live Yukon submission list and mapped
+56 promotions, from 0.999210 to the current crown at 3.252382. This item
+records what that reading changed.
+
+**Standing rule adopted: diff before theorising about any competitor.**
+
+### (A) Two of the last six promotions changed nothing functional
+
+`5068eb8` (companygardener, submission `11863aa9`, 3.243262, +0.008 percent)
+has a tree hash identical to its parent:
+
+```
+git rev-parse 5068eb8^^{tree}  ->  b8642b81f72ff9214c74c654218a1bdc84fc2321
+git rev-parse 5068eb8^{tree}   ->  b8642b81f72ff9214c74c654218a1bdc84fc2321
+```
+
+A source-identical resubmission was promoted because it scored 0.008 percent
+higher. `80021bc` (hadakang, `9d5569bb`, 3.251880, +0.062 percent) changed one
+note string inside `mtp-head.manifest.json` and nothing else.
+
+This is organizer-generated, publicly verifiable proof of what ledger 193
+inferred statistically: the board's top region is a resampling of one cluster
+of near-equivalent candidates. The observable noise floor is at least
+0.06 percent, and a source-identical run moved 0.008 percent. Promotions 66 to
+69 are a stale-base revert ping-pong between two solvers. The last six
+promotions total +0.28 percent, and only one of them (`0c90733`, the
+command-buffer fix, +0.158 percent) is a steady-state mechanism.
+
+The bar adopted in ledger 213, about +1.5 percent true ranked gain to justify
+spending the slot, is confirmed rather than revised.
+
+### (B) The field is capped at NA <= 4
+
+```
+$ git show upstream/main:Vendor/.../kernels/quantized.h | grep -n 'static_assert(NA'
+980:  static_assert(NA >= 2 && NA <= 4, "wide multi-row QMV supports NA in [2, 4]");
+```
+
+Set at `1033e1a` and never raised by any promotion. Every competitor is
+structurally unable to select `<T,5,5>` or `<T,6,6>`. Our campaign is the only
+participant that has ever run NA=5 or NA=6 on the ranked host, which makes the
+arm-2 receipt (`9b241879`, commit `c1207a0d`, 3.23588901) unique information
+that nobody else on the board possesses.
+
+### (C) The crown's dispatch table, decoded
+
+The crown ships `<T,3,3>` `<T,4,4>` `<T,5,3>` `<T,6,3>` `<T,7,4>` `<T,8,4>`
+`<T,9,3>`, all with `DIRECT_NIBBLES=true`. As partitions, `[3]` `[4]` `[3,2]`
+`[3,3]` `[4,3]` `[4,4]` `[3,3,3]`; group counts 1, 1, 2, 2, 2, 2, 3; g17s
+registers 90, 91, 90, 90, 91, 91, 90.
+
+That is exactly **minimise the group count subject to NA <= 4, then tie-break
+to fewer registers**. Verified cell by cell. At M=5, `[4,1]` violates
+`M % IPG != 1`, so `[3,2]` is the only two-group option. At M=6, `[4,2]` and
+`[3,3]` are both two groups and `[3,3]` is one register cheaper. At M=9, IPG=4
+is illegal, so `[3,3,3]`.
+
+The field's revealed preference is fewer groups, taken whenever the cap allows.
+Their M=5, M=6 and M=9 cells are **constrained optima**, not chosen ones. We
+are the only participant able to test the cells they wanted.
+
+### (D) The M=4 ping-pong is a second ranked calibration point
+
+Two solvers flipped the same cell in opposite directions and both were
+promoted:
+
+- `1abe636` (vibecodooor, `f9ea43fd`, 3.110326, +0.303 percent): `<T,4,4>` to
+  `<T,4,2>`, that is `[4]` at 91 registers to `[2,2]` at 83 registers.
+- `d1530a4` (welttowelt, `bd007bc7`, 3.130987, +0.664 percent): reverted to
+  `<T,4,4>`, and also flipped M=7 to `DIRECT_NIBBLES=true` in the same diff,
+  so that gain is contaminated.
+
+Both deltas sit inside the 0.756 percent single-run sd. The defensible reading
+is **M=4 `[2,2]` at 83 registers is tied with `[4]` at 91 registers on the
+ranked host**.
+
+That tie **falsifies the sharp reading of ledger 214(D)**, which I had written
+as "minimise the largest group". Fewer registers is not automatically better.
+Two groups at occupancy 20 exactly cancels one group at occupancy 18.
+
+### (E) One parameter reproduces every ranked partition observation
+
+> 🔴 **RETRACTED IN FULL by ledger 217.** `eps = 0.111`, `kappa = 0.0600`, the
+> 208 KiB occupancy denominator, and every percentage in this section are void.
+> E77 measured the occupancy exponent at `gamma = 0.01346 +/- 0.00065` and the
+> total spread across the whole table at 0.52 percent. This model predicts the
+> crown's table is 5.73 percent slower; the ranked receipt measured it
+> 0.298 percent faster. Wrong sign, magnitude 19x too large. Read ledger 217
+> for the replacement, which is grid width, not registers.
+
+Take `occ(r) = floor(208 KiB / (128 * r))`, giving 83 -> 20, 90 -> 18,
+91 -> 18, 98 -> 16, 111 -> 14, and fit
+
+```
+cell time  ~  (1 + eps * (groups - 1)) / occ
+```
+
+The M=4 tie forces `(1 + eps)/20 = 1/18`, so **eps = 0.111**. A second weight
+stream costs 11 percent, not 100 percent. This is the first quantitative
+support for the cache-reuse hypothesis of ledger 214: at K=5120 with 8 rows and
+affine-4 group-64 weights, two groups share a 22.5 KiB tile, so the second
+group is nearly free in traffic and pays only in scheduling.
+
+With eps fixed by M=4, the model predicts the arm-2 receipt with no further
+fitting. Our table against the crown's:
+
+| M | crown | ours | model says ours is | receipt sign |
+|---|---|---|---|---|
+| 4 | `[2,2]` 83 | `[4]` 91 | tied | this is the fit |
+| 5 | `[3,2]` 90 | `[5]` 98 | 1.3 percent slower | consistent |
+| 6 | `[3,3]` 90 | `[6]` 111 | **15.7 percent slower** | consistent |
+| 9 | `[3,3,3]` 90 | `[5,4]` 98 | 2.3 percent slower | consistent |
+
+Weighting by the ranked width-time shares of ledger 207(G) (M=5 24.1 percent,
+M=6 33.4 percent, M=9 5.75 percent) makes the crown's table 4.97 percent faster
+on this modelled quantity. The receipt measured it 0.298 percent faster on the
+candidate leg, plutarch-corrected, 8 of 8 prompts. One scale factor,
+
+```
+kappa = 0.298 / 4.97 = 0.0600
+```
+
+converts modelled cell cost into leg time. `kappa` rests on a single ranked
+observation and `eps` on a noisy pair of promotions, so the absolute
+percentages below carry at least a factor of two either way. The signs and the
+ordering are the confident part.
+
+This also settles the open question in ledger 214: occupancy alone cannot
+explain the receipt because `occ(90)/occ(111)` maximised over all R is exactly
+2.0000, which can at best cancel a doubling of streams. The missing term is not
+a second occupancy effect. It is that the extra stream is **cheap**, so
+occupancy does not have to cancel a doubling, only 11 percent.
+
+### (F) The graded target, and what it is worth
+
+> 🔴 **RETRACTED IN FULL by ledger 217.** The graded register-tier prize table
+> in this section rests on `eps`, `kappa` and the 208 KiB file, all void. The
+> measured total occupancy spread available anywhere in the table is
+> 0.52 percent, and the M=6 inequality this section relies on needs 3.34 percent
+> where occupancy supplies 0.31 percent, short by 10.8x. The GPU work this
+> section proposed for edward was stopped before it ran.
+
+Tier boundaries on g17s: **92 registers or fewer gives occupancy 18, 93 to 97
+gives 17, 98 to 104 gives 16.** Modelled cell cost against the crown's cell:
+
+| our registers | M=5 `[5]` | M=6 `[6]` | M=9 `[5,4]` |
+|---|---|---|---|
+| today, 98 and 111 | +1.3 percent | +15.7 percent | +2.3 percent |
+| 93 to 97 | -4.7 percent | -4.7 percent | -3.7 percent |
+| 92 or fewer | **-10.0 percent** | **-10.0 percent** | **-9.1 percent** |
+
+Leg-level value against the crown's table, applying `kappa`:
+
+- both bodies reach 93 to 97: about **-0.18 percent**
+- both bodies reach 92 or fewer: about **-0.38 percent**
+- NA=5 only reaches 92 or fewer, NA=6 stays at 111 and we adopt the crown's
+  `[3,3]` at M=6: about **-0.18 percent**
+
+For scale, the field's last six promotions total +0.28 percent between them.
+
+Three consequences, now written into E76's brief. The target is **92, not 90**.
+The target is **graded, not pass or fail**: two registers can cross a boundary.
+And **NA=6 is worth more than NA=5**, because M=6 carries 33.4 percent of
+ranked width time and sits two tiers above the crown, so NA=6 alone is about
+53 percent of the prize. A corollary that matters: `[6]` at 98 registers is
+still worse than the crown's `[3,3]`, so 98 is not a partial win at M=6.
+
+### (G) The richest local experiment available, which I had not seen
+
+> 🔴 **RETRACTED by ledger 217.** The predicted cross-host IPG inversion in this
+> section is a consequence of the void occupancy model. E77 measured the
+> relevant local contrasts directly: pooled M=6 IPG3->4 is 0.99962, M=7 IPG4->5
+> is 1.00822, M=8 IPG4->5 is 1.01231, and simdgroups per core is fixed at 32
+> across IPG 4, 5 and 6, so none of that movement is occupancy. This M=8 cell
+> was drafted for alphonse and never sent.
+
+E77 was assigned to measure the occupancy coefficient on M=8 with IPG in
+{4, 5, 6}, all two groups, expecting a local null. The model shows that one
+cell is far richer than that. All five of IPG 2, 3, 4, 5, 6 are legal at M=8,
+all produce bit-identical output (E66 rung 2, 12 of 12), and they span 4, 3, 2,
+2, 2 groups at g16s registers 70, 93, 94, 95, 96.
+
+Local occupancy under the same tier rule: 70 -> 23, and 93, 94, 95, 96 all
+-> 17. So the model predicts, locally, relative cost 0.05796, 0.07188, 0.06535,
+0.06535, 0.06535 for IPG 2, 3, 4, 5, 6. That is a three-way exact null across
+IPG 4, 5, 6 (the original design, preserved as a control) plus two large
+predicted effects in the same session, with a 1.24 max-to-min ratio against a
+0.0238 percent session null from E73.
+
+The same model on g17s registers 83, 90, 91, 98, 111 predicts 0.06665, 0.06789,
+0.06172, 0.06944, 0.07936, so IPG=4 is the ranked optimum. The crown ships
+IPG=4 at M=8. **The model therefore predicts a cross-host inversion: IPG=2 is
+locally best and IPG=4 is ranked best, at the same cell, from the register
+table alone.** Measuring that inversion locally is a much stronger test than
+the null I originally asked for, and it needs one cell instead of four.
+
+One assumption alphonse must check rather than inherit: the 208 KiB register
+file size is taken from g17s. If g16s differs, the local tier map changes and
+these predictions move.
+
+### (H) Where the field has never looked
+
+**140 of the 154 editable files, 91 percent, have never been changed by any
+promotion.** Of roughly 90 editable Metal and kernel files, the field has
+touched exactly two, `quantized.h` and `mlx-generated/quantized.cpp`. Touched
+counts across all 56 promotions: `Qwen36MTPBlockSession.swift` 37,
+`Qwen35.swift` 28, `quantized.cpp` 18, `quantized.h` 18,
+`Qwen36MTPTarget.swift` 11, `mtp-head.manifest.json` 8, `KVCache.swift` 7,
+`RuntimeStartupMemoryPolicy.swift` 5.
+
+Cross that with the E58 dispatch census
+(`research/e58-artifacts/e58-census-512-nosync-census.json`, 79,695 in-round
+dispatches). The largest untouched scored surface in the competition is the
+`copy` family, `copy.h`, `copy.metal` and `mlx-generated/copy.cpp`, at
+**17.0 percent of in-round dispatches**, 10,235 of the 13,554 inside
+`target_verify`. Zero promotions and zero campaign experiments have touched it.
+`gather_front.h` at 2.15 percent bundles with it.
+
+> 🔴 **CORRECTED by ledger 217(F).** This section originally said the 17 percent
+> was driven by `KVCacheSimple.update` growing its buffer with `zeros()` plus
+> `concatenated()` **every round**, and proposed over-allocating KV growth as
+> the fix. That is wrong. `KVCache.swift:388` already sets `step = 256`, so
+> growth fires **2 times per serial leg and 3 times per candidate leg**. The
+> census proves it exactly: `sn_copy = 96 = 3 events x 16 layers x 2 arrays` in
+> `target_verify`. KV growth is **288 of the 10,235 copies, 2.8 percent**, and
+> 0.36 percent of in-round dispatches. Over-allocating is worth about 368 MiB
+> and roughly 0.02 percent of a leg -- unmeasurable. The two largest identified
+> copy sources are the irreducible per-round KV row write (2,432 dispatches) and
+> the exactness-chunk SDPA output concatenation at `AttentionUtils.swift:141`
+> (**2,048 dispatches per leg, exactly 64 rounds x 16 layers x 2 concat
+> inputs**). The 17 percent figure itself stands, and remains unpriced in time.
+
+Also untouched and reachable: `rms_norm.metal` at 8.1 percent (AOT-only, needs
+`tools/build-mlx-metallib.sh`), `sdpa_vector.h` at 3.45 percent (AOT-only, with
+a two-pass boundary at key_len 1024 inside the scored window), and
+`gemv.{h,metal}` at 3.02 percent, which is 100 percent draft-head and
+0 percent serial and therefore cannot break token exactness.
+
+Caveat that must travel with these numbers: dispatch count is not time. No
+per-family GPU-time census exists yet.
+
+### (I) The proposal head is the field's biggest lever, and nobody has
+re-derived the weights
+
+Cumulative gain by area across the 13 largest promotions: **proposal head
++38.135 percent**, schedule +29.042 percent, runtime +21.678 percent, kernel
++16.131 percent.
+
+The field has used five heads. The organizer's pinned bf16 head
+(`EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e`, 849,400,347 bytes) capped the board
+at 2.52. `deb63ad` swapped in `lowskillcoding/qwen38-mtp-head-4bit-g64`
+(238,934,093 bytes) for **+7.546 percent from a manifest edit alone**. Then
+`6209702` `dwsdubey/qwen3.8-27b-mtp-4bit` at 2.933615, `cbdc3a8`
+`amal-david/...q4-qkv-islands-v1` at 3.004128, `79683c6` reverting to dwsdubey
+by race at 3.024602, `ed4dfd6` re-applying islands at 3.077144, and `036fd9c`
+`amal-david/qwen38-mtp-head-q2-q4-rerank-v1` (427,742,600 bytes) at 3.190884,
+which is the head we ship.
+
+Every one of those five is a **requantization of the organizer's pinned bf16
+weights**. Nobody has re-derived the weights themselves: a head distilled or
+finetuned against the fixed target for the committed-history regime, optimizing
+acceptance at deep positions. The design constants of the current head, a
+32-row shortlist, a 2-bit first stage, a 1024-row island budget, SSE selection,
+were each measured once and never swept.
+
+This is the largest unexplored lever on the board by cumulative historical
+evidence. It is also the one our campaign has never touched.
+
+### (J) Mechanism history worth keeping
+
+`97921a3` +23.300 percent, `draftPolicy` from `min(offeredDepth,0)` to
+`min(offeredDepth,1)`, the serial to speculative switch. `fe88292`
++20.428 percent, the persistent committed-history head KV cache, which moved
+acceptance from 0.262 to 0.903 and survives today as `headHistoryCache`.
+`1167008` +17.918 percent, rollback checkpoints, the streak ladder
+`1 + fullAcceptStreak` capped at 4, and sync elimination. `b6c7251`
++6.876 percent, the original cross-row QMV pairing. `ab62cea` +6.716 percent,
+the two-stage Metal top-2 over the 248,320 vocabulary. `62174db`
++5.742 percent, the cost-model schedule, in which `h` was mispriced twice at
+0.12 and 0.09 before reaching 0.20. `61936f2` +5.347 percent, the compact draft
+vocabulary. `08897af` +3.760 percent, GDN chunking, later **replaced** by the
+correctly diagnosed SDPA-only split, which is the campaign's cleanest instance
+of better measurement winning twice. `1033e1a` +2.539 percent, the fused
+`qwen_mtp_draft_select` and the `_wide<T,NA>` restructure that introduced the
+NA <= 4 cap.
+
+### (K) What this changes about assignments
+
+E76 gains a ranked-anchored graded target and a pre-registerable falsifiable
+prediction, sent to edward on PR #79. E77 gains the five-arm M=8 cell and the
+cross-host inversion prediction, sent to alphonse on PR #80. The `copy` family
+and KV growth become the highest-value unowned surface on the board, to be
+assigned when a slot frees. The proposal-head weights become a named long-lead
+direction rather than an unexamined area.
+
+### (L) Campaign state
+
+Base `5f12720`. Crown 3.25238228, `9ad17378`, source `bfab0de5` which is
+`upstream/main`. Arm 3, submission `2da69933-5202-4e0d-b336-c75945a45b9e`,
+created 2026-08-20T12:00:44Z, status `validating`, candidate commit `389676fb`,
+scored surface byte-identical to thorfinn's validated `4d467ca`. Slots: #77
+askeladd E74 (head moved, work in progress), #78 thorfinn E75 r2, #79 edward
+E76, #80 alphonse E77.
+
+## 217 A student refuted me inside an hour: the lever is grid width, not registers
+
+E74 (askeladd, PR #77) and E77 (alphonse, PR #80) are both merged. E77 destroyed
+the occupancy model I built in ledger 216 and handed to edward as an assignment.
+E74, run blind on a different Mac against a different question, supplied the
+replacement and validated it against the only ranked kernel receipt we own.
+
+This item records the retraction, the measurements, the replacement mechanism,
+the two assignments they generated, and one further correction to 216(H) that
+came from a separate source review.
+
+### (A) What I retract, in full
+
+| retracted | replacement |
+|---|---|
+| Register file `B_R = 208 KiB` | **384 KiB measured locally**; about 496 KiB extrapolated for the ranked host (`124 x 128 x 32`) |
+| `eps = 0.111` group-count penalty | void; fitted on the wrong occupancy denominator |
+| `kappa = 0.298 / 4.97 = 0.0600` | void; converts a void modelled quantity |
+| The graded register-tier prize table sent to edward, "worth -0.38 percent vs the crown" | void; total occupancy spread anywhere in the table is **0.52 percent** |
+| The tier-staircase functional form | **rejected**; time rises smoothly, nearly linearly in R |
+| The predicted cross-host IPG inversion at M=8 (216(G)) | **rejected** by direct measurement |
+
+Ledger 215(B), 216(E), 216(F) and 216(G) now carry inline retraction markers.
+The measured register law of ledger 214 survives untouched: register count is a
+pure function of the largest group in the partition, independent of M and of
+group count, 19 of 19 cells with no exceptions. Only my occupancy reading of
+that law is retracted.
+
+I sent the retraction to edward before he spent a GPU session on it
+(`#issuecomment-5356011622`) and to alphonse on PR #80
+(`#issuecomment-5356149211`). I had drafted an M=8 five-arm cell for alphonse
+that assumed the refuted model. **I did not send it.**
+
+### (B) E77, the decisive negative
+
+W&B https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/3ugpmkvo (`3ugpmkvo`, rung 1) and
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jdlqnbwd (`jdlqnbwd`, rung 2).
+
+Session identity: base `41ddc183817979be8d2f0817d79f98b2ddefb984`, host
+`ip-10-231-2-22`, gated with `cool_gate_passed_real_gate=true`, 36.40 to
+66.04 C, 52 arms x 4 shapes x 15 reps = **6240 timed legs**, session null
+median 0.0193 percent, p90 0.0742 percent, max 0.2396 percent, probe digest
+`fae1c6b75f04878364a25edecaecc05caf376f5c61435d198046e6e469fc7bf3`. **Zero
+candidate files changed.** Verdict on the hypothesis: **not useful**. Verdict
+on the experiment: the most decisive negative the campaign has produced.
+
+Real simdgroups per core, `S = floor(B / (128 * R))`:
+
+| largest group | local R | local S | local frame | ranked R | ranked S |
+|---:|---:|---:|---:|---:|---:|
+| 2 | 70 | 43 | 0 | 83 | 47 |
+| 3 | 93 | 33 | 0 | 90 | 44 |
+| 4 | 94 | 32 | 0 | 91 | 43 |
+| 5 | 95 | 32 | 0 | 98 | 40 |
+| 6 | 96 | 32 | **16 B spill** | 111 | 35 |
+
+Occupancy exponent, `Omega(S) = (32/S)^gamma`:
+
+**`gamma = +0.01346 +/- 0.00065`**, 108 arms, log-rms 0.00125, twenty standard
+errors from zero. Shape dependent: `mlp.down` 0.00511, `lm_head` 0.01477,
+`mlp_gate_up` 0.01524, `gdn out_proj` 0.01874.
+
+1. **The staircase is rejected.** Within-tier spreads (median 0.0869 percent)
+   are 4x the median tier-boundary step (+0.0218 percent).
+2. **Total occupancy spread available anywhere in the table is 0.52 percent.**
+   My M=6 inequality needs 3.34 percent; occupancy supplies 0.31 percent.
+   Short by **10.8x**.
+3. **The ranked-ordering gate fails in sign** at M=5, 6 and 9. Required gamma:
+   2.9701 (+4519 sigma), 0.1639 (+230 sigma), 2.1610 (+3282 sigma). The model
+   predicts the crown's table is **5.73 percent slower**; the receipt measured
+   it **0.298 percent faster**. Wrong sign, magnitude 19x too large.
+4. **The expected local null is rejected.** Pooled ratios: M=6 IPG3->4
+   **0.99962**; M=7 IPG4->5 **1.00822**; M=8 IPG4->5 **1.01231**; M=9 IPG5->6
+   1.08240 (spill); M=8 IPG4->6 1.09663 (spill). `S` is fixed at 32 across IPG
+   4, 5 and 6, so **none of that movement is occupancy**. It is `q(IPG)`.
+5. **The measured `q` chain contradicts the fitted surface.** From `q(3) = 1`:
+   `q(4) = 1.000`, `q(5) = 1.010`, `q(6) = 1.095`, monotone increasing. The
+   fitted surface says 0.971, 0.976, 1.046. The surface is wrong by 3 percent
+   at M=6, which carries **33.4 percent** of the ranked round pool.
+6. **Spill costs about 0.015 percent per frame byte**, 0.052 percent per float,
+   roughly 3x steeper than the spill-free ladder. `<T,6,3>` frame-byte curve:
+   16 -> 1.00095, 16 -> 1.00180, 48 -> 1.00742, 112 -> 1.01672. **Any local arm
+   above 96 registers measures spill, not occupancy.**
+7. **The crown-free falsification.** At `gamma = 0.0135` the model puts M=7 and
+   M=8 at IPG 5, but our table **and** the crown both ship IPG 4. That removes
+   the "the crown is just noise" escape and lands the blame on the
+   **`lam(IPG)/x` core-count term**, not on occupancy.
+8. M=6 IPG3->4 hides opposite-sign shape movement: `lm_head` 0.99621 and
+   `mlp.gate_up_fused` 0.99739 speed up, while `linear_attn.out_proj` 1.00174
+   and `mlp.down` 1.00317 slow down. **Wide n speeds up, narrow n with large K
+   slows down.** Hold that thought for (D).
+
+Between-session replication against E73: absolute time median 0.085 percent,
+max 0.246 percent (n = 44); natural ratios median 0.042 percent, max
+0.222 percent (n = 20). Rung-2 refit: rel-rms 1.62 percent, median 1.06,
+max 6.46 (68x the E73 null); `rho0` 1.5133 ps/byte, `beta` 2.4698;
+`c(IPG)` = 2:1.0872, 3:1.0000, 4:0.9709, 5:0.9764, 6:1.0456, and `c * Omega_L`
+reproduces E73's `q(IPG)` to four decimal places. Rung 3 was **not started**;
+the pre-registered stop rule fired and he honoured it.
+
+### (C) E74, and a blind out-of-sample validation
+
+W&B https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0orl4f8u (`0orl4f8u`, main) and
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/g29ofoa9 (`g29ofoa9`, smoke).
+
+Ungated by permitted standing mode, ABBA-counterbalanced,
+`cool_gate_passed_real_gate=false` and `gate_qualified_for_timing=false`
+preserved verbatim, entry 51.09 to 64.42 C (spread 13.33 C), exit mean 73.33 C,
+130 blocks, 1300 s, seed 768, `correctness_prompts/public_longcopy_gate_english_512_1024.json`.
+Session cost curve agrees with E71 to better than 0.3 percent at every width;
+session null 0.464 ms. Zero candidate files changed.
+
+- **`H_null` is falsified.** `D/level` is 0.197 at M=6, **0.019** at M=7,
+  **0.096** at M=8, 0.029 at M=9, against `H_knee` [0.02, 0.17] and `H_null`
+  [0.20, 0.42]. E71 gave 0.256, 0.410, 0.224 at M=4, 5, 6.
+- Model-free statement: three small families sit at **32 threadgroups per core
+  at M <= 6**; the shipped table doubles groups at M=7, moving them to
+  **64 per core**; the contrast collapses from 0.197-0.410 to 0.019-0.096. The
+  knee is between 32 and 64 per core, at or just above 64.
+- Fit `ln(ms/GB) = a_M + A * max(0, ln(knee) - ln(working_tgs)) + B_w * (k_blocks - 96)`:
+  **knee 1558 working threadgroups = 77.9 per core**, 68 percent profile
+  interval [1344, 2357] = [67.2, 117.8] per core, **A = 0.2132**, log-rms
+  0.0456. Bootstrap p16/p50/p84 = 1305/1806/24346; the tail runs away, so read
+  the profile interval, not the bootstrap.
+- Residual RMS 0.478 ms = 1.03x the session null; 17 of 20 cells below the
+  null. All three misses are `mlp_gate_up`, all one sign (+1.483, +1.066,
+  +0.755 ms) - the only family whose n sits between the small three and
+  `lm_head`, so the hard knee has no shoulder.
+- Pre-registered table selection: `grid_responds_and_cliff_resolves` RMSE 0.223
+  beats `no_grid_term_and_cliff_resolves` 0.354,
+  `grid_responds_and_cliff_persists` 0.603 and
+  `no_grid_term_and_cliff_persists` 0.726. 🔴 **E71's M=6 reduction-depth cliff
+  RESOLVES**: `R` goes +1.293 at M=6 to +0.242..+0.507 at M=7, 8, 9. It was an
+  occupancy effect, not a fixed tax. **Any plan that budgets a fixed
+  reduction-depth tax at M >= 7 must be rechecked.**
+- 🔴 **The E33 sign-flip positive control FAILED.** The gate required the flip
+  to land in [3584, 4120]; the fit predicts 2719 converted, 2577 raw. Passing
+  knees [2285, 2677] overlap the profile interval only in [2285, 2357]. He
+  stopped as the stop rule required and did not retune. Kendall tau is still
+  +0.713 and +0.732 with **zero discordant pairs**. His untested explanation: a
+  shapes-only microbenchmark runs with the machine idle and needs more
+  threadgroups to saturate, while in situ the neighbouring work already fills
+  it - which predicts a **lower** in-situ knee, and that is the direction
+  observed (78 versus >= 114 per core).
+- Fitted knee 1558 sits **inside** ledger 157 R3's independent bracket
+  [1280, 2060]. Fitted `A` is 2.0x the prior `A` of 0.107.
+- **`G` is not identified by his design** - every family has
+  `out_vec_size >= 4096`, so one width has one IPG and the intercept absorbs
+  it. Imported from ledger 157 R1: `G = ln(1.1196) = 0.113`, also scored at 0
+  and at `ln(1.200) = 0.182`.
+- Rung 3: only three cells change, M4/M5/M6 in the 4096-8191 band, all 1 -> 2
+  groups. Whole-lever share of the verify-width tax: **+4.68 / +1.17 / -1.20
+  percent** at G = 0 / 0.113 / 0.182. **Sign not robust.** 47.5 percent of the
+  tax sits in the one band that moves.
+- Starvation boundary by core count: **n = 12464 at 20 cores, 14957 at 24,
+  24928 at 40.** The shipped `out_vec_size >= 4096` gate is therefore **3x too
+  low locally and 6x too low at 40 cores**, and **no scored shape is below 4096
+  at all.**
+- Recommendation: close the measurement, do not promote a kernel change. Carry
+  the knee as "77.9 per core, 68 percent interval [67.2, 117.8], not certified
+  across instruments".
+
+🔴 **The blind out-of-sample validation.** Askeladd priced his rung-3 lever at
+**+1.17 percent of the verify-width tax** at G = 0.113. The tax is 19.83 percent
+of the ranked candidate leg (ledger 211), so +1.17 percent x 12,645 ms =
+147.9 ms out of 63,766 ms = **+0.232 percent of the leg**. The arm-2 ranked
+receipt measured **-0.298 percent**. Same sign, agreement within 25 percent.
+Inverting, the measured 0.298 percent implies `G` about 0.09, consistent with
+his imported 0.113. **His base was `d19d6f5`, which predates ledger 212, so he
+had never seen the arm-2 receipt.** His rung-3 recommendation - M=4 to IPG 2,
+M=5 to IPG 3, M=6 to IPG 3 in the 4096-8191 band - is exactly the crown's cells
+at M=5 and M=6.
+
+This is the first time a local cost model has predicted a ranked receipt it had
+never seen. It is the strongest transfer evidence in the campaign.
+
+### (D) The replacement mechanism: per-shape grid starvation
+
+**The optimal inner-group count is not the same for every shape, and the
+dispatch table applies one group count to all of them.**
+
+E33 (ledger 137) already measured this and I had read it as noise. At M=6, the
+ratio of one group to two groups, with the traffic ratio held at exactly 1.3571
+for all eight families:
+
+| family | n | working TGs at 2 groups | 1-group / 2-group |
+|---|---:|---:|---:|
+| `head.lm_head` | 248320 | 62080 | **0.9830** |
+| `head.compact_draft_vocab` | 98336 | 24584 | **0.9868** |
+| `mlp.gate_up_fused` | 34816 | 8704 | **0.9941** |
+| `linear_attn.in_proj` | 16480 | 4120 | **0.9947** |
+| `full_attn.qkv_proj` | 14336 | 3584 | 1.0148 |
+| `full_attn.o_proj` | 5120 | 1280 | 1.0414 |
+| `linear_attn.out_proj` | 5120 | 1280 | 1.0492 |
+| `mlp.down` | 5120 | 1280 | **1.0592** |
+
+**The sign flips between 1792 and 2060 working threadgroups.** Wide shapes want
+fewer groups; narrow shapes want more. E77(B8) reproduced the same sign split
+independently at M=6 IPG3->4.
+
+Apply askeladd's knee to the three n = 5120 families. One group is
+`ceil(5120/8) = 640` threadgroups; two groups is 1280. Deficit falls from
+`ln(1558/640) = 0.889` to `ln(1558/1280) = 0.197`, so the saving is
+`0.2132 x 0.692 = 0.1475` log units, about **14.8 percent**, against an extra
+weight pass costing `G = 0.113`, about 12 percent. Splitting wins on the narrow
+shapes and loses on the wide ones. Three groups loses everywhere: the marginal
+gain is 4.2 percent locally and 8.6 percent at 40 cores, both below the
+12 percent pass cost.
+
+**Discipline note on core count.** My first framing said the ranked host wins
+with more groups because it has about twice the cores. That is only partly
+right and I am stating the correction here so nobody inherits the overclaim.
+For a shape deep below the knee the gain is a log-ratio and is **the same** at
+20 and at 40 cores. What core count actually changes is **which shapes are
+starved**: the boundary moves from n = 12464 to n = 24928, pulling
+`full_attn.qkv_proj` (14336) and `linear_attn.in_proj` (16480) across it. The
+mechanism is per-shape heterogeneity. Core count only moves the boundary.
+
+**The grid cannot be widened any other way.** The host grid is
+`grid_dims(M, ceil(N/8), B)` with `group_dims(32, 2, 1)` at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:249-254`,
+which is **not editable**. Changing `rows_per_simd` at `quantized.h:982` alone
+would leave output rows uncomputed. **Splitting the group count is the only
+editable grid lever.**
+
+Open and unchecked: whether the ranked g17s dispatches a `_nax` variant of the
+cross-row QMV. The gate is `backend/metal/quantized.cpp:697`. E71 established
+that kernel selection is identical on g16s and g17s at every width, but that
+was not re-verified for `_nax`.
+
+### (E) E78, the assignment this generated
+
+PR #81, askeladd, base `8d938c911df52b6a324f259a55dbaa75e508c822`.
+
+**Make the QMV inner-group count depend on `out_vec_size`.** The kernel already
+branches on `out_vec_size >= 4096` at `quantized.h:1917`, and `out_vec_size` is
+a uniform scalar argument, so a second threshold is free. Our complete diff
+against the crown, re-verified today, is 8 lines across 2 files: `NA <= 4` to
+`NA <= 6` at `:977`, and cases 5, 6 and 9 from IPG 3/3/3 to IPG 5/6/5.
+M = 3, 4, 7 and 8 are identical in both tables. The three cells that differ
+carry **63.25 percent** of the ranked round pool.
+
+Four arms: A = ship, B = crown, C = hybrid at threshold 24928, D = hybrid at
+threshold 8192. Predicted local ordering `D <= C < A < B`, with C or D beating
+A by about 1.0 to 1.9 percent on the M = 5, 6 and 9 rounds. The critical
+deliverable is the **per-family in-situ cell table** at both group counts, which
+is what transfers to the ranked host through the knee. The local A-versus-B
+ordering is known not to transfer: A wins locally by 0.6163 percent (E66), B
+wins on ranked by 0.298 percent (arm-2 receipt).
+
+E66 rung 2 proved changing IPG is **bit-identical, 12 of 12**. Any token
+mismatch is an implementation defect, not a refutation.
+
+### (F) The `copy` family is not what I said it was
+
+A separate source review refuted 216(H)'s mechanism. `KVCache.swift:388`
+already sets `step = 256`, so `zeros()` plus `concatenated()` fire **2 times
+per serial leg and 3 times per candidate leg**, not every round. The census
+proves it exactly: `sn_copy = 96 = 3 events x 16 layers x 2 arrays` in
+`target_verify`, and `sn_copybfloat16bfloat16 = 64 = 2 x 16 x 2` in the serial
+leg. KV growth is **288 of the 10,235 `target_verify` copies, 2.8 percent**, and
+0.36 percent of in-round dispatches. Over-allocating `step` is worth about
+368 MiB and roughly **0.02 percent of a leg** - about 40x below our best
+measurement floor. **Do not spend a student slot on it.** Fold it into another
+PR as a one-line free rider if convenient, and pick 1536 or 2048 rather than
+1024, because the candidate's transient width pushes `offset` past 1024 before
+the rollback trim.
+
+Cache classes on the scored path, now proven rather than assumed: 48 Gated
+DeltaNet layers hold `MambaCache` and have no KV buffer at all; 16
+full-attention layers plus 1 MTP-head layer hold `KVCacheSimple`
+(`Qwen35.swift:2812-2819`, `:3274-3277`). The trusted parent independently
+asserts this shape at `QwenRuntimeWorker.swift:242-294`.
+
+What actually drives the 10,235, by static attribution with two exact identity
+checks:
+
+| kernel | count | attribution | confidence |
+|---|---:|---|---|
+| `gg2_copybfloat16` | 2,432 | per-round FA KV in-place row write, `KVCache.swift:434-435`. Irreducible | high |
+| `g2_copybfloat16` | **2,048** | **exactness-chunk `concatenated([outA, outB], axis: 2)` at `AttentionUtils.swift:141`** - exactly 64 rounds (widths 6-9: 17+3+3+41) x 16 layers x 2 concat inputs | high, exact match |
+| `g3_copybfloat16` | 1,216 | 16 per round, one per FA layer; most likely the SDPA query materialization | medium |
+| `gg1_copyint32` | 571 | exactly the sum of widths; `concatenated([primary] + draftIdArrays, axis: 1)` at `Qwen36MTPBlockSession.swift:1299-1301` | high, exact match |
+| KV growth (`sn` + concat) | 288 | 3 events | high |
+| residual | 3,872 | unattributed by static reading | low |
+
+🔴 **The real untouched target in this family is the exactness-chunk
+concatenation at `AttentionUtils.swift:127-141`: 2,048 dispatches per leg,
+10x the KV-growth prize, squarely inside the editable surface, and never
+touched by any promotion or any campaign experiment.** It exists to preserve
+exactness above width 5, so removing it is a genuine research question rather
+than a free win.
+
+Also newly proven dead relative to the scored MTP decode, with zero references
+from the trusted harness or either session:
+`Sources/MLXFastModel/Qwen35{FastEngine,Cache,Block,Attention,Model}.swift`.
+That closes part of the ledger 181(I) "unverified reachability" debt. Do not
+send a student there.
+
+**Dispatch count is still not time.** The census `dispatch_ns` is host encode
+time (291.7 ns per dispatch, 0.24 percent of a round), so all 10,235 copies cost
+about 3.0 ms of host encode per leg and their GPU occupancy remains unknown. No
+per-family GPU-time census exists.
+
+### (G) The proposal head: the field's biggest lever, and the contract for taking it
+
+Cumulative gain by area across the 13 largest promotions: **PROPOSAL HEAD
++38.135 percent**, SCHEDULE +29.042, RUNTIME +21.678, KERNEL +16.131. All five
+declared heads are requantizations of the organizer's pinned bf16 tensors plus
+an added readout or precision islands. **In 579 scored submissions nobody has
+re-derived the weights.**
+
+**It is explicitly legal.** `.github/scripts/run-submission-static-review.sh:535`,
+in the do-not-fail list, names "re-quantised, **distilled, re-trained** or
+larger-rank heads" as legal when declared. `:510` adds "whatever its
+provenance". `mtp-head/` is excluded from the reviewed payload entirely
+(`:151-172`, `:279-293`), so the weights never reach the judge;
+`mtp-head.manifest.json` **is** reviewed, including its whole `note` string.
+
+Binding engineering constraints, from the three validators:
+
+1. **One single `model.safetensors`, at most 2 GiB**, at an immutable HF
+   revision or an R2 key. The runner curls exactly
+   `https://huggingface.co/${repo}/resolve/${rev}/model.safetensors`
+   (workflow `:2446-2449`). `in_branch` cannot deliver a 400 MB head because
+   submission archives are capped at 25 MiB.
+2. **Bare tensor names**, merged by the loader under `mtp.`. Any name already
+   starting `mtp.` is a hard refusal. Required: `fc.weight`, `norm.weight`,
+   `pre_fc_norm_hidden.weight` (`Qwen36MTPHeadAttachment.swift:259-264`). The
+   tensor-count check was deliberately relaxed; `qwenMTPHeadTensorCount = 15`
+   survives only in comments.
+3. The digest is a **tree digest**, not a blob digest:
+   `sha256` of the concatenation, over `LC_ALL=C`-sorted paths, of
+   `"<hex file sha256>  <relative path>\n"`, excluding a top-level `README.md`.
+   `research/fetch-declared-head.sh:42-59` reproduces it and is a working local
+   verifier.
+4. **A broken declaration is a refusal, never a silent fall back to the pinned
+   head** (`QwenMTPHeadDeclaration.swift:72-79`).
+5. Any tensor that lands as a **Module parameter** must be affine 4-bit
+   group-64 or unquantized bf16, because `(groupSize, bits, mode)` come from
+   the **backbone** config, never the head's. Two families escape this by being
+   side-channelled out of the Module system in `sanitize` before the quantize
+   walk: `mtp.draft_lm_head.*` (bit width inferred from shapes; this is how the
+   current 2-bit readout ships legally) and `mtp.precision_islands.*`.
+
+Architecture and size, derived and cross-checked: one decoder layer,
+**424,699,392 parameters**, and `424,699,392 x 2 = 849,398,784` equals
+`fixtures/qwen3_8_27b_mtp_track.json:127` `mtp_head.tensor_bytes` **exactly**.
+The current 427,742,600 B artifact decomposes as about 238.9 MB requantized
+affine-4/g64, **157,337,600 B** of `draft_lm_head` (`[98336, 320]` uint32 plus
+scales and biases `[98336, 80]` bf16), and about 31 MB of precision islands
+(that last figure inferred by subtraction, not measured).
+
+**Feasibility on a student Mac (M4 Pro, 48 GiB, 109 GiB free).** Memory is not
+the constraint; **teacher compute is**. Teacher-forced prefill is 7.83 ms per
+token, so one 960-minute run caches at most about **7.35 M tokens**; head-only
+training from cached hidden states runs at about 2.0 ms per token, so roughly
+4 epochs over that corpus fit in one run. On-policy self-generation costs
+67.3 ms per token and caps at 0.86 M tokens per run, so it can only be a small
+high-value fraction. Cached hidden states are 10.24 KB per token, so 7.35 M
+tokens is 75 GB - it fits, with little slack. The correct architecture is to
+**decouple**: one teacher pass writes (post-`model.norm` hidden, target argmax)
+pairs to disk, then the head trains standalone with the 27B unloaded. The
+hidden **must** be post-`model.norm`; `Qwen35.swift:2995-2999` warns that the
+wrong variant "fails SILENTLY: acceptance collapses toward zero".
+
+**Legality line.** Training on generic public text is permitted; the head is a
+fixed, input-independent, digest-pinned weight tensor, and
+`program.md:331` permits input-independent weight tables. The line is crossed
+by training on the public fixture prompts (hidden-prompt specialization), on
+GPQA benchmark items, or on anything derived from
+`Qwen36MTPReferenceSession.swift` outputs or goldens.
+
+**Literature, filtered to our regime (greedy, batch 1, linear chain, exact
+top-1 match).** Tree-structured headline numbers do not transfer; S2D measured
+Medusa falling below plain speculative decoding once tree attention is removed.
+The three approaches most likely to pay here:
+
+1. **FastMTP-style recursive fine-tune of the existing head** on a fixed
+   corpus, unrolled K steps, cross-entropy against the **target's argmax**, with
+   exponentially decayed position weights `beta` about 0.6 to 0.8. It is the
+   only published recipe whose setting matches ours end to end. Reported k=1
+   70 -> 81 percent, k=2 11 -> 56, k=3 2 -> 36. Note that **every recipe I found
+   down-weights deep positions; none reports a gain from up-weighting them.**
+   What fixes deep positions is unrolling, not reweighting.
+2. **Attack the 248,320-wide output projection.** FR-Spec (ACL 2025) cut LM-head
+   compute 75 percent for +1.12x on top of EAGLE-2, training-free; FastMTP
+   measured the acceptance cost of 152K -> 32K at only **0.068 tokens of
+   accepted length**. Caveat specific to us: under exact top-1 verification a
+   truncated draft vocabulary is a **hard ceiling** - a token we cannot propose
+   is a token we can never accept. SlimSpec-style low-rank factorisation of the
+   readout avoids that ceiling and is the durable answer.
+3. **Post-norm on the drafter hidden state between speculation steps.** A ~10
+   line change; reported 1.10x acceptance length, 1.18x long context, and - the
+   part that matters for a 48 GiB budget - a post-norm head trained at unroll
+   depth 2 generalises to depth 16 while pre-norm collapses to zero.
+
+Deprioritise: re-deriving the head against the 4-bit target's logits
+(measured at about +2.2 percent, and cheaply obtained as a stage-2 fine-tune),
+and draft-head quantization (contradictory evidence; probably the wrong
+bottleneck at V = 248,320).
+
+### (H) E79, the gate before that project
+
+PR #82, alphonse, base `8d938c911df52b6a324f259a55dbaa75e508c822`. **Zero
+candidate files.**
+
+Re-deriving head weights is a multi-day project and I will not start it on a
+hunch. E79 produces the numbers that decide it.
+
+The scheduler seeds `positionAcceptEMA = 0.85 * 0.98^i` at
+`Qwen36MTPBlockSession.swift:669`. **That is a prior and it has never been
+checked.** Ledger 207 botany: 85 rounds, 491 drafts proposed, 427 accepted, so
+5.78 proposed and 5.02 accepted per round. For a linear chain that requires
+per-position acceptance near **0.97**; the shipped prior sums to 2.96 at d = 5,
+low by a factor of 1.7. **If the measured curve really is flat near 0.97 out to
+position 8, acceptance has almost no headroom on the two scoring prompts, the
+retraining project should not start, and the binding constraint is cost.**
+
+🔴 **In a linear chain the per-position curve is fully determined by the joint
+distribution of (proposed width `d`, accepted prefix length `k`)**, because
+accepting position `i` implies accepting every earlier position:
+`p_i = P(k >= i) / P(k >= i-1)` over rounds with `d >= i`. If the existing
+trace already emits `d` and `k`, no new instrumentation is needed at all.
+
+Cost side: head weights at affine-4/g64 are about 238.9 MB and the draft
+readout is 157.3 MB, so at 226 GB/s the head step should be about 1.06 + 0.70 =
+1.76 ms against a measured isolated step of 2.590 ms. **The readout is about
+40 percent of the head's traffic.** On the ranked host an extra draft costs
+1.0525 ms, so at M=6 the head is 5.26 ms of a 60.5 ms round, 8.7 percent, and a
+40 percent readout cut would be about 1.6 percent of the round. The shipped
+`headStepCostRatio = 0.18` faces a measured marginal range of 0.078 to 0.391 -
+a factor of five - and pinning it down feeds E75 directly.
+
+### (I) What this changes about how I run the campaign
+
+1. **A model I hand a student must be checked against that student's own
+   measurement before they build on it.** When a measurement contradicts my
+   model, the measurement wins and I retract in writing before they spend GPU.
+   That worked here only because alphonse pre-registered a stop rule and
+   because I read his report before sending the next assignment.
+2. **Five consecutive experiments in the QMV cell-cost family (E71, E72, E73,
+   E74, E77) produced excellent physics and no shippable win.** That is a
+   plateau. E78 is the last experiment in that family that has a direct
+   submittable mechanism; E79 moves a student to a different tier entirely.
+3. **Do not price a mechanism from a model when a direct measurement is
+   available at similar cost.** I withheld the `q(IPG)` refit from alphonse for
+   exactly this reason: E78 measures the same quantity per family, in situ.
+4. **Read the old negatives again after a new instrument arrives.** E33's
+   per-family sign flip was measured long ago and sat unused in ledger 137 until
+   E74's knee gave it a mechanism.
+
+### (J) Campaign state
+
+- Advisor branch base before this item: `8d938c911df52b6a324f259a55dbaa75e508c822`.
+- Promoted crown unchanged: `9ad17378`, 3.25238228, Lieisyourlie, source
+  `bfab0de58d43453e506523707e1720a3485570f4` = `upstream/main`.
+- Arm 3, submission `2da69933-5202-4e0d-b336-c75945a45b9e`, candidate commit
+  `389676fb445064b25695c8c44f25f30e98faecbb`, still **`validating`** at
+  2026-08-20T13:01Z, created 12:00:44Z. One in-flight per account.
+- Merged this cycle: PR #77 (E74) at `b2b5d859`, PR #80 (E77) at `8d938c91`.
+  Both accepted on a moved base with recorded reasons.
+- Live slots: #78 thorfinn E75 r2 (schedule calibration), #79 edward E76 r1
+  (compile-only register close-out, premise retracted), #81 askeladd E78 r1
+  (width-dependent IPG), #82 alphonse E79 r1 (head economics census).
