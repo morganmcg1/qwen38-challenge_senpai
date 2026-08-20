@@ -140,13 +140,15 @@ struct E83PrefillDecompositionTests {
         }
 
         // H-221 at prefill width, as a regression discontinuity. The prefill
-        // ladder arms at exactly `dim(1) >= 512`, so widths 496...511 force no
-        // evaluation point and widths 512...528 force 22, while arithmetic
-        // moves by at most 6%. Fit seconds against width on the ladder-off
-        // side, extrapolate across the step, and the residual on the
-        // ladder-on side is the net cost of 22 boundaries. Interleaved
-        // low/high so thermal drift cannot masquerade as the step.
-        let ladderWidths = [496, 512, 504, 520, 511, 528]
+        // ladder arms at exactly `dim(1) >= 512`, so widths below 512 force no
+        // evaluation point and 512 forces 22.
+        //
+        // Every width here rounds up to the SAME 16 GEMM tiles in M
+        // (ceil(M/32)), which is why 520 and 528 are absent: they need 17
+        // tiles, and the smoke run measured that as a +5% step that swamps
+        // any boundary effect. Interleaved low/high so thermal drift cannot
+        // masquerade as the step.
+        let ladderWidths = [481, 512, 489, 512, 497, 505, 512, 511]
         for rep in 0..<ladderReps {
             for width in (rep % 2 == 0 ? ladderWidths : ladderWidths.reversed()) {
                 var block = harness.begin(arm: .baseline, phased: false, width: width)
@@ -167,6 +169,9 @@ struct E83PrefillDecompositionTests {
         var sdpaBlock = e83MeasureSdpa(seed: seedLength, reps: max(reps, 5))
         sdpaBlock["order"] = blocks.count
         blocks.append(e83Emit(sdpaBlock))
+        var swigluBlock = e83MeasureSwiGLU(seed: seedLength, reps: max(reps, 5))
+        swigluBlock["order"] = blocks.count
+        blocks.append(e83Emit(swigluBlock))
 
         let payload: [String: Any] = [
             "schema": 1,
@@ -627,6 +632,11 @@ private func e83IsolatedShapes(seed: Int) -> [E83Shape] {
         E83Shape(family: "mlp.down_proj", m: seed, k: 17408, n: 5120, layers: 64),
         E83Shape(family: "lm_head.tail_row", m: 1, k: 5120, n: 248320, layers: 1),
         E83Shape(family: "mlp.gate_up_fused_unused", m: seed, k: 5120, n: 34816, layers: 64),
+        // `in_proj_b` and `in_proj_a` are two separate 5120 -> 48 projections
+        // per GDN layer. At N = 48 a quantized GEMM is nowhere near the
+        // roofline, so the pair may cost far more than its 0.10% FLOP share.
+        // This cell prices the obvious repair: one 5120 -> 96 projection.
+        E83Shape(family: "gdn.in_proj_ba_fused_probe", m: seed, k: 5120, n: 96, layers: 48),
     ]
     // The M = 1 residue of every pinned family: what a pinned arm still pays.
     for family in ["mlp.gate_proj", "mlp.down_proj", "gdn.in_proj_qkv", "gdn.out_proj"] {
@@ -713,6 +723,66 @@ private func e83MeasureQuantizedShape(_ cell: E83Shape, reps: Int) -> [String: A
     if let entryTemp { record["gpu_temp_entry_c"] = entryTemp }
     if let exit = e83GPUTemperature() { record["gpu_temp_exit_c"] = exit }
     return record
+}
+
+/// Prices the SwiGLU activation two ways at seed width.
+///
+/// `Qwen35FusedMLP.callAsFunction` gates its compiled fused form on
+/// `x.dim(-2) <= 16`, so the 512-row seed runs `silu(gate) * up` as separate
+/// launches with a materialized intermediate, while every decode-width call
+/// runs the single compiled kernel. This measures both forms on the exact
+/// prefill shape so the gap is a number rather than a bandwidth guess.
+private func e83MeasureSwiGLU(seed: Int, reps: Int) -> [String: Any] {
+    let inter = 17408
+    let gate = MLXArray.zeros([1, seed, inter], dtype: .bfloat16)
+    let up = MLXArray.zeros([1, seed, inter], dtype: .bfloat16)
+    eval(gate, up)
+
+    let fused: @Sendable (MLXArray, MLXArray) -> MLXArray = compile { g, u in
+        silu(g) * u
+    }
+    func unfusedCall() -> MLXArray { silu(gate) * up }
+    func fusedCall() -> MLXArray { fused(gate, up) }
+
+    for _ in 0..<3 {
+        eval(unfusedCall())
+        eval(fusedCall())
+    }
+    func sample(_ body: () -> MLXArray) -> [Double] {
+        var out: [Double] = []
+        for _ in 0..<reps {
+            let start = DispatchTime.now().uptimeNanoseconds
+            eval(body())
+            out.append(Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9)
+        }
+        return out.sorted()
+    }
+    // ABBA so drift cannot decide which form wins.
+    var unfused = sample(unfusedCall)
+    var fusedSamples = sample(fusedCall)
+    fusedSamples += sample(fusedCall)
+    unfused += sample(unfusedCall)
+    unfused.sort()
+    fusedSamples.sort()
+
+    let uMed = unfused[unfused.count / 2]
+    let fMed = fusedSamples[fusedSamples.count / 2]
+    let elementBytes = 2.0 * Double(seed) * Double(inter)
+    Memory.clearCache()
+    return [
+        "kind": "isolated_swiglu",
+        "family": "mlp.swiglu_activation",
+        "m": seed, "n": inter, "layers": 64,
+        "reps": reps,
+        "unfused_seconds": unfused,
+        "fused_seconds": fusedSamples,
+        "unfused_seconds_median": uMed,
+        "fused_seconds_median": fMed,
+        "unfused_modelled_prefill_seconds": uMed * 64.0,
+        "fused_modelled_prefill_seconds": fMed * 64.0,
+        "saving_modelled_prefill_seconds": (uMed - fMed) * 64.0,
+        "intermediate_bytes_per_layer": elementBytes,
+    ]
 }
 
 private func e83MeasureSdpa(seed: Int, reps: Int) -> [String: Any] {

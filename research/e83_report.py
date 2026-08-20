@@ -70,9 +70,9 @@ def main() -> int:
 
     section("Rung 1 -- end-to-end `begin()`")
     if whole:
-        w = [b["begin_seconds"] for b in whole]
-        print(f"unphased begin(): median {1e3 * med(w):.1f} ms  "
-              f"range {spread(w)} ms  n={len(w)}")
+        base_s = [b["begin_seconds"] for b in whole]
+        print(f"unphased begin(): median {1e3 * med(base_s):.1f} ms  "
+              f"range {spread(base_s)} ms  n={len(base_s)}")
         print(f"  build      {1e3 * med([b['build_seconds'] for b in whole]):.1f} ms")
         print(f"  final eval {1e3 * med([b['final_eval_seconds'] for b in whole]):.1f} ms")
         print(f"  readback   {1e3 * med([b['readback_seconds'] for b in whole]):.1f} ms")
@@ -81,9 +81,9 @@ def main() -> int:
         print(f"phased begin():   median {1e3 * med(p):.1f} ms  "
               f"range {spread(p)} ms  n={len(p)}")
         if whole:
-            obs = med(p) - med(w)
+            obs = med(p) - med(base_s)
             print(f"observer cost of phasing: {1e3 * obs:+.1f} ms "
-                  f"({100 * obs / med(w):+.1f}%)")
+                  f"({100 * obs / med(base_s):+.1f}%)")
 
     census = next((b for b in blocks if b.get("kind") == "boundary_census"), None)
     per_phase = (census or {}).get("per_phase", {})
@@ -176,8 +176,21 @@ def main() -> int:
         for w in widths:
             print(f"| {w} | {22 if w >= 512 else 0} | {len(by_w[w])} | "
                   f"{m[w]:.1f} | {1e3 * m[w] / w:.1f} |")
-        off = [w for w in widths if w < 512]
-        on = [w for w in widths if w >= 512]
+        # The GEMM tile count in M steps at multiples of 32, so 496/504/511/512
+        # all issue ceil(M/32) = 16 tiles while 520/528 issue 17. A width above
+        # 512 therefore mixes the ladder step with a +6.25% tile step and
+        # cannot be used to price boundaries.
+        tiles = {w: -(-w // 32) for w in widths}
+        base_tiles = tiles.get(512)
+        contaminated = [w for w in widths if tiles[w] != base_tiles]
+        if contaminated:
+            print(f"\ntile counts (M/32, rounded up): "
+                  f"{ {w: tiles[w] for w in widths} }")
+            print(f"EXCLUDED from the fit -- different tile count, so the "
+                  f"arithmetic step is not smooth across them: {contaminated}")
+        off = [w for w in widths if w < 512 and tiles[w] == base_tiles]
+        on = [w for w in widths if w >= 512 and tiles[w] == base_tiles]
+        noise_band = 1e3 * (max(base_s) - min(base_s)) if whole else 0.0
         if len(off) >= 2 and on:
             n = len(off)
             sx, sy = sum(off), sum(m[w] for w in off)
@@ -190,11 +203,18 @@ def main() -> int:
                   f"+ {icept:.2f}  (from widths {off})")
             for w in on:
                 resid = m[w] - (slope * w + icept)
+                verdict = ("INSIDE the noise band -- not distinguishable "
+                           "from zero" if abs(resid) <= noise_band
+                           else "outside the noise band")
                 print(f"  width {w}: residual {resid:+.2f} ms "
-                      f"= {resid / 22:+.4f} ms per forced evaluation point")
-            print("\nA negative residual means the ladder pays for itself: "
-                  "overlapping host graph build with GPU execution wins more "
-                  "than the boundaries cost.")
+                      f"= {resid / 22:+.4f} ms per forced evaluation point "
+                      f"[{verdict}]")
+            print(f"\nbaseline noise band at width 512: {noise_band:.1f} ms")
+            print("A negative residual would mean the ladder pays for itself. "
+                  "H-221 predicts +0.35 ms per boundary, i.e. "
+                  f"{22 * H221_MS_PER_BOUNDARY:.1f} ms over 22 boundaries -- "
+                  "compare that against the noise band before believing "
+                  "either sign.")
 
     section("Rung 2 -- in-situ family tax at M=512")
     pairs: dict[str, dict[str, list[float]]] = {}
@@ -217,7 +237,7 @@ def main() -> int:
         if name == "null" or "baseline" not in arm or name not in arm:
             continue
         tax = med(arm[name]) - med(arm["baseline"]) - (null_tax or 0.0)
-        share = 100 * tax / med(w) if whole else float("nan")
+        share = 100 * tax / med(base_s) if whole else float("nan")
         print(f"| `{name}` | {-1e3 * tax:.1f} | {-share:.1f}% | |")
     print("\n`tax` is time REMOVED by pinning that family to one row, so a "
           "positive number is the family's in-situ cost at M=512.")
@@ -231,20 +251,61 @@ def main() -> int:
     for b in sorted(iso, key=lambda x: -x.get("modelled_prefill_seconds", 0)):
         ms = 1e3 * b["seconds_median"]
         mod = 1e3 * b["modelled_prefill_seconds"]
-        if b["m"] >= 512:
+        # `gate_up_fused_unused` is the 5120->34816 pack the decode path builds
+        # and prefill never calls: `Qwen35FusedMLP.callAsFunction` gates it on
+        # `x.dim(-2) <= 16`. It is measured to price the road not taken, so it
+        # must not enter the executed-path total.
+        if b["m"] >= 512 and not any(t in b["family"] for t in ("unused", "probe")):
             modelled_total += mod
         print(f"| `{b['family']}` | {b['m']} | {b['k']} | {b['n']} | "
               f"{b['layers']} | {ms:.3f} | {b['tflop_per_second']:.2f} | "
               f"{b['gb_per_second']:.1f} | {mod:.1f} |")
+    swiglu = next((b for b in blocks if b.get("kind") == "isolated_swiglu"), None)
     sdpa = next((b for b in blocks if b.get("kind") == "isolated_sdpa"), None)
     if sdpa:
         print(f"| `sdpa` | | | | {sdpa.get('layers')} | "
               f"{1e3 * sdpa['seconds_median']:.3f} | | | "
               f"{1e3 * sdpa.get('modelled_prefill_seconds', 0):.1f} |")
 
+    if swiglu:
+        section("Named lever -- the SwiGLU activation is not fused at seed width")
+        u = 1e3 * swiglu["unfused_modelled_prefill_seconds"]
+        f = 1e3 * swiglu["fused_modelled_prefill_seconds"]
+        s = 1e3 * swiglu["saving_modelled_prefill_seconds"]
+        print("`Qwen35FusedMLP.callAsFunction` gates its compiled fused form "
+              "on `x.dim(-2) <= 16`, so decode gets one launch and the "
+              "512-row seed gets `silu` then multiply with a materialized "
+              "intermediate.\n")
+        print(f"unfused, 64 layers: {u:.1f} ms")
+        print(f"fused,   64 layers: {f:.1f} ms")
+        print(f"available saving:   {s:.1f} ms")
+        if begins:
+            b0 = med([b["begin_seconds"] for b in begins
+                      if b.get("arm") == "baseline" and not b["phased"]
+                      and not b.get("stall_phase")])
+            print(f"                    = {100 * s / (1e3 * b0):.2f}% of the "
+                  "local seed prefill")
+
+    ba = next((b for b in iso if b["family"] == "gdn.in_proj_ba_fused_probe"), None)
+    b_cell = next((b for b in iso if b["family"] == "gdn.in_proj_b"), None)
+    a_cell = next((b for b in iso if b["family"] == "gdn.in_proj_a"), None)
+    if ba and b_cell and a_cell:
+        section("Named lever -- the two 5120->48 GDN projections")
+        pair = 1e3 * (b_cell["modelled_prefill_seconds"]
+                      + a_cell["modelled_prefill_seconds"])
+        fused_ba = 1e3 * ba["modelled_prefill_seconds"]
+        print(f"`in_proj_b` + `in_proj_a` as shipped: {pair:.1f} ms "
+              f"for {100 * 0.0242 / GEMM_TFLOP:.3f}% of the prefill FLOP")
+        print(f"one 5120->96 projection instead:      {fused_ba:.1f} ms")
+        print(f"available saving:                     {pair - fused_ba:.1f} ms")
+        print("\nThese two cells are inside the GEMM total, so the >=90% stop "
+              "rule still reads 'closed'. GEMM-bound is not the same as "
+              "GEMM-optimal, and this is the largest single inefficiency the "
+              "sweep found.")
+
     section("Stop rule")
     if whole and modelled_total:
-        begin_ms = 1e3 * med(w)
+        begin_ms = 1e3 * med(base_s)
         gemm_share = 100 * modelled_total / begin_ms
         print(f"end-to-end begin(): {begin_ms:.1f} ms")
         print(f"modelled GEMM sum:  {modelled_total:.1f} ms")
@@ -262,17 +323,31 @@ def main() -> int:
 
         section("Local -> ranked transfer band")
         other_ms = begin_ms - modelled_total
+        noise = 1e3 * (max(base_s) - min(base_s))
+        print(f"non-GEMM residual: {other_ms:+.1f} ms")
+        print(f"baseline noise band (max-min over {len(base_s)} unpinned reps): "
+              f"{noise:.1f} ms\n")
+        if other_ms <= noise:
+            print("The residual is inside the noise band, so the honest "
+                  "statement is a BOUND, not a value: non-GEMM work in the "
+                  f"seed prefill costs at most {max(other_ms, noise):.0f} ms, "
+                  f"i.e. at most {100 * max(other_ms, noise) / begin_ms:.1f}% "
+                  "of the local leg. Every isolated GEMM is measured with its "
+                  "own eval and no overlap, so the sum OVERSTATES in-situ GEMM "
+                  "time; that is why the residual can land at or below zero.\n")
+            other_ms = noise
         print("The stop rule is evaluated on the local number above. The "
               "ranked consequence is a different quantity, because NAX does "
-              "not accelerate every part equally.\n")
+              "not accelerate every part equally. Rows below use the BOUND.\n")
         print("| g (GEMM speedup) | n (non-GEMM speedup) | ranked non-GEMM share |")
         print("|---:|---:|---:|")
         for g, n in ((7.62, 1.0), (7.62, 1.5), (7.62, 3.0), (7.62, 7.62)):
             r = (other_ms / n) / (modelled_total / g + other_ms / n)
             print(f"| {g} | {n} | {100 * r:.1f}% |")
         print("\ng = 7.62 is the measured local-to-ranked ratio of the whole "
-              "seed leg. Only the n = g row reproduces the local share; every "
-              "other row opens prefill wider on M5 than it looks here.")
+              "seed leg. Even the worst row (NAX helps non-GEMM not at all) "
+              "leaves the ranked non-GEMM share small, because the local "
+              "non-GEMM bound is itself small.")
     return 0
 
 

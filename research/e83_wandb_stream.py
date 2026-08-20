@@ -158,6 +158,14 @@ def main() -> int:
                 row = census_row(block)
             elif kind == "ladder_step":
                 row = ladder_row(block)
+            elif kind == "isolated_swiglu":
+                row = {
+                    "swiglu/order": block.get("order"),
+                    "swiglu/unfused_ms": 1e3 * block["unfused_seconds_median"],
+                    "swiglu/fused_ms": 1e3 * block["fused_seconds_median"],
+                    "swiglu/saving_prefill_ms":
+                        1e3 * block["saving_modelled_prefill_seconds"],
+                }
             elif kind in ("isolated_quantized_matmul", "isolated_sdpa"):
                 row = isolated_row(block)
             else:
