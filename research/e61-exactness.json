@@ -1,0 +1,335 @@
+{
+  "all_three_ledgers_byte_identical": true,
+  "candidate_vs_control": {
+    "covers_changed_dispatch": true,
+    "field_first_mismatches": {
+      "accepted": [],
+      "draft_index": [],
+      "kind": [],
+      "reference_checked_by": [],
+      "reference_margin": [],
+      "reference_token": [],
+      "round": [],
+      "token": [],
+      "top2_logits": [],
+      "top2_tokens": []
+    },
+    "field_mismatch_counts": {
+      "accepted": 0,
+      "draft_index": 0,
+      "kind": 0,
+      "reference_checked_by": 0,
+      "reference_margin": 0,
+      "reference_token": 0,
+      "round": 0,
+      "token": 0,
+      "top2_logits": 0,
+      "top2_tokens": 0
+    },
+    "identical": true,
+    "max_abs_ulp_top2_logits": 0,
+    "reading": "logit-level bitwise",
+    "row_count": [
+      567,
+      567
+    ],
+    "row_population": "candidate wide-dispatch rows, mtp-verify row_ledger",
+    "shape_matches": true,
+    "widths_in_ledger": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    }
+  },
+  "coverage_limits": [
+    "M=3 was never scheduled in this trajectory, so no row exercises the M=3 cell; widths covered are [2, 4, 5, 6, 7, 8, 9].",
+    "One public fixture and one 512-token trajectory. This is exactness evidence for the rows this trajectory produced, not a proof over all inputs.",
+    "The M=6 cell is the only cell E61 changes; it carries 23 of 78 rounds here."
+  ],
+  "depth": 8,
+  "experiment": "qwen38-r1-e61-single-weight-stream-qmv-m6",
+  "gates": {
+    "all_three_ledgers_byte_identical": true,
+    "arms_provably_distinct_binaries": true,
+    "candidate_dispatch_is_live": true,
+    "candidate_identical_to_control": true,
+    "drift_control_identical": true,
+    "every_row_ledger_closes": true,
+    "m6_actually_exercised": true,
+    "max_abs_ulp_top2_logits_is_zero": true,
+    "negative_controls_all_fired": true
+  },
+  "negative_controls": {
+    "all_fired": true,
+    "cases": {
+      "acceptance_flipped_at_row_200": true,
+      "empty_ledger_is_not_a_pass": true,
+      "reference_source_changed_at_row_50": true,
+      "token_flipped_at_row_100": true,
+      "top2_logit_one_ulp_at_row_300": true,
+      "top2_token_order_swapped_at_row_400": true,
+      "truncated_ledger": true
+    }
+  },
+  "null_control_vs_drift_control": {
+    "covers_changed_dispatch": true,
+    "field_first_mismatches": {
+      "accepted": [],
+      "draft_index": [],
+      "kind": [],
+      "reference_checked_by": [],
+      "reference_margin": [],
+      "reference_token": [],
+      "round": [],
+      "token": [],
+      "top2_logits": [],
+      "top2_tokens": []
+    },
+    "field_mismatch_counts": {
+      "accepted": 0,
+      "draft_index": 0,
+      "kind": 0,
+      "reference_checked_by": 0,
+      "reference_margin": 0,
+      "reference_token": 0,
+      "round": 0,
+      "token": 0,
+      "top2_logits": 0,
+      "top2_tokens": 0
+    },
+    "identical": true,
+    "max_abs_ulp_top2_logits": 0,
+    "reading": "logit-level bitwise",
+    "row_count": [
+      567,
+      567
+    ],
+    "row_population": "candidate wide-dispatch rows, mtp-verify row_ledger",
+    "shape_matches": true,
+    "widths_in_ledger": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    }
+  },
+  "path": "PATH C only: on-path and logit-level (mtp-verify --golden row_ledger)",
+  "paths_a_b_absent": "PATH A is off-path (M=1 reference rows) and PATH B is argmax-level; PATH C strictly dominates both for this gate",
+  "provenance": {
+    "all_worker_digests_distinct": true,
+    "arms": [
+      "base",
+      "m6",
+      "base2"
+    ],
+    "arms_provably_distinct_binaries": true,
+    "binary_assert_m6_na": {
+      "base": "3",
+      "base2": "3",
+      "m6": "6"
+    },
+    "binary_assert_m9_na": {
+      "base": "5",
+      "base2": "5",
+      "m6": "5"
+    },
+    "binary_assert_wide_bound": {
+      "base": "5",
+      "base2": "5",
+      "m6": "6"
+    },
+    "candidate_dispatch_is_live": true,
+    "candidate_metallib_differs": true,
+    "candidate_tree_differs": true,
+    "control_and_drift_metallib_match": true,
+    "control_and_drift_share_a_tree": true,
+    "fields_that_must_match": {
+      "depth": true,
+      "golden_sha256": true,
+      "head_dir": true,
+      "tokens": true
+    },
+    "git_head": {
+      "base": "e2de3d48fee06609048a1a294bdaef5b5c47a5b0",
+      "base2": "6ebc0bb23aef97a634c3af75cceb9ad69eb092c3",
+      "m6": "96b424b5babd32f9b533f52019a2282ff8fbbbc7"
+    },
+    "git_tree": {
+      "base": "ee016aae5a40e9c4145d6744c640d3694c9ea564",
+      "base2": "ee016aae5a40e9c4145d6744c640d3694c9ea564",
+      "m6": "add012889090a61b653a0d280b4c63387a9d5155"
+    },
+    "metallib_sha256": {
+      "base": "9e271c6be0e500d01876729970798375f85b83c24fc8a19b66dc8424fd194242",
+      "base2": "9e271c6be0e500d01876729970798375f85b83c24fc8a19b66dc8424fd194242",
+      "m6": "1b597332b351049a3e2d39157a7ac64ce7e917e80205cfd69da759f9839e5a2e"
+    },
+    "metallib_source_fingerprint": {
+      "base": "7a1bbb06bea84acf53084ac55cb24e30950666f7f75e21a7bdb232f28c353a50",
+      "base2": "7a1bbb06bea84acf53084ac55cb24e30950666f7f75e21a7bdb232f28c353a50",
+      "m6": "d9e0bb0dba0ede38c95d40d9d6f216c49d79e96e8838c512079688ca05010d69"
+    },
+    "verify_exit": {
+      "base": "0",
+      "base2": "0",
+      "m6": "0"
+    },
+    "worker_sha256": {
+      "base": "04fe93d654f51add6afa82261c15d49fab6c140f2256efc0559dfae703d5941c",
+      "base2": "1e772f924429f8235c4c1b7ebb84464aa6c9f0cf830dffe09aae494f6d114cd4",
+      "m6": "c1c9ef049719491cf97ed68539c4ddf6e08b22359979719cf32f3452f2132735"
+    },
+    "worker_text_sha256": {
+      "base": "5ea9a67097461877276f9d105870f161cdffed2c9fac6e3fb59d642ee25fd2cc",
+      "base2": "0c32879ade10889a72264e71b389e29daf3cda9b4617f3177e437e3256596e29",
+      "m6": "5ea9a67097461877276f9d105870f161cdffed2c9fac6e3fb59d642ee25fd2cc"
+    },
+    "worker_text_sha256_is_reproducible": false,
+    "worker_text_sha256_used_as_gate": false
+  },
+  "row_ledger_closure": {
+    "base": {
+      "accepted_draft_total": 434,
+      "all_tokens_matched": true,
+      "closes": true,
+      "declared_equals_rounds_plus_drafts": true,
+      "declared_rows_total": 567,
+      "decode_token_count": 512,
+      "emitted_token_total": 512,
+      "eos_present_in_ledger": true,
+      "eos_row_indices": [
+        308,
+        314
+      ],
+      "every_row_reference_checked": true,
+      "kinds": [
+        "draft",
+        "targetTail"
+      ],
+      "parity_all_ok": true,
+      "reference_checked_by": [
+        "serial_golden",
+        "verify_block_replay"
+      ],
+      "reference_checked_row_total": 567,
+      "rejected_draft_total": 55,
+      "rejected_rows_reference_checked": 55,
+      "residual_divergence_count": 0,
+      "round_count": 78,
+      "rows": 567,
+      "rows_equal_declared": true,
+      "window_closed_at_512": true
+    },
+    "base2": {
+      "accepted_draft_total": 434,
+      "all_tokens_matched": true,
+      "closes": true,
+      "declared_equals_rounds_plus_drafts": true,
+      "declared_rows_total": 567,
+      "decode_token_count": 512,
+      "emitted_token_total": 512,
+      "eos_present_in_ledger": true,
+      "eos_row_indices": [
+        308,
+        314
+      ],
+      "every_row_reference_checked": true,
+      "kinds": [
+        "draft",
+        "targetTail"
+      ],
+      "parity_all_ok": true,
+      "reference_checked_by": [
+        "serial_golden",
+        "verify_block_replay"
+      ],
+      "reference_checked_row_total": 567,
+      "rejected_draft_total": 55,
+      "rejected_rows_reference_checked": 55,
+      "residual_divergence_count": 0,
+      "round_count": 78,
+      "rows": 567,
+      "rows_equal_declared": true,
+      "window_closed_at_512": true
+    },
+    "m6": {
+      "accepted_draft_total": 434,
+      "all_tokens_matched": true,
+      "closes": true,
+      "declared_equals_rounds_plus_drafts": true,
+      "declared_rows_total": 567,
+      "decode_token_count": 512,
+      "emitted_token_total": 512,
+      "eos_present_in_ledger": true,
+      "eos_row_indices": [
+        308,
+        314
+      ],
+      "every_row_reference_checked": true,
+      "kinds": [
+        "draft",
+        "targetTail"
+      ],
+      "parity_all_ok": true,
+      "reference_checked_by": [
+        "serial_golden",
+        "verify_block_replay"
+      ],
+      "reference_checked_row_total": 567,
+      "rejected_draft_total": 55,
+      "rejected_rows_reference_checked": 55,
+      "residual_divergence_count": 0,
+      "round_count": 78,
+      "rows": 567,
+      "rows_equal_declared": true,
+      "window_closed_at_512": true
+    }
+  },
+  "tokens": 512,
+  "verdict": "EXACT",
+  "whole_file_sha256": {
+    "base": "a1044f14dcd6d24d7259357b54eda48170321b8fd7943746a84f6468a04acc98",
+    "base2": "a1044f14dcd6d24d7259357b54eda48170321b8fd7943746a84f6468a04acc98",
+    "m6": "a1044f14dcd6d24d7259357b54eda48170321b8fd7943746a84f6468a04acc98"
+  },
+  "width_census_candidate": {
+    "round_count": 78,
+    "rounds_by_width": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    },
+    "rows_by_width": {
+      "2": 2,
+      "4": 20,
+      "5": 25,
+      "6": 138,
+      "7": 28,
+      "8": 48,
+      "9": 306
+    },
+    "widths_exercised": [
+      2,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "widths_not_exercised": [
+      3
+    ]
+  }
+}

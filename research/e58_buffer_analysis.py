@@ -25,6 +25,11 @@ RANKED = {
 # below is kept so this module's published arithmetic stays reproducible; import
 # research/ranked_noise.py for any NEW ranked pricing.
 RANKED_MDE_PERCENT = 0.283
+# RETRACTED by ledger 198(G), confirmed by 202. 0.0629 is ONE adjacent-leg
+# same-arm spread, not a null floor. The local null is not monotone in leg
+# separation and it is host- and session-specific; measured same-arm spreads run
+# to 0.2835 %. Kept so this module's published arithmetic stays reproducible.
+# For a NEW decision, take the largest same-arm spread inside your own session.
 LOCAL_NULL_FLOOR_PERCENT = 0.0629
 
 DECODE_TOKENS = 512

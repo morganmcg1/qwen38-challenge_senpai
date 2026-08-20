@@ -1,0 +1,767 @@
+{
+  "arms": {
+    "ballast": {
+      "delta_pct_vs_shipped": 0.38039793084195545,
+      "mean": 0.16462749245,
+      "registers": 144,
+      "spread_pct": 0.19231642011198735,
+      "tags": [
+        "e1",
+        "e2"
+      ],
+      "values": [
+        0.16478579529999998,
+        0.1644691896
+      ]
+    },
+    "shipped": {
+      "delta_pct_vs_shipped": 0.0,
+      "mean": 0.16400362605000002,
+      "registers": 129,
+      "spread_pct": 0.12921086265214038,
+      "tags": [
+        "d1",
+        "d2"
+      ],
+      "values": [
+        0.1638976708,
+        0.1641095813
+      ]
+    },
+    "shipped_rbx": {
+      "delta_pct_vs_shipped": -2.728831311714784,
+      "mean": 0.15952824375,
+      "registers": 125,
+      "spread_pct": 0.0017225162989287846,
+      "tags": [
+        "f1",
+        "f2"
+      ],
+      "values": [
+        0.1595268698,
+        0.1595296177
+      ]
+    },
+    "t6_rbx": {
+      "delta_pct_vs_shipped": -2.586151905389537,
+      "mean": 0.15976224315,
+      "registers": 145,
+      "spread_pct": 0.08231838600097292,
+      "tags": [
+        "g1",
+        "g2"
+      ],
+      "values": [
+        0.15982800000000003,
+        0.1596964863
+      ]
+    }
+  },
+  "cool_gate_passed_real_gate": true,
+  "gate_qualified_for_timing": false,
+  "inner_calls": 10,
+  "legs": {
+    "d1": {
+      "entry_temp_c": 39.89253234863281,
+      "exit_temp_c": 57.296451568603516,
+      "measured_commit": "1d4fc3b6cc9084482d7e562924e8ce86a9fc3e13",
+      "shapes": [
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.in_proj_fused_qkvzba",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005408625,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.out_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002350917,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.qkv_proj_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00047720419999999997,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.o_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002353875,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.gate_up_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0010848917,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.down",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005989791000000001,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 1,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.lm_head",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0074826708000000006,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 0,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.compact_draft_vocab",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0029776583,
+          "weight_streams": 2
+        }
+      ],
+      "source_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "ec5ec4b330682738cf8515bb454d3bdfca4f455fe4ca0afe5a1c69dd4fa8cc50",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "ff35a0f9fcef99a24d03fe7b00d71f0fac56ac340c2d87ac71a64b043f9e62b8"
+      },
+      "tag": "d1",
+      "verify_seconds_m9": 0.1638976708
+    },
+    "d2": {
+      "entry_temp_c": 40.04819107055664,
+      "exit_temp_c": 55.27900695800781,
+      "measured_commit": "11df49a71aee475e5ef85d15ea46b57918472578",
+      "shapes": [
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.in_proj_fused_qkvzba",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005418167,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.out_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002362167,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.qkv_proj_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0004771333,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.o_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002357583,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.gate_up_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0010848709,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.down",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0006006916,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 1,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.lm_head",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0074817124999999995,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 0,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.compact_draft_vocab",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0029777125,
+          "weight_streams": 2
+        }
+      ],
+      "source_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "ec5ec4b330682738cf8515bb454d3bdfca4f455fe4ca0afe5a1c69dd4fa8cc50",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "ff35a0f9fcef99a24d03fe7b00d71f0fac56ac340c2d87ac71a64b043f9e62b8"
+      },
+      "tag": "d2",
+      "verify_seconds_m9": 0.1641095813
+    },
+    "e1": {
+      "entry_temp_c": 39.9948616027832,
+      "exit_temp_c": 54.98794937133789,
+      "measured_commit": "f76e9af59aa69bb0c5c4c8d669942f0b5617aa0e",
+      "shapes": [
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.in_proj_fused_qkvzba",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.000547475,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.out_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002380333,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.qkv_proj_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00047903340000000005,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.o_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00023638750000000002,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.gate_up_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.001089475,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.down",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005999250000000001,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 1,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.lm_head",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.007513062500000001,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 0,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.compact_draft_vocab",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0029902208,
+          "weight_streams": 2
+        }
+      ],
+      "source_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "ee1e14ae42dec896940dd548e449316206da0c2c1bf8afb37b596c4453760c19",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "7801ccd73abc7fa6ddd3b31b72b9b7b313fd13563b0c7af8ff985a90bcd3ff36"
+      },
+      "tag": "e1",
+      "verify_seconds_m9": 0.16478579529999998
+    },
+    "e2": {
+      "entry_temp_c": 40.02265930175781,
+      "exit_temp_c": 54.73831558227539,
+      "measured_commit": "2fcf1d1da396cbaa0c95ee4d7b7517bcf3a22b84",
+      "shapes": [
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.in_proj_fused_qkvzba",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00054325,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.out_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00023644999999999997,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.qkv_proj_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00047900829999999995,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.o_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002360917,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.gate_up_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0010895125000000001,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.down",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005993833,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 1,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.lm_head",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0075126583999999995,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 0,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.compact_draft_vocab",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0029899042,
+          "weight_streams": 2
+        }
+      ],
+      "source_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "ee1e14ae42dec896940dd548e449316206da0c2c1bf8afb37b596c4453760c19",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "7801ccd73abc7fa6ddd3b31b72b9b7b313fd13563b0c7af8ff985a90bcd3ff36"
+      },
+      "tag": "e2",
+      "verify_seconds_m9": 0.1644691896
+    },
+    "f1": {
+      "entry_temp_c": 39.96023941040039,
+      "exit_temp_c": 54.45439147949219,
+      "measured_commit": "5ee3698a5ee927d8c76dea0e354906ba64abd85b",
+      "shapes": [
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.in_proj_fused_qkvzba",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005263709,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.out_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00023001250000000001,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.qkv_proj_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00046442499999999997,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.o_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00022947499999999998,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.gate_up_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.001053875,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.down",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005844125,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 1,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.lm_head",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0072676666,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 0,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.compact_draft_vocab",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0028931,
+          "weight_streams": 2
+        }
+      ],
+      "source_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "aaef73eab26b1d866bb6c935845bee6615861ecfd72a3386e475fef912c0b565",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "d048528c226d77edffe3258ea2aec1785e0eba151b2e71b5cd7d94fb7c9c917a"
+      },
+      "tag": "f1",
+      "verify_seconds_m9": 0.1595268698
+    },
+    "f2": {
+      "entry_temp_c": 40.0215950012207,
+      "exit_temp_c": 65.08244323730469,
+      "measured_commit": "bcc9174c8caf70fb7261834bd475050b465dc86d",
+      "shapes": [
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.in_proj_fused_qkvzba",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005267875,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.out_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002302625,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.qkv_proj_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00046512919999999996,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.o_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002296042,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.gate_up_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0010545374999999999,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.down",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005830625,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 1,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.lm_head",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0072690833,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 0,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.compact_draft_vocab",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0028934792,
+          "weight_streams": 2
+        }
+      ],
+      "source_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "aaef73eab26b1d866bb6c935845bee6615861ecfd72a3386e475fef912c0b565",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "d048528c226d77edffe3258ea2aec1785e0eba151b2e71b5cd7d94fb7c9c917a"
+      },
+      "tag": "f2",
+      "verify_seconds_m9": 0.1595296177
+    },
+    "g1": {
+      "entry_temp_c": 39.94645309448242,
+      "exit_temp_c": 64.33235168457031,
+      "measured_commit": "590edc435d1ee0c20b03ac7f84d97f97e11d7ef9",
+      "shapes": [
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.in_proj_fused_qkvzba",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005277625,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.out_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00023040830000000003,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.qkv_proj_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0004660708,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.o_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00023046249999999997,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.gate_up_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0010553833000000001,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.down",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005855084,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 1,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.lm_head",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0072742,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 0,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.compact_draft_vocab",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0028965292,
+          "weight_streams": 2
+        }
+      ],
+      "source_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "73055628d8c8053b06cf682b0813f55e6b2cc6232f8eab949e7bb2c39ab0b2a7",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "ade53f897f1909e5ee5d7c01d390e8251cd4bdaf9b9aad8f1291bea4d2da6826"
+      },
+      "tag": "g1",
+      "verify_seconds_m9": 0.15982800000000003
+    },
+    "g2": {
+      "entry_temp_c": 39.95223617553711,
+      "exit_temp_c": 65.77680969238281,
+      "measured_commit": "5988035ceecc161d6f85dd50df2c0ce230e8eaec",
+      "shapes": [
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.in_proj_fused_qkvzba",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005265,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 48,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "linear_attn.out_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.000229825,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.qkv_proj_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.00046438750000000003,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 16,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "full_attn.o_proj",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0002289916,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.gate_up_fused",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0010554875,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 64,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "mlp.down",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0005855291,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 1,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.lm_head",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0072737583,
+          "weight_streams": 2
+        },
+        {
+          "calls_per_verify": 0,
+          "in_kernel_path": "qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>",
+          "inputs_per_group": 5,
+          "name": "head.compact_draft_vocab",
+          "row0_bitwise_matches_m1": true,
+          "seconds_per_call": 0.0028960625,
+          "weight_streams": 2
+        }
+      ],
+      "source_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "73055628d8c8053b06cf682b0813f55e6b2cc6232f8eab949e7bb2c39ab0b2a7",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "ade53f897f1909e5ee5d7c01d390e8251cd4bdaf9b9aad8f1291bea4d2da6826"
+      },
+      "tag": "g2",
+      "verify_seconds_m9": 0.1596964863
+    }
+  },
+  "official_or_ranked_score": false,
+  "order": [
+    "d1",
+    "e1",
+    "f1",
+    "g1",
+    "g2",
+    "f2",
+    "e2",
+    "d2"
+  ],
+  "reps": 21,
+  "routing_matches_shipped": {
+    "ballast": true,
+    "shipped": true,
+    "shipped_rbx": true,
+    "t6_rbx": true
+  },
+  "session": "e61-rung1b-register-dose-response",
+  "session_null_pct_same_arm_two_apart": 0.12921086265214038,
+  "widths": 9,
+  "wired_residency_active": false
+}
