@@ -23,7 +23,7 @@ import pathlib
 import collections
 import re
 
-sys.path.insert(0, "/tmp")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import e80_census_report as R
 
 SHORT = (
