@@ -46,9 +46,13 @@ LOCAL_TOTAL_ROUNDS = sum(LOCAL_ROUNDS.values())
 RANKED_SHARE_PCT = {4: 14.2, 5: 24.1, 6: 33.4, 7: 12.2, 8: 7.35, 9: 5.75}
 
 
-def arm_ipg(arm: str, m: int, n: int) -> int:
-    """The IPG an arm selects for width `m` at out_vec_size `n`."""
+def arm_ipg(arm: str, m: int, n: int, k: int) -> int:
+    """The IPG an arm selects for width `m` at out_vec_size `n`, in_vec_size `k`."""
     ship = SHIPPED[m]
+    if arm == "kdown_8192":
+        # Splits at M = 6 only, and only for the one cell rung 2a measured
+        # faster at two groups. Every other width and shape keeps the base.
+        return 3 if (m == 6 and k >= 8192) else ship
     if m not in MOVED_WIDTHS:
         return ship
     crown = CROWN[m]
@@ -67,6 +71,7 @@ ARMS = {
     "b_crown": "the promoted crown's table, IPG 3 at M = 5, 6 and 9",
     "hybrid_24928": "c_hybrid24928: crown IPG below out_vec_size 24928",
     "hybrid_8192": "d_hybrid8192: crown IPG below out_vec_size 8192",
+    "kdown_8192": "e_kdown: IPG 3 at M = 6 when in_vec_size >= 8192",
 }
 
 
@@ -88,7 +93,8 @@ def main() -> int:
     def round_ms(arm: str, m: int) -> float | None:
         total = 0.0
         for shape, calls in CELL_CALLS.items():
-            found = cell.get((shape, m, arm_ipg(arm, m, shape_n[shape])))
+            found = cell.get(
+                (shape, m, arm_ipg(arm, m, shape_n[shape], shape_k[shape])))
             if found is None:
                 return None
             total += calls * found["seconds_per_dispatch"]["mean"]

@@ -21,6 +21,7 @@ Negative is faster. Only M = 5, 6 and 9 move, so every other width cancels exact
 | b_crown | +12.6354 | +8.6655 |
 | hybrid_24928 | +5.4235 | +3.3556 |
 | hybrid_8192 | +2.5421 | +1.2679 |
+| kdown_8192 | -0.7189 | -0.8395 |
 | oracle_k_and_m | -0.7189 | -0.8395 |
 
 ## Can out_vec_size separate the cells that want IPG 3?

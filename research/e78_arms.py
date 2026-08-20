@@ -59,6 +59,7 @@ BASE_SHA = "8d938c911df52b6a324f259a55dbaa75e508c822"
 CROWN_SHA = "bfab0de58d43453e506523707e1720a3485570f4"
 
 CUTOFF_NAME = "kQmvNarrowOutVecCutoff"
+IN_CUTOFF_NAME = "kQmvSplitInVecCutoff"
 
 LANE_WRITE = """        a0[m] = xc[0];
         a1[m] = xc[1];
@@ -109,7 +110,8 @@ def swap_ipg(text: str, m: int, ipg: int) -> str:
     return pat.sub(lambda mo: call_block(mo.group(1), m, ipg), text, count=1)
 
 
-def split_ipg(text: str, m: int, wide_ipg: int, narrow_ipg: int) -> str:
+def split_ipg(text: str, m: int, wide_ipg: int, narrow_ipg: int,
+              var: str = "out_vec_size", name: str = CUTOFF_NAME) -> str:
     pat = re.compile(CALL_RE % m)
     hits = pat.findall(text)
     if len(hits) != 1:
@@ -120,8 +122,8 @@ def split_ipg(text: str, m: int, wide_ipg: int, narrow_ipg: int) -> str:
         indent = mo.group(1)
         inner = indent + "  "
         return (
-            "%sif (out_vec_size >= %s) {\n%s\n%s} else {\n%s\n%s}"
-            % (indent, CUTOFF_NAME,
+            "%sif (%s >= %s) {\n%s\n%s} else {\n%s\n%s}"
+            % (indent, var, name,
                call_block(inner, m, wide_ipg), indent,
                call_block(inner, m, narrow_ipg), indent)
         )
@@ -129,10 +131,10 @@ def split_ipg(text: str, m: int, wide_ipg: int, narrow_ipg: int) -> str:
     return pat.sub(repl, text, count=1)
 
 
-def set_cutoff(text: str, cutoff: int) -> str:
+def set_cutoff(text: str, cutoff: int, name: str = CUTOFF_NAME) -> str:
     if text.count(SWITCH_ANCHOR) != 1:
         raise SystemExit("e78_arms: wide-branch switch anchor not unique")
-    return text.replace(SWITCH_ANCHOR, CUTOFF_BLOCK % (CUTOFF_NAME, cutoff))
+    return text.replace(SWITCH_ANCHOR, CUTOFF_BLOCK % (name, cutoff))
 
 
 def perturb_lanes(text: str) -> str:
@@ -179,6 +181,16 @@ ARMS: dict[str, dict] = {
         "narrow_cells": dict(CROWN_CELLS),
         "cutoff": 8192,
     },
+    "e_kdown": {
+        "doc": "IPG conditioned on in_vec_size at 8192, at M=6 only: mlp.down "
+               "takes IPG 3, every other shape keeps the base IPG 6. M=5 and "
+               "M=9 are untouched.",
+        "cells": {6: 3},
+        "narrow_cells": {6: 6},
+        "cutoff": 8192,
+        "cutoff_var": "in_vec_size",
+        "cutoff_name": IN_CUTOFF_NAME,
+    },
     "c_perturb": {
         "doc": "positive control: arm C with rows 3 and 4 swapped between "
                "accumulator lanes in every NA=5 group",
@@ -206,9 +218,11 @@ def apply_arm(path: str, name: str) -> str:
         return base_text(path, arm["checkout"])
     text = base_text(path, BASE_SHA)
     if arm["cutoff"] is not None:
-        text = set_cutoff(text, arm["cutoff"])
+        var = arm.get("cutoff_var", "out_vec_size")
+        name = arm.get("cutoff_name", CUTOFF_NAME)
+        text = set_cutoff(text, arm["cutoff"], name)
         for m, wide in sorted(arm["cells"].items()):
-            text = split_ipg(text, m, wide, arm["narrow_cells"][m])
+            text = split_ipg(text, m, wide, arm["narrow_cells"][m], var, name)
     else:
         for m, ipg in sorted(arm["cells"].items()):
             text = swap_ipg(text, m, ipg)

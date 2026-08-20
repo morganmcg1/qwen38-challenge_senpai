@@ -31,7 +31,7 @@ ARMS = pathlib.Path(".mlxfast-private/e78/arms")
 
 # tag -> (arm, position group). `warm` is declared discarded and never enters a
 # contrast.
-LAYOUT = {
+LAYOUT_2B = {
     "a1": ("a_ship", "early"),
     "b1": ("b_crown", "early"),
     "c1": ("c_hybrid24928", "early"),
@@ -41,6 +41,12 @@ LAYOUT = {
     "b2": ("b_crown", "late"),
     "a2": ("a_ship", "late"),
 }
+LAYOUT_3 = {
+    "a1": ("a_ship", "early"),
+    "e1": ("e_kdown", "early"),
+    "e2": ("e_kdown", "late"),
+    "a2": ("a_ship", "late"),
+}
 BASELINE_ARM = "a_ship"
 PRIMARY = "mtp_seconds_per_token"
 SECONDARY = ("serial_seconds_per_token", "mtp_decode_speedup",
@@ -48,7 +54,7 @@ SECONDARY = ("serial_seconds_per_token", "mtp_decode_speedup",
 
 # The arm ladder is the per-family-group attribution: each step adds exactly one
 # family group to the set that runs at IPG 3.
-LADDER = (
+LADDER_2B = (
     ("d_hybrid8192 - a_ship", "d_hybrid8192", "a_ship",
      "n=5120: mlp.down, linear_attn.out_proj, full_attn.o_proj"),
     ("c_hybrid24928 - d_hybrid8192", "c_hybrid24928", "d_hybrid8192",
@@ -58,6 +64,15 @@ LADDER = (
     ("b_crown - c_hybrid24928", "b_crown", "c_hybrid24928",
      "n=34816 mlp.gate_up, n=248320 lm_head"),
 )
+LADDER_3 = (
+    ("e_kdown - a_ship", "e_kdown", "a_ship",
+     "M=6 only, in_vec_size >= 8192: mlp.down alone moves to IPG 3"),
+)
+
+RUNGS = {
+    "2b": (LAYOUT_2B, LADDER_2B),
+    "3": (LAYOUT_3, LADDER_3),
+}
 
 
 def read_meta(path: pathlib.Path) -> dict[str, str]:
@@ -84,9 +99,9 @@ def width_histogram(report: pathlib.Path) -> dict[str, int] | None:
     return {str(k): counts[k] for k in sorted(counts)}
 
 
-def collect() -> dict:
+def collect(layout: dict) -> dict:
     groups: dict[str, dict] = {}
-    for tag, (arm, position) in LAYOUT.items():
+    for tag, (arm, position) in layout.items():
         run_dir = RUNS / tag
         meta = read_meta(run_dir / "meta.txt")
         scores = sorted(run_dir.glob("score-*.json"))
@@ -133,9 +148,11 @@ def mean(values: list[float]) -> float | None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="research/e78-artifacts/rung2b.json")
+    ap.add_argument("--rung", default="2b", choices=sorted(RUNGS))
     args = ap.parse_args()
 
-    groups = collect()
+    layout, ladder = RUNGS[args.rung]
+    groups = collect(layout)
     missing = [tag for tag, g in groups.items() if not g["legs"]]
 
     per_arm: dict[str, list[float]] = collections.defaultdict(list)
@@ -191,10 +208,10 @@ def main() -> None:
             **{key: mean(vals) for key, vals in secondary[arm].items()},
         }
 
-    ladder = []
-    for name, high, low, families in LADDER:
+    ladder_rows = []
+    for name, high, low, families in ladder:
         a, b = mean(per_arm.get(high, [])), mean(per_arm.get(low, []))
-        ladder.append({
+        ladder_rows.append({
             "step": name,
             "families": families,
             "delta_seconds_per_token": None if a is None or b is None
@@ -204,8 +221,7 @@ def main() -> None:
         })
 
     candidates = {arm: arms[arm]["delta_vs_baseline"]
-                  for arm in ("b_crown", "c_hybrid24928", "d_hybrid8192")
-                  if arm in arms}
+                  for arm in arms if arm != BASELINE_ARM}
     threshold = None if session_null is None else 2.0 * session_null
     winners = [] if threshold is None else [
         arm for arm, delta in candidates.items()
@@ -242,7 +258,7 @@ def main() -> None:
         "session_null_by_arm": nulls,
         "useful_effect_threshold_seconds_per_token": threshold,
         "arms": arms,
-        "ladder": ladder,
+        "ladder": ladder_rows,
         "winners": winners,
         "checks": checks,
         "missing_groups": missing,

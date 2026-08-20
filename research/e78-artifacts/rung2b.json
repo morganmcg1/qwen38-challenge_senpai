@@ -1,0 +1,764 @@
+{
+  "experiment": "e78",
+  "rung": "2b",
+  "harness": "local",
+  "host_chip": "Apple M4 Pro",
+  "head_sha": "828c2822db7675b1ffeedd00764b492528b355a7",
+  "primary_metric": "mtp_seconds_per_token",
+  "primary_metric_direction": "minimize",
+  "baseline_arm": "a_ship",
+  "baseline_seconds_per_token": 0.031472862348891795,
+  "session_null_seconds_per_token": 3.956432919949293e-05,
+  "session_null_by_arm": {
+    "a_ship": 3.867084160447121e-06,
+    "b_crown": 3.956432919949293e-05,
+    "c_hybrid24928": 2.6595545932650566e-05,
+    "d_hybrid8192": 1.0698102414608002e-05
+  },
+  "useful_effect_threshold_seconds_per_token": 7.912865839898586e-05,
+  "arms": {
+    "a_ship": {
+      "legs": 4,
+      "mtp_seconds_per_token": 0.031472862348891795,
+      "mtp_seconds_per_token_min": 0.031439716927707195,
+      "mtp_seconds_per_token_max": 0.03150214068591595,
+      "mtp_seconds_per_token_stdev": 2.5711558684857415e-05,
+      "delta_vs_baseline": 0.0,
+      "pct_vs_baseline": 0.0,
+      "session_null": 3.867084160447121e-06,
+      "serial_seconds_per_token": 0.07328410545596853,
+      "mtp_decode_speedup": 2.328486210415737,
+      "effective_mean_draft_len": 6.269230769230769,
+      "accepted_draft_rate": 0.8875255623721882
+    },
+    "b_crown": {
+      "legs": 4,
+      "mtp_seconds_per_token": 0.0333908848115243,
+      "mtp_seconds_per_token_min": 0.03336999821476638,
+      "mtp_seconds_per_token_max": 0.03341560950502753,
+      "mtp_seconds_per_token_stdev": 2.3213737812722125e-05,
+      "delta_vs_baseline": 0.001918022462632507,
+      "pct_vs_baseline": 6.0942104387275196,
+      "session_null": 3.956432919949293e-05,
+      "serial_seconds_per_token": 0.07336682232562453,
+      "mtp_decode_speedup": 2.1972123501769163,
+      "effective_mean_draft_len": 6.269230769230769,
+      "accepted_draft_rate": 0.8875255623721882
+    },
+    "c_hybrid24928": {
+      "legs": 4,
+      "mtp_seconds_per_token": 0.03234717284794897,
+      "mtp_seconds_per_token_min": 0.032328695291653275,
+      "mtp_seconds_per_token_max": 0.03239224595017731,
+      "mtp_seconds_per_token_stdev": 3.0232114466698674e-05,
+      "delta_vs_baseline": 0.0008743104990571737,
+      "pct_vs_baseline": 2.777982152894204,
+      "session_null": 2.6595545932650566e-05,
+      "serial_seconds_per_token": 0.07330780703341588,
+      "mtp_decode_speedup": 2.2662821883219864,
+      "effective_mean_draft_len": 6.269230769230769,
+      "accepted_draft_rate": 0.8875255623721882
+    },
+    "d_hybrid8192": {
+      "legs": 4,
+      "mtp_seconds_per_token": 0.03193666262086481,
+      "mtp_seconds_per_token_min": 0.031903572380542755,
+      "mtp_seconds_per_token_max": 0.031959054758772254,
+      "mtp_seconds_per_token_stdev": 2.395854596622546e-05,
+      "delta_vs_baseline": 0.0004638002719730139,
+      "pct_vs_baseline": 1.4736513852205912,
+      "session_null": 1.0698102414608002e-05,
+      "serial_seconds_per_token": 0.07331719092326239,
+      "mtp_decode_speedup": 2.2957055072727304,
+      "effective_mean_draft_len": 6.269230769230769,
+      "accepted_draft_rate": 0.8875255623721882
+    }
+  },
+  "ladder": [
+    {
+      "step": "d_hybrid8192 - a_ship",
+      "families": "n=5120: mlp.down, linear_attn.out_proj, full_attn.o_proj",
+      "delta_seconds_per_token": 0.0004638002719730139,
+      "pct_of_baseline": 1.4736513852205912
+    },
+    {
+      "step": "c_hybrid24928 - d_hybrid8192",
+      "families": "n=14336 qkv_proj and n=16480 linear_attn.in_proj",
+      "delta_seconds_per_token": 0.00041051022708415985,
+      "pct_of_baseline": 1.304330767673613
+    },
+    {
+      "step": "b_crown - c_hybrid24928",
+      "families": "n=34816 mlp.gate_up, n=248320 lm_head",
+      "delta_seconds_per_token": 0.0010437119635753334,
+      "pct_of_baseline": 3.3162282858333154
+    }
+  ],
+  "winners": [],
+  "checks": {
+    "all_groups_measured": true,
+    "all_tokens_matched": true,
+    "width_histogram_identical_across_arms": true,
+    "baseline_present": true,
+    "session_null_present": true
+  },
+  "missing_groups": [],
+  "unmatched_legs": [],
+  "width_histograms_seen": [
+    {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    }
+  ],
+  "gate_qualified_for_timing": false,
+  "cool_gate_passed_real_gate": false,
+  "official_or_ranked_score": false,
+  "verdict": "not useful",
+  "groups": {
+    "a1": {
+      "arm": "a_ship",
+      "position": "early",
+      "legs": [
+        {
+          "index": 1,
+          "metrics": {
+            "mtp_seconds_per_token": 0.031439716927707195,
+            "serial_seconds_per_token": 0.07325254497118294,
+            "mtp_decode_speedup": 2.329936530269041,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=63.575538635253906C cpu_temp=45.939697265625C gpu_power=0.015055084601044655W"
+        },
+        {
+          "index": 2,
+          "metrics": {
+            "mtp_seconds_per_token": 0.03150214068591595,
+            "serial_seconds_per_token": 0.07329937303438783,
+            "mtp_decode_speedup": 2.3268060975665277,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=64.43315887451172C cpu_temp=46.1039924621582C gpu_power=0.01891319453716278W"
+        }
+      ],
+      "thermal_before": "gpu_temp=50.93854904174805C cpu_temp=48.54007339477539C gpu_power=0.011142832227051258W",
+      "thermal_after": "gpu_temp=62.48684310913086C cpu_temp=45.70572280883789C gpu_power=0.016953755170106888W",
+      "cool_gate_requested": "false",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "worker_sha256": "1a3c73ed77cc2617ffd78bdda967bb5067f4e80ef19d1ba3839a1f881af39676",
+      "metallib_fingerprint": "f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe",
+      "twin_digests": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5 c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+      "dispatch": {
+        "e78_binary_assert_m3_ipgs": "3",
+        "e78_binary_assert_m4_ipgs": "4",
+        "e78_binary_assert_m5_ipgs": "5",
+        "e78_binary_assert_m6_ipgs": "6",
+        "e78_binary_assert_m7_ipgs": "4",
+        "e78_binary_assert_m8_ipgs": "4",
+        "e78_binary_assert_m9_ipgs": "5",
+        "e78_binary_assert_wide_bound": "6",
+        "e78_binary_assert_cutoff": "none",
+        "e78_binary_assert_lane_perturb_copies": "0",
+        "e78_binary_assert_worker_text_sha256": "ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec",
+        "e78_binary_assert_worker_cstring_sha256": "d52a9ba63b9b2a2e1443d91263eabee8eb456db3298ea0cebfca74929f13f01e"
+      },
+      "wandb": {
+        "id": "tckwkh54",
+        "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tckwkh54",
+        "group": "e78-width-dependent-inner-group-count",
+        "name": "e78-a1",
+        "arm": "a_ship",
+        "discarded_warmup": false
+      }
+    },
+    "b1": {
+      "arm": "b_crown",
+      "position": "early",
+      "legs": [
+        {
+          "index": 1,
+          "metrics": {
+            "mtp_seconds_per_token": 0.033405724447220564,
+            "serial_seconds_per_token": 0.07329038670286536,
+            "mtp_decode_speedup": 2.1939469332168096,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=63.722740173339844C cpu_temp=45.9077262878418C gpu_power=0.01399859506636858W"
+        },
+        {
+          "index": 2,
+          "metrics": {
+            "mtp_seconds_per_token": 0.03341560950502753,
+            "serial_seconds_per_token": 0.07338276179507375,
+            "mtp_decode_speedup": 2.196062345773851,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=64.22542572021484C cpu_temp=46.05929183959961C gpu_power=0.016622450202703476W"
+        }
+      ],
+      "thermal_before": "gpu_temp=50.68110275268555C cpu_temp=42.78834533691406C gpu_power=0.012183597311377525W",
+      "thermal_after": "gpu_temp=62.2872428894043C cpu_temp=45.6569938659668C gpu_power=0.016405239701271057W",
+      "cool_gate_requested": "false",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "worker_sha256": "35e72c253f6428b9ec092d0239ae69ae46110413726ff7ed80656b3426d5fa7a",
+      "metallib_fingerprint": "c1739218181272ca50e882e957ede54658fded96f138cc0a80e8c06d9813b62b",
+      "twin_digests": "3043807bd239241bb9e68cfa0b3f9954725018bf474443ed96468fa6a64ef02f c127aa992f0807621d7c94a5b1934eaba11cccbb9ca5e68544bf20428abb44c4",
+      "dispatch": {
+        "e78_binary_assert_m3_ipgs": "3",
+        "e78_binary_assert_m4_ipgs": "4",
+        "e78_binary_assert_m5_ipgs": "3",
+        "e78_binary_assert_m6_ipgs": "3",
+        "e78_binary_assert_m7_ipgs": "4",
+        "e78_binary_assert_m8_ipgs": "4",
+        "e78_binary_assert_m9_ipgs": "3",
+        "e78_binary_assert_wide_bound": "6",
+        "e78_binary_assert_cutoff": "none",
+        "e78_binary_assert_lane_perturb_copies": "0",
+        "e78_binary_assert_worker_text_sha256": "ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec",
+        "e78_binary_assert_worker_cstring_sha256": "548ecb1516886d562df7d5ae27c39d1ef6612ae54b5f038aee580321659d5bc0"
+      },
+      "wandb": {
+        "id": "0kliz8mn",
+        "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0kliz8mn",
+        "group": "e78-width-dependent-inner-group-count",
+        "name": "e78-b1",
+        "arm": "b_crown",
+        "discarded_warmup": false
+      }
+    },
+    "c1": {
+      "arm": "c_hybrid24928",
+      "position": "early",
+      "legs": [
+        {
+          "index": 1,
+          "metrics": {
+            "mtp_seconds_per_token": 0.03239224595017731,
+            "serial_seconds_per_token": 0.07337198033928871,
+            "mtp_decode_speedup": 2.2651093861210656,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=63.28001403808594C cpu_temp=45.8109130859375C gpu_power=0.01587119698524475W"
+        },
+        {
+          "index": 2,
+          "metrics": {
+            "mtp_seconds_per_token": 0.032328695291653275,
+            "serial_seconds_per_token": 0.07322555454447865,
+            "mtp_decode_speedup": 2.265032779203566,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=64.05892944335938C cpu_temp=46.036346435546875C gpu_power=0.016007399186491966W"
+        }
+      ],
+      "thermal_before": "gpu_temp=50.705013275146484C cpu_temp=42.777442932128906C gpu_power=0.011712411418557167W",
+      "thermal_after": "gpu_temp=62.18051528930664C cpu_temp=45.57307052612305C gpu_power=0.01482349168509245W",
+      "cool_gate_requested": "false",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "worker_sha256": "3ec8f845b92fbb1be52f31cd670bfbbe8714a2346359ffed2054e78310dbfbb9",
+      "metallib_fingerprint": "a76b0287f3078fffbe6f9962d1d323195e6d71a5607467abb1c2c08377c4539a",
+      "twin_digests": "e0a6d3d78b95b719145137dfe12c25b3a0feaa121676fd90f992852966e5dd1f f14705b1b269bec7c1dbcabef1a9d767817b1257eaf9765ba0f9d25b7bda1e01",
+      "dispatch": {
+        "e78_binary_assert_m3_ipgs": "3",
+        "e78_binary_assert_m4_ipgs": "4",
+        "e78_binary_assert_m5_ipgs": "3,5",
+        "e78_binary_assert_m6_ipgs": "3,6",
+        "e78_binary_assert_m7_ipgs": "4",
+        "e78_binary_assert_m8_ipgs": "4",
+        "e78_binary_assert_m9_ipgs": "3,5",
+        "e78_binary_assert_wide_bound": "6",
+        "e78_binary_assert_cutoff": "24928",
+        "e78_binary_assert_lane_perturb_copies": "0",
+        "e78_binary_assert_worker_text_sha256": "d28f70c74fd91cb4f4e4ebbcb3f945b9750e12c8098f7554185692cb6ce64490",
+        "e78_binary_assert_worker_cstring_sha256": "5408ee57aa6cf68079e01176dee62f8585760a252d792384bd7d3df2fa16f8c5"
+      },
+      "wandb": {
+        "id": "eu42wktv",
+        "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/eu42wktv",
+        "group": "e78-width-dependent-inner-group-count",
+        "name": "e78-c1",
+        "arm": "c_hybrid24928",
+        "discarded_warmup": false
+      }
+    },
+    "d1": {
+      "arm": "d_hybrid8192",
+      "position": "early",
+      "legs": [
+        {
+          "index": 1,
+          "metrics": {
+            "mtp_seconds_per_token": 0.031903572380542755,
+            "serial_seconds_per_token": 0.07319913106039166,
+            "mtp_decode_speedup": 2.2943866657714516,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=63.9868278503418C cpu_temp=46.00690841674805C gpu_power=0.019425205886363983W"
+        },
+        {
+          "index": 2,
+          "metrics": {
+            "mtp_seconds_per_token": 0.031959054758772254,
+            "serial_seconds_per_token": 0.07340427325107157,
+            "mtp_decode_speedup": 2.2968224124627237,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=65.1268310546875C cpu_temp=57.143531799316406C gpu_power=0.017582206055521965W"
+        }
+      ],
+      "thermal_before": "gpu_temp=50.6389274597168C cpu_temp=42.72693634033203C gpu_power=0.009239913895726204W",
+      "thermal_after": "gpu_temp=63.10165023803711C cpu_temp=45.84186935424805C gpu_power=0.01608382724225521W",
+      "cool_gate_requested": "false",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "worker_sha256": "31ebef164c9200abd6aad0f8827ac80d82af27e1d406773a8f053a0cb75f61a8",
+      "metallib_fingerprint": "cc9a22cc74203d836a48685e2a2b0d61e78957aeaeece751199b0827f24a08ca",
+      "twin_digests": "49e47f3863a15131302698632fcc222d6b47a9c1c922084f8a81372179922d11 f47aaa98debc340812e020ccbff9850c0d462b9d99ac3078b164c55a6700949f",
+      "dispatch": {
+        "e78_binary_assert_m3_ipgs": "3",
+        "e78_binary_assert_m4_ipgs": "4",
+        "e78_binary_assert_m5_ipgs": "3,5",
+        "e78_binary_assert_m6_ipgs": "3,6",
+        "e78_binary_assert_m7_ipgs": "4",
+        "e78_binary_assert_m8_ipgs": "4",
+        "e78_binary_assert_m9_ipgs": "3,5",
+        "e78_binary_assert_wide_bound": "6",
+        "e78_binary_assert_cutoff": "8192",
+        "e78_binary_assert_lane_perturb_copies": "0",
+        "e78_binary_assert_worker_text_sha256": "26da7f89b686df65d8c289f896ab81c9a399bb03f4a4ab8807e3bcb4471dde59",
+        "e78_binary_assert_worker_cstring_sha256": "ee87c4c62e4d2bdab1fa05eb1867680ea9fee3e9b49a74975ce0e9d8c7639758"
+      },
+      "wandb": {
+        "id": "nsbu2ff0",
+        "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/nsbu2ff0",
+        "group": "e78-width-dependent-inner-group-count",
+        "name": "e78-d1",
+        "arm": "d_hybrid8192",
+        "discarded_warmup": false
+      }
+    },
+    "d2": {
+      "arm": "d_hybrid8192",
+      "position": "late",
+      "legs": [
+        {
+          "index": 1,
+          "metrics": {
+            "mtp_seconds_per_token": 0.031947861425578594,
+            "serial_seconds_per_token": 0.073359519476071,
+            "mtp_decode_speedup": 2.2962262950513725,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=63.67160415649414C cpu_temp=45.88813781738281C gpu_power=0.0161923635751009W"
+        },
+        {
+          "index": 2,
+          "metrics": {
+            "mtp_seconds_per_token": 0.03193616191856563,
+            "serial_seconds_per_token": 0.07330583990551531,
+            "mtp_decode_speedup": 2.2953866558053746,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=64.50920867919922C cpu_temp=46.14757537841797C gpu_power=0.030157847329974174W"
+        }
+      ],
+      "thermal_before": "gpu_temp=50.89531326293945C cpu_temp=42.79289245605469C gpu_power=0.010952550917863846W",
+      "thermal_after": "gpu_temp=62.64341735839844C cpu_temp=45.71108627319336C gpu_power=0.01798192597925663W",
+      "cool_gate_requested": "false",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "worker_sha256": "42af6a5591fecf42d34550be226e4d46fa228d7c3776e4292ac6d83b161e8ade",
+      "metallib_fingerprint": "cc9a22cc74203d836a48685e2a2b0d61e78957aeaeece751199b0827f24a08ca",
+      "twin_digests": "49e47f3863a15131302698632fcc222d6b47a9c1c922084f8a81372179922d11 f47aaa98debc340812e020ccbff9850c0d462b9d99ac3078b164c55a6700949f",
+      "dispatch": {
+        "e78_binary_assert_m3_ipgs": "3",
+        "e78_binary_assert_m4_ipgs": "4",
+        "e78_binary_assert_m5_ipgs": "3,5",
+        "e78_binary_assert_m6_ipgs": "3,6",
+        "e78_binary_assert_m7_ipgs": "4",
+        "e78_binary_assert_m8_ipgs": "4",
+        "e78_binary_assert_m9_ipgs": "3,5",
+        "e78_binary_assert_wide_bound": "6",
+        "e78_binary_assert_cutoff": "8192",
+        "e78_binary_assert_lane_perturb_copies": "0",
+        "e78_binary_assert_worker_text_sha256": "26da7f89b686df65d8c289f896ab81c9a399bb03f4a4ab8807e3bcb4471dde59",
+        "e78_binary_assert_worker_cstring_sha256": "ee87c4c62e4d2bdab1fa05eb1867680ea9fee3e9b49a74975ce0e9d8c7639758"
+      },
+      "wandb": {
+        "id": "q9aw8bt7",
+        "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/q9aw8bt7",
+        "group": "e78-width-dependent-inner-group-count",
+        "name": "e78-d2",
+        "arm": "d_hybrid8192",
+        "discarded_warmup": false
+      }
+    },
+    "c2": {
+      "arm": "c_hybrid24928",
+      "position": "late",
+      "legs": [
+        {
+          "index": 1,
+          "metrics": {
+            "mtp_seconds_per_token": 0.032336638774722815,
+            "serial_seconds_per_token": 0.0733432830311358,
+            "mtp_decode_speedup": 2.268117089784465,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=64.9345932006836C cpu_temp=46.258419036865234C gpu_power=0.018039938062429428W"
+        },
+        {
+          "index": 2,
+          "metrics": {
+            "mtp_seconds_per_token": 0.03233111137524247,
+            "serial_seconds_per_token": 0.07329041021876037,
+            "mtp_decode_speedup": 2.2668694981788486,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=64.66365814208984C cpu_temp=46.23442077636719C gpu_power=0.018425416201353073W"
+        }
+      ],
+      "thermal_before": "gpu_temp=51.03201675415039C cpu_temp=42.85035705566406C gpu_power=0.012372985482215881W",
+      "thermal_after": "gpu_temp=62.900089263916016C cpu_temp=45.764312744140625C gpu_power=0.014653396792709827W",
+      "cool_gate_requested": "false",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "worker_sha256": "dada9254a1150696b2c073604628519c4e11583ad65cdc3917593172c050593f",
+      "metallib_fingerprint": "a76b0287f3078fffbe6f9962d1d323195e6d71a5607467abb1c2c08377c4539a",
+      "twin_digests": "e0a6d3d78b95b719145137dfe12c25b3a0feaa121676fd90f992852966e5dd1f f14705b1b269bec7c1dbcabef1a9d767817b1257eaf9765ba0f9d25b7bda1e01",
+      "dispatch": {
+        "e78_binary_assert_m3_ipgs": "3",
+        "e78_binary_assert_m4_ipgs": "4",
+        "e78_binary_assert_m5_ipgs": "3,5",
+        "e78_binary_assert_m6_ipgs": "3,6",
+        "e78_binary_assert_m7_ipgs": "4",
+        "e78_binary_assert_m8_ipgs": "4",
+        "e78_binary_assert_m9_ipgs": "3,5",
+        "e78_binary_assert_wide_bound": "6",
+        "e78_binary_assert_cutoff": "24928",
+        "e78_binary_assert_lane_perturb_copies": "0",
+        "e78_binary_assert_worker_text_sha256": "d28f70c74fd91cb4f4e4ebbcb3f945b9750e12c8098f7554185692cb6ce64490",
+        "e78_binary_assert_worker_cstring_sha256": "5408ee57aa6cf68079e01176dee62f8585760a252d792384bd7d3df2fa16f8c5"
+      },
+      "wandb": {
+        "id": "v5nqgkkz",
+        "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/v5nqgkkz",
+        "group": "e78-width-dependent-inner-group-count",
+        "name": "e78-c2",
+        "arm": "c_hybrid24928",
+        "discarded_warmup": false
+      }
+    },
+    "b2": {
+      "arm": "b_crown",
+      "position": "late",
+      "legs": [
+        {
+          "index": 1,
+          "metrics": {
+            "mtp_seconds_per_token": 0.03337220707908273,
+            "serial_seconds_per_token": 0.07333265244960785,
+            "mtp_decode_speedup": 2.197416918690158,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=63.87351989746094C cpu_temp=45.99247360229492C gpu_power=0.01694379933178425W"
+        },
+        {
+          "index": 2,
+          "metrics": {
+            "mtp_seconds_per_token": 0.03336999821476638,
+            "serial_seconds_per_token": 0.07346148835495114,
+            "mtp_decode_speedup": 2.201423203026846,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=64.28638458251953C cpu_temp=46.06550216674805C gpu_power=0.014482135884463787W"
+        }
+      ],
+      "thermal_before": "gpu_temp=51.245582580566406C cpu_temp=42.92766189575195C gpu_power=0.01169373095035553W",
+      "thermal_after": "gpu_temp=62.383766174316406C cpu_temp=45.63539123535156C gpu_power=0.019252100959420204W",
+      "cool_gate_requested": "false",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "worker_sha256": "446ef46f65c92674925b7cf1422e93651c63f65c4bc18049b2843e363dc07b10",
+      "metallib_fingerprint": "c1739218181272ca50e882e957ede54658fded96f138cc0a80e8c06d9813b62b",
+      "twin_digests": "3043807bd239241bb9e68cfa0b3f9954725018bf474443ed96468fa6a64ef02f c127aa992f0807621d7c94a5b1934eaba11cccbb9ca5e68544bf20428abb44c4",
+      "dispatch": {
+        "e78_binary_assert_m3_ipgs": "3",
+        "e78_binary_assert_m4_ipgs": "4",
+        "e78_binary_assert_m5_ipgs": "3",
+        "e78_binary_assert_m6_ipgs": "3",
+        "e78_binary_assert_m7_ipgs": "4",
+        "e78_binary_assert_m8_ipgs": "4",
+        "e78_binary_assert_m9_ipgs": "3",
+        "e78_binary_assert_wide_bound": "6",
+        "e78_binary_assert_cutoff": "none",
+        "e78_binary_assert_lane_perturb_copies": "0",
+        "e78_binary_assert_worker_text_sha256": "ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec",
+        "e78_binary_assert_worker_cstring_sha256": "548ecb1516886d562df7d5ae27c39d1ef6612ae54b5f038aee580321659d5bc0"
+      },
+      "wandb": {
+        "id": "fbtgiifc",
+        "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/fbtgiifc",
+        "group": "e78-width-dependent-inner-group-count",
+        "name": "e78-b2",
+        "arm": "b_crown",
+        "discarded_warmup": false
+      }
+    },
+    "a2": {
+      "arm": "a_ship",
+      "position": "late",
+      "legs": [
+        {
+          "index": 1,
+          "metrics": {
+            "mtp_seconds_per_token": 0.03147163870744407,
+            "serial_seconds_per_token": 0.07321155071258545,
+            "mtp_decode_speedup": 2.326270690673267,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=63.961402893066406C cpu_temp=42.690528869628906C gpu_power=0.045492880046367645W"
+        },
+        {
+          "index": 2,
+          "metrics": {
+            "mtp_seconds_per_token": 0.031477953074499965,
+            "serial_seconds_per_token": 0.0733729531057179,
+            "mtp_decode_speedup": 2.330931523154113,
+            "effective_mean_draft_len": 6.269230769230769,
+            "accepted_draft_rate": 0.8875255623721882
+          },
+          "all_tokens_matched": true,
+          "residual_divergence_count": 0,
+          "width_histogram": {
+            "2": 1,
+            "4": 5,
+            "5": 5,
+            "6": 23,
+            "7": 4,
+            "8": 6,
+            "9": 34
+          },
+          "thermal_after": "gpu_temp=64.15120697021484C cpu_temp=46.039310455322266C gpu_power=0.017260638996958733W"
+        }
+      ],
+      "thermal_before": "gpu_temp=51.066898345947266C cpu_temp=42.86286544799805C gpu_power=0.011134715750813484W",
+      "thermal_after": "gpu_temp=63.1263542175293C cpu_temp=42.46152114868164C gpu_power=0.06762039661407471W",
+      "cool_gate_requested": "false",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "worker_sha256": "96c1c6b525c3cc00a1e1b828207b2ab577bef2190d29aea9f94c4c11d1d7e0e7",
+      "metallib_fingerprint": "f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe",
+      "twin_digests": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5 c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+      "dispatch": {
+        "e78_binary_assert_m3_ipgs": "3",
+        "e78_binary_assert_m4_ipgs": "4",
+        "e78_binary_assert_m5_ipgs": "5",
+        "e78_binary_assert_m6_ipgs": "6",
+        "e78_binary_assert_m7_ipgs": "4",
+        "e78_binary_assert_m8_ipgs": "4",
+        "e78_binary_assert_m9_ipgs": "5",
+        "e78_binary_assert_wide_bound": "6",
+        "e78_binary_assert_cutoff": "none",
+        "e78_binary_assert_lane_perturb_copies": "0",
+        "e78_binary_assert_worker_text_sha256": "ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec",
+        "e78_binary_assert_worker_cstring_sha256": "d52a9ba63b9b2a2e1443d91263eabee8eb456db3298ea0cebfca74929f13f01e"
+      },
+      "wandb": {
+        "id": "7tbqmtkc",
+        "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/7tbqmtkc",
+        "group": "e78-width-dependent-inner-group-count",
+        "name": "e78-a2",
+        "arm": "a_ship",
+        "discarded_warmup": false
+      }
+    }
+  }
+}
