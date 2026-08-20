@@ -27,10 +27,13 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_root}"
 
-# sha256 of the two files that carry the quantized-matmul dispatch table.
-# `ours` is the campaign base at 432eba0; `crown` is Layr-Labs upstream main at
-# bfab0de, the source the current frontier leader was measured on. Recorded so
-# a mislabelled leg fails before it burns a 40C gate wait.
+# The two files that carry the wide multi-row QMV dispatch table, and the
+# sha256 of each table. `ours` is the campaign base at 432eba0; `crown` is
+# Layr-Labs upstream main at bfab0de, the source the current frontier leader
+# was measured on. Recorded so a mislabelled leg fails before it waits at the
+# 40C gate.
+readonly TABLE_H="Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+readonly TABLE_CPP="Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
 readonly OURS_H="71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
 readonly OURS_CPP="c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276"
 readonly CROWN_H="75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
@@ -51,8 +54,8 @@ while (($#)); do
 done
 ((${#legs[@]})) || { echo "e75_session: no legs given" >&2; exit 2; }
 
-h_now="$(shasum -a 256 Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | cut -d' ' -f1)"
-cpp_now="$(shasum -a 256 mlx-generated/quantized.cpp | cut -d' ' -f1)"
+h_now="$(shasum -a 256 "${TABLE_H}" | cut -d' ' -f1)"
+cpp_now="$(shasum -a 256 "${TABLE_CPP}" | cut -d' ' -f1)"
 case "${table}" in
   ours)  want_h="${OURS_H}";  want_cpp="${OURS_CPP}" ;;
   crown) want_h="${CROWN_H}"; want_cpp="${CROWN_CPP}" ;;
@@ -60,10 +63,12 @@ case "${table}" in
 esac
 if [[ "${h_now}" != "${want_h}" || "${cpp_now}" != "${want_cpp}" ]]; then
   echo "e75_session: tree does not carry the '${table}' dispatch table" >&2
-  echo "  quantized.h   want ${want_h}" >&2
-  echo "                have ${h_now}" >&2
-  echo "  quantized.cpp want ${want_cpp}" >&2
-  echo "                have ${cpp_now}" >&2
+  echo "  ${TABLE_H}" >&2
+  echo "    want ${want_h}" >&2
+  echo "    have ${h_now}" >&2
+  echo "  ${TABLE_CPP}" >&2
+  echo "    want ${want_cpp}" >&2
+  echo "    have ${cpp_now}" >&2
   exit 2
 fi
 
