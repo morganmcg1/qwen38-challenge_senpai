@@ -407,6 +407,16 @@ Swift suite: 688 tests in 49 suites, 41 issues, **10 failing tests**.
 3. **Stale source that I did not fix, to stay in scope.**
    - `quantized.h:1154` still says "IPG = ceil(M / ceil(M / 4)) … at NA <= 4",
      which E55 contradicts and which the `NA <= 6` bound now contradicts twice.
+   - The `case 8` comment block at `quantized.h:1953-1966` contradicts the code
+     it sits on. It argues for "3+3+2, not 4+4", claims "IPG 3", and states the
+     wide helper's range is "[2,4]". The shipped line is
+     `qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>`, which is IPG=4 and
+     therefore exactly the `{4,4}` split the comment argues against, and the
+     helper's range is now `[2,6]`. Anyone reading that block to plan an M=8
+     experiment would start from three wrong facts. I found this while checking
+     the feasibility of the proposed `t8` arm. I did not fix it, to stay in
+     scope, but it is more misleading than the other stale comments because it
+     reads as a deliberate design rationale rather than an outdated aside.
    - `SHIPPED_IPG[9] = 3` in `research/e54_arms.py` is stale, so every `m9_*`
      and `iso_m9_*` arm fails loudly.
    - The retracted `0.0629 %` null floor is still hard-coded in
@@ -481,12 +491,30 @@ the campaign gains a corrected pricer. If both over-perform, the defect is not
 about tails and the model is wrong in a different way. If neither does, `t55` is
 a one-off and should not be generalised.
 
-**Caveats I already know.** `t9` at NA=9 sits far above edward's NA=6 register
-step, so it may be limited by something other than bandwidth, and the table
-maximum register count would move. `t8` at NA=8 has the same exposure. Both are
-above the current `NA <= 6` wide bound, so the bound must be raised for the
-probe. The probe is a cell measurement, not a candidate, so raising it for the
-probe carries no submission risk.
+**Run a feasibility step first; it may answer the question for free.** Both arms
+need widths the wide helper does not currently admit. `quantized.h:980` asserts
+`NA >= 2 && NA <= 6`, and the helper builds `vec<float, NA>` accumulators with
+`rows_per_simd = 4`. So `t9` needs NA=9 and `t8` needs NA=8, both above the
+bound, and both above edward's NA=6 register step where a second
+`[4 x <6 x float>]` alloca appears and peak live registers cross the AGX 128
+boundary (122 fits, 142 does not).
+
+The cheap first step is therefore a compile and register census at NA=7, 8 and 9,
+with no timing at all:
+
+- If NA=8 and NA=9 do not fit the register budget, that **is** the result. The
+  tail-deletion rule would then be bounded by the register step rather than by
+  bandwidth, which is a sharper and more useful statement than any timing.
+- If they fit, run the palindrome and test the prediction as designed.
+
+Raising the bound for a probe carries no submission risk, because this is a cell
+measurement and not a candidate.
+
+**A cleaner control exists at M=7.** M=7 ships `<T,7,4>` = `{4,3}`, which has two
+distinct group sizes and therefore a cheap tail, and NA=7 is the smallest width
+above the current bound. If only one width can be made to fit, test M=7 rather
+than M=9: it needs the smallest bound increase, and it carries 12.2 % of ranked
+QMV against 5.75 % at M=9.
 
 ## Other suggested follow-ups, not implemented
 
