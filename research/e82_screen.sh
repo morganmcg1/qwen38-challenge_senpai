@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
 # E82 rung 0: the untimed acceptance screen.
 #
-# Two stages, because the reference trajectory must not depend on the head:
+# Three stages, following the same reference contract benchmark-qwen-mtp.sh
+# uses, because the reference trajectory must not depend on the head:
 #
-#   goldens  generate-golden walks the SERIAL greedy chain once per seed. No
-#            head participates, so every arm is later scored against the same
-#            token stream and any acceptance difference is the head's alone.
-#   verify   mtp-verify replays each golden under each head at --mtp-depth 8.
-#            It is untimed, so no thermal gate applies and the numbers are
-#            acceptance evidence only -- never a speedup.
+#   plans      tokenize each seed to the `{seed_tokens, emitted}` plan the MTP
+#              verbs take. The CLI accepts token ids only. This stage runs no
+#              GPU work; its tokenization was checked byte-identical to the
+#              trusted CLI's own on seed candle-0.
+#   reference  mtp-verify --generate walks the SERIAL width-1 frame and writes
+#              the reference rows. The head is loaded but never drafts, so the
+#              rows are the target's own greedy chain and every arm is later
+#              scored against the same token stream.
+#   verify     mtp-verify --golden replays those rows under each head at the
+#              requested depth. It is untimed, so no thermal gate applies and
+#              the numbers are acceptance evidence only -- never a speedup.
 #
 # Usage:
-#   research/e82_screen.sh goldens [--steps N] [--only SEED[,SEED...]]
-#   research/e82_screen.sh verify  [--depth D] [--arms A[,A...]] [--only SEED]
+#   research/e82_screen.sh plans
+#   research/e82_screen.sh reference [--steps N] [--head ARM] [--tag T] [--only S]
+#   research/e82_screen.sh verify    [--steps N] [--depth D] [--arms A,..] [--only S]
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -41,6 +48,8 @@ stage="${1:-}"; shift || true
 steps=512
 depth=8
 only=""
+ref_head=declared
+tag=""
 arms="$(IFS=,; echo "${ARM_ORDER[*]}")"
 while (($#)); do
   case "$1" in
@@ -48,9 +57,12 @@ while (($#)); do
     --depth) depth="$2"; shift 2 ;;
     --only)  only="$2"; shift 2 ;;
     --arms)  arms="$2"; shift 2 ;;
+    --head)  ref_head="$2"; shift 2 ;;
+    --tag)   tag="$2"; shift 2 ;;
     *) echo "e82-screen: unknown flag '$1'" >&2; exit 2 ;;
   esac
 done
+ref_dir="${out}/reference${tag:+-${tag}}"
 
 seed_names() {
   python3 - "$only" <<'PY'
@@ -68,31 +80,60 @@ echo "e82-screen: worker $(shasum -a 256 .build-worker/release/mlxfast-runtime-w
 echo "e82-screen: head   $(git rev-parse HEAD)"
 
 case "${stage}" in
-goldens)
-  mkdir -p "${out}/goldens"
+plans)
+  mkdir -p "${out}/plans"
+  python3 - "${seeds_dir}" "${out}/plans" <<'PY'
+import json, sys
+from pathlib import Path
+from tokenizers import Tokenizer
+
+seeds_dir, plans_dir = Path(sys.argv[1]), Path(sys.argv[2])
+tok = Tokenizer.from_file("weights/tokenizer.json")
+for seed in json.load(open("research/e82-corpus-manifest.json"))["seeds"]:
+    ids = tok.encode((seeds_dir / f"e82-{seed['name']}.txt").read_text(), add_special_tokens=False).ids
+    dest = plans_dir / f"{seed['name']}.json"
+    dest.write_text(json.dumps({"seed_tokens": ids, "emitted": []}))
+    print(f"{seed['name']:28s} {len(ids):4d} seed tokens -> {dest}")
+PY
+  ;;
+reference)
+  mkdir -p "${ref_dir}"
+  head_dir="$(arm_head "${ref_head}")" || exit 2
   for name in $(seed_names); do
-    dest="${out}/goldens/${name}_${steps}.json"
-    if [[ -s "${dest}" ]]; then echo "=== skip ${name}: ${dest} exists ==="; continue; fi
-    echo "=== golden ${name} (${steps} steps) ==="
+    dest="${ref_dir}/${name}_${steps}.json"
+    if [[ -s "${dest}" ]]; then echo "=== skip reference ${name} ==="; continue; fi
+    echo "=== reference ${name} ($(( steps + 1 )) rows, head ${ref_head}) ==="
     start=$(date +%s)
-    ${cli} generate-golden \
-      --prompt-file "${seeds_dir}/e82-${name}.txt" \
+    ${cli} mtp-verify \
+      --mtp-head "${head_dir}" \
+      --emitted "${out}/plans/${name}.json" \
+      --generate "$(( steps + 1 ))" \
+      --mtp-depth "${depth}" \
       --output "${dest}" \
-      --name "e82_${name}_${steps}" \
-      --steps "${steps}" || { echo "e82-screen: golden ${name} FAILED" >&2; exit 1; }
-    echo "e82-screen: ${name} golden in $(( $(date +%s) - start ))s"
+      --plan-output "${ref_dir}/${name}_${steps}.plan.json" \
+      || { echo "e82-screen: reference ${name} FAILED" >&2; exit 1; }
+    # The wrapper's own usability preflight: self-consistency alone does not
+    # prove the recorded rows agree with the chain they were generated against.
+    jq -e --argjson tokens "${steps}" '
+        . as $g | ($g.rows | length) as $rows
+        | $g.reference_self_consistent == true
+          and ($g.emitted_tokens | length) == $rows
+          and $rows >= ($tokens + 1)
+          and ([range(0; $rows)
+                | select($g.emitted_tokens[.] != $g.rows[.].sequential_argmax)] | length) == 0
+      ' "${dest}" >/dev/null || { echo "e82-screen: ${name} reference unusable" >&2; exit 1; }
+    echo "e82-screen: ${name} reference in $(( $(date +%s) - start ))s"
   done
   ;;
 verify)
   mkdir -p "${out}/verify"
   IFS=, read -r -a arm_list <<<"${arms}"
-  # Arm-major order: one head load serves every seed, and the arms stay in a
-  # fixed order so a partial run is still a complete prefix of the design.
+  # Arm-major order, so a partial run is still a complete prefix of the design.
   for arm in "${arm_list[@]}"; do
     head_dir="$(arm_head "${arm}")" || exit 2
     mkdir -p "${out}/verify/${arm}"
     for name in $(seed_names); do
-      golden="${out}/goldens/${name}_${steps}.json"
+      golden="${ref_dir}/${name}_${steps}.json"
       [[ -s "${golden}" ]] || { echo "e82-screen: missing ${golden}" >&2; exit 1; }
       dest="${out}/verify/${arm}/${name}.json"
       if [[ -s "${dest}" ]]; then echo "=== skip ${arm}/${name} ==="; continue; fi
@@ -103,13 +144,16 @@ verify)
         --mtp-head "${head_dir}" \
         --mtp-depth "${depth}" \
         --tokens "${steps}" \
-        --output "${dest}" || { echo "e82-screen: ${arm}/${name} FAILED" >&2; exit 1; }
+        --output "${dest}" >/dev/null \
+        || { echo "e82-screen: ${arm}/${name} FAILED" >&2; exit 1; }
+      jq -r '"e82-screen: parity=\(.parity_all_ok) rounds=\(.round_count)"
+             + " accept=\(.accepted_draft_rate) head=\(.head_provenance.sha256[0:12])"' "${dest}"
       echo "e82-screen: ${arm}/${name} in $(( $(date +%s) - start ))s"
     done
   done
   ;;
 *)
-  echo "usage: research/e82_screen.sh {goldens|verify} [flags]" >&2
+  echo "usage: research/e82_screen.sh {plans|reference|verify} [flags]" >&2
   exit 2
   ;;
 esac
