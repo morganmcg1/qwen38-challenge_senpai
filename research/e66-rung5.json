@@ -1,0 +1,102 @@
+{
+  "certified_surface_commit": "e3de44fca83cf327ff944c8912030bcbb20ce468",
+  "experiment": "qwen38-r1-e66-composition-certification",
+  "geometry": "shipped defaults; the E61-comparability lever was NOT set",
+  "merged_advisor_base": "b7b6589a9b319c1176c737b5698b915740df0937",
+  "organizer_main": "bfab0de58d43453e506523707e1720a3485570f4",
+  "rung": 5,
+  "steps": {
+    "01_assert_before": {
+      "forbid_5_3": 0,
+      "forbid_6_3": 0,
+      "rc": 0,
+      "require_5_5": 1,
+      "require_6_6": 1,
+      "verdict": "PASS"
+    },
+    "02_twin_audit": {
+      "comment_only_waivers": 1,
+      "rc": 0,
+      "runtime_effective_twins": 29,
+      "verdict": "OK"
+    },
+    "03_swift_test": {
+      "distinct_failing_tests": 9,
+      "issues": 40,
+      "rc": 1,
+      "suites": 49,
+      "tests": 688
+    },
+    "04_swift_test_runtime": {
+      "distinct_failing_tests": 9,
+      "failure_set_identical_to_03": true,
+      "issues": 40,
+      "rc": 1,
+      "suites": 49,
+      "tests": 688
+    },
+    "05_local_submit": {
+      "accepted_draft_rate": 0.9910714285714286,
+      "all_tokens_matched": true,
+      "cool_gate_passed_real_gate": true,
+      "decode_tokens": 128,
+      "mtp_decode_speedup": 1.7618380735474541,
+      "mtp_depth": 8,
+      "mtp_seconds_per_token": 0.055091758258640766,
+      "official_score": false,
+      "passed": true,
+      "public_drift_tripwire_passed": true,
+      "rc": 0,
+      "real_cool_gate_entries_c": [39.9, 39.9, 39.8],
+      "reference_checked_rows": "130/130",
+      "residual_divergence_count": 0,
+      "serial_seconds_per_token": 0.097062757238745689
+    },
+    "06_assert_after": {"rc": 0, "verdict": "PASS"},
+    "07_scope_vs_organizer": {"rc": 0, "submitted_paths": 5, "verdict": "OK"},
+    "08_scope_vs_merged_base": {"rc": 0, "submitted_paths": 5, "verdict": "OK"},
+    "09_editable_budget": {
+      "exempt": 2410,
+      "files": 154,
+      "growth": 3552,
+      "growth_cap": 262144,
+      "headroom": 537946,
+      "rc": 0,
+      "source_bytes": 2462054,
+      "source_cap": 3000000,
+      "verdict": "OK"
+    },
+    "10_ranked_score_boundary": {
+      "rc": 0,
+      "verdict": "PASS: ranked numerator is pinned baseline; candidate edits affect the MTP denominator only"
+    }
+  },
+  "submitted_numstat": {
+    "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": [112, 74],
+    "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift": [32, 19],
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": [4, 4],
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": [4, 4],
+    "mtp-head.manifest.json": [1, 1]
+  },
+  "swift_test_control_note": "This branch's candidate surface is byte-identical to the merged advisor base b7b6589a, so there is no candidate-specific source change to revert. A control run would execute the identical tree. The failure count matches the known nine and none of the nine touches the QMV kernels.",
+  "swift_test_failing_tests": [
+    "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen()",
+    "participantDocsExposeDefaultCLIInstallDirectory()",
+    "qwen36ConfigContractDigestMatchesTheReferenceManifest()",
+    "startupMemoryPolicyKeepsRanked128GiBProfile()",
+    "submissionStaticReviewPromptCoversMeasurementStructureExploitation()",
+    "theCheckedInDeclarationSelectsThePinnedHead()",
+    "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues()",
+    "theQwenMTPTrackIsArmedOnQwen38()",
+    "theSeededCalibrationExpectationMatchesItsRecordedProvenance()"
+  ],
+  "verdict": "CERTIFIED",
+  "worker_unchanged_across_local_submit": {
+    "identical": true,
+    "note": "Directly closes ledger 202(H) for this certification run.",
+    "worker_mtime_after": "2026-08-20T07:32:00Z",
+    "worker_mtime_before": "2026-08-20T07:32:00Z",
+    "worker_sha256_after": "6b2ad283ba0a1625acd63a0e574913d62248e1f69df77525e7f36a4201c54478",
+    "worker_sha256_before": "6b2ad283ba0a1625acd63a0e574913d62248e1f69df77525e7f36a4201c54478"
+  }
+}

@@ -1,0 +1,5 @@
+112	74	Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+32	19	Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+4	4	Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+4	4	Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+1	1	mtp-head.manifest.json
