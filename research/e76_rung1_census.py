@@ -4,9 +4,14 @@
 The question is a single number per arm: how many `applegpu_g17s` registers does
 this restructuring of the one-group `_wide` body allocate, and does it still emit
 a program at all without a spill frame. The shipped `<T,5,5>` cell allocates 98
-and `<T,6,6>` allocates 111; the frontier's three-input cells allocate 90. An arm
-that reaches 90 or fewer keeps our single weight stream at the frontier's ranked
-occupancy.
+and `<T,6,6>` allocates 111; the frontier's two-group cells at M = 5 and M = 6
+allocate 90.
+
+The bar is 91, not 90. The advisor's census over all 19 legal `(M, IPG)` cells
+shows the g17s register count is a pure function of the largest group in the
+partition, and that NA = 4 allocates 91. A one-group cell at 91 therefore pays
+one register more than the frontier's two-group cell and reads the weights once
+instead of twice, which is strict dominance rather than a trade.
 
 The scored worker does not compile the vendored headers. It concatenates the
 checked-in `mlx-generated/*.cpp` preambles and hands that string to `newLibrary`
@@ -46,7 +51,7 @@ INCLUDE = REPO / "Vendor/mlx-swift/Source/Cmlx/mlx"
 
 # The frontier's three-input cells allocate this many g17s registers. An arm at
 # or below it matches their ranked occupancy while keeping one weight stream.
-TARGET_G17S_REGISTERS = 90
+TARGET_G17S_REGISTERS = 91
 
 INCLUDES = """#include <metal_stdlib>
 

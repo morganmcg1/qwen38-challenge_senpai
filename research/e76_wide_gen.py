@@ -14,7 +14,7 @@ The live set at the peak is thirteen `vec<float, NA>` values: `acc[4]`,
 so the only large lever is the row block: `acc` and `partial` are the two arrays
 indexed by `r`, and halving `rows_per_simd` removes two `VF` values from each.
 
-The arms are the cross product of two independent levers.
+The arms are the cross product of three independent levers.
 
 Row block, which sets how many `VF` values `acc` and `partial` hold:
 
@@ -34,6 +34,21 @@ peak:
   lazyw     each `packed[r][i]` is used at exactly one `i`, so this loads it at
             that use site instead of staging sixteen `uint16_t`.
   lazy      both.
+
+Accumulator layout, which asks whether `vec<float, NA>` itself costs registers
+at non-native widths. The measured g17s step structure is 83, 90, 91, 98, 111 at
+NA = 2..6: +7, +1, +7, +13 for a live-float demand that rises by exactly 4 per
+step. If the allocator charges an alignment class for a non-native vector width
+rather than for live state, replacing the vectors with flat `float` arrays over
+the same expression trees recovers it.
+
+  (none)    the shipped `vec<float, NA>` values.
+  facc      `acc` only: `VF acc[rows_per_simd]` -> `float acc[rows_per_simd][NA]`.
+            The k-block epilogue and the `simd_sum` readout already index by
+            `[r][m]`, so the arithmetic text is otherwise unchanged.
+  fall      every `VF`: `acc`, `partial`, `sums` and `a0..a3`. Element `m` of
+            each vector expression becomes the same scalar expression in the
+            same order, so no accumulation is reassociated.
 
 `plain` is the shipped body, renamed, and the census asserts it emits the same
 machine code as the shipped instantiation. `rps2nu` and `rps1nu` repeat `rps2`
@@ -160,15 +175,126 @@ EPILOGUE_LAZY = """    for (int r = 0; r < rows_per_simd; r++) {
       acc[r] += scale_local_r * partial[r] + sums * bias_local_r;
     }"""
 
-# The two levers are independent, so the search is their cross product: the row
-# block sets how many `VF` values `acc` and `partial` hold, and the staging
-# choice sets how long the scalar operands stay live across that peak.
+# ---------------------------------------------------------------------------
+# Accumulator-layout anchors. `vec<float, NA>` indexed by `[m]` and
+# `float[...][NA]` indexed by `[m]` read identically, so the readout loop and
+# every already-indexed expression are shared text between the two layouts.
+# ---------------------------------------------------------------------------
+
+ACC_DECL = """  VF acc[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc[r] = VF(0.0f);
+  }"""
+
+ACC_DECL_FLAT = """  float acc[rows_per_simd][NA];
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      acc[r][m] = 0.0f;
+    }
+  }"""
+
+PARTIAL_DECL = """    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }"""
+
+PARTIAL_DECL_FLAT = """    float sums[NA];
+    float partial[rows_per_simd][NA];
+    for (int m = 0; m < NA; m++) {
+      sums[m] = 0.0f;
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < NA; m++) {
+        partial[r][m] = 0.0f;
+      }
+    }"""
+
+A_DECL = "      VF a0, a1, a2, a3;"
+A_DECL_FLAT = "      float a0[NA], a1[NA], a2[NA], a3[NA];"
+
+# Element `m` of the vector form, written out. The four products are added in
+# the same left-associated order, so nothing is reassociated.
+USE_FLAT = """      for (int r = 0; r < rows_per_simd; r++) {
+        for (int m = 0; m < NA; m++) {
+          if (DIRECT_NIBBLES) {
+            partial[r][m] += (a0[m] * (packed[r][i] & 0x000f) +
+                              a1[m] * ((packed[r][i] >> 4) & 0x000f) +
+                              a2[m] * ((packed[r][i] >> 8) & 0x000f) +
+                              a3[m] * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r][m] += (a0[m] * (packed[r][i] & 0x000f) +
+                              a1[m] * (packed[r][i] & 0x00f0) +
+                              a2[m] * (packed[r][i] & 0x0f00) +
+                              a3[m] * (packed[r][i] & 0xf000));
+          }
+        }
+      }"""
+
+# The use-site load stays outside the `m` loop so each `packed_ri` is still read
+# exactly once per (r, i), as in the vector form.
+USE_LAZY_FLAT = """      for (int r = 0; r < rows_per_simd; r++) {
+        const uint16_t packed_ri = reinterpret_cast<const device uint16_t*>(
+            reinterpret_cast<const device uint8_t*>(w) +
+            (out_row + r) * in_vec_size_w + k / 2 +
+            simd_lid * bytes_per_lane)[i];
+        for (int m = 0; m < NA; m++) {
+          if (DIRECT_NIBBLES) {
+            partial[r][m] += (a0[m] * (packed_ri & 0x000f) +
+                              a1[m] * ((packed_ri >> 4) & 0x000f) +
+                              a2[m] * ((packed_ri >> 8) & 0x000f) +
+                              a3[m] * ((packed_ri >> 12) & 0x000f));
+          } else {
+            partial[r][m] += (a0[m] * (packed_ri & 0x000f) +
+                              a1[m] * (packed_ri & 0x00f0) +
+                              a2[m] * (packed_ri & 0x0f00) +
+                              a3[m] * (packed_ri & 0xf000));
+          }
+        }
+      }"""
+
+EPILOGUE_FLAT = """    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < NA; m++) {
+        acc[r][m] += scale_local[r] * partial[r][m] + sums[m] * bias_local[r];
+      }
+    }"""
+
+EPILOGUE_LAZY_FLAT = """    for (int r = 0; r < rows_per_simd; r++) {
+      const int group_index =
+          (out_row + r) * in_vec_size_g + k / 64 + simd_lid / 4;
+      const float scale_local_r = scales[group_index];
+      const float bias_local_r = biases[group_index];
+      for (int m = 0; m < NA; m++) {
+        acc[r][m] += scale_local_r * partial[r][m] + sums[m] * bias_local_r;
+      }
+    }"""
+
+# The levers are independent, so the search is their cross product: the row
+# block sets how many accumulator values are live, the staging choice sets how
+# long the scalar operands stay live across that peak, and the layout choice
+# sets whether those values are non-native vectors or flat floats.
 STAGING = {
     "": [],
     "lazysb": [(STAGE, STAGE_WEIGHTS_ONLY), (EPILOGUE, EPILOGUE_LAZY)],
     "lazyw": [(STAGE, STAGE_SCALES_ONLY), (USE, USE_LAZY)],
     "lazy": [(STAGE, STAGE_NONE), (USE, USE_LAZY), (EPILOGUE, EPILOGUE_LAZY)],
 }
+
+
+def layout_rewrites(layout: str, staging: str) -> list[tuple[str, str]]:
+    """Rewrites applied after the staging rewrites, so they see their output."""
+    if not layout:
+        return []
+    pairs = [(ACC_DECL, ACC_DECL_FLAT)]
+    if layout == "fall":
+        pairs.append((PARTIAL_DECL, PARTIAL_DECL_FLAT))
+        pairs.append((A_DECL, A_DECL_FLAT))
+        pairs.append((USE_LAZY, USE_LAZY_FLAT) if staging in ("lazyw", "lazy")
+                     else (USE, USE_FLAT))
+    pairs.append((EPILOGUE_LAZY, EPILOGUE_LAZY_FLAT)
+                 if staging in ("lazysb", "lazy") else (EPILOGUE, EPILOGUE_FLAT))
+    return pairs
+
 
 # (arm, rows_per_simd, unroll the row-block loop, [(anchor, replacement), ...])
 ARMS = []
@@ -181,6 +307,15 @@ for _rps in (4, 2, 1):
 # back. These two hold it rolled and separate that outcome from a real win.
 ARMS.append(("rps2nu", 2, False, []))
 ARMS.append(("rps1nu", 1, False, []))
+# The layout lever is carried on the shipped staging, which isolates it, and on
+# the winning staging, which shows whether the two effects stack. It is carried
+# at the shipped row block and at the smallest one for the same reason.
+for _layout in ("facc", "fall"):
+    for _rps in (4, 1):
+        for _staging in ("", "lazy"):
+            _name = (f"rps{_rps}" if _rps != 4 else "") + _staging + _layout
+            ARMS.append((_name, _rps, True,
+                         STAGING[_staging] + layout_rewrites(_layout, _staging)))
 
 HEADER = """// GENERATED by research/e76_wide_gen.py -- do not edit by hand.
 //
