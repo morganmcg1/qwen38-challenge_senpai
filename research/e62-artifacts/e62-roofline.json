@@ -1,0 +1,88 @@
+{
+ "constants": {
+  "candidate_share_of_dispatches": 0.646384070741737,
+  "tokens_per_candidate_round": 6.4,
+  "non_bandwidth_budget_per_serial_round_s": 0.00177,
+  "serial_commits_at_shipped": 55.137318255250406,
+  "ceiling_per_commit_cost_s": 3.210167008496924e-05,
+  "ceiling_b_s_per_token_per_commit_per_round": 3.242188779239165e-06
+ },
+ "full_ladder": {
+  "n_legs": 12,
+  "dof": 9,
+  "commits_per_round_range": [
+   14.472972972972974,
+   350.22972972972974
+  ],
+  "slope_b": 1.1349919171438878e-06,
+  "se": 1.444051302211841e-07,
+  "t": 7.859775586957544,
+  "ci95": [
+   8.083475125835693e-07,
+   1.4616363217042063e-06
+  ],
+  "ci95_halfwidth": 3.2664440456031844e-07,
+  "residual_sd_percent": 0.17115012417379685,
+  "per_commit_cost_seconds": 1.123782066811358e-05,
+  "per_commit_cost_ci95_seconds": [
+   8.00363795258483e-06,
+   1.4472003383642331e-05
+  ],
+  "fraction_of_ceiling": 0.3500696580074628,
+  "ci95_halfwidth_as_fraction_of_ceiling": 0.1007481139444851,
+  "detectable_effect_b_80pct_power": 4.0433436461931547e-07,
+  "detectable_effect_as_fraction_of_ceiling": 0.12471030903826626
+ },
+ "low_segment_above_shipped_commits": {
+  "n_legs": 10,
+  "dof": 7,
+  "commits_per_round_range": [
+   52.24324324324324,
+   350.22972972972974
+  ],
+  "slope_b": 1.2411312552288273e-06,
+  "se": 1.7614080867995218e-07,
+  "t": 7.04624478864499,
+  "ci95": [
+   8.245582427007402e-07,
+   1.6577042677569143e-06
+  ],
+  "ci95_halfwidth": 4.16573012528087e-07,
+  "residual_sd_percent": 0.18192986985135814,
+  "per_commit_cost_seconds": 1.2288731101231328e-05,
+  "per_commit_cost_ci95_seconds": [
+   8.164144186333505e-06,
+   1.641331801612915e-05
+  ],
+  "fraction_of_ceiling": 0.3828065975603308,
+  "ci95_halfwidth_as_fraction_of_ceiling": 0.12848511943399019,
+  "detectable_effect_b_80pct_power": 4.931942643038661e-07,
+  "detectable_effect_as_fraction_of_ceiling": 0.15211768897047462
+ },
+ "high_segment_below_shipped_commits": {
+  "n_legs": 6,
+  "dof": 3,
+  "commits_per_round_range": [
+   14.472972972972974,
+   52.24324324324324
+  ],
+  "slope_b": -7.777192632530349e-07,
+  "se": 9.088967405006139e-07,
+  "t": -0.8556739490832288,
+  "ci95": [
+   -3.669828691525988e-06,
+   2.1143901650199182e-06
+  ],
+  "ci95_halfwidth": 2.892109428272953e-06,
+  "residual_sd_percent": 0.10700517385439072,
+  "per_commit_cost_seconds": -7.700380486028634e-06,
+  "per_commit_cost_ci95_seconds": [
+   -3.633583296508946e-05,
+   2.093507199303219e-05
+  ],
+  "fraction_of_ceiling": -0.23987476245462178,
+  "ci95_halfwidth_as_fraction_of_ceiling": 0.8920237608593649,
+  "detectable_effect_b_80pct_power": 2.544910873401719e-06,
+  "detectable_effect_as_fraction_of_ceiling": 0.7849360560673231
+ }
+}
