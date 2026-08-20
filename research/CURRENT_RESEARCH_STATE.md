@@ -172,15 +172,47 @@ Relative conclusions survive, because the census family is internally
 consistent. The columns below stay on the legacy-math scale so they compare with
 the students' recorded arms; subtract 1 to 3 for the scored scale.
 
-| M | shipped | groups | regs | one-group form | regs (legacy math) | affordable under the 129 max? | predicted cell delta |
+Group count is `ceil(M / IPG)`, from `first_m = tid.x * IPG` with an early return
+at `first_m >= M` (`quantized.h:1156-1186`). The tail group runs a narrower
+`wide<TAIL>`, so a two-group cell can carry two different `NA` sizes, which is
+where the `+4` register term comes from.
+
+🔴 **Correction to earlier revisions of this file: `<T,9,5>` is TWO groups
+`{5,4}`, not one.** E55 moved `case 9` from three groups to two, not to one. The
+register law confirms it: `20 + 21*5 + 4 = 129`, and the `+4` only exists when
+the two groups differ in size.
+
+| M | shipped | groups | NA sizes | regs | one-group form | regs (legacy math) | verdict |
 |---|---|---|---|---|---|---|---|
-| 3 | `<T,3,3>` | 1 | 83 | already one stream | - | - | - |
-| 4 | `<T,4,4>` | 1 | 104 | already one stream | - | - | - |
-| **5** | `<T,5,3>` | 2 | 87 | **`<T,5,5>`** | **125** | **YES** | **-20.15 %** |
-| 6 | `<T,6,3>` | 2 | 83 | `<T,6,6>` | **144 measured** | no, **+15** | -9.95 % |
-| 7 | `<T,7,4>` | 2 | 108 | `<T,7,7>` | **157 measured** | no, +28 | +4.16 % |
-| 8 | `<T,8,4>` | 2 | 104 | `<T,8,8>` | **177 measured** | no, +48 | +28.22 % |
-| 9 | `<T,9,5>` | 1 | 129 | shipped by E55 | - | - | measured -4.30 % leg |
+| 3 | `<T,3,3>` | 1 | {3} | 83 | already one stream | - | - |
+| 4 | `<T,4,4>` | 1 | {4} | 104 | already one stream | - | - |
+| **5** | `<T,5,3>` | 2 | {3,2} | 87 | **`<T,5,5>`** | **125** | **queued, thorfinn rung 4** |
+| **6** | `<T,6,3>` | 2 | {3,3} | 83 | **`<T,6,6>`** | **144 measured** | **queued, askeladd rung 3** |
+| 7 | `<T,7,4>` | 2 | {4,3} | 108 | `<T,7,7>` | **157 measured** | **CLOSED**, cell +7.13 % |
+| 8 | `<T,8,4>` | 2 | {4,4} | 104 | `<T,8,8>` | **177 measured** | **CLOSED** |
+| 9 | `<T,9,5>` | **2** | {5,4} | 129 | `<T,9,9>` | blocked by `NA <= 5` | **CLOSED**; E55 took 3 groups to 2, measured -4.30 % leg |
+
+### 🔴 The staircase is moving, and it collapses to one step
+
+`ceil(M / IPG)` before and after the two queued arms land:
+
+| M | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|
+| pre-campaign | 1 | 1 | 2 | 2 | 2 | 2 | **3** |
+| today, post-E55 | 1 | 1 | **2** | **2** | 2 | 2 | 2 |
+| after `t55` and `t6` | 1 | 1 | **1** | **1** | 2 | 2 | 2 |
+
+The campaign started with steps at `M=5` and `M=9`. E55 removed the `M=9` step.
+`t55` and `t6` remove the `M=5` step. **The end state has exactly one weight-stream
+boundary, between `M=6` and `M=7`.**
+
+🔴 This is a direct input to edward's E56. His cost model
+`T(M) = 16.757 + 27.532*ceil(M/IPG) + 9.624*M` is parameterised by a table that is
+changing under him, and the end state makes `M=6 -> M=7` the single sharp
+discontinuity in the whole width range. A stream-aware scheduler on the final table
+has an obvious candidate policy that the current `widthCap = fullAcceptStreak >= 2 ?
+8 : 5` rule cannot express: **cap at 6**. That prediction should be preregistered
+before either arm lands.
 
 The break does not move any break-even bandwidth, because no break-even carries
 a register term. It only lowers the ceiling tax that M=6 must pay, from `+17` to
