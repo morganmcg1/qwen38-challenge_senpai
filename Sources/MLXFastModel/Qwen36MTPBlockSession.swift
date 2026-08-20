@@ -331,6 +331,14 @@ public final class Qwen36MTPBlockSession {
         // path and final full row for the full seed and a 2-row accept fold.
         let hDim = row.dim(-1)
         let historyWarmCache = model.makeMTPCache()
+        // E65 rung 1 tested building this block through the live first-round
+        // expression instead — applyFinalNorm over a [1, L-1, h] strided slice
+        // of the retained pre-norm seed hidden, concatenated with a [1, 1, h]
+        // row — on the theory that the unwarmed norm-over-slice and float
+        // concat were the +23.8/+28.0/+29.7 ms of host graph build the census
+        // localised in scored round 1. It measured 22.4 ms, inside the base
+        // range, so those two ops are NOT the cost. Reverted; do not retry
+        // without new evidence naming a different statement.
         let primeHidden = MLXArray.zeros([1, 512, hDim], dtype: row.dtype)
         let primeTokens = MLXArray(
             Array(repeating: Int32(0), count: 512)).reshaped([1, 512])
@@ -1066,6 +1074,8 @@ public final class Qwen36MTPBlockSession {
         //    forward. Only the last row's logits are projected through the
         //    lm_head. Deeper sub-steps chain the head's OWN post-`mtp.norm`
         //    hidden exactly as before.
+        let tDraft0 = Self.traceRounds
+            ? DispatchTime.now().uptimeNanoseconds : 0
         let headCache: [any KVCache]
         var flushHidden: [MLXArray] = []
         var flushTokens: [Int] = []
@@ -1118,6 +1128,8 @@ public final class Qwen36MTPBlockSession {
         // (Per-step asyncEval was tried here and measured NEUTRAL — the
         // ~2.4 ms/step is host graph BUILD, not GPU work to overlap; see
         // idea.md V6 journal. Single submission after the loop, as before.)
+        let tFlushBuilt = Self.traceRounds
+            ? DispatchTime.now().uptimeNanoseconds : 0
         var draftIdArrays: [MLXArray] = []
         var headHidden = model.mtpHeadLastHiddenWithKVOnlyHistory(
             hidden: draftInputHidden, nextTokenIds: draftInputTokens,
@@ -1134,7 +1146,11 @@ public final class Qwen36MTPBlockSession {
         // variant (measured neutral — nothing but build time between steps)
         // the first step carries the history flush, which IS real GPU work
         // the device can start while the host builds steps 2..d.
+        let tHead1Built = Self.traceRounds
+            ? DispatchTime.now().uptimeNanoseconds : 0
         asyncEval(draftId)
+        let tSubmit1 = Self.traceRounds
+            ? DispatchTime.now().uptimeNanoseconds : 0
         for _ in 1 ..< draftCount {
             headHidden = model.mtpHeadHiddenForward(
                 hidden: draftHidden, nextTokenIds: draftId, cache: headCache)
@@ -1143,6 +1159,8 @@ public final class Qwen36MTPBlockSession {
             draftId = model.draftTokenID(draftHidden)
             draftIdArrays.append(draftId)
         }
+        let tChainBuilt = Self.traceRounds
+            ? DispatchTime.now().uptimeNanoseconds : 0
         asyncEval(draftIdArrays[draftIdArrays.count - 1])
         if Self.traceSyncHeadChain {
             eval(draftIdArrays[draftIdArrays.count - 1])
@@ -1348,6 +1366,14 @@ public final class Qwen36MTPBlockSession {
             let line = "mtp-trace: round=\(roundCount) d=\(draftCount) "
                 + "acc=\(acceptedCount) "
                 + "draft_build_us=\((tDraftBuilt - tRound0) / 1000) "
+                // Complete split of draft_build, so a first-round cold cost
+                // names the statement that pays it instead of the section.
+                + "d_pre_us=\((tDraft0 - tRound0) / 1000) "
+                + "d_flush_us=\((tFlushBuilt - tDraft0) / 1000) "
+                + "d_head1_us=\((tHead1Built - tFlushBuilt) / 1000) "
+                + "d_submit1_us=\((tSubmit1 - tHead1Built) / 1000) "
+                + "d_chain_us=\((tChainBuilt - tSubmit1) / 1000) "
+                + "d_submit2_us=\((tDraftBuilt - tChainBuilt) / 1000) "
                 + "verify_build_us=\((tVerifyBuilt - tDraftBuilt) / 1000) "
                 + "eval_wall_us=\((tEvalDone - tVerifyBuilt) / 1000) "
                 + "readout_us=\((tReadDone - tEvalDone) / 1000) "
