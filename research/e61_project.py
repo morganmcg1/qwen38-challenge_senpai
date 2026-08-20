@@ -22,6 +22,22 @@ so it is "E53 ranked width mixture x E61 per-width cell cost measured on this
 host". The assignment's 30.9-34.7 % hand band is kept only as a comparison.
 
   python3 research/e61_project.py --out research/e61-artifacts/e61-projection.json
+
+POST-HOC CORRECTION, ledger 202(C). Rung 3 measured the whole-leg effect at
+-0.5251 % against this module's preregistered -1.84 %. The error is entirely in
+`PSI_MTP`: solving the rung 3 numbers gives an implied local-leg transfer of
+0.4678, so 0.693391 is 1.48x optimistic. Do not repair `PSI_MTP` by refitting it.
+`psi` is not identified separately from `f`; only the product is measured, and
+alphonse's E60 histogram implies a different `psi` for the same physics.
+
+Use the psi-free law for any NEW ranked projection:
+
+    ranked_leg_delta = L_local * (f_ranked / f_local)
+
+At M=6 that ratio is 0.5352 / 0.2673 = 2.0021, which independently reproduces the
+2.04x local-to-ranked width inversion this campaign derived from the E1 phase
+table. The constants below are preregistration values and are kept unchanged so
+the preregistration stays auditable.
 """
 
 from __future__ import annotations

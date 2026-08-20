@@ -85,6 +85,43 @@ senpai/verify-ranked-score-boundary.sh
 before pricing official value. A failure means the enforcing workflow changed;
 re-derive the model instead of editing the check to pass.
 
+## Prove the built worker carries your edit
+
+Do this before every timed leg of every arm. It is mandatory for any kernel
+change.
+
+`./benchmark-qwen-mtp.sh --local-submit` can silently time a **stale** worker
+binary and still report `passed: true` (ledger 202(H)). The wrapper's
+`METALLIB-GUARD` block at `benchmark-qwen-mtp.sh:200-204` extracts only
+`metallib_rebuild_required()`. It does not extract the sibling
+`swift_build_required()` at `benchmark.sh:1791-1805`, which is the function that
+guards `.build-worker/release/mlxfast-runtime-worker`. For the `quantized` kernel
+family the runtime-effective source is the JIT string compiled **into** the
+worker binary, so the half the wrapper refreshes is exactly the half that does not
+govern. A worker 14 minutes older than the candidate edit passed a full
+`--local-submit` run.
+
+```bash
+senpai/rebuild-and-assert-worker.sh \
+  --require '<T, 5, 5, true>' --require '<T, 6, 6, true>' \
+  --forbid  '<T, 5, 3, true>' --forbid  '<T, 6, 3, true>'
+```
+
+Run it **before and after** the leg and compare the reported `worker_mtime` and
+`worker_sha256`. A change between the two reads invalidates the leg.
+
+Do not use a bare `__TEXT,__text` section digest as an arm certificate (ledger
+202(I)). That digest tracks link-time layout, not kernel source content: two
+builds of the same tree produced different digests, and two builds of different
+trees produced the same one. `__text` **and** `__cstring` together is a valid
+falsifiable certificate for a JIT-string-only change, because one half must stay
+identical and the other must differ.
+
+After editing a `.metal` or `.h` kernel source, also run
+`python3 research/twin_audit.py`. After merging a base that touched vendored
+kernels, run `tools/build-mlx-metallib.sh` and record
+`metallib_source_fingerprint` per leg.
+
 ## Record a matched baseline and candidate
 
 Measure unchanged `BASE_SHA` on the assigned host:
