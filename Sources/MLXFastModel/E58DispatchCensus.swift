@@ -690,7 +690,18 @@ private final class GPUTimeLedger: @unchecked Sendable {
         lock.unlock()
     }
 
+    /// A snapshot is a DELTA since the previous snapshot, so opening a window
+    /// without flushing first would charge it with everything that ran between
+    /// the windows. In the E71 harness that is the 768-token seed prefill, the
+    /// warmup reps and the cache teardown: measured at 6.4 s against a 0.24 s
+    /// window, which is 26x the signal. The per-phase buckets survive that
+    /// pollution because the inter-block work carries the `outside` phase, but
+    /// `gpu_busy_ns` and `gpu_idle_ns` are unions over the whole delta and do
+    /// not. Flushing here puts that work in its own record and leaves the window
+    /// record holding only the window.
     func beginWindow(label: String, width: Int) {
+        drain(timeoutMs: 500)
+        snapshot(reason: "pre_window")
         lock.lock()
         window = label
         windowWidth = width

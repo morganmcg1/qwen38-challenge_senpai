@@ -14,8 +14,32 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-tag="${1:?usage: e80_gate_session.sh TAG [smoke|full]}"
+tag="${1:?usage: e80_gate_session.sh TAG [smoke|gate|gate-isolated|full]}"
 profile="${2:-full}"
+
+# The rung-1 gate needs exactly two curve widths and one arm width, because
+# every published E71 family tax it must reproduce is quoted at M = 6. Running
+# the default 1..9 curve and the 4,5,6,9 arm grid would spend 130 blocks to
+# decide a gate that 32 blocks decide, at the same reps and the same precision.
+#
+# `gate-isolated` repeats the same session with one MLX op per command buffer.
+# That makes each command-buffer GPU interval one kernel's GPU time, which is
+# the only configuration that resolves per-kernel cost. It also removes all
+# intra-buffer concurrency, so the per-family difference between the two
+# profiles IS the concurrency discount that rung 0c asks for.
+e71_profile="${profile}"
+case "${profile}" in
+  gate|gate-isolated)
+    export MLXFAST_E71_CURVE_WIDTHS="${MLXFAST_E71_CURVE_WIDTHS:-1,6}"
+    export MLXFAST_E71_ARM_WIDTHS="${MLXFAST_E71_ARM_WIDTHS:-6}"
+    export MLXFAST_E71_REPS="${MLXFAST_E71_REPS:-12}"
+    export MLXFAST_E71_WARMUP="${MLXFAST_E71_WARMUP:-3}"
+    e71_profile=full
+    ;;
+esac
+if [[ "${profile}" == "gate-isolated" ]]; then
+  E80_OPS_PER_BUFFER="${E80_OPS_PER_BUFFER:-1}"
+fi
 
 gpu_out="research/out/${tag}-gpu"
 rm -rf "${gpu_out}"
@@ -80,4 +104,4 @@ swift build -c release --force-resolved-versions -Xswiftc -enable-testing \
   --build-tests || exit 1
 publish_metallib || exit 1
 
-exec research/e71_census.sh "${tag}" "${profile}"
+exec research/e71_census.sh "${tag}" "${e71_profile}"

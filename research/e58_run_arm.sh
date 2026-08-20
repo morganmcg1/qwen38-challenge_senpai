@@ -11,6 +11,8 @@
 #                               [--tax N] [--tax-mode metal|mlx]
 #                               [--tax-ops-per-buffer N] [--tokens N]
 #                               [--trace] [--hot]
+#                               [--gpu-time] [--force-drafts N] [--depth N]
+#                               [--snapshot-rounds N]
 #
 # --census      counts every GPU dispatch by round, verify width and phase. The
 #               swizzle's lock cost makes the run unfit for timing: use it for
@@ -25,6 +27,20 @@
 #               only inside one ABBA-counterbalanced session, and the result must
 #               carry cool_gate_passed_real_gate=false and
 #               gate_qualified_for_timing=false verbatim.
+#
+# E80 additions.
+# --gpu-time      reads GPUStartTime/GPUEndTime per command buffer and emits the
+#                 per-phase, per-width and per-kernel GPU-time ledger. Implies
+#                 --census, because the ledger reuses the census sink and the
+#                 dispatch hook that names the kernels.
+# --force-drafts  pins the proposed draft count for EVERY round, so one leg
+#                 measures exactly one verify width (width = drafts + 1). The
+#                 emitted stream stays the same greedy target chain, but a pinned
+#                 width is not a schedule anyone would ship: research only.
+# --depth         sets the depth OFFERED to the session. --force-drafts is
+#                 clamped by it, so a pinned width above the offered depth would
+#                 silently measure a narrower width. Pass --depth 8 with any
+#                 --force-drafts above the shipped k-test value of 1.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -43,10 +59,18 @@ buffer_ops=
 tokens=512
 row_trace=0
 hot=0
+gpu_time=0
+force_drafts=
+depth=
+snapshot_rounds=
 while (($#)); do
   case "$1" in
     --census) census=1; shift ;;
     --census-shapes) census=1; census_shapes=1; shift ;;
+    --gpu-time) gpu_time=1; census=1; census_shapes=1; shift ;;
+    --force-drafts) force_drafts="$2"; shift 2 ;;
+    --depth) depth="$2"; shift 2 ;;
+    --snapshot-rounds) snapshot_rounds="$2"; shift 2 ;;
     --sync-head) sync_head=1; shift ;;
     --tax) tax="$2"; shift 2 ;;
     --tax-mode) tax_mode="$2"; shift 2 ;;
@@ -94,6 +118,14 @@ if ((census)); then
   export MLX_E58_DISPATCH_CENSUS_PATH="${census_path}"
   ((census_shapes)) && export MLX_E58_DISPATCH_CENSUS_SHAPES=1
 fi
+if ((gpu_time)); then
+  export MLX_E80_GPU_TIME=1
+  # Default to one snapshot per round. A 512-token leg is a few hundred rounds,
+  # which keeps the JSONL small enough to parse and still resolves each round.
+  export MLX_E80_SNAPSHOT_ROUNDS="${snapshot_rounds:-1}"
+fi
+[[ -n "${force_drafts}" ]] && export MLX_E80_FORCE_DRAFTS="${force_drafts}"
+[[ -n "${depth}" ]] && export MLXFAST_QWEN_MTP_DEPTH="${depth}"
 if ((sync_head)); then
   export MLX_QWEN_MTP_TRACE_SYNC_HEAD=1
 fi
@@ -154,6 +186,10 @@ CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-${PWD}/.build-worker/clang-m
   echo "buffer_ops=${buffer_ops:-<worker-default>}"
   echo "tokens=${tokens}"
   echo "row_trace=${row_trace}"
+  echo "gpu_time=${gpu_time}"
+  echo "force_drafts=${force_drafts:-<session-policy>}"
+  echo "offered_depth=${depth:-<worker-default>}"
+  echo "snapshot_rounds=${snapshot_rounds:-<gpu-time-default>}"
   echo "cool_gate=$((1 - hot))"
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   echo "head_dir=${MLXFAST_QWEN_MTP_HEAD_DIR:-<setup-default>}"
