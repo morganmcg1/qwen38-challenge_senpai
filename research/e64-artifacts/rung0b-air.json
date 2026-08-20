@@ -279,7 +279,7 @@
     "-O2",
     "-fno-fast-math"
   ],
-  "head": "3c2999de0bca3c9a79e2481c29322b86f3c303bc",
+  "head": "4fc152948b7a5a9abdb3a82284598e1401d47628",
   "pipeline": "metal -std=metal4.0 -O2 -fno-fast-math -S | metal-opt -passes=default<O3>",
   "probe": "research/e64_wide_probe.metal"
 }

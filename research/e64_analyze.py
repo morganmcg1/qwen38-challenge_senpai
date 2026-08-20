@@ -151,10 +151,72 @@ def analyze_shape(shape: dict) -> dict:
     return out
 
 
+# askeladd's E61 rung 1 single-stream ladder: the only prior measurement of the
+# step this experiment exists to explain.
+ASKELADD_LADDER_GB_S = {2: 223.784, 3: 199.693, 4: 175.238, 5: 150.946,
+                        6: 117.8, 7: 97.9}
+
+
+def ladder(sessions: list[dict]) -> dict:
+    rungs = []
+    for session in sessions:
+        for shape in session["shapes"]:
+            rungs.append({
+                "na": session["na"],
+                "shape": shape["shape"],
+                "plain_gb_per_s": shape["gb_per_s"]["plain"],
+                "plain_ms": shape["median_seconds_per_dispatch"]["plain"] * 1e3,
+                "entry_gpu_temp_c": session["entry_gpu_temp_c"],
+                "exit_gpu_temp_c": session["exit_gpu_temp_c"],
+                "reference_gb_per_s": ASKELADD_LADDER_GB_S.get(session["na"]),
+            })
+    rungs.sort(key=lambda r: (r["shape"], r["na"]))
+
+    steps = []
+    by_shape = {}
+    for rung in rungs:
+        by_shape.setdefault(rung["shape"], {})[rung["na"]] = rung
+    for shape, at_na in by_shape.items():
+        for na in sorted(at_na)[:-1]:
+            if na + 1 not in at_na:
+                continue
+            lo, hi = at_na[na], at_na[na + 1]
+            step = {
+                "shape": shape,
+                "from_na": na,
+                "to_na": na + 1,
+                "seconds_step": hi["plain_ms"] / lo["plain_ms"] - 1.0,
+            }
+            if lo["reference_gb_per_s"] and hi["reference_gb_per_s"]:
+                step["reference_seconds_step"] = (
+                    lo["reference_gb_per_s"] / hi["reference_gb_per_s"] - 1.0)
+            steps.append(step)
+    return {"rungs": rungs, "steps": steps}
+
+
+def print_ladder(data: dict) -> None:
+    print("\nplain-arm ladder (instrument check)")
+    for rung in data["rungs"]:
+        reference = rung["reference_gb_per_s"]
+        print(f"  {rung['shape']:34s} NA={rung['na']}  "
+              f"{rung['plain_ms']:8.4f} ms  {rung['plain_gb_per_s']:6.1f} GB/s"
+              f"  reference {reference if reference else float('nan'):6.1f} GB/s"
+              f"  {rung['entry_gpu_temp_c']:.1f}C -> {rung['exit_gpu_temp_c']:.1f}C")
+    print("  step in seconds per dispatch")
+    for step in data["steps"]:
+        reference = step.get("reference_seconds_step")
+        text = f"{reference * 100:+.1f} %" if reference is not None else "n/a"
+        print(f"    {step['shape']:34s} NA {step['from_na']}->{step['to_na']}  "
+              f"{step['seconds_step'] * 100:+7.2f} %   reference {text}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("timing", type=pathlib.Path, nargs="+")
     parser.add_argument("--out", type=pathlib.Path)
+    parser.add_argument("--ladder", action="store_true",
+                        help="also report the plain-arm bandwidth ladder over "
+                             "NA against askeladd's E61 reference")
     args = parser.parse_args()
 
     report = {"sessions": []}
@@ -206,6 +268,10 @@ def main() -> int:
               f"{session.get('forced_effect_median_over_shapes', float('nan')) * 100:+.3f} %  "
               f"bar {session['widest_same_arm_spread_over_shapes'] * 100:.3f} %  "
               f"-> {session['decision_forced']}")
+
+    if args.ladder:
+        report["ladder"] = ladder(report["sessions"])
+        print_ladder(report["ladder"])
 
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

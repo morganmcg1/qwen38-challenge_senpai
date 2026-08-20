@@ -22,6 +22,7 @@ log="${artifacts}/rung0b.log"
 build="/tmp/e64-build"
 shape=""
 skip_gate=""
+skip_census=""
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -32,6 +33,7 @@ while [[ "$#" -gt 0 ]]; do
     --out) out="$2"; shift 2 ;;
     --log) log="$2"; shift 2 ;;
     --skip-gate) skip_gate="1"; shift ;;
+    --skip-census) skip_census="1"; shift ;;
     *) echo "e64_rung0b: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -53,8 +55,10 @@ sample_thermal() {
 } | tee -a "${log}"
 
 python3 research/e64_wide_gen.py --check | tee -a "${log}" || exit 1
-python3 research/e64_air_census.py --na 5 6 \
-  --out "${artifacts}/rung0b-air.json" | tee -a "${log}" || exit 1
+if [[ -z "${skip_census}" ]]; then
+  python3 research/e64_air_census.py --na 5 6 \
+    --out "${artifacts}/rung0b-air.json" | tee -a "${log}" || exit 1
+fi
 python3 research/e64_emit_arms.py --na "${na}" \
   --out "${build}/arms_na${na}.metal" | tee -a "${log}" || exit 1
 clang -fobjc-arc -O2 -framework Metal -framework Foundation \
