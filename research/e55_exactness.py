@@ -358,11 +358,23 @@ def negative_control() -> dict:
 
 
 def main() -> int:
+    global RUNS, ARMS
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="research/e55-exactness.json")
     ap.add_argument("--ledger-base")
     ap.add_argument("--ledger-candidate")
+    # Later experiments reuse this instrument on their own ABBA run tree. The
+    # arm order is control, candidate, drift control, which is what names the
+    # comparisons below.
+    ap.add_argument("--runs", default=str(RUNS))
+    ap.add_argument("--arms", default=",".join(ARMS))
     args = ap.parse_args()
+
+    RUNS = pathlib.Path(args.runs)
+    ARMS = tuple(a.strip() for a in args.arms.split(","))
+    if len(ARMS) != 3:
+        raise SystemExit("--arms needs exactly three names: control,candidate,drift-control")
+    control, candidate, drift = ARMS
 
     golden = {(a, l): read(a, l, "02-mtp-verify-output.json")
               for a in ARMS for l in LEGS}
@@ -371,15 +383,15 @@ def main() -> int:
     path_a, path_b = {}, {}
     for leg in LEGS:
         path_a["candidate_vs_base_%s" % leg] = compare_golden(
-            golden[("base", leg)], golden[("m9two", leg)])
+            golden[(control, leg)], golden[(candidate, leg)])
         path_a["null_base_vs_base2_%s" % leg] = compare_golden(
-            golden[("base", leg)], golden[("base2", leg)])
+            golden[(control, leg)], golden[(drift, leg)])
         path_b["candidate_vs_base_%s" % leg] = compare_wide(
-            wide[("base", leg)], wide[("m9two", leg)])
+            wide[(control, leg)], wide[(candidate, leg)])
         path_b["null_base_vs_base2_%s" % leg] = compare_wide(
-            wide[("base", leg)], wide[("base2", leg)])
+            wide[(control, leg)], wide[(drift, leg)])
     path_a["candidate_leg1_vs_leg2"] = compare_golden(
-        golden[("m9two", "leg-1")], golden[("m9two", "leg-2")])
+        golden[(candidate, "leg-1")], golden[(candidate, "leg-2")])
 
     path_c = None
     if args.ledger_base and args.ledger_candidate:
