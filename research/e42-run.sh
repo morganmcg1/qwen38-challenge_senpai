@@ -134,6 +134,11 @@ rm -rf "${out}"; mkdir -p "${out}/reports"
   echo "head_safetensors_sha256=$(shasum -a 256 "${head_dir}/model.safetensors" | cut -d' ' -f1)"
   echo "legs=${legs}"
   echo "curve=${want_curve}"
+  # Requested state only. The verdict is appended AFTER the legs, because a gate
+  # that was asked for is not a gate that passed, and the later line wins in
+  # every meta reader in research/.
+  echo "cool_gate_requested=$(
+    [[ "${MLXFAST_LOCAL_COOL_GATE:-0}" == "0" ]] && echo false || echo true)"
   echo "cool_gate_passed_real_gate=false"
   echo "gate_qualified_for_timing=false"
   echo "official_or_ranked_score=false"
@@ -204,7 +209,7 @@ if ((status == 0)); then
 fi
 
 if ((status == 0)); then
-  export MLXFAST_LOCAL_COOL_GATE=0
+  export MLXFAST_LOCAL_COOL_GATE="${MLXFAST_LOCAL_COOL_GATE:-0}"
   export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
   export MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE="${fixture}"
   export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
@@ -240,7 +245,14 @@ if ((status == 0)); then
   done
 fi
 
+gate_verdict=false
+if [[ "${MLXFAST_LOCAL_COOL_GATE:-0}" != "0" && "${status}" -eq 0 ]]; then
+  gate_verdict=true
+fi
+
 {
+  echo "cool_gate_passed_real_gate=${gate_verdict}"
+  echo "gate_qualified_for_timing=${gate_verdict}"
   echo "cli_sha256=$(shasum -a 256 "${repo_root}/.build/release/mlxfast-swift" 2>/dev/null | cut -d' ' -f1)"
   echo "worker_sha256=$(shasum -a 256 "${repo_root}/.build-worker/release/mlxfast-runtime-worker" 2>/dev/null | cut -d' ' -f1)"
   echo "metallib_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint 2>/dev/null | tail -1)"
