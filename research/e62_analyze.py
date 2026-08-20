@@ -152,6 +152,56 @@ def regress(legs: list[dict], reference: str, metric: str) -> dict:
     }
 
 
+def trend(legs: list[dict], metric: str, mb: int) -> dict:
+    """Fit `time ~ log2(ops) + leg_position` across one constant-MB ladder.
+
+    Seven arms with one replicate pair each give a weak pairwise test but a
+    well-powered test of a monotone tilt, because every leg contributes to the
+    one slope. This is the primary screen for the OPS ladder; the per-arm
+    contrasts in `regress` stay descriptive.
+    """
+    ladder = [leg for leg in legs if leg["mb"] == mb and leg["ops"] > 0]
+    distinct = sorted({leg["ops"] for leg in ladder})
+    if len(distinct) < 3:
+        return {"skipped": f"need >=3 distinct ops at mb={mb}, saw {distinct}"}
+    positions = np.array([leg["position"] for leg in ladder], dtype=float)
+    log_ops = np.array([math.log2(leg["ops"]) for leg in ladder])
+    design = np.column_stack(
+        [np.ones(len(ladder)), log_ops - log_ops.mean(),
+         positions - positions.mean()]
+    )
+    response = np.array([leg[metric] for leg in ladder], dtype=float)
+    coefficients, *_ = np.linalg.lstsq(design, response, rcond=None)
+    residuals = response - design @ coefficients
+    dof = len(ladder) - design.shape[1]
+    if dof <= 0:
+        return {"skipped": "not enough ladder legs"}
+    residual_var = float(residuals @ residuals) / dof
+    covariance = residual_var * np.linalg.pinv(design.T @ design)
+    se = float(np.sqrt(np.diag(covariance))[1])
+    estimate = float(coefficients[1])
+    critical = student_t_975(dof)
+    mean = float(response.mean())
+    span = log_ops.max() - log_ops.min()
+    return {
+        "mb": mb,
+        "ops_points": distinct,
+        "n_legs": len(ladder),
+        "dof": dof,
+        "mean": mean,
+        "residual_sd_percent": 100.0 * math.sqrt(residual_var) / mean,
+        "slope_per_log2_ops": estimate,
+        "se": se,
+        "t": estimate / se if se else float("nan"),
+        "ci95_low": estimate - critical * se,
+        "ci95_high": estimate + critical * se,
+        "percent_per_doubling": 100.0 * estimate / mean,
+        "percent_per_doubling_ci95_low": 100.0 * (estimate - critical * se) / mean,
+        "percent_per_doubling_ci95_high": 100.0 * (estimate + critical * se) / mean,
+        "percent_across_full_ladder": 100.0 * estimate * span / mean,
+    }
+
+
 def same_arm_spreads(legs: list[dict], metric: str) -> dict:
     """Observed |a-b|/mean for every same-arm pair, keyed by leg separation."""
     by_separation: dict[int, list[float]] = {}
@@ -180,6 +230,8 @@ def main() -> int:
     parser.add_argument("--metric", default="mtp_seconds_per_token")
     parser.add_argument("--drop", nargs="*", default=[],
                         help="leg tags to exclude, e.g. a declared warm-up")
+    parser.add_argument("--trend-mb", type=int, default=0,
+                        help="fit the ladder slope across legs at this MB")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
@@ -208,6 +260,8 @@ def main() -> int:
         "same_arm_spreads_percent": same_arm_spreads(legs, args.metric),
         "regression": regress(legs, args.reference, args.metric),
     }
+    if args.trend_mb:
+        payload["ladder_trend"] = trend(legs, args.metric, args.trend_mb)
     for arm in sorted({leg["arm"] for leg in legs}):
         values = [leg[args.metric] for leg in legs if leg["arm"] == arm]
         payload["arm_means"][arm] = {
@@ -225,6 +279,8 @@ def main() -> int:
     print(json.dumps(payload["regression"], indent=1))
     print(json.dumps(payload["arm_means"], indent=1))
     print(json.dumps(payload["same_arm_spreads_percent"], indent=1))
+    if "ladder_trend" in payload:
+        print(json.dumps(payload["ladder_trend"], indent=1))
     print(f"entry temperature spread: {payload['entry_temperature_spread_c']:.3f} C")
     return 0
 
