@@ -44,6 +44,11 @@ let qwen35BufferTaxPerDraft: Int =
     ProcessInfo.processInfo.environment["MLX_E85_BUFFER_TAX"]
         .flatMap(Int.init) ?? 0
 
+/// Addend for the tax above. A Swift global is initialised once, on first use,
+/// so an untaxed run never builds it.
+nonisolated(unsafe) let qwen35BufferTaxZero: MLXArray =
+    MLXArray(Float(0)).asType(.bfloat16)
+
 // MARK: - MTPDecoderLayer
 
 /// Full-attention transformer layer used inside the Qwen3.5/3.6 MTP head.
@@ -153,14 +158,12 @@ final class Qwen35MTPModule: Module {
     /// three gathers plus a dequantize. Those four intermediates exist only to
     /// carry one row into a kernel that reads it twice, so the fused variant
     /// reads the packed row in place and the eager embed never runs.
-    private static let bufferTaxZero = MLXArray(Float(0)).asType(.bfloat16)
-
     private func preFcConcat(
         nextTokenIds: MLXArray, embedTokens: Embedding, hidden hiddenIn: MLXArray
     ) -> MLXArray {
         var hidden = hiddenIn
         for _ in 0 ..< qwen35BufferTaxPerDraft {
-            hidden = hidden + Self.bufferTaxZero
+            hidden = hidden + qwen35BufferTaxZero
         }
 
         if qwen35FusedEmbedConcatEnabled,
