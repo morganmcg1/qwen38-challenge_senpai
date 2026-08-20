@@ -1,0 +1,417 @@
+register law holds on both architectures over 19 censused cells: the count is a function of the largest group alone
+sweep: Apple M4 Pro  arms 52  reps 15  entry 36.4C exit 66.0C
+gate: real_gate=True qualified=True
+sweep null: median 0.0193%  p90 0.0742%  max 0.2396%  (n=208)
+arms with local frame bytes: ['m6_ipg2_p27', 'm6_ipg2_p28', 'm6_ipg2_p32', 'm6_ipg3_p16', 'm6_ipg3_p32', 'm6_ipg3_p4', 'm6_ipg3_p8', 'm8_ipg6_p0', 'm9_ipg6_p0']
+
+== rung 1a: NATURAL contrast, fixed M and fixed group count ==
+   measures q(IPG); cannot separate occupancy from partition shape
+  M=8  IPG 4 -> 5   local 94 -> 95 regs   ranked 91 -> 98 regs
+     head.lm_head                  1.01116  95% CI [1.01090, 1.01144]  MOVES
+     linear_attn.out_proj          1.01343  95% CI [1.01213, 1.01403]  MOVES
+     mlp.down                      1.01356  95% CI [1.01252, 1.01552]  MOVES
+     mlp.gate_up_fused             1.01109  95% CI [1.01076, 1.01136]  MOVES
+     pooled over shapes 1.01231
+  M=8  IPG 4 -> 6   local 94 -> 96 regs   ranked 91 -> 111 regs   [LOCAL SPILL]
+     head.lm_head                  1.08162  95% CI [1.08144, 1.08185]  MOVES
+     linear_attn.out_proj          1.10588  95% CI [1.10489, 1.10652]  MOVES
+     mlp.down                      1.11463  95% CI [1.11292, 1.11574]  MOVES
+     mlp.gate_up_fused             1.08474  95% CI [1.08432, 1.08501]  MOVES
+     pooled over shapes 1.09663
+  M=6  IPG 3 -> 4   local 93 -> 94 regs   ranked 90 -> 91 regs
+     head.lm_head                  0.99621  95% CI [0.99587, 0.99635]  MOVES
+     linear_attn.out_proj          1.00174  95% CI [1.00106, 1.00245]  MOVES
+     mlp.down                      1.00317  95% CI [1.00223, 1.00401]  MOVES
+     mlp.gate_up_fused             0.99739  95% CI [0.99707, 0.99788]  MOVES
+     pooled over shapes 0.99962
+  M=7  IPG 4 -> 5   local 94 -> 95 regs   ranked 91 -> 98 regs
+     head.lm_head                  1.00384  95% CI [1.00367, 1.00397]  MOVES
+     linear_attn.out_proj          1.01136  95% CI [1.01056, 1.01236]  MOVES
+     mlp.down                      1.01313  95% CI [1.01225, 1.01411]  MOVES
+     mlp.gate_up_fused             1.00457  95% CI [1.00436, 1.00516]  MOVES
+     pooled over shapes 1.00822
+  M=9  IPG 5 -> 6   local 95 -> 96 regs   ranked 98 -> 111 regs   [LOCAL SPILL]
+     head.lm_head                  1.06807  95% CI [1.06786, 1.06825]  MOVES
+     linear_attn.out_proj          1.08411  95% CI [1.08320, 1.08478]  MOVES
+     mlp.down                      1.10600  95% CI [1.10500, 1.10754]  MOVES
+     mlp.gate_up_fused             1.07181  95% CI [1.07127, 1.07209]  MOVES
+     pooled over shapes 1.08240
+
+== rung 1a control: replicate the probe arms against E73 ==
+   the p0 probe adds only a dead branch, so both sessions must agree
+     arm            R    S   shape                        E77/E73-1
+     m4_ipg2_p0      70  43  head.lm_head                  -0.003%
+     m4_ipg2_p0      70  43  linear_attn.out_proj          -0.056%
+     m4_ipg2_p0      70  43  mlp.down                      -0.065%
+     m4_ipg2_p0      70  43  mlp.gate_up_fused             +0.002%
+     m6_ipg2_p0      70  43  head.lm_head                  +0.107%
+     m6_ipg2_p0      70  43  linear_attn.out_proj          +0.083%
+     m6_ipg2_p0      70  43  mlp.down                      +0.141%
+     m6_ipg2_p0      70  43  mlp.gate_up_fused             +0.117%
+     m6_ipg3_p0      93  33  head.lm_head                  +0.228%
+     m6_ipg3_p0      93  33  linear_attn.out_proj          +0.228%
+     m6_ipg3_p0      93  33  mlp.down                      +0.161%
+     m6_ipg3_p0      93  33  mlp.gate_up_fused             +0.246%
+     m6_ipg4_p0      94  32  head.lm_head                  +0.101%
+     m6_ipg4_p0      94  32  linear_attn.out_proj          +0.068%
+     m6_ipg4_p0      94  32  mlp.down                      +0.132%
+     m6_ipg4_p0      94  32  mlp.gate_up_fused             +0.123%
+     m7_ipg4_p0      94  32  head.lm_head                  +0.131%
+     m7_ipg4_p0      94  32  linear_attn.out_proj          +0.103%
+     m7_ipg4_p0      94  32  mlp.down                      +0.109%
+     m7_ipg4_p0      94  32  mlp.gate_up_fused             +0.114%
+     m7_ipg5_p0      95  32  head.lm_head                  +0.088%
+     m7_ipg5_p0      95  32  linear_attn.out_proj          +0.102%
+     m7_ipg5_p0      95  32  mlp.down                      +0.082%
+     m7_ipg5_p0      95  32  mlp.gate_up_fused             +0.101%
+     m8_ipg4_p0      94  32  head.lm_head                  +0.006%
+     m8_ipg4_p0      94  32  linear_attn.out_proj          +0.007%
+     m8_ipg4_p0      94  32  mlp.down                      +0.044%
+     m8_ipg4_p0      94  32  mlp.gate_up_fused             +0.019%
+     m8_ipg5_p0      95  32  head.lm_head                  +0.047%
+     m8_ipg5_p0      95  32  linear_attn.out_proj          +0.005%
+     m8_ipg5_p0      95  32  mlp.down                      -0.006%
+     m8_ipg5_p0      95  32  mlp.gate_up_fused             +0.044%
+     m8_ipg6_p0      96  32  head.lm_head                  +0.228%
+     m8_ipg6_p0      96  32  linear_attn.out_proj          +0.217%
+     m8_ipg6_p0      96  32  mlp.down                      +0.234%
+     m8_ipg6_p0      96  32  mlp.gate_up_fused             +0.231%
+     m9_ipg5_p0      95  32  head.lm_head                  +0.021%
+     m9_ipg5_p0      95  32  linear_attn.out_proj          -0.009%
+     m9_ipg5_p0      95  32  mlp.down                      +0.088%
+     m9_ipg5_p0      95  32  mlp.gate_up_fused             +0.034%
+     m9_ipg6_p0      96  32  head.lm_head                  -0.017%
+     m9_ipg6_p0      96  32  linear_attn.out_proj          -0.008%
+     m9_ipg6_p0      96  32  mlp.down                      -0.000%
+     m9_ipg6_p0      96  32  mlp.gate_up_fused             +0.040%
+   absolute agreement: median 0.085%  max 0.246%  (n=44)
+   natural ratios reproduce: median 0.042%  max 0.222%  (n=20)
+
+== rung 1b: SYNTHETIC ladder, fixed cell, only registers move ==
+  head.lm_head  m6 ipg2   R 70..96   S 43..32
+       R    S   P   t/t(p0)      95% CI
+      70   43   0   1.00000  [1.00000, 1.00000]
+      71   43   1   0.99970  [0.99961, 0.99987]
+      72   42   2   0.99945  [0.99931, 0.99956]
+      73   42   3   0.99956  [0.99945, 0.99990]
+      74   41   4   0.99961  [0.99948, 0.99987]
+      75   40   5   0.99986  [0.99978, 1.00000]
+      76   40   6   1.00165  [1.00152, 1.00179]
+      77   39   7   1.00116  [1.00103, 1.00137]
+      78   39   8   1.00106  [1.00090, 1.00145]
+      79   38   9   1.00091  [1.00082, 1.00102]
+      80   38  10   1.00010  [1.00002, 1.00020]
+      81   37  11   1.00124  [1.00114, 1.00134]
+      82   37  12   1.00139  [1.00111, 1.00164]
+      83   37  13   1.00258  [1.00248, 1.00267]
+      84   36  14   1.00243  [1.00228, 1.00261]
+      85   36  15   1.00204  [1.00196, 1.00221]
+      86   35  16   1.00297  [1.00288, 1.00307]
+      87   35  17   1.00378  [1.00367, 1.00385]
+      88   34  18   1.00229  [1.00222, 1.00237]
+      89   34  19   1.00284  [1.00274, 1.00303]
+      90   34  20   1.00339  [1.00330, 1.00347]
+      91   33  21   1.00460  [1.00440, 1.00491]
+      92   33  22   1.00396  [1.00378, 1.00412]
+      93   33  23   1.00398  [1.00385, 1.00444]
+      94   32  24   1.00542  [1.00529, 1.00552]
+      95   32  25   1.00622  [1.00597, 1.00651]
+      96   32  26   1.00504  [1.00495, 1.00516]
+      96   32  27   1.00483  [1.00472, 1.00503]  SPILL 16 B, excluded from the fit
+      96   32  28   1.00534  [1.00517, 1.00544]  SPILL 16 B, excluded from the fit
+      96   32  32   1.00644  [1.00618, 1.00669]  SPILL 32 B, excluded from the fit
+     control q8    0.99916 vs p8 1.00106  -0.191%
+     control q16   0.99965 vs p16 1.00297  -0.331%
+     control q24   0.99986 vs p24 1.00542  -0.553%
+  head.lm_head  m6 ipg3   R 93..96   S 33..32
+       R    S   P   t/t(p0)      95% CI
+      93   33   0   1.00000  [1.00000, 1.00000]
+      95   32   1   0.99908  [0.99870, 0.99923]
+      96   32   2   0.99979  [0.99943, 0.99997]
+      96   32   4   1.00095  [1.00057, 1.00112]  SPILL 16 B, excluded from the fit
+      96   32   8   1.00180  [1.00146, 1.00195]  SPILL 16 B, excluded from the fit
+      96   32  16   1.00742  [1.00710, 1.00762]  SPILL 48 B, excluded from the fit
+      96   32  32   1.01672  [1.01635, 1.01688]  SPILL 112 B, excluded from the fit
+     control q2    1.00193 vs p2 0.99979  +0.214%
+     control q8    0.99947 vs p8 1.00180  -0.233%
+     control q32   1.00025 vs p32 1.01672  -1.619%
+  linear_attn.out_proj  m6 ipg2   R 70..96   S 43..32
+       R    S   P   t/t(p0)      95% CI
+      70   43   0   1.00000  [1.00000, 1.00000]
+      71   43   1   1.00074  [1.00015, 1.00163]
+      72   42   2   1.00001  [0.99954, 1.00072]
+      73   42   3   0.99951  [0.99661, 1.00047]
+      74   41   4   1.00051  [0.99943, 1.00118]
+      75   40   5   1.00094  [1.00046, 1.00172]
+      76   40   6   1.00210  [1.00144, 1.00306]
+      77   39   7   1.00185  [1.00136, 1.00280]
+      78   39   8   1.00127  [1.00096, 1.00208]
+      79   38   9   1.00261  [1.00211, 1.00334]
+      80   38  10   1.00104  [1.00033, 1.00179]
+      81   37  11   1.00198  [1.00117, 1.00286]
+      82   37  12   1.00173  [1.00108, 1.00250]
+      83   37  13   1.00290  [1.00226, 1.00364]
+      84   36  14   1.00255  [1.00186, 1.00324]
+      85   36  15   1.00340  [1.00289, 1.00414]
+      86   35  16   1.00405  [1.00306, 1.00481]
+      87   35  17   1.00527  [1.00466, 1.00619]
+      88   34  18   1.00282  [1.00076, 1.00363]
+      89   34  19   1.00358  [1.00273, 1.00457]
+      90   34  20   1.00468  [1.00413, 1.00546]
+      91   33  21   1.00544  [1.00391, 1.00625]
+      92   33  22   1.00468  [1.00400, 1.00577]
+      93   33  23   1.00429  [1.00380, 1.00507]
+      94   32  24   1.00631  [1.00555, 1.00711]
+      95   32  25   1.00721  [1.00603, 1.00799]
+      96   32  26   1.00628  [1.00567, 1.00703]
+      96   32  27   1.00628  [1.00566, 1.00718]  SPILL 16 B, excluded from the fit
+      96   32  28   1.00652  [1.00611, 1.00744]  SPILL 16 B, excluded from the fit
+      96   32  32   1.00845  [1.00806, 1.00957]  SPILL 32 B, excluded from the fit
+     control q8    1.00024 vs p8 1.00127  -0.104%
+     control q16   1.00067 vs p16 1.00405  -0.337%
+     control q24   1.00126 vs p24 1.00631  -0.502%
+  linear_attn.out_proj  m6 ipg3   R 93..96   S 33..32
+       R    S   P   t/t(p0)      95% CI
+      93   33   0   1.00000  [1.00000, 1.00000]
+      95   32   1   1.00019  [0.99961, 1.00117]
+      96   32   2   1.00093  [1.00034, 1.00192]
+      96   32   4   1.00249  [1.00194, 1.00338]  SPILL 16 B, excluded from the fit
+      96   32   8   1.00360  [1.00302, 1.00481]  SPILL 16 B, excluded from the fit
+      96   32  16   1.00849  [1.00797, 1.00965]  SPILL 48 B, excluded from the fit
+      96   32  32   1.01731  [1.01684, 1.01834]  SPILL 112 B, excluded from the fit
+     control q2    1.00121 vs p2 1.00093  +0.029%
+     control q8    1.00130 vs p8 1.00360  -0.229%
+     control q32   1.00302 vs p32 1.01731  -1.404%
+  mlp.down  m6 ipg2   R 70..96   S 43..32
+       R    S   P   t/t(p0)      95% CI
+      70   43   0   1.00000  [1.00000, 1.00000]
+      71   43   1   0.99930  [0.99900, 1.00056]
+      72   42   2   0.99888  [0.99840, 1.00003]
+      73   42   3   0.99921  [0.99859, 1.00038]
+      74   41   4   0.99878  [0.99821, 1.00000]
+      75   40   5   0.99951  [0.99875, 1.00104]
+      76   40   6   1.00049  [0.99980, 1.00180]
+      77   39   7   1.00084  [1.00027, 1.00201]
+      78   39   8   0.99985  [0.99919, 1.00087]
+      79   38   9   1.00009  [0.99938, 1.00128]
+      80   38  10   0.99945  [0.99889, 1.00062]
+      81   37  11   1.00048  [0.99994, 1.00182]
+      82   37  12   0.99956  [0.99907, 1.00100]
+      83   37  13   1.00075  [1.00004, 1.00191]
+      84   36  14   1.00027  [0.99958, 1.00141]
+      85   36  15   1.00090  [0.99980, 1.00222]
+      86   35  16   1.00085  [1.00037, 1.00203]
+      87   35  17   1.00224  [1.00176, 1.00328]
+      88   34  18   0.99948  [0.99895, 1.00055]
+      89   34  19   1.00094  [0.99950, 1.00208]
+      90   34  20   1.00095  [1.00023, 1.00222]
+      91   33  21   1.00201  [1.00159, 1.00316]
+      92   33  22   1.00133  [1.00087, 1.00274]
+      93   33  23   1.00086  [1.00026, 1.00206]
+      94   32  24   1.00260  [1.00166, 1.00374]
+      95   32  25   1.00308  [1.00224, 1.00426]
+      96   32  26   1.00218  [1.00162, 1.00326]
+      96   32  27   1.00151  [1.00109, 1.00263]  SPILL 16 B, excluded from the fit
+      96   32  28   1.00215  [1.00161, 1.00334]  SPILL 16 B, excluded from the fit
+      96   32  32   1.00384  [1.00289, 1.00510]  SPILL 32 B, excluded from the fit
+     control q8    0.99961 vs p8 0.99985  -0.023%
+     control q16   0.99978 vs p16 1.00085  -0.108%
+     control q24   1.00084 vs p24 1.00260  -0.176%
+  mlp.down  m6 ipg3   R 93..96   S 33..32
+       R    S   P   t/t(p0)      95% CI
+      93   33   0   1.00000  [1.00000, 1.00000]
+      95   32   1   1.00130  [1.00019, 1.00249]
+      96   32   2   1.00107  [0.99967, 1.00187]
+      96   32   4   1.00153  [1.00053, 1.00254]  SPILL 16 B, excluded from the fit
+      96   32   8   1.00302  [1.00122, 1.00420]  SPILL 16 B, excluded from the fit
+      96   32  16   1.00548  [1.00416, 1.00646]  SPILL 48 B, excluded from the fit
+      96   32  32   1.01094  [1.00986, 1.01197]  SPILL 112 B, excluded from the fit
+     control q2    1.00081 vs p2 1.00107  -0.026%
+     control q8    1.00059 vs p8 1.00302  -0.242%
+     control q32   1.00178 vs p32 1.01094  -0.905%
+  mlp.gate_up_fused  m6 ipg2   R 70..96   S 43..32
+       R    S   P   t/t(p0)      95% CI
+      70   43   0   1.00000  [1.00000, 1.00000]
+      71   43   1   1.00008  [0.99981, 1.00037]
+      72   42   2   0.99962  [0.99936, 0.99992]
+      73   42   3   0.99985  [0.99950, 1.00014]
+      74   41   4   0.99986  [0.99963, 1.00010]
+      75   40   5   1.00019  [0.99978, 1.00048]
+      76   40   6   1.00185  [1.00160, 1.00219]
+      77   39   7   1.00156  [1.00121, 1.00188]
+      78   39   8   1.00109  [1.00076, 1.00141]
+      79   38   9   1.00128  [1.00103, 1.00161]
+      80   38  10   1.00036  [0.99989, 1.00070]
+      81   37  11   1.00142  [1.00112, 1.00169]
+      82   37  12   1.00128  [1.00086, 1.00156]
+      83   37  13   1.00251  [1.00226, 1.00285]
+      84   36  14   1.00231  [1.00194, 1.00265]
+      85   36  15   1.00211  [1.00178, 1.00248]
+      86   35  16   1.00299  [1.00270, 1.00334]
+      87   35  17   1.00396  [1.00364, 1.00428]
+      88   34  18   1.00236  [1.00203, 1.00272]
+      89   34  19   1.00306  [1.00277, 1.00338]
+      90   34  20   1.00349  [1.00317, 1.00378]
+      91   33  21   1.00466  [1.00433, 1.00492]
+      92   33  22   1.00399  [1.00370, 1.00428]
+      93   33  23   1.00402  [1.00372, 1.00430]
+      94   32  24   1.00553  [1.00527, 1.00576]
+      95   32  25   1.00620  [1.00577, 1.00650]
+      96   32  26   1.00518  [1.00488, 1.00549]
+      96   32  27   1.00480  [1.00443, 1.00514]  SPILL 16 B, excluded from the fit
+      96   32  28   1.00539  [1.00508, 1.00564]  SPILL 16 B, excluded from the fit
+      96   32  32   1.00641  [1.00616, 1.00667]  SPILL 32 B, excluded from the fit
+     control q8    0.99931 vs p8 1.00109  -0.178%
+     control q16   0.99973 vs p16 1.00299  -0.325%
+     control q24   1.00012 vs p24 1.00553  -0.538%
+  mlp.gate_up_fused  m6 ipg3   R 93..96   S 33..32
+       R    S   P   t/t(p0)      95% CI
+      93   33   0   1.00000  [1.00000, 1.00000]
+      95   32   1   0.99958  [0.99936, 0.99996]
+      96   32   2   1.00023  [0.99999, 1.00063]
+      96   32   4   1.00155  [1.00126, 1.00193]  SPILL 16 B, excluded from the fit
+      96   32   8   1.00224  [1.00197, 1.00264]  SPILL 16 B, excluded from the fit
+      96   32  16   1.00826  [1.00779, 1.00854]  SPILL 48 B, excluded from the fit
+      96   32  32   1.01698  [1.01676, 1.01738]  SPILL 112 B, excluded from the fit
+     control q2    1.00169 vs p2 1.00023  +0.146%
+     control q8    0.99973 vs p8 1.00224  -0.251%
+     control q32   1.00047 vs p32 1.01698  -1.624%
+
+  staircase test: 48 within-tier spreads, median 0.0869%, max 0.1859%
+  48 tier boundaries, median step +0.0218%, 25 above 3x the session null
+
+== occupancy exponent  Omega(S) = (S_ref/S)^gamma ==
+  pooled                     gamma +0.01346 +- 0.00065  n 108  log-rms 0.00125
+  head.lm_head               gamma +0.01477 +- 0.00093  n  27  log-rms 0.00087
+  linear_attn.out_proj       gamma +0.01874 +- 0.00083  n  27  log-rms 0.00078
+  mlp.down                   gamma +0.00511 +- 0.00093  n  27  log-rms 0.00088
+  mlp.gate_up_fused          gamma +0.01524 +- 0.00082  n  27  log-rms 0.00077
+  measured S range 32..43
+  IPG  local R/S  Omega_L   ranked R/S  Omega_R  S extrapolated
+   2    70/43   0.99603    83/47   0.99484  True
+   3    93/33   0.99959    90/44   0.99572  True
+   4    94/32   1.00000    91/43   0.99603  False
+   5    95/32   1.00000    98/40   0.99700  False
+   6    96/32   1.00000   111/35   0.99879  False
+
+== rung 2 refit on the 114-cell E73 surface (Omega fixed from rung 1) ==
+  rel-rms 1.62%  median 1.06%  max 6.46%  = 68.0x E73 session null
+  rho0 1.5133 ps/byte   beta 2.4698
+  c(IPG)      2: 1.0872 3: 1.0000 4: 0.9709 5: 0.9764 6: 1.0456
+  c*Omega_L   2: 1.0829 3: 0.9996 4: 0.9709 5: 0.9764 6: 1.0456   (E73's q(IPG))
+  lam(IPG)    2:   8.16 3:   8.55 4:   7.74 5:   7.20 6:  10.09
+
+== rung 1a against the refitted surface: does the model predict the clean contrast? ==
+  M  IPG      shape                        observed  predicted   err
+  8  4->5   head.lm_head                  1.01116   1.00550   -0.56%
+  8  4->5   linear_attn.out_proj          1.01343   0.99807   -1.52%
+  8  4->5   mlp.down                      1.01356   0.99807   -1.53%
+  8  4->5   mlp.gate_up_fused             1.01109   1.00444   -0.66%
+  8  4->6   head.lm_head                  1.08162   1.07774   -0.36%  spill
+  8  4->6   linear_attn.out_proj          1.10588   1.11218   +0.57%  spill
+  8  4->6   mlp.down                      1.11463   1.11218   -0.22%  spill
+  8  4->6   mlp.gate_up_fused             1.08474   1.08263   -0.19%  spill
+  6  3->4   head.lm_head                  0.99621   0.97103   -2.53%
+  6  3->4   linear_attn.out_proj          1.00174   0.96041   -4.13%
+  6  3->4   mlp.down                      1.00317   0.96041   -4.26%
+  6  3->4   mlp.gate_up_fused             0.99739   0.96951   -2.80%
+  7  4->5   head.lm_head                  1.00384   1.00550   +0.17%
+  7  4->5   linear_attn.out_proj          1.01136   0.99807   -1.31%
+  7  4->5   mlp.down                      1.01313   0.99807   -1.49%
+  7  4->5   mlp.gate_up_fused             1.00457   1.00444   -0.01%
+  9  5->6   head.lm_head                  1.06807   1.07184   +0.35%  spill
+  9  5->6   linear_attn.out_proj          1.08411   1.11434   +2.79%  spill
+  9  5->6   mlp.down                      1.10600   1.11434   +0.75%  spill
+  9  5->6   mlp.gate_up_fused             1.07181   1.07785   +0.56%  spill
+  spill-free contrasts: median |err| 1.50%  max 4.26%  (n=12)
+  all contrasts:        median |err| 0.71%  max 4.26%  (n=20)
+
+== validation 1: local table at cores=20 ==
+  M  shipped  model  margin over 2nd (%)
+  3     3       3    -
+  4     4       4    39.87
+  5     5       5    25.04
+  6     6       6    6.01
+  7     4       4    0.22
+  8     4       4    0.22
+  9     5       5    9.08
+  reproduces the shipped local table 7/7: True
+
+== validation 2: ranked ordering at cores=40 (EXTRAPOLATED core count) ==
+  M  ours crown  model argmin   crown-minus-ours QMV (%)   share
+  3    3     3           3             +0.000           3.25%
+  4    4     4           4             +0.000          14.20%
+  5    5     3           5            +21.024          24.10%
+  6    6     3           4             +3.024          33.40%
+  7    4     4           5             +0.000          12.20%
+  8    4     4           5             +0.000           7.35%
+  9    5     3           5            +14.866           5.75%
+  crown faster at M=5: False   M=6: False   M=9: False
+  pool-weighted QMV +6.9316%  -> candidate leg +5.7255%
+  M5/M6 only -> candidate leg +8.7295%   vs measured -0.298%
+
+== validation 2 in exponent units: what gamma would each M need? ==
+  measured gamma +0.01346 +- 0.00065
+  M  ours crown  crown deficit  gamma required  sigma away
+  3    3     3         -              -            same cell
+  4    4     4         -              -            same cell
+  5    5     3       1.21129        +2.9701       +4518.6
+  6    6     3       1.03299        +0.1639        +229.9
+  7    4     4         -              -            same cell
+  8    4     4         -              -            same cell
+  9    5     3       1.14966        +2.1610       +3282.0
+
+== validation 2b: the advisor's M=6 inequality ==
+  occupancy_penalty(111) - occupancy_penalty(90) must exceed the
+  extra weight stream that <T,6,3> pays over <T,6,6>.
+  with Omega:    <T,6,3>/<T,6,6> = 1.03024   crown faster: False
+  without Omega: <T,6,3>/<T,6,6> = 1.03342   crown faster: False
+  Omega_R(111)/Omega_R(90) = 1.00309; the inequality needs it above 1.03342
+  inequality satisfied: False   (measured wide-prompt effect -0.44%)
+
+== validation 3: control 2, E33 ==
+     shape                              base TGs    obs    pred    err
+     head.lm_head                         62080  0.9830  1.5048  +53.08%
+     head.compact_draft_vocab             24584  0.9868  1.5132  +53.35%
+     mlp.gate_up_fused                     8704  0.9941  1.5384  +54.76%
+     linear_attn.in_proj_fused_qkvzba      4120  0.9947  1.5804  +58.88%
+     full_attn.qkv_proj_fused              3584  1.0148  1.5920  +56.88%
+     full_attn.o_proj                      1280  1.0414  1.7394  +67.03%
+     linear_attn.out_proj                  1280  1.0492  1.7394  +65.78%
+     mlp.down                              1280  1.0592  1.7394  +64.22%
+     obs tau -1.000   pred tau -1.000
+     predicted span 1.5048..1.7394  (E73 gave 1.5048..1.7394; observed 0.9830..1.0592)
+
+== rung 3 not started: the ranked-ordering validation did not reproduce the correct sign at both M=5 and M=6 ==
+
+wrote research/e77-artifacts/rung2.json
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from WANDB_API_KEY.
+wandb: W&B API key is configured. Use `wandb login --relogin` to force relogin
+wandb: setting up run jdlqnbwd
+wandb: Tracking run with wandb version 0.28.1
+wandb: Run data is saved locally in /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/workspace/target/wandb/run-20260820_121545-jdlqnbwd
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run e77-rung2
+wandb: ⭐️ View project at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: 🚀 View run at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jdlqnbwd
+e77_fit: run_id=jdlqnbwd url=https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jdlqnbwd
+wandb: updating run metadata
+wandb: uploading summary, console lines 0-0
+wandb: 
+wandb: Run summary:
+wandb:    cool_gate_passed_real_gate True
+wandb:                         cores 20
+wandb:      crown_minus_ours_leg_pct 5.7255
+wandb: crown_minus_ours_leg_pct_m5m6 8.72946
+wandb:                    experiment e77
+wandb:                         gamma 0.01346
+wandb:                      gamma_se 0.00065
+wandb:     gate_qualified_for_timing True
+wandb:                       harness local
+wandb:              local_file_bytes 393216
+wandb:                           +29 ...
+wandb: 
+wandb: 🚀 View run e77-rung2 at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jdlqnbwd
+wandb: ⭐️ View project at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: Synced 7 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260820_121545-jdlqnbwd/logs

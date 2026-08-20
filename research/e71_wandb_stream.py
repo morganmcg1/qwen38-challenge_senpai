@@ -36,6 +36,8 @@ def main() -> int:
     parser.add_argument("--tag", required=True)
     parser.add_argument("--meta", required=True)
     parser.add_argument("--log")
+    parser.add_argument("--experiment", default="e71-in-situ-width-tax-census")
+    parser.add_argument("--group", default="e71-width-tax-census")
     args = parser.parse_args()
 
     meta = read_meta(args.meta)
@@ -44,10 +46,10 @@ def main() -> int:
         entity=entity,
         project=project,
         name=args.tag,
-        group="e71-width-tax-census",
+        group=args.group,
         job_type="census",
         config={
-            "experiment": "e71-in-situ-width-tax-census",
+            "experiment": args.experiment,
             "harness": "local",
             "cool_gate_passed_real_gate": False,
             "gate_qualified_for_timing": False,

@@ -308,14 +308,20 @@ def scalar_kernel(n: int) -> str:
             f"{load}{work}  o[i] = {total};\n}}\n")
 
 
-def wall(out: pathlib.Path | None) -> int:
+def wall(out: pathlib.Path | None, low: int = 8, high: int = 96,
+         step: int = 4) -> int:
     """Locate the register budget by sweeping until the backend starts spilling.
 
     A census number means nothing without the budget it is measured against,
     so this reports the widest kernel that still fits and the highest register
     count reached without a frame, in the same units the census prints.
+
+    The step is adjustable because the coarse sweep answers where the budget
+    ends but not whether the allocator quantizes the count on the way there. A
+    step of one resolves plateaus, which is what an occupancy tier would look
+    like from here.
     """
-    widths = list(range(8, 97, 4))
+    widths = list(range(low, high + 1, step))
     source = ("#include <metal_stdlib>\nusing namespace metal;\n"
               + "".join(scalar_kernel(n) for n in widths))
     result = {"live_floats": widths, "sweep": {}, "budget": {}}
@@ -356,6 +362,9 @@ def main() -> int:
     sub.add_parser("selftest")
     budget = sub.add_parser("wall")
     budget.add_argument("--out", type=pathlib.Path)
+    budget.add_argument("--low", type=int, default=8)
+    budget.add_argument("--high", type=int, default=96)
+    budget.add_argument("--step", type=int, default=4)
     census = sub.add_parser("census")
     census.add_argument("--metallib", type=pathlib.Path, required=True)
     census.add_argument("--arch", nargs="+", default=[LOCAL_ARCH, RANKED_ARCH])
@@ -364,7 +373,7 @@ def main() -> int:
     if args.command == "selftest":
         return selftest()
     if args.command == "wall":
-        return wall(args.out)
+        return wall(args.out, args.low, args.high, args.step)
 
     with tempfile.TemporaryDirectory() as tmp:
         for arch in args.arch:

@@ -86,9 +86,12 @@ gpu_temp() {
 export MLXFAST_RUN_E71_WIDTH_TAX=1
 export MLXFAST_E71_OUT="${PWD}/${out}/census.json"
 
+experiment="${MLXFAST_CENSUS_EXPERIMENT:-e71-in-situ-width-tax-census}"
+group="${MLXFAST_CENSUS_GROUP:-e71-width-tax-census}"
+
 {
   echo "tag=${tag}"
-  echo "experiment=e71-in-situ-width-tax-census"
+  echo "experiment=${experiment}"
   echo "harness=local"
   echo "cool_gate_passed_real_gate=false"
   echo "gate_qualified_for_timing=false"
@@ -98,6 +101,8 @@ export MLXFAST_E71_OUT="${PWD}/${out}/census.json"
     git status --porcelain -- Sources Vendor Package.swift | wc -l | tr -d ' ')"
   echo "host=$(hostname)"
   echo "chip=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)"
+  echo "gpu_cores=$(ioreg -l 2>/dev/null \
+    | LC_ALL=C sed -n 's/.*"gpu-core-count" = \([0-9][0-9]*\).*/\1/p' | head -1)"
   echo "memory_bytes=$(sysctl -n hw.memsize)"
   echo "os=$(sw_vers -productVersion)"
   echo "swift=$(swift --version 2>&1 | head -1)"
@@ -117,7 +122,8 @@ set -o pipefail
 swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
   --filter E71WidthTaxCensusTests 2>&1 \
   | python3 research/e71_wandb_stream.py \
-      --tag "${tag}" --meta "${out}/meta.txt" --log "${out}/session.log"
+      --tag "${tag}" --meta "${out}/meta.txt" --log "${out}/session.log" \
+      --experiment "${experiment}" --group "${group}"
 status=${PIPESTATUS[0]}
 
 {

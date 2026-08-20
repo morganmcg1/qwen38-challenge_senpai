@@ -1,0 +1,299 @@
+{
+  "device": "DEVICE name=Apple M4 Pro max_threads_per_threadgroup=1024",
+  "local_arch": "applegpu_g16s",
+  "max_total_threads_is_register_bound": false,
+  "max_total_threads_values_observed": [
+    1024
+  ],
+  "ranked_arch": "applegpu_g17s",
+  "sweep": [
+    {
+      "g16s_registers": 14,
+      "g16s_spill_bytes": 0,
+      "g17s_registers": 14,
+      "g17s_spill_bytes": 0,
+      "live_floats": 8,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 26,
+      "g16s_spill_bytes": 0,
+      "g17s_registers": 26,
+      "g17s_spill_bytes": 0,
+      "live_floats": 16,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 42,
+      "g16s_spill_bytes": 0,
+      "g17s_registers": 42,
+      "g17s_spill_bytes": 0,
+      "live_floats": 24,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 49,
+      "g16s_spill_bytes": 0,
+      "g17s_registers": 49,
+      "g17s_spill_bytes": 0,
+      "live_floats": 32,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 61,
+      "g16s_spill_bytes": 0,
+      "g17s_registers": 61,
+      "g17s_spill_bytes": 0,
+      "live_floats": 40,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 76,
+      "g16s_spill_bytes": 0,
+      "g17s_registers": 76,
+      "g17s_spill_bytes": 0,
+      "live_floats": 48,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 84,
+      "g16s_spill_bytes": 0,
+      "g17s_registers": 84,
+      "g17s_spill_bytes": 0,
+      "live_floats": 56,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 93,
+      "g16s_spill_bytes": 0,
+      "g17s_registers": 93,
+      "g17s_spill_bytes": 0,
+      "live_floats": 64,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 32,
+      "g17s_registers": 103,
+      "g17s_spill_bytes": 0,
+      "live_floats": 72,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 48,
+      "g17s_registers": 109,
+      "g17s_spill_bytes": 0,
+      "live_floats": 80,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 80,
+      "g17s_registers": 112,
+      "g17s_spill_bytes": 0,
+      "live_floats": 88,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 208,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 32,
+      "live_floats": 96,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 240,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 96,
+      "live_floats": 104,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 256,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 208,
+      "live_floats": 112,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 304,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 272,
+      "live_floats": 120,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 352,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 240,
+      "live_floats": 128,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 336,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 240,
+      "live_floats": 136,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 384,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 288,
+      "live_floats": 144,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 432,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 352,
+      "live_floats": 152,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 448,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 368,
+      "live_floats": 160,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 496,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 384,
+      "live_floats": 168,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 512,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 416,
+      "live_floats": 176,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 528,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 432,
+      "live_floats": 184,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 576,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 464,
+      "live_floats": 192,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 608,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 512,
+      "live_floats": 200,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 624,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 544,
+      "live_floats": 208,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 656,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 576,
+      "live_floats": 216,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 704,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 624,
+      "live_floats": 224,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 720,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 640,
+      "live_floats": 232,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 752,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 656,
+      "live_floats": 240,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 800,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 704,
+      "live_floats": 248,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    },
+    {
+      "g16s_registers": 96,
+      "g16s_spill_bytes": 816,
+      "g17s_registers": 126,
+      "g17s_spill_bytes": 736,
+      "live_floats": 256,
+      "max_total_threads_per_threadgroup": 1024,
+      "thread_execution_width": 32
+    }
+  ]
+}
