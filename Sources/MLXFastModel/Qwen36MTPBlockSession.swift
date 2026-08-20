@@ -948,7 +948,7 @@ public final class Qwen36MTPBlockSession {
     /// serial trajectory. Segmenting the whole FORWARD instead (two model
     /// calls, 5+k) was measured bit-exact too but pays a second full weight
     /// pass (~25 ms) and loses on net; the chunk lives at the sdpa only.
-    private static let sdpaWidthWallDepthCap = 5
+    private static let sdpaWidthWallDepthCap = 6
 
     /// Depth cap for streak-qualified deep rounds. 8 is the trusted
     /// per-round maximum; rows_per_round = depth + 1 stays ledger-legal.
@@ -1010,9 +1010,20 @@ public final class Qwen36MTPBlockSession {
         // itself. Widths 6..8 are bit-exact per position against the serial
         // trajectory through the sdpa exactness chunk, so 7 is policy.
         //
-        // Imported from promoted submission 89cbdc02 (organizer 96f20f87,
-        // official 3.25592233).
-        let widthCap = Self.segmentedVerifyDepthCap
+        // SUPERSEDED by a floor of 6 under the same ceiling of 7. Taking the
+        // floor away entirely overshot on the x4 slot: `919318e1` came back at
+        // draft length 4.38 / 0.012191 s/tok against its own board minimum
+        // 0.011967 at 4.32, and x4 wants to be shallow. The floor was not
+        // damage, it was too BLUNT — one reject dropped the cap the whole way
+        // from 7 to 5. At 6 a rejecting round is restrained by one rung instead
+        // of two: x4 keeps the restraint that holds it near 4.3, while the
+        // high-acceptance prompts keep the depth they earned.
+        //
+        // Imported from promoted submission ead84bba (organizer 3e2530ae,
+        // official 3.30221310); it supersedes 89cbdc02 (official 3.25592233).
+        let widthCap = fullAcceptStreak >= Self.segmentedStreakGate
+            ? Self.segmentedVerifyDepthCap
+            : Self.sdpaWidthWallDepthCap
         let cap = Swift.min(
             Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
             widthCap)
