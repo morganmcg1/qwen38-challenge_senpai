@@ -42,6 +42,7 @@ import argparse
 import collections
 import itertools
 import json
+import math
 import pathlib
 import statistics
 import sys
@@ -81,6 +82,9 @@ KILL_IMPLIED_CELL_PCT = -2.0
 # `research/dilution_basis.py`; on this host it is an estimate, so the
 # prediction is reported and never gates anything.
 STAGE_A_CELL_PCT = {"t55": -20.209, "m5_rbx": -13.431}
+# Standard error of each stage A cell effect: the residual sd of the stage A
+# `t_ms(M=5) ~ arm + leg_position` fit, as a percent of the base cell.
+STAGE_A_CELL_SE_PCT = {"t55": 0.1654, "m5_rbx": 0.1654}
 QMV_SHARE_OF_LEG = 0.82127
 PREDICTED_LEG_PCT = {
     arm: round(pct * LOCAL_M5_SHARE * QMV_SHARE_OF_LEG, 4)
@@ -198,6 +202,46 @@ def implied_cell(leg_pct: float, round_cost_pct: float) -> dict:
         "raw_round_cost_pct": round_cost_pct,
         "implied_cell_pct": leg_pct / LOCAL_M5_SHARE,
         "implied_cell_pct_from_round_cost": round_cost_pct / LOCAL_M5_SHARE,
+    }
+
+
+def round_cost_se_pct(regressions: dict, arm: str) -> float:
+    """Standard error of the arm term on the round-cost basis, in percent."""
+    fit = regressions["mtp_seconds_per_token_prefill_removed"]
+    term = (fit.get("terms") or {}).get(f"arm[{arm}]")
+    if not fit.get("fitted") or term is None:
+        return 0.0
+    return 100.0 * term["std_error"] / fit["base_level_at_mean_position"]
+
+
+def two_instrument_agreement(arm: str, round_cost_pct: float,
+                             round_cost_se: float, share: float) -> dict:
+    """Test the leg instrument against the cell instrument.
+
+    The leg session and the stage A QMV microbenchmark measure the same M=5
+    cell by completely different means. Converting the leg with the share this
+    session actually ran makes the two directly comparable, so the difference
+    is a real check on both instruments rather than a restatement of either.
+    """
+    cell_pct = STAGE_A_CELL_PCT.get(arm)
+    if cell_pct is None or not share:
+        return {"available": False}
+    implied = round_cost_pct / share
+    implied_se = abs(round_cost_se / share)
+    cell_se = STAGE_A_CELL_SE_PCT[arm]
+    difference = implied - cell_pct
+    se = math.hypot(implied_se, cell_se)
+    t = difference / se if se else None
+    return {
+        "available": True,
+        "implied_cell_pct_from_round_cost": implied,
+        "implied_cell_se_pct": implied_se,
+        "stage_a_cell_pct": cell_pct,
+        "stage_a_cell_se_pct": cell_se,
+        "difference_pct": difference,
+        "difference_se_pct": se,
+        "t": t,
+        "consistent_at_2_sigma": bool(t is not None and abs(t) < 2.0),
     }
 
 
@@ -386,6 +430,20 @@ def main() -> int:
         conv["sign_stable_across_palindrome"] = sign_stable
         conv["gate"] = cell_gate(conv["implied_cell_pct"], sign_stable)
         conv["stage_a_measured_cell_pct"] = STAGE_A_CELL_PCT.get(arm)
+
+        # The same conversion on the share this session actually ran. The gate
+        # keeps the preregistered divisor; this is the honest read of the same
+        # legs, and it is what the cell instrument can be compared against.
+        share = m5_share_of_round_cost(rec["width_histogram"]).get("m5_share")
+        conv["measured_m5_share"] = share
+        if share:
+            conv["implied_cell_pct_at_measured_share"] = (
+                rec["delta_vs_base_leg_pct"] / share)
+            conv["implied_cell_pct_from_round_cost_at_measured_share"] = (
+                rec["delta_vs_base_round_cost_pct"] / share)
+        conv["agreement_with_cell_instrument"] = two_instrument_agreement(
+            arm, rec["delta_vs_base_round_cost_pct"],
+            round_cost_se_pct(regressions, arm), share)
         conversions[arm] = conv
 
         verdicts[f"{arm}_implied_cell_pct"] = conv["implied_cell_pct"]
@@ -393,6 +451,11 @@ def main() -> int:
             "implied_cell_pct_from_round_cost"]
         verdicts[f"{arm}_sign_stable"] = sign_stable
         verdicts[f"{arm}_cell_gate"] = conv["gate"]
+        agreement = conv["agreement_with_cell_instrument"]
+        if agreement.get("available"):
+            verdicts[f"{arm}_instruments_agree"] = agreement[
+                "consistent_at_2_sigma"]
+            verdicts[f"{arm}_instrument_difference_t"] = agreement["t"]
 
     verdicts["all_arms_token_exact"] = all(
         rec["all_tokens_matched"] for rec in arms.values())
@@ -580,6 +643,23 @@ def main() -> int:
         if conv["stage_a_measured_cell_pct"] is not None:
             print("  %-10s stage A measured the same cell at %+.3f %%"
                   % ("", conv["stage_a_measured_cell_pct"]))
+        if conv.get("measured_m5_share"):
+            print("  %-10s this session ran an M=5 share of %.5f, so the same"
+                  " legs imply cell %+.3f %% (leg) / %+.3f %% (round cost)"
+                  % ("", conv["measured_m5_share"],
+                     conv["implied_cell_pct_at_measured_share"],
+                     conv["implied_cell_pct_from_round_cost_at_measured_share"]))
+        agreement = conv.get("agreement_with_cell_instrument") or {}
+        if agreement.get("available"):
+            print("  %-10s two instruments: leg %+.3f +/- %.3f %% vs cell"
+                  " %+.3f +/- %.3f %%  ->  difference %+.3f +/- %.3f %%,"
+                  " t = %+.2f, consistent %s"
+                  % ("", agreement["implied_cell_pct_from_round_cost"],
+                     agreement["implied_cell_se_pct"],
+                     agreement["stage_a_cell_pct"],
+                     agreement["stage_a_cell_se_pct"],
+                     agreement["difference_pct"], agreement["difference_se_pct"],
+                     agreement["t"], agreement["consistent_at_2_sigma"]))
 
     if digests["available"]:
         print("\nworker section digests (first 12 hex)")

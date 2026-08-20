@@ -580,6 +580,83 @@ def log_rung4(run) -> None:
         summary[f"rung4/warmup/{leg['tag']}/mtp_seconds_per_token"] = leg[
             "mtp_seconds_per_token"]
 
+    # The conversion from leg to M=5 cell, on both divisors, plus the test of
+    # the leg instrument against the stage A cell instrument.
+    conv_columns = ["arm", "raw_leg_pct", "raw_round_cost_pct", "divisor",
+                    "implied_cell_pct", "implied_cell_pct_from_round_cost",
+                    "measured_m5_share", "implied_cell_pct_at_measured_share",
+                    "implied_cell_pct_from_round_cost_at_measured_share",
+                    "stage_a_measured_cell_pct", "sign_stable", "gate"]
+    conv_table = wandb.Table(columns=conv_columns)
+    for arm, conv in metrics.get("cell_conversion", {}).items():
+        conv_table.add_data(
+            arm, conv["raw_leg_pct"], conv["raw_round_cost_pct"],
+            conv["divisor"], conv["implied_cell_pct"],
+            conv["implied_cell_pct_from_round_cost"],
+            conv.get("measured_m5_share"),
+            conv.get("implied_cell_pct_at_measured_share"),
+            conv.get("implied_cell_pct_from_round_cost_at_measured_share"),
+            conv.get("stage_a_measured_cell_pct"),
+            conv["sign_stable_across_palindrome"], conv["gate"])
+        key = f"rung4/cell_conversion/{arm}"
+        summary[f"{key}/implied_cell_pct"] = conv["implied_cell_pct"]
+        summary[f"{key}/implied_cell_pct_from_round_cost"] = conv[
+            "implied_cell_pct_from_round_cost"]
+        summary[f"{key}/measured_m5_share"] = conv.get("measured_m5_share")
+        summary[f"{key}/implied_cell_pct_at_measured_share"] = conv.get(
+            "implied_cell_pct_at_measured_share")
+        summary[f"{key}/implied_cell_pct_from_round_cost_at_measured_share"] = (
+            conv.get("implied_cell_pct_from_round_cost_at_measured_share"))
+        summary[f"{key}/gate"] = conv["gate"]
+        agreement = conv.get("agreement_with_cell_instrument") or {}
+        if agreement.get("available"):
+            for name in ("implied_cell_pct_from_round_cost",
+                         "implied_cell_se_pct", "stage_a_cell_pct",
+                         "stage_a_cell_se_pct", "difference_pct",
+                         "difference_se_pct", "t", "consistent_at_2_sigma"):
+                summary[f"{key}/agreement/{name}"] = agreement[name]
+    run.log({"rung4/cell_conversion": conv_table})
+
+    # Why the two divisors differ: this host runs a different width mixture
+    # than the one the preregistered divisor came from.
+    audit = metrics.get("m5_share_audit", {})
+    summary["rung4/m5_share/divisor_used"] = audit.get("divisor_used")
+    summary["rung4/m5_share/prereg_share_recomputed"] = (
+        audit.get("prereg_share_recomputed", {}).get("m5_share"))
+    share_columns = ["source", "m5_share", "total_priced_round_us",
+                     "priced_round_us_by_width", "widths_without_e1_cost"]
+    share_table = wandb.Table(columns=share_columns)
+    sources = {f"measured/{arm}": rec
+               for arm, rec in audit.get("measured_share_by_arm", {}).items()}
+    if audit.get("prereg_share_recomputed"):
+        sources["prereg_e60_histogram"] = audit["prereg_share_recomputed"]
+    for source, rec in sources.items():
+        if not rec.get("available"):
+            continue
+        share_table.add_data(source, rec["m5_share"],
+                             rec["total_priced_round_us"],
+                             json.dumps(rec["priced_round_us_by_width"]),
+                             json.dumps(rec["widths_without_e1_cost"]))
+        if source.startswith("measured/"):
+            summary["rung4/m5_share/%s" % source] = rec["m5_share"]
+    run.log({"rung4/m5_share_audit": share_table})
+
+    # The arm certificate: a routing-only change must leave `__TEXT,__text`
+    # identical and move `__TEXT,__cstring`.
+    digests = metrics.get("worker_section_digests", {})
+    if digests.get("available"):
+        digest_columns = ["arm", "section", "digests"]
+        digest_table = wandb.Table(columns=digest_columns)
+        for section, by_arm in (("__TEXT,__text", digests["text_by_arm"]),
+                                ("__TEXT,__cstring", digests["cstring_by_arm"]),
+                                ("file", digests["file_by_arm"])):
+            for arm, values in sorted(by_arm.items()):
+                digest_table.add_data(arm, section, json.dumps(values))
+                if section != "file":
+                    summary["rung4/digest/%s/%s" % (arm, section)] = json.dumps(
+                        values)
+        run.log({"rung4/worker_section_digests": digest_table})
+
     run.log({"rung4/arms": table,
              "rung4/session_null": null_table,
              "rung4/regression": reg_table})
