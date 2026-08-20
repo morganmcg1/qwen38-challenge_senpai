@@ -90,6 +90,38 @@ def quantize(w_bf16_u16: np.ndarray):
     )
 
 
+QUANTIZERS = {
+    "mlx": ("mlx",),
+    "ls": ("ls",),
+    "hqq": ("hqq",),
+    "best": ("mlx", "ls", "hqq"),
+}
+
+
+def quantize_search(w_bf16_u16: np.ndarray, methods: tuple[str, ...]):
+    """Rung 6: the same artifact format, a better estimator inside it.
+
+    `mx.quantize` snaps one group edge onto an exact code and spends half the
+    representable range holding it there. These solvers do not. The returned
+    tuple matches `quantize` above so the island rule, the damage table and the
+    writer are shared by every arm.
+    """
+    import mlx.core as mx
+
+    from e82_quantizers import quantize as search
+
+    w = mx.array(w_bf16_u16).view(mx.bfloat16).astype(mx.float32)
+    r = search(w, methods=methods)
+    return (
+        np.array(r["weight"], copy=True),
+        np.array(r["scales"].view(mx.uint16), copy=True),
+        np.array(r["biases"].view(mx.uint16), copy=True),
+        np.array(r["dequantized"], copy=True),
+        r["method_group_wins"],
+        r["groups"],
+    )
+
+
 def row_sse(ref_f32: np.ndarray, deq_f32: np.ndarray) -> np.ndarray:
     d = ref_f32 - deq_f32
     return np.einsum("ij,ij->i", d, d)
@@ -183,14 +215,17 @@ def cmd_build(args) -> None:
         write_head(args, src, decl, tensors, damage, islands, out_dir, src_path)
         return
 
+    methods = QUANTIZERS[args.quantizer]
     for name in TRUNK:
         stem = name[: -len(".weight")]
         ref = src.f32(name)
-        q, s, b, deq = quantize(src.array(name))
+        q, s, b, deq, wins, groups = quantize_search(src.array(name), methods)
         tensors[name] = q
         tensors[f"{stem}.scales"] = s
         tensors[f"{stem}.biases"] = b
         row = compare(deq, ref)
+        row["method_group_wins"] = wins
+        row["groups"] = groups
         # the same measurement for the pinned head, so the two are read together
         mref = SafeTensors(MASTER).f32(name)
         _, _, _, mdeq = quantize(SafeTensors(MASTER).array(name))
@@ -226,10 +261,16 @@ def cmd_build(args) -> None:
 def write_head(args, src, decl, tensors, damage, islands, out_dir: Path, src_path: Path) -> None:
     ordered = {k: tensors[k] for k in sorted(tensors)}
     meta = {
-        "format": f"e82-{args.source}-{args.trunk}-plus-declared-affine2-readout-v1",
+        "format":
+            f"e82-{args.source}-{args.trunk}-{args.quantizer}"
+            "-plus-declared-affine2-readout-v1",
         "trunk_source": f"{args.source}:{src_path.name}",
         "trunk_source_sha256": file_sha256(src_path),
-        "trunk_quantization": "mlx affine, bits=4, group_size=64" if args.trunk == "q4" else "bf16, unquantized",
+        "trunk_quantization": (
+            f"{args.quantizer} affine, bits=4, group_size=64"
+            if args.trunk == "q4"
+            else "bf16, unquantized"
+        ),
         "draft_lm_head": "byte-copied from amal-david/qwen38-mtp-head-q2-q4-rerank-v1",
         "selection": "largest per-output-row fp32 reconstruction SSE; Q=1024,K=all,V=all"
         if args.trunk == "q4"
@@ -324,6 +365,7 @@ def main() -> None:
     b = sub.add_parser("build")
     b.add_argument("--source", choices=sorted(SOURCES), required=True)
     b.add_argument("--trunk", choices=("q4", "bf16"), default="q4")
+    b.add_argument("--quantizer", choices=sorted(QUANTIZERS), default="mlx")
     b.add_argument("--tag", required=True)
     b.add_argument("--out-dir", default=str(CACHE / "e82/built"))
     b.add_argument("--report", default=None)
