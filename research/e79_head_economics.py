@@ -60,6 +60,34 @@ RANKED = [
     ("botany", 85, 491, 427, 60.548, 3.4253),
 ]
 SEED_PROLOGUE_MS = 525.963  # charged inside the timed leg, outside the rounds
+
+PUBLIC_GOLDEN = "correctness_prompts/public_longcopy_gate_english_512_1024.json"
+# Qwen35TextModel compact draft vocabulary: rows 0 ..< 98,304 plus the 26
+# official text/control tokens 248,044 ..< 248,070, padded to 98,336.
+COMPACT_DRAFT_ROWS = 98_336
+CONTROL_START = 248_044
+CONTROL_END = 248_070
+
+# Weight bytes ONE head step reads, from the safetensors headers of the two
+# provisioned heads. Decode at batch 1 is memory-bandwidth-bound, so these
+# bytes are the head step's cost driver.
+#   declared  hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1  427,738,112 B
+#     stage (i)   transformer block, affine-4 g64 + bf16 qkv islands
+#     stage (ii)  draft_lm_head, affine-2 g64 over 98,336 rows
+#     stage (iii) top-32 over 98,330 coarse logits
+#     stage (iv)  32 gathered affine-4 rows of the compact target lm_head
+COARSE_READOUT_BYTES = 157_337_600          # stage (ii)
+DECLARED_HEAD_BLOCK_BYTES = 270_400_512     # stage (i)
+DECLARED_RERANK_BYTES = 32 * (640 * 4 + 80 * 2 + 80 * 2)  # stage (iv)
+DECLARED_TOP32_BYTES = 2 * 98_330 * 4                     # stage (iii)
+DECLARED_HEAD_STEP_BYTES = (DECLARED_HEAD_BLOCK_BYTES + COARSE_READOUT_BYTES
+                            + DECLARED_TOP32_BYTES + DECLARED_RERANK_BYTES)
+# pinned  EigenLabs/Qwen3.8-27B-MTP-bf16: no draft_lm_head, so the proposal
+# reads the affine-4 g64 compact slice of the target lm_head instead.
+PINNED_HEAD_BLOCK_BYTES = 849_398_784
+PINNED_SELECT_BYTES = 98_336 * 640 * 4 + 2 * 98_336 * 80 * 2
+PINNED_HEAD_STEP_BYTES = (PINNED_HEAD_BLOCK_BYTES + PINNED_SELECT_BYTES
+                          + DECLARED_TOP32_BYTES)
 # floor(M) = 30.402 + (M-1) * 8.42/8, ledger 211(A).
 RANKED_DEPTH0_ROUND_MS = 30.402
 RANKED_HEAD_STEP_MS = 8.42 / 8
@@ -624,6 +652,237 @@ def cmd_census(args):
     return report
 
 
+def vocabulary_coverage(cuts, fixture=PUBLIC_GOLDEN, tokens=512):
+    """Share of decoded tokens a compact draft vocabulary of `cut` rows can
+    still propose. A token the vocabulary drops is a GUARANTEED rejection at
+    that draft position, whatever the head's quality.
+
+    Two estimators bracket the design space.
+
+    `id_prefix` keeps IDs 0 ..< cut plus the 26 official control tokens, which
+    is what truncating the shipped vocabulary does. Qwen's IDs are roughly
+    BPE-merge ordered, so this is close to keeping the most frequent rows.
+
+    `corpus` additionally keeps every dropped ID that a selection corpus
+    already showed, and is scored on a DISJOINT held-out half, so it estimates
+    what re-selecting the rows by empirical frequency would recover. The
+    selection half is the first `tokens` decoded tokens plus the prompt; the
+    held-out half is the next `tokens` decoded tokens.
+    """
+    case = json.load(Path(fixture).open())["cases"][0]
+    expected = case["expected_tokens"]
+    decoded = expected[:tokens]
+    holdout = expected[tokens:2 * tokens]
+    selection = set(decoded) | set(case["prompt_tokens"])
+    controls = set(range(CONTROL_START, CONTROL_END))
+    out = {}
+    for cut in cuts:
+        kept = sum(1 for t in decoded if t < cut or t in controls)
+        row = {"id_prefix": kept / len(decoded)}
+        if holdout:
+            # Budget neutral: every corpus row displaces one ID-ordered row.
+            corpus = {t for t in selection if t not in controls}
+            prefix = max(0, cut - len(corpus))
+            chosen = corpus | set(range(prefix))
+            hit = sum(1 for t in holdout if t in chosen or t in controls)
+            row["corpus"] = hit / len(holdout)
+            row["id_prefix_holdout"] = sum(
+                1 for t in holdout if t < cut or t in controls) / len(holdout)
+        out[cut] = row
+    return out, len(decoded)
+
+
+def head_fraction(d, head_fixed, head_slope, round_fixed, round_slope):
+    """Head-chain share of one round that drafts `d` tokens."""
+    return ((head_fixed + head_slope * d)
+            / (round_fixed + round_slope * d))
+
+
+def cmd_price(args):
+    """Rung 3: price a better head (3a) and a smaller draft vocabulary (3b).
+
+    Costs transfer as a FRACTION of the round, not as absolute milliseconds:
+    the local host and the ranked M5 differ in absolute speed, but the head
+    step and the target verify are both memory-bandwidth-bound on the same
+    weights, so their ratio transfers far better than either time alone.
+    """
+    print("== measured local cost model (ms) ==")
+    print("  round      = %.4f + %.4f * d" % (args.round_fixed,
+                                              args.round_slope))
+    print("  head chain = %.4f + %.4f * d" % (args.head_fixed,
+                                              args.head_slope))
+    print("  true headStepCostRatio h = head_slope / round(d=0) = %.4f "
+          "(shipped %.2f)" % (args.head_slope / args.round_fixed, SHIPPED_H))
+    print("  total marginal ratio     = round_slope / round(d=0) = %.4f"
+          % (args.round_slope / args.round_fixed))
+
+    print("\n== per-prompt ranked working point (ledger 207A) ==")
+    work = {}
+    for name, R, prop, acc, ms, raw in RANKED:
+        d = prop / R
+        p = solve_constant_p(d, acc / R)
+        f = head_fraction(d, args.head_fixed, args.head_slope,
+                          args.round_fixed, args.round_slope)
+        work[name] = (d, p, f)
+        print("  %-9s drafts/round %5.3f  p %6.4f  head share of round "
+              "%5.2f%%" % (name, d, p, 100 * f))
+
+    base = baseline_median()
+    print("\n  reconstructed baseline published median = %.5f" % base)
+
+    def evaluate(label, head_scale, p_scale):
+        def new_ms(name, ms):
+            d, _, f = work[name]
+            return ms * (1.0 - f * (1.0 - head_scale))
+
+        def new_tpr(name, tpr):
+            d, p, _ = work[name]
+            q = min(1.0, p * p_scale)
+            return 1.0 + expected_accepted(d, [q] * (MAX_DEPTH + 1))
+
+        rows, median = ranked_score_table(new_ms, new_tpr)
+        print("  %-34s median %.5f  (%+.2f%%)"
+              % (label, median, 100 * (median - base) / base))
+        return {"arm": label, "head_scale": head_scale, "p_scale": p_scale,
+                "median": median, "delta_pct": 100 * (median - base) / base,
+                "per_prompt": [{"prompt": r[0], "tokens_per_round": r[2],
+                                "round_ms": r[4], "raw": r[6]} for r in rows]}
+
+    def evaluate_floor(label, floor, head_scale=1.0):
+        """Lift every prompt's acceptance to at least `floor`."""
+        def new_ms(name, ms):
+            return ms * (1.0 - work[name][2] * (1.0 - head_scale))
+
+        def new_tpr(name, tpr):
+            d, p, _ = work[name]
+            q = max(p, floor)
+            return 1.0 + expected_accepted(d, [q] * (MAX_DEPTH + 1))
+
+        _, median = ranked_score_table(new_ms, new_tpr)
+        print("  %-34s median %.5f  (%+.2f%%)"
+              % (label, median, 100 * (median - base) / base))
+        return {"arm": label, "head_scale": head_scale,
+                "acceptance_floor": floor, "median": median,
+                "delta_pct": 100 * (median - base) / base}
+
+    def evaluate_shape(label, ratios):
+        """Apply a measured per-position acceptance SHAPE to each prompt.
+
+        Each prompt keeps its ledger-derived scalar `p`, and position i gets
+        `p * ratios[i]`, where `ratios` is normalised to position 1. This is
+        the only way to price a change that touches some positions and not
+        others, because the ranked aggregates alone cannot resolve the shape.
+        """
+        def new_tpr(name, tpr):
+            d, p, _ = work[name]
+            vec = [min(1.0, p * r) for r in ratios] + [min(1.0, p * ratios[-1])]
+            return 1.0 + expected_accepted(d, vec)
+
+        _, median = ranked_score_table(None, new_tpr)
+        print("  %-34s median %.5f  (%+.2f%%)"
+              % (label, median, 100 * (median - base) / base))
+        return {"arm": label, "position_ratios": list(ratios),
+                "median": median, "delta_pct": 100 * (median - base) / base}
+
+    print("\n== 3a: better proposals at unchanged head cost ==")
+    arms = [evaluate("p x %.3f" % s, 1.0, s)
+            for s in (1.00, 1.005, 1.01, 1.02, 1.03, 1.05)]
+    arms += [evaluate_floor("p_i -> %.3f every position" % f, f)
+             for f in (0.97, 0.98, 0.99, 0.995, 1.0)]
+
+    if args.shape:
+        ratios = [v / args.shape[0] for v in args.shape]
+        deep = ratios[:MAX_DEPTH - 3] + [1.0] * 3
+        print("  measured local position shape, normalised to position 1:")
+        print("    " + ", ".join("%.4f" % r for r in ratios))
+        arms.append(evaluate_shape("measured position shape", ratios))
+        arms.append(evaluate_shape(
+            "deepest 3 restored to position 1", deep))
+
+    print("\n== head cost alone, acceptance unchanged ==")
+    arms += [evaluate("head cost x %.2f" % s, s, 1.0)
+             for s in (0.75, 0.50, 0.25, 0.00)]
+
+    cuts = [98304, 90112, 81920, 73728, 65536, 57344, 49152, 40960, 32768,
+            24576, 16384, 8192]
+    cov, n_dec = vocabulary_coverage(cuts, tokens=args.coverage_tokens)
+    print("\n== 3b: smaller compact draft vocabulary "
+          "(coverage from %d decoded tokens of %s) =="
+          % (n_dec, Path(PUBLIC_GOLDEN).name))
+    print("  stage (ii) coarse readout is %d B at %d rows; the head chain is "
+          "%d B, so the readout is %.1f%% of the head step"
+          % (COARSE_READOUT_BYTES, COMPACT_DRAFT_ROWS,
+             DECLARED_HEAD_STEP_BYTES,
+             100 * COARSE_READOUT_BYTES / DECLARED_HEAD_STEP_BYTES))
+    vocab = []
+    print("  %8s %10s %12s %12s %10s" %
+          ("rows", "head x", "break-even", "measured", "median"))
+    for cut in cuts:
+        rows = cut + (CONTROL_END - CONTROL_START)
+        readout = COARSE_READOUT_BYTES * rows / COMPACT_DRAFT_ROWS
+        scale = ((DECLARED_HEAD_STEP_BYTES - COARSE_READOUT_BYTES + readout)
+                 / DECLARED_HEAD_STEP_BYTES)
+        lo, hi = 0.5, 1.0
+        for _ in range(60):
+            mid = 0.5 * (lo + hi)
+            _, m = ranked_score_table(
+                lambda n, ms: ms * (1.0 - work[n][2] * (1.0 - scale)),
+                lambda n, tpr: 1.0 + expected_accepted(
+                    work[n][0],
+                    [min(1.0, work[n][1] * mid)] * (MAX_DEPTH + 1)))
+            if m < base:
+                lo = mid
+            else:
+                hi = mid
+        breakeven = 0.5 * (lo + hi)
+        c = cov[cut]["id_prefix"]
+        _, m = ranked_score_table(
+            lambda n, ms: ms * (1.0 - work[n][2] * (1.0 - scale)),
+            lambda n, tpr: 1.0 + expected_accepted(
+                work[n][0],
+                [min(1.0, work[n][1] * c)] * (MAX_DEPTH + 1)))
+        print("  %8d %10.4f %12.4f %12.4f %10.5f  (%+.2f%%)%s" %
+              (rows, scale, breakeven, c, m, 100 * (m - base) / base,
+               "  PAYS" if c >= breakeven else ""))
+        vocab.append({"arm": "vocab %d" % rows, "vocabulary_rows": rows,
+                      "head_scale": scale, "p_scale": c,
+                      "coverage_id_prefix": c,
+                      "coverage_corpus_degenerate": cov[cut].get("corpus"),
+                      "breakeven_coverage": breakeven, "median": m,
+                      "delta_pct": 100 * (m - base) / base})
+    print("  NOTE: the `corpus` re-selection estimator is DEGENERATE on this"
+          " fixture.\n        `longcopy-gate-english-512` copies 95 percent of"
+          " its prompt, so its\n        held-out half holds 126 distinct tokens"
+          " and exactly 1 unseen ID. It\n        cannot bound a"
+          " frequency-selected vocabulary and is recorded, not used.")
+    arms += vocab
+
+    if args.out:
+        Path(args.out).write_text(json.dumps(
+            {"baseline_median": base,
+             "cost_model": {"round_fixed_ms": args.round_fixed,
+                            "round_slope_ms": args.round_slope,
+                            "head_fixed_ms": args.head_fixed,
+                            "head_slope_ms": args.head_slope,
+                            "measured_h": args.head_slope / args.round_fixed,
+                            "shipped_h": SHIPPED_H},
+             "working_point": {k: {"drafts_per_round": v[0], "p": v[1],
+                                   "head_share_of_round": v[2]}
+                               for k, v in work.items()},
+             "head_step_bytes": {
+                 "declared_total": DECLARED_HEAD_STEP_BYTES,
+                 "declared_stage_i_block": DECLARED_HEAD_BLOCK_BYTES,
+                 "declared_stage_ii_coarse_readout": COARSE_READOUT_BYTES,
+                 "declared_stage_iii_top32": DECLARED_TOP32_BYTES,
+                 "declared_stage_iv_rerank": DECLARED_RERANK_BYTES,
+                 "pinned_total": PINNED_HEAD_STEP_BYTES,
+                 "pinned_stage_i_block": PINNED_HEAD_BLOCK_BYTES,
+                 "pinned_stage_ii_compact_select": PINNED_SELECT_BYTES},
+             "coverage": {str(k): v for k, v in cov.items()},
+             "arms": arms}, indent=2))
+    return arms
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -647,6 +906,17 @@ def main():
     c.add_argument("--warmup", type=int, default=2)
     c.add_argument("--out")
     c.set_defaults(func=cmd_census)
+
+    d = sub.add_parser("price")
+    d.add_argument("--round-fixed", type=float, required=True)
+    d.add_argument("--round-slope", type=float, required=True)
+    d.add_argument("--head-fixed", type=float, required=True)
+    d.add_argument("--head-slope", type=float, required=True)
+    d.add_argument("--shape", type=float, nargs=MAX_DEPTH, default=None,
+                   help="measured per-position acceptance, position 1 first")
+    d.add_argument("--coverage-tokens", type=int, default=512)
+    d.add_argument("--out")
+    d.set_defaults(func=cmd_price)
 
     args = ap.parse_args()
     args.func(args)
