@@ -39,6 +39,44 @@ ARM_DESCRIPTION = {
 }
 
 
+def session_kind(legs: list[dict]) -> str:
+    """`abba` legs carry an `arm` column; buffer-tax legs carry a `tax` level."""
+    return "tax" if "tax" in legs[0] else "abba"
+
+
+def leg_arm(row: dict) -> str:
+    return row["arm"] if "arm" in row else f"k{row['tax']}"
+
+
+def leg_config(row: dict) -> dict:
+    if "arm" in row:
+        return {
+            "arm": row["arm"],
+            "arm_description": ARM_DESCRIPTION.get(row["arm"], row["arm"]),
+            "MLX_E85_FUSED_EMBED": int(row["fused_embed"]),
+            "MLX_E85_GATHER_QMM": int(row["gather_qmm"]),
+        }
+    tax = int(row["tax"])
+    return {
+        "arm": f"k{tax}",
+        "arm_description": f"{tax} added materialised intermediates per draft",
+        "MLX_E85_FUSED_EMBED": 1,
+        "MLX_E85_GATHER_QMM": 1,
+        "MLX_E85_BUFFER_TAX": tax,
+    }
+
+
+def flatten(prefix: str, value, out: dict) -> None:
+    """Flatten nested report dicts into scalar W&B summary keys."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            flatten(f"{prefix}/{key}", item, out)
+    elif isinstance(value, (int, float, bool, str)):
+        out[prefix] = value
+    elif isinstance(value, list):
+        out[prefix] = json.dumps(value)
+
+
 def read_meta(path: pathlib.Path) -> dict:
     meta = {}
     for line in path.read_text().splitlines():
@@ -64,7 +102,7 @@ def drafts_per_token(mean_draft_len: float, accepted_rate: float) -> float:
     return mean_draft_len / (1.0 + mean_draft_len * accepted_rate)
 
 
-def base_config(meta: dict) -> dict:
+def base_config(meta: dict, kind: str = "abba") -> dict:
     return {
         "experiment": "e85-materialised-intermediate-elimination",
         "assignment_pr": 87,
@@ -77,15 +115,17 @@ def base_config(meta: dict) -> dict:
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
-        "design": "ABBA counterbalanced inside one session",
+        "design": ("palindromic dose-response inside one session"
+                   if kind == "tax" else "ABBA counterbalanced inside one session"),
         **meta,
     }
 
 
 def log_legs(session: pathlib.Path, meta: dict, legs: list[dict]) -> list[str]:
     urls = []
+    kind = session_kind(legs)
     for row in legs:
-        arm = row["arm"]
+        arm = leg_arm(row)
         mtp = as_float(row["mtp_s_per_tok"])
         serial = as_float(row["serial_s_per_tok"])
         draft_len = as_float(row["mean_draft_len"])
@@ -95,14 +135,11 @@ def log_legs(session: pathlib.Path, meta: dict, legs: list[dict]) -> list[str]:
         run = wandb.init(
             entity=ENTITY, project=PROJECT, group=GROUP, reinit=True,
             name=f"{session.name}-leg{int(row['leg']):02d}-{arm}",
-            job_type="e85-abba-leg",
+            job_type=f"e85-{kind}-leg",
             config={
-                **base_config(meta),
-                "arm": arm,
-                "arm_description": ARM_DESCRIPTION.get(arm, arm),
+                **base_config(meta, kind),
+                **leg_config(row),
                 "leg_index": int(row["leg"]),
-                "MLX_E85_FUSED_EMBED": int(row["fused_embed"]),
-                "MLX_E85_GATHER_QMM": int(row["gather_qmm"]),
             },
         )
         run.log({
@@ -131,12 +168,13 @@ def log_legs(session: pathlib.Path, meta: dict, legs: list[dict]) -> list[str]:
 def log_summary(session: pathlib.Path, meta: dict, legs: list[dict],
                 stats: dict | None, census: dict | None,
                 buffers: int) -> str:
+    kind = session_kind(legs)
     run = wandb.init(
         entity=ENTITY, project=PROJECT, group=GROUP, reinit=True,
-        name=f"{session.name}-summary", job_type="e85-abba-summary",
+        name=f"{session.name}-summary", job_type=f"e85-{kind}-summary",
         config={
-            **base_config(meta),
-            "arms": sorted({row["arm"] for row in legs}),
+            **base_config(meta, kind),
+            "arms": sorted({leg_arm(row) for row in legs}),
             "legs": len(legs),
             "buffers_removed_per_draft": buffers,
             "stop_rule": "<5 us/buffer terminal negative; 5-10 report and stop; "
@@ -146,8 +184,8 @@ def log_summary(session: pathlib.Path, meta: dict, legs: list[dict],
     )
 
     payload: dict = {}
-    for arm in sorted({row["arm"] for row in legs}):
-        sub = [row for row in legs if row["arm"] == arm]
+    for arm in sorted({leg_arm(row) for row in legs}):
+        sub = [row for row in legs if leg_arm(row) == arm]
         payload[f"{arm}/mtp_seconds_per_token_mean"] = statistics.fmean(
             as_float(r["mtp_s_per_tok"]) for r in sub)
         payload[f"{arm}/serial_seconds_per_token_mean"] = statistics.fmean(
@@ -164,13 +202,7 @@ def log_summary(session: pathlib.Path, meta: dict, legs: list[dict],
                 [as_float(r["mtp_s_per_tok"]) for r in sub])
 
     if stats:
-        for key, value in stats.items():
-            if isinstance(value, (int, float, bool, str)):
-                payload[f"contrast/{key}"] = value
-            elif isinstance(value, dict):
-                for inner, item in value.items():
-                    if isinstance(item, (int, float, bool, str)):
-                        payload[f"contrast/{key}/{inner}"] = item
+        flatten("contrast", stats, payload)
     if census:
         payload["census/answer"] = json.dumps(census)
 
@@ -188,7 +220,8 @@ def main() -> None:
     ap.add_argument("session")
     ap.add_argument("--stats", default=None)
     ap.add_argument("--census", default=None)
-    ap.add_argument("--buffers", type=int, default=7)
+    ap.add_argument("--buffers", type=int, default=6,
+                    help="net materialised intermediates removed per draft token")
     args = ap.parse_args()
 
     session = pathlib.Path(args.session)

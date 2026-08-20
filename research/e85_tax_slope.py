@@ -202,6 +202,14 @@ def main() -> None:
         "ols": ols_slope(rows, "mtp_s_per_tok"),
         "cov": ols_slope(rows, "mtp_s_per_tok", covariate="serial_s_per_tok"),
     }
+    # Leg 1 starts on a cold GPU. That transient is not linear, so the
+    # palindrome does not cancel it. Refit without it.
+    warm_floor = statistics.median(r["temp_in"] for r in rows) - 10.0
+    warm = [r for r in rows if r["temp_in"] >= warm_floor]
+    report["warm_legs"] = len(warm)
+    report["warm_floor_c"] = warm_floor
+    if len(warm) < len(rows) and len(warm) >= 5 and len({r["tax"] for r in warm}) >= 2:
+        estimators["ols_warm"] = ols_slope(warm, "mtp_s_per_tok")
     # The unchanged serial leg must show no tax response. It is the control.
     estimators["control_serial"] = ols_slope(rows, "serial_s_per_tok")
 
