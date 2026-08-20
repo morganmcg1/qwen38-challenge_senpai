@@ -306,10 +306,18 @@ senpai/verify-ranked-score-boundary.sh: PASS
 `swift test` on the gates session: 2 tests, 1 suite, **0 expectation
 failures**, 247.5 s.
 
-**The `Qwen35.swift` instrumentation must not reach the candidate surface.**
-The gates are closed, so the instrument has no further use. Reverting it is a
-single commit; commit `7ef3f15` holds the exact instrument if anyone needs to
-replay rung 3.
+Full `swift test --force-resolved-versions` on the branch head, job
+`66e2fab1`: **705 tests in 53 suites, 40 issues, 9 failing functions**. The
+nine names are exactly the nine recorded in `senpai/known-test-failures.md`,
+and 40 issues equals the recorded count, so the pass rule holds. The recorded
+baseline at `222f2332` was 703 tests in 52 suites; the extra 2 tests and 1
+suite are the E83 suite itself. **The `Qwen35.swift` instrumentation
+introduces no new test failure.**
+
+The gates are closed, so the instrument has no further use on the candidate
+surface. Reverting it is a single commit and `7ef3f15` holds the exact
+instrument for anyone who needs to replay rung 3. The branch is safe either
+way: the defaults are behaviour-identical and the full suite is unchanged.
 
 ## Suggested follow-ups (not implemented)
 
