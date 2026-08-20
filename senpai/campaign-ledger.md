@@ -17593,3 +17593,330 @@ Two consequences worth acting on:
 The 21.6 % figure is shared with every top solver, because the promoted frontier
 is a common lineage and we build on `upstream/main`. It is not a differentiator.
 It is the size of the pool the differentiators are swimming in.
+
+## 207 — the ranked round count is an exact receipt integer, and both sides of the `R` dispute were wrong
+
+Date 2026-08-20. Advisor cycle. `harness=ranked` for every ranked number here,
+`harness=local` for every `E1` number. No GPU ran.
+Instruments `_advisor_scratch/round_audit.py`, `research/e70_double_roofline.py`,
+`research/prompt_round_reconstruction.py`.
+Trigger: qwen-alphonse challenged 206(I) at PR #73 `#issuecomment-5353559620`.
+Adjudicated at `#issuecomment-5353768008`.
+
+### 207(A) The exact round accounting. No model.
+
+Every ranked prompt's round count is fixed by two integer constraints in the
+receipt itself: `mean_draft_len x R` must be a whole number of proposals, and
+`R + accepted = 512`. All eight prompts of `ca9251b8` close exactly.
+
+| prompt | R | proposed | accepted | R + A | M | tokens/round | ranked round ms |
+|---|---|---|---|---|---|---|---|
+| plutarch | 487 | 75 | 25 | 512 | 1.1540 | 1.0513 | 30.781 |
+| drama | 252 | 579 | 260 | 512 | 3.2976 | 2.0317 | 38.094 |
+| travel | 212 | 563 | 300 | 512 | 3.6557 | 2.4151 | 39.511 |
+| beagle | 107 | 485 | 405 | 512 | 5.5327 | 4.7850 | 53.338 |
+| medicine | 99 | 472 | 413 | 512 | 5.7677 | 5.1717 | 53.476 |
+| republic | 89 | 469 | 423 | 512 | 6.2697 | 5.7528 | 58.421 |
+| essays | 87 | 472 | 425 | 512 | 6.4253 | 5.8851 | 60.196 |
+| botany | 85 | 491 | 427 | 512 | 6.7765 | 6.0235 | 60.548 |
+
+Round ms is `(512 x mtp_spt x 1000 - 525.963) / R`.
+
+Drama is the only prompt with two feasible round counts, 168 and 252.
+`R(M)` monotonicity selects 252, which agrees with the cost-residual choice
+already made by `prompt_round_reconstruction.py`. At `R = 168` drama's `R(M)`
+would be 1.404, far outside the 2.11 to 2.47 band every other prompt occupies.
+
+### 207(B) 🔴 My own error. `M` is not tokens per round.
+
+I published the ranked beagle round as **61.672 ms** from `512 / (1 + mean_draft_len)
+= 92.54` rounds. That divides by the **verify width**. Beagle proposes 485 drafts
+and accepts 405, so tokens per round is `1 + 405/107 = 4.785`, not `M = 5.533`.
+
+**`M` is one plus drafts PROPOSED. Tokens per round is one plus drafts ACCEPTED.**
+The two are equal only at 100 % acceptance, which no ranked prompt reaches.
+
+| quantity | published | correct |
+|---|---|---|
+| ranked beagle rounds | 92.54 | **107** |
+| ranked beagle round | 61.672 ms | **53.338 ms** |
+| ranked beagle achieved BW | 233.7 GB/s, 38.1 % of spec | **270.2 GB/s, 44.0 %** |
+| ranked beagle achieved compute | 4.83 TFLOP/s, 9.1 % | **5.58 TFLOP/s, 10.5 %** |
+| ranked width penalty M=1 to M=5.53 | 2.029 x | **1.754 x** |
+
+Fixed in `research/e70_double_roofline.py`, which now asserts
+`R_ROUNDS + R_ACCEPTED == 512` so the same mistake cannot be made silently again.
+
+The "factor of two of unnamed machine at the scored width" headline survives at
+44.0 % of the bandwidth roof and 10.5 % of the compute roof, slightly weakened.
+
+### 207(C) 🔴 205(G) is REINSTATED, and 206's retraction of it is retracted
+
+205(G) said the ranked width curve is 1.16 x flatter than local. 206 retracted
+that on the strength of the 61.672 ms round. With the exact round count the
+original conclusion returns.
+
+| prompt | M | local round ms | ranked round ms | local steepness / ranked |
+|---|---|---|---|---|
+| beagle | 5.533 | 125.800 | 53.338 | 1.103 |
+| medicine | 5.768 | 130.259 | 53.476 | 1.139 |
+| republic | 6.270 | 139.927 | 58.421 | 1.120 |
+| essays | 6.425 | 142.962 | 60.196 | 1.111 |
+| botany | 6.777 | 149.810 | 60.548 | 1.157 |
+
+Mean **1.126**. 205(G)'s 1.16 sat at the top of the measured range and was
+correct in both sign and order of magnitude.
+
+**Second instrument, arrived at independently.**
+`prompt_round_reconstruction.py` calibrates one depth-0 round on plutarch and
+then predicts the other seven prompts under a single-factor M4 Pro to M5
+transfer. It over-predicts every drafting prompt: drama +1.5, travel -1.6,
+beagle -9.3, medicine -12.2, republic -10.7, essays -10.0, botany -13.6 percent.
+Its own joint LP test reports the transfer "REFUTED ... intersection EMPTY by
+2.996 ms (10.12 %)" without reference to any calibrated value. That refutation
+**is** this flattening, reached from a different direction with different
+arithmetic. Two independent instruments agreeing is the strongest evidence
+available.
+
+### 207(D) `30.402 ms` is confirmed by a model-free bound. 206(I) stands.
+
+qwen-alphonse argued that `30.402` is refuted because it implies a 16.092 s leg,
+which 0 of 3768 ranked serial legs reach.
+
+The argument applies a correct calculation to the wrong population. `30.402` is
+the **candidate build's** depth-0 round, computed from `mtp_spt`. 16.092 s is the
+leg **our candidate** would run on plutarch if every round were depth-0. The
+candidate's measured plutarch leg is 15.517 s, 3.6 % below it, and that gap is
+the saving from plutarch's 38 drafting rounds. Nothing about the pinned serial
+population bears on it. This is exactly the two-build error 206(I) names.
+
+The decisive evidence needs no model at all. Plutarch runs 487 rounds and 449 of
+them are depth-0. Its mean round is **30.781 ms**. A drafting round cannot cost
+less than a depth-0 round, therefore
+
+```
+c1 <= 30.781 ms          hard, model free
+```
+
+`30.402` sits 1.2 % below that ceiling. The proposed replacement `36.958` sits
+20.1 % above it. **`c1 = 30.4 +/- 0.6 ms` and `R(depth-0) = 2.1383` stand.**
+
+Also refuted: the claim that no measured source for `30.402` exists in the
+repository. `calibrate_depth0_ms()` at
+`research/prompt_round_reconstruction.py:111-156` reads `row["mtp_spt"]` at
+`:134` and resolves one unknown by fixed point. Command in 206(I).
+
+### 207(E) `R` is width dependent. This replaces the scalar `R`.
+
+| M | prompt | local round ms | ranked round ms | R(M) |
+|---|---|---|---|---|
+| 1.000 | calibrated `c1` | 65.009 | 30.402 | 2.1383 |
+| 1.154 | plutarch | 65.852 | 30.781 | 2.1394 |
+| 3.298 | drama | 80.212 | 38.094 | 2.1056 |
+| 3.656 | travel | 85.859 | 39.511 | 2.1730 |
+| 5.533 | beagle | 125.800 | 53.338 | 2.3586 |
+| 5.768 | medicine | 130.259 | 53.476 | 2.4358 |
+| 6.270 | republic | 139.927 | 58.421 | 2.3951 |
+| 6.425 | essays | 142.962 | 60.196 | 2.3749 |
+| 6.777 | botany | 149.810 | 60.548 | 2.4742 |
+
+`R(M)` is flat at 2.11 to 2.17 for `M <= 3.66` and flat again at 2.36 to 2.47
+for `M >= 5.53`. The step is 8.7 %, roughly twice the within-group scatter.
+
+**Consequence for every projection built on the scalar `R = 2.1383` at a deep
+width: it is 10.3 % too high at beagle and 15.7 % too high at botany.**
+qwen-alphonse independently reached "9.4 to 10.4 % too high" from an incorrect
+argument. The magnitude and the sign are right; the reason is not.
+
+The composed pricing in `_advisor_scratch/price3.py` is unaffected, because it
+uses the flat measured per-removal law from 202, not `R`.
+
+### 207(F) Adopted pricing rule. `R/tau` is retired.
+
+```
+delta_ranked_ms  = delta_local_ms / R(M)
+delta_score_pct  = 100 * delta_ranked_ms * rounds_at_M / ranked_candidate_leg_ms
+```
+
+`M` is the width the local measurement was taken at. Report `M` and `R(M)`
+beside every converted number. An unlabelled conversion is invalid in the same
+way an unlabelled harness is.
+
+Beagle normalizers: `rounds = 107`, `ranked_candidate_leg_ms = 6233.1`.
+
+188(A)'s text defect stands as reported: it says "let `L` be leg time" and then
+divides two round times. The arithmetic was round-level throughout and is
+unaffected; only the wording was wrong. Corrected here rather than in place.
+
+### 207(G) 🔴 OPEN: does the M=4 to M=5 local jump exist on the ranked host?
+
+The 8.7 % step in `R(M)` falls exactly where the local ladder has its sharpest
+sub-M6 jump, `E1(4) = 91.288` to `E1(5) = 115.691`, `+26.7 %`.
+
+Working reading: the M4 Pro carries a width penalty between M=4 and M=5 that the
+ranked M5 carries much less of. Not asserted. Two caveats:
+
+1. Ranked rounds are means over a width **mixture**; `E1` values are fixed width.
+   On a convex curve this biases `R(M)` downward for high-spread prompts, which
+   works **against** the observed step rather than producing it.
+2. The receipt publishes only the mean draft length, so the ranked round census
+   cannot be unfolded from the board.
+
+**Why this matters more than its size suggests: M=5 and M=6 carry 57.5 % of
+ranked width time. If part of the local M4-to-M5 jump is a local artifact, then
+part of our single largest optimization target is a local artifact too.**
+
+This needs a ranked-observable instrument, not another local ladder. Queued as a
+distinct experiment; deliberately kept out of E70 and E71.
+
+### 207(H) New standing rules
+
+- **`M` is one plus drafts PROPOSED. Tokens per round is one plus drafts
+  ACCEPTED.** Never divide 512 by `M` to get a round count. Use the receipt
+  integers and assert `rounds + accepted == 512`.
+- **`R` is width indexed.** Cite `R(M)`, never a scalar `R`.
+- **A bound beats a fit.** Plutarch's 30.781 ms mean round settled a dispute that
+  two calibrated models could not, because 92.2 % of its rounds are the thing
+  being measured and the remainder can only move the bound one way.
+
+## 208 — `ff73cbbd` scored 3.17230 and rejected. The whole QMV partition programme is now the prime suspect for a sign-inverted transfer.
+
+Date 2026-08-20. `harness=ranked` throughout. Official receipt, not a projection.
+Instruments `_advisor_scratch/ff73_diag.py`, `_advisor_scratch/ff73_diag2.py`.
+Submission `ff73cbbd-6ab0-4651-8df1-e2275958e744`, commit
+`f5d13183776b18a9169f69ddc35aef6bac5cde42`, created 06:42Z, resolved 09:0xZ.
+`rejectionReason: score did not improve current best`. `parity_all_ok: true`.
+
+### 208(A) The number, against the prediction
+
+| quantity | value |
+|---|---|
+| predicted median (composed pricing, 95 % CI) | 3.300, [3.254, 3.331] |
+| E66 rung 4 flat law | 3.2744 |
+| E66 rung 4 psi-free projection | 3.4101 |
+| **measured** | **3.17230** |
+| our previous best `ca9251b8` | 3.23251 |
+| crown `9ad17378` | 3.25238 |
+
+**Every prediction was too high, and both competing transfer laws are falsified
+on the low side.** The flat law missed by −3.1 %, the projection by −7.0 %. The
+flat law was the better of the two, which is the one thing E66 rung 4 got right.
+
+### 208(B) It is a pure time regression. The schedule did not move at all.
+
+`effective_mean_draft_len` and `non_drafting_round_count` are **identical on all
+eight prompts** between `ca9251b8` and `ff73cbbd`, so the exact round counts are
+identical too. Same rounds, same widths, same accepts. Only the clock moved.
+
+| prompt | M | rounds | round ms old | round ms new | d round % | d raw % | d raw vs crown % |
+|---|---|---|---|---|---|---|---|
+| plutarch | 1.154 | 487 | 30.782 | 30.760 | **-0.069** | +0.174 | -0.146 |
+| drama | 3.298 | 252 | 57.130 | 57.994 | +1.512 | -0.758 | -1.293 |
+| travel | 3.656 | 212 | 39.504 | 40.436 | +2.360 | -1.690 | -1.872 |
+| beagle | 5.533 | 107 | 53.338 | 53.889 | +1.034 | -0.353 | -0.859 |
+| medicine | 5.768 | 99 | 53.472 | 55.464 | **+3.726** | -3.271 | -3.955 |
+| republic | 6.270 | 89 | 58.406 | 58.735 | +0.563 | -0.390 | -1.385 |
+| essays | 6.425 | 87 | 60.206 | 60.457 | +0.416 | +0.001 | -1.312 |
+| botany | 6.777 | 85 | 60.548 | 62.740 | **+3.620** | -3.097 | -3.940 |
+
+Central pair moved `3.1202, 3.3449` to `3.1091, 3.2355`. Median `-1.86 %`.
+
+**Two facts carry the diagnosis.**
+
+1. **plutarch did not move: -0.069 % per round.** 449 of its 487 rounds are
+   depth-0. **The depth-0 round is clean. The regression is entirely inside
+   drafting rounds.**
+2. **All eight prompts are worse than the crown.** A sign test on 8 of 8 gives
+   `p = 0.004`. Against `ca9251b8` it is 7 of 8 with plutarch a tie, `p = 0.008`.
+
+Mean candidate-leg change `+1.51 %`, sd `1.30 %`. The per-prompt scatter is
+inside the `1.54 %` null for a difference of two ranked runs (193), so the
+bimodal look of the medicine and botany rows is **not** interpretable. The mean
+shift is; at `sd 0.546 %` for the mean of eight it is `2.8 sigma`.
+
+### 208(C) What our candidate actually changed on top of the crown
+
+Diff `bfab0de58d43453e506523707e1720a3485570f4` to `f5d13183`:
+
+| file | +/- | content |
+|---|---|---|
+| `Qwen36MTPBlockSession.swift` | +112/-74 | EOS fixed-window fix, E65 trace plumbing, warm-path additions, **and the 27-line `kL=1025` warm block DELETED** |
+| `Qwen35.swift` | +32/-19 | `qwen35DecodeLadderRungs` refactor, shipped rung set unchanged |
+| `quantized.cpp` | +4/-4 | see below |
+| `quantized.h` | +4/-4 | see below |
+| `mtp-head.manifest.json` | +1/-1 | free-text note only |
+
+🔴 **The kernel delta is not one partition change. It is three.**
+
+| width | crown `bfab0de5` | ours | our experiment |
+|---|---|---|---|
+| 5 | `qmv_fast_crossrow_affine4_g64_m<T, 5, 3>` | `<T, 5, 5>` | **t55**, PR #62 |
+| 6 | `<T, 6, 3>` | `<T, 6, 6>` | **t6**, PR #69 |
+| 9 | `<T, 9, 3>` | `<T, 9, 5>` | **E55** |
+| gate | `static_assert(NA <= 4)` | `NA <= 6` | enabling change |
+
+**The crown ships `IPG = 3` at every one of those widths.** We replaced all three
+with the partitions our local M4 Pro selects.
+
+**Ranked width time shares: M5 24.1 %, M6 33.4 %, M9 5.75 %. Our three changes
+cover 63.25 % of ranked width time.** A `+2.4 %` leg regression concentrated on
+63.25 % of round time is about `+3.8 %` on the widths touched.
+
+Locally the same three changes measured `-20.209 %` (t55 isolated cell),
+`-4.199 %` (t6 isolated cell), and won the closed dispatch-table search at every
+width 3 to 9 under `cost = sum S[g] - 15.191 ms`.
+
+### 208(D) 🔴 The hypothesis, and why it is not yet a conclusion
+
+**H208: the QMV group-partition optimum is host specific, and the local M4 Pro
+optimum is a ranked pessimum. The local-to-ranked transfer inverts in SIGN, not
+merely in magnitude.**
+
+This is exactly the failure mode 207(G) named from a completely different
+direction two hours earlier: `R(M)` steps by 8.7 % between `M <= 3.66` and
+`M >= 5.53`, which says the M4 Pro carries a width penalty between M=4 and M=5
+that the ranked M5 carries much less of. A partition change that pays for itself
+by relieving that penalty buys nothing where the penalty is absent, and can cost
+where the wider group costs occupancy. `t55` raising entry
+`affine_qmv_fast<bfloat16_t,64,4,false>` from 181 to 183 registers was logged as
+an open risk at merge time and is a candidate mechanism.
+
+**Three confounds prevent calling it now.**
+
+1. **The deleted `kL=1025` warm block is in the same diff.** Already repaired in
+   base `4898738e`, so it is separable by one more run.
+2. **Replication.** `-2.46 %` against the crown is `2.3 sigma` on the `1.069 %`
+   difference sd of the ranked median (193). **One ranked run must not be
+   allowed to invalidate three merged experiments.**
+3. E65 trace plumbing and the ladder refactor are both gated or set-equal and
+   should cost nothing, but neither has been measured at rank.
+
+### 208(E) Decision and sequence
+
+**Replicate before retracting.** Ledger 193 exists for this exact moment.
+
+1. Submit the current base `4898738e` unchanged. It differs from `ff73cbbd` by
+   the restored warm block plus 18 gated trace lines and 8 comment lines. That is
+   a one-variable ranked test of the warm block **and** a replication of the
+   `ff73cbbd` measurement.
+2. Prepare and validate a crown-kernel arm: the four lines in `quantized.h` and
+   `quantized.cpp` reverted to the crown's exact bytes, which makes both files
+   byte-identical to a promoted submission and therefore build-safe and
+   correctness-safe by construction. Submit second.
+3. If arm 2 recovers to about 3.25 and arm 1 does not, H208 is confirmed and
+   t55, t6 and E55 are ranked losers that must be reverted from the base.
+
+### 208(F) What this already changes, regardless of how H208 resolves
+
+- **No local QMV cell measurement may be quoted as a ranked expectation again**
+  without a ranked receipt or an explicit statement that the transfer is
+  unverified. The isolated-cell instrument is not discredited as a measurement
+  of the M4 Pro; it is discredited as a predictor of the M5.
+- **The closed dispatch table of 204 is a local result.** Its claim to be closed
+  "at every width 3 to 9" holds for this host only. The ledger's standing rule is
+  amended in place by this item rather than deleted.
+- **Bundling was my error.** `ff73cbbd` carried four independent changes. Had it
+  carried one, this receipt would already be a conclusion. One hypothesis per
+  submission, not merely one per PR.
+- **The plausibility ceiling was never the binding constraint.** We are 2.5 %
+  below the crown, not above 5.0.

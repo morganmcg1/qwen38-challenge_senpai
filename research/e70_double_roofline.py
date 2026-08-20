@@ -30,6 +30,17 @@ R_M = 5.5327
 DECODE = 512
 SEED = 512
 
+# Exact receipt round accounting, not a model. mean_draft_len * R must be a whole
+# number of proposals and R + accepted == 512, which pins beagle at R = 107.
+# The verify width M = 1 + drafts PROPOSED; tokens per round = 1 + drafts
+# ACCEPTED. Beagle accepts 405 of 485, so tokens per round is 4.785, not M.
+R_ROUNDS = 107
+R_PROPOSED = 485
+R_ACCEPTED = 405
+assert R_ROUNDS + R_ACCEPTED == DECODE
+assert abs((R_M - 1.0) - R_PROPOSED / R_ROUNDS) < 1e-4
+R_M = 1.0 + R_PROPOSED / R_ROUNDS
+
 print("=" * 78)
 print("A.  RANKED HOST ROUND TIMES (beagle, receipt ca9251b8, prefill removed)")
 print("=" * 78)
@@ -37,7 +48,7 @@ K = SEED * R_PRE_SPT
 ser_leg = DECODE * R_SER_SPT
 mtp_leg = DECODE * R_MTP_SPT
 ser_round = (ser_leg - K) / DECODE
-n_rounds = DECODE / R_M
+n_rounds = R_ROUNDS
 mtp_round = (mtp_leg - K) / n_rounds
 print(f"  seed prefill K                = {K*1000:8.3f} ms")
 print(f"  serial leg                    = {ser_leg:8.4f} s   round = {ser_round*1000:7.3f} ms")
@@ -88,13 +99,13 @@ r_width = lm / 1000 / mtp_round
 print(f"  depth-0 round       {r_depth0:6.3f} x   (candidate:candidate)")
 print(f"  M={R_M} verify round  {r_width:6.3f} x   (candidate:candidate)")
 print(f"  spec bandwidth      {SPEC_M5MAX/SPEC_M4PRO:6.3f} x")
-# r_width / r_depth0 == local_width_penalty / ranked_width_penalty, so a value
-# below 1 means the RANKED curve is the steeper one. 205(G) read this backwards.
 local_pen = lm / LOCAL_ROUND_MS[1]
 ranked_pen = mtp_round * 1000 / CAND_DEPTH0_MS
 print(f"  width penalty M=1 -> M={R_M}:  local {local_pen:5.3f} x   "
       f"ranked {ranked_pen:5.3f} x")
-print(f"  ranked width curve is {ranked_pen/local_pen:.3f} x as steep as local")
+print(f"  local width curve is {local_pen/ranked_pen:.3f} x as steep as ranked")
+print(f"  => R is width dependent: R(1) = {r_depth0:.4f}, "
+      f"R({R_M}) = {r_width:.4f}")
 print()
 print("  -- ledger 206(M): banked non-speculative advantage over the pinned base --")
 print(f"  baseline serial round / candidate depth-0 = "
