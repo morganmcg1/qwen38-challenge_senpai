@@ -67,6 +67,7 @@ struct E83PrefillDecompositionTests {
         let reps = Int(env["MLXFAST_E83_REPS"] ?? "") ?? 5
         let warmup = Int(env["MLXFAST_E83_WARMUP"] ?? "") ?? 2
         let stallMillis = Int(env["MLXFAST_E83_STALL_MS"] ?? "") ?? 20
+        let ladderReps = Int(env["MLXFAST_E83_LADDER_REPS"] ?? "") ?? 6
         let armNames =
             (env["MLXFAST_E83_ARMS"]?.split(separator: ",").map {
                 $0.trimmingCharacters(in: .whitespaces)
@@ -146,7 +147,7 @@ struct E83PrefillDecompositionTests {
         // ladder-on side is the net cost of 22 boundaries. Interleaved
         // low/high so thermal drift cannot masquerade as the step.
         let ladderWidths = [496, 512, 504, 520, 511, 528]
-        for rep in 0..<max(reps, 5) {
+        for rep in 0..<ladderReps {
             for width in (rep % 2 == 0 ? ladderWidths : ladderWidths.reversed()) {
                 var block = harness.begin(arm: .baseline, phased: false, width: width)
                 block["kind"] = "ladder_step"
@@ -182,6 +183,7 @@ struct E83PrefillDecompositionTests {
                 "warmup": warmup,
                 "arms": armNames,
                 "stall_millis": stallMillis,
+                "ladder_reps": ladderReps,
                 "model_load_seconds": loadSeconds,
                 "num_hidden_layers": config.numHiddenLayers,
                 "hidden_size": config.hiddenSize,
@@ -917,7 +919,10 @@ private func e83LoadPromptTokens(_ path: String) throws -> [Int] {
     else {
         throw E83Failure("E83: \(path) is not a correctness prompt fixture")
     }
-    return prompt
+    // The scored seed is exactly `prompt_tokens`. The ladder sweep also needs
+    // widths above 512, so the fixture's own continuation supplies them: those
+    // widths are a timing probe for the boundary count, never a token claim.
+    return prompt + ((first["expected_tokens"] as? [Int]) ?? [])
 }
 
 private struct E83Failure: Error, CustomStringConvertible {
