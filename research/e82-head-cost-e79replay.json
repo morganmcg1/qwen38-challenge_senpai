@@ -1,0 +1,217 @@
+{
+  "legs": [
+    {
+      "tag": "e79-r5-gated-decl-b1-synchead512",
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+      "tokens": "512",
+      "sync_head": "1",
+      "cool_gate_passed_real_gate": "true",
+      "gate_qualified_for_timing": "true",
+      "official_or_ranked_score": "false",
+      "gpu_temp_entry_c": "56.75993347167969",
+      "gpu_temp_exit_c": "60.73893737792969",
+      "base_sha": "9372fee6fdb72bc2210926372a3f8548a88414e9",
+      "chip": "Apple M4 Pro",
+      "drafting_rounds": 74,
+      "mean_draft_len": 6.351351351351352,
+      "mean_accept_per_round": 5.621621621621622,
+      "median_round_ms": 166.76749999999998,
+      "head_phase_ms_per_draft": {
+        "median": 2.390875,
+        "mean": 2.4341459620334622,
+        "n": 74
+      },
+      "chain_gpu_ms_per_draft": {
+        "median": 2.295375,
+        "mean": 2.2823204954954956,
+        "n": 74
+      },
+      "host_build_ms_per_draft": {
+        "median": 0.04555,
+        "mean": 0.07642089768339769,
+        "n": 74
+      },
+      "median_draft_build_us": 17691.5,
+      "median_d_pre_us": 32.5,
+      "median_d_flush_us": 4.0,
+      "median_d_head1_us": 58.0,
+      "median_d_submit1_us": 156.0,
+      "median_d_chain_us": 270.5,
+      "median_d_submit2_us": 15457.0,
+      "median_verify_build_us": 72872.0,
+      "median_eval_wall_us": 75355.5,
+      "median_round_us": 166767.5,
+      "arm": "declared",
+      "tree_bytes": 427746170,
+      "tensor_bytes": 427738112,
+      "bytes_per_ms_head_step": 178904422.85774037
+    },
+    {
+      "tag": "e79-r6-gated-pin-b1-synchead512",
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head",
+      "tokens": "512",
+      "sync_head": "1",
+      "cool_gate_passed_real_gate": "true",
+      "gate_qualified_for_timing": "true",
+      "official_or_ranked_score": "false",
+      "gpu_temp_entry_c": "56.85617446899414",
+      "gpu_temp_exit_c": "60.07505798339844",
+      "base_sha": "9fdc05a0ab173ab403398baa50c755f47719ee38",
+      "chip": "Apple M4 Pro",
+      "drafting_rounds": 72,
+      "mean_draft_len": 6.597222222222222,
+      "mean_accept_per_round": 5.777777777777778,
+      "median_round_ms": 201.9045,
+      "head_phase_ms_per_draft": {
+        "median": 4.7640625,
+        "mean": 4.771897503306878,
+        "n": 72
+      },
+      "chain_gpu_ms_per_draft": {
+        "median": 4.7005625,
+        "mean": 4.705055357142857,
+        "n": 72
+      },
+      "host_build_ms_per_draft": {
+        "median": 0.0366875,
+        "mean": 0.037792840608465605,
+        "n": 72
+      },
+      "median_draft_build_us": 37874.5,
+      "median_d_pre_us": 26.0,
+      "median_d_flush_us": 3.0,
+      "median_d_head1_us": 45.0,
+      "median_d_submit1_us": 142.0,
+      "median_d_chain_us": 226.5,
+      "median_d_submit2_us": 37331.0,
+      "median_verify_build_us": 79046.5,
+      "median_eval_wall_us": 84484.5,
+      "median_round_us": 201904.5,
+      "arm": "pinned",
+      "tree_bytes": 849407066,
+      "tensor_bytes": 849398784,
+      "bytes_per_ms_head_step": 178292955.6444736
+    },
+    {
+      "tag": "e79-r3-decl-b1-synchead512",
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+      "tokens": "512",
+      "sync_head": "1",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "official_or_ranked_score": "false",
+      "gpu_temp_entry_c": "60.41850662231445",
+      "gpu_temp_exit_c": "64.25434875488281",
+      "base_sha": "83b38057eb36de43442f550c34c44bd867a54610",
+      "chip": "Apple M4 Pro",
+      "drafting_rounds": 74,
+      "mean_draft_len": 6.351351351351352,
+      "mean_accept_per_round": 5.621621621621622,
+      "median_round_ms": 166.627,
+      "head_phase_ms_per_draft": {
+        "median": 2.3810624999999996,
+        "mean": 2.421661196911197,
+        "n": 74
+      },
+      "chain_gpu_ms_per_draft": {
+        "median": 2.3029374999999996,
+        "mean": 2.3011295527670526,
+        "n": 74
+      },
+      "host_build_ms_per_draft": {
+        "median": 0.045450000000000004,
+        "mean": 0.06657429214929216,
+        "n": 74
+      },
+      "median_draft_build_us": 17853.0,
+      "median_d_pre_us": 28.0,
+      "median_d_flush_us": 3.0,
+      "median_d_head1_us": 61.0,
+      "median_d_submit1_us": 152.0,
+      "median_d_chain_us": 275.0,
+      "median_d_submit2_us": 15952.5,
+      "median_verify_build_us": 72611.0,
+      "median_eval_wall_us": 75936.5,
+      "median_round_us": 166627.0,
+      "arm": "declared",
+      "tree_bytes": 427746170,
+      "tensor_bytes": 427738112,
+      "bytes_per_ms_head_step": 179641698.61143926
+    },
+    {
+      "tag": "e79-r3-decl-b2-synchead512",
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+      "tokens": "512",
+      "sync_head": "1",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "official_or_ranked_score": "false",
+      "gpu_temp_entry_c": "60.48628234863281",
+      "gpu_temp_exit_c": "65.11518096923828",
+      "base_sha": "83b38057eb36de43442f550c34c44bd867a54610",
+      "chip": "Apple M4 Pro",
+      "drafting_rounds": 74,
+      "mean_draft_len": 6.351351351351352,
+      "mean_accept_per_round": 5.621621621621622,
+      "median_round_ms": 167.1295,
+      "head_phase_ms_per_draft": {
+        "median": 2.3781125000000003,
+        "mean": 2.4206250965250966,
+        "n": 74
+      },
+      "chain_gpu_ms_per_draft": {
+        "median": 2.2968124999999997,
+        "mean": 2.290078828828829,
+        "n": 74
+      },
+      "host_build_ms_per_draft": {
+        "median": 0.044899999999999995,
+        "mean": 0.06961040862290863,
+        "n": 74
+      },
+      "median_draft_build_us": 17733.0,
+      "median_d_pre_us": 28.0,
+      "median_d_flush_us": 3.0,
+      "median_d_head1_us": 61.0,
+      "median_d_submit1_us": 149.5,
+      "median_d_chain_us": 271.5,
+      "median_d_submit2_us": 15452.5,
+      "median_verify_build_us": 73045.5,
+      "median_eval_wall_us": 75374.0,
+      "median_round_us": 167129.5,
+      "arm": "declared",
+      "tree_bytes": 427746170,
+      "tensor_bytes": 427738112,
+      "bytes_per_ms_head_step": 179864540.47064635
+    }
+  ],
+  "by_arm": {
+    "declared": {
+      "legs": [
+        "e79-r5-gated-decl-b1-synchead512",
+        "e79-r3-decl-b1-synchead512",
+        "e79-r3-decl-b2-synchead512"
+      ],
+      "head_phase_ms_per_draft_median": 2.3810624999999996,
+      "chain_gpu_ms_per_draft_median": 2.2968124999999997,
+      "tensor_bytes": 427738112,
+      "bytes_per_ms": 179641698.61143926,
+      "gate_qualified_for_timing": [
+        "false",
+        "true"
+      ]
+    },
+    "pinned": {
+      "legs": [
+        "e79-r6-gated-pin-b1-synchead512"
+      ],
+      "head_phase_ms_per_draft_median": 4.7640625,
+      "chain_gpu_ms_per_draft_median": 4.7005625,
+      "tensor_bytes": 849398784,
+      "bytes_per_ms": 178292955.6444736,
+      "gate_qualified_for_timing": [
+        "true"
+      ]
+    }
+  }
+}
