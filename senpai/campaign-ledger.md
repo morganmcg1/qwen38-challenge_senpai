@@ -16808,3 +16808,45 @@ cleanup PR. A re-distil of `research/ranked_stream_ab_board.json` from the now 8
 board is still worth doing; the committed analysis covers 428 trees and yields contrasts
 only at M4, M6 and M8, with no M5 or M9 contrast, so `t55` and `E55` are not priced at
 rank directly.
+
+### (K) Ranked board corpus re-distilled: 428 -> 471 trees. Still no M5 or M9 contrast.
+
+`research/ranked_stream_ab.py distil` re-run against the 816-row board. The
+committed corpus `research/ranked_stream_ab_board.json` grows from 428 to 471
+trees, 377,889 bytes.
+
+| quantity | old corpus | new corpus |
+|---|---|---|
+| empirical null pairs | — | 275 |
+| sd of one ranked candidate leg | 1.165 % | **1.092 %** |
+| serial-leg pair sd | 0.163 % | 0.164 % |
+| single-width contrasts | 13 | 13 |
+| runs behind them | — | 83 |
+| pooled one-stream removal | -0.639 % | **-0.639 %** |
+| its standard error | 0.314 % | **0.294 %** |
+| pooled t | -2.04 | **-2.18** |
+
+The pooled point estimate is **unchanged to three decimal places** on a corpus 10 %
+larger. That is a real stability result for the campaign's only rank-anchored
+estimator, and it is worth more than the tightened error bar.
+
+Per-width pooling: M4 -0.737 +/- 0.571 (21 runs, 2 groups), M6 -0.334 +/- 1.544
+(2 runs, 1 group), M8 -0.618 +/- 0.351 (60 runs, 10 groups). Model comparison over
+the three measured widths: constant chi-square 0.072, proportional chi-square
+1.557, both on 2 dof. Delta chi-square 1.485, about 1.2 sigma — consistent with
+(F) above, and flatness remains unestablished rather than demonstrated.
+
+**The corpus still contains no M5 and no M9 contrast.** `t55` and `E55` therefore
+still cannot be priced at rank directly; only `t6` touches a measured width, and
+only through the two-run M6 group. This is now a standing limitation of the
+instrument rather than an open task: the board supplies the contrasts it supplies,
+and no amount of re-distilling creates a width nobody submitted.
+
+`EXPECT_RUN_SD` re-pinned from 1.165 to 1.092 in the same commit, because the
+selftest tolerance is 0.05 and would otherwise fail in every student checkout.
+`EXPECT_POOLED` and `EXPECT_POOLED_SE` were left alone; both are inside tolerance.
+The selftest's positive control still recovers an injected +5.00 % to 1e-6, so the
+gate retains its power.
+
+Note for anyone re-running this: `_advisor_scratch/yukon_all.json` is a bare JSON
+list, while `distil` expects `{"submissions": [...]}`. Wrap it first.
