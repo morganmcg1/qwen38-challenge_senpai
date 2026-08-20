@@ -16850,3 +16850,292 @@ gate retains its power.
 
 Note for anyone re-running this: `_advisor_scratch/yukon_all.json` is a bare JSON
 list, while `distil` expects `{"submissions": [...]}`. Wrap it first.
+
+---
+
+## 205. The roofline the campaign was reading was the one it does not control
+
+2026-08-20, advisor. Zero GPU. Everything here comes from committed artifacts,
+vendored source, the ranked receipt `ca9251b8`, and one published hardware
+specification.
+
+### 205(A) I closed E67 because my own brief was wrong, and I broke rule 186(F) writing it
+
+E67 (PR #70, edward) is closed unmerged with no GPU spent. I wrote it and it was
+wrong in four separate ways.
+
+1. Its headline, "prefill is 23 % of scored time", is a **local** number. At rank
+   the seed prefill is 8.44 % of the beagle leg and 9.05 % of the medicine leg.
+2. Its premise, "prefill is scored", was presented as a discovery. Item 186(B)
+   established it, with the exact per-prompt table, reproducing `raw_p` to 5e-11.
+3. Its rung 2 was literally E16 (PR #18), which closed the prefill layer-ladder
+   with `closure_error_seconds = 0` and a best interior schedule worth
+   -0.2547 % of P, 5.9x below the bar. Its rung 1 duplicated E16's closed budget.
+4. Its cheapest arm could not have worked at all: `MLX_QWEN_MTP_LADDER` overrides
+   only the decode rungs. The prefill schedule is hard-coded at `Qwen35.swift`
+   around `:2184`.
+
+Item 186(F) says "grep the ledger before publishing a cost claim". **I quoted that
+rule in the same round in which I broke it.** The cost was one student cycle. The
+correction is not a new rule; it is that the existing rule applies to the advisor.
+
+### 205(B) Retraction: my own item 204(D) "prefill lever" section is wrong
+
+204(D) contains a prefill section that contradicts item 186 in this same file.
+**Delete it from your working model.** Item 186 is authoritative on prefill:
+prefill is scored, its share at rank is 8.44 % to 9.28 % across the eight prompts,
+and it is unreachable from a gen-16 host. 205(E) below now upgrades the "unreachable"
+part from inference to confirmation.
+
+### 205(C) The scored candidate round is neither bandwidth-bound nor compute-bound. On either host.
+
+Item 199(A) says the target forward runs at **97.3 % of peak DRAM bandwidth**. That
+number is correct and I am not retracting it. What is wrong is how the campaign has
+used it.
+
+199(A) divides the master weight traffic 14,412,349,440 B by E1's `C(0) = 65.0094 ms`.
+`C(0)` is the **depth-0 round**. Depth 0 is M = 1. **That is the serial round: the
+denominator of the score, which candidate code provably cannot change.**
+
+Recomputing the same two roofline fractions for the round we do control, using
+edward's committed peaks from `research/e63-artifacts/e63-cost-curve.json`
+(226.035 GB/s, 7.506 TFLOP/s) and the E1 round times:
+
+```
+round                       GB/s   %BWpeak   TFLOP/s   %computepeak
+local depth-0 (serial M=1)  221.7    98.1      0.83       11.0
+local M=4                   157.9    69.8      2.36       31.4
+local M=5                   124.6    55.1      2.33       31.0
+local M=5.5327 (scored)     114.6    50.7      2.37       31.5
+local M=6                   107.0    47.3      2.40       31.9
+local M=9                    72.7    32.2      2.44       32.5
+```
+
+**At the scored verify width we sit at 50.7 % of the bandwidth roof and 31.5 % of the
+compute roof.** Between those two numbers there is roughly a factor of two of
+machine that nothing in this campaign has been able to name. "We are at peak, there
+is no lever left" was never a statement about the candidate round.
+
+Reproduce with `_advisor_scratch/roof2.py`.
+
+### 205(D) The ranked host has more headroom than we do, not less
+
+`m5-max-128gb-3` is the M5 Max 40-core GPU, 128 GB part. Apple publishes
+**614 GB/s** for it (Apple Newsroom, 2026-03-03, "Apple debuts M5 Pro and M5 Max";
+confirmed on the 14-inch and 16-inch MacBook Pro tech-spec pages). 128 GB is offered
+only on the 40-core SKU, so the identification is unambiguous. Our M4 Pro 20-core is
+273 GB/s published and 226.0 GB/s measured.
+
+Apple publishes no absolute TFLOP/s for any M5 part; only relative multipliers.
+Independent measured bf16 GEMM on real M5 Max hardware is about 53 TFLOP/s (Modular,
+best of 3, 8192-cube). The widely repeated ~70 TFLOP/s figure is an extrapolation
+from a per-core spec, not a measurement. Use 53 and label it third-party.
+
+Applying those roofs to the ranked receipt `ca9251b8`, beagle, prefill removed:
+
+```
+round                  seconds     GB/s   %of 614   TFLOP/s   %of 53
+ranked serial          0.036958   390.0     63.5      1.46       2.7
+ranked beagle M=5.5327 0.061672   233.7     38.1      4.83       9.1
+```
+
+**The ranked host runs the scored candidate round at 38 % of its bandwidth roof.**
+
+`research/ESTABLISHED_FACTS.md:67-71` already carried a ranked achieved bandwidth of
+about 410-420 GB/s, derived from the pinned serial baseline, and then wrote that it
+"supersedes the earlier 560-600 GB/s peak-spec estimate". That is a category error.
+An achieved number does not supersede a roof. Against the real 614 GB/s roof the
+ranked serial leg is at 63.5 %, not near its own roofline. The ledger never
+reconciled that paragraph with item 199, and `research/CURRENT_RESEARCH_STATE.md`
+never carried it at all. This item is the reconciliation.
+
+**Consequence, and it is a mechanism for the transfer law.** Item 186(D) observed
+that compute-bound local wins divide by up to 3.55 on transfer while
+latency-bound wins transfer at 1:1 or better. 205(C) and 205(D) say why: our
+depth-0 round is bandwidth-saturated and the ranked one is not, so a local win that
+buys bandwidth buys less at rank, while a win that buys latency or issue slots is
+not discounted at all.
+
+### 205(E) The QMV/QMM dispatch boundary is identical on both hosts. The decode QMV programme is live at rank.
+
+This was an open risk large enough to invalidate E55, E61, E63, E64, `t55`, `t6` and
+E69 at once, and it is now closed by source reading.
+
+`quantized.cpp:1415` sets `vector_limit = transpose_ ? get_qmv_batch_limit(K, N, d) : 4`
+and `:1417` routes to the `qmm` family only when `M >= vector_limit`.
+
+`get_qmv_batch_limit` at `:84` special-cases `arch_gen == 13 || arch_gen == 14` and
+sends everything else to one shared table. Our M4 Pro is gen 16 / `'s'`; the ranked
+M5 Max is gen 17 / `'s'` (alphonse E65, from public sources, without probing the
+runner). **Both take the same branch and the same `default` case.** With `D = K = 5120 > 4096`:
+
+```
+vector_limit = 10   on our M4 Pro and on the ranked M5 Max alike
+```
+
+`segmentedVerifyDepthCap = 8` bounds M at 9. **Every scored verify width M = 1..9
+reaches `dispatch_qmv` and the cross-row kernel on both hosts.** The
+`is_nax_available()` early return at `quantized.cpp:697` is never reached during
+decode on either host.
+
+🔴 **There is a kernel cliff at M = 10.** Any future proposal to widen verify past 9
+crosses into `qmm`, and at rank that means `qmm_nax`. That is a kernel-family
+boundary, not a cost step, and no local measurement can price it.
+
+**Prefill does reach nax at rank, confirmed rather than inferred.** Prefill has
+M = 512, so `:1417` is taken; with `transpose_` and `B == 1`, `:1422` calls
+`qmm_splitk`. Inside `qmm_splitk` at `:776`, for N = 5120 and M = 512 we get
+`n_tiles = 160`, `m_tiles = 16`, `current_tgs = 2560`, so
+`split_k = max(1, 512/2560) = 1`, and the `split_k <= 1` guard does `return qmm(...)`,
+which reaches `:697`. With `arch_gen == 17` at rank, `is_nax_available()` is true.
+This is the confirmed cause of 186(C)'s 7.58x prefill transfer gap against 1.76x on
+the serial decode round.
+
+**Thirteen other architecture-dependent selection sites remain unaudited**
+(`device.cpp:913-930`; `quantized.cpp:892`, `:1237`; `matmul.cpp:208`, `:372`,
+`:915-918`, `:2303`, `:2443`, `:2514-2517`; `scaled_dot_product_attention.cpp:177`,
+`:443`). `scaled_dot_product_attention.cpp:177` is the one that worries me: 16
+full-attention layers run in every round. Assigned to alphonse as E70 (PR #73).
+
+`MLX_METAL_GPU_ARCH` (`utils.h:205`, consulted at `device.cpp:560-562` before the
+real device string) makes these testable locally as a **selection probe only**.
+Forcing `g17s` on gen-16 silicon makes `is_nax_available()` true on hardware with no
+neural accelerators, so compile failures, wrong results and crashes are all expected.
+Label such artifacts `harness=arch-probe`. Never time under a forced arch.
+
+### 205(F) The cross-row QMV kernel reads its x operand 5.33x more bytes than its weights
+
+Source accounting of `qmv_fast_crossrow_affine4_g64_wide<T, NA>` at
+`quantized.h:968`, with `rows_per_simd = 4`, `values_per_thread = 16`,
+`bytes_per_lane = 8`. Per lane per k-block:
+
+```
+packed weights   rows_per_simd * 8  =  32 bytes   in 16 scalar uint16 loads
+scales + biases  rows_per_simd * 4  =  16 bytes   in  8 scalar loads
+x                32 * NA            = 192 bytes at NA=6, in 4*NA vector loads
+```
+
+The weight term is constant in NA. That is the entire point of cross-row batching.
+**The x term is not, and it is divided only by `rows_per_simd`.** Per output row the
+cost is `12 + 32*NA/rows_per_simd` bytes.
+
+At whole-projection scale for `lm_head` (`out_vec_size = 248320`,
+`in_vec_size = 5120`, NA = 6): each simdgroup covers 4 output rows and walks all of
+k, so x is re-read `out_vec_size/4` times.
+
+```
+x device reads     = (248320/4) * 6 * 5120 * 2  =  3.81 GB
+weight DRAM bytes  = 5120 * 248320 * 0.5625     =  0.715 GB
+ratio                                              5.33 : 1
+```
+
+x is L2-resident, so this is cache traffic and load-store issue, neither of which
+appears in a DRAM roofline. **That is a concrete candidate for the factor of two
+named in 205(C).**
+
+The one-parameter model `b(NA) = 12 + 8*NA` against the measured standalone stream
+costs is within 6 % at NA = 7 and 13 % at NA = 6, the two widths carrying the ranked
+mass, and over-predicts by up to 25 % in the middle. It is not exact. It is the first
+model in this campaign that predicts the right order of growth for the right reason,
+and it retro-explains four standing negatives:
+
+- E61 falsified `bw x regs` by 30x and `ballast` at 144 registers cost +0.38 %.
+  Registers correlate with NA; they were never the cause.
+- E64 found the register-pressure response asymmetric: +8.72 % raising to 211,
+  nothing returned lowering to 158 or 104. Correct, for the same reason.
+- E64's `rows2` was +7.97 %. Splitting output rows raises `32*NA/rows_per_simd`,
+  so it must be slower, and it was.
+- E63's "max weight loads in flight = 16 at every NA 2..9" is exactly
+  `rows_per_simd * 4 = 16` scalar `ws[i]` loads. The compiler is not merging them.
+
+Assigned to edward as E69 (PR #72) with three bit-identical arms: vectorize the
+weight load (tests issue slots), stage x in threadgroup memory (tests cache traffic),
+and raise `rows_per_simd` (the payoff). Raising `rows_per_simd` is bit-identical by
+construction because no cross-row reduction exists anywhere in the function: row `r`
+accumulates over the same k in the same order and ends in the same 32-lane
+`simd_sum`, whatever else the simdgroup carries.
+
+### 205(G) The ranked width curve is about 1.16x flatter than the local one
+
+```
+ranked serial round   36.958 ms      local serial round (E1 M=1)     65.009 ms
+ranked beagle round   61.672 ms      local M=5.5327 (E1 interp)     125.719 ms
+
+serial transfer ratio    1.759 x
+M=5.53 transfer ratio    2.040 x
+flatter at rank by       1.160 x
+```
+
+Going from width 1 to width 5.53 costs us 1.93x locally and costs the ranked host
+1.67x. **Wide verify is relatively cheaper at rank than on our Macs**, which follows
+directly from 205(C) and 205(D): the local width penalty contains a saturation
+component the ranked host does not pay.
+
+Relayed to thorfinn on PR #71 as a correction to E68's conversion step, not to any
+rung. One prompt, one interpolation: one significant figure, not a calibrated
+constant. It does not license deeper drafting on its own, because the fifteen board
+rows at ledger `:3193-3197` that ran beagle at a mean draft length other than 4.5327
+all scored a lower beagle `raw_p`, monotone in distance in both directions.
+
+### 205(H) E65 merged: four campaign corrections beyond its own negative
+
+alphonse, PR #68, merged at `bdfbc4e9`. W&B `cgckdu51`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cgckdu51).
+Bounded negative; primary metric measures instrumentation cost, 0.03 %, not the
+hypothesis. Four measured ceilings: SDPA `kL>=1024` crossing 0.0023 % of a leg;
+depth first touch 0.2616 % worst; prefill 0.67 s absolute; shorter head prime
+about +0.17 %.
+
+1. **`draft_build` is not host graph build.** `d_submit2` is 96.9 to 97.8 % of the
+   section; all graph construction together is ~0.5 ms. The cost is `async_eval`
+   blocking in `scheduler::wait_for_one()` at `transforms.cpp:270` once
+   `n_active_tasks() > MAX_ACTIVE_TASKS = 10`. It is GPU back-pressure. This retires
+   the source comment claiming per-step cost is host graph build, and it also
+   retires the campaign's reading of E1's `verify_build_us`. Corroborated by
+   `--sync-head` transferring 12.8 ms almost exactly between the two sections.
+   **Not separated:** the steady-state split of `d_submit2` into host encode versus
+   GPU wait.
+2. **Round 1 is a 512-row head prime.** `headHistoryCache == nil` gives
+   `primeCount = 511`, so round 1 pushes 512 rows through the MTP head against 1 or 2
+   later, costing +29.5 ms in `d_submit2`. Irreducible GPU work on real data, which
+   is why no prewarm removes it. Rung 1 was falsified and reverted at `3cd80e3`;
+   n = 2 per arm with a 9.29 ms within-arm spread, so no effect was claimed.
+3. **The SDPA two-pass gate needs two conditions**, `(devc=='d' || devc=='s') &&
+   k.shape(2) >= 1024`, and MLX's own comment `case 'g': // base, pro` is wrong:
+   Pro groups with Max under `'s'`.
+4. **The ranked GPU architecture, from public sources only.** Base M5 is
+   `applegpu_g17g`; M5 Pro and M5 Max are `applegpu_g17s`; `arch_gen` is 17 for
+   every tier, so `_nax` gating is tier-independent. The ranked host's **tier**
+   remains unknown. He did not probe the runner.
+
+First complete leg budget in the campaign: `verify_build` 36.0 %, `eval_wall` 32.6 %,
+`begin` 23.0 %, `draft_build` 8.2 %, everything else below 0.3 %; rounds are 77.0 %
+of the leg. Prefill roofline: 26.89 B total parameters, 24.99 TFLOP for 512 tokens,
+measured 6.25 TFLOP/s = 83.2 % of the 7.51 TFLOP/s sibling-host peak, so a perfect
+GEMM still leaves 3.33 s and the absolute ceiling is 0.67 s. `begin` costs the same
+in serial and MTP sessions, so there is **no candidate-side prefill tax in `begin`**.
+
+He also confirmed 193 in the field: the crown moved to `9ad17378` (Lieisyourlie,
+3.25238228) from `9d5569bb` (3.25187972) on a scored diff of 27 lines implementing
+exactly this assignment's mechanism, which he measured at 0.0023 % of a leg. The
+published move was +0.0155 %, about 7x larger, and both sit inside noise. **The
+promotion is 0.02 sigma.**
+
+🔴 **Open debt from this merge.** E65 lands 26 instrumentation lines in the submitted
+file `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` (growth 1650 bytes). The
+traced-versus-untraced cost was measured at 0.03 % of a leg. Before the next
+composed submission, confirm the trace guard costs exactly zero with
+`MLX_QWEN_MTP_TRACE_PATH` unset, or strip those lines from the submitted surface.
+0.03 % is not free when the deficit is 0.61 % and the crown moves on 0.0155 %.
+
+### 205(I) What changes because of this item
+
+1. Stop quoting 97.3 % as a bound on the candidate round. Quote 50.7 % of the
+   bandwidth roof and 31.5 % of the compute roof, and quote 38.1 % at rank.
+2. Byte-reduction levers on the candidate round have been systematically
+   over-priced, and latency, issue-slot and cache-traffic levers under-priced.
+   186(D)'s labelling rule now has a physical reason behind it, so apply it harder.
+3. The decode QMV programme is confirmed live at rank. Kernel work at
+   M = 1..9 is worth doing. Widening past M = 9 crosses a kernel family.
+4. Prefill remains unreachable, now by confirmation. Do not reopen it without a
+   gen-17 host.
