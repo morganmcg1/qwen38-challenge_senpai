@@ -1,0 +1,218 @@
+{
+  "contrast": {
+    "serial_reference_build_us": {
+      "slow": 2954374.714285714,
+      "fast": 2949838.8,
+      "pct": 0.15376820881582656
+    },
+    "serial_reference_eval_wall_us": {
+      "slow": 1047136.1428571428,
+      "fast": 1046989.4,
+      "pct": 0.014015696543137612
+    },
+    "timed_mtp_build_us": {
+      "slow": 2953602.8571428573,
+      "fast": 2947370.2,
+      "pct": 0.21146502542697518
+    },
+    "timed_mtp_eval_wall_us": {
+      "slow": 1047061.7142857143,
+      "fast": 1047014.8,
+      "pct": 0.004480766242680849
+    }
+  },
+  "legs": [
+    {
+      "leg": 1,
+      "state": "slow",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2952496.0,
+          "eval_wall_us": 1047132.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2957222.0,
+          "eval_wall_us": 1047005.0
+        }
+      ]
+    },
+    {
+      "leg": 2,
+      "state": "fast",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2962218.0,
+          "eval_wall_us": 1046732.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2946123.0,
+          "eval_wall_us": 1046631.0
+        }
+      ]
+    },
+    {
+      "leg": 3,
+      "state": "slow",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2977878.0,
+          "eval_wall_us": 1047149.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2971410.0,
+          "eval_wall_us": 1047321.0
+        }
+      ]
+    },
+    {
+      "leg": 4,
+      "state": "slow",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2950670.0,
+          "eval_wall_us": 1047123.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2949810.0,
+          "eval_wall_us": 1047061.0
+        }
+      ]
+    },
+    {
+      "leg": 5,
+      "state": "fast",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2945753.0,
+          "eval_wall_us": 1047213.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2946072.0,
+          "eval_wall_us": 1047043.0
+        }
+      ]
+    },
+    {
+      "leg": 6,
+      "state": "slow",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2946937.0,
+          "eval_wall_us": 1047406.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2944776.0,
+          "eval_wall_us": 1046956.0
+        }
+      ]
+    },
+    {
+      "leg": 7,
+      "state": "fast",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2946073.0,
+          "eval_wall_us": 1046994.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2945589.0,
+          "eval_wall_us": 1047356.0
+        }
+      ]
+    },
+    {
+      "leg": 8,
+      "state": "slow",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2945516.0,
+          "eval_wall_us": 1046936.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2949440.0,
+          "eval_wall_us": 1046958.0
+        }
+      ]
+    },
+    {
+      "leg": 9,
+      "state": "fast",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2946647.0,
+          "eval_wall_us": 1046915.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2947466.0,
+          "eval_wall_us": 1046812.0
+        }
+      ]
+    },
+    {
+      "leg": 10,
+      "state": "fast",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2948503.0,
+          "eval_wall_us": 1047093.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2951601.0,
+          "eval_wall_us": 1047232.0
+        }
+      ]
+    },
+    {
+      "leg": 11,
+      "state": "slow",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2951188.0,
+          "eval_wall_us": 1046964.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2944339.0,
+          "eval_wall_us": 1047309.0
+        }
+      ]
+    },
+    {
+      "leg": 12,
+      "state": "slow",
+      "begins": [
+        {
+          "seed": 512.0,
+          "build_us": 2955938.0,
+          "eval_wall_us": 1047243.0
+        },
+        {
+          "seed": 512.0,
+          "build_us": 2958223.0,
+          "eval_wall_us": 1046822.0
+        }
+      ]
+    }
+  ]
+}
