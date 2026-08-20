@@ -1,0 +1,1072 @@
+{
+  "head": "62ed30d672ca87fec5d11817183fa7a5cc4e3f0b",
+  "dirty_paths": 3,
+  "flags": [
+    "-std=metal4.0",
+    "-O2",
+    "-fno-fast-math"
+  ],
+  "pipeline": "metal -std=metal4.0 -O2 -fno-fast-math -S | metal-opt -passes=default<O3>",
+  "cells": {
+    "2": {
+      "peak_live_regs": 62,
+      "peak_live_values": 44,
+      "air_lines": 499,
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "device_loads_total": 32,
+      "private_stores": 16,
+      "private_loads": 6,
+      "fma": 0,
+      "fmul": 8,
+      "fadd": 16,
+      "loop_backedges": 2,
+      "mlp": {
+        "status": "ok",
+        "block": "72",
+        "block_lines": 111,
+        "device_loads": 24,
+        "weight_loads": 16,
+        "x_loads": 0,
+        "scale_bias_loads": 8,
+        "unclassified_loads": 0,
+        "load_types": [
+          "bfloat",
+          "i16"
+        ],
+        "max_loads_in_flight": 1,
+        "max_weight_loads_in_flight": 1,
+        "max_x_loads_in_flight": 0,
+        "loads_before_first_consumer": 1,
+        "weight_loads_before_first_consumer": 1,
+        "max_loads_in_flight_arith": 17,
+        "max_weight_loads_in_flight_arith": 16,
+        "max_x_loads_in_flight_arith": 0,
+        "loads_before_first_consumer_arith": 24,
+        "weight_loads_before_first_consumer_arith": 16
+      },
+      "loop_body": {
+        "blocks": 3,
+        "lines": 284,
+        "device_loads": 32,
+        "private_loads": 4,
+        "private_stores": 16,
+        "device_stores": 0,
+        "fmul": 4,
+        "fadd": 12,
+        "fma": 0,
+        "labels": [
+          ".loopexit",
+          "72",
+          "161"
+        ]
+      },
+      "occupancy": {
+        "status": "ok",
+        "max_total_threads_per_threadgroup": 1024,
+        "thread_execution_width": 32,
+        "static_threadgroup_memory_bytes": 0
+      }
+    },
+    "3": {
+      "peak_live_regs": 82,
+      "peak_live_values": 46,
+      "air_lines": 585,
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "device_loads_total": 36,
+      "private_stores": 16,
+      "private_loads": 6,
+      "fma": 0,
+      "fmul": 8,
+      "fadd": 20,
+      "loop_backedges": 2,
+      "mlp": {
+        "status": "ok",
+        "block": "75",
+        "block_lines": 111,
+        "device_loads": 24,
+        "weight_loads": 16,
+        "x_loads": 0,
+        "scale_bias_loads": 8,
+        "unclassified_loads": 0,
+        "load_types": [
+          "bfloat",
+          "i16"
+        ],
+        "max_loads_in_flight": 1,
+        "max_weight_loads_in_flight": 1,
+        "max_x_loads_in_flight": 0,
+        "loads_before_first_consumer": 1,
+        "weight_loads_before_first_consumer": 1,
+        "max_loads_in_flight_arith": 17,
+        "max_weight_loads_in_flight_arith": 16,
+        "max_x_loads_in_flight_arith": 0,
+        "loads_before_first_consumer_arith": 24,
+        "weight_loads_before_first_consumer_arith": 16
+      },
+      "loop_body": {
+        "blocks": 3,
+        "lines": 307,
+        "device_loads": 36,
+        "private_loads": 4,
+        "private_stores": 16,
+        "device_stores": 0,
+        "fmul": 4,
+        "fadd": 16,
+        "fma": 0,
+        "labels": [
+          ".loopexit",
+          "75",
+          "164"
+        ]
+      },
+      "occupancy": {
+        "status": "ok",
+        "max_total_threads_per_threadgroup": 1024,
+        "thread_execution_width": 32,
+        "static_threadgroup_memory_bytes": 0
+      }
+    },
+    "4": {
+      "peak_live_regs": 102,
+      "peak_live_values": 45,
+      "air_lines": 671,
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "device_loads_total": 40,
+      "private_stores": 16,
+      "private_loads": 6,
+      "fma": 0,
+      "fmul": 8,
+      "fadd": 24,
+      "loop_backedges": 2,
+      "mlp": {
+        "status": "ok",
+        "block": "78",
+        "block_lines": 111,
+        "device_loads": 24,
+        "weight_loads": 16,
+        "x_loads": 0,
+        "scale_bias_loads": 8,
+        "unclassified_loads": 0,
+        "load_types": [
+          "bfloat",
+          "i16"
+        ],
+        "max_loads_in_flight": 1,
+        "max_weight_loads_in_flight": 1,
+        "max_x_loads_in_flight": 0,
+        "loads_before_first_consumer": 1,
+        "weight_loads_before_first_consumer": 1,
+        "max_loads_in_flight_arith": 17,
+        "max_weight_loads_in_flight_arith": 16,
+        "max_x_loads_in_flight_arith": 0,
+        "loads_before_first_consumer_arith": 24,
+        "weight_loads_before_first_consumer_arith": 16
+      },
+      "loop_body": {
+        "blocks": 3,
+        "lines": 330,
+        "device_loads": 40,
+        "private_loads": 4,
+        "private_stores": 16,
+        "device_stores": 0,
+        "fmul": 4,
+        "fadd": 20,
+        "fma": 0,
+        "labels": [
+          ".loopexit",
+          "78",
+          "167"
+        ]
+      },
+      "occupancy": {
+        "status": "ok",
+        "max_total_threads_per_threadgroup": 1024,
+        "thread_execution_width": 32,
+        "static_threadgroup_memory_bytes": 0
+      }
+    },
+    "5": {
+      "peak_live_regs": 122,
+      "peak_live_values": 46,
+      "air_lines": 757,
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "device_loads_total": 44,
+      "private_stores": 16,
+      "private_loads": 6,
+      "fma": 0,
+      "fmul": 8,
+      "fadd": 28,
+      "loop_backedges": 2,
+      "mlp": {
+        "status": "ok",
+        "block": "81",
+        "block_lines": 111,
+        "device_loads": 24,
+        "weight_loads": 16,
+        "x_loads": 0,
+        "scale_bias_loads": 8,
+        "unclassified_loads": 0,
+        "load_types": [
+          "bfloat",
+          "i16"
+        ],
+        "max_loads_in_flight": 1,
+        "max_weight_loads_in_flight": 1,
+        "max_x_loads_in_flight": 0,
+        "loads_before_first_consumer": 1,
+        "weight_loads_before_first_consumer": 1,
+        "max_loads_in_flight_arith": 17,
+        "max_weight_loads_in_flight_arith": 16,
+        "max_x_loads_in_flight_arith": 0,
+        "loads_before_first_consumer_arith": 24,
+        "weight_loads_before_first_consumer_arith": 16
+      },
+      "loop_body": {
+        "blocks": 3,
+        "lines": 353,
+        "device_loads": 44,
+        "private_loads": 4,
+        "private_stores": 16,
+        "device_stores": 0,
+        "fmul": 4,
+        "fadd": 24,
+        "fma": 0,
+        "labels": [
+          ".loopexit",
+          "81",
+          "170"
+        ]
+      },
+      "occupancy": {
+        "status": "ok",
+        "max_total_threads_per_threadgroup": 1024,
+        "thread_execution_width": 32,
+        "static_threadgroup_memory_bytes": 0
+      }
+    },
+    "6": {
+      "peak_live_regs": 140,
+      "peak_live_values": 50,
+      "air_lines": 837,
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <6 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "device_loads_total": 48,
+      "private_stores": 24,
+      "private_loads": 14,
+      "fma": 0,
+      "fmul": 8,
+      "fadd": 32,
+      "loop_backedges": 2,
+      "mlp": {
+        "status": "ok",
+        "block": "103",
+        "block_lines": 111,
+        "device_loads": 24,
+        "weight_loads": 16,
+        "x_loads": 0,
+        "scale_bias_loads": 8,
+        "unclassified_loads": 0,
+        "load_types": [
+          "bfloat",
+          "i16"
+        ],
+        "max_loads_in_flight": 1,
+        "max_weight_loads_in_flight": 1,
+        "max_x_loads_in_flight": 0,
+        "loads_before_first_consumer": 1,
+        "weight_loads_before_first_consumer": 1,
+        "max_loads_in_flight_arith": 17,
+        "max_weight_loads_in_flight_arith": 16,
+        "max_x_loads_in_flight_arith": 0,
+        "loads_before_first_consumer_arith": 24,
+        "weight_loads_before_first_consumer_arith": 16
+      },
+      "loop_body": {
+        "blocks": 3,
+        "lines": 373,
+        "device_loads": 48,
+        "private_loads": 4,
+        "private_stores": 20,
+        "device_stores": 0,
+        "fmul": 4,
+        "fadd": 28,
+        "fma": 0,
+        "labels": [
+          ".loopexit.loopexit",
+          "103",
+          "196"
+        ]
+      },
+      "occupancy": {
+        "status": "ok",
+        "max_total_threads_per_threadgroup": 1024,
+        "thread_execution_width": 32,
+        "static_threadgroup_memory_bytes": 0
+      }
+    },
+    "7": {
+      "peak_live_regs": 152,
+      "peak_live_values": 50,
+      "air_lines": 646,
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <7 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "device_loads_total": 52,
+      "private_stores": 24,
+      "private_loads": 11,
+      "fma": 0,
+      "fmul": 8,
+      "fadd": 36,
+      "loop_backedges": 3,
+      "mlp": {
+        "status": "ok",
+        "block": "104",
+        "block_lines": 111,
+        "device_loads": 24,
+        "weight_loads": 16,
+        "x_loads": 0,
+        "scale_bias_loads": 8,
+        "unclassified_loads": 0,
+        "load_types": [
+          "bfloat",
+          "i16"
+        ],
+        "max_loads_in_flight": 1,
+        "max_weight_loads_in_flight": 1,
+        "max_x_loads_in_flight": 0,
+        "loads_before_first_consumer": 1,
+        "weight_loads_before_first_consumer": 1,
+        "max_loads_in_flight_arith": 17,
+        "max_weight_loads_in_flight_arith": 16,
+        "max_x_loads_in_flight_arith": 0,
+        "loads_before_first_consumer_arith": 24,
+        "weight_loads_before_first_consumer_arith": 16
+      },
+      "loop_body": {
+        "blocks": 4,
+        "lines": 405,
+        "device_loads": 52,
+        "private_loads": 5,
+        "private_stores": 20,
+        "device_stores": 0,
+        "fmul": 4,
+        "fadd": 32,
+        "fma": 0,
+        "labels": [
+          ".loopexit.loopexit",
+          "104",
+          "197",
+          "501"
+        ]
+      },
+      "occupancy": {
+        "status": "ok",
+        "max_total_threads_per_threadgroup": 1024,
+        "thread_execution_width": 32,
+        "static_threadgroup_memory_bytes": 0
+      }
+    },
+    "8": {
+      "peak_live_regs": 171,
+      "peak_live_values": 52,
+      "air_lines": 687,
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <8 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "device_loads_total": 56,
+      "private_stores": 24,
+      "private_loads": 11,
+      "fma": 0,
+      "fmul": 8,
+      "fadd": 40,
+      "loop_backedges": 3,
+      "mlp": {
+        "status": "ok",
+        "block": "109",
+        "block_lines": 111,
+        "device_loads": 24,
+        "weight_loads": 16,
+        "x_loads": 0,
+        "scale_bias_loads": 8,
+        "unclassified_loads": 0,
+        "load_types": [
+          "bfloat",
+          "i16"
+        ],
+        "max_loads_in_flight": 1,
+        "max_weight_loads_in_flight": 1,
+        "max_x_loads_in_flight": 0,
+        "loads_before_first_consumer": 1,
+        "weight_loads_before_first_consumer": 1,
+        "max_loads_in_flight_arith": 17,
+        "max_weight_loads_in_flight_arith": 16,
+        "max_x_loads_in_flight_arith": 0,
+        "loads_before_first_consumer_arith": 24,
+        "weight_loads_before_first_consumer_arith": 16
+      },
+      "loop_body": {
+        "blocks": 4,
+        "lines": 428,
+        "device_loads": 56,
+        "private_loads": 5,
+        "private_stores": 20,
+        "device_stores": 0,
+        "fmul": 4,
+        "fadd": 36,
+        "fma": 0,
+        "labels": [
+          ".loopexit.loopexit",
+          "109",
+          "202",
+          "529"
+        ]
+      },
+      "occupancy": {
+        "status": "ok",
+        "max_total_threads_per_threadgroup": 1024,
+        "thread_execution_width": 32,
+        "static_threadgroup_memory_bytes": 0
+      }
+    },
+    "9": {
+      "peak_live_regs": 190,
+      "peak_live_values": 54,
+      "air_lines": 728,
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <9 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "device_loads_total": 60,
+      "private_stores": 24,
+      "private_loads": 11,
+      "fma": 0,
+      "fmul": 8,
+      "fadd": 44,
+      "loop_backedges": 3,
+      "mlp": {
+        "status": "ok",
+        "block": "114",
+        "block_lines": 111,
+        "device_loads": 24,
+        "weight_loads": 16,
+        "x_loads": 0,
+        "scale_bias_loads": 8,
+        "unclassified_loads": 0,
+        "load_types": [
+          "bfloat",
+          "i16"
+        ],
+        "max_loads_in_flight": 1,
+        "max_weight_loads_in_flight": 1,
+        "max_x_loads_in_flight": 0,
+        "loads_before_first_consumer": 1,
+        "weight_loads_before_first_consumer": 1,
+        "max_loads_in_flight_arith": 17,
+        "max_weight_loads_in_flight_arith": 16,
+        "max_x_loads_in_flight_arith": 0,
+        "loads_before_first_consumer_arith": 24,
+        "weight_loads_before_first_consumer_arith": 16
+      },
+      "loop_body": {
+        "blocks": 4,
+        "lines": 451,
+        "device_loads": 60,
+        "private_loads": 5,
+        "private_stores": 20,
+        "device_stores": 0,
+        "fmul": 4,
+        "fadd": 40,
+        "fma": 0,
+        "labels": [
+          ".loopexit.loopexit",
+          "114",
+          "207",
+          "557"
+        ]
+      },
+      "occupancy": {
+        "status": "ok",
+        "max_total_threads_per_threadgroup": 1024,
+        "thread_execution_width": 32,
+        "static_threadgroup_memory_bytes": 0
+      }
+    }
+  },
+  "entry": {
+    "status": "ok",
+    "functions": {
+      "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+        "peak_live_regs": 178,
+        "peak_live_values": 92,
+        "air_lines": 13529,
+        "allocas": 56,
+        "alloca_types": [
+          "[4 x <2 x float>]",
+          "[4 x [4 x i16]",
+          "[4 x float]"
+        ],
+        "device_loads_total": 906,
+        "private_stores": 468,
+        "private_loads": 261,
+        "fma": 0,
+        "fmul": 403,
+        "fadd": 619,
+        "loop_backedges": 49,
+        "mlp": {
+          "status": "ok",
+          "block": "175",
+          "block_lines": 196,
+          "device_loads": 40,
+          "weight_loads": 16,
+          "x_loads": 16,
+          "scale_bias_loads": 8,
+          "unclassified_loads": 0,
+          "load_types": [
+            "bfloat",
+            "i16"
+          ],
+          "max_loads_in_flight": 2,
+          "max_weight_loads_in_flight": 1,
+          "max_x_loads_in_flight": 2,
+          "loads_before_first_consumer": 1,
+          "weight_loads_before_first_consumer": 1,
+          "max_loads_in_flight_arith": 18,
+          "max_weight_loads_in_flight_arith": 16,
+          "max_x_loads_in_flight_arith": 2,
+          "loads_before_first_consumer_arith": 40,
+          "weight_loads_before_first_consumer_arith": 16
+        },
+        "loop_body": {
+          "blocks": 70,
+          "lines": 6937,
+          "device_loads": 762,
+          "private_loads": 168,
+          "private_stores": 395,
+          "device_stores": 0,
+          "fmul": 255,
+          "fadd": 435,
+          "fma": 0,
+          "labels": [
+            ".loopexit144",
+            "175",
+            "458",
+            ".preheader142",
+            ".loopexit146",
+            "801",
+            "890",
+            ".loopexit148",
+            "1286",
+            "1375",
+            ".loopexit150",
+            "1833",
+            "1922",
+            ".loopexit152",
+            "2300",
+            "2389",
+            ".loopexit154",
+            "2719",
+            "2808",
+            ".loopexit158",
+            "3206",
+            "3295",
+            ".loopexit156",
+            "3739",
+            "3828",
+            ".loopexit160",
+            "4224",
+            "4313",
+            ".loopexit162",
+            "4777",
+            "4866",
+            ".loopexit164",
+            "5376",
+            "5465",
+            ".loopexit169",
+            "5950",
+            "6233",
+            ".preheader167",
+            ".loopexit174",
+            "6604",
+            "6887",
+            ".preheader172",
+            ".loopexit179",
+            "7258",
+            "7541",
+            ".preheader177",
+            ".loopexit184",
+            "7912",
+            "8195",
+            ".preheader182",
+            ".loopexit189",
+            "8566",
+            "8849",
+            ".preheader187",
+            ".loopexit194",
+            "9220",
+            "9503",
+            ".preheader192",
+            ".loopexit199",
+            "9874",
+            "10157",
+            ".preheader197",
+            ".loopexit204",
+            "10528",
+            "10811",
+            ".preheader202",
+            ".preheader",
+            ".loopexit.loopexit",
+            "11210",
+            "11217"
+          ]
+        }
+      },
+      "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+        "peak_live_regs": 31,
+        "peak_live_values": 31,
+        "air_lines": 393,
+        "allocas": 1,
+        "alloca_types": [
+          "[4 x float]"
+        ],
+        "device_loads_total": 22,
+        "private_stores": 2,
+        "private_loads": 20,
+        "fma": 0,
+        "fmul": 17,
+        "fadd": 21,
+        "loop_backedges": 4,
+        "mlp": {
+          "status": "ok",
+          "block": ".preheader",
+          "block_lines": 86,
+          "device_loads": 16,
+          "weight_loads": 0,
+          "x_loads": 0,
+          "scale_bias_loads": 0,
+          "unclassified_loads": 16,
+          "load_types": [
+            "bfloat"
+          ],
+          "max_loads_in_flight": 2,
+          "max_weight_loads_in_flight": 0,
+          "max_x_loads_in_flight": 0,
+          "loads_before_first_consumer": 2,
+          "weight_loads_before_first_consumer": 0,
+          "max_loads_in_flight_arith": 2,
+          "max_weight_loads_in_flight_arith": 0,
+          "max_x_loads_in_flight_arith": 0,
+          "loads_before_first_consumer_arith": 2,
+          "weight_loads_before_first_consumer_arith": 0
+        },
+        "loop_body": {
+          "blocks": 6,
+          "lines": 236,
+          "device_loads": 22,
+          "private_loads": 8,
+          "private_stores": 1,
+          "device_stores": 0,
+          "fmul": 17,
+          "fadd": 21,
+          "fma": 0,
+          "labels": [
+            ".preheader9",
+            ".preheader7",
+            ".preheader",
+            ".loopexit.loopexit",
+            "229",
+            "236"
+          ]
+        }
+      }
+    },
+    "defined_kernels": [
+      "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
+      "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1"
+    ],
+    "ll": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/tmp/e63-mlp-census-h1bsjaez/pristine/entry.o3.ll"
+  },
+  "model_comparison": {
+    "na": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "ms_per_stream": [
+      64.40138705179996,
+      72.17078215060117,
+      82.24243600132391,
+      95.47785300703563,
+      122.34295415959254,
+      147.2114402451481
+    ],
+    "spill_indicator": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0
+    ],
+    "models": {
+      "mlp": {
+        "coefficients": [
+          1556.9249403080037
+        ],
+        "fitted_ms": [
+          97.30780876925023,
+          97.30780876925023,
+          97.30780876925023,
+          97.30780876925023,
+          97.30780876925023,
+          97.30780876925023
+        ],
+        "residual_ms": [
+          -32.90642171745027,
+          -25.13702661864906,
+          -15.06537276792632,
+          -1.8299557622145954,
+          25.035145390342308,
+          49.90363147589788
+        ],
+        "residual_rel": [
+          -0.5109582762710165,
+          -0.348299212916867,
+          -0.18318247246085712,
+          -0.019166285212548175,
+          0.20463087198045543,
+          0.3389928893623649
+        ],
+        "residual_sign": [
+          "-",
+          "-",
+          "-",
+          "-",
+          "+",
+          "+"
+        ],
+        "rms_rel": 0.30905874288442453,
+        "max_abs_rel": 0.5109582762710165,
+        "free_parameters": 1
+      },
+      "constant_per_stream": {
+        "coefficients": [
+          97.30780876925023
+        ],
+        "fitted_ms": [
+          97.30780876925023,
+          97.30780876925023,
+          97.30780876925023,
+          97.30780876925023,
+          97.30780876925023,
+          97.30780876925023
+        ],
+        "residual_ms": [
+          -32.90642171745027,
+          -25.13702661864906,
+          -15.06537276792632,
+          -1.8299557622145954,
+          25.035145390342308,
+          49.90363147589788
+        ],
+        "residual_rel": [
+          -0.5109582762710165,
+          -0.348299212916867,
+          -0.18318247246085712,
+          -0.019166285212548175,
+          0.20463087198045543,
+          0.3389928893623649
+        ],
+        "residual_sign": [
+          "-",
+          "-",
+          "-",
+          "-",
+          "+",
+          "+"
+        ],
+        "rms_rel": 0.30905874288442453,
+        "max_abs_rel": 0.5109582762710165,
+        "free_parameters": 1
+      },
+      "bw_times_regs_constant": {
+        "coefficients": [
+          0.8651277531232424
+        ],
+        "fitted_ms": [
+          53.63792069364103,
+          70.94047575610588,
+          88.24303081857073,
+          105.54558588103558,
+          122.84814094350043,
+          140.15069600596527
+        ],
+        "residual_ms": [
+          10.76346635815893,
+          1.2303063944952868,
+          -6.000594817246821,
+          -10.067732873999944,
+          -0.5051867839078881,
+          7.0607442391828386
+        ],
+        "residual_rel": [
+          0.167130971100072,
+          0.017047153402438755,
+          -0.07296226995453084,
+          -0.10544574010538409,
+          -0.004129267495444714,
+          0.04796328483319455
+        ],
+        "residual_sign": [
+          "+",
+          "+",
+          "-",
+          "-",
+          "-",
+          "+"
+        ],
+        "rms_rel": 0.08849029271178892,
+        "max_abs_rel": 0.167130971100072,
+        "free_parameters": 1
+      },
+      "alu_work_linear_in_na": {
+        "coefficients": [
+          20.979941987550138
+        ],
+        "fitted_ms": [
+          41.959883975100276,
+          62.93982596265042,
+          83.91976795020055,
+          104.89970993775069,
+          125.87965192530083,
+          146.85959391285095
+        ],
+        "residual_ms": [
+          22.441503076699682,
+          9.230956187950753,
+          -1.6773319488766418,
+          -9.421856930715052,
+          -3.536697765708297,
+          0.351846332297157
+        ],
+        "residual_rel": [
+          0.34846303944741613,
+          0.12790433902584303,
+          -0.020394969196311754,
+          -0.09868107245793187,
+          -0.028908062503499678,
+          0.002390074655279744
+        ],
+        "residual_sign": [
+          "+",
+          "+",
+          "-",
+          "-",
+          "-",
+          "+"
+        ],
+        "rms_rel": 0.15747026553559218,
+        "max_abs_rel": 0.34846303944741613,
+        "free_parameters": 1
+      },
+      "alu_work_plus_offset": {
+        "coefficients": [
+          23.018954612181105,
+          16.50863425712647
+        ],
+        "fitted_ms": [
+          56.036223126434045,
+          72.54485738356051,
+          89.05349164068699,
+          105.56212589781346,
+          122.07076015493992,
+          138.5793944120664
+        ],
+        "residual_ms": [
+          8.365163925365913,
+          -0.374075232959342,
+          -6.811055639363076,
+          -10.084272890777825,
+          0.27219400465261856,
+          8.632045833081719
+        ],
+        "residual_rel": [
+          0.12989105217000313,
+          -0.005183194941392581,
+          -0.08281680322860857,
+          -0.10561897417231124,
+          0.002224844140166421,
+          0.058637058496995575
+        ],
+        "residual_sign": [
+          "+",
+          "-",
+          "-",
+          "-",
+          "+",
+          "+"
+        ],
+        "rms_rel": 0.07995394101864364,
+        "max_abs_rel": 0.12989105217000313,
+        "free_parameters": 2
+      },
+      "alu_work_plus_spill_step": {
+        "coefficients": [
+          37.79189797933128,
+          11.651776163816827,
+          21.248754158229673
+        ],
+        "fitted_ms": [
+          61.095450306964935,
+          72.74722647078175,
+          84.39900263459859,
+          96.05077879841542,
+          128.95130912046193,
+          140.60308528427873
+        ],
+        "residual_ms": [
+          3.305936744835023,
+          -0.5764443201805847,
+          -2.1565666332746787,
+          -0.572925791379788,
+          -6.6083549608693914,
+          6.608354960869377
+        ],
+        "residual_rel": [
+          0.0513333158830253,
+          -0.007987225619610152,
+          -0.026222066589077723,
+          -0.00600061452300954,
+          -0.05401500238623468,
+          0.04489022694068221
+        ],
+        "residual_sign": [
+          "+",
+          "-",
+          "-",
+          "-",
+          "-",
+          "+"
+        ],
+        "rms_rel": 0.037316801848210596,
+        "max_abs_rel": 0.05401500238623468,
+        "free_parameters": 3
+      }
+    }
+  },
+  "accumulator_spill": {
+    "2": {
+      "peak_live_regs": 62,
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "accumulator_in_private_memory": false,
+      "private_stores": 16,
+      "private_loads": 6
+    },
+    "3": {
+      "peak_live_regs": 82,
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "accumulator_in_private_memory": false,
+      "private_stores": 16,
+      "private_loads": 6
+    },
+    "4": {
+      "peak_live_regs": 102,
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "accumulator_in_private_memory": false,
+      "private_stores": 16,
+      "private_loads": 6
+    },
+    "5": {
+      "peak_live_regs": 122,
+      "allocas": 1,
+      "alloca_types": [
+        "[4 x [4 x i16]"
+      ],
+      "accumulator_in_private_memory": false,
+      "private_stores": 16,
+      "private_loads": 6
+    },
+    "6": {
+      "peak_live_regs": 140,
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <6 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "accumulator_in_private_memory": true,
+      "private_stores": 24,
+      "private_loads": 14
+    },
+    "7": {
+      "peak_live_regs": 152,
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <7 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "accumulator_in_private_memory": true,
+      "private_stores": 24,
+      "private_loads": 11
+    },
+    "8": {
+      "peak_live_regs": 171,
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <8 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "accumulator_in_private_memory": true,
+      "private_stores": 24,
+      "private_loads": 11
+    },
+    "9": {
+      "peak_live_regs": 190,
+      "allocas": 2,
+      "alloca_types": [
+        "[4 x <9 x float>]",
+        "[4 x [4 x i16]"
+      ],
+      "accumulator_in_private_memory": true,
+      "private_stores": 24,
+      "private_loads": 11
+    }
+  },
+  "kill_rule": {
+    "max_weight_loads_in_flight_na2": 16,
+    "max_weight_loads_in_flight_na6": 16,
+    "identical": true,
+    "ratio": 1.0,
+    "advance_requires_ratio_ge": 2.0
+  }
+}
