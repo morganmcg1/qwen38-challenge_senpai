@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import statistics as st
 from pathlib import Path
 
 import wandb
@@ -80,14 +81,67 @@ def census_tables(run, tag, census_path):
     return leg
 
 
+def head_variant(run, pinned, declared):
+    """The rung-3a natural experiment: two real heads, one machine, one base,
+    one schedule, one fixture. The serial leg never uses the candidate head,
+    so an unchanged serial time is the control that validates the pair."""
+    if not (pinned and declared):
+        return {}
+    table = wandb.Table(columns=["head", "tag", "head_provenance_sha256",
+                                 "mtp_decode_speedup",
+                                 "mtp_seconds_per_token",
+                                 "serial_seconds_per_token",
+                                 "effective_mean_draft_len",
+                                 "accepted_draft_rate",
+                                 "gate_qualified_for_timing",
+                                 "gpu_temp_entry_c", "gpu_temp_exit_c"])
+    agg = {}
+    for head, tags in (("pinned", pinned), ("declared", declared)):
+        recs = [leg_record(t) for t in tags]
+        for r in recs:
+            table.add_data(head, r["tag"], r.get("head_provenance_sha256"),
+                           r.get("mtp_decode_speedup"),
+                           r.get("mtp_seconds_per_token"),
+                           r.get("serial_seconds_per_token"),
+                           r.get("effective_mean_draft_len"),
+                           r.get("accepted_draft_rate"),
+                           r.get("gate_qualified_for_timing"),
+                           r.get("gpu_temp_entry_c"), r.get("gpu_temp_exit_c"))
+        agg[head] = {k: st.mean([r[k] for r in recs]) for k in
+                     ("mtp_decode_speedup", "mtp_seconds_per_token",
+                      "serial_seconds_per_token", "accepted_draft_rate")}
+    run.log({"rung3a/head_variant": table})
+    p, d = agg["pinned"], agg["declared"]
+    return {
+        "head_variant_speedup_pinned": p["mtp_decode_speedup"],
+        "head_variant_speedup_declared": d["mtp_decode_speedup"],
+        "head_variant_speedup_delta_pct":
+            100 * (d["mtp_decode_speedup"] / p["mtp_decode_speedup"] - 1),
+        "head_variant_candidate_spt_delta_pct":
+            100 * (d["mtp_seconds_per_token"]
+                   / p["mtp_seconds_per_token"] - 1),
+        "head_variant_serial_spt_delta_pct":
+            100 * (d["serial_seconds_per_token"]
+                   / p["serial_seconds_per_token"] - 1),
+        "head_variant_acceptance_pinned": p["accepted_draft_rate"],
+        "head_variant_acceptance_declared": d["accepted_draft_rate"],
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", default="e79-head-economics-census")
     ap.add_argument("--legs", nargs="+", required=True,
                     help="TAG=CENSUS_JSON pairs")
     ap.add_argument("--price", required=True)
+    ap.add_argument("--price-pinned")
     ap.add_argument("--reprice", required=True)
+    ap.add_argument("--reprice-pinned")
     ap.add_argument("--chainfit")
+    ap.add_argument("--pinned-legs", nargs="*", default=[],
+                    help="tags of the organizer-pinned head variant")
+    ap.add_argument("--declared-legs", nargs="*", default=[],
+                    help="tags of the manifest-declared head variant")
     ap.add_argument("--notes", default="")
     args = ap.parse_args()
 
@@ -137,17 +191,44 @@ def main():
                        a["delta_pct_vs_ship"])
     run.log({"rung0/reprice": sched})
 
+    if args.reprice_pinned:
+        rp = json.loads(Path(args.reprice_pinned).read_text())
+        t = wandb.Table(columns=sched.columns)
+        for a in rp["arms"]:
+            t.add_data(a["arm"], a["head_step_ms"], a["M"],
+                       a["tokens_per_round"], a["ms_per_token"],
+                       a["delta_pct_vs_ship"])
+        run.log({"rung0/reprice_pinned_head": t})
+
+    if args.price_pinned:
+        pp = json.loads(Path(args.price_pinned).read_text())
+        t = wandb.Table(columns=arms.columns)
+        for a in pp["arms"]:
+            t.add_data(a["arm"], a.get("head_scale"),
+                       a.get("p_scale", a.get("acceptance_floor")),
+                       a.get("vocabulary_rows"), a.get("breakeven_coverage"),
+                       a["median"], a["delta_pct"])
+        run.log({"rung3/score_arms_pinned_head": t})
+
     if args.chainfit:
         cf = json.loads(Path(args.chainfit).read_text())["prompts"]
         cols = [k for k, v in cf[0].items() if not isinstance(v, list)]
         run.log({"rung0/chainfit": wandb.Table(
             columns=cols, data=[[r[k] for k in cols] for r in cf])})
 
+    variant = head_variant(run, args.pinned_legs, args.declared_legs)
+
     free = next(a for a in price["arms"] if a["arm"] == "head cost x 0.00")
     v32 = next(a for a in price["arms"] if a.get("vocabulary_rows") == 32794)
     p99 = next(a for a in price["arms"]
                if a["arm"] == "p_i -> 0.990 every position")
-    run.summary.update({
+    deep = next((a for a in price["arms"]
+                 if a["arm"] == "deepest 3 restored to position 1"), None)
+    shape = next((a for a in price["arms"]
+                  if a["arm"] == "measured position shape"), None)
+    free_sched = next(a for a in reprice["arms"]
+                      if a["arm"] == "head free, shipped flat price")
+    summary = {
         "baseline_published_median": price["baseline_median"],
         "measured_head_step_cost_ratio": price["cost_model"]["measured_h"],
         "shipped_head_step_cost_ratio": price["cost_model"]["shipped_h"],
@@ -158,7 +239,18 @@ def main():
         "breakeven_coverage_vocab_32768": v32["breakeven_coverage"],
         "measured_coverage_vocab_32768": v32["coverage_id_prefix"],
         "score_delta_pct_p_099": p99["delta_pct"],
-    })
+        "rung0_free_head_ms_per_token_delta_pct":
+            free_sched["delta_pct_vs_ship"],
+        "rung0_stop_rule_triggered":
+            abs(free_sched["delta_pct_vs_ship"]) < 0.5,
+    }
+    if deep is not None and shape is not None:
+        summary["score_delta_pct_measured_position_shape"] = shape["delta_pct"]
+        summary["score_delta_pct_deepest3_to_pos1"] = deep["delta_pct"]
+        summary["score_gain_pct_from_deepest3"] = (deep["delta_pct"]
+                                                   - shape["delta_pct"])
+    summary.update(variant)
+    run.summary.update(summary)
     print("wandb_run_id=%s" % run.id)
     print("wandb_url=%s" % run.url)
     run.finish()

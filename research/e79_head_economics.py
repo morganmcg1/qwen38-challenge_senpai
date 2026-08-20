@@ -92,6 +92,48 @@ PINNED_HEAD_STEP_BYTES = (PINNED_HEAD_BLOCK_BYTES + PINNED_SELECT_BYTES
 RANKED_DEPTH0_ROUND_MS = 30.402
 RANKED_HEAD_STEP_MS = 8.42 / 8
 
+# `Qwen36MTPBlockSession.swift:919-930`: two official ranked runs that differ
+# only in `headStepCostRatio`, with per-prompt mean DRAFTS per round for five
+# wide prompts and one hard prompt. Paired in the order the comment writes
+# them. Two settings per prompt is what makes the acceptance chain
+# identifiable, because one setting alone cannot separate acceptance from
+# price.
+H_SWEEP_H = (0.18, 0.32)
+H_SWEEP_WIDE = [(4.35, 3.36), (4.89, 4.01), (5.78, 4.53), (5.33, 4.03),
+                (5.04, 4.76)]
+H_SWEEP_HARD = (0.17, 0.06)
+# Arm 3, submission `2da69933`: the E68 `pbfit` depth-price vector as executed.
+PBFIT_MARGINAL = [0.12014, 0.13337, 0.15825, 0.18378, 0.28911, 0.19918,
+                  0.16198, 0.19419]
+ARM3 = {"published_median": 3.21126, "baseline_published_median": 3.23251,
+        "fourth_sorted": 3.08697, "fifth_sorted": 3.33554,
+        "min_raw": 1.95855, "candidate_spt_delta_pct": -11.26}
+
+
+def fit_line(xs, ys):
+    n = len(xs)
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs)
+    sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    slope = sxy / sxx
+    intercept = my - slope * mx
+    ss_res = sum((y - (intercept + slope * x)) ** 2 for x, y in zip(xs, ys))
+    ss_tot = sum((y - my) ** 2 for y in ys)
+    return {"slope": slope, "intercept": intercept,
+            "r2": 1.0 - ss_res / ss_tot if ss_tot else float("nan")}
+
+
+def ranked_round_cost_model():
+    """Least-squares `round_ms = fixed + slope * drafts` over the eight ranked
+    prompts of ledger 207(A). The slope is what one more DRAFT really costs on
+    the ranked M5, and `slope / fixed` is the total marginal ratio the greedy
+    rate rule in `costModelDepth` actually needs."""
+    xs = [prop / R for _, R, prop, _, _, _ in RANKED]
+    ys = [ms for *_, ms, _ in RANKED]
+    fit = fit_line(xs, ys)
+    fit["marginal_ratio"] = fit["slope"] / fit["intercept"]
+    return fit
+
 
 def ladder_cost(width: int) -> float:
     groups = OUR_PARTITION[width]
@@ -611,6 +653,28 @@ def cmd_census(args):
             entry["margin_mean"] = st.mean(margins)
             print("   top-2 margin: median %.4f mean %.4f n=%d" %
                   (st.median(margins), st.mean(margins), len(margins)))
+        # A round that rejects has at least one position where the head did
+        # not reproduce the target. Contrast the target's own top-2 margin in
+        # those rounds with the fully accepted rounds: a SMALL margin at the
+        # rejecting rounds means the head is losing near-ties the target
+        # itself barely resolves, which bounds what retraining can recover.
+        rej = [r["margin"] for r in body if r["d"] and r["acc"] < r["d"]
+               and r.get("margin") is not None
+               and math.isfinite(r["margin"])]
+        full = [r["margin"] for r in body if r["d"] and r["acc"] == r["d"]
+                and r.get("margin") is not None
+                and math.isfinite(r["margin"])]
+        if rej and full:
+            entry["margin_rejecting_rounds"] = {
+                "n": len(rej), "median": st.median(rej), "mean": st.mean(rej)}
+            entry["margin_full_accept_rounds"] = {
+                "n": len(full), "median": st.median(full),
+                "mean": st.mean(full)}
+            print("   top-2 margin, rounds WITH a rejection: median %.4f "
+                  "mean %.4f n=%d" % (st.median(rej), st.mean(rej), len(rej)))
+            print("   top-2 margin, fully accepted rounds:   median %.4f "
+                  "mean %.4f n=%d"
+                  % (st.median(full), st.mean(full), len(full)))
         # In-situ round cost by verify width.
         by_width = defaultdict(list)
         for r in body:
@@ -883,6 +947,206 @@ def cmd_price(args):
     return arms
 
 
+def fit_p_to_drafts(target_drafts, marginal, reps, margins=None, seed=11):
+    """Constant-`p` chain that makes the SHIPPED schedule propose
+    `target_drafts` drafts per round at the given depth price. Common random
+    numbers make the simulated mean a deterministic function of `p`, so plain
+    bisection is valid."""
+    def f(p):
+        s = simulate([p] * (MAX_DEPTH + 1), marginal=marginal, seed=seed,
+                     margins=margins, reps=reps)
+        return s["M"] - 1.0
+
+    lo, hi = 1e-4, 1.0 - 1e-6
+    if f(hi) < target_drafts:
+        return hi, f(hi)
+    if f(lo) > target_drafts:
+        return lo, f(lo)
+    for _ in range(48):
+        mid = 0.5 * (lo + hi)
+        if f(mid) < target_drafts:
+            lo = mid
+        else:
+            hi = mid
+    p = 0.5 * (lo + hi)
+    return p, f(p)
+
+
+def geometric_chain(p1, decay):
+    return [min(1.0, p1 * decay ** i) for i in range(MAX_DEPTH + 1)]
+
+
+def fit_p1_and_decay(target_drafts, target_accepted, marginal, reps,
+                     margins=None, seed=11):
+    """Two-parameter per-prompt fit against the TWO ranked observables.
+
+    A constant-`p` chain is over-identified here: the `p` that reproduces the
+    proposed width leaves accepted drafts far too low, and the `p` that
+    reproduces accepted drafts proposes far too deep. A geometric chain adds
+    the one degree of freedom that can separate them, because the schedule
+    stops on the DEEP positions while the accepted count is earned by the
+    SHALLOW ones. Decay near 1 lets the walk run deep, so `p1` must fall to
+    hit the target width and accepted drafts fall with it; strong decay stops
+    the walk early and lets `p1` stay high. Accepted is therefore monotone in
+    the decay and the pair is identified.
+    """
+    def run(p1, decay):
+        return simulate(geometric_chain(p1, decay), marginal=marginal,
+                        seed=seed, margins=margins, reps=reps)
+
+    def p1_for(decay):
+        lo, hi = 1e-4, 1.0 - 1e-6
+        for _ in range(36):
+            mid = 0.5 * (lo + hi)
+            if run(mid, decay)["M"] - 1.0 < target_drafts:
+                lo = mid
+            else:
+                hi = mid
+        return 0.5 * (lo + hi)
+
+    lo_d, hi_d = 0.40, 1.0
+    if run(p1_for(lo_d), lo_d)["accepted"] / run(
+            p1_for(lo_d), lo_d)["rounds"] < target_accepted:
+        decay = lo_d
+        p1 = p1_for(decay)
+        return p1, decay, run(p1, decay), False
+    for _ in range(22):
+        mid = 0.5 * (lo_d + hi_d)
+        r = run(p1_for(mid), mid)
+        if r["accepted"] / r["rounds"] > target_accepted:
+            lo_d = mid
+        else:
+            hi_d = mid
+    decay = 0.5 * (lo_d + hi_d)
+    p1 = p1_for(decay)
+    return p1, decay, run(p1, decay), True
+
+
+def cmd_calibrate(args):
+    """The advisor's calibration set, used as an OUT-OF-SAMPLE test.
+
+    Every prompt's acceptance chain is fitted on the `h = 0.18` column alone,
+    which is an exact one-parameter fit and therefore carries no information
+    about the second column. The same chain then predicts the `h = 0.32`
+    column with no free parameter left. A model that survives that is allowed
+    to predict arm 3; a model that does not is reported as failed.
+    """
+    margins = None
+    if args.margins:
+        body = parse_trace(args.margins)[0][2:]
+        margins = [r["margin"] for r in body
+                   if r.get("margin") is not None
+                   and math.isfinite(r["margin"])]
+        print("margin clamp ON: %d empirical top-2 margins, median %.3f"
+              % (len(margins), st.median(margins)))
+    else:
+        print("margin clamp OFF: the schedule's depth-0 and depth-1 top-2 "
+              "clamp is disabled")
+
+    rr = ranked_round_cost_model()
+    print("\n== ranked round cost from the ledger 207(A) eight prompts ==")
+    print("  round_ms = %.3f + %.3f * drafts   (R^2 %.4f)"
+          % (rr["intercept"], rr["slope"], rr["r2"]))
+    print("  ranked TOTAL marginal ratio = %.4f, against the shipped "
+          "headStepCostRatio %.2f" % (rr["marginal_ratio"], SHIPPED_H))
+
+    lo, hi = H_SWEEP_H
+    m_lo = [lo] * MAX_DEPTH
+    m_hi = [hi] * MAX_DEPTH
+    print("\n== fit each prompt on h = %.2f, then PREDICT h = %.2f ==" %
+          (lo, hi))
+    print("  %-8s %8s %9s %10s %10s %9s" %
+          ("prompt", "p fitted", "obs@0.18", "pred@0.32", "obs@0.32", "error"))
+    rows = []
+    data = [("wide%d" % (i + 1), a, b)
+            for i, (a, b) in enumerate(H_SWEEP_WIDE)]
+    data.append(("hard", H_SWEEP_HARD[0], H_SWEEP_HARD[1]))
+    for name, obs_lo, obs_hi in data:
+        p, got = fit_p_to_drafts(obs_lo, m_lo, args.reps, margins)
+        pred = simulate([p] * (MAX_DEPTH + 1), marginal=m_hi, seed=11,
+                        margins=margins, reps=args.reps)["M"] - 1.0
+        err = pred - obs_hi
+        print("  %-8s %8.4f %9.3f %10.3f %10.3f %+9.3f"
+              % (name, p, got, pred, obs_hi, err))
+        rows.append({"prompt": name, "p_fitted": p, "fit_drafts_h_lo": got,
+                     "observed_drafts_h_lo": obs_lo,
+                     "predicted_drafts_h_hi": pred,
+                     "observed_drafts_h_hi": obs_hi, "error": err})
+    errs = [r["error"] for r in rows]
+    rel = [r["error"] / r["observed_drafts_h_hi"] for r in rows]
+    print("  out-of-sample: mean error %+.3f drafts, mean |relative| %.1f%%, "
+          "max |relative| %.1f%%"
+          % (st.mean(errs), 100 * st.mean(abs(x) for x in rel),
+             100 * max(abs(x) for x in rel)))
+    print("  sign test: %d of %d predicted the observed DIRECTION of change"
+          % (sum(1 for r in rows
+                 if (r["predicted_drafts_h_hi"] - r["observed_drafts_h_lo"])
+                 * (r["observed_drafts_h_hi"] - r["observed_drafts_h_lo"]) > 0),
+             len(rows)))
+
+    print("\n== ledger 207(A): two-parameter geometric chain fitted on BOTH "
+          "ranked observables ==")
+    print("  %-9s %8s %8s %9s %9s %10s %10s %6s" %
+          ("prompt", "p1", "decay", "drafts", "fit", "accepted", "fit", "ok"))
+    arm3 = []
+    for name, R, prop, acc, ms, raw in RANKED:
+        t_d, t_a = prop / R, acc / R
+        p1, dk, r, ok = fit_p1_and_decay(t_d, t_a, m_lo, args.reps, margins)
+        print("  %-9s %8.4f %8.4f %9.3f %9.3f %10.3f %10.3f %6s"
+              % (name, p1, dk, t_d, r["M"] - 1.0, t_a,
+                 r["accepted"] / r["rounds"], ok))
+        arm3.append({"prompt": name, "p1_fitted": p1, "decay_fitted": dk,
+                     "identified": ok, "shipped_drafts": t_d,
+                     "fit_drafts": r["M"] - 1.0, "shipped_accepted": t_a,
+                     "fit_accepted": r["accepted"] / r["rounds"],
+                     "chain": geometric_chain(p1, dk)[:MAX_DEPTH]})
+    if not all(r["identified"] for r in arm3):
+        print("  NOT IDENTIFIED on at least one prompt: even the strongest "
+              "decay the fit allows\n  cannot reach the observed accepted "
+              "count at the observed width. The\n  two-parameter geometric "
+              "chain is REJECTED on those prompts and the arm-3\n  prediction "
+              "below is reported as a failed model, not as a forecast.")
+
+    print("\n== arm 3: the pbfit depth-price vector, predicted not fitted ==")
+    for row, (name, R, prop, acc, ms, raw) in zip(arm3, RANKED):
+        pred = simulate(geometric_chain(row["p1_fitted"],
+                                        row["decay_fitted"]),
+                        marginal=PBFIT_MARGINAL, seed=11, margins=margins,
+                        reps=args.reps)
+        row["pbfit_drafts"] = pred["M"] - 1.0
+        row["pbfit_tokens_per_round"] = pred["tokens_per_round"]
+        print("  %-9s drafts %5.3f -> %5.3f   tokens/round %5.3f -> %5.3f"
+              % (name, row["shipped_drafts"], row["pbfit_drafts"],
+                 1 + acc / R, pred["tokens_per_round"]))
+
+    by = {r["prompt"]: r for r in arm3}
+    base = baseline_median()
+    rows2, median = ranked_score_table(
+        lambda n, ms: rr["intercept"] + rr["slope"] * by[n]["pbfit_drafts"],
+        lambda n, tpr: by[n]["pbfit_tokens_per_round"])
+    raws = sorted(r[6] for r in rows2)
+    print("\n  predicted published median %.5f (%+.2f%%), observed arm 3 "
+          "%.5f (%+.2f%%)"
+          % (median, 100 * (median - base) / base, ARM3["published_median"],
+             100 * (ARM3["published_median"]
+                    - ARM3["baseline_published_median"])
+             / ARM3["baseline_published_median"]))
+    print("  predicted 4th/5th sorted raw %.4f / %.4f, observed %.4f / %.4f"
+          % (raws[3], raws[4], ARM3["fourth_sorted"], ARM3["fifth_sorted"]))
+    print("  predicted minimum raw %.4f, observed %.4f"
+          % (raws[0], ARM3["min_raw"]))
+    report = {"margin_clamp": bool(margins), "reps": args.reps,
+              "ranked_round_cost": rr, "h_sweep": rows, "arm3": arm3,
+              "arm3_predicted_median": median,
+              "arm3_predicted_delta_pct": 100 * (median - base) / base,
+              "arm3_predicted_sorted_raw": raws,
+              "arm3_observed": ARM3,
+              "baseline_median": base}
+    if args.out:
+        Path(args.out).write_text(json.dumps(report, indent=2))
+    return report
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -917,6 +1181,13 @@ def main():
     d.add_argument("--coverage-tokens", type=int, default=512)
     d.add_argument("--out")
     d.set_defaults(func=cmd_price)
+
+    e = sub.add_parser("calibrate")
+    e.add_argument("--reps", type=int, default=24)
+    e.add_argument("--margins", help="trace whose top-2 margins feed the "
+                                     "schedule's depth-0/1 clamp")
+    e.add_argument("--out")
+    e.set_defaults(func=cmd_calibrate)
 
     args = ap.parse_args()
     args.func(args)

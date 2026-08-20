@@ -116,6 +116,16 @@
       ],
       "margin_median": 14.75,
       "margin_mean": 11.955236486486486,
+      "margin_rejecting_rounds": {
+        "n": 17,
+        "median": 5.5,
+        "mean": 7.294117647058823
+      },
+      "margin_full_accept_rounds": {
+        "n": 57,
+        "median": 15.25,
+        "mean": 13.345394736842104
+      },
       "round_ms_by_width": {
         "4": {
           "n": 5,
