@@ -102,7 +102,7 @@ group="${MLXFAST_CENSUS_GROUP:-e71-width-tax-census}"
   echo "host=$(hostname)"
   echo "chip=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)"
   echo "gpu_cores=$(ioreg -l 2>/dev/null \
-    | sed -n 's/.*"gpu-core-count" = \([0-9][0-9]*\).*/\1/p' | head -1)"
+    | LC_ALL=C sed -n 's/.*"gpu-core-count" = \([0-9][0-9]*\).*/\1/p' | head -1)"
   echo "memory_bytes=$(sysctl -n hw.memsize)"
   echo "os=$(sw_vers -productVersion)"
   echo "swift=$(swift --version 2>&1 | head -1)"
