@@ -234,24 +234,26 @@ struct QwenMTPDepthPriceTests {
         }
     }
 
-    @Test("the shipped arm is pbfit")
-    func shippedArmIsPbfit() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .pbfit)
+    @Test("the shipped arm is ship")
+    func shippedArmIsShip() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
         let shipped = Qwen36MTPBlockSession.depthPrice
-        let measured = Qwen36MTPBlockSession.makeMeasuredDepthPrice()
+        let uniform = Qwen36MTPBlockSession.makeUniformDepthPrice()
         for depth in 0 ..< maxDepth {
-            #expect(shipped.marginal[depth] == measured.marginal[depth])
+            #expect(shipped.marginal[depth] == uniform.marginal[depth])
         }
         for depth in 0 ... maxDepth {
-            #expect(shipped.cumulative[depth] == measured.cumulative[depth])
+            #expect(shipped.cumulative[depth] == uniform.cumulative[depth])
         }
     }
 
-    // The shipped arm must draft SHORTER than the flat price at both ranked
+    // The pbfit arm drafts SHORTER than the flat price at both ranked
     // acceptance rates. That is the mechanism E68 measured: the vector moves
-    // rounds off the expensive width-6 step onto width 5.
-    @Test("the shipped arm shortens the walk against the flat price")
-    func shippedArmShortensTheWalk() {
+    // rounds off the expensive width-6 step onto width 5. E75 showed the
+    // mechanism is table-specific, so pbfit is retained as a research arm and
+    // this test pins what the arm still does, not what ships.
+    @Test("the pbfit arm shortens the walk against the flat price")
+    func pbfitArmShortensTheWalk() {
         let cap = 5
         let ship = Qwen36MTPBlockSession.makeUniformDepthPrice()
         let pbfit = Qwen36MTPBlockSession.makeMeasuredDepthPrice()
