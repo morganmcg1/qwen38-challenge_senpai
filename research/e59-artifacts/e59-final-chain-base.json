@@ -2,17 +2,16 @@
   "arm": "base",
   "assert_before": {
     "exit_code": 0,
-    "mtime": "2026-08-20T05:46:30Z",
-    "sha256": "34205e1bfe580f1edfe3b145088d9d3d93f2b22f526258a2d6613a86d106ac3a"
+    "mtime": "2026-08-20T06:09:16Z",
+    "sha256": "4f5758f2f085a1cb8b2a38d7f8d592e27c86686fd7118e0de6956a5379936de4"
   },
   "metallib_exit_code": 0,
   "swift_test": {
     "exit_code": 1,
-    "failing_count": 10,
+    "failing_count": 9,
     "failing_tests": [
       "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
       "participantDocsExposeDefaultCLIInstallDirectory",
-      "phaseStartAllocatorResetLeavesExactlyEmptyCacheWhenRuntimeTestsAreEnabled",
       "qwen36ConfigContractDigestMatchesTheReferenceManifest",
       "startupMemoryPolicyKeepsRanked128GiBProfile",
       "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
@@ -21,7 +20,7 @@
       "theQwenMTPTrackIsArmedOnQwen38",
       "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
     ],
-    "summary": "\u2718 Test run with 688 tests in 49 suites failed after 20.066 seconds with 41 issues."
+    "summary": "\u2718 Test run with 688 tests in 49 suites failed after 20.607 seconds with 40 issues."
   },
   "twin_sha256": [
     "0c3df8cde4ecaf8d73808004abc20b3524a0585a0993e089b49acca91a25b6c7",
