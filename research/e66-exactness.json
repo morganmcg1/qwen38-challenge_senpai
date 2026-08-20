@@ -1,0 +1,420 @@
+{
+  "all_three_ledgers_byte_identical": true,
+  "candidate_vs_merged_base_c_vs_b": {
+    "covers_changed_dispatch": true,
+    "field_first_mismatches": {
+      "accepted": [],
+      "draft_index": [],
+      "kind": [],
+      "reference_checked_by": [],
+      "reference_margin": [],
+      "reference_token": [],
+      "round": [],
+      "token": [],
+      "top2_logits": [],
+      "top2_tokens": []
+    },
+    "field_mismatch_counts": {
+      "accepted": 0,
+      "draft_index": 0,
+      "kind": 0,
+      "reference_checked_by": 0,
+      "reference_margin": 0,
+      "reference_token": 0,
+      "round": 0,
+      "token": 0,
+      "top2_logits": 0,
+      "top2_tokens": 0
+    },
+    "identical": true,
+    "max_abs_ulp_top2_logits": 0,
+    "reading": "logit-level bitwise",
+    "row_count": [
+      567,
+      567
+    ],
+    "row_population": "candidate wide-dispatch rows, mtp-verify row_ledger",
+    "shape_matches": true,
+    "widths_in_ledger": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    }
+  },
+  "candidate_vs_pre_t6_c_vs_a": {
+    "covers_changed_dispatch": true,
+    "field_first_mismatches": {
+      "accepted": [],
+      "draft_index": [],
+      "kind": [],
+      "reference_checked_by": [],
+      "reference_margin": [],
+      "reference_token": [],
+      "round": [],
+      "token": [],
+      "top2_logits": [],
+      "top2_tokens": []
+    },
+    "field_mismatch_counts": {
+      "accepted": 0,
+      "draft_index": 0,
+      "kind": 0,
+      "reference_checked_by": 0,
+      "reference_margin": 0,
+      "reference_token": 0,
+      "round": 0,
+      "token": 0,
+      "top2_logits": 0,
+      "top2_tokens": 0
+    },
+    "identical": true,
+    "max_abs_ulp_top2_logits": 0,
+    "reading": "logit-level bitwise",
+    "row_count": [
+      567,
+      567
+    ],
+    "row_population": "candidate wide-dispatch rows, mtp-verify row_ledger",
+    "shape_matches": true,
+    "widths_in_ledger": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    }
+  },
+  "coverage_limits": [
+    "Widths covered by this trajectory: [2, 4, 5, 6, 7, 8, 9]. Widths never scheduled: [3].",
+    "One public fixture and one 512-token trajectory. This is exactness evidence for the rows this trajectory produced, not a proof over all inputs.",
+    "The M=5 cell carries 5 of 78 rounds here and the M=6 cell 23."
+  ],
+  "depth": 8,
+  "experiment": "qwen38-r1-e66-composition-certification",
+  "gates": {
+    "all_three_ledgers_byte_identical": true,
+    "arms_provably_distinct_binaries": true,
+    "candidate_identical_to_merged_base": true,
+    "candidate_identical_to_pre_t6": true,
+    "eos_inside_window_and_512_tokens_emitted": true,
+    "every_row_ledger_closes": true,
+    "m5_actually_exercised": true,
+    "m6_actually_exercised": true,
+    "max_abs_ulp_top2_logits_is_zero_c_vs_a": true,
+    "max_abs_ulp_top2_logits_is_zero_c_vs_b": true,
+    "negative_controls_all_fired": true,
+    "positive_control_differs": true
+  },
+  "merged_base_vs_pre_t6_b_vs_a": {
+    "covers_changed_dispatch": true,
+    "field_first_mismatches": {
+      "accepted": [],
+      "draft_index": [],
+      "kind": [],
+      "reference_checked_by": [],
+      "reference_margin": [],
+      "reference_token": [],
+      "round": [],
+      "token": [],
+      "top2_logits": [],
+      "top2_tokens": []
+    },
+    "field_mismatch_counts": {
+      "accepted": 0,
+      "draft_index": 0,
+      "kind": 0,
+      "reference_checked_by": 0,
+      "reference_margin": 0,
+      "reference_token": 0,
+      "round": 0,
+      "token": 0,
+      "top2_logits": 0,
+      "top2_tokens": 0
+    },
+    "identical": true,
+    "max_abs_ulp_top2_logits": 0,
+    "reading": "logit-level bitwise",
+    "row_count": [
+      567,
+      567
+    ],
+    "row_population": "candidate wide-dispatch rows, mtp-verify row_ledger",
+    "shape_matches": true,
+    "widths_in_ledger": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    }
+  },
+  "negative_controls": {
+    "all_fired": true,
+    "cases": {
+      "acceptance_flipped_at_row_200": true,
+      "empty_ledger_is_not_a_pass": true,
+      "reference_source_changed_at_row_50": true,
+      "token_flipped_at_row_100": true,
+      "top2_logit_one_ulp_at_row_300": true,
+      "top2_token_order_swapped_at_row_400": true,
+      "truncated_ledger": true
+    }
+  },
+  "path": "PATH C only: on-path and logit-level (mtp-verify --golden row_ledger)",
+  "positive_control": {
+    "arm": "c_perturb",
+    "differs_from_candidate": true,
+    "fired": true,
+    "lane_perturb_copies": "1",
+    "metallib_source_fingerprint": "9c435284dd0f61cbd627304a27fb081adadfbae4fc0dbc5515ab09982c59bfb0",
+    "mode": "rejected_by_trusted_parent",
+    "note": "The trusted parent raised a contract violation and wrote no ledger, so the perturbed kernel could not even produce a candidate row set. NA=5 groups occur at M=5 (the t55 cell) and as the first group of the M=9 cell, so this control proves the ledger reads the NA=5 helper body, not that it isolates M=5.",
+    "verify_exit": "1",
+    "worker_sha256": "581e0aeabd43c969dda30e612cb0aa0ca02a9a4bd66c99c693d38540346333a3"
+  },
+  "provenance": {
+    "all_git_trees_distinct": true,
+    "all_metallib_digests_distinct": true,
+    "all_worker_digests_distinct": true,
+    "arms": [
+      "a",
+      "b",
+      "c"
+    ],
+    "arms_provably_distinct_binaries": true,
+    "binary_assert_dispatch": {
+      "a": {
+        "bound": "5",
+        "m5": "3",
+        "m6": "3",
+        "m9": "5",
+        "perturb": "0"
+      },
+      "b": {
+        "bound": "6",
+        "m5": "3",
+        "m6": "6",
+        "m9": "5",
+        "perturb": "0"
+      },
+      "c": {
+        "bound": "6",
+        "m5": "5",
+        "m6": "6",
+        "m9": "5",
+        "perturb": "0"
+      }
+    },
+    "dispatch_matches_expected": {
+      "a": true,
+      "b": true,
+      "c": true
+    },
+    "fields_that_must_match": {
+      "depth": true,
+      "golden_sha256": true,
+      "head_dir": true,
+      "tokens": true
+    },
+    "git_head": {
+      "a": "1c021c81d930c56d9fe82106ed81c0f86e01e5b9",
+      "b": "ebdd3432e209d10571030a711dce52cb93e0a5cb",
+      "c": "da5cf4ee0672edc8818442c3496cbc2a6df1860b"
+    },
+    "git_tree": {
+      "a": "8b8b44ece7e1408bd15a23d9f7ea0d5ee066291d",
+      "b": "c4de82ef17a0c6a7afc6b62ea79542a5c7c8b136",
+      "c": "bf16d00c2a1ae5f8b151c26117c96d2accb231a7"
+    },
+    "metallib_sha256": {
+      "a": "9e271c6be0e500d01876729970798375f85b83c24fc8a19b66dc8424fd194242",
+      "b": "1b597332b351049a3e2d39157a7ac64ce7e917e80205cfd69da759f9839e5a2e",
+      "c": "45449c09521dc93c3c8b9ba1cd6530b6610eb1564525a40c7fb5719e918dd63e"
+    },
+    "metallib_source_fingerprint": {
+      "a": "7a1bbb06bea84acf53084ac55cb24e30950666f7f75e21a7bdb232f28c353a50",
+      "b": "d9e0bb0dba0ede38c95d40d9d6f216c49d79e96e8838c512079688ca05010d69",
+      "c": "f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe"
+    },
+    "verify_exit": {
+      "a": "0",
+      "b": "0",
+      "c": "0"
+    },
+    "worker_cstring_sha256": {
+      "a": "75f8eabd413abca8baba41e0de6ae935765d9c8ddbb312ecafda00901ab22464",
+      "b": "7983fdd76f0592bc0c7713b400f4e1617e619abf95aa6f588c3bde9273d497b3",
+      "c": "d52a9ba63b9b2a2e1443d91263eabee8eb456db3298ea0cebfca74929f13f01e"
+    },
+    "worker_sha256": {
+      "a": "c543c7b8c07b4893b0bc350438164a3609f1d4e1dd45e8dc63af6ba0e52393e6",
+      "b": "c6d89a3c6e5916ed96afacb7c7f05567219bf0b38ff7533c7fc5a7aeb1bf5d7b",
+      "c": "b4cd8e2efe3a76b747169ab318ce65066c0f34a2786bdc5b99fad4ecf6580424"
+    },
+    "worker_text_sha256": {
+      "a": "720e6f67aec32caac6d6f2dbd34ecd225e91a7aaf826b00397e59026cb503400",
+      "b": "720e6f67aec32caac6d6f2dbd34ecd225e91a7aaf826b00397e59026cb503400",
+      "c": "a761d148dfcae6b6d74fa466fa5e76c80181712f7665c2949387357fb9e5d871"
+    },
+    "worker_text_sha256_used_as_gate": false
+  },
+  "row_ledger_closure": {
+    "a": {
+      "accepted_draft_total": 434,
+      "all_tokens_matched": true,
+      "closes": true,
+      "declared_equals_rounds_plus_drafts": true,
+      "declared_rows_total": 567,
+      "decode_token_count": 512,
+      "emitted_token_total": 512,
+      "eos_present_in_ledger": true,
+      "eos_row_indices": [
+        308,
+        314
+      ],
+      "every_row_reference_checked": true,
+      "kinds": [
+        "draft",
+        "targetTail"
+      ],
+      "parity_all_ok": true,
+      "reference_checked_by": [
+        "serial_golden",
+        "verify_block_replay"
+      ],
+      "reference_checked_row_total": 567,
+      "rejected_draft_total": 55,
+      "rejected_rows_reference_checked": 55,
+      "residual_divergence_count": 0,
+      "round_count": 78,
+      "rows": 567,
+      "rows_after_first_eos": 258,
+      "rows_equal_declared": true,
+      "window_closed_at_512": true
+    },
+    "b": {
+      "accepted_draft_total": 434,
+      "all_tokens_matched": true,
+      "closes": true,
+      "declared_equals_rounds_plus_drafts": true,
+      "declared_rows_total": 567,
+      "decode_token_count": 512,
+      "emitted_token_total": 512,
+      "eos_present_in_ledger": true,
+      "eos_row_indices": [
+        308,
+        314
+      ],
+      "every_row_reference_checked": true,
+      "kinds": [
+        "draft",
+        "targetTail"
+      ],
+      "parity_all_ok": true,
+      "reference_checked_by": [
+        "serial_golden",
+        "verify_block_replay"
+      ],
+      "reference_checked_row_total": 567,
+      "rejected_draft_total": 55,
+      "rejected_rows_reference_checked": 55,
+      "residual_divergence_count": 0,
+      "round_count": 78,
+      "rows": 567,
+      "rows_after_first_eos": 258,
+      "rows_equal_declared": true,
+      "window_closed_at_512": true
+    },
+    "c": {
+      "accepted_draft_total": 434,
+      "all_tokens_matched": true,
+      "closes": true,
+      "declared_equals_rounds_plus_drafts": true,
+      "declared_rows_total": 567,
+      "decode_token_count": 512,
+      "emitted_token_total": 512,
+      "eos_present_in_ledger": true,
+      "eos_row_indices": [
+        308,
+        314
+      ],
+      "every_row_reference_checked": true,
+      "kinds": [
+        "draft",
+        "targetTail"
+      ],
+      "parity_all_ok": true,
+      "reference_checked_by": [
+        "serial_golden",
+        "verify_block_replay"
+      ],
+      "reference_checked_row_total": 567,
+      "rejected_draft_total": 55,
+      "rejected_rows_reference_checked": 55,
+      "residual_divergence_count": 0,
+      "round_count": 78,
+      "rows": 567,
+      "rows_after_first_eos": 258,
+      "rows_equal_declared": true,
+      "window_closed_at_512": true
+    }
+  },
+  "rung": 2,
+  "tokens": 512,
+  "verdict": "EXACT",
+  "whole_file_sha256": {
+    "a": "a1044f14dcd6d24d7259357b54eda48170321b8fd7943746a84f6468a04acc98",
+    "b": "a1044f14dcd6d24d7259357b54eda48170321b8fd7943746a84f6468a04acc98",
+    "c": "a1044f14dcd6d24d7259357b54eda48170321b8fd7943746a84f6468a04acc98"
+  },
+  "width_census_candidate": {
+    "round_count": 78,
+    "round_share_by_width": {
+      "2": 0.01282051282051282,
+      "4": 0.0641025641025641,
+      "5": 0.0641025641025641,
+      "6": 0.2948717948717949,
+      "7": 0.05128205128205128,
+      "8": 0.07692307692307693,
+      "9": 0.4358974358974359
+    },
+    "rounds_by_width": {
+      "2": 1,
+      "4": 5,
+      "5": 5,
+      "6": 23,
+      "7": 4,
+      "8": 6,
+      "9": 34
+    },
+    "rows_by_width": {
+      "2": 2,
+      "4": 20,
+      "5": 25,
+      "6": 138,
+      "7": 28,
+      "8": 48,
+      "9": 306
+    },
+    "widths_exercised": [
+      2,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "widths_not_exercised": [
+      3
+    ]
+  }
+}

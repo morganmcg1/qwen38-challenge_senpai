@@ -215,8 +215,22 @@ if ((status == 0)); then
     export MLXFAST_CAPTURE_DIR="${out}/reports/leg-${i}"
     mkdir -p "${MLXFAST_CAPTURE_DIR}"
     echo "=== e42-run: ${tag} leg pair ${i}/${legs} (${tokens} tokens) ==="
+    # E42_BINARY_ASSERT runs once, before the leg loop. It cannot see a rebuild
+    # that benchmark-qwen-mtp.sh performs from inside a leg, which is exactly
+    # the failure ledger 202(H) records. E42_LEG_ASSERT is the per-leg form:
+    # it runs before and after each leg and compares the worker across it.
+    if [[ -n "${E42_LEG_ASSERT:-}" ]]; then
+      ${E42_LEG_ASSERT} before "${i}" | tee -a "${out}/meta.txt" || {
+        echo "e42-run: ${tag} leg ${i}: pre-leg assertion failed; not timing it" >&2
+        status=1; break; }
+    fi
     ./benchmark-qwen-mtp.sh --local-iterate
     rc=$?
+    if [[ -n "${E42_LEG_ASSERT:-}" ]]; then
+      ${E42_LEG_ASSERT} after "${i}" | tee -a "${out}/meta.txt" || {
+        echo "e42-run: ${tag} leg ${i}: post-leg assertion failed; the leg is invalid" >&2
+        rc=1; }
+    fi
     {
       echo "leg${i}_exit=${rc}"
       echo "leg${i}_thermal_after=$(sample_thermal)"

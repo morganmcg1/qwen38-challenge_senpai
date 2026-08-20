@@ -1,0 +1,110 @@
+{
+  "composition": {
+    "method": "sum of the two per-mechanism projections; each mechanism is projected with its own width share",
+    "ranked_leg_pct_count_basis": -4.455840601576114,
+    "ranked_leg_pct_headline": -5.206941197501975,
+    "ranked_leg_pct_high": -6.861003791542672,
+    "ranked_leg_pct_low": -4.048198992657939
+  },
+  "cross_check_ledger_201_flat_law": {
+    "agrees_within_combined_uncertainty": false,
+    "gap_vs_202c_projection_pct": -3.9289411975019752,
+    "one_stream_removal_pct": -0.639,
+    "one_stream_removal_se_pct": 0.313,
+    "two_removals_pct": -1.278,
+    "two_removals_se_pct": 0.626
+  },
+  "experiment": "qwen38-r1-e66-composition-certification",
+  "f_local_count_share": {
+    "2": 0.01282051282051282,
+    "4": 0.0641025641025641,
+    "5": 0.0641025641025641,
+    "6": 0.2948717948717949,
+    "7": 0.05128205128205128,
+    "8": 0.07692307692307693,
+    "9": 0.4358974358974359
+  },
+  "f_local_time_weighted_share": {
+    "2": 0.00599377691344307,
+    "4": 0.03719112650977669,
+    "5": 0.05429035901738532,
+    "6": 0.2673234151361853,
+    "7": 0.05004653972766028,
+    "8": 0.08076909175292595,
+    "9": 0.5043856909426234
+  },
+  "law": "ledger 202(C): ranked_leg_delta = L_local * (f_ranked / f_local)",
+  "measured_round_fraction_of_leg": {
+    "a_neither": {
+      "mtp_round_count": 78.0,
+      "p50_round_seconds_over_seconds_per_token": 5.150337867945509,
+      "round_seconds_share_of_decode": 0.7846217845698236
+    },
+    "b_t6": {
+      "mtp_round_count": 78.0,
+      "p50_round_seconds_over_seconds_per_token": 5.190269418758359,
+      "round_seconds_share_of_decode": 0.7907051067639688
+    },
+    "c_t55_t6": {
+      "mtp_round_count": 78.0,
+      "p50_round_seconds_over_seconds_per_token": 5.237840858022074,
+      "round_seconds_share_of_decode": 0.7979523182143003
+    }
+  },
+  "mechanisms": {
+    "t55": {
+      "cell": "<T,5,3> -> <T,5,5>",
+      "f_local_count": 0.0641025641025641,
+      "f_local_time_weighted": 0.05429035901738532,
+      "f_ranked_e53_max": 0.3056519636108851,
+      "f_ranked_e53_min": 0.1780607179162684,
+      "f_ranked_headline": 0.241,
+      "local_leg_pct": -0.9995114057050849,
+      "ranked_leg_pct_headline": -4.436924955640615,
+      "ranked_leg_pct_headline_count_basis": -3.7577630808888376,
+      "ranked_leg_pct_high": -5.627198444338977,
+      "ranked_leg_pct_low": -3.2781827507965784
+    },
+    "t6": {
+      "cell": "<T,6,3> -> <T,6,6>",
+      "f_local_count": 0.2948717948717949,
+      "f_local_time_weighted": 0.2673234151361853,
+      "f_ranked_e53_max": 0.5351718101034941,
+      "f_ranked_e53_min": 0.4048274533767755,
+      "f_ranked_headline": 0.334,
+      "local_leg_pct": -0.6162975194152984,
+      "ranked_leg_pct_headline": -0.7700162418613603,
+      "ranked_leg_pct_headline_count_basis": -0.6980775206872764,
+      "ranked_leg_pct_high": -1.233805347203695,
+      "ranked_leg_pct_low": -0.7700162418613603
+    }
+  },
+  "psi_used": false,
+  "retracted_constants_not_used": [
+    "psi_mtp_ranked_leg = 0.82127",
+    "LOCAL_NULL_FLOOR_PCT = 0.0629"
+  ],
+  "rung": 4,
+  "session_round_census": {
+    "2": 1,
+    "4": 5,
+    "5": 5,
+    "6": 23,
+    "7": 4,
+    "8": 6,
+    "9": 34
+  },
+  "session_round_count": 78,
+  "time_weighting_basis": {
+    "provenance": "E61 --curve sweep, this host, pre-t6 table = arm A. Used only to time weight THIS session's own census, because f_ranked is a time share and the census alone is a count share.",
+    "seconds_per_verify": {
+      "2": 0.0662173643,
+      "4": 0.0821751763,
+      "5": 0.11995656605,
+      "6": 0.12840456985,
+      "7": 0.138224612,
+      "8": 0.1487185918,
+      "9": 0.1638910192
+    }
+  }
+}
