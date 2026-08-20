@@ -135,6 +135,52 @@ def cell_outliers(rows, k=3.0):
     return stats, outliers, singular
 
 
+def crossing_probe(rows):
+    """Compare every kL >= 1024 round with same-width rounds below the cross.
+
+    At exactly 512 decode tokens the crossing round is also the last round and
+    can be the only member of its own (M, repaired) cell, so the IQR rule has
+    no bar to apply. This falls back to the widest legitimate comparison: all
+    rounds of the SAME verify width that stayed below the threshold. Repair
+    state is reported per comparator so the confound stays visible.
+    """
+    probes = []
+    for row in rows:
+        if not row["crosses_two_pass"]:
+            continue
+        peers = [r for r in rows
+                 if r["M"] == row["M"] and not r["crosses_two_pass"]]
+        if not peers:
+            probes.append({"round": row["round"], "M": row["M"],
+                           "kL_verify": row["kL_verify"],
+                           "round_us": row["round_us"], "peers": 0})
+            continue
+        vals = sorted(p["round_us"] for p in peers)
+        med = statistics.median(vals)
+        spread = vals[-1] - vals[0]
+        probes.append({
+            "round": row["round"],
+            "M": row["M"],
+            "repaired": row["repaired"],
+            "kL_verify": row["kL_verify"],
+            "is_last_round": row is rows[-1],
+            "round_us": row["round_us"],
+            "peers": len(peers),
+            "peer_repaired": sorted({p["repaired"] for p in peers}),
+            "peer_median_us": med,
+            "peer_min_us": vals[0],
+            "peer_max_us": vals[-1],
+            "peer_spread_us": spread,
+            "excess_us": row["round_us"] - med,
+            "excess_in_peer_spreads": (
+                (row["round_us"] - med) / spread if spread else None),
+            "segment_excess_us": {
+                s: row[s] - statistics.median([p[s] for p in peers])
+                for s in SEGMENTS},
+        })
+    return probes
+
+
 def structural_events(rows):
     """First occurrence of every structural event the census can name."""
     events = {}
@@ -180,6 +226,10 @@ def main():
             continue
         stats, outliers, singular = cell_outliers(rows, args.iqr_k)
         leg_us = sum(r["round_us"] for r in rows)
+        # The scored leg is seed processing plus decode, so the denominator for
+        # a "% of the leg" claim includes `begin`, not the round series alone.
+        timed_leg_us = (leg_us + session["begin_build_us"]
+                        + session["begin_eval_wall_us"])
         excess_us = sum(o["excess_us"] for o in outliers)
         tokens = sum(1 + r["acc"] for r in rows)
         entry = {
@@ -199,9 +249,14 @@ def main():
             "cells": stats,
             "singular_cells": singular,
             "structural_events": structural_events(rows),
+            "crossing_probe": crossing_probe(rows),
             "outliers": outliers,
             "outlier_excess_us": excess_us,
-            "outlier_excess_pct_of_leg": 100.0 * excess_us / leg_us if leg_us else 0.0,
+            "timed_leg_us": timed_leg_us,
+            "outlier_excess_pct_of_rounds": (
+                100.0 * excess_us / leg_us if leg_us else 0.0),
+            "outlier_excess_pct_of_leg": (
+                100.0 * excess_us / timed_leg_us if timed_leg_us else 0.0),
             "segment_totals_us": {
                 s: sum(r[s] for r in rows) for s in SEGMENTS},
             "round_table": rows,
@@ -235,7 +290,25 @@ def main():
                   f"vbuild={o['verify_build'] / 1000:.2f}ms "
                   f"tags={','.join(tags) or '-'}")
         print(f"  outlier excess = {entry['outlier_excess_us'] / 1000:.2f} ms "
-              f"= {entry['outlier_excess_pct_of_leg']:.4f} % of the round series")
+              f"= {entry['outlier_excess_pct_of_rounds']:.4f} % of the round "
+              f"series = {entry['outlier_excess_pct_of_leg']:.4f} % of the "
+              f"timed leg ({entry['timed_leg_us'] / 1e6:.3f} s incl. begin)")
+        for p in entry["crossing_probe"]:
+            if p["peers"] == 0:
+                print(f"  kL>=1024 round={p['round']} M={p['M']}: no same-width "
+                      f"peer below the threshold")
+                continue
+            seg = ", ".join(
+                f"{k}{v / 1000:+.2f}" for k, v in p["segment_excess_us"].items())
+            print(f"  kL>=1024 round={p['round']} M={p['M']} "
+                  f"repaired={p['repaired']} last={p['is_last_round']} "
+                  f"t={p['round_us'] / 1000:.2f}ms vs same-width peers "
+                  f"n={p['peers']} med={p['peer_median_us'] / 1000:.2f}ms "
+                  f"[{p['peer_min_us'] / 1000:.2f},{p['peer_max_us'] / 1000:.2f}] "
+                  f"excess={p['excess_us'] / 1000:+.2f}ms "
+                  f"= {p['excess_in_peer_spreads']:.1f} peer spreads "
+                  f"= {100.0 * p['excess_us'] / entry['timed_leg_us']:.4f} % of leg")
+            print(f"      segment excess ms: {seg}")
         print(f"  structural events: {json.dumps(entry['structural_events'])}")
 
     if args.json:
