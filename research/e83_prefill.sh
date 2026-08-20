@@ -24,12 +24,13 @@ case "${profile}" in
     # surgery and the swizzle on the real checkpoint without spending a session.
     : "${MLXFAST_E83_REPS:=1}"
     : "${MLXFAST_E83_WARMUP:=1}"
+    : "${MLXFAST_E83_LADDER_REPS:=1}"
     : "${MLXFAST_E83_ARMS:=null,mlp_all,gdn_in_qkv,all_interceptable}"
     ;;
-  full) ;;
+  full) : "${MLXFAST_E83_LADDER_REPS:=6}" ;;
   *) echo "e83_prefill.sh: unknown profile ${profile}" >&2; exit 2 ;;
 esac
-export MLXFAST_E83_REPS MLXFAST_E83_WARMUP MLXFAST_E83_ARMS
+export MLXFAST_E83_REPS MLXFAST_E83_WARMUP MLXFAST_E83_ARMS MLXFAST_E83_LADDER_REPS
 
 out="research/out/${tag}"
 rm -rf "${out}"
