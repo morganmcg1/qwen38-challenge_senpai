@@ -235,21 +235,24 @@ RULE = re.compile(r"^/{40,}$")
 KNOWN_COMMENT_DIVERGENCES = {
     ("quantized", "mlx/backend/metal/kernels/quantized.h"): {
         "checked_in_comment_sha256": (
-            "1fdb8dcee8c7cfeb203e9afad1d991a746b7ba08d24638774878fbbd3404a0ba"
+            "53721d560163e6e44790a8716b5a571b661f7bb88b92f5ec84c6ebfe0871367e"
         ),
         "regenerated_comment_sha256": (
-            "f7baab91ee3afe85961d6f9b535e45f6cc362fdc05d9ee26caaaabeba9a564f3"
+            "1787db92ecffb44f4bc576c6c173bcdaf3a154f2e8a9327f9e3d730cc5edd77a"
         ),
         "inherited_from": "474c750 (Accept submission 942e5ab2-1c46-4c50-b7c3-eaf948878ed0)",
-        "adopted_by": "e468efd (rebase the shipped surface onto the live frontier; drop E27)",
+        "adopted_by": "E87 arm G (template the single-row affine-2 QMV over group size)",
         "note": (
-            "3087 checked-in vs 3097 regenerated lines, 3005 non-comment lines "
-            "identical on both sides. Header case 8 carries a 17-line argument "
-            "for 3+3+2 that is measured +18.72 % SLOWER (E46) and is NOT what "
-            "either file's code does; the twin's 3-line 4+4 comment is the "
-            "correct one. Waived rather than fixed because both paths are held "
-            "byte-identical to the frontier by the E27 revert. Code guarded by "
-            "senpai/campaign-invariants.txt."
+            "3095 checked-in vs 3105 regenerated lines, 3009 non-comment lines "
+            "identical on both sides. The waived fact is unchanged: header "
+            "case 8 carries a 17-line argument for 3+3+2 that is measured "
+            "+18.72 % SLOWER (E46) and is NOT what either file's code does; "
+            "the twin's 3-line 4+4 comment is the correct one. Waived rather "
+            "than fixed because both paths are held byte-identical to the "
+            "frontier by the E27 revert. Code guarded by "
+            "senpai/campaign-invariants.txt. Re-pinned by E87, which edits the "
+            "`qmv_fast_singlerow_affine2` comment block identically in both "
+            "files and so moves both digests without adding a divergence."
         ),
     },
 }

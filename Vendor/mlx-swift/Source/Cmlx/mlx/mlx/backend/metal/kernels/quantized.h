@@ -1065,7 +1065,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
   }
 }
 
-// Single-row (M == 1) affine2/g64 fast QMV for the coarse compact draft
+// Single-row (M == 1) affine-2 fast QMV for the coarse compact draft
 // readout (out_vec_size == 98_336, bits == 2) of the promoted draft-rerank
 // scheme, at 32 values per lane: each lane loads ONE uint64 (32 packed
 // 2-bit values) per row per k-block, halving load count and k-blocks versus
@@ -1073,15 +1073,20 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
 // multiplied by the UNSCALED activation: (x / 4^k) * (w & (3 << 2k)) and
 // x * ((w >> 2k) & 3) are the same real product (power-of-two scaling is
 // exact in FP32), so every elementary product equals the generic
-// qmv_fast_impl<T, 64, 2> value; the wider lane coverage reassociates the
-// FP32 partial sums, which is safe for this stage because the coarse
+// qmv_fast_impl<T, group_size, 2> value; the wider lane coverage reassociates
+// the FP32 partial sums, which is safe for this stage because the coarse
 // shortlist is approximate by design and the exact affine-4 rerank plus
 // target verification decide every emitted token. The serial leg runs no
 // 2-bit matmul (all its projections are affine-4), and out_vec_size ==
 // 98_336 exists only in the compact draft readout, so the dispatch gate
 // below cannot touch the serial numerator or the denominator band.
-template <typename T>
-METAL_FUNC void qmv_fast_singlerow_affine2_g64(
+// The group size is a template parameter, not a constant. A lane covers 32
+// contiguous values, so any group size that is a multiple of 32 keeps one
+// lane inside one scale group and leaves the arithmetic above unchanged.
+// Only the two scale/bias divisors depend on it, so instantiating at 64
+// reproduces the promoted kernel value for value.
+template <typename T, int group_size>
+METAL_FUNC void qmv_fast_singlerow_affine2(
     const device uint32_t* w,
     const device T* scales,
     const device T* biases,
@@ -1096,8 +1101,12 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
   constexpr int values_per_thread = 32;
   constexpr int block_size = values_per_thread * SIMD_SIZE;
   constexpr int bytes_per_lane = 8;  // 32 values x 2 bits = 8 bytes
-  const int in_vec_size_w = in_vec_size / 4;   // weight bytes per output row
-  const int in_vec_size_g = in_vec_size / 64;  // scale groups per output row
+  static_assert(
+      group_size % values_per_thread == 0,
+      "a lane's 32 values must lie inside one scale group");
+  const int in_vec_size_w = in_vec_size / 4;  // weight bytes per output row
+  const int in_vec_size_g =
+      in_vec_size / group_size;  // scale groups per output row
 
   const int out_row = int(tid.y) * 8 + int(simd_gid) * rows_per_simd;
 
@@ -1115,9 +1124,8 @@ METAL_FUNC void qmv_fast_singlerow_affine2_g64(
       const device uint8_t* ws = reinterpret_cast<const device uint8_t*>(w) +
           row * in_vec_size_w + k / 4 + simd_lid * bytes_per_lane;
       packed[r] = *reinterpret_cast<const device ulong*>(ws);
-      // 32 values per lane = half of one 64-value group.
-      const int group_index =
-          row * in_vec_size_g + k / 64 + (simd_lid * values_per_thread) / 64;
+      const int group_index = row * in_vec_size_g + k / group_size +
+          (simd_lid * values_per_thread) / group_size;
       scale_local[r] = scales[group_index];
       bias_local[r] = biases[group_index];
     }
@@ -1905,11 +1913,11 @@ template <typename T, int group_size, int bits, bool batched>
         b_strides,
         tid);
   }
-  if (!batched && group_size == 64 && bits == 2 && out_vec_size == 98336 &&
-      ntg.x == 1) {
+  if (!batched && (group_size == 64 || group_size == 128) && bits == 2 &&
+      out_vec_size == 98336 && ntg.x == 1) {
     // M == 1 coarse draft readout (draft-rerank scheme): the ONE 2-bit shape
     // in the scored path; proposal-only by construction (see kernel header).
-    qmv_fast_singlerow_affine2_g64<T>(
+    qmv_fast_singlerow_affine2<T, group_size>(
         w, scales, biases, x, y, in_vec_size, out_vec_size, tid, simd_gid,
         simd_lid);
     return;

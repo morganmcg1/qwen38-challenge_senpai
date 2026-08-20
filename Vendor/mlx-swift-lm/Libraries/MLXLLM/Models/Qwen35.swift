@@ -12,6 +12,43 @@ import MLX
 import MLXLMCommon
 import MLXNN
 
+// E87 RESEARCH INSTRUMENT -- streams every hidden row that reaches the draft
+// readout, together with the proposal token the runtime returned for it, so an
+// offline harness can screen candidate coarse shortlist scorers without a
+// timed decode. Reverted out of the submitted surface before the experiment
+// closes; the shipped default is a no-op.
+//
+// The `MLX_` prefix is load-bearing: `sanitizedRuntimeWorkerEnvironment` admits
+// `MLX_` and drops `MLXFAST_`, so a `MLXFAST_`-spelled gate would never reach
+// the worker process that owns the draft path.
+//
+// `asArray` forces a host readback per draft call. That is why this instrument
+// may only run on the untimed `mtp-verify` path.
+private enum E87HiddenDump {
+    private static let prefix =
+        ProcessInfo.processInfo.environment["MLX_E87_HIDDEN_DUMP"]
+    private static let lock = NSLock()
+    private static var hiddenFile: FileHandle?
+    private static var tokenFile: FileHandle?
+
+    static func record(_ hidden: MLXArray, _ proposal: MLXArray) {
+        guard let prefix else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        if hiddenFile == nil {
+            let manager = FileManager.default
+            manager.createFile(atPath: prefix + ".x.f32", contents: nil)
+            manager.createFile(atPath: prefix + ".tok.i32", contents: nil)
+            hiddenFile = FileHandle(forWritingAtPath: prefix + ".x.f32")
+            tokenFile = FileHandle(forWritingAtPath: prefix + ".tok.i32")
+        }
+        let row = hidden.reshaped([hidden.size]).asType(.float32).asArray(Float.self)
+        let ids = proposal.reshaped([proposal.size]).asType(.int32).asArray(Int32.self)
+        row.withUnsafeBufferPointer { try? hiddenFile?.write(contentsOf: Data(buffer: $0)) }
+        ids.withUnsafeBufferPointer { try? tokenFile?.write(contentsOf: Data(buffer: $0)) }
+    }
+}
+
 // MARK: - Configuration
 
 private enum RopeParametersCodingKey: String, CodingKey {
@@ -3345,11 +3382,11 @@ extension Qwen35TextModel: MTPCapable {
     /// never for ledger or verify values.
     public func applyDraftLMHead(_ x: MLXArray) -> MLXArray {
         if let w = _draftHeadW, let s = _draftHeadS, let z = _draftHeadZ {
-            let k = s.dim(1) * 64
-            let bits = w.dim(1) * 32 / k
+            let groupSize = configuration.hiddenSize / s.dim(1)
+            let bits = w.dim(1) * 32 / configuration.hiddenSize
             let logits = quantizedMM(
                 x, w, scales: s, biases: z, transpose: true,
-                groupSize: 64, bits: bits, mode: .affine)
+                groupSize: groupSize, bits: bits, mode: .affine)
             if w.dim(0) == Self.compactDraftPaddedCount {
                 return logits[0..., 0..., 0 ..< Self.compactDraftRealCount]
             }
@@ -3375,6 +3412,7 @@ extension Qwen35TextModel: MTPCapable {
     public func draftTokenID(_ x: MLXArray) -> MLXArray {
         if _draftHeadW != nil {
             if let reranked = draftTokenIDWithDeclaredRerank(x) {
+                E87HiddenDump.record(x, reranked)
                 return reranked
             }
             return mapDraftTokenIds(
@@ -3411,10 +3449,17 @@ extension Qwen35TextModel: MTPCapable {
               let coarseBiases = _draftHeadZ,
               coarseWeight.dim(0) == Self.compactDraftPaddedCount,
               coarseWeight.dim(1) == 320,
-              coarseScales.shape == [Self.compactDraftPaddedCount, 80],
-              coarseBiases.shape == [Self.compactDraftPaddedCount, 80],
+              coarseScales.dim(0) == Self.compactDraftPaddedCount,
+              coarseBiases.shape == coarseScales.shape,
+              coarseScales.dim(1) > 0,
+              configuration.hiddenSize % coarseScales.dim(1) == 0,
               x.shape == [1, 1, configuration.hiddenSize]
         else { return nil }
+        // The shortlist readout stays 2-bit, but its group size is whatever
+        // the declared head shipped (5120/80 = 64, 5120/40 = 128). Reading it
+        // from the tensor keeps one build tree for every coarse variant.
+        let coarseGroupSize = configuration.hiddenSize / coarseScales.dim(1)
+        guard coarseGroupSize == 64 || coarseGroupSize == 128 else { return nil }
 
         if _compactDraftHead == nil {
             _compactDraftHead = makeCompactDraftHead()
@@ -3430,7 +3475,7 @@ extension Qwen35TextModel: MTPCapable {
 
         let coarse = quantizedMM(
             x, coarseWeight, scales: coarseScales, biases: coarseBiases,
-            transpose: true, groupSize: 64, bits: 2, mode: .affine
+            transpose: true, groupSize: coarseGroupSize, bits: 2, mode: .affine
         )
         let candidateCount = Self.draftRerankCandidateCount
         // Drift guard: the kernels bake these shapes in as constexpr.
