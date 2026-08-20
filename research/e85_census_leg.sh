@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Run one E85 census leg: forced draft width, dispatch + allocation census on.
 #
-#   usage: research/e85_census_leg.sh TAG DRAFTS TOKENS
+#   usage: research/e85_census_leg.sh TAG DRAFTS TOKENS [ARM]
+#
+# ARM is one of base|a|b|ab and defaults to `ab`, matching the code defaults.
+# Running the same census binary at both ARM settings is the execution proof:
+# if the fused paths really run, the five gather and dequantize kernels leave
+# the `draft_head` phase. A guard that fails silently would leave them there.
 #
 # The census swizzle serialises every dispatch behind its own lock, so a census
 # leg is NEVER a timing leg. It reports COUNTS only: dispatches, kernels,
@@ -16,9 +21,18 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-tag="${1:?usage: e85_census_leg.sh TAG DRAFTS TOKENS}"
-drafts="${2:?usage: e85_census_leg.sh TAG DRAFTS TOKENS}"
-tokens="${3:?usage: e85_census_leg.sh TAG DRAFTS TOKENS}"
+tag="${1:?usage: e85_census_leg.sh TAG DRAFTS TOKENS [ARM]}"
+drafts="${2:?usage: e85_census_leg.sh TAG DRAFTS TOKENS [ARM]}"
+tokens="${3:?usage: e85_census_leg.sh TAG DRAFTS TOKENS [ARM]}"
+arm="${4:-ab}"
+
+case "${arm}" in
+  base) export MLX_E85_FUSED_EMBED=0 MLX_E85_GATHER_QMM=0 ;;
+  a)    export MLX_E85_FUSED_EMBED=1 MLX_E85_GATHER_QMM=0 ;;
+  b)    export MLX_E85_FUSED_EMBED=0 MLX_E85_GATHER_QMM=1 ;;
+  ab)   export MLX_E85_FUSED_EMBED=1 MLX_E85_GATHER_QMM=1 ;;
+  *) echo "e85_census_leg.sh: unknown arm ${arm}" >&2; exit 2 ;;
+esac
 
 head_dir="${E85_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
 if [[ ! -s "${head_dir}/config.json" ]]; then
@@ -48,6 +62,9 @@ export MLX_E80_FORCE_DRAFTS="${drafts}"
 {
   echo "tag=${tag}"
   echo "experiment=e85-materialised-intermediate-census"
+  echo "arm=${arm}"
+  echo "MLX_E85_FUSED_EMBED=${MLX_E85_FUSED_EMBED}"
+  echo "MLX_E85_GATHER_QMM=${MLX_E85_GATHER_QMM}"
   echo "forced_drafts=${drafts}"
   echo "tokens=${tokens}"
   echo "local_mode=--local-iterate"
