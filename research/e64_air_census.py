@@ -313,9 +313,42 @@ def verdict(cells: dict[int, dict], na: int) -> dict:
     return checks
 
 
+def compile_merged(workdir: pathlib.Path, widths: list[int]) -> pathlib.Path:
+    """AIR for the arm that mirrors the shipped one-kernel runtime switch.
+
+    The scored `affine_qmv_fast` is a single entry point whose widths are cases
+    of a runtime switch, so every width shares one register allocation. Each
+    per-NA cell above is its own entry point and cannot show that sharing.
+    """
+    source = workdir / "merged.metal"
+    raw = workdir / "merged.ll"
+    optimized = workdir / "merged.o3.ll"
+    emit = subprocess.run(
+        [sys.executable, str(REPO / "research/e64_emit_arms.py"),
+         "--na", str(max(widths)), "--merged-widths", *[str(w) for w in widths],
+         "--out", str(source)],
+        capture_output=True, text=True)
+    if emit.returncode != 0:
+        raise SystemExit(f"emit failed:\n{emit.stderr}")
+    compile_step = subprocess.run(
+        ["xcrun", "-sdk", "macosx", "metal", *SCORED_FLAGS,
+         "-I", str(INCLUDE), "-S", str(source), "-o", str(raw)],
+        capture_output=True, text=True)
+    if compile_step.returncode != 0:
+        raise SystemExit(f"merged compile failed:\n{compile_step.stderr}")
+    opt = subprocess.run(
+        ["xcrun", "-sdk", "macosx", "metal-opt", "-passes=default<O3>", "-S",
+         str(raw), "-o", str(optimized)],
+        capture_output=True, text=True)
+    if opt.returncode != 0:
+        raise SystemExit(f"merged metal-opt failed:\n{opt.stderr}")
+    return optimized
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("--na", type=int, nargs="+", default=[5])
+    parser.add_argument("--merged-widths", type=int, nargs="*", default=[])
     parser.add_argument("--out", type=pathlib.Path)
     args = parser.parse_args()
 
@@ -340,6 +373,17 @@ def main() -> int:
                 arm: arm_stats(bodies[kernel], na)
                 for arm, kernel in ARMS.items() if kernel in bodies
             }
+        if args.merged_widths:
+            merged = kernel_bodies(compile_merged(workdir, args.merged_widths))
+            text = "\n".join(merged["e64_cell_merged"])
+            report["merged"] = {
+                "widths": args.merged_widths,
+                "stats": arm_stats(merged["e64_cell_merged"],
+                                   max(args.merged_widths)),
+                "phi_acc_width_by_width": {
+                    width: len(re.findall(rf"phi <{width} x float>", text))
+                    for width in args.merged_widths},
+            }
     report["checks"] = {na: verdict(report["cells"], na) for na in args.na}
 
     for na in args.na:
@@ -353,6 +397,17 @@ def main() -> int:
             print(f"           loop  {stats['loop']}")
         for check, passed in report["checks"][na].items():
             print(f"  {'PASS' if passed else 'FAIL'}  {check}")
+
+    if "merged" in report:
+        stats = report["merged"]["stats"]
+        print(f"merged widths={report['merged']['widths']}")
+        print(f"  alloca={stats['allocas']} {stats['alloca_types']}")
+        print(f"  peak_live cfg_loop={stats['peak_live_cfg_loop']} "
+              f"cfg_max={stats['peak_live_cfg_max']} "
+              f"text={stats['peak_live_text_order']}")
+        print(f"  phi acc width by width: "
+              f"{report['merged']['phi_acc_width_by_width']}")
+        print(f"  heaviest loop  {stats['loop']}")
 
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

@@ -33,7 +33,14 @@ ARMS = {
     "plain": "qmv_fast_crossrow_affine4_g64_wide_e64plain",
     "forced": "qmv_fast_crossrow_affine4_g64_wide_e64forced",
     "ballast": "qmv_fast_crossrow_affine4_g64_wide_e64ballast",
+    "rows2": "qmv_fast_crossrow_affine4_g64_wide_e64rows2",
 }
+
+# rows2 halves the rows each simdgroup owns, so it needs twice the threadgroups
+# to cover the same output. The host reads this and sizes the grid per arm; an
+# arm timed on the wrong grid computes a fraction of the output and its parity
+# check would still pass on the rows it did write.
+ARM_ROWS_PER_SIMD = {"plain": 4, "forced": 4, "ballast": 4, "rows2": 2}
 
 ENTRY = """
 [[kernel]] void e64_cell_{arm}(
@@ -48,7 +55,7 @@ ENTRY = """
     uint simd_gid [[simdgroup_index_in_threadgroup]],
     uint simd_lid [[thread_index_in_simdgroup]]) {{
   const int first_m = int(tid.x) * {na};
-  const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
+  const int out_row = int(tid.y) * {rows_per_tg} + int(simd_gid) * {rows_per_simd};
   {symbol}<bfloat16_t, {na}, true>(
       w, scales, biases, x, y, in_vec_size, out_vec_size,
       first_m, out_row, simd_lid);
@@ -96,7 +103,10 @@ def assemble(na: int, merged_widths: list[int]) -> str:
     body = ARMS_HEADER.read_text()
     parts.append(body.replace("#pragma once", ""))
     for arm, symbol in ARMS.items():
-        parts.append(ENTRY.format(arm=arm, symbol=symbol, na=na))
+        rows_per_simd = ARM_ROWS_PER_SIMD[arm]
+        parts.append(ENTRY.format(arm=arm, symbol=symbol, na=na,
+                                  rows_per_simd=rows_per_simd,
+                                  rows_per_tg=rows_per_simd * 2))
     if merged_widths:
         cases = "".join(MERGED_CASE.format(na=width) for width in merged_widths)
         parts.append(MERGED_ENTRY.format(cases=cases))

@@ -29,6 +29,16 @@ static int kArmCount = 3;
 static int kOrder[2 * kMaxArms];
 static int kLegs = 6;
 
+// Output rows one threadgroup covers. `rows2` halves the rows per simdgroup, so
+// it needs twice the threadgroups for the same output. Timing it on the default
+// grid would leave half the output unwritten, and the parity check would still
+// read zero differing on the rows it did write.
+static int kArmRowsPerTG[kMaxArms] = {8, 8, 8, 8, 8, 8, 8, 8};
+
+static int rowsPerThreadgroup(const char *arm) {
+  return strcmp(arm, "rows2") == 0 ? 4 : 8;
+}
+
 static void buildOrder(void) {
   kLegs = 2 * kArmCount;
   for (int a = 0; a < kArmCount; a++) {
@@ -134,7 +144,8 @@ static Operands makeOperands(id<MTLDevice> device, Shape shape, int na) {
 }
 
 static void encodeDispatch(id<MTLComputeCommandEncoder> enc,
-                           id<MTLComputePipelineState> pso, Operands *o) {
+                           id<MTLComputePipelineState> pso, Operands *o,
+                           int rows_per_tg) {
   [enc setComputePipelineState:pso];
   [enc setBuffer:o->w offset:0 atIndex:0];
   [enc setBuffer:o->scales offset:0 atIndex:1];
@@ -146,9 +157,9 @@ static void encodeDispatch(id<MTLComputeCommandEncoder> enc,
   // Only `merged` declares buffer 7. Binding it for every arm keeps one
   // dispatch path and cannot change an arm that does not read it.
   [enc setBuffer:o->na_vec offset:0 atIndex:7];
-  // One x-group covering NA input rows, 8 output rows per threadgroup: the
-  // single-weight-stream geometry the NA ladder measures.
-  [enc dispatchThreadgroups:MTLSizeMake(1, (NSUInteger)(o->n / 8), 1)
+  // One x-group covering NA input rows: the single-weight-stream geometry the
+  // NA ladder measures. Output rows per threadgroup vary by arm.
+  [enc dispatchThreadgroups:MTLSizeMake(1, (NSUInteger)(o->n / rows_per_tg), 1)
       threadsPerThreadgroup:MTLSizeMake(32, 2, 1)];
 }
 
@@ -158,11 +169,11 @@ typedef struct {
 } Leg;
 
 static Leg runLeg(id<MTLCommandQueue> queue, id<MTLComputePipelineState> pso,
-                  Operands *o, int inner) {
+                  Operands *o, int inner, int rows_per_tg) {
   uint64_t t0 = mach_absolute_time();
   id<MTLCommandBuffer> cb = [queue commandBuffer];
   id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
-  for (int i = 0; i < inner; i++) encodeDispatch(enc, pso, o);
+  for (int i = 0; i < inner; i++) encodeDispatch(enc, pso, o, rows_per_tg);
   [enc endEncoding];
   [cb commit];
   [cb waitUntilCompleted];
@@ -174,11 +185,11 @@ static Leg runLeg(id<MTLCommandQueue> queue, id<MTLComputePipelineState> pso,
 
 static void captureOutput(id<MTLCommandQueue> queue,
                           id<MTLComputePipelineState> pso, Operands *o,
-                          uint16_t *out) {
+                          uint16_t *out, int rows_per_tg) {
   memset(o->y.contents, 0, o->y.length);
   id<MTLCommandBuffer> cb = [queue commandBuffer];
   id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
-  encodeDispatch(enc, pso, o);
+  encodeDispatch(enc, pso, o, rows_per_tg);
   [enc endEncoding];
   [cb commit];
   [cb waitUntilCompleted];
@@ -224,6 +235,9 @@ int main(int argc, const char *argv[]) {
         }
         kArms[kArmCount++] = token;
       }
+    }
+    for (int a = 0; a < kArmCount; a++) {
+      kArmRowsPerTG[a] = rowsPerThreadgroup(kArms[a]);
     }
     buildOrder();
 
@@ -292,10 +306,10 @@ int main(int argc, const char *argv[]) {
       size_t elements = (size_t)na * shape.n;
       uint16_t *reference = malloc(elements * 2);
       uint16_t *candidate = malloc(elements * 2);
-      captureOutput(queue, pso[0], &o, reference);
+      captureOutput(queue, pso[0], &o, reference, kArmRowsPerTG[0]);
       NSMutableDictionary *parity = [NSMutableDictionary dictionary];
       for (int a = 1; a < kArmCount; a++) {
-        captureOutput(queue, pso[a], &o, candidate);
+        captureOutput(queue, pso[a], &o, candidate, kArmRowsPerTG[a]);
         size_t differing = 0;
         for (size_t i = 0; i < elements; i++) {
           if (reference[i] != candidate[i]) differing++;
@@ -312,7 +326,7 @@ int main(int argc, const char *argv[]) {
       for (int rep = -warmup_reps; rep < reps; rep++) {
         for (int position = 0; position < kLegs; position++) {
           int arm = kOrder[position];
-          Leg leg = runLeg(queue, pso[arm], &o, inner);
+          Leg leg = runLeg(queue, pso[arm], &o, inner, kArmRowsPerTG[arm]);
           if (rep < 0) continue;  // declared discarded warm-up rep
           [legs addObject:@{
             @"rep": @(rep),
