@@ -94,25 +94,46 @@ def cells_of(payload: dict, seed: str) -> tuple[dict, dict]:
     """
     by_round: dict[int, dict] = {}
     for row in payload["row_ledger"]:
+        if row["kind"] != "draft":
+            continue
         entry = by_round.setdefault(row["round"], {"drafts": {}, "accepted_count": 0})
-        if row["kind"] == "draft":
-            depth = row["draft_index"] + 1
-            entry["drafts"][depth] = bool(row["accepted"])
-            entry["accepted_count"] += bool(row["accepted"])
+        entry["drafts"][row["draft_index"] + 1] = row
+        entry["accepted_count"] += bool(row["accepted"])
 
     cells, rounds = {}, {}
     base = 0
     for index in sorted(by_round):
         entry = by_round[index]
-        rounds[(seed, index)] = {"base": base, **entry}
-        for depth, accepted in entry["drafts"].items():
-            cells[(seed, base, depth)] = accepted
+        rounds[(seed, index)] = {
+            "base": base,
+            "accepted_count": entry["accepted_count"],
+            "drafted": len(entry["drafts"]),
+        }
+        for depth, row in entry["drafts"].items():
+            # ONLY the golden-trajectory rows are comparable. Once a draft is
+            # rejected, every deeper draft in that round continues the
+            # candidate's own wrong tokens, so the harness checks it with
+            # `verify_block_replay` against a replayed reference instead of a
+            # golden row. Those rows describe a trajectory that is unique to the
+            # arm, so pairing them across arms would compare different questions.
+            if row["reference_checked_by"] != "serial_golden":
+                continue
+            cells[(seed, base, depth)] = {
+                "accepted": bool(row["accepted"]),
+                "reference_margin": row["reference_margin"],
+                "reference_token": row["reference_token"],
+            }
         base += entry["accepted_count"] + 1
     return cells, rounds
 
 
 def difficulty(seed: str, steps: int) -> dict[int, float]:
-    """Per-emitted-position top1-top2 margin, straight from the reference rows."""
+    """Per-golden-row top1-top2 margin, straight from the reference rows.
+
+    Row `j` predicts emission index `j + 1`; emission index 0 is the seed argmax
+    and carries no row (`QwenRuntimeMTPDriver.swift:43-50`). A draft at depth `d`
+    in a round based at `base` therefore lands on golden row `base + d - 1`.
+    """
     rows = json.loads((CACHE / "reference" / f"{seed}_{steps}.json").read_text())["rows"]
     out = {}
     for position, row in enumerate(rows):
@@ -121,12 +142,55 @@ def difficulty(seed: str, steps: int) -> dict[int, float]:
     return out
 
 
+def validate_pairing(cells: dict, margins: dict, steps: int) -> dict:
+    """Check the reconstructed base against the golden the runtime itself used.
+
+    Every ledger draft row carries the `reference_margin` and `reference_token`
+    the trusted driver read out of the golden. If `base + depth - 1` is the right
+    golden row, those two fields must reproduce that row exactly. This is a
+    live check on real data, so it is far stronger than the synthetic self-test.
+    """
+    goldens = {}
+    checked = mismatched = 0
+    examples = []
+    for (seed, base, depth), fact in cells.items():
+        if seed not in goldens:
+            goldens[seed] = json.loads(
+                (CACHE / "reference" / f"{seed}_{steps}.json").read_text()
+            )["rows"]
+        rows = goldens[seed]
+        index = base + depth - 1
+        checked += 1
+        if index >= len(rows):
+            mismatched += 1
+            examples.append({"seed": seed, "row": index, "why": "row index past the golden"})
+            continue
+        row = rows[index]
+        want = row["top2_logits"][0] - row["top2_logits"][1]
+        if row["sequential_argmax"] != fact["reference_token"] or abs(
+            want - fact["reference_margin"]
+        ) > 1e-6:
+            mismatched += 1
+            if len(examples) < 5:
+                examples.append(
+                    {
+                        "seed": seed,
+                        "row": index,
+                        "golden_token": row["sequential_argmax"],
+                        "ledger_token": fact["reference_token"],
+                        "golden_margin": want,
+                        "ledger_margin": fact["reference_margin"],
+                    }
+                )
+    return {"cells_checked": checked, "mismatched": mismatched, "examples": examples}
+
+
 def profile(cells: dict, keep: set) -> dict:
     per_depth = {}
     for depth in DEPTHS:
-        chosen = [v for (s, b, d), v in cells.items() if d == depth and (s, b, d) in keep]
+        chosen = [v["accepted"] for k, v in cells.items() if k[2] == depth and k in keep]
         per_depth[depth] = wilson(sum(chosen), len(chosen))
-    pooled = [v for (s, b, d), v in cells.items() if d in RULE_DEPTHS and (s, b, d) in keep]
+    pooled = [v["accepted"] for k, v in cells.items() if k[2] in RULE_DEPTHS and k in keep]
     return {"per_depth": per_depth, "pooled_3_6": wilson(sum(pooled), len(pooled))}
 
 
@@ -135,7 +199,7 @@ def work(payload: dict, rounds: dict, seeds: list[str], steps: int) -> dict:
     drafted = {s: 0 for s in seeds}
     accepted = {s: 0 for s in seeds}
     for (seed, _), r in rounds.items():
-        drafted[seed] += len(r["drafts"])
+        drafted[seed] += r["drafted"]
         accepted[seed] += r["accepted_count"]
     total_rounds = sum(per_seed_rounds.values())
     return {
@@ -153,9 +217,10 @@ def work(payload: dict, rounds: dict, seeds: list[str], steps: int) -> dict:
 def mcnemar(ref: dict, cand: dict, keep: set) -> dict:
     b01 = b10 = both = neither = 0
     for key in keep:
-        x, y = ref.get(key), cand.get(key)
-        if x is None or y is None:
+        rx, ry = ref.get(key), cand.get(key)
+        if rx is None or ry is None:
             continue
+        x, y = rx["accepted"], ry["accepted"]
         if x and y:
             both += 1
         elif x and not y:
@@ -180,12 +245,18 @@ def mcnemar(ref: dict, cand: dict, keep: set) -> dict:
 
 def selftest() -> None:
     """Check the round-base reconstruction, which the pairing depends on."""
-    def draft(r, i, a):
-        return {"round": r, "kind": "draft", "draft_index": i, "accepted": a}
+    def draft(r, i, a, checked="serial_golden"):
+        return {
+            "round": r, "kind": "draft", "draft_index": i, "accepted": a,
+            "reference_checked_by": checked, "reference_margin": 0.0, "reference_token": 0,
+        }
 
+    # Round 1 drafts twice, is rejected at depth 1, and so has its depth-2 row
+    # checked by replay instead of the golden. That row must not become a cell.
     ledger = [
         draft(0, 0, True), draft(0, 1, True), draft(0, 2, False), {"round": 0, "kind": "targetTail"},
-        draft(1, 0, False), {"round": 1, "kind": "targetTail"},
+        draft(1, 0, False), draft(1, 1, False, "verify_block_replay"),
+        {"round": 1, "kind": "targetTail"},
         draft(2, 0, True), draft(2, 1, True), draft(2, 2, True), draft(2, 3, True),
         {"round": 2, "kind": "targetTail"},
     ]
@@ -197,7 +268,9 @@ def selftest() -> None:
         ("s", 0, 1), ("s", 0, 2), ("s", 0, 3), ("s", 3, 1),
         ("s", 4, 1), ("s", 4, 2), ("s", 4, 3), ("s", 4, 4),
     ]
-    assert [cells[k] for k in sorted(cells)] == [True, True, False, False, True, True, True, True]
+    assert [cells[k]["accepted"] for k in sorted(cells)] == [
+        True, True, False, False, True, True, True, True
+    ]
     print("selftest: round-base reconstruction and cell keys OK")
 
 
@@ -241,14 +314,21 @@ def main() -> None:
             cells[arm].update(c)
             rounds[arm].update(r)
 
+    # The reconstructed base is what every paired comparison rests on, so check
+    # it against the golden the trusted driver itself read, for every arm.
+    pairing = {a: validate_pairing(cells[a], margins, args.steps) for a in cells}
+    bad = {a: v for a, v in pairing.items() if v["mismatched"]}
+    if bad:
+        raise SystemExit(f"round-base reconstruction disagrees with the golden: {bad}")
+
     # Tercile cuts come from the reference rows over every predicted position,
     # so they describe the corpus and not any arm's round population.
-    pool = sorted(m for s in seeds for p, m in margins[s].items() if 1 <= p <= args.steps)
+    pool = sorted(m for s in seeds for m in margins[s].values())
     lo_cut, hi_cut = pool[len(pool) // 3], pool[2 * len(pool) // 3]
 
     def cell_margin(key):
         seed, base, depth = key
-        return margins[seed].get(base + depth)
+        return margins[seed].get(base + depth - 1)
 
     every = set().union(*(set(c) for c in cells.values()))
     splits = {
@@ -270,24 +350,17 @@ def main() -> None:
             # of each tercile says how much of the split is genre and how much is
             # position-level difficulty.
             "tercile_seed_mix": {
-                name: dict(
-                    Counter(
-                        s
-                        for s in seeds
-                        for p, m in margins[s].items()
-                        if 1 <= p <= args.steps and pick(m)
-                    )
-                )
+                name: dict(Counter(s for s in seeds for m in margins[s].values() if pick(m)))
                 for name, pick in (
                     ("hardest", lambda m: m <= lo_cut),
                     ("easiest", lambda m: m >= hi_cut),
                 )
             },
             "per_seed_median_margin": {
-                s: statistics.median([m for p, m in margins[s].items() if 1 <= p <= args.steps])
-                for s in seeds
+                s: statistics.median(list(margins[s].values())) for s in seeds
             },
         },
+        "pairing_validation": pairing,
         "arms": {},
     }
 

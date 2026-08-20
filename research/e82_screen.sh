@@ -128,7 +128,11 @@ reference)
 verify)
   mkdir -p "${out}/verify"
   IFS=, read -r -a arm_list <<<"${arms}"
-  # Arm-major order, so a partial run is still a complete prefix of the design.
+  # A leg can abort on a contract violation the arm did not cause -- a near-tie
+  # seed argmax makes the block-session prefill disagree with the reference
+  # prefill, for instance. Record such a leg and keep going: losing the other 65
+  # legs of a 2-hour sweep to one bad seed destroys more evidence than it saves.
+  declare -a failed=()
   for arm in "${arm_list[@]}"; do
     head_dir="$(arm_head "${arm}")" || exit 2
     mkdir -p "${out}/verify/${arm}"
@@ -139,18 +143,34 @@ verify)
       if [[ -s "${dest}" ]]; then echo "=== skip ${arm}/${name} ==="; continue; fi
       echo "=== verify ${arm} / ${name} (depth ${depth}, ${steps} tokens) ==="
       start=$(date +%s)
-      ${cli} mtp-verify \
+      log="${out}/verify/${arm}/${name}.leg.log"
+      if ${cli} mtp-verify \
         --golden "${golden}" \
         --mtp-head "${head_dir}" \
         --mtp-depth "${depth}" \
         --tokens "${steps}" \
-        --output "${dest}" >/dev/null \
-        || { echo "e82-screen: ${arm}/${name} FAILED" >&2; exit 1; }
-      jq -r '"e82-screen: parity=\(.parity_all_ok) rounds=\(.round_count)"
-             + " accept=\(.accepted_draft_rate) head=\(.head_provenance.sha256[0:12])"' "${dest}"
+        --output "${dest}" >"${log}" 2>&1
+      then
+        rm -f "${log}" "${out}/verify/${arm}/${name}.failed.log"
+        jq -r '"e82-screen: parity=\(.parity_all_ok) matched=\(.all_tokens_matched)"
+               + " rounds=\(.round_count) accept=\(.accepted_draft_rate)"
+               + " meandraft=\(.effective_mean_draft_len) rows=\(.reference_checked_row_total)"
+               + " head=\(.head_provenance.sha256[0:12])"' "${dest}"
+      else
+        mv "${log}" "${out}/verify/${arm}/${name}.failed.log"
+        rm -f "${dest}"
+        failed+=("${arm}/${name}")
+        echo "e82-screen: ${arm}/${name} FAILED:" >&2
+        tail -2 "${out}/verify/${arm}/${name}.failed.log" >&2
+      fi
       echo "e82-screen: ${arm}/${name} in $(( $(date +%s) - start ))s"
     done
   done
+  printf '%s\n' "${failed[@]:-}" | jq -Rn '[inputs | select(length > 0)]' \
+    >"${out}/verify/failures.json"
+  if ((${#failed[@]})); then
+    echo "e82-screen: ${#failed[@]} leg(s) failed: ${failed[*]}" >&2
+  fi
   ;;
 *)
   echo "usage: research/e82_screen.sh {plans|reference|verify} [flags]" >&2
