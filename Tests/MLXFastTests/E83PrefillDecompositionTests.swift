@@ -119,19 +119,23 @@ struct E83PrefillDecompositionTests {
         // Rung 1 positive control. A deliberate host stall in exactly one phase
         // must appear in that phase and nowhere else. The delivered stall is
         // calibrated first, because `usleep` overshoots its argument here.
-        blocks.append(e83Emit(e83CalibrateStall(millis: stallMillis, samples: 24)))
-        for phase in ["p1_cache_alloc", "p4_tail_norm_lmhead"] {
-            for _ in 0..<2 {
-                var block = harness.begin(
-                    arm: .baseline, phased: true,
-                    stallPhase: phase, stallMillis: stallMillis)
-                block["order"] = blocks.count
-                blocks.append(e83Emit(block))
+        // `reps == 0` selects a run that skips rung 1 entirely, so a focused
+        // later-rung session does not pay for the control or the census.
+        if reps > 0 {
+            blocks.append(e83Emit(e83CalibrateStall(millis: stallMillis, samples: 24)))
+            for phase in ["p1_cache_alloc", "p4_tail_norm_lmhead"] {
+                for _ in 0..<2 {
+                    var block = harness.begin(
+                        arm: .baseline, phased: true,
+                        stallPhase: phase, stallMillis: stallMillis)
+                    block["order"] = blocks.count
+                    blocks.append(e83Emit(block))
+                }
             }
-        }
 
-        // Rung 1 boundary census. Untimed: the swizzle perturbs the clock.
-        blocks.append(e83Emit(harness.censusBoundaries()))
+            // Rung 1 boundary census. Untimed: the swizzle perturbs the clock.
+            blocks.append(e83Emit(harness.censusBoundaries()))
+        }
 
         // Rung 2 -- in-situ family tax at M = 512, ABBA within each arm.
         for name in armNames {
@@ -169,6 +173,75 @@ struct E83PrefillDecompositionTests {
             }
         }
 
+        // Rung 3 -- prefill-width fusion gates G1, G2 and G1+G2.
+        //
+        // Both bounds already fuse every decode and verify width, because the
+        // verify ladder stops at `maxDepth + 1 == 9`. Raising a bound therefore
+        // changes the 512-row seed prefill and nothing else, which is why this
+        // reads as a clean single-cause comparison against `gate_baseline`.
+        //
+        // Counterbalanced: the arm order reverses on odd reps, so monotone
+        // thermal drift cannot load onto whichever arm happens to run first.
+        //
+        // `first_primary` and `top2_values` travel with every block. They are
+        // exact top-two float evidence at the seed boundary, so a fusion that
+        // perturbs the numerics is visible here before a 512-token run is spent
+        // on it.
+        let gateReps = Int(env["MLXFAST_E83_GATE_REPS"] ?? "") ?? 6
+        let gateArmsAll: [(name: String, inProj: Int, gateUp: Int)] = [
+            ("gate_baseline", 9, 16),
+            ("gate_g1", seedLength, 16),
+            ("gate_g2", 9, seedLength),
+            ("gate_g1g2", seedLength, seedLength),
+        ]
+        let gateSelection = env["MLXFAST_E83_GATES"]
+        let gateArms: [(name: String, inProj: Int, gateUp: Int)]
+        if gateSelection == "none" {
+            gateArms = []
+        } else if let picked = gateSelection?
+            .split(separator: ",")
+            .map({ $0.trimmingCharacters(in: .whitespaces) }), !picked.isEmpty
+        {
+            gateArms = gateArmsAll.filter { picked.contains($0.name) }
+        } else {
+            gateArms = gateArmsAll
+        }
+
+        if !gateArms.isEmpty {
+            // The de-risk assertion the assignment requires, made explicit.
+            // `warmLikeTheSession` runs widths 1...9, which are under both
+            // shipped bounds, so every fused pack is already resident. No arm
+            // can pay a first-use allocation inside a timed region.
+            let packsAfterWarm = qwen35FusedPackBuildCount
+            #expect(
+                packsAfterWarm > 0,
+                "warm must build the fused packs before any gate arm is timed")
+
+            for rep in 0 ..< gateReps {
+                let order = rep % 2 == 0 ? gateArms : Array(gateArms.reversed())
+                for gate in order {
+                    qwen35FusedInProjMaxRows = gate.inProj
+                    qwen35FusedGateUpMaxRows = gate.gateUp
+                    var block = harness.begin(arm: .baseline, phased: false)
+                    block["kind"] = "gate_arm"
+                    block["gate_arm"] = gate.name
+                    block["fused_in_proj_max_rows"] = gate.inProj
+                    block["fused_gate_up_max_rows"] = gate.gateUp
+                    block["pack_builds_before"] = packsAfterWarm
+                    block["pack_builds_after"] = qwen35FusedPackBuildCount
+                    block["rep"] = rep
+                    block["order"] = blocks.count
+                    blocks.append(e83Emit(block))
+                }
+            }
+
+            qwen35FusedInProjMaxRows = 9
+            qwen35FusedGateUpMaxRows = 16
+            #expect(
+                qwen35FusedPackBuildCount == packsAfterWarm,
+                "a gate arm built a fused pack inside a timed region")
+        }
+
         // Rung 2 -- isolated roofline at the exact prefill shapes.
         if measureIsolated {
             for cell in e83IsolatedShapes(seed: seedLength) {
@@ -200,6 +273,9 @@ struct E83PrefillDecompositionTests {
                 "arms": armNames,
                 "stall_millis": stallMillis,
                 "ladder_reps": ladderReps,
+                "gate_reps": gateReps,
+                "gate_arms": gateArms.map(\.name),
+                "fused_pack_builds_total": qwen35FusedPackBuildCount,
                 "model_load_seconds": loadSeconds,
                 "num_hidden_layers": config.numHiddenLayers,
                 "hidden_size": config.hiddenSize,
