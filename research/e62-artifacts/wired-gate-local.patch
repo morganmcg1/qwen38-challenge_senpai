@@ -1,0 +1,33 @@
+diff --git a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+index 328399d..d589ea7 100644
+--- a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
++++ b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+@@ -222,7 +222,7 @@ public final class Qwen36MTPBlockSession {
+     private static func wireResidentWeightsIfEnabled() {
+         let environment = ProcessInfo.processInfo.environment
+         guard environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0" else { return }
+-        guard ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
++        guard ProcessInfo.processInfo.physicalMemory >= (UInt64(32) << 30)
+         else { return }
+ 
+         wiredTicketLock.lock()
+@@ -273,6 +273,19 @@ public final class Qwen36MTPBlockSession {
+         line += " slack_mb=\(max(0, slackMB)) fraction=\(fraction)"
+         line += " maxrec=\(recommended)\n"
+         FileHandle.standardError.write(Data(line.utf8))
++        // E62 rung 1b research instrument, throwaway branch only: the timed
++        // parent swallows worker stderr, so the outcome needs a file sink to be
++        // observable at all.
++        if let sink = environment["MLX_E62_WIRED_OUT"], !sink.isEmpty {
++            if let handle = FileHandle(forWritingAtPath: sink) {
++                handle.seekToEndOfFile()
++                handle.write(Data(line.utf8))
++                try? handle.close()
++            } else {
++                try? line.write(
++                    toFile: sink, atomically: true, encoding: .utf8)
++            }
++        }
+     }
+ 
+     /// Input-independent shape warm, run OUTSIDE every scored window.

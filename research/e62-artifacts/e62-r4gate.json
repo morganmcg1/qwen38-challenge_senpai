@@ -1,0 +1,21 @@
+{
+  "leg": "e62-r4gate-01-cachegate",
+  "arm": "cachegate",
+  "tokens": 512,
+  "traced_diagnostic_not_timed": true,
+  "rounds": 76,
+  "cache_limit_mb": 6144,
+  "peak_cache_mb": 3362,
+  "peak_cache_gib": 3.283,
+  "peak_active_mb": 25179,
+  "headroom_mb": 2782,
+  "headroom_pct_of_cap": 45.3,
+  "growth_mib_per_round_body": 2.04,
+  "rounds_to_reach_cap": 1395,
+  "windows_to_reach_cap": 18.4,
+  "preregistered_kill_threshold_gib": 3.0,
+  "preregistered_kill_fired": false,
+  "preregistered_kill_miss_mib": 290,
+  "cap_binds_in_ranked_window": false,
+  "verdict": "rung 4 closed: the trusted 6 GiB cache cap never binds in the ranked window"
+}

@@ -1,0 +1,35 @@
+diff --git a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+index 328399d..00f45bf 100644
+--- a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
++++ b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+@@ -578,6 +578,9 @@ public final class Qwen36MTPBlockSession {
+     /// stderr to the wrapper's log.
+     private static let traceRounds =
+         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
++    // E62 rung 4 gate, throwaway branch only.
++    nonisolated(unsafe) private static var e62PeakCacheBytes = 0
++    nonisolated(unsafe) private static var e62PeakActiveBytes = 0
+     /// Attribution probe only. `verify_build_us` measures the window in which
+     /// the host builds the verify graph WHILE the asynchronously submitted head
+     /// chain runs on the GPU, so a head-chain stall is indistinguishable from
+@@ -1275,8 +1278,20 @@ public final class Qwen36MTPBlockSession {
+             // in principle be overlapping, so the tail segments are the budget
+             // for any further pipelining work.
+             let tTailDone = DispatchTime.now().uptimeNanoseconds
++            // E62 rung 4 gate, throwaway branch only. The trusted phase start
++            // sets Memory.cacheLimit = 6 GiB and clears the cache; this samples
++            // how close the charged window actually comes to that cap.
++            let cacheBytes = Memory.cacheMemory
++            let activeBytes = Memory.activeMemory
++            Self.e62PeakCacheBytes = max(Self.e62PeakCacheBytes, cacheBytes)
++            Self.e62PeakActiveBytes = max(Self.e62PeakActiveBytes, activeBytes)
+             let line = "mtp-trace: round=\(roundCount) d=\(draftCount) "
+                 + "acc=\(acceptedCount) "
++                + "cache_mb=\(cacheBytes >> 20) "
++                + "active_mb=\(activeBytes >> 20) "
++                + "cache_limit_mb=\(Memory.cacheLimit >> 20) "
++                + "peak_cache_mb=\(Self.e62PeakCacheBytes >> 20) "
++                + "peak_active_mb=\(Self.e62PeakActiveBytes >> 20) "
+                 + "draft_build_us=\((tDraftBuilt - tRound0) / 1000) "
+                 + "verify_build_us=\((tVerifyBuilt - tDraftBuilt) / 1000) "
+                 + "eval_wall_us=\((tEvalDone - tVerifyBuilt) / 1000) "

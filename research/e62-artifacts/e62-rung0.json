@@ -1,0 +1,219 @@
+{
+ "base_sha": "73f724d0a32c9ea0ec3ad48fa9c3261c27cd411e",
+ "checks": [
+  {
+   "row": "worker startup calls resolve",
+   "advisor_claim": "applyQwenMTPStartupMemoryProfile() at QwenRuntimeMTPWorker.swift:491",
+   "observed": [
+    491
+   ],
+   "expected": [
+    491
+   ],
+   "verdict": "confirmed",
+   "note": "called unconditionally at [136]"
+  },
+  {
+   "row": "96 GiB gate in installQwenMTPFullProfileCommandBufferDefaults",
+   "advisor_claim": "RuntimeStartupMemoryPolicy.swift:66 returns on a sub-96 GiB host",
+   "observed": [
+    66
+   ],
+   "expected": [
+    66
+   ],
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "editable setenv of the ranked command-buffer geometry",
+   "advisor_claim": "setenv MLX_MAX_MB_PER_BUFFER=512 / MLX_MAX_OPS_PER_BUFFER=50, overwrite=1, at :75-76",
+   "observed": [
+    [
+     75,
+     "setenv(\"MLX_MAX_MB_PER_BUFFER\", \"512\", 1)"
+    ],
+    [
+     76,
+     "setenv(\"MLX_MAX_OPS_PER_BUFFER\", \"50\", 1)"
+    ]
+   ],
+   "expected": [
+    [
+     75,
+     "setenv(\"MLX_MAX_MB_PER_BUFFER\", \"512\", 1)"
+    ],
+    [
+     76,
+     "setenv(\"MLX_MAX_OPS_PER_BUFFER\", \"50\", 1)"
+    ]
+   ],
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "isLowMemory guard in the MTP worker",
+   "advisor_claim": "guard policy.isLowMemory else { return } at QwenRuntimeMTPWorker.swift:498",
+   "observed": [
+    498
+   ],
+   "expected": [
+    498
+   ],
+   "verdict": "confirmed",
+   "note": "on the ranked 128 GiB host resolve() returns isLowMemory=false, so this returns; on this 48 GiB host it returns ONLY under DARKBLOOM_STARTUP_MEMORY_PROFILE=full. Under the default auto profile 48 GiB < 64 GiB makes isLowMemory true, the guard PASSES, and the following setenv pair overwrites any parent export with 128/64."
+  },
+  {
+   "row": "Qwen35RuntimeWeightCache is never constructed on the MTP worker path",
+   "advisor_claim": "never constructed on this path",
+   "observed": [],
+   "expected": [],
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "wired residency 96 GiB gate",
+   "advisor_claim": "Qwen36MTPBlockSession.swift:226 returns on a sub-96 GiB host",
+   "observed": [
+    225
+   ],
+   "expected": [
+    225
+   ],
+   "verdict": "confirmed",
+   "note": "the predicate is on :225 and its `else { return }` continuation is on :226, so the advisor's :226 names the return, not the predicate"
+  },
+  {
+   "row": "wired residency is reached from warmAllDepths",
+   "advisor_claim": "called from warmAllDepths at :287",
+   "observed": [
+    287
+   ],
+   "expected": [
+    287
+   ],
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "wiredZHDefaultFraction / wiredZHDefaultSlackMB",
+   "advisor_claim": "1.0 and 64 at :213-214",
+   "observed": [
+    [
+     213,
+     "private static let wiredZHDefaultFraction = 1.0"
+    ],
+    [
+     214,
+     "private static let wiredZHDefaultSlackMB = 64"
+    ]
+   ],
+   "expected": [
+    [
+     213,
+     "private static let wiredZHDefaultFraction = 1.0"
+    ],
+    [
+     214,
+     "private static let wiredZHDefaultSlackMB = 64"
+    ]
+   ],
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "trusted phase-start allocator reset",
+   "advisor_claim": "QwenRuntimeWorker.swift:176-192 sets cacheLimit 6 GiB, clears, asserts zero",
+   "observed": {
+    "definition": [
+     176
+    ],
+    "cache_limit_constant": [
+     "static let trustedRuntimeWorkerPhaseStartCacheLimitBytes = 6 << 30"
+    ],
+    "clear_inside_the_reset": [
+     178
+    ],
+    "assert": [
+     187
+    ]
+   },
+   "expected": {
+    "definition": [
+     176
+    ],
+    "cache_limit_constant": [
+     "static let trustedRuntimeWorkerPhaseStartCacheLimitBytes = 6 << 30"
+    ],
+    "clear_inside_the_reset": [
+     178
+    ],
+    "assert": [
+     187
+    ]
+   },
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "cacheLimitBytes = 32 << 30 is dead on the MTP path",
+   "advisor_claim": "apply() is never called on this path",
+   "observed": [
+    "Sources/MLXFastModel/LagunaRuntimeWeights.swift:368:",
+    "policy.apply()"
+   ],
+   "expected": [
+    "Sources/MLXFastModel/LagunaRuntimeWeights.swift:368:",
+    "policy.apply()"
+   ],
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "clearAllocatorCacheAfterWarmup is dead on the MTP path",
+   "advisor_claim": "read only in LagunaRuntimeWeights.swift:395 and the two DFlash workers",
+   "observed": [
+    "Sources/MLXFastHarness/QwenRuntimeDFlashWorker.swift",
+    "Sources/MLXFastModel/LagunaRuntimeWeights.swift",
+    "Sources/MLXFastTrustedHarness/QwenRuntimeDFlashWorker.swift"
+   ],
+   "expected": [
+    "Sources/MLXFastHarness/QwenRuntimeDFlashWorker.swift",
+    "Sources/MLXFastModel/LagunaRuntimeWeights.swift",
+    "Sources/MLXFastTrustedHarness/QwenRuntimeDFlashWorker.swift"
+   ],
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "trusted code invites an in-window cache-limit change",
+   "advisor_claim": "QwenRuntimeWorker.swift:168-173 says editable code may change it",
+   "observed": [
+    169
+   ],
+   "expected": [
+    169
+   ],
+   "verdict": "confirmed",
+   "note": ""
+  },
+  {
+   "row": "submission surface of the two knob sites",
+   "advisor_claim": "RuntimeStartupMemoryPolicy.swift and Qwen36MTPBlockSession.swift are submitted; QwenRuntimeWorker.swift and QwenRuntimeMTPWorker.swift are trusted",
+   "observed": {
+    "Sources/MLXFastModel": true,
+    "Sources/MLXFastHarness": false,
+    "Sources/MLXFastTrustedHarness": false
+   },
+   "expected": {
+    "Sources/MLXFastModel": true,
+    "Sources/MLXFastHarness": false,
+    "Sources/MLXFastTrustedHarness": false
+   },
+   "verdict": "confirmed",
+   "note": ""
+  }
+ ],
+ "confirmed": 13,
+ "corrections": 0
+}
