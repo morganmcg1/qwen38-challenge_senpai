@@ -1,0 +1,162 @@
+{
+  "tag": "e82-qat-q4",
+  "source": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/xkm-retrained/parents/parent-a-qat-4bit-aware.safetensors",
+  "out": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/built/e82-qat-q4/model.safetensors",
+  "file_sha256": "dbfb207cbe57e4267363a0caa3f4056eed1a23957bbe09f6b073aef122113384",
+  "tree_sha256": "4bbb9132dcd68d17c685f8e38d9b33d4940c1b9d9b8b26abd2378e97c8aa1af5",
+  "tree_bytes": 427742640,
+  "metadata": {
+    "format": "e82-qat-q4-plus-declared-affine2-readout-v1",
+    "trunk_source": "qat:parent-a-qat-4bit-aware.safetensors",
+    "trunk_source_sha256": "6c9b30a34a2cc0e7919fcc53e866ed1b36b60d3a4f6448844396441ad63f404f",
+    "trunk_quantization": "mlx affine, bits=4, group_size=64",
+    "draft_lm_head": "byte-copied from amal-david/qwen38-mtp-head-q2-q4-rerank-v1",
+    "selection": "largest per-output-row fp32 reconstruction SSE; Q=1024,K=all,V=all",
+    "built_by": "senpai E82"
+  },
+  "quantization_damage": {
+    "fc.weight": {
+      "rel_l2": 0.028938873129469078,
+      "cosine": 0.999573290348053,
+      "max_abs_diff": 0.037109375,
+      "pinned_head_rel_l2": 0.09331068372217838,
+      "pinned_head_cosine": 0.9955865144729614,
+      "finetune_rel_l2_vs_master": 0.0956132079468196
+    },
+    "layers.0.self_attn.q_proj.weight": {
+      "rel_l2": 0.0345236585715461,
+      "cosine": 0.9993997812271118,
+      "max_abs_diff": 0.025390625,
+      "pinned_head_rel_l2": 0.09299628616158497,
+      "pinned_head_cosine": 0.9956130385398865,
+      "finetune_rel_l2_vs_master": 0.09396040151328969
+    },
+    "layers.0.self_attn.k_proj.weight": {
+      "rel_l2": 0.03524234124140546,
+      "cosine": 0.9993956089019775,
+      "max_abs_diff": 0.01123046875,
+      "pinned_head_rel_l2": 0.0988426655192829,
+      "pinned_head_cosine": 0.9951282739639282,
+      "finetune_rel_l2_vs_master": 0.09950389102839817
+    },
+    "layers.0.self_attn.v_proj.weight": {
+      "rel_l2": 0.03448434815685238,
+      "cosine": 0.9994180202484131,
+      "max_abs_diff": 0.0146484375,
+      "pinned_head_rel_l2": 0.09435634895953054,
+      "pinned_head_cosine": 0.995559811592102,
+      "finetune_rel_l2_vs_master": 0.09435918453620079
+    },
+    "layers.0.self_attn.o_proj.weight": {
+      "rel_l2": 0.034878150292435656,
+      "cosine": 0.9994001984596252,
+      "max_abs_diff": 0.07421875,
+      "pinned_head_rel_l2": 0.09969687469924292,
+      "pinned_head_cosine": 0.9950031638145447,
+      "finetune_rel_l2_vs_master": 0.09983254430497915
+    },
+    "layers.0.mlp.gate_proj.weight": {
+      "rel_l2": 0.03454608361220655,
+      "cosine": 0.9993906617164612,
+      "max_abs_diff": 0.01416015625,
+      "pinned_head_rel_l2": 0.09178499329061525,
+      "pinned_head_cosine": 0.9956853985786438,
+      "finetune_rel_l2_vs_master": 0.09337385433894728
+    },
+    "layers.0.mlp.up_proj.weight": {
+      "rel_l2": 0.034429822092172775,
+      "cosine": 0.9993937611579895,
+      "max_abs_diff": 0.01123046875,
+      "pinned_head_rel_l2": 0.09174864065173105,
+      "pinned_head_cosine": 0.9956892132759094,
+      "finetune_rel_l2_vs_master": 0.0927781757664228
+    },
+    "layers.0.mlp.down_proj.weight": {
+      "rel_l2": 0.03513588263178121,
+      "cosine": 0.99936443567276,
+      "max_abs_diff": 0.052734375,
+      "pinned_head_rel_l2": 0.09810177309309305,
+      "pinned_head_cosine": 0.9950771927833557,
+      "finetune_rel_l2_vs_master": 0.09936020636321621
+    }
+  },
+  "islands": {
+    "q": {
+      "rows": 1024,
+      "selected_sse_share": 0.3078802525997162,
+      "sse_total": 18.903499603271484
+    },
+    "k": {
+      "rows": 1024,
+      "selected_sse_share": 1.0,
+      "sse_total": 1.6874525547027588
+    },
+    "v": {
+      "rows": 1024,
+      "selected_sse_share": 1.0,
+      "sse_total": 5.556323528289795
+    }
+  },
+  "constraints": {
+    "draft_lm_head_byte_identical": {
+      "draft_lm_head.weight": true,
+      "draft_lm_head.scales": true,
+      "draft_lm_head.biases": true
+    },
+    "norms_byte_identical_to_source": {
+      "layers.0.input_layernorm.weight": true,
+      "layers.0.post_attention_layernorm.weight": true,
+      "layers.0.self_attn.k_norm.weight": true,
+      "layers.0.self_attn.q_norm.weight": true,
+      "norm.weight": true,
+      "pre_fc_norm_embedding.weight": true,
+      "pre_fc_norm_hidden.weight": true
+    },
+    "bytes": 427742640,
+    "reference_bytes": 427742600,
+    "tensor_count": 40,
+    "shapes_match_reference": {
+      "draft_lm_head.weight": true,
+      "fc.weight": true,
+      "layers.0.mlp.down_proj.weight": true,
+      "layers.0.mlp.gate_proj.weight": true,
+      "layers.0.mlp.up_proj.weight": true,
+      "layers.0.self_attn.k_proj.weight": true,
+      "layers.0.self_attn.o_proj.weight": true,
+      "layers.0.self_attn.q_proj.weight": true,
+      "layers.0.self_attn.v_proj.weight": true,
+      "precision_islands.k.indices": true,
+      "precision_islands.q.indices": true,
+      "precision_islands.v.indices": true,
+      "draft_lm_head.biases": true,
+      "draft_lm_head.scales": true,
+      "fc.biases": true,
+      "fc.scales": true,
+      "layers.0.input_layernorm.weight": true,
+      "layers.0.mlp.down_proj.biases": true,
+      "layers.0.mlp.down_proj.scales": true,
+      "layers.0.mlp.gate_proj.biases": true,
+      "layers.0.mlp.gate_proj.scales": true,
+      "layers.0.mlp.up_proj.biases": true,
+      "layers.0.mlp.up_proj.scales": true,
+      "layers.0.post_attention_layernorm.weight": true,
+      "layers.0.self_attn.k_norm.weight": true,
+      "layers.0.self_attn.k_proj.biases": true,
+      "layers.0.self_attn.k_proj.scales": true,
+      "layers.0.self_attn.o_proj.biases": true,
+      "layers.0.self_attn.o_proj.scales": true,
+      "layers.0.self_attn.q_norm.weight": true,
+      "layers.0.self_attn.q_proj.biases": true,
+      "layers.0.self_attn.q_proj.scales": true,
+      "layers.0.self_attn.v_proj.biases": true,
+      "layers.0.self_attn.v_proj.scales": true,
+      "norm.weight": true,
+      "pre_fc_norm_embedding.weight": true,
+      "pre_fc_norm_hidden.weight": true,
+      "precision_islands.k.weight": true,
+      "precision_islands.q.weight": true,
+      "precision_islands.v.weight": true
+    },
+    "bytes_delta_pct": 9.351418353000145e-06
+  }
+}

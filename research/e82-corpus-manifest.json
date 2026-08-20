@@ -1,0 +1,114 @@
+{
+  "seed_tokens": 512,
+  "tokenizer_sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+  "seeds": [
+    {
+      "name": "mobydick-0",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-mobydick-0.txt",
+      "chars": 2179,
+      "tokens": 512,
+      "sha256": "3c03f838422bb134fe9fa6766a984698cf85b84d97cc2c1e27354aa27873d87d"
+    },
+    {
+      "name": "mobydick-1",
+      "domain": "narrative",
+      "gutenberg_id": 2701,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-mobydick-1.txt",
+      "chars": 2168,
+      "tokens": 512,
+      "sha256": "bb776433fa5cf48dc71154aeb6be6381639c892a21b166ae92259353c509fe56"
+    },
+    {
+      "name": "frankenstein-0",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-frankenstein-0.txt",
+      "chars": 2498,
+      "tokens": 512,
+      "sha256": "98c9bdcf6dbb92381e19f069ffde033b61c2e450ad95b6860de5388510e4b600"
+    },
+    {
+      "name": "frankenstein-1",
+      "domain": "narrative",
+      "gutenberg_id": 84,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-frankenstein-1.txt",
+      "chars": 2504,
+      "tokens": 512,
+      "sha256": "c0ccd061a5f6870578b1153adefaf8053f26b1651fd51ac490972e688185848f"
+    },
+    {
+      "name": "pride-0",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-pride-0.txt",
+      "chars": 2186,
+      "tokens": 512,
+      "sha256": "bc6cb81ed06796edea0c747f2c647bdc2f1677bc56834be54b399d28e587056b"
+    },
+    {
+      "name": "pride-1",
+      "domain": "narrative",
+      "gutenberg_id": 1342,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-pride-1.txt",
+      "chars": 2341,
+      "tokens": 512,
+      "sha256": "767e6e5407b2f8b445dad132c5b9575725a953216438ae0c2cfc9b470625f3d9"
+    },
+    {
+      "name": "wealthofnations-0",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-wealthofnations-0.txt",
+      "chars": 2565,
+      "tokens": 512,
+      "sha256": "a27ff411957b3efcbb85b21f2012d903e069b9f7f29fb7d4d3ea0e0c8896e51c"
+    },
+    {
+      "name": "wealthofnations-1",
+      "domain": "expository",
+      "gutenberg_id": 3300,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-wealthofnations-1.txt",
+      "chars": 2353,
+      "tokens": 512,
+      "sha256": "be1dfcfabf056b2c5556c30c65e99c1d64fb26cad0daabb97ef73691c226b508"
+    },
+    {
+      "name": "problemsofphilosophy-0",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-problemsofphilosophy-0.txt",
+      "chars": 2424,
+      "tokens": 512,
+      "sha256": "ac5aa0cd8f38a1b584b77efb476ff74d66ec2a6056d6f525d8026892719533d5"
+    },
+    {
+      "name": "problemsofphilosophy-1",
+      "domain": "expository",
+      "gutenberg_id": 5827,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-problemsofphilosophy-1.txt",
+      "chars": 2387,
+      "tokens": 512,
+      "sha256": "8e206f2b06a96f6540d6c92f95a633fcd50dee4a59e68e2f64697dd4c512297c"
+    },
+    {
+      "name": "candle-0",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-candle-0.txt",
+      "chars": 2220,
+      "tokens": 512,
+      "sha256": "fe8c375d90139bb702c68c64f8e275f37dbbeb39a5d5f1011d54a1228ed62aab"
+    },
+    {
+      "name": "candle-1",
+      "domain": "expository",
+      "gutenberg_id": 14474,
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/corpus/seeds/e82-candle-1.txt",
+      "chars": 2305,
+      "tokens": 512,
+      "sha256": "255aa786fe64160ca92068323ada727ddd22f14c5852045af489c7c42baadc47"
+    }
+  ]
+}

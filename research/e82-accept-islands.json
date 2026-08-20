@@ -1,0 +1,2155 @@
+{
+  "seeds": [
+    "candle-0",
+    "candle-1",
+    "mobydick-0",
+    "mobydick-1",
+    "problemsofphilosophy-0",
+    "problemsofphilosophy-1",
+    "wealthofnations-1"
+  ],
+  "steps": 512,
+  "reference_arm": "declared",
+  "rule_depths": [
+    3,
+    4,
+    5,
+    6
+  ],
+  "difficulty": {
+    "signal": "reference top1-top2 logit margin at the predicted emitted position",
+    "tercile_cuts": {
+      "hardest_max": 3.875,
+      "easiest_min": 7.9375
+    },
+    "positions": 3591,
+    "tercile_seed_mix": {
+      "hardest": {
+        "candle-0": 197,
+        "candle-1": 138,
+        "mobydick-0": 381,
+        "mobydick-1": 156,
+        "problemsofphilosophy-0": 108,
+        "problemsofphilosophy-1": 117,
+        "wealthofnations-1": 111
+      },
+      "easiest": {
+        "candle-0": 199,
+        "candle-1": 220,
+        "mobydick-0": 32,
+        "mobydick-1": 226,
+        "problemsofphilosophy-0": 25,
+        "problemsofphilosophy-1": 227,
+        "wealthofnations-1": 284
+      }
+    },
+    "per_seed_median_margin": {
+      "candle-0": 7.125,
+      "candle-1": 7.5,
+      "mobydick-0": 1.75,
+      "mobydick-1": 7.5,
+      "problemsofphilosophy-0": 6.5,
+      "problemsofphilosophy-1": 7.5,
+      "wealthofnations-1": 8.3125
+    },
+    "tied_positions": 39,
+    "tied_position_fraction": 0.01086048454469507,
+    "near_tie_fraction_under_0p5": 0.08159287106655527
+  },
+  "pairing_validation": {
+    "declared": {
+      "cells_checked": 3110,
+      "mismatched": 0,
+      "examples": []
+    },
+    "best": {
+      "cells_checked": 3109,
+      "mismatched": 0,
+      "examples": []
+    },
+    "noislands": {
+      "cells_checked": 3107,
+      "mismatched": 0,
+      "examples": []
+    },
+    "qonly": {
+      "cells_checked": 3108,
+      "mismatched": 0,
+      "examples": []
+    },
+    "qat-q4": {
+      "cells_checked": 3109,
+      "mismatched": 0,
+      "examples": []
+    },
+    "master-bf16": {
+      "cells_checked": 3107,
+      "mismatched": 0,
+      "examples": []
+    }
+  },
+  "schedule_latch": {
+    "non_drafting_round_fraction": {
+      "declared": {
+        "candle-0": 0.0,
+        "candle-1": 0.0,
+        "mobydick-0": 0.0,
+        "mobydick-1": 0.0,
+        "problemsofphilosophy-0": 0.0,
+        "problemsofphilosophy-1": 0.0,
+        "wealthofnations-1": 0.0
+      },
+      "best": {
+        "candle-0": 0.0,
+        "candle-1": 0.0,
+        "mobydick-0": 0.0,
+        "mobydick-1": 0.0,
+        "problemsofphilosophy-0": 0.0,
+        "problemsofphilosophy-1": 0.0,
+        "wealthofnations-1": 0.0
+      },
+      "noislands": {
+        "candle-0": 0.0,
+        "candle-1": 0.0,
+        "mobydick-0": 0.0,
+        "mobydick-1": 0.0,
+        "problemsofphilosophy-0": 0.0,
+        "problemsofphilosophy-1": 0.0,
+        "wealthofnations-1": 0.0
+      },
+      "qonly": {
+        "candle-0": 0.0,
+        "candle-1": 0.0,
+        "mobydick-0": 0.0,
+        "mobydick-1": 0.0,
+        "problemsofphilosophy-0": 0.0,
+        "problemsofphilosophy-1": 0.0,
+        "wealthofnations-1": 0.0
+      },
+      "qat-q4": {
+        "candle-0": 0.0,
+        "candle-1": 0.0,
+        "mobydick-0": 0.0,
+        "mobydick-1": 0.0,
+        "problemsofphilosophy-0": 0.0,
+        "problemsofphilosophy-1": 0.0,
+        "wealthofnations-1": 0.0
+      },
+      "master-bf16": {
+        "candle-0": 0.0,
+        "candle-1": 0.0,
+        "mobydick-0": 0.0,
+        "mobydick-1": 0.0,
+        "problemsofphilosophy-0": 0.0,
+        "problemsofphilosophy-1": 0.0,
+        "wealthofnations-1": 0.0
+      }
+    },
+    "threshold": 0.05,
+    "latched_seeds": [],
+    "excluded": true
+  },
+  "arms": {
+    "declared": {
+      "head_provenance_sha256": [
+        "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9"
+      ],
+      "head_bytes": [
+        427746170
+      ],
+      "head_file_count": [
+        2
+      ],
+      "parity_all_ok": true,
+      "accepted_draft_rate": {
+        "candle-0": 0.7306201550387597,
+        "candle-1": 0.8676470588235294,
+        "mobydick-0": 0.37966101694915255,
+        "mobydick-1": 0.8028747433264887,
+        "problemsofphilosophy-0": 0.8565488565488566,
+        "problemsofphilosophy-1": 0.8760504201680672,
+        "wealthofnations-1": 0.821285140562249
+      },
+      "work": {
+        "rounds": {
+          "candle-0": 136,
+          "candle-1": 99,
+          "mobydick-0": 288,
+          "mobydick-1": 121,
+          "problemsofphilosophy-0": 100,
+          "problemsofphilosophy-1": 95,
+          "wealthofnations-1": 103
+        },
+        "drafted_rows": {
+          "candle-0": 516,
+          "candle-1": 476,
+          "mobydick-0": 590,
+          "mobydick-1": 487,
+          "problemsofphilosophy-0": 481,
+          "problemsofphilosophy-1": 476,
+          "wealthofnations-1": 498
+        },
+        "accepted_rows": {
+          "candle-0": 377,
+          "candle-1": 413,
+          "mobydick-0": 224,
+          "mobydick-1": 391,
+          "problemsofphilosophy-0": 412,
+          "problemsofphilosophy-1": 417,
+          "wealthofnations-1": 409
+        },
+        "mean_rounds_per_512": 134.57142857142858,
+        "mean_accepted_per_round": 2.805732484076433,
+        "mean_drafted_per_round": 3.740976645435244,
+        "rows_per_token": 1.24609375
+      },
+      "splits": {
+        "pooled": {
+          "per_depth": {
+            "1": {
+              "accepted": 710,
+              "reached": 923,
+              "p": 0.7692307692307693,
+              "lo": 0.740967395195754,
+              "hi": 0.7952623939122763
+            },
+            "2": {
+              "accepted": 519,
+              "reached": 668,
+              "p": 0.7769461077844312,
+              "lo": 0.7438442061505951,
+              "hi": 0.8068809614350337
+            },
+            "3": {
+              "accepted": 354,
+              "reached": 398,
+              "p": 0.8894472361809045,
+              "lo": 0.854839510428082,
+              "hi": 0.9166090128521532
+            },
+            "4": {
+              "accepted": 297,
+              "reached": 312,
+              "p": 0.9519230769230769,
+              "lo": 0.9222017098365112,
+              "hi": 0.9706513090576732
+            },
+            "5": {
+              "accepted": 257,
+              "reached": 272,
+              "p": 0.9448529411764706,
+              "lo": 0.9110167987338955,
+              "hi": 0.9662987470677522
+            },
+            "6": {
+              "accepted": 188,
+              "reached": 190,
+              "p": 0.9894736842105263,
+              "lo": 0.9624385081002578,
+              "hi": 0.9971085420075956
+            },
+            "7": {
+              "accepted": 169,
+              "reached": 172,
+              "p": 0.9825581395348837,
+              "lo": 0.9499814467435205,
+              "hi": 0.9940507576825729
+            },
+            "8": {
+              "accepted": 137,
+              "reached": 143,
+              "p": 0.958041958041958,
+              "lo": 0.911487997721173,
+              "hi": 0.9806306249898837
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 1096,
+            "reached": 1172,
+            "p": 0.9351535836177475,
+            "lo": 0.9195850136041661,
+            "hi": 0.9478788713850612
+          },
+          "ties_by_depth": {
+            "1": 19,
+            "2": 9,
+            "3": 4,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 4,
+          "tie_fraction_3_6": 0.003401360544217687,
+          "tied_cells_the_arm_matched_3_6": 1
+        },
+        "easiest": {
+          "per_depth": {
+            "1": {
+              "accepted": 182,
+              "reached": 184,
+              "p": 0.9891304347826086,
+              "lo": 0.9612408144472387,
+              "hi": 0.9970140944002309
+            },
+            "2": {
+              "accepted": 152,
+              "reached": 157,
+              "p": 0.9681528662420382,
+              "lo": 0.9276218505242199,
+              "hi": 0.9863216132930005
+            },
+            "3": {
+              "accepted": 156,
+              "reached": 156,
+              "p": 1.0,
+              "lo": 0.9759670685625849,
+              "hi": 0.9999999999999999
+            },
+            "4": {
+              "accepted": 148,
+              "reached": 153,
+              "p": 0.9673202614379085,
+              "lo": 0.9257867588179043,
+              "hi": 0.9859619655004657
+            },
+            "5": {
+              "accepted": 151,
+              "reached": 155,
+              "p": 0.9741935483870968,
+              "lo": 0.9355314540311528,
+              "hi": 0.9899196283965077
+            },
+            "6": {
+              "accepted": 93,
+              "reached": 94,
+              "p": 0.9893617021276596,
+              "lo": 0.9421770870372144,
+              "hi": 0.998119604251912
+            },
+            "7": {
+              "accepted": 97,
+              "reached": 97,
+              "p": 1.0,
+              "lo": 0.9619059574740523,
+              "hi": 1.0
+            },
+            "8": {
+              "accepted": 73,
+              "reached": 77,
+              "p": 0.948051948051948,
+              "lo": 0.8739071685752308,
+              "hi": 0.9796152814963542
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 548,
+            "reached": 558,
+            "p": 0.982078853046595,
+            "lo": 0.967328495434428,
+            "hi": 0.990237009128483
+          },
+          "ties_by_depth": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 0,
+          "tie_fraction_3_6": 0.0,
+          "tied_cells_the_arm_matched_3_6": 0
+        },
+        "hardest": {
+          "per_depth": {
+            "1": {
+              "accepted": 316,
+              "reached": 515,
+              "p": 0.6135922330097088,
+              "lo": 0.5708447351867771,
+              "hi": 0.654657676023646
+            },
+            "2": {
+              "accepted": 174,
+              "reached": 311,
+              "p": 0.5594855305466238,
+              "lo": 0.5039175556220395,
+              "hi": 0.6136019100118429
+            },
+            "3": {
+              "accepted": 62,
+              "reached": 102,
+              "p": 0.6078431372549019,
+              "lo": 0.5108332390767232,
+              "hi": 0.6970248181073728
+            },
+            "4": {
+              "accepted": 25,
+              "reached": 30,
+              "p": 0.8333333333333334,
+              "lo": 0.6643564949358398,
+              "hi": 0.9266345762815145
+            },
+            "5": {
+              "accepted": 14,
+              "reached": 22,
+              "p": 0.6363636363636364,
+              "lo": 0.42951708090131013,
+              "hi": 0.8026679532963387
+            },
+            "6": {
+              "accepted": 3,
+              "reached": 3,
+              "p": 1.0,
+              "lo": 0.4385029682449546,
+              "hi": 1.0
+            },
+            "7": {
+              "accepted": 6,
+              "reached": 6,
+              "p": 1.0,
+              "lo": 0.6096657120978346,
+              "hi": 1.0
+            },
+            "8": {
+              "accepted": 5,
+              "reached": 6,
+              "p": 0.8333333333333334,
+              "lo": 0.43649717781352987,
+              "hi": 0.9699466302516935
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 104,
+            "reached": 157,
+            "p": 0.6624203821656051,
+            "lo": 0.5853574055402763,
+            "hi": 0.7317250206820246
+          },
+          "ties_by_depth": {
+            "1": 19,
+            "2": 9,
+            "3": 4,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 4,
+          "tie_fraction_3_6": 0.024844720496894408,
+          "tied_cells_the_arm_matched_3_6": 1
+        }
+      }
+    },
+    "best": {
+      "head_provenance_sha256": [
+        "b26da7fe3dee1a034d957313cd3a0b2effc6cf69e42da7b206a064aec251886d"
+      ],
+      "head_bytes": [
+        427746210
+      ],
+      "head_file_count": [
+        2
+      ],
+      "parity_all_ok": true,
+      "accepted_draft_rate": {
+        "candle-0": 0.7421259842519685,
+        "candle-1": 0.8718487394957983,
+        "mobydick-0": 0.3642495784148398,
+        "mobydick-1": 0.7818181818181819,
+        "problemsofphilosophy-0": 0.8565488565488566,
+        "problemsofphilosophy-1": 0.8295687885010267,
+        "wealthofnations-1": 0.8381147540983607
+      },
+      "work": {
+        "rounds": {
+          "candle-0": 135,
+          "candle-1": 97,
+          "mobydick-0": 296,
+          "mobydick-1": 125,
+          "problemsofphilosophy-0": 100,
+          "problemsofphilosophy-1": 108,
+          "wealthofnations-1": 103
+        },
+        "drafted_rows": {
+          "candle-0": 508,
+          "candle-1": 476,
+          "mobydick-0": 593,
+          "mobydick-1": 495,
+          "problemsofphilosophy-0": 481,
+          "problemsofphilosophy-1": 487,
+          "wealthofnations-1": 488
+        },
+        "accepted_rows": {
+          "candle-0": 377,
+          "candle-1": 415,
+          "mobydick-0": 216,
+          "mobydick-1": 387,
+          "problemsofphilosophy-0": 412,
+          "problemsofphilosophy-1": 404,
+          "wealthofnations-1": 409
+        },
+        "mean_rounds_per_512": 137.71428571428572,
+        "mean_accepted_per_round": 2.7178423236514524,
+        "mean_drafted_per_round": 3.659751037344398,
+        "rows_per_token": 1.2533482142857142
+      },
+      "splits": {
+        "pooled": {
+          "per_depth": {
+            "1": {
+              "accepted": 727,
+              "reached": 944,
+              "p": 0.7701271186440678,
+              "lo": 0.7422241275469101,
+              "hi": 0.795840540603967
+            },
+            "2": {
+              "accepted": 519,
+              "reached": 681,
+              "p": 0.762114537444934,
+              "lo": 0.7287209329491757,
+              "hi": 0.7925676009178577
+            },
+            "3": {
+              "accepted": 356,
+              "reached": 402,
+              "p": 0.8855721393034826,
+              "lo": 0.8507377759621629,
+              "hi": 0.9131073001441742
+            },
+            "4": {
+              "accepted": 305,
+              "reached": 315,
+              "p": 0.9682539682539683,
+              "lo": 0.9425582512589261,
+              "hi": 0.9826664704291597
+            },
+            "5": {
+              "accepted": 269,
+              "reached": 283,
+              "p": 0.950530035335689,
+              "lo": 0.9186866258486468,
+              "hi": 0.9703062033204506
+            },
+            "6": {
+              "accepted": 172,
+              "reached": 182,
+              "p": 0.945054945054945,
+              "lo": 0.9018263245828161,
+              "hi": 0.9698844391402716
+            },
+            "7": {
+              "accepted": 144,
+              "reached": 152,
+              "p": 0.9473684210526315,
+              "lo": 0.8995892611068522,
+              "hi": 0.9730925081037206
+            },
+            "8": {
+              "accepted": 111,
+              "reached": 117,
+              "p": 0.9487179487179487,
+              "lo": 0.8926194657545686,
+              "hi": 0.9762876214711834
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 1102,
+            "reached": 1182,
+            "p": 0.9323181049069373,
+            "lo": 0.9165519419539773,
+            "hi": 0.9452833332407079
+          },
+          "ties_by_depth": {
+            "1": 20,
+            "2": 10,
+            "3": 3,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 3,
+          "tie_fraction_3_6": 0.002531645569620253,
+          "tied_cells_the_arm_matched_3_6": 1
+        },
+        "easiest": {
+          "per_depth": {
+            "1": {
+              "accepted": 175,
+              "reached": 178,
+              "p": 0.9831460674157303,
+              "lo": 0.951627039958885,
+              "hi": 0.9942518653000175
+            },
+            "2": {
+              "accepted": 166,
+              "reached": 170,
+              "p": 0.9764705882352941,
+              "lo": 0.9410708694326396,
+              "hi": 0.9908127048250533
+            },
+            "3": {
+              "accepted": 162,
+              "reached": 163,
+              "p": 0.9938650306748467,
+              "lo": 0.9660717609349152,
+              "hi": 0.9989162051139073
+            },
+            "4": {
+              "accepted": 155,
+              "reached": 158,
+              "p": 0.9810126582278481,
+              "lo": 0.9456688269800894,
+              "hi": 0.9935219162793524
+            },
+            "5": {
+              "accepted": 162,
+              "reached": 165,
+              "p": 0.9818181818181818,
+              "lo": 0.9479142454896411,
+              "hi": 0.9937975894504637
+            },
+            "6": {
+              "accepted": 91,
+              "reached": 94,
+              "p": 0.9680851063829787,
+              "lo": 0.9103268539187764,
+              "hi": 0.9890873725316923
+            },
+            "7": {
+              "accepted": 72,
+              "reached": 76,
+              "p": 0.9473684210526315,
+              "lo": 0.8723432742411035,
+              "hi": 0.9793445707006156
+            },
+            "8": {
+              "accepted": 57,
+              "reached": 61,
+              "p": 0.9344262295081968,
+              "lo": 0.8431719832010424,
+              "hi": 0.9742062955104335
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 570,
+            "reached": 580,
+            "p": 0.9827586206896551,
+            "lo": 0.9685561310842064,
+            "hi": 0.9906083673245711
+          },
+          "ties_by_depth": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 0,
+          "tie_fraction_3_6": 0.0,
+          "tied_cells_the_arm_matched_3_6": 0
+        },
+        "hardest": {
+          "per_depth": {
+            "1": {
+              "accepted": 331,
+              "reached": 534,
+              "p": 0.6198501872659176,
+              "lo": 0.5779608936519671,
+              "hi": 0.6600274538448232
+            },
+            "2": {
+              "accepted": 163,
+              "reached": 313,
+              "p": 0.5207667731629393,
+              "lo": 0.4655068808826478,
+              "hi": 0.5755231031616969
+            },
+            "3": {
+              "accepted": 57,
+              "reached": 99,
+              "p": 0.5757575757575758,
+              "lo": 0.4773666401385342,
+              "hi": 0.6684889337905829
+            },
+            "4": {
+              "accepted": 20,
+              "reached": 25,
+              "p": 0.8,
+              "lo": 0.6086904963045967,
+              "hi": 0.9113941531319742
+            },
+            "5": {
+              "accepted": 14,
+              "reached": 18,
+              "p": 0.7777777777777778,
+              "lo": 0.5478541568378739,
+              "hi": 0.9099907189139831
+            },
+            "6": {
+              "accepted": 2,
+              "reached": 3,
+              "p": 0.6666666666666666,
+              "lo": 0.2076596008020477,
+              "hi": 0.9385080552796037
+            },
+            "7": {
+              "accepted": 2,
+              "reached": 3,
+              "p": 0.6666666666666666,
+              "lo": 0.2076596008020477,
+              "hi": 0.9385080552796037
+            },
+            "8": {
+              "accepted": 0,
+              "reached": 1,
+              "p": 0.0,
+              "lo": 0.0,
+              "hi": 0.7934506856227626
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 93,
+            "reached": 145,
+            "p": 0.6413793103448275,
+            "lo": 0.5605961054218109,
+            "hi": 0.7148647797700747
+          },
+          "ties_by_depth": {
+            "1": 20,
+            "2": 10,
+            "3": 3,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 3,
+          "tie_fraction_3_6": 0.02027027027027027,
+          "tied_cells_the_arm_matched_3_6": 1
+        }
+      },
+      "paired_vs_reference": {
+        "pooled": {
+          "candidate_only": 4,
+          "reference_only": 7,
+          "both": 193,
+          "neither": 25,
+          "discordant": 11,
+          "paired_cells": 229,
+          "chi2": 0.36363636363636365,
+          "significant_95": false
+        },
+        "easiest": {
+          "candidate_only": 3,
+          "reference_only": 1,
+          "both": 87,
+          "neither": 1,
+          "discordant": 4,
+          "paired_cells": 92,
+          "chi2": 0.25,
+          "significant_95": false
+        },
+        "hardest": {
+          "candidate_only": 0,
+          "reference_only": 4,
+          "both": 40,
+          "neither": 21,
+          "discordant": 4,
+          "paired_cells": 65,
+          "chi2": 2.25,
+          "significant_95": false
+        }
+      },
+      "stop_rule": {
+        "pooled_delta_points": -0.28354787108101354,
+        "hardest_delta_points_by_depth": {
+          "3": -3.208556149732611,
+          "4": -3.3333333333333326,
+          "5": 14.141414141414144,
+          "6": -33.333333333333336
+        },
+        "pooled_gate_passed": false,
+        "hardest_gate_passed": false,
+        "advance": false
+      },
+      "rounds_delta_pct": 2.3354564755838636
+    },
+    "noislands": {
+      "head_provenance_sha256": [
+        "92b8419bc3a017b8315fac90bd62c77a73b40f6bfd4f4aa673a3cf14b3f4ab60"
+      ],
+      "head_bytes": [
+        396276034
+      ],
+      "head_file_count": [
+        2
+      ],
+      "parity_all_ok": true,
+      "accepted_draft_rate": {
+        "candle-0": 0.7184466019417476,
+        "candle-1": 0.8637316561844863,
+        "mobydick-0": 0.37018425460636517,
+        "mobydick-1": 0.8045267489711934,
+        "problemsofphilosophy-0": 0.8533057851239669,
+        "problemsofphilosophy-1": 0.8222222222222222,
+        "wealthofnations-1": 0.8279352226720648
+      },
+      "work": {
+        "rounds": {
+          "candle-0": 142,
+          "candle-1": 100,
+          "mobydick-0": 291,
+          "mobydick-1": 121,
+          "problemsofphilosophy-0": 100,
+          "problemsofphilosophy-1": 105,
+          "wealthofnations-1": 103
+        },
+        "drafted_rows": {
+          "candle-0": 515,
+          "candle-1": 477,
+          "mobydick-0": 597,
+          "mobydick-1": 486,
+          "problemsofphilosophy-0": 484,
+          "problemsofphilosophy-1": 495,
+          "wealthofnations-1": 494
+        },
+        "accepted_rows": {
+          "candle-0": 370,
+          "candle-1": 412,
+          "mobydick-0": 221,
+          "mobydick-1": 391,
+          "problemsofphilosophy-0": 413,
+          "problemsofphilosophy-1": 407,
+          "wealthofnations-1": 409
+        },
+        "mean_rounds_per_512": 137.42857142857142,
+        "mean_accepted_per_round": 2.726611226611227,
+        "mean_drafted_per_round": 3.688149688149688,
+        "rows_per_token": 1.2583705357142858
+      },
+      "splits": {
+        "pooled": {
+          "per_depth": {
+            "1": {
+              "accepted": 712,
+              "reached": 942,
+              "p": 0.7558386411889597,
+              "lo": 0.7274024792412127,
+              "hi": 0.7821966671114683
+            },
+            "2": {
+              "accepted": 514,
+              "reached": 667,
+              "p": 0.7706146926536732,
+              "lo": 0.7372117867444037,
+              "hi": 0.8009183411022265
+            },
+            "3": {
+              "accepted": 348,
+              "reached": 392,
+              "p": 0.8877551020408163,
+              "lo": 0.8526683511174427,
+              "hi": 0.9153158840500619
+            },
+            "4": {
+              "accepted": 293,
+              "reached": 304,
+              "p": 0.9638157894736842,
+              "lo": 0.9363786768920008,
+              "hi": 0.9796772730775392
+            },
+            "5": {
+              "accepted": 264,
+              "reached": 276,
+              "p": 0.9565217391304348,
+              "lo": 0.9255535049147839,
+              "hi": 0.9749563804395042
+            },
+            "6": {
+              "accepted": 185,
+              "reached": 192,
+              "p": 0.9635416666666666,
+              "lo": 0.9266691049105195,
+              "hi": 0.9822293534234273
+            },
+            "7": {
+              "accepted": 162,
+              "reached": 166,
+              "p": 0.9759036144578314,
+              "lo": 0.9396889400205068,
+              "hi": 0.9905903987056432
+            },
+            "8": {
+              "accepted": 132,
+              "reached": 135,
+              "p": 0.9777777777777777,
+              "lo": 0.9367032029591469,
+              "hi": 0.9924140873352181
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 1090,
+            "reached": 1164,
+            "p": 0.936426116838488,
+            "lo": 0.9209234182569996,
+            "hi": 0.9490576843371605
+          },
+          "ties_by_depth": {
+            "1": 20,
+            "2": 9,
+            "3": 4,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 4,
+          "tie_fraction_3_6": 0.003424657534246575,
+          "tied_cells_the_arm_matched_3_6": 1
+        },
+        "easiest": {
+          "per_depth": {
+            "1": {
+              "accepted": 175,
+              "reached": 178,
+              "p": 0.9831460674157303,
+              "lo": 0.951627039958885,
+              "hi": 0.9942518653000175
+            },
+            "2": {
+              "accepted": 161,
+              "reached": 167,
+              "p": 0.9640718562874252,
+              "lo": 0.9238422456604652,
+              "hi": 0.9834316740891872
+            },
+            "3": {
+              "accepted": 157,
+              "reached": 157,
+              "p": 1.0,
+              "lo": 0.976116488566691,
+              "hi": 0.9999999999999999
+            },
+            "4": {
+              "accepted": 143,
+              "reached": 146,
+              "p": 0.9794520547945206,
+              "lo": 0.9413332370314517,
+              "hi": 0.9929876185037926
+            },
+            "5": {
+              "accepted": 149,
+              "reached": 153,
+              "p": 0.9738562091503268,
+              "lo": 0.9347131943281209,
+              "hi": 0.9897872604002961
+            },
+            "6": {
+              "accepted": 91,
+              "reached": 92,
+              "p": 0.9891304347826086,
+              "lo": 0.9409721438693747,
+              "hi": 0.9980786709599082
+            },
+            "7": {
+              "accepted": 93,
+              "reached": 94,
+              "p": 0.9893617021276596,
+              "lo": 0.9421770870372144,
+              "hi": 0.998119604251912
+            },
+            "8": {
+              "accepted": 73,
+              "reached": 75,
+              "p": 0.9733333333333334,
+              "lo": 0.9078851181224086,
+              "hi": 0.9926563109938686
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 540,
+            "reached": 548,
+            "p": 0.9854014598540146,
+            "lo": 0.9714604626097165,
+            "hi": 0.9925845388965202
+          },
+          "ties_by_depth": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 0,
+          "tie_fraction_3_6": 0.0,
+          "tied_cells_the_arm_matched_3_6": 0
+        },
+        "hardest": {
+          "per_depth": {
+            "1": {
+              "accepted": 317,
+              "reached": 532,
+              "p": 0.5958646616541353,
+              "lo": 0.5536220921666373,
+              "hi": 0.6367327195429429
+            },
+            "2": {
+              "accepted": 165,
+              "reached": 306,
+              "p": 0.5392156862745098,
+              "lo": 0.4832253811676025,
+              "hi": 0.5942335879818065
+            },
+            "3": {
+              "accepted": 50,
+              "reached": 90,
+              "p": 0.5555555555555556,
+              "lo": 0.4527192645595967,
+              "hi": 0.6538434437110336
+            },
+            "4": {
+              "accepted": 18,
+              "reached": 23,
+              "p": 0.782608695652174,
+              "lo": 0.5809651698373599,
+              "hi": 0.9033602197341379
+            },
+            "5": {
+              "accepted": 17,
+              "reached": 22,
+              "p": 0.7727272727272727,
+              "lo": 0.5656004682477829,
+              "hi": 0.8987696001475147
+            },
+            "6": {
+              "accepted": 4,
+              "reached": 5,
+              "p": 0.8,
+              "lo": 0.37553462976252533,
+              "hi": 0.9637758913675698
+            },
+            "7": {
+              "accepted": 5,
+              "reached": 6,
+              "p": 0.8333333333333334,
+              "lo": 0.43649717781352987,
+              "hi": 0.9699466302516935
+            },
+            "8": {
+              "accepted": 0,
+              "reached": 1,
+              "p": 0.0,
+              "lo": 0.0,
+              "hi": 0.7934506856227626
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 89,
+            "reached": 140,
+            "p": 0.6357142857142857,
+            "lo": 0.553363753555321,
+            "hi": 0.7108159920586955
+          },
+          "ties_by_depth": {
+            "1": 20,
+            "2": 9,
+            "3": 4,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 4,
+          "tie_fraction_3_6": 0.027777777777777776,
+          "tied_cells_the_arm_matched_3_6": 1
+        }
+      },
+      "paired_vs_reference": {
+        "pooled": {
+          "candidate_only": 4,
+          "reference_only": 1,
+          "both": 488,
+          "neither": 44,
+          "discordant": 5,
+          "paired_cells": 537,
+          "chi2": 0.8,
+          "significant_95": false
+        },
+        "easiest": {
+          "candidate_only": 0,
+          "reference_only": 0,
+          "both": 262,
+          "neither": 4,
+          "discordant": 0,
+          "paired_cells": 266,
+          "chi2": 0.0,
+          "significant_95": false
+        },
+        "hardest": {
+          "candidate_only": 2,
+          "reference_only": 1,
+          "both": 57,
+          "neither": 35,
+          "discordant": 3,
+          "paired_cells": 95,
+          "chi2": 0.0,
+          "significant_95": false
+        }
+      },
+      "stop_rule": {
+        "pooled_delta_points": 0.12725332207405016,
+        "hardest_delta_points_by_depth": {
+          "3": -5.228758169934633,
+          "4": -5.072463768115942,
+          "5": 13.636363636363635,
+          "6": -19.999999999999996
+        },
+        "pooled_gate_passed": false,
+        "hardest_gate_passed": false,
+        "advance": false
+      },
+      "rounds_delta_pct": 2.123142250530763
+    },
+    "qonly": {
+      "head_provenance_sha256": [
+        "315a03a98a59a89d90da0ce5b4a6566255e8768e2b22392f021bf018d6e50e75"
+      ],
+      "head_bytes": [
+        406786962
+      ],
+      "head_file_count": [
+        2
+      ],
+      "parity_all_ok": true,
+      "accepted_draft_rate": {
+        "candle-0": 0.7395626242544732,
+        "candle-1": 0.8565488565488566,
+        "mobydick-0": 0.37755102040816324,
+        "mobydick-1": 0.8024691358024691,
+        "problemsofphilosophy-0": 0.8571428571428571,
+        "problemsofphilosophy-1": 0.8235294117647058,
+        "wealthofnations-1": 0.8273092369477911
+      },
+      "work": {
+        "rounds": {
+          "candle-0": 140,
+          "candle-1": 100,
+          "mobydick-0": 290,
+          "mobydick-1": 122,
+          "problemsofphilosophy-0": 98,
+          "problemsofphilosophy-1": 106,
+          "wealthofnations-1": 101
+        },
+        "drafted_rows": {
+          "candle-0": 503,
+          "candle-1": 481,
+          "mobydick-0": 588,
+          "mobydick-1": 486,
+          "problemsofphilosophy-0": 483,
+          "problemsofphilosophy-1": 493,
+          "wealthofnations-1": 498
+        },
+        "accepted_rows": {
+          "candle-0": 372,
+          "candle-1": 412,
+          "mobydick-0": 222,
+          "mobydick-1": 390,
+          "problemsofphilosophy-0": 414,
+          "problemsofphilosophy-1": 406,
+          "wealthofnations-1": 412
+        },
+        "mean_rounds_per_512": 136.71428571428572,
+        "mean_accepted_per_round": 2.7460815047021945,
+        "mean_drafted_per_round": 3.690700104493208,
+        "rows_per_token": 1.2525111607142858
+      },
+      "splits": {
+        "pooled": {
+          "per_depth": {
+            "1": {
+              "accepted": 713,
+              "reached": 937,
+              "p": 0.7609391675560299,
+              "lo": 0.7325996377089953,
+              "hi": 0.7871478664166639
+            },
+            "2": {
+              "accepted": 524,
+              "reached": 670,
+              "p": 0.7820895522388059,
+              "lo": 0.7492699715165545,
+              "hi": 0.811692841103415
+            },
+            "3": {
+              "accepted": 352,
+              "reached": 399,
+              "p": 0.8822055137844611,
+              "lo": 0.8468710110191355,
+              "hi": 0.910250663827535
+            },
+            "4": {
+              "accepted": 303,
+              "reached": 314,
+              "p": 0.964968152866242,
+              "lo": 0.9383688546395829,
+              "hi": 0.9803281620536605
+            },
+            "5": {
+              "accepted": 263,
+              "reached": 281,
+              "p": 0.9359430604982206,
+              "lo": 0.9010272895885963,
+              "hi": 0.9591003091617875
+            },
+            "6": {
+              "accepted": 176,
+              "reached": 185,
+              "p": 0.9513513513513514,
+              "lo": 0.910142071731273,
+              "hi": 0.97419763334677
+            },
+            "7": {
+              "accepted": 156,
+              "reached": 157,
+              "p": 0.9936305732484076,
+              "lo": 0.964807130088783,
+              "hi": 0.9988747535280136
+            },
+            "8": {
+              "accepted": 127,
+              "reached": 131,
+              "p": 0.9694656488549618,
+              "lo": 0.9241193283504454,
+              "hi": 0.988063030663926
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 1094,
+            "reached": 1179,
+            "p": 0.9279050042408821,
+            "lo": 0.9117102341903413,
+            "hi": 0.9413204001991432
+          },
+          "ties_by_depth": {
+            "1": 20,
+            "2": 9,
+            "3": 5,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 5,
+          "tie_fraction_3_6": 0.004222972972972973,
+          "tied_cells_the_arm_matched_3_6": 2
+        },
+        "easiest": {
+          "per_depth": {
+            "1": {
+              "accepted": 184,
+              "reached": 187,
+              "p": 0.983957219251337,
+              "lo": 0.9539019690235603,
+              "hi": 0.9945292634690571
+            },
+            "2": {
+              "accepted": 152,
+              "reached": 158,
+              "p": 0.9620253164556962,
+              "lo": 0.9196357572478628,
+              "hi": 0.982481667198706
+            },
+            "3": {
+              "accepted": 152,
+              "reached": 152,
+              "p": 1.0,
+              "lo": 0.9753502126471109,
+              "hi": 0.9999999999999999
+            },
+            "4": {
+              "accepted": 149,
+              "reached": 150,
+              "p": 0.9933333333333333,
+              "lo": 0.9632071602251817,
+              "hi": 0.9988221986649826
+            },
+            "5": {
+              "accepted": 142,
+              "reached": 148,
+              "p": 0.9594594594594594,
+              "lo": 0.9143814308173778,
+              "hi": 0.9812896267203338
+            },
+            "6": {
+              "accepted": 95,
+              "reached": 96,
+              "p": 0.9895833333333334,
+              "lo": 0.9433338237728424,
+              "hi": 0.9981588297831838
+            },
+            "7": {
+              "accepted": 100,
+              "reached": 100,
+              "p": 1.0,
+              "lo": 0.9630065017930143,
+              "hi": 1.0
+            },
+            "8": {
+              "accepted": 66,
+              "reached": 69,
+              "p": 0.9565217391304348,
+              "lo": 0.8797879725062087,
+              "hi": 0.9851040961037877
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 538,
+            "reached": 546,
+            "p": 0.9853479853479854,
+            "lo": 0.9713569089442856,
+            "hi": 0.9925573094137657
+          },
+          "ties_by_depth": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 0,
+          "tie_fraction_3_6": 0.0,
+          "tied_cells_the_arm_matched_3_6": 0
+        },
+        "hardest": {
+          "per_depth": {
+            "1": {
+              "accepted": 320,
+              "reached": 529,
+              "p": 0.6049149338374291,
+              "lo": 0.5626427402608352,
+              "hi": 0.6456743832709366
+            },
+            "2": {
+              "accepted": 167,
+              "reached": 301,
+              "p": 0.5548172757475083,
+              "lo": 0.49833236693248273,
+              "hi": 0.6099206250577255
+            },
+            "3": {
+              "accepted": 53,
+              "reached": 96,
+              "p": 0.5520833333333334,
+              "lo": 0.4525163859774741,
+              "hi": 0.6476424069540183
+            },
+            "4": {
+              "accepted": 20,
+              "reached": 24,
+              "p": 0.8333333333333334,
+              "lo": 0.6414692935030095,
+              "hi": 0.9332132367136705
+            },
+            "5": {
+              "accepted": 14,
+              "reached": 22,
+              "p": 0.6363636363636364,
+              "lo": 0.42951708090131013,
+              "hi": 0.8026679532963387
+            },
+            "6": {
+              "accepted": 10,
+              "reached": 11,
+              "p": 0.9090909090909091,
+              "lo": 0.6226415635484043,
+              "hi": 0.9837678271141151
+            },
+            "7": {
+              "accepted": 1,
+              "reached": 2,
+              "p": 0.5,
+              "lo": 0.09453120573423074,
+              "hi": 0.9054687942657693
+            },
+            "8": {
+              "accepted": 1,
+              "reached": 2,
+              "p": 0.5,
+              "lo": 0.09453120573423074,
+              "hi": 0.9054687942657693
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 97,
+            "reached": 153,
+            "p": 0.6339869281045751,
+            "lo": 0.5552451700689189,
+            "hi": 0.7061653033370472
+          },
+          "ties_by_depth": {
+            "1": 20,
+            "2": 9,
+            "3": 5,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 5,
+          "tie_fraction_3_6": 0.03164556962025317,
+          "tied_cells_the_arm_matched_3_6": 2
+        }
+      },
+      "paired_vs_reference": {
+        "pooled": {
+          "candidate_only": 2,
+          "reference_only": 5,
+          "both": 544,
+          "neither": 49,
+          "discordant": 7,
+          "paired_cells": 600,
+          "chi2": 0.5714285714285714,
+          "significant_95": false
+        },
+        "easiest": {
+          "candidate_only": 0,
+          "reference_only": 0,
+          "both": 299,
+          "neither": 3,
+          "discordant": 0,
+          "paired_cells": 302,
+          "chi2": 0.0,
+          "significant_95": false
+        },
+        "hardest": {
+          "candidate_only": 1,
+          "reference_only": 2,
+          "both": 63,
+          "neither": 37,
+          "discordant": 3,
+          "paired_cells": 103,
+          "chi2": 0.0,
+          "significant_95": false
+        }
+      },
+      "stop_rule": {
+        "pooled_delta_points": -0.7248579376865405,
+        "hardest_delta_points_by_depth": {
+          "3": -5.575980392156854,
+          "4": 0.0,
+          "5": 0.0,
+          "6": -9.090909090909093
+        },
+        "pooled_gate_passed": false,
+        "hardest_gate_passed": false,
+        "advance": false
+      },
+      "rounds_delta_pct": 1.5923566878980777
+    },
+    "qat-q4": {
+      "head_provenance_sha256": [
+        "3362d37d4cbe8eb7a597454ccaba30b85696f42dce3aff823a307c0ef7c913e1"
+      ],
+      "head_bytes": [
+        427746210
+      ],
+      "head_file_count": [
+        2
+      ],
+      "parity_all_ok": true,
+      "accepted_draft_rate": {
+        "candle-0": 0.7426326129666012,
+        "candle-1": 0.881104033970276,
+        "mobydick-0": 0.38305084745762713,
+        "mobydick-1": 0.7849898580121704,
+        "problemsofphilosophy-0": 0.8533057851239669,
+        "problemsofphilosophy-1": 0.8336755646817249,
+        "wealthofnations-1": 0.8343558282208589
+      },
+      "work": {
+        "rounds": {
+          "candle-0": 134,
+          "candle-1": 97,
+          "mobydick-0": 286,
+          "mobydick-1": 125,
+          "problemsofphilosophy-0": 99,
+          "problemsofphilosophy-1": 106,
+          "wealthofnations-1": 104
+        },
+        "drafted_rows": {
+          "candle-0": 509,
+          "candle-1": 471,
+          "mobydick-0": 590,
+          "mobydick-1": 493,
+          "problemsofphilosophy-0": 484,
+          "problemsofphilosophy-1": 487,
+          "wealthofnations-1": 489
+        },
+        "accepted_rows": {
+          "candle-0": 378,
+          "candle-1": 415,
+          "mobydick-0": 226,
+          "mobydick-1": 387,
+          "problemsofphilosophy-0": 413,
+          "problemsofphilosophy-1": 406,
+          "wealthofnations-1": 408
+        },
+        "mean_rounds_per_512": 135.85714285714286,
+        "mean_accepted_per_round": 2.768664563617245,
+        "mean_drafted_per_round": 3.704521556256572,
+        "rows_per_token": 1.2483258928571428
+      },
+      "splits": {
+        "pooled": {
+          "per_depth": {
+            "1": {
+              "accepted": 721,
+              "reached": 936,
+              "p": 0.7702991452991453,
+              "lo": 0.7422791154193408,
+              "hi": 0.7961095620017692
+            },
+            "2": {
+              "accepted": 505,
+              "reached": 669,
+              "p": 0.7548579970104634,
+              "lo": 0.72086665099162,
+              "hi": 0.7859392176563662
+            },
+            "3": {
+              "accepted": 353,
+              "reached": 391,
+              "p": 0.9028132992327366,
+              "lo": 0.8694153820430013,
+              "hi": 0.9283731808420532
+            },
+            "4": {
+              "accepted": 293,
+              "reached": 309,
+              "p": 0.948220064724919,
+              "lo": 0.917553029745799,
+              "hi": 0.9678794862774793
+            },
+            "5": {
+              "accepted": 270,
+              "reached": 277,
+              "p": 0.9747292418772563,
+              "lo": 0.9487653728706874,
+              "hi": 0.9877060480668985
+            },
+            "6": {
+              "accepted": 191,
+              "reached": 196,
+              "p": 0.9744897959183674,
+              "lo": 0.9416823647208152,
+              "hi": 0.9890554366224324
+            },
+            "7": {
+              "accepted": 160,
+              "reached": 169,
+              "p": 0.9467455621301775,
+              "lo": 0.9019001343859231,
+              "hi": 0.9717328529209447
+            },
+            "8": {
+              "accepted": 125,
+              "reached": 129,
+              "p": 0.9689922480620154,
+              "lo": 0.9229832552530715,
+              "hi": 0.9878769616866008
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 1107,
+            "reached": 1173,
+            "p": 0.9437340153452686,
+            "lo": 0.9290406507328374,
+            "hi": 0.9555304970606641
+          },
+          "ties_by_depth": {
+            "1": 15,
+            "2": 12,
+            "3": 6,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 6,
+          "tie_fraction_3_6": 0.005089058524173028,
+          "tied_cells_the_arm_matched_3_6": 2
+        },
+        "easiest": {
+          "per_depth": {
+            "1": {
+              "accepted": 172,
+              "reached": 174,
+              "p": 0.9885057471264368,
+              "lo": 0.9590654074816999,
+              "hi": 0.9968421808124327
+            },
+            "2": {
+              "accepted": 158,
+              "reached": 160,
+              "p": 0.9875,
+              "lo": 0.9555746308159091,
+              "hi": 0.9965653288918735
+            },
+            "3": {
+              "accepted": 154,
+              "reached": 156,
+              "p": 0.9871794871794872,
+              "lo": 0.9544651890044474,
+              "hi": 0.9964770829283277
+            },
+            "4": {
+              "accepted": 161,
+              "reached": 164,
+              "p": 0.9817073170731707,
+              "lo": 0.9476049010042733,
+              "hi": 0.9937596528440829
+            },
+            "5": {
+              "accepted": 139,
+              "reached": 142,
+              "p": 0.9788732394366197,
+              "lo": 0.9397300911612929,
+              "hi": 0.9927893796375162
+            },
+            "6": {
+              "accepted": 102,
+              "reached": 105,
+              "p": 0.9714285714285714,
+              "lo": 0.9193437093626844,
+              "hi": 0.9902361609612977
+            },
+            "7": {
+              "accepted": 86,
+              "reached": 87,
+              "p": 0.9885057471264368,
+              "lo": 0.9377280216427621,
+              "hi": 0.9979680922624077
+            },
+            "8": {
+              "accepted": 76,
+              "reached": 80,
+              "p": 0.95,
+              "lo": 0.8783772379535698,
+              "hi": 0.9803864454644556
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 556,
+            "reached": 567,
+            "p": 0.9805996472663139,
+            "lo": 0.9655976659820107,
+            "hi": 0.98913326951437
+          },
+          "ties_by_depth": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 0,
+          "tie_fraction_3_6": 0.0,
+          "tied_cells_the_arm_matched_3_6": 0
+        },
+        "hardest": {
+          "per_depth": {
+            "1": {
+              "accepted": 331,
+              "reached": 530,
+              "p": 0.6245283018867924,
+              "lo": 0.5825446923132875,
+              "hi": 0.6647197301457706
+            },
+            "2": {
+              "accepted": 155,
+              "reached": 312,
+              "p": 0.4967948717948718,
+              "lo": 0.4416928450911022,
+              "hi": 0.5519748639947547
+            },
+            "3": {
+              "accepted": 56,
+              "reached": 91,
+              "p": 0.6153846153846154,
+              "lo": 0.5126876687650975,
+              "hi": 0.7087344841743918
+            },
+            "4": {
+              "accepted": 19,
+              "reached": 29,
+              "p": 0.6551724137931034,
+              "lo": 0.47345104090476137,
+              "hi": 0.80059281473325
+            },
+            "5": {
+              "accepted": 13,
+              "reached": 16,
+              "p": 0.8125,
+              "lo": 0.5699111903802586,
+              "hi": 0.9340840092857187
+            },
+            "6": {
+              "accepted": 7,
+              "reached": 7,
+              "p": 1.0,
+              "lo": 0.6456695649333126,
+              "hi": 1.0
+            },
+            "7": {
+              "accepted": 2,
+              "reached": 2,
+              "p": 1.0,
+              "lo": 0.34238022750665303,
+              "hi": 1.0
+            },
+            "8": {
+              "accepted": 3,
+              "reached": 3,
+              "p": 1.0,
+              "lo": 0.4385029682449546,
+              "hi": 1.0
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 95,
+            "reached": 143,
+            "p": 0.6643356643356644,
+            "lo": 0.5835373250331337,
+            "hi": 0.7365357686112912
+          },
+          "ties_by_depth": {
+            "1": 15,
+            "2": 12,
+            "3": 6,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 6,
+          "tie_fraction_3_6": 0.040268456375838924,
+          "tied_cells_the_arm_matched_3_6": 2
+        }
+      },
+      "paired_vs_reference": {
+        "pooled": {
+          "candidate_only": 7,
+          "reference_only": 5,
+          "both": 279,
+          "neither": 20,
+          "discordant": 12,
+          "paired_cells": 311,
+          "chi2": 0.08333333333333333,
+          "significant_95": false
+        },
+        "easiest": {
+          "candidate_only": 2,
+          "reference_only": 1,
+          "both": 69,
+          "neither": 0,
+          "discordant": 3,
+          "paired_cells": 72,
+          "chi2": 0.0,
+          "significant_95": false
+        },
+        "hardest": {
+          "candidate_only": 4,
+          "reference_only": 3,
+          "both": 31,
+          "neither": 20,
+          "discordant": 7,
+          "paired_cells": 58,
+          "chi2": 0.0,
+          "significant_95": false
+        }
+      },
+      "stop_rule": {
+        "pooled_delta_points": 0.8580431727521098,
+        "hardest_delta_points_by_depth": {
+          "3": 0.7541478129713508,
+          "4": -17.816091954022994,
+          "5": 17.613636363636363,
+          "6": 0.0
+        },
+        "pooled_gate_passed": false,
+        "hardest_gate_passed": false,
+        "advance": false
+      },
+      "rounds_delta_pct": 0.9554140127388422
+    },
+    "master-bf16": {
+      "head_provenance_sha256": [
+        "15d9c74eb57d3d4063bf80b84012191021c0459d5ad223dba1ca72daafdbc70e"
+      ],
+      "head_bytes": [
+        1006742194
+      ],
+      "head_file_count": [
+        2
+      ],
+      "parity_all_ok": true,
+      "accepted_draft_rate": {
+        "candle-0": 0.7396449704142012,
+        "candle-1": 0.8838709677419355,
+        "mobydick-0": 0.36626916524701875,
+        "mobydick-1": 0.7991803278688525,
+        "problemsofphilosophy-0": 0.8669438669438669,
+        "problemsofphilosophy-1": 0.8661087866108786,
+        "wealthofnations-1": 0.8512396694214877
+      },
+      "work": {
+        "rounds": {
+          "candle-0": 137,
+          "candle-1": 102,
+          "mobydick-0": 297,
+          "mobydick-1": 122,
+          "problemsofphilosophy-0": 96,
+          "problemsofphilosophy-1": 98,
+          "wealthofnations-1": 100
+        },
+        "drafted_rows": {
+          "candle-0": 507,
+          "candle-1": 465,
+          "mobydick-0": 587,
+          "mobydick-1": 488,
+          "problemsofphilosophy-0": 481,
+          "problemsofphilosophy-1": 478,
+          "wealthofnations-1": 484
+        },
+        "accepted_rows": {
+          "candle-0": 375,
+          "candle-1": 411,
+          "mobydick-0": 215,
+          "mobydick-1": 390,
+          "problemsofphilosophy-0": 417,
+          "problemsofphilosophy-1": 414,
+          "wealthofnations-1": 412
+        },
+        "mean_rounds_per_512": 136.0,
+        "mean_accepted_per_round": 2.7668067226890756,
+        "mean_drafted_per_round": 3.6659663865546217,
+        "rows_per_token": 1.2393973214285714
+      },
+      "splits": {
+        "pooled": {
+          "per_depth": {
+            "1": {
+              "accepted": 708,
+              "reached": 931,
+              "p": 0.7604726100966702,
+              "lo": 0.7320224539167515,
+              "hi": 0.786782093553607
+            },
+            "2": {
+              "accepted": 504,
+              "reached": 654,
+              "p": 0.7706422018348624,
+              "lo": 0.736895907437609,
+              "hi": 0.801227671204899
+            },
+            "3": {
+              "accepted": 353,
+              "reached": 396,
+              "p": 0.8914141414141414,
+              "lo": 0.8569275247366308,
+              "hi": 0.9183797705956853
+            },
+            "4": {
+              "accepted": 297,
+              "reached": 311,
+              "p": 0.954983922829582,
+              "lo": 0.9258667945021068,
+              "hi": 0.9729983075084001
+            },
+            "5": {
+              "accepted": 267,
+              "reached": 276,
+              "p": 0.967391304347826,
+              "lo": 0.9391992365036425,
+              "hi": 0.9827513604066999
+            },
+            "6": {
+              "accepted": 193,
+              "reached": 196,
+              "p": 0.9846938775510204,
+              "lo": 0.9559725478180302,
+              "hi": 0.9947811202207711
+            },
+            "7": {
+              "accepted": 169,
+              "reached": 176,
+              "p": 0.9602272727272727,
+              "lo": 0.9201906360780736,
+              "hi": 0.9806027686368957
+            },
+            "8": {
+              "accepted": 125,
+              "reached": 132,
+              "p": 0.946969696969697,
+              "lo": 0.8945821108242697,
+              "hi": 0.9740775827951562
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 1110,
+            "reached": 1179,
+            "p": 0.9414758269720102,
+            "lo": 0.9265885013818981,
+            "hi": 0.9534956318187494
+          },
+          "ties_by_depth": {
+            "1": 21,
+            "2": 10,
+            "3": 4,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 4,
+          "tie_fraction_3_6": 0.0033812341504649195,
+          "tied_cells_the_arm_matched_3_6": 2
+        },
+        "easiest": {
+          "per_depth": {
+            "1": {
+              "accepted": 159,
+              "reached": 161,
+              "p": 0.9875776397515528,
+              "lo": 0.9558435956299433,
+              "hi": 0.9965867039027511
+            },
+            "2": {
+              "accepted": 149,
+              "reached": 153,
+              "p": 0.9738562091503268,
+              "lo": 0.9347131943281209,
+              "hi": 0.9897872604002961
+            },
+            "3": {
+              "accepted": 158,
+              "reached": 158,
+              "p": 1.0,
+              "lo": 0.9762640620723142,
+              "hi": 1.0
+            },
+            "4": {
+              "accepted": 159,
+              "reached": 162,
+              "p": 0.9814814814814815,
+              "lo": 0.9469750571819407,
+              "hi": 0.9936823701545215
+            },
+            "5": {
+              "accepted": 152,
+              "reached": 154,
+              "p": 0.987012987012987,
+              "lo": 0.9538894269441661,
+              "hi": 0.9964312373522662
+            },
+            "6": {
+              "accepted": 114,
+              "reached": 114,
+              "p": 1.0,
+              "lo": 0.9674014658411585,
+              "hi": 1.0
+            },
+            "7": {
+              "accepted": 87,
+              "reached": 88,
+              "p": 0.9886363636363636,
+              "lo": 0.9384050610770144,
+              "hi": 0.9979912146822955
+            },
+            "8": {
+              "accepted": 71,
+              "reached": 76,
+              "p": 0.9342105263157895,
+              "lo": 0.8550647346629656,
+              "hi": 0.9715734677804679
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 583,
+            "reached": 588,
+            "p": 0.9914965986394558,
+            "lo": 0.9802503517303288,
+            "hi": 0.99636254245881
+          },
+          "ties_by_depth": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 0,
+          "tie_fraction_3_6": 0.0,
+          "tied_cells_the_arm_matched_3_6": 0
+        },
+        "hardest": {
+          "per_depth": {
+            "1": {
+              "accepted": 327,
+              "reached": 535,
+              "p": 0.611214953271028,
+              "lo": 0.5692550240955337,
+              "hi": 0.6515891556757162
+            },
+            "2": {
+              "accepted": 166,
+              "reached": 305,
+              "p": 0.5442622950819672,
+              "lo": 0.4881644125562369,
+              "hi": 0.5992590833147483
+            },
+            "3": {
+              "accepted": 62,
+              "reached": 103,
+              "p": 0.6019417475728155,
+              "lo": 0.5053868568583854,
+              "hi": 0.6911660565124728
+            },
+            "4": {
+              "accepted": 18,
+              "reached": 25,
+              "p": 0.72,
+              "lo": 0.5242339480963842,
+              "hi": 0.8571614614904344
+            },
+            "5": {
+              "accepted": 13,
+              "reached": 15,
+              "p": 0.8666666666666667,
+              "lo": 0.6211801716767764,
+              "hi": 0.9626387408969346
+            },
+            "6": {
+              "accepted": 1,
+              "reached": 1,
+              "p": 1.0,
+              "lo": 0.20654931437723745,
+              "hi": 1.0
+            },
+            "7": {
+              "accepted": 4,
+              "reached": 4,
+              "p": 1.0,
+              "lo": 0.5101091635454027,
+              "hi": 1.0
+            },
+            "8": {
+              "accepted": 1,
+              "reached": 1,
+              "p": 1.0,
+              "lo": 0.20654931437723745,
+              "hi": 1.0
+            }
+          },
+          "pooled_3_6": {
+            "accepted": 94,
+            "reached": 144,
+            "p": 0.6527777777777778,
+            "lo": 0.5719628693574034,
+            "hi": 0.7256532415155575
+          },
+          "ties_by_depth": {
+            "1": 21,
+            "2": 10,
+            "3": 4,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          },
+          "ties_3_6": 4,
+          "tie_fraction_3_6": 0.02702702702702703,
+          "tied_cells_the_arm_matched_3_6": 2
+        }
+      },
+      "paired_vs_reference": {
+        "pooled": {
+          "candidate_only": 5,
+          "reference_only": 4,
+          "both": 413,
+          "neither": 33,
+          "discordant": 9,
+          "paired_cells": 455,
+          "chi2": 0.0,
+          "significant_95": false
+        },
+        "easiest": {
+          "candidate_only": 1,
+          "reference_only": 0,
+          "both": 234,
+          "neither": 2,
+          "discordant": 1,
+          "paired_cells": 237,
+          "chi2": 0.0,
+          "significant_95": false
+        },
+        "hardest": {
+          "candidate_only": 1,
+          "reference_only": 2,
+          "both": 57,
+          "neither": 26,
+          "discordant": 3,
+          "paired_cells": 86,
+          "chi2": 0.0,
+          "significant_95": false
+        }
+      },
+      "stop_rule": {
+        "pooled_delta_points": 0.632224335426268,
+        "hardest_delta_points_by_depth": {
+          "3": -0.5901389682086422,
+          "4": -11.33333333333334,
+          "5": 23.030303030303035,
+          "6": 0.0
+        },
+        "pooled_gate_passed": false,
+        "hardest_gate_passed": false,
+        "advance": false
+      },
+      "rounds_delta_pct": 1.0615711252653925
+    }
+  }
+}

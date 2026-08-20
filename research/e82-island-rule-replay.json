@@ -1,0 +1,23 @@
+{
+  "q": {
+    "rows": 1024,
+    "set_identical": false,
+    "overlap": 1023,
+    "sequence_identical": false,
+    "first_rank_disagreement_rel_sse_gap": 0.00013750126024734383
+  },
+  "k": {
+    "rows": 1024,
+    "set_identical": true,
+    "overlap": 1024,
+    "sequence_identical": false,
+    "first_rank_disagreement_rel_sse_gap": 0.00013787605662851464
+  },
+  "v": {
+    "rows": 1024,
+    "set_identical": true,
+    "overlap": 1024,
+    "sequence_identical": false,
+    "first_rank_disagreement_rel_sse_gap": 0.0002590090325831841
+  }
+}

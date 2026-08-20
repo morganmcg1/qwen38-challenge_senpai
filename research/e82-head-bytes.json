@@ -1,0 +1,1639 @@
+{
+  "arms": {
+    "pinned": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head",
+      "tree_sha256": "62516c6f3799b66c91171ee13aa6816db5af197aa8c527cec0f6bb4026f0c7b7",
+      "tree_bytes": 849407066,
+      "tensor_bytes": 849398784,
+      "safetensors_bytes": 849400347,
+      "file_count": 5,
+      "tensor_count": 15,
+      "ships_draft_lm_head": false,
+      "derived_compact_draft_head_bytes": 283207680,
+      "traffic_bytes_per_draft": 1132606464,
+      "head_stream_bytes_by_precision": {
+        "dense": 849398784,
+        "q4": 283207680
+      },
+      "head_stream_bytes": 1132606464,
+      "groups": {
+        "fc": {
+          "bytes": 104857600,
+          "tensors": 1,
+          "dtypes": [
+            "BF16"
+          ]
+        },
+        "trunk": {
+          "bytes": 744541184,
+          "tensors": 14,
+          "dtypes": [
+            "BF16"
+          ]
+        }
+      },
+      "tensors": {
+        "fc.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            10240
+          ],
+          "bytes": 104857600
+        },
+        "layers.0.input_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.mlp.down_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            17408
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.mlp.gate_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            5120
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.mlp.up_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            5120
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.post_attention_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.self_attn.k_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.k_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "layers.0.self_attn.o_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            6144
+          ],
+          "bytes": 62914560
+        },
+        "layers.0.self_attn.q_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            5120
+          ],
+          "bytes": 125829120
+        },
+        "layers.0.self_attn.v_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_embedding.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_hidden.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        }
+      }
+    },
+    "declared": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+      "tree_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "tree_bytes": 427746170,
+      "tensor_bytes": 427738112,
+      "safetensors_bytes": 427742600,
+      "file_count": 2,
+      "tensor_count": 40,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 427738112,
+      "head_stream_bytes_by_precision": {
+        "dense": 31521792,
+        "q2": 157337600,
+        "q4": 238878720
+      },
+      "head_stream_bytes": 427738112,
+      "groups": {
+        "draft_lm_head": {
+          "bytes": 157337600,
+          "tensors": 3,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "fc": {
+          "bytes": 29491200,
+          "tensors": 3,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "trunk": {
+          "bytes": 209439744,
+          "tensors": 28,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "precision_islands": {
+          "bytes": 31469568,
+          "tensors": 6,
+          "dtypes": [
+            "BF16",
+            "I32"
+          ]
+        }
+      },
+      "tensors": {
+        "draft_lm_head.weight": {
+          "dtype": "U32",
+          "shape": [
+            98336,
+            320
+          ],
+          "bytes": 125870080
+        },
+        "fc.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            1280
+          ],
+          "bytes": 26214400
+        },
+        "layers.0.mlp.down_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            2176
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.mlp.gate_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            17408,
+            640
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.mlp.up_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            17408,
+            640
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.self_attn.k_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            1024,
+            640
+          ],
+          "bytes": 2621440
+        },
+        "layers.0.self_attn.o_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            768
+          ],
+          "bytes": 15728640
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            12288,
+            640
+          ],
+          "bytes": 31457280
+        },
+        "layers.0.self_attn.v_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            1024,
+            640
+          ],
+          "bytes": 2621440
+        },
+        "precision_islands.k.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "precision_islands.q.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "precision_islands.v.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "draft_lm_head.biases": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "draft_lm_head.scales": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "fc.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            160
+          ],
+          "bytes": 1638400
+        },
+        "fc.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            160
+          ],
+          "bytes": 1638400
+        },
+        "layers.0.input_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.mlp.down_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            272
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.down_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            272
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.gate_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.gate_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.up_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.up_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.post_attention_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.self_attn.k_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.k_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.k_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.o_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            96
+          ],
+          "bytes": 983040
+        },
+        "layers.0.self_attn.o_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            96
+          ],
+          "bytes": 983040
+        },
+        "layers.0.self_attn.q_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.q_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            80
+          ],
+          "bytes": 1966080
+        },
+        "layers.0.self_attn.q_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            80
+          ],
+          "bytes": 1966080
+        },
+        "layers.0.self_attn.v_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.v_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_embedding.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_hidden.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "precision_islands.k.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "precision_islands.q.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "precision_islands.v.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        }
+      }
+    },
+    "soup-q4": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/built/e82-soup-q4-run",
+      "tree_sha256": "08932511760ef41ac2d4c7f02abffe94a957832a2011c10bbc156369f698eaab",
+      "tree_bytes": 427746194,
+      "tensor_bytes": 427738112,
+      "safetensors_bytes": 427742624,
+      "file_count": 2,
+      "tensor_count": 40,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 427738112,
+      "head_stream_bytes_by_precision": {
+        "dense": 31521792,
+        "q2": 157337600,
+        "q4": 238878720
+      },
+      "head_stream_bytes": 427738112,
+      "groups": {
+        "draft_lm_head": {
+          "bytes": 157337600,
+          "tensors": 3,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "fc": {
+          "bytes": 29491200,
+          "tensors": 3,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "trunk": {
+          "bytes": 209439744,
+          "tensors": 28,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "precision_islands": {
+          "bytes": 31469568,
+          "tensors": 6,
+          "dtypes": [
+            "BF16",
+            "I32"
+          ]
+        }
+      },
+      "tensors": {
+        "draft_lm_head.biases": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "draft_lm_head.scales": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "draft_lm_head.weight": {
+          "dtype": "U32",
+          "shape": [
+            98336,
+            320
+          ],
+          "bytes": 125870080
+        },
+        "fc.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            160
+          ],
+          "bytes": 1638400
+        },
+        "fc.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            160
+          ],
+          "bytes": 1638400
+        },
+        "fc.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            1280
+          ],
+          "bytes": 26214400
+        },
+        "layers.0.input_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.mlp.down_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            272
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.down_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            272
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.down_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            2176
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.mlp.gate_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.gate_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.gate_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            17408,
+            640
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.mlp.up_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.up_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.up_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            17408,
+            640
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.post_attention_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.self_attn.k_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.k_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.k_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.k_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            1024,
+            640
+          ],
+          "bytes": 2621440
+        },
+        "layers.0.self_attn.o_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            96
+          ],
+          "bytes": 983040
+        },
+        "layers.0.self_attn.o_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            96
+          ],
+          "bytes": 983040
+        },
+        "layers.0.self_attn.o_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            768
+          ],
+          "bytes": 15728640
+        },
+        "layers.0.self_attn.q_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.q_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            80
+          ],
+          "bytes": 1966080
+        },
+        "layers.0.self_attn.q_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            80
+          ],
+          "bytes": 1966080
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            12288,
+            640
+          ],
+          "bytes": 31457280
+        },
+        "layers.0.self_attn.v_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.v_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.v_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            1024,
+            640
+          ],
+          "bytes": 2621440
+        },
+        "norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_embedding.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_hidden.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "precision_islands.k.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "precision_islands.k.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "precision_islands.q.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "precision_islands.q.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "precision_islands.v.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "precision_islands.v.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        }
+      }
+    },
+    "qat-q4": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/built/e82-qat-q4-run",
+      "tree_sha256": "3362d37d4cbe8eb7a597454ccaba30b85696f42dce3aff823a307c0ef7c913e1",
+      "tree_bytes": 427746210,
+      "tensor_bytes": 427738112,
+      "safetensors_bytes": 427742640,
+      "file_count": 2,
+      "tensor_count": 40,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 427738112,
+      "head_stream_bytes_by_precision": {
+        "dense": 31521792,
+        "q2": 157337600,
+        "q4": 238878720
+      },
+      "head_stream_bytes": 427738112,
+      "groups": {
+        "draft_lm_head": {
+          "bytes": 157337600,
+          "tensors": 3,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "fc": {
+          "bytes": 29491200,
+          "tensors": 3,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "trunk": {
+          "bytes": 209439744,
+          "tensors": 28,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "precision_islands": {
+          "bytes": 31469568,
+          "tensors": 6,
+          "dtypes": [
+            "BF16",
+            "I32"
+          ]
+        }
+      },
+      "tensors": {
+        "draft_lm_head.biases": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "draft_lm_head.scales": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "draft_lm_head.weight": {
+          "dtype": "U32",
+          "shape": [
+            98336,
+            320
+          ],
+          "bytes": 125870080
+        },
+        "fc.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            160
+          ],
+          "bytes": 1638400
+        },
+        "fc.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            160
+          ],
+          "bytes": 1638400
+        },
+        "fc.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            1280
+          ],
+          "bytes": 26214400
+        },
+        "layers.0.input_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.mlp.down_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            272
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.down_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            272
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.down_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            2176
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.mlp.gate_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.gate_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.gate_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            17408,
+            640
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.mlp.up_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.up_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            80
+          ],
+          "bytes": 2785280
+        },
+        "layers.0.mlp.up_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            17408,
+            640
+          ],
+          "bytes": 44564480
+        },
+        "layers.0.post_attention_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.self_attn.k_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.k_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.k_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.k_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            1024,
+            640
+          ],
+          "bytes": 2621440
+        },
+        "layers.0.self_attn.o_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            96
+          ],
+          "bytes": 983040
+        },
+        "layers.0.self_attn.o_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            96
+          ],
+          "bytes": 983040
+        },
+        "layers.0.self_attn.o_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            5120,
+            768
+          ],
+          "bytes": 15728640
+        },
+        "layers.0.self_attn.q_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.q_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            80
+          ],
+          "bytes": 1966080
+        },
+        "layers.0.self_attn.q_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            80
+          ],
+          "bytes": 1966080
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            12288,
+            640
+          ],
+          "bytes": 31457280
+        },
+        "layers.0.self_attn.v_proj.biases": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.v_proj.scales": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            80
+          ],
+          "bytes": 163840
+        },
+        "layers.0.self_attn.v_proj.weight": {
+          "dtype": "U32",
+          "shape": [
+            1024,
+            640
+          ],
+          "bytes": 2621440
+        },
+        "norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_embedding.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_hidden.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "precision_islands.k.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "precision_islands.k.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "precision_islands.q.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "precision_islands.q.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "precision_islands.v.indices": {
+          "dtype": "I32",
+          "shape": [
+            1024
+          ],
+          "bytes": 4096
+        },
+        "precision_islands.v.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        }
+      }
+    },
+    "master-bf16": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/built/e82-master-bf16-run",
+      "tree_sha256": "15d9c74eb57d3d4063bf80b84012191021c0459d5ad223dba1ca72daafdbc70e",
+      "tree_bytes": 1006742194,
+      "tensor_bytes": 1006736384,
+      "safetensors_bytes": 1006738624,
+      "file_count": 2,
+      "tensor_count": 18,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 1006736384,
+      "head_stream_bytes_by_precision": {
+        "dense": 849398784,
+        "q2": 157337600
+      },
+      "head_stream_bytes": 1006736384,
+      "groups": {
+        "draft_lm_head": {
+          "bytes": 157337600,
+          "tensors": 3,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "fc": {
+          "bytes": 104857600,
+          "tensors": 1,
+          "dtypes": [
+            "BF16"
+          ]
+        },
+        "trunk": {
+          "bytes": 744541184,
+          "tensors": 14,
+          "dtypes": [
+            "BF16"
+          ]
+        }
+      },
+      "tensors": {
+        "draft_lm_head.biases": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "draft_lm_head.scales": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "draft_lm_head.weight": {
+          "dtype": "U32",
+          "shape": [
+            98336,
+            320
+          ],
+          "bytes": 125870080
+        },
+        "fc.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            10240
+          ],
+          "bytes": 104857600
+        },
+        "layers.0.input_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.mlp.down_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            17408
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.mlp.gate_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            5120
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.mlp.up_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            5120
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.post_attention_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.self_attn.k_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.k_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "layers.0.self_attn.o_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            6144
+          ],
+          "bytes": 62914560
+        },
+        "layers.0.self_attn.q_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            5120
+          ],
+          "bytes": 125829120
+        },
+        "layers.0.self_attn.v_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_embedding.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_hidden.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        }
+      }
+    },
+    "kamciosz": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/built/e82-kamciosz-run",
+      "tree_sha256": "2d3144901ac207e52d760651c2327538bb67f172b2f134942bd1db4267c67c65",
+      "tree_bytes": 1006741794,
+      "tensor_bytes": 1006736384,
+      "safetensors_bytes": 1006738224,
+      "file_count": 2,
+      "tensor_count": 18,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 1006736384,
+      "head_stream_bytes_by_precision": {
+        "dense": 849398784,
+        "q2": 157337600
+      },
+      "head_stream_bytes": 1006736384,
+      "groups": {
+        "draft_lm_head": {
+          "bytes": 157337600,
+          "tensors": 3,
+          "dtypes": [
+            "BF16",
+            "U32"
+          ]
+        },
+        "fc": {
+          "bytes": 104857600,
+          "tensors": 1,
+          "dtypes": [
+            "BF16"
+          ]
+        },
+        "trunk": {
+          "bytes": 744541184,
+          "tensors": 14,
+          "dtypes": [
+            "BF16"
+          ]
+        }
+      },
+      "tensors": {
+        "draft_lm_head.weight": {
+          "dtype": "U32",
+          "shape": [
+            98336,
+            320
+          ],
+          "bytes": 125870080
+        },
+        "draft_lm_head.biases": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "draft_lm_head.scales": {
+          "dtype": "BF16",
+          "shape": [
+            98336,
+            80
+          ],
+          "bytes": 15733760
+        },
+        "fc.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            10240
+          ],
+          "bytes": 104857600
+        },
+        "layers.0.input_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.mlp.down_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            17408
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.mlp.gate_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            5120
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.mlp.up_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            17408,
+            5120
+          ],
+          "bytes": 178257920
+        },
+        "layers.0.post_attention_layernorm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "layers.0.self_attn.k_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.k_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "layers.0.self_attn.o_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120,
+            6144
+          ],
+          "bytes": 62914560
+        },
+        "layers.0.self_attn.q_norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            256
+          ],
+          "bytes": 512
+        },
+        "layers.0.self_attn.q_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            12288,
+            5120
+          ],
+          "bytes": 125829120
+        },
+        "layers.0.self_attn.v_proj.weight": {
+          "dtype": "BF16",
+          "shape": [
+            1024,
+            5120
+          ],
+          "bytes": 10485760
+        },
+        "norm.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_embedding.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        },
+        "pre_fc_norm_hidden.weight": {
+          "dtype": "BF16",
+          "shape": [
+            5120
+          ],
+          "bytes": 10240
+        }
+      }
+    }
+  },
+  "pinned_vs_fixture_manifest": {
+    "manifest": "fixtures/qwen3_8_27b_mtp_head.sha256",
+    "manifest_sha256": "1034f92634351b0bb4c4a02afa62df316c7a56a41a35e16f36479fde47041f81",
+    "records": [
+      {
+        "path": ".gitattributes",
+        "present": true,
+        "bytes_match": true,
+        "sha256_match": true,
+        "expected_bytes": 1519
+      },
+      {
+        "path": "config.json",
+        "present": true,
+        "bytes_match": true,
+        "sha256_match": true,
+        "expected_bytes": 3570
+      },
+      {
+        "path": "model.safetensors",
+        "present": true,
+        "bytes_match": true,
+        "sha256_match": true,
+        "expected_bytes": 849400347
+      },
+      {
+        "path": "model.safetensors.index.json",
+        "present": true,
+        "bytes_match": true,
+        "sha256_match": true,
+        "expected_bytes": 1002
+      }
+    ],
+    "all_match": true
+  }
+}
