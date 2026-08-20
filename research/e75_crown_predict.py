@@ -29,13 +29,34 @@ whether the E68 depth price still pays once they are removed.
 
 The cost model
 --------------
-    cell(w) = L + sum over active groups of c(size of group)
-    c(k)    = S[k] - L                      for a width whose partition is [k]
+S[w] is the E68 rung-1 curve: `quantized_matmul` at the scored Qwen 3.8 27B
+shapes, measured in isolation by research/run-qmv-curve.sh. It is NOT a whole
+round. Two layers are needed.
 
-L is the part of an in-situ round that does not scale with the QMV group
-structure. It is overdetermined: every multi-group width on the `ours` table
-gives one estimate, and their spread is carried through to the prediction
-band rather than hidden.
+Layer 1, the QMV cell, which is the only thing either table can move:
+
+    S[w]  = L + sum over active groups of c(size of group)
+    c(k)  = S[k] - L                      for a width whose partition is [k]
+
+L is the part of the isolated QMV measurement that does not scale with the
+group structure. It is overdetermined: every multi-group width on the `ours`
+table gives one estimate, and their spread is carried through to the
+prediction band rather than hidden.
+
+Layer 2, the round, which turns a QMV curve into decode seconds:
+
+    decode = sum_w n(w) S[w]  +  a * rounds  +  b * rows
+
+`a` is the fixed per-round cost and `b` the per-row cost of everything that is
+not this QMV: SDPA, the recurrent state, the proposal head, sampling. Both are
+solved exactly from the two measured E68 cells, so the fit has no freedom left
+over. It is then checked at width 1, which appears in NEITHER arm's histogram:
+S[1] + a + b must reproduce the measured serial seconds per token.
+
+The two layers separate cleanly. `a` and `b` are table-independent, so the
+predicted table effect is exactly sum_w n(w) (S_crown[w] - S_ours[w]) and does
+not depend on the round fit at all. The round fit only converts that into an
+absolute decode second figure.
 
 The width histogram is treated as table-invariant. That is not an assumption
 about timing; the emitted stream, the acceptance pattern and the depth walk
@@ -62,6 +83,7 @@ TABLE_H = REPO / ("Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal"
                   "/kernels/quantized.h")
 RUNG1 = REPO / "research/e68-artifacts/e68-rung1.json"
 E68_RUNS = REPO / ".mlxfast-private/e68-e2e/runs"
+PBFIT_CROWN_OUT = REPO / "research/e75_pbfit_crown_vector.json"
 
 # The crown table, held here as the exact upstream dispatch rather than as a
 # formula, so a prediction cannot silently follow a later upstream edit.
@@ -178,7 +200,8 @@ def arm_histograms(runs_dir):
         hist = collections.Counter(int(v) + 1 for v in lengths)
         arm = fields["arm"]
         record = out.setdefault(arm, {"histogram": dict(sorted(hist.items())),
-                                      "legs": [], "decode_seconds": []})
+                                      "legs": [], "decode_seconds": [],
+                                      "serial_seconds_per_token": []})
         if record["histogram"] != dict(sorted(hist.items())):
             raise SystemExit(
                 "e75_crown_predict: arm %s produced two different histograms; "
@@ -186,13 +209,53 @@ def arm_histograms(runs_dir):
                 % arm)
         record["legs"].append(leg.name)
         record["decode_seconds"].append(payload["decode_seconds"])
+        score = leg / "score.json"
+        if score.exists():
+            record["serial_seconds_per_token"].append(
+                json.loads(score.read_text())["metrics"]
+                ["serial_seconds_per_token"])
     for arm, record in out.items():
         record["rounds"] = sum(record["histogram"].values())
+        record["rows"] = sum(w * n for w, n in record["histogram"].items())
         record["decode_seconds_median"] = statistics.median(
             record["decode_seconds"])
         record["decode_seconds_spread"] = (max(record["decode_seconds"])
                                            - min(record["decode_seconds"]))
+        record["serial_seconds_per_token_median"] = statistics.median(
+            record["serial_seconds_per_token"])
     return out
+
+
+def fit_round_model(s, hists):
+    """Solve the per-round and per-row cost outside this QMV, then check it.
+
+    Two unknowns, two measured cells, so the fit is exact and has no residual
+    to admire. The evidence is the out-of-sample width-1 point: no arm ever
+    runs a width-1 verify, so `S[1] + a + b` against the measured serial
+    seconds per token is a real test the model can fail.
+    """
+    def cell(arm):
+        h = hists[arm]
+        return (h["rounds"], h["rows"],
+                sum(n * s[w] for w, n in h["histogram"].items()),
+                h["decode_seconds_median"])
+
+    (r1, w1, q1, d1), (r2, w2, q2, d2) = cell("ship"), cell("pbfit")
+    det = r1 * w2 - r2 * w1
+    y1, y2 = d1 - q1, d2 - q2
+    a = (y1 * w2 - y2 * w1) / det
+    b = (r1 * y2 - r2 * y1) / det
+    measured_serial = statistics.median(
+        record["serial_seconds_per_token_median"] for record in hists.values())
+    return {
+        "per_round_s": a,
+        "per_row_s": b,
+        "fitted_on": ["ship", "pbfit"],
+        "width1_model_s": s[1] + a + b,
+        "width1_measured_serial_seconds_per_token": measured_serial,
+        "width1_error_pct": 100 * (s[1] + a + b - measured_serial)
+                            / measured_serial,
+    }
 
 
 def round_total(histogram, cost, table):
@@ -214,12 +277,19 @@ def walk_depth(marginal, cap, p):
 
 
 def refit_pbfit(s):
-    """The E68 pbfit construction, run on an arbitrary width ladder."""
+    """The E68 pbfit construction, run on an arbitrary width ladder.
+
+    The rescale associates as `v * (total / sum)`, matching Swift's
+    `makeMeasuredDepthPrice`. Rung A found that the other association,
+    `v * total / sum`, differs by one ulp at three of the eight positions, so
+    the vector written here is the one Swift would actually execute.
+    """
     raw = [HEAD_STEP_COST_RATIO
            + (s[d + 2] - s[d + 1]) / VERIFY_FORWARD_S
            for d in range(MAX_DEPTH)]
     total = MAX_DEPTH * HEAD_STEP_COST_RATIO
-    marginal = [v * total / sum(raw) for v in raw]
+    scale = total / sum(raw)
+    marginal = [v * scale for v in raw]
     return {
         "raw": raw,
         "marginal": marginal,
@@ -250,25 +320,24 @@ def main():
     cost = predict_cells(s, launch_floor, ours, crown)
     hists = arm_histograms(E68_RUNS)
 
+    round_model = fit_round_model(s, hists)
+    a, b = round_model["per_round_s"], round_model["per_row_s"]
+
     cells = {}
     for table in ("ours", "crown"):
         for arm in sorted(hists):
-            hist = hists[arm]["histogram"]
+            record = hists[arm]
+            qmv = round_total(record["histogram"], cost, table)
             cells["%s-%s" % (table, arm)] = {
-                "round_total_s": round_total(hist, cost, table),
+                "qmv_total_s": qmv,
+                "predicted_decode_seconds":
+                    qmv + a * record["rounds"] + b * record["rows"],
                 "measured_decode_seconds":
-                    hists[arm]["decode_seconds_median"] if table == "ours"
+                    record["decode_seconds_median"] if table == "ours"
                     else None,
             }
 
     factorial = {}
-    for arm in sorted(hists):
-        base = cells["ours-%s" % arm]["round_total_s"]
-        cells["ours-%s" % arm]["predicted_decode_seconds"] = \
-            hists[arm]["decode_seconds_median"]
-        cells["crown-%s" % arm]["predicted_decode_seconds"] = \
-            hists[arm]["decode_seconds_median"] \
-            + cells["crown-%s" % arm]["round_total_s"] - base
 
     if "ship" in hists and "pbfit" in hists:
         o_ship = cells["ours-ship"]["predicted_decode_seconds"]
@@ -292,6 +361,7 @@ def main():
         }
 
     crown_ladder = {w: cost[w]["crown_s"] for w in cost}
+    ours_refit, crown_refit = refit_pbfit(s), refit_pbfit(crown_ladder)
     payload = {
         "harness": "local",
         "instrument": "E68 rung-1 fixed-width cell curve, unchanged",
@@ -311,10 +381,11 @@ def main():
         "predicted_crown_step_into_5_s": (crown_ladder[5] - crown_ladder[4]),
         "predicted_crown_step_into_6_s": (crown_ladder[6] - crown_ladder[5]),
         "arm_histograms": hists,
+        "round_model": round_model,
         "cells": cells,
         "factorial": factorial,
-        "pbfit_ours_refit": refit_pbfit(s),
-        "pbfit_crown_refit": refit_pbfit(crown_ladder),
+        "pbfit_ours_refit": ours_refit,
+        "pbfit_crown_refit": crown_refit,
     }
 
     text = json.dumps(payload, indent=1, sort_keys=True, default=str)
@@ -325,6 +396,26 @@ def main():
         print("e75_crown_predict: wrote %s" % out)
     else:
         print(text)
+
+    PBFIT_CROWN_OUT.write_text(json.dumps({
+        "harness": "local",
+        "arm": "pbfit_crown",
+        "provenance": "E75 rung C refit of the E68 pbfit construction onto the"
+                      " PREDICTED crown width ladder. Not measured. Replace"
+                      " from the rung B curve before shipping it anywhere.",
+        "crown_ladder_predicted_s": crown_ladder,
+        "raw": crown_refit["raw"],
+        "marginal": crown_refit["marginal"],
+        "marginal_total": crown_refit["marginal_total"],
+        "holds_total": abs(crown_refit["marginal_total"]
+                           - MAX_DEPTH * HEAD_STEP_COST_RATIO) < 1e-12,
+        "predicted_depth": crown_refit["predicted_depth"],
+        "pbfit_ours_for_comparison": {
+            "marginal": ours_refit["marginal"],
+            "predicted_depth": ours_refit["predicted_depth"],
+        },
+    }, indent=1, sort_keys=True) + "\n")
+    print("e75_crown_predict: wrote %s" % PBFIT_CROWN_OUT)
     return 0
 
 
