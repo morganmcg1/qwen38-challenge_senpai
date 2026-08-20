@@ -10,9 +10,9 @@ of the design are subsets of one diff:
   ab    both, which must reproduce the branch tip byte for byte
 
 The two mechanisms touch disjoint regions of the file, so each hunk of
-`git diff BASE TIP` belongs to exactly one of them. The trace seam is used by
-both and is shared. Classification is by content, not by line number, so a
-later edit that moves a region cannot silently mislabel an arm.
+`git diff BASE TIP` belongs to exactly one of them. Classification is by
+content, not by line number, so a later edit that moves a region cannot
+silently mislabel an arm.
 
   research/e84_arm.py ab --out /dev/stdout
 
@@ -37,15 +37,13 @@ FILE = "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
 B_MARKERS = (
     "qwen35GatedDeltaReplayState",
     "boundarySsm",
-    "gdn replay:",
 )
-SHARED_MARKERS = ("private enum Qwen35PathTrace",)
 
 ARMS = {
     "base": frozenset(),
-    "a": frozenset({"shared", "a"}),
-    "b": frozenset({"shared", "b"}),
-    "ab": frozenset({"shared", "a", "b"}),
+    "a": frozenset({"a"}),
+    "b": frozenset({"b"}),
+    "ab": frozenset({"a", "b"}),
 }
 
 
@@ -56,8 +54,6 @@ def git(*args, **kw):
 
 
 def classify(hunk: str) -> str:
-    if any(m in hunk for m in SHARED_MARKERS):
-        return "shared"
     if any(m in hunk for m in B_MARKERS):
         return "b"
     return "a"

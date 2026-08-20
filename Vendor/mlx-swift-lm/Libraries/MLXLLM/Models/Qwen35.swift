@@ -12,23 +12,6 @@ import MLX
 import MLXLMCommon
 import MLXNN
 
-/// Reports which projection and recurrent-replay path the process actually
-/// took. Off unless `MLXFAST_E84_TRACE=1`, and it never changes the work
-/// performed. Both fast paths below fail closed, so without this seam a path
-/// that never engaged is indistinguishable from a mechanism with no effect.
-private enum Qwen35PathTrace {
-    nonisolated(unsafe) private static var seen = Set<String>()
-    private static let enabled =
-        ProcessInfo.processInfo.environment["MLXFAST_E84_TRACE"] == "1"
-
-    static func once(_ message: @autoclosure () -> String) {
-        guard enabled else { return }
-        let text = message()
-        guard seen.insert(text).inserted else { return }
-        FileHandle.standardError.write(Data("[e84] \(text)\n".utf8))
-    }
-}
-
 // MARK: - Configuration
 
 private enum RopeParametersCodingKey: String, CodingKey {
@@ -1109,11 +1092,8 @@ final class Qwen35GatedDeltaNet: Module {
                let stateOnly = qwen35GatedDeltaReplayState(
                 k: k, v: v, g: g, beta: beta, state: tape.ssmPre)
             {
-                Qwen35PathTrace.once("gdn replay: state-only kernel")
                 boundarySsm = stateOnly
             } else {
-                Qwen35PathTrace.once(
-                    "gdn replay: two-output kernel (mask=\(mask != nil))")
                 boundarySsm = qwen35GatedDeltaPrepared(
                     q: tape.q[0..., rows, 0...],
                     k: k, v: v, g: g, beta: beta,
@@ -2025,8 +2005,6 @@ final class Qwen35Attention: Module {
         // permutation of the output range.
         if let kvExact = _exactKVDenseW, islandFastPathReady() {
             if let w = _qOnlyW, let s = _qOnlyS, let z = _qOnlyZ {
-                Qwen35PathTrace.once(
-                    "qkv: affine-4 q pack \(_qOut) rows + dense bf16 kv")
                 var q = quantizedMM(
                     x, w, scales: s, biases: z, transpose: true,
                     groupSize: _qkvGS, bits: _qkvBits, mode: _qkvMode)
@@ -2047,8 +2025,6 @@ final class Qwen35Attention: Module {
             }
         }
         if let w = _qkvW, let s = _qkvS, let z = _qkvZ {
-            Qwen35PathTrace.once(
-                "qkv: affine-4 pack \(w.dim(0)) rows + scatter")
             var y = quantizedMM(
                 x, w, scales: s, biases: z, transpose: true,
                 groupSize: _qkvGS, bits: _qkvBits, mode: _qkvMode)
@@ -2101,13 +2077,11 @@ final class Qwen35Attention: Module {
         // Complete K/V island coverage: the whole affine-4 K/V pack this used
         // to run was overwritten row for row. One BF16 matmul is the result.
         if let kvExact = _exactKVDenseW, islandFastPathReady() {
-            Qwen35PathTrace.once("kv: dense bf16 only")
             let y = matmul(x, kvExact.transposed(1, 0))
             let kEnd = _exactKVDenseKOut
             return (y[.ellipsis, ..<kEnd], y[.ellipsis, kEnd...])
         }
         if let w = _kvW, let s = _kvS, let z = _kvZ {
-            Qwen35PathTrace.once("kv: affine-4 pack \(w.dim(0)) rows + scatter")
             var y = quantizedMM(
                 x, w, scales: s, biases: z, transpose: true,
                 groupSize: _kvGS, bits: _kvBits, mode: _kvMode)
@@ -2201,7 +2175,6 @@ final class Qwen35Attention: Module {
             ready = true
         }
         _islandFastPathReady = ready
-        Qwen35PathTrace.once("islands: fastPathReady=\(ready)")
         return ready
     }
 
@@ -2236,13 +2209,8 @@ final class Qwen35Attention: Module {
             _exactQKVIndices = qOnlyIndices
             _exactKVIndices = nil
             _exactQRowCount = qWeight.dim(0)
-            Qwen35PathTrace.once(
-                "islands: kv reordered to natural order "
-                    + "[\(kvNatural.dim(0)), \(kvNatural.dim(1))], "
-                    + "q scatter kept \(qWeight.dim(0)) rows")
             return
         }
-        Qwen35PathTrace.once("islands: k/v are not complete permutations")
         let weight = concatenated([qWeight, kWeight, vWeight], axis: 0).contiguous()
         let qkvIndices = concatenated(
             [qIndices, kIndices + qOutputCount,
