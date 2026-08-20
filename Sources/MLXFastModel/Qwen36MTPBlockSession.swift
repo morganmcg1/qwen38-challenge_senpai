@@ -673,8 +673,12 @@ public final class Qwen36MTPBlockSession {
     /// `QwenMTPDepthCostModelTests` re-parses that switch and fails if this
     /// table drifts from it, so a retuned IPG cannot leave a stale staircase
     /// inside the schedule.
+    ///
+    /// E55 moved width 9 from 3 inputs per group to 5, which drops it from
+    /// three weight streams to two and deletes the 8 -> 9 crossing. The table
+    /// now steps exactly once, at width 5.
     static let verifyInputsPerGroup: [Int: Int] = [
-        3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 3,
+        3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 5,
     ]
 
     /// Weight passes over the 4-bit backbone for one verify width. Widths 1
@@ -719,6 +723,14 @@ public final class Qwen36MTPBlockSession {
     /// buys local time on a width the score-setting prompts almost never run.
     /// This set is therefore the experiment's treatment: it names which
     /// crossings the walk is allowed to see.
+    ///
+    /// After E55 the live table steps only at width 5, so a SHIPPED set may
+    /// name width 5 alone. `QwenMTPDepthCostModelTests` fails if the shipped
+    /// set names a width the live table does not step at, which stops the
+    /// schedule charging for a pass the machine no longer makes. A research arm
+    /// may still declare width 9 in order to hold the pre-E55 geometry fixed
+    /// while the machine underneath it changes; such an arm is measured and
+    /// reported, never shipped.
     static let pricedBoundaryWidths: Set<Int> = [5]
 
     /// Depth steps this price closes at EVERY acceptance rate, on every
@@ -744,8 +756,6 @@ public final class Qwen36MTPBlockSession {
     static let marginalCostRatio: [Double] = {
         let crossesBoundary = (0 ..< Qwen36MTPLimits.maxDepth).map { depth in
             pricedBoundaryWidths.contains(depth + 2)
-                && verifyWeightStreams(width: depth + 2)
-                    > verifyWeightStreams(width: depth + 1)
         }
         let boundaries = Double(crossesBoundary.filter { $0 }.count)
         let rows = Double(Qwen36MTPLimits.maxDepth)

@@ -3,9 +3,8 @@
 #
 #   research/e56_run_leg.sh ARM TAG [--tokens N]
 #
-# ARM is `base` (the campaign base's scalar-price schedule), `s45`, `s89` or
-# `sfull` (this branch's stream-aware price with the 4 -> 5 crossing, the 8 -> 9
-# crossing, or both). research/e56_build_arms.sh has already built every worker
+# ARM is `base` (the campaign base's scalar-price schedule), `s45`, `s89`,
+# `h224` or `s45h224`. research/e56_build_arms.sh has already built every worker
 # binary and published them outside the checkout, so this script only selects
 # one of them. It never edits, checks out, or stashes anything:
 # the work tree stays on HEAD for the whole session, which removes the failure
@@ -30,7 +29,7 @@ while (($#)); do
 done
 
 case "${arm}" in
-  base|s45|s89|sfull) ;;
+  base|s45|s89|h224|s45h224) ;;
   *) echo "e56_run_leg: unknown arm ${arm}" >&2; exit 2 ;;
 esac
 

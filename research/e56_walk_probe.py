@@ -24,13 +24,20 @@ import re
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SESSION = ROOT / "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
 
-# The four arms of the E56 revision. `base` is the shipped scalar rule; the
-# others price the crossings they name and nothing else.
+# The five arms of the E56 revision on the post-E55 base, as
+# (priced crossing widths, headStepCostRatio override).
+#
+# `base` is the shipped scalar rule. `s45` prices the only crossing the live
+# dispatch table still has. `s89` prices the 8 -> 9 step that E55 deleted, which
+# holds the pre-E55 geometry fixed while the machine underneath it changes, and
+# is the R6 erosion arm. `h224` and `s45h224` carry askeladd's directly measured
+# head-step ratio instead of the shipped 0.18.
 ARMS = {
-    "base": None,
-    "s45": {5},
-    "s89": {9},
-    "sfull": {5, 9},
+    "base": (None, None),
+    "s45": ({5}, None),
+    "s89": ({9}, None),
+    "h224": (None, 0.224),
+    "s45h224": ({5}, 0.224),
 }
 
 
@@ -88,21 +95,20 @@ def streams(width: int, ipg: dict[int, int]) -> int:
     return 1 if group is None else -(-width // group)
 
 
-def cost_table(source: str, priced: set[int] | None,
+def cost_table(source: str, priced: set[int] | None, h: float | None = None,
                depth_cap: int = 8) -> tuple[list[float], list[float]]:
     """Rebuild `marginalCostRatio` and `cumulativeCostRatio` for one arm.
 
-    `priced=None` is the shipped scalar rule, whose table is flat.
+    `priced=None` is the shipped scalar rule, whose table is flat. `h` defaults
+    to the `headStepCostRatio` the checkout carries.
     """
-    h = swift_scalar(source, "headStepCostRatio")
-    if priced is None:
+    if h is None:
+        h = swift_scalar(source, "headStepCostRatio")
+    if priced is None or not priced:
         marginal = [h] * depth_cap
     else:
-        ipg = inputs_per_group(source)
         ratio = stream_cost_ratio(source)
-        crosses = [(d + 2) in priced
-                   and streams(d + 2, ipg) > streams(d + 1, ipg)
-                   for d in range(depth_cap)]
+        crosses = [(d + 2) in priced for d in range(depth_cap)]
         count = sum(crosses)
         within = depth_cap * h / (depth_cap - count + count * ratio)
         marginal = [within * ratio if cross else within for cross in crosses]
@@ -136,7 +142,7 @@ def walk(p: float, marginal: list[float], cumulative: list[float],
     return depth
 
 
-def check(source: str) -> int:
+def check(source: str, allow_flat_priced: bool = False) -> int:
     """Guard the arm the checkout currently holds."""
     priced = priced_boundary_widths(source)
     declared = declared_closed_steps(source)
@@ -145,15 +151,20 @@ def check(source: str) -> int:
     ipg = inputs_per_group(source)
     flat = sorted(w for w in priced if streams(w, ipg) <= streams(w - 1, ipg))
     print(f"e56_walk_probe --check: pricedBoundaryWidths={sorted(priced)} "
+          f"headStepCostRatio={swift_scalar(source, 'headStepCostRatio')} "
           f"declaredClosedDepthSteps={declared} computed_closed={closed}")
     failures = []
     if closed != declared:
         failures.append(
             f"closed steps {closed} do not match the declaration {declared}")
-    if flat:
+    if flat and not allow_flat_priced:
         failures.append(
             f"widths {flat} are priced but add no weight stream in the live "
             "dispatch table")
+    elif flat:
+        print(f"e56_walk_probe: RESEARCH GEOMETRY: widths {flat} are priced "
+              "but add no weight stream in the live dispatch table. This arm "
+              "holds an older geometry fixed on purpose and must not ship.")
     mean = sum(marginal) / len(marginal)
     if abs(mean - swift_scalar(source, "headStepCostRatio")) > 1e-12:
         failures.append(f"mean price {mean} is off headStepCostRatio")
@@ -174,12 +185,13 @@ def report(source: str) -> None:
           f"{sorted(priced_boundary_widths(source))} "
           f"declaredClosedDepthSteps={declared_closed_steps(source)}\n")
 
-    tables = {name: cost_table(source, priced)
-              for name, priced in ARMS.items()}
+    tables = {name: cost_table(source, priced, arm_h)
+              for name, (priced, arm_h) in ARMS.items()}
 
     print("Price of the depth -> depth + 1 step, as a fraction of a depth-0 "
           "round.")
-    print("Every arm has the same MEAN price, so no arm is an h retune.")
+    print("Arms that share an h share a MEAN price, so within one h the shape "
+          "is the only treatment.")
     print("  depth  width step  crossing  " + "  ".join(
         f"{name:>9}" for name in ARMS))
     for depth in range(8):
@@ -219,10 +231,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true",
                         help="verify the arm currently in the checkout")
+    parser.add_argument("--allow-flat-priced", action="store_true",
+                        help="accept a research arm that prices a width the "
+                             "live dispatch table no longer steps at")
     args = parser.parse_args()
     source = read_source()
     if args.check:
-        raise SystemExit(check(source))
+        raise SystemExit(check(source, args.allow_flat_priced))
     report(source)
 
 

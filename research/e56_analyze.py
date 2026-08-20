@@ -1,23 +1,33 @@
 #!/usr/bin/env python3
-"""E56 four-arm palindrome analysis.
+"""E56 palindrome analysis.
 
-  python3 research/e56_analyze.py [--session s3] [--out research/e56-abba.json]
+  python3 research/e56_analyze.py [--session s4] [--out research/e56-abba.json]
 
-Session 3 runs eight legs in the order base, s45, s89, sfull, sfull, s89, s45,
-base. The palindrome gives every arm one early and one late slot, so monotone
-thermal drift cancels to first order, and the two `base` legs are two
-byte-identical builds measured in one session. Their spread -- not a nominal
-noise figure -- is what this instrument calls a difference when there is none.
+A session runs every arm twice in palindrome order, so every arm gets one early
+and one late slot and monotone thermal drift cancels to first order. The two
+`base` legs are two byte-identical builds measured in one session. Their spread
+-- not a nominal noise figure -- is what this instrument calls a difference
+when there is none.
 
-The arms differ only in which verify-width crossings the depth walk pays for:
+Session 3 ran on the pre-E55 base, where the dispatch table still crossed a
+weight stream at width 9:
 
   base   no crossing priced; one scalar price per extra draft step
   s45    the 4 -> 5 crossing priced (the SDPA width wall)
   s89    the 8 -> 9 crossing priced (the segmented-verify wall)
   sfull  both crossings priced
 
-Every arm keeps the same mean price, so an arm can only move the walk by moving
-cost between steps, never by making drafting globally cheaper or dearer.
+Session 4 runs on the post-E55 base, where `case 9:` dispatches two streams and
+the 8 -> 9 crossing no longer exists. It keeps `s89` unchanged to price the
+erosion directly, and replaces `sfull` with the head-price correction arms:
+
+  h224     flat price at the directly measured head cost ratio 0.224
+  s45h224  the 4 -> 5 crossing priced at that corrected head cost
+
+An arm that only redistributes cost between steps keeps the same mean price, so
+it can move the walk only by moving cost, never by making drafting globally
+cheaper or dearer. The `h224` arms deliberately break that: they change the
+mean, which is the quantity the advisor says was mismeasured.
 """
 from __future__ import annotations
 
@@ -29,7 +39,16 @@ import statistics as st
 from collections import Counter
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ARMS = ("base", "s45", "s89", "sfull")
+# Suffix -> arm, in run order, matching research/e56_session.sh.
+LAYOUTS = {
+    "s3": (("base1", "base"), ("s45a", "s45"), ("s89a", "s89"),
+           ("sfulla", "sfull"), ("sfullb", "sfull"), ("s89b", "s89"),
+           ("s45b", "s45"), ("base2", "base")),
+    "s4": (("base1", "base"), ("s45a", "s45"), ("s89a", "s89"),
+           ("h224a", "h224"), ("mixa", "s45h224"), ("mixb", "s45h224"),
+           ("h224b", "h224"), ("s89b", "s89"), ("s45b", "s45"),
+           ("base2", "base")),
+}
 NULL_FLOOR_PCT = 0.0629
 ROUND_RE = re.compile(r"mtp-trace: round=(\d+) d=(\d+) acc=(\d+)")
 
@@ -40,10 +59,16 @@ CORRECTNESS = ("all_tokens_matched", "residual_divergence_count",
 
 def session_order(session: str) -> list[tuple[str, str]]:
     """Tags in run order, matching research/e56_session.sh."""
-    return [(f"{session}base1", "base"), (f"{session}s45a", "s45"),
-            (f"{session}s89a", "s89"), (f"{session}sfulla", "sfull"),
-            (f"{session}sfullb", "sfull"), (f"{session}s89b", "s89"),
-            (f"{session}s45b", "s45"), (f"{session}base2", "base")]
+    return [(f"{session}{suffix}", arm) for suffix, arm in LAYOUTS[session]]
+
+
+def session_arms(session: str) -> list[str]:
+    """Arms in first-appearance order, so `base` leads the report."""
+    seen = []
+    for _, arm in LAYOUTS[session]:
+        if arm not in seen:
+            seen.append(arm)
+    return seen
 
 
 def read_meta(path: pathlib.Path) -> dict:
@@ -87,9 +112,19 @@ def width_histogram(rounds: list[tuple[int, int]]) -> dict:
     # that is the 4 -> 5 crossing binding (R5).
     full = Counter(d + 1 for d, a in rounds if d > 0 and a == d)
     total = len(rounds)
+    # `accepted_draft_rate` divides accepted drafts by PROPOSED drafts, which
+    # counts every draft behind a rejection as a failure. The depth walk models
+    # acceptance as a sequential Bernoulli chain, so it needs the conditional
+    # per-draft rate: successes over trials that were actually reached, where a
+    # round that lost a draft contributes exactly one observed failure and a
+    # round that kept every draft contributes none.
+    successes = sum(a for _, a in rounds)
+    trials = sum(a + (1 if a < d else 0) for d, a in rounds)
     return {
         "rounds": total,
         "mean_verify_width": sum(d + 1 for d, _ in rounds) / total,
+        "sequential_accept_mle": successes / trials if trials else None,
+        "accept_trials": trials,
         "share": {w: round(widths.get(w, 0) / total, 5) for w in range(1, 10)},
         "count": {w: widths.get(w, 0) for w in range(1, 10)},
         "full_accept_count": {w: full.get(w, 0) for w in range(1, 10)},
@@ -105,8 +140,13 @@ def load_legs(session: str) -> list[dict]:
         out_dir = ROOT / "research" / "out" / tag
         score_path = out_dir / "score.json"
         if not score_path.exists():
-            legs.append({"tag": tag, "arm": arm, "status": "missing"})
-            continue
+            # The session retries a failed leg once under a suffixed tag.
+            retry = ROOT / "research" / "out" / f"{tag}r"
+            if (retry / "score.json").exists():
+                out_dir, score_path, tag = retry, retry / "score.json", f"{tag}r"
+            else:
+                legs.append({"tag": tag, "arm": arm, "status": "missing"})
+                continue
         score = json.loads(score_path.read_text())
         rounds = rounds_from_trace(out_dir / "trace.txt")
         legs.append({
@@ -128,7 +168,7 @@ def arm_values(legs: list[dict], arm: str, key: str) -> list[float]:
             and isinstance(leg["metrics"].get(key), (int, float))]
 
 
-def contrast(legs: list[dict], key: str) -> dict | None:
+def contrast(legs: list[dict], key: str, arms: list[str]) -> dict | None:
     base = arm_values(legs, "base", key)
     if not base:
         return None
@@ -140,7 +180,7 @@ def contrast(legs: list[dict], key: str) -> dict | None:
                                  if len(base) > 1 and mb else None),
         "arms": {},
     }
-    for arm in ARMS:
+    for arm in arms:
         if arm == "base":
             continue
         values = arm_values(legs, arm, key)
@@ -159,22 +199,23 @@ def contrast(legs: list[dict], key: str) -> dict | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--session", default="s3")
+    parser.add_argument("--session", default="s4", choices=sorted(LAYOUTS))
     parser.add_argument("--out", default="research/e56-abba.json")
     args = parser.parse_args()
 
     legs = load_legs(args.session)
-    report = {"session": args.session, "legs": legs,
+    arms = session_arms(args.session)
+    report = {"session": args.session, "arms": arms, "legs": legs,
               "null_floor_pct": NULL_FLOOR_PCT, "contrasts": {}}
 
-    print(f"{'tag':<10}{'arm':<7}{'serial s/tok':>14}{'mtp s/tok':>14}"
+    print(f"{'tag':<10}{'arm':<8}{'serial s/tok':>14}{'mtp s/tok':>14}"
           f"{'speedup':>10}{'draft':>8}{'acc':>8}{'tokens':>8}")
     for leg in legs:
         if leg["status"] != "ok":
-            print(f"{leg['tag']:<10}{leg['arm']:<7}  MISSING")
+            print(f"{leg['tag']:<10}{leg['arm']:<8}  MISSING")
             continue
         m = leg["metrics"]
-        print(f"{leg['tag']:<10}{leg['arm']:<7}"
+        print(f"{leg['tag']:<10}{leg['arm']:<8}"
               f"{m.get('serial_seconds_per_token', float('nan')):>14.8f}"
               f"{m.get('mtp_seconds_per_token', float('nan')):>14.8f}"
               f"{m.get('mtp_decode_speedup', float('nan')):>10.5f}"
@@ -190,7 +231,7 @@ def main() -> None:
                        ("serial_seconds_per_token", "serial leg (falsifier)"),
                        ("effective_mean_draft_len", "mean draft length"),
                        ("accepted_draft_rate", "accepted draft rate")):
-        row = contrast(legs, key)
+        row = contrast(legs, key, arms)
         if row is None:
             continue
         report["contrasts"][key] = row
@@ -199,7 +240,7 @@ def main() -> None:
         print(f"    base  {row['base_mean']:.8f}"
               + (f"   null arm spread {null:.4f} %" if null is not None else ""))
         for arm, cell in row["arms"].items():
-            print(f"    {arm:<5} {cell['mean']:.8f}   {cell['delta_pct']:+.4f} %"
+            print(f"    {arm:<8} {cell['mean']:.8f}   {cell['delta_pct']:+.4f} %"
                   + (f"   own spread {cell['spread_pct']:.4f} %"
                      if cell["spread_pct"] is not None else ""))
 
@@ -219,21 +260,24 @@ def main() -> None:
 
     print()
     print("Verify-width share by leg (the mechanism readout):")
-    print(f"{'tag':<10}{'arm':<7}{'rounds':>7}{'mean W':>8}" +
+    print(f"{'tag':<10}{'arm':<8}{'rounds':>7}{'mean W':>8}{'accept p':>10}" +
           "".join(f"{w:>8}" for w in range(1, 10)))
     for leg in legs:
         widths = leg.get("widths") or {}
         if not widths:
             continue
-        print(f"{leg['tag']:<10}{leg['arm']:<7}{widths['rounds']:>7}"
+        print(f"{leg['tag']:<10}{leg['arm']:<8}{widths['rounds']:>7}"
               f"{widths['mean_verify_width']:>8.3f}"
+              f"{widths['sequential_accept_mle']:>10.4f}"
               + "".join(f"{widths['share'][w]:>8.3f}" for w in range(1, 10)))
+    print("`accept p` is the sequential per-draft acceptance the depth walk")
+    print("models, not accepted/proposed. It is the p the walk should be fed.")
 
     print()
     print("Rounds that terminate at exactly verify width 5 (R5). `full accept`")
     print("counts the width-5 rounds whose four drafts were all accepted, so")
     print("the walk stopped there by price, not by target rejection:")
-    print(f"{'tag':<10}{'arm':<7}{'rounds':>8}{'W=5':>8}{'share':>9}"
+    print(f"{'tag':<10}{'arm':<8}{'rounds':>8}{'W=5':>8}{'share':>9}"
           f"{'full accept':>13}")
     width5 = {}
     for leg in legs:
@@ -241,7 +285,7 @@ def main() -> None:
         if not widths:
             continue
         width5.setdefault(leg["arm"], []).append(widths["width5_rounds"])
-        print(f"{leg['tag']:<10}{leg['arm']:<7}{widths['rounds']:>8}"
+        print(f"{leg['tag']:<10}{leg['arm']:<8}{widths['rounds']:>8}"
               f"{widths['width5_rounds']:>8}{widths['width5_share']:>9.4f}"
               f"{widths['width5_full_accept']:>13}")
     report["width5_rounds_by_arm"] = width5

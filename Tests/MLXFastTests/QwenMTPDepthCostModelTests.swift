@@ -96,8 +96,6 @@ struct QwenMTPDepthCostModelTests {
 
         let priced = { (depth: Int) -> Bool in
             Qwen36MTPBlockSession.pricedBoundaryWidths.contains(depth + 2)
-                && Qwen36MTPBlockSession.verifyWeightStreams(width: depth + 2)
-                    > Qwen36MTPBlockSession.verifyWeightStreams(width: depth + 1)
         }
         let withinTier = marginals.enumerated().filter { !priced($0.offset) }
         let crossings = marginals.enumerated().filter { priced($0.offset) }

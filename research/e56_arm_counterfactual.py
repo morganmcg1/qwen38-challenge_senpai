@@ -12,14 +12,19 @@ price into the four arms the session measures, and prices each one twice: once
 against a truth curve for THIS host class and once against a truth curve
 transferred to the ranked M5.
 
-THE ARMS. Each arm names the crossings its price is allowed to see, and every
-arm's mean price is pinned to the live `headStepCostRatio`, so no arm is a
-disguised `h` retune:
+THE ARMS. Each arm names the crossings its price is allowed to see. The three
+redistribution arms keep the mean price pinned to `headStepCostRatio`, so none
+of them is a disguised `h` retune; the two `h` arms change the mean on purpose,
+because the advisor reports that 0.18 was mismeasured and the directly measured
+value is 0.224:
 
-  base   the shipped scalar price, flat at h
-  s45    prices only the 4 -> 5 crossing (weight streams 1 -> 2)
-  s89    prices only the 8 -> 9 crossing (weight streams 2 -> 3)
-  sfull  prices both
+  base     the shipped scalar price, flat at h = 0.18
+  s45      prices only the 4 -> 5 crossing (weight streams 1 -> 2)
+  s89      prices only the 8 -> 9 crossing, which E55 deleted from the live
+           dispatch table; the arm holds that older geometry fixed so the
+           erosion can be priced against an unchanged treatment
+  h224     flat price at h = 0.224
+  s45h224  the 4 -> 5 crossing priced at h = 0.224
 
 The tables are rebuilt by `e56_walk_probe.cost_table` from the live Swift
 constants, so this script and the binaries under test cannot disagree.
@@ -57,7 +62,7 @@ import qmv_score_leverage as Q
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "research" / "e56-arm-counterfactual.json"
 
-ARMS = ("base", "s45", "s89", "sfull")
+ARMS = ("base", "s45", "s89", "h224", "s45h224")
 
 # Mean draft length published for the two score-setting prompts, from the
 # receipt row the campaign measures against (E53).
@@ -68,20 +73,26 @@ RANKED_TARGET_MEAN = {"beagle": 485 / 107, "medicine": 472 / 99}
 # 3, 4, 5 and 6.
 LOCAL_ROUND_SECONDS = {3: 0.12912, 4: 0.15878, 5: 0.21549, 6: 0.24170}
 
-# The public local fixture accepts about 0.99 of proposed drafts. One state,
-# no bursts: this is the acceptance process the local session actually runs.
-LOCAL_FIXTURE_ACCEPT = 0.99
+# Measured, not assumed: the sequential per-draft acceptance of the base pair
+# in E56 session 3 (research/e56_analyze.py --session s3, `accept p`). An
+# earlier 0.99 was a guess and was too high, which made the local fixture look
+# like a place where depth never has to be rationed.
+LOCAL_FIXTURE_ACCEPT = 0.9625
 
 
 def arm_prices(source: str) -> dict:
     """One `Price` per arm, rebuilt from the live Swift constants."""
     prices = {}
     for arm in ARMS:
-        marginal, _ = PROBE.cost_table(source, PROBE.ARMS[arm])
-        note = ("shipped scalar price" if arm == "base"
-                else f"prices crossings at verify width "
-                     f"{sorted(PROBE.ARMS[arm])}")
-        prices[arm] = E56.Price(arm, marginal, note)
+        priced, head = PROBE.ARMS[arm]
+        marginal, _ = PROBE.cost_table(source, priced, head)
+        parts = []
+        if priced:
+            parts.append(f"prices crossings at verify width {sorted(priced)}")
+        if head is not None:
+            parts.append(f"head step cost ratio {head}")
+        prices[arm] = E56.Price(arm, marginal,
+                                ", ".join(parts) or "shipped scalar price")
     return prices
 
 
