@@ -83,7 +83,7 @@ MLXFAST_MACMON_BIN="${macmon_bin}" "${build}/e64_cell_ab" \
   --source "${build}/arms_na${na}.metal" \
   --na "${na}" --reps "${reps}" --warmup-reps 1 \
   --target-bytes "${target_bytes}" \
-  "${shape_args[@]}" \
+  ${shape_args[@]+"${shape_args[@]}"} \
   --out "${out}" 2>&1 | tee -a "${log}"
 status="${PIPESTATUS[0]}"
 

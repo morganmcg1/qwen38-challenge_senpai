@@ -273,13 +273,13 @@
       "forced_total_fp_unchanged": true
     }
   },
-  "dirty_paths": 4,
+  "dirty_paths": 1,
   "flags": [
     "-std=metal4.0",
     "-O2",
     "-fno-fast-math"
   ],
-  "head": "402c929a86bf7e24b14c187e91926aec5d756677",
+  "head": "3c2999de0bca3c9a79e2481c29322b86f3c303bc",
   "pipeline": "metal -std=metal4.0 -O2 -fno-fast-math -S | metal-opt -passes=default<O3>",
   "probe": "research/e64_wide_probe.metal"
 }
