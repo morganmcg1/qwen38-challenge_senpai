@@ -191,6 +191,12 @@ def main() -> None:
     baseline = report["per_level"][str(levels[0])]["mtp_s_per_tok_mean"]
     report["baseline_mtp_s_per_tok"] = baseline
 
+    # Adding bf16 zero is exact, so every level must propose and accept exactly
+    # the same drafts. A difference here means the tax changed the computation
+    # and the slope no longer prices a pure buffer.
+    report["draft_len_invariant"] = len({r["mean_draft_len"] for r in rows}) == 1
+    report["accepted_rate_invariant"] = len({r["accepted_rate"] for r in rows}) == 1
+
     estimators = {
         "pass": pass_slopes(rows, "mtp_s_per_tok", len(levels)),
         "ols": ols_slope(rows, "mtp_s_per_tok"),
@@ -207,6 +213,18 @@ def main() -> None:
         est["percent_of_candidate_per_unit"] = (
             100.0 * est.get("slope", math.nan) / baseline if baseline else math.nan)
     report["estimators"] = estimators
+
+    # Linearity check. A constant marginal price puts every interior level on
+    # the line through the two extremes. A large deviation means the tax left
+    # the constant-cost regime and the slope must not be extrapolated.
+    lo_k, hi_k = levels[0], levels[-1]
+    lo_y = report["per_level"][str(lo_k)]["mtp_s_per_tok_mean"]
+    hi_y = report["per_level"][str(hi_k)]["mtp_s_per_tok_mean"]
+    report["linearity_residual_us"] = {
+        str(k): 1e6 * (report["per_level"][str(k)]["mtp_s_per_tok_mean"]
+                       - (lo_y + (hi_y - lo_y) * (k - lo_k) / (hi_k - lo_k)))
+        for k in levels[1:-1]
+    }
 
     point = estimators["ols"]["slope_us_per_buffer"]
     hi = estimators["ols"]["ci95_hi_us_per_buffer"]
