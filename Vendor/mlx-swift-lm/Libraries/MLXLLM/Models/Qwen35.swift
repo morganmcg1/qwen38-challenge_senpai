@@ -1830,6 +1830,167 @@ private let qwen35DualRMSNormConcatKernel = MLXFast.metalKernel(
     ensureRowContiguous: false
 )
 
+/// Same result as `qwen35DualRMSNormConcat(a: embedTokens(ids), b: hidden, ...)`
+/// with an affine 4-bit group-64 embedding table, and without materialising the
+/// embedding row.
+///
+/// `QuantizedEmbedding.callAsFunction` is three gathers plus one dequantize, so
+/// the eager path writes four intermediates -- packed rows, scales, zero
+/// points and the bf16 row -- purely to hand a single [1, 5120] row to a kernel
+/// that reads it twice and throws it away. This variant reads the packed row
+/// directly and dequantizes each element where it is used. The dequantization
+/// expression is written exactly as `affine_dequantize` writes it, `scale * d +
+/// bias` in `bfloat`, so the normalized values are the same bits.
+private let qwen35EmbedDualRMSNormConcatKernel = MLXFast.metalKernel(
+    name: "qwen35_embed_dual_rms_norm_concat_bf16_v1",
+    inputNames: [
+        "ids", "e_weight", "e_scales", "e_biases", "b", "a_weight", "b_weight",
+        "eps",
+    ],
+    outputNames: ["concat_out"],
+    source: """
+        constexpr uint n_reads = 4;
+        constexpr uint simd_size = 32;
+        constexpr uint lsize = 1024;
+
+        uint row = threadgroup_position_in_grid.x;
+        uint thread_id = thread_position_in_threadgroup.x;
+        uint simd_thread = thread_index_in_simdgroup;
+        uint simd_group = simdgroup_index_in_threadgroup;
+
+        uint axis_size = uint(b_shape[b_ndim - 1]);
+        uint b_rows = 1;
+        for (uint i = 0; i + 1 < b_ndim; ++i) {
+            b_rows *= uint(b_shape[i]);
+        }
+        bool is_a = row < b_rows;
+        uint local_row = is_a ? row : row - b_rows;
+        ulong in_off = ulong(local_row) * ulong(axis_size);
+        ulong out_off = ulong(local_row) * ulong(axis_size * 2)
+            + (is_a ? 0 : ulong(axis_size));
+
+        uint token = is_a ? uint(ids[local_row]) : 0u;
+        ulong w_off = ulong(token) * ulong(axis_size / 8);
+        ulong g_off = ulong(token) * ulong(axis_size / 64);
+
+        threadgroup float local_inv_mean[1];
+        threadgroup float local_sums[simd_size];
+
+        float acc = 0.0f;
+        for (uint r_start = 0; r_start < axis_size; r_start += lsize * n_reads) {
+            uint elem = r_start + thread_id * n_reads;
+            if (elem + n_reads <= axis_size) {
+                for (uint i = 0; i < n_reads; ++i) {
+                    float xi = is_a
+                        ? qwen35_embed_row_value(
+                            e_weight, e_scales, e_biases, w_off, g_off, elem + i)
+                        : float(b[in_off + elem + i]);
+                    acc += xi * xi;
+                }
+            } else {
+                for (uint i = 0; i < n_reads; ++i) {
+                    if (elem + i < axis_size) {
+                        float xi = is_a
+                            ? qwen35_embed_row_value(
+                                e_weight, e_scales, e_biases, w_off, g_off,
+                                elem + i)
+                            : float(b[in_off + elem + i]);
+                        acc += xi * xi;
+                    }
+                }
+            }
+        }
+
+        acc = simd_sum(acc);
+        if (simd_group == 0) {
+            local_sums[simd_thread] = 0.0f;
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        if (simd_thread == 0) {
+            local_sums[simd_group] = acc;
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        if (simd_group == 0) {
+            acc = simd_sum(local_sums[simd_thread]);
+            if (simd_thread == 0) {
+                local_inv_mean[0] = metal::precise::rsqrt(
+                    acc / float(axis_size) + eps);
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        float inv_mean = local_inv_mean[0];
+        for (uint r_start = 0; r_start < axis_size; r_start += lsize * n_reads) {
+            uint elem = r_start + thread_id * n_reads;
+            if (elem + n_reads <= axis_size) {
+                for (uint i = 0; i < n_reads; ++i) {
+                    float xi = is_a
+                        ? qwen35_embed_row_value(
+                            e_weight, e_scales, e_biases, w_off, g_off, elem + i)
+                        : float(b[in_off + elem + i]);
+                    bfloat wi = is_a ? a_weight[elem + i] : b_weight[elem + i];
+                    concat_out[out_off + elem + i] = wi * bfloat(xi * inv_mean);
+                }
+            } else {
+                for (uint i = 0; i < n_reads; ++i) {
+                    if (elem + i < axis_size) {
+                        float xi = is_a
+                            ? qwen35_embed_row_value(
+                                e_weight, e_scales, e_biases, w_off, g_off,
+                                elem + i)
+                            : float(b[in_off + elem + i]);
+                        bfloat wi = is_a ? a_weight[elem + i] : b_weight[elem + i];
+                        concat_out[out_off + elem + i] = wi * bfloat(xi * inv_mean);
+                    }
+                }
+            }
+        }
+    """,
+    header: """
+        inline float qwen35_embed_row_value(
+            const device uint32_t* weight,
+            const device bfloat* scales,
+            const device bfloat* biases,
+            ulong w_off,
+            ulong g_off,
+            uint elem
+        ) {
+            uint packed = weight[w_off + (elem >> 3)];
+            uint d = (packed >> (4u * (elem & 7u))) & 0xFu;
+            uint group = elem >> 6;
+            return float(scales[g_off + group] * bfloat(d)
+                + biases[g_off + group]);
+        }
+    """,
+    ensureRowContiguous: false
+)
+
+func qwen35EmbedDualRMSNormConcat(
+    ids: MLXArray,
+    embedWeight: MLXArray,
+    embedScales: MLXArray,
+    embedBiases: MLXArray,
+    b: MLXArray,
+    aWeight: MLXArray,
+    bWeight: MLXArray,
+    eps: Float
+) -> MLXArray {
+    let nRows = b.size / b.dim(-1)
+    var outShape = b.shape
+    outShape[outShape.count - 1] = b.dim(-1) * 2
+    let outputs = qwen35EmbedDualRMSNormConcatKernel(
+        [ids, embedWeight, embedScales, embedBiases, b, aWeight, bWeight,
+         MLXArray(eps)],
+        grid: (2 * nRows * 1024, 1, 1),
+        threadGroup: (1024, 1, 1),
+        outputShapes: [outShape],
+        outputDTypes: [.bfloat16]
+    )
+    return outputs[0]
+}
+
 func qwen35DualRMSNormConcat(
     a: MLXArray,
     b: MLXArray,
@@ -2919,6 +3080,14 @@ private let qwen35DraftTop32FinalizeKernel = MLXFast.metalKernel(
 private let qwen35Top32Enabled: Bool =
     ProcessInfo.processInfo.environment["MLXFAST_QWEN_MTP_TOP32"] != "0"
 
+/// E85 arm gate. `MLX_E85_GATHER_QMM=0` restores the three-`take` rerank path.
+/// The `MLX_` prefix is load-bearing: the trusted worker's environment
+/// sanitizer drops `MLXFAST_*`, so an `MLXFAST_`-spelled gate would never
+/// reach the process that runs the scored round, and both arms of an A/B would
+/// silently measure the same code.
+private let qwen35GatherQMMRerankEnabled: Bool =
+    ProcessInfo.processInfo.environment["MLX_E85_GATHER_QMM"] != "0"
+
 /// Exact top-32 of `row` (shape [REAL_COUNT], bf16) as ascending uint32 ids.
 private func qwen35DraftTop32(_ row: MLXArray) -> MLXArray {
     // Mirrors the kernel static_asserts; see the bitmask note there.
@@ -3012,6 +3181,17 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     // for draft proposals when no declared draft_lm_head is present. It is not
     // ModuleInfo because it is derived during warmup, not checkpoint state.
     private var _compactDraftHead: Linear?
+
+    // Batch-dimension views of the compact exact head. `gather_qmm` gathers on
+    // the BATCH dims of `w`, so [98336, 640] is presented as 98336 single-row
+    // [1, 640] matrices and the rerank's 32 rows are collected inside the
+    // matmul instead of by three preceding `take` dispatches. A reshape of a
+    // contiguous array is metadata only, so these are built once at first use;
+    // building them per draft would replace three allocations with three
+    // others.
+    private var _compactDraftGatherW: MLXArray?
+    private var _compactDraftGatherS: MLXArray?
+    private var _compactDraftGatherZ: MLXArray?
     // Prefix 98_304, the promoted trim. A 49_152 halving was measured on the
     // public longcopy gate and REGRESSED: three of its committed argmax ids
     // live in [49_152, 248_044), the head could no longer propose them, and
@@ -3450,12 +3630,36 @@ extension Qwen35TextModel: MTPCapable {
             )[.ellipsis, (kth)...].reshaped([candidateCount])
         }
 
-        let exactWeight = MLX.take(exact.weight, candidateIDs, axis: 0)
-        let exactScales = MLX.take(exact.scales, candidateIDs, axis: 0)
-        let exactZeroPoints = MLX.take(exactBiases, candidateIDs, axis: 0)
-        let exactLogits = quantizedMM(
-            x, exactWeight, scales: exactScales, biases: exactZeroPoints,
-            transpose: true, groupSize: 64, bits: 4, mode: .affine)
+        if qwen35GatherQMMRerankEnabled, _compactDraftGatherW == nil {
+            let rows = Self.compactDraftPaddedCount
+            _compactDraftGatherW = exact.weight.reshaped([rows, 1, 640])
+            _compactDraftGatherS = exact.scales.reshaped([rows, 1, 80])
+            _compactDraftGatherZ = exactBiases.reshaped([rows, 1, 80])
+        }
+        let exactLogits: MLXArray
+        if let gatherWeight = _compactDraftGatherW,
+           let gatherScales = _compactDraftGatherS,
+           let gatherZeroPoints = _compactDraftGatherZ,
+           gatherWeight.shape == [Self.compactDraftPaddedCount, 1, 640],
+           gatherScales.shape == [Self.compactDraftPaddedCount, 1, 80],
+           gatherZeroPoints.shape == [Self.compactDraftPaddedCount, 1, 80]
+        {
+            // One dispatch reading 32 rows in place, where the eager path
+            // needed three gathers writing ~92 KB of copies plus a matmul that
+            // read them straight back. `sortedIndices` stays false:
+            // `qwen35DraftTop32` does not return sorted ids.
+            exactLogits = gatherQuantizedMM(
+                x, gatherWeight, scales: gatherScales, biases: gatherZeroPoints,
+                rhsIndices: candidateIDs,
+                transpose: true, groupSize: 64, bits: 4, mode: .affine)
+        } else {
+            let exactWeight = MLX.take(exact.weight, candidateIDs, axis: 0)
+            let exactScales = MLX.take(exact.scales, candidateIDs, axis: 0)
+            let exactZeroPoints = MLX.take(exactBiases, candidateIDs, axis: 0)
+            exactLogits = quantizedMM(
+                x, exactWeight, scales: exactScales, biases: exactZeroPoints,
+                transpose: true, groupSize: 64, bits: 4, mode: .affine)
+        }
 
         return qwen35DraftRerankKernel(
             [exactLogits.reshaped([candidateCount]), candidateIDs],
