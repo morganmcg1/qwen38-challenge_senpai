@@ -64,6 +64,8 @@ import argparse
 import json
 import math
 import os
+import statistics
+from collections import Counter
 from pathlib import Path
 
 CACHE = Path(os.path.expanduser("~/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/screen"))
@@ -264,6 +266,27 @@ def main() -> None:
             "signal": "reference top1-top2 logit margin at the predicted emitted position",
             "tercile_cuts": {"hardest_max": lo_cut, "easiest_min": hi_cut},
             "positions": len(pool),
+            # Margin is strongly seed-correlated on this corpus, so the seed mix
+            # of each tercile says how much of the split is genre and how much is
+            # position-level difficulty.
+            "tercile_seed_mix": {
+                name: dict(
+                    Counter(
+                        s
+                        for s in seeds
+                        for p, m in margins[s].items()
+                        if 1 <= p <= args.steps and pick(m)
+                    )
+                )
+                for name, pick in (
+                    ("hardest", lambda m: m <= lo_cut),
+                    ("easiest", lambda m: m >= hi_cut),
+                )
+            },
+            "per_seed_median_margin": {
+                s: statistics.median([m for p, m in margins[s].items() if 1 <= p <= args.steps])
+                for s in seeds
+            },
         },
         "arms": {},
     }
