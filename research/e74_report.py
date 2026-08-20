@@ -55,6 +55,22 @@ FAMILY_TO_SCORED = {
 # probed (ledger :17127), so the core count is an inference, never a
 # measurement. 20 is the M4 Pro count on this host, read from ioreg.
 RANKED_CORE_ASSUMPTIONS = [20, 24, 40]
+RANKED_CORE_EVIDENCE = {
+    20: "the local M4 Pro count, carried as the null assumption that nothing scales",
+    24: "a mid M5 Pro tier, carried only to show the shape of the dependence",
+    40: ("ledger 205(D): the runner label m5-max-128gb-3 is offered only on the "
+         "40-core SKU, and Apple publishes 614 GB/s for it. The label is not a "
+         "probe of the ranked runner."),
+}
+
+# Ledger item 130's own reading of the same E33 table: "The sign flips between
+# 1792 (1.0148) and 2060 (0.9947), i.e. a knee near 1900 working threadgroups
+# ~= 95 per core." That per-core figure divides by this host's 20 cores. It is
+# a flip point rather than a knee, because the E33 arm also carries a
+# shape-independent level term, so treat it as a nearby anchor, not as an
+# equal-instrument estimate.
+PRIOR_FLIP_WORKING_TGS = 1900.0
+PRIOR_FLIP_PER_CORE = 95.0
 
 # Ranked verify-width mixture, from the E74 assignment's leg table.
 RANKED_WIDTH_MIX = {3: 0.0325, 4: 0.142, 5: 0.241, 6: 0.334, 7: 0.122,
@@ -396,6 +412,11 @@ def ranked_extrapolation(fit: dict, cores_local: int) -> dict:
                "each SKU, and the width at which a ranked candidate's cost curve "
                "changes slope. Both need a receipt, neither is a measurement of the "
                "runner's core count."),
+           "prior_flip_point_ledger_130": {
+               "working_tgs": PRIOR_FLIP_WORKING_TGS,
+               "per_core_at_20_cores": PRIOR_FLIP_PER_CORE,
+               "fitted_over_prior": knee_per_core / PRIOR_FLIP_PER_CORE},
+           "core_count_evidence": RANKED_CORE_EVIDENCE,
            "by_cores": {}}
     for cores in RANKED_CORE_ASSUMPTIONS:
         knee = knee_per_core * cores
