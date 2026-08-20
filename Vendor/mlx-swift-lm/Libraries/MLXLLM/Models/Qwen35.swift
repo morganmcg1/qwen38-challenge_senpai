@@ -528,33 +528,6 @@ private let qwen35GatedDeltaMidKernel: MLXFast.MLXFastKernel? = {
     )
 }()
 
-// MARK: - Prefill-width fusion gates (E83)
-
-// Both projection fusions below are bounded by a row count. The verify ladder
-// never exceeds `maxDepth + 1 == 9` rows, so the shipped defaults fuse every
-// decode and verify width and leave only the 512-row seed prefill on the
-// unfused path. Raising a bound therefore changes the seed prefill and nothing
-// else.
-//
-// Neither bound controls allocation. Both fused packs are built lazily on
-// first use and the warm pass already reaches them at verify widths, so the
-// packs are resident before any timed work whatever these bounds hold. Raising
-// a bound selects an already-resident pack; it never builds one.
-
-/// Row-count bound below which the Gated DeltaNet in-projections run as one
-/// fused `quantizedMM` (N = 16480) instead of four (N = 10240, 6144, 48, 48).
-public nonisolated(unsafe) var qwen35FusedInProjMaxRows: Int = 9
-
-/// Row-count bound below which the MLP gate and up projections run as one
-/// fused `quantizedMM` (N = 34816) plus `qwen35CompiledFusedSwiGLU`, instead of
-/// two projections (N = 17408) with a separate `silu` and multiply.
-public nonisolated(unsafe) var qwen35FusedGateUpMaxRows: Int = 16
-
-/// Counts fused-pack construction. A timed region that builds no pack leaves
-/// this unchanged, which is what proves the bounds above price only the
-/// projection call and not a hidden first-use allocation.
-public nonisolated(unsafe) var qwen35FusedPackBuildCount: Int = 0
-
 // MARK: - GatedDeltaNet
 
 final class Qwen35GatedDeltaNet: Module {
@@ -735,7 +708,6 @@ final class Qwen35GatedDeltaNet: Module {
         _inGS = q.groupSize
         _inBits = q.bits
         _inMode = q.mode
-        qwen35FusedPackBuildCount += 1
         return fusedInProjections(x)
     }
 
@@ -1028,7 +1000,7 @@ final class Qwen35GatedDeltaNet: Module {
         let z: MLXArray
         let b: MLXArray
         let a: MLXArray
-        if S <= qwen35FusedInProjMaxRows, let fused = fusedInProjections(inputs) {
+        if S <= 9, let fused = fusedInProjections(inputs) {
             qkv = fused.0
             z = fused.1.reshaped(B, S, numVHeads, headVDim)
             b = fused.2
@@ -1301,14 +1273,12 @@ final class Qwen35FusedMLP: Module, UnaryLayer {
             _fqBits = g.bits
             _fqMode = g.mode
             _gateOut = g.shape.0
-            qwen35FusedPackBuildCount += 1
             return fusedGateUp(x)
         }
         if !(gateProj is QuantizedLinear), !(upProj is QuantizedLinear) {
             _fbfW = concatenated([gateProj.weight, upProj.weight], axis: 0)
                 .contiguous()
             _gateOut = gateProj.weight.dim(0)
-            qwen35FusedPackBuildCount += 1
             return fusedGateUp(x)
         }
         return nil
@@ -1319,9 +1289,7 @@ final class Qwen35FusedMLP: Module, UnaryLayer {
         // equal halves (`_gateOut * 2 == N`); a mismatched pair falls back
         // to the exact two-projection expression, preserving the original
         // slicing semantics in every case.
-        if x.dim(-2) <= qwen35FusedGateUpMaxRows, let y = fusedGateUp(x),
-           _gateOut * 2 == y.dim(-1)
-        {
+        if x.dim(-2) <= 16, let y = fusedGateUp(x), _gateOut * 2 == y.dim(-1) {
             return downProj(qwen35CompiledFusedSwiGLU(y))
         }
         return downProj(silu(gateProj(x)) * upProj(x))

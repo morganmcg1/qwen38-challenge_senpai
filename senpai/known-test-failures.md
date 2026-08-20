@@ -16,7 +16,7 @@ Run the suite and compare:
 swift test --force-resolved-versions
 ```
 
-The run is **expected to exit 1**. Treat the result as a pass when both hold:
+The gate is the **failing name set** and the **issue count**, and nothing else:
 
 1. every failing test function name is a member of the nine names listed below;
    and
@@ -25,6 +25,15 @@ The run is **expected to exit 1**. Treat the result as a pass when both hold:
 Treat the result as a **stop** when a test outside this list fails, or when the
 issue count exceeds 40. Either condition means the change under test broke
 something new.
+
+**The bare exit code is never the gate.** The run exits 1 whenever any of the
+nine fails, so exit 1 carries no information on its own. Read the name set and
+the issue count out of the run.
+
+**The test count and the suite count are never the gate either.** They rise with
+whatever tests a branch adds, so they differ between students on the same base.
+Branches that added no test report 710 tests; this branch reports 705 because it
+carries the E83 instrument. Both are the same 9 names and the same 40 issues.
 
 Do **not** edit the organizer's tests to make them green. These failures are
 evidence about the base, not defects to hide.
