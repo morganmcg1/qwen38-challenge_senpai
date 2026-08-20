@@ -100,3 +100,4 @@ research/e57-artifacts/bitwise-whole-vs-chunked.json
 # Transient per-run build and test logs. The structured JSON artifacts beside
 # them carry the durable evidence: exit codes, worker digests, and verdicts.
 research/e59-artifacts/final-chain-logs/
+research/e69-artifacts/*.log
