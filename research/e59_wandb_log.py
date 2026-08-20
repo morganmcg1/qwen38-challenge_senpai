@@ -307,6 +307,11 @@ def read_leg(path: pathlib.Path) -> dict:
         "worker_sha256": meta.get("worker_sha256"),
         "metallib_source_fingerprint": meta.get("metallib_source_fingerprint"),
         "cool_gate_requested": meta.get("cool_gate_requested"),
+        "warmup_discarded": meta.get("warmup_discarded", "0"),
+        "startup_memory_profile": meta.get("startup_memory_profile"),
+        "mlx_max_ops_per_buffer": meta.get("mlx_max_ops_per_buffer"),
+        "mlx_max_mb_per_buffer": meta.get("mlx_max_mb_per_buffer"),
+        "wired_residency_active": meta.get("wired_residency_active"),
         "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
         "gpu_temp_exit_c": meta.get("gpu_temp_exit_c"),
         "started": meta.get("started"),
@@ -353,6 +358,8 @@ LEG_COLUMNS = [
     "effective_mean_draft_len", "accepted_draft_rate", "score",
     "width_histogram", "measured_commit_unwound", "worker_sha256",
     "metallib_source_fingerprint", "stale_metallib_warnings",
+    "warmup_discarded", "startup_memory_profile", "mlx_max_ops_per_buffer",
+    "mlx_max_mb_per_buffer", "wired_residency_active",
 ]
 
 
@@ -416,8 +423,91 @@ def log_rung4(run) -> None:
         "cool_gate_passed_real_gate"]
     summary["rung4/gate_qualified_for_timing"] = metrics[
         "gate_qualified_for_timing"]
-    run.log({"rung4/arms": table})
+
+    # The session's own noise model, one row per same-arm leg pair. This is the
+    # only null the rung 4 verdicts use; the 0.0629 % constant is withdrawn.
+    null_columns = ["field", "leg_separation", "arm", "tags", "abs_delta_pct"]
+    null_table = wandb.Table(columns=null_columns)
+    for field, by_sep in metrics["session_null_by_separation_pct"].items():
+        for sep, entry in by_sep.items():
+            for pair in entry["pairs"]:
+                null_table.add_data(field, int(sep), pair["arm"],
+                                    json.dumps(pair["tags"]),
+                                    pair["abs_delta_pct"])
+            summary[f"rung4/null/{field}/sep{sep}/max_abs_delta_pct"] = entry[
+                "max_abs_delta_pct"]
+    for name, value in metrics["bar_pct"].items():
+        summary[f"rung4/bar/{name}"] = value
+
+    reg_columns = ["field", "term", "estimate", "std_error", "t",
+                   "estimate_pct_of_base", "residual_dof", "residual_sd"]
+    reg_table = wandb.Table(columns=reg_columns)
+    for field, fit in metrics["regression_time_by_arm_and_position"].items():
+        if not fit.get("fitted"):
+            summary[f"rung4/regression/{field}/fitted"] = False
+            continue
+        summary[f"rung4/regression/{field}/fitted"] = True
+        summary[f"rung4/regression/{field}/residual_dof"] = fit["residual_dof"]
+        for term, stats in fit["terms"].items():
+            reg_table.add_data(field, term, stats["estimate"],
+                               stats["std_error"], stats["t"],
+                               stats["estimate_pct_of_base"],
+                               fit["residual_dof"], fit["residual_sd"])
+            if term.startswith("arm["):
+                arm = term[4:-1]
+                summary[f"rung4/regression/{field}/{arm}/pct_of_base"] = stats[
+                    "estimate_pct_of_base"]
+                summary[f"rung4/regression/{field}/{arm}/t"] = stats["t"]
+
+    for leg in metrics.get("discarded_warmup_legs", []):
+        summary[f"rung4/warmup/{leg['tag']}/gpu_temp_entry_c"] = leg[
+            "gpu_temp_entry_c"]
+        summary[f"rung4/warmup/{leg['tag']}/mtp_seconds_per_token"] = leg[
+            "mtp_seconds_per_token"]
+
+    run.log({"rung4/arms": table,
+             "rung4/session_null": null_table,
+             "rung4/regression": reg_table})
     run.summary.update(summary)
+
+
+def log_geometry(run) -> None:
+    """The replacement for the withdrawn low-memory grep."""
+    path = ARTIFACTS / "e59-geometry-proof.json"
+    proof = json.loads(path.read_text())
+    columns = ["probe", "requested_profile", "exit_code", "low_memory_notices",
+               "precondition_messages", "passed"]
+    table = wandb.Table(columns=columns)
+    summary: dict = {
+        "geometry/all_passed": proof["all_passed"],
+        "geometry/physical_memory_gib": proof["physical_memory_gib"],
+        "geometry/replaces": proof["replaces"],
+    }
+    for entry in proof["profile_probes"]:
+        table.add_data(*[entry[name] for name in columns])
+        summary[f"geometry/profile/{entry['probe']}/passed"] = entry["passed"]
+        summary[f"geometry/profile/{entry['probe']}/exit_code"] = entry[
+            "exit_code"]
+        summary[f"geometry/profile/{entry['probe']}/low_memory_notices"] = entry[
+            "low_memory_notices"]
+    dose = proof["dose_response"]
+    summary["geometry/dose/ran"] = dose["ran"]
+    summary["geometry/dose/passed"] = dose["passed"]
+    if dose["ran"]:
+        summary["geometry/dose/ops8_slower_than_ops50_pct"] = dose[
+            "ops8_slower_than_ops50_pct"]
+        summary["geometry/dose/min_effect_pct"] = dose["min_effect_pct"]
+        dose_columns = ["tag", "requested_ops_per_buffer", "decode_tokens",
+                        "mtp_seconds_per_token", "serial_seconds_per_token",
+                        "all_tokens_matched", "gpu_temp_entry_c",
+                        "gpu_temp_exit_c", "wired_residency_active"]
+        dose_table = wandb.Table(columns=dose_columns)
+        for leg in dose["legs"]:
+            dose_table.add_data(*[leg[name] for name in dose_columns])
+        run.log({"geometry/dose": dose_table})
+    run.log({"geometry/profile_probes": table})
+    run.summary.update(summary)
+    print("logged geometry proof all_passed=%s" % proof["all_passed"])
 
 
 # --- gates ---------------------------------------------------------------------
@@ -443,8 +533,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True,
                     choices=["rung1", "rung2", "rung2-e2e", "rung2b-leg",
-                             "rung3", "rung4-parity", "rung4-leg", "rung4",
-                             "gates"])
+                             "rung3", "rung4-parity", "geometry", "rung4-leg",
+                             "rung4", "gates"])
     ap.add_argument("--leg", type=pathlib.Path,
                     help="one run directory for --stage rung4-leg or rung2b-leg")
     ap.add_argument("--legs", type=pathlib.Path, nargs="*", default=[],
@@ -460,6 +550,8 @@ def main() -> int:
             log_parity(run, "e59-parity.json", "rung2")
         elif args.stage == "rung4-parity":
             log_parity(run, "e59-parity-rung4.json", "rung4/parity")
+        elif args.stage == "geometry":
+            log_geometry(run)
         elif args.stage == "rung2-e2e":
             log_rung2_e2e(run, args.legs)
         elif args.stage == "rung3":

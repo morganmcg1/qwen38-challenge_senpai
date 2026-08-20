@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""E59 rung 4 analysis: score the counterbalanced end-to-end legs.
+"""E59 rung 4 analysis: score the palindrome end-to-end legs.
 
-Reads every run directory under `.mlxfast-private/e59-e2e/runs/*`, groups the
-legs by arm, and reports the candidate move on both bases the assignment names:
+Reads the rung 4 run directories under `.mlxfast-private/e59-e2e/runs/*`,
+groups the legs by arm, and reports the candidate move on both bases the
+assignment names:
 
   * leg basis        -- the whole timed MTP leg, seed prefill included, which
                         is what `--local-iterate` divides by the token count;
@@ -11,7 +12,21 @@ legs by arm, and reports the candidate move on both bases the assignment names:
 
   python3 research/e59_e2e_analyze.py --out research/e59-artifacts/e59-e2e-metrics.json
 
-Exit code 0 means every pre-registered rung 4 check passed. Exit code 2 means a
+Two things decide the verdicts, and both are session-local by design.
+
+1.  The noise bar is this session's own same-arm spread, taken at the leg
+    separation the contrast actually has. The old `0.0629 %` constant is
+    withdrawn: it came from adjacent legs, and ledger 198 measured the same-
+    binary spread growing with separation (0.0032 % adjacent, 0.1147 % three
+    apart, 0.1634 % five apart). A palindrome measures all three separations
+    for free, so the session supplies its own bar.
+
+2.  The arm effect is an ordinary least-squares fit of `time ~ arm +
+    leg_position`. A two-block difference of means confounds the arm with its
+    position; the regression carries position as a covariate and reports the
+    residual degrees of freedom honestly.
+
+Exit code 0 means every preregistered rung 4 check passed. Exit code 2 means a
 stop rule fired.
 """
 
@@ -19,7 +34,9 @@ from __future__ import annotations
 
 import argparse
 import collections
+import itertools
 import json
+import math
 import pathlib
 import statistics
 import sys
@@ -29,18 +46,22 @@ from e59_wandb_log import read_leg  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 RUNS = REPO / ".mlxfast-private/e59-e2e/runs"
-PREREG = REPO / "research/e59-artifacts/e59-prereg.json"
+PREREG = REPO / "research/e59-artifacts/e59-rung4-prereg.json"
+PREREG_AMENDMENT = REPO / "research/e59-artifacts/e59-rung4-prereg-amendment.json"
 
 BASE_ARM = "shipped"
-# Pre-registered in PR 62: the local same-build null floor for a --local-iterate
-# leg. The session's own base-to-base replicate spread can only raise the bar.
-NULL_FLOOR_PCT = 0.0629
-# Pre-registered route prediction, both bases.
-PREDICTED_LEG_PCT = -0.34
-PREDICTED_ROUND_COST_PCT = -0.44
-# Pre-registered additive shape of the ceiling dose under a multiplicative null.
-CEILING_ADDITIVE_LOW_PCT = 0.99
-CEILING_ADDITIVE_HIGH_PCT = 2.33
+TREATMENT_ARMS = ("t55", "m5_rbx")
+
+# Preregistered in PR 62 before the session ran, from rung 3's measured M=5 cell
+# deltas re-based onto the whole table. See `e59-rung4-prereg.json`.
+PREDICTED_LEG_PCT = {"t55": -0.751, "m5_rbx": -0.501}
+# The advisor predicts these two arms time the SAME. Rung 3's T2 pair measured
+# the same 125-vs-90 register contrast at +8.318 % +/- 1.007 % at the isolated
+# cell, so this analysis predicts t55 is faster by this much at the leg.
+PREDICTED_T55_MINUS_RBX_PCT = -0.250
+# Advance rule: a candidate has to reach this to be advanced on its own.
+STOP_RULE_LEG_PCT = -2.0
+REPORT_ONLY_BAND_PCT = (-6.0, -2.0)
 
 
 def mean(xs) -> float:
@@ -55,9 +76,11 @@ def spread_pct(values: list[float]) -> float:
     return 100.0 * (max(values) - min(values)) / mean(values)
 
 
-def collect() -> list[dict]:
+def collect(tag_prefix: str) -> list[dict]:
     legs = []
     for path in sorted(RUNS.glob("*")):
+        if not path.name.startswith(tag_prefix):
+            continue
         if not (path / "score.json").exists():
             continue
         rec = read_leg(path)
@@ -67,13 +90,158 @@ def collect() -> list[dict]:
     return legs
 
 
+def same_arm_spreads_by_separation(legs: list[dict], field: str) -> dict:
+    """Every same-arm leg pair, keyed by how far apart the two legs ran.
+
+    This is the session's own noise model. Each entry compares two legs that
+    ran the identical binary, so anything it reports is drift plus measurement
+    noise and nothing else.
+    """
+    pairs = collections.defaultdict(list)
+    for left, right in itertools.combinations(legs, 2):
+        if left["arm"] != right["arm"]:
+            continue
+        separation = right["leg_position"] - left["leg_position"]
+        delta = 100.0 * abs(right[field] - left[field]) / left[field]
+        pairs[separation].append(
+            {
+                "arm": left["arm"],
+                "tags": [left["tag"], right["tag"]],
+                "abs_delta_pct": delta,
+            }
+        )
+    return {
+        str(sep): {
+            "pairs": entries,
+            "max_abs_delta_pct": max(e["abs_delta_pct"] for e in entries),
+        }
+        for sep, entries in sorted(pairs.items())
+    }
+
+
+def ols_arm_position(legs: list[dict], field: str) -> dict:
+    """Fit `value ~ arm + leg_position` with the base arm as the reference.
+
+    Plain normal equations by Gaussian elimination: the design is tiny and a
+    SciPy dependency inside a timed workspace is not worth it.
+    """
+    arms = sorted({leg["arm"] for leg in legs})
+    others = [a for a in arms if a != BASE_ARM]
+    names = ["intercept"] + [f"arm[{a}]" for a in others] + ["leg_position"]
+
+    rows, ys = [], []
+    for leg in legs:
+        row = [1.0]
+        row += [1.0 if leg["arm"] == a else 0.0 for a in others]
+        row.append(float(leg["leg_position"]))
+        rows.append(row)
+        ys.append(leg[field])
+
+    k = len(names)
+    n = len(rows)
+    dof = n - k
+    if dof <= 0:
+        return {"fitted": False, "reason": f"{n} legs cannot fit {k} parameters"}
+
+    xtx = [[sum(rows[i][a] * rows[i][b] for i in range(n)) for b in range(k)]
+           for a in range(k)]
+    xty = [sum(rows[i][a] * ys[i] for i in range(n)) for a in range(k)]
+
+    inv = [[1.0 if i == j else 0.0 for j in range(k)] for i in range(k)]
+    work = [row[:] for row in xtx]
+    rhs = xty[:]
+    for col in range(k):
+        pivot = max(range(col, k), key=lambda r: abs(work[r][col]))
+        if abs(work[pivot][col]) < 1e-18:
+            return {"fitted": False, "reason": "singular design"}
+        work[col], work[pivot] = work[pivot], work[col]
+        inv[col], inv[pivot] = inv[pivot], inv[col]
+        rhs[col], rhs[pivot] = rhs[pivot], rhs[col]
+        scale = work[col][col]
+        work[col] = [v / scale for v in work[col]]
+        inv[col] = [v / scale for v in inv[col]]
+        rhs[col] /= scale
+        for r in range(k):
+            if r == col:
+                continue
+            factor = work[r][col]
+            work[r] = [v - factor * w for v, w in zip(work[r], work[col])]
+            inv[r] = [v - factor * w for v, w in zip(inv[r], inv[col])]
+            rhs[r] -= factor * rhs[col]
+    beta = rhs
+
+    resid = [ys[i] - sum(rows[i][a] * beta[a] for a in range(k)) for i in range(n)]
+    sigma2 = sum(r * r for r in resid) / dof
+
+    base_level = beta[0] + beta[k - 1] * mean(
+        float(leg["leg_position"]) for leg in legs)
+    terms = {}
+    for i, name in enumerate(names):
+        se = math.sqrt(max(sigma2 * inv[i][i], 0.0))
+        terms[name] = {
+            "estimate": beta[i],
+            "std_error": se,
+            "t": beta[i] / se if se > 0 else None,
+            "estimate_pct_of_base": (
+                100.0 * beta[i] / base_level if name.startswith("arm[") else None),
+        }
+    return {
+        "fitted": True,
+        "field": field,
+        "n": n,
+        "parameters": k,
+        "residual_dof": dof,
+        "residual_sd": math.sqrt(sigma2),
+        "reference_arm": BASE_ARM,
+        "base_level_at_mean_position": base_level,
+        "terms": terms,
+        "names": names,
+        "covariance": [[sigma2 * inv[i][j] for j in range(k)] for i in range(k)],
+        "residuals": [
+            {"tag": leg["tag"], "arm": leg["arm"],
+             "leg_position": leg["leg_position"],
+             "residual_pct_of_base": 100.0 * resid[i] / base_level}
+            for i, leg in enumerate(legs)
+        ],
+    }
+
+
+def contrast(fit: dict, left: str, right: str) -> dict:
+    """`arm[left] - arm[right]` as a percent of the base level, with its error.
+
+    A palindrome gives both arms the same mean position, so this contrast is
+    what the tie test needs and the position covariate has already absorbed the
+    session drift.
+    """
+    if not fit.get("fitted"):
+        return {"available": False}
+    names = fit["names"]
+    try:
+        i = names.index(f"arm[{left}]")
+        j = names.index(f"arm[{right}]")
+    except ValueError:
+        return {"available": False}
+    cov = fit["covariance"]
+    estimate = fit["terms"][names[i]]["estimate"] - fit["terms"][names[j]]["estimate"]
+    variance = cov[i][i] + cov[j][j] - 2.0 * cov[i][j]
+    se = math.sqrt(max(variance, 0.0))
+    base_level = fit["base_level_at_mean_position"]
+    return {
+        "available": True,
+        "estimate_pct_of_base": 100.0 * estimate / base_level,
+        "std_error_pct_of_base": 100.0 * se / base_level,
+        "t": estimate / se if se > 0 else None,
+        "residual_dof": fit["residual_dof"],
+    }
+
+
 def summarise(arm: str, legs: list[dict]) -> dict:
     hists = [tuple(sorted(leg["width_histogram"].items())) for leg in legs]
-    temps = [leg["gpu_temp_entry_c"] for leg in legs]
     return {
         "arm": arm,
         "legs": len(legs),
         "tags": [leg["tag"] for leg in legs],
+        "leg_positions": [leg["leg_position"] for leg in legs],
         "serial_seconds_per_token_mean": mean(
             leg["serial_seconds_per_token"] for leg in legs),
         "serial_seconds_per_token_all": [
@@ -109,11 +277,12 @@ def summarise(arm: str, legs: list[dict]) -> dict:
         "accepted_draft_rate_mean": mean(
             leg["accepted_draft_rate"] for leg in legs),
         "effective_mean_draft_len": legs[0]["effective_mean_draft_len"],
-        "entry_temp_c": temps,
+        "entry_temp_c": [leg["gpu_temp_entry_c"] for leg in legs],
         "exit_temp_c": [leg["gpu_temp_exit_c"] for leg in legs],
         "cool_gate_requested": sorted({leg["cool_gate_requested"] for leg in legs}),
         "replicate_spread_pct": {
-            "serial_leg": spread_pct([leg["serial_seconds_per_token"] for leg in legs]),
+            "serial_leg": spread_pct(
+                [leg["serial_seconds_per_token"] for leg in legs]),
             "mtp_leg": spread_pct([leg["mtp_seconds_per_token"] for leg in legs]),
             "mtp_round_cost": spread_pct(
                 [leg["mtp_seconds_per_token_prefill_removed"] for leg in legs]),
@@ -128,11 +297,23 @@ def delta_pct(candidate: float, base: float) -> float:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="research/e59-artifacts/e59-e2e-metrics.json")
+    ap.add_argument("--tag-prefix", default="e59-r4-",
+                    help="only analyse legs whose run directory starts with this")
     args = ap.parse_args()
 
-    legs = collect()
+    every_leg = collect(args.tag_prefix)
+    if not every_leg:
+        raise SystemExit("e59_e2e_analyze: no %s* legs under %s"
+                         % (args.tag_prefix, RUNS))
+
+    warmups = [leg for leg in every_leg if leg["warmup_discarded"] == "1"]
+    legs = [leg for leg in every_leg if leg["warmup_discarded"] != "1"]
     if not legs:
-        raise SystemExit("e59_e2e_analyze: no legs under %s" % RUNS)
+        raise SystemExit("e59_e2e_analyze: every leg is a discarded warm-up")
+    # Positions number the timed set only, so the regression covariate
+    # describes the counterbalanced sequence and not the throwaway leg.
+    for position, leg in enumerate(legs, start=1):
+        leg["leg_position"] = position
 
     by_arm: dict[str, list[dict]] = collections.defaultdict(list)
     for leg in legs:
@@ -144,14 +325,34 @@ def main() -> int:
                          % BASE_ARM)
     base = arms[BASE_ARM]
 
-    # The bar is the larger of the pre-registered null floor and this session's
-    # own base-to-base replicate spread. A session that drifted cannot be
-    # rescued by the smaller pre-registered number.
+    fields = ("mtp_seconds_per_token",
+              "mtp_seconds_per_token_prefill_removed",
+              "serial_seconds_per_token")
+    nulls = {field: same_arm_spreads_by_separation(legs, field)
+             for field in fields}
+
+    def bar_for(field: str, separation: int) -> float:
+        """Largest same-arm spread at this separation or wider.
+
+        Wider separations bound narrower ones: if two identical legs five apart
+        differ by x, a contrast three apart cannot claim a tighter bar without
+        new evidence.
+        """
+        candidates = [entry["max_abs_delta_pct"]
+                      for sep, entry in nulls[field].items()
+                      if int(sep) >= separation]
+        return max(candidates) if candidates else float("nan")
+
+    # In a palindrome every arm shares the same mean position, so an arm-vs-base
+    # contrast spans the whole session and the widest same-arm separation is the
+    # honest bar.
+    separations = [int(sep) for sep in nulls["mtp_seconds_per_token"]]
+    widest = max(separations) if separations else 1
     bar = {
-        "leg": max(NULL_FLOOR_PCT, base["replicate_spread_pct"]["mtp_leg"]),
-        "round_cost": max(NULL_FLOOR_PCT,
-                          base["replicate_spread_pct"]["mtp_round_cost"]),
-        "serial": max(NULL_FLOOR_PCT, base["replicate_spread_pct"]["serial_leg"]),
+        "leg": bar_for("mtp_seconds_per_token", widest),
+        "round_cost": bar_for("mtp_seconds_per_token_prefill_removed", widest),
+        "serial": bar_for("serial_seconds_per_token", widest),
+        "separation_used": widest,
     }
 
     for arm, rec in arms.items():
@@ -170,42 +371,77 @@ def main() -> int:
             abs(rec["delta_vs_base_round_cost_pct"]) > bar["round_cost"])
         rec["exceeds_bar_serial"] = abs(rec["serial_leg_delta_pct"]) > bar["serial"]
 
+    regressions = {
+        field: ols_arm_position(legs, field)
+        for field in ("mtp_seconds_per_token",
+                      "mtp_seconds_per_token_prefill_removed")
+    }
+
     entry_temps = [float(t) for leg in legs
                    if (t := leg["gpu_temp_entry_c"]) not in (None, "")]
     real_gate = all(leg["cool_gate_requested"] == "1" for leg in legs)
 
+    leg_fit = regressions["mtp_seconds_per_token"]
+
     verdicts: dict = {}
-
-    # Stop rule 4: a ceiling dose that moves one leg but not the other means the
-    # ceiling cost is width dependent, and the additive pricing model that the
-    # deficit arithmetic rests on does not hold.
-    ceiling = arms.get("ceil_only")
-    if ceiling is not None:
-        moved_mtp = ceiling["exceeds_bar_leg"]
-        moved_serial = ceiling["exceeds_bar_serial"]
-        verdicts["ceiling_moved_mtp_leg"] = moved_mtp
-        verdicts["ceiling_moved_serial_leg"] = moved_serial
-        verdicts["ceiling_cost_is_width_dependent"] = moved_mtp != moved_serial
-        verdicts["stop_rule_4_fired"] = moved_mtp != moved_serial
-        verdicts["ceiling_dose_leg_pct"] = ceiling["delta_vs_base_leg_pct"]
-        verdicts["ceiling_dose_serial_pct"] = ceiling["serial_leg_delta_pct"]
-        verdicts["ceiling_dose_inside_prereg_additive_band"] = bool(
-            CEILING_ADDITIVE_LOW_PCT <= ceiling["delta_vs_base_leg_pct"]
-            <= CEILING_ADDITIVE_HIGH_PCT)
-
-    route = [arm for arm in arms if arm.startswith("m5_")]
-    for arm in route:
-        rec = arms[arm]
+    for arm in TREATMENT_ARMS:
+        rec = arms.get(arm)
+        if rec is None:
+            continue
+        if leg_fit.get("fitted") and f"arm[{arm}]" in leg_fit["terms"]:
+            term = leg_fit["terms"][f"arm[{arm}]"]
+            verdicts[f"{arm}_leg_pct_regression"] = term["estimate_pct_of_base"]
+            verdicts[f"{arm}_leg_t_regression"] = term["t"]
         verdicts[f"{arm}_leg_pct"] = rec["delta_vs_base_leg_pct"]
         verdicts[f"{arm}_round_cost_pct"] = rec["delta_vs_base_round_cost_pct"]
         verdicts[f"{arm}_beats_bar_leg"] = bool(
             rec["delta_vs_base_leg_pct"] < -bar["leg"])
-        verdicts[f"{arm}_beats_bar_round_cost"] = bool(
-            rec["delta_vs_base_round_cost_pct"] < -bar["round_cost"])
         verdicts[f"{arm}_vs_prereg_leg_pct"] = round(
-            rec["delta_vs_base_leg_pct"] - PREDICTED_LEG_PCT, 4)
-        verdicts[f"{arm}_vs_prereg_round_cost_pct"] = round(
-            rec["delta_vs_base_round_cost_pct"] - PREDICTED_ROUND_COST_PCT, 4)
+            rec["delta_vs_base_leg_pct"] - PREDICTED_LEG_PCT[arm], 4)
+        verdicts[f"{arm}_clears_stop_rule"] = bool(
+            rec["delta_vs_base_leg_pct"] <= STOP_RULE_LEG_PCT)
+        verdicts[f"{arm}_in_report_only_band"] = bool(
+            REPORT_ONLY_BAND_PCT[0] <= rec["delta_vs_base_leg_pct"]
+            <= REPORT_ONLY_BAND_PCT[1])
+
+    # The preregistered head to head. The advisor predicts a tie; rung 3 T2
+    # predicts t55 is faster. Both arms sit at the same mean position in a
+    # palindrome, so the tie tolerance is the same session null the arms use.
+    if all(arm in arms for arm in TREATMENT_ARMS):
+        t55, rbx = arms["t55"], arms["m5_rbx"]
+        gap = delta_pct(t55["mtp_seconds_per_token_mean"],
+                        rbx["mtp_seconds_per_token_mean"])
+        tolerance = bar["leg"]
+        verdicts["t55_minus_rbx_leg_pct"] = gap
+        verdicts["t55_minus_rbx_tie_tolerance_pct"] = tolerance
+        verdicts["t55_minus_rbx_predicted_pct"] = PREDICTED_T55_MINUS_RBX_PCT
+        if abs(gap) <= tolerance:
+            outcome = "tie"
+        elif gap < 0:
+            outcome = "t55_faster"
+        else:
+            outcome = "rbx_faster"
+        verdicts["t55_vs_rbx_outcome"] = outcome
+        verdicts["occupancy_hypothesis_supported_at_m5"] = outcome == "tie"
+        # Honest power statement. Rung 3 resolved the same register contrast at
+        # the isolated cell with an 8x margin; this leg-level test may not, and
+        # an underpowered tie is not evidence for the occupancy hypothesis.
+        verdicts["t55_vs_rbx_test_is_powered"] = bool(
+            abs(PREDICTED_T55_MINUS_RBX_PCT) >= 2.0 * tolerance)
+        # The same contrast with the session drift regressed out. The raw bar
+        # above carries the drift and is deliberately conservative; this one is
+        # the powered read and the campaign-standard estimator.
+        gap_fit = contrast(leg_fit, "t55", "m5_rbx")
+        if gap_fit["available"]:
+            verdicts["t55_minus_rbx_leg_pct_regression"] = gap_fit[
+                "estimate_pct_of_base"]
+            verdicts["t55_minus_rbx_leg_se_pct_regression"] = gap_fit[
+                "std_error_pct_of_base"]
+            verdicts["t55_minus_rbx_t_regression"] = gap_fit["t"]
+            verdicts["t55_vs_rbx_outcome_regression"] = (
+                "tie" if gap_fit["t"] is not None and abs(gap_fit["t"]) < 2.0
+                else ("t55_faster" if gap_fit["estimate_pct_of_base"] < 0
+                      else "rbx_faster"))
 
     verdicts["all_arms_token_exact"] = all(
         rec["all_tokens_matched"] for rec in arms.values())
@@ -214,25 +450,41 @@ def main() -> int:
     verdicts["all_arms_same_width_histogram"] = len(
         {json.dumps(rec["width_histogram"], sort_keys=True)
          for rec in arms.values()}) == 1
+    verdicts["all_legs_wired_residency_inactive"] = all(
+        leg["wired_residency_active"] == "false" for leg in legs)
+    verdicts["all_legs_ranked_geometry"] = all(
+        leg["mlx_max_ops_per_buffer"] == "50"
+        and leg["mlx_max_mb_per_buffer"] == "512"
+        and leg["startup_memory_profile"] == "full" for leg in legs)
+    verdicts["warmup_leg_declared_and_dropped"] = len(warmups) >= 1
 
     payload = {
         "base_arm": BASE_ARM,
+        "tag_prefix": args.tag_prefix,
         "arms": arms,
         "leg_order": [
-            {"tag": leg["tag"], "arm": leg["arm"], "started": leg["started"],
+            {"tag": leg["tag"], "arm": leg["arm"],
+             "leg_position": leg["leg_position"], "started": leg["started"],
              "gpu_temp_entry_c": leg["gpu_temp_entry_c"],
-             "gpu_temp_exit_c": leg["gpu_temp_exit_c"]}
+             "gpu_temp_exit_c": leg["gpu_temp_exit_c"],
+             "wired_residency_active": leg["wired_residency_active"],
+             "mlx_max_ops_per_buffer": leg["mlx_max_ops_per_buffer"],
+             "metallib_source_fingerprint": leg["metallib_source_fingerprint"]}
             for leg in legs],
+        "discarded_warmup_legs": [
+            {"tag": leg["tag"], "arm": leg["arm"],
+             "gpu_temp_entry_c": leg["gpu_temp_entry_c"],
+             "gpu_temp_exit_c": leg["gpu_temp_exit_c"],
+             "mtp_seconds_per_token": leg["mtp_seconds_per_token"]}
+            for leg in warmups],
+        "session_null_by_separation_pct": nulls,
         "bar_pct": bar,
-        "bar_inputs": {
-            "prereg_null_floor_pct": NULL_FLOOR_PCT,
-            "base_replicate_spread_pct": base["replicate_spread_pct"],
-        },
+        "regression_time_by_arm_and_position": regressions,
         "predicted_pct": {
             "leg_basis": PREDICTED_LEG_PCT,
-            "round_cost_basis": PREDICTED_ROUND_COST_PCT,
-            "ceiling_additive_band": [CEILING_ADDITIVE_LOW_PCT,
-                                      CEILING_ADDITIVE_HIGH_PCT],
+            "t55_minus_rbx": PREDICTED_T55_MINUS_RBX_PCT,
+            "stop_rule_leg_pct": STOP_RULE_LEG_PCT,
+            "report_only_band_pct": list(REPORT_ONLY_BAND_PCT),
         },
         "entry_temperature_spread_c": (
             round(max(entry_temps) - min(entry_temps), 2) if entry_temps else None),
@@ -245,14 +497,19 @@ def main() -> int:
         "official_or_ranked_score": False,
         "verdicts": verdicts,
         "prereg": json.loads(PREREG.read_text()),
+        "prereg_amendment": json.loads(PREREG_AMENDMENT.read_text()),
     }
 
     print("E59 rung 4 legs, in run order:")
-    print("  %-22s %-12s %-20s %-7s %-7s" %
-          ("tag", "arm", "started", "in C", "out C"))
+    print("  %-24s %-3s %-10s %-20s %-7s %-7s"
+          % ("tag", "pos", "arm", "started", "in C", "out C"))
+    for leg in warmups:
+        print("  %-24s %-3s %-10s %-20s %-7s %-7s  (discarded warm-up)"
+              % (leg["tag"], "-", leg["arm"], leg["started"],
+                 leg["gpu_temp_entry_c"], leg["gpu_temp_exit_c"]))
     for leg in legs:
-        print("  %-22s %-12s %-20s %-7s %-7s"
-              % (leg["tag"], leg["arm"], leg["started"],
+        print("  %-24s %-3d %-10s %-20s %-7s %-7s"
+              % (leg["tag"], leg["leg_position"], leg["arm"], leg["started"],
                  leg["gpu_temp_entry_c"], leg["gpu_temp_exit_c"]))
 
     print("\nper arm (mean over legs)")
@@ -265,10 +522,18 @@ def main() -> int:
                  rec["mtp_seconds_per_token_prefill_removed_mean"],
                  rec["seed_prefill_seconds_mean"]))
 
-    print("\ndeltas vs %s   (bar: leg %.4f %%, round-cost %.4f %%, serial %.4f %%)"
-          % (BASE_ARM, bar["leg"], bar["round_cost"], bar["serial"]))
-    print("  %-12s %-12s %-14s %-12s"
-          % ("arm", "leg %", "round-cost %", "serial %"))
+    print("\nsession null, same arm, same binary, by leg separation")
+    for field, table in nulls.items():
+        for sep, entry in table.items():
+            arms_seen = ",".join(sorted({p["arm"] for p in entry["pairs"]}))
+            print("  %-38s sep %-2s %-12s max |d| %.4f %%"
+                  % (field, sep, arms_seen, entry["max_abs_delta_pct"]))
+
+    print("\ndeltas vs %s   (bar at separation %d: leg %.4f %%, round-cost %.4f %%,"
+          " serial %.4f %%)"
+          % (BASE_ARM, bar["separation_used"], bar["leg"], bar["round_cost"],
+             bar["serial"]))
+    print("  %-12s %-12s %-14s %-12s" % ("arm", "leg %", "round-cost %", "serial %"))
     for arm, rec in arms.items():
         if arm == BASE_ARM:
             continue
@@ -277,11 +542,25 @@ def main() -> int:
                  rec["delta_vs_base_round_cost_pct"], rec["serial_leg_delta_pct"]))
     print("  round-cost basis is the one that converts to rank (189(D)).")
 
+    print("\nregression  value ~ arm + leg_position")
+    for field, fit in regressions.items():
+        if not fit.get("fitted"):
+            print("  %-38s NOT FITTED: %s" % (field, fit.get("reason")))
+            continue
+        print("  %s  (n=%d, residual dof=%d, residual sd=%.3e)"
+              % (field, fit["n"], fit["residual_dof"], fit["residual_sd"]))
+        for name, term in fit["terms"].items():
+            pct = term["estimate_pct_of_base"]
+            pct_text = "" if pct is None else "  (%+.4f %% of base)" % pct
+            t_text = "  t=%+.4f" % term["t"] if term["t"] is not None else ""
+            print("    %-18s %+.6e +/- %.3e%s%s"
+                  % (name, term["estimate"], term["std_error"], t_text, pct_text))
+
     print("\nVERDICTS")
     for name, value in verdicts.items():
         print("  %-42s %s" % (name, value))
 
-    rc = 2 if verdicts.get("stop_rule_4_fired") else 0
+    rc = 0
     if not verdicts["all_arms_token_exact"]:
         print("\nHARD STOP: an arm did not match the golden token stream.")
         rc = 2

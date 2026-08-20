@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One E59 rung 4 end-to-end leg: patch -> commit -> build -> measure -> unwind.
 #
-#   research/e59_e2e_run.sh ARM TAG [--tokens N] [--hot]
+#   research/e59_e2e_run.sh ARM TAG [--tokens N] [--hot] [--ops N] [--warmup]
 #
 # The arm patch is committed while it is compiled, so every timed leg records
 # dirty=0 and names an exact commit, and the commit is unwound on every exit
@@ -22,10 +22,19 @@ shift 2
 
 tokens="${E59_TOKENS:-512}"
 hot=0
+warmup=0
+ops_override=""
 while (($#)); do
   case "$1" in
     --tokens) tokens="$2"; shift 2 ;;
     --hot) hot=1; shift ;;
+    # Declared in advance and excluded from the analysis. A cold first leg does
+    # not cancel in a palindrome, so the session pays for one throwaway leg
+    # instead of carrying a cold leg into the counterbalanced set.
+    --warmup) warmup=1; shift ;;
+    # Command-buffer geometry dose. Only the geometry proof uses this; every
+    # timed leg runs at the ranked 50.
+    --ops) ops_override="$2"; shift 2 ;;
     *) echo "e59_e2e_run: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -34,7 +43,7 @@ readonly SCORED_FILES=(
   "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
   "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
 )
-base_sha="${E59_BASE_SHA:-989596895b7c8f889443dac0c87e024a428e6e9e}"
+base_sha="${E59_BASE_SHA:-$(git rev-parse origin/senpai/qwen38-mtp-r1)}"
 arms_module="${E59_ARMS_MODULE:-research/e59_arms.py}"
 root="${E59_E2E_ROOT:-${repo_root}/.mlxfast-private/e59-e2e}"
 fixture="${E59_FIXTURE:-correctness_prompts/public_longcopy_gate_english_512_256.json}"
@@ -59,14 +68,18 @@ export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-sh
 # `DARKBLOOM_STARTUP_MEMORY_PROFILE=full` is the lever that works. It makes
 # `resolve` return the full profile, so the worker's `guard policy.isLowMemory
 # else { return }` returns before either force-set and the exported values
-# survive. That is also exactly what the ranked 128 GiB box does: there the
-# profile resolves to full for the same reason, and
-# `installQwenMTPFullProfileCommandBufferDefaults` supplies these same two
-# values. Setting all three names together reproduces the ranked worker's
-# resolved command-buffer state on a machine that cannot reach it by memory.
+# survive.
+#
+# The exports are also the ONLY source of the ranked values here.
+# `installQwenMTPFullProfileCommandBufferDefaults`
+# (RuntimeStartupMemoryPolicy.swift:63) opens with
+# `guard physicalMemoryBytes >= 96 GiB else { return }`, so on a 48 GiB host it
+# installs nothing and warns about nothing. The ranked 128 GiB box passes that
+# guard and force-sets exactly 512 and 50 for itself. Same resolved state, two
+# different routes to it.
 export DARKBLOOM_STARTUP_MEMORY_PROFILE="${DARKBLOOM_STARTUP_MEMORY_PROFILE:-full}"
 export MLX_MAX_MB_PER_BUFFER="${MLX_MAX_MB_PER_BUFFER:-512}"
-export MLX_MAX_OPS_PER_BUFFER="${MLX_MAX_OPS_PER_BUFFER:-50}"
+export MLX_MAX_OPS_PER_BUFFER="${ops_override:-${MLX_MAX_OPS_PER_BUFFER:-50}}"
 
 pre_patch_sha="$(git rev-parse HEAD)"
 transient_sha=""
@@ -217,6 +230,17 @@ fi
   echo "mlx_max_mb_per_buffer=${MLX_MAX_MB_PER_BUFFER}"
   echo "mlx_max_ops_per_buffer=${MLX_MAX_OPS_PER_BUFFER}"
   echo "physical_memory_gib=$(( $(sysctl -n hw.memsize) >> 30 ))"
+  # `wireResidentWeightsIfEnabled` (Qwen36MTPBlockSession.swift:222-226) needs
+  # the opt-out unset and >= 96 GiB of physical memory. The ranked 128 GiB box
+  # wires the weights; a 48 GiB host cannot, so the two hosts decode from
+  # different residency states and this flag has to travel with every leg.
+  echo "wired_residency_active=$(
+    if [[ "${DARKBLOOM_QWEN_MTP_WIRED_ZH:-}" != "0" ]] \
+      && (( $(sysctl -n hw.memsize) >= (96 << 30) )); then
+      echo true
+    else
+      echo false
+    fi)"
   echo "gpu_temp_entry_c=$(gpu_temp)"
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "${out}/meta.txt"
@@ -248,18 +272,33 @@ if ((stale_metal > 0)); then
   rc=6
 fi
 
-# The worker announces the low-memory profile on stderr, and that branch is
-# exactly the branch that force-sets the command-buffer limits away from the
-# exported ranked values. Absence of the notice is therefore direct runtime
-# evidence that the exports survived into MLX. A leg that ran at the wrong
-# geometry is not comparable with the rest of the session, so discard it.
-low_mem="$(grep -c 'low-memory startup profile' "${out}/run.log")"
-echo "worker_low_memory_notices=${low_mem}" >> "${out}/meta.txt"
-echo "ranked_command_buffer_geometry=$((low_mem == 0 ? 1 : 0))" >> "${out}/meta.txt"
-if ((low_mem > 0 && rc == 0)); then
-  echo "e59_e2e_run: ${tag} ran at low-memory command-buffer geometry; discarding" >&2
-  rc=7
-fi
+# WITHDRAWN: grepping this log for `low-memory startup profile` was not a
+# check. The worker writes that notice to its own stderr
+# (QwenRuntimeMTPWorker.swift:504). `mtp-timed` builds its worker options at
+# main.swift:1799 without `forwardsWorkerStderr`, the default is `false`
+# (QwenRuntime.swift:304), and the drain then installs a swallowing emitter,
+# `emit: options.forwardsWorkerStderr ? nil : { _ in }`
+# (QwenRuntimeWorker.swift:1985). The only call site that can enable forwarding
+# is the `dflash` subcommand at main.swift:1409, which a Qwen MTP leg never
+# reaches. The notice could never appear, so a zero count meant nothing and the
+# `rc=7` gate could never fire.
+#
+# The replacement is two falsifiable proofs, both outside this script:
+#   1. `research/e59_geometry_proof.sh` launches one worker with
+#      `DARKBLOOM_STARTUP_MEMORY_PROFILE=bogus`, which must crash at the
+#      `preconditionFailure` in `resolve` (RuntimeStartupMemoryPolicy.swift:104).
+#      A worker that starts at all under `=full` therefore resolved to the full
+#      profile, because `case "full"` sets `lowMemory = false` unconditionally.
+#   2. The same script times one leg at `--ops 8` and one at `--ops 50`. If the
+#      export reaches MLX the small cap must be materially slower, because MLX
+#      latches the value once (utils.h:178) and commits a command buffer every
+#      N operations against a round that issues roughly a thousand.
+# Both proofs are session evidence, so record the geometry the leg requested and
+# let the proof decide whether the request landed.
+echo "startup_memory_profile_resolves_full=1" >> "${out}/meta.txt"
+echo "geometry_proof=research/e59-artifacts/e59-geometry-proof.json" \
+  >> "${out}/meta.txt"
+echo "warmup_discarded=${warmup}" >> "${out}/meta.txt"
 
 echo "status=${rc}" >> "${out}/meta.txt"
 
