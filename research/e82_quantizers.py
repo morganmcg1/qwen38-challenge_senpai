@@ -248,7 +248,7 @@ def selftest() -> None:
     assert mx.array_equal(pack(codes), ref_q.reshape(-1, w.shape[1] * BITS // 32)), \
         "pack/unpack is not an involution on MLX's own payload"
     ref_deq = mx.dequantize(ref_q, ref_s, ref_b, group_size=GROUP, bits=BITS)
-    mine = (ref_s.astype(mx.float32).reshape(-1, 1) * codes
+    mine = (ref_s.astype(mx.float32).reshape(-1, 1) * codes.reshape(-1, GROUP)
             + ref_b.astype(mx.float32).reshape(-1, 1)).reshape(w.shape)
     assert float(mx.abs(ref_deq.astype(mx.float32) - mine).max().item()) == 0.0, \
         "bit order disagrees with mx.dequantize"
