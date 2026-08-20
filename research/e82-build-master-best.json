@@ -1,0 +1,212 @@
+{
+  "tag": "e82-master-best",
+  "source": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head/model.safetensors",
+  "out": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/built/e82-master-best/model.safetensors",
+  "file_sha256": "2bc8199b59d95969c62ad696be443a5d7b9f88eea551680594baa72011bd034b",
+  "tree_sha256": "e1feee4b2091f33f41fd5615febd3ba3d95f9ede4b9ca453996783a58e060d86",
+  "tree_bytes": 427742640,
+  "metadata": {
+    "format": "e82-master-q4-best-plus-declared-affine2-readout-v1",
+    "trunk_source": "master:model.safetensors",
+    "trunk_source_sha256": "8fceddc664f3ea96d02e304463aa1319213ff52cdf1f3401d4bce64e7075c349",
+    "trunk_quantization": "best affine, bits=4, group_size=64",
+    "draft_lm_head": "byte-copied from amal-david/qwen38-mtp-head-q2-q4-rerank-v1",
+    "selection": "largest per-output-row fp32 reconstruction SSE; Q=1024,K=all,V=all",
+    "built_by": "senpai E82"
+  },
+  "quantization_damage": {
+    "fc.weight": {
+      "rel_l2": 0.08568019261748652,
+      "cosine": 0.9962673783302307,
+      "max_abs_diff": 0.049072265625,
+      "method_group_wins": {
+        "mlx": 2038,
+        "ls": 699192,
+        "hqq": 117970
+      },
+      "groups": 819200,
+      "pinned_head_rel_l2": 0.09331068372217838,
+      "pinned_head_cosine": 0.9955865144729614,
+      "finetune_rel_l2_vs_master": 0.0
+    },
+    "layers.0.self_attn.q_proj.weight": {
+      "rel_l2": 0.08251200271186869,
+      "cosine": 0.996532142162323,
+      "max_abs_diff": 0.02880859375,
+      "method_group_wins": {
+        "mlx": 2473,
+        "ls": 839459,
+        "hqq": 141108
+      },
+      "groups": 983040,
+      "pinned_head_rel_l2": 0.09299628616158497,
+      "pinned_head_cosine": 0.9956130385398865,
+      "finetune_rel_l2_vs_master": 0.0
+    },
+    "layers.0.self_attn.k_proj.weight": {
+      "rel_l2": 0.08782173499187719,
+      "cosine": 0.9961361885070801,
+      "max_abs_diff": 0.0152587890625,
+      "method_group_wins": {
+        "mlx": 202,
+        "ls": 70130,
+        "hqq": 11588
+      },
+      "groups": 81920,
+      "pinned_head_rel_l2": 0.0988426655192829,
+      "pinned_head_cosine": 0.9951282739639282,
+      "finetune_rel_l2_vs_master": 0.0
+    },
+    "layers.0.self_attn.v_proj.weight": {
+      "rel_l2": 0.08370698458127947,
+      "cosine": 0.9964913725852966,
+      "max_abs_diff": 0.0269775390625,
+      "method_group_wins": {
+        "mlx": 195,
+        "ls": 70024,
+        "hqq": 11701
+      },
+      "groups": 81920,
+      "pinned_head_rel_l2": 0.09435634895953054,
+      "pinned_head_cosine": 0.995559811592102,
+      "finetune_rel_l2_vs_master": 0.0
+    },
+    "layers.0.self_attn.o_proj.weight": {
+      "rel_l2": 0.08859603619452165,
+      "cosine": 0.9960333108901978,
+      "max_abs_diff": 0.091796875,
+      "method_group_wins": {
+        "mlx": 1151,
+        "ls": 421299,
+        "hqq": 69070
+      },
+      "groups": 491520,
+      "pinned_head_rel_l2": 0.09969687469924292,
+      "pinned_head_cosine": 0.9950031638145447,
+      "finetune_rel_l2_vs_master": 0.0
+    },
+    "layers.0.mlp.gate_proj.weight": {
+      "rel_l2": 0.08139640678648856,
+      "cosine": 0.9965962171554565,
+      "max_abs_diff": 0.0234375,
+      "method_group_wins": {
+        "mlx": 3360,
+        "ls": 1189304,
+        "hqq": 199976
+      },
+      "groups": 1392640,
+      "pinned_head_rel_l2": 0.09178499329061525,
+      "pinned_head_cosine": 0.9956853985786438,
+      "finetune_rel_l2_vs_master": 0.0
+    },
+    "layers.0.mlp.up_proj.weight": {
+      "rel_l2": 0.08138482456479193,
+      "cosine": 0.9966012835502625,
+      "max_abs_diff": 0.0234375,
+      "method_group_wins": {
+        "mlx": 3385,
+        "ls": 1189193,
+        "hqq": 200062
+      },
+      "groups": 1392640,
+      "pinned_head_rel_l2": 0.09174864065173105,
+      "pinned_head_cosine": 0.9956892132759094,
+      "finetune_rel_l2_vs_master": 0.0
+    },
+    "layers.0.mlp.down_proj.weight": {
+      "rel_l2": 0.0871452803743076,
+      "cosine": 0.9961108565330505,
+      "max_abs_diff": 0.06640625,
+      "method_group_wins": {
+        "mlx": 3281,
+        "ls": 1191764,
+        "hqq": 197595
+      },
+      "groups": 1392640,
+      "pinned_head_rel_l2": 0.09810177309309305,
+      "pinned_head_cosine": 0.9950771927833557,
+      "finetune_rel_l2_vs_master": 0.0
+    }
+  },
+  "islands": {
+    "q": {
+      "rows": 1024,
+      "selected_sse_share": 0.2935774028301239,
+      "sse_total": 107.73486328125
+    },
+    "k": {
+      "rows": 1024,
+      "selected_sse_share": 1.0,
+      "sse_total": 10.443707466125488
+    },
+    "v": {
+      "rows": 1024,
+      "selected_sse_share": 1.0,
+      "sse_total": 32.66160202026367
+    }
+  },
+  "constraints": {
+    "submission_eligible": true,
+    "draft_lm_head_byte_identical": {
+      "draft_lm_head.weight": true,
+      "draft_lm_head.scales": true,
+      "draft_lm_head.biases": true
+    },
+    "norms_byte_identical_to_source": {
+      "layers.0.input_layernorm.weight": true,
+      "layers.0.post_attention_layernorm.weight": true,
+      "layers.0.self_attn.k_norm.weight": true,
+      "layers.0.self_attn.q_norm.weight": true,
+      "norm.weight": true,
+      "pre_fc_norm_embedding.weight": true,
+      "pre_fc_norm_hidden.weight": true
+    },
+    "bytes": 427742640,
+    "reference_bytes": 427742600,
+    "reference_artifact": "amal-david/qwen38-mtp-head-q2-q4-rerank-v1",
+    "tensor_count": 40,
+    "shapes_match_reference": {
+      "draft_lm_head.weight": true,
+      "fc.weight": true,
+      "layers.0.mlp.down_proj.weight": true,
+      "layers.0.mlp.gate_proj.weight": true,
+      "layers.0.mlp.up_proj.weight": true,
+      "layers.0.self_attn.k_proj.weight": true,
+      "layers.0.self_attn.o_proj.weight": true,
+      "layers.0.self_attn.q_proj.weight": true,
+      "layers.0.self_attn.v_proj.weight": true,
+      "precision_islands.k.indices": true,
+      "precision_islands.q.indices": true,
+      "precision_islands.v.indices": true,
+      "draft_lm_head.biases": true,
+      "draft_lm_head.scales": true,
+      "fc.biases": true,
+      "fc.scales": true,
+      "layers.0.input_layernorm.weight": true,
+      "layers.0.mlp.down_proj.biases": true,
+      "layers.0.mlp.down_proj.scales": true,
+      "layers.0.mlp.gate_proj.biases": true,
+      "layers.0.mlp.gate_proj.scales": true,
+      "layers.0.mlp.up_proj.biases": true,
+      "layers.0.mlp.up_proj.scales": true,
+      "layers.0.post_attention_layernorm.weight": true,
+      "layers.0.self_attn.k_norm.weight": true,
+      "layers.0.self_attn.k_proj.biases": true,
+      "layers.0.self_attn.k_proj.scales": true,
+      "layers.0.self_attn.o_proj.biases": true,
+      "layers.0.self_attn.o_proj.scales": true,
+      "layers.0.self_attn.q_norm.weight": true,
+      "layers.0.self_attn.q_proj.biases": true,
+      "layers.0.self_attn.q_proj.scales": true,
+      "layers.0.self_attn.v_proj.biases": true,
+      "layers.0.self_attn.v_proj.scales": true,
+      "norm.weight": true,
+      "pre_fc_norm_embedding.weight": true,
+      "pre_fc_norm_hidden.weight": true,
+      "precision_islands.k.weight": true,
+      "precision_islands.q.weight": true,
+      "precision_islands.v.weight": true
+    },
+    "bytes_delta_pct": 9.351418353000145e-06
+  }
+}
