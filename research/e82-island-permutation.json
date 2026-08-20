@@ -1,0 +1,139 @@
+{
+  "declared": {
+    "q": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 6144,
+      "unique": 1024,
+      "min": 3,
+      "max": 12239,
+      "is_full_permutation": false,
+      "is_sorted": false,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    },
+    "k": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 1024,
+      "unique": 1024,
+      "min": 0,
+      "max": 1023,
+      "is_full_permutation": true,
+      "is_sorted": false,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    },
+    "v": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 1024,
+      "unique": 1024,
+      "min": 0,
+      "max": 1023,
+      "is_full_permutation": true,
+      "is_sorted": false,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    }
+  },
+  "soup-q4": {
+    "q": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 6144,
+      "unique": 1024,
+      "min": 3,
+      "max": 12239,
+      "is_full_permutation": false,
+      "is_sorted": false,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    },
+    "k": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 1024,
+      "unique": 1024,
+      "min": 0,
+      "max": 1023,
+      "is_full_permutation": true,
+      "is_sorted": true,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    },
+    "v": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 1024,
+      "unique": 1024,
+      "min": 0,
+      "max": 1023,
+      "is_full_permutation": true,
+      "is_sorted": true,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    }
+  },
+  "qat-q4": {
+    "q": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 6144,
+      "unique": 1024,
+      "min": 3,
+      "max": 12239,
+      "is_full_permutation": false,
+      "is_sorted": false,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    },
+    "k": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 1024,
+      "unique": 1024,
+      "min": 0,
+      "max": 1023,
+      "is_full_permutation": true,
+      "is_sorted": true,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    },
+    "v": {
+      "present": true,
+      "count": 1024,
+      "output_rows": 1024,
+      "unique": 1024,
+      "min": 0,
+      "max": 1023,
+      "is_full_permutation": true,
+      "is_sorted": true,
+      "weight_shape": [
+        1024,
+        5120
+      ]
+    }
+  },
+  "distinct_index_lists_across_arms": {
+    "q": 3,
+    "k": 2,
+    "v": 2
+  }
+}
