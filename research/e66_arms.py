@@ -24,17 +24,12 @@ Source-byte growth for `c_t55_t6` against the base is 0: one character per twin.
 from __future__ import annotations
 
 import pathlib
+import re
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 HEADER = REPO / "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
 TWIN = REPO / "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
 SOURCES = (HEADER, TWIN)
-
-BASE_NA_BOUND = 6
-
-# The base table at 45b4f3a8: `case 9` is <T,9,5> since E55, `case 6` is <T,6,6>
-# since E61.
-BASE_IPG = {3: 3, 4: 4, 5: 3, 6: 6, 7: 4, 8: 4, 9: 5}
 
 LANE_WRITE = """        a0[m] = xc[0];
         a1[m] = xc[1];
@@ -56,19 +51,20 @@ def na_assert(bound: int) -> str:
 
 
 def set_na_bound(text: str, bound: int) -> str:
-    current = na_assert(BASE_NA_BOUND)
-    if text.count(current) != 1:
+    pat = re.compile(r'static_assert\(NA >= 2 && NA <= (\d+), '
+                     r'"wide multi-row QMV supports NA in \[2, \d+\]"\);')
+    if len(pat.findall(text)) != 1:
         raise SystemExit("e66_arms: NA assert anchor not unique")
-    return text.replace(current, na_assert(bound))
+    return pat.sub(na_assert(bound).replace("\\", "\\\\"), text)
 
 
 def swap_ipg(text: str, m: int, ipg: int) -> str:
-    """Repoint `case m:` at `<T, m, ipg>` instead of its base IPG."""
-    old = "qmv_fast_crossrow_affine4_g64_m<T, %d, %d, true>" % (m, BASE_IPG[m])
-    new = "qmv_fast_crossrow_affine4_g64_m<T, %d, %d, true>" % (m, ipg)
-    if text.count(old) != 1:
+    """Write `case m:` as `<T, m, ipg>` whatever IPG it currently carries."""
+    pat = re.compile(r"qmv_fast_crossrow_affine4_g64_m<T, %d, \d+, true>" % m)
+    if len(pat.findall(text)) != 1:
         raise SystemExit("e66_arms: M=%d dispatch anchor not unique" % m)
-    return text.replace(old, new)
+    return pat.sub("qmv_fast_crossrow_affine4_g64_m<T, %d, %d, true>" % (m, ipg),
+                   text)
 
 
 def perturb_lanes(text: str) -> str:
@@ -83,44 +79,45 @@ ARMS: dict[str, dict] = {
                "wide-helper bound back to NA <= 5",
         "cells": {5: 3, 6: 3},
         "na_bound": 5,
-        "steps": [("swap_ipg", {"m": 6, "ipg": 3}), ("na_bound", {"bound": 5})],
     },
     "b_t6": {
-        "doc": "the merged base, unmodified: case 5 <T,5,3>, case 6 <T,6,6>",
+        "doc": "t6 only: case 5 <T,5,3>, case 6 <T,6,6>",
         "cells": {5: 3, 6: 6},
         "na_bound": 6,
-        "steps": [],
     },
     "c_t55_t6": {
-        "doc": "the candidate: case 5 -> <T,5,5> composed with the merged "
+        "doc": "the candidate: case 5 -> <T,5,5> composed with "
                "case 6 <T,6,6>. One weight stream at both M=5 and M=6",
         "cells": {5: 5, 6: 6},
         "na_bound": 6,
-        "steps": [("swap_ipg", {"m": 5, "ipg": 5})],
     },
     "c_lane_perturb": {
         "doc": "positive control: arm C with input rows 3 and 4 written to each "
                "other's lane in every NA=5 group; the row ledger MUST differ",
         "cells": {5: 5, 6: 6},
         "na_bound": 6,
-        "steps": [("swap_ipg", {"m": 5, "ipg": 5}), ("perturb", {})],
+        "perturb": True,
         "never_time": True,
         "never_submit": True,
     },
 }
 
-_STEPS = {
-    "swap_ipg": lambda t, m, ipg: swap_ipg(t, m, ipg),
-    "na_bound": lambda t, bound: set_na_bound(t, bound),
-    "perturb": lambda t: perturb_lanes(t),
-}
-
 
 def apply_arm(text: str, name: str) -> str:
+    """Write the arm's declared final table, whatever table is checked out.
+
+    Arms are states, not patches: `a_neither` and `b_t6` are reversions once the
+    base carries `t55`, and `c_t55_t6` is then a no-op. The compiled object is
+    the same either way, so the measured contrast does not depend on the base.
+    """
     if name not in ARMS:
         raise SystemExit("e66_arms: unknown arm %s" % name)
-    for step, kwargs in ARMS[name]["steps"]:
-        text = _STEPS[step](text, **kwargs)
+    arm = ARMS[name]
+    for m, ipg in sorted(arm["cells"].items()):
+        text = swap_ipg(text, m, ipg)
+    text = set_na_bound(text, arm["na_bound"])
+    if arm.get("perturb"):
+        text = perturb_lanes(text)
     return text
 
 
