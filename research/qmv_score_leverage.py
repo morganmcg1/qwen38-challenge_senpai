@@ -44,6 +44,14 @@ from noise_floors import SCORE_BETWEEN_SUBMISSION  # noqa: E402
 # effect size is chosen rather than fought for, which is how it escapes the MDE
 # trap. Linearity checked at two doses: p2 ratio 1.0012, p6 0.9980, so one psi
 # to 0.12 %. Bit-exactness 6/6 arms, 1152 cells, 0 differing.
+# NAMING WARNING, resolved in ledger 192(R). This `PSI_MTP` and
+# `research/dilution_basis.py`'s `PSI_MTP = 0.693391` are DIFFERENT MEASURED
+# QUANTITIES that happen to share a name. This one is ledger 173(A)'s
+# no-modelling split over dispatched verify widths 2..9 only. That one is E48's
+# share over ALL widths of the same local leg. The difference,
+# 0.693391 - 0.6736 = 0.019791, is exactly `psi_mtp_w1`, the width-1 QMV share
+# this module carries as a free argument. The two numbers are consistent; only
+# the name collides. Never substitute one for the other.
 PSI_MTP = 0.6736        # QMV share of the CANDIDATE leg, dispatched widths 2..9
 PSI_MTP_FLOOR = 0.604   # his conservative floor
 

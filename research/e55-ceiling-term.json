@@ -1,0 +1,273 @@
+{
+  "advisor_prize_back_solve": {
+    "ambiguity_flagged": "I cannot tell from the comment whether g multiplies the sensitivity or was already applied when the corrected range was quoted, so both back-solves are reported.",
+    "corrected_4_5_to_4_7": {
+      "implied_f9_pct_no_g": [
+        52.95668966556085,
+        55.310320317363555
+      ],
+      "implied_f9_pct_with_g_mid": [
+        61.85445268418017,
+        64.60353947014373
+      ]
+    },
+    "e49_m9_half_1_3625": {
+      "implied_f9_pct_no_g": 16.034108815405926
+    },
+    "g_mid": 0.85615,
+    "g_range": [
+      0.8331,
+      0.8792
+    ],
+    "implied_band_brackets_local_f9": true,
+    "implied_band_exceeds_e48": true,
+    "implied_band_exceeds_edward_upper": true,
+    "implied_ranked_f9_band_pct": [
+      52.95668966556085,
+      64.60353947014373
+    ],
+    "local_fixture_f9_pct": 55.435,
+    "pre_correction_5_36": {
+      "implied_f9_pct_no_g": 63.077301468312484
+    },
+    "reading": "Every quoted ranked prize figure implies a ranked f9 of 53.0..64.6 %, which is the LOCAL fixture's mixture, not either registered ranked mixture. It is 2.45x E48's 21.630 % and 5.95x edward's 8.9 % upper bound. The E49 M=9-half figure of +1.3625 % implies only 16.03 %. The prize quoted to me and the prize implied by E49 differ by 3.30x, and the whole difference is f9.",
+    "registered_mixtures_f9_pct": {
+      "e48_merged": 21.63,
+      "edward_e53_lower": 4.6,
+      "edward_e53_upper": 8.9
+    },
+    "sensitivity_pct_dscore_per_unit_f9": 8.49751
+  },
+  "e27_conversion_anomaly": {
+    "e27_ranked_dscore_pct": -0.3321,
+    "e27_ranked_mtp_leg_pct": 0.1995,
+    "flag": "E27's receipt converts an MTP-leg change into published score at 1.6647, which is 2.40x psi_mtp = 0.693391. Either the E27 loss has a component outside the MTP leg, or the order-statistic behaviour at that operating point is far from the constant-rate model. I flag it because the ceiling term in section 4 is quoted in MTP-leg space and then priced with psi_mtp; if E27's own conversion is right, the ceiling term costs 0.3321 % of score, not 0.1383 %.",
+    "implied_dscore_per_mtp_leg": 1.6646616541353383,
+    "psi_mtp": 0.693391,
+    "ratio_to_psi_mtp": 2.400754630699473
+  },
+  "experiment": "E55",
+  "local_f9_discrepancy": {
+    "advisor_quoted_pct": 53.45,
+    "delta_pp": 1.9849999999999994,
+    "mine_pct": 55.435,
+    "note": "same fixture, so this is a denominator difference and not a disagreement about the schedule; it does not change any sign here"
+  },
+  "measured_vs_two_term": {
+    "best_fitting_variant": "two_term_e27_ceiling_magnitude",
+    "fit_improvement_factor": 1.9241665330964477,
+    "measured_mtp_leg_pct": -4.295224484008933,
+    "measured_serial_leg_pct": 0.004658791855401965,
+    "mtp_base_bracket_mean": 0.03343178,
+    "predicted_pct": {
+      "one_term_cell_only": -4.710594668500001,
+      "two_term_e27_ceiling_magnitude": -4.5110946685,
+      "two_term_e49_local_dose_reading": -4.745594668500001
+    },
+    "reading": "Adding the E27-magnitude ceiling tax moves the local prediction TOWARD the measurement. That is weak corroboration that a real ceiling tax is present locally as well, but it is a one-point fit with a cross-host coefficient and it does not identify the term.",
+    "residual_pp": {
+      "one_term_cell_only": 0.415370184491068,
+      "two_term_e27_ceiling_magnitude": 0.21587018449106754,
+      "two_term_e49_local_dose_reading": 0.45037018449106814
+    },
+    "serial_falsifier_held": true,
+    "two_term_improves_local_fit": true
+  },
+  "negative_controls": {
+    "all_fire": true,
+    "controls": {
+      "back_solve_separates_prize_figures": true,
+      "decomposition_notices_a_case5_change": true,
+      "gate_fires_when_shipped_table_is_not_108": true,
+      "post_hoc_label_present": true,
+      "ranked_prereg_hypotheses_do_not_overlap": true,
+      "register_identity_claim_can_fail": true,
+      "two_term_fit_claim_is_a_comparison_not_a_pass": true,
+      "width_gap_direction_survives_both_readings": true
+    }
+  },
+  "ranked_prereg": {
+    "ceiling_is_common_mode": true,
+    "discriminating": true,
+    "h_ceiling": {
+      "claim": "E27's ranked loss is the shared register ceiling",
+      "predicted_ranked_dscore_pct": [
+        -0.3321,
+        0.0
+      ]
+    },
+    "h_m5cell": {
+      "claim": "E27's ranked loss is the M=5 cell; the ceiling is bounded by E49 Arm 2",
+      "implied_m5cell_contribution_pct": [
+        -1.7822,
+        -1.6070000000000002
+      ],
+      "predicted_ranked_dscore_pct": [
+        1.2749000000000001,
+        1.4501
+      ]
+    },
+    "identity": "E27 = ceiling + M5cell + M9cell ; E55 = ceiling + M9cell",
+    "ranked_mde_2sd_pct": 0.283,
+    "reading": "One ranked run of this candidate separates the two explanations by 1.2749 points against a 0.283 % minimum detectable effect, i.e. 4.50x. That is the experiment section 2 asks for, and it is not available locally at any cost, because the ceiling term is common-mode between E27 and E55 by construction.",
+    "separation_in_mde": 4.504946996466432,
+    "separation_pct": 1.2749000000000001
+  },
+  "register_decomposition": {
+    "candidate_ceiling_set_by_widths": [
+      9
+    ],
+    "candidate_is_register_identical_to_e27": true,
+    "candidate_reg_max": 129,
+    "candidate_vs_base_step": 21,
+    "e27_case5_cell": 125,
+    "e27_case5_is_below_ceiling": true,
+    "e27_ceiling_set_by_widths": [
+      9
+    ],
+    "e27_reg_max": 129,
+    "e27_vs_base_step": 21,
+    "hard_gate_shipped_reads_108": true,
+    "per_width": [
+      {
+        "base": 83,
+        "candidate": 83,
+        "candidate_equals_base": true,
+        "candidate_equals_e27": true,
+        "e27": 83,
+        "width": 3
+      },
+      {
+        "base": 104,
+        "candidate": 104,
+        "candidate_equals_base": true,
+        "candidate_equals_e27": true,
+        "e27": 104,
+        "width": 4
+      },
+      {
+        "base": 87,
+        "candidate": 87,
+        "candidate_equals_base": true,
+        "candidate_equals_e27": false,
+        "e27": 125,
+        "width": 5
+      },
+      {
+        "base": 83,
+        "candidate": 83,
+        "candidate_equals_base": true,
+        "candidate_equals_e27": true,
+        "e27": 83,
+        "width": 6
+      },
+      {
+        "base": 108,
+        "candidate": 108,
+        "candidate_equals_base": true,
+        "candidate_equals_e27": true,
+        "e27": 108,
+        "width": 7
+      },
+      {
+        "base": 104,
+        "candidate": 104,
+        "candidate_equals_base": true,
+        "candidate_equals_e27": true,
+        "e27": 104,
+        "width": 8
+      },
+      {
+        "base": 83,
+        "candidate": 129,
+        "candidate_equals_base": false,
+        "candidate_equals_e27": true,
+        "e27": 129,
+        "width": 9
+      }
+    ],
+    "reading": "E27's kernel-wide ceiling of 129 is set by the M=9 cell alone; its M=5 cell reaches only 125, which is below it. The candidate raises the same M=9 cell and leaves M=5 at the base value, so the candidate and E27 have the SAME kernel-wide register allocation. Section 3 of the feedback establishes one library, one pipeline and one allocation for all M, so the shared-ceiling tax is common-mode between E27 and E55 and cancels in the E27-minus-E55 contrast.",
+    "shipped_table_reg_max": 108,
+    "steps_are_equal": true,
+    "widths_where_candidate_differs_from_e27": [
+      5
+    ]
+  },
+  "responds_to_feedback_id": "e55-is-the-m9-half-of-e27-and-prereg-omits-ceiling-term",
+  "two_term_predictions": {
+    "ceiling_term_is_cross_host": true,
+    "ceiling_term_local_alternative_pct": -0.035,
+    "ceiling_term_source": "E27 ranked MTP leg +0.1995 %, applied at the candidate's dose because the candidate's kernel-wide allocation is identical to E27's.",
+    "is_pre_registration": false,
+    "post_hoc_reason": "the three timed arms completed before this feedback arrived, so the second term is a requested model correction, not a prereg",
+    "rows": [
+      {
+        "f9_pct": 21.63,
+        "mixture": "e48_merged",
+        "net_moved_ceiling_pct": -1.6385114129999998,
+        "net_static_ceiling_pct": -1.8380114129999998,
+        "term1_cell_pct": -1.8380114129999998,
+        "term2_ceiling_pct": 0.1995,
+        "x_mtp_null_moved": 32.96803647887324
+      },
+      {
+        "f9_pct": 8.9,
+        "mixture": "edward_e53_upper",
+        "net_moved_ceiling_pct": -0.5567783900000001,
+        "net_static_ceiling_pct": -0.7562783900000001,
+        "term1_cell_pct": -0.7562783900000001,
+        "term2_ceiling_pct": 0.1995,
+        "x_mtp_null_moved": 11.202784507042255
+      },
+      {
+        "f9_pct": 4.6,
+        "mixture": "edward_e53_lower",
+        "net_moved_ceiling_pct": -0.19138546,
+        "net_static_ceiling_pct": -0.39088546,
+        "term1_cell_pct": -0.39088546,
+        "term2_ceiling_pct": 0.1995,
+        "x_mtp_null_moved": 3.8508140845070424
+      },
+      {
+        "f9_pct": 55.435,
+        "mixture": "local_fixture_measured",
+        "net_moved_ceiling_pct": -4.5110946685,
+        "net_static_ceiling_pct": -4.710594668500001,
+        "term1_cell_pct": -4.710594668500001,
+        "term2_ceiling_pct": 0.1995,
+        "x_mtp_null_moved": 90.76649232394367
+      }
+    ]
+  },
+  "verdict_ok": true,
+  "width_mixture_gap": {
+    "ambiguity_flagged": "the receipt's mean_draft_len may be proposed or accepted drafts; both readings are carried and the direction is the same under each",
+    "central_pair": {
+      "beagle": {
+        "gap_vs_local_reading1_rows": 1.7362307692307688,
+        "gap_vs_local_reading2_rows": 1.1617722438851468,
+        "reading1_proposed_mean_m": 5.533,
+        "reading2_accepted_mean_m": 6.107458525345622,
+        "receipt_mean_draft_len": 4.533
+      },
+      "medicine": {
+        "gap_vs_local_reading1_rows": 1.5012307692307694,
+        "gap_vs_local_reading2_rows": 0.8969911378943642,
+        "reading1_proposed_mean_m": 5.768,
+        "reading2_accepted_mean_m": 6.372239631336405,
+        "receipt_mean_draft_len": 4.768
+      }
+    },
+    "gap_positive_under_both_readings": true,
+    "gap_rows_max": 1.7362307692307688,
+    "gap_rows_min": 0.8969911378943642,
+    "local_accepted_drafts_per_round": 5.564102564102564,
+    "local_mean_verify_width": 7.269230769230769,
+    "local_proposed_drafts_per_round": 6.269230769230769,
+    "local_proposed_over_accepted": 1.1267281105990783,
+    "local_rounds": 78,
+    "local_rows": 567,
+    "m_equals_proposed_plus_one_holds_locally": true,
+    "reading": "The local public fixture dispatches 0.897 to 1.736 more rows per verify than the two prompts that set the published median. Under a greedy marginal-cost schedule a shallower mean width places less cost at M=9, so f9 on the central pair is BELOW the local fixture's 55.435 %. That is a direction, not a bound: section 5b's LP admits up to 70 % and I am not trying to close it analytically."
+  }
+}

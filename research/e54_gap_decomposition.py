@@ -35,7 +35,11 @@ SHARES = {
 }
 
 # E54's own published score prices, per cent of published median, from
-# `research/e49_price.py --harness ranked`.  That tool recomputes the eight
+# `research/e49_price.py`.  🔴 That script has NO argparse: the `--harness
+# ranked` flag this comment used to cite does not exist and was silently
+# ignored; the harness is hard-coded at `e49_price.py:55`.  It also runs
+# `qmv_score_leverage.PSI_MTP = 0.6736`, not the 0.693391 named below --
+# see ledger 191(E), unresolved.  That tool recomputes the eight
 # per-prompt raw ratios and re-medians them, so its output is NOT a linear
 # function of the cell wins: the per-cell prices do not sum to the composite
 # price, and the effective multiplier varies with effect size.  We therefore
@@ -88,6 +92,11 @@ SHIPPED_IPG = {2: 2, 3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 3}
 LOCAL_NULL_FLOOR_PCT = 0.0629
 
 # Ranked minimum detectable effect at 2 sd, per cent of published median.
+# RETRACTED by ledger 193(E): this is 2 sd of the SERIAL leg's jitter applied to the
+# score, and the median over eight prompts does not average the candidate-leg common
+# mode away. The measured single-pair ranked MDE is 2.10 %, 7.4x larger. The value
+# below is kept so this module's published arithmetic stays reproducible; import
+# research/ranked_noise.py for any NEW ranked pricing.
 RANKED_MDE_PCT = 0.283
 RANKED_MDE_WORST_PCT = 0.527
 
@@ -98,8 +107,16 @@ DEFICIT_PCT = 0.5367
 R2_TAX_PCT = 10.54
 
 # Affine register ladders (E32, confirmed out of sample by E54's census).
-def regs_r4(na: int) -> int:
-    return 20 + 21 * na
+# 🔴 E55 (askeladd) closed the law with zero fitted parameters:
+#     peak_live_regs = 20 + 21*max(NA) + 4*[the cell has two distinct NA groups]
+# The bare ladder below is valid ONLY on uniform cells.  The shipped maximum is
+# set by M=7 `<T,7,4>`, whose only legal split {4,3} is MIXED, so it reads 108,
+# not the 104 this file published before ledger 187(P)/189(C).
+SHIPPED_TRUE_MAX_REGS = 108
+
+
+def regs_r4(na: int, mixed: bool = False) -> int:
+    return 20 + 21 * na + (4 if mixed else 0)
 
 
 def regs_r2(na: int) -> int:
@@ -250,27 +267,37 @@ def main() -> int:
     # <T,5,5> at r=4 needs 125 regs, above the shipped 104 true max.
     # <T,5,5> at r=2 needs 91 regs, BELOW it -> zero ceiling dose.
     escape = {
-        "shipped_true_max_r4_na4": regs_r4(4),
+        "shipped_true_max_r4_na4": SHIPPED_TRUE_MAX_REGS,
         "t5_5_r4": regs_r4(5),
         "t5_5_r2": regs_r2(5),
-        "raises_ceiling_r4": regs_r4(5) > regs_r4(4),
-        "raises_ceiling_r2": regs_r2(5) > regs_r4(4),
+        "raises_ceiling_r4": regs_r4(5) > SHIPPED_TRUE_MAX_REGS,
+        "raises_ceiling_r2": regs_r2(5) > SHIPPED_TRUE_MAX_REGS,
         "r2_tax_pct_at_na4": R2_TAX_PCT,
         "net_cell_win_pct": CELL_WIN_PCT[5] + R2_TAX_PCT,
     }
+    # 🔴 Ledger 191 corrects this block twice over.  The previous version read
+    #     naive = E54_PRICE_SINGLE_CELL[mixture][5] * surviving
+    # and claimed it "keeps the nonlinear ranked pricing".  It does the
+    # opposite: that input is a SCORE that already passed through the concave
+    # re-sorting pricer, so scaling it linearises exactly what 187(H) forbids.
+    # It then multiplied by DILUTION_MEDIAN_PAIR, double-charging the prefill
+    # per 189(D).  Both corrections now live in `research/pricing_order.py`,
+    # which shrinks the LEG GAIN and prices once.
+    import pricing_order as PO
     for mixture in ("e48", "e53_mid"):
-        # Scale E54's published M=5 price by the fraction of the cell win that
-        # survives the r=2 x re-read tax.  This keeps the nonlinear ranked
-        # pricing thorfinn measured and only rescales the mechanism size.
         surviving = escape["net_cell_win_pct"] / CELL_WIN_PCT[5]
-        naive = E54_PRICE_SINGLE_CELL[mixture][5] * surviving
-        diluted = naive * DILUTION_MEDIAN_PAIR
         escape["surviving_fraction_of_cell_win"] = surviving
-        escape[f"score_{mixture}_naive"] = naive
-        escape[f"score_{mixture}_diluted"] = diluted
-        escape[f"score_{mixture}_traffic"] = diluted / TRANSFER_DIVISOR_TRAFFIC
-        escape[f"score_{mixture}_h_lo"] = diluted * TRANSFER_H_RATIO_D4[0]
-        escape[f"score_{mixture}_h_hi"] = diluted * TRANSFER_H_RATIO_D4[1]
+        escape[f"score_{mixture}_traffic"] = (
+            PO.shrink_then_price(mixture, 1.0 / TRANSFER_DIVISOR_TRAFFIC,
+                                 PO.REBASE[0]))
+        escape[f"score_{mixture}_h_lo"] = PO.shrink_then_price(
+            mixture, TRANSFER_H_RATIO_D4[0], PO.REBASE[0])
+        escape[f"score_{mixture}_h_hi"] = PO.shrink_then_price(
+            mixture, TRANSFER_H_RATIO_D4[1], PO.REBASE[1])
+        escape[f"score_{mixture}_union_lo"] = PO.shrink_then_price(
+            mixture, PO.TRANSFER_UNION[0], PO.REBASE[0])
+        escape[f"score_{mixture}_union_hi"] = PO.shrink_then_price(
+            mixture, PO.TRANSFER_UNION[1], PO.REBASE[1])
     out["r2_escape"] = escape
 
     # --- 6. Local-fixture sensitivity, which is the measurement bias ------
@@ -347,7 +374,7 @@ def main() -> int:
 
     print("\n6. The rows_per_simd=2 escape: a NA=5 cell BELOW the shipped ceiling")
     e = out["r2_escape"]
-    print(f"   shipped true max, <T,7,4> at r=4      {e['shipped_true_max_r4_na4']:4d} regs")
+    print(f"   shipped true max, <T,7,4> MIXED {4,3} {e['shipped_true_max_r4_na4']:4d} regs")
     print(f"   <T,5,5> at r=4                        {e['t5_5_r4']:4d} regs  "
           f"raises ceiling: {e['raises_ceiling_r4']}")
     print(f"   <T,5,5> at r=2, two row blocks        {e['t5_5_r2']:4d} regs  "
@@ -355,9 +382,13 @@ def main() -> int:
     print(f"   measured r=2 x re-read tax at NA=4    {e['r2_tax_pct_at_na4']:+.2f} %")
     print(f"   net cell win after that tax           {e['net_cell_win_pct']:+.3f} %")
     for mixture in ("e48", "e53_mid"):
-        print(f"   score, {mixture:8s} diluted {e[f'score_{mixture}_diluted']:+7.4f}  "
+        print(f"   score, {mixture:8s} union "
+              f"{e[f'score_{mixture}_union_lo']:+7.4f}.."
+              f"{e[f'score_{mixture}_union_hi']:+7.4f}  "
               f"/3.55 {e[f'score_{mixture}_traffic']:+7.4f}  "
-              f"xh {e[f'score_{mixture}_h_lo']:+7.4f}..{e[f'score_{mixture}_h_hi']:+7.4f}")
+              f"xh {e[f'score_{mixture}_h_lo']:+7.4f}.."
+              f"{e[f'score_{mixture}_h_hi']:+7.4f}")
+    print("   (shrink-then-price per ledger 191; see research/pricing_order.py)")
 
     print("\n7. The LOCAL fixture under-weights M=5, so a local test is biased against it")
     lo = out["local_fixture"]

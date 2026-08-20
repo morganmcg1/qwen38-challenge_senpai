@@ -29,7 +29,15 @@ curve_widths="${E42_CURVE_WIDTHS:-1,2,3,4,5,6,7,8,9}"
 curve_reps="${E42_CURVE_REPS:-21}"
 curve_inner="${E42_CURVE_INNER:-10}"
 
-macmon_bin="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
+macmon_bin="${MLXFAST_MACMON_BIN:-}"
+if [[ -z "${macmon_bin}" ]]; then
+  for macmon_cand in "${HOME}/bin/macmon" "$(command -v macmon 2>/dev/null || true)"; do
+    if [[ -n "${macmon_cand}" && -x "${macmon_cand}" ]]; then
+      macmon_bin="${macmon_cand}"
+      break
+    fi
+  done
+fi
 sample_thermal() {
   [[ -x "${macmon_bin}" ]] || { echo "unavailable"; return 0; }
   "${macmon_bin}" pipe -s1 2>/dev/null \
@@ -51,6 +59,33 @@ done
 [[ -s "${head_dir}/config.json" && -s "${head_dir}/model.safetensors" ]] || {
   echo "e42-run: declared head run tree missing at ${head_dir}" >&2; exit 2; }
 [[ -s "${fixture}" ]] || { echo "e42-run: missing fixture ${fixture}" >&2; exit 2; }
+# The transformed weights/ tree is ~15 GB, is not in Git, and a launch retag can
+# delete it: measured 2026-08-19T15:02Z, which cost an E55 arm a full metallib
+# build before the failure surfaced. benchmark-qwen-mtp.sh's own fallback cannot
+# repair it from inside a timing leg either, because MLXFAST_SWIFT_BIN points at
+# research/capture-cli.sh below and run-offline.sh's sandbox refuses to exec a
+# shell script. Fail in seconds instead, and name the command that does work.
+[[ -s "weights/model.safetensors.index.json" ]] || {
+  echo "e42-run: no transformed weights at weights/" >&2
+  echo "e42-run: run './benchmark.sh --transform-only' first, outside any arm" >&2
+  exit 2
+}
+# This driver always exports MLXFAST_LOCAL_COOL_GATE=0, and program.md permits
+# that ungated mode only when entry and exit GPU temperature are recorded for
+# every arm. sample_thermal degrades to the string "unavailable", so a missing
+# macmon would still produce complete-looking timings whose protocol condition
+# was never met -- measured 2026-08-19, when the E55 base arm recorded
+# thermal_before=unavailable because macmon lives at /opt/homebrew/bin, not
+# ${HOME}/bin. Refuse to time instead.
+[[ -x "${macmon_bin}" ]] || {
+  echo "e42-run: no usable macmon (${macmon_bin:-none found})" >&2
+  echo "e42-run: the ungated protocol requires per-arm GPU temperatures; set MLXFAST_MACMON_BIN" >&2
+  exit 2
+}
+[[ "$(sample_thermal)" == gpu_temp=* ]] || {
+  echo "e42-run: macmon at ${macmon_bin} did not return a GPU temperature" >&2
+  exit 2
+}
 
 dirty="$(git status --porcelain -- \
   Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h \
@@ -59,7 +94,12 @@ if ((dirty)); then
   echo "e42-run: twins are uncommitted; commit the arm first so timed runs are reproducible" >&2
   exit 2
 fi
-python3 research/twin_audit.py quantized || exit 2
+# The campaign gate pins its comment-only waiver to WHOLE-BODY digests, so any
+# code edit in the quantized section de-pins it and one pinned pair cannot cover
+# both arms of an A/B on that section. E55_TWIN_GATE lets such an experiment
+# substitute a gate pinned to the divergence instead of the body. The default is
+# unchanged.
+python3 "${E42_TWIN_GATE:-research/twin_audit.py}" quantized || exit 2
 
 # The kernel ships as a source string inside a C++ translation unit, so a Metal
 # syntax or template-arity error survives `swift build` and only surfaces as a
@@ -129,13 +169,38 @@ if ((status == 0)); then
     --scratch-path .build-worker --product mlxfast-runtime-worker || status=1
   # Freshness, not existence: a silently-skipped rebuild would time the previous
   # arm and read as a null.
+  #
+  # This used to compare product mtimes against Sources/ and Vendor/. That test
+  # is unsound in both directions and was removed on 2026-08-19 after it blocked
+  # two E55 arms:
+  #   * llbuild is content-addressed, so a byte-identical relink is SKIPPED and
+  #     the product mtime does not move even when the build is up to date. Any
+  #     content-neutral mtime bump under the watched trees makes the test
+  #     permanently unsatisfiable.
+  #   * mlxfast-swift embeds none of the quantized JIT string, so its mtime
+  #     cannot witness a kernel edit at all.
+  # E42_BINARY_ASSERT replaces it with a content proof read from the built
+  # artefact. Set it to a command that exits 0 only when the scored binary holds
+  # this arm's runtime-effective source.
   for product in .build/release/mlxfast-swift .build-worker/release/mlxfast-runtime-worker; do
-    stale="$(find Package.swift Package.resolved Sources Vendor -newer "${product}" -print -quit 2>/dev/null || true)"
-    [[ -z "${stale}" ]] || {
-      echo "e42-run: ${product} is older than ${stale}; refusing to time a stale binary" >&2
+    [[ -x "${product}" ]] || {
+      echo "e42-run: ${product} is missing after a successful build" >&2
       status=1
     }
   done
+  if ((status == 0)); then
+    if [[ -n "${E42_BINARY_ASSERT:-}" ]]; then
+      # `set -o pipefail` is in force, so the hook's own status propagates. The
+      # hook writes key=value lines to stdout and its human verdict to stderr.
+      ${E42_BINARY_ASSERT} | tee -a "${out}/meta.txt" || {
+        echo "e42-run: refusing to time a binary that failed ${E42_BINARY_ASSERT}" >&2
+        status=1
+      }
+    else
+      echo "e42-run: WARNING no E42_BINARY_ASSERT set; binary freshness is unproven" >&2
+      echo "binary_assert=none" >> "${out}/meta.txt"
+    fi
+  fi
 fi
 
 if ((status == 0)); then
