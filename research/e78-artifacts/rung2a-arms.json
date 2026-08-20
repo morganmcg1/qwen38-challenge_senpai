@@ -1,0 +1,293 @@
+{
+  "experiment": "e78",
+  "rung": "2a-derived",
+  "harness": "local",
+  "instrument": "isolated",
+  "derived_from": "research/e78-artifacts/rung2a-cells.json",
+  "derivation": "arm round cost = sum over the seven scored linear families of (calls per round) x (measured cell time for the IPG that arm selects at that width and n)",
+  "gate_qualified_for_timing": false,
+  "cool_gate_passed_real_gate": false,
+  "official_or_ranked_score": false,
+  "device": "Apple M4 Pro",
+  "baseline_arm": "a_ship",
+  "moved_widths": [
+    5,
+    6,
+    9
+  ],
+  "per_width_round_ms": [
+    {
+      "m": 4,
+      "shipped_ipg": 4,
+      "crown_ipg": 4,
+      "local_rounds": 5,
+      "ranked_share_pct": 14.2,
+      "oracle_round_ms": 74.57525809213206,
+      "a_ship_round_ms": 74.57525809213206,
+      "b_crown_round_ms": 74.57525809213206,
+      "hybrid_24928_round_ms": 74.57525809213206,
+      "hybrid_8192_round_ms": 74.57525809213206,
+      "kdown_8192_round_ms": 74.57525809213206
+    },
+    {
+      "m": 5,
+      "shipped_ipg": 5,
+      "crown_ipg": 3,
+      "local_rounds": 5,
+      "ranked_share_pct": 24.1,
+      "oracle_round_ms": 87.75959611871498,
+      "a_ship_round_ms": 87.75959611871498,
+      "b_crown_round_ms": 111.32999603347147,
+      "hybrid_24928_round_ms": 99.15617046945447,
+      "hybrid_8192_round_ms": 94.25703769620095,
+      "kdown_8192_round_ms": 87.75959611871498
+    },
+    {
+      "m": 6,
+      "shipped_ipg": 6,
+      "crown_ipg": 3,
+      "local_rounds": 23,
+      "ranked_share_pct": 33.4,
+      "oracle_round_ms": 113.32017612374764,
+      "a_ship_round_ms": 115.75818034954985,
+      "b_crown_round_ms": 120.01983983512777,
+      "hybrid_24928_round_ms": 115.3831811455363,
+      "hybrid_8192_round_ms": 113.6693202862506,
+      "kdown_8192_round_ms": 113.32017612374764
+    },
+    {
+      "m": 9,
+      "shipped_ipg": 5,
+      "crown_ipg": 3,
+      "local_rounds": 34,
+      "ranked_share_pct": 5.75,
+      "oracle_round_ms": 154.11539956935457,
+      "a_ship_round_ms": 154.11539956935457,
+      "b_crown_round_ms": 176.75326956829412,
+      "hybrid_24928_round_ms": 165.13514731677986,
+      "hybrid_8192_round_ms": 160.40479406908963,
+      "kdown_8192_round_ms": 154.11539956935457
+    }
+  ],
+  "mix_weighted_delta_vs_a_ship": {
+    "a_ship": {
+      "local_delta_ms_per_round": 0.0,
+      "ranked_delta_ms_per_round": 0.0
+    },
+    "b_crown": {
+      "local_delta_ms_per_round": 12.63535573982076,
+      "ranked_delta_ms_per_round": 8.665503270699345
+    },
+    "hybrid_24928": {
+      "local_delta_ms_per_round": 5.42345273684418,
+      "ranked_delta_ms_per_round": 3.3556290514068507
+    },
+    "hybrid_8192": {
+      "local_delta_ms_per_round": 2.542087684904351,
+      "ranked_delta_ms_per_round": 1.2678807657391093
+    },
+    "kdown_8192": {
+      "local_delta_ms_per_round": -0.7188986819673163,
+      "ranked_delta_ms_per_round": -0.8394777437298307
+    },
+    "oracle_k_and_m": {
+      "local_delta_ms_per_round": -0.7188986819673163,
+      "ranked_delta_ms_per_round": -0.8394777437298307
+    }
+  },
+  "out_vec_size_separability": [
+    {
+      "m": 5,
+      "cells": [
+        {
+          "shape": "mlp.down",
+          "n": 5120,
+          "k": 17408,
+          "k_blocks_g64": 272,
+          "shipped_ms": 0.3343708440328321,
+          "crown_ms": 0.40873460198732087,
+          "crown_wins": false
+        },
+        {
+          "shape": "linear_attn.out_proj",
+          "n": 5120,
+          "k": 6144,
+          "k_blocks_g64": 96,
+          "shipped_ms": 0.12098327427420995,
+          "crown_ms": 0.14814204096793954,
+          "crown_wins": false
+        },
+        {
+          "shape": "full_attn.qkv_proj_fused",
+          "n": 14336,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 0.24981135982881247,
+          "crown_ms": 0.31839805569456225,
+          "crown_wins": false
+        },
+        {
+          "shape": "linear_attn.in_proj_fused_qkvzba",
+          "n": 16480,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 0.28418608136363976,
+          "crown_ms": 0.36338911551783787,
+          "crown_wins": false
+        },
+        {
+          "shape": "mlp.gate_up_fused",
+          "n": 34816,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 0.5777572852469259,
+          "crown_ms": 0.7487126705220324,
+          "crown_wins": false
+        },
+        {
+          "shape": "head.lm_head",
+          "n": 248320,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 4.002552628545316,
+          "crown_ms": 5.235233534955525,
+          "crown_wins": false
+        }
+      ],
+      "crown_wins_at": [],
+      "separable_by_out_vec_size": true,
+      "n_collisions": []
+    },
+    {
+      "m": 6,
+      "cells": [
+        {
+          "shape": "mlp.down",
+          "n": 5120,
+          "k": 17408,
+          "k_blocks_g64": 272,
+          "shipped_ms": 0.47801089888072285,
+          "crown_ms": 0.4399170828525634,
+          "crown_wins": true
+        },
+        {
+          "shape": "linear_attn.out_proj",
+          "n": 5120,
+          "k": 6144,
+          "k_blocks_g64": 96,
+          "shipped_ms": 0.15378944236233594,
+          "crown_ms": 0.1592448199014444,
+          "crown_wins": false
+        },
+        {
+          "shape": "full_attn.qkv_proj_fused",
+          "n": 14336,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 0.3196715656072274,
+          "crown_ms": 0.3432046881544345,
+          "crown_wins": false
+        },
+        {
+          "shape": "linear_attn.in_proj_fused_qkvzba",
+          "n": 16480,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 0.3640220280990855,
+          "crown_ms": 0.3918830884851351,
+          "crown_wins": false
+        },
+        {
+          "shape": "mlp.gate_up_fused",
+          "n": 34816,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 0.7432883856684276,
+          "crown_ms": 0.808092171473211,
+          "crown_wins": false
+        },
+        {
+          "shape": "head.lm_head",
+          "n": 248320,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 5.164699428742977,
+          "crown_ms": 5.653915826828339,
+          "crown_wins": false
+        }
+      ],
+      "crown_wins_at": [
+        "mlp.down"
+      ],
+      "separable_by_out_vec_size": false,
+      "n_collisions": [
+        {
+          "crown_wins": "mlp.down",
+          "shipped_wins": "linear_attn.out_proj"
+        }
+      ]
+    },
+    {
+      "m": 9,
+      "cells": [
+        {
+          "shape": "mlp.down",
+          "n": 5120,
+          "k": 17408,
+          "k_blocks_g64": 272,
+          "shipped_ms": 0.5645677779328175,
+          "crown_ms": 0.6360207321343523,
+          "crown_wins": false
+        },
+        {
+          "shape": "linear_attn.out_proj",
+          "n": 5120,
+          "k": 6144,
+          "k_blocks_g64": 96,
+          "shipped_ms": 0.20215857339619164,
+          "crown_ms": 0.22897740825301732,
+          "crown_wins": false
+        },
+        {
+          "shape": "full_attn.qkv_proj_fused",
+          "n": 14336,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 0.4395499490087519,
+          "crown_ms": 0.5058809186257339,
+          "crown_wins": false
+        },
+        {
+          "shape": "linear_attn.in_proj_fused_qkvzba",
+          "n": 16480,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 0.5024375772619638,
+          "crown_ms": 0.5788762800498493,
+          "crown_wins": false
+        },
+        {
+          "shape": "mlp.gate_up_fused",
+          "n": 34816,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 1.039685975072522,
+          "crown_ms": 1.2029122163466635,
+          "crown_wins": false
+        },
+        {
+          "shape": "head.lm_head",
+          "n": 248320,
+          "k": 5120,
+          "k_blocks_g64": 80,
+          "shipped_ms": 7.355207786942276,
+          "crown_ms": 8.526850596911485,
+          "crown_wins": false
+        }
+      ],
+      "crown_wins_at": [],
+      "separable_by_out_vec_size": true,
+      "n_collisions": []
+    }
+  ]
+}

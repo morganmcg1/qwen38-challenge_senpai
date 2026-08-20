@@ -1,0 +1,15 @@
+{
+  "experiment": "e73",
+  "rung": 1,
+  "harness": "local",
+  "reps": 31,
+  "head_sha": "f645a82fc77814cbdfcf957db9a529e0cd8c42b3",
+  "arms": "m4_ipg2,m4_ipg4,m5_ipg3,m5_ipg5,m6_ipg3,m6_ipg6,m9_ipg3,m9_ipg5",
+  "host_chip": "Apple M4 Pro",
+  "source_sha256": "8a03ace3735f57d167c630705d45d53d8e58d2778b4845a2fe8bb4e5a56f2472",
+  "grid": "dispatchThreadgroups(M, N/8, 1) x threadsPerThreadgroup(32, 2, 1)",
+  "host_grid_editable": false,
+  "cool_gate": "skipped_by_request",
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false
+}

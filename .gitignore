@@ -106,3 +106,8 @@ research/e76-artifacts/*.log
 # E77 driver appends to this log while a session runs; the durable copy
 # is committed as research/e77-artifacts/rung1-<tag>.log after the session.
 research/e77-artifacts/rung1.log
+
+# E78 drivers append to these logs while a session runs; the durable copy is
+# committed as research/e78-artifacts/<rung>-session.log after the session.
+research/e78-artifacts/rung2a.log
+research/e78-artifacts/rung2b.log

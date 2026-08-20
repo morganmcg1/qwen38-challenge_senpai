@@ -40,7 +40,15 @@ while [[ "$#" -gt 0 ]]; do
 done
 mkdir -p "${artifacts}" "${build}"
 
-macmon_bin="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
+macmon_bin="${MLXFAST_MACMON_BIN:-}"
+if [[ -z "${macmon_bin}" ]]; then
+  for macmon_cand in "${HOME}/bin/macmon" "$(command -v macmon 2>/dev/null || true)"; do
+    if [[ -n "${macmon_cand}" && -x "${macmon_cand}" ]]; then
+      macmon_bin="${macmon_cand}"
+      break
+    fi
+  done
+fi
 sample_thermal() {
   [[ -x "${macmon_bin}" ]] || { echo "unavailable"; return 0; }
   "${macmon_bin}" pipe -s1 2>/dev/null \
@@ -125,6 +133,7 @@ else
     ${shape_args[@]+"${shape_args[@]}"} --out "${out}" \
     2> >(tee -a "${log}" >&2) \
     | python3 research/e73_wandb_stream.py --name "e73-rung1${tag}" \
+        --group "${E73_WANDB_GROUP:-e73-rung1}" \
         --config "${cfg}" 2> >(tee -a "${log}" >&2) \
     | tee -a "${log}" >/dev/null
   status="${PIPESTATUS[0]}"
