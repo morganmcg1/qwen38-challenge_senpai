@@ -83,7 +83,65 @@ def log_builds(run, reports: list[Path]) -> None:
     )
 
 
-def log_screen(run, path: Path) -> None:
+def log_heads(run, bytes_path: Path, cost_paths: list[Path], island_path: Path) -> None:
+    """The four numbers the advisor asked for per head: total artifact bytes,
+    the split across fc / trunk / draft_lm_head / islands, the measured head
+    step, and the implied bytes per millisecond."""
+    byte_report = json.loads(bytes_path.read_text())
+    groups = ("fc", "trunk", "draft_lm_head", "precision_islands")
+    split_rows = []
+    for arm, entry in byte_report["arms"].items():
+        row = {
+            "arm": arm,
+            "tree_bytes": entry["tree_bytes"],
+            "tensor_bytes": entry["tensor_bytes"],
+            "tree_sha256": entry["tree_sha256"],
+            "tensor_count": entry["tensor_count"],
+            "file_count": entry["file_count"],
+        }
+        for g in groups:
+            got = entry["groups"].get(g)
+            row[f"{g}_bytes"] = got["bytes"] if got else 0
+            row[f"{g}_dtypes"] = "/".join(got["dtypes"]) if got else ""
+        split_rows.append(row)
+    run.log({
+        "heads/byte_split": table(sorted({k for r in split_rows for k in r}), split_rows),
+        "heads/pinned_vs_fixture_manifest": wandb.Table(
+            columns=["json"],
+            data=[[json.dumps(byte_report["pinned_vs_fixture_manifest"], indent=2)]]),
+    })
+
+    leg_rows, arm_rows = [], []
+    for path in cost_paths:
+        cost = json.loads(path.read_text())
+        for leg in cost["legs"]:
+            leg_rows.append({k: cell(v) for k, v in leg.items()})
+        for arm, roll in cost["by_arm"].items():
+            arm_rows.append({"source": path.name, "arm": arm,
+                             **{k: cell(v) for k, v in roll.items()}})
+            if roll.get("bytes_per_ms"):
+                run.log({
+                    f"heads/{arm}/head_step_ms_per_draft":
+                        roll["head_phase_ms_per_draft_median"],
+                    f"heads/{arm}/bytes_per_ms": roll["bytes_per_ms"],
+                    f"heads/{arm}/tensor_bytes": roll["tensor_bytes"],
+                })
+    if leg_rows:
+        run.log({
+            "heads/timed_legs": table(sorted({k for r in leg_rows for k in r}), leg_rows),
+            "heads/step_cost": table(sorted({k for r in arm_rows for k in r}), arm_rows),
+        })
+
+    if island_path.exists():
+        perm = json.loads(island_path.read_text())
+        rows = [{"arm": arm, "projection": proj, **vals}
+                for arm, projs in perm.items() if isinstance(projs, dict)
+                for proj, vals in projs.items() if isinstance(vals, dict)]
+        run.log({"heads/island_permutation":
+                 table(sorted({k for r in rows for k in r}), rows)})
+
+
+def log_screen(run, path: Path, prefix: str = "screen") -> None:
     screen = json.loads(path.read_text())
     ref = screen["reference_arm"]
 
@@ -125,22 +183,22 @@ def log_screen(run, path: Path) -> None:
         # Scalars so the arms are directly plottable, not only inspectable.
         run.log(
             {
-                f"screen/{arm}/mean_rounds_per_512": w["mean_rounds_per_512"],
-                f"screen/{arm}/mean_accepted_per_round": w["mean_accepted_per_round"],
-                f"screen/{arm}/rows_per_token": w["rows_per_token"],
-                f"screen/{arm}/pooled_accept_d3_d6": entry["splits"]["pooled"]["pooled_3_6"]["p"],
-                f"screen/{arm}/hardest_accept_d3_d6": entry["splits"]["hardest"]["pooled_3_6"]["p"],
-                f"screen/{arm}/easiest_accept_d3_d6": entry["splits"]["easiest"]["pooled_3_6"]["p"],
+                f"{prefix}/{arm}/mean_rounds_per_512": w["mean_rounds_per_512"],
+                f"{prefix}/{arm}/mean_accepted_per_round": w["mean_accepted_per_round"],
+                f"{prefix}/{arm}/rows_per_token": w["rows_per_token"],
+                f"{prefix}/{arm}/pooled_accept_d3_d6": entry["splits"]["pooled"]["pooled_3_6"]["p"],
+                f"{prefix}/{arm}/hardest_accept_d3_d6": entry["splits"]["hardest"]["pooled_3_6"]["p"],
+                f"{prefix}/{arm}/easiest_accept_d3_d6": entry["splits"]["easiest"]["pooled_3_6"]["p"],
             }
         )
 
     run.log(
         {
-            "screen/work": table(sorted({k for r in work_rows for k in r}), work_rows),
-            "screen/per_depth": table(sorted({k for r in depth_rows for k in r}), depth_rows),
-            "screen/pooled_d3_d6": table(sorted({k for r in pooled_rows for k in r}), pooled_rows),
-            "screen/paired_mcnemar": table(sorted({k for r in paired_rows for k in r}), paired_rows),
-            "screen/stop_rule": table(sorted({k for r in rule_rows for k in r}), rule_rows),
+            f"{prefix}/work": table(sorted({k for r in work_rows for k in r}), work_rows),
+            f"{prefix}/per_depth": table(sorted({k for r in depth_rows for k in r}), depth_rows),
+            f"{prefix}/pooled_d3_d6": table(sorted({k for r in pooled_rows for k in r}), pooled_rows),
+            f"{prefix}/paired_mcnemar": table(sorted({k for r in paired_rows for k in r}), paired_rows),
+            f"{prefix}/stop_rule": table(sorted({k for r in rule_rows for k in r}), rule_rows),
         }
     )
     return screen
@@ -153,6 +211,11 @@ def main() -> None:
     ap.add_argument("--island-replay", default="research/e82-island-rule-replay.json")
     ap.add_argument("--builds", nargs="*", default=sorted(str(p) for p in Path("research").glob("e82-build-*.json")))
     ap.add_argument("--screen", default="research/e82-accept.json")
+    ap.add_argument("--screen-clean", default="research/e82-accept-clean.json")
+    ap.add_argument("--bytes", default="research/e82-head-bytes.json")
+    ap.add_argument("--cost", nargs="*",
+                    default=sorted(str(p) for p in Path("research").glob("e82-head-cost*.json")))
+    ap.add_argument("--island-permutation", default="research/e82-island-permutation.json")
     ap.add_argument("--corpus", default="research/e82-corpus-manifest.json")
     ap.add_argument("--notes", default="")
     args = ap.parse_args()
@@ -204,8 +267,18 @@ def main() -> None:
             }
         )
     log_builds(run, [Path(p) for p in args.builds])
+    log_heads(run, Path(args.bytes), [Path(p) for p in args.cost],
+              Path(args.island_permutation))
     if screen:
         log_screen(run, screen_path)
+        # The unlatched subset is the read that is free of the head-independent
+        # non-drafting latch, so it is logged beside the full corpus, not
+        # instead of it.
+        run.log({"screen/schedule_latch": wandb.Table(
+            columns=["json"], data=[[json.dumps(screen["schedule_latch"], indent=2)]])})
+    clean_path = Path(args.screen_clean)
+    if clean_path.exists():
+        log_screen(run, clean_path, prefix="screen_unlatched")
 
     print(f"wandb run: {run.url}  id={run.id}")
     run.finish()
