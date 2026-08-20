@@ -32,6 +32,7 @@ readonly MANIFEST="${E66_MANIFEST_DIR:-${repo_root}/.mlxfast-private/e66/arms}"
 # needs the same per-arm build and the same guarantee that the branch's scored
 # surface returns to base bytes between arms.
 readonly LEG_RUNNER="${E66_LEG_RUNNER:-research/e66-run.sh}"
+readonly WANDB_LOGGER="${E66_WANDB_LOGGER:-research/e66_wandb_leg.py}"
 
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-e66-composition-certification}"
@@ -112,7 +113,7 @@ only so the bytes the compiler saw are reachable while the arm runs."
     [[ "${tag}" == warm* ]] && discarded=(--discarded)
     # bash 3.2 treats "${arr[@]}" on an EMPTY array as an unbound variable under
     # `set -u`, so the ${arr[@]+...} form is required.
-    python3 research/e66_wandb_leg.py --tag "${tag}" --arm "${arm}" \
+    python3 "${WANDB_LOGGER}" --tag "${tag}" --arm "${arm}" \
       --group "${WANDB_RUN_GROUP}" ${discarded[@]+"${discarded[@]}"} \
       || echo "e66_whole_leg_session: ${tag}: W&B logging failed" >&2
   fi
