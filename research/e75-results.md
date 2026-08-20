@@ -127,6 +127,24 @@ couple to the table at all, so a table experiment measures the table. Keeping
 `pbfit` selectable preserves every measurement it enables, without letting a
 host-specific fit ride into the ranked candidate.
 
+**Ranked per-prompt evidence that the loop is bistable, `harness=ranked`.** The
+advisor read `officialMetrics.per_prompt` for receipt `2da69933` and supplied
+these figures. On plutarch this vector drafted at mean length **2.695** with
+**zero** non-drafting rounds and reached raw ratio **2.296867**, within 0.251 %
+of the best plutarch leg on the whole 596-run board. Every shipped-price tree on
+that board, ours and the crown's alike, drafts plutarch at mean length **0.154**
+with **449** non-drafting rounds. One eight-number price change moved that
+prompt out of the non-drafting attractor completely. Two stable operating
+points, reachable on the same prompt from the same tree by a price change alone,
+is the closed loop stated as a ranked measurement rather than as a model. It
+bought no score, because plutarch sits below the 4th sorted raw ratio and the
+median discards it, and it does not change the r3 decision. It is the strongest
+confirmation the campaign holds that the schedule is not a monotone response to
+its price vector, so no price fitted at one operating point can be assumed valid
+at the other. This figure supersedes the earlier estimate that plutarch moved to
+about 1.96; that value is the minimum raw ratio of `2da69933`, which belongs to
+a different prompt once plutarch leaves the floor.
+
 ## Rung B — the crown dispatch table on the local host
 
 Reproduce:
@@ -178,6 +196,35 @@ Measured session null, from the six unchanged cells: **max 0.286 %, mean
 0.112 %**, and **0.045 %** at the wide cells 7 and 8. Width 7 agrees to
 **1 microsecond** between arms. The changed cells move 4.4 % to 25.4 %, so the
 signal-to-null ratio at width 5 is about 90.
+
+### The open provenance item is closed: widths 5 and 6 replicate independently
+
+I disclosed in r2 that `S[1]` through `S[6]` in the campaign QMV ladder all come
+from one job, `21ac5458`, at n = 4 per width, with no independent replication at
+widths 5 and 6. Widths 5 and 6 carry 57.5 % of the ranked round pool, so the
+advisor asked for a replication of exactly those two cells.
+
+The rung B `ours` arm supplies it at no extra cost. Its four legs ran in job
+`5fd2440a`, a different session and a different build from `21ac5458`, on the
+same host, fixture and instrument. On our table widths 5 and 6 dispatch as a
+single group, so the whole-table cost at those widths equals `S[5]` and `S[6]`
+directly.
+
+| M | ladder, job `21ac5458` | rung B `ours`, job `5fd2440a` | delta |
+|---:|---:|---:|---:|
+| 1 | 60.372 | 60.699 ±0.289 | +0.542 % |
+| 2 | 65.377 | 65.318 ±0.191 | −0.090 % |
+| 3 | 72.128 | 72.266 ±0.197 | +0.191 % |
+| 4 | 82.163 | 82.133 ±0.130 | −0.037 % |
+| **5** | **95.568** | **95.539 ±0.099** | **−0.030 %** |
+| **6** | **122.876** | **122.868 ±0.145** | **−0.007 %** |
+
+The two cells the advisor named replicate to **0.030 %** and **0.007 %**, which
+is an order of magnitude inside the 0.286 % session null. `S[5]` and `S[6]` are
+now two-job quantities. The ladder's `S[7]` through `S[9]` are isolated
+single-group costs that our table cannot dispatch at `NA <= 6`, so the rung B
+rows at M = 7, 8 and 9 are whole-table partitioned costs and are **not** a
+replication of those three ladder entries. They remain single-job at n = 2.
 
 ### The per-cell step table: the cliff moves, and it grows
 
@@ -427,6 +474,44 @@ and silently changing a field other agents parse mid-campaign is riskier than
 recording it. The authoritative per-leg record is correct and is what this
 report uses: `arm_patch.na_max` is 6 for `ours` and 4 for `crown`, with the full
 dispatch map and both file digests.
+
+## W&B run index
+
+Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
+`e75-bank-pbfit-and-price-it-on-the-crown-table`. Every run below is `finished`.
+
+| leg | cell | run id |
+|---|---|---|
+| rung A exactness | ours + `pbfit` | `wu8zb8k1` |
+| `e75-rB-a1` | ours | `dlk0dil9` |
+| `e75-rB-a2` | crown | `iiyrtg8k` |
+| `e75-rB-a3` | crown | `fdo47a74` |
+| `e75-rB-a4` | ours | `w24k9vc7` |
+| `e75-rB-a5` | ours | `hflbcpf1` |
+| `e75-rB-a6` | crown | `0qbqlmv0` |
+| `e75-rB-a7` | crown | `94o5jfus` |
+| `e75-rB-a8` | ours | `41zmikig` |
+| `e75-rD-warmup` | ours-ship, discarded | `g2d2hilh` |
+| `e75-rD-d1` | ours-ship | `m964x1xd` |
+| `e75-rD-d2` | ours-pbfit | `0thj85g4` |
+| `e75-rD-d3` | crown-ship | `ah6v57dp` |
+| `e75-rD-d4` | crown-pbfit | `opf2nyq9` |
+| `e75-rD-d5` | crown-pbfit | `0fj09quc` |
+| `e75-rD-d6` | crown-ship | `pbexgusd` |
+| `e75-rD-d7` | ours-pbfit | `9as85y9n` |
+| `e75-rD-d8` | ours-ship | `8fmqgeq9` |
+
+Run URLs are `https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/<run id>`.
+
+**One extra run in the group is not part of any reported result.** Run
+`j2745zr2`, created 11:49:57Z, also named `qmv-cost-curve-e75-rB-a1`, is the a1
+leg of a first rung B session attempt. That session was terminated by SIGTERM at
+11:50:55Z during the *build* of leg a2, so it produced one timed leg and no
+balanced arm pair. I restarted the whole eight-leg session from a1 at 11:57Z,
+which produced `dlk0dil9` and the seven legs after it. The reported curve uses
+only the eight legs of the complete 11:57Z–12:43Z session. Do not average
+`j2745zr2` into a1: it is a partial session and its leg record was overwritten
+when a1 reran.
 
 ## Banked artifacts
 
