@@ -16530,3 +16530,281 @@ ranked M5 architecture string is unknown and gates the whole SDPA-warm area;
 the comment at `quantized.h:1154` is still wrong and is deferred to the
 post-winner cleanup PR because re-touching a scored-surface line re-exposes it to
 the bypass reviewer.
+
+---
+
+## 204 — `t55` merged and submitted; the QMV dispatch table is closed; the marginal cost curve inverted under the scheduler; and prefill is 23 % of scored time
+
+Date 2026-08-20, advisor round after the E59/E64 merges.
+
+### (A) `t55` merged, composed candidate submitted
+
+thorfinn reported E59 terminal with ADVANCE at head `73da450d456a09ea3657609f736ee71cb7076729`
+(W&B `pr02aqgp`). Merged as `ade70ea67e56ab920d5c478220c5fc5d67ed263c`. edward's E64
+merged after it as `6cbf1a40632ea44f4eff0406d32eddf72f50d282`.
+
+Verified directly, `git diff --numstat upstream/main HEAD` restricted to the 89
+`editablePaths`, five files:
+
+```
+  112  74  Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+   32  19  Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+    4   4  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+    4   4  Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+    1   1  mtp-head.manifest.json
+```
+
+The eight twin lines are exactly the predicted table: bound `NA <= 4` -> `NA <= 6`,
+`case 5` `<T,5,3>` -> `<T,5,5>`, `case 6` `<T,6,3>` -> `<T,6,6>`, `case 9`
+`<T,9,3>` -> `<T,9,5>`, in both `quantized.h` and `mlx-generated/quantized.cpp`.
+`twin_audit.py quantized` OK, `verify-ranked-score-boundary.sh` PASS,
+`benchmark.json` identical to `origin/main`.
+
+The `Qwen35.swift` delta, never previously written down, is: the decode `asyncEval`
+ladder rungs move from an inline `switch` into `qwen35DecodeLadderRungs`, a `Set<Int>`
+overridable by `MLX_QWEN_MTP_LADDER` with modes `default`, `off`, `front`, `dense` or
+an explicit index list. The shipped set is unchanged at `{0, 1, 9, 19, 29, 39, 49, 57}`.
+The rest of the hunk corrects a stale comment that said `S <= 2` where the code tests
+`S <= 9`.
+
+Official submission **`ff73cbbd-6ab0-4651-8df1-e2275958e744`**, `BASE_SHA`
+`770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`, model `senpai`, note 7.8 KiB.
+The note now enumerates all five files rather than only the two twins, because the
+bypass reviewer sees the whole diff and a note that under-describes it invites a
+mismatch finding.
+
+Submitted deliberately before askeladd's E66 rung 5 certification. The candidate had
+already passed `--local-submit` in thorfinn's chain with `all_tokens_matched=true` and
+`residual_divergence_count=0` and an identical worker digest before and after timing.
+Holding a correct candidate for a second local certification buys precision we do not
+need and costs an hour of ranked latency we cannot recover.
+
+### (B) 🔴 The QMV dispatch table is CLOSED. It is optimal at every width 3..9.
+
+Priced with the E1-calibrated standalone stream costs (ledger 199(B)) and the measured
+~0.80 extra-x-group discount, `_advisor_scratch/marg.py`:
+
+| M | shipped IPG | groups | ms | best alternative | ms | verdict |
+|---|---|---|---|---|---|---|
+| 3 | 3 | `[3]` | 72.17 | — | — | optimal |
+| 4 | 4 | `[4]` | 82.24 | — | — | optimal |
+| 5 | **5** | `[5]` | 95.48 | `{3,2}` | 123.69 | **`t55`, -22.81 % modelled, -20.209 % measured** |
+| 6 | **6** | `[6]` | 122.34 | `{3,3}` | 129.91 | **`t6`, -5.82 % modelled, -4.199 % measured** |
+| 7 | 4 | `{4,3}` | 139.98 | `<T,7,7>` 147.21, `{5,2}` 147.0, `{6,1}` 168 | — | optimal; `<T,7,7>` +5.2 % modelled, **+7.13 % measured** |
+| 8 | 4 | `{4,4}` | 148.03 | `<T,8,8>` 172.21, `{5,3}` 153.2, `{6,2}` 173.9 | — | optimal; `t8` **+16.3 %** |
+| 9 | **5** | `{5,4}` | 161.27 | `<T,9,9>` 199.21, `{3,3,3}` 187.64, `{6,3}` 180.1 | — | **`E55`**, optimal; `t9` **+23.5 %** |
+
+The model has now called three signs correctly in a row at M=5, M=6 and M=7. The
+one-group merge stops paying between NA=6 and NA=7 because the per-stream cost curve is
+superlinear there — edward's NA 5->6 step is +28.6 % and remains unexplained.
+
+**Consequence: `t7`, `t8` and `t9` are rejected without a GPU slot.** thorfinn proposed
+the `t9`/`t8` palindrome and I declined it using his own instrument's calibration. He is
+funded instead for rung 1 of E68 to close the table with measured NA=7,8,9 standalone
+costs and register counts, so the rejection rests on measurement rather than on
+extrapolation past NA=7. Reopen only if a measured standalone cost lands more than 15 %
+below the extrapolation.
+
+### (C) 🔴🔴 Merging `t55`/`t6`/`E55` INVERTED the marginal verify-width cost curve, exactly under the draft scheduler's decision boundary
+
+Cost of adding one more verify width:
+
+| step | old ms | new ms | change |
+|---|---|---|---|
+| 3 -> 4 | 10.07 | 10.07 | 0.00 |
+| **4 -> 5** | **41.45** | **13.24** | **-28.21** |
+| **5 -> 6** | **6.22** | **26.86** | **+20.64** |
+| 6 -> 7 | 10.07 | 17.64 | +7.57 |
+| 7 -> 8 | 8.06 | 8.06 | 0.00 |
+| **8 -> 9** | **39.61** | **13.24** | **-26.37** |
+
+Before this campaign's kernel work, reaching verify width 5 was the expensive step and
+5 -> 6 was nearly free. It is now reversed: width 5 became three times cheaper to reach
+and width 6 four times more expensive. The 8 -> 9 step also collapsed.
+
+The greedy draft-depth walk at `Qwen36MTPBlockSession.swift:738-756`, its cost model at
+`:196`, and `headStepCostRatio = 0.18` at `:668` were all tuned against the old curve.
+Ranked verify-width time shares are M4 14.2 %, M5 24.1 %, M6 33.4 %, M7 12.2 %,
+M8 7.35 %, M9 5.75 %, and the two prompts that set our published median — beagle at
+M = 5.5327 and medicine at M = 5.7677 — sit precisely on the boundary that inverted.
+
+This also revives E56 revision 2, closed unmerged on branch
+`qwen-edward/stream-aware-draft-depth-schedule @ e2bd7e615f386f65b9981ba0881c10a54a991418`.
+It was closed because its `pricedBoundaryWidths = [5]` crossing is at p = 0.9491, while
+beagle is 0.8351 and medicine 0.8750 and only the public local fixture at 0.9625
+crosses. The recorded reopening condition was `t55` landing with `[7]`, at which point
+p = 0.8351 extends to depth 5 and therefore verify width 6. That condition is now met.
+Assigned to thorfinn as E68, PR #71.
+
+### (D) 🔴🔴🔴 PREFILL IS 23 % OF SCORED TIME, DOES NOT CANCEL AT RANK, AND IS INVISIBLE TO THE LOCAL RATIO
+
+From alphonse's E65 correction 1, five traced 512-token legs, sibling M4 Pro:
+candidate timed leg 17.37 s, serial timed leg 38.12 s, local `raw` 2.1947, prefill about
+4.0 s = **23 % of the candidate leg**.
+
+`program.md` puts seed processing inside the timed leg. The ranked numerator comes from
+the runner-owned prebuilt baseline workspace, so `d ln(ranked baseline serial time)/dx = 0`
+and a candidate prefill saving is kept in full:
+
+```
+raw = (P_serial + D_serial) / (P_cand + D_cand)
+d(raw)/raw = X / 17.37     for X seconds removed from candidate prefill
+```
+
+**One second off prefill is +5.8 % on `raw`. Four hundred milliseconds is +2.3 %.**
+For scale, `t55` — the best single result the campaign has produced — is -0.7689 % of
+the leg.
+
+**Why the whole campaign walked past it.** Both local legs run the same candidate build,
+so a prefill saving removes the same absolute time from the numerator and denominator of
+the local ratio and nearly cancels. Every screening decision this campaign has made used
+that ratio. This is exactly the failure mode `program.md` names, and we fell into it for
+the entire campaign.
+
+**Rule added:** for any mechanism whose causal path is not confined to the MTP decode
+rounds, the primary metric is **absolute candidate-leg seconds**, never a ratio. A
+serial-to-MTP ratio must be labelled `harness=local` in the same sentence in which it
+appears.
+
+Open sub-questions, assigned to edward as E67, PR #70:
+1. Where the 4.0 s goes, by layer type and kernel family, host build separated from GPU
+   execution. alphonse withdrew his earlier "host is the bottleneck 3x" reading of
+   `begin` because `asyncEval` inside the layer loop means GPU work runs inside the
+   interval he had called host build; do not repeat that error.
+2. Prefill's achieved arithmetic and bandwidth fractions of roofline. A 512-token forward
+   is about `2 * 27e9 * 512 = 2.76e13` FLOP; at edward's measured 7.51 TFLOP/s bf16 that
+   is 3.68 s against a measured 4.0 s, implying roughly 92 % of arithmetic peak — but
+   that is an inference across hosts and must be measured, because it decides whether the
+   remaining headroom is in overheads or in the kernels.
+3. Whether the 48 Gated DeltaNet layers process the 512 timesteps chunked or as a
+   sequential scan. A sequential scan would be about 24,576 dispatches and would dominate
+   everything else. Highest-variance unknown in the brief.
+4. Whether the MTP session's prefill costs more than the serial session's on the same
+   build. Retaining `seedHidden`, applying the final norm across 512 positions and
+   priming the head chain are candidate-only work that the pinned ranked serial baseline
+   never does, so any excess is charged to us in full at rank.
+5. The prefill `asyncEval` ladder is undosed. `Qwen35.swift` sets
+   `prefillLadder = inputs.dim(1) >= 512`, exactly our seed, then fires `asyncEval` at
+   layer 0 and every `i % 3 == 2`, about 22 command-buffer boundaries across 64 layers.
+   The decode rungs are overridable through `MLX_QWEN_MTP_LADDER`; the prefill schedule
+   is hard-coded and has never been measured by anyone. Pure enqueue timing, bit-identical
+   by construction.
+
+### (E) 🔴 The noise ratchet, confirmed in the field, on our own assigned mechanism
+
+The crown moved twice this hour: `9d5569bb` hadakang 3.25187972 -> **`9ad17378`
+`Lieisyourlie` 3.25238228**, source `bfab0de58d43`.
+
+The entire scored diff between those two frontiers is **27 added lines** in
+`Qwen36MTPBlockSession.swift`: inside `warmAllDepthShapes`, when `extK.dim(2) == 1024`,
+build `k1025`/`v1025` by concatenating one zero row and run
+`scaledDotProductAttention` for `qL in [1, 5, 4]`, so the 128-block
+`sdpa_vector_2pass` family is compiled before the clock starts.
+
+**That is precisely the mechanism alphonse was assigned in E65, and he measured it the
+same hour.** Five traced 512-token legs: the crossing round costs +0.25, +0.41, +0.00,
++0.30 and +0.32 ms, i.e. **0.0023 % of a timed leg**, and the clean-against-repaired
+offset within one width is +/-0.5 ms, larger than the effect itself. He declined to ship
+it because 0.0023 % is far below the 0.10 % preregistered band.
+
+So a change worth 0.0023 % of a leg produced a +0.0155 % published move against a
+single-run published-score sd of 0.756 %. **That is 0.02 sigma.** Promotion keeps the
+maximum over noisy draws, so resampling alone ratchets the board upward. This is
+ledger 193 confirmed by field observation of a competitor's promoted submission whose
+mechanism we had independently measured, and it is the strongest evidence the campaign
+has for calibrating on local measurement rather than on ranked receipts.
+
+Note also that alphonse's structural argument is stronger than the competitor's comment.
+The exposure is exactly one round at rank because both public fixtures carry exactly 512
+prompt tokens and the ranked leg is 512 seed plus 512 decode, so `kL` walks 517 to 1024
+and touches 1024 only in the final round. And the gate needs **two** conditions,
+`(devc=='d' || devc=='s') && k.shape(2) >= 1024`, not one. Our submission `ff73cbbd` was
+built on `80021bc0` and therefore omits these 27 lines; the omission costs at most
+0.0023 % and did not justify delaying the submission. The next candidate should be
+rebased onto `bfab0de`.
+
+### (F) 🔴 Correction owed to ledger 201: "flat fits about 20x better" overstates the evidence
+
+The likelihood ratio behind that phrase is chi-square 0.063 against 1.367, i.e.
+**delta chi-square 1.3 on 1 degree of freedom, about 1.1 sigma**. Flatness of the
+per-stream removal cost in verify width is **not established**. It is also not rejected,
+and neither is proportionality. Every one of the 13 board contrasts is individually
+insignificant, `|t| <= 1.65`; only the pooled estimate reaches t = -2.04.
+
+The flat law's real virtue is not fit quality. It is that it is the only estimator among
+the three that does not depend on an unobserved quantity.
+
+### (G) The three-estimator reconciliation: two of three disagreements were denominator errors
+
+1. **The local-`f` disagreement was leg-share against QMV-share.** My M6 local share of
+   18.89 % is a share of the **leg**; askeladd's `f6_local = 0.2673` is a share of **QMV
+   time**. Converting mine through the measured round-fraction-of-leg 0.7562 gives
+   `0.1889 / 0.7562 = 0.2498` against his 0.2673, a factor of 1.07. **Resolved.**
+
+2. **The ranked-`f` disagreement is an unobservable, not an error.** My M6 ranked 33.4 %
+   against his 0.5352, a factor of 1.60. Both are models of a histogram nobody has
+   observed: the ranked data gives only `effective_mean_draft_len` per prompt. His
+   `round_mixture` places 51 % of rounds at M=6 with mean 5.6408; mine is broader.
+   Neither is measured. Only the board-anchored law uses ranked timing directly.
+
+3. **The composed pricing converges** (`_advisor_scratch/price3.py`). For the three
+   removals `t55` + `t6` + `E55`:
+
+   ```
+   FLAT 3 removals  leg -1.917  raw +1.954  published +1.490   95% CI [+0.077, +2.433]
+   PROP 3 removals  leg -2.110  raw +2.155  published +1.587
+   flat3    crown 3.25188 -> 3.30034
+   prop3    crown 3.25188 -> 3.30349
+   flat3 CI crown 3.25188 -> [3.25437, 3.33100]
+   ```
+
+   The two models agree to 0.1 percentage points because `E55` is nearly free under
+   proportional and a full removal under flat, while `t55` and `t6` are the reverse.
+   Headline: **about +1.5 % published, so about 3.300, 95 % CI [3.254, 3.331]. Both
+   models predict we take the crown and the CI lower bound sits just above it.**
+
+4. **Retired:** the psi-free `L x (f_ranked / f_local)` projection as a leg-level pricing
+   tool. It returns -3.87 % for `t55` alone, six times the flat law and about ten sigma.
+   Use the board-anchored models.
+
+### (H) alphonse E65 measured ceilings, now campaign facts
+
+- SDPA `kL >= 1024` two-pass crossing: **0.0023 % of a leg**. Mechanism dead.
+- Every draft-depth first touch: at most 1.75 ms, mostly below 0.25 ms.
+  `warmAllDepthShapes` already covers depths 3 and 5 through 8 correctly.
+- **Scored round 1: 0.129 to 0.171 % of a leg**, host-side graph build inside
+  `draft_build`, not head GPU work. `--sync-head` moves steady-state `draft_build` from
+  6.6 to 19.3 ms and `verify_build` from 69.7 to 57.1 ms while the round total stays at
+  138 ms, and the round-1 excess stays near 29 ms and stays inside `draft_build` either
+  way. The other six `d=4` rounds cost 6.56 ms; round 1 costs 20.89 to 35.89 ms.
+- A **stochastic host stall of the same magnitude** exists: round 27 of leg r1-02 shows a
+  +32.7 ms `draft_build` spike at `d=5` which is not a first touch, in 1 leg of 5. This
+  floors how well any single leg can resolve a 25 ms event.
+- `benchmark-qwen-mtp.sh:120` caps both local modes at 512 decode tokens, so a 640-token
+  leg cannot separate "crossing" from "last round" locally. That confound is a property
+  of the ranked window too.
+- Traced legs are not comparable with untraced receipts: scores 2.1947 / 2.1869 / 2.1897
+  at entry temperatures 36.9 / 57.9 / 56.0 C, coldest leg highest, largest same-arm score
+  spread 0.36 %.
+
+### (I) Instrument and process notes
+
+- macOS `bash` is 3.2 and has **no `mapfile`**. A scope check written as
+  `mapfile -t EP < ep.txt; git diff ... -- "${EP[@]}"` silently expands to an unscoped
+  diff and reports the whole repository as changed. Use a Python helper;
+  `_advisor_scratch/scope3.py` takes two revisions and prints the `editablePaths`-scoped
+  numstat.
+- `senpai/check-editable-budget.sh` requires `GROWTH_BASE_SHA` as argv[1]; calling it bare
+  prints usage and exits 0, which reads as a pass. Do not treat a bare invocation as a
+  green.
+
+### (J) Open items carried forward
+
+`pricedBoundaryWidths = [7]` is now assigned as E68 rung 3. The M5 `architecture.name`
+last character is still unknown and still blocks any `devc`-gated SDPA reasoning; it is
+carried on alphonse. `senpai/frontier-state.json` needs `organizer.syncedCommit` moved to
+`bfab0de58d43`. The comment at `quantized.h:1154` remains deferred to the post-winner
+cleanup PR. A re-distil of `research/ranked_stream_ab_board.json` from the now 814-row
+board is still worth doing; the committed analysis covers 428 trees and yields contrasts
+only at M4, M6 and M8, with no M5 or M9 contrast, so `t55` and `E55` are not priced at
+rank directly.
