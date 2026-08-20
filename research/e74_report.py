@@ -383,6 +383,7 @@ def e33_positive_control(fit: dict, tax_by_family: dict) -> dict:
                  "working threadgroups, that is between 1792 and 2060 in the arm"),
         "passed": bool(converted["passed"]),
         "primary_variant": "tax_share_converted",
+        "knee_values_that_would_pass": _passing_knees(fit),
         "raw_variant": {**raw, "per_shape": preds,
                         "note": ("compares a marginal per-byte quantity directly with a "
                                  "total-cost ratio, so it overstates the predicted "
@@ -393,6 +394,48 @@ def e33_positive_control(fit: dict, tax_by_family: dict) -> dict:
                    "level. The E33 arm also changed ROWS_PER_SIMD 4 -> 2, which C "
                    "absorbs. Three of the eight E33 shapes are not in this census and "
                    "carry the mean measured tax share instead of their own."),
+    }
+
+
+def _passing_knees(fit: dict) -> dict:
+    """Which knee values, at the fitted A, would place E33's flip in the window.
+
+    This turns a bare pass or fail into a distance. It re-runs the raw variant
+    only, because the tax-share conversion moves the flip by a few per cent and
+    the question here is which knee the control demands.
+    """
+    a = fit["A_per_log_deficit"]
+    passing = []
+    for i in range(240):
+        k = 400 * 1.02 ** i
+        pen = lambda t: max(0.0, math.log(k) - math.log(t))
+        c = statistics.fmean([math.log(obs) - a * (pen(t_new) - pen(t_old))
+                              for _, _, _, t_old, t_new, obs in r0.E33_SHAPES])
+        lo, hi, mid = 1.0, 1e7, 1.0
+        for _ in range(120):
+            mid = math.sqrt(lo * hi)
+            val = c + a * (pen(mid / 2) - pen(mid))
+            if val > 0:
+                lo = mid
+            else:
+                hi = mid
+        if 3584.0 <= mid <= 4120.0:
+            passing.append(k)
+    iv = fit.get("knee_interval_working_tgs")
+    rng = [min(passing), max(passing)] if passing else None
+    overlap = None
+    if rng and iv:
+        lo, hi = max(rng[0], iv[0]), min(rng[1], iv[1])
+        overlap = [lo, hi] if lo <= hi else None
+    return {
+        "at_fitted_A": a,
+        "knee_range_that_passes": rng,
+        "fitted_knee": fit["knee_working_tgs"],
+        "fitted_knee_interval": iv,
+        "overlap_with_fitted_interval": overlap,
+        "note": ("E33's flip sits between 1792 and 2060 arm threadgroups. A hard "
+                 "knee below 1792 gives both of those cells a zero penalty, so no "
+                 "flip can occur there at any level term."),
     }
 
 
@@ -544,16 +587,43 @@ def recommendation(fit: dict, cores_local: int, width_taxes: dict) -> dict:
                     "ledger item 157 R1, second weight pass at M=6, same host family",
             }
 
-    # Value, expressed only as a share of the measured verify-width tax.
+    # Value, expressed only as a share of the measured verify-width tax. Each
+    # census family is placed in its band by out_vec_size, so its measured share
+    # of the tax weights the gain predicted for that band.
+    family_bands = {"lm_head": "32768+", "mlp_gate_up": "32768+",
+                    "gdn_out_proj": "4096-8191", "fa_o_proj": "4096-8191",
+                    "mlp_down": "4096-8191"}
     value = {}
+    totals = {k: 0.0 for k in g_variants}
     for m, mix in sorted(RANKED_WIDTH_MIX.items()):
         cells = [v for v in table.values() if v["M"] == m and v["change"]]
+        per_m = {k: 0.0 for k in g_variants}
+        for fam, band in family_bands.items():
+            cell = table.get(f"M{m}/{band}")
+            share = width_taxes.get(fam, 0.0)
+            if cell is None or not cell["change"]:
+                continue
+            for k in g_variants:
+                per_m[k] += share * cell[
+                    "predicted_local_gain_fraction_of_that_cell_width_tax"][k]
+        for k in g_variants:
+            totals[k] += mix * per_m[k]
         value[str(m)] = {
             "ranked_width_share": mix,
             "cells_recommended_to_change": [c["band"] for c in cells],
+            "gain_as_share_of_this_width_tax": per_m,
         }
     return {"table": table, "by_width": value,
             "measured_width_tax_share": width_taxes,
+            "total_gain_as_share_of_verify_width_tax": totals,
+            "bands_without_measured_tax_weight":
+                [b for b, _ in bands if b not in set(family_bands.values())],
+            "bands_without_measured_tax_weight_note":
+                ("no census family lands in these bands, so a cell that changes "
+                 "there contributes zero to the total. Two scored shapes do live "
+                 "there: full_attn.qkv_proj at 14336 and linear_attn.in_proj at "
+                 "16480. The total therefore understates any core assumption that "
+                 "pushes those bands below the knee."),
             "note": ("no ranked score conversion. Value is expressed as a fraction of "
                      "the measured verify-width tax, per the assignment.")}
 
@@ -644,6 +714,33 @@ def main() -> int:
         total_tax = sum(v["tax_ms"] for v in tax_by_family.values())
         width_taxes = {f: v["tax_ms"] / total_tax for f, v in tax_by_family.items()}
         report["rung3"] = recommendation(fit, cores, width_taxes)
+        # The same surface under each ranked core assumption, with the knee held
+        # at the fitted per-core value. Only the changed cells and the totals are
+        # kept, because the rest repeats the local table.
+        ranked = {}
+        for c in RANKED_CORE_ASSUMPTIONS:
+            scaled = dict(fit)
+            scaled["knee_working_tgs"] = fit["knee_working_tgs"] / cores * c
+            rec = recommendation(scaled, c, width_taxes)
+            ranked[str(c)] = {
+                "assumed_cores": c,
+                "evidence": RANKED_CORE_EVIDENCE[c],
+                "knee_working_tgs": scaled["knee_working_tgs"],
+                "total_gain_as_share_of_verify_width_tax":
+                    rec["total_gain_as_share_of_verify_width_tax"],
+                "changed_cells": {k: {"shipped_ipg": v["shipped_ipg"],
+                                      "recommended_ipg": v["recommended_ipg"],
+                                      "robust_to_group_pass_cost":
+                                          v["robust_to_group_pass_cost"],
+                                      "gain": v["predicted_local_gain_fraction_of_"
+                                                "that_cell_width_tax"]}
+                                  for k, v in rec["table"].items() if v["change"]},
+            }
+        report["rung3"]["by_ranked_core_assumption"] = ranked
+        report["rung3"]["extrapolation_flag"] = (
+            "every ranked column assumes the knee is a per-core capacity boundary "
+            "and that generation 17 keeps the same resident threadgroups per core. "
+            "Neither is measured. The ranked core count is itself an inference.")
     else:
         report["rung2"]["positive_control_e33"] = {"skipped": "fit unresolved"}
         report["rung2"]["ranked_extrapolation"] = {"skipped": "fit unresolved"}
@@ -663,7 +760,31 @@ def main() -> int:
             verdict = "knee confirmed in situ"
         elif got and all(v >= null_band[0] for v in got.values()):
             verdict = "knee falsified in situ"
+        # Score the four pre-registered point-prediction tables. This is the
+        # model-selection half of the pre-registration: which of the 2x2 of
+        # {grid term, no grid term} x {M=6 depth cliff resolves, persists}
+        # predicted the two new widths best.
+        measured = {}
+        for c in report["surface"]:
+            if c["session"] == "e74":
+                measured.setdefault(str(c["width"]), {})[c["family"]] = c["ms_per_gb"]
+        scoring = {}
+        for name, tab in pre["per_family_point_predictions"].items():
+            errs = [measured[w][f] - p
+                    for w in ("7", "8") if w in measured
+                    for f, p in tab[w].items() if f in measured[w]]
+            if not errs:
+                continue
+            scoring[name] = {
+                "rmse_ms_per_gb": math.sqrt(statistics.fmean(e * e for e in errs)),
+                "max_abs_error": max(abs(e) for e in errs),
+                "mean_signed_error": statistics.fmean(errs),
+                "n": len(errs)}
+        best = min(scoring, key=lambda k: scoring[k]["rmse_ms_per_gb"]) if scoring else None
+
         report["preregistration_verdict"] = {
+            "point_prediction_scoring": scoring,
+            "best_prediction_table": best,
             "D_over_level_measured": got,
             "H_knee_band": knee_band, "H_null_band": null_band,
             "verdict": verdict,
@@ -686,7 +807,12 @@ def main() -> int:
           f"({fit.get('knee_working_tgs', float('nan')) / cores:.1f}/core), "
           f"A={fit.get('A_per_log_deficit', float('nan')):.4f}, "
           f"interval {fit.get('knee_interval_working_tgs')}")
-    print("verdict:", report.get("preregistration_verdict", {}).get("verdict"))
+    pv = report.get("preregistration_verdict", {})
+    print("verdict:", pv.get("verdict"), "| best prediction table:",
+          pv.get("best_prediction_table"))
+    for name, s in sorted(pv.get("point_prediction_scoring", {}).items(),
+                          key=lambda kv: kv[1]["rmse_ms_per_gb"]):
+        print(f"   {name:38s} rmse {s['rmse_ms_per_gb']:.3f}  max {s['max_abs_error']:.3f}")
     pc = report["rung2"]["positive_control_e33"]
     if "skipped" in pc:
         print("E33 control skipped:", pc["skipped"])
