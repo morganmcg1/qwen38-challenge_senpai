@@ -1,0 +1,119 @@
+{
+  "isolated_ms": {
+    "1": 60.371847349999996,
+    "2": 65.37682075000001,
+    "3": 72.12774795,
+    "4": 82.16296020000001,
+    "5": 95.56826720000001,
+    "6": 122.87649490000001,
+    "7": 138.3142807,
+    "8": 148.8413423,
+    "9": 163.62116379999998,
+    "10": 271.14732730000003
+  },
+  "traces": {
+    "research/results/e37/medicine-rounds.txt": {
+      "2": {
+        "eval_ms": 34.306,
+        "eval_step_ms": null,
+        "insitu_over_isolated": 0.5247425556404102,
+        "isolated_ms": 65.37682075000001,
+        "ms_per_token": 39.86781818181819,
+        "round_ms": 73.09100000000001,
+        "round_step_ms": null,
+        "rounds": 6,
+        "tokens_per_round": 1.8333333333333333
+      },
+      "3": {
+        "eval_ms": 35.4165,
+        "eval_step_ms": 1.1105000000000018,
+        "insitu_over_isolated": 0.49102461960341853,
+        "isolated_ms": 72.12774795,
+        "ms_per_token": 38.214486486486486,
+        "round_ms": 78.55199999999999,
+        "round_step_ms": 5.460999999999984,
+        "rounds": 108,
+        "tokens_per_round": 2.0555555555555554
+      },
+      "4": {
+        "eval_ms": 40.2645,
+        "eval_step_ms": 4.847999999999999,
+        "insitu_over_isolated": 0.4900565887839079,
+        "isolated_ms": 82.16296020000001,
+        "ms_per_token": 38.83893969849246,
+        "round_ms": 89.8715,
+        "round_step_ms": 11.319500000000005,
+        "rounds": 86,
+        "tokens_per_round": 2.313953488372093
+      },
+      "5": {
+        "eval_ms": 47.368,
+        "eval_step_ms": 7.103500000000004,
+        "insitu_over_isolated": 0.49564569273680414,
+        "isolated_ms": 95.56826720000001,
+        "ms_per_token": 39.621375,
+        "round_ms": 105.657,
+        "round_step_ms": 15.785499999999999,
+        "rounds": 21,
+        "tokens_per_round": 2.6666666666666665
+      },
+      "6": {
+        "eval_ms": 64.622,
+        "eval_step_ms": 17.253999999999998,
+        "insitu_over_isolated": 0.5259101836571023,
+        "isolated_ms": 122.87649490000001,
+        "ms_per_token": 47.01066666666666,
+        "round_ms": 141.03199999999998,
+        "round_step_ms": 35.374999999999986,
+        "rounds": 8,
+        "tokens_per_round": 3
+      }
+    },
+    "research/results/e37/natural_history-rounds.txt": {
+      "2": {
+        "eval_ms": 33.807,
+        "eval_step_ms": null,
+        "insitu_over_isolated": 0.517109881027673,
+        "isolated_ms": 65.37682075000001,
+        "ms_per_token": 46.08725396825396,
+        "round_ms": 70.817,
+        "round_step_ms": null,
+        "rounds": 41,
+        "tokens_per_round": 1.5365853658536586
+      },
+      "3": {
+        "eval_ms": 35.405,
+        "eval_step_ms": 1.597999999999999,
+        "insitu_over_isolated": 0.49086518027075043,
+        "isolated_ms": 72.12774795,
+        "ms_per_token": 37.65737630662021,
+        "round_ms": 77.753,
+        "round_step_ms": 6.936000000000007,
+        "rounds": 139,
+        "tokens_per_round": 2.064748201438849
+      },
+      "4": {
+        "eval_ms": 40.328,
+        "eval_step_ms": 4.923000000000002,
+        "insitu_over_isolated": 0.49082944311930954,
+        "isolated_ms": 82.16296020000001,
+        "ms_per_token": 44.22246268656716,
+        "round_ms": 89.785,
+        "round_step_ms": 12.031999999999996,
+        "rounds": 66,
+        "tokens_per_round": 2.0303030303030303
+      },
+      "5": {
+        "eval_ms": 47.471000000000004,
+        "eval_step_ms": 7.143000000000001,
+        "insitu_over_isolated": 0.49672345633990944,
+        "isolated_ms": 95.56826720000001,
+        "ms_per_token": 52.90175,
+        "round_ms": 105.8035,
+        "round_step_ms": 16.018500000000003,
+        "rounds": 14,
+        "tokens_per_round": 2
+      }
+    }
+  }
+}

@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+# One E68 rung 3 end-to-end leg: select arm -> commit -> build -> measure ->
+# unwind.
+#
+#   research/e68_run_leg.sh ARM TAG [--tokens N] [--hot] [--warmup]
+#
+# Modelled on research/e59_e2e_run.sh, with one structural difference. E59's
+# arms rewrite a Metal source string that is JIT-compiled at run time, so its
+# binary probe reads the arm back out of `__cstring`. An E68 arm is ordinary
+# Swift that the optimiser compiles into the scheduler, so the witness is
+# `__TEXT,__text`: every arm must produce a DIFFERENT text digest, and the
+# `ship` arm must reproduce the tip's digest exactly. Both are recorded here
+# and checked across the session.
+set -uo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+repo_root="${PWD}"
+
+arm="${1:?usage: e68_run_leg.sh ARM TAG [--tokens N] [--hot] [--warmup]}"
+tag="${2:?usage: e68_run_leg.sh ARM TAG [--tokens N] [--hot] [--warmup]}"
+shift 2
+
+tokens="${E68_TOKENS:-512}"
+hot=0
+warmup=0
+while (($#)); do
+  case "$1" in
+    --tokens) tokens="$2"; shift 2 ;;
+    --hot) hot=1; shift ;;
+    # Declared in advance and excluded from the analysis. A cold first leg does
+    # not cancel in a palindrome.
+    --warmup) warmup=1; shift ;;
+    *) echo "e68_run_leg: unknown argument $1" >&2; exit 2 ;;
+  esac
+done
+
+readonly SCORED_FILES=(
+  "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+)
+base_sha="${E68_BASE_SHA:-$(git rev-parse origin/senpai/qwen38-mtp-r1)}"
+root="${E68_E2E_ROOT:-${repo_root}/.mlxfast-private/e68-e2e}"
+fixture="${E68_FIXTURE:-correctness_prompts/public_longcopy_gate_english_512_256.json}"
+head_dir="${E68_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
+rung1="${E68_RUNG1_CURVE:-research/e68-artifacts/e68-rung1.json}"
+verify_forward_key="${E68_VERIFY_FORWARD_KEY:-}"
+
+# benchmark.sh derives the run lock from $HOME, which differs per role while the
+# uid does not, so the default lock gives zero mutual exclusion against another
+# student timing on the same box.
+export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
+
+# Ranked command-buffer geometry. See research/e59_e2e_run.sh for why
+# DARKBLOOM_STARTUP_MEMORY_PROFILE is the lever that makes the other two
+# exports survive on a 48 GiB host.
+export DARKBLOOM_STARTUP_MEMORY_PROFILE="${DARKBLOOM_STARTUP_MEMORY_PROFILE:-full}"
+export MLX_MAX_MB_PER_BUFFER="${MLX_MAX_MB_PER_BUFFER:-512}"
+export MLX_MAX_OPS_PER_BUFFER="${MLX_MAX_OPS_PER_BUFFER:-50}"
+
+pre_patch_sha="$(git rev-parse HEAD)"
+transient_sha=""
+
+unwind() {
+  if [[ -n "${transient_sha}" ]]; then
+    if [[ "$(git rev-parse HEAD)" == "${transient_sha}" ]]; then
+      git reset -q "${pre_patch_sha}"
+    else
+      echo "e68_run_leg: HEAD moved during the leg; restoring files only" >&2
+    fi
+  fi
+  git checkout -q "${pre_patch_sha}" -- "${SCORED_FILES[@]}" 2>/dev/null || true
+}
+trap unwind EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "e68_run_leg: worktree is dirty; refusing to time over uncommitted work" >&2
+  exit 1
+fi
+[[ -s "${fixture}" ]] || { echo "e68_run_leg: missing fixture ${fixture}" >&2; exit 2; }
+[[ -s "${head_dir}/config.json" && -s "${head_dir}/model.safetensors" ]] \
+  || { echo "e68_run_leg: declared head tree missing at ${head_dir}" >&2; exit 2; }
+
+out="${root}/runs/${tag}"
+rm -rf "${out}"; mkdir -p "${out}/reports"
+
+macmon_bin="${MLXFAST_MACMON_BIN:-}"
+if [[ -z "${macmon_bin}" ]]; then
+  macmon_bin="$(command -v macmon 2>/dev/null || true)"
+fi
+[[ -n "${macmon_bin}" ]] || macmon_bin="${HOME}/bin/macmon"
+gpu_temp() {
+  [[ -x "${macmon_bin}" ]] || { echo ""; return 0; }
+  "${macmon_bin}" pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty'
+}
+
+# --- who else is on this GPU --------------------------------------------------
+gate_json="${out}/gpu-gate.json"
+python3 research/e49_gpu_gate.py --samples 5 --out "${gate_json}"
+case "$?" in
+  0) echo "e68_run_leg: GPU gate idle" >&2 ;;
+  1) echo "e68_run_leg: GPU gate reports BUSY; not timing." >&2; exit 3 ;;
+  *) echo "e68_run_leg: GPU utilization counter unavailable; not timing blind." >&2; exit 4 ;;
+esac
+
+# --- select the arm -----------------------------------------------------------
+arm_args=("${arm}" --out "${out}/arm.json")
+if [[ "${arm}" == "pbfit" ]]; then
+  [[ -s "${rung1}" ]] || {
+    echo "e68_run_leg: pbfit needs the rung-1 curve at ${rung1}" >&2; exit 2; }
+  arm_args+=(--raw-from "${rung1}")
+  [[ -n "${verify_forward_key}" ]] \
+    && arm_args+=(--verify-forward-key "${verify_forward_key}")
+fi
+python3 research/e68_swift_arm.py "${arm_args[@]}" > "${out}/arm.log" 2>&1 || {
+  echo "e68_run_leg: arm selection failed for ${arm}" >&2
+  cat "${out}/arm.log" >&2
+  exit 2
+}
+
+# The selector edits one line. Prove it took before spending a build, and
+# prove no other arm's selector survived in the file.
+selected="$(grep -c "let depthPriceArm: DepthPriceArm = .${arm}$" \
+  "${SCORED_FILES[0]}")"
+total_selectors="$(grep -c "let depthPriceArm: DepthPriceArm = " \
+  "${SCORED_FILES[0]}")"
+if ((selected != 1 || total_selectors != 1)); then
+  echo "e68_run_leg: selector says ${selected}/${total_selectors} for ${arm}" >&2
+  exit 2
+fi
+
+# The `ship` arm must be byte-identical to the base. Any diff means the
+# selector rewrote something it should not have, and the control is not a
+# control.
+if [[ "${arm}" == "ship" ]] \
+   && ! git diff --quiet "${base_sha}" -- "${SCORED_FILES[@]}"; then
+  echo "e68_run_leg: ship arm differs from ${base_sha}; not a control" >&2
+  git diff --stat "${base_sha}" -- "${SCORED_FILES[@]}" >&2
+  exit 2
+fi
+
+git add -- "${SCORED_FILES[@]}"
+git commit -q --allow-empty -m "E68 leg ${tag}: TRANSIENT ${arm} arm bytes under measurement
+
+Unwound to ${pre_patch_sha} when the leg exits, including on a crash, so the
+branch's scored surface stays byte-identical between legs. This commit exists
+only so the bytes the compiler saw are reachable while the leg runs."
+transient_sha="$(git rev-parse HEAD)"
+
+# --- build both roots ---------------------------------------------------------
+status=0
+mkdir -p .build/clang-module-cache .build-worker/clang-module-cache
+CLANG_MODULE_CACHE_PATH="${PWD}/.build/clang-module-cache" \
+  swift build -c release --force-resolved-versions --product mlxfast-swift \
+  > "${out}/build-cli.log" 2>&1 || status=1
+CLANG_MODULE_CACHE_PATH="${PWD}/.build-worker/clang-module-cache" \
+  swift build -c release --force-resolved-versions \
+  --scratch-path .build-worker --product mlxfast-runtime-worker \
+  > "${out}/build-worker.log" 2>&1 || status=1
+((status == 0)) || {
+  echo "e68_run_leg: build failed for ${arm}" >&2
+  grep -m5 'error:' "${out}/build-worker.log" >&2
+  exit 5
+}
+
+# The selector must still read the same arm after the build, so a stale or
+# concurrently restored file cannot be timed under the wrong label.
+post_selected="$(grep -c "let depthPriceArm: DepthPriceArm = .${arm}$" \
+  "${SCORED_FILES[0]}")"
+((post_selected == 1)) || {
+  echo "e68_run_leg: selector changed during the build" >&2; exit 5; }
+
+# --- measure ------------------------------------------------------------------
+{
+  echo "tag=${tag}"
+  echo "arm=${arm}"
+  echo "base_sha=${base_sha}"
+  echo "measured_commit_unwound=${transient_sha}"
+  echo "branch_commit=${pre_patch_sha}"
+  echo "dirty=$(git status --porcelain | wc -l | tr -d ' ')"
+  echo "tokens=${tokens}"
+  echo "offered_depth=${MLXFAST_QWEN_MTP_DEPTH:-8}"
+  echo "fixture=${fixture}"
+  echo "fixture_sha256=$(shasum -a 256 "${fixture}" | cut -d' ' -f1)"
+  echo "head_dir=${head_dir}"
+  echo "head_safetensors_sha256=$(shasum -a 256 "${head_dir}/model.safetensors" | cut -d' ' -f1)"
+  echo "head_run_dir_tree_sha256=$(python3 research/e59_head_tree_digest.py "${head_dir}")"
+  echo "scored_source_sha256=$(shasum -a 256 "${SCORED_FILES[@]}" | awk '{printf "%s ", $1}')"
+  echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
+  echo "worker_sha256=$(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | cut -d' ' -f1)"
+  # The arm witness. A Swift arm changes compiled code, so `__text` must differ
+  # between arms and must match the tip for `ship`. The whole-file digest also
+  # moves with LC_UUID and the signature slots, so it cannot do this job.
+  echo "worker_text_sha256=$(python3 research/e59_worker_digest.py \
+    .build-worker/release/mlxfast-runtime-worker --json \
+    | python3 -c 'import json,sys;print(json.load(sys.stdin)["sections"]["__TEXT,__text"]["sha256"])')"
+  echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
+  echo "cool_gate_requested=$((1 - hot))"
+  echo "cool_gate_passed_real_gate=$( ((hot)) && echo false || echo true )"
+  echo "gate_qualified_for_timing=$( ((hot)) && echo false || echo true )"
+  echo "startup_memory_profile=${DARKBLOOM_STARTUP_MEMORY_PROFILE}"
+  echo "mlx_max_mb_per_buffer=${MLX_MAX_MB_PER_BUFFER}"
+  echo "mlx_max_ops_per_buffer=${MLX_MAX_OPS_PER_BUFFER}"
+  echo "physical_memory_gib=$(( $(sysctl -n hw.memsize) >> 30 ))"
+  echo "wired_residency_active=$(
+    if [[ "${DARKBLOOM_QWEN_MTP_WIRED_ZH:-}" != "0" ]] \
+      && (( $(sysctl -n hw.memsize) >= (96 << 30) )); then
+      echo true
+    else
+      echo false
+    fi)"
+  echo "gpu_temp_entry_c=$(gpu_temp)"
+  echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "${out}/meta.txt"
+
+export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
+export MLXFAST_QWEN_MTP_LOCAL_GOLDEN_FIXTURE="${fixture}"
+export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
+export MLXFAST_SCORE_PATH="${out}/score.json"
+export MLXFAST_CAPTURE_REAL_BIN="${repo_root}/.build/release/mlxfast-swift"
+export MLXFAST_SWIFT_BIN="${repo_root}/research/capture-cli.sh"
+export MLXFAST_CAPTURE_DIR="${out}/reports"
+((hot)) && export MLXFAST_LOCAL_COOL_GATE=0
+
+./benchmark-qwen-mtp.sh --local-iterate > "${out}/run.log" 2>&1
+rc=$?
+
+{
+  echo "gpu_temp_exit_c=$(gpu_temp)"
+  echo "wrapper_exit=${rc}"
+  echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} >> "${out}/meta.txt"
+
+stale_metal="$(grep -c 'built from different vendored Metal sources' "${out}/run.log")"
+echo "stale_metallib_warnings=${stale_metal}" >> "${out}/meta.txt"
+if ((stale_metal > 0)); then
+  echo "e68_run_leg: ${tag} saw ${stale_metal} stale-metallib warnings; discarding the leg" >&2
+  rc=6
+fi
+
+echo "warmup_discarded=${warmup}" >> "${out}/meta.txt"
+echo "status=${rc}" >> "${out}/meta.txt"
+
+# Log while measuring, never once at session end: a session that dies on leg 4
+# must still leave legs 1-3 on the board.
+if ((rc == 0)); then
+  python3 research/e68_wandb_log.py --leg "${out}" \
+    >> "${out}/wandb.log" 2>&1 \
+    || echo "e68_run_leg: W&B logging failed for ${tag}; see ${out}/wandb.log" >&2
+fi
+
+exit "${rc}"
