@@ -14,6 +14,18 @@ out_dir="research/e59-artifacts"
 log_dir="${out_dir}/gate-logs"
 mkdir -p "${log_dir}"
 
+# The scored-surface gate reads two objects that exist only in the organizer
+# repository: the scored submission commit and the promoted frontier tip. Our
+# `origin` fork answers `not our ref` for both, and this checkout has no
+# `upstream` remote, so fetch them by URL into refs we own. Fetch only; nothing
+# here merges organizer work into the experiment.
+organizer_url="${E59_ORGANIZER_URL:-https://github.com/Layr-Labs/qwen-3.8-mtp-challenge}"
+scored_commit="2b0c36a078b7660c9215adee933336ff46da25af"
+GIT_TERMINAL_PROMPT=0 git fetch "${organizer_url}" \
+  "+${scored_commit}:refs/e59/scored-commit" "+main:refs/e59/frontier-main" \
+  > "${log_dir}/organizer-fetch.log" 2>&1
+export SCORED_GATE_FRONTIER_REF="${SCORED_GATE_FRONTIER_REF:-refs/e59/frontier-main}"
+
 names=()
 commands=()
 codes=()

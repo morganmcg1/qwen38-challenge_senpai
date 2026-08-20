@@ -62,8 +62,10 @@ conversion is reported beside it.
   twice during this experiment. I merged `44bb38d5` in `74dbf34a` and
   `45b4f3a8` in `391ed5f`, both by merge and never by rebase. The assignment's
   original `989596895b` is retired.
-- **`UPSTREAM_SHA`:** not resolvable from this checkout. It has no `upstream`
-  remote and terminal policy blocks `git remote`. See the scored-surface blocker.
+- **`UPSTREAM_SHA`:** `0c90733d383f6b987a29682bf9eb9458a6172bfa`, read from
+  `senpai/frontier-state.json` as `organizer.syncedCommit`. My earlier report
+  said this was not resolvable; that was wrong, and I retract it. The value was
+  recorded in the campaign state file the whole time.
 - **Candidate commit:** `b757237`. Result head: the submitted head of this PR.
 - **Yukon promoted submission:** the crown moved during this experiment to
   hadakang's `80021bc0`. The advisor relays that it differs from the row it
@@ -357,7 +359,84 @@ rebuild-and-assert-worker: PASS
 
 Swift suite: 688 tests in 49 suites, 41 issues, **10 failing tests**.
 
-<!-- CANDIDATE-ARM-PENDING -->
+### Candidate arm
+
+```
+worker_mtime  2026-08-20T05:50:27Z   (assert before timing)
+worker_sha256 fab69831ed1d7f55bb6b56f0fbe6b5a379d77202bed63fee8fb7585a0927a8a8
+ok require '<T, 5, 5, true>': 1
+ok require '<T, 6, 6, true>': 1
+ok forbid  '<T, 5, 3, true>': 0
+ok extraction: 80399 strings
+rebuild-and-assert-worker: PASS
+
+worker_mtime  2026-08-20T05:50:27Z   (assert after timing, --no-build)
+worker_sha256 fab69831ed1d7f55bb6b56f0fbe6b5a379d77202bed63fee8fb7585a0927a8a8
+worker_unchanged_across_timing: true
+```
+
+The two worker digests are equal, so the binary that produced the timings below
+is the same binary whose JIT kernel string was asserted by content. That closes
+the ledger 202(H) stale-worker trap on both sides of the measurement.
+
+Swift suite: 688 tests in 49 suites, 40 issues, **9 failing tests**.
+
+The candidate failing set is a strict subset of the base control's 10. The one
+test that differs is
+`phaseStartAllocatorResetLeavesExactlyEmptyCacheWhenRuntimeTestsAreEnabled`,
+which failed in the base arm with `runtime worker failed to clear the MLX
+allocator cache at phase start` (`RuntimeWorkerSupportTests.swift:179`) and
+passed in the candidate arm after 9.024 s. I read this as host memory pressure
+on a 48 GiB machine, not as an effect of the change: a one-character template
+width cannot decide whether the allocator cache drains at phase start. I claim
+no credit for it. The honest statement is **no new failure**, not a fix. The
+other 9 failures are the same environment and provenance failures both arms
+share.
+
+`--local-submit`, run between the two assertions, exit code 0:
+
+| field | value |
+| --- | --- |
+| `passed` | `true` |
+| `all_tokens_matched` | `true` |
+| `residual_divergence_count` | 0 |
+| `public_drift_tripwire_passed` | `true` |
+| `uses_pinned_mtp_head` | `true` |
+| `head_provenance_sha256` | `dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9` |
+| serial rows checked | 128/128, depth 0, 0.097499 s/token |
+| MTP rows checked | 134/134, depth 8, 20 rounds, 0.055101 s/token |
+| `accepted_draft_rate` | 0.9561 |
+| `effective_mean_draft_len` | 5.7 |
+| local speedup | 1.7694 |
+
+Reference rows: `rows=129 seed_tokens=512 reference_seed_token=271
+self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0`.
+
+All three cool gates were the real 40 °C gate, not a bypass: 39.8 °C before
+reference generation, 40.0 °C before the serial control, 39.8 °C before the MTP
+leg.
+
+That 1.7694 is not a score. `rankable` is `false` and the recorded reason is
+`candidate-generated reference rows; official scoring disabled; ranked run is
+the only authority`. Both legs also use the candidate build, so this number is a
+correctness receipt and a sanity check, not evidence for the effect size. The
+effect size comes from the matched leg session above.
+
+### Submission gates
+
+All five now pass, recorded in `research/e59-artifacts/e59-gates.json` with
+`all_passed=true`:
+
+| gate | verdict |
+| --- | --- |
+| `assignment_scope` | PASS, 2 submitted paths against `BASE_SHA=45b4f3a8` |
+| `editable_budget` | PASS, `source=2458949/3000000 headroom=541051 growth=0/262144 exempt=2410 files=154` |
+| `twin_audit` | PASS, 29 runtime-effective twins, 1 allowlisted comment-only waiver |
+| `scored_surface` | PASS, every unscored shipped delta acknowledged |
+| `ranked_score_boundary` | PASS, candidate edits affect the MTP denominator only |
+
+`scored_surface` was blocked in the previous report and is now unblocked. See
+the blocker section for how, and for the stale pin it exposed.
 
 ## Negative and null results
 
@@ -397,13 +476,62 @@ Swift suite: 688 tests in 49 suites, 41 issues, **10 failing tests**.
    host. The `exit_status=15` in the error text is an artifact:
    `workerExitDiagnostic()` calls `stopRuntimeWorkerProcess` while the process
    is still running, so the SIGTERM is the harness's own.
-2. **The scored-surface gate cannot run in a student checkout.** It needs the
-   organizer-lineage commit `2b0c36a078b7660c9215adee933336ff46da25af`
-   (`yukon-autoresearch[bot]`, parent `5068eb8d…`). `git fetch origin` answers
-   `not our ref`, this checkout has no `upstream` remote, and terminal policy
-   blocks `git remote`. The gate aborts at `scored-surface-gate.sh:163` before
-   it reads any diff, so the failure is independent of this candidate. Fix:
-   provision `upstream` in student checkouts, or run that gate advisor-side.
+2. **The scored-surface gate is unblocked, and it caught a stale pin on the
+   base.** The gate needs two objects that exist only in the organizer
+   repository: the scored submission commit
+   `2b0c36a078b7660c9215adee933336ff46da25af` and the promoted frontier tip.
+   `git fetch origin` answers `not our ref` for both because `origin` is our
+   fork, this checkout has no `upstream` remote, and terminal policy blocks `git
+   remote`. The fix needs no remote: fetch by URL into refs we own.
+
+   ```bash
+   git fetch https://github.com/Layr-Labs/qwen-3.8-mtp-challenge \
+     +2b0c36a078b7660c9215adee933336ff46da25af:refs/e59/scored-commit \
+     +main:refs/e59/frontier-main
+   export SCORED_GATE_FRONTIER_REF=refs/e59/frontier-main
+   ```
+
+   `research/e59_gates.sh` now does this itself, so the gate is reproducible in
+   any student checkout. `refs/e59/frontier-main` resolves to
+   `80021bc03e4b270f7dfef5b4425107bfc57b8d70`, the current crown. This is a
+   fetch only. Nothing merges organizer work into the experiment.
+
+   With the gate finally reading the diff, both `FRONTIER-TAKEN` entries verify
+   byte-identical, and both `FRONTIER-PLUS-PINNED-DIFF` entries failed against
+   their pinned digest `08c42cf7…`. **That pin was already wrong on the base,
+   before my change.** Digests of the `-U0` content lines against the frontier:
+
+   | subject | digest |
+   | --- | --- |
+   | pinned in `ACK_UNSCORED` | `08c42cf7891adc91…` |
+   | base `45b4f3a8` | `76659e5e5db34baa…` |
+   | this candidate | `d1c64484de7b1821…` |
+
+   t6 merged its `case 6` and `NA <= 6` hunks without re-pinning, so the
+   tripwire was already red and would have stayed red no matter what I did. The
+   base declares three content-line pairs against the crown: the assert widened
+   from `NA <= 4` to `NA <= 6`, `case 6` moved from `<T,6,3>` to `<T,6,6>`, and
+   `case 9` moved from `<T,9,3>` to `<T,9,5>`. My change adds a fourth, `case 5`
+   from `<T,5,3>` to `<T,5,5>`.
+
+   I re-pinned to the observed `d1c64484…` in the same commit that introduces
+   my hunk, which is what the gate instructs, and I rewrote both rationale
+   strings to declare all four pairs and to attribute t6's hunks to t6 rather
+   than to me. The rewritten text also drops two claims that went stale: the old
+   text said the assert was relaxed to `NA in [2, 5]`, and it did not mention
+   `case 6` at all.
+
+   One fact in that rationale deserves to be read directly rather than buried.
+   The crown reverted E27 because whole-table register widening cost 0.3321 % of
+   score, and `t55` raises the production entry
+   `affine_qmv_fast<bfloat16_t,64,4,false>` from 181 to 183 registers, which is
+   exactly E27's entry count. So this candidate does reopen the channel E27 was
+   reverted for. The evidence that it does not cost anything here is direct and
+   local: the matched serial control moved −0.0196 % against a 0.0676 % bar, and
+   the isolated `M=1` cell is 1.404 % *faster* under `t55`, not slower. The
+   kernel-wide maximum stays 129, set by `case 9`, not by me. I state this as a
+   named residual risk that the ranked M5 run should settle, not as a solved
+   question.
 3. **Stale source that I did not fix, to stay in scope.**
    - `quantized.h:1154` still says "IPG = ceil(M / ceil(M / 4)) … at NA <= 4",
      which E55 contradicts and which the `NA <= 6` bound now contradicts twice.
@@ -463,6 +591,18 @@ Swift suite: 688 tests in 49 suites, 41 issues, **10 failing tests**.
   needing −0.646 %, so it is a hair short on its own and clears comfortably when
   composed. With `t6` the advisor's pricer gives −3.40 % ranked QMV, −2.808 %
   candidate leg, and +1.942 % published score at sd 2.57.
+- **Close-out chain: green.** Both arms rebuilt and asserted the JIT kernel
+  string inside the worker binary by content. The candidate asserted again after
+  timing with the same worker digest, so no stale binary was timed. The
+  candidate Swift failing set is a strict subset of the base control's.
+  `--local-submit` passed with exact tokens, a closed row ledger, and three real
+  40 °C gates. All five submission gates pass, including the scored-surface gate
+  that could not run before.
+- **Named residual risk:** `t55` restores E27's 183 entry registers on
+  `affine_qmv_fast<bfloat16_t,64,4,false>`, and E27 lost 0.3321 % of score. The
+  local evidence says this costs nothing here — serial −0.0196 % against a
+  0.0676 % bar, and the isolated `M=1` cell 1.404 % faster — but the local
+  serial leg is not the ranked numerator, so only an M5 run settles it.
 - **Recommendation: compose, do not submit alone.** The mechanism is real, the
   evidence is reproducible, and the diff is two characters with zero byte
   growth. Compose with `t6`, which is already in the base, and let askeladd's
@@ -524,7 +664,8 @@ QMV against 5.75 % at M=9.
 2. **Extend the in-binary string assertion to the leg runners**, not just
    `--local-submit`. My leg sessions used a binary probe, but that probe checks
    routing presence rather than the exact template arguments.
-3. **Provision `upstream` in student checkouts**, or move the scored-surface
-   gate advisor-side, so the pre-submit chain can complete in one place.
+3. **Re-pin `ACK_UNSCORED` in the same commit as every future routing change.**
+   The pin went stale on t6 and nobody noticed, because the gate could not run
+   here. It runs now, so the next routing merge should carry its own digest.
 4. **Clear the five hard-coded `0.0629 %` null floors** listed above so no later
    analysis silently inherits a retracted constant.

@@ -750,12 +750,60 @@ def log_presubmit(run) -> None:
              metrics["mtp_decode_speedup"]))
 
 
+# --- close-out chain -------------------------------------------------------------
+
+def log_chain(run) -> None:
+    columns = ["arm", "metallib_exit", "assert_before_exit", "worker_sha256_before",
+               "assert_after_exit", "worker_sha256_after", "worker_unchanged",
+               "swift_exit", "swift_failing_count", "swift_failing_tests",
+               "local_submit_exit"]
+    table = wandb.Table(columns=columns)
+    summary: dict = {}
+    failing: dict[str, set[str]] = {}
+    for arm in ("base", "candidate"):
+        path = ARTIFACTS / f"e59-final-chain-{arm}.json"
+        if not path.exists():
+            print("e59_wandb_log: no chain record for arm %s" % arm)
+            continue
+        payload = json.loads(path.read_text())
+        before = payload["assert_before"]
+        after = payload.get("assert_after", {})
+        tests = payload["swift_test"]
+        failing[arm] = set(tests["failing_tests"])
+        table.add_data(
+            arm, payload["metallib_exit_code"], before["exit_code"],
+            before.get("sha256", ""), after.get("exit_code"), after.get("sha256", ""),
+            payload.get("worker_unchanged_across_timing"),
+            tests["exit_code"], tests["failing_count"],
+            " ".join(tests["failing_tests"]),
+            payload.get("local_submit", {}).get("exit_code"))
+        summary[f"chain/{arm}/assert_before_passed"] = before["exit_code"] == 0
+        summary[f"chain/{arm}/swift_failing_count"] = tests["failing_count"]
+        if "assert_after" in payload:
+            summary[f"chain/{arm}/assert_after_passed"] = after["exit_code"] == 0
+            summary[f"chain/{arm}/worker_unchanged_across_timing"] = \
+                payload["worker_unchanged_across_timing"]
+    run.log({"chain/arms": table})
+    if "base" in failing and "candidate" in failing:
+        # The control exists to price the candidate's failures, so record the
+        # comparison rather than two counts a reader has to diff by hand.
+        summary["chain/candidate_introduces_no_new_failure"] = \
+            failing["candidate"] <= failing["base"]
+        summary["chain/failing_only_in_candidate"] = \
+            " ".join(sorted(failing["candidate"] - failing["base"]))
+        summary["chain/failing_only_in_base"] = \
+            " ".join(sorted(failing["base"] - failing["candidate"]))
+    run.summary.update(summary)
+    print("logged chain arms=%s" % sorted(failing))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True,
                     choices=["rung1", "rung2", "rung2-e2e", "rung2b-leg",
                              "rung3", "rung4-parity", "rung4-cells", "geometry",
-                             "rung4-leg", "rung4", "gates", "presubmit"])
+                             "rung4-leg", "rung4", "gates", "presubmit",
+                             "chain"])
     ap.add_argument("--leg", type=pathlib.Path,
                     help="one run directory for --stage rung4-leg or rung2b-leg")
     ap.add_argument("--legs", type=pathlib.Path, nargs="*", default=[],
@@ -788,6 +836,8 @@ def main() -> int:
             log_rung4(run)
         elif args.stage == "presubmit":
             log_presubmit(run)
+        elif args.stage == "chain":
+            log_chain(run)
         else:
             log_gates(run)
     finally:
