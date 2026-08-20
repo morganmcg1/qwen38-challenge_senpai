@@ -116,23 +116,42 @@ def cell_outliers(rows, k=3.0):
             iqr = 0.0
         stats[cell] = {"n": n, "median_us": med, "q1_us": q1, "q3_us": q3,
                        "iqr_us": iqr, "threshold_us": med + k * iqr,
-                       "min_us": vals[0], "max_us": vals[-1]}
+                       "min_us": vals[0], "max_us": vals[-1],
+                       "segment_median_us": {
+                           s: statistics.median([x[s] for x in members])
+                           for s in SEGMENTS}}
+    # Conservative pooled bar for cells too small to carry their own IQR: the
+    # largest same-cell spread measured anywhere in this session.
+    resolved = [s["iqr_us"] for s in stats.values() if s["n"] >= 4]
+    pooled_iqr = max(resolved) if resolved else 0.0
+
     outliers = []
+    small_cell_outliers = []
     for row in rows:
         st = stats[row["cell"]]
-        # A cell with fewer than 4 members has no usable IQR; it is reported
-        # as structurally singular rather than silently given a zero bar.
+        out = dict(row)
+        out["cell_median_us"] = st["median_us"]
+        out["excess_us"] = row["round_us"] - st["median_us"]
+        out["segment_excess_us"] = {
+            s: row[s] - st["segment_median_us"][s] for s in SEGMENTS}
+        # A cell with fewer than 4 members has no usable IQR of its own. The
+        # preregistered rule stays exactly as written; such rounds are scored
+        # on a separate, clearly labelled pooled bar so they are never silently
+        # dropped.
         if st["n"] < 4:
+            if pooled_iqr > 0 and out["excess_us"] > k * pooled_iqr:
+                out["cell_iqr_us"] = pooled_iqr
+                out["excess_iqr"] = out["excess_us"] / pooled_iqr
+                out["bar"] = "pooled"
+                small_cell_outliers.append(out)
             continue
         if row["round_us"] > st["threshold_us"] and st["iqr_us"] > 0:
-            out = dict(row)
-            out["cell_median_us"] = st["median_us"]
             out["cell_iqr_us"] = st["iqr_us"]
-            out["excess_us"] = row["round_us"] - st["median_us"]
-            out["excess_iqr"] = (row["round_us"] - st["median_us"]) / st["iqr_us"]
+            out["excess_iqr"] = out["excess_us"] / st["iqr_us"]
+            out["bar"] = "cell"
             outliers.append(out)
     singular = {c: s for c, s in stats.items() if s["n"] < 4}
-    return stats, outliers, singular
+    return stats, outliers, singular, small_cell_outliers, pooled_iqr
 
 
 def crossing_probe(rows):
@@ -224,13 +243,15 @@ def main():
         rows = annotate(session, args.seed)
         if len(rows) < args.min_rounds:
             continue
-        stats, outliers, singular = cell_outliers(rows, args.iqr_k)
+        (stats, outliers, singular,
+         small_cell_outliers, pooled_iqr) = cell_outliers(rows, args.iqr_k)
         leg_us = sum(r["round_us"] for r in rows)
         # The scored leg is seed processing plus decode, so the denominator for
         # a "% of the leg" claim includes `begin`, not the round series alone.
         timed_leg_us = (leg_us + session["begin_build_us"]
                         + session["begin_eval_wall_us"])
         excess_us = sum(o["excess_us"] for o in outliers)
+        small_excess_us = sum(o["excess_us"] for o in small_cell_outliers)
         tokens = sum(1 + r["acc"] for r in rows)
         entry = {
             "session_index": index,
@@ -252,11 +273,17 @@ def main():
             "crossing_probe": crossing_probe(rows),
             "outliers": outliers,
             "outlier_excess_us": excess_us,
+            "pooled_iqr_us": pooled_iqr,
+            "small_cell_outliers": small_cell_outliers,
+            "small_cell_excess_us": small_excess_us,
             "timed_leg_us": timed_leg_us,
             "outlier_excess_pct_of_rounds": (
                 100.0 * excess_us / leg_us if leg_us else 0.0),
             "outlier_excess_pct_of_leg": (
                 100.0 * excess_us / timed_leg_us if timed_leg_us else 0.0),
+            "combined_excess_pct_of_leg": (
+                100.0 * (excess_us + small_excess_us) / timed_leg_us
+                if timed_leg_us else 0.0),
             "segment_totals_us": {
                 s: sum(r[s] for r in rows) for s in SEGMENTS},
             "round_table": rows,
@@ -289,10 +316,30 @@ def main():
                   f"eval={o['eval_wall'] / 1000:.2f}ms "
                   f"vbuild={o['verify_build'] / 1000:.2f}ms "
                   f"tags={','.join(tags) or '-'}")
+            print("      segment excess ms: " + ", ".join(
+                f"{s}{o['segment_excess_us'][s] / 1000:+.2f}"
+                for s in SEGMENTS))
         print(f"  outlier excess = {entry['outlier_excess_us'] / 1000:.2f} ms "
               f"= {entry['outlier_excess_pct_of_rounds']:.4f} % of the round "
               f"series = {entry['outlier_excess_pct_of_leg']:.4f} % of the "
               f"timed leg ({entry['timed_leg_us'] / 1e6:.3f} s incl. begin)")
+        print(f"  small-cell channel (pooled bar "
+              f"{entry['pooled_iqr_us'] / 1000:.2f}ms, "
+              f"{len(entry['small_cell_outliers'])}):")
+        for o in entry["small_cell_outliers"]:
+            seg = ", ".join(f"{s}{o['segment_excess_us'][s] / 1000:+.2f}"
+                            for s in SEGMENTS)
+            print(f"    round={o['round']:4d} cell={o['cell']:12s} "
+                  f"kL={o['kL_verify']:5d} "
+                  f"t={o['round_us'] / 1000:8.2f}ms "
+                  f"med={o['cell_median_us'] / 1000:8.2f}ms "
+                  f"excess={o['excess_us'] / 1000:7.2f}ms "
+                  f"({o['excess_iqr']:.1f} pooled spreads) "
+                  f"first_round={o['round'] == 1}")
+            print(f"      segment excess ms: {seg}")
+        print(f"  combined excess (cell + pooled bars) = "
+              f"{(entry['outlier_excess_us'] + entry['small_cell_excess_us']) / 1000:.2f} ms "
+              f"= {entry['combined_excess_pct_of_leg']:.4f} % of the timed leg")
         for p in entry["crossing_probe"]:
             if p["peers"] == 0:
                 print(f"  kL>=1024 round={p['round']} M={p['M']}: no same-width "
