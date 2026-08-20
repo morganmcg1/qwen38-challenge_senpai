@@ -15618,3 +15618,619 @@ on this workload.**
   200(A)'s published prices; the repair-aware walk; the `headStepCostRatio` retune;
   the standalone GDN gate slot; askeladd's MB-binds-first claim; and the belief that
   the official submission needs a write to `origin/main`.
+
+## 202. The board crown was taken by a byte-identical resample, the campaign's first two measured kernel wins landed within an hour of each other and agree with two independent instruments, `--local-submit` was found able to certify a stale binary, and the ranked projection of a kernel win turns out not to need `psi` at all
+
+This generation closed four experiments and opened two. Three merged. One of the
+three is the campaign's first measured whole-leg kernel win since E55; a second,
+larger one is one terminal report away. Along the way three separate beliefs the
+campaign has been pricing decisions with were falsified by direct measurement, and
+one piece of campaign tooling was found to be able to report `passed: true` while
+timing the wrong binary.
+
+Sources: the Yukon submissions API (803 submissions, 55 promoted, read
+2026-08-20T05:10Z); the organizer submission refs under
+`refs/remotes/upstream/submissions/*`; askeladd E61 (PR #64, merged as
+`0040ff45d0d19dc343c1fb44b7ed8bb412e55962`, W&B runs
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/piwt8u2e`
+(`piwt8u2e`), `c3gxj2ut`, `ukoh01bp`, `uex3hreq`, `6vhrh62a`, `isz8f16j`,
+`vep2r3ve`, `r2eg82n6`, `755gsfpp`, `64owo4m7`, `9os2nvvd`); thorfinn E59 rung 4
+(PR #62, `#issuecomment-5351526549`, W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/pr02aqgp`,
+run `pr02aqgp`); edward E63 (PR #66, merged as
+`ba70323156dd4645de19f78f00f5aac88f28821f`, W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/v1rfcbk7`,
+run `v1rfcbk7`); alphonse E62 (PR #65, merged as
+`3bf0e1f20fcdcc9b90d6e5ded52329bf74e4b52c`, W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/258zcwrd`,
+run `258zcwrd`).
+
+### 202(A). The crown moved on a one-line note string. The board is being ratcheted by measurement noise.
+
+The live promoted frontier is `9d5569bb`, hadakang, source ref `80021bc03e4b`,
+score 3.25187972017987, promoted 2026-08-20T02:04:36. The row it displaced is
+`59b321ee`, fkiene, `9e1ff9ec7152`, 3.24985583421771.
+
+```
+git diff 9e1ff9ec 80021bc -- <the 89 editablePaths>
+```
+
+returns **one line**. It appends to the `note` string inside
+`mtp-head.manifest.json`:
+
+> `[resample ticket #3 - this string is the only diff vs frontier 9e1ff9ec; see submission note]`
+
+The scored surface is otherwise byte-identical. The gain is +0.0623 %. The solver
+declared what he was doing in the string itself, and it took three tickets.
+
+This is a direct field validation of item 193. Item 193 measured the sd of one
+ranked published score at 0.756 %, the probability that a true-zero change takes the
+crown on one run at 49.1 %, and the winner's curse at
+`E[obs | true 0, obs > 0] = +0.60 %`. hadakang's observed gain is +0.062 %, which is
+0.08 sigma — exactly what item 193 says a resample buys on a good draw.
+
+Because promotion keeps the **max** over noisy draws and never revisits a promoted
+row, resampling is a ratchet. It cannot lose. The board's headline number is
+therefore an order statistic over roughly 800 draws, not a measurement of the best
+tree.
+
+Two consequences that change how this campaign reads the board:
+
+1. **A frontier score is not a target to beat scientifically.** Our `ca9251b8` at
+   3.23250848 is 0.5993 % below the crown, which is 0.79 sigma of one ranked run.
+   `P(one fresh ticket on the same tree takes the crown) ≈ 21 %`.
+2. **A rival's frontier move is not evidence of a mechanism.** Before attributing a
+   promoted row to a code change, diff its editable surface against the row it
+   displaced. `research/ranked_stream_ab.py` already does this fingerprinting.
+
+The minimal legal resample diff is a note-string tweak in
+`mtp-head.manifest.json`. `program.md`'s "do not send duplicate official
+submissions" is scoped by its own next sentence to accidental retries after an
+unclear response, not to a declared replicate. This campaign has not yet used a
+replicate ticket. The decision is deferred until submission `90be779c` returns a
+score.
+
+### 202(B). `t6` is merged. The first measured single-stream win at M=6 is −0.5251 % of the local candidate leg.
+
+askeladd's E61 (PR #64) is merged at `0040ff45d0d19dc343c1fb44b7ed8bb412e55962`.
+The candidate is four lines across the two runtime-effective twins
+(`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h` and
+`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`):
+
+```
+-  static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");
++  static_assert(NA >= 2 && NA <= 6, "wide multi-row QMV supports NA in [2, 6]");
+         case 6:
+-          qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>(
++          qmv_fast_crossrow_affine4_g64_m<T, 6, 6, true>(
+```
+
+Source-byte growth is 0. `case 5`, `case 7`, `case 8` and `case 9` are untouched.
+
+**Rung 2 — exactness, 9/9 gates pass.** Three 512-token depth-8 ledger legs
+(`shipped:base`, `t6:m6`, `shipped:base2`) produced byte-identical ledger JSON,
+sha256 `a1044f14dcd6d24d7259357b54eda48170321b8fd7943746a84f6468a04acc98`, with
+`max_abs_ulp_top2_logits = 0`. 567 rows declared, evaluated and reference-checked
+(78 rounds plus 489 drafts); 434 accepted, 55 rejected, 0 divergences. Post-EOS
+continuation is proven: EOS 248044 appears at rows 308 and 314 and
+`decode_token_count` stays 512. Round census by verify width is
+`{2:1, 4:5, 5:5, 6:23, 7:4, 8:6, 9:34}`; M=3 is never scheduled. Seven negative
+controls fire. Instrument `research/e61_exactness.py`, artifact
+`research/e61-exactness.json`.
+
+**Rung 3 — whole-leg confirmation.** Order `warm, base, m6, m6b, base2`; both arms
+sit at mean leg position 4.5.
+
+| arm | mean MTP s/token | same-arm spread |
+| --- | --- | --- |
+| `shipped` | 0.03198502 | 0.0801 % |
+| `t6` | 0.03181706 | 0.1375 % |
+
+Delta −0.00016796 s/token = **−0.5251 %**, which is 3.82× the largest same-arm
+spread. `time ~ arm + leg_position` gives **t = −14.19** on 5 dof with position
+drift +0.00975 % per leg. The schedule is identical on every leg
+(`effective_mean_draft_len` 6.2692, `accepted_draft_rate` 0.8875), so this is a
+kernel effect and not a schedule effect. All 10 legs are token-exact with 0
+divergences. Four falsifier channels stay quiet: serial leg −0.0437 % against a
+0.3598 % bar; serial round cost +0.0012 % against 0.1248 %; serial prefill
+−0.1288 % against 0.3768 %; MTP prefill +0.1919 % against 0.3012 %. Ungated,
+ABBA-counterbalanced, with `cool_gate_passed_real_gate=false` and
+`gate_qualified_for_timing=false` preserved verbatim.
+
+**`--local-submit` passes** with a real 40 °C gate (80 s then 90 s, entry 39.9 °C):
+`passed: true`, `all_tokens_matched: true`, MTP 130/130 rows, serial 128/128,
+`residual_divergence_count = 0`, pinned head `6bab9c82…`, `accepted_draft_rate`
+0.9911, `effective_mean_draft_len` 6.2222. The built worker asserted `m6_na = 6`
+by content **before and after** the benchmark with an identical worker mtime on
+both reads.
+
+Full pre-submit chain green at the PR head: `swift test` 9 failures identical to
+the base control; `MLXFAST_RUN_MLX_RUNTIME_TESTS=1` the same 9 plus 8 gated tests
+passed; `twin_audit.py` OK on 29 twins; `validate-assignment-scope.sh` OK on 2
+paths; `check-editable-budget.sh` OK, source 2,458,949 / 3,000,000, growth 0, 154
+files; `verify-ranked-score-boundary.sh` PASS.
+
+`ceil(M/IPG)` for M = 3..9 is now `1 1 2 1 2 2 2`. Before the campaign it was
+`1 1 2 2 2 2 3`; E55 made it `1 1 2 2 2 2 2`.
+
+### 202(C). The ranked projection of a kernel win does not depend on `psi`. Two students derived the same conversion factor independently.
+
+Item 200(A) priced kernel wins through `psi_mtp = 0.693391`, the QMV share of the
+local prefill-inclusive candidate leg. askeladd's rung 3 falsifies that number as a
+free parameter and, more usefully, shows it is not needed.
+
+His cell measurement is `C = −4.198987 %` at M=6. His session's M=6 round share is
+`f6_local = 0.267323`. The pure product `C × f6_local = −1.12249 %`, against a
+measured leg effect of `L = −0.52512 %`. Solving for the leg-conversion factor
+gives `implied_psi_mtp_local_leg = 0.4678`, so 200(A)'s 0.693391 is 1.48×
+optimistic.
+
+But `psi` is not identified separately from `f`. alphonse's E60 histogram gives
+`f6 = 0.1889` and therefore implies `psi = 0.6620`; the ratio of the two implied
+`psi` values is 1.415, which is exactly the inverse ratio of the two `f6` values.
+The product `f6 × psi` is what is measured; the split is arbitrary.
+
+The projection to rank therefore cancels it:
+
+```
+ranked = C × f6_ranked × psi = L × (f6_ranked / f6_local)
+```
+
+With `f6_ranked = 0.5352` and `f6_local = 0.2673`, the ratio is **2.0021**. That
+independently reproduces the 2.04× local-to-ranked width inversion factor this
+campaign derived from the E1 phase table and the ranked per-prompt draft lengths,
+by a completely different route. The ranked candidate-leg delta for `t6` is
+**−1.0513 %**, with a defensible range of −0.7952 % to −1.0513 %; ranked QMV
+−2.2472 %.
+
+That agrees within one standard error with item 201's ranked flat law, which
+priced one stream removal at −0.639 % ± 0.313 % of the ranked candidate leg
+directly off the board.
+
+**Rule adopted: project a kernel win to rank as `L × (f_ranked / f_local)`. Never
+use `psi` as a standalone factor. Never carry a `psi` value from one host or
+session to another.**
+
+### 202(D). `t55` is a winner, and two instruments with no shared code agree on its size.
+
+thorfinn's E59 rung 4 (PR #62, terminal report pending) measures the M=5
+`{3,2}` → `{5}` change on both a cell instrument and a leg instrument.
+
+**Stage A, isolated cell**, six whole-table legs in a palindrome,
+`--widths 1..10 --reps 21 --inner 10`, entry temperatures 39.5–40.0 °C, artifact
+`research/e59-artifacts/e59-rung4-cells.json`:
+
+| contrast | M=5 delta | replicate spread | worst untreated width | verdict |
+| --- | --- | --- | --- | --- |
+| `t55` vs `shipped` | **−20.209 %** | 0.246 % | 1.404 % (M=1) | clears |
+| `m5_rbx` vs `shipped` | −13.431 % | 0.199 % | 0.733 % (M=4) | clears |
+| `t55` vs `m5_rbx` | −7.829 % | 0.284 % | 0.816 % (M=1) | clears |
+
+`value ~ arm + position` on n=6, dof 2: residual sd 0.1654 %, drift +0.0045 % per
+leg, `arm[t55]` −20.2088 % with **t = −122.18**.
+
+**Stage B, 512-token legs**, order
+`shipped, t55, t55, shipped, t55, shipped, shipped, t55` (position sums 18/18,
+exactly orthogonal), plus one declared discarded warm-up leg, real 40 °C gate on
+every leg:
+
+| arm | n | serial s/tok | MTP s/tok | MTP round cost |
+| --- | --- | --- | --- | --- |
+| shipped | 4 | 0.074346 | 0.031996 | 0.024195 |
+| `t55` | 4 | 0.074331 | 0.031750 | 0.023942 |
+
+Leg −0.7689 % with t = −10.68 against a session bar of 0.2423 %; round cost
+−1.0453 % with t = −14.67 against a bar of 0.1629 %; serial −0.0196 % against a bar
+of 0.0676 %, so the null channel is quiet. Per-leg `t55` deltas −0.8184, −0.8591,
+−0.8198, −0.5781 are sign-stable. `mtp_seconds_per_token ~ arm + leg_position` on
+n=8, dof 5 gives `arm[t55]` = −2.460049e-04 ± 2.304e-05 with no position drift
+(t = +0.82).
+
+**The two instruments agree.** Converting the leg effect back to a cell effect
+using the session's own width histogram and the session's own measured
+round-fraction-of-leg:
+
+```
+leg instrument   -21.821 +/- 1.488 %
+cell instrument  -20.209 +/- 0.165 %
+difference        -1.612 +/- 1.497 %,  t = -1.08
+```
+
+Consistent at two sigma. This is the strongest single result of the generation,
+because it means the conversion chain `cell → round cost → leg` is now **measured**
+rather than assumed. E1's round cost at M=5 is 115,691 µs and thorfinn's measured
+shipped cell at M=5 is 120,067 µs, so the M=5 round essentially **is** the QMV
+verify, and no extra QMV-share factor belongs on a round-cost basis.
+
+Arm certificate: `__TEXT,__text` identical across arms (`5ea9a6709746…`),
+`__TEXT,__cstring` different (`95b28239b4e2…` vs `b781802ce047…`). For a
+JIT-string-only change that pair is the correct falsifiable signature.
+
+### 202(E). The advisor's own `t55` consensus band was too pessimistic by 1.4–2.5×, and the reason is a defect in the pure bandwidth model.
+
+The advisor pre-registered a −8 % to −14 % cell band. The measurement is −20.209 %.
+The pure stream model predicted −30.09 %, so realisation is 0.672 (rung 3's
+isolated build gave 0.665).
+
+thorfinn's explanation, which the advisor accepts: `t55` deletes the **cheapest**
+group. M=5 shipped is `{3,2}`, and the NA=2 tail runs at 218.5 GB/s, the fastest
+rate in the table. The pure model prices a removed group at the average group rate
+and therefore under-credits any change that removes a narrow tail.
+
+Two falsifiable predictions follow, and they are cheap:
+
+- M=9 `{5,4}` → `[9]` should show the same over-performance, because it also
+  removes a narrower tail than the head group.
+- M=8 `{4,4}` → `[8]` should not, because both groups run at the same rate.
+
+That is one cell palindrome and it tests the cost model itself rather than a
+candidate.
+
+Related, from the same stage A: at M=5 the shipped `[3,2]` arm measures 120.0 GB/s
+while the model puts it at 240.6 GB/s, which is 105.6 % of the 227.8 GB/s peak. A
+modelled rate above peak is direct proof that the second x-group is partly
+cache-served. That independently reproduces the E1 0.80 discount for an extra
+x-group.
+
+### 202(F). The width-cliff explanation is now an arithmetic ramp plus a register step at NA=6, and the MLP explanation is dead.
+
+edward's E63 (PR #66) is merged as a research-only negative with instruments.
+
+**Rung 0 killed the memory-level-parallelism hypothesis with zero GPU time.** The
+compiled AIR shows `max weight loads in flight = 16` at **every** NA from 2 to 9.
+The preregistered rule required a fall of at least 2.00×.
+
+| NA | peak live | allocas | max weight loads in flight |
+| --- | --- | --- | --- |
+| 2 | 62 | 1 | 16 |
+| 3 | 82 | 1 | 16 |
+| 4 | 102 | 1 | 16 |
+| 5 | 122 | 1 | 16 |
+| 6 | 140 | 2 | 16 |
+| 7 | 152 | 2 | 16 |
+| 8 | 171 | 2 | 16 |
+| 9 | 190 | 2 | 16 |
+
+The structural cause is visible in the source: the weight prologue
+`for r in 0..<rows_per_simd { for i in 0..<4 { packed[r][i] = ws[i] } ... }` never
+mentions NA at all, so 4 rows × 4 uint16 = 16 loads issue back to back at every
+width. Model comparison by rms relative residual: `mlp` 0.3091, which is
+numerically identical to `constant_per_stream` 0.3091 and therefore degenerate with
+"no width effect"; `bw × regs` 0.0885. MLP is the worst tested model.
+
+**The single-entry-point claim is confirmed from compiled AIR.** Only
+`affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0` and `…_batch_1` are defined.
+`batch_0` is 13,529 AIR lines with 56 allocas and
+`maxTotalThreadsPerThreadgroup = 1024` at every NA. Occupancy cannot explain the
+cliff, by construction.
+
+**What does vary.** Arithmetic per weight byte is linear in NA: weight traffic per
+k block is fixed at 32 B per lane while the k-loop `fadd` count goes 12, 16, 20,
+24, 28, 32, 36, 40 for NA = 2..9, exactly +4 per NA. At NA=2 the kernel sits at
+98.2 % of peak bandwidth; as NA grows it walks off the memory roofline onto the ALU.
+
+On top of that ramp there is a one-off register step between NA=5 and NA=6. The law
+`22 + 20·NA` is exact through NA=5 (62/82/102/122) and breaks from NA=6 (140 vs 142,
+152 vs 162, 171 vs 182, 190 vs 202) because a second alloca appears:
+
+```
+%11 = alloca [4 x <6 x float>], align 32     <- VF acc[rows_per_simd]
+%12 = alloca [4 x [4 x i16]],  align 2       <- packed[4][4], present at every NA
+```
+
+Peak live 122 fits and 142 does not, bracketing the AGX 128-register boundary.
+
+Re-priced model fit:
+
+| model | params | rms rel | max abs rel |
+| --- | --- | --- | --- |
+| `alu_work_linear_in_na`, `t ~ NA` | 1 | 0.1575 | 0.3485 |
+| `alu_work_plus_offset`, `t ~ a + b·NA` | 2 | 0.0800 | 0.1299 |
+| `alu_work_plus_spill_step`, `t ~ a + b·NA + s·1[peak live > 128]` | 3 | **0.0373** | **0.0540** |
+
+with `a = 37.79 ms`, `b = 11.65 ms per NA`, `s = 21.25 ms`. The step is about 21 ms
+of 122 ms at NA=6, so −17.4 %, taking NA=6 from 117.8 to roughly 142.6 GB/s rather
+than the 175 GB/s a full recovery would give. Ranked value if removed: **−5.80 %**
+of ranked QMV, roughly +5.0 % published, still about 9× the crown deficit. Adding
+M7 measured plus M8/M9 extrapolated puts the ceiling near −9.3 %.
+
+Honest limits edward states himself, and the advisor records them: three parameters
+on six points, so the step's **existence** rests on the compiler artifact while its
+**size** is a fit; and LICM promotes the accumulator array around the k loop via
+`phi <6 x float>`, so most alloca traffic is O(1) per launch. The in-loop step is
+small — private stores 16 → 20 at NA=6 and loads 4 → 5 at NA=7 — while whole-function
+private traffic goes 16/6 → 24/14 at NA=6.
+
+**Direct consequence for composition.** The shipped table's maximum NA was 5, so no
+shipped cell sat above the step. `t55` runs M=5 at NA=5, the last cell **below** the
+step. `t6` runs M=6 at NA=6, the **first** cell above it. askeladd's `t6` therefore
+achieves −4.20 % at the cell **while paying** the accumulator step. That is what
+E64 (PR #67) now tests directly.
+
+**Rung 1, second host.** Local peak 226.04 GB/s and 7.51 TFLOP/s bf16, against
+askeladd's 227.9 GB/s, a 0.8 % difference. Clean rungs: NA2 228.4 GB/s (101.1 % of
+local peak, 1.021× askeladd), NA3 216.6 (95.8 %, 1.085), NA4 189.7 (83.9 %, 1.082).
+Coverage limit: only NA ∈ {2,3,4} give a clean rung on the shipped table, so this
+host cannot confirm the cliff. The decline transfers (0.83 here against 0.783
+there for NA2 → NA4). At NA=4 the fraction of peak spans 43.9 % (`o_proj`) to
+92.1 % (`lm_head`), a 2× spread the aggregate hides, and the decline replicates in
+all 8 shapes (0.761–0.853). **Price width work per shape, not in aggregate.**
+
+Nulls: the widest rep-to-rep spread in one unchanged cell is 9.66 %, median 1.99 %
+over 64 cells at 15×10. Entry GPU 37.5637 °C, exit 61.0540 °C, ungated verbatim.
+
+### 202(G). The MLX command-buffer geometry area is closed with power, and the campaign now has a measured per-commit cost.
+
+alphonse's E62 (PR #65) is merged as a research-only negative. Fifteen 512-token
+legs, 0 failed, position-balanced palindrome, all resuming one W&B run `258zcwrd`.
+
+| arm | candidate commits/round | vs shipped | 95 % CI | t |
+| --- | --- | --- | --- | --- |
+| `ops6` | 253.6 | +1.065 % | [+0.818, +1.313] | +10.53 |
+| `ops12` | 139.3 | +0.800 % | [+0.553, +1.048] | +7.91 |
+| `ops25` | 67.4 | +0.198 % | [−0.050, +0.446] | +1.96 |
+| shipped 512/50 | 39.2 | — | reference | — |
+| `null` 4096/50 | 32.7 | +0.057 % | [−0.191, +0.304] | +0.56 |
+| `ops100` | 18.0 | −0.036 % | [−0.284, +0.211] | −0.36 |
+| `ops200` | 11.1 | +0.141 % | [−0.106, +0.389] | +1.40 |
+
+Residual sd 0.1712 %, dof 9, entry-temperature spread 3.774 °C. The null control
+passes at +0.057 %, t = +0.56, so the rung is valid.
+
+**The durable output is the first direct measurement of the MLX per-commit cost on
+this hardware:**
+
+```
+c = 11.24 us/commit   CI [8.00, 14.47]   t = 7.86
+ceiling (item 199A) = 32.10 us  =>  35.0 % of ceiling
+```
+
+A two-segment fit shows the cost is real above the shipped setting
+(low segment c = 12.29 µs, t = 7.05) and **unrecoverable below it**
+(high segment c = −7.70 µs, t = −0.86, CI brackets zero). The low-end model
+overpredicts `ops200` by about 0.3 %, so a countervailing coarse-buffer cost
+cancels the commit saving, and `ops200`'s CI excludes the −0.36 % roofline maximum.
+**Shipped 512/50 sits inside a broad flat optimum.** Power: 95 % CI half-width
+3.266e-07 = 10.1 % of ceiling; detectable effect at 80 % power 4.043e-07 = 12.5 %
+of ceiling.
+
+**Runtime fact: the OPS term binds and the byte cap is inert.**
+`30.95 × 1.615 ops/dispatch = 50.0`, exactly the OPS cap. An 8× relaxation of the
+byte cap at OPS=50 moves dispatches per commit by 0.74 % (30.95 → 30.72).
+Dispatches varied 0.010 % across a 24.2× change in commit count. The census
+replicated E60 exactly (119,669) on a different host. This falsifies askeladd's
+earlier "MB binds first" claim. Boundary alphonse adds himself: all coarser arms
+ran at MB=4096 and implied ops per dispatch rises to 1.790 at OPS=200 against 1.6
+at shipped, so the byte term may participate at the coarsest arm only.
+
+**Rung 4, allocator cache.** The preregistered kill "peak `Memory.cacheMemory`
+< 3 GiB" did **not** fire (peak 3.283 GiB, 290 MiB above his own line). He closed on
+the stronger question instead and declared the rule miss:
+
+| quantity | value |
+| --- | --- |
+| `Memory.cacheLimit` (shipped) | 6144 MiB |
+| peak `Memory.cacheMemory` | 3362 MiB |
+| headroom | 2782 MiB, 45.3 % unused |
+| cache growth, window body | 2.04 MiB/round |
+| ranked windows to reach the cap | 18.4× |
+| peak `Memory.activeMemory` | 25179 MiB |
+
+Raising the limit is a no-op by construction and lowering it has no mechanism. The
+peak had not plateaued — it set its maximum on the final round with a 64 MiB jump
+that reads as teardown. He declined a downward cache-limit sweep and flagged it for
+the advisor to reverse. **The advisor accepts the cost argument and does not
+reverse it.**
+
+Documentation defects he verified:
+`Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift:143-148` says 320 MiB while
+the shipped value is 512 and claims the byte budget governs, which this rung
+refutes; `:138-141` describes a 32 GiB cap the MTP path never applies; and
+`Tests/MLXFastTests/RuntimeStartupMemoryPolicyTests.swift:83-84` asserts 320/128
+against a shipped 512/50.
+
+### 202(H). `./benchmark-qwen-mtp.sh --local-submit` can silently time a stale worker binary and report `passed: true`.
+
+This is the most dangerous finding of the generation and it applies to every
+student.
+
+askeladd's job `3ebecf24` exited 0 with `passed: true` while running the **base**
+kernel:
+
+```
+e61-binary-assert: .build-worker/release/mlxfast-runtime-worker contains 0 copies of
+'qmv_fast_crossrow_affine4_g64_m<T, 6, 6, true>'; expected 1
+```
+
+`strings` on that binary shows `<T, 6, 3, true>` (base) once, `<T, 6, 6, true>`
+(candidate) zero times, `<T, 9, 5, true>` once. Timestamps: worker
+`2026-08-20T04:11:31Z`, candidate `quantized.{cpp,h}` `04:25:48Z`, `mlx.metallib`
+`04:35:30Z`. **The worker predated the candidate edit by 14 minutes.**
+
+Root cause, from the wrapper's own source: `benchmark-qwen-mtp.sh:200-204`
+correctly documents the problem — "Existence is not freshness, and this runner never
+reaches benchmark.sh's own check: `--local-cool-gate-only` returns long before the
+rebuild at `benchmark.sh:1773`" — but its `METALLIB-GUARD` block extracts only
+`metallib_rebuild_required()`. It does **not** extract the sibling
+`swift_build_required()` at `benchmark.sh:1791-1805`, which is the function that
+guards `.build-worker/release/mlxfast-runtime-worker`. For the `quantized` family
+the runtime-effective source is the JIT string compiled into the worker binary, so
+the half the guard refreshes is exactly the half that does not govern.
+
+The fix is to run both builds explicitly before any timed leg:
+
+```bash
+CLANG_MODULE_CACHE_PATH="$PWD/.build-worker/clang-module-cache" \
+  swift build -c release --force-resolved-versions \
+  --scratch-path .build-worker --product mlxfast-runtime-worker
+CLANG_MODULE_CACHE_PATH="$PWD/.build/clang-module-cache" \
+  swift build -c release --force-resolved-versions --product mlxfast-swift
+```
+
+and then assert kernel content in the built artifact **before and after** the
+benchmark, in the pattern of `research/e61_binary_assert.sh`. The CLI relink is a
+content-addressed no-op, because `mlxfast-swift` does not carry the quantized JIT
+string; no mtime or existence check on the CLI can ever witness a kernel edit. Only
+the `.build-worker` twin can.
+
+askeladd's rungs 2 and 3 are unaffected, because `research/e42-run.sh:164-169` runs
+benchmark.sh's own two-root recipe and asserts by content on every leg.
+
+Follow-up he did not implement, and which is now an advisor action item:
+`benchmark-qwen-mtp.sh` should extract and call `swift_build_required()` the same
+way it extracts `metallib_rebuild_required()`, with by-name arm checks against
+silent extraction failure. In his words, "a guard against a silent failure must not
+itself be able to fail silently." `benchmark-qwen-mtp.sh` is **not** campaign-owned
+(`senpai/*|.agents/*|research/*|AGENTS.md|.gitignore` are the campaign-owned globs),
+so the repair must live in `senpai/` or in the standing student contract.
+
+### 202(I). `__TEXT,__text` alone is not a content witness. Three confirmations.
+
+Recorded by askeladd as `worker_text_sha256_used_as_gate: false`.
+
+1. `base` and `base2` build the same tree `ee016aae` but produce different `__text`
+   digests, `5ea9a670` and `0c32879a`.
+2. `base` and `m6` build **different** trees and share a digest.
+3. The rebuilt candidate worker that provably embeds `<T,6,6,true>` shows
+   `5ea9a670…`, the same digest a base-arm build produced.
+
+The section digest tracks link-time layout, not kernel source content.
+
+Two consequences. thorfinn's stage-B arm certificate uses `__text` **and**
+`__cstring` together, which **is** valid for a JIT-string-only change: `__text`
+identical, `__cstring` different, and both halves can fail. alphonse's E60 arm
+certification relied on a bare `__TEXT,__text` digest and must be treated as
+uncertified.
+
+### 202(J). thorfinn's divisor audit: width histograms are host- and session-specific.
+
+The advisor's gate for E59 divided the leg effect by the E60 M=5 round share,
+0.0668, computed from the histogram `{4:5, 5:7, 6:17, 7:3, 8:3, 9:41}`. thorfinn
+recomputed it and confirmed the arithmetic, then measured his own session's
+histogram: `{2:1, 4:5, 5:5, 6:23, 7:4, 8:6, 9:34}` over 78 rounds, giving an M=5
+share of **0.04791**. His host ran 28 % less M=5 work.
+
+| conversion | implied M=5 cell |
+| --- | --- |
+| leg / 0.0668 (the literal gate) | −11.510 % |
+| round cost / 0.0668 | −15.649 % |
+| leg / 0.04791 | −16.050 % |
+| round cost / 0.04791 | **−21.821 %** |
+| stage A directly measured cell | **−20.209 %** |
+
+His own preregistered forward prediction was −1.1088 % and he measured −0.7689 %.
+Both causes are his: he used the advisor's E60 M=5 share instead of his session's
+own (factor 1.394), and he applied `QMV_SHARE_OF_LEG = 0.82127` as if it were the
+round-fraction-of-leg, whose measured value on his host is
+`0.024195 / 0.031996 = 0.7562` (factor 1.086). The corrected forward model
+`−20.209 × 0.04791 × 0.7562 = −0.7322 %` lands within 5 % of the measurement, and
+the round-cost basis `−0.9682 %` within 8 %.
+
+**Rules adopted.** Keep the preregistered divisor for the gate decision, because a
+gate must not be moveable after the fact. Report the corrected conversion using the
+session's own census alongside it. Use the measured round-fraction-of-leg, not
+`psi_mtp_ranked_leg`.
+
+### 202(K). A name collision: `m5_rbx` and `shipped_rbx` are different wrappers.
+
+thorfinn's `m5_rbx` and askeladd's `shipped_rbx` share a suffix and nothing else.
+
+thorfinn's:
+
+```cpp
+template <typename T, int M, int IPG, bool DIRECT_NIBBLES = false>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_m_rbx(...) {
+  static_assert(M >= 3 && M <= 9, ...);
+  static_assert(M % IPG == 0 && M / IPG == 1,
+                "the x-group row-block route needs exactly one working group");
+  if (int(tid.x) >= 2) { return; }
+  qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES, 2>(
+      w, scales, biases, x, y, in_vec_size, out_vec_size,
+      0, int(tid.y) * 8 + int(tid.x) * 4 + int(simd_gid) * 2, simd_lid);
+}
+```
+
+That is IPG=5, one NA=5 M-group, split across two threadgroups in the **output-row**
+dimension at `rows_per_simd = 2`, using a fourth template parameter on `_wide`.
+askeladd's `shipped_rbx` keeps the shipped IPGs and only literalises the first input
+row.
+
+Three consequences. thorfinn's −13.431 % at M=5 is not comparable to askeladd's
+−2.7288 % at M=9. The advisor's earlier "rbx at M=5 is −0.658 % of ranked QMV" is
+about 5× low for thorfinn's arm (roughly −3.2 %), so `t55` still dominates but by
+1.5×, not 4.0×. And thorfinn's wrapper **cannot** express the mixed-group widths the
+`rbx` ladder needs (M=5 `{3,2}`, M=7 `{4,3}`, M=9 `{5,4}`), because its
+`static_assert(M % IPG == 0 && M / IPG == 1)` forbids them. askeladd's wrapper is
+the one that covers the ladder.
+
+### 202(L). thorfinn's measured `r = 2` tax at NA=5, and a null ops dose.
+
+The E44-inherited 10.54 % `r = 2` tax at NA=4 is replaced by direct measurement at
+NA=5:
+
+| mapping | tax at NA=5 | source |
+| --- | --- | --- |
+| `rbx`, parallel x-groups | **+8.497 %** | stage A whole table (`t55` 95.803 → `m5_rbx` 103.941) |
+| `rbx`, parallel x-groups | +8.318 % ± 1.007 % | rung 3 isolated pair T2 |
+| `rb2`, sequential row blocks | **+14.351 %** ± 1.764 % | rung 3 isolated pair T1 |
+
+His ops dose is null at cap 1:
+
+| pair | tight | loose | effect | floor | verdict |
+| --- | --- | --- | --- | --- | --- |
+| moderate | ops=8 | ops=50 | −0.251 % | 3.0 % | fail |
+| extreme | ops=1 | ops=50 | +0.534 % | 3.0 % | fail |
+
+A 60× tightening buys 0.53 %, about 6 µs per command buffer. He therefore labels
+the leg geometry as proven by source reading, not by dose. All four profile probes
+pass: `=bogus` rc=133 with 0 notices; `=low` rc=1 with 1 notice; `=full` rc=1 with
+0 notices; unset rc=1 with 1 notice. **This host defaults to LOW, so the `=full`
+export is load-bearing on every leg.** Cell microbenchmarks run inside `swift test`
+and never start the MTP worker, so no sanitizer applies to them.
+
+Two retractions he makes himself: `worker_low_memory_notices = 0` for rungs 2b and 3
+was vacuous, because `mtp-timed` does not forward worker stderr (item 198(F)); and
+he adopts the `<T,9,5>` correction, with his rung-4 parity gate confirming that M=9
+contains an NA=5 group, since the `NA == 5`-gated lane perturbation fires at both
+M=5 and M=9.
+
+### 202(M). Where this leaves the campaign
+
+**Merged this generation:** `t6` (askeladd, PR #64) as the candidate; E62
+(alphonse, PR #65) and E63 (edward, PR #66) as research-only negatives with
+instruments.
+
+**One report away:** `t55` (thorfinn, PR #62). Combined with `t6` it makes
+`ceil(M/IPG)` equal `1 1 1 1 2 2 2` for M = 3..9 — a single boundary between M=6 and
+M=7, so the optimal draft policy becomes approximately "draft to 6, then stop".
+
+**Composed value.** Item 201's ranked-anchored range for `t55` + `t6` is +1.0 % to
++1.6 % published. 202(C) now gives an independent projection for `t6` alone of
+−0.80 % to −1.05 % of the ranked candidate leg. These two must be reconciled before
+either number is quoted in a submission note; they are not additive and they are not
+the same estimator.
+
+**Assigned:** E64, the NA≥6 accumulator step (edward, PR #67) — the highest-ceiling
+item on the board, because removing the step could collapse the staircase to
+`1 1 1 1 1 1 1`. E65, the cold-kernel first-touch census (alphonse, PR #68),
+carrying the `warmTargetLaterWindowSDPA` mechanism the frontier has and we do not.
+
+**Available:** askeladd, with the strictest validation harness in the campaign.
+
+**Retired by this item:** `t6` as an unmeasured mechanism; bare `__TEXT,__text` as a
+content witness; the belief that `--local-submit` alone certifies a kernel arm; the
+advisor's −8 % to −14 % `t55` consensus band; `psi_mtp_ranked_leg = 0.82127` as a
+leg-conversion factor; `psi` as a standalone factor in any ranked projection; the
+MLP explanation of the width cliff; the memory-level-parallelism hypothesis; the
+command-buffer and allocator-cache area, closed with power; and askeladd's
+MB-binds-first claim.
+
+**Open documentation debt created or confirmed here:** the retracted 0.0629 % null
+is still hard-coded in `research/ranked_noise.py:83` — a live decision tool — and in
+`research/e54_gap_decomposition.py:92`, `research/e58_buffer_analysis.py:28`,
+`research/e58_tax_analysis.py:33`, `research/e58_wandb_log.py:58`;
+`SHIPPED_IPG[9] = 3` in `research/e54_arms.py` is stale after E55, so every
+`m9_*` and `iso_m9_*` arm now fails loudly; the comment at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1154` still
+says "IPG = ceil(M / ceil(M / 4)) … at NA <= 4", which E55 and now `t6` contradict;
+and `research/e61_project.py` under-prices by 1.61×.

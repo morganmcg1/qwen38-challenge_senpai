@@ -1,0 +1,93 @@
+{
+  "experiment": "qwen38-r1-e61-single-weight-stream-qmv-m6",
+  "artifact": "pre-submit correctness record for ./benchmark-qwen-mtp.sh --local-submit",
+  "base_sha": "d2139c924c7a7d98ca6026eea63867c2776abbca",
+  "candidate_commit": "aa8ce50be02834eb545758f4cae57899ec9dfe30",
+  "host": "Apple M4 Pro, 48 GiB, macOS 26.5.2, Swift 6.3.3",
+  "is_pricing_input": false,
+  "why_not_pricing": "128-token window, one leg per arm, no counterbalancing, candidate-generated reference rows. The advisor's standing rule is that --local-submit is a correctness and gate check only.",
+
+  "void_run": {
+    "job_id": "3ebecf24-a079-4033-bcab-a6959a884381",
+    "exit_code": 0,
+    "reported_passed": true,
+    "verdict": "VOID - measured the base kernel, not the candidate",
+    "worker_binary_mtime_utc": "2026-08-20T04:11:31Z",
+    "candidate_twin_mtime_utc": "2026-08-20T04:25:48Z",
+    "worker_embedded_m6_na": 3,
+    "binary_assert_run_before_benchmark": false,
+    "root_cause": "benchmark-qwen-mtp.sh extracts benchmark.sh's metallib_rebuild_required() but not its sibling swift_build_required(), so it refreshed mlx.metallib from candidate source and left .build-worker/release/mlxfast-runtime-worker on base source. quantized has an mlx-generated twin, so the runtime-effective source is the JIT string inside the worker binary - the half that was not refreshed."
+  },
+
+  "valid_run": {
+    "job_id": "f6ce3128-5632-477f-8823-fe50fad0cdad",
+    "exit_code": 0,
+    "passed": true,
+    "worker_rebuild_job_id": "441fb6b9-c47a-459d-84a5-09742f223927",
+    "cli_rebuild_job_id": "233b9620-b977-4eea-8f1e-7ad1fbc59c7f",
+    "cli_relink_was_content_addressed_noop": true,
+    "worker_binary_mtime_utc": "2026-08-20T04:46:40Z",
+    "worktree_clean": true,
+    "binary_assert_before": {
+      "m6_na": 6,
+      "m9_na": 5,
+      "wide_bound": 6,
+      "exit_code": 0
+    },
+    "binary_assert_after": {
+      "m6_na": 6,
+      "m9_na": 5,
+      "wide_bound": 6,
+      "exit_code": 0,
+      "worker_mtime_unchanged": true
+    },
+    "cool_gate": {
+      "real_40c_gate": true,
+      "serial_leg_wait_seconds": 80,
+      "serial_leg_entry_c": 39.9,
+      "mtp_leg_wait_seconds": 90,
+      "mtp_leg_entry_c": 39.9
+    },
+    "correctness": {
+      "public_drift_tripwire_passed": true,
+      "all_tokens_matched": true,
+      "reference_checked_rows": "130/130",
+      "serial_reference_checked_rows": "128/128",
+      "residual_divergence_count": 0,
+      "reference_self_consistent": true,
+      "reference_chain_contradictions": 0,
+      "uses_pinned_mtp_head": true,
+      "head_provenance_sha256": "6bab9c82ff4a718018ca9a38b1b3e25dc71f68be82ea4ee1d3ca478cc91b45f0"
+    },
+    "reported_metrics": {
+      "decode_tokens": 128,
+      "mtp_depth": 8,
+      "effective_mean_draft_len": 6.2222222222222223,
+      "accepted_draft_rate": 0.9910714285714286,
+      "serial_seconds_per_token": 0.096841491758823395,
+      "mtp_seconds_per_token": 0.055376742035150528,
+      "mtp_decode_speedup": 1.748775536440064,
+      "official_score": false,
+      "rankable": false
+    }
+  },
+
+  "incidental_base_vs_candidate_pair": {
+    "informative": false,
+    "note": "The void run is a base-arm 128-token leg and the valid run is a candidate-arm 128-token leg, so the pair looks like a comparison. It is not one.",
+    "base_serial_seconds_per_token": 0.097115788608789444,
+    "candidate_serial_seconds_per_token": 0.096841491758823395,
+    "serial_delta_pct": -0.2824,
+    "base_mtp_seconds_per_token": 0.05554346926510334,
+    "candidate_mtp_seconds_per_token": 0.055376742035150528,
+    "mtp_delta_pct": -0.3001,
+    "ratio_delta_pct": 0.0178,
+    "reading": "Both legs moved by the same ~0.29 % in the same direction and the ratio is flat. The candidate cannot change the serial depth-0 leg, because M=1 falls through to qmv_fast_impl and never reaches the crossrow path. A serial move of the same size as the MTP move is therefore session drift, not signal. n=1 per arm, no counterbalancing, ~20 minutes apart, different thermal histories, and 56.2 % of a 128-token leg is prefill. This pair neither supports nor contradicts the rung 3 headline and is recorded only so nobody mistakes it for evidence later."
+  },
+
+  "worker_text_sha256_retraction_reconfirmed": {
+    "digest_of_candidate_worker": "5ea9a67097461877276f9d105870f161cdffed2c9fac6e3fb59d642ee25fd2cc",
+    "note": "This worker demonstrably embeds <T, 6, 6, true>, yet its __TEXT,__text digest equals the digest a base-arm build produced during rung 2. Second independent confirmation that the section digest tracks link layout, not kernel content, and is not a build witness.",
+    "used_as_gate": false
+  }
+}

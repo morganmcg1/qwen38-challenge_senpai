@@ -30,8 +30,14 @@ head_dir="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run"
 # One shared golden for every arm: the timed run proved all three arms generate a
 # byte-identical reference, so pinning one file removes the reference as a
 # variable and makes any ledger difference attributable to the wide dispatch.
-golden="${repo_root}/.mlxfast-private/e55/runs/base/reports/leg-1/02-mtp-verify-output.json"
-out_dir="${repo_root}/.mlxfast-private/e55/ledgers"
+#
+# Later experiments reuse this runner on their own ABBA run tree by repointing
+# E55_LEDGER_ROOT, E55_LEDGER_GOLDEN and E55_LEDGER_BINARY_ASSERT. The defaults
+# reproduce E55 exactly.
+ledger_root="${E55_LEDGER_ROOT:-${repo_root}/.mlxfast-private/e55}"
+golden="${E55_LEDGER_GOLDEN:-${ledger_root}/runs/base/reports/leg-1/02-mtp-verify-output.json}"
+binary_assert="${E55_LEDGER_BINARY_ASSERT:-research/e55_binary_assert.sh}"
+out_dir="${ledger_root}/ledgers"
 out="${out_dir}/${arm}.json"
 meta="${out_dir}/${arm}-meta.txt"
 
@@ -66,7 +72,7 @@ echo "=== e55-ledger-run: ${arm}: rebuild mlx.metallib for this arm ==="
 tools/build-mlx-metallib.sh --all-build-roots || fail "metallib rebuild failed"
 
 echo "=== e55-ledger-run: ${arm}: assert the worker holds this arm's source ==="
-research/e55_binary_assert.sh | tee "${meta}" || fail "binary assert failed"
+"${binary_assert}" | tee "${meta}" || fail "binary assert failed"
 
 rows_available="$(python3 -c "
 import json,sys
