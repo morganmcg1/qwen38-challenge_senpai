@@ -18,7 +18,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 repo_root="${PWD}"
 
 export E42_ROOT="${repo_root}/.mlxfast-private/e66"
-export E42_BASE_SHA="45b4f3a800f879e3579ca27ef0b1c0ef40e4473d"
+export E42_BASE_SHA="${E42_BASE_SHA:-45b4f3a800f879e3579ca27ef0b1c0ef40e4473d}"
 export E42_CURVE_PREFIX="e66"
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 # E66 edits the quantized section, which de-pins the campaign audit's whole-body
