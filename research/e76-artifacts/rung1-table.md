@@ -167,16 +167,16 @@
 
 ### Rung 3: does the qualifying arm pay for itself?
 
-Modelled columns use the advisor's unverified `floor(208 KiB / (128 B * regs))` occupancy model. The cost column is measured on this host behind the real 40 C gate.
+Occupancy columns use Alphonse's measured E77 law: `S = floor(496 KiB / (128 B * regs))` on the ranked architecture and `Omega(S) = (32 / S) ** 0.01346`. The cost column is measured on this host behind the real 40 C gate. `net` composes the two multiplicatively, so a negative net would be a win.
 
-| variant | NA | g17s regs | modelled resident simdgroups (`plain` -> arm) | modelled occupancy gain | measured cost per verify round | conversion needed to break even | can it pay? |
-|---|---:|---:|:--:|---:|---:|---:|:--:|
-| `rps1lazyw` | 5 | 76 | 16 -> 21 | +31.2 % | +62.31 % | 199 % | NO |
-| `rps1lazy` | 5 | 75 | 16 -> 22 | +37.5 % | +64.71 % | 173 % | NO |
-| `rps2lazyw` | 6 | 88 | 14 -> 18 | +28.6 % | +17.87 % | 63 % | possible |
-| `rps2lazy` | 6 | 86 | 14 -> 19 | +35.7 % | +17.14 % | 48 % | possible |
-| `rps1lazyw` | 6 | 70 | 14 -> 23 | +64.3 % | +52.36 % | 81 % | possible |
-| `rps1lazy` | 6 | 70 | 14 -> 23 | +64.3 % | +49.76 % | 77 % | possible |
+| variant | NA | g17s regs | ranked simdgroups (`plain` -> arm) | occupancy gain | measured cost per verify round | net |
+|---|---:|---:|:--:|---:|---:|---:|
+| `rps1lazyw` | 5 | 76 | 40 -> 52 | -0.353 % | +62.31 % | +61.74 % |
+| `rps1lazy` | 5 | 75 | 40 -> 52 | -0.353 % | +64.71 % | +64.13 % |
+| `rps2lazyw` | 6 | 88 | 35 -> 45 | -0.338 % | +17.87 % | +17.47 % |
+| `rps2lazy` | 6 | 86 | 35 -> 46 | -0.367 % | +17.14 % | +16.71 % |
+| `rps1lazyw` | 6 | 70 | 35 -> 56 | -0.631 % | +52.36 % | +51.40 % |
+| `rps1lazy` | 6 | 70 | 35 -> 56 | -0.631 % | +49.76 % | +48.81 % |
 
 ### Rung 3, model-free: what each route pays per register
 

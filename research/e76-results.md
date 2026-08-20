@@ -7,23 +7,40 @@ either dispatch table. Every arm lives in a generated research header.
 
 ## Answer
 
-**The 91-register bar is reachable at both scored widths, and it is not worth a
-ranked slot.**
+**The register bar is reachable at both scored widths, and the register axis is
+worth nothing. Every arm loses, and the closest one misses by a factor of 47.**
+
+This report is written against the E77-corrected occupancy law from feedback
+`e76-retract-the-occupancy-premise`. No GPU time was spent after that
+retraction arrived, and the prediction it asked me not to pre-register is not
+recorded here.
 
 `rps1lazy` allocates **75** g17s registers at NA = 5 and **70** at NA = 6, which
 is 23 and 41 registers below the shipped cells and 15 and 20 below the crown's
 90. Bit-identity holds: zero differing elements on all seven scored shapes at
-both widths.
+both widths, over 112 checked arm-width pairs.
 
-The cost is +64.71 % and +49.76 % per target-verify round on this host, measured
-behind the real 40 C gate. The cheapest arm that clears the bar at either width
-costs +17.14 %. The public board's top eight scores span 0.564 % and a single
-ranked run has a standard deviation of 0.756 %.
+None of it converts, and the corrected law makes that unambiguous. The largest
+occupancy gain anywhere in the grid is **-0.631 %**, while the cheapest arm that
+reduces registers at all costs **+5.03 %**. At the closest point, `rps2lazy` at
+NA = 6, occupancy supplies -0.367 % against a measured +17.14 %.
 
-The pre-registered section 6 conclusion holds, but its stated antecedent does
-not. The one-group partition is **not** structurally unavailable at rank. It is
-available and it is priced, and the price is not close. The ranked-optimal
-dispatch table is the crown's at M = 5, 6 and 9 and ours nowhere.
+The mechanism behind the cost is structural and is unaffected by the retraction:
+**every arm that lowers the register count at NA = 5 or NA = 6 does so by
+reducing `rows_per_simd`**, which doubles or quadruples x re-reads while the
+weight and scale traffic stays fixed. Section 4 prices that from the shipped
+source with no model at all.
+
+Recommendation: **do not spend a ranked slot, and do not spend further GPU time
+on the register axis.** The one-group partition is not structurally unavailable
+at rank, which is what the brief expected the negative to look like. It is
+available, it is bit-identical, and it is simply not worth what it costs.
+
+**Deliverable B has a clean answer.** `lazyfall` removes the 16-byte
+`applegpu_g16s` spill frame at NA = 6 while keeping the shipped
+`rows_per_simd = 4`, and it lowers the ranked count from 111 to 99 rather than
+raising it. It is the only arm that removes the frame without touching the row
+block. It was never timed, and section 5b states that gap plainly.
 
 A second result came out of the same instrument and it matters more than the
 recommendation. **The register census is a cost instrument, not a correctness
@@ -249,45 +266,137 @@ one-group body that clears the bar costs +480 bytes, which is +230.8 %. The
 register route trades away 32 bytes of weight re-read and buys 480 bytes of x
 re-read to do it.
 
-## 5. Rung 3: the recommendation
+## 5. Rung 3, graded against the E77-corrected occupancy law
 
-**Do not spend a ranked slot on a one-group cell at M = 5 or M = 6.**
+Feedback `e76-retract-the-occupancy-premise` retracts the 208 KiB register file,
+`eps = 0.111`, `kappa = 0.0600`, the graded tier table and the -0.38 % prize. It
+also instructs me not to pre-register the prediction that the previous feedback
+asked for, so no such prediction appears in this report. The surviving law from
+Alphonse's E77 is:
 
-Modelled columns use the advisor's unverified
-`floor(208 KiB / (128 B * regs))` occupancy model and are labelled as his.
-"Conversion needed" is the fraction of the modelled occupancy gain that would
-have to become throughput for the arm to pay for its measured cost.
+```text
+S_local(R)  = floor(384 KiB / (128 * R))
+S_ranked(R) = floor(496 KiB / (128 * R))
+Omega(S)    = (32 / S) ** gamma,   gamma = 0.01346 +/- 0.00065
+```
 
-| arm | NA | g17s regs | modelled resident (`plain` -> arm) | modelled gain | measured cost | conversion needed | can it pay? |
-|---|---:|---:|:--:|---:|---:|---:|:--:|
-| `rps1lazy` | 5 | 75 | 16 -> 22 | +37.5 % | +64.71 % | 173 % | **NO** |
-| `rps1lazyw` | 5 | 76 | 16 -> 21 | +31.3 % | +62.31 % | 199 % | **NO** |
-| `rps2lazy` | 6 | 86 | 14 -> 19 | +35.7 % | +17.14 % | 48 % | possible |
-| `rps2lazyw` | 6 | 88 | 14 -> 18 | +28.6 % | +17.87 % | 63 % | possible |
-| `rps1lazy` | 6 | 70 | 14 -> 23 | +64.3 % | +49.76 % | 77 % | possible |
-| `rps1lazyw` | 6 | 70 | 14 -> 23 | +64.3 % | +52.36 % | 81 % | possible |
+**None of my measurements change under the retraction.** The register census,
+the parity results, the gated timing and the section 4 traffic accounting are
+all direct observations. Only the modelled upside changes, and it collapses.
 
-At NA = 5 the arithmetic is closed. Both timed qualifying arms need more than
-100 % conversion, so they cannot pay even if every extra resident simdgroup were
-free throughput.
+`research/e76_grade.py` reproduces every row of Alphonse's `S` table from these
+two register-file sizes, on both architectures, which is the check that I am
+applying his law and not a variant of it: local `R` 70, 93, 94, 95, 96 give `S`
+43, 33, 32, 32, 32, and ranked `R` 83, 90, 91, 98, 111 give `S` 47, 44, 43, 40,
+35.
 
-Six of the eight qualifying arms at NA = 5 were not timed, but they are bounded
-without timing them. Section 2 shows that **every** arm clearing the bar at
-NA = 5 carries `rps1`, and bare `rps1` with no staging at all already measures
-**+47.56 %** per verify round. The row block is therefore a floor on the whole
-qualifying set at that width, and it alone consumes more than the +37.5 % that
-the advisor's model offers as the entire upside. No NA = 5 arm can pay. The same
-floor argument bounds the untimed `rps1` arms at NA = 6 at +33.79 %.
+### The register route is refuted by a factor of about 47
 
-At NA = 6 the arithmetic is open but the case is still weak, for three reasons.
-The required 48 to 81 % conversion is high for a kernel whose local occupancy
-improvement was already large and returned nothing. The crown reaches the same
-tier at 2 extra bytes per register instead of 8 to 14. And the crown's table
-was measured at rank as -0.298 % against ours over eight prompts, so the
-composable arm already exists and costs no restructuring.
+Occupancy gain is priced against the shipped cell at the same width. The cost
+column is the same gated local measurement reported in section 3.
 
-The recommendation therefore holds at both widths, and M = 9 was not searched as
-instructed.
+| NA | arm | g17s | ranked S | occupancy gain | measured cost | net | verdict |
+|---:|---|---:|---:|---:|---:|---:|---|
+| 5 | `rps1lazy` | 75 | 52 | **-0.353 %** | +64.71 % | +64.13 % | loses |
+| 5 | `rps1lazyw` | 76 | 52 | -0.353 % | +62.31 % | +61.74 % | loses |
+| 5 | `rps1` | 93 | 42 | -0.066 % | +47.56 % | +47.47 % | loses |
+| 5 | `rps2lazyw` | 94 | 42 | -0.066 % | +28.59 % | +28.50 % | loses |
+| 5 | `rps2` | 96 | 41 | -0.033 % | +14.16 % | +14.12 % | loses |
+| 5 | `lazy` | 97 | 40 | +0.000 % | +15.73 % | +15.73 % | loses |
+| 6 | `rps1lazy` | 70 | 56 | **-0.631 %** | +49.76 % | +48.81 % | loses |
+| 6 | `rps1lazyw` | 70 | 56 | -0.631 % | +52.36 % | +51.40 % | loses |
+| 6 | `rps2lazy` | 86 | 46 | -0.367 % | +17.14 % | +16.71 % | loses |
+| 6 | `rps2lazyw` | 88 | 45 | -0.338 % | +17.87 % | +17.47 % | loses |
+| 6 | `rps2` | 100 | 39 | -0.146 % | +5.18 % | +5.03 % | loses |
+| 6 | `lazy` | 107 | 37 | -0.075 % | +5.71 % | +5.64 % | loses |
+
+**Every arm loses, and none is close.** The largest occupancy gain anywhere in
+the grid is -0.631 %. The smallest cost of any arm that reduces registers at all
+is +5.03 %. At the closest point, `rps2lazy` at NA = 6, the corrected law
+supplies -0.367 % against a measured +17.14 %, short by a factor of **47**.
+
+Under the retracted model this same cell was an exact tie. That is the entire
+effect of the retraction on this experiment: one tie becomes a clear loss, and
+the recommendation stops depending on a modelled quantity at all.
+
+The whole-grid occupancy span, from the worst spill-free arm at 122 ranked
+registers to the best at 50, is **-1.209 %**, and -1.151 % to -1.267 % at one
+standard error on `gamma`. That is the entire prize available on this axis
+across a register range far wider than any shippable table spans, and it is
+consistent in magnitude with Alphonse's 0.52 % for the shipped range.
+
+### The recommendation
+
+**Do not spend a ranked slot on a one-group cell at M = 5 or M = 6, and do not
+spend further GPU time on the register axis.** The register question is now
+closed as a fact for the record rather than a lever, which is how the retraction
+asks for it.
+
+The cheapest arm at each width is the honest headline. At NA = 6 the best net
+outcome in the grid is `rps2` at +5.03 %; at NA = 5 it is `rps2` at +14.12 %.
+Both are losses against the shipped cell.
+
+M = 9 was not searched, as instructed.
+
+## 5b. Deliverable B: the 16-byte local frame at NA = 6 can be removed
+
+The retraction asks a separate, compile-only question: does any variant remove
+the 16-byte `applegpu_g16s` spill frame that our `<T,6,6>` cell carries, without
+raising the ranked register count? The frame is an instrument problem, because
+the ranked host does not charge it, so it biases every local M = 6 measurement
+the campaign makes.
+
+**Yes. `lazyfall` removes it at the shipped row block.**
+
+| arm | rows per simd | g16s regs / frame | g17s regs / spill | vs shipped g17s | parity |
+|---|---:|---:|---:|---:|---|
+| `plain` (= shipped) | 4 | 96 / **16** | 111 / 0 | — | reference |
+| **`lazyfall`** | **4** | **93 / 0** | **99 / 0** | **-12** | clean, 7 shapes |
+| `rps2` | 2 | 96 / 0 | 100 / 0 | -11 | clean, 7 shapes |
+| `rps2lazy` | 2 | 72 / 0 | 86 / 0 | -25 | clean, 7 shapes |
+| `rps1lazy` | 1 | 57 / 0 | 70 / 0 | -41 | clean, 7 shapes |
+
+`lazyfall` is the one that matters, because **it is the only arm that removes
+the frame while keeping `rows_per_simd = 4`.** Every other candidate reduces the
+row block and therefore pays the x re-read that section 4 prices. `lazyfall`
+keeps the shipped row block, so it does not pay it, and it lowers the ranked
+count by 12 rather than raising it.
+
+Neither lever does this alone. `fall` by itself makes NA = 6 worse: it spills 48
+bytes on **both** architectures. `lazy` by itself keeps the 16-byte frame. Only
+the combination clears it.
+
+`lazyfall` at the shipped row block across all five widths, g16s regs / frame
+then g17s regs / spill:
+
+| NA | `plain` | `lazyfall` |
+|---:|---|---|
+| 2 | 70 / 0, 83 / 0 | 78 / 0, 82 / 0 |
+| 3 | 93 / 0, 90 / 0 | 62 / 0, **70** / 0 |
+| 4 | 94 / 0, 91 / 0 | 85 / 0, 93 / 0 |
+| 5 | 95 / 0, 98 / 0 | 87 / 0, **93** / 0 |
+| 6 | 96 / **16**, 111 / 0 | 93 / **0**, **99** / 0 |
+
+It lowers the ranked count at NA = 3, 5 and 6 and costs 2 registers at NA = 4.
+
+**One honest gap: `lazyfall` was never timed.** It was not in the rung-2 arm
+set, and the retraction forbids opening a timed session, so I did not add one.
+Its throughput cost is therefore unmeasured. I will not claim it is free: `lazy`
+alone costs +5.71 % at NA = 6 and `lazyfall` carries that staging plus a flat
+layout. What can be said from compile-time and parity evidence alone is that it
+satisfies both stated requirements and is the only arm that does so without
+touching the row block.
+
+### Deliverable A, for the record
+
+The flat-`acc` arm the retraction names is `facc`, and the answer at the two
+scored widths is that **it moves neither number**. At NA = 5 and NA = 6 it
+allocates exactly the shipped 98 and 111 g17s registers, and at NA = 6 it keeps
+the 16-byte g16s frame. At NA = 5 it emits byte-identical g16s machine code to
+`plain`, because SROA rebuilds the same scalars from the flat array. Its only
+effect anywhere in the grid is to cost 2 registers at NA = 4. Section 1 records
+the wider `fall` arm that does move the count, and why it is not profitable.
+
 
 ## 6. The traffic-free route, refuted twice, and a fault in the compile oracle
 
@@ -414,18 +523,34 @@ on this host and gives no register-file estimate.
 
 The step-1 live-float sweep shows no further allocator steps. The reported count
 takes both odd and even values across 74 to 126 with no plateau, so the allocator
-does not quantize the count. **Occupancy tiers remain unknown; rank variants by
-raw register count.** Both backends allocate identically up to 64 live floats on
-the scalar probe and diverge only where g16s runs out.
+does not quantize the count. Both backends allocate identically up to 64 live
+floats on the scalar probe and diverge only where g16s runs out.
+
+**This section is now partly superseded, and the two results agree.** Alphonse's
+E77 measured the register file directly at 384 KiB locally and 496 KiB at rank,
+which is what I could not obtain here, and it also found that occupancy rises
+smoothly rather than in tiers. My negative result — no plateau anywhere in a
+step-1 sweep from 74 to 126 registers — is the same observation from the
+compile side, and it is consistent with his finding that the staircase is the
+wrong functional form. Section 5 uses his measured constants rather than my
+inability to obtain them.
+
+One correction for the record, requested in the retraction and not made in any
+scored diff: the `<T,8,4,true>` line at `upstream/main` carries a stale
+`3+3+2` comment. The actual partition is `[4,4]`.
 
 ## 8. Suggested follow-ups, not implemented
 
-1. **Measure the crown's two-dispatch cell directly.** Section 4 compares
-   one-group arms against the one-group shipped cell, not against the crown's
-   `[3,2]` and `[3,3]` split. At NA = 6 the one-group `rps2lazy` reaches 86
-   registers at the same 2x row-side traffic the crown pays, which is 19
-   modelled resident simdgroups against the crown's 18, and it saves a dispatch
-   launch. That single cell is the one place the arithmetic here is not closed.
+1. **Time `lazyfall` at NA = 6 and adopt it as an instrument fix if it is
+   cheap.** This is the one open item from section 5b and it is a measurement I
+   was told not to start. `lazyfall` removes the 16-byte local frame at the
+   shipped row block, so it is the only frame-free arm whose cost is not
+   dominated by x re-reads, and its cost is unmeasured. If it is near free, every
+   future local M = 6 measurement gets a control that is not handicapped relative
+   to the ranked host, which matters because M = 6 carries 33.4 % of the ranked
+   width pool. Report it as an instrument fix, not a score lever: section 5 shows
+   its 12-register reduction is worth about -0.1 % on the corrected occupancy
+   law, so it cannot be a lever.
 2. **Reduce the chunk miscompile to a minimal case and pin or report it.** The
    failure is reproducible from `research/e76_wide_gen.py` plus
    `research/e76_session.sh --mode parity`, and it is a silent wrong-answer bug,
@@ -454,6 +579,7 @@ research/e76_session.sh --mode timed --na "6" --reps 21 \
 python3 research/e76_report.py --out research/e76-artifacts/rung1-table.md
 python3 research/e76_qualify.py                   # arms clearing the 91 bar
 python3 research/e76_chunk_cross.py               # the miscompile cross
+python3 research/e76_grade.py                     # E77-corrected occupancy law
 ```
 
 Two traps in this tooling. `e76_rung1_census.py` defaults to `--na 5 6`, so the

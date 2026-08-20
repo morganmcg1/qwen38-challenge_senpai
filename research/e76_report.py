@@ -52,22 +52,30 @@ DISPATCHES_PER_ROUND = {
     "head.compact_draft_vocab": 0,
 }
 
-# The advisor's occupancy model, carried here unchanged and NOT verified by this
-# experiment: `floor(register_file / (32 lanes * 4 bytes * registers))` resident
-# simdgroups per core on the ranked architecture. research/e76_occupancy_probe.m
-# could not confirm it, because `maxTotalThreadsPerThreadgroup` is 1024 for every
-# kernel from 14 to 126 registers on this host. Every number derived from this
-# model is labelled as modelled, not measured.
-ADVISOR_REGISTER_FILE_BYTES = 208 * 1024
+# Occupancy law measured by Alphonse's E77, which superseded the advisor's
+# earlier 208 KiB estimate. Feedback `e76-retract-the-occupancy-premise` also
+# retracted the tier staircase: occupancy rises smoothly in the register count,
+# so `Omega` is continuous and very weak rather than a step function.
+LOCAL_REGISTER_FILE_BYTES = 384 * 1024
+RANKED_REGISTER_FILE_BYTES = 496 * 1024
 BYTES_PER_REGISTER_PER_SIMDGROUP = 32 * 4
+OCCUPANCY_EXPONENT = 0.01346
+OCCUPANCY_EXPONENT_STDERR = 0.00065
 # The crown's ranked table never puts more than three proposals in one group, so
 # its scored cells compile at the NA=3 register count.
 CROWN_LARGEST_GROUP = 3
 
 
-def resident_simdgroups(registers: int) -> int:
-    return ADVISOR_REGISTER_FILE_BYTES // (
+def simdgroups(registers: int,
+               register_file_bytes: int = RANKED_REGISTER_FILE_BYTES) -> int:
+    return register_file_bytes // (
         BYTES_PER_REGISTER_PER_SIMDGROUP * registers)
+
+
+def occupancy_factor(registers: int,
+                     gamma: float = OCCUPANCY_EXPONENT) -> float:
+    """Relative time contributed by occupancy at this ranked register count."""
+    return (32.0 / simdgroups(registers)) ** gamma
 
 
 def block_bytes_per_lane(partition: tuple[int, ...], rows_per_simd: int) -> int:
@@ -238,12 +246,12 @@ def main() -> int:
                 row["seconds_per_round"] = entry["seconds_per_round"]
                 row["delta_vs_plain_pct"] = entry["delta_vs_plain_pct"]
 
-    # Rung 3. Every timed arm is priced against the occupancy it would buy on the
-    # ranked architecture, so the recommendation is a division and not a
-    # judgement call. `break_even_conversion` is the fraction of the modelled
-    # occupancy gain that would have to become throughput for the arm to pay for
-    # its own measured cost. Above 100 % the arm cannot pay even if every extra
-    # resident simdgroup were free throughput.
+    # Rung 3, under Alphonse's measured law rather than the retracted tier
+    # staircase. `Omega(S) = (32 / S) ** gamma` with `gamma = 0.01346` is a very
+    # weak continuous function, so the whole occupancy gain an arm can buy is a
+    # fraction of a percent. It is subtracted from the arm's measured cost to
+    # give a net, and the net decides. No break-even conversion is reported,
+    # because the retraction removed the tier prize that made one meaningful.
     crown = census["census"][RANKED_ARCH].get(
         f"e76_plain_na{CROWN_LARGEST_GROUP}")
     advice = []
@@ -252,20 +260,19 @@ def main() -> int:
             continue
         base = next(r for r in rows
                     if r["na"] == row["na"] and r["arm"] == "plain")
-        r0 = resident_simdgroups(base["g17s_registers"])
-        r1 = resident_simdgroups(row["g17s_registers"])
-        gain = 100.0 * (r1 / r0 - 1.0)
-        c = row["delta_vs_plain_pct"]
-        need = None if gain <= 0 else 100.0 * c / gain
+        s0 = simdgroups(base["g17s_registers"])
+        s1 = simdgroups(row["g17s_registers"])
+        gain = 100.0 * (occupancy_factor(row["g17s_registers"])
+                        / occupancy_factor(base["g17s_registers"]) - 1.0)
         one_group = block_bytes_per_lane((row["na"],), 4)
         arm_bytes = block_bytes_per_lane((row["na"],), row["rows_per_simd"])
         saved = base["g17s_registers"] - row["g17s_registers"]
         row.update({
-            "modelled_resident_simdgroups": r1,
-            "modelled_resident_simdgroups_plain": r0,
-            "modelled_occupancy_gain_pct": gain,
-            "break_even_conversion_pct": need,
-            "pays_for_itself_possible": bool(need is not None and need <= 100.0),
+            "ranked_simdgroups": s1,
+            "ranked_simdgroups_plain": s0,
+            "occupancy_gain_pct": gain,
+            "net_pct": 100.0 * ((1.0 + row["delta_vs_plain_pct"] / 100.0)
+                                * (1.0 + gain / 100.0) - 1.0),
             "block_bytes_per_lane": arm_bytes,
             "extra_block_bytes_per_lane": arm_bytes - one_group,
             "g17s_registers_saved": saved,
@@ -276,24 +283,22 @@ def main() -> int:
     if advice:
         body += (
             "\n\n### Rung 3: does the qualifying arm pay for itself?\n\n"
-            f"Modelled columns use the advisor's unverified "
-            f"`floor({ADVISOR_REGISTER_FILE_BYTES // 1024} KiB / "
-            f"({BYTES_PER_REGISTER_PER_SIMDGROUP} B * regs))` occupancy model. "
+            f"Occupancy columns use Alphonse's measured E77 law: "
+            f"`S = floor({RANKED_REGISTER_FILE_BYTES // 1024} KiB / "
+            f"({BYTES_PER_REGISTER_PER_SIMDGROUP} B * regs))` on the ranked "
+            f"architecture and `Omega(S) = (32 / S) ** {OCCUPANCY_EXPONENT}`. "
             "The cost column is measured on this host behind the real 40 C "
-            "gate.\n\n"
-            "| variant | NA | g17s regs | modelled resident simdgroups "
-            "(`plain` -> arm) | modelled occupancy gain | measured cost per "
-            "verify round | conversion needed to break even | can it pay? |\n"
-            "|---|---:|---:|:--:|---:|---:|---:|:--:|\n")
+            "gate. `net` composes the two multiplicatively, so a negative net "
+            "would be a win.\n\n"
+            "| variant | NA | g17s regs | ranked simdgroups (`plain` -> arm) | "
+            "occupancy gain | measured cost per verify round | net |\n"
+            "|---|---:|---:|:--:|---:|---:|---:|\n")
         body += "\n".join(
             f"| `{row['arm']}` | {row['na']} | {row['g17s_registers']} | "
-            f"{row['modelled_resident_simdgroups_plain']} -> "
-            f"{row['modelled_resident_simdgroups']} | "
-            f"{row['modelled_occupancy_gain_pct']:+.1f} % | "
+            f"{row['ranked_simdgroups_plain']} -> {row['ranked_simdgroups']} | "
+            f"{row['occupancy_gain_pct']:+.3f} % | "
             f"{row['delta_vs_plain_pct']:+.2f} % | "
-            + (f"{row['break_even_conversion_pct']:.0f} %"
-               if row["break_even_conversion_pct"] is not None else "no gain")
-            + f" | {'possible' if row['pays_for_itself_possible'] else 'NO'} |"
+            f"{row['net_pct']:+.2f} % |"
             for row in advice)
         # The model-free comparison. Both routes buy registers with traffic, so
         # price each one in extra bytes per register saved and the recommendation
