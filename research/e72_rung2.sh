@@ -130,7 +130,7 @@ PY
 
   shape_args=()
   [[ -n "${shape}" ]] && shape_args=(--shape "${shape}")
-  arm_args=(--arms "${arms:-plain,tailfull,allfull,xvec,tailfullxvec,allfullxvec}")
+  arm_args=(--arms "${arms:-plain,tailfull,mfull,rfull,allfull,split,shift,xvec,tailfullxvec}")
 
   if [[ -n "${skip_wandb}" ]]; then
     MLXFAST_MACMON_BIN="${macmon_bin}" "${build}/e72_cell_ab" \

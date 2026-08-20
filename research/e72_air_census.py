@@ -55,11 +55,14 @@ UNROLLED = {tag.removeprefix("e72") for tag in GEN_PRAGMA_ONLY}
 # the rolled tail and are the controls that still carry it. `mfull` opens only
 # the inner `i`/`m` loop and is a bisect probe, not a proposed fix. `shift`
 # touches address setup only and is expected to spill exactly like `plain`.
-FIX_ARMS = {"tailfull", "rfull", "allfull", "split", "tailfullxvec"}
+FIX_ARMS = {"tailfull", "rfull", "allfull", "tailfullxvec"}
 # Each arm's own control for register pressure: an `xvec` arm must be compared
 # against `xvec`, because widening the x load costs registers on its own.
 CONTROL = {arm: ("xvec" if arm in VECTORIZES_X else "plain") for arm in ARMS}
-FLOAT_ALLOCA = re.compile(r"^\[\s*\d+\s+x\s+<\s*\d+\s+x\s+float\s*>\s*\]$")
+# Any alloca holding float data, at any nesting depth. A shape test on the
+# outer array is not enough: `split` spills as `[4 x [2 x <4 x float>]]`, which
+# is the same accumulator demoted to memory one level deeper.
+FLOAT_ALLOCA = re.compile(r"\bfloat\b")
 # A `<6 x float>` value is legal AIR but has no native register class, so it is
 # the shape most likely to be demoted to memory. `split` exists to remove it.
 NON_NATIVE_VECTOR = re.compile(r"<\s*(?:[35]|[67]|\d\d+)\s+x\s+float\s*>")
@@ -99,7 +102,7 @@ def arm_stats(body: list[str], arm: str, na: int) -> dict:
             entry["peak_live"] for entry in liveness["blocks"].values()),
         "allocas": len(alloca_types),
         "alloca_types": sorted(alloca_types),
-        "float_allocas": sorted(t for t in alloca_types if FLOAT_ALLOCA.match(t)),
+        "float_allocas": sorted(t for t in alloca_types if FLOAT_ALLOCA.search(t)),
         "non_native_vectors": len(NON_NATIVE_VECTOR.findall(text)),
         "integer_divides": len(INT_DIVIDE.findall(text)),
     }
@@ -144,23 +147,37 @@ def checks(cell: dict, na: int) -> dict:
                 out[f"{arm}_x_loads_are_4_wide"] = (
                     stats["loop_loads_static"]["device_x"]["elements"]
                     == 4 * stats["loop_loads_static"]["device_x"]["loads"])
-        # Every fix arm exists to remove the spilled accumulator, so each one
-        # must clear it and none may raise register pressure to do so. `plain`
-        # and `xvec` are the controls that still carry the alloca at NA = 6.
+        # Each fix arm must clear the spill, and must not pay for it with more
+        # register pressure than its own control already carries.
         if arm in FIX_ARMS:
             out[f"{arm}_has_no_float_alloca"] = not stats["float_allocas"]
-            out[f"{arm}_peak_live_not_above_plain"] = (
-                stats["peak_live_cfg_max"] <= plain["peak_live_cfg_max"])
+            out[f"{arm}_peak_live_not_above_control"] = (
+                stats["peak_live_cfg_max"]
+                <= cell[CONTROL[arm]]["peak_live_cfg_max"])
         if arm.startswith("allfull"):
             out[f"{arm}_has_no_alloca_at_all"] = stats["allocas"] == 0
             out[f"{arm}_k_loop_is_one_block"] = len(stats["loop_blocks"]) == 1
-        # Every index arithmetic in the wide body divides by a compile-time
-        # power of two, so nothing may survive as a runtime divide.
-        out[f"{arm}_has_no_integer_divide"] = stats["integer_divides"] == 0
+    # Bisect: opening the inner `i`/`m` loop alone does not clear the spill, so
+    # the rolled reduction tail is the cause, not the inner accumulate loop.
+    out["mfull_alone_does_not_clear_the_spill"] = (
+        bool(cell["mfull"]["float_allocas"]) == (na == 6))
     # `split` is the only arm that reaches native lanes by changing the type,
     # so it is the only one required to leave no odd-width float vector at all.
     out["split_has_only_native_float_vectors"] = (
         cell["split"]["non_native_vectors"] == 0)
+    # Falsified prediction, recorded as a check so it cannot be quietly reread:
+    # native lane width was expected to remove the spill. It does not. `split`
+    # reaches native `float4` chunks and STILL spills at NA = 6, at higher
+    # pressure than the shipped body, because the rolled tail still indexes the
+    # accumulator with a variable and now has more lanes to hold.
+    out["native_lane_width_alone_does_not_remove_the_spill"] = (
+        bool(cell["split"]["float_allocas"]) == (na == 6)
+        and cell["split"]["peak_live_cfg_max"] >= plain["peak_live_cfg_max"])
+    # `in_vec_size` is signed, so `/ 2` and `/ 64` stay as real `sdiv`. Every
+    # other divide in the body already folds, so the count is exactly two.
+    out["shipped_body_keeps_two_signed_divides"] = plain["integer_divides"] == 2
+    out["shift_arm_removes_both_signed_divides"] = (
+        cell["shift"]["integer_divides"] == 0)
     return out
 
 

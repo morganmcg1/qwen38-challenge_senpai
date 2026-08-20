@@ -665,6 +665,107 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e72split(
   }
 }
 
+// ---------------------------------------------------------------- e72shift
+template <typename T, int NA, bool DIRECT_NIBBLES = false>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e72shift(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  static_assert(NA >= 2 && NA <= 9, "probe-only NA bound");
+  typedef vec<float, NA> VF;
+  constexpr int rows_per_simd = 4;
+  constexpr int values_per_thread = 16;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = int(uint(in_vec_size) / 2);
+  const int in_vec_size_g = int(uint(in_vec_size) / 64);
+
+  VF acc[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc[r] = VF(0.0f);
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    thread uint16_t packed[rows_per_simd][4];
+    thread float scale_local[rows_per_simd];
+    thread float bias_local[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      const int row = out_row + r;
+      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
+          reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
+          k / 2 + simd_lid * bytes_per_lane);
+      for (int i = 0; i < 4; i++) {
+        packed[r][i] = ws[i];
+      }
+      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = biases[group_index];
+    }
+
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        thread float xc[4];
+        if (DIRECT_NIBBLES) {
+          xc[0] = static_cast<float>(xm[0]);
+          xc[1] = static_cast<float>(xm[1]);
+          xc[2] = static_cast<float>(xm[2]);
+          xc[3] = static_cast<float>(xm[3]);
+          // Preserve the incumbent BF16 expression tree used for the affine
+          // bias correction; only the qdot nibble extraction changes.
+          sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+        } else {
+          sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+        }
+        a0[m] = xc[0];
+        a1[m] = xc[1];
+        a2[m] = xc[2];
+        a3[m] = xc[3];
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        if (DIRECT_NIBBLES) {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * ((packed[r][i] >> 4) & 0x000f) +
+                         a2 * ((packed[r][i] >> 8) & 0x000f) +
+                         a3 * ((packed[r][i] >> 12) & 0x000f));
+        } else {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * (packed[r][i] & 0x00f0) +
+                         a2 * (packed[r][i] & 0x0f00) +
+                         a3 * (packed[r][i] & 0xf000));
+        }
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      const float reduced = simd_sum(acc[r][m]);
+      if (simd_lid == 0) {
+        y[(first_m + m) * out_vec_size + out_row + r] =
+            static_cast<T>(reduced);
+      }
+    }
+  }
+}
+
 // ---------------------------------------------------------------- e72xvec
 template <typename T, int NA, bool DIRECT_NIBBLES = false>
 METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e72xvec(
@@ -896,6 +997,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e72tailfullxvec(
   X(rfull, qmv_fast_crossrow_affine4_g64_wide_e72rfull) \
   X(allfull, qmv_fast_crossrow_affine4_g64_wide_e72allfull) \
   X(split, qmv_fast_crossrow_affine4_g64_wide_e72split) \
+  X(shift, qmv_fast_crossrow_affine4_g64_wide_e72shift) \
   X(xvec, qmv_fast_crossrow_affine4_g64_wide_e72xvec) \
   X(tailfullxvec, qmv_fast_crossrow_affine4_g64_wide_e72tailfullxvec) \
   /* end */

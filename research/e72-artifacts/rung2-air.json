@@ -237,6 +237,69 @@
      "fmul": 8
     }
    },
+   "shift": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 0,
+    "loop_blocks": [
+     "72",
+     "161",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 16,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 8,
+      "loads": 8
+     },
+     "per_block": {
+      ".preheader": {},
+      "161": {
+       "as1:bfloat": 8
+      },
+      "72": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 0,
+    "peak_live_cfg_loop": 82,
+    "peak_live_cfg_max": 82,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 14.0,
+     "device_loads_total": 56,
+     "device_x_loads": 32,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 16,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
    "split": {
     "alloca_types": [
      "[4 x [4 x i16]]"
@@ -671,6 +734,69 @@
     "allocas": 1,
     "float_allocas": [],
     "integer_divides": 2,
+    "loop_blocks": [
+     "75",
+     "164",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 20,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 12,
+      "loads": 12
+     },
+     "per_block": {
+      ".preheader": {},
+      "164": {
+       "as1:bfloat": 12
+      },
+      "75": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 195,
+    "peak_live_cfg_loop": 98,
+    "peak_live_cfg_max": 98,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 18.0,
+     "device_loads_total": 72,
+     "device_x_loads": 48,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 20,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "shift": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 0,
     "loop_blocks": [
      "75",
      "164",
@@ -1217,6 +1343,69 @@
      "fmul": 8
     }
    },
+   "shift": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 0,
+    "loop_blocks": [
+     "78",
+     "167",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 24,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 16,
+      "loads": 16
+     },
+     "per_block": {
+      ".preheader": {},
+      "167": {
+       "as1:bfloat": 16
+      },
+      "78": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 0,
+    "peak_live_cfg_loop": 114,
+    "peak_live_cfg_max": 114,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 22.0,
+     "device_loads_total": 88,
+     "device_x_loads": 64,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 24,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
    "split": {
     "alloca_types": [
      "[4 x [4 x i16]]"
@@ -1651,6 +1840,69 @@
     "allocas": 1,
     "float_allocas": [],
     "integer_divides": 2,
+    "loop_blocks": [
+     "81",
+     "170",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 20,
+      "loads": 20
+     },
+     "per_block": {
+      ".preheader": {},
+      "170": {
+       "as1:bfloat": 20
+      },
+      "81": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 215,
+    "peak_live_cfg_loop": 130,
+    "peak_live_cfg_max": 130,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 26.0,
+     "device_loads_total": 104,
+     "device_x_loads": 80,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 28,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
+   "shift": {
+    "alloca_types": [
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 1,
+    "float_allocas": [],
+    "integer_divides": 0,
     "loop_blocks": [
      "81",
      "170",
@@ -2204,13 +2456,81 @@
      "fmul": 8
     }
    },
+   "shift": {
+    "alloca_types": [
+     "[4 x <6 x float>]",
+     "[4 x [4 x i16]]"
+    ],
+    "allocas": 2,
+    "float_allocas": [
+     "[4 x <6 x float>]"
+    ],
+    "integer_divides": 0,
+    "loop_blocks": [
+     "103",
+     "196",
+     ".preheader"
+    ],
+    "loop_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    },
+    "loop_loads_static": {
+     "device_x": {
+      "elements": 24,
+      "loads": 24
+     },
+     "per_block": {
+      ".preheader": {},
+      "103": {
+       "as1:bfloat": 8,
+       "as1:i16": 16
+      },
+      "196": {
+       "as1:bfloat": 24
+      }
+     },
+     "scale_bias": {
+      "elements": 8,
+      "loads": 8
+     },
+     "staged_x": {
+      "elements": 0,
+      "loads": 0
+     },
+     "staging_stores": 0,
+     "weight": {
+      "elements": 16,
+      "loads": 16
+     }
+    },
+    "non_native_vectors": 271,
+    "peak_live_cfg_loop": 182,
+    "peak_live_cfg_max": 182,
+    "per_lane_per_k_block": {
+     "device_loads_per_output_row": 30.0,
+     "device_loads_total": 120,
+     "device_x_loads": 96,
+     "scale_bias_loads": 8,
+     "weight_loads": 16
+    },
+    "rows_per_simd": 4,
+    "total_fp": {
+     "fadd": 32,
+     "fma": 0,
+     "fmul": 8
+    }
+   },
    "split": {
     "alloca_types": [
      "[4 x [2 x <4 x float>]]",
      "[4 x [4 x i16]]"
     ],
     "allocas": 2,
-    "float_allocas": [],
+    "float_allocas": [
+     "[4 x [2 x <4 x float>]]"
+    ],
     "integer_divides": 2,
     "loop_blocks": [
      "107",
@@ -2466,161 +2786,121 @@
   "2": {
    "allfull_has_no_alloca_at_all": true,
    "allfull_has_no_float_alloca": true,
-   "allfull_has_no_integer_divide": false,
    "allfull_k_loop_is_one_block": true,
-   "allfull_peak_live_not_above_plain": true,
-   "mfull_has_no_float_alloca": true,
-   "mfull_has_no_integer_divide": false,
-   "mfull_peak_live_not_above_plain": true,
+   "allfull_peak_live_not_above_control": true,
+   "mfull_alone_does_not_clear_the_spill": true,
+   "native_lane_width_alone_does_not_remove_the_spill": true,
    "plain_float_alloca_only_at_na6": true,
    "plain_fp_matches_plain": true,
-   "plain_has_no_integer_divide": false,
    "rfull_has_no_float_alloca": true,
-   "rfull_has_no_integer_divide": false,
-   "rfull_peak_live_not_above_plain": true,
-   "split_has_no_float_alloca": true,
-   "split_has_no_integer_divide": false,
+   "rfull_peak_live_not_above_control": true,
+   "shift_arm_removes_both_signed_divides": true,
+   "shipped_body_keeps_two_signed_divides": true,
    "split_has_only_native_float_vectors": true,
-   "split_peak_live_not_above_plain": false,
    "tailfull_fp_matches_plain": true,
    "tailfull_has_no_float_alloca": true,
-   "tailfull_has_no_integer_divide": false,
-   "tailfull_peak_live_not_above_plain": true,
+   "tailfull_peak_live_not_above_control": true,
    "tailfullxvec_fp_matches_plain": true,
    "tailfullxvec_has_no_float_alloca": true,
-   "tailfullxvec_has_no_integer_divide": false,
-   "tailfullxvec_peak_live_not_above_plain": false,
+   "tailfullxvec_peak_live_not_above_control": true,
    "tailfullxvec_x_loads_are_4_wide": true,
    "xvec_fp_matches_plain": true,
-   "xvec_has_no_integer_divide": false,
    "xvec_x_loads_are_4_wide": true
   },
   "3": {
    "allfull_has_no_alloca_at_all": true,
    "allfull_has_no_float_alloca": true,
-   "allfull_has_no_integer_divide": false,
    "allfull_k_loop_is_one_block": true,
-   "allfull_peak_live_not_above_plain": true,
-   "mfull_has_no_float_alloca": true,
-   "mfull_has_no_integer_divide": false,
-   "mfull_peak_live_not_above_plain": true,
+   "allfull_peak_live_not_above_control": true,
+   "mfull_alone_does_not_clear_the_spill": true,
+   "native_lane_width_alone_does_not_remove_the_spill": true,
    "plain_float_alloca_only_at_na6": true,
    "plain_fp_matches_plain": true,
-   "plain_has_no_integer_divide": false,
    "rfull_has_no_float_alloca": true,
-   "rfull_has_no_integer_divide": false,
-   "rfull_peak_live_not_above_plain": true,
-   "split_has_no_float_alloca": true,
-   "split_has_no_integer_divide": false,
+   "rfull_peak_live_not_above_control": true,
+   "shift_arm_removes_both_signed_divides": true,
+   "shipped_body_keeps_two_signed_divides": true,
    "split_has_only_native_float_vectors": true,
-   "split_peak_live_not_above_plain": false,
    "tailfull_fp_matches_plain": true,
    "tailfull_has_no_float_alloca": true,
-   "tailfull_has_no_integer_divide": false,
-   "tailfull_peak_live_not_above_plain": true,
+   "tailfull_peak_live_not_above_control": true,
    "tailfullxvec_fp_matches_plain": true,
    "tailfullxvec_has_no_float_alloca": true,
-   "tailfullxvec_has_no_integer_divide": false,
-   "tailfullxvec_peak_live_not_above_plain": false,
+   "tailfullxvec_peak_live_not_above_control": true,
    "tailfullxvec_x_loads_are_4_wide": true,
    "xvec_fp_matches_plain": true,
-   "xvec_has_no_integer_divide": false,
    "xvec_x_loads_are_4_wide": true
   },
   "4": {
    "allfull_has_no_alloca_at_all": true,
    "allfull_has_no_float_alloca": true,
-   "allfull_has_no_integer_divide": false,
    "allfull_k_loop_is_one_block": true,
-   "allfull_peak_live_not_above_plain": true,
-   "mfull_has_no_float_alloca": true,
-   "mfull_has_no_integer_divide": false,
-   "mfull_peak_live_not_above_plain": true,
+   "allfull_peak_live_not_above_control": true,
+   "mfull_alone_does_not_clear_the_spill": true,
+   "native_lane_width_alone_does_not_remove_the_spill": true,
    "plain_float_alloca_only_at_na6": true,
    "plain_fp_matches_plain": true,
-   "plain_has_no_integer_divide": false,
    "rfull_has_no_float_alloca": true,
-   "rfull_has_no_integer_divide": false,
-   "rfull_peak_live_not_above_plain": true,
-   "split_has_no_float_alloca": true,
-   "split_has_no_integer_divide": false,
+   "rfull_peak_live_not_above_control": true,
+   "shift_arm_removes_both_signed_divides": true,
+   "shipped_body_keeps_two_signed_divides": true,
    "split_has_only_native_float_vectors": true,
-   "split_peak_live_not_above_plain": true,
    "tailfull_fp_matches_plain": true,
    "tailfull_has_no_float_alloca": true,
-   "tailfull_has_no_integer_divide": false,
-   "tailfull_peak_live_not_above_plain": true,
+   "tailfull_peak_live_not_above_control": true,
    "tailfullxvec_fp_matches_plain": true,
    "tailfullxvec_has_no_float_alloca": true,
-   "tailfullxvec_has_no_integer_divide": false,
-   "tailfullxvec_peak_live_not_above_plain": false,
+   "tailfullxvec_peak_live_not_above_control": true,
    "tailfullxvec_x_loads_are_4_wide": true,
    "xvec_fp_matches_plain": true,
-   "xvec_has_no_integer_divide": false,
    "xvec_x_loads_are_4_wide": true
   },
   "5": {
    "allfull_has_no_alloca_at_all": true,
    "allfull_has_no_float_alloca": true,
-   "allfull_has_no_integer_divide": false,
    "allfull_k_loop_is_one_block": true,
-   "allfull_peak_live_not_above_plain": true,
-   "mfull_has_no_float_alloca": true,
-   "mfull_has_no_integer_divide": false,
-   "mfull_peak_live_not_above_plain": true,
+   "allfull_peak_live_not_above_control": true,
+   "mfull_alone_does_not_clear_the_spill": true,
+   "native_lane_width_alone_does_not_remove_the_spill": true,
    "plain_float_alloca_only_at_na6": true,
    "plain_fp_matches_plain": true,
-   "plain_has_no_integer_divide": false,
    "rfull_has_no_float_alloca": true,
-   "rfull_has_no_integer_divide": false,
-   "rfull_peak_live_not_above_plain": true,
-   "split_has_no_float_alloca": true,
-   "split_has_no_integer_divide": false,
+   "rfull_peak_live_not_above_control": true,
+   "shift_arm_removes_both_signed_divides": true,
+   "shipped_body_keeps_two_signed_divides": true,
    "split_has_only_native_float_vectors": true,
-   "split_peak_live_not_above_plain": false,
    "tailfull_fp_matches_plain": true,
    "tailfull_has_no_float_alloca": true,
-   "tailfull_has_no_integer_divide": false,
-   "tailfull_peak_live_not_above_plain": true,
+   "tailfull_peak_live_not_above_control": true,
    "tailfullxvec_fp_matches_plain": true,
    "tailfullxvec_has_no_float_alloca": true,
-   "tailfullxvec_has_no_integer_divide": false,
-   "tailfullxvec_peak_live_not_above_plain": false,
+   "tailfullxvec_peak_live_not_above_control": true,
    "tailfullxvec_x_loads_are_4_wide": true,
    "xvec_fp_matches_plain": true,
-   "xvec_has_no_integer_divide": false,
    "xvec_x_loads_are_4_wide": true
   },
   "6": {
    "allfull_has_no_alloca_at_all": true,
    "allfull_has_no_float_alloca": true,
-   "allfull_has_no_integer_divide": false,
    "allfull_k_loop_is_one_block": true,
-   "allfull_peak_live_not_above_plain": true,
-   "mfull_has_no_float_alloca": false,
-   "mfull_has_no_integer_divide": false,
-   "mfull_peak_live_not_above_plain": true,
+   "allfull_peak_live_not_above_control": true,
+   "mfull_alone_does_not_clear_the_spill": true,
+   "native_lane_width_alone_does_not_remove_the_spill": true,
    "plain_float_alloca_only_at_na6": true,
    "plain_fp_matches_plain": true,
-   "plain_has_no_integer_divide": false,
    "rfull_has_no_float_alloca": true,
-   "rfull_has_no_integer_divide": false,
-   "rfull_peak_live_not_above_plain": true,
-   "split_has_no_float_alloca": true,
-   "split_has_no_integer_divide": false,
+   "rfull_peak_live_not_above_control": true,
+   "shift_arm_removes_both_signed_divides": true,
+   "shipped_body_keeps_two_signed_divides": true,
    "split_has_only_native_float_vectors": true,
-   "split_peak_live_not_above_plain": false,
    "tailfull_fp_matches_plain": true,
    "tailfull_has_no_float_alloca": true,
-   "tailfull_has_no_integer_divide": false,
-   "tailfull_peak_live_not_above_plain": true,
+   "tailfull_peak_live_not_above_control": true,
    "tailfullxvec_fp_matches_plain": true,
    "tailfullxvec_has_no_float_alloca": true,
-   "tailfullxvec_has_no_integer_divide": false,
-   "tailfullxvec_peak_live_not_above_plain": true,
+   "tailfullxvec_peak_live_not_above_control": true,
    "tailfullxvec_x_loads_are_4_wide": true,
    "xvec_fp_matches_plain": true,
-   "xvec_has_no_integer_divide": false,
    "xvec_x_loads_are_4_wide": true
   }
  }
