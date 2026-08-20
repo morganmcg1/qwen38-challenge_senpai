@@ -1,0 +1,21 @@
+e64_rung0b head=e3de612be663d9bb345f1c17108c47ef606061f9 dirty=3
+e64_rung0b host=ip-10-231-2-12 chip=Apple M4 Pro
+e64_rung0b na=3 reps=7 target_bytes=24e9
+e64_rung0b started=2026-08-20T05:35:51Z
+research/generated/e64_wide_arms.h is in sync with Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+/tmp/e64-build/arms_na3.metal 222216 bytes na=3 source_sha256=b297f795b4dfcd3e472f36c89a26d857db47aca0cb4b053b8e4da9da48e476e2 arms_header_sha256=47118b5c8b67602eb46074d2269b6095b7f9f37938a3f986984cf9674c05f679
+e64_rung0b cool_gate before=gpu_temp=40.807621002197266C cpu_temp=40.20521926879883C gpu_power=0.00759704178199172W
+benchmark.sh: waiting for GPU to cool down before timing (current 40.4C, target <=40C, waited 0s)...
+benchmark.sh: GPU cool-down gate passed (current 39.3C, target <=40C, waited 10s)
+e64_rung0b cool_gate_passed_real_gate=true
+e64_rung0b entry_thermal gpu_temp=39.01533126831055C cpu_temp=39.63876724243164C gpu_power=0.00474565289914608W
+e64_cell_ab: arm plain    max_threads=1024 tg_mem=0
+e64_cell_ab: arm forced   max_threads=1024 tg_mem=0
+e64_cell_ab: arm ballast  max_threads=1024 tg_mem=0
+e64_cell_ab: session entry gpu_temp_c=38.89
+e64_cell_ab: forced parity vs plain: 0 differing of 104448
+e64_cell_ab: ballast parity vs plain: 0 differing of 104448
+e64_cell_ab: mlp.gate_up_fused inner=269 legs=42 entry=38.77C exit=44.96C
+e64_cell_ab: wrote research/e64-artifacts/rung0b-ladder-na3.json
+e64_rung0b exit_thermal gpu_temp=42.63996124267578C cpu_temp=40.600460052490234C gpu_power=0.009036850184202194W
+e64_rung0b finished=2026-08-20T05:36:31Z status=0
