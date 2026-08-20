@@ -111,6 +111,9 @@ WRAPPER_BODY = """  constexpr int TAIL = M % IPG;
 # compile-time constant, so the branches a cell does not use are dead code.
 WRAPPER_BODY_RBX = """  constexpr int TAIL = M % IPG;
   constexpr int GROUPS = (M + IPG - 1) / IPG;
+  // Only groups 0..2 are emitted below, so a fourth group would be dropped in
+  // silence and the cell would compute a partial row set that still validates.
+  static_assert(GROUPS <= 3, "rbx wrapper emits at most 3 groups");
   constexpr int LAST_NA = (TAIL == 0 ? IPG : (TAIL >= 2 ? TAIL : 2));
   constexpr int NA0 = (GROUPS > 1 ? IPG : LAST_NA);
   constexpr int NA1 = (GROUPS > 2 ? IPG : LAST_NA);
@@ -253,7 +256,7 @@ ARMS: dict[str, dict] = {
         "steps": [],
     },
     "t6": _whole(6, 6, "whole table, case 6 -> <T,6,6>: ONE weight stream at "
-                 "M=6, table register maximum rises 129 -> 146"),
+                 "M=6, table register maximum rises 129 -> 144 (measured)"),
     "t7": _whole(7, 7, "whole table, case 7 -> <T,7,7>: bandwidth probe for the "
                  "lone NA=7 rate; closes M=7, M=8 and M=9",
                  never_submit=True),
