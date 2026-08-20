@@ -20,13 +20,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *kArms[] = {"plain", "forced", "ballast"};
-static const int kArmCount = 3;
-// Palindrome over the three arms: every arm has mean leg position 2.5, so a
-// monotone drift across the six legs of one rep cancels in the arm contrast,
-// and the two legs of one arm are a same-arm null at maximum separation.
-static const int kOrder[] = {0, 1, 2, 2, 1, 0};
-static const int kLegs = 6;
+#define kMaxArms 8
+// Palindrome over the selected arms: every arm has the same mean leg position,
+// so a monotone drift across one rep cancels in the arm contrast, and the two
+// legs of one arm are a same-arm null at maximum separation.
+static const char *kArms[kMaxArms] = {"plain", "forced", "ballast"};
+static int kArmCount = 3;
+static int kOrder[2 * kMaxArms];
+static int kLegs = 6;
+
+static void buildOrder(void) {
+  kLegs = 2 * kArmCount;
+  for (int a = 0; a < kArmCount; a++) {
+    kOrder[a] = a;
+    kOrder[kLegs - 1 - a] = a;
+  }
+}
 
 typedef struct {
   const char *name;
@@ -80,7 +89,7 @@ static double sample_gpu_temp(const char *macmon) {
 }
 
 typedef struct {
-  id<MTLBuffer> w, scales, biases, x, y, in_vec, out_vec;
+  id<MTLBuffer> w, scales, biases, x, y, in_vec, out_vec, na_vec;
   int n, k, rows;
 } Operands;
 
@@ -101,6 +110,8 @@ static Operands makeOperands(id<MTLDevice> device, Shape shape, int na) {
                             options:MTLResourceStorageModeShared];
   o.in_vec = [device newBufferWithLength:4 options:MTLResourceStorageModeShared];
   o.out_vec = [device newBufferWithLength:4 options:MTLResourceStorageModeShared];
+  o.na_vec = [device newBufferWithLength:4 options:MTLResourceStorageModeShared];
+  *(int *)o.na_vec.contents = na;
 
   uint32_t seed = 0x1234567u;
   uint32_t *wp = (uint32_t *)o.w.contents;
@@ -132,6 +143,9 @@ static void encodeDispatch(id<MTLComputeCommandEncoder> enc,
   [enc setBuffer:o->y offset:0 atIndex:4];
   [enc setBuffer:o->in_vec offset:0 atIndex:5];
   [enc setBuffer:o->out_vec offset:0 atIndex:6];
+  // Only `merged` declares buffer 7. Binding it for every arm keeps one
+  // dispatch path and cannot change an arm that does not read it.
+  [enc setBuffer:o->na_vec offset:0 atIndex:7];
   // One x-group covering NA input rows, 8 output rows per threadgroup: the
   // single-weight-stream geometry the NA ladder measures.
   [enc dispatchThreadgroups:MTLSizeMake(1, (NSUInteger)(o->n / 8), 1)
@@ -177,6 +191,7 @@ int main(int argc, const char *argv[]) {
     const char *out_path = NULL;
     const char *macmon = getenv("MLXFAST_MACMON_BIN");
     const char *shape_filter = NULL;
+    char *arm_list = NULL;
     int na = 5, reps = 21, warmup_reps = 1;
     double target_bytes = 24e9;
 
@@ -189,6 +204,7 @@ int main(int argc, const char *argv[]) {
       else if (!strcmp(argv[i], "--warmup-reps") && i + 1 < argc) warmup_reps = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--target-bytes") && i + 1 < argc) target_bytes = atof(argv[++i]);
       else if (!strcmp(argv[i], "--macmon") && i + 1 < argc) macmon = argv[++i];
+      else if (!strcmp(argv[i], "--arms") && i + 1 < argc) arm_list = strdup(argv[++i]);
       else {
         fprintf(stderr, "e64_cell_ab: unknown argument %s\n", argv[i]);
         return 2;
@@ -198,6 +214,18 @@ int main(int argc, const char *argv[]) {
       fprintf(stderr, "e64_cell_ab: --source is required\n");
       return 2;
     }
+    if (arm_list) {
+      kArmCount = 0;
+      for (char *token = strtok(arm_list, ","); token;
+           token = strtok(NULL, ",")) {
+        if (kArmCount == kMaxArms) {
+          fprintf(stderr, "e64_cell_ab: at most %d arms\n", kMaxArms);
+          return 2;
+        }
+        kArms[kArmCount++] = token;
+      }
+    }
+    buildOrder();
 
     mach_timebase_info_data_t tb;
     mach_timebase_info(&tb);
@@ -228,7 +256,7 @@ int main(int argc, const char *argv[]) {
       return 1;
     }
 
-    id<MTLComputePipelineState> pso[kArmCount];
+    id<MTLComputePipelineState> pso[kMaxArms];
     for (int a = 0; a < kArmCount; a++) {
       NSString *name = [NSString stringWithFormat:@"e64_cell_%s", kArms[a]];
       id<MTLFunction> fn = [lib newFunctionWithName:name];
@@ -317,12 +345,17 @@ int main(int argc, const char *argv[]) {
     }
     double exit_c = sample_gpu_temp(macmon);
 
+    NSMutableArray *order = [NSMutableArray array];
+    for (int position = 0; position < kLegs; position++) {
+      [order addObject:@(kArms[kOrder[position]])];
+    }
+
     NSDictionary *report = @{
       @"source": @(source_path),
       @"na": @(na),
       @"reps": @(reps),
       @"warmup_reps_discarded": @(warmup_reps),
-      @"order": @[@"plain", @"forced", @"ballast", @"ballast", @"forced", @"plain"],
+      @"order": order,
       @"device": device.name ?: @"?",
       @"entry_gpu_temp_c": @(entry_c),
       @"exit_gpu_temp_c": @(exit_c),

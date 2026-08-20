@@ -186,6 +186,35 @@ def main() -> int:
     rows.sort(key=lambda row: (-(row["priced_ms"] or 0.0), row["region"],
                                row["name"]))
 
+    # The decisive question is not what NA=5 and NA=6 differ by, but whether
+    # that difference is the SAME difference every other rung of the ladder
+    # pays. If the in-loop increment is uniform while the measured increment is
+    # not, no structural difference in the AIR can explain the step and the
+    # cause is below AIR, in register allocation or occupancy.
+    signatures = []
+    ladder = sorted(cells)
+    for index in range(len(ladder) - 1):
+        a, b = ladder[index], ladder[index + 1]
+        delta = {}
+        for key in ("opcodes", "memory"):
+            left, right = cells[a]["loop"][key], cells[b]["loop"][key]
+            for name in set(left) | set(right):
+                change = right.get(name, 0) - left.get(name, 0)
+                if change:
+                    delta[f"{key}:{name}"] = change
+        measured = None
+        if a in LADDER_MS and b in LADDER_MS:
+            measured = LADDER_MS[b] - LADDER_MS[a]
+        signatures.append({
+            "from_na": a, "to_na": b,
+            "loop_delta": delta,
+            "measured_step_ms": measured,
+            "peak_live_cfg_loop_delta": cells[b]["peak_live_cfg_loop"]
+                                        - cells[a]["peak_live_cfg_loop"],
+        })
+    reference = signatures[0]["loop_delta"] if signatures else {}
+    uniform = all(row["loop_delta"] == reference for row in signatures)
+
     observed = LADDER_MS.get(high, 0.0) - LADDER_MS.get(low, 0.0)
     on_model = MS_PER_LOOP_VECTOR_OP * 4
     report = {
@@ -208,6 +237,8 @@ def main() -> int:
         "ladder_peak_live_cfg_loop": {str(na): cells[na]["peak_live_cfg_loop"]
                                       for na in args.na},
         "ladder_allocas": {str(na): cells[na]["allocas"] for na in args.na},
+        "ladder_loop_delta_signatures": signatures,
+        "ladder_loop_delta_uniform": uniform,
     }
 
     print(f"NA={low} -> NA={high}: measured step {observed:.2f} ms, "
@@ -220,6 +251,16 @@ def main() -> int:
         print(f"  {priced}  {row['region']:12s} {row['kind']:14s} "
               f"{row['name']:24s} {row['low']:4d} -> {row['high']:4d} "
               f"({row['delta']:+d})")
+    print(f"\nin-loop increment per rung (uniform={uniform})")
+    for row in signatures:
+        measured = f"{row['measured_step_ms']:7.2f} ms" \
+            if row["measured_step_ms"] is not None else "      n/a"
+        same = "same" if row["loop_delta"] == reference else "DIFFERENT"
+        print(f"  NA {row['from_na']}->{row['to_na']}  measured {measured}  "
+              f"peak_live {row['peak_live_cfg_loop_delta']:+4d}  "
+              f"loop increment {same}: "
+              f"{', '.join(f'{k}{v:+d}' for k, v in sorted(row['loop_delta'].items()))}")
+
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")

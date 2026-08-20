@@ -23,6 +23,8 @@ build="/tmp/e64-build"
 shape=""
 skip_gate=""
 skip_census=""
+arms=""
+merged_widths=""
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -34,6 +36,8 @@ while [[ "$#" -gt 0 ]]; do
     --log) log="$2"; shift 2 ;;
     --skip-gate) skip_gate="1"; shift ;;
     --skip-census) skip_census="1"; shift ;;
+    --arms) arms="$2"; shift 2 ;;
+    --merged-widths) merged_widths="$2"; shift 2 ;;
     *) echo "e64_rung0b: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -59,7 +63,10 @@ if [[ -z "${skip_census}" ]]; then
   python3 research/e64_air_census.py --na 5 6 \
     --out "${artifacts}/rung0b-air.json" | tee -a "${log}" || exit 1
 fi
+merged_args=()
+[[ -n "${merged_widths}" ]] && merged_args=(--merged-widths ${merged_widths})
 python3 research/e64_emit_arms.py --na "${na}" \
+  ${merged_args[@]+"${merged_args[@]}"} \
   --out "${build}/arms_na${na}.metal" | tee -a "${log}" || exit 1
 clang -fobjc-arc -O2 -framework Metal -framework Foundation \
   -o "${build}/e64_cell_ab" research/e64_cell_ab.m 2>&1 \
@@ -83,6 +90,7 @@ echo "e64_rung0b entry_thermal $(sample_thermal)" | tee -a "${log}"
 
 shape_args=()
 [[ -n "${shape}" ]] && shape_args=(--shape "${shape}")
+[[ -n "${arms}" ]] && shape_args+=(--arms "${arms}")
 MLXFAST_MACMON_BIN="${macmon_bin}" "${build}/e64_cell_ab" \
   --source "${build}/arms_na${na}.metal" \
   --na "${na}" --reps "${reps}" --warmup-reps 1 \
