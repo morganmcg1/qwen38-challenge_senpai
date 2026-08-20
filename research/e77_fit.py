@@ -414,10 +414,23 @@ def main():
     args = ap.parse_args()
 
     census = json.loads(pathlib.Path(args.regs).read_text())
-    cell_regs = {arch: {int(k.split("ipg")[1]): v["registers"]
-                        for k, v in census["cells"][arch].items()
-                        if k.startswith("e77_cell_m6_")}
-                 for arch in (LOCAL_ARCH, RANKED_ARCH)}
+    cell_regs, cell_spill = {}, {}
+    for arch in (LOCAL_ARCH, RANKED_ARCH):
+        by_group = {}
+        for key, row in census["cells"][arch].items():
+            m, ipg = (int(x) for x in
+                      key.removeprefix("e77_cell_m").split("_ipg"))
+            by_group.setdefault(min(ipg, m), set()).add(
+                (row["registers"], row["spill_bytes"]))
+        for group, seen in sorted(by_group.items()):
+            if len(seen) != 1:
+                raise SystemExit(f"{arch}: largest group {group} is not a "
+                                 f"single register count: {sorted(seen)}")
+        cell_regs[arch] = {g: next(iter(s))[0] for g, s in by_group.items()}
+        cell_spill[arch] = {g: next(iter(s))[1] for g, s in by_group.items()}
+    print(f"register law holds on both architectures over "
+          f"{len(census['cells'][LOCAL_ARCH])} censused cells: the count is a "
+          "function of the largest group alone")
     sg_local = {i: sg_per_core(cell_regs[LOCAL_ARCH][i], LOCAL_FILE_BYTES)
                 for i in range(2, 7)}
     sg_ranked = {i: sg_per_core(cell_regs[RANKED_ARCH][i], RANKED_FILE_BYTES)
@@ -545,6 +558,37 @@ def main():
     print("  lam(IPG)    " + " ".join(f"{i}:{v:7.2f}"
                                       for i, v in sorted(fit["lam"].items())))
 
+    print("\n== rung 1a against the refitted surface: does the model predict "
+          "the clean contrast? ==")
+    nat_pred = []
+    for row in nat:
+        for p in row["per_shape"]:
+            cell = next(r for r in rows if r["shape"] == p["shape"]
+                        and r["m"] == row["m"] and r["ipg"] == row["ipg"]
+                        and r["kind"] == "p" and r["pressure"] == 0)
+            pred = (fit["t_local"](row["m"], row["ipg"], cell["n"], cell["k"])
+                    / fit["t_local"](row["m"], row["ref_ipg"], cell["n"],
+                                     cell["k"]))
+            nat_pred.append(dict(m=row["m"], ipg=row["ipg"],
+                                 ref_ipg=row["ref_ipg"], shape=p["shape"],
+                                 obs=p["ratio"], pred=pred,
+                                 err=pred / p["ratio"] - 1.0,
+                                 spill_free=row["spill_free"]))
+    print("  M  IPG      shape                        observed  predicted   err")
+    for r in nat_pred:
+        tag = "" if r["spill_free"] else "  spill"
+        print(f"  {r['m']}  {r['ref_ipg']}->{r['ipg']}   "
+              f"{r['shape'][:28]:28s} {r['obs']:8.5f}  {r['pred']:8.5f}  "
+              f"{100*r['err']:+6.2f}%{tag}")
+    clean_err = [abs(r["err"]) for r in nat_pred if r["spill_free"]]
+    all_err = [abs(r["err"]) for r in nat_pred]
+    print(f"  spill-free contrasts: median |err| "
+          f"{100*statistics.median(clean_err):.2f}%  max "
+          f"{100*max(clean_err):.2f}%  (n={len(clean_err)})")
+    print(f"  all contrasts:        median |err| "
+          f"{100*statistics.median(all_err):.2f}%  max "
+          f"{100*max(all_err):.2f}%  (n={len(all_err)})")
+
     print(f"\n== validation 1: local table at cores={args.cores} ==")
     tab = argmin_table(fit["t_local"], args.cores)
     print("  M  shipped  model  margin over 2nd (%)")
@@ -638,8 +682,10 @@ def main():
         cores=args.cores, ranked_cores_extrapolated=args.ranked_cores,
         gamma=gamma, gamma_se=gamma_se, gamma_fits=fits,
         staircase=stairs, natural_contrast=nat, cross_session=xs,
+        natural_vs_model=nat_pred,
         measured_sg_range=[measured_sg[0], measured_sg[-1]],
-        cell_registers=cell_regs, sg_local=sg_local, sg_ranked=sg_ranked,
+        cell_registers=cell_regs, cell_spill_bytes=cell_spill,
+        sg_local=sg_local, sg_ranked=sg_ranked,
         omega_local=omega_local, omega_ranked=omega_ranked,
         points=[{k: v for k, v in r.items() if k not in {"pos", "samples"}}
                 for r in rows],

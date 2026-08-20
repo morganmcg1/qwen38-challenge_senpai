@@ -142,5 +142,20 @@ else
 fi
 
 echo "e77_rung1 exit_thermal $(sample_thermal) status=${status}" | tee -a "${log}"
+
+# The sweep binary knows nothing about the cool gate, so fold the driver's
+# provenance and gate record into the artifact the analysis reads.
+if [[ "${status}" -eq 0 ]]; then
+  python3 - "${out}" "${cfg}" <<'PY'
+import json, pathlib, sys
+out, cfg = (pathlib.Path(p) for p in sys.argv[1:3])
+record = json.loads(out.read_text())
+record.update({k: v for k, v in json.loads(cfg.read_text()).items()
+               if k not in record})
+out.write_text(json.dumps(record, indent=2))
+PY
+  cp "${log}" "${artifacts}/rung1${tag}.log"
+fi
+
 echo "e77_rung1 finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)" | tee -a "${log}"
 exit "${status}"
