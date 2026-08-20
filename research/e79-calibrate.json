@@ -5,7 +5,10 @@
     "slope": 5.771599348439857,
     "intercept": 27.017906991440846,
     "r2": 0.9711730614314459,
-    "marginal_ratio": 0.21362126053170122
+    "marginal_ratio": 0.21362126053170122,
+    "head_slope_ms": 1.0525,
+    "head_only_ratio": 0.038955645244223666,
+    "head_share_of_marginal": 0.1823584653852498
   },
   "h_sweep": [
     {

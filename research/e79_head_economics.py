@@ -132,6 +132,9 @@ def ranked_round_cost_model():
     ys = [ms for *_, ms, _ in RANKED]
     fit = fit_line(xs, ys)
     fit["marginal_ratio"] = fit["slope"] / fit["intercept"]
+    fit["head_slope_ms"] = RANKED_HEAD_STEP_MS
+    fit["head_only_ratio"] = RANKED_HEAD_STEP_MS / fit["intercept"]
+    fit["head_share_of_marginal"] = RANKED_HEAD_STEP_MS / fit["slope"]
     return fit
 
 
@@ -1049,6 +1052,13 @@ def cmd_calibrate(args):
           % (rr["intercept"], rr["slope"], rr["r2"]))
     print("  ranked TOTAL marginal ratio = %.4f, against the shipped "
           "headStepCostRatio %.2f" % (rr["marginal_ratio"], SHIPPED_H))
+    print("  ranked HEAD-only ratio      = %.4f  (head step %.4f ms/draft, "
+          "ledger 211(A))" % (rr["head_only_ratio"], rr["head_slope_ms"]))
+    print("  the head is %.1f%% of what one more draft costs on the ranked M5"
+          % (100 * rr["head_share_of_marginal"]))
+    print("  shipped h is %.2fx the ranked TOTAL ratio and %.1fx the ranked "
+          "HEAD-only ratio" % (SHIPPED_H / rr["marginal_ratio"],
+                               SHIPPED_H / rr["head_only_ratio"]))
 
     lo, hi = H_SWEEP_H
     m_lo = [lo] * MAX_DEPTH

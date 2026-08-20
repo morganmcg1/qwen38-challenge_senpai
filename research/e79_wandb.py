@@ -51,12 +51,26 @@ def leg_record(tag):
 
 def census_tables(run, tag, census_path):
     leg = json.loads(Path(census_path).read_text())["legs"][0]
+    # p_i is reported beside the width mix that produced it. A position is
+    # only sampled by rounds whose verify width reaches it, so a p_i measured
+    # under this fixture's width mix does not transfer to a ranked prompt
+    # that runs at a different mix.
+    hist = {int(k): v for k, v in leg["width_histogram"].items()}
+    total = sum(hist.values())
     pos = wandb.Table(columns=["tag", "position", "reached", "accepted", "p",
-                               "wilson_lo", "wilson_hi"])
+                               "wilson_lo", "wilson_hi",
+                               "rounds_at_width_eq_position",
+                               "share_of_rounds_reaching_position"])
     for r in leg["positions"]:
-        pos.add_data(tag, r["position"], r["reached"], r["accepted"], r["p"],
-                     r["lo"], r["hi"])
+        i = r["position"]
+        pos.add_data(tag, i, r["reached"], r["accepted"], r["p"],
+                     r["lo"], r["hi"], hist.get(i + 1, 0), r["reached"] / total)
     run.log({f"census/{tag}/per_position": pos})
+
+    width = wandb.Table(columns=["tag", "verify_width", "rounds", "share"])
+    for w in sorted(hist):
+        width.add_data(tag, w, hist[w], hist[w] / total)
+    run.log({f"census/{tag}/width_histogram": width})
 
     ema = wandb.Table(columns=["tag", "position", "converged_ema",
                                "shipped_seed"])
@@ -138,6 +152,7 @@ def main():
     ap.add_argument("--reprice", required=True)
     ap.add_argument("--reprice-pinned")
     ap.add_argument("--chainfit")
+    ap.add_argument("--calibrate")
     ap.add_argument("--pinned-legs", nargs="*", default=[],
                     help="tags of the organizer-pinned head variant")
     ap.add_argument("--declared-legs", nargs="*", default=[],
@@ -147,6 +162,8 @@ def main():
 
     pairs = [p.split("=", 1) for p in args.legs]
     legs = [leg_record(tag) for tag, _ in pairs]
+    census = {tag: json.loads(Path(c).read_text())["legs"][0]
+              for tag, c in pairs}
     price = json.loads(Path(args.price).read_text())
     reprice = json.loads(Path(args.reprice).read_text())
 
@@ -216,6 +233,38 @@ def main():
         run.log({"rung0/chainfit": wandb.Table(
             columns=cols, data=[[r[k] for k in cols] for r in cf])})
 
+    calib = {}
+    if args.calibrate:
+        cal = json.loads(Path(args.calibrate).read_text())
+        sweep = wandb.Table(columns=list(cal["h_sweep"][0].keys()))
+        for r in cal["h_sweep"]:
+            sweep.add_data(*r.values())
+        run.log({"calibration/h_sweep_out_of_sample": sweep})
+        cols = [k for k, v in cal["arm3"][0].items()
+                if not isinstance(v, list)]
+        run.log({"calibration/arm3_chain": wandb.Table(
+            columns=cols, data=[[r[k] for k in cols] for r in cal["arm3"]])})
+        rr = cal["ranked_round_cost"]
+        calib = {
+            "ranked_round_fixed_ms": rr["intercept"],
+            "ranked_round_slope_ms_per_draft": rr["slope"],
+            "ranked_round_fit_r2": rr["r2"],
+            "ranked_total_marginal_ratio": rr["marginal_ratio"],
+            "ranked_head_only_ratio": rr["head_only_ratio"],
+            "ranked_head_share_of_marginal": rr["head_share_of_marginal"],
+            "h_sweep_mean_abs_relative_error":
+                st.mean(abs(r["error"] / r["observed_drafts_h_hi"])
+                        for r in cal["h_sweep"]),
+            "h_sweep_direction_correct": sum(
+                1 for r in cal["h_sweep"]
+                if (r["predicted_drafts_h_hi"] - r["observed_drafts_h_lo"])
+                * (r["observed_drafts_h_hi"] - r["observed_drafts_h_lo"]) > 0),
+            "arm3_chain_identified_prompts":
+                sum(1 for r in cal["arm3"] if r["identified"]),
+            "arm3_predicted_median": cal["arm3_predicted_median"],
+            "arm3_observed_median": cal["arm3_observed"]["published_median"],
+        }
+
     variant = head_variant(run, args.pinned_legs, args.declared_legs)
 
     free = next(a for a in price["arms"] if a["arm"] == "head cost x 0.00")
@@ -241,14 +290,26 @@ def main():
         "score_delta_pct_p_099": p99["delta_pct"],
         "rung0_free_head_ms_per_token_delta_pct":
             free_sched["delta_pct_vs_ship"],
-        "rung0_stop_rule_triggered":
-            abs(free_sched["delta_pct_vs_ship"]) < 0.5,
+        # The objective is the published MEDIAN, so the rung-0 stop rule is
+        # read against the median arm. Pooled local ms/token is a secondary
+        # observation that no prompt is scored on.
+        "rung0_free_head_median_delta_pct": free["delta_pct"],
+        "rung0_stop_rule_triggered": abs(free["delta_pct"]) < 0.5,
     }
     if deep is not None and shape is not None:
         summary["score_delta_pct_measured_position_shape"] = shape["delta_pct"]
         summary["score_delta_pct_deepest3_to_pos1"] = deep["delta_pct"]
         summary["score_gain_pct_from_deepest3"] = (deep["delta_pct"]
                                                    - shape["delta_pct"])
+    if args.declared_legs:
+        widths = [census[t]["M"] for t in args.declared_legs if t in census]
+        if widths:
+            summary["local_mean_verify_width"] = st.mean(widths)
+    ranked_widths = sorted(1 + v["drafts_per_round"]
+                           for v in price["working_point"].values())
+    summary["ranked_mean_verify_width"] = st.mean(ranked_widths)
+    summary["ranked_median_setting_verify_width"] = st.mean(ranked_widths[3:5])
+    summary.update(calib)
     summary.update(variant)
     run.summary.update(summary)
     print("wandb_run_id=%s" % run.id)
