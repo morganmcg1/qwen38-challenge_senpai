@@ -301,6 +301,21 @@ def rows_per_cluster_for(k: int) -> int:
     return need + (-need % 8)
 
 
+def grouped_members(assign: np.ndarray, k: int, rpc: int) -> np.ndarray:
+    """`(K, rpc)` row indices per cluster, spare slots filled with a pad row.
+
+    Index `H.REAL_COUNT` is the first padded row of the compact head. It is
+    never a real candidate, so it is the safe filler for a short cluster.
+    """
+    order = np.argsort(assign, kind="stable")
+    counts = np.bincount(assign, minlength=k)
+    starts = np.concatenate([[0], np.cumsum(counts)[:-1]])
+    slot = np.arange(assign.size) - starts[assign[order]]
+    members = np.full((k, rpc), H.REAL_COUNT, dtype=np.int32)
+    members[assign[order], slot] = order
+    return members
+
+
 def cluster_counts(args) -> list[int]:
     ks = [int(v) for v in args.k.split(",") if v]
     for rpc in [int(v) for v in args.rpc.split(",") if v]:
@@ -432,16 +447,20 @@ def cmd_screen(args) -> None:
             assign = blob["assign"].astype(np.int32)
             rpc = int(blob["rows_per_cluster"])
             counts = np.bincount(assign, minlength=k)
-            if counts.min() != rpc or counts.max() != rpc:
-                raise SystemExit(f"{path.name}: clusters are not exactly {rpc} rows")
+            if counts.max() > rpc:
+                raise SystemExit(
+                    f"{path.name}: cluster of {counts.max()} rows exceeds the "
+                    f"{rpc}-row block")
             entry = {
                 "assign": mx.array(assign),
                 "row_cluster": mx.array(assign[: H.REAL_COUNT]),
-                # Members of each cluster, grouped. `assign` is exactly
-                # balanced, so a stable argsort reshapes to (K, rpc) and turns
-                # the per-cluster reduction into one gather plus one sum.
-                "members": mx.array(
-                    np.argsort(assign, kind="stable").astype(np.int32).reshape(k, rpc)),
+                # Members of each cluster, grouped, so the per-cluster
+                # reduction is one gather plus one sum. The primary grid is
+                # exactly balanced, but the coarse trend cells are not, so
+                # short clusters fill their spare slots with a padded row.
+                # Padded rows read zero out of `gt_pad` and are excluded from
+                # `n_real`, so a spare slot contributes nothing either way.
+                "members": mx.array(grouped_members(assign, k, rpc)),
                 # Padded rows are unreachable, so a cluster's real width can be
                 # below rpc and the probed-row count must use the real width.
                 "n_real": mx.array(
