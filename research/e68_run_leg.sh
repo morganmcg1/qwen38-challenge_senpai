@@ -36,6 +36,21 @@ done
 readonly SCORED_FILES=(
   "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
 )
+# The two files that carry the wide multi-row QMV dispatch table. They are a
+# SECOND factor, not a scored one: a 2x2 over {kernel table} x {depth price}
+# has to move them per leg, and E75 submits neither of them.
+readonly TABLE_FILES=(
+  "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+  "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
+)
+table_arm="${LEG_TABLE_ARM:-}"
+table_arms_module="${LEG_TABLE_ARMS_MODULE:-research/e75_arms.py}"
+prebuilt_cell="${LEG_PREBUILT_CELL:-}"
+patched_files=("${SCORED_FILES[@]}")
+if [[ -n "${table_arm}" ]]; then
+  patched_files+=("${TABLE_FILES[@]}")
+fi
+
 base_sha="${E68_BASE_SHA:-$(git rev-parse origin/senpai/qwen38-mtp-r1)}"
 root="${E68_E2E_ROOT:-${repo_root}/.mlxfast-private/e68-e2e}"
 fixture="${E68_FIXTURE:-correctness_prompts/public_longcopy_gate_english_512_256.json}"
@@ -78,7 +93,7 @@ unwind() {
       echo "e68_run_leg: HEAD moved during the leg; restoring files only" >&2
     fi
   fi
-  git checkout -q "${pre_patch_sha}" -- "${SCORED_FILES[@]}" 2>/dev/null || true
+  git checkout -q "${pre_patch_sha}" -- "${patched_files[@]}" 2>/dev/null || true
 }
 trap unwind EXIT
 trap 'exit 143' TERM
@@ -113,6 +128,19 @@ case "$?" in
   1) echo "e68_run_leg: GPU gate reports BUSY; not timing." >&2; exit 3 ;;
   *) echo "e68_run_leg: GPU utilization counter unavailable; not timing blind." >&2; exit 4 ;;
 esac
+
+# --- select the kernel dispatch table -----------------------------------------
+# The table arm module refuses to write a table whose bytes do not hash to the
+# source it claims to reproduce, so a mislabelled leg fails here rather than at
+# the 40C gate.
+if [[ -n "${table_arm}" ]]; then
+  python3 "${table_arms_module}" "${table_arm}" --out "${out}/table-arm.json" \
+    > "${out}/table-arm.log" 2>&1 || {
+    echo "e68_run_leg: table arm ${table_arm} failed" >&2
+    cat "${out}/table-arm.log" >&2
+    exit 2
+  }
+fi
 
 # --- select the arm -----------------------------------------------------------
 arm_args=("${arm}" --out "${out}/arm.json")
@@ -158,7 +186,7 @@ if [[ "${arm}" == "${tip_arm}" ]] \
   exit 2
 fi
 
-git add -- "${SCORED_FILES[@]}"
+git add -- "${patched_files[@]}"
 git commit -q --allow-empty -m "E68 leg ${tag}: TRANSIENT ${arm} arm bytes under measurement
 
 Unwound to ${pre_patch_sha} when the leg exits, including on a crash, so the
@@ -166,21 +194,36 @@ branch's scored surface stays byte-identical between legs. This commit exists
 only so the bytes the compiler saw are reachable while the leg runs."
 transient_sha="$(git rev-parse HEAD)"
 
-# --- build both roots ---------------------------------------------------------
+# --- build both roots, or install a cell built before the session -------------
+# A 2x2 that switches the kernel table per leg would otherwise recompile Cmlx
+# and the metallib mid-session. LEG_PREBUILT_CELL installs binaries built from
+# these exact bytes before any timing started; the source digests must match,
+# and meta.txt records the installed binary's own digests, so the swap cannot
+# put an unrelated build under measurement.
 status=0
-mkdir -p .build/clang-module-cache .build-worker/clang-module-cache
-CLANG_MODULE_CACHE_PATH="${PWD}/.build/clang-module-cache" \
-  swift build -c release --force-resolved-versions --product mlxfast-swift \
-  > "${out}/build-cli.log" 2>&1 || status=1
-CLANG_MODULE_CACHE_PATH="${PWD}/.build-worker/clang-module-cache" \
-  swift build -c release --force-resolved-versions \
-  --scratch-path .build-worker --product mlxfast-runtime-worker \
-  > "${out}/build-worker.log" 2>&1 || status=1
-((status == 0)) || {
-  echo "e68_run_leg: build failed for ${arm}" >&2
-  grep -m5 'error:' "${out}/build-worker.log" >&2
-  exit 5
-}
+if [[ -n "${prebuilt_cell}" ]]; then
+  research/e75_rungD_install_cell.sh "${prebuilt_cell}" \
+    > "${out}/install-cell.log" 2>&1 || status=1
+  ((status == 0)) || {
+    echo "e68_run_leg: installing prebuilt cell ${prebuilt_cell} failed" >&2
+    tail -20 "${out}/install-cell.log" >&2
+    exit 5
+  }
+else
+  mkdir -p .build/clang-module-cache .build-worker/clang-module-cache
+  CLANG_MODULE_CACHE_PATH="${PWD}/.build/clang-module-cache" \
+    swift build -c release --force-resolved-versions --product mlxfast-swift \
+    > "${out}/build-cli.log" 2>&1 || status=1
+  CLANG_MODULE_CACHE_PATH="${PWD}/.build-worker/clang-module-cache" \
+    swift build -c release --force-resolved-versions \
+    --scratch-path .build-worker --product mlxfast-runtime-worker \
+    > "${out}/build-worker.log" 2>&1 || status=1
+  ((status == 0)) || {
+    echo "e68_run_leg: build failed for ${arm}" >&2
+    grep -m5 'error:' "${out}/build-worker.log" >&2
+    exit 5
+  }
+fi
 
 # The selector must still read the same arm after the build, so a stale or
 # concurrently restored file cannot be timed under the wrong label.
@@ -213,7 +256,19 @@ post_selected="$(grep -c "let depthPriceArm: DepthPriceArm = .${arm}$" \
   echo "worker_text_sha256=$(python3 research/e59_worker_digest.py \
     .build-worker/release/mlxfast-runtime-worker --json \
     | python3 -c 'import json,sys;print(json.load(sys.stdin)["sections"]["__TEXT,__text"]["sha256"])')"
+  # The kernel table is a JIT source string compiled into the binary, so it
+  # witnesses in `__cstring` while the Swift depth price witnesses in `__text`.
+  # A 2x2 must show two distinct values on each axis and four distinct pairs.
+  echo "worker_cstring_sha256=$(python3 research/e59_worker_digest.py \
+    .build-worker/release/mlxfast-runtime-worker --json \
+    | python3 -c 'import json,sys;print(json.load(sys.stdin)["sections"]["__TEXT,__cstring"]["sha256"])')"
+  echo "prebuilt_cell=${prebuilt_cell##*/}"
+  echo "kernel_table_arm=${table_arm}"
+  echo "kernel_table_sha256=$(shasum -a 256 "${TABLE_FILES[@]}" | awk '{printf "%s ", $1}')"
+  echo "metallib_sha256=$(shasum -a 256 .build-worker/release/mlx.metallib | cut -d' ' -f1)"
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
+  echo "metallib_published_fingerprint=$(awk '{print $2}' \
+    .build-worker/release/mlx.metallib.fingerprint)"
   echo "cool_gate_requested=$((1 - hot))"
   echo "cool_gate_passed_real_gate=$( ((hot)) && echo false || echo true )"
   echo "gate_qualified_for_timing=$( ((hot)) && echo false || echo true )"
