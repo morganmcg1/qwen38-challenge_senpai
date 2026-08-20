@@ -269,6 +269,178 @@ EPILOGUE_LAZY_FLAT = """    for (int r = 0; r < rows_per_simd; r++) {
       }
     }"""
 
+# ---------------------------------------------------------------------------
+# The proposal-width chunk lever.
+#
+# The row block cuts registers by re-reading x, and the timed session prices
+# that at +14 % to +65 % per verify round. Chunking the proposal width instead
+# costs no extra traffic at all: the k-block still stages `packed`,
+# `scale_local` and `bias_local` exactly once, and each chunk touches a disjoint
+# set of `m`, so every x element is still read exactly once. Only `acc` stays
+# live across the chunks; `partial`, `sums` and `a0..a3` become chunk-local, and
+# each chunk's vectors sit in a narrower lane class.
+#
+# Three chunk slots cover every legal case at NA <= 6 for a maximum width of 2
+# or more. An unused slot has a constexpr width of zero, so its guard and its
+# placeholder one-lane vector are removed at compile time.
+# ---------------------------------------------------------------------------
+
+K_INTERIOR = """    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        thread float xc[4];
+        if (DIRECT_NIBBLES) {
+          xc[0] = static_cast<float>(xm[0]);
+          xc[1] = static_cast<float>(xm[1]);
+          xc[2] = static_cast<float>(xm[2]);
+          xc[3] = static_cast<float>(xm[3]);
+          // Preserve the incumbent BF16 expression tree used for the affine
+          // bias correction; only the qdot nibble extraction changes.
+          sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+        } else {
+          sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+        }
+        a0[m] = xc[0];
+        a1[m] = xc[1];
+        a2[m] = xc[2];
+        a3[m] = xc[3];
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        if (DIRECT_NIBBLES) {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * ((packed[r][i] >> 4) & 0x000f) +
+                         a2 * ((packed[r][i] >> 8) & 0x000f) +
+                         a3 * ((packed[r][i] >> 12) & 0x000f));
+        } else {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * (packed[r][i] & 0x00f0) +
+                         a2 * (packed[r][i] & 0x0f00) +
+                         a3 * (packed[r][i] & 0xf000));
+        }
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }"""
+
+READOUT = """  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      const float reduced = simd_sum(acc[r][m]);
+      if (simd_lid == 0) {
+        y[(first_m + m) * out_vec_size + out_row + r] =
+            static_cast<T>(reduced);
+      }
+    }
+  }"""
+
+CHUNK_SLOTS = 3
+
+
+def chunk_widths(width: int) -> str:
+    """constexpr chunk widths, greedy at `width`, over `CHUNK_SLOTS` slots."""
+    lines = [f"  constexpr int kChunkMax = {width};",
+             "  constexpr int C0 = NA < kChunkMax ? NA : kChunkMax;"]
+    for slot in range(1, CHUNK_SLOTS):
+        taken = " - ".join(f"C{i}" for i in range(slot))
+        lines.append(
+            f"  constexpr int kLeft{slot} = NA - {taken};\n"
+            f"  constexpr int C{slot} = kLeft{slot} <= 0 ? 0"
+            f" : (kLeft{slot} < kChunkMax ? kLeft{slot} : kChunkMax);")
+    total = " + ".join(f"C{i}" for i in range(CHUNK_SLOTS))
+    lines.append(f'  static_assert({total} == NA, "chunks must tile NA");')
+    for slot in range(CHUNK_SLOTS):
+        lines.append(f"  typedef vec<float, C{slot} == 0 ? 1 : C{slot}> V{slot};")
+        lines.append(f"  V{slot} acc{slot}[rows_per_simd];")
+    lines.append("  for (int r = 0; r < rows_per_simd; r++) {")
+    for slot in range(CHUNK_SLOTS):
+        lines.append(f"    acc{slot}[r] = V{slot}(0.0f);")
+    lines.append("  }")
+    return "\n".join(lines)
+
+
+def chunk_offset(slot: int) -> str:
+    return "" if slot == 0 else " + " + " + ".join(f"C{i}" for i in range(slot))
+
+
+def chunk_block(slot: int) -> str:
+    """One chunk of the k-block. Same text as the shipped body, narrower."""
+    off = chunk_offset(slot)
+    return f"""    if (C{slot} > 0) {{
+      V{slot} sums = V{slot}(0.0f);
+      V{slot} partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {{
+        partial[r] = V{slot}(0.0f);
+      }}
+      for (int i = 0; i < 4; i++) {{
+        V{slot} a0, a1, a2, a3;
+        for (int m = 0; m < C{slot}; m++) {{
+          const device T* xm = x + (first_m{off} + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {{
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          }} else {{
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }}
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }}
+        for (int r = 0; r < rows_per_simd; r++) {{
+          if (DIRECT_NIBBLES) {{
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          }} else {{
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }}
+        }}
+      }}
+      for (int r = 0; r < rows_per_simd; r++) {{
+        acc{slot}[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }}
+    }}"""
+
+
+def chunk_readout(slot: int) -> str:
+    off = chunk_offset(slot)
+    return f"""  if (C{slot} > 0) {{
+    for (int r = 0; r < rows_per_simd; r++) {{
+      for (int m = 0; m < C{slot}; m++) {{
+        const float reduced = simd_sum(acc{slot}[r][m]);
+        if (simd_lid == 0) {{
+          y[(first_m{off} + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }}
+      }}
+    }}
+  }}"""
+
+
+def mchunk_rewrites(width: int) -> list[tuple[str, str]]:
+    return [
+        (ACC_DECL, chunk_widths(width)),
+        (K_INTERIOR, "\n".join(chunk_block(s) for s in range(CHUNK_SLOTS))),
+        (READOUT, "\n".join(chunk_readout(s) for s in range(CHUNK_SLOTS))),
+    ]
+
+
 # The levers are independent, so the search is their cross product: the row
 # block sets how many accumulator values are live, the staging choice sets how
 # long the scalar operands stay live across that peak, and the layout choice
@@ -316,6 +488,10 @@ for _layout in ("facc", "fall"):
             _name = (f"rps{_rps}" if _rps != 4 else "") + _staging + _layout
             ARMS.append((_name, _rps, True,
                          STAGING[_staging] + layout_rewrites(_layout, _staging)))
+# The chunk lever keeps the shipped row block and the shipped staging, because
+# its whole claim is that it reduces register pressure without adding traffic.
+for _width in (4, 3, 2):
+    ARMS.append((f"mc{_width}", 4, True, mchunk_rewrites(_width)))
 
 HEADER = """// GENERATED by research/e76_wide_gen.py -- do not edit by hand.
 //

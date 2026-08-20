@@ -2650,6 +2650,735 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e76_rps1lazyfall(
         out_row + b * kRowsPerSimd, simd_lid);
   }
 }
+// ---- arm mc4: rows_per_simd = 4, row-block loop unrolled, 3 body rewrite(s)
+template <typename T, int NA, bool DIRECT_NIBBLES, int ROWS_PER_SIMD>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e76_mc4_body(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  static_assert(NA >= 2 && NA <= 6, "wide multi-row QMV supports NA in [2, 6]");
+  typedef vec<float, NA> VF;
+  constexpr int rows_per_simd = ROWS_PER_SIMD;
+  constexpr int values_per_thread = 16;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = in_vec_size / 2;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  constexpr int kChunkMax = 4;
+  constexpr int C0 = NA < kChunkMax ? NA : kChunkMax;
+  constexpr int kLeft1 = NA - C0;
+  constexpr int C1 = kLeft1 <= 0 ? 0 : (kLeft1 < kChunkMax ? kLeft1 : kChunkMax);
+  constexpr int kLeft2 = NA - C0 - C1;
+  constexpr int C2 = kLeft2 <= 0 ? 0 : (kLeft2 < kChunkMax ? kLeft2 : kChunkMax);
+  static_assert(C0 + C1 + C2 == NA, "chunks must tile NA");
+  typedef vec<float, C0 == 0 ? 1 : C0> V0;
+  V0 acc0[rows_per_simd];
+  typedef vec<float, C1 == 0 ? 1 : C1> V1;
+  V1 acc1[rows_per_simd];
+  typedef vec<float, C2 == 0 ? 1 : C2> V2;
+  V2 acc2[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc0[r] = V0(0.0f);
+    acc1[r] = V1(0.0f);
+    acc2[r] = V2(0.0f);
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    thread uint16_t packed[rows_per_simd][4];
+    thread float scale_local[rows_per_simd];
+    thread float bias_local[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      const int row = out_row + r;
+      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
+          reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
+          k / 2 + simd_lid * bytes_per_lane);
+      for (int i = 0; i < 4; i++) {
+        packed[r][i] = ws[i];
+      }
+      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = biases[group_index];
+    }
+
+    if (C0 > 0) {
+      V0 sums = V0(0.0f);
+      V0 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V0(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V0 a0, a1, a2, a3;
+        for (int m = 0; m < C0; m++) {
+          const device T* xm = x + (first_m + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc0[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+    if (C1 > 0) {
+      V1 sums = V1(0.0f);
+      V1 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V1(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V1 a0, a1, a2, a3;
+        for (int m = 0; m < C1; m++) {
+          const device T* xm = x + (first_m + C0 + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc1[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+    if (C2 > 0) {
+      V2 sums = V2(0.0f);
+      V2 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V2(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V2 a0, a1, a2, a3;
+        for (int m = 0; m < C2; m++) {
+          const device T* xm = x + (first_m + C0 + C1 + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc2[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+  }
+
+  if (C0 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C0; m++) {
+        const float reduced = simd_sum(acc0[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+  if (C1 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C1; m++) {
+        const float reduced = simd_sum(acc1[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + C0 + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+  if (C2 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C2; m++) {
+        const float reduced = simd_sum(acc2[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + C0 + C1 + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+}
+
+template <typename T, int NA, bool DIRECT_NIBBLES = false>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e76_mc4(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  qmv_fast_crossrow_affine4_g64_wide_e76_mc4_body<T, NA, DIRECT_NIBBLES, 4>(
+      w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
+      simd_lid);
+}
+// ---- arm mc3: rows_per_simd = 4, row-block loop unrolled, 3 body rewrite(s)
+template <typename T, int NA, bool DIRECT_NIBBLES, int ROWS_PER_SIMD>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e76_mc3_body(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  static_assert(NA >= 2 && NA <= 6, "wide multi-row QMV supports NA in [2, 6]");
+  typedef vec<float, NA> VF;
+  constexpr int rows_per_simd = ROWS_PER_SIMD;
+  constexpr int values_per_thread = 16;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = in_vec_size / 2;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  constexpr int kChunkMax = 3;
+  constexpr int C0 = NA < kChunkMax ? NA : kChunkMax;
+  constexpr int kLeft1 = NA - C0;
+  constexpr int C1 = kLeft1 <= 0 ? 0 : (kLeft1 < kChunkMax ? kLeft1 : kChunkMax);
+  constexpr int kLeft2 = NA - C0 - C1;
+  constexpr int C2 = kLeft2 <= 0 ? 0 : (kLeft2 < kChunkMax ? kLeft2 : kChunkMax);
+  static_assert(C0 + C1 + C2 == NA, "chunks must tile NA");
+  typedef vec<float, C0 == 0 ? 1 : C0> V0;
+  V0 acc0[rows_per_simd];
+  typedef vec<float, C1 == 0 ? 1 : C1> V1;
+  V1 acc1[rows_per_simd];
+  typedef vec<float, C2 == 0 ? 1 : C2> V2;
+  V2 acc2[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc0[r] = V0(0.0f);
+    acc1[r] = V1(0.0f);
+    acc2[r] = V2(0.0f);
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    thread uint16_t packed[rows_per_simd][4];
+    thread float scale_local[rows_per_simd];
+    thread float bias_local[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      const int row = out_row + r;
+      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
+          reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
+          k / 2 + simd_lid * bytes_per_lane);
+      for (int i = 0; i < 4; i++) {
+        packed[r][i] = ws[i];
+      }
+      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = biases[group_index];
+    }
+
+    if (C0 > 0) {
+      V0 sums = V0(0.0f);
+      V0 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V0(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V0 a0, a1, a2, a3;
+        for (int m = 0; m < C0; m++) {
+          const device T* xm = x + (first_m + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc0[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+    if (C1 > 0) {
+      V1 sums = V1(0.0f);
+      V1 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V1(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V1 a0, a1, a2, a3;
+        for (int m = 0; m < C1; m++) {
+          const device T* xm = x + (first_m + C0 + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc1[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+    if (C2 > 0) {
+      V2 sums = V2(0.0f);
+      V2 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V2(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V2 a0, a1, a2, a3;
+        for (int m = 0; m < C2; m++) {
+          const device T* xm = x + (first_m + C0 + C1 + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc2[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+  }
+
+  if (C0 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C0; m++) {
+        const float reduced = simd_sum(acc0[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+  if (C1 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C1; m++) {
+        const float reduced = simd_sum(acc1[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + C0 + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+  if (C2 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C2; m++) {
+        const float reduced = simd_sum(acc2[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + C0 + C1 + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+}
+
+template <typename T, int NA, bool DIRECT_NIBBLES = false>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e76_mc3(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  qmv_fast_crossrow_affine4_g64_wide_e76_mc3_body<T, NA, DIRECT_NIBBLES, 4>(
+      w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
+      simd_lid);
+}
+// ---- arm mc2: rows_per_simd = 4, row-block loop unrolled, 3 body rewrite(s)
+template <typename T, int NA, bool DIRECT_NIBBLES, int ROWS_PER_SIMD>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e76_mc2_body(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  static_assert(NA >= 2 && NA <= 6, "wide multi-row QMV supports NA in [2, 6]");
+  typedef vec<float, NA> VF;
+  constexpr int rows_per_simd = ROWS_PER_SIMD;
+  constexpr int values_per_thread = 16;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = in_vec_size / 2;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  constexpr int kChunkMax = 2;
+  constexpr int C0 = NA < kChunkMax ? NA : kChunkMax;
+  constexpr int kLeft1 = NA - C0;
+  constexpr int C1 = kLeft1 <= 0 ? 0 : (kLeft1 < kChunkMax ? kLeft1 : kChunkMax);
+  constexpr int kLeft2 = NA - C0 - C1;
+  constexpr int C2 = kLeft2 <= 0 ? 0 : (kLeft2 < kChunkMax ? kLeft2 : kChunkMax);
+  static_assert(C0 + C1 + C2 == NA, "chunks must tile NA");
+  typedef vec<float, C0 == 0 ? 1 : C0> V0;
+  V0 acc0[rows_per_simd];
+  typedef vec<float, C1 == 0 ? 1 : C1> V1;
+  V1 acc1[rows_per_simd];
+  typedef vec<float, C2 == 0 ? 1 : C2> V2;
+  V2 acc2[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc0[r] = V0(0.0f);
+    acc1[r] = V1(0.0f);
+    acc2[r] = V2(0.0f);
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    thread uint16_t packed[rows_per_simd][4];
+    thread float scale_local[rows_per_simd];
+    thread float bias_local[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      const int row = out_row + r;
+      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
+          reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
+          k / 2 + simd_lid * bytes_per_lane);
+      for (int i = 0; i < 4; i++) {
+        packed[r][i] = ws[i];
+      }
+      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = biases[group_index];
+    }
+
+    if (C0 > 0) {
+      V0 sums = V0(0.0f);
+      V0 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V0(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V0 a0, a1, a2, a3;
+        for (int m = 0; m < C0; m++) {
+          const device T* xm = x + (first_m + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc0[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+    if (C1 > 0) {
+      V1 sums = V1(0.0f);
+      V1 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V1(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V1 a0, a1, a2, a3;
+        for (int m = 0; m < C1; m++) {
+          const device T* xm = x + (first_m + C0 + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc1[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+    if (C2 > 0) {
+      V2 sums = V2(0.0f);
+      V2 partial[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] = V2(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        V2 a0, a1, a2, a3;
+        for (int m = 0; m < C2; m++) {
+          const device T* xm = x + (first_m + C0 + C1 + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          thread float xc[4];
+          if (DIRECT_NIBBLES) {
+            xc[0] = static_cast<float>(xm[0]);
+            xc[1] = static_cast<float>(xm[1]);
+            xc[2] = static_cast<float>(xm[2]);
+            xc[3] = static_cast<float>(xm[3]);
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          } else {
+            sums[m] += load_vector<T, float, 4, 4>(xm, xc);
+          }
+          a0[m] = xc[0];
+          a1[m] = xc[1];
+          a2[m] = xc[2];
+          a3[m] = xc[3];
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          if (DIRECT_NIBBLES) {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * ((packed[r][i] >> 4) & 0x000f) +
+                           a2 * ((packed[r][i] >> 8) & 0x000f) +
+                           a3 * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                           a1 * (packed[r][i] & 0x00f0) +
+                           a2 * (packed[r][i] & 0x0f00) +
+                           a3 * (packed[r][i] & 0xf000));
+          }
+        }
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        acc2[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+    }
+  }
+
+  if (C0 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C0; m++) {
+        const float reduced = simd_sum(acc0[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+  if (C1 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C1; m++) {
+        const float reduced = simd_sum(acc1[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + C0 + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+  if (C2 > 0) {
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int m = 0; m < C2; m++) {
+        const float reduced = simd_sum(acc2[r][m]);
+        if (simd_lid == 0) {
+          y[(first_m + C0 + C1 + m) * out_vec_size + out_row + r] =
+              static_cast<T>(reduced);
+        }
+      }
+    }
+  }
+}
+
+template <typename T, int NA, bool DIRECT_NIBBLES = false>
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e76_mc2(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* biases,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    int first_m,
+    int out_row,
+    uint simd_lid) {
+  qmv_fast_crossrow_affine4_g64_wide_e76_mc2_body<T, NA, DIRECT_NIBBLES, 4>(
+      w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
+      simd_lid);
+}
 
 // One list of arms, so no consumer can drift from the generator.
 #define E76_FOR_EACH_ARM(X) \
@@ -2674,4 +3403,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_e76_rps1lazyfall(
     X(fall, qmv_fast_crossrow_affine4_g64_wide_e76_fall, 4) \
     X(lazyfall, qmv_fast_crossrow_affine4_g64_wide_e76_lazyfall, 4) \
     X(rps1fall, qmv_fast_crossrow_affine4_g64_wide_e76_rps1fall, 1) \
-    X(rps1lazyfall, qmv_fast_crossrow_affine4_g64_wide_e76_rps1lazyfall, 1)
+    X(rps1lazyfall, qmv_fast_crossrow_affine4_g64_wide_e76_rps1lazyfall, 1) \
+    X(mc4, qmv_fast_crossrow_affine4_g64_wide_e76_mc4, 4) \
+    X(mc3, qmv_fast_crossrow_affine4_g64_wide_e76_mc3, 4) \
+    X(mc2, qmv_fast_crossrow_affine4_g64_wide_e76_mc2, 4)
