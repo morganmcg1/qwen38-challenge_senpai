@@ -1,0 +1,96 @@
+{
+  "arms": {
+    "ref": {
+      "cells_differing_vs_ref": 0,
+      "differing_bits_m": [],
+      "shapes_differing": [],
+      "twin_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "ec5ec4b330682738cf8515bb454d3bdfca4f455fe4ca0afe5a1c69dd4fa8cc50",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "ff35a0f9fcef99a24d03fe7b00d71f0fac56ac340c2d87ac71a64b043f9e62b8"
+      },
+      "verdict": "BIT-IDENTICAL"
+    },
+    "shipped_rbx": {
+      "cells_differing_vs_ref": 0,
+      "differing_bits_m": [],
+      "shapes_differing": [],
+      "twin_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "aaef73eab26b1d866bb6c935845bee6615861ecfd72a3386e475fef912c0b565",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "d048528c226d77edffe3258ea2aec1785e0eba151b2e71b5cd7d94fb7c9c917a"
+      },
+      "verdict": "BIT-IDENTICAL"
+    },
+    "t6": {
+      "cells_differing_vs_ref": 0,
+      "differing_bits_m": [],
+      "shapes_differing": [],
+      "twin_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "6fb7af32a46625be3c1b1c902bd880bbc0a40fb692d2397b8cadcc2f76002c30",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "0c3df8cde4ecaf8d73808004abc20b3524a0585a0993e089b49acca91a25b6c7"
+      },
+      "verdict": "BIT-IDENTICAL"
+    },
+    "t6_lane_perturb": {
+      "cells_differing_vs_ref": 8,
+      "differing_bits_m": [
+        [
+          4,
+          6
+        ]
+      ],
+      "shapes_differing": [
+        "full_attn.o_proj",
+        "full_attn.qkv_proj_fused",
+        "head.compact_draft_vocab",
+        "head.lm_head",
+        "linear_attn.in_proj_fused_qkvzba",
+        "linear_attn.out_proj",
+        "mlp.down",
+        "mlp.gate_up_fused"
+      ],
+      "twin_sha256": {
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "48573437ab3bfdbb65638d549dca9081c2bcd39d5dac5fa6cf1cdbccb1025851",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "3f52ff8a54b7c850ccc1422d08c5517b434ce718065458bc3a4947796eaaf599"
+      },
+      "verdict": "DIVERGES"
+    }
+  },
+  "arms_have_distinct_twins": true,
+  "base_sha": "d2139c924c7a7d98ca6026eea63867c2776abbca",
+  "bits3_has_no_power": true,
+  "bits3_note": "every bits=3 cell routes qmv_fast_impl, so the 96 bits=3 cells are a leakage control only and have NO power over the crossrow change",
+  "cells_by_bits": {
+    "3": 96,
+    "4": 96
+  },
+  "cells_total_per_arm": 192,
+  "control": "qmv-bitwise-parity-digest",
+  "covering_cells_by_bits": {
+    "4": 64
+  },
+  "crossrow_guard": "!batched && group_size==64 && bits==4 && out_vec_size>=1024; the multi-row ntg.x switch is nested inside out_vec_size>=4096",
+  "experiment": "e61",
+  "head_sha": "c85f0aa03bab82ba09253fcac353d5a68b4f27c3",
+  "host": "Apple M4 Pro 48GiB",
+  "limitations": [
+    "synthetic activations and synthetic quantized weights, one call per cell",
+    "kernel-level bitwise check only; it is NOT the end-to-end 512-token exactness check, which is rung 2 PATH C"
+  ],
+  "negative_control": {
+    "arm": "t6_lane_perturb",
+    "cells_differing": 8,
+    "does_not_prove": "power at any other M: the perturbation is gated on NA==6, so M=6 is the only locus it can reach",
+    "fired": true,
+    "loci": [
+      [
+        4,
+        6
+      ]
+    ],
+    "proves": [
+      "the digest observes kernel output bits in the covering region",
+      "the t6 <T,6,6> route at M=6 is live on every scored shape",
+      "sensitivity is localised; no spurious divergence elsewhere"
+    ]
+  }
+}
