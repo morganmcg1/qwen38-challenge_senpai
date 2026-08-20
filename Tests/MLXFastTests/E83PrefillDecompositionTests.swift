@@ -138,6 +138,24 @@ struct E83PrefillDecompositionTests {
             }
         }
 
+        // H-221 at prefill width, as a regression discontinuity. The prefill
+        // ladder arms at exactly `dim(1) >= 512`, so widths 496...511 force no
+        // evaluation point and widths 512...528 force 22, while arithmetic
+        // moves by at most 6%. Fit seconds against width on the ladder-off
+        // side, extrapolate across the step, and the residual on the
+        // ladder-on side is the net cost of 22 boundaries. Interleaved
+        // low/high so thermal drift cannot masquerade as the step.
+        let ladderWidths = [496, 512, 504, 520, 511, 528]
+        for rep in 0..<max(reps, 5) {
+            for width in (rep % 2 == 0 ? ladderWidths : ladderWidths.reversed()) {
+                var block = harness.begin(arm: .baseline, phased: false, width: width)
+                block["kind"] = "ladder_step"
+                block["rep"] = rep
+                block["order"] = blocks.count
+                blocks.append(e83Emit(block))
+            }
+        }
+
         // Rung 2 -- isolated roofline at the exact prefill shapes.
         let shapes = e83IsolatedShapes(seed: seedLength)
         for cell in shapes {
@@ -195,9 +213,8 @@ private final class E83Harness {
         self.seedLength = seedLength
     }
 
-    private var seedInput: LMInput.Text {
-        LMInput.Text(
-            tokens: MLXArray(Array(tokens[0..<seedLength])).reshaped([1, seedLength]))
+    private func seedInput(_ width: Int) -> LMInput.Text {
+        LMInput.Text(tokens: MLXArray(Array(tokens[0..<width])).reshaped([1, width]))
     }
 
     /// The untimed warm the trusted driver runs before it starts the clock:
@@ -217,11 +234,12 @@ private final class E83Harness {
     /// One `begin()`. `phased == false` is the session's exact form: build the
     /// whole graph, then one blocking eval, then the host readback.
     func begin(
-        arm: E83Arm, phased: Bool,
+        arm: E83Arm, phased: Bool, width: Int? = nil,
         stallPhase: String? = nil, stallMillis: Int = 0
     ) -> [String: Any] {
+        let width = width ?? seedLength
         let entryTemp = e83GPUTemperature()
-        let restore = arm.install(model, seedLength)
+        let restore = arm.install(model, width)
         defer { restore() }
 
         var phases: [String: Double] = [:]
@@ -249,7 +267,7 @@ private final class E83Harness {
         // p2 -- the target forward's host graph build. `seedLogits` projects
         // lm_head over all 512 seed rows and is deliberately never evaluated.
         let (seedLogits, hidden) = model.callWithHidden(
-            input: seedInput, cache: cache, nConfirmed: 0)
+            input: seedInput(width), cache: cache, nConfirmed: 0)
         _ = seedLogits
         stall("p2_target_forward_build")
         if phased { close("p2_target_forward_build") }
@@ -295,9 +313,15 @@ private final class E83Harness {
         var record: [String: Any] = [
             "kind": "begin",
             "arm": arm.name,
-            "pin_rows": arm.pinRows(seedLength),
+            "pin_rows": arm.pinRows(width),
             "phased": phased,
-            "seed_length": seedLength,
+            "seed_length": width,
+            // `Qwen35TextModelInner.callAsFunction` arms the prefill ladder at
+            // `dim(1) >= 512` and fires `asyncEval` at `i == 0 || i % 3 == 2`.
+            // Below 512 (and above the 9-wide decode ladder) nothing is forced,
+            // so the 511/512 step is a regression discontinuity in boundary
+            // count with only 1/512 more arithmetic on the high side.
+            "forced_eval_points": width >= 512 ? 22 : (width <= 9 ? 8 : 0),
             "begin_seconds": Double(total1 - total0) / 1e9,
             "build_seconds": Double(buildDone - total0) / 1e9,
             "final_eval_seconds": Double(evalDone - buildDone) / 1e9,
@@ -336,7 +360,7 @@ private final class E83Harness {
         snap("p1_cache_alloc")
 
         let (seedLogits, hidden) = model.callWithHidden(
-            input: seedInput, cache: cache, nConfirmed: 0)
+            input: seedInput(seedLength), cache: cache, nConfirmed: 0)
         _ = seedLogits
         snap("p2_target_forward_build")
 
@@ -383,7 +407,7 @@ private struct E83Arm {
         wrap(model, pin ?? width)
     }
 
-    static let baseline = E83Arm(name: "baseline", pin: nil) { _, _ in {} }
+    nonisolated(unsafe) static let baseline = E83Arm(name: "baseline", pin: nil) { _, _ in {} }
 
     static func named(_ name: String) -> E83Arm? {
         switch name {
@@ -859,7 +883,7 @@ private func e83SwizzleNewPipeline(_ cls: AnyClass) -> Bool {
     return true
 }
 
-private var e83SwizzlesInstalled = false
+nonisolated(unsafe) private var e83SwizzlesInstalled = false
 
 private func e83InstallSwizzles() -> Bool {
     if e83SwizzlesInstalled { return true }

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import statistics
 import sys
 
 import wandb
@@ -63,6 +64,19 @@ def begin_row(block: dict) -> dict:
         row["control/stall_phase"] = block["stall_phase"]
         row["control/stall_ms"] = block.get("stall_millis")
     return row
+
+
+def ladder_row(block: dict) -> dict:
+    width = block.get("seed_length")
+    return {
+        "ladder/order": block.get("order"),
+        "ladder/width": width,
+        "ladder/forced_eval_points": block.get("forced_eval_points"),
+        "ladder/begin_ms": 1e3 * block["begin_seconds"],
+        "ladder/final_eval_ms": 1e3 * block["final_eval_seconds"],
+        "ladder/ms_per_token": 1e3 * block["begin_seconds"] / width,
+        f"ladder/w{width}/begin_ms": 1e3 * block["begin_seconds"],
+    }
 
 
 def isolated_row(block: dict) -> dict:
@@ -142,6 +156,8 @@ def main() -> int:
                 row = begin_row(block)
             elif kind == "boundary_census":
                 row = census_row(block)
+            elif kind == "ladder_step":
+                row = ladder_row(block)
             elif kind in ("isolated_quantized_matmul", "isolated_sdpa"):
                 row = isolated_row(block)
             else:
@@ -180,6 +196,55 @@ def main() -> int:
                     )
                 }
             )
+        ladder = [b for b in blocks if b.get("kind") == "ladder_step"]
+        if ladder:
+            by_width: dict[int, list[float]] = {}
+            for b in ladder:
+                by_width.setdefault(b["seed_length"], []).append(
+                    1e3 * b["begin_seconds"])
+            widths = sorted(by_width)
+            med = {w: statistics.median(by_width[w]) for w in widths}
+            run.log(
+                {
+                    "ladder_steps": wandb.Table(
+                        columns=[
+                            "width", "forced_eval_points", "n",
+                            "median_begin_ms", "ms_per_token",
+                        ],
+                        data=[
+                            [
+                                w, 22 if w >= 512 else 0, len(by_width[w]),
+                                med[w], med[w] / w,
+                            ]
+                            for w in widths
+                        ],
+                    )
+                }
+            )
+            # Fit median begin_ms against width on the ladder-off side only,
+            # then read the residual at each ladder-on width. That residual is
+            # the net cost of arming 22 forced evaluation points, with the
+            # arithmetic difference already removed by the fit.
+            off = [w for w in widths if w < 512]
+            on = [w for w in widths if w >= 512]
+            if len(off) >= 2 and on:
+                sx = sum(off)
+                sy = sum(med[w] for w in off)
+                sxx = sum(w * w for w in off)
+                sxy = sum(w * med[w] for w in off)
+                n = len(off)
+                denom = n * sxx - sx * sx
+                if denom:
+                    slope = (n * sxy - sx * sy) / denom
+                    intercept = (sy - slope * sx) / n
+                    summary = {}
+                    for w in on:
+                        resid = med[w] - (slope * w + intercept)
+                        summary[f"ladder/residual_ms_w{w}"] = resid
+                        summary[f"ladder/residual_per_boundary_ms_w{w}"] = resid / 22
+                    summary["ladder/fit_slope_ms_per_token"] = slope
+                    summary["ladder/fit_intercept_ms"] = intercept
+                    run.summary.update(summary)
         isolated = [
             b for b in blocks
             if b.get("kind") in ("isolated_quantized_matmul", "isolated_sdpa")
