@@ -52,6 +52,47 @@ DISPATCHES_PER_ROUND = {
     "head.compact_draft_vocab": 0,
 }
 
+# The advisor's occupancy model, carried here unchanged and NOT verified by this
+# experiment: `floor(register_file / (32 lanes * 4 bytes * registers))` resident
+# simdgroups per core on the ranked architecture. research/e76_occupancy_probe.m
+# could not confirm it, because `maxTotalThreadsPerThreadgroup` is 1024 for every
+# kernel from 14 to 126 registers on this host. Every number derived from this
+# model is labelled as modelled, not measured.
+ADVISOR_REGISTER_FILE_BYTES = 208 * 1024
+BYTES_PER_REGISTER_PER_SIMDGROUP = 32 * 4
+# The crown's ranked table never puts more than three proposals in one group, so
+# its scored cells compile at the NA=3 register count.
+CROWN_LARGEST_GROUP = 3
+
+
+def resident_simdgroups(registers: int) -> int:
+    return ADVISOR_REGISTER_FILE_BYTES // (
+        BYTES_PER_REGISTER_PER_SIMDGROUP * registers)
+
+
+def block_bytes_per_lane(partition: tuple[int, ...], rows_per_simd: int) -> int:
+    """Bytes one lane reads per k-block to cover the whole four-row block.
+
+    Read straight off the shipped body with T = bfloat16. Per call the lane
+    reads `4 i-steps * NA m * 4 elements * 2 B` of x, `rows_per_simd * 4 * 2 B`
+    of packed weights and `rows_per_simd * 2 * 2 B` of scale and bias. The block
+    needs `4 / rows_per_simd` calls, so the row-side terms are invariant at 32
+    and 16 bytes per group and only the x term moves with the row block.
+    Splitting the proposal width into groups is the mirror image: x is invariant
+    and the row side repeats per group. This is the model-free part of the
+    recommendation, because it needs no register-file constant.
+    """
+    calls = 4 // rows_per_simd
+    return sum(calls * 32 * na + 32 + 16 for na in partition)
+
+
+def greedy_partition(width: int, largest: int) -> tuple[int, ...]:
+    groups = []
+    while width > 0:
+        groups.append(min(largest, width))
+        width -= groups[-1]
+    return tuple(groups)
+
 
 def parity() -> dict[tuple[int, str], dict]:
     found: dict[tuple[int, str], dict] = {}
@@ -196,6 +237,99 @@ def main() -> int:
             if entry["na"] == row["na"] and entry["arm"] == row["arm"]:
                 row["seconds_per_round"] = entry["seconds_per_round"]
                 row["delta_vs_plain_pct"] = entry["delta_vs_plain_pct"]
+
+    # Rung 3. Every timed arm is priced against the occupancy it would buy on the
+    # ranked architecture, so the recommendation is a division and not a
+    # judgement call. `break_even_conversion` is the fraction of the modelled
+    # occupancy gain that would have to become throughput for the arm to pay for
+    # its own measured cost. Above 100 % the arm cannot pay even if every extra
+    # resident simdgroup were free throughput.
+    crown = census["census"][RANKED_ARCH].get(
+        f"e76_plain_na{CROWN_LARGEST_GROUP}")
+    advice = []
+    for row in rows:
+        if "delta_vs_plain_pct" not in row or not row["reaches_target"]:
+            continue
+        base = next(r for r in rows
+                    if r["na"] == row["na"] and r["arm"] == "plain")
+        r0 = resident_simdgroups(base["g17s_registers"])
+        r1 = resident_simdgroups(row["g17s_registers"])
+        gain = 100.0 * (r1 / r0 - 1.0)
+        c = row["delta_vs_plain_pct"]
+        need = None if gain <= 0 else 100.0 * c / gain
+        one_group = block_bytes_per_lane((row["na"],), 4)
+        arm_bytes = block_bytes_per_lane((row["na"],), row["rows_per_simd"])
+        saved = base["g17s_registers"] - row["g17s_registers"]
+        row.update({
+            "modelled_resident_simdgroups": r1,
+            "modelled_resident_simdgroups_plain": r0,
+            "modelled_occupancy_gain_pct": gain,
+            "break_even_conversion_pct": need,
+            "pays_for_itself_possible": bool(need is not None and need <= 100.0),
+            "block_bytes_per_lane": arm_bytes,
+            "extra_block_bytes_per_lane": arm_bytes - one_group,
+            "g17s_registers_saved": saved,
+            "extra_bytes_per_register_saved":
+                None if saved <= 0 else (arm_bytes - one_group) / saved,
+        })
+        advice.append(row)
+    if advice:
+        body += (
+            "\n\n### Rung 3: does the qualifying arm pay for itself?\n\n"
+            f"Modelled columns use the advisor's unverified "
+            f"`floor({ADVISOR_REGISTER_FILE_BYTES // 1024} KiB / "
+            f"({BYTES_PER_REGISTER_PER_SIMDGROUP} B * regs))` occupancy model. "
+            "The cost column is measured on this host behind the real 40 C "
+            "gate.\n\n"
+            "| variant | NA | g17s regs | modelled resident simdgroups "
+            "(`plain` -> arm) | modelled occupancy gain | measured cost per "
+            "verify round | conversion needed to break even | can it pay? |\n"
+            "|---|---:|---:|:--:|---:|---:|---:|:--:|\n")
+        body += "\n".join(
+            f"| `{row['arm']}` | {row['na']} | {row['g17s_registers']} | "
+            f"{row['modelled_resident_simdgroups_plain']} -> "
+            f"{row['modelled_resident_simdgroups']} | "
+            f"{row['modelled_occupancy_gain_pct']:+.1f} % | "
+            f"{row['delta_vs_plain_pct']:+.2f} % | "
+            + (f"{row['break_even_conversion_pct']:.0f} %"
+               if row["break_even_conversion_pct"] is not None else "no gain")
+            + f" | {'possible' if row['pays_for_itself_possible'] else 'NO'} |"
+            for row in advice)
+        # The model-free comparison. Both routes buy registers with traffic, so
+        # price each one in extra bytes per register saved and the recommendation
+        # needs no register-file constant to rank them.
+        if crown:
+            body += (
+                "\n\n### Rung 3, model-free: what each route pays per register\n"
+                "\n| M | route | partition | rows_per_simd | g17s regs | "
+                "bytes per lane per k-block | extra vs one-group shipped | "
+                "extra bytes per register saved |\n"
+                "|---:|---|---|---:|---:|---:|---:|---:|\n")
+            lines3 = []
+            for na in census["widths"]:
+                shipped_bytes = block_bytes_per_lane((na,), 4)
+                shipped_regs = census["census"][RANKED_ARCH][
+                    f"e76_plain_na{na}"]["registers"]
+                entries = [("shipped one group", (na,), 4, shipped_regs)]
+                part = greedy_partition(na, CROWN_LARGEST_GROUP)
+                if len(part) > 1:
+                    entries.append(("crown partition", part, 4,
+                                    crown["registers"]))
+                for row in advice:
+                    if row["na"] == na:
+                        entries.append((f"one group, `{row['arm']}`", (na,),
+                                        row["rows_per_simd"],
+                                        row["g17s_registers"]))
+                for label, partition, rps, regs in entries:
+                    total = block_bytes_per_lane(partition, rps)
+                    extra = total - shipped_bytes
+                    saved = shipped_regs - regs
+                    per = f"{extra / saved:.0f}" if saved > 0 else "-"
+                    lines3.append(
+                        f"| {na} | {label} | "
+                        f"[{','.join(str(g) for g in partition)}] | {rps} | "
+                        f"{regs} | {total} | {extra:+d} | {per} |")
+            body += "\n".join(lines3)
 
     print(body)
     print()
