@@ -12,10 +12,14 @@ be carried through two factors:
            0.693391, with E55's measured realisation factor 0.946 applied
            afterwards.
 
-The ranked projection uses the assignment's ranked M=6 share band, 30.9-34.7 %,
-because no per-width ranked mixture exists on this base. `research/e53-width-
-mixture.json` gives bucket fractions (f456, f78, f9, f123), not per-width ones,
-so it corroborates that widths 4-6 dominate at rank but cannot supply f6 alone.
+The ranked projection is computed from `research/e53-width-mixture.json`, which
+does carry a per-width mixture under prompts[p].fits[variant].mixture. Those
+keys are already verify widths M, not draft lengths: research/e53_width_
+mixture.py stores widths[depth + 1] at :182. Only `mean_draft_len` (:192) is a
+draft count, so the ranked mean verify width is 1 + mean_draft_len. The ranked
+f6 combines that round mixture with THIS session's measured per-width cell cost,
+so it is "E53 ranked width mixture x E61 per-width cell cost measured on this
+host". The assignment's 30.9-34.7 % hand band is kept only as a comparison.
 
   python3 research/e61_project.py --out research/e61-artifacts/e61-projection.json
 """
@@ -33,8 +37,10 @@ LOCAL_ROUNDS = {2: 1, 4: 5, 5: 5, 6: 23, 7: 4, 8: 6, 9: 34}
 # E55 preregistered transfer constant and its measured realisation factor.
 PSI_MTP = 0.693391
 REALISATION = 0.946
-# Assignment: M=6 share of ranked QMV time.
+# Assignment: M=6 share of ranked QMV time, kept only for comparison.
 RANKED_F6_BAND = (0.309, 0.347)
+# E53's base fit; the other five variants are reported as a sensitivity range.
+E53_HEADLINE_VARIANT = "A_flat"
 # research/e61-prereg.md.
 LOCAL_NULL_FLOOR_PCT = 0.0629
 PROMOTE_PCT = -0.30
@@ -44,9 +50,36 @@ PREREG_CELL_DELTA_PCT = -9.95
 PREREG_WHOLE_LEG_PCT = -1.84
 
 
+def time_shares(rounds: dict[int, float], cost: dict[str, dict]) -> dict[int, float]:
+    """Share of QMV verify time per width, given a round mixture and cell costs."""
+    weighted = {m: n * cost[str(m)]["weighted_seconds_per_verify"]
+                for m, n in rounds.items() if str(m) in cost}
+    total = sum(weighted.values())
+    return {m: w / total for m, w in weighted.items()}
+
+
+def ranked_mixtures(e53: dict) -> dict[str, dict[int, float]]:
+    """Prompt-weighted ranked round mixture per E53 fit variant.
+
+    The mixture keys are verify widths already, so they are used unshifted.
+    """
+    weights = e53["weights"]
+    out = {}
+    for variant in e53["variants"]:
+        blended: dict[int, float] = {}
+        for prompt, w in weights.items():
+            mixture = e53["prompts"][prompt]["fits"][variant]["mixture"]
+            for width, p in mixture.items():
+                blended[int(width)] = blended.get(int(width), 0.0) + w * p
+        total = sum(blended.values())
+        out[variant] = {m: p / total for m, p in blended.items()}
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bandwidth", default="research/e61-artifacts/e61-bandwidth.json")
+    ap.add_argument("--e53", default="research/e53-width-mixture.json")
     ap.add_argument("--out", default="research/e61-artifacts/e61-projection.json")
     args = ap.parse_args()
 
@@ -56,27 +89,51 @@ def main() -> int:
 
     # Time-weighted share of local QMV verify time per width, on the shipped
     # table, using this session's own per-width costs.
-    weighted = {m: LOCAL_ROUNDS[m] * shipped[str(m)]["weighted_seconds_per_verify"]
-                for m in LOCAL_ROUNDS if str(m) in shipped}
-    total = sum(weighted.values())
-    shares = {m: w / total for m, w in weighted.items()}
+    shares = time_shares(LOCAL_ROUNDS, shipped)
     f6 = shares[6]
 
     m6_delta_pct = cell["6"]["seconds_delta_pct"]
 
-    qmv_delta_pct = f6 * m6_delta_pct
-    leg_delta_pct = PSI_MTP * qmv_delta_pct
-    leg_delta_realised_pct = leg_delta_pct * REALISATION
-
-    ranked = {}
-    for name, f in (("low", RANKED_F6_BAND[0]), ("high", RANKED_F6_BAND[1])):
+    def carry(f: float) -> dict:
         q = f * m6_delta_pct
-        ranked[name] = {
+        return {
             "f6": f,
             "qmv_delta_pct": q,
             "leg_delta_pct": PSI_MTP * q,
             "leg_delta_realised_pct": PSI_MTP * q * REALISATION,
         }
+
+    qmv_delta_pct = f6 * m6_delta_pct
+    leg_delta_pct = PSI_MTP * qmv_delta_pct
+    leg_delta_realised_pct = leg_delta_pct * REALISATION
+
+    e53 = json.loads((REPO / args.e53).read_text())
+    ranked_rounds = ranked_mixtures(e53)
+    ranked_e53 = {}
+    for variant, mixture in ranked_rounds.items():
+        s = time_shares(mixture, shipped)
+        ranked_e53[variant] = {
+            "round_mixture": mixture,
+            "time_shares": s,
+            "mean_verify_width_rounds": sum(m * p for m, p in mixture.items()),
+            **carry(s[6]),
+        }
+    headline = ranked_e53[E53_HEADLINE_VARIANT]
+    f6_values = [v["f6"] for v in ranked_e53.values()]
+
+    # The published score is a median over eight hidden prompts. E53's two
+    # weighted prompts both draft deeply; its held-out `plutarch` record barely
+    # drafts at all, so it bounds what this change buys on a hard prompt.
+    plutarch_mixture = {int(m): p for m, p in e53["plutarch"]["mixture"].items()}
+    plutarch = {
+        "published_mean_verify_width": 1.0 + e53["plutarch"]["published_mean_draft_len"],
+        "time_shares": time_shares(plutarch_mixture, shipped),
+        **carry(time_shares(plutarch_mixture, shipped)[6]),
+    }
+
+    ranked_band = {name: carry(f)
+                   for name, f in (("low", RANKED_F6_BAND[0]),
+                                   ("high", RANKED_F6_BAND[1]))}
 
     verdict = ("promote" if leg_delta_realised_pct <= PROMOTE_PCT
                else "report_only" if leg_delta_realised_pct < REPORT_ONLY_PCT
@@ -101,7 +158,22 @@ def main() -> int:
             "leg_delta_realised_pct": leg_delta_realised_pct,
             "multiple_of_null_floor": abs(leg_delta_realised_pct) / LOCAL_NULL_FLOOR_PCT,
         },
-        "ranked": ranked,
+        "ranked_e53": {
+            "source": "research/e53-width-mixture.json",
+            "label": ("E53 ranked width mixture x E61 per-width cell cost "
+                      "measured on this host"),
+            "prompt_weights": e53["weights"],
+            "headline_variant": E53_HEADLINE_VARIANT,
+            "headline": headline,
+            "variants": ranked_e53,
+            "f6_min": min(f6_values),
+            "f6_max": max(f6_values),
+            "plutarch_low_drafting_case": plutarch,
+            "published_mean_verify_width": {
+                p: 1.0 + e53["prompts"][p]["published"]["mean_draft_len"]
+                for p in e53["prompts"]},
+        },
+        "ranked_assignment_band": ranked_band,
         "prereg_comparison": {
             "prereg_cell_delta_pct": PREREG_CELL_DELTA_PCT,
             "measured_cell_delta_pct": m6_delta_pct,
@@ -137,11 +209,33 @@ def main() -> int:
     print("   after E55 realisation %.3f: %+.3f %%   (%.1fx the %.4f %% null floor)"
           % (REALISATION, leg_delta_realised_pct,
              abs(leg_delta_realised_pct) / LOCAL_NULL_FLOOR_PCT, LOCAL_NULL_FLOOR_PCT))
-    print("\nranked projection, assignment f6 band %.1f-%.1f %%"
+    print("\nranked projection: E53 ranked width mixture x this host's cell costs")
+    print("   published mean VERIFY width = 1 + mean_draft_len: " + ", ".join(
+        "%s %.4f" % (p, 1.0 + e53["prompts"][p]["published"]["mean_draft_len"])
+        for p in sorted(e53["prompts"])))
+    print("   %s round mixture mean verify width %.4f"
+          % (E53_HEADLINE_VARIANT, headline["mean_verify_width_rounds"]))
+    print("   headline f6=%.4f -> QMV %+.3f %%, MTP leg %+.3f %% realised"
+          % (headline["f6"], headline["qmv_delta_pct"],
+             headline["leg_delta_realised_pct"]))
+    for variant in sorted(ranked_e53):
+        if variant == E53_HEADLINE_VARIANT:
+            continue
+        v = ranked_e53[variant]
+        print("     %-14s f6=%.4f -> MTP leg %+.3f %%"
+              % (variant, v["f6"], v["leg_delta_realised_pct"]))
+    print("   f6 across all six fits: %.4f - %.4f" % (min(f6_values), max(f6_values)))
+    print("   E53 held-out low-drafting prompt (plutarch, mean verify width %.3f):"
+          % plutarch["published_mean_verify_width"])
+    print("     f6=%.4f -> MTP leg %+.3f %%   (the change buys almost nothing here)"
+          % (plutarch["f6"], plutarch["leg_delta_realised_pct"]))
+    print("   the published score is a MEDIAN over eight hidden prompts, so the")
+    print("   realised median depends on how many of them draft deeply.")
+    print("\n   assignment hand band %.1f-%.1f %% for comparison only"
           % (100 * RANKED_F6_BAND[0], 100 * RANKED_F6_BAND[1]))
     for name in ("low", "high"):
-        print("   f6=%.3f -> MTP leg %+.3f %% realised"
-              % (ranked[name]["f6"], ranked[name]["leg_delta_realised_pct"]))
+        print("     f6=%.3f -> MTP leg %+.3f %% realised"
+              % (ranked_band[name]["f6"], ranked_band[name]["leg_delta_realised_pct"]))
     print("\npromote at <= %.2f %%, report-only below %+.2f %% -> projection says %s"
           % (PROMOTE_PCT, REPORT_ONLY_PCT, verdict))
     print("wrote %s" % dest)

@@ -68,6 +68,8 @@ PREDICTED_EXTRA_CELLS = {(7, 7): 167, (8, 8): 188}
 ARMS = [
     {"name": "shipped", "role": "reference", "never_time": False},
     {"name": "t6", "role": "measurement", "never_time": False},
+    {"name": "t6_rbx", "role": "measurement", "never_time": False},
+    {"name": "shipped_rbx", "role": "measurement", "never_time": False},
     {"name": "iso_m6_ipg3", "role": "census_probe", "never_time": True},
     {"name": "iso_m6_ipg6", "role": "census_probe", "never_time": True},
     {"name": "ballast", "role": "census_probe", "never_time": True},

@@ -90,6 +90,46 @@ CASE9_TAIL_PLUS_BALLAST = """        case 9:
         default:"""
 
 
+WRAPPER_BODY = """  constexpr int TAIL = M % IPG;
+  const int first_m = int(tid.x) * IPG;
+  if (first_m >= M) {
+    return;
+  }
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
+  if (TAIL == 0 || M - first_m >= IPG) {
+    qmv_fast_crossrow_affine4_g64_wide<T, IPG, DIRECT_NIBBLES>(
+        w, scales, biases, x, y, in_vec_size, out_vec_size,
+        first_m, out_row, simd_lid);
+  } else {
+    qmv_fast_crossrow_affine4_g64_wide<
+        T, (TAIL >= 2 ? TAIL : 2), DIRECT_NIBBLES>(
+        w, scales, biases, x, y, in_vec_size, out_vec_size,
+        first_m, out_row, simd_lid);
+  }"""
+
+# M <= 9 and IPG >= 3, so a group index never exceeds 2. Every guard below is a
+# compile-time constant, so the branches a cell does not use are dead code.
+WRAPPER_BODY_RBX = """  constexpr int TAIL = M % IPG;
+  constexpr int GROUPS = (M + IPG - 1) / IPG;
+  constexpr int LAST_NA = (TAIL == 0 ? IPG : (TAIL >= 2 ? TAIL : 2));
+  constexpr int NA0 = (GROUPS > 1 ? IPG : LAST_NA);
+  constexpr int NA1 = (GROUPS > 2 ? IPG : LAST_NA);
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
+  if (int(tid.x) == 0) {
+    qmv_fast_crossrow_affine4_g64_wide<T, NA0, DIRECT_NIBBLES>(
+        w, scales, biases, x, y, in_vec_size, out_vec_size,
+        0, out_row, simd_lid);
+  } else if (GROUPS > 1 && int(tid.x) == 1) {
+    qmv_fast_crossrow_affine4_g64_wide<T, NA1, DIRECT_NIBBLES>(
+        w, scales, biases, x, y, in_vec_size, out_vec_size,
+        IPG, out_row, simd_lid);
+  } else if (GROUPS > 2 && int(tid.x) == 2) {
+    qmv_fast_crossrow_affine4_g64_wide<T, LAST_NA, DIRECT_NIBBLES>(
+        w, scales, biases, x, y, in_vec_size, out_vec_size,
+        2 * IPG, out_row, simd_lid);
+  }"""
+
+
 def relax_na(text: str, bound: int) -> str:
     """Admit the probe-only NA range this arm needs, and no more."""
     if text.count(NA_ASSERT) != 1:
@@ -147,6 +187,22 @@ def perturb_lanes(text: str) -> str:
     return text.replace(LANE_WRITE, LANE_WRITE_PERTURBED)
 
 
+def rbx_wrapper(text: str) -> str:
+    """Select the weight stream from tid.x before the branch, not after it.
+
+    The shipped wrapper computes a runtime `first_m` and then decides the tail
+    NA from it, so the wide helper carries a runtime input-row base and both
+    group widths sit inside one inlined body. This form branches on tid.x
+    first and hands each group a literal first input row.
+
+    Group count, per-group NA and per-group first input row are identical to
+    the shipped wrapper, so no output element changes its K accumulation order.
+    """
+    if text.count(WRAPPER_BODY) != 1:
+        raise SystemExit("e61_arms: wrapper-body anchor not unique")
+    return text.replace(WRAPPER_BODY, WRAPPER_BODY_RBX)
+
+
 def _iso(m: int, ipg: int, structure: str) -> dict:
     tail = m % ipg
     groups = (m + ipg - 1) // ipg
@@ -172,7 +228,10 @@ def _iso(m: int, ipg: int, structure: str) -> dict:
     }
 
 
-def _whole(m: int, ipg: int, doc: str, **extra) -> dict:
+def _whole(m: int, ipg: int, doc: str, rbx: bool = False, **extra) -> dict:
+    steps = [("relax_na", {"bound": ipg}), ("swap_ipg", {"m": m, "ipg": ipg})]
+    if rbx:
+        steps.append(("rbx", {}))
     return dict({
         "family": "whole_table",
         "doc": doc,
@@ -181,7 +240,8 @@ def _whole(m: int, ipg: int, doc: str, **extra) -> dict:
         "ipg": ipg,
         "working_groups": 1,
         "group_na_values": [ipg],
-        "steps": [("relax_na", {"bound": ipg}), ("swap_ipg", {"m": m, "ipg": ipg})],
+        "rbx": rbx,
+        "steps": steps,
     }, **extra)
 
 
@@ -197,6 +257,20 @@ ARMS: dict[str, dict] = {
     "t7": _whole(7, 7, "whole table, case 7 -> <T,7,7>: bandwidth probe for the "
                  "lone NA=7 rate; closes M=7, M=8 and M=9",
                  never_submit=True),
+    "t6_rbx": _whole(6, 6, "t6 plus the rbx wrapper: the same <T,6,6> schedule "
+                     "reached by selecting the stream from tid.x before the "
+                     "branch, so the wide helper takes a literal first input "
+                     "row. Tests whether the NA=6 bandwidth cliff is an "
+                     "occupancy cliff caused by the register jump.",
+                     rbx=True),
+    "shipped_rbx": {
+        "family": "whole_table",
+        "doc": "the rbx wrapper alone, every cell at its shipped IPG: isolates "
+               "what the wrapper rewrite costs or buys with no schedule change",
+        "cell": None,
+        "steps": [("rbx", {})],
+        "never_submit": True,
+    },
     "iso_m6_ipg3": _iso(6, 3, "shipped, two NA=3 groups"),
     "iso_m6_ipg6": _iso(6, 6, "LONE NA=6"),
     "ballast": {
@@ -226,6 +300,7 @@ _STEPS = {
     "swap_ipg": lambda t, m=6, ipg=6, **kw: swap_ipg(t, m, ipg),
     "ballast": lambda t, **kw: add_ballast(t),
     "perturb": lambda t, **kw: perturb_lanes(t),
+    "rbx": lambda t, **kw: rbx_wrapper(t),
 }
 
 

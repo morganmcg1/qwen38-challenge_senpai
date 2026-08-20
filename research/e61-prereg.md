@@ -197,3 +197,51 @@ Local null floor `0.0629 %`. The predicted effect is 27x the null floor.
   `gate_qualified_for_timing=false`, `official_or_ranked_score=false` are
   preserved verbatim, arms are ABBA-counterbalanced in one session, and entry
   and exit GPU temperature are recorded per arm.
+
+---
+
+## Rung 1b prereg — `t6_rbx`, the occupancy-cliff hypothesis
+
+Registered before `research/e61_reg_census.py` ran on the rbx arms and before
+any `t6_rbx` timing leg. Advisor comment 5349751724 supplied the hypothesis and
+the reading.
+
+**Hypothesis.** The -33.1 GB/s step from NA=5 to NA=6 is an occupancy cliff
+caused by the 125 -> 144 register jump, not a property of streaming six inputs.
+The threadgroup is 64 threads and the kernel is bandwidth bound, so losing one
+resident threadgroup per multiprocessor removes latency hiding.
+
+**Mechanism under test.** The shipped `qmv_fast_crossrow_affine4_g64_m` wrapper
+computes a runtime `first_m = tid.x * IPG` and then chooses the tail NA from
+it. The `rbx` form selects the group from `tid.x` first and hands each group a
+literal first input row. Group count, per-group NA and per-group first input
+row are unchanged, so no output element changes its K accumulation order.
+
+I implemented this from the mechanism the advisor described in prose. I did not
+read PR #62; this launch scopes me to `senpai/qwen38-mtp-r1` and my own branch.
+So `t6_rbx` is my construction of the described idea, not thorfinn's bytes, and
+its register count must be measured rather than assumed to match his 95.
+
+**Preregistered reading, from the advisor.**
+
+- `bw(6)` under `t6_rbx` at or above ~135 GB/s AND the M=6 cell register count
+  near 110 or below: the cliff is occupancy. Rung 3 times `t6_rbx`.
+- `bw(6)` unchanged within the rung 1 controls: the cliff is intrinsic to six
+  streams. Rung 3 times `t6` as planned, and the hypothesis is dead.
+
+**My own additions, registered now.**
+
+- `shipped_rbx` is included so the wrapper rewrite is separable from the
+  schedule change. Under `t6_rbx` every width except 6 is treated by the
+  wrapper rewrite alone, so those widths are NOT an untreated-width null the
+  way they were under `t6`. I will report them as the rbx-wrapper effect and
+  not as a null.
+- Register prediction for `t6_rbx` at the M=6 cell: I predict a **small**
+  reduction only, 135 to 144, because at `<T,6,6>` the shipped wrapper already
+  has `TAIL == 0`, so its `else` branch is already dead and the only thing
+  `rbx` removes is the runtime input-row base. I expect the large saving the
+  advisor quotes for `<T,9,5>` to come mostly from separating two live group
+  widths, which `<T,6,6>` does not have. If the count lands near 110 my
+  reasoning is wrong and the occupancy reading is live.
+- `shipped_rbx` table maximum prediction: 129, unchanged or slightly below.
+
