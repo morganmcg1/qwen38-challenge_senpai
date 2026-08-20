@@ -164,6 +164,10 @@ def ladder(sessions: list[dict]) -> dict:
             rungs.append({
                 "na": session["na"],
                 "shape": shape["shape"],
+                "ms": {arm: value * 1e3 for arm, value
+                       in shape["median_seconds_per_dispatch"].items()},
+                "gb_per_s": dict(shape["gb_per_s"]),
+                "widest_same_arm_spread": shape["widest_same_arm_spread"],
                 "plain_gb_per_s": shape["gb_per_s"]["plain"],
                 "plain_ms": shape["median_seconds_per_dispatch"]["plain"] * 1e3,
                 "entry_gpu_temp_c": session["entry_gpu_temp_c"],
@@ -186,6 +190,13 @@ def ladder(sessions: list[dict]) -> dict:
                 "from_na": na,
                 "to_na": na + 1,
                 "seconds_step": hi["plain_ms"] / lo["plain_ms"] - 1.0,
+                "seconds_step_by_arm": {
+                    arm: hi["ms"][arm] / lo["ms"][arm] - 1.0
+                    for arm in lo["ms"] if arm in hi["ms"]},
+                # The bar a step must clear is the two rungs' same-arm spreads
+                # compounded: each rung's median carries its own session noise.
+                "null_bar": ((1.0 + lo["widest_same_arm_spread"])
+                             * (1.0 + hi["widest_same_arm_spread"]) - 1.0),
             }
             if lo["reference_gb_per_s"] and hi["reference_gb_per_s"]:
                 step["reference_seconds_step"] = (
@@ -195,19 +206,24 @@ def ladder(sessions: list[dict]) -> dict:
 
 
 def print_ladder(data: dict) -> None:
-    print("\nplain-arm ladder (instrument check)")
+    print("\nladder over NA (instrument check)")
     for rung in data["rungs"]:
         reference = rung["reference_gb_per_s"]
-        print(f"  {rung['shape']:34s} NA={rung['na']}  "
-              f"{rung['plain_ms']:8.4f} ms  {rung['plain_gb_per_s']:6.1f} GB/s"
+        arms = "  ".join(
+            f"{arm} {rung['ms'][arm]:7.4f} ms {rung['gb_per_s'][arm]:6.1f} GB/s"
+            for arm in sorted(rung["ms"]))
+        print(f"  {rung['shape']:24s} NA={rung['na']}  {arms}"
               f"  reference {reference if reference else float('nan'):6.1f} GB/s"
               f"  {rung['entry_gpu_temp_c']:.1f}C -> {rung['exit_gpu_temp_c']:.1f}C")
     print("  step in seconds per dispatch")
     for step in data["steps"]:
         reference = step.get("reference_seconds_step")
         text = f"{reference * 100:+.1f} %" if reference is not None else "n/a"
-        print(f"    {step['shape']:34s} NA {step['from_na']}->{step['to_na']}  "
-              f"{step['seconds_step'] * 100:+7.2f} %   reference {text}")
+        arms = "  ".join(f"{arm} {value * 100:+7.2f} %" for arm, value
+                         in sorted(step["seconds_step_by_arm"].items()))
+        print(f"    {step['shape']:24s} NA {step['from_na']}->{step['to_na']}  "
+              f"{arms}   bar {step['null_bar'] * 100:.2f} %"
+              f"   reference {text}")
 
 
 def main() -> int:
