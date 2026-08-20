@@ -750,14 +750,23 @@ bit-identical is not a control.
 The winning vector, which sums to 1.44 exactly:
 
 ```
-pbfit.marginal = [0.12014290579688387, 0.13336973691819140, 0.15825051194819845,
-                  0.18378135596082670, 0.28910578332644965, 0.19917881598825600,
-                  0.16197661758144877, 0.19419427247974502]
+pbfit.marginal = [0.12014290579688386, 0.13336973691819140, 0.15825051194819845,
+                  0.18378135596082668, 0.28910578332644965, 0.19917881598825601,
+                  0.16197661758144877, 0.19419427247974499]
 ```
 
 derived from the rung-1 curve as `marginal[d] ∝ H + C(d+2) − C(d+1)` with
 `H = E68_VERIFY_FORWARD_KEY = 0.060300` s, then scaled so the total is
 `maxDepth * headStepCostRatio = 1.44`.
+
+**Which association produced it.** These are the values Swift's
+`makeMeasuredDepthPrice` computes, `raw * (total / sum)`: form the scale factor
+once, then multiply. An earlier revision of this table printed
+`raw * total / sum`, the other association, which differs by one ulp at depths
+0, 3 and 7. The timed legs ran Swift, so the vector above is the arm. E75 rung
+A found the discrepancy while asserting bit-identity, and
+`QwenMTPDepthPriceTests.measuredDepthPriceIsBitIdenticalToTimedArm` now pins
+these eight doubles so a report and an arm cannot drift apart again.
 
 ---
 

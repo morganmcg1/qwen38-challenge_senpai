@@ -780,10 +780,13 @@ public final class Qwen36MTPBlockSession {
     /// this stack's per-row GDN checkpoints make a prefix reject nearly
     /// free (restoreAfterPrefixReject, no repair at any depth). Their
     /// constant prices a cost this stack deleted; 0.40 measured -4.5% on
-    /// the easy-prose receipt (held d2-3 where d4 pays). h = 0.20 is the
-    /// honest fit FOR THIS ROLLBACK MECHANISM; the wasted-work term a
-    /// reject does keep (the drafted head steps past the break) is already
-    /// inside the marginal the rule prices.
+    /// the easy-prose receipt (held d2-3 where d4 pays). A fit near 0.20 is
+    /// the honest READING of that trace FOR THIS ROLLBACK MECHANISM; the
+    /// shipped level is 0.18, which is the end-to-end optimum bracketed on
+    /// both sides by ranked receipts (0.14 -> 2.766, 0.15 -> 2.667,
+    /// 0.32 -> 2.84585). The wasted-work term a reject does keep (the
+    /// drafted head steps past the break) is already inside the marginal
+    /// the rule prices.
     private static let headStepCostRatio = 0.18
 
     /// E68: the depth price as a per-position vector.
@@ -839,9 +842,34 @@ public final class Qwen36MTPBlockSession {
     }
 
     /// `headStepCostRatio + (C(d + 2) - C(d + 1)) / V` from the E68 rung-1
-    /// session, before rescaling. Empty until that session fills it, and
-    /// `makeMeasuredDepthPrice` traps rather than silently running as `ship`.
-    internal static let measuredRawDepthPrice: [Double] = []
+    /// session, before rescaling. `C(M)` is the whole-table isolated QMV cost
+    /// at verify width `M`, median of the three shipped legs of rung-1 job
+    /// `21ac5458`, and `V = 0.060300` s is the verify-forward normaliser that
+    /// session named. `makeMeasuredDepthPrice` rescales to the shipped total,
+    /// so only the SHAPE of these numbers reaches the scheduler; the level
+    /// stays at `maxDepth * headStepCostRatio`. An empty array is a trap
+    /// rather than a silent fallback to `ship`.
+    ///
+    /// E68 rung 3 measured this shape end to end: candidate MTP seconds per
+    /// token 0.031457267 -> 0.030356223, **-3.500 % against a 0.143 % null**,
+    /// nine mirrored-palindrome legs, real 40 C gate on every leg, one
+    /// byte-identical 513-token stream `da92be8a0dc02229` on all nine.
+    ///
+    /// The shape is fitted to the CURRENT kernel dispatch table, whose step
+    /// into verify width 6 costs 27.308 ms against 13.405 ms for the step
+    /// into width 5. A change to that table invalidates the fit, not only its
+    /// magnitude. Refit from a fresh rung-1 curve whenever the QMV group
+    /// shapes move.
+    internal static let measuredRawDepthPrice: [Double] = [
+        0.26300121724709807,
+        0.29195567495854047,
+        0.34642143034825884,
+        0.40231023217247086,
+        0.63287276451077956,
+        0.43601634825870655,
+        0.35457813598673293,
+        0.42510483416251998,
+    ]
 
     internal static func makeMeasuredDepthPrice() -> DepthPrice {
         precondition(
@@ -868,7 +896,15 @@ public final class Qwen36MTPBlockSession {
         case ship, pb5, pb7, pbfit
     }
 
-    /// THE ONE LINE THE E68 LEG RUNNER PATCHES.
+    /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
+    /// shipped value so a leg session cannot leave another arm behind.
+    ///
+    /// The shipped default is `ship` (uniform). `pbfit` wins by -3.5 % on this
+    /// host's kernel dispatch table and loses that win entirely on the crown
+    /// table (E75 rung B/D: +0.33 % on crown, a +3.8 pp interaction). The
+    /// shape is fitted to one dispatch table, so it is a research arm, not a
+    /// shipped constant. Refit and re-price on the live table before shipping
+    /// any non-uniform shape.
     internal static let depthPriceArm: DepthPriceArm = .ship
 
     /// Built once. A computed property here would allocate two arrays on

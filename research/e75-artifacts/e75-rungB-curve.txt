@@ -1,0 +1,59 @@
+==============================================================================
+E75 RUNG B  harness=local  8 legs, balanced mirrored palindrome
+==============================================================================
+
+leg provenance
+  e75-rB-a1  arm=ours  cell=<T,5,5>+<T,6,6>+<T,9,5> na_max=6  verified=False
+  e75-rB-a2  arm=crown cell=<T,5,3>+<T,6,3>+<T,9,3> na_max=4  verified=True
+  e75-rB-a3  arm=crown cell=<T,5,3>+<T,6,3>+<T,9,3> na_max=4  verified=True
+  e75-rB-a4  arm=ours  cell=<T,5,5>+<T,6,6>+<T,9,5> na_max=6  verified=False
+  e75-rB-a5  arm=ours  cell=<T,5,5>+<T,6,6>+<T,9,5> na_max=6  verified=False
+  e75-rB-a6  arm=crown cell=<T,5,3>+<T,6,3>+<T,9,3> na_max=4  verified=True
+  e75-rB-a7  arm=crown cell=<T,5,3>+<T,6,3>+<T,9,3> na_max=4  verified=True
+  e75-rB-a8  arm=ours  cell=<T,5,5>+<T,6,6>+<T,9,5> na_max=6  verified=False
+
+verify cost per width, milliseconds (n=4 legs per arm)
+   M                ours               crown   crown-ours            role
+   1     60.699 +-0.289     60.559 +-0.924      -0.140    -0.23%  null (unchanged)
+   2     65.318 +-0.191     65.273 +-1.033      -0.045    -0.07%  null (unchanged)
+   3     72.266 +-0.197     72.059 +-0.082      -0.207    -0.29%  null (unchanged)
+   4     82.133 +-0.130     82.101 +-0.068      -0.032    -0.04%  null (unchanged)
+   5     95.539 +-0.099    119.836 +-0.048     +24.297   +25.43%  CHANGED CELL
+   6    122.868 +-0.145    128.328 +-0.112      +5.460    +4.44%  CHANGED CELL
+   7    138.354 +-0.135    138.353 +-0.078      -0.001    -0.00%  null (unchanged)
+   8    148.852 +-0.089    148.784 +-0.030      -0.068    -0.05%  null (unchanged)
+   9    163.663 +-0.170    185.563 +-0.103     +21.900   +13.38%  CHANGED CELL
+
+MEASURED SESSION NULL from the 6 unchanged cells
+  max |crown-ours| on an unchanged cell : 0.286 %
+  mean                                  : 0.112 %
+  at the wide unchanged cells 7 and 8   : 0.045 %
+
+marginal cost of the step INTO each width, milliseconds
+   M   ours step   crown step      delta
+   2       4.619        4.714     +0.095
+   3       6.948        6.786     -0.162
+   4       9.867       10.042     +0.175
+   5      13.406       37.735    +24.329  <== headline pair
+   6      27.329        8.492    -18.837  <== headline pair
+   7      15.486       10.025     -5.461
+   8      10.497       10.431     -0.067
+   9      14.811       36.779    +21.968
+
+PRE-REGISTERED vs MEASURED, changed cells
+   M   predicted    measured      error          
+   5     122.314     119.836     -2.478    -2.03%
+   6     129.065     128.328     -0.737    -0.57%
+   9     186.003     185.563     -0.440    -0.24%
+
+RUNG C 2x2 RE-PRICED WITH THE MEASURED CROWN CURVE (decode seconds)
+      cell   pre-registered   re-priced     shift
+    O-ship           16.106      16.107    +0.01%
+   O-pbfit           15.538      15.538    +0.00%
+    C-ship           17.143      17.098    -0.26%
+   C-pbfit           17.274      17.155    -0.69%
+
+  effect of pbfit on OUR table   : -3.533 %   (pre-registered -3.525 %, E68 measured -3.500 %)
+  effect of pbfit on CROWN table : +0.330 %   (pre-registered +0.77 %)
+  effect of table, at ship       : +6.153 %   (pre-registered +6.44 %)
+  INTERACTION                    : +3.863 pp (pre-registered +4.29 pp)

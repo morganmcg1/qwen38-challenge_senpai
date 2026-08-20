@@ -1,0 +1,162 @@
+{
+  "accepted_build": {
+    "cells": {
+      "crown-pbfit": {
+        "cli_sha256": "c891bac8934495656a5ce394395baad9223c13850166e66cf9506d13c87f2ddb",
+        "metallib_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+        "metallib_sha256": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+        "source_sha256": {
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "d249337665009edab58de285e8c193393cccb9e9669372e243dc146b7753d02f",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
+        },
+        "worker_cstring_sha256": "756cf5c9435aafdfe2efe81df1fc16ac9ec403772dd8f8dcfca9db9ea3838989",
+        "worker_cstring_size": 1415017,
+        "worker_sha256": "a3cee38628895e499c25a763793d553116f78de39a589257f6b7249af59ea686",
+        "worker_text_sha256": "f0f2674fe36d53b9315af84d660f836567bb627fedf2f4e645e71e21a8252a22",
+        "worker_text_size": 19533432
+      },
+      "crown-ship": {
+        "cli_sha256": "c891bac8934495656a5ce394395baad9223c13850166e66cf9506d13c87f2ddb",
+        "metallib_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+        "metallib_sha256": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+        "source_sha256": {
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "b0b838fc99b15d6df94972468cedcae0c1487636b0db0abaed4fe2c90a83b432",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
+        },
+        "worker_cstring_sha256": "756cf5c9435aafdfe2efe81df1fc16ac9ec403772dd8f8dcfca9db9ea3838989",
+        "worker_cstring_size": 1415017,
+        "worker_sha256": "b21bebfb20008f529f7f8600abf235b8ab0628bab3aaea007289a7200cd727de",
+        "worker_text_sha256": "ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec",
+        "worker_text_size": 19533256
+      },
+      "ours-pbfit": {
+        "cli_sha256": "c891bac8934495656a5ce394395baad9223c13850166e66cf9506d13c87f2ddb",
+        "metallib_fingerprint": "f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe",
+        "metallib_sha256": "45449c09521dc93c3c8b9ba1cd6530b6610eb1564525a40c7fb5719e918dd63e",
+        "source_sha256": {
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "d249337665009edab58de285e8c193393cccb9e9669372e243dc146b7753d02f",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+        },
+        "worker_cstring_sha256": "0a3d8809e94f078e79c25a849aaab52579d3bc8755b419878d2354c3bad0e899",
+        "worker_cstring_size": 1415017,
+        "worker_sha256": "6317f2287abe60f5d581a2eecdfc366237fd693789f06fb5d5e090e7fa858c9e",
+        "worker_text_sha256": "f0f2674fe36d53b9315af84d660f836567bb627fedf2f4e645e71e21a8252a22",
+        "worker_text_size": 19533432
+      },
+      "ours-ship": {
+        "cli_sha256": "c891bac8934495656a5ce394395baad9223c13850166e66cf9506d13c87f2ddb",
+        "metallib_fingerprint": "f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe",
+        "metallib_sha256": "45449c09521dc93c3c8b9ba1cd6530b6610eb1564525a40c7fb5719e918dd63e",
+        "source_sha256": {
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "b0b838fc99b15d6df94972468cedcae0c1487636b0db0abaed4fe2c90a83b432",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+        },
+        "worker_cstring_sha256": "0a3d8809e94f078e79c25a849aaab52579d3bc8755b419878d2354c3bad0e899",
+        "worker_cstring_size": 1415017,
+        "worker_sha256": "687f28b500220bfb08af8b5503e8c0a8f05578704530206b96984d19ecfdf3f5",
+        "worker_text_sha256": "ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec",
+        "worker_text_size": 19533256
+      }
+    },
+    "note": "Built in the reverse order, so cell identity cannot depend on build order. Three of four cells reproduced the first build's __text and __cstring exactly. Only crown-ship changed, and it changed to the value the invariant requires.",
+    "order": [
+      "crown-pbfit",
+      "crown-ship",
+      "ours-pbfit",
+      "ours-ship"
+    ],
+    "verdict": "ACCEPTED, `witness matrix OK, 4 distinct cells on 2 independent axes`"
+  },
+  "cells_that_changed_between_the_two_builds": [
+    "crown-ship"
+  ],
+  "cost_of_the_check": "About 8 minutes of rebuild. It replaced a binary that would otherwise have carried an unexplained 36-byte code difference into two timed legs of the 2x2.",
+  "experiment": "E75 rung D",
+  "first_build": {
+    "cells": {
+      "crown-pbfit": {
+        "cli_sha256": "c891bac8934495656a5ce394395baad9223c13850166e66cf9506d13c87f2ddb",
+        "metallib_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+        "metallib_sha256": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+        "source_sha256": {
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "d249337665009edab58de285e8c193393cccb9e9669372e243dc146b7753d02f",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
+        },
+        "worker_cstring_sha256": "756cf5c9435aafdfe2efe81df1fc16ac9ec403772dd8f8dcfca9db9ea3838989",
+        "worker_cstring_size": 1415017,
+        "worker_sha256": "a8bcf7fe6e820a1142cb4390dfe2ded5c160e64d34f6061264e57cac9d62c74b",
+        "worker_text_sha256": "f0f2674fe36d53b9315af84d660f836567bb627fedf2f4e645e71e21a8252a22",
+        "worker_text_size": 19533432
+      },
+      "crown-ship": {
+        "cli_sha256": "c891bac8934495656a5ce394395baad9223c13850166e66cf9506d13c87f2ddb",
+        "metallib_fingerprint": "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c",
+        "metallib_sha256": "2c754990890829f7370ef3258cf77ac2cbf862b413824855a5bafd0675591dda",
+        "source_sha256": {
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "b0b838fc99b15d6df94972468cedcae0c1487636b0db0abaed4fe2c90a83b432",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
+        },
+        "worker_cstring_sha256": "756cf5c9435aafdfe2efe81df1fc16ac9ec403772dd8f8dcfca9db9ea3838989",
+        "worker_cstring_size": 1415017,
+        "worker_sha256": "4e139aef8f019a6e252c960a116b9eb91c118677e73f71b261fd90971d8c8529",
+        "worker_text_sha256": "d568e9ec39e1c3aa04a8f4cdac0863c9e0783d9267b39814b2b3616d1006b05f",
+        "worker_text_size": 19533220
+      },
+      "ours-pbfit": {
+        "cli_sha256": "c891bac8934495656a5ce394395baad9223c13850166e66cf9506d13c87f2ddb",
+        "metallib_fingerprint": "f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe",
+        "metallib_sha256": "45449c09521dc93c3c8b9ba1cd6530b6610eb1564525a40c7fb5719e918dd63e",
+        "source_sha256": {
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "d249337665009edab58de285e8c193393cccb9e9669372e243dc146b7753d02f",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+        },
+        "worker_cstring_sha256": "0a3d8809e94f078e79c25a849aaab52579d3bc8755b419878d2354c3bad0e899",
+        "worker_cstring_size": 1415017,
+        "worker_sha256": "1f7421c1d6d96df2e521d7553ef3cb83e723519ab4ae36bb54f1725e0a5c22fa",
+        "worker_text_sha256": "f0f2674fe36d53b9315af84d660f836567bb627fedf2f4e645e71e21a8252a22",
+        "worker_text_size": 19533432
+      },
+      "ours-ship": {
+        "cli_sha256": "c891bac8934495656a5ce394395baad9223c13850166e66cf9506d13c87f2ddb",
+        "metallib_fingerprint": "f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe",
+        "metallib_sha256": "45449c09521dc93c3c8b9ba1cd6530b6610eb1564525a40c7fb5719e918dd63e",
+        "source_sha256": {
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "b0b838fc99b15d6df94972468cedcae0c1487636b0db0abaed4fe2c90a83b432",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+        },
+        "worker_cstring_sha256": "0a3d8809e94f078e79c25a849aaab52579d3bc8755b419878d2354c3bad0e899",
+        "worker_cstring_size": 1415017,
+        "worker_sha256": "0e61d5fc98ebc8f5d07a428dcf9676f0f795831e2da77461a2d73787b0d16c53",
+        "worker_text_sha256": "ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec",
+        "worker_text_size": 19533256
+      }
+    },
+    "defect": "crown-ship carried a __text that is 36 bytes shorter than every other ship-price build and differs in bytes from ours-ship, which the invariant forbids. __TEXT,__const and __DATA_CONST,__const also differed at equal size. The recorded source digests were correct, so this is a stale incremental link, not a wrong input.",
+    "order": [
+      "ours-ship",
+      "ours-pbfit",
+      "crown-ship",
+      "crown-pbfit"
+    ],
+    "rejected_cells": [
+      "crown-ship"
+    ],
+    "verdict": "REJECTED by the prebuild witness assertion, exit 6, `__text takes 3 values, want 2 (the depth price)`"
+  },
+  "harness": "local",
+  "invariant": {
+    "consequence": "__TEXT,__text must take exactly two values across the 2x2, one per depth price, and __TEXT,__cstring exactly two, one per kernel table.",
+    "statement": "Two cells that share a depth price must have byte-identical __TEXT,__text. The kernel table cannot change host machine code.",
+    "why": "The table arm edits kernels/quantized.h and its generated twin mlx-generated/quantized.cpp. The twin is one function, `const char* quantized()`, that returns a raw string literal, so the table reaches the host binary only as string data in __TEXT,__cstring and reaches the GPU through mlx.metallib. The crown patch is byte-length preserving, ten single-character substitutions per file, so __cstring keeps its size and no address inside the binary moves."
+  },
+  "source_digests_identical_in_both_builds": true,
+  "what_this_records": "The prebuild witness assertion rejected the first four-cell build. This file records the rejected build, the accepted rebuild, and why the accepted set is the correct one."
+}

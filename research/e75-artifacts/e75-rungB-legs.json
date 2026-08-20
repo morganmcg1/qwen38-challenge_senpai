@@ -1,0 +1,655 @@
+{
+ "experiment": "E75 rung B",
+ "harness": "local",
+ "not_a_ranked_score": true,
+ "design": "balanced mirrored palindrome, 4 legs per arm",
+ "instrument": "E68 rung-1, unchanged: --widths 1,2,3,4,5,6,7,8,9,10 --reps 21 --inner 10 --skip-stock",
+ "upstream_crown_digests": {
+  "quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281",
+  "quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb"
+ },
+ "arm_median_table_cost_ms": {
+  "ours": {
+   "1": {
+    "median_ms": 60.6521,
+    "n_legs": 4,
+    "legs_ms": [
+     61.0874,
+     60.7171,
+     60.4053,
+     60.5871
+    ]
+   },
+   "2": {
+    "median_ms": 65.2588,
+    "n_legs": 4,
+    "legs_ms": [
+     65.1728,
+     65.5827,
+     65.3358,
+     65.1818
+    ]
+   },
+   "3": {
+    "median_ms": 72.2413,
+    "n_legs": 4,
+    "legs_ms": [
+     72.0524,
+     72.2276,
+     72.2549,
+     72.5291
+    ]
+   },
+   "4": {
+    "median_ms": 82.132,
+    "n_legs": 4,
+    "legs_ms": [
+     81.9883,
+     82.0661,
+     82.1979,
+     82.2784
+    ]
+   },
+   "5": {
+    "median_ms": 95.5449,
+    "n_legs": 4,
+    "legs_ms": [
+     95.6368,
+     95.4825,
+     95.6073,
+     95.4291
+    ]
+   },
+   "6": {
+    "median_ms": 122.8561,
+    "n_legs": 4,
+    "legs_ms": [
+     122.9143,
+     122.7979,
+     123.0469,
+     122.7126
+    ]
+   },
+   "7": {
+    "median_ms": 138.298,
+    "n_legs": 4,
+    "legs_ms": [
+     138.2898,
+     138.5552,
+     138.2664,
+     138.3062
+    ]
+   },
+   "8": {
+    "median_ms": 148.8226,
+    "n_legs": 4,
+    "legs_ms": [
+     148.8178,
+     148.9814,
+     148.7808,
+     148.8275
+    ]
+   },
+   "9": {
+    "median_ms": 163.6641,
+    "n_legs": 4,
+    "legs_ms": [
+     163.4719,
+     163.8532,
+     163.7489,
+     163.5793
+    ]
+   }
+  },
+  "crown": {
+   "1": {
+    "median_ms": 60.4007,
+    "n_legs": 4,
+    "legs_ms": [
+     61.77,
+     59.6654,
+     60.7526,
+     60.0488
+    ]
+   },
+   "2": {
+    "median_ms": 65.4064,
+    "n_legs": 4,
+    "legs_ms": [
+     65.9851,
+     64.0314,
+     66.2494,
+     64.8277
+    ]
+   },
+   "3": {
+    "median_ms": 72.0567,
+    "n_legs": 4,
+    "legs_ms": [
+     72.1089,
+     72.0046,
+     72.147,
+     71.9761
+    ]
+   },
+   "4": {
+    "median_ms": 82.1005,
+    "n_legs": 4,
+    "legs_ms": [
+     82.0358,
+     82.1527,
+     82.1665,
+     82.0482
+    ]
+   },
+   "5": {
+    "median_ms": 119.8396,
+    "n_legs": 4,
+    "legs_ms": [
+     119.8324,
+     119.8468,
+     119.7751,
+     119.8904
+    ]
+   },
+   "6": {
+    "median_ms": 128.3215,
+    "n_legs": 4,
+    "legs_ms": [
+     128.2369,
+     128.4414,
+     128.2274,
+     128.4061
+    ]
+   },
+   "7": {
+    "median_ms": 138.3591,
+    "n_legs": 4,
+    "legs_ms": [
+     138.425,
+     138.2703,
+     138.3028,
+     138.4154
+    ]
+   },
+   "8": {
+    "median_ms": 148.7767,
+    "n_legs": 4,
+    "legs_ms": [
+     148.7578,
+     148.7881,
+     148.8256,
+     148.7653
+    ]
+   },
+   "9": {
+    "median_ms": 185.5731,
+    "n_legs": 4,
+    "legs_ms": [
+     185.4309,
+     185.6004,
+     185.6766,
+     185.5458
+    ]
+   }
+  }
+ },
+ "legs": [
+  {
+   "tag": "e75-rB-a1",
+   "arm": "ours",
+   "wandb_run_id": "dlk0dil9",
+   "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/dlk0dil9",
+   "cell": "<T,5,5>+<T,6,6>+<T,9,5>",
+   "na_max": 6,
+   "dispatch": {
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 4,
+    "8": 4,
+    "9": 5
+   },
+   "crown_bytes_verified": false,
+   "sources_as_measured": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+   },
+   "binary_probe": "BINARY PROBE OK .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlxfast-challenge-devPackageTests: arm ours routing at widths 2,3,4,5,6,7,8,9 is present and exclusive",
+   "gpu_gate": {
+    "consecutive_required": 3,
+    "interval_seconds": 2.0,
+    "longest_busy_run": 0,
+    "max": 9,
+    "mean": 1.8,
+    "priming_discarded": 7,
+    "samples": [
+     9,
+     0,
+     0,
+     0,
+     0
+    ],
+    "state": "idle",
+    "threshold": 25
+   },
+   "branch_commit": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "measured_commit_unwound": "c8ecb7807c1e4e2eec96cafcc387a36563e122bb",
+   "base_sha": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "host": "Apple M4 Pro",
+   "gpu_architecture": "applegpu_g16s",
+   "crossrow_na_max_reported": 4,
+   "table_cost_ms_by_width": {
+    "1": 61.087382,
+    "2": 65.172822,
+    "3": 72.052364,
+    "4": 81.988267,
+    "5": 95.636767,
+    "6": 122.914295,
+    "7": 138.289804,
+    "8": 148.817823,
+    "9": 163.471901
+   }
+  },
+  {
+   "tag": "e75-rB-a2",
+   "arm": "crown",
+   "wandb_run_id": "iiyrtg8k",
+   "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/iiyrtg8k",
+   "cell": "<T,5,3>+<T,6,3>+<T,9,3>",
+   "na_max": 4,
+   "dispatch": {
+    "3": 3,
+    "4": 4,
+    "5": 3,
+    "6": 3,
+    "7": 4,
+    "8": 4,
+    "9": 3
+   },
+   "crown_bytes_verified": true,
+   "sources_as_measured": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
+   },
+   "binary_probe": "BINARY PROBE OK .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlxfast-challenge-devPackageTests: arm crown routing at widths 2,3,4,5,6,7,8,9 is present and exclusive",
+   "gpu_gate": {
+    "consecutive_required": 3,
+    "interval_seconds": 2.0,
+    "longest_busy_run": 0,
+    "max": 0,
+    "mean": 0.0,
+    "priming_discarded": 10,
+    "samples": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "state": "idle",
+    "threshold": 25
+   },
+   "branch_commit": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "measured_commit_unwound": "931c9aa7a15da4f12012381370ae124343c72c69",
+   "base_sha": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "host": "Apple M4 Pro",
+   "gpu_architecture": "applegpu_g16s",
+   "crossrow_na_max_reported": 4,
+   "table_cost_ms_by_width": {
+    "1": 61.769972,
+    "2": 65.985065,
+    "3": 72.108891,
+    "4": 82.035783,
+    "5": 119.832443,
+    "6": 128.236949,
+    "7": 138.424969,
+    "8": 148.757801,
+    "9": 185.430879
+   }
+  },
+  {
+   "tag": "e75-rB-a3",
+   "arm": "crown",
+   "wandb_run_id": "fdo47a74",
+   "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/fdo47a74",
+   "cell": "<T,5,3>+<T,6,3>+<T,9,3>",
+   "na_max": 4,
+   "dispatch": {
+    "3": 3,
+    "4": 4,
+    "5": 3,
+    "6": 3,
+    "7": 4,
+    "8": 4,
+    "9": 3
+   },
+   "crown_bytes_verified": true,
+   "sources_as_measured": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
+   },
+   "binary_probe": "BINARY PROBE OK .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlxfast-challenge-devPackageTests: arm crown routing at widths 2,3,4,5,6,7,8,9 is present and exclusive",
+   "gpu_gate": {
+    "consecutive_required": 3,
+    "interval_seconds": 2.0,
+    "longest_busy_run": 0,
+    "max": 7,
+    "mean": 1.4,
+    "priming_discarded": 0,
+    "samples": [
+     0,
+     0,
+     0,
+     0,
+     7
+    ],
+    "state": "idle",
+    "threshold": 25
+   },
+   "branch_commit": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "measured_commit_unwound": "05415241c67e4204269bd75b0038c33cd82ae501",
+   "base_sha": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "host": "Apple M4 Pro",
+   "gpu_architecture": "applegpu_g16s",
+   "crossrow_na_max_reported": 4,
+   "table_cost_ms_by_width": {
+    "1": 59.665409,
+    "2": 64.031406,
+    "3": 72.004566,
+    "4": 82.152699,
+    "5": 119.846808,
+    "6": 128.441439,
+    "7": 138.270322,
+    "8": 148.788067,
+    "9": 185.6004
+   }
+  },
+  {
+   "tag": "e75-rB-a4",
+   "arm": "ours",
+   "wandb_run_id": "w24k9vc7",
+   "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/w24k9vc7",
+   "cell": "<T,5,5>+<T,6,6>+<T,9,5>",
+   "na_max": 6,
+   "dispatch": {
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 4,
+    "8": 4,
+    "9": 5
+   },
+   "crown_bytes_verified": false,
+   "sources_as_measured": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+   },
+   "binary_probe": "BINARY PROBE OK .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlxfast-challenge-devPackageTests: arm ours routing at widths 2,3,4,5,6,7,8,9 is present and exclusive",
+   "gpu_gate": {
+    "consecutive_required": 3,
+    "interval_seconds": 2.0,
+    "longest_busy_run": 0,
+    "max": 0,
+    "mean": 0.0,
+    "priming_discarded": 0,
+    "samples": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "state": "idle",
+    "threshold": 25
+   },
+   "branch_commit": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "measured_commit_unwound": "ad5009ce5c032b23a33385182a25d2bb24baad4a",
+   "base_sha": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "host": "Apple M4 Pro",
+   "gpu_architecture": "applegpu_g16s",
+   "crossrow_na_max_reported": 4,
+   "table_cost_ms_by_width": {
+    "1": 60.717087,
+    "2": 65.582651,
+    "3": 72.227621,
+    "4": 82.066128,
+    "5": 95.48247,
+    "6": 122.797936,
+    "7": 138.555164,
+    "8": 148.98139,
+    "9": 163.853174
+   }
+  },
+  {
+   "tag": "e75-rB-a5",
+   "arm": "ours",
+   "wandb_run_id": "hflbcpf1",
+   "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/hflbcpf1",
+   "cell": "<T,5,5>+<T,6,6>+<T,9,5>",
+   "na_max": 6,
+   "dispatch": {
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 4,
+    "8": 4,
+    "9": 5
+   },
+   "crown_bytes_verified": false,
+   "sources_as_measured": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+   },
+   "binary_probe": "BINARY PROBE OK .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlxfast-challenge-devPackageTests: arm ours routing at widths 2,3,4,5,6,7,8,9 is present and exclusive",
+   "gpu_gate": {
+    "consecutive_required": 3,
+    "interval_seconds": 2.0,
+    "longest_busy_run": 0,
+    "max": 0,
+    "mean": 0.0,
+    "priming_discarded": 0,
+    "samples": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "state": "idle",
+    "threshold": 25
+   },
+   "branch_commit": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "measured_commit_unwound": "5a2d87406d6a0e7d800480aecba6cac4e0faa331",
+   "base_sha": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "host": "Apple M4 Pro",
+   "gpu_architecture": "applegpu_g16s",
+   "crossrow_na_max_reported": 4,
+   "table_cost_ms_by_width": {
+    "1": 60.405315,
+    "2": 65.3358,
+    "3": 72.254909,
+    "4": 82.197937,
+    "5": 95.607315,
+    "6": 123.046929,
+    "7": 138.266441,
+    "8": 148.780831,
+    "9": 163.748917
+   }
+  },
+  {
+   "tag": "e75-rB-a6",
+   "arm": "crown",
+   "wandb_run_id": "0qbqlmv0",
+   "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0qbqlmv0",
+   "cell": "<T,5,3>+<T,6,3>+<T,9,3>",
+   "na_max": 4,
+   "dispatch": {
+    "3": 3,
+    "4": 4,
+    "5": 3,
+    "6": 3,
+    "7": 4,
+    "8": 4,
+    "9": 3
+   },
+   "crown_bytes_verified": true,
+   "sources_as_measured": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
+   },
+   "binary_probe": "BINARY PROBE OK .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlxfast-challenge-devPackageTests: arm crown routing at widths 2,3,4,5,6,7,8,9 is present and exclusive",
+   "gpu_gate": {
+    "consecutive_required": 3,
+    "interval_seconds": 2.0,
+    "longest_busy_run": 0,
+    "max": 0,
+    "mean": 0.0,
+    "priming_discarded": 0,
+    "samples": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "state": "idle",
+    "threshold": 25
+   },
+   "branch_commit": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "measured_commit_unwound": "787563cbb344f67dca0a532f9f6fb6f3e2d6041f",
+   "base_sha": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "host": "Apple M4 Pro",
+   "gpu_architecture": "applegpu_g16s",
+   "crossrow_na_max_reported": 4,
+   "table_cost_ms_by_width": {
+    "1": 60.752646,
+    "2": 66.24939,
+    "3": 72.147026,
+    "4": 82.16649,
+    "5": 119.775134,
+    "6": 128.227384,
+    "7": 138.302809,
+    "8": 148.825592,
+    "9": 185.676579
+   }
+  },
+  {
+   "tag": "e75-rB-a7",
+   "arm": "crown",
+   "wandb_run_id": "94o5jfus",
+   "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/94o5jfus",
+   "cell": "<T,5,3>+<T,6,3>+<T,9,3>",
+   "na_max": 4,
+   "dispatch": {
+    "3": 3,
+    "4": 4,
+    "5": 3,
+    "6": 3,
+    "7": 4,
+    "8": 4,
+    "9": 3
+   },
+   "crown_bytes_verified": true,
+   "sources_as_measured": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281"
+   },
+   "binary_probe": "BINARY PROBE OK .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlxfast-challenge-devPackageTests: arm crown routing at widths 2,3,4,5,6,7,8,9 is present and exclusive",
+   "gpu_gate": {
+    "consecutive_required": 3,
+    "interval_seconds": 2.0,
+    "longest_busy_run": 0,
+    "max": 0,
+    "mean": 0.0,
+    "priming_discarded": 0,
+    "samples": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "state": "idle",
+    "threshold": 25
+   },
+   "branch_commit": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "measured_commit_unwound": "177c8f5ba6f4ab89efad5ca30bd289ddcdc8873b",
+   "base_sha": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "host": "Apple M4 Pro",
+   "gpu_architecture": "applegpu_g16s",
+   "crossrow_na_max_reported": 4,
+   "table_cost_ms_by_width": {
+    "1": 60.048816,
+    "2": 64.827662,
+    "3": 71.976088,
+    "4": 82.048242,
+    "5": 119.890379,
+    "6": 128.406133,
+    "7": 138.415357,
+    "8": 148.765336,
+    "9": 185.545849
+   }
+  },
+  {
+   "tag": "e75-rB-a8",
+   "arm": "ours",
+   "wandb_run_id": "41zmikig",
+   "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/41zmikig",
+   "cell": "<T,5,5>+<T,6,6>+<T,9,5>",
+   "na_max": 6,
+   "dispatch": {
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 4,
+    "8": 4,
+    "9": 5
+   },
+   "crown_bytes_verified": false,
+   "sources_as_measured": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+   },
+   "binary_probe": "BINARY PROBE OK .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlxfast-challenge-devPackageTests: arm ours routing at widths 2,3,4,5,6,7,8,9 is present and exclusive",
+   "gpu_gate": {
+    "consecutive_required": 3,
+    "interval_seconds": 2.0,
+    "longest_busy_run": 0,
+    "max": 0,
+    "mean": 0.0,
+    "priming_discarded": 0,
+    "samples": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "state": "idle",
+    "threshold": 25
+   },
+   "branch_commit": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "measured_commit_unwound": "91ea2cf34d5e5a3cc0c1123dcb08f2e16221003b",
+   "base_sha": "74c262513cfc6d6b7a6694f09b21bc4eda687b5e",
+   "host": "Apple M4 Pro",
+   "gpu_architecture": "applegpu_g16s",
+   "crossrow_na_max_reported": 4,
+   "table_cost_ms_by_width": {
+    "1": 60.587131,
+    "2": 65.181805,
+    "3": 72.529064,
+    "4": 82.278375,
+    "5": 95.429113,
+    "6": 122.712617,
+    "7": 138.306214,
+    "8": 148.827472,
+    "9": 163.579317
+   }
+  }
+ ]
+}

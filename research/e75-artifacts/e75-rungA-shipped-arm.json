@@ -1,0 +1,84 @@
+{
+  "arm": "pbfit",
+  "dry_run": false,
+  "marginal": [
+    0.12014290579688387,
+    0.1333697369181914,
+    0.15825051194819845,
+    0.1837813559608267,
+    0.28910578332644965,
+    0.199178815988256,
+    0.16197661758144877,
+    0.19419427247974502
+  ],
+  "marginal_total": 1.44,
+  "measured_raw": [
+    0.2630012172470981,
+    0.29195567495854047,
+    0.34642143034825884,
+    0.40231023217247086,
+    0.6328727645107796,
+    0.43601634825870655,
+    0.35457813598673293,
+    0.42510483416252
+  ],
+  "predicted_depth": {
+    "beagle": {
+      "default_cap": {
+        "depth": 4,
+        "reach": 0.40615557459744756,
+        "stopped_at_depth": 5,
+        "threshold": 0.652529099317262,
+        "verify_width": 5
+      },
+      "p": 0.8351,
+      "streak_cap": {
+        "depth": 4,
+        "reach": 0.40615557459744756,
+        "stopped_at_depth": 5,
+        "threshold": 0.652529099317262,
+        "verify_width": 5
+      }
+    },
+    "local": {
+      "default_cap": {
+        "depth": 4,
+        "reach": 0.6551507727859495,
+        "stopped_at_depth": 5,
+        "threshold": 0.7704709315257552,
+        "verify_width": 5
+      },
+      "p": 0.9189,
+      "streak_cap": {
+        "depth": 4,
+        "reach": 0.6551507727859495,
+        "stopped_at_depth": 5,
+        "threshold": 0.7704709315257552,
+        "verify_width": 5
+      }
+    },
+    "medicine": {
+      "default_cap": {
+        "depth": 4,
+        "reach": 0.512908935546875,
+        "stopped_at_depth": 5,
+        "threshold": 0.7060703994272275,
+        "verify_width": 5
+      },
+      "p": 0.875,
+      "streak_cap": {
+        "depth": 4,
+        "reach": 0.512908935546875,
+        "stopped_at_depth": 5,
+        "threshold": 0.7060703994272275,
+        "verify_width": 5
+      }
+    }
+  },
+  "role": "candidate",
+  "sha256": {
+    "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": "0fb51b5b774a7574799b7a82f84955a9170fbbf1ecdf2b4af23a4173ffa7725e"
+  },
+  "shipped_total": 1.44,
+  "verify_forward_key": "0.060300"
+}
