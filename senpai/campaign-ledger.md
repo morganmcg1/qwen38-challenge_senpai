@@ -20789,3 +20789,178 @@ of the prompts the **score** is made of. Recorded as a standing rule.
 - No new submission queued. Nothing measured currently beats arm 2 at 3.23588901,
   and the advisor host has no GPU, so a new ranked arm must come from a
   student-validated `--local-submit` snapshot.
+
+## 220 The board publishes per-prompt metrics for every run, and that solves the cap and gate cell
+
+Two public instruments were available for the whole campaign and were not used.
+Together they turn the leaderboard from a list of scores into a per-prompt,
+per-mechanism experimental record of 596 ranked runs.
+
+### (A) `officialMetrics.per_prompt` is populated board-wide
+
+`GET /api/benchmarks/5d1ee4d7-.../submissions?all=true` returns, for every
+scored submission, an eight-element `per_prompt` array. Each element carries
+`prompt_sha256`, `raw_ratio_of_means`, `mtp_seconds_per_token_mean`,
+`serial_seconds_per_token_mean`, `effective_mean_draft_len`,
+`non_drafting_round_count`, `prefill_seconds_per_token`, `parity_ok`,
+`accepted_pair_count` and `head_provenance_sha256`. One request returns all 862
+rows, 596 of them scored.
+
+An earlier note in this ledger recorded that `per_prompt` was null. That claim
+was wrong and is **retracted**. It came from a flattened local dump that dropped
+the field, not from the API.
+
+The serial denominator has a coefficient of variation of **0.21 % to 0.24 %**
+per prompt across all 596 runs. Candidate seconds per token are therefore
+directly comparable between seats, dates and solvers to about a fifth of a
+percent. Tooling: `research/board_per_prompt.py`.
+
+### (B) Every submission has a fetchable source branch
+
+`git fetch upstream` creates `upstream/submissions/<uuid>` for every submission,
+including rejected, failed and still-validating ones. Joining that source to the
+per-prompt metrics gives a full factorial over any mechanism a competitor has
+tried. This supersedes the promotion-chain method of ledger 216, which could
+only read the 56 promoted diffs.
+
+### (C) beagle is 50 % of the score, and three of five wide prompts are worth zero
+
+Which prompt occupies each order statistic:
+
+| slot | all 596 scored | the 248 runs above 3.15 |
+|---|---|---|
+| 4th | beagle 96.6 % | **beagle 100 %** |
+| 5th | medicine 54.0 %, republic 26.2 %, botany 13.6 %, essays 4.9 % | medicine 91.5 %, botany 3.6 %, republic 3.2 %, essays 1.6 % |
+
+For any tree we would actually submit, the score is
+`(beagle_raw + min over the other four wide prompts) / 2`. At the crown tree
+`89cbdc02` the wide prompts sort as beagle 3.119392, essays 3.392453, republic
+3.450045, medicine 3.465321, botany 3.482492. **republic, medicine and botany
+are all above the 5th slot and are worth exactly zero to that tree.** beagle
+carries 50 % of the score with 8.75 % of headroom before it stops paying; essays
+carries the other 50 % with 1.70 %.
+
+The standing rule that uniform wide-prompt improvement is the only full-value
+lever survives and is now sharper: a uniform gain moves both binding slots, and
+a targeted gain is worth something only on beagle and on whichever prompt is
+currently 5th.
+
+### (D) The observed-floor ceiling is 3.3272
+
+Taking each wide prompt's best candidate time ever recorded on the board:
+
+| prompt | floor s/tok | raw at floor | set by |
+|---|---:|---:|---|
+| beagle | 0.01196662 | 3.174650 | `a7206518` yijunyu |
+| republic | 0.01091846 | 3.479771 | `a7206518` yijunyu |
+| botany | 0.01083058 | 3.508226 | `28031cc2` jonathan308 |
+| medicine | 0.01081874 | 3.511954 | `872b228e` gibavargas |
+| essays | 0.01070514 | 3.549467 | `5edf75ac` EternaPeptix |
+
+Median at the floors: **3.327210, or +2.189 % over the crown**. Every value in
+that column was achieved by a real ranked run, so this is a demonstrated
+ceiling for the current tree family rather than a model. beagle sits 9.6 % below
+the next-lowest floor and is the binding constraint on all of it.
+
+A weaker but strictly constructive target: the best achievable median from
+mixing two real trees is **3.293832, +1.164 %**, from `a7206518`'s beagle and
+`872b228e`'s other seven prompts.
+
+### (E) The cap and gate factorial, solved
+
+`widthCap` and `segmentedVerifyDepthCap` extracted from the submission branch of
+every run in the top 45 by score plus the top 25 by beagle speed:
+
+| cell | runs | best beagle raw | best official |
+|---|---:|---:|---:|
+| **cap 7 + streak gate, floor 5** | 3 | **3.17673** | 3.24649 `a7206518` |
+| cap 7 flat, no gate | 3 | 3.14698 | **3.25592** `89cbdc02` |
+| cap 8 + streak gate, floor 5 | 49 | 3.14688 | 3.25489 `872b228e` |
+| cap 8 flat, no gate | **0** | — | never run by anyone |
+
+The four fastest beagle legs on the board are `a7206518` 0.01196662 (cap 7 +
+gate), `055bc201` 0.01198857 (cap 7 + gate), `4461c719` 0.01204812 (cap 8 +
+gate) and `62a7821b` 0.01206765 (cap 7 + gate). **Three of the four best come
+from a cell that only three runs ever used**, by three different solvers. That
+is not a favourable draw.
+
+Prompt by prompt, cap 7 + gate against cap 7 flat:
+
+| prompt | cap 7 + gate | cap 7 flat | winner |
+|---|---:|---:|---|
+| beagle | **3.176726** | 3.119392 | gate, +1.84 % |
+| medicine | 3.316257 | **3.465321** | flat, +4.49 % |
+| botany | 3.428545 | **3.482492** | flat, +1.57 % |
+| essays | **3.450498** | 3.392453 | gate, +1.71 % |
+| republic | **3.471684** | 3.450045 | gate, +0.63 % |
+| median | 3.246492 | **3.255922** | flat, +0.29 % |
+
+The gated tree wins three of five wide prompts including beagle. Its only real
+loss is medicine, and medicine is what drags its 5th slot down to 3.3163. Lift
+medicine in that tree to the value botany already holds there, 3.42855, and the
+median becomes **3.302636, +1.43 % over the crown**, with no new kernel and no
+new head.
+
+### (F) Why the gate helps beagle and hurts medicine
+
+`widthCap = fullAcceptStreak >= 2 ? cap : 5`. The clamp to 5 fires whenever the
+previous round did not accept every draft. beagle rejects deep drafts, so
+truncating them saves more than it costs. medicine accepts deep drafts, so
+truncating them destroys value. The crown's own note reached the same reading
+from the other side: the floor, not the ceiling, truncated medicine.
+
+`fullAcceptStreak` is a single-round signal and cannot separate "this prompt is
+hard" from "this round happened to reject." `positionAcceptEMA` is a
+multi-round signal and does separate them. That is the E81 hypothesis. Note that
+a graded **streak** ladder is already a ranked negative at 3.19124, so the arm
+must condition on the smoothed acceptance state and must not reduce to a streak
+ladder.
+
+### (G) No custom proposal head has ever beaten the pinned head on beagle
+
+329 of the 596 scored runs declared a non-pinned head, across about 40 distinct
+digests. Best beagle time ever achieved by each head:
+
+| head | best beagle s/tok | runs | best score |
+|---|---:|---:|---:|
+| **pinned `559b24eb…`** | **0.01196662** | 267 | 3.25592233 |
+| `d2a8b49d…` hadakang | 0.01237839, +3.44 % | 1 | 3.15514209 |
+| `477ba72…` prior pinned | 0.01240716, +3.68 % | 46 | 3.16765685 |
+| `1f207eb9…` ours `2c766441` | 0.01242812, +3.86 % | 1 | 3.07213258 |
+| `2edd8b91…` jonathan308 | 0.01247363, +4.24 % | 3 | 3.19853422 |
+
+The controlled comparison is hadakang on 2026-08-20: a custom head at 11:04
+scored 3.15514, their own pinned-head tree at 00:57 scored 3.25188. Same
+account, same day, same base family, −3.0 % of score.
+
+This does **not** close the head axis. The HF audit found that 19 of 25
+island-bearing published heads are bit-exact copies of the
+`EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0` master, so the board has been testing
+packaging rather than training. 17 of the 40 published heads, `xkm` included,
+carry no `draft_lm_head` at all, which drops the affine-2 shortlist and exact
+affine-4 rerank at `Qwen35.swift:3122-3219` — two promoted levers — and `xkm`
+also doubles per-draft-step weight traffic with a BF16 trunk. Two large
+per-step penalties unrelated to weight quality explain the whole table. E82 is
+scoped to hold the readout and the footprint fixed and vary only the trunk
+weights, which is the arm the board has never run.
+
+### (H) The schedule is bistable on plutarch, confirmed at rank
+
+Every shipped-price tree on the board, ours and the crown's alike, drafts
+plutarch at mean length 0.154 with 449 non-drafting rounds. Our `pbfit` arm
+`2da69933` drafted it at mean length 2.695 with **zero** non-drafting rounds and
+reached raw 2.296867, within 0.251 % of the board's best plutarch. The schedule
+has two attractors on that prompt and the depth price selects between them. It
+bought nothing, because plutarch stays below the 4th slot in both attractors,
+but it is direct ranked evidence for the closed-loop diagnosis.
+
+### (I) Retractions and corrections
+
+- `officialMetrics.per_prompt` is populated, not null. Retracted as above.
+- The serial-denominator coefficient of variation is 0.21–0.24 %, not 0.11 %.
+- Per-prompt floors are lower than previously recorded: medicine 0.01081874 and
+  not 0.01097, essays 0.01070514, botany 0.01083058.
+- The mechanism ceiling of the current family is 3.3272 and not 3.32.
+- The median pair is not fixed at (beagle, medicine). The 4th is beagle; the 5th
+  is whichever wide prompt is currently slowest, and at the crown tree it is
+  essays.
