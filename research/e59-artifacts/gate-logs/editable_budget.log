@@ -1,1 +1,1 @@
-editable budget OK: source=2458949/3000000 bytes headroom=541051 growth=0/262144 exempt=2410/2147483648 files=154 (growth base=45b4f3a800f879e3579ca27ef0b1c0ef40e4473d; contract=45b4f3a800f879e3579ca27ef0b1c0ef40e4473d; base source=2458949, exempt=2410, files=154)
+editable budget OK: source=2462054/3000000 bytes headroom=537946 growth=0/262144 exempt=2410/2147483648 files=154 (growth base=31e67cb82c0e78c04c3d36b401ae213aa9e540e8; contract=31e67cb82c0e78c04c3d36b401ae213aa9e540e8; base source=2462054, exempt=2410, files=154)

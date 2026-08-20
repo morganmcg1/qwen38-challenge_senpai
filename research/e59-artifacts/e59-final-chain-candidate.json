@@ -2,13 +2,13 @@
   "arm": "candidate",
   "assert_after": {
     "exit_code": 0,
-    "mtime": "2026-08-20T05:50:27Z",
-    "sha256": "fab69831ed1d7f55bb6b56f0fbe6b5a379d77202bed63fee8fb7585a0927a8a8"
+    "mtime": "2026-08-20T06:11:51Z",
+    "sha256": "410e863c4091e7d3fdd82988f255dc1648d5e6cba7b8606995211f2e4cc22fa0"
   },
   "assert_before": {
     "exit_code": 0,
-    "mtime": "2026-08-20T05:50:27Z",
-    "sha256": "fab69831ed1d7f55bb6b56f0fbe6b5a379d77202bed63fee8fb7585a0927a8a8"
+    "mtime": "2026-08-20T06:11:51Z",
+    "sha256": "410e863c4091e7d3fdd82988f255dc1648d5e6cba7b8606995211f2e4cc22fa0"
   },
   "local_submit": {
     "exit_code": 0,
@@ -20,9 +20,9 @@
         "effective_mean_draft_len": 5.7,
         "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
         "mode": "qwen-mtp-local-submit",
-        "mtp_decode_speedup": 1.7694432050053421,
+        "mtp_decode_speedup": 1.7773240334752587,
         "mtp_depth": 8,
-        "mtp_seconds_per_token": 0.05510105472058058,
+        "mtp_seconds_per_token": 0.0549498051404953,
         "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
         "official_score": false,
         "oracle": "candidate-local-mtp-golden-rows",
@@ -30,11 +30,11 @@
         "rankable": false,
         "ranked_decode_speedup_floor": 0.9,
         "residual_divergence_count": 0,
-        "serial_seconds_per_token": 0.09749818686395884,
+        "serial_seconds_per_token": 0.09766360931098461,
         "uses_pinned_mtp_head": true
       },
       "passed": true,
-      "score": 1.7694432050053421,
+      "score": 1.7773240334752587,
       "track_id": "qwen3.8-27b-mtp-v1"
     }
   },
@@ -53,7 +53,7 @@
       "theQwenMTPTrackIsArmedOnQwen38",
       "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
     ],
-    "summary": "\u2718 Test run with 688 tests in 49 suites failed after 19.732 seconds with 40 issues."
+    "summary": "\u2718 Test run with 688 tests in 49 suites failed after 19.246 seconds with 40 issues."
   },
   "twin_sha256": [
     "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5",

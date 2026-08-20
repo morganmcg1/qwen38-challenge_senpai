@@ -5,7 +5,7 @@ scored-surface gate
   scored commit : 2b0c36a078b7660c9215adee933336ff46da25af
   official score: 3.23250848263467   (created 2026-08-18T22:44:18.032Z)
   built by      : yukon-autoresearch[bot] on organizer lineage 5068eb8d0bae
-  subject rev   : 314781dab497a79d7b1a95fb15d479aecd62abd6  (HEAD)
+  subject rev   : 5cbc2ee3526618cb308e0ed21a069f74de8d9022  (HEAD)
   lineage       : the scored commit is NOT an ancestor of HEAD -- divergent
                   histories, so only the TREE comparison below is meaningful.
 
@@ -18,13 +18,13 @@ scored-surface gate
 
   UNSCORED SHIPPED DELTA (scored tree -> HEAD):
         +3     -1  Sources/MLXFastModel/Qwen35RuntimeWeights.swift                  FRONTIER-TAKEN
-       +50     -0  Sources/MLXFastModel/Qwen36MTPBlockSession.swift                 WARM-PATH-ONLY
+      +120     -0  Sources/MLXFastModel/Qwen36MTPBlockSession.swift                 WARM-PATH-ONLY
         +8     -4  Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift            FRONTIER-TAKEN
        +32    -19  Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift         HOT-PATH-REFACTOR
         +3     -3  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp         FRONTIER-PLUS-PINNED-DIFF:d1c64484de7b18210117cda71340c157375fc6255d155ef1550c7b9d5a4fd86e
        +16     -6  Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h FRONTIER-PLUS-PINNED-DIFF:d1c64484de7b18210117cda71340c157375fc6255d155ef1550c7b9d5a4fd86e
 
-    112 inserted and 33 deleted lines in the surface we would
+    182 inserted and 33 deleted lines in the surface we would
     submit next have never been measured by the board.
 
   FRONTIER-TAKEN VERIFICATION (against refs/e59/frontier-main = 80021bc03e4b):

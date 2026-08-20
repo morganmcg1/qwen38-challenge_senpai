@@ -374,33 +374,35 @@ files to the arm, rebuilds the metallib into every build root, rebuilds the
 worker, asserts the JIT kernel string by content inside the built binary, and
 then runs the full Swift suite with runtime tests enabled.
 
+Both arms below ran on the current base `31e67cb8`. An earlier pass on
+`45b4f3a8` reached the same verdicts and is reported at the end of this section.
+
 ### Base arm, the control
 
 ```
-worker_mtime  2026-08-20T05:46:30Z
-worker_sha256 34205e1bfe580f1edfe3b145088d9d3d93f2b22f526258a2d6613a86d106ac3a
+worker_mtime  2026-08-20T06:09:16Z
+worker_sha256 4f5758f2f085a1cb8b2a38d7f8d592e27c86686fd7118e0de6956a5379936de4
 ok require '<T, 5, 3, true>': 1
 ok require '<T, 6, 6, true>': 1
 ok forbid  '<T, 5, 5, true>': 0
-ok extraction: 80399 strings
+ok extraction: 80228 strings
 rebuild-and-assert-worker: PASS
 ```
 
-Swift suite: 688 tests in 49 suites, 41 issues, **10 failing tests**.
+Swift suite: 688 tests in 49 suites, 40 issues, **9 failing tests**.
 
 ### Candidate arm
 
 ```
-worker_mtime  2026-08-20T05:50:27Z   (assert before timing)
-worker_sha256 fab69831ed1d7f55bb6b56f0fbe6b5a379d77202bed63fee8fb7585a0927a8a8
+worker_mtime  2026-08-20T06:11:51Z   (assert before timing)
+worker_sha256 410e863c4091e7d3fdd82988f255dc1648d5e6cba7b8606995211f2e4cc22fa0
 ok require '<T, 5, 5, true>': 1
 ok require '<T, 6, 6, true>': 1
 ok forbid  '<T, 5, 3, true>': 0
-ok extraction: 80399 strings
 rebuild-and-assert-worker: PASS
 
-worker_mtime  2026-08-20T05:50:27Z   (assert after timing, --no-build)
-worker_sha256 fab69831ed1d7f55bb6b56f0fbe6b5a379d77202bed63fee8fb7585a0927a8a8
+worker_mtime  2026-08-20T06:11:51Z   (assert after timing, --no-build)
+worker_sha256 410e863c4091e7d3fdd82988f255dc1648d5e6cba7b8606995211f2e4cc22fa0
 worker_unchanged_across_timing: true
 ```
 
@@ -410,17 +412,9 @@ the ledger 202(H) stale-worker trap on both sides of the measurement.
 
 Swift suite: 688 tests in 49 suites, 40 issues, **9 failing tests**.
 
-The candidate failing set is a strict subset of the base control's 10. The one
-test that differs is
-`phaseStartAllocatorResetLeavesExactlyEmptyCacheWhenRuntimeTestsAreEnabled`,
-which failed in the base arm with `runtime worker failed to clear the MLX
-allocator cache at phase start` (`RuntimeWorkerSupportTests.swift:179`) and
-passed in the candidate arm after 9.024 s. I read this as host memory pressure
-on a 48 GiB machine, not as an effect of the change: a one-character template
-width cannot decide whether the allocator cache drains at phase start. I claim
-no credit for it. The honest statement is **no new failure**, not a fix. The
-other 9 failures are the same environment and provenance failures both arms
-share.
+**The two failing sets are identical.** Nothing fails only in the candidate and
+nothing fails only in the base. The 9 shared failures are the same environment
+and provenance failures both arms carry.
 
 `--local-submit`, run between the two assertions, exit code 0:
 
@@ -432,40 +426,64 @@ share.
 | `public_drift_tripwire_passed` | `true` |
 | `uses_pinned_mtp_head` | `true` |
 | `head_provenance_sha256` | `dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9` |
-| serial rows checked | 128/128, depth 0, 0.097499 s/token |
-| MTP rows checked | 134/134, depth 8, 20 rounds, 0.055101 s/token |
+| serial rows checked | 128/128, depth 0, 0.097664 s/token |
+| MTP rows checked | 134/134, depth 8, 20 rounds, 0.054950 s/token |
 | `accepted_draft_rate` | 0.9561 |
 | `effective_mean_draft_len` | 5.7 |
-| local speedup | 1.7694 |
+| local speedup | 1.7773 |
 
 Reference rows: `rows=129 seed_tokens=512 reference_seed_token=271
 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0`.
 
-All three cool gates were the real 40 °C gate, not a bypass: 39.8 °C before
-reference generation, 40.0 °C before the serial control, 39.8 °C before the MTP
+All three cool gates were the real 40 °C gate, not a bypass: 40.0 °C before
+reference generation, 39.3 °C before the serial control, 39.6 °C before the MTP
 leg.
 
-That 1.7694 is not a score. `rankable` is `false` and the recorded reason is
+That 1.7773 is not a score. `rankable` is `false` and the recorded reason is
 `candidate-generated reference rows; official scoring disabled; ranked run is
 the only authority`. Both legs also use the candidate build, so this number is a
 correctness receipt and a sanity check, not evidence for the effect size. The
 effect size comes from the matched leg session above.
 
+### The earlier pass on `45b4f3a8`, and one flaky test
+
+The same chain ran on the previous base before it moved. It reached the same
+verdicts: assert before and after equal at `fab69831ed1d7f55…`,
+`--local-submit` passed with exact tokens and 128/128 plus 134/134 rows, local
+speedup 1.7694.
+
+The Swift control differed in exactly one place, and it is worth recording
+because it would otherwise look like a candidate effect. On `45b4f3a8` the base
+arm failed 10 tests and the candidate arm failed 9; the extra failure was
+`phaseStartAllocatorResetLeavesExactlyEmptyCacheWhenRuntimeTestsAreEnabled`,
+reporting `runtime worker failed to clear the MLX allocator cache at phase
+start` (`RuntimeWorkerSupportTests.swift:179`). On `31e67cb8` that test passes
+in **both** arms. So it is flaky under host memory pressure on this 48 GiB
+machine and it has now been observed passing and failing on the same tree. It
+is not evidence for or against the candidate, and I claimed no credit for it.
+
 ### Submission gates
 
-All five now pass, recorded in `research/e59-artifacts/e59-gates.json` with
-`all_passed=true`:
+All five pass on the current base, recorded in
+`research/e59-artifacts/e59-gates.json` with `all_passed=true`:
 
 | gate | verdict |
 | --- | --- |
-| `assignment_scope` | PASS, 2 submitted paths against `BASE_SHA=45b4f3a8` |
-| `editable_budget` | PASS, `source=2458949/3000000 headroom=541051 growth=0/262144 exempt=2410 files=154` |
+| `assignment_scope` | PASS, 2 submitted paths against `BASE_SHA=31e67cb8` |
+| `editable_budget` | PASS, `source=2462054/3000000 headroom=537946 growth=0/262144 exempt=2410 files=154` |
 | `twin_audit` | PASS, 29 runtime-effective twins, 1 allowlisted comment-only waiver |
 | `scored_surface` | PASS, every unscored shipped delta acknowledged |
 | `ranked_score_boundary` | PASS, candidate edits affect the MTP denominator only |
 
-`scored_surface` was blocked in the previous report and is now unblocked. See
-the blocker section for how, and for the stale pin it exposed.
+Source growth is **zero**: the diff is two characters, each replacing one
+character. The base's own source total moved from 2,458,949 to 2,462,054 bytes
+when the advisor merged the organizer frontier, which is why the headroom figure
+differs from the earlier pass.
+
+`scored_surface` was blocked in the previous report and is now unblocked. Its
+pinned digest `d1c64484…` still matches on the new base, because the base move
+left both twins byte-identical. See the blocker section for how it was unblocked
+and for the stale pin it exposed.
 
 ## Negative and null results
 
@@ -620,13 +638,13 @@ the blocker section for how, and for the stale pin it exposed.
   needing −0.646 %, so it is a hair short on its own and clears comfortably when
   composed. With `t6` the advisor's pricer gives −3.40 % ranked QMV, −2.808 %
   candidate leg, and +1.942 % published score at sd 2.57.
-- **Close-out chain: green.** Both arms rebuilt and asserted the JIT kernel
-  string inside the worker binary by content. The candidate asserted again after
-  timing with the same worker digest, so no stale binary was timed. The
-  candidate Swift failing set is a strict subset of the base control's.
-  `--local-submit` passed with exact tokens, a closed row ledger, and three real
-  40 °C gates. All five submission gates pass, including the scored-surface gate
-  that could not run before.
+- **Close-out chain: green on the current base `31e67cb8`.** Both arms rebuilt
+  and asserted the JIT kernel string inside the worker binary by content. The
+  candidate asserted again after timing with the same worker digest, so no stale
+  binary was timed. The two Swift failing sets are identical, so the candidate
+  introduces no failure. `--local-submit` passed with exact tokens, a closed row
+  ledger, and three real 40 °C gates. All five submission gates pass, including
+  the scored-surface gate that could not run before.
 - **Named residual risk:** `t55` restores E27's 183 entry registers on
   `affine_qmv_fast<bfloat16_t,64,4,false>`, and E27 lost 0.3321 % of score. The
   local evidence says this costs nothing here — serial −0.0196 % against a
@@ -696,5 +714,15 @@ QMV against 5.75 % at M=9.
 3. **Re-pin `ACK_UNSCORED` in the same commit as every future routing change.**
    The pin went stale on t6 and nobody noticed, because the gate could not run
    here. It runs now, so the next routing merge should carry its own digest.
-4. **Clear the five hard-coded `0.0629 %` null floors** listed above so no later
+4. **Make `research/e59_final_chain.sh` stage-safe, or warn about it.** While the
+   base arm runs, `git checkout <base> -- <twins>` leaves the base twins in the
+   **index**, not only in the worktree. Any `git commit -a` or bare `git commit`
+   during that window silently commits `<T,5,3>` and destroys the candidate. I
+   hit this and had to commit by explicit pathspec. A `git checkout` into a
+   temporary worktree, or a loud banner, would remove the trap.
+5. **Clear the five hard-coded `0.0629 %` null floors** listed above so no later
    analysis silently inherits a retracted constant.
+6. **Refresh `senpai/frontier-state.json`.** It records
+   `organizer.syncedCommit 0c90733d`, but the base merge `53d9d58` adopted
+   `80021bc0`. Anyone reading the state file for `UPSTREAM_SHA` gets the wrong
+   answer, as I did.

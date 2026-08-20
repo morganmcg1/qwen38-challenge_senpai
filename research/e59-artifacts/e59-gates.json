@@ -2,14 +2,14 @@
   "all_passed": true,
   "gates": [
     {
-      "command": "senpai/validate-assignment-scope.sh 45b4f3a800f879e3579ca27ef0b1c0ef40e4473d Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+      "command": "senpai/validate-assignment-scope.sh 31e67cb82c0e78c04c3d36b401ae213aa9e540e8 Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
       "exit_code": 0,
       "gate": "assignment_scope",
       "note": "",
       "passed": true
     },
     {
-      "command": "senpai/check-editable-budget.sh 45b4f3a800f879e3579ca27ef0b1c0ef40e4473d",
+      "command": "senpai/check-editable-budget.sh 31e67cb82c0e78c04c3d36b401ae213aa9e540e8",
       "exit_code": 0,
       "gate": "editable_budget",
       "note": "",
