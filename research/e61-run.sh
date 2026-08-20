@@ -36,9 +36,12 @@ export E42_BINARY_ASSERT="research/e61_binary_assert.sh"
 # and op budgets and clears the allocator cache after warmup -- a different
 # command-buffer geometry from the ranked box, which is exactly the confound the
 # assignment's lever removes.
-export DARKBLOOM_STARTUP_MEMORY_PROFILE=full
-export MLX_MAX_MB_PER_BUFFER=512
-export MLX_MAX_OPS_PER_BUFFER=50
+# Overridable so research/e61_geometry_proof.sh can starve the ops budget on a
+# throwaway leg and show that the value governs the worker. meta.txt records the
+# values a leg actually ran under, so a timed leg still names its own geometry.
+export DARKBLOOM_STARTUP_MEMORY_PROFILE="${DARKBLOOM_STARTUP_MEMORY_PROFILE:-full}"
+export MLX_MAX_MB_PER_BUFFER="${MLX_MAX_MB_PER_BUFFER:-512}"
+export MLX_MAX_OPS_PER_BUFFER="${MLX_MAX_OPS_PER_BUFFER:-50}"
 
 tag="${1:?usage: research/e61-run.sh TAG [--legs N] [--curve]}"
 
@@ -53,22 +56,31 @@ echo "e61-run: DARKBLOOM_STARTUP_MEMORY_PROFILE=${DARKBLOOM_STARTUP_MEMORY_PROFI
 research/e42-run.sh "$@" 2>&1 | tee "${log}"
 rc="${PIPESTATUS[0]}"
 
-# The lever is only worth setting if it is also verified. The worker announces a
-# low-memory startup on stderr, and QwenRuntimeWorker forwards worker stderr with
-# the `mlxfast-worker: ` prefix, so the announcement reaches this log. Fail the
-# leg rather than report a number measured under the wrong geometry.
-low_memory="Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift:495"
-if grep -q "mlxfast-worker: low-memory startup profile engaged" "${log}"; then
-  echo "e61-run: ${tag} ran under the LOW-MEMORY startup profile (${low_memory});" \
-       "the geometry lever did not take. Failing the leg." >&2
-  echo "geometry_lever_verified=false" >> "${E42_ROOT}/runs/${tag}/meta.txt" 2>/dev/null || true
-  exit 6
-fi
+# DEFECT REMOVED: this used to grep the leg log for the worker's low-memory
+# startup notice. That check cannot fail. The notice is written to the worker's
+# stderr (QwenRuntimeMTPWorker.swift:493-497) but `mtp-timed` builds worker
+# options without `forwardsWorkerStderr` (MLXFastCLI/main.swift, default false
+# at QwenRuntime.swift), and the drain installs a swallowing emitter
+# (QwenRuntimeWorker.swift), so the line never reaches this log under any
+# profile. A grep that can only pass is not an instrument, and it reported a
+# false `geometry_lever_verified=true` on the E61 smoke leg.
+#
+# research/e61_geometry_proof.sh carries the two falsifiable session controls
+# instead: a `DARKBLOOM_STARTUP_MEMORY_PROFILE=bogus` launch that must crash on
+# `RuntimeStartupMemoryPolicy.resolve`'s `preconditionFailure`, and a starved
+# `MLX_MAX_OPS_PER_BUFFER` leg that must run measurably slower. This leg only
+# records the geometry it exported.
+#
+# wired_residency_active: Qwen36MTPBlockSession.wireResidentWeightsIfEnabled
+# returns early below 96 GiB of physical memory, so resident weights are never
+# wired on this host. The ranked M5 wires them. Recorded per leg on the
+# advisor's instruction; E62 tests whether it moves a leg.
 {
-  echo "geometry_lever_verified=true"
   echo "darkbloom_startup_memory_profile=${DARKBLOOM_STARTUP_MEMORY_PROFILE}"
   echo "mlx_max_mb_per_buffer=${MLX_MAX_MB_PER_BUFFER}"
   echo "mlx_max_ops_per_buffer=${MLX_MAX_OPS_PER_BUFFER}"
+  echo "geometry_lever_verified_by=research/e61_geometry_proof.sh"
+  echo "wired_residency_active=false"
   echo "run_log=${log}"
 } >> "${E42_ROOT}/runs/${tag}/meta.txt" 2>/dev/null || true
 
