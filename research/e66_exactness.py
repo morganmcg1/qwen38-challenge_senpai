@@ -250,7 +250,14 @@ def main() -> int:
     root = pathlib.Path(args.ledgers)
 
     control_path = root / ("%s.json" % args.positive_control)
-    has_control = control_path.exists()
+    # The control can fire two ways. It can produce a ledger that differs from
+    # arm C, or the trusted parent can reject the run outright and write no
+    # ledger at all. The second is the stronger outcome and leaves a 0-byte file.
+    control_meta = read_meta(control_path)
+    control_rejected = (control_path.exists()
+                        and control_path.stat().st_size == 0
+                        and control_meta.get("verify_exit") not in (None, "0"))
+    has_control = control_path.exists() and control_path.stat().st_size > 0
     all_names = names + ([args.positive_control] if has_control else [])
 
     paths = {n: root / ("%s.json" % n) for n in all_names}
@@ -269,7 +276,26 @@ def main() -> int:
 
     timed_digests = {n: digests[n] for n in names}
     pos = None
-    if has_control:
+    if control_rejected:
+        pos = {
+            "arm": args.positive_control,
+            "fired": True,
+            "mode": "rejected_by_trusted_parent",
+            "differs_from_candidate": True,
+            "verify_exit": control_meta.get("verify_exit"),
+            "lane_perturb_copies":
+                control_meta.get("e66_binary_assert_lane_perturb_copies"),
+            "worker_sha256": control_meta.get("worker_sha256"),
+            "metallib_source_fingerprint":
+                control_meta.get("metallib_source_fingerprint"),
+            "note": ("The trusted parent raised a contract violation and wrote "
+                     "no ledger, so the perturbed kernel could not even produce "
+                     "a candidate row set. NA=5 groups occur at M=5 (the t55 "
+                     "cell) and as the first group of the M=9 cell, so this "
+                     "control proves the ledger reads the NA=5 helper body, "
+                     "not that it isolates M=5."),
+        }
+    elif has_control:
         pos_cmp = compare_ledger(payload[c], payload[args.positive_control])
         touched = rows_touching_width(payload[c]["row_ledger"], {5, 9})
         pos = {
@@ -330,7 +356,7 @@ def main() -> int:
             clo[n]["eos_present_in_ledger"] and clo[n]["window_closed_at_512"]
             for n in names),
     }
-    if has_control:
+    if pos is not None:
         gates["positive_control_differs"] = pos["differs_from_candidate"]
     report["gates"] = gates
     report["verdict"] = "EXACT" if all(gates.values()) else "FAILED"
