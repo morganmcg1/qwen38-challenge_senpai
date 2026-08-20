@@ -1,6 +1,6 @@
 {
   "trace": "research/out/e65-r1-02-census512b/trace.txt",
-  "label": "",
+  "label": "e65-r1-02-census512b",
   "iqr_k": 3.0,
   "sessions": [
     {
@@ -268,6 +268,110 @@
         "first_width_M9": 10,
         "first_width_M4": 45
       },
+      "depth_first_touch": [
+        {
+          "d": 3,
+          "n": 5,
+          "first_round": 45,
+          "excess_us": {
+            "draft_build": -27.5,
+            "verify_build": 64.5,
+            "eval_wall": -20.0,
+            "readout": 2.0,
+            "commit": -275.0,
+            "upkeep": 2.0
+          },
+          "first_draft_build_us": 1552,
+          "median_rest_draft_build_us": 1579.5,
+          "max_rest_draft_build_us": 1613,
+          "round_excess_us": -467.0
+        },
+        {
+          "d": 4,
+          "n": 7,
+          "first_round": 1,
+          "excess_us": {
+            "draft_build": 14325.5,
+            "verify_build": -140.0,
+            "eval_wall": -598.5,
+            "readout": 20.5,
+            "commit": 75.5,
+            "upkeep": 65.0
+          },
+          "first_draft_build_us": 20885,
+          "median_rest_draft_build_us": 6559.5,
+          "max_rest_draft_build_us": 6619,
+          "round_excess_us": 13545.0
+        },
+        {
+          "d": 5,
+          "n": 17,
+          "first_round": 2,
+          "excess_us": {
+            "draft_build": 167.0,
+            "verify_build": -243.5,
+            "eval_wall": -600.0,
+            "readout": 6.5,
+            "commit": -343.0,
+            "upkeep": 109.0
+          },
+          "first_draft_build_us": 11431,
+          "median_rest_draft_build_us": 11264.0,
+          "max_rest_draft_build_us": 43975,
+          "round_excess_us": -948.0
+        },
+        {
+          "d": 6,
+          "n": 3,
+          "first_round": 4,
+          "excess_us": {
+            "draft_build": -97.5,
+            "verify_build": 67.0,
+            "eval_wall": 16.0,
+            "readout": 2.5,
+            "commit": 10.0,
+            "upkeep": 19.0
+          },
+          "first_draft_build_us": 15882,
+          "median_rest_draft_build_us": 15979.5,
+          "max_rest_draft_build_us": 16031,
+          "round_excess_us": 15.5
+        },
+        {
+          "d": 7,
+          "n": 3,
+          "first_round": 7,
+          "excess_us": {
+            "draft_build": -65.0,
+            "verify_build": -22.0,
+            "eval_wall": 39.5,
+            "readout": 1.0,
+            "commit": 8.0,
+            "upkeep": -8.0
+          },
+          "first_draft_build_us": 20555,
+          "median_rest_draft_build_us": 20620.0,
+          "max_rest_draft_build_us": 20644,
+          "round_excess_us": -46.0
+        },
+        {
+          "d": 8,
+          "n": 41,
+          "first_round": 10,
+          "excess_us": {
+            "draft_build": -207.0,
+            "verify_build": -428.0,
+            "eval_wall": -437.0,
+            "readout": 2.0,
+            "commit": 21.0,
+            "upkeep": 5.0
+          },
+          "first_draft_build_us": 25246,
+          "median_rest_draft_build_us": 25453.0,
+          "max_rest_draft_build_us": 27094,
+          "round_excess_us": -1449.0
+        }
+      ],
       "crossing_probe": [
         {
           "round": 76,

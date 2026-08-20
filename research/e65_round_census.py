@@ -238,6 +238,45 @@ def structural_events(rows):
     return events
 
 
+def depth_first_touch(rows, segments=SEGMENTS):
+    """Cold-cost test that does not depend on an outlier rule.
+
+    Every draft depth builds its own graph shape, so the first round at a given
+    depth pays any compile or allocation the prewarm missed. Comparing it with
+    the median of the *remaining* rounds at that same depth isolates the cold
+    cost from the depth's intrinsic cost. A prewarm that covers a depth leaves
+    an excess near zero.
+    """
+    by_depth = {}
+    for row in rows:
+        by_depth.setdefault(row["d"], []).append(row)
+
+    out = []
+    for depth in sorted(by_depth):
+        group = sorted(by_depth[depth], key=lambda r: r["round"])
+        first, rest = group[0], group[1:]
+        if not rest:
+            continue
+        record = {
+            "d": depth,
+            "n": len(group),
+            "first_round": first["round"],
+            "excess_us": {},
+        }
+        for seg in segments:
+            values = [r[seg] for r in rest]
+            median_rest = statistics.median(values)
+            record["excess_us"][seg] = first[seg] - median_rest
+            if seg == "draft_build":
+                record["first_draft_build_us"] = first[seg]
+                record["median_rest_draft_build_us"] = median_rest
+                record["max_rest_draft_build_us"] = max(values)
+        record["round_excess_us"] = (
+            first["round_us"] - statistics.median([r["round_us"] for r in rest]))
+        out.append(record)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("trace")
@@ -285,6 +324,7 @@ def main():
             "cells": stats,
             "singular_cells": singular,
             "structural_events": structural_events(rows),
+            "depth_first_touch": depth_first_touch(rows, segments),
             "crossing_probe": crossing_probe(rows),
             "outliers": outliers,
             "outlier_excess_us": excess_us,
@@ -372,6 +412,19 @@ def main():
                   f"= {p['excess_in_peer_spreads']:.1f} peer spreads "
                   f"= {100.0 * p['excess_us'] / entry['timed_leg_us']:.4f} % of leg")
             print(f"      segment excess ms: {seg}")
+        print("  first touch per draft depth (first round at that depth vs "
+              "median of the rest):")
+        for r in entry["depth_first_touch"]:
+            seg = ", ".join(
+                f"{k}{v / 1000:+.2f}" for k, v in r["excess_us"].items()
+                if abs(v) >= 500)
+            print(f"    d={r['d']} n={r['n']:>2} first_rnd={r['first_round']:>3} "
+                  f"dbuild {r['first_draft_build_us'] / 1000:7.2f}ms vs med "
+                  f"{r['median_rest_draft_build_us'] / 1000:7.2f}ms "
+                  f"(max rest {r['max_rest_draft_build_us'] / 1000:7.2f}ms) "
+                  f"excess={r['excess_us']['draft_build'] / 1000:+7.2f}ms "
+                  f"round{r['round_excess_us'] / 1000:+8.2f}ms"
+                  + (f"  [{seg}]" if seg else ""))
         print(f"  structural events: {json.dumps(entry['structural_events'])}")
 
     if args.json:
