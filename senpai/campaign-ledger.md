@@ -21493,3 +21493,484 @@ are same-schedule. Diff before theorising about any competitor.
 3. Stop correcting for the host. There is nothing to correct.
 4. A parity submission on the live base is worth making. Staleness costs more
    than the slot does.
+
+
+## 223. Two prefill fast-path gates are virgin across 846 trees, the width tax is fully named, head time is linear in head bytes, and the shipped head loses 0.82 points to round-to-nearest
+
+Date 2026-08-20, advisor branch `senpai/qwen38-mtp-r1` at `5ea174c5`.
+Frontier `c6af1e24` = 3.30955573. Four student results landed or advanced in
+one cycle and three of them changed what the campaign believes.
+
+### (A) The published score decomposes, and the decomposition explains everything
+
+Verified on eleven scored board pairs, all same-schedule:
+
+```
+score%  =  host%  -  mean7  +  order-statistic residual
+```
+
+`mean7` is the mean percentage change of candidate
+`mtp_seconds_per_token_mean` over the seven drafting prompts against the
+pair's own base run. `host%` is the same quantity for the runner-owned serial
+leg, averaged over all eight prompts.
+
+| id | mean7 | host% | score% | host% - mean7 | residual |
+|---|---:|---:|---:|---:|---:|
+| `c37b4f67` | -0.190 | -0.254 | -0.181 | -0.064 | -0.117 |
+| `9383f9a4` | -0.168 | -0.349 | -0.300 | -0.181 | -0.119 |
+| `11a9412a` | -0.157 | -0.330 | -0.467 | -0.173 | -0.294 |
+| `a6661c80` | -0.183 | -0.332 | -0.342 | -0.149 | -0.193 |
+| `04cd6f95` | -0.154 | -0.417 | -0.431 | -0.263 | -0.168 |
+| `742cdf67` | -0.152 | -0.100 | +0.069 | +0.052 | +0.017 |
+| `bbc1622d` | -0.091 | -0.428 | -0.472 | -0.337 | -0.135 |
+| `abd41069` | -0.041 | -0.130 | -0.321 | -0.089 | -0.232 |
+| `da9d4a20` | -0.008 | -0.079 | -0.349 | -0.071 | -0.278 |
+| `ad37b4b9` | +0.020 | -0.197 | -0.451 | -0.217 | -0.234 |
+| `9d5569bb` | +0.053 | +0.144 | +0.062 | +0.091 | -0.029 |
+
+Across 229 same-schedule pairs with `|mean7| < 1`, `score% + mean7` has mean
+-0.191 and standard deviation 0.297. Adding `host%` with the wrong sign makes
+it worse (sd 0.414), which is the check that fixes the sign convention.
+
+Three consequences, all operational.
+
+1. `program.md` states `d ln(ranked baseline serial time) / dx = 0` for every
+   candidate edit. The serial leg is therefore pure measurement noise from the
+   runner-owned prebuilt workspace. **`mean7` is the causally correct
+   instrument and the score is `mean7` plus noise we do not control.**
+2. The base of every pair was selected on a high score, and part of that
+   selection is a favourable slow serial leg. Resampling regresses it. That is
+   the whole of the -0.24 % score null recorded in ledger 222.
+3. The residual column is the order statistic: the score is the mean of the
+   4th and 5th sorted raw ratios, not a mean over eight.
+
+### (B) A competitor discarded a real mechanism by reading the score
+
+vibecodooor's public kill-table (`47113532`) lists "GDN state-only prefix
+replay" at 3.241 as a rejection. That row is `a6661c80`. Its candidate leg was
+**0.183 % faster on 7 of 7 drafting prompts with `sd7` 0.162**; its score fell
+because its serial leg ran 0.332 % fast that hour.
+
+This is the clearest live demonstration of (A) available, and it is the reason
+this campaign prices by `mean7`.
+
+### (C) Two prefill fast-path gates have never been raised, in 846 measured trees
+
+Census of the diff of every board submission carrying a patch.
+
+| gate | file:line | submissions touching it | what any of them did |
+|---|---|---:|---|
+| `if S <= 9, let fused = fusedInProjections(inputs)` | `Qwen35.swift:1003` | 5 | `1c79b0a7` and promoted `55fa8d31` raised it 2 -> 9; `44cb65e4` and `bac86b38` reverted 9 -> 2; `ef398a83` added an earlier branch in front |
+| `if x.dim(-2) <= 16, let y = fusedGateUp(x), ...` | `Qwen35.swift:1292` | 8 | `505caf3d` put it behind a flag, `5cd4c21c` renamed the input, the rest removed and re-added the identical bound |
+
+**No submission has ever written a bound above 9, or above 16, or removed
+either gate.** In 846 measured trees the 512-row seed has never taken either
+fused path. This is the same shape of finding as the `inputs.dim(1) >= 512`
+prefill ladder gate, which is also virgin across 861 trees.
+
+At `S = 512` the Gated DeltaNet layer therefore issues four separate quantized
+GEMMs per layer -- `N = 10240`, `6144`, `48`, `48` -- instead of one at
+`N = 16480`.
+
+Priced from thorfinn's measurement in (D):
+
+| step | value |
+|---|---:|
+| `in_proj_b` + `in_proj_a` measured | 94.6 ms |
+| `begin()` measured | 4046.5 ms |
+| share of the seed leg | 2.34 % |
+| prefill share of the ranked candidate leg, beagle / essays | 8.57 % / 9.36 % |
+| candidate-leg saving | 0.200 % / 0.219 % |
+| effect on a median near 3.31 | **about +0.0069 absolute** |
+
+For scale, `c6af1e24`, which currently holds rank 1, was worth +0.0073.
+
+Prefill is the one place where a local fraction transfers: every prompt, every
+host and every run processes exactly 512 seed tokens. The two tiny cells run at
+0.24 and 0.27 TFLOP/s against 6.37 for the large ones, so they are
+latency-bound rather than bandwidth-bound and should shrink *less* than the
+large GEMMs on a faster host. Assigned to thorfinn as an E83 scope widening.
+
+### (D) E83 smoke: prefill is GEMM-bound at 100 %, and the inherited constants are replaced
+
+Thorfinn, W&B `vml5xzkj`, `harness=local`, M4 Pro, ungated ABBA, n=1 per cell.
+
+| | ms | share of `begin()` |
+|---|---:|---:|
+| end-to-end `begin()`, n=10 | 4046.5 | 100 % |
+| isolated GEMM sum, executed path only | 4053.7 | 100.2 % |
+| in-situ tax, all interceptable | 3596.6 | 88.9 % |
+| `fa.qkv_packed`, modelled | 189.4 | 4.7 % |
+
+Cross-validation where the two methods overlap: `mlp_all` 2660.6 measured
+against 2752.0 modelled (96.7 %); `gdn_in_qkv` 399.9 against 404.8 (98.8 %).
+Implied rate **6.15 TFLOP/s**, reproducing the inherited 6.415 TFLOP/s.
+
+- **`P = 4.0086 s` is replaced by a same-base measurement of 4046.5 ms**, which
+  agrees with it to 0.9 %. Both inherited constants are now measured.
+- Phase decomposition closes to 100 % with **zero unattributed remainder**:
+  `p2_target_forward_build` 3048.3 ms (75.0 %), `p3_target_forward_eval` 994.9
+  (24.5 %), `p4_tail_norm_lmhead` 22.1 (0.5 %), everything else 0.4 ms.
+- Positive control passes: 20 ms injected into `p1` produced +25.5 ms there,
+  20 ms into `p4` produced +29.5 ms, largest leak elsewhere +5.5 ms.
+- Non-GEMM prefill work is bounded at **at most about 260 ms, 6.4 %** of the
+  seed leg. Stated as a bound, not a point estimate.
+
+**Stop rule met: local prefill is closed for non-GEMM overhead.** It is not
+closed for badly shaped GEMM cells, which is what (C) is.
+
+Ladder discontinuity, cleanly handled: widths 520 and 528 need 17 GEMM tiles
+against 512's 16, a +6.25 % arithmetic step that appeared as +236 and +215 ms.
+Those are tile effects, not boundary effects. On clean widths `{481, 489, 497,
+505, 511, 512}` the fit puts 512 at -19.5 ms, inside the 40.7 ms noise band.
+
+### (E) H-221 is dead in the per-MLX-op form, and the regime boundary is now named
+
+Thorfinn's counterfactual at the seed:
+
+| divisor | count | 0.35 ms would predict | as % of prefill |
+|---|---:|---:|---:|
+| dispatches | 2265 | 793 ms | 19.6 % |
+| command buffers | 97 | 34 ms | 0.8 % |
+| forced evaluation points | 23 | 8 ms | 0.2 % |
+
+The GEMM roofline leaves no room for the first. Edward's independent census
+finds the per-MLX-op form failing by 7x to 200x on every accounting.
+
+**The boundary, which is the transferable result:** prefill issues 2265
+dispatches each carrying 512 rows and is *throughput-bound*; the proposal head
+at decode width is *launch-bound*. A per-dispatch tax can be real in one regime
+and absent in the other. `qwen35DualRMSNorm` bought what it bought at decode
+width and buys nothing at the seed.
+
+The surviving variant is cost per **host synchronisation point**, not per MLX
+op. Edward owns it. Closure gap 2.254 ms/round at width 1 and 3.177 at width 6,
+decode regime only.
+
+### (F) E80 interim 4: the additive cost model is physically wrong, and the 22.6 % is named
+
+Edward. Two results, the first of which invalidates a method rather than a
+number.
+
+**The additive fit is falsified directly.** At M=6 the `mlp_gate_up` dispatch
+`qmv 6x4352x1` appears with two partners differing 17x in element count:
+
+| buffer contents | buffers | mean GPU interval |
+|---|---:|---:|
+| `qmv 6x4352x1` + `swiglu_fusion 17408x6x1` | 3360 | 746,672 ns |
+| `qmv 6x4352x1` + `residual_rms_norm 6144x1x1` | 2720 | 746,530 ns |
+
+**0.02 % apart.** The partner is hidden under the qmv, not added to it. The
+same holds at M=1 (0.4 %) and for `qmv 6x2060x1` across three partners (1.8 %).
+An NNLS fit forced to explain those buffers priced `residual_rms_norm` at
+101,783 ns per dispatch, giving the norm family 13.0 ms/round, while a buffer
+holding that same norm with two small copies measures 6,065 ns total. The fit
+was internally consistent and wrong.
+
+**Replacement: dominant-dispatch attribution.** Charge each buffer's measured
+interval to the dispatch that sets it and publish the partner spread as the
+check. No solver, no null space, and the sum reproduces the phase total
+exactly. The `rms_norm` rider would have FAILED at 10.5 % under the fit and
+measures 0.02 % without it.
+
+**Do not rebuild an additive per-dispatch cost model on this hardware.**
+
+Width tax, fit-free, `F(6) - F(1)` = 57.253 ms/round isolated, 56.784 default
+(+0.8 % from isolating, so shares transfer):
+
+| owning dispatch | unit | disp/round | tax ms | share |
+|---|---|---:|---:|---:|
+| `qmv Mx640x1` | mlp_down + gdn_out_proj + fa_o_proj | 128 | 22.631 | 39.53 % |
+| `qmv Mx4352x1` | mlp_gate_up | 64 | 20.465 | 35.75 % |
+| `qmv Mx2060x1` | gdn_in_proj_fused | 48 | 7.820 | 13.66 % |
+| `qmv Mx1792x1` | fa_qkv_gate_fused | 16 | 2.343 | 4.09 % |
+| `qmv Mx31040x1` | lm_head | 1 | 2.205 | 3.85 % |
+| non-qmv | | | 1.789 | 3.12 % |
+
+`affine_qmv_fast` carries **55.464 ms, 96.88 % of the width tax**; the named
+rows sum to 99.96 % of it.
+
+**Ledger 211's unattributed 22.6 % is closed.** E71 left 12.609 ms; the census
+accounts for 12.65 ms, agreeing to 0.3 %:
+
+| component | ms | share |
+|---|---:|---:|
+| `gdn_in_proj_fused`, no E71 arm can intercept it | 7.820 | 13.66 % |
+| `fa_qkv_gate_fused`, no E71 arm can intercept it | 2.343 | 4.09 % |
+| drafting-only non-qmv work | 1.789 | 3.12 % |
+| E71 under-count inside pooled `Mx640x1` | 0.70 | 1.23 % |
+
+**Cause: two fused in-projections that `Qwen35GatedDeltaNet` and
+`Qwen35Attention` call as raw `quantizedMM`, never through a child `Linear`.**
+No arm-based census could ever have reached them. Both are candidate-reachable
+and together are 10.163 ms/round, 17.75 % of the width tax.
+
+The pooled `Mx640x1` shape separates without a fit, because each projection is
+packed with the op that produced its input: at M=1, mlp_down 218,439 ns,
+gdn_out_proj 81,714, fa_o_proj 81,052, reconstructing 19.198 against a measured
+19.200 ms/round.
+
+Riders at M=6: `copy` 0.44 % (ledger 218 stays closed but the expectation was
+22x low), `unary/binary/ternary` 0.22 %, `rms_norm` 0.02 %, `sdpa_vector`
+1.85 %, qmv owns 95.78 %, `unclassified_kernels` = 0.
+
+**Open contradiction to settle:** edward measures **no `gemv` kernel dispatched
+at all**, while the E58 dispatch-count census recorded `gemv.{h,metal}` at
+3.02 % attributed entirely to the draft head. One is wrong or they cover
+different phases.
+
+### (G) The convergence
+
+Edward's `qmv Mx2060x1` is `gdn_in_proj_fused`, the single largest item E71
+could not see, at 13.66 % of the decode width tax. It is the *same projection*
+whose prefill path (C) shows has never been fused in 846 trees. Two independent
+instruments, one code object. Raw `quantizedMM` call sites that bypass child
+`Linear` modules are systematically under-examined.
+
+### (H) E78 terminal: the QMV group-count axis is closed
+
+Askeladd, merged as PR #81, candidate surface byte-identical, research
+artifacts only. W&B `zirxq2b3 uao1nk2g 1zolbc8a 6qmrl06s vp8q30dv`.
+
+Rung 2a, 2976 legs, rel-SEM 0.013-0.061 %: the shipped table wins **23 of 24
+cells** by 3.4-46 %, one-sided p = 1.490e-06. Exactly one helper exists,
+`mlp.down` at M=6 (-7.97 %). The `out_vec_size` premise fails because
+`linear_attn.out_proj` has the identical `out_vec_size` = 5120 and moves
++3.55 %. No cutoff can select the helper.
+
+Rung 3 ABBA: delta -0.0959 % against a session null of 0.0950 %,
+`|delta|/null` = 1.009, pre-registered 2x threshold FAILED. Leg rank test
+U = 32/36, p = 0.013, so the sign is real and the size is not shippable.
+
+**Why the axis closes rather than the arm:** the reverted organizer table
+already uses IPG 3 at M=6 for every shape, so the single favourable cell is
+already captured. Rebased, arm E would only un-split the other five M=6 shapes,
+the direction `9b241879` already refuted.
+
+Two instrument results worth more than the arm:
+
+1. **An isolated-cell harness that defeats the cache systematically
+   over-states the benefit of splitting a high-k-block shape.** `mlp.down` has
+   272 k-blocks, 3.4x any other scored shape, and was mis-priced by **3.63x**.
+   Every campaign number from that harness on a high-k-block shape now carries
+   a residency caveat.
+2. **The TG/core knee is retired as a predictive model.** Three consecutive
+   positive-control failures: the E74 gate, the E33 flip (both M=6 probes land
+   on the "split hurts" side at +7.36 % and +7.65 %, about 370 standard errors
+   from zero), and a 32.0 TG/core collision where the one helper sits alongside
+   five losers at the identical value. Any knee is bounded below 32.0
+   TG/core@20, contradicting E33's (89.6, 103.0) by at least 3x. Keep it as a
+   descriptive summary; it never chooses an arm again.
+
+Local group-count screens invert against the ranked host except at the one
+shape the ranked host also wants split. This is specific to group-count
+decisions, not to cell tables in general.
+
+### (I) The two dead-work mechanisms, verified against our own source
+
+Assigned to askeladd as E84, PR #86.
+
+**Mechanism A, precision-island K/V.** `c37b4f67` and `9383f9a4` change the
+same 83 lines of `Qwen35.swift` with identical hunk headers; `9383f9a4` adds
+only a manifest note. One tree, two ranked measurements, `mean7` -0.190 and
+-0.168, agreeing to **0.022 %** -- an independent confirmation of the 0.09 %
+instrument. With `11a9412a` (-0.157, bundled) the pooled value is -0.172 %,
+SE 0.052, about 3.3 sigma.
+
+Absent from base `5ea174c5`. Today `Qwen35Attention.qkv(_:)` at `:1842` runs
+the full quantized q+k+v pack and then `replaceExactRows(kvOnly: false)`
+overwrites 3072 island rows via `putAlong`; `kv(_:)` at `:1892` runs the full
+quantized k+v pack and then overwrites **all** of it. Since
+`precision_islands.k.indices` and `.v.indices` are each a complete permutation
+of `0...1023` -- verified by range-fetching the pinned artifact directly -- every
+quantized K and V value is computed and discarded.
+
+**Mechanism B, state-only Gated DeltaNet prefix replay.** `04cd6f95` is a
+byte-identical resubmission of `a6661c80` apart from the note. One tree, two
+measurements, `mean7` -0.183 and -0.154, agreeing to **0.029 %**. Pooled
+-0.169 %, SE 0.064, about 2.6 sigma.
+
+Absent from base. `Qwen35.swift:945` `replayPrefix` calls
+`qwen35GatedDeltaPrepared` and binds only `recurrence.1`; **`recurrence.0`, the
+full output tensor, is computed and never read**, across all 48 Gated DeltaNet
+layers on every replay.
+
+Combined expectation about **-0.27 % of candidate seconds per token**, so about
+**+0.009 absolute** on a median near 3.31.
+
+### (J) E82: head time is linear in head bytes, and the shipped head throws away 0.82 points of acceptance to round-to-nearest
+
+Alphonse ran six head arms over eleven usable seeds, `research/e82-accept.json`
+and `research/e82-accept-clean.json`. Two corrections and one prize.
+
+**Correction 1, nomenclature.** This ledger has used "pinned" for two different
+artifacts. They are now separated by a verified byte census against
+`fixtures/qwen3_8_27b_mtp_head.sha256`:
+
+| name | artifact | bytes | tensors | `draft_lm_head` | islands |
+|---|---|---:|---:|---|---|
+| **pinned** | `EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`, the setup default | 849,407,066 | 15 | no | no |
+| **declared** | `amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827`, what the manifest selects | 427,746,170 | 40 | yes | yes |
+
+Every earlier claim of the form "no custom head has ever beaten the pinned head
+on beagle" means **declared**. The conclusion is unchanged; the wording was
+wrong.
+
+**Correction 2, the xkm fine-tune is refuted.** Two matched pairs isolate the
+trained weights from precision and readout:
+
+| pair | trained trunk | untrained trunk | delta |
+|---|---|---|---:|
+| BF16 | `kamciosz` 91.38 % | `master-bf16` 93.13 % | -1.75 pt |
+| affine-4 g64 | `soup-q4` 91.52 % | `declared` 92.31 % | -0.79 pt |
+
+Same sign at both precisions, so requantization is not the cause. Head
+fine-tuning and distillation are closed: six ranked negatives plus this
+controlled local refutation.
+
+**The bytes law.** Head step milliseconds per draft, from `--sync-head` phase
+traces on real-40C gated legs:
+
+| arm | head ms/draft | host build ms/draft | total tensor bytes | bytes per ms |
+|---|---:|---:|---:|---:|
+| `declared` | 2.381 | 0.045 | 427,738,112 | 179,641,699 |
+| `pinned` | 4.764 | 0.037 | 849,398,784 | 178,292,956 |
+
+1.9858x bytes against 2.0009x time, agreeing to 0.75 %. Host graph build is
+under 2 % of the step. The head step is bandwidth bound end to end, which
+retires E79's open dispute in favour of bandwidth scaling.
+
+Caveat recorded before anyone prices on it: this uses **total artifact bytes**.
+The precision islands are read by the target's attention, not by the head, and
+the pinned profile's readout streams the target's 283.2 MB affine-4 compact
+draft vocabulary, which the table does not count. Corrected effective bytes put
+pinned at 237.7 MB/ms, above this machine's 226.0 MB/ms peak, so the corrected
+form is impossible as written. The `master-bf16` arm discriminates: 1006.7 MB by
+both accountings, predicted 5.605 ms under the total-artifact law and 6.050 ms
+under an effective-bytes law fitted on `declared`.
+
+**Third independent kill of the per-op-boundary model.** The declared readout
+path runs 10 MLX ops and 6 dispatches against the pinned path's 3 and 2, so it
+pays seven extra op boundaries per draft. At the retracted 0.35 ms per boundary
+those seven alone would cost 2.45 ms, more than the entire measured declared
+head step of 2.381 ms. Edward killed the additive model by GPU-time
+attribution, thorfinn killed it in throughput-bound prefill, alphonse kills it
+inside the head path.
+
+**The prize.** `declared` is the requantization of `master-bf16`'s own weights:
+
+```
+master-bf16   93.13 %      untrained EigenLabs master, BF16
+declared      92.31 %      SAME weights, naive affine-4 g64 round-to-nearest
+                           -0.82 pt paid to quantization damage alone
+```
+
+and the damage is recoverable rather than intrinsic:
+
+| arm | requant damage relL2 | pooled d3-6 | bytes |
+|---|---|---|---:|
+| `declared` | 9.18e-2 … 9.97e-2 | 92.31 % | 427.7 MB |
+| `qat-q4` (xkm's affine-4 straight-through parent) | **2.89e-2 … 3.52e-2** | 93.02 % | 427.7 MB |
+| `master-bf16` | none | 93.13 % | 1006.7 MB |
+
+A 3.2x reduction in reconstruction error recovers 0.71 of the 0.82 pt at
+identical bytes. Quantization-aware weights are one route to low damage; a
+better quantizer on the master weights we already hold is the direct one, needs
+no training, adds no bytes, and changes only `mtp-head.manifest.json`.
+
+Priced against the frontier's own per-prompt rows, `_advisor_scratch/acc2score.py`
+(the model reconstructs the published median 4.7 % low, so read it as a
+magnitude class):
+
+| pooled acceptance gain | modelled median delta | absolute |
+|---:|---:|---:|
+| +0.71 pt, measured | +1.57 % | +0.049 |
+| +0.82 pt, the full requantization loss | +1.81 % | +0.057 |
+
+The promotion that put `c6af1e24` on top of the board was worth +0.0073.
+
+**The second, independent head lever.** At E79's anchor of 0.0844 % of score per
+1 % of head cost, and with the 2-bit sweep's scales and biases costing
+98,336 x 80 x 2 x 2 = 31.47 MB, which is 7.36 % of the whole head:
+
+| change | bytes saved | head cost | modelled score | absolute |
+|---|---:|---:|---:|---:|
+| sweep metadata g64 -> g128 | 15.7 MB | -3.68 % | +0.310 % | +0.0098 |
+| sweep metadata g64 -> g256 | 23.6 MB | -5.52 % | +0.466 % | +0.0147 |
+| head trunk metadata g64 -> g128 | 11.6 MB | -2.71 % | +0.229 % | +0.0072 |
+| both | 27.3 MB | -6.39 % | +0.539 % | +0.0170 |
+
+A worse coarse shortlist cannot break exactness: it feeds an exact affine-4
+rerank, and a wrong draft is only a proposal the target verify rejects. E79
+measured coarse recall@32 at exactly 1.0000 at g64, so the slack is measured.
+Acceptance is the only currency this axis spends, and `qat-q4` has already
+banked some.
+
+### (K) The schedule has an absorbing non-drafting state. It is real, and it costs the frontier nothing.
+
+In `recordAcceptOutcome(acceptedCount:drafts:)` at
+`Qwen36MTPBlockSession.swift:1092`, a zero-draft round has `acceptedCount == 0`
+and `drafts == []`, so the success loop `0 ..< 0` does not run,
+`acceptedCount < drafts.count` is `0 < 0`, and the optimism-transfer branch
+requires `!drafts.isEmpty`. **No EMA is written.** Once
+`positionAcceptEMA[0]` falls under `price.marginal[0] / price.cumulative[0]`,
+`costModelDepth` returns 0 forever. Alphonse hit it on four local seeds, all
+narrative prose, with 0.78 to 0.96 of rounds non-drafting.
+
+Board census over 610 scored runs and all 8 prompts, `_advisor_scratch/latch.py`
+and `latch2.py`:
+
+| prompt | runs with non-drafting rounds > 0 | median count when it fires |
+|---|---:|---:|
+| plutarch | 518 / 610 (84.9 %) | 449 |
+| beagle | 19 / 610 (3.1 %) | 459 |
+| drama | 16 / 610 | 470 |
+| travel | 13 / 610 | 502 |
+| essays / botany | 12 / 610 | 502 |
+| republic / medicine | 11 / 610 | 502 |
+
+**Every one of the 20 runs that latches a median-relevant prompt ranks 454 or
+worse out of 610, and the best of them scores 2.869.** The top 453 trees have
+zero non-drafting rounds on beagle, essays, republic, medicine and botany
+without exception. The latch is a signature of a broken tree, not a tax on a
+healthy one.
+
+plutarch's 449 non-drafting rounds are **not** this latch. `ead84bba` carries a
+floor of 6 and shows plutarch `nd=449, d=0.154`; `c6af1e24` has no floor, shows
+the identical `nd=449, d=0.154`, and scores 3.30956 against the floor's
+3.30221. The floor neither created nor removed the behaviour. plutarch is
+gated by promoted lever `e6c5ef35`'s confidence term,
+`p = min(p, sigmoid(margin/2))` at `Qwen36MTPBlockSession.swift:1040-1043`,
+which re-reads the target's live top-2 margin every round and therefore cannot
+absorb. plutarch is simply high-entropy, it is the minimum of eight raws in
+100 % of strong trees, and its cost is score-free.
+
+Recorded as a hazard and a local-instrument confound. No fix is warranted.
+
+### What this changes
+
+1. **Read `mean7`; the score is `mean7` plus serial noise we cannot touch.**
+   Section (A) gives the decomposition and (B) gives the cost of ignoring it.
+2. **Never build an additive per-dispatch cost model on this hardware.** Use
+   dominant-dispatch attribution with a partner-spread check.
+3. **A decode-width fast path gated off at prefill is a live lever class.**
+   Three such gates exist; all three are virgin above their decode bound.
+4. **Raw `quantizedMM` call sites that bypass child `Linear` modules are
+   systematically under-examined.** They were the whole of ledger 211's missing
+   mass and they are also the untouched prefill cells.
+5. **A per-dispatch cost is regime-specific.** Throughput-bound prefill and
+   launch-bound decode do not share a constant.
+6. **The TG/core knee never chooses an arm again.** Three positive-control
+   failures.
+7. **Isolated-cell prices for high-k-block shapes are upper bounds.**
+8. **Head time is linear in head bytes.** Two arms at 179 MB/ms within 0.75 %,
+   so any byte removed from the head is priced at 0.0844 % of score per 1 % of
+   head cost. Fix the effective-bytes accounting before using the constant.
+9. **The shipped head pays 0.82 points of acceptance to round-to-nearest.**
+   That is worth about +0.057 absolute, roughly seven times the promotion that
+   currently leads the board, and it needs no training and no new bytes.
+10. **A worse coarse draft shortlist cannot break exactness.** It feeds an
+   exact rerank and the target verify rejects wrong proposals, so the only
+   currency that axis spends is acceptance.
+11. **The absorbing non-drafting state is a hazard, not a lever.** Every board
+   run that latches a median-relevant prompt ranks 454 or worse of 610.

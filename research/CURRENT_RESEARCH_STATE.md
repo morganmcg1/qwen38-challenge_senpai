@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- 2026-08-20 17:20 UTC
+- 2026-08-20 18:35 UTC
 - Most recent human direction: issue #22 — execute aggressively toward the
   winning frontier. No new human instruction since.
 
@@ -16,6 +16,21 @@ deficit is almost entirely staleness: every submission we have made was built
 on a base that is now several promotions old. **Submitting the composed
 advisor branch is the single highest-value action available and it is
 dispatched.**
+
+Three distinct candidates are now queued behind it, in order: the frontier
+composition (thorfinn), the two dead-work eliminations (askeladd), and the
+head requantization recovery (alphonse). Each student holds autonomous submit
+authority once its own gates pass, and each checks `yukon submissions --all`
+immediately before calling `senpai/submit-official.sh`.
+
+One process rule came out of the first attempt. `swift test
+--force-resolved-versions` on this checkout has a **standing floor of 40 issues
+across 9 test functions in 7 files** — six suites of organizer staleness that
+fail on `upstream/main` too, plus the campaign's `AGENTS.md` overlay. Every
+failing input is byte-identical to `BASE_SHA`. The bare exit code is not a
+gate; the gate is that no failing test name falls outside the recorded nine and
+that the count does not exceed 40. The list lives in
+`senpai/known-test-failures.md`.
 
 ## The measurement model — rewritten today, supersedes everything before it
 
@@ -86,8 +101,25 @@ in a row**, with sd7 of 1.676, 1.117 and 0.642. The "fixed cost of 0.86 ms per
 drafting round" was read off that chain and is **withdrawn**. **H-221** — the
 claim that the head path pays about 0.35 ms per MLX op boundary — rested on
 attributing `89cbdc02 → c6af1e24` entirely to `qwen35DualRMSNorm`, but that
-pair also changed the verify width cap. H-221 is **unproven, not disproven**,
-and needs a same-schedule test.
+pair also changed the verify width cap.
+
+**H-221 is now DEAD in the per-MLX-op form.** Three independent measurements
+killed it on the same day, in three different regimes:
+
+- **Edward, decode GPU-time census.** Prefill carries 512 rows per dispatch and
+  is throughput bound; the head at decode width is launch bound. A per-dispatch
+  tax cannot be one constant across both.
+- **Thorfinn, prefill.** 2265 dispatches at 0.35 ms would be 793 ms, 19.6 % of a
+  4046.5 ms `begin()` whose isolated GEMM sum already accounts for 100.2 % of
+  it. There is no room for the tax.
+- **Alphonse, head path.** The declared readout runs 10 MLX ops and 6 dispatches
+  against the pinned path's 3 and 2, so it pays seven extra boundaries per
+  draft. At 0.35 ms those seven alone would cost 2.45 ms, more than the entire
+  measured declared head step of 2.381 ms.
+
+The one surviving variant is a cost per **host synchronisation point**, a
+different quantity with a different count — 23 forced eval points per round,
+not 2265 dispatches — and it exists only in the decode regime. Edward owns it.
 
 ### 5. The score is a 3× noisier instrument than mean7.
 
@@ -114,7 +146,7 @@ frontier sits above the top pack's true level by a lucky draw of order +0.2 %,
 and a candidate at true parity is recorded above the frontier roughly one time
 in five.
 
-## Priced and ready: two dead-work eliminations
+## Priced and ready: three levers with ranked or matched-control evidence
 
 Both are absent from the organizer tree, both are pure removals of computed
 work that is then discarded, and both now have clean same-schedule ranked
@@ -148,7 +180,39 @@ POOLED -0.169 %, n=2, SE 0.064  ->  2.6 sigma; -0.133 % net of the null
 
 Combined expectation about **−0.27 % of candidate time**, which maps roughly
 1:1 into the median. Both must be reimplemented from the mechanism, and the
-prior art must be credited in the submission note.
+prior art must be credited in the submission note. Assigned as E84, PR #86.
+
+**C. The head's requantization loss — the largest single unclaimed number on
+the board.** The declared head is the naive affine-4 g64 round-to-nearest
+requantization of the untrained EigenLabs master. Alphonse measured both, on
+identical seeds, against the target's own greedy chain:
+
+```
+master-bf16   93.13 %  pooled acceptance, depths 3-6
+declared      92.31 %  the SAME weights after round-to-nearest
+                       -0.82 pt paid to quantization damage and nothing else
+```
+
+The damage is recoverable, not intrinsic. xkm's quantization-aware parent
+requantizes with relL2 **2.89e-2 … 3.52e-2** against the declared head's
+**9.18e-2 … 9.97e-2**, a 3.2× reduction, and recovers **0.71 of the 0.82 pt at
+identical bytes**. Quantization-aware training is one route; a better quantizer
+applied to the master weights we already hold is the direct one. It needs no
+training, adds no bytes, and changes only `mtp-head.manifest.json`.
+
+Priced against the frontier's own per-prompt rows, +0.71 pt is about **+1.57 %
+of median (+0.049 absolute)** and the full +0.82 pt is about **+1.81 %
+(+0.057)**. The promotion that currently leads the board was worth +0.0073.
+
+A second, independent head lever rides on the same finding. Head time is linear
+in head bytes: 179 MB/ms on two arms, agreeing to 0.75 %. At E79's anchor of
+0.0844 % of score per 1 % of head cost, coarsening the 2-bit sweep's scales and
+biases from g64 to g128 removes 15.7 MB (3.68 % of the head) for about
+**+0.31 % (+0.0098)**, and g256 removes 23.6 MB for about **+0.47 %
+(+0.0147)**. A worse coarse shortlist cannot break exactness — it feeds an
+exact affine-4 rerank and the target verify rejects wrong proposals — so
+acceptance is the only currency this axis spends, and arm `qat-q4` has already
+banked some of it. Assigned as E82 rungs 4-8, PR #84.
 
 ## Closed axes — do not reopen without a named new reason
 
@@ -166,44 +230,57 @@ prior art must be credited in the submission note.
 
 ## Next research directions, in priority order
 
-1. **Ship the two dead-work eliminations** above as one composed candidate.
-   Highest expected value and already priced on rank.
-2. **Prefill.** 8.6–9.4 % of the scored candidate leg. Across 470 scored runs
-   the `prefill_seconds_per_token` p10–p90 band is 3.4 % wide — the whole field
-   treats it as a constant and **no submission has ever changed the
-   `inputs.dim(1) >= 512` prefill ladder gate**. Worth +0.903 % per 10 % cut.
-   Under test as E83.
-3. **Retest H-221 with a same-schedule pair.** If one removed op boundary on
-   the head flush really is worth about 0.5 % of median, it is the largest
-   remaining lever and it generalises. If it is worth 0.05 %, a whole class of
-   fusion work is dead. Either answer is valuable.
-4. **Delete the pre-fc concat.** `qwen35DualRMSNorm` already computes both
+1. **Recover the head's requantization loss.** 0.82 pt of acceptance measured
+   lying on the floor, worth about +0.057 absolute, obtainable with a better
+   affine-4 quantizer on weights we already hold. No training, no extra bytes,
+   two lines of `mtp-head.manifest.json`. This is the largest single priced
+   number in the campaign. E82 rungs 5-8.
+2. **Ship the two dead-work eliminations.** Priced on rank at about −0.27 % of
+   candidate time. E84.
+3. **The two virgin prefill fast-path gates.** A census of every diff in all
+   846 board trees found that the decode-width bound in
+   `if S <= 9, let fused = fusedInProjections(inputs)` at `Qwen35.swift:1003`
+   and in `if x.dim(-2) <= 16, let y = fusedGateUp(x)` at `Qwen35.swift:1292`
+   has **never been raised above 9 or 16 by anybody**. Five and eight
+   submissions respectively touched those lines, every one of them to revert,
+   rename, or restore the same bound. At the 512-token seed width the GDN layer
+   therefore issues four quantized GEMMs per layer instead of one, priced by
+   direct measurement at 94.6 ms of a 4046.5 ms `begin()`, and the SwiGLU
+   intermediate is materialised instead of fused. Prefill is 8.6-9.4 % of the
+   candidate leg and is the one place a local fraction transfers exactly,
+   because every prompt on every host seeds exactly 512 tokens. E83.
+4. **Head bytes.** Head time is linear in head bytes at 179 MB/ms. The 2-bit
+   sweep spends 31.47 MB, 7.36 % of the whole head, on scales and biases for a
+   stage whose only job is a 32-row shortlist, and whose recall@32 measures
+   exactly 1.0000. Correctness has a hard floor on this axis. E82 rung 7.
+5. **The host synchronisation point.** The only surviving form of H-221. 23
+   forced eval points per round, not 2265 dispatches, decode regime only.
+   Closure gap 2.254 ms/round at width 1 and 3.177 at width 6. E80.
+6. **Delete the pre-fc concat.** `qwen35DualRMSNorm` already computes both
    halves; write them into one buffer of width 10240 at column offsets 0 and
    5120 so `fc` consumes it directly. Bit-identical by construction. Scope it
    narrowly: a larger fused pre-FC embed/RMS/concat was a local negative at
    +23 % MTP time.
-5. **Tune the decode ladder rung set.** The shipped `[0,1,9,19,29,39,49,57]`
+7. **Tune the decode ladder rung set.** The shipped `[0,1,9,19,29,39,49,57]`
    was scaled from a 40-layer to a 64-layer stack and has never been tuned for
-   this model. It is now env-selectable, so measuring it costs no code change,
-   and the board supplies a calibrated positive control: `off` at S=1 must cost
-   about 7 % on plutarch. Nobody has added a rung in the 9 < S < 512 dead band.
-6. **The narrow dispatch switch** at `quantized.h:1980`. Every promoted kernel
+   this model. It is env-selectable, so measuring it costs no code change, and
+   the board supplies a calibrated positive control: `off` at S=1 must cost
+   about 7 % on plutarch. Nobody has added a rung in the 9 < S < 512 dead band,
+   and the `>= 512` prefill gate has never been changed in 861 trees.
+8. **The narrow dispatch switch** at `quantized.h:1980`. Every promoted kernel
    change has been on the wide switch behind `out_vec_size >= 4096`. The narrow
    switch serves proposal-head shapes only and cannot touch the serial
-   numerator. M=1 there is a null; the rest of the table is unexamined.
-7. **Head bytes, not head quality.** Head cost ×0.75 is +2.11 % of median and
-   the head step is bandwidth-scaling (2.05× cost for 1.99× traffic). No custom
-   head has beaten the pinned head on beagle across ~40 board digests, so the
-   lever is bytes moved per draft step, not acceptance.
+   numerator. M=1 there is a null; the rest of the table is unexamined. Price
+   the call path before spending GPU on it.
 
 ## Live experiments
 
 | PR | student | question |
 | --- | --- | --- |
-| #85 | thorfinn | E83 — decompose the untouched prefill leg |
-| #83 | edward | E80 — per-kernel GPU-time census, name the unattributed 22.6 % |
-| #84 | alphonse | E82 — requantize the one genuinely retrained published head |
-| #81 | askeladd | E78 — width-dependent QMV inner-group count |
+| #85 | thorfinn | E83 — prefill decomposition, plus the two virgin prefill gates |
+| #83 | edward | E80 — per-kernel GPU-time census; the 22.6 % is now named |
+| #84 | alphonse | E82 — head economics; rung 0 no-go, redirected to the requantization loss |
+| #86 | askeladd | E84 — the two ranked-measured dead-work eliminations |
 
 ## The board-wide instrument
 
