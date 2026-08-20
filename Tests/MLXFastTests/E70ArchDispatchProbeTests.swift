@@ -184,50 +184,61 @@ private enum ArchProbe {
         return buffer[0..., 0..., 0 ..< length, 0...]
     }
 
-    static func attention(qL: Int, kL: Int) -> MLXArray {
+    static func attention(qL: Int, kL: Int) -> () -> MLXArray {
         let queries = MLXRandom.normal([1, heads, qL, headDim]).asType(.bfloat16)
         let keys = cacheSlice(length: kL)
         let values = cacheSlice(length: kL)
         eval(queries, keys, values)
-        return MLXFast.scaledDotProductAttention(
-            queries: queries, keys: keys, values: values,
-            scale: 1.0 / Float(headDim).squareRoot(), mask: .causal)
+        return {
+            MLXFast.scaledDotProductAttention(
+                queries: queries, keys: keys, values: values,
+                scale: 1.0 / Float(headDim).squareRoot(), mask: .causal)
+        }
     }
 }
 
 /// One probed shape: what it is, which audited site it exercises, and what
 /// rung 0 predicted for each arm.
+///
+/// `body` is built by a factory that has already generated and evaluated its
+/// inputs, so the captured region contains the audited operation alone. With
+/// the random inputs built inside the capture instead, every cell also reports
+/// the `rbitsc` and `v_copy*` kernels of the RNG, which obscures the selection.
 private struct ProbeCellSpec {
     var id: String
     var site: String
     var shape: String
     var rung0Local: String
     var rung0Forced: String
-    var body: () -> MLXArray
+    var makeBody: () -> () -> MLXArray
 }
 
 private func probeCells() -> [ProbeCellSpec] {
-    // Two quantized weights cover every quantized cell: the packed QKV
-    // projection (N = 14336) is the widest scored affine-4 linear that appears
-    // in both the target layers and the MTP head.
-    let qkv = ArchProbe.quantizedWeight(rows: ArchProbe.packedQKV, columns: ArchProbe.hidden)
-
-    func quantizedCell(m: Int) -> () -> MLXArray {
+    func quantizedCell(m: Int) -> () -> () -> MLXArray {
         {
+            // The packed QKV projection, N = 14336, is the widest scored
+            // affine-4 linear and it appears in both the target layers and the
+            // MTP head.
+            let w = ArchProbe.quantizedWeight(
+                rows: ArchProbe.packedQKV, columns: ArchProbe.hidden)
             let x = MLXRandom.normal([m, ArchProbe.hidden]).asType(.bfloat16)
             eval(x)
-            return quantizedMatmul(
-                x, qkv.wq, scales: qkv.scales, biases: qkv.biases,
-                transpose: true, groupSize: ArchProbe.groupSize, bits: ArchProbe.bits)
+            return {
+                quantizedMatmul(
+                    x, w.wq, scales: w.scales, biases: w.biases,
+                    transpose: true, groupSize: ArchProbe.groupSize,
+                    bits: ArchProbe.bits)
+            }
         }
     }
 
-    func denseCell(m: Int) -> () -> MLXArray {
+    func denseCell(m: Int) -> () -> () -> MLXArray {
         {
             let x = MLXRandom.normal([m, ArchProbe.hidden]).asType(.bfloat16)
             let w = MLXRandom.normal([2048, ArchProbe.hidden]).asType(.bfloat16)
-            eval(x, w)
-            return matmul(x, w.transposed(1, 0))
+            let wt = w.transposed(1, 0)
+            eval(x, wt)
+            return { matmul(x, wt) }
         }
     }
 
@@ -240,7 +251,7 @@ private func probeCells() -> [ProbeCellSpec] {
                 shape: "quantizedMatmul M=\(m) K=5120 N=14336 affine g64 b4 transposed",
                 rung0Local: "M < vector_limit 10 -> dispatch_qmv -> affine_qmv_fast*",
                 rung0Forced: "identical: vector_limit is 10 on gen 16 and gen 17",
-                body: quantizedCell(m: m)))
+                makeBody: quantizedCell(m: m)))
     }
     for m in [10, 511, 512] {
         cells.append(
@@ -250,7 +261,7 @@ private func probeCells() -> [ProbeCellSpec] {
                 shape: "quantizedMatmul M=\(m) K=5120 N=14336 affine g64 b4 transposed",
                 rung0Local: "M >= 10 -> qmm_splitk -> split_k 1 -> qmm() -> affine_qmm_t*",
                 rung0Forced: "is_nax_available() true -> affine_qmm_t_nax*",
-                body: quantizedCell(m: m)))
+                makeBody: quantizedCell(m: m)))
     }
     cells.append(
         ProbeCellSpec(
@@ -261,7 +272,7 @@ private func probeCells() -> [ProbeCellSpec] {
                 "head_dim 256 excludes sdpa_full and qL 512 exceeds the vector cap, "
                 + "so use_fallback is true -> two dense steel_gemm_fused_* GEMMs",
             rung0Forced: "same fallback, but steel_gemm_fused_nax_*",
-            body: { ArchProbe.attention(qL: 512, kL: 512) }))
+            makeBody: { ArchProbe.attention(qL: 512, kL: 512) }))
     for qL in [1, 5] {
         for kL in [768, 1030] {
             cells.append(
@@ -274,7 +285,7 @@ private func probeCells() -> [ProbeCellSpec] {
                         ? "devc 's' and kL >= 1024 -> sdpa_vector_2pass_*"
                         : "devc 's' but kL < 1024 -> sdpa_vector_*",
                     rung0Forced: "identical: the forced arch keeps devc == 's'",
-                    body: { ArchProbe.attention(qL: qL, kL: kL) }))
+                    makeBody: { ArchProbe.attention(qL: qL, kL: kL) }))
         }
     }
     cells.append(
@@ -284,7 +295,7 @@ private func probeCells() -> [ProbeCellSpec] {
             shape: "matmul M=1 K=5120 N=2048 bfloat16",
             rung0Local: "min(M, N) == 1 returns to gemv before any architecture read",
             rung0Forced: "identical: the early return is upstream of the nax gate",
-            body: denseCell(m: 1)))
+            makeBody: denseCell(m: 1)))
     cells.append(
         ProbeCellSpec(
             id: "dense_matmul_m511",
@@ -292,7 +303,7 @@ private func probeCells() -> [ProbeCellSpec] {
             shape: "matmul M=511 K=5120 N=2048 bfloat16 (the MTP head prime island patch)",
             rung0Local: "use_nax false -> steel_matmul_regular_axpby -> steel_gemm_fused_nt*",
             rung0Forced: "use_nax true -> steel_matmul_regular_axpby_NAX -> steel_gemm_fused_nax_nt*",
-            body: denseCell(m: 511)))
+            makeBody: denseCell(m: 511)))
     return cells
 }
 
@@ -343,14 +354,17 @@ struct E70ArchDispatchProbeTests {
         for cell in cells {
             trace("begin cell=\(cell.id) shape=\(cell.shape)")
 
+            // The inputs are built and evaluated here, outside the capture.
+            let body = cell.makeBody()
+
             // Warm first, so a first-use JIT compile does not appear as a
             // dispatch. Under a forced architecture this warm call is also the
             // most likely place for the process to die, which is why the trace
             // line above is already flushed.
-            eval(cell.body())
+            eval(body())
 
             ArchProbeLedger.shared.start()
-            eval(cell.body())
+            eval(body())
             let (dispatched, created) = ArchProbeLedger.shared.stop()
 
             var counts: [String: Int] = [:]

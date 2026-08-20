@@ -7,6 +7,7 @@
 # usage:
 #   research/e70_run_arch_probe.sh real                    # one process, all cells
 #   research/e70_run_arch_probe.sh applegpu_g17s           # one process PER CELL
+#   research/e70_run_arch_probe.sh real applegpu_g17s      # both arms, in order
 #
 # 🔴 A forced architecture makes is_nax_available() return true on gen-16
 # silicon that has no neural accelerators. A compile failure, wrong numbers, or
@@ -17,7 +18,10 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-arch="${1:?usage: e70_run_arch_probe.sh real|applegpu_g17s|applegpu_g17g}"
+(($# >= 1)) || {
+  echo "usage: e70_run_arch_probe.sh <real|applegpu_g17s|applegpu_g17g>..." >&2
+  exit 2
+}
 
 cells=(
   qmv_m1 qmv_m5 qmv_m9
@@ -28,13 +32,12 @@ cells=(
   dense_gemv_m1 dense_matmul_m511
 )
 
-out="research/out/e70-rung1/${arch}"
-mkdir -p "${out}" research/e70-artifacts
+mkdir -p research/out/e70-rung1
 
 # Cmlx searches for mlx.metallib next to the RUNNING executable, and the xctest
 # bundle is a third location that only exists after the tests are built. Build
 # the tests first, then publish, then run.
-build_log="${out}/build.log"
+build_log="research/out/e70-rung1/build.log"
 if ! { swift build --build-tests --force-resolved-versions \
   && tools/build-mlx-metallib.sh --all-build-roots ; } > "${build_log}" 2>&1
 then
@@ -44,20 +47,19 @@ then
 fi
 
 export MLXFAST_E70_ARCH_PROBE=1
-if [[ "${arch}" != "real" ]]; then
-  export MLX_METAL_GPU_ARCH="${arch}"
-fi
 
 run_cell() {
-  local cell="$1"
-  MLXFAST_E70_CELL="${cell}" \
-  MLXFAST_E70_OUT="${PWD}/${out}/${cell}.json" \
-    swift test --force-resolved-versions \
-      --filter E70ArchDispatchProbeTests > "${out}/${cell}.log" 2>&1
+  local arch="$1" out="$2" cell="$3"
+  (
+    if [[ "${arch}" != "real" ]]; then export MLX_METAL_GPU_ARCH="${arch}"; fi
+    export MLXFAST_E70_CELL="${cell}"
+    export MLXFAST_E70_OUT="${PWD}/${out}/${cell}.json"
+    swift test --force-resolved-versions --filter E70ArchDispatchProbeTests
+  ) > "${out}/${cell}.log" 2>&1
   local status=$?
   echo "e70_run_arch_probe: arch=${arch} cell=${cell} exit=${status}"
   # A non-zero exit under a forced architecture is a reportable datum, not a
-  # failure of the probe, so record the last trace line and keep going.
+  # failure of the probe, so record where it stopped and keep going.
   if ((status != 0)); then
     grep -E '^e70-probe:' "${out}/${cell}.log" | tail -2
     grep -iE 'error|exception|assert|abort|terminating' "${out}/${cell}.log" | tail -5
@@ -66,17 +68,20 @@ run_cell() {
     >> "${out}/manifest.jsonl"
 }
 
-: > "${out}/manifest.jsonl"
-if [[ "${arch}" == "real" ]]; then
-  # The real arch cannot abort on a nax pipeline, so one process covers
-  # everything and the shared quantized weight is built once.
-  run_cell all
-else
-  for cell in "${cells[@]}"; do
-    run_cell "${cell}"
-  done
-fi
-
-echo "e70_run_arch_probe: done arch=${arch} out=${out}"
-cat "${out}/manifest.jsonl"
+for arch in "$@"; do
+  out="research/out/e70-rung1/${arch}"
+  mkdir -p "${out}"
+  : > "${out}/manifest.jsonl"
+  if [[ "${arch}" == "real" ]]; then
+    # The real architecture cannot abort on a nax pipeline, so one process
+    # covers every cell.
+    run_cell "${arch}" "${out}" all
+  else
+    for cell in "${cells[@]}"; do
+      run_cell "${arch}" "${out}" "${cell}"
+    done
+  fi
+  echo "e70_run_arch_probe: done arch=${arch} out=${out}"
+  cat "${out}/manifest.jsonl"
+done
 exit 0

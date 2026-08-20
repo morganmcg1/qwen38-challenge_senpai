@@ -46,10 +46,11 @@ UTILS_H = MLX / "utils.h"
 ATTN_UTILS = LM / "MLXLMCommon/AttentionUtils.swift"
 QWEN35_SWIFT = LM / "MLXLLM/Models/Qwen35.swift"
 BENCH_JSON = ROOT / "benchmark.json"
+MEMORY_POLICY = ROOT / "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift"
 
 SOURCES = [
     DEVICE_CPP, QUANT_CPP, MATMUL_CPP, SDPA_CPP, FAST_CPP, UTILS_H,
-    ATTN_UTILS, QWEN35_SWIFT,
+    ATTN_UTILS, QWEN35_SWIFT, MEMORY_POLICY,
 ]
 
 # ---------------------------------------------------------------------------
@@ -179,6 +180,27 @@ def _a4(t: str) -> bool:
 @check("A5 env var is MLX_METAL_GPU_ARCH", UTILS_H)
 def _a5(t: str) -> bool:
     return 'get_var("MLX_METAL_GPU_ARCH", "")' in norm(t)
+
+
+@check("A6 the tier command-buffer defaults are overridden by env AFTER the switch", DEVICE_CPP)
+def _a6(t: str) -> bool:
+    i_switch = t.index("case 's': // max")
+    i_env = t.index("max_ops_per_buffer_ = env::max_ops_per_buffer(max_ops_per_buffer_);")
+    i_end = t.index("Device::~Device()")
+    return i_switch < i_env < i_end
+
+
+@check("A7 the scored worker force-sets both budgets before the first device touch", MEMORY_POLICY)
+def _a7(t: str) -> bool:
+    n = norm(t)
+    # >= 96 GiB hosts, which includes the 128 GiB ranked machine, and the
+    # low-memory branch below both write the two variables explicitly, so the
+    # arch tier value at device.cpp is never the value MLX ends up using.
+    return ("guard physicalMemoryBytes >= (UInt64(96) << 30) else { return }" in n
+            and 'setenv("MLX_MAX_MB_PER_BUFFER", "512", 1)' in n
+            and 'setenv("MLX_MAX_OPS_PER_BUFFER", "50", 1)' in n
+            and "maxMegabytesPerCommandBuffer: 128," in n
+            and "maxOperationsPerCommandBuffer: 64," in n)
 
 
 @check("B1 get_qmv_batch_limit branches on gen 13||14 then on arch_size", QUANT_CPP)
@@ -397,6 +419,12 @@ MUTATIONS: list[tuple[str, pathlib.Path, str, str]] = [
      "arch_gen_ = ag_tens * 10 + ag_ones;", "arch_gen_ = 16;"),
     ("A5 env var is MLX_METAL_GPU_ARCH", UTILS_H,
      '"MLX_METAL_GPU_ARCH"', '"MLX_METAL_GPU_ARCH_OFF"'),
+    ("A6 the tier command-buffer defaults are overridden by env AFTER the switch", DEVICE_CPP,
+     "max_ops_per_buffer_ = env::max_ops_per_buffer(max_ops_per_buffer_);",
+     "// removed"),
+    ("A7 the scored worker force-sets both budgets before the first device touch",
+     MEMORY_POLICY,
+     'setenv("MLX_MAX_OPS_PER_BUFFER", "50", 1)', "// removed"),
     ("B1 get_qmv_batch_limit branches on gen 13||14 then on arch_size", QUANT_CPP,
      "if (arch_gen == 13 || arch_gen == 14) {", "if (false) {"),
     ("B2 QuantizedMatmul::eval_gpu gates qmv on M >= get_qmv_batch_limit(K, N, d)", QUANT_CPP,
@@ -497,13 +525,17 @@ def site_table() -> list[dict]:
         id="S2", file="device.cpp",
         line=L(DEVICE_CPP, "  arch_gen_ = ag_tens * 10 + ag_ones;"),
         predicate="arch_ = env::metal_gpu_arch(); ... arch_gen_ = ag_tens * 10 + ag_ones; auto arch = arch_.back();",
-        decode="YES - command-buffer budget, set once in the Device ctor.",
-        prefill="YES - same.",
-        local="'s' -> max_ops_per_buffer 50, max_mb_per_buffer 50",
-        ranked="'s' -> 50 / 50",
-        base_m5="'g' -> 40 / 40",
-        verdict="IDENTICAL (M5 Pro/Max); DIVERGES vs a base M5",
-        kernels="no kernel; buffer geometry only (E58 rung 2 measured this lever)",
+        decode="NO EFFECT - the tier value is computed and then discarded. device.cpp:595-596 "
+               "reapplies env::max_ops_per_buffer / env::max_mb_per_buffer AFTER the switch, and "
+               "RuntimeStartupMemoryPolicy force-sets both variables before the first MLX device "
+               "touch: 512 MiB / 50 ops on any host with >= 96 GiB (the ranked 128 GiB machine), "
+               "128 MiB / 64 ops on a low-memory host.",
+        prefill="NO EFFECT - same override.",
+        local="tier 's' would give 50 / 50, but the worker installs 128 / 64 on this 48 GiB host",
+        ranked="tier 's' would give 50 / 50; the worker installs 512 / 50",
+        base_m5="tier 'g' would give 40 / 40; the worker installs the same 512 / 50",
+        verdict="IDENTICAL (overridden on every host, including a base M5)",
+        kernels="no kernel; buffer geometry only, and editable Swift already pins it",
     ))
     sites.append(dict(
         id="S3", file="quantized.cpp",
