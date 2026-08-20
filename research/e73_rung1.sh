@@ -133,6 +133,7 @@ else
     ${shape_args[@]+"${shape_args[@]}"} --out "${out}" \
     2> >(tee -a "${log}" >&2) \
     | python3 research/e73_wandb_stream.py --name "e73-rung1${tag}" \
+        --group "${E73_WANDB_GROUP:-e73-rung1}" \
         --config "${cfg}" 2> >(tee -a "${log}" >&2) \
     | tee -a "${log}" >/dev/null
   status="${PIPESTATUS[0]}"
