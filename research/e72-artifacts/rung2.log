@@ -1,0 +1,61 @@
+e72_rung2 head=de9ab030f96e7310676705a3eaa2048697027b5a dirty=1
+e72_rung2 host=ip-10-231-2-12 chip=Apple M4 Pro
+e72_rung2 na_list=6 reps=1 target_bytes=24e9
+e72_rung2 started=2026-08-20T10:17:54Z
+research/generated/e72_wide_arms.h is in sync with Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+wrote research/e72-artifacts/rung2-air.json
+ NA arm            allocas peak_live  alloca_types
+  6 plain                2       182  ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+  6 tailfull             1       146  ['[4 x [4 x i16]]']
+  6 mfull                1       169  ['[4 x <6 x float>]']
+  6 rfull                1       146  ['[4 x [4 x i16]]']
+  6 allfull              0       133  []
+  6 split                2       215  ['[4 x [2 x <4 x float>]]', '[4 x [4 x i16]]']
+  6 shift                2       182  ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+  6 xvec                 2       191  ['[4 x <6 x float>]', '[4 x [4 x i16]]']
+  6 tailfullxvec         1       155  ['[4 x [4 x i16]]']
+checks: 22 pass, 0 fail
+wrote /tmp/e72-build/arms_na6.metal na=6 bytes=250029 sha256=e14eb26f7bbbebb2 arms=9
+e72_rung2 na=6 cool_gate=skipped_by_request cool_gate_passed_real_gate=false gate_qualified_for_timing=false
+e72_rung2 na=6 entry_thermal gpu_temp=37.006858825683594C cpu_temp=39.34889602661133C gpu_power=0.0067238397896289825W
+ARM na=6 arm=plain max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=tailfull max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=mfull max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=rfull max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=allfull max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=split max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=shift max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=xvec max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+ARM na=6 arm=tailfullxvec max_total_threads_per_threadgroup=1024 static_threadgroup_memory_bytes=0 thread_execution_width=32
+e69_cell_ab: session entry gpu_temp_c=36.72
+PARITY na=6 shape=linear_attn.out_proj arm=tailfull differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=mfull differing=30720 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=rfull differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=allfull differing=30720 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=split differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=shift differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=xvec differing=0 elements=30720
+PARITY na=6 shape=linear_attn.out_proj arm=tailfullxvec differing=0 elements=30720
+LEG na=6 shape=linear_attn.out_proj rep=0 position=0 arm=plain inner=1525 gpu_seconds=0.215664417 wall_seconds=0.216063708 seconds_per_dispatch=0.000141419290 gbps=111.219905
+LEG na=6 shape=linear_attn.out_proj rep=0 position=1 arm=tailfull inner=1525 gpu_seconds=0.215702458 wall_seconds=0.216090208 seconds_per_dispatch=0.000141444235 gbps=111.200290
+LEG na=6 shape=linear_attn.out_proj rep=0 position=2 arm=mfull inner=1525 gpu_seconds=0.349286500 wall_seconds=0.349689000 seconds_per_dispatch=0.000229040328 gbps=68.671924
+LEG na=6 shape=linear_attn.out_proj rep=0 position=3 arm=rfull inner=1525 gpu_seconds=0.214753333 wall_seconds=0.215131958 seconds_per_dispatch=0.000140821858 gbps=111.691752
+LEG na=6 shape=linear_attn.out_proj rep=0 position=4 arm=allfull inner=1525 gpu_seconds=0.349404000 wall_seconds=0.349790000 seconds_per_dispatch=0.000229117377 gbps=68.648831
+LEG na=6 shape=linear_attn.out_proj rep=0 position=5 arm=split inner=1525 gpu_seconds=1.034455375 wall_seconds=1.034882500 seconds_per_dispatch=0.000678331393 gbps=23.187251
+LEG na=6 shape=linear_attn.out_proj rep=0 position=6 arm=shift inner=1525 gpu_seconds=0.210509833 wall_seconds=0.211328458 seconds_per_dispatch=0.000138039235 gbps=113.943257
+LEG na=6 shape=linear_attn.out_proj rep=0 position=7 arm=xvec inner=1525 gpu_seconds=0.210799000 wall_seconds=0.211235667 seconds_per_dispatch=0.000138228852 gbps=113.786953
+LEG na=6 shape=linear_attn.out_proj rep=0 position=8 arm=tailfullxvec inner=1525 gpu_seconds=0.209957875 wall_seconds=0.210421208 seconds_per_dispatch=0.000137677295 gbps=114.242802
+LEG na=6 shape=linear_attn.out_proj rep=0 position=9 arm=tailfullxvec inner=1525 gpu_seconds=0.209907000 wall_seconds=0.210335458 seconds_per_dispatch=0.000137643935 gbps=114.270491
+LEG na=6 shape=linear_attn.out_proj rep=0 position=10 arm=xvec inner=1525 gpu_seconds=0.210730083 wall_seconds=0.211186917 seconds_per_dispatch=0.000138183661 gbps=113.824166
+LEG na=6 shape=linear_attn.out_proj rep=0 position=11 arm=shift inner=1525 gpu_seconds=0.214145083 wall_seconds=0.214538458 seconds_per_dispatch=0.000140423005 gbps=112.008997
+LEG na=6 shape=linear_attn.out_proj rep=0 position=12 arm=split inner=1525 gpu_seconds=1.033072708 wall_seconds=1.033456083 seconds_per_dispatch=0.000677424727 gbps=23.218284
+LEG na=6 shape=linear_attn.out_proj rep=0 position=13 arm=allfull inner=1525 gpu_seconds=0.348520292 wall_seconds=0.348900083 seconds_per_dispatch=0.000228537896 gbps=68.822897
+LEG na=6 shape=linear_attn.out_proj rep=0 position=14 arm=rfull inner=1525 gpu_seconds=0.214885042 wall_seconds=0.215261083 seconds_per_dispatch=0.000140908224 gbps=111.623293
+LEG na=6 shape=linear_attn.out_proj rep=0 position=15 arm=mfull inner=1525 gpu_seconds=0.348329625 wall_seconds=0.348703708 seconds_per_dispatch=0.000228412869 gbps=68.860568
+LEG na=6 shape=linear_attn.out_proj rep=0 position=16 arm=tailfull inner=1525 gpu_seconds=0.215599250 wall_seconds=0.215972833 seconds_per_dispatch=0.000141376557 gbps=111.253522
+LEG na=6 shape=linear_attn.out_proj rep=0 position=17 arm=plain inner=1525 gpu_seconds=0.215367833 wall_seconds=0.215719500 seconds_per_dispatch=0.000141224809 gbps=111.373066
+SHAPE na=6 shape=linear_attn.out_proj inner=1525 legs=18 entry_gpu_temp_c=36.69 exit_gpu_temp_c=45.94
+e69_cell_ab: linear_attn.out_proj inner=1525 legs=18 entry=36.69C exit=45.94C
+e69_cell_ab: wrote research/e72-artifacts/rung2-na6-bisect.json
+e72_rung2 na=6 exit_thermal gpu_temp=43.289161682128906C cpu_temp=43.49913024902344C gpu_power=0.008199846372008324W status=0
+e72_rung2 finished=2026-08-20T10:18:22Z status=0
