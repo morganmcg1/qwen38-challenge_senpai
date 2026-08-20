@@ -6,10 +6,12 @@ a log file, and logs every `E83_BLOCK {json}` line to W&B the moment it appears.
 The run is created before the first block and finished when stdin closes, so no
 measurement is logged retroactively at session end.
 
-Three block kinds arrive on the same stream and each gets its own row shape:
+Several block kinds arrive on the same stream and each gets its own row shape:
 
     begin                      one `begin()` replay, whole or phased
     boundary_census            dispatch and command-buffer counts per phase
+    ladder_step                one seed width across the prefill-ladder edge
+    gate_arm                   one prefill-width fusion-bound arm
     isolated_quantized_matmul  one prefill GEMM shape in isolation
     isolated_sdpa              the 512-row causal attention shape in isolation
 
@@ -77,6 +79,19 @@ def head_row(block: dict) -> dict:
         "head/total_bytes_per_ms": block.get("total_bytes_per_ms"),
         "head/gemm_bytes_per_ms": block.get("gemm_bytes_per_ms"),
         f"head/m{rows}/step_ms": 1e3 * block["seconds_median"],
+    }
+
+
+def gate_row(block: dict) -> dict:
+    arm = block.get("gate_arm")
+    return {
+        "gate/order": block.get("order"),
+        "gate/rep": block.get("rep"),
+        "gate/begin_ms": 1e3 * block["begin_seconds"],
+        "gate/fused_in_proj_max_rows": block.get("fused_in_proj_max_rows"),
+        "gate/fused_gate_up_max_rows": block.get("fused_gate_up_max_rows"),
+        "gate/pack_builds_after": block.get("pack_builds_after"),
+        f"gate/{arm}/begin_ms": 1e3 * block["begin_seconds"],
     }
 
 
@@ -172,6 +187,8 @@ def main() -> int:
                 row = census_row(block)
             elif kind == "ladder_step":
                 row = ladder_row(block)
+            elif kind == "gate_arm":
+                row = gate_row(block)
             elif kind == "isolated_swiglu":
                 row = {
                     "swiglu/order": block.get("order"),
@@ -229,6 +246,57 @@ def main() -> int:
                     )
                 }
             )
+        gates = [b for b in blocks if b.get("kind") == "gate_arm"]
+        if gates:
+            run.log(
+                {
+                    "gate_arms": wandb.Table(
+                        columns=[
+                            "order", "rep", "arm", "fused_in_proj_max_rows",
+                            "fused_gate_up_max_rows", "begin_ms",
+                            "pack_builds_before", "pack_builds_after",
+                            "first_primary", "gpu_temp_entry_c",
+                            "gpu_temp_exit_c",
+                        ],
+                        data=[
+                            [
+                                b.get("order"), b.get("rep"), b.get("gate_arm"),
+                                b.get("fused_in_proj_max_rows"),
+                                b.get("fused_gate_up_max_rows"),
+                                1e3 * b["begin_seconds"],
+                                b.get("pack_builds_before"),
+                                b.get("pack_builds_after"),
+                                b.get("first_primary"),
+                                b.get("gpu_temp_entry_c"),
+                                b.get("gpu_temp_exit_c"),
+                            ]
+                            for b in gates
+                        ],
+                    )
+                }
+            )
+            # Each rep runs every arm, so a paired within-rep delta cancels the
+            # monotone thermal trend that an unpaired arm median would absorb.
+            by_rep = {b["rep"]: b["begin_seconds"]
+                      for b in gates if b.get("gate_arm") == "gate_baseline"}
+            summary = {}
+            for arm in sorted({b.get("gate_arm") for b in gates}):
+                xs = [1e3 * b["begin_seconds"]
+                      for b in gates if b.get("gate_arm") == arm]
+                summary[f"gate/{arm}/median_begin_ms"] = statistics.median(xs)
+                summary[f"gate/{arm}/n"] = len(xs)
+                if arm == "gate_baseline":
+                    continue
+                deltas = [1e3 * (by_rep[b["rep"]] - b["begin_seconds"])
+                          for b in gates
+                          if b.get("gate_arm") == arm and b["rep"] in by_rep]
+                if deltas:
+                    summary[f"gate/{arm}/paired_median_saving_ms"] = (
+                        statistics.median(deltas))
+                    summary[f"gate/{arm}/paired_min_saving_ms"] = min(deltas)
+                    summary[f"gate/{arm}/paired_max_saving_ms"] = max(deltas)
+            run.summary.update(summary)
+
         ladder = [b for b in blocks if b.get("kind") == "ladder_step"]
         if ladder:
             by_width: dict[int, list[float]] = {}
