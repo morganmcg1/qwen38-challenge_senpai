@@ -1,0 +1,36 @@
+{
+  "command_buffer_gpu_time" : {
+    "gpu_end_time" : 1302180.138875375,
+    "gpu_seconds" : 0.001666458323597908,
+    "gpu_start_time" : 1302180.1372089167,
+    "kernel_end_time" : 1302180.1369247918,
+    "kernel_start_time" : 1302180.1354816251,
+    "usable" : "true"
+  },
+  "counter_sets" : [
+    {
+      "counters" : [
+        "GPUTimestamp"
+      ],
+      "name" : "timestamp"
+    }
+  ],
+  "device" : "Apple M4 Pro",
+  "dispatch_boundary_probe" : {
+    "error" : "atDispatchBoundary not supported",
+    "ok" : "false"
+  },
+  "has_timestamp_counter_set" : "true",
+  "supports_counter_sampling" : {
+    "at_blit_boundary" : "false",
+    "at_dispatch_boundary" : "false",
+    "at_draw_boundary" : "false",
+    "at_stage_boundary" : "true",
+    "at_tile_dispatch_boundary" : "false"
+  },
+  "timestamp_correlation" : {
+    "cpu_delta" : 30017083,
+    "gpu_delta" : 30017083,
+    "gpu_ticks_per_cpu_ns" : 1
+  }
+}
