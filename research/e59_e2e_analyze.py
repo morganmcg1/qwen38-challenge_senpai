@@ -424,7 +424,7 @@ def main() -> int:
                         for arm, rows in by_arm.items()},
     }
     digests["available"] = all(
-        d is not None for arm in digests["text_by_arm"]
+        d for arm in digests["text_by_arm"]
         for d in digests["text_by_arm"][arm] + digests["cstring_by_arm"][arm])
     if digests["available"]:
         verdicts["each_arm_has_one_text_digest"] = all(
