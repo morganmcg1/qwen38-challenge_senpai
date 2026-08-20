@@ -61,6 +61,20 @@ def read_rounds(tag_dir: Path) -> list[dict]:
     return rounds
 
 
+def read_head_provenance(tag_dir: Path) -> dict:
+    """`uses_pinned_mtp_head` reads true whichever head is attached, because
+    `benchmark-qwen-mtp.sh:280` provisions only the organizer head. Only
+    `head_provenance_sha256` discriminates, so every leg must carry it."""
+    path = tag_dir / "score.json"
+    if not path.exists():
+        return {}
+    metrics = json.loads(path.read_text()).get("metrics", {})
+    return {
+        "head_provenance_sha256": metrics.get("head_provenance_sha256"),
+        "uses_pinned_mtp_head": metrics.get("uses_pinned_mtp_head"),
+    }
+
+
 def summarize(tag_dir: Path, warmup: int) -> dict:
     meta = read_meta(tag_dir)
     rounds = [r for r in read_rounds(tag_dir) if r["round"] > warmup and r["d"] > 0]
@@ -92,6 +106,7 @@ def summarize(tag_dir: Path, warmup: int) -> dict:
         "mean_draft_len": st.mean(r["d"] for r in rounds),
         "mean_accept_per_round": st.mean(r["acc"] for r in rounds),
         "median_round_ms": st.median(r["round_us"] / 1000 for r in rounds),
+        **read_head_provenance(tag_dir),
     }
     for name, xs in per_draft.items():
         out[name] = {"median": st.median(xs), "mean": st.mean(xs), "n": len(xs)}
@@ -193,6 +208,8 @@ def main() -> None:
             "traffic_bytes_per_ms": tr / ms if tr else None,
             "gate_qualified_for_timing":
                 sorted({g["gate_qualified_for_timing"] for g in group}),
+            "head_provenance_sha256":
+                sorted({g.get("head_provenance_sha256") for g in group}),
         }
         print(f"{arm.ljust(13)}{len(group):5d}{ms:15.3f}"
               + (f"{tb / ms:16,.0f}{tr / ms:16,.0f}" if tb
