@@ -359,6 +359,27 @@ The reported `growth=29980` is measured against the contract base
 `770a3ff2`, so it prices the organizer commits this base adopted, not E83. E83
 contributes 0 bytes of candidate growth.
 
+`swift test --force-resolved-versions` on the rebased and reverted branch head:
+**705 tests in 53 suites, 40 issues, 9 failing functions**, 20.9 s. The nine
+names are exactly the nine in `senpai/known-test-failures.md`:
+
+```
+contestantDocsCommandBlocksKeepTheDependencyGraphFrozen
+participantDocsExposeDefaultCLIInstallDirectory
+qwen36ConfigContractDigestMatchesTheReferenceManifest
+startupMemoryPolicyKeepsRanked128GiBProfile
+submissionStaticReviewPromptCoversMeasurementStructureExploitation
+theCheckedInDeclarationSelectsThePinnedHead
+theEvenMedianRuleIsTheMeanOfTheTwoCentralValues
+theQwenMTPTrackIsArmedOnQwen38
+theSeededCalibrationExpectationMatchesItsRecordedProvenance
+```
+
+The name set and the issue count are the gate, and both hold. The test and
+suite counts are not the gate: they move with whatever tests a branch adds, and
+`senpai/known-test-failures.md` now says so. Neither the organizer sync nor the
+revert introduced a new failure.
+
 `swift test` on the gates session: 2 tests, 1 suite, **0 expectation
 failures**, 247.5 s.
 

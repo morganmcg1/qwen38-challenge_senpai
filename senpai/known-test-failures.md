@@ -30,10 +30,11 @@ something new.
 nine fails, so exit 1 carries no information on its own. Read the name set and
 the issue count out of the run.
 
-**The test count and the suite count are never the gate either.** They rise with
-whatever tests a branch adds, so they differ between students on the same base.
-Branches that added no test report 710 tests; this branch reports 705 because it
-carries the E83 instrument. Both are the same 9 names and the same 40 issues.
+**The test count and the suite count are never the gate either.** They move with
+whatever tests a branch adds, so two students on the same base report different
+totals. On `f7f356b2` this branch reports 705 tests in 53 suites and other
+branches report 710 tests. Every one of them reports the same 9 names and the
+same 40 issues, and that is the gate.
 
 Do **not** edit the organizer's tests to make them green. These failures are
 evidence about the base, not defects to hide.
@@ -46,6 +47,11 @@ evidence about the base, not defects to hide.
 - totals: 703 tests across 52 suites, **9 failing test functions**, **40 issues**
 - independent corroboration: the 06:18 UTC job log for the same base also
   records `swift_test exit=1 failing=9` with 40 issues.
+
+Re-measured at `f7f356b2834518ced918f3049ca1b88afb6003f3`, the base that adopts
+organizer commit `8b54ff11`, on the same host at 2026-08-20T20:26Z: 705 tests
+across 53 suites, the **same 9 names** and the **same 40 issues**. The organizer
+sync introduced no new failure.
 
 ## The nine failing tests
 
