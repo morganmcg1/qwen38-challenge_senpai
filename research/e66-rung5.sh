@@ -56,7 +56,11 @@ step "05-local-submit" ./benchmark-qwen-mtp.sh --local-submit
 step "06-assert-after" assert_arm
 
 # The submitted set is every editablePath that differs from the organizer tree.
-mapfile -t submitted < <(python3 - "${ORGANIZER}" <<'PY'
+# `mapfile` is bash 4; macOS ships bash 3.2, so read the list the portable way.
+submitted=()
+while IFS= read -r line; do
+  [[ -n "${line}" ]] && submitted+=("${line}")
+done < <(python3 - "${ORGANIZER}" <<'PY'
 import json, subprocess, sys
 bm = json.load(open("benchmark.json"))
 def find(o):
