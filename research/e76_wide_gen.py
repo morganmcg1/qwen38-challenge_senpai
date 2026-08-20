@@ -57,6 +57,12 @@ count, so an unrolled block loop lets the allocator interleave the blocks and
 put the pressure straight back, and these two separate that outcome from a real
 reduction.
 
+A fourth lever was added for E80 rung 0a. `ballast<N>` keeps the shipped body
+exactly and adds `N` live-but-inert floats across the k loop, which moves the
+arm along the spill axis without moving it along any other axis. It exists
+because spill and the multi-chunk rewrite are perfectly confounded in the rung-1
+census: see the ballast section below.
+
 Every rewrite is a storage or scheduling change. No arm changes which values are
 computed, the order of any floating-point accumulation, or the reduction. That
 is the claim, not the proof: E72 saw `mfull` pass an arithmetic-level gate and
@@ -441,6 +447,87 @@ def mchunk_rewrites(width: int) -> list[tuple[str, str]]:
     ]
 
 
+# ---------------------------------------------------------------------------
+# The ballast lever: register pressure with no arithmetic change.
+#
+# Every arm that fails E76 device parity is a multi-chunk arm, and every one of
+# them carries at least 144 bytes of `applegpu_g16s` spill; every arm that
+# passes carries at most 48. Two explanations survive that: the chunk rewrite
+# itself is wrong, or a large spill frame is mis-handled on this generation.
+# The census cannot separate them, because the largest non-`mc` spill available
+# is 48 bytes.
+#
+# `ballast<N>` supplies the missing arm. It is the shipped body with `N` extra
+# `float` values declared before the k loop, updated once per k block so each
+# one is a loop-carried value the allocator must keep live across the peak, and
+# consumed after the loop. Nothing else changes: the row block stays at the
+# shipped 4, the staging, the qdot tree, the accumulation order and the
+# `simd_sum` reduction are the shipped text.
+#
+# The consumption is bit-exact by construction, not by approximation:
+#
+#   * `ballast[b]` is a sum of small non-negative integers, so it is finite.
+#   * `0.0f * finite` is `+/-0.0f`, and a sum of `+/-0.0f` starting from
+#     `+0.0f` is `+0.0f` in round-to-nearest, so `ballast_zero` is `+0.0f`.
+#   * `1.0f + (+0.0f)` is exactly `1.0f`, and `x * 1.0f` is `x` for every bit
+#     pattern, including both signed zeros, subnormals and infinities.
+#
+# `-fno-fast-math` is what makes it a pressure lever rather than dead code:
+# without `nnan`/`ninf` the compiler may not fold `0.0f * ballast[b]` to zero,
+# because `ballast[b]` could be an infinity or a NaN as far as it knows, and
+# without `nsz` it may not fold `1.0f + ballast_zero` to `1.0f`. So the values
+# stay live even though they cannot move a single output bit. That is the whole
+# point: an arm that is numerically `plain` and structurally `plain` but spills
+# like `mc2` isolates spill as the parity variable.
+#
+# The loops are fully unrolled so the array is promoted to scalars. Left as an
+# addressed `thread` array it would become a stack object, which is thread
+# memory traffic rather than allocator spill and would not test the same thing.
+# ---------------------------------------------------------------------------
+
+
+def ballast_decl(count: int) -> str:
+    return f"""  constexpr int kBallast = {count};
+  float ballast[kBallast];
+#pragma clang loop unroll(full)
+  for (int b = 0; b < kBallast; b++) {{
+    ballast[b] = static_cast<float>(b + 1);
+  }}"""
+
+
+BALLAST_STEP = """#pragma clang loop unroll(full)
+    for (int b = 0; b < kBallast; b++) {
+      ballast[b] += static_cast<float>(k + b);
+    }"""
+
+BALLAST_READOUT = """  float ballast_zero = 0.0f;
+#pragma clang loop unroll(full)
+  for (int b = 0; b < kBallast; b++) {
+    ballast_zero += 0.0f * ballast[b];
+  }
+  const float ballast_unit = 1.0f + ballast_zero;
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      const float reduced = simd_sum(acc[r][m]) * ballast_unit;
+      if (simd_lid == 0) {
+        y[(first_m + m) * out_vec_size + out_row + r] =
+            static_cast<T>(reduced);
+      }
+    }
+  }"""
+
+
+def ballast_rewrites(count: int) -> list[tuple[str, str]]:
+    """Rewrites applied BEFORE any layout rewrite, so the layout still sees its
+    own anchors: `ballast` appends to `ACC_DECL` and `EPILOGUE` rather than
+    replacing them."""
+    return [
+        (ACC_DECL, ACC_DECL + "\n" + ballast_decl(count)),
+        (EPILOGUE, EPILOGUE + "\n" + BALLAST_STEP),
+        (READOUT, BALLAST_READOUT),
+    ]
+
+
 # The levers are independent, so the search is their cross product: the row
 # block sets how many accumulator values are live, the staging choice sets how
 # long the scalar operands stay live across that peak, and the layout choice
@@ -500,6 +587,25 @@ for _width in (4, 3, 2):
 for _rps in (2, 1):
     for _width in (4, 2):
         ARMS.append((f"rps{_rps}mc{_width}", _rps, True, mchunk_rewrites(_width)))
+# E80 rung 0a, spill ladder. Every parity failure so far carries at least 144
+# bytes of g16s spill and every pass carries at most 48, but spill and the
+# chunk rewrite are perfectly confounded because only `mc*` arms spill that
+# hard. These arms break the confound: they are numerically and structurally
+# `plain` at the shipped row block, and their only job is to climb the spill
+# axis. The ladder is wide enough to bracket 144 bytes from below and above.
+for _count in (8, 16, 24, 32, 48):
+    ARMS.append((f"ballast{_count}", 4, True, ballast_rewrites(_count)))
+# The second, independent ladder. `fall` is the largest non-`mc` spill in the
+# rung-1 census at 48 bytes on g16s, so these ask whether the flat-float layout
+# still climbs when it is carried on a staging choice it has not been crossed
+# with yet, and whether it stacks with the ballast lever.
+ARMS.append(("lazywfall", 4, True,
+             STAGING["lazyw"] + layout_rewrites("fall", "lazyw")))
+ARMS.append(("lazysbfall", 4, True,
+             STAGING["lazysb"] + layout_rewrites("fall", "lazysb")))
+for _count in (16, 32):
+    ARMS.append((f"fallballast{_count}", 4, True,
+                 ballast_rewrites(_count) + layout_rewrites("fall", "")))
 
 HEADER = """// GENERATED by research/e76_wide_gen.py -- do not edit by hand.
 //
