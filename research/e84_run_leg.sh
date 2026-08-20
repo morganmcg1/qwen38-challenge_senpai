@@ -41,7 +41,7 @@ readonly SCORED_FILE="Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
 readonly A_SYMBOL="islandFastPathReady"
 readonly B_STRING="qwen35_gated_delta_replay_state"
 
-base_sha="${E84_BASE_SHA:-5ea174c50b98407bc463c463cc7c7a85d32960a7}"
+base_sha="${E84_BASE_SHA:-07c75a708c2347021d3148d7bc87b246ba2aec73}"
 root="${E84_ROOT:-${repo_root}/.mlxfast-private/e84}"
 fixture="${E84_FIXTURE:-correctness_prompts/public_longcopy_gate_english_512_256.json}"
 head_dir="${E84_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"

@@ -24,7 +24,7 @@ done
 ((${#legs[@]})) || { echo "e84_session: no legs given" >&2; exit 2; }
 
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
-export E84_BASE_SHA="${E84_BASE_SHA:-5ea174c50b98407bc463c463cc7c7a85d32960a7}"
+export E84_BASE_SHA="${E84_BASE_SHA:-07c75a708c2347021d3148d7bc87b246ba2aec73}"
 export E84_ROOT="${E84_ROOT:-${repo_root}/.mlxfast-private/e84}"
 export DARKBLOOM_STARTUP_MEMORY_PROFILE="${DARKBLOOM_STARTUP_MEMORY_PROFILE:-full}"
 export MLX_MAX_MB_PER_BUFFER="${MLX_MAX_MB_PER_BUFFER:-512}"
