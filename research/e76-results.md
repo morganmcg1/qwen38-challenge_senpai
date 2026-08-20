@@ -25,6 +25,11 @@ not. The one-group partition is **not** structurally unavailable at rank. It is
 available and it is priced, and the price is not close. The ranked-optimal
 dispatch table is the crown's at M = 5, 6 and 9 and ours nowhere.
 
+A second result came out of the same instrument and it matters more than the
+recommendation. **The register census is a cost instrument, not a correctness
+gate.** One arm family compiles clean, with no spill and no diagnostic, and
+returns wrong answers on every scored shape. Section 6 characterises it.
+
 ## 1. Why the register steps are +7, +1, +7, +13
 
 `metal::vec<float,N>` pads to a power-of-two lane count. Read out of the front
@@ -84,9 +89,13 @@ does cost the +7; removing it costs more than +7 elsewhere.
 
 ## 2. Rung 1: the register census
 
-`research/e76-artifacts/rung1.json` and `rung1-table.md`. 26 arms x NA = 2..6 x
+`research/e76-artifacts/rung1.json` and `rung1-table.md`. 29 arms x NA = 2..6 x
 two architectures, in one JIT-string translation unit, from the `_wide` body
-extracted verbatim from `quantized.h` lines 968-1066.
+extracted verbatim from `quantized.h` lines 968-1066. Four levers cross into the
+arm set: the row block (`rps4`, `rps2`, `rps1`), operand staging (eager,
+`lazysb`, `lazyw`, `lazy`), accumulator layout (`facc`, `fall`) and
+proposal-width chunking (`mc4`, `mc3`, `mc2`), plus the `rps2nu` and `rps1nu`
+rolled-loop controls.
 
 The census independently reproduces the advisor's wrapper grid on both
 architectures at all five widths, from the bare `_wide` body rather than the
@@ -105,12 +114,26 @@ widths, so the control is the shipped object at every point in the table.
 **NA = 2 = 83 g17s registers is recorded as the low-end anchor.** The g17s hard
 ceiling is **126**, not 124; six chunk kernels clamp there and start spilling.
 
-Arms at or below the 91 bar with no spill:
+Arms at or below the 91 bar with no spill. Every arm listed here also returns
+zero differing elements against `plain` on all seven priced shapes at its width,
+so the answer to the assignment question is yes on registers **and** on device
+output. `research/e76_qualify.py` prints this table with its parity and cost
+columns joined.
 
 | NA | arms |
 |---:|---|
-| 5 | `rps1lazy` **75**, `rps1lazyfacc` 75, `rps1lazyfall` 75, `rps1lazyw` 76, `rps1fall` 80, `rps1lazysb` 88, `rps1mc4` 88 |
+| 5 | `rps1lazy` **75**, `rps1lazyfacc` 75, `rps1lazyfall` 75, `rps1lazyw` 76, `rps1fall` 80, `rps1lazysb` 88, `rps1mc4` 88, `rps1mc2` 88 |
 | 6 | `rps1lazyfall` **68**, `rps1lazy` 70, `rps1lazyw` 70, `rps1lazyfacc` 70, `rps2lazy` 86, `rps2lazyw` 88, `rps1fall` 90 |
+
+The two widths differ in a way that decides section 5 before any timing is read.
+**At NA = 5 every qualifying arm carries `rps1`.** No arm reaches the bar at the
+shipped row block or at a halved one, so clearing 91 at NA = 5 requires
+quartering the row block. **At NA = 6 the bar is reachable at `rps2`**, because
+`rps2lazy` and `rps2lazyw` clear it while bare `rps2` at 100 does not.
+
+The `rps1mc*` arms are diagnostics for section 6 and not candidates. They carry
+the row block that section 4 prices at four times the x traffic, so they inherit
+the cost that disqualifies `rps1lazy` and add the chunk overhead on top.
 
 The enabling lever is one the brief did not list. `packed[4][4]`,
 `scale_local[4]` and `bias_local[4]` are loaded at the top of each k-block, but
@@ -244,9 +267,17 @@ have to become throughput for the arm to pay for its measured cost.
 | `rps1lazy` | 6 | 70 | 14 -> 23 | +64.3 % | +49.76 % | 77 % | possible |
 | `rps1lazyw` | 6 | 70 | 14 -> 23 | +64.3 % | +52.36 % | 81 % | possible |
 
-At NA = 5 the arithmetic is closed. Both qualifying arms need more than 100 %
-conversion, so they cannot pay even if every extra resident simdgroup were free
-throughput.
+At NA = 5 the arithmetic is closed. Both timed qualifying arms need more than
+100 % conversion, so they cannot pay even if every extra resident simdgroup were
+free throughput.
+
+Six of the eight qualifying arms at NA = 5 were not timed, but they are bounded
+without timing them. Section 2 shows that **every** arm clearing the bar at
+NA = 5 carries `rps1`, and bare `rps1` with no staging at all already measures
+**+47.56 %** per verify round. The row block is therefore a floor on the whole
+qualifying set at that width, and it alone consumes more than the +37.5 % that
+the advisor's model offers as the entire upside. No NA = 5 arm can pay. The same
+floor argument bounds the untimed `rps1` arms at NA = 6 at +33.79 %.
 
 At NA = 6 the arithmetic is open but the case is still weak, for three reasons.
 The required 48 to 81 % conversion is high for a kernel whose local occupancy
@@ -288,30 +319,90 @@ Where the partition is trivial the arm must be the shipped kernel, and it is.
 `mc4` at NA = 2, 3 and 4, `mc3` at NA = 2 and 3, and `mc2` at NA = 2 all emit
 byte-identical machine code to the shipped instantiation on both architectures.
 
-### The chunk arms also fail device parity, and the cause is the backend
+### The chunk arms also fail device parity, and the compiler reports success
 
-The full parity sweep is 518 device checks over 25 arms x NA = 5, 6 x seven
-scored shapes. 476 pass with zero differing elements. **The 42 failures are
-exactly `mc4`, `mc3` and `mc2`, at both widths, on all seven shapes.**
+The parity sweep covers all arms at NA = 3, 4, 5 and 6 on all seven scored
+shapes. Every non-chunk arm returns zero differing elements. **Every multi-chunk
+arm at the shipped row block returns wrong output.**
 
 The failure signature is precise and identical everywhere. The fraction of
 differing elements equals exactly the fraction of `m` values that are not in the
-last chunk: `mc4` at NA = 5 is [4,1] and 80 % differ, `mc3` is [3,2] and 60 %
-differ, `mc2` is [2,2,1] and 80 % differ. Every chunk except the last returns
-wrong output and the last chunk is exact, independent of chunk width.
+last non-empty chunk. Every chunk except the last returns wrong output and the
+last chunk is exact, independent of chunk width and of width `NA`.
 
-**The rewrite is not the cause.** `rps1mc4` carries the same three substitutions
-on the smallest row block. It allocates 88 g17s registers at NA = 5 and 98 at
-NA = 6 with **zero spill on both architectures**, and it returns **zero
-differing elements over all seven scored shapes at both widths**, 4 647 808
-elements. Every chunk instantiation that spills fails on every shape; the one
-that does not spill passes.
+| arm | NA | partition | g17s regs / spill | fraction differing | "all but the last chunk" predicts |
+|---|---:|---|---:|---:|---:|
+| `mc2` | 3 | [2,1] | 116 / **0** | 66.7 % | 66.7 % |
+| `mc2` | 4 | [2,2] | 122 / **0** | 50.0 % | 50.0 % |
+| `mc3` | 4 | [3,1] | 126 / 144 | 75.0 % | 75.0 % |
+| `mc4` | 5 | [4,1] | 126 / 240 | 80.0 % | 80.0 % |
+| `mc3` | 5 | [3,2] | 126 / 176 | 60.0 % | 60.0 % |
+| `mc2` | 5 | [2,2,1] | 126 / 240 | 80.0 % | 80.0 % |
+| `mc4` | 6 | [4,2] | 126 / 288 | 66.7 % | 66.7 % |
+| `mc3` | 6 | [3,3] | 126 / 224 | 50.0 % | 50.0 % |
+| `mc2` | 6 | [2,2,2] | 126 / 288 | 66.7 % | 66.7 % |
 
-This is a caveat the campaign should carry, because the compile oracle is now
-load-bearing for kernel design. **A register census that reports a spill frame
-is reporting more than a performance problem on this toolchain. Treat any
-non-zero spill as a correctness risk and prove bit-identity on device before
-believing a spilling arm.** A register count alone is not a safe gate there.
+Three hypotheses were tested and all three are refuted.
+
+**It is not the rewrite.** `rps1mc4` carries the identical three substitutions on
+the smallest row block. At NA = 5 it emits exactly the same `[4,1]` partition as
+`mc4`. `mc4` fails on all seven shapes; `rps1mc4` returns **zero differing
+elements on all seven shapes at NA = 3, 4, 5 and 6**.
+
+**It is not spill.** `mc2` at NA = 3 and NA = 4 carries no spill frame on either
+architecture and fails anyway, at exactly the predicted fraction. `mc4` at
+NA = 3 and NA = 4 is a single chunk and passes trivially, and it emits
+byte-identical machine code to the shipped instantiation.
+
+**It is not register pressure, and it is not the number of chunks.** Crossing the
+chunk lever with every row block separates the two candidate causes completely.
+`research/e76_chunk_cross.py` prints the table; each cell is 7 priced shapes.
+
+| arm | rows per simd | NA=3 | NA=4 | NA=5 | NA=6 |
+|---|---:|---|---|---|---|
+| `mc4` | 4 | pass (1 chunk) | pass (1 chunk) | **FAIL 80.00 %** | **FAIL 66.67 %** |
+| `mc3` | 4 | pass (1 chunk) | **FAIL 75.00 %** | **FAIL 60.00 %** | **FAIL 50.00 %** |
+| `mc2` | 4 | **FAIL 66.67 %** | **FAIL 50.00 %** | **FAIL 80.00 %** | **FAIL 66.67 %** |
+| `rps2mc4` | 2 | pass | pass | pass | pass |
+| `rps2mc2` | 2 | pass | pass | pass | pass |
+| `rps1mc4` | 1 | pass | pass | pass | pass |
+| `rps1mc2` | 1 | pass | pass | pass | pass |
+
+112 arm-width pairs were checked over 7 shapes. Exactly 9 pairs differ, and all
+9 are `rows_per_simd = 4` with more than one chunk. Multiple chunks alone are
+safe: `rps2mc2` and `rps1mc2` at NA = 6 both run the three-chunk `[2,2,2]`
+partition and both return zero differing elements.
+
+The cleanest single comparison holds NA, the partition and the substitutions
+fixed and varies only the row block. At NA = 3 with the `[2,1]` partition:
+
+| arm | rows per simd | g17s regs / spill | parity |
+|---|---:|---:|---|
+| `mc2` | 4 | 116 / **0** | **FAIL 66.67 %** |
+| `rps2mc2` | 2 | 92 / 0 | pass |
+| `rps1mc2` | 1 | 65 / 0 | pass |
+
+The failing arm carries the **most** registers of the three and still has no
+spill, so higher pressure is not the trigger and the two lower-pressure arms are
+correct.
+
+**The discriminator is `rows_per_simd = 4` — the shipped value — combined with
+more than one chunk.** `mc4` and `rps1mc4` at NA = 5 differ in exactly one
+`constexpr`. Every row loop in the rewritten body is
+`for (int r = 0; r < rows_per_simd; r++)`, so the source has no structural
+dependence on that constant. The compiler accepts both, reports registers and
+spill for both, and one of them silently returns wrong answers for 80 % of its
+output rows.
+
+This is the caveat the campaign should carry, because the compile oracle is now
+load-bearing for kernel design. E72 established that AIR is not the backend.
+This is the next step down: **the backend can report a clean allocation, with no
+spill and no diagnostic, for a kernel that does not compute the right thing. A
+register census is a cost instrument, not a correctness gate.** Device parity on
+the scored shapes remains the only gate that holds.
+
+Toolchain for the record: `Apple metal version 32023.883 (metalfe-32023.883)`,
+target `air64-apple-darwin25.5.0`, macOS 26.5.2.
 
 ## 7. What could not be calibrated
 
@@ -335,9 +426,12 @@ the scalar probe and diverge only where g16s runs out.
    registers at the same 2x row-side traffic the crown pays, which is 19
    modelled resident simdgroups against the crown's 18, and it saves a dispatch
    launch. That single cell is the one place the arithmetic here is not closed.
-2. **Report the spill miscompile upstream or pin it.** The failure is
-   reproducible from `research/e76_wide_gen.py` plus `research/e76_session.sh
-   --mode parity`, and it is a silent wrong-answer bug, not a crash.
+2. **Reduce the chunk miscompile to a minimal case and pin or report it.** The
+   failure is reproducible from `research/e76_wide_gen.py` plus
+   `research/e76_session.sh --mode parity`, and it is a silent wrong-answer bug,
+   not a crash. The reduction is not needed for any campaign decision, so I did
+   not spend the time, but the toolchain version should be recorded against it
+   before the next toolchain change.
 3. **Reuse the oracle on the head, not the target.** The census costs about nine
    seconds for 26 arms at five widths across two architectures. The MTP proposal
    head has never been through it.
@@ -350,14 +444,23 @@ the scalar probe and diverge only where g16s runs out.
 ```bash
 python3 research/e76_wide_gen.py --check          # arms are the shipped body
 python3 research/e76_vec_layout.py                # vector padding, no GPU
-python3 research/e76_rung1_census.py --out research/e76-artifacts/rung1.json
-research/e76_session.sh --mode parity --na "5 6"
+python3 research/e76_rung1_census.py --na 2 3 4 5 6 \
+  --out research/e76-artifacts/rung1.json
+research/e76_session.sh --mode parity --na "3 4 5 6"
 research/e76_session.sh --mode timed --na "5" --reps 21 \
   --arms plain,lazy,rps2,rps2lazyw,rps2lazy,rps1,rps1lazyw,rps1lazy
 research/e76_session.sh --mode timed --na "6" --reps 21 \
   --arms plain,lazy,rps2,rps2lazyw,rps2lazy,rps1,rps1lazyw,rps1lazy
 python3 research/e76_report.py --out research/e76-artifacts/rung1-table.md
+python3 research/e76_qualify.py                   # arms clearing the 91 bar
+python3 research/e76_chunk_cross.py               # the miscompile cross
 ```
+
+Two traps in this tooling. `e76_rung1_census.py` defaults to `--na 5 6`, so the
+low widths that anchor section 1 are dropped unless they are named. `--mode
+parity` ignores `--arms` and always sweeps every arm, so a tagged partial run
+must be deleted rather than kept beside a full one; `e76_report.parity()` globs
+`parity-na*.json` and would otherwise count both.
 
 Pre-checks, all passing on this branch:
 

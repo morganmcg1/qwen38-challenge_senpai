@@ -1,7 +1,7 @@
 {
   "source" : "\/tmp\/e76-build\/arms_na6.metal",
   "device" : "Apple M4 Pro",
-  "exit_gpu_temp_c" : 37.827785491943359,
+  "exit_gpu_temp_c" : 38.507114410400391,
   "reps" : 1,
   "na" : 6,
   "order" : [
@@ -30,15 +30,15 @@
     "lazysb",
     "plain"
   ],
-  "entry_gpu_temp_c" : 37.744075775146484,
+  "entry_gpu_temp_c" : 38.501613616943359,
   "warmup_reps_discarded" : 0,
   "shapes" : [
     {
       "k" : 5120,
       "inner" : 2,
       "bytes_per_dispatch" : 42188800,
-      "exit_gpu_temp_c" : 37.72698974609375,
-      "entry_gpu_temp_c" : 37.669944763183594,
+      "exit_gpu_temp_c" : 38.678188323974609,
+      "entry_gpu_temp_c" : 38.352993011474609,
       "parity_differing_vs_plain" : {
         "lazysb" : 0,
         "rps1lazyw" : 0,
@@ -57,217 +57,217 @@
           "rep" : 0,
           "position" : 0,
           "arm" : "plain",
-          "wall_seconds" : 0.008731541666666667,
-          "seconds_per_dispatch" : 0.0016906041419133544,
-          "gbps" : 24.954866106179356,
-          "gpu_seconds" : 0.0033812082838267088
+          "wall_seconds" : 0.0088329583333333333,
+          "seconds_per_dispatch" : 0.0016779374564066529,
+          "gbps" : 25.143249433353986,
+          "gpu_seconds" : 0.0033558749128133059
         },
         {
           "rep" : 0,
           "position" : 1,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0037534583333333335,
-          "seconds_per_dispatch" : 0.0016596874920651317,
-          "gbps" : 25.419725220381654,
-          "gpu_seconds" : 0.0033193749841302633
+          "wall_seconds" : 0.0039574166666666664,
+          "seconds_per_dispatch" : 0.0016619792440906167,
+          "gbps" : 25.384673214185895,
+          "gpu_seconds" : 0.0033239584881812334
         },
         {
           "rep" : 0,
           "position" : 2,
           "arm" : "lazyw",
-          "wall_seconds" : 0.003705333333333333,
-          "seconds_per_dispatch" : 0.0016912083374336362,
-          "gbps" : 24.94595081290835,
-          "gpu_seconds" : 0.0033824166748672724
+          "wall_seconds" : 0.0039291666666666667,
+          "seconds_per_dispatch" : 0.001709187519736588,
+          "gbps" : 24.683540871221634,
+          "gpu_seconds" : 0.003418375039473176
         },
         {
           "rep" : 0,
           "position" : 3,
           "arm" : "lazy",
-          "wall_seconds" : 0.0037022916666666667,
-          "seconds_per_dispatch" : 0.0016753542004153132,
-          "gbps" : 25.182018220112244,
-          "gpu_seconds" : 0.0033507084008306265
+          "wall_seconds" : 0.0038665833333333334,
+          "seconds_per_dispatch" : 0.0016770833171904087,
+          "gbps" : 25.156054900527085,
+          "gpu_seconds" : 0.0033541666343808174
         },
         {
           "rep" : 0,
           "position" : 4,
           "arm" : "rps2",
-          "wall_seconds" : 0.0038316250000000004,
-          "seconds_per_dispatch" : 0.001783125102519989,
-          "gbps" : 23.660033690500445,
-          "gpu_seconds" : 0.003566250205039978
+          "wall_seconds" : 0.0042925000000000003,
+          "seconds_per_dispatch" : 0.0017848958959802985,
+          "gbps" : 23.636560594380835,
+          "gpu_seconds" : 0.003569791791960597
         },
         {
           "rep" : 0,
           "position" : 5,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0038610000000000003,
-          "seconds_per_dispatch" : 0.0018016041722148657,
-          "gbps" : 23.417352518746505,
-          "gpu_seconds" : 0.0036032083444297314
+          "wall_seconds" : 0.0023155416666666667,
+          "seconds_per_dispatch" : 0.00088762491941452026,
+          "gbps" : 47.529986007859996,
+          "gpu_seconds" : 0.0017752498388290405
         },
         {
           "rep" : 0,
           "position" : 6,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.002152833333333333,
-          "seconds_per_dispatch" : 0.00094568752683699131,
-          "gbps" : 44.611775880250249,
-          "gpu_seconds" : 0.0018913750536739826
+          "wall_seconds" : 0.0020944583333333336,
+          "seconds_per_dispatch" : 0.00078743742778897285,
+          "gbps" : 53.577336447495192,
+          "gpu_seconds" : 0.0015748748555779457
         },
         {
           "rep" : 0,
           "position" : 7,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0017430000000000002,
-          "seconds_per_dispatch" : 0.00071054173167794943,
-          "gbps" : 59.375541392017666,
-          "gpu_seconds" : 0.0014210834633558989
+          "wall_seconds" : 0.0017003750000000001,
+          "seconds_per_dispatch" : 0.00071500008925795555,
+          "gbps" : 59.005307319310354,
+          "gpu_seconds" : 0.0014300001785159111
         },
         {
           "rep" : 0,
           "position" : 8,
           "arm" : "rps1",
-          "wall_seconds" : 0.0019219166666666666,
-          "seconds_per_dispatch" : 0.00083522917702794075,
-          "gbps" : 50.511645378725397,
-          "gpu_seconds" : 0.0016704583540558815
+          "wall_seconds" : 0.0019366250000000002,
+          "seconds_per_dispatch" : 0.00084060418885201216,
+          "gbps" : 50.1886625828215,
+          "gpu_seconds" : 0.0016812083777040243
         },
         {
           "rep" : 0,
           "position" : 9,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0019205833333333334,
-          "seconds_per_dispatch" : 0.00083625002298504114,
-          "gbps" : 50.449983665656262,
-          "gpu_seconds" : 0.0016725000459700823
+          "wall_seconds" : 0.0019055416666666667,
+          "seconds_per_dispatch" : 0.00080262497067451477,
+          "gbps" : 52.563527851052434,
+          "gpu_seconds" : 0.0016052499413490295
         },
         {
           "rep" : 0,
           "position" : 10,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0020384166666666667,
-          "seconds_per_dispatch" : 0.00089149991981685162,
-          "gbps" : 47.32339180542742,
-          "gpu_seconds" : 0.0017829998396337032
+          "wall_seconds" : 0.0022470416666666667,
+          "seconds_per_dispatch" : 0.00087845837697386742,
+          "gbps" : 48.025952174686864,
+          "gpu_seconds" : 0.0017569167539477348
         },
         {
           "rep" : 0,
           "position" : 11,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0018424583333333333,
-          "seconds_per_dispatch" : 0.00081054167822003365,
-          "gbps" : 52.050130343263135,
-          "gpu_seconds" : 0.0016210833564400673
+          "wall_seconds" : 0.0022490000000000001,
+          "seconds_per_dispatch" : 0.00087162503041327,
+          "gbps" : 48.402464968217714,
+          "gpu_seconds" : 0.00174325006082654
         },
         {
           "rep" : 0,
           "position" : 12,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0018443750000000001,
-          "seconds_per_dispatch" : 0.00080949999392032623,
-          "gbps" : 52.117109718165565,
-          "gpu_seconds" : 0.0016189999878406525
+          "wall_seconds" : 0.0022344999999999999,
+          "seconds_per_dispatch" : 0.00086877075955271721,
+          "gbps" : 48.561487062157475,
+          "gpu_seconds" : 0.0017375415191054344
         },
         {
           "rep" : 0,
           "position" : 13,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0018352083333333334,
-          "seconds_per_dispatch" : 0.00081268756184726954,
-          "gbps" : 51.912693119239158,
-          "gpu_seconds" : 0.0016253751236945391
+          "wall_seconds" : 0.0025317916666666666,
+          "seconds_per_dispatch" : 0.00096689572092145681,
+          "gbps" : 43.633247192152062,
+          "gpu_seconds" : 0.0019337914418429136
         },
         {
           "rep" : 0,
           "position" : 14,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0016592083333333333,
-          "seconds_per_dispatch" : 0.0007281875004991889,
-          "gbps" : 57.936726421531034,
-          "gpu_seconds" : 0.0014563750009983778
+          "wall_seconds" : 0.0019972500000000003,
+          "seconds_per_dispatch" : 0.00083929160609841347,
+          "gbps" : 50.267153505944911,
+          "gpu_seconds" : 0.0016785832121968269
         },
         {
           "rep" : 0,
           "position" : 15,
           "arm" : "rps1",
-          "wall_seconds" : 0.0013069583333333334,
-          "seconds_per_dispatch" : 0.00054216664284467697,
-          "gbps" : 77.815189401252951,
-          "gpu_seconds" : 0.0010843332856893539
+          "wall_seconds" : 0.0020330416666666665,
+          "seconds_per_dispatch" : 0.00084229162894189358,
+          "gbps" : 50.088115030893228,
+          "gpu_seconds" : 0.0016845832578837872
         },
         {
           "rep" : 0,
           "position" : 16,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0010655,
-          "seconds_per_dispatch" : 0.00041885417886078358,
-          "gbps" : 100.72431440160582,
-          "gpu_seconds" : 0.00083770835772156715
+          "wall_seconds" : 0.0016984166666666667,
+          "seconds_per_dispatch" : 0.00071393745020031929,
+          "gbps" : 59.093132021807378,
+          "gpu_seconds" : 0.0014278749004006386
         },
         {
           "rep" : 0,
           "position" : 17,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0010395833333333333,
-          "seconds_per_dispatch" : 0.0004166249418631196,
-          "gbps" : 101.26326045515766,
-          "gpu_seconds" : 0.0008332498837262392
+          "wall_seconds" : 0.0015480000000000001,
+          "seconds_per_dispatch" : 0.00065443746279925108,
+          "gbps" : 64.465747146479345,
+          "gpu_seconds" : 0.0013088749255985022
         },
         {
           "rep" : 0,
           "position" : 18,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.00099204166666666668,
-          "seconds_per_dispatch" : 0.00039168749935925007,
-          "gbps" : 107.71035600833676,
-          "gpu_seconds" : 0.00078337499871850014
+          "wall_seconds" : 0.0018105833333333333,
+          "seconds_per_dispatch" : 0.00064687500707805157,
+          "gbps" : 65.219400252558415,
+          "gpu_seconds" : 0.0012937500141561031
         },
         {
           "rep" : 0,
           "position" : 19,
           "arm" : "rps2",
-          "wall_seconds" : 0.00097729166666666667,
-          "seconds_per_dispatch" : 0.00038699992001056671,
-          "gbps" : 109.0150096125293,
-          "gpu_seconds" : 0.00077399984002113342
+          "wall_seconds" : 0.0018093750000000002,
+          "seconds_per_dispatch" : 0.00065354164689779282,
+          "gbps" : 64.554110974044619,
+          "gpu_seconds" : 0.0013070832937955856
         },
         {
           "rep" : 0,
           "position" : 20,
           "arm" : "lazy",
-          "wall_seconds" : 0.00093904166666666669,
-          "seconds_per_dispatch" : 0.00036666670348495245,
-          "gbps" : 115.0603520827502,
-          "gpu_seconds" : 0.0007333334069699049
+          "wall_seconds" : 0.0017458333333333334,
+          "seconds_per_dispatch" : 0.00060408329591155052,
+          "gbps" : 69.839375274129836,
+          "gpu_seconds" : 0.001208166591823101
         },
         {
           "rep" : 0,
           "position" : 21,
           "arm" : "lazyw",
-          "wall_seconds" : 0.00095329166666666674,
-          "seconds_per_dispatch" : 0.00037181249354034662,
-          "gbps" : 113.4679461636271,
-          "gpu_seconds" : 0.00074362498708069324
+          "wall_seconds" : 0.0017635000000000001,
+          "seconds_per_dispatch" : 0.00062937499023973942,
+          "gbps" : 67.032851089188625,
+          "gpu_seconds" : 0.0012587499804794788
         },
         {
           "rep" : 0,
           "position" : 22,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0009219166666666667,
-          "seconds_per_dispatch" : 0.00036114582326263189,
-          "gbps" : 116.81929371039556,
-          "gpu_seconds" : 0.00072229164652526379
+          "wall_seconds" : 0.0019912083333333335,
+          "seconds_per_dispatch" : 0.00069208338391035795,
+          "gbps" : 60.959128597522437,
+          "gpu_seconds" : 0.0013841667678207159
         },
         {
           "rep" : 0,
           "position" : 23,
           "arm" : "plain",
-          "wall_seconds" : 0.0009278750000000001,
-          "seconds_per_dispatch" : 0.00035581248812377453,
-          "gbps" : 118.57031837883109,
-          "gpu_seconds" : 0.00071162497624754906
+          "wall_seconds" : 0.0014397083333333334,
+          "seconds_per_dispatch" : 0.00060125009622424841,
+          "gbps" : 70.168471098697054,
+          "gpu_seconds" : 0.0012025001924484968
         }
       ],
       "n" : 16480,
@@ -277,8 +277,8 @@
       "k" : 6144,
       "inner" : 6,
       "bytes_per_dispatch" : 15728640,
-      "exit_gpu_temp_c" : 37.655807495117188,
-      "entry_gpu_temp_c" : 37.666545867919922,
+      "exit_gpu_temp_c" : 38.702804565429688,
+      "entry_gpu_temp_c" : 38.625316619873047,
       "parity_differing_vs_plain" : {
         "lazysb" : 0,
         "rps1lazyw" : 0,
@@ -297,217 +297,217 @@
           "rep" : 0,
           "position" : 0,
           "arm" : "plain",
-          "wall_seconds" : 0.009220250000000001,
-          "seconds_per_dispatch" : 0.0006462916499003768,
-          "gbps" : 24.336752613815303,
-          "gpu_seconds" : 0.0038777498994022608
+          "wall_seconds" : 0.0069933750000000005,
+          "seconds_per_dispatch" : 0.00062640973677237832,
+          "gbps" : 25.109188246407154,
+          "gpu_seconds" : 0.0037584584206342697
         },
         {
           "rep" : 0,
           "position" : 1,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0046625,
-          "seconds_per_dispatch" : 0.00064827777290095889,
-          "gbps" : 24.262192315519901,
-          "gpu_seconds" : 0.0038896666374057531
+          "wall_seconds" : 0.0043180833333333335,
+          "seconds_per_dispatch" : 0.00063586805481463671,
+          "gbps" : 24.735697729908907,
+          "gpu_seconds" : 0.0038152083288878202
         },
         {
           "rep" : 0,
           "position" : 2,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0045962916666666661,
-          "seconds_per_dispatch" : 0.00065413195018966996,
-          "gbps" : 24.045056957452353,
-          "gpu_seconds" : 0.0039247917011380196
+          "wall_seconds" : 0.0043742500000000005,
+          "seconds_per_dispatch" : 0.00064053471821049846,
+          "gbps" : 24.555483961809401,
+          "gpu_seconds" : 0.003843208309262991
         },
         {
           "rep" : 0,
           "position" : 3,
           "arm" : "lazy",
-          "wall_seconds" : 0.0045582083333333334,
-          "seconds_per_dispatch" : 0.00064212499031176173,
-          "gbps" : 24.494670410449999,
-          "gpu_seconds" : 0.0038527499418705702
+          "wall_seconds" : 0.004317375,
+          "seconds_per_dispatch" : 0.00063785413901011145,
+          "gbps" : 24.658678274643385,
+          "gpu_seconds" : 0.0038271248340606689
         },
         {
           "rep" : 0,
           "position" : 4,
           "arm" : "rps2",
-          "wall_seconds" : 0.0048659583333333332,
-          "seconds_per_dispatch" : 0.00069127084376911319,
-          "gbps" : 22.753223489422069,
-          "gpu_seconds" : 0.0041476250626146793
+          "wall_seconds" : 0.0046193750000000002,
+          "seconds_per_dispatch" : 0.0006868819473311305,
+          "gbps" : 22.898607338733235,
+          "gpu_seconds" : 0.004121291683986783
         },
         {
           "rep" : 0,
           "position" : 5,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.004915416666666666,
-          "seconds_per_dispatch" : 0.00069993749881784118,
-          "gbps" : 22.471492135461911,
-          "gpu_seconds" : 0.0041996249929070473
+          "wall_seconds" : 0.0017689166666666667,
+          "seconds_per_dispatch" : 0.00025713886134326458,
+          "gbps" : 61.16788383457618,
+          "gpu_seconds" : 0.0015428331680595875
         },
         {
           "rep" : 0,
           "position" : 6,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0045920833333333334,
-          "seconds_per_dispatch" : 0.00064845833306511247,
-          "gbps" : 24.255436622511056,
-          "gpu_seconds" : 0.0038907499983906746
+          "wall_seconds" : 0.0018518333333333334,
+          "seconds_per_dispatch" : 0.00027023608951518935,
+          "gbps" : 58.203328904801701,
+          "gpu_seconds" : 0.001621416537091136
         },
         {
           "rep" : 0,
           "position" : 7,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0019981250000000003,
-          "seconds_per_dispatch" : 0.00027485416891674203,
-          "gbps" : 57.225400880728401,
-          "gpu_seconds" : 0.001649125013500452
+          "wall_seconds" : 0.0020934583333333335,
+          "seconds_per_dispatch" : 0.00027239582656572264,
+          "gbps" : 57.741853824640202,
+          "gpu_seconds" : 0.0016343749593943357
         },
         {
           "rep" : 0,
           "position" : 8,
           "arm" : "rps1",
-          "wall_seconds" : 0.0021689583333333331,
-          "seconds_per_dispatch" : 0.00031864581008752185,
-          "gbps" : 49.360887549972311,
-          "gpu_seconds" : 0.0019118748605251312
+          "wall_seconds" : 0.0023574583333333334,
+          "seconds_per_dispatch" : 0.00031679170206189156,
+          "gbps" : 49.649785324639275,
+          "gpu_seconds" : 0.0019007502123713493
         },
         {
           "rep" : 0,
           "position" : 9,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0025313333333333334,
-          "seconds_per_dispatch" : 0.00033011112827807665,
-          "gbps" : 47.646500383200113,
-          "gpu_seconds" : 0.0019806667696684599
+          "wall_seconds" : 0.0021198333333333329,
+          "seconds_per_dispatch" : 0.00027724999623994034,
+          "gbps" : 56.730893465506021,
+          "gpu_seconds" : 0.001663499977439642
         },
         {
           "rep" : 0,
           "position" : 10,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0024997500000000002,
-          "seconds_per_dispatch" : 0.00033856947751094896,
-          "gbps" : 46.456166443684673,
-          "gpu_seconds" : 0.0020314168650656939
+          "wall_seconds" : 0.002338458333333333,
+          "seconds_per_dispatch" : 0.00031521528338392574,
+          "gbps" : 49.89808816104528,
+          "gpu_seconds" : 0.0018912917003035545
         },
         {
           "rep" : 0,
           "position" : 11,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0024812916666666668,
-          "seconds_per_dispatch" : 0.00033064586265633505,
-          "gbps" : 47.569444461332793,
-          "gpu_seconds" : 0.0019838751759380102
+          "wall_seconds" : 0.0023457083333333333,
+          "seconds_per_dispatch" : 0.00031387499378373224,
+          "gbps" : 50.111159893283592,
+          "gpu_seconds" : 0.0018832499627023935
         },
         {
           "rep" : 0,
           "position" : 12,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0024852916666666665,
-          "seconds_per_dispatch" : 0.00033095141407102346,
-          "gbps" : 47.525525896754658,
-          "gpu_seconds" : 0.0019857084844261408
+          "wall_seconds" : 0.0022088750000000003,
+          "seconds_per_dispatch" : 0.00032602774444967508,
+          "gbps" : 48.243256188363553,
+          "gpu_seconds" : 0.0019561664666980505
         },
         {
           "rep" : 0,
           "position" : 13,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.002644208333333333,
-          "seconds_per_dispatch" : 0.00034282639777908724,
-          "gbps" : 45.879314142358801,
-          "gpu_seconds" : 0.0020569583866745234
+          "wall_seconds" : 0.0023906666666666668,
+          "seconds_per_dispatch" : 0.00035921530798077583,
+          "gbps" : 43.786107246971085,
+          "gpu_seconds" : 0.002155291847884655
         },
         {
           "rep" : 0,
           "position" : 14,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0021766666666666666,
-          "seconds_per_dispatch" : 0.00031998613849282265,
-          "gbps" : 49.154129219734301,
-          "gpu_seconds" : 0.0019199168309569359
+          "wall_seconds" : 0.0023559166666666667,
+          "seconds_per_dispatch" : 0.00031670834869146347,
+          "gbps" : 49.662852479215204,
+          "gpu_seconds" : 0.0019002500921487808
         },
         {
           "rep" : 0,
           "position" : 15,
           "arm" : "rps1",
-          "wall_seconds" : 0.0021940416666666666,
-          "seconds_per_dispatch" : 0.00031864581008752185,
-          "gbps" : 49.360887549972311,
-          "gpu_seconds" : 0.0019118748605251312
+          "wall_seconds" : 0.0023271666666666666,
+          "seconds_per_dispatch" : 0.00031647916572789353,
+          "gbps" : 49.698816551871758,
+          "gpu_seconds" : 0.0018988749943673611
         },
         {
           "rep" : 0,
           "position" : 16,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0022380416666666668,
-          "seconds_per_dispatch" : 0.00028914585709571838,
-          "gbps" : 54.396905969824132,
-          "gpu_seconds" : 0.0017348751425743103
+          "wall_seconds" : 0.0019072083333333335,
+          "seconds_per_dispatch" : 0.00023956942216803631,
+          "gbps" : 65.653787773331857,
+          "gpu_seconds" : 0.0014374165330082178
         },
         {
           "rep" : 0,
           "position" : 17,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0020360416666666665,
-          "seconds_per_dispatch" : 0.00026297914640357095,
-          "gbps" : 59.809457194992333,
-          "gpu_seconds" : 0.0015778748784214258
+          "wall_seconds" : 0.001642875,
+          "seconds_per_dispatch" : 0.00023688193565855423,
+          "gbps" : 66.398646888260558,
+          "gpu_seconds" : 0.0014212916139513254
         },
         {
           "rep" : 0,
           "position" : 18,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0020188333333333334,
-          "seconds_per_dispatch" : 0.00025110416269550723,
-          "gbps" : 62.637910224820892,
-          "gpu_seconds" : 0.0015066249761730433
+          "wall_seconds" : 0.0015773333333333334,
+          "seconds_per_dispatch" : 0.00022574999214460453,
+          "gbps" : 69.67282634466271,
+          "gpu_seconds" : 0.0013544999528676271
         },
         {
           "rep" : 0,
           "position" : 19,
           "arm" : "rps2",
-          "wall_seconds" : 0.0019920416666666667,
-          "seconds_per_dispatch" : 0.00024847220629453659,
-          "gbps" : 63.301405958280178,
-          "gpu_seconds" : 0.0014908332377672195
+          "wall_seconds" : 0.0017925,
+          "seconds_per_dispatch" : 0.00022179167717695236,
+          "gbps" : 70.916276932480187,
+          "gpu_seconds" : 0.0013307500630617142
         },
         {
           "rep" : 0,
           "position" : 20,
           "arm" : "lazy",
-          "wall_seconds" : 0.0019453750000000001,
-          "seconds_per_dispatch" : 0.00023905552613238493,
-          "gbps" : 65.794923273556719,
-          "gpu_seconds" : 0.0014343331567943096
+          "wall_seconds" : 0.0014517916666666666,
+          "seconds_per_dispatch" : 0.0002061458071693778,
+          "gbps" : 76.298617061256593,
+          "gpu_seconds" : 0.0012368748430162668
         },
         {
           "rep" : 0,
           "position" : 21,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0020380416666666667,
-          "seconds_per_dispatch" : 0.00025320833083242178,
-          "gbps" : 62.117387482047427,
-          "gpu_seconds" : 0.0015192499849945307
+          "wall_seconds" : 0.0016340833333333333,
+          "seconds_per_dispatch" : 0.00023414586515476307,
+          "gbps" : 67.174536648784567,
+          "gpu_seconds" : 0.0014048751909285784
         },
         {
           "rep" : 0,
           "position" : 22,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0017153750000000001,
-          "seconds_per_dispatch" : 0.00023853472278763851,
-          "gbps" : 65.938576221470342,
-          "gpu_seconds" : 0.001431208336725831
+          "wall_seconds" : 0.0017015416666666665,
+          "seconds_per_dispatch" : 0.00023610416489342848,
+          "gbps" : 66.61737630549429,
+          "gpu_seconds" : 0.0014166249893605709
         },
         {
           "rep" : 0,
           "position" : 23,
           "arm" : "plain",
-          "wall_seconds" : 0.0016724583333333333,
-          "seconds_per_dispatch" : 0.00023450000056376061,
-          "gbps" : 67.073091523184786,
-          "gpu_seconds" : 0.0014070000033825636
+          "wall_seconds" : 0.001642,
+          "seconds_per_dispatch" : 0.00023125003402431807,
+          "gbps" : 68.015730533237416,
+          "gpu_seconds" : 0.0013875002041459084
         }
       ],
       "n" : 5120,
@@ -517,8 +517,8 @@
       "k" : 5120,
       "inner" : 2,
       "bytes_per_dispatch" : 36700160,
-      "exit_gpu_temp_c" : 37.651271820068359,
-      "entry_gpu_temp_c" : 37.656463623046875,
+      "exit_gpu_temp_c" : 38.458763122558594,
+      "entry_gpu_temp_c" : 38.688461303710938,
       "parity_differing_vs_plain" : {
         "lazysb" : 0,
         "rps1lazyw" : 0,
@@ -537,217 +537,217 @@
           "rep" : 0,
           "position" : 0,
           "arm" : "plain",
-          "wall_seconds" : 0.0081699166666666673,
-          "seconds_per_dispatch" : 0.001455125049687922,
-          "gbps" : 25.221310022716615,
-          "gpu_seconds" : 0.002910250099375844
+          "wall_seconds" : 0.0077977916666666664,
+          "seconds_per_dispatch" : 0.0014744374202564359,
+          "gbps" : 24.890958066987384,
+          "gpu_seconds" : 0.0029488748405128717
         },
         {
           "rep" : 0,
           "position" : 1,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0032300000000000002,
-          "seconds_per_dispatch" : 0.001454354147426784,
-          "gbps" : 25.234678956933752,
-          "gpu_seconds" : 0.0029087082948535681
+          "wall_seconds" : 0.0036042500000000002,
+          "seconds_per_dispatch" : 0.00145800004247576,
+          "gbps" : 25.171576770108466,
+          "gpu_seconds" : 0.00291600008495152
         },
         {
           "rep" : 0,
           "position" : 2,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0036476666666666667,
-          "seconds_per_dispatch" : 0.001469625043682754,
-          "gbps" : 24.972465022801021,
-          "gpu_seconds" : 0.0029392500873655081
+          "wall_seconds" : 0.0036905000000000002,
+          "seconds_per_dispatch" : 0.0014755207812413573,
+          "gbps" : 24.872682558306035,
+          "gpu_seconds" : 0.0029510415624827147
         },
         {
           "rep" : 0,
           "position" : 3,
           "arm" : "lazy",
-          "wall_seconds" : 0.0036296666666666669,
-          "seconds_per_dispatch" : 0.0014603125164285302,
-          "gbps" : 25.131716387501193,
-          "gpu_seconds" : 0.0029206250328570604
+          "wall_seconds" : 0.0035345416666666667,
+          "seconds_per_dispatch" : 0.0014637500280514359,
+          "gbps" : 25.072696359812035,
+          "gpu_seconds" : 0.0029275000561028719
         },
         {
           "rep" : 0,
           "position" : 4,
           "arm" : "rps2",
-          "wall_seconds" : 0.0036789166666666667,
-          "seconds_per_dispatch" : 0.0015576250152662396,
-          "gbps" : 23.561614406742798,
-          "gpu_seconds" : 0.0031152500305324793
+          "wall_seconds" : 0.0036848750000000002,
+          "seconds_per_dispatch" : 0.001554229180328548,
+          "gbps" : 23.613094172020347,
+          "gpu_seconds" : 0.0031084583606570959
         },
         {
           "rep" : 0,
           "position" : 5,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0037062916666666668,
-          "seconds_per_dispatch" : 0.0015720416558906436,
-          "gbps" : 23.345539135352901,
-          "gpu_seconds" : 0.0031440833117812872
+          "wall_seconds" : 0.0037672083333333333,
+          "seconds_per_dispatch" : 0.0015777084045112133,
+          "gbps" : 23.26168758121689,
+          "gpu_seconds" : 0.0031554168090224266
         },
         {
           "rep" : 0,
           "position" : 6,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0036433333333333331,
-          "seconds_per_dispatch" : 0.0016737499972805381,
-          "gbps" : 21.926906682377528,
-          "gpu_seconds" : 0.0033474999945610762
+          "wall_seconds" : 0.003910625,
+          "seconds_per_dispatch" : 0.0016756249824538827,
+          "gbps" : 21.90237098652835,
+          "gpu_seconds" : 0.0033512499649077654
         },
         {
           "rep" : 0,
           "position" : 7,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0039889583333333331,
-          "seconds_per_dispatch" : 0.0016778125427663326,
-          "gbps" : 21.873814305553918,
-          "gpu_seconds" : 0.0033556250855326653
+          "wall_seconds" : 0.0039000416666666667,
+          "seconds_per_dispatch" : 0.0016807917272672057,
+          "gbps" : 21.835043214825124,
+          "gpu_seconds" : 0.0033615834545344114
         },
         {
           "rep" : 0,
           "position" : 8,
           "arm" : "rps1",
-          "wall_seconds" : 0.0045359583333333337,
-          "seconds_per_dispatch" : 0.0019768750062212348,
-          "gbps" : 18.564734687071475,
-          "gpu_seconds" : 0.0039537500124424696
+          "wall_seconds" : 0.0031813333333333333,
+          "seconds_per_dispatch" : 0.0012796666705980897,
+          "gbps" : 28.679468523507847,
+          "gpu_seconds" : 0.0025593333411961794
         },
         {
           "rep" : 0,
           "position" : 9,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0034058333333333332,
-          "seconds_per_dispatch" : 0.0014040833339095116,
-          "gbps" : 26.138163678513688,
-          "gpu_seconds" : 0.0028081666678190231
+          "wall_seconds" : 0.0017611666666666665,
+          "seconds_per_dispatch" : 0.00073175004217773676,
+          "gbps" : 50.153956794833768,
+          "gpu_seconds" : 0.0014635000843554735
         },
         {
           "rep" : 0,
           "position" : 10,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0018992083333333335,
-          "seconds_per_dispatch" : 0.00081033329479396343,
-          "gbps" : 45.290203717140166,
-          "gpu_seconds" : 0.0016206665895879269
+          "wall_seconds" : 0.0022750416666666665,
+          "seconds_per_dispatch" : 0.00084095832426100969,
+          "gbps" : 43.640878437406741,
+          "gpu_seconds" : 0.0016819166485220194
         },
         {
           "rep" : 0,
           "position" : 11,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.002350583333333333,
-          "seconds_per_dispatch" : 0.00083991663996130228,
-          "gbps" : 43.695002877536631,
-          "gpu_seconds" : 0.0016798332799226046
+          "wall_seconds" : 0.0021597083333333334,
+          "seconds_per_dispatch" : 0.00083462498150765896,
+          "gbps" : 43.972036319479876,
+          "gpu_seconds" : 0.0016692499630153179
         },
         {
           "rep" : 0,
           "position" : 12,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0021663750000000003,
-          "seconds_per_dispatch" : 0.00084077089559286833,
-          "gbps" : 43.65060707069425,
-          "gpu_seconds" : 0.0016815417911857367
+          "wall_seconds" : 0.0020874166666666667,
+          "seconds_per_dispatch" : 0.00079006259329617023,
+          "gbps" : 46.452218231071519,
+          "gpu_seconds" : 0.0015801251865923405
         },
         {
           "rep" : 0,
           "position" : 13,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0021692916666666666,
-          "seconds_per_dispatch" : 0.00079818745143711567,
-          "gbps" : 45.979374812172651,
-          "gpu_seconds" : 0.0015963749028742313
+          "wall_seconds" : 0.0020382500000000001,
+          "seconds_per_dispatch" : 0.00076222920324653387,
+          "gbps" : 48.148456978143059,
+          "gpu_seconds" : 0.0015244584064930677
         },
         {
           "rep" : 0,
           "position" : 14,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0019130416666666666,
-          "seconds_per_dispatch" : 0.00070643750950694084,
-          "gbps" : 51.951035309004098,
-          "gpu_seconds" : 0.0014128750190138817
+          "wall_seconds" : 0.0019102500000000001,
+          "seconds_per_dispatch" : 0.00070122908800840378,
+          "gbps" : 52.336904768502947,
+          "gpu_seconds" : 0.0014024581760168076
         },
         {
           "rep" : 0,
           "position" : 15,
           "arm" : "rps1",
-          "wall_seconds" : 0.0018381666666666666,
-          "seconds_per_dispatch" : 0.00067693751771003008,
-          "gbps" : 54.214988887232451,
-          "gpu_seconds" : 0.0013538750354200602
+          "wall_seconds" : 0.0019636250000000001,
+          "seconds_per_dispatch" : 0.00071422918699681759,
+          "gbps" : 51.384290460484252,
+          "gpu_seconds" : 0.0014284583739936352
         },
         {
           "rep" : 0,
           "position" : 16,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0017617916666666667,
-          "seconds_per_dispatch" : 0.00062885414808988571,
-          "gbps" : 58.360368793741721,
-          "gpu_seconds" : 0.0012577082961797714
+          "wall_seconds" : 0.0018017083333333333,
+          "seconds_per_dispatch" : 0.00063460413366556168,
+          "gbps" : 57.831580434269746,
+          "gpu_seconds" : 0.0012692082673311234
         },
         {
           "rep" : 0,
           "position" : 17,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0016749583333333334,
-          "seconds_per_dispatch" : 0.00058893742971122265,
-          "gbps" : 62.315889852671475,
-          "gpu_seconds" : 0.0011778748594224453
+          "wall_seconds" : 0.0015097083333333334,
+          "seconds_per_dispatch" : 0.00062056258320808411,
+          "gbps" : 59.140143142813166,
+          "gpu_seconds" : 0.0012411251664161682
         },
         {
           "rep" : 0,
           "position" : 18,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0013600833333333334,
-          "seconds_per_dispatch" : 0.00057662499602884054,
-          "gbps" : 63.646495127249743,
-          "gpu_seconds" : 0.0011532499920576811
+          "wall_seconds" : 0.0014246666666666665,
+          "seconds_per_dispatch" : 0.0005903332494199276,
+          "gbps" : 62.168546386405069,
+          "gpu_seconds" : 0.0011806664988398552
         },
         {
           "rep" : 0,
           "position" : 19,
           "arm" : "rps2",
-          "wall_seconds" : 0.0013706666666666665,
-          "seconds_per_dispatch" : 0.00057222915347665548,
-          "gbps" : 64.13542507756415,
-          "gpu_seconds" : 0.001144458306953311
+          "wall_seconds" : 0.0017642500000000002,
+          "seconds_per_dispatch" : 0.00062412500847131014,
+          "gbps" : 58.802578813322839,
+          "gpu_seconds" : 0.0012482500169426203
         },
         {
           "rep" : 0,
           "position" : 20,
           "arm" : "lazy",
-          "wall_seconds" : 0.0017395416666666666,
-          "seconds_per_dispatch" : 0.00062443746719509363,
-          "gbps" : 58.773154924308429,
-          "gpu_seconds" : 0.0012488749343901873
+          "wall_seconds" : 0.0017330000000000002,
+          "seconds_per_dispatch" : 0.00061535416170954704,
+          "gbps" : 59.640711453127089,
+          "gpu_seconds" : 0.0012307083234190941
         },
         {
           "rep" : 0,
           "position" : 21,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0017488333333333334,
-          "seconds_per_dispatch" : 0.00063329166732728481,
-          "gbps" : 57.951433586498418,
-          "gpu_seconds" : 0.0012665833346545696
+          "wall_seconds" : 0.0017104166666666667,
+          "seconds_per_dispatch" : 0.00059395842254161835,
+          "gbps" : 61.789106117825007,
+          "gpu_seconds" : 0.0011879168450832367
         },
         {
           "rep" : 0,
           "position" : 22,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0016557500000000001,
-          "seconds_per_dispatch" : 0.00058968749362975359,
-          "gbps" : 62.236626003540252,
-          "gpu_seconds" : 0.0011793749872595072
+          "wall_seconds" : 0.0017226666666666666,
+          "seconds_per_dispatch" : 0.00058743753470480442,
+          "gbps" : 62.475000032884076,
+          "gpu_seconds" : 0.0011748750694096088
         },
         {
           "rep" : 0,
           "position" : 23,
           "arm" : "plain",
-          "wall_seconds" : 0.0016944583333333334,
-          "seconds_per_dispatch" : 0.00057189585641026497,
-          "gbps" : 64.172802772804403,
-          "gpu_seconds" : 0.0011437917128205299
+          "wall_seconds" : 0.0016295000000000001,
+          "seconds_per_dispatch" : 0.00054887507576495409,
+          "gbps" : 66.864322357599974,
+          "gpu_seconds" : 0.0010977501515299082
         }
       ],
       "n" : 14336,
@@ -757,8 +757,8 @@
       "k" : 5120,
       "inner" : 1,
       "bytes_per_dispatch" : 89128960,
-      "exit_gpu_temp_c" : 37.6766357421875,
-      "entry_gpu_temp_c" : 37.629966735839844,
+      "exit_gpu_temp_c" : 38.529403686523438,
+      "entry_gpu_temp_c" : 38.600955963134766,
       "parity_differing_vs_plain" : {
         "lazysb" : 0,
         "rps1lazyw" : 0,
@@ -777,217 +777,217 @@
           "rep" : 0,
           "position" : 0,
           "arm" : "plain",
-          "wall_seconds" : 0.010053000000000001,
-          "seconds_per_dispatch" : 0.0034920000471174717,
-          "gbps" : 25.523756814829643,
-          "gpu_seconds" : 0.0034920000471174717
+          "wall_seconds" : 0.0107145,
+          "seconds_per_dispatch" : 0.0035103750415146351,
+          "gbps" : 25.390153173360982,
+          "gpu_seconds" : 0.0035103750415146351
         },
         {
           "rep" : 0,
           "position" : 1,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0038485833333333332,
-          "seconds_per_dispatch" : 0.0034483750350773335,
-          "gbps" : 25.846655045744232,
-          "gpu_seconds" : 0.0034483750350773335
+          "wall_seconds" : 0.0039095000000000006,
+          "seconds_per_dispatch" : 0.003449541749432683,
+          "gbps" : 25.837913112562934,
+          "gpu_seconds" : 0.003449541749432683
         },
         {
           "rep" : 0,
           "position" : 2,
           "arm" : "lazyw",
-          "wall_seconds" : 0.004201333333333333,
-          "seconds_per_dispatch" : 0.0034972082357853651,
-          "gbps" : 25.485745769434967,
-          "gpu_seconds" : 0.0034972082357853651
+          "wall_seconds" : 0.004183541666666667,
+          "seconds_per_dispatch" : 0.0034949583932757378,
+          "gbps" : 25.502151948785187,
+          "gpu_seconds" : 0.0034949583932757378
         },
         {
           "rep" : 0,
           "position" : 3,
           "arm" : "lazy",
-          "wall_seconds" : 0.0041200416666666668,
-          "seconds_per_dispatch" : 0.0034925416111946106,
-          "gbps" : 25.519799023815718,
-          "gpu_seconds" : 0.0034925416111946106
+          "wall_seconds" : 0.0042039166666666666,
+          "seconds_per_dispatch" : 0.0034880000166594982,
+          "gbps" : 25.553027400888585,
+          "gpu_seconds" : 0.0034880000166594982
         },
         {
           "rep" : 0,
           "position" : 4,
           "arm" : "rps2",
-          "wall_seconds" : 0.0043740833333333331,
-          "seconds_per_dispatch" : 0.0037159167695790529,
-          "gbps" : 23.985725603347333,
-          "gpu_seconds" : 0.0037159167695790529
+          "wall_seconds" : 0.0039917500000000005,
+          "seconds_per_dispatch" : 0.0036926250904798508,
+          "gbps" : 24.137018466832178,
+          "gpu_seconds" : 0.0036926250904798508
         },
         {
           "rep" : 0,
           "position" : 5,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0041112916666666667,
-          "seconds_per_dispatch" : 0.0037537501193583012,
-          "gbps" : 23.743977932989445,
-          "gpu_seconds" : 0.0037537501193583012
+          "wall_seconds" : 0.0016720000000000001,
+          "seconds_per_dispatch" : 0.001413208432495594,
+          "gbps" : 63.068516965049938,
+          "gpu_seconds" : 0.001413208432495594
         },
         {
           "rep" : 0,
           "position" : 6,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0046067916666666662,
-          "seconds_per_dispatch" : 0.0039972499944269657,
-          "gbps" : 22.297569610173277,
-          "gpu_seconds" : 0.0039972499944269657
+          "wall_seconds" : 0.0017018333333333334,
+          "seconds_per_dispatch" : 0.0014691250398755074,
+          "gbps" : 60.668055870555939,
+          "gpu_seconds" : 0.0014691250398755074
         },
         {
           "rep" : 0,
           "position" : 7,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.004627416666666666,
-          "seconds_per_dispatch" : 0.0040071248076856136,
-          "gbps" : 22.242621400025225,
-          "gpu_seconds" : 0.0040071248076856136
+          "wall_seconds" : 0.0017185000000000002,
+          "seconds_per_dispatch" : 0.0014719166792929173,
+          "gbps" : 60.552992743322932,
+          "gpu_seconds" : 0.0014719166792929173
         },
         {
           "rep" : 0,
           "position" : 8,
           "arm" : "rps1",
-          "wall_seconds" : 0.0023036250000000001,
-          "seconds_per_dispatch" : 0.0019423749763518572,
-          "gbps" : 45.886587855142587,
-          "gpu_seconds" : 0.0019423749763518572
+          "wall_seconds" : 0.0023146666666666667,
+          "seconds_per_dispatch" : 0.0018085415940731764,
+          "gbps" : 49.282228449755912,
+          "gpu_seconds" : 0.0018085415940731764
         },
         {
           "rep" : 0,
           "position" : 9,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0020244166666666666,
-          "seconds_per_dispatch" : 0.0017351666465401649,
-          "gbps" : 51.366224781762988,
-          "gpu_seconds" : 0.0017351666465401649
+          "wall_seconds" : 0.0018357916666666666,
+          "seconds_per_dispatch" : 0.0016002915799617767,
+          "gbps" : 55.695450201724405,
+          "gpu_seconds" : 0.0016002915799617767
         },
         {
           "rep" : 0,
           "position" : 10,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0026250416666666666,
-          "seconds_per_dispatch" : 0.0020167918410152197,
-          "gbps" : 44.193435429178429,
-          "gpu_seconds" : 0.0020167918410152197
+          "wall_seconds" : 0.0023168750000000004,
+          "seconds_per_dispatch" : 0.0018135416321456432,
+          "gbps" : 49.146354525398714,
+          "gpu_seconds" : 0.0018135416321456432
         },
         {
           "rep" : 0,
           "position" : 11,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0026075416666666669,
-          "seconds_per_dispatch" : 0.0019187501166015863,
-          "gbps" : 46.451572421458224,
-          "gpu_seconds" : 0.0019187501166015863
+          "wall_seconds" : 0.001887875,
+          "seconds_per_dispatch" : 0.0016775417607277632,
+          "gbps" : 53.130695215201932,
+          "gpu_seconds" : 0.0016775417607277632
         },
         {
           "rep" : 0,
           "position" : 12,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0023105000000000001,
-          "seconds_per_dispatch" : 0.0018159167375415564,
-          "gbps" : 49.08207417079349,
-          "gpu_seconds" : 0.0018159167375415564
+          "wall_seconds" : 0.0022660416666666666,
+          "seconds_per_dispatch" : 0.0017556250095367432,
+          "gbps" : 50.767652269614487,
+          "gpu_seconds" : 0.0017556250095367432
         },
         {
           "rep" : 0,
           "position" : 13,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0023001250000000001,
-          "seconds_per_dispatch" : 0.0018186250235885382,
-          "gbps" : 49.008981424950044,
-          "gpu_seconds" : 0.0018186250235885382
+          "wall_seconds" : 0.0020965833333333335,
+          "seconds_per_dispatch" : 0.0018540418241173029,
+          "gbps" : 48.072788240596303,
+          "gpu_seconds" : 0.0018540418241173029
         },
         {
           "rep" : 0,
           "position" : 14,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0021341250000000002,
-          "seconds_per_dispatch" : 0.0016235001385211945,
-          "gbps" : 54.899262331560585,
-          "gpu_seconds" : 0.0016235001385211945
+          "wall_seconds" : 0.0020758333333333332,
+          "seconds_per_dispatch" : 0.0017473751213401556,
+          "gbps" : 51.007341761648881,
+          "gpu_seconds" : 0.0017473751213401556
         },
         {
           "rep" : 0,
           "position" : 15,
           "arm" : "rps1",
-          "wall_seconds" : 0.0019028750000000001,
-          "seconds_per_dispatch" : 0.001658416585996747,
-          "gbps" : 53.743408473228349,
-          "gpu_seconds" : 0.001658416585996747
+          "wall_seconds" : 0.00199,
+          "seconds_per_dispatch" : 0.0017375831957906485,
+          "gbps" : 51.294787044394646,
+          "gpu_seconds" : 0.0017375831957906485
         },
         {
           "rep" : 0,
           "position" : 16,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0017609166666666667,
-          "seconds_per_dispatch" : 0.0014985832385718822,
-          "gbps" : 59.475481712272448,
-          "gpu_seconds" : 0.0014985832385718822
+          "wall_seconds" : 0.0017121666666666665,
+          "seconds_per_dispatch" : 0.0014781251084059477,
+          "gbps" : 60.298657734134032,
+          "gpu_seconds" : 0.0014781251084059477
         },
         {
           "rep" : 0,
           "position" : 17,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0017221250000000001,
-          "seconds_per_dispatch" : 0.0014754999428987503,
-          "gbps" : 60.405939308203742,
-          "gpu_seconds" : 0.0014754999428987503
+          "wall_seconds" : 0.0016165416666666665,
+          "seconds_per_dispatch" : 0.0013976250775158405,
+          "gbps" : 63.771723499995531,
+          "gpu_seconds" : 0.0013976250775158405
         },
         {
           "rep" : 0,
           "position" : 18,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0020414999999999999,
-          "seconds_per_dispatch" : 0.0015428748447448015,
-          "gbps" : 57.768107571124688,
-          "gpu_seconds" : 0.0015428748447448015
+          "wall_seconds" : 0.0013974583333333332,
+          "seconds_per_dispatch" : 0.0012057500425726175,
+          "gbps" : 73.919931041289686,
+          "gpu_seconds" : 0.0012057500425726175
         },
         {
           "rep" : 0,
           "position" : 19,
           "arm" : "rps2",
-          "wall_seconds" : 0.0015870000000000001,
-          "seconds_per_dispatch" : 0.0013540000654757023,
-          "gbps" : 65.826407451971747,
-          "gpu_seconds" : 0.0013540000654757023
+          "wall_seconds" : 0.0013792500000000001,
+          "seconds_per_dispatch" : 0.0011943334247916937,
+          "gbps" : 74.626530707323369,
+          "gpu_seconds" : 0.0011943334247916937
         },
         {
           "rep" : 0,
           "position" : 20,
           "arm" : "lazy",
-          "wall_seconds" : 0.0018319583333333334,
-          "seconds_per_dispatch" : 0.001347333425655961,
-          "gbps" : 66.15211817862145,
-          "gpu_seconds" : 0.001347333425655961
+          "wall_seconds" : 0.0013276666666666667,
+          "seconds_per_dispatch" : 0.0011239999439567327,
+          "gbps" : 79.296231711761479,
+          "gpu_seconds" : 0.0011239999439567327
         },
         {
           "rep" : 0,
           "position" : 21,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0013301250000000001,
-          "seconds_per_dispatch" : 0.0011300833430141211,
-          "gbps" : 78.869368839892971,
-          "gpu_seconds" : 0.0011300833430141211
+          "wall_seconds" : 0.001357125,
+          "seconds_per_dispatch" : 0.0011302083730697632,
+          "gbps" : 78.860643863322736,
+          "gpu_seconds" : 0.0011302083730697632
         },
         {
           "rep" : 0,
           "position" : 22,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0013197500000000002,
-          "seconds_per_dispatch" : 0.0011090415064245462,
-          "gbps" : 80.365756812244157,
-          "gpu_seconds" : 0.0011090415064245462
+          "wall_seconds" : 0.0013278750000000001,
+          "seconds_per_dispatch" : 0.0011080834083259106,
+          "gbps" : 80.435244612728013,
+          "gpu_seconds" : 0.0011080834083259106
         },
         {
           "rep" : 0,
           "position" : 23,
           "arm" : "plain",
-          "wall_seconds" : 0.0018147916666666666,
-          "seconds_per_dispatch" : 0.001313250046223402,
-          "gbps" : 67.868994374920376,
-          "gpu_seconds" : 0.001313250046223402
+          "wall_seconds" : 0.0013862916666666665,
+          "seconds_per_dispatch" : 0.0011492082849144936,
+          "gbps" : 77.556837320078671,
+          "gpu_seconds" : 0.0011492082849144936
         }
       ],
       "n" : 34816,
@@ -997,8 +997,8 @@
       "k" : 17408,
       "inner" : 2,
       "bytes_per_dispatch" : 44564480,
-      "exit_gpu_temp_c" : 37.626712799072266,
-      "entry_gpu_temp_c" : 37.668289184570312,
+      "exit_gpu_temp_c" : 38.35272216796875,
+      "entry_gpu_temp_c" : 38.475357055664062,
       "parity_differing_vs_plain" : {
         "lazysb" : 0,
         "rps1lazyw" : 0,
@@ -1017,217 +1017,217 @@
           "rep" : 0,
           "position" : 0,
           "arm" : "plain",
-          "wall_seconds" : 0.010184041666666666,
-          "seconds_per_dispatch" : 0.0020080000394955277,
-          "gbps" : 22.19346569893295,
-          "gpu_seconds" : 0.0040160000789910555
+          "wall_seconds" : 0.011080833333333333,
+          "seconds_per_dispatch" : 0.0020250000525265932,
+          "gbps" : 22.0071500464392,
+          "gpu_seconds" : 0.0040500001050531864
         },
         {
           "rep" : 0,
           "position" : 1,
           "arm" : "lazysb",
-          "wall_seconds" : 0.004710458333333333,
-          "seconds_per_dispatch" : 0.0019590625306591392,
-          "gbps" : 22.74785990879321,
-          "gpu_seconds" : 0.0039181250613182783
+          "wall_seconds" : 0.0047550416666666661,
+          "seconds_per_dispatch" : 0.0019730208441615105,
+          "gbps" : 22.58692812692453,
+          "gpu_seconds" : 0.0039460416883230209
         },
         {
           "rep" : 0,
           "position" : 2,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0052247916666666666,
-          "seconds_per_dispatch" : 0.0022386875934898853,
-          "gbps" : 19.906520288759239,
-          "gpu_seconds" : 0.0044773751869797707
+          "wall_seconds" : 0.0051645416666666662,
+          "seconds_per_dispatch" : 0.0022300416603684425,
+          "gbps" : 19.983698417830073,
+          "gpu_seconds" : 0.0044600833207368851
         },
         {
           "rep" : 0,
           "position" : 3,
           "arm" : "lazy",
-          "wall_seconds" : 0.0049045833333333337,
-          "seconds_per_dispatch" : 0.0022319583222270012,
-          "gbps" : 19.966537706463306,
-          "gpu_seconds" : 0.0044639166444540024
+          "wall_seconds" : 0.0044537916666666667,
+          "seconds_per_dispatch" : 0.0018819583347067237,
+          "gbps" : 23.679844116710871,
+          "gpu_seconds" : 0.0037639166694134474
         },
         {
           "rep" : 0,
           "position" : 4,
           "arm" : "rps2",
-          "wall_seconds" : 0.0045750416666666665,
-          "seconds_per_dispatch" : 0.0019313750090077519,
-          "gbps" : 23.073965331515343,
-          "gpu_seconds" : 0.0038627500180155039
+          "wall_seconds" : 0.0017139166666666665,
+          "seconds_per_dispatch" : 0.00071749999187886715,
+          "gbps" : 62.110774222174001,
+          "gpu_seconds" : 0.0014349999837577343
         },
         {
           "rep" : 0,
           "position" : 5,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0045932083333333337,
-          "seconds_per_dispatch" : 0.0019593749893829226,
-          "gbps" : 22.744232340147892,
-          "gpu_seconds" : 0.0039187499787658453
+          "wall_seconds" : 0.0017329166666666667,
+          "seconds_per_dispatch" : 0.0007248750189319253,
+          "gbps" : 61.478846471580717,
+          "gpu_seconds" : 0.0014497500378638506
         },
         {
           "rep" : 0,
           "position" : 6,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0040126250000000006,
-          "seconds_per_dispatch" : 0.0017134166555479169,
-          "gbps" : 26.009132020342804,
-          "gpu_seconds" : 0.0034268333110958338
+          "wall_seconds" : 0.0022573750000000003,
+          "seconds_per_dispatch" : 0.00088287494145333767,
+          "gbps" : 50.476548724602523,
+          "gpu_seconds" : 0.0017657498829066753
         },
         {
           "rep" : 0,
           "position" : 7,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0020061666666666665,
-          "seconds_per_dispatch" : 0.00085750001017004251,
-          "gbps" : 51.970238450682764,
-          "gpu_seconds" : 0.001715000020340085
+          "wall_seconds" : 0.0022440416666666668,
+          "seconds_per_dispatch" : 0.00087643752340227365,
+          "gbps" : 50.847298078936163,
+          "gpu_seconds" : 0.0017528750468045473
         },
         {
           "rep" : 0,
           "position" : 8,
           "arm" : "rps1",
-          "wall_seconds" : 0.002423625,
-          "seconds_per_dispatch" : 0.00094737508334219456,
-          "gbps" : 47.039953639886029,
-          "gpu_seconds" : 0.0018947501666843891
+          "wall_seconds" : 0.002258208333333333,
+          "seconds_per_dispatch" : 0.00086525001097470522,
+          "gbps" : 51.504743640278093,
+          "gpu_seconds" : 0.0017305000219494104
         },
         {
           "rep" : 0,
           "position" : 9,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0024206666666666665,
-          "seconds_per_dispatch" : 0.00095972919370979071,
-          "gbps" : 46.43443201695051,
-          "gpu_seconds" : 0.0019194583874195814
+          "wall_seconds" : 0.002254333333333333,
+          "seconds_per_dispatch" : 0.00086550007108598948,
+          "gbps" : 51.489862899817616,
+          "gpu_seconds" : 0.001731000142171979
         },
         {
           "rep" : 0,
           "position" : 10,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0024538750000000003,
-          "seconds_per_dispatch" : 0.00099437497556209564,
-          "gbps" : 44.816574325805817,
-          "gpu_seconds" : 0.0019887499511241913
+          "wall_seconds" : 0.0025527916666666668,
+          "seconds_per_dispatch" : 0.0010189792374148965,
+          "gbps" : 43.734433797746497,
+          "gpu_seconds" : 0.002037958474829793
         },
         {
           "rep" : 0,
           "position" : 11,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0025005416666666665,
-          "seconds_per_dispatch" : 0.00099968747235834599,
-          "gbps" : 44.578411985966653,
-          "gpu_seconds" : 0.001999374944716692
+          "wall_seconds" : 0.0028250000000000003,
+          "seconds_per_dispatch" : 0.001145250047557056,
+          "gbps" : 38.912445448101863,
+          "gpu_seconds" : 0.0022905000951141119
         },
         {
           "rep" : 0,
           "position" : 12,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0024669166666666667,
-          "seconds_per_dispatch" : 0.0010018749162554741,
-          "gbps" : 44.481081696865481,
-          "gpu_seconds" : 0.0020037498325109482
+          "wall_seconds" : 0.0024450000000000001,
+          "seconds_per_dispatch" : 0.0010666875168681145,
+          "gbps" : 41.778383355272695,
+          "gpu_seconds" : 0.0021333750337362289
         },
         {
           "rep" : 0,
           "position" : 13,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0028411250000000003,
-          "seconds_per_dispatch" : 0.001118458341807127,
-          "gbps" : 39.8445595461301,
-          "gpu_seconds" : 0.002236916683614254
+          "wall_seconds" : 0.002758208333333333,
+          "seconds_per_dispatch" : 0.001135187572799623,
+          "gbps" : 39.257371264287329,
+          "gpu_seconds" : 0.002270375145599246
         },
         {
           "rep" : 0,
           "position" : 14,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0021025416666666666,
-          "seconds_per_dispatch" : 0.00091318751219660044,
-          "gbps" : 48.801017758996352,
-          "gpu_seconds" : 0.0018263750243932009
+          "wall_seconds" : 0.002242208333333333,
+          "seconds_per_dispatch" : 0.00087704171892255545,
+          "gbps" : 50.8122692894785,
+          "gpu_seconds" : 0.0017540834378451109
         },
         {
           "rep" : 0,
           "position" : 15,
           "arm" : "rps1",
-          "wall_seconds" : 0.0024687083333333332,
-          "seconds_per_dispatch" : 0.00096189579926431179,
-          "gbps" : 46.329841583760242,
-          "gpu_seconds" : 0.0019237915985286236
+          "wall_seconds" : 0.0022055416666666668,
+          "seconds_per_dispatch" : 0.00084058335050940514,
+          "gbps" : 53.016134536799129,
+          "gpu_seconds" : 0.0016811667010188103
         },
         {
           "rep" : 0,
           "position" : 16,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0021983750000000002,
-          "seconds_per_dispatch" : 0.00086154160089790821,
-          "gbps" : 51.726440085486765,
-          "gpu_seconds" : 0.0017230832017958164
+          "wall_seconds" : 0.0020690000000000001,
+          "seconds_per_dispatch" : 0.00076825008727610111,
+          "gbps" : 58.00777733460118,
+          "gpu_seconds" : 0.0015365001745522022
         },
         {
           "rep" : 0,
           "position" : 17,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0020858333333333332,
-          "seconds_per_dispatch" : 0.00079175003338605165,
-          "gbps" : 56.286047516048136,
-          "gpu_seconds" : 0.0015835000667721033
+          "wall_seconds" : 0.0021457083333333332,
+          "seconds_per_dispatch" : 0.00079806253779679537,
+          "gbps" : 55.840836888583681,
+          "gpu_seconds" : 0.0015961250755935907
         },
         {
           "rep" : 0,
           "position" : 18,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.001868375,
-          "seconds_per_dispatch" : 0.00068450008984655142,
-          "gbps" : 65.105148503326404,
-          "gpu_seconds" : 0.0013690001796931028
+          "wall_seconds" : 0.0015675416666666665,
+          "seconds_per_dispatch" : 0.00067531259264796972,
+          "gbps" : 65.990891455552642,
+          "gpu_seconds" : 0.0013506251852959394
         },
         {
           "rep" : 0,
           "position" : 19,
           "arm" : "rps2",
-          "wall_seconds" : 0.0019136250000000002,
-          "seconds_per_dispatch" : 0.0007197291124612093,
-          "gbps" : 61.918406840048256,
-          "gpu_seconds" : 0.0014394582249224186
+          "wall_seconds" : 0.0016752916666666665,
+          "seconds_per_dispatch" : 0.00071045837830752134,
+          "gbps" : 62.726376886655984,
+          "gpu_seconds" : 0.0014209167566150427
         },
         {
           "rep" : 0,
           "position" : 20,
           "arm" : "lazy",
-          "wall_seconds" : 0.0019617916666666668,
-          "seconds_per_dispatch" : 0.00072233332321047783,
-          "gbps" : 61.695173914902625,
-          "gpu_seconds" : 0.0014446666464209557
+          "wall_seconds" : 0.0018353750000000002,
+          "seconds_per_dispatch" : 0.0007922083605080843,
+          "gbps" : 56.253483580277404,
+          "gpu_seconds" : 0.0015844167210161686
         },
         {
           "rep" : 0,
           "position" : 21,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0017980000000000001,
-          "seconds_per_dispatch" : 0.00077125011011958122,
-          "gbps" : 57.782137616927329,
-          "gpu_seconds" : 0.0015425002202391624
+          "wall_seconds" : 0.0021345416666666665,
+          "seconds_per_dispatch" : 0.00081318756565451622,
+          "gbps" : 54.80221523570772,
+          "gpu_seconds" : 0.0016263751313090324
         },
         {
           "rep" : 0,
           "position" : 22,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0017338750000000002,
-          "seconds_per_dispatch" : 0.00070685415994375944,
-          "gbps" : 63.046215931650956,
-          "gpu_seconds" : 0.0014137083198875189
+          "wall_seconds" : 0.0020350416666666668,
+          "seconds_per_dispatch" : 0.00075925001874566078,
+          "gbps" : 58.695395323959211,
+          "gpu_seconds" : 0.0015185000374913216
         },
         {
           "rep" : 0,
           "position" : 23,
           "arm" : "plain",
-          "wall_seconds" : 0.0016467916666666666,
-          "seconds_per_dispatch" : 0.0007112500024959445,
-          "gbps" : 62.656562170281468,
-          "gpu_seconds" : 0.001422500004991889
+          "wall_seconds" : 0.0019368750000000002,
+          "seconds_per_dispatch" : 0.00070893752854317427,
+          "gbps" : 62.860940782155289,
+          "gpu_seconds" : 0.0014178750570863485
         }
       ],
       "n" : 5120,
@@ -1237,8 +1237,8 @@
       "k" : 5120,
       "inner" : 1,
       "bytes_per_dispatch" : 251740160,
-      "exit_gpu_temp_c" : 37.844985961914062,
-      "entry_gpu_temp_c" : 37.630214691162109,
+      "exit_gpu_temp_c" : 38.531318664550781,
+      "entry_gpu_temp_c" : 38.477275848388672,
       "parity_differing_vs_plain" : {
         "lazysb" : 0,
         "rps1lazyw" : 0,
@@ -1257,217 +1257,217 @@
           "rep" : 0,
           "position" : 0,
           "arm" : "plain",
-          "wall_seconds" : 0.021649333333333333,
-          "seconds_per_dispatch" : 0.0096593748312443495,
-          "gbps" : 26.061744615781731,
-          "gpu_seconds" : 0.0096593748312443495
+          "wall_seconds" : 0.020804125,
+          "seconds_per_dispatch" : 0.0096102918032556772,
+          "gbps" : 26.194850807206294,
+          "gpu_seconds" : 0.0096102918032556772
         },
         {
           "rep" : 0,
           "position" : 1,
           "arm" : "lazysb",
-          "wall_seconds" : 0.010423083333333333,
-          "seconds_per_dispatch" : 0.0096223750151693821,
-          "gbps" : 26.161956856092107,
-          "gpu_seconds" : 0.0096223750151693821
+          "wall_seconds" : 0.010056416666666667,
+          "seconds_per_dispatch" : 0.0096507498528808355,
+          "gbps" : 26.085036275689323,
+          "gpu_seconds" : 0.0096507498528808355
         },
         {
           "rep" : 0,
           "position" : 2,
           "arm" : "lazyw",
-          "wall_seconds" : 0.01015575,
-          "seconds_per_dispatch" : 0.0093967500142753124,
-          "gbps" : 26.790130589572193,
-          "gpu_seconds" : 0.0093967500142753124
+          "wall_seconds" : 0.010231041666666666,
+          "seconds_per_dispatch" : 0.009817083366215229,
+          "gbps" : 25.643070411966274,
+          "gpu_seconds" : 0.009817083366215229
         },
         {
           "rep" : 0,
           "position" : 3,
           "arm" : "lazy",
-          "wall_seconds" : 0.0039686666666666663,
-          "seconds_per_dispatch" : 0.0036547083873301744,
-          "gbps" : 68.881052417946918,
-          "gpu_seconds" : 0.0036547083873301744
+          "wall_seconds" : 0.0041970000000000002,
+          "seconds_per_dispatch" : 0.0037200001534074545,
+          "gbps" : 67.67208323080591,
+          "gpu_seconds" : 0.0037200001534074545
         },
         {
           "rep" : 0,
           "position" : 4,
           "arm" : "rps2",
-          "wall_seconds" : 0.0040152500000000006,
-          "seconds_per_dispatch" : 0.0037567082326859236,
-          "gbps" : 67.010836191559648,
-          "gpu_seconds" : 0.0037567082326859236
+          "wall_seconds" : 0.0040432916666666664,
+          "seconds_per_dispatch" : 0.003810125170275569,
+          "gbps" : 66.07136215994521,
+          "gpu_seconds" : 0.003810125170275569
         },
         {
           "rep" : 0,
           "position" : 5,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0036464583333333331,
-          "seconds_per_dispatch" : 0.0033696249593049288,
-          "gbps" : 74.708658393819547,
-          "gpu_seconds" : 0.0033696249593049288
+          "wall_seconds" : 0.0035867916666666669,
+          "seconds_per_dispatch" : 0.0033785831183195114,
+          "gbps" : 74.510571794135458,
+          "gpu_seconds" : 0.0033785831183195114
         },
         {
           "rep" : 0,
           "position" : 6,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0038385833333333332,
-          "seconds_per_dispatch" : 0.0035884999670088291,
-          "gbps" : 70.151919273901058,
-          "gpu_seconds" : 0.0035884999670088291
+          "wall_seconds" : 0.0038140416666666665,
+          "seconds_per_dispatch" : 0.0035902918316423893,
+          "gbps" : 70.116907428341491,
+          "gpu_seconds" : 0.0035902918316423893
         },
         {
           "rep" : 0,
           "position" : 7,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0029034583333333334,
-          "seconds_per_dispatch" : 0.0024396248627454042,
-          "gbps" : 103.18806134673798,
-          "gpu_seconds" : 0.0024396248627454042
+          "wall_seconds" : 0.0030025000000000004,
+          "seconds_per_dispatch" : 0.002790708327665925,
+          "gbps" : 90.20654631096788,
+          "gpu_seconds" : 0.002790708327665925
         },
         {
           "rep" : 0,
           "position" : 8,
           "arm" : "rps1",
-          "wall_seconds" : 0.0031190833333333331,
-          "seconds_per_dispatch" : 0.0028504168149083853,
-          "gbps" : 88.316964271097717,
-          "gpu_seconds" : 0.0028504168149083853
+          "wall_seconds" : 0.0030870416666666668,
+          "seconds_per_dispatch" : 0.0028528333641588688,
+          "gbps" : 88.242153629685703,
+          "gpu_seconds" : 0.0028528333641588688
         },
         {
           "rep" : 0,
           "position" : 9,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0030948333333333331,
-          "seconds_per_dispatch" : 0.0028495832812041044,
-          "gbps" : 88.342797931361403,
-          "gpu_seconds" : 0.0028495832812041044
+          "wall_seconds" : 0.0030698333333333333,
+          "seconds_per_dispatch" : 0.0028506249655038118,
+          "gbps" : 88.310515429555323,
+          "gpu_seconds" : 0.0028506249655038118
         },
         {
           "rep" : 0,
           "position" : 10,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0033913333333333334,
-          "seconds_per_dispatch" : 0.0031527499668300152,
-          "gbps" : 79.847803551994431,
-          "gpu_seconds" : 0.0031527499668300152
+          "wall_seconds" : 0.0033662500000000003,
+          "seconds_per_dispatch" : 0.0031530000269412994,
+          "gbps" : 79.841470932117673,
+          "gpu_seconds" : 0.0031530000269412994
         },
         {
           "rep" : 0,
           "position" : 11,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0033988333333333331,
-          "seconds_per_dispatch" : 0.0031398334540426731,
-          "gbps" : 80.176278036618001,
-          "gpu_seconds" : 0.0031398334540426731
+          "wall_seconds" : 0.0033416666666666668,
+          "seconds_per_dispatch" : 0.0031393333338201046,
+          "gbps" : 80.18905074144179,
+          "gpu_seconds" : 0.0031393333338201046
         },
         {
           "rep" : 0,
           "position" : 12,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0034501666666666669,
-          "seconds_per_dispatch" : 0.0031956250313669443,
-          "gbps" : 78.776501475930957,
-          "gpu_seconds" : 0.0031956250313669443
+          "wall_seconds" : 0.0034074583333333331,
+          "seconds_per_dispatch" : 0.0032021249644458294,
+          "gbps" : 78.616594541171182,
+          "gpu_seconds" : 0.0032021249644458294
         },
         {
           "rep" : 0,
           "position" : 13,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0034161250000000003,
-          "seconds_per_dispatch" : 0.0031525001395493746,
-          "gbps" : 79.854131278796487,
-          "gpu_seconds" : 0.0031525001395493746
+          "wall_seconds" : 0.0033816250000000001,
+          "seconds_per_dispatch" : 0.0031525418162345886,
+          "gbps" : 79.853075605093693,
+          "gpu_seconds" : 0.0031525418162345886
         },
         {
           "rep" : 0,
           "position" : 14,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.003087125,
-          "seconds_per_dispatch" : 0.002850125078111887,
-          "gbps" : 88.326004333385072,
-          "gpu_seconds" : 0.002850125078111887
+          "wall_seconds" : 0.0030881250000000002,
+          "seconds_per_dispatch" : 0.0028516666498035192,
+          "gbps" : 88.278256512676535,
+          "gpu_seconds" : 0.0028516666498035192
         },
         {
           "rep" : 0,
           "position" : 15,
           "arm" : "rps1",
-          "wall_seconds" : 0.0030832083333333332,
-          "seconds_per_dispatch" : 0.0028502498753368855,
-          "gbps" : 88.322137009214174,
-          "gpu_seconds" : 0.0028502498753368855
+          "wall_seconds" : 0.0030747500000000002,
+          "seconds_per_dispatch" : 0.0028517500031739473,
+          "gbps" : 88.275676240840752,
+          "gpu_seconds" : 0.0028517500031739473
         },
         {
           "rep" : 0,
           "position" : 16,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0026580416666666666,
-          "seconds_per_dispatch" : 0.0024138751905411482,
-          "gbps" : 104.28880539741755,
-          "gpu_seconds" : 0.0024138751905411482
+          "wall_seconds" : 0.0026466250000000001,
+          "seconds_per_dispatch" : 0.0024141250178217888,
+          "gbps" : 104.27801300329489,
+          "gpu_seconds" : 0.0024141250178217888
         },
         {
           "rep" : 0,
           "position" : 17,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0026590000000000003,
-          "seconds_per_dispatch" : 0.0024105417542159557,
-          "gbps" : 104.43302197927707,
-          "gpu_seconds" : 0.0024105417542159557
+          "wall_seconds" : 0.00263225,
+          "seconds_per_dispatch" : 0.0024103750474750996,
+          "gbps" : 104.44024479248623,
+          "gpu_seconds" : 0.0024103750474750996
         },
         {
           "rep" : 0,
           "position" : 18,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0025367083333333331,
-          "seconds_per_dispatch" : 0.0022695832885801792,
-          "gbps" : 110.91911068726861,
-          "gpu_seconds" : 0.0022695832885801792
+          "wall_seconds" : 0.0025622500000000003,
+          "seconds_per_dispatch" : 0.0022707500029355288,
+          "gbps" : 110.86212030146915,
+          "gpu_seconds" : 0.0022707500029355288
         },
         {
           "rep" : 0,
           "position" : 19,
           "arm" : "rps2",
-          "wall_seconds" : 0.0025010000000000002,
-          "seconds_per_dispatch" : 0.0022474166471511126,
-          "gbps" : 112.01312418821529,
-          "gpu_seconds" : 0.0022474166471511126
+          "wall_seconds" : 0.0024765833333333332,
+          "seconds_per_dispatch" : 0.0022481251507997513,
+          "gbps" : 111.97782290298456,
+          "gpu_seconds" : 0.0022481251507997513
         },
         {
           "rep" : 0,
           "position" : 20,
           "arm" : "lazy",
-          "wall_seconds" : 0.0023619166666666667,
-          "seconds_per_dispatch" : 0.002128874883055687,
-          "gbps" : 118.25033119779403,
-          "gpu_seconds" : 0.002128874883055687
+          "wall_seconds" : 0.0023526666666666665,
+          "seconds_per_dispatch" : 0.0021291668526828289,
+          "gbps" : 118.23411569778953,
+          "gpu_seconds" : 0.0021291668526828289
         },
         {
           "rep" : 0,
           "position" : 21,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0023682500000000001,
-          "seconds_per_dispatch" : 0.0021408749744296074,
-          "gbps" : 117.58751118433297,
-          "gpu_seconds" : 0.0021408749744296074
+          "wall_seconds" : 0.0023527500000000002,
+          "seconds_per_dispatch" : 0.0021411667112261057,
+          "gbps" : 117.5714897304026,
+          "gpu_seconds" : 0.0021411667112261057
         },
         {
           "rep" : 0,
           "position" : 22,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0023162083333333333,
-          "seconds_per_dispatch" : 0.0020834167953580618,
-          "gbps" : 120.8304361186333,
-          "gpu_seconds" : 0.0020834167953580618
+          "wall_seconds" : 0.0023030416666666668,
+          "seconds_per_dispatch" : 0.002082000020891428,
+          "gbps" : 120.9126596897031,
+          "gpu_seconds" : 0.002082000020891428
         },
         {
           "rep" : 0,
           "position" : 23,
           "arm" : "plain",
-          "wall_seconds" : 0.0022818333333333332,
-          "seconds_per_dispatch" : 0.0020638334099203348,
-          "gbps" : 121.97697681893682,
-          "gpu_seconds" : 0.0020638334099203348
+          "wall_seconds" : 0.0022768750000000003,
+          "seconds_per_dispatch" : 0.0020658751018345356,
+          "gbps" : 121.85642770777866,
+          "gpu_seconds" : 0.0020658751018345356
         }
       ],
       "n" : 98336,
@@ -1477,8 +1477,8 @@
       "k" : 5120,
       "inner" : 1,
       "bytes_per_dispatch" : 635699200,
-      "exit_gpu_temp_c" : 38.191524505615234,
-      "entry_gpu_temp_c" : 37.802730560302734,
+      "exit_gpu_temp_c" : 38.883991241455078,
+      "entry_gpu_temp_c" : 38.6246337890625,
       "parity_differing_vs_plain" : {
         "lazysb" : 0,
         "rps1lazyw" : 0,
@@ -1497,217 +1497,217 @@
           "rep" : 0,
           "position" : 0,
           "arm" : "plain",
-          "wall_seconds" : 0.037161125000000003,
-          "seconds_per_dispatch" : 0.018038041656836867,
-          "gbps" : 35.242140587864434,
-          "gpu_seconds" : 0.018038041656836867
+          "wall_seconds" : 0.039043666666666664,
+          "seconds_per_dispatch" : 0.01969800004735589,
+          "gbps" : 32.272271218992685,
+          "gpu_seconds" : 0.01969800004735589
         },
         {
           "rep" : 0,
           "position" : 1,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0085963333333333326,
-          "seconds_per_dispatch" : 0.0083018750883638859,
-          "gbps" : 76.572966135206229,
-          "gpu_seconds" : 0.0083018750883638859
+          "wall_seconds" : 0.0092150416666666665,
+          "seconds_per_dispatch" : 0.0085093334782868624,
+          "gbps" : 74.706109664417781,
+          "gpu_seconds" : 0.0085093334782868624
         },
         {
           "rep" : 0,
           "position" : 2,
           "arm" : "lazyw",
-          "wall_seconds" : 0.0069614166666666661,
-          "seconds_per_dispatch" : 0.0066931250039488077,
-          "gbps" : 94.977936259213806,
-          "gpu_seconds" : 0.0066931250039488077
+          "wall_seconds" : 0.0073583750000000003,
+          "seconds_per_dispatch" : 0.0068365416955202818,
+          "gbps" : 92.985493003948008,
+          "gpu_seconds" : 0.0068365416955202818
         },
         {
           "rep" : 0,
           "position" : 3,
           "arm" : "lazy",
-          "wall_seconds" : 0.0056132083333333338,
-          "seconds_per_dispatch" : 0.0053619584068655968,
-          "gbps" : 118.55727921836051,
-          "gpu_seconds" : 0.0053619584068655968
+          "wall_seconds" : 0.0055706666666666665,
+          "seconds_per_dispatch" : 0.0053588750306516886,
+          "gbps" : 118.62549441140692,
+          "gpu_seconds" : 0.0053588750306516886
         },
         {
           "rep" : 0,
           "position" : 4,
           "arm" : "rps2",
-          "wall_seconds" : 0.0058588333333333331,
-          "seconds_per_dispatch" : 0.0056513750459998846,
-          "gbps" : 112.48575697519067,
-          "gpu_seconds" : 0.0056513750459998846
+          "wall_seconds" : 0.0063175416666666666,
+          "seconds_per_dispatch" : 0.0057412500027567148,
+          "gbps" : 110.72487693355333,
+          "gpu_seconds" : 0.0057412500027567148
         },
         {
           "rep" : 0,
           "position" : 5,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0059088750000000001,
-          "seconds_per_dispatch" : 0.0057072499766945839,
-          "gbps" : 111.38450262313062,
-          "gpu_seconds" : 0.0057072499766945839
+          "wall_seconds" : 0.005949833333333333,
+          "seconds_per_dispatch" : 0.0057070415932685137,
+          "gbps" : 111.38856964873194,
+          "gpu_seconds" : 0.0057070415932685137
         },
         {
           "rep" : 0,
           "position" : 6,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0063317500000000006,
-          "seconds_per_dispatch" : 0.0060648333746939898,
-          "gbps" : 104.81725724774346,
-          "gpu_seconds" : 0.0060648333746939898
+          "wall_seconds" : 0.0063085416666666663,
+          "seconds_per_dispatch" : 0.0060633749235421419,
+          "gbps" : 104.84246941942907,
+          "gpu_seconds" : 0.0060633749235421419
         },
         {
           "rep" : 0,
           "position" : 7,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0063224166666666663,
-          "seconds_per_dispatch" : 0.0060742083005607128,
-          "gbps" : 104.65548241757175,
-          "gpu_seconds" : 0.0060742083005607128
+          "wall_seconds" : 0.0063042500000000008,
+          "seconds_per_dispatch" : 0.0060730001423507929,
+          "gbps" : 104.67630250275734,
+          "gpu_seconds" : 0.0060730001423507929
         },
         {
           "rep" : 0,
           "position" : 8,
           "arm" : "rps1",
-          "wall_seconds" : 0.0074495000000000004,
-          "seconds_per_dispatch" : 0.0072171667125076056,
-          "gbps" : 88.081545753725038,
-          "gpu_seconds" : 0.0072171667125076056
+          "wall_seconds" : 0.0074040416666666664,
+          "seconds_per_dispatch" : 0.0071715000085532665,
+          "gbps" : 88.642431742566771,
+          "gpu_seconds" : 0.0071715000085532665
         },
         {
           "rep" : 0,
           "position" : 9,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0074094166666666666,
-          "seconds_per_dispatch" : 0.0071688750758767128,
-          "gbps" : 88.674888775664371,
-          "gpu_seconds" : 0.0071688750758767128
+          "wall_seconds" : 0.0074331666666666669,
+          "seconds_per_dispatch" : 0.0071743750013411045,
+          "gbps" : 88.606909993019443,
+          "gpu_seconds" : 0.0071743750013411045
         },
         {
           "rep" : 0,
           "position" : 10,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0081707500000000009,
-          "seconds_per_dispatch" : 0.0079321248922497034,
-          "gbps" : 80.142358905761441,
-          "gpu_seconds" : 0.0079321248922497034
+          "wall_seconds" : 0.0081883333333333339,
+          "seconds_per_dispatch" : 0.0079304999671876431,
+          "gbps" : 80.158779727658839,
+          "gpu_seconds" : 0.0079304999671876431
         },
         {
           "rep" : 0,
           "position" : 11,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0081454583333333327,
-          "seconds_per_dispatch" : 0.0078971665352582932,
-          "gbps" : 80.497124780363791,
-          "gpu_seconds" : 0.0078971665352582932
+          "wall_seconds" : 0.0081465416666666665,
+          "seconds_per_dispatch" : 0.0078947916626930237,
+          "gbps" : 80.521339531226346,
+          "gpu_seconds" : 0.0078947916626930237
         },
         {
           "rep" : 0,
           "position" : 12,
           "arm" : "rps1lazy",
-          "wall_seconds" : 0.0081857916666666659,
-          "seconds_per_dispatch" : 0.0079537082929164171,
-          "gbps" : 79.924882405626391,
-          "gpu_seconds" : 0.0079537082929164171
+          "wall_seconds" : 0.0081342083333333336,
+          "seconds_per_dispatch" : 0.0078943748958408833,
+          "gbps" : 80.525590485310673,
+          "gpu_seconds" : 0.0078943748958408833
         },
         {
           "rep" : 0,
           "position" : 13,
           "arm" : "rps1lazyw",
-          "wall_seconds" : 0.0081912916666666662,
-          "seconds_per_dispatch" : 0.0079317500349134207,
-          "gbps" : 80.146146462233915,
-          "gpu_seconds" : 0.0079317500349134207
+          "wall_seconds" : 0.0081820416666666673,
+          "seconds_per_dispatch" : 0.0079312501475214958,
+          "gbps" : 80.151197878767576,
+          "gpu_seconds" : 0.0079312501475214958
         },
         {
           "rep" : 0,
           "position" : 14,
           "arm" : "rps1lazysb",
-          "wall_seconds" : 0.0074174166666666668,
-          "seconds_per_dispatch" : 0.0071717498358339071,
-          "gbps" : 88.63934389118063,
-          "gpu_seconds" : 0.0071717498358339071
+          "wall_seconds" : 0.0074135000000000008,
+          "seconds_per_dispatch" : 0.0071679167449474335,
+          "gbps" : 88.686744366568661,
+          "gpu_seconds" : 0.0071679167449474335
         },
         {
           "rep" : 0,
           "position" : 15,
           "arm" : "rps1",
-          "wall_seconds" : 0.0074344583333333337,
-          "seconds_per_dispatch" : 0.0071729167830199003,
-          "gbps" : 88.624923337304011,
-          "gpu_seconds" : 0.0071729167830199003
+          "wall_seconds" : 0.0074162500000000001,
+          "seconds_per_dispatch" : 0.007169041782617569,
+          "gbps" : 88.672826756478017,
+          "gpu_seconds" : 0.007169041782617569
         },
         {
           "rep" : 0,
           "position" : 16,
           "arm" : "rps2lazy",
-          "wall_seconds" : 0.0063517083333333333,
-          "seconds_per_dispatch" : 0.0060735000297427177,
-          "gbps" : 104.66768698228344,
-          "gpu_seconds" : 0.0060735000297427177
+          "wall_seconds" : 0.0063170833333333334,
+          "seconds_per_dispatch" : 0.0060732502024620771,
+          "gbps" : 104.67199255882616,
+          "gpu_seconds" : 0.0060732502024620771
         },
         {
           "rep" : 0,
           "position" : 17,
           "arm" : "rps2lazyw",
-          "wall_seconds" : 0.0062900416666666669,
-          "seconds_per_dispatch" : 0.0060642084572464228,
-          "gbps" : 104.82805867934364,
-          "gpu_seconds" : 0.0060642084572464228
+          "wall_seconds" : 0.0063618750000000003,
+          "seconds_per_dispatch" : 0.0060639998409897089,
+          "gbps" : 104.83166501802664,
+          "gpu_seconds" : 0.0060639998409897089
         },
         {
           "rep" : 0,
           "position" : 18,
           "arm" : "rps2lazysb",
-          "wall_seconds" : 0.0059510833333333334,
-          "seconds_per_dispatch" : 0.0057072502095252275,
-          "gbps" : 111.38449807913403,
-          "gpu_seconds" : 0.0057072502095252275
+          "wall_seconds" : 0.0059930000000000001,
+          "seconds_per_dispatch" : 0.0057075000368058681,
+          "gbps" : 111.37962258441985,
+          "gpu_seconds" : 0.0057075000368058681
         },
         {
           "rep" : 0,
           "position" : 19,
           "arm" : "rps2",
-          "wall_seconds" : 0.005934875,
-          "seconds_per_dispatch" : 0.0056498749181628227,
-          "gbps" : 112.51562365679966,
-          "gpu_seconds" : 0.0056498749181628227
+          "wall_seconds" : 0.0058625833333333334,
+          "seconds_per_dispatch" : 0.0056491249706596136,
+          "gbps" : 112.5305606269449,
+          "gpu_seconds" : 0.0056491249706596136
         },
         {
           "rep" : 0,
           "position" : 20,
           "arm" : "lazy",
-          "wall_seconds" : 0.0056432500000000007,
-          "seconds_per_dispatch" : 0.005358999827876687,
-          "gbps" : 118.62273193090832,
-          "gpu_seconds" : 0.005358999827876687
+          "wall_seconds" : 0.0055471666666666664,
+          "seconds_per_dispatch" : 0.0053626666776835918,
+          "gbps" : 118.54162084050893,
+          "gpu_seconds" : 0.0053626666776835918
         },
         {
           "rep" : 0,
           "position" : 21,
           "arm" : "lazyw",
-          "wall_seconds" : 0.005597916666666666,
-          "seconds_per_dispatch" : 0.0053792083635926247,
-          "gbps" : 118.1770916892749,
-          "gpu_seconds" : 0.0053792083635926247
+          "wall_seconds" : 0.0055599583333333334,
+          "seconds_per_dispatch" : 0.0053803334012627602,
+          "gbps" : 118.15238064072422,
+          "gpu_seconds" : 0.0053803334012627602
         },
         {
           "rep" : 0,
           "position" : 22,
           "arm" : "lazysb",
-          "wall_seconds" : 0.0054182500000000003,
-          "seconds_per_dispatch" : 0.0052360417321324348,
-          "gbps" : 121.40835243899109,
-          "gpu_seconds" : 0.0052360417321324348
+          "wall_seconds" : 0.0054065833333333336,
+          "seconds_per_dispatch" : 0.0052351250778883696,
+          "gbps" : 121.42961066680272,
+          "gpu_seconds" : 0.0052351250778883696
         },
         {
           "rep" : 0,
           "position" : 23,
           "arm" : "plain",
-          "wall_seconds" : 0.0053691666666666662,
-          "seconds_per_dispatch" : 0.0051929582841694355,
-          "gbps" : 122.41561846123594,
-          "gpu_seconds" : 0.0051929582841694355
+          "wall_seconds" : 0.0053949583333333332,
+          "seconds_per_dispatch" : 0.0051927499007433653,
+          "gbps" : 122.4205309616388,
+          "gpu_seconds" : 0.0051927499007433653
         }
       ],
       "n" : 248320,
