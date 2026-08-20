@@ -1,0 +1,53 @@
+{
+ "harness": "local",
+ "instrument": "E58 in-process dispatch census, restored from d0b337d^",
+ "timed": false,
+ "model_e60": {
+  "ops_per_dispatch": 1.8369,
+  "mb_per_dispatch": 10.58
+ },
+ "session_refit_ops_per_dispatch": 1.615288838379196,
+ "legs": [
+  {
+   "tag": "e62-census-mb512-ops50",
+   "mb": 512,
+   "ops": 50,
+   "worker_env_proof": [
+    "MLX_MAX_MB_PER_BUFFER=512",
+    "DARKBLOOM_STARTUP_MEMORY_PROFILE=full",
+    "MLX_MAX_OPS_PER_BUFFER=50"
+   ],
+   "rounds": 74,
+   "dispatches": 119669,
+   "commits": 3866,
+   "barriers": 77701,
+   "dispatches_per_round": 1617.1486486486488,
+   "commits_per_round": 52.24324324324324,
+   "dispatches_per_commit": 30.95421624418003,
+   "gap_dispatches": 69570,
+   "gap_commits": 2419,
+   "phases": {
+    "draft_head": {
+     "dispatches": 1627,
+     "commits": 73,
+     "dispatches_per_commit": 22.28767123287671
+    },
+    "target_forward": {
+     "dispatches": 109216,
+     "commits": 3474,
+     "dispatches_per_commit": 31.43811168681635
+    },
+    "target_verify": {
+     "dispatches": 8826,
+     "commits": 319,
+     "dispatches_per_commit": 27.66771159874608
+    }
+   },
+   "model_e60_predicted_dispatches_per_commit": 27.21977244270238,
+   "model_e60_error_percent": 13.719599637868601,
+   "binding_cap": "ops",
+   "model_refit_predicted_dispatches_per_commit": 30.95421624418003,
+   "model_refit_error_percent": 0.0
+  }
+ ]
+}
