@@ -176,13 +176,40 @@ def mcnemar(ref: dict, cand: dict, keep: set) -> dict:
     }
 
 
+def selftest() -> None:
+    """Check the round-base reconstruction, which the pairing depends on."""
+    def draft(r, i, a):
+        return {"round": r, "kind": "draft", "draft_index": i, "accepted": a}
+
+    ledger = [
+        draft(0, 0, True), draft(0, 1, True), draft(0, 2, False), {"round": 0, "kind": "targetTail"},
+        draft(1, 0, False), {"round": 1, "kind": "targetTail"},
+        draft(2, 0, True), draft(2, 1, True), draft(2, 2, True), draft(2, 3, True),
+        {"round": 2, "kind": "targetTail"},
+    ]
+    cells, rounds = cells_of({"row_ledger": ledger}, "s")
+    # Round 0 accepts 2 and commits 1, so round 1 starts at 3; round 1 accepts
+    # 0 and commits 1, so round 2 starts at 4.
+    assert [r["base"] for _, r in sorted(rounds.items())] == [0, 3, 4]
+    assert sorted(cells) == [
+        ("s", 0, 1), ("s", 0, 2), ("s", 0, 3), ("s", 3, 1),
+        ("s", 4, 1), ("s", 4, 2), ("s", 4, 3), ("s", 4, 4),
+    ]
+    assert [cells[k] for k in sorted(cells)] == [True, True, False, False, True, True, True, True]
+    print("selftest: round-base reconstruction and cell keys OK")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--reference", default="declared")
     ap.add_argument("--candidates", default="soup-q4,qat-q4,master-bf16,kamciosz,pinned")
     ap.add_argument("--steps", type=int, default=512)
     ap.add_argument("--report", default="research/e82-accept.json")
     args = ap.parse_args()
+    if args.selftest:
+        selftest()
+        return
 
     manifest = json.loads(Path("research/e82-corpus-manifest.json").read_text())
     all_seeds = [s["name"] for s in manifest["seeds"]]

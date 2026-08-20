@@ -20,10 +20,16 @@ ENTITY = "wandb-applied-ai-team"
 EXPERIMENT = "qwen38-r1-e82-requantize-the-only-genuinely-retrained-head"
 
 
+def cell(value):
+    # W&B table cells must be scalars; nested audit blocks are kept as JSON
+    # text rather than dropped, so nothing in the record is lost.
+    return json.dumps(value) if isinstance(value, (dict, list)) else value
+
+
 def table(columns, rows):
     t = wandb.Table(columns=columns)
     for row in rows:
-        t.add_data(*[row.get(c) for c in columns])
+        t.add_data(*[cell(row.get(c)) for c in columns])
     return t
 
 
