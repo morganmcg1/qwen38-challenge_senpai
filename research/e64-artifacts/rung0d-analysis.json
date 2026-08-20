@@ -1,0 +1,91 @@
+{
+  "sessions": [
+    {
+      "ballast_effect_median_over_shapes": 0.08715281846408596,
+      "decision_forced": "dead",
+      "device": "Apple M4 Pro",
+      "entry_gpu_temp_c": 36.80089569091797,
+      "exit_gpu_temp_c": 52.74050521850586,
+      "forced_effect_median_over_shapes": 0.007243328230767121,
+      "na": 6,
+      "order": [
+        "plain",
+        "forced",
+        "ballast",
+        "rows2",
+        "rows2",
+        "ballast",
+        "forced",
+        "plain"
+      ],
+      "path": "research/e64-artifacts/rung0d-pressure-na6.json",
+      "reps": 9,
+      "shapes": [
+        {
+          "effects": {
+            "ballast": {
+              "max": 0.08988148125606155,
+              "mean": 0.08714080899105577,
+              "median": 0.08715281846408596,
+              "min": 0.08571125419258974,
+              "reps": 9,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "partial",
+              "verdict_vs_spread_bar": "partial"
+            },
+            "forced": {
+              "max": 0.008000569504244437,
+              "mean": 0.0071646552529561385,
+              "median": 0.007243328230767121,
+              "min": 0.005872587190572709,
+              "reps": 9,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "dead",
+              "verdict_vs_spread_bar": "dead"
+            },
+            "rows2": {
+              "max": 0.08194199823210413,
+              "mean": 0.07974268047460457,
+              "median": 0.07968333501874048,
+              "min": 0.07813056377101768,
+              "reps": 9,
+              "sign_stable_fraction": 1.0,
+              "verdict_vs_null_estimator": "partial",
+              "verdict_vs_spread_bar": "partial"
+            }
+          },
+          "entry_gpu_temp_c": 36.88050079345703,
+          "exit_gpu_temp_c": 55.05813980102539,
+          "gb_per_s": {
+            "ballast": 111.14077212936581,
+            "forced": 120.00655815644797,
+            "plain": 120.83737129700087,
+            "rows2": 111.88851556958298
+          },
+          "inner": 269,
+          "k": 5120,
+          "median_seconds_per_dispatch": {
+            "ballast": 0.0008019465610357244,
+            "forced": 0.0007427007437694028,
+            "plain": 0.0007375943306556532,
+            "rows2": 0.0007965872059905119
+          },
+          "n": 34816,
+          "null_position_split_max": 0.006961161766482871,
+          "null_position_split_median": 7.116266173001762e-06,
+          "parity_differing_vs_plain": {
+            "ballast": 0,
+            "forced": 0,
+            "rows2": 0
+          },
+          "reps": 9,
+          "shape": "mlp.gate_up_fused",
+          "widest_mirrored_leg_spread": 0.007038653519238348,
+          "widest_same_arm_spread": 0.007487368690085182
+        }
+      ],
+      "warmup_reps_discarded": 1,
+      "widest_same_arm_spread_over_shapes": 0.007487368690085182
+    }
+  ]
+}
