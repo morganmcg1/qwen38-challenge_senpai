@@ -80,8 +80,9 @@ def main() -> int:
         project=PROJECT,
         job_type="kernel-microbenchmark",
         name=args.name,
-        tags=["e64", "qmv", "wide-crossrow", "rung0b", "accumulator",
-              "private-memory", "qwen-edward"],
+        tags=["e64", "qmv", "wide-crossrow", "rung0b", "rung0c", "accumulator",
+              "private-memory", "merged-dispatcher", "register-pressure",
+              "qwen-edward"],
         config={
             "experiment": "e64-wide-qmv-accumulator-private-memory",
             "hypothesis": "the NA=5 -> 6 step in the wide crossrow QMV ladder "
@@ -101,7 +102,15 @@ def main() -> int:
             "metal_flags": air["flags"],
             "air_pipeline": air["pipeline"],
             "jit_compile_options": "MTLLanguageVersion4_0, fastMath off",
-            "arms": ["plain", "forced", "ballast"],
+            "arms": ["plain", "forced", "ballast", "rows2", "merged"],
+            "arm_meaning": {
+                "plain": "shipped body, renamed only",
+                "forced": "accumulator forced out of registers into an alloca",
+                "ballast": "more live registers, accumulator left alone",
+                "rows2": "rows_per_simd 4 -> 2, candidate 3",
+                "merged": "one kernel, runtime switch over widths, the shipped "
+                          "affine_qmv_fast structure",
+            },
             "leg_order": primary["order"],
             "reps": primary["reps"],
             "warmup_reps_discarded": primary["warmup_reps_discarded"],
