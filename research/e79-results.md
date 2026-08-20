@@ -1,6 +1,12 @@
 # E79 — Head economics census: go/no-go on 3a and 3b
 
-SENPAI-RESULT: PLACEHOLDER
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"local_serial_relative_speedup","available":true,"value":2.3515},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+
+W&B run `0hj17swj` —
+<https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0hj17swj>
+holds every leg's identity, both per-position censuses with their width
+histograms, the per-draft phase decomposition, the rung-0 reprice, the rung-3
+score arms, and the ranked calibration tables.
 
 - **Student / branch:** `qwen-alphonse` / `qwen-alphonse/e79-head-economics-census`
 - **Hypothesis and target cost:** two named head-side proposals were priced
@@ -152,16 +158,25 @@ move.
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | pinned | ABBA ungated | 4 | 2.2105 ± 0.0057 | 0.0335469 | 0.0741564 | 6.5132 | 0.8808 |
 | declared | ABBA ungated | 4 | 2.3667 ± 0.0056 | 0.0313290 | 0.0741460 | 6.2692 | 0.8875 |
-| declared | **gated** | 2 | 2.3571 / 2.3458 | 0.031433 / 0.031385 | 0.074092 / 0.073623 | 6.2692 | 0.8875 |
-| pinned | **gated** | 2 | PLACEHOLDER_PIN_GATED | | | | |
+| declared | **gated** | 2 | 2.3515 | 0.031409 | 0.073857 | 6.2692 | 0.8875 |
+| pinned | **gated** | 2 | 2.2144 | 0.033522 | 0.074232 | 6.5132 | 0.8808 |
 
-The serial leg never uses the candidate head. Serial seconds per token moved
-by **−0.01%** between the two ungated head blocks, which is the control that
-validates the pair: the head swap moved the candidate leg and left the
-reference untouched.
+Individual gated legs: declared 2.3571 and 2.3458, pinned 2.2167 and 2.2122.
+Every gated leg passed the real 40 C gate three times, at 39.8 to 40.0 C, and
+carries `cool_gate_passed_real_gate=true` and `gate_qualified_for_timing=true`.
 
-The gated declared pair lands 0.4% below the ungated declared mean. The ABBA
-block was therefore mildly optimistic, not misleading.
+The serial leg never uses the candidate head, so serial seconds per token is
+the control that validates the head swap. It moved by **−0.01%** across the two
+ungated blocks and by **−0.50%** across the two gated pairs, against a
+candidate-leg move of −6.61% and −6.30%. The control is one order of magnitude
+smaller than the effect under both policies. The gated control is the noisier
+of the two because each gated arm is two legs rather than four.
+
+**The gated pair confirms the ungated block.** Gate-qualified head-variant
+contrast: speedup **+6.19%** and candidate seconds per token **−6.30%**,
+against +7.06% and −6.61% ungated. The gated declared pair lands 0.6% below the
+ungated declared mean and the gated pinned pair 0.2% above the ungated pinned
+mean, so the ABBA block was mildly optimistic, not misleading.
 
 ### Rung 1 — per-position acceptance census, with the width mix beside it
 
@@ -243,10 +258,13 @@ and exaggerated the declared head's advantage.
 | head | head ms/draft | round fixed ms | true h | total marginal ratio |
 | --- | ---: | ---: | ---: | ---: |
 | declared, ungated ABBA | 2.3330 | 43.7432 | **0.0533** | 0.4023 |
-| declared, gated | 2.3050 | 43.6312 | **0.0528** | 0.4046 |
-| pinned, ungated ABBA | 4.7160 | 38.5150 | **0.1224** | 0.5349 |
+| declared, **gated** | 2.3050 | 43.6312 | **0.0528** | 0.4046 |
+| pinned, ungated ABBA | 4.7161 | 38.5153 | **0.1224** | 0.5349 |
+| pinned, **gated** | 4.7180 | 38.8201 | **0.1215** | 0.5300 |
 
-The shipped constant is 0.18.
+The shipped constant is 0.18. Both thermal policies agree to within 1% on every
+row, so this decomposition is gate-qualified, not an artefact of ABBA.
+Gate-qualified, the pinned head costs **2.047×** the declared head per draft.
 
 **Stage split.** No isolated four-stage micro-benchmark was run, and this is an
 honest gap. All four stages are one MLX graph inside `d_submit2`, which is 97%
