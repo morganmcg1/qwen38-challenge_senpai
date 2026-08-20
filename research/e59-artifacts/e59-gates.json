@@ -1,0 +1,40 @@
+{
+  "all_passed": true,
+  "gates": [
+    {
+      "command": "senpai/validate-assignment-scope.sh 31e67cb82c0e78c04c3d36b401ae213aa9e540e8 Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+      "exit_code": 0,
+      "gate": "assignment_scope",
+      "note": "",
+      "passed": true
+    },
+    {
+      "command": "senpai/check-editable-budget.sh 31e67cb82c0e78c04c3d36b401ae213aa9e540e8",
+      "exit_code": 0,
+      "gate": "editable_budget",
+      "note": "",
+      "passed": true
+    },
+    {
+      "command": "python3 research/twin_audit.py",
+      "exit_code": 0,
+      "gate": "twin_audit",
+      "note": "",
+      "passed": true
+    },
+    {
+      "command": "research/scored-surface-gate.sh",
+      "exit_code": 0,
+      "gate": "scored_surface",
+      "note": "",
+      "passed": true
+    },
+    {
+      "command": "senpai/verify-ranked-score-boundary.sh",
+      "exit_code": 0,
+      "gate": "ranked_score_boundary",
+      "note": "",
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "experiment": "E59",
+  "stage": "geometry-proof",
+  "head": "cd7ec469bb95149935cb2d8b88b9927b92ddcfaa",
+  "physical_memory_gib": 48,
+  "replaces": "worker_low_memory_notices grep (withdrawn: unfalsifiable on a timed leg, mtp-timed swallows worker stderr)",
+  "profile_probes": [
+    {
+      "probe": "bogus",
+      "requested_profile": "bogus",
+      "exit_code": 133,
+      "low_memory_notices": 0,
+      "precondition_messages": 0,
+      "expected": {
+        "exit_code": 133,
+        "low_memory_notices": 0,
+        "precondition_messages": 0
+      },
+      "passed": true
+    },
+    {
+      "probe": "low",
+      "requested_profile": "low",
+      "exit_code": 1,
+      "low_memory_notices": 1,
+      "precondition_messages": 0,
+      "expected": {
+        "exit_code": "nonzero",
+        "low_memory_notices": 1,
+        "precondition_messages": 0
+      },
+      "passed": true
+    },
+    {
+      "probe": "full",
+      "requested_profile": "full",
+      "exit_code": 1,
+      "low_memory_notices": 0,
+      "precondition_messages": 0,
+      "expected": {
+        "exit_code": "nonzero",
+        "low_memory_notices": 0,
+        "precondition_messages": 0
+      },
+      "passed": true
+    },
+    {
+      "probe": "auto",
+      "requested_profile": "unset",
+      "exit_code": 1,
+      "low_memory_notices": 1,
+      "precondition_messages": 0,
+      "expected": {
+        "exit_code": "nonzero",
+        "low_memory_notices": 1,
+        "precondition_messages": 0
+      },
+      "passed": true
+    }
+  ],
+  "dose_response": {
+    "ran": true,
+    "pairs": [
+      {
+        "label": "moderate ops=8 vs ops=50",
+        "legs": [
+          {
+            "tag": "e59-geom-ops8",
+            "requested_ops_per_buffer": 8,
+            "startup_memory_profile": "full",
+            "wired_residency_active": "false",
+            "commit": null,
+            "decode_tokens": 64,
+            "mtp_seconds_per_token": 0.0872357189655304,
+            "serial_seconds_per_token": 0.12767423503100872,
+            "all_tokens_matched": true,
+            "gpu_temp_entry_c": "43.714786529541016",
+            "gpu_temp_exit_c": "65.14854431152344"
+          },
+          {
+            "tag": "e59-geom-ops50",
+            "requested_ops_per_buffer": 50,
+            "startup_memory_profile": "full",
+            "wired_residency_active": "false",
+            "commit": null,
+            "decode_tokens": 64,
+            "mtp_seconds_per_token": 0.08745560981333256,
+            "serial_seconds_per_token": 0.12938246876001358,
+            "all_tokens_matched": true,
+            "gpu_temp_entry_c": "44.215797424316406",
+            "gpu_temp_exit_c": "66.37887573242188"
+          }
+        ],
+        "tight_slower_than_loose_pct": -0.2514313813276275,
+        "min_effect_pct": 3.0,
+        "order": "tight cap first (colder), loose cap second (warmer)",
+        "passed": false
+      },
+      {
+        "label": "extreme ops=1 vs ops=50",
+        "legs": [
+          {
+            "tag": "e59-geom-ops1",
+            "requested_ops_per_buffer": 1,
+            "startup_memory_profile": "full",
+            "wired_residency_active": "false",
+            "commit": null,
+            "decode_tokens": 64,
+            "mtp_seconds_per_token": 0.08783420361578465,
+            "serial_seconds_per_token": 0.13202693685889244,
+            "all_tokens_matched": true,
+            "gpu_temp_entry_c": "43.36538314819336",
+            "gpu_temp_exit_c": "66.26371002197266"
+          },
+          {
+            "tag": "e59-geom-ops50x",
+            "requested_ops_per_buffer": 50,
+            "startup_memory_profile": "full",
+            "wired_residency_active": "false",
+            "commit": null,
+            "decode_tokens": 64,
+            "mtp_seconds_per_token": 0.08736774884164333,
+            "serial_seconds_per_token": 0.13050574995577335,
+            "all_tokens_matched": true,
+            "gpu_temp_entry_c": "44.190399169921875",
+            "gpu_temp_exit_c": "67.12017059326172"
+          }
+        ],
+        "tight_slower_than_loose_pct": 0.5338981263976195,
+        "min_effect_pct": 3.0,
+        "order": "tight cap first (colder), loose cap second (warmer)",
+        "passed": false
+      }
+    ],
+    "passed": false,
+    "note": "any responding pair proves MLX_MAX_OPS_PER_BUFFER reaches the worker; an all-null result leaves the leg geometry unproven"
+  },
+  "all_passed": false
+}

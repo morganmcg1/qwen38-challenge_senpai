@@ -1,0 +1,158 @@
+{
+  "all_passed": true,
+  "comparisons": [
+    {
+      "bits_differing": [],
+      "cells_compared": 192,
+      "cells_differing": 0,
+      "comparison": "m5_rb2 vs base",
+      "expectation": "identical",
+      "first_difference": null,
+      "passed": true,
+      "reachable_widths_differing": [],
+      "route_change_detail": [
+        {
+          "bits": 4,
+          "from": "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>",
+          "m": 5,
+          "shape": "full_attn.o_proj",
+          "to": "qmv_fast_crossrow_affine4_g64_m_rb2<T, 5, 5, true>"
+        }
+      ],
+      "route_change_widths": [
+        5
+      ],
+      "route_changes": 8,
+      "unreachable_widths_differing": [],
+      "widths_differing": []
+    },
+    {
+      "bits_differing": [],
+      "cells_compared": 192,
+      "cells_differing": 0,
+      "comparison": "m5_rbx vs base",
+      "expectation": "identical",
+      "first_difference": null,
+      "passed": true,
+      "reachable_widths_differing": [],
+      "route_change_detail": [
+        {
+          "bits": 4,
+          "from": "qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>",
+          "m": 5,
+          "shape": "full_attn.o_proj",
+          "to": "qmv_fast_crossrow_affine4_g64_m_rbx<T, 5, 5, true>"
+        }
+      ],
+      "route_change_widths": [
+        5
+      ],
+      "route_changes": 8,
+      "unreachable_widths_differing": [],
+      "widths_differing": []
+    },
+    {
+      "bits_differing": [],
+      "cells_compared": 192,
+      "cells_differing": 0,
+      "comparison": "ceil_only vs base",
+      "expectation": "identical_at_reachable_widths",
+      "first_difference": null,
+      "passed": true,
+      "reachable_widths_differing": [],
+      "route_change_detail": [
+        {
+          "bits": 4,
+          "from": "qmv_fast_impl",
+          "m": 10,
+          "shape": "full_attn.o_proj",
+          "to": "qmv_fast_crossrow_affine4_g64_m<T, 10, 5, true>"
+        }
+      ],
+      "route_change_widths": [
+        10
+      ],
+      "route_changes": 8,
+      "unreachable_widths_differing": [],
+      "widths_differing": []
+    },
+    {
+      "bits_differing": [
+        4
+      ],
+      "cells_compared": 192,
+      "cells_differing": 8,
+      "comparison": "lane perturbation vs m5_rb2",
+      "expectation": "diverges_at_m5",
+      "first_difference": {
+        "bits": 4,
+        "m": 5,
+        "shape": "full_attn.o_proj"
+      },
+      "passed": true,
+      "reachable_widths_differing": [
+        5
+      ],
+      "route_change_detail": [],
+      "route_change_widths": [],
+      "route_changes": 0,
+      "unreachable_widths_differing": [],
+      "widths_differing": [
+        5
+      ]
+    },
+    {
+      "bits_differing": [
+        4
+      ],
+      "cells_compared": 192,
+      "cells_differing": 8,
+      "comparison": "one row block vs m5_rb2",
+      "expectation": "diverges_at_m5",
+      "first_difference": {
+        "bits": 4,
+        "m": 5,
+        "shape": "full_attn.o_proj"
+      },
+      "passed": true,
+      "reachable_widths_differing": [
+        5
+      ],
+      "route_change_detail": [],
+      "route_change_widths": [],
+      "route_changes": 0,
+      "unreachable_widths_differing": [],
+      "widths_differing": [
+        5
+      ]
+    },
+    {
+      "bits_differing": [
+        4
+      ],
+      "cells_compared": 192,
+      "cells_differing": 8,
+      "comparison": "one x-group vs m5_rbx",
+      "expectation": "diverges_at_m5",
+      "first_difference": {
+        "bits": 4,
+        "m": 5,
+        "shape": "full_attn.o_proj"
+      },
+      "passed": true,
+      "reachable_widths_differing": [
+        5
+      ],
+      "route_change_detail": [],
+      "route_change_widths": [],
+      "route_changes": 0,
+      "unreachable_widths_differing": [],
+      "widths_differing": [
+        5
+      ]
+    }
+  ],
+  "controls_fired": 3,
+  "controls_total": 3,
+  "max_reachable_width": 9
+}

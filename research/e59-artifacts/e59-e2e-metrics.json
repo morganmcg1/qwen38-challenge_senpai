@@ -1,0 +1,1515 @@
+{
+  "arms": {
+    "shipped": {
+      "accepted_draft_rate_mean": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "shipped",
+      "cool_gate_requested": [
+        "1"
+      ],
+      "declared_rows_total": 567,
+      "delta_vs_base_leg_pct": 0.0,
+      "delta_vs_base_round_cost_pct": 0.0,
+      "effective_mean_draft_len": 6.269230769230769,
+      "entry_temp_c": [
+        "44.043209075927734",
+        "43.34197998046875",
+        "43.85176086425781",
+        "43.41358947753906"
+      ],
+      "exceeds_bar_leg": false,
+      "exceeds_bar_round_cost": false,
+      "exceeds_bar_serial": false,
+      "exit_temp_c": [
+        "61.9374885559082",
+        "61.00552749633789",
+        "62.17375183105469",
+        "61.77756118774414"
+      ],
+      "leg_positions": [
+        1,
+        4,
+        6,
+        7
+      ],
+      "legs": 4,
+      "mtp_decode_seconds_mean": 16.38175803422928,
+      "mtp_seconds_per_token_all": [
+        0.032009197399020195,
+        0.03201258392073214,
+        0.031977816484868526,
+        0.03198288683779538
+      ],
+      "mtp_seconds_per_token_mean": 0.03199562116060406,
+      "mtp_seconds_per_token_prefill_removed_all": [
+        0.02421024232171476,
+        0.024218044709414244,
+        0.024181677727028728,
+        0.02417081454768777
+      ],
+      "mtp_seconds_per_token_prefill_removed_mean": 0.024195194826461375,
+      "public_drift_tripwire_passed": true,
+      "replicate_spread_pct": {
+        "mtp_leg": 0.10866310639539305,
+        "mtp_round_cost": 0.1952047175698743,
+        "serial_leg": 0.10733978672866817
+      },
+      "round_count": 78,
+      "round_count_identical_across_legs": true,
+      "row_ledger_closes": true,
+      "score_mean": 2.323626966066243,
+      "seed_prefill_delta_pct": 0.0,
+      "seed_prefill_seconds_mean": 3.9938182830810547,
+      "serial_decode_seconds_mean": 38.065087735652924,
+      "serial_leg_delta_pct": 0.0,
+      "serial_seconds_per_token_all": [
+        0.07439492968842387,
+        0.07431512698531151,
+        0.07432876550592482,
+        0.07434467575512826
+      ],
+      "serial_seconds_per_token_mean": 0.07434587448369712,
+      "serial_seconds_per_token_prefill_removed_mean": 0.06653820554492995,
+      "serial_seed_prefill_seconds_mean": 3.9975264966487885,
+      "tags": [
+        "e59-r4-l1",
+        "e59-r4-l4",
+        "e59-r4-l6",
+        "e59-r4-l7"
+      ],
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "width_histogram_identical_across_legs": true
+    },
+    "t55": {
+      "accepted_draft_rate_mean": 0.8875255623721882,
+      "all_tokens_matched": true,
+      "arm": "t55",
+      "cool_gate_requested": [
+        "1"
+      ],
+      "declared_rows_total": 567,
+      "delta_vs_base_leg_pct": -0.7688705236535309,
+      "delta_vs_base_round_cost_pct": -1.0453391036504223,
+      "effective_mean_draft_len": 6.269230769230769,
+      "entry_temp_c": [
+        "43.29016876220703",
+        "43.29817581176758",
+        "44.084922790527344",
+        "43.39488220214844"
+      ],
+      "exceeds_bar_leg": true,
+      "exceeds_bar_round_cost": true,
+      "exceeds_bar_serial": false,
+      "exit_temp_c": [
+        "66.54839324951172",
+        "62.47366714477539",
+        "60.896949768066406",
+        "61.05062484741211"
+      ],
+      "leg_positions": [
+        2,
+        3,
+        5,
+        8
+      ],
+      "legs": 4,
+      "mtp_decode_seconds_mean": 16.255803525447845,
+      "mtp_seconds_per_token_all": [
+        0.031733759911730886,
+        0.03172073629684746,
+        0.031733306823298335,
+        0.03181066201068461
+      ],
+      "mtp_seconds_per_token_mean": 0.03174961626064032,
+      "mtp_seconds_per_token_prefill_removed_all": [
+        0.0239349864423275,
+        0.023922793101519346,
+        0.023937496123835444,
+        0.023973816307261586
+      ],
+      "mtp_seconds_per_token_prefill_removed_mean": 0.02394227299373597,
+      "public_drift_tripwire_passed": true,
+      "replicate_spread_pct": {
+        "mtp_leg": 0.2832340180080436,
+        "mtp_round_cost": 0.21310928062506507,
+        "serial_leg": 0.15464721083102817
+      },
+      "round_count": 78,
+      "round_count_identical_across_legs": true,
+      "row_ledger_closes": true,
+      "score_mean": 2.341174058392073,
+      "seed_prefill_delta_pct": 0.08867377839840707,
+      "seed_prefill_seconds_mean": 3.9973597526550293,
+      "serial_decode_seconds_mean": 38.05762577056885,
+      "serial_leg_delta_pct": -0.019603173217142,
+      "serial_seconds_per_token_all": [
+        0.07434744713827968,
+        0.07425866415724158,
+        0.07437361543998122,
+        0.07434547459706664
+      ],
+      "serial_seconds_per_token_mean": 0.07433130033314228,
+      "serial_seconds_per_token_prefill_removed_mean": 0.06652517238399014,
+      "serial_seed_prefill_seconds_mean": 3.9967375099658966,
+      "tags": [
+        "e59-r4-l2",
+        "e59-r4-l3",
+        "e59-r4-l5",
+        "e59-r4-l8"
+      ],
+      "width_histogram": {
+        "2": 1,
+        "4": 5,
+        "5": 5,
+        "6": 23,
+        "7": 4,
+        "8": 6,
+        "9": 34
+      },
+      "width_histogram_identical_across_legs": true
+    }
+  },
+  "bar_pct": {
+    "leg": 0.24233528950755007,
+    "round_cost": 0.16285575957092424,
+    "separation_used": 6,
+    "serial": 0.06755021277132447
+  },
+  "base_arm": "shipped",
+  "cell_conversion": {
+    "t55": {
+      "agreement_with_cell_instrument": {
+        "available": true,
+        "consistent_at_2_sigma": true,
+        "difference_pct": -1.6117831203275976,
+        "difference_se_pct": 1.4968923447259308,
+        "implied_cell_pct_from_round_cost": -21.820783120327597,
+        "implied_cell_se_pct": 1.487726295962767,
+        "stage_a_cell_pct": -20.209,
+        "stage_a_cell_se_pct": 0.1654,
+        "t": -1.0767528646976297
+      },
+      "divisor": 0.0668,
+      "gate": "advance",
+      "implied_cell_pct": -11.510037779244476,
+      "implied_cell_pct_at_measured_share": -16.0496788895281,
+      "implied_cell_pct_from_round_cost": -15.648788976802729,
+      "implied_cell_pct_from_round_cost_at_measured_share": -21.820783120327597,
+      "measured_m5_share": 0.047905663966597754,
+      "per_leg_pct": [
+        -0.8184283954318139,
+        -0.8591327618763689,
+        -0.8198444905601954,
+        -0.5780764467457455
+      ],
+      "raw_leg_pct": -0.7688705236535309,
+      "raw_round_cost_pct": -1.0453391036504223,
+      "sign_stable_across_palindrome": true,
+      "stage_a_measured_cell_pct": -20.209
+    }
+  },
+  "cool_gate_passed_real_gate": true,
+  "discarded_warmup_legs": [
+    {
+      "arm": "shipped",
+      "gpu_temp_entry_c": "42.58400344848633",
+      "gpu_temp_exit_c": "61.79909896850586",
+      "mtp_seconds_per_token": 0.03199265035800636,
+      "tag": "e59-r4-w0"
+    }
+  ],
+  "entry_temperature_c": [
+    44.043209075927734,
+    43.29016876220703,
+    43.29817581176758,
+    43.34197998046875,
+    44.084922790527344,
+    43.85176086425781,
+    43.41358947753906,
+    43.39488220214844
+  ],
+  "entry_temperature_sd_c": 0.321,
+  "entry_temperature_spread_c": 0.79,
+  "gate_qualified_for_timing": true,
+  "leg_order": [
+    {
+      "arm": "shipped",
+      "gpu_temp_entry_c": "44.043209075927734",
+      "gpu_temp_exit_c": "61.9374885559082",
+      "leg_position": 1,
+      "metallib_source_fingerprint": "7a1bbb06bea84acf53084ac55cb24e30950666f7f75e21a7bdb232f28c353a50",
+      "mlx_max_ops_per_buffer": "50",
+      "started": "2026-08-20T03:21:19Z",
+      "tag": "e59-r4-l1",
+      "wired_residency_active": "false"
+    },
+    {
+      "arm": "t55",
+      "gpu_temp_entry_c": "43.29016876220703",
+      "gpu_temp_exit_c": "66.54839324951172",
+      "leg_position": 2,
+      "metallib_source_fingerprint": "d98ff373d3a99cf8b61f5fb5c2c815e46789e71f21661ef541d210d105b74bb3",
+      "mlx_max_ops_per_buffer": "50",
+      "started": "2026-08-20T03:31:45Z",
+      "tag": "e59-r4-l2",
+      "wired_residency_active": "false"
+    },
+    {
+      "arm": "t55",
+      "gpu_temp_entry_c": "43.29817581176758",
+      "gpu_temp_exit_c": "62.47366714477539",
+      "leg_position": 3,
+      "metallib_source_fingerprint": "d98ff373d3a99cf8b61f5fb5c2c815e46789e71f21661ef541d210d105b74bb3",
+      "mlx_max_ops_per_buffer": "50",
+      "started": "2026-08-20T03:41:37Z",
+      "tag": "e59-r4-l3",
+      "wired_residency_active": "false"
+    },
+    {
+      "arm": "shipped",
+      "gpu_temp_entry_c": "43.34197998046875",
+      "gpu_temp_exit_c": "61.00552749633789",
+      "leg_position": 4,
+      "metallib_source_fingerprint": "7a1bbb06bea84acf53084ac55cb24e30950666f7f75e21a7bdb232f28c353a50",
+      "mlx_max_ops_per_buffer": "50",
+      "started": "2026-08-20T03:51:41Z",
+      "tag": "e59-r4-l4",
+      "wired_residency_active": "false"
+    },
+    {
+      "arm": "t55",
+      "gpu_temp_entry_c": "44.084922790527344",
+      "gpu_temp_exit_c": "60.896949768066406",
+      "leg_position": 5,
+      "metallib_source_fingerprint": "d98ff373d3a99cf8b61f5fb5c2c815e46789e71f21661ef541d210d105b74bb3",
+      "mlx_max_ops_per_buffer": "50",
+      "started": "2026-08-20T04:02:09Z",
+      "tag": "e59-r4-l5",
+      "wired_residency_active": "false"
+    },
+    {
+      "arm": "shipped",
+      "gpu_temp_entry_c": "43.85176086425781",
+      "gpu_temp_exit_c": "62.17375183105469",
+      "leg_position": 6,
+      "metallib_source_fingerprint": "7a1bbb06bea84acf53084ac55cb24e30950666f7f75e21a7bdb232f28c353a50",
+      "mlx_max_ops_per_buffer": "50",
+      "started": "2026-08-20T04:12:48Z",
+      "tag": "e59-r4-l6",
+      "wired_residency_active": "false"
+    },
+    {
+      "arm": "shipped",
+      "gpu_temp_entry_c": "43.41358947753906",
+      "gpu_temp_exit_c": "61.77756118774414",
+      "leg_position": 7,
+      "metallib_source_fingerprint": "7a1bbb06bea84acf53084ac55cb24e30950666f7f75e21a7bdb232f28c353a50",
+      "mlx_max_ops_per_buffer": "50",
+      "started": "2026-08-20T04:23:17Z",
+      "tag": "e59-r4-l7",
+      "wired_residency_active": "false"
+    },
+    {
+      "arm": "t55",
+      "gpu_temp_entry_c": "43.39488220214844",
+      "gpu_temp_exit_c": "61.05062484741211",
+      "leg_position": 8,
+      "metallib_source_fingerprint": "d98ff373d3a99cf8b61f5fb5c2c815e46789e71f21661ef541d210d105b74bb3",
+      "mlx_max_ops_per_buffer": "50",
+      "started": "2026-08-20T04:33:43Z",
+      "tag": "e59-r4-l8",
+      "wired_residency_active": "false"
+    }
+  ],
+  "m5_share_audit": {
+    "divisor_used": 0.0668,
+    "e1_round_us": {
+      "4": 91288,
+      "5": 115691,
+      "6": 134668,
+      "7": 154169,
+      "8": 172827,
+      "9": 184970
+    },
+    "measured_share_by_arm": {
+      "shipped": {
+        "available": true,
+        "m5_share": 0.047905663966597754,
+        "priced_round_us_by_width": {
+          "4": 456440,
+          "5": 578455,
+          "6": 3097364,
+          "7": 616676,
+          "8": 1036962,
+          "9": 6288980
+        },
+        "total_priced_round_us": 12074877,
+        "widths_without_e1_cost": [
+          2
+        ]
+      },
+      "t55": {
+        "available": true,
+        "m5_share": 0.047905663966597754,
+        "priced_round_us_by_width": {
+          "4": 456440,
+          "5": 578455,
+          "6": 3097364,
+          "7": 616676,
+          "8": 1036962,
+          "9": 6288980
+        },
+        "total_priced_round_us": 12074877,
+        "widths_without_e1_cost": [
+          2
+        ]
+      }
+    },
+    "prereg_e60_histogram": {
+      "4": 5,
+      "5": 7,
+      "6": 17,
+      "7": 3,
+      "8": 3,
+      "9": 41
+    },
+    "prereg_share_recomputed": {
+      "available": true,
+      "m5_share": 0.06681607878821731,
+      "priced_round_us_by_width": {
+        "4": 456440,
+        "5": 809837,
+        "6": 2289356,
+        "7": 462507,
+        "8": 518481,
+        "9": 7583770
+      },
+      "total_priced_round_us": 12120391,
+      "widths_without_e1_cost": []
+    }
+  },
+  "official_or_ranked_score": false,
+  "predicted_pct": {
+    "advance_implied_cell_pct": -6.0,
+    "kill_implied_cell_pct": -2.0,
+    "leg_basis": {
+      "m5_rbx": -0.7368,
+      "t55": -1.1087
+    },
+    "qmv_share_of_leg": 0.82127,
+    "stage_a_cell_pct": {
+      "m5_rbx": -13.431,
+      "t55": -20.209
+    }
+  },
+  "prereg": {
+    "census": {
+      "base": {
+        "entry": "183 band 181-185",
+        "m5_cell": 87,
+        "table_max": 129
+      },
+      "m5_rb2": {
+        "entry": "within +-3 of base",
+        "m5_cell": 100,
+        "table_max": 129
+      },
+      "m5_rbx": {
+        "entry": "within +-3 of base",
+        "m5_cell": 90,
+        "table_max": 129
+      },
+      "t55": {
+        "entry": "within +-3 of base",
+        "m5_cell": 125,
+        "table_max": 129
+      }
+    },
+    "experiment": "E59",
+    "hard_gate_before_timing_t55": "bitwise parity M=2..9 vs new base, controls fire, max_abs_ulp_top2_logits=0",
+    "m5_cell_count_changes_when_table_max_moves": false,
+    "m9_cell_change_pct_e55": -11.87,
+    "new_base": "d2139c924c7a7d98ca6026eea63867c2776abbca",
+    "note_t55_exactness": "t55 changes NA {3,2}->{5}; exactness is empirical, not structural. rb2/rbx preserve NA and are exact by construction.",
+    "null_floor_pct": 0.0629,
+    "rbx_vs_base": {
+      "cell_pct": -11.74,
+      "leg_pct": -0.4406,
+      "tax_source": "E44 10.54% at NA=4, inherited, multiplicative"
+    },
+    "recorded_at_utc": "2026-08-19T23:21:32.438222Z",
+    "recorded_before": "rung 3 session 44d6077c completion; no rung 3 data visible",
+    "report_only_band_pct": [
+      -6.0,
+      -2.0
+    ],
+    "rung3_tests": {
+      "R1": "iso_m5_ipg3->iso_m5_ipg5_r4 == t55 cell in isolation, pred -20.15%",
+      "T2": "iso_m5_ipg5_r4->iso_m5_ipg5_rbx == t55 vs rbx, measures NA=5 x re-read tax"
+    },
+    "stage": "rung4-prereg",
+    "stop_rule_pct": -2.0,
+    "t55_vs_base": {
+      "cell_pct": -20.15,
+      "leg_pct": -0.7564,
+      "round_pct": -0.9875
+    },
+    "t55_vs_rbx": {
+      "predict_tie": false,
+      "predicted_leg_pct": -0.3159,
+      "tie_tolerance_pct": 0.126
+    },
+    "width_share_m5_pct": {
+      "new_base": 5.413,
+      "old_base": 5.07
+    }
+  },
+  "prereg_amendment": {
+    "amends": {
+      "frozen_sha256": "22a3e9a717f1971bd0aff93d2548273081abb45778cf5fc95e9e2f5d059c11c7",
+      "path": "research/e59-artifacts/e59-rung4-prereg.json",
+      "rule": "the frozen file is not edited; this file records only what changed and why"
+    },
+    "decision_rule": {
+      "power_caveat": "rung 3 resolved this same register contrast at the isolated cell with an 8x margin. The leg-level test dilutes it by the 5.413 % M=5 QMV share. If the measured contrast standard error exceeds half the predicted 0.250 % gap, a leg-level tie is UNDERPOWERED and must not be reported as support for the occupancy hypothesis. The verdict `t55_vs_rbx_test_is_powered` records this explicitly.",
+      "rbx_faster": "both this prereg and rung 3 T2 are wrong at the leg level; the register story needs rebuilding",
+      "t55_faster": "this prereg is supported; m5_rbx buys nothing at M=5 and rung 3 T2 generalises to the whole table",
+      "tie": "advisor's occupancy hypothesis is supported at M=5",
+      "tie_tolerance_raw_pct": "this session's largest same-arm absolute leg spread at the widest separation the palindrome measures; conservative because it still carries the session drift",
+      "tie_tolerance_regression": "|t| < 2.0 on the arm[t55] - arm[m5_rbx] contrast from time ~ arm + leg_position, which is the powered read"
+    },
+    "design": {
+      "arm_order_constraint": "t55 is measured before m5_rbx, so a session cut short still returns the shippable arm",
+      "cool_gate": "real 40 C gate on every timed leg",
+      "estimator": "time ~ arm + leg_position, ordinary least squares, base arm as reference",
+      "palindrome": true,
+      "sequence": [
+        "warmup shipped (declared, discarded)",
+        "shipped",
+        "t55",
+        "m5_rbx",
+        "m5_rbx",
+        "t55",
+        "shipped"
+      ],
+      "tokens": 512,
+      "warmup_leg": "leg 1 is discarded and excluded from the analysis; alphonse measured that a warm-up cuts the timed-leg entry-temperature spread from 13.53 C to 4.30 C",
+      "why_palindrome": "every arm gets the same mean leg position, so linear thermal drift cancels to first order for every pairwise contrast, and the session measures its own same-arm null at separations 1, 3 and 5 for free"
+    },
+    "experiment": "E59",
+    "identity_recorded_per_leg": [
+      "wired_residency_active (false on this 48 GiB host; Qwen36MTPBlockSession.swift:226 gates wiring at 96 GiB)",
+      "metallib_source_fingerprint (rebuilt per leg after the E55 merge touched quantized.h)",
+      "startup_memory_profile, mlx_max_ops_per_buffer, mlx_max_mb_per_buffer",
+      "gpu_temp_entry_c, gpu_temp_exit_c, cool_gate_requested",
+      "warmup_discarded"
+    ],
+    "predictions": {
+      "basis": "rung 3 pair T2 measured the identical 125-vs-90 register contrast at the isolated M=5 cell: iso_m5_ipg5_r4 -> iso_m5_ipg5_rbx = +8.318 % +/- 1.007 %, so the 90-register form is SLOWER, not equal. Rung 3 R1 (-20.010 %) and N2 (-13.356 %) give the two cell wins whose 6.654 pp gap converts to -0.250 % at the leg through the 5.413 % M=5 QMV share.",
+      "direction": "t55 is FASTER than m5_rbx",
+      "disagrees_with_advisor": true,
+      "m5_rbx_vs_base_leg_pct": -0.501,
+      "predict_tie": false,
+      "t55_minus_rbx_leg_pct": -0.25,
+      "t55_vs_base_leg_pct": -0.751,
+      "third_outcome_the_advisor_did_not_enumerate": "a LOSS at M=5. If m5_rbx is slower at M=5 while t6_rbx is faster at M=6, the occupancy relief at M=6 is real but it is paid for out of an intrinsic row-block cost that M=5 measures directly. That makes rung 3 T2 the calibration constant for askeladd's arm rather than a contradiction of it."
+    },
+    "recorded_at_utc": "2026-08-20T01:40:00Z",
+    "recorded_before": "the first rung 4 timed leg",
+    "report_only_band_pct": [
+      -6.0,
+      -2.0
+    ],
+    "retractions": [
+      {
+        "item": "null_floor_pct = 0.0629",
+        "reason": "measured on adjacent legs only; ledger 198 shows the same-binary null grows with leg separation (0.0032 % adjacent, 0.1147 % three apart, 0.1634 % five apart)",
+        "replacement": "this session's own same-arm spread, taken at the widest separation the palindrome measures"
+      },
+      {
+        "item": "ceiling-tax motivation for m5_rbx",
+        "reason": "E61 rung 1 measured the +15-register table-maximum rise at -0.02 % / -0.06 % on untreated widths; the ceiling argument is dead",
+        "replacement": "m5_rbx is retained purely as the M=5 dose point of the occupancy hypothesis"
+      },
+      {
+        "item": "worker_low_memory_notices = 0 as evidence in rungs 2b and 3",
+        "reason": "mtp-timed never forwards worker stderr, so the count could not be anything but zero",
+        "replacement": "research/e59_geometry_proof.sh, run before rung 4"
+      }
+    ],
+    "stage": "rung4-prereg-amendment-1",
+    "stop_rule_pct": -2.0,
+    "trigger": {
+      "advisor_prediction": "t55 (125 registers) and m5_rbx (90 registers) must time the SAME at M=5, because the register law is exact at NA=5 and there is no cliff to relieve",
+      "content": "askeladd E61 rung 1 closed M=7/8/9 for the single-stream form, priced the ceiling tax at -0.02 % to -0.06 % on untreated widths, and reframed m5_rbx as the M=5 dose point of an occupancy hypothesis",
+      "source": "advisor comment 5349939578, 2026-08-20T01:09:57Z"
+    }
+  },
+  "regression_time_by_arm_and_position": {
+    "mtp_seconds_per_token": {
+      "base_level_at_mean_position": 0.03199562116060406,
+      "covariance": [
+        [
+          7.773949926797238e-10,
+          -2.6545194871990574e-10,
+          -1.1376512087995956e-10
+        ],
+        [
+          -2.654519487199057e-10,
+          5.309038974398115e-10,
+          0.0
+        ],
+        [
+          -1.1376512087995957e-10,
+          -0.0,
+          2.5281137973324346e-11
+        ]
+      ],
+      "field": "mtp_seconds_per_token",
+      "fitted": true,
+      "n": 8,
+      "names": [
+        "intercept",
+        "arm[t55]",
+        "position"
+      ],
+      "parameters": 3,
+      "position_drift_pct_of_base_per_leg": 0.012942633352740767,
+      "reference_arm": "shipped",
+      "residual_dof": 5,
+      "residual_sd": 3.258539235423786e-05,
+      "residual_sd_pct_of_base": 0.10184328721318897,
+      "residuals": [
+        {
+          "arm": "shipped",
+          "label": "e59-r4-l1",
+          "position": 1,
+          "residual_pct_of_base": 0.08773076806465914
+        },
+        {
+          "arm": "t55",
+          "label": "e59-r4-l2",
+          "position": 2,
+          "residual_pct_of_base": -0.01720128839643515
+        },
+        {
+          "arm": "t55",
+          "label": "e59-r4-l3",
+          "position": 3,
+          "residual_pct_of_base": -0.07084828819373087
+        },
+        {
+          "arm": "shipped",
+          "label": "e59-r4-l4",
+          "position": 4,
+          "residual_pct_of_base": 0.05948719670238755
+        },
+        {
+          "arm": "t55",
+          "label": "e59-r4-l5",
+          "position": 5,
+          "residual_pct_of_base": -0.05744528358302568
+        },
+        {
+          "arm": "shipped",
+          "label": "e59-r4-l6",
+          "position": 6,
+          "residual_pct_of_base": -0.07506117639849323
+        },
+        {
+          "arm": "shipped",
+          "label": "e59-r4-l7",
+          "position": 7,
+          "residual_pct_of_base": -0.07215678836853177
+        },
+        {
+          "arm": "t55",
+          "label": "e59-r4-l8",
+          "position": 8,
+          "residual_pct_of_base": 0.14549486017319171
+        }
+      ],
+      "terms": {
+        "arm[t55]": {
+          "estimate": -0.00024600489996373653,
+          "estimate_pct_of_base": -0.7688705236535314,
+          "std_error": 2.3041351901305867e-05,
+          "t": -10.6766695382051
+        },
+        "intercept": {
+          "estimate": 0.03197698631889319,
+          "estimate_pct_of_base": null,
+          "std_error": 2.7881803971043978e-05,
+          "t": 1146.8765203321195
+        },
+        "position": {
+          "estimate": 4.141075935748923e-06,
+          "estimate_pct_of_base": null,
+          "std_error": 5.028035200088037e-06,
+          "t": 0.8235972444418083
+        }
+      }
+    },
+    "mtp_seconds_per_token_prefill_removed": {
+      "base_level_at_mean_position": 0.024195194826461375,
+      "covariance": [
+        [
+          4.3541549364950804e-10,
+          -1.486784612461735e-10,
+          -6.371934053407433e-11
+        ],
+        [
+          -1.4867846124617348e-10,
+          2.97356922492347e-10,
+          0.0
+        ],
+        [
+          -6.371934053407434e-11,
+          -0.0,
+          1.415985345201652e-11
+        ]
+      ],
+      "field": "mtp_seconds_per_token_prefill_removed",
+      "fitted": true,
+      "n": 8,
+      "names": [
+        "intercept",
+        "arm[t55]",
+        "position"
+      ],
+      "parameters": 3,
+      "position_drift_pct_of_base_per_leg": 0.0009970356630824224,
+      "reference_arm": "shipped",
+      "residual_dof": 5,
+      "residual_sd": 2.438675552394566e-05,
+      "residual_sd_pct_of_base": 0.10079173033678068,
+      "residuals": [
+        {
+          "arm": "shipped",
+          "label": "e59-r4-l1",
+          "position": 1,
+          "residual_pct_of_base": 0.06568170618781774
+        },
+        {
+          "arm": "t55",
+          "label": "e59-r4-l2",
+          "position": 2,
+          "residual_pct_of_base": -0.027623107205702137
+        },
+        {
+          "arm": "t55",
+          "label": "e59-r4-l3",
+          "position": 3,
+          "residual_pct_of_base": -0.07901585530510999
+        },
+        {
+          "arm": "shipped",
+          "label": "e59-r4-l4",
+          "position": 4,
+          "residual_pct_of_base": 0.09493827381101522
+        },
+        {
+          "arm": "t55",
+          "label": "e59-r4-l5",
+          "position": 5,
+          "residual_pct_of_base": -0.0202415698498694
+        },
+        {
+          "arm": "shipped",
+          "label": "e59-r4-l6",
+          "position": 6,
+          "residual_pct_of_base": -0.05736242925073892
+        },
+        {
+          "arm": "shipped",
+          "label": "e59-r4-l7",
+          "position": 7,
+          "residual_pct_of_base": -0.10325755074810838
+        },
+        {
+          "arm": "t55",
+          "label": "e59-r4-l8",
+          "position": 8,
+          "residual_pct_of_base": 0.12688053236066718
+        }
+      ],
+      "terms": {
+        "arm[t55]": {
+          "estimate": -0.0002529218327254057,
+          "estimate_pct_of_base": -1.0453391036504265,
+          "std_error": 1.724404020212047e-05,
+          "t": -14.667202683411995
+        },
+        "intercept": {
+          "estimate": 0.0241941092702161,
+          "estimate_pct_of_base": null,
+          "std_error": 2.0866611935086828e-05,
+          "t": 1159.4651467847614
+        },
+        "position": {
+          "estimate": 2.412347211720931e-07,
+          "estimate_pct_of_base": null,
+          "std_error": 3.7629580720513643e-06,
+          "t": 0.06410773560402303
+        }
+      }
+    }
+  },
+  "session_null_by_separation_pct": {
+    "mtp_seconds_per_token": {
+      "1": {
+        "max_abs_delta_pct": 0.04104025151651969,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.04104025151651969,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l3"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.01585584472050974,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l6",
+              "e59-r4-l7"
+            ]
+          }
+        ]
+      },
+      "2": {
+        "max_abs_delta_pct": 0.10860552821885093,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.039628734759608125,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l3",
+              "e59-r4-l5"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.10860552821885093,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l4",
+              "e59-r4-l6"
+            ]
+          }
+        ]
+      },
+      "3": {
+        "max_abs_delta_pct": 0.24376655044812662,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.010579839505907747,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l4"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.0014277804893297217,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l5"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.09276690382225347,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l4",
+              "e59-r4-l7"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.24376655044812662,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l5",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      },
+      "5": {
+        "max_abs_delta_pct": 0.28349188680744447,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.09803717900352328,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l6"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.28349188680744447,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l3",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      },
+      "6": {
+        "max_abs_delta_pct": 0.24233528950755007,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.08219687890588472,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l7"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.24233528950755007,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      }
+    },
+    "mtp_seconds_per_token_prefill_removed": {
+      "1": {
+        "max_abs_delta_pct": 0.05094358769550003,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.05094358769550003,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l3"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.044923183013130766,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l6",
+              "e59-r4-l7"
+            ]
+          }
+        ]
+      },
+      "2": {
+        "max_abs_delta_pct": 0.15016481644936136,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.06146030797367227,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l3",
+              "e59-r4-l5"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.15016481644936136,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l4",
+              "e59-r4-l6"
+            ]
+          }
+        ]
+      },
+      "3": {
+        "max_abs_delta_pct": 0.19502054064717725,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.03222763157759339,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l4"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.010485410192281741,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l5"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.19502054064717725,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l4",
+              "e59-r4-l7"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.15172925037041113,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l5",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      },
+      "5": {
+        "max_abs_delta_pct": 0.21328281160864718,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.11798557943557243,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l6"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.21328281160864718,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l3",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      },
+      "6": {
+        "max_abs_delta_pct": 0.16285575957092424,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.16285575957092424,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l7"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.16223056999697588,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      }
+    },
+    "serial_seconds_per_token": {
+      "1": {
+        "max_abs_delta_pct": 0.11941631415126477,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.11941631415126477,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l3"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.021405238059786294,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l6",
+              "e59-r4-l7"
+            ]
+          }
+        ]
+      },
+      "2": {
+        "max_abs_delta_pct": 0.15479847913265946,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.15479847913265946,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l3",
+              "e59-r4-l5"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.01835228057405916,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l4",
+              "e59-r4-l6"
+            ]
+          }
+        ]
+      },
+      "3": {
+        "max_abs_delta_pct": 0.1072690080447531,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.1072690080447531,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l4"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.035197310343252255,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l5"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.039761446983191735,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l4",
+              "e59-r4-l7"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.03783713182168841,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l5",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      },
+      "5": {
+        "max_abs_delta_pct": 0.11690277600636366,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.08893641378001932,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l6"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.11690277600636366,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l3",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      },
+      "6": {
+        "max_abs_delta_pct": 0.06755021277132447,
+        "pairs": [
+          {
+            "abs_delta_pct": 0.06755021277132447,
+            "arm": "shipped",
+            "tags": [
+              "e59-r4-l1",
+              "e59-r4-l7"
+            ]
+          },
+          {
+            "abs_delta_pct": 0.002653139131148419,
+            "arm": "t55",
+            "tags": [
+              "e59-r4-l2",
+              "e59-r4-l8"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "stage_a_cells": {
+    "rbx_vs_shipped": {
+      "clears_bar": true,
+      "clears_kill_rule": true,
+      "control_arm": "shipped",
+      "decision_bar_pct": 0.733,
+      "m5_control_ms": 120.067,
+      "m5_delta_ms": -16.126,
+      "m5_delta_pct": -13.431,
+      "m5_replicate_spread_pct": 0.19905552733057377,
+      "m5_treated_ms": 103.941,
+      "per_width": {
+        "1": {
+          "control_ms": 60.867,
+          "delta_ms": -0.361,
+          "delta_pct": -0.592,
+          "exceeds_mde": false,
+          "mde_ms": 0.408,
+          "treated_ms": 60.506
+        },
+        "10": {
+          "control_ms": 271.257,
+          "delta_ms": -0.166,
+          "delta_pct": -0.061,
+          "exceeds_mde": false,
+          "mde_ms": 0.202,
+          "treated_ms": 271.091
+        },
+        "2": {
+          "control_ms": 65.119,
+          "delta_ms": -0.109,
+          "delta_pct": -0.167,
+          "exceeds_mde": true,
+          "mde_ms": 0.093,
+          "treated_ms": 65.011
+        },
+        "3": {
+          "control_ms": 72.09,
+          "delta_ms": 0.038,
+          "delta_pct": 0.053,
+          "exceeds_mde": false,
+          "mde_ms": 0.259,
+          "treated_ms": 72.129
+        },
+        "4": {
+          "control_ms": 82.16,
+          "delta_ms": 0.603,
+          "delta_pct": 0.733,
+          "exceeds_mde": false,
+          "mde_ms": 1.336,
+          "treated_ms": 82.763
+        },
+        "5": {
+          "control_ms": 120.067,
+          "delta_ms": -16.126,
+          "delta_pct": -13.431,
+          "exceeds_mde": true,
+          "mde_ms": 0.239,
+          "treated_ms": 103.941
+        },
+        "6": {
+          "control_ms": 128.563,
+          "delta_ms": -0.4,
+          "delta_pct": -0.311,
+          "exceeds_mde": true,
+          "mde_ms": 0.134,
+          "treated_ms": 128.163
+        },
+        "7": {
+          "control_ms": 138.13,
+          "delta_ms": -0.026,
+          "delta_pct": -0.019,
+          "exceeds_mde": false,
+          "mde_ms": 0.057,
+          "treated_ms": 138.103
+        },
+        "8": {
+          "control_ms": 148.809,
+          "delta_ms": 0.215,
+          "delta_pct": 0.145,
+          "exceeds_mde": false,
+          "mde_ms": 0.376,
+          "treated_ms": 149.024
+        },
+        "9": {
+          "control_ms": 164.293,
+          "delta_ms": -0.366,
+          "delta_pct": -0.222,
+          "exceeds_mde": false,
+          "mde_ms": 1.103,
+          "treated_ms": 163.927
+        }
+      },
+      "treated_arm": "m5_rbx",
+      "untreated_width_pct": {
+        "1": -0.592,
+        "10": -0.061,
+        "2": -0.167,
+        "3": 0.053,
+        "4": 0.733,
+        "6": -0.311,
+        "7": -0.019,
+        "8": 0.145,
+        "9": -0.222
+      },
+      "worst_untreated_width_pct": 0.733
+    },
+    "t55_vs_rbx": {
+      "clears_bar": true,
+      "clears_kill_rule": true,
+      "control_arm": "m5_rbx",
+      "decision_bar_pct": 0.816,
+      "m5_control_ms": 103.941,
+      "m5_delta_ms": -8.138,
+      "m5_delta_pct": -7.829,
+      "m5_replicate_spread_pct": 0.2838148565051327,
+      "m5_treated_ms": 95.803,
+      "per_width": {
+        "1": {
+          "control_ms": 60.506,
+          "delta_ms": -0.494,
+          "delta_pct": -0.816,
+          "exceeds_mde": true,
+          "mde_ms": 0.408,
+          "treated_ms": 60.012
+        },
+        "10": {
+          "control_ms": 271.091,
+          "delta_ms": 0.009,
+          "delta_pct": 0.003,
+          "exceeds_mde": false,
+          "mde_ms": 0.133,
+          "treated_ms": 271.101
+        },
+        "2": {
+          "control_ms": 65.011,
+          "delta_ms": 0.038,
+          "delta_pct": 0.059,
+          "exceeds_mde": false,
+          "mde_ms": 1.42,
+          "treated_ms": 65.049
+        },
+        "3": {
+          "control_ms": 72.129,
+          "delta_ms": 0.502,
+          "delta_pct": 0.697,
+          "exceeds_mde": false,
+          "mde_ms": 0.862,
+          "treated_ms": 72.631
+        },
+        "4": {
+          "control_ms": 82.763,
+          "delta_ms": -0.43,
+          "delta_pct": -0.519,
+          "exceeds_mde": false,
+          "mde_ms": 1.336,
+          "treated_ms": 82.334
+        },
+        "5": {
+          "control_ms": 103.941,
+          "delta_ms": -8.138,
+          "delta_pct": -7.829,
+          "exceeds_mde": true,
+          "mde_ms": 0.295,
+          "treated_ms": 95.803
+        },
+        "6": {
+          "control_ms": 128.163,
+          "delta_ms": 0.172,
+          "delta_pct": 0.134,
+          "exceeds_mde": false,
+          "mde_ms": 0.216,
+          "treated_ms": 128.335
+        },
+        "7": {
+          "control_ms": 138.103,
+          "delta_ms": 0.159,
+          "delta_pct": 0.115,
+          "exceeds_mde": true,
+          "mde_ms": 0.057,
+          "treated_ms": 138.262
+        },
+        "8": {
+          "control_ms": 149.024,
+          "delta_ms": 0.058,
+          "delta_pct": 0.039,
+          "exceeds_mde": false,
+          "mde_ms": 0.177,
+          "treated_ms": 149.082
+        },
+        "9": {
+          "control_ms": 163.927,
+          "delta_ms": 0.303,
+          "delta_pct": 0.185,
+          "exceeds_mde": true,
+          "mde_ms": 0.154,
+          "treated_ms": 164.23
+        }
+      },
+      "treated_arm": "t55",
+      "untreated_width_pct": {
+        "1": -0.816,
+        "10": 0.003,
+        "2": 0.059,
+        "3": 0.697,
+        "4": -0.519,
+        "6": 0.134,
+        "7": 0.115,
+        "8": 0.039,
+        "9": 0.185
+      },
+      "worst_untreated_width_pct": 0.816
+    },
+    "t55_vs_shipped": {
+      "clears_bar": true,
+      "clears_kill_rule": true,
+      "control_arm": "shipped",
+      "decision_bar_pct": 1.404,
+      "m5_control_ms": 120.067,
+      "m5_delta_ms": -24.264,
+      "m5_delta_pct": -20.209,
+      "m5_replicate_spread_pct": 0.24569615298125214,
+      "m5_treated_ms": 95.803,
+      "per_width": {
+        "1": {
+          "control_ms": 60.867,
+          "delta_ms": -0.855,
+          "delta_pct": -1.404,
+          "exceeds_mde": true,
+          "mde_ms": 0.193,
+          "treated_ms": 60.012
+        },
+        "10": {
+          "control_ms": 271.257,
+          "delta_ms": -0.156,
+          "delta_pct": -0.058,
+          "exceeds_mde": false,
+          "mde_ms": 0.202,
+          "treated_ms": 271.101
+        },
+        "2": {
+          "control_ms": 65.119,
+          "delta_ms": -0.07,
+          "delta_pct": -0.108,
+          "exceeds_mde": false,
+          "mde_ms": 1.42,
+          "treated_ms": 65.049
+        },
+        "3": {
+          "control_ms": 72.09,
+          "delta_ms": 0.541,
+          "delta_pct": 0.75,
+          "exceeds_mde": false,
+          "mde_ms": 0.862,
+          "treated_ms": 72.631
+        },
+        "4": {
+          "control_ms": 82.16,
+          "delta_ms": 0.173,
+          "delta_pct": 0.211,
+          "exceeds_mde": true,
+          "mde_ms": 0.159,
+          "treated_ms": 82.334
+        },
+        "5": {
+          "control_ms": 120.067,
+          "delta_ms": -24.264,
+          "delta_pct": -20.209,
+          "exceeds_mde": true,
+          "mde_ms": 0.295,
+          "treated_ms": 95.803
+        },
+        "6": {
+          "control_ms": 128.563,
+          "delta_ms": -0.228,
+          "delta_pct": -0.177,
+          "exceeds_mde": true,
+          "mde_ms": 0.216,
+          "treated_ms": 128.335
+        },
+        "7": {
+          "control_ms": 138.13,
+          "delta_ms": 0.132,
+          "delta_pct": 0.096,
+          "exceeds_mde": true,
+          "mde_ms": 0.052,
+          "treated_ms": 138.262
+        },
+        "8": {
+          "control_ms": 148.809,
+          "delta_ms": 0.273,
+          "delta_pct": 0.184,
+          "exceeds_mde": false,
+          "mde_ms": 0.376,
+          "treated_ms": 149.082
+        },
+        "9": {
+          "control_ms": 164.293,
+          "delta_ms": -0.063,
+          "delta_pct": -0.038,
+          "exceeds_mde": false,
+          "mde_ms": 1.103,
+          "treated_ms": 164.23
+        }
+      },
+      "treated_arm": "t55",
+      "untreated_width_pct": {
+        "1": -1.404,
+        "10": -0.058,
+        "2": -0.108,
+        "3": 0.75,
+        "4": 0.211,
+        "6": -0.177,
+        "7": 0.096,
+        "8": 0.184,
+        "9": -0.038
+      },
+      "worst_untreated_width_pct": 1.404
+    }
+  },
+  "tag_prefix": "e59-r4-",
+  "verdicts": {
+    "all_arms_row_ledger_closes": true,
+    "all_arms_same_width_histogram": true,
+    "all_arms_token_exact": true,
+    "all_legs_ranked_geometry": true,
+    "all_legs_wired_residency_inactive": true,
+    "arms_have_distinct_cstring_digests": true,
+    "arms_share_one_text_digest": true,
+    "each_arm_has_one_cstring_digest": true,
+    "each_arm_has_one_text_digest": true,
+    "t55_beats_bar_leg": true,
+    "t55_cell_gate": "advance",
+    "t55_implied_cell_pct": -11.510037779244476,
+    "t55_implied_cell_pct_from_round_cost": -15.648788976802729,
+    "t55_instrument_difference_t": -1.0767528646976297,
+    "t55_instruments_agree": true,
+    "t55_leg_pct": -0.7688705236535309,
+    "t55_leg_pct_regression": -0.7688705236535314,
+    "t55_leg_t_regression": -10.6766695382051,
+    "t55_round_cost_pct": -1.0453391036504223,
+    "t55_sign_stable": true,
+    "t55_vs_prereg_leg_pct": 0.3398,
+    "warmup_leg_declared_and_dropped": true
+  },
+  "worker_section_digests": {
+    "available": true,
+    "cstring_by_arm": {
+      "shipped": [
+        "95b28239b4e275a12fa62316a33e32836ce9bb01f714891030e70f30d8942f6d"
+      ],
+      "t55": [
+        "b781802ce047a1b28a1d9d38354b36ca7624978557df6616e75ab6ea0856f9cc"
+      ]
+    },
+    "file_by_arm": {
+      "shipped": [
+        "29702b08d26b79cefa5f0f6e3b770cae9a19bee2791c415cde4b5f30fe79407f",
+        "7b798a4620563c07a563ee80395a1215fa21a7017ddb632df9fe1e35e6928bb5",
+        "9cf79fea5aa11cf13bfadc09025ea0a106ad16699546183ef6d65559f70683e5",
+        "fb502a14c86d853cc0f91bf74777d52037a6bc03abf8eb20119d54c6377c5bb8"
+      ],
+      "t55": [
+        "150e448146bae6cf20d60c8d661f5901724d5ed0b8ed6d961f8f806e524b53ab",
+        "191023767d72dd9326d80f38b8b9ac0f52bb64596e7825c4dcaac376b47b533d",
+        "a4220dc248bec2454a0c8756f1c4391e31fb0aad3eb88859f2d10b43a3073166",
+        "cf5ebcf14dd6cf260f8f6d56cadc48bf65c109ae3d5239265aed27117e0dca9a"
+      ]
+    },
+    "text_by_arm": {
+      "shipped": [
+        "5ea9a67097461877276f9d105870f161cdffed2c9fac6e3fb59d642ee25fd2cc"
+      ],
+      "t55": [
+        "5ea9a67097461877276f9d105870f161cdffed2c9fac6e3fb59d642ee25fd2cc"
+      ]
+    }
+  }
+}

@@ -1,0 +1,3027 @@
+{
+  "any_exceeds_ceiling": true,
+  "arms": {
+    "ceil_only": {
+      "argmax_width": 10,
+      "arm": "ceil_only",
+      "cell": "<T,10,5> unreachable",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13814,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 56,
+          "device_loads": 902,
+          "peak_live_regs": 177,
+          "peak_live_values": 83
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 177,
+      "exceeds_ceiling": true,
+      "family": "control",
+      "kernel_wide_reg_max": 125,
+      "reachable_reg_max": 108,
+      "routing": {
+        "10": {
+          "ipg": 5,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 87
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "10": {
+          "acc_alloca_types": [],
+          "air_lines": 777,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 44,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 125,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 125
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "iso_m5_ipg3": {
+      "argmax_width": 5,
+      "arm": "iso_m5_ipg3",
+      "cell": "<T,5,3>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7768,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 43,
+          "device_loads": 538,
+          "peak_live_regs": 139,
+          "peak_live_values": 87
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 139,
+      "exceeds_ceiling": false,
+      "family": "isolated",
+      "kernel_wide_reg_max": 87,
+      "reachable_reg_max": 87,
+      "routing": {
+        "5": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 87
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "iso_m5_ipg5_r4": {
+      "argmax_width": 5,
+      "arm": "iso_m5_ipg5_r4",
+      "cell": "<T,5,5> r=4",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7433,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 42,
+          "device_loads": 514,
+          "peak_live_regs": 177,
+          "peak_live_values": 83
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 177,
+      "exceeds_ceiling": true,
+      "family": "isolated",
+      "kernel_wide_reg_max": 125,
+      "reachable_reg_max": 125,
+      "routing": {
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 777,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 44,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 125,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 125
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "iso_m5_ipg5_rb2": {
+      "argmax_width": 5,
+      "arm": "iso_m5_ipg5_rb2",
+      "cell": "<T,5,5> r=2 rb2",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7148,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 42,
+          "device_loads": 502,
+          "peak_live_regs": 153,
+          "peak_live_values": 83
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 153,
+      "exceeds_ceiling": false,
+      "family": "isolated",
+      "kernel_wide_reg_max": 100,
+      "reachable_reg_max": 100,
+      "routing": {
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 492,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 100,
+          "peak_live_values": 40,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2"
+        }
+      }
+    },
+    "iso_m5_ipg5_rbx": {
+      "argmax_width": 5,
+      "arm": "iso_m5_ipg5_rbx",
+      "cell": "<T,5,5> r=2 rbx",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7118,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 42,
+          "device_loads": 502,
+          "peak_live_regs": 142,
+          "peak_live_values": 72
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 142,
+      "exceeds_ceiling": false,
+      "family": "isolated",
+      "kernel_wide_reg_max": 90,
+      "reachable_reg_max": 90,
+      "routing": {
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 462,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 90,
+          "peak_live_values": 30,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx"
+        }
+      }
+    },
+    "iso_m5_ipg5_rbx4": {
+      "argmax_width": 5,
+      "arm": "iso_m5_ipg5_rbx4",
+      "cell": "<T,5,5> r=2 rbx4",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7143,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 42,
+          "device_loads": 502,
+          "peak_live_regs": 143,
+          "peak_live_values": 73
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 143,
+      "exceeds_ceiling": false,
+      "family": "census_probe",
+      "kernel_wide_reg_max": 91,
+      "reachable_reg_max": 91,
+      "routing": {
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx4"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 487,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 91,
+          "peak_live_values": 31,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx4"
+        }
+      }
+    },
+    "iso_m9_ipg3": {
+      "argmax_width": 9,
+      "arm": "iso_m9_ipg3",
+      "cell": "<T,9,3>",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7261,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 42,
+          "device_loads": 506,
+          "peak_live_regs": 135,
+          "peak_live_values": 83
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 135,
+      "exceeds_ceiling": false,
+      "family": "census_probe",
+      "kernel_wide_reg_max": 83,
+      "reachable_reg_max": 83,
+      "routing": {
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "iso_m9_ipg5_r4": {
+      "argmax_width": 9,
+      "arm": "iso_m9_ipg5_r4",
+      "cell": "<T,9,5> r=4",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 8112,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 43,
+          "device_loads": 554,
+          "peak_live_regs": 181,
+          "peak_live_values": 87
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 181,
+      "exceeds_ceiling": true,
+      "family": "census_probe",
+      "kernel_wide_reg_max": 129,
+      "reachable_reg_max": 129,
+      "routing": {
+        "9": {
+          "ipg": 5,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 1456,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 84,
+          "ipg": 5,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 129,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 129
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "iso_m9_ipg5_rb2t": {
+      "argmax_width": 9,
+      "arm": "iso_m9_ipg5_rb2t",
+      "cell": "<T,9,5> r=2 rb2t",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7556,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 43,
+          "device_loads": 530,
+          "peak_live_regs": 181,
+          "peak_live_values": 111
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 181,
+      "exceeds_ceiling": true,
+      "family": "census_probe",
+      "kernel_wide_reg_max": 128,
+      "reachable_reg_max": 128,
+      "routing": {
+        "9": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2t"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 900,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 60,
+          "ipg": 5,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 128,
+          "peak_live_values": 68,
+          "predicted": {
+            "e44_anchors_r2": 104,
+            "ledger_183c_r2": 95,
+            "rung1_rb2_anchor_r2": 104,
+            "rung1_rbx_anchor_r2": 94
+          },
+          "rows_per_simd": 2,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2t"
+        }
+      }
+    },
+    "iso_m9_ipg5_rbx4": {
+      "argmax_width": 9,
+      "arm": "iso_m9_ipg5_rbx4",
+      "cell": "<T,9,5> r=2 rbx4",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 7558,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 43,
+          "device_loads": 530,
+          "peak_live_regs": 147,
+          "peak_live_values": 77
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 147,
+      "exceeds_ceiling": false,
+      "family": "census_probe",
+      "kernel_wide_reg_max": 95,
+      "reachable_reg_max": 95,
+      "routing": {
+        "9": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx4"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 902,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 60,
+          "ipg": 5,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 95,
+          "peak_live_values": 35,
+          "predicted": {
+            "e44_anchors_r2": 104,
+            "ledger_183c_r2": 95,
+            "rung1_rb2_anchor_r2": 104,
+            "rung1_rbx_anchor_r2": 94
+          },
+          "rows_per_simd": 2,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx4"
+        }
+      }
+    },
+    "m5_rb2": {
+      "argmax_width": 7,
+      "arm": "m5_rb2",
+      "cell": "<T,5,5> r=2 rb2",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 12418,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 54,
+          "device_loads": 822,
+          "peak_live_regs": 162,
+          "peak_live_values": 89
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 162,
+      "exceeds_ceiling": false,
+      "family": "candidate",
+      "kernel_wide_reg_max": 108,
+      "reachable_reg_max": 108,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 492,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 100,
+          "peak_live_values": 40,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "m5_rb2_coverage_drop": {
+      "argmax_width": 7,
+      "arm": "m5_rb2_coverage_drop",
+      "cell": "<T,5,5> r=2 rb2, one block",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 12409,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 54,
+          "device_loads": 822,
+          "peak_live_regs": 162,
+          "peak_live_values": 89
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 162,
+      "exceeds_ceiling": false,
+      "family": "positive_control",
+      "kernel_wide_reg_max": 108,
+      "reachable_reg_max": 108,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 483,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 91,
+          "peak_live_values": 31,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "m5_rb2_lane_perturb": {
+      "argmax_width": 7,
+      "arm": "m5_rb2_lane_perturb",
+      "cell": "<T,5,5> r=2 rb2, lanes 3<->4",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 12418,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 54,
+          "device_loads": 822,
+          "peak_live_regs": 162,
+          "peak_live_values": 89
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 162,
+      "exceeds_ceiling": false,
+      "family": "positive_control",
+      "kernel_wide_reg_max": 108,
+      "reachable_reg_max": 108,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 492,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 100,
+          "peak_live_values": 40,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "m5_rbx": {
+      "argmax_width": 7,
+      "arm": "m5_rbx",
+      "cell": "<T,5,5> r=2 rbx",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 12388,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 54,
+          "device_loads": 822,
+          "peak_live_regs": 162,
+          "peak_live_values": 89
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 162,
+      "exceeds_ceiling": false,
+      "family": "candidate",
+      "kernel_wide_reg_max": 108,
+      "reachable_reg_max": 108,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 462,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 90,
+          "peak_live_values": 30,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "m5_rbx4": {
+      "argmax_width": 7,
+      "arm": "m5_rbx4",
+      "cell": "<T,5,5> r=2 rbx4",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 12413,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 54,
+          "device_loads": 822,
+          "peak_live_regs": 162,
+          "peak_live_values": 89
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 162,
+      "exceeds_ceiling": false,
+      "family": "census_probe",
+      "kernel_wide_reg_max": 108,
+      "reachable_reg_max": 108,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx4"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 487,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 91,
+          "peak_live_values": 31,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx4"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "m5_rbx_coverage_drop": {
+      "argmax_width": 7,
+      "arm": "m5_rbx_coverage_drop",
+      "cell": "<T,5,5> r=2 rbx, one block",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 12388,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 54,
+          "device_loads": 822,
+          "peak_live_regs": 162,
+          "peak_live_values": 89
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 162,
+      "exceeds_ceiling": false,
+      "family": "positive_control",
+      "kernel_wide_reg_max": 108,
+      "reachable_reg_max": 108,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 462,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 32,
+          "ipg": 5,
+          "na_cells": [
+            5
+          ],
+          "peak_live_regs": 90,
+          "peak_live_values": 30,
+          "predicted": {
+            "e44_anchors_r2": 100,
+            "ledger_183c_r2": 91,
+            "rung1_rb2_anchor_r2": 100,
+            "rung1_rbx_anchor_r2": 90
+          },
+          "rows_per_simd": 2,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    },
+    "m9_rb2t": {
+      "argmax_width": 9,
+      "arm": "m9_rb2t",
+      "cell": "<T,9,5> r=2 rb2t",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13333,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 56,
+          "device_loads": 882,
+          "peak_live_regs": 181,
+          "peak_live_values": 111
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 181,
+      "exceeds_ceiling": true,
+      "family": "census_probe",
+      "kernel_wide_reg_max": 128,
+      "reachable_reg_max": 128,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2t"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 87
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 900,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 60,
+          "ipg": 5,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 128,
+          "peak_live_values": 68,
+          "predicted": {
+            "e44_anchors_r2": 104,
+            "ledger_183c_r2": 95,
+            "rung1_rb2_anchor_r2": 104,
+            "rung1_rbx_anchor_r2": 94
+          },
+          "rows_per_simd": 2,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rb2t"
+        }
+      }
+    },
+    "m9_rbx4": {
+      "argmax_width": 7,
+      "arm": "m9_rbx4",
+      "cell": "<T,9,5> r=2 rbx4",
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13335,
+          "alloca_types": [
+            "[2 x [4 x i16]",
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 56,
+          "device_loads": 882,
+          "peak_live_regs": 164,
+          "peak_live_values": 91
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 164,
+      "exceeds_ceiling": false,
+      "family": "census_probe",
+      "kernel_wide_reg_max": 108,
+      "reachable_reg_max": 108,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 5,
+          "rows_per_simd": 2,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx4"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 87
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 902,
+          "alloca_types": [
+            "[2 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 60,
+          "ipg": 5,
+          "na_cells": [
+            4,
+            5
+          ],
+          "peak_live_regs": 95,
+          "peak_live_values": 35,
+          "predicted": {
+            "e44_anchors_r2": 104,
+            "ledger_183c_r2": 95,
+            "rung1_rb2_anchor_r2": 104,
+            "rung1_rbx_anchor_r2": 94
+          },
+          "rows_per_simd": 2,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m_rbx4"
+        }
+      }
+    },
+    "shipped": {
+      "argmax_width": 7,
+      "arm": "shipped",
+      "cell": null,
+      "entry": {
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+          "acc_alloca_types": [
+            "[4 x <2 x float>]"
+          ],
+          "air_lines": 13038,
+          "alloca_types": [
+            "[4 x <2 x float>]",
+            "[4 x [4 x i16]",
+            "[4 x float]"
+          ],
+          "allocas": 55,
+          "device_loads": 858,
+          "peak_live_regs": 163,
+          "peak_live_values": 90
+        },
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_1": {
+          "acc_alloca_types": [],
+          "air_lines": 395,
+          "alloca_types": [
+            "[4 x float]"
+          ],
+          "allocas": 1,
+          "device_loads": 22,
+          "peak_live_regs": 31,
+          "peak_live_values": 31
+        }
+      },
+      "entry_point_reg_max": 163,
+      "exceeds_ceiling": false,
+      "family": "control",
+      "kernel_wide_reg_max": 108,
+      "reachable_reg_max": 108,
+      "routing": {
+        "2": {
+          "ipg": 2,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64"
+        },
+        "3": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "6": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "ipg": 4,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "ipg": 3,
+          "rows_per_simd": 4,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      },
+      "status": "ok",
+      "width_cells": {
+        "3": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "4": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "5": {
+          "acc_alloca_types": [],
+          "air_lines": 1112,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 68,
+          "ipg": 3,
+          "na_cells": [
+            2,
+            3
+          ],
+          "peak_live_regs": 87,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 87
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "6": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "7": {
+          "acc_alloca_types": [],
+          "air_lines": 1284,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 2,
+          "device_loads": 76,
+          "ipg": 4,
+          "na_cells": [
+            3,
+            4
+          ],
+          "peak_live_regs": 108,
+          "peak_live_values": 45,
+          "predicted": {
+            "e55_law_r4": 108
+          },
+          "rows_per_simd": 4,
+          "uniform": false,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "8": {
+          "acc_alloca_types": [],
+          "air_lines": 691,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 40,
+          "ipg": 4,
+          "na_cells": [
+            4
+          ],
+          "peak_live_regs": 104,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 104
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        },
+        "9": {
+          "acc_alloca_types": [],
+          "air_lines": 605,
+          "alloca_types": [
+            "[4 x [4 x i16]"
+          ],
+          "allocas": 1,
+          "device_loads": 36,
+          "ipg": 3,
+          "na_cells": [
+            3
+          ],
+          "peak_live_regs": 83,
+          "peak_live_values": 41,
+          "predicted": {
+            "e55_law_r4": 83
+          },
+          "rows_per_simd": 4,
+          "uniform": true,
+          "wrapper": "qmv_fast_crossrow_affine4_g64_m"
+        }
+      }
+    }
+  },
+  "ceiling": 108,
+  "head": "781eb6240611a7de24493f212ede3ecb2f0eb5e1",
+  "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>"
+}
