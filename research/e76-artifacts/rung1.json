@@ -1,0 +1,735 @@
+{
+  "architectures": [
+    "applegpu_g16s",
+    "applegpu_g17s"
+  ],
+  "census": {
+    "applegpu_g16s": {
+      "e76_lazy_na5": {
+        "registers": 86,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4192,
+        "text_sha8": "a5441c65"
+      },
+      "e76_lazy_na6": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 4854,
+        "text_sha8": "4234033f"
+      },
+      "e76_lazysb_na5": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 8220,
+        "text_sha8": "5e591e72"
+      },
+      "e76_lazysb_na6": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 4972,
+        "text_sha8": "286027b1"
+      },
+      "e76_lazyw_na5": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4184,
+        "text_sha8": "e7eba2b1"
+      },
+      "e76_lazyw_na6": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 4864,
+        "text_sha8": "03cea6d2"
+      },
+      "e76_plain_na5": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 8208,
+        "text_sha8": "0a5810b4"
+      },
+      "e76_plain_na6": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 4954,
+        "text_sha8": "f8f80669"
+      },
+      "e76_rps1_na5": {
+        "registers": 71,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3116,
+        "text_sha8": "a2e6e6f1"
+      },
+      "e76_rps1_na6": {
+        "registers": 79,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3590,
+        "text_sha8": "80333026"
+      },
+      "e76_rps1lazy_na5": {
+        "registers": 64,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2258,
+        "text_sha8": "a3f4bafc"
+      },
+      "e76_rps1lazy_na6": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 1928,
+        "text_sha8": "c788ca0d"
+      },
+      "e76_rps1lazysb_na5": {
+        "registers": 70,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3116,
+        "text_sha8": "c8a28a23"
+      },
+      "e76_rps1lazysb_na6": {
+        "registers": 79,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3590,
+        "text_sha8": "a2995067"
+      },
+      "e76_rps1lazyw_na5": {
+        "registers": 65,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2258,
+        "text_sha8": "273e8dd9"
+      },
+      "e76_rps1lazyw_na6": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 1928,
+        "text_sha8": "0d4f24e0"
+      },
+      "e76_rps1nu_na5": {
+        "registers": 71,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3116,
+        "text_sha8": "a2e6e6f1"
+      },
+      "e76_rps1nu_na6": {
+        "registers": 79,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3590,
+        "text_sha8": "80333026"
+      },
+      "e76_rps2_na5": {
+        "registers": 84,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4834,
+        "text_sha8": "26aa43f0"
+      },
+      "e76_rps2_na6": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5610,
+        "text_sha8": "e5cfb0d0"
+      },
+      "e76_rps2lazy_na5": {
+        "registers": 83,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3374,
+        "text_sha8": "37d4c512"
+      },
+      "e76_rps2lazy_na6": {
+        "registers": 72,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2888,
+        "text_sha8": "a80bcba4"
+      },
+      "e76_rps2lazysb_na5": {
+        "registers": 86,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4844,
+        "text_sha8": "4e01c5ba"
+      },
+      "e76_rps2lazysb_na6": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 5618,
+        "text_sha8": "0fe9bb0d"
+      },
+      "e76_rps2lazyw_na5": {
+        "registers": 86,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3370,
+        "text_sha8": "d46a4f10"
+      },
+      "e76_rps2lazyw_na6": {
+        "registers": 74,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2894,
+        "text_sha8": "05ffab8f"
+      },
+      "e76_rps2nu_na5": {
+        "registers": 84,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4834,
+        "text_sha8": "26aa43f0"
+      },
+      "e76_rps2nu_na6": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5610,
+        "text_sha8": "e5cfb0d0"
+      },
+      "shipped_na5": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 8208,
+        "text_sha8": "0a5810b4"
+      },
+      "shipped_na6": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 4954,
+        "text_sha8": "f8f80669"
+      }
+    },
+    "applegpu_g17s": {
+      "e76_lazy_na5": {
+        "registers": 97,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4322,
+        "text_sha8": "fe3345fb"
+      },
+      "e76_lazy_na6": {
+        "registers": 107,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4986,
+        "text_sha8": "25bb2cf8"
+      },
+      "e76_lazysb_na5": {
+        "registers": 100,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 8460,
+        "text_sha8": "05fe6987"
+      },
+      "e76_lazysb_na6": {
+        "registers": 108,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5096,
+        "text_sha8": "70bf7ec1"
+      },
+      "e76_lazyw_na5": {
+        "registers": 98,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4296,
+        "text_sha8": "1031066b"
+      },
+      "e76_lazyw_na6": {
+        "registers": 110,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4960,
+        "text_sha8": "ba09fc0b"
+      },
+      "e76_plain_na5": {
+        "registers": 98,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 8472,
+        "text_sha8": "146e1618"
+      },
+      "e76_plain_na6": {
+        "registers": 111,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5064,
+        "text_sha8": "e13c0e1a"
+      },
+      "e76_rps1_na5": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3098,
+        "text_sha8": "ad528705"
+      },
+      "e76_rps1_na6": {
+        "registers": 99,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3556,
+        "text_sha8": "feb5d64a"
+      },
+      "e76_rps1lazy_na5": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2244,
+        "text_sha8": "439606f1"
+      },
+      "e76_rps1lazy_na6": {
+        "registers": 70,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 1910,
+        "text_sha8": "0e697651"
+      },
+      "e76_rps1lazysb_na5": {
+        "registers": 88,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3098,
+        "text_sha8": "41aefd0e"
+      },
+      "e76_rps1lazysb_na6": {
+        "registers": 99,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3556,
+        "text_sha8": "fcb2cc88"
+      },
+      "e76_rps1lazyw_na5": {
+        "registers": 76,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2246,
+        "text_sha8": "317a6e08"
+      },
+      "e76_rps1lazyw_na6": {
+        "registers": 70,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 1910,
+        "text_sha8": "02cb90b3"
+      },
+      "e76_rps1nu_na5": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3098,
+        "text_sha8": "ad528705"
+      },
+      "e76_rps1nu_na6": {
+        "registers": 99,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3556,
+        "text_sha8": "feb5d64a"
+      },
+      "e76_rps2_na5": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4824,
+        "text_sha8": "5814ce70"
+      },
+      "e76_rps2_na6": {
+        "registers": 100,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5578,
+        "text_sha8": "4f6ca62a"
+      },
+      "e76_rps2lazy_na5": {
+        "registers": 98,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3380,
+        "text_sha8": "852a8b6a"
+      },
+      "e76_rps2lazy_na6": {
+        "registers": 86,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2852,
+        "text_sha8": "3e4ef8a8"
+      },
+      "e76_rps2lazysb_na5": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4834,
+        "text_sha8": "b0051a7e"
+      },
+      "e76_rps2lazysb_na6": {
+        "registers": 100,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5582,
+        "text_sha8": "695df90f"
+      },
+      "e76_rps2lazyw_na5": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3364,
+        "text_sha8": "5103e01a"
+      },
+      "e76_rps2lazyw_na6": {
+        "registers": 88,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2850,
+        "text_sha8": "1925ba46"
+      },
+      "e76_rps2nu_na5": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4824,
+        "text_sha8": "5814ce70"
+      },
+      "e76_rps2nu_na6": {
+        "registers": 100,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5578,
+        "text_sha8": "4f6ca62a"
+      },
+      "shipped_na5": {
+        "registers": 98,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 8472,
+        "text_sha8": "146e1618"
+      },
+      "shipped_na6": {
+        "registers": 111,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5064,
+        "text_sha8": "e13c0e1a"
+      }
+    }
+  },
+  "checks": {
+    "applegpu_g16s_na5": {
+      "plain_is_shipped_wide": true,
+      "plain_text_sha8": "0a5810b4",
+      "shipped_text_sha8": "0a5810b4"
+    },
+    "applegpu_g16s_na6": {
+      "plain_is_shipped_wide": true,
+      "plain_text_sha8": "f8f80669",
+      "shipped_text_sha8": "f8f80669"
+    },
+    "applegpu_g17s_na5": {
+      "plain_is_shipped_wide": true,
+      "plain_text_sha8": "146e1618",
+      "shipped_text_sha8": "146e1618"
+    },
+    "applegpu_g17s_na6": {
+      "plain_is_shipped_wide": true,
+      "plain_text_sha8": "e13c0e1a",
+      "shipped_text_sha8": "e13c0e1a"
+    }
+  },
+  "kernels": {
+    "e76_lazy_na5": {
+      "arm": "lazy",
+      "body_rewrites": 3,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 4
+    },
+    "e76_lazy_na6": {
+      "arm": "lazy",
+      "body_rewrites": 3,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 4
+    },
+    "e76_lazysb_na5": {
+      "arm": "lazysb",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 4
+    },
+    "e76_lazysb_na6": {
+      "arm": "lazysb",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 4
+    },
+    "e76_lazyw_na5": {
+      "arm": "lazyw",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 4
+    },
+    "e76_lazyw_na6": {
+      "arm": "lazyw",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 4
+    },
+    "e76_plain_na5": {
+      "arm": "plain",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 4
+    },
+    "e76_plain_na6": {
+      "arm": "plain",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 4
+    },
+    "e76_rps1_na5": {
+      "arm": "rps1",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 1
+    },
+    "e76_rps1_na6": {
+      "arm": "rps1",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 1
+    },
+    "e76_rps1lazy_na5": {
+      "arm": "rps1lazy",
+      "body_rewrites": 3,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 1
+    },
+    "e76_rps1lazy_na6": {
+      "arm": "rps1lazy",
+      "body_rewrites": 3,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 1
+    },
+    "e76_rps1lazysb_na5": {
+      "arm": "rps1lazysb",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 1
+    },
+    "e76_rps1lazysb_na6": {
+      "arm": "rps1lazysb",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 1
+    },
+    "e76_rps1lazyw_na5": {
+      "arm": "rps1lazyw",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 1
+    },
+    "e76_rps1lazyw_na6": {
+      "arm": "rps1lazyw",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 1
+    },
+    "e76_rps1nu_na5": {
+      "arm": "rps1nu",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": false,
+      "rows_per_simd": 1
+    },
+    "e76_rps1nu_na6": {
+      "arm": "rps1nu",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": false,
+      "rows_per_simd": 1
+    },
+    "e76_rps2_na5": {
+      "arm": "rps2",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 2
+    },
+    "e76_rps2_na6": {
+      "arm": "rps2",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 2
+    },
+    "e76_rps2lazy_na5": {
+      "arm": "rps2lazy",
+      "body_rewrites": 3,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 2
+    },
+    "e76_rps2lazy_na6": {
+      "arm": "rps2lazy",
+      "body_rewrites": 3,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 2
+    },
+    "e76_rps2lazysb_na5": {
+      "arm": "rps2lazysb",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 2
+    },
+    "e76_rps2lazysb_na6": {
+      "arm": "rps2lazysb",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 2
+    },
+    "e76_rps2lazyw_na5": {
+      "arm": "rps2lazyw",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 2
+    },
+    "e76_rps2lazyw_na6": {
+      "arm": "rps2lazyw",
+      "body_rewrites": 2,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": true,
+      "rows_per_simd": 2
+    },
+    "e76_rps2nu_na5": {
+      "arm": "rps2nu",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 5,
+      "row_block_loop_unrolled": false,
+      "rows_per_simd": 2
+    },
+    "e76_rps2nu_na6": {
+      "arm": "rps2nu",
+      "body_rewrites": 0,
+      "kind": "arm",
+      "na": 6,
+      "row_block_loop_unrolled": false,
+      "rows_per_simd": 2
+    },
+    "shipped_na5": {
+      "arm": "shipped",
+      "kind": "shipped",
+      "na": 5,
+      "rows_per_simd": 4
+    },
+    "shipped_na6": {
+      "arm": "shipped",
+      "kind": "shipped",
+      "na": 6,
+      "rows_per_simd": 4
+    }
+  },
+  "reached_target": [
+    {
+      "arm": "rps1lazysb",
+      "na": 5,
+      "registers": 88
+    },
+    {
+      "arm": "rps1lazyw",
+      "na": 5,
+      "registers": 76
+    },
+    {
+      "arm": "rps1lazy",
+      "na": 5,
+      "registers": 75
+    },
+    {
+      "arm": "rps2lazyw",
+      "na": 6,
+      "registers": 88
+    },
+    {
+      "arm": "rps2lazy",
+      "na": 6,
+      "registers": 86
+    },
+    {
+      "arm": "rps1lazyw",
+      "na": 6,
+      "registers": 70
+    },
+    {
+      "arm": "rps1lazy",
+      "na": 6,
+      "registers": 70
+    }
+  ],
+  "target_g17s_registers": 90,
+  "translation_unit": "jit_string",
+  "widths": [
+    5,
+    6
+  ]
+}
