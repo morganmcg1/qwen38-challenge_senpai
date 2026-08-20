@@ -1,0 +1,466 @@
+{
+  "artifacts": {
+    "master_bf16": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head/model.safetensors",
+      "bytes": 849400347,
+      "file_sha256": "8fceddc664f3ea96d02e304463aa1319213ff52cdf1f3401d4bce64e7075c349",
+      "tensors": 15,
+      "metadata": null
+    },
+    "declared_q4": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared/model.safetensors",
+      "bytes": 427742600,
+      "file_sha256": "d038fd41e2d5dab1b3905c115d859fdc98dfbfde9862c14ebb82c2b3247ec2f1",
+      "tensors": 40,
+      "metadata": {
+        "format": "qwen38-mtp-incumbent-q4-g64-plus-bf16-qkv-islands-v1",
+        "bf16": "EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e070875b0314d652a039b6b59902690f03",
+        "base": "dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6c87a438caa28f975c1cea9b0b005bc71",
+        "e034_readout": "proposal-only affine2 compact shortlist; incumbent affine4 reranks",
+        "selection": "largest per-output-row fp32 reconstruction SSE; Q=1024,K=all,V=all"
+      }
+    },
+    "xkm_bf16": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/xkm-retrained/model.safetensors",
+      "bytes": 849400336,
+      "file_sha256": "ca37addfbadf03f19c7c198b2c9d27ad860caeeac9fbd15d88ea4bc0a5bb3e05",
+      "tensors": 15,
+      "metadata": null
+    },
+    "kamciosz_graft": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/kamciosz-graft/model.safetensors",
+      "bytes": 1006738224,
+      "file_sha256": "ba591743c4ecc0ac9d76913f975d9192b2c58cdcae0da52691a55f7b259dd6da",
+      "tensors": 18,
+      "metadata": null
+    }
+  },
+  "xkm_vs_master": {
+    "fc.weight": {
+      "n": 52428800,
+      "pct_elements_changed": 29.58492088317871,
+      "rel_l2": 0.026141546145638034,
+      "cosine": 0.9996784014761616,
+      "max_abs_diff": 0.00439453125,
+      "rms_ref": 0.012933706662316902,
+      "bytes_identical": false
+    },
+    "layers.0.self_attn.q_proj.weight": {
+      "n": 62914560,
+      "pct_elements_changed": 25.0174347559611,
+      "rel_l2": 0.018447939408609806,
+      "cosine": 0.9998505902487681,
+      "max_abs_diff": 0.0043792724609375,
+      "rms_ref": 0.015858785776345703,
+      "bytes_identical": false
+    },
+    "layers.0.self_attn.k_proj.weight": {
+      "n": 5242880,
+      "pct_elements_changed": 21.66240692138672,
+      "rel_l2": 0.018202632024032446,
+      "cosine": 0.9998333230222481,
+      "max_abs_diff": 0.0043487548828125,
+      "rms_ref": 0.01607072865879564,
+      "bytes_identical": false
+    },
+    "layers.0.self_attn.v_proj.weight": {
+      "n": 5242880,
+      "pct_elements_changed": 11.158275604248047,
+      "rel_l2": 0.007112500620893512,
+      "cosine": 0.9999750469776896,
+      "max_abs_diff": 0.004241943359375,
+      "rms_ref": 0.029817399991819538,
+      "bytes_identical": false
+    },
+    "layers.0.self_attn.o_proj.weight": {
+      "n": 31457280,
+      "pct_elements_changed": 18.893426259358723,
+      "rel_l2": 0.013041774001902694,
+      "cosine": 0.9999220598674127,
+      "max_abs_diff": 0.004180908203125,
+      "rms_ref": 0.01977340061279881,
+      "bytes_identical": false
+    },
+    "layers.0.mlp.gate_proj.weight": {
+      "n": 89128960,
+      "pct_elements_changed": 28.181033414952896,
+      "rel_l2": 0.022681655003710548,
+      "cosine": 0.9997678434312272,
+      "max_abs_diff": 0.0046234130859375,
+      "rms_ref": 0.012654821438862327,
+      "bytes_identical": false
+    },
+    "layers.0.mlp.up_proj.weight": {
+      "n": 89128960,
+      "pct_elements_changed": 25.598527122946347,
+      "rel_l2": 0.020519775404470024,
+      "cosine": 0.9998140456773363,
+      "max_abs_diff": 0.0050048828125,
+      "rms_ref": 0.013765883155110363,
+      "bytes_identical": false
+    },
+    "layers.0.mlp.down_proj.weight": {
+      "n": 89128960,
+      "pct_elements_changed": 27.88273530847886,
+      "rel_l2": 0.024627421418954052,
+      "cosine": 0.9997283849242293,
+      "max_abs_diff": 0.0046539306640625,
+      "rms_ref": 0.012301100173706293,
+      "bytes_identical": false
+    },
+    "norm.weight": {
+      "n": 5120,
+      "pct_elements_changed": 0.0,
+      "rel_l2": 0.0,
+      "cosine": 1.000000056990746,
+      "max_abs_diff": 0.0,
+      "rms_ref": 2.2583732980784146,
+      "bytes_identical": true
+    },
+    "pre_fc_norm_hidden.weight": {
+      "n": 5120,
+      "pct_elements_changed": 0.0,
+      "rel_l2": 0.0,
+      "cosine": 1.0000000156230255,
+      "max_abs_diff": 0.0,
+      "rms_ref": 0.8460135372528548,
+      "bytes_identical": true
+    },
+    "pre_fc_norm_embedding.weight": {
+      "n": 5120,
+      "pct_elements_changed": 0.0,
+      "rel_l2": 0.0,
+      "cosine": 0.9999999777878595,
+      "max_abs_diff": 0.0,
+      "rms_ref": 0.5562622559360224,
+      "bytes_identical": true
+    },
+    "layers.0.input_layernorm.weight": {
+      "n": 5120,
+      "pct_elements_changed": 0.0,
+      "rel_l2": 0.0,
+      "cosine": 1.0000000982422859,
+      "max_abs_diff": 0.0,
+      "rms_ref": 1.0446715381605824,
+      "bytes_identical": true
+    },
+    "layers.0.post_attention_layernorm.weight": {
+      "n": 5120,
+      "pct_elements_changed": 0.0,
+      "rel_l2": 0.0,
+      "cosine": 0.999999963816753,
+      "max_abs_diff": 0.0,
+      "rms_ref": 1.2080405570453006,
+      "bytes_identical": true
+    },
+    "layers.0.self_attn.q_norm.weight": {
+      "n": 256,
+      "pct_elements_changed": 0.0,
+      "rel_l2": 0.0,
+      "cosine": 1.0000000578566057,
+      "max_abs_diff": 0.0,
+      "rms_ref": 1.8141968250274658,
+      "bytes_identical": true
+    },
+    "layers.0.self_attn.k_norm.weight": {
+      "n": 256,
+      "pct_elements_changed": 0.0,
+      "rel_l2": 0.0,
+      "cosine": 1.0000000613091504,
+      "max_abs_diff": 0.0,
+      "rms_ref": 1.7992877960205078,
+      "bytes_identical": true
+    }
+  },
+  "kamciosz_graft": {
+    "draft_lm_head.weight": {
+      "claimed_parent": "declared_q4",
+      "bytes_identical": true,
+      "sha256": "397b7050f0b8e65f39ad19e368b20185c2b2e4996bf4b8453a68a5e1bf6c35cd"
+    },
+    "draft_lm_head.biases": {
+      "claimed_parent": "declared_q4",
+      "bytes_identical": true,
+      "sha256": "8bc626c2a2b21f7cdea144144c18c5dc03ec706525c48d4ca0361c78d40a4b5d"
+    },
+    "draft_lm_head.scales": {
+      "claimed_parent": "declared_q4",
+      "bytes_identical": true,
+      "sha256": "665e15e07c950a4a68cb65e1e99874d9ae42f0af8418d5cc791174d1b522732c"
+    },
+    "fc.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "390fc7558d392ffd3628d5e4d5182b2b3c2c2a96c7db330a886b1a46acefda1e"
+    },
+    "layers.0.input_layernorm.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "0b8c69e4dc351792f332a12ecc062f07715d692f271f93274f8e8a4cd9d10a77"
+    },
+    "layers.0.mlp.down_proj.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "07edc0f19df124d6d42d5da02c4b3d22c514402501f708fc8600c0a7f8347584"
+    },
+    "layers.0.mlp.gate_proj.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "2abfe95394d4f79b4378be4e873b061d8736bb18c3abd2bfe8a1e81103ddcd5f"
+    },
+    "layers.0.mlp.up_proj.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "0d206f0182d8bb597353dd08c04adc852d6970ebc15c21eca15d1ac4126f25a6"
+    },
+    "layers.0.post_attention_layernorm.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "55e4f0fb8f7b40034c4f7bf7f134f4123679e719e2184fdfaf5028b021458b1b"
+    },
+    "layers.0.self_attn.k_norm.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "f1134c68d8c851a3ca7fcb4cf2771a4d9b2f81c949dae0e77a460c3ca5be5853"
+    },
+    "layers.0.self_attn.k_proj.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "2557493ccf18de83639931ac3d5b83eb98625290899c7a02543934d88056bcc3"
+    },
+    "layers.0.self_attn.o_proj.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "2dec2914f7cfdf9a158be336934fc1f4c9ab718be3e9800a308f76a69d77be92"
+    },
+    "layers.0.self_attn.q_norm.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "f09e3e5610fa6ca8cac3acc45d4adf87e46f3961b71d5e011df14513099839d0"
+    },
+    "layers.0.self_attn.q_proj.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "681568d1dc895c4af8afb6162a13b939a034d77029e4c454c6f9a051b5b65cfa"
+    },
+    "layers.0.self_attn.v_proj.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "eb59dedbb9ad3e4f451faee180d6ea48a8b82cb45704bb6b2a39d808e4a0f8f2"
+    },
+    "norm.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "bcdd78884fafa3b6911171327fb313d2c49084ecf04daae0507946f2e4d25bba"
+    },
+    "pre_fc_norm_embedding.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "4528c5b2d6130e56f559daf281b64a39298428a14427f38db0a6f3f5aa7861be"
+    },
+    "pre_fc_norm_hidden.weight": {
+      "claimed_parent": "xkm_bf16",
+      "bytes_identical": true,
+      "sha256": "a94faf2a058af656da2503cedec4c2f2b65eddf621729492db0a392ac0f383ca"
+    }
+  },
+  "declared_islands_vs_master": {
+    "q": {
+      "rows": 1024,
+      "index_min": 3,
+      "index_max": 12239,
+      "indices_are_identity": false,
+      "bit_exact_vs_master": true,
+      "vs_master": {
+        "n": 5242880,
+        "pct_elements_changed": 0.0,
+        "rel_l2": 0.0,
+        "cosine": 1.0000000837097938,
+        "max_abs_diff": 0.0,
+        "rms_ref": 0.02988327031834927
+      },
+      "master_vs_xkm_same_rows": {
+        "n": 5242880,
+        "pct_elements_changed": 14.560394287109375,
+        "rel_l2": 0.007206188345076571,
+        "cosine": 0.9999744308164555,
+        "max_abs_diff": 0.0043182373046875,
+        "rms_ref": 0.02988327031834927
+      }
+    },
+    "k": {
+      "rows": 1024,
+      "index_min": 0,
+      "index_max": 1023,
+      "indices_are_identity": false,
+      "bit_exact_vs_master": true,
+      "vs_master": {
+        "n": 5242880,
+        "pct_elements_changed": 0.0,
+        "rel_l2": 0.0,
+        "cosine": 1.0000001026844483,
+        "max_abs_diff": 0.0,
+        "rms_ref": 0.016070761978805012
+      },
+      "master_vs_xkm_same_rows": {
+        "n": 5242880,
+        "pct_elements_changed": 21.66240692138672,
+        "rel_l2": 0.018202594283950768,
+        "cosine": 0.9998330895701393,
+        "max_abs_diff": 0.0043487548828125,
+        "rms_ref": 0.016070761978805012
+      }
+    },
+    "v": {
+      "rows": 1024,
+      "index_min": 0,
+      "index_max": 1023,
+      "indices_are_identity": false,
+      "bit_exact_vs_master": true,
+      "vs_master": {
+        "n": 5242880,
+        "pct_elements_changed": 0.0,
+        "rel_l2": 0.0,
+        "cosine": 0.9999998944131212,
+        "max_abs_diff": 0.0,
+        "rms_ref": 0.02981744330783172
+      },
+      "master_vs_xkm_same_rows": {
+        "n": 5242880,
+        "pct_elements_changed": 11.158275604248047,
+        "rel_l2": 0.0071124907250237745,
+        "cosine": 0.9999753889128035,
+        "max_abs_diff": 0.004241943359375,
+        "rms_ref": 0.02981744330783172
+      }
+    }
+  },
+  "declared_dequant_vs_master": {
+    "fc.weight": {
+      "n": 52428800,
+      "pct_elements_changed": 97.65688133239746,
+      "rel_l2": 0.09330889144659288,
+      "cosine": 0.995598994785163,
+      "max_abs_diff": 0.04052734375,
+      "rms_ref": 0.012933706662316902,
+      "mlx_requant_weight_bit_identical": true,
+      "mlx_requant_scales_bit_identical": true,
+      "mlx_requant_biases_bit_identical": true,
+      "mlx_requant_weight_mismatch_frac": 0.0
+    },
+    "layers.0.self_attn.q_proj.weight": {
+      "n": 62914560,
+      "pct_elements_changed": 97.63670285542806,
+      "rel_l2": 0.0929903271103654,
+      "cosine": 0.9956265680404855,
+      "max_abs_diff": 0.02783203125,
+      "rms_ref": 0.015858785776345703,
+      "mlx_requant_weight_bit_identical": true,
+      "mlx_requant_scales_bit_identical": true,
+      "mlx_requant_biases_bit_identical": true,
+      "mlx_requant_weight_mismatch_frac": 0.0
+    },
+    "layers.0.self_attn.k_proj.weight": {
+      "n": 5242880,
+      "pct_elements_changed": 97.66536712646484,
+      "rel_l2": 0.09883282365567789,
+      "cosine": 0.9951242179513298,
+      "max_abs_diff": 0.016845703125,
+      "rms_ref": 0.01607072865879564,
+      "mlx_requant_weight_bit_identical": true,
+      "mlx_requant_scales_bit_identical": true,
+      "mlx_requant_biases_bit_identical": true,
+      "mlx_requant_weight_mismatch_frac": 0.0
+    },
+    "layers.0.self_attn.v_proj.weight": {
+      "n": 5242880,
+      "pct_elements_changed": 97.64276504516602,
+      "rel_l2": 0.09434534887762008,
+      "cosine": 0.9955554461550432,
+      "max_abs_diff": 0.021484375,
+      "rms_ref": 0.029817399991819538,
+      "mlx_requant_weight_bit_identical": true,
+      "mlx_requant_scales_bit_identical": true,
+      "mlx_requant_biases_bit_identical": true,
+      "mlx_requant_weight_mismatch_frac": 0.0
+    },
+    "layers.0.self_attn.o_proj.weight": {
+      "n": 31457280,
+      "pct_elements_changed": 97.69184748331706,
+      "rel_l2": 0.09968752736695952,
+      "cosine": 0.9950040703071569,
+      "max_abs_diff": 0.09765625,
+      "rms_ref": 0.01977340061279881,
+      "mlx_requant_weight_bit_identical": true,
+      "mlx_requant_scales_bit_identical": true,
+      "mlx_requant_biases_bit_identical": true,
+      "mlx_requant_weight_mismatch_frac": 0.0
+    },
+    "layers.0.mlp.gate_proj.weight": {
+      "n": 89128960,
+      "pct_elements_changed": 97.6416857102338,
+      "rel_l2": 0.09178208768926081,
+      "cosine": 0.9957106655087467,
+      "max_abs_diff": 0.017822265625,
+      "rms_ref": 0.012654821438862327,
+      "mlx_requant_weight_bit_identical": true,
+      "mlx_requant_scales_bit_identical": true,
+      "mlx_requant_biases_bit_identical": true,
+      "mlx_requant_weight_mismatch_frac": 0.0
+    },
+    "layers.0.mlp.up_proj.weight": {
+      "n": 89128960,
+      "pct_elements_changed": 97.62672312119427,
+      "rel_l2": 0.09174639517781394,
+      "cosine": 0.9957110442683257,
+      "max_abs_diff": 0.0341796875,
+      "rms_ref": 0.013765883155110363,
+      "mlx_requant_weight_bit_identical": true,
+      "mlx_requant_scales_bit_identical": true,
+      "mlx_requant_biases_bit_identical": true,
+      "mlx_requant_weight_mismatch_frac": 0.0
+    },
+    "layers.0.mlp.down_proj.weight": {
+      "n": 89128960,
+      "pct_elements_changed": 97.68652635462144,
+      "rel_l2": 0.09810095189730716,
+      "cosine": 0.9951054630488679,
+      "max_abs_diff": 0.0556640625,
+      "rms_ref": 0.012301100173706293,
+      "mlx_requant_weight_bit_identical": true,
+      "mlx_requant_scales_bit_identical": true,
+      "mlx_requant_biases_bit_identical": true,
+      "mlx_requant_weight_mismatch_frac": 0.0
+    }
+  },
+  "declared_norms_vs_master": {
+    "norm.weight": {
+      "bytes_identical": true
+    },
+    "pre_fc_norm_hidden.weight": {
+      "bytes_identical": true
+    },
+    "pre_fc_norm_embedding.weight": {
+      "bytes_identical": true
+    },
+    "layers.0.input_layernorm.weight": {
+      "bytes_identical": true
+    },
+    "layers.0.post_attention_layernorm.weight": {
+      "bytes_identical": true
+    },
+    "layers.0.self_attn.q_norm.weight": {
+      "bytes_identical": true
+    },
+    "layers.0.self_attn.k_norm.weight": {
+      "bytes_identical": true
+    }
+  },
+  "tree_digests": {
+    "declared": {
+      "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared",
+      "sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "bytes": 427742600
+    }
+  }
+}
