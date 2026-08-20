@@ -57,6 +57,8 @@ FAMILY_BYTES = {
     "lm_head": 715_161_600,
     "fa_o_proj": 283_115_520,
     "gdn_out_proj": 849_346_560,
+    "all_interceptable": (6_417_285_120 + 3_208_642_560 + 715_161_600
+                          + 283_115_520 + 849_346_560),
     "null": 0,
     "baseline": 0,
 }
@@ -75,6 +77,9 @@ PREREGISTERED_MS = {
     "mlp_down": (11.0, 7.0, 16.0),
     "fa_o_proj": (1.2, 0.6, 2.2),
     "gdn_out_proj": (3.2, 1.8, 5.0),
+    # Added after the plumbing smoke, before the census. Registered as the exact
+    # sum of the four disjoint arms, i.e. the hypothesis is perfect additivity.
+    "all_interceptable": (39.3, 30.6, 56.4),
 }
 
 # research/e63-artifacts/e63-cost-curve.json. Standalone lm_head, seconds.
@@ -262,9 +267,18 @@ def main() -> int:
         if width in curve_ms and 1 in curve_ms:
             measured_here = curve_ms[width]["mean_ms"] - curve_ms[1]["mean_ms"]
         total = measured_here if measured_here is not None else this_v - base_v
+        joint = per_arm.get("all_interceptable", {}).get(width)
         closure[str(width)] = {
             "parts_ms": parts,
             "attributed_ms": attributed,
+            "joint_all_interceptable_ms": joint["tax_ms"] if joint else None,
+            "additivity_residual_ms": (
+                joint["tax_ms"] - attributed if joint else None),
+            "additivity_note": (
+                "joint minus the sum of the disjoint single-family arms. Near "
+                "zero means the families are additive and the remaining gap "
+                "belongs to families this harness cannot reach. A large value "
+                "means the per-family map is incomplete on its own."),
             "total_width_tax_ms_this_session": measured_here,
             "total_width_tax_ms_ledger_200E": this_v - base_v,
             "gap_ms": total - attributed,

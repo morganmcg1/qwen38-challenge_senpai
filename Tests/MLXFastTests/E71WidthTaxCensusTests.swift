@@ -60,12 +60,20 @@ struct E71WidthTaxCensusTests {
         let reps = Int(env["MLXFAST_E71_REPS"] ?? "") ?? 12
         let warmup = Int(env["MLXFAST_E71_WARMUP"] ?? "") ?? 3
         let curveWidths = parseWidths(env["MLXFAST_E71_CURVE_WIDTHS"]) ?? Array(1...9)
-        let armWidths = parseWidths(env["MLXFAST_E71_ARM_WIDTHS"]) ?? [4, 6, 9]
+        // M=6 is the headline; M=4 and M=9 are the assignment's shape checks.
+        // M=5 is added because it is the last width BELOW the SDPA split: the
+        // helper cuts 6..9 query rows into two <=5-row calls, so M=5 against
+        // M=6 is the only pair that isolates that branch, and M=5 also carries
+        // 0.241 of the ranked width mixture against M=6's 0.334.
+        let armWidths = parseWidths(env["MLXFAST_E71_ARM_WIDTHS"]) ?? [4, 5, 6, 9]
         let armNames =
             (env["MLXFAST_E71_ARMS"]?.split(separator: ",").map {
                 $0.trimmingCharacters(in: .whitespaces)
             }).flatMap { $0.isEmpty ? nil : $0 }
-            ?? ["null", "lm_head", "mlp_all", "mlp_down", "fa_o_proj", "gdn_out_proj"]
+            ?? [
+                "null", "lm_head", "mlp_all", "mlp_down", "fa_o_proj",
+                "gdn_out_proj", "all_interceptable",
+            ]
 
         let tokens = try loadPromptTokens(promptPath)
         #expect(tokens.count >= seedLength + 256)
@@ -314,6 +322,24 @@ private func e71Arm(_ name: String) -> E71Arm? {
     case "gdn_out_proj":
         return E71Arm(name: "gdn_out_proj", pin: 1) { model, pin in
             e71WrapQuantizedLinear(model, childPath: ["linear_attn", "out_proj"], pinRows: pin)
+        }
+
+    // Every reachable family pinned at once, 11.473 GB or 79.61 % of the weight
+    // stream. This is the additivity test the closure gap needs: if it equals
+    // the sum of the disjoint single-family arms, the remaining gap is families
+    // this harness cannot reach; if it does not, the families interact and a
+    // per-family map is incomplete on its own.
+    case "all_interceptable":
+        return E71Arm(name: "all_interceptable", pin: 1) { model, pin in
+            let restores = [
+                e71WrapUnary(model, childPath: ["mlp"], pinRows: pin),
+                e71WrapQuantizedLinear(
+                    model, childPath: ["self_attn", "o_proj"], pinRows: pin),
+                e71WrapQuantizedLinear(
+                    model, childPath: ["linear_attn", "out_proj"], pinRows: pin),
+                e71WrapLMHead(model, pinRows: pin),
+            ]
+            return { restores.reversed().forEach { $0() } }
         }
 
     default:
