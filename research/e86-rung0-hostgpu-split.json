@@ -50,6 +50,149 @@
   "paired": {
     "prefix": "e86r0",
     "reference_arm": "default",
+    "leg_host_state": {
+      "e86r0-default-1": {
+        "host_sum_med_us": 675.0,
+        "frac_rounds_stuck": 0.2876712328767123,
+        "stuck": false
+      },
+      "e86r0-default-2": {
+        "host_sum_med_us": 649.0,
+        "frac_rounds_stuck": 0.1506849315068493,
+        "stuck": false
+      },
+      "e86r0-dense-1": {
+        "host_sum_med_us": 637.0,
+        "frac_rounds_stuck": 0.0273972602739726,
+        "stuck": false
+      },
+      "e86r0-dense-2": {
+        "host_sum_med_us": 639.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r0-front-1": {
+        "host_sum_med_us": 635.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r0-front-2": {
+        "host_sum_med_us": 675.0,
+        "frac_rounds_stuck": 0.0547945205479452,
+        "stuck": false
+      },
+      "e86r0-off-1": {
+        "host_sum_med_us": 635.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r0-off-2": {
+        "host_sum_med_us": 643.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      }
+    },
+    "stuck_legs": [],
+    "excluded_legs": [],
+    "n_legs": 8,
+    "distinct_work_sequences": 1,
+    "bit_exact_work": true,
+    "pairing_key": "round index",
+    "statistic": "median of paired per-round differences",
+    "ci": "2.5/97.5 percentile of 4000 bootstrap resamples of the median",
+    "arms": {
+      "dense": {
+        "median_round_us": -182.5,
+        "ci_lo_us": -240.0,
+        "ci_hi_us": -122.0,
+        "mean_round_us": -907.4487179487179,
+        "median_vpipe_us": -61.0,
+        "pairs": 312,
+        "pct_of_round": -0.10967811726243419,
+        "pct_ci_lo": -0.14423423639991345,
+        "pct_ci_hi": -0.07331907016995601
+      },
+      "front": {
+        "median_round_us": -95.0,
+        "ci_lo_us": -122.0,
+        "ci_hi_us": -46.0,
+        "mean_round_us": -618.4551282051282,
+        "median_vpipe_us": 12.0,
+        "pairs": 312,
+        "pct_of_round": -0.05709271857496574,
+        "pct_ci_lo": -0.07331907016995601,
+        "pct_ci_hi": -0.027644895309983413
+      },
+      "off": {
+        "median_round_us": 2749.5,
+        "ci_lo_us": 2695.0,
+        "ci_hi_us": 2797.0,
+        "mean_round_us": 2036.0833333333333,
+        "median_vpipe_us": 2838.0,
+        "pairs": 312,
+        "pct_of_round": 1.6523834707565084,
+        "pct_ci_lo": 1.6196302795740283,
+        "pct_ci_hi": 1.6809298300439912
+      }
+    },
+    "null": {
+      "median_round_us": 51.0,
+      "ci_lo_us": -46.0,
+      "ci_hi_us": 87.0,
+      "mean_round_us": -164.24358974358975,
+      "pairs": 78,
+      "position_balanced": false,
+      "pct_of_round": 0.03064977523498161
+    },
+    "reference_median_round_us": 166396.0
+  },
+  "paired_all_legs": {
+    "prefix": "e86r0",
+    "reference_arm": "default",
+    "leg_host_state": {
+      "e86r0-default-1": {
+        "host_sum_med_us": 675.0,
+        "frac_rounds_stuck": 0.2876712328767123,
+        "stuck": false
+      },
+      "e86r0-default-2": {
+        "host_sum_med_us": 649.0,
+        "frac_rounds_stuck": 0.1506849315068493,
+        "stuck": false
+      },
+      "e86r0-dense-1": {
+        "host_sum_med_us": 637.0,
+        "frac_rounds_stuck": 0.0273972602739726,
+        "stuck": false
+      },
+      "e86r0-dense-2": {
+        "host_sum_med_us": 639.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r0-front-1": {
+        "host_sum_med_us": 635.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r0-front-2": {
+        "host_sum_med_us": 675.0,
+        "frac_rounds_stuck": 0.0547945205479452,
+        "stuck": false
+      },
+      "e86r0-off-1": {
+        "host_sum_med_us": 635.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r0-off-2": {
+        "host_sum_med_us": 643.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      }
+    },
+    "stuck_legs": [],
+    "excluded_legs": [],
     "n_legs": 8,
     "distinct_work_sequences": 1,
     "bit_exact_work": true,
@@ -173,7 +316,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12286088.0,
       "position": 0,
-      "host_phase_sum_us_med": 828.0
+      "host_phase_sum_us_med": 828.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.2876712328767123
     },
     {
       "tag": "e86r0-off-1",
@@ -235,7 +380,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12451517.0,
       "position": 1,
-      "host_phase_sum_us_med": 635.0
+      "host_phase_sum_us_med": 635.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0
     },
     {
       "tag": "e86r0-front-1",
@@ -297,7 +444,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12229533.0,
       "position": 2,
-      "host_phase_sum_us_med": 636.0
+      "host_phase_sum_us_med": 636.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0
     },
     {
       "tag": "e86r0-dense-1",
@@ -359,7 +508,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12223500.0,
       "position": 3,
-      "host_phase_sum_us_med": 637.5
+      "host_phase_sum_us_med": 637.5,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0273972602739726
     },
     {
       "tag": "e86r0-dense-2",
@@ -421,7 +572,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12219925.0,
       "position": 4,
-      "host_phase_sum_us_med": 639.5
+      "host_phase_sum_us_med": 639.5,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0
     },
     {
       "tag": "e86r0-front-2",
@@ -483,7 +636,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12258975.0,
       "position": 5,
-      "host_phase_sum_us_med": 677.5
+      "host_phase_sum_us_med": 677.5,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0547945205479452
     },
     {
       "tag": "e86r0-off-2",
@@ -545,7 +700,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12451099.0,
       "position": 6,
-      "host_phase_sum_us_med": 644.5
+      "host_phase_sum_us_med": 644.5,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0
     },
     {
       "tag": "e86r0-default-2",
@@ -607,7 +764,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12298899.0,
       "position": 7,
-      "host_phase_sum_us_med": 654.5
+      "host_phase_sum_us_med": 654.5,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.1506849315068493
     }
   ],
   "summary": {

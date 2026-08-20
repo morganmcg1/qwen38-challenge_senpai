@@ -13,6 +13,209 @@
   "paired": {
     "prefix": "e86r1",
     "reference_arm": "default",
+    "leg_host_state": {
+      "e86r1-blk2-1": {
+        "host_sum_med_us": 637.0,
+        "frac_rounds_stuck": 0.0273972602739726,
+        "stuck": false
+      },
+      "e86r1-blk2-2": {
+        "host_sum_med_us": 635.0,
+        "frac_rounds_stuck": 0.0410958904109589,
+        "stuck": false
+      },
+      "e86r1-blocks-1": {
+        "host_sum_med_us": 640.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r1-blocks-2": {
+        "host_sum_med_us": 656.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r1-default-1": {
+        "host_sum_med_us": 1118.0,
+        "frac_rounds_stuck": 0.3835616438356164,
+        "stuck": false
+      },
+      "e86r1-default-2": {
+        "host_sum_med_us": 3231.0,
+        "frac_rounds_stuck": 1.0,
+        "stuck": true
+      },
+      "e86r1-dense-1": {
+        "host_sum_med_us": 655.0,
+        "frac_rounds_stuck": 0.0136986301369863,
+        "stuck": false
+      },
+      "e86r1-dense-2": {
+        "host_sum_med_us": 648.0,
+        "frac_rounds_stuck": 0.0136986301369863,
+        "stuck": false
+      },
+      "e86r1-frontw-1": {
+        "host_sum_med_us": 664.0,
+        "frac_rounds_stuck": 0.1232876712328767,
+        "stuck": false
+      },
+      "e86r1-frontw-2": {
+        "host_sum_med_us": 649.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r1-stride2-1": {
+        "host_sum_med_us": 649.0,
+        "frac_rounds_stuck": 0.0273972602739726,
+        "stuck": false
+      },
+      "e86r1-stride2-2": {
+        "host_sum_med_us": 647.0,
+        "frac_rounds_stuck": 0.0136986301369863,
+        "stuck": false
+      }
+    },
+    "stuck_legs": [
+      "e86r1-default-2"
+    ],
+    "excluded_legs": [
+      "e86r1-default-2"
+    ],
+    "n_legs": 11,
+    "distinct_work_sequences": 1,
+    "bit_exact_work": true,
+    "pairing_key": "round index",
+    "statistic": "median of paired per-round differences",
+    "ci": "2.5/97.5 percentile of 4000 bootstrap resamples of the median",
+    "arms": {
+      "blk2": {
+        "median_round_us": -223.5,
+        "ci_lo_us": -557.5,
+        "ci_hi_us": -44.0,
+        "mean_round_us": -645.8846153846154,
+        "median_vpipe_us": 58.5,
+        "pairs": 156,
+        "pct_of_round": -0.13414963536508506,
+        "pct_ci_lo": -0.3346238108099997,
+        "pct_ci_hi": -0.026409771615497735
+      },
+      "blocks": {
+        "median_round_us": -186.5,
+        "ci_lo_us": -862.0,
+        "ci_hi_us": -128.0,
+        "mean_round_us": -822.8589743589744,
+        "median_vpipe_us": -51.0,
+        "pairs": 156,
+        "pct_of_round": -0.11194141832478018,
+        "pct_ci_lo": -0.5173914348308873,
+        "pct_ci_hi": -0.07682842651781159
+      },
+      "dense": {
+        "median_round_us": -226.5,
+        "ci_lo_us": -360.0,
+        "ci_hi_us": -120.0,
+        "mean_round_us": -852.2692307692307,
+        "median_vpipe_us": -69.5,
+        "pairs": 156,
+        "pct_of_round": -0.1359503016115963,
+        "pct_ci_lo": -0.21607994958134508,
+        "pct_ci_hi": -0.07202664986044836
+      },
+      "frontw": {
+        "median_round_us": -83.5,
+        "ci_lo_us": -211.0,
+        "ci_hi_us": -43.5,
+        "mean_round_us": -625.5384615384615,
+        "median_vpipe_us": -10.5,
+        "pairs": 156,
+        "pct_of_round": -0.05011854386122866,
+        "pct_ci_lo": -0.12664685933795503,
+        "pct_ci_hi": -0.02610966057441253
+      },
+      "stride2": {
+        "median_round_us": -241.5,
+        "ci_lo_us": -593.0,
+        "ci_hi_us": -98.5,
+        "mean_round_us": -852.4294871794872,
+        "median_vpipe_us": -42.5,
+        "pairs": 156,
+        "pct_of_round": -0.14495363284415233,
+        "pct_ci_lo": -0.355931694727049,
+        "pct_ci_hi": -0.0591218750937847
+      }
+    },
+    "null": null,
+    "reference_median_round_us": 166605.0
+  },
+  "paired_all_legs": {
+    "prefix": "e86r1",
+    "reference_arm": "default",
+    "leg_host_state": {
+      "e86r1-blk2-1": {
+        "host_sum_med_us": 637.0,
+        "frac_rounds_stuck": 0.0273972602739726,
+        "stuck": false
+      },
+      "e86r1-blk2-2": {
+        "host_sum_med_us": 635.0,
+        "frac_rounds_stuck": 0.0410958904109589,
+        "stuck": false
+      },
+      "e86r1-blocks-1": {
+        "host_sum_med_us": 640.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r1-blocks-2": {
+        "host_sum_med_us": 656.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r1-default-1": {
+        "host_sum_med_us": 1118.0,
+        "frac_rounds_stuck": 0.3835616438356164,
+        "stuck": false
+      },
+      "e86r1-default-2": {
+        "host_sum_med_us": 3231.0,
+        "frac_rounds_stuck": 1.0,
+        "stuck": true
+      },
+      "e86r1-dense-1": {
+        "host_sum_med_us": 655.0,
+        "frac_rounds_stuck": 0.0136986301369863,
+        "stuck": false
+      },
+      "e86r1-dense-2": {
+        "host_sum_med_us": 648.0,
+        "frac_rounds_stuck": 0.0136986301369863,
+        "stuck": false
+      },
+      "e86r1-frontw-1": {
+        "host_sum_med_us": 664.0,
+        "frac_rounds_stuck": 0.1232876712328767,
+        "stuck": false
+      },
+      "e86r1-frontw-2": {
+        "host_sum_med_us": 649.0,
+        "frac_rounds_stuck": 0.0,
+        "stuck": false
+      },
+      "e86r1-stride2-1": {
+        "host_sum_med_us": 649.0,
+        "frac_rounds_stuck": 0.0273972602739726,
+        "stuck": false
+      },
+      "e86r1-stride2-2": {
+        "host_sum_med_us": 647.0,
+        "frac_rounds_stuck": 0.0136986301369863,
+        "stuck": false
+      }
+    },
+    "stuck_legs": [
+      "e86r1-default-2"
+    ],
+    "excluded_legs": [],
     "n_legs": 12,
     "distinct_work_sequences": 1,
     "bit_exact_work": true,
@@ -162,7 +365,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12291246.0,
       "position": 0,
-      "host_phase_sum_us_med": 1146.0
+      "host_phase_sum_us_med": 1146.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.3835616438356164
     },
     {
       "tag": "e86r1-dense-1",
@@ -224,7 +429,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12221930.0,
       "position": 1,
-      "host_phase_sum_us_med": 655.5
+      "host_phase_sum_us_med": 655.5,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0136986301369863
     },
     {
       "tag": "e86r1-blocks-1",
@@ -286,7 +493,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12226034.0,
       "position": 2,
-      "host_phase_sum_us_med": 640.0
+      "host_phase_sum_us_med": 640.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0
     },
     {
       "tag": "e86r1-blk2-1",
@@ -348,7 +557,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12242346.0,
       "position": 3,
-      "host_phase_sum_us_med": 637.0
+      "host_phase_sum_us_med": 637.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0273972602739726
     },
     {
       "tag": "e86r1-stride2-1",
@@ -410,7 +621,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12227537.0,
       "position": 4,
-      "host_phase_sum_us_med": 649.0
+      "host_phase_sum_us_med": 649.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0273972602739726
     },
     {
       "tag": "e86r1-frontw-1",
@@ -472,7 +685,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12252633.0,
       "position": 5,
-      "host_phase_sum_us_med": 689.5
+      "host_phase_sum_us_med": 689.5,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.1232876712328767
     },
     {
       "tag": "e86r1-frontw-2",
@@ -534,7 +749,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12232275.0,
       "position": 6,
-      "host_phase_sum_us_med": 655.0
+      "host_phase_sum_us_med": 655.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0
     },
     {
       "tag": "e86r1-stride2-2",
@@ -596,7 +813,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12221976.0,
       "position": 7,
-      "host_phase_sum_us_med": 647.5
+      "host_phase_sum_us_med": 647.5,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0136986301369863
     },
     {
       "tag": "e86r1-blk2-2",
@@ -658,7 +877,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12239388.0,
       "position": 8,
-      "host_phase_sum_us_med": 635.0
+      "host_phase_sum_us_med": 635.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0410958904109589
     },
     {
       "tag": "e86r1-blocks-2",
@@ -720,7 +941,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12228092.0,
       "position": 9,
-      "host_phase_sum_us_med": 661.0
+      "host_phase_sum_us_med": 661.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0
     },
     {
       "tag": "e86r1-dense-2",
@@ -782,7 +1005,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12227608.0,
       "position": 10,
-      "host_phase_sum_us_med": 648.0
+      "host_phase_sum_us_med": 648.0,
+      "host_state_stuck": false,
+      "frac_rounds_host_stuck": 0.0136986301369863
     },
     {
       "tag": "e86r1-default-2",
@@ -844,7 +1069,9 @@
       "mean_acc": 5.576923076923077,
       "round_us_total": 12416019.0,
       "position": 11,
-      "host_phase_sum_us_med": 3228.0
+      "host_phase_sum_us_med": 3228.0,
+      "host_state_stuck": true,
+      "frac_rounds_host_stuck": 1.0
     }
   ],
   "summary": {

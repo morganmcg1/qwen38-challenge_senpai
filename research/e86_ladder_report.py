@@ -26,10 +26,8 @@ import re
 import statistics as st
 from pathlib import Path
 
-from e86_paired import paired_summary, render as render_paired, rounds as trace_rounds
-
-HOST_PHASES = ("d_pre_us", "d_flush_us", "d_head1_us", "d_submit1_us",
-               "d_chain_us", "readout_us", "commit_us", "upkeep_us")
+from e86_paired import (HOST_PHASES, leg_states, paired_summary,
+                        render as render_paired, rounds as trace_rounds)
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "research" / "out"
@@ -137,10 +135,13 @@ def main() -> None:
     # Median of the per-round host sum, not the sum of per-phase medians: a
     # contaminated leg spikes different phases in different rounds, and the
     # sum of medians hides that.
+    states = leg_states(args.prefix)
     for i, r in enumerate(legs):
         r["position"] = i
         r["host_phase_sum_us_med"] = st.median(
             [sum(x[k] for k in HOST_PHASES) for x in trace_rounds(r["tag"])])
+        r["host_state_stuck"] = states[r["tag"]]["stuck"]
+        r["frac_rounds_host_stuck"] = states[r["tag"]]["frac_rounds_stuck"]
 
     arms: dict[str, list[dict]] = {}
     for r in legs:
@@ -242,10 +243,13 @@ def main() -> None:
               f"T={r['gpu_temp_entry_c']:.1f}->{r['gpu_temp_exit_c']:.1f}C "
               f"matched={r['all_tokens_matched']}")
 
-    # Leg-total deltas above are contaminated by host jitter and by leg
-    # position. The paired per-round comparison below is the decision
-    # instrument; see e86_paired.paired_summary for the method.
-    paired = paired_summary(args.prefix, ref)
+    # Leg-total deltas above are contaminated by host jitter and by legs whose
+    # host thread never leaves its slow start state. The paired per-round
+    # comparison over the surviving legs is the decision instrument; see
+    # e86_paired.paired_summary for the method.
+    stuck = tuple(t for t, s in leg_states(args.prefix).items() if s["stuck"])
+    paired_all = paired_summary(args.prefix, ref)
+    paired = paired_summary(args.prefix, ref, stuck) if stuck else paired_all
     print("\npaired per-round comparison (decision instrument):")
     render_paired(paired)
 
@@ -262,6 +266,7 @@ def main() -> None:
         "bit_exact_work": bit_exact_work,
         "decomposition": decomp,
         "paired": paired,
+        "paired_all_legs": paired_all,
         "leg_order": [r["tag"] for r in legs],
         "legs": legs,
         "summary": summary,

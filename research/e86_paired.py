@@ -54,21 +54,50 @@ def bootstrap_ci(values: list[float], stat, n: int = 4000, seed: int = 0):
     return draws[int(0.025 * n)], draws[int(0.975 * n)]
 
 
-def load_legs(prefix: str) -> dict[str, list[list[dict]]]:
+HOST_PHASES = ("d_pre_us", "d_flush_us", "d_head1_us", "d_submit1_us",
+               "d_chain_us", "readout_us", "commit_us", "upkeep_us")
+STUCK_US = 1500
+WARMUP_ROUNDS = 5
+
+
+def host_state(leg: list[dict]) -> dict:
+    """Classify the leg's host-thread state after the warm-up rounds.
+
+    Every leg starts slow: rounds 1-3 spend 800-5400 us in host phases, then
+    almost every leg settles at about 630 us and stays there. A minority never
+    settle and hold about 3000 us for the whole leg. The state is binary per
+    leg, it is worth up to 0.4 % of leg time, and it has nothing to do with
+    the ladder, so a leg that stays stuck cannot serve as a reference.
+    """
+    h = [sum(r[k] for k in HOST_PHASES) for r in leg[WARMUP_ROUNDS:]]
+    frac = sum(x > STUCK_US for x in h) / len(h)
+    return {"host_sum_med_us": st.median(h), "frac_rounds_stuck": frac,
+            "stuck": frac > 0.5}
+
+
+def load_legs(prefix: str, exclude: tuple[str, ...] = ()) -> dict[str, list[list[dict]]]:
     """Arm name -> list of legs, each a list of round records, chronological.
 
     A leg tag carries its repeat index, and the session script hands out those
     indices in run order, so tag order inside one arm is also session order.
     """
     tags = sorted(p.name for p in OUT.iterdir()
-                  if p.name.startswith(prefix + "-") and (p / "trace.txt").exists())
+                  if p.name.startswith(prefix + "-") and (p / "trace.txt").exists()
+                  and p.name not in exclude)
     legs: dict[str, list[list[dict]]] = {}
     for t in tags:
         legs.setdefault(t[len(prefix) + 1:].rpartition("-")[0], []).append(rounds(t))
     return legs
 
 
-def paired_summary(prefix: str, ref: str = "default") -> dict:
+def leg_states(prefix: str) -> dict[str, dict]:
+    tags = sorted(p.name for p in OUT.iterdir()
+                  if p.name.startswith(prefix + "-") and (p / "trace.txt").exists())
+    return {t: host_state(rounds(t)) for t in tags}
+
+
+def paired_summary(prefix: str, ref: str = "default",
+                   exclude: tuple[str, ...] = ()) -> dict:
     """Paired per-round comparison of every arm against `ref`.
 
     Pairing key: the round index. Valid only because the change is bit-exact,
@@ -87,11 +116,15 @@ def paired_summary(prefix: str, ref: str = "default") -> dict:
     two reference legs at the two ends of a palindrome measures drift and
     rejects true effects.
     """
-    legs = load_legs(prefix)
+    states = leg_states(prefix)
+    legs = load_legs(prefix, exclude)
     seqs = {tuple((r["d"], r["acc"]) for r in leg) for arm in legs.values() for leg in arm}
     out = {
         "prefix": prefix,
         "reference_arm": ref,
+        "leg_host_state": states,
+        "stuck_legs": sorted(t for t, s in states.items() if s["stuck"]),
+        "excluded_legs": sorted(exclude),
         "n_legs": sum(len(v) for v in legs.values()),
         "distinct_work_sequences": len(seqs),
         "bit_exact_work": len(seqs) == 1,
@@ -140,6 +173,12 @@ def paired_summary(prefix: str, ref: str = "default") -> dict:
 
 
 def render(res: dict) -> None:
+    print(f"leg host state (post-warmup median us, fraction of rounds > {STUCK_US} us):")
+    for t, s in res["leg_host_state"].items():
+        mark = "  STUCK" if s["stuck"] else ""
+        mark += "  EXCLUDED" if t in res["excluded_legs"] else ""
+        print(f"  {t:<26}{s['host_sum_med_us']:>8.0f}{s['frac_rounds_stuck']:>8.2f}{mark}")
+    print()
     print(f"distinct (d, acc) round sequences over {res['n_legs']} legs: "
           f"{res['distinct_work_sequences']}")
     print(f"every arm replayed the identical work sequence: {res['bit_exact_work']}\n")
@@ -174,8 +213,14 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("prefix")
     ap.add_argument("--ref", default="default")
+    ap.add_argument("--exclude", action="append", default=[], metavar="TAG")
+    ap.add_argument("--drop-stuck", action="store_true",
+                    help="exclude every leg whose host thread never left the slow state")
     args = ap.parse_args()
-    render(paired_summary(args.prefix, args.ref))
+    exclude = list(args.exclude)
+    if args.drop_stuck:
+        exclude += [t for t, s in leg_states(args.prefix).items() if s["stuck"]]
+    render(paired_summary(args.prefix, args.ref, tuple(exclude)))
 
 
 if __name__ == "__main__":
