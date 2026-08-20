@@ -12,7 +12,7 @@
       "derived_compact_draft_head_bytes": 283207680,
       "traffic_bytes_per_draft": 1132606464,
       "head_stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q4": 283207680
       },
       "head_stream_bytes": 1132606464,
@@ -160,11 +160,11 @@
       "derived_compact_draft_head_bytes": 0,
       "traffic_bytes_per_draft": 427738112,
       "head_stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
-      "head_stream_bytes": 396268544,
+      "head_stream_bytes": 427738112,
       "groups": {
         "draft_lm_head": {
           "bytes": 157337600,
@@ -524,11 +524,11 @@
       "derived_compact_draft_head_bytes": 0,
       "traffic_bytes_per_draft": 427738112,
       "head_stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
-      "head_stream_bytes": 396268544,
+      "head_stream_bytes": 427738112,
       "groups": {
         "draft_lm_head": {
           "bytes": 157337600,
@@ -888,11 +888,11 @@
       "derived_compact_draft_head_bytes": 0,
       "traffic_bytes_per_draft": 427738112,
       "head_stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
-      "head_stream_bytes": 396268544,
+      "head_stream_bytes": 427738112,
       "groups": {
         "draft_lm_head": {
           "bytes": 157337600,
@@ -1252,7 +1252,7 @@
       "derived_compact_draft_head_bytes": 0,
       "traffic_bytes_per_draft": 1006736384,
       "head_stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q2": 157337600
       },
       "head_stream_bytes": 1006736384,
@@ -1432,7 +1432,7 @@
       "derived_compact_draft_head_bytes": 0,
       "traffic_bytes_per_draft": 1006736384,
       "head_stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q2": 157337600
       },
       "head_stream_bytes": 1006736384,

@@ -73,7 +73,9 @@ def main() -> None:
         print(f"{r['law'].ljust(44)}{r['gb_per_s']:8.1f}{r['fixed_ms']:10.3f}"
               f"{r['predicted_ms']:11.3f}{err:+8.1f}%")
 
-    pf = COST["precision_fit"]
+    pf = COST.get("precision_fit")
+    if not pf:
+        return
     print(f"\nprecision-class model: fitted on all three arms,"
           f" dof={pf['degrees_of_freedom']}, so it makes no out-of-sample"
           " prediction here.")

@@ -79,10 +79,13 @@ def stream_bytes_by_precision(tensors: dict, derived: int) -> dict:
     byte carries four times as many values to unpack, so the classes have to be
     priced separately.
 
-    `precision_islands` is excluded: `installExactQKVRows`
-    (`Qwen35.swift:2999-3008`) writes those rows into the *target's*
-    `Qwen35Attention`, so they are read by the 16 full-attention layers of the
-    target and never by the head's draft step.
+    `precision_islands` is INCLUDED, and the enforcing source says why. The
+    side-channel in `Qwen35TextModel.sanitize` installs the island rows on
+    `mtp?.layers.first` and its own comment states "The target model never sees
+    or consumes this artifact". `qkv(x)` then calls
+    `replaceExactRows(y, input: x, kvOnly: false)`, which multiplies the whole
+    concatenated 3072x5120 BF16 correction against the draft hidden state on
+    every draft step. These are head bytes, read at head cadence.
     """
     quant: dict[str, dict[str, dict]] = {}
     for name, t in tensors.items():
@@ -93,8 +96,6 @@ def stream_bytes_by_precision(tensors: dict, derived: int) -> dict:
 
     classes: dict[str, int] = {}
     for name, t in tensors.items():
-        if group_of(name) == "precision_islands":
-            continue
         module = next((name[: -len(p)] for p in QUANT_PARTS if name.endswith(p)), None)
         parts = quant.get(module, {}) if module else {}
         w, s = parts.get("weight"), parts.get("scales")
@@ -102,7 +103,10 @@ def stream_bytes_by_precision(tensors: dict, derived: int) -> dict:
             bits = w["shape"][1] * 32 // (s["shape"][1] * 64)
             label = f"q{bits}"
         else:
-            label = t["dtype"].lower()
+            # Unpacked reads are one class: what separates the classes is
+            # how many values a delivered byte must be expanded into, and a
+            # BF16 weight and an I32 index are both expanded into one.
+            label = "dense"
         classes[label] = classes.get(label, 0) + t["bytes"]
 
     if derived:
@@ -229,7 +233,7 @@ def main() -> None:
               f"{e['traffic_bytes_per_draft']:>18,}  {e['ships_draft_lm_head']}")
 
     classes = sorted({c for e in report["arms"].values() for c in e["head_stream_bytes_by_precision"]})
-    print("\n=== head stream bytes per draft by precision class (islands excluded) ===")
+    print("\n=== head stream bytes per draft by precision class (islands included) ===")
     print("arm".ljust(13) + "".join(c.rjust(18) for c in classes) + "total".rjust(18))
     for arm, e in report["arms"].items():
         s = e["head_stream_bytes_by_precision"]

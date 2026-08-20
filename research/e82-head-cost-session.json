@@ -48,7 +48,7 @@
       "tensor_bytes": 849398784,
       "traffic_bytes": 1132606464,
       "stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q4": 283207680
       },
       "bytes_per_ms_head_step": 178057025.70552632
@@ -101,7 +101,7 @@
       "tensor_bytes": 1006736384,
       "traffic_bytes": 1006736384,
       "stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q2": 157337600
       },
       "bytes_per_ms_head_step": 217822852.83100516
@@ -154,7 +154,7 @@
       "tensor_bytes": 427738112,
       "traffic_bytes": 427738112,
       "stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
@@ -208,7 +208,7 @@
       "tensor_bytes": 427738112,
       "traffic_bytes": 427738112,
       "stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
@@ -262,7 +262,7 @@
       "tensor_bytes": 427738112,
       "traffic_bytes": 427738112,
       "stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
@@ -316,7 +316,7 @@
       "tensor_bytes": 427738112,
       "traffic_bytes": 427738112,
       "stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
@@ -370,7 +370,7 @@
       "tensor_bytes": 1006736384,
       "traffic_bytes": 1006736384,
       "stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q2": 157337600
       },
       "bytes_per_ms_head_step": 217903254.81010798
@@ -423,7 +423,7 @@
       "tensor_bytes": 849398784,
       "traffic_bytes": 1132606464,
       "stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q4": 283207680
       },
       "bytes_per_ms_head_step": 178253200.91288266
@@ -444,7 +444,7 @@
       "tensor_bytes": 849398784,
       "traffic_bytes": 1132606464,
       "stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q4": 283207680
       },
       "artifact_bytes_per_ms": 178155059.3047035,
@@ -470,7 +470,7 @@
       "tensor_bytes": 1006736384,
       "traffic_bytes": 1006736384,
       "stream_bytes_by_precision": {
-        "bf16": 849398784,
+        "dense": 849398784,
         "q2": 157337600
       },
       "artifact_bytes_per_ms": 217863046.40250412,
@@ -496,7 +496,7 @@
       "tensor_bytes": 427738112,
       "traffic_bytes": 427738112,
       "stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
@@ -523,7 +523,7 @@
       "tensor_bytes": 427738112,
       "traffic_bytes": 427738112,
       "stream_bytes_by_precision": {
-        "bf16": 52224,
+        "dense": 31521792,
         "q2": 157337600,
         "q4": 238878720
       },
@@ -615,48 +615,48 @@
   },
   "precision_fit": {
     "classes": [
-      "bf16",
+      "dense",
       "q2",
       "q4"
     ],
     "distinct_byte_vectors": 3,
     "degrees_of_freedom": 0,
     "effective_gb_per_s": {
-      "bf16": 249.99364171987406,
-      "q2": 128.61963105950215,
-      "q4": 206.7106062667676
+      "dense": 244.96922976631691,
+      "q2": 136.38946883999208,
+      "q4": 217.7882812066078
     },
     "ms_per_byte": {
-      "bf16": 4.000101735069455e-09,
-      "q2": 7.77486291760065e-09,
-      "q4": 4.837681133349604e-09
+      "dense": 4.0821453410860145e-09,
+      "q2": 7.331944383280568e-09,
+      "q4": 4.591615280949559e-09
     },
     "residuals": {
       "pinned": {
         "measured_ms": 4.7677499999999995,
-        "predicted_ms": 4.767749999999997,
-        "residual_ms": 2.6645352591003757e-15,
-        "residual_frac": 5.588663959100993e-16
+        "predicted_ms": 4.767749999999999,
+        "residual_ms": 8.881784197001252e-16,
+        "residual_frac": 1.8628879863669976e-16
       },
       "master-bf16": {
         "measured_ms": 4.620959821428571,
-        "predicted_ms": 4.620959821428569,
-        "residual_ms": 2.6645352591003757e-15,
-        "residual_frac": 5.766194388326522e-16
+        "predicted_ms": 4.6209598214285705,
+        "residual_ms": 8.881784197001252e-16,
+        "residual_frac": 1.9220647961088407e-16
       },
       "qat-q4": {
         "measured_ms": 2.3835625,
-        "predicted_ms": 2.3791062499999986,
-        "residual_ms": 0.004456250000001383,
-        "residual_frac": 0.0018695754778829516
+        "predicted_ms": 2.379106249999998,
+        "residual_ms": 0.004456250000001827,
+        "residual_frac": 0.0018695754778831378
       },
       "declared": {
         "measured_ms": 2.37465,
-        "predicted_ms": 2.3791062499999986,
-        "residual_ms": -0.004456249999998718,
-        "residual_frac": -0.0018765923399232385
+        "predicted_ms": 2.379106249999998,
+        "residual_ms": -0.004456249999998274,
+        "residual_frac": -0.0018765923399230516
       }
     },
-    "max_abs_residual_frac": 0.0018765923399232385
+    "max_abs_residual_frac": 0.0018765923399230516
   }
 }
