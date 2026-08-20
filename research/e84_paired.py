@@ -25,6 +25,22 @@ spikes, E3 had the lowest RMSE of every estimator tried, and its
 round-cluster bootstrap CI covered the truth 92-97 % of the time against a
 nominal 95 %. The naive leg total had 2-3x the RMSE of E3.
 
+Position-endpoint rule
+----------------------
+E86 measured that the first and last legs of a session carry inflated host
+phases (1146 and 3228 us/round against 635-690 us/round for interior legs).
+A palindrome cancels linear drift, but it does not cancel that endpoint
+premium: it places both extremes on whichever arm sits at position 1 and
+position N. Never give the reference arm both extremes, because every
+arm-minus-reference number then becomes an upper bound instead of an
+estimate. Add a throwaway arm at position 0 and at the last position, and
+start the palindrome at position 1. Arm-to-arm contrasts inside the
+palindrome stay position-balanced either way.
+
+The null control below pairs the two reference legs. It prices leg-position
+drift and leg noise. It does not price the endpoint premium, because both
+of its legs are endpoints.
+
 harness=local for every number produced here.
 """
 
@@ -366,14 +382,22 @@ def main() -> int:
     print(
         "\nE3 = mean of the two symmetric per-pair medians (primary). "
         "E1 = median of leg-averaged deltas (cross-check). "
-        "legtotal = naive sum over the same traced legs."
+        "legtotal = naive sum over the same traced legs.\n"
+        "The percentage columns are shares of the instrumented round window, "
+        "not of the leg. Section 6 converts the us to seconds per token."
     )
 
-    # 3. Null control. The two base legs sit at the extreme positions, so this
-    # pair is deliberately NOT drift-cancelled: it prices leg-position drift
-    # plus leg noise, the error the paired design is meant to remove.
-    print("\n## 3. Null control: base leg q8 minus base leg q1  (harness=local)")
-    q1, q8 = sel[order[0][0]], sel[order[-1][0]]
+    # 3. Null control. The two reference legs sit at the extreme positions, so
+    # this pair is deliberately NOT drift-cancelled: it prices leg-position
+    # drift plus leg noise, the error the paired design is meant to remove.
+    # It does not price the endpoint premium itself, because both legs of the
+    # pair are endpoints.
+    first_tag, last_tag = order[0][0], order[-1][0]
+    print(
+        f"\n## 3. Null control: last reference leg {last_tag} minus "
+        f"first reference leg {first_tag}  (harness=local)"
+    )
+    q1, q8 = sel[first_tag], sel[last_tag]
     dnull = [b - a for a, b in zip(field_of(q1, "round_us"), field_of(q8, "round_us"))]
     nmed = statistics.median(dnull)
     nlo, nhi = e3_ci(dnull, dnull, rng, args.reps)
@@ -412,11 +436,15 @@ def main() -> int:
         f"{n_rounds} rounds = {tpr:.4f} tokens/round)"
     )
     print(
-        f"traced   base mean round = {traced_base_round_s * 1000:.3f} ms\n"
-        f"untraced base mean round = {untraced_base_round_s * 1000:.3f} ms "
+        f"instrumented round window = {traced_base_round_s * 1000:.3f} ms "
+        "(sum of the round_us phases)\n"
+        f"leg wall per round        = {untraced_base_round_s * 1000:.3f} ms "
         f"(from {args.base_abs:.9f} s/token)\n"
-        f"tracing overhead         = {overhead:+.3f} %  "
-        "-> percentages under trace are diluted by this factor; the us are not."
+        f"instrumented coverage     = {100.0 + overhead:.1f} %  "
+        "-> round_us does not span the whole decode leg, so a percentage of "
+        "the instrumented round is not a percentage of the leg. The us are "
+        "unaffected, and the conversion below divides them by tokens per "
+        "round only."
     )
     for r in results:
         d = r["e3_us"] * 1e-6 / tpr
