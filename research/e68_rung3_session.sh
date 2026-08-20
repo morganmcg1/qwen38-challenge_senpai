@@ -25,6 +25,15 @@ export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-sh
 export E68_BASE_SHA="${E68_BASE_SHA:-$(git rev-parse origin/senpai/qwen38-mtp-r1)}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-e68-schedule-against-the-new-cost-curve}"
 
+# Which verify-forward normaliser `pbfit` divides the measured width steps by.
+# The rung-1 artifact carries a sweep, so the arm must name one rather than
+# guess. 0.060300 is the fit closest to the measured C(1) = 60.372 ms, which
+# keeps numerator and denominator inside the same measurement: the in-situ
+# curve is a near constant 0.50 of the isolated one at every width, so that
+# factor cancels only when both come from the same source. The depth decision
+# is invariant across the whole swept range anyway.
+export E68_VERIFY_FORWARD_KEY="${E68_VERIFY_FORWARD_KEY:-0.060300}"
+
 # Ranked command-buffer geometry. Unlike a rung-1 cell leg, a rung-3 leg starts
 # the MTP worker, so `DARKBLOOM_STARTUP_MEMORY_PROFILE=full` is load bearing:
 # without it the worker force-sets 128 MiB / 64 ops on this 48 GiB host and the
