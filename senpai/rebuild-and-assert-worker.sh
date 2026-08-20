@@ -22,14 +22,37 @@
 # Two builds of the same tree produced different digests, and two builds of
 # different trees produced the same one. Assert by string content instead.
 #
+# CHOOSE THE WITNESS THAT MATCHES THE LANGUAGE OF YOUR ARM.
+#
+# `--require` / `--forbid` read the STRING table. That is correct for a Metal
+# JIT arm, because the runtime-effective source of the `quantized` family is a
+# real string literal compiled into the worker.
+#
+# `--require-symbol` / `--forbid-symbol` read the SYMBOL table through `nm -a`.
+# That is the only correct witness for a SWIFT arm. A Swift function name
+# reaches the binary mangled in the symbol table and never appears in the
+# string table, so `strings` reports 0 for a function that is certainly
+# compiled in. Measured on this campaign's worker (qwen-alphonse, PR #68):
+#
+#   warmAllDepthShapes                   strings=0   nm -a=22
+#   snapshotScheduleSignal               strings=0
+#   linearTopTwoRows                     strings=0
+#
+# Using `--require` on a Swift identifier therefore fails a correct build, and
+# using `--forbid` on one passes every build unconditionally. The second error
+# is the dangerous one: it is a guard that cannot fail.
+#
 # USAGE
 #   senpai/rebuild-and-assert-worker.sh \
 #       --require '<T, 5, 5, true>' --require '<T, 6, 6, true>' \
 #       --forbid  '<T, 5, 3, true>' --forbid  '<T, 6, 3, true>'
 #
+#   senpai/rebuild-and-assert-worker.sh \
+#       --require-symbol warmTargetLaterWindowSDPA
+#
 # Run it BEFORE and AFTER every timed leg and compare the reported mtime and
-# sha256. Exit status is 0 only when every --require string is present at least
-# once and every --forbid string is absent.
+# sha256. Exit status is 0 only when every required needle is present at least
+# once and every forbidden needle is absent.
 
 set -u
 
@@ -40,19 +63,25 @@ WORKER=".build-worker/release/mlxfast-runtime-worker"
 SKIP_BUILD=0
 REQUIRE=()
 FORBID=()
+REQUIRE_SYM=()
+FORBID_SYM=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --require) REQUIRE+=("$2"); shift 2 ;;
     --forbid)  FORBID+=("$2");  shift 2 ;;
+    --require-symbol) REQUIRE_SYM+=("$2"); shift 2 ;;
+    --forbid-symbol)  FORBID_SYM+=("$2");  shift 2 ;;
     --no-build) SKIP_BUILD=1; shift ;;
     --worker)  WORKER="$2"; shift 2 ;;
     *) echo "rebuild-and-assert-worker: unknown argument '$1'" >&2; exit 2 ;;
   esac
 done
 
-if [ "${#REQUIRE[@]}" -eq 0 ] && [ "${#FORBID[@]}" -eq 0 ]; then
-  echo "rebuild-and-assert-worker: refusing to run with no --require and no --forbid." >&2
+if [ "${#REQUIRE[@]}" -eq 0 ] && [ "${#FORBID[@]}" -eq 0 ] \
+  && [ "${#REQUIRE_SYM[@]}" -eq 0 ] && [ "${#FORBID_SYM[@]}" -eq 0 ]
+then
+  echo "rebuild-and-assert-worker: refusing to run with no assertion." >&2
   echo "A guard that asserts nothing is not a guard." >&2
   exit 2
 fi
@@ -98,15 +127,47 @@ for needle in "${FORBID[@]+"${FORBID[@]}"}"; do
   fi
 done
 
+for needle in "${REQUIRE_SYM[@]+"${REQUIRE_SYM[@]}"}"; do
+  n=$(nm -a "$WORKER" 2>/dev/null | grep -c -- "$needle")
+  if [ "$n" -lt 1 ]; then
+    echo "FAIL require-symbol '$needle': found $n, expected at least 1"
+    STATUS=1
+  else
+    echo "ok   require-symbol '$needle': $n"
+  fi
+done
+
+for needle in "${FORBID_SYM[@]+"${FORBID_SYM[@]}"}"; do
+  n=$(nm -a "$WORKER" 2>/dev/null | grep -c -- "$needle")
+  if [ "$n" -ne 0 ]; then
+    echo "FAIL forbid-symbol  '$needle': found $n, expected 0"
+    STATUS=1
+  else
+    echo "ok   forbid-symbol  '$needle': 0"
+  fi
+done
+
 # A guard against a silent failure must not itself be able to fail silently.
-# `strings` returning nothing at all means the extraction broke, not that the
-# binary is clean.
-TOTAL=$(strings -a "$WORKER" | wc -l | tr -d ' ')
-if [ "$TOTAL" -lt 1000 ]; then
-  echo "FAIL extraction: strings returned only $TOTAL lines; the probe itself is broken"
-  STATUS=1
-else
-  echo "ok   extraction: $TOTAL strings"
+# An empty extraction means the probe broke, not that the binary is clean, so
+# self-check each table that this invocation actually relied on.
+if [ "${#REQUIRE[@]}" -ne 0 ] || [ "${#FORBID[@]}" -ne 0 ]; then
+  TOTAL=$(strings -a "$WORKER" | wc -l | tr -d ' ')
+  if [ "$TOTAL" -lt 1000 ]; then
+    echo "FAIL extraction: strings returned only $TOTAL lines; the probe itself is broken"
+    STATUS=1
+  else
+    echo "ok   extraction: $TOTAL strings"
+  fi
+fi
+
+if [ "${#REQUIRE_SYM[@]}" -ne 0 ] || [ "${#FORBID_SYM[@]}" -ne 0 ]; then
+  NSYM=$(nm -a "$WORKER" 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$NSYM" -lt 1000 ]; then
+    echo "FAIL extraction: nm -a returned only $NSYM symbols; the probe itself is broken"
+    STATUS=1
+  else
+    echo "ok   extraction: $NSYM symbols"
+  fi
 fi
 
 if [ "$STATUS" -eq 0 ]; then
