@@ -122,6 +122,15 @@ def rank_of(score: mx.array, row: mx.array) -> mx.array:
     return mx.sum(score > at, axis=1)
 
 
+def masked_rank_reference(coarse: mx.array, row: mx.array, row_probed: mx.array) -> mx.array:
+    """Arm C's rank, written the slow, obvious way: mask then rank.
+
+    Kept as the reference the fast cluster-aggregate path is checked against.
+    """
+    masked = mx.where(row_probed, coarse, mx.array(-3.0e38, mx.float32))
+    return rank_of(masked, row)
+
+
 # --------------------------------------------------------------------------
 # clustering
 
@@ -411,9 +420,24 @@ def cmd_screen(args) -> None:
                 continue
             blob = np.load(path)
             probe = mx.array(blob["probe"]).astype(mx.bfloat16)
+            assign = blob["assign"].astype(np.int32)
+            rpc = int(blob["rows_per_cluster"])
+            counts = np.bincount(assign, minlength=k)
+            if counts.min() != rpc or counts.max() != rpc:
+                raise SystemExit(f"{path.name}: clusters are not exactly {rpc} rows")
             entry = {
-                "assign": mx.array(blob["assign"].astype(np.int32)),
-                "rpc": int(blob["rows_per_cluster"]),
+                "assign": mx.array(assign),
+                "row_cluster": mx.array(assign[: H.REAL_COUNT]),
+                # Members of each cluster, grouped. `assign` is exactly
+                # balanced, so a stable argsort reshapes to (K, rpc) and turns
+                # the per-cluster reduction into one gather plus one sum.
+                "members": mx.array(
+                    np.argsort(assign, kind="stable").astype(np.int32).reshape(k, rpc)),
+                # Padded rows are unreachable, so a cluster's real width can be
+                # below rpc and the probed-row count must use the real width.
+                "n_real": mx.array(
+                    np.bincount(assign[: H.REAL_COUNT], minlength=k).astype(np.int32)),
+                "rpc": rpc,
                 "probe": probe,
                 "quant": None,
             }
@@ -450,7 +474,9 @@ def cmd_screen(args) -> None:
                                  ("better", better), ("n", total)):
                 target[field] = target.get(field, 0) + value
 
+    pad = H.PADDED_COUNT - H.REAL_COUNT
     n = 0
+    checked_fast_path = False
     t0 = time.time()
     for name, domain, x, _ in chunks(args.limit, args.seeds, args.batch):
         b = x.shape[0]
@@ -458,33 +484,61 @@ def cmd_screen(args) -> None:
         ex = H.scores(exact, x)
         r = mx.argmax(ex, axis=1)
         coarse_scores = H.scores(coarse, x)
-        base_miss = rank_of(coarse_scores, r) >= CANDIDATES
-        mx.eval(base_miss, coarse_scores)
+        # `gt` is the only full-width comparison arm C needs: masking a score
+        # cannot change which OTHER rows outscore the exact argmax, and a
+        # masked row is never strictly greater than another masked row.
+        at = mx.take_along_axis(coarse_scores, r[:, None], axis=1)
+        gt = coarse_scores > at
+        base_miss = mx.sum(gt, axis=1) >= CANDIDATES
+        mx.eval(base_miss, gt)
         bump("shipped-g64", labels, base_miss, base_miss, b)
         bump("armG-g128", labels, rank_of(H.scores(g128, x), r) >= CANDIDATES, base_miss, b)
+        gt_pad = mx.concatenate([gt, mx.zeros((b, pad), gt.dtype)], axis=1)
 
         for (rule, k), table in tables.items():
-            row_cluster = table["assign"][: H.REAL_COUNT]
             if table["quant"] is None:
                 probe_scores = mx.matmul(x, table["probe"].T).astype(mx.float32)
             else:
                 probe_scores = H.scores_all(table["quant"], x)
-            # Rank of each cluster under the probe score; `< c` is "probed".
-            crank = mx.argsort(mx.argsort(-probe_scores, axis=1), axis=1)
+            cluster_of_r = mx.take(table["row_cluster"], r)
+            # Per-cluster counts of outscoring rows and of real rows.
+            s_gt = mx.sum(mx.take(gt_pad, table["members"], axis=1), axis=2)
+            order_c = mx.argsort(-probe_scores, axis=1)
+            cum_gt = mx.cumsum(mx.take_along_axis(s_gt, order_c, axis=1), axis=1)
+            cum_n = mx.cumsum(
+                mx.take_along_axis(
+                    mx.broadcast_to(table["n_real"][None, :], (b, k)), order_c, axis=1),
+                axis=1)
+            # Probe rank of the exact argmax's own cluster.
+            crank_r = mx.argmax(
+                (order_c == cluster_of_r[:, None]).astype(mx.int8), axis=1)
+            mx.eval(cum_gt, cum_n, crank_r)
             for p in ps:
                 c = max(1, int(round(p * k)))
                 # A row survives only if its cluster is probed AND it still
                 # ranks in the top 32 of the probed rows under the SAME coarse
                 # g64 score the run time uses. Restricting the pool can only
                 # improve a row's rank, so arm C can also beat the shipped
-                # shortlist on samples the global top-32 loses.
-                row_probed = mx.take(crank < c, row_cluster, axis=1)
-                masked = mx.where(row_probed, coarse_scores, mx.array(-3.0e38, mx.float32))
-                miss = rank_of(masked, r) >= CANDIDATES
+                # shortlist on samples the global top-32 loses. When the exact
+                # argmax's own cluster is not probed, every probed real row
+                # outscores its masked sentinel, so the rank is that count.
+                probed_r = crank_r < c
+                rank = mx.where(probed_r, cum_gt[:, c - 1], cum_n[:, c - 1])
+                miss = rank >= CANDIDATES
                 mx.eval(miss)
+                if not checked_fast_path:
+                    row_probed = mx.take(
+                        mx.argsort(order_c, axis=1) < c, table["row_cluster"], axis=1)
+                    want = masked_rank_reference(coarse_scores, r, row_probed) >= CANDIDATES
+                    if not bool(mx.all(want == miss).item()):
+                        raise SystemExit(
+                            f"fast cluster path disagrees with the masked reference "
+                            f"on {rule} K={k} p={p:g}")
+                    del row_probed, want
                 bump(f"armC-{rule}-K{k}-p{p:g}", labels, miss, base_miss, b)
-                del row_probed, masked, miss
-            del probe_scores, crank
+                del probed_r, rank, miss
+            del probe_scores, order_c, cum_gt, cum_n, crank_r, s_gt
+        checked_fast_path = True
         n += b
         if n % (args.batch * 20) == 0:
             print(f"  {n} samples  {time.time() - t0:.0f}s", flush=True)
