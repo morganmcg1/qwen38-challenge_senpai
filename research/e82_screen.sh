@@ -40,6 +40,12 @@ arm_head() {
     master-bf16) echo "${cache}/e82/built/e82-master-bf16-run" ;;
     kamciosz)    echo "${cache}/e82/built/e82-kamciosz-run" ;;
     pinned)      echo "${cache}/mtp-head" ;;
+    # rung 6: the best group-wise affine-4 g64 estimator we can build.
+    best)        echo "${cache}/e82/built/e82-master-best-run" ;;
+    # island allocation. Both trunks are byte-identical to `declared`, so the
+    # only difference from it is which BF16 correction rows ship.
+    noislands)   echo "${cache}/e82/built/e82-raw-noislands-run" ;;
+    qonly)       echo "${cache}/e82/built/e82-raw-qonly-run" ;;
     *) echo "e82-screen: unknown arm '$1'" >&2; return 1 ;;
   esac
 }
