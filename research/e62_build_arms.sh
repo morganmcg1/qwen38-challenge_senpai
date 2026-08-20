@@ -13,6 +13,10 @@
 #   census  THROWAWAY research binary carrying the E58 in-process dispatch
 #           census, restored from d0b337d^. The census takes a lock on every
 #           dispatch, so census legs are counted, never timed.
+#   cachegate THROWAWAY research binary for the rung 4 gate. It adds
+#           Memory.cacheMemory, Memory.activeMemory and Memory.cacheLimit to the
+#           session's existing per-round trace line, so one leg shows how close
+#           the charged window comes to the trusted 6 GiB cap.
 #
 # Each arm leaves its two products in research/out/e62/bin/<arm>/ with a
 # provenance file that records the __TEXT,__text sha256 of both products.
@@ -46,6 +50,7 @@ build_arm() {
     stock) : ;;
     wired) git apply research/e62-artifacts/wired-gate-local.patch || return 1 ;;
     census) git apply research/e62-artifacts/census-probe.patch || return 1 ;;
+    cachegate) git apply research/e62-artifacts/cache-gate-local.patch || return 1 ;;
     *) echo "e62: unknown arm ${arm}" >&2; return 2 ;;
   esac
 

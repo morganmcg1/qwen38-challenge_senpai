@@ -46,6 +46,7 @@ ops=50
 wired=off
 wired_fraction=
 census=0
+trace=0
 mode=--local-iterate
 label=
 while (($#)); do
@@ -55,6 +56,7 @@ while (($#)); do
     --wired) wired="$2"; shift 2 ;;
     --wired-fraction) wired_fraction="$2"; shift 2 ;;
     --census) census=1; shift ;;
+    --trace) trace=1; shift ;;
     --submit) mode=--local-submit; shift ;;
     --label) label="$2"; shift 2 ;;
     *) echo "e62_run_leg.sh: unknown argument $1" >&2; exit 2 ;;
@@ -105,6 +107,14 @@ if [[ "${arm}" == "wired" ]]; then
   export DARKBLOOM_QWEN_MTP_WIRED_ZH=$([[ "${wired}" == "on" ]] && echo 1 || echo 0)
   [[ -n "${wired_fraction}" ]] \
     && export DARKBLOOM_QWEN_MTP_WIRED_ZH_FRACTION="${wired_fraction}"
+fi
+
+trace_path="${PWD}/${out}/trace.txt"
+if ((trace)); then
+  export MLXFAST_NO_SANDBOX=1
+  : > "${trace_path}"
+  export MLX_QWEN_MTP_TRACE=1
+  export MLX_QWEN_MTP_TRACE_PATH="${trace_path}"
 fi
 
 census_path="${PWD}/${out}/census.jsonl"
