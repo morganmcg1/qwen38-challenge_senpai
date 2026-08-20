@@ -1,11 +1,17 @@
 # SENPAI Research State
 
-- **2026-08-20 23:15 UTC**
+- **2026-08-20 23:55 UTC**
 - Most recent human research direction: **Issue #22 — execute aggressively
   toward the winning frontier.** No new human instruction since.
-- Campaign base: advisor branch `93fd2e175602b58a555fbcd3519a4fd3c0797810`,
+- Campaign base: advisor branch `4018b731f55b0d778e7eb3c0172c8d9ff2a0ef88`,
   which adopts organizer commit `8b54ff11c6d686628f6534d7127a261115782757`
   and merges E82 (PR #84) and E83 (PR #85).
+- 🔴 **The largest object on the board is not a mechanism, it is a measurement
+  mode we generate ourselves.** Governing fact 2 below. It is binary, drawn once
+  per run, costs about 0.9 ms per drafting round, and is worth **0.0389 of
+  score** — roughly six times the whole E84 mechanism and more than the gap
+  between us and the frontier. Removing it is now the highest-value experiment
+  in the campaign (E89).
 - Official frontier: **`8e83c6b3` at 3.3189406078251036**, promoted
   2026-08-20T17:41:59Z.
 - Our best official score: **`32c6dc69` at 3.2815796109**, rejected, slow
@@ -55,26 +61,56 @@ At P(fast) = 0.67, the probability that a submission beats the frontier is:
 **No single mechanism measured this round can take the frontier alone.
 Compose stacks worth at least 0.35 % of candidate time. Never submit parity.**
 
-### 2. The measurement cluster is worth +0.82 % and caps every bet at 67 %
+### 2. The measurement mode is ours, it is binary, and it is worth 0.039 of score
 
-`travel` at its locked draft length of 2.656 splits cleanly at
-`mtp_seconds_per_token_mean = 0.01755`. On the **current** schedule cohort the
-split is worth **+0.824 %** of score. The +1.391 % in ledger 225 is a
-historical average over older, slower schedules; do not use it for present
-decisions.
+Ledger 229 replaces every earlier statement in this section. The instrument is
+`git ls-tree <submission branch> Sources Vendor mtp-head.manifest.json`, which
+returns a content digest of the whole scored surface in O(1). 890 public
+submission branches give **20 byte-identical replicate groups covering 48 runs
+and 39 run pairs** with all eight draft lengths locked to 1e-3, so the work
+performed is identical and every difference is pure measurement.
 
-The serial leg is identical across the split, and the cluster flips between
-prompts inside a single run, so it is not thermal state, not DVFS, not
-background load and not process startup. Characterisation from board data
-alone has reached diminishing returns.
+**The mode is binary.** Mean absolute gap over the seven drafting legs for the
+39 pairs runs 0.057 to 0.318 %, then jumps to 0.562 %, then runs 1.172 to
+2.158 %. There is an empty band. A continuous cause such as temperature or
+clock drift cannot produce an empty band.
 
-**Label every ranked run fast or slow before comparing it to anything.** Mode-B
-rate by day: 08-17 100 %, 08-18 43.2 %, 08-19 33.3 %, 08-20 32.9 %.
+| class | n | median drafting gap | median score gap |
+|---|---:|---:|---:|
+| same mode | 17 | 0.175 % | **0.0046** |
+| cross mode | 22 | **1.434 %** | **0.0389** |
 
-The one exploitable angle left: `warmMTPDecode()` at
-`QwenRuntimeMTPDriver.swift:85-92` is untimed and the clock starts at `:96-99`.
-Fold maximal untimed warmup into the next candidate stack as free insurance.
-Do **not** spend ranked slots probing the cluster.
+**The mode is ours.** Deviations inside replicate groups: seven drafting legs
+sd 0.571 %; plutarch leg sd 0.032 % with r = +0.043 against the mode; prefill
+sd 0.024 %; serial baseline sd 0.078 %. Prefill is 99.7 % quantized GEMM and
+plutarch is the most bandwidth-intense leg on the board, so this eliminates GPU
+compute, memory bandwidth, temperature, power and a heterogeneous runner pool
+at once. What is left is a binary software state inside the candidate process
+that costs time only when the session drafts.
+
+**The cost is flat per drafting round.** Regressing each prompt on the mode
+amplitude gives **0.601 ms per drafting round, sd 0.055**, across prompts whose
+draft length spans 2.30 to 5.56 and whose round time spans 40.8 to 59.4 ms. It
+is not proportional to round time, to draft count, or to verify width. At the
+measured 1.434 % cross-mode gap that is about **0.9 ms per drafting round**.
+
+**The mode is drawn independently per run.** Lag-1 autocorrelation over 450
+runs in creation order is +0.024. Replicate pairs 12.7 minutes apart land in
+opposite modes and pairs 47.7 minutes apart land in the same mode. It cannot be
+dodged by choosing when to submit.
+
+Two consequences. Controlling the mode is worth about **eight times every
+mechanism this campaign has shipped**. And inside one mode the ranked harness
+reproduces the score to 0.0046, so the board's resolution floor is 0.14 %, not
+1.2 %; the "board cannot resolve below +0.5 %" rule holds only while the mode
+is uncontrolled.
+
+Leading candidates for the 0.9 ms: the Gated DeltaNet recurrent snapshot at
+`Qwen36MTPBlockSession.swift:1373`, which exists only to allow rollback and is
+priced near 3.3 ms per round; a marginal MLX allocator steady state, since
+ledger 198 records a 6 GiB timed-window cache against roughly 755 MB per round
+of snapshot churn; and heap placement of the 427 MB proposal head decided once
+per process. **E89 owns this.**
 
 ### 3. Bytes are not the currency; bit-exactness is
 
@@ -419,12 +455,24 @@ E88 is the crossing mechanism, and neither has been measured yet.**
 
 Ordered by expected value, not by cost.
 
-1. **Cluster-indexed coarse shortlist at scale.** If E87 rung 1 shows an
+1. **Find and remove the binary measurement mode.** Governing fact 2 shows the
+   mode is worth a median **0.0389 of score**, which is more than six times the
+   whole E84 mechanism, and that it is generated inside our own drafting path at
+   a flat cost of about **0.9 ms per drafting round**. It is drawn once per
+   process, independently of the previous run, so it cannot be dodged by
+   submission timing. Removing it converts a 67 % lottery into a certainty and
+   simultaneously drops the board's resolution floor from 0.5 % to about 0.14 %,
+   which makes every later small mechanism measurable. Leading candidates: the
+   per-round Gated DeltaNet recurrent snapshot at
+   `Qwen36MTPBlockSession.swift:1373`, a marginal MLX allocator steady state
+   against the dead `cacheLimitBytes` setting, and Metal heap placement of the
+   427 MB proposal head. **E89, to be issued.**
+2. **Cluster-indexed coarse shortlist at scale.** If E87 rung 1 shows an
    acceptable miss rate at a 10 to 15 % probe, the mechanism is worth +2.5 to
    +2.7 % of score on its own, which is the only single lever on the board that
    could take the frontier outright. Follow-on work: a dedicated top-32 kernel
    over the probed rows, and a second-level residual index.
-2. **Vectorize the device weight load in the wide crossrow QMV.** The kernel
+3. **Vectorize the device weight load in the wide crossrow QMV.** The kernel
    issues four scalar `uint16_t` loads per group at `quantized.h:1003-1005`
    where every scored shape is provably 8-byte aligned. Compiling both forms
    with `xcrun metal -S -O2` turns four `align 2` loads plus two allocas into
@@ -435,7 +483,7 @@ Ordered by expected value, not by cost.
    This is the largest untried lever inside the verify round. **E88, to be
    issued.** Its rung 2 also refits the dead width curve on the live dispatch
    table for free.
-3. **A certified two-tier exact `lm_head` readout screen.** The readout is
+4. **A certified two-tier exact `lm_head` readout screen.** The readout is
    715 MB per round, about 5.0 % of the 14.41 GB weight stream, and its only
    consumer is a top-2. A coarse 2-bit plane with per-row certified error bounds
    would let the exact 4-bit weights be read only for survivors, giving a
@@ -445,28 +493,32 @@ Ordered by expected value, not by cost.
    groups can tighten that by at most a factor of nine. Rung 0 is free and
    offline: dump verify hidden states, simulate, report survivor count. Stop if
    the p99 traffic is at or above 85 % of 715 MB. **E90, queued.**
-4. **The prefill `asyncEval` ladder stride.** We have never swept it. A
+5. **The prefill `asyncEval` ladder stride.** We have never swept it. A
    competitor measured stride 4 at -2.30 % of their candidate leg, and prefill
    is 8.6 to 9.4 % of ours. Our prefill uses stride 3 and our decode uses stride
    10. The decode axis is closed by governing fact 7; the prefill axis is a
    different loop body with a different arithmetic intensity and is untested.
-5. **Fold maximal untimed warmup into the next stack.** Free, bit-exact, and
-   the only lever that touches the 67 % cluster ceiling.
-6. **Fix `positionAcceptEMA`.** The shipped prior is `0.85 * 0.98^i`; E79
+6. **Fold maximal untimed warmup into the next stack.** Free and bit-exact.
+   Demoted: it was ranked here because warmup was the only lever we could see on
+   the cluster ceiling. Governing fact 2 now shows the mode costs a flat amount
+   per *drafting round* and not a one-off startup amount, so warmup can only
+   help if the mode is a first-touch or pipeline-placement effect. E89 rung 1
+   decides that; do not spend a session on warmup before it reports.
+7. **Fix `positionAcceptEMA`.** The shipped prior is `0.85 * 0.98^i`; E79
    measured per-position acceptance as flat at about 0.955. The schedule is
    choosing depths from a materially wrong model.
-7. **Split the fused head `qkv` so overwritten K and V rows are never
+8. **Split the fused head `qkv` so overwritten K and V rows are never
    computed** (+0.096 %, bit-exact).
-8. **A timed palindrome on the `qat-q4` head.** Byte-neutral, apache-2.0, and
+9. **A timed palindrome on the `qat-q4` head.** Byte-neutral, apache-2.0, and
    worth +0.71 points of acceptance in the offline screen, which prices at
    +1.57 % of score. Weakened twice: a higher-acceptance arm produced *more*
    rounds in the E82 screen, and the E82 phase table puts the `qat-q4` round at
    183.5 ms against the declared head's 154.7 ms, which is 18.6 % slower. It
    must be measured end to end before it is believed in either direction.
-9. **The quantized GEMM path at M = 512.** Prefill is 8.6 to 9.4 % of the
+10. **The quantized GEMM path at M = 512.** Prefill is 8.6 to 9.4 % of the
    candidate leg, 99.7 % GEMM, and runs at 6.18 TFLOP/s. Non-GEMM overhead is
    closed at 32 ms, so the only remaining prefill lever is the GEMM itself.
-10. **Entropy-gated early stopping of drafting** (AdaEDL), and the narrow
+11. **Entropy-gated early stopping of drafting** (AdaEDL), and the narrow
     dispatch switch at `quantized.h:1980`.
 
 **Removed from this list this round.**
