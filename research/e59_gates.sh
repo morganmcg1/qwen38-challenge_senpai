@@ -9,7 +9,7 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-base_sha="${E59_BASE_SHA:-989596895b7c8f889443dac0c87e024a428e6e9e}"
+base_sha="${E59_BASE_SHA:-$(git rev-parse origin/senpai/qwen38-mtp-r1)}"
 out_dir="research/e59-artifacts"
 log_dir="${out_dir}/gate-logs"
 mkdir -p "${log_dir}"
