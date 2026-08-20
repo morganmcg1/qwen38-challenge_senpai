@@ -100,6 +100,20 @@ only so the bytes the compiler saw are reachable while the arm runs."
   echo "e61_whole_leg_session: ${tag} (${arm}) exited ${rc}" >&2
 
   unwind
+
+  # Log this leg to W&B before the next arm starts, so a session that dies
+  # part-way still leaves every completed leg on the board. It runs after the
+  # unwind and outside the timed window, and `wandb/` is gitignored, so it can
+  # neither perturb the measurement nor dirty the worktree. A logging failure
+  # never fails the leg that already measured cleanly.
+  if [[ "${E61_WANDB:-1}" != "0" && ${rc} -eq 0 ]]; then
+    discarded=()
+    [[ "${tag}" == warm* ]] && discarded=(--discarded)
+    python3 research/e61_wandb_leg.py --tag "${tag}" --arm "${arm}" \
+      --group "${WANDB_RUN_GROUP}" "${discarded[@]}" \
+      || echo "e61_whole_leg_session: ${tag}: W&B logging failed" >&2
+  fi
+
   ((rc == 0)) || { status="${rc}"; break; }
 done
 
