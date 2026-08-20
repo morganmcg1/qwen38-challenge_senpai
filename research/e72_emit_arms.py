@@ -20,6 +20,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from jit_string_compile import PREAMBLES, preamble  # noqa: E402
+from e72_wide_gen import ARMS as GEN_ARMS, BASE_SYMBOL  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 ARMS_HEADER = REPO / "research/generated/e72_wide_arms.h"
@@ -48,14 +49,9 @@ ENTRY = """
 }}
 """
 
-ARMS = {
-    "plain": "qmv_fast_crossrow_affine4_g64_wide_e72plain",
-    "tailfull": "qmv_fast_crossrow_affine4_g64_wide_e72tailfull",
-    "allfull": "qmv_fast_crossrow_affine4_g64_wide_e72allfull",
-    "xvec": "qmv_fast_crossrow_affine4_g64_wide_e72xvec",
-    "tailfullxvec": "qmv_fast_crossrow_affine4_g64_wide_e72tailfullxvec",
-    "allfullxvec": "qmv_fast_crossrow_affine4_g64_wide_e72allfullxvec",
-}
+# Derived from the generator so the entry points can never drift from the arms
+# actually emitted into research/generated/e72_wide_arms.h.
+ARMS = {tag.removeprefix("e72"): f"{BASE_SYMBOL}_{tag}" for tag in GEN_ARMS}
 
 
 def assemble(na: int) -> str:

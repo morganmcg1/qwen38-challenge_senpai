@@ -195,17 +195,127 @@ def arm(body: str, name: str, pairs: list[tuple[str, str]]) -> str:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Arm `split`, the advisor's named layout edit: never declare a non-native
+# vector width. All accumulator state is held in ceil(NA/4) native `float4`
+# chunks, where element m lives at chunk m/4, lane m%4. Every operation stays
+# element-wise on the same elements in the same order, so each output element
+# is the same sequence of roundings; only the container changes.
+# ---------------------------------------------------------------------------
+SPLIT = [
+    ("  typedef vec<float, NA> VF;",
+     """  // E72 arm `split`: VF is ALWAYS a native width. Element m of the old
+  // vec<float, NA> lives at chunk m / 4, lane m % 4. Lanes above NA are
+  // initialised and computed but never read out.
+  typedef vec<float, 4> VF;
+  constexpr int NC = (NA + 3) / 4;"""),
+    ("""  VF acc[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc[r] = VF(0.0f);
+  }""",
+     """  VF acc[rows_per_simd][NC];
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int c = 0; c < NC; c++) {
+      acc[r][c] = VF(0.0f);
+    }
+  }"""),
+    ("""    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }""",
+     """    VF sums[NC];
+    for (int c = 0; c < NC; c++) {
+      sums[c] = VF(0.0f);
+    }
+    VF partial[rows_per_simd][NC];
+    for (int r = 0; r < rows_per_simd; r++) {
+      for (int c = 0; c < NC; c++) {
+        partial[r][c] = VF(0.0f);
+      }
+    }"""),
+    ("""      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {""",
+     """      VF a0[NC], a1[NC], a2[NC], a3[NC];
+      for (int c = 0; c < NC; c++) {
+        a0[c] = VF(0.0f);
+        a1[c] = VF(0.0f);
+        a2[c] = VF(0.0f);
+        a3[c] = VF(0.0f);
+      }
+      for (int m = 0; m < NA; m++) {"""),
+    ("          sums[m] += xm[0] + xm[1] + xm[2] + xm[3];",
+     "          sums[m / 4][m % 4] += xm[0] + xm[1] + xm[2] + xm[3];"),
+    ("          sums[m] += load_vector<T, float, 4, 4>(xm, xc);",
+     "          sums[m / 4][m % 4] += load_vector<T, float, 4, 4>(xm, xc);"),
+    ("""        a0[m] = xc[0];
+        a1[m] = xc[1];
+        a2[m] = xc[2];
+        a3[m] = xc[3];""",
+     """        a0[m / 4][m % 4] = xc[0];
+        a1[m / 4][m % 4] = xc[1];
+        a2[m / 4][m % 4] = xc[2];
+        a3[m / 4][m % 4] = xc[3];"""),
+    ("""      for (int r = 0; r < rows_per_simd; r++) {
+        if (DIRECT_NIBBLES) {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * ((packed[r][i] >> 4) & 0x000f) +
+                         a2 * ((packed[r][i] >> 8) & 0x000f) +
+                         a3 * ((packed[r][i] >> 12) & 0x000f));
+        } else {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * (packed[r][i] & 0x00f0) +
+                         a2 * (packed[r][i] & 0x0f00) +
+                         a3 * (packed[r][i] & 0xf000));
+        }
+      }""",
+     """      for (int r = 0; r < rows_per_simd; r++) {
+        for (int c = 0; c < NC; c++) {
+          if (DIRECT_NIBBLES) {
+            partial[r][c] += (a0[c] * (packed[r][i] & 0x000f) +
+                              a1[c] * ((packed[r][i] >> 4) & 0x000f) +
+                              a2[c] * ((packed[r][i] >> 8) & 0x000f) +
+                              a3[c] * ((packed[r][i] >> 12) & 0x000f));
+          } else {
+            partial[r][c] += (a0[c] * (packed[r][i] & 0x000f) +
+                              a1[c] * (packed[r][i] & 0x00f0) +
+                              a2[c] * (packed[r][i] & 0x0f00) +
+                              a3[c] * (packed[r][i] & 0xf000));
+          }
+        }
+      }"""),
+    ("""    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }""",
+     """    for (int r = 0; r < rows_per_simd; r++) {
+      for (int c = 0; c < NC; c++) {
+        acc[r][c] += scale_local[r] * partial[r][c] + sums[c] * bias_local[r];
+      }
+    }"""),
+    ("      const float reduced = simd_sum(acc[r][m]);",
+     "      const float reduced = simd_sum(acc[r][m / 4][m % 4]);"),
+]
+
 TAILFULL = [(TAIL, TAIL_FULL)]
+# _INNER[4] is the only substitution that opens the `m` loop; every other entry
+# opens an `r` loop or the 4-trip `i` loop over the packed weights. Splitting
+# them gives a two-way bisect of any codegen fault the parity harness finds.
+MFULL = [_INNER[4]]
+RFULL = [pair for index, pair in enumerate(_INNER) if index != 4] + TAILFULL
 ALLFULL = _INNER + TAILFULL
 XVEC = [(X_SCALAR_READ, X_VECTOR_READ)]
+
+BASE_SYMBOL = "qmv_fast_crossrow_affine4_g64_wide"
 
 ARMS = {
     "e72plain": [],
     "e72tailfull": TAILFULL,
+    "e72mfull": MFULL,
+    "e72rfull": RFULL,
     "e72allfull": ALLFULL,
+    "e72split": SPLIT,
     "e72xvec": XVEC,
     "e72tailfullxvec": TAILFULL + XVEC,
-    "e72allfullxvec": ALLFULL + XVEC,
 }
 
 HEADER = """// GENERATED by research/e72_wide_gen.py. Do not edit.
@@ -257,7 +367,7 @@ def assert_pragma_only(body: str, name: str, pairs: list[tuple[str, str]]) -> No
         raise SystemExit(f"{name} is not pragma-only:\n{diff}")
 
 
-PRAGMA_ONLY = {"e72tailfull", "e72allfull"}
+PRAGMA_ONLY = {"e72tailfull", "e72mfull", "e72rfull", "e72allfull"}
 
 
 def render(text: str) -> str:
@@ -265,7 +375,7 @@ def render(text: str) -> str:
     digest = hashlib.sha256(text.encode()).hexdigest()
     parts = [HEADER.format(digest=digest)]
     for name, pairs in ARMS.items():
-        full_name = f"qmv_fast_crossrow_affine4_g64_wide_{name}"
+        full_name = f"{BASE_SYMBOL}_{name}"
         if name in PRAGMA_ONLY:
             assert_pragma_only(body, full_name, pairs)
         parts.append(
