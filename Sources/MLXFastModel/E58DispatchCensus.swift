@@ -565,6 +565,10 @@ private final class GPUTimeLedger: @unchecked Sendable {
     private var untrackedBuffers = 0
     private var zeroTimeBuffers = 0
     private var completedBuffers = 0
+    /// Coverage of the NNLS fit: how many in-phase buffers became equations,
+    /// and how many were dropped for spanning phases.
+    private var signatureBuffers = 0
+    private var mixedPhaseBuffers = 0
     /// Never reset. `drain` compares the two to know when every committed
     /// buffer has reported its GPU interval.
     private var committedTotal = 0
@@ -652,8 +656,14 @@ private final class GPUTimeLedger: @unchecked Sendable {
         var perPhase: [String: Int] = [:]
         for note in notes { perPhase[note.phase, default: 0] += 1 }
         let width = notes[0].width
+        // Composed from SHAPE, not kernel name. Every projection in the model
+        // dispatches the same `affine_qmv_fast` function and is told apart only
+        // by its grid, so a name-keyed signature pools the 248320-wide lm_head
+        // readout with the 5120-wide down projections. Measured on the rung-2
+        // debug leg that pooling put the fitted qmv time 7x under the directly
+        // measured lm_head buffers.
         let signature = notes
-            .reduce(into: [String: Int]()) { $0[$1.kernel, default: 0] += 1 }
+            .reduce(into: [String: Int]()) { $0[$1.shape, default: 0] += 1 }
             .sorted { $0.key < $1.key }
             .map { "\($0.key)*\($0.value)" }
             .joined(separator: ",")
@@ -689,10 +699,21 @@ private final class GPUTimeLedger: @unchecked Sendable {
             exclusiveKernels["w\(width)|\(notes[0].phase)|\(notes[0].shape)",
                 default: KernelBucket()].add(gpuNs)
         }
-        signatures["w\(width)|\(notes[0].phase)|\(signature)",
-            default: GPUBucket()].add(
-                gpuNs: gpuNs, driverNs: driverNs, encodeNs: encodeNs,
-                dispatches: notes.count)
+        // Only single-phase buffers become NNLS equations. A buffer that spans
+        // phases would need its GPU interval split before it could be an
+        // equation, and the dispatch-count split used for `byPhase` is an
+        // approximation this fit must not inherit. `outside` is excluded
+        // because it holds weight loading, warmup and teardown, whose shape
+        // variety would dominate the record for no analytical gain.
+        if perPhase.count == 1, notes[0].phase != "outside" {
+            signatureBuffers += 1
+            signatures["w\(width)|\(notes[0].phase)|\(signature)",
+                default: GPUBucket()].add(
+                    gpuNs: gpuNs, driverNs: driverNs, encodeNs: encodeNs,
+                    dispatches: notes.count)
+        } else if notes[0].phase != "outside" || perPhase.count > 1 {
+            mixedPhaseBuffers += 1
+        }
         lock.unlock()
     }
 
@@ -766,6 +787,8 @@ private final class GPUTimeLedger: @unchecked Sendable {
             "untracked_buffers": untrackedBuffers,
             "unmapped_encoder_dispatches": unmappedDispatches,
             "zero_time_buffers": zeroTimeBuffers,
+            "signature_buffers": signatureBuffers,
+            "mixed_phase_buffers": mixedPhaseBuffers,
             "gpu_busy_ns": Int(busyNs),
             "gpu_idle_ns": Int(idleNs),
             "gpu_span_ns": Int(Swift.max(0, spanEnd - spanStart) * 1e9),
@@ -788,6 +811,8 @@ private final class GPUTimeLedger: @unchecked Sendable {
         untrackedBuffers = 0
         unmappedDispatches = 0
         zeroTimeBuffers = 0
+        signatureBuffers = 0
+        mixedPhaseBuffers = 0
         busyNs = 0
         idleNs = 0
         spanStart = 0

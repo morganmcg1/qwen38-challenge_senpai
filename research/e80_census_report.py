@@ -1,35 +1,32 @@
 #!/usr/bin/env python3
-"""E80 rung 2 -- the per-kernel GPU-time census.
+"""E80 rung 2 and 3: the per-kernel GPU-time census of the verify block.
 
-Two configurations are needed, and neither alone answers the question.
+Mechanism
+---------
+Rung 0c picked `MLX_MAX_OPS_PER_BUFFER=1` on the premise that it puts one
+dispatch in one command buffer, so the buffer's `GPUEndTime - GPUStartTime`
+would BE that dispatch's GPU time. The rung-2 debug leg refuted the premise:
+MLX honours the limit, but one MLX op is not one Metal dispatch, so the
+isolated leg still averages 2.04 dispatches per buffer and only 0.4 % of
+verify dispatches ever run alone.
 
-  DEFAULT   MLX packs many ops into one command buffer, so a buffer's
-            GPU interval covers a whole group of kernels running with real
-            overlap. This is the true cost, and it cannot be split per kernel:
-            the width-6 verify phase produces about six distinct buffer
-            signatures over fifteen kernels, so the linear system is
-            underdetermined by a wide margin.
+The recorded data still determines every kernel's time. Each single-phase
+command buffer contributes one exact linear equation
 
-  ISOLATED  MLX_MAX_OPS_PER_BUFFER=1 makes every buffer exactly one dispatch,
-            so a buffer's GPU interval IS that kernel's GPU time. Per-kernel
-            cost is then exact, but all intra-buffer concurrency is removed and
-            per-buffer overhead is paid once per dispatch, so the total is an
-            upper bound on the real cost.
+    gpu_time(buffer) = sum over shapes s of count(s, buffer) * t_s
 
-The concurrency discount for a width is
-    discount = isolated kernel-time total / default in-situ total
-and it is reported beside every share so no isolated number is ever read as
-though it were the shipped cost.
+and the same shape appears in many different pairings, which identifies the
+system. `e80_nnls` solves it under a non-negativity constraint. Fitting the
+default-mode and the isolated-mode legs separately and dividing gives the
+concurrency discount per family.
 
-Dispatch counts always come from the DEFAULT run's `round` records, which are
-the unperturbed schedule.
+Shapes, not kernel names, are the unknowns. Every projection in the model
+dispatches the same `affine_qmv_fast` Metal function and differs only by grid.
 
-usage:
-  research/e80_census_report.py --default research/out/TAG/census.jsonl \\
-      [--isolated research/out/TAG-iso/census.jsonl] \\
-      [--width M] [--json OUT]
+Identifiability is reported, never assumed. Where the design matrix is rank
+deficient the split inside a degenerate group is arbitrary, so the group is
+reported as a group and flagged.
 """
-
 from __future__ import annotations
 
 import argparse
@@ -39,410 +36,599 @@ import pathlib
 import re
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from e58_census_report import family  # noqa: E402
+import numpy as np
 
-# Ranked width histogram supplied with the E80 assignment. The local fixture
-# over-weights M = 9 by 7.6x, so an unweighted local census answers the wrong
-# question. Mean ranked width is 5.82 against a local fixture mean of 7.27.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from e80_nnls import solve_kernel_times  # noqa: E402
+
+# Ranked verify-width histogram supplied with the assignment. It sums to
+# 100.25 %, and rung 2 measures only a subset, so shares are renormalised over
+# the covered widths and the covered mass is always printed beside them.
 RANKED_WIDTH_WEIGHTS = {
     3: 0.0325, 4: 0.1420, 5: 0.2410, 6: 0.3340,
     7: 0.1220, 8: 0.0735, 9: 0.0575,
 }
 
-# Falsification riders from the assignment. Each is a share of verify GPU time.
-# `copy` carries a headline rule: above 1 % it reopens ledger entry 218.
+# Falsification riders from the assignment, as a share of verify GPU time.
 RIDERS = [
     ("copy", ["copy"], 0.01, "ledger 218 reopens; must be in the headline"),
-    ("elementwise+fusions", ["elementwise", "compiled_fusion", "reduce_scan"], 0.03,
-     "unary/binary/ternary ops well under 3 %"),
+    ("unary/binary/ternary ops", ["elementwise", "compiled_fusion", "reduce_scan"],
+     0.03, "elementwise and fused elementwise under 3 %"),
     ("rms_norm", ["norm"], 0.03, "rms_norm under 3 %"),
-    ("sdpa_vector", ["sdpa_fused"], 0.03, "sdpa_vector under 3 %"),
-    ("gemv", ["dense_gemv"], 0.02, "gemv under 2 %"),
+    ("sdpa_vector", ["sdpa"], 0.03, "sdpa_vector under 3 %"),
+    ("gemv", ["dense_gemv"], 0.02, "non-quantised gemv under 2 %"),
 ]
 
-HASH_RE = re.compile(r"_\d{12,}_")
-SHAPE_RE = re.compile(r"^(?P<kernel>\S+) grid=(?P<gx>\d+)x(?P<gy>\d+)x(?P<gz>\d+)"
-                      r" tg=(?P<tx>\d+)x(?P<ty>\d+)x(?P<tz>\d+)$")
+SHAPE_RE = re.compile(
+    r"^(?P<kernel>\S+) grid=(?P<gx>\d+)x(?P<gy>\d+)x(?P<gz>\d+)"
+    r"(?: tg=(?P<tx>\d+)x(?P<ty>\d+)x(?P<tz>\d+))?$")
+SIG_ENTRY = re.compile(r"^(?P<name>.+)\*(?P<count>\d+)$")
 
-# The `affine_qmv_fast` dispatches all share one Metal function name and are
-# told apart only by their grid. grid.y * 8 recovers the projection's output
-# width, which identifies the module exactly. Verified against the config:
-# hidden 5120, 64 layers = 48 GDN + 16 full attention, head_dim 256, 24 query
-# heads, 4 KV heads, MLP intermediate 17408, vocabulary 248320.
+# `affine_qmv_fast` grid.y * 8 is the projection's output width, which names the
+# module exactly. Verified against the config: hidden 5120, 64 layers = 48 GDN +
+# 16 full attention, head_dim 256, 24 query heads, 4 KV heads, MLP intermediate
+# 17408, vocabulary 248320. grid.x is the verify width M.
 #
-# The count column is the decisive one. `gdn_in_proj_fused` and `fa_qkv_gate_
-# fused` are the two projections that `Qwen35GatedDeltaNet` and `Qwen35Attention`
-# fuse into raw `quantizedMM` calls, so they never dispatch through a child
-# `Linear` and NO E71 arm can intercept them. Together they are 48 + 16 = 64 of
-# the 257 qmv dispatches in a verify round.
-QMV_GROUPS = {
-    4352: ("mlp_gate_up", 64, True, "5120 -> 34816, gate and up fused"),
-    640: ("out_projections", 128, True,
-          "-> 5120: mlp_down x64, gdn_out_proj x48, fa_o_proj x16"),
-    2060: ("gdn_in_proj_fused", 48, False, "5120 -> 16480, qkvzba fused"),
-    1792: ("fa_qkv_gate_fused", 16, False, "5120 -> 14336, q/k/v and output gate"),
-    31040: ("lm_head", 1, True, "5120 -> 248320"),
+# `gdn_in_proj_fused` and `fa_qkv_gate_fused` are the two projections that
+# `Qwen35GatedDeltaNet` and `Qwen35Attention` fuse into raw `quantizedMM`, so
+# they never dispatch through a child `Linear` and NO E71 arm can intercept
+# them. Together they are 48 + 16 = 64 of the 257 qmv dispatches in a round.
+QMV_UNITS = {
+    4352: ("mlp_gate_up", 64, True),
+    640: ("mlp_down + gdn_out_proj + fa_o_proj", 128, True),
+    2060: ("gdn_in_proj_fused (qkvzba)", 48, False),
+    1792: ("fa_qkv_gate_fused", 16, False),
+    31040: ("lm_head", 1, True),
 }
+
+FAMILY_RULES = [
+    ("qmv", ("affine_qmv",)),
+    ("quant_dequant", ("affine_dequantize", "affine_quantize")),
+    ("dense_gemv", ("gemv", "gemm", "steel")),
+    ("norm", ("rms", "layer_norm", "layernorm")),
+    ("sdpa", ("sdpa",)),
+    ("gdn_recurrence", ("gated_delta", "gdn_prework", "packed_gdn")),
+    ("qk_rms_rope", ("qk_rms_rope",)),
+    ("top2_readout", ("top2",)),
+    ("gather_scatter", ("gather", "scatter")),
+    ("copy", ("copy",)),
+    ("compiled_fusion", ("_VV_", "_strided_", "astype", "multiply", "sigmoid")),
+    ("elementwise", ("vv_", "ss_", "unary", "binary", "ternary", "add")),
+    ("reduce_scan", ("reduce", "scan", "sum", "arg")),
+]
+
+
+def family_of(kernel: str) -> str:
+    low = kernel.lower()
+    for name, needles in FAMILY_RULES:
+        for needle in needles:
+            if needle.lower() in low:
+                return name
+    return "unclassified"
 
 
 def parse_shape(shape: str):
     m = SHAPE_RE.match(shape)
     if not m:
         return None
-    return {
-        "kernel": m.group("kernel"),
-        "grid": (int(m.group("gx")), int(m.group("gy")), int(m.group("gz"))),
-        "threadgroup": (int(m.group("tx")), int(m.group("ty")), int(m.group("tz"))),
-    }
+    return {"kernel": m["kernel"],
+            "grid": (int(m["gx"]), int(m["gy"]), int(m["gz"]))}
 
 
-def qmv_group(shape: str):
+def qmv_unit(shape: str):
     parsed = parse_shape(shape)
     if not parsed or "affine_qmv" not in parsed["kernel"]:
         return None
-    return QMV_GROUPS.get(parsed["grid"][1])
+    return QMV_UNITS.get(parsed["grid"][1])
 
 
-def short(kernel: str, width: int = 84) -> str:
-    """Collapse the MLX fusion hash so a table stays readable."""
-    name = HASH_RE.sub("_H_", kernel)
-    return name if len(name) <= width else name[:width - 3] + "..."
+def parse_signature(sig: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for part in sig.split(","):
+        m = SIG_ENTRY.match(part)
+        if not m:
+            raise ValueError(f"unparsable signature element: {part!r}")
+        counts[m["name"]] = counts.get(m["name"], 0) + int(m["count"])
+    return counts
 
 
 def read_records(path: pathlib.Path):
     for line in path.read_text().splitlines():
-        line = line.strip()
-        if line:
-            try:
-                yield json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        if line.strip():
+            yield json.loads(line)
 
 
-def default_dispatches(path: pathlib.Path):
-    """{width: {shape: dispatches per round}} and {width: rounds} from `round`.
+class Leg:
+    """One census file, summed over its delta snapshots.
 
-    Keyed by SHAPE, not kernel name. One Metal function name can carry several
-    unrelated costs: every projection in the model dispatches the same
-    `affine_qmv_fast` function and is told apart only by its grid. Keying on the
-    name alone collapses `lm_head` (5120 -> 248320) onto `mlp_down`
-    (17408 -> 5120) and makes per-kernel GPU time meaningless.
+    Every `gputime` record is a DELTA since the previous snapshot and the
+    `snapshot` field is its index, not a boolean, so totals are sums.
+
+    A leg runs two model-holding processes: the serial reference pass, whose
+    rounds are width 1 in phase `target_forward`, and the MTP candidate pass,
+    whose rounds carry the forced verify width in `draft_head` and
+    `target_verify`. Their records interleave in one file but never share a
+    width and phase, so summing is safe.
     """
-    counts = collections.defaultdict(collections.Counter)
-    rounds = collections.Counter()
-    for rec in read_records(path):
-        if rec.get("event") != "round":
-            continue
-        verify = (rec.get("phases") or {}).get("verify_block")
-        if not verify:
-            continue
-        width = rec["width"]
-        rounds[width] += 1
-        for shape, n in (verify.get("shapes") or {}).items():
-            counts[width][shape] += n
-    per_round = {
-        w: {k: v / rounds[w] for k, v in c.items()} for w, c in counts.items()
-    }
-    return per_round, dict(rounds)
 
+    def __init__(self, path: pathlib.Path, skip_rounds: int = 0):
+        self.path = path
+        self.skip_rounds = skip_rounds
+        self.by_width_phase = collections.defaultdict(
+            lambda: {"gpu_ns": 0, "buffers": 0, "dispatches": 0})
+        self.signatures = collections.defaultdict(
+            lambda: {"gpu_ns": 0, "buffers": 0, "dispatches": 0})
+        self.rounds = collections.Counter()
+        self.dispatches = collections.Counter()
+        self.shape_dispatches = collections.defaultdict(collections.Counter)
+        self.health = collections.Counter()
+        self._load()
 
-def default_phase_gpu(path: pathlib.Path):
-    """{width: total verify GPU ns} summed over every snapshot."""
-    total = collections.Counter()
-    for rec in read_records(path):
-        if rec.get("event") != "gputime":
-            continue
-        for key, bucket in rec.get("by_width_phase", {}).items():
-            w, _, phase = key.partition("|")
-            if phase != "verify_block":
-                continue
-            total[int(w[1:])] += bucket["gpu_ns"]
-    return dict(total)
+    def _load(self):
+        for rec in read_records(self.path):
+            event = rec.get("event")
+            if event == "round":
+                if rec.get("round", 0) <= self.skip_rounds:
+                    continue
+                width = rec["width"]
+                for phase, entry in (rec.get("phases") or {}).items():
+                    self.rounds[(width, phase)] += 1
+                    self.dispatches[(width, phase)] += entry.get("dispatches", 0)
+                    for shape, count in (entry.get("shapes") or {}).items():
+                        self.shape_dispatches[(width, phase)][shape] += count
+            elif event == "gputime":
+                # Drop the same warmup rounds here as in the round records, or
+                # the per-round means would divide warmup GPU time by a
+                # post-warmup round count. With one snapshot per round the
+                # filter is exact; completion handlers can still smear a
+                # buffer into the next snapshot, which is immaterial over the
+                # round counts this census uses.
+                if (self.skip_rounds
+                        and rec.get("round_last", -1) >= 0
+                        and rec["round_last"] <= self.skip_rounds):
+                    continue
+                for key, b in (rec.get("by_width_phase") or {}).items():
+                    slot = self.by_width_phase[key]
+                    slot["gpu_ns"] += b.get("gpu_ns", 0)
+                    slot["buffers"] += b.get("buffers", 0)
+                    slot["dispatches"] += b.get("dispatches", 0)
+                for key, b in (rec.get("signatures") or {}).items():
+                    slot = self.signatures[key]
+                    slot["gpu_ns"] += b.get("gpu_ns", 0)
+                    slot["buffers"] += b.get("buffers", 0)
+                    slot["dispatches"] += b.get("dispatches", 0)
+                for field in ("unmapped_encoder_dispatches", "zero_time_buffers",
+                              "untracked_buffers", "signature_buffers",
+                              "mixed_phase_buffers", "committed_total",
+                              "completed_total"):
+                    self.health[field] += rec.get(field, 0)
 
+    def widths(self, phase="target_verify"):
+        return sorted({w for (w, p) in self.rounds if p == phase})
 
-def isolation_coverage(path: pathlib.Path):
-    """{width: {dispatches, exclusive, coverage, unmapped, zero_time, undrained}}.
+    def round_count(self, width, phase="target_verify"):
+        return self.rounds[(width, phase)]
 
-    Per-kernel GPU time is only exact for dispatches that had a command buffer
-    to themselves. `MLX_MAX_OPS_PER_BUFFER=1` is a request, not a guarantee: MLX
-    still emits multi-dispatch buffers for a fused graph. Coverage is the share
-    of verify dispatches this instrument can actually price, and a census that
-    does not state it is quoting an unknown fraction of the round.
-    """
-    acc = collections.defaultdict(lambda: {"dispatches": 0, "exclusive": 0})
-    totals = collections.Counter()
-    for rec in read_records(path):
-        if rec.get("event") != "gputime":
-            continue
-        for key, bucket in rec.get("by_width_phase", {}).items():
-            w, _, phase = key.partition("|")
-            if phase == "verify_block":
-                acc[int(w[1:])]["dispatches"] += bucket["dispatches"]
-        for key, bucket in rec.get("exclusive_kernels", {}).items():
+    def signature_rows(self, phase, widths=None):
+        """NNLS equations for one phase, optionally pooled over widths.
+
+        Pooling is legitimate because the unknown is keyed by SHAPE, and a
+        shape already carries the verify width in grid.x wherever the kernel is
+        width dependent. Pooling adds distinct pairings, which is what breaks
+        degeneracies that a single width leaves behind.
+        """
+        rows = []
+        for key, v in self.signatures.items():
             w, _, rest = key.partition("|")
-            if rest.startswith("verify_block|"):
-                acc[int(w[1:])]["exclusive"] += bucket["buffers"]
-        totals["unmapped"] += rec.get("unmapped_encoder_dispatches", 0)
-        totals["zero_time"] += rec.get("zero_time_buffers", 0)
-        totals["undrained"] += rec.get("committed_total", 0) - rec.get("completed_total", 0)
-    out = {
-        w: {"verify_dispatches": slot["dispatches"],
-            "priced_dispatches": slot["exclusive"],
-            "coverage": (slot["exclusive"] / slot["dispatches"]
-                         if slot["dispatches"] else None)}
-        for w, slot in acc.items()
-    }
-    return out, dict(totals)
-
-
-def isolated_kernel_gpu(path: pathlib.Path):
-    """{width: {shape: {gpu_ns, buffers}}} from single-dispatch buffers.
-
-    In isolated mode every command buffer holds one dispatch, so the buffer's
-    GPU interval IS that dispatch's GPU time. The instrument keys these by
-    `w<W>|<phase>|<shape>` for the reason given on `default_dispatches`.
-    """
-    acc = collections.defaultdict(lambda: collections.defaultdict(
-        lambda: {"gpu_ns": 0, "buffers": 0}))
-    for rec in read_records(path):
-        if rec.get("event") != "gputime":
-            continue
-        for key, bucket in rec.get("exclusive_kernels", {}).items():
-            w, _, rest = key.partition("|")
-            phase, _, shape = rest.partition("|")
-            if phase != "verify_block":
+            ph, _, sig = rest.partition("|")
+            if ph != phase or v["buffers"] <= 0:
                 continue
-            slot = acc[int(w[1:])][shape]
-            slot["gpu_ns"] += bucket["gpu_ns"]
-            slot["buffers"] += bucket["buffers"]
-    return {w: dict(k) for w, k in acc.items()}
+            if widths is not None and int(w[1:]) not in widths:
+                continue
+            rows.append((parse_signature(sig), v["gpu_ns"], v["buffers"]))
+        return rows
 
 
-def build_width_table(width, dispatches, iso_kernels, insitu_ns, rounds):
-    """Per-shape rows for one width, with the isolated-to-in-situ reconciliation."""
-    rows = []
-    iso = iso_kernels.get(width, {})
-    for shape, per_round in sorted(dispatches.get(width, {}).items()):
-        entry = iso.get(shape)
-        if entry and entry["buffers"]:
-            mean_ns = entry["gpu_ns"] / entry["buffers"]
-            iso_ms = mean_ns * per_round / 1e6
-        else:
-            mean_ns, iso_ms = None, None
+class Identifiability:
+    """Which reported quantities the data actually determines.
+
+    The fit solves `A t = b` for per-dispatch times `t`. If `A` has a null
+    space `N`, then `t + N a` fits equally well for any `a`, so an individual
+    time is only meaningful when its own direction is orthogonal to `N`.
+
+    The quantities this census reports are never single times. They are
+    weighted sums `c . t`, where `c` holds dispatches per round for the shapes
+    in a family, a qmv unit or a rider. Such a sum is determined exactly when
+    `c` is orthogonal to the null space, EVEN IF several of its individual
+    terms are not. Checking the reported functional directly is therefore both
+    stricter and more useful than checking each shape, and it is what
+    `identified` does.
+    """
+
+    def __init__(self, rows, tol=1e-8):
+        self.keys = sorted({k for counts, _, _ in rows for k in counts})
+        self.index = {k: i for i, k in enumerate(self.keys)}
+        self.tol = tol
+        n_keys = len(self.keys)
+        A = np.zeros((len(rows), n_keys))
+        for r, (counts, _, n) in enumerate(rows):
+            for k, c in counts.items():
+                A[r, self.index[k]] = c * np.sqrt(n)
+        self.A = A
+        if n_keys == 0 or not len(rows):
+            self.null = np.zeros((0, 0))
+            self.rank = 0
+            return
+        _, s, vt = np.linalg.svd(A, full_matrices=True)
+        cutoff = max(A.shape) * (s[0] if s.size else 0.0) * 1e-12
+        self.rank = int((s > cutoff).sum())
+        self.null = vt[self.rank:]                      # (n_keys - rank, n_keys)
+
+    def identified(self, weights: dict[str, float]) -> bool:
+        """Is `sum_i weights[i] * t_i` determined by the data?"""
+        if self.null.size == 0:
+            return True
+        c = np.zeros(len(self.keys))
+        for k, w in weights.items():
+            if k in self.index:
+                c[self.index[k]] = w
+        norm = np.linalg.norm(c)
+        if norm == 0:
+            return True
+        return bool(np.linalg.norm(self.null @ c) / norm < self.tol)
+
+    def unidentified_shapes(self) -> list[str]:
+        """Shapes whose individual time the data leaves free."""
+        if self.null.size == 0:
+            return []
+        loading = np.linalg.norm(self.null, axis=0)
+        return [self.keys[i] for i in np.where(loading > self.tol)[0]]
+
+
+def fit_phase(leg, phase, widths=None):
+    rows = leg.signature_rows(phase, widths)
+    if not rows:
+        empty = {"signatures": 0, "kernels": 0, "rank": 0,
+                 "rank_deficient": False, "closure": None,
+                 "unidentified_shapes": [], "buffers": 0, "measured_ms": 0.0}
+        return {}, empty, None
+    times, diag = solve_kernel_times(rows)
+    ident = Identifiability(rows)
+    diag["unidentified_shapes"] = ident.unidentified_shapes()
+    diag["buffers"] = sum(n for _, _, n in rows)
+    diag["measured_ms"] = sum(g for _, g, _ in rows) / 1e6
+    return times, diag, ident
+
+
+def build_rows(leg, width, phase, times):
+    """Per-shape rows: dispatches per round, fitted GPU ms per round, share."""
+    per_round_counts = leg.shape_dispatches[(width, phase)]
+    rounds = leg.round_count(width, phase) or 1
+    total_ns = leg.by_width_phase[f"w{width}|{phase}"]["gpu_ns"]
+    out = []
+    for shape, count in per_round_counts.items():
+        per_round = count / rounds
+        t = times.get(shape)
+        ms = (t * per_round / 1e6) if t is not None else None
         parsed = parse_shape(shape)
-        kernel = parsed["kernel"] if parsed else shape
-        group = qmv_group(shape)
-        rows.append({
+        unit = qmv_unit(shape)
+        out.append({
             "shape": shape,
-            "kernel": kernel,
-            "grid": parsed["grid"] if parsed else None,
-            "family": family(kernel),
-            "unit": group[0] if group else None,
-            "e71_interceptable": group[2] if group else None,
+            "kernel": parsed["kernel"] if parsed else shape,
+            "grid": list(parsed["grid"]) if parsed else None,
+            "family": family_of(parsed["kernel"] if parsed else shape),
+            "unit": unit[0] if unit else None,
+            "e71_interceptable": unit[2] if unit else None,
             "dispatches_per_round": per_round,
-            "isolated_mean_ns": mean_ns,
-            "isolated_ms_per_round": iso_ms,
-            "isolated_samples": entry["buffers"] if entry else 0,
+            "fitted_ns_per_dispatch": t,
+            "ms_per_round": ms,
+            "share": (ms * 1e6 * rounds / total_ns) if (ms and total_ns) else None,
         })
-    iso_total = sum(r["isolated_ms_per_round"] or 0.0 for r in rows)
-    insitu_ms = (insitu_ns.get(width, 0) / 1e6 / rounds[width]) if rounds.get(width) else None
-    discount = (insitu_ms / iso_total) if (iso_total and insitu_ms) else None
+    out.sort(key=lambda r: -(r["ms_per_round"] or 0))
+    return out, rounds, (total_ns / 1e6 / rounds if rounds else 0.0)
+
+
+def _group(rows, key_fn, ident=None):
+    acc = collections.defaultdict(
+        lambda: {"kernels": 0, "dispatches_per_round": 0.0,
+                 "ms_per_round": 0.0, "share": 0.0,
+                 "weights": {}, "e71_interceptable": None})
     for r in rows:
-        r["share_of_isolated"] = (
-            (r["isolated_ms_per_round"] / iso_total) if (iso_total and r["isolated_ms_per_round"])
-            else None)
-        # Scaling the isolated per-kernel time by the measured overall discount
-        # is the best in-situ estimate this instrument can produce. It assumes
-        # the discount is uniform across kernels, which is stated, not proved.
-        r["insitu_estimate_ms"] = (
-            r["isolated_ms_per_round"] * discount
-            if (discount and r["isolated_ms_per_round"]) else None)
-    return {
-        "width": width,
-        "rounds": rounds.get(width, 0),
-        "isolated_total_ms_per_round": iso_total,
-        "insitu_total_ms_per_round": insitu_ms,
-        "concurrency_discount": discount,
-        "rows": rows,
-    }
-
-
-def family_totals(table):
-    fam = collections.defaultdict(lambda: {"ms": 0.0, "dispatches": 0.0, "kernels": 0})
-    for r in table["rows"]:
-        slot = fam[r["family"]]
-        slot["ms"] += r["isolated_ms_per_round"] or 0.0
-        slot["dispatches"] += r["dispatches_per_round"]
-        slot["kernels"] += 1
-    total = table["isolated_total_ms_per_round"]
-    for slot in fam.values():
-        slot["share"] = slot["ms"] / total if total else None
-    return dict(fam)
-
-
-def qmv_unit_totals(table):
-    """Split the one `affine_qmv_fast` name into the five projections it serves.
-
-    This is the rung-3 table. `gdn_in_proj_fused` and `fa_qkv_gate_fused` are
-    dispatched by raw `quantizedMM` calls inside `Qwen35GatedDeltaNet` and
-    `Qwen35Attention`, never through a child `Linear`, so no E71 arm could
-    intercept them. If they carry real GPU time, they are the unattributed mass.
-    """
-    units = collections.defaultdict(
-        lambda: {"ms": 0.0, "dispatches": 0.0, "interceptable": None, "shapes": 0})
-    for r in table["rows"]:
-        if r["unit"] is None:
+        name = key_fn(r)
+        if name is None:
             continue
-        slot = units[r["unit"]]
-        slot["ms"] += r["isolated_ms_per_round"] or 0.0
-        slot["dispatches"] += r["dispatches_per_round"]
-        slot["interceptable"] = r["e71_interceptable"]
-        slot["shapes"] += 1
-    total = table["isolated_total_ms_per_round"]
-    for slot in units.values():
-        slot["share"] = slot["ms"] / total if total else None
-    return dict(units)
+        slot = acc[name]
+        slot["kernels"] += 1
+        slot["dispatches_per_round"] += r["dispatches_per_round"]
+        slot["ms_per_round"] += r["ms_per_round"] or 0.0
+        slot["share"] += r["share"] or 0.0
+        slot["weights"][r["shape"]] = (slot["weights"].get(r["shape"], 0.0)
+                                       + r["dispatches_per_round"])
+        if r["e71_interceptable"] is not None:
+            slot["e71_interceptable"] = r["e71_interceptable"]
+    for slot in acc.values():
+        slot["identified"] = (ident.identified(slot["weights"])
+                              if ident is not None else None)
+        slot.pop("weights")
+    return dict(acc)
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--default", required=True, type=pathlib.Path)
+def family_totals(rows, ident=None):
+    return _group(rows, lambda r: r["family"], ident)
+
+
+def qmv_unit_totals(rows, ident=None):
+    """Rung-3 table: qmv cost split by projection, with E71 reachability."""
+    return _group(
+        rows,
+        lambda r: (None if r["family"] != "qmv" else
+                   (r["unit"] or
+                    f"unmapped grid.y={r['grid'][1] if r['grid'] else '?'}")),
+        ident)
+
+
+def fmt_ms(v):
+    return "     n/a" if v is None else f"{v:8.3f}"
+
+
+def fmt_pct(v):
+    return "    n/a" if v is None else f"{100 * v:6.2f}%"
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--default", type=pathlib.Path, required=True)
     ap.add_argument("--isolated", type=pathlib.Path)
-    ap.add_argument("--width", type=int, action="append")
-    ap.add_argument("--top", type=int, default=18)
+    ap.add_argument("--width", type=int, action="append", dest="widths")
+    ap.add_argument("--skip-rounds", type=int, default=0)
+    ap.add_argument("--phase", default="target_verify")
     ap.add_argument("--json", type=pathlib.Path)
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
-    dispatches, rounds = default_dispatches(args.default)
-    insitu_ns = default_phase_gpu(args.default)
-    iso_kernels = isolated_kernel_gpu(args.isolated) if args.isolated else {}
+    default = Leg(args.default, args.skip_rounds)
+    isolated = Leg(args.isolated, args.skip_rounds) if args.isolated else None
+    phase = args.phase
+    widths = args.widths or default.widths(phase)
 
-    widths = args.width or sorted(dispatches)
-    print(f"widths seen = {sorted(dispatches)}  rounds per width = "
-          f"{ {w: rounds[w] for w in sorted(rounds)} }")
-    coverage = {}
-    if args.isolated:
-        print(f"isolated widths = {sorted(iso_kernels)}")
-        coverage, health = isolation_coverage(args.isolated)
-        print(f"isolated instrument health: unmapped={health.get('unmapped', 0)} "
-              f"zero_time={health.get('zero_time', 0)} "
-              f"undrained={health.get('undrained', 0)}")
-        print("\n| width | verify dispatches | priced by a lone buffer | coverage |")
-        print("|---:|---:|---:|---:|")
-        for w in sorted(coverage):
-            c = coverage[w]
-            pct = "--" if c["coverage"] is None else f"{c['coverage'] * 100:.1f} %"
-            print(f"| {w} | {c['verify_dispatches']} | {c['priced_dispatches']} | {pct} |")
-    else:
-        print("no isolated run supplied: dispatch counts only, no per-kernel GPU time")
+    print("# E80 per-kernel GPU-time census\n")
+    print(f"default leg  = {args.default}")
+    print(f"isolated leg = {args.isolated}")
+    print(f"phase = {phase}   widths = {widths}   "
+          f"warmup rounds dropped = {args.skip_rounds}")
+
+    print("\n## phase coverage, including `begin()`\n")
+    print("| leg | width and phase | GPU ms | buffers | dispatches |")
+    print("|---|---|---:|---:|---:|")
+    for label, leg in (("default", default), ("isolated", isolated)):
+        if leg is None:
+            continue
+        for key in sorted(leg.by_width_phase,
+                          key=lambda k: -leg.by_width_phase[k]["gpu_ns"]):
+            b = leg.by_width_phase[key]
+            print(f"| {label} | {key} | {b['gpu_ns']/1e6:.1f} | "
+                  f"{b['buffers']} | {b['dispatches']} |")
+
+    fits = {}
+    for label, leg in (("default", default), ("isolated", isolated)):
+        if leg is None:
+            continue
+        times, diag, ident = fit_phase(leg, phase, set(widths))
+        fits[label] = (times, diag, ident)
+        print(f"\n## NNLS fit, {label} leg, phase {phase}, widths pooled {widths}\n")
+        print(f"- equations (distinct signatures): {diag['signatures']}")
+        print(f"- buffers behind them: {diag['buffers']}")
+        print(f"- unknown shapes: {diag['kernels']}")
+        print(f"- design-matrix rank: {diag['rank']}, "
+              f"rank deficient: {diag['rank_deficient']}")
+        closure = diag.get("closure")
+        print("- closure (fitted / measured): "
+              + (f"{closure:.4f}" if closure else "n/a"))
+        free = diag.get("unidentified_shapes") or []
+        if free:
+            print(f"- {len(free)} of {diag['kernels']} shapes are not "
+                  f"individually identified. Every reported family, qmv unit "
+                  f"and rider below carries its own identifiability verdict, "
+                  f"because a weighted sum can be determined even when its "
+                  f"terms are not.")
+            for s in free:
+                print(f"    - {s}")
+        else:
+            print("- every fitted shape is individually identified")
+
+    if not fits:
+        print("\nno signature data; nothing to fit")
+        return 1
+    primary = "isolated" if "isolated" in fits else "default"
+    times, _, primary_ident = fits[primary]
+    leg = isolated if primary == "isolated" else default
+    print(f"\nper-kernel times below come from the **{primary}** leg")
 
     tables = {}
     for width in widths:
-        table = build_width_table(width, dispatches, iso_kernels, insitu_ns, rounds)
-        tables[width] = table
-        print(f"\n## width M = {width}   rounds = {table['rounds']}")
-        if table["insitu_total_ms_per_round"]:
-            print(f"in-situ verify GPU = {table['insitu_total_ms_per_round']:.3f} ms/round")
-        if table["isolated_total_ms_per_round"]:
-            print(f"isolated kernel sum = {table['isolated_total_ms_per_round']:.3f} ms/round")
-        if table["concurrency_discount"]:
-            print(f"concurrency discount = {table['concurrency_discount']:.3f} "
-                  f"(in-situ / isolated)")
-
-        rows = sorted(table["rows"],
-                      key=lambda r: -(r["isolated_ms_per_round"] or 0.0))
-        print(f"\n| kernel | grid | unit | family | dispatches/round "
-              f"| isolated ms/round | share | in-situ est ms |")
+        rows, rounds, ms_round = build_rows(leg, width, phase, times)
+        if not rows:
+            continue
+        tables[width] = {"rows": rows, "rounds": rounds,
+                         "measured_ms_per_round": ms_round}
+        print(f"\n## width M = {width}   rounds = {rounds}   "
+              f"measured {phase} = {ms_round:.3f} ms/round\n")
+        print("| kernel | grid | unit | family | disp/round | ns/disp | "
+              "ms/round | share |")
         print("|---|---|---|---|---:|---:|---:|---:|")
-        for r in rows[:args.top]:
-            ms = "--" if r["isolated_ms_per_round"] is None else f"{r['isolated_ms_per_round']:.4f}"
-            sh = "--" if r["share_of_isolated"] is None else f"{r['share_of_isolated'] * 100:.2f} %"
-            est = "--" if r["insitu_estimate_ms"] is None else f"{r['insitu_estimate_ms']:.4f}"
-            grid = "x".join(str(v) for v in r["grid"]) if r["grid"] else "--"
-            print(f"| `{short(r['kernel'], 56)}` | {grid} | {r['unit'] or '--'} "
-                  f"| {r['family']} | {r['dispatches_per_round']:.1f} | {ms} | {sh} | {est} |")
+        for r in rows:
+            grid = "x".join(str(g) for g in r["grid"]) if r["grid"] else "?"
+            ns = ("" if r["fitted_ns_per_dispatch"] is None
+                  else str(int(r["fitted_ns_per_dispatch"])))
+            print(f"| {r['kernel'][:52]} | {grid} | {r['unit'] or ''} | "
+                  f"{r['family']} | {r['dispatches_per_round']:.1f} | {ns} | "
+                  f"{fmt_ms(r['ms_per_round'])} | {fmt_pct(r['share'])} |")
 
-        units = qmv_unit_totals(table)
+        fam = family_totals(rows, primary_ident)
+        print("\n| family | kernels | disp/round | ms/round | share | identified |")
+        print("|---|---:|---:|---:|---:|---|")
+        for name, slot in sorted(fam.items(),
+                                 key=lambda kv: -kv[1]["ms_per_round"]):
+            print(f"| {name} | {slot['kernels']} | "
+                  f"{slot['dispatches_per_round']:.1f} | "
+                  f"{slot['ms_per_round']:8.3f} | {100*slot['share']:6.2f}% | "
+                  f"{slot['identified']} |")
+
+        units = qmv_unit_totals(rows, primary_ident)
         if units:
-            print("\n**`affine_qmv_fast` split by projection.** `E71 arm?` = no means "
-                  "no E71 arm could ever intercept it.\n")
-            print("| projection | E71 arm? | dispatches/round | isolated ms/round | share |")
-            print("|---|---|---:|---:|---:|")
-            for name, slot in sorted(units.items(), key=lambda kv: -kv[1]["ms"]):
-                sh = "--" if slot["share"] is None else f"{slot['share'] * 100:.2f} %"
-                print(f"| {name} | {'yes' if slot['interceptable'] else '**no**'} "
-                      f"| {slot['dispatches']:.1f} | {slot['ms']:.4f} | {sh} |")
-            blind = sum(s["ms"] for s in units.values() if not s["interceptable"])
-            blind_d = sum(s["dispatches"] for s in units.values() if not s["interceptable"])
-            tot = table["isolated_total_ms_per_round"]
-            print(f"\nE71-blind projections: {blind:.4f} ms/round over {blind_d:.0f} "
-                  f"dispatches" + (f", {blind / tot * 100:.2f} % of the round" if tot else ""))
+            print("\n| qmv unit | reachable by an E71 arm | disp/round | "
+                  "ms/round | share | identified |")
+            print("|---|---|---:|---:|---:|---|")
+            for name, slot in sorted(units.items(),
+                                     key=lambda kv: -kv[1]["ms_per_round"]):
+                print(f"| {name} | {slot['e71_interceptable']} | "
+                      f"{slot['dispatches_per_round']:.1f} | "
+                      f"{slot['ms_per_round']:8.3f} | "
+                      f"{100*slot['share']:6.2f}% | {slot['identified']} |")
 
-        fam = family_totals(table)
-        print(f"\n| family | kernels | dispatches/round | isolated ms/round | share |")
-        print("|---|---:|---:|---:|---:|")
-        for name, slot in sorted(fam.items(), key=lambda kv: -kv[1]["ms"]):
-            sh = "--" if slot["share"] is None else f"{slot['share'] * 100:.2f} %"
-            print(f"| {name} | {slot['kernels']} | {slot['dispatches']:.1f} "
-                  f"| {slot['ms']:.4f} | {sh} |")
+        unclassified = [r for r in rows if r["family"] == "unclassified"]
+        if unclassified:
+            print(f"\nunclassified kernels ({len(unclassified)}), each named "
+                  f"with its GPU time:")
+            for r in unclassified:
+                print(f"  - {r['kernel']}  grid="
+                      f"{'x'.join(str(g) for g in r['grid']) if r['grid'] else '?'}"
+                      f"  {fmt_ms(r['ms_per_round'])} ms/round")
+        else:
+            print("\nunclassified kernels: 0")
 
-        unclassified = [r for r in table["rows"] if r["family"] == "unclassified"]
-        print(f"\nunclassified kernels: {len(unclassified)}")
-        for r in sorted(unclassified, key=lambda r: -(r["isolated_ms_per_round"] or 0.0)):
-            ms = "--" if r["isolated_ms_per_round"] is None else f"{r['isolated_ms_per_round']:.4f} ms"
-            print(f"  {ms}  x{r['dispatches_per_round']:.1f}  {r['kernel']}")
+    # -- concurrency discount, per family ---------------------------------
+    discounts = {"phase_level": {}, "per_family": {}}
+    if isolated is not None:
+        print("\n## concurrency discount\n")
+        print("The discount is the in-situ default configuration divided by the "
+              "one-op-per-buffer isolated configuration. At phase level it needs "
+              "no fit at all: both legs run the same dispatches, so the ratio of "
+              "measured GPU time is exact.\n")
+        print("| width and phase | isolated GPU ms | default GPU ms | "
+              "isolated buffers | default buffers | discount |")
+        print("|---|---:|---:|---:|---:|---:|")
+        for width in widths:
+            key = f"w{width}|{phase}"
+            bi = isolated.by_width_phase.get(key)
+            bd = default.by_width_phase.get(key)
+            if not bi or not bd or not bi["gpu_ns"]:
+                continue
+            ratio = bd["gpu_ns"] / bi["gpu_ns"]
+            discounts["phase_level"][key] = {
+                "isolated_ms": bi["gpu_ns"] / 1e6,
+                "default_ms": bd["gpu_ns"] / 1e6,
+                "isolated_buffers": bi["buffers"],
+                "default_buffers": bd["buffers"],
+                "discount": ratio,
+            }
+            print(f"| {key} | {bi['gpu_ns']/1e6:.1f} | {bd['gpu_ns']/1e6:.1f} | "
+                  f"{bi['buffers']} | {bd['buffers']} | {ratio:.4f} |")
 
-    # --- riders ----------------------------------------------------------
-    print("\n## falsification riders, at the ranked-dominant width M = 6\n")
+    if "default" in fits and "isolated" in fits and tables:
+        d_times, _, d_ident = fits["default"]
+        i_times, _, i_ident = fits["isolated"]
+        width = max(tables, key=lambda w: tables[w]["rounds"])
+        rows_i, _, _ = build_rows(isolated, width, phase, i_times)
+        rows_d, _, _ = build_rows(default, width, phase, d_times)
+        fam_i = family_totals(rows_i, i_ident)
+        fam_d = family_totals(rows_d, d_ident)
+        print(f"\nPer family, at width M = {width}. A family is only "
+              f"comparable when BOTH legs identify it.\n")
+        print("| family | isolated ms/round | default ms/round | discount | "
+              "both identified |")
+        print("|---|---:|---:|---:|---|")
+        for name in sorted(set(fam_i) | set(fam_d)):
+            si, sd = fam_i.get(name, {}), fam_d.get(name, {})
+            mi, md = si.get("ms_per_round"), sd.get("ms_per_round")
+            both = bool(si.get("identified")) and bool(sd.get("identified"))
+            ratio = (md / mi) if (mi and md) else None
+            discounts["per_family"][name] = {
+                "width": width, "isolated_ms": mi, "default_ms": md,
+                "discount": ratio, "both_identified": both}
+            print(f"| {name} | {fmt_ms(mi)} | {fmt_ms(md)} | "
+                  f"{'n/a' if ratio is None else f'{ratio:.3f}'} | {both} |")
+
+    # -- falsification riders ---------------------------------------------
     verdicts = {}
-    if 6 in tables and tables[6]["isolated_total_ms_per_round"]:
-        fam6 = family_totals(tables[6])
-        print("| rider | families | share | limit | verdict |")
-        print("|---|---|---:|---:|---|")
-        for label, fams, limit, note in RIDERS:
-            share = sum(fam6.get(f, {}).get("ms", 0.0) for f in fams)
-            share = share / tables[6]["isolated_total_ms_per_round"]
-            ok = share <= limit
-            verdicts[label] = {"share": share, "limit": limit, "holds": ok, "note": note}
-            print(f"| {label} | {', '.join(fams)} | {share * 100:.3f} % "
-                  f"| {limit * 100:.0f} % | {'holds' if ok else '**BREAKS** -- ' + note} |")
-    else:
-        print("width 6 has no isolated data; riders cannot be decided")
+    rider_width = 6 if 6 in tables else (max(tables) if tables else None)
+    if rider_width is not None:
+        fam = family_totals(tables[rider_width]["rows"], primary_ident)
+        print(f"\n## falsification riders, at width M = {rider_width}\n")
+        print("| rider | families | measured share | limit | verdict | identified |")
+        print("|---|---|---:|---:|---|---|")
+        for name, families, limit, note in RIDERS:
+            share = sum(fam.get(f, {}).get("share", 0.0) for f in families)
+            ident_ok = all(fam[f].get("identified") for f in families if f in fam)
+            ok = share < limit
+            verdicts[name] = {"share": share, "limit": limit, "pass": ok,
+                              "families": families, "note": note,
+                              "identified": ident_ok}
+            print(f"| {name} | {', '.join(families)} | {100*share:.3f}% | "
+                  f"{100*limit:.1f}% | {'PASS' if ok else 'FAIL'} | {ident_ok} |")
+        copy_share = verdicts["copy"]["share"]
+        if copy_share > 0.01:
+            print(f"\n**HEADLINE: `copy` is {100*copy_share:.2f} % of verify GPU "
+                  f"time, above the 1 % rider. Ledger entry 218 reopens.**")
 
-    # --- ranked weighting -------------------------------------------------
-    usable = {w: t for w, t in tables.items()
-              if w in RANKED_WIDTH_WEIGHTS and t["isolated_total_ms_per_round"]}
+    # -- ranked-weighted family shares ------------------------------------
+    weighted = {}
+    usable = {w: t for w, t in tables.items() if w in RANKED_WIDTH_WEIGHTS}
     if usable:
         covered = sum(RANKED_WIDTH_WEIGHTS[w] for w in usable)
-        print(f"\n## ranked-weighted family shares\n")
-        print(f"covered ranked mass = {covered * 100:.1f} % over widths {sorted(usable)}; "
-              f"weights renormalised over the covered widths")
-        weighted = collections.defaultdict(float)
+        print("\n## ranked-weighted family shares\n")
+        print(f"covered ranked mass = {100*covered:.2f} % over widths "
+              f"{sorted(usable)}; weights renormalised over the covered widths. "
+              f"Widths {sorted(set(RANKED_WIDTH_WEIGHTS) - set(usable))} were "
+              f"not measured and are NOT interpolated.")
+        acc = collections.defaultdict(float)
         for w, t in usable.items():
             weight = RANKED_WIDTH_WEIGHTS[w] / covered
-            for name, slot in family_totals(t).items():
-                weighted[name] += weight * (slot["share"] or 0.0)
+            for name, slot in family_totals(t["rows"], primary_ident).items():
+                acc[name] += weight * slot["share"]
+        weighted = dict(acc)
         print("\n| family | ranked-weighted share |")
         print("|---|---:|")
         for name, share in sorted(weighted.items(), key=lambda kv: -kv[1]):
-            print(f"| {name} | {share * 100:.2f} % |")
-    else:
-        weighted = {}
+            print(f"| {name} | {100*share:.2f}% |")
+
+    print("\n## instrument health\n")
+    print("| leg | " + " | ".join(sorted(default.health)) + " |")
+    print("|---" * (1 + len(default.health)) + "|")
+    for label, lg in (("default", default), ("isolated", isolated)):
+        if lg is None:
+            continue
+        print(f"| {label} | " +
+              " | ".join(str(lg.health[k]) for k in sorted(default.health)) + " |")
 
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         args.json.write_text(json.dumps({
             "default_census": str(args.default),
             "isolated_census": str(args.isolated) if args.isolated else None,
+            "phase": phase,
+            "skip_rounds": args.skip_rounds,
             "ranked_width_weights": RANKED_WIDTH_WEIGHTS,
-            "rounds_per_width": rounds,
-            "isolation_coverage": coverage,
+            "fits": {k: {"diag": v[1], "times_ns": v[0]}
+                     for k, v in fits.items()},
             "widths": {str(w): t for w, t in tables.items()},
-            "families_per_width": {str(w): family_totals(t) for w, t in tables.items()},
-            "qmv_units_per_width": {str(w): qmv_unit_totals(t) for w, t in tables.items()},
+            "families_per_width": {str(w): family_totals(t["rows"], primary_ident)
+                                   for w, t in tables.items()},
+            "qmv_units_per_width": {str(w): qmv_unit_totals(t["rows"], primary_ident)
+                                    for w, t in tables.items()},
+            "concurrency_discount": discounts,
             "riders": verdicts,
-            "ranked_weighted_family_share": dict(weighted),
+            "ranked_weighted_family_share": weighted,
+            "phase_gpu_ms": {
+                "default": {k: v["gpu_ns"] / 1e6
+                            for k, v in default.by_width_phase.items()},
+                "isolated": ({k: v["gpu_ns"] / 1e6
+                              for k, v in isolated.by_width_phase.items()}
+                             if isolated else None),
+            },
+            "health": {"default": dict(default.health),
+                       "isolated": dict(isolated.health) if isolated else None},
         }, indent=2, default=float) + "\n")
         print(f"\nwrote {args.json}")
     return 0
