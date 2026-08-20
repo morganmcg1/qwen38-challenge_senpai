@@ -44,7 +44,9 @@ SOURCES = {
     "parent_b": XKM / "parents/parent-b-plus-copytask.safetensors",
     "qat": XKM / "parents/parent-a-qat-4bit-aware.safetensors",
 }
+KAMCIOSZ = CACHE / "e82/kamciosz-graft/model.safetensors"
 DECLARED_BYTES = 427_742_600
+KAMCIOSZ_BYTES = 1_006_738_224
 GROUP, BITS = 64, 4
 
 TRUNK = [
@@ -238,12 +240,20 @@ def write_head(args, src, decl, tensors, damage, islands, out_dir: Path, src_pat
     nbytes = write_safetensors(out_file, ordered, meta)
 
     built = SafeTensors(out_file)
-    reference = decl if args.trunk == "q4" else SafeTensors(SOURCES["master"])
+    q4 = args.trunk == "q4"
+    # Only a 4-bit trunk can meet the +-2 % budget against the declared head.
+    # bf16 arms are diagnostic controls; their reference is the published
+    # Kamciosz bf16 graft, which has the same 18-tensor layout.
+    reference = decl if q4 else SafeTensors(KAMCIOSZ)
     checks = {
+        "submission_eligible": q4,
         "draft_lm_head_byte_identical": {n: built.sha256(n) == decl.sha256(n) for n in DRAFT},
         "norms_byte_identical_to_source": {n: built.sha256(n) == src.sha256(n) for n in NORMS},
         "bytes": nbytes,
-        "reference_bytes": DECLARED_BYTES if args.trunk == "q4" else reference.path.stat().st_size,
+        "reference_bytes": DECLARED_BYTES if q4 else KAMCIOSZ_BYTES,
+        "reference_artifact": "amal-david/qwen38-mtp-head-q2-q4-rerank-v1"
+        if q4
+        else "Kamciosz/qwen3.8-27b-mtp-head-retrained-graft",
         "tensor_count": len(built.entries),
         "shapes_match_reference": {
             n: (
@@ -276,6 +286,8 @@ def write_head(args, src, decl, tensors, damage, islands, out_dir: Path, src_pat
         and all(checks["shapes_match_reference"].values())
         and abs(checks["bytes_delta_pct"]) <= 2.0
     )
+    if not q4:
+        print("note: diagnostic bf16 arm, not submission-eligible under the 427 MB budget")
     print(
         f"\n{args.tag}: {nbytes:,} B ({checks['bytes_delta_pct']:+.3f} % vs reference),"
         f" {len(built.entries)} tensors, tree {digest}"

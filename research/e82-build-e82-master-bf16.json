@@ -1,0 +1,61 @@
+{
+  "tag": "e82-master-bf16",
+  "source": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head/model.safetensors",
+  "out": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/built/e82-master-bf16/model.safetensors",
+  "file_sha256": "3f4b78a2b1c54b8738200863c6dc09fcec73923de1cc265cf278ae160cdf2f25",
+  "tree_sha256": "ee0c24870ccd83e13a33ffe6c9601a44ca5c5ebe743d72717cf5f5660835fa7b",
+  "tree_bytes": 1006738624,
+  "metadata": {
+    "format": "e82-master-bf16-plus-declared-affine2-readout-v1",
+    "trunk_source": "master:model.safetensors",
+    "trunk_source_sha256": "8fceddc664f3ea96d02e304463aa1319213ff52cdf1f3401d4bce64e7075c349",
+    "trunk_quantization": "bf16, unquantized",
+    "draft_lm_head": "byte-copied from amal-david/qwen38-mtp-head-q2-q4-rerank-v1",
+    "selection": "none: no quantization error to correct",
+    "built_by": "senpai E82"
+  },
+  "quantization_damage": {},
+  "islands": {},
+  "constraints": {
+    "submission_eligible": false,
+    "draft_lm_head_byte_identical": {
+      "draft_lm_head.weight": true,
+      "draft_lm_head.scales": true,
+      "draft_lm_head.biases": true
+    },
+    "norms_byte_identical_to_source": {
+      "layers.0.input_layernorm.weight": true,
+      "layers.0.post_attention_layernorm.weight": true,
+      "layers.0.self_attn.k_norm.weight": true,
+      "layers.0.self_attn.q_norm.weight": true,
+      "norm.weight": true,
+      "pre_fc_norm_embedding.weight": true,
+      "pre_fc_norm_hidden.weight": true
+    },
+    "bytes": 1006738624,
+    "reference_bytes": 1006738224,
+    "reference_artifact": "Kamciosz/qwen3.8-27b-mtp-head-retrained-graft",
+    "tensor_count": 18,
+    "shapes_match_reference": {
+      "draft_lm_head.weight": true,
+      "draft_lm_head.biases": true,
+      "draft_lm_head.scales": true,
+      "fc.weight": true,
+      "layers.0.input_layernorm.weight": true,
+      "layers.0.mlp.down_proj.weight": true,
+      "layers.0.mlp.gate_proj.weight": true,
+      "layers.0.mlp.up_proj.weight": true,
+      "layers.0.post_attention_layernorm.weight": true,
+      "layers.0.self_attn.k_norm.weight": true,
+      "layers.0.self_attn.k_proj.weight": true,
+      "layers.0.self_attn.o_proj.weight": true,
+      "layers.0.self_attn.q_norm.weight": true,
+      "layers.0.self_attn.q_proj.weight": true,
+      "layers.0.self_attn.v_proj.weight": true,
+      "norm.weight": true,
+      "pre_fc_norm_embedding.weight": true,
+      "pre_fc_norm_hidden.weight": true
+    },
+    "bytes_delta_pct": 3.973227503081278e-05
+  }
+}
