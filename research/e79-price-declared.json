@@ -1,0 +1,894 @@
+{
+  "baseline_median": 3.2323500000000003,
+  "cost_model": {
+    "round_fixed_ms": 43.7432,
+    "round_slope_ms": 17.5984,
+    "head_fixed_ms": 0.5074,
+    "head_slope_ms": 2.333,
+    "measured_h": 0.05333400391375117,
+    "shipped_h": 0.18
+  },
+  "working_point": {
+    "plutarch": {
+      "drafts_per_round": 0.1540041067761807,
+      "p": 0.33333333333333326,
+      "head_share_of_round": 0.018657215583713478
+    },
+    "drama": {
+      "drafts_per_round": 2.2976190476190474,
+      "p": 0.6029534502953129,
+      "head_share_of_round": 0.06970671426066198
+    },
+    "travel": {
+      "drafts_per_round": 2.6556603773584904,
+      "p": 0.7000602949925652,
+      "head_share_of_round": 0.07408445331078489
+    },
+    "beagle": {
+      "drafts_per_round": 4.5327102803738315,
+      "p": 0.9362466011177035,
+      "head_share_of_round": 0.08972605588133864
+    },
+    "medicine": {
+      "drafts_per_round": 4.767676767676767,
+      "p": 0.9543589990673516,
+      "head_share_of_round": 0.09111392197034782
+    },
+    "republic": {
+      "drafts_per_round": 5.269662921348314,
+      "p": 0.9674022115612444,
+      "head_share_of_round": 0.09379722439362273
+    },
+    "essays": {
+      "drafts_per_round": 5.425287356321839,
+      "p": 0.9676967515816828,
+      "head_share_of_round": 0.09455994397405727
+    },
+    "botany": {
+      "drafts_per_round": 5.776470588235294,
+      "p": 0.959111917779818,
+      "head_share_of_round": 0.09617552455596197
+    }
+  },
+  "head_step_bytes": {
+    "declared_total": 428616912,
+    "declared_stage_i_block": 270400512,
+    "declared_stage_ii_coarse_readout": 157337600,
+    "declared_stage_iii_top32": 786640,
+    "declared_stage_iv_rerank": 92160,
+    "pinned_total": 1133393104,
+    "pinned_stage_i_block": 849398784,
+    "pinned_stage_ii_compact_select": 283207680
+  },
+  "coverage": {
+    "98304": {
+      "id_prefix": 1.0,
+      "corpus": 1.0,
+      "id_prefix_holdout": 1.0
+    },
+    "90112": {
+      "id_prefix": 0.99609375,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.99609375
+    },
+    "81920": {
+      "id_prefix": 0.98828125,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.99609375
+    },
+    "73728": {
+      "id_prefix": 0.98828125,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.99609375
+    },
+    "65536": {
+      "id_prefix": 0.984375,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.99609375
+    },
+    "57344": {
+      "id_prefix": 0.978515625,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.994140625
+    },
+    "49152": {
+      "id_prefix": 0.970703125,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.994140625
+    },
+    "40960": {
+      "id_prefix": 0.962890625,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.9921875
+    },
+    "32768": {
+      "id_prefix": 0.935546875,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.982421875
+    },
+    "24576": {
+      "id_prefix": 0.908203125,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.97265625
+    },
+    "16384": {
+      "id_prefix": 0.810546875,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.93359375
+    },
+    "8192": {
+      "id_prefix": 0.71875,
+      "corpus": 1.0,
+      "id_prefix_holdout": 0.896484375
+    }
+  },
+  "arms": [
+    {
+      "arm": "p x 1.000",
+      "head_scale": 1.0,
+      "p_scale": 1.0,
+      "median": 3.232349999999999,
+      "delta_pct": -4.12166884635076e-14,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.051334702258727,
+          "round_ms": 30.781,
+          "raw": 1.2528
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.0317460317460316,
+          "round_ms": 38.094,
+          "raw": 1.9163
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.415094339622641,
+          "round_ms": 39.511,
+          "raw": 2.1794999999999995
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 4.785046728971961,
+          "round_ms": 53.338,
+          "raw": 3.120099999999999
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.171717171717171,
+          "round_ms": 53.476,
+          "raw": 3.344599999999999
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 5.752808988764045,
+          "round_ms": 58.421,
+          "raw": 3.3929999999999993
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 5.885057471264369,
+          "round_ms": 60.196,
+          "raw": 3.3666000000000005
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.023529411764707,
+          "round_ms": 60.548,
+          "raw": 3.4253000000000005
+        }
+      ]
+    },
+    {
+      "arm": "p x 1.005",
+      "head_scale": 1.0,
+      "p_scale": 1.005,
+      "median": 3.2649168739568446,
+      "delta_pct": 1.0075293194376946,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.0515913757700206,
+          "round_ms": 30.781,
+          "raw": 1.2530954890834878
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.0393889133585663,
+          "round_ms": 38.094,
+          "raw": 1.9231328285521476
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.426898881135149,
+          "round_ms": 39.511,
+          "raw": 2.189520707839381
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 4.836046579746098,
+          "round_ms": 53.338,
+          "raw": 3.1505211211209487
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.230786422607855,
+          "round_ms": 53.476,
+          "raw": 3.3793126267927405
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 5.826435067936479,
+          "round_ms": 58.421,
+          "raw": 3.4323890955281615
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 5.96265166699775,
+          "round_ms": 60.196,
+          "raw": 3.406888852534994
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.10675394575322,
+          "round_ms": 60.548,
+          "raw": 3.468182872699618
+        }
+      ]
+    },
+    {
+      "arm": "p x 1.010",
+      "head_scale": 1.0,
+      "p_scale": 1.01,
+      "median": 3.2978133260646576,
+      "delta_pct": 2.0252548784833735,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.0518480492813143,
+          "round_ms": 30.781,
+          "raw": 1.2533909732762756
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.0470598075017854,
+          "round_ms": 38.094,
+          "raw": 1.9299880167567591
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.4387618380249103,
+          "round_ms": 39.511,
+          "raw": 2.19958517643176
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 4.8876412911844405,
+          "round_ms": 53.338,
+          "raw": 3.1812414938644062
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.290592082191819,
+          "round_ms": 53.476,
+          "raw": 3.4143851582649094
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 5.90110897482574,
+          "round_ms": 58.421,
+          "raw": 3.4722443836332357
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 6.041392911181878,
+          "round_ms": 60.196,
+          "raw": 3.447674399116416
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.191288276873554,
+          "round_ms": 60.548,
+          "raw": 3.511628450057696
+        }
+      ]
+    },
+    {
+      "arm": "p x 1.020",
+      "head_scale": 1.0,
+      "p_scale": 1.02,
+      "median": 3.3646024973833777,
+      "delta_pct": 4.0915277548340185,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.0523613963039014,
+          "round_ms": 30.781,
+          "raw": 1.2539819269902357
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.0624858290994292,
+          "round_ms": 38.094,
+          "raw": 1.9437655353155316
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.4626636727850757,
+          "round_ms": 39.511,
+          "raw": 2.219845642593507
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 4.992638757633849,
+          "round_ms": 53.338,
+          "raw": 3.243586772387759
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.412443830629969,
+          "round_ms": 53.476,
+          "raw": 3.4856182223789967
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 6.05365306971855,
+          "round_ms": 58.421,
+          "raw": 3.553366897559154
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 6.202377293544949,
+          "round_ms": 60.196,
+          "raw": 3.5307508872348583
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.364361224058002,
+          "round_ms": 60.548,
+          "raw": 3.6002266911981624
+        }
+      ]
+    },
+    {
+      "arm": "p x 1.030",
+      "head_scale": 1.0,
+      "p_scale": 1.03,
+      "median": 3.4327323971298522,
+      "delta_pct": 6.199279073424967,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.0528747433264887,
+          "round_ms": 30.781,
+          "raw": 1.2545728611428517
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.078024487977273,
+          "round_ms": 38.094,
+          "raw": 1.9576326806290827
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.486801193600905,
+          "round_ms": 39.511,
+          "raw": 2.240281885764593
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 5.100086457880906,
+          "round_ms": 53.338,
+          "raw": 3.3071492499899766
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.537335409597346,
+          "round_ms": 53.476,
+          "raw": 3.5583155442697283
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 6.210548154836687,
+          "round_ms": 58.421,
+          "raw": 3.636393962289441
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 6.368133698247675,
+          "round_ms": 60.196,
+          "raw": 3.6158597813558813
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.542900179531099,
+          "round_ms": 60.548,
+          "raw": 3.691132301151153
+        }
+      ]
+    },
+    {
+      "arm": "p x 1.050",
+      "head_scale": 1.0,
+      "p_scale": 1.05,
+      "median": 3.541541710395993,
+      "delta_pct": 9.56553932575349,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.0539014373716633,
+          "round_ms": 30.781,
+          "raw": 1.255754670767937
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.1094412833267984,
+          "round_ms": 38.094,
+          "raw": 1.9856363398431822
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.5357886921906276,
+          "round_ms": 39.511,
+          "raw": 2.2816836027435694
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 5.322525149908484,
+          "round_ms": 53.338,
+          "raw": 3.4379782591717705
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.767676767676767,
+          "round_ms": 53.476,
+          "raw": 3.6915697512110985
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 6.269662921348314,
+          "round_ms": 58.421,
+          "raw": 3.667569790124681
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 6.425287356321839,
+          "round_ms": 60.196,
+          "raw": 3.6451051616202155
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.776470588235294,
+          "round_ms": 60.548,
+          "raw": 3.809312167957662
+        }
+      ]
+    },
+    {
+      "arm": "p_i -> 0.970 every position",
+      "head_scale": 1.0,
+      "acceptance_floor": 0.97,
+      "median": 3.365964903871219,
+      "delta_pct": 4.133676856504366
+    },
+    {
+      "arm": "p_i -> 0.980 every position",
+      "head_scale": 1.0,
+      "acceptance_floor": 0.98,
+      "median": 3.4431434654425104,
+      "delta_pct": 6.521368832042016
+    },
+    {
+      "arm": "p_i -> 0.990 every position",
+      "head_scale": 1.0,
+      "acceptance_floor": 0.99,
+      "median": 3.5221095103447944,
+      "delta_pct": 8.964360615180722
+    },
+    {
+      "arm": "p_i -> 0.995 every position",
+      "head_scale": 1.0,
+      "acceptance_floor": 0.995,
+      "median": 3.562270432514148,
+      "delta_pct": 10.206828855604979
+    },
+    {
+      "arm": "p_i -> 1.000 every position",
+      "head_scale": 1.0,
+      "acceptance_floor": 1.0,
+      "median": 3.602887276479006,
+      "delta_pct": 11.463402059770926
+    },
+    {
+      "arm": "measured position shape",
+      "position_ratios": [
+        1.0,
+        1.0257546970656533,
+        1.0096052353810427,
+        0.9884948279501794,
+        1.0184716065020054,
+        1.0303989867004433,
+        0.9984167194426852,
+        0.9851171627612413
+      ],
+      "median": 3.2874295619915506,
+      "delta_pct": 1.7040098377821176
+    },
+    {
+      "arm": "deepest 3 restored to position 1",
+      "position_ratios": [
+        1.0,
+        1.0257546970656533,
+        1.0096052353810427,
+        0.9884948279501794,
+        1.0184716065020054,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "median": 3.2874295619915506,
+      "delta_pct": 1.7040098377821176
+    },
+    {
+      "arm": "head cost x 0.75",
+      "head_scale": 0.75,
+      "p_scale": 1.0,
+      "median": 3.300446454367581,
+      "delta_pct": 2.106716610750092,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.051334702258727,
+          "round_ms": 30.637428061779428,
+          "raw": 1.2584709165988681
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.0317460317460316,
+          "round_ms": 37.43014810673859,
+          "raw": 1.9484919587297105
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.415094339622641,
+          "round_ms": 38.7792122913094,
+          "raw": 2.2181554713016163
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 4.785046728971961,
+          "round_ms": 52.141547907850295,
+          "raw": 3.1855265784511
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.171717171717171,
+          "round_ms": 52.25789797717842,
+          "raw": 3.415366330284061
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 5.752808988764045,
+          "round_ms": 57.05106808842504,
+          "raw": 3.466826596560883
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 5.885057471264369,
+          "round_ms": 58.77296740313441,
+          "raw": 3.4405106910357044
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.023529411764707,
+          "round_ms": 59.092191084796404,
+          "raw": 3.501687606590962
+        }
+      ]
+    },
+    {
+      "arm": "head cost x 0.50",
+      "head_scale": 0.5,
+      "p_scale": 1.0,
+      "median": 3.3714739155424533,
+      "delta_pct": 4.304110493679616,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.051334702258727,
+          "round_ms": 30.493856123558857,
+          "raw": 1.264193406520016
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.0317460317460316,
+          "round_ms": 36.76629621347717,
+          "raw": 1.9817839841054476
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.415094339622641,
+          "round_ms": 38.04742458261879,
+          "raw": 2.258206882795545
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 4.785046728971961,
+          "round_ms": 50.94509581570058,
+          "raw": 3.2537558376324047
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.171717171717171,
+          "round_ms": 51.03979595435684,
+          "raw": 3.4891919934525015
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 5.752808988764045,
+          "round_ms": 55.68113617685008,
+          "raw": 3.5439373640265575
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 5.885057471264369,
+          "round_ms": 57.34993480626883,
+          "raw": 3.517739514902528
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.023529411764707,
+          "round_ms": 57.636382169592814,
+          "raw": 3.58155996629292
+        }
+      ]
+    },
+    {
+      "arm": "head cost x 0.25",
+      "head_scale": 0.25,
+      "p_scale": 1.0,
+      "median": 3.445625784388791,
+      "delta_pct": 6.598164938474815,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.051334702258727,
+          "round_ms": 30.350284185338285,
+          "raw": 1.2699681765162378
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.0317460317460316,
+          "round_ms": 36.10244432021576,
+          "raw": 2.0162334436835527
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.415094339622641,
+          "round_ms": 37.315636873928185,
+          "raw": 2.2997312409610826
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 4.785046728971961,
+          "round_ms": 49.74864372355087,
+          "raw": 3.3249718069870715
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.171717171717171,
+          "round_ms": 49.82169393153526,
+          "raw": 3.5662797617905104
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 5.752808988764045,
+          "round_ms": 54.31120426527512,
+          "raw": 3.624556431750387
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 5.885057471264369,
+          "round_ms": 55.92690220940323,
+          "raw": 3.598515047889437
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.023529411764707,
+          "round_ms": 56.180573254389216,
+          "raw": 3.665161103491069
+        }
+      ]
+    },
+    {
+      "arm": "head cost x 0.00",
+      "head_scale": 0.0,
+      "p_scale": 1.0,
+      "median": 3.523112860098607,
+      "delta_pct": 8.99540149113204,
+      "per_prompt": [
+        {
+          "prompt": "plutarch",
+          "tokens_per_round": 1.051334702258727,
+          "round_ms": 30.206712247117714,
+          "raw": 1.2757959463132273
+        },
+        {
+          "prompt": "drama",
+          "tokens_per_round": 2.0317460317460316,
+          "round_ms": 35.438592426954344,
+          "raw": 2.051901764479672
+        },
+        {
+          "prompt": "travel",
+          "tokens_per_round": 2.415094339622641,
+          "round_ms": 36.58384916523758,
+          "raw": 2.342811322422041
+        },
+        {
+          "prompt": "beagle",
+          "tokens_per_round": 4.785046728971961,
+          "round_ms": 48.55219163140116,
+          "raw": 3.3993749881292024
+        },
+        {
+          "prompt": "medicine",
+          "tokens_per_round": 5.171717171717171,
+          "round_ms": 48.603591908713675,
+          "raw": 3.6468507320680117
+        },
+        {
+          "prompt": "republic",
+          "tokens_per_round": 5.752808988764045,
+          "round_ms": 52.94127235370017,
+          "raw": 3.7089287982037025
+        },
+        {
+          "prompt": "essays",
+          "tokens_per_round": 5.885057471264369,
+          "round_ms": 54.50386961253764,
+          "raw": 3.683087354286629
+        },
+        {
+          "prompt": "botany",
+          "tokens_per_round": 6.023529411764707,
+          "round_ms": 54.72476433918561,
+          "raw": 3.75275837127983
+        }
+      ]
+    },
+    {
+      "arm": "vocab 98330",
+      "vocabulary_rows": 98330,
+      "head_scale": 0.9999776023770149,
+      "p_scale": 1.0,
+      "coverage_id_prefix": 1.0,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9999990780211199,
+      "median": 3.232355974928827,
+      "delta_pct": 0.00018484782980843478
+    },
+    {
+      "arm": "vocab 90138",
+      "vocabulary_rows": 90138,
+      "head_scale": 0.969397381128069,
+      "p_scale": 0.99609375,
+      "coverage_id_prefix": 0.99609375,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9987383568577943,
+      "median": 3.215261867281839,
+      "delta_pct": -0.528659728004737
+    },
+    {
+      "arm": "vocab 81946",
+      "vocabulary_rows": 81946,
+      "head_scale": 0.9388171598791231,
+      "p_scale": 0.98828125,
+      "coverage_id_prefix": 0.98828125,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.99747379646634,
+      "median": 3.173361282513145,
+      "delta_pct": -1.8249483343961848
+    },
+    {
+      "arm": "vocab 73754",
+      "vocabulary_rows": 73754,
+      "head_scale": 0.9082369386301771,
+      "p_scale": 0.98828125,
+      "coverage_id_prefix": 0.98828125,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9962053716236265,
+      "median": 3.18144938104186,
+      "delta_pct": -1.5747248583272306
+    },
+    {
+      "arm": "vocab 65562",
+      "vocabulary_rows": 65562,
+      "head_scale": 0.8776567173812311,
+      "p_scale": 0.984375,
+      "coverage_id_prefix": 0.984375,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9949330568542425,
+      "median": 3.164730388316375,
+      "delta_pct": -2.0919644123818637
+    },
+    {
+      "arm": "vocab 57370",
+      "vocabulary_rows": 57370,
+      "head_scale": 0.8470764961322852,
+      "p_scale": 0.978515625,
+      "coverage_id_prefix": 0.978515625,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.993656826427118,
+      "median": 3.135855824026774,
+      "delta_pct": -2.9852638474554447
+    },
+    {
+      "arm": "vocab 49178",
+      "vocabulary_rows": 49178,
+      "head_scale": 0.8164962748833392,
+      "p_scale": 0.970703125,
+      "coverage_id_prefix": 0.970703125,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9923766543520913,
+      "median": 3.092046216744511,
+      "delta_pct": -4.340612348770684
+    },
+    {
+      "arm": "vocab 40986",
+      "vocabulary_rows": 40986,
+      "head_scale": 0.7859160536343932,
+      "p_scale": 0.962890625,
+      "coverage_id_prefix": 0.962890625,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9910925143764184,
+      "median": 3.04840665920758,
+      "delta_pct": -5.690699979656294
+    },
+    {
+      "arm": "vocab 32794",
+      "vocabulary_rows": 32794,
+      "head_scale": 0.7553358323854472,
+      "p_scale": 0.935546875,
+      "coverage_id_prefix": 0.935546875,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.989804379981222,
+      "median": 2.882010139916388,
+      "delta_pct": -10.838549664597343
+    },
+    {
+      "arm": "vocab 24602",
+      "vocabulary_rows": 24602,
+      "head_scale": 0.7247556111365013,
+      "p_scale": 0.908203125,
+      "coverage_id_prefix": 0.908203125,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9885122243778817,
+      "median": 2.7257044798924914,
+      "delta_pct": -15.674215976225
+    },
+    {
+      "arm": "vocab 16410",
+      "vocabulary_rows": 16410,
+      "head_scale": 0.6941753898875553,
+      "p_scale": 0.810546875,
+      "coverage_id_prefix": 0.810546875,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9872160205043641,
+      "median": 2.227533720280487,
+      "delta_pct": -31.086246220845922
+    },
+    {
+      "arm": "vocab 8218",
+      "vocabulary_rows": 8218,
+      "head_scale": 0.6635951686386093,
+      "p_scale": 0.71875,
+      "coverage_id_prefix": 0.71875,
+      "coverage_corpus_degenerate": 1.0,
+      "breakeven_coverage": 0.9859157410214876,
+      "median": 1.825247152682071,
+      "delta_pct": -43.53188384048537
+    }
+  ]
+}
