@@ -327,6 +327,60 @@ def render_control_vs_e71(control_blocks, wall, width=6):
     return rows
 
 
+def render_reproducibility(blocks, control_blocks, wall, gpu, width=6):
+    """Is the published reference reproducible to 10 % by ANY session?
+
+    Three independent sessions now measure the same quantities: the published
+    E71 run, this instrumented run, and the dormant control. Two of them carry
+    no E80 GPU-time code in the compared column at all.
+
+    If the spread across those three exceeds the tolerance band, the row is not
+    a test of the instrument. It is a restatement of the harness noise floor,
+    and no instrument can pass it.
+    """
+    print("\n### Reference reproducibility across three independent sessions\n")
+    print("| row | E71 published | dormant control | instrumented (wall) "
+          "| instrumented (GPU) | spread | +-10 % band | reproducible |")
+    print("|---|---:|---:|---:|---:|---:|---:|---|")
+    out = {}
+    for fam, ref in E71_FAMILY_TAX_MS.items():
+        arms = ("mlp_all", "mlp_down") if fam == "mlp_gate_up" else (fam,)
+
+        def tax(bs, value_of):
+            vals = [abba_tax(bs, a, width, value_of) for a in arms]
+            if any(v is None for v in vals):
+                return None
+            return vals[0] - vals[1] if len(vals) == 2 else vals[0]
+
+        ctrl = tax(control_blocks, wall)
+        inst_w = tax(blocks, wall)
+        inst_g = tax(blocks, gpu)
+        seen = [v for v in (ref, ctrl, inst_w, inst_g) if v is not None]
+        spread = max(seen) - min(seen)
+        band = 2 * ref * G1_TOLERANCE  # a +-10 % band is 20 % wide
+        ok = spread <= band
+        out[fam] = {"e71": ref, "control_wall": ctrl, "instrumented_wall": inst_w,
+                    "instrumented_gpu": inst_g, "spread_ms": spread,
+                    "band_ms": band, "reproducible": ok}
+        print(f"| {fam} | {ref:.3f} | {ctrl:.3f} | {inst_w:.3f} | {inst_g:.3f} "
+              f"| {spread:.3f} | {band:.3f} | {'yes' if ok else '**NO**'} |")
+
+    for w, ref in ((1, E71_F1_MS), (6, E71_F6_MS)):
+        ctrl = curve_level(control_blocks, w, wall)
+        inst_w = curve_level(blocks, w, wall)
+        inst_g = curve_level(blocks, w, gpu)
+        seen = [v for v in (ref, ctrl, inst_w, inst_g) if v is not None]
+        spread = max(seen) - min(seen)
+        band = 2 * ref * G2_TOLERANCE
+        ok = spread <= band
+        out[f"F({w})"] = {"e71": ref, "control_wall": ctrl, "instrumented_wall": inst_w,
+                          "instrumented_gpu": inst_g, "spread_ms": spread,
+                          "band_ms": band, "reproducible": ok}
+        print(f"| F({w}) level | {ref:.3f} | {ctrl:.3f} | {inst_w:.3f} | {inst_g:.3f} "
+              f"| {spread:.3f} | {band:.3f} | {'yes' if ok else '**NO**'} |")
+    return out
+
+
 def verdict(observed, reference, tolerance):
     if observed is None:
         return {"observed": None, "reference": reference, "relative": None,
@@ -449,11 +503,12 @@ def main() -> int:
     power = render_power(blocks, 6)
     self_consistency, worst_self = render_self_consistency(blocks, wall, gpu, 6)
 
-    overhead, control_rows = {}, {}
+    overhead, control_rows, reproducibility = {}, {}, {}
     if args.control:
         control_blocks = json.loads(args.control.read_text())["blocks"]
         overhead = render_overhead(blocks, control_blocks, wall, 6)
         control_rows = render_control_vs_e71(control_blocks, wall, 6)
+        reproducibility = render_reproducibility(blocks, control_blocks, wall, gpu, 6)
 
     attributed = [g1[f"{f} GPU tax ms"]["observed"] for f in E71_DISJOINT]
     if all(v is not None for v in attributed):
@@ -521,6 +576,7 @@ def main() -> int:
             "instrument_self_consistency_worst_relative": worst_self,
             "instrument_overhead": overhead,
             "dormant_control_vs_e71": control_rows,
+            "three_session_reproducibility": reproducibility,
         }, indent=2, default=float) + "\n")
         print(f"\nwrote {args.json}")
 

@@ -280,5 +280,165 @@
       "relative": -0.0034588065349034193
     }
   },
-  "instrument_self_consistency_worst_relative": 0.07327247797939648
+  "instrument_self_consistency_worst_relative": 0.07327247797939648,
+  "instrument_overhead": {
+    "mlp_gate_up tax": {
+      "instrumented_ms": 20.029708499999998,
+      "control_ms": 19.299812000000003,
+      "relative": 0.03781883989336244
+    },
+    "mlp_down tax": {
+      "instrumented_ms": 16.745500000000007,
+      "control_ms": 17.214292,
+      "relative": -0.027232720346558163
+    },
+    "gdn_out_proj tax": {
+      "instrumented_ms": 2.982916500000016,
+      "control_ms": 3.589936999999992,
+      "relative": -0.16908945755871965
+    },
+    "fa_o_proj tax": {
+      "instrumented_ms": 1.1236455000000092,
+      "control_ms": 1.5525829999999985,
+      "relative": -0.27627347459040175
+    },
+    "lm_head tax": {
+      "instrumented_ms": 2.5696664999999967,
+      "control_ms": 2.1941249999999997,
+      "relative": 0.17115775081182574
+    },
+    "F(1) level": {
+      "instrumented_ms": 65.9243335,
+      "control_ms": 65.7808545,
+      "relative": 0.0021811665581206344
+    },
+    "F(6) level": {
+      "instrumented_ms": 122.0615755,
+      "control_ms": 122.2332708125,
+      "relative": -0.0014046528523593566
+    }
+  },
+  "dormant_control_vs_e71": {
+    "F(1) wall ms": {
+      "observed": 65.7808545,
+      "reference": 64.706,
+      "relative": 0.01661135752480451,
+      "pass": true,
+      "note": ""
+    },
+    "F(6) wall ms": {
+      "observed": 122.2332708125,
+      "reference": 122.11,
+      "relative": 0.0010095062853164847,
+      "pass": true,
+      "note": ""
+    },
+    "F(6)-F(1) wall ms": {
+      "observed": 56.45241631249999,
+      "reference": 57.404,
+      "relative": -0.01657695783394906,
+      "pass": true,
+      "note": ""
+    },
+    "mlp_gate_up wall tax ms": {
+      "observed": 19.299812000000003,
+      "reference": 20.913,
+      "relative": -0.07713804810404999,
+      "pass": true,
+      "note": ""
+    },
+    "mlp_down wall tax ms": {
+      "observed": 17.214292,
+      "reference": 16.887,
+      "relative": 0.019381299224255338,
+      "pass": true,
+      "note": ""
+    },
+    "gdn_out_proj wall tax ms": {
+      "observed": 3.589936999999992,
+      "reference": 3.313,
+      "relative": 0.08359100513129845,
+      "pass": true,
+      "note": ""
+    },
+    "fa_o_proj wall tax ms": {
+      "observed": 1.5525829999999985,
+      "reference": 1.161,
+      "relative": 0.337280792420326,
+      "pass": false,
+      "note": ""
+    },
+    "lm_head wall tax ms": {
+      "observed": 2.1941249999999997,
+      "reference": 2.142,
+      "relative": 0.02433473389355731,
+      "pass": true,
+      "note": ""
+    }
+  },
+  "three_session_reproducibility": {
+    "mlp_gate_up": {
+      "e71": 20.913,
+      "control_wall": 19.299812000000003,
+      "instrumented_wall": 20.029708499999998,
+      "instrumented_gpu": 21.49733487499998,
+      "spread_ms": 2.197522874999976,
+      "band_ms": 4.1826,
+      "reproducible": true
+    },
+    "mlp_down": {
+      "e71": 16.887,
+      "control_wall": 17.214292,
+      "instrumented_wall": 16.745500000000007,
+      "instrumented_gpu": 16.77351554166667,
+      "spread_ms": 0.46879199999999344,
+      "band_ms": 3.3774,
+      "reproducible": true
+    },
+    "gdn_out_proj": {
+      "e71": 3.313,
+      "control_wall": 3.589936999999992,
+      "instrumented_wall": 2.982916500000016,
+      "instrumented_gpu": 2.989847041666664,
+      "spread_ms": 0.607020499999976,
+      "band_ms": 0.6626000000000001,
+      "reproducible": true
+    },
+    "fa_o_proj": {
+      "e71": 1.161,
+      "control_wall": 1.5525829999999985,
+      "instrumented_wall": 1.1236455000000092,
+      "instrumented_gpu": 1.1010176666666638,
+      "spread_ms": 0.4515653333333347,
+      "band_ms": 0.23220000000000002,
+      "reproducible": false
+    },
+    "lm_head": {
+      "e71": 2.142,
+      "control_wall": 2.1941249999999997,
+      "instrumented_wall": 2.5696664999999967,
+      "instrumented_gpu": 2.4333694999999977,
+      "spread_ms": 0.42766649999999684,
+      "band_ms": 0.4284,
+      "reproducible": true
+    },
+    "F(1)": {
+      "e71": 64.706,
+      "control_wall": 65.7808545,
+      "instrumented_wall": 65.9243335,
+      "instrumented_gpu": 64.12636624999999,
+      "spread_ms": 1.7979672500000135,
+      "band_ms": 6.470600000000001,
+      "reproducible": true
+    },
+    "F(6)": {
+      "e71": 122.11,
+      "control_wall": 122.2332708125,
+      "instrumented_wall": 122.0615755,
+      "instrumented_gpu": 121.639388125,
+      "spread_ms": 0.593882687499999,
+      "band_ms": 12.211,
+      "reproducible": true
+    }
+  }
 }
