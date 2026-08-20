@@ -310,6 +310,36 @@ def parse_trace(path):
     return legs
 
 
+PHASES = ("round", "draft_build", "d_pre", "d_flush", "d_head1", "d_submit1",
+          "d_chain", "d_submit2", "verify_build", "eval_wall", "readout",
+          "commit", "upkeep")
+
+
+def slope_vs_draft(rounds, phase):
+    """Least-squares `phase_ms = fixed + slope * draftCount` over the leg.
+
+    The slope is the marginal cost of one more DRAFT at the widths the
+    schedule actually visited; the intercept is the width-independent part.
+    Reported with R^2 so a phase that does not scale with width is visible
+    as such instead of being read as a per-draft price.
+    """
+    pts = [(r["d"], r[phase] / 1000.0) for r in rounds if phase in r]
+    xs = {x for x, _ in pts}
+    if len(pts) < 3 or len(xs) < 2:
+        return None
+    n = len(pts)
+    mx = sum(x for x, _ in pts) / n
+    my = sum(y for _, y in pts) / n
+    sxx = sum((x - mx) ** 2 for x, _ in pts)
+    sxy = sum((x - mx) * (y - my) for x, y in pts)
+    slope = sxy / sxx
+    fixed = my - slope * mx
+    sst = sum((y - my) ** 2 for _, y in pts)
+    sse = sum((y - fixed - slope * x) ** 2 for x, y in pts)
+    return {"slope_ms_per_draft": slope, "fixed_ms": fixed,
+            "r2": 1.0 - sse / sst if sst > 0 else float("nan"), "n": n}
+
+
 def position_table(rounds):
     """Per-position (reached, accepted, p, Wilson 95% interval).
 
@@ -566,12 +596,28 @@ def cmd_census(args):
             print("   in-situ round ms by width: " + ", ".join(
                 "M=%d:%.3f(n=%d)" % (w, st.median(v), len(v))
                 for w, v in sorted(by_width.items())))
-        for phase in ("draft_build", "d_chain", "d_head1", "verify_build",
-                      "eval_wall", "readout", "commit", "upkeep"):
+        for phase in PHASES:
             vals = [r[phase] / 1000.0 for r in body if phase in r]
-            if vals:
-                entry.setdefault("phase_ms", {})[phase] = {
-                    "median": st.median(vals), "mean": st.mean(vals)}
+            if not vals:
+                continue
+            entry.setdefault("phase_ms", {})[phase] = {
+                "median": st.median(vals), "mean": st.mean(vals)}
+            per_width = defaultdict(list)
+            for r in body:
+                if phase in r:
+                    per_width[r["d"] + 1].append(r[phase] / 1000.0)
+            entry.setdefault("phase_ms_by_width", {})[phase] = {
+                str(w): {"n": len(v), "median": st.median(v)}
+                for w, v in sorted(per_width.items())}
+            fit = slope_vs_draft(body, phase)
+            if fit:
+                entry.setdefault("phase_fit", {})[phase] = fit
+        if entry.get("phase_fit"):
+            print("   per-draft slope (ms/draft) / fixed (ms) / R^2:")
+            for phase, f in entry["phase_fit"].items():
+                print("     %-14s %8.4f  %8.4f  %.3f" %
+                      (phase, f["slope_ms_per_draft"], f["fixed_ms"],
+                       f["r2"]))
         report["legs"].append(entry)
     if args.out:
         Path(args.out).write_text(json.dumps(report, indent=2))

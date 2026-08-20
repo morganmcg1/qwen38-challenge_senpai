@@ -30,6 +30,18 @@ while (($#)); do
   esac
 done
 
+# `setup-qwen-mtp.sh` provisions only the ORGANIZER-PINNED head and
+# `benchmark-qwen-mtp.sh` takes that as its default, but the ranked candidate
+# leg runs the head `mtp-head.manifest.json` DECLARES. Default to the declared
+# run tree that `research/fetch-declared-head.sh` stages, and keep the pinned
+# head reachable through `E79_HEAD_DIR` as an explicit head-variant arm.
+head_dir="${E79_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
+if [[ ! -s "${head_dir}/config.json" ]]; then
+  echo "e79_trace_leg.sh: no head at ${head_dir}; run research/fetch-declared-head.sh" >&2
+  exit 1
+fi
+export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
+
 out="research/out/${tag}"
 rm -rf "${out}"
 mkdir -p "${out}"
