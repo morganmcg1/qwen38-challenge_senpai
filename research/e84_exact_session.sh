@@ -3,9 +3,11 @@
 #
 #   research/e84_exact_session.sh [--tokens N]
 #
-# 1. One gate-qualified base leg at N tokens. Its `mtp-verify --generate` pass
-#    writes the reference rows, so the golden every arm is judged against comes
-#    from code that carries neither mechanism.
+# 1. One base leg at N tokens. Its `mtp-verify --generate` pass writes the
+#    reference rows, so the golden every arm is judged against comes from code
+#    that carries neither mechanism. The leg runs `--hot`: this host's GPU
+#    asymptotes near 40.5 C and never reaches the 40 C gate, and the leg exists
+#    only to produce reference rows, so no number it reports is used as timing.
 # 2. One untimed 512-token `mtp-verify --golden` pass per arm against that one
 #    golden, which reports exact tokens, post-EOS continuation and row-ledger
 #    closure, plus the path trace that proves which projection and replay path
@@ -34,7 +36,7 @@ golden="${E84_ROOT}/runs/exact-base-${tokens}/reports/02-mtp-verify-output.json"
 
 if [[ ! -s "${golden}" ]]; then
   echo "e84_exact_session: === $(date -u +%Y-%m-%dT%H:%M:%SZ) golden leg (base) ===" >&2
-  research/e84_run_leg.sh base "exact-base-${tokens}" --tokens "${tokens}" || {
+  research/e84_run_leg.sh base "exact-base-${tokens}" --tokens "${tokens}" --hot || {
     echo "e84_exact_session: the base golden leg failed" >&2
     exit 1
   }
