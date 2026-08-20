@@ -95,6 +95,10 @@ def log_heads(run, bytes_path: Path, cost_paths: list[Path], island_path: Path) 
             "arm": arm,
             "tree_bytes": entry["tree_bytes"],
             "tensor_bytes": entry["tensor_bytes"],
+            "ships_draft_lm_head": entry["ships_draft_lm_head"],
+            "derived_compact_draft_head_bytes":
+                entry["derived_compact_draft_head_bytes"],
+            "traffic_bytes_per_draft": entry["traffic_bytes_per_draft"],
             "tree_sha256": entry["tree_sha256"],
             "tensor_count": entry["tensor_count"],
             "file_count": entry["file_count"],
@@ -111,7 +115,7 @@ def log_heads(run, bytes_path: Path, cost_paths: list[Path], island_path: Path) 
             data=[[json.dumps(byte_report["pinned_vs_fixture_manifest"], indent=2)]]),
     })
 
-    leg_rows, arm_rows = [], []
+    leg_rows, arm_rows, fit_rows = [], [], []
     for path in cost_paths:
         cost = json.loads(path.read_text())
         for leg in cost["legs"]:
@@ -119,18 +123,38 @@ def log_heads(run, bytes_path: Path, cost_paths: list[Path], island_path: Path) 
         for arm, roll in cost["by_arm"].items():
             arm_rows.append({"source": path.name, "arm": arm,
                              **{k: cell(v) for k, v in roll.items()}})
-            if roll.get("bytes_per_ms"):
+            if roll.get("artifact_bytes_per_ms"):
                 run.log({
                     f"heads/{arm}/head_step_ms_per_draft":
                         roll["head_phase_ms_per_draft_median"],
-                    f"heads/{arm}/bytes_per_ms": roll["bytes_per_ms"],
+                    f"heads/{arm}/artifact_bytes_per_ms":
+                        roll["artifact_bytes_per_ms"],
+                    f"heads/{arm}/traffic_bytes_per_ms":
+                        roll["traffic_bytes_per_ms"],
                     f"heads/{arm}/tensor_bytes": roll["tensor_bytes"],
+                    f"heads/{arm}/traffic_bytes": roll["traffic_bytes"],
                 })
+        for key, fit in (cost.get("byte_law_fits") or {}).items():
+            if not fit:
+                continue
+            run.log({f"heads/byte_law/{key}/effective_gb_per_s":
+                     fit["effective_gb_per_s"],
+                     f"heads/byte_law/{key}/intercept_ms": fit["intercept_ms"],
+                     f"heads/byte_law/{key}/max_abs_residual_frac":
+                     fit["max_abs_residual_frac"]})
+            fit_rows.extend(
+                {"source": path.name, "byte_key": key, "arm": arm,
+                 "effective_gb_per_s": fit["effective_gb_per_s"],
+                 "intercept_ms": fit["intercept_ms"], **r}
+                for arm, r in fit["residuals"].items())
     if leg_rows:
         run.log({
             "heads/timed_legs": table(sorted({k for r in leg_rows for k in r}), leg_rows),
             "heads/step_cost": table(sorted({k for r in arm_rows for k in r}), arm_rows),
         })
+    if fit_rows:
+        run.log({"heads/byte_law_fit":
+                 table(sorted({k for r in fit_rows for k in r}), fit_rows)})
 
     if island_path.exists():
         perm = json.loads(island_path.read_text())
@@ -139,6 +163,33 @@ def log_heads(run, bytes_path: Path, cost_paths: list[Path], island_path: Path) 
                 for proj, vals in projs.items() if isinstance(vals, dict)]
         run.log({"heads/island_permutation":
                  table(sorted({k for r in rows for k in r}), rows)})
+
+
+def log_identity(run, path: Path) -> None:
+    """Row-level agreement between each arm and the reference arm.
+
+    This is the sharp form of the acceptance screen: aggregates can match by
+    coincidence, identical draft streams cannot.
+    """
+    if not path.exists():
+        return
+    report = json.loads(path.read_text())
+    rows = []
+    for arm, entry in report["arms"].items():
+        rows.append({"arm": arm, "reference": report["reference"],
+                     "seeds_compared": entry["seeds_compared"],
+                     "seeds_identical": entry["seeds_identical"],
+                     "seeds_emitted_match": entry["seeds_emitted_match"],
+                     **entry["totals"]})
+        run.log({
+            f"identity/{arm}/seeds_identical": entry["seeds_identical"],
+            f"identity/{arm}/differing_tokens_on_same_context_rows":
+                entry["totals"]["differing_tokens_on_same_context_rows"],
+            f"identity/{arm}/same_context_rows":
+                entry["totals"]["same_context_rows"],
+        })
+    run.log({"identity/vs_reference":
+             table(sorted({k for r in rows for k in r}), rows)})
 
 
 def log_screen(run, path: Path, prefix: str = "screen") -> None:
@@ -216,6 +267,7 @@ def main() -> None:
     ap.add_argument("--cost", nargs="*",
                     default=sorted(str(p) for p in Path("research").glob("e82-head-cost*.json")))
     ap.add_argument("--island-permutation", default="research/e82-island-permutation.json")
+    ap.add_argument("--identity", default="research/e82-arm-identity.json")
     ap.add_argument("--corpus", default="research/e82-corpus-manifest.json")
     ap.add_argument("--notes", default="")
     args = ap.parse_args()
@@ -269,6 +321,7 @@ def main() -> None:
     log_builds(run, [Path(p) for p in args.builds])
     log_heads(run, Path(args.bytes), [Path(p) for p in args.cost],
               Path(args.island_permutation))
+    log_identity(run, Path(args.identity))
     if screen:
         log_screen(run, screen_path)
         # The unlatched subset is the read that is free of the head-independent
