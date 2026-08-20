@@ -151,8 +151,13 @@ class Leg:
     width and phase, so summing is safe.
     """
 
-    def __init__(self, path: pathlib.Path, skip_rounds: int = 0):
-        self.path = path
+    def __init__(self, paths, skip_rounds: int = 0):
+        # Several legs may be merged. Every bucket key carries its verify
+        # width, and each leg forces a different width, so the only bucket the
+        # legs share is the serial reference pass at `w1|target_forward`, where
+        # pooling simply adds rounds of the same computation.
+        self.paths = [paths] if isinstance(paths, pathlib.Path) else list(paths)
+        self.path = self.paths[0]
         self.skip_rounds = skip_rounds
         self.by_width_phase = collections.defaultdict(
             lambda: {"gpu_ns": 0, "buffers": 0, "dispatches": 0})
@@ -162,18 +167,41 @@ class Leg:
         self.dispatches = collections.Counter()
         self.shape_dispatches = collections.defaultdict(collections.Counter)
         self.health = collections.Counter()
+        self.exclusive = collections.defaultdict(
+            lambda: {"gpu_ns": 0, "buffers": 0})
+        # Round-level, not phase-level: one entry per `round` record, so a
+        # round's wall clock is never multiplied by its phase count.
+        self.round_total = collections.Counter()
+        self.round_wall_ns = collections.Counter()
+        self.round_commits = collections.Counter()
+        self.round_dispatches = collections.Counter()
+        # Host synchronisation points: `waitUntilCompleted` calls, and the host
+        # nanoseconds blocked inside them. Present only when the census build
+        # carries the H-221 wait hook.
+        self.round_waits = collections.Counter()
+        self.round_wait_ns = collections.Counter()
         self._load()
 
     def _load(self):
-        for rec in read_records(self.path):
+        for path in self.paths:
+            self._load_one(path)
+
+    def _load_one(self, path):
+        for rec in read_records(path):
             event = rec.get("event")
             if event == "round":
                 if rec.get("round", 0) <= self.skip_rounds:
                     continue
                 width = rec["width"]
+                self.round_total[width] += 1
+                self.round_wall_ns[width] += rec.get("wall_ns", 0)
                 for phase, entry in (rec.get("phases") or {}).items():
                     self.rounds[(width, phase)] += 1
                     self.dispatches[(width, phase)] += entry.get("dispatches", 0)
+                    self.round_commits[width] += entry.get("commits", 0)
+                    self.round_dispatches[width] += entry.get("dispatches", 0)
+                    self.round_waits[width] += entry.get("waits", 0)
+                    self.round_wait_ns[width] += entry.get("wait_ns", 0)
                     for shape, count in (entry.get("shapes") or {}).items():
                         self.shape_dispatches[(width, phase)][shape] += count
             elif event == "gputime":
@@ -197,6 +225,10 @@ class Leg:
                     slot["gpu_ns"] += b.get("gpu_ns", 0)
                     slot["buffers"] += b.get("buffers", 0)
                     slot["dispatches"] += b.get("dispatches", 0)
+                for key, b in (rec.get("exclusive_kernels") or {}).items():
+                    slot = self.exclusive[key]
+                    slot["gpu_ns"] += b.get("gpu_ns", 0)
+                    slot["buffers"] += b.get("buffers", 0)
                 for field in ("unmapped_encoder_dispatches", "zero_time_buffers",
                               "untracked_buffers", "signature_buffers",
                               "mixed_phase_buffers", "committed_total",
@@ -227,6 +259,19 @@ class Leg:
                 continue
             rows.append((parse_signature(sig), v["gpu_ns"], v["buffers"]))
         return rows
+
+    def exclusive_ns(self, width, phase, shape):
+        """Directly measured ns for a dispatch that owned its command buffer.
+
+        This is the only per-kernel number in the census that needs no fit, so
+        it is the ground truth the NNLS solution is checked against. Coverage
+        is small: on this runtime one MLX op emits about two dispatches, so
+        only a few shapes ever get a buffer to themselves.
+        """
+        slot = self.exclusive.get(f"w{width}|{phase}|{shape}")
+        if not slot or slot["buffers"] <= 0:
+            return None, 0
+        return slot["gpu_ns"] / slot["buffers"], slot["buffers"]
 
 
 class Identifiability:
@@ -283,6 +328,38 @@ class Identifiability:
             return []
         loading = np.linalg.norm(self.null, axis=0)
         return [self.keys[i] for i in np.where(loading > self.tol)[0]]
+
+    def degenerate_groups(self) -> list[list[str]]:
+        """Shapes the null space ties together, as connected components.
+
+        A single unidentified shape is not actionable, but a group is: the fit
+        can trade time between the members of one group and nowhere else, so a
+        weighted sum over a whole group is often determined even though no
+        member is. Reporting the group states exactly what the data does and
+        does not separate.
+        """
+        if self.null.size == 0:
+            return []
+        load = np.abs(self.null) > self.tol
+        parent = list(range(len(self.keys)))
+
+        def find(a):
+            while parent[a] != a:
+                parent[a] = parent[parent[a]]
+                a = parent[a]
+            return a
+
+        for row in load:
+            idx = [int(i) for i in np.where(row)[0]]
+            for j in idx[1:]:
+                ra, rb = find(idx[0]), find(j)
+                if ra != rb:
+                    parent[rb] = ra
+        groups = collections.defaultdict(list)
+        for i in range(len(self.keys)):
+            if load[:, i].any():
+                groups[find(i)].append(self.keys[i])
+        return sorted((sorted(v) for v in groups.values()), key=len, reverse=True)
 
 
 def fit_phase(leg, phase, widths=None):
@@ -367,8 +444,263 @@ def qmv_unit_totals(rows, ident=None):
         ident)
 
 
+def family_pure_rates(leg, phase, width):
+    """Per-family ns per dispatch from buffers that hold ONE family only.
+
+    This needs no fit and no null-space argument: a buffer whose every
+    dispatch belongs to one family charges its whole GPU interval to that
+    family. Coverage is partial, so the table also reports the share of the
+    phase's GPU time these buffers carry. Applying the rate to the family's
+    full dispatch count assumes a pure buffer prices a mixed one, which is an
+    assumption, not a measurement, and is labelled as such.
+    """
+    pure = collections.defaultdict(
+        lambda: {"gpu_ns": 0, "dispatches": 0, "buffers": 0,
+                 "shape_dispatches": collections.Counter()})
+    total_ns = 0
+    for key, v in leg.signatures.items():
+        w, _, rest = key.partition("|")
+        ph, _, sig = rest.partition("|")
+        if ph != phase or w != f"w{width}":
+            continue
+        total_ns += v["gpu_ns"]
+        counts = parse_signature(sig)
+        families = set()
+        for shape in counts:
+            parsed = parse_shape(shape)
+            families.add(family_of(parsed["kernel"] if parsed else shape))
+        if len(families) != 1:
+            continue
+        slot = pure[families.pop()]
+        slot["gpu_ns"] += v["gpu_ns"]
+        slot["dispatches"] += sum(counts.values()) * v["buffers"]
+        slot["buffers"] += v["buffers"]
+        for shape, c in counts.items():
+            slot["shape_dispatches"][shape] += c * v["buffers"]
+    return pure, total_ns
+
+
+def width_tax_decomposition(leg, high_width, low_width=1,
+                            high_phase="target_verify",
+                            low_phase="target_forward", anchor=None,
+                            leg_label="isolated"):
+    """Rung 3. Splits `F(M) - F(1)` by family inside ONE leg.
+
+    Every leg runs a serial reference pass, so `w1|target_forward` and
+    `wM|target_verify` are measured in the same session, on the same build, at
+    the same thermal state. That is a tighter comparison than E71's, which
+    differenced two census blocks.
+    """
+    lo_times, lo_diag, lo_ident = fit_phase(leg, low_phase, {low_width})
+    hi_times, hi_diag, hi_ident = fit_phase(leg, high_phase, {high_width})
+    lo_rows, lo_n, lo_ms = build_rows(leg, low_width, low_phase, lo_times)
+    hi_rows, hi_n, hi_ms = build_rows(leg, high_width, high_phase, hi_times)
+    lo_fam = family_totals(lo_rows, lo_ident)
+    hi_fam = family_totals(hi_rows, hi_ident)
+    lo_unit = qmv_unit_totals(lo_rows, lo_ident)
+    hi_unit = qmv_unit_totals(hi_rows, hi_ident)
+    tax = hi_ms - lo_ms
+    print(f"\n## rung 3: F({high_width}) - F({low_width}) in GPU time, "
+          f"decomposed inside one leg\n")
+    print(f"F({low_width}) = {lo_ms:.3f} ms/round over {lo_n} rounds "
+          f"({low_phase}); F({high_width}) = {hi_ms:.3f} ms/round over "
+          f"{hi_n} rounds ({high_phase}); tax = **{tax:.3f} ms/round**.\n")
+    print(f"The split comes from the **{leg_label}** leg, whose design matrix "
+          f"has the higher rank. Rows are fitted times; the two totals are "
+          f"measured.\n")
+    print("| side | phase | signatures | buffers | shapes | rank | "
+          "unidentified | in degenerate ms/round | closure |")
+    print("|---|---|---:|---:|---:|---:|---:|---:|---:|")
+    for tag, d, i, ph, wd, tms in ((f"F({low_width})", lo_diag, lo_ident,
+                                    low_phase, low_width, lo_times),
+                                   (f"F({high_width})", hi_diag, hi_ident,
+                                    high_phase, high_width, hi_times)):
+        deg_ms = 0.0
+        if i is not None:
+            counts = leg.shape_dispatches[(wd, ph)]
+            rounds = leg.round_count(wd, ph) or 1
+            for g in i.degenerate_groups():
+                deg_ms += sum(tms.get(s, 0.0) * counts.get(s, 0) / rounds
+                              for s in g) / 1e6
+        cl = d.get("closure")
+        print(f"| {tag} | {ph} | {d['signatures']} | {d['buffers']} | "
+              f"{d['kernels']} | {d['rank']} | "
+              f"{len(d.get('unidentified_shapes') or [])} | {deg_ms:.3f} | "
+              + (f"{cl:.4f} |" if cl else "n/a |"))
+    print()
+    if anchor is not None:
+        a_lo = anchor.by_width_phase.get(f"w{low_width}|{low_phase}")
+        a_hi = anchor.by_width_phase.get(f"w{high_width}|{high_phase}")
+        a_lo_n = anchor.round_count(low_width, low_phase) or 1
+        a_hi_n = anchor.round_count(high_width, high_phase) or 1
+        if a_lo and a_hi and a_hi_n:
+            a_lo_ms = a_lo["gpu_ns"] / 1e6 / a_lo_n
+            a_hi_ms = a_hi["gpu_ns"] / 1e6 / a_hi_n
+            a_tax = a_hi_ms - a_lo_ms
+            print(f"Absolute anchor, measured with no fit on the **default** "
+                  f"leg that the candidate actually runs: F({low_width}) = "
+                  f"{a_lo_ms:.3f}, F({high_width}) = {a_hi_ms:.3f}, tax = "
+                  f"**{a_tax:.3f} ms/round**. Isolating buffers inflates the "
+                  f"tax by {100*(tax/a_tax - 1):+.1f} %, so read the shares "
+                  f"below as shares and the anchor as milliseconds.\n")
+            out_anchor = {"low_ms": a_lo_ms, "high_ms": a_hi_ms,
+                          "tax_ms": a_tax, "inflation": tax / a_tax}
+        else:
+            out_anchor = None
+    else:
+        out_anchor = None
+    print(f"| family | F({low_width}) ms | F({high_width}) ms | tax ms | "
+          f"share of tax | both identified |")
+    print("|---|---:|---:|---:|---:|---|")
+    named = 0.0
+    out = {"tax_ms": tax, f"F{low_width}_ms": lo_ms,
+           f"F{high_width}_ms": hi_ms, "families": {}, "qmv_units": {},
+           "fit_leg": leg_label, "default_leg_anchor": out_anchor}
+    for name in sorted(set(lo_fam) | set(hi_fam),
+                       key=lambda k: -(hi_fam.get(k, {}).get("ms_per_round", 0.0)
+                                       - lo_fam.get(k, {}).get("ms_per_round", 0.0))):
+        lo = lo_fam.get(name, {}).get("ms_per_round", 0.0)
+        hi = hi_fam.get(name, {}).get("ms_per_round", 0.0)
+        both = (bool(lo_fam.get(name, {}).get("identified", True))
+                and bool(hi_fam.get(name, {}).get("identified", True)))
+        delta = hi - lo
+        named += delta
+        out["families"][name] = {"low_ms": lo, "high_ms": hi, "tax_ms": delta,
+                                 "both_identified": both}
+        print(f"| {name} | {lo:8.3f} | {hi:8.3f} | {delta:8.3f} | "
+              f"{100*delta/tax if tax else 0:6.2f}% | {both} |")
+    print(f"\nnamed families sum to {named:.3f} ms, which closes "
+          f"{100*named/tax if tax else 0:.2f} % of the tax.")
+    print(f"\n| qmv unit | reachable by an E71 arm | F({low_width}) ms | "
+          f"F({high_width}) ms | tax ms | share of tax |")
+    print("|---|---|---:|---:|---:|---:|")
+    for name in sorted(set(lo_unit) | set(hi_unit),
+                       key=lambda k: -(hi_unit.get(k, {}).get("ms_per_round", 0.0)
+                                       - lo_unit.get(k, {}).get("ms_per_round", 0.0))):
+        lo = lo_unit.get(name, {}).get("ms_per_round", 0.0)
+        hi = hi_unit.get(name, {}).get("ms_per_round", 0.0)
+        reach = (hi_unit.get(name) or lo_unit.get(name) or {}).get(
+            "e71_interceptable")
+        delta = hi - lo
+        out["qmv_units"][name] = {"low_ms": lo, "high_ms": hi, "tax_ms": delta,
+                                  "e71_interceptable": reach}
+        print(f"| {name} | {reach} | {lo:8.3f} | {hi:8.3f} | {delta:8.3f} | "
+              f"{100*delta/tax if tax else 0:6.2f}% |")
+    unreachable = sum(v["tax_ms"] for v in out["qmv_units"].values()
+                      if v["e71_interceptable"] is False)
+    out["qmv_unreachable_by_e71_ms"] = unreachable
+    out["qmv_unreachable_share_of_tax"] = unreachable / tax if tax else None
+    print(f"\nqmv units no E71 arm can intercept carry {unreachable:.3f} ms, "
+          f"{100*unreachable/tax if tax else 0:.2f} % of the tax. E71 left "
+          f"22.6 % unattributed.")
+    return out
+
+
+def h221_table(default, isolated):
+    """Prices the host boundary instead of the kernel.
+
+    `host_boundary_ms` is the advisor's closure gap: the round's wall clock
+    minus every millisecond of GPU time the census can name. With
+    `MLX_MAX_OPS_PER_BUFFER=1` one command buffer holds exactly one MLX
+    primitive op, so the isolated leg's buffer count IS the MLX op count and
+    the gap can be divided by it directly.
+
+    The last column needs no attribution assumption at all. Both legs run the
+    same ops in a different number of command buffers, so the wall difference
+    over the commit difference is an upper bound on ONE command-buffer
+    boundary.
+    """
+    rows = []
+    print("\n## H-221: host boundary cost, wall clock minus named GPU time\n")
+    print("| width | rounds | wall ms/round | GPU ms/round | "
+          "`host_boundary_ms`/round | GPU/wall | commits/round | "
+          "MLX ops/round | ms per MLX op, uniform | "
+          "ms per MLX op, head path only |")
+    print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+    for width in sorted(default.round_total):
+        n = default.round_total[width]
+        if not n:
+            continue
+        wall = default.round_wall_ns[width] / 1e6 / n
+        gpu = sum(v["gpu_ns"] for k, v in default.by_width_phase.items()
+                  if k.split("|", 1)[0] == f"w{width}") / 1e6 / n
+        gap = wall - gpu
+        row = {
+            "width": width, "rounds": n,
+            "wall_ms_per_round": wall, "gpu_ms_per_round": gpu,
+            "host_boundary_ms_per_round": gap,
+            "gpu_over_wall": gpu / wall if wall else None,
+            "commits_per_round": default.round_commits[width] / n,
+            "waits_per_round": default.round_waits[width] / n,
+            "wait_ms_per_round": default.round_wait_ns[width] / 1e6 / n,
+        }
+        ops = head_ops = None
+        if isolated is not None and isolated.round_total.get(width):
+            m = isolated.round_total[width]
+            ops = sum(v["buffers"] for k, v in isolated.by_width_phase.items()
+                      if k.split("|", 1)[0] == f"w{width}") / m
+            head_ops = sum(
+                v["buffers"] for k, v in isolated.by_width_phase.items()
+                if k == f"w{width}|draft_head") / m
+            row["mlx_ops_per_round"] = ops
+            row["mlx_ops_head_path_per_round"] = head_ops
+            row["ms_per_mlx_op_uniform"] = gap / ops if ops else None
+            row["ms_per_mlx_op_head_only"] = gap / head_ops if head_ops else None
+            i_wall = isolated.round_wall_ns[width] / 1e6 / m
+            i_commits = isolated.round_commits[width] / m
+            row["isolated_wall_ms_per_round"] = i_wall
+            row["isolated_commits_per_round"] = i_commits
+            if i_commits > row["commits_per_round"]:
+                row["ms_per_command_buffer_boundary"] = (
+                    (i_wall - wall) / (i_commits - row["commits_per_round"]))
+        rows.append(row)
+        print(f"| {width} | {n} | {wall:.3f} | {gpu:.3f} | {gap:.3f} | "
+              f"{row['gpu_over_wall']:.4f} | {row['commits_per_round']:.1f} | "
+              f"{'n/a' if ops is None else f'{ops:.1f}'} | "
+              f"{fmt_us(row.get('ms_per_mlx_op_uniform'))} | "
+              f"{fmt_us(row.get('ms_per_mlx_op_head_only'))} |")
+    if any(r.get("waits_per_round") for r in rows):
+        print("\nHost synchronisation points. MLX blocks the host only in "
+              "`CommandEncoder::synchronize()`, which ends encoding, commits "
+              "and calls `waitUntilCompleted`. Dividing the closure gap by "
+              "those calls prices one synchronisation instead of one op.\n")
+        print("| width | sync points/round | blocked ms/round | "
+              "`host_boundary_ms`/round | ms per sync point | "
+              "gap left after blocked time |")
+        print("|---:|---:|---:|---:|---:|---:|")
+        for row in rows:
+            w = row.get("waits_per_round") or 0.0
+            if not w:
+                continue
+            blocked = row["wait_ms_per_round"]
+            gap = row["host_boundary_ms_per_round"]
+            print(f"| {row['width']} | {w:.1f} | {blocked:.3f} | {gap:.3f} | "
+                  f"{gap/w:.4f} | {gap-blocked:.3f} |")
+    if isolated is not None:
+        print("\nPacking bound. Both legs run the same MLX ops. Only the "
+              "number of command buffers changes, so the wall difference over "
+              "the commit difference is an upper bound on one command-buffer "
+              "boundary.\n")
+        print("| width | default commits/round | isolated commits/round | "
+              "default wall ms | isolated wall ms | ms per command buffer |")
+        print("|---:|---:|---:|---:|---:|---:|")
+        for row in rows:
+            if "ms_per_command_buffer_boundary" not in row:
+                continue
+            print(f"| {row['width']} | {row['commits_per_round']:.1f} | "
+                  f"{row['isolated_commits_per_round']:.1f} | "
+                  f"{row['wall_ms_per_round']:.3f} | "
+                  f"{row['isolated_wall_ms_per_round']:.3f} | "
+                  f"{row['ms_per_command_buffer_boundary']:.5f} |")
+    return rows
+
+
 def fmt_ms(v):
     return "     n/a" if v is None else f"{v:8.3f}"
+
+
+def fmt_us(v):
+    return "n/a" if v is None else f"{v:.5f}"
 
 
 def fmt_pct(v):
@@ -379,8 +711,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--default", type=pathlib.Path, required=True)
-    ap.add_argument("--isolated", type=pathlib.Path)
+    ap.add_argument("--default", type=pathlib.Path, required=True,
+                    action="append")
+    ap.add_argument("--isolated", type=pathlib.Path, action="append")
     ap.add_argument("--width", type=int, action="append", dest="widths")
     ap.add_argument("--skip-rounds", type=int, default=0)
     ap.add_argument("--phase", default="target_verify")
@@ -410,6 +743,8 @@ def main(argv=None):
             print(f"| {label} | {key} | {b['gpu_ns']/1e6:.1f} | "
                   f"{b['buffers']} | {b['dispatches']} |")
 
+    h221 = h221_table(default, isolated)
+
     fits = {}
     for label, leg in (("default", default), ("isolated", isolated)):
         if leg is None:
@@ -427,13 +762,36 @@ def main(argv=None):
               + (f"{closure:.4f}" if closure else "n/a"))
         free = diag.get("unidentified_shapes") or []
         if free:
+            groups = ident.degenerate_groups() if ident is not None else []
             print(f"- {len(free)} of {diag['kernels']} shapes are not "
-                  f"individually identified. Every reported family, qmv unit "
-                  f"and rider below carries its own identifiability verdict, "
-                  f"because a weighted sum can be determined even when its "
-                  f"terms are not.")
-            for s in free:
-                print(f"    - {s}")
+                  f"individually identified, in {len(groups)} degenerate "
+                  f"groups. The fit can move time between the members of one "
+                  f"group and nowhere else, so a sum over a whole group is "
+                  f"often exact even though no member is. Every family, qmv "
+                  f"unit and rider below carries its own verdict.")
+            for gi, g in enumerate(groups, 1):
+                per_round = {}
+                for width in widths:
+                    counts = leg.shape_dispatches[(width, phase)]
+                    rounds = leg.round_count(width, phase) or 1
+                    ns = sum(times.get(s, 0.0) * counts.get(s, 0) / rounds
+                             for s in g)
+                    if ns:
+                        per_round[width] = ns / 1e6
+                w = {}
+                for width in widths:
+                    counts = leg.shape_dispatches[(width, phase)]
+                    rounds = leg.round_count(width, phase) or 1
+                    for s in g:
+                        w[s] = w.get(s, 0.0) + counts.get(s, 0) / rounds
+                sum_ok = ident.identified(w) if ident is not None else False
+                shown = "  ".join(f"w{k} {v:.3f} ms/round"
+                                  for k, v in sorted(per_round.items()))
+                shown = shown or "no dispatches at the reported widths"
+                print(f"    - group {gi} ({len(g)} shapes): {shown}; "
+                      f"group sum identified: {sum_ok}")
+                for s in g:
+                    print(f"        . {s}")
         else:
             print("- every fitted shape is individually identified")
 
@@ -455,15 +813,23 @@ def main(argv=None):
         print(f"\n## width M = {width}   rounds = {rounds}   "
               f"measured {phase} = {ms_round:.3f} ms/round\n")
         print("| kernel | grid | unit | family | disp/round | ns/disp | "
-              "ms/round | share |")
-        print("|---|---|---|---|---:|---:|---:|---:|")
+              "ms/round | share | id? | direct ns/disp |")
+        print("|---|---|---|---|---:|---:|---:|---:|---|---:|")
         for r in rows:
             grid = "x".join(str(g) for g in r["grid"]) if r["grid"] else "?"
             ns = ("" if r["fitted_ns_per_dispatch"] is None
                   else str(int(r["fitted_ns_per_dispatch"])))
+            solo = (primary_ident.identified({r["shape"]: 1.0})
+                    if primary_ident else False)
+            r["identified"] = bool(solo)
+            direct, n_direct = leg.exclusive_ns(width, phase, r["shape"])
+            r["direct_ns_per_dispatch"] = direct
+            r["direct_buffers"] = n_direct
+            direct_txt = "" if direct is None else f"{int(direct)} (n={n_direct})"
             print(f"| {r['kernel'][:52]} | {grid} | {r['unit'] or ''} | "
                   f"{r['family']} | {r['dispatches_per_round']:.1f} | {ns} | "
-                  f"{fmt_ms(r['ms_per_round'])} | {fmt_pct(r['share'])} |")
+                  f"{fmt_ms(r['ms_per_round'])} | {fmt_pct(r['share'])} | "
+                  f"{'yes' if solo else 'NO'} | {direct_txt} |")
 
         fam = family_totals(rows, primary_ident)
         print("\n| family | kernels | disp/round | ms/round | share | identified |")
@@ -474,6 +840,32 @@ def main(argv=None):
                   f"{slot['dispatches_per_round']:.1f} | "
                   f"{slot['ms_per_round']:8.3f} | {100*slot['share']:6.2f}% | "
                   f"{slot['identified']} |")
+
+        pure, pure_total_ns = family_pure_rates(leg, phase, width)
+        if pure:
+            covered = sum(s["gpu_ns"] for s in pure.values())
+            print(f"\nFit-free cross-check. Buffers holding ONE family only "
+                  f"carry {100*covered/pure_total_ns:.1f} % of this phase's "
+                  f"signature GPU time. No fit, no null space.\n")
+            print("The NNLS column reweights the fitted times to the exact "
+                  "shape mix of the pure sample, so the two columns describe "
+                  "the same dispatches. A ratio below one means the fit "
+                  "charges a dispatch less than it costs alone, which is what "
+                  "overlap inside a shared buffer looks like.\n")
+            print("| family | pure buffers | pure disp | ns/disp (direct) | "
+                  "ns/disp (NNLS, same mix) | ratio |")
+            print("|---|---:|---:|---:|---:|---:|")
+            for name, slot in sorted(pure.items(), key=lambda kv: -kv[1]["gpu_ns"]):
+                direct = slot["gpu_ns"] / slot["dispatches"] if slot["dispatches"] else None
+                mix = slot.get("shape_dispatches") or {}
+                num = sum(times.get(s, 0.0) * c for s, c in mix.items())
+                den = sum(c for s, c in mix.items() if s in times)
+                fitted = (num / den) if den else None
+                ratio = (fitted / direct) if (direct and fitted) else None
+                print(f"| {name} | {slot['buffers']} | {slot['dispatches']} | "
+                      f"{'n/a' if direct is None else int(direct)} | "
+                      f"{'n/a' if fitted is None else int(fitted)} | "
+                      f"{'n/a' if ratio is None else f'{ratio:.3f}'} |")
 
         units = qmv_unit_totals(rows, primary_ident)
         if units:
@@ -497,6 +889,16 @@ def main(argv=None):
                       f"  {fmt_ms(r['ms_per_round'])} ms/round")
         else:
             print("\nunclassified kernels: 0")
+
+    # -- rung 3: the width tax, decomposed --------------------------------
+    rung3 = {}
+    if phase == "target_verify":
+        for width in sorted(tables):
+            if width <= 1:
+                continue
+            rung3[str(width)] = width_tax_decomposition(
+                leg, width, anchor=(default if leg is not default else None),
+                leg_label=primary)
 
     # -- concurrency discount, per family ---------------------------------
     discounts = {"phase_level": {}, "per_family": {}}
@@ -618,6 +1020,8 @@ def main(argv=None):
             "qmv_units_per_width": {str(w): qmv_unit_totals(t["rows"], primary_ident)
                                     for w, t in tables.items()},
             "concurrency_discount": discounts,
+            "h221_host_boundary": h221,
+            "rung3_width_tax": rung3,
             "riders": verdicts,
             "ranked_weighted_family_share": weighted,
             "phase_gpu_ms": {
