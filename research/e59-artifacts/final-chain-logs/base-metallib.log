@@ -1,0 +1,28 @@
+-- Building MLX for arm64 processor on Darwin
+-- Metal found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework
+-- Building on macOS 26.5.2
+-- Building with macOS 26.5 SDK
+-- Metal version: 400
+-- Accelerate found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- Downloading json
+-- Using the multi-header code from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/workspace/target/Vendor/mlx-swift/Source/Cmlx/json/include/
+-- Downloading json for JACCL
+-- {fmt} version: 12.1.0
+-- Build type: Release
+-- Configuring done (0.1s)
+-- Generating done (0.2s)
+-- Build files have been written to: /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/workspace/target/.build-worker/mlx-metal
+[  0%] Building quantized.air
+In file included from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal:7:
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1091:25: warning: unused parameter 'out_vec_size' [-Wunused-parameter]
+    const constant int& out_vec_size,
+                        ^
+1 warning generated.
+[  0%] Building mlx.metallib
+[100%] Built target mlx-metallib
+build-mlx-metallib.sh: wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/workspace/target/.build-worker/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/debug/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/debug/mlx.metallib
+build-mlx-metallib.sh: wrote .build/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build-worker/release/mlx.metallib
