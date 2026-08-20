@@ -23908,3 +23908,190 @@ Ranked candidates, in order of prior:
    legs and leaves all three alone is measurement, not mechanism.
 3. **Never quote a cluster premium estimated across different trees.** Those
    estimates are attenuated. Use replicate groups.
+
+## 230. The crown NA<=6 QMV table is a large ranked NEGATIVE, the group-count axis inverts sign between g16s and g17s, and rule 2 of ledger 229 needs a qualifier
+
+Advisor analysis, 2026-08-21 00:10 UTC. No GPU used. Instrument
+`_advisor_scratch/ctrlpair.py` over the 912-row public board, plus
+`git diff` over the fetched `upstream/submissions/*` branches.
+
+### (A) Why this was reopened
+
+At 2026-08-20T21:37Z a rival submitted `ac2dc651`, "one weight stream for wide
+QMV M=5 and M=6" (failed), and at 23:47Z submitted `0741d679`, "Metal-clean
+one-stream wide QMV for M=5 and M=6" (validating). That is our own E68 crown
+table: `qmv_fast_crossrow_affine4_g64_m<T,5,5>` and `<T,6,6>` in place of the
+organizer's `<T,5,3>` and `<T,6,3>`, with the wide-kernel guard widened from
+`NA <= 4` to `NA <= 6`.
+
+E68 measured that table at **-3.500 % locally against a 0.143 % null**.
+Thorfinn's E75 rung B measured the changed cells in isolation on g16s at
+**-20.3 % at M=5, -4.3 % at M=6 and -11.8 % at M=9**. M=5 and M=6 carry 57.5 %
+of the ranked round cost, so the naive ranked forecast was several percent. The
+campaign record said the table had been reverted during the `e3beb682`
+composition and never cleanly measured on the ranked host. That record was
+wrong.
+
+### (B) The archives, inspected
+
+`git diff --stat <branch>^ <branch> -- Sources Vendor mtp-head.manifest.json`
+over all nine of our scored submissions gives the exact shipped scored surface
+of each one. Two of them carry the crown table:
+
+- `ff73cbbd` (commit `f5d13183`), 3.17229700, created 2026-08-20T06:42:09Z.
+- `2da69933` (commit `2d853ca9`), 3.21125713, created 2026-08-20T12:00:44Z.
+
+Both carry exactly the same four-hunk `quantized.h` change and its generated
+twin: `static_assert(NA >= 2 && NA <= 6)`, `case 5: <T,5,5>`,
+`case 6: <T,6,6>`, `case 9: <T,9,5>`.
+
+**`9b241879` does not carry it.** Its archive touches only
+`Qwen36MTPBlockSession.swift`, `Qwen35.swift` and `mtp-head.manifest.json`.
+The campaign record labelled `9b241879` "arm 2, the kernel retable". That label
+is false. This resolves the outstanding conflict between my
+"mean7 -0.092 %, 4 of 7, clean null" reading of `9b241879` and another agent's
+"8 of 8 prompts, mean -0.383 %, p = 0.0039" claim: **both were reading a
+submission that contained no kernel change.** My own control-aware re-run of
+`9ad17378` against `9b241879` gives mean7 -0.092 %, sd7 0.167, 4 of 7 faster,
+plutarch +0.012 %, prefill -0.066 %. It is a null of a schedule change.
+
+### (C) The clean isolated pair
+
+`9b241879` and `ff73cbbd` differ on the scored surface by:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift   | 53 ---------------------
+Vendor/.../mlx-generated/quantized.cpp             |  8 ++++----
+Vendor/.../metal/kernels/quantized.h               |  8 ++++----
+```
+
+The 53 session lines are deletions only and they change no behaviour: **the
+`effective_mean_draft_len` of all eight prompts is identical to seven
+significant figures across the two runs** (4.533, 5.425, 5.270, 4.768, 5.776,
+2.656, 2.298, 0.154) and `non_drafting_round_count` is identical (0,0,0,0,0,0,0,
+449). Identical schedules on eight independent hidden prompts is proof that the
+only effective difference is the QMV dispatch table.
+
+| prompt | `9b241879` s/tok | `ff73cbbd` s/tok | crown delta |
+|---|---:|---:|---:|
+| beagle | 0.01211040 | 0.01229274 | **+1.506 %** |
+| essays | 0.01117439 | 0.01130417 | **+1.161 %** |
+| republic | 0.01109991 | 0.01123963 | **+1.259 %** |
+| medicine | 0.01133499 | 0.01175286 | **+3.687 %** |
+| botany | 0.01103197 | 0.01143983 | **+3.697 %** |
+| travel | 0.01737674 | 0.01777165 | **+2.273 %** |
+| drama | 0.01974890 | 0.02005796 | **+1.565 %** |
+| plutarch | 0.03027270 | 0.03028929 | +0.055 % |
+
+mean7 **+2.164 %**, sd7 1.103, **0 of 7 prompts faster**. Prefill +0.077 %.
+Pooled candidate MTP +1.609 %.
+
+### (D) Mode or mechanism
+
+A single pair cannot separate the two by size alone, because both live only in
+the drafting legs. It can be separated by **profile**. The measured per-prompt
+mode premium (ledger 219 cohort, retained for shape only) is
+beagle +0.887, essays +0.744, republic +0.992, medicine +1.103, botany +1.166,
+travel +2.231, drama +2.008: travel and drama largest, essays smallest.
+
+The observed profile is the opposite shape. medicine +3.687 and botany +3.697
+are the largest and drama +1.565 is among the smallest. Subtracting the full
+mode profile as an upper bound leaves a residual of
+
+```
+beagle +0.619  essays +0.417  republic +0.267  medicine +2.584
+botany +2.531  travel +0.042  drama  -0.443     mean +0.860 %
+```
+
+**So the crown table costs between +0.86 % and +2.16 % on the ranked M5,
+whichever way the mode fell.** There is no reading of this pair in which it is
+neutral or positive. The residual is concentrated on medicine and botany,
+whose mean verify widths are about 5.8 and 6.8, which are exactly the two cells
+the table changed.
+
+### (E) The finding
+
+**The QMV input-group-count axis inverts sign between the local M4 Pro (g16s)
+and the ranked M5 (g17s).** Merging M=5 and M=6 into a single wide input group
+is worth about -20 % and -4 % per cell on g16s and costs +0.9 % to +2.2 %
+end to end on g17s.
+
+The mechanism is plausible from the two facts we already hold. First, the
+g17s register law: `<T,5,5>` needs 98 ranked registers and `<T,6,6>` needs 111,
+against 90 for both `<T,5,3>` and `<T,6,3>`, and the ranked ceiling is 126.
+Second, the M5 has roughly twice the cores, so the threadgroups per core at
+these shapes are half those on g16s: 16 against 32 at n=5120, 44.8 against 89.6
+at n=14336, 307 against 615 at n=98336. A wider, more register-hungry kernel
+loses occupancy, and on the ranked host there are not enough threadgroups per
+core left to hide it. On the local host there are.
+
+This closes the axis on the ranked host and it should stay closed. It also
+predicts that the rival's `0741d679` will lose. That prediction is recorded
+here before its result is known, as a calibration test of this analysis.
+
+### (F) Rule 2 of ledger 229 needs a qualifier
+
+Ledger 229 rule 2 said to use plutarch, prefill and the serial baseline as
+controls, and that an effect which moves the drafting legs and leaves all three
+alone is measurement rather than mechanism. **That is too strong and this entry
+is the counterexample.** plutarch has essentially zero mode sensitivity
+(r = +0.043, sd 0.032 %) and prefill has almost none (sd 0.024 %), so neither
+can report which mode a run drew. What they actually certify is that a change
+does **not** reach non-drafting rounds or the prefill GEMM. They are controls
+for **mechanism breadth**, not for mode.
+
+Corrected rule 2:
+
+> plutarch, prefill and the serial baseline certify that an effect is confined
+> to drafting rounds. They cannot identify the mode. To separate mode from
+> mechanism inside a single pair, compare the **per-prompt profile** against the
+> measured mode profile, which is largest on travel and drama and smallest on
+> essays. Report the effect as a range whose ends are the raw mean7 and the
+> mode-profile-subtracted mean7. Only a byte-identical replicate group settles
+> it exactly.
+
+### (G) A second, free result from `2da69933`
+
+`2da69933` broke the absorbing non-drafting state on plutarch: its plutarch
+`effective_mean_draft_len` is 2.695 with 0 non-drafting rounds, against 0.154
+and 449 for every other run of ours. plutarch's seconds per token fell from
+0.03027270 to 0.01659771, a **45.2 % speedup on that prompt**, and its raw
+ratio therefore roughly doubled.
+
+**The score did not improve. It fell, from 3.23589 to 3.21126.** This is a
+clean independent confirmation of the beagle wall: the published score is the
+mean of the two lowest **wide** raws, so travel, drama and plutarch are
+score-free, and a 45 % win on plutarch buys nothing. Do not spend GPU on the
+absorbing non-drafting state.
+
+### (H) Consequence for E88
+
+E88 vectorizes the device weight load inside the same wide crossrow kernel. It
+is a different axis: it changes neither the input group count nor the
+partition, so it is not the axis that inverted. Two of its expected effects,
+fewer device load instructions and the removal of two allocas, reduce register
+pressure rather than raise it, so the occupancy story above runs in E88's
+favour rather than against it.
+
+The transfer prior is nevertheless now much worse than it was this morning, and
+E88 must carry a g17s-specific free gate. `xcrun metal-tt -arch applegpu_g17s`
+is already validated by E72 and reports register and spill counts per pipeline.
+**E88 rung 1 must publish the register and spill census for the changed
+kernel on `applegpu_g17s`, not only on `applegpu_g16s`, and must stop if the
+ranked register count rises at any live cell.**
+
+### (I) Advisor error 19
+
+I labelled `ff73cbbd` a "cluster artifact" on the strength of mean7 +2.069 %
+with sd7 1.016 and 0 of 7 faster, and its travel value crossing the 0.01755
+threshold of the univariate cluster instrument. A univariate threshold on a
+drafting leg cannot distinguish a slow mode from a slow candidate, because both
+push the same number the same way. The correct reading, available at the time
+from the identical draft lengths, was a genuine +2 % regression. I therefore
+carried a dead kernel table on the "locally proven, ranked-untested" list for
+a day, and I resolved a submission-identity conflict in favour of the wrong
+submission.
+
+Rule: **before labelling a ranked regression a mode artifact, check the
+per-prompt profile against the mode profile and check whether the archive
+actually contains the mechanism you think it does.**

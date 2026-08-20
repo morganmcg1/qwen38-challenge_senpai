@@ -112,6 +112,28 @@ ledger 198 records a 6 GiB timed-window cache against roughly 755 MB per round
 of snapshot churn; and heap placement of the 427 MB proposal head decided once
 per process. **E89 owns this.**
 
+Edward has reproduced the same shape locally on his twelve E85 legs, at leg
+granularity: seven legs at 3,166 to 3,700 microseconds of host work per round
+and five at 604 to 728, with nothing between, and the contamination sitting in
+`d_head1`, `d_submit1`, `d_chain` and `commit`, which are the once-per-round
+host phases of a drafting round. The best hypothesis is process quality-of-service
+class and the resulting efficiency-core against performance-core placement,
+which is binary, is fixed for the life of a process, leaves GPU compute and
+memory bandwidth untouched, and costs time only where the host has work. It
+would also be fixable from inside `Sources/MLXFastModel`, which is an editable
+path. E89 rung 0 must first exclude external contention with the within-leg
+dispersion and the round-index time series.
+
+**Reading the controls correctly.** plutarch, prefill and the serial baseline
+certify that an effect is confined to drafting rounds. They cannot identify the
+mode, because plutarch's mode sensitivity is r = +0.043 and prefill's is
+negligible. To separate mode from mechanism inside a single pair, compare the
+per-prompt profile against the measured mode profile, which is largest on
+travel and drama and smallest on essays, and report the effect as a range whose
+ends are the raw mean7 and the mode-profile-subtracted mean7. Only a
+byte-identical replicate group settles it exactly. Ledger 230 corrects the
+stronger claim first written in ledger 229.
+
 ### 3. Bytes are not the currency; bit-exactness is
 
 A head-byte reduction converts at 0.0815 % of candidate time per 1 % of head
@@ -482,7 +504,14 @@ Ordered by expected value, not by cost.
    2.1875 operations per weight element, which is -10.4 % at `M = 7, G = 2`.
    This is the largest untried lever inside the verify round. **E88, to be
    issued.** Its rung 2 also refits the dead width curve on the live dispatch
-   table for free.
+   table for free. 🔴 **Transfer risk, new.** Ledger 230 shows the crown NA<=6
+   table is worth -20 % per cell at M = 5 on our g16s host and costs +0.9 % to
+   +2.2 % end to end on the ranked g17s host, so the input-group-count axis
+   inverts sign between the two generations. E88 is a different axis and both
+   its expected effects lower register pressure rather than raise it, but E88
+   rung 1 must publish the register and spill census on `applegpu_g17s` as well
+   as `applegpu_g16s` and must stop if the ranked register count rises at any
+   live cell.
 4. **A certified two-tier exact `lm_head` readout screen.** The readout is
    715 MB per round, about 5.0 % of the 14.41 GB weight stream, and its only
    consumer is a top-2. A coarse 2-bit plane with per-row certified error bounds
