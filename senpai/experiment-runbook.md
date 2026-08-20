@@ -149,6 +149,67 @@ After editing a `.metal` or `.h` kernel source, also run
 kernels, run `tools/build-mlx-metallib.sh` and record
 `metallib_source_fingerprint` per leg.
 
+## Prove which proposal head you measured
+
+Do this on every timed leg, not only on head experiments. The head changes
+kernel families, byte traffic, and acceptance, so a leg with unknown head
+provenance cannot be compared with anything.
+
+**The local harness does not provision the head you probably think it does.**
+`benchmark-qwen-mtp.sh:280` provisions only the setup-default head, which is
+the organizer-pinned `EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`. The checked-in
+`mtp-head.manifest.json` selects a different artifact, the declared
+`amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827`. The two differ by a
+factor of two in bytes and by their entire quantization state.
+
+**`score.json.uses_pinned_mtp_head` lies.** It reads `true` for both
+artifacts. Do not use it. The only field that discriminates is
+**`head_provenance_sha256`**. Record it for every leg and quote it in the
+result.
+
+| name | artifact | tensors | `draft_lm_head` | islands |
+|---|---|---:|---|---|
+| pinned | `EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0` | 15 | no | no |
+| declared | `amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827` | 40 | yes | yes |
+
+To provision and verify the declared head:
+
+```bash
+research/fetch-declared-head.sh
+```
+
+It downloads the artifact, recomputes the tree digest and byte count, and
+compares both against `mtp-head.manifest.json`. The authoritative values are
+the manifest's own fields, currently tree digest
+`559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71` and
+`427742600` bytes. Both the digest and the byte count **exclude a top-level
+`README.md`** (`research/fetch-declared-head.sh:42-59`), so a raw directory
+listing or a whole-repository byte count will not match. Quote the manifest
+figure when you report bytes, and say which convention any other figure uses.
+
+**A second, free check: the kernel census.** The head's `fc` and its decoder
+layer projections are declared as plain `Linear`
+(`MLXLLM/Models/Qwen35MTP.swift:103`, `:113`). Whether they become
+`QuantizedLinear` is decided at load time, per submodule, purely by the
+presence of a matching `.scales` key
+(`MLXLMCommon/Load.swift:250-258`). So:
+
+- **pinned head resident** — BF16, no scales — the head dispatches **`gemv`**;
+- **declared head resident** — affine-4 g64 with scales — the head dispatches
+  **`qmv`** and no `gemv` appears at all.
+
+If you are already collecting a kernel census, the presence or absence of
+`gemv` confirms the head artifact independently of any metadata field.
+
+Two consequences for reading older evidence:
+
+- A dispatch or timing number attributed to the draft head is only meaningful
+  once the head artifact behind it is named. Numbers taken on the pinned head
+  do not describe the scored path.
+- A base-versus-candidate ratio can still be valid when both legs ran the same
+  wrong head, but the absolute numbers are not transferable and must not be
+  quoted as scored-path costs.
+
 ## Record a matched baseline and candidate
 
 Measure unchanged `BASE_SHA` on the assigned host:
