@@ -256,13 +256,14 @@ def main() -> int:
              "",
              "## Absolute time per cell (ms per dispatch)", "",
              "| shape | k | n | M | IPG | groups | working TGs | TGs/core (20) | "
-             "GB moved | ms | +/- SEM ms | ms/GB |",
-             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+             "TGs/core (40) | GB moved | ms | +/- SEM ms | ms/GB |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for c in cells:
         lines.append(
             f"| {c['shape']} | {c['k']} | {c['n']} | {c['m']} | {c['ipg']} | "
             f"{c['groups']} | {c['working_threadgroups']} | "
-            f"{c['threadgroups_per_core_local']:.1f} | {c['gb_moved']:.4f} | "
+            f"{c['threadgroups_per_core_local']:.1f} | "
+            f"{c['threadgroups_per_core_ranked']:.1f} | {c['gb_moved']:.4f} | "
             f"{c['seconds_per_dispatch']['mean'] * 1000:.5f} | "
             f"{c['seconds_per_dispatch'].get('sem', 0.0) * 1000:.5f} | "
             f"{c['ms_per_gb']:.4f} |")

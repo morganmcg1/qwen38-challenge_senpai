@@ -244,7 +244,7 @@ def main() -> None:
 
     record = {
         "experiment": "e78",
-        "rung": "2b",
+        "rung": args.rung,
         "harness": "local",
         "host_chip": subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"],
                                     capture_output=True, text=True).stdout.strip(),
@@ -282,7 +282,7 @@ def main() -> None:
               f"({row['pct_vs_baseline']:+.4f} %) legs={row['legs']}")
     print(f"e78_analyze: session null {session_null} "
           f"threshold {threshold}")
-    for step in ladder:
+    for step in ladder_rows:
         print(f"e78_analyze: ladder {step['step']}: "
               f"{step['delta_seconds_per_token']} ({step['families']})")
     print(f"e78_analyze: checks {checks}")

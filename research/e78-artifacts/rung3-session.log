@@ -1,0 +1,2276 @@
+e78_rung3: legs_per_group=3 cool_gate=0 base=8d938c911df52b6a324f259a55dbaa75e508c822
+e66_whole_leg_session: === 2026-08-20T16:05:20Z arm warm (a_ship, 1 leg(s)) ===
+{
+  "arm": "a_ship",
+  "base_sha": "8d938c911df52b6a324f259a55dbaa75e508c822",
+  "cells": {
+    "5": 5,
+    "6": 6,
+    "9": 5
+  },
+  "checkout": null,
+  "cutoff": null,
+  "doc": "the base table, unmodified: <T,5,5>, <T,6,6>, <T,9,5>",
+  "dry_run": false,
+  "narrow_cells": null,
+  "never_submit": false,
+  "never_time": false,
+  "sha256": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+  },
+  "source_bytes": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": 99360,
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": 99565
+  }
+}
+e78-run: MLXFAST_LOCAL_COOL_GATE=0 DARKBLOOM_STARTUP_MEMORY_PROFILE=full MLX_MAX_MB_PER_BUFFER=512 MLX_MAX_OPS_PER_BUFFER=50
+E55 twin gate: quantized
+    quantized/mlx/backend/metal/kernels/quantized.h: PINNED comment-only divergence (3 vs 13 comment line(s), 3005 non-comment line(s) identical)
+E55 TWIN GATE OK: 1 runtime-effective twin(s)
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[0/1] Planning build
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'mlxfast-swift' complete! (10.49s)
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[0/1] Planning build
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[1/3] Compiling quantized.cpp
+[3/5] Compiling MLX ArrayAt.swift
+[4/6] Compiling MLXFast MLXFast.swift
+[5/7] Compiling MLXLMCommon DoRA+Layers.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1178:52: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1176 |                 stream?.reserveEmission()
+1177 |                 detokQueue.async {
+1178 |                     let text = isStopToken ? "" : (detokenizer?.push([token]) ?? "")
+     |                                                    `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1179 |                     stream?.emit(
+1180 |                         .delta(text: text, tokens: [token], logprobs: logprobs),
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1279:32: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1277 |         if rec.request.stopStrings.isEmpty {
+1278 |             detokQueue.async {
+1279 |                 let trailing = detokenizer?.flush() ?? ""
+     |                                `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1280 |                 if !trailing.isEmpty {
+1281 |                     stream?.emit(.delta(text: trailing, tokens: [], logprobs: nil))
+
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+[5/7] Write Objects.LinkFileList
+[6/7] Linking mlxfast-runtime-worker
+Build of product 'mlxfast-runtime-worker' complete! (45.47s)
+e78_binary_assert_m3_ipgs=3
+e78_binary_assert_m4_ipgs=4
+e78_binary_assert_m5_ipgs=5
+e78_binary_assert_m6_ipgs=6
+e78_binary_assert_m7_ipgs=4
+e78_binary_assert_m8_ipgs=4
+e78_binary_assert_m9_ipgs=5
+e78_binary_assert_wide_bound=6
+e78_binary_assert_cutoff=none
+e78_binary_assert_lane_perturb_copies=0
+e78-binary-assert OK: .build-worker/release/mlxfast-runtime-worker embeds m3=[3] m4=[4] m5=[5] m6=[6] m7=[4] m8=[4] m9=[5], wide-helper bound [2, 6], cutoff=none, lane_perturb=0
+e78_binary_assert_worker_text_sha256=ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec
+e78_binary_assert_worker_cstring_sha256=d52a9ba63b9b2a2e1443d91263eabee8eb456db3298ea0cebfca74929f13f01e
+=== e42-run: warm leg pair 1/1 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:06:43Z
+worker_sha256 f32ff270445816926cbf5b648ac7993735937ae546deb18a1059447aa16fa87b
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg1_before_arm_m5_ipgs=5
+leg1_before_arm_m6_ipgs=6
+leg1_before_arm_m9_ipgs=5
+leg1_before_worker_mtime=2026-08-20T16:06:43Z
+leg1_before_worker_sha256=f32ff270445816926cbf5b648ac7993735937ae546deb18a1059447aa16fa87b
+leg1_before_rebuild_assert_exit=0
+leg1_before_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+benchmark-qwen-mtp.sh: mlx.metallib is stale (vendored kernel sources changed after it was built); rebuilding with tools/build-mlx-metallib.sh
+-- Building MLX for arm64 processor on Darwin
+-- Metal found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework
+-- Building on macOS 26.5.2
+-- Building with macOS 26.5 SDK
+-- Metal version: 400
+-- Accelerate found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- Downloading json
+-- Using the multi-header code from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/json/include/
+-- Downloading json for JACCL
+-- {fmt} version: 12.1.0
+-- Build type: Release
+-- Configuring done (0.2s)
+-- Generating done (0.2s)
+-- Build files have been written to: /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/mlx-metal
+[  0%] Building quantized.air
+In file included from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal:7:
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1091:25: warning: unused parameter 'out_vec_size' [-Wunused-parameter]
+    const constant int& out_vec_size,
+                        ^
+1 warning generated.
+[  0%] Building mlx.metallib
+[100%] Built target mlx-metallib
+build-mlx-metallib.sh: wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/debug/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/debug/mlx.metallib
+build-mlx-metallib.sh: wrote .build/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build-worker/release/mlx.metallib
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073421
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031461
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.333738672911054 (serial K=1 0.07342073624022305s/token / MTP 0.031460564583539963s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.333738672911054,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.07342073624022305,
+    "mtp_seconds_per_token": 0.031460564583539963,
+    "mtp_decode_speedup": 2.333738672911054,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:06:43Z
+worker_sha256 f32ff270445816926cbf5b648ac7993735937ae546deb18a1059447aa16fa87b
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg1_after_arm_m5_ipgs=5
+leg1_after_arm_m6_ipgs=6
+leg1_after_arm_m9_ipgs=5
+leg1_after_worker_mtime=2026-08-20T16:06:43Z
+leg1_after_worker_sha256=f32ff270445816926cbf5b648ac7993735937ae546deb18a1059447aa16fa87b
+leg1_after_rebuild_assert_exit=0
+leg1_after_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+leg1_worker_unchanged_across_leg=true
+e66_whole_leg_session: warm (a_ship) exited 0
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from WANDB_API_KEY.
+wandb: W&B API key is configured. Use `wandb login --relogin` to force relogin
+wandb: setting up run x3xonel6
+wandb: Tracking run with wandb version 0.28.1
+wandb: Run data is saved locally in /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/wandb/run-20260820_161206-x3xonel6
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run e78-warm
+wandb: ⭐️ View project at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: 🚀 View run at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/x3xonel6
+e78_wandb_leg: warm -> https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/x3xonel6
+wandb: updating run metadata; uploading summary
+wandb: uploading config.yaml; uploading code/research/e78_wandb_leg.py; uploading wandb-metadata.json; uploading requirements.txt; uploading output.log (+ 1 more)
+wandb: 
+wandb: Run history:
+wandb:       leg/accepted_draft_rate ▁
+wandb:             leg/decode_tokens ▁
+wandb:  leg/effective_mean_draft_len ▁
+wandb:                     leg/index ▁
+wandb:        leg/mtp_decode_speedup ▁
+wandb:                 leg/mtp_depth ▁
+wandb:     leg/mtp_seconds_per_token ▁
+wandb: leg/residual_divergence_count ▁
+wandb:  leg/serial_seconds_per_token ▁
+wandb:           leg/width_rounds_m2 ▁
+wandb:                            +6 ...
+wandb: 
+wandb: Run summary:
+wandb:          accepted_draft_rate 0.88753
+wandb: all_tokens_matched_every_leg True
+wandb:                decode_tokens 512
+wandb:     effective_mean_draft_len 6.26923
+wandb:      leg/accepted_draft_rate 0.88753
+wandb:       leg/all_tokens_matched True
+wandb:            leg/decode_tokens 512
+wandb: leg/effective_mean_draft_len 6.26923
+wandb:                    leg/index 1
+wandb:       leg/mtp_decode_speedup 2.33374
+wandb:                          +20 ...
+wandb: 
+wandb: 🚀 View run e78-warm at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/x3xonel6
+wandb: ⭐️ View project at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260820_161206-x3xonel6/logs
+e66_whole_leg_session: === 2026-08-20T16:12:13Z arm a1 (a_ship, 3 leg(s)) ===
+{
+  "arm": "a_ship",
+  "base_sha": "8d938c911df52b6a324f259a55dbaa75e508c822",
+  "cells": {
+    "5": 5,
+    "6": 6,
+    "9": 5
+  },
+  "checkout": null,
+  "cutoff": null,
+  "doc": "the base table, unmodified: <T,5,5>, <T,6,6>, <T,9,5>",
+  "dry_run": false,
+  "narrow_cells": null,
+  "never_submit": false,
+  "never_time": false,
+  "sha256": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+  },
+  "source_bytes": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": 99360,
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": 99565
+  }
+}
+e78-run: MLXFAST_LOCAL_COOL_GATE=0 DARKBLOOM_STARTUP_MEMORY_PROFILE=full MLX_MAX_MB_PER_BUFFER=512 MLX_MAX_OPS_PER_BUFFER=50
+E55 twin gate: quantized
+    quantized/mlx/backend/metal/kernels/quantized.h: PINNED comment-only divergence (3 vs 13 comment line(s), 3005 non-comment line(s) identical)
+E55 TWIN GATE OK: 1 runtime-effective twin(s)
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'mlxfast-swift' complete! (1.61s)
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[1/3] Compiling quantized.cpp
+[3/5] Compiling MLX ArrayAt.swift
+[4/6] Compiling MLXFast MLXFast.swift
+[5/7] Compiling MLXLMCommon DoRA+Layers.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1178:52: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1176 |                 stream?.reserveEmission()
+1177 |                 detokQueue.async {
+1178 |                     let text = isStopToken ? "" : (detokenizer?.push([token]) ?? "")
+     |                                                    `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1179 |                     stream?.emit(
+1180 |                         .delta(text: text, tokens: [token], logprobs: logprobs),
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1279:32: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1277 |         if rec.request.stopStrings.isEmpty {
+1278 |             detokQueue.async {
+1279 |                 let trailing = detokenizer?.flush() ?? ""
+     |                                `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1280 |                 if !trailing.isEmpty {
+1281 |                     stream?.emit(.delta(text: trailing, tokens: [], logprobs: nil))
+
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+[5/7] Write Objects.LinkFileList
+[6/7] Linking mlxfast-runtime-worker
+Build of product 'mlxfast-runtime-worker' complete! (38.79s)
+e78_binary_assert_m3_ipgs=3
+e78_binary_assert_m4_ipgs=4
+e78_binary_assert_m5_ipgs=5
+e78_binary_assert_m6_ipgs=6
+e78_binary_assert_m7_ipgs=4
+e78_binary_assert_m8_ipgs=4
+e78_binary_assert_m9_ipgs=5
+e78_binary_assert_wide_bound=6
+e78-binary-assert OK: .build-worker/release/mlxfast-runtime-worker embeds m3=[3] m4=[4] m5=[5] m6=[6] m7=[4] m8=[4] m9=[5], wide-helper bound [2, 6], cutoff=none, lane_perturb=0
+e78_binary_assert_cutoff=none
+e78_binary_assert_lane_perturb_copies=0
+e78_binary_assert_worker_text_sha256=ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec
+e78_binary_assert_worker_cstring_sha256=d52a9ba63b9b2a2e1443d91263eabee8eb456db3298ea0cebfca74929f13f01e
+=== e42-run: a1 leg pair 1/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:13:20Z
+worker_sha256 195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg1_before_arm_m5_ipgs=5
+leg1_before_arm_m6_ipgs=6
+leg1_before_arm_m9_ipgs=5
+leg1_before_worker_mtime=2026-08-20T16:13:20Z
+leg1_before_worker_sha256=195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+leg1_before_rebuild_assert_exit=0
+leg1_before_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+benchmark-qwen-mtp.sh: mlx.metallib is stale (vendored kernel sources changed after it was built); rebuilding with tools/build-mlx-metallib.sh
+-- Building MLX for arm64 processor on Darwin
+-- Metal found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework
+-- Building on macOS 26.5.2
+-- Building with macOS 26.5 SDK
+-- Metal version: 400
+-- Accelerate found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- Downloading json
+-- Using the multi-header code from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/json/include/
+-- Downloading json for JACCL
+-- {fmt} version: 12.1.0
+-- Build type: Release
+-- Configuring done (0.2s)
+-- Generating done (0.2s)
+-- Build files have been written to: /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/mlx-metal
+[  0%] Building quantized.air
+In file included from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal:7:
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1091:25: warning: unused parameter 'out_vec_size' [-Wunused-parameter]
+    const constant int& out_vec_size,
+                        ^
+1 warning generated.
+[  0%] Building mlx.metallib
+[100%] Built target mlx-metallib
+build-mlx-metallib.sh: wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/debug/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/debug/mlx.metallib
+build-mlx-metallib.sh: wrote .build/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build-worker/release/mlx.metallib
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073385
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031456
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.3329286081721343 (serial K=1 0.0733845429494977s/token / MTP 0.03145597456023097s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.3329286081721343,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.0733845429494977,
+    "mtp_seconds_per_token": 0.03145597456023097,
+    "mtp_decode_speedup": 2.3329286081721343,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:13:20Z
+worker_sha256 195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg1_after_arm_m5_ipgs=5
+leg1_after_arm_m6_ipgs=6
+leg1_after_arm_m9_ipgs=5
+leg1_after_worker_mtime=2026-08-20T16:13:20Z
+leg1_after_worker_sha256=195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+leg1_after_rebuild_assert_exit=0
+leg1_after_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+leg1_worker_unchanged_across_leg=true
+=== e42-run: a1 leg pair 2/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:13:20Z
+worker_sha256 195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg2_before_arm_m5_ipgs=5
+leg2_before_arm_m6_ipgs=6
+leg2_before_arm_m9_ipgs=5
+leg2_before_worker_mtime=2026-08-20T16:13:20Z
+leg2_before_worker_sha256=195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+leg2_before_rebuild_assert_exit=0
+leg2_before_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073254
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031455
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.3288440092015485 (serial K=1 0.073253515409305692s/token / MTP 0.031454882817342877s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.3288440092015485,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073253515409305692,
+    "mtp_seconds_per_token": 0.031454882817342877,
+    "mtp_decode_speedup": 2.3288440092015485,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:13:20Z
+worker_sha256 195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg2_after_arm_m5_ipgs=5
+leg2_after_arm_m6_ipgs=6
+leg2_after_arm_m9_ipgs=5
+leg2_after_worker_mtime=2026-08-20T16:13:20Z
+leg2_after_worker_sha256=195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+leg2_after_rebuild_assert_exit=0
+leg2_after_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+leg2_worker_unchanged_across_leg=true
+=== e42-run: a1 leg pair 3/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:13:20Z
+worker_sha256 195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg3_before_arm_m5_ipgs=5
+leg3_before_arm_m6_ipgs=6
+leg3_before_arm_m9_ipgs=5
+leg3_before_worker_mtime=2026-08-20T16:13:20Z
+leg3_before_worker_sha256=195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+leg3_before_rebuild_assert_exit=0
+leg3_before_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073232
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031457
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.327990311665984 (serial K=1 0.073231609538197517s/token / MTP 0.031457007862627506s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.327990311665984,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073231609538197517,
+    "mtp_seconds_per_token": 0.031457007862627506,
+    "mtp_decode_speedup": 2.327990311665984,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:13:20Z
+worker_sha256 195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg3_after_arm_m5_ipgs=5
+leg3_after_arm_m6_ipgs=6
+leg3_after_arm_m9_ipgs=5
+leg3_after_worker_mtime=2026-08-20T16:13:20Z
+leg3_after_worker_sha256=195aebdfd8030cbfca412d5f564ee1053dc83a416912ef607815dd09ffc2155e
+leg3_after_rebuild_assert_exit=0
+leg3_after_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+leg3_worker_unchanged_across_leg=true
+e66_whole_leg_session: a1 (a_ship) exited 0
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from WANDB_API_KEY.
+wandb: W&B API key is configured. Use `wandb login --relogin` to force relogin
+wandb: setting up run zirxq2b3
+wandb: Tracking run with wandb version 0.28.1
+wandb: Run data is saved locally in /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/wandb/run-20260820_162641-zirxq2b3
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run e78-a1
+wandb: ⭐️ View project at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: 🚀 View run at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zirxq2b3
+e78_wandb_leg: a1 -> https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zirxq2b3
+wandb: updating run metadata; uploading summary
+wandb: updating run metadata
+wandb: 
+wandb: Run history:
+wandb:       leg/accepted_draft_rate ▁▁▁
+wandb:             leg/decode_tokens ▁▁▁
+wandb:  leg/effective_mean_draft_len ▁▁▁
+wandb:                     leg/index ▁▅█
+wandb:        leg/mtp_decode_speedup █▂▁
+wandb:                 leg/mtp_depth ▁▁▁
+wandb:     leg/mtp_seconds_per_token ▅▁█
+wandb: leg/residual_divergence_count ▁▁▁
+wandb:  leg/serial_seconds_per_token █▂▁
+wandb:           leg/width_rounds_m2 ▁▁▁
+wandb:                            +6 ...
+wandb: 
+wandb: Run summary:
+wandb:          accepted_draft_rate 0.88753
+wandb:      accepted_draft_rate_max 0.88753
+wandb:      accepted_draft_rate_min 0.88753
+wandb: all_tokens_matched_every_leg True
+wandb:                decode_tokens 512
+wandb:            decode_tokens_max 512
+wandb:            decode_tokens_min 512
+wandb:     effective_mean_draft_len 6.26923
+wandb: effective_mean_draft_len_max 6.26923
+wandb: effective_mean_draft_len_min 6.26923
+wandb:                          +36 ...
+wandb: 
+wandb: 🚀 View run e78-a1 at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zirxq2b3
+wandb: ⭐️ View project at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260820_162641-zirxq2b3/logs
+e66_whole_leg_session: === 2026-08-20T16:26:48Z arm e1 (e_kdown, 3 leg(s)) ===
+{
+  "arm": "e_kdown",
+  "base_sha": "8d938c911df52b6a324f259a55dbaa75e508c822",
+  "cells": {
+    "6": 3
+  },
+  "checkout": null,
+  "cutoff": 8192,
+  "doc": "IPG conditioned on in_vec_size at 8192, at M=6 only: mlp.down takes IPG 3, every other shape keeps the base IPG 6. M=5 and M=9 are untouched.",
+  "dry_run": false,
+  "narrow_cells": {
+    "6": 6
+  },
+  "never_submit": false,
+  "never_time": false,
+  "sha256": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "6c19f0a966162b4271721340b470fe34c371d097cc03678f84c042db6ec64dc3",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "30e74c6451f00b78d8a320b456b95724b61fb2173958214fb48b4159305e3c70"
+  },
+  "source_bytes": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": 99669,
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": 99874
+  }
+}
+e78-run: MLXFAST_LOCAL_COOL_GATE=0 DARKBLOOM_STARTUP_MEMORY_PROFILE=full MLX_MAX_MB_PER_BUFFER=512 MLX_MAX_OPS_PER_BUFFER=50
+E55 twin gate: quantized
+    quantized/mlx/backend/metal/kernels/quantized.h: PINNED comment-only divergence (3 vs 13 comment line(s), 3012 non-comment line(s) identical)
+E55 TWIN GATE OK: 1 runtime-effective twin(s)
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'mlxfast-swift' complete! (1.56s)
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[1/3] Compiling quantized.cpp
+[3/5] Compiling MLX ArrayAt.swift
+[4/6] Compiling MLXFast MLXFast.swift
+[5/7] Compiling MLXLMCommon DoRA+Layers.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1178:52: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1176 |                 stream?.reserveEmission()
+1177 |                 detokQueue.async {
+1178 |                     let text = isStopToken ? "" : (detokenizer?.push([token]) ?? "")
+     |                                                    `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1179 |                     stream?.emit(
+1180 |                         .delta(text: text, tokens: [token], logprobs: logprobs),
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1279:32: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1277 |         if rec.request.stopStrings.isEmpty {
+1278 |             detokQueue.async {
+1279 |                 let trailing = detokenizer?.flush() ?? ""
+     |                                `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1280 |                 if !trailing.isEmpty {
+1281 |                     stream?.emit(.delta(text: trailing, tokens: [], logprobs: nil))
+
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+[5/7] Write Objects.LinkFileList
+[6/7] Linking mlxfast-runtime-worker
+Build of product 'mlxfast-runtime-worker' complete! (40.03s)
+e78_binary_assert_m3_ipgs=3
+e78_binary_assert_m4_ipgs=4
+e78_binary_assert_m5_ipgs=5
+e78_binary_assert_m6_ipgs=3,6
+e78_binary_assert_m7_ipgs=4
+e78_binary_assert_m8_ipgs=4
+e78_binary_assert_m9_ipgs=5
+e78_binary_assert_wide_bound=6
+e78_binary_assert_cutoff=none
+e78_binary_assert_lane_perturb_copies=0
+e78-binary-assert OK: .build-worker/release/mlxfast-runtime-worker embeds m3=[3] m4=[4] m5=[5] m6=[3 6] m7=[4] m8=[4] m9=[5], wide-helper bound [2, 6], cutoff=none, lane_perturb=0
+e78_binary_assert_worker_text_sha256=420ec1e7e52929d84e95f91f1f076bd5ca9bb1f747506cf22ecadecbf0479900
+e78_binary_assert_worker_cstring_sha256=2829d128f4c4487a09087553db9b9746ac3634c178b24bbb2f90c706f72cf5fb
+=== e42-run: e1 leg pair 1/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:27:57Z
+worker_sha256 25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80345 strings
+rebuild-and-assert-worker: PASS
+leg1_before_arm_m5_ipgs=5
+leg1_before_arm_m6_ipgs=3,6
+leg1_before_arm_m9_ipgs=5
+leg1_before_worker_mtime=2026-08-20T16:27:57Z
+leg1_before_worker_sha256=25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+leg1_before_rebuild_assert_exit=0
+leg1_before_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+benchmark-qwen-mtp.sh: mlx.metallib is stale (vendored kernel sources changed after it was built); rebuilding with tools/build-mlx-metallib.sh
+-- Building MLX for arm64 processor on Darwin
+-- Metal found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework
+-- Building on macOS 26.5.2
+-- Building with macOS 26.5 SDK
+-- Metal version: 400
+-- Accelerate found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- Downloading json
+-- Using the multi-header code from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/json/include/
+-- Downloading json for JACCL
+-- {fmt} version: 12.1.0
+-- Build type: Release
+-- Configuring done (0.2s)
+-- Generating done (0.2s)
+-- Build files have been written to: /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/mlx-metal
+[  0%] Building quantized.air
+In file included from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal:7:
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1091:25: warning: unused parameter 'out_vec_size' [-Wunused-parameter]
+    const constant int& out_vec_size,
+                        ^
+1 warning generated.
+[  0%] Building mlx.metallib
+[100%] Built target mlx-metallib
+build-mlx-metallib.sh: wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/debug/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/debug/mlx.metallib
+build-mlx-metallib.sh: wrote .build/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build-worker/release/mlx.metallib
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073227
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031427
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.33007943498216 (serial K=1 0.073227269574999809s/token / MTP 0.031426941277459264s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.33007943498216,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073227269574999809,
+    "mtp_seconds_per_token": 0.031426941277459264,
+    "mtp_decode_speedup": 2.33007943498216,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:27:57Z
+worker_sha256 25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80345 strings
+rebuild-and-assert-worker: PASS
+leg1_after_arm_m5_ipgs=5
+leg1_after_arm_m6_ipgs=3,6
+leg1_after_arm_m9_ipgs=5
+leg1_after_worker_mtime=2026-08-20T16:27:57Z
+leg1_after_worker_sha256=25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+leg1_after_rebuild_assert_exit=0
+leg1_after_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+leg1_worker_unchanged_across_leg=true
+=== e42-run: e1 leg pair 2/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:27:57Z
+worker_sha256 25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80345 strings
+rebuild-and-assert-worker: PASS
+leg2_before_arm_m5_ipgs=5
+leg2_before_arm_m6_ipgs=3,6
+leg2_before_arm_m9_ipgs=5
+leg2_before_worker_mtime=2026-08-20T16:27:57Z
+leg2_before_worker_sha256=25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+leg2_before_rebuild_assert_exit=0
+leg2_before_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073222
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031469
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.326781696824778 (serial K=1 0.073221915867179632s/token / MTP 0.031469181645661592s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.326781696824778,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073221915867179632,
+    "mtp_seconds_per_token": 0.031469181645661592,
+    "mtp_decode_speedup": 2.326781696824778,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:27:57Z
+worker_sha256 25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80345 strings
+rebuild-and-assert-worker: PASS
+leg2_after_arm_m5_ipgs=5
+leg2_after_arm_m6_ipgs=3,6
+leg2_after_arm_m9_ipgs=5
+leg2_after_worker_mtime=2026-08-20T16:27:57Z
+leg2_after_worker_sha256=25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+leg2_after_rebuild_assert_exit=0
+leg2_after_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+leg2_worker_unchanged_across_leg=true
+=== e42-run: e1 leg pair 3/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:27:57Z
+worker_sha256 25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80345 strings
+rebuild-and-assert-worker: PASS
+leg3_before_arm_m5_ipgs=5
+leg3_before_arm_m6_ipgs=3,6
+leg3_before_arm_m9_ipgs=5
+leg3_before_worker_mtime=2026-08-20T16:27:57Z
+leg3_before_worker_sha256=25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+leg3_before_rebuild_assert_exit=0
+leg3_before_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073213
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031421
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.3300867904559666 (serial K=1 0.073213156079873443s/token / MTP 0.031420785002410412s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.3300867904559666,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073213156079873443,
+    "mtp_seconds_per_token": 0.031420785002410412,
+    "mtp_decode_speedup": 2.3300867904559666,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:27:57Z
+worker_sha256 25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80345 strings
+rebuild-and-assert-worker: PASS
+leg3_after_arm_m5_ipgs=5
+leg3_after_arm_m6_ipgs=3,6
+leg3_after_arm_m9_ipgs=5
+leg3_after_worker_mtime=2026-08-20T16:27:57Z
+leg3_after_worker_sha256=25da3897ea6059931241dfb8b4060ba8f62d4fad3b32685c9f63da8bd15e0a33
+leg3_after_rebuild_assert_exit=0
+leg3_after_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+leg3_worker_unchanged_across_leg=true
+e66_whole_leg_session: e1 (e_kdown) exited 0
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from WANDB_API_KEY.
+wandb: W&B API key is configured. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.28.1
+wandb: Run data is saved locally in /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/wandb/run-20260820_164119-uao1nk2g
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run e78-e1
+wandb: ⭐️ View project at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: 🚀 View run at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/uao1nk2g
+e78_wandb_leg: e1 -> https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/uao1nk2g
+wandb: updating run metadata; uploading summary
+wandb: uploading wandb-summary.json; uploading config.yaml; uploading code/research/e78_wandb_leg.py; uploading wandb-metadata.json; uploading requirements.txt (+ 1 more)
+wandb: 
+wandb: Run history:
+wandb:       leg/accepted_draft_rate ▁▁▁
+wandb:             leg/decode_tokens ▁▁▁
+wandb:  leg/effective_mean_draft_len ▁▁▁
+wandb:                     leg/index ▁▅█
+wandb:        leg/mtp_decode_speedup █▁█
+wandb:                 leg/mtp_depth ▁▁▁
+wandb:     leg/mtp_seconds_per_token ▂█▁
+wandb: leg/residual_divergence_count ▁▁▁
+wandb:  leg/serial_seconds_per_token █▅▁
+wandb:           leg/width_rounds_m2 ▁▁▁
+wandb:                            +6 ...
+wandb: 
+wandb: Run summary:
+wandb:          accepted_draft_rate 0.88753
+wandb:      accepted_draft_rate_max 0.88753
+wandb:      accepted_draft_rate_min 0.88753
+wandb: all_tokens_matched_every_leg True
+wandb:                decode_tokens 512
+wandb:            decode_tokens_max 512
+wandb:            decode_tokens_min 512
+wandb:     effective_mean_draft_len 6.26923
+wandb: effective_mean_draft_len_max 6.26923
+wandb: effective_mean_draft_len_min 6.26923
+wandb:                          +36 ...
+wandb: 
+wandb: 🚀 View run e78-e1 at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/uao1nk2g
+wandb: ⭐️ View project at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260820_164119-uao1nk2g/logs
+e66_whole_leg_session: === 2026-08-20T16:41:25Z arm e2 (e_kdown, 3 leg(s)) ===
+{
+  "arm": "e_kdown",
+  "base_sha": "8d938c911df52b6a324f259a55dbaa75e508c822",
+  "cells": {
+    "6": 3
+  },
+  "checkout": null,
+  "cutoff": 8192,
+  "doc": "IPG conditioned on in_vec_size at 8192, at M=6 only: mlp.down takes IPG 3, every other shape keeps the base IPG 6. M=5 and M=9 are untouched.",
+  "dry_run": false,
+  "narrow_cells": {
+    "6": 6
+  },
+  "never_submit": false,
+  "never_time": false,
+  "sha256": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "6c19f0a966162b4271721340b470fe34c371d097cc03678f84c042db6ec64dc3",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "30e74c6451f00b78d8a320b456b95724b61fb2173958214fb48b4159305e3c70"
+  },
+  "source_bytes": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": 99669,
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": 99874
+  }
+}
+e78-run: MLXFAST_LOCAL_COOL_GATE=0 DARKBLOOM_STARTUP_MEMORY_PROFILE=full MLX_MAX_MB_PER_BUFFER=512 MLX_MAX_OPS_PER_BUFFER=50
+E55 twin gate: quantized
+    quantized/mlx/backend/metal/kernels/quantized.h: PINNED comment-only divergence (3 vs 13 comment line(s), 3012 non-comment line(s) identical)
+E55 TWIN GATE OK: 1 runtime-effective twin(s)
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'mlxfast-swift' complete! (1.47s)
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[1/3] Compiling quantized.cpp
+[3/5] Compiling MLX ArrayAt.swift
+[4/6] Compiling MLXFast MLXFast.swift
+[5/7] Compiling MLXLMCommon DoRA+Layers.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1178:52: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1176 |                 stream?.reserveEmission()
+1177 |                 detokQueue.async {
+1178 |                     let text = isStopToken ? "" : (detokenizer?.push([token]) ?? "")
+     |                                                    `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1179 |                     stream?.emit(
+1180 |                         .delta(text: text, tokens: [token], logprobs: logprobs),
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1279:32: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1277 |         if rec.request.stopStrings.isEmpty {
+1278 |             detokQueue.async {
+1279 |                 let trailing = detokenizer?.flush() ?? ""
+     |                                `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1280 |                 if !trailing.isEmpty {
+1281 |                     stream?.emit(.delta(text: trailing, tokens: [], logprobs: nil))
+
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+[5/7] Write Objects.LinkFileList
+[6/7] Linking mlxfast-runtime-worker
+Build of product 'mlxfast-runtime-worker' complete! (39.80s)
+e78_binary_assert_m3_ipgs=3
+e78_binary_assert_m4_ipgs=4
+e78_binary_assert_m5_ipgs=5
+e78_binary_assert_m6_ipgs=3,6
+e78_binary_assert_m7_ipgs=4
+e78_binary_assert_m8_ipgs=4
+e78_binary_assert_m9_ipgs=5
+e78_binary_assert_wide_bound=6
+e78_binary_assert_cutoff=none
+e78_binary_assert_lane_perturb_copies=0
+e78-binary-assert OK: .build-worker/release/mlxfast-runtime-worker embeds m3=[3] m4=[4] m5=[5] m6=[3 6] m7=[4] m8=[4] m9=[5], wide-helper bound [2, 6], cutoff=none, lane_perturb=0
+e78_binary_assert_worker_text_sha256=545a2b75a6136fed9c5a69be7be79a88912c45c5ccf27c35703998a2232daf88
+e78_binary_assert_worker_cstring_sha256=2829d128f4c4487a09087553db9b9746ac3634c178b24bbb2f90c706f72cf5fb
+=== e42-run: e2 leg pair 1/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:42:34Z
+worker_sha256 eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80363 strings
+rebuild-and-assert-worker: PASS
+leg1_before_arm_m5_ipgs=5
+leg1_before_arm_m6_ipgs=3,6
+leg1_before_arm_m9_ipgs=5
+leg1_before_worker_mtime=2026-08-20T16:42:34Z
+leg1_before_worker_sha256=eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+leg1_before_rebuild_assert_exit=0
+leg1_before_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+benchmark-qwen-mtp.sh: mlx.metallib is stale (vendored kernel sources changed after it was built); rebuilding with tools/build-mlx-metallib.sh
+-- Building MLX for arm64 processor on Darwin
+-- Metal found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework
+-- Building on macOS 26.5.2
+-- Building with macOS 26.5 SDK
+-- Metal version: 400
+-- Accelerate found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- Downloading json
+-- Using the multi-header code from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/json/include/
+-- Downloading json for JACCL
+-- {fmt} version: 12.1.0
+-- Build type: Release
+-- Configuring done (0.2s)
+-- Generating done (0.2s)
+-- Build files have been written to: /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/mlx-metal
+[  0%] Building quantized.air
+In file included from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal:7:
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1091:25: warning: unused parameter 'out_vec_size' [-Wunused-parameter]
+    const constant int& out_vec_size,
+                        ^
+1 warning generated.
+[  0%] Building mlx.metallib
+[100%] Built target mlx-metallib
+build-mlx-metallib.sh: wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/debug/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/debug/mlx.metallib
+build-mlx-metallib.sh: wrote .build/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build-worker/release/mlx.metallib
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073309
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031438
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.3318600852348785 (serial K=1 0.073308921884745359s/token / MTP 0.031437959056347609s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.3318600852348785,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073308921884745359,
+    "mtp_seconds_per_token": 0.031437959056347609,
+    "mtp_decode_speedup": 2.3318600852348785,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:42:34Z
+worker_sha256 eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80363 strings
+rebuild-and-assert-worker: PASS
+leg1_after_arm_m5_ipgs=5
+leg1_after_arm_m6_ipgs=3,6
+leg1_after_arm_m9_ipgs=5
+leg1_after_worker_mtime=2026-08-20T16:42:34Z
+leg1_after_worker_sha256=eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+leg1_after_rebuild_assert_exit=0
+leg1_after_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+leg1_worker_unchanged_across_leg=true
+=== e42-run: e2 leg pair 2/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:42:34Z
+worker_sha256 eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80363 strings
+rebuild-and-assert-worker: PASS
+leg2_before_arm_m5_ipgs=5
+leg2_before_arm_m6_ipgs=3,6
+leg2_before_arm_m9_ipgs=5
+leg2_before_worker_mtime=2026-08-20T16:42:34Z
+leg2_before_worker_sha256=eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+leg2_before_rebuild_assert_exit=0
+leg2_before_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073387
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031446
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.3337074276560177 (serial K=1 0.073386720847338438s/token / MTP 0.031446410110220313s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.3337074276560177,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073386720847338438,
+    "mtp_seconds_per_token": 0.031446410110220313,
+    "mtp_decode_speedup": 2.3337074276560177,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:42:34Z
+worker_sha256 eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80363 strings
+rebuild-and-assert-worker: PASS
+leg2_after_arm_m5_ipgs=5
+leg2_after_arm_m6_ipgs=3,6
+leg2_after_arm_m9_ipgs=5
+leg2_after_worker_mtime=2026-08-20T16:42:34Z
+leg2_after_worker_sha256=eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+leg2_after_rebuild_assert_exit=0
+leg2_after_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+leg2_worker_unchanged_across_leg=true
+=== e42-run: e2 leg pair 3/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:42:34Z
+worker_sha256 eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80363 strings
+rebuild-and-assert-worker: PASS
+leg3_before_arm_m5_ipgs=5
+leg3_before_arm_m6_ipgs=3,6
+leg3_before_arm_m9_ipgs=5
+leg3_before_worker_mtime=2026-08-20T16:42:34Z
+leg3_before_worker_sha256=eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+leg3_before_rebuild_assert_exit=0
+leg3_before_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073264
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031443
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.3300428551930645 (serial K=1 0.073263910366222262s/token / MTP 0.031443160027265549s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.3300428551930645,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073263910366222262,
+    "mtp_seconds_per_token": 0.031443160027265549,
+    "mtp_decode_speedup": 2.3300428551930645,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:42:34Z
+worker_sha256 eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 3, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80363 strings
+rebuild-and-assert-worker: PASS
+leg3_after_arm_m5_ipgs=5
+leg3_after_arm_m6_ipgs=3,6
+leg3_after_arm_m9_ipgs=5
+leg3_after_worker_mtime=2026-08-20T16:42:34Z
+leg3_after_worker_sha256=eec59543e9e059e29776affebae93f0fb0db04f496ea1ae358872579b1a28450
+leg3_after_rebuild_assert_exit=0
+leg3_after_metallib_source_fingerprint=1198ae41ccd687b8a61d3e2b155778942529e96f3a0ffdb1f14aa718f470390e
+leg3_worker_unchanged_across_leg=true
+e66_whole_leg_session: e2 (e_kdown) exited 0
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from WANDB_API_KEY.
+wandb: W&B API key is configured. Use `wandb login --relogin` to force relogin
+wandb: setting up run 1zolbc8a
+wandb: Tracking run with wandb version 0.28.1
+wandb: Run data is saved locally in /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/wandb/run-20260820_165558-1zolbc8a
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run e78-e2
+wandb: ⭐️ View project at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: 🚀 View run at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/1zolbc8a
+e78_wandb_leg: e2 -> https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/1zolbc8a
+wandb: updating run metadata; uploading summary
+wandb: uploading history steps 0-2, summary, console lines 0-0
+wandb: 
+wandb: Run history:
+wandb:       leg/accepted_draft_rate ▁▁▁
+wandb:             leg/decode_tokens ▁▁▁
+wandb:  leg/effective_mean_draft_len ▁▁▁
+wandb:                     leg/index ▁▅█
+wandb:        leg/mtp_decode_speedup ▄█▁
+wandb:                 leg/mtp_depth ▁▁▁
+wandb:     leg/mtp_seconds_per_token ▁█▅
+wandb: leg/residual_divergence_count ▁▁▁
+wandb:  leg/serial_seconds_per_token ▄█▁
+wandb:           leg/width_rounds_m2 ▁▁▁
+wandb:                            +6 ...
+wandb: 
+wandb: Run summary:
+wandb:          accepted_draft_rate 0.88753
+wandb:      accepted_draft_rate_max 0.88753
+wandb:      accepted_draft_rate_min 0.88753
+wandb: all_tokens_matched_every_leg True
+wandb:                decode_tokens 512
+wandb:            decode_tokens_max 512
+wandb:            decode_tokens_min 512
+wandb:     effective_mean_draft_len 6.26923
+wandb: effective_mean_draft_len_max 6.26923
+wandb: effective_mean_draft_len_min 6.26923
+wandb:                          +36 ...
+wandb: 
+wandb: 🚀 View run e78-e2 at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/1zolbc8a
+wandb: ⭐️ View project at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260820_165558-1zolbc8a/logs
+e66_whole_leg_session: === 2026-08-20T16:56:06Z arm a2 (a_ship, 3 leg(s)) ===
+{
+  "arm": "a_ship",
+  "base_sha": "8d938c911df52b6a324f259a55dbaa75e508c822",
+  "cells": {
+    "5": 5,
+    "6": 6,
+    "9": 5
+  },
+  "checkout": null,
+  "cutoff": null,
+  "doc": "the base table, unmodified: <T,5,5>, <T,6,6>, <T,9,5>",
+  "dry_run": false,
+  "narrow_cells": null,
+  "never_submit": false,
+  "never_time": false,
+  "sha256": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": "c43a11f71495cec36589012a4ba950cb4d5f82d11cb6b9f525a977bbc34b8276",
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": "71ab9a72965e727830fc35feaeefc628082ba22b9b4dd4b3cfc9a4ab066857f5"
+  },
+  "source_bytes": {
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp": 99360,
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h": 99565
+  }
+}
+e78-run: MLXFAST_LOCAL_COOL_GATE=0 DARKBLOOM_STARTUP_MEMORY_PROFILE=full MLX_MAX_MB_PER_BUFFER=512 MLX_MAX_OPS_PER_BUFFER=50
+E55 twin gate: quantized
+    quantized/mlx/backend/metal/kernels/quantized.h: PINNED comment-only divergence (3 vs 13 comment line(s), 3005 non-comment line(s) identical)
+E55 TWIN GATE OK: 1 runtime-effective twin(s)
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'mlxfast-swift' complete! (1.55s)
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[1/3] Compiling quantized.cpp
+[3/5] Compiling MLX ArrayAt.swift
+[4/6] Compiling MLXFast MLXFast.swift
+[5/7] Compiling MLXLMCommon DoRA+Layers.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1178:52: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1176 |                 stream?.reserveEmission()
+1177 |                 detokQueue.async {
+1178 |                     let text = isStopToken ? "" : (detokenizer?.push([token]) ?? "")
+     |                                                    `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1179 |                     stream?.emit(
+1180 |                         .delta(text: text, tokens: [token], logprobs: logprobs),
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/EngineLoopV2.swift:1279:32: warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 128 | /// Incremental per-request detokenizer with UTF-8 + stop-string holdback.
+ 129 | /// See CONTRACT-ISSUES-B-scheduler.md §3.
+ 130 | public protocol CBv2IncrementalDetokenizer: AnyObject {
+     |                 `- note: protocol 'CBv2IncrementalDetokenizer' does not conform to the 'Sendable' protocol
+ 131 |     /// Append confirmed tokens; returns text now safe to emit.
+ 132 |     func push(_ tokens: [Int]) -> String
+     :
+1277 |         if rec.request.stopStrings.isEmpty {
+1278 |             detokQueue.async {
+1279 |                 let trailing = detokenizer?.flush() ?? ""
+     |                                `- warning: capture of 'detokenizer' with non-Sendable type '(any CBv2IncrementalDetokenizer)?' in a '@Sendable' closure [#SendableClosureCaptures]
+1280 |                 if !trailing.isEmpty {
+1281 |                     stream?.emit(.delta(text: trailing, tokens: [], logprobs: nil))
+
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+[5/7] Write Objects.LinkFileList
+[6/7] Linking mlxfast-runtime-worker
+Build of product 'mlxfast-runtime-worker' complete! (39.36s)
+e78_binary_assert_m3_ipgs=3
+e78_binary_assert_m4_ipgs=4
+e78_binary_assert_m5_ipgs=5
+e78_binary_assert_m6_ipgs=6
+e78_binary_assert_m7_ipgs=4
+e78_binary_assert_m8_ipgs=4
+e78_binary_assert_m9_ipgs=5
+e78_binary_assert_wide_bound=6
+e78_binary_assert_cutoff=none
+e78_binary_assert_lane_perturb_copies=0
+e78-binary-assert OK: .build-worker/release/mlxfast-runtime-worker embeds m3=[3] m4=[4] m5=[5] m6=[6] m7=[4] m8=[4] m9=[5], wide-helper bound [2, 6], cutoff=none, lane_perturb=0
+e78_binary_assert_worker_text_sha256=ef5171917447d347ebe34ab127b5e45fedbbc2120f00b4c4ed26cddf23f68fec
+e78_binary_assert_worker_cstring_sha256=d52a9ba63b9b2a2e1443d91263eabee8eb456db3298ea0cebfca74929f13f01e
+=== e42-run: a2 leg pair 1/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:57:14Z
+worker_sha256 47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg1_before_arm_m5_ipgs=5
+leg1_before_arm_m6_ipgs=6
+leg1_before_arm_m9_ipgs=5
+leg1_before_worker_mtime=2026-08-20T16:57:14Z
+leg1_before_worker_sha256=47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+leg1_before_rebuild_assert_exit=0
+leg1_before_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+benchmark-qwen-mtp.sh: mlx.metallib is stale (vendored kernel sources changed after it was built); rebuilding with tools/build-mlx-metallib.sh
+-- Building MLX for arm64 processor on Darwin
+-- Metal found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework
+-- Building on macOS 26.5.2
+-- Building with macOS 26.5 SDK
+-- Metal version: 400
+-- Accelerate found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- Downloading json
+-- Using the multi-header code from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/json/include/
+-- Downloading json for JACCL
+-- {fmt} version: 12.1.0
+-- Build type: Release
+-- Configuring done (0.2s)
+-- Generating done (0.2s)
+-- Build files have been written to: /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/mlx-metal
+[  0%] Building quantized.air
+In file included from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal:7:
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1091:25: warning: unused parameter 'out_vec_size' [-Wunused-parameter]
+    const constant int& out_vec_size,
+                        ^
+1 warning generated.
+[  0%] Building mlx.metallib
+[100%] Built target mlx-metallib
+build-mlx-metallib.sh: wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.build-worker/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/debug/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/debug/mlx.metallib
+build-mlx-metallib.sh: wrote .build/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build-worker/release/mlx.metallib
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073331
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031512
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.327095873897113 (serial K=1 0.073330790968611836s/token / MTP 0.03151171887293458s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.327095873897113,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073330790968611836,
+    "mtp_seconds_per_token": 0.03151171887293458,
+    "mtp_decode_speedup": 2.327095873897113,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:57:14Z
+worker_sha256 47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg1_after_arm_m5_ipgs=5
+leg1_after_arm_m6_ipgs=6
+leg1_after_arm_m9_ipgs=5
+leg1_after_worker_mtime=2026-08-20T16:57:14Z
+leg1_after_worker_sha256=47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+leg1_after_rebuild_assert_exit=0
+leg1_after_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+leg1_worker_unchanged_across_leg=true
+=== e42-run: a2 leg pair 2/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:57:14Z
+worker_sha256 47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg2_before_arm_m5_ipgs=5
+leg2_before_arm_m6_ipgs=6
+leg2_before_arm_m9_ipgs=5
+leg2_before_worker_mtime=2026-08-20T16:57:14Z
+leg2_before_worker_sha256=47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+leg2_before_rebuild_assert_exit=0
+leg2_before_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073259
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031462
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.328492687398877 (serial K=1 0.073259328026324511s/token / MTP 0.031462125014513731s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.328492687398877,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073259328026324511,
+    "mtp_seconds_per_token": 0.031462125014513731,
+    "mtp_decode_speedup": 2.328492687398877,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:57:14Z
+worker_sha256 47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg2_after_arm_m5_ipgs=5
+leg2_after_arm_m6_ipgs=6
+leg2_after_arm_m9_ipgs=5
+leg2_after_worker_mtime=2026-08-20T16:57:14Z
+leg2_after_worker_sha256=47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+leg2_after_rebuild_assert_exit=0
+leg2_after_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+leg2_worker_unchanged_across_leg=true
+=== e42-run: a2 leg pair 3/3 (512 tokens) ===
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:57:14Z
+worker_sha256 47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg3_before_arm_m5_ipgs=5
+leg3_before_arm_m6_ipgs=6
+leg3_before_arm_m9_ipgs=5
+leg3_before_worker_mtime=2026-08-20T16:57:14Z
+leg3_before_worker_sha256=47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+leg3_before_rebuild_assert_exit=0
+leg3_before_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_256.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073151
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: warning: local GPU cool-down gate disabled (MLXFAST_LOCAL_COOL_GATE=0); hot-start timings are not comparable to gated runs
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=78 accepted_draft_rate=0.8875 all_tokens_matched=true reference_checked_rows=567/567 seconds_per_token=0.031484
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.3234621910024473 (serial K=1 0.073151316493749619s/token / MTP 0.03148375591263175s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.3234621910024473,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-iterate",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "effective_mean_draft_len": 6.2692307692307692,
+    "serial_seconds_per_token": 0.073151316493749619,
+    "mtp_seconds_per_token": 0.03148375591263175,
+    "mtp_decode_speedup": 2.3234621910024473,
+    "accepted_draft_rate": 0.88752556237218816,
+    "residual_divergence_count": 0
+  }
+}
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-20T16:57:14Z
+worker_sha256 47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+ok   require '<T, 5, 5, true>': 1
+ok   require '<T, 6, 6, true>': 1
+ok   require '<T, 9, 5, true>': 1
+ok   forbid  '<T, 5, 3, true>': 0
+ok   forbid  '<T, 5, 4, true>': 0
+ok   forbid  '<T, 5, 6, true>': 0
+ok   forbid  '<T, 6, 3, true>': 0
+ok   forbid  '<T, 6, 4, true>': 0
+ok   forbid  '<T, 6, 5, true>': 0
+ok   forbid  '<T, 9, 3, true>': 0
+ok   forbid  '<T, 9, 4, true>': 0
+ok   forbid  '<T, 9, 6, true>': 0
+ok   extraction: 80356 strings
+rebuild-and-assert-worker: PASS
+leg3_after_arm_m5_ipgs=5
+leg3_after_arm_m6_ipgs=6
+leg3_after_arm_m9_ipgs=5
+leg3_after_worker_mtime=2026-08-20T16:57:14Z
+leg3_after_worker_sha256=47b97b8a407c1e278b1e30cc62cfb4e368f6b7bdb95501e8483f222fc2dab86d
+leg3_after_rebuild_assert_exit=0
+leg3_after_metallib_source_fingerprint=f09821bdbd820b77502867cbf660c1157407243ca9639de681c5b46fedfbd9fe
+leg3_worker_unchanged_across_leg=true
+e66_whole_leg_session: a2 (a_ship) exited 0
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from WANDB_API_KEY.
+wandb: W&B API key is configured. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.28.1
+wandb: Run data is saved locally in /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/wandb/run-20260820_171034-6qmrl06s
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run e78-a2
+wandb: ⭐️ View project at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: 🚀 View run at https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6qmrl06s
+e78_wandb_leg: a2 -> https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6qmrl06s
+wandb: updating run metadata; uploading summary
+wandb: updating run metadata
+wandb: 
+wandb: Run history:
+wandb:       leg/accepted_draft_rate ▁▁▁
+wandb:             leg/decode_tokens ▁▁▁
+wandb:  leg/effective_mean_draft_len ▁▁▁
+wandb:                     leg/index ▁▅█
+wandb:        leg/mtp_decode_speedup ▆█▁
+wandb:                 leg/mtp_depth ▁▁▁
+wandb:     leg/mtp_seconds_per_token █▁▄
+wandb: leg/residual_divergence_count ▁▁▁
+wandb:  leg/serial_seconds_per_token █▅▁
+wandb:           leg/width_rounds_m2 ▁▁▁
+wandb:                            +6 ...
+wandb: 
+wandb: Run summary:
+wandb:          accepted_draft_rate 0.88753
+wandb:      accepted_draft_rate_max 0.88753
+wandb:      accepted_draft_rate_min 0.88753
+wandb: all_tokens_matched_every_leg True
+wandb:                decode_tokens 512
+wandb:            decode_tokens_max 512
+wandb:            decode_tokens_min 512
+wandb:     effective_mean_draft_len 6.26923
+wandb: effective_mean_draft_len_max 6.26923
+wandb: effective_mean_draft_len_min 6.26923
+wandb:                          +36 ...
+wandb: 
+wandb: 🚀 View run e78-a2 at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6qmrl06s
+wandb: ⭐️ View project at: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260820_171034-6qmrl06s/logs
+e66_whole_leg_session: === 2026-08-20T17:10:41Z session complete (status 0) ===
+e78_analyze: baseline a_ship mtp_seconds_per_token=0.031470910840046905
+e78_analyze: a_ship           0.031470911 delta=+0.000000000 (+0.0000 %) legs=6
+e78_analyze: e_kdown          0.031440740 delta=-0.000030171 (-0.0959 %) legs=6
+e78_analyze: session null 2.9911519959568977e-05 threshold 5.9823039919137955e-05
+Traceback (most recent call last):
+  File "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/research/e78_analyze.py", line 295, in <module>
+    main()
+    ~~~~^^
+  File "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/research/e78_analyze.py", line 286, in main
+    print(f"e78_analyze: ladder {step['step']}: "
+                                 ~~~~^^^^^^^^
+TypeError: tuple indices must be integers or slices, not str
+e78_rung3: session_status=0 analysis_status=1
