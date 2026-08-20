@@ -1,17 +1,20 @@
 # SENPAI Research State
 
-- 2026-08-20, after ledger 197 retired three of the seven directions that ledger
-  196 had just queued. Two of them died against sources this campaign already
-  owned: our own policy wall, and `benchmark.json`'s `editablePaths` list.
-  Campaign base `d2139c924c7a7d98ca6026eea63867c2776abbca`.
+- 2026-08-20, after ledger 198. Campaign base
+  `d2139c924c7a7d98ca6026eea63867c2776abbca`.
 - Most recent human research direction: issue #22 -- execute aggressively toward
   the winning frontier. Issue #31 is complete and closed. No new human direction
   is outstanding.
-- Two new standing gates now run **before** any mechanism is priced or queued:
-  a **policy gate** (`research/e53_policy_wall.md` plus the `fail_on` list in
+- Two standing gates run **before** any mechanism is priced or queued: a
+  **policy gate** (`research/e53_policy_wall.md` plus the `fail_on` list in
   `.github/scripts/run-submission-static-review.sh`) and an **`editablePaths`
   membership check** for every file the mechanism must change. Ledger 197(A) and
   197(E) are the two errors that bought these rules.
+- 🔴 Ledger 198 added a third: **audit whether the code you are pricing actually
+  executes on the ranked path.** 198(A) found that the "ranked/full" allocator
+  profile the whole campaign believed in is unreachable on the Qwen MTP worker,
+  and 198(F) found that three of my own standing instruments cannot fail. Both
+  errors survived for months because nobody demanded a positive control.
 
 ---
 
@@ -188,36 +191,55 @@ a register term. It only lowers the ceiling tax that M=6 must pay, from `+17` to
 already passes `-fno-fast-math`, so the JIT and metallib kernel families share
 float semantics and there is no divergence to chase.
 
-Break-even against E54's measured lone-group bandwidth ladder
-(`223.8 / 199.7 / 175.2 / 150.9` GB/s at `NA = 2..5`; differences
-`-24.1 / -24.5 / -24.3`, so near-linear across its measured span):
+### 🔴 The table is now a CLOSED SET of two members
 
-| M | needs | flagged extrapolation | verdict |
-|---|---|---|---|
-| 5 | `bw(5) > 120.49` | `150.9` **measured** | PASS |
-| 6 | `bw(6) > 114.00` | `126.6` | PASS, margin 11 % |
-| 7 | `bw(7) > 106.55` | `102.3` | FAIL |
-| 8 | `bw(8) > 100.01` | `78.0` | FAIL |
-| 9 | `bw(9) > 92.56` | `53.7` | FAIL |
+Askeladd's E61 rung 1 (job `9c2b761b`) measured the two bandwidths that decided
+everything. The extrapolations `bw(6) = 126.6` and `bw(7) = 102.3` are
+superseded.
 
-Two consequences drive the current assignments.
+| M | needs | E54 extrapolation | **E61 measurement** | verdict |
+|---|---|---|---|---|
+| 5 | `bw(5) > 120.49` | - | `150.9` | PASS |
+| **6** | `bw(6) > 114.00` | `126.65` | **`117.8`** | **PASS by 3.3 %** |
+| **7** | `bw(7) > 106.55` | `102.35` | **`97.9`** | **FAIL, cell +7.13 % slower** |
+| 8 | `bw(8) > 100.01` | `78.0` | - | FAIL |
+| 9 | `bw(9) > 92.56` | `53.7` | - | FAIL |
 
-1. **`<T,5,5>` is a one-character diff per twin and is already paid for.** It
-   needs no helper change (E55 already raised `NA <= 5`), costs 125 registers
-   which is below the 129 the table now pays, and lands on a cell carrying
-   **19.4 % to 26.4 %** of ranked QMV time on the two prompts that set the
-   published median. Assigned to thorfinn as a new rung-4 arm.
-2. **`bw(6)` is the single measurement that closes M=6 through M=9 permanently.**
-   Assigned to askeladd as E61 rung 1, with an explicit stop gate at
-   `bw(6) <= 114.00`. M=6 is the **largest** ranked QMV width (30.9 % to 34.7 %
-   of QMV time), so it is worth the direct measurement even though its one-group
-   form needs 17 registers above the current max.
+Linearity is **refuted at M=6** and holds at M=7. Measured ladder steps run
+`-19.14 / -23.62 / -24.3 / -33.1 / -19.85`.
 
-`m5_rbx`'s motivation is retracted, not lost. Before E55 the table max was 108
-and `<T,5,5>` at 125 would have raised it; now the max is pinned at 129 by
-`case 9`, so if the allocator is per-kernel-max, `m5_rbx` (90) and `<T,5,5>`
-(125) must time identically. That is now a free falsifier with a preregistered
-tolerance.
+1. **M=6 proceeds**, but at `-4.20 %` per cell rather than the predicted
+   `-9.95 %`; realisation `0.42x`. Projected leg effect `-0.736 %`, ranked band
+   `-0.85 %` to `-0.96 %` (`research/e61_project.py`, `f6 = 0.2673`).
+2. **M=7, M=8 and M=9 are closed for the single-stream form.** No `<T,7,7>` or
+   wider arm will be built. Reopen only if a different construction changes the
+   bandwidth, not the schedule.
+3. **`<T,5,5>` is a one-character diff per twin and is already paid for.** It
+   needs no helper change, costs 125 registers below the 129 the table now pays,
+   and lands on a cell carrying **19.4 % to 26.4 %** of ranked QMV time on the
+   two prompts that set the published median. thorfinn rung-4 arm, run first.
+
+### 🔴 The ceiling tax is measured NULL, and the NA=6 cliff is probably occupancy
+
+E61 rung 1 also priced the ceiling tax directly on untreated widths: `t6` mean
+`-0.02 %` with max `|delta| 0.53 %`, `t7` mean `-0.06 %` with max `0.42 %`. The
+`+15` register rise from 129 to 144 **costs nothing on routes that did not
+change**. The ceiling-tax motivation for the `rbx` wrapper is retired.
+
+`rbx` survives on far better grounds. The only ladder step outside the `-19` to
+`-24` band is **`-33.1`**, and it lands on **exactly the width where the register
+law first breaks** (144 measured against 146 predicted). The threadgroup is 64
+threads, the kernel is bandwidth-bound and needs resident threadgroups to hide
+latency, and `125 -> 144` registers per thread is the right size to drop a
+threadgroup. Two arms now test this one hypothesis as a dose response:
+
+- **askeladd `t6_rbx`**, microbenchmark only, before rung 3. Preregistered:
+  `bw(6) >= ~135` at `<= ~110` registers means occupancy, and rung 3 then times
+  `t6_rbx`; unchanged means the cliff is intrinsic and rung 3 times `t6`.
+- **thorfinn rung 4**, the second dose point. At `NA = 5` the law is exact and
+  the ladder step is normal, so **`m5_rbx` (90 registers) and `t55` (125) must
+  time the same.** A null at M=5 beside a gain at M=6 establishes the story; a
+  gain at both refutes it.
 
 ---
 
@@ -296,19 +318,119 @@ describe verify-width work as skipping or splitting verification.
 
 ---
 
+## 🔴🔴 The ranked machine is not running the memory profile we thought
+
+Ledger 198(A). I traced every site that touches the MLX allocator or the
+command-buffer geometry on the Qwen MTP path. The "ranked/full" profile at
+`Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift:135-153` is **unreachable
+on this worker**.
+
+| step | ranked M5, 128 GiB | our Macs, 48 GiB, profile `full` |
+|---|---|---|
+| `installQwenMTPFullProfileCommandBufferDefaults`, `:62-77` | setenv `MLX_MAX_MB_PER_BUFFER=512`, `MLX_MAX_OPS_PER_BUFFER=50`, `overwrite=1` | **returns at `:66`**, the 96 GiB gate |
+| `guard policy.isLowMemory else { return }`, `QwenRuntimeMTPWorker.swift:498` | **returns** | returns |
+| `Qwen35RuntimeWeightCache` | **never constructed on this path**, per the worker's own comment at `:486-487` | never |
+| `wireResidentWeightsIfEnabled()`, `Qwen36MTPBlockSession.swift:222-276` | wires ~100 % of active memory | **returns at `:226`**, the same 96 GiB gate |
+| every phase start, TRUSTED, `QwenRuntimeWorker.swift:176-192` | `Memory.cacheLimit = 6 << 30`, `Memory.clearCache()`, fail-closed assert | identical |
+
+So:
+
+- **`cacheLimitBytes = 32 << 30` is dead.** The ranked timed window runs a
+  **6 GiB** allocator cache, set by trusted code. Any price that used 32 GiB is
+  void.
+- **`clearAllocatorCacheAfterWarmup` is dead** on this path.
+- **The two command-buffer constants at `:75-76` are the live ranked geometry**,
+  and their own comment records that `512` is the promoted setting from the
+  **Laguna M5-Max track** -- a different model on a different track.
+- **Two 96 GiB gates hide ranked-only behaviour from every local leg we have ever
+  run.** No local measurement has ever included wired residency.
+
+### The permission we have not taken
+
+`QwenRuntimeWorker.swift:168-173`, trusted, non-editable, verbatim: "This is NOT
+an enforced cap for the rest of the phase -- **editable code may change
+`Memory.cacheLimit` again inside the charged window**, and any allocation that
+follows is charged like all other work." This is a fourth entry in the
+permissions catalogue beside the three in 197(C). E62 rung 4 gates it on one
+leg: if peak `Memory.cacheMemory` never approaches 6 GiB, the cap never binds
+and the arm dies.
+
+### At the shipped setting the byte budget is inert
+
+From alphonse's E60 census, `dispatches_per_commit = min(OPS / 1.8369, MB /
+10.58)` fits all three measured points (`512/256 -> 48.39`, `512/50 -> 27.22`,
+`128/64 -> 12.95`). At the shipped ranked pair the **op cap fires first**, so
+`MLX_MAX_MB_PER_BUFFER = 512` does no work. Sweeping MB at `OPS = 50` measures
+nothing; the ladder must move OPS. Free null control: `MB=4096, OPS=50` must
+equal `MB=512, OPS=50`.
+
+Direction is already indicated: alphonse's aside measured the finer profile
+(12.95 dispatches per commit) at **`-0.1432 %`** against shipped (27.22), and
+E58 falsified the coarser direction. Both point the same way. E62 walks the
+ladder at `OPS in {6, 12, 25, 50, 100, 200}`.
+
+🔴 **Method rule this creates.** On a sub-96-GiB host the editable `setenv` never
+runs, so a shell export **is** an exact emulation of changing those constants on
+the ranked box. The source edit is the delivery vehicle and is **not locally
+observable**. Never report the source edit as the thing measured. And never
+change either 96 GiB predicate in a submitted diff: host-keyed behaviour reads
+to the bypass reviewer as runner special-casing.
+
+---
+
+## 🔴 Rollback repair is a hard 48-dispatch term, confounded with width
+
+Ledger 198(H). alphonse pooled all four E58 censuses, 106 candidate rounds, zero
+GPU, split by how many drafts the **previous** round rejected.
+
+1. **GDN dispatches take exactly two values**: 96 when the previous round
+   rejected nothing, 144 when it rejected anything. The difference is 48 --
+   exactly one extra pass over the 48 recurrent layers.
+2. **The repair is binary**, not proportional. A round that lost one draft pays
+   the same as a round that lost eight.
+3. **Width and repair are structurally confounded, totally at `M >= 7`.** `M` is
+   set by the previous round's accepted count, so a round can only be wide if the
+   previous round rejected nothing. M=7, M=8 and M=9 have **no `rejected>0` rows
+   at all across 65 rounds.**
+
+Standing rule: **it is `d(M, repaired)`, never `d(M)`.** Every per-width table in
+189, 191 and the E56 session-1 analysis is affected. The same data **falsified my
+`kL` hypothesis** -- only 1 of 106 rounds reached `kL >= 1024` -- so the `+73.71`
+window effect is withdrawn as a mixture artefact.
+
+The scheduler does not know any of this. The greedy walk at
+`Qwen36MTPBlockSession.swift:738-756` prices only the current round, while
+drafting deeper raises `P(rejection)` and charges 48 extra dispatches to the
+**following** round:
+
+```
+marginal(d) = [current-round row cost]
+            + [P(any reject | d) - P(any reject | d-1)] x repair_cost
+```
+
+Repair is 13-15 % of a round on roughly one round in five, so a first cut is
+**about +2.5 % of decode time invisible to the scheduler**. Routed into E56 as
+the `repair` arm. It also puts a measured dispatch count behind the
+rejecting-round component of the bundled GDN slot.
+
+---
+
+
 ## Current research focus
 
 1. **Get `origin/main` moved and submit `d2139c92`.** It is certified and idle.
    Under the 193 instrument this is worth more than any single mechanism now in
    flight.
-2. **Finish the single-weight-stream sweep of the QMV width table.** This is the
-   only direction with a measured `-4.30 %` leg result behind it and a
-   zero-parameter model that predicts where the next win is.
-3. **Repair the scheduler's cost model.** Two constants in the same greedy walk
-   are wrong at once: the flat per-row price ignores the weight-stream staircase
-   (edward's E56 thesis), and `headStepCostRatio` ships `0.18` against a directly
-   measured `0.224`. Both under-price a deep round, so both bias the scheduler
-   toward drafting too deep. Routed into E56 as a factor design.
+2. **Close the single-weight-stream table.** E61 rung 1 reduced it to two
+   remaining members, M=5 and M=6. Land both, then the direction is finished and
+   the students move on. Do not keep sweeping widths that measurement has closed.
+3. **Repair the scheduler's cost model.** Three terms in the same greedy walk are
+   wrong at once: the flat per-row price ignores the weight-stream staircase
+   (edward's E56 thesis), `headStepCostRatio` ships `0.18` against a directly
+   measured `0.224`, and 198(H) shows the walk charges **nothing** for the 48
+   extra recurrent-layer dispatches a rejection inflicts on the following round.
+   All three under-price a deep round, so all three bias the scheduler toward
+   drafting too deep. Routed into E56 as a factor design.
 4. **Open the transform-side surface.** 197(C) removed the only reason this
    campaign never worked there. It is the one editable area with zero field
    coverage, and a layout change attacks every QMV cell at once instead of one
@@ -330,18 +452,22 @@ stands: "Compiled decode is dead. Do not spend a student."
 
 | PR | student | experiment | state |
 |---|---|---|---|
-| #64 | qwen-askeladd | **E61** single weight stream at M=6, and the first direct price of the register ceiling | rung 0 landed and broke the register law; rung 1 running behind the `bw(6) <= 114.00` stop gate |
-| #63 | qwen-alphonse | **E60** composite against organizer main, warm-matched to the frontier | arm C certified; 512-token exactness running, then merge `d2139c92` and re-time |
-| #62 | qwen-thorfinn | **E59** M=5 route, now with `<T,5,5>` as a rung-4 arm | rungs 2b and 3 in flight; rung 4 runs `t55` first |
-| #59 | qwen-edward | **E56** stream-aware draft-depth schedule | revision `e56-r2`, must merge `d2139c92` first, plus the `h224` arm |
+| #64 | qwen-askeladd | **E61** single weight stream at M=6 | rung 1 closed the table at two members and measured the ceiling tax null; `t6_rbx` occupancy microbenchmark ordered **before** rung 3; then rung 3 at 512 tokens |
+| #65 | qwen-alphonse | **E62** ranked command-buffer granularity and the in-window allocator cache limit | new, from ledger 198(A)-(D); rung 0 source audit and instrument proofs first |
+| #62 | qwen-thorfinn | **E59** M=5 route, with `<T,5,5>` and `m5_rbx` as rung-4 arms | rungs 2b and 3 in flight; rung 4 runs `t55` first, then `m5_rbx` as the second dose point of the occupancy hypothesis |
+| #59 | qwen-edward | **E56** stream-aware draft-depth schedule | revision `e56-r2`; arms `base`/`stream`/`h224`/`repair`/`stream+repair`; the `repair` arm is new from 198(H) |
 
 Merged this campaign: #57, #55, #53, #52, #56, #60, #58, #61.
+Closed unmerged: **#63** (E60) -- experiment succeeded, candidate was a measured
+null at `-0.04627 %`, `t = -0.9379` on 5 dof, 95 % CI `[-0.1731 %, +0.0806 %]`.
+Third independent closure of warm coverage after 183(E) and 185(C)(E).
 
 ## Next research directions
 
 Ordered by expected value against the `0.5366 %` deficit. Ledger 197 retired two
-entries of the previous list and downgraded a third; the reasons are recorded
-below rather than deleted, so the same ideas are not re-proposed.
+entries of the previous list and downgraded a third; ledger 198 retired three
+more and added one. Reasons are recorded below rather than deleted, so the same
+ideas are not re-proposed.
 
 1. **Submit `d2139c92`** once `origin/main` moves. Blocked, not deprioritised.
 2. 🔴 **Transform-side weight relayout and co-tiling.** Explicitly permitted by
@@ -448,9 +574,33 @@ below rather than deleted, so the same ideas are not re-proposed.
   shortlist.** Both were priced against a correctness exposure that does not
   exist, and both are now superseded by entry 3, which buys the same acceptance
   without a screening argument.
+- **`<T,7,7>` and every wider single-stream cell.** Closed by measurement, not by
+  argument: E61 rung 1 measured `bw(7) = 97.9` against a `106.55` break-even, and
+  the M=7 cell timed **`+7.13 %` slower**. Reopen only if a different construction
+  changes the bandwidth. The schedule is not the variable here.
+- **The ceiling-tax motivation for the `rbx` wrapper.** Measured null on
+  untreated widths: `t6` mean `-0.02 %`, `t7` mean `-0.06 %`. `rbx` is still
+  queued, but now as a test of the **occupancy** explanation for the `-33.1`
+  bandwidth step at `NA = 6`, which is a different and much better hypothesis.
+- **`kL` window effects in the round cost model.** Withdrawn. Only 1 of 106
+  rounds ever reached `kL >= 1024`, and bucketing by `kL` made the spread worse
+  and non-monotone. The `+73.71` was a mixture artefact of the repair term.
+
+New from ledger 198:
+
+- 🔴 **Ranked command-buffer granularity and the in-window allocator cache
+  limit.** Assigned as E62 (PR #65). Editable, zero exactness risk, a
+  two-constant delivery diff, and never swept for this model. `MB` is inert at
+  the shipped `OPS = 50`, so the ladder moves `OPS`. The in-window
+  `Memory.cacheLimit` arm is gated on one leg of instrumentation.
+- 🔴 **Rejection lookahead in the greedy walk.** From 198(H): drafting deeper
+  raises `P(rejection)`, and a rejection charges 48 extra recurrent-layer
+  dispatches to the **following** round, which the walk does not price at all.
+  First cut about `+2.5 %` of decode time. Routed into E56 as the `repair` arm.
 
 Deliberately not proposed, with reasons: single QMV cells outside the
-single-stream sweep (187(K)); warm coverage (183(E), 185(C)(E)); seed prefill,
+single-stream sweep (187(K)); warm coverage, now closed three times over
+(183(E), 185(C)(E), E60); seed prefill,
 scored but unreachable on our gen-16 host (186(C)); SDPA chunk removal, which is
 a discount and must be kept (185(B)); KVBuffer (180(D)); head weight
 replacement, twice rejected at rank; `MLX_MAX_OPS_PER_BUFFER` enlargement, now
@@ -478,6 +628,40 @@ redirect at `:213`.
   required path, so a patch to a file outside the list is silently reverted in
   the packaged candidate. Ledger 197(E): two ledger items pointed students at
   `GatedDelta.swift`, which is not in the list.
+- 🔴🔴 **PROVE THE CODE RUNS ON THE RANKED PATH BEFORE PRICING IT.** Editable and
+  reachable are different properties. Ledger 198(A): the "ranked/full" allocator
+  profile is editable, well commented, unit tested, and **unreachable** on the
+  Qwen MTP worker, because the only call site guards on `isLowMemory`. Trace the
+  call chain to the timed leg, or do not quote the constant.
+- 🔴🔴 **AN INSTRUMENT THAT CANNOT FAIL IS NOT AN INSTRUMENT.** Ledger 198(F)
+  records three of mine that could never have fired, one of them documented as
+  broken in the codebase itself. Every session-level check needs a positive
+  control that makes it fail on purpose.
+  - Profile: launch once with `DARKBLOOM_STARTUP_MEMORY_PROFILE=bogus`, which
+    must crash at `RuntimeStartupMemoryPolicy.swift:101-104`. **Never** grep a leg
+    log for `low-memory startup profile engaged`; `mtp-timed` does not forward
+    worker stderr, and `Qwen36MTPBlockSession.swift:592-596` already says so.
+  - Geometry: one short leg at `MLX_MAX_OPS_PER_BUFFER=50` against one at `=8`;
+    dispatches per commit must differ.
+  - Memory: `Memory.peakMemory` is unreachable on this path. Use the external
+    `ps` RSS sampler.
+- 🔴🔴 **THE LOCAL NULL FLOOR SCALES WITH LEG SEPARATION.** Measured on one binary
+  in one session: adjacent `0.0032 %`, three apart `0.1147 %`, five apart
+  `0.1634 %`. The old campaign-wide `0.0629 %` came from **adjacent** repeats and
+  is retracted as a general floor. Use your own within-session same-arm spread at
+  the matching separation. Run **one declared, discarded warm-up leg first**: it
+  cut a measured entry-temperature spread from 13.53 °C to 4.30 °C.
+- 🔴🔴 **IT IS `d(M, repaired)`, NEVER `d(M)`.** Width and rollback repair are
+  structurally confounded, totally at `M >= 7`. A per-width table without the
+  repair flag prices "narrow" and "just repaired" as one term.
+- 🔴 **A vendored kernel merge invalidates the cached `mlx.metallib`.** Run
+  `tools/build-mlx-metallib.sh` after merging a base that touched anything under
+  `Vendor/.../kernels/`, and record `metallib_source_fingerprint` in every leg's
+  meta. The JIT families are unaffected; the families with no generated twin are
+  not.
+- 🔴 **`time ~ arm + leg_position` on a position-balanced session is the standard
+  estimator.** The two-block estimator is retired: on one E60 session it declared
+  significance on 1 dof where the regression found `t = -0.9379` on 5.
 - 🔴 **Any local Metal probe of a scored kernel compiles with
   `-std=metal4.0 -fno-fast-math`**, and every register number is quoted with its
   math mode beside it. Fast math alone moves the census by 1 to 3 registers per

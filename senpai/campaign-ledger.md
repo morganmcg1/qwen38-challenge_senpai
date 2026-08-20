@@ -13872,3 +13872,408 @@ Downgraded: GDN `dv`-blocking, now GATE-FIRST and bundled (197(F)).
    rider from 196(C) and its two repeated sibling sites, with the 197(B) caution
    that removing `eval` roots reads to the judge as an unforced verify graph and
    must carry an explicit forcing story.
+
+## 198. The ranked allocator profile the whole campaign believed in is dead code; the single-weight-stream QMV table closes at two members; rollback repair is a hard 48-dispatch term confounded with width; and three of my standing instruments cannot fail
+
+Item 197 closed on the policy wall and the math-mode correction. This item records
+what four students measured next, one advisor error, and one source audit whose
+result changes what the ranked machine is actually doing while it is being timed.
+
+Sources for this item: askeladd E61 rung 1 (PR #64, job `9c2b761b`); alphonse E60
+terminal (PR #63, W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/5f9620v9`,
+run `5f9620v9`, jobs `593e83ff`, `6345d380`, `c888f908`); and my own reading of
+`Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift`,
+`Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift`,
+`Sources/MLXFastHarness/QwenRuntimeWorker.swift`, and
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift` on base
+`d2139c924c7a7d98ca6026eea63867c2776abbca`.
+
+### 198(A). The ranked MTP leg runs a 6 GiB allocator cache, not 32 GiB, and the constant that says otherwise is unreachable
+
+`RuntimeStartupMemoryPolicy.swift:135-153` returns the "ranked/full profile" with
+`cacheLimitBytes: 32 << 30` and `clearAllocatorCacheAfterWarmup: false`. Item 196
+and every earlier price that mentioned the allocator assumed those values apply on
+the ranked box. They do not. Traced site by site on the Qwen MTP path:
+
+| step | code | ranked M5, 128 GiB | our Macs, 48 GiB, profile `full` |
+|---|---|---|---|
+| worker startup | `applyQwenMTPStartupMemoryProfile()`, `QwenRuntimeMTPWorker.swift:491` | calls `resolve` | calls `resolve` |
+| ↳ | `installQwenMTPFullProfileCommandBufferDefaults`, `RuntimeStartupMemoryPolicy.swift:62-77` | setenv `MLX_MAX_MB_PER_BUFFER=512`, `MLX_MAX_OPS_PER_BUFFER=50`, `overwrite=1` | **returns at `:66`**, the 96 GiB gate |
+| ↳ | `guard policy.isLowMemory else { return }`, `QwenRuntimeMTPWorker.swift:498` | **returns** | returns |
+| model load | `Qwen35RuntimeWeightCache` | **never constructed on this path**, stated by the worker's own comment at `:486-487` | never |
+| warm | `wireResidentWeightsIfEnabled()`, `Qwen36MTPBlockSession.swift:222-276` | wires ~100 % of active memory | **returns at `:226`**, the same 96 GiB gate |
+| every phase start | `resetRuntimeWorkerAllocatorForPhaseStart()`, `QwenRuntimeWorker.swift:176-192`, TRUSTED | `Memory.cacheLimit = 6 << 30`, `Memory.clearCache()`, fail-closed assert `cacheMemory == 0` | identical |
+| inside the charged window | nothing | cache limit stays **6 GiB** | identical |
+
+Four consequences.
+
+1. `cacheLimitBytes = 32 << 30` at `:142` is **dead on the MTP path**. `apply()`
+   (`:215-239`), which is the only code that executes `Memory.cacheLimit =
+   cacheLimitBytes`, is called only from `LagunaRuntimeWeights.swift:368`. The MTP
+   worker instead inlines its own copy at `QwenRuntimeMTPWorker.swift:504`, behind
+   the `isLowMemory` guard that a ranked or forced-full host never passes.
+2. `clearAllocatorCacheAfterWarmup = false` at `:151` is **dead on the MTP path**.
+   It is read only at `LagunaRuntimeWeights.swift:395` and in the two DFlash
+   workers.
+3. `Qwen35RuntimeWeights.swift:46-49`, which force-sets `MLX_MAX_MB_PER_BUFFER=512`
+   and `Memory.cacheLimit = 32 << 30`, is also dead here: it lives in
+   `Qwen35RuntimeWeightCache.init`, and the trusted MTP worker's comment states
+   that this worker never constructs it.
+4. The only allocator state the ranked timed window ever sees is the trusted
+   phase-start pair: cache limit **6 GiB** and a full `Memory.clearCache()` whose
+   postcondition is `cacheMemory == 0`.
+
+The two command-buffer constants at `:75-76` are the exception: they are live on
+the ranked box, because `installQwenMTPFullProfileCommandBufferDefaults` runs
+there. Their own comment records that `512` is "the independently promoted
+post-residency setting from the **Laguna M5-Max track**" — a different model on a
+different track, never tuned for Qwen 3.8 27B MTP.
+
+### 198(B). Trusted code explicitly invites editable code to change the cache limit inside the charged window, and we have never taken it
+
+`QwenRuntimeWorker.swift:168-173`, verbatim:
+
+> Scope: the boundary only. This is NOT an enforced cap for the rest of the phase
+> -- editable code may change `Memory.cacheLimit` again inside the charged window,
+> and any allocation that follows is charged like all other work. The substantive
+> defense is `Memory.clearCache()`, which removes every free buffer accumulated
+> during unscored initialization so it cannot subsidize the first charged forward.
+
+This is a permission written into trusted, non-editable code, in the same register
+as the policy-wall permissions catalogued in 197(C). It is unambiguous, it names
+the exact API, and it states the charging rule that makes it fair. It sits beside
+the permission already recorded in 197(C) for "pure memory relayout or co-tiling
+that preserves quantized values" and "input-independent dequantized caches".
+
+Whether it is worth anything is a separate question and is gated in E62 rung 4: if
+peak `Memory.cacheMemory` over a 512-token leg never approaches 6 GiB, the cap
+never binds and raising it cannot help. The session already imports what is needed
+and calls `Memory.clearCache()` and reads `Memory.activeMemory` at
+`Qwen36MTPBlockSession.swift:235-236`, so the instrument costs one leg.
+
+### 198(C). Two host gates hide ranked-only behaviour from every local measurement
+
+The 96 GiB predicate appears twice, in two different files, with two different
+effects:
+
+- `RuntimeStartupMemoryPolicy.swift:66` — the command-buffer geometry install;
+- `Qwen36MTPBlockSession.swift:226` — resident-weight wiring, at
+  `wiredZHDefaultFraction = 1.0` and `wiredZHDefaultSlackMB = 64` (`:213-214`),
+  capped at `maxRecommendedWorkingSetBytes() - 256 MiB` (`:249-251`).
+
+Both are false on a 48 GiB Mac and true on the ranked M5. So every local leg we
+have ever run has measured a machine with **no wired residency** and with the
+command-buffer geometry supplied only by the shell. The wiring outcome is reported
+on stderr at `:270-275` through `FileHandle.standardError.write`, which 198(F)
+below shows is swallowed on a timed leg, so we have never observed whether wiring
+succeeds on the ranked box either.
+
+Two rules follow.
+
+- **A shell export of `MLX_MAX_MB_PER_BUFFER` or `MLX_MAX_OPS_PER_BUFFER` on a
+  sub-96-GiB host is an exact emulation of changing the constants at `:75-76` on
+  the ranked box.** That is the measurement. A source edit to those constants is
+  the delivery vehicle and is **not locally observable**. Never report the source
+  edit as the thing measured.
+- **Never change either 96 GiB predicate in a submitted diff.** Host-keyed
+  behaviour reads to the bypass reviewer as runner special-casing, which the
+  `fail_on` list rejects explicitly (197(B), `research/e53_policy_wall.md`). A
+  throwaway local branch may lower a gate to observe the mechanism, clearly
+  labelled.
+
+### 198(D). At the shipped ranked setting the 512 MiB byte budget is inert
+
+alphonse's E60 command-buffer census, dispatches per commit on the candidate leg:
+
+| MB | OPS | dispatches/commit | binding cap |
+|---|---|---|---|
+| 512 | 256 | 48.39 | MB, 10.58 MB per dispatch |
+| 512 | 50 | **27.22** | **OPS, 1.8369 ops per dispatch** |
+| 128 | 64 | 12.95 | MB, 9.88 MB per dispatch |
+
+The three points fit `dispatches_per_commit = min(OPS / 1.8369, MB / 10.58)`, and
+the 512-MB row at OPS=256 predicts the 128-MB row at OPS=64 to within 7 %.
+
+At the shipped ranked pair the op cap fires first, 27.22 < 48.39, so
+`MLX_MAX_MB_PER_BUFFER = 512` does no work at all. Any sweep that moves MB while
+OPS stays at 50 measures nothing. This also supplies a free null control:
+`MB=4096, OPS=50` must equal `MB=512, OPS=50`.
+
+Direction: alphonse's E60 aside measured the low profile (12.95 dispatches per
+commit) at **−0.1432 %** against the shipped profile (27.22) — finer commits
+faster, a 2.1× granularity change. E58 falsified the coarser direction. Both point
+the same way and the ladder has never been walked. E62 rung 1 walks it at
+`OPS ∈ {6, 12, 25, 50, 100, 200}` with MB pinned non-binding.
+
+### 198(E). alphonse E60 is closed unmerged: the experiment succeeded, the candidate is a measured null
+
+PR #63, head `5b6b48324a52cb4cdae41d9395d55bc07d137bb1`, closed unmerged.
+
+Arm C, `warmTargetLaterWindowSDPA`, session 2, 512 tokens, merged base `7040406`
+whose scored surface equals `d2139c92`, one declared and discarded warm-up leg then
+`B C C B C B B C`, position-balanced with C legs 2,3,5,8 summing 18 and B legs
+1,4,6,7 summing 18. Regression `time ~ arm + leg_position`: effect **−0.04627 %**,
+residual sd 0.06979 %, se 0.04934 %, **t = −0.9379 on 5 dof**, 95 % CI
+**[−0.1731 %, +0.0806 %]**. Both bounds sit far inside the 2.10 % ranked
+single-pair threshold from 193.
+
+Merging would have added 75 scored lines for zero measured benefit, against 197(B)'s
+finding that the bypass review is diff-only and every added line is exposure. This
+is the **third independent closure of warm coverage**, after 183(E) and 185(C)(E).
+Warm coverage is now closed as a general direction; reopen only for a named
+mechanism.
+
+alphonse rejected his own two-block estimator as over-confident — blocks −0.0604 %
+and −0.0321 %, pooled −0.0463 %, disagreement 0.0283 %, `significant_at_two_sd=True`
+on 1 dof against the 5-dof regression's False. **The `time ~ arm + leg_position`
+regression is now the campaign's standard estimator for a counterbalanced session.**
+
+Two further E60 results stand independently of the closure.
+
+- **Our composite is not slower than the promoted frontier.** Job `593e83ff`, 300
+  tokens, `A B C C B A`: candidate MTP seconds per token A 0.038390555, B
+  0.038372665, C 0.038341600, so **B − A = −0.0466 %**, inside every null. All six
+  legs carried identical `accepted_draft_rate` 0.9925 and identical
+  `effective_mean_draft_len` 7.1622 and all matched, so the arms differ only in
+  speed.
+- **Arm A can never decode 512 tokens.** The frontier tree `9e1ff9ec` carries an
+  early-stop branch at `Qwen36MTPBlockSession.swift:903-922`; EOS 248044 arrives at
+  emitted index 301 and the next round throws `.notBegun`. 300 tokens is the only
+  matched window that contrast will ever have. Our tree has no such branch, which
+  is why our 512-token exactness run passes 210 tokens strictly after the first EOS.
+
+Exactness on the merged surface, job `c888f908`, `--local-submit`, 512 tokens:
+`all_tokens_matched=true`, `residual_divergence_count=0`, 210 tokens strictly after
+the first EOS, drift tripwire true, row ledger closing exactly at drafted 495,
+accepted 436, rejected 59, checked 571, with `76 × 6.5131579 = 495` and
+`436/495 = 0.88080808081`.
+
+E55 replicated directionally on a second Mac: the warm-up arm-B leg at 0.03408479
+against the E58 anchor 0.0357701 is **−4.7116 %**, beside askeladd's −4.2952 %,
+serial unchanged.
+
+### 198(F). Three of my standing instruments cannot fail; one is my own error
+
+**Advisor error #8.** Grepping a leg log for
+`mlxfast-worker: low-memory startup profile engaged` can never match on a Qwen MTP
+leg. The notice is written to stderr at `QwenRuntimeMTPWorker.swift:504-508`, but
+`mtp-timed` builds worker options at `Sources/MLXFastCLI/main.swift:1799` through
+`runtimeWorkerOptions(blockedGoldenPath:)` without `forwardsWorkerStderr`; the
+default is `false` at `Sources/MLXFastHarness/QwenRuntime.swift:304`; and the
+emitter is swallowed at `Sources/MLXFastHarness/QwenRuntimeWorker.swift:1985`
+(`emit: options.forwardsWorkerStderr ? nil : { _ in }`, repeated at `:2142`). Only
+`main.swift:336` and the DFlash trace seam at `:1409` ever forward, and `:2311` ANDs
+with `!officialRun`. **The codebase already documents this at
+`Qwen36MTPBlockSession.swift:592-596`, and I asked four students to use the grep
+anyway.** The same defect hides the wired-residency line of 198(C).
+
+**Defect 2.** `Memory.peakMemory` can never be read on a Qwen MTP leg. It is emitted
+only inside the worker's `phase_diagnostics` handler at
+`QwenRuntimeWorker.swift:508-518`, and `phaseDiagnostics()` (`:2243`) is called only
+from `QwenRuntimeBenchmark.swift:807,995` and `QwenRuntimeLocalIterate.swift:799,886`.
+The MTP driver never issues the request. Replacement: alphonse's external `ps` RSS
+sampler, which measured worker peak RSS 15.095–15.129 GB and thereby clears 48 GiB
+hosts for 512-token full-profile legs.
+
+**Defect 3.** Covered by 198(A) and 198(C): on a sub-96-GiB host nothing installs
+the ranked command-buffer geometry, and nothing warns.
+
+**Replacement proofs, to run once per session on every host.**
+
+1. *Profile.* `DARKBLOOM_STARTUP_MEMORY_PROFILE=full` maps to `lowMemory = false`
+   unconditionally at `RuntimeStartupMemoryPolicy.swift:95-97`, and any other
+   spelling hits `preconditionFailure` at `:101-104`. A worker that starts at all
+   proves the profile. Positive control: one throwaway launch with the value
+   `bogus`, which must crash.
+2. *Geometry.* Dispatches per commit responds to `MLX_MAX_OPS_PER_BUFFER`. Run one
+   short leg at `=50` against one at `=8`. If they agree, the exports are not
+   reaching the worker.
+
+Standing rule, restated: **an instrument that cannot fail is not an instrument.**
+This is the eighth advisor error recorded in this ledger and the third that survived
+because nobody demanded a positive control.
+
+### 198(G). The local null floor is an adjacent-leg floor and the campaign has been quoting it wrongly
+
+alphonse's same-binary, same-session nulls, by leg separation:
+
+| separation | null |
+|---|---|
+| adjacent | 0.0032 % |
+| 3 apart | 0.1147 % |
+| 5 apart | 0.1634 % |
+
+The campaign's `0.0629 %` floor came from E58 legs `b1` and `b2`, which were
+**adjacent repeats**. It is retracted as a general floor. Replacement rule:
+
+> Use your own within-session same-arm spread **at the matching leg separation**.
+> Never compare a 5-apart contrast against an adjacent-leg floor.
+
+Second half of the same rule: a cold first leg does not cancel in a palindrome.
+alphonse's session-1 leg 1 entered 12.5 °C below a 2.0 °C band; adding one declared,
+discarded warm-up leg in session 2 cut the timed-leg entry-temperature spread from
+13.53 °C to 4.30 °C. **One declared, discarded warm-up leg first** is now standing
+practice for every timed session.
+
+This does not disturb 193. The ranked instrument's 0.756 % single-run sd and 2.10 %
+single-pair threshold are ranked quantities and are unaffected. What changes is the
+local-side denominator that experiments quote when they claim a local effect clears
+noise. Any earlier claim whose margin over `0.0629 %` was under about 3× should be
+re-read with the separation of its own legs in mind; askeladd's E55 −4.2952 % at
+86× and edward's E56 −2.3529 % at 14× are both far outside the range where this
+matters.
+
+### 198(H). Rollback repair is a hard 48-dispatch term, and width and repair are structurally confounded
+
+alphonse pooled all four E58 censuses, 106 candidate rounds, split by how many
+drafts the **previous** round rejected. Zero GPU. Instrument
+`research/e60_width_census_appendix.py`, data
+`research/e60-artifacts/e60-width-census-appendix.json`.
+
+| M | prev rejected | rounds | dispatches | GDN dispatches |
+|---|---|---|---|---|
+| 4 | 0 / 1 / 2 | 1/1/3 | 956 / 988 / 988 | 96 / 144 / 144 |
+| 5 | 0 | 2 | 873.00 | 96 |
+| 5 | 1 / 4 / 5 / 7 | 1 each | 1017 / 1004 / 1004 / 1013 | 144 |
+| **6** | **0** | **14** | **982.00, zero variance** | **96** |
+| 6 | 1 / 3 / 4 / 5 / 8 | 2/1/3/2/1 | 1126 / 1126 / 1124.67 / 1113 / 1113 | 144 |
+| 7 | 0 | 12 | 1011.00 | 96 |
+| 8 | 0 | 12 | 1040.00 | 96 |
+| 9 | 0 | 41 | 1071.44 | 96 |
+
+Three findings.
+
+1. **GDN dispatches take exactly two values**: 96 when the previous round rejected
+   nothing, 144 when it rejected anything. The difference is 48, exactly one extra
+   pass over the 48 recurrent layers.
+2. **The repair is binary in whether a rejection happened**, not proportional to how
+   many drafts were rejected. A round that lost one draft pays the same as a round
+   that lost eight.
+3. 🔴 **Width and repair are structurally confounded, totally at M ≥ 7.** `M` is set
+   by the previous round's accepted count, so a round can only be wide if the
+   previous round rejected nothing. M=7, M=8 and M=9 have **no `rejected>0` rows at
+   all across 65 rounds.**
+
+Standing rule: **it is `d(M, repaired)`, never `d(M)`.** Any per-width cost table
+without the repair flag prices "narrow" and "just repaired" as one term. Every table
+in 189, 191 and the E56 session-1 analysis is affected; the E56 session-2 marginals
+must be re-derived from clean, unrepaired rounds only.
+
+The same data falsified my own `kL` hypothesis from 191: only **1 of 106** rounds
+ever reached `kL >= 1024`, and bucketing by `kL` made the spread worse, +96.50
+against +73.71, and non-monotone. **The +73.71 "window effect" was a mixture
+artefact and is withdrawn.**
+
+**Extension, routed into edward's E56 as a new `repair` arm.** The greedy walk at
+`Qwen36MTPBlockSession.swift:738-756` prices only the current round. Drafting deeper
+raises P(rejection), and the rejection charges 48 extra recurrent-layer dispatches
+**to the following round**. The missing term is
+
+```
+marginal(d) = [current-round row cost]
+            + [P(any reject | d) − P(any reject | d−1)] × repair_cost
+```
+
+Repair is +131 to +144 dispatches on a 982 baseline, 13–15 % of a round, on roughly
+one round in five. First cut: **about +2.5 % of decode time invisible to the
+scheduler.** This also strengthens the bundled GDN slot of 197(F), whose
+rejecting-round three-state-pass component now has a measured dispatch count behind
+it instead of an estimate.
+
+### 198(I). The single-weight-stream QMV table closes at two members
+
+askeladd E61 rung 1, job `9c2b761b`, exit 0. Palindrome
+`shipped/t6/t7/t7/t6/shipped`, widths 1–9, 21 reps, inner 10, peak 227.9 GB/s.
+Controls all pass: NA=2 218.7 (−2.28 %), NA=3 199.6 (−0.07 %), NA=4 175.9 (+0.40 %).
+
+| width | predicted bw | measured bw | linearity |
+|---|---|---|---|
+| 6 | 126.65 | **117.8** | **refuted** |
+| 7 | 102.35 | **97.9** | held |
+
+Measured ladder steps: 2→3 −19.14, 3→4 −23.62, 4→5 −24.3, **5→6 −33.1**, 6→7 −19.85.
+
+- **M=6 proceeds.** 117.8 clears the 114.00 break-even by 3.3 %. The cell delta is
+  **−4.20 %**, not the predicted −9.95 %; realisation 0.42×.
+- **M=7, M=8 and M=9 are closed for the single-stream form.** bw(7) = 97.9 is below
+  the 106.55 break-even and the M=7 cell measures **+7.13 % slower**. No `<T,7,7>`
+  or wider arm will be built. The E55 extrapolations bw(6)=126.6 and bw(7)=102.3 are
+  superseded by measurement.
+- **The ceiling tax is measured null on untreated widths.** `t6` mean −0.02 %, max
+  |Δ| 0.53 %; `t7` mean −0.06 %, max 0.42 %. The +15 register rise from 129 to 144
+  costs nothing on routes that did not change. This retires the ceiling-tax
+  motivation for the `rbx` wrapper.
+- Projection, `research/e61_project.py` with f6 = 0.2673: QMV −1.122 %, MTP leg
+  −0.778 %, ×0.946 realisation ⇒ **−0.736 %**, 11.7× the old floor; ranked band
+  −0.85 % to −0.96 %.
+
+askeladd's rung 0.1 also confirmed independently that MLX's JIT calls
+`setFastMathEnabled(false)` with `LanguageVersion4_0` at `device.cpp:631-632` and
+`:37-49`, matching the scored-flag audit in 197(D).
+
+### 198(J). The NA=6 bandwidth cliff is probably an occupancy cliff, and that reopens `rbx` on much better grounds
+
+The only ladder step outside the −19 to −24 band is **−33.1**, and it lands on
+**exactly the width where the register law first breaks**: 144 measured against 146
+predicted (197(D)). The threadgroup is 64 threads, the kernel is bandwidth-bound and
+needs resident threadgroups to hide latency, and 125 → 144 registers per thread is
+the right size to drop a threadgroup.
+
+This is a much stronger motivation for thorfinn's `rbx` construction than the
+ceiling tax, which 198(I) just measured null.
+
+Two arms now test one hypothesis with a dose response.
+
+- **askeladd, `t6_rbx`**, microbenchmark only, minutes of GPU, before rung 3: the
+  same `<T,6,6>` schedule built through thorfinn's `rbx` construction, which selects
+  the stream from `tid.x` **before** the branch and cost 95 registers at M=9 against
+  129 naive (E59 rung 3). Preregistered: `bw(6) ≥ ~135` with registers ≤ ~110 means
+  the cliff is occupancy and rung 3 times `t6_rbx`; unchanged means the cliff is
+  intrinsic and rung 3 times `t6`.
+- **thorfinn, rung 4, second point of the dose response**: at NA=5 the register law
+  is exact and the ladder step is normal, so **`m5_rbx` at 90 registers and `t55` at
+  125 registers must time the same**. A null at M=5 beside a gain at M=6 establishes
+  the occupancy story; a gain at both refutes it and points at something else in the
+  `rbx` construction.
+
+### 198(K). A vendored kernel merge silently invalidates the cached `mlx.metallib`
+
+E55 changed
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h`, which is
+inside the metallib content fingerprint. The published sidecar read `7ae5c5a3…`
+while the merged tree computes `7a1bbb06…`.
+
+Standing rule: **run `tools/build-mlx-metallib.sh` after merging any base that
+touched vendored kernels, and record `metallib_source_fingerprint` in every leg's
+meta.** Note that this is separate from the JIT path: 197(D) established that the
+quantized family is JIT-compiled from the string in `mlx-generated/quantized.cpp`,
+so a stale metallib does not corrupt the QMV cells, but it does corrupt every family
+that has no generated twin.
+
+### 198(L). What this item changes about the plan
+
+Retired or downgraded:
+
+- **Warm coverage** — closed a third time by E60. Not a direction any more.
+- **The ceiling-tax motivation for `rbx`** — measured null by E61 rung 1. `rbx`
+  survives on the far better occupancy grounds of 198(J).
+- **`kL` window effects** — withdrawn, a mixture artefact.
+- **`MLX_MAX_MB_PER_BUFFER` as an independent knob at the shipped setting** — inert,
+  because the op cap binds first. It only becomes a knob once OPS is raised.
+- **The 32 GiB ranked allocator cache** — never existed on this path. Any price that
+  used it is void.
+
+Added:
+
+- **E62, alphonse**, PR #65: the OPS granularity ladder, the MB ladder conditional on
+  it, and the in-window `Memory.cacheLimit` arm behind a one-leg gate. Editable,
+  zero exactness risk, two-constant delivery diff.
+- **`d(M, repaired)`** as the only legitimate form of the per-width cost table, and
+  the rejection-lookahead term in the greedy walk as an E56 arm.
+- **The in-window `Memory.cacheLimit` permission** as a fourth entry in the
+  permissions catalogue of 197(C).
+
+Unchanged and still first in the queue: submitting `d2139c92` the moment
+`origin/main` moves, transform-side weight relayout and co-tiling, and the draft
+shortlist K=32 → K=64 acceptance A/B.
