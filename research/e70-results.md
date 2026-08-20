@@ -56,7 +56,7 @@ Three rungs, cheapest first.
 
 Report and stop. The assignment names the deliverable as the follow-up
 experiment stated precisely, not the follow-up experiment run. Section 9 names
-it. It is not started.
+two. Neither is started.
 
 ---
 
@@ -177,7 +177,7 @@ its caller at `:1415-1424`. The table is accurate. Two additions:
   every M ≤ 32. The cliff is a step at M=10 and then a flat shelf all the way to
   M=32, not a ramp. Rung 1 confirms this empirically at both M values.
 
-## 4. The transfer constant, settled (`harness=ranked`)
+## 4. The transfer constant (`harness=ranked`)
 
 `research/e70_transfer_constant_provenance.py` →
 `research/e70-transfer-constant.json`.
@@ -186,61 +186,121 @@ Source data: `research/ranked_stream_ab_board.json`, **471 submissions × 8
 prompt keys = 3768 ranked serial legs**. Mean seconds/token 0.03799564539,
 sd 0.2225 %, min 0.0377260451, max 0.0385442637. Mean leg 19.4538 s.
 
-### 4.1 The 30.402 ms constant is refuted
+### 4.1 🔴 RETRACTION — my refutation of 30.402 ms was wrong
 
-The ranked depth-0 serial round is **36.957 ms** (beagle receipt) or
-**36.964–36.969 ms** (board mean crossed with the ledger's own K). Those two
-independent routes agree to 0.03 %.
+An earlier revision of this report claimed that the 30.402 ms constant at
+`campaign-ledger.md:10453` was refuted, because it implies a 16.092 s leg that
+none of the 3768 board samples reach. **I retract that claim.** The arithmetic
+is right and the population is wrong.
 
-`30.402 ms` requires a pinned serial leg of 16.092 s. That is **17.28 % below
-the board mean**, and **0 of 3768** ranked serial samples reach it. It also puts
-K/leg at 3.27 % against the 2.70–2.72 % that ledger item 186(B) observes in the
-same breath. It is refuted, not merely uncertain.
+`30.402 ms` is not a pinned serial round. It is the **candidate build's**
+depth-0 round. It is calibrated in `research/prompt_round_reconstruction.py`
+from `row["mtp_spt"]`, the candidate seconds per token. I compared it against
+the pinned serial leg population, which is a different build. The measured
+source does exist, and it reproduces:
 
-I could not find a measured source for 30.402 ms anywhere in the ledger,
-receipts, or research outputs. The advisor asked for that source immediately if
-found. **It does not exist as a measurement.** The nearest candidate is an
-arithmetic slip.
-
-### 4.2 A second, independent defect in `R`
-
-Ledger 188(A) defines `R` as a **leg** ratio ("Let L be leg time") and then
-computes it from two **round** times. Even with a correct ranked round those are
-different numbers, because prefill transfers at 7.58× and decode at 1.76×.
-
-Corrected constants:
-
-| quantity | ledger | corrected |
-|----------|--------|-----------|
-| `tau_prefill` | 7.5798 | 7.5798, unchanged |
-| `tau_depth0_round` | — | **1.7590** |
-| serial-leg ratio | — | **1.9163–1.9377** |
-| prefill-to-round contrast | 3.55× | **4.309×** |
-| arithmetic-bound divisor | ÷3.55 | **÷3.91–3.96** |
-| latency-bound multiplier | 2.1383 | **1.92–1.94** |
-
-**Every R-based ranked projection in the campaign is 9.4–10.4 % too high.**
-Scale by 0.896–0.906. The correction is uniform, so it does not reorder any
-experiment ranking; it only shrinks every predicted gain by about a tenth.
-
-### 4.3 Recommendation: retire `R`
-
-Score is ranked serial spt ÷ ranked candidate spt. A candidate-side saving moves
-the **denominator** only, so the correct normalizer is the **candidate** leg, not
-the pinned serial leg:
-
-```
-delta_score_pct = 100 * (delta_local / tau) / ranked_candidate_leg
+```bash
+python3 research/prompt_round_reconstruction.py \
+  --facts research/e53-board-facts.json --submission ca9251b8 --prefill-ms 526.6
 ```
 
-This needs no leg ratio at all and cannot pick up the wrong leg. The indicative
-candidate-leg ratio on beagle is 2.839, but the local runs and the ranked legs
-of `ca9251b8` are not proven to be the same candidate schedule, so **that number
-is flagged and not adoptable**.
+`calibrate_depth0_ms()` at `:111-156` reads `row["mtp_spt"]` at `:134`, anchors
+on plutarch (92.2 % non-drafting, 487 rounds), and resolves one unknown by
+fixed point. Recomputed live it returns **30.40205 ms**, which is the ledger
+value to 1.6e-4 %. The same script emits an exact score decomposition
+(`build × spec × dilution = raw_ratio`) that closes to ~1e-11 on all eight
+prompts.
 
-Per the advisor's instruction, **no rung-1 finding below is converted to score
-with `R`**. Route A (median pair, no `R`) is the quoted number throughout;
-route B is printed beside it only so the size of the error stays visible.
+My implied 16.092 s leg is also real. It is the leg **our candidate** would run
+on plutarch if every round were depth-0. The measured plutarch candidate leg is
+15.517 s, 3.6 % below it, and the gap is exactly what plutarch's 38 drafting
+rounds add.
+
+**A model-free bound settles it with no transfer model at all.** plutarch runs
+487 rounds, 449 of them depth-0, at a mean round of 30.781 ms. A drafting round
+cannot be cheaper than a depth-0 round, so `c1 ≤ 30.781 ms` is hard. 30.402
+sits 1.23 % under that ceiling. The pinned serial 36.963 sits 20.09 % over it
+and cannot be `c1`. **`R(depth-0) = 65.009 / 30.402 = 2.1383` stands.**
+
+### 4.2 Both constants are correct; they measure different builds
+
+| constant | value | population |
+|----------|-------|-----------|
+| pinned serial depth-0 round | **36.963 ms** | 3768 board serial legs |
+| candidate depth-0 round | **30.402 ms** | reconstruction of `ca9251b8` |
+| build factor | **1.2158** | serial ÷ candidate |
+
+The pinned serial round is confirmed to **0.031 %** by three independent
+routes: beagle receipt 36.9573, board mean minus the ledger's K high
+36.9640, board mean minus K low 36.9689. It remains the best-supported
+constant available; it simply is not the denominator of `R`.
+
+My error was to build `tau_depth0_round = 65.0094 / 36.9573 = 1.7590`, which
+divides the local **candidate** round by the ranked **serial** round. That
+mixes builds and is withdrawn. Every consequence I drew from it — the 4.309×
+contrast, the ÷3.91–3.96 divisor, the 1.92–1.94 latency multiplier, and the
+"every R-based projection is 9.4–10.4 % too high" claim — is withdrawn with it.
+
+**The surviving defect is real and separate.** Ledger 188(A) still defines `R`
+as a **leg** ratio ("Let L be leg time") and then computes it from two **round**
+times. That defect does not depend on which round constant is used.
+
+### 4.3 `R` is width dependent — `R(M)` is the pricing table
+
+`R` is not one number. Dividing the local E1 round ladder by the reconstructed
+ranked round at the same verify width gives:
+
+| M | prompt | local round ms | ranked round ms | **R(M)** | rounds | tok/rd | candidate leg ms |
+|---|--------|---------------:|----------------:|---------:|-------:|-------:|-----------------:|
+| 1.0000 | (depth-0 control) | 65.009 | 30.402 | **2.1383** | 512 | 1.0000 | — |
+| 1.1540 | plutarch | 65.851 | 30.781 | 2.1394 | 487 | 1.0513 | 15516.8 |
+| 3.2976 | drama | 80.212 | 38.092 | 2.1058 | 252 | 2.0317 | 10125.7 |
+| 3.6557 | travel | 85.859 | 39.511 | 2.1730 | 212 | 2.4151 | 8903.0 |
+| 5.5327 | beagle | 125.800 | 53.332 | 2.3588 | 107 | 4.7850 | 6233.1 |
+| 5.7677 | medicine | 130.260 | 53.476 | 2.4358 | 99 | 5.1717 | 5820.7 |
+| 6.2697 | republic | 139.927 | 58.421 | 2.3951 | 89 | 5.7528 | 5726.1 |
+| 6.4253 | essays | 142.962 | 60.196 | 2.3749 | 87 | 5.8851 | 5763.7 |
+| 6.7765 | botany | 149.810 | 60.548 | **2.4742** | 85 | 6.0235 | 5673.2 |
+
+`M = 1 + proposed / rounds` is the verify width. `tok/rd = 1 + accepted /
+rounds` is what the 512-token window divides by, so `rounds + accepted = 512`
+closes exactly on all eight prompts. Local round cost is E1's depth-0 round plus
+its marginal ladder, interpolated at fractional depth.
+
+`R(M)` is flat at **2.11–2.17 for M ≤ 3.66** and flat again at **2.36–2.47 for
+M ≥ 5.53**. Group means are 2.1394 and 2.4078, a step of **12.55 %**; measured
+edge to edge the step is **8.55 %**, against within-group scatter of 3.14 % and
+4.79 %. The step sits exactly where the local ladder jumps `E1(4) = 91.29 ms →
+E1(5) = 115.69 ms`, **+26.7 %**.
+
+Two caveats, both carried into rung 2:
+
+1. Ranked rounds are means over a width **mixture**, while local `E1` is a
+   fixed width. That biases `R(M)` **downward** for high-spread prompts.
+2. The public receipt gives no ranked round census, so the mixture cannot be
+   deconvolved.
+
+The caveat cuts **against** the step, so the step is more likely real than not.
+The working reading is that our M4 Pro carries an M=4→M=5 width penalty that the
+ranked M5 carries much less of. That question is **named as a follow-up in
+§9.2 and deliberately NOT opened here.**
+
+### 4.4 The adopted pricing rule
+
+```
+delta_ranked_ms = delta_local_ms / R(M)          # M = the width you measured at
+delta_score_pct = 100 * delta_ranked_ms * rounds_at_M / ranked_candidate_leg_ms
+```
+
+**Report `R(M)` and `M` beside every converted number. An unlabelled conversion
+is invalid.** The normalizer is the **candidate** leg, because a candidate-side
+saving moves only the score denominator. This form needs no leg ratio and
+cannot pick up the wrong leg, so the single `R` is retired in favour of `R(M)`
+plus the direct form.
+
+The indicative candidate-leg ratio on beagle is 2.839. It is **not** comparable
+with `R(M)`: it is a leg ratio across two different width mixtures. I decline to
+promote it to a constant.
 
 ## 5. Rung 2 — consequences (`harness=ranked`)
 
@@ -255,36 +315,72 @@ ratio, the median pair is **beagle (6233 ms) and medicine (5821 ms)**.
 **Self-check: the model reproduces the published 3.23250848 to 7.11e-6 relative
 error.** Score sensitivity is **0.016631 % per ranked millisecond**.
 
+Both sites are **once-per-leg** costs, so `rounds_at_M = 1`. The 511-row head
+prime fires on the first drafting round only; the SDPA fallback fires inside the
+single seed prefill. Neither is a per-round cost.
+
+`R(M)` at the median pair, labelled as the rule requires:
+
+| prompt | M | R(M) | rounds | candidate leg ms |
+|--------|--:|-----:|-------:|-----------------:|
+| beagle | 5.5327 | 2.3588 | 107 | 6233.1 |
+| medicine | 5.7677 | 2.4358 | 99 | 5820.7 |
+
 ### 5.2 The two divergent, reachable sites
 
 | | S4 decode head prime | S9 prefill SDPA fallback |
 |---|---|---|
 | local saving if removed entirely | 29.215 ms | ≤ 16.49 ms |
-| transfer rate `tau` | 7.5798 | 7.5798 |
+| adopted transfer rate | `tau_prefill` 7.5798 | `tau_prefill` 7.5798 |
+| `rounds_at_M` | 1 | 1 |
 | ranked saving | 3.854 ms | 2.176 ms |
 | **route A, median pair** | **0.0641 %** | **0.0362 %** |
-| route B, refuted `R` | 0.0563 % (−12.2 %) | — |
-| naive, ignoring `tau` | 0.1684 % (2.63× too high) | 0.0951 % (2.63× too high) |
+| route B, direct form, same transfer rate | 0.0640 % (−0.12 %) | 0.0361 % (−0.12 %) |
+| route B, direct form, `R(M)` | 0.2024 % (3.16×) | not applicable |
+| naive, ignoring the transfer | 0.1684 % (2.63× too high) | 0.0951 % (2.63× too high) |
 | vs published-score sd 0.756 % | 0.085 sd | 0.048 sd |
 | vs our 0.61 % deficit | 10.5 % | 5.9 % |
 | steerable by editable code | **no** | **no** |
 
 S9's FLOP accounting: the composed fallback runs 103.1 GFLOP per seed, which is
-0.412 % of prefill FLOPs.
+0.412 % of prefill FLOPs. `R(M)` is **not applicable** to S9: that cost sits
+inside the seed prefill, not inside a decode round, so a decode-round ratio is
+the wrong category of constant. Prefill has its own measured transfer rate.
 
-### 5.3 The `tau` band, and what the audit buys
+**Do the two routes agree?** Yes, on the part that can be compared. Hold the
+transfer constant equal and the two leg models differ by **0.12 %** on both
+sites. The whole remaining gap is the choice of transfer constant, and §5.3 is
+what decides it.
 
-S4 is the interesting one. Its price depends entirely on which `tau` it takes:
+### 5.3 The transfer band, and what the audit buys
 
-- at `tau = 7.58` (compute-bound, nax-accelerated): **0.0641 %**
-- at `tau = 1.76` (decode-round rate, no nax): **0.2762 %**
+S4 is the interesting one. Its price depends entirely on which constant it
+takes:
 
-That is a 4.3× spread, and the whole question is whether the head prime reaches
-the nax family at rank. **Rung 1 answers it.** The prime runs at M=511, and rung
-1 shows M=511 taking `affine_qmm_t_nax` and `steel_gemm_fused_nax` under the
-ranked architecture. The prime is ~100 % GEMM at M=511, against prefill's 84 %
-at M=512, so if anything it is *more* compute-bound than prefill. The
-`tau = 1.76` branch is excluded. **0.0641 % is the number.**
+| divisor | value | M | ranked saving | score |
+|---------|------:|--:|--------------:|------:|
+| `tau_prefill` (adopted) | 7.5798 | 511 | 3.854 ms | **0.0641 %** |
+| `R(M)` largest, drama | 2.1058 | 3.30 | 13.874 ms | 0.2307 % |
+| `R(depth-0)` | 2.1383 | 1.00 | 13.663 ms | 0.2272 % |
+| `R(M)` at the median pair | 2.3588 / 2.4358 | 5.53 / 5.77 | 12.385 / 11.994 ms | 0.2024 %\* |
+| `R(M)` smallest, botany | 2.4742 | 6.78 | 11.808 ms | 0.1964 % |
+
+\* route B direct form. Route A with the same two divisors gives 0.2027 %, a
+0.15 % difference, which is the same leg-model agreement reported in §5.2.
+
+That is a **3.06–3.60× spread**, and the whole question is whether the head
+prime reaches the nax family at rank. **Rung 1 answers it.** The prime runs at
+M=511, and rung 1 shows M=511 taking `affine_qmm_t_nax` and
+`steel_gemm_fused_nax` under the ranked architecture — exactly the families
+that give prefill its 7.58×. The prime is ~100 % GEMM at M=511, against
+prefill's 84 % at M=512, so if anything it is *more* compute-bound than
+prefill. The `R(M)` decode-round branch is excluded. **0.0641 % is the
+number.**
+
+Note what this band is doing. The `R(M)` rows are a **floor** in the sense of a
+worst case for the audit's conclusion, not a competing estimate: they price the
+prime as if it ran at a decode round's transfer rate. Rung 1 is measured
+evidence that it does not.
 
 ### 5.4 Upper bound
 
@@ -370,7 +466,8 @@ with no transfer rate applied. Rung 2 reproduces that figure as the *naive* row:
 **0.1684 %**. Applying the measured `tau = 7.5798` gives **0.0641 %**, so the
 published ceiling was **2.63× too high**.
 
-The sweep was also attractive while S4's price could still have been 0.2762 %.
+The sweep was also attractive while S4's price could still have been 0.196 % to
+0.231 %, which is what a decode-round `R(M)` divisor would give.
 Rung 1 excludes that branch, because M=511 provably takes `affine_qmm_t_nax` and
 `steel_gemm_fused_nax` under the ranked architecture. The real ceiling is
 0.0641 %, which is 0.085 sd of one published score. A sweep cannot recover more
@@ -392,10 +489,17 @@ nax tiling (`bm64_bn128_bk256_wm2_wn4` against local `bm64_bn64_bk16_wm2_wn2`).
 The effect is real and measurable in rung 1. Its priced consequence is S9's
 0.0362 %. No follow-up is proposed.
 
-### 6.4 Five corrections to standing campaign records
+### 6.4 Corrections to standing campaign records, and one retraction of my own
 
-1. **The 30.402 ms ranked depth-0 round has no measured source.** It is refuted
-   against 3768 ranked serial legs (section 4.1).
+0. 🔴 **RETRACTED, mine.** My claim that the 30.402 ms constant has no measured
+   source and is refuted was wrong. The source exists at
+   `prompt_round_reconstruction.py:111-156`, 30.402 ms is the **candidate**
+   build's depth-0 round, and I compared it against the **pinned serial** leg
+   population. `R(depth-0) = 2.1383` stands. `tau_depth0_round = 1.7590` and
+   every consequence I drew from it are withdrawn (section 4.1, 4.2).
+1. **`R` is width dependent.** A single `R` is the wrong shape. `R(M)` runs
+   2.11–2.17 for M ≤ 3.66 and 2.36–2.47 for M ≥ 5.53 (section 4.3). This
+   supersedes the flat constant without refuting its depth-0 value.
 2. **S2 is not an architecture divergence.** `device.cpp:595-596` reapplies
    `env::max_ops_per_buffer` and `max_mb_per_buffer` after the tier switch, and
    `RuntimeStartupMemoryPolicy.installQwenMTPFullProfileCommandBufferDefaults`
@@ -409,8 +513,10 @@ The effect is real and measurable in rung 1. Its priced consequence is S9's
    then masks, so the masked half is computed and discarded.
 4. **There are 15 architecture-conditional sites, not 14.** `device.cpp:572` is
    a second, separate read of the architecture string.
-5. **`R` has two independent defects**, a refuted input and a leg/round
-   confusion (section 4.2).
+5. **188(A) still has a definitional defect.** It defines `R` as a **leg** ratio
+   ("Let L be leg time") and then computes it from two **round** times. This
+   defect is independent of which round constant is used, and it survives my
+   retraction (section 4.2).
 
 ## 7. Scope, budget and boundary checks
 
@@ -512,7 +618,15 @@ python3 research/e70_wandb_log.py --rung0 research/e70-rung0.json \
 research/e70_test_control.sh bdfbc4e92c93d216503980fb46258ff0b314145a
 ```
 
-## 9. The follow-up experiment, named precisely and NOT started
+The W&B backend merges summary metrics instead of replacing them, so the keys
+written by the retracted revision cannot be deleted. `e70_wandb_log.py`
+overwrites each one with its own retraction text instead, which leaves a
+readable record rather than a silent gap. The new `transfer/R_of_M` table
+carries the width ladder of §4.3.
+
+## 9. Follow-up experiments, named precisely and NOT started
+
+### 9.1 E71 — the unaligned nax variant
 
 Per the stop rule, this is the deliverable. It is not started.
 
@@ -562,6 +676,36 @@ Per the stop rule, this is the deliverable. It is not started.
 > sd) of separation, close it. The padding is cheap but not free, and an
 > unresolved 0.19 % overhead is not worth carrying.
 
+### 9.2 The M=4 → M=5 width-transfer question — suggested, NOT opened here
+
+Section 4.3 found a step in `R(M)`. The advisor asked me to record it and not
+to open it in this PR, so it is recorded and not opened.
+
+> **Suggested experiment — does the local M4 Pro carry an M=4 → M=5 verify-width
+> penalty that the ranked M5 does not?**
+>
+> **Evidence.** `R(M)` sits on two flat shelves, 2.11–2.17 for M ≤ 3.66 and
+> 2.36–2.47 for M ≥ 5.53. The 8.55 % edge-to-edge step is about twice the
+> within-group scatter. It coincides exactly with the local ladder's own jump
+> `E1(4) = 91.29 ms → E1(5) = 115.69 ms`, **+26.7 %**. That local jump is much
+> larger than any adjacent marginal step: `E1_MARGINAL[4] = 24.40 ms` against
+> 15.77 at depth 3 and 18.98 at depth 5.
+>
+> **Why it matters.** M=5 and M=6 together carry **57.5 %** of the modelled
+> ranked verify-width time. If the local penalty at M=5 is a local artefact,
+> every local measurement taken at M ≥ 5 is over-priced when converted to rank,
+> and any experiment whose gain comes from *avoiding* width 5 is over-valued.
+>
+> **What would settle it.** A ranked-side round census, or a rung-1-style probe
+> extended to time the M=4 and M=5 verify shapes on the M5. Neither is available
+> from public receipts.
+>
+> **Confound to control first.** Ranked rounds are means over a width mixture
+> while local `E1` is a fixed width, which biases `R(M)` downward for
+> high-spread prompts. That bias works *against* the step, so it does not
+> explain it, but a proper test must model the mixture rather than assume a
+> point width.
+
 ## 10. Honest limits of this result
 
 - Rung 1 names kernels. It does not time them. Nothing here measures M5 speed.
@@ -570,7 +714,17 @@ Per the stop rule, this is the deliverable. It is not started.
   shift the median pair and therefore the sensitivity constant.
 - The 0.1003 % upper bound assumes both sites cost *zero* at rank, which is
   physically impossible. The true recoverable amount is strictly smaller.
-- The corrected `R` band 1.9163–1.9377 is derived, not directly measured. The
-  underlying ranked round 36.957–36.969 ms *is* measured, twice, independently.
+- `R(M)` is derived, not directly measured. Its ranked side comes from the
+  round-count reconstruction of one receipt, and its local side comes from the
+  E1 ladder interpolated at fractional depth. Both inputs are measured; the
+  quotient is a construction.
+- The `R(M)` shelf step is confounded by the ranked width mixture, which is
+  unidentifiable from public data (184(D):10219). The confound pushes the step
+  down, so the step is a lower bound on whatever effect is there, but the size
+  is not settled.
 - `tau = 7.5798` is imported from ledger 186(C). This audit justifies applying
   it to S4 but does not re-derive it.
+- My own refutation of the 30.402 ms constant was wrong and is retracted in
+  §4.1. The corrected reading changes no headline number in §5: S4 is still
+  0.0641 %, S9 is still 0.0362 %, and the upper bound is still 0.1003 %. The
+  error was in the transfer-constant analysis, not in the priced result.

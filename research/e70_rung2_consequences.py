@@ -2,22 +2,29 @@
 """E70 rung 2 -- price each divergent, reachable dispatch site.
 
 harness=ranked for every score projection here. No GPU runs. Every input is a
-measured campaign number with its source quoted beside it, and the two
-independent conversion routes are both printed so a disagreement between them
-is visible instead of hidden.
+measured campaign number with its source quoted beside it, and both conversion
+routes are printed so a disagreement between them is visible, not hidden.
 
-Route A, the median pair: convert the local saving to rank with that term's own
-transfer rate `tau`, then move it through the two prompts that actually set the
+Route A, the median pair. Convert the local saving with that term's own
+transfer rate `tau`, then move it through the two prompts that set the
 published median. Their legs are measured ranked values from 186(B), so this
-route needs no leg ratio `R` at all. The self-check reproduces the published
+route needs no leg ratio at all. A self-check reproduces the published
 3.23250848 of submission ca9251b8 from the same table.
 
-Route B, the ledger's standing rule (campaign-ledger.md:10519-10520): express
-the saving as a fraction of ROUND cost, multiply by `R / tau`, then multiply by
-the median-pair dilution 0.9125. 🔴 `R = 2.1383` rests on a ranked depth-0 round
-of 30.402 ms that `research/e70_transfer_constant_provenance.py` refutes against
-3768 ranked serial legs. Route B is kept only so the size of that error stays
-visible; it is not the number to quote.
+Route B, the adopted direct form. Convert with the width-dependent round ratio
+`R(M)`, then
+
+    delta_score_pct = 100 * delta_ranked_ms * rounds_at_M / candidate_leg_ms
+
+`R(M)` and `M` are reported beside every converted number, because an
+unlabelled conversion is invalid. The table comes from
+`research/e70-transfer-constant.json`, which derives it from the same measured
+reconstruction that calibrates the candidate depth-0 round.
+
+The flat `R = 2.1383` of campaign-ledger.md:11045 is NOT refuted. An earlier
+revision of this file said it was; that claim is retracted in
+`research/e70_transfer_constant_provenance.py`. `R = 2.1383` is the correct
+value at depth 0. It is superseded only because `R` rises with verify width.
 
 usage:
   python3 research/e70_rung2_consequences.py [--json PATH]
@@ -27,8 +34,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import pathlib
+import statistics
 
 # --- measured inputs -------------------------------------------------------
+
+TRANSFER = pathlib.Path("research/e70-transfer-constant.json")
 
 # E65 (research/e65-results.md:114-124). Timed candidate leg, --local-iterate.
 LOCAL_LEG_S = 17.349          # mean of the two reported legs 17.344 / 17.354
@@ -41,18 +52,6 @@ HEAD_PRIME_MS = (29.52 + 28.91) / 2
 # Ledger 186(C) (campaign-ledger.md:10452-10453). The measured local->ranked
 # transfer rate of the prefill section, which is 84 % nax GEMM at rank.
 TAU_PREFILL = 3.9938 / 0.5269           # 7.5798, compute-bound, nax-accelerated
-
-# The alternative transfer rate a decode-resident term would take. It bounds
-# the head-prime price from above if that section did NOT reach the nax family.
-# 65.0094 ms is E1's local depth-0 round (:14313); 36.9573 ms is the ranked
-# depth-0 round confirmed in research/e70-transfer-constant.json.
-TAU_DECODE_ROUND = 65.0094 / 36.9573    # 1.7590
-
-# 🔴 refuted, kept only to price route B. See e70_transfer_constant_provenance.
-R_ROUND_LEDGER = 65.009 / 30.402        # 2.1383
-
-# Ledger 186(B/F) (campaign-ledger.md:10442, :10519-10520).
-DILUTION = 0.9125
 
 # Ledger 186(B) (campaign-ledger.md:10425-10434). The per-prompt ranked receipt
 # of submission ca9251b8: candidate leg and the three score factors. The
@@ -90,6 +89,15 @@ SEED_TOKENS = 512
 # E65 prefill roofline (research/e65-results.md:130-134).
 PREFILL_TFLOP_TOTAL = 24.99
 PREFILL_TFLOP_PER_S = 6.25
+
+
+def load_width_table() -> dict[str, dict]:
+    if not TRANSFER.exists():
+        raise SystemExit(
+            f"{TRANSFER} missing. Run "
+            "python3 research/e70_transfer_constant_provenance.py first.")
+    rows = json.loads(TRANSFER.read_text())["R_of_M"]["table"]
+    return {row["prompt"]: row for row in rows}
 
 
 def sdpa_fallback_flop() -> float:
@@ -133,28 +141,84 @@ def score_sensitivity_per_ms() -> float:
     return 0.5 * sum(raws[p] / RANKED_PROMPTS[p][0] for p in pair)
 
 
-def price(delta_local_ms: float, tau: float, in_rounds: bool) -> dict:
-    """Both conversion routes for one saving."""
+def route_a(delta_local_ms: float, tau: float) -> dict:
+    """Median-pair route: term-specific tau, measured ranked median-pair legs."""
     delta_ranked_ms = delta_local_ms / tau
     _, published = median_pair()
-    pair_pct = 100.0 * delta_ranked_ms * score_sensitivity_per_ms() / published
+    return {
+        "delta_local_ms": delta_local_ms,
+        "tau": tau,
+        "delta_ranked_ms": delta_ranked_ms,
+        "score_pct": 100.0 * delta_ranked_ms * score_sensitivity_per_ms()
+                     / published,
+    }
+
+
+def route_b(delta_local_ms: float, rounds_at_m: int,
+            widths: dict[str, dict], tau_override: float | None = None) -> dict:
+    """Adopted direct form, evaluated on each median-pair prompt.
+
+    `tau_override` replaces R(M) with a stated transfer rate. It exists so the
+    two routes can be compared with the transfer constant held equal, which
+    isolates how much of any gap is the leg arithmetic and how much is the
+    conversion.
+    """
+    pair, _ = median_pair()
+    per_prompt = {}
+    for name in pair:
+        w = widths[name]
+        divisor = tau_override if tau_override is not None else w["R_of_M"]
+        delta_ranked_ms = delta_local_ms / divisor
+        per_prompt[name] = {
+            "verify_width_M": w["verify_width_M"],
+            "R_of_M": w["R_of_M"],
+            "divisor_used": divisor,
+            "rounds_at_M": rounds_at_m,
+            "candidate_leg_ms": w["ranked_candidate_leg_ms"],
+            "delta_ranked_ms": delta_ranked_ms,
+            "score_pct": 100.0 * delta_ranked_ms * rounds_at_m
+                         / w["ranked_candidate_leg_ms"],
+        }
+    return {
+        "per_prompt": per_prompt,
+        "score_pct": statistics.fmean(
+            p["score_pct"] for p in per_prompt.values()),
+    }
+
+
+def price(delta_local_ms: float, tau: float, rounds_at_m: int,
+          widths: dict[str, dict], round_resident: bool) -> dict:
+    """Both routes for one saving, plus the naive and noise comparisons."""
+    a = route_a(delta_local_ms, tau)
+    pair_pct = a["score_pct"]
 
     out = {
         "delta_local_ms": delta_local_ms,
         "tau": tau,
-        "delta_ranked_ms": delta_ranked_ms,
+        "rounds_at_M": rounds_at_m,
+        "delta_ranked_ms": a["delta_ranked_ms"],
         "route_a_median_pair_score_pct": pair_pct,
         "score_sensitivity_pct_per_ranked_ms":
-            100.0 * score_sensitivity_per_ms() / published,
+            100.0 * score_sensitivity_per_ms() / median_pair()[1],
     }
-    if in_rounds:
-        local_rounds_ms = (LOCAL_LEG_S - LOCAL_PREFILL_S) * 1000.0
-        round_fraction_pct = delta_local_ms / local_rounds_ms * 100.0
-        out["route_b_ledger_score_pct"] = (
-            round_fraction_pct * (R_ROUND_LEDGER / tau) * DILUTION)
-        out["local_round_fraction_pct"] = round_fraction_pct
-        out["route_b_error_pct_of_route_a"] = (
-            100.0 * (out["route_b_ledger_score_pct"] - pair_pct) / pair_pct)
+
+    # Hold the transfer constant equal so the two leg models can be compared.
+    matched = route_b(delta_local_ms, rounds_at_m, widths, tau_override=tau)
+    out["route_b_direct_form_at_same_tau"] = matched
+    out["leg_model_agreement_pct"] = (
+        100.0 * (matched["score_pct"] - pair_pct) / pair_pct)
+
+    if round_resident:
+        b = route_b(delta_local_ms, rounds_at_m, widths)
+        out["route_b_direct_form_at_R_of_M"] = b
+        out["route_b_over_route_a"] = b["score_pct"] / pair_pct
+    else:
+        out["route_b_direct_form_at_R_of_M"] = None
+        out["route_b_not_applicable"] = (
+            "the cost is inside the seed prefill, not inside a decode round, "
+            "so R(M) is the wrong category of constant. Prefill has its own "
+            "measured transfer rate, tau_prefill = 7.5798 (186(C)).")
+
     # What the same saving looks like if you forget that the section is
     # nax-accelerated at rank and transfers at tau instead of 1.
     out["naive_no_tau_score_pct"] = (
@@ -171,9 +235,15 @@ def main() -> None:
     parser.add_argument("--json")
     args = parser.parse_args()
 
+    widths = load_width_table()
     fallback_flop = sdpa_fallback_flop()
     fallback_ms = fallback_flop / (PREFILL_TFLOP_PER_S * 1e12) * 1000.0
     pair, reconstructed_score = median_pair()
+    sens_pct = 100.0 * score_sensitivity_per_ms() / reconstructed_score
+
+    r_values = {n: widths[n]["R_of_M"] for n in RANKED_PROMPTS}
+    r_lo_name = min(r_values, key=r_values.get)
+    r_hi_name = max(r_values, key=r_values.get)
 
     report: dict = {
         "harness": "ranked",
@@ -182,12 +252,29 @@ def main() -> None:
             "local_prefill_s": LOCAL_PREFILL_S,
             "head_prime_ms": HEAD_PRIME_MS,
             "tau_prefill": TAU_PREFILL,
-            "tau_decode_round": TAU_DECODE_ROUND,
-            "r_round_ledger_refuted": R_ROUND_LEDGER,
-            "dilution": DILUTION,
+            "R_of_M_source": str(TRANSFER),
+            "R_of_M_median_pair": {
+                n: {"M": widths[n]["verify_width_M"],
+                    "R_of_M": widths[n]["R_of_M"],
+                    "rounds": widths[n]["rounds_at_M"],
+                    "candidate_leg_ms": widths[n]["ranked_candidate_leg_ms"]}
+                for n in pair},
             "score_sd_pct": SCORE_SD_PCT,
             "leg_sd_pct": LEG_SD_PCT,
             "deficit_pct": DEFICIT_PCT,
+        },
+        "pricing_rule": {
+            "delta_ranked_ms": "delta_local_ms / R(M)",
+            "delta_score_pct":
+                "100 * delta_ranked_ms * rounds_at_M / candidate_leg_ms",
+            "reporting_requirement":
+                "report R(M) and M beside every converted number",
+            "rounds_at_M_for_these_sites": 1,
+            "why_one": (
+                "both divergent reachable sites are once-per-leg costs. The "
+                "511-row head prime fires on the first drafting round only, "
+                "and the SDPA fallback fires inside the single seed prefill. "
+                "Neither is a per-round cost, so rounds_at_M = 1."),
         },
         "median_pair_model": {
             "raw_ratios": raw_ratios(),
@@ -197,13 +284,12 @@ def main() -> None:
             "actual_published_score": PUBLISHED_SCORE,
             "self_check_relative_error": abs(
                 reconstructed_score - PUBLISHED_SCORE) / PUBLISHED_SCORE,
-            "score_sensitivity_pct_per_ranked_ms":
-                100.0 * score_sensitivity_per_ms() / reconstructed_score,
+            "score_sensitivity_pct_per_ranked_ms": sens_pct,
             "why": (
                 "The two middle raw ratios set the published median, so a "
-                "fixed per-leg saving reaches the score only through those two "
-                "prompts. Their measured ranked legs replace the leg ratio R, "
-                "which e70_transfer_constant_provenance.py refutes."),
+                "fixed per-leg saving reaches the score only through those "
+                "two prompts. Their measured ranked legs replace any leg "
+                "ratio."),
         },
         "sdpa_fallback": {
             "gflop_per_seed": fallback_flop / 1e9,
@@ -212,13 +298,15 @@ def main() -> None:
             "upper_bound_ms_at_measured_prefill_rate": fallback_ms,
             "e65_roofline_attention_tflop": 0.052,
             "note": (
-                "E65's roofline recorded 0.052 TFLOP of prefill attention, which "
-                "is half of the dispatched work: the composed fallback runs both "
-                "matmuls at full qL x kL and masks afterwards."),
+                "E65's roofline recorded 0.052 TFLOP of prefill attention, "
+                "which is half of the dispatched work: the composed fallback "
+                "runs both matmuls at full qL x kL and masks afterwards."),
         },
         "sites": {},
     }
 
+    head_prime = price(
+        HEAD_PRIME_MS, TAU_PREFILL, 1, widths, round_resident=True)
     report["sites"]["S4_decode_head_prime"] = {
         "site": "quantized.cpp:697 qmm nax gate, plus matmul.cpp:915 for the "
                 "bf16 island patch on the same 511 rows",
@@ -228,16 +316,40 @@ def main() -> None:
             "quantized.cpp and matmul.cpp are not in benchmark.json "
             "editablePaths. Only the row count is editable, in "
             "Qwen36MTPBlockSession, and that is the queued E65 follow-up (a)."),
-        "arithmetic": price(HEAD_PRIME_MS, TAU_PREFILL, in_rounds=True),
+        "arithmetic": head_prime,
         # The head prime's transfer rate is the whole question, so bound it
         # from both ends instead of asserting one value.
-        "tau_sensitivity": {
-            "tau_prefill_7.58": price(
-                HEAD_PRIME_MS, TAU_PREFILL, in_rounds=False)[
-                    "route_a_median_pair_score_pct"],
-            "tau_decode_round_1.76": price(
-                HEAD_PRIME_MS, TAU_DECODE_ROUND, in_rounds=False)[
-                    "route_a_median_pair_score_pct"],
+        "transfer_band": {
+            "adopted_tau_prefill": {
+                "divisor": TAU_PREFILL,
+                "delta_ranked_ms": HEAD_PRIME_MS / TAU_PREFILL,
+                "score_pct": route_a(HEAD_PRIME_MS, TAU_PREFILL)["score_pct"],
+            },
+            "floor_R_of_M_smallest": {
+                "prompt": r_lo_name,
+                "M": widths[r_lo_name]["verify_width_M"],
+                "divisor": r_values[r_lo_name],
+                "delta_ranked_ms": HEAD_PRIME_MS / r_values[r_lo_name],
+                "score_pct": route_a(
+                    HEAD_PRIME_MS, r_values[r_lo_name])["score_pct"],
+            },
+            "floor_R_of_M_largest": {
+                "prompt": r_hi_name,
+                "M": widths[r_hi_name]["verify_width_M"],
+                "divisor": r_values[r_hi_name],
+                "delta_ranked_ms": HEAD_PRIME_MS / r_values[r_hi_name],
+                "score_pct": route_a(
+                    HEAD_PRIME_MS, r_values[r_hi_name])["score_pct"],
+            },
+            "floor_R_depth0": {
+                "M": 1.0,
+                "divisor": widths["(depth-0 control)"]["R_of_M"],
+                "delta_ranked_ms":
+                    HEAD_PRIME_MS / widths["(depth-0 control)"]["R_of_M"],
+                "score_pct": route_a(
+                    HEAD_PRIME_MS,
+                    widths["(depth-0 control)"]["R_of_M"])["score_pct"],
+            },
             "which_applies": (
                 "tau_prefill. This audit proves the 511-row prime runs "
                 "affine_qmm_t_nax through quantized.cpp:697 and "
@@ -246,9 +358,9 @@ def main() -> None:
                 "prime is ~100 % GEMM at M = 511 against prefill's 84 % at "
                 "M = 512, so if anything it transfers better than 7.58x."),
             "why_it_matters": (
-                "At the decode-round rate the prime would be worth 0.28 % of "
-                "score and E65 follow-up (a) would be a live target. The audit "
-                "is what excludes that branch."),
+                "At an R(M) decode-round rate the prime would be worth about "
+                "0.20-0.23 % of score and E65 follow-up (a) would be a live "
+                "target. Rung 1 is what excludes that branch."),
         },
     }
     report["sites"]["S9_prefill_sdpa_fallback"] = {
@@ -262,7 +374,8 @@ def main() -> None:
             "mlx/fast.cpp and matmul.cpp are not editable. AttentionUtils.swift "
             "IS editable, but no chunking of a 512-row prefill query reaches a "
             "fused kernel: sdpa_full excludes head_dim 256 at every width."),
-        "arithmetic": price(fallback_ms, TAU_PREFILL, in_rounds=False),
+        "arithmetic": price(
+            fallback_ms, TAU_PREFILL, 1, widths, round_resident=False),
     }
 
     report["width_shares"] = {
@@ -295,6 +408,14 @@ def main() -> None:
     print(f"  score sensitivity "
           f"{mp['score_sensitivity_pct_per_ranked_ms']:.6f} % per ranked ms")
     print()
+    print("R(M) at the median pair (report M and R(M) with every conversion):")
+    for name in pair:
+        w = widths[name]
+        print(f"  {name:<9} M = {w['verify_width_M']:.4f}"
+              f"  R(M) = {w['R_of_M']:.4f}"
+              f"  rounds = {w['rounds_at_M']}"
+              f"  leg = {w['ranked_candidate_leg_ms']:.1f} ms")
+    print()
     fb = report["sdpa_fallback"]
     print(f"prefill SDPA fallback: {fb['gflop_per_seed']:.1f} GFLOP per seed"
           f" = {fb['share_of_prefill_flop_pct']:.3f} % of prefill FLOPs"
@@ -304,17 +425,42 @@ def main() -> None:
         a = site["arithmetic"]
         print(f"{name}")
         print(f"  local saving if removed entirely : {a['delta_local_ms']:.2f} ms")
-        print(f"  transfer rate tau                : {a['tau']:.4f}")
+        print(f"  adopted transfer rate            : {a['tau']:.4f}"
+              f"  (rounds_at_M = {a['rounds_at_M']})")
         print(f"  ranked saving                    : {a['delta_ranked_ms']:.3f} ms")
         print(f"  route A, median pair             : {a['route_a_median_pair_score_pct']:.4f} % of score")
-        if "route_b_ledger_score_pct" in a:
-            print(f"  route B, ledger rule (R refuted) : {a['route_b_ledger_score_pct']:.4f} % of score"
-                  f"  ({a['route_b_error_pct_of_route_a']:+.1f} % vs route A)")
-        if "tau_sensitivity" in site:
-            ts = site["tau_sensitivity"]
-            print(f"  tau band                         : {ts['tau_prefill_7.58']:.4f} % at tau 7.58"
-                  f"  to {ts['tau_decode_round_1.76']:.4f} % at tau 1.76")
-        print(f"  naive, ignoring tau              : {a['naive_no_tau_score_pct']:.4f} %"
+        matched = a["route_b_direct_form_at_same_tau"]
+        print(f"  route B, direct form, same tau   : {matched['score_pct']:.4f} % of score"
+              f"  ({a['leg_model_agreement_pct']:+.2f} % vs route A)")
+        b = a["route_b_direct_form_at_R_of_M"]
+        if b is not None:
+            print(f"  route B, direct form, R(M)       : {b['score_pct']:.4f} % of score"
+                  f"  ({a['route_b_over_route_a']:.2f}x route A)")
+            for pname, pv in b["per_prompt"].items():
+                print(f"      {pname:<9} M = {pv['verify_width_M']:.4f}"
+                      f"  R(M) = {pv['R_of_M']:.4f}"
+                      f"  -> {pv['delta_ranked_ms']:.3f} ms"
+                      f"  = {pv['score_pct']:.4f} %")
+        else:
+            print(f"  route B, direct form, R(M)       : not applicable"
+                  f"  -- {a['route_b_not_applicable'].split('.')[0]}")
+        if "transfer_band" in site:
+            tb = site["transfer_band"]
+            print(f"  transfer band                    : "
+                  f"{tb['adopted_tau_prefill']['score_pct']:.4f} % at "
+                  f"tau_prefill {tb['adopted_tau_prefill']['divisor']:.4f}"
+                  f"  to {tb['floor_R_of_M_smallest']['score_pct']:.4f} % at "
+                  f"R(M) {tb['floor_R_of_M_smallest']['divisor']:.4f}"
+                  f" (M = {tb['floor_R_of_M_smallest']['M']:.2f},"
+                  f" {tb['floor_R_of_M_smallest']['prompt']})")
+            print(f"                                     "
+                  f"narrowest floor {tb['floor_R_of_M_largest']['score_pct']:.4f} % at "
+                  f"R(M) {tb['floor_R_of_M_largest']['divisor']:.4f}"
+                  f" (M = {tb['floor_R_of_M_largest']['M']:.2f},"
+                  f" {tb['floor_R_of_M_largest']['prompt']});"
+                  f" depth-0 floor {tb['floor_R_depth0']['score_pct']:.4f} % at "
+                  f"R(1) {tb['floor_R_depth0']['divisor']:.4f}")
+        print(f"  naive, ignoring the transfer     : {a['naive_no_tau_score_pct']:.4f} %"
               f"  ({a['overstatement_factor']:.2f}x too high)")
         print(f"  vs published-score sd {SCORE_SD_PCT} %      : {a['sd_of_published_score']:.3f} sd")
         print(f"  vs our {DEFICIT_PCT} % deficit             : {a['fraction_of_deficit']*100:.1f} % of it")
@@ -324,10 +470,22 @@ def main() -> None:
     total = sum(s["arithmetic"]["route_a_median_pair_score_pct"]
                 for s in report["sites"].values())
     report["total_if_every_divergent_site_cost_went_to_zero_pct"] = total
+    agreement = [s["arithmetic"]["leg_model_agreement_pct"]
+                 for s in report["sites"].values()]
+    report["route_agreement"] = {
+        "leg_model_max_abs_disagreement_pct": max(abs(v) for v in agreement),
+        "verdict": (
+            "the two routes agree on the leg arithmetic to within "
+            f"{max(abs(v) for v in agreement):.2f} % when the transfer "
+            "constant is held equal. The whole remaining gap is the choice of "
+            "transfer constant, and rung 1 is the evidence that decides it."),
+    }
     print(f"UPPER BOUND: if BOTH divergent reachable sites cost zero at rank, "
           f"the score moves {total:.4f} %.")
     print(f"That is {total / SCORE_SD_PCT:.3f} sd of one published score and "
           f"{total / DEFICIT_PCT * 100:.1f} % of the deficit.")
+    print()
+    print("ROUTE AGREEMENT: " + report["route_agreement"]["verdict"])
     print()
     print("The modelled width shares do not enter any line above; see "
           "report['width_shares'] for why.")

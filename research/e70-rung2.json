@@ -1,15 +1,27 @@
 {
   "harness": "ranked",
   "inputs": {
+    "R_of_M_median_pair": {
+      "beagle": {
+        "M": 5.5327102803738315,
+        "R_of_M": 2.358811792677166,
+        "candidate_leg_ms": 6233.1099648,
+        "rounds": 107
+      },
+      "medicine": {
+        "M": 5.767676767676767,
+        "R_of_M": 2.4358457136193765,
+        "candidate_leg_ms": 5820.732928,
+        "rounds": 99
+      }
+    },
+    "R_of_M_source": "research/e70-transfer-constant.json",
     "deficit_pct": 0.61,
-    "dilution": 0.9125,
     "head_prime_ms": 29.215,
     "leg_sd_pct": 1.092,
     "local_leg_s": 17.349,
     "local_prefill_s": 3.9938,
-    "r_round_ledger_refuted": 2.1383132688638904,
     "score_sd_pct": 0.756,
-    "tau_decode_round": 1.7590408390223313,
     "tau_prefill": 7.579806414879483
   },
   "median_pair_model": {
@@ -35,7 +47,18 @@
     "reconstructed_published_score": 3.2324855071211998,
     "score_sensitivity_pct_per_ranked_ms": 0.016631151969569845,
     "self_check_relative_error": 7.106827079430818e-06,
-    "why": "The two middle raw ratios set the published median, so a fixed per-leg saving reaches the score only through those two prompts. Their measured ranked legs replace the leg ratio R, which e70_transfer_constant_provenance.py refutes."
+    "why": "The two middle raw ratios set the published median, so a fixed per-leg saving reaches the score only through those two prompts. Their measured ranked legs replace any leg ratio."
+  },
+  "pricing_rule": {
+    "delta_ranked_ms": "delta_local_ms / R(M)",
+    "delta_score_pct": "100 * delta_ranked_ms * rounds_at_M / candidate_leg_ms",
+    "reporting_requirement": "report R(M) and M beside every converted number",
+    "rounds_at_M_for_these_sites": 1,
+    "why_one": "both divergent reachable sites are once-per-leg costs. The 511-row head prime fires on the first drafting round only, and the SDPA fallback fires inside the single seed prefill. Neither is a per-round cost, so rounds_at_M = 1."
+  },
+  "route_agreement": {
+    "leg_model_max_abs_disagreement_pct": 0.1171933821925595,
+    "verdict": "the two routes agree on the leg arithmetic to within 0.12 % when the transfer constant is held equal. The whole remaining gap is the choice of transfer constant, and rung 1 is the evidence that decides it."
   },
   "sdpa_fallback": {
     "e65_roofline_attention_tflop": 0.052,
@@ -50,12 +73,58 @@
         "delta_local_ms": 29.215,
         "delta_ranked_ms": 3.8543200711102212,
         "fraction_of_deficit": 0.10508488990491367,
-        "local_round_fraction_pct": 0.21875374386006946,
+        "leg_model_agreement_pct": -0.1171933821925595,
         "naive_no_tau_score_pct": 0.16839587296097758,
         "overstatement_factor": 2.627007635279845,
+        "rounds_at_M": 1,
         "route_a_median_pair_score_pct": 0.06410178284199734,
-        "route_b_error_pct_of_route_a": -12.152081453232514,
-        "route_b_ledger_score_pct": 0.0563120819780636,
+        "route_b_direct_form_at_R_of_M": {
+          "per_prompt": {
+            "beagle": {
+              "R_of_M": 2.358811792677166,
+              "candidate_leg_ms": 6233.1099648,
+              "delta_ranked_ms": 12.38547309738605,
+              "divisor_used": 2.358811792677166,
+              "rounds_at_M": 1,
+              "score_pct": 0.19870454985280303,
+              "verify_width_M": 5.5327102803738315
+            },
+            "medicine": {
+              "R_of_M": 2.4358457136193765,
+              "candidate_leg_ms": 5820.732928,
+              "delta_ranked_ms": 11.993780984013963,
+              "divisor_used": 2.4358457136193765,
+              "rounds_at_M": 1,
+              "score_pct": 0.20605276229595054,
+              "verify_width_M": 5.767676767676767
+            }
+          },
+          "score_pct": 0.20237865607437677
+        },
+        "route_b_direct_form_at_same_tau": {
+          "per_prompt": {
+            "beagle": {
+              "R_of_M": 2.358811792677166,
+              "candidate_leg_ms": 6233.1099648,
+              "delta_ranked_ms": 3.8543200711102212,
+              "divisor_used": 7.579806414879483,
+              "rounds_at_M": 1,
+              "score_pct": 0.06183622770778269,
+              "verify_width_M": 5.5327102803738315
+            },
+            "medicine": {
+              "R_of_M": 2.4358457136193765,
+              "candidate_leg_ms": 5820.732928,
+              "delta_ranked_ms": 3.8543200711102212,
+              "divisor_used": 7.579806414879483,
+              "rounds_at_M": 1,
+              "score_pct": 0.06621709188149547,
+              "verify_width_M": 5.767676767676767
+            }
+          },
+          "score_pct": 0.06402665979463908
+        },
+        "route_b_over_route_a": 3.1571455129916455,
         "score_sensitivity_pct_per_ranked_ms": 0.016631151969569845,
         "sd_of_published_score": 0.08479071804497003,
         "tau": 7.579806414879483
@@ -63,11 +132,34 @@
       "site": "quantized.cpp:697 qmm nax gate, plus matmul.cpp:915 for the bf16 island patch on the same 511 rows",
       "steerable": false,
       "steerable_reason": "quantized.cpp and matmul.cpp are not in benchmark.json editablePaths. Only the row count is editable, in Qwen36MTPBlockSession, and that is the queued E65 follow-up (a).",
-      "tau_sensitivity": {
-        "tau_decode_round_1.76": 0.27621820597470204,
-        "tau_prefill_7.58": 0.06410178284199734,
+      "transfer_band": {
+        "adopted_tau_prefill": {
+          "delta_ranked_ms": 3.8543200711102212,
+          "divisor": 7.579806414879483,
+          "score_pct": 0.06410178284199734
+        },
+        "floor_R_depth0": {
+          "M": 1.0,
+          "delta_ranked_ms": 13.662660333588581,
+          "divisor": 2.1383097644737026,
+          "score_pct": 0.22722578031652552
+        },
+        "floor_R_of_M_largest": {
+          "M": 6.776470588235294,
+          "delta_ranked_ms": 11.80773443516544,
+          "divisor": 2.4742257001472496,
+          "prompt": "botany",
+          "score_pct": 0.1963762258075594
+        },
+        "floor_R_of_M_smallest": {
+          "M": 3.2976190476190474,
+          "delta_ranked_ms": 13.873727817649337,
+          "divisor": 2.105778661942207,
+          "prompt": "drama",
+          "score_pct": 0.23073607571977472
+        },
         "which_applies": "tau_prefill. This audit proves the 511-row prime runs affine_qmm_t_nax through quantized.cpp:697 and steel_gemm_fused_nax through matmul.cpp:915 at rank, which are exactly the families that give prefill its 7.58x. The prime is ~100 % GEMM at M = 511 against prefill's 84 % at M = 512, so if anything it transfers better than 7.58x.",
-        "why_it_matters": "At the decode-round rate the prime would be worth 0.28 % of score and E65 follow-up (a) would be a live target. The audit is what excludes that branch."
+        "why_it_matters": "At an R(M) decode-round rate the prime would be worth about 0.20-0.23 % of score and E65 follow-up (a) would be a live target. Rung 1 is what excludes that branch."
       },
       "what_it_costs_locally": "the E65 round-1 d_submit2 excess"
     },
@@ -76,9 +168,36 @@
         "delta_local_ms": 16.49267441664,
         "delta_ranked_ms": 2.175870136243081,
         "fraction_of_deficit": 0.059323322790012005,
+        "leg_model_agreement_pct": -0.11719338219255565,
         "naive_no_tau_score_pct": 0.09506412137091474,
         "overstatement_factor": 2.627007635279845,
+        "rounds_at_M": 1,
         "route_a_median_pair_score_pct": 0.03618722690190732,
+        "route_b_direct_form_at_R_of_M": null,
+        "route_b_direct_form_at_same_tau": {
+          "per_prompt": {
+            "beagle": {
+              "R_of_M": 2.358811792677166,
+              "candidate_leg_ms": 6233.1099648,
+              "delta_ranked_ms": 2.175870136243081,
+              "divisor_used": 7.579806414879483,
+              "rounds_at_M": 1,
+              "score_pct": 0.03490825845413907,
+              "verify_width_M": 5.5327102803738315
+            },
+            "medicine": {
+              "R_of_M": 2.4358457136193765,
+              "candidate_leg_ms": 5820.732928,
+              "delta_ranked_ms": 2.175870136243081,
+              "divisor_used": 7.579806414879483,
+              "rounds_at_M": 1,
+              "score_pct": 0.03738137727941949,
+              "verify_width_M": 5.767676767676767
+            }
+          },
+          "score_pct": 0.03614481786677928
+        },
+        "route_b_not_applicable": "the cost is inside the seed prefill, not inside a decode round, so R(M) is the wrong category of constant. Prefill has its own measured transfer rate, tau_prefill = 7.5798 (186(C)).",
         "score_sensitivity_pct_per_ranked_ms": 0.016631151969569845,
         "sd_of_published_score": 0.04786670225120016,
         "tau": 7.579806414879483

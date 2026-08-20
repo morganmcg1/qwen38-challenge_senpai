@@ -33,6 +33,31 @@ OUR_BEST_OFFICIAL_SCORE = 3.23250848
 RANKED_RUN_PUBLISHED_SCORE_SD_PERCENT = 0.756
 RANKED_CANDIDATE_LEG_SD_PERCENT = 1.092
 
+# Written by an earlier revision that wrongly refuted the 30.402 ms candidate
+# depth-0 round. The W&B backend merges summary metrics instead of replacing
+# them, so these keys cannot be deleted; they are overwritten with their own
+# retraction. See research/e70_transfer_constant_provenance.py.
+RETRACTED_SUMMARY_KEYS = {
+    "rung2/head_prime_score_pct_at_decode_tau":
+        "RETRACTED: built on tau_depth0_round = 1.7590, which divides the "
+        "local CANDIDATE round by the ranked SERIAL round. See "
+        "rung2/head_prime_score_pct_at_R_of_M.",
+    "transfer/R_change_pct":
+        "RETRACTED: R(depth-0) = 2.1383 stands. See transfer/R_depth0.",
+    "transfer/R_serial_leg_corrected":
+        "RETRACTED: derived from a build-mixing transfer constant. A leg "
+        "ratio is not R; see transfer/R_of_M.",
+    "transfer/board_samples_compatible_with_ledger_value":
+        "RETRACTED: wrong population. 30.402 ms is a CANDIDATE-build depth-0 "
+        "round and was tested against PINNED SERIAL legs.",
+    "transfer/ranked_depth0_round_ms_confirmed":
+        "SUPERSEDED by transfer/pinned_serial_depth0_round_ms. The value was "
+        "right; the name did not say which build it measures.",
+    "transfer/ranked_depth0_round_ms_ledger_refuted":
+        "RETRACTED: 30.402 ms is not refuted. It is the candidate build's "
+        "depth-0 round; see transfer/candidate_depth0_round_ms.",
+}
+
 
 def git(*args: str) -> str:
     return subprocess.run(
@@ -225,49 +250,71 @@ def main() -> None:
 
     # --- rung 2: the score arithmetic ---------------------------------------
     consequence_table = wandb.Table(columns=[
-        "site", "delta_local_ms", "tau", "delta_ranked_ms",
-        "score_pct_median_pair", "score_pct_ledger_rule_R_refuted", "naive_score_pct",
-        "overstatement_factor", "sd_of_published_score",
+        "site", "delta_local_ms", "tau", "rounds_at_M", "delta_ranked_ms",
+        "score_pct_route_a_median_pair", "score_pct_route_b_same_tau",
+        "score_pct_route_b_R_of_M", "leg_model_agreement_pct",
+        "naive_score_pct", "overstatement_factor", "sd_of_published_score",
         "fraction_of_deficit", "steerable", "steerable_reason",
     ])
     for name, site in rung2["sites"].items():
         a = site["arithmetic"]
+        route_b_r = a.get("route_b_direct_form_at_R_of_M")
         consequence_table.add_data(
-            name, a["delta_local_ms"], a["tau"], a["delta_ranked_ms"],
+            name, a["delta_local_ms"], a["tau"], a["rounds_at_M"],
+            a["delta_ranked_ms"],
             a["route_a_median_pair_score_pct"],
-            a.get("route_b_ledger_score_pct"),
+            a["route_b_direct_form_at_same_tau"]["score_pct"],
+            route_b_r["score_pct"] if route_b_r else None,
+            a["leg_model_agreement_pct"],
             a["naive_no_tau_score_pct"], a["overstatement_factor"],
             a["sd_of_published_score"], a["fraction_of_deficit"],
             site["steerable"], site["steerable_reason"])
 
-    # --- the transfer-constant ruling ---------------------------------------
+    # --- the transfer-constant retraction and the R(M) table ----------------
     transfer = json.loads(
         pathlib.Path("research/e70-transfer-constant.json").read_text())
-    constant_table = wandb.Table(columns=["quantity", "ledger", "corrected"])
-    corrected = transfer["corrected_transfer_constants"]
-    rounds = transfer["ranked_depth0_serial_round_ms"]
-    for quantity, ledger_value, corrected_value in [
-        ("ranked depth-0 serial round ms",
-         rounds["ledger_10453_claim"], rounds["from_beagle_receipt"]),
-        ("tau prefill", corrected["tau_prefill"], corrected["tau_prefill"]),
-        ("tau depth-0 round",
-         corrected["ledger_R"], corrected["tau_depth0_round"]),
-        ("serial-leg ratio R", corrected["ledger_R"],
-         corrected["R_leg_from_measured_local_legs"]),
-        ("prefill-to-round contrast", corrected["ledger_transfer_contrast"],
-         corrected["prefill_over_round_transfer_contrast"]),
-        ("arithmetic-bound divisor",
-         corrected["ledger_arithmetic_bound_divisor"],
-         corrected["arithmetic_bound_divisor"]),
-        ("latency-bound multiplier",
-         corrected["ledger_latency_bound_multiplier"],
-         corrected["latency_bound_multiplier"]),
+    r_of_m = transfer["R_of_M"]
+    two_builds = transfer["two_builds"]
+    ceiling = transfer["model_free_ceiling"]
+
+    width_table = wandb.Table(columns=[
+        "prompt", "verify_width_M", "local_round_ms", "ranked_round_ms",
+        "R_of_M", "rounds_at_M", "tokens_per_round", "rounds_plus_accepted",
+        "ranked_candidate_leg_ms",
+    ])
+    for row in r_of_m["table"]:
+        width_table.add_data(
+            row["prompt"], row["verify_width_M"], row["local_round_ms"],
+            row["ranked_round_ms"], row["R_of_M"], row["rounds_at_M"],
+            row["tokens_per_round"], row["rounds_plus_accepted"],
+            row["ranked_candidate_leg_ms"])
+
+    constant_table = wandb.Table(columns=["quantity", "value", "population"])
+    for quantity, value, population in [
+        ("pinned serial depth-0 round ms",
+         two_builds["pinned_serial_depth0_round_ms"],
+         "3768 board serial legs, 3 routes agreeing to "
+         f"{two_builds['pinned_serial_routes']['route_spread_pct']:.3f} %"),
+        ("candidate depth-0 round ms",
+         two_builds["candidate_depth0_round_ms"],
+         "reconstruction of ca9251b8 from row['mtp_spt']"),
+        ("build factor serial/candidate",
+         two_builds["serial_over_candidate"], "quotient of the two above"),
+        ("model-free ceiling on c1 ms", ceiling["ceiling_ms"],
+         f"{ceiling['anchor_prompt']} mean round over "
+         f"{ceiling['anchor_rounds']} rounds"),
+        ("R(depth-0)", r_of_m["table"][0]["R_of_M"], "65.009 / 30.402"),
+        ("R(M) low shelf mean", r_of_m["low_width_group_mean"], "M <= 3.66"),
+        ("R(M) high shelf mean", r_of_m["high_width_group_mean"], "M >= 5.53"),
+        ("tau prefill", transfer["pricing_rule"]["tau_prefill"],
+         "ledger 186(C), unchanged"),
     ]:
-        constant_table.add_data(quantity, ledger_value, corrected_value)
+        constant_table.add_data(quantity, value, population)
 
     run.log({
         "rung0/site_table": site_table,
         "transfer/constants": constant_table,
+        "transfer/R_of_M": width_table,
         "rung0/structural_checks": check_table,
         "rung0/mutation_controls": mutation_table,
         "rung1/kernel_capture": kernel_table,
@@ -314,21 +361,35 @@ def main() -> None:
             "median_pair_prompts"],
         "rung2/median_pair_self_check_relative_error": rung2[
             "median_pair_model"]["self_check_relative_error"],
-        "rung2/head_prime_score_pct_at_decode_tau": rung2["sites"][
-            "S4_decode_head_prime"]["tau_sensitivity"]["tau_decode_round_1.76"],
-        "transfer/ranked_depth0_round_ms_confirmed":
-            rounds["from_beagle_receipt"],
-        "transfer/ranked_depth0_round_ms_ledger_refuted":
-            rounds["ledger_10453_claim"],
+        "rung2/head_prime_score_pct_at_R_of_M": rung2["sites"][
+            "S4_decode_head_prime"]["arithmetic"][
+                "route_b_direct_form_at_R_of_M"]["score_pct"],
+        "rung2/route_leg_model_max_disagreement_pct": rung2[
+            "route_agreement"]["leg_model_max_abs_disagreement_pct"],
+        "transfer/refutation_of_30_402_status":
+            transfer["retraction"]["status"],
+        "transfer/pinned_serial_depth0_round_ms":
+            two_builds["pinned_serial_depth0_round_ms"],
+        "transfer/candidate_depth0_round_ms":
+            two_builds["candidate_depth0_round_ms"],
+        "transfer/build_factor_serial_over_candidate":
+            two_builds["serial_over_candidate"],
+        "transfer/model_free_ceiling_on_c1_ms": ceiling["ceiling_ms"],
+        "transfer/candidate_margin_under_ceiling_pct":
+            ceiling["candidate_margin_under_ceiling_pct"],
+        "transfer/pinned_serial_excess_over_ceiling_pct":
+            ceiling["pinned_serial_excess_over_ceiling_pct"],
         "transfer/board_serial_leg_samples":
             transfer["board_evidence"]["serial_spt_samples"],
-        "transfer/board_samples_compatible_with_ledger_value":
-            transfer["falsification_of_30_402"][
-                "board_serial_spt_samples_at_or_below_implied"],
-        "transfer/R_ledger": corrected["ledger_R"],
-        "transfer/R_serial_leg_corrected":
-            corrected["R_leg_from_measured_local_legs"],
-        "transfer/R_change_pct": corrected["R_change_pct_measured"],
+        "transfer/R_depth0": r_of_m["table"][0]["R_of_M"],
+        "transfer/R_of_M_low_shelf_mean": r_of_m["low_width_group_mean"],
+        "transfer/R_of_M_high_shelf_mean": r_of_m["high_width_group_mean"],
+        "transfer/R_of_M_step_pct_group_means":
+            r_of_m["step_pct_group_means"],
+        "transfer/R_of_M_step_pct_shelf_edges":
+            r_of_m["step_pct_shelf_edges"],
+        "transfer/surviving_defect_188A":
+            transfer["surviving_defect"]["defect"],
     })
 
     tests_root = pathlib.Path("research/out/e70-tests")
@@ -367,6 +428,8 @@ def main() -> None:
             artifact.add_file(
                 str(manifest), name=f"rung1/{arm_dir.name}/manifest.jsonl")
     run.log_artifact(artifact)
+
+    run.summary.update(RETRACTED_SUMMARY_KEYS)
 
     print(f"run  {run.id}")
     print(f"url  {run.url}")
