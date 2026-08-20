@@ -1,0 +1,314 @@
+[
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "6ofu4nll",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6ofu4nll",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg01-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "6csosmyh",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6csosmyh",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg02-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "j2svsykm",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/j2svsykm",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg03-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "fk99s6go",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/fk99s6go",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg04-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "2gxfm1rp",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/2gxfm1rp",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg05-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "ky4ep5ip",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ky4ep5ip",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg06-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "ult4fp0b",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ult4fp0b",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg07-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "y2qo6rug",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/y2qo6rug",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg08-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "1nnegez5",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/1nnegez5",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg09-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "znthmn6w",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/znthmn6w",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg10-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "xtlsfbx7",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/xtlsfbx7",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg11-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "romtvdul",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/romtvdul",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-leg12-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-base-vs-ab",
+    "run_id": "6ku1dv7s",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6ku1dv7s",
+    "state": "finished",
+    "name": "e85-abba-512-base-vs-ab-summary",
+    "summary": true
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "k4hxbvbo",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/k4hxbvbo",
+    "state": "finished",
+    "name": "e85-tax-512-leg01-k0",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "azp7bpni",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/azp7bpni",
+    "state": "finished",
+    "name": "e85-tax-512-leg02-k48",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "r5rof3dh",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/r5rof3dh",
+    "state": "finished",
+    "name": "e85-tax-512-leg03-k192",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "j0pks5p9",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/j0pks5p9",
+    "state": "finished",
+    "name": "e85-tax-512-leg04-k192",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "rk7fpzpg",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rk7fpzpg",
+    "state": "finished",
+    "name": "e85-tax-512-leg05-k48",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "e4yme5wd",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e4yme5wd",
+    "state": "finished",
+    "name": "e85-tax-512-leg06-k0",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "xa6kmcuv",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/xa6kmcuv",
+    "state": "finished",
+    "name": "e85-tax-512-leg07-k0",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "ajmrg30e",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ajmrg30e",
+    "state": "finished",
+    "name": "e85-tax-512-leg08-k48",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "8qrkfuy6",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/8qrkfuy6",
+    "state": "finished",
+    "name": "e85-tax-512-leg09-k192",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "jne912sw",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jne912sw",
+    "state": "finished",
+    "name": "e85-tax-512-leg10-k192",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "rspdqekb",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rspdqekb",
+    "state": "finished",
+    "name": "e85-tax-512-leg11-k48",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "rt5a5o0c",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rt5a5o0c",
+    "state": "finished",
+    "name": "e85-tax-512-leg12-k0",
+    "summary": false
+  },
+  {
+    "session": "e85-tax-512",
+    "run_id": "s1pc01r8",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/s1pc01r8",
+    "state": "finished",
+    "name": "e85-tax-512-summary",
+    "summary": true
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "yjdc8s9x",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/yjdc8s9x",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg01-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "kdj10knx",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/kdj10knx",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg02-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "8zbwgma2",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/8zbwgma2",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg03-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "6nnyzcll",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6nnyzcll",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg04-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "mgwfqzu2",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/mgwfqzu2",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg05-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "z9izonlw",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/z9izonlw",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg06-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "m3aj9mkg",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/m3aj9mkg",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg07-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "vty9ps1w",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/vty9ps1w",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg08-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "t0dszrm9",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/t0dszrm9",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg09-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "v2ytccjk",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/v2ytccjk",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg10-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "tu5hsuf2",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tu5hsuf2",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg11-ab",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "8ezu3vzc",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/8ezu3vzc",
+    "state": "finished",
+    "name": "e85-abba-512-traced-leg12-base",
+    "summary": false
+  },
+  {
+    "session": "e85-abba-512-traced",
+    "run_id": "webqtrl9",
+    "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/webqtrl9",
+    "state": "finished",
+    "name": "e85-abba-512-traced-summary",
+    "summary": true
+  }
+]
