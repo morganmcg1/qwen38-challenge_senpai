@@ -162,13 +162,102 @@ struct QwenMTPDepthPriceTests {
         }
     }
 
-    @Test("pbfit refuses to run as ship when the measured curve is missing")
-    func pbfitRefusesAnUnfilledCurve() {
-        // The scored default is `ship`, so `measuredRawDepthPrice` is empty on
-        // the branch tip. An empty curve must be a trap, not a silent
-        // fallback to the flat vector: a `pbfit` leg that quietly measured
-        // `ship` would look like a null result instead of a broken arm.
-        #expect(Qwen36MTPBlockSession.measuredRawDepthPrice.isEmpty
-                || Qwen36MTPBlockSession.measuredRawDepthPrice.count == maxDepth)
+    // E75 rung A: the E68 winner is now the shipped default, so these tests
+    // own the three ways banking it could silently regress — an unfilled
+    // curve, a refit that moves the LEVEL instead of the shape, and a leg
+    // session that leaves another arm behind.
+
+    @Test("the measured curve is filled, so pbfit cannot trap at startup")
+    func measuredCurveIsFilled() {
+        // An unfilled curve must be a trap, not a silent fallback to the flat
+        // vector: a `pbfit` build that quietly ran `ship` would look like a
+        // null result instead of a broken arm. `makeMeasuredDepthPrice`
+        // preconditions on the count, and the shipped arm calls it, so an
+        // empty array is now a startup crash rather than a test failure.
+        #expect(Qwen36MTPBlockSession.measuredRawDepthPrice.count == maxDepth)
+    }
+
+    @Test("the measured arm holds the shipped total, so it changes shape only")
+    func measuredArmHoldsTheTotal() {
+        let price = Qwen36MTPBlockSession.makeMeasuredDepthPrice()
+        #expect(price.marginal.count == maxDepth)
+        #expect(price.cumulative.count == maxDepth + 1)
+        #expect(price.cumulative[0] == 1.0)
+        #expect(abs(price.marginal.reduce(0, +) - Double(maxDepth) * h) < 1e-12)
+    }
+
+    // The exact vector the nine E68 rung-3 legs timed. The committed array is
+    // the RAW curve and `makeMeasuredDepthPrice` rescales it, so this test
+    // proves the rescale reproduces the timed arm bit for bit rather than to
+    // within an ulp. If it ever fails, the shipped arm is not the arm that
+    // measured -3.500 %.
+    //
+    // These are the values Swift computes, and they are what every E68 leg
+    // ran. At depths 0, 3 and 7 they sit ONE ULP below the vector printed in
+    // research/e68-results.md, because Swift evaluates `raw * (total / sum)`
+    // while the Python arm manifest that produced the report evaluated
+    // `raw * total / sum`. The manifest never reached the compiler; only the
+    // raw array did. The published rendering is checked separately below at
+    // one-ulp tolerance so both facts stay on the record.
+    @Test("the measured arm is bit-identical to the vector E68 timed")
+    func measuredArmMatchesTheTimedVector() {
+        let timed = [0.12014290579688386, 0.13336973691819140,
+                     0.15825051194819845, 0.18378135596082668,
+                     0.28910578332644965, 0.19917881598825601,
+                     0.16197661758144877, 0.19419427247974499]
+        let published = [0.12014290579688387, 0.13336973691819140,
+                         0.15825051194819845, 0.18378135596082670,
+                         0.28910578332644965, 0.19917881598825600,
+                         0.16197661758144877, 0.19419427247974502]
+        let price = Qwen36MTPBlockSession.makeMeasuredDepthPrice()
+        for depth in 0 ..< maxDepth {
+            #expect(price.marginal[depth] == timed[depth])
+            #expect(abs(price.marginal[depth] - published[depth])
+                    <= published[depth].ulp)
+        }
+    }
+
+    // Provenance. The raw curve is `h + (C(d + 2) - C(d + 1)) / V` over the
+    // rung-1 isolated whole-table QMV medians, in milliseconds here where the
+    // session worked in seconds, so this reconstruction is exact only to
+    // rounding.
+    @Test("the raw curve reconstructs from the rung-1 width medians")
+    func rawCurveReconstructsFromRung1() {
+        let cost = [1: 60.372, 2: 65.377, 3: 72.128, 4: 82.163, 5: 95.568,
+                    6: 122.876, 7: 138.314, 8: 148.841, 9: 163.621]
+        let verifyForwardMs = 60.300
+        for depth in 0 ..< maxDepth {
+            let step = cost[depth + 2]! - cost[depth + 1]!
+            let expected = h + step / verifyForwardMs
+            let raw = Qwen36MTPBlockSession.measuredRawDepthPrice[depth]
+            #expect(abs(raw - expected) < 1e-5)
+        }
+    }
+
+    @Test("the shipped arm is pbfit")
+    func shippedArmIsPbfit() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .pbfit)
+        let shipped = Qwen36MTPBlockSession.depthPrice
+        let measured = Qwen36MTPBlockSession.makeMeasuredDepthPrice()
+        for depth in 0 ..< maxDepth {
+            #expect(shipped.marginal[depth] == measured.marginal[depth])
+        }
+        for depth in 0 ... maxDepth {
+            #expect(shipped.cumulative[depth] == measured.cumulative[depth])
+        }
+    }
+
+    // The shipped arm must draft SHORTER than the flat price at both ranked
+    // acceptance rates. That is the mechanism E68 measured: the vector moves
+    // rounds off the expensive width-6 step onto width 5.
+    @Test("the shipped arm shortens the walk against the flat price")
+    func shippedArmShortensTheWalk() {
+        let cap = 5
+        let ship = Qwen36MTPBlockSession.makeUniformDepthPrice()
+        let pbfit = Qwen36MTPBlockSession.makeMeasuredDepthPrice()
+        for p in [0.8351, 0.8750] {
+            #expect(walkDepth(ship, cap: cap, p: p) == 5)
+            #expect(walkDepth(pbfit, cap: cap, p: p) == 4)
+        }
     }
 }
