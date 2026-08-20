@@ -31,7 +31,23 @@
   "fraction_of_ceiling": 0.3500696580074628,
   "ci95_halfwidth_as_fraction_of_ceiling": 0.1007481139444851,
   "detectable_effect_b_80pct_power": 4.0433436461931547e-07,
-  "detectable_effect_as_fraction_of_ceiling": 0.12471030903826626
+  "detectable_effect_as_fraction_of_ceiling": 0.12471030903826626,
+  "power_at_reference_effects": {
+   "3e-06": {
+    "b": 3e-06,
+    "fraction_of_ceiling": 0.9253008397321026,
+    "expected_t": 20.77488518174476,
+    "power_two_sided_5pct": 1.0,
+    "separable_from_zero": true
+   },
+   "1e-06": {
+    "b": 1e-06,
+    "fraction_of_ceiling": 0.3084336132440342,
+    "expected_t": 6.924961727248253,
+    "power_two_sided_5pct": 0.9999996564269023,
+    "separable_from_zero": true
+   }
+  }
  },
  "low_segment_above_shipped_commits": {
   "n_legs": 10,
@@ -57,7 +73,23 @@
   "fraction_of_ceiling": 0.3828065975603308,
   "ci95_halfwidth_as_fraction_of_ceiling": 0.12848511943399019,
   "detectable_effect_b_80pct_power": 4.931942643038661e-07,
-  "detectable_effect_as_fraction_of_ceiling": 0.15211768897047462
+  "detectable_effect_as_fraction_of_ceiling": 0.15211768897047462,
+  "power_at_reference_effects": {
+   "3e-06": {
+    "b": 3e-06,
+    "fraction_of_ceiling": 0.9253008397321026,
+    "expected_t": 17.03182824288606,
+    "power_two_sided_5pct": 1.0,
+    "separable_from_zero": true
+   },
+   "1e-06": {
+    "b": 1e-06,
+    "fraction_of_ceiling": 0.3084336132440342,
+    "expected_t": 5.67727608096202,
+    "power_two_sided_5pct": 0.9998993088303624,
+    "separable_from_zero": true
+   }
+  }
  },
  "high_segment_below_shipped_commits": {
   "n_legs": 6,
@@ -83,6 +115,22 @@
   "fraction_of_ceiling": -0.23987476245462178,
   "ci95_halfwidth_as_fraction_of_ceiling": 0.8920237608593649,
   "detectable_effect_b_80pct_power": 2.544910873401719e-06,
-  "detectable_effect_as_fraction_of_ceiling": 0.7849360560673231
+  "detectable_effect_as_fraction_of_ceiling": 0.7849360560673231,
+  "power_at_reference_effects": {
+   "3e-06": {
+    "b": 3e-06,
+    "fraction_of_ceiling": 0.9253008397321026,
+    "expected_t": 3.300704982556788,
+    "power_two_sided_5pct": 0.9099919436443642,
+    "separable_from_zero": true
+   },
+   "1e-06": {
+    "b": 1e-06,
+    "fraction_of_ceiling": 0.3084336132440342,
+    "expected_t": 1.100234994185596,
+    "power_two_sided_5pct": 0.19606511341649513,
+    "separable_from_zero": false
+   }
+  }
  }
 }

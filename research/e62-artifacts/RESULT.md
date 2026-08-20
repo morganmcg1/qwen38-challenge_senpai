@@ -102,9 +102,81 @@ fitted slope is rescaled by `6.4 / 0.6464` to recover a per-commit cost.
 | 95 % CI half-width | 3.266e-07 = **10.1 % of ceiling** |
 | detectable effect @80 % power | 4.043e-07 = **12.5 % of ceiling** |
 
-The design separates "no per-commit cost" from "cost at the physical maximum"
-with roughly 8x margin, so the high-end null is informative rather than
-underpowered.
+Checked at the two reference slopes the advisor asked for, rather than at the
+much larger effect the estimator was first validated against. Measured slope
+`b = 1.135e-06`, `se = 1.444e-07`, dof 9:
+
+| true slope `b` | fraction of ceiling | expected t | power (two-sided 5 %) |
+|---|---|---|---|
+| 3e-06 | 0.925 | 20.77 | **1.000** |
+| 1e-06 | 0.308 | 6.92 | **1.000** |
+
+**Plain statement: the design can separate zero from the physical maximum.**
+It is not underpowered, and the high-end null is a real null rather than a
+failure to measure. Both reference effects would have been detected with
+power indistinguishable from certainty.
+
+## Two runtime facts this session establishes
+
+Neither was the question I was sent to answer. Both are durable properties of
+the runtime that the next agent would otherwise re-derive from source, and the
+source reads the wrong way.
+
+### 1. The OPS term binds. The 512 MiB byte budget is inert at the shipped setting.
+
+Reading `device.cpp` alone suggests the byte term could trip first. The census
+falsifies that directly, because it contains the matched pair:
+
+| MB | OPS | dispatches/commit | implied ops/dispatch |
+|---|---|---|---|
+| 512 | 50 | 30.95 | 1.615 |
+| 4096 | 50 | 30.72 | 1.627 |
+
+An **8x relaxation of the byte cap moves dispatches per commit by 0.74 %**. If
+512 MiB were binding, that relaxation would have to grow the commit
+substantially, and it does not. Independently, 30.95 dispatches x 1.615 ops
+per dispatch = **50.0 ops per commit**, which is the OPS cap exactly.
+
+This arm is unusually strong evidence because it is the same `null` arm that
+also came out null in *timing* (+0.057 %, t = +0.56). The byte cap is inert by
+counter and inert by clock, from one pair.
+
+**Boundary of validity, which matters for reuse.** Every arm coarser than
+OPS=50 ran at MB=4096, so I can prove the byte term is inert *at and below the
+shipped OPS=50*; I cannot prove it never binds anywhere. There is in fact a
+hint it starts to participate at the coarsest arm: implied ops per dispatch
+across the ladder runs 1.300, 1.407, 1.316, 1.534, 1.627, 1.340, **1.790** at
+OPS = 6, 8, 12, 25, 50, 100, 200. The OPS=200 value is the highest in the
+ladder, which is what a byte term beginning to contribute would look like. It
+is also what approaching a forced-boundary floor looks like, so I am not
+claiming which. Anyone shipping OPS above 50 must recheck the byte cap.
+
+### 2. Three documentation defects, all verified against source on this base
+
+| site | says | actually |
+|---|---|---|
+| `RuntimeStartupMemoryPolicy.swift:143-148` | "320 MiB groups adjacent kernels" | `maxMegabytesPerCommandBuffer: 512` |
+| `RuntimeStartupMemoryPolicy.swift:138-141` | a 32 GiB soft allocator cap that "lets the M5 Max retain freed intermediates" | `cacheLimitBytes` is never applied on the MTP path; trusted code sets 6 GiB |
+| `RuntimeStartupMemoryPolicyTests.swift:83-84` | asserts `== 320` and `== 128` | shipped values are 512 and 50 |
+
+The `:143-148` comment is stale in a second, worse way than the number. It
+claims the referenced-byte budget "governs within" the async-eval groups. Fact
+1 above shows it governs nothing at the shipped setting.
+
+I did **not** fix these. Rung 5 was the delivery rung and it was never reached,
+so touching `RuntimeStartupMemoryPolicy.swift` would have put lines into a
+submitted diff for an experiment that ships nothing. They are listed as
+follow-ups instead.
+
+### Independent replication, relayed by the advisor
+
+The advisor reports that another student's probe on a different Mac ran
+ops=50 against ops=8 at 64 tokens and came out 0.48 % faster at the coarse
+end — wrong sign, inside noise, at a dose stronger than every arm here except
+`ops6`. I did not inspect that work and it is outside my assigned scope, so I
+record it only as advisor-relayed corroboration of direction, not as evidence
+I verified. My own `ops6` contrast at +1.065 %, t = +10.53 is the load-bearing
+measurement.
 
 ## Reproduction
 
@@ -256,3 +328,9 @@ All three pass against base `ea683aae`. Logs are in
    resident set is about 25.2 GiB active, and the allocator cache settles near
    3.3 GiB and grows about 2 MiB per round. Any future memory-profile or
    residency work can start from these instead of measuring them again.
+6. **Fix the three documentation defects** in the table above. I left them
+   alone because this experiment ships nothing and every submitted line is
+   review exposure, but they should ride along with the next change that
+   touches `RuntimeStartupMemoryPolicy.swift`. Note that
+   `startupMemoryPolicyKeepsRanked128GiBProfile` asserts 320/128 against
+   shipped 512/50, so it is one of the tests already failing at base.

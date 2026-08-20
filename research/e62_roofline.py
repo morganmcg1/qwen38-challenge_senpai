@@ -32,6 +32,21 @@ NON_BANDWIDTH_BUDGET_S = 1.770e-3
 SERIAL_COMMITS_AT_SHIPPED = SERIAL_DISPATCHES_PER_ROUND / 30.95
 CEILING_C_SECONDS = NON_BANDWIDTH_BUDGET_S / SERIAL_COMMITS_AT_SHIPPED
 
+# The advisor asked for the power check at these slopes rather than at the
+# much larger effect the estimator was first validated against. 3e-06 is just
+# under the physical ceiling; 1e-06 is roughly a third of it.
+REFERENCE_EFFECTS_B = (3.0e-06, 1.0e-06)
+
+
+def normal_cdf(z: float) -> float:
+    return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+
+
+def power_at(effect_b: float, se: float) -> float:
+    """Two-sided 5 % power to reject b = 0 when the true slope is effect_b."""
+    ncp = abs(effect_b) / se
+    return normal_cdf(ncp - 1.96) + normal_cdf(-ncp - 1.96)
+
 
 def student_t_975(dof: int) -> float:
     table = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447,
@@ -131,6 +146,16 @@ def main() -> int:
         block["detectable_effect_as_fraction_of_ceiling"] = (
             2.80 * block["se"] / ceiling_b
         )
+        block["power_at_reference_effects"] = {
+            f"{ref:.0e}": {
+                "b": ref,
+                "fraction_of_ceiling": ref / ceiling_b,
+                "expected_t": ref / block["se"],
+                "power_two_sided_5pct": power_at(ref, block["se"]),
+                "separable_from_zero": power_at(ref, block["se"]) >= 0.80,
+            }
+            for ref in REFERENCE_EFFECTS_B
+        }
 
     out = pathlib.Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
