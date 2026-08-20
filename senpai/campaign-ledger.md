@@ -17920,3 +17920,204 @@ an open risk at merge time and is a candidate mechanism.
   submission, not merely one per PR.
 - **The plausibility ceiling was never the binding constraint.** We are 2.5 %
   below the crown, not above 5.0.
+
+## 209 The ranked slot is the campaign bottleneck, and arm 2 is in flight
+
+Advisor, 2026-08-20, no GPU. This entry records one operational discovery that
+changes how the campaign must be run, the two submission actions taken under
+it, and a pre-registered prediction for the run that is now measuring.
+
+### 209(A) Yukon allows exactly ONE in-flight submission per account
+
+Submitting a second candidate while a first is validating returns:
+
+```
+{"error":{"code":"conflict",
+  "message":"account already has 1 submission(s) in flight
+             for this benchmark (limit 1)"}}
+```
+
+This is a hard server-side gate. It is not documented in `TASK.md`, in
+`benchmark.json`, or in the `yukon` CLI help. It was discovered by trying.
+
+The consequence is the most important operational fact in this campaign so far.
+A ranked run takes about two and a half hours end to end: the timed step begins
+roughly one hour forty-five minutes after creation and runs for about forty
+minutes. With a limit of one in flight, the campaign can obtain at most about
+nine ranked measurements per day, and they are strictly serial.
+
+**The scarce resource is the ranked slot, not the student GPU.** Four students
+on four Macs can run local experiments in parallel all day. They cannot produce
+a single ranked number. Every local result we cannot price is, at the moment,
+worth less than one ranked receipt.
+
+This reprices the whole research plan. Work that converts local measurements
+into ranked-priceable measurements now outranks work that produces new local
+wins. Work that can only be settled by a ranked receipt must be queued in
+strict order of information value, because the queue depth is one.
+
+### 209(B) The submission archive is applied over the LIVE promoted frontier
+
+The validation job returned by the cancel endpoint records its own input:
+
+```json
+"input": {
+  "sourceRef": "bfab0de58d43453e506523707e1720a3485570f4",
+  "sourceUrl": "https://github.com/Layr-Labs/qwen-3.8-mtp-challenge",
+  "submissionArchiveRef": "r2://.../5d1935e0...632a6.tar.gz"
+}
+```
+
+`bfab0de5` is the promoted source reference of the current crown. So the runner
+checks out the live promoted frontier and then overwrites every required
+editable path with our archive. Two corollaries follow.
+
+1. Every non-editable byte we run at rank comes from the crown, not from our
+   base. Our vendored trusted surface is irrelevant to the ranked build.
+2. The composition point moves whenever the crown moves. A candidate measured
+   against an older crown is measuring a different program. This is the
+   mechanical reason behind the standing rule to diff the packaged surface
+   against the live frontier before every submission, and it is now recorded
+   with the evidence that proves it.
+
+### 209(C) Cancelling a submission
+
+The CLI has no cancel verb. The API does:
+
+```
+POST https://api.yukon.org/api/submissions/<uuid>/cancel
+Authorization: Bearer $YUKON_API_TOKEN
+```
+
+It returns the full submission row with `status: "cancelled"` and
+`rejectionReason: "cancelled by submitter"`, and the attached job with
+`status: "cancelled"`. Cancelling before the timed step consumes no runner time
+and frees the in-flight slot immediately.
+
+### 209(D) What I actually did, and the ordering error I corrected
+
+I submitted arm 1 at 09:25:48Z as `042705e4`. Arm 1 was our base `d6237abb`
+unchanged: `ff73cbbd` plus the restored `kL = 1025` warm block. It is a
+one-variable test of the warm block and a replication of the `ff73cbbd`
+regression. I had already written in 208(E) that it was not expected to win.
+
+Four minutes later, trying to queue arm 2 behind it, I found 209(A). Under a
+queue of depth one, spending the next two and a half hours on an arm that is
+not expected to win, ahead of an arm that is our best available shot at the
+crown, is simply wrong. I cancelled arm 1 at 09:30:18Z and submitted arm 2.
+
+The ordering error is worth recording as a rule. **Before spending a scarce
+serialized resource, establish its concurrency.** I assumed submissions were
+parallel because the public board shows eight rows validating at once. Those
+eight belong to eight different accounts.
+
+### 209(E) Arm 2: the crown-kernel revert, submission `9b241879`
+
+Submitted 09:33Z from local commit `e7d2067` on `advisor/arm2-crown-kernels`,
+which is our base `d6237abb` plus one commit that reverts eight lines:
+
+| file | lines | change |
+| --- | --- | --- |
+| `quantized.h` | 977, 1939, 1944, 1972 | gate `NA<=6`->`NA<=4`; `<T,5,5>`->`<T,5,3>`; `<T,6,6>`->`<T,6,3>`; `<T,9,5>`->`<T,9,3>` |
+| `mlx-generated/quantized.cpp` | 990, 1952, 1957, 1975 | identical four changes in the runtime-effective JIT twin |
+
+After the revert both files are byte-identical to the crown's promoted source
+`bfab0de5`, and `upstream/main` is byte-identical to the crown at these two
+files as well. Digests of the submitted files:
+
+```
+quantized.h    75d45143959eb3bd7223875da4dbe15ce5be3d1cf45871e010817b1e5249f281
+quantized.cpp  350de46828265271e504c93d009a3b3e8b05c83047666be7fc0de51ded29b6bb
+```
+
+This matters for risk: those exact bytes have already built and passed the
+ranked correctness and parity gates, so the changed lines cannot introduce a
+build or fidelity fault. Every other byte of arm 2 is identical to a snapshot
+that already returned `parity_all_ok: true`.
+
+Gates run before submitting:
+
+```
+python3 research/twin_audit.py
+  TWIN AUDIT OK: 29 runtime-effective twin(s)
+senpai/check-editable-budget.sh 770a3ff2...
+  source=2464949/3000000 growth=10114/262144 exempt=2410 files=154
+senpai/verify-ranked-score-boundary.sh
+  PASS: ranked numerator is pinned baseline
+```
+
+I also confirmed that the only production instantiation sites of
+`qmv_fast_crossrow_affine4_g64_m<>` are the two runtime switch blocks in the
+header and its twin. The six other matches in the tree are all research probe
+`.metal` files, which are not submitted. Those probes do instantiate group
+sizes 5 and 6 directly, so a student who applies this revert locally must
+expect the QMV cost-curve probe sources to fail to compile against the reverted
+header until their `IPG` arguments are bounded to 4. That is a local test
+concern only; it cannot affect the ranked build.
+
+I could not run `--local-submit` for arm 2. The advisor host has no GPU. I
+accepted that risk for the reason above and recorded it in the public note.
+
+### 209(F) Pre-registered prediction for arm 2
+
+Written before the receipt exists.
+
+Arm 2 differs from the crown by exactly four things, all of which 208(C)
+already priced at approximately zero: the fixed-window EOS continuation fix,
+gated trace plumbing that is inert with its environment variable unset, an
+`asyncEval` ladder refactor that ships the identical rung set, and a free-text
+note line in the proposal-head manifest. It differs from `ff73cbbd` by the warm
+block and the kernel revert.
+
+Point prediction: **3.2524**, the crown's score.
+
+Decision rule, using the measured one-run standard deviation of 0.756 % and the
+difference standard deviation of 1.069 %:
+
+| observed arm 2 | reading | next action |
+| --- | --- | --- |
+| >= 3.2524 | we take the crown | promote, then re-add widths one at a time |
+| 3.22 to 3.2524 | partitions were the dominant loss; residual deltas cost a little | isolate the residual four |
+| 3.19 to 3.22 | partitions were about half the loss | split the arm |
+| <= 3.19 | **partitions exonerated** | the loss is in the trace plumbing, the EOS fix or the ladder refactor, and arm 2 replicates `ff73cbbd` |
+
+The last row is the falsifier. Arm 2 carries the warm block, so if it returns
+near 3.17 then neither the warm block nor the group partitions explain the
+`ff73cbbd` regression, and the prime suspect becomes the one file I discounted
+on a local 0.03 % measurement: the gated trace plumbing.
+
+### 209(G) The uncomfortable strategic reading
+
+Arm 2 removes the last scored-path mechanism that distinguishes us from the
+crown. If it lands at the crown's score, that is not a win. It is a statement
+that **we currently hold no ranked-verified advantage over the frontier at
+all.**
+
+Every experiment we have merged is a local win on `applegpu_g16s`. Our ranked
+history is one build-and-parity success, five score rejections, and three
+workflow failures. The single ranked comparison we have that isolates our own
+work says that work is negative.
+
+Two consequences for how the campaign proceeds.
+
+**Compose from the crown, not from our base.** Each future ranked arm should be
+the crown plus exactly one of our mechanisms, so the receipt prices that
+mechanism. Our base is now a staging area for candidate mechanisms, not a
+frontier.
+
+**Prefer mechanisms whose transfer sign is known.** Kernel group-partition
+choices trade register pressure against reuse, and register budgets and
+occupancy boundaries differ between generation 16 and generation 17. Schedule
+and policy changes do not have that exposure: they change which shapes run, not
+how a shape is compiled. 207(C) and 207(E) both say the ranked width curve is
+1.10 to 1.16 times flatter than the local one, and the sign of that difference
+is actionable on its own: **a depth policy tuned on our host under-drafts at
+rank, because our host over-charges for width.** That makes the depth schedule
+the strongest next ranked arm, and it is already in flight as E68.
+
+### 209(H) Backlog correction
+
+`senpai/frontier-state.json` was recorded in my own working notes as stale. It
+is not. It already carries crown `9ad17378`, source `bfab0de5`, score
+3.25238228, observed 06:45Z. Only the observation timestamp lags. The note was
+wrong; the file is right.
