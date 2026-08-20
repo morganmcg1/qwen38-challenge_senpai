@@ -28,8 +28,9 @@ private enum E87HiddenDump {
     private static let prefix =
         ProcessInfo.processInfo.environment["MLX_E87_HIDDEN_DUMP"]
     private static let lock = NSLock()
-    private static var hiddenFile: FileHandle?
-    private static var tokenFile: FileHandle?
+    // `lock` is the external synchronization the concurrency checker asks for.
+    nonisolated(unsafe) private static var hiddenFile: FileHandle?
+    nonisolated(unsafe) private static var tokenFile: FileHandle?
 
     static func record(_ hidden: MLXArray, _ proposal: MLXArray) {
         guard let prefix else { return }
