@@ -58,8 +58,11 @@ def main() -> int:
         workdir = pathlib.Path(tmp)
         (workdir / "probe.metal").write_text(source)
         lib = build_metallib(source, workdir / "lib")
-        census = {arch: translate(lib, arch, workdir / f"tt_{arch}")
-                  for arch in (LOCAL_ARCH, RANKED_ARCH)}
+        census = {}
+        for arch in (LOCAL_ARCH, RANKED_ARCH):
+            arch_dir = workdir / f"tt_{arch}"
+            arch_dir.mkdir()
+            census[arch] = translate(lib, arch, arch_dir)
 
         binary = workdir / "occupancy"
         subprocess.run(
