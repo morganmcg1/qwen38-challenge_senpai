@@ -58,14 +58,43 @@ conversion is reported beside it.
   second pass disappears. The measured M=5 QMV cell cost was 120.07 ms per probe,
   the largest single-width discontinuity in the shipped width curve.
 - **Decision:** green locally.
-- **`BASE_SHA`:** `45b4f3a800f879e3579ca27ef0b1c0ef40e4473d`. The base moved
-  twice during this experiment. I merged `44bb38d5` in `74dbf34a` and
-  `45b4f3a8` in `391ed5f`, both by merge and never by rebase. The assignment's
-  original `989596895b` is retired.
-- **`UPSTREAM_SHA`:** `0c90733d383f6b987a29682bf9eb9458a6172bfa`, read from
-  `senpai/frontier-state.json` as `organizer.syncedCommit`. My earlier report
-  said this was not resolvable; that was wrong, and I retract it. The value was
-  recorded in the campaign state file the whole time.
+- **`BASE_SHA`:** `31e67cb82c0e78c04c3d36b401ae213aa9e540e8`. The base moved
+  three times during this experiment. I merged `44bb38d5` in `74dbf34a`,
+  `45b4f3a8` in `391ed5f`, and `31e67cb8` in `2227a9c5`, always by merge and
+  never by rebase. The assignment's original `989596895b` is retired.
+
+  The third move landed while the candidate arm was timing. It contains
+  `53d9d58`, which merges the promoted organizer frontier `80021bc0`, and
+  `31e67cb8`, which adds a symbol-table witness to the worker guard. It changes
+  three files: `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` by +70 lines,
+  `senpai/rebuild-and-assert-worker.sh`, and `senpai/experiment-runbook.md`.
+  **The two scored twins are byte-identical between `45b4f3a8` and
+  `31e67cb8`**, so the candidate surface against the new base is still exactly
+  the two-character diff. The guard upgrade needs no change here: the new file
+  documents `--require` and `--forbid` on the string table as the correct
+  witness for a Metal JIT arm, which is what this is, and reserves
+  `--require-symbol` for Swift arms.
+
+  **What I replayed on `31e67cb8`, and what I did not.** I replayed both
+  close-out chain arms, so the content assertion, the Swift control comparison,
+  the `--local-submit` correctness receipt, and all five gates are evidence on
+  the current base. I did **not** replay the 512-token matched leg session that
+  produced the −0.7689 % headline. That session is about 40 minutes, the advisor
+  asked for no new arms, and the new base touches neither scored file nor the
+  QMV path. The leg session is an A/B inside one session, so a change to the MTP
+  session code applies to both arms and cancels in the contrast. The effect size
+  in this report is therefore measured on `45b4f3a8` and stated as such.
+- **`UPSTREAM_SHA`:** `80021bc03e4b270f7dfef5b4425107bfc57b8d70`. My earlier
+  report said this was not resolvable; that was wrong and I retract it. Two
+  sources disagree, and the commit graph settles it:
+  `senpai/frontier-state.json` still records
+  `organizer.syncedCommit = 0c90733d383f6b987a29682bf9eb9458a6172bfa` at
+  `observedAt 2026-08-20T05:15:00Z`, but the base's own merge `53d9d58` at
+  06:01Z brought in organizer main `80021bc0`, which is now an ancestor of HEAD
+  and is the `sourceRef` of the live promoted crown `9d5569bb` at score
+  `3.25187972017987`. **`frontier-state.json` is stale by one organizer sync**
+  and should be refreshed by whoever owns it; I did not edit it, because
+  campaign state is advisor-owned.
 - **Candidate commit:** `b757237`. Result head: the submitted head of this PR.
 - **Yukon promoted submission:** the crown moved during this experiment to
   hadakang's `80021bc0`. The advisor relays that it differs from the row it
