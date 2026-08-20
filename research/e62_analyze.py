@@ -152,22 +152,40 @@ def regress(legs: list[dict], reference: str, metric: str) -> dict:
     }
 
 
+def load_census(path: pathlib.Path) -> dict[tuple[int, int], float]:
+    """Map (MB, OPS) to the measured commits per decode round."""
+    payload = json.loads(path.read_text())
+    return {
+        (leg["mb"], leg["ops"]): leg["commits_per_round"]
+        for leg in payload["legs"]
+    }
+
+
 def trend(legs: list[dict], metric: str, mb: int) -> dict:
-    """Fit `time ~ log2(ops) + leg_position` across one constant-MB ladder.
+    """Fit `time ~ commits_per_round + leg_position` across one MB ladder.
+
+    The covariate is the *measured* commit count, not `log2(OPS)`. The census
+    shows total dispatches are invariant to 0.010 % across a 24x change in
+    commit count, so a geometry change repackages identical work. If a command
+    buffer commit carries a fixed cost `c`, then decode time is linear in the
+    number of commits and this slope estimates `c` directly. `log2(OPS)` has no
+    such reading, and the OPS-to-commit map is not even log-linear.
 
     Seven arms with one replicate pair each give a weak pairwise test but a
-    well-powered test of a monotone tilt, because every leg contributes to the
-    one slope. This is the primary screen for the OPS ladder; the per-arm
-    contrasts in `regress` stay descriptive.
+    well-powered test of a monotone tilt, because every leg informs the one
+    slope. This is the primary screen; the per-arm contrasts stay descriptive.
     """
-    ladder = [leg for leg in legs if leg["mb"] == mb and leg["ops"] > 0]
+    ladder = [
+        leg for leg in legs
+        if leg["mb"] == mb and leg.get("commits_per_round") is not None
+    ]
     distinct = sorted({leg["ops"] for leg in ladder})
     if len(distinct) < 3:
         return {"skipped": f"need >=3 distinct ops at mb={mb}, saw {distinct}"}
     positions = np.array([leg["position"] for leg in ladder], dtype=float)
-    log_ops = np.array([math.log2(leg["ops"]) for leg in ladder])
+    commits = np.array([leg["commits_per_round"] for leg in ladder])
     design = np.column_stack(
-        [np.ones(len(ladder)), log_ops - log_ops.mean(),
+        [np.ones(len(ladder)), commits - commits.mean(),
          positions - positions.mean()]
     )
     response = np.array([leg[metric] for leg in ladder], dtype=float)
@@ -182,23 +200,26 @@ def trend(legs: list[dict], metric: str, mb: int) -> dict:
     estimate = float(coefficients[1])
     critical = student_t_975(dof)
     mean = float(response.mean())
-    span = log_ops.max() - log_ops.min()
+    span = float(commits.max() - commits.min())
     return {
         "mb": mb,
+        "covariate": "commits_per_round (measured by census)",
         "ops_points": distinct,
+        "commits_per_round_span": [float(commits.min()), float(commits.max())],
         "n_legs": len(ladder),
         "dof": dof,
         "mean": mean,
         "residual_sd_percent": 100.0 * math.sqrt(residual_var) / mean,
-        "slope_per_log2_ops": estimate,
+        "seconds_per_token_per_commit_per_round": estimate,
         "se": se,
         "t": estimate / se if se else float("nan"),
         "ci95_low": estimate - critical * se,
         "ci95_high": estimate + critical * se,
-        "percent_per_doubling": 100.0 * estimate / mean,
-        "percent_per_doubling_ci95_low": 100.0 * (estimate - critical * se) / mean,
-        "percent_per_doubling_ci95_high": 100.0 * (estimate + critical * se) / mean,
         "percent_across_full_ladder": 100.0 * estimate * span / mean,
+        "percent_across_full_ladder_ci95_low":
+            100.0 * (estimate - critical * se) * span / mean,
+        "percent_across_full_ladder_ci95_high":
+            100.0 * (estimate + critical * se) * span / mean,
     }
 
 
@@ -232,10 +253,23 @@ def main() -> int:
                         help="leg tags to exclude, e.g. a declared warm-up")
     parser.add_argument("--trend-mb", type=int, default=0,
                         help="fit the ladder slope across legs at this MB")
+    parser.add_argument("--census", default="research/e62-artifacts/e62-census.json",
+                        help="census file supplying measured commits per round")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
     legs = [leg for leg in load_session(args.session) if leg["tag"] not in args.drop]
+    census_path = pathlib.Path(args.census)
+    if census_path.exists():
+        census = load_census(census_path)
+        missing = set()
+        for leg in legs:
+            key = (leg["mb"], leg["ops"])
+            leg["commits_per_round"] = census.get(key)
+            if key not in census:
+                missing.add(key)
+        if missing:
+            print(f"warning: no census geometry for {sorted(missing)}")
     if not legs:
         raise SystemExit(f"e62: no legs found for session {args.session}")
     entry = [leg["gpu_temp_entry_c"] for leg in legs]
