@@ -41,9 +41,16 @@ base_sha="${E84_BASE_SHA:-5ea174c50b98407bc463c463cc7c7a85d32960a7}"
 root="${E84_ROOT:-${repo_root}/.mlxfast-private/e84}"
 head_dir="${E84_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
 golden="${E84_GOLDEN:-${root}/runs/exact-base-512/reports/02-mtp-verify-output.json}"
+# A label lets the same arm run twice against different goldens without one
+# pass overwriting the other's evidence.
+label="${E84_LEDGER_LABEL:-${arm}}"
+# The positive control runs a known-good arm against a golden with one token
+# changed. It passes only when the gate reports a mismatch, which is what
+# proves the gate is not vacuous.
+expect_mismatch="${E84_EXPECT_MISMATCH:-0}"
 out_dir="${root}/ledgers"
-out="${out_dir}/${arm}.json"
-meta="${out_dir}/${arm}-meta.txt"
+out="${out_dir}/${label}.json"
+meta="${out_dir}/${label}-meta.txt"
 
 fail() { echo "e84_ledger_run: $*" >&2; exit 1; }
 
@@ -104,6 +111,8 @@ print(len(json.load(open('${golden}'))['rows']))
 
 {
   echo "arm=${arm}"
+  echo "label=${label}"
+  echo "expect_mismatch=${expect_mismatch}"
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "tokens=${tokens}"
   echo "depth=${depth}"
@@ -121,35 +130,72 @@ print(len(json.load(open('${golden}'))['rows']))
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint 2>/dev/null | tail -1)"
 } > "${meta}"
 
-echo "=== e84_ledger_run: ${arm}: mtp-verify --golden (${tokens} tokens, depth ${depth}) ==="
+echo "=== e84_ledger_run: ${label}: mtp-verify --golden (${tokens} tokens, depth ${depth}) ==="
 export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
-MLXFAST_E84_TRACE=1 .build/release/mlxfast-swift mtp-verify \
+.build/release/mlxfast-swift mtp-verify \
   --mtp-head "${head_dir}" \
   --golden "${golden}" \
   --tokens "${tokens}" \
-  --mtp-depth "${depth}" > "${out}" 2> "${out_dir}/${arm}-stderr.txt"
+  --mtp-depth "${depth}" > "${out}" 2> "${out_dir}/${label}-stderr.txt"
 status=$?
 
 {
   echo "verify_exit=${status}"
   echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "trace=$(grep -c '^\[e84\]' "${out_dir}/${arm}-stderr.txt")"
 } >> "${meta}"
-grep '^\[e84\]' "${out_dir}/${arm}-stderr.txt" >> "${meta}"
+grep '^mtp-verify: ' "${out_dir}/${label}-stderr.txt" >> "${meta}"
 
-if ((status == 0)); then
-  python3 -c "
+python3 - "${out}" "${label}" "${expect_mismatch}" "${status}" <<'PY'
 import json
-d = json.load(open('${out}'))
-led = d.get('row_ledger', [])
-print('e84_ledger_run: ${arm}: rows=%d declared=%s matched=%s parity=%s' % (
-    len(led), d.get('declared_rows_total'), d.get('all_tokens_matched'),
-    d.get('parity_all_ok')))
-if not led:
-    raise SystemExit('e84_ledger_run: ${arm}: NO row_ledger in the report')
-"
-  status=$?
+import sys
+
+path, label, expect_mismatch, verify_exit = (
+    sys.argv[1], sys.argv[2], sys.argv[3] == "1", int(sys.argv[4]))
+
+report = None
+try:
+    report = json.load(open(path))
+except Exception as exc:
+    read_error = str(exc)
+
+if report is None:
+    if expect_mismatch and verify_exit != 0:
+        print("e84_ledger_run: %s: positive control OK, the gate refused the "
+              "corrupted golden and wrote no report (verify_exit=%d)"
+              % (label, verify_exit))
+        raise SystemExit(0)
+    raise SystemExit(
+        "e84_ledger_run: %s: unreadable report (%s)" % (label, read_error))
+
+ledger = report.get("row_ledger", [])
+matched = report.get("all_tokens_matched")
+print("e84_ledger_run: %s: rows=%d declared=%s matched=%s parity=%s "
+      "verify_exit=%d" % (label, len(ledger), report.get("declared_rows_total"),
+                          matched, report.get("parity_all_ok"), verify_exit))
+
+if expect_mismatch:
+    if matched is False or verify_exit != 0:
+        print("e84_ledger_run: %s: positive control OK, the gate rejects a "
+              "corrupted golden" % label)
+        raise SystemExit(0)
+    raise SystemExit(
+        "e84_ledger_run: %s: POSITIVE CONTROL FAILED, the gate accepted a "
+        "corrupted golden (all_tokens_matched=%s, verify_exit=%d)"
+        % (label, matched, verify_exit))
+
+if not ledger:
+    raise SystemExit("e84_ledger_run: %s: NO row_ledger in the report" % label)
+if matched is not True:
+    raise SystemExit(
+        "e84_ledger_run: %s: all_tokens_matched=%s" % (label, matched))
+PY
+check=$?
+
+# In positive-control mode a non-zero CLI exit is the expected outcome, so the
+# Python verdict is the only one that counts.
+if ((expect_mismatch)) || ((status == 0)); then
+  status="${check}"
 fi
 
-echo "e84_ledger_run: ${arm}: status=${status} ledger=${out}"
+echo "e84_ledger_run: ${label}: status=${status} ledger=${out}"
 exit "${status}"

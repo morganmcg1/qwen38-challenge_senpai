@@ -10,8 +10,10 @@
 #    only to produce reference rows, so no number it reports is used as timing.
 # 2. One untimed 512-token `mtp-verify --golden` pass per arm against that one
 #    golden, which reports exact tokens, post-EOS continuation and row-ledger
-#    closure, plus the path trace that proves which projection and replay path
-#    each arm actually took.
+#    closure.
+# 3. One positive control: the tip arm against a golden with one reference
+#    token changed. Four passing arms prove nothing unless the gate that
+#    passed them is able to fail.
 set -uo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -53,6 +55,36 @@ for arm in base a b ab; do
     echo "e84_exact_session: ledger ${arm} failed; continuing" >&2
   }
 done
+
+# Positive control. Without it, four passing arms are equally consistent with
+# "the mechanisms are exact" and "the gate cannot fail". One reference token is
+# changed in the middle of the window and the tip arm is judged against that
+# corrupted golden; the control passes only when the gate rejects it.
+mutated="${E84_ROOT}/golden-mutated-row256.json"
+python3 - "${golden}" "${mutated}" <<'PY'
+import json
+import sys
+
+src, dst = sys.argv[1], sys.argv[2]
+g = json.load(open(src))
+i = 256
+old = g["rows"][i]["sequential_argmax"]
+new = old + 1
+g["rows"][i]["sequential_argmax"] = new
+g["rows"][i]["top2_tokens"][0] = new
+g["emitted_tokens"][i] = new
+json.dump(g, open(dst, "w"))
+print("e84_exact_session: mutated golden row %d token %d -> %d" % (i, old, new))
+PY
+
+echo "e84_exact_session: === $(date -u +%Y-%m-%dT%H:%M:%SZ) positive control ===" >&2
+E84_GOLDEN="${mutated}" \
+E84_LEDGER_LABEL="ab-mutated-golden" \
+E84_EXPECT_MISMATCH=1 \
+  research/e84_ledger_run.sh ab --tokens "${tokens}" || {
+  failed=$((failed + 1))
+  echo "e84_exact_session: the positive control failed; the gate may be vacuous" >&2
+}
 
 echo "e84_exact_session: done, ${failed} failed arm(s)" >&2
 exit 0
