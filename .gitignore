@@ -101,6 +101,7 @@ research/e57-artifacts/bitwise-whole-vs-chunked.json
 # them carry the durable evidence: exit codes, worker digests, and verdicts.
 research/e59-artifacts/final-chain-logs/
 research/e69-artifacts/*.log
+research/e76-artifacts/*.log
 
 # E77 driver appends to this log while a session runs; the durable copy
 # is committed as research/e77-artifacts/rung1-<tag>.log after the session.

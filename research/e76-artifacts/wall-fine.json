@@ -1,0 +1,697 @@
+{
+  "budget": {
+    "applegpu_g16s": {
+      "at_live_floats": 68,
+      "first_live_float_count_with_a_frame": 72,
+      "max_registers_without_a_frame": 96
+    },
+    "applegpu_g17s": {
+      "at_live_floats": 92,
+      "first_live_float_count_with_a_frame": 96,
+      "max_registers_without_a_frame": 124
+    }
+  },
+  "live_floats": [
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100
+  ],
+  "sweep": {
+    "applegpu_g16s": {
+      "k_s100": {
+        "registers": 96,
+        "spill_bytes": 192,
+        "spill_mirror": 192,
+        "text_bytes": 3882,
+        "text_sha8": "1614b55d"
+      },
+      "k_s56": {
+        "registers": 84,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 1756,
+        "text_sha8": "14f01a36"
+      },
+      "k_s57": {
+        "registers": 74,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2798,
+        "text_sha8": "2d54222f"
+      },
+      "k_s58": {
+        "registers": 82,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2176,
+        "text_sha8": "383d8c15"
+      },
+      "k_s59": {
+        "registers": 79,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2894,
+        "text_sha8": "86c25c72"
+      },
+      "k_s60": {
+        "registers": 87,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 1894,
+        "text_sha8": "3488cbe0"
+      },
+      "k_s61": {
+        "registers": 88,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2970,
+        "text_sha8": "f7dbb7c8"
+      },
+      "k_s62": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2334,
+        "text_sha8": "993a6859"
+      },
+      "k_s63": {
+        "registers": 85,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3074,
+        "text_sha8": "822cd12d"
+      },
+      "k_s64": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2048,
+        "text_sha8": "33d16e15"
+      },
+      "k_s65": {
+        "registers": 85,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3224,
+        "text_sha8": "441ca8fb"
+      },
+      "k_s66": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2540,
+        "text_sha8": "33a3e958"
+      },
+      "k_s67": {
+        "registers": 88,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3280,
+        "text_sha8": "28912014"
+      },
+      "k_s68": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2190,
+        "text_sha8": "d2882088"
+      },
+      "k_s69": {
+        "registers": 91,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3426,
+        "text_sha8": "d91fc3df"
+      },
+      "k_s70": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2682,
+        "text_sha8": "b111bafa"
+      },
+      "k_s71": {
+        "registers": 90,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3528,
+        "text_sha8": "93a8228b"
+      },
+      "k_s72": {
+        "registers": 96,
+        "spill_bytes": 32,
+        "spill_mirror": 32,
+        "text_bytes": 2480,
+        "text_sha8": "6dead686"
+      },
+      "k_s73": {
+        "registers": 92,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3632,
+        "text_sha8": "c362e1bc"
+      },
+      "k_s74": {
+        "registers": 96,
+        "spill_bytes": 48,
+        "spill_mirror": 48,
+        "text_bytes": 2980,
+        "text_sha8": "7f2678d7"
+      },
+      "k_s75": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3750,
+        "text_sha8": "ef478300"
+      },
+      "k_s76": {
+        "registers": 96,
+        "spill_bytes": 48,
+        "spill_mirror": 48,
+        "text_bytes": 2668,
+        "text_sha8": "588353e9"
+      },
+      "k_s77": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3898,
+        "text_sha8": "2be40bd1"
+      },
+      "k_s78": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3070,
+        "text_sha8": "31bc835d"
+      },
+      "k_s79": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3948,
+        "text_sha8": "030a3781"
+      },
+      "k_s80": {
+        "registers": 96,
+        "spill_bytes": 48,
+        "spill_mirror": 48,
+        "text_bytes": 2746,
+        "text_sha8": "ec345b7c"
+      },
+      "k_s81": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4112,
+        "text_sha8": "58c64005"
+      },
+      "k_s82": {
+        "registers": 96,
+        "spill_bytes": 80,
+        "spill_mirror": 80,
+        "text_bytes": 3354,
+        "text_sha8": "182316be"
+      },
+      "k_s83": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4252,
+        "text_sha8": "a558f8c3"
+      },
+      "k_s84": {
+        "registers": 96,
+        "spill_bytes": 128,
+        "spill_mirror": 128,
+        "text_bytes": 3116,
+        "text_sha8": "11557a2d"
+      },
+      "k_s85": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4346,
+        "text_sha8": "3d46b51c"
+      },
+      "k_s86": {
+        "registers": 96,
+        "spill_bytes": 80,
+        "spill_mirror": 80,
+        "text_bytes": 3578,
+        "text_sha8": "ac2371f9"
+      },
+      "k_s87": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4448,
+        "text_sha8": "8669fb2a"
+      },
+      "k_s88": {
+        "registers": 96,
+        "spill_bytes": 80,
+        "spill_mirror": 80,
+        "text_bytes": 3128,
+        "text_sha8": "9f84ec18"
+      },
+      "k_s89": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4604,
+        "text_sha8": "71685cd5"
+      },
+      "k_s90": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 3576,
+        "text_sha8": "05cc4599"
+      },
+      "k_s91": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4678,
+        "text_sha8": "119f50ce"
+      },
+      "k_s92": {
+        "registers": 96,
+        "spill_bytes": 208,
+        "spill_mirror": 208,
+        "text_bytes": 3746,
+        "text_sha8": "e122765f"
+      },
+      "k_s93": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4814,
+        "text_sha8": "f95955b5"
+      },
+      "k_s94": {
+        "registers": 96,
+        "spill_bytes": 32,
+        "spill_mirror": 32,
+        "text_bytes": 3796,
+        "text_sha8": "473db48c"
+      },
+      "k_s95": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4906,
+        "text_sha8": "a9de1105"
+      },
+      "k_s96": {
+        "registers": 96,
+        "spill_bytes": 208,
+        "spill_mirror": 208,
+        "text_bytes": 3816,
+        "text_sha8": "3e801ecc"
+      },
+      "k_s97": {
+        "registers": 96,
+        "spill_bytes": 112,
+        "spill_mirror": 112,
+        "text_bytes": 5212,
+        "text_sha8": "9c782394"
+      },
+      "k_s98": {
+        "registers": 96,
+        "spill_bytes": 128,
+        "spill_mirror": 128,
+        "text_bytes": 4114,
+        "text_sha8": "efc6336f"
+      },
+      "k_s99": {
+        "registers": 96,
+        "spill_bytes": 112,
+        "spill_mirror": 112,
+        "text_bytes": 5394,
+        "text_sha8": "383be895"
+      }
+    },
+    "applegpu_g17s": {
+      "k_s100": {
+        "registers": 126,
+        "spill_bytes": 80,
+        "spill_mirror": 80,
+        "text_bytes": 3494,
+        "text_sha8": "4e4f2f77"
+      },
+      "k_s56": {
+        "registers": 84,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 1716,
+        "text_sha8": "f1939d91"
+      },
+      "k_s57": {
+        "registers": 74,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2596,
+        "text_sha8": "0dd063c2"
+      },
+      "k_s58": {
+        "registers": 82,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2084,
+        "text_sha8": "52061c68"
+      },
+      "k_s59": {
+        "registers": 79,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2680,
+        "text_sha8": "c092b20a"
+      },
+      "k_s60": {
+        "registers": 87,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 1852,
+        "text_sha8": "4678be63"
+      },
+      "k_s61": {
+        "registers": 88,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2750,
+        "text_sha8": "ea715a00"
+      },
+      "k_s62": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2234,
+        "text_sha8": "d98e3901"
+      },
+      "k_s63": {
+        "registers": 85,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2852,
+        "text_sha8": "2a6f7bf6"
+      },
+      "k_s64": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2010,
+        "text_sha8": "3afdc696"
+      },
+      "k_s65": {
+        "registers": 85,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2986,
+        "text_sha8": "df04d854"
+      },
+      "k_s66": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2434,
+        "text_sha8": "522cc3b2"
+      },
+      "k_s67": {
+        "registers": 88,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3036,
+        "text_sha8": "105b3036"
+      },
+      "k_s68": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2148,
+        "text_sha8": "f5090d75"
+      },
+      "k_s69": {
+        "registers": 91,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3174,
+        "text_sha8": "ba861a06"
+      },
+      "k_s70": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2566,
+        "text_sha8": "4175282f"
+      },
+      "k_s71": {
+        "registers": 90,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3262,
+        "text_sha8": "93bce319"
+      },
+      "k_s72": {
+        "registers": 103,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2302,
+        "text_sha8": "847257f1"
+      },
+      "k_s73": {
+        "registers": 92,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3364,
+        "text_sha8": "a8988847"
+      },
+      "k_s74": {
+        "registers": 103,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2702,
+        "text_sha8": "527313d2"
+      },
+      "k_s75": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3474,
+        "text_sha8": "21739227"
+      },
+      "k_s76": {
+        "registers": 107,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2412,
+        "text_sha8": "6e9e9015"
+      },
+      "k_s77": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3658,
+        "text_sha8": "a0f40983"
+      },
+      "k_s78": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2964,
+        "text_sha8": "9ba54fb5"
+      },
+      "k_s79": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3722,
+        "text_sha8": "1bf9f9d4"
+      },
+      "k_s80": {
+        "registers": 109,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2568,
+        "text_sha8": "a31875c1"
+      },
+      "k_s81": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3884,
+        "text_sha8": "94ecdfa7"
+      },
+      "k_s82": {
+        "registers": 111,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3054,
+        "text_sha8": "75cad743"
+      },
+      "k_s83": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4026,
+        "text_sha8": "8893f1d4"
+      },
+      "k_s84": {
+        "registers": 113,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2712,
+        "text_sha8": "92933aa1"
+      },
+      "k_s85": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4122,
+        "text_sha8": "7ee78f19"
+      },
+      "k_s86": {
+        "registers": 123,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3210,
+        "text_sha8": "a68b28b4"
+      },
+      "k_s87": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4234,
+        "text_sha8": "fe1c341b"
+      },
+      "k_s88": {
+        "registers": 112,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2858,
+        "text_sha8": "8e4bccce"
+      },
+      "k_s89": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4382,
+        "text_sha8": "f1c95588"
+      },
+      "k_s90": {
+        "registers": 98,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3478,
+        "text_sha8": "72236022"
+      },
+      "k_s91": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4456,
+        "text_sha8": "e6407266"
+      },
+      "k_s92": {
+        "registers": 124,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 2976,
+        "text_sha8": "8395e0d0"
+      },
+      "k_s93": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4590,
+        "text_sha8": "66e211a6"
+      },
+      "k_s94": {
+        "registers": 102,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3634,
+        "text_sha8": "edd6674a"
+      },
+      "k_s95": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4676,
+        "text_sha8": "1cee74b3"
+      },
+      "k_s96": {
+        "registers": 126,
+        "spill_bytes": 32,
+        "spill_mirror": 32,
+        "text_bytes": 3256,
+        "text_sha8": "a3547644"
+      },
+      "k_s97": {
+        "registers": 98,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4784,
+        "text_sha8": "0787168c"
+      },
+      "k_s98": {
+        "registers": 106,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 3770,
+        "text_sha8": "4952cad0"
+      },
+      "k_s99": {
+        "registers": 100,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 4888,
+        "text_sha8": "73765b82"
+      }
+    }
+  }
+}
