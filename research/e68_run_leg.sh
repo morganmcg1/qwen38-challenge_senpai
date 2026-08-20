@@ -128,13 +128,21 @@ if ((selected != 1 || total_selectors != 1)); then
   exit 2
 fi
 
-# The `ship` arm must be byte-identical to the base. Any diff means the
-# selector rewrote something it should not have, and the control is not a
-# control.
+# The `ship` arm must leave the tree byte-identical to the commit this leg
+# started from, which already carries the depth-price patch at arm `ship`.
+# Any diff means the selector rewrote something beyond its one line.
+#
+# Comparing against `base_sha` instead would be wrong and was: the E68 patch
+# adds the price vectors to EVERY arm, so the `ship` file legitimately differs
+# from the advisor branch by the whole patch. That check failed all three
+# `ship` legs of the first rung-3 session and left the experiment with no
+# control. Behavioural identity between `ship` and the tip is proven by
+# QwenMTPDepthPriceTests, which compares cumulative cost bit for bit, the
+# threshold expression, and the whole walk on a dense acceptance grid.
 if [[ "${arm}" == "ship" ]] \
-   && ! git diff --quiet "${base_sha}" -- "${SCORED_FILES[@]}"; then
-  echo "e68_run_leg: ship arm differs from ${base_sha}; not a control" >&2
-  git diff --stat "${base_sha}" -- "${SCORED_FILES[@]}" >&2
+   && ! git diff --quiet "${pre_patch_sha}" -- "${SCORED_FILES[@]}"; then
+  echo "e68_run_leg: ship arm differs from ${pre_patch_sha}; not a control" >&2
+  git diff --stat "${pre_patch_sha}" -- "${SCORED_FILES[@]}" >&2
   exit 2
 fi
 

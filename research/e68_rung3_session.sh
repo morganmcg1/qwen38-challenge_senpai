@@ -72,9 +72,10 @@ for spec in "${legs[@]}"; do
   # dropping it from the analysis later.
   [[ "${tag}" == *warmup* ]] && extra+=(--warmup)
   echo "e68_rung3_session: === $(date -u +%Y-%m-%dT%H:%M:%SZ) leg ${tag} (${arm}) ===" >&2
-  if ! research/e68_run_leg.sh "${arm}" "${tag}" \
-       "${passthrough[@]+"${passthrough[@]}"}" "${extra[@]+"${extra[@]}"}"; then
-    rc=$?
+  rc=0
+  research/e68_run_leg.sh "${arm}" "${tag}" \
+    "${passthrough[@]+"${passthrough[@]}"}" "${extra[@]+"${extra[@]}"}" || rc=$?
+  if ((rc != 0)); then
     failed=$((failed + 1))
     echo "e68_rung3_session: leg ${tag} failed with ${rc}; continuing" >&2
   fi
