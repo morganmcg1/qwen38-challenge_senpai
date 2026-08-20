@@ -40,7 +40,15 @@ while [[ "$#" -gt 0 ]]; do
 done
 mkdir -p "${artifacts}" "${build}"
 
-macmon_bin="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
+macmon_bin="${MLXFAST_MACMON_BIN:-}"
+if [[ -z "${macmon_bin}" ]]; then
+  for macmon_cand in "${HOME}/bin/macmon" "$(command -v macmon 2>/dev/null || true)"; do
+    if [[ -n "${macmon_cand}" && -x "${macmon_cand}" ]]; then
+      macmon_bin="${macmon_cand}"
+      break
+    fi
+  done
+fi
 sample_thermal() {
   [[ -x "${macmon_bin}" ]] || { echo "unavailable"; return 0; }
   "${macmon_bin}" pipe -s1 2>/dev/null \
