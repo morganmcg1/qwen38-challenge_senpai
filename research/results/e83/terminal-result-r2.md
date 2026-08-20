@@ -118,6 +118,30 @@ adds only `research/CURRENT_RESEARCH_STATE.md`, `senpai/campaign-ledger.md` and
 `senpai/notes/r1-compose-on-8e83c6b3.md`, so no build input moves. The organizer
 concat block lands near line 1736, far from every E83 region.
 
+### (b2) Reconciling the rebase with the published head
+
+`submit_experiment_result` requires the local head to fast-forward the
+published head, and a rebase breaks that by construction. The first submission
+attempt failed with `local head does not fast-forward remote head`.
+
+The fix keeps every published commit. A merge with `-s ours` records the
+published head `8fb1a9bf7feddf4acd989a58fe1336d264173efe` as a second parent and
+keeps the rebased tree byte for byte:
+
+```
+git merge -s ours 8fb1a9bf7feddf4acd989a58fe1336d264173efe
+tree(HEAD) == tree(dfde3813112f5c3a9102eeeb930cd96d4dfd1807)   YES
+8fb1a9b is an ancestor of HEAD                                 YES
+07c75a70 is an ancestor of HEAD                                YES
+git diff 07c75a70 HEAD -- Sources/ Vendor/ mtp-head.manifest.json mtp-head/
+                                                               prints nothing
+```
+
+The published branch therefore fast-forwards again, the merge base with
+`senpai/qwen38-mtp-r1` is `07c75a70`, and the pull-request diff is the
+research-only file set. Nothing published is discarded and nothing is
+force-overwritten.
+
 ### (c) The four gate numbers on the rebased tree
 
 ```
