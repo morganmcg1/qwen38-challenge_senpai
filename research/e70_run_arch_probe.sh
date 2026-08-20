@@ -32,6 +32,16 @@ cells=(
   dense_gemv_m1 dense_matmul_m511
 )
 
+# The M = 9/10/12 routing ladder over every scored affine-4 linear. It must
+# stay in step with routingLadderCells() in the Swift suite.
+for family in 6144_5120 17408_5120 5120_5120 5120_14336 5120_16480 \
+  5120_34816 5120_248320
+do
+  for m in 9 10 12; do
+    cells+=("route_k${family%_*}_n${family#*_}_m${m}")
+  done
+done
+
 mkdir -p research/out/e70-rung1
 
 # Cmlx searches for mlx.metallib next to the RUNNING executable, and the xctest

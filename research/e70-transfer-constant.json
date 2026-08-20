@@ -1,0 +1,62 @@
+{
+  "board_evidence": {
+    "prompt_keys": [
+      "00142a44",
+      "192fb621",
+      "3b10cb4d",
+      "4b9e88cd",
+      "919318e1",
+      "a2ea8b60",
+      "c1ec5866",
+      "ea82dcb5"
+    ],
+    "ranked_serial_leg_max_s": 19.7346630144,
+    "ranked_serial_leg_min_s": 19.3157350912,
+    "ranked_serial_leg_s": 19.453770437734185,
+    "serial_spt_max_s": 0.0385442637,
+    "serial_spt_mean_s": 0.03799564538619958,
+    "serial_spt_min_s": 0.0377260451,
+    "serial_spt_samples": 3768,
+    "serial_spt_sd_pct": 0.22253559296568023,
+    "serial_spt_sd_s": 8.455383476131636e-05,
+    "source": "ranked_stream_ab_board.json",
+    "submissions": 471
+  },
+  "corrected_transfer_constants": {
+    "R_change_pct": -10.383635762682982,
+    "R_leg_local_over_ranked": 1.91626671648655,
+    "arithmetic_bound_divisor": 3.9555070020612577,
+    "arithmetic_bound_multiplier_R_over_tau": 0.25281209197174703,
+    "latency_bound_multiplier": 1.91626671648655,
+    "ledger_R": 2.1383,
+    "ledger_arithmetic_bound_divisor": 3.55,
+    "ledger_latency_bound_multiplier": 2.1383,
+    "ledger_transfer_contrast": 3.55,
+    "local_serial_leg_s": 37.2786128,
+    "prefill_over_round_transfer_contrast": 4.309060669683973,
+    "tau_depth0_round": 1.7590391493456015,
+    "tau_prefill": 7.579806414879483
+  },
+  "falsification_of_30_402": {
+    "board_serial_spt_samples_at_or_below_implied": 0,
+    "board_serial_spt_samples_total": 3768,
+    "implied_K_over_leg_pct": 3.266937301898814,
+    "implied_serial_leg_s": 16.091524,
+    "implied_serial_spt_s": 0.0314287578125,
+    "ledger_observed_K_over_leg_pct": [
+      2.7,
+      2.72
+    ],
+    "shortfall_vs_board_mean_pct": 17.283263666011432,
+    "verdict": "refuted: 30.402 ms requires a pinned serial leg of 16.092 s, which no board sample reaches, and it puts K/leg at 3.27 % against the 2.70-2.72 % the ledger itself observes in the same item"
+  },
+  "harness": "ranked",
+  "note": "188(A) defines R as a LEG ratio ('Let L be leg time') but then computes it from two ROUND times. Even with a correct ranked round the two are not equal, because prefill transfers at 7.58x and decode at 1.76x. The leg ratio is computed here from the board mean and the local leg, and it is a third number again.",
+  "ranked_depth0_serial_round_ms": {
+    "from_beagle_receipt": 36.9573355,
+    "from_board_and_ledger_K_high": 36.96888757369958,
+    "from_board_and_ledger_K_low": 36.96400476119958,
+    "ledger_10453_claim": 30.402
+  },
+  "what": "provenance decision between the 30.402 ms ledger constant and the 36.957 ms receipt derivation for the ranked depth-0 serial decode round"
+}

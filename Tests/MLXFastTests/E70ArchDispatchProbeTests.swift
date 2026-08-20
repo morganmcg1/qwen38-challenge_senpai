@@ -176,6 +176,33 @@ private enum ArchProbe {
         return QuantizedWeight(wq: wq, scales: scales, biases: biases)
     }
 
+    /// The packed form built directly, without the dense matrix it would come
+    /// from. `lm_head` is N = 248320 by K = 5120, and quantizing that honestly
+    /// needs a 5 GB float32 temporary. Kernel selection reads only the shapes,
+    /// so random packed bits answer the routing question at 1/8 of the memory.
+    static func syntheticQuantizedWeight(rows: Int, columns: Int) -> QuantizedWeight {
+        let packed = MLXRandom.randInt(Int32(0) ..< 65536, [rows, columns * bits / 32])
+            .asType(.uint32)
+        let scales = MLXRandom.normal([rows, columns / groupSize]).asType(.bfloat16)
+        let biases = MLXRandom.normal([rows, columns / groupSize]).asType(.bfloat16)
+        eval(packed, scales, biases)
+        return QuantizedWeight(wq: packed, scales: scales, biases: biases)
+    }
+
+    /// `quantized.cpp:776-810`, transcribed. Returns the route a transposed
+    /// non-batched quantized matmul takes once `M >= vector_limit`.
+    static func splitKRoute(m: Int, n: Int, k: Int) -> (splitK: Int, route: String) {
+        let bm = 32, bn = 32
+        let nTiles = (n + bn - 1) / bn
+        let mTiles = (m + bm - 1) / bm
+        let kAlign = max(groupSize, 32)
+        var splitK = min(max(1, 512 / (nTiles * mTiles)), k / kAlign)
+        while splitK > 1 && k % (splitK * kAlign) != 0 {
+            splitK -= 1
+        }
+        return (splitK, splitK <= 1 ? "qmm" : "qmm_t_splitk")
+    }
+
     /// A KV cache hands attention a row slice of one preallocated buffer, which
     /// `kv_copy_unless` accepts without a copy. Building the keys the same way
     /// keeps the probed call faithful to the scored one.
@@ -304,6 +331,69 @@ private func probeCells() -> [ProbeCellSpec] {
             rung0Local: "use_nax false -> steel_matmul_regular_axpby -> steel_gemm_fused_nt*",
             rung0Forced: "use_nax true -> steel_matmul_regular_axpby_NAX -> steel_gemm_fused_nax_nt*",
             makeBody: denseCell(m: 511)))
+    cells.append(contentsOf: routingLadderCells())
+    return cells
+}
+
+/// The advisor's `qmm_splitk` table, turned into live dispatcher evidence.
+///
+/// At M = 10 the verify route leaves `dispatch_qmv`, and the claim under test
+/// is that it then forks: wide-output families fall to `qmm()` and reach the
+/// `quantized.cpp:697` nax gate, while narrow-output families take
+/// `qmm_t_splitk`, which is not a nax kernel on any host. M = 9 is the control
+/// below the cliff and M = 12 the control above it.
+private func routingLadderCells() -> [ProbeCellSpec] {
+    // Every scored affine-4 linear, named as it appears in the checkpoint.
+    let families: [(name: String, k: Int, n: Int)] = [
+        ("gdn.out_proj and fa.o_proj share this shape", 6144, 5120),
+        ("mlp.down", 17408, 5120),
+        ("square control", 5120, 5120),
+        ("fa.qkv packed", 5120, 14336),
+        ("gdn.in_proj fused", 5120, 16480),
+        ("mlp.gate_up fused", 5120, 34816),
+        ("lm_head", 5120, 248320),
+    ]
+    var cells: [ProbeCellSpec] = []
+    for family in families {
+        for m in [9, 10, 12] {
+            let route = ArchProbe.splitKRoute(m: m, n: family.n, k: family.k)
+            let belowLimit = m < 10  // vector_limit is 10 on every audited arm
+            let local: String
+            let forced: String
+            if belowLimit {
+                local = "M < vector_limit 10 -> dispatch_qmv -> affine_qmv_fast*"
+                forced = "identical: vector_limit is 10 on gen 16 and gen 17"
+            } else if route.route == "qmm" {
+                local = "M >= 10 -> qmm_splitk -> split_k \(route.splitK) -> qmm() "
+                    + "-> affine_qmm_t*"
+                forced = "same route, but the :697 gate is open -> affine_qmm_t_nax*"
+            } else {
+                local = "M >= 10 -> qmm_splitk -> split_k \(route.splitK) "
+                    + "-> affine_qmm_t_splitk*"
+                forced = "identical: qmm_t_splitk never reads is_nax_available()"
+            }
+            cells.append(
+                ProbeCellSpec(
+                    id: "route_k\(family.k)_n\(family.n)_m\(m)",
+                    site: "S4 quantized.cpp:697 via the qmm_splitk fork at :776-810",
+                    shape: "quantizedMatmul M=\(m) K=\(family.k) N=\(family.n) "
+                        + "affine g64 b4 transposed -- \(family.name)",
+                    rung0Local: local,
+                    rung0Forced: forced,
+                    makeBody: {
+                        let w = ArchProbe.syntheticQuantizedWeight(
+                            rows: family.n, columns: family.k)
+                        let x = MLXRandom.normal([m, family.k]).asType(.bfloat16)
+                        eval(x)
+                        return {
+                            quantizedMatmul(
+                                x, w.wq, scales: w.scales, biases: w.biases,
+                                transpose: true, groupSize: ArchProbe.groupSize,
+                                bits: ArchProbe.bits)
+                        }
+                    }))
+        }
+    }
     return cells
 }
 

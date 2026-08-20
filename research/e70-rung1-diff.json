@@ -1,0 +1,206 @@
+{
+  "cells_changed": [
+    "qmm_m10",
+    "qmm_m511",
+    "qmm_m512",
+    "sdpa_prefill_512",
+    "dense_matmul_m511"
+  ],
+  "cells_not_captured": [],
+  "forced_arch": "applegpu_g17s",
+  "forced_arm_failures": [],
+  "harness": "arch-probe",
+  "real_arch": "applegpu_g16s",
+  "rows": [
+    {
+      "cell": "qmv_m1",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=1 K=5120 N=14336 affine g64 b4 transposed",
+      "site": "S3 quantized.cpp:84 get_qmv_batch_limit"
+    },
+    {
+      "cell": "qmv_m5",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=5 K=5120 N=14336 affine g64 b4 transposed",
+      "site": "S3 quantized.cpp:84 get_qmv_batch_limit"
+    },
+    {
+      "cell": "qmv_m9",
+      "forced_applegpu_g17s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=9 K=5120 N=14336 affine g64 b4 transposed",
+      "site": "S3 quantized.cpp:84 get_qmv_batch_limit"
+    },
+    {
+      "cell": "qmm_m10",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=10 K=5120 N=14336 affine g64 b4 transposed",
+      "site": "S4 quantized.cpp:697 qmm nax gate"
+    },
+    {
+      "cell": "qmm_m511",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=511 K=5120 N=14336 affine g64 b4 transposed",
+      "site": "S4 quantized.cpp:697 qmm nax gate"
+    },
+    {
+      "cell": "qmm_m512",
+      "forced_applegpu_g17s": [
+        "affine_qmm_t_nax_bfloat16_t_gs_64_b_4_bm64_bn64_bk64_wm2_wn2_alN_true_batch_0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
+      ],
+      "real_exit": 0,
+      "shape": "quantizedMatmul M=512 K=5120 N=14336 affine g64 b4 transposed",
+      "site": "S4 quantized.cpp:697 qmm nax gate"
+    },
+    {
+      "cell": "sdpa_prefill_512",
+      "forced_applegpu_g17s": [
+        "block_softmax_precise_bfloat16",
+        "steel_gemm_fused_nax_nn_bfloat16_bfloat16_bm64_bn128_bk256_wm2_wn4_has_batch_t_use_out_source_n_do_axpby_n_align_M_t_align_N_t_align_K_t",
+        "steel_gemm_fused_nax_nt_bfloat16_bfloat16_bm64_bn128_bk256_wm2_wn4_has_batch_t_use_out_source_n_do_axpby_n_align_M_t_align_N_t_align_K_t"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "block_softmax_precise_bfloat16",
+        "steel_gemm_fused_nn_bfloat16_bfloat16_bm64_bn64_bk16_wm2_wn2_has_batch_t_use_out_source_n_do_axpby_n_align_M_t_align_N_t_align_K_t",
+        "steel_gemm_fused_nt_bfloat16_bfloat16_bm64_bn64_bk16_wm2_wn2_has_batch_t_use_out_source_n_do_axpby_n_align_M_t_align_N_t_align_K_t"
+      ],
+      "real_exit": 0,
+      "shape": "SDPA qL=512 kL=512 head_dim=256 heads=24 kv=4 causal",
+      "site": "S13 sdpa.cpp:177 unreachable, S9/S7/S8 dense fallback"
+    },
+    {
+      "cell": "sdpa_vector_q1_k768",
+      "forced_applegpu_g17s": [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks"
+      ],
+      "real_exit": 0,
+      "shape": "SDPA qL=1 kL=768 head_dim=256 heads=24 kv=4 causal",
+      "site": "S14 sdpa.cpp:443 and S15 sdpa.cpp:748, both devc-keyed"
+    },
+    {
+      "cell": "sdpa_vector_q1_k1030",
+      "forced_applegpu_g17s": [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "real_exit": 0,
+      "shape": "SDPA qL=1 kL=1030 head_dim=256 heads=24 kv=4 causal",
+      "site": "S14 sdpa.cpp:443 and S15 sdpa.cpp:748, both devc-keyed"
+    },
+    {
+      "cell": "sdpa_vector_q5_k768",
+      "forced_applegpu_g17s": [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "real_exit": 0,
+      "shape": "SDPA qL=5 kL=768 head_dim=256 heads=24 kv=4 causal",
+      "site": "S14 sdpa.cpp:443 and S15 sdpa.cpp:748, both devc-keyed"
+    },
+    {
+      "cell": "sdpa_vector_q5_k1030",
+      "forced_applegpu_g17s": [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "real_exit": 0,
+      "shape": "SDPA qL=5 kL=1030 head_dim=256 heads=24 kv=4 causal",
+      "site": "S14 sdpa.cpp:443 and S15 sdpa.cpp:748, both devc-keyed"
+    },
+    {
+      "cell": "dense_gemv_m1",
+      "forced_applegpu_g17s": [
+        "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": false,
+      "real_applegpu_g16s": [
+        "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0"
+      ],
+      "real_exit": 0,
+      "shape": "matmul M=1 K=5120 N=2048 bfloat16",
+      "site": "S9 matmul.cpp:915, not reached"
+    },
+    {
+      "cell": "dense_matmul_m511",
+      "forced_applegpu_g17s": [
+        "steel_gemm_fused_nax_nt_bfloat16_bfloat16_bm64_bn128_bk256_wm2_wn4_has_batch_n_use_out_source_n_do_axpby_n_align_M_n_align_N_t_align_K_t"
+      ],
+      "forced_exit": 0,
+      "kernel_changed": true,
+      "real_applegpu_g16s": [
+        "steel_gemm_fused_nt_bfloat16_bfloat16_bm64_bn64_bk16_wm2_wn2_has_batch_n_use_out_source_n_do_axpby_n_align_M_n_align_N_t_align_K_t"
+      ],
+      "real_exit": 0,
+      "shape": "matmul M=511 K=5120 N=2048 bfloat16 (the MTP head prime island patch)",
+      "site": "S9 matmul.cpp:915 with S7 vs S8 tile parameters"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "harness": "ranked",
+  "inputs": {
+    "deficit_pct": 0.61,
+    "dilution": 0.9125,
+    "head_prime_ms": 29.215,
+    "leg_sd_pct": 1.092,
+    "local_leg_s": 17.349,
+    "local_prefill_s": 3.9938,
+    "r_round": 2.1383132688638904,
+    "score_sd_pct": 0.756,
+    "tau_prefill": 7.579806414879483
+  },
+  "reconstructed_ranked_leg": {
+    "ledger_round_share": 0.9125,
+    "ranked_leg_s": 6.7725704517836,
+    "ranked_prefill_s": 0.5269,
+    "ranked_round_share": 0.9222008831430852,
+    "ranked_rounds_s": 6.2456704517835995
+  },
+  "sdpa_fallback": {
+    "e65_roofline_attention_tflop": 0.052,
+    "gflop_per_seed": 103.079215104,
+    "note": "E65's roofline recorded 0.052 TFLOP of prefill attention, which is half of the dispatched work: the composed fallback runs both matmuls at full qL x kL and masks afterwards.",
+    "share_of_prefill_flop_pct": 0.41248185315726293,
+    "upper_bound_ms_at_measured_prefill_rate": 16.49267441664
+  },
+  "sites": {
+    "S4_decode_head_prime": {
+      "arithmetic": {
+        "delta_local_ms": 29.215,
+        "delta_ranked_ms": 3.8543200711102212,
+        "fraction_of_deficit": 0.0932962977440756,
+        "local_round_fraction_pct": 0.21875374386006946,
+        "naive_no_tau_score_pct": 0.16839587296097758,
+        "overstatement_factor": 2.958947083731199,
+        "ranked_leg_s": 6.7725704517836,
+        "route_a_direct_score_pct": 0.05691074162388611,
+        "route_b_ledger_score_pct": 0.0563120819780636,
+        "sd_of_published_score": 0.07527875876175412,
+        "tau": 7.579806414879483
+      },
+      "site": "quantized.cpp:697 qmm nax gate, plus matmul.cpp:915 for the bf16 island patch on the same 511 rows",
+      "steerable": false,
+      "steerable_reason": "quantized.cpp and matmul.cpp are not in benchmark.json editablePaths. Only the row count is editable, in Qwen36MTPBlockSession, and that is the queued E65 follow-up (a).",
+      "what_it_costs_locally": "the E65 round-1 d_submit2 excess"
+    },
+    "S9_prefill_sdpa_fallback": {
+      "arithmetic": {
+        "delta_local_ms": 16.49267441664,
+        "delta_ranked_ms": 2.175870136243081,
+        "fraction_of_deficit": 0.05266833691497327,
+        "naive_no_tau_score_pct": 0.09506412137091474,
+        "overstatement_factor": 2.9589470837311986,
+        "ranked_leg_s": 6.7725704517836,
+        "route_a_direct_score_pct": 0.03212768551813369,
+        "sd_of_published_score": 0.042496938516049854,
+        "tau": 7.579806414879483
+      },
+      "site": "matmul.cpp:915 family selector, with matmul.cpp:176 vs :373 tile parameters",
+      "steerable": false,
+      "steerable_reason": "mlx/fast.cpp and matmul.cpp are not editable. AttentionUtils.swift IS editable, but no chunking of a 512-row prefill query reaches a fused kernel: sdpa_full excludes head_dim 256 at every width.",
+      "what_it_costs_locally": "the 32 dense bf16 GEMMs MLX composes because head_dim 256 has no fused attention kernel"
+    }
+  },
+  "total_if_every_divergent_site_cost_went_to_zero_pct": 0.0890384271420198,
+  "width_shares": {
+    "applies_to_any_divergent_site": false,
+    "distance_to_the_cliff": "segmentedVerifyDepthCap 8 bounds M at 9. The widest scored width M = 9 carries 5.75 % of modelled ranked verify mass and sits one row below the cliff.",
+    "provenance": "MODELLED (e53 mixture fit, ledger 200(D):14830); item 184(D):10219 proved the ranked histogram is unidentifiable from public data",
+    "shares_pct": {
+      "4": 14.2,
+      "5": 24.1,
+      "6": 33.4,
+      "7": 12.2,
+      "8": 7.35,
+      "9": 5.75
+    },
+    "why": "Every divergent site fires either once per leg (the 511-row head prime) or inside the seed prefill. Neither is inside the per-round, width-dependent verify work, so the width mixture cannot change any number above. The one place the mixture would matter is the M = 10 qmv -> qmm cliff, which no scored width reaches today."
+  }
+}
