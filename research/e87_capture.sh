@@ -127,7 +127,7 @@ capture)
     golden="${ref_dir}/${name}_${steps}.json"
     [[ -s "${golden}" ]] || { echo "e87-capture: missing golden ${name}"; continue; }
     dest="${out}/verify/${name}.json"
-    if [[ -s "${dest}" && -s "${dump_dir}/${name}.tok.i32" ]]; then
+    if [[ -s "${dest}" ]] && compgen -G "${dump_dir}/${name}.pid*.tok.i32" >/dev/null; then
       echo "=== skip capture ${name} ==="; continue
     fi
     echo "=== capture ${name} (depth ${depth}, ${steps} tokens) ==="
@@ -147,17 +147,20 @@ capture)
              + " head=\(.head_provenance.sha256[0:12])"' "${dest}"
       # A silently empty dump is the failure mode this stage exists to avoid,
       # so treat it exactly like a failed leg rather than reporting success.
-      tok_bytes=$(stat -f%z "${dump_dir}/${name}.tok.i32" 2>/dev/null || echo 0)
-      x_bytes=$(stat -f%z "${dump_dir}/${name}.x.f32" 2>/dev/null || echo 0)
+      # The instrument shards by process, so sum the shards.
+      tok_bytes=$(cat "${dump_dir}/${name}".pid*.tok.i32 2>/dev/null | wc -c | tr -d ' ')
+      x_bytes=$(cat "${dump_dir}/${name}".pid*.x.f32 2>/dev/null | wc -c | tr -d ' ')
+      shards=$(ls "${dump_dir}/${name}".pid*.tok.i32 2>/dev/null | wc -l | tr -d ' ')
       if ((tok_bytes == 0)) || ((x_bytes != tok_bytes / 4 * 5120 * 4)); then
         echo "e87-capture: ${name} DUMP UNUSABLE (tok=${tok_bytes} x=${x_bytes})" >&2
-        rm -f "${dest}" "${dump_dir}/${name}.x.f32" "${dump_dir}/${name}.tok.i32"
+        rm -f "${dest}" "${dump_dir}/${name}".pid*
         continue
       fi
-      echo "e87-capture: ${name} dumped $((tok_bytes / 4)) samples in $(( $(date +%s) - start ))s"
+      echo "e87-capture: ${name} dumped $((tok_bytes / 4)) samples" \
+           "in ${shards} shard(s) in $(( $(date +%s) - start ))s"
     else
       mv "${log}" "${out}/verify/${name}.failed.log"
-      rm -f "${dest}" "${dump_dir}/${name}.x.f32" "${dump_dir}/${name}.tok.i32"
+      rm -f "${dest}" "${dump_dir}/${name}".pid*
       echo "e87-capture: ${name} FAILED" >&2
       tail -3 "${out}/verify/${name}.failed.log" >&2
     fi

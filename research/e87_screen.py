@@ -78,14 +78,23 @@ def domains() -> dict[str, str]:
 
 
 def seed_files(limit_seeds: int = 0) -> list[tuple[str, Path, Path]]:
-    out = []
-    for x_path in sorted(DUMP_DIR.glob("*.x.f32")):
-        name = x_path.name[: -len(".x.f32")]
-        tok_path = DUMP_DIR / f"{name}.tok.i32"
+    """One entry per dump shard, named by the seed that produced it.
+
+    The instrument shards by process, so a seed can appear more than once.
+    Shards are grouped by seed so a `--seeds` limit still means whole seeds.
+    """
+    by_seed: dict[str, list[tuple[str, Path, Path]]] = {}
+    for x_path in sorted(DUMP_DIR.glob("*.pid*.x.f32")):
+        stem = x_path.name[: -len(".x.f32")]
+        tok_path = DUMP_DIR / f"{stem}.tok.i32"
         if not tok_path.exists():
             continue
-        out.append((name, x_path, tok_path))
-    return out[:limit_seeds] if limit_seeds else out
+        seed = stem.rsplit(".pid", 1)[0]
+        by_seed.setdefault(seed, []).append((seed, x_path, tok_path))
+    seeds = sorted(by_seed)
+    if limit_seeds:
+        seeds = seeds[:limit_seeds]
+    return [shard for seed in seeds for shard in by_seed[seed]]
 
 
 def load_seed(x_path: Path, tok_path: Path) -> tuple[np.ndarray, np.ndarray]:

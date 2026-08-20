@@ -37,11 +37,15 @@ private enum E87HiddenDump {
         lock.lock()
         defer { lock.unlock() }
         if hiddenFile == nil {
+            // The CLI and the worker it spawns both inherit the gate, and both
+            // reach this readout. One shared path means whichever opens second
+            // truncates the other's samples, so shard by process.
+            let shard = "\(prefix).pid\(ProcessInfo.processInfo.processIdentifier)"
             let manager = FileManager.default
-            manager.createFile(atPath: prefix + ".x.f32", contents: nil)
-            manager.createFile(atPath: prefix + ".tok.i32", contents: nil)
-            hiddenFile = FileHandle(forWritingAtPath: prefix + ".x.f32")
-            tokenFile = FileHandle(forWritingAtPath: prefix + ".tok.i32")
+            manager.createFile(atPath: shard + ".x.f32", contents: nil)
+            manager.createFile(atPath: shard + ".tok.i32", contents: nil)
+            hiddenFile = FileHandle(forWritingAtPath: shard + ".x.f32")
+            tokenFile = FileHandle(forWritingAtPath: shard + ".tok.i32")
         }
         let row = hidden.reshaped([hidden.size]).asType(.float32).asArray(Float.self)
         let ids = proposal.reshaped([proposal.size]).asType(.int32).asArray(Int32.self)
