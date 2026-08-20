@@ -184,6 +184,20 @@ export MLXFAST_SWIFT_BIN="${repo_root}/research/capture-cli.sh"
 export MLXFAST_CAPTURE_DIR="${out}/reports"
 ((hot)) && export MLXFAST_LOCAL_COOL_GATE=0
 
+# Per-round records for the paired-median analysis. The path must be per leg:
+# the sink is opened O_APPEND once per process, so a shared path would
+# interleave every leg into one file with no way to attribute a round.
+#
+# MLX_QWEN_MTP_TRACE_SYNC_HEAD is deliberately NOT set. It drains the head
+# chain before the verify-build window, which is what makes it useful for
+# attributing draft cost, but its own doc comment records that it destroys the
+# head/verify overlap the round is built around. That would change round_us,
+# which is the quantity being compared here.
+if [[ "${E84_TRACE:-0}" == "1" ]]; then
+  export MLX_QWEN_MTP_TRACE=1
+  export MLX_QWEN_MTP_TRACE_PATH="${out}/round-trace.txt"
+fi
+
 ./benchmark-qwen-mtp.sh --local-iterate > "${out}/run.log" 2>&1
 rc=$?
 
