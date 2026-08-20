@@ -19222,6 +19222,15 @@ file, the tiers are 83 to 20, 90 to 18, 91 to 18, 98 to 16, 111 to 14.
 **90 and 91 sit in the same tier.** That single fact is what makes E76
 tractable, and it is why edward's target was corrected from 90 to 91.
 
+> 🔴 **RETRACTED by ledger 217.** E77 measured the local register file at
+> **384 KiB**, not 208 KiB, and the ranked file extrapolates to about 496 KiB.
+> The tier map in this paragraph is void. E77 also refuted the tier-staircase
+> form itself: within-tier spreads are 4x the tier-boundary steps, so time
+> rises smoothly in R with exponent `gamma = 0.01346` and a total spread of
+> 0.52 percent across the whole table. The measured register law from 214 --
+> register count is a pure function of the largest group in the partition --
+> still holds. Only the occupancy reading of it is retracted.
+
 Dominance, where a cell strictly dominates another if it has no more groups and
 no more registers:
 
@@ -19671,6 +19680,14 @@ Two groups at occupancy 20 exactly cancels one group at occupancy 18.
 
 ### (E) One parameter reproduces every ranked partition observation
 
+> 🔴 **RETRACTED IN FULL by ledger 217.** `eps = 0.111`, `kappa = 0.0600`, the
+> 208 KiB occupancy denominator, and every percentage in this section are void.
+> E77 measured the occupancy exponent at `gamma = 0.01346 +/- 0.00065` and the
+> total spread across the whole table at 0.52 percent. This model predicts the
+> crown's table is 5.73 percent slower; the ranked receipt measured it
+> 0.298 percent faster. Wrong sign, magnitude 19x too large. Read ledger 217
+> for the replacement, which is grid width, not registers.
+
 Take `occ(r) = floor(208 KiB / (128 * r))`, giving 83 -> 20, 90 -> 18,
 91 -> 18, 98 -> 16, 111 -> 14, and fit
 
@@ -19716,6 +19733,13 @@ occupancy does not have to cancel a doubling, only 11 percent.
 
 ### (F) The graded target, and what it is worth
 
+> 🔴 **RETRACTED IN FULL by ledger 217.** The graded register-tier prize table
+> in this section rests on `eps`, `kappa` and the 208 KiB file, all void. The
+> measured total occupancy spread available anywhere in the table is
+> 0.52 percent, and the M=6 inequality this section relies on needs 3.34 percent
+> where occupancy supplies 0.31 percent, short by 10.8x. The GPU work this
+> section proposed for edward was stopped before it ran.
+
 Tier boundaries on g17s: **92 registers or fewer gives occupancy 18, 93 to 97
 gives 17, 98 to 104 gives 16.** Modelled cell cost against the crown's cell:
 
@@ -19742,6 +19766,13 @@ ranked width time and sits two tiers above the crown, so NA=6 alone is about
 still worse than the crown's `[3,3]`, so 98 is not a partial win at M=6.
 
 ### (G) The richest local experiment available, which I had not seen
+
+> 🔴 **RETRACTED by ledger 217.** The predicted cross-host IPG inversion in this
+> section is a consequence of the void occupancy model. E77 measured the
+> relevant local contrasts directly: pooled M=6 IPG3->4 is 0.99962, M=7 IPG4->5
+> is 1.00822, M=8 IPG4->5 is 1.01231, and simdgroups per core is fixed at 32
+> across IPG 4, 5 and 6, so none of that movement is occupancy. This M=8 cell
+> was drafted for alphonse and never sent.
 
 E77 was assigned to measure the occupancy coefficient on M=8 with IPG in
 {4, 5, 6}, all two groups, expecting a local null. The model shows that one
@@ -19782,11 +19813,22 @@ Cross that with the E58 dispatch census
 dispatches). The largest untouched scored surface in the competition is the
 `copy` family, `copy.h`, `copy.metal` and `mlx-generated/copy.cpp`, at
 **17.0 percent of in-round dispatches**, 10,235 of the 13,554 inside
-`target_verify`. It is driven by `KVCacheSimple.update` growing its buffer with
-`zeros()` plus `concatenated()` every round. Zero promotions and zero campaign
-experiments have touched it, and the fix is available on the Swift side alone:
-over-allocate KV growth so the concat copies disappear. `gather_front.h` at
-2.15 percent bundles with it.
+`target_verify`. Zero promotions and zero campaign experiments have touched it.
+`gather_front.h` at 2.15 percent bundles with it.
+
+> 🔴 **CORRECTED by ledger 217(F).** This section originally said the 17 percent
+> was driven by `KVCacheSimple.update` growing its buffer with `zeros()` plus
+> `concatenated()` **every round**, and proposed over-allocating KV growth as
+> the fix. That is wrong. `KVCache.swift:388` already sets `step = 256`, so
+> growth fires **2 times per serial leg and 3 times per candidate leg**. The
+> census proves it exactly: `sn_copy = 96 = 3 events x 16 layers x 2 arrays` in
+> `target_verify`. KV growth is **288 of the 10,235 copies, 2.8 percent**, and
+> 0.36 percent of in-round dispatches. Over-allocating is worth about 368 MiB
+> and roughly 0.02 percent of a leg -- unmeasurable. The two largest identified
+> copy sources are the irreducible per-round KV row write (2,432 dispatches) and
+> the exactness-chunk SDPA output concatenation at `AttentionUtils.swift:141`
+> (**2,048 dispatches per leg, exactly 64 rounds x 16 layers x 2 concat
+> inputs**). The 17 percent figure itself stands, and remains unpriced in time.
 
 Also untouched and reachable: `rms_norm.metal` at 8.1 percent (AOT-only, needs
 `tools/build-mlx-metallib.sh`), `sdpa_vector.h` at 3.45 percent (AOT-only, with
@@ -19859,3 +19901,469 @@ created 2026-08-20T12:00:44Z, status `validating`, candidate commit `389676fb`,
 scored surface byte-identical to thorfinn's validated `4d467ca`. Slots: #77
 askeladd E74 (head moved, work in progress), #78 thorfinn E75 r2, #79 edward
 E76, #80 alphonse E77.
+
+## 217 A student refuted me inside an hour: the lever is grid width, not registers
+
+E74 (askeladd, PR #77) and E77 (alphonse, PR #80) are both merged. E77 destroyed
+the occupancy model I built in ledger 216 and handed to edward as an assignment.
+E74, run blind on a different Mac against a different question, supplied the
+replacement and validated it against the only ranked kernel receipt we own.
+
+This item records the retraction, the measurements, the replacement mechanism,
+the two assignments they generated, and one further correction to 216(H) that
+came from a separate source review.
+
+### (A) What I retract, in full
+
+| retracted | replacement |
+|---|---|
+| Register file `B_R = 208 KiB` | **384 KiB measured locally**; about 496 KiB extrapolated for the ranked host (`124 x 128 x 32`) |
+| `eps = 0.111` group-count penalty | void; fitted on the wrong occupancy denominator |
+| `kappa = 0.298 / 4.97 = 0.0600` | void; converts a void modelled quantity |
+| The graded register-tier prize table sent to edward, "worth -0.38 percent vs the crown" | void; total occupancy spread anywhere in the table is **0.52 percent** |
+| The tier-staircase functional form | **rejected**; time rises smoothly, nearly linearly in R |
+| The predicted cross-host IPG inversion at M=8 (216(G)) | **rejected** by direct measurement |
+
+Ledger 215(B), 216(E), 216(F) and 216(G) now carry inline retraction markers.
+The measured register law of ledger 214 survives untouched: register count is a
+pure function of the largest group in the partition, independent of M and of
+group count, 19 of 19 cells with no exceptions. Only my occupancy reading of
+that law is retracted.
+
+I sent the retraction to edward before he spent a GPU session on it
+(`#issuecomment-5356011622`) and to alphonse on PR #80
+(`#issuecomment-5356149211`). I had drafted an M=8 five-arm cell for alphonse
+that assumed the refuted model. **I did not send it.**
+
+### (B) E77, the decisive negative
+
+W&B https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/3ugpmkvo (`3ugpmkvo`, rung 1) and
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jdlqnbwd (`jdlqnbwd`, rung 2).
+
+Session identity: base `41ddc183817979be8d2f0817d79f98b2ddefb984`, host
+`ip-10-231-2-22`, gated with `cool_gate_passed_real_gate=true`, 36.40 to
+66.04 C, 52 arms x 4 shapes x 15 reps = **6240 timed legs**, session null
+median 0.0193 percent, p90 0.0742 percent, max 0.2396 percent, probe digest
+`fae1c6b75f04878364a25edecaecc05caf376f5c61435d198046e6e469fc7bf3`. **Zero
+candidate files changed.** Verdict on the hypothesis: **not useful**. Verdict
+on the experiment: the most decisive negative the campaign has produced.
+
+Real simdgroups per core, `S = floor(B / (128 * R))`:
+
+| largest group | local R | local S | local frame | ranked R | ranked S |
+|---:|---:|---:|---:|---:|---:|
+| 2 | 70 | 43 | 0 | 83 | 47 |
+| 3 | 93 | 33 | 0 | 90 | 44 |
+| 4 | 94 | 32 | 0 | 91 | 43 |
+| 5 | 95 | 32 | 0 | 98 | 40 |
+| 6 | 96 | 32 | **16 B spill** | 111 | 35 |
+
+Occupancy exponent, `Omega(S) = (32/S)^gamma`:
+
+**`gamma = +0.01346 +/- 0.00065`**, 108 arms, log-rms 0.00125, twenty standard
+errors from zero. Shape dependent: `mlp.down` 0.00511, `lm_head` 0.01477,
+`mlp_gate_up` 0.01524, `gdn out_proj` 0.01874.
+
+1. **The staircase is rejected.** Within-tier spreads (median 0.0869 percent)
+   are 4x the median tier-boundary step (+0.0218 percent).
+2. **Total occupancy spread available anywhere in the table is 0.52 percent.**
+   My M=6 inequality needs 3.34 percent; occupancy supplies 0.31 percent.
+   Short by **10.8x**.
+3. **The ranked-ordering gate fails in sign** at M=5, 6 and 9. Required gamma:
+   2.9701 (+4519 sigma), 0.1639 (+230 sigma), 2.1610 (+3282 sigma). The model
+   predicts the crown's table is **5.73 percent slower**; the receipt measured
+   it **0.298 percent faster**. Wrong sign, magnitude 19x too large.
+4. **The expected local null is rejected.** Pooled ratios: M=6 IPG3->4
+   **0.99962**; M=7 IPG4->5 **1.00822**; M=8 IPG4->5 **1.01231**; M=9 IPG5->6
+   1.08240 (spill); M=8 IPG4->6 1.09663 (spill). `S` is fixed at 32 across IPG
+   4, 5 and 6, so **none of that movement is occupancy**. It is `q(IPG)`.
+5. **The measured `q` chain contradicts the fitted surface.** From `q(3) = 1`:
+   `q(4) = 1.000`, `q(5) = 1.010`, `q(6) = 1.095`, monotone increasing. The
+   fitted surface says 0.971, 0.976, 1.046. The surface is wrong by 3 percent
+   at M=6, which carries **33.4 percent** of the ranked round pool.
+6. **Spill costs about 0.015 percent per frame byte**, 0.052 percent per float,
+   roughly 3x steeper than the spill-free ladder. `<T,6,3>` frame-byte curve:
+   16 -> 1.00095, 16 -> 1.00180, 48 -> 1.00742, 112 -> 1.01672. **Any local arm
+   above 96 registers measures spill, not occupancy.**
+7. **The crown-free falsification.** At `gamma = 0.0135` the model puts M=7 and
+   M=8 at IPG 5, but our table **and** the crown both ship IPG 4. That removes
+   the "the crown is just noise" escape and lands the blame on the
+   **`lam(IPG)/x` core-count term**, not on occupancy.
+8. M=6 IPG3->4 hides opposite-sign shape movement: `lm_head` 0.99621 and
+   `mlp.gate_up_fused` 0.99739 speed up, while `linear_attn.out_proj` 1.00174
+   and `mlp.down` 1.00317 slow down. **Wide n speeds up, narrow n with large K
+   slows down.** Hold that thought for (D).
+
+Between-session replication against E73: absolute time median 0.085 percent,
+max 0.246 percent (n = 44); natural ratios median 0.042 percent, max
+0.222 percent (n = 20). Rung-2 refit: rel-rms 1.62 percent, median 1.06,
+max 6.46 (68x the E73 null); `rho0` 1.5133 ps/byte, `beta` 2.4698;
+`c(IPG)` = 2:1.0872, 3:1.0000, 4:0.9709, 5:0.9764, 6:1.0456, and `c * Omega_L`
+reproduces E73's `q(IPG)` to four decimal places. Rung 3 was **not started**;
+the pre-registered stop rule fired and he honoured it.
+
+### (C) E74, and a blind out-of-sample validation
+
+W&B https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0orl4f8u (`0orl4f8u`, main) and
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/g29ofoa9 (`g29ofoa9`, smoke).
+
+Ungated by permitted standing mode, ABBA-counterbalanced,
+`cool_gate_passed_real_gate=false` and `gate_qualified_for_timing=false`
+preserved verbatim, entry 51.09 to 64.42 C (spread 13.33 C), exit mean 73.33 C,
+130 blocks, 1300 s, seed 768, `correctness_prompts/public_longcopy_gate_english_512_1024.json`.
+Session cost curve agrees with E71 to better than 0.3 percent at every width;
+session null 0.464 ms. Zero candidate files changed.
+
+- **`H_null` is falsified.** `D/level` is 0.197 at M=6, **0.019** at M=7,
+  **0.096** at M=8, 0.029 at M=9, against `H_knee` [0.02, 0.17] and `H_null`
+  [0.20, 0.42]. E71 gave 0.256, 0.410, 0.224 at M=4, 5, 6.
+- Model-free statement: three small families sit at **32 threadgroups per core
+  at M <= 6**; the shipped table doubles groups at M=7, moving them to
+  **64 per core**; the contrast collapses from 0.197-0.410 to 0.019-0.096. The
+  knee is between 32 and 64 per core, at or just above 64.
+- Fit `ln(ms/GB) = a_M + A * max(0, ln(knee) - ln(working_tgs)) + B_w * (k_blocks - 96)`:
+  **knee 1558 working threadgroups = 77.9 per core**, 68 percent profile
+  interval [1344, 2357] = [67.2, 117.8] per core, **A = 0.2132**, log-rms
+  0.0456. Bootstrap p16/p50/p84 = 1305/1806/24346; the tail runs away, so read
+  the profile interval, not the bootstrap.
+- Residual RMS 0.478 ms = 1.03x the session null; 17 of 20 cells below the
+  null. All three misses are `mlp_gate_up`, all one sign (+1.483, +1.066,
+  +0.755 ms) - the only family whose n sits between the small three and
+  `lm_head`, so the hard knee has no shoulder.
+- Pre-registered table selection: `grid_responds_and_cliff_resolves` RMSE 0.223
+  beats `no_grid_term_and_cliff_resolves` 0.354,
+  `grid_responds_and_cliff_persists` 0.603 and
+  `no_grid_term_and_cliff_persists` 0.726. 🔴 **E71's M=6 reduction-depth cliff
+  RESOLVES**: `R` goes +1.293 at M=6 to +0.242..+0.507 at M=7, 8, 9. It was an
+  occupancy effect, not a fixed tax. **Any plan that budgets a fixed
+  reduction-depth tax at M >= 7 must be rechecked.**
+- 🔴 **The E33 sign-flip positive control FAILED.** The gate required the flip
+  to land in [3584, 4120]; the fit predicts 2719 converted, 2577 raw. Passing
+  knees [2285, 2677] overlap the profile interval only in [2285, 2357]. He
+  stopped as the stop rule required and did not retune. Kendall tau is still
+  +0.713 and +0.732 with **zero discordant pairs**. His untested explanation: a
+  shapes-only microbenchmark runs with the machine idle and needs more
+  threadgroups to saturate, while in situ the neighbouring work already fills
+  it - which predicts a **lower** in-situ knee, and that is the direction
+  observed (78 versus >= 114 per core).
+- Fitted knee 1558 sits **inside** ledger 157 R3's independent bracket
+  [1280, 2060]. Fitted `A` is 2.0x the prior `A` of 0.107.
+- **`G` is not identified by his design** - every family has
+  `out_vec_size >= 4096`, so one width has one IPG and the intercept absorbs
+  it. Imported from ledger 157 R1: `G = ln(1.1196) = 0.113`, also scored at 0
+  and at `ln(1.200) = 0.182`.
+- Rung 3: only three cells change, M4/M5/M6 in the 4096-8191 band, all 1 -> 2
+  groups. Whole-lever share of the verify-width tax: **+4.68 / +1.17 / -1.20
+  percent** at G = 0 / 0.113 / 0.182. **Sign not robust.** 47.5 percent of the
+  tax sits in the one band that moves.
+- Starvation boundary by core count: **n = 12464 at 20 cores, 14957 at 24,
+  24928 at 40.** The shipped `out_vec_size >= 4096` gate is therefore **3x too
+  low locally and 6x too low at 40 cores**, and **no scored shape is below 4096
+  at all.**
+- Recommendation: close the measurement, do not promote a kernel change. Carry
+  the knee as "77.9 per core, 68 percent interval [67.2, 117.8], not certified
+  across instruments".
+
+🔴 **The blind out-of-sample validation.** Askeladd priced his rung-3 lever at
+**+1.17 percent of the verify-width tax** at G = 0.113. The tax is 19.83 percent
+of the ranked candidate leg (ledger 211), so +1.17 percent x 12,645 ms =
+147.9 ms out of 63,766 ms = **+0.232 percent of the leg**. The arm-2 ranked
+receipt measured **-0.298 percent**. Same sign, agreement within 25 percent.
+Inverting, the measured 0.298 percent implies `G` about 0.09, consistent with
+his imported 0.113. **His base was `d19d6f5`, which predates ledger 212, so he
+had never seen the arm-2 receipt.** His rung-3 recommendation - M=4 to IPG 2,
+M=5 to IPG 3, M=6 to IPG 3 in the 4096-8191 band - is exactly the crown's cells
+at M=5 and M=6.
+
+This is the first time a local cost model has predicted a ranked receipt it had
+never seen. It is the strongest transfer evidence in the campaign.
+
+### (D) The replacement mechanism: per-shape grid starvation
+
+**The optimal inner-group count is not the same for every shape, and the
+dispatch table applies one group count to all of them.**
+
+E33 (ledger 137) already measured this and I had read it as noise. At M=6, the
+ratio of one group to two groups, with the traffic ratio held at exactly 1.3571
+for all eight families:
+
+| family | n | working TGs at 2 groups | 1-group / 2-group |
+|---|---:|---:|---:|
+| `head.lm_head` | 248320 | 62080 | **0.9830** |
+| `head.compact_draft_vocab` | 98336 | 24584 | **0.9868** |
+| `mlp.gate_up_fused` | 34816 | 8704 | **0.9941** |
+| `linear_attn.in_proj` | 16480 | 4120 | **0.9947** |
+| `full_attn.qkv_proj` | 14336 | 3584 | 1.0148 |
+| `full_attn.o_proj` | 5120 | 1280 | 1.0414 |
+| `linear_attn.out_proj` | 5120 | 1280 | 1.0492 |
+| `mlp.down` | 5120 | 1280 | **1.0592** |
+
+**The sign flips between 1792 and 2060 working threadgroups.** Wide shapes want
+fewer groups; narrow shapes want more. E77(B8) reproduced the same sign split
+independently at M=6 IPG3->4.
+
+Apply askeladd's knee to the three n = 5120 families. One group is
+`ceil(5120/8) = 640` threadgroups; two groups is 1280. Deficit falls from
+`ln(1558/640) = 0.889` to `ln(1558/1280) = 0.197`, so the saving is
+`0.2132 x 0.692 = 0.1475` log units, about **14.8 percent**, against an extra
+weight pass costing `G = 0.113`, about 12 percent. Splitting wins on the narrow
+shapes and loses on the wide ones. Three groups loses everywhere: the marginal
+gain is 4.2 percent locally and 8.6 percent at 40 cores, both below the
+12 percent pass cost.
+
+**Discipline note on core count.** My first framing said the ranked host wins
+with more groups because it has about twice the cores. That is only partly
+right and I am stating the correction here so nobody inherits the overclaim.
+For a shape deep below the knee the gain is a log-ratio and is **the same** at
+20 and at 40 cores. What core count actually changes is **which shapes are
+starved**: the boundary moves from n = 12464 to n = 24928, pulling
+`full_attn.qkv_proj` (14336) and `linear_attn.in_proj` (16480) across it. The
+mechanism is per-shape heterogeneity. Core count only moves the boundary.
+
+**The grid cannot be widened any other way.** The host grid is
+`grid_dims(M, ceil(N/8), B)` with `group_dims(32, 2, 1)` at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:249-254`,
+which is **not editable**. Changing `rows_per_simd` at `quantized.h:982` alone
+would leave output rows uncomputed. **Splitting the group count is the only
+editable grid lever.**
+
+Open and unchecked: whether the ranked g17s dispatches a `_nax` variant of the
+cross-row QMV. The gate is `backend/metal/quantized.cpp:697`. E71 established
+that kernel selection is identical on g16s and g17s at every width, but that
+was not re-verified for `_nax`.
+
+### (E) E78, the assignment this generated
+
+PR #81, askeladd, base `8d938c911df52b6a324f259a55dbaa75e508c822`.
+
+**Make the QMV inner-group count depend on `out_vec_size`.** The kernel already
+branches on `out_vec_size >= 4096` at `quantized.h:1917`, and `out_vec_size` is
+a uniform scalar argument, so a second threshold is free. Our complete diff
+against the crown, re-verified today, is 8 lines across 2 files: `NA <= 4` to
+`NA <= 6` at `:977`, and cases 5, 6 and 9 from IPG 3/3/3 to IPG 5/6/5.
+M = 3, 4, 7 and 8 are identical in both tables. The three cells that differ
+carry **63.25 percent** of the ranked round pool.
+
+Four arms: A = ship, B = crown, C = hybrid at threshold 24928, D = hybrid at
+threshold 8192. Predicted local ordering `D <= C < A < B`, with C or D beating
+A by about 1.0 to 1.9 percent on the M = 5, 6 and 9 rounds. The critical
+deliverable is the **per-family in-situ cell table** at both group counts, which
+is what transfers to the ranked host through the knee. The local A-versus-B
+ordering is known not to transfer: A wins locally by 0.6163 percent (E66), B
+wins on ranked by 0.298 percent (arm-2 receipt).
+
+E66 rung 2 proved changing IPG is **bit-identical, 12 of 12**. Any token
+mismatch is an implementation defect, not a refutation.
+
+### (F) The `copy` family is not what I said it was
+
+A separate source review refuted 216(H)'s mechanism. `KVCache.swift:388`
+already sets `step = 256`, so `zeros()` plus `concatenated()` fire **2 times
+per serial leg and 3 times per candidate leg**, not every round. The census
+proves it exactly: `sn_copy = 96 = 3 events x 16 layers x 2 arrays` in
+`target_verify`, and `sn_copybfloat16bfloat16 = 64 = 2 x 16 x 2` in the serial
+leg. KV growth is **288 of the 10,235 `target_verify` copies, 2.8 percent**, and
+0.36 percent of in-round dispatches. Over-allocating `step` is worth about
+368 MiB and roughly **0.02 percent of a leg** - about 40x below our best
+measurement floor. **Do not spend a student slot on it.** Fold it into another
+PR as a one-line free rider if convenient, and pick 1536 or 2048 rather than
+1024, because the candidate's transient width pushes `offset` past 1024 before
+the rollback trim.
+
+Cache classes on the scored path, now proven rather than assumed: 48 Gated
+DeltaNet layers hold `MambaCache` and have no KV buffer at all; 16
+full-attention layers plus 1 MTP-head layer hold `KVCacheSimple`
+(`Qwen35.swift:2812-2819`, `:3274-3277`). The trusted parent independently
+asserts this shape at `QwenRuntimeWorker.swift:242-294`.
+
+What actually drives the 10,235, by static attribution with two exact identity
+checks:
+
+| kernel | count | attribution | confidence |
+|---|---:|---|---|
+| `gg2_copybfloat16` | 2,432 | per-round FA KV in-place row write, `KVCache.swift:434-435`. Irreducible | high |
+| `g2_copybfloat16` | **2,048** | **exactness-chunk `concatenated([outA, outB], axis: 2)` at `AttentionUtils.swift:141`** - exactly 64 rounds (widths 6-9: 17+3+3+41) x 16 layers x 2 concat inputs | high, exact match |
+| `g3_copybfloat16` | 1,216 | 16 per round, one per FA layer; most likely the SDPA query materialization | medium |
+| `gg1_copyint32` | 571 | exactly the sum of widths; `concatenated([primary] + draftIdArrays, axis: 1)` at `Qwen36MTPBlockSession.swift:1299-1301` | high, exact match |
+| KV growth (`sn` + concat) | 288 | 3 events | high |
+| residual | 3,872 | unattributed by static reading | low |
+
+🔴 **The real untouched target in this family is the exactness-chunk
+concatenation at `AttentionUtils.swift:127-141`: 2,048 dispatches per leg,
+10x the KV-growth prize, squarely inside the editable surface, and never
+touched by any promotion or any campaign experiment.** It exists to preserve
+exactness above width 5, so removing it is a genuine research question rather
+than a free win.
+
+Also newly proven dead relative to the scored MTP decode, with zero references
+from the trusted harness or either session:
+`Sources/MLXFastModel/Qwen35{FastEngine,Cache,Block,Attention,Model}.swift`.
+That closes part of the ledger 181(I) "unverified reachability" debt. Do not
+send a student there.
+
+**Dispatch count is still not time.** The census `dispatch_ns` is host encode
+time (291.7 ns per dispatch, 0.24 percent of a round), so all 10,235 copies cost
+about 3.0 ms of host encode per leg and their GPU occupancy remains unknown. No
+per-family GPU-time census exists.
+
+### (G) The proposal head: the field's biggest lever, and the contract for taking it
+
+Cumulative gain by area across the 13 largest promotions: **PROPOSAL HEAD
++38.135 percent**, SCHEDULE +29.042, RUNTIME +21.678, KERNEL +16.131. All five
+declared heads are requantizations of the organizer's pinned bf16 tensors plus
+an added readout or precision islands. **In 579 scored submissions nobody has
+re-derived the weights.**
+
+**It is explicitly legal.** `.github/scripts/run-submission-static-review.sh:535`,
+in the do-not-fail list, names "re-quantised, **distilled, re-trained** or
+larger-rank heads" as legal when declared. `:510` adds "whatever its
+provenance". `mtp-head/` is excluded from the reviewed payload entirely
+(`:151-172`, `:279-293`), so the weights never reach the judge;
+`mtp-head.manifest.json` **is** reviewed, including its whole `note` string.
+
+Binding engineering constraints, from the three validators:
+
+1. **One single `model.safetensors`, at most 2 GiB**, at an immutable HF
+   revision or an R2 key. The runner curls exactly
+   `https://huggingface.co/${repo}/resolve/${rev}/model.safetensors`
+   (workflow `:2446-2449`). `in_branch` cannot deliver a 400 MB head because
+   submission archives are capped at 25 MiB.
+2. **Bare tensor names**, merged by the loader under `mtp.`. Any name already
+   starting `mtp.` is a hard refusal. Required: `fc.weight`, `norm.weight`,
+   `pre_fc_norm_hidden.weight` (`Qwen36MTPHeadAttachment.swift:259-264`). The
+   tensor-count check was deliberately relaxed; `qwenMTPHeadTensorCount = 15`
+   survives only in comments.
+3. The digest is a **tree digest**, not a blob digest:
+   `sha256` of the concatenation, over `LC_ALL=C`-sorted paths, of
+   `"<hex file sha256>  <relative path>\n"`, excluding a top-level `README.md`.
+   `research/fetch-declared-head.sh:42-59` reproduces it and is a working local
+   verifier.
+4. **A broken declaration is a refusal, never a silent fall back to the pinned
+   head** (`QwenMTPHeadDeclaration.swift:72-79`).
+5. Any tensor that lands as a **Module parameter** must be affine 4-bit
+   group-64 or unquantized bf16, because `(groupSize, bits, mode)` come from
+   the **backbone** config, never the head's. Two families escape this by being
+   side-channelled out of the Module system in `sanitize` before the quantize
+   walk: `mtp.draft_lm_head.*` (bit width inferred from shapes; this is how the
+   current 2-bit readout ships legally) and `mtp.precision_islands.*`.
+
+Architecture and size, derived and cross-checked: one decoder layer,
+**424,699,392 parameters**, and `424,699,392 x 2 = 849,398,784` equals
+`fixtures/qwen3_8_27b_mtp_track.json:127` `mtp_head.tensor_bytes` **exactly**.
+The current 427,742,600 B artifact decomposes as about 238.9 MB requantized
+affine-4/g64, **157,337,600 B** of `draft_lm_head` (`[98336, 320]` uint32 plus
+scales and biases `[98336, 80]` bf16), and about 31 MB of precision islands
+(that last figure inferred by subtraction, not measured).
+
+**Feasibility on a student Mac (M4 Pro, 48 GiB, 109 GiB free).** Memory is not
+the constraint; **teacher compute is**. Teacher-forced prefill is 7.83 ms per
+token, so one 960-minute run caches at most about **7.35 M tokens**; head-only
+training from cached hidden states runs at about 2.0 ms per token, so roughly
+4 epochs over that corpus fit in one run. On-policy self-generation costs
+67.3 ms per token and caps at 0.86 M tokens per run, so it can only be a small
+high-value fraction. Cached hidden states are 10.24 KB per token, so 7.35 M
+tokens is 75 GB - it fits, with little slack. The correct architecture is to
+**decouple**: one teacher pass writes (post-`model.norm` hidden, target argmax)
+pairs to disk, then the head trains standalone with the 27B unloaded. The
+hidden **must** be post-`model.norm`; `Qwen35.swift:2995-2999` warns that the
+wrong variant "fails SILENTLY: acceptance collapses toward zero".
+
+**Legality line.** Training on generic public text is permitted; the head is a
+fixed, input-independent, digest-pinned weight tensor, and
+`program.md:331` permits input-independent weight tables. The line is crossed
+by training on the public fixture prompts (hidden-prompt specialization), on
+GPQA benchmark items, or on anything derived from
+`Qwen36MTPReferenceSession.swift` outputs or goldens.
+
+**Literature, filtered to our regime (greedy, batch 1, linear chain, exact
+top-1 match).** Tree-structured headline numbers do not transfer; S2D measured
+Medusa falling below plain speculative decoding once tree attention is removed.
+The three approaches most likely to pay here:
+
+1. **FastMTP-style recursive fine-tune of the existing head** on a fixed
+   corpus, unrolled K steps, cross-entropy against the **target's argmax**, with
+   exponentially decayed position weights `beta` about 0.6 to 0.8. It is the
+   only published recipe whose setting matches ours end to end. Reported k=1
+   70 -> 81 percent, k=2 11 -> 56, k=3 2 -> 36. Note that **every recipe I found
+   down-weights deep positions; none reports a gain from up-weighting them.**
+   What fixes deep positions is unrolling, not reweighting.
+2. **Attack the 248,320-wide output projection.** FR-Spec (ACL 2025) cut LM-head
+   compute 75 percent for +1.12x on top of EAGLE-2, training-free; FastMTP
+   measured the acceptance cost of 152K -> 32K at only **0.068 tokens of
+   accepted length**. Caveat specific to us: under exact top-1 verification a
+   truncated draft vocabulary is a **hard ceiling** - a token we cannot propose
+   is a token we can never accept. SlimSpec-style low-rank factorisation of the
+   readout avoids that ceiling and is the durable answer.
+3. **Post-norm on the drafter hidden state between speculation steps.** A ~10
+   line change; reported 1.10x acceptance length, 1.18x long context, and - the
+   part that matters for a 48 GiB budget - a post-norm head trained at unroll
+   depth 2 generalises to depth 16 while pre-norm collapses to zero.
+
+Deprioritise: re-deriving the head against the 4-bit target's logits
+(measured at about +2.2 percent, and cheaply obtained as a stage-2 fine-tune),
+and draft-head quantization (contradictory evidence; probably the wrong
+bottleneck at V = 248,320).
+
+### (H) E79, the gate before that project
+
+PR #82, alphonse, base `8d938c911df52b6a324f259a55dbaa75e508c822`. **Zero
+candidate files.**
+
+Re-deriving head weights is a multi-day project and I will not start it on a
+hunch. E79 produces the numbers that decide it.
+
+The scheduler seeds `positionAcceptEMA = 0.85 * 0.98^i` at
+`Qwen36MTPBlockSession.swift:669`. **That is a prior and it has never been
+checked.** Ledger 207 botany: 85 rounds, 491 drafts proposed, 427 accepted, so
+5.78 proposed and 5.02 accepted per round. For a linear chain that requires
+per-position acceptance near **0.97**; the shipped prior sums to 2.96 at d = 5,
+low by a factor of 1.7. **If the measured curve really is flat near 0.97 out to
+position 8, acceptance has almost no headroom on the two scoring prompts, the
+retraining project should not start, and the binding constraint is cost.**
+
+🔴 **In a linear chain the per-position curve is fully determined by the joint
+distribution of (proposed width `d`, accepted prefix length `k`)**, because
+accepting position `i` implies accepting every earlier position:
+`p_i = P(k >= i) / P(k >= i-1)` over rounds with `d >= i`. If the existing
+trace already emits `d` and `k`, no new instrumentation is needed at all.
+
+Cost side: head weights at affine-4/g64 are about 238.9 MB and the draft
+readout is 157.3 MB, so at 226 GB/s the head step should be about 1.06 + 0.70 =
+1.76 ms against a measured isolated step of 2.590 ms. **The readout is about
+40 percent of the head's traffic.** On the ranked host an extra draft costs
+1.0525 ms, so at M=6 the head is 5.26 ms of a 60.5 ms round, 8.7 percent, and a
+40 percent readout cut would be about 1.6 percent of the round. The shipped
+`headStepCostRatio = 0.18` faces a measured marginal range of 0.078 to 0.391 -
+a factor of five - and pinning it down feeds E75 directly.
+
+### (I) What this changes about how I run the campaign
+
+1. **A model I hand a student must be checked against that student's own
+   measurement before they build on it.** When a measurement contradicts my
+   model, the measurement wins and I retract in writing before they spend GPU.
+   That worked here only because alphonse pre-registered a stop rule and
+   because I read his report before sending the next assignment.
+2. **Five consecutive experiments in the QMV cell-cost family (E71, E72, E73,
+   E74, E77) produced excellent physics and no shippable win.** That is a
+   plateau. E78 is the last experiment in that family that has a direct
+   submittable mechanism; E79 moves a student to a different tier entirely.
+3. **Do not price a mechanism from a model when a direct measurement is
+   available at similar cost.** I withheld the `q(IPG)` refit from alphonse for
+   exactly this reason: E78 measures the same quantity per family, in situ.
+4. **Read the old negatives again after a new instrument arrives.** E33's
+   per-family sign flip was measured long ago and sat unused in ledger 137 until
+   E74's knee gave it a mechanism.
+
+### (J) Campaign state
+
+- Advisor branch base before this item: `8d938c911df52b6a324f259a55dbaa75e508c822`.
+- Promoted crown unchanged: `9ad17378`, 3.25238228, Lieisyourlie, source
+  `bfab0de58d43453e506523707e1720a3485570f4` = `upstream/main`.
+- Arm 3, submission `2da69933-5202-4e0d-b336-c75945a45b9e`, candidate commit
+  `389676fb445064b25695c8c44f25f30e98faecbb`, still **`validating`** at
+  2026-08-20T13:01Z, created 12:00:44Z. One in-flight per account.
+- Merged this cycle: PR #77 (E74) at `b2b5d859`, PR #80 (E77) at `8d938c91`.
+  Both accepted on a moved base with recorded reasons.
+- Live slots: #78 thorfinn E75 r2 (schedule calibration), #79 edward E76 r1
+  (compile-only register close-out, premise retracted), #81 askeladd E78 r1
+  (width-dependent IPG), #82 alphonse E79 r1 (head economics census).
