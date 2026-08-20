@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- 2026-08-20, after ledger 199. Campaign base
+- 2026-08-20, after ledger 200. Campaign base
   `d2139c924c7a7d98ca6026eea63867c2776abbca`.
 - Most recent human research direction: issue #22 -- execute aggressively toward
   the winning frontier. Issue #31 is complete and closed. No new human direction
@@ -20,6 +20,60 @@
   lever on it is the number of weight streams per round.** Price every proposed
   mechanism against that first. If it does not reduce weight streams, reduce
   bytes, or act outside the target forward, it cannot pay.
+- 🔴🔴 Ledger 200 added a fifth, after I broke the fourth: **check every new
+  ratio against the master fact in the same document.** 199 published both the
+  97.3 % weight-streaming round and a claim that QMV is 33 % of the leg. Those
+  cannot both be true. The error under-priced the whole QMV programme by 2.4x.
+
+---
+
+## 🔴🔴🔴 Corrected pricing: one already-measured cell is 2.2x the crown deficit
+
+Ledger 200(A) retracts 199(C). The ranked leg elasticity is **not** a row of the
+width table. It is `psi_mtp_ranked_leg = 0.81665 .. 0.82589`, from
+`research/dilution_basis.py`, which also puts QMV at **86.7-90.5 % of the round**
+by three routes that share no input and agree to under 1 %. That is what the
+roofline fact required all along.
+
+**Ranked leg effect = (cell effect) x (ranked QMV width share) x 0.826.**
+
+| set | ranked QMV | candidate leg | published score | sd |
+|---|---|---|---|---|
+| `t6` alone, **already measured** | -1.403 % | -1.159 % | **+1.112 %** | **1.47** |
+| `t55` + `t6` | -3.40 % | -2.808 % | +1.942 % | 2.57 |
+| `rbx` + `t6` + `t55`, composed | -4.544 % | -3.753 % | **+2.431 %** | **3.22** |
+
+Closing the gap to the live crown needs **-0.646 %** of ranked QMV: a **-1.94 %**
+effect at M=6, or **-2.68 %** at M=5. **askeladd measured -4.20 % at M=6.**
+
+🔴 The campaign is no longer short of mechanism. It is short of two things: an
+end-to-end confirmation of `t6` on a leg (askeladd rung 3, running), and a
+publication channel (the `origin/main` blocker below).
+
+**Two pricing rules that follow.** `psi_mtp = 0.693391` is a *local
+prefill-inclusive leg* share; re-base it once with `(1-0.0875)/(1-0.234)` and do
+not also multiply by 0.9125, or the prefill is charged twice. And price ranked
+changes with the **ranked** width mixture: the local 512-token leg under-weights
+M=5 by **2.04x** and spends 62.6 % of its time at M=9, while the ranked pool is
+centred at M = 5.5 to 5.8.
+
+---
+
+## 🔴🔴 The width cliff has no mechanism, and that is now a tier-1 question
+
+askeladd's E61 rung 1b dose response settles what it is **not**. Raising the table
+register maximum by 15 to 20 at fixed routing costs between 0 and +0.38 %, against
+a -22 % bandwidth step from NA=5 to NA=6. **Occupancy is refuted by two orders of
+magnitude**, and with it the last motivation for the `rbx` family as a register
+lever.
+
+It is not DRAM saturation: NA=6 runs at 51.7 % of peak against NA=2's 98.2 %. It is
+not ALU saturation: NA=6 runs about 1.7 TFLOP/s against a scalar ceiling near 7.2.
+Both roofs are far away.
+
+An occupancy law fitted to the ladder (`bw x regs` constant to ±10 % across NA=3..7)
+was **refuted by that dose by a factor of 30** before it reached a student. Recorded
+in 200(C) so nobody rebuilds it. A direct dose beats a fit.
 
 ---
 

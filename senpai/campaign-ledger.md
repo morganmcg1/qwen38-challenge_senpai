@@ -14399,15 +14399,31 @@ Ranked value, using the beagle QMV share by width (M5 24.1 %, M6 33.4 %):
 | `t6` | −4.20 % (measured) | 33.4 % | −1.40 % |
 | both | | | **−3.40 % of ranked QMV** |
 
-QMV is 32.1–34.7 % of the MTP leg at M=6, so the pair is worth roughly **−1.1 % of
-the candidate leg**. Against the ranked instrument of 193 that is about 1.4 sd of a
-single run, and it moves P(crown) on one run from roughly 52 % to roughly 90 %.
+🔴 **RETRACTED BY 200(A). The next sentence is wrong; do not use it.** `32.1–34.7 %`
+is M=6's share of ranked QMV time, a width-mixture weight from the table above, not
+QMV's share of the MTP leg. The correct ranked leg elasticity is
+`psi_mtp_ranked_leg = 0.81665 .. 0.82589` from `research/dilution_basis.py`, and QMV
+is 86.7–90.5 % of the round. The pair is worth **−2.808 % of the candidate leg**,
+**+1.942 % published**, **2.57 sd** — the figure below is low by 2.4×. See 200(A)
+and 200(B).
+
+> QMV is 32.1–34.7 % of the MTP leg at M=6, so the pair is worth roughly **−1.1 % of
+> the candidate leg**. Against the ranked instrument of 193 that is about 1.4 sd of a
+> single run, and it moves P(crown) on one run from roughly 52 % to roughly 90 %.
 
 Both arms are already assigned: `t55` to thorfinn as rung-4 arm one, `t6` to
 askeladd. `t55` is a one-character change per twin, `case 5:` `<T,5,3,true>` →
 `<T,5,5,true>`, in `quantized.h` and the generated twin, then `twin_audit.py`.
 
 ### 199(D) 🔴 M=7 is a model refutation, and it is the strongest evidence yet for the occupancy cliff
+
+🔴 **PARTLY RETRACTED BY 200(C).** The M=7 model refutation stands: the model predicts
+−4.66 % and E61 measured +7.13 % slower, a signed disagreement from a model with zero
+residual elsewhere. The *occupancy* reading of it does not. askeladd's rung 1b dose
+response shows that +15 to +20 registers at the entry, at fixed routing, costs between
+0 and +0.38 %, against a −22 % bandwidth step. Occupancy is refuted by two orders of
+magnitude and the width cliff has no known mechanism. Read the register discussion
+below as a refuted hypothesis, not as support.
 
 The model says `t7` should **win**. Shipped `[4,3]` costs 10.7142, so single-stream
 M=7 needs only `bw(7) > 93.33 GB/s`. E61 measured **97.9 GB/s**, above break-even.
@@ -14641,3 +14657,460 @@ Open and now sharper:
 
 Unchanged and still first in the queue: submitting `d2139c92` the moment
 `origin/main` moves, and the draft shortlist K=32 → K=64 acceptance A/B.
+
+## 200. A factor-of-2.4 pricing error in 199(C) is retracted; the corrected elasticity makes one already-measured cell 2.2× the crown deficit; the occupancy model is refuted by a direct dose; `rbx` is an addressing win with a coverage map; and the QMV table has a substitution structure nobody had priced
+
+Item 199 built the weight-stream cost model. This item corrects a serious error in
+how 199 converted that model into ranked score, records askeladd's dose response
+that refutes the occupancy explanation before it cost a student slot, and states
+the substitution structure that determines which of the remaining QMV mechanisms
+can actually be banked together.
+
+Sources: askeladd E61 rung 1b (PR #64, `#issuecomment-5350300646`, job `ba5c1572`);
+askeladd E61 rung 1 (job `9c2b761b`, W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9qt2x4cp`,
+run `9qt2x4cp`); alphonse E62 rung 0 and rung 1b (PR #65,
+`#issuecomment-5350088915` and `#issuecomment-5350118832`); alphonse E60 (W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/5f9620v9`,
+run `5f9620v9`); E55 (W&B
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wxezisvs`,
+run `wxezisvs`); the E1 depth ladder
+(`research/results/qwen38-r1-e1-depth-cost-curve.md:1053`, `:1840`); and the
+in-repository authority `research/dilution_basis.py`. Scripts:
+`_advisor_scratch/qmv_repricing.py`, `_advisor_scratch/e1_calibration.py`,
+`_advisor_scratch/local_ranked_inversion.py`, `_advisor_scratch/rbx_composition.py`,
+`_advisor_scratch/e62_ceiling.py`.
+
+### 200(A) RETRACTION: 199(C) used a width-mixture weight as a leg elasticity
+
+Ledger 199(C) states, verbatim:
+
+> QMV is 32.1–34.7 % of the MTP leg at M=6, so the pair is worth roughly **−1.1 % of
+> the candidate leg**.
+
+That sentence is wrong. `32.1–34.7 %` is **M=6's share of ranked QMV time**, a
+width-mixture weight taken from the same table two paragraphs earlier. It is not
+QMV's share of the MTP leg. One row of a width histogram was read as a leg
+elasticity.
+
+The correct factor was already in the repository and already settled, in
+`research/dilution_basis.py`:
+
+```
+PSI_MTP            = 0.693391              QMV share of the LOCAL prefill-inclusive leg
+PSI_MTP_INTERVAL   = (0.692292, 0.694490)
+psi_mtp_ranked_leg = PSI_MTP * (1 - 0.0875) / (1 - 0.234) = 0.81665 .. 0.82589
+QMV share of the ROUND                                    = 0.86656 .. 0.90508
+```
+
+The round-share figure comes from three routes that share no input — `psi_mtp` over
+measured local prefill, `psi_mtp` over the E55 amplification, and E55's own round
+win divided by its width share and cell win — and they agree to under 1 %.
+
+199(A) should have caught this at the time it was written. If a decode round is
+97.3 % weight streaming, and QMV is the kernel that streams the weights, then QMV
+cannot be a third of the round. The roofline fact and the 33 % figure were
+published in the same item and are not mutually consistent. The error is a failure
+to check a new number against the master fact in the same document.
+
+`dilution_basis.py:52` had already recorded the general form of this mistake: every
+ranked price published through `psi_mtp × ... × 0.9125` is low by 1.29 to 1.31×,
+because multiplying a local-leg share by the ranked prefill dilution charges the
+prefill twice. 199(C) committed a second, larger version of the same class of error
+on top of it.
+
+### 200(B) The corrected pricing, and what it does to the campaign posture
+
+Ranked leg effect = (cell effect) × (ranked QMV width share) × 0.826.
+
+| set | ranked QMV | candidate leg | raw | published | sd |
+|---|---|---|---|---|---|
+| `t6` alone, **measured** | −1.403 % | −1.159 % | +1.172 % | **+1.112 %** | **1.47** |
+| `t55` + `t6`, as printed in 199(C) | −3.40 % | −2.808 % | +2.889 % | +1.942 % | 2.57 |
+| `rbx` + `t6` + `t55`, composed | −4.544 % | −3.753 % | +3.899 % | **+2.431 %** | **3.22** |
+
+199(C) printed +1.100 % published and 1.46 sd for the pair. The corrected figure is
++1.942 % and 2.57 sd. The published price was low by **2.4×**. The `published`
+column applies the ranked pricer kink at +1.0551 % with slope 0.483694 above it.
+
+Closing the gap to the live crown needs a **−0.646 %** reduction in ranked QMV,
+which is a **−1.94 %** effect at M=6 or a **−2.68 %** effect at M=5.
+
+🔴 **askeladd has already measured −4.20 % at M=6. One cell, already in hand, is
+2.2× what the whole campaign needs.** The campaign's binding constraint is no
+longer finding a mechanism. It is (i) confirming this cell end to end on a leg,
+and (ii) the submission blocker of 199(I).
+
+This also revises 199(J). "Bank mechanism size, not cadence" was written when the
+best pair looked like 1.4 sd against a 0.756 % single-run sd. At 2.57 sd for the
+same pair and 3.22 sd for the composed set, the mechanisms in flight are already
+comfortably above the noise. The rule stands as written, but it no longer implies
+that the current set is marginal.
+
+### 200(C) The register-occupancy explanation of the width cliff is refuted by a direct dose
+
+askeladd rung 1b, job `ba5c1572`, 8 legs, palindrome
+`shipped / ballast / shipped_rbx / t6_rbx / t6_rbx / shipped_rbx / ballast / shipped`,
+width 9, 21 reps, inner 10. Every leg passed the real 40 °C gate with an entry
+spread of 0.16 °C. All four arms route the measured cell to
+`qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>` on all eight scored shapes, and
+`row0_bitwise_matches_m1` is true with `row0_max_abs_delta_vs_m1 = 0` everywhere.
+
+| arm | table max regs | T(M=9) ms | same-arm spread | vs `shipped` |
+|---|---|---|---|---|
+| `shipped_rbx` | 125 | 159.52824 | 0.0017 % | **−2.7288 %** |
+| `shipped` | 129 | 164.00363 | 0.1292 % | — |
+| `ballast` | 144 | 164.62749 | 0.1923 % | +0.3804 % |
+| `t6_rbx` | 145 | 159.76224 | 0.0823 % | −2.5862 % |
+
+Two fixed-routing doses:
+
+| contrast | register change | cost | vs conservative null 0.1923 % |
+|---|---|---|---|
+| `ballast` − `shipped` | +15, dead `case 12` | +0.3804 % | 1.98×, marginal |
+| `t6_rbx` − `shipped_rbx` | +20, unreachable `case 6` | +0.1467 % | 0.76×, inside the null |
+
+Raising the table register maximum by 15 to 20 at fixed routing costs between 0 and
+about 0.4 %. The NA=5 → NA=6 bandwidth step is −22 %. The two quantities differ by
+about two orders of magnitude.
+
+**A model refuted before it was published.** The advisor had fitted an occupancy law
+to the E61 bandwidth ladder, using the scored register law
+`reg = 22 + 20·max(NA) + 4·[two distinct group sizes]`:
+
+| NA | bw GB/s | scored regs | bw × regs |
+|---|---|---|---|
+| 3 | 199.693 | 82 | 16,375 |
+| 4 | 175.238 | 102 | 17,874 |
+| 5 | 150.946 | 122 | 18,415 |
+| 6 | 117.8 | 142 | 16,728 |
+| 7 | 97.9 | 154 | 15,077 |
+
+`bw × regs` is constant to about ±10 % across a 2× range in both quantities, with
+NA=2 excluded because it already runs at 98.2 % of peak. The law predicts that
+dropping the M=6 cell to 110 registers lifts `bw(6)` to about 154 GB/s, worth
+roughly +2.5 % on the score. **The `ballast` dose falsifies it by a factor of 30.**
+The fit is recorded here as a refuted model so that nobody rebuilds it.
+
+Consequences:
+
+1. The occupancy motivation for the whole `rbx` family is dead, alongside the
+   ceiling-tax motivation already retired in 198.
+2. `t6_rbx` is dead as a concept: `<T,6,6>` has `TAIL = 0`, so there is no second
+   group width for `rbx` to remove, and the census puts it at 145 registers rather
+   than the ≤110 the occupancy rule required. askeladd's rung 3 correctly times
+   plain `t6`.
+3. **The width cliff still has no mechanism.** It is not DRAM saturation: NA=6 runs
+   at 51.7 % of peak against NA=2's 98.2 %. It is not ALU saturation either: at
+   NA=6 the kernel runs about 1.7 TFLOP/s against a scalar ceiling near 7.2. Both
+   roofs are far away and something else limits the wide cells. This is now the
+   largest unexplained quantity in the QMV table and it is worth an experiment in
+   its own right.
+4. 198(G)'s null-floor-versus-leg-separation rule is **narrowed to leg sessions**.
+   askeladd's microbenchmark contradicts it: his 3-apart pair is the tightest at
+   0.0017 % and his adjacent pair is not, so he correctly took the largest same-arm
+   spread as the conservative null. A microbenchmark with no resident model does not
+   carry the same thermal and allocator drift structure as a decode leg.
+
+### 200(D) `rbx` is an instruction-and-addressing win with a coverage map, and it is substitutive with `t55`
+
+`shipped_rbx` beats `shipped` by **−2.7288 %** at M=9 with identical routing and a
+replicate spread of **0.0017 %**, which is 1600× its own null and 14× the
+conservative session null. −4 registers buying −2.73 % while +15 registers cost
++0.38 % cannot be one mechanism.
+
+Mechanism, from thorfinn's E59 census: the shipped wrapper computes a runtime
+`first_m = tid.x * IPG` and derives the tail width from it, so the wide helper takes
+a runtime input-row base and both group widths live in one inlined body. The `rbx`
+form branches on `tid.x` first and passes a **literal** first input row.
+
+That yields a falsifiable coverage map. `rbx` can only remove work where two
+**distinct** group widths exist:
+
+| M | shipped groups | two distinct widths | ranked QMV share |
+|---|---|---|---|
+| 3 | `{3}` | no | 3.25 % |
+| 4 | `{4}` | no | 14.2 % |
+| **5** | `{3,2}` | **yes** | **24.1 %** |
+| 6 | `{3,3}` | no | 33.4 % |
+| **7** | `{4,3}` | **yes** | **12.2 %** |
+| 8 | `{4,4}` | no | 7.35 % |
+| **9** | `{5,4}` | **yes** | **5.75 %** |
+
+Coverage 42.05 % of ranked QMV; at −2.73 % that is **−1.148 % of ranked QMV**,
+comparable to the whole `t6` result. Prediction, pre-registered for thorfinn: about
+−2.7 % at M = 5, 7, 9 and neutral inside the replicate null at M = 3, 4, 6, 8.
+
+🔴 **The substitution nobody had priced.** `t55` turns M=5 from `{3,2}` into `{5}`.
+A single group has one width, so **after `t55`, `rbx` has nothing to remove at
+M=5**:
+
+| M=5 term | ranked QMV |
+|---|---|
+| `rbx` at M=5 | −0.658 % |
+| `t55` at M=5 | −2.651 % |
+
+`t55` dominates `rbx` at M=5 by **4.0×** and is also the smaller diff. The correct
+composition is `t55` at M=5, `t6` at M=6, and `rbx` at M=7 and M=9 only. Summing
+`rbx` over its full shipped coverage **and** `t55` double-counts M=5 and overstates
+the set by 0.658 points of ranked QMV.
+
+`t6` and `rbx` are purely additive: M=6 is `{3,3}`, one distinct width, so `rbx` is
+neutral there by its own mechanism.
+
+### 200(E) The E1 depth ladder validates the stream cost model on single-group cells and reveals a multi-group discount
+
+Verify path `V = vrfy_bld + eval_wall`, `M = d + 1`, compared with
+`cost(M, IPG) = Σ_g W / bw(NA_g)` at `W = 14.412 GB`:
+
+| M | groups | model µs | V measured µs | N | V / model |
+|---|---|---|---|---|---|
+| 1 | singlerow | — | 64,979 | 1778 | 221.8 GB/s |
+| 2 | singlerow | — | 69,509 | 129 | 207.3 GB/s |
+| 3 | `{3}` | 72,173 | 73,985 | 83 | **1.025** |
+| 4 | `{4}` | 82,244 | 89,610 | 61 | **1.090** |
+| 5 | `{3,2}` | 136,575 | 114,934 | 60 | 0.842 |
+| 6 | `{3,3}` | 144,345 | 131,749 | **2** | 0.913 |
+| 7 | `{4,3}` | 154,417 | 150,629 | 36 | 0.975 |
+| 8 | `{4,4}` | 164,489 | 167,074 | 7 | 1.016 |
+| 9 | `{3,3,3}` | 216,518 | 190,483 | 32 | 0.880 |
+
+1. **Single-group cells match the pure bandwidth model within 2.5 to 9.0 %.** This
+   is an independent validation of the byte census and the E61 ladder against data
+   neither was fitted to, at N = 61 and N = 83.
+2. **Multi-group cells measure below model.** An extra x-group costs only 64 to
+   94 % of a standalone stream, mean about 80 %, and the discount grows as the tail
+   group narrows. Likely mechanism: the x-groups are concurrent threadgroups
+   (`grid_dims(M, …)`, `first_m = tid.x*IPG`) reading identical weight addresses, so
+   later groups are partly cache-served.
+3. That discount **is** the mechanism behind the 0.276 realisation factor between
+   askeladd's measured `t6` of −4.20 % and the model's −15.24 %. The `{3,3}` cell
+   was never paying for two full streams, so removing one group recovers less than
+   the model says. The measurement is not a disappointment against the model; it is
+   the model correctly discounted by a real effect.
+4. Caveat: the M=6 row rests on **N = 2**. It must not be used as a baseline. The
+   M=5 and M=9 rows, at N = 60 and N = 32, are usable.
+
+Three constructions of the `t55` cell effect — realisation transfer on the pure
+model, the same absolute delta applied to measured `V`, and an additive bias on the
+new single-group cost — give −8.3 %, −9.0 % and −9.5 to −14.3 %. **Consensus band
+−8 % to −14 %, central about −11 %.** The robust quantity is the ratio: `t55` is
+**1.97× to 2.37× `t6`** at the cell level on every construction.
+
+### 200(F) The local leg under-weights M=5 by 2.04× relative to rank
+
+E60's 512-token candidate leg histogram priced with E1 round costs, M=9 corrected to
+its post-E55 value of 184,970 µs:
+
+| M | rounds | round µs | local leg share |
+|---|---|---|---|
+| 4 | 5 | 91,288 | 3.77 % |
+| **5** | 7 | 115,691 | **6.68 %** |
+| **6** | 17 | 134,668 | **18.89 %** |
+| 7 | 3 | 154,169 | 3.82 % |
+| 8 | 3 | 172,827 | 4.28 % |
+| 9 | 41 | 184,970 | 62.57 % |
+
+| | M5 | M6 | M5/M6 |
+|---|---|---|---|
+| local 512-token leg | 6.68 % | 18.89 % | 0.354 |
+| ranked | 24.1 % | 33.4 % | 0.722 |
+
+🔴 **Inversion factor 2.04×.** Locally `t55` is worth 0.70× to 0.93× `t6`; at rank it
+is worth 1.4× to 2.4×. The cause is that the local fixture decodes long, easy,
+high-acceptance text and spends 62.6 % of its time at width 9, while the ranked pool
+is centred at M = 5.5 to 5.8.
+
+Practical consequence, issued to thorfinn: a leg-level threshold is the wrong gate
+for a narrow-width cell. His `threshold_pct: -2.0` with a report-only band of
+`[-6.0, -2.0]` would have discarded `t55` at its predicted −0.735 % leg effect,
+which is t ≈ 15 against a position-balanced residual sd of 0.070 %. Replaced with a
+cell-level gate `implied_cell_pct = leg_pct / 0.0668`, advancing at ≤ −6.0 %.
+
+Second consequence: `m5_rbx` is about −0.16 % on his leg, at or just above his null,
+while askeladd's microbenchmark resolves the same effect at 1600 sigma. `rbx` was
+moved out of the leg session and into a width-ladder microbenchmark.
+
+**New rule: choose the instrument from the predicted effect size and the cell's
+share of the readout, not from habit. A whole-leg run cannot price a narrow-width
+cell.**
+
+### 200(G) alphonse's OPS census refutes the E60 byte-budget model, and the roofline caps all of E62 at −0.36 %
+
+Rung 0, 7 points plus the shipped setting, 74 rounds each,
+`research/e62-artifacts/e62-census.json`:
+
+| MB | OPS | dispatches | commits | disp/commit | commits/round |
+|---|---|---|---|---|---|
+| 512 | 50 | 119669 | 3866 | 30.95 | 52.2 ← shipped |
+| 4096 | 6 | 119657 | 25917 | 4.62 | 350.2 |
+| 4096 | 8 | 119663 | 21042 | 5.69 | 284.4 |
+| 4096 | 12 | 119669 | 13120 | 9.12 | 177.3 |
+| 4096 | 25 | 119669 | 7341 | 16.30 | 99.2 |
+| 4096 | 50 | 119669 | 3895 | 30.72 | 52.6 |
+| 4096 | 100 | 119669 | 1604 | 74.61 | 21.7 |
+| 4096 | 200 | 119669 | 1071 | 111.74 | 14.5 |
+
+Dispatch span 119,657 to 119,669 is **0.010 %** across a 24.2× change in commit
+count, so the work is invariant and only the commit granularity moves. `(512, 50)`
+against `(4096, 50)` is a genuine null control at 3866 against 3895 commits,
+confirming 198's finding that the byte budget is inert at the shipped setting.
+
+**198's fitted map `dispatches_per_commit = min(OPS/1.8369, MB/10.58)` is
+falsified**: prediction error 2.6 % to 41.4 %, with implied `ops_per_dispatch`
+wandering non-monotonically from 1.30 to 1.75. A session refit does not rescue it.
+The OPS → commit map is not log-linear. alphonse correctly replaced the covariate
+with **measured** commits per round and fits `seconds_per_token = b + c × commits_per_round`.
+
+**Census self-check.** `64 × 1706.5 + 10 × 1045.3 = 119,669.0` and `64 + 10 = 74`
+exactly reproduce his measurements from E60's independently measured
+dispatches-per-round. The leg is 64 serial rounds plus 10 candidate rounds, 6.4
+tokens per candidate round, 218.0 ms per candidate round. This replicates E60 to one
+part in 119,669.
+
+🔴 **The roofline caps the whole experiment.** From 199(A), the serial round is
+65.0094 ms of which 97.28 % is weight streaming, leaving a non-bandwidth budget of
+**1.770 ms per serial round**. At the shipped geometry a serial round issues
+`1706.5 / 30.95 = 55.14` commits, so the hard per-commit ceiling is
+
+```
+c ≤ 32.1 µs
+```
+
+Applied to the candidate share of commits (`1045.3 / 1617.15 = 0.6464`, window
+independent):
+
+| arm | disp/commit | candidate commits/round | Δ vs ship | max effect | max % |
+|---|---|---|---|---|---|
+| `ops6` | 4.62 | 226.3 | +192.5 | +6.18 ms | +2.83 % |
+| `ops12` | 9.12 | 114.6 | +80.8 | +2.59 ms | +1.19 % |
+| `ops25` | 16.30 | 64.1 | +30.4 | +0.97 ms | +0.45 % |
+| ship 512/50 | 30.95 | 33.8 | 0 | 0 | 0 |
+| null 4096/50 | 30.72 | 34.0 | +0.3 | +0.01 ms | +0.00 % |
+| `ops100` | 74.61 | 14.0 | −19.8 | −0.63 ms | −0.29 % |
+| `ops200` | 111.74 | 9.4 | −24.4 | −0.78 ms | **−0.36 %** |
+
+**E62's entire attainable upside is −0.36 %**, under half of one ranked sd. In
+alphonse's regression units the ceiling is `b ≤ 3.24e-06` s/token per pooled
+commit/round; his synthetic validation injected `2.0e-05`, which is 6.2× the
+physical ceiling, so it demonstrates unbiasedness rather than power. The experiment
+was redirected to closure: read `ops6` against `ship` first, because the low end
+carries about 8× the leverage.
+
+Hypothesis for the non-log-linear map, not yet tested: commits per round has a floor
+set by forced evaluation boundaries rather than by OPS
+(`device.cpp:484`, `:573-595`; `transforms.cpp:269-283` `MAX_ACTIVE_TASKS=10`; per
+round `Qwen36MTPBlockSession.swift:1067`, `:1068-1076`, `:1123`), giving about 7
+forced boundaries at M=6 against a measured 14.5 commits/round at OPS=200.
+
+### 200(H) The 96 GiB gate fires on the ranked runner. Wired residency is live at rank
+
+`Qwen36MTPBlockSession.swift:226` and `RuntimeStartupMemoryPolicy.swift:66` both gate
+on `physicalMemory >= (UInt64(96) << 30) = 103,079,215,104`. alphonse raised the
+concern that a "128GB" machine might report a decimal figure and miss the gate.
+
+Closed with no probe. The ranked runner is `m5-max-128gb-3`
+(`.github/workflows/qwen-mtp-ranked-benchmark.yml:196`, and the unit test
+`startupMemoryPolicyKeepsRanked128GiBProfile`). His own machine settles the
+reporting convention: a "48GB" Mac reports `hw.memsize = 51,539,607,552`, which is
+exactly `48 << 30`. Apple reports the binary figure, so a 128 GiB machine reports
+`137,438,953,472`, which is 1.333× the gate.
+
+**Wired residency and the 512/50 command-buffer defaults are live on the ranked
+runner**, confirming the assumption in 198(A). Neither 96 GiB predicate may appear in
+a submitted diff.
+
+### 200(I) A constant already at an endpoint of its own clamp is not a tunable
+
+alphonse killed E62 rung 1b correctly and for a generalisable reason.
+`wiredZHDefaultFraction = 1.0` at `Qwen36MTPBlockSession.swift:213` is consumed at
+`:243` through `min(max(fraction, 0.0), 1.0)`. The reachable set is `[0, 1]` and the
+shipped value is the upper endpoint. Every branch of an ON/OFF test therefore ends in
+"nothing ships", and lifting the clamp requires editing `:243`, which is not the line
+under test.
+
+**Rule: before costing a sweep over a constant, read its clamp. A constant already
+sitting at an endpoint of its own clamp is not a tunable.**
+
+Process note worth keeping: he nearly reported a false +5.8 % anomaly caused by
+reading `census.jsonl` while it was still being written. Read measurement artifacts
+only after the writer has closed them.
+
+### 200(J) Submission blocker unchanged; urgency raised
+
+`origin/main` is still `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`. Both gates in
+`senpai/submit-official.sh` still block `d2139c92`:
+
+- `:190` `git merge-base --is-ancestor "${base_sha}" "${main_sha}"` — fails, since
+  `d2139c92` is on the advisor branch only.
+- `:383` `git diff --quiet "${main_sha}" "${base_sha}" -- benchmark.json "${editable_paths[@]}"`
+  — fails on 4 files, 151 insertions and 83 deletions:
+  `Qwen36MTPBlockSession.swift` (159), `Qwen35.swift` (51),
+  `mlx-generated/quantized.cpp` (20), `kernels/quantized.h` (4).
+
+Clearing either gate requires a write to `origin/main`. No typed advisor tool writes
+`main` and raw pushes are denied, so this remains operator-owned. It must not be
+bypassed.
+
+200(B) raises the cost of the blocker. The base carries E55 and is a coin flip at
+P(crown) ≈ 52 %. `t6` alone, once confirmed end to end, is worth +1.112 % published
+and would take P(crown) to roughly 92 %; the composed set is worth +2.431 % and
+takes it to roughly 99.9 %. The campaign is no longer short of mechanism. It is short
+of a publication channel.
+
+### 200(K) The decisive open measurement
+
+Everything in 200(B) rests on QMV's share of the leg, which has never been checked
+end to end. askeladd's rung 3 measures it as a by-product. With cell effect
+`C = −4.20 %` and local width share `f6 = 0.2673`, the whole-leg effect `L` gives
+
+```
+implied psi_mtp_local_leg = L / (C × f6)
+```
+
+- `L ≈ −0.78 %` ⇒ elasticity 0.69, E48 confirmed independently, corrected price stands.
+- `L ≈ −0.35 %` ⇒ elasticity 0.31, the repricing is wrong and retracted 199(C) was
+  accidentally right.
+
+A position-balanced 512-token session has residual sd near 0.070 %, so the two
+outcomes are eleven sigma and five sigma apart respectively. This is the highest-value
+measurement running anywhere in the campaign, and it was pre-registered before the
+run.
+
+### 200(L) Standing rules added or changed by this item
+
+1. **Check every new ratio against the master fact in the same document.** A QMV
+   share of 33 % and a 97.3 % weight-streaming round cannot both be true. 199
+   published both.
+2. **`psi_mtp` is a local prefill-inclusive leg share.** To price a ranked change,
+   re-base once with `(1 − 0.0875)/(1 − 0.234)` and do not also multiply by 0.9125.
+   Never substitute `0.6736` for `0.693391`; they are different measured quantities
+   differing by the width-1 share.
+3. **Price ranked changes with the ranked width mixture**, not the local one. The
+   local leg under-weights M=5 by 2.04× and over-weights M=9 heavily.
+4. **Choose the instrument from the predicted effect size**, not from habit. A
+   whole-leg run cannot resolve a −0.16 % narrow-width cell; a QMV microbenchmark
+   resolves it at 1600 sigma.
+5. **A constant already at an endpoint of its own clamp is not a tunable.**
+6. **198(G)'s null-floor-versus-separation rule applies to leg sessions only.** On a
+   microbenchmark, take the largest same-arm spread as the conservative null.
+7. **Before composing two kernel mechanisms, check whether one destroys the
+   structure the other exploits.** `t55` and `rbx` are substitutive at M=5.
+8. **A direct dose beats a fit.** A five-point correlation at ±10 % was refuted by a
+   two-point dose by a factor of 30.
+
+### 200(M) Queue changes
+
+- **Elevated to first:** confirm `t6` end to end (askeladd rung 3), then `t55`
+  (thorfinn rung 4 leg session), then the `rbx` width ladder (thorfinn
+  microbenchmark).
+- **New tier-1:** explain the width cliff. It is neither DRAM-bound at 51.7 % of peak
+  nor ALU-bound at about 23 % of scalar peak, and occupancy is refuted. This is the
+  largest unexplained quantity in the QMV table.
+- **Retired:** the occupancy explanation of the width cliff; the `bw × regs` law;
+  `t6_rbx`; the E60 `min(OPS/1.8369, MB/10.58)` byte-budget map; E62 as a source of
+  submission-worthy gain, capped at −0.36 %.
+- **Unchanged and still blocked:** submitting `d2139c92` the moment `origin/main`
+  moves.
+- **Unchanged in the queue:** the draft shortlist K=32 → K=64 acceptance A/B, the
+  per-family width attribution via `QwenQMVCostCurveTests`, and the bundled GDN slot.
