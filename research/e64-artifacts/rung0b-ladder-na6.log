@@ -17,3 +17,7 @@ e64_cell_ab: arm ballast  max_threads=1024 tg_mem=0
 e64_cell_ab: session entry gpu_temp_c=39.15
 e64_cell_ab: forced parity vs plain: 0 differing of 208896
 e64_cell_ab: ballast parity vs plain: 0 differing of 208896
+e64_cell_ab: mlp.gate_up_fused inner=269 legs=42 entry=38.98C exit=48.81C
+e64_cell_ab: wrote research/e64-artifacts/rung0b-ladder-na6.json
+e64_rung0b exit_thermal gpu_temp=45.82881164550781C cpu_temp=41.39911651611328C gpu_power=0.009237721562385559W
+e64_rung0b finished=2026-08-20T05:39:16Z status=0
