@@ -108,7 +108,12 @@ def quantize(w_bf16_u16: np.ndarray):
     )
 
 
+# `raw` calls `mx.quantize` directly and reproduces the shipped codes byte for
+# byte. The module's own `mlx` path re-derives codes against BF16-rounded
+# scales and biases, which is very slightly better, so it is not usable as the
+# control arm for an island A/B.
 QUANTIZERS = {
+    "raw": None,
     "mlx": ("mlx",),
     "ls": ("ls",),
     "hqq": ("hqq",),
@@ -127,6 +132,10 @@ def quantize_search(w_bf16_u16: np.ndarray, methods: tuple[str, ...]):
     import mlx.core as mx
 
     from e82_quantizers import quantize as search
+
+    if methods is None:
+        q, s, b, deq = quantize(w_bf16_u16)
+        return q, s, b, deq, {"raw": None}, None
 
     w = mx.array(w_bf16_u16).view(mx.bfloat16).astype(mx.float32)
     r = search(w, methods=methods)
