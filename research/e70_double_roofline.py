@@ -68,19 +68,37 @@ for m in (1, 4, 5, 6, 9):
 lm = LOCAL_ROUND_MS[5] + (R_M - 5) * (LOCAL_ROUND_MS[6] - LOCAL_ROUND_MS[5])
 line(f"local M={R_M} (interp)", lm / 1000.0, R_M, PEAK_BW, PEAK_FLOPS)
 
+# Ledger 206(I): the receipt carries two builds. `ser_round` is the runner's
+# pinned BASELINE build; `cand_depth0` is our CANDIDATE build at depth 0, model-
+# fit from plutarch by research/prompt_round_reconstruction.py. Only
+# candidate:candidate ratios are transfer ratios.
+CAND_DEPTH0_MS = 30.402
+
 print("  -- ranked M5 Max (spec 614 GB/s; measured 3rd-party ~53 TFLOP/s bf16) --")
-line("ranked serial round", ser_round, 1.0, SPEC_M5MAX, 53e12)
-line("ranked beagle round", mtp_round, R_M, SPEC_M5MAX, 53e12)
+line("ranked baseline serial round", ser_round, 1.0, SPEC_M5MAX, 53e12)
+line("ranked candidate depth-0", CAND_DEPTH0_MS / 1000.0, 1.0, SPEC_M5MAX, 53e12)
+line("ranked candidate beagle round", mtp_round, R_M, SPEC_M5MAX, 53e12)
 
 print()
 print("=" * 78)
-print("C.  TRANSFER RATIOS local/ranked")
+print("C.  TRANSFER RATIOS local/ranked  (candidate build on both sides only)")
 print("=" * 78)
-print(f"  serial round        {LOCAL_ROUND_MS[1]/1000/ser_round:6.3f} x")
-print(f"  M={R_M} verify round  {lm/1000/mtp_round:6.3f} x")
+r_depth0 = LOCAL_ROUND_MS[1] / CAND_DEPTH0_MS
+r_width = lm / 1000 / mtp_round
+print(f"  depth-0 round       {r_depth0:6.3f} x   (candidate:candidate)")
+print(f"  M={R_M} verify round  {r_width:6.3f} x   (candidate:candidate)")
 print(f"  spec bandwidth      {SPEC_M5MAX/SPEC_M4PRO:6.3f} x")
-print(f"  width curve is flatter at rank by "
-      f"{(lm/1000/mtp_round)/(LOCAL_ROUND_MS[1]/1000/ser_round):.3f} x")
+# r_width / r_depth0 == local_width_penalty / ranked_width_penalty, so a value
+# below 1 means the RANKED curve is the steeper one. 205(G) read this backwards.
+local_pen = lm / LOCAL_ROUND_MS[1]
+ranked_pen = mtp_round * 1000 / CAND_DEPTH0_MS
+print(f"  width penalty M=1 -> M={R_M}:  local {local_pen:5.3f} x   "
+      f"ranked {ranked_pen:5.3f} x")
+print(f"  ranked width curve is {ranked_pen/local_pen:.3f} x as steep as local")
+print()
+print("  -- ledger 206(M): banked non-speculative advantage over the pinned base --")
+print(f"  baseline serial round / candidate depth-0 = "
+      f"{(ser_round * 1000) / CAND_DEPTH0_MS:6.4f} x")
 
 print()
 print("=" * 78)

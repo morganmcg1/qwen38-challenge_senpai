@@ -16941,6 +16941,13 @@ ranked beagle M=5.5327 0.061672   233.7     38.1      4.83       9.1
 
 **The ranked host runs the scored candidate round at 38 % of its bandwidth roof.**
 
+🔴 **CORRECTION, see 206(I).** The `ranked serial` row above is the *pinned
+baseline* build, not our candidate at depth 0. The comparable candidate-build
+figure is the ranked depth-0 round of **30.402 ms = 474.1 GB/s = 77.2 % of the
+614 GB/s roof**. Every conclusion of this item about the scored width is
+unaffected, because the `ranked beagle M=5.5327` row is already candidate-build.
+The `ranked serial` row must not be paired with a local candidate measurement.
+
 `research/ESTABLISHED_FACTS.md:67-71` already carried a ranked achieved bandwidth of
 about 410-420 GB/s, derived from the pinned serial baseline, and then wrote that it
 "supersedes the earlier 560-600 GB/s peak-spec estimate". That is a category error.
@@ -17055,21 +17062,34 @@ construction because no cross-row reduction exists anywhere in the function: row
 accumulates over the same k in the same order and ends in the same 32-lane
 `simd_sum`, whatever else the simdgroup carries.
 
-### 205(G) The ranked width curve is about 1.16x flatter than the local one
+### 205(G) 🔴 RETRACTED by 206(I). The ranked width curve is NOT 1.16x flatter; it is within 5 % of the local one and if anything slightly steeper
 
-```
-ranked serial round   36.958 ms      local serial round (E1 M=1)     65.009 ms
-ranked beagle round   61.672 ms      local M=5.5327 (E1 interp)     125.719 ms
+The original text is preserved below because three arms were designed against it.
+**Do not use it.** The corrected arithmetic is in 206(I).
 
-serial transfer ratio    1.759 x
-M=5.53 transfer ratio    2.040 x
-flatter at rank by       1.160 x
-```
+> ```
+> ranked serial round   36.958 ms      local serial round (E1 M=1)     65.009 ms
+> ranked beagle round   61.672 ms      local M=5.5327 (E1 interp)     125.719 ms
+>
+> serial transfer ratio    1.759 x
+> M=5.53 transfer ratio    2.040 x
+> flatter at rank by       1.160 x
+> ```
+>
+> Going from width 1 to width 5.53 costs us 1.93x locally and costs the ranked host
+> 1.67x. **Wide verify is relatively cheaper at rank than on our Macs**, which follows
+> directly from 205(C) and 205(D): the local width penalty contains a saturation
+> component the ranked host does not pay.
 
-Going from width 1 to width 5.53 costs us 1.93x locally and costs the ranked host
-1.67x. **Wide verify is relatively cheaper at rank than on our Macs**, which follows
-directly from 205(C) and 205(D): the local width penalty contains a saturation
-component the ranked host does not pay.
+The defect: `36.958 ms` is the **pinned baseline build's** ranked round and
+`65.009 ms` is **our candidate build's** local round. Dividing one by the other
+mixes a host transfer with a build difference. With both sides on the candidate
+build the ratio is `65.009 / 30.402 = 2.1383` at depth 0 against
+`125.800 / 61.672 = 2.0398` at M = 5.5327, so the ranked width curve is
+**1.048x steeper**, not 1.160x flatter. Given that the two ranked figures come
+from different prompts and one is model-fit, the honest statement is that
+**the width curve transfers approximately 1:1 and there is no reliable evidence
+of flattening in either direction.**
 
 Relayed to thorfinn on PR #71 as a correction to E68's conversion step, not to any
 rung. One prompt, one interpolation: one significant figure, not a calibrated
@@ -17139,3 +17159,437 @@ composed submission, confirm the trace guard costs exactly zero with
    M = 1..9 is worth doing. Widening past M = 9 crosses a kernel family.
 4. Prefill remains unreachable, now by confirmation. Do not reopen it without a
    gen-17 host.
+
+---
+
+## 206. The crown's free warm block is adopted; the local fixture's acceptance rate is retracted and restored; the depth walk is proved to be greedy ascent and proved not to matter; and one architecture audit closes the SDPA transfer risk
+
+Five independent results landed in one advisor cycle. Three of them retract or
+close a standing campaign claim. Read 206(B) and 206(I) before pricing any
+schedule arm or any local-to-ranked conversion.
+
+### 206(A) The promoted crown ships 27 free lines that our candidate surface was deleting
+
+`upstream/main` moved to `bfab0de58d43453e506523707e1720a3485570f4`, the snapshot
+promoted from Yukon submission `9ad17378` (officialScore **3.25238228**, solver
+Lieisyourlie). Its entire scored diff is a 27-line block appended to
+`warmTargetLaterWindowSDPA` in `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`,
+which pads the warm K/V from `kL = 1024` to `kL = 1025` and compiles the
+128-block `sdpa_vector_2pass` family for `qL` in {1, 5, 4}.
+
+Our tree did not carry it. `grep -n 'extK.dim(2) == 1024' ` returned nothing.
+
+🔴 **A submission archive replaces every required path in `editablePaths`, so
+our candidate surface was actively DELETING those lines from the promoted base.**
+The arithmetic is exact: askeladd's E66 scope check reported
+`Qwen36MTPBlockSession.swift` at `+112/-74` against `bfab0de5` where the same
+candidate scored `+112/-47` against the previous frontier. The 27 extra
+deletions are the block.
+
+Adopted at campaign commit `4898738ef12a423212c00485aa865b8e52056974`. The
+function is now byte-identical to `upstream/main`: sha256 of the
+`warmTargetLaterWindowSDPA` body is `65aa59ea8e74386d...`, 3,400 bytes, in both
+trees. `swiftc -parse` returns 0. Editable budget after the change: source
+2,464,949 / 3,000,000, growth 1,245 / 262,144, files 154.
+
+The block runs inside `warmMTPDecode()`, which `QwenRuntimeMTPDriver.swift:83`
+calls before the timed window opens. **It is untimed and therefore free.** E65
+measured the mechanism it warms at **0.0023 % of a leg**, and the published
+crown moved by **+0.0155 %**, which is 0.02 sigma against the 0.756 % ranked
+single-run noise of ledger 193. We keep the block because it costs nothing and
+because the organizer already promoted it, not because we can resolve its
+effect. See 206(J).
+
+**Rule.** Before every submission, diff the candidate's editable surface against
+`upstream/main`, not only against the campaign base. A frontier move can turn a
+no-op into a deletion.
+
+### 206(B) 🔴 RETRACTION — the public local fixture is at `p = 0.8808`, and "a different scheduler policy regime" is false
+
+Ledger `:15480` states that the public local fixture "sits on the opposite side
+of this price's own decision boundary from both score-setting ranked prompts,"
+and concludes that "a schedule-policy arm measured locally is measuring a
+different policy regime." **That is retracted.**
+
+The claim rested on an acceptance rate of `0.9625` that I published without a
+source. Recomputed under ledger 184(B)'s own definition of ranked per-draft
+acceptance, `A / P`, from E65's shipped-configuration 512-token
+`--local-iterate` leg at cap 8 and gate 2:
+
+```
+R (rounds)          = 76
+P (drafts proposed) = 571 - 76 = 495
+A (drafts accepted) = 512 - 76 = 436
+per-draft acceptance = 436 / 495 = 0.8808
+mean draft depth     = 495 / 76  = 6.513
+```
+
+Identical definition to the ranked column. Placed against the ranked prompts:
+
+| prompt | R | P | A | mean depth | per-draft accept |
+|---|---|---|---|---|---|
+| ranked beagle | 107 | 485 | 405 | 4.533 | 0.8351 |
+| ranked medicine | 99 | 472 | 413 | 4.768 | 0.8750 |
+| **public local fixture** | **76** | **495** | **436** | **6.513** | **0.8808** |
+| ranked republic | 89 | 469 | 423 | 5.270 | 0.9019 |
+
+The fixture sits **between medicine and republic**. On E56's own boundary test,
+`p^4 > 0.218976 * (1 + p + p^2 + p^3)`, `p = 0.8808` gives left `0.60188`
+against right `0.73138`, so the walk does **not** extend past width 4 — the same
+side as beagle and medicine.
+
+⇒ **Local scheduler A/B tests transfer.** The `0.9189` figure that also
+circulates is real but comes from `research/score-runO-cap7-gate3-512.json`,
+which is cap 7 and gate 3, not the shipped configuration. Label it accordingly
+whenever it is used.
+
+This retraction also weakens part of the stated reason for closing PR #59
+(E56 r2). The mechanism was revived as thorfinn's E68 rung 3 before the
+retraction was found, so no experiment was lost.
+
+### 206(C) The shipped depth walk is greedy ascent on tokens-per-cost, proved from source
+
+The walk at `Qwen36MTPBlockSession.swift:~715-760`, quoted exactly:
+
+```
+reach = 1; expected = 0; depth = 0
+while depth < cap:
+    p = positionAcceptEMA[depth]        (clamped by pendingTop2 margin at depth 0 and 1)
+    reach *= p
+    threshold = h * (1 + expected) / (1 + depth * h)
+    if not (reach > threshold): break
+    expected += reach; depth += 1
+```
+
+Define `E(D) = sum_{j<D} reach_j`, `H(D) = sum_{j<D} h_j`, and the objective
+`J(D) = (1 + E(D)) / (1 + H(D))`, which is expected tokens per unit round cost.
+Then
+
+```
+J(D+1) > J(D)   <=>   reach_D > h_D * (1 + E) / (1 + H)
+```
+
+and the right-hand side is the shipped threshold verbatim. `E(D)` does not
+depend on `h`. **So the shipped rule is exact greedy ascent on `J`, and greedy
+equals argmax whenever `J` is unimodal in `D`.**
+
+### 206(D) 🔴 The "total conservation can only shorten" theorem is FALSE
+
+thorfinn's E68 rung 2 argued that any reshape of the per-depth price vector `h`
+that conserves `sum h` can only shorten the selected depth. The threshold
+carries `1 + H(D)` in the **denominator**, so loading cost early *lowers* every
+later threshold: a conserving reshape can help a late step twice.
+
+Counterexample at beagle `p = 0.8351`, cap 8, `sum h = 1.44` exactly in every
+row:
+
+| price vector | selected depth |
+|---|---|
+| `ship = [.18] * 8` | **5** |
+| `[.19,.19,.19,.19,.19,.13,.18,.18]` | **6** |
+| `[.20,.20,.20,.20,.20,.08,.18,.18]` | **6** |
+| `[.21,.21,.21,.21,.21,.03,.18,.18]` | 4 greedy, **6** argmax |
+
+The last row also shows greedy and argmax separating, which is the setup for
+206(E).
+
+### 206(E) Changing the walk from greedy to argmax is a NULL at every ranked operating point
+
+Instrument: `_advisor_scratch/e68_argmax.py`, zero GPU.
+
+| price curve | beagle .8351 | medicine .8750 | local .8808 | local cap7gate3 .9189 |
+|---|---|---|---|---|
+| `ship`, greedy / argmax | 5 / 5 | 6 / 6 | 6 / 6 | 8 / 8 |
+| `pbfit` V = 60.372 | 4 / 4 | 4 / 4 | 4 / 4 | 4 / **7** |
+| `pbfit` V = 65.7 | 4 / 4 | 4 / 4 | 4 / 4 | 4 / **7** |
+| `pbfit` V = 73.0 | 4 / 4 | 4 / 4 | 4 / 4 | 4 / **7** |
+| `pbfit` divided by 1.160, flattened for ranked | 4 / 4 | 4 / 4 | 4 / 4 | 4 / **7** |
+
+Greedy and argmax separate only at `p = 0.9189`, which 206(B) shows is not the
+shipped configuration and is above every ranked prompt.
+
+The honest un-renormalised price vector `h_d = (2.590 + dC_d) / C(1)` sums to
+**2.0534** against the shipped 1.44, and selects depth **3** at both
+score-setting ranked prompts.
+
+⇒ **The depth-price lever is closed from four directions at once**: the level is
+bracketed (0.14, 0.15, 0.18, 0.32 all measured), the shape is under test in E68
+rung 3, the order is irrelevant by 206(F), and the decision rule is equivalent
+by argmax. thorfinn's structural worry — "one expensive step blocks every
+cheaper step behind it, and only changing the rule can fix it" — is correct as
+analysis and a measured null in practice. Record it as a negative, not as an
+open follow-up.
+
+### 206(F) QMV input groups are concurrent, so a partition is an unordered multiset
+
+`quantized.h:1157-1186`: `first_m = tid.x * IPG`, `TAIL = M % IPG`, the tail is
+always last, and `static_assert(M % IPG != 1)`. Groups are **concurrent
+threadgroups indexed by `tid.x`**, not a sequential loop. Therefore `{4,5}` and
+`{5,4}` are the same dispatch, and any cost form whose value depends on group
+order is a fit artifact.
+
+Replace the asymmetric form with the symmetric one, `cost = sum_g S[g] - L`,
+where `S` is the measured single-group ladder and `L` is one concurrency
+discount. Instrument `_advisor_scratch/e68_groupcost.py`:
+
+| width | shipped partition | measured ms | implied L |
+|---|---|---|---|
+| 7 | `{4,3}` | 138.314 | 15.977 |
+| 8 | `{4,4}` | 148.841 | 15.485 |
+| 9 | `{5,4}` | 163.621 | 14.110 |
+
+**`L = 15.191 ms`, spread 12.3 %.** Residuals are +0.57 / +0.20 / -0.66 %
+against the asymmetric form's +1.44 / -0.30 / -1.11 %. The symmetric form
+selects the shipped partition at every width 3 through 9, so **the dispatch
+table stays closed**. It predicts thorfinn's forced-single-group arm at
+t7 **+7.38 %** (measured +7.99 and +7.13), t8 **+23.14 %** (measured +23.38) and
+t9 **+177.93 %** (measured +176.09).
+
+Caveat on that accuracy: it comes mainly from thorfinn's **measured**
+`S[8] = 183.642` and `S[9] = 451.747` replacing the earlier extrapolations
+172.21 and 199.21. The form is good; the old inputs were not.
+
+Measured concurrency discounts per width are 0.7785 at M7, 0.8115 at M8 and
+0.8283 at M9. The ledger's assumed 0.80 is now measured.
+
+### 206(G) The M = 10 kernel-family cliff has two-instrument agreement, and one large caveat
+
+Source: `get_qmv_batch_limit` returns 10 for `D = 5120 > 4096`; `quantized.cpp:1415`
+sets `vector_limit`, `:1417` routes `M >= vector_limit` away from QMV, and
+`qmv_fast_crossrow_affine4_g64_m` carries `static_assert(M >= 3 && M <= 9)`.
+Measurement: thorfinn's `C(10) = 271.147 ms`, a **+107.526 ms** step, which is
+**+54.1 %** over the symmetric form's hypothetical `{5,5}` QMV at 175.95 ms.
+
+🔴 **Caveat, from the `qmm_splitk` arithmetic at `quantized.cpp:776-810`.** At
+`M = 10` the route is not uniform across the scored linears:
+
+```
+n_tiles = ceil(N/32);  m_tiles = ceil(M/32) = 1
+split_k = max(1, 512 / n_tiles),  clamped by K/64 and by K % (split_k*64) == 0
+split_k <= 1  =>  return qmm(...)  =>  reaches the is_nax_available() gate at :697
+```
+
+| family | K | N | n_tiles | split_k | route at M=10 | nax at rank? |
+|---|---|---|---|---|---|---|
+| `gdn.in_proj` | 5120 | 16480 | 515 | 1 | `qmm` | **yes** |
+| `fa.qkv` | 5120 | 14336 | 448 | 1 | `qmm` | **yes** |
+| `mlp.gate_up` | 5120 | 34816 | 1088 | 1 | `qmm` | **yes** |
+| `lm_head` | 5120 | 248320 | 7760 | 1 | `qmm` | **yes** |
+| `gdn.out_proj` | 6144 | 5120 | 160 | 3 | `qmm_t_splitk` | no |
+| `fa.o_proj` | 6144 | 5120 | 160 | 3 | `qmm_t_splitk` | no |
+| `mlp.down` | 17408 | 5120 | 160 | 2 | `qmm_t_splitk` | no |
+
+So four of seven families would take `qmm_t_nax` at rank and three would not.
+**The measured +54.1 % cliff is a local-only number for those four families.**
+
+This does not change the standing rule, because `program.md` caps the draft
+count at eight and therefore `M = 1 + drafts <= 9` by contract: **M = 10 is
+unreachable by the verify.** The caveat matters only for any future idea that
+would pad or batch a scored call past nine rows, and such an idea would have to
+be priced at rank, not locally. E70 rung 1 will confirm the routing table above
+from the live dispatcher.
+
+### 206(H) 🔴 alphonse's E70 rung 0 — `sdpa.cpp:177` is unreachable, so local SDPA evidence transfers
+
+Machine-checked by `research/e70_dispatch_divergence_audit.py`: 33 of 33
+structural checks pass, 22 of 22 mutation negative controls flip. Fifteen
+architecture-dependent selection sites audited, not fourteen: `device.cpp:572`
+is a second architecture read that sets the command-buffer budget.
+
+The four results that change something:
+
+1. 🔴 **`sdpa.cpp:177` is dead code on every host.** The nax gate lives inside
+   `sdpa_full_self_attention_metal`, reachable only when
+   `supports_sdpa_full` is true, which needs `query_head_dim` in {64, 80, 128}.
+   **This checkpoint is head_dim 256.** So `use_fallback` in `mlx/fast.cpp`
+   never builds the fused full primitive, every fused decode SDPA takes the
+   vector branch, and the vector branch selects on `devc`, not on nax.
+   ⇒ **No local SDPA measurement in this campaign describes a kernel the ranked
+   M5 does not run.** This retires a standing transfer risk and validates
+   206(A)'s adoption of the crown's SDPA warm mechanism as locally comparable.
+2. **Prefill full attention runs dense bf16 GEMMs, not a fused kernel.** At
+   `qL = 512` both `supports_*` are false, so MLX composes
+   `matmul(q, swapaxes(k,-1,-2))` then `matmul(scores, v)`: about **103 GFLOP of
+   dense bf16 GEMM per seed** across 16 layers, inside the timed leg, landing on
+   `steel_gemm_fused_*` locally and `steel_gemm_fused_nax_*` at rank with
+   different tile parameters. The 7.58x prefill gap of 186(C) therefore has
+   **two** nax causes, not one. Direction stays closed; it is now more
+   thoroughly closed.
+3. 🔴 **Exactly one divergent site is reachable in decode, and it is the E65 head
+   prime.** `headHistoryCache == nil` gives `primeCount = 511`; `511 >= 10`
+   routes through `qmm_splitk` to `qmm()` and the `:697` nax gate, and the same
+   511 rows go through the bf16 precision-island patch at `Qwen35.swift:1813`
+   into `steel_matmul` and the `matmul.cpp:915` dense selector. Every other
+   scored decode matmul is `M <= 9` (QMV, identical) or `M = 1` dense (returns
+   at `min(M,N) == 1` before any architecture read).
+   ⇒ E65's head prime cost of **+29.52 ms local** is measured on `qmm_t` where
+   rank runs `qmm_t_nax`. **The +0.17 % ceiling on the head-prime row-count
+   follow-up is over-stated, plausibly by several times.** The audit closed a
+   direction rather than opening one.
+4. **Three sites are Pro/Max-safe but base-M5-divergent.** `sdpa.cpp:443`,
+   `sdpa.cpp:748` and `device.cpp:572` read `devc`, which is `'s'` on our host
+   and on M5 Pro/Max but `'g'` on a base M5. A base M5 would run `sdpa_vector`
+   for the whole leg where we run `sdpa_vector_2pass` in the final rounds, and
+   would take a 40/40 command-buffer budget instead of 50/50. The ranked tier is
+   still unconfirmed, so this is live tier risk.
+
+Also confirmed by that audit: `vector_limit = 10` for **all seven** scored linear
+families on all three architecture arms, so the QMV programme is live at rank
+independent of ranked tier; and `Qwen35SparseMoeBlock` is never built because
+`weights/config.json` has no `num_experts` key, which is why the four
+`gather_qmm` and `GatherMM` sites are unreachable. **This is a dense model.**
+
+### 206(I) 🔴 `R = 2.1383` is CONFIRMED CORRECT. My own 205(D)/(G) figure of 1.759 is RETRACTED — it compared two different builds
+
+alphonse challenged the `1.76x` serial transfer ratio I published in the E70
+brief, noting that it appears nowhere in `senpai/` while `2.14x` is a ledger
+constant. A bounded provenance search settled it, and the answer is the opposite
+of what I expected.
+
+**What 30.402 ms actually is.** It is not asserted in prose and it is not
+back-derived from 2.14. It is the reproducible output of
+`calibrate_depth0_ms()` at `research/prompt_round_reconstruction.py:111-156`:
+
+```
+python3 research/prompt_round_reconstruction.py --facts research/e53-board-facts.json \
+  --submission ca9251b8 --prefill-ms 526.6
+-> candidate depth-0 round 30.402 ms
+```
+
+It anchors on **plutarch** (`:67`), which is 92.2 % non-drafting rounds, reads
+`row["mtp_spt"]` (`:134`) — the **candidate build's** own per-token time, not the
+serial baseline's — and applies a fixed-point correction (`:143-148`) for
+plutarch's residual 7.8 % drafting rounds using the E1 marginal ladder scaled by
+a fitted `host_scale_vs_m4pro = 0.4677`. `2.1383` is then computed from it at
+`:11045`, so the millisecond figure is primary and the ratio is downstream.
+
+**Why my 1.759 was wrong.** `65.009 ms` is E1's whole-model depth-0 round
+measured with **our candidate build** on our M4 Pro. `36.958 ms` is derived from
+`serial_seconds_per_token` in the receipt, which `program.md` states comes from
+the **runner-owned prebuilt baseline workspace** — a different build. Dividing
+one by the other mixes a host transfer with a build difference and is not a
+transfer ratio at all.
+
+Corrected, with both sides on the candidate build:
+
+```
+local  candidate depth-0 round (E1 M=1)                65.009 ms
+ranked candidate depth-0 round (plutarch calibration)  30.402 ms
+R = 65.009 / 30.402 = 2.1383                           <-- CORRECT, unchanged
+```
+
+⇒ **186(C), `:11045`, `:11059`, `:11060`, `:11184`, `:11637`, `:11664`, `:11731`
+and the `R / tau` framework all stand. The `÷3.55` divisor of 186(D) stands.
+`research/e56_g_correction.py:14`, `research/e58_dispatch_repricing.py:81` and
+`research/transfer_class_resolver.py:22,81` all hard-code 30.402 and are all
+correct.** Nothing downstream of `R` needs re-pricing.
+
+What must be fixed is mine: **205(D)'s `ranked serial` roofline row and 205(G)'s
+entire "1.16x flatter" conclusion are retracted**, and
+`research/e70_double_roofline.py` prints the bad ratio. Both are annotated in
+place.
+
+**Rule, restated with teeth.** 186(F) says grep the ledger before publishing a
+cost claim. This item adds the reason it is not enough: *state the build on both
+sides of every ratio.* The ranked receipt contains two builds. A ratio that
+crosses them measures nothing. Label every transfer ratio
+`candidate:candidate`, `baseline:baseline`, or reject it.
+
+I published `1.76x` in an assignment brief without grepping, and alphonse caught
+it. He was right to check and wrong about which number was bad, which is the
+best possible outcome: the challenge produced the audit that found the real
+defect.
+
+### 206(J) 🔴 The board is a noise ratchet, quantified
+
+The crown moved from `9d5569bb` (hadakang, 3.25187972) to `9ad17378`
+(Lieisyourlie, 3.25238228). The published gap is **+0.0155 %**. The mechanism
+behind it is measured at **0.0023 % of a leg**, and it is untimed. Ledger 193
+puts the standard deviation of one ranked run at **0.756 %**.
+
+**+0.0155 % is 0.02 sigma.** The top of this board is being reordered by
+measurement noise, not by mechanism. Two consequences:
+
+1. Do not read a 0.02 sigma crown move as evidence that the mechanism behind it
+   works. Adopt free changes anyway, as 206(A) did, on cost grounds.
+2. A candidate needs roughly **+1.66 %** of true improvement to take the crown
+   with 98.4 % probability on a single run (193). Our best real board score
+   `ca9251b8` sits 0.61 % below the crown, which is inside the noise of a single
+   pair. Composition, not micro-optimisation, is the way across.
+
+### 206(K) Small-divisor caveat on 202(C), requested by askeladd
+
+Ledger 202(C) publishes `f_ranked = 0.5352` for the t55 cell. askeladd's E66
+rung 4 reproduces the board only with `f6_ranked = 0.334`, the value used in his
+assignment brief, and not with 0.5352.
+
+Two corrections, both his:
+
+1. **State which mixture each `f_ranked` value describes.** 202(C)'s figure and
+   the assignment's figure are drawn from different width mixtures and are not
+   interchangeable. An `f_ranked` without its mixture is unusable.
+2. **Carry a small-divisor caveat.** His local `t55` divisor rests on **5 rounds
+   out of 78**. Any projection through it inherits that count. This is the
+   proximate reason the psi-free `L * (f_ranked / f_local)` projection broke by
+   7x at t55 while agreeing within 13 % at t6, whose divisor is 23 rounds.
+
+⇒ **Retire the psi-free projection.** Use the flat law: one weight-stream
+removal is about **-0.639 % +/- 0.294 %** of the ranked candidate leg, roughly
+flat in width. E66 rung 4's own chain validates it at t6 (multiplier 1.13) and
+breaks it at t55 (multiplier 3.76), and the break is isolated to the
+local-to-ranked step, not to the local chain.
+
+### 206(L) Open debts recorded here so they are not lost
+
+- E65 left **26 instrumentation lines** in the submitted
+  `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`, growth 1,650 bytes. Either
+  prove they cost exactly zero with `MLX_QWEN_MTP_TRACE_PATH` unset, or strip
+  them in the next cleanup PR.
+- `research/ESTABLISHED_FACTS.md:67-71`, `:497` and `:516-523` still say a ranked
+  achieved bandwidth of 410-420 GB/s "supersedes the earlier 560-600 GB/s
+  peak-spec estimate." That is a category error: achieved is not a roof. Ledger
+  205(D) corrects it; the file does not.
+- Ledger `:15480` carries the retracted "different policy regime" claim of
+  206(B) in its original wording.
+
+### 206(M) 🔴 NEW — the candidate build already carries a 21.6 % non-speculative runtime advantage at rank, and plutarch measures it almost purely
+
+206(I)'s reconciliation exposes a quantity nobody had named. At rank, prefill
+removed, on the same submission `ca9251b8`:
+
+```
+pinned baseline serial round   36.958 ms      (serial_spt - prefill_spt, beagle)
+candidate depth-0 round        30.402 ms      (plutarch calibration)
+ratio                          1.2156 x
+```
+
+**Our candidate build runs a depth-0 round 21.6 % faster than the organizer's
+pinned baseline build, before any speculation happens at all.** That is the
+banked value of every non-speculative runtime change in the promoted lineage.
+
+The instrument that reads it most cleanly is **plutarch**. Its
+`mean_draft_len = 0.1540`, so 92.2 % of its rounds are depth 0 and its `raw_p`
+is almost entirely runtime, not speculation:
+
+| solver | plutarch `raw_p` |
+|---|---|
+| crown `9ad17378` (Lieisyourlie) | 1.2560334838 |
+| ours `ca9251b8` | 1.2528 |
+| gap | **0.26 %** |
+
+Two consequences worth acting on:
+
+1. 🔴 **plutarch is a low-noise, speculation-free channel for comparing runtime
+   work against the crown.** Every other prompt confounds runtime with draft
+   policy. When a candidate changes the runtime and not the schedule, plutarch's
+   `raw_p` is the cleanest ranked read available, and it says we are 0.26 %
+   behind the crown on pure runtime.
+2. A pure-runtime win multiplies through **every** prompt including the
+   non-drafting ones, whereas a speculation win only helps prompts that draft.
+   The published median is still set by the beagle/medicine pair, so this does
+   not reorder priorities on its own — but it does mean a runtime win is never
+   wasted on a prompt, and a schedule win can be.
+
+The 21.6 % figure is shared with every top solver, because the promoted frontier
+is a common lineage and we build on `upstream/main`. It is not a differentiator.
+It is the size of the pool the differentiators are swimming in.
