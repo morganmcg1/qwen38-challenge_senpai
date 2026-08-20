@@ -253,6 +253,118 @@ def log_rung3(run) -> None:
     run.summary.update(summary)
 
 
+# --- rung 4 stage A: the whole-table cell ---------------------------------------
+
+def log_rung4_cells(run) -> None:
+    metrics = json.loads((ARTIFACTS / "e59-rung4-cells.json").read_text())
+    width = 5
+
+    leg_table = wandb.Table(columns=[
+        "tag", "arm", "leg_position", "started_utc", "gpu_idle_gate",
+        "cool_gate_vendored", "gpu_temp_entry_c", "gpu_temp_exit_c",
+        "t_ms_by_width", "jit_spread_pct", "bitwise_failures"])
+    entry_temps = []
+    for position, leg in enumerate(metrics["legs"], start=1):
+        ident = leg.get("identity") or {}
+        entry = ident.get("gpu_temp_c_before_vendored")
+        if entry is not None:
+            entry_temps.append(float(entry))
+        leg_table.add_data(
+            leg["tag"], leg["arm"], position, ident.get("started_utc"),
+            (leg.get("gpu_gate") or {}).get("state"),
+            ident.get("cool_gate_vendored"), entry,
+            ident.get("gpu_temp_c_after_vendored"), json.dumps(leg["t_ms"]),
+            json.dumps(leg["jit_spread_pct"]),
+            json.dumps(leg["bitwise_failures"]))
+    run.log({"rung4/cells/legs": leg_table})
+
+    summary: dict = {
+        "rung4/cells/all_passed": metrics["all_passed"],
+        "rung4/cells/kill_rule_pct": metrics["kill_rule_pct"],
+        "rung4/cells/model_predicted_m5_pct": metrics["model_predicted_m5_pct"],
+        "rung4/cells/rung3_isolated_m5_pct": metrics["rung3_isolated_m5_pct"],
+        "rung4/cells/t55_model_realisation": metrics["t55_model_realisation"],
+        "rung4/cells/routes_clearing_kill_rule": json.dumps(
+            metrics["routes_clearing_kill_rule"]),
+        "rung4/cells/cool_gate_passed_real_gate": all(
+            (leg.get("identity") or {}).get("cool_gate_vendored") == "passed"
+            for leg in metrics["legs"]),
+        "rung4/cells/gate_qualified_for_timing": all(
+            (leg.get("identity") or {}).get("cool_gate_vendored") == "passed"
+            for leg in metrics["legs"]),
+        "rung4/cells/official_or_ranked_score": False,
+        "rung4/cells/entry_temperature_spread_c": (
+            round(max(entry_temps) - min(entry_temps), 3) if entry_temps
+            else None),
+    }
+
+    route_table = wandb.Table(columns=[
+        "route", "control_arm", "treated_arm", "m5_control_ms", "m5_treated_ms",
+        "m5_delta_pct", "replicate_spread_pct", "worst_untreated_width_pct",
+        "decision_bar_pct", "clears_bar", "clears_kill_rule"])
+    for name, r in metrics["routes"].items():
+        if not r:
+            continue
+        route_table.add_data(
+            name, r["control_arm"], r["treated_arm"], r["m5_control_ms"],
+            r["m5_treated_ms"], r["m5_delta_pct"], r["m5_replicate_spread_pct"],
+            r["worst_untreated_width_pct"], r["decision_bar_pct"],
+            r["clears_bar"], r["clears_kill_rule"])
+        summary[f"rung4/cells/{name}/m5_delta_pct"] = r["m5_delta_pct"]
+        summary[f"rung4/cells/{name}/decision_bar_pct"] = r["decision_bar_pct"]
+        summary[f"rung4/cells/{name}/clears_kill_rule"] = r["clears_kill_rule"]
+    run.log({"rung4/cells/routes": route_table})
+
+    # Every width of every route, so a later reader can see that the effect
+    # sits at M=5 alone and price the untreated widths as the instrument bar.
+    width_table = wandb.Table(columns=["route", "width", "control_ms",
+                                       "treated_ms", "delta_ms", "delta_pct",
+                                       "mde_ms", "exceeds_mde"])
+    for name, r in metrics["routes"].items():
+        if not r:
+            continue
+        for m, row in sorted(r["per_width"].items(), key=lambda kv: int(kv[0])):
+            width_table.add_data(name, int(m), row["control_ms"],
+                                 row["treated_ms"], row["delta_ms"],
+                                 row["delta_pct"], row["mde_ms"],
+                                 row["exceeds_mde"])
+    run.log({"rung4/cells/per_width": width_table})
+
+    bw_table = wandb.Table(columns=["arm", "width", "group_na", "working_groups",
+                                    "seconds_per_verify", "single_pass_gbps",
+                                    "modelled_gbps", "lone_group_gbps_mean"])
+    for arm, widths in metrics["bandwidth"].items():
+        for m, b in sorted(widths.items(), key=lambda kv: int(kv[0])):
+            bw_table.add_data(arm, int(m), json.dumps(b["group_na"]),
+                              json.dumps(b["working_groups"]),
+                              b["seconds_per_verify"], b["single_pass_gbps"],
+                              b["modelled_gbps"], b["lone_group_gbps_mean"])
+            if int(m) == width:
+                summary[f"rung4/cells/bw/{arm}/m5_single_pass_gbps"] = b[
+                    "single_pass_gbps"]
+                summary[f"rung4/cells/bw/{arm}/m5_modelled_gbps"] = b[
+                    "modelled_gbps"]
+    run.log({"rung4/cells/bandwidth": bw_table})
+
+    fit = metrics.get("regression_t_ms_by_arm_and_position", {}).get(str(width))
+    if fit and fit.get("fitted"):
+        summary["rung4/cells/regression/residual_dof"] = fit["residual_dof"]
+        summary["rung4/cells/regression/residual_sd_pct"] = fit[
+            "residual_sd_pct_of_base"]
+        summary["rung4/cells/regression/drift_pct_per_leg"] = fit[
+            "position_drift_pct_of_base_per_leg"]
+        for name, term in fit["terms"].items():
+            if name.startswith("arm["):
+                arm = name[4:-1]
+                summary[f"rung4/cells/regression/{arm}/pct_of_base"] = term[
+                    "estimate_pct_of_base"]
+                summary[f"rung4/cells/regression/{arm}/t"] = term["t"]
+
+    run.summary.update(summary)
+    print("logged rung 4 stage A cells, routes clearing the kill rule: %s"
+          % metrics["routes_clearing_kill_rule"])
+
+
 # --- rung 4: end to end --------------------------------------------------------
 
 def read_meta(path: pathlib.Path) -> dict:
@@ -305,6 +417,8 @@ def read_leg(path: pathlib.Path) -> dict:
         "measured_commit_unwound": meta.get("measured_commit_unwound"),
         "twin_digests": meta.get("twin_digests"),
         "worker_sha256": meta.get("worker_sha256"),
+        "worker_text_sha256": meta.get("worker_text_sha256"),
+        "worker_cstring_sha256": meta.get("worker_cstring_sha256"),
         "metallib_source_fingerprint": meta.get("metallib_source_fingerprint"),
         "cool_gate_requested": meta.get("cool_gate_requested"),
         "warmup_discarded": meta.get("warmup_discarded", "0"),
@@ -357,6 +471,7 @@ LEG_COLUMNS = [
     "round_count", "declared_rows_total", "row_ledger_sum",
     "effective_mean_draft_len", "accepted_draft_rate", "score",
     "width_histogram", "measured_commit_unwound", "worker_sha256",
+    "worker_text_sha256", "worker_cstring_sha256",
     "metallib_source_fingerprint", "stale_metallib_warnings",
     "warmup_discarded", "startup_memory_profile", "mlx_max_ops_per_buffer",
     "mlx_max_mb_per_buffer", "wired_residency_active",
@@ -533,8 +648,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True,
                     choices=["rung1", "rung2", "rung2-e2e", "rung2b-leg",
-                             "rung3", "rung4-parity", "geometry", "rung4-leg",
-                             "rung4", "gates"])
+                             "rung3", "rung4-parity", "rung4-cells", "geometry",
+                             "rung4-leg", "rung4", "gates"])
     ap.add_argument("--leg", type=pathlib.Path,
                     help="one run directory for --stage rung4-leg or rung2b-leg")
     ap.add_argument("--legs", type=pathlib.Path, nargs="*", default=[],
@@ -550,6 +665,8 @@ def main() -> int:
             log_parity(run, "e59-parity.json", "rung2")
         elif args.stage == "rung4-parity":
             log_parity(run, "e59-parity-rung4.json", "rung4/parity")
+        elif args.stage == "rung4-cells":
+            log_rung4_cells(run)
         elif args.stage == "geometry":
             log_geometry(run)
         elif args.stage == "rung2-e2e":

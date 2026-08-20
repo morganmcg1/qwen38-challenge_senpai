@@ -223,6 +223,15 @@ fi
   echo "twin_digests=$(shasum -a 256 "${SCORED_FILES[@]}" | awk '{printf "%s ", $1}')"
   echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
   echo "worker_sha256=$(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | cut -d' ' -f1)"
+  # The whole-file digest also moves with LC_UUID and the code-signature slots,
+  # so it cannot certify an arm across relinks. These two can: an arm that only
+  # reroutes the JIT kernel must leave `__text` equal and move `__cstring`.
+  echo "worker_text_sha256=$(python3 research/e59_worker_digest.py \
+    .build-worker/release/mlxfast-runtime-worker --json \
+    | python3 -c 'import json,sys;print(json.load(sys.stdin)["sections"]["__TEXT,__text"]["sha256"])')"
+  echo "worker_cstring_sha256=$(python3 research/e59_worker_digest.py \
+    .build-worker/release/mlxfast-runtime-worker --json \
+    | python3 -c 'import json,sys;print(json.load(sys.stdin)["sections"]["__TEXT,__cstring"]["sha256"])')"
   echo "worker_binary_probe=$(head -1 "${out}/binary-probe.log" | cut -d' ' -f1-3)"
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   echo "cool_gate_requested=$((1 - hot))"

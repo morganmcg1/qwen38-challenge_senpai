@@ -12,7 +12,7 @@ assignment names:
 
   python3 research/e59_e2e_analyze.py --out research/e59-artifacts/e59-e2e-metrics.json
 
-Two things decide the verdicts, and both are session-local by design.
+Three things decide the verdicts, and all three are session-local by design.
 
 1.  The noise bar is this session's own same-arm spread, taken at the leg
     separation the contrast actually has. The old `0.0629 %` constant is
@@ -26,6 +26,12 @@ Two things decide the verdicts, and both are session-local by design.
     position; the regression carries position as a covariate and reports the
     residual degrees of freedom honestly.
 
+3.  The decision is taken on the CELL the leg implies, not on the leg. This
+    host's width histogram is not the ranked one: it under-weights M=5 and M=6
+    by about 2.04x, so a small leg number cannot refute a mechanism the ranked
+    mixture weights far more heavily. The leg effect is therefore divided by
+    the M=5 share of leg round cost and compared with the cell gate.
+
 Exit code 0 means every preregistered rung 4 check passed. Exit code 2 means a
 stop rule fired.
 """
@@ -36,32 +42,50 @@ import argparse
 import collections
 import itertools
 import json
-import math
 import pathlib
 import statistics
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from e59_ols import fit_arm_position  # noqa: E402
 from e59_wandb_log import read_leg  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 RUNS = REPO / ".mlxfast-private/e59-e2e/runs"
 PREREG = REPO / "research/e59-artifacts/e59-rung4-prereg.json"
 PREREG_AMENDMENT = REPO / "research/e59-artifacts/e59-rung4-prereg-amendment.json"
+CELLS = REPO / "research/e59-artifacts/e59-rung4-cells.json"
 
 BASE_ARM = "shipped"
-TREATMENT_ARMS = ("t55", "m5_rbx")
+# `m5_rbx` was dropped from the leg session on the advisor's 2026-08-20T02:43Z
+# instruction. `t55` turns M=5 into a single {5} group, so after `t55` there is
+# nothing left at M=5 for a row-block route to win, and `m5_rbx` alone would
+# move the leg by about -0.16 %, at or below the session null.
+TREATMENT_ARMS = ("t55",)
 
-# Preregistered in PR 62 before the session ran, from rung 3's measured M=5 cell
-# deltas re-based onto the whole table. See `e59-rung4-prereg.json`.
-PREDICTED_LEG_PCT = {"t55": -0.751, "m5_rbx": -0.501}
-# The advisor predicts these two arms time the SAME. Rung 3's T2 pair measured
-# the same 125-vs-90 register contrast at +8.318 % +/- 1.007 % at the isolated
-# cell, so this analysis predicts t55 is faster by this much at the leg.
-PREDICTED_T55_MINUS_RBX_PCT = -0.250
-# Advance rule: a candidate has to reach this to be advanced on its own.
-STOP_RULE_LEG_PCT = -2.0
-REPORT_ONLY_BAND_PCT = (-6.0, -2.0)
+# Round cost by width from E1, and the width histogram of the E60 512-token
+# candidate leg. Their product is the divisor the advisor preregistered: the
+# share of leg round cost that this host actually spends at M=5.
+E1_ROUND_US = {4: 91288, 5: 115691, 6: 134668, 7: 154169, 8: 172827, 9: 184970}
+E60_LEG_ROUNDS = {4: 5, 5: 7, 6: 17, 7: 3, 8: 3, 9: 41}
+LOCAL_M5_SHARE = 0.0668
+
+# Cell gate, on the cell the leg implies. Preregistered by the advisor to
+# replace the old `-2.0 %` leg threshold, which this host cannot resolve.
+ADVANCE_IMPLIED_CELL_PCT = -6.0
+KILL_IMPLIED_CELL_PCT = -2.0
+
+# What stage A measured on the whole-table cell palindrome, and what it
+# predicts for this leg once the local M=5 share and the QMV share of the leg
+# are applied. `QMV_SHARE_OF_LEG` is the ranked figure from
+# `research/dilution_basis.py`; on this host it is an estimate, so the
+# prediction is reported and never gates anything.
+STAGE_A_CELL_PCT = {"t55": -20.209, "m5_rbx": -13.431}
+QMV_SHARE_OF_LEG = 0.82127
+PREDICTED_LEG_PCT = {
+    arm: round(pct * LOCAL_M5_SHARE * QMV_SHARE_OF_LEG, 4)
+    for arm, pct in STAGE_A_CELL_PCT.items()
+}
 
 
 def mean(xs) -> float:
@@ -120,119 +144,69 @@ def same_arm_spreads_by_separation(legs: list[dict], field: str) -> dict:
 
 
 def ols_arm_position(legs: list[dict], field: str) -> dict:
-    """Fit `value ~ arm + leg_position` with the base arm as the reference.
+    """Fit `value ~ arm + leg_position` with the base arm as the reference."""
+    fit = fit_arm_position(
+        [{"arm": leg["arm"], "position": leg["leg_position"],
+          "value": leg[field], "label": leg["tag"]}
+         for leg in legs],
+        BASE_ARM,
+    )
+    fit["field"] = field
+    return fit
 
-    Plain normal equations by Gaussian elimination: the design is tiny and a
-    SciPy dependency inside a timed workspace is not worth it.
+
+def m5_share_of_round_cost(histogram: dict) -> dict:
+    """Price a measured width histogram with the E1 round costs.
+
+    The gate divisor is preregistered, so this never replaces it. It says
+    whether this session's own mixture matches the one the divisor came from,
+    which is the only way to see that the conversion is still honest.
     """
-    arms = sorted({leg["arm"] for leg in legs})
-    others = [a for a in arms if a != BASE_ARM]
-    names = ["intercept"] + [f"arm[{a}]" for a in others] + ["leg_position"]
-
-    rows, ys = [], []
-    for leg in legs:
-        row = [1.0]
-        row += [1.0 if leg["arm"] == a else 0.0 for a in others]
-        row.append(float(leg["leg_position"]))
-        rows.append(row)
-        ys.append(leg[field])
-
-    k = len(names)
-    n = len(rows)
-    dof = n - k
-    if dof <= 0:
-        return {"fitted": False, "reason": f"{n} legs cannot fit {k} parameters"}
-
-    xtx = [[sum(rows[i][a] * rows[i][b] for i in range(n)) for b in range(k)]
-           for a in range(k)]
-    xty = [sum(rows[i][a] * ys[i] for i in range(n)) for a in range(k)]
-
-    inv = [[1.0 if i == j else 0.0 for j in range(k)] for i in range(k)]
-    work = [row[:] for row in xtx]
-    rhs = xty[:]
-    for col in range(k):
-        pivot = max(range(col, k), key=lambda r: abs(work[r][col]))
-        if abs(work[pivot][col]) < 1e-18:
-            return {"fitted": False, "reason": "singular design"}
-        work[col], work[pivot] = work[pivot], work[col]
-        inv[col], inv[pivot] = inv[pivot], inv[col]
-        rhs[col], rhs[pivot] = rhs[pivot], rhs[col]
-        scale = work[col][col]
-        work[col] = [v / scale for v in work[col]]
-        inv[col] = [v / scale for v in inv[col]]
-        rhs[col] /= scale
-        for r in range(k):
-            if r == col:
-                continue
-            factor = work[r][col]
-            work[r] = [v - factor * w for v, w in zip(work[r], work[col])]
-            inv[r] = [v - factor * w for v, w in zip(inv[r], inv[col])]
-            rhs[r] -= factor * rhs[col]
-    beta = rhs
-
-    resid = [ys[i] - sum(rows[i][a] * beta[a] for a in range(k)) for i in range(n)]
-    sigma2 = sum(r * r for r in resid) / dof
-
-    base_level = beta[0] + beta[k - 1] * mean(
-        float(leg["leg_position"]) for leg in legs)
-    terms = {}
-    for i, name in enumerate(names):
-        se = math.sqrt(max(sigma2 * inv[i][i], 0.0))
-        terms[name] = {
-            "estimate": beta[i],
-            "std_error": se,
-            "t": beta[i] / se if se > 0 else None,
-            "estimate_pct_of_base": (
-                100.0 * beta[i] / base_level if name.startswith("arm[") else None),
-        }
-    return {
-        "fitted": True,
-        "field": field,
-        "n": n,
-        "parameters": k,
-        "residual_dof": dof,
-        "residual_sd": math.sqrt(sigma2),
-        "reference_arm": BASE_ARM,
-        "base_level_at_mean_position": base_level,
-        "terms": terms,
-        "names": names,
-        "covariance": [[sigma2 * inv[i][j] for j in range(k)] for i in range(k)],
-        "residuals": [
-            {"tag": leg["tag"], "arm": leg["arm"],
-             "leg_position": leg["leg_position"],
-             "residual_pct_of_base": 100.0 * resid[i] / base_level}
-            for i, leg in enumerate(legs)
-        ],
-    }
-
-
-def contrast(fit: dict, left: str, right: str) -> dict:
-    """`arm[left] - arm[right]` as a percent of the base level, with its error.
-
-    A palindrome gives both arms the same mean position, so this contrast is
-    what the tie test needs and the position covariate has already absorbed the
-    session drift.
-    """
-    if not fit.get("fitted"):
+    priced = {}
+    for width, rounds in histogram.items():
+        m = int(width)
+        cost = E1_ROUND_US.get(m)
+        if cost is None:
+            continue
+        priced[m] = cost * int(rounds)
+    total = sum(priced.values())
+    if not total:
         return {"available": False}
-    names = fit["names"]
-    try:
-        i = names.index(f"arm[{left}]")
-        j = names.index(f"arm[{right}]")
-    except ValueError:
-        return {"available": False}
-    cov = fit["covariance"]
-    estimate = fit["terms"][names[i]]["estimate"] - fit["terms"][names[j]]["estimate"]
-    variance = cov[i][i] + cov[j][j] - 2.0 * cov[i][j]
-    se = math.sqrt(max(variance, 0.0))
-    base_level = fit["base_level_at_mean_position"]
     return {
         "available": True,
-        "estimate_pct_of_base": 100.0 * estimate / base_level,
-        "std_error_pct_of_base": 100.0 * se / base_level,
-        "t": estimate / se if se > 0 else None,
-        "residual_dof": fit["residual_dof"],
+        "priced_round_us_by_width": priced,
+        "total_priced_round_us": total,
+        "m5_share": priced.get(5, 0) / total,
+        "widths_without_e1_cost": sorted(
+            int(w) for w in histogram if int(w) not in E1_ROUND_US),
     }
+
+
+def implied_cell(leg_pct: float, round_cost_pct: float) -> dict:
+    """Convert one leg effect into the M=5 cell effect it implies.
+
+    Two divisions, both reported, both using the preregistered divisor.
+    `from_leg` is the advisor's literal rule and is deliberately conservative:
+    the raw leg carries seed prefill and every non-QMV round cost, neither of
+    which the M=5 kernel can move, so dividing it by an M=5 share of round cost
+    understates the cell. `from_round_cost` removes the measured prefill first
+    and is the sharper read. The gate reads the conservative one.
+    """
+    return {
+        "divisor": LOCAL_M5_SHARE,
+        "raw_leg_pct": leg_pct,
+        "raw_round_cost_pct": round_cost_pct,
+        "implied_cell_pct": leg_pct / LOCAL_M5_SHARE,
+        "implied_cell_pct_from_round_cost": round_cost_pct / LOCAL_M5_SHARE,
+    }
+
+
+def cell_gate(implied_cell_pct: float, sign_stable: bool) -> str:
+    if implied_cell_pct <= ADVANCE_IMPLIED_CELL_PCT and sign_stable:
+        return "advance"
+    if implied_cell_pct <= KILL_IMPLIED_CELL_PCT and sign_stable:
+        return "report_only"
+    return "kill"
 
 
 def summarise(arm: str, legs: list[dict]) -> dict:
@@ -384,6 +358,7 @@ def main() -> int:
     leg_fit = regressions["mtp_seconds_per_token"]
 
     verdicts: dict = {}
+    conversions: dict = {}
     for arm in TREATMENT_ARMS:
         rec = arms.get(arm)
         if rec is None:
@@ -398,50 +373,26 @@ def main() -> int:
             rec["delta_vs_base_leg_pct"] < -bar["leg"])
         verdicts[f"{arm}_vs_prereg_leg_pct"] = round(
             rec["delta_vs_base_leg_pct"] - PREDICTED_LEG_PCT[arm], 4)
-        verdicts[f"{arm}_clears_stop_rule"] = bool(
-            rec["delta_vs_base_leg_pct"] <= STOP_RULE_LEG_PCT)
-        verdicts[f"{arm}_in_report_only_band"] = bool(
-            REPORT_ONLY_BAND_PCT[0] <= rec["delta_vs_base_leg_pct"]
-            <= REPORT_ONLY_BAND_PCT[1])
 
-    # The preregistered head to head. The advisor predicts a tie; rung 3 T2
-    # predicts t55 is faster. Both arms sit at the same mean position in a
-    # palindrome, so the tie tolerance is the same session null the arms use.
-    if all(arm in arms for arm in TREATMENT_ARMS):
-        t55, rbx = arms["t55"], arms["m5_rbx"]
-        gap = delta_pct(t55["mtp_seconds_per_token_mean"],
-                        rbx["mtp_seconds_per_token_mean"])
-        tolerance = bar["leg"]
-        verdicts["t55_minus_rbx_leg_pct"] = gap
-        verdicts["t55_minus_rbx_tie_tolerance_pct"] = tolerance
-        verdicts["t55_minus_rbx_predicted_pct"] = PREDICTED_T55_MINUS_RBX_PCT
-        if abs(gap) <= tolerance:
-            outcome = "tie"
-        elif gap < 0:
-            outcome = "t55_faster"
-        else:
-            outcome = "rbx_faster"
-        verdicts["t55_vs_rbx_outcome"] = outcome
-        verdicts["occupancy_hypothesis_supported_at_m5"] = outcome == "tie"
-        # Honest power statement. Rung 3 resolved the same register contrast at
-        # the isolated cell with an 8x margin; this leg-level test may not, and
-        # an underpowered tie is not evidence for the occupancy hypothesis.
-        verdicts["t55_vs_rbx_test_is_powered"] = bool(
-            abs(PREDICTED_T55_MINUS_RBX_PCT) >= 2.0 * tolerance)
-        # The same contrast with the session drift regressed out. The raw bar
-        # above carries the drift and is deliberately conservative; this one is
-        # the powered read and the campaign-standard estimator.
-        gap_fit = contrast(leg_fit, "t55", "m5_rbx")
-        if gap_fit["available"]:
-            verdicts["t55_minus_rbx_leg_pct_regression"] = gap_fit[
-                "estimate_pct_of_base"]
-            verdicts["t55_minus_rbx_leg_se_pct_regression"] = gap_fit[
-                "std_error_pct_of_base"]
-            verdicts["t55_minus_rbx_t_regression"] = gap_fit["t"]
-            verdicts["t55_vs_rbx_outcome_regression"] = (
-                "tie" if gap_fit["t"] is not None and abs(gap_fit["t"]) < 2.0
-                else ("t55_faster" if gap_fit["estimate_pct_of_base"] < 0
-                      else "rbx_faster"))
+        # The gate. Every timed leg of this arm must move the same way, or the
+        # sign is not stable and the conversion means nothing.
+        per_leg = [delta_pct(leg["mtp_seconds_per_token"],
+                             base["mtp_seconds_per_token_mean"])
+                   for leg in by_arm[arm]]
+        sign_stable = all(p < 0 for p in per_leg) or all(p > 0 for p in per_leg)
+        conv = implied_cell(rec["delta_vs_base_leg_pct"],
+                            rec["delta_vs_base_round_cost_pct"])
+        conv["per_leg_pct"] = per_leg
+        conv["sign_stable_across_palindrome"] = sign_stable
+        conv["gate"] = cell_gate(conv["implied_cell_pct"], sign_stable)
+        conv["stage_a_measured_cell_pct"] = STAGE_A_CELL_PCT.get(arm)
+        conversions[arm] = conv
+
+        verdicts[f"{arm}_implied_cell_pct"] = conv["implied_cell_pct"]
+        verdicts[f"{arm}_implied_cell_pct_from_round_cost"] = conv[
+            "implied_cell_pct_from_round_cost"]
+        verdicts[f"{arm}_sign_stable"] = sign_stable
+        verdicts[f"{arm}_cell_gate"] = conv["gate"]
 
     verdicts["all_arms_token_exact"] = all(
         rec["all_tokens_matched"] for rec in arms.values())
@@ -457,6 +408,40 @@ def main() -> int:
         and leg["mlx_max_mb_per_buffer"] == "512"
         and leg["startup_memory_profile"] == "full" for leg in legs)
     verdicts["warmup_leg_declared_and_dropped"] = len(warmups) >= 1
+
+    # Arm certification by Mach-O section digest. A routing-only arm must leave
+    # `__TEXT,__text` identical and move `__TEXT,__cstring`, because the whole
+    # change is one template argument inside a JIT kernel source string. The
+    # whole-file digest cannot say this: it also moves with LC_UUID and the
+    # code-signature slots on every relink.
+    digests = {
+        "text_by_arm": {arm: sorted({leg["worker_text_sha256"] for leg in rows})
+                        for arm, rows in by_arm.items()},
+        "cstring_by_arm": {
+            arm: sorted({leg["worker_cstring_sha256"] for leg in rows})
+            for arm, rows in by_arm.items()},
+        "file_by_arm": {arm: sorted({leg["worker_sha256"] for leg in rows})
+                        for arm, rows in by_arm.items()},
+    }
+    digests["available"] = all(
+        d is not None for arm in digests["text_by_arm"]
+        for d in digests["text_by_arm"][arm] + digests["cstring_by_arm"][arm])
+    if digests["available"]:
+        verdicts["each_arm_has_one_text_digest"] = all(
+            len(v) == 1 for v in digests["text_by_arm"].values())
+        verdicts["each_arm_has_one_cstring_digest"] = all(
+            len(v) == 1 for v in digests["cstring_by_arm"].values())
+        verdicts["arms_share_one_text_digest"] = len(
+            {v[0] for v in digests["text_by_arm"].values() if v}) == 1
+        verdicts["arms_have_distinct_cstring_digests"] = len(
+            {v[0] for v in digests["cstring_by_arm"].values() if v}) == len(by_arm)
+
+    # The divisor audit. The gate divisor is preregistered from the advisor's
+    # E60 512-token histogram; this prices the histogram the session actually
+    # produced with the same E1 round costs and reports the difference.
+    measured_share = {arm: m5_share_of_round_cost(rec["width_histogram"])
+                      for arm, rec in arms.items()}
+    prereg_share = m5_share_of_round_cost(E60_LEG_ROUNDS)
 
     payload = {
         "base_arm": BASE_ARM,
@@ -480,11 +465,21 @@ def main() -> int:
         "session_null_by_separation_pct": nulls,
         "bar_pct": bar,
         "regression_time_by_arm_and_position": regressions,
+        "worker_section_digests": digests,
+        "cell_conversion": conversions,
+        "m5_share_audit": {
+            "divisor_used": LOCAL_M5_SHARE,
+            "prereg_e60_histogram": E60_LEG_ROUNDS,
+            "prereg_share_recomputed": prereg_share,
+            "measured_share_by_arm": measured_share,
+            "e1_round_us": E1_ROUND_US,
+        },
         "predicted_pct": {
             "leg_basis": PREDICTED_LEG_PCT,
-            "t55_minus_rbx": PREDICTED_T55_MINUS_RBX_PCT,
-            "stop_rule_leg_pct": STOP_RULE_LEG_PCT,
-            "report_only_band_pct": list(REPORT_ONLY_BAND_PCT),
+            "stage_a_cell_pct": STAGE_A_CELL_PCT,
+            "qmv_share_of_leg": QMV_SHARE_OF_LEG,
+            "advance_implied_cell_pct": ADVANCE_IMPLIED_CELL_PCT,
+            "kill_implied_cell_pct": KILL_IMPLIED_CELL_PCT,
         },
         "entry_temperature_spread_c": (
             round(max(entry_temps) - min(entry_temps), 2) if entry_temps else None),
@@ -498,6 +493,8 @@ def main() -> int:
         "verdicts": verdicts,
         "prereg": json.loads(PREREG.read_text()),
         "prereg_amendment": json.loads(PREREG_AMENDMENT.read_text()),
+        "stage_a_cells": (json.loads(CELLS.read_text())["routes"]
+                          if CELLS.exists() else None),
     }
 
     print("E59 rung 4 legs, in run order:")
@@ -555,6 +552,42 @@ def main() -> int:
             t_text = "  t=%+.4f" % term["t"] if term["t"] is not None else ""
             print("    %-18s %+.6e +/- %.3e%s%s"
                   % (name, term["estimate"], term["std_error"], t_text, pct_text))
+
+    print("\nM=5 share of leg round cost, priced with the E1 round costs")
+    print("  %-22s %s" % ("preregistered divisor", LOCAL_M5_SHARE))
+    if prereg_share["available"]:
+        print("  %-22s %.5f  (E60 512-token histogram %s)"
+              % ("recomputed", prereg_share["m5_share"], E60_LEG_ROUNDS))
+    for arm, share in measured_share.items():
+        if share["available"]:
+            print("  %-22s %.5f  (this session, %s)"
+                  % ("measured " + arm, share["m5_share"],
+                     arms[arm]["width_histogram"]))
+
+    print("\nCELL GATE   implied_cell_pct = leg_pct / %.4f" % LOCAL_M5_SHARE)
+    print("  advance if <= %.1f %% with a stable sign, report-only down to"
+          " %.1f %%, kill above it"
+          % (ADVANCE_IMPLIED_CELL_PCT, KILL_IMPLIED_CELL_PCT))
+    for arm, conv in conversions.items():
+        print("  %-10s leg %+.4f %% -> cell %+.3f %%   (round-cost basis"
+              " %+.4f %% -> cell %+.3f %%)"
+              % (arm, conv["raw_leg_pct"], conv["implied_cell_pct"],
+                 conv["raw_round_cost_pct"],
+                 conv["implied_cell_pct_from_round_cost"]))
+        print("  %-10s per-leg %s  sign stable %s  GATE %s"
+              % ("", ["%+.4f" % p for p in conv["per_leg_pct"]],
+                 conv["sign_stable_across_palindrome"], conv["gate"].upper()))
+        if conv["stage_a_measured_cell_pct"] is not None:
+            print("  %-10s stage A measured the same cell at %+.3f %%"
+                  % ("", conv["stage_a_measured_cell_pct"]))
+
+    if digests["available"]:
+        print("\nworker section digests (first 12 hex)")
+        for arm in sorted(digests["text_by_arm"]):
+            print("  %-10s __text %s  __cstring %s"
+                  % (arm,
+                     ",".join(d[:12] for d in digests["text_by_arm"][arm]),
+                     ",".join(d[:12] for d in digests["cstring_by_arm"][arm])))
 
     print("\nVERDICTS")
     for name, value in verdicts.items():

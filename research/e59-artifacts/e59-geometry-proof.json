@@ -1,7 +1,7 @@
 {
   "experiment": "E59",
   "stage": "geometry-proof",
-  "head": "f90079fc734c1162b3c5208e92aefe8a9707d354",
+  "head": "cd7ec469bb95149935cb2d8b88b9927b92ddcfaa",
   "physical_memory_gib": 48,
   "replaces": "worker_low_memory_notices grep (withdrawn: unfalsifiable on a timed leg, mtp-timed swallows worker stderr)",
   "profile_probes": [
@@ -92,6 +92,41 @@
           }
         ],
         "tight_slower_than_loose_pct": -0.2514313813276275,
+        "min_effect_pct": 3.0,
+        "order": "tight cap first (colder), loose cap second (warmer)",
+        "passed": false
+      },
+      {
+        "label": "extreme ops=1 vs ops=50",
+        "legs": [
+          {
+            "tag": "e59-geom-ops1",
+            "requested_ops_per_buffer": 1,
+            "startup_memory_profile": "full",
+            "wired_residency_active": "false",
+            "commit": null,
+            "decode_tokens": 64,
+            "mtp_seconds_per_token": 0.08783420361578465,
+            "serial_seconds_per_token": 0.13202693685889244,
+            "all_tokens_matched": true,
+            "gpu_temp_entry_c": "43.36538314819336",
+            "gpu_temp_exit_c": "66.26371002197266"
+          },
+          {
+            "tag": "e59-geom-ops50x",
+            "requested_ops_per_buffer": 50,
+            "startup_memory_profile": "full",
+            "wired_residency_active": "false",
+            "commit": null,
+            "decode_tokens": 64,
+            "mtp_seconds_per_token": 0.08736774884164333,
+            "serial_seconds_per_token": 0.13050574995577335,
+            "all_tokens_matched": true,
+            "gpu_temp_entry_c": "44.190399169921875",
+            "gpu_temp_exit_c": "67.12017059326172"
+          }
+        ],
+        "tight_slower_than_loose_pct": 0.5338981263976195,
         "min_effect_pct": 3.0,
         "order": "tight cap first (colder), loose cap second (warmer)",
         "passed": false

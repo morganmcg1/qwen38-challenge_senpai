@@ -27,6 +27,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from e46_analyze import load  # noqa: E402
 from e49_analyze import contrast  # noqa: E402
 from e54_bandwidth import bandwidth_rows  # noqa: E402
+from e59_ols import arm_contrast, fit_arm_position  # noqa: E402
 import e54_analyze  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
@@ -97,6 +98,33 @@ def cell_bandwidth(legs: list[dict]) -> dict[int, dict]:
     return out
 
 
+def cell_regression(legs: list[dict], width: int, base_arm: str = "shipped") -> dict:
+    """`t_ms(width) ~ arm + leg_position`, the campaign-standard estimator.
+
+    A palindrome makes arm and linear position orthogonal, so these arm
+    contrasts reproduce the plain means. The fit is still worth reporting: the
+    position coefficient prices the session drift the palindrome cancelled, and
+    the residual sd is a second, independent read of the replicate noise.
+    """
+    observations = [
+        {"arm": leg["arm"], "position": position, "value": leg["t_ms"][width],
+         "label": leg["tag"]}
+        for position, leg in enumerate(legs, start=1)
+        if width in leg["t_ms"]
+    ]
+    if not observations:
+        return {"fitted": False, "reason": f"no leg reports width {width}"}
+    fit = fit_arm_position(observations, base_arm)
+    if not fit.get("fitted"):
+        return fit
+    arms = sorted({obs["arm"] for obs in observations})
+    fit["contrasts"] = {
+        f"{left}_vs_{right}": arm_contrast(fit, left, right)
+        for left in arms for right in arms if left != right
+    }
+    return fit
+
+
 def route_report(arms: dict, treated_arm: str, control_arm: str) -> dict | None:
     if treated_arm not in arms or control_arm not in arms:
         return None
@@ -149,6 +177,8 @@ def main() -> int:
     }
 
     bandwidth = {arm: cell_bandwidth(arm_legs) for arm, arm_legs in arms.items()}
+    widths = sorted(legs[0]["t_ms"])
+    regressions = {m: cell_regression(legs, m) for m in widths}
 
     t55 = routes["t55_vs_shipped"]
     realisation = None
@@ -166,6 +196,7 @@ def main() -> int:
         "kill_rule_pct": KILL_RULE_PCT,
         "routes": routes,
         "bandwidth": bandwidth,
+        "regression_t_ms_by_arm_and_position": regressions,
         "t55_model_realisation": realisation,
         "legs": legs,
     }
@@ -200,8 +231,30 @@ def main() -> int:
                 f"single-pass {b['single_pass_gbps']:6.1f} GB/s "
                 f"modelled {b['modelled_gbps']:6.1f} GB/s"
             )
+    fit = regressions.get(TREATED_WIDTH, {})
+    if fit.get("fitted"):
+        print(
+            f"\nregression  t_ms(M={TREATED_WIDTH}) ~ arm + leg_position "
+            f"(n={fit['n']}, residual dof={fit['residual_dof']}, "
+            f"residual sd={fit['residual_sd_pct_of_base']:.4f} % of base)"
+        )
+        print(f"  drift {fit['position_drift_pct_of_base_per_leg']:+.4f} % per leg")
+        for name, term in fit["terms"].items():
+            if not name.startswith("arm["):
+                continue
+            t = term["t"]
+            print(
+                f"  {name:18s} {term['estimate_pct_of_base']:+8.4f} % of base"
+                + (f"  t={t:+.2f}" if t is not None else "")
+            )
+        gap = fit["contrasts"].get("m5_rbx_vs_t55")
+        if gap and gap["available"]:
+            print(
+                f"  m5_rbx - t55      {gap['estimate_pct_of_base']:+8.4f} % "
+                f"+/- {gap['std_error_pct_of_base']:.4f} %  t={gap['t']:+.2f}"
+            )
     if realisation is not None:
-        print(f"t55 realisation vs model {MODEL_PREDICTED_PCT} % = {realisation:.3f}")
+        print(f"\nt55 realisation vs model {MODEL_PREDICTED_PCT} % = {realisation:.3f}")
     print(f"routes clearing the kill rule: {survivors or 'none'} -> {out}")
     return 0 if survivors else 2
 
