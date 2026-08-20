@@ -60,6 +60,27 @@ RANKED_CORE_ASSUMPTIONS = [20, 24, 40]
 RANKED_WIDTH_MIX = {3: 0.0325, 4: 0.142, 5: 0.241, 6: 0.334, 7: 0.122,
                     8: 0.0735, 9: 0.0575}
 
+# The log cost of one extra x-group weight pass. This census CANNOT identify it:
+# every family it measures has out_vec_size >= 4096, so all five families share
+# one IPG at a given width, and the per-width intercept absorbs the whole group
+# term. The value is imported from prior art measured on this host family at
+# M=6, senpai/campaign-ledger.md item 157: "R1, the second weight pass: +0.1196
+# as attributed", pre-registered band [0.130, 0.200], point estimate +0.1658.
+# The low end is the conservative attributed value; the high end is the top of
+# the registered band. That +12 % rather than +100 % for a doubled weight stream
+# is itself evidence that the second pass is mostly cache-served.
+G_GROUP_PASS_LOG = math.log(1.1196)
+G_GROUP_PASS_LOG_RANGE = (math.log(1.1196), math.log(1.200))
+
+# Independent prior-art bracket on the same knee, ledger item 157 R3: grid
+# thinning by 2x costs "+7.4 pp at 1280 TGs decaying to ~0 at >=4120 TGs" at
+# identical n and identical traffic. Under the hard-knee model a 2x thinning of
+# a grid at T working threadgroups costs A*[max(0, lnK - ln(T/2)) - max(0, lnK -
+# lnT)]. Zero cost at T=4120 requires K <= 2060; the full A*ln2 cost at T=1280
+# requires K >= 1280 and gives A = 0.074/ln2.
+E33_R3_KNEE_BRACKET = (1280.0, 2060.0)
+E33_R3_IMPLIED_A = 0.074 / math.log(2.0)
+
 
 def reduce_session(path: str) -> dict:
     payload = json.load(open(path))
@@ -164,13 +185,15 @@ def ols(design: list[list[float]], y: list[float]) -> list[float]:
 
 
 def fit_knee(rows: list[dict], knee_grid=None) -> dict:
-    """ln(ms/GB) = a_M + A * max(0, ln(knee) - ln(tgs)) + B_ipg * (k_blocks - 96).
+    """ln(ms/GB) = a_M + A * max(0, ln(knee) - ln(tgs)) + B_w * (k_blocks - 96).
 
-    Per-width intercepts absorb the pure width term, so `A` is identified only
-    by cross-family variation in the working threadgroup count and by how that
-    variation changes when the shipped table doubles the group count. The depth
-    coefficient is split at IPG=6, which E71 found is the one width whose
-    reduction-depth penalty is anomalous.
+    Per-width intercepts absorb every uniform width term, including the whole
+    effect of the shipped group count, because all five families here have
+    out_vec_size >= 4096 and therefore share one IPG at a given width. `A` is
+    identified only by cross-family variation in the working threadgroup count
+    at a fixed width. The depth slope is split at width 6, which E71 found is
+    the one width whose reduction-depth penalty is anomalous; width 6 is also
+    the only width with IPG=6, so the two readings are not separable here.
     """
     widths = sorted({r["width"] for r in rows})
     if knee_grid is None:
@@ -181,8 +204,8 @@ def fit_knee(rows: list[dict], knee_grid=None) -> dict:
         for r in rows:
             row = [1.0 if r["width"] == w else 0.0 for w in widths]
             row.append(max(0.0, math.log(knee) - math.log(r["working_tgs"])))
-            row.append((r["k_blocks"] - 96) * (1.0 if r["ipg"] != 6 else 0.0))
-            row.append((r["k_blocks"] - 96) * (1.0 if r["ipg"] == 6 else 0.0))
+            row.append((r["k_blocks"] - 96) * (1.0 if r["width"] != 6 else 0.0))
+            row.append((r["k_blocks"] - 96) * (1.0 if r["width"] == 6 else 0.0))
             d.append(row)
         return d
 
@@ -215,7 +238,7 @@ def fit_knee(rows: list[dict], knee_grid=None) -> dict:
         "width_intercepts": {str(w): beta[i] for i, w in enumerate(widths)},
         "A_per_log_deficit": beta[len(widths)],
         "B_depth_per_k_block": beta[len(widths) + 1],
-        "B_depth_per_k_block_ipg6": beta[len(widths) + 2],
+        "B_depth_per_k_block_width6": beta[len(widths) + 2],
         "knee_working_tgs": best["knee"],
         "knee_interval_working_tgs": [min(inside), max(inside)] if inside else None,
         "knee_spans_whole_grid": bool(inside and
@@ -396,20 +419,52 @@ def ranked_extrapolation(fit: dict, cores_local: int) -> dict:
     return out
 
 
+def r3_bracket_crosscheck(fit: dict) -> dict:
+    """Compare the fitted knee with ledger item 157's independent R3 bracket.
+
+    R3 was measured at identical n and identical traffic, so it isolates the
+    same occupancy term this census fits, on the same host family, without
+    sharing an instrument with it.
+    """
+    lo, hi = E33_R3_KNEE_BRACKET
+    knee = fit["knee_working_tgs"]
+    interval = fit.get("knee_interval_working_tgs")
+    overlaps = bool(interval and interval[0] <= hi and interval[1] >= lo)
+    return {
+        "prior_bracket_working_tgs": [lo, hi],
+        "prior_implied_A": E33_R3_IMPLIED_A,
+        "fitted_knee_working_tgs": knee,
+        "fitted_A": fit["A_per_log_deficit"],
+        "point_inside_bracket": bool(lo <= knee <= hi),
+        "interval_overlaps_bracket": overlaps,
+        "A_ratio_fitted_over_prior": fit["A_per_log_deficit"] / E33_R3_IMPLIED_A,
+        "note": ("independent corroboration, not a pre-registered gate. The "
+                 "pre-registered E33 control is the sign-flip window."),
+    }
+
+
 def recommendation(fit: dict, cores_local: int, width_taxes: dict) -> dict:
     """Rung 3. A recommended IPG per (M, out_vec_size band), with predictions.
 
-    Cost model, in the fitted units: relative cost of a cell is
-    exp(A * max(0, ln(knee) - ln(working_tgs))) at fixed width and fixed shape.
-    A is the NET effect of a group-count change, because the census measures
-    ms/GB with the weights counted once while the shipped table doubles the real
-    weight traffic at groups=2. The traffic cost is therefore already inside A.
+    Cost model at fixed width and fixed shape, in the fitted log units:
+
+        cost(IPG) = A * max(0, ln(knee) - ln(working_tgs))   # occupancy, fitted
+                  + G * (groups - 1)                         # weight passes
+                  + depth term
+
+    The two terms come from different instruments and that is deliberate. A is
+    fitted here, but G is NOT identified by this design: every family measured
+    has out_vec_size >= 4096, so one width has one IPG for all five families and
+    the per-width intercept absorbs the whole group term. G is therefore
+    imported from ledger item 157 R1. Each cell is scored at the low, point and
+    high value of G, and a recommendation counts as robust only when the
+    argument of the minimum does not move across that range.
     """
     a = fit["A_per_log_deficit"]
     knee = fit["knee_working_tgs"]
-    b_hi = fit["B_depth_per_k_block_ipg6"]
-    b_lo = fit["B_depth_per_k_block"]
     pen = lambda t: max(0.0, math.log(knee) - math.log(t))
+    g_variants = {"g_zero": 0.0, "g_point": G_GROUP_PASS_LOG,
+                  "g_high": G_GROUP_PASS_LOG_RANGE[1]}
 
     bands = [("1024-4095 pair kernel", 2048), ("4096-8191", 5120),
              ("8192-16383", 14336), ("16384-32767", 16480), ("32768+", 34816)]
@@ -421,26 +476,51 @@ def recommendation(fit: dict, cores_local: int, width_taxes: dict) -> dict:
             for ipg in (2, 3, 4, 5, 6):
                 if ipg > m or m % ipg == 1:
                     continue  # wrapper static_asserts, quantized.h:1168-1169
-                tgs = math.ceil(m / ipg) * math.ceil(n_rep / 8)
-                depth = (b_hi - b_lo) if ipg == 6 else 0.0
+                groups = math.ceil(m / ipg)
+                tgs = groups * math.ceil(n_rep / 8)
+                occ = a * pen(tgs)
                 candidates[ipg] = {
                     "working_tgs": tgs, "tgs_per_core": tgs / cores_local,
-                    "groups": math.ceil(m / ipg),
-                    "predicted_log_cost": a * pen(tgs) + depth * 176,
+                    "groups": groups,
+                    "occupancy_log_cost": occ,
+                    "predicted_log_cost": {
+                        k: occ + g * (groups - 1)
+                        for k, g in g_variants.items()},
                 }
             if not candidates:
                 continue
-            best = min(candidates, key=lambda i: candidates[i]["predicted_log_cost"])
-            shipped_cost = candidates.get(shipped_ipg, {}).get("predicted_log_cost")
-            gain = (1 - math.exp(candidates[best]["predicted_log_cost"] - shipped_cost)) \
-                if shipped_cost is not None else None
+            argmin = {k: min(candidates,
+                             key=lambda i: candidates[i]["predicted_log_cost"][k])
+                      for k in g_variants}
+            best = argmin["g_point"]
+            safe = min((i for i in candidates if candidates[i]["groups"] <= 2),
+                       key=lambda i: candidates[i]["predicted_log_cost"]["g_point"])
+            shipped = candidates.get(shipped_ipg)
+            gain = None
+            if shipped is not None:
+                gain = {k: 1 - math.exp(candidates[best]["predicted_log_cost"][k]
+                                        - shipped["predicted_log_cost"][k])
+                        for k in g_variants}
+            # The 1024-4095 band runs the separate pair kernel at NA=2 for every
+            # width, quantized.h:1980-2023. Its constraints are not the IPG-table
+            # constraints, and no family in this census lands in it, so the model
+            # is outside its identified domain there.
+            applies = n_rep >= 4096
             table[f"M{m}/{band_name}"] = {
                 "M": m, "band": band_name, "representative_n": n_rep,
-                "shipped_ipg": shipped_ipg, "recommended_ipg": best,
-                "change": best != shipped_ipg,
+                "model_applies": applies,
+                "shipped_ipg": shipped_ipg,
+                "recommended_ipg": best if applies else shipped_ipg,
+                "recommended_ipg_groups_le_2": safe if applies else shipped_ipg,
+                "change": bool(applies and best != shipped_ipg),
+                "argmin_by_g": argmin,
+                "robust_to_group_pass_cost": len(set(argmin.values())) == 1,
                 "predicted_local_gain_fraction_of_that_cell_width_tax": gain,
                 "candidates": candidates,
-                "extrapolated": bool(math.ceil(m / best) > 2),
+                "extrapolated_group_count": bool(candidates[best]["groups"] > 2),
+                "uniform_group_term_not_identified_here": True,
+                "uniform_group_term_source":
+                    "ledger item 157 R1, second weight pass at M=6, same host family",
             }
 
     # Value, expressed only as a share of the measured verify-width tax.
@@ -538,6 +618,7 @@ def main() -> int:
                          for r in rows if r["session"] == "e71" and r["width"] == 6}
     if fit.get("resolved"):
         report["rung2"]["positive_control_e33"] = e33_positive_control(fit, tax_by_family)
+        report["rung2"]["independent_r3_bracket"] = r3_bracket_crosscheck(fit)
         report["rung2"]["ranked_extrapolation"] = ranked_extrapolation(fit, cores)
         total_tax = sum(v["tax_ms"] for v in tax_by_family.values())
         width_taxes = {f: v["tax_ms"] / total_tax for f, v in tax_by_family.items()}
