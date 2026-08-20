@@ -66,6 +66,52 @@ def group_of(name: str) -> str:
     raise AssertionError(name)
 
 
+QUANT_PARTS = (".weight", ".scales", ".biases")
+
+
+def stream_bytes_by_precision(tensors: dict, derived: int) -> dict:
+    """Split the per-draft read into bandwidth classes, not one flat total.
+
+    A single bytes-per-millisecond law cannot fit these six heads: the
+    controlled pinned/master-bf16 pair differs only in the readout and implies
+    856 GB/s, which is above the machine's measured 226 GB/s peak. Bytes of
+    2-bit weight cost more milliseconds than bytes of BF16 weight because each
+    byte carries four times as many values to unpack, so the classes have to be
+    priced separately.
+
+    `precision_islands` is excluded: `installExactQKVRows`
+    (`Qwen35.swift:2999-3008`) writes those rows into the *target's*
+    `Qwen35Attention`, so they are read by the 16 full-attention layers of the
+    target and never by the head's draft step.
+    """
+    quant: dict[str, dict[str, dict]] = {}
+    for name, t in tensors.items():
+        for part in QUANT_PARTS:
+            if name.endswith(part):
+                quant.setdefault(name[: -len(part)], {})[part[1:]] = t
+                break
+
+    classes: dict[str, int] = {}
+    for name, t in tensors.items():
+        if group_of(name) == "precision_islands":
+            continue
+        module = next((name[: -len(p)] for p in QUANT_PARTS if name.endswith(p)), None)
+        parts = quant.get(module, {}) if module else {}
+        w, s = parts.get("weight"), parts.get("scales")
+        if w is not None and s is not None and w["dtype"] == "U32":
+            bits = w["shape"][1] * 32 // (s["shape"][1] * 64)
+            label = f"q{bits}"
+        else:
+            label = t["dtype"].lower()
+        classes[label] = classes.get(label, 0) + t["bytes"]
+
+    if derived:
+        # The derived compact head is an affine-4 g64 trim built at warm time,
+        # so it streams in the same class as a shipped 4-bit readout.
+        classes["q4"] = classes.get("q4", 0) + derived
+    return dict(sorted(classes.items()))
+
+
 def split_tree(directory: Path) -> dict:
     groups: dict[str, dict] = {}
     tensors = {}
@@ -88,6 +134,7 @@ def split_tree(directory: Path) -> dict:
     tensor_bytes = sum(t["bytes"] for t in tensors.values())
     ships_readout = "draft_lm_head" in groups
     derived = 0 if ships_readout else COMPACT_BYTES
+    streamed = stream_bytes_by_precision(tensors, derived)
     return {
         "path": str(directory),
         "tree_sha256": digest,
@@ -99,6 +146,8 @@ def split_tree(directory: Path) -> dict:
         "ships_draft_lm_head": ships_readout,
         "derived_compact_draft_head_bytes": derived,
         "traffic_bytes_per_draft": tensor_bytes + derived,
+        "head_stream_bytes_by_precision": streamed,
+        "head_stream_bytes": sum(streamed.values()),
         "groups": groups,
         "tensors": tensors,
     }
@@ -178,6 +227,14 @@ def main() -> None:
         print(f"{arm.ljust(13)}{e['tensor_bytes']:>18,}"
               f"{e['derived_compact_draft_head_bytes']:>18,}"
               f"{e['traffic_bytes_per_draft']:>18,}  {e['ships_draft_lm_head']}")
+
+    classes = sorted({c for e in report["arms"].values() for c in e["head_stream_bytes_by_precision"]})
+    print("\n=== head stream bytes per draft by precision class (islands excluded) ===")
+    print("arm".ljust(13) + "".join(c.rjust(18) for c in classes) + "total".rjust(18))
+    for arm, e in report["arms"].items():
+        s = e["head_stream_bytes_by_precision"]
+        print(arm.ljust(13) + "".join(f"{s.get(c, 0):>18,}" for c in classes)
+              + f"{e['head_stream_bytes']:>18,}")
 
     Path(args.out).write_text(json.dumps(report, indent=2, default=str))
     print(f"\nwrote {args.out}")
