@@ -100,6 +100,42 @@ def summarize(tag_dir: Path, warmup: int) -> dict:
     return out
 
 
+def affine_fit(rollup: dict, byte_key: str) -> dict | None:
+    """Least-squares `ms = intercept + bytes / bandwidth` over the arm medians.
+
+    Two byte accountings compete. `tensor_bytes` counts only what the head
+    artifact ships. `traffic_bytes` adds the compact draft head that the
+    runtime derives when the artifact ships no `draft_lm_head`. The fit that
+    leaves the smaller residual is the one that describes the hardware.
+    """
+    pts = [(a, v[byte_key], v["head_phase_ms_per_draft_median"])
+           for a, v in rollup.items() if v.get(byte_key)]
+    # Distinct byte counts, not distinct arms: identical builds share a point.
+    if len({p[1] for p in pts}) < 2:
+        return None
+    mx = st.mean(p[1] for p in pts)
+    my = st.mean(p[2] for p in pts)
+    sxx = sum((p[1] - mx) ** 2 for p in pts)
+    slope = sum((p[1] - mx) * (p[2] - my) for p in pts) / sxx
+    intercept = my - slope * mx
+    residuals = {}
+    for arm, x, y in pts:
+        pred = intercept + slope * x
+        residuals[arm] = {
+            "bytes": x, "measured_ms": y, "predicted_ms": pred,
+            "residual_ms": y - pred, "residual_frac": (y - pred) / y,
+        }
+    return {
+        "byte_key": byte_key,
+        "intercept_ms": intercept,
+        "ms_per_byte": slope,
+        "effective_gb_per_s": 1e-6 / slope if slope > 0 else None,
+        "residuals": residuals,
+        "max_abs_residual_frac":
+            max(abs(r["residual_frac"]) for r in residuals.values()),
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("tags", nargs="+")
@@ -120,6 +156,7 @@ def main() -> None:
         if entry:
             leg["tree_bytes"] = entry["tree_bytes"]
             leg["tensor_bytes"] = entry["tensor_bytes"]
+            leg["traffic_bytes"] = entry["traffic_bytes_per_draft"]
             leg["bytes_per_ms_head_step"] = (
                 entry["tensor_bytes"] / leg["head_phase_ms_per_draft"]["median"])
         t0 = float(leg["gpu_temp_entry_c"] or "nan")
@@ -137,25 +174,46 @@ def main() -> None:
     for leg in legs:
         by_arm.setdefault(leg["arm"], []).append(leg)
     print("\n=== per arm (median across legs) ===")
-    print("arm".ljust(13) + "legs  head ms/draft  tensor bytes    bytes per ms")
+    print("arm".ljust(13) + "legs  head ms/draft   artifact B/ms    traffic B/ms")
     rollup = {}
     for arm, group in by_arm.items():
         ms = st.median(g["head_phase_ms_per_draft"]["median"] for g in group)
         tb = group[0].get("tensor_bytes")
+        tr = group[0].get("traffic_bytes")
         rollup[arm] = {
             "legs": [g["tag"] for g in group],
             "head_phase_ms_per_draft_median": ms,
+            "head_phase_ms_per_draft_legs":
+                [g["head_phase_ms_per_draft"]["median"] for g in group],
             "chain_gpu_ms_per_draft_median":
                 st.median(g["chain_gpu_ms_per_draft"]["median"] for g in group),
             "tensor_bytes": tb,
-            "bytes_per_ms": tb / ms if tb else None,
+            "traffic_bytes": tr,
+            "artifact_bytes_per_ms": tb / ms if tb else None,
+            "traffic_bytes_per_ms": tr / ms if tr else None,
             "gate_qualified_for_timing":
                 sorted({g["gate_qualified_for_timing"] for g in group}),
         }
         print(f"{arm.ljust(13)}{len(group):5d}{ms:15.3f}"
-              + (f"{tb:15,}{tb / ms:16,.0f}" if tb else f"{'unknown head dir':>31}"))
+              + (f"{tb / ms:16,.0f}{tr / ms:16,.0f}" if tb
+                 else f"{'unknown head dir':>32}"))
 
-    Path(args.out).write_text(json.dumps({"legs": legs, "by_arm": rollup}, indent=2))
+    fits = {key: affine_fit(rollup, key) for key in
+            ("tensor_bytes", "traffic_bytes")}
+    print("\n=== which byte accounting predicts the measured head step? ===")
+    for key, fit in fits.items():
+        if not fit:
+            continue
+        print(f"{key}: {fit['effective_gb_per_s']:.1f} GB/s"
+              f"  fixed {fit['intercept_ms']:.3f} ms"
+              f"  max |residual| {100 * fit['max_abs_residual_frac']:.1f}%")
+        for arm, r in fit["residuals"].items():
+            print(f"    {arm.ljust(13)}measured {r['measured_ms']:6.3f}"
+                  f"  predicted {r['predicted_ms']:6.3f}"
+                  f"  {100 * r['residual_frac']:+6.1f}%")
+
+    Path(args.out).write_text(json.dumps(
+        {"legs": legs, "by_arm": rollup, "byte_law_fits": fits}, indent=2))
     print(f"\nwrote {args.out}")
 
 

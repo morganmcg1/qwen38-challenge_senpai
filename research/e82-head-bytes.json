@@ -8,6 +8,9 @@
       "safetensors_bytes": 849400347,
       "file_count": 5,
       "tensor_count": 15,
+      "ships_draft_lm_head": false,
+      "derived_compact_draft_head_bytes": 283207680,
+      "traffic_bytes_per_draft": 1132606464,
       "groups": {
         "fc": {
           "bytes": 104857600,
@@ -148,6 +151,9 @@
       "safetensors_bytes": 427742600,
       "file_count": 2,
       "tensor_count": 40,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 427738112,
       "groups": {
         "draft_lm_head": {
           "bytes": 157337600,
@@ -503,6 +509,9 @@
       "safetensors_bytes": 427742624,
       "file_count": 2,
       "tensor_count": 40,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 427738112,
       "groups": {
         "draft_lm_head": {
           "bytes": 157337600,
@@ -858,6 +867,9 @@
       "safetensors_bytes": 427742640,
       "file_count": 2,
       "tensor_count": 40,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 427738112,
       "groups": {
         "draft_lm_head": {
           "bytes": 157337600,
@@ -1213,6 +1225,9 @@
       "safetensors_bytes": 1006738624,
       "file_count": 2,
       "tensor_count": 18,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 1006736384,
       "groups": {
         "draft_lm_head": {
           "bytes": 157337600,
@@ -1385,6 +1400,9 @@
       "safetensors_bytes": 1006738224,
       "file_count": 2,
       "tensor_count": 18,
+      "ships_draft_lm_head": true,
+      "derived_compact_draft_head_bytes": 0,
+      "traffic_bytes_per_draft": 1006736384,
       "groups": {
         "draft_lm_head": {
           "bytes": 157337600,

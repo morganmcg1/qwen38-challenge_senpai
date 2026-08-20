@@ -38,6 +38,16 @@ ARMS = {
 }
 MANIFEST = Path("fixtures/qwen3_8_27b_mtp_head.sha256")
 
+# A head that ships no `draft_lm_head` does NOT skip the readout: the runtime
+# derives a compact affine-4 g64 trim of the exact lm_head at warm and reads
+# all of it on every draft step (`Qwen35.swift:3126-3153`,
+# `compactDraftPaddedCount = 98_336`, hidden 5120). Those bytes are absent
+# from the artifact but present in the traffic, so a bytes-per-millisecond
+# fit that ignores them mis-prices the pinned head by a factor of 1.33.
+COMPACT_ROWS = 98_336
+COMPACT_BYTES = (COMPACT_ROWS * (5120 * 4 // 32) * 4   # u32 4-bit weight
+                 + 2 * COMPACT_ROWS * (5120 // 64) * 2)  # bf16 scales + biases
+
 # `fc` is the once-per-round join of embedding and hidden state; the trunk is
 # the single decoder layer that follows it; `draft_lm_head` is the readout over
 # the 248,320-entry vocabulary; islands are the BF16 rows kept exact.
@@ -75,14 +85,20 @@ def split_tree(directory: Path) -> dict:
     # The lock file is runtime state the fetcher writes, not part of the head.
     payload = [p for p in files if p.suffix == ".safetensors"]
     digest, total = tree_digest(directory)
+    tensor_bytes = sum(t["bytes"] for t in tensors.values())
+    ships_readout = "draft_lm_head" in groups
+    derived = 0 if ships_readout else COMPACT_BYTES
     return {
         "path": str(directory),
         "tree_sha256": digest,
         "tree_bytes": total,
-        "tensor_bytes": sum(t["bytes"] for t in tensors.values()),
+        "tensor_bytes": tensor_bytes,
         "safetensors_bytes": sum(p.stat().st_size for p in payload),
         "file_count": len(files),
         "tensor_count": len(tensors),
+        "ships_draft_lm_head": ships_readout,
+        "derived_compact_draft_head_bytes": derived,
+        "traffic_bytes_per_draft": tensor_bytes + derived,
         "groups": groups,
         "tensors": tensors,
     }
@@ -154,6 +170,14 @@ def main() -> None:
         print(arm.ljust(13) + "".join(
             f"{100 * e['groups'][g]['bytes'] / tot:19.1f}%" if g in e["groups"] else "                   -"
             for g in order))
+
+    print("\n=== traffic read per draft step (artifact + derived readout) ===")
+    print("arm".ljust(13) + "artifact tensors".rjust(18)
+          + "derived compact".rjust(18) + "traffic".rjust(18) + "  ships readout")
+    for arm, e in report["arms"].items():
+        print(f"{arm.ljust(13)}{e['tensor_bytes']:>18,}"
+              f"{e['derived_compact_draft_head_bytes']:>18,}"
+              f"{e['traffic_bytes_per_draft']:>18,}  {e['ships_draft_lm_head']}")
 
     Path(args.out).write_text(json.dumps(report, indent=2, default=str))
     print(f"\nwrote {args.out}")
