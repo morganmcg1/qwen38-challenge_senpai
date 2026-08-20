@@ -87,4 +87,50 @@ echo "e61-binary-assert OK: ${worker} embeds M=6 NA=${na6}, M=9 NA=${na9}, wide-
 echo "e61_binary_assert_m6_na=${na6}"
 echo "e61_binary_assert_m9_na=${na9}"
 echo "e61_binary_assert_wide_bound=${bound}"
-echo "e61_binary_assert_worker_sha256=$(shasum -a 256 "${worker}" | awk '{print $1}')"
+# The Mach-O UUID and code signature are not reproducible across rebuilds, so the
+# whole-file digest cannot certify that two workers hold the same code. Hash the
+# __TEXT,__text section instead.
+text_sha="$(python3 - "${worker}" <<'PY'
+import hashlib
+import subprocess
+import sys
+
+path = sys.argv[1]
+lines = subprocess.run(
+    ["otool", "-l", path], capture_output=True, text=True, check=True
+).stdout.splitlines()
+
+hits = []
+for i, line in enumerate(lines):
+    if line.strip() != "sectname __text":
+        continue
+    block = lines[i : i + 8]
+    if not any(l.strip() == "segname __TEXT" for l in block):
+        continue
+    off = size = None
+    for l in block:
+        parts = l.split()
+        if len(parts) != 2:
+            continue
+        if parts[0] == "size":
+            size = int(parts[1], 16)
+        elif parts[0] == "offset":
+            off = int(parts[1])
+    if off is None or size is None:
+        sys.exit(f"e61-binary-assert: incomplete __TEXT,__text header in {path}")
+    hits.append((off, size))
+
+if len(hits) != 1:
+    sys.exit(f"e61-binary-assert: found {len(hits)} __TEXT,__text sections in {path}; expected 1")
+
+off, size = hits[0]
+with open(path, "rb") as fh:
+    fh.seek(off)
+    data = fh.read(size)
+if len(data) != size:
+    sys.exit(f"e61-binary-assert: short read of __TEXT,__text in {path}")
+print(hashlib.sha256(data).hexdigest())
+PY
+)" || fail "cannot hash __TEXT,__text of ${worker}"
+
+echo "e61_binary_assert_worker_text_sha256=${text_sha}"

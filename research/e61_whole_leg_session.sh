@@ -24,6 +24,10 @@ readonly SCORED_FILES=(
 readonly BASE_SHA="${E61_BASE_SHA:-d2139c924c7a7d98ca6026eea63867c2776abbca}"
 readonly ARMS_MODULE="${E61_ARMS_MODULE:-research/e61_arms.py}"
 readonly MANIFEST="${E61_MANIFEST_DIR:-${repo_root}/.mlxfast-private/e61/arms}"
+# Rung 2 reuses this patch/commit/unwind driver with the ledger runner, which
+# needs the same per-arm build and the same guarantee that the branch's scored
+# surface returns to base bytes between arms.
+readonly LEG_RUNNER="${E61_LEG_RUNNER:-research/e61-run.sh}"
 
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-e61-single-stream-qmv-m6}"
@@ -91,7 +95,7 @@ branch's scored surface stays byte-identical to ${BASE_SHA}. This commit exists
 only so the bytes the compiler saw are reachable while the arm runs."
   transient_sha="$(git rev-parse HEAD)"
 
-  research/e61-run.sh "${tag}" "$@"
+  "${LEG_RUNNER}" "${tag}" "$@"
   rc=$?
   echo "e61_whole_leg_session: ${tag} (${arm}) exited ${rc}" >&2
 
