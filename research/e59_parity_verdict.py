@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""E59 rung 2 verdict: turn the parity digests into a pass or a hard stop.
+"""E59 rung 4 verdict: turn the parity digests into a pass or a hard stop.
 
 Stop rule 2 is "any delta at any M <= 9 is a hard stop", and a check that cannot
 fail is not a check. This asserts BOTH halves:
 
-  candidates   `m5_rb2` and `m5_rbx` must be bit-identical to the unchanged base
-               at every swept width and bit width.
-  ceiling arm  `ceil_only` must be identical at every REACHABLE width (M <= 9).
-               M = 10 is outside the scored contract, so its digest is recorded
-               but not constrained: the arm exists to buy register pressure, not
-               to change any answer the session can ask for.
-  controls     each defect arm must diverge, and only at M = 5, bits = 4.
+  candidates   `t55` and `m5_rbx` must be bit-identical to the unchanged base at
+               every swept width and bit width. `m5_rbx` holds NA fixed, so its
+               answer is exact by construction and this only confirms the build.
+               `t55` merges the accumulator groups {3, 2} into one group of 5,
+               so its exactness is an empirical claim and this gate is the only
+               thing that establishes it before the arm is timed.
+  controls     each defect arm must diverge, and only where its defect lives.
+               `perturb_lanes` is gated on NA == 5, and E55 shipped `<T,9,5>`,
+               so the lane control fires at M=5 and M=9. The row-drop control
+               fires at M=5 alone.
 
 Exits non-zero if any expectation fails, so the session can stop before it
 spends a GPU hour on a route that is not exact.
@@ -61,6 +64,8 @@ def check(name: str, ref: dict, arm: dict, expect: str) -> dict:
         passed = not reachable
     elif expect == "diverges_at_m5":
         passed = widths == [5] and bits == [4]
+    elif expect == "diverges_at_m5_and_m9":
+        passed = widths == [5, 9] and bits == [4]
     else:
         raise SystemExit("e59_parity_verdict: unknown expectation %s" % expect)
     return {
@@ -83,23 +88,23 @@ def check(name: str, ref: dict, arm: dict, expect: str) -> dict:
 
 
 COMPARISONS = [
-    ("m5_rb2 vs base", "shipped", "m5_rb2", "identical"),
+    ("t55 vs base", "shipped", "t55", "identical"),
     ("m5_rbx vs base", "shipped", "m5_rbx", "identical"),
-    ("ceil_only vs base", "shipped", "ceil_only",
-     "identical_at_reachable_widths"),
-    ("lane perturbation vs m5_rb2", "m5_rb2", "m5_rb2_lane_perturb",
-     "diverges_at_m5"),
-    ("one row block vs m5_rb2", "m5_rb2", "m5_rb2_coverage_drop",
-     "diverges_at_m5"),
+    ("lane perturbation vs t55", "t55", "t55_lane_perturb",
+     "diverges_at_m5_and_m9"),
+    ("four written rows vs t55", "t55", "t55_row_drop", "diverges_at_m5"),
     ("one x-group vs m5_rbx", "m5_rbx", "m5_rbx_coverage_drop",
      "diverges_at_m5"),
 ]
+
+CONTROL_EXPECTATIONS = ("diverges_at_m5", "diverges_at_m5_and_m9")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--parity-dir", required=True)
-    ap.add_argument("--out", default="research/e59-artifacts/e59-parity.json")
+    ap.add_argument("--out",
+                    default="research/e59-artifacts/e59-parity-rung4.json")
     args = ap.parse_args()
 
     d = pathlib.Path(args.parity_dir)
@@ -131,7 +136,7 @@ def main() -> int:
             print("      route change at M=%s: %s -> %s"
                   % (d["m"], d["from"], d["to"]))
 
-    controls = [r for r in rows if r["expectation"] == "diverges_at_m5"]
+    controls = [r for r in rows if r["expectation"] in CONTROL_EXPECTATIONS]
     ok = all(r["passed"] for r in rows)
     out = pathlib.Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

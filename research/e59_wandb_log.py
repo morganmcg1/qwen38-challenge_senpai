@@ -8,6 +8,7 @@ and after every timed leg.
   research/e59_wandb_log.py --stage rung1
   research/e59_wandb_log.py --stage rung2
   research/e59_wandb_log.py --stage rung3
+  research/e59_wandb_log.py --stage rung4-parity
   research/e59_wandb_log.py --stage rung4-leg --leg .mlxfast-private/e59-e2e/runs/TAG
   research/e59_wandb_log.py --stage rung4
   research/e59_wandb_log.py --stage gates
@@ -148,8 +149,8 @@ def log_rung1(run) -> None:
 
 # --- rung 2: bitwise parity ----------------------------------------------------
 
-def log_rung2(run) -> None:
-    verdict = json.loads((ARTIFACTS / "e59-parity.json").read_text())
+def log_parity(run, artifact: str, ns: str) -> None:
+    verdict = json.loads((ARTIFACTS / artifact).read_text())
     columns = ["comparison", "expectation", "cells_compared", "cells_differing",
                "widths_differing", "reachable_widths_differing",
                "unreachable_widths_differing", "bits_differing",
@@ -167,17 +168,17 @@ def log_rung2(run) -> None:
             json.dumps(row["first_difference"]), row["route_changes"],
             json.dumps(row["route_change_widths"]),
             json.dumps(row["route_change_detail"]), row["passed"])
-        key = "rung2/" + row["comparison"].replace(" ", "_")
+        key = f"{ns}/" + row["comparison"].replace(" ", "_")
         summary[f"{key}/cells_differing"] = row["cells_differing"]
         summary[f"{key}/reachable_widths_differing"] = len(
             row["reachable_widths_differing"])
         summary[f"{key}/route_changes"] = row["route_changes"]
         summary[f"{key}/passed"] = row["passed"]
-    summary["rung2/max_reachable_width"] = verdict["max_reachable_width"]
-    summary["rung2/all_passed"] = verdict["all_passed"]
-    summary["rung2/controls_fired"] = verdict["controls_fired"]
-    summary["rung2/controls_total"] = verdict["controls_total"]
-    run.log({"rung2/parity": table})
+    summary[f"{ns}/max_reachable_width"] = verdict["max_reachable_width"]
+    summary[f"{ns}/all_passed"] = verdict["all_passed"]
+    summary[f"{ns}/controls_fired"] = verdict["controls_fired"]
+    summary[f"{ns}/controls_total"] = verdict["controls_total"]
+    run.log({f"{ns}/parity": table})
     run.summary.update(summary)
 
 
@@ -442,7 +443,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True,
                     choices=["rung1", "rung2", "rung2-e2e", "rung2b-leg",
-                             "rung3", "rung4-leg", "rung4", "gates"])
+                             "rung3", "rung4-parity", "rung4-leg", "rung4",
+                             "gates"])
     ap.add_argument("--leg", type=pathlib.Path,
                     help="one run directory for --stage rung4-leg or rung2b-leg")
     ap.add_argument("--legs", type=pathlib.Path, nargs="*", default=[],
@@ -455,7 +457,9 @@ def main() -> int:
         if args.stage == "rung1":
             log_rung1(run)
         elif args.stage == "rung2":
-            log_rung2(run)
+            log_parity(run, "e59-parity.json", "rung2")
+        elif args.stage == "rung4-parity":
+            log_parity(run, "e59-parity-rung4.json", "rung4/parity")
         elif args.stage == "rung2-e2e":
             log_rung2_e2e(run, args.legs)
         elif args.stage == "rung3":

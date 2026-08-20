@@ -66,6 +66,8 @@ sys.path.insert(0, str(HERE))
 
 from e54_arms import (  # noqa: E402
     HEADER,
+    NA_ASSERT,
+    NA_ASSERT_RELAXED,
     SHIPPED_IPG,
     SOURCES,
     only_case,
@@ -318,7 +320,7 @@ def add_rps(text: str) -> str:
     untouched widths compile to the same code. The census checks that claim
     rather than assuming it.
     """
-    text = relax_asserts(text)
+    text = relax_na_assert(text)
     text = _replace_once(text, WIDE_SIGNATURE, WIDE_SIGNATURE_RPS,
                          "wide signature")
     return _replace_once(text, WIDE_PROLOGUE, WIDE_PROLOGUE_RPS,
@@ -376,9 +378,34 @@ def drop_coverage(text: str, kind: str) -> str:
     return _replace_once(text, old, new, "%s coverage" % kind)
 
 
+def drop_row5(text: str) -> str:
+    """Positive control: let `case 5:` write only four of its five rows.
+
+    `<T,4,5>` is one working group of NA=4, so it is a legal instantiation and
+    it compiles. Dispatched at ntg.x = 5 it never writes output row 4, which is
+    a defect the digest must catch at M=5 and at no other width.
+    """
+    return _replace_once(text, CASE5_SHIPPED,
+                         "qmv_fast_crossrow_affine4_g64_m<T, 4, 5, true>",
+                         "case 5 dispatch")
+
+
+def relax_na_assert(text: str) -> str:
+    """Widen the wide helper's NA bound, or accept a base that already did.
+
+    E55 shipped `NA <= 5` to reach `<T,9,5>`, which is the exact edit this step
+    used to perform. Failing here would report a satisfied precondition as a
+    broken anchor, so treat an already-relaxed base as success and keep the
+    hard failure for a base that matches neither form.
+    """
+    if NA_ASSERT not in text and NA_ASSERT_RELAXED in text:
+        return text
+    return relax_asserts(text)
+
+
 _STEPS = {
     "rps": lambda t, **kw: add_rps(t),
-    "relax": lambda t, **kw: relax_asserts(t),
+    "relax": lambda t, **kw: relax_na_assert(t),
     "wrapper": lambda t, kind="rb2", **kw: add_wrapper(t, kind),
     "route5": lambda t, kind="rb2", **kw: route_case5(t, kind),
     "route9": lambda t, kind="rb2t", **kw: route_case9(t, kind),
@@ -387,6 +414,7 @@ _STEPS = {
     "swap_ipg": lambda t, m=5, ipg=5, **kw: swap_ipg(t, m, ipg),
     "perturb": lambda t, **kw: perturb_lanes(t),
     "drop": lambda t, kind="rb2", **kw: drop_coverage(t, kind),
+    "row_drop5": lambda t, **kw: drop_row5(t),
 }
 
 
@@ -404,6 +432,31 @@ ARMS: dict[str, dict] = {
         "doc": "the tip, unmodified",
         "cell": None,
         "steps": [],
+    },
+    "t55": {
+        "family": "candidate",
+        "doc": "real table, case 5 -> <T,5,5> at the stock rows_per_simd = 4: "
+               "one weight stream instead of two, one character per twin. "
+               "Same cell edit as iso_m5_ipg5_r4 without the isolation step",
+        "cell": "<T,5,5> r=4",
+        "steps": [("relax", {}), ("swap_ipg", {"m": 5, "ipg": 5})],
+    },
+    "t55_lane_perturb": {
+        "family": "control",
+        "doc": "positive control: t55 with rows 3 and 4 written to swapped "
+               "accumulator lanes wherever NA == 5. Must diverge at M=5, the "
+               "t55 cell, and at M=9, E55's shipped <T,9,5>, and nowhere else",
+        "cell": "<T,5,5> r=4, lanes 3<->4",
+        "steps": [("relax", {}), ("swap_ipg", {"m": 5, "ipg": 5}),
+                  ("perturb", {})],
+    },
+    "t55_row_drop": {
+        "family": "control",
+        "doc": "positive control: case 5 dispatches <T,4,5>, which writes four "
+               "output rows and leaves row 4 untouched. Must diverge at M=5 "
+               "only",
+        "cell": "<T,4,5> at case 5",
+        "steps": [("relax", {}), ("row_drop5", {})],
     },
     "m5_rb2": {
         "family": "candidate",
@@ -560,7 +613,13 @@ ROW_BLOCK_WRAPPERS = ("_m_rb2", "_m_rbx", "_m_rb2t", "_m_rbx4")
 
 
 def routing_table(text: str) -> dict[int, dict]:
-    """Per-width dispatch of the `out_vec_size >= 4096` tier."""
+    """Per-width dispatch of the `out_vec_size >= 4096` tier.
+
+    `width` is the `case` label the hardware selects on; `template_m` is the row
+    count the selected instantiation actually writes. They agree in every honest
+    arm and disagree in the `t55_row_drop` control, so record both rather than
+    letting a coverage defect read back as a correct route.
+    """
     tier = text.index("if (out_vec_size >= 4096) {")
     end = text.index("        default:\n          break;\n      }\n    } else {",
                      tier)
@@ -569,6 +628,7 @@ def routing_table(text: str) -> dict[int, dict]:
         m = int(hit.group("m"))
         ipg = int(hit.group("b")) if hit.group("b") else int(hit.group("a"))
         out[m] = {"wrapper": hit.group("fn"), "ipg": ipg,
+                  "template_m": int(hit.group("a")),
                   "rows_per_simd": 2 if hit.group("fn").endswith(
                       ROW_BLOCK_WRAPPERS) else 4}
     return out

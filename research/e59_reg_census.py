@@ -127,14 +127,19 @@ def census_arm(name: str, workdir: pathlib.Path) -> dict:
     for m, route in sorted(table.items()):
         if "_m" not in route["wrapper"]:
             continue  # M=2 keeps the promoted pair kernel, which takes no IPG
+        # Probe the instantiation the case label really selects. They differ
+        # only in the `t55_row_drop` control, where `case 5:` dispatches
+        # `<T,4,5>`; probing the case label there would report a cell the build
+        # does not contain.
         res = compile_probe(
             shadow, "cell_m%d" % m, CELL_PROBE,
-            {"E59_CELL_M": str(m), "E59_CELL_IPG": str(route["ipg"]),
+            {"E59_CELL_M": str(route["template_m"]),
+             "E59_CELL_IPG": str(route["ipg"]),
              "E59_CELL_WRAPPER": route["wrapper"]}, (CELL,))
         if res["status"] != "ok":
             return dict(out, status="cell_%d_%s" % (m, res["status"]),
                         error=res.get("error"))
-        na = na_cells(m, route["ipg"])
+        na = na_cells(route["template_m"], route["ipg"])
         cells[m] = dict(res["functions"][CELL], **route, na_cells=na,
                         uniform=len(set(na)) == 1,
                         predicted=predict(na, route["rows_per_simd"]))
