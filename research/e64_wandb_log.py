@@ -57,6 +57,10 @@ def main() -> int:
                         default=["research/e64-artifacts/rung0b-timing-na5.json"])
     parser.add_argument("--log", type=pathlib.Path, nargs="+",
                         default=["research/e64-artifacts/rung0b-na5.log"])
+    parser.add_argument("--ladder", type=pathlib.Path,
+                        default="research/e64-artifacts/rung0b-ladder-analysis.json")
+    parser.add_argument("--rung0c", type=pathlib.Path,
+                        default="research/e64-artifacts/rung0c-diff.json")
     parser.add_argument("--name", default="e64-wide-qmv-accumulator-private-memory")
     args = parser.parse_args()
 
@@ -159,6 +163,58 @@ def main() -> int:
                     shape["parity_differing_vs_plain"].get(arm),
                     shape["entry_gpu_temp_c"], shape["exit_gpu_temp_c"])
 
+    tables = {"air_census": census, "legs": legs, "effects": effects}
+    extra_summary: dict = {}
+
+    ladder_path = pathlib.Path(args.ladder)
+    if ladder_path.exists():
+        data = json.loads(ladder_path.read_text())["ladder"]
+        rungs = wandb.Table(columns=["na", "shape", "plain_ms", "plain_gb_per_s",
+                                     "reference_gb_per_s", "entry_gpu_temp_c",
+                                     "exit_gpu_temp_c"])
+        for rung in data["rungs"]:
+            rungs.add_data(rung["na"], rung["shape"], rung["plain_ms"],
+                           rung["plain_gb_per_s"], rung["reference_gb_per_s"],
+                           rung["entry_gpu_temp_c"], rung["exit_gpu_temp_c"])
+        steps = wandb.Table(columns=["shape", "from_na", "to_na",
+                                     "seconds_step_pct",
+                                     "reference_seconds_step_pct"])
+        for step in data["steps"]:
+            reference = step.get("reference_seconds_step")
+            steps.add_data(step["shape"], step["from_na"], step["to_na"],
+                           step["seconds_step"] * 100,
+                           reference * 100 if reference is not None else None)
+            if (step["from_na"], step["to_na"]) == (5, 6):
+                extra_summary["ladder/step_na5_to_na6_pct"] = \
+                    step["seconds_step"] * 100
+                if reference is not None:
+                    extra_summary["ladder/reference_step_na5_to_na6_pct"] = \
+                        reference * 100
+        tables["ladder_rungs"] = rungs
+        tables["ladder_steps"] = steps
+
+    rung0c_path = pathlib.Path(args.rung0c)
+    if rung0c_path.exists():
+        data = json.loads(rung0c_path.read_text())
+        differences = wandb.Table(columns=["region", "kind", "name", "low",
+                                           "high", "delta", "priced_ms"])
+        for row in data["differences"]:
+            differences.add_data(row["region"], row["kind"], row["name"],
+                                 row["low"], row["high"], row["delta"],
+                                 row["priced_ms"])
+        ladder_ops = wandb.Table(columns=["opcode", *[str(na) for na
+                                                      in sorted(data["ladder_peak_live_cfg_loop"],
+                                                                key=int)]])
+        order = sorted(data["ladder_peak_live_cfg_loop"], key=int)
+        for name, by_na in data["ladder_opcodes"].items():
+            ladder_ops.add_data(name, *[by_na.get(na, 0) for na in order])
+        tables["rung0c_differences"] = differences
+        tables["rung0c_loop_opcodes_by_na"] = ladder_ops
+        extra_summary["rung0c/observed_step_ms"] = data["observed_step_ms"]
+        extra_summary["rung0c/on_model_arithmetic_ms"] = \
+            data["on_model_arithmetic_ms"]
+        extra_summary["rung0c/unexplained_step_ms"] = data["unexplained_step_ms"]
+
     summary = {
         "rung0b/forced_effect_median": primary.get("forced_effect_median_over_shapes"),
         "rung0b/ballast_effect_median": primary.get("ballast_effect_median_over_shapes"),
@@ -181,10 +237,9 @@ def main() -> int:
         "air/ballast_raises_live_registers":
             air["checks"]["5"]["ballast_raises_live_registers"],
     }
+    summary.update(extra_summary)
     run.log({
-        "air_census": census,
-        "legs": legs,
-        "effects": effects,
+        **tables,
         **{key: value for key, value in summary.items()
            if not isinstance(value, str)},
     })
