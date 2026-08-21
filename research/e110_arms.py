@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""E110 rung 0: the roofline triple for one wide x-group, plus the staging proxy.
+"""E110 rung 1: loop-nest order and activation staging in the wide QMV kernel.
 
-E104 measured `rate(NA)` and closed the arithmetic axis. It never changed how
-many ACTIVATION bytes the kernel asks for. This module builds the arms that do.
+Rung 0 refuted H1 and H2. The activation stream does not cost bandwidth: it
+costs only when it sits next to the dense arithmetic, so the remaining
+mechanism is the extraction schedule inside the k-block. This module builds the
+arms that change that schedule.
 
     research/e110_arms.py --emit /tmp/e110-arms
     research/e110_arms.py --census /tmp/e110-arms --out research/out/e110/x.json
@@ -10,32 +12,31 @@ many ACTIVATION bytes the kernel asks for. This module builds the arms that do.
 Arms, all instantiated per width as their own `e110_iso_na<NA>` entry point so
 the backend allocates registers for one width instead of a max over branches:
 
-  a_base        the shipped wide kernel, unmodified, routed to IPG == NA.
-  l_loadonly    E104's pure-load arm, reproduced byte for byte.
-  z_loadxconst  `l_loadonly` with x replaced by a compile-time constant. This
-                is the DCE control: if the compiler had removed the activation
-                loads from `l_loadonly`, these two arms compile to the same
-                machine text, and E104's flat-in-NA load curve says nothing
-                about H1. Different text plus a higher device-load count is the
-                proof that the loads survived.
-  w_only        the shipped body with x replaced by a compile-time constant:
-                the weight, scale and bias stream on its own, with the FULL
-                arithmetic shape retained. The constants differ per lane so the
-                NA-wide vector work is not collapsed to scalar work.
-  x_only        the inverse: weights, scales and biases replaced by
-                compile-time constants, so only the activation stream is read.
-  b_barrier     `a_base` plus the two `threadgroup_barrier` calls per k-block
-                that staging needs, and nothing else. It prices the barrier
-                alone, which the staged arm cannot separate from its own gain.
-  xs_stage      the fix as a diagnostic: the NA x 512 activation tile for the
-                k-block is staged in threadgroup memory once per THREADGROUP,
-                then read from there by both simdgroups. Only the memory space
-                of the activation read changes, so it is bit exact by
-                construction and the harness checks that at every cell.
+  a_base      the shipped wide kernel, unmodified, routed to IPG == NA.
+  l_loadonly  E104's pure-load arm, reproduced byte for byte. The LOAD half of
+              the rule 36b roofline pair.
+  b_constw    both operand streams replaced by compile-time constants while the
+              full 160 x NA scalar body is retained. The ALU half of the
+              roofline pair. The constants differ per lane and per row so no
+              vector work collapses to scalar work.
+  b_barrier   `a_base` plus the two `threadgroup_barrier` calls per k-block that
+              staging needs, and nothing else. It prices the barrier alone,
+              which a staged arm cannot separate from its own gain.
+  xs_stage    the NA x 512 activation tile for the k-block is staged in
+              threadgroup memory once per THREADGROUP, then read from there by
+              both simdgroups. Only the memory space of the activation read
+              changes.
+  mo_swap     the `i` outer / `m` inner nest is swapped to `m` outer / `i`
+              inner. Each lane then finishes its 32 bytes of activation row `m`
+              before it moves to row `m + 1` instead of interleaving NA address
+              streams, and the four staged conversions become scalars instead
+              of `vec<float, NA>`, which is `4 * NA` fewer live registers.
+  mo_stage    `mo_swap` and `xs_stage` together: additive or the same effect?
 
-`w_only`, `x_only` and `z_loadxconst` change the arithmetic on purpose and are
-timing-only diagnostics. `l_loadonly` is E104's diagnostic. `b_barrier` and
-`xs_stage` must reproduce `a_base` bit for bit.
+`b_constw` and `l_loadonly` change the arithmetic on purpose and are
+timing-only diagnostics. `b_barrier`, `xs_stage`, `mo_swap` and `mo_stage` must
+reproduce `a_base` bit for bit; the harness checks that at every cell and the
+positive control proves the check can fail.
 
 Research-only: nothing here is on the scored path.
 """
@@ -61,7 +62,25 @@ from e104_variant_sources import (  # noqa: E402
     EPILOGUE, PROLOGUE, emit_base, wide_fn_span, widen_asserts,
 )
 
-WIDTHS = (2, 3, 4, 5, 6)
+# NA = 6 is not reachable in the shipped wide switch, so rung 1 drops it. The
+# realised width histogram of the same fixture weights the four survivors.
+WIDTHS = (2, 3, 4, 5)
+
+# Apple's documented threadgroup memory limit, which is also the per-core pool
+# the resident threadgroups share. A tile of `B` bytes therefore caps residency
+# at `floor(TG_MEMORY_BYTES / B)` threadgroups of 64 threads, whatever the
+# register file allows. The probe prints the device's own
+# `maxThreadgroupMemoryLength`, so this constant is checkable, not assumed.
+TG_MEMORY_BYTES = 32768
+
+# Register file per core, in bytes, and 128 bytes per simdgroup register.
+REGISTER_FILE = {LOCAL_ARCH: 384 * 1024, RANKED_ARCH: 496 * 1024}
+
+
+def simdgroups(arch: str, registers: int) -> int:
+    """Register-limited resident simdgroups per core."""
+    return REGISTER_FILE[arch] // (128 * registers)
+
 
 # --- the shipped inner body, in the shared scaffold ---------------------------
 # `DIRECT_NIBBLES == true` is the branch every scored cell takes, so the
@@ -161,29 +180,47 @@ BODY_WONLY = """
     }
 """ % X_CONSTANTS
 
-BODY_LOADXCONST = """
+# mo_swap: the `i` outer / `m` inner nest of the shipped body, swapped.
+#
+# Bit exactness by construction. `sums` and `partial[r]` are both zeroed inside
+# the k loop. For each fixed pair (r, m) the accumulation into `partial[r][m]`
+# still runs over i = 0, 1, 2, 3 in that order over the same expression, and for
+# each fixed m the accumulation into `sums[m]` still runs over i = 0, 1, 2, 3 in
+# that order over the same BF16 expression tree. The `acc[r]` update and the
+# `simd_sum` reduction are untouched. `a0..a3` become scalars because the m loop
+# no longer has to hold one lane of every row at once.
+BODY_MOSWAP = """
     VF sums = VF(0.0f);
     VF partial[rows_per_simd];
     for (int r = 0; r < rows_per_simd; r++) {
       partial[r] = VF(0.0f);
     }
-    for (int i = 0; i < 4; i++) {
-      VF a0;
-      for (int m = 0; m < NA; m++) {
-%s        sums[m] += c0 + c1 + c2 + c3;
-        a0[m] = c0;
+    for (int m = 0; m < NA; m++) {
+      float sm = 0.0f;
+      for (int i = 0; i < 4; i++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        const float a0 = static_cast<float>(xm[0]);
+        const float a1 = static_cast<float>(xm[1]);
+        const float a2 = static_cast<float>(xm[2]);
+        const float a3 = static_cast<float>(xm[3]);
+        sm += xm[0] + xm[1] + xm[2] + xm[3];
+        for (int r = 0; r < rows_per_simd; r++) {
+          partial[r][m] += (a0 * (packed[r][i] & 0x000f) +
+                            a1 * ((packed[r][i] >> 4) & 0x000f) +
+                            a2 * ((packed[r][i] >> 8) & 0x000f) +
+                            a3 * ((packed[r][i] >> 12) & 0x000f));
+        }
       }
-      for (int r = 0; r < rows_per_simd; r++) {
-        partial[r] += a0 * float(packed[r][i] & 0x000f);
-      }
+      sums[m] = sm;
     }
     for (int r = 0; r < rows_per_simd; r++) {
       acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
     }
-""" % X_CONSTANTS
+"""
 
 # The weight-side loads of the shared prologue, and the constant stand-in that
-# `x_only` puts in their place.
+# `b_constw` puts in their place.
 WEIGHT_LOADS = """    for (int r = 0; r < rows_per_simd; r++) {
       const int row = out_row + r;
       const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
@@ -221,7 +258,7 @@ def expect(text: str, needle: str, count: int, label: str) -> None:
             "e110_arms: %s matched %d times, expected %d" % (label, seen, count))
 
 
-def prologue_xonly() -> str:
+def prologue_constw() -> str:
     expect(PROLOGUE, WEIGHT_LOADS, 1, "prologue weight loads")
     return PROLOGUE.replace(WEIGHT_LOADS, WEIGHT_CONSTANTS)
 
@@ -243,7 +280,7 @@ def prologue_barrier() -> str:
 # construction and the probe's fidelity pass proves it at every cell.
 STAGED_FN = """
 template <typename T, int NA, bool DIRECT_NIBBLES = false>
-METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_staged(
+METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_staged%(suffix)s(
     const device uint32_t* w,
     const device T* scales,
     const device T* biases,
@@ -299,7 +336,22 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_staged(
       bias_local[r] = biases[group_index];
     }
 
-    VF sums = VF(0.0f);
+%(body)s  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      const float reduced = simd_sum(acc[r][m]);
+      if (simd_lid == 0) {
+        y[(first_m + m) * out_vec_size + out_row + r] =
+            static_cast<T>(reduced);
+      }
+    }
+  }
+}
+"""
+
+# The shipped nest, reading the staged tile. Only the address space changes.
+STAGED_BODY_XS = """    VF sums = VF(0.0f);
     VF partial[rows_per_simd];
     for (int r = 0; r < rows_per_simd; r++) {
       partial[r] = VF(0.0f);
@@ -325,18 +377,36 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide_staged(
     for (int r = 0; r < rows_per_simd; r++) {
       acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
     }
-  }
+"""
 
-  for (int r = 0; r < rows_per_simd; r++) {
-    for (int m = 0; m < NA; m++) {
-      const float reduced = simd_sum(acc[r][m]);
-      if (simd_lid == 0) {
-        y[(first_m + m) * out_vec_size + out_row + r] =
-            static_cast<T>(reduced);
-      }
+# The swapped nest, reading the staged tile: both changes at once.
+STAGED_BODY_MO = """    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
     }
-  }
-}
+    for (int m = 0; m < NA; m++) {
+      float sm = 0.0f;
+      for (int i = 0; i < 4; i++) {
+        const threadgroup T* xm = xtile + m * block_size +
+            simd_lid * values_per_thread + 4 * i;
+        const float a0 = static_cast<float>(xm[0]);
+        const float a1 = static_cast<float>(xm[1]);
+        const float a2 = static_cast<float>(xm[2]);
+        const float a3 = static_cast<float>(xm[3]);
+        sm += xm[0] + xm[1] + xm[2] + xm[3];
+        for (int r = 0; r < rows_per_simd; r++) {
+          partial[r][m] += (a0 * (packed[r][i] & 0x000f) +
+                            a1 * ((packed[r][i] >> 4) & 0x000f) +
+                            a2 * ((packed[r][i] >> 8) & 0x000f) +
+                            a3 * ((packed[r][i] >> 12) & 0x000f));
+        }
+      }
+      sums[m] = sm;
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
 """
 
 # The entry point the harness dispatches. `first_m` is threadgroup-uniform, so
@@ -378,29 +448,35 @@ STAGED_KERNEL = """
     return;
   }
   const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
-  qmv_fast_crossrow_affine4_g64_wide_staged<bfloat16_t, %(na)d, true>(
+  qmv_fast_crossrow_affine4_g64_wide_staged%(suffix)s<bfloat16_t, %(na)d, true>(
       w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
       simd_gid, simd_lid, xtile);
 }
 """
 
-# arm -> (prologue, body, epilogue) applied to the wide template, or None to
-# leave the shipped template alone.
+# arm -> (prologue, body, epilogue) applied to the wide template, or the staged
+# body the arm appends instead.
 BODIES = {
     "a_base": None,
     "l_loadonly": (PROLOGUE, BODY_LOADONLY, EPILOGUE),
-    "z_loadxconst": (PROLOGUE, BODY_LOADXCONST, EPILOGUE),
-    "w_only": (PROLOGUE, BODY_WONLY, EPILOGUE),
-    "x_only": (prologue_xonly(), BODY_BASE, EPILOGUE),
+    "b_constw": (prologue_constw(), BODY_WONLY, EPILOGUE),
     "b_barrier": (prologue_barrier(), BODY_BASE, EPILOGUE),
     "xs_stage": None,
+    "mo_stage": None,
+    "mo_swap": (PROLOGUE, BODY_MOSWAP, EPILOGUE),
 }
+
+STAGED = {"xs_stage": ("_xs", STAGED_BODY_XS),
+          "mo_stage": ("_mo", STAGED_BODY_MO)}
 
 # Arms that must reproduce `a_base` bit for bit. The rest change the arithmetic
 # on purpose and are timing-only.
-EXACT_ARMS = ("b_barrier", "xs_stage")
+EXACT_ARMS = ("b_barrier", "xs_stage", "mo_stage", "mo_swap")
 
-ARMS = tuple(BODIES)
+# The harness runs its positive control on the LAST arm, so the last arm has to
+# be an exact one. `mo_swap` is the priority arm, so it takes that slot.
+ARMS = ("a_base", "l_loadonly", "b_constw", "b_barrier", "xs_stage",
+        "mo_stage", "mo_swap")
 
 
 def arm_source(base: str, arm: str) -> str:
@@ -410,9 +486,11 @@ def arm_source(base: str, arm: str) -> str:
         prologue, body, epilogue = plan
         start, end = wide_fn_span(base)
         text = base[:start] + prologue + body + epilogue + base[end:]
-    if arm == "xs_stage":
-        return text + STAGED_FN + "".join(
-            STAGED_KERNEL % {"na": na} for na in WIDTHS)
+    if arm in STAGED:
+        suffix, staged_body = STAGED[arm]
+        fields = {"suffix": suffix, "body": staged_body}
+        return text + STAGED_FN % fields + "".join(
+            STAGED_KERNEL % dict(fields, na=na) for na in WIDTHS)
     return text + "".join(ISO_KERNEL % {"na": na} for na in WIDTHS)
 
 
@@ -448,6 +526,14 @@ KERNEL_RE = re.compile(r"e110_iso_na(\d+)$")
 DEVICE_LOAD = re.compile(r"=\s*load\s.*addrspace\(1\)")
 TG_LOAD = re.compile(r"=\s*load\s.*addrspace\(3\)")
 TG_STORE = re.compile(r"^\s*store\s.*addrspace\(3\)")
+# A `threadgroup` declaration inside a kernel becomes a module-level global in
+# address space 3 whose mangled name carries the entry point it belongs to.
+# Summing those per entry point is how the compiled allocation is read without a
+# device, which is the question the isolated per-width probe cannot answer for
+# the composed dispatcher.
+TG_GLOBAL = re.compile(
+    r"^@(\S+)\s*=.*addrspace\(3\) global \[(\d+) x (\w+)\]")
+TYPE_BYTES = {"bfloat": 2, "half": 2, "float": 4, "i8": 1, "i16": 2, "i32": 4}
 
 
 def air_loads(source: pathlib.Path, workdir: pathlib.Path) -> dict:
@@ -466,6 +552,20 @@ def air_loads(source: pathlib.Path, workdir: pathlib.Path) -> dict:
     if done.returncode != 0:
         return {"error": done.stderr.strip().splitlines()[-8:]}
     found: dict[str, dict] = {}
+    tg_bytes: dict[str, int] = {}
+    for line in ll.read_text().splitlines():
+        global_hit = TG_GLOBAL.match(line)
+        if global_hit is None:
+            continue
+        owner = re.search(r"e110_iso_na(\d+)", global_hit.group(1))
+        if owner is None:
+            continue
+        width = int(global_hit.group(2))
+        unit = TYPE_BYTES.get(global_hit.group(3))
+        if unit is None:
+            raise SystemExit("e110_arms: unknown threadgroup element type %s"
+                             % global_hit.group(3))
+        tg_bytes[owner.group(1)] = tg_bytes.get(owner.group(1), 0) + width * unit
     name, body = None, []
     for line in ll.read_text().splitlines():
         if line.startswith("define "):
@@ -478,6 +578,7 @@ def air_loads(source: pathlib.Path, workdir: pathlib.Path) -> dict:
                     "device_loads": sum(1 for x in body if DEVICE_LOAD.search(x)),
                     "threadgroup_loads": sum(1 for x in body if TG_LOAD.search(x)),
                     "threadgroup_stores": sum(1 for x in body if TG_STORE.search(x)),
+                    "threadgroup_bytes": tg_bytes.get(hit.group(1), 0),
                     "air_lines": len(body),
                 }
             name = None
@@ -537,19 +638,20 @@ def census(directory: pathlib.Path, out: pathlib.Path | None) -> int:
                     value["text_bytes"]))
             print("  %-13s %s" % (arm, "  ".join(cells)))
 
-    print("\nDCE control: l_loadonly against z_loadxconst (same arithmetic, "
-          "x loads removed)")
-    for na in WIDTHS:
-        a = rows["l_loadonly"].get(LOCAL_ARCH, {}).get(str(na), {})
-        b = rows["z_loadxconst"].get(LOCAL_ARCH, {}).get(str(na), {})
-        air_a = rows["l_loadonly"]["air"].get(str(na), {})
-        air_b = rows["z_loadxconst"]["air"].get(str(na), {})
-        same = a.get("text_sha8") == b.get("text_sha8")
-        print("  NA%d  air device loads %s vs %s   text %s vs %s   %s"
-              % (na, air_a.get("device_loads"), air_b.get("device_loads"),
-                 a.get("text_bytes"), b.get("text_bytes"),
-                 "SAME TEXT -> loads were eliminated" if same
-                 else "different text -> loads survived"))
+    print("\nCompiled threadgroup memory per entry point, and the occupancy it "
+          "implies")
+    print("  a threadgroup is 64 threads = 2 simdgroups; the cap is "
+          "floor(%d / tile) threadgroups" % TG_MEMORY_BYTES)
+    for arm in ARMS:
+        cells = []
+        for na in WIDTHS:
+            tg = rows[arm]["air"].get(str(na), {}).get("threadgroup_bytes", 0)
+            cells.append("NA%d=%dB%s" % (
+                na, tg, "/%dsg" % (2 * (TG_MEMORY_BYTES // tg)) if tg else ""))
+        print("  %-13s %s" % (arm, "  ".join(cells)))
+    print("  register-limited simdgroups per core: %s %d, %s %d at R = 96"
+          % (LOCAL_ARCH, simdgroups(LOCAL_ARCH, 96),
+             RANKED_ARCH, simdgroups(RANKED_ARCH, 96)))
 
     if out is not None:
         out.parent.mkdir(parents=True, exist_ok=True)

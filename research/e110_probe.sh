@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# E110 rung 0 -- the roofline triple for one wide x-group, plus the staging
-# proxy, on the isolated per-width entry points.
+# E110 rung 1 -- loop-nest order and activation staging for one wide x-group,
+# on the isolated per-width entry points, with the rule 36b roofline pair.
 #
 #   usage: research/e110_probe.sh TAG [extra probe args...]
 #
@@ -15,7 +15,7 @@ shift
 out_dir="research/out/${tag}"
 arms_dir="/tmp/e110-arms"
 bin="/tmp/e110_rate_probe"
-arms="a_base,l_loadonly:diag,z_loadxconst:diag,w_only:diag,x_only:diag,b_barrier,xs_stage"
+arms="a_base,l_loadonly:diag,b_constw:diag,b_barrier,xs_stage,mo_stage,mo_swap"
 mkdir -p "${out_dir}"
 
 macmon_bin=""
@@ -50,7 +50,7 @@ macmon_arg=()
 [[ -n "${macmon_bin}" ]] && macmon_arg=(--macmon "${macmon_bin}")
 
 "${bin}" --dir "${arms_dir}" --out "${PWD}/${out_dir}/rate.json" \
-  --fn 'e110_iso_na%d' --arms "${arms}" --widths 2,3,4,5,6 \
+  --fn 'e110_iso_na%d' --arms "${arms}" --widths 2,3,4,5 \
   "${macmon_arg[@]}" "$@" 2>&1 | tee "${out_dir}/probe.log"
 status="${PIPESTATUS[0]}"
 

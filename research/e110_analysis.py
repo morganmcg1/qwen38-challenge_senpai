@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""E110 rung 0: read the roofline triple and apply the pre-registered stop rule.
+"""E110 rung 1: read the arms and apply the round-weighted kill and advance bars.
 
-    research/e110_analysis.py research/out/e110-rung0/rate.json \
-        --census research/out/e110/rung0-census.json
+    research/e110_analysis.py research/out/e110-rung1/rate.json \
+        --census research/out/e110/rung1-census.json \
+        --probe-log research/out/e110-rung1/probe.log
 
 Every arm is timed inside one counterbalanced palindrome block, so the paired
 per-block ratio is the estimator: it cancels the drift the palindrome cannot,
@@ -11,6 +12,10 @@ and its spread across blocks is the instrument's own noise at that cell.
 Round frame, rule 34: the decode-only M = 5 frame is 102,864 us on the current
 tree, of which the four clean streaming families are 14.4123 GB moving at a
 measured 179.9 GB/s, which is 80,113 us. Nothing here is a score.
+
+The headline is round-weighted, not NA = 5. The realised verify-width histogram
+of this fixture puts 66.7 % of the streaming time at NA = 4 and only 3.4 % at
+NA = 5, so an arm is priced by the weighted sum over its NA ladder.
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import statistics
 
 DRAM_PEAK_GBS = 273.0
@@ -26,13 +32,25 @@ STREAM_GB = 14.4123
 STREAM_RATE_GBS = 179.9
 STREAM_US = STREAM_GB / STREAM_RATE_GBS * 1e6
 
-ARMS = ("a_base", "l_loadonly", "z_loadxconst", "w_only", "x_only",
-        "b_barrier", "xs_stage")
+# Share of the streaming term spent in a one-group pass of each width, from the
+# realised width histogram of this fixture weighted by 1 / rate(NA).
+ROUND_WEIGHTS = {2: 0.024, 3: 0.275, 4: 0.667, 5: 0.034}
 
-# The pre-registered decision. If the staging proxy does not move the isolated
-# one-group NA = 5 rate by more than this, H1 is dead and the axis goes back.
-STOP_RULE_NA = 5
-STOP_RULE_PCT = 5.0
+# Rule 34 transfer from a local streaming-term change to a ranked one.
+RANKED_TRANSFER = 0.95
+
+# Rung 1 decision bars, on the round-weighted isolated gain.
+KILL_PCT = -0.30
+ADVANCE_PCT = -0.50
+
+# Rule 36b: the extraction schedule changes, so text bytes are a screen only and
+# a measured roofline pair is mandatory. These two arms are its halves.
+ROOFLINE_LOAD = "l_loadonly"
+ROOFLINE_ALU = "b_constw"
+
+# Apple's threadgroup memory limit, which is also the pool the resident
+# threadgroups of a core share.
+TG_POOL_BYTES = 32768
 
 
 def collect(doc: dict, warmup_blocks: int) -> dict:
@@ -88,49 +106,85 @@ def thermal(doc: dict) -> None:
     print()
 
 
-def factorial(cells: dict, shapes: list[str], widths: list[int]) -> None:
-    """The 2 x 2 the four diagnostic arms happen to form.
+def roofline(cells: dict, shapes: list[str], widths: list[int]) -> None:
+    """Rule 36b: does `max(ALU, load)` predict the shipped kernel's time?
 
-    Rows are the activation stream, columns are the arithmetic. `a_base` and
-    `w_only` carry the full 160 x NA scalar FP body; `l_loadonly` and
-    `z_loadxconst` carry the 64 x NA reduced body. `a_base` and `l_loadonly`
-    read the activations; `w_only` and `z_loadxconst` replace them with
-    compile-time constants and read only the weight stream.
-
-    If the activation stream cost bandwidth or cache residency, its price would
-    be about the same in both columns. The interaction term measures how far
-    from true that is.
+    `l_loadonly` keeps every device load and drops three quarters of the
+    arithmetic. `b_constw` keeps every arithmetic operation and drops every
+    operand load. If the kernel were a clean roofline, `a_base` would cost
+    `max` of the two. The gap is the part neither stream explains on its own,
+    and it is the part a schedule change can address.
     """
-    print("\n=== 2 x 2: activation stream against arithmetic, pooled over "
-          "shapes ===")
-    print("  price of the activation loads, as %% of a_base, in each "
-          "arithmetic column")
-    print("  %3s %14s %14s %14s %9s" % (
-        "NA", "full arith", "light arith", "interaction", "n"))
+    print("\n=== rule 36b roofline pair: max(ALU, load) against a_base ===")
+    print("  %3s %11s %11s %11s %11s %9s" % (
+        "NA", "load us", "ALU us", "max us", "a_base us", "gap %"))
     for width in widths:
-        full, light = [], []
+        load, alu, base = [], [], []
         for shape in shapes:
             cell = cells.get((shape, width))
             if cell is None:
                 continue
             for block in cell["blocks"]:
-                base = block["a_base"]
-                full.append(100.0 * (base - block["w_only"]) / base)
-                light.append(
-                    100.0 * (block["l_loadonly"] - block["z_loadxconst"]) / base)
-        if not full:
+                load.append(block[ROOFLINE_LOAD])
+                alu.append(block[ROOFLINE_ALU])
+                base.append(block["a_base"])
+        if not base:
             continue
-        f_pct, l_pct = med(full), med(light)
-        print("  %3d %13.2f%% %13.2f%% %13.2f%% %9d" % (
-            width, f_pct, l_pct, f_pct - l_pct, len(full)))
-    print("  A cost that appears only next to the full arithmetic is not a "
-          "bandwidth cost.")
+        l_us, a_us, b_us = med(load) * 1e6, med(alu) * 1e6, med(base) * 1e6
+        roof = max(l_us, a_us)
+        print("  %3d %11.1f %11.1f %11.1f %11.1f %+8.1f%%" % (
+            width, l_us, a_us, roof, b_us, 100.0 * (b_us - roof) / roof))
+    print("  A positive gap is time that neither the load stream nor the "
+          "arithmetic explains alone.")
+
+
+def weighted(per_width: dict[int, float]) -> float | None:
+    """Round-weighted percent change over the realised width histogram."""
+    total = sum(ROUND_WEIGHTS[w] for w in per_width if w in ROUND_WEIGHTS)
+    if not total:
+        return None
+    return sum(ROUND_WEIGHTS[w] * v for w, v in per_width.items()
+               if w in ROUND_WEIGHTS) / total
+
+
+def ladder(cells: dict, shapes: list[str], widths: list[int],
+           arm: str) -> dict[int, float]:
+    """Paired median percent change against a_base, one value per width."""
+    out = {}
+    for width in widths:
+        ratios = []
+        for shape in shapes:
+            cell = cells.get((shape, width))
+            if cell is not None:
+                ratios.extend(paired(cell, arm))
+        if ratios:
+            out[width] = 100.0 * (med(ratios) - 1.0)
+    return out
+
+
+def threadgroup_memory(probe_log: pathlib.Path) -> dict[tuple[str, int], int]:
+    """Compiled threadgroup memory per arm and width, from the device itself.
+
+    The probe prints `staticThreadgroupMemoryLength` for every pipeline it
+    builds, which is what the driver actually reserves, not what one case
+    declares.
+    """
+    line_re = re.compile(
+        r"e110_rate_probe:\s+(\S+) e110_iso_na(\d+)\s+max_threads=(\d+)\s+"
+        r"tg_mem=(\d+)")
+    found = {}
+    for line in probe_log.read_text(errors="replace").splitlines():
+        hit = line_re.search(line)
+        if hit:
+            found[(hit.group(1), int(hit.group(2)))] = int(hit.group(4))
+    return found
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("rate_json")
     ap.add_argument("--census")
+    ap.add_argument("--probe-log")
     ap.add_argument("--warmup-blocks", type=int, default=1)
     ap.add_argument("--out")
     args = ap.parse_args()
@@ -207,48 +261,78 @@ def main() -> int:
                 width, med(pct), min(pct), max(pct), max(pct) - min(pct),
                 len(pct)))
 
-    factorial(cells, shapes, widths)
+    roofline(cells, shapes, widths)
 
-    print("\n=== per shape at NA=%d ===" % STOP_RULE_NA)
-    print("  %-32s %10s %10s %10s" % (
-        "shape", "base us", "stage us", "change %"))
-    for shape in shapes:
-        cell = cells.get((shape, STOP_RULE_NA))
-        if cell is None:
+    print("\n=== round-weighted headline, rule 34 frame ===")
+    print("  weights over the realised width histogram: %s"
+          % "  ".join("NA%d=%.3f" % (w, ROUND_WEIGHTS[w])
+                      for w in sorted(ROUND_WEIGHTS)))
+    print("  %-11s %s %11s %11s %11s" % (
+        "arm", " ".join("%8s" % ("NA%d %%" % w) for w in widths),
+        "weighted %", "round %", "ranked %"))
+    ladders, headline = {}, {}
+    for arm in arms:
+        if arm == "a_base":
             continue
-        base = med([b["a_base"] for b in cell["blocks"]])
-        stage = med([b["xs_stage"] for b in cell["blocks"]])
-        print("  %-32s %10.1f %10.1f %+10.2f" % (
-            shape, base * 1e6, stage * 1e6, 100.0 * (stage - base) / base))
+        ladders[arm] = ladder(cells, shapes, widths, arm)
+        value = weighted(ladders[arm])
+        headline[arm] = value
+        if value is None:
+            continue
+        round_pct = value * STREAM_US / ROUND_US
+        print("  %-11s %s %+10.3f %+10.3f %+10.3f" % (
+            arm, " ".join("%+8.2f" % ladders[arm].get(w, float("nan"))
+                          for w in widths),
+            value, round_pct, round_pct * RANKED_TRANSFER))
+    print("  round %% is the weighted change applied to the %.0f us streaming "
+          "term of the %.0f us round." % (STREAM_US, ROUND_US))
 
-    stop_ratios = []
-    for shape in shapes:
-        cell = cells.get((shape, STOP_RULE_NA))
-        if cell is not None:
-            stop_ratios.extend(paired(cell, "xs_stage"))
-    verdict = "inconclusive"
-    if stop_ratios:
-        effect = 100.0 * (med(stop_ratios) - 1.0)
-        moved = abs(effect) > STOP_RULE_PCT
-        verdict = ("H1 LIVE: proxy moves NA=%d by %+.2f%%, past the %.0f%% bar"
-                   % (STOP_RULE_NA, effect, STOP_RULE_PCT)) if moved else (
-                   "H1 DEAD: proxy moves NA=%d by %+.2f%%, inside the %.0f%% bar"
-                   % (STOP_RULE_NA, effect, STOP_RULE_PCT))
-        print("\n=== pre-registered stop rule ===")
-        print("  %s" % verdict)
-        print("  n=%d paired blocks across %d shapes, sign of effect: "
-              "%d of %d blocks faster"
-              % (len(stop_ratios), len(shapes),
-                 sum(1 for r in stop_ratios if r < 1.0), len(stop_ratios)))
-        if moved and effect < 0:
-            saved = STREAM_US * (1.0 - 1.0 / (1.0 - effect / 100.0))
-            print("  indicative round value, rule 34 frame: the four clean "
-                  "streaming families are")
-            print("  %.4f GB at %.1f GB/s = %.0f us of the %.0f us decode-only "
-                  "M=5 round; a %+.2f%%"
-                  % (STREAM_GB, STREAM_RATE_GBS, STREAM_US, ROUND_US, effect))
-            print("  change on that term is %.0f us, %.2f%% of the round."
-                  % (-saved, -100.0 * saved / ROUND_US))
+    print("\n=== rung 1 decision, pre-registered ===")
+    print("  KILL above %+.2f%% weighted, ADVANCE at %+.2f%% or better"
+          % (KILL_PCT, ADVANCE_PCT))
+    exact_arms = [a for a in arms
+                  if a not in (ROOFLINE_LOAD, ROOFLINE_ALU, "a_base")]
+    survivors = []
+    for arm in exact_arms:
+        value = headline.get(arm)
+        if value is None:
+            continue
+        state = ("ADVANCE" if value <= ADVANCE_PCT
+                 else "SURVIVES" if value <= KILL_PCT else "KILL")
+        if value <= KILL_PCT:
+            survivors.append((value, arm))
+        print("  %-11s %+8.3f%% weighted   %s" % (arm, value, state))
+    survivors.sort()
+    verdict = "no arm clears the kill bar"
+    if survivors:
+        best_value, best_arm = survivors[0]
+        verdict = "best surviving arm %s at %+.3f%% weighted" % (
+            best_arm, best_value)
+        singles = [(v, a) for v, a in survivors if a != "mo_stage"]
+        if singles and best_arm == "mo_stage":
+            single_value, single_arm = singles[0]
+            if single_value <= best_value + 0.05:
+                verdict += ("; the combination is no better than %s, so ship "
+                            "the single arm" % single_arm)
+    print("  %s" % verdict)
+
+    if args.probe_log:
+        tg = threadgroup_memory(pathlib.Path(args.probe_log))
+        if tg:
+            print("\n=== compiled threadgroup memory, from the driver ===")
+            print("  a threadgroup is 64 threads = 2 simdgroups; the cap is "
+                  "floor(%d / tile)" % TG_POOL_BYTES)
+            for arm in arms:
+                cells_txt = []
+                for width in widths:
+                    value = tg.get((arm, width))
+                    if value is None:
+                        continue
+                    cells_txt.append("NA%d=%dB%s" % (
+                        width, value,
+                        "/%dsg" % (2 * (TG_POOL_BYTES // value))
+                        if value else ""))
+                print("  %-11s %s" % (arm, "  ".join(cells_txt)))
 
     if args.census:
         census = json.loads(pathlib.Path(args.census).read_text())
@@ -272,10 +356,15 @@ def main() -> int:
         summary = {
             "device": doc["device"], "architecture": doc["architecture"],
             "blocks_kept": blocks, "verdict": verdict,
-            "stop_rule": {"na": STOP_RULE_NA, "bar_pct": STOP_RULE_PCT,
-                          "median_pct": 100.0 * (med(stop_ratios) - 1.0)
-                          if stop_ratios else None,
-                          "n_blocks": len(stop_ratios)},
+            "round_weights": ROUND_WEIGHTS,
+            "bars": {"kill_pct": KILL_PCT, "advance_pct": ADVANCE_PCT},
+            "ladder_pct": ladders,
+            "weighted_pct": headline,
+            "round_pct": {a: (v * STREAM_US / ROUND_US if v is not None
+                              else None) for a, v in headline.items()},
+            "ranked_pct": {a: (v * STREAM_US / ROUND_US * RANKED_TRANSFER
+                               if v is not None else None)
+                           for a, v in headline.items()},
             "cells": [
                 {"shape": shape, "na": width,
                  "median_us": {a: med([b[a] for b in cells[(shape, width)]
