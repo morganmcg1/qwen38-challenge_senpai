@@ -34,14 +34,15 @@ No candidate change is proposed. Nothing on the per-row axis is worth
   `python3 research/twin_audit.py` reports
   `TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s)`
 - **Submitted candidate files: none.** The complete diff against the assignment
-  head `0e3ff4c8` touches 7 files: 3 under `Tests/` and 4 under `research/`. A
+  head `0e3ff4c8` touches 9 files: 3 under `Tests/` and 6 under `research/`. A
   programmatic check against every `editablePaths` entry in `benchmark.json`
   (89 entries) reports `SUBMITTED SURFACE TOUCHED: NONE`.
 - Supporting test, tooling, or documentation files:
   `Tests/MLXFastTests/E97VerifyRowCostTests.swift` (new, 477 lines, three
   opt-in rungs), `research/e97_row_cost_probe.sh`,
   `research/e97_row_cost_analysis.py`, `research/e97_metadata_census.py`,
-  `research/e97_wandb_log.py`, and the operational fix in
+  `research/e97_wandb_log.py`, `research/e97_round_reconstruction.py`, and the
+  operational fix in
   `Tests/MLXFastTests/E95QmvWidthProbeTests.swift` and
   `Tests/MLXFastTests/E95DonationProbeTests.swift`
 - MTP head provenance, digest, and draft policy: not applicable. No model, no
@@ -104,8 +105,20 @@ No candidate change is proposed. Nothing on the per-row axis is worth
       --peak  research/out/e97-peak-r0/peak.json \
       --shape research/out/e97-shape-r2/shape.json \
       --json  research/out/e97-row-cost-r1/analysis.json
+  python3 research/e97_round_reconstruction.py \
+      > research/out/e97-reconstruction/reconstruction.json
   python3 research/e97_wandb_log.py
   ```
+
+- W&B runs, all `finished`, group `e97-ranked-per-row-verify-cost`:
+
+  | run | id | URL |
+  | --- | --- | --- |
+  | `e97-peak` | `tjl6xim7` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tjl6xim7 |
+  | `e97-row` | `ch0owi0d` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ch0owi0d |
+  | `e97-shape` | `pflg8on2` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/pflg8on2 |
+  | `e97-census` | `ywzutsuy` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ywzutsuy |
+  | `e97-recon` | `vykpmmlf` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/vykpmmlf |
 
 - Cheapest real falsification gate and positive-control verdict: the **session
   null**. One identical cell is repeated at the open and the close of every
@@ -138,7 +151,8 @@ No candidate change is proposed. Nothing on the per-row axis is worth
   2. `python3 research/twin_audit.py` — OK, 29 runtime-effective twins
   3. `senpai/check-editable-budget.sh 770a3ff2` — OK, growth 60,709 of 262,144
   4. programmatic `editablePaths` intersection of my diff — empty
-  5. rung 0, rung 1, rung 2, census, W&B publish — all exit 0
+  5. rung 0, rung 1, rung 2, census, round reconstruction, W&B publish — all
+     exit 0
 
 - Exact-token and row-ledger verdict: **not applicable.** No generation runs in
   this experiment and no submitted file changed, so there is no token stream to
@@ -477,6 +491,146 @@ extra indirection per group in the kernel, and it is not implemented here.
 
 ---
 
+## 6. Advisor feedback f2 — the concurrent encoder
+
+Feedback f2 arrived after every rung had run. It adds one threat to this
+report, asks one method question, and repeats one housekeeping item.
+
+### 6.1 Reading 3 is dead: the marginal row overlaps nothing
+
+The threat is reading 3. MLX opens every compute encoder with
+`MTL::DispatchTypeConcurrent` (`backend/metal/device.cpp:545-548`), so
+dispatches inside one command buffer are unordered unless a buffer dependency
+forces a barrier. If the marginal verify row already overlapped other round
+work, its effective rate would not be a rate and comparing it with a peak would
+be meaningless.
+
+Two facts settle this without a GPU leg.
+
+**First, the E97 probe is already the serialised geometry.** `timed()` calls a
+blocking `eval` inside the loop
+(`Tests/MLXFastTests/E97VerifyRowCostTests.swift:94-101`), so every replicate is
+its own submit and drain and no two replicates overlap. By the advisor's own
+rule (b), an isolated time is an **upper bound** on in-situ contribution. The
+measured `eval` floor is subtracted from every cell, and a slope is a
+difference, so the floor cancels twice over.
+
+**Second, that upper bound lands below the round-level marginal.**
+`research/e97_round_reconstruction.py` splits the rung-2 fit into three terms:
+a per-dispatch constant `p = 2.107 us/row`, an output-column term
+`q_a = 0.12417 ns/row/column`, and a per-multiply-accumulate term
+`q_b = 0.33414 ps/row/MAC`. It then extrapolates that fit over the six
+quantized-projection classes of one decode round, taken from `QMV_CLASSES` in
+`research/e95_verify_census.py`.
+
+| class | K | N | dispatches | us/row each | us/row total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| full-attention fused QKV+gate | 5,120 | 14,336 | 16 | 28.41 | 454.6 |
+| GDN `in_proj` | 5,120 | 16,480 | 48 | 32.35 | 1,552.7 |
+| MLP `gate_up` fused | 5,120 | 34,816 | 64 | 65.99 | 4,223.5 |
+| `out_proj` | 6,144 | 5,120 | 64 | 13.25 | 848.2 |
+| MLP `down_proj` | 17,408 | 5,120 | 64 | 32.52 | 2,081.6 |
+| `lm_head` | 5,120 | 248,320 | 1 | 457.76 | 457.8 |
+| **isolated sum** | | | **257** | | **9,618.4** |
+| reduction term only | | | | | 8,561.3 |
+| output-column term | | | | | 515.6 |
+| per-dispatch launch term | | | | | 541.5 |
+
+```text
+isolated sum          9,618.4 us/row   (E97, isolated quantizedMM, this session)
+round-level marginal 10,268.0 us/row   (E95 rung 2, confirmed by E92)
+ratio                    0.9367
+```
+
+An upper bound that reconstructs **93.7 %** of an independently fitted
+round-level marginal leaves no room for a concurrency discount. If the marginal
+row overlapped other work, the isolated sum would have to *exceed* the
+round-level marginal, not fall 6.3 % short of it. The 650 us/row shortfall is
+the per-row work that is not a quantized projection at all: the recurrent step
+loop over `T`, the norms, SwiGLU, the attention row, the cache writes, and the
+extra encode and barrier cost of a wider dispatch. **Reading 3 is refuted, and
+reading 4 with it** — a missed traffic term would have to appear as unexplained
+*extra* round-level cost, and the arithmetic-only reconstruction already
+accounts for nearly all of it.
+
+Four calibration classes are extrapolated below the two measured widths
+(`N = 5,120`, `14,336`, `16,480` against calibration at `34,816` and
+`248,320`), and the two-point split of `a_N` into `p + q_a·N` has no residual
+and no error bar. That is why 93.7 % should be read as "the same number", not
+as a measured 6.3 % gap.
+
+The reconstruction also re-prices the decision rule on a consistent
+multiply-accumulate count. The six classes contain 25.622 G MACs per row, not
+the 24.35 G trunk-parameter count in the brief; the difference is the fused
+gate and conv columns and the vocabulary readout. On that count the round-level
+marginal is **4.991 TFLOP/s = 76.0 % of the measured affine-4 ceiling**, and
+the isolated sum is 5.328 TFLOP/s = 81.1 %. Both are above the 70 % threshold,
+so the rule fires on either accounting.
+
+**Why I did not spend the two legs.** f2 asks for a normal round and a round
+under `MLX_E58_BUFFER_LIMIT_OPS=1` together with
+`MLX_E58_BUFFER_LIMIT_MB=1`. That request is conditional on the marginal row's
+rate being *far below* peak; rung 0 says it is at 72–76 % of peak, so the
+condition does not hold. The measurement is also not available at the stated
+cost: neither variable exists in this tree. `MLX_E58_BUFFER_LIMIT_OPS` lives
+only in `research/e95-artifacts/e95-census-instrument.patch`, and
+`MLX_E58_BUFFER_LIMIT_MB` has not been written yet, so the two legs are
+preceded by an instrument change to `device.cpp` plus a full worker rebuild,
+and every one of those edits must be unwound before a scope check. The
+campaign-wide concurrency-discount question is real and still open; it is a
+separate assignment with its own instrument, and it no longer blocks E97.
+
+### 6.2 How 8,112.6 us/round was obtained
+
+It was neither an isolated-buffer measurement nor a GPU-timeline interval. It
+is the output of `report_fixed()` in `research/e95_verify_census.py`, run on an
+**in-situ** census leg at the default 50 MLX ops per command buffer, through
+three stacked modelling steps: (1) least squares fits `a + b·G(M) + c·M` to the
+measured per-round verify time over several widths; (2) the modelled variable
+cost `b·G + c·M` is allocated to each individual `qmv` dispatch **pro rata by
+multiply-accumulate count** and subtracted from the measured GPU interval of
+the command buffer that contains it; (3) the remaining per-buffer residual is
+distributed over the non-`qmv` shapes in that buffer **pro rata by modelled
+bytes**. The residuals sum to `a` by construction, which is an identity and not
+a check.
+
+The number is therefore a **residual allocation, not a measurement**, and I
+labelled it that way at the time: `research/e95-artifacts/e95-gdn-census-handover.md`
+opens with "That number came from `fixed` mode, which is a **model output**, not
+a measurement. Do not start from it", lists it under "Model outputs", and its
+section 4 records the falsifying evidence — the modelled series *falls* with
+width, 9,493.8 us at M=3 down to 6,768.3 us at M=9, slope −428.3 us per row,
+while the kernel body loops `for (int t = 0; t < T; ++t)` over exactly those
+rows and therefore cannot get cheaper as rows are added.
+
+So the correction rule f2 derives for isolation does **not** apply to this
+number, and there is no second unexplained effect. The applicable failure is
+the byte-weighted residual allocation in step (3). With a concurrent encoder a
+round's wall time contains barrier stalls, encode gaps, submit and drain, and
+non-overlapped tails, and none of that belongs to any kernel. Step (3) has no
+"belongs to no kernel" bucket, so all of it is forced onto the non-`qmv` shapes
+present, in proportion to their bytes. The GDN recurrent state is by a wide
+margin the largest non-`qmv` byte mover in those buffers, so it absorbs almost
+all of `a` whatever actually caused `a`. Step (2) compounds it: giving the
+whole `M`-linear term to `qmv` pulls the genuinely per-row part of the GDN step
+out of the fixed term, which is exactly the negative width slope the handover
+flagged. The general rule is that any residual-allocation split of a fixed term
+is invalid without a no-kernel bucket, and its error is largest for the shape
+with the largest allocator weight. Alphonse's repeat arm is the right
+instrument, and 854 us/round landing on my own ruling-4 cache-resident rate of
+371.1 GB/s is the confirmation.
+
+### 6.3 Housekeeping
+
+Both probe suites already skip instead of failing. Commit `370ddc2` replaced
+`try #require(Self.enabled)` with `@Suite(.enabled(if:))` in
+`Tests/MLXFastTests/E95QmvWidthProbeTests.swift` and
+`Tests/MLXFastTests/E95DonationProbeTests.swift`, so the campaign `swift test`
+gate returns to 40 issues across 9 names on a host with the probe variables
+unset.
+
+---
+
 ## Metric table
 
 The standard score table does not apply: no model, no fixture, no token window
@@ -493,6 +647,8 @@ and no score. The measured quantities are these.
 | `IPG 4` row against `IPG 3` row | 1.000 | 1.198 | +19.8 % |
 | group-boundary step, × the M=1 weight read | — | 0.609–0.654 | — |
 | tensors admitting a lossless 8-bit pair table | 498 | **0** | −498 |
+| isolated per-row sum ÷ round-level marginal | 1.000 | **0.9367** | −6.3 % |
+| round-level marginal as a fraction of affine-4 peak | 0.70 | 0.760 | +0.060 |
 | session null, worst rung-1 drift | 0 % | −0.23 % | — |
 
 Every compared identity field matched within each session: same host, same
@@ -527,6 +683,14 @@ a consistency check, not a fit.
   intensity of 8 FLOP per byte on a 10.2 KB vector that never leaves L1. (C)
   survives as the residual and is now sized: a K-independent 7–10 % of the row,
   plus about +20 % for each `IPG` widening.
+- **The isolated instrument reconstructs the round.** Extrapolating the rung-2
+  fit over the 257 quantized-projection dispatches of one decode round gives
+  9,618.4 us per row against the 10,268 us per row that E95 rung 2 and E92
+  fitted from round-level times, a ratio of 0.9367. Two instruments that share
+  no code, no fixture and no geometry agree to 6.3 %. That also refutes advisor
+  reading 3: an isolated time is an upper bound, so an upper bound below the
+  round-level marginal leaves no room for a concurrency discount on the
+  marginal row.
 - **The one thing the row cost does *not* explain**, and the largest single
   term in the vector-regime curve, is the group-boundary step: 0.61–0.65 of a
   full weight read every time `ceil(M/IPG)` increments, replicating E27's
@@ -583,3 +747,20 @@ a consistency check, not a fit.
    `qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>`, that is `4+4`. The comment
    and the code disagree. I did not change either — rung 2's brief forbids a
    table change — but a reader could be misled.
+5. **The campaign concurrency discount, as its own assignment.** Feedback f2's
+   two-leg ratio is still worth measuring for the ledger, but it needs an
+   instrument that does not exist yet: `MLX_E58_BUFFER_LIMIT_OPS` lives only in
+   `research/e95-artifacts/e95-census-instrument.patch` and
+   `MLX_E58_BUFFER_LIMIT_MB` is unwritten. Whoever takes it should write both,
+   run a normal round and a one-op-per-buffer round at one fixed width, and
+   publish the ratio per kernel family, because f2 predicts the discount is
+   largest for families that run furthest below peak.
+6. **Whole-buffer false barriers (f2 section 6).** Rung 0 satisfies the
+   condition f2 attached to this idea: the verify path is near peak, so the
+   remaining round cost is more likely to be serialisation than arithmetic.
+   `prev_inputs_` and `prev_outputs_` hold `MTL::Resource*`, so two dispatches
+   that touch disjoint slices of one buffer still force a full
+   `memoryBarrier(BarrierScopeBuffers)`. `KVCache.swift:398` and `:434` write
+   slices into one K buffer and one V buffer across 16 layers. The fix is
+   editable Swift, not `device.cpp`. I did not start it; it is the single most
+   promising direction this experiment leaves open.
