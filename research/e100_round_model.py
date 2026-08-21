@@ -37,9 +37,9 @@ ROUNDS = re.compile(r"^mtp-timed: tokens=(\d+) depth=(\d+) rounds=(\d+)",
                     re.MULTILINE)
 
 # tag infix -> (offered depth, decode tokens)
-SESSIONS = {"d8": (8, 64), "d4": (4, 64), "w512": (8, 512),
+SESSIONS = {"d8": (8, 64), "w512": (8, 512),
             "w512d4": (4, 512)}
-SLOT_ARM = {"a1": "base", "a2": "base", "b1": "collapse", "b2": "collapse"}
+SLOT_ARM = {"a1": "collapse", "a2": "collapse", "b1": "base", "b2": "base"}
 
 
 def legs() -> list[dict]:

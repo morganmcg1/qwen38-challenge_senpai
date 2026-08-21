@@ -32,20 +32,16 @@ import json
 import os
 import sys
 
-SLOTS = (("a1", "base"), ("b1", "collapse"), ("b2", "collapse"), ("a2", "base"))
+SLOTS = (("a1", "collapse"), ("b1", "base"), ("b2", "base"), ("a2", "collapse"))
 
-# name, tag infix, offered depth, decode tokens, collapse-arm `twin_m9`.
+# name, tag infix, offered depth, decode tokens.
 #
-# The first three sessions ran the two-line arm, which also collapsed M = 9.
-# `segmentedVerifyDepthCap` is 7, so M = 9 never executes; the advisor ordered
-# the line dropped because it widens the NA = 5 surface inside the single
-# shared kernel for no reachable gain. w512d4 therefore runs `<T,5,5,true>`
-# alone and expects `twin_m9` = 0 in both arms.
+# Every session runs the M = 5 only arm: `<T,5,5,true>` with `<T,9,5,true>`
+# dropped, so `worker_m9_ipg5` is 0 in both arms.
 SESSIONS = (
-    ("d8", "d8", 8, 64, "1"),
-    ("d4", "d4", 4, 64, "1"),
-    ("w512", "w512", 8, 512, "1"),
-    ("w512d4", "w512d4", 4, 512, "0"),
+    ("d8", "d8", 8, 64),
+    ("w512", "w512", 8, 512),
+    ("w512d4", "w512d4", 4, 512),
 )
 
 
@@ -65,15 +61,24 @@ def load(infix, slot):
     return dict(tag=tag, score=score, meta=meta)
 
 
-def check(leg, arm, depth, tokens, m9_collapse):
+def check(leg, arm, depth, tokens):
     m, s = leg["meta"], leg["score"]
     want5 = "1" if arm == "collapse" else "0"
-    want9 = m9_collapse if arm == "collapse" else "0"
     problems = []
+    # The binary is the only witness that decides which kernel ran. The twin
+    # fields below only prove the source was edited; see FINDING 28.
+    for field, want in (("worker_m5_ipg5", want5),
+                        ("worker_m5_ipg3", "0" if arm == "collapse" else "1"),
+                        ("worker_m6_ipg3", "1"),
+                        ("worker_m6_ipg2", "0")):
+        if m.get(field) != want:
+            problems.append("%s=%s expected %s" % (field, m.get(field), want))
+    if m.get("worker_sha256_pre") != m.get("worker_sha256_post"):
+        problems.append("worker changed during the leg")
     if m.get("twin_m5") != want5:
         problems.append("twin_m5=%s expected %s" % (m.get("twin_m5"), want5))
-    if m.get("twin_m9") != want9:
-        problems.append("twin_m9=%s expected %s" % (m.get("twin_m9"), want9))
+    if m.get("twin_m9") != "0":
+        problems.append("twin_m9=%s expected 0" % m.get("twin_m9"))
     if m.get("arm") != arm:
         problems.append("arm=%s expected %s" % (m.get("arm"), arm))
     if m.get("offered_depth") != str(depth):
@@ -101,13 +106,13 @@ def main():
     args = ap.parse_args()
 
     legs, sessions = {}, []
-    for name, infix, depth, tokens, m9_collapse in SESSIONS:
+    for name, infix, depth, tokens in SESSIONS:
         present = {}
         for slot, arm in SLOTS:
             leg = load(infix, slot)
             if leg is None:
                 continue
-            problems = check(leg, arm, depth, tokens, m9_collapse)
+            problems = check(leg, arm, depth, tokens)
             if problems:
                 print("leg %s: %s" % (leg["tag"], "; ".join(problems)))
                 return 2
@@ -166,8 +171,8 @@ def main():
                      s["serial_seconds_per_token"], s["mtp_decode_speedup"],
                      s["effective_mean_draft_len"], s["accepted_draft_rate"]))
 
-        base_slots = [s for s in ("a1", "a2") if s in present]
-        coll_slots = [s for s in ("b1", "b2") if s in present]
+        base_slots = [s for s in ("b1", "b2") if s in present]
+        coll_slots = [s for s in ("a1", "a2") if s in present]
         out = {"decode_tokens": tokens, "offered_depth": depth,
                "base_slots": base_slots, "collapse_slots": coll_slots}
         for key, label, better in (
