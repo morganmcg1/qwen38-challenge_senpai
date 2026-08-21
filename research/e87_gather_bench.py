@@ -73,6 +73,18 @@ def coarse_bytes(rows: int) -> int:
     return rows * (320 * 4 + 80 * 2 * 2)
 
 
+def fit_fixed_cost(mb: np.ndarray, us: np.ndarray) -> tuple[float, float]:
+    """Least-squares `(fixed us, marginal GB/s)` for a pass.
+
+    In this regime a dispatch is not free, so a pass costs a fixed launch
+    term plus a bandwidth term. The fixed term is what decides whether
+    splitting one dense read into two smaller passes can pay at all.
+    """
+    a = np.vstack([mb, np.ones_like(mb)]).T
+    slope, intercept = np.linalg.lstsq(a, us, rcond=None)[0]
+    return float(intercept), float(1000.0 / slope)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rule", default="spherical")
@@ -98,10 +110,23 @@ def main() -> None:
     print(f"dense 98336 rows   {dense_t * 1e6:8.1f} us   "
           f"{dense_bytes / dense_t / 1e9:7.1f} GB/s")
 
+    # The scored path does not stop at the matmul: it also selects the top 32.
+    # The shipped build fuses that into `qwen35DraftTop32`, which this wheel
+    # does not have, so `argpartition` is an UPPER bound on the dense stage.
+    def dense_pipe():
+        sc = mx.quantized_matmul(x, w, s, b, transpose=True,
+                                 group_size=64, bits=2)
+        return mx.argpartition(-sc, 32, axis=-1)[:, :32]
+
+    dense_pipe_t = timed(dense_pipe, args.iters)
+    print(f"dense + top32      {dense_pipe_t * 1e6:8.1f} us   "
+          f"(select costs {(dense_pipe_t - dense_t) * 1e6:.1f} us)")
+
     results = {
         "dense": {"rows": H.PADDED_COUNT, "seconds": dense_t,
                   "bytes": dense_bytes,
                   "gbps": dense_bytes / dense_t / 1e9},
+        "dense_pipeline_seconds": dense_pipe_t,
         "cells": [],
     }
 
@@ -151,29 +176,74 @@ def main() -> None:
                                       transpose=True, group_size=64, bits=2,
                                       sorted_indices=True),
                 args.iters)
+
+            # The honest arm C stage: score centroids, pick the top C, gather
+            # those blocks, pick the top 32 of what came back. Steps 2 and 4
+            # are real dispatches that the byte model does not price at all.
+            def armc_pipe():
+                cscore = mx.quantized_matmul(x, cw, cs, cb, transpose=True,
+                                             group_size=64, bits=2)
+                top = mx.argpartition(-cscore, c, axis=-1)[0, :c].astype(mx.uint32)
+                got = mx.gather_qmm(xg, wp, scales=sp, biases=bp,
+                                    lhs_indices=lhs, rhs_indices=mx.sort(top),
+                                    transpose=True, group_size=64, bits=2,
+                                    sorted_indices=True)
+                flat = got.reshape(1, c * rpc)
+                return mx.argpartition(-flat, 32, axis=-1)[:, :32]
+
+            pipe_t = timed(armc_pipe, args.iters)
             gather_bytes = coarse_bytes(c * rpc)
-            total_t = cent_t + gather_t
+            total_t = pipe_t
             total_bytes = cent_bytes + gather_bytes
+            byte_frac = total_bytes / dense_bytes
+            time_frac = total_t / dense_pipe_t
+            # The coarse stage is 36.78 % of the declared head, and the price
+            # list turns 1 % of head bytes into 0.0815 % of candidate time.
+            stage_pct = 36.78 * 0.0815
             print(f"    rpc={rpc:<3} p={p:<6g} C={c:<6} "
-                  f"gather {gather_t * 1e6:8.1f} us "
-                  f"({gather_bytes / gather_t / 1e9:6.1f} GB/s)   "
-                  f"stage1 total {total_t * 1e6:8.1f} us   "
-                  f"bytes {total_bytes / dense_bytes:6.1%}   "
-                  f"time {total_t / dense_t:6.1%}   "
-                  f"speedup {dense_t / total_t:5.2f}x")
+                  f"gather {gather_t * 1e6:7.1f} us "
+                  f"({gather_bytes / gather_t / 1e9:6.1f} GB/s)  "
+                  f"pipe {total_t * 1e6:7.1f} us  "
+                  f"bytes {byte_frac:6.1%}  time {time_frac:6.1%}  "
+                  f"byte-model +{stage_pct * (1 - byte_frac):.2f}%  "
+                  f"measured +{stage_pct * (1 - time_frac):.2f}%")
             results["cells"].append({
                 "rule": args.rule, "rows_per_cluster": rpc, "k": k, "p": p,
                 "clusters_probed": c, "rows_probed": c * rpc,
                 "centroid_seconds": cent_t, "gather_seconds": gather_t,
-                "total_seconds": total_t,
+                "pipeline_seconds": total_t,
                 "centroid_bytes": cent_bytes, "gather_bytes": gather_bytes,
                 "total_bytes": total_bytes,
                 "gather_gbps": gather_bytes / gather_t / 1e9,
-                "byte_fraction_of_dense": total_bytes / dense_bytes,
-                "time_fraction_of_dense": total_t / dense_t,
-                "speedup": dense_t / total_t,
+                "byte_fraction_of_dense": byte_frac,
+                "time_fraction_of_dense": time_frac,
+                "speedup": dense_pipe_t / total_t,
+                "predicted_pct_byte_model": stage_pct * (1 - byte_frac),
+                "predicted_pct_measured_time": stage_pct * (1 - time_frac),
             })
         del wp, sp, bp, cw, cs, cb
+
+    cells = results["cells"]
+    if cells:
+        g_fixed, g_bw = fit_fixed_cost(
+            np.array([c["gather_bytes"] / 1e6 for c in cells]),
+            np.array([c["gather_seconds"] * 1e6 for c in cells]))
+        seen = {c["k"]: c for c in cells}.values()
+        c_fixed, c_bw = fit_fixed_cost(
+            np.array([c["centroid_bytes"] / 1e6 for c in seen]),
+            np.array([c["centroid_seconds"] * 1e6 for c in seen]))
+        print(f"\ngather   fixed {g_fixed:6.1f} us   marginal {g_bw:6.0f} GB/s")
+        print(f"centroid fixed {c_fixed:6.1f} us   marginal {c_bw:6.0f} GB/s")
+        print(f"two-pass launch floor {g_fixed + c_fixed:.0f} us = "
+              f"{(g_fixed + c_fixed) / (dense_pipe_t * 1e6):.1%} of the dense stage")
+        results["fit"] = {
+            "gather_fixed_us": g_fixed, "gather_marginal_gbps": g_bw,
+            "centroid_fixed_us": c_fixed, "centroid_marginal_gbps": c_bw,
+        }
+        best = max(cells, key=lambda c: c["predicted_pct_measured_time"])
+        print(f"best cell: rpc={best['rows_per_cluster']} p={best['p']:g} "
+              f"-> byte model +{best['predicted_pct_byte_model']:.2f}%, "
+              f"measured +{best['predicted_pct_measured_time']:.2f}%")
 
     if args.out:
         Path(args.out).write_text(json.dumps(results, indent=2))
