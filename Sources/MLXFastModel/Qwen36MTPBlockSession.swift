@@ -593,6 +593,8 @@ public final class Qwen36MTPBlockSession {
         guard !seedTokens.isEmpty else { throw Qwen36MTPSessionError.emptySeed }
         let tBegin0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
         let cpuBegin0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
+        E58DispatchCensus.phase("seed_prefill")
+        defer { E58DispatchCensus.phase("outside") }
         cache = model.newCache(parameters: nil)
         let (seedLogits, hidden) = model.callWithHidden(
             input: LMInput.Text(
@@ -1271,12 +1273,24 @@ public final class Qwen36MTPBlockSession {
         // that matters -- the draft loop, the declared row count, the per-row
         // readouts and the rollback all key off it, so a policy change needs no
         // other edit to stay ledger-correct.
-        let draftCount = draftPolicy(depth, roundCount)
+        var draftCount = draftPolicy(depth, roundCount)
+        // E80 research instrument: pin the width so one leg measures one width.
+        if let forced = E58DispatchCensus.forcedDrafts {
+            draftCount = Swift.min(forced, depth, Qwen36MTPLimits.maxDepth)
+        }
         precondition(
             draftCount >= 0 && draftCount <= depth
                 && draftCount <= Qwen36MTPLimits.maxDepth,
             "draftPolicy returned \(draftCount) for an offer of \(depth); a "
                 + "round may propose 0 ... min(offer, maxDepth) drafts")
+        // E58 research instruments, both off unless their MLX_E58_* variable is
+        // set. The census keys every dispatch to this round and verify width;
+        // the tax adds trivial dispatches so a timed regression can price one.
+        var censusAccepted = 0
+        E58DispatchCensus.beginRound(
+            round: roundCount, width: draftCount + 1, depth: depth)
+        defer { E58DispatchCensus.endRound(accepted: censusAccepted) }
+        E58DispatchCensus.fireTax()
 
         // A STOP TOKEN IS COMMITTED LIKE ANY OTHER TOKEN, and this round keeps
         // drafting past it. The parent owns the decode window: its loop runs to
@@ -1316,6 +1330,7 @@ public final class Qwen36MTPBlockSession {
             // this backlog (the head cache is never created).
             headHistoryBacklogHidden.append(hidden)
             headHistoryBacklogTokens.append(primary)
+            E58DispatchCensus.phase("target_forward")
             let (serialLogits, serialHidden) = model.callWithHidden(
                 input: LMInput.Text(
                     tokens: MLXArray([primary]).reshaped([1, 1])),
@@ -1329,6 +1344,7 @@ public final class Qwen36MTPBlockSession {
                 0..., (serialLogits.dim(1) - 1) ..< serialLogits.dim(1), 0...]
             let (tailIDs, tailValues) = Self.linearTopTwoRows(serialLastRow)
             eval(cache.flatMap { $0.state } + [tailIDs, tailValues])
+            E58DispatchCensus.phase("round_tail")
             let readTail = (
                 tailIDs.asArray(Int32.self).map { Int($0) },
                 tailValues.asArray(Float.self).map { Double($0) }
@@ -1362,6 +1378,7 @@ public final class Qwen36MTPBlockSession {
         //    hidden exactly as before.
         let tDraft0 = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
+        E58DispatchCensus.phase("draft_head")
         let headCache: [any KVCache]
         var flushHidden: [MLXArray] = []
         var flushTokens: [Int] = []
@@ -1453,6 +1470,7 @@ public final class Qwen36MTPBlockSession {
             eval(draftIdArrays[draftIdArrays.count - 1])
         }
         if Self.traceRounds { tDraftBuilt = DispatchTime.now().uptimeNanoseconds }
+        E58DispatchCensus.phase("target_verify")
 
         // 2. Keep the generic pre-verify snapshot as a fallback, but use the
         //    vendored post-primary rollback checkpoint for the hot K=1 path. A
@@ -1498,6 +1516,7 @@ public final class Qwen36MTPBlockSession {
         bundle.append(contentsOf: draftIdArrays)
         eval(cache.flatMap { $0.state } + bundle)
         if Self.traceRounds { tEvalDone = DispatchTime.now().uptimeNanoseconds }
+        E58DispatchCensus.phase("round_tail")
 
         let drafts = draftIdArrays.map { Int($0.item(Int32.self)) }
         let flatTop2IDs = top2IDs.asArray(Int32.self).map { Int($0) }
@@ -1519,6 +1538,7 @@ public final class Qwen36MTPBlockSession {
             acceptedCount += 1
             if stopTokens.contains(drafts[index]) { break }
         }
+        censusAccepted = acceptedCount
 
         var perRowTop2Tokens: [[Int]] = []
         var perRowTop2Logits: [[Double]] = []
