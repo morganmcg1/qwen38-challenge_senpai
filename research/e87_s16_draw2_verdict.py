@@ -135,38 +135,13 @@ def main():
           % ((measured + alpha) / priced))
 
     print()
-    print("  consequence for the retired selection chain (f18 section 2)")
-    ratio = CHAIN_US_PER_DRAFT / S8_US_PER_DRAFT
-    print("    chain is %.1fx section 8 (%.2f vs %.2f us per draft)"
-          % (ratio, CHAIN_US_PER_DRAFT, S8_US_PER_DRAFT))
-    print("    retired on a priced value of %+.4f %% against a %.3f %% floor"
-          % (local_pct * ratio * BYTE_TRANSFER_FACTOR, FLOOR_SERIALFREE))
-    print("    measured-rate value would be %+.4f %%" % ((measured + alpha) * ratio))
-    print("    -> above the floor by %.1fx"
-          % ((measured + alpha) * ratio / FLOOR_SERIALFREE))
-
-    print()
     print("  serial draw and the counterfactual at board-mean serial")
-    raws = []
-    for key in tb:
-        e = tb[key]
-        raws.append((e["serial_seconds_per_token_mean"] / e["mtp_seconds_per_token_mean"],
-                     key))
-    raws.sort()
-    mid = (raws[3][0] + raws[4][0]) / 2.0
+    raws = sorted((e["serial_seconds_per_token_mean"] / e["mtp_seconds_per_token_mean"],
+                   k) for k, e in tb.items())
     print("    median pair %s %.6f and %s %.6f -> %.8f"
-          % (raws[3][1], raws[3][0], raws[4][1], raws[4][0], mid))
-    board = {}
-    for r in rows:
-        if r.get("officialScore") is None:
-            continue
-        for k, e in per_prompt(r).items():
-            board.setdefault(k, []).append(e["serial_seconds_per_token_mean"])
-    cf = []
-    for key in tb:
-        mean_serial = sum(board[key]) / len(board[key])
-        cf.append(mean_serial / tb[key]["mtp_seconds_per_token_mean"])
-    cf.sort()
+          % (raws[3][1], raws[3][0], raws[4][1], raws[4][0],
+             (raws[3][0] + raws[4][0]) / 2.0))
+    cf = sorted(means[k] / tb[k]["mtp_seconds_per_token_mean"] for k in tb)
     cf_score = (cf[3] + cf[4]) / 2.0
     print("    published                      %.8f" % b["officialScore"])
     print("    at board-mean serial draws     %.8f  (%+.3f %%)"
@@ -175,6 +150,51 @@ def main():
     print("    margin taken                   %+.8f  (%+.4f %%)"
           % (b["officialScore"] - 3.32794960796967,
              100.0 * (b["officialScore"] / 3.32794960796967 - 1.0)))
+
+    print()
+    print("  forward prediction, no fitted parameter")
+    print("  the local census fixes 12.84 us/draft; ranked round times are public,")
+    print("  so the ranked gain is predicted outright rather than regressed")
+    local_round_pct = 100.0 * S8_US_PER_DRAFT * LOCAL_DRAFTS_PER_ROUND / LOCAL_ROUND_US
+    pair = [raws[3][1], raws[4][1]]
+    preds = []
+    for key in pair:
+        e = tb[key]
+        d = e["effective_mean_draft_len"]
+        round_us = e["mtp_seconds_per_token_mean"] * (1.0 + LOCAL_ACCEPT * d) * 1e6
+        pct = 100.0 * S8_US_PER_DRAFT * d / round_us
+        preds.append(pct)
+        print("    %s  d %.3f  round %8.0f us  ->  predicted %+.4f %%"
+              % (key, d, round_us, pct))
+    pred = sum(preds) / len(preds)
+    got = 100.0 * (cf_score / 3.33339197 - 1.0)
+    print("    median-pair prediction  %+.4f %%" % pred)
+    print("    measured serial-free    %+.4f %%   (3.33339197 -> %.8f)" % (got, cf_score))
+    print("    agreement               %.0f %%" % (100.0 * pred / got))
+    print("    local round for the same census was %+.4f %%, so the ranked round"
+          % local_round_pct)
+    print("    being about %.2fx shorter is the whole of the difference"
+          % (LOCAL_ROUND_US / (sum(
+              tb[k]["mtp_seconds_per_token_mean"]
+              * (1.0 + LOCAL_ACCEPT * tb[k]["effective_mean_draft_len"]) * 1e6
+              for k in pair) / 2.0)))
+
+    print()
+    print("  consequence for the retired selection chain (f18 section 2)")
+    for key in pair:
+        e = tb[key]
+        d = e["effective_mean_draft_len"]
+        round_us = e["mtp_seconds_per_token_mean"] * (1.0 + LOCAL_ACCEPT * d) * 1e6
+        print("    %s  chain at %.2f us/draft  ->  %+.4f %%"
+              % (key, CHAIN_US_PER_DRAFT, 100.0 * CHAIN_US_PER_DRAFT * d / round_us))
+    ratio = CHAIN_US_PER_DRAFT / S8_US_PER_DRAFT
+    print("    chain is %.1fx section 8 (%.2f vs %.2f us per draft)"
+          % (ratio, CHAIN_US_PER_DRAFT, S8_US_PER_DRAFT))
+    print("    retired on a priced value of %+.4f %% against a %.3f %% floor"
+          % (local_pct * ratio * BYTE_TRANSFER_FACTOR, FLOOR_SERIALFREE))
+    print("    measured-rate value would be %+.4f %%" % ((measured + alpha) * ratio))
+    print("    -> above the floor by %.1fx"
+          % ((measured + alpha) * ratio / FLOOR_SERIALFREE))
 
 
 if __name__ == "__main__":
