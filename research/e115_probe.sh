@@ -39,12 +39,17 @@ gpu_temp() {
 entry_c="$(gpu_temp)"
 start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+# A debug test build leaves about 124 us of host cost on every blocking eval,
+# which is a quarter of one gate_up dispatch. Release cuts it, and the arm
+# structure control cell measures whatever is left.
+config="${MLXFAST_E115_CONFIG:-release}"
+
 MLXFAST_RUN_E115_PROBE=1 \
 MLXFAST_E115_SHAPES="${shapes}" \
 MLXFAST_E115_WIDTHS="${widths}" \
 MLXFAST_E115_BLOCKS="${blocks}" \
 MLXFAST_E115_OUT="${PWD}/${out_dir}/cells.json" \
-swift test --force-resolved-versions \
+swift test -c "${config}" --force-resolved-versions \
   --filter E115ConcurrentDispatchProbeTests 2>&1 | tee "${out_dir}/probe.log"
 status="${PIPESTATUS[0]}"
 
@@ -57,6 +62,7 @@ exit_c="$(gpu_temp)"
   echo "shapes=${shapes}"
   echo "widths=${widths}"
   echo "blocks=${blocks}"
+  echo "swift_config=${config}"
   echo "started_utc=${start_iso}"
   echo "finished_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "git_head=$(git rev-parse HEAD)"

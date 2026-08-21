@@ -101,11 +101,19 @@ struct E115ConcurrentDispatchProbeTests {
     /// `out_vec_size >= 4096` branch at `quantized.h:1917` so the split keeps
     /// the same kernel. N=5120 tensors (`gdn.out_proj`, `fa.o_proj`,
     /// `mlp.down`) are excluded by construction.
+    ///
+    /// `control.small` is not a scored shape. It runs every arm with the same
+    /// graph structure on a tensor whose GPU work is about 1.5 us, so its cell
+    /// time is the host cost of that arm structure. The analysis subtracts it,
+    /// which is the right model for the scored path: there MLX encodes the next
+    /// dispatch while the GPU runs the current one, so host cost is hidden and
+    /// only GPU time transfers.
     static let allShapes: [(name: String, hidden: Int, outputs: Int)] = [
         ("mlp.gate_up", 5120, 34816),
         ("lm_head", 5120, 248320),
         ("gdn.in_proj", 5120, 16480),
         ("fa.qkv", 5120, 14336),
+        ("control.small", 64, 8192),
     ]
 
     static var shapes: [(name: String, hidden: Int, outputs: Int)] {
@@ -232,6 +240,13 @@ struct E115ConcurrentDispatchProbeTests {
                 seed: UInt64(0xB115) &+ UInt64(shape.outputs))
 
             // Does a first-dim slice alias the parent buffer or copy it?
+            // Settle first: MLX releases a temporary's buffer lazily, so an
+            // unsettled reading can fall while the slices are created and hide
+            // a copy.
+            eval(MLXArray(0))
+            Memory.clearCache()
+            let activeSettle = Memory.activeMemory
+            eval(MLXArray(0))
             Memory.clearCache()
             let activeBefore = Memory.activeMemory
             let topPre = w.rows(0 ..< half, groupSize: Self.groupSize)
@@ -244,8 +259,10 @@ struct E115ConcurrentDispatchProbeTests {
                 hidden: shape.hidden, outputs: shape.outputs)
             sliceAliasing.append([
                 "shape": shape.name,
+                "active_settle": activeSettle,
                 "active_before": activeBefore,
                 "active_after": activeAfter,
+                "settle_drift_bytes": activeBefore - activeSettle,
                 "delta_bytes": activeAfter - activeBefore,
                 "full_tensor_bytes": fullBytes,
                 "copy_would_add_bytes": fullBytes,
