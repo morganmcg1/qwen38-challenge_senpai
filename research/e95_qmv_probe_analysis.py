@@ -78,19 +78,32 @@ def fit_width_model(samples: list[tuple[int, float]]) -> tuple[float, float, flo
     return a, b, c
 
 
+def weight_bytes(packed_bytes: int) -> int:
+    """`packed.sum()` reads only the 4-bit weight words.
+
+    `packed_bytes` is the affine-4 group-64 total at 0.5625 bytes per weight:
+    0.5 in the packed words plus 0.0625 in the bf16 scale and bias. The
+    reduction touches the packed words alone, so the read rate must be
+    computed against 0.5/0.5625 of the total.
+    """
+    return packed_bytes * 8 // 9
+
+
 def report_reads(reads: list[dict], overhead: float) -> dict[int, float]:
     print("\n=== achieved read rate against working-set size ===")
     print(
-        f"{'O':>7} {'MB':>8} {'raw us':>9} {'net us':>9} {'net GB/s':>9}")
-    net_us: dict[int, float] = {}
+        f"{'O':>7} {'total MB':>9} {'read MB':>8} {'raw us':>9} {'net us':>9} "
+        f"{'net GB/s':>9}")
+    rate: dict[int, float] = {}
     for entry in sorted(reads, key=lambda e: -e["packed_bytes"]):
-        nbytes = entry["packed_bytes"]
+        touched = weight_bytes(entry["packed_bytes"])
         net = entry["raw_us"] - overhead
-        net_us[entry["outputs"]] = net
+        rate[entry["outputs"]] = touched / net / 1e3
         print(
-            f"{entry['outputs']:>7} {nbytes / 1e6:>8.1f} {entry['raw_us']:>9.2f} "
-            f"{net:>9.2f} {nbytes / net / 1e3:>9.1f}")
-    return net_us
+            f"{entry['outputs']:>7} {entry['packed_bytes'] / 1e6:>9.1f} "
+            f"{touched / 1e6:>8.1f} {entry['raw_us']:>9.2f} "
+            f"{net:>9.2f} {touched / net / 1e3:>9.1f}")
+    return rate
 
 
 def report_tensor(
@@ -141,6 +154,22 @@ def report_tensor(
     }
 
 
+def traffic_share(
+    big: dict[str, float], small: dict[str, float], coefficient: str,
+    rate_big: float, rate_small: float,
+) -> float:
+    """How much of a per-byte coefficient behaves like DRAM traffic.
+
+    Pure DRAM traffic costs `bytes / rate`, so on a cache-resident pack its
+    per-byte cost falls by exactly `rate_big / rate_small`. Bandwidth-
+    independent work costs the same per byte on both packs. The measured
+    ratio interpolates between those two limits.
+    """
+    measured = small[f"{coefficient}_ns_per_mb"] / big[f"{coefficient}_ns_per_mb"]
+    traffic_limit = rate_big / rate_small
+    return (1.0 - measured) / (1.0 - traffic_limit)
+
+
 def transfer(summary: dict[str, float], read_gb_s: float) -> None:
     stream_mb = VERIFY_STREAM_BYTES / 1e6
     predicted_b = summary["b_ns_per_mb"] * stream_mb / 1e3
@@ -180,8 +209,7 @@ def main() -> int:
     overhead = payload["eval_overhead_us"]
     print(f"=== measured fixed per-eval overhead : {overhead:.2f} us ===")
 
-    read_net = report_reads(payload["reads"], overhead)
-    read_bytes = {e["outputs"]: e["packed_bytes"] for e in payload["reads"]}
+    rate = report_reads(payload["reads"], overhead)
 
     cells: dict[int, dict[int, tuple[float, float]]] = {}
     cell_bytes: dict[int, int] = {}
@@ -194,23 +222,41 @@ def main() -> int:
     summary = {
         outputs: report_tensor(
             outputs, cells[outputs], cell_bytes[outputs], overhead,
-            read_net[outputs])
+            cell_bytes[outputs] / (rate[outputs] * 1e3))
         for outputs in (big, small)
     }
 
     print("\n=== verdict ===")
-    byte_ratio = summary[big]["bytes"] / summary[small]["bytes"]
-    print(f"bytes ratio big/small     : {byte_ratio:.2f}x")
-    print(f"b ratio    big/small      : {summary[big]['b'] / summary[small]['b']:.2f}x")
-    print(f"c ratio    big/small      : {summary[big]['c'] / summary[small]['c']:.2f}x")
     print(
-        f"read rate big {read_bytes[big] / read_net[big] / 1e3:.1f} GB/s   "
-        f"small {read_bytes[small] / read_net[small] / 1e3:.1f} GB/s")
+        f"bytes ratio big/small     : "
+        f"{summary[big]['bytes'] / summary[small]['bytes']:.2f}x")
+    print(
+        f"read rate                 : big {rate[big]:.1f} GB/s, "
+        f"small {rate[small]:.1f} GB/s, "
+        f"cache speedup {rate[small] / rate[big]:.2f}x")
     print(
         f"b is {summary[big]['b_over_pass']:.3f} of a pass on the big tensor "
         f"and {summary[small]['b_over_pass']:.3f} on the small one")
+    print(
+        f"traffic share of b        : "
+        f"{100 * traffic_share(summary[big], summary[small], 'b', rate[big], rate[small]):.0f}%")
+    print(
+        f"traffic share of c        : "
+        f"{100 * traffic_share(summary[big], summary[small], 'c', rate[big], rate[small]):.0f}%")
 
-    transfer(summary[big], read_bytes[big] / read_net[big] / 1e3)
+    print("\n=== elasticity of time to bytes, removing whole weights ===")
+    byte_cut = 1.0 - summary[small]["bytes"] / summary[big]["bytes"]
+    print(f"{'M':>3} {'big net us':>11} {'small net us':>13} {'time cut':>9} {'elasticity':>11}")
+    for width in MODEL_WIDTHS:
+        big_net = (sum(cells[big][width]) / 2) - overhead
+        small_net = (sum(cells[small][width]) / 2) - overhead
+        time_cut = 1.0 - small_net / big_net
+        print(
+            f"{width:>3} {big_net:>11.2f} {small_net:>13.2f} "
+            f"{time_cut:>8.3f} {time_cut / byte_cut:>11.3f}")
+    print(f"byte cut big -> small     : {byte_cut:.3f}")
+
+    transfer(summary[big], rate[big])
     return 0
 
 
