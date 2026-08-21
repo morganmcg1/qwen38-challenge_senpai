@@ -102,10 +102,10 @@ struct E95DonationProbeTests {
             peakBytes: peak, seconds: seconds)
     }
 
-    @Test("head chain and target pattern donate differently")
+    @Test(
+        "head chain and target pattern donate differently",
+        .enabled(if: E95DonationProbeTests.enabled))
     func donationPattern() throws {
-        try #require(Self.enabled)
-
         let capacityRows = 4096
         let steps = 16
         let capacityBytes = 1 * 4 * capacityRows * 256 * 4
