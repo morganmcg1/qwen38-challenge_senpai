@@ -55,8 +55,15 @@ start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 macmon_arg=()
 [[ -n "${macmon_bin}" ]] && macmon_arg=(--macmon "${macmon_bin}")
 
+# Without this the harness silently falls back to E104's own arm list, which
+# names files this set never emits.
+arms_arg=()
+if [[ " $* " != *" --arms "* ]]; then
+  arms_arg=(--arms "$(python3 research/e108_arms.py --set "${set_name}" --list)")
+fi
+
 "${bin}" --dir "${arms_dir}" --out "${PWD}/${out_dir}/probe.json" \
-  "${macmon_arg[@]}" "$@" 2>&1 | tee "${out_dir}/probe.log"
+  "${macmon_arg[@]}" "${arms_arg[@]}" "$@" 2>&1 | tee "${out_dir}/probe.log"
 status="${PIPESTATUS[0]}"
 
 exit_c="$(gpu_temp)"

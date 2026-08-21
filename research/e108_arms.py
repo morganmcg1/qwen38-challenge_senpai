@@ -270,9 +270,14 @@ def main() -> int:
     ap.add_argument("--out", type=pathlib.Path)
     ap.add_argument("--arch", nargs="+", default=[LOCAL_ARCH, RANKED_ARCH])
     ap.add_argument("--reference", default=None)
+    ap.add_argument("--list", action="store_true",
+                    help="print the set as a comma list, in timing order")
     args = ap.parse_args()
 
     names = SETS[args.which]
+    if args.list:
+        print(",".join(names))
+        return 0
     if args.emit:
         emit(args.emit, names)
     if args.census:
