@@ -1,4 +1,4 @@
-"""E89: is thread duty before the demotion round what selects the cluster?
+"""E89: what distinguishes a leg before the scheduler demotes it?
 
     usage: research/e89_predecision_duty.py PREFIX [DECISION_ROUND [JSON_OUT]]
 
@@ -10,6 +10,20 @@ lower duty in the rounds *before* the decision.
 The comparison uses only pre-decision rounds, so the regressor cannot be
 contaminated by the demotion it is meant to predict. A demoted thread runs
 slower and therefore looks busier afterwards, which would invert the effect.
+
+Instrument scopes, which are not the same and must not be divided into each
+other. `Qwen36MTPHostStateProbe` takes `e89_instr` and `e89_cycles` from
+`proc_pid_rusage(getpid(), ...)`, so both count the WHOLE PROCESS including
+the MLX worker and completion threads. `round_thread_cpu_ns` and `e89_probe_ns`
+belong to the drafting thread alone. Dividing process cycles by thread
+nanoseconds produced an apparent 5.02 GHz on a part whose performance cores
+stop near 4.5, which is how the error was caught.
+
+The clock instrument here is therefore `e89_probe_ns`: the wall time of a fixed
+20,000-iteration dependent integer chain that touches no memory and makes no
+system call. It measures issue latency, so it tracks core clock and nothing
+else. Process IPC is still reported, because numerator and denominator share
+the same scope, but it describes the process rather than the thread.
 """
 
 import glob
@@ -20,10 +34,32 @@ import re
 import statistics
 import sys
 
+PROBE_ITERATIONS = 20_000
+
 
 def fnum(line, key):
     m = re.search(rf"(?:^|[ =]){re.escape(key)}=(-?[0-9.]+)", line)
     return float(m.group(1)) if m else None
+
+
+def med(rows, field):
+    vals = [x[field] for x in rows if x[field]]
+    return statistics.median(vals) if vals else None
+
+
+def cluster_cost(rows):
+    """Per-round medians for one cluster's share of a leg's late rounds."""
+    if not rows:
+        return None
+    return {
+        "rounds": len(rows),
+        "process_instructions": med(rows, "instr"),
+        "process_ipc": statistics.median(
+            x["instr"] / x["cycles"] for x in rows if x["cycles"]),
+        "probe_ns": med(rows, "probe_ns"),
+        "thread_cpu_ns": med(rows, "cpu_ns"),
+        "round_us": med(rows, "round_us"),
+    }
 
 
 def load(prefix, decision_round):
@@ -44,10 +80,9 @@ def load(prefix, decision_round):
                 "core": int(fnum(line, "e89_core_a") or -1),
                 "round_us": fnum(line, "round_us"),
                 "cpu_ns": fnum(line, "round_thread_cpu_ns"),
-                "user_ns": fnum(line, "e89_thr_user_ns"),
-                "sys_ns": fnum(line, "e89_thr_sys_ns"),
                 "instr": fnum(line, "e89_instr"),
                 "cycles": fnum(line, "e89_cycles"),
+                "probe_ns": fnum(line, "e89_probe_ns"),
             })
         if not rounds:
             continue
@@ -57,28 +92,32 @@ def load(prefix, decision_round):
             continue
         wall = sum(x["round_us"] or 0 for x in pre) * 1000.0
         cpu = sum(x["cpu_ns"] or 0 for x in pre)
-        user = sum(x["user_ns"] or 0 for x in pre)
         # Round 1 carries the warm path's counters, so the work comparison
-        # uses only whole timed rounds after it.
+        # uses only whole timed rounds after it. The probe is a self-contained
+        # chain inside the round, so it stays valid in round 1.
         body = [x for x in pre if x["round"] > 1]
         instr = sum(x["instr"] or 0 for x in body)
         cycles = sum(x["cycles"] or 0 for x in body)
-        body_cpu = sum(x["cpu_ns"] or 0 for x in body)
         demoted = next((x["round"] for x in rounds if 0 <= x["core"] <= 3), None)
         post = [x for x in rounds if x["round"] > 8]
+        late = {c: [x for x in rounds if x["round"] > 8
+                    and (x["core"] <= 3) == (c == "e")] for c in "ep"}
         legs.append({
             "tag": os.path.basename(d),
             "arm": os.path.basename(d)[len(prefix) + 1:].rsplit("-", 1)[0],
             "pre_rounds": len(pre),
             "pre_duty": cpu / wall if wall else None,
-            "pre_user_duty": user / wall if wall else None,
-            "pre_wall_us": wall / 1000.0,
             "pre_cores": sorted({x["core"] for x in pre}),
             "pre_instructions": instr,
-            "pre_cycles": cycles,
-            "pre_ipc": instr / cycles if cycles else None,
-            "pre_clock_ghz": cycles / body_cpu if body_cpu else None,
+            "pre_process_ipc": instr / cycles if cycles else None,
+            "pre_probe_ns": med(body, "probe_ns"),
             "demoted_at": demoted,
+            "late_p_probe_ns": med(late["p"], "probe_ns"),
+            "late_p_ipc": (statistics.median(
+                x["instr"] / x["cycles"] for x in late["p"] if x["cycles"])
+                if any(x["cycles"] for x in late["p"]) else None),
+            "late_p_rounds": len(late["p"]),
+            "late_by_cluster": {c: cluster_cost(v) for c, v in late.items()},
             "stuck": sum(1 for x in post if 0 <= x["core"] <= 3) / len(post) > 0.5,
         })
     return legs
@@ -99,30 +138,104 @@ def exact_one_sided(a, b):
     return {"statistic": obs, "relabelings": draws, "p_one_sided": hits / draws}
 
 
-def work_or_speed(legs, label):
-    """Split the pre-decision cost of the demoted legs into work and speed."""
-    hit = [L for L in legs if L["demoted_at"] is not None]
-    rest = [L for L in legs if L["demoted_at"] is None]
-    out = {"label": label, "n_demoted": len(hit), "n_rest": len(rest),
-           "legs": [L["tag"] for L in legs]}
-    print(f"\n  {label}: {len(hit)} demoted against {len(rest)}")
-    if len(hit) < 2 or len(rest) < 2:
-        print("    too few legs on one side; test skipped")
-        return out
-    for field, unit in (("pre_instructions", "instructions"),
-                        ("pre_cycles", "cycles"),
-                        ("pre_ipc", "instructions per cycle"),
-                        ("pre_clock_ghz", "GHz")):
-        a = [L[field] for L in hit if L[field]]
-        b = [L[field] for L in rest if L[field]]
-        ma, mb = statistics.median(a), statistics.median(b)
-        out[field] = {"demoted_median": ma, "rest_median": mb,
-                      "ratio": ma / mb if mb else None,
-                      "test_demoted_lower": exact_one_sided(a, b)}
-        t = out[field]["test_demoted_lower"]
-        print(f"    {field:<18} demoted {ma:>16.4f}  rest {mb:>16.4f}  "
-              f"ratio {ma / mb:6.4f}  p(demoted lower)={t['p_one_sided']:.4f}"
-              f"  [{unit}]")
+def compare(legs, field, label, unit=""):
+    """Demoted legs against the rest on one pre-decision quantity."""
+    a = [L[field] for L in legs if L["demoted_at"] and L[field]]
+    b = [L[field] for L in legs if not L["demoted_at"] and L[field]]
+    if len(a) < 2 or len(b) < 2:
+        return None
+    lower = exact_one_sided(a, b)
+    out = {"label": label, "n_demoted": len(a), "n_rest": len(b),
+           "demoted_mean": statistics.mean(a), "rest_mean": statistics.mean(b),
+           "demoted_median": statistics.median(a),
+           "rest_median": statistics.median(b),
+           "ratio": statistics.median(a) / statistics.median(b),
+           "p_demoted_lower": lower["p_one_sided"],
+           "p_demoted_higher": exact_one_sided(b, a)["p_one_sided"],
+           "relabelings": lower["relabelings"]}
+    print(f"  {label:<34} demoted {out['demoted_median']:>14.4f}  "
+          f"rest {out['rest_median']:>14.4f}  ratio {out['ratio']:6.4f}  "
+          f"p(lower)={out['p_demoted_lower']:.4f} "
+          f"p(higher)={out['p_demoted_higher']:.4f} {unit}")
+    return out
+
+
+def stall_persistence(legs):
+    """Does the pre-decision slowdown stay with the leg after it recovers?
+
+    A leg that was demoted and then returned to a performance core is its own
+    control. If its late performance-core numbers match the never-demoted
+    legs, the slowdown passed through; if they stay poor, it belongs to the
+    leg.
+    """
+    print("\nIS THE SLOWDOWN A PROPERTY OF THE LEG, OR A PASSING DISTURBANCE?")
+    groups = {
+        "recovered": [L for L in legs if L["demoted_at"] and not L["stuck"]],
+        "never demoted": [L for L in legs if not L["demoted_at"]],
+        "permanently stuck": [L for L in legs if L["stuck"]],
+    }
+    out = {}
+    print(f"  {'leg':<16} {'group':<18} {'pre_probe_ns':>12} "
+          f"{'late_P_probe_ns':>16} {'late_P_rounds':>13}")
+    for name, members in groups.items():
+        for L in sorted(members, key=lambda x: x["tag"]):
+            late = (f"{L['late_p_probe_ns']:.0f}"
+                    if L["late_p_probe_ns"] else "none")
+            print(f"  {L['tag']:<16} {name:<18} {L['pre_probe_ns']:>12.0f} "
+                  f"{late:>16} {L['late_p_rounds']:>13}")
+        vals = [L["late_p_probe_ns"] for L in members if L["late_p_probe_ns"]]
+        out[name.replace(" ", "_")] = {
+            "n": len(members),
+            "n_with_late_performance_rounds": len(vals),
+            "pre_probe_ns_median": statistics.median(
+                [L["pre_probe_ns"] for L in members]) if members else None,
+            "late_performance_probe_ns_median":
+                statistics.median(vals) if vals else None,
+        }
+    for name, d in out.items():
+        if d["late_performance_probe_ns_median"]:
+            print(f"  {name:<18} n={d['n_with_late_performance_rounds']:<3} "
+                  f"pre-decision median {d['pre_probe_ns_median']:.0f} ns  "
+                  f"late performance-core median "
+                  f"{d['late_performance_probe_ns_median']:.0f} ns")
+    return out
+
+
+def demotion_price(legs):
+    """Split the demoted round's extra host CPU time into clock and the rest.
+
+    The probe chain gives the clock ratio between the two clusters directly.
+    Whatever the thread CPU time ratio exceeds it by is work the efficiency
+    core does not lose to clock alone.
+    """
+    print("\nWHAT IS THE EFFICIENCY-CORE PENALTY MADE OF?")
+    stuck = [L["late_by_cluster"]["e"] for L in legs
+             if L["stuck"] and L["late_by_cluster"]["e"]]
+    clean = [L["late_by_cluster"]["p"] for L in legs
+             if not L["demoted_at"] and L["late_by_cluster"]["p"]]
+    if not (stuck and clean):
+        print("  one cluster is unrepresented; comparison skipped")
+        return None
+    out = {"n_stuck_legs": len(stuck), "n_clean_legs": len(clean)}
+    print(f"  {'quantity':<22} {'stuck E-core':>14} {'clean P-core':>14} "
+          f"{'ratio':>8}")
+    for field in ("process_instructions", "process_ipc", "probe_ns",
+                  "thread_cpu_ns", "round_us"):
+        a = statistics.median(x[field] for x in stuck)
+        b = statistics.median(x[field] for x in clean)
+        out[field] = {"stuck_efficiency": a, "clean_performance": b,
+                      "ratio": a / b if b else None}
+        print(f"  {field:<22} {a:>14.4f} {b:>14.4f} {a / b:>8.4f}")
+    clock = out["probe_ns"]["ratio"]
+    cpu = out["thread_cpu_ns"]["ratio"]
+    out["clock_slowdown"] = clock
+    out["residual_slowdown_beyond_clock"] = cpu / clock
+    for name, rows in (("stuck efficiency", stuck), ("clean performance", clean)):
+        ns = statistics.median(x["probe_ns"] for x in rows) / PROBE_ITERATIONS
+        out[f"{name.split()[0]}_ns_per_chain_iteration"] = ns
+        print(f"  {name:<22} {ns:.4f} ns per dependent chain iteration")
+    print(f"  thread CPU time ratio {cpu:.4f} = clock {clock:.4f} "
+          f"times {cpu / clock:.4f} of everything else")
     return out
 
 
@@ -133,18 +246,21 @@ def main():
 
     legs = load(prefix, decision)
     doc = {"prefix": prefix, "decision_round": decision,
-           "question": "does duty before the demotion round predict demotion",
+           "question": "what distinguishes a leg before the scheduler demotes it",
+           "probe_iterations": PROBE_ITERATIONS,
+           "process_scope_fields": ["e89_instr", "e89_cycles"],
+           "thread_scope_fields": ["round_thread_cpu_ns", "e89_probe_ns"],
            "harness": "local", "sandbox": "off",
            "official_or_ranked_score": False}
 
     print(f"pre-decision window: rounds 1 to {decision - 1}\n")
     print(f"{'leg':<16} {'stuck':>6} {'demoted':>8} {'duty':>7} "
-          f"{'instr_M':>8} {'IPC':>6} {'GHz':>5}  {'pre_cores'}")
+          f"{'probe_ns':>9} {'instr_M':>8} {'procIPC':>8}  {'pre_cores'}")
     for L in sorted(legs, key=lambda x: (x["demoted_at"] is None, x["tag"])):
         print(f"{L['tag']:<16} {str(L['stuck']):>6} "
               f"{str(L['demoted_at']):>8} {L['pre_duty']:>7.4f} "
-              f"{L['pre_instructions'] / 1e6:>8.1f} {L['pre_ipc']:>6.3f} "
-              f"{L['pre_clock_ghz']:>5.2f}  {L['pre_cores']}")
+              f"{L['pre_probe_ns']:>9.0f} {L['pre_instructions'] / 1e6:>8.1f} "
+              f"{L['pre_process_ipc']:>8.3f}  {L['pre_cores']}")
 
     for name, hit in (("permanently stuck", lambda L: L["stuck"]),
                       ("ever demoted", lambda L: L["demoted_at"] is not None)):
@@ -175,13 +291,18 @@ def main():
         print(f"  legs in the rest at or below the highest {name} leg: "
               f"{doc[key]['rest_legs_at_or_below_highest_hit']} of {len(b)}")
 
-    print("\nIS THE HIGHER DUTY MORE WORK, OR SLOWER WORK?")
-    print("  duty is CPU time over wall time, so a thread that runs slower "
-          "looks busier\n  for identical work. Instructions settle it.")
-    doc["work_or_speed"] = work_or_speed(legs, "all legs")
-    doc["work_or_speed_cluster2_only"] = work_or_speed(
-        [L for L in legs if min(L["pre_cores"]) > 8],
-        "sensitivity: legs confined to performance cores 9 to 13")
+    print("\nWAS THE DEMOTED LEG ALREADY SLOWER, AND WAS IT DOING MORE WORK?")
+    doc["pre_decision"] = {
+        "probe_ns": compare(legs, "pre_probe_ns",
+                            "dependent-chain time, thread", "[clock, ns]"),
+        "instructions": compare(legs, "pre_instructions",
+                                "retired instructions, process", "[work]"),
+        "process_ipc": compare(legs, "pre_process_ipc",
+                               "instructions per cycle, process", "[process]"),
+        "duty": compare(legs, "pre_duty", "thread duty", "[thread]"),
+    }
+    doc["stall_persistence"] = stall_persistence(legs)
+    doc["demotion_price"] = demotion_price(legs)
 
     if out_json:
         json.dump(doc, open(out_json, "w"), indent=2, sort_keys=True)

@@ -1,5 +1,38 @@
 {
   "decision_round": 3,
+  "demotion_price": {
+    "clean_ns_per_chain_iteration": 1.4854,
+    "clock_slowdown": 1.3001548404470176,
+    "n_clean_legs": 14,
+    "n_stuck_legs": 3,
+    "probe_ns": {
+      "clean_performance": 29708.0,
+      "ratio": 1.3001548404470176,
+      "stuck_efficiency": 38625.0
+    },
+    "process_instructions": {
+      "clean_performance": 119349919.5,
+      "ratio": 1.0013718191070922,
+      "stuck_efficiency": 119513646.0
+    },
+    "process_ipc": {
+      "clean_performance": 3.636481295394132,
+      "ratio": 0.3280225124759313,
+      "stuck_efficiency": 1.1928477310869126
+    },
+    "residual_slowdown_beyond_clock": 2.997799517577399,
+    "round_us": {
+      "clean_performance": 165149.25,
+      "ratio": 1.0073615229860262,
+      "stuck_efficiency": 166365.0
+    },
+    "stuck_ns_per_chain_iteration": 1.93125,
+    "thread_cpu_ns": {
+      "clean_performance": 6563728.75,
+      "ratio": 3.897603553467989,
+      "stuck_efficiency": 25582812.5
+    }
+  },
   "ever_demoted": {
     "hit_mean_duty": 0.06819343642078021,
     "hit_values": [
@@ -39,138 +72,90 @@
       "statistic": 0.0037666032672072497
     }
   },
-  "prefix": "e89rA",
-  "question": "does duty before the demotion round predict demotion",
-  "sandbox": "off",
-  "work_or_speed": {
-    "label": "all legs",
-    "legs": [
-      "e89rA-ctl-1",
-      "e89rA-ctl-10",
-      "e89rA-ctl-2",
-      "e89rA-ctl-3",
-      "e89rA-ctl-4",
-      "e89rA-ctl-5",
-      "e89rA-ctl-6",
-      "e89rA-ctl-7",
-      "e89rA-ctl-8",
-      "e89rA-ctl-9",
-      "e89rA-spin-1",
-      "e89rA-spin-10",
-      "e89rA-spin-2",
-      "e89rA-spin-3",
-      "e89rA-spin-4",
-      "e89rA-spin-5",
-      "e89rA-spin-6",
-      "e89rA-spin-7",
-      "e89rA-spin-8",
-      "e89rA-spin-9"
-    ],
-    "n_demoted": 6,
-    "n_rest": 14,
-    "pre_clock_ghz": {
-      "demoted_median": 4.0687533370687365,
-      "ratio": 0.986636710437757,
-      "rest_median": 4.123861695013849,
-      "test_demoted_lower": {
-        "p_one_sided": 0.14471104231166151,
-        "relabelings": 38760,
-        "statistic": -0.08332236224151846
-      }
+  "pre_decision": {
+    "duty": {
+      "demoted_mean": 0.06819343642078021,
+      "demoted_median": 0.06665527223632765,
+      "label": "thread duty",
+      "n_demoted": 6,
+      "n_rest": 14,
+      "p_demoted_higher": 5.159958720330237e-05,
+      "p_demoted_lower": 0.9999742002063984,
+      "ratio": 1.0567455961569694,
+      "relabelings": 38760,
+      "rest_mean": 0.06323935259153265,
+      "rest_median": 0.06307598771050535
     },
-    "pre_cycles": {
-      "demoted_median": 44921399.0,
-      "ratio": 1.0859389869967329,
-      "rest_median": 41366411.5,
-      "test_demoted_lower": {
-        "p_one_sided": 0.999406604747162,
-        "relabelings": 38760,
-        "statistic": 3098006.9761904776
-      }
-    },
-    "pre_instructions": {
+    "instructions": {
+      "demoted_mean": 139626482.83333334,
       "demoted_median": 136657922.5,
+      "label": "retired instructions, process",
+      "n_demoted": 6,
+      "n_rest": 14,
+      "p_demoted_higher": 0.30975232198142416,
+      "p_demoted_lower": 0.6902734778121775,
       "ratio": 1.0041323805770423,
-      "rest_median": 136095524.0,
-      "test_demoted_lower": {
-        "p_one_sided": 0.6902734778121775,
-        "relabelings": 38760,
-        "statistic": 1470031.4047619104
-      }
+      "relabelings": 38760,
+      "rest_mean": 138156451.42857143,
+      "rest_median": 136095524.0
     },
-    "pre_ipc": {
+    "probe_ns": {
+      "demoted_mean": 36493.0,
+      "demoted_median": 36395.5,
+      "label": "dependent-chain time, thread",
+      "n_demoted": 6,
+      "n_rest": 14,
+      "p_demoted_higher": 0.009210526315789473,
+      "p_demoted_lower": 0.9927760577915377,
+      "ratio": 1.0511335740072203,
+      "relabelings": 38760,
+      "rest_mean": 34818.57142857143,
+      "rest_median": 34625.0
+    },
+    "process_ipc": {
+      "demoted_mean": 3.113586033610651,
       "demoted_median": 3.082269731178817,
+      "label": "instructions per cycle, process",
+      "n_demoted": 6,
+      "n_rest": 14,
+      "p_demoted_higher": 0.9939628482972136,
+      "p_demoted_lower": 0.006062951496388029,
       "ratio": 0.9314467554327115,
-      "rest_median": 3.3091206912271893,
-      "test_demoted_lower": {
-        "p_one_sided": 0.006062951496388029,
-        "relabelings": 38760,
-        "statistic": -0.19048639026265413
-      }
+      "relabelings": 38760,
+      "rest_mean": 3.304072423873306,
+      "rest_median": 3.3091206912271893
     }
   },
-  "work_or_speed_cluster2_only": {
-    "label": "sensitivity: legs confined to performance cores 9 to 13",
-    "legs": [
-      "e89rA-ctl-1",
-      "e89rA-ctl-10",
-      "e89rA-ctl-2",
-      "e89rA-ctl-3",
-      "e89rA-ctl-4",
-      "e89rA-ctl-5",
-      "e89rA-ctl-7",
-      "e89rA-ctl-8",
-      "e89rA-ctl-9",
-      "e89rA-spin-10",
-      "e89rA-spin-2",
-      "e89rA-spin-3",
-      "e89rA-spin-4",
-      "e89rA-spin-5",
-      "e89rA-spin-6",
-      "e89rA-spin-7",
-      "e89rA-spin-9"
-    ],
-    "n_demoted": 4,
-    "n_rest": 13,
-    "pre_clock_ghz": {
-      "demoted_median": 4.106549480824006,
-      "ratio": 1.0021366124836424,
-      "rest_median": 4.097794082831233,
-      "test_demoted_lower": {
-        "p_one_sided": 0.5869747899159664,
-        "relabelings": 2380,
-        "statistic": 0.017106745569272164
-      }
+  "prefix": "e89rA",
+  "probe_iterations": 20000,
+  "process_scope_fields": [
+    "e89_instr",
+    "e89_cycles"
+  ],
+  "question": "what distinguishes a leg before the scheduler demotes it",
+  "sandbox": "off",
+  "stall_persistence": {
+    "never_demoted": {
+      "late_performance_probe_ns_median": 29708.0,
+      "n": 14,
+      "n_with_late_performance_rounds": 14,
+      "pre_probe_ns_median": 34625.0
     },
-    "pre_cycles": {
-      "demoted_median": 44021482.0,
-      "ratio": 1.0653779012873237,
-      "rest_median": 41320063.0,
-      "test_demoted_lower": {
-        "p_one_sided": 0.9936974789915967,
-        "relabelings": 2380,
-        "statistic": 2381345.3076923043
-      }
+    "permanently_stuck": {
+      "late_performance_probe_ns_median": 64791.5,
+      "n": 3,
+      "n_with_late_performance_rounds": 2,
+      "pre_probe_ns_median": 36416.0
     },
-    "pre_instructions": {
-      "demoted_median": 139840499.5,
-      "ratio": 1.0279773240068346,
-      "rest_median": 136034615.0,
-      "test_demoted_lower": {
-        "p_one_sided": 0.726890756302521,
-        "relabelings": 2380,
-        "statistic": 2800464.0
-      }
-    },
-    "pre_ipc": {
-      "demoted_median": 3.234311793498351,
-      "ratio": 0.9764164364585792,
-      "rest_median": 3.3124307137117253,
-      "test_demoted_lower": {
-        "p_one_sided": 0.05126050420168067,
-        "relabelings": 2380,
-        "statistic": -0.11340213983562819
-      }
+    "recovered": {
+      "late_performance_probe_ns_median": 29709.0,
+      "n": 3,
+      "n_with_late_performance_rounds": 3,
+      "pre_probe_ns_median": 36334.0
     }
-  }
+  },
+  "thread_scope_fields": [
+    "round_thread_cpu_ns",
+    "e89_probe_ns"
+  ]
 }
