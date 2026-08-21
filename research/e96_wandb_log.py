@@ -155,7 +155,7 @@ def log_model(path):
         project=PROJECT,
         group=GROUP,
         job_type="ablation-model",
-        name="e96-rung1-model",
+        name=f"e96-{pathlib.Path(path).stem}-model",
         config={
             "experiment": "e96",
             "harness": "local",
