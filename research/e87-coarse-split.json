@@ -1,0 +1,95 @@
+{
+  "affine2_declared_ps_per_weight": 0.8,
+  "affine4_ps_per_weight": 0.21,
+  "drafts_per_round": 8,
+  "dram_gb_s": 265.0,
+  "legs": {
+    "research/out/e87c-mb1/census.jsonl": {
+      "census": "research/out/e87c-mb1/census.jsonl",
+      "combined": {
+        "axis_closed": true,
+        "non_memory_us_per_draft": 46.30470283018869,
+        "ps_per_weight": 0.2452513090227039,
+        "stop_rule_us": 60.0
+      },
+      "phase_dispatches_per_draft": 60.5,
+      "phase_us_per_draft": 1674.6461666666667,
+      "phase_us_per_round": 13397.169333333333,
+      "snapshot_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "stages": {
+        "stage1_centroids": {
+          "expected_bytes": 19667200,
+          "isolated": {
+            "achieved_gb_s": 207.61312519215787,
+            "buffers_per_draft": 1.0,
+            "dispatches_per_buffer": 0.0,
+            "fraction_of_dram_ceiling": 0.7834457554421052,
+            "measured_us": 94.73004166666668,
+            "memory_us_at_ceiling": 74.21584905660377,
+            "moved_bytes": 19667200,
+            "moved_mb": 19.6672,
+            "non_memory_us": 20.514192610062906,
+            "ps_per_weight": 0.3259582040475847,
+            "weights": 62935040
+          },
+          "shape": "[12292,5120] affine-2 g64 dense qmv",
+          "whole_buffer": {
+            "achieved_gb_s": 207.61312519215787,
+            "buffers_per_draft": 1.0,
+            "dispatches_per_buffer": 1.0,
+            "fraction_of_dram_ceiling": 0.7834457554421052,
+            "measured_us": 94.73004166666668,
+            "memory_us_at_ceiling": 74.21584905660377,
+            "moved_bytes": 19667200,
+            "moved_mb": 19.6672,
+            "non_memory_us": 20.514192610062906,
+            "ps_per_weight": 0.3259582040475847,
+            "signature": "affine_qmv_bfloat16_t_gs_64_b_2_batch_0 grid=1x1537x1 tg=32x2x1*1",
+            "weights": 62935040
+          }
+        },
+        "stage2_gather": {
+          "expected_bytes": 39334400,
+          "isolated": {
+            "achieved_gb_s": 225.77144656979007,
+            "buffers_per_draft": 1.0,
+            "dispatches_per_buffer": 0.0,
+            "fraction_of_dram_ceiling": 0.8519677229048682,
+            "measured_us": 174.22220833333333,
+            "memory_us_at_ceiling": 148.43169811320755,
+            "moved_bytes": 39334400,
+            "moved_mb": 39.3344,
+            "non_memory_us": 25.790510220125782,
+            "ps_per_weight": 0.20489786151026346,
+            "weights": 125870080
+          },
+          "shape": "[3073x8,5120] affine-2 g64 gather qmv",
+          "whole_buffer": {
+            "achieved_gb_s": 225.77144656979007,
+            "buffers_per_draft": 1.0,
+            "dispatches_per_buffer": 1.0,
+            "fraction_of_dram_ceiling": 0.8519677229048682,
+            "measured_us": 174.22220833333333,
+            "memory_us_at_ceiling": 148.43169811320755,
+            "moved_bytes": 39334400,
+            "moved_mb": 39.3344,
+            "non_memory_us": 25.790510220125782,
+            "ps_per_weight": 0.20489786151026346,
+            "signature": "affine_gather_qmv_fast_bfloat16_t_gs_64_b_2 grid=1x1x3073 tg=32x2x1*1",
+            "weights": 125870080
+          }
+        }
+      },
+      "steady_snapshots": 6
+    }
+  },
+  "stop_rule_us": 60.0,
+  "width_phase": "w9|draft_head"
+}
