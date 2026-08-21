@@ -6,6 +6,7 @@
       research/e95_verify_census.py buffers  LEG [LEG ...]
       research/e95_verify_census.py kernels  LEG [LEG ...]
       research/e95_verify_census.py gdn      LEG [LEG ...]
+      research/e95_verify_census.py step     LEG_A LEG_B --width=4 --width2=5
 
 `counts` fits the per-round `target_verify` dispatch count of every shape at
 every observed verify width M. It is an exact integer model, so a residual means
@@ -464,6 +465,112 @@ def report_closure(insitu, iso, phase="target_verify", width=9):
           f"concurrency discount {100.0 * (1 - measured / max(modelled, 1e-9)):.1f} %")
 
 
+def class_label(shape):
+    """A width-independent name for one dispatch, so two widths can be paired."""
+    match = QMV_RE.match(shape)
+    if match:
+        out = int(match.group(2)) * 8
+        name = QMV_CLASSES.get(out, (f"O={out}",))[0]
+        return f"qmv {name} [O={out}]"
+    head = shape.split(" grid=")[0]
+    if head.startswith("sdpa_vector"):
+        return "sdpa_vector over the full-attention history"
+    grid = grid_of(shape)
+    if head.startswith("gg2_copybfloat16bfloat16") and grid and grid[1] == 4:
+        return "full-attention KV cache write"
+    return head
+
+
+def shape_bytes(shape, width):
+    entry = qmv_bytes(shape, width)
+    if entry:
+        return entry[4], entry[5]
+    entry = other_bytes(shape, width)
+    if entry:
+        return float(entry[1]), float(entry[2])
+    return 0.0, 0.0
+
+
+def leg_classes(path, phase, width):
+    """Per dispatch class: [us/round, dispatches/round, weight B, activation B].
+
+    A command buffer is the only measured interval, so a buffer holding several
+    dispatches has to be split. The split here is proportional to modelled
+    bytes. `report_buffers` shows the achieved rate is tightly clustered across
+    buffer signatures, which is what makes that rule usable; a buffer with no
+    modelled bytes is kept in a separate `unmodelled` class instead of being
+    charged to a neighbour.
+    """
+    out = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0])
+    measured = rounds = 0.0
+    for _path, steady in pick_leg([path], phase, width):
+        rounds = phase_rounds(steady, phase, width)
+        if rounds == 0:
+            return out, 0.0, 0
+        key = f"w{width}|{phase}"
+        measured = sum(s["by_width_phase"][key]["gpu_ns"] for s in steady
+                       if key in s["by_width_phase"]) / 1e3 / rounds
+        for body, (count, gpu_ns) in collect_signatures(steady, phase, width).items():
+            shapes = parse_signature(body)
+            us = gpu_ns / 1e3 / rounds
+            per_round = count / rounds
+            costs = {shape: [multiplicity * b for b in shape_bytes(shape, width)]
+                     for shape, multiplicity in shapes.items()}
+            total = sum(sum(pair) for pair in costs.values())
+            for shape, multiplicity in shapes.items():
+                weight, activation = costs[shape]
+                modelled = weight + activation
+                if total > 0:
+                    label = class_label(shape)
+                    share = modelled / total
+                else:
+                    label = f"unmodelled {class_label(shape)}"
+                    share = multiplicity / sum(shapes.values())
+                row = out[label]
+                row[0] += us * share
+                row[1] += per_round * multiplicity
+                row[2] += weight * per_round
+                row[3] += activation * per_round
+    return out, measured, rounds
+
+
+def report_step(path_a, path_b, phase="target_verify", width_a=4, width_b=5):
+    """Pair two verify widths by dispatch class and itemise the step between them.
+
+    Buffer signatures embed the grid, so they cannot be compared across widths
+    directly. `class_label` removes the width from every shape, which lets the
+    same physical work be matched at both widths. The cumulative column answers
+    whether the step is concentrated in a few classes or spread over many.
+    """
+    left, us_a, rounds_a = leg_classes(path_a, phase, width_a)
+    right, us_b, rounds_b = leg_classes(path_b, phase, width_b)
+    print(f"=== M={width_a} {path_a}  ({rounds_a} rounds, {us_a:.1f} us/round)")
+    print(f"=== M={width_b} {path_b}  ({rounds_b} rounds, {us_b:.1f} us/round)")
+    print(f"    measured step {us_b - us_a:+.1f} us/round "
+          f"({100.0 * (us_b / max(us_a, 1e-9) - 1):+.1f} %)")
+    rows = []
+    for label in set(left) | set(right):
+        a = left.get(label, [0.0, 0.0, 0.0, 0.0])
+        b = right.get(label, [0.0, 0.0, 0.0, 0.0])
+        rows.append((b[0] - a[0], label, a, b))
+    rows.sort(key=lambda row: -abs(row[0]))
+    itemised = sum(row[0] for row in rows)
+    print(f"    {'d us':>10} {'cum %':>7} {'us A':>10} {'us B':>10} "
+          f"{'n A':>7} {'n B':>7} {'dMB':>9} {'d GB/s':>8}  class")
+    cumulative = 0.0
+    for delta, label, a, b in rows:
+        if abs(delta) < 0.05 * abs(itemised) / 100:
+            continue
+        cumulative += delta
+        moved = (b[2] + b[3]) - (a[2] + a[3])
+        rate = moved / (delta * 1e-6) / 1e9 if delta > 0 and moved > 0 else 0.0
+        print(f"    {delta:10.1f} {100.0 * cumulative / itemised:7.1f} "
+              f"{a[0]:10.1f} {b[0]:10.1f} {a[1]:7.2f} {b[1]:7.2f} "
+              f"{moved / 1e6:9.3f} {rate:8.1f}  {label[:78]}")
+    print(f"    itemised step {itemised:+.1f} us/round vs measured "
+          f"{us_b - us_a:+.1f} us/round")
+
+
 def report_gdn(paths, phase="target_verify"):
     """Audit every Gated DeltaNet recurrent-state dispatch, per round and width."""
     print(f"GDN recurrent state: {GDN_V_HEADS} heads x {GDN_HEAD_DIM} x "
@@ -508,10 +615,13 @@ def main():
         return 2
     mode, paths = sys.argv[1], sys.argv[2:]
     width = 9
+    width2 = None
     kept = []
     for path in paths:
         if path.startswith("--width="):
             width = int(path.split("=", 1)[1])
+        elif path.startswith("--width2="):
+            width2 = int(path.split("=", 1)[1])
         else:
             kept.append(path)
     print(f"modelled weight stream = {WEIGHT_STREAM_BYTES:,} B "
@@ -524,6 +634,8 @@ def main():
         report_kernels(kept, width=width)
     elif mode == "closure":
         report_closure(kept[0], kept[1], width=width)
+    elif mode == "step":
+        report_step(kept[0], kept[1], width_a=width, width_b=width2)
     elif mode == "gdn":
         report_gdn(kept)
     else:
