@@ -290,7 +290,7 @@ struct E83PrefillDecompositionTests {
 // MARK: - harness
 
 /// One resident model, replayed as `begin()` blocks.
-private final class E83Harness {
+final class E83Harness {
     let model: Qwen35TextModel
     let tokens: [Int32]
     let seedLength: Int
@@ -492,7 +492,7 @@ private final class E83Harness {
 // MARK: - arms
 
 /// A pinned-width ablation: which modules get wrapped, and at what pin width.
-private struct E83Arm {
+struct E83Arm {
     let name: String
     /// Rows the wrapped family sees. `nil` means "the caller's width", i.e. the
     /// null control: same wrapper, same launches, same copy, full-width family.
@@ -696,7 +696,7 @@ private func e83WrapLinear(
 
 // MARK: - isolated roofline
 
-private struct E83Shape {
+struct E83Shape {
     let family: String
     let m: Int
     let k: Int
@@ -708,7 +708,7 @@ private struct E83Shape {
 /// and multiplicity, plus the two shapes the brief asked about that prefill does
 /// NOT run: the fused `5120 -> 34816` gate_up and the M = 1 residue every pinned
 /// arm still pays.
-private func e83IsolatedShapes(seed: Int) -> [E83Shape] {
+func e83IsolatedShapes(seed: Int) -> [E83Shape] {
     var cells: [E83Shape] = [
         E83Shape(family: "gdn.in_proj_qkv", m: seed, k: 5120, n: 10240, layers: 48),
         E83Shape(family: "gdn.in_proj_z", m: seed, k: 5120, n: 6144, layers: 48),
@@ -739,13 +739,13 @@ private func e83IsolatedShapes(seed: Int) -> [E83Shape] {
     return cells
 }
 
-private struct E83QuantWeight {
+struct E83QuantWeight {
     let w: MLXArray
     let scales: MLXArray
     let biases: MLXArray
 }
 
-private func e83QuantWeight(k: Int, n: Int, bits: Int = 4, group: Int = 64) -> E83QuantWeight {
+func e83QuantWeight(k: Int, n: Int, bits: Int = 4, group: Int = 64) -> E83QuantWeight {
     let words = k / (32 / bits)
     let tile = (0..<words).map { index -> UInt32 in
         UInt32(truncatingIfNeeded: index &* 2_654_435_761) ^ 0x9E37_79B9
@@ -766,7 +766,7 @@ private func e83QuantWeight(k: Int, n: Int, bits: Int = 4, group: Int = 64) -> E
     return weight
 }
 
-private func e83Activations(m: Int, k: Int) -> MLXArray {
+func e83Activations(m: Int, k: Int) -> MLXArray {
     let tile: [Float] = (0..<k).map { i in Float((i &* 131) % 251) / 251.0 - 0.5 }
     let rowJitter = arange(0, m, dtype: .float32).reshaped([m, 1]) * 0.01
     let x = (MLXArray(tile).reshaped([1, k]) + rowJitter).asType(.bfloat16)
@@ -774,7 +774,7 @@ private func e83Activations(m: Int, k: Int) -> MLXArray {
     return x
 }
 
-private func e83MeasureQuantizedShape(_ cell: E83Shape, reps: Int) -> [String: Any] {
+func e83MeasureQuantizedShape(_ cell: E83Shape, reps: Int) -> [String: Any] {
     let entryTemp = e83GPUTemperature()
     let weight = e83QuantWeight(k: cell.k, n: cell.n)
     let x = e83Activations(m: cell.m, k: cell.k)
@@ -1222,7 +1222,7 @@ private func e83CalibrateStall(millis: Int, samples: Int) -> [String: Any] {
     ]
 }
 
-private func e83LoadPromptTokens(_ path: String) throws -> [Int] {
+func e83LoadPromptTokens(_ path: String) throws -> [Int] {
     let data = try Data(contentsOf: URL(fileURLWithPath: path))
     guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
         let cases = object["cases"] as? [[String: Any]],
@@ -1237,14 +1237,14 @@ private func e83LoadPromptTokens(_ path: String) throws -> [Int] {
     return prompt + ((first["expected_tokens"] as? [Int]) ?? [])
 }
 
-private struct E83Failure: Error, CustomStringConvertible {
+struct E83Failure: Error, CustomStringConvertible {
     let description: String
     init(_ description: String) { self.description = description }
 }
 
 /// One macmon sample. The census runs with `MLXFAST_LOCAL_COOL_GATE=0`, so the
 /// entry and exit temperature of every block is the thermal record.
-private func e83GPUTemperature() -> Double? {
+func e83GPUTemperature() -> Double? {
     let binary =
         ProcessInfo.processInfo.environment["MLXFAST_E83_MACMON"] ?? "/opt/homebrew/bin/macmon"
     guard FileManager.default.isExecutableFile(atPath: binary) else { return nil }
@@ -1268,7 +1268,7 @@ private func e83GPUTemperature() -> Double? {
     return nil
 }
 
-private func e83Device() -> [String: Any] {
+func e83Device() -> [String: Any] {
     let device = MLX.GPU.deviceInfo()
     return [
         "architecture": device.architecture,
@@ -1281,7 +1281,7 @@ private func e83Device() -> [String: Any] {
 /// Stream one block to stdout as it completes, so a long session is observable
 /// and a crash does not lose everything measured before it.
 @discardableResult
-private func e83Emit(_ record: [String: Any]) -> [String: Any] {
+func e83Emit(_ record: [String: Any]) -> [String: Any] {
     let json =
         (try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]))
         .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"

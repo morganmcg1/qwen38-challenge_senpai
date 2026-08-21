@@ -2797,8 +2797,42 @@ let qwen35DecodeLadderRungs: Set<Int> = {
     }
 }()
 
+/// `{0}` plus every layer index that closes a `stride`-long group. Indices past
+/// the model's layer count are inert, so the bound is a constant.
+public func qwen35PrefillLadderStride(_ stride: Int) -> Set<Int> {
+    Set([0] + (0 ..< 256).filter { $0 % stride == stride - 1 })
+}
+
+/// Layer indices at which the `S >= 512` seed-prefill ladder fires `asyncEval`.
+///
+/// The shipped schedule is stride 3 — `{0}` plus every `i % 3 == 2`, which is 22
+/// rungs over 64 layers. `MLX_QWEN_MTP_PREFILL_LADDER` overrides it for stride
+/// research: `off`, `sN` for stride N, or an explicit comma-separated index
+/// list. Read once, so a scored run with the variable unset behaves exactly as
+/// before.
+let qwen35PrefillLadderRungs: Set<Int> = {
+    let shipped = qwen35PrefillLadderStride(3)
+    guard let raw = ProcessInfo.processInfo.environment["MLX_QWEN_MTP_PREFILL_LADDER"],
+          !raw.isEmpty
+    else { return shipped }
+    switch raw {
+    case "default", "ship": return shipped
+    case "off": return []
+    default:
+        if raw.hasPrefix("s"), let stride = Int(raw.dropFirst()), stride > 0 {
+            return qwen35PrefillLadderStride(stride)
+        }
+        let parsed = Set(raw.split(separator: ",").compactMap { Int($0) })
+        return parsed.isEmpty ? shipped : parsed
+    }
+}()
+
 public class Qwen35TextModelInner: Module {
     @ModuleInfo(key: "embed_tokens") var embedTokens: Embedding
+
+    /// Per-instance copy of the seed-prefill rung set, so one resident model can
+    /// measure several schedules in one session. Never written on a scored run.
+    public var prefillLadderRungs: Set<Int> = qwen35PrefillLadderRungs
 
     fileprivate let layers: [Qwen35DecoderLayer]
     let norm: RMSNorm
@@ -2857,8 +2891,9 @@ public class Qwen35TextModelInner: Module {
         // rest. Pure enqueue-timing change — no op is added, no reduction
         // order moves, so the emitted stream is bit-identical (Laguna receipt
         // for the same schedule shape: off 10.37 ms vs ladder 9.45 ms/step;
-        // schedule scaled from 40 to 64 layers, front rungs kept). The rung
-        // set is overridable via MLX_QWEN_MTP_LADDER for schedule research.
+        // schedule scaled from 40 to 64 layers, front rungs kept). The decode
+        // rung set is overridable via MLX_QWEN_MTP_LADDER and the prefill rung
+        // set via MLX_QWEN_MTP_PREFILL_LADDER, for schedule research.
         let prefillLadder = inputs.dim(1) >= 512
         let ladderActive = inputs.dim(1) <= 9 || prefillLadder
         if hiddenStates.dtype == .bfloat16 && hiddenStates.dim(-1) == 5120 {
@@ -2883,7 +2918,7 @@ public class Qwen35TextModelInner: Module {
                 delta = out.delta
                 if ladderActive {
                     if prefillLadder {
-                        if i == 0 || i % 3 == 2 {
+                        if prefillLadderRungs.contains(i) {
                             asyncEval(base, out.delta)
                         }
                     } else if qwen35DecodeLadderRungs.contains(i) {
@@ -2903,7 +2938,7 @@ public class Qwen35TextModelInner: Module {
                     cache: cacheArray?[i], nConfirmed: nConfirmed)
                 if ladderActive {
                     if prefillLadder {
-                        if i == 0 || i % 3 == 2 {
+                        if prefillLadderRungs.contains(i) {
                             asyncEval(hiddenStates)
                         }
                     } else if qwen35DecodeLadderRungs.contains(i) {
