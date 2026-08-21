@@ -669,6 +669,123 @@ def report_nnls(paths, min_buffers=4, width=9):
                   f"{'id' if ok else '  '}  {shape[:88]}")
 
 
+def report_buffers(paths, min_buffers=4, width=9, drafts=8):
+    """Print the identification-free per-command-buffer cost of the head pass.
+
+    One command buffer is one measured GPU interval, so this table needs no
+    solver and no identifiability argument. The NNLS report then tries to split
+    the buffers into kernels and is rank deficient; this table is not.
+    """
+    for path in paths:
+        snapshots = [r for r in load(path) if r.get("event") == "gputime"]
+        legs = split_legs(snapshots)
+        leg = max(legs, key=lambda candidate: sum(
+            1 for snapshot in candidate
+            if f"w{width}|draft_head" in snapshot.get("by_width_phase", {})))
+        steady = leg[1:]
+        buckets = collect_signatures(steady, width=width)
+        head_rounds = sum(
+            snapshot["by_width_phase"][f"w{width}|draft_head"]["dispatches"]
+            for snapshot in steady
+            if f"w{width}|draft_head" in snapshot["by_width_phase"]
+        )
+        rounds = (head_rounds - 37 * len(steady)) / (27.0 * (drafts - 1)) if drafts > 1 else 0
+        marginal = max(1.0, rounds) * drafts
+        print(f"=== {path}")
+        print(f"    steady snapshots={len(steady)}  head dispatches={head_rounds}"
+              f"  implied rounds={rounds:.2f}  head calls={marginal:.2f}"
+              f"  (every figure below is per head call, not per marginal draft)")
+        rows = []
+        total_us = 0.0
+        total_bytes = 0
+        for body, (count, gpu_ns) in buckets.items():
+            if count < min_buffers:
+                continue
+            shapes = parse_signature(body)
+            weight = sum(MAP[s][2] * n for s, n in shapes.items() if s in MAP)
+            us = gpu_ns / 1000.0 / marginal
+            total_us += us
+            total_bytes += weight * (count / marginal)
+            names = ", ".join(
+                f"{MAP[s][1]}x{n}" if s in MAP else f"UNMAPPED[{s[:40]}]x{n}"
+                for s, n in shapes.items())
+            rows.append((us, count, count / marginal, weight, names))
+        for us, count, per_draft, weight, names in sorted(rows, reverse=True):
+            rate = (weight * per_draft / (us * 1e-6) / 1e9) if us > 0 and weight else 0.0
+            print(f"    {us:9.2f} us/call   n={count:4d}  {per_draft:5.2f} buf/call"
+                  f"  {weight / 1e6:8.3f} MB  {rate:7.1f} GB/s  {names[:100]}")
+        print(f"    TOTAL {total_us:.2f} us/call over {len(rows)} buffer signatures,"
+              f" {total_bytes / 1e6:.3f} MB/call")
+
+
+HOST_PHASE_GATE_US = 1500.0
+
+
+def report_hoststate(paths, gate_us=HOST_PHASE_GATE_US, warmup_rounds=1):
+    """Stratify every leg by host state before any pooled GPU number is quoted.
+
+    The gate is absolute and arm blind: a round is dirty when the host side of
+    a phase spends more than `gate_us` outside its own dispatch encoding. Each
+    figure carries its instruction counter (encoded dispatches, commits and
+    barriers) so a host-state number can never be compared across rounds that
+    encoded a different amount of work.
+    """
+    for path in paths:
+        records = load(path)
+        rounds = [r for r in records if r.get("event") == "round"]
+        by_pid = {}
+        for record in rounds:
+            by_pid.setdefault(record["pid"], []).append(record)
+        print(f"\n=== {path}")
+        for pid in sorted(by_pid):
+            leg = sorted(by_pid[pid], key=lambda r: r["round"])[warmup_rounds:]
+            if not leg:
+                continue
+            phases = sorted({name for r in leg for name in r["phases"]})
+            print(f"  pid {pid}: {len(leg)} rounds after dropping {warmup_rounds} warmup")
+            for phase in phases:
+                samples = []
+                for record in leg:
+                    body = record["phases"].get(phase)
+                    if not body:
+                        continue
+                    samples.append(
+                        (
+                            body["dispatch_ns"] / 1000.0,
+                            body["dispatches"],
+                            body.get("commits", 0),
+                            body.get("barriers", 0),
+                            record["wall_ns"] / 1000.0,
+                        )
+                    )
+                if not samples:
+                    continue
+                host = [s[0] for s in samples]
+                counters = {s[1] for s in samples}
+                clean = [s for s in samples if s[0] <= gate_us]
+                dirty = [s for s in samples if s[0] > gate_us]
+                mean_clean = sum(s[0] for s in clean) / len(clean) if clean else float("nan")
+                mean_dirty = sum(s[0] for s in dirty) / len(dirty) if dirty else float("nan")
+                flag = "" if len(clean) >= 20 else "   <<< SMALL CLEAN SAMPLE"
+                print(
+                    f"    {phase:<16} host {min(host):8.1f}..{max(host):9.1f} us  "
+                    f"clean(<= {gate_us:.0f}us) {len(clean):4d}/{len(samples):4d} "
+                    f"mean {mean_clean:9.1f}  dirty {len(dirty):4d} mean {mean_dirty:9.1f}"
+                    f"{flag}"
+                )
+                counter_note = (
+                    f"{sorted(counters)[0]}"
+                    if len(counters) == 1
+                    else f"{min(counters)}..{max(counters)} over {len(counters)} values"
+                )
+                print(
+                    f"      instruction counter: dispatches {counter_note}, "
+                    f"commits mean {sum(s[2] for s in samples) / len(samples):.1f}, "
+                    f"barriers mean {sum(s[3] for s in samples) / len(samples):.1f}, "
+                    f"host us/dispatch {sum(host) / len(host) / max(1, sorted(counters)[0]):.3f}"
+                )
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
@@ -680,6 +797,10 @@ def main():
         report_gputime(paths)
     elif mode == "nnls":
         report_nnls(paths)
+    elif mode == "hoststate":
+        report_hoststate(paths)
+    elif mode == "buffers":
+        report_buffers(paths)
     else:
         print(__doc__)
         return 2
