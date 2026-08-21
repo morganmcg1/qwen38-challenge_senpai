@@ -132,7 +132,7 @@ def enrich(leg, tag):
 
 
 def log_legs(tags):
-    for tag in tags:
+    for tag in report.expand_tags(tags):
         leg = enrich(report.summarise(tag), tag)
         run = wandb.init(
             entity=ENTITY,

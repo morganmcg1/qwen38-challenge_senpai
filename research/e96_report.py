@@ -309,17 +309,22 @@ def fit_payload(legs, bucket, modelled_step_us=8112.6):
     }
 
 
+def expand_tags(patterns):
+    tags = []
+    for pattern in patterns:
+        matches = sorted(path.name for path in OUT.glob(pattern)
+                         if path.is_dir())
+        tags.extend(matches or [pattern])
+    return tags
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("tags", nargs="+")
     parser.add_argument("--fit-json")
     parser.add_argument("--bucket", default="4,4")
     args = parser.parse_args()
-    tags = []
-    for pattern in args.tags:
-        matches = sorted(path.name for path in OUT.glob(pattern)
-                         if path.is_dir())
-        tags.extend(matches or [pattern])
+    tags = expand_tags(args.tags)
     bucket = tuple(int(part) for part in args.bucket.split(","))
     legs = [summarise(tag) for tag in tags]
     for leg in legs:
