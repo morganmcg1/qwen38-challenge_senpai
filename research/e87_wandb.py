@@ -18,6 +18,9 @@ One run holds every fact another agent needs to reproduce or overturn it:
              session, never a score.
   paired     the same session priced round-for-round, with the host-state
              stratum and the achieved bandwidth per arm.
+  headline   the same session converted to the published score. The score is
+             (raw_beagle + raw_essays) / 2, so each scored prompt gets its own
+             price at its own mean draft count.
   liveness   the damaged-index positive control.
   derivation option B's load-time index: whether the table the runtime derives
              from the declared head equals the table the screen priced, and
@@ -182,9 +185,12 @@ def log_paired(run, path: Path) -> None:
     prefix = doc["prefix"]
     run.log({
         f"paired/{prefix}/stratum": table(
-            ["tag", "arm", "rounds", "clean_rounds", "dirty_rounds",
-             "clean_median_host_us", "dirty_median_host_us", "max_host_us",
-             "drafts", "accepted"],
+            ["tag", "arm", "leg_index", "sandbox", "rounds", "clean_rounds",
+             "dirty_rounds", "clean_median_host_us", "dirty_median_host_us",
+             "max_host_us", "drafts", "accepted", "mtp_seconds_per_token",
+             "gpu_temp_entry_c", "gpu_temp_exit_c", "all_tokens_matched",
+             "effective_mean_draft_len", "accepted_draft_rate",
+             "head_provenance_sha256", "round1_us", "round2_us"],
             doc["per_leg_host_stratum"]),
         f"paired/{prefix}/host_gate_us": doc["host_gate_us"],
         f"paired/{prefix}/depth_sequence_identical_across_arms":
@@ -288,6 +294,66 @@ def log_submit_gate(run, legs) -> None:
         })
 
 
+def log_headline(run, path: Path) -> None:
+    """The score-relevant conversion of one balanced timing session.
+
+    The published score is (raw_beagle + raw_essays) / 2, so the two scored
+    prompts get their own rows and the mean7-style fixture number stays a
+    mechanism diagnostic.
+    """
+    doc = json.loads(path.read_text())
+    prefix = doc["prefix"]
+
+    arm_rows = [{"arm": a, **{k: cell(v) for k, v in s.items()}}
+                for a, s in doc["arms"].items()]
+    run.log({f"headline/{prefix}/arms":
+             table(sorted({k for r in arm_rows for k in r}), arm_rows)})
+
+    score_rows, prompt_rows = [], []
+    for arm, s in doc["score_model"].items():
+        price = s.get("scored_prompt_price", {})
+        score_rows.append({"arm": arm,
+                           **{k: cell(v) for k, v in s.items()
+                              if k != "scored_prompt_price"},
+                           "published_score_gain_pct":
+                               price.get("published_score_gain_pct"),
+                           "scored_prompt_spread_pp":
+                               price.get("scored_prompt_spread_pp"),
+                           "spread_within_one_stderr":
+                               price.get("spread_within_one_stderr")})
+        for prompt, p in price.get("prompts", {}).items():
+            prompt_rows.append({"arm": arm, "prompt": prompt, **p})
+            if p["in_published_score"]:
+                run.log({f"headline/{prefix}/{arm}/{prompt}_raw_p_gain_pct":
+                         p["ranked_raw_p_gain_pct"]})
+        run.log({
+            f"headline/{prefix}/{arm}/measured_leg_total_gain_pct":
+                s["measured_leg_total_gain_pct"],
+            f"headline/{prefix}/{arm}/leg_total_gain_stderr_pct":
+                s["leg_total_gain_stderr_pct"],
+            f"headline/{prefix}/{arm}/measured_round_only_gain_pct":
+                s["measured_round_only_gain_pct"],
+            f"headline/{prefix}/{arm}/ranked_raw_p_gain_pct_at_fixture_depth":
+                s["ranked_raw_p_gain_pct"],
+            f"headline/{prefix}/{arm}/published_score_gain_pct":
+                price.get("published_score_gain_pct"),
+            f"headline/{prefix}/{arm}/nonround_seconds_delta":
+                s["nonround_seconds_delta"],
+            f"headline/{prefix}/{arm}/round_seconds_delta":
+                s["round_seconds_delta"],
+        })
+    run.log({
+        f"headline/{prefix}/score_model":
+            table(sorted({k for r in score_rows for k in r}), score_rows),
+        f"headline/{prefix}/scored_prompts":
+            table(sorted({k for r in prompt_rows for k in r}), prompt_rows),
+        f"headline/{prefix}/session_null_pct": doc["session_null"]["session_null_pct"],
+        f"headline/{prefix}/depth_sequence_identical_across_arms":
+            doc["depth_sequence_identical_across_arms"],
+        f"headline/{prefix}/raw": table(["json"], [{"json": json.dumps(doc, indent=2)}]),
+    })
+
+
 def log_liveness(run, path: Path) -> None:
     """The damaged-index control that proves the cluster path is on the clock."""
     doc = json.loads(path.read_text())
@@ -309,6 +375,8 @@ def main() -> None:
     ap.add_argument("--derivation")
     ap.add_argument("--timed", action="append", default=[])
     ap.add_argument("--paired", action="append", default=[])
+    ap.add_argument("--headline", action="append", default=[],
+                    help="report written by research/e87_r2t_headline.py")
     ap.add_argument("--submit-gate", action="append", default=[],
                     help="leg directory written by research/e87_submit_gate.sh")
     ap.add_argument("--notes", default="")
@@ -340,7 +408,7 @@ def main() -> None:
             fn(run, Path(path))
             print(f"logged {flag} from {path}")
     for flag, fn in (("build", log_build), ("timed", log_timed),
-                     ("paired", log_paired)):
+                     ("paired", log_paired), ("headline", log_headline)):
         for path in getattr(args, flag):
             fn(run, Path(path))
             print(f"logged {flag} from {path}")
