@@ -121,7 +121,47 @@ def main(argv):
 
     widths = [1.0 + field(tables[0][k], "effective_mean_draft_len") for k in order]
     shape_report(widths, deltas, order)
+    level_report(rows, picked)
     mode_report(rows, picked, tables)
+
+
+def level_report(rows, picked):
+    """Report the per-round level `L` and per-row slope `S` asked for in f18 section 5.
+
+    Comment 47 reported this as blocked on the per-prompt round count.  That was
+    wrong: the round count cancels.  See `research/e87_s15_level_slope.py` for
+    the identity and its positive control.
+    """
+    from e87_s15_level_slope import LOCAL_ACCEPT, cohort_of, fit
+
+    print()
+    print("  per-round level and per-row slope, assumed accepted rate a = %.3f"
+          % LOCAL_ACCEPT)
+    print("  plutarch excluded from the fit and used as the mode control")
+    for r in picked:
+        table = per_prompt(r)
+        level, slope, plut_round, _ = fit(table, LOCAL_ACCEPT)
+        peers = cohort_of(rows, table)
+        vals = sorted((fit(t, LOCAL_ACCEPT)[0] / fit(t, LOCAL_ACCEPT)[2], pid)
+                      for pid, t in peers)
+        pos = [i for i, v in enumerate(vals) if v[1] == r["id"][:8]]
+        rank = "rank %d of %d" % (pos[0] + 1, len(vals)) if pos else "not in cohort"
+        print("    %s  L %9.1f us   S %8.1f us/row   L/plutarch %.4f   %s"
+              % (r["id"][:8], level, slope, level / plut_round, rank))
+
+    # Finding 21 says the round is at least 82 % weight streaming, measured on
+    # an M4 Pro.  The width-independent share of L is the same quantity read off
+    # the ranked M5 host itself, so it is an independent check rather than a
+    # transfer.  Report it as a band because `a` is assumed, not published.
+    table = per_prompt(picked[-1])
+    widths = [1.0 + field(e, "effective_mean_draft_len")
+              for k, e in table.items() if k != "c1ec5866"]
+    wbar = sum(widths) / len(widths)
+    print("  fixed (width-independent) share of the round at mean width %.3f:" % wbar)
+    for a in (0.75, LOCAL_ACCEPT, 1.0):
+        level, slope, _, _ = fit(table, a)
+        print("    a %.3f  ->  %.1f %%" % (a, 100.0 * level / (level + slope * wbar)))
+    print("    Finding 21 gives >= 82 % from an M4 Pro ladder; this is the ranked host")
 
 
 def shape_report(widths, deltas, order):
