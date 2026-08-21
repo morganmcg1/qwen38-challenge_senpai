@@ -53,6 +53,17 @@ public enum E58DispatchCensus {
     /// implies the census, because only the phase machine can name the phase.
     static let allocCensusEnabled = environment["MLX_E85_ALLOC_CENSUS"] == "1"
 
+    /// E106 extension. ONE ROW PER DISPATCH, not an aggregate bucket. The
+    /// aggregate is keyed by kernel name plus grid plus threadgroup, and the
+    /// three N=5120 projections share all three: `gdn.out_proj` (K=6144),
+    /// `fa.o_proj` (K=6144) and `mlp.down` (K=17408) differ only in the number
+    /// of k-loop iterations, which no dispatch dimension carries. K is the
+    /// discriminating variable of the E106 hypotheses, so the pooled line
+    /// cannot answer the question. This gate records the encode ordinal within
+    /// the round beside each single-dispatch buffer's GPU time; the ordinal
+    /// names the layer and therefore the tensor.
+    static let traceEnabled = environment["MLX_E58_DISPATCH_TRACE"] == "1"
+
     static let censusEnabled =
         environment["MLX_E58_DISPATCH_CENSUS"] == "1" || gpuTimeEnabled
         || allocCensusEnabled
@@ -611,6 +622,8 @@ private struct DispatchNote {
     let width: Int
     let round: Int
     let encodeNs: Int
+    /// E106. Encode position within the round, assigned under the ledger lock.
+    var ordinal = 0
 }
 
 /// One bucket of GPU nanoseconds. `gpuNs` is the SUM of command-buffer
@@ -676,6 +689,13 @@ private final class GPUTimeLedger: @unchecked Sendable {
     private var byWidthPhase: [String: GPUBucket] = [:]
     private var exclusiveKernels: [String: KernelBucket] = [:]
     private var signatures: [String: GPUBucket] = [:]
+    /// E106 per-dispatch trace: `[round, ordinal, width, shapeID, gpuNs]` for
+    /// every buffer that carried exactly one dispatch, plus the shape table
+    /// those IDs index. Empty unless `MLX_E58_DISPATCH_TRACE=1`.
+    private var traceRows: [[Int]] = []
+    private var traceShapeIDs: [String: Int] = [:]
+    private var traceRound = -1
+    private var traceOrdinal = 0
     private var unmappedDispatches = 0
     private var untrackedBuffers = 0
     private var zeroTimeBuffers = 0
@@ -731,11 +751,19 @@ private final class GPUTimeLedger: @unchecked Sendable {
         encoder: AnyObject, kernel: String, shape: String, phase: String,
         width: Int, round: Int, encodeNs: Int
     ) {
-        let note = DispatchNote(
+        var note = DispatchNote(
             kernel: kernel, shape: shape, phase: phase, width: width,
             round: round, encodeNs: encodeNs)
         let encoderID = ObjectIdentifier(encoder)
         lock.lock()
+        if E58DispatchCensus.traceEnabled {
+            if round != traceRound {
+                traceRound = round
+                traceOrdinal = 0
+            }
+            note.ordinal = traceOrdinal
+            traceOrdinal += 1
+        }
         if let bufferID = encoderToBuffer[encoderID] {
             bufferNotes[bufferID, default: []].append(note)
         } else {
@@ -811,8 +839,17 @@ private final class GPUTimeLedger: @unchecked Sendable {
                 encodeNs: Int(Double(encodeNs) * share), dispatches: count)
         }
         if notes.count == 1 {
-            exclusiveKernels["w\(width)|\(notes[0].phase)|\(notes[0].shape)",
-                default: KernelBucket()].add(gpuNs)
+            let key = "w\(width)|\(notes[0].phase)|\(notes[0].shape)"
+            exclusiveKernels[key, default: KernelBucket()].add(gpuNs)
+            if E58DispatchCensus.traceEnabled {
+                let shapeKey = "\(notes[0].phase)|\(notes[0].shape)"
+                let shapeID = traceShapeIDs[shapeKey]
+                    ?? { let next = traceShapeIDs.count
+                         traceShapeIDs[shapeKey] = next
+                         return next }()
+                traceRows.append(
+                    [notes[0].round, notes[0].ordinal, width, shapeID, gpuNs])
+            }
         }
         // Only single-phase buffers become NNLS equations. A buffer that spans
         // phases would need its GPU interval split before it could be an
@@ -917,6 +954,9 @@ private final class GPUTimeLedger: @unchecked Sendable {
                 ] as [String: Any]
             },
             "signatures": signatures.mapValues(Self.encode),
+            "trace_shapes": traceShapeIDs
+                .sorted { $0.value < $1.value }.map { $0.key },
+            "trace": traceRows,
         ]
         snapshotIndex += 1
         roundsInSnapshot = 0
@@ -936,6 +976,7 @@ private final class GPUTimeLedger: @unchecked Sendable {
         byWidthPhase = [:]
         exclusiveKernels = [:]
         signatures = [:]
+        traceRows = []
         lock.unlock()
         E58CensusSink.write(payload)
     }
