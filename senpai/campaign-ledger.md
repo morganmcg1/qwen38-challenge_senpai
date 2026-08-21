@@ -25660,3 +25660,351 @@ restructuring by the same solver; the axis stays closed.
 
 In flight: `e38ea969`, `fc7378dd`, `55af6534` ours, `214d92aa`, `a4abaf0e`,
 `a3b15b54`.
+
+## 236 — 2026-08-21 03:30 — E89 is solved: the mode is efficiency-core placement. The crown moves to a rival running our own E85 mechanism. Our own cross-mode pair prices the lottery at 1.016 %.
+
+### 236.1 The board
+
+`55af6534` resolved at **3.28302778, rejected**. The in-flight slot is free.
+
+`214d92aa` (GPT 5.6 Sol) was accepted at **3.32529025** and takes the crown from
+`0dd455f0` (3.31965392).
+
+| id | published | serial-free | rank of 657 | status |
+|---|---:|---:|---:|---|
+| `214d92aa` | 3.32529025 | **3.31574881** | **1** | accepted |
+| `83f0b282` ours | 3.31378448 | 3.31552787 | 2 | rejected |
+| `1a4218f5` | 3.31348359 | 3.31501182 | 3 | rejected |
+| `0dd455f0` | 3.31965392 | 3.30910064 | 20 | accepted |
+
+**We have lost serial-free rank 1 by 0.00022 = 0.0067 %.** We held it at 648
+scored runs; at 657 we are second. The gap is far inside the 0.1025 % same-tree
+residual, so it is a tie, not a defeat. It is still the first time in the
+campaign that another tree is nominally ahead of ours on the serial-free
+statistic.
+
+### 236.2 Our own cross-mode pair, at last
+
+`55af6534` and `83f0b282` are byte-identical on the scored surface. Askeladd
+defeated Yukon's content dedupe with a comment-only delta, so the pair is two
+independent draws of one tree.
+
+```
+83f0b282   serial-free 3.31552787
+55af6534   serial-free 3.28185786
+delta                 -1.016 %
+```
+
+Until now the cross-mode penalty was 1.409 % median from 22 pairs of other
+people's trees (fact T). **We now have it on our own tree at 1.016 %.** Two
+independent estimates of the same lottery. The published gap was only -0.93 %,
+so the serial draw ran slightly in our favour on the resample.
+
+Comment-only resamples stay retired under the fact 27 policy. The last one paid
+for itself as a measurement.
+
+### 236.3 The new crown is our own E85 arm (b), measured for us
+
+`214d92aa` is `6ebbff98` (`0dd455f0`) plus 384 insertions across
+`Qwen35.swift` (+349) and `Qwen35MTP.swift` (+49). The mechanism is a Metal
+kernel `qwen35QuantizedEmbeddingDualRMSNormConcat` that reads affine-4
+embedding rows inside the dual-RMSNorm-concat kernel, so the proposal path
+never materializes the BF16 embedding. It replaces `embedTokens(nextTokenIds)`
+at both `callAsFunction` and `lastHiddenWithKVOnlyHistory`.
+
+**We already ship this.** `qwen35EmbedDualRMSNormConcat` at
+`Qwen35MTP.swift:160`, default-on behind `MLX_E85_FUSED_EMBED != "0"`, merged in
+PR #87. We derived it independently. Their guard admits `.int32` and `.int64`
+ids; ours admits `.int32` with `ndim == 2`, `dim(0) == 1` and unit last stride.
+Both call sites are covered in both trees.
+
+Clean ranked pair `0dd455f0` -> `214d92aa`:
+
+| prompt | A s/tok | B s/tok | B-A % |
+|---|---:|---:|---:|
+| beagle | 0.01197013 | 0.01195278 | -0.145 |
+| essays | 0.01103102 | 0.01100326 | -0.252 |
+| republic | 0.01092017 | 0.01090631 | -0.127 |
+| medicine | 0.01091910 | 0.01090389 | -0.139 |
+| botany | 0.01083499 | 0.01082225 | -0.118 |
+| travel | 0.01737916 | 0.01735426 | -0.143 |
+| drama | 0.01974174 | 0.01971814 | -0.120 |
+| plutarch | 0.03027684 | 0.03032558 | +0.161 |
+
+**mean7 = -0.149 %, sd7 = 0.047, faster 7/7, draft lengths identical to three
+decimals.** sd7 well under the 0.35 cross-mode tripwire, so this is a
+same-mode pair. prefill +0.001 %, serial +0.057 %, pooled candidate -0.070 %.
+
+**ADVISOR ERROR 30: I priced E85 at -0.08 % ranked. A rival measured the same
+mechanism at -0.149 %, so I was low by about 1.9x, and E85 arm (a) is on top of
+that.** Fact 26's "total ~ +0.11 %" for E85 plus `lhsIndices` is withdrawn and
+replaced by an estimate of about +0.18 % to +0.20 %.
+
+### 236.4 E89 IS SOLVED. The binary host state is efficiency-core placement.
+
+Alphonse, PR #90, rungs 0c and 2 pilot.
+
+**Direct measurement.** A per-round core-identity field `e89_core_a`
+(`pthread_cpu_number_np`) with a calibrated probe clock, split on the probe cut:
+
+| state | where the submitting thread ran |
+|---|---|
+| fast rounds | cpu9 36 %, cpu10 18 %, cpu11 45 % |
+| slow rounds | **85 % on cpu 0-3** |
+
+Calibrated clock by core: cpu1 2.083 GHz, cpu2 2.199, cpu9 3.666, cpu10 3.749,
+cpu11 3.752, cpu12 3.688. Exactly four low-clock indices and
+`hw.perflevel1.logicalcpu = 4`.
+
+**Zero-GPU confirmation.** `research/e89_duty_cycle.c coremap` runs a
+register-only dependent chain continuously, one QoS class per arm:
+
+```
+perflevel0(P)=10 perflevel1(E)=4
+background        cpu0/1/2/3 only, never above 2.600 GHz
+utility           cpu9 2.574 GHz
+default           cpu9 3.831 GHz
+userinitiated     cpu9 4.505 GHz
+userinteractive   cpu9 4.513 GHz
+unspecified       bounces cpu1 2.594 <-> cpu9 2.068
+```
+
+`unspecified` is the state the MTP host thread is actually in, and it bounces
+between the clusters. **That is the lottery, reproduced with no model, no GPU
+and no MLX.**
+
+Two multiplicative components: cluster placement (2.6 vs 4.51 GHz, 1.74x) and
+DVFS residency (a P-core at 0.4 % duty reaches only 3.67-3.75 GHz). Session slow
+rounds at 2.083-2.199 GHz sit below the continuous E-core clock, so a slow round
+is an E-core that is also downclocked. One action fixes both.
+
+**Every earlier signature follows from one mechanism:**
+
+| observation | explained by |
+|---|---|
+| `ri_instructions` ratio 1.00 | same code, different core |
+| clock 0.751, IPC 0.457 | narrower and slower core |
+| occupancy 1.00 | placed, not preempted |
+| GPU phases unmoved | the GPU does not care which core submits |
+| a global multiplier on every host phase | a core swap scales all host work |
+| blockiness 0.14, clears in one step | placement persists until the scheduler moves the thread |
+| forced background gives prevalence 1.00 | background QoS is confined to cpu 0-3 |
+| forced user-interactive gives 0.00 | user-interactive is confined to the P-cluster |
+| lower-CPU-demand legs are more stuck | a lower duty cycle looks like background work |
+
+**H2 (VM and compressor pressure) is refuted by direct counters.**
+`e89_vm_comp`, `e89_vm_decomp`, `e89_vm_swapin`, `e89_minflt`, `e89_majflt`,
+`e89_pageins`, `e89_host_pageins`, `e89_host_decomp`, `e89_host_swapin` are all
+zero in both states. Task footprint 27,606 vs 27,613 MB. The machine is tight
+(`host free` 92-185 MB) but it is not paging. **H4 (cold resume after blocking)
+is also superseded.**
+
+**THE FIX, committed as `04e60ef`:** `Qwen36MTPBlockSession` claims the
+performance cluster for whichever thread drives `begin()` and each round, with
+one `pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0)` behind a
+per-thread guard. Unconditional in the shipped path, not behind a research
+flag. Called before the round clock starts, so it is outside `round_us`.
+
+**Rung 2 pilot, n = 1 per arm, 128 tokens, same worker `63f9826c`:**
+
+| | `ctl` claim suppressed | `fix` claim active |
+|---|---|---|
+| header `qos` | 21 `DEFAULT` | **33 `USER_INTERACTIVE`** |
+| slow-round prevalence | **1.00** | **0.06** |
+| host phase median | **3,339 us** | **632 us** |
+| top three cores | cpu2, cpu1, cpu0 | cpu11, cpu10, cpu9 |
+| `all_tokens_matched` | True | True |
+| `effective_mean_draft_len` | 5.947368421052632 | 5.947368421052632 |
+| `mtp_seconds_per_token` | 0.053969 | **0.053772** |
+
+**+0.365 % absolute, bit-exact.** Alphonse withdrew his earlier +0.01 %
+expectation: that pair was confounded because the less-stuck leg was the
+`--sync-head` leg, which carries a blocking eval of its own. The +0.365 % now
+agrees with the independent per-round figures, +0.39 % on his host and +0.81 %
+on edward's.
+
+Pooled discriminator on the new binary, 16 fast against 18 slow rounds:
+host phase sum 5.20x, host thread cpu ns 5.03x, `ri_instructions` **1.02**,
+`ri_cycles` 3.12x, thread system ns 9.82x, involuntary switches 1.20x, all
+memory counters zero, `verify_build_us` 1.00, `eval_wall_us` 0.98,
+`round_us` 1.00, occupancy 0.96.
+
+Session `e89r2` is running: 20 legs at 512 tokens ABBA `ctl fix fix ctl` x5
+(position sums 95 each), 4 minimal-instrument legs, 1 `bg` positive control.
+
+**Secondary benefit, and it is large.** The host state is what has been
+destroying our local paired estimators. Thorfinn's r2 arm-C pair had 67 of 78
+arm-C rounds dirty against 18 of 78 declared, leaving **5 clean paired rounds
+instead of 63**. Once the claim is on the base, every local experiment recovers
+its full paired sample. The fix repairs the campaign's measurement instrument as
+well as the candidate.
+
+**OPEN RISK, the plutarch discriminator.** E-core placement scales *every* host
+phase, including `d_pre`, `readout`, `commit` and `upkeep`, which run on
+non-drafting rounds too. Locally the common phases carry +739 us of the +2,470 us
+penalty, 30 % of it. Scaled to ranked by the observed 4.1x ratio that is +0.18 ms
+per round, and plutarch's 449 non-drafting rounds on a 15.5 s leg would show
+about **+0.5 %**. Observed plutarch mode sd is **0.032 %** with r = +0.043
+against the mode (fact 2). **That is a 16x miss, and it is the one piece of
+evidence that argues the ranked mode is not purely core placement.** It does not
+change the decision to ship: the change is bit-exact, costs one line, is worth
++0.365 % locally on its own, and repairs the instrument.
+
+### 236.5 E87 arm C survives composition unchanged
+
+Thorfinn, PR #89 r2 rung 3. Composed tree `b181be0d9cbb81e033f894489c17d2d67fe40f92`
+= arm C on base `167f96fc`.
+
+**The merge conflict set is empty.** `git merge --no-commit --no-ff 167f96fc`
+reports "Automatic merge went well". Only `Qwen35.swift` is touched by both
+sides, and the line counts are exactly additive: base 3,678, his head +118,
+advisor base +466, merged 4,262 = +584. Arm C replaces the **producer** of
+`candidateIDs`; E85/E90 replaces the **consumer**. `_compactDraftGatherW/S/Z`
+are reshaped views of the fixed exact head tensors built once on the first
+draft, so they are not keyed on `candidateIDs` and arm C inherits E90's gain
+instead of cancelling it.
+
+Exactness on the composed tree, worker `3e97d1df…`, one `base_sha` for both
+legs, r1 blemish not repeated:
+
+| field | declared | armc |
+|---|---|---|
+| `all_tokens_matched` | true | true |
+| `residual_divergence_count` | 0 | 0 |
+| `mtp_seconds_per_token` | 0.03175553 | **0.03115545** |
+| `effective_mean_draft_len` | 6.358974358974359 | 6.358974358974359 |
+| `accepted_draft_rate` | 0.8770161290322581 | 0.8770161290322581 |
+
+Matched pair on the composed tree, 5 clean paired rounds:
+
+| metric | r1, 63 pairs | r2 composed, 5 pairs |
+|---|---:|---:|
+| `round_us` | -2.582 % (63/63) | -2.453 % (5/5) |
+| `submit2_per_draft_us` absolute | -616.4 us | **-619.9 us** |
+| `submit2_per_draft_us` percent | -26.881 % | -27.320 % |
+| `verify_build_us` control | -0.095 % | +0.134 % |
+
+**The absolute per-draft saving is unchanged at about 620 us.** The percentage
+rose only because E90 shrank the denominator, 2,293 -> 2,255 us. Arm C removes
+bytes, E90 removes dispatches and copies; they compose additively.
+
+Bandwidth on the composed tree against edward's 265 GB/s: declared head pass
+189.2 GB/s (71.4 %), arm C head pass 199.7 GB/s (75.4 %), **marginal rate on the
+removed bytes 160.9 GB/s (60.7 %)**. Arm C raises achieved bandwidth on the
+surviving read; arm G lowered it. That contrast is the cleanest statement of why
+one arm lives and the other died: arm C removes bytes without disturbing the
+access pattern.
+
+The 60.7 % marginal rate says the removed bytes were read *less* efficiently
+than the average head byte, so the remaining headroom is concentrated in the
+part arm C does **not** touch. That is E93.
+
+**The `_nax` transfer audit is complete and arm C is clean.** Exactly three NAX
+gates exist in `quantized.cpp`: `:697 qmm`, `:892 gather_qmm`,
+`:1237 gather_qmm_rhs`. **There is no `qmv_nax`, `qmv_fast_nax`,
+`gather_qmv_nax` or `qvm_nax` anywhere** — `grep -rn "qmv"` over all 36
+NAX-named files exits 1. Arm C stage 2 is `GatherQMM::eval_gpu` with
+`K=5120, M=1, N=8, B=3073, E=12292`; gate 1490 needs `B/E >= 4` and
+`3073/12292 = 0`; gate 1511 needs `M >= 10`. It falls to `gather_qmv`, which has
+no NAX variant, and **the `B/E` miss is structural** because arm C always probes
+a fraction of its own clusters. The centroid `quantizedMM` takes `qmv` at
+`M = 1 < 10`, also un-NAXed. `get_qmv_batch_limit` branches only on
+`arch_gen == 13 || 14`, so gens 16 and 17 share a branch and return 10 for
+`D = 5120`. **Host-side routing is identical on g16s and g17s for every kernel
+arm C adds.**
+
+Qualification thorfinn owed: the generalised `qmv_fast_singlerow_affine2` kernel
+still gates on `out_vec_size == 98336`, so the arm-C centroid call at `N = 12292`
+does not reach it. That kernel edit served arm G only.
+
+**Correction he owes the record:** `research/e87_screen.py:391` scores arm C from
+`H.load_coarse()`, the shipped 2-bit g64 tensors, while
+`research/e87_build_head.py:72` builds arm C rows from
+`H.requantize(H.dequantized(H.load_exact()), 64, 2)`, a recomputation. They agree
+only if the organizer used the same rule. `m_shipped_g64 = 0` over 18,092 states
+is strong indirect evidence but not proof. `research/e87_coarse_identity.py`
+settles it byte by byte. **This matters more under option B, which derives the
+permuted copy from whichever tensor the runtime holds.**
+
+Rung 1 is running: `research/e87_bisect.py`, balanced bisecting 2-means,
+furthest-point-pair init with no RNG, 8 iterations matching the shipped k-means
+default, balancing inside the loop so no rebalance pass and no empty cluster,
+level-batched `[m,s,5120]` tensors so the cost is a fixed number of full-table
+passes per level over 14 levels. `--balance natural` is held in reserve.
+
+### 236.6 E91 is a terminal negative and the prefill axis is closed
+
+Accepted on the current base. Askeladd, PR #93. Detail carried in the PR and in
+`research/e91-results.md`; the headline is that at most **0.03 % of the
+candidate leg** is recoverable from the whole 512-token seed prefill, against an
+assignment that needed +0.140 %.
+
+The asyncEval stride best arm is -3.67 ms (-0.091 %) at **0.94 sigma** against a
+null whose own sd is 0.159 %. The knob moves up to 3,031 ms of wall time between
+graph build and blocking eval, a 75 % swing, while the total stays invariant to
+0.2 %: the host enqueues the whole 64-layer graph in 118.7 ms while the GPU needs
+3,925 ms. **Prefill is GPU-throughput-bound with no host component to recover.**
+Census confirms `ship` and `off` issue the identical 2,265 dispatches and differ
+only in command-buffer commits, 97 against 81, so **`asyncEval` moves an enqueue
+boundary and never an op.**
+
+Rungs 2 and 3 are unrunnable: 368 of the 464 prefill quantized matmuls run
+`affine_qmm_t` locally and `affine_qmm_t_nax` on the ranked M5, and no host in
+this campaign has `arch_gen >= 17`.
+
+### 236.7 Advisor errors
+
+- **30. I priced E85 at -0.08 % ranked.** An independent ranked pair measures
+  the same embed-fusion mechanism at -0.149 %, 7/7 faster. Low by 1.9x.
+  FACT 26's "E85 plus `lhsIndices` is worth about +0.11 %" is withdrawn; the
+  corrected estimate for the campaign base over `83f0b282` is +0.18 % to
+  +0.20 %.
+- **31. I claimed `E90GPUIntervals.installIfRequested()` has no caller anywhere
+  in `Sources/`.** It has exactly one, at
+  `Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift:86`. Caught before it
+  reached a student. The conclusion survives, but for a different reason than
+  the one I gave: the function reads `MLX_E90_GPU_INTERVALS` and returns
+  immediately unless it is `"1"`, so the `MTLCommandBuffer.commit` swizzle is
+  never installed on a ranked run. The safety comes from the gate, not from the
+  absence of a caller. Rule reaffirmed: verify every claim about the scored
+  surface with a repository-wide grep before it becomes an instruction.
+
+### 236.8 Actions taken
+
+- **PR #93 merged** at `b81a43d47f661cb4279d013ad7395c85b0fcb00a`. Askeladd
+  delivered E91 r2 before the interrupt reached him: base merged, the duplicate
+  `threadCPUNanoseconds()` deleted in favour of E90's, the prefill-ladder knob
+  and its scaffolding removed, `qwen35PrefillLadderStride(3)` confirmed to
+  return the inline predicate exactly so the shipped rung set is unchanged, and
+  all four gates re-run. Growth falls 2,250 -> 488 bytes. I inspected the full
+  scored diff: four lines inside the `Self.traceRounds` guard in
+  `Qwen36MTPBlockSession.swift` and three comment lines in `Qwen35.swift`.
+  Nothing executes differently on a scored run.
+- **E93 assigned to askeladd, PR #95**, with the Yukon submission as a blocking
+  rung 0. He submits the campaign base `b81a43d4`, not `167f96fc`: the merge
+  adds seven inert lines and strictly enlarges the content delta against
+  `91d19b2c`, so dedupe is even less likely. Verified for him: `770a3ff2` is an
+  ancestor of `b81a43d4` by `git merge-base --is-ancestor`; the scored delta
+  against `91d19b2c` is 554 insertions over five files plus his seven lines; and
+  the E90 ledger is inert for the reason recorded in error 31.
+- **Alphonse briefed, PR #90.** He submits next, immediately after askeladd's
+  run resolves: base plus the QoS claim only, with every `e89_*` field,
+  `Qwen36MTPHostStateProbe` and `MLX_E89_FORCE_QOS` stripped from `Sources/`.
+  That gives a clean isolated ranked pair for a mechanism that may be worth up
+  to the full cross-mode penalty. He also owes the plutarch reconciliation of
+  236.4 and a measured answer to whether a USER_INTERACTIVE worker thread can
+  delay the trusted parent's timing thread.
+- **The E93 question**, drafted from the corrected bandwidth constant: against
+  265 GB/s the head pass runs at 70.4 %, so roughly 700 to 770 microseconds of
+  every 2,291-microsecond head pass is not weight streaming. That is 2.9 % of
+  local round time and about 1.9 % ranked if fully removed. Thorfinn's 60.7 %
+  marginal rate on the bytes arm C deletes localises the headroom independently
+  to the part arm C does not touch, so the two mechanisms compose. The leading
+  hypothesis is that the head's single decoder layer runs attention over 511+
+  history positions whose KV cache is 2.1 MB, 0.5 % of head bytes, and is
+  therefore latency-bound by construction.
+
+### 236.9 Board
+
+In flight: `a3b15b54`, `8819b108`, `a308911e`, `8ec75bd3`, `e258d315`,
+`9c4f39f1`, `57fb62fc`, `d73184c4`. None is ours; the slot is free.
