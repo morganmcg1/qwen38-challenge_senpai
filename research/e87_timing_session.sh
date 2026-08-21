@@ -37,11 +37,9 @@ else
   declare -a order=(declared g128 declared g128 declared g128 declared g128 declared)
 fi
 
-probe_fraction="${E87_PROBE_FRACTION:-0.15}"
-
 dir_for() {
   case "$1" in
-    declared|dense|derived) echo "${cache}/mtp-head-declared-run" ;;
+    declared|dense|derived|derived25|derived15) echo "${cache}/mtp-head-declared-run" ;;
     g128) echo "${cache}/e87/built/e87-coarse-g128-run" ;;
     armc) echo "${cache}/e87/built/e87-armC-plain-k12292-p25-run" ;;
     armc-damaged) echo "${cache}/e87/built/e87-armC-damaged-run" ;;
@@ -50,13 +48,22 @@ dir_for() {
   esac
 }
 
-# `derived` is option B: the DECLARED head plus the cluster index the runtime
+# `derived*` is option B: the DECLARED head plus the cluster index the runtime
 # builds from it during the untimed warm. Every other arm pins the gate off so
 # a shipped index or the dense readout is what actually runs.
 index_for() {
   case "$1" in
-    derived) echo "1" ;;
+    derived|derived25|derived15) echo "1" ;;
     *) echo "0" ;;
+  esac
+}
+
+# Probe fraction only reaches model code when the derived index is on. The
+# dense arms still receive a value; it is inert there.
+probe_for() {
+  case "$1" in
+    derived15) echo "0.15" ;;
+    *) echo "${E87_PROBE_FRACTION:-0.25}" ;;
   esac
 }
 
@@ -77,6 +84,7 @@ for i in "${!order[@]}"; do
     [[ "${order[$j]}" == "${arm}" ]] && rep=$((rep + 1))
   done
   tag="${prefix}-${arm}-${rep}"
+  probe_fraction="$(probe_for "${arm}")"
   mkdir -p "research/out/${tag}"
   MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
   MLX_E87_PROBE_FRACTION="${probe_fraction}" \

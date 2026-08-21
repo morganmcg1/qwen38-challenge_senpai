@@ -3347,13 +3347,19 @@ private let qwen35GatherQMMRerankEnabled: Bool =
 private let qwen35DerivedClusterEnabled: Bool =
     ProcessInfo.processInfo.environment["MLX_E87_DERIVED_INDEX"] != "0"
 
-/// Fraction of leaves probed per draft step. 0.15 is the screened optimum:
-/// it removes 26.7 % of the declared head's per-draft bytes at a worst-domain
-/// argmax miss rate of 7.6e-4, an order of magnitude under break-even.
+/// Fraction of leaves probed per draft step. 0.25 removes 23.0 % of the
+/// declared head's per-draft bytes at a worst-domain argmax miss rate of
+/// 2.3e-4, 13x inside the accepted gate.
+///
+/// 0.15 screens better under the fitted acceptance penalty (+2.02 % against
+/// +1.83 %), but the whole difference lives inside that fitted coefficient,
+/// and no local leg can resolve it: at these miss rates a 512-token leg
+/// expects under one changed proposal. 0.25 is the low-variance choice and it
+/// is the byte point the r1 arm-C session already measured.
 private let qwen35DerivedClusterProbeFraction: Double = {
     guard let raw = ProcessInfo.processInfo.environment["MLX_E87_PROBE_FRACTION"],
           let value = Double(raw), value > 0, value <= 1
-    else { return 0.15 }
+    else { return 0.25 }
     return value
 }()
 
@@ -3374,23 +3380,18 @@ private let qwen35DerivedClusterDumpPath: String? = {
 /// `benchmark.sh` gives the worker a Seatbelt profile that denies file writes.
 /// Only a trace leg, which sets `MLXFAST_NO_SANDBOX=1`, can open it.
 private let qwen35DerivedClusterLog: FileHandle? = {
-    let requested = ProcessInfo.processInfo.environment["MLX_E87_DERIVED_LOG"]
-    // A fallback path, so an empty research directory separates "the build never
-    // ran" from "the harness variable never reached model code".
-    let path = (requested?.isEmpty ?? true) ? "/tmp/mlxfast-e87-derived.log" : requested!
+    guard let path = ProcessInfo.processInfo.environment["MLX_E87_DERIVED_LOG"],
+          !path.isEmpty
+    else { return nil }
     let descriptor = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
     guard descriptor >= 0 else { return nil }
-    let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
-    let visible = ProcessInfo.processInfo.environment.keys
-        .filter { $0.hasPrefix("MLX_") }.sorted().joined(separator: ",")
-    handle.write(Data((
-        "e87 log opened pid=\(getpid()) requested=\(requested ?? "<unset>") "
-            + "mlx_env=[\(visible)]\n").utf8))
-    return handle
+    return FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
 }()
 
+/// One leg starts several worker processes that append to the same file, so
+/// every line carries its pid.
 private func qwen35DerivedClusterNote(_ line: String) {
-    qwen35DerivedClusterLog?.write(Data(("e87 " + line + "\n").utf8))
+    qwen35DerivedClusterLog?.write(Data(("e87 pid=\(getpid()) " + line + "\n").utf8))
 }
 
 /// `[m, s, c]` squared distance from every row to every centre, formed as
@@ -4178,7 +4179,10 @@ extension Qwen35TextModel: MTPCapable {
             leaves, rowsPerLeaf, probes, qwen35DerivedClusterProbeFraction,
             Self.derivedClusterIterations, Self.derivedClusterCentroidBits,
             qwen35ClusterOrderDigest(orderHost), seconds))
-        if let path = qwen35DerivedClusterDumpPath {
+        if let base = qwen35DerivedClusterDumpPath {
+            // One pid per file, so the several worker processes of one leg each
+            // leave a table and cross-process determinism is checkable.
+            let path = "\(base).\(getpid())"
             do {
                 try orderHost.withUnsafeBufferPointer {
                     try Data(buffer: $0).write(to: URL(fileURLWithPath: path))

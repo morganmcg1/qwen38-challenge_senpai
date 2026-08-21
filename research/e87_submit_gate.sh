@@ -29,23 +29,28 @@ else
   declare -a arms=(declared)
 fi
 
-probe_fraction="${E87_PROBE_FRACTION:-0.15}"
-
 dir_for() {
   case "$1" in
-    declared|dense|derived) echo "${cache}/mtp-head-declared-run" ;;
+    declared|dense|derived|derived25|derived15) echo "${cache}/mtp-head-declared-run" ;;
     armc) echo "${cache}/e87/built/e87-armC-plain-k12292-p25-run" ;;
     *) echo "e87_submit_gate.sh: unknown arm $1" >&2; exit 2 ;;
   esac
 }
 
-# `derived` is option B: the DECLARED head plus the cluster index the runtime
+# `derived*` is option B: the DECLARED head plus the cluster index the runtime
 # builds from it during the untimed warm. Every other arm pins the gate off so
 # a shipped index or the dense readout is what actually runs.
 index_for() {
   case "$1" in
-    derived) echo "1" ;;
+    derived|derived25|derived15) echo "1" ;;
     *) echo "0" ;;
+  esac
+}
+
+probe_for() {
+  case "$1" in
+    derived15) echo "0.15" ;;
+    *) echo "${E87_PROBE_FRACTION:-0.25}" ;;
   esac
 }
 
@@ -68,6 +73,7 @@ gpu_temp() {
 
 for arm in "${arms[@]}"; do
   head_dir="$(dir_for "${arm}")"
+  probe_fraction="$(probe_for "${arm}")"
   if [[ ! -s "${head_dir}/config.json" ]]; then
     echo "e87_submit_gate.sh: no head at ${head_dir}" >&2
     exit 1
