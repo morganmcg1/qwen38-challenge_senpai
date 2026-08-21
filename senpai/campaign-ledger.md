@@ -32404,3 +32404,280 @@ NOT editable.
   equals the published detection floor.
 - Collapsing M=6, M=7 or M=8 streams **without first measuring `r1` at that NA
   against the Finding 34 break-even**. Not closed, but gated.
+
+## 253 - 2026-08-21 17:00Z - FINDING 35 (the dispatch-transfer correction) and FINDING 36 (the per-dispatch fixed-cost law)
+
+Two new laws, one retraction, four new board decompositions, two new assignments
+(E106 PR #108 edward, E107 PR #109 thorfinn), and two merges (#103 E101 thorfinn
+at `e2b1ab00`, #101 E99 edward at `e2f4617f`).
+
+Instruments added to the tree with this entry:
+
+- `research/dispatch_transfer.py`   - the Finding 35 derivation.
+- `research/dispatch_fixed_cost.py` - the Finding 36 fit and its consequences.
+
+---
+
+### FINDING 35 - THE DISPATCH-TRANSFER CORRECTION (ADVISOR ERROR 61)
+
+The measured ranked realisation for a launch-overhead-bound dispatch deletion is
+
+```
+ranked %  ~=  0.95 x local %          (percentage form)
+ranked_delta_us ~= 0.52 x local_delta_us   (absolute form)
+```
+
+NOT the Finding 22 LATENCY value of `x2.40`. The overprediction factor is 2.52x.
+
+Physics. The ranked M5 GPU dispatch boundary is about 1.3 us against the local
+FACT-8 boundary of 3.87 us [2.63, 5.11], so `L_ranked ~= 0.42 x L_local`. The
+ranked round is 2.40x shorter than the local round. The two effects nearly
+cancel, which is why a dispatch deletion keeps its PERCENTAGE but loses more
+than half of its absolute microseconds.
+
+Two independent board measurements now support the 0.93-0.95 percentage
+transfer for chain C (E101's selection chain):
+
+1. frontier contrast `51b9bf85` vs `9612d3ba`: +0.1572 %, sd 0.0236, 8/8 positive.
+2. isolated contrast `73cb7dfe` vs `9612d3ba`: +0.1515 %, sd 0.0983.
+
+Local was -0.1651 %, so the transfer ratio is 0.93-0.95.
+
+REPRICED Finding 22 LATENCY table:
+
+| family                     | local % | old x2.40 | new x1.00 | owner |
+|----------------------------|--------:|----------:|----------:|-------|
+| SDPA over FA history       |   0.993 |     2.384 |     0.945 | closed (E103) |
+| fused residual + RMSNorm   |   0.605 |     1.453 |     0.576 | unassigned, `Qwen35.swift:1737` |
+| GDN prework                |   0.426 |     1.023 |     0.406 | E105 |
+| q/k norm + RoPE            |   0.117 |     0.281 |     0.111 | E105 |
+| KV cache write             |   0.070 |     0.168 |     0.067 | E105 |
+| MTP top-2                  |   0.044 |     0.106 |     0.042 | - |
+
+Consequences:
+
+- The E105 target pool falls from 1.473 % to 0.584 %, which is 0.016 % BELOW
+  its own briefed 0.600 % bar. Fixed by feedback `e105-f1` (comment 5372665502):
+  the 0.600 % bar is deleted, askeladd works in local percent with a x1.0
+  transfer, rung 0 stops if the addressable non-cache-served subtotal is below
+  0.25 % of the local round (~319 us/round), and the promotion bar is >= 0.20 %
+  matched-ABBA local round.
+- Chain A, the 12,292 -> 3,073 radix select, reprices to +0.061 % ranked.
+  DEAD. On the stop list.
+- E103's closure is firmer: its stacked ceiling of 0.2988 % local reprices to
+  ~0.115-0.181 % ranked instead of 0.277-0.435 %.
+
+ADVISOR ERROR 61. I priced the E101 selection chain with a 1:1 absolute
+microsecond LATENCY transfer (+0.32 %) when the measured ranked realisation for
+dispatch-count deletions is ~1.0x in PERCENTAGE (+0.15 %). The same 2.40x
+multiplier inflated every Theme 6 price by ~2.5x.
+
+---
+
+### THE FOUR NEW BOARD DECOMPOSITIONS
+
+All four are schedule-matched pairs: the eight per-prompt
+`effective_mean_draft_len` values are bit-identical between A and B, so the
+candidate-leg contrast is a clean mechanism measurement and the serial-leg
+contrast is pure lottery.
+
+1. THE SDPA WARM LADDER ALONE - `51b9bf85` -> `73cb7dfe`
+   (jonathan308 / DeepSeek-V4-Flash, commit `aadd6283`, published 3.32972572, rejected)
+
+```
+schedule identical on all eight prompts   YES
+candidate leg   B faster by  +0.0057 %   sd 0.0875      <- NULL
+serial leg      B slower by  -0.1353 %   sd 0.3822
+serial-free   A 3.33979539   B 3.33854865   gap -0.0373 %
+published     A 3.35025879   B 3.32972572   gap -0.6129 %
+```
+
+The qL={1..5} later-window SDPA compile-warm ladder is WORTH NOTHING on the
+candidate leg. Its -0.61 % published headline is pure serial lottery. STOP LIST.
+Three rivals were still burning submissions on it at the time of writing
+(`dffe0d93`, `a543934d`, and `73cb7dfe` itself).
+
+2. CHAIN C ALONE - `73cb7dfe` -> `9612d3ba`
+
+```
+schedule identical on all eight prompts   YES
+candidate leg   B faster by  +0.1515 %   sd 0.0983
+serial leg      B slower by  -0.0398 %   sd 0.1719
+serial-free   A 3.33854865   B 3.34536215   gap +0.2041 %
+published     A 3.32972572   B 3.33872765   gap +0.2704 %
+```
+
+3. `29aedfe4` (Lieisyourlie / Grok 4.6, commit `2680b47e`, published 3.34596174,
+   #2 on the board, rejected), note "E88 cluster shortlist: drop two argPartition
+   merge-sorts per draft"
+
+```
+candidate leg   B faster by  +0.0101 %   sd 0.0342      <- NULL
+serial leg      B slower by  +0.1127 %   sd 0.3582
+serial-free   A 3.33979539   B 3.33927317   gap -0.0156 %
+published     A 3.35025879   B 3.34596174   gap -0.1283 %
+```
+
+4. `1ae7de74` (francip / Claude Fable 5, commit `9fce4079`, published 3.34360107,
+   #3 on the board, rejected)
+
+```
+candidate leg   B faster by  +0.0168 %   sd 0.0359      <- NULL
+serial-free   A 3.33979539   B 3.33988450   gap +0.0027 %
+```
+
+CONCLUSION. Every board score above our chain-C twin is pure serial lottery.
+Chain C is the ONLY real mechanism anyone shipped on 2026-08-21.
+
+Serial-free leaderboard, the true engineering frontier:
+
+```
+9612d3ba 3.34536215   newjordan      <- chain C twin
+1ae7de74 3.33988450   francip
+51b9bf85 3.33979539   vibecodooor    <- published frontier
+29aedfe4 3.33927317   Lieisyourlie
+73cb7dfe 3.33854865   jonathan308
+276aa2c2 3.33753284   hadakang
+f04b102e 3.33711595   ours
+```
+
+---
+
+### FINDING 36 - THE PER-DISPATCH FIXED-COST LAW
+
+Fit `dispatch_us = F + bytes_GB x S` to the four clean streaming families of the
+E96 round census, converting each family to bytes through the shape table at
+G=2 (weights streamed twice per round at M>=5), BPE = 0.5625.
+
+```
+family                     disp/rnd   GB/disp   us/disp     GB/s
+lm_head                           2   0.71516   2634.66    271.4
+mlp.gate_up                     128   0.10027    377.98    265.3
+gdn.in_proj                      96   0.04746    184.12    257.8
+fa.qkv                           32   0.04129    161.36    255.9
+
+  S  =  3670.2 us per GB   ->  272.5 GB/s  =  99.8 % of the 273 GB/s DRAM peak
+  F  =     9.90 us per dispatch
+
+family                       us/disp  predicted  resid us  resid %
+lm_head                      2634.66    2634.66     -0.01   -0.000
+mlp.gate_up                   377.98     377.91      0.07    0.019
+gdn.in_proj                   184.12     184.10      0.02    0.009
+fa.qkv                        161.36     161.44     -0.08   -0.050
+
+  R^2 = 1.00000000
+```
+
+Step 1 reconciliation: census GB/s against shape-table-implied GB/s agree to
+-0.17 to -0.26 % on all five lines. The census is trustworthy.
+
+CONSEQUENCE 1. There is NO bandwidth headroom anywhere in the target streaming
+path at G=2. After removing F, all four clean families sit at 99.8-99.9 % of
+DRAM peak. The census "rate deficits" of 97.2 %, 94.4 % and 93.7 % ARE the fixed
+cost, not kernel inefficiency. "Make the QMV kernel stream faster" at G=2 is
+CLOSED.
+
+CONSEQUENCE 2. 514 streaming dispatches x 9.90 us = 5,091 us = 3.992 % of the
+127,533 us local round is pure fixed cost. This total is invariant to whether
+G=2 is two GPU dispatches (F = 9.90) or an internal loop in one dispatch
+(F = 19.80): the product is the same.
+
+CONSEQUENCE 3 - THE ANOMALY. `gdn.out_proj + fa.o_proj + mlp.down` is the only
+family that misses the law.
+
+```
+family                        disp   GB/round   law us   measured us   excess us
+gdn.out_proj + fa.o_proj       128     2.2649   9580.4
+mlp.down                       128     6.4173  24820.2
+combined                       256     8.6822  34400.6       36559.2      2158.6
+
+  excess = 8.43 us/dispatch on top of the 9.90 us law
+         = 5.90 % of the family
+         = 1.693 % of the local round
+  achieved peak after removing F:  93.5 %   (every other family: 99.8 %)
+```
+
+CONSEQUENCE 4 - PERFECT MONOTONE ORDERING IN N (output width):
+
+| tensor              |     K |      N | census % peak | % peak after F |
+|---------------------|------:|-------:|--------------:|---------------:|
+| lm_head             |  5120 | 248320 |          99.4 |           99.8 |
+| mlp.gate_up         |  5120 |  34816 |          97.2 |           99.8 |
+| gdn.in_proj         |  5120 |  16480 |          94.4 |           99.8 |
+| fa.qkv              |  5120 |  14336 |          93.7 |           99.9 |
+| out_proj + mlp.down | 6144/17408 | 5120 |        87.0 |           93.5 |
+
+Threadgroups are N/8: 31040, 4352, 2060, 1792, 640. The last one is against
+20 GPU cores.
+
+CONSEQUENCE 5 - M=1 CROSS-CHECK. The law over 257 G=1 dispatches and 14.4123 GB
+plus the E96 non-streaming 5,074 us predicts 60,515 us against the E92 measured
+64,445 us, so 6.1 % is unexplained (the head is absent at M=1). If F is read as
+per-GPU-dispatch at 19.80 us over 257 dispatches the residual falls to ~2.2 %.
+Edward's E106 rung 0 dispatch count settles the units.
+
+CONSEQUENCE 6 - E104 IS A SEPARATE AND MUCH LARGER AXIS. The NA=5 one-group arm
+has the same 257 dispatches and the same bytes yet measures 103,404 us against
+the law's 60,515 us, which is 70.9 % above the law. The `rate(NA)` penalty is
+NOT the fixed cost.
+
+CONSEQUENCE 7 - THE DRAFT HEAD IS THE LARGEST VIOLATOR. `draft_lm_head` is
++69.4 % above the law: law 587.4 us, measured 994.81 us, excess 407.4 us/draft
+= 2.03 % of the local round at 6.359 drafts/round. The whole draft buffer is
+6,326 us = 4.96 %. Assigned as E107.
+
+CONSEQUENCE 8 - A NEW STANDING LEVER. At M>=5 the same tensor is streamed twice
+in two INDEPENDENT passes. If those are two non-overlapping GPU dispatches,
+removing the duplicate fixed cost is worth 257 x 9.90 = 2,544 us = 2.0 % of the
+local round WITH NO rate(NA) penalty. That is strictly better than the stream
+collapse, which Findings 32 and 34 showed is ranked-neutral because the
+wider-x-group rate penalty cancels the saving. Assigned as E106 rung 3.
+
+---
+
+### NEW STOP-LIST ENTRIES
+
+- The qL={1..5} later-window SDPA compile-warm ladder at both kL families.
+  MEASURED NULL on the candidate leg: +0.0057 %, sd 0.0875 (`73cb7dfe`).
+- Chain A, the 12,292 -> 3,073 radix select: +0.061 % ranked after Finding 35.
+- "Make the QMV kernel stream faster" at G=2 in any clean streaming family.
+  Closed by Finding 36 consequence 1.
+- Eliminating the GDN recurrent-state snapshot copy. `snapshotRecurrent`
+  (`Qwen36MTPBlockSession.swift:1709`) returns lazy slice expressions and its
+  docstring states "No GPU work happens here". There is no 302 MB memcpy to
+  remove.
+- hadakang's published negatives, from their own note: `ef365c52` de-islanding
+  timing-inverted on M5; `142db395` fc-bf16 uniform -2.7 % tax; `9c30d69c`
+  trained heads coverage-limited, needing 20-100x more data.
+
+---
+
+### MERGES AND ASSIGNMENTS THIS ENTRY
+
+- PR #103, thorfinn E101, accepted on the changed base at `2aaa2feb`
+  (comment 5372665102) then merged at `e2b1ab00`. Chain C. Local
+  -0.1484 % raw, -0.1504 % drift-corrected, ~5.7 sigma against a session null of
+  0.0263 %. Row digests unchanged at 64 rows (`c556822a`) and 1025 rows
+  (`719d82b8`). Submitted officially as `b8b8b860` at 15:58:25Z.
+- PR #101, edward E99 revision 2, accepted at `e2b1ab00` (comment 5372669932)
+  then merged at `e2f4617f`. The rung-7 depth discriminator and the rung-8
+  oracle allocation bound are the durable results; the margin gate itself is
+  the `87b654b2` -6.08 % ranked failure recorded in entry 252.
+- PR #108, edward E106, created on base `e2f4617f`, head `7762d9bd`. Question:
+  why do the two projections whose output width is 5120 cost 8.43 us/dispatch
+  more than the law that fits every other streaming projection to 0.05 %?
+  Rung 0 stop below 0.8 % of the local round; promotion bar >= 0.20 %
+  matched-ABBA local round. Rung 3 carries the consequence-8 prize.
+- PR #109, thorfinn E107, created on base `e2f4617f`, head `d03b2af5`.
+  Question: is the coarse affine-2 draft readout issue-rate bound, and how much
+  of the 69 % excess can a different value-extraction scheme remove while
+  holding recall@32 at exactly 1.0000? Arms A mask-and-pre-scale, B split the
+  ulong, C more rows per lane, D LUT readout (T-MAC / LUT-GEMM). Rung 0 stops if
+  the affine-2 QMV alone is within 15 % of the law or the constant-weight arm
+  shows it is bandwidth bound.
+
+Standing cross-cutting constraint imposed in both new briefs: three students are
+in or near `quantized.h`. Rungs 0-2 are RESEARCH-ONLY under `research/`. No
+student may modify `quantized.h`,
+`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`, or any other
+candidate file until the advisor adjudicates the integration order.

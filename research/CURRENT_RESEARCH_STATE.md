@@ -1,31 +1,39 @@
 # SENPAI Research State
 
-- **2026-08-21 16:20 UTC.** Campaign active, no round limit.
+- **2026-08-21 17:05 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
-- 🔴🔴🔴 **IN FLIGHT NOW: `b8b8b860`, submitted by thorfinn at 15:58:25Z.** It
-  is the first COMPOSED candidate of the campaign: three disjoint mechanisms in
-  one tree. (a) E101 chain C, two fused threadgroup top-K kernels that replace a
-  13-dispatch `argPartition` chain, −39.16 µs per draft on the conservative
-  estimator. (b) The `41bad1c6` one-dispatch rerank kernel imported from
-  vibecodooor's promoted `51b9bf85`. (c) The already-merged E100
-  `qmv_fast_crossrow_affine4_g64_m<T,5,5,true>` M=5 stream collapse.
-  Pre-registered central expectation **+0.37 % ± 0.42 %**, about **3.3406
-  published** against our promoted `f04b102e` at 3.32824629.
-- 🔴 **AN INDEPENDENT RANKED RECEIPT ALREADY CONFIRMS CHAIN C.** Board row
-  `9612d3ba` is a rival twin of chain C and scored **3.33872764713944**, which
-  is **+0.3149 %** over `f04b102e`. Our pre-registered chain-C figure was
-  **+0.32 %**. This is the first ranked-box confirmation of the Finding 22
-  LATENCY-class 1:1 absolute-microsecond transfer frame, and it was produced by
-  a rival on our own axis.
+- 🔴🔴🔴 **IN FLIGHT NOW: `b8b8b860`, submitted by thorfinn at 15:58:25Z**, still
+  validating at 17:05Z. It is the first COMPOSED candidate of the campaign:
+  three disjoint mechanisms in one tree. (a) E101 chain C, two fused threadgroup
+  top-K kernels that replace a 13-dispatch `argPartition` chain, −39.16 µs per
+  draft on the conservative estimator. (b) The `41bad1c6` one-dispatch rerank
+  kernel imported from vibecodooor's promoted `51b9bf85`. (c) The already-merged
+  E100 `qmv_fast_crossrow_affine4_g64_m<T,5,5,true>` M=5 stream collapse.
+- 🔴 **THE PRE-REGISTERED EXPECTATION IS NOW REPRICED BY FINDING 35.** The old
+  central figure of +0.37 % assumed the Finding 22 LATENCY multiplier of ×2.40.
+  The measured transfer is ×1.0 in percentage, so the central published estimate
+  is **≈3.344**. Beating the 3.35025879 frontier needs a further +0.18 %, which
+  is about 0.64 σ on the 0.28 % published resample floor, so **~26 %**. Its
+  serial-free value of ≈3.3442–3.3449 would beat the frontier's 3.33979539.
+- 🔴 **TWO INDEPENDENT RANKED RECEIPTS CONFIRM CHAIN C at ≈ +0.15 %.** Board row
+  `9612d3ba` against `51b9bf85` gives +0.1572 %, sd 0.0236, 8/8 positive; the
+  isolated pair `73cb7dfe` → `9612d3ba` gives +0.1515 %, sd 0.0983. Local was
+  −0.1651 %, so the percentage transfer ratio is 0.93–0.95, not 2.40.
 - 🔴 **`87b654b2` (edward, the fixed-threshold margin gate) was REJECTED at
   3.12600524, a −6.077 % regression.** Cause fully identified: overfiring, not
   mispricing. See FINDING 33. Advisor error 60.
 - **Frontier:** vibecodooor `51b9bf85` **3.35025879**, promoted 11:41:47Z.
   hadakang `276aa2c2` 3.33849825. Ours `f04b102e` 3.32824629.
-- Campaign base: see the advisor branch head. It carries PR #105 (E103,
-  research only), PR #102 (E100), PR #104 (E102), PR #100 (E98), PR #89 (E87),
-  PR #99 (E96), PR #97 (E94) and PR #98 (E97).
+- 🔴 **THE SERIAL-FREE LEADERBOARD IS THE TRUE ENGINEERING FRONTIER.**
+  `9612d3ba` 3.34536215 › `1ae7de74` 3.33988450 › `51b9bf85` 3.33979539 ›
+  `29aedfe4` 3.33927317 › `73cb7dfe` 3.33854865 › `276aa2c2` 3.33753284 ›
+  ours `f04b102e` 3.33711595. Every board score above our chain-C twin is pure
+  serial lottery. Chain C is the only real mechanism anyone shipped today.
+- Campaign base `e2f4617f`. It carries PR #101 (E99, research only), PR #103
+  (E101, chain C), PR #105 (E103, research only), PR #102 (E100), PR #104
+  (E102), PR #100 (E98), PR #89 (E87), PR #99 (E96), PR #97 (E94) and PR #98
+  (E97).
 - `BASE_SHA` for every submit call: `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
   Verified an ancestor of the campaign base.
 - Organizer `upstream/main`: **`41bad1c6f124f8f0c7f324cf60e95cd2c4de2ca6`**,
@@ -39,6 +47,114 @@
 - ✅ **The `41bad1c6` rerank kernel is now IMPORTED** by thorfinn in E101 and is
   part of `b8b8b860`. Only the `Qwen35.swift` hunks were taken; the manifest
   hunk is hadakang's resample marker and carries no scored behaviour.
+
+## 🔴🔴🔴🔴🔴 FINDING 36. THE PER-DISPATCH FIXED-COST LAW
+
+`research/dispatch_fixed_cost.py`. Fit `dispatch_us = F + bytes_GB × S` to the
+four clean streaming families of the E96 round census, converting each family
+to bytes through the shape table at G=2, BPE = 0.5625.
+
+```
+family                     disp/rnd   GB/disp   us/disp     GB/s
+lm_head                           2   0.71516   2634.66    271.4
+mlp.gate_up                     128   0.10027    377.98    265.3
+gdn.in_proj                      96   0.04746    184.12    257.8
+fa.qkv                           32   0.04129    161.36    255.9
+
+  S  =  3670.2 us per GB   ->  272.5 GB/s  =  99.8 % of the 273 GB/s DRAM peak
+  F  =     9.90 us per dispatch
+  R^2 = 1.00000000   (max residual 0.05 %)
+```
+
+1. **There is NO bandwidth headroom in the target streaming path at G=2.** After
+   removing F, all four clean families sit at 99.8–99.9 % of DRAM peak. The
+   census "rate deficits" of 97.2 %, 94.4 % and 93.7 % ARE the fixed cost.
+   "Make the QMV kernel stream faster" at G=2 is CLOSED.
+2. **514 streaming dispatches × 9.90 µs = 5,091 µs = 3.992 % of the 127,533 µs
+   local round is pure fixed cost.** The total is invariant to whether G=2 is
+   two GPU dispatches (F = 9.90) or an internal loop in one (F = 19.80).
+3. 🔴 **THE ANOMALY.** `gdn.out_proj + fa.o_proj + mlp.down` is the only family
+   that misses the law: 256 dispatches, 8.6822 GB/round, law 34,400.6 µs,
+   measured 36,559.2 µs, **excess 2,158.6 µs = 8.43 µs/dispatch = 1.693 % of the
+   local round**. Achieved peak after removing F is 93.5 % against 99.8 %
+   everywhere else. **ASSIGNED as E106, PR #108, edward.**
+4. **Perfect monotone ordering in N**, the output width. lm_head N=248320
+   99.8 %; mlp.gate_up N=34816 99.8 %; gdn.in_proj N=16480 99.8 %; fa.qkv
+   N=14336 99.9 %; out_proj + mlp.down **N=5120 93.5 %**. Threadgroups are N/8:
+   31040, 4352, 2060, 1792, **640**, against 20 GPU cores.
+5. **M=1 cross-check.** The law over 257 G=1 dispatches plus the E96
+   non-streaming 5,074 µs predicts 60,515 µs against the E92 measured
+   64,445 µs, so 6.1 % is unexplained. At F = 19.80 the residual falls to
+   ~2.2 %. Edward's E106 rung 0 dispatch count settles the units.
+6. 🔴 **E104 is a SEPARATE and much larger axis.** NA=5 one-group has the same
+   257 dispatches and the same bytes yet measures 103,404 µs, which is **70.9 %
+   above the law**. The `rate(NA)` penalty is not the fixed cost.
+7. 🔴 **The draft head is the largest violator.** `draft_lm_head` is **+69.4 %
+   above the law**: law 587.4 µs, measured 994.81 µs, excess 407.4 µs/draft =
+   **2.03 % of the local round** at 6.359 drafts/round. **ASSIGNED as E107,
+   PR #109, thorfinn.**
+8. 🔴 **A NEW STANDING LEVER.** At M≥5 the same tensor is streamed twice in two
+   INDEPENDENT passes. If those are two non-overlapping GPU dispatches, removing
+   the duplicate fixed cost is worth **257 × 9.90 = 2,544 µs = 2.0 % of the
+   local round WITH NO rate(NA) penalty** — strictly better than the stream
+   collapse, which Findings 32 and 34 showed is ranked-neutral. **E106 rung 3.**
+
+## 🔴🔴🔴🔴🔴 FINDING 35. THE DISPATCH-TRANSFER CORRECTION (ADVISOR ERROR 61)
+
+`research/dispatch_transfer.py`. The measured ranked realisation for a
+launch-overhead-bound dispatch deletion is
+
+```
+ranked %  ~=  0.95 x local %                 (percentage form)
+ranked_delta_us ~= 0.52 x local_delta_us     (absolute form)
+```
+
+NOT the Finding 22 LATENCY value of ×2.40. The overprediction factor is 2.52×.
+The ranked M5 dispatch boundary is ≈1.3 µs against the local FACT-8 boundary of
+3.87 µs [2.63, 5.11], so `L_ranked ≈ 0.42 × L_local`, and the ranked round is
+2.40× shorter. The two effects nearly cancel.
+
+REPRICED Finding 22 LATENCY table:
+
+| family | local % | old ×2.40 | **new ×1.00** | owner |
+|---|--:|--:|--:|---|
+| SDPA over FA history | 0.993 | 2.384 | **0.945** | closed (E103) |
+| fused residual + RMSNorm | 0.605 | 1.453 | **0.576** | unassigned, `Qwen35.swift:1737` |
+| GDN prework | 0.426 | 1.023 | **0.406** | E105 |
+| q/k norm + RoPE | 0.117 | 0.281 | **0.111** | E105 |
+| KV cache write | 0.070 | 0.168 | **0.067** | E105 |
+| MTP top-2 | 0.044 | 0.106 | **0.042** | — |
+
+- The **E105 target pool falls from 1.473 % to 0.584 %**, below its own briefed
+  0.600 % bar. Fixed by feedback `e105-f1`: askeladd now works in local percent
+  with a ×1.0 transfer, rung 0 stops if the addressable non-cache-served
+  subtotal is below 0.25 % of the local round (~319 µs/round), and the promotion
+  bar is ≥ 0.20 % matched-ABBA local round.
+- **Chain A, the 12,292 → 3,073 radix select, reprices to +0.061 % ranked.
+  DEAD.**
+- **E103's closure is firmer:** its 0.2988 % local ceiling reprices to
+  ~0.115–0.181 % ranked instead of 0.277–0.435 %.
+
+**ADVISOR ERROR 61.** I priced the E101 selection chain with a 1:1 absolute
+microsecond LATENCY transfer (+0.32 %) when the measured ranked realisation for
+dispatch-count deletions is ~1.0× in PERCENTAGE (+0.15 %).
+
+## 🔴🔴🔴🔴 THE FOUR SCHEDULE-MATCHED BOARD DECOMPOSITIONS OF 2026-08-21
+
+All four pairs have bit-identical per-prompt `effective_mean_draft_len` on all
+eight prompts, so the candidate-leg contrast is a clean mechanism measurement.
+
+| pair | candidate leg | verdict |
+|---|--:|---|
+| `51b9bf85` → `73cb7dfe`, the qL={1..5} SDPA warm ladder | **+0.0057 %** sd 0.0875 | **NULL. STOP LIST.** |
+| `73cb7dfe` → `9612d3ba`, chain C alone | **+0.1515 %** sd 0.0983 | real |
+| `51b9bf85` → `29aedfe4`, "drop two argPartition merge-sorts" | **+0.0101 %** sd 0.0342 | **NULL** |
+| `51b9bf85` → `1ae7de74` | **+0.0168 %** sd 0.0359 | **NULL** |
+
+The −0.61 % published gap of `73cb7dfe`, the +0.13 % of `29aedfe4` and the
++0.16 % of `1ae7de74` are all pure serial lottery. Three rivals were still
+burning submissions on the SDPA warm ladder at the time of writing (`dffe0d93`,
+`a543934d`, `73cb7dfe`).
 
 ## 🔴🔴🔴🔴 FINDING 33. A THRESHOLD IN A GAP IS FRAGILE, NOT ROBUST
 
@@ -1782,9 +1898,11 @@ error 53.**
 | PR | student | experiment | state |
 |---|---|---|---|
 | #106 | alphonse | E104 why a lone wide x-group streams slowly — find the binding constraint on `rate(NA)` | 🔴 **`status:wip`. THE CROWN-TAKING EXPERIMENT.** Direct prize −2.04 % to −10.91 % on the ranked leg, plus a conditional enabling prize that reopens the whole collapse family across 65.65 % of round time. H1 occupancy and H2 threadgroup count are pre-refuted and serve as controls. **H4, the load stream is not deep enough, leads.** Rung 0.5 was extended to the full NA=1..8 ladder so `r1` is measured against the Finding 34 break-even at every width. Promotion bar: a bit-exact arm must lift the isolated one-group NA=5 rate by ≥10 %. |
-| #107 | askeladd | E105 the LATENCY-class dispatch family — GDN prework, q/k norm+RoPE, KV write | 🔴 **`status:wip`. 1.473 % ranked in three families that run at about 12 % of DRAM peak.** Minimum useful stacked ceiling is **0.60 % ranked**, deliberately twice the published floor after two transfer failures this week. Rung 0 must measure REAL achieved bandwidth in an isolated harness before any latency claim, because E103 proved a census line can understate a cache-served dispatch by about 16x. |
-| #103 | thorfinn | E101 selection chain, custom top-K, plus the rival rerank import | ✅ **TERMINAL, `succeeded`. Produced official submission `b8b8b860`, validating since 15:58:25Z.** Chain C replaces a 13-dispatch `argPartition` chain with two fused threadgroup top-K kernels: **−39.16 µs per draft** on the conservative `round_us` estimator, five estimators bracketing −28.41 to −104.21, about 5.7 σ against a 0.0263 % session null. Three exactness gates each with a live positive control; row digest IDENTICAL at 64 and 1,025 rows. He then imported the `41bad1c6` rerank kernel and composed all three mechanisms. **An independent rival receipt `9612d3ba` scored his mechanism at +0.3149 % against our pre-registered +0.32 %.** |
-| #101 | edward | E99 oracle allocation bound, then the margin gate | ✅ **TERMINAL, `failed`, r2 clean.** The bound is the durable result: the ungated allocation gap is 5.81–6.41 % with 36–44 % reachable; gated it falls to 2.88–3.95 % with NO reliably reachable part. The candidate was refuted at −6.077 % and produced **Finding 33**. Rung 7 is the standalone win: the discriminator `gain(d2) − gain(d3) = −1.790 pp` against −0.727 predicted for a stream boundary and +0.443 for drafting cost, so **the depth price is set by a hardware dispatch boundary, not by drafting cost**. In r2 he DELETED the gate rather than defaulting it off, and proved it: the candidate surface is byte-identical with the advisor base. |
+| #108 | edward | E106 the N=5120 dispatch anomaly and the duplicate fixed cost | 🔴 **`status:wip`. 1.693 % of the local round, STREAM class, ×1.0 transfer — 11× chain C.** Every streaming projection sits at 99.8 % of DRAM peak after removing the 9.90 µs fixed cost, except the two whose output width is 5120, which cost **8.43 µs/dispatch more**. Five pre-registered hypotheses; H2 and H3 are confounded by the shipped shapes, so rung 1 must add a synthetic shape to break the K–bytes tie. Rung 0 also settles whether F is per-logical or per-GPU dispatch. **Rung 3 carries the standing 2,544 µs prize**: overlap the two independent row-group passes. Rung-0 stop below 0.8 % of the local round; promotion ≥ 0.20 % matched-ABBA local round. |
+| #109 | thorfinn | E107 the coarse affine-2 draft readout is ALU bound, not bandwidth bound | 🔴 **`status:wip`. Ceiling 2.08 % of the local round.** `draft_lm_head` is **+69.4 % above the fixed-cost law**. The inner loop runs ~20 ALU ops per weight byte against 8 for the affine-4 wide kernel, and an operation count predicts the measured 994.81 µs to within 30 % while a byte count is out by 69 % the other way. Arms: **A** byte masks with power-of-two pre-scaling, exactly the trick the promoted `51b9bf85` rerank kernel already uses; **B** split the `ulong` into two `uint32`; **C** more rows per lane, explicitly NOT transferred from the dead E76 §4 result; **D** LUT readout, T-MAC / LUT-GEMM. **recall@32 must stay exactly 1.0000.** Rung 0 stops if the affine-2 QMV alone is within 15 % of the law or a constant-weight arm shows it is bandwidth bound. |
+| #107 | askeladd | E105 the LATENCY-class dispatch family — GDN prework, q/k norm+RoPE, KV write | 🔴 **`status:wip`. REPRICED by Finding 35 from 1.473 % to 0.584 %.** Feedback `e105-f1` deleted the 0.600 % bar: he now works in LOCAL percent with a ×1.0 transfer, rung 0 stops if the addressable non-cache-served subtotal is below 0.25 % of the local round (~319 µs/round), and the promotion bar is ≥ 0.20 % matched-ABBA local round. Rung 0 must measure REAL achieved bandwidth in an isolated harness before any latency claim, because E103 proved a census line can understate a cache-served dispatch by about 16x. |
+| #103 | thorfinn | E101 selection chain, custom top-K, plus the rival rerank import | ✅ **MERGED at `e2b1ab00`. Produced official submission `b8b8b860`, validating since 15:58:25Z.** Chain C replaces a 13-dispatch `argPartition` chain with two fused threadgroup top-K kernels: **−39.16 µs per draft** on the conservative `round_us` estimator, five estimators bracketing −28.41 to −104.21, about 5.7 σ against a 0.0263 % session null. Three exactness gates each with a live positive control; row digest IDENTICAL at 64 and 1,025 rows. He then imported the `41bad1c6` rerank kernel and composed all three mechanisms. **An independent rival receipt `9612d3ba` scored his mechanism at +0.3149 % against our pre-registered +0.32 %.** |
+| #101 | edward | E99 oracle allocation bound, then the margin gate | ✅ **MERGED at `e2f4617f`, `failed`, r2 clean.** The bound is the durable result: the ungated allocation gap is 5.81–6.41 % with 36–44 % reachable; gated it falls to 2.88–3.95 % with NO reliably reachable part. The candidate was refuted at −6.077 % and produced **Finding 33**. Rung 7 is the standalone win: the discriminator `gain(d2) − gain(d3) = −1.790 pp` against −0.727 predicted for a stream boundary and +0.443 for drafting cost, so **the depth price is set by a hardware dispatch boundary, not by drafting cost**. In r2 he DELETED the gate rather than defaulting it off, and proved it: the candidate surface is byte-identical with the advisor base. |
 | #105 | askeladd | E103 SDPA over the full-attention history, GQA sibling packing | ✅ **MERGED. Premise falsified, and the falsification generalises.** Redundant K/V traffic is only 21.6 % of the dispatch and is served from cache at 835–1046 GB/s, which is 3.1–3.8x DRAM peak, so the census bandwidth line understated the real rate about 16x. The dispatch actually spends 26.3 % in softmax and 25.3 % in a cross-simdgroup reduction tail. He also found **wave quantisation**: `24*M` threadgroups against 20 cores make a merge worth only 36 % of its linear prediction. He declined to start the integration. Correct call. |
 | #102 | alphonse | E100 fewer weight streams per round | ✅ **MERGED at `5c2c3b8b`.** Four lines in two files collapse the M=5 partition from `[3+2]` to `[5]`: **−0.775 %** local s/token at 512 tokens depth 8, **−12.810 %** at depth 4, confirmed in both directions by a `<T,6,2,true>` dose control. Now part of the composed `b8b8b860`. Its ranked value is about zero by Finding 32, but the register census it produced is what made Finding 34 possible. |
 | #104 | askeladd | E102 g17s occupancy and the dispatcher census | ✅ **MERGED at `97511edb`.** Delivered Finding 27 with zero GPU time. The dispatcher allocates exactly what its widest inlined body allocates, 7 of 7 arms on both generations. Second zero-parameter corroboration of the E77 occupancy law. Dead-width pruning produces byte-identical GPU objects, so text is not a register lever. |
@@ -1797,24 +1915,39 @@ Each student has one physical Mac: Apple M4 Pro, `applegpu_g16s` generation 16,
 273 GB/s. The ranked runner is an M5, `applegpu_g17s` generation 17, 128 GiB.
 The advisor is co-located with edward and must not run builds or GPU work.
 
-**File-overlap schedule in `Qwen35.swift`, three students at once.** askeladd
-owns `:662-1250`, the GDN path. edward owns `:1737`, the residual and RMSNorm
-prologue. thorfinn owns `:3055-3850`, selection and rerank. alphonse is in
-`quantized.h` and its JIT twin only, and `case 6` must stay untouched.
-`GatedDelta.swift` is NOT editable.
+🔴 **THE `quantized.h` INTEGRATION FREEZE.** Three students are now in or near
+`quantized.h`: alphonse in `qmv_fast_crossrow_affine4_g64_m` and `_wide` from
+`:1156`, edward in the dispatch structure and the N=5120 projections, thorfinn
+in `qmv_fast_singlerow_affine2_g64` at `:1084` and its dispatch site at `:1912`.
+**Rungs 0–2 of E104, E106 and E107 are RESEARCH-ONLY under `research/`. No
+student may modify `quantized.h`,
+`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`, or any other
+candidate file until the advisor adjudicates the integration order.**
+
+**File-overlap schedule in `Qwen35.swift`.** askeladd owns `:662-1250`, the GDN
+path. thorfinn owns `:3055-3850`, selection and rerank. `:1737`, the residual
+and RMSNorm prologue, is currently UNASSIGNED. `GatedDelta.swift` is NOT
+editable.
 
 **Submission discipline.** One in-flight Yukon slot. It belongs to `b8b8b860`
 until that receipt lands. No student may submit before then. The advisor owns
 the board watch.
 
 **Queued next, in priority order.**
-1. thorfinn: chain A, a 12,292 → 3,073 radix select plus bitmap emit, about
-   40.42 µs per draft. With chain C that reaches about 145 µs per draft, or
-   roughly +1.1 % on the median pair.
-2. edward: Theme 6, the fused residual and RMSNorm prologue at `Qwen35.swift:1737`.
-   E96 rung 3a measured slope 298.01 µs per pass per round with R² 0.9506, and
-   771.54 µs per round at 27.0 GB/s, which is 9.9 % of peak. **1.453 % ranked.**
-   Rung 0 must first measure real achieved bandwidth in an isolated harness, by
-   the E103 rule.
-3. The plutarch instrument, Finding 29b: a 0.088 % ranked resolution for broad
-   target-runtime improvements, from the 79-run crown-schedule cohort.
+1. The plutarch instrument, Finding 29b: a **0.088 %** ranked resolution for
+   broad target-runtime improvements, from the 79-run crown-schedule cohort.
+   This is the sharpest ranked instrument available to the campaign and it
+   needs no GPU. Every other prompt in that cohort has a per-prompt sd about
+   ten times larger.
+2. A board-wide schedule-matched pair mining pass: 1,014 board rows against
+   ~915 `upstream/submissions/*` branches, producing a measured ranked value
+   for every mechanism any competitor has ever shipped. Today's four
+   decompositions found three NULLs and one real mechanism in one hour. No GPU.
+3. The fused residual and RMSNorm prologue at `Qwen35.swift:1737`, repriced by
+   Finding 35 to **0.576 %** local, ×1.0 transfer. E96 rung 3a measured slope
+   298.01 µs per pass per round with R² 0.9506, and 771.54 µs per round at
+   27.0 GB/s, which is 9.9 % of peak. Rung 0 must first measure real achieved
+   bandwidth in an isolated harness, by the E103 rule, because Finding 36 says
+   a nominal rate deficit is usually just the 9.90 µs fixed cost.
+4. ~~chain A, the 12,292 → 3,073 radix select~~ **DEAD.** Finding 35 reprices it
+   to +0.061 % ranked. On the stop list.
