@@ -144,11 +144,18 @@ struct E100StreamCollapseProbeTests {
             // Aim at roughly 100 ms of integrated work per cell.
             let count = max(20, min(400, Int(1.0e11) / (bytes * 4)))
 
+            // One activation block, sliced per width. Row m must be the same
+            // input vector at every width, or the cross-width digest check
+            // below compares different products and cannot detect a
+            // reassociation.
+            MLXRandom.seed(UInt64(0xBEEF) &+ UInt64(shape.outputs))
+            let block = MLXRandom.normal([Self.widths.max()!, shape.hidden])
+                .asType(.bfloat16)
+            eval(block)
+
             var inputs: [Int: MLXArray] = [:]
             for width in Self.widths {
-                MLXRandom.seed(UInt64(0xBEEF) &+ UInt64(width))
-                let x = MLXRandom.normal([width, shape.hidden])
-                    .asType(.bfloat16)
+                let x = contiguous(block[0 ..< width])
                 eval(x)
                 inputs[width] = x
             }
@@ -219,10 +226,10 @@ struct E100StreamCollapseProbeTests {
         var mismatches: [[String: Any]] = []
         for shape in Self.shapes {
             let byWidth = cells.filter { $0.shape == shape.name && $0.width >= 2 }
-            guard let reference = byWidth.first(where: { $0.width == 2 })
+            guard let reference = byWidth.max(by: { $0.width < $1.width })
             else { continue }
-            for cell in byWidth where cell.width > 2 {
-                for row in 0 ..< min(reference.width, cell.width)
+            for cell in byWidth where cell.width < reference.width {
+                for row in 0 ..< cell.width
                 where reference.rowDigests[row] != cell.rowDigests[row] {
                     mismatches.append([
                         "shape": shape.name, "width": cell.width, "row": row,
