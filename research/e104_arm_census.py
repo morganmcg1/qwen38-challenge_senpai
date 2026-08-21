@@ -32,6 +32,13 @@ from air_kernel_stats import peak_live_registers  # noqa: E402
 ARMS = ("a_base", "l_loadonly", "z_noxload", "xw_widex")
 PROBE_NA = (2, 3, 4, 5, 6)
 
+# Static AIR counts mix regions that execute a different number of times: the
+# k-block prologue runs once per k-block while the `i` loop body runs once per
+# source iteration. Each arm's `i` loop has a compile-time trip count, so the
+# static counts can be reweighted into counts per k-block, which is the unit the
+# rate identity is written in.
+INNER_TRIP = {"a_base": 4, "l_loadonly": 4, "z_noxload": 4, "xw_widex": 2}
+
 DEVICE_LOAD = re.compile(r"^\s*%\S+ = load .*addrspace\(1\)", re.M)
 ANY_LOAD = re.compile(r"^\s*%\S+ = load ", re.M)
 ALLOCA = re.compile(r"^\s*%\S+ = alloca ", re.M)
@@ -58,7 +65,80 @@ def weighted(body: list[str], pattern: re.Pattern) -> int:
     return total
 
 
-def air_for(src: pathlib.Path, entry: str) -> dict:
+BLOCK_LABEL = re.compile(r"^(\S+):")
+BR_TARGET = re.compile(r"label %([\w.$-]+)")
+
+
+def blocks_of(body: list[str]) -> list[tuple[str, list[str]]]:
+    out: list[tuple[str, list[str]]] = []
+    name, cur = "entry", []
+    for line in body:
+        m = BLOCK_LABEL.match(line)
+        if m:
+            out.append((name, cur))
+            name, cur = m.group(1), []
+        else:
+            cur.append(line)
+    out.append((name, cur))
+    return out
+
+
+def block_weights(body: list[str], inner_trip: int) -> list[int]:
+    """Executions per k-block for each basic block.
+
+    A branch to an earlier block is a backedge. The widest backedge spans the
+    k-block loop, so its body runs once per k-block; a block that branches to
+    itself is the inner `i` loop and runs `inner_trip` times. Everything outside
+    the k-block loop is prologue or epilogue and does not repeat per k-block.
+    """
+    blocks = blocks_of(body)
+    index = {name: i for i, (name, _) in enumerate(blocks)}
+    outer = (0, -1)
+    inner: set[int] = set()
+    for i, (_, lines) in enumerate(blocks):
+        for line in lines:
+            if not line.strip().startswith("br "):
+                continue
+            for target in BR_TARGET.findall(line):
+                j = index.get(target)
+                if j is None or j > i:
+                    continue
+                if j == i:
+                    inner.add(i)
+                elif i - j > outer[1] - outer[0]:
+                    outer = (j, i)
+    weights = []
+    for i in range(len(blocks)):
+        if i in inner:
+            weights.append(inner_trip)
+        elif outer[0] <= i <= outer[1]:
+            weights.append(1)
+        else:
+            weights.append(0)
+    return weights
+
+
+def dynamic_counts(body: list[str], inner_trip: int) -> dict:
+    """Operation counts per k-block, with the inner loop counted every trip."""
+    blocks = blocks_of(body)
+    weights = block_weights(body, inner_trip)
+    totals = {"device_loads": 0, "nibble_and": 0, "nibble_lshr": 0,
+              "fmul_lanes": 0, "fadd_lanes": 0, "fpext_lanes": 0, "air_lines": 0}
+    for (_, lines), weight in zip(blocks, weights):
+        if not weight:
+            continue
+        totals["air_lines"] += weight * len(lines)
+        totals["device_loads"] += weight * sum(
+            1 for l in lines if DEVICE_LOAD.search(l + "\n"))
+        totals["nibble_and"] += weight * sum(1 for l in lines if "and i" in l)
+        totals["nibble_lshr"] += weight * sum(1 for l in lines if "lshr i" in l)
+        totals["fmul_lanes"] += weight * weighted(lines, FMUL)
+        totals["fadd_lanes"] += weight * weighted(lines, FADD)
+        totals["fpext_lanes"] += weight * weighted(lines, FPEXT)
+    return totals
+
+
+def air_for(src: pathlib.Path, entry: str, inner_trip: int) -> dict:
     ll = src.with_suffix(".ll")
     ll_o3 = src.with_suffix(".o3.ll")
     if not ll_o3.exists():
@@ -92,6 +172,7 @@ def air_for(src: pathlib.Path, entry: str) -> dict:
     live = peak_live_registers(body)
     return {
         "status": "ok",
+        "per_kblock": dynamic_counts(body, inner_trip),
         "air_lines": len(body),
         "device_loads": len(DEVICE_LOAD.findall(text)),
         "loads": len(ANY_LOAD.findall(text)),
@@ -118,7 +199,8 @@ def main() -> int:
     for arm in ARMS:
         src = arms_dir / ("iso_%s.metal" % arm)
         results[arm] = {
-            str(na): air_for(src, "e104_iso_na%d" % na) for na in PROBE_NA
+            str(na): air_for(src, "e104_iso_na%d" % na, INNER_TRIP[arm])
+            for na in PROBE_NA
         }
 
     out = pathlib.Path(args.out)
@@ -128,18 +210,20 @@ def main() -> int:
          "pipeline": "metal -O2 -S | metal-opt -passes=default<O3>",
          "arms": results}, indent=2) + "\n")
 
-    head = ("arm", "NA", "status", "regs", "air", "dev_ld", "fma", "fmul",
-            "fadd", "and", "lshr", "u2f", "fpext", "alloca")
-    print("%-12s %3s %-8s %6s %6s %7s %7s %7s %7s %6s %6s %6s %6s %6s" % head)
+    print("per k-block of 512 K values per lane; 'and'/'lshr' are the nibble "
+          "unpack")
+    head = ("arm", "NA", "status", "regs", "alloca", "dev_ld", "and", "lshr",
+            "fmul", "fadd", "fpext", "air")
+    print("%-12s %3s %-8s %6s %7s %7s %6s %6s %7s %7s %7s %7s" % head)
     for arm, per_na in results.items():
         for na, r in per_na.items():
-            print("%-12s %3s %-8s %6s %6s %7s %7s %7s %7s %6s %6s %6s %6s %6s" % (
+            d = r.get("per_kblock", {})
+            print("%-12s %3s %-8s %6s %7s %7s %6s %6s %7s %7s %7s %7s" % (
                 arm, na, r["status"], r.get("peak_live_regs", "-"),
-                r.get("air_lines", "-"), r.get("device_loads", "-"),
-                r.get("fma_lanes", "-"), r.get("fmul_lanes", "-"),
-                r.get("fadd_lanes", "-"), r.get("and_ops", "-"),
-                r.get("lshr_ops", "-"), r.get("uitofp_lanes", "-"),
-                r.get("fpext_lanes", "-"), r.get("allocas", "-")))
+                r.get("allocas", "-"), d.get("device_loads", "-"),
+                d.get("nibble_and", "-"), d.get("nibble_lshr", "-"),
+                d.get("fmul_lanes", "-"), d.get("fadd_lanes", "-"),
+                d.get("fpext_lanes", "-"), d.get("air_lines", "-")))
     print("wrote %s" % out)
     ok = all(r["status"] == "ok" for p in results.values() for r in p.values())
     if not ok:
