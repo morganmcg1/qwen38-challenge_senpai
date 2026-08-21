@@ -1,0 +1,204 @@
+{
+  "session": "research/out/e85-abba-512-base-vs-ab",
+  "arm_a": "base",
+  "arm_b": "ab",
+  "legs": 12,
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "buffers_removed_per_draft": 6,
+  "arm_base": {
+    "legs": 6,
+    "mtp_s_per_tok_mean": 0.031757766962982714,
+    "mtp_s_per_tok_sd": 0.00011389259054557236,
+    "serial_s_per_tok_mean": 0.07438016244365524,
+    "ratio_mean": 2.342146131948745,
+    "mean_draft_len_mean": 6.358974358974359,
+    "accepted_rate_mean": 0.8770161290322581,
+    "drafts_per_token_mean": 0.9668615984405458,
+    "temp_in_min": 39.20090103149414,
+    "temp_in_max": 61.50932312011719,
+    "temp_out_max": 63.72496032714844,
+    "all_matched": true
+  },
+  "arm_ab": {
+    "legs": 6,
+    "mtp_s_per_tok_mean": 0.03174120311935743,
+    "mtp_s_per_tok_sd": 0.00014733568485224163,
+    "serial_s_per_tok_mean": 0.07434882429273178,
+    "ratio_mean": 2.342389378925129,
+    "mean_draft_len_mean": 6.358974358974359,
+    "accepted_rate_mean": 0.8770161290322581,
+    "drafts_per_token_mean": 0.9668615984405458,
+    "temp_in_min": 59.4456672668457,
+    "temp_in_max": 61.92344665527344,
+    "temp_out_max": 64.48450469970703,
+    "all_matched": true
+  },
+  "temp_in_spread_c": 22.722545623779297,
+  "block_mtp_s_per_tok": {
+    "n": 3,
+    "mean": -1.6563843625287216e-05,
+    "sd": 8.582976729443691e-05,
+    "sem": 4.955383925192609e-05,
+    "t": -0.3342595422542039,
+    "values": [
+      -9.862019214779139e-05,
+      -2.3668981157243252e-05,
+      7.259764242917299e-05
+    ]
+  },
+  "ols_mtp_s_per_tok": {
+    "effect": -1.6563843625287216e-05,
+    "stderr": 7.801309192972537e-05,
+    "t": -0.21232133242722925,
+    "dof": 9,
+    "ci95_lo": -0.000193029457570326,
+    "ci95_hi": 0.0001599017703197516,
+    "drift_per_leg": -7.965609307526177e-06,
+    "resid_sd": 0.0001351226388778259,
+    "covariate": null
+  },
+  "block_serial_s_per_tok": {
+    "n": 3,
+    "mean": -3.133815092345079e-05,
+    "sd": 7.725420659690144e-05,
+    "sem": 4.4602736974752015e-05,
+    "t": -0.7026060069181445,
+    "values": [
+      5.153031088411808e-05,
+      -0.00010137003846466541,
+      -4.417472518980503e-05
+    ]
+  },
+  "ols_serial_s_per_tok": {
+    "effect": -3.133815092345079e-05,
+    "stderr": 5.7427902258051825e-05,
+    "t": -0.545695553750737,
+    "dof": 9,
+    "ci95_lo": -0.00016124006583116403,
+    "ci95_hi": 9.856376398426243e-05,
+    "drift_per_leg": 2.009220831617347e-05,
+    "resid_sd": 9.946804448304522e-05,
+    "covariate": null
+  },
+  "block_ratio": {
+    "n": 3,
+    "mean": 0.00024324697638385592,
+    "sd": 0.007905862560368545,
+    "sem": 0.0045644518774049635,
+    "t": 0.05329160716711282,
+    "values": [
+      0.008857129940516018,
+      -0.0014457892297770059,
+      -0.006681599781587444
+    ]
+  },
+  "ols_ratio": {
+    "effect": 0.00024324697638355985,
+    "stderr": 0.006915290621040661,
+    "t": 0.035175235534346115,
+    "dof": 9,
+    "ci95_lo": -0.015399140408410415,
+    "ci95_hi": 0.015885634361177535,
+    "drift_per_leg": 0.0012205138217545107,
+    "resid_sd": 0.01197763470474696,
+    "covariate": null
+  },
+  "block_mean_draft_len": {
+    "n": 3,
+    "mean": 0.0,
+    "sd": 0.0,
+    "sem": 0.0,
+    "t": NaN,
+    "values": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "ols_mean_draft_len": {
+    "effect": 0.0,
+    "stderr": 0.0,
+    "t": NaN,
+    "dof": 9,
+    "ci95_lo": 0.0,
+    "ci95_hi": 0.0,
+    "drift_per_leg": 0.0,
+    "resid_sd": 0.0,
+    "covariate": null
+  },
+  "block_accepted_rate": {
+    "n": 3,
+    "mean": 0.0,
+    "sd": 0.0,
+    "sem": 0.0,
+    "t": NaN,
+    "values": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "ols_accepted_rate": {
+    "effect": 0.0,
+    "stderr": 0.0,
+    "t": NaN,
+    "dof": 9,
+    "ci95_lo": 0.0,
+    "ci95_hi": 0.0,
+    "drift_per_leg": 0.0,
+    "resid_sd": 0.0,
+    "covariate": null
+  },
+  "cov_mtp_s_per_tok": {
+    "effect": -4.032703685359188e-05,
+    "stderr": 6.978113051875924e-05,
+    "t": -0.5779074737510992,
+    "dof": 8,
+    "ci95_lo": -0.0002012423238298507,
+    "ci95_hi": 0.00012058825012266693,
+    "drift_per_leg": 7.269974622325083e-06,
+    "resid_sd": 0.00011891322711474703,
+    "covariate": "serial_s_per_tok"
+  },
+  "drafts_per_token": 0.9668615984405458,
+  "block_effect_us_per_token": -16.563843625287216,
+  "block_effect_us_per_draft": -17.13155600760553,
+  "block_effect_us_per_buffer": -2.8552593346009214,
+  "block_effect_us_per_token_ci95_lo": -229.79401392632516,
+  "block_effect_us_per_draft_ci95_lo": -237.6700184358968,
+  "block_effect_us_per_buffer_ci95_lo": -39.611669739316135,
+  "block_effect_us_per_token_ci95_hi": 196.66632667575075,
+  "block_effect_us_per_draft_ci95_hi": 203.40690642068577,
+  "block_effect_us_per_buffer_ci95_hi": 33.901151070114295,
+  "block_effect_pct_of_mtp": -0.05215682716166491,
+  "ols_effect_us_per_token": -16.563843625287216,
+  "ols_effect_us_per_draft": -17.13155600760553,
+  "ols_effect_us_per_buffer": -2.8552593346009214,
+  "ols_effect_us_per_token_ci95_lo": -193.029457570326,
+  "ols_effect_us_per_draft_ci95_lo": -199.64538655963153,
+  "ols_effect_us_per_buffer_ci95_lo": -33.27423109327192,
+  "ols_effect_us_per_token_ci95_hi": 159.9017703197516,
+  "ols_effect_us_per_draft_ci95_hi": 165.3822745444205,
+  "ols_effect_us_per_buffer_ci95_hi": 27.563712424070086,
+  "ols_effect_pct_of_mtp": -0.05215682716166491,
+  "cov_effect_us_per_token": -40.327036853591885,
+  "cov_effect_us_per_draft": -41.70921351994483,
+  "cov_effect_us_per_buffer": -6.951535586657472,
+  "cov_effect_us_per_token_ci95_lo": -201.2423238298507,
+  "cov_effect_us_per_draft_ci95_lo": -208.1397421869222,
+  "cov_effect_us_per_buffer_ci95_lo": -34.6899570311537,
+  "cov_effect_us_per_token_ci95_hi": 120.58825012266692,
+  "cov_effect_us_per_draft_ci95_hi": 124.72131514703253,
+  "cov_effect_us_per_buffer_ci95_hi": 20.786885857838755,
+  "cov_effect_pct_of_mtp": -0.12698322555423253,
+  "control_serial_effect_pct": -0.04213240452007643,
+  "control_serial_effect_t": -0.545695553750737,
+  "saving_us_per_buffer": 6.951535586657472,
+  "saving_us_per_buffer_ci95": [
+    -20.786885857838755,
+    34.6899570311537
+  ],
+  "verdict": "partial (5-10 us/buffer): report and stop"
+}

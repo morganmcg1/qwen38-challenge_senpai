@@ -1,0 +1,22 @@
+arms base vs ab   legs 12
+  base  mtp=0.03175777 sd=0.00011389  serial=0.07438016  ratio=2.3421  dlen=6.358974359  acc=0.877016129  matched=True
+  ab    mtp=0.03174120 sd=0.00014734  serial=0.07434882  ratio=2.3424  dlen=6.358974359  acc=0.877016129  matched=True
+  drafts_per_token=0.9669  temp_in_spread=22.72C
+
+ARM CONTRAST on absolute candidate seconds per token  (negative = the arms are faster)
+  [block]   -16.56 us/token  CI95 [ -229.79,  +196.67]  -0.0522%    -17.13 us/draft    -2.45 us/buffer  CI95 [ -33.95,  +29.06]
+  [ols  ]   -16.56 us/token  CI95 [ -193.03,  +159.90]  -0.0522%    -17.13 us/draft    -2.45 us/buffer  CI95 [ -28.52,  +23.63]
+  [cov  ]   -40.33 us/token  CI95 [ -201.24,  +120.59]  -0.1270%    -41.71 us/draft    -5.96 us/buffer  CI95 [ -29.73,  +17.82]
+    ols  t=-0.212 dof=9 resid_sd=135.12us drift_per_leg=-7.97us
+    cov  t=-0.578 dof=8 resid_sd=118.91us drift_per_leg=+7.27us
+    block values us = [-98.62, -23.67, 72.6]
+
+CONTROL: the unchanged depth-0 serial leg, measured in the same runs
+  contrast -31.34 us/token  (-0.0421%)  t=-0.546  resid_sd=99.47us  drift_per_leg=+20.09us
+
+BEHAVIOUR (must not regress)
+  effective_mean_draft_len contrast +0.000e+00
+  accepted_draft_rate      contrast +0.000e+00
+
+saving_us_per_buffer = +5.96  CI95 [-17.82, 29.73]
+VERDICT: partial (5-10 us/buffer): report and stop

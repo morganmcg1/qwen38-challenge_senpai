@@ -1,0 +1,54 @@
+leg drafts=1 pid=31774 rounds=64 path=research/out/e85-proof-d1-base/census.jsonl
+  draft_head       n=57 disp=41.0 commit=3.00 barrier=25.0 alloc=0.00 alloc_bytes=0 disp_ns=114559 commit_ns=92056
+  target_verify    n=57 disp=1323.0 commit=45.04 barrier=965.0 alloc=0.00 alloc_bytes=0 disp_ns=1316959 commit_ns=882939
+leg drafts=5 pid=32278 rounds=23 path=research/out/e85-proof-d5-base/census.jsonl
+  draft_head       n=16 disp=168.8 commit=11.44 barrier=120.8 alloc=0.00 alloc_bytes=0 disp_ns=279584 commit_ns=278175
+  target_verify    n=16 disp=879.8 commit=49.50 barrier=725.0 alloc=1.69 alloc_bytes=5308416 disp_ns=1225214 commit_ns=1157694
+
+per-draft slope (round total against forced draft count)
+  draft_head
+    ddispatches/ddraft = +31.938   values=['41.00', '168.75']
+    dcommits/ddraft = +2.109   values=['3.00', '11.44']
+    dbarriers/ddraft = +23.953   values=['25.00', '120.81']
+    dallocations/ddraft = +0.000   values=['0.00', '0.00']
+    dalloc_bytes/ddraft = +0.000   values=['0.00', '0.00']
+  target_verify
+    ddispatches/ddraft = -110.812   values=['1323.00', '879.75']
+    dcommits/ddraft = +1.116   values=['45.04', '49.50']
+    dbarriers/ddraft = -60.000   values=['965.00', '725.00']
+    dallocations/ddraft = +0.422   values=['0.00', '1.69']
+    dalloc_bytes/ddraft = +1327104.000   values=['0.00', '5308416.00']
+
+per-kernel per-round counts and per-draft slope in phase 'draft_head'
+     +5.625 /draft   ['7.00', '29.50']   affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0
+     +1.875 /draft   ['2.00', '9.50']   gather_frontbfloat16_int32_int_2
+     +1.875 /draft   ['2.00', '9.50']   gather_frontbfloat16_uint32_int_2
+     +1.875 /draft   ['4.00', '11.50']   gg2_copybfloat16bfloat16
+     +1.875 /draft   ['3.00', '10.50']   rms_loopedbfloat16
+     +1.875 /draft   ['0.00', '7.50']   vn_copybfloat16bfloat16
+     +0.938 /draft   ['1.00', '4.75']   CV2ISigmoidADV2IMultiplyACEV2OMultiplyDB_VV_V2V2_1116031815...
+     +0.938 /draft   ['1.00', '4.75']   CV2ISigmoidBDV2IBroadcastACEV2IBroadcastCAFV2OMultiplyDE_VV...
+     +0.938 /draft   ['1.00', '4.75']   affine_dequantize_bfloat16_t_gs_64_b_4
+     +0.938 /draft   ['1.00', '4.75']   affine_qmv_fast_bfloat16_t_gs_64_b_2_batch_0
+     +0.938 /draft   ['1.00', '4.75']   custom_kernel_qwen35_attention_qk_rms_rope_bf16_v1_bfloat16...
+     +0.938 /draft   ['1.00', '4.75']   custom_kernel_qwen35_dual_rms_norm_concat_bf16_v1_bfloat16_...
+     +0.938 /draft   ['1.00', '4.75']   custom_kernel_qwen35_fused_residual_rms_norm_bfloat16_t_bfl...
+     +0.938 /draft   ['1.00', '4.75']   custom_kernel_qwen_mtp_draft_rerank__98304_149740_bfloat16_...
+     +0.938 /draft   ['1.00', '4.75']   custom_kernel_qwen_mtp_draft_top32_finalize_uint32_t_uint32...
+     +0.938 /draft   ['1.00', '4.75']   custom_kernel_qwen_mtp_draft_top32_partial_bfloat16_t_uint3...
+     +0.938 /draft   ['1.00', '4.75']   g1_copybfloat16bfloat16
+     +0.938 /draft   ['1.00', '4.75']   gather_frontuint32_int32_int_1
+     +0.938 /draft   ['1.00', '4.75']   gather_frontuint32_uint32_int_1
+     +0.938 /draft   ['1.00', '4.75']   sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks
+     +0.938 /draft   ['1.00', '4.75']   vv_Addbfloat16
+     +0.688 /draft   ['2.00', '4.75']   gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0
+     +0.688 /draft   ['2.00', '4.75']   scatter_axisbfloat16int32_none_intcc
+     +0.500 /draft   ['0.00', '2.00']   g3_copybfloat16bfloat16
+     +0.250 /draft   ['0.00', '1.00']   g2_copybfloat16bfloat16
+     +0.250 /draft   ['0.00', '1.00']   rope_bfloat16_
+     -0.250 /draft   ['1.00', '0.00']   rope_single_bfloat16_
+     +0.250 /draft   ['0.00', '1.00']   scatter_axisbfloat16int32_none_intcnc
+     +0.250 /draft   ['0.00', '1.00']   steel_gemm_splitk_accum_bfloat16_float32
+     +0.250 /draft   ['0.00', '1.00']   steel_gemm_splitk_nt_bfloat16_float32_bm16_bn32_bk16_wm2_wn...
+     +0.000 /draft   ['2.00', '2.00']   gg1_copybfloat16bfloat16
+     +0.000 /draft   ['1.00', '1.00']   rmsbfloat16
