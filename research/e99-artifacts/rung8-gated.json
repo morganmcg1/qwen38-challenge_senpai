@@ -1,0 +1,3636 @@
+{
+  "legs": {
+    "e99r5c4b1": {
+      "ranked": {
+        "leg": "e99r5c4b1",
+        "curve": "ranked",
+        "offered_cap": 4,
+        "actual": {
+          "us_per_token": 11256.175048732943,
+          "rounds": 113,
+          "tokens": 513,
+          "round_us": 51101.04247787611,
+          "mean_depth": 3.7876106194690267,
+          "mean_tokens": 4.539823008849558
+        },
+        "measured_local_round_us": 121338.38053097345,
+        "censored_share": 0.8849557522123894,
+        "score": {
+          "effective_mean_draft_len": 3.7876106194690267,
+          "accepted_draft_rate": 0.9345794392523364,
+          "mtp_seconds_per_token": 0.034702312434092164,
+          "all_tokens_matched": true
+        },
+        "treatments": {
+          "observed": {
+            "actual": {
+              "us_per_token": 11256.175048732943,
+              "rounds": 113,
+              "tokens": 513,
+              "round_us": 51101.04247787611,
+              "mean_depth": 3.7876106194690267,
+              "mean_tokens": 4.539823008849558
+            },
+            "oracle": {
+              "us_per_token": 10980.115009746605,
+              "rounds": 113,
+              "depth_share": {
+                "0": 0.04424778761061947,
+                "1": 0.02654867256637168,
+                "2": 0.035398230088495575,
+                "3": 0.13274336283185842,
+                "4": 0.7610619469026548
+              },
+              "mean_depth": 3.5398230088495577
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 11422.235831381733,
+              "tokens_per_round": 3.7787610619469025
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 17983.719909502262,
+                "tokens_per_round": 1.9557522123893805
+              },
+              {
+                "depth": 2,
+                "us_per_token": 13576.222085889573,
+                "tokens_per_round": 2.8849557522123894
+              },
+              {
+                "depth": 3,
+                "us_per_token": 11422.235831381733,
+                "tokens_per_round": 3.7787610619469025
+              },
+              {
+                "depth": 4,
+                "us_per_token": 11698.297465886939,
+                "tokens_per_round": 4.539823008849558
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 11159.232553606254,
+              "rounds": 113,
+              "depth_share": {
+                "1": 0.008849557522123894,
+                "3": 0.23008849557522124,
+                "4": 0.7610619469026548
+              },
+              "mean_depth": 3.743362831858407
+            },
+            "one_bit_g_band": {
+              "us_per_token": 10980.115009746605,
+              "rounds": 113,
+              "depth_share": {
+                "0": 0.04424778761061947,
+                "1": 0.02654867256637168,
+                "2": 0.035398230088495575,
+                "3": 0.13274336283185842,
+                "4": 0.7610619469026548
+              },
+              "mean_depth": 3.5398230088495577
+            },
+            "oracle_gap_pct": 2.4525208411485426,
+            "fixed_gap_pct": 1.4752860712439173,
+            "one_bit_g_gap_pct": 0.861238339906598,
+            "one_bit_share_of_oracle": 0.35116453465213804
+          },
+          "exclude": {
+            "actual": {
+              "us_per_token": 21063.317241379307,
+              "rounds": 13,
+              "tokens": 29,
+              "round_us": 46987.399999999994,
+              "mean_depth": 3.3846153846153846,
+              "mean_tokens": 2.230769230769231
+            },
+            "oracle": {
+              "us_per_token": 16179.910344827587,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.38461538461538464,
+                "1": 0.15384615384615385,
+                "2": 0.3076923076923077,
+                "3": 0.15384615384615385
+              },
+              "mean_depth": 1.2307692307692308
+            },
+            "best_fixed": {
+              "depth": 2,
+              "us_per_token": 18858.08888888889,
+              "tokens_per_round": 2.076923076923077
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 21772.957142857143,
+                "tokens_per_round": 1.6153846153846154
+              },
+              {
+                "depth": 2,
+                "us_per_token": 18858.08888888889,
+                "tokens_per_round": 2.076923076923077
+              },
+              {
+                "depth": 3,
+                "us_per_token": 19348.437931034485,
+                "tokens_per_round": 2.230769230769231
+              },
+              {
+                "depth": 4,
+                "us_per_token": 23807.124137931034,
+                "tokens_per_round": 2.230769230769231
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 19348.437931034485,
+              "rounds": 13,
+              "depth_share": {
+                "3": 1.0
+              },
+              "mean_depth": 3.0
+            },
+            "one_bit_g_band": {
+              "us_per_token": 16179.910344827587,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.38461538461538464,
+                "1": 0.15384615384615385,
+                "2": 0.3076923076923077,
+                "3": 0.15384615384615385
+              },
+              "mean_depth": 1.2307692307692308
+            },
+            "oracle_gap_pct": 23.184415069047954,
+            "fixed_gap_pct": -10.469520670553264,
+            "one_bit_g_gap_pct": 8.141544328905173,
+            "one_bit_share_of_oracle": 0.3511645346521782
+          },
+          "impute": {
+            "actual": {
+              "us_per_token": 11256.175048732943,
+              "rounds": 113,
+              "tokens": 513,
+              "round_us": 51101.04247787611,
+              "mean_depth": 3.7876106194690267,
+              "mean_tokens": 4.539823008849558
+            },
+            "oracle": {
+              "us_per_token": 10929.313507797451,
+              "rounds": 113,
+              "depth_share": {
+                "0": 0.04424778761061947,
+                "1": 0.0180070796460177,
+                "2": 0.035788580884955755,
+                "3": 0.024031363225699123,
+                "4": 0.877925188632708
+              },
+              "mean_depth": 3.6733790856238584
+            },
+            "best_fixed": {
+              "depth": 4,
+              "us_per_token": 11363.982896951422,
+              "tokens_per_round": 4.673379085623858
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 17983.719909502262,
+                "tokens_per_round": 1.9557522123893805
+              },
+              {
+                "depth": 2,
+                "us_per_token": 13536.14513104147,
+                "tokens_per_round": 2.8934973451327433
+              },
+              {
+                "depth": 3,
+                "us_per_token": 11371.999547726464,
+                "tokens_per_round": 3.7954538969911504
+              },
+              {
+                "depth": 4,
+                "us_per_token": 11363.982896951422,
+                "tokens_per_round": 4.673379085623858
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 11159.232553606254,
+              "rounds": 113,
+              "depth_share": {
+                "1": 0.008849557522123894,
+                "3": 0.23008849557522124,
+                "4": 0.7610619469026548
+              },
+              "mean_depth": 3.743362831858407
+            },
+            "one_bit_g_band": {
+              "us_per_token": 10954.525347088995,
+              "rounds": 113,
+              "depth_share": {
+                "0": 0.04424778761061947,
+                "1": 0.0180070796460177,
+                "2": 0.035788580884955755,
+                "3": 0.1408946049557522,
+                "4": 0.7610619469026548
+              },
+              "mean_depth": 3.556515843893805
+            },
+            "oracle_gap_pct": 2.9038420202276876,
+            "fixed_gap_pct": 0.957766272750126,
+            "one_bit_g_gap_pct": 0.861238339906598,
+            "one_bit_share_of_oracle": 0.29658581076634094
+          }
+        }
+      },
+      "local": {
+        "leg": "e99r5c4b1",
+        "curve": "local",
+        "offered_cap": 4,
+        "actual": {
+          "us_per_token": 26035.36647173489,
+          "rounds": 113,
+          "tokens": 513,
+          "round_us": 118195.9557522124,
+          "mean_depth": 3.7876106194690267,
+          "mean_tokens": 4.539823008849558
+        },
+        "measured_local_round_us": 121338.38053097345,
+        "censored_share": 0.8849557522123894,
+        "score": {
+          "effective_mean_draft_len": 3.7876106194690267,
+          "accepted_draft_rate": 0.9345794392523364,
+          "mtp_seconds_per_token": 0.034702312434092164,
+          "all_tokens_matched": true
+        },
+        "treatments": {
+          "observed": {
+            "actual": {
+              "us_per_token": 26035.36647173489,
+              "rounds": 113,
+              "tokens": 513,
+              "round_us": 118195.9557522124,
+              "mean_depth": 3.7876106194690267,
+              "mean_tokens": 4.539823008849558
+            },
+            "oracle": {
+              "us_per_token": 22343.429742388802,
+              "rounds": 113,
+              "depth_share": {
+                "0": 0.04424778761061947,
+                "1": 0.02654867256637168,
+                "2": 0.035398230088495575,
+                "3": 0.8938053097345132
+              },
+              "mean_depth": 2.7787610619469025
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 22821.60702576112,
+              "tokens_per_round": 3.7787610619469025
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 35677.065610859725,
+                "tokens_per_round": 1.9557522123893805
+              },
+              {
+                "depth": 2,
+                "us_per_token": 25920.12024539877,
+                "tokens_per_round": 2.8849557522123894
+              },
+              {
+                "depth": 3,
+                "us_per_token": 22821.60702576112,
+                "tokens_per_round": 3.7787610619469025
+              },
+              {
+                "depth": 4,
+                "us_per_token": 27777.096101364525,
+                "tokens_per_round": 4.539823008849558
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 22783.054566744777,
+              "rounds": 113,
+              "depth_share": {
+                "1": 0.008849557522123894,
+                "3": 0.9911504424778761
+              },
+              "mean_depth": 2.982300884955752
+            },
+            "one_bit_g_band": {
+              "us_per_token": 22343.429742388802,
+              "rounds": 113,
+              "depth_share": {
+                "0": 0.04424778761061947,
+                "1": 0.02654867256637168,
+                "2": 0.035398230088495575,
+                "3": 0.8938053097345132
+              },
+              "mean_depth": 2.7787610619469025
+            },
+            "oracle_gap_pct": 14.180467685577668,
+            "fixed_gap_pct": -12.34382258249664,
+            "one_bit_g_gap_pct": 12.491899849080148,
+            "one_bit_share_of_oracle": 0.8809229798383245
+          },
+          "exclude": {
+            "actual": {
+              "us_per_token": 45531.54137931034,
+              "rounds": 13,
+              "tokens": 29,
+              "round_us": 101570.36153846154,
+              "mean_depth": 3.3846153846153846,
+              "mean_tokens": 2.230769230769231
+            },
+            "oracle": {
+              "us_per_token": 32185.048275862075,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.38461538461538464,
+                "1": 0.15384615384615385,
+                "2": 0.3076923076923077,
+                "3": 0.15384615384615385
+              },
+              "mean_depth": 1.2307692307692308
+            },
+            "best_fixed": {
+              "depth": 2,
+              "us_per_token": 36004.414814814816,
+              "tokens_per_round": 2.076923076923077
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.40000000001,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 43194.357142857145,
+                "tokens_per_round": 1.6153846153846154
+              },
+              {
+                "depth": 2,
+                "us_per_token": 36004.414814814816,
+                "tokens_per_round": 2.076923076923077
+              },
+              {
+                "depth": 3,
+                "us_per_token": 38658.144827586206,
+                "tokens_per_round": 2.230769230769231
+              },
+              {
+                "depth": 4,
+                "us_per_token": 56528.97586206897,
+                "tokens_per_round": 2.230769230769231
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 38658.14482758621,
+              "rounds": 13,
+              "depth_share": {
+                "3": 1.0
+              },
+              "mean_depth": 3.0
+            },
+            "one_bit_g_band": {
+              "us_per_token": 32185.048275862075,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.38461538461538464,
+                "1": 0.15384615384615385,
+                "2": 0.3076923076923077,
+                "3": 0.15384615384615385
+              },
+              "mean_depth": 1.2307692307692308
+            },
+            "oracle_gap_pct": 29.312631857249077,
+            "fixed_gap_pct": -20.924234664334644,
+            "one_bit_g_gap_pct": 15.095901310398904,
+            "one_bit_share_of_oracle": 0.5149964487636295
+          },
+          "impute": {
+            "actual": {
+              "us_per_token": 26035.36647173489,
+              "rounds": 113,
+              "tokens": 513,
+              "round_us": 118195.9557522124,
+              "mean_depth": 3.7876106194690267,
+              "mean_tokens": 4.539823008849558
+            },
+            "oracle": {
+              "us_per_token": 22281.029467027445,
+              "rounds": 113,
+              "depth_share": {
+                "0": 0.04424778761061946,
+                "1": 0.0180070796460177,
+                "2": 0.03578858088495575,
+                "3": 0.9019565518584071
+              },
+              "mean_depth": 2.7954538969911504
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 22721.235019707332,
+              "tokens_per_round": 3.7954538969911504
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 35677.065610859725,
+                "tokens_per_round": 1.9557522123893805
+              },
+              {
+                "depth": 2,
+                "us_per_token": 25843.604151145137,
+                "tokens_per_round": 2.8934973451327433
+              },
+              {
+                "depth": 3,
+                "us_per_token": 22721.235019707332,
+                "tokens_per_round": 3.7954538969911504
+              },
+              {
+                "depth": 4,
+                "us_per_token": 26983.280767424898,
+                "tokens_per_round": 4.673379085623858
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 22783.05456674475,
+              "rounds": 113,
+              "depth_share": {
+                "1": 0.008849557522123894,
+                "3": 0.9911504424778761
+              },
+              "mean_depth": 2.982300884955752
+            },
+            "one_bit_g_band": {
+              "us_per_token": 22281.029467027445,
+              "rounds": 113,
+              "depth_share": {
+                "0": 0.04424778761061946,
+                "1": 0.0180070796460177,
+                "2": 0.03578858088495575,
+                "3": 0.9019565518584071
+              },
+              "mean_depth": 2.7954538969911504
+            },
+            "oracle_gap_pct": 14.420142726945345,
+            "fixed_gap_pct": -12.729344354055943,
+            "one_bit_g_gap_pct": 12.491899849080246,
+            "one_bit_share_of_oracle": 0.866281290388201
+          }
+        }
+      }
+    },
+    "e99r5c5b1": {
+      "ranked": {
+        "leg": "e99r5c5b1",
+        "curve": "ranked",
+        "offered_cap": 5,
+        "actual": {
+          "us_per_token": 10774.85925925926,
+          "rounds": 98,
+          "tokens": 513,
+          "round_us": 56403.089795918364,
+          "mean_depth": 4.530612244897959,
+          "mean_tokens": 5.23469387755102
+        },
+        "measured_local_round_us": 128628.4693877551,
+        "censored_share": 0.8673469387755102,
+        "score": {
+          "effective_mean_draft_len": 4.530612244897959,
+          "accepted_draft_rate": 0.9346846846846847,
+          "mtp_seconds_per_token": 0.03255316219292581,
+          "all_tokens_matched": true
+        },
+        "treatments": {
+          "observed": {
+            "actual": {
+              "us_per_token": 10774.85925925926,
+              "rounds": 98,
+              "tokens": 513,
+              "round_us": 56403.089795918364,
+              "mean_depth": 4.530612244897959,
+              "mean_tokens": 5.23469387755102
+            },
+            "oracle": {
+              "us_per_token": 10464.742105263169,
+              "rounds": 98,
+              "depth_share": {
+                "0": 0.030612244897959183,
+                "1": 0.05102040816326531,
+                "2": 0.02040816326530612,
+                "3": 0.16326530612244897,
+                "4": 0.02040816326530612,
+                "5": 0.7142857142857143
+              },
+              "mean_depth": 4.23469387755102
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 11401.256603773585,
+              "tokens_per_round": 3.7857142857142856
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 17859.205181347148,
+                "tokens_per_round": 1.969387755102041
+              },
+              {
+                "depth": 2,
+                "us_per_token": 13563.061484098942,
+                "tokens_per_round": 2.8877551020408165
+              },
+              {
+                "depth": 3,
+                "us_per_token": 11401.256603773585,
+                "tokens_per_round": 3.7857142857142856
+              },
+              {
+                "depth": 4,
+                "us_per_token": 11748.54085778781,
+                "tokens_per_round": 4.520408163265306
+              },
+              {
+                "depth": 5,
+                "us_per_token": 11527.168810916179,
+                "tokens_per_round": 5.23469387755102
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 10615.317025440321,
+              "rounds": 98,
+              "depth_share": {
+                "1": 0.01020408163265306,
+                "3": 0.2755102040816326,
+                "5": 0.7142857142857143
+              },
+              "mean_depth": 4.408163265306122
+            },
+            "one_bit_g_band": {
+              "us_per_token": 10466.771232876723,
+              "rounds": 98,
+              "depth_share": {
+                "0": 0.030612244897959183,
+                "1": 0.05102040816326531,
+                "2": 0.02040816326530612,
+                "3": 0.1836734693877551,
+                "5": 0.7142857142857143
+              },
+              "mean_depth": 4.214285714285714
+            },
+            "oracle_gap_pct": 2.878155032322995,
+            "fixed_gap_pct": 5.813508366487829,
+            "one_bit_g_gap_pct": 1.4806897239222625,
+            "one_bit_share_of_oracle": 0.5144579452091499
+          },
+          "exclude": {
+            "actual": {
+              "us_per_token": 18976.585714285713,
+              "rounds": 13,
+              "tokens": 35,
+              "round_us": 51090.807692307695,
+              "mean_depth": 3.923076923076923,
+              "mean_tokens": 2.6923076923076925
+            },
+            "oracle": {
+              "us_per_token": 14431.154285714285,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.23076923076923078,
+                "1": 0.3076923076923077,
+                "2": 0.15384615384615385,
+                "3": 0.15384615384615385,
+                "4": 0.15384615384615385
+              },
+              "mean_depth": 1.6923076923076923
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 17003.17272727273,
+              "tokens_per_round": 2.5384615384615383
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 19879.65652173913,
+                "tokens_per_round": 1.7692307692307692
+              },
+              {
+                "depth": 2,
+                "us_per_token": 17557.53103448276,
+                "tokens_per_round": 2.230769230769231
+              },
+              {
+                "depth": 3,
+                "us_per_token": 17003.17272727273,
+                "tokens_per_round": 2.5384615384615383
+              },
+              {
+                "depth": 4,
+                "us_per_token": 19725.902857142857,
+                "tokens_per_round": 2.6923076923076925
+              },
+              {
+                "depth": 5,
+                "us_per_token": 22412.445714285714,
+                "tokens_per_round": 2.6923076923076925
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 17003.17272727273,
+              "rounds": 13,
+              "depth_share": {
+                "3": 1.0
+              },
+              "mean_depth": 3.0
+            },
+            "one_bit_g_band": {
+              "us_per_token": 14702.963636363636,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.23076923076923078,
+                "1": 0.3076923076923077,
+                "2": 0.15384615384615385,
+                "3": 0.3076923076923077
+              },
+              "mean_depth": 1.5384615384615385
+            },
+            "oracle_gap_pct": 23.952841132794475,
+            "fixed_gap_pct": -10.399199396166319,
+            "one_bit_g_gap_pct": 10.399199396166319,
+            "one_bit_share_of_oracle": 0.4341530651213019
+          },
+          "impute": {
+            "actual": {
+              "us_per_token": 10774.85925925926,
+              "rounds": 98,
+              "tokens": 513,
+              "round_us": 56403.089795918364,
+              "mean_depth": 4.530612244897959,
+              "mean_tokens": 5.23469387755102
+            },
+            "oracle": {
+              "us_per_token": 10348.721194219059,
+              "rounds": 98,
+              "depth_share": {
+                "0": 0.03061224489795918,
+                "1": 0.04117142857142856,
+                "2": 0.020858261632653058,
+                "3": 0.028234122903102052,
+                "4": 0.027817425571274954,
+                "5": 0.8513065164235821
+              },
+              "mean_depth": 4.535392604949052
+            },
+            "best_fixed": {
+              "depth": 5,
+              "us_per_token": 10900.97926316021,
+              "tokens_per_round": 5.5353926049490525
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 17859.205181347148,
+                "tokens_per_round": 1.969387755102041
+              },
+              {
+                "depth": 2,
+                "us_per_token": 13516.960528966227,
+                "tokens_per_round": 2.897604081632653
+              },
+              {
+                "depth": 3,
+                "us_per_token": 11343.581969496146,
+                "tokens_per_round": 3.804962146530612
+              },
+              {
+                "depth": 4,
+                "us_per_token": 11338.006816334633,
+                "tokens_per_round": 4.684086088525469
+              },
+              {
+                "depth": 5,
+                "us_per_token": 10900.97926316021,
+                "tokens_per_round": 5.5353926049490525
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 10615.317025440321,
+              "rounds": 98,
+              "depth_share": {
+                "1": 0.01020408163265306,
+                "3": 0.2755102040816326,
+                "5": 0.7142857142857143
+              },
+              "mean_depth": 4.408163265306122
+            },
+            "one_bit_g_band": {
+              "us_per_token": 10442.969756235387,
+              "rounds": 98,
+              "depth_share": {
+                "0": 0.030612244897959183,
+                "1": 0.04117142857142857,
+                "2": 0.020858261632653058,
+                "3": 0.1930723506122449,
+                "5": 0.7142857142857143
+              },
+              "mean_depth": 4.23353357510204
+            },
+            "oracle_gap_pct": 3.9549292922225736,
+            "fixed_gap_pct": 1.1705025640364726,
+            "one_bit_g_gap_pct": 1.4806897239222625,
+            "one_bit_share_of_oracle": 0.37439094722478616
+          }
+        }
+      },
+      "local": {
+        "leg": "e99r5c5b1",
+        "curve": "local",
+        "offered_cap": 5,
+        "actual": {
+          "us_per_token": 24087.326510721246,
+          "rounds": 98,
+          "tokens": 513,
+          "round_us": 126089.7806122449,
+          "mean_depth": 4.530612244897959,
+          "mean_tokens": 5.23469387755102
+        },
+        "measured_local_round_us": 128628.4693877551,
+        "censored_share": 0.8673469387755102,
+        "score": {
+          "effective_mean_draft_len": 4.530612244897959,
+          "accepted_draft_rate": 0.9346846846846847,
+          "mtp_seconds_per_token": 0.03255316219292581,
+          "all_tokens_matched": true
+        },
+        "treatments": {
+          "observed": {
+            "actual": {
+              "us_per_token": 24087.326510721246,
+              "rounds": 98,
+              "tokens": 513,
+              "round_us": 126089.7806122449,
+              "mean_depth": 4.530612244897959,
+              "mean_tokens": 5.23469387755102
+            },
+            "oracle": {
+              "us_per_token": 22319.842857142892,
+              "rounds": 98,
+              "depth_share": {
+                "0": 0.030612244897959183,
+                "1": 0.05102040816326531,
+                "2": 0.02040816326530612,
+                "3": 0.8979591836734694
+              },
+              "mean_depth": 2.7857142857142856
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 22779.690566037734,
+              "tokens_per_round": 3.7857142857142856
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 35430.04663212435,
+                "tokens_per_round": 1.969387755102041
+              },
+              {
+                "depth": 2,
+                "us_per_token": 25894.99363957597,
+                "tokens_per_round": 2.8877551020408165
+              },
+              {
+                "depth": 3,
+                "us_per_token": 22779.690566037734,
+                "tokens_per_round": 3.7857142857142856
+              },
+              {
+                "depth": 4,
+                "us_per_token": 27896.39683972912,
+                "tokens_per_round": 4.520408163265306
+              },
+              {
+                "depth": 5,
+                "us_per_token": 26332.5044834308,
+                "tokens_per_round": 5.23469387755102
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 22735.318867924572,
+              "rounds": 98,
+              "depth_share": {
+                "1": 0.01020408163265306,
+                "3": 0.9897959183673469
+              },
+              "mean_depth": 2.979591836734694
+            },
+            "one_bit_g_band": {
+              "us_per_token": 22319.842857142892,
+              "rounds": 98,
+              "depth_share": {
+                "0": 0.030612244897959183,
+                "1": 0.05102040816326531,
+                "2": 0.02040816326530612,
+                "3": 0.8979591836734694
+              },
+              "mean_depth": 2.7857142857142856
+            },
+            "oracle_gap_pct": 7.337815812774609,
+            "fixed_gap_pct": -5.428730100459612,
+            "one_bit_g_gap_pct": 5.612941902020121,
+            "one_bit_share_of_oracle": 0.7649336049357349
+          },
+          "exclude": {
+            "actual": {
+              "us_per_token": 40877.64,
+              "rounds": 13,
+              "tokens": 35,
+              "round_us": 110055.18461538461,
+              "mean_depth": 3.923076923076923,
+              "mean_tokens": 2.6923076923076925
+            },
+            "oracle": {
+              "us_per_token": 29301.351515151517,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.23076923076923078,
+                "1": 0.3076923076923077,
+                "2": 0.15384615384615385,
+                "3": 0.3076923076923077
+              },
+              "mean_depth": 1.5384615384615385
+            },
+            "best_fixed": {
+              "depth": 2,
+              "us_per_token": 33521.35172413793,
+              "tokens_per_round": 2.230769230769231
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.40000000001,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 39438.32608695652,
+                "tokens_per_round": 1.7692307692307692
+              },
+              {
+                "depth": 2,
+                "us_per_token": 33521.35172413793,
+                "tokens_per_round": 2.230769230769231
+              },
+              {
+                "depth": 3,
+                "us_per_token": 33972.30909090909,
+                "tokens_per_round": 2.5384615384615383
+              },
+              {
+                "depth": 4,
+                "us_per_token": 46838.294285714284,
+                "tokens_per_round": 2.6923076923076925
+              },
+              {
+                "depth": 5,
+                "us_per_token": 51198.68,
+                "tokens_per_round": 2.6923076923076925
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 33972.3090909091,
+              "rounds": 13,
+              "depth_share": {
+                "3": 1.0
+              },
+              "mean_depth": 3.0
+            },
+            "one_bit_g_band": {
+              "us_per_token": 29301.351515151517,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.23076923076923078,
+                "1": 0.3076923076923077,
+                "2": 0.15384615384615385,
+                "3": 0.3076923076923077
+              },
+              "mean_depth": 1.5384615384615385
+            },
+            "oracle_gap_pct": 28.31936600265691,
+            "fixed_gap_pct": -17.995873235005906,
+            "one_bit_g_gap_pct": 16.892684873908824,
+            "one_bit_share_of_oracle": 0.5965064638920221
+          },
+          "impute": {
+            "actual": {
+              "us_per_token": 24087.326510721246,
+              "rounds": 98,
+              "tokens": 513,
+              "round_us": 126089.7806122449,
+              "mean_depth": 4.530612244897959,
+              "mean_tokens": 5.23469387755102
+            },
+            "oracle": {
+              "us_per_token": 22248.190636094165,
+              "rounds": 98,
+              "depth_share": {
+                "0": 0.030612244897959183,
+                "1": 0.04117142857142857,
+                "2": 0.020858261632653058,
+                "3": 0.9073580648979591
+              },
+              "mean_depth": 2.804962146530612
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 22664.45674857286,
+              "tokens_per_round": 3.804962146530612
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 35430.04663212435,
+                "tokens_per_round": 1.969387755102041
+              },
+              {
+                "depth": 2,
+                "us_per_token": 25806.976347805998,
+                "tokens_per_round": 2.897604081632653
+              },
+              {
+                "depth": 3,
+                "us_per_token": 22664.45674857286,
+                "tokens_per_round": 3.804962146530612
+              },
+              {
+                "depth": 4,
+                "us_per_token": 26921.601699190105,
+                "tokens_per_round": 4.684086088525469
+              },
+              {
+                "depth": 5,
+                "us_per_token": 24902.045769392847,
+                "tokens_per_round": 5.5353926049490525
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 22735.31886792454,
+              "rounds": 98,
+              "depth_share": {
+                "1": 0.01020408163265306,
+                "3": 0.9897959183673469
+              },
+              "mean_depth": 2.979591836734694
+            },
+            "one_bit_g_band": {
+              "us_per_token": 22248.190636094165,
+              "rounds": 98,
+              "depth_share": {
+                "0": 0.030612244897959183,
+                "1": 0.04117142857142857,
+                "2": 0.020858261632653058,
+                "3": 0.9073580648979591
+              },
+              "mean_depth": 2.804962146530612
+            },
+            "oracle_gap_pct": 7.635284363370439,
+            "fixed_gap_pct": -5.907130297399631,
+            "one_bit_g_gap_pct": 5.612941902020258,
+            "one_bit_share_of_oracle": 0.7351320048992308
+          }
+        }
+      }
+    },
+    "e99r5c6b1": {
+      "ranked": {
+        "leg": "e99r5c6b1",
+        "curve": "ranked",
+        "offered_cap": 6,
+        "actual": {
+          "us_per_token": 10723.644335937499,
+          "rounds": 90,
+          "tokens": 512,
+          "round_us": 61005.621111111104,
+          "mean_depth": 5.177777777777778,
+          "mean_tokens": 5.688888888888889
+        },
+        "measured_local_round_us": 136477.7111111111,
+        "censored_share": 0.8333333333333334,
+        "score": {
+          "effective_mean_draft_len": 5.177777777777778,
+          "accepted_draft_rate": 0.9055793991416309,
+          "mtp_seconds_per_token": 0.03189896675758064,
+          "all_tokens_matched": true
+        },
+        "treatments": {
+          "observed": {
+            "actual": {
+              "us_per_token": 10723.644335937499,
+              "rounds": 90,
+              "tokens": 512,
+              "round_us": 61005.621111111104,
+              "mean_depth": 5.177777777777778,
+              "mean_tokens": 5.688888888888889
+            },
+            "oracle": {
+              "us_per_token": 10186.143554687507,
+              "rounds": 90,
+              "depth_share": {
+                "0": 0.044444444444444446,
+                "1": 0.044444444444444446,
+                "2": 0.022222222222222223,
+                "3": 0.23333333333333334,
+                "5": 0.03333333333333333,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.688888888888889
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 11492.813609467456,
+              "tokens_per_round": 3.7555555555555555
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 17985.528409090908,
+                "tokens_per_round": 1.9555555555555555
+              },
+              {
+                "depth": 2,
+                "us_per_token": 13662.837209302328,
+                "tokens_per_round": 2.8666666666666667
+              },
+              {
+                "depth": 3,
+                "us_per_token": 11492.813609467456,
+                "tokens_per_round": 3.7555555555555555
+              },
+              {
+                "depth": 4,
+                "us_per_token": 12039.642317380352,
+                "tokens_per_round": 4.411111111111111
+              },
+              {
+                "depth": 5,
+                "us_per_token": 11909.447368421053,
+                "tokens_per_round": 5.066666666666666
+              },
+              {
+                "depth": 6,
+                "us_per_token": 11878.27734375,
+                "tokens_per_round": 5.688888888888889
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 10342.202148437504,
+              "rounds": 90,
+              "depth_share": {
+                "1": 0.011111111111111112,
+                "3": 0.3333333333333333,
+                "5": 0.03333333333333333,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.911111111111111
+            },
+            "one_bit_g_band": {
+              "us_per_token": 10186.143554687507,
+              "rounds": 90,
+              "depth_share": {
+                "0": 0.044444444444444446,
+                "1": 0.044444444444444446,
+                "2": 0.022222222222222223,
+                "3": 0.23333333333333334,
+                "5": 0.03333333333333333,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.688888888888889
+            },
+            "oracle_gap_pct": 5.012295861479645,
+            "fixed_gap_pct": 7.172648116949257,
+            "one_bit_g_gap_pct": 3.5570201281451603,
+            "one_bit_share_of_oracle": 0.7096588522400425
+          },
+          "exclude": {
+            "actual": {
+              "us_per_token": 21068.1725,
+              "rounds": 15,
+              "tokens": 40,
+              "round_us": 56181.793333333335,
+              "mean_depth": 4.6,
+              "mean_tokens": 2.6666666666666665
+            },
+            "oracle": {
+              "us_per_token": 14188.162499999997,
+              "rounds": 15,
+              "depth_share": {
+                "0": 0.26666666666666666,
+                "1": 0.2,
+                "2": 0.13333333333333333,
+                "3": 0.4
+              },
+              "mean_depth": 1.6666666666666667
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 16185.7125,
+              "tokens_per_round": 2.6666666666666665
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 20291.365384615383,
+                "tokens_per_round": 1.7333333333333334
+              },
+              {
+                "depth": 2,
+                "us_per_token": 17279.470588235294,
+                "tokens_per_round": 2.2666666666666666
+              },
+              {
+                "depth": 3,
+                "us_per_token": 16185.7125,
+                "tokens_per_round": 2.6666666666666665
+              },
+              {
+                "depth": 4,
+                "us_per_token": 19915.575,
+                "tokens_per_round": 2.6666666666666665
+              },
+              {
+                "depth": 5,
+                "us_per_token": 22627.95,
+                "tokens_per_round": 2.6666666666666665
+              },
+              {
+                "depth": 6,
+                "us_per_token": 25340.325,
+                "tokens_per_round": 2.6666666666666665
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 16185.712500000003,
+              "rounds": 15,
+              "depth_share": {
+                "3": 1.0
+              },
+              "mean_depth": 3.0
+            },
+            "one_bit_g_band": {
+              "us_per_token": 14188.162499999997,
+              "rounds": 15,
+              "depth_share": {
+                "0": 0.26666666666666666,
+                "1": 0.2,
+                "2": 0.13333333333333333,
+                "3": 0.4
+              },
+              "mean_depth": 1.6666666666666667
+            },
+            "oracle_gap_pct": 32.6559410883882,
+            "fixed_gap_pct": -23.174577671603938,
+            "one_bit_g_gap_pct": 23.174577671603917,
+            "one_bit_share_of_oracle": 0.7096588522400396
+          },
+          "impute": {
+            "actual": {
+              "us_per_token": 10723.644335937499,
+              "rounds": 90,
+              "tokens": 512,
+              "round_us": 61005.621111111104,
+              "mean_depth": 5.177777777777778,
+              "mean_tokens": 5.688888888888889
+            },
+            "oracle": {
+              "us_per_token": 9993.31108442445,
+              "rounds": 90,
+              "depth_share": {
+                "0": 0.04444444444444447,
+                "1": 0.03372000000000002,
+                "2": 0.022712329333333343,
+                "3": 0.07575937827226673,
+                "4": 0.008608565399832728,
+                "5": 0.0027147161506234,
+                "6": 0.8120405663994994
+              },
+              "mean_depth": 5.226674034232911
+            },
+            "best_fixed": {
+              "depth": 6,
+              "us_per_token": 10852.374739466306,
+              "tokens_per_round": 6.226674034232911
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 17985.528409090908,
+                "tokens_per_round": 1.9555555555555555
+              },
+              {
+                "depth": 2,
+                "us_per_token": 13611.913878775993,
+                "tokens_per_round": 2.877391111111111
+              },
+              {
+                "depth": 3,
+                "us_per_token": 11429.031150051827,
+                "tokens_per_round": 3.776514337333333
+              },
+              {
+                "depth": 4,
+                "us_per_token": 11545.566613027442,
+                "tokens_per_round": 4.599878185283289
+              },
+              {
+                "depth": 5,
+                "us_per_token": 11144.096891962785,
+                "tokens_per_round": 5.414633467833411
+              },
+              {
+                "depth": 6,
+                "us_per_token": 10852.374739466306,
+                "tokens_per_round": 6.226674034232911
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 10342.202148437505,
+              "rounds": 90,
+              "depth_share": {
+                "1": 0.011111111111111112,
+                "3": 0.3333333333333333,
+                "5": 0.03333333333333333,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.911111111111111
+            },
+            "one_bit_g_band": {
+              "us_per_token": 10163.418477185702,
+              "rounds": 90,
+              "depth_share": {
+                "0": 0.044444444444444446,
+                "1": 0.03372,
+                "2": 0.022712329333333333,
+                "3": 0.24356767066666668,
+                "5": 0.03333333333333333,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.709847670666667
+            },
+            "oracle_gap_pct": 6.810494908578123,
+            "fixed_gap_pct": 1.2004352204912343,
+            "one_bit_g_gap_pct": 3.5570201281451435,
+            "one_bit_share_of_oracle": 0.5222851167049428
+          }
+        }
+      },
+      "local": {
+        "leg": "e99r5c6b1",
+        "curve": "local",
+        "offered_cap": 6,
+        "actual": {
+          "us_per_token": 23453.3900390625,
+          "rounds": 90,
+          "tokens": 512,
+          "round_us": 133423.72999999998,
+          "mean_depth": 5.177777777777778,
+          "mean_tokens": 5.688888888888889
+        },
+        "measured_local_round_us": 136477.7111111111,
+        "censored_share": 0.8333333333333334,
+        "score": {
+          "effective_mean_draft_len": 5.177777777777778,
+          "accepted_draft_rate": 0.9055793991416309,
+          "mtp_seconds_per_token": 0.03189896675758064,
+          "all_tokens_matched": true
+        },
+        "treatments": {
+          "observed": {
+            "actual": {
+              "us_per_token": 23453.3900390625,
+              "rounds": 90,
+              "tokens": 512,
+              "round_us": 133423.72999999998,
+              "mean_depth": 5.177777777777778,
+              "mean_tokens": 5.688888888888889
+            },
+            "oracle": {
+              "us_per_token": 22095.447430830078,
+              "rounds": 90,
+              "depth_share": {
+                "0": 0.044444444444444446,
+                "1": 0.044444444444444446,
+                "2": 0.022222222222222223,
+                "3": 0.26666666666666666,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.622222222222222
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 22962.621301775143,
+              "tokens_per_round": 3.7555555555555555
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 35680.65340909091,
+                "tokens_per_round": 1.9555555555555555
+              },
+              {
+                "depth": 2,
+                "us_per_token": 26085.48837209302,
+                "tokens_per_round": 2.8666666666666667
+              },
+              {
+                "depth": 3,
+                "us_per_token": 22962.621301775143,
+                "tokens_per_round": 3.7555555555555555
+              },
+              {
+                "depth": 4,
+                "us_per_token": 28587.604534005037,
+                "tokens_per_round": 4.411111111111111
+              },
+              {
+                "depth": 5,
+                "us_per_token": 27205.776315789473,
+                "tokens_per_round": 5.066666666666666
+              },
+              {
+                "depth": 6,
+                "us_per_token": 26443.01953125,
+                "tokens_per_round": 5.688888888888889
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 22410.60889328067,
+              "rounds": 90,
+              "depth_share": {
+                "1": 0.011111111111111112,
+                "3": 0.36666666666666664,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.844444444444444
+            },
+            "one_bit_g_band": {
+              "us_per_token": 22095.447430830078,
+              "rounds": 90,
+              "depth_share": {
+                "0": 0.044444444444444446,
+                "1": 0.044444444444444446,
+                "2": 0.022222222222222223,
+                "3": 0.26666666666666666,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.622222222222222
+            },
+            "oracle_gap_pct": 5.78996301161886,
+            "fixed_gap_pct": -2.0925279308021634,
+            "one_bit_g_gap_pct": 4.446185152956724,
+            "one_bit_share_of_oracle": 0.7679125313986386
+          },
+          "exclude": {
+            "actual": {
+              "us_per_token": 45177.825,
+              "rounds": 15,
+              "tokens": 40,
+              "round_us": 120474.2,
+              "mean_depth": 4.6,
+              "mean_tokens": 2.6666666666666665
+            },
+            "oracle": {
+              "us_per_token": 28352.232500000002,
+              "rounds": 15,
+              "depth_share": {
+                "0": 0.26666666666666666,
+                "1": 0.2,
+                "2": 0.13333333333333333,
+                "3": 0.4
+              },
+              "mean_depth": 1.6666666666666667
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 32339.025,
+              "tokens_per_round": 2.6666666666666665
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 40255.096153846156,
+                "tokens_per_round": 1.7333333333333334
+              },
+              {
+                "depth": 2,
+                "us_per_token": 32990.470588235294,
+                "tokens_per_round": 2.2666666666666666
+              },
+              {
+                "depth": 3,
+                "us_per_token": 32339.025,
+                "tokens_per_round": 2.6666666666666665
+              },
+              {
+                "depth": 4,
+                "us_per_token": 47288.6625,
+                "tokens_per_round": 2.6666666666666665
+              },
+              {
+                "depth": 5,
+                "us_per_token": 51690.975,
+                "tokens_per_round": 2.6666666666666665
+              },
+              {
+                "depth": 6,
+                "us_per_token": 56411.775,
+                "tokens_per_round": 2.6666666666666665
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 32339.025,
+              "rounds": 15,
+              "depth_share": {
+                "3": 1.0
+              },
+              "mean_depth": 3.0
+            },
+            "one_bit_g_band": {
+              "us_per_token": 28352.232500000002,
+              "rounds": 15,
+              "depth_share": {
+                "0": 0.26666666666666666,
+                "1": 0.2,
+                "2": 0.13333333333333333,
+                "3": 0.4
+              },
+              "mean_depth": 1.6666666666666667
+            },
+            "oracle_gap_pct": 37.24303350150211,
+            "fixed_gap_pct": -28.418366754043596,
+            "one_bit_g_gap_pct": 28.418366754043596,
+            "one_bit_share_of_oracle": 0.7630518806395673
+          },
+          "impute": {
+            "actual": {
+              "us_per_token": 23453.3900390625,
+              "rounds": 90,
+              "tokens": 512,
+              "round_us": 133423.72999999998,
+              "mean_depth": 5.177777777777778,
+              "mean_tokens": 5.688888888888889
+            },
+            "oracle": {
+              "us_per_token": 21984.491306613178,
+              "rounds": 90,
+              "depth_share": {
+                "0": 0.04444444444444446,
+                "1": 0.033720000000000014,
+                "2": 0.02271232933333334,
+                "3": 0.0870826598227229,
+                "6": 0.8120405663994993
+              },
+              "mean_depth": 5.212636036531831
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 22835.184060467203,
+              "tokens_per_round": 3.776514337333333
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 35680.65340909091,
+                "tokens_per_round": 1.9555555555555555
+              },
+              {
+                "depth": 2,
+                "us_per_token": 25988.264060190326,
+                "tokens_per_round": 2.877391111111111
+              },
+              {
+                "depth": 3,
+                "us_per_token": 22835.184060467203,
+                "tokens_per_round": 3.776514337333333
+              },
+              {
+                "depth": 4,
+                "us_per_token": 27414.443365794,
+                "tokens_per_round": 4.599878185283289
+              },
+              {
+                "depth": 5,
+                "us_per_token": 25457.420307187618,
+                "tokens_per_round": 5.414633467833411
+              },
+              {
+                "depth": 6,
+                "us_per_token": 24159.189829588093,
+                "tokens_per_round": 6.226674034232911
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 22410.608893280678,
+              "rounds": 90,
+              "depth_share": {
+                "1": 0.011111111111111112,
+                "3": 0.3666666666666666,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.844444444444444
+            },
+            "one_bit_g_band": {
+              "us_per_token": 22043.67431453906,
+              "rounds": 90,
+              "depth_share": {
+                "0": 0.044444444444444446,
+                "1": 0.03372,
+                "2": 0.022712329333333333,
+                "3": 0.276901004,
+                "6": 0.6222222222222222
+              },
+              "mean_depth": 4.6431810040000006
+            },
+            "oracle_gap_pct": 6.263055063693629,
+            "fixed_gap_pct": -2.6358917732816023,
+            "one_bit_g_gap_pct": 4.4461851529566925,
+            "one_bit_share_of_oracle": 0.7099067639898029
+          }
+        }
+      }
+    },
+    "e99r5c8b1": {
+      "ranked": {
+        "leg": "e99r5c8b1",
+        "curve": "ranked",
+        "offered_cap": 8,
+        "actual": {
+          "us_per_token": 10312.084600389862,
+          "rounds": 81,
+          "tokens": 513,
+          "round_us": 65309.86913580246,
+          "mean_depth": 5.777777777777778,
+          "mean_tokens": 6.333333333333333
+        },
+        "measured_local_round_us": 144381.56790123458,
+        "censored_share": 0.8395061728395061,
+        "score": {
+          "effective_mean_draft_len": 5.777777777777778,
+          "accepted_draft_rate": 0.9230769230769231,
+          "mtp_seconds_per_token": 0.030731915961951017,
+          "all_tokens_matched": true
+        },
+        "treatments": {
+          "observed": {
+            "actual": {
+              "us_per_token": 10312.084600389862,
+              "rounds": 81,
+              "tokens": 513,
+              "round_us": 65309.86913580246,
+              "mean_depth": 5.777777777777778,
+              "mean_tokens": 6.333333333333333
+            },
+            "oracle": {
+              "us_per_token": 9902.162890625006,
+              "rounds": 81,
+              "depth_share": {
+                "0": 0.037037037037037035,
+                "1": 0.04938271604938271,
+                "2": 0.037037037037037035,
+                "3": 0.19753086419753085,
+                "5": 0.04938271604938271,
+                "6": 0.04938271604938271,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.320987654320987
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 11500.374671052632,
+              "tokens_per_round": 3.753086419753086
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.600000000002,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 17917.658490566035,
+                "tokens_per_round": 1.962962962962963
+              },
+              {
+                "depth": 2,
+                "us_per_token": 13615.926180257511,
+                "tokens_per_round": 2.876543209876543
+              },
+              {
+                "depth": 3,
+                "us_per_token": 11500.374671052632,
+                "tokens_per_round": 3.753086419753086
+              },
+              {
+                "depth": 4,
+                "us_per_token": 11949.345000000001,
+                "tokens_per_round": 4.444444444444445
+              },
+              {
+                "depth": 5,
+                "us_per_token": 11777.439036144578,
+                "tokens_per_round": 5.1234567901234565
+              },
+              {
+                "depth": 6,
+                "us_per_token": 11745.730042918456,
+                "tokens_per_round": 5.753086419753086
+              },
+              {
+                "depth": 7,
+                "us_per_token": 11811.663157894738,
+                "tokens_per_round": 6.333333333333333
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 10059.620512820517,
+              "rounds": 81,
+              "depth_share": {
+                "1": 0.012345679012345678,
+                "3": 0.3333333333333333,
+                "5": 0.037037037037037035,
+                "6": 0.037037037037037035,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.481481481481482
+            },
+            "one_bit_g_band": {
+              "us_per_token": 9917.782642998032,
+              "rounds": 81,
+              "depth_share": {
+                "0": 0.037037037037037035,
+                "1": 0.04938271604938271,
+                "2": 0.037037037037037035,
+                "3": 0.2222222222222222,
+                "5": 0.037037037037037035,
+                "6": 0.037037037037037035,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.2592592592592595
+            },
+            "oracle_gap_pct": 3.9751585217731678,
+            "fixed_gap_pct": 11.523276977555486,
+            "one_bit_g_gap_pct": 2.4482352245228967,
+            "one_bit_share_of_oracle": 0.6158836713336482
+          },
+          "exclude": {
+            "actual": {
+              "us_per_token": 18774.4125,
+              "rounds": 13,
+              "tokens": 40,
+              "round_us": 57767.42307692308,
+              "mean_depth": 4.846153846153846,
+              "mean_tokens": 3.076923076923077
+            },
+            "oracle": {
+              "us_per_token": 13518.269999999999,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.23076923076923078,
+                "1": 0.23076923076923078,
+                "2": 0.23076923076923078,
+                "3": 0.07692307692307693,
+                "4": 0.07692307692307693,
+                "5": 0.07692307692307693,
+                "6": 0.07692307692307693
+              },
+              "mean_depth": 2.076923076923077
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 16503.07941176471,
+              "tokens_per_round": 2.6153846153846154
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.6,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 19879.65652173913,
+                "tokens_per_round": 1.7692307692307692
+              },
+              {
+                "depth": 2,
+                "us_per_token": 16972.280000000002,
+                "tokens_per_round": 2.3076923076923075
+              },
+              {
+                "depth": 3,
+                "us_per_token": 16503.07941176471,
+                "tokens_per_round": 2.6153846153846154
+              },
+              {
+                "depth": 4,
+                "us_per_token": 18659.637837837836,
+                "tokens_per_round": 2.8461538461538463
+              },
+              {
+                "depth": 5,
+                "us_per_token": 20113.733333333334,
+                "tokens_per_round": 3.0
+              },
+              {
+                "depth": 6,
+                "us_per_token": 21961.614999999998,
+                "tokens_per_round": 3.076923076923077
+              },
+              {
+                "depth": 7,
+                "us_per_token": 24312.34,
+                "tokens_per_round": 3.076923076923077
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 16010.135897435901,
+              "rounds": 13,
+              "depth_share": {
+                "3": 0.8461538461538461,
+                "7": 0.15384615384615385
+              },
+              "mean_depth": 3.6153846153846154
+            },
+            "one_bit_g_band": {
+              "us_per_token": 14076.708108108107,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.23076923076923078,
+                "1": 0.23076923076923078,
+                "2": 0.23076923076923078,
+                "3": 0.23076923076923078,
+                "7": 0.07692307692307693
+              },
+              "mean_depth": 1.9230769230769231
+            },
+            "oracle_gap_pct": 27.996308805934675,
+            "fixed_gap_pct": -12.098024842243609,
+            "one_bit_g_gap_pct": 14.723638369850978,
+            "one_bit_share_of_oracle": 0.5259135578162307
+          },
+          "impute": {
+            "actual": {
+              "us_per_token": 10312.084600389862,
+              "rounds": 81,
+              "tokens": 513,
+              "round_us": 65309.86913580246,
+              "mean_depth": 5.777777777777778,
+              "mean_tokens": 6.333333333333333
+            },
+            "oracle": {
+              "us_per_token": 9662.114106266316,
+              "rounds": 81,
+              "depth_share": {
+                "0": 0.03703703703703704,
+                "1": 0.037466666666666676,
+                "2": 0.037581600493827166,
+                "3": 0.04312409568504872,
+                "5": 0.015205374622149466,
+                "6": 0.02535657455870271,
+                "7": 0.8042286509365683
+              },
+              "mean_depth": 6.099769031728409
+            },
+            "best_fixed": {
+              "depth": 7,
+              "us_per_token": 10505.037223180207,
+              "tokens_per_round": 7.121079003407234
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 31176.600000000002,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 17917.658490566035,
+                "tokens_per_round": 1.962962962962963
+              },
+              {
+                "depth": 2,
+                "us_per_token": 13559.755040493203,
+                "tokens_per_round": 2.8884592592592595
+              },
+              {
+                "depth": 3,
+                "us_per_token": 11429.4560108771,
+                "tokens_per_round": 3.776373955061728
+              },
+              {
+                "depth": 4,
+                "us_per_token": 11439.631966261668,
+                "tokens_per_round": 4.642474526857975
+              },
+              {
+                "depth": 5,
+                "us_per_token": 10996.58912112022,
+                "tokens_per_round": 5.487265126975395
+              },
+              {
+                "depth": 6,
+                "us_per_token": 10697.451455941198,
+                "tokens_per_round": 6.3168503524706665
+              },
+              {
+                "depth": 7,
+                "us_per_token": 10505.037223180207,
+                "tokens_per_round": 7.121079003407234
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 10059.620512820518,
+              "rounds": 81,
+              "depth_share": {
+                "1": 0.012345679012345678,
+                "3": 0.3333333333333333,
+                "5": 0.037037037037037035,
+                "6": 0.037037037037037035,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.481481481481482
+            },
+            "one_bit_g_band": {
+              "us_per_token": 9895.829017234362,
+              "rounds": 81,
+              "depth_share": {
+                "0": 0.037037037037037035,
+                "1": 0.03746666666666667,
+                "2": 0.03758160049382716,
+                "3": 0.23359370814814817,
+                "5": 0.037037037037037035,
+                "6": 0.037037037037037035,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.282546794567901
+            },
+            "oracle_gap_pct": 6.302998077604734,
+            "fixed_gap_pct": 1.8711311075071038,
+            "one_bit_g_gap_pct": 2.448235224522879,
+            "one_bit_share_of_oracle": 0.3884239205500849
+          }
+        }
+      },
+      "local": {
+        "leg": "e99r5c8b1",
+        "curve": "local",
+        "offered_cap": 8,
+        "actual": {
+          "us_per_token": 22291.051072124756,
+          "rounds": 81,
+          "tokens": 513,
+          "round_us": 141176.65679012344,
+          "mean_depth": 5.777777777777778,
+          "mean_tokens": 6.333333333333333
+        },
+        "measured_local_round_us": 144381.56790123458,
+        "censored_share": 0.8395061728395061,
+        "score": {
+          "effective_mean_draft_len": 5.777777777777778,
+          "accepted_draft_rate": 0.9230769230769231,
+          "mtp_seconds_per_token": 0.030731915961951017,
+          "all_tokens_matched": true
+        },
+        "treatments": {
+          "observed": {
+            "actual": {
+              "us_per_token": 22291.051072124756,
+              "rounds": 81,
+              "tokens": 513,
+              "round_us": 141176.65679012344,
+              "mean_depth": 5.777777777777778,
+              "mean_tokens": 6.333333333333333
+            },
+            "oracle": {
+              "us_per_token": 21285.477032520324,
+              "rounds": 81,
+              "depth_share": {
+                "0": 0.037037037037037035,
+                "1": 0.04938271604938271,
+                "2": 0.037037037037037035,
+                "3": 0.2962962962962963,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.074074074074074
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 22977.72828947368,
+              "tokens_per_round": 3.753086419753086
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 35546.00943396227,
+                "tokens_per_round": 1.962962962962963
+              },
+              {
+                "depth": 2,
+                "us_per_token": 25995.92446351931,
+                "tokens_per_round": 2.876543209876543
+              },
+              {
+                "depth": 3,
+                "us_per_token": 22977.72828947368,
+                "tokens_per_round": 3.753086419753086
+              },
+              {
+                "depth": 4,
+                "us_per_token": 28373.1975,
+                "tokens_per_round": 4.444444444444445
+              },
+              {
+                "depth": 5,
+                "us_per_token": 26904.21831325301,
+                "tokens_per_round": 5.1234567901234565
+              },
+              {
+                "depth": 6,
+                "us_per_token": 26147.94721030043,
+                "tokens_per_round": 5.753086419753086
+              },
+              {
+                "depth": 7,
+                "us_per_token": 25887.963157894737,
+                "tokens_per_round": 6.333333333333333
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 21585.180439121756,
+              "rounds": 81,
+              "depth_share": {
+                "1": 0.012345679012345678,
+                "3": 0.37037037037037035,
+                "6": 0.037037037037037035,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.407407407407407
+            },
+            "one_bit_g_band": {
+              "us_per_token": 21285.477032520324,
+              "rounds": 81,
+              "depth_share": {
+                "0": 0.037037037037037035,
+                "1": 0.04938271604938271,
+                "2": 0.037037037037037035,
+                "3": 0.2962962962962963,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.074074074074074
+            },
+            "oracle_gap_pct": 4.511110922274609,
+            "fixed_gap_pct": 3.0805062315236666,
+            "one_bit_g_gap_pct": 3.1666099131848484,
+            "one_bit_share_of_oracle": 0.7019578919128349
+          },
+          "exclude": {
+            "actual": {
+              "us_per_token": 39685.11,
+              "rounds": 13,
+              "tokens": 40,
+              "round_us": 122108.03076923077,
+              "mean_depth": 4.846153846153846,
+              "mean_tokens": 3.076923076923077
+            },
+            "oracle": {
+              "us_per_token": 27890.94102564103,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.23076923076923078,
+                "1": 0.23076923076923078,
+                "2": 0.23076923076923078,
+                "3": 0.15384615384615385,
+                "5": 0.07692307692307693,
+                "6": 0.07692307692307693
+              },
+              "mean_depth": 2.0
+            },
+            "best_fixed": {
+              "depth": 2,
+              "us_per_token": 32403.97333333333,
+              "tokens_per_round": 2.3076923076923075
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.40000000001,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 39438.32608695652,
+                "tokens_per_round": 1.7692307692307692
+              },
+              {
+                "depth": 2,
+                "us_per_token": 32403.97333333333,
+                "tokens_per_round": 2.3076923076923075
+              },
+              {
+                "depth": 3,
+                "us_per_token": 32973.123529411765,
+                "tokens_per_round": 2.6153846153846154
+              },
+              {
+                "depth": 4,
+                "us_per_token": 44306.494594594595,
+                "tokens_per_round": 2.8461538461538463
+              },
+              {
+                "depth": 5,
+                "us_per_token": 45947.53333333333,
+                "tokens_per_round": 3.0
+              },
+              {
+                "depth": 6,
+                "us_per_token": 48890.205,
+                "tokens_per_round": 3.076923076923077
+              },
+              {
+                "depth": 7,
+                "us_per_token": 53286.05750000001,
+                "tokens_per_round": 3.076923076923077
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 32400.159459459464,
+              "rounds": 13,
+              "depth_share": {
+                "3": 0.9230769230769231,
+                "7": 0.07692307692307693
+              },
+              "mean_depth": 3.3076923076923075
+            },
+            "one_bit_g_band": {
+              "us_per_token": 28369.38378378379,
+              "rounds": 13,
+              "depth_share": {
+                "0": 0.23076923076923078,
+                "1": 0.23076923076923078,
+                "2": 0.23076923076923078,
+                "3": 0.23076923076923078,
+                "7": 0.07692307692307693
+              },
+              "mean_depth": 1.9230769230769231
+            },
+            "oracle_gap_pct": 29.719380831649378,
+            "fixed_gap_pct": -18.347276010238268,
+            "one_bit_g_gap_pct": 18.356886349919495,
+            "one_bit_share_of_oracle": 0.6176739163546268
+          },
+          "impute": {
+            "actual": {
+              "us_per_token": 22291.051072124756,
+              "rounds": 81,
+              "tokens": 513,
+              "round_us": 141176.65679012344,
+              "mean_depth": 5.777777777777778,
+              "mean_tokens": 6.333333333333333
+            },
+            "oracle": {
+              "us_per_token": 21004.035091047608,
+              "rounds": 81,
+              "depth_share": {
+                "0": 0.03703703703703704,
+                "1": 0.037466666666666676,
+                "2": 0.037581600493827166,
+                "3": 0.08368604486590095,
+                "7": 0.8042286509365683
+              },
+              "mean_depth": 5.993288558808001
+            },
+            "best_fixed": {
+              "depth": 3,
+              "us_per_token": 22836.03293164603,
+              "tokens_per_round": 3.776373955061728
+            },
+            "fixed_sweep": [
+              {
+                "depth": 0,
+                "us_per_token": 64445.4,
+                "tokens_per_round": 1.0
+              },
+              {
+                "depth": 1,
+                "us_per_token": 35546.00943396227,
+                "tokens_per_round": 1.962962962962963
+              },
+              {
+                "depth": 2,
+                "us_per_token": 25888.680880746364,
+                "tokens_per_round": 2.8884592592592595
+              },
+              {
+                "depth": 3,
+                "us_per_token": 22836.03293164603,
+                "tokens_per_round": 3.776373955061728
+              },
+              {
+                "depth": 4,
+                "us_per_token": 27162.906176535667,
+                "tokens_per_round": 4.642474526857975
+              },
+              {
+                "depth": 5,
+                "us_per_token": 25120.455602257265,
+                "tokens_per_round": 5.487265126975395
+              },
+              {
+                "depth": 6,
+                "us_per_token": 23814.304852284935,
+                "tokens_per_round": 6.3168503524706665
+              },
+              {
+                "depth": 7,
+                "us_per_token": 23024.193373160328,
+                "tokens_per_round": 7.121079003407234
+              }
+            ],
+            "one_bit_g_truncate": {
+              "us_per_token": 21585.180439121727,
+              "rounds": 81,
+              "depth_share": {
+                "1": 0.012345679012345678,
+                "3": 0.37037037037037035,
+                "6": 0.037037037037037035,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.407407407407407
+            },
+            "one_bit_g_band": {
+              "us_per_token": 21235.329828391285,
+              "rounds": 81,
+              "depth_share": {
+                "0": 0.037037037037037035,
+                "1": 0.03746666666666667,
+                "2": 0.03758160049382716,
+                "3": 0.30766778222222224,
+                "7": 0.5802469135802469
+              },
+              "mean_depth": 5.097361609382716
+            },
+            "oracle_gap_pct": 5.773689077795786,
+            "fixed_gap_pct": 2.4448459507716143,
+            "one_bit_g_gap_pct": 3.166609913184979,
+            "one_bit_share_of_oracle": 0.548455219967247
+          }
+        }
+      }
+    }
+  },
+  "headline": "e99r5c5b1",
+  "feature_ranking": [
+    {
+      "feature": "d_ship",
+      "r_accepted": 0.8234456756728614,
+      "r_shallow": -0.3567664553721062
+    },
+    {
+      "feature": "prev_acc",
+      "r_accepted": 0.6891406656199052,
+      "r_shallow": -0.2847660582093742
+    },
+    {
+      "feature": "margin",
+      "r_accepted": 0.6325376304652309,
+      "r_shallow": -0.4222270080004762
+    },
+    {
+      "feature": "prev_depth",
+      "r_accepted": 0.5979535445400493,
+      "r_shallow": -0.16943485962369567
+    },
+    {
+      "feature": "reach7",
+      "r_accepted": 0.4707529706626822,
+      "r_shallow": -0.045604095817729375
+    },
+    {
+      "feature": "reach3",
+      "r_accepted": 0.4187572178955919,
+      "r_shallow": -0.1712838278414944
+    },
+    {
+      "feature": "reach4",
+      "r_accepted": 0.39435589849802605,
+      "r_shallow": -0.1686326383085554
+    },
+    {
+      "feature": "ema0",
+      "r_accepted": 0.39091140921484047,
+      "r_shallow": -0.16912820001126494
+    },
+    {
+      "feature": "reach1",
+      "r_accepted": 0.39091140921484047,
+      "r_shallow": -0.16912820001126494
+    },
+    {
+      "feature": "prev_full",
+      "r_accepted": 0.3863838434762195,
+      "r_shallow": -0.25738454586870474
+    },
+    {
+      "feature": "ema1",
+      "r_accepted": 0.3435703433950714,
+      "r_shallow": -0.1536030474325362
+    },
+    {
+      "feature": "round_idx",
+      "r_accepted": -0.2594161973049884,
+      "r_shallow": 0.18123410428318687
+    },
+    {
+      "feature": "ema5",
+      "r_accepted": 0.2410549762998394,
+      "r_shallow": 0.06711043298040398
+    },
+    {
+      "feature": "ema6",
+      "r_accepted": 0.23898809215782463,
+      "r_shallow": 0.07680936706100634
+    },
+    {
+      "feature": "ema7",
+      "r_accepted": 0.22534032523956474,
+      "r_shallow": 0.061457719185903814
+    },
+    {
+      "feature": "ema3",
+      "r_accepted": 0.17046854475224127,
+      "r_shallow": -0.0774027792249284
+    },
+    {
+      "feature": "ema2",
+      "r_accepted": 0.15614052620406552,
+      "r_shallow": -0.0203311551221174
+    },
+    {
+      "feature": "streak",
+      "r_accepted": 0.13068081052201563,
+      "r_shallow": -0.11347431652364703
+    },
+    {
+      "feature": "ema4",
+      "r_accepted": 0.045879483493939305,
+      "r_shallow": 0.09627638231573828
+    }
+  ],
+  "rung4": {
+    "absolute|observed": [
+      {
+        "fold": "parity even->odd",
+        "treatment": "observed",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10774.612289395447,
+        "actual_us_per_token": 10760.261224489795,
+        "oracle_us_per_token": 10374.011273080663,
+        "train_us_per_token": 10696.35192878339,
+        "gain_pct": -0.13337097126405542,
+        "oracle_gap_pct": 3.5895964173253296,
+        "recovered_share": -0.03715486527129767,
+        "random_control": null,
+        "tree_text": [
+          "if ema2 <= 0.999833:",
+          "    if margin <= 10.9375:",
+          "        d3  (n=30)",
+          "    else:",
+          "        ship  (n=135)",
+          "else:",
+          "    if ema1 <= 0.876367:",
+          "        ship  (n=13)",
+          "    else:",
+          "        d3  (n=13)"
+        ]
+      },
+      {
+        "fold": "parity odd->even",
+        "treatment": "observed",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10773.094182547653,
+        "actual_us_per_token": 10773.206555772993,
+        "oracle_us_per_token": 10392.870156555775,
+        "train_us_per_token": 10591.552976190487,
+        "gain_pct": 0.0010430805791963808,
+        "oracle_gap_pct": 3.530391784917637,
+        "recovered_share": 0.00029545745705974547,
+        "random_control": null,
+        "tree_text": [
+          "if ema0 <= 0.965067:",
+          "    if ema4 <= 0.917462:",
+          "        ship  (n=24)",
+          "    else:",
+          "        d3  (n=46)",
+          "else:",
+          "    ship  (n=121)"
+        ]
+      },
+      {
+        "fold": "time first->second",
+        "treatment": "observed",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 11622.878117913842,
+        "actual_us_per_token": 11598.83,
+        "oracle_us_per_token": 10908.95685393259,
+        "train_us_per_token": 10110.704450261766,
+        "gain_pct": -0.20733227328827444,
+        "oracle_gap_pct": 5.947782199302946,
+        "recovered_share": -0.03485875345478738,
+        "random_control": null,
+        "tree_text": [
+          "if streak <= 22.5:",
+          "    ship  (n=177)",
+          "else:",
+          "    d3  (n=13)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c4b1",
+        "treatment": "observed",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 11222.372994129175,
+        "actual_us_per_token": 11256.175048732943,
+        "oracle_us_per_token": 10980.115009746605,
+        "train_us_per_token": 10474.233730158716,
+        "gain_pct": 0.30029787612065234,
+        "oracle_gap_pct": 2.4525208411485426,
+        "recovered_share": 0.12244457665037396,
+        "random_control": null,
+        "tree_text": [
+          "if ema2 <= 0.999783:",
+          "    if ema0 <= 0.872431:",
+          "        d3  (n=13)",
+          "    else:",
+          "        ship  (n=198)",
+          "else:",
+          "    if ema4 <= 0.998597:",
+          "        ship  (n=19)",
+          "    else:",
+          "        d3  (n=39)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c5b1",
+        "treatment": "observed",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10789.780816326534,
+        "actual_us_per_token": 10774.85925925926,
+        "oracle_us_per_token": 10464.742105263169,
+        "train_us_per_token": 10627.064464993382,
+        "gain_pct": -0.1384849370951394,
+        "oracle_gap_pct": 2.878155032322995,
+        "recovered_share": -0.04811587129250868,
+        "random_control": null,
+        "tree_text": [
+          "if ema2 <= 0.999858:",
+          "    if ema0 <= 0.907326:",
+          "        d3  (n=43)",
+          "    else:",
+          "        ship  (n=218)",
+          "else:",
+          "    d3  (n=23)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c6b1",
+        "treatment": "observed",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10642.964636542247,
+        "actual_us_per_token": 10723.644335937499,
+        "oracle_us_per_token": 10186.143554687507,
+        "train_us_per_token": 10695.028327868833,
+        "gain_pct": 0.7523533685733601,
+        "oracle_gap_pct": 5.012295861479645,
+        "recovered_share": 0.15010154814589557,
+        "random_control": null,
+        "tree_text": [
+          "if ema0 <= 0.907824:",
+          "    if reach4 <= 0.600088:",
+          "        ship  (n=18)",
+          "    else:",
+          "        d3  (n=36)",
+          "else:",
+          "    if ema1 <= 0.873989:",
+          "        d3  (n=19)",
+          "    else:",
+          "        ship  (n=219)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c8b1",
+        "treatment": "observed",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10206.608055009827,
+        "actual_us_per_token": 10312.084600389862,
+        "oracle_us_per_token": 9902.162890625006,
+        "train_us_per_token": 10824.597896120953,
+        "gain_pct": 1.0228440656513607,
+        "oracle_gap_pct": 3.9751585217731678,
+        "recovered_share": 0.25730900039556376,
+        "random_control": null,
+        "tree_text": [
+          "if ema2 <= 0.999818:",
+          "    if ema0 <= 0.855417:",
+          "        d3  (n=16)",
+          "    else:",
+          "        ship  (n=232)",
+          "else:",
+          "    if ema4 <= 0.998658:",
+          "        ship  (n=20)",
+          "    else:",
+          "        d3  (n=33)"
+        ]
+      }
+    ],
+    "absolute|impute": [
+      {
+        "fold": "parity even->odd",
+        "treatment": "impute",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10749.780390478327,
+        "actual_us_per_token": 10760.261224489795,
+        "oracle_us_per_token": 10226.091301852799,
+        "train_us_per_token": 10635.603708521245,
+        "gain_pct": 0.09740315586033221,
+        "oracle_gap_pct": 4.964283965720586,
+        "recovered_share": 0.019620786508773726,
+        "random_control": null,
+        "tree_text": [
+          "if margin <= 11.6875:",
+          "    if reach3 <= 0.698454:",
+          "        d7  (n=24)",
+          "    else:",
+          "        d3  (n=24)",
+          "else:",
+          "    if ema0 <= 0.999872:",
+          "        d7  (n=129)",
+          "    else:",
+          "        d3  (n=14)"
+        ]
+      },
+      {
+        "fold": "parity odd->even",
+        "treatment": "impute",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10769.864202808632,
+        "actual_us_per_token": 10773.206555772993,
+        "oracle_us_per_token": 10210.37884630608,
+        "train_us_per_token": 10582.777776281364,
+        "gain_pct": 0.031024680971790064,
+        "oracle_gap_pct": 5.224328583631525,
+        "recovered_share": 0.005938501086817982,
+        "random_control": null,
+        "tree_text": [
+          "if margin <= 12.625:",
+          "    if reach4 <= 0.572935:",
+          "        d7  (n=14)",
+          "    else:",
+          "        d3  (n=45)",
+          "else:",
+          "    if ema3 <= 0.99968:",
+          "        d7  (n=118)",
+          "    else:",
+          "        d3  (n=14)"
+        ]
+      },
+      {
+        "fold": "time first->second",
+        "treatment": "impute",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 11677.624013897526,
+        "actual_us_per_token": 11598.83,
+        "oracle_us_per_token": 10544.07605180832,
+        "train_us_per_token": 10074.712769905618,
+        "gain_pct": -0.6793272588487492,
+        "oracle_gap_pct": 9.093623651624165,
+        "recovered_share": -0.07470369182558133,
+        "random_control": null,
+        "tree_text": [
+          "if streak <= 22.5:",
+          "    if ema0 <= 0.999601:",
+          "        d7  (n=142)",
+          "    else:",
+          "        ship  (n=35)",
+          "else:",
+          "    d3  (n=13)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c4b1",
+        "treatment": "impute",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 11208.345087258165,
+        "actual_us_per_token": 11256.175048732943,
+        "oracle_us_per_token": 10929.313507797451,
+        "train_us_per_token": 10438.551691329174,
+        "gain_pct": 0.4249219763170041,
+        "oracle_gap_pct": 2.9038420202276876,
+        "recovered_share": 0.1463309551129391,
+        "random_control": null,
+        "tree_text": [
+          "if margin <= 11.5:",
+          "    if reach3 <= 0.637746:",
+          "        d7  (n=16)",
+          "    else:",
+          "        d3  (n=54)",
+          "else:",
+          "    if ema2 <= 0.999843:",
+          "        d7  (n=178)",
+          "    else:",
+          "        d3  (n=21)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c5b1",
+        "treatment": "impute",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10743.636853208674,
+        "actual_us_per_token": 10774.85925925926,
+        "oracle_us_per_token": 10348.721194219059,
+        "train_us_per_token": 10597.455779190657,
+        "gain_pct": 0.2897708944435113,
+        "oracle_gap_pct": 3.9549292922225736,
+        "recovered_share": 0.07326828699904951,
+        "random_control": null,
+        "tree_text": [
+          "if margin <= 12.5625:",
+          "    if round_idx <= 39.5:",
+          "        d7  (n=12)",
+          "    else:",
+          "        d3  (n=72)",
+          "else:",
+          "    if streak <= 24.5:",
+          "        d7  (n=186)",
+          "    else:",
+          "        d3  (n=14)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c6b1",
+        "treatment": "impute",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10570.636478330223,
+        "actual_us_per_token": 10723.644335937499,
+        "oracle_us_per_token": 9993.31108442445,
+        "train_us_per_token": 10665.80538266362,
+        "gain_pct": 1.4268270451166458,
+        "oracle_gap_pct": 6.810494908578123,
+        "recovered_share": 0.2095041644212219,
+        "random_control": null,
+        "tree_text": [
+          "if margin <= 11.375:",
+          "    if reach4 <= 0.582725:",
+          "        d7  (n=14)",
+          "    else:",
+          "        d3  (n=57)",
+          "else:",
+          "    if ema2 <= 0.999727:",
+          "        d7  (n=198)",
+          "    else:",
+          "        d3  (n=23)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c8b1",
+        "treatment": "impute",
+        "policy_class": "absolute",
+        "held_out_us_per_token": 10703.348120181961,
+        "actual_us_per_token": 10312.084600389862,
+        "oracle_us_per_token": 9662.114106266316,
+        "train_us_per_token": 10799.260116893365,
+        "gain_pct": -3.794223330725068,
+        "oracle_gap_pct": 6.302998077604734,
+        "recovered_share": -0.6019712022769567,
+        "random_control": null,
+        "tree_text": [
+          "if margin <= 12.5625:",
+          "    if round_idx <= 43.5:",
+          "        d6  (n=14)",
+          "    else:",
+          "        d3  (n=72)",
+          "else:",
+          "    if reach4 <= 0.985937:",
+          "        d6  (n=183)",
+          "    else:",
+          "        d3  (n=32)"
+        ]
+      }
+    ],
+    "one_bit_g|observed": [
+      {
+        "fold": "parity even->odd",
+        "treatment": "observed",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10776.494488977962,
+        "actual_us_per_token": 10760.261224489795,
+        "oracle_us_per_token": 10374.011273080663,
+        "train_us_per_token": 10689.393406593415,
+        "gain_pct": -0.15086310777679054,
+        "oracle_gap_pct": 3.5895964173253296,
+        "recovered_share": -0.04202787451219969,
+        "random_control": {
+          "mean_gain_pct": -0.48926950683268106,
+          "p95_gain_pct": 0.09603471591664672,
+          "max_gain_pct": 0.7379352134635716,
+          "draws": 200,
+          "clamped": 21,
+          "rounds": 191,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if ema2 <= 0.999833:",
+          "    if streak <= 21.5:",
+          "        ship  (n=150)",
+          "    else:",
+          "        g1  (n=15)",
+          "else:",
+          "    if ema1 <= 0.876367:",
+          "        ship  (n=13)",
+          "    else:",
+          "        g1  (n=13)"
+        ]
+      },
+      {
+        "fold": "parity odd->even",
+        "treatment": "observed",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10773.094182547653,
+        "actual_us_per_token": 10773.206555772993,
+        "oracle_us_per_token": 10392.870156555775,
+        "train_us_per_token": 10591.552976190487,
+        "gain_pct": 0.0010430805791963808,
+        "oracle_gap_pct": 3.530391784917637,
+        "recovered_share": 0.00029545745705974547,
+        "random_control": {
+          "mean_gain_pct": -0.29646926915402,
+          "p95_gain_pct": 0.09397418843664117,
+          "max_gain_pct": 0.503438476253004,
+          "draws": 200,
+          "clamped": 14,
+          "rounds": 191,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if ema0 <= 0.965067:",
+          "    if ema4 <= 0.917462:",
+          "        ship  (n=24)",
+          "    else:",
+          "        g1  (n=46)",
+          "else:",
+          "    ship  (n=121)"
+        ]
+      },
+      {
+        "fold": "time first->second",
+        "treatment": "observed",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 11613.818934240375,
+        "actual_us_per_token": 11598.83,
+        "oracle_us_per_token": 10908.95685393259,
+        "train_us_per_token": 10110.704450261766,
+        "gain_pct": -0.12922798454994922,
+        "oracle_gap_pct": 5.947782199302946,
+        "recovered_share": -0.02172708754619397,
+        "random_control": {
+          "mean_gain_pct": -0.16218871688592118,
+          "p95_gain_pct": 0.2207252029502663,
+          "max_gain_pct": 0.5560540655027478,
+          "draws": 200,
+          "clamped": 8,
+          "rounds": 192,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if streak <= 22.5:",
+          "    ship  (n=177)",
+          "else:",
+          "    g1  (n=13)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c4b1",
+        "treatment": "observed",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 11222.372994129175,
+        "actual_us_per_token": 11256.175048732943,
+        "oracle_us_per_token": 10980.115009746605,
+        "train_us_per_token": 10474.233730158716,
+        "gain_pct": 0.30029787612065234,
+        "oracle_gap_pct": 2.4525208411485426,
+        "recovered_share": 0.12244457665037396,
+        "random_control": {
+          "mean_gain_pct": -0.04225065037872789,
+          "p95_gain_pct": 0.12737604896911586,
+          "max_gain_pct": 0.32243976762347115,
+          "draws": 200,
+          "clamped": 4,
+          "rounds": 113,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if ema2 <= 0.999783:",
+          "    if ema0 <= 0.872431:",
+          "        g1  (n=13)",
+          "    else:",
+          "        ship  (n=198)",
+          "else:",
+          "    if ema4 <= 0.998597:",
+          "        ship  (n=19)",
+          "    else:",
+          "        g1  (n=39)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c5b1",
+        "treatment": "observed",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10789.780816326534,
+        "actual_us_per_token": 10774.85925925926,
+        "oracle_us_per_token": 10464.742105263169,
+        "train_us_per_token": 10627.064464993382,
+        "gain_pct": -0.1384849370951394,
+        "oracle_gap_pct": 2.878155032322995,
+        "recovered_share": -0.04811587129250868,
+        "random_control": {
+          "mean_gain_pct": -0.6273117999040342,
+          "p95_gain_pct": -0.09328049219960509,
+          "max_gain_pct": 0.4299695521140833,
+          "draws": 200,
+          "clamped": 14,
+          "rounds": 98,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if ema2 <= 0.999858:",
+          "    if ema0 <= 0.907326:",
+          "        g1  (n=43)",
+          "    else:",
+          "        ship  (n=218)",
+          "else:",
+          "    g1  (n=23)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c6b1",
+        "treatment": "observed",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10642.964636542247,
+        "actual_us_per_token": 10723.644335937499,
+        "oracle_us_per_token": 10186.143554687507,
+        "train_us_per_token": 10695.028327868833,
+        "gain_pct": 0.7523533685733601,
+        "oracle_gap_pct": 5.012295861479645,
+        "recovered_share": 0.15010154814589557,
+        "random_control": {
+          "mean_gain_pct": -0.21454074934397627,
+          "p95_gain_pct": 0.3051052581582276,
+          "max_gain_pct": 0.7523533685733601,
+          "draws": 200,
+          "clamped": 3,
+          "rounds": 90,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if ema0 <= 0.907824:",
+          "    if reach4 <= 0.600088:",
+          "        ship  (n=18)",
+          "    else:",
+          "        g1  (n=36)",
+          "else:",
+          "    if ema1 <= 0.873989:",
+          "        g1  (n=19)",
+          "    else:",
+          "        ship  (n=219)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c8b1",
+        "treatment": "observed",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10560.208830022075,
+        "actual_us_per_token": 10312.084600389862,
+        "oracle_us_per_token": 9902.162890625006,
+        "train_us_per_token": 10814.639414114494,
+        "gain_pct": -2.406150058377448,
+        "oracle_gap_pct": 3.9751585217731678,
+        "recovered_share": -0.6052966303603298,
+        "random_control": {
+          "mean_gain_pct": -1.5066517561710902,
+          "p95_gain_pct": -0.2051328683159688,
+          "max_gain_pct": 0.47011677029057486,
+          "draws": 200,
+          "clamped": 16,
+          "rounds": 81,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if ema2 <= 0.999818:",
+          "    if reach4 <= 0.986149:",
+          "        ship  (n=220)",
+          "    else:",
+          "        g1  (n=28)",
+          "else:",
+          "    if ema4 <= 0.998658:",
+          "        ship  (n=20)",
+          "    else:",
+          "        g1  (n=33)"
+        ]
+      }
+    ],
+    "one_bit_g|impute": [
+      {
+        "fold": "parity even->odd",
+        "treatment": "impute",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10776.494488977962,
+        "actual_us_per_token": 10760.261224489795,
+        "oracle_us_per_token": 10226.091301852799,
+        "train_us_per_token": 10689.393406593415,
+        "gain_pct": -0.15086310777679054,
+        "oracle_gap_pct": 4.964283965720586,
+        "recovered_share": -0.030389701479313372,
+        "random_control": {
+          "mean_gain_pct": -0.48926950683268106,
+          "p95_gain_pct": 0.09603471591664672,
+          "max_gain_pct": 0.7379352134635716,
+          "draws": 200,
+          "clamped": 21,
+          "rounds": 191,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if ema2 <= 0.999833:",
+          "    if streak <= 21.5:",
+          "        ship  (n=150)",
+          "    else:",
+          "        g1  (n=15)",
+          "else:",
+          "    if ema1 <= 0.876367:",
+          "        ship  (n=13)",
+          "    else:",
+          "        g1  (n=13)"
+        ]
+      },
+      {
+        "fold": "parity odd->even",
+        "treatment": "impute",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10773.094182547653,
+        "actual_us_per_token": 10773.206555772993,
+        "oracle_us_per_token": 10210.37884630608,
+        "train_us_per_token": 10591.552976190487,
+        "gain_pct": 0.0010430805791963808,
+        "oracle_gap_pct": 5.224328583631525,
+        "recovered_share": 0.00019965830297590445,
+        "random_control": {
+          "mean_gain_pct": -0.29646926915402,
+          "p95_gain_pct": 0.09397418843664117,
+          "max_gain_pct": 0.503438476253004,
+          "draws": 200,
+          "clamped": 14,
+          "rounds": 191,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if ema0 <= 0.965067:",
+          "    if ema4 <= 0.917462:",
+          "        ship  (n=24)",
+          "    else:",
+          "        g1  (n=46)",
+          "else:",
+          "    ship  (n=121)"
+        ]
+      },
+      {
+        "fold": "time first->second",
+        "treatment": "impute",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 11613.818934240375,
+        "actual_us_per_token": 11598.83,
+        "oracle_us_per_token": 10544.07605180832,
+        "train_us_per_token": 10110.704450261766,
+        "gain_pct": -0.12922798454994922,
+        "oracle_gap_pct": 9.093623651624165,
+        "recovered_share": -0.01421083492133177,
+        "random_control": {
+          "mean_gain_pct": -0.16218871688592118,
+          "p95_gain_pct": 0.2207252029502663,
+          "max_gain_pct": 0.5560540655027478,
+          "draws": 200,
+          "clamped": 8,
+          "rounds": 192,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if streak <= 22.5:",
+          "    ship  (n=177)",
+          "else:",
+          "    g1  (n=13)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c4b1",
+        "treatment": "impute",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 11222.372994129175,
+        "actual_us_per_token": 11256.175048732943,
+        "oracle_us_per_token": 10929.313507797451,
+        "train_us_per_token": 10474.233730158716,
+        "gain_pct": 0.30029787612065234,
+        "oracle_gap_pct": 2.9038420202276876,
+        "recovered_share": 0.10341398534383983,
+        "random_control": {
+          "mean_gain_pct": -0.04225065037872789,
+          "p95_gain_pct": 0.12737604896911586,
+          "max_gain_pct": 0.32243976762347115,
+          "draws": 200,
+          "clamped": 4,
+          "rounds": 113,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if ema2 <= 0.999783:",
+          "    if ema0 <= 0.872431:",
+          "        g1  (n=13)",
+          "    else:",
+          "        ship  (n=198)",
+          "else:",
+          "    if ema4 <= 0.998597:",
+          "        ship  (n=19)",
+          "    else:",
+          "        g1  (n=39)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c5b1",
+        "treatment": "impute",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10789.780816326534,
+        "actual_us_per_token": 10774.85925925926,
+        "oracle_us_per_token": 10348.721194219059,
+        "train_us_per_token": 10627.064464993382,
+        "gain_pct": -0.1384849370951394,
+        "oracle_gap_pct": 3.9549292922225736,
+        "recovered_share": -0.03501578077956338,
+        "random_control": {
+          "mean_gain_pct": -0.6273117999040342,
+          "p95_gain_pct": -0.09328049219960509,
+          "max_gain_pct": 0.4299695521140833,
+          "draws": 200,
+          "clamped": 14,
+          "rounds": 98,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if ema2 <= 0.999858:",
+          "    if ema0 <= 0.907326:",
+          "        g1  (n=43)",
+          "    else:",
+          "        ship  (n=218)",
+          "else:",
+          "    g1  (n=23)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c6b1",
+        "treatment": "impute",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10642.964636542247,
+        "actual_us_per_token": 10723.644335937499,
+        "oracle_us_per_token": 9993.31108442445,
+        "train_us_per_token": 10695.028327868833,
+        "gain_pct": 0.7523533685733601,
+        "oracle_gap_pct": 6.810494908578123,
+        "recovered_share": 0.11046970575159484,
+        "random_control": {
+          "mean_gain_pct": -0.21454074934397627,
+          "p95_gain_pct": 0.3051052581582276,
+          "max_gain_pct": 0.7523533685733601,
+          "draws": 200,
+          "clamped": 3,
+          "rounds": 90,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if ema0 <= 0.907824:",
+          "    if reach4 <= 0.600088:",
+          "        ship  (n=18)",
+          "    else:",
+          "        g1  (n=36)",
+          "else:",
+          "    if ema1 <= 0.873989:",
+          "        g1  (n=19)",
+          "    else:",
+          "        ship  (n=219)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c8b1",
+        "treatment": "impute",
+        "policy_class": "one_bit_g",
+        "held_out_us_per_token": 10560.208830022075,
+        "actual_us_per_token": 10312.084600389862,
+        "oracle_us_per_token": 9662.114106266316,
+        "train_us_per_token": 10814.639414114494,
+        "gain_pct": -2.406150058377448,
+        "oracle_gap_pct": 6.302998077604734,
+        "recovered_share": -0.38174691293763385,
+        "random_control": {
+          "mean_gain_pct": -1.5066517561710902,
+          "p95_gain_pct": -0.2051328683159688,
+          "max_gain_pct": 0.47011677029057486,
+          "draws": 200,
+          "clamped": 16,
+          "rounds": 81,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if ema2 <= 0.999818:",
+          "    if reach4 <= 0.986149:",
+          "        ship  (n=220)",
+          "    else:",
+          "        g1  (n=28)",
+          "else:",
+          "    if ema4 <= 0.998658:",
+          "        ship  (n=20)",
+          "    else:",
+          "        g1  (n=33)"
+        ]
+      }
+    ],
+    "margin_gate|observed": [
+      {
+        "fold": "parity even->odd",
+        "treatment": "observed",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10727.605231984213,
+        "actual_us_per_token": 10760.261224489795,
+        "oracle_us_per_token": 10374.011273080663,
+        "train_us_per_token": 10749.613484251973,
+        "gain_pct": 0.3034869862755681,
+        "oracle_gap_pct": 3.5895964173253296,
+        "recovered_share": 0.08454626955018567,
+        "random_control": {
+          "mean_gain_pct": -0.20066496176865292,
+          "p95_gain_pct": 0.21331894264743853,
+          "max_gain_pct": 0.4382304500366488,
+          "draws": 200,
+          "clamped": 9,
+          "rounds": 191,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if margin <= 11.6875:",
+          "    g1  (n=48)",
+          "else:",
+          "    ship  (n=143)"
+        ]
+      },
+      {
+        "fold": "parity odd->even",
+        "treatment": "observed",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10798.434638554225,
+        "actual_us_per_token": 10773.206555772993,
+        "oracle_us_per_token": 10392.870156555775,
+        "train_us_per_token": 10671.751243781104,
+        "gain_pct": -0.2341743161669268,
+        "oracle_gap_pct": 3.530391784917637,
+        "recovered_share": -0.06633097130107615,
+        "random_control": {
+          "mean_gain_pct": -0.29646926915402,
+          "p95_gain_pct": 0.09397418843664117,
+          "max_gain_pct": 0.503438476253004,
+          "draws": 200,
+          "clamped": 14,
+          "rounds": 191,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if margin <= 12.625:",
+          "    g1  (n=59)",
+          "else:",
+          "    ship  (n=132)"
+        ]
+      },
+      {
+        "fold": "time first->second",
+        "treatment": "observed",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 11598.83000000001,
+        "actual_us_per_token": 11598.83,
+        "oracle_us_per_token": 10908.95685393259,
+        "train_us_per_token": 10128.826184323843,
+        "gain_pct": -9.409514943554772e-14,
+        "oracle_gap_pct": 5.947782199302946,
+        "recovered_share": -1.582020764757917e-14,
+        "random_control": {
+          "mean_gain_pct": -9.409514943554773e-14,
+          "p95_gain_pct": -9.409514943554772e-14,
+          "max_gain_pct": -9.409514943554772e-14,
+          "draws": 200,
+          "clamped": 0,
+          "rounds": 192,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "ship  (n=190)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c4b1",
+        "treatment": "observed",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 11222.372994129177,
+        "actual_us_per_token": 11256.175048732943,
+        "oracle_us_per_token": 10980.115009746605,
+        "train_us_per_token": 10556.260156760267,
+        "gain_pct": 0.3002978761206362,
+        "oracle_gap_pct": 2.4525208411485426,
+        "recovered_share": 0.12244457665036737,
+        "random_control": {
+          "mean_gain_pct": -0.04225065037872789,
+          "p95_gain_pct": 0.12737604896911586,
+          "max_gain_pct": 0.32243976762347115,
+          "draws": 200,
+          "clamped": 4,
+          "rounds": 113,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if margin <= 11.5:",
+          "    g1  (n=70)",
+          "else:",
+          "    ship  (n=199)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c5b1",
+        "treatment": "observed",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10780.136800000006,
+        "actual_us_per_token": 10774.85925925926,
+        "oracle_us_per_token": 10464.742105263169,
+        "train_us_per_token": 10714.047242524903,
+        "gain_pct": -0.04898013620188117,
+        "oracle_gap_pct": 2.878155032322995,
+        "recovered_share": -0.017017893633877217,
+        "random_control": {
+          "mean_gain_pct": -0.3523829518585329,
+          "p95_gain_pct": 0.032014323529210235,
+          "max_gain_pct": 0.5477334630199794,
+          "draws": 200,
+          "clamped": 8,
+          "rounds": 98,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if margin <= 12.5625:",
+          "    g1  (n=84)",
+          "else:",
+          "    ship  (n=200)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c6b1",
+        "treatment": "observed",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10628.283789062509,
+        "actual_us_per_token": 10723.644335937499,
+        "oracle_us_per_token": 10186.143554687507,
+        "train_us_per_token": 10754.631111111088,
+        "gain_pct": 0.8892550320362096,
+        "oracle_gap_pct": 5.012295861479645,
+        "recovered_share": 0.1774147130599946,
+        "random_control": {
+          "mean_gain_pct": -0.14974977689012742,
+          "p95_gain_pct": 0.3051052581582276,
+          "max_gain_pct": 0.4446275160180454,
+          "draws": 200,
+          "clamped": 2,
+          "rounds": 90,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if margin <= 11.375:",
+          "    g1  (n=71)",
+          "else:",
+          "    ship  (n=221)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c8b1",
+        "treatment": "observed",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10262.027364185114,
+        "actual_us_per_token": 10312.084600389862,
+        "oracle_us_per_token": 9902.162890625006,
+        "train_us_per_token": 10884.934946949583,
+        "gain_pct": 0.48542305600223007,
+        "oracle_gap_pct": 3.9751585217731678,
+        "recovered_share": 0.12211413792517166,
+        "random_control": {
+          "mean_gain_pct": -0.5610619643068362,
+          "p95_gain_pct": 0.2388665929040295,
+          "max_gain_pct": 1.022844065651343,
+          "draws": 200,
+          "clamped": 6,
+          "rounds": 81,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if margin <= 12.5625:",
+          "    g1  (n=86)",
+          "else:",
+          "    ship  (n=215)"
+        ]
+      }
+    ],
+    "margin_gate|impute": [
+      {
+        "fold": "parity even->odd",
+        "treatment": "impute",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10727.605231984213,
+        "actual_us_per_token": 10760.261224489795,
+        "oracle_us_per_token": 10226.091301852799,
+        "train_us_per_token": 10749.613484251973,
+        "gain_pct": 0.3034869862755681,
+        "oracle_gap_pct": 4.964283965720586,
+        "recovered_share": 0.06113409071100865,
+        "random_control": {
+          "mean_gain_pct": -0.20066496176865292,
+          "p95_gain_pct": 0.21331894264743853,
+          "max_gain_pct": 0.4382304500366488,
+          "draws": 200,
+          "clamped": 9,
+          "rounds": 191,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if margin <= 11.6875:",
+          "    g1  (n=48)",
+          "else:",
+          "    ship  (n=143)"
+        ]
+      },
+      {
+        "fold": "parity odd->even",
+        "treatment": "impute",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10798.434638554225,
+        "actual_us_per_token": 10773.206555772993,
+        "oracle_us_per_token": 10210.37884630608,
+        "train_us_per_token": 10671.751243781104,
+        "gain_pct": -0.2341743161669268,
+        "oracle_gap_pct": 5.224328583631525,
+        "recovered_share": -0.044823810833917344,
+        "random_control": {
+          "mean_gain_pct": -0.29646926915402,
+          "p95_gain_pct": 0.09397418843664117,
+          "max_gain_pct": 0.503438476253004,
+          "draws": 200,
+          "clamped": 14,
+          "rounds": 191,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if margin <= 12.625:",
+          "    g1  (n=59)",
+          "else:",
+          "    ship  (n=132)"
+        ]
+      },
+      {
+        "fold": "time first->second",
+        "treatment": "impute",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 11598.83000000001,
+        "actual_us_per_token": 11598.83,
+        "oracle_us_per_token": 10544.07605180832,
+        "train_us_per_token": 10128.826184323843,
+        "gain_pct": -9.409514943554772e-14,
+        "oracle_gap_pct": 9.093623651624165,
+        "recovered_share": -1.0347376693859755e-14,
+        "random_control": {
+          "mean_gain_pct": -9.409514943554773e-14,
+          "p95_gain_pct": -9.409514943554772e-14,
+          "max_gain_pct": -9.409514943554772e-14,
+          "draws": 200,
+          "clamped": 0,
+          "rounds": 192,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "ship  (n=190)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c4b1",
+        "treatment": "impute",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 11222.372994129177,
+        "actual_us_per_token": 11256.175048732943,
+        "oracle_us_per_token": 10929.313507797451,
+        "train_us_per_token": 10556.260156760267,
+        "gain_pct": 0.3002978761206362,
+        "oracle_gap_pct": 2.9038420202276876,
+        "recovered_share": 0.10341398534383427,
+        "random_control": {
+          "mean_gain_pct": -0.04225065037872789,
+          "p95_gain_pct": 0.12737604896911586,
+          "max_gain_pct": 0.32243976762347115,
+          "draws": 200,
+          "clamped": 4,
+          "rounds": 113,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if margin <= 11.5:",
+          "    g1  (n=70)",
+          "else:",
+          "    ship  (n=199)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c5b1",
+        "treatment": "impute",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10780.136800000006,
+        "actual_us_per_token": 10774.85925925926,
+        "oracle_us_per_token": 10348.721194219059,
+        "train_us_per_token": 10714.047242524903,
+        "gain_pct": -0.04898013620188117,
+        "oracle_gap_pct": 3.9549292922225736,
+        "recovered_share": -0.012384579491269624,
+        "random_control": {
+          "mean_gain_pct": -0.3523829518585329,
+          "p95_gain_pct": 0.032014323529210235,
+          "max_gain_pct": 0.5477334630199794,
+          "draws": 200,
+          "clamped": 8,
+          "rounds": 98,
+          "beaten_by_fit": false
+        },
+        "tree_text": [
+          "if margin <= 12.5625:",
+          "    g1  (n=84)",
+          "else:",
+          "    ship  (n=200)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c6b1",
+        "treatment": "impute",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10628.283789062509,
+        "actual_us_per_token": 10723.644335937499,
+        "oracle_us_per_token": 9993.31108442445,
+        "train_us_per_token": 10754.631111111088,
+        "gain_pct": 0.8892550320362096,
+        "oracle_gap_pct": 6.810494908578123,
+        "recovered_share": 0.1305712791762245,
+        "random_control": {
+          "mean_gain_pct": -0.14974977689012742,
+          "p95_gain_pct": 0.3051052581582276,
+          "max_gain_pct": 0.4446275160180454,
+          "draws": 200,
+          "clamped": 2,
+          "rounds": 90,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if margin <= 11.375:",
+          "    g1  (n=71)",
+          "else:",
+          "    ship  (n=221)"
+        ]
+      },
+      {
+        "fold": "leg-out e99r5c8b1",
+        "treatment": "impute",
+        "policy_class": "margin_gate",
+        "held_out_us_per_token": 10262.027364185114,
+        "actual_us_per_token": 10312.084600389862,
+        "oracle_us_per_token": 9662.114106266316,
+        "train_us_per_token": 10884.934946949583,
+        "gain_pct": 0.48542305600223007,
+        "oracle_gap_pct": 6.302998077604734,
+        "recovered_share": 0.07701462859825282,
+        "random_control": {
+          "mean_gain_pct": -0.5610619643068362,
+          "p95_gain_pct": 0.2388665929040295,
+          "max_gain_pct": 1.022844065651343,
+          "draws": 200,
+          "clamped": 6,
+          "rounds": 81,
+          "beaten_by_fit": true
+        },
+        "tree_text": [
+          "if margin <= 12.5625:",
+          "    g1  (n=86)",
+          "else:",
+          "    ship  (n=215)"
+        ]
+      }
+    ]
+  },
+  "headline_summary": {
+    "leg": "e99r5c5b1",
+    "width": 5.530612244897959,
+    "nearest_prompt": "beagle",
+    "oracle_gap_pct_min": 2.878155032322995,
+    "oracle_gap_pct_max": 23.952841132794475,
+    "treatments_agree_in_sign": true,
+    "published_move_at_oracle": {
+      "applied_gain_pct": 23.952841132794475,
+      "beagle_pct": 4.51,
+      "essays_pct": 0.27554700000000004,
+      "published_pct": 4.785547
+    }
+  },
+  "boundary_sensitivity": [
+    {
+      "boundary_step_pct": 10.0,
+      "actual_us_per_token": 9940.76888888889,
+      "oracle_us_per_token": 9674.551228070166,
+      "oracle_gap_pct": 2.678038930331472,
+      "one_bit_g_us_per_token": 9844.069080234822,
+      "one_bit_g_gap_pct": 0.9727598512239067
+    },
+    {
+      "boundary_step_pct": 15.0,
+      "actual_us_per_token": 10260.486666666668,
+      "oracle_us_per_token": 9977.441754385956,
+      "oracle_gap_pct": 2.7585914925482213,
+      "one_bit_g_us_per_token": 10139.698532289616,
+      "one_bit_g_gap_pct": 1.177216425507933
+    },
+    {
+      "boundary_step_pct": 23.0,
+      "actual_us_per_token": 10772.035111111112,
+      "oracle_us_per_token": 10462.066596491237,
+      "oracle_gap_pct": 2.877529746446424,
+      "one_bit_g_us_per_token": 10612.705655577305,
+      "one_bit_g_gap_pct": 1.4791026383627575
+    },
+    {
+      "boundary_step_pct": 30.0,
+      "actual_us_per_token": 11219.640000000001,
+      "oracle_us_per_token": 10878.041095890407,
+      "oracle_gap_pct": 3.0446512019066074,
+      "one_bit_g_us_per_token": 11026.586888454007,
+      "one_bit_g_gap_pct": 1.7206711761339435
+    },
+    {
+      "boundary_step_pct": 46.2,
+      "actual_us_per_token": 12255.525599999999,
+      "oracle_us_per_token": 11175.118867924515,
+      "oracle_gap_pct": 8.815670313441995,
+      "one_bit_g_us_per_token": 11379.719676549848,
+      "one_bit_g_gap_pct": 7.146212672022411
+    }
+  ],
+  "width_surrogate": [
+    {
+      "leg": "e99r5c4b1",
+      "width": 4.787610619469026,
+      "prompt": "beagle",
+      "prompt_width": 5.382,
+      "oracle_gap_pct": 2.4525208411485426,
+      "one_bit_g_gap_pct": 0.861238339906598,
+      "fixed_gap_pct": 1.4752860712439173
+    },
+    {
+      "leg": "e99r5c5b1",
+      "width": 5.530612244897959,
+      "prompt": "beagle",
+      "prompt_width": 5.382,
+      "oracle_gap_pct": 2.878155032322995,
+      "one_bit_g_gap_pct": 1.4806897239222625,
+      "fixed_gap_pct": 5.813508366487829
+    },
+    {
+      "leg": "e99r5c6b1",
+      "width": 6.177777777777778,
+      "prompt": "medicine",
+      "prompt_width": 6.256,
+      "oracle_gap_pct": 5.012295861479645,
+      "one_bit_g_gap_pct": 3.5570201281451603,
+      "fixed_gap_pct": 7.172648116949257
+    },
+    {
+      "leg": "e99r5c8b1",
+      "width": 6.777777777777778,
+      "prompt": "botany",
+      "prompt_width": 7.148,
+      "oracle_gap_pct": 3.9751585217731678,
+      "one_bit_g_gap_pct": 2.4482352245228967,
+      "fixed_gap_pct": 11.523276977555486
+    }
+  ]
+}

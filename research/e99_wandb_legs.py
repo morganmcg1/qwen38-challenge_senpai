@@ -26,6 +26,20 @@ IDENTITY = ("leg", "gate", "threshold", "offered_cap", "worker_sha256",
             "base_sha", "head_provenance_sha256", "entry_c", "exit_c",
             "cool_gate_passed_real_gate", "gate_qualified_for_timing")
 
+# Present only on the rungs 6 and 7 session, which varies the clamp depth and
+# records the round-sequence digest that makes the ranked figure auditable.
+OPTIONAL_IDENTITY = ("gate_depth", "sequence_sha256")
+
+
+def arms_of(bundle: dict):
+    """Both bundle shapes: the rung-5 off/on/sweep split, and the rungs 6-7
+    report, which carries one row per leg with its own role."""
+    if "legs" in bundle:
+        return [(row.get("role", "leg"), [row])
+                for row in bundle["legs"].values()]
+    return [("off", bundle["off"]), ("on", bundle["on"]),
+            ("sweep", bundle["sweep"])]
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -36,11 +50,11 @@ def main() -> None:
     urls = []
     for path in args.bundles:
         bundle = json.loads(Path(path).read_text())
-        arms = (("off", bundle["off"]), ("on", bundle["on"]),
-                ("sweep", bundle["sweep"]))
-        for role, rows in arms:
+        for role, rows in arms_of(bundle):
             for row in rows:
                 config = {key: row[key] for key in IDENTITY}
+                config.update({key: row[key] for key in OPTIONAL_IDENTITY
+                               if key in row})
                 config.update(experiment=EXPERIMENT, assignment_pr=101,
                               student="qwen-edward", role=role,
                               bundle=Path(path).stem, harness="local",

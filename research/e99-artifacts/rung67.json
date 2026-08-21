@@ -1,0 +1,41 @@
+{
+  "legs": {
+    "e99r6n1o": {
+      "leg": "e99r6n1o",
+      "gate": "off",
+      "threshold": 9.4375,
+      "offered_cap": 8,
+      "rounds": 78,
+      "fired_rounds": 0,
+      "fired_share": 0.0,
+      "clamped_rounds": 0,
+      "mean_width": 7.358974358974359,
+      "g1_share": 0.0641025641025641,
+      "effective_mean_draft_len": 6.358974358974359,
+      "accepted_draft_rate": 0.8770161290322581,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "mtp_seconds_per_token": 0.03176982421427965,
+      "serial_seconds_per_token": 0.0736884824000299,
+      "local_ratio": 2.3194488550839694,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "ranked_us_per_token": 10655.401364522417,
+      "local_us_per_token": 23436.98596491228,
+      "measured_round_us": 156871.07692307694,
+      "min_round_us": 74787.0,
+      "dram_floor_violations": 0,
+      "first_floor_violation": "",
+      "entry_c": 36.691768646240234,
+      "exit_c": 60.699588775634766,
+      "worker_sha256": "6bddaffe504fa0cb80f036027895efd2744112b434e33e9497f5b83a46991753",
+      "base_sha": "3d27852c44ee03fd7e988c059d87cc91ccbb6871",
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "sequence_sha256": "75e7cf19e5b58f2724681aa8cd932c5c5b79d531e7c8c296958d4cbbd3a97469",
+      "gate_depth": 3,
+      "role": "null-off"
+    }
+  },
+  "exact": true,
+  "dram_floor_violations": 0
+}
