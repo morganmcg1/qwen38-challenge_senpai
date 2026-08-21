@@ -9,6 +9,7 @@
       research/e95_verify_census.py step     LEG_A LEG_B --width=4 --width2=5
       research/e95_verify_census.py model    LEG@M [LEG@M ...]
       research/e95_verify_census.py rowcost  LEG_A LEG_B --width=5 --width2=8
+      research/e95_verify_census.py fixed    LEG@M [LEG@M ...]
 
 `counts` fits the per-round `target_verify` dispatch count of every shape at
 every observed verify width M. It is an exact integer model, so a residual means
@@ -739,6 +740,100 @@ def report_rowcost(path_a, path_b, phase="target_verify", width_a=5, width_b=8):
               f"rms residual {100.0 * (error / signal) ** 0.5:5.2f} %")
 
 
+DRAM_GB_S = 265.0
+
+
+def report_fixed(specs, phase="target_verify"):
+    """Itemise the fixed term `a`: what the verify phase spends outside qmv.
+
+    Every command buffer at the default 50 ops per buffer is mixed, so a buffer
+    interval on its own cannot separate the non-qmv work. The phase model can.
+    `b*G + c*M` is the whole cost of the quantized projections, and affine-4
+    group-64 makes bytes and multiply-accumulates exactly proportional, so one
+    weight-stream share prices each qmv class. Subtracting the modelled qmv cost
+    of the dispatches inside a buffer from that buffer's measured interval
+    leaves the cost of everything else in it. Those residuals sum to `a` by
+    construction, which is the check, not the result; the result is how they
+    distribute over the non-qmv classes.
+
+    Residuals are never clipped. A negative residual means the buffer ran its
+    qmv content faster than the phase-average rate, and it is carried with its
+    sign.
+
+    Bound classification uses the 265.0 GB/s DRAM read rate this host reaches
+    for working sets of 64 MB to 1024 MB.
+    """
+    fit_points = []
+    for spec in specs:
+        path, _, text = spec.partition("@")
+        width = int(text)
+        _classes, measured, rounds = leg_classes(path, phase, width)
+        if rounds:
+            fit_points.append((width, measured, path))
+    alpha, beta, gamma = solve(
+        [[1.0, float(groups(m)), float(m)] for m, _u, _p in fit_points],
+        [u for _m, u, _p in fit_points])
+    macs = {out: count * work for out, (count, work) in QMV_WORK.items()}
+    mac_total = sum(macs.values())
+    print(f"phase model a={alpha:,.1f}  b={beta:,.1f}  c={gamma:,.1f} us "
+          f"over widths {[m for m, _u, _p in fit_points]}")
+
+    for width, measured, path in fit_points:
+        variable = beta * groups(width) + gamma * width
+        per_dispatch = {}
+        for out, (count, _work) in QMV_WORK.items():
+            per_dispatch[out] = variable * macs[out] / mac_total / count
+        charged = defaultdict(lambda: [0.0, 0.0, 0.0])
+        modelled_qmv = 0.0
+        for _p, steady in pick_leg([path], phase, width):
+            rounds = phase_rounds(steady, phase, width)
+            for body, (count, gpu_ns) in collect_signatures(
+                    steady, phase, width).items():
+                shapes = parse_signature(body)
+                buffers = count / rounds
+                us = gpu_ns / 1e3 / rounds
+                qmv_us = 0.0
+                for shape, multiplicity in shapes.items():
+                    match = QMV_RE.match(shape)
+                    if match:
+                        out = int(match.group(2)) * 8
+                        qmv_us += per_dispatch[out] * multiplicity * buffers
+                modelled_qmv += qmv_us
+                residual = us - qmv_us
+                non_qmv = {s: n for s, n in shapes.items()
+                           if not QMV_RE.match(s)}
+                if not non_qmv:
+                    charged["qmv-only buffers, launch and tail"][0] += residual
+                    continue
+                weights = {s: n * max(sum(shape_bytes(s, width)), 1.0)
+                           for s, n in non_qmv.items()}
+                total = sum(weights.values())
+                for shape, n in non_qmv.items():
+                    row = charged[class_label(shape)]
+                    row[0] += residual * weights[shape] / total
+                    row[1] += n * buffers
+                    row[2] += sum(shape_bytes(shape, width)) * n * buffers
+        print()
+        print(f"=== {path}  M={width}  measured {measured:,.1f} us/round; "
+              f"modelled qmv {modelled_qmv:,.1f}; residual "
+              f"{measured - modelled_qmv:,.1f} (model a = {alpha:,.1f})")
+        print(f"    {'us/round':>10}{'disp/rnd':>10}{'MB/round':>10}"
+              f"{'GB/s':>8}{'bound':>12}  class")
+        for label, (us, disp, moved) in sorted(charged.items(),
+                                               key=lambda kv: -kv[1][0]):
+            rate = moved / (us * 1e-6) / 1e9 if us > 0 and moved else 0.0
+            if moved == 0:
+                bound = "no bytes"
+            elif rate >= 0.60 * DRAM_GB_S:
+                bound = "bandwidth"
+            elif rate >= 0.25 * DRAM_GB_S:
+                bound = "partly bw"
+            else:
+                bound = "latency"
+            print(f"    {us:10,.1f}{disp:10.2f}{moved / 1e6:10.2f}"
+                  f"{rate:8.1f}{bound:>12}  {label[:72]}")
+
+
 def report_gdn(paths, phase="target_verify"):
     """Audit every Gated DeltaNet recurrent-state dispatch, per round and width."""
     print(f"GDN recurrent state: {GDN_V_HEADS} heads x {GDN_HEAD_DIM} x "
@@ -810,6 +905,8 @@ def main():
         report_rowcost(kept[0], kept[1], width_a=width, width_b=width2)
     elif mode == "gdn":
         report_gdn(kept)
+    elif mode == "fixed":
+        report_fixed(kept)
     else:
         print(__doc__)
         return 2
