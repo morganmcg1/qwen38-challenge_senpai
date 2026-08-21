@@ -516,7 +516,10 @@ int main(int argc, char **argv) {
     // --- pack control: a damaged interleaved record must break g_pack32 ----
     {
       const uint32_t saved_pack = pp[0];
-      pp[0] ^= 0x00010000u;
+      // Flip an exponent bit of the bias half. A one-ordinal mantissa flip is
+      // too small: one group of the eighty a row accumulates rounds away in
+      // the bf16 output and the control silently passes.
+      pp[0] ^= 0x40000000u;
       int slice = 0;
       memset(y.contents, 0, y_bytes);
       runArm(queue, pso[kArmPack32], w, w_copies, scales, biases, codes,
