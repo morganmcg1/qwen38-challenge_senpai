@@ -1,0 +1,50 @@
+legs: 3   draft depths observed: [2, 4, 5, 8]
+rounds dropped: seed-history-flush=3 cache-growth=2
+head KV cache capacity observed (positions -> copy dispatches): 768->436, 1024->20
+  d= 2  rounds= 11  draft_head dispatches [64]
+  d= 4  rounds=  1  draft_head dispatches [118]
+  d= 5  rounds=  1  draft_head dispatches [145]
+  d= 8  rounds= 30  draft_head dispatches [226]
+
+MARGINAL DRAFT STEP -- shapes whose count is exactly A + B*(d-1)
+  first   marg   res  class  shape
+   1.00   1.00  0.00      3  CV2ISigmoidADV2IMultiplyACEV2OMultiplyDB_VV_V2V2_11160318154034397263_contiguous grid=17408x1x1 
+   1.00   1.00  0.00      3  CV2ISigmoidBDV2IBroadcastACEV2IBroadcastCAFV2OMultiplyDE_VV_V2V2_11160318154034397263_strided_2 
+   1.00   1.00  0.00      4  affine_gather_qmv_bfloat16_t_gs_64_b_4 grid=1x1x32 tg=32x2x1
+   1.00   1.00  0.00      4  affine_qmv_fast_bfloat16_t_gs_64_b_2_batch_0 grid=1x12292x1 tg=32x2x1
+   1.00   1.00  0.00      1  affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x1536x1 tg=32x2x1
+   1.00   1.00  0.00      1  affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x4352x1 tg=32x2x1
+   2.00   3.00  0.00      1  affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x640x1 tg=32x2x1
+   1.00   1.00  0.00      2  custom_kernel_qwen35_attention_qk_rms_rope_bf16_v1_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_f
+   0.00   1.00  0.00      3  custom_kernel_qwen35_embed_dual_rms_norm_concat_bf16_v1_int32_tc_uint32_t_bfloat16_t_bfloat16_t_
+   1.00   1.00  0.00      3  custom_kernel_qwen35_fused_residual_rms_norm_bfloat16_t_bfloat16_t_bfloat16_t_floats_bfloat16_t_
+   1.00   1.00  0.00      4  custom_kernel_qwen_mtp_draft_rerank__98304_149740_bfloat16_t_uint32_t_int32_t grid=32x1x1 tg=32x
+   1.00   1.00  0.00      4  custom_kernel_qwen_mtp_draft_top32_finalize_uint32_t_uint32_t_uint32_t grid=256x1x1 tg=256x1x1
+   1.00   1.00  0.00      4  custom_kernel_qwen_mtp_draft_top32_partial_bfloat16_t_uint32_t_uint32_t grid=16384x1x1 tg=256x1x
+   1.00   1.00  0.00      3  g1_copybfloat16bfloat16 grid=17408x1x1 tg=1024x1x1
+   1.00   1.00  0.00      1  gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=128x1x1 tg=32x1x4
+   1.00   1.00  0.00      1  gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=64x1x1 tg=32x1x4
+   2.00   2.00  0.00      2  gg2_copybfloat16bfloat16 grid=256x4x1 tg=256x4x1
+   2.00   2.00  0.00      3  rms_loopedbfloat16 grid=1024x1x1 tg=1024x1x1
+   1.00   1.00  0.00      5  scatter_axisbfloat16int32_none_intcc grid=1x1024x1 tg=1x1024x1
+   1.00   1.00  0.00      2  sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=24x1x1 tg=1024x1x1
+   0.00   2.00  0.00      2  vn_copybfloat16bfloat16 grid=196608x1x1 tg=1024x1x1
+   1.00   1.00  0.00      3  vv_Addbfloat16 grid=5120x1x1 tg=1024x1x1
+  23.00  27.00         TOTAL
+
+FIRST HEAD CALL ONLY -- 52 flush-width-dependent shapes, not part of the marginal draft step
+
+per-class marginal dispatches and modelled bytes per draft step
+  class 1 weight-streaming GEMV          dispatches= 7.00 weight_bytes= 264,437,760 activation_bytes=          0
+  class 2 attention over head history    dispatches= 6.00 weight_bytes=       1,024 activation_bytes=  8,425,472
+  class 3 norms and elementwise          dispatches= 8.00 weight_bytes=      54,080 activation_bytes=    344,064
+  class 4 readout and rerank             dispatches= 5.00 weight_bytes= 157,429,760 activation_bytes=    262,272
+  class 5 island scatter                 dispatches= 1.00 weight_bytes=       4,096 activation_bytes=      4,096
+                                         weight total   =  421,926,720
+                                         activation tot =    9,035,904
+
+  declared-head weight actually read  =  421,831,680
+  target-owned weight read on the path=       95,040
+  campaign head artifact byte model   =  427,738,112
+  difference                          =   -5,906,432 (-1.381 %)
+  activation traffic, stated separately = 9,035,904 (2.14 % of head weight bytes)

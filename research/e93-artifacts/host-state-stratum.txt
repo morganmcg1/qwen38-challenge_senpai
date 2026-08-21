@@ -1,0 +1,70 @@
+
+=== research/out/e93-census-d8/census.jsonl
+  pid 94164: 23 rounds after dropping 1 warmup
+    target_forward   host    383.7..   1368.3 us  clean(<= 1500us)   23/  23 mean    1140.2  dirty    0 mean       nan
+      instruction counter: dispatches 1705, commits mean 44.8, barriers mean 1081.0, host us/dispatch 0.669
+  pid 94195: 2 rounds after dropping 1 warmup
+    draft_head       host    135.4..    233.3 us  clean(<= 1500us)    2/   2 mean     184.3  dirty    0 mean       nan   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 145..226 over 2 values, commits mean 16.5, barriers mean 138.5, host us/dispatch 1.271
+    target_verify    host   1084.3..   1367.1 us  clean(<= 1500us)    2/   2 mean    1225.7  dirty    0 mean       nan   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 831..834 over 2 values, commits mean 53.0, barriers mean 709.0, host us/dispatch 1.475
+
+=== research/out/e93-census-d2/census.jsonl
+  pid 94610: 35 rounds after dropping 1 warmup
+    target_forward   host    366.3..   1385.3 us  clean(<= 1500us)   35/  35 mean    1149.7  dirty    0 mean       nan
+      instruction counter: dispatches 1705, commits mean 44.5, barriers mean 1081.0, host us/dispatch 0.674
+  pid 94669: 11 rounds after dropping 1 warmup
+    draft_head       host     24.1..    169.7 us  clean(<= 1500us)   11/  11 mean     121.1  dirty    0 mean       nan   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 64, commits mean 6.0, barriers mean 44.0, host us/dispatch 1.891
+    target_verify    host    264.1..   1107.8 us  clean(<= 1500us)   11/  11 mean     852.1  dirty    0 mean       nan   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 748, commits mean 48.1, barriers mean 677.0, host us/dispatch 1.139
+
+=== research/out/e93-census-long/census.jsonl
+  pid 94977: 279 rounds after dropping 1 warmup
+    target_forward   host    352.6..   4061.1 us  clean(<= 1500us)  273/ 279 mean    1196.4  dirty    6 mean    2051.0
+      instruction counter: dispatches 1705..1801 over 2 values, commits mean 44.3, barriers mean 1080.7, host us/dispatch 0.712
+  pid 95050: 32 rounds after dropping 1 warmup
+    draft_head       host     36.3..    116.6 us  clean(<= 1500us)   32/  32 mean      68.1  dirty    0 mean       nan
+      instruction counter: dispatches 118..232 over 3 values, commits mean 20.7, barriers mean 167.4, host us/dispatch 0.577
+    target_verify    host    218.7..    546.3 us  clean(<= 1500us)   32/  32 mean     279.0  dirty    0 mean       nan
+      instruction counter: dispatches 750..1074 over 4 values, commits mean 55.0, barriers mean 708.5, host us/dispatch 0.372
+
+=== research/out/e93-gpu-insitu-d8/census.jsonl
+  pid 95459: 127 rounds after dropping 1 warmup
+    target_forward   host    383.7..   1595.9 us  clean(<= 1500us)  126/ 127 mean    1188.0  dirty    1 mean    1595.9
+      instruction counter: dispatches 1705, commits mean 43.9, barriers mean 1081.0, host us/dispatch 0.699
+  pid 95475: 15 rounds after dropping 1 warmup
+    draft_head       host     12.0..    443.7 us  clean(<= 1500us)   15/  15 mean     110.1  dirty    0 mean       nan   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 37..226 over 3 values, commits mean 19.1, barriers mean 153.3, host us/dispatch 2.975
+    target_verify    host    233.0..   1494.6 us  clean(<= 1500us)   15/  15 mean     450.6  dirty    0 mean       nan   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 749..1467 over 4 values, commits mean 53.9, barriers mean 724.5, host us/dispatch 0.602
+
+=== research/out/e93-gpu-iso-d8/census.jsonl
+  pid 95873: 23 rounds after dropping 1 warmup
+    target_forward   host    413.8..    490.1 us  clean(<= 1500us)   23/  23 mean     444.2  dirty    0 mean       nan
+      instruction counter: dispatches 1705, commits mean 1068.3, barriers mean 483.0, host us/dispatch 0.261
+  pid 95961: 2 rounds after dropping 1 warmup
+    draft_head       host    212.1..    274.2 us  clean(<= 1500us)    2/   2 mean     243.2  dirty    0 mean       nan   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 137..212 over 2 values, commits mean 109.0, barriers mean 71.5, host us/dispatch 1.775
+    target_verify    host   1611.3..   1827.5 us  clean(<= 1500us)    0/   2 mean       nan  dirty    2 mean    1719.4   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 831..834 over 2 values, commits mean 598.0, barriers mean 386.0, host us/dispatch 2.069
+
+=== research/out/e93-gpu-iso2-d8/census.jsonl
+  pid 96405: 71 rounds after dropping 1 warmup
+    target_forward   host    394.8..    478.6 us  clean(<= 1500us)   71/  71 mean     420.7  dirty    0 mean       nan
+      instruction counter: dispatches 1705, commits mean 1072.5, barriers mean 483.0, host us/dispatch 0.247
+  pid 96419: 7 rounds after dropping 1 warmup
+    draft_head       host    132.6..    473.6 us  clean(<= 1500us)    7/   7 mean     379.6  dirty    0 mean       nan   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 212, commits mean 124.3, barriers mean 88.0, host us/dispatch 1.791
+    target_verify    host   1419.5..   2013.9 us  clean(<= 1500us)    1/   7 mean    1419.5  dirty    6 mean    1934.2   <<< SMALL CLEAN SAMPLE
+      instruction counter: dispatches 834, commits mean 604.1, barriers mean 386.0, host us/dispatch 2.231
+
+=== research/out/e93-gpu-insitu-long/census.jsonl
+  pid 96801: 383 rounds after dropping 1 warmup
+    target_forward   host    379.1..   2058.7 us  clean(<= 1500us)  381/ 383 mean    1228.1  dirty    2 mean    1796.3
+      instruction counter: dispatches 1705..1801 over 2 values, commits mean 44.1, barriers mean 1079.4, host us/dispatch 0.722
+  pid 96820: 52 rounds after dropping 1 warmup
+    draft_head       host      9.7..    323.5 us  clean(<= 1500us)   52/  52 mean      65.2  dirty    0 mean       nan
+      instruction counter: dispatches 33..232 over 6 values, commits mean 20.6, barriers mean 164.4, host us/dispatch 1.975
+    target_verify    host    224.6..    985.0 us  clean(<= 1500us)   52/  52 mean     276.2  dirty    0 mean       nan
+      instruction counter: dispatches 834..1467 over 5 values, commits mean 54.8, barriers mean 713.8, host us/dispatch 0.331

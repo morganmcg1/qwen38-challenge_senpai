@@ -2859,6 +2859,9 @@ public class Qwen35TextModelInner: Module {
         // for the same schedule shape: off 10.37 ms vs ladder 9.45 ms/step;
         // schedule scaled from 40 to 64 layers, front rungs kept). The rung
         // set is overridable via MLX_QWEN_MTP_LADDER for schedule research.
+        // The seed-prefill stride is fixed at 3: E91 swept 9 schedules over 108
+        // blocks and the best arm was 0.94 sigma, because the host enqueues the
+        // whole graph in 118.7 ms of a 4043 ms GPU-bound block.
         let prefillLadder = inputs.dim(1) >= 512
         let ladderActive = inputs.dim(1) <= 9 || prefillLadder
         if hiddenStates.dtype == .bfloat16 && hiddenStates.dim(-1) == 5120 {
