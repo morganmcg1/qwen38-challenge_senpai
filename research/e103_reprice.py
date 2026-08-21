@@ -63,6 +63,54 @@ def kernels(leg: dict, prefix: str) -> dict[str, dict]:
     return {k: v for k, v in leg["kernels"].items() if k.startswith(prefix)}
 
 
+def compute() -> dict:
+    """Every scalar the report and the W&B run quote, from one place."""
+    payload = json.loads(CENSUS.read_text())
+    anchors = {}
+    for leg in payload.values():
+        for width, busy in leg["round_busy_us"].items():
+            m = int(width[1:])
+            if m and leg["rounds_by_width"][width] >= 10:
+                anchors[m] = busy
+    # Round length model. Widths 5 and 6 are measured over 10+ rounds each.
+    # Width 4 is a single-round sample from the same leg. For M >= 7 the
+    # increment is the pre-E100 width 5 to width 6 step, which is the
+    # increment in the regime where E100's `case 5:` edit does not apply.
+    per_row_ge6 = anchors[6] - PRE_E100_ROUND_US
+    rounds = {3: 79000.0, 4: 86301.0, 5: anchors[5], 6: anchors[6]}
+    for m in (7, 8, 9):
+        rounds[m] = anchors[6] + per_row_ge6 * (m - 6)
+
+    mass = sum(WIDTH_SHARE.values())
+    num = sum(WIDTH_SHARE[m] * STACK_US[m] for m in WIDTH_SHARE)
+    den = sum(WIDTH_SHARE[m] * rounds[m] for m in WIDTH_SHARE)
+    # Rung 2b measured the merge on the SDPA kernels only, because the
+    # microbenchmark never saw the copy. In situ the split pays two copies
+    # and a merged pass pays one, so M >= 6 has one more copy to give back.
+    copy_us = W6_LEG1 - sum(ISOLATED_1ROW) / 2
+    num_hi = sum(WIDTH_SHARE[m] * (STACK_US[m]
+                                   + (FA_LAYERS * copy_us if m >= 6 else 0.0))
+                 for m in WIDTH_SHARE)
+    weighted_round = den / mass
+    return {
+        "anchors": anchors,
+        "rounds": rounds,
+        "per_row_ge6_us": per_row_ge6,
+        "insitu_fa_w5_us_per_round": FA_LAYERS * W5_LEG5,
+        "insitu_fa_w6_us_per_round": FA_LAYERS * (W6_LEG5 + W6_LEG1),
+        "copy_us": copy_us,
+        "weighted_round_us": weighted_round,
+        "weighted_saving_us": num / mass,
+        "weighted_saving_upper_us": num_hi / mass,
+        "ceiling_pct": 100 * num / den,
+        "ceiling_upper_pct": 100 * num_hi / den,
+        "bar_us": MIN_USEFUL_FRACTION * weighted_round,
+        "ratio_to_bar": (num / mass) / (MIN_USEFUL_FRACTION * weighted_round),
+        "ratio_to_bar_upper": (num_hi / mass)
+        / (MIN_USEFUL_FRACTION * weighted_round),
+    }
+
+
 def main() -> None:
     payload = json.loads(CENSUS.read_text())
     d4, d5 = payload[D4], payload[D5]

@@ -31,8 +31,13 @@ import argparse
 import json
 import pathlib
 import statistics as st
+import sys
 
 import wandb
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import e103_insitu_split  # noqa: E402
+import e103_reprice  # noqa: E402
 
 ENTITY = "wandb-applied-ai-team"
 PROJECT = "qwen38-mlx-challenge-senpai"
@@ -750,8 +755,61 @@ def log_rebased_census() -> None:
                            v["us_per_round"], v["min_us"], v["max_us"])
             summary[f"census/{tag}/{key}/us_per_dispatch"] = v["us_per_dispatch"]
             summary[f"census/{tag}/{key}/us_per_round"] = v["us_per_round"]
+    # The in-situ partition. At verify width 6 the trusted cap is exceeded
+    # and each FA-layer attention emits two kernels into one command buffer,
+    # so it vanishes from the one-kernel-per-buffer view entirely and only
+    # the buffer signature table holds it.
+    insitu = wandb.Table(columns=["leg", "buffers", "buffers_per_round",
+                                  "kernels_per_buffer", "us_per_buffer",
+                                  "us_per_round", "signature"])
+    for tag, rounds_n, pat in (("e103r2-d4-ops0", 12, "w5|target_verify|sdpa"),
+                               ("e103r2-d5-ops0", 11, "w6|target_verify|g2_copy")):
+        for key, e in sorted(e103_insitu_split.signatures(tag, pat).items(),
+                             key=lambda kv: -kv[1]["gpu_ns"]):
+            insitu.add_data(tag, e["buffers"], e["buffers"] / rounds_n,
+                            e["dispatches"] / e["buffers"],
+                            e["gpu_ns"] / 1e3 / e["buffers"],
+                            e["gpu_ns"] / 1e3 / rounds_n, key)
+
+    m = e103_reprice.compute()
+    reprice = wandb.Table(columns=["verify_width", "width_share",
+                                   "round_gpu_busy_us", "stacked_saving_us",
+                                   "saving_pct_of_round"])
+    for width in sorted(e103_reprice.WIDTH_SHARE):
+        reprice.add_data(width, e103_reprice.WIDTH_SHARE[width],
+                         m["rounds"][width], e103_reprice.STACK_US[width],
+                         100 * e103_reprice.STACK_US[width]
+                         / m["rounds"][width])
+    summary.update({
+        "reprice/pre_e100_anchor_us": LOCAL_ROUND_US,
+        "reprice/post_e100_anchor_w5_us": m["anchors"][5],
+        "reprice/post_e100_anchor_w6_us": m["anchors"][6],
+        "reprice/anchor_w5_change_pct": 100 * (m["anchors"][5]
+                                               / LOCAL_ROUND_US - 1),
+        "reprice/insitu_fa_attention_w5_us_per_round":
+            m["insitu_fa_w5_us_per_round"],
+        "reprice/insitu_fa_attention_w6_us_per_round":
+            m["insitu_fa_w6_us_per_round"],
+        "reprice/insitu_copy_us_per_leg": m["copy_us"],
+        "reprice/session_weighted_round_us": m["weighted_round_us"],
+        "reprice/stacked_saving_us_per_round": m["weighted_saving_us"],
+        "reprice/stacked_saving_upper_us_per_round":
+            m["weighted_saving_upper_us"],
+        "reprice/stacked_ceiling_pct": m["ceiling_pct"],
+        "reprice/stacked_ceiling_upper_pct": m["ceiling_upper_pct"],
+        "reprice/min_useful_us_per_round": m["bar_us"],
+        "reprice/ratio_to_bar": m["ratio_to_bar"],
+        "reprice/ratio_to_bar_upper": m["ratio_to_bar_upper"],
+        "reprice/verdict": (
+            "the rebased anchor does not move the verdict: the stacked "
+            "ceiling is 1.00x the minimum useful effect, 1.06x if the one "
+            "copy per FA layer that a merged pass removes is counted"
+        ),
+    })
     run.log({"census/sdpa_dispatches": table})
     run.log({"census/round_anchor": anchors})
+    run.log({"census/insitu_buffer_signatures": insitu})
+    run.log({"reprice/per_width": reprice})
     run.summary.update(summary)
     run.finish()
 

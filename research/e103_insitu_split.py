@@ -24,11 +24,8 @@ import pathlib
 import sys
 
 
-def main() -> None:
-    if len(sys.argv) < 3:
-        sys.exit("usage: e103_insitu_split.py TAG ROUNDS [SUBSTRING]")
-    tag, rounds = sys.argv[1], float(sys.argv[2])
-    pat = sys.argv[3] if len(sys.argv) > 3 else "sdpa"
+def signatures(tag: str, pat: str) -> dict[str, collections.Counter]:
+    """Buffer signatures matching `pat`, summed over every snapshot."""
     path = pathlib.Path("research/out") / tag / "census.jsonl"
     agg: dict[str, collections.Counter] = {}
     for line in path.open():
@@ -42,6 +39,15 @@ def main() -> None:
             e["buffers"] += val["buffers"]
             e["dispatches"] += val["dispatches"]
             e["gpu_ns"] += val["gpu_ns"]
+    return agg
+
+
+def main() -> None:
+    if len(sys.argv) < 3:
+        sys.exit("usage: e103_insitu_split.py TAG ROUNDS [SUBSTRING]")
+    tag, rounds = sys.argv[1], float(sys.argv[2])
+    pat = sys.argv[3] if len(sys.argv) > 3 else "sdpa"
+    agg = signatures(tag, pat)
     print(f"=== {tag}, {rounds:g} rounds, signatures matching {pat!r} ===")
     for key, e in sorted(agg.items(), key=lambda kv: -kv[1]["gpu_ns"]):
         print(f"  buffers={e['buffers']:6d} ({e['buffers'] / rounds:6.2f}/rd)"
