@@ -177,8 +177,8 @@ struct E115ConcurrentDispatchProbeTests {
     private static func evalOverheadMicroseconds() -> Double {
         let tiny = MLXArray(Array(repeating: Float(1), count: 16))
         eval(tiny)
-        _ = timed(200) { [{ [tiny + 1] }] }
-        return timed(4000) { [{ [tiny + 1] }] }
+        _ = timed(200, [{ [tiny + 1] }])
+        return timed(4000, [{ [tiny + 1] }])
     }
 
     /// FNV-1a over the raw float32 bit patterns of a whole output tensor.
