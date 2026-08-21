@@ -26008,3 +26008,343 @@ this campaign has `arch_gen >= 17`.
 
 In flight: `a3b15b54`, `8819b108`, `a308911e`, `8ec75bd3`, `e258d315`,
 `9c4f39f1`, `57fb62fc`, `d73184c4`. None is ours; the slot is free.
+
+## 237 — 2026-08-21 04:40 — Advisor error 32: the published score is exactly `(raw_beagle + raw_essays) / 2`. `mean7` is retired. It cost us the crown. E87 arm C's delivery blocker is gone.
+
+### 237.1 The decisive finding
+
+The published score is the median of eight per-prompt ratios. With eight values
+the median is the mean of the 4th and 5th after sorting. **On every
+high-scoring submission the 4th is beagle and the 5th is essays, exact to eight
+decimal places:**
+
+| submission | 4th sorted | 5th sorted | mean of the two | published `officialScore` |
+|---|---|---|---:|---:|
+| `8819b108` crown | beagle 3.185167 | essays 3.470732 | 3.32794961 | **3.32794961** |
+| `214d92aa` | beagle 3.181589 | essays 3.468991 | 3.32529025 | **3.32529025** |
+| `0dd455f0` | beagle 3.187837 | essays 3.451471 | 3.31965392 | **3.31965392** |
+| `8e83c6b3` | beagle 3.178054 | essays 3.459828 | 3.31894061 | **3.31894061** |
+| `83f0b282` ours | beagle 3.177222 | essays 3.450347 | 3.31378448 | **3.31378448** |
+
+**Travel, drama, plutarch, republic, medicine and botany contribute nothing to
+the score.** I have priced this entire campaign on the mean over the seven
+drafting prompts. That statistic is not the score and never was. **Advisor
+error 32.**
+
+### 237.2 The margins are asymmetric, which decides how to aim a mechanism
+
+From `python3 research/board_per_prompt.py setters`:
+
+- **beagle has 31.15 to 31.43 % of headroom below it.** The next lowest ratio is
+  travel at about 2.19 against beagle's 3.185. Beagle stays 4th under any
+  mechanism we can build.
+- **essays has only 0.59 to 1.04 % of headroom above it.** Republic is next. An
+  **essays-only** improvement therefore **saturates near +0.7 %**, after which
+  republic becomes 5th and further essays gain pays nothing.
+
+Three mechanism classes and their score multipliers:
+
+| class | multiplier on the score | limit |
+|---|---|---|
+| uniform across prompts | **1.0x** | none |
+| beagle-only | 0.48x | none |
+| essays-only | 0.48x | saturates near +0.7 % |
+| any of the other six only | **0.0x** | immediate |
+
+E87 arm C is uniform: it removes 98,336,000 bytes from every draft step of every
+prompt. Draft counts are beagle 4.382, essays 5.087, republic 4.989, so arm C
+separates essays from republic by roughly 0.03 %, two orders of magnitude inside
+the 0.59 % essays margin. **No reordering, no saturation, full payment.**
+
+### 237.3 The proof that `mean7` cost us the crown
+
+`8819b108` (ox-alpha) is a re-implementation of our own E84 mechanism with one
+extra half we do not have. Both measured against the same predecessor
+`8e83c6b3`:
+
+| prompt | our E84 (K/V half) | `8819b108` (K/V + Q) | winner |
+|---|---:|---:|---|
+| **beagle — SETS SCORE** | −0.116 % | **−0.139 %** | them |
+| **essays — SETS SCORE** | −0.103 % | **−0.150 %** | them |
+| republic | −0.098 % | −0.162 % | them, pays nothing |
+| medicine | −0.139 % | −0.146 % | them, pays nothing |
+| botany | −0.105 % | −0.112 % | them, pays nothing |
+| travel | **−0.229 %** | −0.156 % | us, pays nothing |
+| drama | **−0.170 %** | −0.051 % | us, pays nothing |
+| plutarch | +0.040 % | +0.139 % | — |
+| **`mean7`** | **−0.1371 %, sd 0.0478** | −0.1308 %, sd 0.0387 | **us** |
+| **SCORE STATISTIC** | −0.109 % | **−0.145 %** | **THEM** |
+
+Score-statistic gap 0.035 %. The serial-free gap between the two submissions is
+0.0357 %. **They agree to three decimals.** Our mechanism won where it pays
+nothing and lost where it is the entire score.
+
+### 237.4 The score lives at verify width 5 and 6
+
+Mean verify width is drafts plus one:
+
+| prompt | `effective_mean_draft_len` | mean verify width | sets score |
+|---|---:|---:|---|
+| **beagle** | 4.382 | **5.38** | **yes, 4th** |
+| **essays** | 5.087 | **6.09** | **yes, 5th** |
+| republic | 4.989 | 5.99 | no |
+| medicine | 5.256 | 6.26 | no |
+| botany | 6.148 | 7.15 | no |
+| travel | 2.656 | 3.66 | no |
+| drama | 2.298 | 3.30 | no |
+| plutarch | 0.154 | 1.15 | no |
+
+This explains ledger 207's finding that widths 5 and 6 carry 57.5 % of ranked
+round cost. **Our local fixture runs at mean verify width 7.27, roughly two
+widths above the scoring point.** It over-weights M=9 by 7.58x and under-weights
+M=5 by 3.76x. **A mechanism that helps at M=9 and not at M=5 or M=6 looks
+excellent locally and scores zero.**
+
+Consequence for E92: the M=5 impossible-114 % bandwidth cell is now the single
+most important number in edward's rung 2, and the marginal cost per width from
+1 to 9 in absolute GPU-busy microseconds matters more than any curve average.
+
+### 237.5 The `8819b108` mechanism in full
+
+Branch `upstream/submissions/8819b108-e0cb-411f-8c60-e1629523cb49`, commit
+`b40c28e9`, now `upstream/main`. Tree digests: `Sources 8aa63cff…` identical to
+`8e83c6b3`, `manifest e38827ef…` identical to `8e83c6b3`, `Vendor 1417ee42…`
+new. **A clean isolated ranked pair: one file, +264 / −0 in
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`.**
+
+Their added symbols:
+
+- `_kvIslandsComplete` and `_qkvIslandsComplete`, set at install only when the
+  index sets are complete permutations. **Any mismatch permanently reverts to
+  the legacy assembly bit for bit.**
+- `islandKVForward(x:islandKVWeight:takeOrder:kvOut:)` — one bf16 matmul plus
+  one `MLX.take`, no quantized K/V GEMM. This is the half we already have.
+- `islandQKVForward(...)` — **one quantized GEMM over the live Q rows only**,
+  plus one exact GEMM, reassembled by `concatenated([qLive, exact], axis: -1)`
+  then `MLX.take(…, takeOrder, axis: -1)`. **This is the half we are missing.**
+- `buildIslandLivePack(q:)` — `MLX.take(q.weight/scales/biases, liveIdx,
+  axis: 0).contiguous()`, built lazily on the first draft-step call.
+- `IslandFastPathPlan`, `isPermutationOfRange`, `islandFastPathPlan`.
+
+Bit-exactness argument: rows are independent, so per-row results are
+bit-identical with the legacy fused-pack plus `putAlong` assembly.
+
+Byte arithmetic at affine-4 g64, 0.5625 bytes per element:
+
+| tensor | rows | bytes |
+|---|---:|---:|
+| `q_proj` full | 12,288 | 35,389,440 |
+| `q_proj` live only | 11,264 | 32,440,320 |
+| **saved per draft step** | 1,024 | **2,949,120 = 0.6895 % of 427,738,112** |
+
+Our missing delta sits at `Qwen35.swift:2287-2301`: we call
+`quantizedMM(x, _qOnlyW, …)` over **all 12,288 Q rows** and then overwrite 1,024
+of them with `replaceExactRows`. Those 1,024 rows are dead work.
+
+**Six rival failures on adjacent forms:** `c6b9c06b` 3.3106, `396a16f9` 3.3015,
+`f1e03d66` 3.2476, `23a4d1d6` 3.2611, `a3b15b54` 3.2496, all Claude Fable 5
+"head attention island rows", plus `a4abaf0e` 3.3082 (GPT 5.6 Sol, "compress
+precision-island Q and fuse reconstruction into Q/K preparation"). **ox-alpha's
+form is the only one that has worked, because it deletes provably dead work
+only, keeps bit-exactness by row independence, and reverts permanently on any
+unexpected index set.** Assigned to askeladd as the E93 rung-4 default arm.
+
+### 237.6 The byte law is an average and must not be applied per tensor
+
+The E82 law `score gain % = 0.0815 × (head bytes removed %) − 206.6 × m` predicts
+**+0.056 %** for the Q shrink at 0.6895 % of head bytes. The measured ranked
+increment is **+0.0063 %, se 0.0233, 95 % CI −0.039 to +0.052** — the prediction
+sits at the very top of the interval.
+
+`q_proj` is a 35 MB read. Edward's corrected bandwidth curve shows reads that
+size are partly cache-served, 276 to 430 GB/s against 261 to 265 in the plateau,
+so removing 35 MB of a 428 MB stream removes cheaper-than-average bytes.
+
+**Rule: the 0.0815 coefficient is an average over the whole 428 MB head stream.
+Price a byte removal against the achievable rate for a read of that size, or
+measure the mechanism directly.** A directly measured mechanism such as E87 arm
+C does not need the law at all.
+
+### 237.7 Submission-branch git ancestry is not content lineage
+
+`8819b108`'s branch is not a descendant of `214d92aa`'s branch, yet its scored
+surface is `214d92aa` plus one file. **Rule: always group and diff submissions
+by `git ls-tree <branch> Sources Vendor mtp-head.manifest.json`, never by
+`git merge-base` or branch topology.** Instrument:
+`python3 research/board_per_prompt.py tree <uuid…>`.
+
+### 237.8 New instrument commands
+
+`research/board_per_prompt.py` gains two commands:
+
+- `setters [<uuid…>]` — prints the 4th and 5th sorted prompts for each
+  submission and both margins.
+- `pair <base-prefix> <candidate-prefix>` — per-prompt table marking which rows
+  set the score, plus `mean7` and the score statistic, with an explicit note
+  that `mean7` is not the score.
+
+### 237.9 E87 arm C: the delivery blocker is gone and the derived partition beats the shipped one
+
+Thorfinn, PR #89, comment `e87-r2-rung1-derived-partition-passes-the-gate`,
+`harness=local`, no GPU time spent. Gate was worst-domain `m <= 3.0e-3`.
+
+| partition | probe `p` | misses / 18,092 | pooled `m` | worst-domain `m` | verdict |
+|---|---:|---:|---:|---:|---|
+| **bisect, derived** | 0.25 | 4 | 2.211e-4 | **2.266e-4** | **pass, 13.2x inside** |
+| **bisect, derived** | 0.15 | 10 | 5.527e-4 | **7.554e-4** | **pass, 4.0x inside** |
+| bisectnat, reserve | 0.25 | 8 | 4.422e-4 | 8.633e-4 | pass |
+| bisectnat, reserve | 0.15 | 22 | 1.216e-3 | 2.266e-3 | pass, 1.3x |
+| plain k-means, r1 shipped | 0.25 | 11 | 6.080e-4 | 1.079e-3 | pass |
+| plain k-means, r1 shipped | 0.15 | 36 | 1.990e-3 | 3.237e-3 | **fail** |
+
+**The derived partition is better than the artifact he shipped in r1**, not
+merely acceptable. Domain concentration also improves: at `p = 0.25` k-means put
+10 of 11 misses in narrative, the derived rule splits 4 misses 2 and 2.
+
+Byte and gain curve under his model `byte gain − 206.6 × m`:
+
+| `p` | head bytes removed | gain at m=0 | worst-domain `m` | predicted worst-domain gain |
+|---:|---:|---:|---:|---:|
+| 0.08 | 29.24 % | +2.383 % | 3.777e-3 | +1.603 % |
+| 0.10 | 28.51 % | +2.323 % | 2.482e-3 | +1.811 % |
+| 0.125 | 27.59 % | +2.249 % | 1.727e-3 | +1.892 % |
+| **0.15** | 26.67 % | +2.173 % | 7.554e-4 | **+2.017 %** |
+| 0.175 | 25.75 % | +2.099 % | 6.475e-4 | +1.965 % |
+| 0.20 | 24.83 % | +2.024 % | 4.316e-4 | +1.934 % |
+| **0.25** | 22.99 % | +1.874 % | 2.266e-4 | **+1.827 %** |
+
+There is a clear interior maximum at 0.15. **I overruled it: ship `p = 0.25`
+first, hold `p = 0.15` as the immediate follow-up submission.** The reason is
+that the whole difference between the two arms is the penalty term, the penalty
+coefficient 206.6 is a single-point fit, and at 0.45 expected misses per leg no
+local measurement can resolve it. Coefficient sensitivity: at 206.6 the ranking
+is +1.827 against +2.017; at 3x it is +1.734 against +1.768; at 10x it is
++1.406 against **+0.988**. `p = 0.25` is also the arm with a measured r1 anchor
+at 22.99 % bytes removed.
+
+**The partition rule**, `research/e87_bisect.py --balance half`: rows are
+dequantized affine-4 g64 compact `lm_head` rows `[98336, 5120]` in compact row
+order; a node with leaf target `L` splits into `ceil(L/2)` and `floor(L/2)`;
+root `L = 12292`; every leaf exactly 8 rows; **no padding at any node**; initial
+centres are the furthest-point pair, **no RNG**; 8 balanced refinement passes
+matching the shipped k-means iteration count; nodes of one level that share a row
+count are batched as `[m, s, 5120]`. **14 levels, 4.87 s.** The reserve rule
+`--balance natural` needs 36 levels and 11.18 s and screens worse on every cell:
+**recorded as a campaign negative so nobody re-derives it.** The r1
+capacity-balanced k-means needed about 20 minutes.
+
+**Provenance closed.** `research/e87-coarse-identity.json`: the shipped
+`mtp.draft_lm_head.{weight,scales,biases}` is **bit-identical** to
+`mx.quantize(dequantize(exact affine-4 g64 compact lm_head rows), 64, 2)`. Zero
+differing bytes across all 157,337,600 bytes, all three tensors, shapes and
+dtypes matched. **Option B is a pure gather.**
+
+**Therefore the HF publication blocker is eliminated.** No custom head, no
+manifest declaration, no HF repository, nothing in the 25 MiB archive. The whole
+mechanism lives in `Sources/` and `Vendor/`, both already in `editablePaths`.
+
+### 237.10 E87 rung 4.1 and 4.2 pass
+
+Thorfinn, comment `e87-r2-step41-42-evidence`. Base `486d19fa`, worker
+`878719eb…`, host `ip-10-231-2-95`, `harness=local`, `sandbox=off`, 512 tokens.
+
+**4.1 determinism.** The local harness starts four worker processes per leg and
+he ran two legs, giving **eight independent derivations**. All eight report
+`order_fnv1a64 = efa704192133552d`, equal to the offline canonical digest. All
+eight 393,344-byte order dumps hash to one value,
+`sha256 = 9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f`.
+`probes = 3073` of 12,292 leaves confirms `p = 0.25`. Because the runtime table
+is the object rung 1 screened, no re-screen is needed.
+
+**4.2 the build is outside the timed window.** Three independent lines:
+
+1. Source path: `QwenRuntimeMTPDriver.swift` calls `warmMTPDecode()` and only
+   then takes `let started = Date()`; the build fires inside
+   `warmAllDepthShapes` through `draftTokenIDWithDeclaredRerank`.
+2. Round 1 against round 2: the build costs 4,943,000 µs; round-1 excess is
+   27,803 µs and 13,192 µs, which is 0.6 % and 0.3 % of the build, differs
+   between legs, and sits in `draft_build_us` next to the declared arm's own
+   first-round JIT.
+3. Whole-window arithmetic: summed `round_us` is 11.984 s and 12.067 s against a
+   charged window of about 16.0 s. A 4.94 s build inside it would force at least
+   0.0409 s/token; measured is 0.0313 and 0.0315.
+
+Once per process, not once per leg: `_derivedClusterAttempted` is an instance
+flag, a worker holds one model, and the ranked candidate leg starts one
+candidate worker, so the ranked cost is 4.94 s once at load.
+
+**Free result: not one proposal changed.** `effective_mean_draft_len`
+6.3589743589743586 and `accepted_draft_rate` 0.87701612903225812 are identical
+to the declared arm at full printed precision on both legs, with
+`all_tokens_matched = true`, `residual_divergence_count = 0`, and
+`head_provenance_sha256` equal to the declared hash. **Corollary I drew and he
+did not: the r1 timing comparison was a same-proposal comparison, so the entire
+−2.582 % round-time result is cost with no acceptance confound.** The caveat
+still stands for the hidden pool: arm C is exact in emitted tokens, not
+identical in proposals.
+
+`--require-symbol buildDerivedClusterIndex` accepted as a standing witness;
+`nm -a` finds it 18 times in the worker.
+
+### 237.11 The Seatbelt sandbox defect
+
+Thorfinn reported two debug legs that passed exactness but produced no log and
+no order dump, and offered two hypotheses. Neither was right. **The Seatbelt
+sandbox eats the write.** Verified in source:
+
+- `benchmark.sh:1294` `(deny file-write*)`.
+- `benchmark.sh:1295` `(allow file-write* (literal "/dev/null"))` — the only
+  writable path in the whole profile.
+- `write_runtime_worker_sandbox_profile()` returns early at `:1267` when
+  `MLXFAST_NO_SANDBOX=1`.
+- `enforce_official_sandbox()` at `:1282` correctly rejects `MLXFAST_NO_SANDBOX=1`
+  for official runs.
+
+The shipped trace sink has the identical failure mode:
+`Qwen36MTPBlockSession.swift:788-794` opens `MLX_QWEN_MTP_TRACE_PATH`, `open()`
+returns −1 under the sandbox, and it falls back to `FileHandle.standardError`,
+which the source comment at `:784-787` states `mtp-timed` installs a swallowing
+emitter for.
+
+**Fix: `MLXFAST_NO_SANDBOX=1` on untimed capture legs only, and hard-check the
+dump size.** `os_log` is the sandbox-proof alternative. `research/e79_trace_leg.sh`
+already sets the variable, so the timing session was always the correct capture
+path.
+
+**New identity field.** I ruled that `research/e87_timing_session.sh` keeps
+`MLXFAST_NO_SANDBOX=1` on its timed arms: it is arm-blind, the r1 result that
+put arm C on the critical path was produced that way, and per-round
+`submit2_per_draft_us` telemetry cannot exist without it. My earlier "never on a
+timed arm" line was meant for official and ranked legs and was written too
+broadly. **But `sandbox=on|off` now joins the experiment identity tuple, and
+absolute times from a sandboxed `--local-submit` leg may never be compared with
+absolute times from an unsandboxed `--local-iterate` leg.**
+
+### 237.12 Board
+
+`87e6421b` is in flight, submitted by askeladd at 04:14:33 UTC from the campaign
+base `b81a43d4`, status `validating`. It carries E85 and the `lhsIndices`
+follow-up, neither of which has ever been measured on the ranked host. Predicted
+serial-free about 3.3221 against the crown's 3.31672423, so it is a genuine
+crown shot.
+
+Serial-free standings over 661 scored rows:
+
+| rank | id | serial-free | published | status |
+|---:|---|---:|---:|---|
+| **1** | `8819b108` | 3.31672423 | 3.32794961 | accepted, ox-alpha |
+| 2 | `214d92aa` | 3.31576204 | 3.32529025 | accepted, GPT 5.6 Sol |
+| **3** | `83f0b282` ours | **3.31554109** | 3.31378448 | rejected |
+| 4 | `1a4218f5` | 3.31502504 | 3.31348359 | rejected |
+| 5 | `3f98b9aa` | 3.31396058 | 3.30895495 | rejected |
+
+Resolutions recorded: `a4abaf0e` rejected 3.3081835855; `a3b15b54` rejected
+3.2495708594; `a308911e` rejected 3.2806493478; `e258d315` rejected
+3.2743235112; `8ec75bd3`, `9c4f39f1` and `c5488cd6` cancelled; `57fb62fc`
+failed.
+
+In flight from rivals: `d73184c4` (Grok 4.6), `fb03be75`, `a3d79512`, `08760612`
+(Claude Fable 5), `70aa42aa` (ox-alpha, island dead-work follow-up), and
+`ad729ec8` (Grok 4.6, 04:11:57, "Restore qL={1,2,3,4,5} SDPA warm on the #914
+island-dead-work crown"). `ad729ec8` is on our stop list: `fc7378dd` ran the
+same qL={1..5} SDPA warm and scored 3.3020.

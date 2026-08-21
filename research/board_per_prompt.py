@@ -230,6 +230,81 @@ def cmd_serialfree(scored, argv):
                  (row.get("createdAt") or "")[:19], index, len(ranked)))
 
 
+def score_setting_prompts(row):
+    """The published score is the mean of the 4th and 5th sorted raw ratios.
+
+    Every other prompt contributes nothing. Returns those two names, weakest
+    first, together with the margin to the neighbours that would displace them.
+    """
+    per = vec(row)
+    ordered = sorted(per, key=lambda n: per[n]["raw_ratio_of_means"])
+    low, high = ordered[3], ordered[4]
+    raws = [per[n]["raw_ratio_of_means"] for n in ordered]
+    return low, high, (raws[3] - raws[2]) / raws[3], (raws[5] - raws[4]) / raws[4]
+
+
+def cmd_setters(scored, prefixes):
+    wanted = [p for p in prefixes] or None
+    for row in sorted(scored, key=lambda r: -(r["officialScore"] or 0)):
+        ident = row["id"]
+        if wanted and not any(ident.startswith(p) for p in wanted):
+            continue
+        low, high, mlow, mhigh = score_setting_prompts(row)
+        per = vec(row)
+        mean = (per[low]["raw_ratio_of_means"] + per[high]["raw_ratio_of_means"]) / 2
+        print("%-9s 4th=%-9s %.6f  5th=%-9s %.6f  mean=%.8f  official=%.8f  "
+              "margin below %.2f%% above %.2f%%"
+              % (ident[:8], low, per[low]["raw_ratio_of_means"],
+                 high, per[high]["raw_ratio_of_means"], mean,
+                 row["officialScore"], mlow * 100, mhigh * 100))
+        if not wanted:
+            break
+
+
+def cmd_pair(scored, argv):
+    """Price a candidate change A -> B per prompt.
+
+    Reports the mean over the seven drafting prompts and, separately, the mean
+    over the two prompts that actually set the score on A. Only the second
+    number predicts a score move.
+    """
+    if len(argv) < 2:
+        print("usage: board_per_prompt.py pair <base-prefix> <candidate-prefix>")
+        return
+    by_id = {r["id"]: r for r in scored}
+
+    def pick(prefix):
+        hits = [r for i, r in by_id.items() if i.startswith(prefix)]
+        if len(hits) != 1:
+            raise SystemExit("prefix %r matched %d rows" % (prefix, len(hits)))
+        return hits[0]
+
+    base, cand = pick(argv[0]), pick(argv[1])
+    pa, pb = vec(base), vec(cand)
+    low, high, _, _ = score_setting_prompts(base)
+    drafting = [n for n in PROMPT_NAMES.values() if n != "plutarch"]
+
+    deltas = {}
+    print("%-9s %14s %14s %10s   %s" % ("prompt", "base s/tok", "cand s/tok",
+                                        "delta %", "role"))
+    for name in sorted(PROMPT_NAMES.values(),
+                       key=lambda n: pa[n]["raw_ratio_of_means"]):
+        x = pa[name]["mtp_seconds_per_token_mean"]
+        y = pb[name]["mtp_seconds_per_token_mean"]
+        deltas[name] = (y - x) / x * 100.0
+        role = "SETS SCORE" if name in (low, high) else ""
+        print("%-9s %14.8f %14.8f %+10.4f   %s" % (name, x, y, deltas[name], role))
+
+    seven = [deltas[n] for n in drafting]
+    two = [deltas[low], deltas[high]]
+    print("mean7            = %+.4f %%  sd %.4f  faster %d/7"
+          % (st.mean(seven), st.stdev(seven), sum(1 for d in seven if d < 0)))
+    print("score statistic  = %+.4f %%  (mean over %s and %s)"
+          % (st.mean(two), low, high))
+    print("note: mean7 is not the score. Only the score statistic predicts a "
+          "board move.")
+
+
 def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "floors"
     if command == "fetch":
@@ -247,6 +322,10 @@ def main():
         cmd_tree(scored, sys.argv[2:])
     elif command == "serialfree":
         cmd_serialfree(scored, sys.argv[2:])
+    elif command == "setters":
+        cmd_setters(scored, sys.argv[2:])
+    elif command == "pair":
+        cmd_pair(scored, sys.argv[2:])
     else:
         print(__doc__)
 
