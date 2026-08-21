@@ -349,6 +349,13 @@ struct E115ConcurrentDispatchProbeTests {
 
                 for blockIndex in 0 ..< Self.blocks {
                     let entryTemp = e115GPUTemperature()
+                    // Sampling macmon leaves the GPU idle long enough to drop
+                    // its clocks, and the release smoke showed the next timed
+                    // arm paying the whole ramp: `a_one` forward came back at
+                    // 856-966 us against 329 us on the reverse pass, in every
+                    // block. This discarded ramp absorbs it, so the palindrome
+                    // is not biased against whichever arm happens to be first.
+                    _ = Self.timed(max(4, count / 4), arms[0].bodies)
                     let forward = arms.map { Self.timed(count, $0.bodies) }
                     let reverse = Array(
                         arms.reversed().map { Self.timed(count, $0.bodies) }

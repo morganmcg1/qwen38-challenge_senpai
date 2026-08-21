@@ -19,17 +19,31 @@ fraction c = 0.180, and `W` cancels. The script that publishes it prints
 from __future__ import annotations
 
 W = 14.41235e9  # logical weight bytes in one pass over the backbone
+# MEASURED: E92 round-busy times, edward, PR #94, W&B ytcemy51, ungated ABBA,
+# 512 tokens. senpai/campaign-ledger.md:27529-27533.
 LOCAL = {1: 64445, 2: 69776, 3: 74778, 4: 86237, 5: 126103}  # us per round
+# INFERRED: evaluations of the fitted lines 27,181.5 + 3,995.1M and
+# 16,943.2 + 7,233.0M. senpai/campaign-ledger.md:28560-28572. These ranked round
+# times were never measured.
 RANKED = {1: 31177, 2: 35172, 3: 39167, 4: 43162, 5: 53108}  # us per round
-GOF_PRE_E100 = {1: 1, 2: 1, 3: 1, 4: 1, 5: 2}  # partition map assumed
+GOF_PRE_E100 = {1: 1, 2: 1, 3: 1, 4: 1, 5: 2}  # PRE-E100 partition map
 COLLAPSE_MEASURED = 0.180
 DW_MEASURED_PP, DW_SD_PP, G2_SHARE = -0.070, 0.360, 0.24
 
-# Finding 44, harness=local: load-only, ALU-only and the shipped kernel.
+# Finding 44, harness=local: load-only, ALU-only and the shipped kernel, from
+# alphonse's isolated NA-ladder arms, E110 r1/r2, PR #112.
+# senpai/campaign-ledger.md:34260-34281.
 ROOFLINE = {4: (203.0, 33.0, 245.9), 5: (207.0, 39.1, 292.2)}
-# Finding 47 / E106 refit, harness=local: isolated ONE-group rate, GB/s.
-ISOLATED_RATE = {2: 253.6, 3: 245.6, 4: 211.7, 5: 178.8}
-# Standing local round weights over NA.
+# Two different NA rate tables exist and must not be merged. The E115 brief
+# quotes the first family under the label "Finding 47", but there is no
+# Finding 47 in senpai/campaign-ledger.md; the highest is Finding 45 at :34310.
+# END-TO-END REFIT, edward's realised width histogram,
+# senpai/campaign-ledger.md:33867-33878, W&B 19kgn6xi.
+REFIT_RATE = {2: 253.6, 3: 245.6, 4: 211.7, 5: 178.8}
+# ISOLATED PROBE, alphonse E111 rung 1, senpai/campaign-ledger.md:34057-34058.
+ISOLATED_RATE = {2: 242.2, 3: 239.7, 4: 206.9, 5: 173.5}
+# Standing local round weights over NA: shares of STREAMING TIME per one-group
+# width, senpai/campaign-ledger.md:33867-33882, research/e111_analyze.py:43-45.
 ROUND_WEIGHTS = {2: 0.024, 3: 0.275, 4: 0.667, 5: 0.034}
 
 FRAMES = {
@@ -65,7 +79,11 @@ def main() -> None:
     r1 = W / (t1 * 1e-6) / 1e9
     a_local = r2 / r1
     print(f"  measured input   E100 collapse c = {COLLAPSE_MEASURED:.3f} "
-          f"(round level, -17.5..-18.6 % per M=5 round)")
+          f"(-17.5..-18.6 % per M=5 round, alphonse, PR #102)")
+    print("                   the band reconciles an end-to-end 3-session ABBA")
+    print("                   (research/e100-results.md:265-281) with an")
+    print("                   isolated kernel probe -17.7 +/- 1.7 % (:283-294),")
+    print("                   <T,5,3,true> against <T,5,5,true>")
     print(f"  r2 = 2W/t2 = {r2:.1f} GB/s   r1 = W/t1 = {r1:.1f} GB/s")
     print(f"  A_local = r2/r1 = {a_local:.3f}")
     print(f"  identity 2*(1-c) = {2 * (1 - COLLAPSE_MEASURED):.3f}   "
@@ -89,15 +107,25 @@ def main() -> None:
               f"A_kernel = {2 * q1 / q2:.3f}")
     print("  => the kernel-level two-group advantage is at most A_local, and is")
     print("     smaller than it whenever the round holds any non-QMV work.")
+    print("  OPEN: E100 also reports an ISOLATED kernel collapse of")
+    print("     -17.7 +/- 1.7 %, which is the round-level -18.0 % almost")
+    print("     exactly. Those two agree only if QMV holds nearly the whole")
+    print("     M=5 round. Finding 22 gives four tensors 59.98 % of the E96")
+    print("     round, so the rest of the QMV set must carry the remainder for")
+    print("     both numbers to stand. E115 does not need to settle this, but")
+    print("     no A quotation should assume the round and kernel frames are")
+    print("     interchangeable.")
 
     print()
     print("=" * 78)
     print("3. A does not isolate concurrency: it mixes four terms")
     print("=" * 78)
     print("  (a) overlap between two concurrent dispatches")
-    print("  (b) the per-dispatch rate(NA) curve, Finding 47 harness=local:")
-    for na, gbs in ISOLATED_RATE.items():
-        print(f"        NA={na}  isolated one-group rate {gbs:6.1f} GB/s")
+    print("  (b) the per-dispatch rate(NA) curve, harness=local. Two tables")
+    print("      exist and the brief's 'Finding 47' label matches neither name:")
+    for na in sorted(REFIT_RATE):
+        print(f"        NA={na}  end-to-end refit {REFIT_RATE[na]:6.1f} GB/s   "
+              f"isolated probe {ISOLATED_RATE[na]:6.1f} GB/s")
     print("      a [3+2] partition runs its groups at NA=3 and NA=2, which are")
     print("      intrinsically faster per byte than one NA=5 group, and that")
     print("      difference is inside A with no way to remove it")
