@@ -132,9 +132,10 @@ struct E98MetadataByteProbeTests {
                 let dense = MLXRandom.normal([outputs, hidden], dtype: .bfloat16)
                 eval(dense)
                 for groupSize in Self.groupSizes {
-                    let (packed, scales, biases) = quantized(
+                    let (packed, scales, optionalBiases) = quantized(
                         dense, groupSize: groupSize, bits: Self.bits,
                         mode: .affine)
+                    let biases = try #require(optionalBiases)
                     eval(packed, scales, biases)
                     packedByGroup[groupSize] = (packed, scales, biases)
                 }
