@@ -556,7 +556,15 @@ public final class Qwen36MTPBlockSession {
         // `sdpa_vector_2pass` on this arch bumps blocks 64→128 when N>1024.
         // The kL=1024 warm above compiles the 64-block family. Compile the
         // 128-block family at kL=1025 for the same qL={1,5,4} only.
-        if extK.dim(2) == 1024 {
+        // E112 arm switch: board pair 8819b108 -> 8bea1495 deleted this family
+        // and read +0.185 % on the plutarch target probe. One binary serves
+        // both arms so an ABBA session needs no rebuild between legs.
+        if Self.traceRounds {
+            Self.traceWrite(
+                "mtp-trace: e112 skip_1025_warm="
+                    + "\(Self.e112Skip1025Warm ? 1 : 0) kL=\(extK.dim(2))\n")
+        }
+        if !Self.e112Skip1025Warm, extK.dim(2) == 1024 {
             let kPad1 = MLXArray.zeros(
                 [extK.dim(0), extK.dim(1), 1, extK.dim(3)], dtype: extK.dtype)
             let vPad1 = MLXArray.zeros(
@@ -711,6 +719,11 @@ public final class Qwen36MTPBlockSession {
     /// `MLXFAST_OFFICIAL_BENCHMARK_RUN=1`, so this stays local-only.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+    /// E112 arm switch for `warmTargetLaterWindowSDPA`. Read once, outside any
+    /// timed window, and it gates untimed warm work only, so no scored token,
+    /// row ledger entry or draft decision can depend on it.
+    private static let e112Skip1025Warm =
+        ProcessInfo.processInfo.environment["MLX_E112_SKIP_1025_WARM"] == "1"
     /// Attribution probe only. `verify_build_us` measures the window in which
     /// the host builds the verify graph WHILE the asynchronously submitted head
     /// chain runs on the GPU, so a head-chain stall is indistinguishable from
