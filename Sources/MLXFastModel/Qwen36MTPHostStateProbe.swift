@@ -49,6 +49,28 @@ enum Qwen36MTPHostStateProbe {
         ticks * machTimebase.numer / machTimebase.denom
     }
 
+    // MARK: - thread CPU time
+
+    /// Nanoseconds this THREAD has spent on-core. Bracketing a phase with two
+    /// marks gives `cpu / wall` for that phase, which separates "the thread is
+    /// running slowly" (cpu inflates with wall) from "the thread is not
+    /// running" (cpu flat while wall inflates).
+    @inline(__always)
+    static func cpuMark() -> UInt64 {
+        enabled ? clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) : 0
+    }
+
+    /// Wall cost of the twelve `cpuMark` calls a traced round adds, measured
+    /// on the same thread in the same round, so the analysis can subtract the
+    /// instrument from the phase totals instead of assuming it is free.
+    static func cpuMarkOverheadNanos() -> UInt64 {
+        let t0 = DispatchTime.now().uptimeNanoseconds
+        for _ in 0 ..< 12 { overheadSink &+= clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) }
+        return DispatchTime.now().uptimeNanoseconds - t0
+    }
+
+    nonisolated(unsafe) static var overheadSink: UInt64 = 0
+
     // MARK: - resource usage
 
     struct Usage {

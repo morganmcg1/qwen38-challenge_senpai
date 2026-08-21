@@ -1200,11 +1200,13 @@ public final class Qwen36MTPBlockSession {
         // E89 host-state probe, before the round clock starts so its cost
         // stays out of `round_us`. See Qwen36MTPHostStateProbe.
         var e89ProbeNanos: UInt64 = 0
+        var e89MarkOverheadNanos: UInt64 = 0
         var e89Usage0 = Qwen36MTPHostStateProbe.Usage()
         var e89Thread0 = Qwen36MTPHostStateProbe.ThreadState()
         if Qwen36MTPHostStateProbe.enabled {
             Qwen36MTPHostStateProbe.applyForcedQoS()
             e89ProbeNanos = Qwen36MTPHostStateProbe.cpuProbeNanos()
+            e89MarkOverheadNanos = Qwen36MTPHostStateProbe.cpuMarkOverheadNanos()
             e89Usage0 = Qwen36MTPHostStateProbe.usage()
             e89Thread0 = Qwen36MTPHostStateProbe.threadState()
         }
@@ -1212,11 +1214,17 @@ public final class Qwen36MTPBlockSession {
         // split a round into head-chain graph build, verify graph build, and
         // the single blocking eval's GPU wall. Never on in a ranked run.
         let tRound0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
+        let cRound0 = Qwen36MTPHostStateProbe.cpuMark()
         var tDraftBuilt: UInt64 = 0
         var tVerifyBuilt: UInt64 = 0
         var tEvalDone: UInt64 = 0
         var tReadDone: UInt64 = 0
         var tCommitDone: UInt64 = 0
+        var cDraftBuilt: UInt64 = 0
+        var cVerifyBuilt: UInt64 = 0
+        var cEvalDone: UInt64 = 0
+        var cReadDone: UInt64 = 0
+        var cCommitDone: UInt64 = 0
 
         // Round-top invariant, kept as a THROW rather than a comment: every
         // emitted token is in the trimmable caches and the pending primary is
@@ -1329,6 +1337,7 @@ public final class Qwen36MTPBlockSession {
         //    hidden exactly as before.
         let tDraft0 = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
+        let cDraft0 = Qwen36MTPHostStateProbe.cpuMark()
         let headCache: [any KVCache]
         var flushHidden: [MLXArray] = []
         var flushTokens: [Int] = []
@@ -1383,6 +1392,7 @@ public final class Qwen36MTPBlockSession {
         // idea.md V6 journal. Single submission after the loop, as before.)
         let tFlushBuilt = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
+        let cFlushBuilt = Qwen36MTPHostStateProbe.cpuMark()
         var draftIdArrays: [MLXArray] = []
         var headHidden = model.mtpHeadLastHiddenWithKVOnlyHistory(
             hidden: draftInputHidden, nextTokenIds: draftInputTokens,
@@ -1400,9 +1410,11 @@ public final class Qwen36MTPBlockSession {
         // the device can start while the host builds steps 2..d.
         let tHead1Built = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
+        let cHead1Built = Qwen36MTPHostStateProbe.cpuMark()
         asyncEval(draftId)
         let tSubmit1 = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
+        let cSubmit1 = Qwen36MTPHostStateProbe.cpuMark()
         for _ in 1 ..< draftCount {
             headHidden = model.mtpHeadHiddenForward(
                 hidden: draftHidden, nextTokenIds: draftId, cache: headCache)
@@ -1412,11 +1424,13 @@ public final class Qwen36MTPBlockSession {
         }
         let tChainBuilt = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
+        let cChainBuilt = Qwen36MTPHostStateProbe.cpuMark()
         asyncEval(draftIdArrays[draftIdArrays.count - 1])
         if Self.traceSyncHeadChain {
             eval(draftIdArrays[draftIdArrays.count - 1])
         }
         if Self.traceRounds { tDraftBuilt = DispatchTime.now().uptimeNanoseconds }
+        cDraftBuilt = Qwen36MTPHostStateProbe.cpuMark()
 
         // 2. Keep the generic pre-verify snapshot as a fallback, but use the
         //    vendored post-primary rollback checkpoint for the hot K=1 path. A
@@ -1448,6 +1462,7 @@ public final class Qwen36MTPBlockSession {
                 input: LMInput.Text(tokens: verifyTokens),
                 cache: cache, nConfirmed: 1)
         if Self.traceRounds { tVerifyBuilt = DispatchTime.now().uptimeNanoseconds }
+        cVerifyBuilt = Qwen36MTPHostStateProbe.cpuMark()
 
         // THE ROUND'S SINGLE BLOCKING EVAL. Everything the host needs to read
         // this round — the per-row argmaxes (accept walk AND both candidates
@@ -1461,6 +1476,7 @@ public final class Qwen36MTPBlockSession {
         bundle.append(contentsOf: draftIdArrays)
         eval(cache.flatMap { $0.state } + bundle)
         if Self.traceRounds { tEvalDone = DispatchTime.now().uptimeNanoseconds }
+        cEvalDone = Qwen36MTPHostStateProbe.cpuMark()
 
         let drafts = draftIdArrays.map { Int($0.item(Int32.self)) }
         let flatTop2IDs = top2IDs.asArray(Int32.self).map { Int($0) }
@@ -1494,6 +1510,7 @@ public final class Qwen36MTPBlockSession {
         }
 
         if Self.traceRounds { tReadDone = DispatchTime.now().uptimeNanoseconds }
+        cReadDone = Qwen36MTPHostStateProbe.cpuMark()
 
         if acceptedCount == drafts.count {
             // FULL ACCEPTANCE: the verify state IS the committed state. No
@@ -1564,6 +1581,7 @@ public final class Qwen36MTPBlockSession {
         }
 
         if Self.traceRounds { tCommitDone = DispatchTime.now().uptimeNanoseconds }
+        cCommitDone = Qwen36MTPHostStateProbe.cpuMark()
 
         // Head-history upkeep. Trim the speculative deeper-draft rows back to
         // the valid prefix, then queue the ACCEPTED transitions for the next
@@ -1614,12 +1632,33 @@ public final class Qwen36MTPBlockSession {
             // in principle be overlapping, so the tail segments are the budget
             // for any further pipelining work.
             let tTailDone = DispatchTime.now().uptimeNanoseconds
+            let cTailDone = Qwen36MTPHostStateProbe.cpuMark()
+            // The eight once-per-round HOST phases are contiguous in two
+            // spans: tRound0..tChainBuilt and tEvalDone..tTailDone. Everything
+            // between is the submit-2, verify-build and blocking-eval window
+            // the GPU owns. `host_thread_cpu_ns / (host_sum_us * 1000)` is the
+            // occupancy that separates a slow thread from an off-core one.
             let e89Fields = Qwen36MTPHostStateProbe.enabled
                 ? Qwen36MTPHostStateProbe.roundFields(
                     probeNanos: e89ProbeNanos,
                     delta: Qwen36MTPHostStateProbe.usage() - e89Usage0,
                     legWallNanos: tTailDone - e89LegStartNanos,
                     threadStart: e89Thread0)
+                    + "host_sum_us=\(((tChainBuilt - tRound0) + (tTailDone - tEvalDone)) / 1000) "
+                    + "host_thread_cpu_ns=\((cChainBuilt - cRound0) + (cTailDone - cEvalDone)) "
+                    + "round_thread_cpu_ns=\(cTailDone - cRound0) "
+                    + "cpu_pre_ns=\(cDraft0 - cRound0) "
+                    + "cpu_flush_ns=\(cFlushBuilt - cDraft0) "
+                    + "cpu_head1_ns=\(cHead1Built - cFlushBuilt) "
+                    + "cpu_submit1_ns=\(cSubmit1 - cHead1Built) "
+                    + "cpu_chain_ns=\(cChainBuilt - cSubmit1) "
+                    + "cpu_submit2_ns=\(cDraftBuilt - cChainBuilt) "
+                    + "cpu_verify_ns=\(cVerifyBuilt - cDraftBuilt) "
+                    + "cpu_eval_ns=\(cEvalDone - cVerifyBuilt) "
+                    + "cpu_readout_ns=\(cReadDone - cEvalDone) "
+                    + "cpu_commit_ns=\(cCommitDone - cReadDone) "
+                    + "cpu_upkeep_ns=\(cTailDone - cCommitDone) "
+                    + "e89_markcost_ns=\(e89MarkOverheadNanos) "
                 : ""
             let line = "mtp-trace: round=\(roundCount) d=\(draftCount) "
                 + "acc=\(acceptedCount) "

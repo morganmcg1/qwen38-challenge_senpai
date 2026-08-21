@@ -60,6 +60,12 @@ def load(tag: str) -> tuple[list[dict], list[dict]]:
         rec["d"] = int(m.group(2))
         rec["acc"] = int(m.group(3))
         rec["HOSTSUM"] = sum(rec[k] for k in HOST)
+        if "e89_thr_user_ns" in rec:
+            rec["THRCPU"] = rec["e89_thr_user_ns"] + rec["e89_thr_sys_ns"]
+            # The share of the round the submitting thread spent ON a CPU.
+            # A slow thread stays near its clean share; a blocked thread drops.
+            rec["THRCPU_frac"] = rec["THRCPU"] / (rec["round_us"] * 1000)
+            rec["HOSTCPU_frac"] = rec["THRCPU"] / (rec["HOSTSUM"] * 1000)
         rounds.append(rec)
     return rounds, headers
 
@@ -171,6 +177,9 @@ def main() -> None:
         rows = {}
         for key, label in [
             ("e89_probe_ns", "cpu probe ns"),
+            ("THRCPU", "thread cpu ns"),
+            ("e89_thr_user_ns", "thread user ns"),
+            ("e89_thr_sys_ns", "thread system ns"),
             ("e89_instr", "instructions"),
             ("e89_cycles", "cycles"),
             ("e89_user_ns", "user cpu ns"),
@@ -211,13 +220,22 @@ def main() -> None:
             [r["HOSTSUM"] for r in fast])
         print(f"\n  instruction ratio {ic:.2f}   probe ratio {pc:.2f}   "
               f"host phase ratio {hc:.2f}")
+        tc = st.median([r["THRCPU"] for r in slow]) / st.median(
+            [r["THRCPU"] for r in fast])
+        print(f"  thread cpu ratio {tc:.2f}")
         if ic < 1.2 and pc > 1.5:
             verdict = "THREAD IS SLOW: same work, longer issue latency"
         elif ic > 2.0 and pc < 1.2:
             verdict = "THREAD IS BUSY: more retired work at unchanged speed"
+        elif pc < 1.2 and ic < 1.2 and tc < 1.2 and hc > 2.0:
+            verdict = ("THREAD IS BLOCKED: host phases inflate while the thread "
+                       "neither runs slower nor retires more work")
         else:
-            verdict = "MIXED: neither discriminator is clean, report and stop"
+            verdict = "MIXED: no discriminator is clean, report and stop"
         print(f"  verdict: {verdict}")
+        rows["verdict"] = verdict
+        rows["ratios"] = {"instructions": ic, "cpu_probe": pc,
+                          "host_phase_sum": hc, "thread_cpu": tc}
 
         r_ph = pearson([r["e89_probe_ns"] for r in obs],
                        [r["HOSTSUM"] for r in obs])
@@ -278,6 +296,7 @@ def main() -> None:
         "harness": "local", "gate_qualified_for_timing": False,
         "cool_gate_passed_real_gate": False, "official_or_ranked_score": False,
         "probe_cut_ns": cut,
+        "discriminator": rows if slow and fast else None,
         "stuck_leg_rate": {"k": k, "n": n, "wilson95": ci},
         "legs": [{kk: vv for kk, vv in l.items()
                   if kk not in ("rounds", "headers")} for l in legs],
