@@ -267,6 +267,14 @@ def log_submit_gate(run, legs) -> None:
         rows.append({
             "tag": meta.get("tag", leg.name),
             "arm": meta.get("e87_arm"),
+            # The probe fraction is a compile-time constant, so the arm label
+            # alone no longer identifies the binary. Carry the value the driver
+            # read back from the model source, plus the build it names.
+            "probe_fraction": meta.get("e87_probe_fraction"),
+            "derived_index": meta.get("e87_derived_index"),
+            "worker_sha256": meta.get("worker_sha256"),
+            "base_sha": meta.get("base_sha"),
+            "sandbox": meta.get("sandbox"),
             "mode": m["mode"],
             "decode_tokens": m["decode_tokens"],
             "golden": meta.get("golden"),
