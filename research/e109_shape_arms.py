@@ -172,27 +172,14 @@ PREWORK_BODY = """
   }
 
   if (is_q || is_k) {
-    threadgroup float local_inv_mean[UNITS];
-    threadgroup float local_sums[UNITS][32];
-    sumsq = simd_sum(sumsq);
-    local_sums[unit][lane] = 0.0f;
-    threadgroup_barrier(mem_flags::mem_threadgroup);
-    if (lane == 0) {
-      local_sums[unit][0] = sumsq;
-    }
-    threadgroup_barrier(mem_flags::mem_threadgroup);
-    sumsq = simd_sum(local_sums[unit][lane]);
-    if (lane == 0) {
-      local_inv_mean[unit] = metal::precise::rsqrt(sumsq / Dk + 1e-6f);
-    }
-    threadgroup_barrier(mem_flags::mem_threadgroup);
+__REDUCE__
 
     const InT scale = is_q ? q_scale : k_scale;
     const uint output_base = (row * Hk + head) * Dk + lane * 4;
     #pragma clang loop unroll(full)
     for (uint i = 0; i < 4; ++i) {
       const InT rms = InT(1) * static_cast<InT>(
-          static_cast<float>(activated[i]) * local_inv_mean[unit]);
+          static_cast<float>(activated[i]) * __INVMEAN__);
       const InT value = scale * rms;
       if (is_q) {
         q_out[output_base + i] = value;
@@ -401,6 +388,53 @@ QKV_ROW_STRIDE = 16480             # the fused in-proj carrier's live stride
 QUERY_HEADS, KEY_HEADS, HEAD_DIM = 24, 4, 256
 
 
+# The shipped RMS reduction, verbatim.
+PREWORK_REDUCE_SHIPPED = """    threadgroup float local_inv_mean[UNITS];
+    threadgroup float local_sums[UNITS][32];
+    sumsq = simd_sum(sumsq);
+    local_sums[unit][lane] = 0.0f;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (lane == 0) {
+      local_sums[unit][0] = sumsq;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    sumsq = simd_sum(local_sums[unit][lane]);
+    if (lane == 0) {
+      local_inv_mean[unit] = metal::precise::rsqrt(sumsq / Dk + 1e-6f);
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);"""
+
+# The same reduction with a redundant threadgroup round trip removed.
+#
+# `simd_sum` is a BROADCAST reduction: after the first call every lane already
+# holds the complete 32-lane sum. The shipped code then zeroes a threadgroup
+# array, has lane 0 store that sum into slot 0, and runs a second `simd_sum`
+# over `[sumsq, 0, 0, ... 0]`. That reproduces the number every lane already
+# had, at the cost of two threadgroup barriers and a threadgroup round trip.
+# Once `sumsq` is known to be live in every lane, `local_inv_mean` is also
+# unnecessary: each lane evaluates the same `rsqrt` of the same input, which
+# removes a third barrier and the second threadgroup array.
+#
+# WHY THIS IS BIT-EXACT.
+#   * The removed second reduction adds 31 zeros to `sumsq`. `sumsq` is a sum
+#     of squares, so it is never -0.0, and x + 0.0 == x exactly for every other
+#     float in every summation order. So the second `simd_sum` is the identity.
+#   * `rsqrt` is deterministic, so evaluating it per lane gives every lane the
+#     same bits lane 0 would have broadcast.
+# The probe still byte-compares this arm against arm 0 rather than trusting the
+# argument.
+PREWORK_REDUCE_DIRECT = """    sumsq = simd_sum(sumsq);
+    const float inv_mean = metal::precise::rsqrt(sumsq / Dk + 1e-6f);"""
+
+
+def prework_body(name: str, units: int, reduce_src: str, inv_mean: str) -> str:
+    return (PREWORK_BODY
+            .replace("__NAME__", name)
+            .replace("__REDUCE__", reduce_src)
+            .replace("__INVMEAN__", inv_mean)
+            .replace("__UNITS__", str(units)))
+
+
 def prework_spec(units: list[int]) -> dict:
     buffers = [
         {"name": "qkv", "kind": "in", "dtype": "bf16", "count": S * QKV_ROW_STRIDE},
@@ -438,8 +472,26 @@ def prework_spec(units: list[int]) -> dict:
                 "simdgroups_per_threadgroup": unit,
                 "shipped": unit == 1,
                 "exact_vs_arm0": True,
+                "reduction": "shipped",
             }
         )
+    # The shape sweep names the mechanism; this arm prices one concrete fix for
+    # H2 at the shipped shape, so a "dependent chain" verdict arrives with a
+    # candidate lever instead of only a diagnosis.
+    arms.append(
+        {
+            "name": "g1nored",
+            "function": "e109_prework_g1nored",
+            "source": "arm_prework_g1nored.metal",
+            "grid": [32, S, 2 * HK + HV],
+            "threadgroup": [32, 1, 1],
+            "threadgroups": S * (2 * HK + HV),
+            "simdgroups_per_threadgroup": 1,
+            "shipped": False,
+            "exact_vs_arm0": True,
+            "reduction": "direct",
+        }
+    )
     return {
         "family": "prework",
         "live_kernel": "qwen35_packed_gdn_prework",
@@ -528,11 +580,15 @@ def main() -> int:
                 raise SystemExit(
                     f"prework unit {unit} would mix query/key/value classes"
                     " inside one threadgroup")
-            body = PREWORK_BODY.replace("__NAME__", f"e109_prework_g{unit}")
-            body = body.replace("__UNITS__", str(unit))
             path = outdir / f"arm_prework_g{unit}.metal"
-            path.write_text(PREAMBLE + PREWORK_HEADER + body)
+            path.write_text(PREAMBLE + PREWORK_HEADER + prework_body(
+                f"e109_prework_g{unit}", unit, PREWORK_REDUCE_SHIPPED,
+                "local_inv_mean[unit]"))
             written.append(path)
+        path = outdir / "arm_prework_g1nored.metal"
+        path.write_text(PREAMBLE + PREWORK_HEADER + prework_body(
+            "e109_prework_g1nored", 1, PREWORK_REDUCE_DIRECT, "inv_mean"))
+        written.append(path)
         spec = prework_spec(units)
         (outdir / "spec_prework.json").write_text(json.dumps(spec, indent=2))
 

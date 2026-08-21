@@ -199,7 +199,7 @@ def log_shape(family: str) -> str:
     )
 
     table = wandb.Table(
-        columns=["arm", "function", "fold_factor", "threadgroups",
+        columns=["arm", "variant", "function", "fold_factor", "threadgroups",
                  "simdgroups_per_threadgroup", "threads_per_threadgroup",
                  "waves_over_cores", "us_per_dispatch_median",
                  "us_per_dispatch_min", "us_per_dispatch_sd",
@@ -214,7 +214,8 @@ def log_shape(family: str) -> str:
         g16 = a["isa"].get("applegpu_g16s", {})
         g17 = a["isa"].get("applegpu_g17s", {})
         table.add_data(
-            a["name"], a["function"], a["fold_factor"], a["threadgroups"],
+            a["name"], a["variant"], a["function"], a["fold_factor"],
+            a["threadgroups"],
             a["simdgroups_per_threadgroup"], a["threads_per_threadgroup"],
             a["waves_over_cores"], a["us_per_dispatch_median"],
             a["us_per_dispatch_min"], a["us_per_dispatch_sd"],
@@ -247,6 +248,7 @@ def log_shape(family: str) -> str:
         "min_useful_gain": v["min_useful_gain"],
         "actionable": v["actionable"],
         "all_folds_bit_exact": v["all_folds_bit_exact"],
+        "levers": json.dumps(report["levers"]),
     })
     url = run.url
     run.finish()

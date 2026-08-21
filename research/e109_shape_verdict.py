@@ -116,14 +116,20 @@ def build(timing: dict, census: dict, spec: dict, cores: int) -> dict:
         entry["isa"] = isa
         entry["source_grid"] = spec_by_name[arm["name"]]["grid"]
         entry["source_threadgroup"] = spec_by_name[arm["name"]]["threadgroup"]
+        entry["variant"] = spec_by_name[arm["name"]].get("reduction", "shipped")
         arms.append(entry)
-    arms.sort(key=lambda a: a["fold_factor"])
+    arms.sort(key=lambda a: (a["variant"] != "shipped", a["fold_factor"]))
 
     shipped = next((a for a in arms if a["shipped"]), arms[0])
     best = min(arms, key=lambda a: a["us_per_dispatch_median"])
     gain = 1.0 - best["us_per_dispatch_median"] / shipped["us_per_dispatch_median"]
 
-    seq = slopes([(a["fold_factor"], a["us_per_dispatch_median"]) for a in arms])
+    # Only the shape ladder can be read as a curve. A lever arm changes the
+    # kernel body at a fold factor the ladder already occupies, so including it
+    # would put two times at one abscissa.
+    sweep = [a for a in arms if a["variant"] == "shipped"]
+    levers = [a for a in arms if a["variant"] != "shipped"]
+    seq = slopes([(a["fold_factor"], a["us_per_dispatch_median"]) for a in sweep])
     mechanism, why = classify(seq)
 
     exact = all(a["exact_vs_arm0"] for a in arms)
@@ -138,6 +144,17 @@ def build(timing: dict, census: dict, spec: dict, cores: int) -> dict:
         "inner": timing["inner"],
         "arms": arms,
         "log_log_slopes": seq,
+        "levers": [
+            {
+                "name": a["name"],
+                "variant": a["variant"],
+                "us_per_dispatch_median": a["us_per_dispatch_median"],
+                "gain_vs_shipped": 1.0 - a["us_per_dispatch_median"]
+                / shipped["us_per_dispatch_median"],
+                "exact_vs_arm0": a["exact_vs_arm0"],
+            }
+            for a in levers
+        ],
         "verdict": {
             "mechanism": mechanism,
             "reason": why,
@@ -159,7 +176,7 @@ def render(out: dict) -> str:
         f"  {out['device']}   {out['dispatch']}   reps {out['reps']}"
         f" x inner {out['inner']}   cores assumed {out['gpu_cores_assumed']}",
         "",
-        f"{'arm':<6} {'fold':>5} {'tgs':>5} {'simd':>5} {'thr':>5} {'waves':>6}"
+        f"{'arm':<8} {'fold':>5} {'tgs':>5} {'simd':>5} {'thr':>5} {'waves':>6}"
         f" {'us/disp':>9} {'sd':>7} {'g16s reg':>9} {'g16s spill':>11}"
         f" {'g17s reg':>9} {'g17s spill':>11} {'exact':>6}",
     ]
@@ -167,7 +184,7 @@ def render(out: dict) -> str:
         g16 = a["isa"].get("applegpu_g16s", {})
         g17 = a["isa"].get("applegpu_g17s", {})
         lines.append(
-            f"{a['name']:<6} {a['fold_factor']:>5.0f} {a['threadgroups']:>5}"
+            f"{a['name']:<8} {a['fold_factor']:>5.0f} {a['threadgroups']:>5}"
             f" {a['simdgroups_per_threadgroup']:>5}"
             f" {a['threads_per_threadgroup']:>5} {a['waves_over_cores']:>6}"
             f" {a['us_per_dispatch_median']:>9.3f} {a['us_per_dispatch_sd']:>7.3f}"
@@ -188,6 +205,12 @@ def render(out: dict) -> str:
         f"  bit-exact folds {v['all_folds_bit_exact']}"
         f"   ACTIONABLE {v['actionable']}",
     ]
+    for lever in out["levers"]:
+        lines.append(
+            f"  lever {lever['name']} ({lever['variant']})"
+            f" {lever['us_per_dispatch_median']:.3f} us"
+            f"   gain {100 * lever['gain_vs_shipped']:+.1f} %"
+            f"   bit-exact {lever['exact_vs_arm0']}")
     return "\n".join(lines)
 
 
