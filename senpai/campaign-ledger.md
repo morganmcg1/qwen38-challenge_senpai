@@ -29142,3 +29142,264 @@ campaign's draw economics before issuing any hold.
   from the exact rational; 523 of 633 runs violate round-cost monotonicity in
   `M`, so **arbitrary-schedule round-count inference is unreliable and only the
   same-schedule cohort should be used**.
+
+## 245
+
+Three results. One reduces the score to a single prompt. One invalidates a
+measurement method the campaign has used for six experiments. One is a
+student refutation of a number I put in his own brief.
+
+### FINDING 16 - the median pair is locked, and six of eight prompts are worth exactly zero
+
+Instrument: `research/board_median_lock.py`. Method: sort every official run's
+eight `raw_ratio_of_means` ascending, record which prompt occupies each rank,
+then replay the median-of-eight rule under a multiplier applied to one prompt
+at a time to get the exact derivative and the exact ceiling.
+
+Rank occupancy, strong cohort, published >= 3.25, n = 81:
+
+```
+rank 4  beagle 100.0 %
+rank 5  essays 66.7 %, medicine 19.8 %, republic 7.4 %, botany 6.2 %
+```
+
+Beagle occupies rank 4 in every one of the 81 strong runs. Not 97 %. Every one.
+
+Relative gap between adjacent sorted ranks, same cohort:
+
+```
+rank 3 to 4   median 45.400 %   min 42.654   max 48.521
+rank 4 to 5   median  8.557 %   min  6.699   max 10.424
+rank 5 to 6   median  0.769 %   min  0.009   max  2.590
+rank 6 to 7   median  0.222 %   min  0.000   max  1.215
+rank 7 to 8   median  0.557 %   min  0.019   max  2.135
+```
+
+The three prompts below the median pair sit at least 42.7 % away and have never
+come closer in 81 runs. The four prompts at and above rank 5 form a cluster
+spanning under 1.6 %. So the published score is
+
+```
+published = 0.5 * raw_beagle + 0.5 * min(essays, medicine, republic, botany)
+```
+
+and only the first term is free. The second is pinned by whichever cluster
+member happens to be lowest, so improving essays merely hands the slot to
+republic.
+
+Exact single-prompt value at the crown `8819b108`:
+
+| prompt | raw ratio | 1 % on it alone | ceiling | reached at |
+|---|---:|---:|---:|---:|
+| **beagle** | 3.185167 | **+0.4785 %** | **+4.6625 %** | 9.8 % |
+| essays | 3.470732 | +0.3721 % | +0.3721 % | 0.8 % |
+| travel | 2.188496 | +0.0000 % | +4.6625 % | 59.8 %, unreachable |
+| republic | 3.495499 | +0.0000 % | +0.0000 % | - |
+| medicine | 3.496755 | +0.0000 % | +0.0000 % | - |
+| botany | 3.517914 | +0.0000 % | +0.0000 % | - |
+| drama | 1.931805 | +0.0000 % | +0.0000 % | - |
+| plutarch | 1.253788 | +0.0000 % | +0.0000 % | - |
+| **uniform** | | **+1.0000 %** | unbounded | |
+
+Same shape on our own `cb8aeefb`: beagle +0.4801 % per percent with a +4.5146 %
+ceiling, essays +0.5199 % per percent with a +0.5269 % ceiling, everything else
+zero. Closing the whole beagle deficit would give a median of 3.47349989.
+
+**Consequences.**
+
+1. Finding 1 said the score is `(raw_beagle + raw_essays) / 2`. That is right at
+   the frontier but it understates the asymmetry. **Beagle-only work is worth
+   12.5x essays-only work**, and essays saturates after 0.8 %.
+2. Uniform mechanisms keep the 1.0 multiplier and remain the best value per unit
+   of gain. Nothing here demotes them.
+3. After uniform work, **every remaining prompt-specific microsecond should go
+   to beagle**, which carries 4.66 % of ceiling that no solver on the board has
+   touched.
+4. Beagle's deficit is an **acceptance** deficit and not a cost deficit. Beagle
+   accepts at 0.834 with mean draft length 4.382; essays accepts at 0.897 with
+   mean draft length 5.087. Their round costs are what the shared cost curve
+   says they should be. Beagle is simply the least predictable prompt.
+5. Therefore **the low-acceptance regime is the highest-value unexploited axis
+   in the campaign.** Nothing here permits prompt detection. It says only that a
+   schedule which behaves better when observed acceptance is low is worth far
+   more than one which behaves better when acceptance is high, and the campaign
+   has implicitly tuned for the opposite.
+6. Beagle is the only scoring prompt sitting on the dispatch-group boundary, at
+   verify width 5.382 against a boundary at 5. Every boundary-price decision is
+   being made on the one prompt that sets half the score.
+
+### FINDING 17 - MLX dispatches are concurrent, so per-dispatch census over-attributes
+
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp:545-548` creates
+every compute encoder with `MTL::DispatchTypeConcurrent`. `device.cpp:363-374`
+inserts `memoryBarrier(BarrierScopeBuffers)` only when `needs_barrier_` is set,
+and that flag is set only on a detected buffer dependency: at
+`device.cpp:322-325` when a dispatch's input buffer is in `prev_outputs_`, and
+at `device.cpp:344-350` when its output buffer is in `prev_inputs_`.
+`device.cpp:377-390` runs the check before every `dispatch_threadgroups` and
+`dispatch_threads`. `device.h:33-42` and `device.h:88-89` provide a
+`ConcurrentContext` that suppresses the output-side barrier entirely.
+
+Three consequences.
+
+1. **Independent dispatches inside one command buffer overlap in wall time.**
+   Summing per-dispatch intervals double counts.
+2. **`MLX_E58_BUFFER_LIMIT_MB=1` measures a cost the round does not pay.** It
+   forces one kernel per command buffer, which serialises concurrent work and
+   charges each kernel a full submit and drain. An isolated per-kernel time is
+   an **upper bound** on round contribution.
+3. **The error size is predictable.** A kernel that saturates the machine cannot
+   overlap with much, so its isolated time is close to truth. A kernel far below
+   peak leaves the machine free, overlaps, and inflates roughly in proportion.
+
+This explains why E93's head census cross-validated to 0.7 % against thorfinn's
+round-level arm C delta - those are DRAM-saturating GEMVs - while the Gated
+DeltaNet step, censused at 37.2 GB/s or about one eighth of the machine, came
+out about eight times too large.
+
+**What survives.** Every round-level and leg-level measurement. That includes
+askeladd's E95 rung-2 width model `verify_us = 10,920 + 27,377 G + 10,268 M`,
+edward's E92 ladder, the ranked M5 cost curve of ledger 243, the same-schedule
+identified level of ledger 244, and the per-row verify slope that E97 is built
+on. A round-level marginal cannot be inflated by concurrency, because overlap is
+already priced into the wall time it measures.
+
+**What needs a caveat.** Any per-dispatch attribution, including E95 rung 3, and
+thorfinn's E87 section 8 isolated chain cost of 113.78 us per draft. Thorfinn
+was instructed to report both the isolated cost and a round-level ABBA delta,
+and to label the isolated figure an upper bound. My `e87-f15` instruction to
+measure only the isolated chain is withdrawn.
+
+**A lever this exposes.** MLX tracks dependencies at whole-`MTL::Buffer`
+granularity, not at array-slice granularity, because `prev_inputs_` and
+`prev_outputs_` hold `MTL::Resource*`. Two dispatches touching disjoint slices
+of one buffer therefore still trigger a full-encoder barrier and lose all
+concurrency. Our editable surface writes into shared buffers in several places,
+including `KVCache.swift:398` and `:434`. `device.cpp` is not editable, so the
+barrier policy is fixed, but what we ask it to do is entirely editable. Held as
+a candidate, not yet assigned.
+
+### E96 - alphonse refutes the Gated DeltaNet step cost by 9.5x
+
+I wrote 8,112.6 us per round into his brief from askeladd's E95 rung-3
+itemisation, and built the assignment on the 6.8x gap between that and its own
+DRAM bound. Alphonse measured the step two independent ways.
+
+**Removal arm.** Deleting the dispatch from all 48 layers moved the round by
+-1.9 to +2.6 ms on about 129 ms. An 8.1 ms cost had to show up. It did not.
+
+**Repeat arm.** A token-exact positive control: run the same scan R times from
+the same input state, with each store address offset by a device-resident zero
+indexed by the repetition counter so the compiler cannot fold the repetitions.
+`reference_seed_token` matches the control at 271 while the removal arm gives 2,
+and `all_tokens_matched=true`. Fifteen extra repetitions cost 12,810 us, so one
+step costs **854 us per round**.
+
+Cross-check that settles it. 854 us over 48 layers is 17.79 us per layer. The
+state traffic of one layer is one read plus one write of `[48,128,128]` fp32,
+6.291 MB, so the rate is **353.6 GB/s**. Askeladd's own ruling-4 rates predict
+813.8 us per round at his cache-resident 371.1 GB/s and 1,074.3 us at his DRAM
+281.1 GB/s. Alphonse's slope lands on the cache-resident figure, measured on a
+different Mac with a different instrument. The step is a bandwidth-bound state
+copy running at the machine's proper speed. It was never an anomaly.
+
+Priced through the transfer table at 0.670 for the fixed and launch class:
+
+| step cost | share of local round | ranked share | value of a 30 % cut |
+|---|---:|---:|---:|
+| 854 us, measured | 0.67 % | 0.45 % | +0.134 % published |
+| 1,074 us, cold DRAM | 0.84 % | 0.56 % | +0.169 % published |
+| 8,112.6 us, the brief | 6.34 % | 4.25 % | +1.274 % published |
+
+Making the entire step free is worth at most 0.56 % ranked, against a 0.32 %
+serial-free detection floor. **E96 rung 2 is closed as a negative before it
+ran.** Recorded as a first-class negative: it removes a 4.25 % ranked claim from
+the campaign cost map.
+
+**What it opens.** If the step is 854 to 1,074 us, then **7,088 to 7,308 us of
+the width-independent cost `a` has no owner** - 65 to 67 % of `a`, 5.5 to 5.7 %
+of the local round, about 3.7 to 3.8 % of the ranked round. E96 is retargeted to
+attribute `a`, ablating the next two families with the same paired instrument
+and reporting, for each, the `off` round delta, the `rep` marginal slope, and
+the isolated-buffer census line side by side. Three such triples give a
+calibration curve from census time to true round contribution, which would
+retro-correct every per-dispatch attribution in the campaign.
+
+**Two method notes from the same report.** First, `benchmark-qwen-mtp.sh:582-599`
+kills any ablated arm at the golden check before it measures anything, so
+`research/e96_direct_leg.sh` runs the trusted binary with the wrapper's own
+step-2 and step-4 arguments and skips step 1 only. The wrapper was not edited.
+Second, his phase counters do not close: the unattributed residual is 3,035 us
+on the control and 6,438 us on the ablated arm, and the entire apparent "removal
+is slower" result lives in that residual. Phase closure is now a required field.
+
+**One campaign fact he produced in passing.** Within one arm at fixed draft
+depth 4, round cost at acceptance 0, 1 and 2 is 130,055, 130,507 and 129,051 us,
+a spread of 1.1 %. **Round cost is set by draft width, not by how many drafts
+survive.** Rollback and repair are close to free. This constrains every future
+schedule experiment.
+
+### E94 rung 2 - the depth guard works exactly as modelled and is not a ranked prize
+
+Edward ran twelve legs, ABBA at offered caps 4, 5 and 8, W&B `3d8x9ypr`, all
+ungated. Cap 4 gives -10.69 % on seconds per token against a 0.71 % session
+RMS null, matching the rung-1 prediction of -11.61 % within a point. Caps 5 and
+8 are inside or near their nulls at +0.12 % and -0.30 %.
+
+He then downgraded his own result without being asked. On the ranked curve
+`C(5)/C(4) = 1.2304`, below the 1.25 the dominance argument needs, so depth 4 is
+not dominated on M5 and the guard's 4-to-3 substitution is near a ranked no-op.
+The -10.69 % measures the M4 Pro's 46.2 % boundary step, not a ranked prize.
+Accepted as filed. The arm witness was checked on every traced round of every
+leg, which is now campaign standard.
+
+### The shipped depth price is a fit to the wrong machine
+
+Comparing the shipped uniform `headStepCostRatio = 0.18` against both machines'
+marginal round costs:
+
+| step | M | local marg us | local h | ranked marg us | ranked h | shipped error |
+|---|---:|---:|---:|---:|---:|---|
+| d0-d1 | 2 | 5,330.1 | 0.0827 | 3,995.1 | 0.1281 | over-prices 1.405x |
+| d1-d2 | 3 | 5,002.9 | 0.0776 | 3,995.1 | 0.1281 | over-prices 1.405x |
+| d2-d3 | 4 | 11,459.0 | 0.1778 | 3,995.1 | 0.1281 | over-prices 1.405x |
+| **d3-d4** | **5** | **39,865.7** | **0.6186** | **9,946.3** | **0.3190** | **under-prices 1.773x** |
+| d4-d5 | 6 | 11,739.5 | 0.1822 | 7,233.0 | 0.2320 | under-prices 1.289x |
+| d5-d6 | 7 | 12,588.8 | 0.1953 | 7,233.0 | 0.2320 | under-prices 1.289x |
+| d6-d7 | 8 | 13,525.7 | 0.2099 | 7,233.0 | 0.2320 | under-prices 1.289x |
+
+The local implied `h` is 0.1778 at d2-d3 and 0.1822 at d4-d5, ratios of 0.988
+and 1.012 to the shipped 0.18. **The shipped constant is a two-decimal fit to
+the M4 Pro's mid-range marginal cost and was never a ranked number.** Normalised
+ranked tier factors are 1.0000, 1.0000, 1.0000, 2.4896, 1.8105, 1.8105, 1.8105.
+`makeBoundaryDepthPrice` at `Qwen36MTPBlockSession.swift:915-925` already carries
+`boundaryTierFactor = 2.0301` and is switched off. Every previous attempt tuned
+`h` as one uniform number and every one lost, because a uniform constant cannot
+express a cost curve with a cliff in it.
+
+E94 rung 3 is retargeted accordingly: implement the three-tier ranked price
+behind a new arm, and decide it by simulation against the ranked curve **on
+beagle and essays only**, since the other six prompts are worth zero. The
+simulation must first reproduce the crown's observed mean draft lengths of
+4.3818 on beagle and 5.0870 on essays under the shipped price, or no conclusion
+about the new price is admissible. A local timing leg cannot decide this,
+because the two machines disagree by 2.9x at exactly the d2-d3 step.
+
+### ADVISOR ERROR 45
+
+I read a per-dispatch census rate of 37.2 GB/s, one eighth of the machine, as
+evidence of headroom. It was evidence that the census method does not apply to
+that kernel. A measured rate far below peak is first a validity signal about the
+instrument and only second a signal about the workload. I built a whole
+assignment on the inverted reading, and the student refuted it in one session.
+
+### Submission and student state at the time of writing
+
+`84b9ef7b` is still `validating`, submitted 08:16:17Z, 64 minutes elapsed
+against a normal 85 to 120. Crown unchanged at `8819b108` 3.32794961. Our
+`cb8aeefb` remains rank 1 of 54 on the identified round cost and rank 1 of 678
+serial-free. `5d047f62` resolved at 3.31830753 rejected.
+
+Open work: thorfinn building E87 section 8 as ladder draw 2 cargo; edward on
+E94 rung 3, now a beagle experiment; alphonse retargeted to attribute `a`;
+askeladd on E97 rung 0, unaffected by finding 17.

@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- **2026-08-21 09:05 UTC.** Campaign active, no round limit.
+- **2026-08-21 09:35 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
 - Campaign base: `1d5445176559a58ccc3cfe7aefdac9ef3d879acc`, the merge of PR #90
@@ -42,6 +42,23 @@
   `audreyt`, since 02:31Z. Four rejected runs now sit inside 0.15 % of it:
   `4cb3c9b7` 3.32553, `a321a008` 3.32466, `cb8aeefb` 3.32346 ours, `70aa42aa`
   3.32279. Six runs validate at once.
+- 🔴 **NEW, SECTION 0e — THE MEDIAN PAIR IS LOCKED, AND SIX OF EIGHT PROMPTS ARE
+  WORTH EXACTLY ZERO.** The score is
+  `0.5 * raw_beagle + 0.5 * min(essays, medicine, republic, botany)`. Only the
+  first term is free. **Beagle is worth 12.5 times essays per point**, and an
+  essays-only mechanism saturates after +0.372 % of published score. Beagle is
+  also the **only** scoring prompt sitting above the verify group boundary. This
+  supersedes and sharpens section 1.
+- 🔴 **NEW, SECTION 0e — MLX DISPATCHES RUN CONCURRENTLY, SO A PER-DISPATCH
+  CENSUS IS AN UPPER BOUND, NOT AN ATTRIBUTION.** Every compute encoder is
+  created with `MTL::DispatchTypeConcurrent`. Round-level and leg-level numbers
+  survive; per-dispatch itemisations do not.
+- 🔴 **E96 REFUTED ITS OWN PREMISE IN ONE SESSION.** The Gated DeltaNet recurrent
+  step costs **854 us/round**, not the 8,112.6 us I wrote into the brief. Making
+  it entirely free is worth at most 0.56 % ranked against a 0.32 % serial-free
+  floor, so **E96 rung 2 is closed as a negative before it ran**. The refutation
+  orphans **7.1 to 7.3 ms of the width-independent term `a`**, which is now the
+  live question.
 
 ---
 
@@ -361,9 +378,129 @@ multiplier is 1.0.** Ranked prefill is about 0.527 s per leg, so M5 prefill is
 ---
 
 
-## 1. The scoring statistic, which we had wrong until now
+## 0e. THE MEDIAN IS LOCKED, AND THE CENSUS METHOD HAS A CEILING
 
-**The published score is exactly `(raw_beagle + raw_essays) / 2`.** The score is
+Two results from ledger 245. Both change how work is priced. Read them before
+section 1, which they supersede.
+
+### 0e.1 The exact score function, and the exact value of each prompt
+
+Instrument: `python3 research/board_median_lock.py`. It sorts each run's eight
+`raw_ratio_of_means` ascending, records which prompt occupies each rank, then
+replays the median-of-eight rule under a multiplier on one prompt at a time.
+That gives the exact derivative and the exact ceiling of every prompt, with no
+model and no fitting.
+
+**Rank occupancy over the 81 published runs at or above 3.25:**
+
+| rank | occupant |
+|---|---|
+| 4 | **beagle, 100.0 % — every one of 81 runs** |
+| 5 | essays 66.7 %, medicine 19.8 %, republic 7.4 %, botany 6.2 % |
+
+**The score is therefore exactly:**
+
+```text
+published = 0.5 * raw_beagle + 0.5 * min(essays, medicine, republic, botany)
+```
+
+Only the first term is free. The second is pinned by a four-prompt cluster that
+spans less than 1.6 %, so improving essays alone simply hands the 5th slot to
+republic. Exact single-prompt value at the crown `8819b108`:
+
+| prompt | raw ratio | published gain per 1 % | ceiling | reached at |
+|---|---:|---:|---:|---:|
+| **beagle** | 3.185167 | **+0.4785 %** | **+4.6625 %** | 9.8 % |
+| essays | 3.470732 | +0.3721 % | **+0.3721 %** | 0.8 % |
+| travel | 2.188496 | 0 | +4.6625 % | 59.8 %, unreachable |
+| republic, medicine, botany, drama, plutarch | | 0 | 0 | — |
+| **uniform, all eight** | | **+1.0000 %** | unbounded | |
+
+The same shape holds on our own `cb8aeefb`: beagle +0.4801 % per point with a
++4.5146 % ceiling, essays +0.5199 % per point with a +0.5269 % ceiling, every
+other prompt zero.
+
+**Four consequences for how we assign work:**
+
+1. **A beagle-only mechanism is worth 12.5 times an essays-only mechanism.**
+   Essays saturates after 0.8 % and pays nothing after that.
+2. Uniform mechanisms keep the full 1.0 multiplier and remain the best value per
+   unit of engineering. Nothing here demotes them.
+3. After uniform work is exhausted, **every remaining prompt-specific
+   microsecond belongs to beagle**, which still has 4.66 % of untouched ceiling.
+4. 🔴 **Beagle's deficit is an acceptance deficit, not a cost deficit.** Beagle
+   accepts 0.834 at mean draft length 4.382; essays accepts 0.897 at 5.087. Their
+   round costs sit on the same shared curve. Beagle is simply the least
+   predictable prompt in the pool.
+
+🔴 **The low-acceptance regime is the highest-value unexploited axis in this
+campaign.** Prompt detection is illegal, but a schedule that behaves better when
+**observed** acceptance is low is legal, general and worth far more than one
+tuned for high acceptance. The campaign has implicitly tuned for the opposite.
+Beagle is also the only scoring prompt above the verify group boundary, at
+`M = 5.382` against a boundary at `M = 5`, so every boundary-price decision is
+made on the one prompt that sets half the score.
+
+### 0e.2 MLX dispatches are concurrent, so a per-dispatch census is an upper bound
+
+Source, all in `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp`,
+which is **not** editable:
+
+- `:545-548` every compute encoder is created with `MTL::DispatchTypeConcurrent`.
+- `:363-374 maybeInsertBarrier()` inserts a buffer memory barrier **only** when
+  `needs_barrier_` is set.
+- `:322-325` and `:344-350` set `needs_barrier_` from whole-`MTL::Buffer`
+  overlap between this dispatch and the previous one.
+
+Three consequences:
+
+1. **Independent dispatches inside one command buffer overlap in wall time.**
+   Summing per-dispatch intervals double-counts.
+2. `MLX_E58_BUFFER_LIMIT_MB=1` measures a cost the round does not pay. It
+   serialises concurrent work and charges every kernel a full submit and drain.
+   An isolated per-kernel time is an **upper bound** on round contribution.
+3. **The error size is predictable.** A kernel that saturates the machine cannot
+   overlap much, so isolated is close to true. A kernel far below peak leaves the
+   machine free, overlaps, and inflates roughly in proportion.
+
+This is exactly why E93's head census cross-validated to 0.7 % against
+thorfinn's round-level arm C delta — those are DRAM-saturating GEMVs — while the
+Gated DeltaNet step, censused at 37.2 GB/s or about one eighth of the machine,
+came out about eight times too large.
+
+**What survives:** every round-level and leg-level measurement. Askeladd's E95
+rung 2 width model, edward's E92 ladder, the ranked M5 cost curve in section 0d,
+the identified level `L` in section 0a, and the per-row verify slope that E97 is
+built on. A round-level marginal cannot be inflated by concurrency, because
+overlap is already priced into the wall time.
+
+**What needs a caveat:** every per-dispatch attribution. E95 rung 3 and
+thorfinn's E87 §8 isolated chain cost of 113.78 us/draft are upper bounds.
+
+🔴 **A lever this exposes, candidate and unassigned.** MLX tracks dependencies at
+whole-buffer granularity, not array-slice granularity. Two dispatches touching
+disjoint slices of one buffer still trigger a full-encoder barrier and lose all
+concurrency. Our editable surface writes into shared buffers, for example
+`KVCache.swift:398` and `:434` `slice_update` across the 16 full-attention
+layers, and the Gated DeltaNet state writes. `device.cpp` is not editable, so
+the barrier policy is fixed, but **what we ask it to do is entirely editable
+Swift**.
+
+### 0e.3 Advisor error 45
+
+I read a per-dispatch census rate of 37.2 GB/s, one eighth of the machine, as
+evidence of headroom. It was evidence that the census method does not apply. **A
+measured rate far below peak is first a validity signal about the instrument and
+only second a signal about the workload.** I built a whole assignment on the
+inverted reading and the student refuted it in one session.
+
+---
+
+## 1. The scoring statistic. Superseded in detail by section 0e.
+
+**The published score is exactly `(raw_beagle + raw_essays) / 2`** at the current
+frontier, and section 0e gives the general form and the exact per-prompt
+derivatives. The score is
 the median of eight per-prompt ratios, and for eight values the median is the
 mean of the 4th and 5th sorted. On every high-scoring submission the 4th is
 beagle and the 5th is essays, exact to eight decimal places:
@@ -611,15 +748,22 @@ ruling 4 measured its traffic share at -195 % and read it honestly as zero — a
 it runs at only 6.8 TFLOP/s on M5 and 4.7 locally. Nobody knows what it is.
 That question is now E97, PR #98.
 
-**Theme C — attack the largest item in the fixed term.** The Gated DeltaNet
-recurrent step is 85.1 % of `a`, 4.73 % of the ranked round after the 0.670
-transfer, and runs 6.8x slower than its own DRAM bound. A 30 % improvement is
-about +1.42 % published, which is ten times the remaining gap to the crown. The
-kernel is editable in practice through the two clones already in `Qwen35.swift`.
-E96, PR #99, and it opens with an **ablation**, not an optimisation: pass
-`state_in` through, accept token divergence, read the absolute drop. Askeladd's
-attribution is a named hypothesis and its M-trend has the wrong shape, so it must
-be replaced by a direct measurement before anyone edits a kernel.
+**Theme C — find the owner of the orphaned 7.1 ms in the fixed term. The Gated
+DeltaNet step is closed.** I briefed alphonse that the recurrent step costs
+8,112.6 us/round. He refuted it two independent ways in one session. A removal
+arm that deletes the dispatch from all 48 layers moved the round by −1.9 to
++2.6 ms on 129 ms, where 8.1 ms had to appear. A token-exact repeat arm gives a
+clean slope of **854 us/round for one step**. That is 17.79 us per layer over
+6.291 MB of state traffic, or **353.6 GB/s** — which lands on askeladd's own
+cache-resident rate of 371.1 GB/s, measured on a different Mac with a different
+instrument. The step is a bandwidth-bound state copy running at the machine's
+proper speed. Making it entirely free is worth at most 0.56 % ranked against a
+0.32 % serial-free floor, so **rung 2 is closed as a negative before it ran**.
+What this opens is larger than what it closed: **7,088 to 7,308 us of the
+width-independent term `a` now has no owner**, 65 to 67 % of `a` and about 3.8 %
+of the ranked round. E96 is retargeted onto that, plus a census-to-round
+calibration curve that would retro-correct every per-dispatch attribution in the
+campaign.
 
 **Theme D — fit the schedule to the ranked machine, not to ours.** The shipped
 uniform depth price prices every step at a flat `h * V` with `h = 0.18`. Against
@@ -631,11 +775,24 @@ with `boundaryTierFactor = 2.0301`, switched off. Every previous attempt tuned `
 as a single uniform number and the campaign bracketed it on both sides; nobody has
 tried the ranked **shape**, because until now nobody had the ranked marginals.
 
-**Theme E — aim mechanisms at beagle and essays, because they are the score.**
-Six of the eight ranked prompts contribute nothing at the frontier. A uniform
-mechanism pays in full; a beagle-only mechanism pays at 0.48x without limit; an
-essays-only mechanism pays at 0.48x and saturates near +0.7 %. Every brief states
+**Theme E — aim mechanisms at beagle, because beagle is half the score and the
+other half is locked.** Section 0e replaces the old two-prompt framing. Six of
+the eight ranked prompts pay exactly zero. A uniform mechanism pays in full at
+1.0. A beagle-only mechanism pays at 0.478 with 4.66 % of ceiling left. An
+essays-only mechanism pays at 0.372 and **saturates after +0.372 % of published
+score**, because republic and medicine sit 0.7 % above it. Every brief must state
 which class its mechanism is in.
+
+**Theme G — open the low-acceptance regime.** This follows from theme E and it is
+new. Beagle's deficit is not cost, it is acceptance: 0.834 against essays 0.897
+on the same cost curve. Prompt detection is illegal, but a schedule that behaves
+better when **observed** acceptance is low is legal, general and, by section 0e,
+worth more than any amount of work aimed at the high-acceptance prompts. The
+campaign has implicitly tuned for the opposite for its whole history. Beagle is
+also the only scoring prompt above the verify group boundary at `M = 5.382`, so
+the boundary price and the low-acceptance schedule are the same question.
+Currently reached only obliquely, through E94 rung 3. The acceptance side is
+unassigned and is the single largest open prize on the board.
 
 **Theme F — keep the one in-flight Yukon slot occupied with the best available
 real candidate, always carrying a content delta we can name and price.** Rivals
@@ -656,12 +813,13 @@ Ordered by ranked value after the section 0d transfer table, not by local value.
    **slope** comparison at the scored shapes. Whatever explains it must also
    explain why the ranked slope nearly doubles across the group boundary while the
    local slope is flat.
-2. **The Gated DeltaNet recurrent step. ASSIGNED, E96, PR #99.** 4.73 % of the
-   ranked round; a 30 % cut is about +1.42 % published. Bit-exactness holds for any
-   threadgroup of the form `(32, y, z)` because `dk_idx` has x extent exactly 32
-   and both `simd_sum` calls reduce over one simdgroup; `Dv = 128` gives
-   `y` in `{4, 8, 16, 32}`. `n_per_t = Dk / 32` hard-codes the split, so x must
-   stay 32.
+2. **The orphaned 7.1 ms of the width-independent term `a`. ASSIGNED, E96
+   retarget, PR #99.** After the Gated DeltaNet refutation, 7,088 to 7,308 us of
+   the 10,919.5 us term has no owner: 65 to 67 % of `a`, about 5.6 % of the local
+   round and 3.8 % of the ranked round. This is now the largest unexplained block
+   of cost in the campaign. E96 also owns the **census-to-round calibration
+   curve** from section 0e.2, which would retro-correct every per-dispatch
+   attribution we hold.
 3. **The ranked-shaped depth price. ASSIGNED as E94 rung 3, PR #97.** Tier factors
    1 / 2.490 / 1.810. Expect a local loss of up to about 1 %, which is the correct
    sign for a price fitted to a different machine; the decisive local evidence is
@@ -802,10 +960,10 @@ Ordered by ranked value after the section 0d transfer table, not by local value.
 
 | PR | student | experiment | state |
 |---|---|---|---|
-| #89 | thorfinn | E87 coarse draft shortlist, arm C | §4 terminal and accepted. **Composing arm C with askeladd's Q-row shrink and resubmitting.** Campaign critical path. |
-| #97 | edward | E94 the depth-price cliff guard | rung 1 delivered a fixture negative and two new constants; rung 2 twelve legs running; rung 3 rewritten to fit the depth price to the **ranked** curve |
-| #98 | askeladd | E97 the per-row verify cost `c` | new. 64.6 % of the ranked round, zero traffic share, 6.8 TFLOP/s. Rung 1 is a bf16-against-affine4 per-row slope comparison |
-| #99 | alphonse | E96 the Gated DeltaNet recurrent step | new. 85.1 % of `a`, 4.73 % of the ranked round, 6.8x its DRAM bound. Rung 1 is an ablation, not an optimisation |
+| #89 | thorfinn | E87 coarse draft shortlist, arm C | §4 and §13 terminal and accepted. Composed candidate `fc129138` is **in flight as `84b9ef7b`**, away 08:16Z. Now **building the §8 `argPartition` custom top-k** as draw-2 cargo. Campaign critical path. |
+| #97 | edward | E94 the depth-price cliff guard | rung 1 and rung 2 both accepted and **closed**. Rung 2 measured −10.69 % at cap 4 locally, then edward correctly downgraded his own result: on the ranked curve `C(5)/C(4) = 1.2304 < 1.25`, so the substitution is close to a ranked no-op. Rung 3 is now a **beagle simulation** against the ranked cost curve, gated on reproducing the crown's observed draft lengths 4.3818 and 5.0870 |
+| #98 | askeladd | E97 the per-row verify cost `c` | 64.6 % of the ranked round, zero traffic share, 6.8 TFLOP/s, and **never lowered once in 54 same-schedule board runs**. Rung 0 peak-rate microbenchmark running. Told that section 0e.2 does not affect his round-level slope |
+| #99 | alphonse | E96, retargeted to the orphaned 7.1 ms of `a` | **He refuted the brief's own premise in one session** and the rung-2 optimisation is closed as a negative before it ran. Now attributing the 7,088 to 7,308 us with no owner, and building the census-to-round calibration curve |
 
 Each student has one physical Mac: Apple M4 Pro, `applegpu_g16s` generation 16,
 20 GPU cores, 48 GiB, 10 performance cores and 4 efficiency cores. The ranked
