@@ -29,7 +29,7 @@ BASE_SHA = "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf"
 ART = pathlib.Path("research/e114-artifacts")
 RECEIPTS = ("b8b8b860", "44559d02", "51b9bf85")
 NA_CELLS = ("2", "3", "4", "5")
-SHAPES = ("maxent", "gt1", "gt2")
+SHAPES = ("maxent", "gt1", "gt2", "policy")
 
 
 def gate_flags() -> dict[str, object]:
@@ -120,7 +120,62 @@ def rung0_tables(run, d: dict) -> None:
     run.log({"rung0/recovered_na_weights_by_prompt": rec})
 
 
+def rung1b_tables(run, d: dict) -> None:
+    fit = wandb.Table(columns=[
+        "prompt", "model", "lambda", "mu", "board_mean_draft_len",
+        "sim_mean_draft_len", "board_accepted_draft_rate",
+        "sim_accepted_draft_rate", "board_rounds", "sim_rounds",
+        "rounds_resid_pct", "bracketed"])
+    for name, r in sorted(d["prompts"].items()):
+        for m in ("A", "B"):
+            if m not in r:
+                continue
+            f = r[m]
+            fit.add_data(name, m, f["lambda"], f["mu"],
+                         r["board_mean_draft_len"], f["mean_draft_len"],
+                         r["board_accepted_draft_rate"],
+                         f["accepted_draft_rate"], r["board_rounds"],
+                         f["mean_rounds"], f["rounds_resid_pct"],
+                         f["bracketed"])
+    run.log({"rung1b/policy_fit_per_prompt": fit})
+
+    oos = wandb.Table(columns=[
+        "held_out_target", "model", "lambda", "mu", "total_variation_distance",
+        "bar", "observed_rounds", "sim_rounds", "accept_residual"])
+    for r in d["validation"]["rows"]:
+        for m in ("A", "B"):
+            if m not in r:
+                continue
+            f = r[m]
+            oos.add_data(r["target"], m, f["lambda"], f["mu"], f["tvd"],
+                         d["oos_tvd_bar"], r["rounds"], f["mean_rounds"],
+                         f["acc_resid"])
+    run.log({"rung1b/held_out_width_census_validation": oos})
+
+    band = wandb.Table(columns=[
+        "prompt", "model", "inside_identified_set", "policy_mean_wide",
+        "board_mean_wide", "monte_carlo_gap", "projected_cost_resid_pct",
+        "cost_band_ok"])
+    for name, v in sorted(d["identified_set_check"].items()):
+        for m, chk in sorted(v.items()):
+            band.add_data(name, m, chk["inside"], chk["policy_mean_wide"],
+                          chk["board_mean_wide"], chk["mean_wide_gap"],
+                          chk["cost_resid_pct"], chk["cost_ok"])
+    run.log({"rung1b/policy_shape_against_rung0_band": band})
+
+    gates = wandb.Table(columns=["structural_gate"])
+    for g in d["gates"]:
+        gates.add_data(g)
+    run.log({"rung1b/structural_gates": gates})
+
+
 def rung1_tables(run, d: dict) -> None:
+    chk = wandb.Table(columns=["arm", "ledger_recorded_weighted_pct",
+                               "rebuilt_by_instrument", "residual_pp"])
+    for r in sorted(d["chk"]["rows"], key=lambda r: -abs(r["resid_pp"])):
+        chk.add_data(r["arm"], r["recorded"], r["chk"], r["resid_pp"])
+    run.log({"rung1/provenance_reproduce_ledger_column": chk})
+
     mix = wandb.Table(columns=["prompt", "sensitivity_weight", "share"])
     tot = sum(d["prompt_mix"].values())
     for name, w in sorted(d["prompt_mix"].items(), key=lambda kv: -kv[1]):
@@ -147,7 +202,7 @@ def rung1_tables(run, d: dict) -> None:
         "standing_pct", "published_lo", "published_hi",
         "move_lo_pp", "move_hi_pp", "guaranteed_move_pp", "max_move_pp",
         "sign_identified", "immaterial_proven",
-        "point_maxent", "point_gt1", "point_gt2"])
+        *["point_%s" % s for s in SHAPES]])
     for frame, f in sorted(d["frames"].items()):
         for r in sorted(f["arms"], key=lambda r: -r["max_move_pp"]):
             arms.add_data(
@@ -160,6 +215,43 @@ def rung1_tables(run, d: dict) -> None:
                 *[r["points"][s] for s in SHAPES])
     run.log({"deliverable/arm_rerank": arms})
 
+    ver = wandb.Table(columns=["verdict", "arm", "move_lo_pp", "move_hi_pp"])
+    ranked = {r["arm"]: r for r in d["frames"]["ranked"]["arms"]}
+    for verdict, names in sorted(d["verdicts"].items()):
+        for arm in names:
+            r = ranked[arm]
+            ver.add_data(verdict, arm, r["move_lo_pp"], r["move_hi_pp"])
+    run.log({"deliverable/sign_invariance_verdicts": ver})
+
+    rc = wandb.Table(columns=[
+        "arm", "d_chk_pp", "d_maxent_pp", "d_gt1_pp", "d_gt2_pp",
+        "advisor_three_shape_spread_pp", "my_identified_set_max_move_pp"])
+    for r in d["advisor_reconciliation"]["rows"]:
+        rc.add_data(r["arm"], r["delta"]["chk"], r["delta"]["maxent"],
+                    r["delta"]["gt1"], r["delta"]["gt2"],
+                    r["advisor_three_shape_spread_pp"],
+                    r["my_identified_set_max_move_pp"])
+    run.log({"rung1/reconciliation_against_advisor": rc})
+
+    fac = wandb.Table(columns=[
+        "rate_table_harness", "basis", "weighted_to_round_factor",
+        "extrapolated_mass", "identified_lo", "identified_hi"])
+    for frame, f in sorted(d["frames"].items()):
+        w2r = f["weighted_to_round"]
+        fac.add_data(frame, "ledger scalar as quoted", w2r["ledger_scalar"], None,
+                     w2r["published_lo"], w2r["published_hi"])
+        fac.add_data(frame, "M=5 point rebuilt", w2r["m5_point"], 0.0,
+                     w2r["published_lo"], w2r["published_hi"])
+        fac.add_data(frame, "E106 realised widths", w2r["e106_realised"],
+                     w2r["e106_extrapolated_mass"], w2r["published_lo"],
+                     w2r["published_hi"])
+        for shape in SHAPES:
+            p = w2r["published"][shape]
+            fac.add_data(frame, "published/%s" % shape, p["factor"],
+                         p["extrapolated_mass"], w2r["published_lo"],
+                         w2r["published_hi"])
+    run.log({"deliverable/weighted_to_round_factor": fac})
+
     un = wandb.Table(columns=["arm", "why_it_cannot_be_reweighted"])
     for arm, why in sorted(d["unresolved"].items()):
         un.add_data(arm, why)
@@ -168,7 +260,7 @@ def rung1_tables(run, d: dict) -> None:
 
 def item5_tables(run, d: dict) -> dict:
     it5 = d["item5"]
-    sh = wandb.Table(columns=["prompt", "maxent", "gt1", "gt2",
+    sh = wandb.Table(columns=["prompt", *SHAPES,
                               "identified_lo", "identified_hi"])
     for name, r in sorted(it5["per_prompt_m5_time_share"].items()):
         sh.add_data(name, *[r["points"][s] for s in SHAPES], r["lo"], r["hi"])
@@ -200,6 +292,7 @@ def item5_tables(run, d: dict) -> dict:
 
 def main() -> None:
     d0 = json.loads((ART / "rung0.json").read_text())
+    d1b = json.loads((ART / "rung1b.json").read_text())
     d1 = json.loads((ART / "rung1.json").read_text())
     pm = d1["primary_metric"]
 
@@ -214,8 +307,12 @@ def main() -> None:
                 "operating point change any ranking?"
             ),
             "kill_rule": (
-                "stop if no arm moves by more than 0.05 pp under the "
-                "published weights"
+                "AMENDED by advisor feedback f2, not applied. The original "
+                "rule stopped the experiment if no arm moved by more than "
+                "0.05 pp under the published weights. Rung 0 showed the "
+                "weight vector is a set, so that scalar can only be read at "
+                "a shape the rung-0 gate rejected. The deliverable is the "
+                "identified-set bound per arm plus the sign-invariant list."
             ),
             "primary_metric": pm["name"],
             "primary_metric_definition": pm["definition"],
@@ -230,19 +327,22 @@ def main() -> None:
     )
 
     rung0_tables(run, d0)
+    rung1b_tables(run, d1b)
     rung1_tables(run, d1)
     it5 = item5_tables(run, d1)
 
     v = d0["validation"]["ranked"]
     ag = it5["published_weighted_share"]
     cd = it5["curve_difference_price"]
-    e110 = [r for r in d1["frames"]["ranked"]["arms"] if r["src"] == "E110 A"]
+    e110 = [r for r in d1["frames"]["ranked"]["arms"] if r["src"] == "E110"]
+    pol = d1["policy_gate"]
+    w2r = d1["frames"]["ranked"]["weighted_to_round"]
     summary = {
-        "verdict": "kill_rule_does_not_fire_but_weights_are_not_identified",
+        "verdict": "weights_are_not_point_identified_bound_and_signs_delivered",
         "result_label": "unclear",
         pm["name"]: pm["value"],
-        "kill_rule_pp": pm["kill_rule_pp"],
-        "kill_rule_fires": bool(pm["value"] < pm["kill_rule_pp"]),
+        "kill_rule_pp": pm["amended_kill_rule_pp"],
+        "kill_rule_amended_not_applied": True,
         "identified_set_upper_bound_pp": pm["identified_set_upper_bound"],
         "guaranteed_lower_bound_pp": pm["guaranteed_lower_bound"],
         "shape_ensemble_lo_pp": pm["shape_ensemble_lo"],
@@ -261,6 +361,22 @@ def main() -> None:
         "arms_reweighted": len(e110),
         "arms_without_per_na_cells": len(d1["unresolved"]),
         "arms_sign_identified": sum(1 for r in e110 if r["sign_identified"]),
+        "provenance_reproduces_ledger_column": bool(d1["chk"]["pass"]),
+        "provenance_worst_resid_pp": d1["chk"]["worst_resid_pp"],
+        "advisor_reconciliation_worst_pp":
+            d1["advisor_reconciliation"]["worst_abs_pp"],
+        "advisor_reconciliation_set_vs_spread_ratio":
+            d1["advisor_reconciliation"]["worst_set_vs_spread_ratio"],
+        "policy_shape_gate_pass": bool(pol["pass"]),
+        "policy_shape_worst_oos_tvd": pol["worst_tvd"],
+        "policy_shape_oos_tvd_bar": pol["bar"],
+        "policy_shape_scored_prompts_out_of_band": len(pol["out_of_band"]),
+        "policy_model_a_falsified": True,
+        "weighted_to_round_ledger_scalar": w2r["ledger_scalar"],
+        "weighted_to_round_m5_point": w2r["m5_point"],
+        "weighted_to_round_maxent": w2r["published"]["maxent"]["factor"],
+        "weighted_to_round_lo": w2r["published_lo"],
+        "weighted_to_round_hi": w2r["published_hi"],
         "item5_m5_time_share_maxent": ag["points"]["maxent"],
         "item5_m5_time_share_lo": ag["lo"],
         "item5_m5_time_share_hi": ag["hi"],
@@ -279,11 +395,12 @@ def main() -> None:
     run.summary.update(summary)
 
     art = wandb.Artifact("e114-operating-point", type="analysis")
-    for f in ("rung0.json", "rung0.txt", "rung1.json", "rung1.txt",
-              "selftest.txt"):
+    for f in ("rung0.json", "rung0.txt", "rung1b.json", "rung1b.txt",
+              "rung1.json", "rung1.txt", "selftest.txt"):
         art.add_file(str(ART / f))
     for f in ("scoring_weights.py", "scoring_weights_selftest.py",
-              "e114_width_recovery.py", "e114_rerank.py", "e114-results.md"):
+              "e114_width_recovery.py", "e114_policy_sim.py",
+              "e114_rerank.py", "e114-results.md"):
         art.add_file("research/%s" % f)
     run.log_artifact(art)
 

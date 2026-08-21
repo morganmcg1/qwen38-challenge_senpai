@@ -74,15 +74,40 @@ ONE_GROUP_GBPS: dict[int, float] = {2: 253.6, 3: 245.6, 4: 211.7, 5: 178.8}
 # standing local rule gives them. E113 finding 1 also shows the ranked COST
 # tier stays at M=5 while the local one moves to M=6. Any table built with this
 # rate table is `harness=ranked` on both axes.
+#
+# CAUTION on NA=5. That entry is not measured. Finding 32 route 2 derives it as
+# `r2_ranked / A_ranked` with `A_ranked ~ 2`, i.e. half the two-group aggregate,
+# so it carries whatever error `A_ranked` carries. Ledger 260.7 records that
+# `research/group_scaling.py` also still uses the pre-E100 `Gof[5] = 2`. Report
+# any table that leans on NA=5 in the local frame as well.
 RANKED_ONE_GROUP_GBPS: dict[int, float] = {2: 409.8, 3: 368.0, 4: 333.9,
                                            5: 272.2}
 RANKED_RATE_SOURCE = "E113 route A, Finding 31 identity, ranked M5 receipts"
+RANKED_RATE_MEASURED = {2: True, 3: True, 4: True, 5: False}
 
 NA_CELLS = (2, 3, 4, 5)
 
 # Edward's traced local histogram over verify width M, E106, 19 native MTP
 # rounds, W&B run `19kgn6xi`. mean width 6.947, accept 0.9735.
 E106_LOCAL_HISTOGRAM: dict[int, float] = {2: 1, 5: 1, 6: 4, 7: 3, 8: 10}
+
+# Transformed weight total in GB, Finding 21. One wide-QMV group streams it
+# once, so `WEIGHT_STREAM_GB / rate(NA)` is that group's streaming time.
+WEIGHT_STREAM_GB = 14.41235
+
+# harness=local. E106 census GPU-busy round total, same leg as
+# `E106_LOCAL_HISTOGRAM`. Only M = 1..5 were traced.
+E106_LOCAL_ROUND_US: dict[int, float] = {1: 67405.9, 2: 71831.0, 3: 75163.1,
+                                         4: 86090.7, 5: 102864.5}
+
+# The campaign converts a `weighted %` kernel number into a `round %` with one
+# scalar. Ledger 258.8/259.8 use 80,113 / 102,864 = 0.7788, which is the M = 5
+# streaming term over the M = 5 round: a POINT on the width axis, evaluated at
+# the local operating point. `qmv_share_of_round()` rebuilds it as a function
+# of the width distribution so the same reweighting can be applied to it.
+LEDGER_WEIGHTED_TO_ROUND = 0.7788
+# FINDING 35 local-to-ranked transfer, applied on top of `round %`.
+LOCAL_TO_RANKED = 0.95
 
 # The standing campaign rule, quoted so the self-test can check we still
 # reproduce it rather than trusting that we do.
@@ -159,6 +184,70 @@ def published_weights(per_prompt: dict[str, dict[int, float]],
             mixed[na] += (share / occ_total) * part[na]
     return {na: BEAGLE_SHARE * beagle[na] + (1 - BEAGLE_SHARE) * mixed[na]
             for na in NA_CELLS}
+
+
+def qmv_us(width: int, rates: dict[int, float] | None = None) -> float:
+    """Wide-QMV streaming microseconds for one round at verify width `width`.
+
+    `M = 1` returns 0: the narrow single-row QMV is a different kernel family
+    and carries no cell any wide arm can move.
+    """
+    rates = rates or ONE_GROUP_GBPS
+    if width not in PARTITION:
+        raise KeyError("verify width %r is not in the partition table (%s)"
+                       % (width, PARTITION_SOURCE))
+    return sum(WEIGHT_STREAM_GB / rates[na] * 1e6
+               for na in PARTITION[width] if na in rates)
+
+
+def _overhead_fit() -> tuple[float, float]:
+    """Least-squares line through the measured non-streaming round remainder.
+
+    `round_us(M) - qmv_us(M)` is everything in the round that is not wide-QMV
+    weight streaming. It is measured only at M = 2..5, so widths 6..8 need an
+    extrapolation and every consumer must label it.
+    """
+    pts = [(float(M), E106_LOCAL_ROUND_US[M] - qmv_us(M))
+           for M in sorted(E106_LOCAL_ROUND_US) if M >= 2]
+    n = len(pts)
+    mx = sum(x for x, _ in pts) / n
+    my = sum(y for _, y in pts) / n
+    sxx = sum((x - mx) ** 2 for x, _ in pts)
+    sxy = sum((x - mx) * (y - my) for x, y in pts)
+    slope = sxy / sxx
+    return my - slope * mx, slope
+
+
+def round_us(width: int) -> tuple[float, bool]:
+    """Local round microseconds and whether that value was measured."""
+    if width in E106_LOCAL_ROUND_US:
+        return E106_LOCAL_ROUND_US[width], True
+    o0, o1 = _overhead_fit()
+    return qmv_us(width) + o0 + o1 * width, False
+
+
+def qmv_share_of_round(width_dist: dict[int, float]) -> dict:
+    """The `weighted % -> round %` factor at one verify-width distribution.
+
+    `round % = weighted % * qmv_us_total / round_us_total`, because the NA
+    weights are already the shares of `qmv_us_total`. Widths above 5 use the
+    extrapolated round time, and the share of distribution mass that depends on
+    it is returned so a reader can discount the answer.
+    """
+    total = sum(width_dist.values())
+    if total <= 0:
+        raise ValueError("width distribution carries no mass")
+    q = r = extrapolated = 0.0
+    for width, mass in width_dist.items():
+        if mass == 0:
+            continue
+        ru, measured = round_us(int(width))
+        q += mass / total * qmv_us(int(width))
+        r += mass / total * ru
+        if not measured:
+            extrapolated += mass / total
+    return {"factor": q / r, "qmv_us": q, "round_us": r,
+            "extrapolated_mass": extrapolated}
 
 
 def weighted(arm_table: dict[int, float], weights: dict[int, float]) -> float:

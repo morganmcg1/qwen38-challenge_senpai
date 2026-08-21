@@ -240,7 +240,54 @@ def main() -> int:
     if wr.ROUTE_B["break"] != wr.ROUTE_B_PRE_E100["break"]:
         failures.append("the two fits disagree on the break width")
 
-    n = 14
+    # 15. `round_us` must reproduce every measured E106 round time exactly and
+    #     must mark exactly the widths it did not measure. If a measured width
+    #     silently came from the fit, the `weighted -> round` factor would be
+    #     an extrapolation everywhere and the ledger comparison meaningless.
+    for M, us in sw.E106_LOCAL_ROUND_US.items():
+        got, measured = sw.round_us(M)
+        if not measured or not close(got, us, 1e-9):
+            failures.append("round_us(%d) did not return the measurement" % M)
+    for M in (6, 7, 8):
+        got, measured = sw.round_us(M)
+        if measured:
+            failures.append("round_us(%d) claims to be measured" % M)
+        if got <= sw.E106_LOCAL_ROUND_US[5]:
+            failures.append("extrapolated round_us(%d) is not increasing" % M)
+
+    # 16. The `weighted -> round` factor must equal the ledger scalar at its
+    #     M=5 point to within the residual the advisor allowed, must stay a
+    #     fraction, and must fall as width rises, because wider rounds add
+    #     non-QMV work faster than they add QMV bytes.
+    m5 = sw.qmv_share_of_round({5: 1.0})
+    if not (0.0 < m5["factor"] < 1.0):
+        failures.append("the M=5 factor is not a fraction")
+    if abs(m5["factor"] - sw.LEDGER_WEIGHTED_TO_ROUND) > 0.01:
+        failures.append("the M=5 factor left the ledger scalar: %.4f" %
+                        m5["factor"])
+    if m5["extrapolated_mass"] != 0.0:
+        failures.append("the M=5 factor used an extrapolated round time")
+    if sw.qmv_share_of_round({8: 1.0})["extrapolated_mass"] != 1.0:
+        failures.append("the M=8 factor was not marked extrapolated")
+    mixed = sw.qmv_share_of_round({4: 0.5, 5: 0.5})["factor"]
+    if not (min(sw.qmv_share_of_round({4: 1.0})["factor"], m5["factor"]) <= mixed
+            <= max(sw.qmv_share_of_round({4: 1.0})["factor"], m5["factor"])):
+        failures.append("the factor is not a mixture of its per-width points")
+
+    # 17. Both stored per-round rate tables must be strictly decreasing in
+    #     width. `qmv_us` divides by them, so a non-monotone table would make
+    #     a wider round look cheaper and invert every arm sign downstream.
+    for name, rates in (("local", sw.ONE_GROUP_GBPS),
+                        ("ranked", sw.RANKED_ONE_GROUP_GBPS)):
+        seq = [rates[M] for M in sorted(rates)]
+        if any(b >= a for a, b in zip(seq, seq[1:])):
+            failures.append("%s rate table is not decreasing: %s"
+                            % (name, seq))
+        us = [sw.qmv_us(M, rates) for M in sorted(rates)]
+        if any(b <= a for a, b in zip(us, us[1:])):
+            failures.append("%s qmv_us is not increasing: %s" % (name, us))
+
+    n = 17
     for failure in failures:
         print("FAIL %s" % failure)
     if failures:

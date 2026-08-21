@@ -1,0 +1,103 @@
+==============================================================================
+E114 rung 1b - the width distribution the SHIPPED SCHEDULE emits
+==============================================================================
+policy transcribed from Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+  cap 7, price uniform h=0.18, EMA alpha 0.15, prior 0.8500, 0.8330, 0.8163, 0.8000, ...
+  acceptance profile (E92, harness=local) 0.9659, 0.9652, 0.9543, 0.9486, 0.9487, 0.9859, 0.9451, 0.8333
+  300 Monte Carlo windows per evaluation, seed 20260817
+
+-- out-of-sample validation ------------------------------------
+  target          M   lambda      mu     TVD rounds obs rounds sim  acc resid
+  E106_census     A   0.9786       -  0.1992        19      22.6    -0.1587
+  E106_census     B   1.0143  13.119  0.1607        19      20.4    -0.0541
+  E109_witness    A   0.8919       -  0.5028        77     117.9    -0.4253
+  E109_witness    B   1.0143   1.048  0.5494        77      86.9    -0.1340
+  v2_pair_census  A   0.9735       -  0.1183        31      83.5          -
+
+  E106_census width histogram, observed against policy
+    M=2  observed 0.0526   A 0.0000   B 0.0000
+    M=3  observed 0.0000   A 0.0000   B 0.0104
+    M=4  observed 0.0000   A 0.0016   B 0.0300
+    M=5  observed 0.0526   A 0.1073   B 0.0998
+    M=6  observed 0.2105   A 0.2118   B 0.1725
+    M=7  observed 0.1579   A 0.2995   B 0.2310
+    M=8  observed 0.5263   A 0.3797   B 0.4563
+
+  E109_witness width histogram, observed against policy
+    M=2  observed 0.0130   A 0.0000   B 0.0000
+    M=3  observed 0.0260   A 0.0030   B 0.0483
+    M=4  observed 0.0779   A 0.0486   B 0.1219
+    M=5  observed 0.0649   A 0.1969   B 0.1627
+    M=6  observed 0.0909   A 0.2657   B 0.1110
+    M=7  observed 0.7273   A 0.2897   B 0.1908
+    M=8  observed 0.0000   A 0.1961   B 0.3652
+
+  v2_pair_census width histogram, observed against policy
+    M=4  observed 0.0323   A 0.0007   B -
+    M=5  observed 0.0323   A 0.0335   B -
+    M=6  observed 0.0645   A 0.0713   B -
+    M=7  observed 0.0323   A 0.1425   B -
+    M=8  observed 0.8387   A 0.7519   B -
+
+-- ranked per-prompt policy point, receipt b8b8b860 ------------------
+  prompt    M   lambda      mu  dbar brd  dbar sim   acc brd   acc sim
+  beagle    A   0.8261       -    4.3818    4.3798    0.8340    0.5558
+  beagle    B   0.9761   0.902    4.3818    4.3865    0.8340    0.8331
+  botany    A   0.9368       -    6.1481    6.1483    0.8655    0.6983
+  botany    B   1.0001   4.432    6.1481    6.1428    0.8655    0.8641
+  drama     A   0.5975       -    2.2976    2.2837    0.4491    0.3848
+  drama     B   0.6453   0.843    2.2976    2.2613    0.4491    0.4510
+  essays    A   0.8750       -    5.0870    5.0871    0.8974    0.6062
+  essays    B   1.0069   0.946    5.0870    5.0929    0.8974    0.8973
+  medicine  A   0.8851       -    5.2556    5.2555    0.8922    0.6173
+  medicine  B   1.0056   1.166    5.2556    5.2417    0.8922    0.8922
+  plutarch  A   0.3317       -    0.1540    0.1542    0.3333    0.1861
+  plutarch  B   0.4351   0.001    0.1540    0.3151    0.3333    0.3334
+  republic  A   0.8681       -    4.9892    4.9941    0.9030    0.5971
+  republic  B   1.0087   0.829    4.9892    4.9902    0.9030    0.9023
+  travel    A   0.6369       -    2.6557    2.6576    0.5329    0.4108
+  travel    B   0.7331   0.697    2.6557    2.6575    0.5329    0.5345
+
+  beagle accepted_draft_rate: board 0.8340, model A 0.5558, model B 0.8331
+
+  round-count check against Finding 18b
+  prompt     R (18b)  A resid %  B resid %
+  beagle         110     +36.01       0.45
+  botany          81     +20.03       0.83
+  drama          252      +8.28       0.74
+  essays          92     +36.86       0.55
+  medicine        90     +34.64       0.75
+  plutarch       487      +2.20      -4.86
+  republic        93     +38.80       0.65
+  travel         212     +15.65      -0.03
+
+  is the policy SHAPE, projected onto the board mean, inside the
+  rung-0 identified set?
+    beagle    A  inside=True  mean_wide 5.3798 vs board 5.3818 (MC gap -0.0020), projected cost -0.659 % of band centre -> ok
+    beagle    B  inside=False mean_wide 5.3865 vs board 5.3818 (MC gap +0.0047), projected cost -0.720 % of band centre -> OUT OF BAND
+    botany    A  inside=True  mean_wide 7.1483 vs board 7.1481 (MC gap +0.0002), projected cost +0.071 % of band centre -> ok
+    botany    B  inside=True  mean_wide 7.1428 vs board 7.1481 (MC gap -0.0053), projected cost -0.083 % of band centre -> ok
+    drama     A  inside=False mean_wide 3.6079 vs board 3.2976 (MC gap +0.3103), projected cost +1.847 % of band centre -> OUT OF BAND
+    drama     B  inside=False mean_wide 3.4262 vs board 3.2976 (MC gap +0.1285), projected cost +1.708 % of band centre -> OUT OF BAND
+    essays    A  inside=False mean_wide 6.0871 vs board 6.0870 (MC gap +0.0002), projected cost -1.004 % of band centre -> OUT OF BAND
+    essays    B  inside=False mean_wide 6.0929 vs board 6.0870 (MC gap +0.0060), projected cost -1.281 % of band centre -> OUT OF BAND
+    medicine  A  inside=True  mean_wide 6.2555 vs board 6.2556 (MC gap -0.0001), projected cost -0.152 % of band centre -> ok
+    medicine  B  inside=True  mean_wide 6.2417 vs board 6.2556 (MC gap -0.0138), projected cost -0.441 % of band centre -> ok
+    plutarch  A  inside=True  mean_wide 3.1007 vs board 2.9737 (MC gap +0.1271), projected cost +2.054 % of band centre -> ok
+    plutarch  B  inside=True  mean_wide 2.5386 vs board 2.9737 (MC gap -0.4351), projected cost +0.688 % of band centre -> ok
+    republic  A  inside=True  mean_wide 5.9941 vs board 5.9892 (MC gap +0.0049), projected cost -0.180 % of band centre -> ok
+    republic  B  inside=True  mean_wide 5.9902 vs board 5.9892 (MC gap +0.0009), projected cost -0.452 % of band centre -> ok
+    travel    A  inside=False mean_wide 3.8204 vs board 3.6557 (MC gap +0.1647), projected cost +2.158 % of band centre -> OUT OF BAND
+    travel    B  inside=False mean_wide 3.6634 vs board 3.6557 (MC gap +0.0078), projected cost +2.092 % of band centre -> OUT OF BAND
+
+-- pre-registered promotion gate for the policy shape ----------
+  a generated shape may join maxent/gt1/gt2 as a published weight
+  vector only if it reproduces HELD-OUT width censuses. Bar: worst
+  out-of-sample TVD <= 0.10 and every scored prompt in band.
+    model A  worst OOS TVD 0.5028 (E109_witness)   scored prompts out of band essays  -> FAIL
+    model B  worst OOS TVD 0.5494 (E109_witness)   scored prompts out of band beagle,essays  -> FAIL
+  both models FAIL. The `policy` column downstream is a DIAGNOSTIC
+  shape, not a validated one: it must not be used to narrow the
+  identified set or to overturn a bound built from the equalities.
+
+wrote research/e114-artifacts/rung1b.json
