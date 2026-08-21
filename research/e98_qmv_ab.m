@@ -431,7 +431,12 @@ int main(int argc, char **argv) {
           }
         }
 
-        double max_rel = 0.0, sq = 0.0;
+        // A random 4-bit matrix against random signed activations produces
+        // outputs that pass through zero, so a per-element relative error is
+        // unbounded there. The scale-invariant statistic is the error RMS over
+        // the signal RMS; it is what proves the harness indexes k, the nibble
+        // order and the group stride correctly.
+        double max_rel = 0.0, sq_err = 0.0, sq_want = 0.0;
         int count = 0;
         const int stride = o.n / samples > 0 ? o.n / samples : 1;
         for (int mm = 0; mm < m; mm++) {
@@ -441,15 +446,16 @@ int main(int argc, char **argv) {
             double scale = fabs(want) > 1e-6 ? fabs(want) : 1e-6;
             double rel = fabs(got - want) / scale;
             if (rel > max_rel) max_rel = rel;
-            sq += rel * rel;
+            sq_err += (got - want) * (got - want);
+            sq_want += want * want;
             count++;
           }
         }
-        double rms = count ? sqrt(sq / (double)count) : 0.0;
+        double rms = count && sq_want > 0.0 ? sqrt(sq_err / sq_want) : 0.0;
 
         fprintf(stderr,
                 "e98_qmv_ab:   fidelity M=%d  a_vs_double max_rel=%.3e "
-                "rms=%.3e   b_vs_a differing=%zu/%zu\n",
+                "rms_over_signal=%.3e   b_vs_a differing=%zu/%zu\n",
                 m, max_rel, rms, differing, total);
         if (differing) {
           fprintf(stderr,
@@ -460,7 +466,7 @@ int main(int argc, char **argv) {
         }
         fprintf(out,
                 "%s    {\"kind\":\"fidelity\",\"shape\":\"%s\",\"m\":%d,"
-                "\"a_vs_double_max_rel\":%.6e,\"a_vs_double_rms_rel\":%.6e,"
+                "\"a_vs_double_max_rel\":%.6e,\"a_vs_double_rms_over_signal\":%.6e,"
                 "\"b_vs_a_differing\":%zu,\"b_vs_a_total\":%zu,"
                 "\"bit_identical\":%s}",
                 first_row ? "" : ",\n", shapes[s].name, m, max_rel, rms,
