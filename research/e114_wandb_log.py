@@ -251,9 +251,11 @@ def main() -> None:
         "free_dimensions_after_constraints": 4,
         "bound_coverage_pass": bool(v["bound_pass"]),
         "point_estimator_maxent_gate_pass":
-            bool(v["points"]["maxent"]["pass"]),
+            bool(v["points"]["maxent"]["overall_pass"]),
         "point_estimator_transport_gate_pass":
-            bool(v["points"]["transport"]["pass"]),
+            bool(v["points"]["transport"]["overall_pass"]),
+        "gt2_maxent_max_abs_err": v["points"]["maxent"]["GT2"]["max_abs_err"],
+        "gt1_maxent_max_abs_err": v["points"]["maxent"]["GT1"]["max_abs_err"],
         "round_counts_all_agree_with_finding_18b":
             all(r["agrees"] for r in d0["round_counts"]),
         "arms_reweighted": len(e110),
