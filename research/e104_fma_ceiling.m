@@ -99,7 +99,10 @@ int main(void) {
     }
 
     const uint32_t threads = 1u << 20;
-    const uint32_t iters = 4096;
+    // Swept, not fixed: if measured time does not grow with the trip count the
+    // compiler removed the loop and any derived rate is meaningless.
+    const uint32_t iter_sweep[] = {1024, 2048, 4096, 8192};
+    const int n_iter = 4;
     id<MTLBuffer> out = [device newBufferWithLength:threads * sizeof(float)
                                             options:MTLResourceStorageModeShared];
 
@@ -108,36 +111,58 @@ int main(void) {
     double ns_per_tick = (double)tb.numer / (double)tb.denom;
 
     printf("device: %s\n", device.name.UTF8String);
-    printf("threads=%u iters=%u chains=%d\n\n", threads, iters, kChains);
-    printf("%-16s %10s %12s %12s\n", "form", "ms", "GFLOP", "TFLOP/s");
+    printf("threads=%u chains=%d\n\n", threads, kChains);
+    printf("%-16s %8s %10s %12s %12s\n", "form", "iters", "ms", "GFLOP",
+           "TFLOP/s");
 
     double best[2] = {0, 0};
-    // Interleave the two forms so any drift affects both equally.
-    for (int rep = 0; rep < 5; rep++) {
-      for (int i = 0; i < 2; i++) {
-        float seed = 1.0f;
-        id<MTLCommandBuffer> cb = [queue commandBuffer];
-        id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
-        [enc setComputePipelineState:pso[i]];
-        [enc setBuffer:out offset:0 atIndex:0];
-        [enc setBytes:&iters length:sizeof(iters) atIndex:1];
-        [enc setBytes:&seed length:sizeof(seed) atIndex:2];
-        [enc dispatchThreads:MTLSizeMake(threads, 1, 1)
-            threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
-        [enc endEncoding];
-        uint64_t t0 = mach_absolute_time();
-        [cb commit];
-        [cb waitUntilCompleted];
-        double sec = (mach_absolute_time() - t0) * ns_per_tick * 1e-9;
-        // One multiply-accumulate is two floating point operations.
-        double flops = 2.0 * (double)threads * (double)iters * (double)kChains;
-        double tflops = flops / sec / 1e12;
-        if (tflops > best[i]) best[i] = tflops;
-        if (rep >= 1) {
-          printf("%-16s %10.3f %12.1f %12.3f\n", names[i], sec * 1e3,
-                 flops / 1e9, tflops);
+    double sec_at[2][8];
+    for (int k = 0; k < n_iter; k++) {
+      uint32_t iters = iter_sweep[k];
+      double bestsec[2] = {1e9, 1e9};
+      // Interleave the two forms so any drift affects both equally.
+      for (int rep = 0; rep < 4; rep++) {
+        for (int i = 0; i < 2; i++) {
+          float seed = 1.0f;
+          id<MTLCommandBuffer> cb = [queue commandBuffer];
+          id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
+          [enc setComputePipelineState:pso[i]];
+          [enc setBuffer:out offset:0 atIndex:0];
+          [enc setBytes:&iters length:sizeof(iters) atIndex:1];
+          [enc setBytes:&seed length:sizeof(seed) atIndex:2];
+          [enc dispatchThreads:MTLSizeMake(threads, 1, 1)
+              threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+          [enc endEncoding];
+          uint64_t t0 = mach_absolute_time();
+          [cb commit];
+          [cb waitUntilCompleted];
+          double sec = (mach_absolute_time() - t0) * ns_per_tick * 1e-9;
+          if (rep > 0 && sec < bestsec[i]) bestsec[i] = sec;
         }
       }
+      for (int i = 0; i < 2; i++) {
+        double flops = 2.0 * (double)threads * (double)iters * (double)kChains;
+        double tflops = flops / bestsec[i] / 1e12;
+        sec_at[i][k] = bestsec[i];
+        if (tflops > best[i]) best[i] = tflops;
+        printf("%-16s %8u %10.3f %12.1f %12.3f\n", names[i], iters,
+               bestsec[i] * 1e3, flops / 1e9, tflops);
+      }
+    }
+
+    printf("\nscaling check (time must grow with the trip count):\n");
+    int sane = 1;
+    for (int i = 0; i < 2; i++) {
+      double ratio = sec_at[i][n_iter - 1] / sec_at[i][0];
+      double expect = (double)iter_sweep[n_iter - 1] / (double)iter_sweep[0];
+      printf("  %-16s t(%u)/t(%u) = %.2f, expected ~%.1f\n", names[i],
+             iter_sweep[n_iter - 1], iter_sweep[0], ratio, expect);
+      if (ratio < 0.6 * expect) sane = 0;
+    }
+    if (!sane) {
+      printf("\nLOOP ELIMINATED: the reported rates are not a machine "
+             "ceiling and must not be quoted.\n");
+      return 3;
     }
     printf("\nbest mul_add = %.3f TFLOP/s\nbest fma     = %.3f TFLOP/s\n",
            best[0], best[1]);
