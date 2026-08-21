@@ -35,14 +35,13 @@ static const int kN = 98336;         // out_vec_size
 static const int kGroup = 64;
 static const int kRowsPerTG = 8;     // 2 simdgroups x 4 rows
 
-enum { kArmA = 0, kArmB, kArmC, kArmE, kArmH, kArmF, kArmG, kArmCount };
-static const char *kArmNames[kArmCount] = {"a_shipped", "b_constw",
-                                           "c_loadonly", "e_floor",
-                                           "h_split",   "f_mask",
-                                           "g_bfe"};
+enum { kArmA = 0, kArmB, kArmB2, kArmC, kArmE, kArmH, kArmF, kArmG, kArmCount };
+static const char *kArmNames[kArmCount] = {
+    "a_shipped", "b_constw", "b2_maskalu", "c_loadonly",
+    "e_floor",   "h_split",  "f_mask",     "g_bfe"};
 // Arms that keep every elementary product and the shipped summation order, so
 // their whole output must be bit-identical to a_shipped.
-static const int kExpectBitExact[kArmCount] = {1, 0, 0, 0, 1, 1, 1};
+static const int kExpectBitExact[kArmCount] = {1, 0, 0, 0, 0, 1, 1, 1};
 
 static inline uint16_t f32_to_bf16(float f) {
   uint32_t u;
@@ -99,7 +98,13 @@ static float referenceRow(const uint8_t *w, const uint16_t *scales,
         xv[i + 1] = bf16_to_f32(xm[i + 1]);
         xv[i + 2] = bf16_to_f32(xm[i + 2]);
         xv[i + 3] = bf16_to_f32(xm[i + 3]);
-        sum += xv[i] + xv[i + 1] + xv[i + 2] + xv[i + 3];
+        // The kernel adds these four in BFLOAT, not in float, so the
+        // reference must round after every add or the affine bias term
+        // disagrees in the last place.
+        uint16_t t = f32_to_bf16(xv[i] + xv[i + 1]);
+        t = f32_to_bf16(bf16_to_f32(t) + xv[i + 2]);
+        t = f32_to_bf16(bf16_to_f32(t) + xv[i + 3]);
+        sum += bf16_to_f32(t);
       }
       float accum = 0.0f;
       for (int j = 0; j < 32; j++) {
