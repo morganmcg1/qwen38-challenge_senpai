@@ -37,7 +37,8 @@ ROUNDS = re.compile(r"^mtp-timed: tokens=(\d+) depth=(\d+) rounds=(\d+)",
                     re.MULTILINE)
 
 # tag infix -> (offered depth, decode tokens)
-SESSIONS = {"d8": (8, 64), "d4": (4, 64), "w512": (8, 512)}
+SESSIONS = {"d8": (8, 64), "d4": (4, 64), "w512": (8, 512),
+            "w512d4": (4, 512)}
 SLOT_ARM = {"a1": "base", "a2": "base", "b1": "collapse", "b2": "collapse"}
 
 
@@ -138,7 +139,7 @@ def main() -> int:
     print("ARM COMPARISON AT MATCHED WIDTH")
     print("=" * 100)
     summary = {}
-    for session in ("d8", "d4", "w512"):
+    for session in SESSIONS:
         arms = {}
         for arm in ("base", "collapse"):
             v = [r["round_ms"] for r in rows
