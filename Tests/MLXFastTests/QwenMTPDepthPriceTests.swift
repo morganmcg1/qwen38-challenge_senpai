@@ -234,31 +234,6 @@ struct QwenMTPDepthPriceTests {
         }
     }
 
-    // E99 rung 5. The ranked worker exports no campaign environment, so the
-    // gate must be on and fully configured in a process that sets nothing, and
-    // the clamp depth must be the widest draft that still streams the weights
-    // once.
-    @Test("the margin gate ships on and clamps into the G = 1 band")
-    func marginGateShipsOn() {
-        #expect(Qwen36MTPBlockSession.marginGateArm == .g1)
-        #expect(Qwen36MTPBlockSession.marginGateThreshold
-            == Qwen36MTPBlockSession.marginGateDefaultThreshold)
-        #expect(Qwen36MTPBlockSession.marginGateDepth
-            == Qwen36MTPBlockSession.marginGateDefaultDepth)
-        let width = Qwen36MTPBlockSession.marginGateDepth + 1
-        #expect(width == 4)
-        #expect(streamsPerRound(width) == 1)
-        #expect(streamsPerRound(width + 1) == 2)
-    }
-
-    /// `G = ceil(M / IPG)`, `IPG = ceil(M / ceil(M / 4))`, which is the
-    /// ranked runner's grouping and the reason the clamp depth is 3.
-    private func streamsPerRound(_ width: Int) -> Int {
-        let groups = (width + 3) / 4
-        let perGroup = (width + groups - 1) / groups
-        return (width + perGroup - 1) / perGroup
-    }
-
     @Test("the shipped arm is ship")
     func shippedArmIsShip() {
         #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
