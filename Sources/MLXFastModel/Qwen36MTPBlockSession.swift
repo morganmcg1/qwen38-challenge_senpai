@@ -192,6 +192,12 @@ public final class Qwen36MTPBlockSession {
         // version of this; the per-position EMAs let depth 5-8 pay where the
         // ladder's cap of 4 left committed tokens on the table.
         draftPolicy = { [weak self] offeredDepth, _ in
+            // E96 RESEARCH INSTRUMENT (unwound before submission): pin the
+            // round geometry so an ablation arm whose tokens diverge still
+            // runs the same verify width as its control.
+            if let forced = Self.e96ForcedDrafts {
+                return Swift.min(offeredDepth, forced)
+            }
             guard let self else { return Swift.min(offeredDepth, 1) }
             return self.costModelDepth(offeredDepth: offeredDepth)
         }
@@ -674,6 +680,17 @@ public final class Qwen36MTPBlockSession {
         offeredDepth, _ in
         Swift.min(offeredDepth, 1)
     }
+
+    /// E96 RESEARCH INSTRUMENT (unwound before submission). `MLX_E96_FORCE_DRAFTS`
+    /// replaces the cost-model schedule with a constant width.
+    private static let e96ForcedDrafts: Int? = {
+        guard let raw = ProcessInfo.processInfo
+            .environment["MLX_E96_FORCE_DRAFTS"],
+              let value = Int(raw), value >= 0,
+              value <= Qwen36MTPLimits.maxDepth
+        else { return nil }
+        return value
+    }()
 
     /// Consecutive fully-accepted DRAFTING rounds. Kept as a public-ish
     /// telemetry counter; the cost-model schedule below reads the per-position

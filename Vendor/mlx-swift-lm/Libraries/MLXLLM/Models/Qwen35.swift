@@ -189,6 +189,174 @@ private let qwen35CompiledGatedDeltaGBeta:
     return body
 }()
 
+// MARK: - E96 recurrent-step instrument (RESEARCH ONLY, NOT FOR SUBMISSION)
+
+/// Ablation and dispatch-geometry instrument for the GDN recurrent step.
+///
+/// `MLX_E96_STEP` selects the arm:
+///   `vendor` (default) the unmodified `gated_delta_step` kernel;
+///   `clone`  a byte-identical clone of that kernel dispatched from this file,
+///            so the threadgroup geometry becomes a variable;
+///   `t1`     the clone with the t-loop forced to one iteration, which
+///            separates launch plus state traffic from per-timestep work;
+///   `off`    no dispatch at all: `y = v` and `state_out = state_in`.
+/// `MLX_E96_TG_Y` sets the threadgroup y extent for the clone arms. The x
+/// extent stays 32, so both `simd_sum` calls still reduce over exactly one
+/// simdgroup and the arithmetic stays bit-identical.
+private enum Qwen35E96Step {
+    enum Mode: String {
+        case vendor, clone, t1, off
+    }
+
+    static let mode: Mode = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E96_STEP"] ?? ""
+        return Mode(rawValue: raw) ?? .vendor
+    }()
+
+    static let threadGroupY: Int = {
+        guard let raw = ProcessInfo.processInfo.environment["MLX_E96_TG_Y"],
+              let y = Int(raw), y > 0, y <= 32, 128 % y == 0
+        else { return 4 }
+        return y
+    }()
+
+    static let cloneKernel = makeKernel(
+        name: "qwen35_e96_step_clone", oneIteration: false)
+    static let t1Kernel = makeKernel(
+        name: "qwen35_e96_step_t1", oneIteration: true)
+
+    private static func makeKernel(
+        name: String, oneIteration: Bool
+    ) -> MLXFast.MLXFastKernel? {
+        // Rows the shortened loop never reaches still need a defined value:
+        // an uninitialised output buffer can carry recycled NaNs into every
+        // later kernel and change what the instrument measures.
+        let zeroTail =
+            oneIteration
+            ? """
+                  if (thread_index_in_simdgroup == 0) {
+                    for (int t = 1; t < T; ++t) {
+                      y[t * Hv * Dv + dv_idx] = static_cast<InT>(0);
+                    }
+                  }
+            """
+            : ""
+        let bound = oneIteration ? "1" : "T"
+        let source = """
+                    auto n = thread_position_in_grid.z;
+                    auto b_idx = n / Hv;
+                    auto hv_idx = n % Hv;
+                    auto hk_idx = hv_idx / (Hv / Hk);
+                    constexpr int n_per_t = Dk / 32;
+
+                    auto q_ = q + b_idx * T * Hk * Dk + hk_idx * Dk;
+                    auto k_ = k + b_idx * T * Hk * Dk + hk_idx * Dk;
+
+                    auto v_ = v + b_idx * T * Hv * Dv + hv_idx * Dv;
+                    y += b_idx * T * Hv * Dv + hv_idx * Dv;
+
+                    auto dk_idx = thread_position_in_threadgroup.x;
+                    auto dv_idx = thread_position_in_grid.y;
+
+                    auto g_ = g + b_idx * T * Hv;
+                    auto beta_ = beta + b_idx * T * Hv;
+
+                    auto i_state = state_in + (n * Dv + dv_idx) * Dk;
+                    auto o_state = state_out + (n * Dv + dv_idx) * Dk;
+
+                    float state[n_per_t];
+                    for (int i = 0; i < n_per_t; ++i) {
+                      auto s_idx = n_per_t * dk_idx + i;
+                      state[i] = static_cast<float>(i_state[s_idx]);
+                    }
+            \(zeroTail)
+                    for (int t = 0; t < \(bound); ++t) {
+                      float kv_mem = 0.0f;
+                      for (int i = 0; i < n_per_t; ++i) {
+                        auto s_idx = n_per_t * dk_idx + i;
+                        state[i] = state[i] * g_[hv_idx];
+                        kv_mem += state[i] * k_[s_idx];
+                      }
+                      kv_mem = simd_sum(kv_mem);
+
+                      auto delta = (v_[dv_idx] - kv_mem) * beta_[hv_idx];
+
+                      float out = 0.0f;
+                      for (int i = 0; i < n_per_t; ++i) {
+                        auto s_idx = n_per_t * dk_idx + i;
+                        state[i] = state[i] + k_[s_idx] * delta;
+                        out += state[i] * q_[s_idx];
+                      }
+                      out = simd_sum(out);
+                      if (thread_index_in_simdgroup == 0) {
+                        y[dv_idx] = static_cast<InT>(out);
+                      }
+                      q_ += Hk * Dk;
+                      k_ += Hk * Dk;
+                      v_ += Hv * Dv;
+                      y += Hv * Dv;
+                      g_ += Hv;
+                      beta_ += Hv;
+                    }
+                    for (int i = 0; i < n_per_t; ++i) {
+                      auto s_idx = n_per_t * dk_idx + i;
+                      o_state[s_idx] = static_cast<StT>(state[i]);
+                    }
+            """
+        return MLXFast.metalKernel(
+            name: name,
+            inputNames: ["q", "k", "v", "g", "beta", "state_in", "T"],
+            outputNames: ["y", "state_out"],
+            source: source)
+    }
+}
+
+/// Route every recurrent-step dispatch through the E96 arm selector. The
+/// default arm calls the unmodified vendored kernel, so an unset environment
+/// reproduces the base tree exactly.
+private func qwen35E96GatedDeltaStep(
+    q: MLXArray,
+    k: MLXArray,
+    v: MLXArray,
+    g: MLXArray,
+    beta: MLXArray,
+    state: MLXArray,
+    mask: MLXArray?
+) -> (MLXArray, MLXArray) {
+    let vendored = {
+        gatedDeltaKernel(
+            q: q, k: k, v: v, g: g, beta: beta, state: state, mask: mask)
+    }
+    guard mask == nil, Qwen35E96Step.mode != .vendor else { return vendored() }
+    if Qwen35E96Step.mode == .off { return (v, state) }
+    let kernel =
+        Qwen35E96Step.mode == .t1
+        ? Qwen35E96Step.t1Kernel : Qwen35E96Step.cloneKernel
+    guard let kernel else { return vendored() }
+    let B = k.dim(0)
+    let T = k.dim(1)
+    let Hk = k.dim(2)
+    let Dk = k.dim(3)
+    let Hv = v.dim(2)
+    let Dv = v.dim(3)
+    let outputs = kernel(
+        [q, k, v, g, beta, state, MLXArray(T)],
+        template: [
+            ("InT", q.dtype),
+            ("StT", state.dtype),
+            ("Dk", Dk),
+            ("Dv", Dv),
+            ("Hk", Hk),
+            ("Hv", Hv),
+        ],
+        grid: (32, Dv, B * Hv),
+        threadGroup: (32, Qwen35E96Step.threadGroupY, 1),
+        outputShapes: [[B, T, Hv, Dv], state.shape],
+        outputDTypes: [q.dtype, state.dtype]
+    )
+    return (outputs[0], outputs[1])
+}
+
 /// Run the existing recurrence kernel from already-computed fp32 `g`/`beta`.
 /// The official M5 path uses this after the compiled helper; callers retain the
 /// original `gatedDeltaUpdate` fallback when compiled decode is disabled.
@@ -210,7 +378,7 @@ private func qwen35GatedDeltaPrepared(
     if preparedState.dtype != .float32 {
         preparedState = preparedState.asType(.float32)
     }
-    return gatedDeltaKernel(
+    return qwen35E96GatedDeltaStep(
         q: q, k: k, v: v, g: g, beta: beta,
         state: preparedState, mask: mask)
 }
@@ -753,7 +921,7 @@ final class Qwen35GatedDeltaNet: Module {
         if state.dtype != .float32 {
             state = state.asType(.float32)
         }
-        return gatedDeltaKernel(
+        return qwen35E96GatedDeltaStep(
             q: q, k: k, v: v, g: g, beta: beta, state: state, mask: mask)
     }
 
