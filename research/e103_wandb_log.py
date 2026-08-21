@@ -77,6 +77,8 @@ ARMS = [
     "e_resident_c",
     "f_nosoftmax_c",
     "g_double_c",
+    "h_tailfree_c",
+    "j_launchonly_c",
 ]
 
 ARM_ROLE = {
@@ -90,6 +92,12 @@ ARM_ROLE = {
     "e_resident_c": "traffic-free control: K and V pointers never advance",
     "f_nosoftmax_c": "softmax-free control: traffic kept, online softmax removed",
     "g_double_c": "positive control: the key loop runs twice",
+    "h_tailfree_c": (
+        "tail-free control: the cross-simdgroup output reduction is removed"
+    ),
+    "j_launchonly_c": (
+        "launch-only control: query load and output write, no key loop, no tail"
+    ),
 }
 
 ARM_PACK = {a: (2 if a == "d_pack2_c" else 3 if a == "d_pack3_c"
@@ -479,6 +487,15 @@ def log_isolated() -> None:
             "decomp/traffic_pct": 100.0 * traffic / a,
             "decomp/softmax_us": softmax,
             "decomp/softmax_pct": 100.0 * softmax / a,
+            "decomp/tail_us": a - med[(n, m)]["h_tailfree_c"] * 1e6,
+            "decomp/tail_pct": 100.0
+            * (a - med[(n, m)]["h_tailfree_c"] * 1e6)
+            / a,
+            "decomp/launch_floor_us": med[(n, m)]["j_launchonly_c"] * 1e6,
+            "decomp/launch_floor_pct": 100.0
+            * med[(n, m)]["j_launchonly_c"]
+            * 1e6
+            / a,
             "decomp/actual_read_mb": actual_mb,
             "decomp/logical_read_mb": logical_mb,
             "decomp/actual_gb_s": actual_mb / a * 1e3,
