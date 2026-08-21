@@ -74,6 +74,7 @@ def main() -> int:
     ap.add_argument("--bar-pct", type=float, default=0.20)
     ap.add_argument("--leg-seconds", type=float, default=92.3)
     ap.add_argument("--control-us", type=float, default=177431.6)
+    ap.add_argument("--json", type=pathlib.Path)
     args = ap.parse_args()
 
     legs = load(pathlib.Path(args.session))
@@ -179,6 +180,22 @@ def main() -> int:
     verdict = ("DRIFT" if (p_two < 0.05 or o_r * o_r > 0.10)
                else "EXCHANGEABLE")
     print(f"     verdict  {verdict}")
+    exchangeability = {
+        "legs": len(seq),
+        "offset_sd_us": st.pstdev(seq),
+        "order_slope_us_per_leg": o_slope,
+        "order_r2": o_r * o_r,
+        "order_total_swing_us": o_slope * (len(seq) - 1),
+        "residual_sd_after_order_removal_us": st.pstdev(o_resid),
+        "lag1_autocorrelation": obs,
+        "lag1_after_order_removal": obs_resid,
+        "permutation_null_sd": null_sd,
+        "permutation_p_two_sided": p_two,
+        "permutation_draws": len(null),
+        "verdict": verdict,
+        "entry_temp_r2": r * r,
+        "entry_temp_slope_us_per_c": slope,
+    }
 
     # What that verdict is worth. A leg costs a fixed setup plus a per-token
     # decode, so halving the token window does NOT halve the leg. Measure the
@@ -192,13 +209,25 @@ def main() -> int:
         print(f"\n   leg cost   wall {st.mean(walls):6.1f} s"
               f"   decode {st.mean(decodes):6.1f} s"
               f"   fixed setup {fixed:6.1f} s")
+        exchangeability["leg_wall_seconds"] = st.mean(walls)
+        exchangeability["leg_decode_seconds"] = st.mean(decodes)
+        exchangeability["leg_fixed_setup_seconds"] = fixed
+        shorter = {}
         for frac in (0.5, 0.25):
             wall_h = fixed + st.mean(decodes) * frac
             gain = math.sqrt(st.mean(walls) / wall_h)
+            shorter[f"{frac:g}"] = {"leg_seconds": wall_h,
+                                    "legs_per_hour_factor":
+                                        st.mean(walls) / wall_h,
+                                    "resolution_factor": gain}
             print(f"   at {frac:.0%} tokens: leg {wall_h:5.1f} s"
                   f"   legs per hour x{st.mean(walls) / wall_h:.2f}"
                   f"   resolution x{gain:.2f} better"
                   f"   IF the offset stays per-leg")
+        exchangeability["shorter_token_window"] = shorter
+    if args.json:
+        args.json.write_text(json.dumps(exchangeability, indent=2))
+        print(f"\n   wrote {args.json}")
 
     # How many legs each design needs to put the 95 % half-width under the bar.
     control = st.mean([st.mean(g["t"]) for g in legs.values()])

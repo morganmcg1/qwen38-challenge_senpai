@@ -103,7 +103,7 @@ def log_protocol(tag: str) -> str:
             "estimator": "round-aligned pairing, then block pairing",
             "endpoint": "block_request_seconds (parent-measured decode round)",
             "decode_tokens": design["tokens"],
-            "mtp_depth": design["depth"],
+            "mtp_depth": design["offered_depth"],
             "estimate_blocks": design["estimate_blocks"],
             "conditioning_blocks": design["conditioning_blocks"],
             "arms": report["arms"],
@@ -292,7 +292,8 @@ def log_shape(spec: str) -> str:
     return url
 
 
-def log_v2(report_path: pathlib.Path) -> str:
+def log_v2(report_path: pathlib.Path,
+           offsets_path: pathlib.Path | None = None) -> str:
     """Rung 0 v2: the same dose resolved from inside a single leg.
 
     v1 contrasted whole legs and failed the bar at 833.5 us, because a per-leg
@@ -302,8 +303,12 @@ def log_v2(report_path: pathlib.Path) -> str:
     """
     report = json.loads(report_path.read_text())
     legs = report["legs"]
-    dosed = [leg for leg in legs if leg["dose_alignment"]]
-    null = [leg for leg in legs if not leg["dose_alignment"]]
+    # Classify by what the leg was ASKED to do. A timing leg carries no
+    # witness, on purpose, so presence of the worker's own accounting cannot
+    # be the classifier.
+    dosed = [leg for leg in legs if leg["dose_requested"]]
+    null = [leg for leg in legs if not leg["dose_requested"]]
+    session = report["session"]
 
     run = wandb.init(
         entity=ENTITY, project=PROJECT, group=GROUP,
@@ -343,10 +348,9 @@ def log_v2(report_path: pathlib.Path) -> str:
                  "pairs_by_width", "control_round_us", "effect_us",
                  "half_width_us", "half_width_pct", "drift_us_per_round",
                  "triples", "drift_cancelled_us", "drift_cancelled_half_us",
-                 "one_forward_per_round", "dosed_forwards", "entry_c",
-                 "exit_c", "wall_seconds"])
+                 "dose_requested", "entry_c", "exit_c", "wall_seconds",
+                 "worker_sha256", "git_head"])
     for leg in legs:
-        alignment = leg["dose_alignment"] or {}
         table.add_data(
             leg["leg"], leg["arm_label"], leg["arm_env"],
             leg["all_tokens_matched"], leg["round_count"], leg["pairs"],
@@ -354,11 +358,62 @@ def log_v2(report_path: pathlib.Path) -> str:
             leg["paired_difference_mean_us"], leg["half_width_us"],
             leg["half_width_percent"], leg["within_leg_drift_us_per_round"],
             leg["drift_cancelled_triples"], leg["drift_cancelled_mean_us"],
-            leg["drift_cancelled_half_width_us"],
-            alignment.get("one_forward_per_round"),
-            alignment.get("dosed_forwards"), leg["gpu_temp_entry_c"],
-            leg["gpu_temp_exit_c"], leg["leg_wall_seconds"])
-    run.log({"v2/legs": table})
+            leg["drift_cancelled_half_width_us"], leg["dose_requested"],
+            leg["gpu_temp_entry_c"], leg["gpu_temp_exit_c"],
+            leg["leg_wall_seconds"], leg["worker_sha256"], leg["git_head"])
+    payload = {"v2/legs": table}
+
+    # The recipe another student runs: how many legs buy how much resolution,
+    # what that costs, and how often a bar-sized arm actually reads non-zero.
+    cost = wandb.Table(
+        columns=["legs", "half_width_us", "half_width_pct", "minutes",
+                 "clears_bar", "power_at_one_bar"])
+    for point in session["cost_curve"]:
+        cost.add_data(point["legs"], point["half_width_us"],
+                      point["half_width_percent"], point["minutes"],
+                      point["clears_bar"], point["power_at_one_bar"])
+    payload["v2/cost_curve"] = cost
+
+    # Why `round_alignment_verified` is false: the dose alternates over
+    # QUALIFYING FORWARDS and the forward stream is not one per round.
+    diagnoses = report.get("forward_stream_diagnosis") or []
+    if diagnoses:
+        stream = wandb.Table(
+            columns=["leg", "tokens", "rounds", "qualifying_forwards",
+                     "forwards_per_round", "width_one_forwards",
+                     "wide_forwards_after_warmup", "replayed_verify_blocks",
+                     "rejected_drafts", "alternation_exact",
+                     "one_forward_per_round", "tail_width_fingerprint_matched",
+                     "width_histogram_observed",
+                     "width_histogram_expected_for_rounds"])
+        for d in diagnoses:
+            stream.add_data(
+                d["leg"], d["tokens"], d["round_count"],
+                d["qualifying_forwards"], d["forwards_per_round"],
+                d["width_one_forwards"], d["wide_forwards_after_warmup"],
+                d["verify_block_replayed_round_count"],
+                d["rejected_draft_total"], d["alternation_exact"],
+                d["one_forward_per_round"],
+                d["tail_width_fingerprint_matched"],
+                json.dumps(d["width_histogram_observed"]),
+                json.dumps(d["width_histogram_expected_for_rounds"]))
+        payload["v2/forward_stream"] = stream
+
+    injection = report.get("synthetic_injection")
+    if injection:
+        table_inj = wandb.Table(
+            columns=["leg", "injected_us", "pair_us", "pair_half_us",
+                     "pair_covers", "triple_us", "triple_half_us",
+                     "triple_covers"])
+        for leg in injection["legs"]:
+            table_inj.add_data(
+                leg["leg"], injection["injected_us"], leg["pair_mean_us"],
+                leg["pair_half_width_us"], leg["pair_covers_delta"],
+                leg["triple_mean_us"], leg["triple_half_width_us"],
+                leg["triple_covers_delta"])
+        payload["v2/synthetic_injection"] = table_inj
+
+    run.log(payload)
 
     halves = sorted(leg["half_width_us"] for leg in dosed)
     median_half = statistics.median(halves) if halves else float("nan")
@@ -388,6 +443,37 @@ def log_v2(report_path: pathlib.Path) -> str:
             [leg["drift_cancelled_mean_us"] for leg in dosed]) if dosed else None,
         "all_legs_matched": all(leg["all_tokens_matched"] for leg in legs),
         "improvement_over_v1": 833.5 / median_half if median_half else None,
+        # The frame, under the name the advisor asked every consumer to use.
+        "e109_v2_control_round_us": session["e109_v2_control_round_us"],
+        "arms": json.dumps(session["arms"]),
+        "round_alignment_verified": session["resolution"][
+            "round_alignment_verified"],
+        "dose_minus_null_us": session["pair"]["dose_minus_null_us"],
+        "dose_minus_null_half_width_us": session["pair"]["half_width_us"],
+        "dose_minus_null_excludes_zero": session["pair"]["excludes_zero"],
+        "dose_minus_null_triple_us": session["triple"]["dose_minus_null_us"],
+        "dose_minus_null_triple_half_width_us": session["triple"][
+            "half_width_us"],
+        "null_leg_estimate_scatter_us": session["detection"][
+            "null_leg_estimate_scatter_us"],
+        "legs_to_reach_bar": session["legs_to_reach_bar"],
+        "minutes_to_reach_bar": session["minutes_to_reach_bar"],
+        "seconds_per_leg": session["seconds_per_leg"],
+        "synthetic_injection_us": (
+            report["synthetic_injection"]["injected_us"]
+            if report.get("synthetic_injection") else None),
+        "synthetic_injection_pair_bias_us": (
+            report["synthetic_injection"]["pair_bias_us"]
+            if report.get("synthetic_injection") else None),
+        "synthetic_injection_all_cover": (
+            report["synthetic_injection"]["all_legs_cover_delta"]
+            if report.get("synthetic_injection") else None),
+        # Why v2 and not simply more v1 legs: the v1 leg offset is
+        # exchangeable, so shortening a leg buys almost nothing on a host
+        # where the leg is dominated by fixed setup rather than by decode.
+        **({f"v1_offset_{k}": (json.dumps(v) if isinstance(v, dict) else v)
+            for k, v in json.loads(offsets_path.read_text()).items()}
+           if offsets_path else {}),
     })
     url = run.url
     run.finish()
@@ -398,6 +484,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol")
     parser.add_argument("--v2", type=pathlib.Path)
+    parser.add_argument("--offsets", type=pathlib.Path,
+                        help="e109_offset_diagnosis.py --json output")
     parser.add_argument("--shape", action="append", default=[],
                         help="FAMILY or FAMILY:SUFFIX, e.g. prework:-s8")
     args = parser.parse_args()
@@ -406,7 +494,7 @@ def main() -> int:
     if args.protocol:
         urls["e109-rung0-protocol"] = log_protocol(args.protocol)
     if args.v2:
-        urls["e109-rung0-protocol-v2"] = log_v2(args.v2)
+        urls["e109-rung0-protocol-v2"] = log_v2(args.v2, args.offsets)
     for spec in args.shape:
         urls[f"e109-rung1-{spec.replace(':', '')}"] = log_shape(spec)
     for name, url in urls.items():
