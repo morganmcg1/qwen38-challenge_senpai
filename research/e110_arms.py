@@ -116,6 +116,84 @@ BODY_BASE = """
     }
 """
 
+# One 8-byte `vec<T, 4>` load replaces the four scalar activation accesses.
+# Same four raw bf16 values, same four conversions, same BF16 addition tree, so
+# the arm is bit exact. The element offset is
+# `(first_m + m) * in_vec_size + k + simd_lid * 16 + 4 * i`; every term is a
+# multiple of 4 elements for the scored `in_vec_size` set {5120, 6144, 17408},
+# so the address is 8-byte aligned, which is what `vec<bfloat16_t, 4>` needs.
+BODY_XV4 = """
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        const vec<T, 4> xv = *reinterpret_cast<const device vec<T, 4>*>(xm);
+        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
+        a0[m] = static_cast<float>(xv[0]);
+        a1[m] = static_cast<float>(xv[1]);
+        a2[m] = static_cast<float>(xv[2]);
+        a3[m] = static_cast<float>(xv[3]);
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                       a1 * ((packed[r][i] >> 4) & 0x000f) +
+                       a2 * ((packed[r][i] >> 8) & 0x000f) +
+                       a3 * ((packed[r][i] >> 12) & 0x000f));
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+"""
+
+# `xv4` at the widest load the hardware offers: one 16-byte `uint4` covers 8
+# bf16 values, so the four `i` iterations become two halves of two. Every
+# accumulation still runs over i = 0, 1, 2, 3 in that order with the same
+# expression, so the arm stays bit exact. The address is a multiple of 8
+# elements here, which is the 16 bytes `uint4` needs.
+BODY_XV8 = """
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int h = 0; h < 2; h++) {
+      thread vec<T, 4> xv[NA][2];
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 8 * h;
+        *reinterpret_cast<thread uint4*>(&xv[m][0]) =
+            *reinterpret_cast<const device uint4*>(xm);
+      }
+      for (int s = 0; s < 2; s++) {
+        const int i = 2 * h + s;
+        VF a0, a1, a2, a3;
+        for (int m = 0; m < NA; m++) {
+          sums[m] += xv[m][s][0] + xv[m][s][1] + xv[m][s][2] + xv[m][s][3];
+          a0[m] = static_cast<float>(xv[m][s][0]);
+          a1[m] = static_cast<float>(xv[m][s][1]);
+          a2[m] = static_cast<float>(xv[m][s][2]);
+          a3[m] = static_cast<float>(xv[m][s][3]);
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * ((packed[r][i] >> 4) & 0x000f) +
+                         a2 * ((packed[r][i] >> 8) & 0x000f) +
+                         a3 * ((packed[r][i] >> 12) & 0x000f));
+        }
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+"""
+
 # E104's `l_loadonly`, reproduced verbatim so the DCE question is asked of the
 # arm that produced the finding and not of a lookalike.
 BODY_LOADONLY = """
@@ -437,6 +515,39 @@ STAGED_BODY_XS = """    VF sums = VF(0.0f);
     }
 """
 
+# The staged tile read as `vec<T, 4>`: `xs_stage` and `xv4` together. The tile
+# base is 512-element aligned and the same offset argument applies, so the
+# threadgroup address is 8-byte aligned too.
+STAGED_BODY_XV = """    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const threadgroup T* xm = xtile + m * block_size +
+            simd_lid * values_per_thread + 4 * i;
+        const vec<T, 4> xv =
+            *reinterpret_cast<const threadgroup vec<T, 4>*>(xm);
+        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
+        a0[m] = static_cast<float>(xv[0]);
+        a1[m] = static_cast<float>(xv[1]);
+        a2[m] = static_cast<float>(xv[2]);
+        a3[m] = static_cast<float>(xv[3]);
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                       a1 * ((packed[r][i] >> 4) & 0x000f) +
+                       a2 * ((packed[r][i] >> 8) & 0x000f) +
+                       a3 * ((packed[r][i] >> 12) & 0x000f));
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+"""
+
 # The swapped nest, reading the staged tile: both changes at once.
 STAGED_BODY_MO = """    VF sums = VF(0.0f);
     VF partial[rows_per_simd];
@@ -521,24 +632,29 @@ BODIES = {
     "b_barrier": (prologue_barrier(), BODY_BASE, EPILOGUE),
     "xs_stage": None,
     "mo_stage": None,
+    "xv4_stage": None,
+    "xv4": (PROLOGUE, BODY_XV4, EPILOGUE),
+    "xv8": (PROLOGUE, BODY_XV8, EPILOGUE),
     "mo_swap": (PROLOGUE, BODY_MOSWAP, EPILOGUE),
     "mu_swap": (PROLOGUE, BODY_MUSWAP, EPILOGUE),
     "mo_hoist": (PROLOGUE, BODY_MOHOIST, EPILOGUE),
 }
 
 STAGED = {"xs_stage": ("_xs", STAGED_BODY_XS),
-          "mo_stage": ("_mo", STAGED_BODY_MO)}
+          "mo_stage": ("_mo", STAGED_BODY_MO),
+          "xv4_stage": ("_xv", STAGED_BODY_XV)}
 
 # Arms that must reproduce `a_base` bit for bit. The rest change the arithmetic
 # on purpose and are timing-only.
-EXACT_ARMS = ("b_barrier", "xs_stage", "mo_stage", "mo_swap", "mu_swap",
-              "mo_hoist")
+EXACT_ARMS = ("b_barrier", "xs_stage", "mo_stage", "xv4", "xv8", "xv4_stage",
+              "mo_swap", "mu_swap", "mo_hoist")
 
 # Every arm the census covers. The harness admits eight per timed session and
 # runs its positive control on the LAST one, so `research/e110_probe.sh` names
 # the timing subset and always ends it with an exact arm.
 ARMS = ("a_base", "l_loadonly", "b_constw", "b_barrier", "xs_stage",
-        "mo_stage", "mo_swap", "mu_swap", "mo_hoist")
+        "mo_stage", "xv4", "xv8", "xv4_stage", "mo_swap", "mu_swap",
+        "mo_hoist")
 
 
 def arm_source(base: str, arm: str) -> str:

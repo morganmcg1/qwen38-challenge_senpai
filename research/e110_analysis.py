@@ -125,6 +125,8 @@ def roofline(cells: dict, shapes: list[str], widths: list[int]) -> None:
             if cell is None:
                 continue
             for block in cell["blocks"]:
+                if ROOFLINE_LOAD not in block or ROOFLINE_ALU not in block:
+                    continue
                 load.append(block[ROOFLINE_LOAD])
                 alu.append(block[ROOFLINE_ALU])
                 base.append(block["a_base"])
