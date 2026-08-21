@@ -362,6 +362,23 @@ def log_headline(run, path: Path) -> None:
     })
 
 
+def log_abba(run, path: Path) -> None:
+    """The probe-fraction rider: p = 0.15 against the submitted p = 0.25.
+
+    The two arms need two binaries, so the design counterbalances leg order and
+    reads the head-free depth-0 serial leg of each pair as a drift control.
+    """
+    doc = json.loads(path.read_text())
+    scalars = {f"abba/{k}": v for k, v in doc.items()
+               if isinstance(v, (int, float, bool))}
+    run.log(scalars)
+    leg_columns = sorted({k for leg in doc["legs"] for k in leg})
+    run.log({
+        "abba/legs": table(leg_columns, doc["legs"]),
+        "abba/raw": table(["json"], [{"json": json.dumps(doc, indent=2)}]),
+    })
+
+
 def log_liveness(run, path: Path) -> None:
     """The damaged-index control that proves the cluster path is on the clock."""
     doc = json.loads(path.read_text())
@@ -381,6 +398,8 @@ def main() -> None:
     ap.add_argument("--decision")
     ap.add_argument("--liveness")
     ap.add_argument("--derivation")
+    ap.add_argument("--abba",
+                    help="report written by research/e87_abba_probe.py")
     ap.add_argument("--timed", action="append", default=[])
     ap.add_argument("--paired", action="append", default=[])
     ap.add_argument("--headline", action="append", default=[],
@@ -410,7 +429,7 @@ def main() -> None:
     )
     for flag, fn in (("validate", log_validate), ("screen", log_screen),
                      ("decision", log_decision), ("liveness", log_liveness),
-                     ("derivation", log_derivation)):
+                     ("derivation", log_derivation), ("abba", log_abba)):
         path = getattr(args, flag)
         if path:
             fn(run, Path(path))
