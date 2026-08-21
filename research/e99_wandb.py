@@ -37,6 +37,8 @@ def table(columns, rows):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", required=True)
+    parser.add_argument("--rung5", default="",
+                        help="JSON from research/e99_rung5_price.py")
     parser.add_argument("--name", required=True)
     parser.add_argument("--notes", default="")
     parser.add_argument("--group", default=EXPERIMENT)
@@ -164,8 +166,27 @@ def main() -> None:
     run.summary["realisable/leg_out_recovered_share_median"] = \
         statistics.median([f["recovered_share"] for f in transfer])
 
+    if args.rung5:
+        rung5 = json.loads(Path(args.rung5).read_text())
+        measured = rung5["off"] + rung5["on"] + rung5["sweep"]
+        run.log({
+            "rung5_legs": table(list(measured[0]), measured),
+            "rung5_replay": table(list(rung5["replay"][0]), rung5["replay"]),
+        })
+        for field, values in rung5["contrasts"].items():
+            run.summary[f"rung5/{field}/off"] = values["off"]
+            run.summary[f"rung5/{field}/on"] = values["on"]
+            run.summary[f"rung5/{field}/delta_pct"] = values["delta_pct"]
+        run.summary["rung5/exactness_green"] = rung5["exactness_green"]
+        run.summary["rung5/dram_floor_violations"] = \
+            rung5["dram_floor_violations"]
+        run.summary["rung5/fired_share_on"] = \
+            statistics.fmean([row["fired_share"] for row in rung5["on"]])
+
     artifact = wandb.Artifact(name="e99-oracle-report", type="analysis")
     artifact.add_file(args.report)
+    if args.rung5:
+        artifact.add_file(args.rung5)
     run.log_artifact(artifact)
     print(f"run {run.id} {run.url}")
     run.finish()

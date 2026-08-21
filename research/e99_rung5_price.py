@@ -109,7 +109,8 @@ def leg_row(tag: str, out_root: Path) -> dict:
         measured_round_us=statistics.fmean([r.round_us for r in rounds]),
         min_round_us=min(r.round_us for r in rounds),
         dram_floor_violations=len(floor_violations),
-        first_floor_violation=floor_violations[0] if floor_violations else None,
+        first_floor_violation=json.dumps(floor_violations[0])
+        if floor_violations else '',
         entry_c=float(meta.get('gpu_temp_entry_c', 'nan')),
         exit_c=float(meta.get('gpu_temp_exit_c', 'nan')),
         worker_sha256=meta.get('worker_sha256', ''),
