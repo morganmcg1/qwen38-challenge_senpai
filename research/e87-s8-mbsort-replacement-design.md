@@ -30,10 +30,46 @@ construction: `REAL_COUNT` from `qwen35Top32RealCount = 98_330` (`:3193`) and
 
 Chain C is the identical problem at a different width: top-32 from 24,584 bf16
 keys. Making the kernel factory take `(realCount, topK)` and instantiating a
-second copy at 24,584 is a parameterisation change. At the declared per-key cost
-this is 24,584 x 0.388 ns = 9.5 us, so the saving is about **38.1 us/draft**.
+second copy at 24,584 is a parameterisation change.
 
-This is the highest-confidence part of §8 and it should be built first.
+### Caveat on the per-key extrapolation — this weakens my own estimate
+
+The obvious arithmetic is 24,584 x 0.388 ns = 9.5 us, giving a 38.1 us saving.
+**That number assumes perfect per-key scaling and it should not be quoted.**
+
+The declared 0.388 ns/key comes from one measurement at one width: 38.19 us for
+98,304 keys. It is an average that already contains whatever fixed launch and
+finalize cost the two-dispatch structure carries. Chain C is a quarter of that
+width, so any fixed component is amortised over four times fewer keys and the
+achieved per-key cost must be worse than 0.388 ns.
+
+Bounds, rather than a point estimate:
+
+- If the kernel were purely work-bound, cost at 24,584 keys is 9.5 us and the
+  saving is 38.1 us.
+- If it carried, say, a 5 us fixed component, cost is 5 + 0.337 x 24.584 = 13.3
+  us and the saving is 34.3 us.
+
+So the saving is bounded above by 38.1 us and stays useful across a wide range
+of fixed cost, but the honest claim is "tens of microseconds, upper bound 38.1",
+not "38.1".
+
+Resolving this needs one measurement at two widths, not an argument. The tree
+already carries `qwen35BenchDraftTop32(iters:)` and `qwen35VerifyDraftTop32(
+trials:seed:)`, both `public`, both documented as never running on a scored
+path. Neither has any caller anywhere in the repository today. A research-only
+test under `Tests/` that calls the benchmark at the current width and at 24,584
+would separate fixed cost from per-key cost directly and settle the chain C
+prize before any scored-surface edit. That is the first thing to do when §8 is
+assigned.
+
+The same caveat applies to chains A and B, where the replacement is a new
+algorithm rather than a reinstantiation, so its fixed cost is unknown until
+built. The 24.40 us attributed to deleting chain B is the one figure here that
+does not depend on any extrapolation, because it is a measured cost being
+removed rather than a measured cost being scaled.
+
+This is still the highest-confidence part of §8 and it should be built first.
 
 ## Chains A and B should be fused, and that is the real win
 
@@ -101,11 +137,16 @@ against `MLX.argPartition` and is documented as never running on a scored path.
 The advisor's §5 transfer factor is 0.30, measured from one mechanism on one
 ranked pair.
 
-| target | us/draft | % of round, k-adjusted | published at 0.30 |
-|---|---:|---:|---:|
-| chain C alone | 38.1 | 0.162 % | +0.049 % |
-| chains A and B | 66.2 | 0.281 % | +0.084 % |
-| all three | 99.5 | 0.422 % | +0.127 % |
+All rows except the chain B deletion are **upper bounds**, because they scale a
+measured per-key cost to a narrower width and ignore fixed cost. Read them as
+ceilings.
+
+| target | us/draft | basis | % of round, k-adjusted | published at 0.30 |
+|---|---:|---|---:|---:|
+| chain B deletion | 24.4 | measured cost removed | 0.104 % | +0.031 % |
+| chain C alone | <= 38.1 | extrapolated | <= 0.162 % | <= +0.049 % |
+| chains A and B | <= 66.2 | 24.4 measured + 41.8 extrapolated | <= 0.281 % | <= +0.084 % |
+| all three | <= 99.5 | 24.4 measured + 75.1 extrapolated | <= 0.422 % | <= +0.127 % |
 
 This is below the 0.55 % published detection floor, so it is a rider. Its
 strategic value is that it removes 22 generic dispatches per draft, and fixed
