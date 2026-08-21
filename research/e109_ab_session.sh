@@ -146,10 +146,12 @@ if ! jq -e --argjson tokens "${tokens}" '
       tail -20 "${out_dir}/verify.log" >&2
       exit 1; }
   jq -e --argjson tokens "${tokens}" '
-      .reference_self_consistent == true and (.rows | length) >= ($tokens + 1)
-      and ([range(0; (.rows | length))
-            | select(.emitted_tokens[.] != .rows[.].sequential_argmax)]
-           | length) == 0
+      . as $g
+      | $g.reference_self_consistent == true
+        and ($g.rows | length) >= ($tokens + 1)
+        and ([range(0; ($g.rows | length))
+              | select($g.emitted_tokens[.] != $g.rows[.].sequential_argmax)]
+             | length) == 0
     ' "${golden}" >/dev/null || {
       echo "e109_ab_session: generated reference rows are not usable" >&2
       exit 1; }
