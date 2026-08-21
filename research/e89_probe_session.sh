@@ -9,15 +9,17 @@
 # leg is the instrument-cost control: same worker binary, no per-round probe
 # work. `parts` is a `+`-separated subset of the probe components
 # `marks probe rusage thread mem`, which becomes MLX_E89_PARTS; omit it for
-# every component. The `name` becomes the arm label in the tag; a repeated
-# name gets the next repeat index.
+# every component. The pseudo-part `synchead` is not a probe component: it
+# passes --sync-head to the leg, which drains the head chain every round. The
+# `name` becomes the arm label in the tag; a repeated name gets the next
+# repeat index.
 #
-# THERE IS NO ARM TO BALANCE. Rung 0b measures the natural rate at which a leg
-# lands in the slow host state, so the observation legs must be identical and
-# must run in the shipped configuration: default ladder, production overlap
-# (no --sync-head), declared head, 512 decode tokens. The only non-identical
-# legs are the two forced-QoS controls, which exist to prove the instrument
-# can see a state it did not cause.
+# Rung 0b had no arm to balance, because it measured the natural rate at which
+# a leg lands in the slow host state. Rung 0c does have one: forced
+# userInteractive QoS is a candidate fix, so its legs and their controls are
+# ABBA-counterbalanced within the session and every other setting stays at the
+# shipped configuration, which is the default ladder, production overlap and
+# the declared head.
 #
 # The legs are UNGATED (program.md permits an ungated, counterbalanced local
 # arm). e79_trace_leg.sh records entry and exit GPU temperature per leg and
@@ -59,6 +61,14 @@ for i in "${!order[@]}"; do
   qos="${value%%/*}"
   parts=""
   [[ "${value}" == */* ]] && parts="${value#*/}"
+  sync=0
+  if [[ "+${parts}+" == *"+synchead+"* || "${parts}" == "synchead" ]]; then
+    sync=1
+    parts="${parts//synchead/}"
+    parts="${parts//++/+}"
+    parts="${parts#+}"
+    parts="${parts%+}"
+  fi
   probe=1
   unset MLX_E89_FORCE_QOS MLX_E89_PARTS
   case "${qos}" in
@@ -68,13 +78,16 @@ for i in "${!order[@]}"; do
   esac
   [[ -n "${parts}" ]] && export MLX_E89_PARTS="${parts//+/,}"
   export MLX_E89_PROBE="${probe}"
-  research/e79_trace_leg.sh "${tags[$i]}" "${tokens}"
+  declare -a legflags=()
+  ((sync)) && legflags+=(--sync-head)
+  research/e79_trace_leg.sh "${tags[$i]}" "${tokens}" "${legflags[@]}"
   status=$?
   {
     echo "e89_force_qos=${qos}"
     echo "e89_parts=${parts:-all}"
     echo "e89_position=${i}"
     echo "e89_probe=${probe}"
+    echo "e89_sync_head=${sync}"
   } >> "research/out/${tags[$i]}/meta.txt"
   bytes=$(wc -c < "research/out/${tags[$i]}/trace.txt" | tr -d ' ')
   echo "leg ${tags[$i]} pos=${i} qos=${qos} exit=${status} trace_bytes=${bytes}"

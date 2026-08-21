@@ -265,18 +265,26 @@ enum Qwen36MTPHostStateProbe {
     /// cycle, or the same clock at a lower work per cycle.
     struct ProbeClock {
         var nanos: UInt64 = 0
+        var spanNanos: UInt64 = 0
         var cycles: UInt64 = 0
         var instructions: UInt64 = 0
     }
 
+    /// `nanos` covers the chain alone and stays comparable with earlier rungs.
+    /// `spanNanos` covers exactly the window the cycle and instruction deltas
+    /// cover, which is the chain plus the two counter reads, so the derived
+    /// clock is `cycles / spanNanos` with no unaccounted work between them.
     @inline(never)
     static func cpuProbeClock() -> ProbeClock {
         guard on("probe") else { return ProbeClock() }
+        let t0 = DispatchTime.now().uptimeNanoseconds
         let before = usage()
         let nanos = cpuProbeNanos()
         let after = usage()
+        let t1 = DispatchTime.now().uptimeNanoseconds
         return ProbeClock(
             nanos: nanos,
+            spanNanos: t1 &- t0,
             cycles: after.cycles &- before.cycles,
             instructions: after.instructions &- before.instructions)
     }
@@ -427,6 +435,7 @@ enum Qwen36MTPHostStateProbe {
             + "e89_thr_cpu=\(state.cpuUsage) "
             + "e89_core_a=\(coreStart) e89_core_b=\(coreEnd) "
             + "e89_probe_ns=\(probe.nanos) "
+            + "e89_probe_span_ns=\(probe.spanNanos) "
             + "e89_probe_cyc=\(probe.cycles) "
             + "e89_probe_ins=\(probe.instructions) "
             + "e89_nvcsw=\(delta.voluntarySwitches) "
