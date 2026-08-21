@@ -45,6 +45,35 @@ gpu_temp() {
   echo ""
 }
 
+# The runtime-effective source of the `quantized` family is the JIT string
+# linked into .build-worker/release/mlxfast-runtime-worker, not mlx.metallib
+# (jit_kernels.cpp:915 -> device.cpp:770 builds the library from the string and
+# never opens default.metallib). benchmark-qwen-mtp.sh refreshes only the
+# metallib, so an arm switch does not reach the worker unless it is forced
+# here. Witness the BINARY, never the source twin.
+case "${arm}" in
+  base)     require='qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>'
+            forbid='qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>' ;;
+  collapse) require='qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>'
+            forbid='qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>' ;;
+  dose6)    require='qmv_fast_crossrow_affine4_g64_m<T, 6, 2, true>'
+            forbid='qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>' ;;
+  *) echo "e100_e2e_leg: unknown arm '${arm}'" >&2; exit 2 ;;
+esac
+
+senpai/rebuild-and-assert-worker.sh --require "${require}" --forbid "${forbid}" \
+  > "${out_dir}/worker-pre.txt" 2>&1
+if [[ $? -ne 0 ]]; then
+  echo "e100_e2e_leg: refusing to time '${arm}'; the worker does not carry it." >&2
+  cat "${out_dir}/worker-pre.txt" >&2
+  exit 3
+fi
+cat "${out_dir}/worker-pre.txt"
+
+worker=".build-worker/release/mlxfast-runtime-worker"
+worker_mtime_pre="$(date -u -r "${worker}" +%Y-%m-%dT%H:%M:%SZ)"
+worker_sha_pre="$(shasum -a 256 "${worker}" | awk '{print $1}')"
+
 entry_c="$(gpu_temp)"
 start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -78,6 +107,15 @@ exit_c="$(gpu_temp)"
   echo "twin_m9_ipg=$(grep -o 'qmv_fast_crossrow_affine4_g64_m<T, 9, [0-9], true>' \
     "${twin}" | head -1 | sed 's/.*, 9, \([0-9]\), true>/\1/')"
   echo "twin_na_bound=$(grep -o 'wide multi-row QMV supports NA in \[2, [0-9]\]' "${twin}" | head -1)"
+  # The binary witness. twin_* above only prove the SOURCE was edited.
+  echo "worker_mtime_pre=${worker_mtime_pre}"
+  echo "worker_sha256_pre=${worker_sha_pre}"
+  echo "worker_mtime_post=$(date -u -r "${worker}" +%Y-%m-%dT%H:%M:%SZ)"
+  echo "worker_sha256_post=$(shasum -a 256 "${worker}" | awk '{print $1}')"
+  echo "worker_m5_ipg5=$(strings -a "${worker}" | grep -c 'qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>')"
+  echo "worker_m5_ipg3=$(strings -a "${worker}" | grep -c 'qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>')"
+  echo "worker_m6_ipg2=$(strings -a "${worker}" | grep -c 'qmv_fast_crossrow_affine4_g64_m<T, 6, 2, true>')"
+  echo "worker_m6_ipg3=$(strings -a "${worker}" | grep -c 'qmv_fast_crossrow_affine4_g64_m<T, 6, 3, true>')"
   echo "host=$(hostname)"
   echo "chip=$(sysctl -n machdep.cpu.brand_string)"
   echo "memory_gib=$(( $(sysctl -n hw.memsize) / 1073741824 ))"
