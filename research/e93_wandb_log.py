@@ -89,12 +89,16 @@ CLASS_ROLLUP = [
 HEAD_SHARE_RANKED = 0.063
 MARGINAL_DRAFT_US = 2226.5
 
+# Ranked prices are modelled on beagle and essays, the 4th and 5th sorted
+# prompts that set the published median. The model is calibrated against the
+# ranked increment ox-alpha measured for the Q-row shrink.
 ARMS = [
-    ("q-row-shrink", "delete 1024 dead q_proj output rows", 12.84,
-     "deletion; ranked-proven by the ox-alpha crown"),
-    ("head-kv-cache-full-array-copy", "stop the capacity-sized head KV cache copy", 26.0,
-     "deletion in effect; implementation route must pass the restructuring test"),
-    ("lm-head-affine2-rate", "raise the affine-2 readout above 158 GB/s", 334.0,
+    ("q-row-shrink", "delete 1024 dead q_proj output rows", 12.84, 0.0351, 0.0353,
+     "rider; deletion; ranked-proven by the ox-alpha crown"),
+    ("head-kv-cache-full-array-copy", "stop the capacity-sized head KV cache copy",
+     30.3, 0.0640, 0.0669,
+     "PROPOSED; deletion in effect; implementation route must pass the restructuring test"),
+    ("lm-head-affine2-rate", "raise the affine-2 readout above 158 GB/s", 334.0, 0.83, 0.83,
      "RESTRUCTURING - reported, explicitly NOT proposed"),
 ]
 
@@ -220,7 +224,7 @@ def log_leg(tag: str, extra: dict) -> str:
     return run_id
 
 
-def log_summary(leg_ids: dict) -> str:
+def log_summary(leg_ids: dict, resume_id: str | None = None) -> str:
     config = {
         "experiment": "e93",
         "harness": "local",
@@ -232,8 +236,11 @@ def log_summary(leg_ids: dict) -> str:
         "marginal_draft_us": MARGINAL_DRAFT_US,
         "head_share_ranked": HEAD_SHARE_RANKED,
     }
+    if not leg_ids:
+        config.pop("legs")
     run = wandb.init(entity=ENTITY, project=PROJECT, group=GROUP,
                      job_type="analysis", name="e93-summary", config=config,
+                     id=resume_id, resume="allow" if resume_id else None,
                      reinit=True)
     census_table = wandb.Table(
         columns=["class", "per_draft", "kernel", "tensor", "weight_bytes", "activation_bytes"],
@@ -248,9 +255,11 @@ def log_summary(leg_ids: dict) -> str:
                (b / (us * 1e-6) / 1e9) if b and us else 0.0]
               for c, n, d, us, b in CLASS_ROLLUP])
     arm_table = wandb.Table(
-        columns=["arm", "mechanism", "local_us_per_draft", "ranked_pct_of_candidate_time", "shape"],
-        data=[[a, m, us, 100.0 * (us / MARGINAL_DRAFT_US) * HEAD_SHARE_RANKED, s]
-              for a, m, us, s in ARMS])
+        columns=["arm", "mechanism", "local_us_per_head_call",
+                 "ranked_pct_beagle", "ranked_pct_essays",
+                 "ranked_pct_beagle_essays_mean", "shape"],
+        data=[[a, m, us, beagle, essays, 0.5 * (beagle + essays), s]
+              for a, m, us, beagle, essays, s in ARMS])
     run.log({
         "dispatch_census": census_table,
         "buffer_costs": buffer_table,
@@ -287,10 +296,17 @@ SUMMARY_SCALARS = {
         "rung3/best_within_host_gb_per_s": 246.2,
         "rung3/lm_head_gb_per_s": 158.2,
         "rung3/lm_head_headroom_us_per_draft": 334.0,
-        "rung4/vn_copy_us_per_draft_cap768": 26.0,
-        "rung4/vn_copy_ranked_pct_cap768": 0.0736,
-        "rung4/vn_copy_ranked_pct_ranked_capacity": 0.098,
-        "rung4/q_row_shrink_ranked_pct": 0.0364,
+        "rung4/vn_copy_us_per_marginal_draft_cap768": 26.0,
+        "rung4/vn_copy_us_per_marginal_draft_ranked_mean_capacity": 30.3,
+        "rung4/vn_copy_ranked_pct_beagle": 0.0640,
+        "rung4/vn_copy_ranked_pct_essays": 0.0669,
+        "rung4/vn_copy_ranked_pct_beagle_essays_mean": 0.0654,
+        "rung4/q_row_shrink_ranked_pct_beagle": 0.0351,
+        "rung4/q_row_shrink_ranked_pct_essays": 0.0353,
+        "rung4/q_row_shrink_ranked_pct_beagle_essays_mean": 0.0352,
+        "rung4/q_row_shrink_ranked_measured_pct": 0.035,
+        "rung4/model_error_vs_ranked_measurement": 0.014,
+        "rung4/lm_head_ranked_pct_if_fully_recovered": 0.83,
         "timing_valid": False,
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
@@ -329,7 +345,12 @@ def main() -> int:
     parser.add_argument("--summary", action="store_true")
     parser.add_argument("--amend", metavar="TAG=RUNID", action="append", default=[])
     parser.add_argument("--amend-summary", metavar="RUNID")
+    parser.add_argument("--relog-summary", metavar="RUNID")
     args = parser.parse_args()
+    if args.relog_summary:
+        log_summary({}, resume_id=args.relog_summary)
+        print(f"relogged summary {args.relog_summary}")
+        return 0
     if args.amend_summary:
         amend_summary(args.amend_summary)
         return 0
