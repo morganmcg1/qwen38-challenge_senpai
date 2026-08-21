@@ -427,6 +427,11 @@ int main(int argc, char **argv) {
         {14336, 5120, "fa_qkv_k5120_n14336"},
         {5120, 17408, "mlp_down_k17408_n5120"},
         {5120, 6144, "gdn_out_proj_k6144_n5120"},
+        // The two remaining scored output widths. The real n = 98336 readout is
+        // 2-bit and reaches a different entry point, so this 4-bit point covers
+        // the width for an exactness sweep and is not a scored-cell timing.
+        {98336, 5120, "draft_readout_width_n98336_k5120_4bit"},
+        {248320, 5120, "lm_head_k5120_n248320"},
     };
     Shape shapes[8];
     int n_shapes = 0;
