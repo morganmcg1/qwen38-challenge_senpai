@@ -3365,6 +3365,23 @@ private let qwen35DerivedClusterDumpPath: String? = {
     return (raw?.isEmpty ?? true) ? nil : raw
 }()
 
+/// Append-only research log for the derived index, opened once from
+/// `MLX_E87_DERIVED_LOG`. A file is the only usable channel from model code:
+/// the worker's stdout carries the trusted protocol and `mtp-timed` installs a
+/// swallowing drain on its stderr, so `print` is both invisible and unsafe.
+private let qwen35DerivedClusterLog: FileHandle? = {
+    guard let path = ProcessInfo.processInfo.environment["MLX_E87_DERIVED_LOG"],
+          !path.isEmpty
+    else { return nil }
+    let descriptor = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+    guard descriptor >= 0 else { return nil }
+    return FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
+}()
+
+private func qwen35DerivedClusterNote(_ line: String) {
+    qwen35DerivedClusterLog?.write(Data(("e87 " + line + "\n").utf8))
+}
+
 /// `[m, s, c]` squared distance from every row to every centre, formed as
 /// `||x||^2 - 2 x.c + ||c||^2` so no `[m, s, D]` difference tensor exists.
 private func qwen35ClusterSquaredDistance(
@@ -4062,13 +4079,17 @@ extension Qwen35TextModel: MTPCapable {
     /// It runs once, on the first draft proposal, which the trusted driver
     /// makes during the untimed warm.
     private func buildDerivedClusterIndex() {
+        qwen35DerivedClusterNote("build entered")
         guard let coarseWeight = _draftHeadW,
               let coarseScales = _draftHeadS,
               let coarseBiases = _draftHeadZ,
               coarseWeight.shape == [Self.compactDraftPaddedCount, 320],
               coarseScales.shape == [Self.compactDraftPaddedCount, 80],
               coarseBiases.shape == coarseScales.shape
-        else { return }
+        else {
+            qwen35DerivedClusterNote("build abandoned: declared coarse head unusable")
+            return
+        }
         if _compactDraftHead == nil {
             _compactDraftHead = makeCompactDraftHead()
         }
@@ -4077,7 +4098,10 @@ extension Qwen35TextModel: MTPCapable {
               exact.bits == 4,
               exact.weight.shape == [Self.compactDraftPaddedCount, 640],
               let exactBiases = exact.biases
-        else { return }
+        else {
+            qwen35DerivedClusterNote("build abandoned: compact exact head unusable")
+            return
+        }
 
         let started = Date()
         let rowsPerLeaf = Self.derivedClusterRowsPerLeaf
@@ -4103,7 +4127,10 @@ extension Qwen35TextModel: MTPCapable {
             .asType(.bfloat16)
         let quantizedCentroids = quantized(
             centroids, groupSize: 64, bits: Self.derivedClusterCentroidBits, mode: .affine)
-        guard let centroidBiases = quantizedCentroids.biases else { return }
+        guard let centroidBiases = quantizedCentroids.biases else {
+            qwen35DerivedClusterNote("build abandoned: centroid quantization carries no biases")
+            return
+        }
 
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
         let probes = max(
@@ -4131,14 +4158,21 @@ extension Qwen35TextModel: MTPCapable {
 
         let orderHost = order.asArray(Int32.self)
         let seconds = Date().timeIntervalSince(started)
-        print(String(
-            format: "[e87] derived cluster index leaves=%d rows_per_leaf=%d probes=%d "
-                + "iters=%d order_fnv1a64=%016llx seconds=%.3f",
-            leaves, rowsPerLeaf, probes, Self.derivedClusterIterations,
+        qwen35DerivedClusterNote(String(
+            format: "build ok leaves=%d rows_per_leaf=%d probes=%d probe_fraction=%.4f "
+                + "iters=%d centroid_bits=%d order_fnv1a64=%016llx build_seconds=%.3f",
+            leaves, rowsPerLeaf, probes, qwen35DerivedClusterProbeFraction,
+            Self.derivedClusterIterations, Self.derivedClusterCentroidBits,
             qwen35ClusterOrderDigest(orderHost), seconds))
         if let path = qwen35DerivedClusterDumpPath {
-            orderHost.withUnsafeBufferPointer {
-                try? Data(buffer: $0).write(to: URL(fileURLWithPath: path))
+            do {
+                try orderHost.withUnsafeBufferPointer {
+                    try Data(buffer: $0).write(to: URL(fileURLWithPath: path))
+                }
+                qwen35DerivedClusterNote(
+                    "dump ok bytes=\(orderHost.count * 4) path=\(path)")
+            } catch {
+                qwen35DerivedClusterNote("dump failed path=\(path) error=\(error)")
             }
         }
     }
@@ -4214,6 +4248,14 @@ extension Qwen35TextModel: MTPCapable {
     }
 
     private func draftTokenIDWithDeclaredRerank(_ x: MLXArray) -> MLXArray? {
+        // Before the shape guards, so a head that fails one of them still leaves
+        // a record of why no derived index exists.
+        if qwen35DerivedClusterEnabled, _draftClusterShape == nil,
+           !_derivedClusterAttempted
+        {
+            _derivedClusterAttempted = true
+            buildDerivedClusterIndex()
+        }
         guard let coarseWeight = _draftHeadW,
               let coarseScales = _draftHeadS,
               let coarseBiases = _draftHeadZ,
@@ -4242,13 +4284,6 @@ extension Qwen35TextModel: MTPCapable {
               let exactBiases = exact.biases,
               exactBiases.shape == [Self.compactDraftPaddedCount, 80]
         else { return nil }
-
-        if qwen35DerivedClusterEnabled, _draftClusterShape == nil,
-           !_derivedClusterAttempted
-        {
-            _derivedClusterAttempted = true
-            buildDerivedClusterIndex()
-        }
 
         let candidateCount = Self.draftRerankCandidateCount
         let candidateIDs: MLXArray

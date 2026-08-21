@@ -77,8 +77,10 @@ for i in "${!order[@]}"; do
     [[ "${order[$j]}" == "${arm}" ]] && rep=$((rep + 1))
   done
   tag="${prefix}-${arm}-${rep}"
+  mkdir -p "research/out/${tag}"
   MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
   MLX_E87_PROBE_FRACTION="${probe_fraction}" \
+  MLX_E87_DERIVED_LOG="${PWD}/research/out/${tag}/derived.log" \
   E79_HEAD_DIR="$(dir_for "${arm}")" \
     research/e79_trace_leg.sh "${tag}" "${tokens}" --sync-head
   status=$?

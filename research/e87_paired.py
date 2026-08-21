@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import statistics as st
 from pathlib import Path
@@ -46,10 +47,26 @@ FIELD = re.compile(r"(\w+)=([-\d.]+)")
 # every timed stage keeps a byte model honest about the fixed cost it omits.
 HEAD_BYTES = {
     "declared": 427_738_112,
+    "dense": 427_738_112,
     "g128": 412_004_352,
     "armc": 329_402_112,
     "armc-damaged": 329_402_112,
 }
+
+# Option B derives the index instead of shipping it, so its per-draft read is a
+# function of the probe fraction the leg ran with. 12,292 leaves of 8 rows at
+# 1,600 B per coarse row: every leg pays the centroid pass, and a probed leaf
+# costs 8 rows.
+DERIVED_LEAVES = 12_292
+DERIVED_ROWS_PER_LEAF = 8
+COARSE_ROW_BYTES = 1_600
+DENSE_COARSE_BYTES = 157_337_600
+
+
+def derived_head_bytes(probe_fraction: float) -> int:
+    probes = max(1, math.ceil(probe_fraction * DERIVED_LEAVES))
+    stage = (DERIVED_LEAVES + probes * DERIVED_ROWS_PER_LEAF) * COARSE_ROW_BYTES
+    return HEAD_BYTES["declared"] - DENSE_COARSE_BYTES + stage
 
 
 def rounds(tag: str) -> list[dict]:
@@ -67,11 +84,27 @@ def rounds(tag: str) -> list[dict]:
     return out
 
 
-def arm_of(tag: str) -> str:
+def meta_value(tag: str, key: str) -> str | None:
     for line in (OUT / tag / "meta.txt").read_text().splitlines():
-        if line.startswith("e87_arm="):
+        if line.startswith(key + "="):
             return line.partition("=")[2]
-    raise SystemExit(f"{tag}: no e87_arm in meta.txt")
+    return None
+
+
+def arm_of(tag: str) -> str:
+    value = meta_value(tag, "e87_arm")
+    if value is None:
+        raise SystemExit(f"{tag}: no e87_arm in meta.txt")
+    return value
+
+
+def head_bytes_of(tag: str, arm: str) -> int | None:
+    if arm != "derived":
+        return HEAD_BYTES.get(arm)
+    raw = meta_value(tag, "e87_probe_fraction")
+    if raw is None:
+        raise SystemExit(f"{tag}: derived leg with no e87_probe_fraction")
+    return derived_head_bytes(float(raw))
 
 
 def paired(base: list[list[dict]], arm: list[list[dict]], key: str) -> dict | None:
@@ -118,10 +151,11 @@ def main() -> None:
     if not tags:
         raise SystemExit(f"no legs under {OUT} with prefix {args.prefix}-")
 
-    legs, stratum = {}, []
+    legs, stratum, arm_bytes = {}, [], {}
     for tag in tags:
         rs = rounds(tag)
         legs.setdefault(arm_of(tag), []).append(rs)
+        arm_bytes[arm_of(tag)] = head_bytes_of(tag, arm_of(tag))
         clean = [r["host_us"] for r in rs if r["clean"]]
         dirty = [r["host_us"] for r in rs if not r["clean"]]
         stratum.append({
@@ -144,14 +178,15 @@ def main() -> None:
     for arm, group in legs.items():
         per_draft = [r["submit2_per_draft_us"] for rs in group for r in rs
                      if r["clean"] and "submit2_per_draft_us" in r]
-        if not per_draft or arm not in HEAD_BYTES:
+        head_bytes = arm_bytes.get(arm)
+        if not per_draft or head_bytes is None:
             continue
         med = st.median(per_draft)
         bandwidth[arm] = {
-            "head_bytes_per_draft": HEAD_BYTES[arm],
+            "head_bytes_per_draft": head_bytes,
             "submit2_per_draft_median_us": med,
             "clean_drafting_rounds": len(per_draft),
-            "achieved_bandwidth_gbs": HEAD_BYTES[arm] / (med * 1e-6) / 1e9,
+            "achieved_bandwidth_gbs": head_bytes / (med * 1e-6) / 1e9,
         }
 
     # The fixture is fixed, so an arm that proposes the same tokens must

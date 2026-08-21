@@ -31,8 +31,13 @@ DECLARED_HEAD_BYTES = 427_738_112
 PCT_PER_PCT_HEAD_BYTES = 0.0815  # % candidate s/token per 1% of declared head
 ARM_BYTES = {
     "declared": 0,
+    "dense": 0,
     "g128": -15_733_760,
     "armc": -98_336_000,
+    # Option B at the default 0.15 probe fraction: the 157,337,600 B dense
+    # coarse read becomes a 19,667,200 B centroid pass plus 1,844 probed leaves
+    # of eight 1,600 B rows.
+    "derived": -114_067_200,
     "pinned": None,
 }
 

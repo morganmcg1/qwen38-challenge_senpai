@@ -106,7 +106,8 @@ for arm in "${arms[@]}"; do
 
   MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
   MLX_E87_PROBE_FRACTION="${probe_fraction}" \
-  MLX_E87_DERIVED_DUMP="${E87_DERIVED_DUMP:-}" \
+  MLX_E87_DERIVED_DUMP="${E87_DERIVED_DUMP:-${PWD}/${out}/derived-order.bin}" \
+  MLX_E87_DERIVED_LOG="${PWD}/${out}/derived.log" \
   MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}" \
   MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS="${tokens}" \
   MLXFAST_SCORE_PATH="${PWD}/${out}/score.json" \
