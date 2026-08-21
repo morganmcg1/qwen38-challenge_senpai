@@ -2,6 +2,7 @@
 # Run one traced, UNCHANGED-base leg of ./benchmark-qwen-mtp.sh for E79.
 #
 #   usage: research/e79_trace_leg.sh TAG TOKENS [--sync-head] [--cool-gate]
+#                                              [--no-trace]
 #
 #   --sync-head  MLX_QWEN_MTP_TRACE_SYNC_HEAD=1. Drains the head chain before
 #                the verify-build window, so head-chain GPU time moves out of
@@ -9,6 +10,11 @@
 #   --cool-gate  keep the real 40 C gate (MLXFAST_LOCAL_COOL_GATE unset).
 #                Without it the gate is disabled and the leg is labelled
 #                gate_qualified_for_timing=false.
+#   --no-trace   run the same leg with MLX_QWEN_MTP_TRACE unset, which is the
+#                control arm for the instrumentation-neutrality check: the
+#                schedule reads no trace state, so the leg's
+#                effective_mean_draft_len and accepted_draft_rate must be
+#                digit-identical to the traced leg's.
 #
 # The leg stages nothing and builds nothing. It reads the binaries already in
 # .build/release and .build-worker/release and records their digests, so a leg
@@ -22,10 +28,12 @@ shift 2
 
 sync_head=0
 cool_gate=0
+trace=1
 while (($#)); do
   case "$1" in
     --sync-head) sync_head=1; shift ;;
     --cool-gate) cool_gate=1; shift ;;
+    --no-trace) trace=0; shift ;;
     *) echo "e79_trace_leg.sh: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -53,10 +61,14 @@ export MLXFAST_NO_SANDBOX=1
 ((cool_gate)) || export MLXFAST_LOCAL_COOL_GATE=0
 
 trace_path="${PWD}/${out}/trace.txt"
-: > "${trace_path}"
-export MLX_QWEN_MTP_TRACE=1
-export MLX_QWEN_MTP_TRACE_PATH="${trace_path}"
-((sync_head)) && export MLX_QWEN_MTP_TRACE_SYNC_HEAD=1
+if ((trace)); then
+  : > "${trace_path}"
+  export MLX_QWEN_MTP_TRACE=1
+  export MLX_QWEN_MTP_TRACE_PATH="${trace_path}"
+  ((sync_head)) && export MLX_QWEN_MTP_TRACE_SYNC_HEAD=1
+else
+  unset MLX_QWEN_MTP_TRACE MLX_QWEN_MTP_TRACE_PATH MLX_QWEN_MTP_TRACE_SYNC_HEAD
+fi
 
 gpu_temp() {
   local macmon
@@ -80,6 +92,7 @@ gpu_temp() {
   # from a leg with sandbox=off is not comparable with one from sandbox=on.
   echo "sandbox=$([[ "${MLXFAST_NO_SANDBOX:-0}" == "1" ]] && echo off || echo on)"
   echo "sync_head=${sync_head}"
+  echo "trace=${trace}"
   echo "cool_gate=${cool_gate}"
   if ((cool_gate)); then
     echo "cool_gate_passed_real_gate=true"
@@ -111,7 +124,8 @@ status=$?
 
 {
   echo "gpu_temp_exit_c=$(gpu_temp)"
-  echo "trace_rounds=$(grep -c '^mtp-trace: round=' "${trace_path}" || true)"
+  echo "trace_rounds=$(
+    grep -c '^mtp-trace: round=' "${trace_path}" 2>/dev/null || true)"
   echo "post_run_worker_sha256=$(
     shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
   echo "post_run_cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | awk '{print $1}')"
