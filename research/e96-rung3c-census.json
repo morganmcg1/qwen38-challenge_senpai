@@ -1,0 +1,315 @@
+{
+  "config": {
+    "census_leg": "e96r3c-census-ops0",
+    "buffer_limit_ops": 0,
+    "buffer_limit_mb": 1,
+    "timing_valid": false,
+    "public_drift_tripwire_run": true
+  },
+  "metrics": {
+    "census_rounds": 11,
+    "census_verify_width": 5,
+    "census_ops_per_buffer": 0,
+    "census_isolated_total_us_per_round": 118122.84,
+    "census_streaming_us_per_round": 113048.79000000001,
+    "census_streaming_mb_per_round": 28887.978,
+    "census_streaming_gbs": 249.54637741478697,
+    "census_streaming_share_of_isolated_total_pct": 95.70442938893105,
+    "census_non_streaming_us_per_round": 5074.049999999988,
+    "GDN_recurrent_step_isolated_us": 1421.13,
+    "GDN_recurrent_step_modelled_us": 8112.6,
+    "GDN_recurrent_step_modelled_over_isolated": 5.70855586751388,
+    "GDN_recurrent_step_dose_us": 861.0,
+    "GDN_recurrent_step_modelled_over_dose": 9.422299651567945,
+    "GDN_recurrent_step_isolated_over_dose": 1.6505574912891987,
+    "fused_residual_and_RMSNorm_isolated_us": 771.54,
+    "fused_residual_and_RMSNorm_modelled_us": 1187.1,
+    "fused_residual_and_RMSNorm_modelled_over_isolated": 1.538611089509293,
+    "fused_residual_and_RMSNorm_dose_us": 298.0,
+    "fused_residual_and_RMSNorm_modelled_over_dose": 3.9835570469798656,
+    "fused_residual_and_RMSNorm_isolated_over_dose": 2.589060402684564,
+    "GDN_prework_isolated_us": 543.39,
+    "GDN_prework_modelled_us": 475.3,
+    "GDN_prework_modelled_over_isolated": 0.874694050313771,
+    "q_norm_and_k_norm_and_RoPE_isolated_us": 149.85,
+    "q_norm_and_k_norm_and_RoPE_modelled_us": 210.5,
+    "q_norm_and_k_norm_and_RoPE_modelled_over_isolated": 1.4047380714047382,
+    "full-attention_KV_cache_write_isolated_us": 89.1,
+    "full-attention_KV_cache_write_modelled_us": 166.5,
+    "full-attention_KV_cache_write_modelled_over_isolated": 1.8686868686868687
+  },
+  "tables": {
+    "isolated_kernels": {
+      "columns": [
+        "kernel",
+        "us_per_round",
+        "n_per_round",
+        "us_per_dispatch",
+        "mb_per_dispatch",
+        "gbs"
+      ],
+      "rows": [
+        [
+          "MLP gate_up fused [O=34816, G=2]",
+          48381.86,
+          64.0,
+          755.967,
+          200.94,
+          265.8
+        ],
+        [
+          "out_proj and MLP down_proj [O=5120, G=2]",
+          36559.21,
+          128.0,
+          285.619,
+          67.999,
+          238.1
+        ],
+        [
+          "GDN in_proj (conv qkv + a/beta + gate) [O=16480, G=2]",
+          17675.04,
+          48.0,
+          368.23,
+          95.141,
+          258.4
+        ],
+        [
+          "lm_head over the full vocabulary [O=248320, G=2]",
+          5269.31,
+          1.0,
+          5269.307,
+          1432.858,
+          271.9
+        ],
+        [
+          "full-attention fused QKV+gate [O=14336, G=2]",
+          5163.37,
+          16.0,
+          322.71,
+          82.77,
+          256.5
+        ],
+        [
+          "GDN recurrent step, full [48,128,128] fp32 state",
+          1421.13,
+          48.0,
+          29.607,
+          6.291,
+          212.5
+        ],
+        [
+          "SDPA over the full-attention history (5 rows)",
+          1267.0,
+          16.0,
+          79.187,
+          0.0,
+          0.0
+        ],
+        [
+          "fused residual + RMSNorm",
+          771.54,
+          127.0,
+          6.075,
+          0.164,
+          27.0
+        ],
+        [
+          "GDN prework: causal conv1d, q/k norm, gates",
+          543.39,
+          48.0,
+          11.321,
+          0.369,
+          32.6
+        ],
+        [
+          "UNMAPPED CV2ISigmoidADV2IMultiplyACEV2OMultiplyDB_VV_V2V2_11160318154",
+          298.86,
+          64.0,
+          4.67,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED rmsbfloat16 grid=7680x1x1 tg=32x1x1",
+          192.11,
+          48.0,
+          4.002,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED Cf4IAsTypeADf4ISigmoidCEf4IBroadcastCDFf4IBroadcastDCGf4IMul",
+          161.31,
+          48.0,
+          3.361,
+          0.0,
+          0.0
+        ],
+        [
+          "q_norm + k_norm + RoPE (28 heads)",
+          149.85,
+          16.0,
+          9.366,
+          0.073,
+          7.8
+        ],
+        [
+          "full-attention KV cache write, 5 positions",
+          89.1,
+          32.0,
+          2.784,
+          0.02,
+          7.4
+        ],
+        [
+          "UNMAPPED CV2ISigmoidBDV2IBroadcastACEV2IBroadcastCAFV2OMultiplyDE_VV_",
+          53.74,
+          16.0,
+          3.359,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED custom_kernel_qwen_mtp_linear_top2_partial_bfloat16_t_int32_",
+          49.46,
+          1.0,
+          49.462,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED g3_copybfloat16bfloat16 grid=256x5x4 tg=64x4x4",
+          46.66,
+          16.0,
+          2.916,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED rms_loopedbfloat16 grid=5120x1x1 tg=1024x1x1",
+          9.82,
+          2.0,
+          4.909,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED custom_kernel_qwen_mtp_linear_top2_finalize_int32_t_float_in",
+          6.67,
+          1.0,
+          6.674,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED gather_frontbfloat16_int32_int_2 grid=40x5x1 tg=32x4x1",
+          5.28,
+          2.0,
+          2.638,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED affine_dequantize_bfloat16_t_gs_64_b_4 grid=12800x1x1 tg=102",
+          2.91,
+          1.0,
+          2.913,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED gather_frontuint32_int32_int_1 grid=640x5x1 tg=256x4x1",
+          2.63,
+          1.0,
+          2.633,
+          0.0,
+          0.0
+        ],
+        [
+          "UNMAPPED vv_Addbfloat16 grid=25600x1x1 tg=1024x1x1",
+          2.59,
+          1.0,
+          2.595,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    "census_versus_truth": {
+      "columns": [
+        "family",
+        "modelled_us",
+        "isolated_us",
+        "dose_us",
+        "modelled_over_isolated",
+        "modelled_over_dose",
+        "isolated_over_dose",
+        "n_per_round",
+        "us_per_dispatch",
+        "gbs"
+      ],
+      "rows": [
+        [
+          "GDN recurrent step",
+          8112.6,
+          1421.13,
+          861.0,
+          5.70855586751388,
+          9.422299651567945,
+          1.6505574912891987,
+          48.0,
+          29.607,
+          212.5
+        ],
+        [
+          "fused residual + RMSNorm",
+          1187.1,
+          771.54,
+          298.0,
+          1.538611089509293,
+          3.9835570469798656,
+          2.589060402684564,
+          127.0,
+          6.075,
+          27.0
+        ],
+        [
+          "GDN prework",
+          475.3,
+          543.39,
+          null,
+          0.874694050313771,
+          null,
+          null,
+          48.0,
+          11.321,
+          32.6
+        ],
+        [
+          "q_norm + k_norm + RoPE",
+          210.5,
+          149.85,
+          null,
+          1.4047380714047382,
+          null,
+          null,
+          16.0,
+          9.366,
+          7.8
+        ],
+        [
+          "full-attention KV cache write",
+          166.5,
+          89.1,
+          null,
+          1.8686868686868687,
+          null,
+          null,
+          32.0,
+          2.784,
+          7.4
+        ]
+      ]
+    }
+  }
+}
