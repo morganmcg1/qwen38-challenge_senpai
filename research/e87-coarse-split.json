@@ -90,6 +90,7 @@
       "steady_snapshots": 6
     }
   },
+  "stage_set": "armc",
   "stop_rule_us": 60.0,
   "width_phase": "w9|draft_head"
 }

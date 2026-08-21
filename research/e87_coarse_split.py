@@ -40,6 +40,7 @@ STOP_RULE_US = 60.0
 CLUSTERS = 12292
 ROWS_PER_CLUSTER = 8
 PROBES = 3073
+COMPACT_ROWS = 98336
 HIDDEN = 5120
 
 STAGE1_KEY = "affine_qmv_bfloat16_t_gs_64_b_2_batch_0 grid=1x1537x1 tg=32x2x1"
@@ -53,18 +54,36 @@ def affine2_bytes(rows: int, cols: int) -> int:
     return rows * cols // 4 + 4 * groups
 
 
-STAGES = {
-    "stage1_centroids": {
-        "key": STAGE1_KEY,
-        "bytes": affine2_bytes(CLUSTERS, HIDDEN),
-        "weights": CLUSTERS * HIDDEN,
-        "shape": f"[{CLUSTERS},{HIDDEN}] affine-2 g64 dense qmv",
+STAGE_SETS = {
+    "armc": {
+        # Byte derivation, stated inline so the next reader can check it.
+        # Stage 1 reads every centroid once: CLUSTERS x HIDDEN affine-2 g64
+        # weights. The dispatch grid 1x1537x1 covers ceil(12292/8) row blocks,
+        # which confirms the row count.
+        "stage1_centroids": {
+            "key": STAGE1_KEY,
+            "bytes": affine2_bytes(CLUSTERS, HIDDEN),
+            "weights": CLUSTERS * HIDDEN,
+            "shape": f"[{CLUSTERS},{HIDDEN}] affine-2 g64 dense qmv",
+        },
+        # Stage 2 reads ROWS_PER_CLUSTER rows for each probed cluster. The
+        # dispatch grid 1x1x3073 carries the probe count directly.
+        "stage2_gather": {
+            "key": STAGE2_KEY,
+            "bytes": affine2_bytes(PROBES * ROWS_PER_CLUSTER, HIDDEN),
+            "weights": PROBES * ROWS_PER_CLUSTER * HIDDEN,
+            "shape": f"[{PROBES}x{ROWS_PER_CLUSTER},{HIDDEN}] affine-2 g64 gather qmv",
+        },
     },
-    "stage2_gather": {
-        "key": STAGE2_KEY,
-        "bytes": affine2_bytes(PROBES * ROWS_PER_CLUSTER, HIDDEN),
-        "weights": PROBES * ROWS_PER_CLUSTER * HIDDEN,
-        "shape": f"[{PROBES}x{ROWS_PER_CLUSTER},{HIDDEN}] affine-2 g64 gather qmv",
+    # The advisor-head declared dense coarse pass. One qmv over every compact
+    # row, so the grid is ceil(98336/8) = 12292 row blocks.
+    "declared": {
+        "dense_coarse": {
+            "key": "affine_qmv_fast_bfloat16_t_gs_64_b_2_batch_0 grid=1x12292x1",
+            "bytes": affine2_bytes(COMPACT_ROWS, HIDDEN),
+            "weights": COMPACT_ROWS * HIDDEN,
+            "shape": f"[{COMPACT_ROWS},{HIDDEN}] affine-2 g64 dense qmv",
+        },
     },
 }
 
@@ -118,10 +137,13 @@ def main() -> int:
     ap.add_argument("census", nargs="+")
     ap.add_argument("--width-phase", default="w9|draft_head")
     ap.add_argument("--drafts-per-round", type=int, default=8)
+    ap.add_argument("--stages", default="armc", choices=sorted(STAGE_SETS))
     ap.add_argument("--json")
     args = ap.parse_args()
+    stages = STAGE_SETS[args.stages]
 
     report = {
+        "stage_set": args.stages,
         "dram_gb_s": DRAM_GB_S,
         "affine4_ps_per_weight": AFFINE4_PS_PER_WEIGHT,
         "affine2_declared_ps_per_weight": AFFINE2_DECLARED_PS_PER_WEIGHT,
@@ -170,7 +192,7 @@ def main() -> int:
 
         combined_non_memory = 0.0
         combined_isolated = True
-        for name, spec in STAGES.items():
+        for name, spec in stages.items():
             entry = {"shape": spec["shape"], "expected_bytes": spec["bytes"]}
 
             hit = None
@@ -241,7 +263,7 @@ def main() -> int:
                 )
 
         if combined_isolated:
-            weights = sum(s["weights"] for s in STAGES.values())
+            weights = sum(s["weights"] for s in stages.values())
             leg["combined"] = {
                 "non_memory_us_per_draft": combined_non_memory,
                 "ps_per_weight": combined_non_memory * 1e6 / weights,
