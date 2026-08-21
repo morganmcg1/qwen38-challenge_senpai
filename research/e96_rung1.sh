@@ -3,17 +3,20 @@
 #
 #   usage: research/e96_rung1.sh [TOKENS] [FORCE_DRAFTS]
 #
-# Four arms, ABBA-counterbalanced inside one ungated session:
+# Seven legs per direction, counterbalanced inside one ungated session:
 #
-#   vendor  the unmodified kernel and its (32, 4, 1) threadgroup
-#   clone   a byte-identical clone dispatched from Qwen35.swift, same geometry
-#   t1      the clone with the t-loop forced to one iteration      (rung 1b)
-#   off     no dispatch: y = v, state_out = state_in               (rung 1)
+#   vendor    the unmodified kernel and its (32, 4, 1) threadgroup
+#   clone     a byte-identical clone dispatched from Qwen35.swift, same geometry
+#   rep R=1   the clone plus the repetition scaffold, one repetition
+#   rep R=2,4,8   the same scan repeated, bit-identical output
+#   off       no dispatch: y = v, state_out = state_in
 #
 # vendor - clone isolates any cost of moving the dispatch into the editable
-# file. clone - off is the true cost of the step. clone - t1 divided by
-# (T - 1) is the per-timestep cost, and t1 - per_timestep is launch plus
-# state traffic.
+# file. clone - rep R=1 isolates the scaffold. The slope of round cost against
+# R measures one step directly, over arms that share one token stream and one
+# (d, acc) distribution. off is the removal bracket, and it is NOT bucket
+# matched: it emits different tokens, so its rounds land at different
+# acceptance counts.
 #
 # Every arm runs through research/e96_direct_leg.sh, including the two
 # unablated controls. The wrapper cannot time an ablated arm at all: its step 1
@@ -30,14 +33,19 @@ tokens="${1:-128}"
 drafts="${2:-4}"
 failures=0
 
-for spec in v1:vendor:4 c1:clone:4 t1:t1:4 o1:off:4 \
-            o2:off:4 t2:t1:4 c2:clone:4 v2:vendor:4; do
-  IFS=: read -r slot mode y <<<"${spec}"
-  research/e96_direct_leg.sh "e96r1-${slot}-${mode}" "${tokens}" "${mode}" \
-    "${y}" "${drafts}"
+# slot:mode:repeat. The order is a palindrome, so every arm's two legs sit
+# symmetrically about the session midpoint and monotone thermal drift cancels
+# to first order.
+for spec in a1:vendor:1 a2:clone:1 a3:rep:1 a4:rep:2 a5:rep:4 a6:rep:8 a7:off:1 \
+            b7:off:1 b6:rep:8 b5:rep:4 b4:rep:2 b3:rep:1 b2:clone:1 b1:vendor:1
+do
+  IFS=: read -r slot mode reps <<<"${spec}"
+  MLX_E96_REPEAT="${reps}" \
+    research/e96_direct_leg.sh "e96r1-${slot}-${mode}${reps}" "${tokens}" \
+      "${mode}" 4 "${drafts}"
   status=$?
   failures=$((failures + (status != 0)))
-  echo "e96_rung1: leg ${slot} mode=${mode} exit=${status}"
+  echo "e96_rung1: leg ${slot} mode=${mode} R=${reps} exit=${status}"
 done
 
 echo "e96_rung1: ${failures} failed legs"
