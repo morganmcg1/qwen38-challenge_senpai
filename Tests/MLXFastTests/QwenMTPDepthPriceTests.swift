@@ -234,6 +234,28 @@ struct QwenMTPDepthPriceTests {
         }
     }
 
+    // E99 rung 5. The margin gate is an environment-selected research arm, so
+    // an ordinary process must see it off, and the clamp depth must be the
+    // widest draft that still streams the weights once.
+    @Test("the margin gate is off and clamps into the G = 1 band")
+    func marginGateDefaultsOff() {
+        #expect(Qwen36MTPBlockSession.marginGateArm == .off)
+        #expect(Qwen36MTPBlockSession.marginGateThreshold
+            == Qwen36MTPBlockSession.marginGateDefaultThreshold)
+        let width = Qwen36MTPBlockSession.marginGateDepth + 1
+        #expect(width == 4)
+        #expect(streamsPerRound(width) == 1)
+        #expect(streamsPerRound(width + 1) == 2)
+    }
+
+    /// `G = ceil(M / IPG)`, `IPG = ceil(M / ceil(M / 4))`, which is the
+    /// ranked runner's grouping and the reason the clamp depth is 3.
+    private func streamsPerRound(_ width: Int) -> Int {
+        let groups = (width + 3) / 4
+        let perGroup = (width + groups - 1) / groups
+        return (width + perGroup - 1) / perGroup
+    }
+
     @Test("the shipped arm is ship")
     func shippedArmIsShip() {
         #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
