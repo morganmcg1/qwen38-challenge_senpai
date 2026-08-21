@@ -125,7 +125,10 @@ def slope(legs: list[dict], key: str) -> dict | None:
 DENOM_LABELS = (
     "census_gpu_busy_round",
     "advisor_e96_round",
-    "leg_wall_round",
+    # Kept only to show how far it misleads. It is `wall / rounds` with the
+    # 512-token seed still inside, so it grows as the token count shrinks and
+    # is not a round time at all. Never quote a percent against it.
+    "leg_wall_round_ARTEFACT",
     "decode_only_round",
 )
 
@@ -164,9 +167,19 @@ def decode_only_round(legs: list[dict]) -> dict | None:
     d_mtp = m_hi - p / n_hi
     draft = mean([leg["mean_draft"] for leg in by_n[n_hi]])
 
+    # Falsification check on the whole correction. P was solved on the serial
+    # pass, so applying it to the MTP pass at BOTH token counts is an out-of-
+    # sample test: if the seed model is right the two marginal costs agree, and
+    # if it is wrong they inherit the raw spread between m_lo and m_hi.
+    d_mtp_at_lo = m_lo - p / n_lo
     return {
         "tokens": [n_lo, n_hi],
         "fixed_seed_and_warmup_s": p,
+        "seed_model_check": {
+            "raw_mtp_spt_spread_pct": 100.0 * (m_lo - m_hi) / m_hi,
+            "corrected_mtp_spt_spread_pct": 100.0 * (d_mtp_at_lo - d_mtp) / d_mtp,
+            "marginal_mtp_spt_at_n_lo_s": d_mtp_at_lo,
+        },
         "serial": {
             "spt_at_n_lo": s_lo,
             "spt_at_n_hi": s_hi,
@@ -272,6 +285,10 @@ def main() -> None:
                   f'{b["marginal_spt_s"] * 1e3:6.2f} ms/token, fixed share of '
                   f'the reported number '
                   f'{100 * b["fixed_share_of_reported_at_n_hi"]:.1f} %')
+        chk = dec["seed_model_check"]
+        print(f'  seed-model out-of-sample chk : MTP spt spread across n is '
+              f'{chk["raw_mtp_spt_spread_pct"]:+.1f} % raw, '
+              f'{chk["corrected_mtp_spt_spread_pct"]:+.2f} % corrected')
         print(f'  decode-only local round      : {decode_round_us:,.1f} us')
 
     # The scored round must be timed at one token count, so the slope uses the
@@ -283,6 +300,17 @@ def main() -> None:
         # dose 0 belongs to every shape: it is the shared zero-dose reference.
         sel = [leg for leg in ladder if leg["shape"] == shape or leg["dose"] == 0]
         block: dict[str, object] = {}
+        # The MTP round is spt x (1 + mean draft). If the dose perturbs the
+        # adaptive draft schedule then that factor moves for a reason other
+        # than the dose and the MTP slope is contaminated. The serial pass
+        # decodes one token per forward, so it carries no such factor and is
+        # the primary estimator whenever these two disagree.
+        drafts = sorted({round(leg["mean_draft"], 3) for leg in sel})
+        block["mean_draft_across_doses"] = drafts
+        block["mtp_slope_draft_contaminated"] = len(drafts) > 1
+        if len(drafts) > 1:
+            print(f"\n  WARNING shape={shape}: mean draft varies across doses "
+                  f"{drafts}; trust the serial slope over the MTP slope")
         for key, label in (("serial_round_us", "serial"), ("mtp_round_us", "mtp")):
             s = slope(sel, key)
             if s is None:
