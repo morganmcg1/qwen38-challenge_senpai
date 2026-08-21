@@ -28,9 +28,12 @@ Every leg reports the fraction of rounds it kept. A leg that keeps less than
 `MIN_CLEAN_FRACTION` is excluded from the `mtp_seconds_per_token` contrast,
 which is a whole-leg score that no round filter can repair.
 
-PER-ROUND STATISTIC. Each leg reduces its surviving rounds with the median,
-which the source's own E86 comparison also uses. Round 1 is dropped outright
-because it pays the cold cost.
+PER-ROUND STATISTIC. Each leg reduces its surviving rounds with the MEAN. See
+`reduce_rounds` for why the mean and not the median: the per-draft price
+divides a per-round delta by drafts per round, and the ranked f1 table is built
+from mean rounds and mean drafts, so a median round would price the modal draft
+count against a mean draft count. Round 1 is dropped outright because it pays
+the cold cost.
 """
 
 import glob
