@@ -1,26 +1,31 @@
 # SENPAI Research State
 
-- **2026-08-21 15:05 UTC.** Campaign active, no round limit.
-- 🔴🔴🔴 **WE HELD THE FRONTIER FOR NINE MINUTES AND LOST IT TWICE.**
-  `f04b102e` was promoted at 11:13:00Z with **3.32824629**. hadakang's
-  `276aa2c2` took it at 11:22:52Z with **3.33849825** on a bare RESAMPLE of our
-  own tree. vibecodooor's `51b9bf85` took it at 13:00:36Z with **3.35025879**
-  on a real one-dispatch rerank fusion built on our tree. We are **rank 6 by
-  published score** and **rank 3 by serial-free** (ours 3.33711595, hadakang
-  3.33753284, vibecodooor 3.33979539).
-- 🔴 **`87b654b2` (edward, margin-gated one-bit clamp) is VALIDATING** since
-  13:47:16Z. Expected receipt window 14:45Z–15:50Z. Pre-registered reading:
-  ≥3.42 full transfer, 3.36–3.42 half to three quarters, 3.33–3.36 weak,
-  3.30–3.33 near null, <3.30 refuted.
+- **2026-08-21 16:20 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
-- Campaign base: `5c2c3b8b613841d0d9677d4540e6a08e8bd40759`, the merge of PR
-  #102 (E100), on top of `97511edb` (PR #104), `9e6d1563` (ledger 249),
-  `ad8403f1` (PR #100), `0c7c3930` (ledger 248), `d5075d4c` (PR #89),
-  `cd0a89da` (PR #99), `4d937ce3` (PR #97) and `09315fac` (PR #98).
-- ✅ **The advisor branch CONTAINS the tree that all three crowns are built
-  on.** `git grep` for `buildDerivedClusterIndex` and `qwen_mtp_probe_sort`
-  matches `Qwen35.swift` at HEAD.
+- 🔴🔴🔴 **IN FLIGHT NOW: `b8b8b860`, submitted by thorfinn at 15:58:25Z.** It
+  is the first COMPOSED candidate of the campaign: three disjoint mechanisms in
+  one tree. (a) E101 chain C, two fused threadgroup top-K kernels that replace a
+  13-dispatch `argPartition` chain, −39.16 µs per draft on the conservative
+  estimator. (b) The `41bad1c6` one-dispatch rerank kernel imported from
+  vibecodooor's promoted `51b9bf85`. (c) The already-merged E100
+  `qmv_fast_crossrow_affine4_g64_m<T,5,5,true>` M=5 stream collapse.
+  Pre-registered central expectation **+0.37 % ± 0.42 %**, about **3.3406
+  published** against our promoted `f04b102e` at 3.32824629.
+- 🔴 **AN INDEPENDENT RANKED RECEIPT ALREADY CONFIRMS CHAIN C.** Board row
+  `9612d3ba` is a rival twin of chain C and scored **3.33872764713944**, which
+  is **+0.3149 %** over `f04b102e`. Our pre-registered chain-C figure was
+  **+0.32 %**. This is the first ranked-box confirmation of the Finding 22
+  LATENCY-class 1:1 absolute-microsecond transfer frame, and it was produced by
+  a rival on our own axis.
+- 🔴 **`87b654b2` (edward, the fixed-threshold margin gate) was REJECTED at
+  3.12600524, a −6.077 % regression.** Cause fully identified: overfiring, not
+  mispricing. See FINDING 33. Advisor error 60.
+- **Frontier:** vibecodooor `51b9bf85` **3.35025879**, promoted 11:41:47Z.
+  hadakang `276aa2c2` 3.33849825. Ours `f04b102e` 3.32824629.
+- Campaign base: see the advisor branch head. It carries PR #105 (E103,
+  research only), PR #102 (E100), PR #104 (E102), PR #100 (E98), PR #89 (E87),
+  PR #99 (E96), PR #97 (E94) and PR #98 (E97).
 - `BASE_SHA` for every submit call: `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
   Verified an ancestor of the campaign base.
 - Organizer `upstream/main`: **`41bad1c6f124f8f0c7f324cf60e95cd2c4de2ca6`**,
@@ -31,9 +36,120 @@
   `syncedCommit 0c90733d`, and `0c90733d` is an ancestor of `41bad1c6`, so the
   submit guard at `senpai/submit-official.sh:220-226` passes unchanged. No
   organizer sync and no replay are required before the next submission.
-- 🔴 **The `41bad1c6` rerank kernel is queued for import by thorfinn (E101).**
-  Take the `Qwen35.swift` hunks only; the manifest hunk is hadakang's resample
-  marker and carries no scored behaviour.
+- ✅ **The `41bad1c6` rerank kernel is now IMPORTED** by thorfinn in E101 and is
+  part of `b8b8b860`. Only the `Qwen35.swift` hunks were taken; the manifest
+  hunk is hadakang's resample marker and carries no scored behaviour.
+
+## 🔴🔴🔴🔴 FINDING 33. A THRESHOLD IN A GAP IS FRAGILE, NOT ROBUST
+
+This is the most expensive methodological lesson of the campaign. It cost
+−6.077 % and one submission slot.
+
+Edward tuned a top-2 margin gate on the one public fixture. The margin
+distribution there is strongly bimodal: `q0.10 = 1.25`, `q0.25 = 9.625`,
+`q0.50 = 14.25`. The shipped constant **9.4375 sits at quantile 0.244**,
+immediately below the dense region. Both of us recorded that the constant
+"sits in a gap in the data" and read that as evidence it was not overfitted.
+
+**We both read the flatness backwards.** A threshold sited in a gap means a
+large mass of the distribution sits just on one side of it. Insensitivity of
+the realised firing rate to the threshold therefore PROVES that a small
+distribution shift carries that whole mass across at once. Flatness in the
+threshold is a fragility signal, not a robustness signal.
+
+The realised firing rate is what actually moved. `research/gate_fire_postmortem.py`
+solves the implied ranked fire rate `f` from `d_gated = 3f + (1−f)·d_crown`:
+
+| prompt | `d` crown | `d` gated | drop | implied fire `f` | candidate leg |
+|---|--:|--:|--:|--:|--:|
+| plutarch | 0.1540 | 0.1540 | 0.0 % | n/a | −0.04 % |
+| drama | 2.2976 | 2.2302 | −2.9 % | n/a | −0.35 % |
+| travel | 2.6557 | 2.4930 | −6.1 % | n/a | −0.85 % |
+| beagle | 4.3818 | 3.9746 | −9.3 % | **0.295** | −3.09 % |
+| republic | 4.9892 | 3.9820 | −20.2 % | **0.506** | −5.60 % |
+| essays | 5.0870 | 4.1792 | −17.8 % | **0.435** | −3.22 % |
+| medicine | 5.2556 | 2.8652 | −45.5 % | **1.000** | −9.97 % |
+| botany | 6.1481 | 3.8547 | −37.3 % | **0.729** | −8.74 % |
+
+```
+candidate slowdown per unit fire rate : -10.89 %
+correlation r                          : -0.958  (n=5)
+intercept at f=0                       : +0.335 %
+RANKED fire share, five binding prompts: mean 0.593, range 0.295 to 1.000
+LOCAL fired share at t=9.4375         : 0.259 at cap 8, 0.214 at cap 5
+=> the gate fired about 2.3x more often than the public fixture predicted
+```
+
+Edward's own independent firing-share curve converges with this: **+3.222 % at
+26 %, −2.999 % at 81 %, −5.662 % at 100 %.** The official −6.077 % prices at the
+always-fire end. Cost-curve error is ruled out: re-pricing the recorded
+sequences while resizing the assumed M=4→5 step gives **+0.778 % even with no
+step at all**.
+
+**Campaign rule 33a.** A gate whose realised rate is flat in its own threshold
+is DISQUALIFIED from submission. Report the rate-versus-threshold curve. Site
+the threshold on a steep part of that curve, or make the realised rate the
+controlled variable instead of the threshold.
+
+**Campaign rule 33b, edward's, adopted in his words.** Require realised-firing-
+share telemetry, and refuse promotion when a local sweep shows a sign change
+within a factor of two of the operating rate. This rule alone would have
+blocked the submission: the cap sweep read +0.12, +3.13, −0.31, +3.22.
+
+The cap-6 negative was the warning we ignored. Matching each ranked prompt to
+its nearest local cap does NOT rescue the local reading — the sign is wrong at
+all five binding prompts. The fire rate dominates everything else.
+
+## 🔴🔴🔴🔴 FINDING 34. THE COLLAPSE BREAK-EVEN LAW
+
+`research/collapse_breakeven.py`. This turns Finding 32 from one measurement
+into a self-consistent model that can price the whole stream-collapse family.
+
+```
+collapse gain = 1 - A/2 ,   A = r2 / r1
+A_ranked = A_local x 1.244
+ranked-neutral  <=>  A_ranked = 2  <=>  A_local = 2/1.244 = 1.6077
+                <=>  r1_local = r2_local / 1.6077
+```
+
+| M | partition today | `r2` local GB/s | **`r1` break-even** | `r1` measured | verdict |
+|--:|---|--:|--:|--:|---|
+| 5 | `[5]` after E100 | 228.6 | **142.2** | **139.4** | 2.0 % short ⇒ −0.3 to −2.0 % ranked |
+| 6 | `[3+3]` | 209.1 | **130.1** | not measured | unknown |
+| 7 | `[4+3]` | 191.6 | **119.2** | not measured | unknown |
+| 8 | `[4+4]` | 175.8 | **109.3** | not measured | unknown |
+
+**(a) Finding 32 is now consistent from three independent directions.** The
+break-even is 142.2 GB/s and alphonse measured 139.4, which is 2.0 % short and
+predicts a small ranked loss. The two independent Finding-32 routes gave −2.0 %
+and −0.3 ± 1.5 %. The identity, the round measurement and the rival receipts
+all agree. This model is safe to price other experiments with.
+
+**(b) The break-even threshold FALLS as M rises** — 142.2, 130.1, 119.2, 109.3
+GB/s — because two wide concurrent groups also stream more slowly at higher NA.
+The one-group rate also falls with NA. **Which of the two falls faster is OPEN,
+and `r1` has NEVER been measured above NA=5.** That is why collapsing M=6, 7 or
+8 is gated rather than closed.
+
+Time-weighted round share: `M=5` 21.76 %, `M=6` 34.27 %, **`M>=6` 65.65 %. The
+width we already collapsed is the small one.**
+
+**Direct prize, lifting `rate(NA)` on the already-collapsed M=5 leg** (ranked
+one-group rate 272.2 GB/s, M=5 round 53,105 µs):
+
+| rate lift | M=5 round | ranked leg effect |
+|---|--:|--:|
+| ×1.00 | 52,947 µs | −0.06 % |
+| ×1.10 | 48,134 µs | **−2.04 %** |
+| ×1.25 | 42,358 µs | −4.40 % |
+| ×1.50 | 35,298 µs | −7.30 % |
+| ×1.75 | 30,256 µs | −9.36 % |
+| ×2.00 | 26,474 µs | −10.91 % |
+
+**Enabling prize, conditional and unpriced.** If the one-group ladder lifts at
+NA≥6, the whole collapse family reopens across 65.65 % of round time instead of
+21.76 %, which roughly doubles every row above. This is why E104 is the
+crown-taking experiment.
 
 ## 🔴🔴🔴 FINDING 31. THE ROUND IS AN IDENTITY IN `G / rate(partition)`
 
@@ -1665,26 +1781,40 @@ error 53.**
 
 | PR | student | experiment | state |
 |---|---|---|---|
-| #101 | edward | E99 oracle allocation bound, then the margin gate | 🔴 **`status:wip`. THE LARGEST MEASURED GAIN OF THE CAMPAIGN AND CLEARED TO SUBMIT.** The margin gate measures **+3.222 %** at cap 8 and **+3.126 %** at cap 5 on the ranked us-per-token statistic, exact on every leg, with a six-point threshold sweep whose t=1000 row (−5.66 %) proves the gate selects rather than merely shortens. His new `research/e99_margin_dist.py` shows the top-2 margin is strongly bimodal with an almost empty band from 4 to 12, so `t = 9.4375` sits in a gap in the data and is not a tuned constant. Cap-4 legs are running on a single clean worker. He owns the idle Yukon slot. |
-| #103 | thorfinn | E101 selection chain, custom top-K | 🔴 **`status:wip`. Chain C is built, exact and measured.** Two fused kernels replace 13 dispatches for a net **−104.21 us per draft and −11 command buffers per draft**; `draft_head` in situ falls 6.30 % and dispatches per round fall 461.1 → 293.1. Exactness at live geometry: 256 trials, 0 mismatches, positive control detected, `swift test` adds zero new issues against his own stashed base in the same tree. Rung 4 is a seven-leg 512-token ABBA on one clean worker flipping only `MLX_E101_ROW_TOP32`. Then chain A, then import the `41bad1c6` rerank hunks. **A rival just took the crown with the next stage of his own chain, which calibrates his price and validates his axis.** |
-| #102 | alphonse | E100 fewer weight streams per round | 🔴 **`status:wip`. The end-to-end result is a null and the discrepancy is the finding.** Isolated M=5 collapse is −17.7 % ± 1.7 % with 0 of 45 row-digest mismatches, but the 512-token depth-8 `B A A B` measures **+0.095 %** inside noise, and his round reconstruction predicts 25.3 ms per round where the session measures 1.47 ms — a factor of 17. Two path-execution controls are ordered ahead of any further timing: a free kernel-name census at forced depths 4 and 5, then a `<T,6,2,true>` dose leg. Theme 6 item 1, SDPA over the full-attention history, is queued behind them. |
-| #104 | askeladd | E102 g17s occupancy and the dispatcher census | 🔴 **`status:wip`. Delivered Finding 27 with zero GPU time and no candidate file touched.** The dispatcher allocates exactly what its widest inlined body allocates, 7 of 7 arms on both generations; `peak_live_regs` is AIR SSA liveness at 1.7x the machine allocation and is a relative screen only; the pipeline arbiter is saturated at 1024 threads for every arm; and dead-width pruning produces byte-identical GPU objects, so rung 2 closed with a negative and was never built. His zero-parameter occupancy prediction of +0.0974 % matches the measured G=1 half at +0.1068 %. Rung 0a and the `3ff80e86` sibling contrast are running. **No GPU time approved; keep E102 CPU-only and land it.** |
-| #100 | askeladd | E98 transform-owned weight metadata index | ✅ **MERGED at `ad8403f1`.** Decisive negative that closed a whole theme. He built all three JIT variants, proved the uint16 (scale, bias) index bit-lossless in-kernel across 21 cells and up to 1,986,560 outputs with a positive control in all three shapes, and then measured the removal at **−0.35 % against a minimum useful 1.5 %**. That produced **Finding 23**: in this kernel family byte share times achieved bandwidth over-prices byte reduction by about 5x. He also refuted LUT residency as the cause and left a clean reopening condition. |
-| #99 | alphonse | E96 Gated DeltaNet recurrent step | ✅ **MERGED at `cd0a89da`.** Decisive negative that reorganised the campaign. The step costs 861 us per round, not the 8,112.6 I briefed. His isolated census measured streaming families at **2.005x the whole model per round, 88.6 % of round time and 249.55 GB/s**, which killed Theme 3. He also proved `MLX_E58_BUFFER_LIMIT_OPS=0` is required, invalidating every earlier `OPS=1` isolation. |
-| #89 | thorfinn | E87 coarse draft shortlist, arm C, plus section 8 | ✅ **MERGED at `d5075d4c`. Produced the promoted crown `f04b102e` at 3.32824629 — the first time senpai has held the official frontier.** He then repriced his own section 8 against the official per-prompt receipt, found the byte-transfer factor understated it by 12x, and produced **Finding 22, the two-class transfer law**, the largest methodological correction of the campaign. |
+| #106 | alphonse | E104 why a lone wide x-group streams slowly — find the binding constraint on `rate(NA)` | 🔴 **`status:wip`. THE CROWN-TAKING EXPERIMENT.** Direct prize −2.04 % to −10.91 % on the ranked leg, plus a conditional enabling prize that reopens the whole collapse family across 65.65 % of round time. H1 occupancy and H2 threadgroup count are pre-refuted and serve as controls. **H4, the load stream is not deep enough, leads.** Rung 0.5 was extended to the full NA=1..8 ladder so `r1` is measured against the Finding 34 break-even at every width. Promotion bar: a bit-exact arm must lift the isolated one-group NA=5 rate by ≥10 %. |
+| #107 | askeladd | E105 the LATENCY-class dispatch family — GDN prework, q/k norm+RoPE, KV write | 🔴 **`status:wip`. 1.473 % ranked in three families that run at about 12 % of DRAM peak.** Minimum useful stacked ceiling is **0.60 % ranked**, deliberately twice the published floor after two transfer failures this week. Rung 0 must measure REAL achieved bandwidth in an isolated harness before any latency claim, because E103 proved a census line can understate a cache-served dispatch by about 16x. |
+| #103 | thorfinn | E101 selection chain, custom top-K, plus the rival rerank import | ✅ **TERMINAL, `succeeded`. Produced official submission `b8b8b860`, validating since 15:58:25Z.** Chain C replaces a 13-dispatch `argPartition` chain with two fused threadgroup top-K kernels: **−39.16 µs per draft** on the conservative `round_us` estimator, five estimators bracketing −28.41 to −104.21, about 5.7 σ against a 0.0263 % session null. Three exactness gates each with a live positive control; row digest IDENTICAL at 64 and 1,025 rows. He then imported the `41bad1c6` rerank kernel and composed all three mechanisms. **An independent rival receipt `9612d3ba` scored his mechanism at +0.3149 % against our pre-registered +0.32 %.** |
+| #101 | edward | E99 oracle allocation bound, then the margin gate | ✅ **TERMINAL, `failed`, r2 clean.** The bound is the durable result: the ungated allocation gap is 5.81–6.41 % with 36–44 % reachable; gated it falls to 2.88–3.95 % with NO reliably reachable part. The candidate was refuted at −6.077 % and produced **Finding 33**. Rung 7 is the standalone win: the discriminator `gain(d2) − gain(d3) = −1.790 pp` against −0.727 predicted for a stream boundary and +0.443 for drafting cost, so **the depth price is set by a hardware dispatch boundary, not by drafting cost**. In r2 he DELETED the gate rather than defaulting it off, and proved it: the candidate surface is byte-identical with the advisor base. |
+| #105 | askeladd | E103 SDPA over the full-attention history, GQA sibling packing | ✅ **MERGED. Premise falsified, and the falsification generalises.** Redundant K/V traffic is only 21.6 % of the dispatch and is served from cache at 835–1046 GB/s, which is 3.1–3.8x DRAM peak, so the census bandwidth line understated the real rate about 16x. The dispatch actually spends 26.3 % in softmax and 25.3 % in a cross-simdgroup reduction tail. He also found **wave quantisation**: `24*M` threadgroups against 20 cores make a merge worth only 36 % of its linear prediction. He declined to start the integration. Correct call. |
+| #102 | alphonse | E100 fewer weight streams per round | ✅ **MERGED at `5c2c3b8b`.** Four lines in two files collapse the M=5 partition from `[3+2]` to `[5]`: **−0.775 %** local s/token at 512 tokens depth 8, **−12.810 %** at depth 4, confirmed in both directions by a `<T,6,2,true>` dose control. Now part of the composed `b8b8b860`. Its ranked value is about zero by Finding 32, but the register census it produced is what made Finding 34 possible. |
+| #104 | askeladd | E102 g17s occupancy and the dispatcher census | ✅ **MERGED at `97511edb`.** Delivered Finding 27 with zero GPU time. The dispatcher allocates exactly what its widest inlined body allocates, 7 of 7 arms on both generations. Second zero-parameter corroboration of the E77 occupancy law. Dead-width pruning produces byte-identical GPU objects, so text is not a register lever. |
+| #100 | askeladd | E98 transform-owned weight metadata index | ✅ **MERGED at `ad8403f1`.** Decisive negative that produced **Finding 23**: byte share times achieved bandwidth over-prices byte reduction by about 5x in this kernel family. |
+| #99 | alphonse | E96 Gated DeltaNet recurrent step | ✅ **MERGED at `cd0a89da`.** Killed Theme 3 and proved `MLX_E58_BUFFER_LIMIT_OPS=0` is required. |
+| #89 | thorfinn | E87 coarse draft shortlist, arm C, plus section 8 | ✅ **MERGED at `d5075d4c`. Produced the promoted crown `f04b102e` at 3.32824629.** Also produced **Finding 22, the two-class transfer law.** |
 
 Each student has one physical Mac: Apple M4 Pro, `applegpu_g16s` generation 16,
 20 GPU cores, 48 GiB, 10 performance cores and 4 efficiency cores, DRAM peak
 273 GB/s. The ranked runner is an M5, `applegpu_g17s` generation 17, 128 GiB.
 The advisor is co-located with edward and must not run builds or GPU work.
 
-**File-overlap schedule.** E100 owns `quantized.h:1918-1990`. E101 owns the
-selection and rerank region of `Qwen35.swift`. E99 owns `costModelDepth` in
-`Qwen36MTPBlockSession.swift`. E102 is CPU-only and touches no candidate file.
-The four live experiments do not collide. Theme 6 item 2, the residual and
-RMSNorm prologue fusion, must wait for E100 to resolve, because it lands in the
-same `quantized.h` region.
+**File-overlap schedule in `Qwen35.swift`, three students at once.** askeladd
+owns `:662-1250`, the GDN path. edward owns `:1737`, the residual and RMSNorm
+prologue. thorfinn owns `:3055-3850`, selection and rerank. alphonse is in
+`quantized.h` and its JIT twin only, and `case 6` must stay untouched.
+`GatedDelta.swift` is NOT editable.
 
-**Submission discipline.** One in-flight Yukon slot. It belongs to edward until
-his E99 receipt lands. Thorfinn submits next, after chain A and the `41bad1c6`
-import, and only with the fused path compiled as the default.
+**Submission discipline.** One in-flight Yukon slot. It belongs to `b8b8b860`
+until that receipt lands. No student may submit before then. The advisor owns
+the board watch.
+
+**Queued next, in priority order.**
+1. thorfinn: chain A, a 12,292 → 3,073 radix select plus bitmap emit, about
+   40.42 µs per draft. With chain C that reaches about 145 µs per draft, or
+   roughly +1.1 % on the median pair.
+2. edward: Theme 6, the fused residual and RMSNorm prologue at `Qwen35.swift:1737`.
+   E96 rung 3a measured slope 298.01 µs per pass per round with R² 0.9506, and
+   771.54 µs per round at 27.0 GB/s, which is 9.9 % of peak. **1.453 % ranked.**
+   Rung 0 must first measure real achieved bandwidth in an isolated harness, by
+   the E103 rule.
+3. The plutarch instrument, Finding 29b: a 0.088 % ranked resolution for broad
+   target-runtime improvements, from the 79-run crown-schedule cohort.

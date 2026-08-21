@@ -32013,3 +32013,394 @@ carrying Finding 32's reading:
 Board at 15:05Z: `51b9bf85` vibecodooor 3.35025879 holds the frontier;
 `276aa2c2` hadakang 3.33849825; ours `f04b102e` 3.32824629 at rank 6;
 `87b654b2` still validating since 13:47:16Z.
+
+
+## 252. 2026-08-21 16:05 UTC - the margin gate is rejected at 3.126, a threshold in a gap is a fragility signal, and the collapse family gets a break-even law
+
+Two experiments went terminal this afternoon. Both are negatives. Both have
+fully identified causes. Both produced a transferable rule, which is what
+earns the GPU time back.
+
+### 252.1 The `87b654b2` receipt - our largest local-to-ranked inversion
+
+```
+f04b102e  crown     published 3.32824629   serial-free 3.33711595
+87b654b2  the gate  published 3.12600524   serial-free 3.13029605   REJECTED
+gap                 published -6.0765 %    serial-free -6.1976 %
+```
+
+`research/board_pair_decompose.py f04b102e 87b654b2`:
+
+```
+candidate leg   B slower by  3.9827 %   sd 3.7969
+serial leg      B slower by  0.1054 %   sd 0.3282
+schedule identical on all eight prompts   NO  (7 of 8 differ)
+decode_tokens 512 SAME . mtp_max_draft_depth 8 SAME
+qwen_mtp_weights_hash b53e4991... SAME . head_provenance_sha256 559b24eb... SAME
+```
+
+The candidate leg carries the whole loss. This is a mechanism failure, not the
+Finding 20 serial lottery and not a measurement artefact.
+
+Locally the same arm measured **+3.22 %** through the real cool gate. That is
+the largest local-to-ranked sign inversion of the campaign.
+
+### 252.2 The per-prompt post-mortem
+
+`_advisor_scratch/gatefire.py`, promoted to `research/gate_fire_postmortem.py`.
+The implied fire rate solves `d_gated = 3f + (1 - f) d_crown` and is a **lower
+bound**, because a clamped round offers at most 3.
+
+| prompt | M crown | d crown | d gated | d drop | implied fire f | candidate % |
+|---|--:|--:|--:|--:|--:|--:|
+| plutarch | 1.154 | 0.1540 | 0.1540 | 0.0 % | n/a | -0.04 |
+| drama | 3.298 | 2.2976 | 2.2302 | -2.9 % | n/a | -0.35 |
+| travel | 3.656 | 2.6557 | 2.4930 | -6.1 % | n/a | -0.85 |
+| beagle | 5.382 | 4.3818 | 3.9746 | -9.3 % | 0.295 | -3.09 |
+| republic | 5.989 | 4.9892 | 3.9820 | -20.2 % | 0.506 | -5.60 |
+| essays | 6.087 | 5.0870 | 4.1792 | -17.8 % | 0.435 | -3.22 |
+| medicine | 6.256 | 5.2556 | 2.8652 | -45.5 % | 1.000 | -9.97 |
+| botany | 7.148 | 6.1481 | 3.8547 | -37.3 % | 0.729 | -8.74 |
+
+Regressing candidate % on `f` over the five clamp-binding prompts:
+
+```
+slope       -10.89 % per unit fire rate
+r           -0.958   (n = 5)
+```
+
+Local fired share at t = 9.4375 was 0.259 at cap 8 and 0.186 to 0.259 at every
+cap measured. The ranked mean over the five binding prompts is **0.593**, so
+the gate fired about **2.3x** more often than the public fixture predicted and
+about **4x** more often on medicine.
+
+Edward reached the same conclusion independently and from the other side,
+using his own local firing-share curve: **+3.222 % at 26 %, -2.999 % at 81 %,
+-5.662 % at 100 %**. The official -6.077 % prices at the always-fire end of his
+own curve. Two independent routes, one answer.
+
+He also ruled out the alternative explanation properly. Re-pricing the recorded
+sequences while resizing the assumed M=4 to M=5 step never turns the predicted
+gain negative: it is **+0.778 % even with no step at all**. So the cost curve is
+not the error. Overfiring is.
+
+### 252.3 FINDING 33 - a threshold sited in a gap is fragile, not robust
+
+The margin distribution measured on the one public fixture is strongly bimodal:
+`q0.10 = 1.25, q0.25 = 9.625, q0.50 = 14.25`. The shipped constant 9.4375 sits
+at quantile 0.244, immediately below the dense region. Edward recorded in E99
+interim 6 that it "sits in a gap in the data", and measured that t = 8.25 and
+t = 9.4375 both return +3.22 % at cap 8.
+
+**Both of us read that flatness as robustness. It is the exact opposite.**
+
+A threshold sitting in a gap means a large mass of the distribution sits just
+on one side of it. Insensitivity of the realised rate to the threshold is
+therefore proof that a small shift of the distribution carries that whole mass
+across at once. The hidden prompts have systematically lower top-2 margins
+than the single public fixture, the mass crossed, and the fire rate went from
+0.26 to 0.59 or higher.
+
+**Campaign rule 33a.** A gate whose realised rate is flat in its own threshold
+is disqualified from submission. Report the rate-versus-threshold curve for
+every gate. Site the threshold on a steep part of that curve, or make the rate
+itself the controlled variable instead of the threshold.
+
+**Campaign rule 33b, contributed by edward and adopted in his words.** Require
+realised-firing-share telemetry, and refuse promotion when a local sweep shows
+a sign change within a factor of two of the operating rate. This is the better
+rule of the two because it keys on an observable we already log, and it would
+have blocked this submission: the cap sweep was **+0.12, +3.13, -0.31, +3.22**
+across caps 4, 5, 6 and 8, a sign change at essentially the same firing share.
+
+**The cap-6 negative was the warning we ignored.** Mapping each ranked prompt
+onto the local cap whose arm-off width is nearest:
+
+| ranked prompt | ranked M | nearest cap | local off width | local gain | ranked candidate % |
+|---|--:|--:|--:|--:|--:|
+| beagle | 5.382 | 5 | 5.804 | +3.13 % | -3.09 % |
+| republic | 5.989 | 6 | 6.576 | -0.31 % | -5.60 % |
+| essays | 6.087 | 6 | 6.576 | -0.31 % | -3.22 % |
+| medicine | 6.256 | 6 | 6.576 | -0.31 % | -9.97 % |
+| botany | 7.148 | 8 | 7.359 | +3.22 % | -8.74 % |
+
+Three of the five clamp-binding prompts sit nearest cap 6, where the local
+measurement was already negative. Note the honest limit: matching the
+operating point does not rescue the local reading either, since the sign is
+wrong at all five. Term (a), the fire rate, dominates.
+
+**Advisor error 60.** I approved this submission. Edward's evidence was
+complete, his counters were correct and his reporting was honest. I had the
+board evidence to catch the inversion and I read the same property backwards
+that he did.
+
+### 252.4 E99 TERMINAL - the bound stands, and rung 7 outlives the gate
+
+PR #101, status `failed`, revision r2 requested. W&B: 20 runs, group
+`qwen38-r1-e99-oracle-allocation-bound`, run ids `qbwdjxv1` `n0aocq0i`
+`thi4obg1` `ref5zrrd` `9bzfjyxv` `mkf3yhcg` `7pv8taca` `gc7jdmob` `60ly1xcv`
+`jetiey6d` `a460kzso` `jmxxb8pz` `hx6effp2` `v1htvq5u` `ycerblbe` `9ailw4mh`
+`stov118h` `bxk4ejhk` `44rv2017` `sk9cvcr1`, all at
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/<id>`.
+
+**The bound, which was the assignment's question.** Ungated allocation gap at
+the ranked operating point is 5.81 % to 6.41 % us/token, with 36 % to 44 %
+reachable from pre-round state. With the gate on it falls to 2.88 % to 3.95 %
+with **no reliably reachable part**. The oracle is arm-invariant to within 1 %
+(+0.48, -0.11, +0.99, +0.36 % at caps 4, 5, 6, 8), which validates the
+instrument before it is used. Reachability: a one-bit refit beats the
+random-clamp control on **7/7 folds ungated but 2/7 gated**, and `margin` is
+the first split feature on **6/7 folds ungated but 0/7 gated**.
+
+**THE SCHEDULE ALLOCATION THEME IS CLOSED.** Reopens only on a genuinely new
+pre-round signal. The single named candidate is **per-position head-side
+confidence**: the head logits for every drafted position, which we already
+compute but never reduce or retain. Not open now.
+
+**Rung 7 - the depth discriminator. This is the durable result.** Pre-registered
+before running, swept with `MLX_QWEN_MTP_MARGIN_GATE_D` at fixed t = 9.4375,
+cap 8:
+
+| depth | M | G | leg | fired | mean width | ranked us/tok | measured gain | replay pred (G) | replay pred (no step) |
+|--:|--:|--:|---|---|--:|--:|--:|--:|--:|
+| 1 | 2 | 1 | `e99r7d1` | 27/89 | 6.011 | 10702.6 | **-0.443 %** | +1.116 | +2.741 |
+| 2 | 3 | 1 | `e99r7d2` | 19/82 | 6.707 | 10502.9 | **+1.432 %** | +2.501 | +2.893 |
+| 3 | 4 | 1 | `e99r6n2s` | 21/81 | 6.778 | 10312.1 | **+3.222 %** | +3.228 | +2.450 |
+| 4 | 5 | 2 | `e99r7d4` | 21/80 | 6.925 | 10460.9 | **+1.826 %** | +1.985 | +1.981 |
+
+```
+discriminating statistic   gain(d2) - gain(d3) = -1.790 pp
+pre-registered split       stream boundary     -0.727 pp
+                           drafting-cost-only  +0.443 pp
+VERDICT                    STREAM BOUNDARY
+```
+
+**The depth-price structure is set by a hardware dispatch boundary, not by
+drafting cost.** This underwrites Finding 12, Finding 14 and Finding 31 and it
+survives the gate's failure entirely.
+
+He also refuted advisor error: I claimed depth 4 recovers close to zero, he
+pre-registered 61.5 %, and it measured 57 %. And he was right that depth 4 and
+depth 5 have literally zero discriminating power, because at M >= 5 the two
+candidate curves are the same line by construction; that is why he added
+depth 1, the most discriminating single arm at 1.63 pp.
+
+**Methodological result, with its caveat.** Four replicates per arm gave one
+distinct value on both arms, range 0.000 %, because the `(round, draft,
+accept)` sequence is bit-identical. One leg per cell suffices for a
+ranked-curve contrast. The caveat is the important half: **zero variance is not
+accuracy.** The statistic is a deterministic function of a cost model, so it
+repeats its own bias exactly. That is precisely how a confidently wrong local
+number was produced.
+
+**Correctness**: 16/16 legs matched exactly, zero DRAM-floor violations, zero
+residual divergences, `dirty_candidate_paths=0`, ABBA counterbalanced, and
+`cool_gate_passed_real_gate=false` and `gate_qualified_for_timing=false`
+preserved verbatim.
+
+**Revision r2 requested, zero GPU.** `marginGateArm` still defaults to `.g1` at
+`Qwen36MTPBlockSession.swift:1071`, so merging r1 would ship the -6.08 % gate
+as the base default schedule. r2 must delete the whole gate from the candidate
+surface - `MarginGateArm`, the threshold and depth constants,
+`pendingTop2Margin()`, the three `costModelDepth` lines and the `gate=`, `gt=`,
+`gd=`, `fire=` trace fields - keep every `research/` file, and record the
+recovery commit SHA plus `git cherry-pick -n <sha>` in `research/e99-results.md`,
+the same pattern used for the E58 census instrument at `cd924bd6`.
+
+**Declined follow-up.** Edward proposed expressing the threshold as a running
+quantile of margins observed inside the same request, targeting a fixed firing
+share near 0.25. It is the right fix for the diagnosed failure and it is inside
+the contract. Declined anyway, because rung 8 says there is nothing left to
+reach: after clamping the residual gap has no reliably reachable part and
+held-out one-bit gains run -2.41 to +0.75 %. A better-aimed clamp would spend
+GPU on a prize the oracle says is absent. **His closure is stronger than his
+follow-up, so we take the closure.**
+
+**Agreed and enforced**: do not retune the constant to 11.5625. Same class of
+error. Stop list.
+
+### 252.5 E103 TERMINAL - the SDPA packing ceiling lands on the bar
+
+PR #105, status `failed`, **MERGED at `f556bd5f`** after
+`accept_result_on_current_base` at `88d5037d`. Commit
+`e253c2c697dbfacf8008b8128cba133d221af480`. W&B `2p44qjdf` `peutgxvj`
+`bj9zpvtw` `tan8623z` `ibgx90bh`. Report `research/e103-results.md`.
+**Zero candidate surface touched**; the branch adds nine research files only.
+
+```
+stacked ceiling   379 us/round = 0.2988 %   against a 0.300 % bar
+ranked after 2.40x latency and the 1.65-2.59x in-situ discount:  0.277 - 0.435 %
+whose low end IS the published detection floor to three decimals
+```
+
+He declined to start the integration. Correct call.
+
+**The premise is falsified, and the reason generalises.** Redundant K/V traffic
+is only 21.6 % of the dispatch and is served from cache at **835 to 1046 GB/s,
+which is 3.1 to 3.8x DRAM peak**, so removing redundancy removes almost
+nothing. The dispatch actually spends **26.3 % in softmax and 25.3 % in a
+cross-simdgroup reduction tail**, neither of which head packing touches.
+
+**Campaign consequence.** Every low-GB/s line in the Finding 22 reprice table
+is now suspect in the same way. A census bandwidth figure computed on logical
+bytes understates a cache-served dispatch by up to ~16x. **Before pricing any
+latency-class fusion, measure the real achieved bandwidth in an isolated
+harness.** This is now rung 0 of every latency-class assignment.
+
+**Register wall on packing**: P=6 spills 400 bytes for +282 % cost; the usable
+arm is P=2.
+
+**Wave quantisation, promoted to a transfer hazard.** The 5+r merge is
+bit-identical in all 16 cells with all 16 positive controls detected, and is
+worth **7.54 us/dispatch, only 36 % of the 20.9 us a linear fit predicts**,
+because `24*M` threadgroups against **20 cores** quantise into waves. The
+ranked M5 has a different core count, so a dispatch that quantises badly
+locally may not quantise badly on the ranked box, and the reverse. **Report
+threadgroup count and implied waves against 20 cores for every measured
+dispatch, and attribute any shortfall against a linear fit to quantisation
+explicitly.**
+
+**Post-E100 re-anchor, as instructed**: width-5 rounds shorten 18.6 % to
+103,579 us, width-6 rounds are untouched at 139,476 us and carry 58.7 % of the
+width mass, session-weighted round 126,771 us.
+
+### 252.6 The E103 handoff, and FINDING 34 - the collapse break-even law
+
+The handoff from the same census:
+
+> `affine_qmv_fast` costs **116.60 us/row at M=5** but **136.11 us/row at M=6**,
+> 6.7 to 18.3 % worse per row across all five shapes, worth **13,869 us/round at
+> M=6** (9.94 % of that round) and about **8.1 ms/round session average, 21x
+> E103's entire ceiling**.
+
+The cause is structural and it is ours: E100 collapsed **M=5 only**, so a
+width-5 round streams the weights once as `[5]` while a width-6 round still
+streams them twice as `[3+3]`.
+
+Finding 32 says a collapse is worth nothing ranked at `A_ranked = 2`. Combining
+that with the collapse identity gives the useful operational form.
+
+**FINDING 34.**
+
+```
+collapse gain = 1 - A/2 ,   A = r2 / r1
+A_ranked = A_local x 1.244
+ranked-neutral  <=>  A_ranked = 2  <=>  A_local = 2 / 1.244 = 1.6077
+                <=>  r1_local = r2_local / 1.6077
+```
+
+Every verify width has a **break-even one-group local streaming rate**. Above
+it the collapse pays on the ranked box; below it the collapse is a ranked loss
+however good it looks locally. `research/collapse_breakeven.py`:
+
+| M | partition today | `r2` local | **`r1` break-even** | `r1` measured | verdict |
+|--:|---|--:|--:|--:|---|
+| 5 | `[5]` after E100 | 228.6 | **142.2** | **139.4** | 2.0 % short, -0.3 to -2.0 % ranked |
+| 6 | `[3+3]` | 209.1 | **130.1** | not measured | unknown |
+| 7 | `[4+3]` | 191.6 | **119.2** | not measured | unknown |
+| 8 | `[4+4]` | 175.8 | **109.3** | not measured | unknown |
+
+Two consequences.
+
+**(a) Finding 32 is now a self-consistent model, not one measurement.** At M=5
+the break-even is 142.2 and alphonse measured 139.4, a 2.0 % shortfall, which
+predicts a small ranked loss. Finding 32's two independent ranked routes gave
+-2.0 % and -0.3 +/- 1.5 %. The identity, the round measurement and the rival
+receipts all agree. The model is now safe to price other experiments with.
+
+**(b) The break-even threshold FALLS as M rises** - 142.2, 130.1, 119.2, 109.3
+- because two wide concurrent groups themselves stream more slowly at higher
+NA. The one-group rate also falls with NA. **Which falls faster is an open
+empirical question and nobody has ever measured `r1` above NA = 5.**
+
+Time-weighted over ranked round costs and the ledger-207 width shares:
+
+```
+M = 5      21.76 % of round time
+M = 6      34.27 %
+M >= 6     65.65 %
+```
+
+**The width we already collapsed is the small one.** This is now the highest-
+value cheap measurement on the board and it has been folded into E104 rung 0.5.
+
+### 252.7 Board at 15:46Z
+
+```
+51b9bf85  vibecodooor    accepted  3.35025879 promoted   11:41:47Z   <- FRONTIER
+fe01af82  hadakang       rejected  3.34527594
+9cb82a2f  ivanfioravanti rejected  3.34161311
+cc19da3d  Amal-David     rejected  3.33858551
+276aa2c2  hadakang       accepted  3.33849825 promoted   11:22:52Z
+e18433d4  audreyt        rejected  3.33813079
+71eddde4  newjordan      rejected  3.33695815
+91623861  andreolf       rejected  3.33669020
+27057395  jonathan308    rejected  3.33270129
+f04b102e  morganmcg1     accepted  3.32824629 promoted   10:17:01Z   <- ours
+8819b108  audreyt        accepted  3.32794961 promoted
+0c2807a4  newjordan      rejected  3.32774046
+87b654b2  morganmcg1     REJECTED  3.12600524            13:47:16Z   <- ours
+```
+
+Total rows 1008. Our submission slot is **FREE** as of 13:47Z.
+
+**RIVAL RACE ON THORFINN'S MECHANISM.** Two live submissions are validating the
+selection-chain family:
+
+```
+9612d3ba  14:10:40Z  Model: Claude Opus 5
+          "Exact top-32 over the IVF shortlist, in two dispatches instead of eight"
+29aedfe4  14:36:32Z  Model: Grok 4.6
+          "E88 cluster shortlist: drop two argPartition merge-sorts per draft"
+```
+
+`9612d3ba` is chain C described in one line. Thorfinn has been told to finish
+the pre-submit chain and submit without waiting for further instruction.
+
+Honest arithmetic given to him: composed expectation +0.37 % +/- 0.42 % on
+`f04b102e` is about **3.3406 published**, below the 3.35026 frontier, with a
+published resample sd of 0.277 % and only two serial draws averaged
+(Finding 20), so a good draw reaches roughly 3.346 to 3.350. Submit anyway: it
+moves our own frontier, banks chain C before a rival owns it, and gives the
+first official measurement of the +0.32 % latency-class transfer estimate.
+
+### 252.8 Student board after this cycle
+
+| PR | experiment | student | state |
+|---|---|---|---|
+| #101 | E99 oracle allocation bound | edward | `r2` requested, delete the gate, zero GPU |
+| #103 | E101 selection chain custom top-k | thorfinn | `wip`, submitting the composed tree |
+| #105 | E103 SDPA FA-history packing | askeladd | **MERGED at `f556bd5f`** |
+| #106 | E104 why a wide x-group streams slowly | alphonse | `wip`, rung 0.5 extended to the full NA ladder |
+| #107 | E105 latency-class dispatch family | askeladd | **NEW**, head `08a574b8` |
+
+**E104 is now the crown-taking experiment.** Direct prize on the already-
+collapsed M=5 leg: x1.10 rate lift gives -2.04 % on the leg, x1.25 gives
+-4.40 %, x1.50 gives -7.30 %, x2.00 gives -10.91 %. Enabling prize, conditional
+on the NA >= 6 ladder that rung 0.5 will now measure: the collapse family
+reopens across 65.65 % of round time instead of 21.76 %. Promotion bar raised
+to a **10 % lift in the isolated one-group NA=5 rate**.
+
+**E105** gives askeladd the remaining latency class: GDN prework 1.023 %,
+q/k norm and RoPE 0.282 %, KV cache write 0.168 %, total **1.473 % ranked**
+against a **0.60 % bar**, which is deliberately 2x E103's bar after this week's
+two transfer failures. The fused residual and RMSNorm prologue (1.453 % ranked)
+is reserved for edward after r2 lands.
+
+Three students are in `Qwen35.swift` this round and each brief names its
+region: thorfinn `:3055-3850` selection and rerank; edward `:1737` residual and
+RMSNorm prologue; askeladd `:662-1250` the GDN path. `GatedDelta.swift` remains
+NOT editable.
+
+### 252.9 Stop-list additions
+
+- `87b654b2`, the fixed-threshold margin gate at t = 9.4375 depth 3. Ranked
+  -6.08 %. Cause: gap-threshold fragility, Finding 33. Do not resubmit at any
+  threshold, and do not build a self-calibrating version, because rung 8 shows
+  no reachable prize remains after clamping.
+- Retuning the margin constant to 11.5625. Same class of error.
+- SDPA-over-FA-history GQA sibling packing and 5+r split merging as a ranked
+  lever: ceiling 0.2988 % against a 0.300 % bar, low end of the ranked range
+  equals the published detection floor.
+- Collapsing M=6, M=7 or M=8 streams **without first measuring `r1` at that NA
+  against the Finding 34 break-even**. Not closed, but gated.
