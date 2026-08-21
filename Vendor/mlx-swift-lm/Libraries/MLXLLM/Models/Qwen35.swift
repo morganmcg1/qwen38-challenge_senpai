@@ -3370,12 +3370,19 @@ private let qwen35DerivedClusterDumpPath: String? = {
 /// the worker's stdout carries the trusted protocol and `mtp-timed` installs a
 /// swallowing drain on its stderr, so `print` is both invisible and unsafe.
 private let qwen35DerivedClusterLog: FileHandle? = {
-    guard let path = ProcessInfo.processInfo.environment["MLX_E87_DERIVED_LOG"],
-          !path.isEmpty
-    else { return nil }
+    let requested = ProcessInfo.processInfo.environment["MLX_E87_DERIVED_LOG"]
+    // A fallback path, so an empty research directory separates "the build never
+    // ran" from "the harness variable never reached model code".
+    let path = (requested?.isEmpty ?? true) ? "/tmp/mlxfast-e87-derived.log" : requested!
     let descriptor = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
     guard descriptor >= 0 else { return nil }
-    return FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
+    let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
+    let visible = ProcessInfo.processInfo.environment.keys
+        .filter { $0.hasPrefix("MLX_") }.sorted().joined(separator: ",")
+    handle.write(Data((
+        "e87 log opened pid=\(getpid()) requested=\(requested ?? "<unset>") "
+            + "mlx_env=[\(visible)]\n").utf8))
+    return handle
 }()
 
 private func qwen35DerivedClusterNote(_ line: String) {
@@ -3745,6 +3752,9 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
             _draftHeadW = draftW
             _draftHeadS = weights.removeValue(forKey: "mtp.draft_lm_head.scales")
             _draftHeadZ = weights.removeValue(forKey: "mtp.draft_lm_head.biases")
+            qwen35DerivedClusterNote(
+                "declared coarse head loaded rows=\(draftW.dim(0)) "
+                    + "enabled=\(qwen35DerivedClusterEnabled)")
         }
         if mtp != nil {
             // Optional cluster index over the same coarse rows. Side-channel it
