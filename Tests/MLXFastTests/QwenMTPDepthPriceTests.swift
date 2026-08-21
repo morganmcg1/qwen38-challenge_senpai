@@ -243,6 +243,8 @@ struct QwenMTPDepthPriceTests {
         #expect(Qwen36MTPBlockSession.marginGateArm == .g1)
         #expect(Qwen36MTPBlockSession.marginGateThreshold
             == Qwen36MTPBlockSession.marginGateDefaultThreshold)
+        #expect(Qwen36MTPBlockSession.marginGateDepth
+            == Qwen36MTPBlockSession.marginGateDefaultDepth)
         let width = Qwen36MTPBlockSession.marginGateDepth + 1
         #expect(width == 4)
         #expect(streamsPerRound(width) == 1)

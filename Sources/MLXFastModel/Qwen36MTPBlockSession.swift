@@ -1096,7 +1096,22 @@ public final class Qwen36MTPBlockSession {
 
     /// The widest draft that still streams the weights once: `M = d + 1 = 4`
     /// gives `IPG = 4` and `G = 1`.
-    internal static let marginGateDepth = 3
+    internal static let marginGateDefaultDepth = 3
+
+    /// Research override for the clamp target, so one build serves the depth
+    /// arms. The default is the shipped value, so a process that exports
+    /// nothing runs the submitted schedule.
+    internal static let marginGateDepth: Int = {
+        guard let raw = ProcessInfo.processInfo
+            .environment["MLX_QWEN_MTP_MARGIN_GATE_D"], !raw.isEmpty
+        else { return marginGateDefaultDepth }
+        guard let value = Int(raw), (0...Qwen36MTPLimits.maxDepth).contains(value)
+        else {
+            preconditionFailure(
+                "MLX_QWEN_MTP_MARGIN_GATE_D=\(raw) is not a legal draft depth")
+        }
+        return value
+    }()
 
     /// The pending primary's target top-2 margin, or NaN before the first
     /// commit of a request. Every NaN comparison is false, so a round without
@@ -1206,8 +1221,8 @@ public final class Qwen36MTPBlockSession {
             .map { String(format: "%.6f", $0) }.joined(separator: ",")
         scheduleTrace = "arm=" + Self.depthPriceArm.rawValue
             + " gate=" + Self.marginGateArm.rawValue + String(
-                format: " gt=%.6f fire=%d ", Self.marginGateThreshold,
-                gateFired ? 1 : 0) + String(
+                format: " gt=%.6f gd=%d fire=%d ", Self.marginGateThreshold,
+                Self.marginGateDepth, gateFired ? 1 : 0) + String(
                 format: "m=%.6f streak=%d cap=%d ema=",
                 margin, fullAcceptStreak, widthCap) + emas + " sched="
     }
