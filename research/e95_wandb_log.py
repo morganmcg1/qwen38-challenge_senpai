@@ -5,6 +5,7 @@
       research/e95_wandb_log.py census LEG@M [LEG@M ...]
       research/e95_wandb_log.py model
       research/e95_wandb_log.py rider --exact DIR --base LEG --cand LEG
+      research/e95_wandb_log.py probe [--json PATH]
 
 `census` writes one run per width leg: the identity tuple, the local score
 metrics, the host thermal record and the per-phase and per-class dispatch
@@ -17,6 +18,12 @@ cost weighting of the target weight stream.
 `rider` writes the rider run: the 512-token exactness gate, its positive
 control, the base-to-rider draft-head dispatch and byte diff, and the ranked
 price of the removed dead rows.
+
+`probe` writes the isolated `quantized_matmul` width probe: the measured
+per-eval overhead, the read rate at four pack sizes, the refitted width model
+on a large and a small tensor, the traffic share of each term, the elasticity
+of time to bytes, and what share of the verify phase a byte reduction can
+reach.
 
 Every leg in this experiment is a counting and GPU-clock attribution leg, never
 a gate-qualified timed arm, so `timing_valid`, `cool_gate_passed_real_gate` and
@@ -34,6 +41,7 @@ import wandb
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+import e95_qmv_probe_analysis as probe  # noqa: E402
 import e95_verify_census as census  # noqa: E402
 
 ENTITY = "wandb-applied-ai-team"
@@ -51,7 +59,10 @@ WIDTH_MODEL = {
     "max_abs_residual_pct": 1.08,
     "out_of_sample_width": 6,
     "out_of_sample_residual_pct": -1.34,
-    "weight_stream_gb_per_s": 526.4,
+    # Reading `b` as one full pass over the weight stream implies this rate.
+    # The E95 probe run refutes that reading: `b` is 0.53 of a pass and the
+    # kernel reads at 281.1 GB/s. See job_type `qmv-width-probe`.
+    "implied_gb_per_s_if_b_were_one_pass": 526.4,
     "arithmetic_tmac_per_s": 2.50,
 }
 
@@ -289,11 +300,7 @@ def log_model() -> None:
 def log_rider(exact_dir: pathlib.Path, base_leg: str, cand_leg: str) -> None:
     summary_path = exact_dir / "rung0a-summary.json"
     exact = read_json(summary_path)
-    meta = {}
-    for line in (exact_dir / "meta.txt").read_text().splitlines():
-        if "=" in line:
-            key, value = line.split("=", 1)
-            meta[key] = value
+    meta = exact["meta"]
 
     base_meta = read_meta(base_leg)
     cand_meta = read_meta(cand_leg)
@@ -312,7 +319,10 @@ def log_rider(exact_dir: pathlib.Path, base_leg: str, cand_leg: str) -> None:
         "cli_sha256": meta.get("cli_sha256"),
         "head_provenance_sha256": meta.get("head_provenance_sha256"),
         "fixture": meta.get("fixture"),
-        "tokens": int(meta.get("tokens", 0)),
+        "golden_sha256": meta.get("golden_sha256"),
+        "vendored_metal_fingerprint": meta.get("vendored_metal_fingerprint"),
+        "chip": meta.get("chip"),
+        "tokens": exact.get("tokens"),
         "mtp_depth": int(meta.get("depth", 0)),
         "dirty_candidate_paths": int(meta.get("dirty_candidate_paths", -1)),
         "base_census_leg": base_leg,
@@ -327,15 +337,38 @@ def log_rider(exact_dir: pathlib.Path, base_leg: str, cand_leg: str) -> None:
         job_type="rider-exactness", name="e95-rider-q-row-shrink",
         config=config, reinit=True)
 
+    checks = exact["checks"]
     run.summary.update({
-        "exact/gate_exit": exact.get("gate_exit"),
-        "exact/control_exit": exact.get("control_exit"),
-        "exact/tokens": exact.get("tokens"),
-        "exact/all_tokens_matched": exact.get("all_tokens_matched"),
-        "exact/row_ledger_closed": exact.get("row_ledger_closed"),
-        "exact/rows_accounted": exact.get("rows_accounted"),
-        "exact/post_eos_tokens_checked": exact.get("post_eos_tokens_checked"),
-        "exact/control_detected_mutation": exact.get("control_detected_mutation"),
+        "exact/passed": exact["passed"],
+        "exact/gate_exit": int(exact["gate_exit"]),
+        "exact/control_exit": int(exact["control_exit"]),
+        "exact/tokens": exact["tokens"],
+        "exact/all_tokens_matched": exact["all_tokens_matched"],
+        "exact/residual_divergence_count": exact["residual_divergence_count"],
+        "exact/parity_all_ok": exact["parity_all_ok"],
+        # A positive control that still matches would prove the comparison
+        # cannot fail, so the gate is only meaningful when this is false.
+        "exact/control_all_tokens_matched":
+            exact["control_all_tokens_matched"],
+        "exact/positive_control_rejects": checks["positive_control_rejects"],
+        "exact/post_eos_continuation": checks["post_eos_continuation"],
+        "exact/first_eos_index_in_window": exact["first_eos_index_in_window"],
+        "exact/tokens_after_first_eos": exact["tokens_after_first_eos"],
+        "exact/declared_rows_total": exact["declared_rows_total"],
+        "exact/reference_checked_row_total":
+            exact["reference_checked_row_total"],
+        "exact/row_ledger_rows": exact["row_ledger_rows"],
+        "exact/ledger_equals_declared": checks["ledger_equals_declared"],
+        "exact/checked_equals_declared": checks["checked_equals_declared"],
+        "exact/emitted_equals_window": checks["emitted_equals_window"],
+        "exact/rows_per_token": exact["rows_per_token"],
+        "exact/round_count": exact["round_count"],
+        "exact/rejected_draft_total": exact["rejected_draft_total"],
+        "exact/verify_block_replayed_round_count":
+            exact["verify_block_replayed_round_count"],
+        "exact/target_cache_offset_final": exact["target_cache_offset_final"],
+        "exact/max_rejected_tail_logit_delta":
+            exact["max_rejected_tail_logit_delta"],
         "rider/q_rows_before": Q_ROWS_TOTAL,
         "rider/q_rows_after": Q_ROWS_LIVE,
         "rider/q_island_rows": Q_ROWS_ISLAND,
@@ -375,6 +408,138 @@ def log_rider(exact_dir: pathlib.Path, base_leg: str, cand_leg: str) -> None:
     run.finish()
 
 
+def log_probe(path: pathlib.Path) -> None:
+    """Ruling 4: is the per-weight-pass term `b` DRAM traffic?
+
+    The probe times one isolated `quantized_matmul` at many widths on two
+    tensors that differ only in byte size, so the width model can be refitted
+    where nothing else in the model is running. It measures its own per-eval
+    overhead instead of solving for it.
+    """
+    payload = json.loads(path.read_text())
+    overhead = payload["eval_overhead_us"]
+    rate = probe.report_reads(payload["reads"], overhead)
+
+    cells: dict[int, dict[int, tuple[float, float]]] = {}
+    cell_bytes: dict[int, int] = {}
+    for cell in payload["cells"]:
+        cells.setdefault(cell["outputs"], {})[cell["m"]] = (
+            cell["forward_us"], cell["reverse_us"])
+        cell_bytes[cell["outputs"]] = cell["packed_bytes"]
+    big, small = sorted(cell_bytes, reverse=True)
+    fit = {
+        outputs: probe.report_tensor(
+            outputs, cells[outputs], cell_bytes[outputs], overhead,
+            cell_bytes[outputs] / (rate[outputs] * 1e3))
+        for outputs in (big, small)
+    }
+
+    stream_mb = probe.VERIFY_STREAM_BYTES / 1e6
+    predicted_b = fit[big]["b_ns_per_mb"] * stream_mb / 1e3
+    predicted_c = fit[big]["c_ns_per_mb"] * stream_mb / 1e3
+    one_pass = probe.VERIFY_STREAM_BYTES / (rate[big] * 1e3)
+
+    run = wandb.init(
+        entity=ENTITY, project=PROJECT, group=GROUP,
+        job_type="qmv-width-probe", name="e95-qmv-width-probe",
+        config={
+            "host": HOST,
+            "experiment": "e95-ruling4-b-is-not-one-pass",
+            "kernel": "qmv_fast_crossrow_affine4_g64_wide",
+            "big_outputs": big,
+            "small_outputs": small,
+            "big_packed_bytes": cell_bytes[big],
+            "small_packed_bytes": cell_bytes[small],
+            "verify_stream_bytes": probe.VERIFY_STREAM_BYTES,
+            "in_model_a_us": probe.IN_MODEL["a"],
+            "in_model_b_us": probe.IN_MODEL["b"],
+            "in_model_c_us": probe.IN_MODEL["c"],
+            **gate_flags(),
+        },
+        reinit=True)
+
+    metrics = {
+        "probe/eval_overhead_us": overhead,
+        "probe/read_gb_s_big": rate[big],
+        "probe/read_gb_s_small": rate[small],
+        "probe/cache_speedup_x": rate[small] / rate[big],
+        "probe/traffic_share_b":
+            probe.traffic_share(fit[big], fit[small], "b", rate[big], rate[small]),
+        "probe/traffic_share_c":
+            probe.traffic_share(fit[big], fit[small], "c", rate[big], rate[small]),
+        "transfer/b_predicted_us": predicted_b,
+        "transfer/b_error_pct":
+            100 * (predicted_b - probe.IN_MODEL["b"]) / probe.IN_MODEL["b"],
+        "transfer/c_predicted_us": predicted_c,
+        "transfer/c_error_pct":
+            100 * (predicted_c - probe.IN_MODEL["c"]) / probe.IN_MODEL["c"],
+        "reach/mandatory_single_pass_us": one_pass,
+    }
+    for tag, outputs in (("big", big), ("small", small)):
+        for key in ("a", "b", "c", "one_pass_us", "b_over_pass",
+                    "b_ns_per_mb", "c_ns_per_mb", "m1_over_pass"):
+            metrics[f"fit_{tag}/{key}"] = fit[outputs][key]
+    for prompt, spec in probe.RANKED.items():
+        phase = (probe.IN_MODEL["a"]
+                 + probe.IN_MODEL["b"] * spec["groups"]
+                 + probe.IN_MODEL["c"] * spec["mean_m"])
+        metrics[f"reach/{prompt}_phase_us"] = phase
+        metrics[f"reach/{prompt}_mandatory_pass_pct"] = 100 * one_pass / phase
+        metrics[f"reach/{prompt}_qmv_term_pct"] = (
+            100 * (phase - probe.IN_MODEL["a"]) / phase)
+        metrics[f"reach/{prompt}_non_qmv_fixed_pct"] = (
+            100 * probe.IN_MODEL["a"] / phase)
+    run.summary.update(metrics)
+
+    ladder = []
+    for outputs in (big, small):
+        a, b, c = fit[outputs]["a"], fit[outputs]["b"], fit[outputs]["c"]
+        for width in sorted(cells[outputs]):
+            forward, reverse = cells[outputs][width]
+            net = (forward + reverse) / 2 - overhead
+            modelled = a + b * probe.groups(width) + c * width
+            ladder.append([
+                outputs, width, probe.inputs_per_group(width),
+                probe.groups(width), forward, reverse,
+                100 * (reverse - forward) / forward, net, modelled,
+                100 * (net - modelled) / net,
+                net / fit[outputs]["one_pass_us"],
+                width in probe.MODEL_WIDTHS])
+    run.log({"width_ladder": wandb.Table(
+        columns=["outputs", "m", "inputs_per_group", "groups", "forward_us",
+                 "reverse_us", "drift_pct", "net_us", "fit_us", "residual_pct",
+                 "net_over_one_pass", "in_fit"],
+        data=ladder)})
+
+    byte_cut = 1.0 - fit[small]["bytes"] / fit[big]["bytes"]
+    elasticity = []
+    for width in probe.MODEL_WIDTHS:
+        big_net = sum(cells[big][width]) / 2 - overhead
+        small_net = sum(cells[small][width]) / 2 - overhead
+        time_cut = 1.0 - small_net / big_net
+        elasticity.append(
+            [width, big_net, small_net, time_cut, time_cut / byte_cut])
+    run.log({"byte_elasticity": wandb.Table(
+        columns=["m", "big_net_us", "small_net_us", "time_cut",
+                 "elasticity"],
+        data=elasticity)})
+    run.summary["reach/byte_cut"] = byte_cut
+    run.summary["reach/mean_elasticity"] = (
+        sum(row[4] for row in elasticity) / len(elasticity))
+
+    reads = [[entry["outputs"], entry["packed_bytes"],
+              probe.weight_bytes(entry["packed_bytes"]), entry["raw_us"],
+              entry["raw_us"] - overhead, rate[entry["outputs"]]]
+             for entry in payload["reads"]]
+    run.log({"read_rates": wandb.Table(
+        columns=["outputs", "packed_bytes", "weight_bytes", "raw_us",
+                 "net_us", "gb_per_s"],
+        data=reads)})
+
+    print(f"probe\t{run.id}\t{run.url}")
+    run.finish()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -385,12 +550,18 @@ def main() -> int:
     p_rider.add_argument("--exact", required=True, type=pathlib.Path)
     p_rider.add_argument("--base", required=True)
     p_rider.add_argument("--cand", required=True)
+    p_probe = sub.add_parser("probe")
+    p_probe.add_argument(
+        "--json", type=pathlib.Path,
+        default=pathlib.Path("research/out/e95_qmv_probe.json"))
     args = parser.parse_args()
 
     if args.command == "census":
         log_census(args.specs)
     elif args.command == "model":
         log_model()
+    elif args.command == "probe":
+        log_probe(args.json)
     else:
         log_rider(args.exact, args.base, args.cand)
     return 0
