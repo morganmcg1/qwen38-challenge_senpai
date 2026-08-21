@@ -15,6 +15,15 @@
 //               Same operations, same operand types, same accumulation order,
 //               so it must be BIT-IDENTICAL to a_base. The candidate fix.
 //
+// `--arms` replaces that default set, so the same harness also runs the rung
+// 0.5 partition ladder and the arithmetic arms. A name suffixed `:diag` is a
+// timing-only diagnostic and is exempt from the bit-for-bit check; every other
+// arm must reproduce arm 0 exactly.
+//
+// `read_bytes` in the JSON always prices ONE weight stream. An arm whose
+// partition reads the weights twice therefore needs its own multiplier, which
+// research/e104_analysis.py applies from the arm's partition table.
+//
 // Sources come from research/e104_variant_sources.py. Research-only: nothing
 // here is on the scored path.
 //
@@ -29,9 +38,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NARM 4
-static const char *kArmName[NARM] = {"a_base", "l_loadonly", "z_noxload",
-                                     "xw_widex"};
+#define MAXARM 8
+static int g_narm = 4;
+static const char *kArmName[MAXARM] = {"a_base", "l_loadonly", "z_noxload",
+                                       "xw_widex"};
 // An arm named "fm_<base>" reads arm_<base>.metal but compiles it with fast
 // math on. That contracts multiply-add into fma, which changes rounding, so
 // such an arm is a timing-only diagnostic and can never ship.
@@ -39,7 +49,7 @@ static const char *kArmName[NARM] = {"a_base", "l_loadonly", "z_noxload",
 // Diagnostic arms deliberately change the arithmetic, so they are never quoted
 // as correctness-bearing. Every other arm must reproduce a_base bit for bit.
 static const char *kDiagPrefix[] = {"l_", "z_", FM_PREFIX};
-static int kArmExactVsBase[NARM] = {1, 0, 0, 1};
+static int kArmExactVsBase[MAXARM] = {1, 0, 0, 1};
 
 static int armIsDiagnostic(const char *name) {
   for (size_t i = 0; i < sizeof(kDiagPrefix) / sizeof(kDiagPrefix[0]); i++) {
@@ -88,7 +98,7 @@ typedef struct {
   id<MTLBuffer> out_vec;
   id<MTLBuffer> scales;
   id<MTLBuffer> biases;
-  id<MTLBuffer> y[NARM];
+  id<MTLBuffer> y[MAXARM];
   int n;
   int k;
 } Operands;
@@ -137,9 +147,8 @@ static double flops(const Operands *o, int m) {
   return 2.0 * (double)o->n * (double)o->k * (double)m;
 }
 
-static id<MTLComputePipelineState> buildArm(id<MTLDevice> device,
-                                            const char *path, NSString *fn,
-                                            const char *label, int fast_math) {
+static id<MTLLibrary> buildArm(id<MTLDevice> device, const char *path,
+                               const char *label, int fast_math) {
   NSString *src = [NSString stringWithContentsOfFile:@(path)
                                             encoding:NSUTF8StringEncoding
                                                error:nil];
@@ -166,12 +175,26 @@ static id<MTLComputePipelineState> buildArm(id<MTLDevice> device,
             err ? [[err localizedDescription] UTF8String] : "unknown");
     exit(1);
   }
+  fprintf(stderr, "e104_rate_probe: %s compiled in %.2fs  src=%zu bytes\n",
+          label, compile_s, (size_t)[src length]);
+  return lib;
+}
+
+// The scored dispatcher is one kernel whose register allocation is a max over
+// every width branch, so a partition ladder built from it would confound the
+// widest branch with the width under test. `--fn` may therefore carry a `%d`,
+// which selects one isolated entry point per width and gives each cell its own
+// allocation.
+static id<MTLComputePipelineState> psoFor(id<MTLDevice> device,
+                                          id<MTLLibrary> lib, NSString *fn,
+                                          const char *label) {
   id<MTLFunction> f = [lib newFunctionWithName:fn];
   if (!f) {
     fprintf(stderr, "e104_rate_probe: %s arm has no function %s\n", label,
             [fn UTF8String]);
     exit(1);
   }
+  NSError *err = nil;
   id<MTLComputePipelineState> pso =
       [device newComputePipelineStateWithFunction:f error:&err];
   if (!pso) {
@@ -180,10 +203,8 @@ static id<MTLComputePipelineState> buildArm(id<MTLDevice> device,
     exit(1);
   }
   fprintf(stderr,
-          "e104_rate_probe: %s compiled in %.2fs  src=%zu bytes  "
-          "max_threads=%lu  tg_mem=%lu\n",
-          label, compile_s, (size_t)[src length],
-          (unsigned long)pso.maxTotalThreadsPerThreadgroup,
+          "e104_rate_probe:   %s %s  max_threads=%lu  tg_mem=%lu\n", label,
+          [fn UTF8String], (unsigned long)pso.maxTotalThreadsPerThreadgroup,
           (unsigned long)pso.staticThreadgroupMemoryLength);
   return pso;
 }
@@ -208,7 +229,7 @@ static Operands makeOperands(id<MTLDevice> device, Shape shape, int max_m) {
                                  options:MTLResourceStorageModeShared];
   o.biases = [device newBufferWithLength:groups * 2
                                  options:MTLResourceStorageModeShared];
-  for (int a = 0; a < NARM; a++) {
+  for (int a = 0; a < g_narm; a++) {
     o.y[a] = [device newBufferWithLength:(size_t)max_m * shape.n * 2
                                  options:MTLResourceStorageModeShared];
     memset(o.y[a].contents, 0, o.y[a].length);
@@ -363,17 +384,20 @@ int main(int argc, char **argv) {
       char buf[512];
       snprintf(buf, sizeof(buf), "%s", arms_arg);
       int n = 0;
-      for (char *tok = strtok(buf, ","); tok && n < NARM;
+      for (char *tok = strtok(buf, ","); tok && n < MAXARM;
            tok = strtok(NULL, ",")) {
+        char *mark = strstr(tok, ":diag");
+        if (mark) *mark = '\0';
         kArmName[n] = strdup(tok);
-        kArmExactVsBase[n] = !armIsDiagnostic(tok);
+        kArmExactVsBase[n] = !mark && !armIsDiagnostic(tok);
         n++;
       }
-      if (n != NARM) {
-        fprintf(stderr, "e104_rate_probe: --arms needs exactly %d names\n",
-                NARM);
+      if (n < 2) {
+        fprintf(stderr, "e104_rate_probe: --arms needs 2 to %d names\n",
+                MAXARM);
         return 2;
       }
+      g_narm = n;
       if (armIsDiagnostic(kArmName[0])) {
         fprintf(stderr,
                 "e104_rate_probe: arm 0 is the exactness reference and must "
@@ -419,16 +443,25 @@ int main(int argc, char **argv) {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     id<MTLCommandQueue> queue = [device newCommandQueue];
     NSString *arch = [[device architecture] name];
-    NSString *fn = @(fn_name);
 
-    id<MTLComputePipelineState> arm[NARM];
-    for (int a = 0; a < NARM; a++) {
+    const int per_width = strstr(fn_name, "%d") != NULL;
+    id<MTLComputePipelineState> pso[MAXARM][32];
+    for (int a = 0; a < g_narm; a++) {
       char path[1024];
       int fast_math = !strncmp(kArmName[a], FM_PREFIX, strlen(FM_PREFIX));
       const char *srcName =
           fast_math ? kArmName[a] + strlen(FM_PREFIX) : kArmName[a];
       snprintf(path, sizeof(path), "%s/arm_%s.metal", dir, srcName);
-      arm[a] = buildArm(device, path, fn, kArmName[a], fast_math);
+      id<MTLLibrary> lib = buildArm(device, path, kArmName[a], fast_math);
+      for (int wi = 0; wi < n_widths; wi++) {
+        if (!per_width && wi) {
+          pso[a][wi] = pso[a][0];
+          continue;
+        }
+        char name[256];
+        snprintf(name, sizeof(name), fn_name, widths[wi]);
+        pso[a][wi] = psoFor(device, lib, @(name), kArmName[a]);
+      }
     }
 
     FILE *out = fopen(out_path, "w");
@@ -439,9 +472,9 @@ int main(int argc, char **argv) {
     fprintf(out, "{\n  \"device\": \"%s\",\n  \"architecture\": \"%s\",\n",
             [[device name] UTF8String], [arch UTF8String]);
     fprintf(out, "  \"function\": \"%s\",\n  \"pairs\": %d,\n", fn_name, pairs);
-    fprintf(out, "  \"order\": \"ABCDDCBA\",\n  \"weight_streams\": 1,\n");
+    fprintf(out, "  \"order\": \"palindrome\",\n  \"arm_count\": %d,\n", g_narm);
     fprintf(out, "  \"arms\": [");
-    for (int a = 0; a < NARM; a++) {
+    for (int a = 0; a < g_narm; a++) {
       fprintf(out, "%s\"%s\"", a ? ", " : "", kArmName[a]);
     }
     fprintf(out, "],\n  \"measurements\": [\n");
@@ -455,8 +488,8 @@ int main(int argc, char **argv) {
       // --- fidelity, before any timing -----------------------------------
       for (int wi = 0; wi < n_widths; wi++) {
         int m = widths[wi];
-        for (int a = 0; a < NARM; a++) {
-          dispatchOnce(queue, arm[a], &o, a, m);
+        for (int a = 0; a < g_narm; a++) {
+          dispatchOnce(queue, pso[a][wi], &o, a, m);
         }
 
         double max_rel = 0.0, sq_err = 0.0, sq_want = 0.0;
@@ -486,7 +519,7 @@ int main(int argc, char **argv) {
         fprintf(stderr,
                 "e104_rate_probe:   fidelity M=%d  base_vs_double max_rel=%.3e "
                 "rms=%.3e\n", m, max_rel, rms);
-        for (int a = 1; a < NARM; a++) {
+        for (int a = 1; a < g_narm; a++) {
           int fm = -1, fn_ = -1;
           size_t differing = countDiffering(&o, a, m, &fm, &fn_);
           size_t total = (size_t)m * o.n;
@@ -523,9 +556,9 @@ int main(int argc, char **argv) {
         uint16_t *xp = (uint16_t *)o.x.contents;
         uint16_t saved = xp[0];
         xp[0] = f32_to_bf16(bf16_to_f32(saved) * 1.5f + 0.25f);
-        dispatchOnce(queue, arm[NARM - 1], &o, NARM - 1, m);
+        dispatchOnce(queue, pso[g_narm - 1][0], &o, g_narm - 1, m);
         int fm = -1, fn_ = -1;
-        size_t differing = countDiffering(&o, NARM - 1, m, &fm, &fn_);
+        size_t differing = countDiffering(&o, g_narm - 1, m, &fm, &fn_);
         size_t total = (size_t)m * o.n;
         xp[0] = saved;
         fprintf(stderr,
@@ -535,50 +568,51 @@ int main(int argc, char **argv) {
                 ",\n    {\"kind\":\"positive_control\",\"shape\":\"%s\","
                 "\"m\":%d,\"arm\":\"%s\",\"differing\":%zu,\"total\":%zu,"
                 "\"detected\":%s}",
-                shapes[s].name, m, kArmName[NARM - 1], differing, total,
+                shapes[s].name, m, kArmName[g_narm - 1], differing, total,
                 differing ? "true" : "false");
-        dispatchOnce(queue, arm[NARM - 1], &o, NARM - 1, m);
+        dispatchOnce(queue, pso[g_narm - 1][0], &o, g_narm - 1, m);
       }
 
       // --- calibrate, warm, then time ---------------------------------------
       for (int wi = 0; wi < n_widths; wi++) {
         int m = widths[wi];
-        runArm(queue, arm[0], &o, 0, m, 1, 1);
-        double probe = runArm(queue, arm[0], &o, 0, m, 1, 1);
+        runArm(queue, pso[0][wi], &o, 0, m, 1, 1);
+        double probe = runArm(queue, pso[0][wi], &o, 0, m, 1, 1);
         int inner = (int)(target_ms * 1e-3 / probe);
         if (inner < 1) inner = 1;
         if (inner > 64) inner = 64;
         const int reps = 3;
 
-        for (int a = 0; a < NARM; a++) {
-          runArm(queue, arm[a], &o, a, m, 1, inner);
+        for (int a = 0; a < g_narm; a++) {
+          runArm(queue, pso[a][wi], &o, a, m, 1, inner);
         }
 
         double entry_c = gpuTempC();
+        const int slots = 2 * g_narm;
         for (int p = 0; p < pairs; p++) {
-          // ABCDDCBA: linear drift inside the block cancels for every arm.
-          const int order[2 * NARM] = {0, 1, 2, 3, 3, 2, 1, 0};
-          double t[2 * NARM];
+          // AB..BA palindrome: linear drift inside the block cancels for every
+          // arm at any arm count.
+          double t[2 * MAXARM];
           double at = seconds_since(g_session_start);
-          for (int slot = 0; slot < 2 * NARM; slot++) {
-            t[slot] = runArm(queue, arm[order[slot]], &o, order[slot], m, reps,
-                             inner);
+          for (int slot = 0; slot < slots; slot++) {
+            const int a = slot < g_narm ? slot : slots - 1 - slot;
+            t[slot] = runArm(queue, pso[a][wi], &o, a, m, reps, inner);
           }
-          double sec[NARM];
-          for (int a = 0; a < NARM; a++) {
-            sec[a] = 0.5 * (t[a] + t[2 * NARM - 1 - a]);
+          double sec[MAXARM];
+          for (int a = 0; a < g_narm; a++) {
+            sec[a] = 0.5 * (t[a] + t[slots - 1 - a]);
           }
           const double bytes = readBytes(&o, m);
           const double fl = flops(&o, m);
 
           fprintf(stderr, "e104_rate_probe:   %s M=%d block %d inner=%d",
                   shapes[s].name, m, p, inner);
-          for (int a = 0; a < NARM; a++) {
+          for (int a = 0; a < g_narm; a++) {
             fprintf(stderr, "  %s=%.1fus/%.1fGBs", kArmName[a], sec[a] * 1e6,
                     bytes / sec[a] / 1e9);
           }
-          fprintf(stderr, "  xw_vs_base=%+.2f%%\n",
-                  100.0 * (sec[NARM - 1] - sec[0]) / sec[0]);
+          fprintf(stderr, "  last_vs_base=%+.2f%%\n",
+                  100.0 * (sec[g_narm - 1] - sec[0]) / sec[0]);
 
           fprintf(out,
                   ",\n    {\"kind\":\"timing\",\"shape\":\"%s\",\"m\":%d,"
@@ -587,11 +621,11 @@ int main(int argc, char **argv) {
                   "\"session_elapsed_s\":%.3f,\"gpu_temp_entry_c\":%.2f,"
                   "\"seconds\":{",
                   shapes[s].name, m, p, inner, reps, bytes, fl, at, entry_c);
-          for (int a = 0; a < NARM; a++) {
+          for (int a = 0; a < g_narm; a++) {
             fprintf(out, "%s\"%s\":%.9e", a ? "," : "", kArmName[a], sec[a]);
           }
           fprintf(out, "},\"slots\":[");
-          for (int slot = 0; slot < 2 * NARM; slot++) {
+          for (int slot = 0; slot < slots; slot++) {
             fprintf(out, "%s%.9e", slot ? "," : "", t[slot]);
           }
           fprintf(out, "]}");

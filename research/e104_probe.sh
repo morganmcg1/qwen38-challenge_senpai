@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # E104 -- measure rate(NA) for one wide x-group and find what binds it.
 #
-#   usage: research/e104_probe.sh TAG [extra e104_rate_probe args...]
+#   usage: E104_SET=rate|ladder research/e104_probe.sh TAG [extra probe args...]
 #
 # The comparison is within-session and counterbalanced, so it runs under no
 # thermal gate and reports no score. Entry and exit GPU temperature are recorded
@@ -11,8 +11,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 tag="${1:?usage: e104_probe.sh TAG [args...]}"
 shift
+set_name="${E104_SET:-rate}"
 out_dir="research/out/${tag}"
-arms_dir="/tmp/e104-arms"
+arms_dir="/tmp/e104-arms-${set_name}"
 bin="/tmp/e104_rate_probe"
 mkdir -p "${out_dir}"
 
@@ -32,15 +33,28 @@ gpu_temp() {
 
 rm -rf "${arms_dir}"
 python3 research/e104_variant_sources.py --outdir "${arms_dir}" \
-  2>&1 | tee "${out_dir}/arms.log" || exit 1
+  --set "${set_name}" 2>&1 | tee "${out_dir}/arms.log" || exit 1
 
-clang -fobjc-arc -O2 -framework Metal -framework Foundation \
-  -o "${bin}" research/e104_rate_probe.m 2>&1 \
+arm_names=()
+for f in "${arms_dir}"/arm_*.metal; do
+  base="$(basename "${f}")"
+  base="${base#arm_}"
+  arm_names+=("${base%.metal}")
+done
+
+clang -fobjc-arc -O2 -Wno-format-nonliteral -framework Metal \
+  -framework Foundation -o "${bin}" research/e104_rate_probe.m 2>&1 \
   | grep -v 'setFastMathEnabled\|deprecated' | tee "${out_dir}/build.log"
 
-# No GPU: the per-NA AIR and register census that answers rung 0.
-python3 research/e104_arm_census.py --dir "${arms_dir}" \
-  --out "${out_dir}/census.json" 2>&1 | tee "${out_dir}/census.log"
+# No GPU: the source-level census that prices the arms before they are timed.
+if [[ "${set_name}" == "ladder" ]]; then
+  python3 research/e104_ladder_census.py --dir "${arms_dir}" \
+    --arms "$(IFS=,; echo "${arm_names[*]}")" \
+    --out "${out_dir}/census.json" 2>&1 | tee "${out_dir}/census.log"
+else
+  python3 research/e104_arm_census.py --dir "${arms_dir}" \
+    --out "${out_dir}/census.json" 2>&1 | tee "${out_dir}/census.log"
+fi
 
 entry_c="$(gpu_temp)"
 start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -57,6 +71,7 @@ exit_c="$(gpu_temp)"
 {
   echo "experiment=e104-why-a-wide-x-group-streams-slowly"
   echo "harness=local"
+  echo "arm_set=${set_name}"
   echo "args=$*"
   echo "started_utc=${start_iso}"
   echo "finished_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -67,7 +82,7 @@ exit_c="$(gpu_temp)"
   echo "memory_gib=$(( $(sysctl -n hw.memsize) / 1073741824 ))"
   echo "toolchain=$(swift --version 2>&1 | head -1)"
   echo "metal_toolchain=$(xcrun -sdk macosx metal --version 2>&1 | head -1)"
-  for a in a_base l_loadonly z_noxload xw_widex; do
+  for a in "${arm_names[@]}"; do
     echo "arm_${a}_sha256=$(shasum -a 256 "${arms_dir}/arm_${a}.metal" | cut -d' ' -f1)"
   done
   echo "gpu_temp_entry_c=${entry_c}"

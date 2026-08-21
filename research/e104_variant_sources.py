@@ -44,6 +44,7 @@ silently producing an arm that is identical to another arm.
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 import re
 import subprocess
@@ -56,6 +57,23 @@ ENTRY = "affine_qmv_fast_bfloat16_t_64_4_false"
 ARMS = ("a_base", "l_loadonly", "z_noxload", "xw_widex")
 PROBE_NA = (2, 3, 4, 5, 6)
 
+# --- rung 0.5: the partition ladder ------------------------------------------
+# The break-even law needs the isolated ONE-group rate `r1` and the two-group
+# rate `r2` at every verify width. `x_onegroup` routes every M to IPG == M, so
+# one x-group reads the weights. `y_split` uses the two-group partition that a
+# collapse at that width replaces: the shipped one at M = 6, 7 and 8, and the
+# pre-E100 one at M = 5.
+#
+# M = 2 and M = 3 have no legal two-group partition, because `M % IPG == 1` is
+# not instantiated and IPG = 1 would need `vec<float, 1>`. Both arms therefore
+# run the same one-group kernel there, which makes those two cells a null
+# control that measures the instrument's own noise.
+#
+# Both arms must agree bit for bit at every width: each group runs the same
+# accumulation over the same k order for its own rows.
+LADDER_NA = (2, 3, 4, 5, 6, 7, 8)
+LADDER_SPLIT = {2: 2, 3: 3, 4: 2, 5: 3, 6: 3, 7: 4, 8: 4}
+
 WIDE_FN = "qmv_fast_crossrow_affine4_g64_wide"
 
 # --- shared patches ----------------------------------------------------------
@@ -65,7 +83,7 @@ NA_ASSERT = (
     '[2, 5]");'
 )
 NA_ASSERT_NEW = (
-    'static_assert(NA >= 2 && NA <= 6, "e104 probe admits NA in [2, 6]");'
+    'static_assert(NA >= 2 && NA <= 8, "e104 probe admits NA in [2, 8]");'
 )
 M_ASSERT = (
     'static_assert(M >= 3 && M <= 9, "wide multi-row QMV dispatch covers M in '
@@ -116,11 +134,16 @@ def expect(text: str, needle: str, count: int, label: str) -> None:
         )
 
 
-def force_lone_group(text: str) -> str:
-    """Route every measured M to one weight-reading x-group."""
+def widen_asserts(text: str) -> str:
+    """Admit the research-only widths the probe instantiates."""
     expect(text, NA_ASSERT, 1, "NA static_assert")
     expect(text, M_ASSERT, 1, "M static_assert")
-    text = text.replace(NA_ASSERT, NA_ASSERT_NEW).replace(M_ASSERT, M_ASSERT_NEW)
+    return text.replace(NA_ASSERT, NA_ASSERT_NEW).replace(M_ASSERT, M_ASSERT_NEW)
+
+
+def force_lone_group(text: str) -> str:
+    """Route every measured M to one weight-reading x-group."""
+    text = widen_asserts(text)
 
     open_at = text.index(WIDE_SWITCH_OPEN)
     close_at = text.index(WIDE_SWITCH_CLOSE, open_at)
@@ -155,7 +178,7 @@ METAL_FUNC void qmv_fast_crossrow_affine4_g64_wide(
     int first_m,
     int out_row,
     uint simd_lid) {
-  static_assert(NA >= 2 && NA <= 6, "e104 probe admits NA in [2, 6]");
+  static_assert(NA >= 2 && NA <= 8, "e104 probe admits NA in [2, 8]");
   typedef vec<float, NA> VF;
   constexpr int rows_per_simd = 4;
   constexpr int values_per_thread = 16;
@@ -340,25 +363,99 @@ def iso_source(arm_text: str) -> str:
     return arm_text + "".join(ISO_KERNEL % {"na": na} for na in PROBE_NA)
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--outdir", default="/tmp/e104-arms")
-    args = ap.parse_args()
+# --- rung 0.5: isolated partition entry points -------------------------------
 
-    outdir = pathlib.Path(args.outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
+LADDER_KERNEL = """
+// M = %(na)d as %(label)s
+[[kernel]] void e104_iso_na%(na)d(
+    const device uint32_t* w [[buffer(0)]],
+    const device bfloat16_t* scales [[buffer(1)]],
+    const device bfloat16_t* biases [[buffer(2)]],
+    const device bfloat16_t* x [[buffer(3)]],
+    device bfloat16_t* y [[buffer(4)]],
+    const constant int& in_vec_size [[buffer(5)]],
+    const constant int& out_vec_size [[buffer(6)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  qmv_fast_crossrow_affine4_g64_m<bfloat16_t, %(na)d, %(ipg)d, true>(
+      w, scales, biases, x, y, in_vec_size, out_vec_size, tid, simd_gid,
+      simd_lid);
+}
+"""
 
-    base = force_lone_group(emit_base(outdir / "base_raw.metal"))
+
+def partition_label(m: int, ipg: int) -> str:
+    groups, left = [], m
+    while left > 0:
+        groups.append(min(ipg, left))
+        left -= ipg
+    return "+".join(str(g) for g in groups)
+
+
+def ladder_source(base: str, ipg_of: dict[int, int]) -> str:
+    """Every width as its own kernel, so registers are allocated per cell."""
+    return base + "".join(
+        LADDER_KERNEL
+        % {"na": na, "ipg": ipg_of[na], "label": partition_label(na, ipg_of[na])}
+        for na in LADDER_NA
+    )
+
+
+def emit_rate_arms(outdir: pathlib.Path, raw: str) -> tuple[str, ...]:
+    base = force_lone_group(raw)
     (outdir / "base_lone.metal").write_text(base)
-
     for arm in ARMS:
         text = arm_source(base, arm)
         (outdir / ("arm_%s.metal" % arm)).write_text(text)
         (outdir / ("iso_%s.metal" % arm)).write_text(iso_source(text))
         print("%-12s %8d bytes  arm_%s.metal" % (arm, len(text), arm))
+    return ARMS
 
-    distinct = {(outdir / ("arm_%s.metal" % a)).read_text() for a in ARMS}
-    if len(distinct) != len(ARMS):
+
+def emit_ladder_arms(outdir: pathlib.Path, raw: str) -> tuple[str, ...]:
+    base = widen_asserts(raw)
+    plans = {
+        "x_onegroup": {na: na for na in LADDER_NA},
+        "y_split": LADDER_SPLIT,
+    }
+    manifest = {}
+    for arm, ipg_of in plans.items():
+        text = ladder_source(base, ipg_of)
+        (outdir / ("arm_%s.metal" % arm)).write_text(text)
+        manifest[arm] = {
+            str(na): {
+                "ipg": ipg_of[na],
+                "partition": partition_label(na, ipg_of[na]),
+                "weight_streams": -(-na // ipg_of[na]),
+            }
+            for na in LADDER_NA
+        }
+        table = " ".join(
+            "M%d=[%s]" % (na, partition_label(na, ipg_of[na])) for na in LADDER_NA
+        )
+        print("%-12s %8d bytes  %s" % (arm, len(text), table))
+    (outdir / "partitions.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    return tuple(plans)
+
+
+SETS = {"rate": emit_rate_arms, "ladder": emit_ladder_arms}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--outdir", default="/tmp/e104-arms")
+    ap.add_argument("--set", dest="which", default="rate", choices=sorted(SETS))
+    args = ap.parse_args()
+
+    outdir = pathlib.Path(args.outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    raw = emit_base(outdir / "base_raw.metal")
+    arms = SETS[args.which](outdir, raw)
+
+    distinct = {(outdir / ("arm_%s.metal" % a)).read_text() for a in arms}
+    if len(distinct) != len(arms):
         raise SystemExit("e104_variant_sources: two arms are byte-identical")
     return 0
 
