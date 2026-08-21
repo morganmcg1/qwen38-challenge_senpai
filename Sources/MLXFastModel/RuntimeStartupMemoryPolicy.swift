@@ -84,10 +84,6 @@ public struct RuntimeStartupMemoryPolicy: Equatable, Sendable {
         // the earliest editable hook the worker reaches, so hooking here covers
         // weight loading and warmup as well as the timed rounds.
         E90GPUIntervals.installIfRequested()
-        // E58 research instrument, off unless MLX_E58_* is set. This is the
-        // earliest editable hook the worker reaches, so it is the only place a
-        // dispatch counter can map every pipeline the backbone and head create.
-        E58DispatchCensus.installIfRequested()
         installQwenMTPFullProfileCommandBufferDefaults(
             physicalMemoryBytes: physicalMemoryBytes,
             requestedProfile: requestedProfile
