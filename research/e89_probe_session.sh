@@ -3,12 +3,13 @@
 #
 #   usage: research/e89_probe_session.sh PREFIX TOKENS LEGSPEC ...
 #
-# LEGSPEC is `name=qos[/parts]`. `qos` is the value of MLX_E89_FORCE_QOS for
-# that leg. `none` sets nothing, so the session's shipped performance-cluster
-# claim runs; `unclaimed` sends MLX_E89_FORCE_QOS=off, which suppresses that
-# claim and restores the pre-fix scheduling behaviour; `off` additionally
-# disables the probe itself (MLX_E89_PROBE=0) and is the instrument-cost
-# control: same worker binary, no per-round probe work.
+# LEGSPEC is `name=qos[/parts][@spinms]`. `qos` is the value of
+# MLX_E89_FORCE_QOS for that leg. `none` sets nothing; `unclaimed` sends
+# MLX_E89_FORCE_QOS=off; `off` additionally disables the probe itself
+# (MLX_E89_PROBE=0) and is the instrument-cost control: same worker binary, no
+# per-round probe work. `@spinms` sets MLX_E89_WARM_SPIN_MS, the bounded warm-
+# path spin that holds the drafting thread on the performance cluster; omit it
+# to run the shipped default.
 # `parts` is a `+`-separated subset of the probe components
 # `marks probe rusage thread mem`, which becomes MLX_E89_PARTS; omit it for
 # every component. The pseudo-part `synchead` is not a probe component: it
@@ -60,6 +61,11 @@ export MLXFAST_QWEN_MTP_HEAD_DIR="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-
 
 for i in "${!order[@]}"; do
   value="${order[$i]#*=}"
+  spin=""
+  if [[ "${value}" == *@* ]]; then
+    spin="${value##*@}"
+    value="${value%@*}"
+  fi
   qos="${value%%/*}"
   parts=""
   [[ "${value}" == */* ]] && parts="${value#*/}"
@@ -72,7 +78,8 @@ for i in "${!order[@]}"; do
     parts="${parts%+}"
   fi
   probe=1
-  unset MLX_E89_FORCE_QOS MLX_E89_PARTS
+  unset MLX_E89_FORCE_QOS MLX_E89_PARTS MLX_E89_WARM_SPIN_MS
+  [[ -n "${spin}" ]] && export MLX_E89_WARM_SPIN_MS="${spin}"
   case "${qos}" in
     off) probe=0 ;;
     none) ;;
@@ -93,6 +100,7 @@ for i in "${!order[@]}"; do
     echo "e89_position=${i}"
     echo "e89_probe=${probe}"
     echo "e89_sync_head=${sync}"
+    echo "e89_warm_spin_ms=${spin:-default}"
   } >> "research/out/${tags[$i]}/meta.txt"
   bytes=$(wc -c < "research/out/${tags[$i]}/trace.txt" | tr -d ' ')
   echo "leg ${tags[$i]} pos=${i} qos=${qos} exit=${status} trace_bytes=${bytes}"

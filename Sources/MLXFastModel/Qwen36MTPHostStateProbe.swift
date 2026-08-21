@@ -373,16 +373,9 @@ enum Qwen36MTPHostStateProbe {
     /// `MLX_E89_FORCE_QOS=off|background|utility|default|userinitiated|userinteractive`.
     /// A control only. It must produce a distinct, reproducible signature, or
     /// the instrument cannot detect a state it did not cause. `off` leaves the
-    /// thread policy untouched, which also suppresses the shipped
-    /// performance-cluster claim in `Qwen36MTPBlockSession`.
+    /// thread policy untouched.
     private static let forcedQoSRequest =
         ProcessInfo.processInfo.environment["MLX_E89_FORCE_QOS"]?.lowercased()
-
-    /// True when a control owns the thread policy, so the shipped claim stands down.
-    static var forcedQoSOverridesShippedPolicy: Bool {
-        guard let request = forcedQoSRequest else { return false }
-        return !request.isEmpty
-    }
 
     nonisolated(unsafe) private static var forcedQoSOutcome: String?
 
